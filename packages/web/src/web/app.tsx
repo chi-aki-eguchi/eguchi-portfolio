@@ -1,7 +1,6 @@
 import { Route, Switch, Link } from "wouter";
 import { lazy, Suspense } from "react";
 import { Provider } from "./components/provider";
-import { RunableBadge } from "@runablehq/website-runtime";
 import PageTransition from "./components/PageTransition";
 import { usePageTitle } from "./hooks/usePageTitle";
 import Layout from "./components/Layout";
@@ -134,7 +133,6 @@ function App() {
         </Route>
       </Switch>
       </ErrorBoundary>
-      <RunableBadge />
     </Provider>
   );
 }

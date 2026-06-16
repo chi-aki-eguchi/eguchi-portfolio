@@ -20,8 +20,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1055.0",
     "@libsql/client": "^0.17.2",
-    "@runablehq/website-runtime": "^0.10.0",
-    "@tanstack/react-query": "^5.100.6",
+"@tanstack/react-query": "^5.100.6",
     "drizzle-orm": "^0.45.2",
     "exif-reader": "^2.0.3",
     "hono": "^4.12.10",

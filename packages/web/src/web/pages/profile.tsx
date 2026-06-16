@@ -32,9 +32,12 @@ export default function ProfilePage() {
   const nameEn = data?.profileNameEn ?? "Aki Eguchi";
 
   const hasSns = data?.profileInstagram || data?.profileTwitter || data?.profileNote;
-  // Re-run entrance observer when settings arrive so the (conditionally-rendered)
-  // Statement / Equipment sections fade in instead of staying invisible.
-  const entranceRef = usePageEntrance([data]);
+  // Re-run entrance observer when settings OR note data arrive so all
+  // conditionally-rendered sections (Statement, Equipment, Journal) fade in
+  // instead of staying invisible. noteData is fetched after settings, so
+  // without it the Journal section mounts after the observer last ran and
+  // stays at opacity:0.
+  const entranceRef = usePageEntrance([data, noteData]);
 
   return (
     <section className="max-w-3xl mx-auto px-5 md:px-10 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[60vh]" ref={entranceRef}>
@@ -152,54 +155,64 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* J1: Journal — latest note posts. Hidden if disabled or fetch returned nothing. */}
+      {/* J1: Journal — latest note posts as cards (thumbnail + date + title + excerpt).
+          Hidden if disabled or fetch returned nothing. */}
       {noteOn && notePosts.length > 0 && (
         <div className="mt-20 md:mt-28 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
-          <h4 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-6">Journal</h4>
-          <ul className="space-y-5">
+          <h4 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-8">Journal</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
             {notePosts.map((post) => (
-              <li key={post.link}>
-                <a
-                  href={post.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex gap-4 items-start"
-                >
-                  {post.thumbnail && (
+              <a
+                key={post.link}
+                href={post.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block"
+              >
+                {/* Thumbnail — 3:2 photographic ratio */}
+                <div className="aspect-[3/2] overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] mb-4">
+                  {post.thumbnail ? (
                     <img
                       src={post.thumbnail}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      // note's external RSS thumbnail URLs expire; hide the broken-image
-                      // icon if one 404s (the adjacent title keeps the link usable).
                       onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
-                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-md flex-shrink-0 bg-[rgba(var(--foreground-rgb),0.04)]"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
                     />
-                  )}
-                  <div className="min-w-0">
-                    <p
-                      className="text-[rgba(var(--foreground-rgb),0.65)] group-hover:text-[rgba(var(--foreground-rgb),0.85)] transition-colors duration-300"
-                      style={{ fontSize: "var(--body-size, 0.9rem)", lineHeight: "1.6", letterSpacing: "0.01em" }}
-                    >
-                      {post.title}
-                    </p>
-                    {post.date && (
-                      <p className="mt-1 font-en text-[11px] tracking-[0.05em] text-[rgba(var(--foreground-rgb),0.30)]">
-                        {formatNoteDate(post.date)}
-                      </p>
-                    )}
-                  </div>
-                </a>
-              </li>
+                  ) : null}
+                </div>
+                {/* Date */}
+                {post.date && (
+                  <p className="font-en text-[10px] tracking-[0.10em] text-[rgba(var(--foreground-rgb),0.30)] mb-2">
+                    {formatNoteDate(post.date)}
+                  </p>
+                )}
+                {/* Title */}
+                <p
+                  className="text-[rgba(var(--foreground-rgb),0.68)] group-hover:text-[rgba(var(--foreground-rgb),0.88)] transition-colors duration-300 mb-2"
+                  style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "1.6", letterSpacing: "0.01em" }}
+                >
+                  {post.title}
+                </p>
+                {/* Excerpt — first ~120 chars, 2-line clamp */}
+                {post.excerpt && (
+                  <p
+                    className="line-clamp-2 text-[rgba(var(--foreground-rgb),0.38)]"
+                    style={{ fontSize: "0.78rem", lineHeight: "1.75", letterSpacing: "0.01em" }}
+                  >
+                    {post.excerpt}
+                  </p>
+                )}
+              </a>
             ))}
-          </ul>
+          </div>
           {data?.profileNote && (
             <a
               href={data.profileNote}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-6 font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300"
+              className="inline-block mt-8 font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300"
             >
               {data?.snsLabelNote ?? "note"} →
             </a>

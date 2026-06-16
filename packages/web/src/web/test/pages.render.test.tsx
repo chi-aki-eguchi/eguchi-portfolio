@@ -1,0 +1,238 @@
+/**
+ * Page-level render smoke tests (壊れにくさの砦):
+ * every public page + admin login + the shared viewer components must mount
+ * without crashing, in BOTH a populated state (canned API) and the empty
+ * state (0 photos / empty settings). A throw inside any component leaves the
+ * host empty or rejects — either fails here before a ZIP can be built.
+ */
+import { test, expect, describe } from "bun:test";
+import { setupDom, canned, samplePhotos, flush } from "./jsdom-setup";
+
+const dom = setupDom();
+
+const { createElement, StrictMode } = await import("react");
+const { createRoot } = await import("react-dom/client");
+const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+
+async function mount(node: unknown) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  root.render(
+    createElement(StrictMode, null,
+      createElement(QueryClientProvider, { client: qc }, node as never))
+  );
+  await flush(30); // let queries resolve against the canned fetch and re-render
+  return {
+    host,
+    cleanup: () => { root.unmount(); host.remove(); },
+  };
+}
+
+const pages: [string, () => Promise<{ default: React.ComponentType }>][] = [
+  ["top", () => import("../pages/top")],
+  ["gallery", () => import("../pages/gallery")],
+  ["series", () => import("../pages/series")],
+  ["series-detail", () => import("../pages/series-detail")],
+  ["profile", () => import("../pages/profile")],
+  ["contact", () => import("../pages/contact")],
+  ["admin-login", () => import("../pages/admin-login")],
+];
+
+describe("public pages render (populated API)", () => {
+  for (const [name, load] of pages) {
+    test(name, async () => {
+      const Page = (await load()).default;
+      const { host, cleanup } = await mount(createElement(Page));
+      expect(host.innerHTML.length).toBeGreaterThan(0);
+      cleanup();
+    });
+  }
+});
+
+describe("public pages render (empty state: 写真0枚・設定空)", () => {
+  test("all pages survive an empty site", async () => {
+    const prevPhotos = canned["/api/photos"];
+    canned["/api/photos"] = { photos: [] };
+    try {
+      for (const [, load] of pages) {
+        const Page = (await load()).default;
+        const { host, cleanup } = await mount(createElement(Page));
+        expect(host.innerHTML.length).toBeGreaterThan(0);
+        cleanup();
+      }
+    } finally {
+      canned["/api/photos"] = prevPhotos;
+    }
+  });
+});
+
+describe("shared components", () => {
+  test("SeriesGrid renders its empty state", async () => {
+    const { SeriesGrid } = await import("../components/SeriesGrid");
+    const { host, cleanup } = await mount(createElement(SeriesGrid));
+    expect(host.textContent).toContain("No series yet");
+    cleanup();
+  });
+
+  test("SeriesGrid renders tiles with titles (R1)", async () => {
+    const prev = canned["/api/series"];
+    canned["/api/series"] = { series: [{ id: 3, slug: "s", title: "indigo blue", subtitle: "2026", statement: "", coverPhotoId: 2, sortOrder: 0, isPublished: true, coverUrl: "/api/images/photos/b.jpg" }] };
+    try {
+      const { SeriesGrid } = await import("../components/SeriesGrid");
+      const { host, cleanup } = await mount(createElement(SeriesGrid));
+      expect(host.textContent).toContain("indigo blue");
+      cleanup();
+    } finally {
+      canned["/api/series"] = prev;
+    }
+  });
+
+  test("Lightbox mounts, navigates and closes without crashing", async () => {
+    const { Lightbox } = await import("../components/Lightbox");
+    let closed = 0;
+    let index = 0;
+    const photos = samplePhotos.map((p) => ({ url: p.url, title: p.title, camera: p.camera, lens: p.lens, filmType: p.filmType }));
+    const { cleanup } = await mount(
+      createElement(Lightbox, {
+        photos,
+        index,
+        onClose: () => { closed += 1; },
+        onPrev: () => { index = (index + photos.length - 1) % photos.length; },
+        onNext: () => { index = (index + 1) % photos.length; },
+      })
+    );
+    const dlg = dom.window.document.querySelector("dialog");
+    expect(dlg).not.toBeNull();
+    // Keyboard navigation + Escape-equivalent close button stay wired.
+    dom.window.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "ArrowRight" }));
+    const closeBtn = dom.window.document.querySelector('dialog button[aria-label="閉じる"]') as HTMLButtonElement | null;
+    expect(closeBtn).not.toBeNull();
+    closeBtn!.click();
+    expect(closed).toBe(1);
+    cleanup();
+    await flush(5); // popstate/scroll-restore cleanup must not throw after unmount
+  });
+
+  test("AdminPage: unauthenticated renders the redirect guard (null), no crash", async () => {
+    const Admin = (await import("../pages/admin")).default;
+    const { host, cleanup } = await mount(createElement(Admin));
+    expect(host.innerHTML).toBe(""); // designed: guard returns null and redirects
+    cleanup();
+  });
+
+  test("AdminPage: authenticated mounts the full admin UI", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      expect(host.textContent).toContain("Library");
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
+    }
+  });
+
+  test("Provider applies empty settings and survives a preview-settings message", async () => {
+    const { Provider } = await import("../components/provider");
+    const { host, cleanup } = await mount(
+      createElement(Provider, null, createElement("p", null, "child"))
+    );
+    expect(host.textContent).toContain("child");
+    // Live-preview path (§0 3箇所同期の受信側): a settings payload with new keys
+    // must never throw, even with empty / odd values.
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { themeBg: "#101010", topWorksMode: "manual", topWorksIds: "1,2", topWorksColumns: "", gallerySizeScale: "1.4", heroNameSize: "48", bodyLeading: "" } },
+    }));
+    await flush(10);
+    expect(host.textContent).toContain("child");
+    cleanup();
+  });
+
+  test("DD grain: preview toggles body[data-texture], Layout must not paint over it", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    const { host, cleanup } = await mount(
+      createElement(Provider, null, createElement(Layout, null, createElement("p", null, "child")))
+    );
+    // Preview path: texture on → data attribute lights the styles.css ::before
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { bgTexture: "grain-fine", bgTextureOpacity: "0.08" } },
+    }));
+    await flush(5);
+    expect(dom.window.document.body.dataset.texture).toBe("grain-fine");
+    // texture off → attribute removed (CSS default = no grain)
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { bgTexture: "none" } },
+    }));
+    await flush(5);
+    expect(dom.window.document.body.dataset.texture).toBeUndefined();
+    // Dark themeBg → blend flips to `screen` (multiply is invisible on dark);
+    // clearing themeBg → property removed (CSS default multiply for light bg).
+    const rootStyle = dom.window.document.documentElement.style;
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { themeBg: "#111111" } },
+    }));
+    await flush(5);
+    expect(rootStyle.getPropertyValue("--bg-texture-blend")).toBe("screen");
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { themeBg: "" } },
+    }));
+    await flush(5);
+    expect(rootStyle.getPropertyValue("--bg-texture-blend")).toBe("");
+    // A3: font weights flow through the preview path as CSS vars
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { heroNameWeight: "500", bodyWeight: "300" } },
+    }));
+    await flush(5);
+    expect(rootStyle.getPropertyValue("--hero-name-weight")).toBe("500");
+    expect(rootStyle.getPropertyValue("--body-weight")).toBe("300");
+    // photoRevealEffect: non-default variants set body[data-reveal]; fade/"" clear it
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { photoRevealEffect: "rise" } },
+    }));
+    await flush(5);
+    expect(dom.window.document.body.dataset.reveal).toBe("rise");
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      data: { type: "preview-settings", settings: { photoRevealEffect: "fade" } },
+    }));
+    await flush(5);
+    expect(dom.window.document.body.dataset.reveal).toBeUndefined();
+    // The grain lives on body::before at z-index:-1, which paints BELOW in-flow
+    // block backgrounds. An opaque bg on Layout's full-screen wrapper hides it
+    // entirely (the original bug) — the wrapper must stay background-free.
+    const wrapper = host.querySelector('[class*="nav-pos-"]');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper!.className).not.toContain("bg-");
+    cleanup();
+  });
+
+  test("A6 font pairings reference real font-map entries", async () => {
+    // A typo (or a future font-map rename) would silently no-op the preset
+    // button: provider falls back to system fonts and nothing errors.
+    const { FONT_PAIRINGS, GOOGLE_FONTS_JA, GOOGLE_FONTS_EN } = await import("../components/provider");
+    expect(FONT_PAIRINGS.length).toBeGreaterThanOrEqual(4);
+    for (const p of FONT_PAIRINGS) {
+      expect(GOOGLE_FONTS_JA[p.ja]).toBeDefined();
+      expect(GOOGLE_FONTS_EN[p.en]).toBeDefined();
+    }
+  });
+
+  test("PhotoGallery: empty photos renders null, missing settings keys fall back", async () => {
+    const { PhotoGallery } = await import("../components/PhotoGallery");
+    const empty = await mount(createElement(PhotoGallery, { photos: [], layoutType: "mosaic" }));
+    // photos=[] → component renders nothing, and must not crash.
+    empty.cleanup();
+    const noDims = await mount(
+      createElement(PhotoGallery, {
+        photos: [{ id: 9, url: "/api/images/photos/x.jpg", title: "" }],
+        layoutType: "unknown-layout-value",
+        variant: "top",
+      })
+    );
+    noDims.cleanup();
+  });
+});

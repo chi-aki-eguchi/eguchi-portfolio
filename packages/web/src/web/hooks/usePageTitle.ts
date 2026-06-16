@@ -1,0 +1,26 @@
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/api";
+
+const FALLBACK_TITLE = "Photography Portfolio";
+
+/**
+ * Sets document.title on SPA navigation.
+ * Subscribes to the settings query so the title refreshes once settings load
+ * (not only on the next navigation).
+ * Pass a page name like "Gallery" → "Gallery | 江口秋 | Photography"
+ * Pass nothing → base title.
+ */
+export function usePageTitle(page?: string) {
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => (await api.settings.$get()).json(),
+  });
+
+  useEffect(() => {
+    const siteName = settings?.siteName || "";
+    const subtitle = settings?.heroSubtitle || "";
+    const base = [siteName, subtitle].filter(Boolean).join(" | ") || FALLBACK_TITLE;
+    document.title = page ? `${page} | ${base}` : base;
+  }, [page, settings?.siteName, settings?.heroSubtitle]);
+}

@@ -1,0 +1,56 @@
+# dependencies
+node_modules
+
+# output
+out
+dist
+dist-electron
+release
+web-build
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+_.log
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# local databases
+*.db
+
+# dotenv environment variable files — 絶対にコミットしない
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+.env*.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+.turbo
+
+# IntelliJ based IDEs
+.idea
+
+# macOS
+.DS_Store
+
+# deploy artifacts
+deploys/
+*.zip
+
+# ルート直下のデバッグ用スクリーンショット（大容量）
+/*.png
+
+# Claude Code / Codex の設定・メモリ（ローカル専用）
+.claude/
+.codex/
+
+# screenshots ディレクトリ
+/screenshots/

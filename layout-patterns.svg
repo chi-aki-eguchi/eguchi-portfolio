@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 920" font-family="sans-serif">
+  <rect width="800" height="920" fill="#faf8f5"/>
+
+  <!-- ===== A: 不揃いグリッド（モザイク風） ===== -->
+  <text x="30" y="40" font-size="20" font-weight="bold" fill="#333">A. 不揃いグリッド（モザイク風）</text>
+  <text x="30" y="62" font-size="13" fill="#888">大小が混ざってパズルのように敷き詰まる。隙間なく埋まるけどサイズに変化。</text>
+  <g>
+    <rect x="30" y="78" width="230" height="120" fill="#c9bfae"/>
+    <rect x="268" y="78" width="110" height="120" fill="#d8cfc0"/>
+    <rect x="30" y="206" width="110" height="90" fill="#d8cfc0"/>
+    <rect x="148" y="206" width="230" height="90" fill="#c9bfae"/>
+    <rect x="386" y="78" width="110" height="90" fill="#d8cfc0"/>
+    <rect x="386" y="176" width="110" height="120" fill="#c9bfae"/>
+  </g>
+
+  <!-- ===== B: 雑誌の見開き風 ===== -->
+  <text x="30" y="370" font-size="20" font-weight="bold" fill="#333">B. 雑誌の見開き風</text>
+  <text x="30" y="392" font-size="13" fill="#888">左右で対をなす。余白を大きく取って「抜け」を作る。ページめくり感。</text>
+  <g>
+    <!-- 左ページ: 大きい1枚 -->
+    <rect x="30" y="408" width="200" height="160" fill="#c9bfae"/>
+    <!-- 右ページ: 小さい写真＋余白 -->
+    <rect x="300" y="430" width="90" height="70" fill="#d8cfc0"/>
+    <text x="300" y="560" font-size="11" fill="#aaa">＼ 右側はあえて空ける ／</text>
+  </g>
+  <line x1="265" y1="408" x2="265" y2="575" stroke="#e5ded3" stroke-width="1" stroke-dasharray="3 3"/>
+
+  <!-- ===== C: 1枚ずつ大きく・ずらす ===== -->
+  <text x="430" y="40" font-size="20" font-weight="bold" fill="#333">C. 1枚ずつ大きく・ずらす</text>
+  <text x="430" y="62" font-size="13" fill="#888">縦スクロールで1枚ずつ。左右に互い違いに配置してリズム。</text>
+  <g>
+    <rect x="430" y="78" width="220" height="120" fill="#c9bfae"/>
+    <rect x="540" y="216" width="220" height="120" fill="#c9bfae"/>
+    <rect x="430" y="354" width="220" height="120" fill="#c9bfae"/>
+  </g>
+
+  <!-- ===== D: 整然グリッド・余白広め ===== -->
+  <text x="430" y="370" font-size="20" font-weight="bold" fill="#333">D. 整然グリッド・余白広め</text>
+  <text x="430" y="392" font-size="13" fill="#888">全部同じ大きさできれいに整列。間隔をたっぷり取って上品に。</text>
+  <g>
+    <rect x="430" y="408" width="95" height="95" fill="#c9bfae"/>
+    <rect x="555" y="408" width="95" height="95" fill="#c9bfae"/>
+    <rect x="680" y="408" width="95" height="95" fill="#c9bfae"/>
+    <rect x="430" y="533" width="95" height="95" fill="#c9bfae"/>
+    <rect x="555" y="533" width="95" height="95" fill="#c9bfae"/>
+    <rect x="680" y="533" width="95" height="95" fill="#c9bfae"/>
+  </g>
+
+  <!-- 区切り線 -->
+  <line x1="30" y1="660" x2="770" y2="660" stroke="#ddd" stroke-width="1"/>
+  <text x="30" y="695" font-size="15" fill="#666" font-style="italic">※ 茶色い四角＝写真。実際にはここに秋の作品が入る。</text>
+  <text x="30" y="722" font-size="15" fill="#666" font-style="italic">　 AとBは「雑誌っぽい・こなれ感」、Cは「没入・作家性」、Dは「端正・ミニマル」寄り。</text>
+</svg>

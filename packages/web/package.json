@@ -1,0 +1,47 @@
+{
+  "name": "@template/web",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/api/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "dev": "vite",
+    "test": "bun test ./src",
+    "start": "bun src/server.ts",
+    "lint": "cd ../.. && oxlint packages/web --deny-warnings --no-error-on-unmatched-pattern",
+    "preview": "bun run build && vite preview",
+    "db:generate": "bun --env-file=../../.env drizzle-kit generate",
+    "db:migrate": "bun --env-file=../../.env drizzle-kit migrate",
+    "db:push": "bun --env-file=../../.env drizzle-kit push",
+    "db:studio": "bun --env-file=../../.env drizzle-kit studio"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1055.0",
+    "@libsql/client": "^0.17.2",
+    "@runablehq/website-runtime": "^0.10.0",
+    "@tanstack/react-query": "^5.100.6",
+    "drizzle-orm": "^0.45.2",
+    "exif-reader": "^2.0.3",
+    "hono": "^4.12.10",
+    "lucide-react": "^0.577.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-icons": "^5.6.0",
+    "wouter": "^3.9.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/jsdom": "^28.0.1",
+    "@types/node": "^25.3.5",
+    "@types/react": "19.1.17",
+    "@types/react-dom": "19.1.11",
+    "@vitejs/plugin-react": "5.1.4",
+    "drizzle-kit": "^0.31.10",
+    "jsdom": "^29.1.0",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.8.3",
+    "vite": "^7.3.1"
+  }
+}

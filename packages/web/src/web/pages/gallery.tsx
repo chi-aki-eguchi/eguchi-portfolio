@@ -1,0 +1,153 @@
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/api";
+import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
+import { PhotoGallery } from "../components/PhotoGallery";
+import { SeriesGrid } from "../components/SeriesGrid";
+import { InquiryCta } from "../components/InquiryCta";
+
+export default function GalleryPage() {
+  const [activeFilter, setActiveFilter] = useState("all");
+  // P1: Photos / Series toggle. `null` = follow the admin default; a click pins
+  // the user's choice. Series tab only appears when published series exist.
+  const [pinnedView, setPinnedView] = useState<"photos" | "series" | null>(null);
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => (await api.settings.$get()).json(),
+  });
+  const { data: photosData, isLoading: photosLoading } = useQuery({
+    queryKey: ["photos"],
+    queryFn: async () => (await api.photos.$get()).json(),
+  });
+  const { data: seriesData } = useQuery({
+    queryKey: ["series"],
+    queryFn: async () => (await api.series.$get()).json(),
+  });
+  const { data: catsData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => (await api.categories.$get()).json(),
+    // Categories rarely change; keep them fresh longer so the prefetched data is
+    // used as-is on navigation (no background refetch / flicker).
+    staleTime: 5 * 60_000,
+  });
+
+  const hasSeries = (seriesData?.series.length ?? 0) > 0;
+  const defaultView = settings?.worksDefaultView === "series" ? "series" : "photos";
+  const view = hasSeries ? (pinnedView ?? defaultView) : "photos";
+
+  // Memoise so references are stable across renders — otherwise dependent
+  // useMemo/useEffect (and useScrollFadeIn) re-run every render.
+  const allPhotos = useMemo(() => photosData?.photos ?? [], [photosData]);
+  const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
+  const filtered = useMemo(
+    () => (activeFilter === "all" ? allPhotos : allPhotos.filter((p) => p.category === activeFilter)),
+    [allPhotos, activeFilter]
+  );
+
+  // If the active category no longer exists (e.g. it was deleted/renamed), fall
+  // back to "All" instead of stranding the user on an empty, unhighlighted filter.
+  useEffect(() => {
+    if (activeFilter !== "all" && categories.length > 0 && !categories.some((c) => c.slug === activeFilter)) {
+      setActiveFilter("all");
+    }
+  }, [activeFilter, categories]);
+
+  const filterItems = [
+    { slug: "all", label: settings?.filterAllLabel ?? "All" },
+    ...categories.map((c) => ({ slug: c.slug, label: c.label })),
+  ];
+
+  const fadeRef = useScrollFadeIn([filtered, view]);
+
+  // Switching the filter (or Photos/Series view) while scrolled deep can shrink
+  // the page and strand the viewer at the footer of a now-short grid. Scroll
+  // back to the top of the section so the new selection starts in view.
+  const prevViewKey = useRef<string | null>(null);
+  useEffect(() => {
+    const key = `${activeFilter}/${view}`;
+    if (prevViewKey.current === null) { prevViewKey.current = key; return; } // initial mount — don't scroll
+    if (prevViewKey.current === key) return;
+    prevViewKey.current = key;
+    const el = fadeRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    if (window.scrollY > top + 40) {
+      const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: Math.max(0, top - 70), behavior: reduce ? "auto" : "smooth" }); // 70px ≈ fixed header + breathing room
+    }
+  }, [activeFilter, view, fadeRef]);
+
+  return (
+    <section className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-16 md:pb-32" ref={fadeRef}>
+      <h1
+        className="font-en uppercase text-center mb-16 md:mb-24 section-reveal"
+        style={{ fontSize: "var(--section-label-size, 0.75rem)", color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`, letterSpacing: "var(--section-label-tracking, 0.10em)", lineHeight: "var(--section-leading, 1.2)" }}
+      >
+        {settings?.galleryLabel ?? "Gallery"}
+      </h1>
+
+      {/* P1: Photos / Series view toggle — only when there are series to show */}
+      {hasSeries && (
+        <div className="flex justify-center gap-x-8 mb-12 md:mb-14 section-reveal">
+          {([["photos", "Photos"], ["series", "Series"]] as const).map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => setPinnedView(val)}
+              aria-pressed={view === val}
+              className={`font-en text-xs tracking-[0.08em] transition-colors duration-300 nav-link-luxury ${
+                view === val
+                  ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
+                  : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {view === "series" ? (
+        <SeriesGrid />
+      ) : (
+      <>
+      {/* Filter */}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal" style={{ transitionDelay: "0.1s" }}>
+          {filterItems.map((cat) => (
+            <button
+              key={cat.slug}
+              onClick={() => setActiveFilter(cat.slug)}
+              aria-pressed={activeFilter === cat.slug}
+              className={`font-en text-xs tracking-[0.04em] transition-colors duration-300 nav-link-luxury ${
+                activeFilter === cat.slug
+                  ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
+                  : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Grid */}
+      {filtered.length === 0 ? (
+        // Don't flash "No photos" while the first fetch is still in flight.
+        photosLoading ? (
+          <div className="py-24" aria-hidden="true" />
+        ) : (
+          <div className="py-24 text-center">
+            <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">No photos</p>
+          </div>
+        )
+      ) : (
+        <PhotoGallery photos={filtered} layoutType={settings?.galleryLayout} />
+      )}
+      </>
+      )}
+
+      <InquiryCta />
+    </section>
+  );
+}

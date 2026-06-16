@@ -1,0 +1,8 @@
+{
+    "id": "website",
+    "name": "Aki Eguchi Portfolio",
+    "description": "A photography portfolio site for Aki Eguchi, built with Hono, React, Drizzle/Turso, and Bun.",
+    "url": "https://chi-aki-eguchi.runable.site",
+    "hostname": "chi-aki-eguchi.runable.site",
+    "port": 8080
+}

@@ -244,6 +244,8 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [bulkEditMode, setBulkEditMode] = usePersistentState("admin:bulkEditMode", false);
+  // 機能5: アップロード時のフィルム/デジタル選択（グループ単位。デフォルト=digital）
+  const [uploadMedium, setUploadMedium] = usePersistentState<"digital" | "film">("admin:uploadMedium", "digital");
 
   const { data: photosData, isLoading } = useQuery({
     queryKey: ["photos", "all"],
@@ -619,13 +621,18 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
         const data = await res.json();
         // C1: server detected an identical image already registered — skip it.
         if (data.duplicate) { duplicates.push(file.name); return; }
-        const { url, width, height, fileHash, shotAt } = data;
+        const { url, width, height, fileHash, shotAt, exifCamera, exifLens } = data;
         if (!url) throw new Error("no url returned");
-        // New uploads land in "uncategorized" (empty category) — the photographer
-        // assigns categories afterwards rather than them defaulting to whatever
-        // happens to be the first category. shotAt arrives from the server's
-        // EXIF read (U2) and may be null.
-        const created = await adminApi.photos.$post({ json: { filename: file.name, url, width, height, fileHash, shotAt, title: "", meta: "", category: "" } });
+        // 機能5: デジタルはEXIF由来のカメラ・レンズを自動補完。フィルムは空欄（EXIFなし前提）。
+        const isDigital = uploadMedium === "digital";
+        const filmTypeVal = isDigital ? "デジタル" : "フィルム";
+        const cameraVal  = isDigital ? (exifCamera ?? "") : "";
+        const lensVal    = isDigital ? (exifLens   ?? "") : "";
+        const created = await adminApi.photos.$post({ json: {
+          filename: file.name, url, width, height, fileHash, shotAt,
+          title: "", meta: "", category: "",
+          filmType: filmTypeVal, camera: cameraVal, lens: lensVal,
+        } });
         assertOk(created);
       } catch {
         failed.push(file);
@@ -1206,6 +1213,25 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
               </button>
             </div>
           )}
+
+          {/* 機能5: アップロード前のフィルム/デジタル選択 */}
+          <div className="flex items-center gap-1">
+            {([["digital", "Digital"] as const, ["film", "Film"] as const]).map(([val, lbl]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setUploadMedium(val)}
+                aria-pressed={uploadMedium === val}
+                className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
+                  uploadMedium === val
+                    ? "bg-[#555] text-[#eee] border-[#666]"
+                    : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
+                }`}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
 
           {/* Upload button */}
           <button

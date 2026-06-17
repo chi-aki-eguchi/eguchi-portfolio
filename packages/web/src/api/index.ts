@@ -625,17 +625,25 @@ const app = new Hono()
     // Capture intrinsic dimensions so the client can reserve aspect-ratio (CLS)
     const { width = null, height = null } = await sharp(optimised).metadata();
 
-    // U2: EXIF DateTimeOriginal → shotAt. Read from the *original* bytes — the
-    // optimised JPEG has its metadata stripped. EXIF datetimes are timezone-less
-    // wall-clock values; exif-reader surfaces them as UTC Dates, so slicing the
-    // ISO string preserves the camera's local time as written.
+    // U2: EXIF → shotAt / camera / lens. Read from *original* bytes — the
+    // optimised JPEG has its metadata stripped. Datetimes are timezone-less
+    // wall-clock values; exif-reader surfaces them as UTC Dates.
     let shotAt: string | null = null;
+    let exifCamera: string | null = null;
+    let exifLens: string | null = null;
     try {
       const { exif } = await sharp(inputBuf).metadata();
       if (exif) {
         const tags = exifReader(exif);
         const dt = tags?.Photo?.DateTimeOriginal ?? tags?.Image?.DateTime;
         if (dt instanceof Date && !Number.isNaN(dt.getTime())) shotAt = dt.toISOString().slice(0, 19);
+        // Make + Model → camera (trim and join with a space, skip if empty)
+        const make  = (tags?.Image?.Make  as string | undefined)?.trim() ?? "";
+        const model = (tags?.Image?.Model as string | undefined)?.trim() ?? "";
+        if (model) exifCamera = make && !model.startsWith(make) ? `${make} ${model}` : model;
+        // LensModel → lens
+        const lensModel = (tags?.Photo?.LensModel as string | undefined)?.trim() ?? "";
+        if (lensModel) exifLens = lensModel;
       }
     } catch { /* EXIFなし・壊れたEXIF → null のまま（手入力可） */ }
 
@@ -643,7 +651,7 @@ const app = new Hono()
     await uploadToR2(key, optimised, 'image/jpeg');
 
     const proxyUrl = keyToProxyUrl(key);
-    return c.json({ url: proxyUrl, key, size: optimised.length, width, height, fileHash, shotAt }, 201);
+    return c.json({ url: proxyUrl, key, size: optimised.length, width, height, fileHash, shotAt, exifCamera, exifLens }, 201);
   })
 
   // ── Admin: Hero image upload (resize → R2) ──────────────
@@ -721,6 +729,9 @@ const app = new Hono()
         title:    body.title    ?? "",
         meta:     body.meta     ?? "",
         category: body.category ?? "", // default to uncategorized, not a phantom slug
+        camera:   typeof body.camera   === "string" && body.camera   ? body.camera   : null,
+        lens:     typeof body.lens     === "string" && body.lens     ? body.lens     : null,
+        filmType: typeof body.filmType === "string" && body.filmType ? body.filmType : null,
         width:  typeof body.width  === "number" ? body.width  : null,
         height: typeof body.height === "number" ? body.height : null,
         fileHash: typeof body.fileHash === "string" ? body.fileHash : null,

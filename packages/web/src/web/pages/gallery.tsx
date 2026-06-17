@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { api } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery } from "../components/PhotoGallery";
@@ -11,6 +12,17 @@ export default function GalleryPage() {
   // P1: Photos / Series toggle. `null` = follow the admin default; a click pins
   // the user's choice. Series tab only appears when published series exist.
   const [pinnedView, setPinnedView] = useState<"photos" | "series" | null>(null);
+  // 機能8: フィルム/デジタルフィルター（URLクエリパラメータで状態管理）
+  const [location, setLocation] = useLocation();
+  const activeMedium = useMemo(() => {
+    const params = new URLSearchParams(location.includes("?") ? location.split("?")[1] : "");
+    const v = params.get("medium");
+    return v === "film" || v === "digital" ? v : "all";
+  }, [location]);
+  const setActiveMedium = (v: "all" | "film" | "digital") => {
+    const base = location.split("?")[0];
+    setLocation(v === "all" ? base : `${base}?medium=${v}`);
+  };
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -40,10 +52,14 @@ export default function GalleryPage() {
   // useMemo/useEffect (and useScrollFadeIn) re-run every render.
   const allPhotos = useMemo(() => photosData?.photos ?? [], [photosData]);
   const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
-  const filtered = useMemo(
-    () => (activeFilter === "all" ? allPhotos : allPhotos.filter((p) => p.category === activeFilter)),
-    [allPhotos, activeFilter]
-  );
+  const filtered = useMemo(() => {
+    let list = activeFilter === "all" ? allPhotos : allPhotos.filter((p) => p.category === activeFilter);
+    if (activeMedium !== "all") {
+      const target = activeMedium === "film" ? "フィルム" : "デジタル";
+      list = list.filter((p) => (p as Record<string, unknown>).filmType === target);
+    }
+    return list;
+  }, [allPhotos, activeFilter, activeMedium]);
 
   // If the active category no longer exists (e.g. it was deleted/renamed), fall
   // back to "All" instead of stranding the user on an empty, unhighlighted filter.
@@ -111,9 +127,9 @@ export default function GalleryPage() {
         <SeriesGrid />
       ) : (
       <>
-      {/* Filter */}
+      {/* Filter — カテゴリ */}
       {categories.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal" style={{ transitionDelay: "0.1s" }}>
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6 section-reveal" style={{ transitionDelay: "0.1s" }}>
           {filterItems.map((cat) => (
             <button
               key={cat.slug}
@@ -126,6 +142,26 @@ export default function GalleryPage() {
               }`}
             >
               {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
+      {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal" style={{ transitionDelay: "0.15s" }}>
+          {([["all", settings?.filterAllLabel ?? "All"], ["film", "Film"], ["digital", "Digital"]] as const).map(([val, lbl]) => (
+            <button
+              key={val}
+              onClick={() => setActiveMedium(val)}
+              aria-pressed={activeMedium === val}
+              className={`font-en text-xs tracking-[0.04em] transition-colors duration-300 nav-link-luxury ${
+                activeMedium === val
+                  ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
+                  : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
+              }`}
+            >
+              {lbl}
             </button>
           ))}
         </div>

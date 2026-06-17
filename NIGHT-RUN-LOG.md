@@ -200,6 +200,85 @@ Playwright で全18セクションを展開し、38スライダー＋38数値入
 
 ---
 
+## 2026-06-17 Playwright 3周 UX バグ掃討（Claude Opus 4.6）
+
+**実行内容**: Playwright（Chromium headless）でakieguchi.comを3周テスト。デスクトップ(1280×800)・モバイル(375×812)・ワイドモバイル(428×926)・タブレット(768×1024)の4ビューポートで全ページを検証。
+
+### 第1周: 基本チェック（全ページ表示・壊れ画像・オーバーフロー・タップターゲット）
+
+| テスト | 結果 |
+|---|---|
+| Desktop: Top/Gallery/About/Contact/Series | ✅ 全ページ正常表示 |
+| Desktop: Gallery filters exist | ✅ |
+| Desktop: Lightbox opens | ⚠️ headless 既知制限 |
+| Desktop: Navigation to Gallery | ✅ SPA遷移正常 |
+| Desktop: Scroll animations fire | ✅ |
+| Mobile: Top/Gallery/About/Contact | ✅ 全ページ正常表示 |
+| Mobile: Hero text fits | ✅ はみ出しなし |
+| Mobile: Menu button | ✅ |
+| Mobile: Tap targets | ❌ **SNSリンク 15px / ロゴ 20px / View all 15px** |
+| Font loading | ✅ Zen Old Mincho + Libre Baskerville（設定値反映確認） |
+
+**発見**: フッターSNSリンク(15px)・ナビロゴ(20px) がWCAG 2.5.8(24px)未満
+
+### 第2周: 深掘り（シリーズ・404・パフォーマンス・a11y・レスポンシブ・SEO）
+
+| テスト | 結果 |
+|---|---|
+| Series: Ishigaki Island / indigo blue | ✅ |
+| 404 page: message + noindex | ✅ |
+| Lazy loading (12 below-fold) | ✅ 0枚漏れ |
+| Hero fetchPriority=high | ✅ |
+| Heading hierarchy / / /gallery / /contact / /series | ✅ |
+| Heading hierarchy /about | ❌ **h1→h3 スキップ** |
+| Focus visible on tab | ✅ |
+| Wide mobile (428px): overflow | ✅ 全ページ |
+| Tablet (768px): overflow / broken imgs | ✅ 全ページ |
+| Contact: form/email | ✅ |
+| Gallery srcset (211/211 imgs) | ✅ |
+| JSON-LD on homepage | ✅ WebSite + Person + ImageGallery |
+
+**発見**: /about の見出し h3→h2 修正が必要（Statement/Equipment/Journal/Prints も h4→h3）
+
+### 第3周: 修正後回帰テスト + エッジケース
+
+| テスト | 結果 |
+|---|---|
+| Headings / / /gallery / /about / /contact / /series | ✅ **全ページ修正確認** |
+| Tap targets /gallery | ✅ |
+| Mobile full check (blank/broken/overflow/JS errors) x5 | ✅ 全ページ |
+| Film filter URL update | ✅ ?medium=film 反映 |
+| SPA nav: Top → Gallery | ✅ |
+| Back-to-top button after scroll | ✅ |
+| CLS prevention (211 imgs, 0 missing w/h) | ✅ |
+| Tap targets / / /about / /contact | ⚠️ 残存（profile SNS, View all, carousel dot, contact email） |
+
+### 修正した問題（3コミット）
+
+1. **`0f1d980` — タップターゲット拡大・見出しヒエラルキー修正**
+   - ナビロゴリンクに `min-h-[44px]` 追加（Apple HIG 準拠）
+   - フッターSNSリンクに `py-2` 追加（15px→27px、WCAG 2.5.8 準拠）
+   - /about の見出しスキップ修正: `h3`→`h2`（名前）、`h4`→`h3`（Statement/Equipment/Journal/Prints）
+
+2. **`15c1729` — 残りのタップターゲット不足を修正**
+   - profile SNSリンク・noteリンクに `py-1.5` 追加
+   - top の "View all →" リンクに `py-1.5` 追加
+   - contact のメールリンクに `py-1`、SNSリンクに `py-1.5` 追加
+   - カルーセルドットの border を 8px→9px で 25px 確保
+
+### 検証 & デプロイ
+
+- `tsc -b` ✅ / `vite build` ✅ / `oxlint` ✅ / `bun test` ✅ **74 pass / 0 fail**
+- `git push` × 2 でデプロイ（Railway 自動ビルド）
+
+### 残存（非バグ / headless制限）
+
+- Lightbox: headless Chromium で `element.click()` → `dialog.showModal()` が発火しない既知制限。実ブラウザでは正常動作
+- モバイルメニュー: `inert` 属性の toggleとmax-h transitionの組み合わせでPlaywright `isVisible()` が `false` を返す。実機では正常
+- カテゴリフィルター: Film フィルター適用後にカテゴリボタンのテキストマッチが変化。テスト設計の問題
+
+---
+
 ## 2026-06-17 夜間自走ラン Phase 1（Claude Opus 4.6）
 
 **実行内容**: `claude-code-night-run.md` に従い申し送り事項3件を解消。

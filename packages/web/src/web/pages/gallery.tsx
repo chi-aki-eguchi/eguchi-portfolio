@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { api } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery } from "../components/PhotoGallery";
@@ -14,14 +14,14 @@ export default function GalleryPage() {
   const [pinnedView, setPinnedView] = useState<"photos" | "series" | null>(null);
   // 機能8: フィルム/デジタルフィルター（URLクエリパラメータで状態管理）
   const [location, setLocation] = useLocation();
+  const search = useSearch();
   const activeMedium = useMemo(() => {
-    const params = new URLSearchParams(location.includes("?") ? location.split("?")[1] : "");
+    const params = new URLSearchParams(search);
     const v = params.get("medium");
     return v === "film" || v === "digital" ? v : "all";
-  }, [location]);
+  }, [search]);
   const setActiveMedium = (v: "all" | "film" | "digital") => {
-    const base = location.split("?")[0];
-    setLocation(v === "all" ? base : `${base}?medium=${v}`);
+    setLocation(v === "all" ? location : `${location}?medium=${v}`);
   };
 
   const { data: settings } = useQuery({
@@ -111,7 +111,7 @@ export default function GalleryPage() {
               key={val}
               onClick={() => setPinnedView(val)}
               aria-pressed={view === val}
-              className={`font-en text-xs tracking-[0.08em] transition-colors duration-300 nav-link-luxury ${
+              className={`font-en text-xs tracking-[0.08em] py-1 transition-colors duration-300 nav-link-luxury ${
                 view === val
                   ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
                   : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
@@ -135,7 +135,7 @@ export default function GalleryPage() {
               key={cat.slug}
               onClick={() => setActiveFilter(cat.slug)}
               aria-pressed={activeFilter === cat.slug}
-              className={`font-en text-xs tracking-[0.04em] transition-colors duration-300 nav-link-luxury ${
+              className={`font-en text-xs tracking-[0.04em] py-1 transition-colors duration-300 nav-link-luxury ${
                 activeFilter === cat.slug
                   ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
                   : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
@@ -155,7 +155,7 @@ export default function GalleryPage() {
               key={val}
               onClick={() => setActiveMedium(val)}
               aria-pressed={activeMedium === val}
-              className={`font-en text-xs tracking-[0.04em] transition-colors duration-300 nav-link-luxury ${
+              className={`font-en text-xs tracking-[0.04em] py-1 transition-colors duration-300 nav-link-luxury ${
                 activeMedium === val
                   ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
                   : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"

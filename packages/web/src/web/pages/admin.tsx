@@ -774,6 +774,7 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
     setSelected(new Set([photo.id]));
     setLastClicked(photo.id);
     setPreviewPhoto(prev => (prev ? photo : prev)); // keep quick-preview in sync if open
+    if (inspectPhoto) openInspector(photo); // keep inspector panel in sync if open
     requestAnimationFrame(() => document.getElementById(`admin-photo-${photo.id}`)?.scrollIntoView({ block: "nearest" }));
   };
 
@@ -845,7 +846,7 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, displayed, lastClicked, showTrash, previewPhoto, showShortcuts, thumbSize]);
+  }, [selected, displayed, lastClicked, showTrash, previewPhoto, showShortcuts, thumbSize, inspectPhoto]);
 
   // Undo toast auto-dismiss after 5s
   useEffect(() => {
@@ -1744,7 +1745,8 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
             <img
               src={`${inspectPhoto.url}?w=800&q=80`}
               alt={inspectPhoto.title}
-              className="w-full object-contain max-h-48 bg-[#1e1e1e]"
+              className="w-full h-auto object-contain bg-[#1e1e1e]"
+              style={{ maxHeight: "320px" }}
             />
           </div>
 

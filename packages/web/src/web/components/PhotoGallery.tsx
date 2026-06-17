@@ -30,6 +30,10 @@ const KNOWN_LAYOUTS: GalleryLayoutType[] = ["mosaic", "grid", "scroll", "stagger
  */
 export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { photos: GalleryPhoto[]; layoutType?: string; variant?: "top" | "gallery" }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  // Track the ID of the photo that is currently open so we can detect real
+  // filter-switches (photo disappears from the set) vs. array growth from
+  // infinite scroll (existing photos stay, new ones are appended at the end).
+  const openPhotoIdRef = useRef<number | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -94,17 +98,38 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
     [photos, columns, emptyRate, seed, isMobile]
   );
 
-  // Close the lightbox if the photo set changes (e.g. filter switch).
-  useEffect(() => { setLightboxIndex(null); }, [photos]);
+  // Close only when the currently-open photo disappears from the set (filter
+  // switch). Do NOT close when photos are merely appended (top-page infinite
+  // scroll grows the array, so the open photo is still at the same index).
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const id = openPhotoIdRef.current;
+    if (id !== null && !photos.some((p) => p.id === id)) {
+      setLightboxIndex(null);
+    }
+  }, [photos, lightboxIndex]);
 
-  const openLightbox = (idx: number) => setLightboxIndex(idx);
+  const openLightbox = (idx: number) => {
+    openPhotoIdRef.current = photos[idx]?.id ?? null;
+    setLightboxIndex(idx);
+  };
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const prev = useCallback(() => {
-    setLightboxIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length));
-  }, [photos.length]);
+    setLightboxIndex((i) => {
+      if (i === null) return null;
+      const ni = (i - 1 + photos.length) % photos.length;
+      openPhotoIdRef.current = photos[ni]?.id ?? null;
+      return ni;
+    });
+  }, [photos]);
   const next = useCallback(() => {
-    setLightboxIndex((i) => (i === null ? null : (i + 1) % photos.length));
-  }, [photos.length]);
+    setLightboxIndex((i) => {
+      if (i === null) return null;
+      const ni = (i + 1) % photos.length;
+      openPhotoIdRef.current = photos[ni]?.id ?? null;
+      return ni;
+    });
+  }, [photos]);
 
   if (photos.length === 0) return null;
 

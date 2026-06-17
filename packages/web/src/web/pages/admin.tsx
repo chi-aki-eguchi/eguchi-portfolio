@@ -3828,6 +3828,9 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
                 <TopWorksPicker value={current["topWorksIds"] ?? ""} onChange={(v) => set("topWorksIds", v)} />
               </AdminField>
             )}
+            <AdminField label="初期表示枚数" hint="トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます">
+              <TypoControl label="初期表示枚数" valueKey="homeGalleryCount" current={current} set={set} min={1} max={200} step={3} unit="枚" defaultVal="12" />
+            </AdminField>
             {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
                 W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">ギャラリーの列数・大きさ・余白</p>

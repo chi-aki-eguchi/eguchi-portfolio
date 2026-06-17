@@ -291,10 +291,13 @@ export default function TopPage() {
     return allPhotos;
   }, [allPhotos, topWorksMode, topWorksIds]);
 
-  // Progressive reveal: +9 per step, triggered well before the sentinel is
-  // visible (rootMargin) so new rows are usually ready by the time you arrive.
+  // homeGalleryCount: initial batch from settings (default 12).
+  // extraCount: additional photos revealed by infinite scroll.
+  // worksCount = homeGalleryCount + extraCount — never shrinks while browsing.
+  const homeGalleryCount = Math.max(1, parseInt(settings?.homeGalleryCount ?? "12", 10) || 12);
   const WORKS_STEP = 9;
-  const [worksCount, setWorksCount] = useState(WORKS_STEP);
+  const [extraCount, setExtraCount] = useState(0);
+  const worksCount = homeGalleryCount + extraCount;
   const worksSentinelRef = useRef<HTMLDivElement>(null);
   const featured = useMemo(() => worksPool.slice(0, worksCount), [worksPool, worksCount]);
   useEffect(() => {
@@ -304,7 +307,7 @@ export default function TopPage() {
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setWorksCount((c) => Math.min(c + WORKS_STEP, worksPool.length));
+          setExtraCount((c) => c + WORKS_STEP);
         }
       },
       { rootMargin: "900px 0px" }

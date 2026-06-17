@@ -81,6 +81,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "homeCtaTitle",
   "homeCtaText",
   "homeCtaButton",
+  "homeGalleryCount",
 ] as const;
 
 export type SettingsPreviewKey = (typeof SETTINGS_PREVIEW_KEYS)[number];
@@ -123,6 +124,7 @@ export const JS_PREVIEW_KEYS = [
   "homeCtaTitle",
   "homeCtaText",
   "homeCtaButton",
+  "homeGalleryCount",
 ] as const satisfies readonly SettingsPreviewKey[];
 
 export function makeSettingsPreviewPayload(settings: Record<string, string | undefined>): Record<SettingsPreviewKey, string> {

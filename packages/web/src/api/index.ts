@@ -503,6 +503,8 @@ const app = new Hono()
       homeCtaTitle:        settings.homeCtaTitle        ?? "撮影のご依頼",
       homeCtaText:         settings.homeCtaText         ?? "ポートレート・作品撮り・取材など、お気軽にご相談ください。",
       homeCtaButton:       settings.homeCtaButton       ?? "お問い合わせ",
+      // ── homeGalleryCount: トップ Works 欄の初期表示枚数 ──
+      homeGalleryCount:    settings.homeGalleryCount    ?? "12",
       // ── G: gallery controlled-random layout (JS-driven; see lib/gallery-layout) ──
       galleryGapScale:       settings.galleryGapScale       ?? "1",    // 0.5–2.0
       galleryEmptyRate:      settings.galleryEmptyRate      ?? "0.1",  // 0–0.3

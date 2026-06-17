@@ -16,7 +16,7 @@ export default function SeriesDetailPage() {
     // The ":slug" subtree of the typed client collapses under TS instantiation
     // limits (see lib/api.ts) — the response shape is annotated manually instead.
     queryFn: async (): Promise<{
-      series: { id: number; slug: string; title: string; subtitle: string; statement: string };
+      series: { id: number; slug: string; title: string; subtitle: string; statement: string; themeConfig?: string | null };
       photos: (GalleryPhoto & { description?: string })[];
     } | null> => {
       const res = await (api.series as Record<string, any>)[":slug"].$get({ param: { slug } });
@@ -76,8 +76,20 @@ export default function SeriesDetailPage() {
 
   const { series, photos } = data;
 
+  // 機能9: シリーズ固有のthemeConfigを適用
+  const themeConfig = (() => {
+    try { return series.themeConfig ? (JSON.parse(series.themeConfig) as Record<string, string>) : {}; }
+    catch { return {}; }
+  })();
+  const seriesBgColor = themeConfig.bgColor ?? null;
+  const seriesLayout = themeConfig.layout || settings?.seriesLayout;
+
   return (
-    <section className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]" ref={entranceRef}>
+    <section
+      className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]"
+      ref={entranceRef}
+      style={seriesBgColor ? { backgroundColor: seriesBgColor } : undefined}
+    >
       {/* Statement header — quiet, editorial */}
       <header className="max-w-2xl mx-auto text-center mb-16 md:mb-24 page-entrance">
         <h1
@@ -107,7 +119,7 @@ export default function SeriesDetailPage() {
             <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">No photos in this series</p>
           </div>
         ) : (
-          <PhotoGallery photos={photos} layoutType={settings?.seriesLayout} />
+          <PhotoGallery photos={photos} layoutType={seriesLayout} />
         )}
       </div>
 

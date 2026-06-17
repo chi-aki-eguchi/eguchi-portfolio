@@ -66,6 +66,8 @@ export const series = sqliteTable("series", {
   coverPhotoId: integer("cover_photo_id"), // 表紙写真（nullable）
   sortOrder: integer("sort_order").notNull().default(0),
   isPublished: integer("is_published", { mode: "boolean" }).notNull().default(true),
+  // 機能10: シリーズ固有のレイアウト・テーマ設定（JSON文字列。null = グローバル設定に従う）
+  themeConfig: text("theme_config"),
 });
 
 // 料金プランテーブル — H1（撮影依頼の料金表）

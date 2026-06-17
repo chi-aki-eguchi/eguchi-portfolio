@@ -15,6 +15,13 @@
       "when": 1780316457752,
       "tag": "0001_flawless_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781673649223,
+      "tag": "0002_sleepy_whiplash",
+      "breakpoints": true
     }
   ]
 }

@@ -532,6 +532,9 @@ const app = new Hono()
       // "on" = always show; "off" = always hide. Default avoids the trap where
       // created/published series stay invisible because nav was never enabled.
       seriesNavEnabled:      settings.seriesNavEnabled      ?? "auto",  // "auto" | "on" | "off"
+      // ── 機能8: 並び順独立設定 ──
+      gallerySortOrder:      settings.gallerySortOrder      ?? "manual", // "manual" | "date_desc" | "date_asc" | "upload_desc"
+      seriesSortOrder:       settings.seriesSortOrder       ?? "manual", // "manual" | "date_desc" | "date_asc" | "upload_desc"
       // ── J: note RSS integration ──
       noteUsername:          settings.noteUsername          ?? "",
       noteShowCount:         settings.noteShowCount         ?? "3",
@@ -562,10 +565,20 @@ const app = new Hono()
     const where = includeUnpublished
       ? isNull(schema.photos.deletedAt)
       : and(isNull(schema.photos.deletedAt), eq(schema.photos.isPublished, true));
+    // 機能8: gallerySortOrder 設定に従って並び順を変える
+    const [[sortRow]] = [await withRetry(() =>
+      db.select({ value: schema.siteSettings.value }).from(schema.siteSettings)
+        .where(eq(schema.siteSettings.key, "gallerySortOrder")).limit(1)
+    )];
+    const gallerySortOrder = sortRow?.value ?? "manual";
+    const orderExpr = gallerySortOrder === "date_desc" ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
+      : gallerySortOrder === "date_asc"  ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
+      : gallerySortOrder === "upload_desc" ? sql`${schema.photos.createdAt} DESC`
+      : schema.photos.sortOrder;
     const photos = await withRetry(() =>
       db.select().from(schema.photos)
         .where(where)
-        .orderBy(schema.photos.sortOrder)
+        .orderBy(orderExpr)
     );
     return c.json({ photos }, 200);
   })
@@ -1045,7 +1058,7 @@ const app = new Hono()
     return c.json({ series: list }, 200);
   })
 
-  // Single published series + its (non-deleted) photos in sortOrder.
+  // Single published series + its (non-deleted) photos.
   .get('/series/:slug', async (c) => {
     const slug = c.req.param("slug");
     const [s] = await withRetry(() =>
@@ -1054,10 +1067,28 @@ const app = new Hono()
         .limit(1)
     );
     if (!s) return c.json({ error: "Not found" }, 404);
+    // 機能8: seriesSortOrder に従ってシリーズ内写真を並べる。
+    // themeConfig に上書き値があればそちらを優先。
+    let sortKey = "manual";
+    try {
+      const tc = s.themeConfig ? (JSON.parse(s.themeConfig) as Record<string, string>) : null;
+      sortKey = tc?.photoOrder ?? "inherit";
+    } catch { /* ignore malformed JSON */ }
+    if (sortKey === "inherit" || sortKey === "manual_inherit") {
+      const [[row]] = [await withRetry(() =>
+        db.select({ value: schema.siteSettings.value }).from(schema.siteSettings)
+          .where(eq(schema.siteSettings.key, "seriesSortOrder")).limit(1)
+      )];
+      sortKey = row?.value ?? "manual";
+    }
+    const seriesOrderExpr = sortKey === "date_desc" ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
+      : sortKey === "date_asc"  ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
+      : sortKey === "upload_desc" ? sql`${schema.photos.createdAt} DESC`
+      : schema.photos.sortOrder;
     const photos = await withRetry(() =>
       db.select().from(schema.photos)
         .where(sql`${eq(schema.photos.seriesId, s.id)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`)
-        .orderBy(schema.photos.sortOrder)
+        .orderBy(seriesOrderExpr)
     );
     return c.json({ series: s, photos }, 200);
   })
@@ -1099,6 +1130,8 @@ const app = new Hono()
     if (body.coverPhotoId !== undefined)
       update.coverPhotoId = body.coverPhotoId === null || body.coverPhotoId === "" ? null : Number(body.coverPhotoId);
     if (body.isPublished !== undefined) update.isPublished = !!body.isPublished;
+    // 機能9: themeConfig (JSON string | null)
+    if (body.themeConfig !== undefined) update.themeConfig = body.themeConfig === "" ? null : body.themeConfig;
     await withRetry(() =>
       db.update(schema.series).set(update).where(eq(schema.series.id, id))
     );

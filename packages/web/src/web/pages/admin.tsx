@@ -2897,8 +2897,8 @@ function CategoriesTab() {
 /* ══════════════════════════════════════════════════
    SERIES TAB (I1)
 ══════════════════════════════════════════════════ */
-type SeriesRow = { id: number; slug: string; title: string; subtitle: string; statement: string; coverPhotoId: number | null; sortOrder: number; isPublished: boolean };
-type SeriesDraft = { slug: string; title: string; subtitle: string; statement: string; coverPhotoId: string };
+type SeriesRow = { id: number; slug: string; title: string; subtitle: string; statement: string; coverPhotoId: number | null; sortOrder: number; isPublished: boolean; themeConfig?: string | null };
+type SeriesDraft = { slug: string; title: string; subtitle: string; statement: string; coverPhotoId: string; themeConfig: string };
 
 function SeriesTab() {
   const qc = useQueryClient();
@@ -2906,7 +2906,7 @@ function SeriesTab() {
   const [newSlug, setNewSlug] = useState("");
   const [addError, setAddError] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
-  const [draft, setDraft] = useState<SeriesDraft>({ slug: "", title: "", subtitle: "", statement: "", coverPhotoId: "" });
+  const [draft, setDraft] = useState<SeriesDraft>({ slug: "", title: "", subtitle: "", statement: "", coverPhotoId: "", themeConfig: "" });
   const [rowError, setRowError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
 
@@ -2993,12 +2993,23 @@ function SeriesTab() {
   const openEdit = (s: SeriesRow) => {
     setEditId(s.id);
     setRowError("");
-    setDraft({ slug: s.slug, title: s.title, subtitle: s.subtitle, statement: s.statement, coverPhotoId: s.coverPhotoId ? String(s.coverPhotoId) : "" });
+    setDraft({ slug: s.slug, title: s.title, subtitle: s.subtitle, statement: s.statement, coverPhotoId: s.coverPhotoId ? String(s.coverPhotoId) : "", themeConfig: s.themeConfig ?? "" });
   };
+
+  // Parse themeConfig JSON for the inline editor (safe fallback on invalid JSON).
+  const parsedTheme = (() => {
+    try { return draft.themeConfig ? JSON.parse(draft.themeConfig) as Record<string, string> : {}; }
+    catch { return {}; }
+  })();
+  const setThemeKey = (key: string, value: string) => {
+    const next = { ...parsedTheme, [key]: value };
+    setDraft(d => ({ ...d, themeConfig: JSON.stringify(next) }));
+  };
+
   const saveEdit = () => {
     if (editId === null) return;
     patchSeries.mutate(
-      { id: editId, slug: draft.slug, title: draft.title, subtitle: draft.subtitle, statement: draft.statement, coverPhotoId: draft.coverPhotoId === "" ? null : Number(draft.coverPhotoId) },
+      { id: editId, slug: draft.slug, title: draft.title, subtitle: draft.subtitle, statement: draft.statement, coverPhotoId: draft.coverPhotoId === "" ? null : Number(draft.coverPhotoId), themeConfig: draft.themeConfig === "" ? null : draft.themeConfig },
       { onSuccess: () => setEditId(null) }
     );
   };
@@ -3142,6 +3153,33 @@ function SeriesTab() {
                       );
                     })()}
                   </AdminField>
+                  {/* 機能9: シリーズ固有のレイアウト・テーマ設定 */}
+                  <div className="border-t border-[#2a2a2a] pt-3 mt-1">
+                    <p className="text-[10px] tracking-wider uppercase text-[#555] mb-2">Layout &amp; Theme</p>
+                    <AdminField label="レイアウト" hint="「グローバルに従う」はSettings→ギャラリー配置の設定を使います">
+                      <div className="grid grid-cols-3 gap-1">
+                        {([["", "グローバル"], ["mosaic", "モザイク"], ["grid", "均等グリッド"], ["scroll", "縦スクロール"], ["stagger", "ずらし大"], ["editorial", "雑誌見開き"]] as const).map(([val, lbl]) => (
+                          <button key={val} type="button" onClick={() => setThemeKey("layout", val)}
+                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                          >{lbl}</button>
+                        ))}
+                      </div>
+                    </AdminField>
+                    <AdminField label="写真の並び順" hint="「グローバルに従う」はSettings→シリーズ並び順の設定を使います">
+                      <div className="grid grid-cols-2 gap-1">
+                        {([["inherit", "グローバル"], ["manual", "手動順"], ["date_desc", "撮影日↓新しい順"], ["date_asc", "撮影日↑古い順"]] as const).map(([val, lbl]) => (
+                          <button key={val} type="button" onClick={() => setThemeKey("photoOrder", val)}
+                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                          >{lbl}</button>
+                        ))}
+                      </div>
+                    </AdminField>
+                    <AdminField label="背景色" hint="空欄=グローバル設定。#fff / #000 / #1a1a1a など">
+                      <input type="text" value={parsedTheme.bgColor ?? ""} onChange={e => setThemeKey("bgColor", e.target.value.trim())} placeholder="（グローバル設定を使用）"
+                        className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]" />
+                    </AdminField>
+                  </div>
+
                   <div className="flex gap-2">
                     <button onClick={saveEdit} disabled={patchSeries.isPending || !draft.title || !draft.slug}
                       className="flex items-center gap-1.5 px-4 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40">
@@ -3870,6 +3908,30 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
                 <TypoControl label="スマホ 列数" valueKey="seriesGridColumnsMobile" current={current} set={set} min={1} max={3} step={1} unit="列" defaultVal="2" />
               </AdminField>
               <button onClick={() => { ["worksDefaultView","seriesGridColumns","seriesGridColumnsMobile"].forEach(k => set(k, "")); }} className="text-[10px] text-[#555] hover:text-[#888] transition-colors">Reset to default</button>
+            </div>
+
+            {/* 機能8: 並び順独立設定 */}
+            <div className="pt-3 mt-1 border-t border-[#333] space-y-3">
+              <p className="text-[10px] text-[#666] leading-relaxed">写真の並び順。「手動順」は Library でドラッグした順番。シリーズごとに上書きしたい場合は Series タブの各シリーズ編集から設定できます。</p>
+              <AdminField label="ギャラリーの並び順" hint="ギャラリーページ・トップの写真の並べ方">
+                <div className="grid grid-cols-2 gap-1">
+                  {([["manual", "手動順（D&D）"], ["date_desc", "撮影日↓新しい順"], ["date_asc", "撮影日↑古い順"], ["upload_desc", "アップロード↓新しい順"]] as const).map(([val, lbl]) => (
+                    <button key={val} onClick={() => set("gallerySortOrder", val)}
+                      className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                    >{lbl}</button>
+                  ))}
+                </div>
+              </AdminField>
+              <AdminField label="シリーズ内の並び順" hint="各シリーズ詳細ページの写真の並べ方（シリーズ側で個別設定もできます）">
+                <div className="grid grid-cols-2 gap-1">
+                  {([["manual", "手動順（D&D）"], ["date_desc", "撮影日↓新しい順"], ["date_asc", "撮影日↑古い順"], ["upload_desc", "アップロード↓新しい順"]] as const).map(([val, lbl]) => (
+                    <button key={val} onClick={() => set("seriesSortOrder", val)}
+                      className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                    >{lbl}</button>
+                  ))}
+                </div>
+              </AdminField>
+              <button onClick={() => { ["gallerySortOrder","seriesSortOrder"].forEach(k => set(k, "")); }} className="text-[10px] text-[#555] hover:text-[#888] transition-colors">Reset to default</button>
             </div>
           </Section>
 

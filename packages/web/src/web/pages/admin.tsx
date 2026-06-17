@@ -3063,35 +3063,55 @@ function SeriesTab() {
                   </AdminField>
                   <AdminField label="Cover Photo" hint="シリーズ一覧の表紙。未設定ならシリーズ先頭の写真を自動使用">
                     {(() => {
-                      // Series members first — picking a cover out of a flat list of
-                      // 100+ filenames was effectively unusable. Thumbnail previews
-                      // the current choice.
                       const members = photos.filter((p) => (p as Photo).seriesId === editId);
                       const others = photos.filter((p) => (p as Photo).seriesId !== editId);
-                      const sel = photos.find((p) => String(p.id) === draft.coverPhotoId);
+                      const allForPicker = [...members, ...others];
                       return (
-                        <div className="flex items-center gap-2">
-                          {sel && (
-                            <img src={`${sel.url}?w=120&q=60`} alt="" className="w-10 h-10 object-cover rounded-sm border border-[#444] flex-shrink-0" />
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDraft(d => ({ ...d, coverPhotoId: "" }))}
+                            className={`text-[11px] px-2 py-1 rounded-sm border transition-colors self-start ${
+                              draft.coverPhotoId === "" ? "bg-[#555] text-[#1e1e1e] border-[#666]" : "bg-[#333] text-[#888] border-[#444] hover:bg-[#3a3a3a]"
+                            }`}
+                          >
+                            なし（自動）
+                          </button>
+                          {allForPicker.length > 0 ? (
+                            <div className="grid grid-cols-5 gap-1 max-h-44 overflow-y-auto rounded-sm border border-[#444] bg-[#1e1e1e] p-1">
+                              {allForPicker.map(p => (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => setDraft(d => ({ ...d, coverPhotoId: String(p.id) }))}
+                                  title={p.title || p.filename}
+                                  className={`relative aspect-square overflow-hidden rounded-sm transition-all ${
+                                    String(p.id) === draft.coverPhotoId
+                                      ? "ring-2 ring-white ring-offset-1 ring-offset-[#1e1e1e]"
+                                      : "opacity-60 hover:opacity-100"
+                                  }`}
+                                >
+                                  <img
+                                    src={`${p.url}?w=120&q=60`}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                  {(p as Photo).seriesId === editId && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400/80" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-[#555]">写真がありません</p>
                           )}
-                          <select value={draft.coverPhotoId} onChange={(e) => setDraft((d) => ({ ...d, coverPhotoId: e.target.value }))}
-                            className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-2 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors">
-                            <option value="">— なし（先頭の写真を自動使用）—</option>
-                            {members.length > 0 && (
-                              <optgroup label={`このシリーズの写真 (${members.length})`}>
-                                {members.map((p) => (
-                                  <option key={p.id} value={p.id}>{p.title || p.filename}</option>
-                                ))}
-                              </optgroup>
-                            )}
-                            {others.length > 0 && (
-                              <optgroup label="その他の写真">
-                                {others.map((p) => (
-                                  <option key={p.id} value={p.id}>{p.title || p.filename}</option>
-                                ))}
-                              </optgroup>
-                            )}
-                          </select>
+                          {draft.coverPhotoId && (() => {
+                            const sel = photos.find(p => String(p.id) === draft.coverPhotoId);
+                            return sel ? (
+                              <p className="text-[10px] text-[#777] truncate">選択中: {sel.title || sel.filename}</p>
+                            ) : null;
+                          })()}
                         </div>
                       );
                     })()}

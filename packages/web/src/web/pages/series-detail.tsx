@@ -50,7 +50,7 @@ export default function SeriesDetailPage() {
   const entranceRef = usePageEntrance([data]);
   // PhotoGallery tiles use fade-in-item (opacity:0 until visible). usePageEntrance
   // only watches .page-entrance, so we need a separate ref for the gallery area.
-  const fadeRef = useScrollFadeIn([data?.photos]);
+  const fadeRef = useScrollFadeIn([data?.photos, data?.series?.themeConfig, settings?.seriesLayout]);
 
   // While loading, render a quiet placeholder rather than a "not found" flash.
   if (isLoading) {

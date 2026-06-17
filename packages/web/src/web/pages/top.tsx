@@ -318,7 +318,7 @@ export default function TopPage() {
   const siteNameJa = settings?.siteName ?? "江口秋";
   const siteNameEn = settings?.siteNameEn ?? "Aki Eguchi";
   const subtitle = settings?.heroSubtitle ?? "Photography";
-  const fadeRef = useScrollFadeIn([featured]);
+  const fadeRef = useScrollFadeIn([featured, settings?.topWorksLayout]);
   const nameKata = settings?.profileNameKata ?? "";
   const heroMode = settings?.heroMode ?? "carousel";
   const isSingle = heroMode === "single" && heroPhotos.length > 0;

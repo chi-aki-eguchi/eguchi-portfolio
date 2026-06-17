@@ -74,7 +74,7 @@ export default function GalleryPage() {
     ...categories.map((c) => ({ slug: c.slug, label: c.label })),
   ];
 
-  const fadeRef = useScrollFadeIn([filtered, view]);
+  const fadeRef = useScrollFadeIn([filtered, view, settings?.galleryLayout]);
 
   // Switching the filter (or Photos/Series view) while scrolled deep can shrink
   // the page and strand the viewer at the footer of a now-short grid. Scroll

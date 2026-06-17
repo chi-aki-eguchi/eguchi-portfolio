@@ -69,12 +69,12 @@ export default function ProfilePage() {
 
         {/* Bio */}
         <div className="pt-1 flex flex-col">
-          <h3
+          <h2
             className="font-bold tracking-[0.03em] text-[var(--foreground)] page-entrance page-entrance-delay-1"
             style={{ fontSize: "var(--heading-size, 1.25rem)" }}
           >
             {nameJa}
-          </h3>
+          </h2>
           <p className="font-en text-sm tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.40)] mt-1 page-entrance page-entrance-delay-1">
             {nameEn}
           </p>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
           {/* E5: Statement (作家ステートメント) — 空欄なら非表示 */}
           {statement && (
             <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h4 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-3">Statement</h4>
+              <h3 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-3">Statement</h3>
               <div className="space-y-3">
                 {statement.split("\n").filter(Boolean).map((line, i) => (
                   <p key={i} className="text-[rgba(var(--foreground-rgb),0.55)]" style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "var(--body-leading, 2)", letterSpacing: "var(--body-tracking, 0.01em)" }}>{line}</p>
@@ -108,7 +108,7 @@ export default function ProfilePage() {
           {/* E5: Equipment (使用機材) — 空欄なら非表示 */}
           {gear.length > 0 && (
             <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h4 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-3">Equipment</h4>
+              <h3 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-3">Equipment</h3>
               <ul className="space-y-1.5">
                 {gear.map((item, i) => (
                   <li key={i} className="font-en text-[rgba(var(--foreground-rgb),0.50)]" style={{ fontSize: "var(--body-size, 0.8125rem)", letterSpacing: "0.02em" }}>{item}</li>
@@ -160,7 +160,7 @@ export default function ProfilePage() {
           Hidden if disabled or fetch returned nothing. */}
       {noteOn && notePosts.length > 0 && (
         <div className="mt-20 md:mt-28 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
-          <h4 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-8">Journal</h4>
+          <h3 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-8">Journal</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
             {notePosts.map((post) => (
               <a
@@ -224,7 +224,7 @@ export default function ProfilePage() {
       {/* K1: Prints — quiet external store link. Hidden unless enabled + URL set. */}
       {printOn && (
         <div className="mt-16 md:mt-20 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
-          <h4 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-4">Prints</h4>
+          <h3 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-4">Prints</h3>
           {data?.printDescription && (
             <p
               className="text-[rgba(var(--foreground-rgb),0.55)] mb-5 whitespace-pre-line"

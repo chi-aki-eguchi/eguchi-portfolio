@@ -101,7 +101,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <Link
             to="/"
-            className="font-en text-sm font-semibold tracking-[0.08em] text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300"
+            className="font-en text-sm font-semibold tracking-[0.08em] text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300 inline-flex items-center min-h-[44px]"
           >
             {data?.navLabelTop ?? "TOP"}
           </Link>
@@ -197,7 +197,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex gap-6">
               {data?.profileInstagram && (
                 <a href={data.profileInstagram} target="_blank" rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300"
+                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
                   style={{ color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))` }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`; }}>
@@ -206,7 +206,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
               {data?.profileTwitter && (
                 <a href={data.profileTwitter} target="_blank" rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300"
+                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
                   style={{ color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))` }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`; }}>
@@ -215,7 +215,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
               {data?.profileNote && (
                 <a href={data.profileNote} target="_blank" rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300"
+                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
                   style={{ color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))` }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`; }}>

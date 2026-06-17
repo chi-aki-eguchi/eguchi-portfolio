@@ -91,3 +91,46 @@
 2. BUILD_ID（ogp.ts）が `20260615` で固定・stale。Railway は git push デプロイなので X-Build が実デプロイと不一致。`scripts/deploy.sh` 由来コメントも陳腐化 → ビルド時に注入する仕組みへ要更新（要設計）。
 3. font preload（index.html）と styles.css の `:root` 既定フォント不一致（#11）— 実デフォルトが Shippori/Cormorant なら styles.css 既定を合わせてスワップ削減（要 settings 既定値の確認）。
 
+---
+
+## 2026-06-17 デバッグラン（Claude Opus 4.6）
+
+**実行内容**: 全体デバッグ — 型エラー・lint・表示バグ・管理画面不具合・アクセシビリティ問題の洗い出し。
+
+### 検査結果
+
+| 項目 | 結果 |
+|---|---|
+| `tsc -b`（型チェック） | ✅ エラーなし |
+| `bun run build`（vite build） | ✅ 成功（1838 modules, built in ~1.1s） |
+| `bun run lint`（oxlint） | ❌ → ✅ 修正後クリーン |
+| `bun test`（全テスト） | ✅ **74 pass / 0 fail**（4907 expect） |
+
+### 発見・修正した問題（2件）
+
+1. **`admin.tsx` BulkEditTable `<th>` に aria-label 欠落**（lint エラー）
+   - 場所: `admin.tsx:2120-2121`（Select列・Thumbnail列のヘッダー）
+   - oxlint `jsx-a11y(control-has-associated-label)` 違反
+   - 修正: `aria-label="Select"` / `aria-label="Thumbnail"` を追加
+
+2. **GalleryTab の削除確認モーダルがアクセシブルでない**（a11y バグ）
+   - 場所: `admin.tsx:1704-1724`
+   - 問題: 他タブ（Categories/Series/Pricing）は `<Modal>` コンポーネント（`<dialog>` ベース、フォーカストラップ・Escape閉じ・backdrop閉じ）を使用するが、GalleryTab だけ素の `<div>` オーバーレイだった
+   - 影響: フォーカスが背面要素に逃げる / Escapeキーで閉じない / dialog セマンティクスなし
+   - 修正: `<Modal>` コンポーネントに統一。スタイルも他タブの削除モーダルと一致させた
+
+### 検査した範囲（問題なし）
+
+- **全フロントエンドページ**: top / gallery / series / series-detail / profile / contact / admin-login / 404
+- **主要コンポーネント**: Layout / PhotoGallery / Lightbox / SeriesGrid / InquiryCta / BackToTop / PageTransition / ErrorBoundary / provider
+- **API**: 認証・CORS・画像プロキシ・キャッシュ・リサイズ
+- **サーバー**: OGP注入・セキュリティヘッダー・sitemap・robots.txt・静的ファイル配信
+- **DB スキーマ**: インデックス・型定義
+- **CSS**: 全レイアウト・アニメーション・reduced-motion対応・ダークテーマ・ナビ位置
+- **hooks**: useScrollFadeIn / usePageEntrance / usePageTitle
+
+### コミット & デプロイ
+
+- `768fea5` — `fix(a11y): 管理画面の削除モーダルとテーブルヘッダーのアクセシビリティ修正`
+- `git push` でデプロイ済み（Railway 自動ビルド）
+

@@ -145,7 +145,7 @@ export default function ContactPage() {
           {data?.contactEmail && (
             <a
               href={`mailto:${data.contactEmail}`}
-              className="block font-en text-sm tracking-[0.03em] text-[rgba(var(--foreground-rgb),0.45)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300"
+              className="inline-block font-en text-sm tracking-[0.03em] text-[rgba(var(--foreground-rgb),0.45)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1"
             >
               {data.contactEmail}
             </a>
@@ -154,13 +154,13 @@ export default function ContactPage() {
             <div className="flex gap-6 pt-4 border-t border-[rgba(var(--foreground-rgb),0.06)]">
               {data?.profileInstagram && (
                 <a href={data.profileInstagram} target="_blank" rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.55)] nav-link-luxury transition-colors duration-300">
+                  className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.55)] nav-link-luxury transition-colors duration-300 py-1.5">
                   {data?.snsLabelInstagram ?? "Instagram"}
                 </a>
               )}
               {data?.profileTwitter && (
                 <a href={data.profileTwitter} target="_blank" rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.55)] nav-link-luxury transition-colors duration-300">
+                  className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.55)] nav-link-luxury transition-colors duration-300 py-1.5">
                   {data?.snsLabelTwitter ?? "X"}
                 </a>
               )}

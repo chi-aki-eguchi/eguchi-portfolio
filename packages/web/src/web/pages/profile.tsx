@@ -126,7 +126,7 @@ export default function ProfilePage() {
                   href={data.profileInstagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300"
+                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelInstagram ?? "Instagram"}
                 </a>
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                   href={data.profileTwitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300"
+                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelTwitter ?? "X"}
                 </a>
@@ -146,7 +146,7 @@ export default function ProfilePage() {
                   href={data.profileNote}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300"
+                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelNote ?? "note"}
                 </a>
@@ -213,7 +213,7 @@ export default function ProfilePage() {
               href={data.profileNote}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-8 font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300"
+              className="inline-block mt-8 font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
             >
               {data?.snsLabelNote ?? "note"} →
             </a>

@@ -451,7 +451,7 @@ export default function TopPage() {
             </h2>
             <Link
               to="/gallery"
-              className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal"
+              className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5"
               style={{
                 transitionDelay: "0.05s",
                 fontSize: "var(--section-label-size, 0.6875rem)",

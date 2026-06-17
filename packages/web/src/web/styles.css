@@ -390,20 +390,18 @@ body[data-texture="paper"]::before {
 }
 
 /* Dot indicators — the visible dot stays 7px, but a transparent border pads the
-   hit target to 23px (WCAG 2.5.8 minimum is 24px; a bare 7px dot is untappable
+   hit target to 25px (WCAG 2.5.8 minimum is 24px; a bare 7px dot is untappable
    on touch). background-clip keeps the border invisible. */
 .carousel-dot {
   box-sizing: content-box;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  /* Theme-aware: the dots sit on the page background below the photo, so a
-     hardcoded black is invisible on dark themes. Drive them from the foreground. */
   background: rgba(var(--foreground-rgb), 0.18);
   background-clip: padding-box;
   transition: background 0.3s ease, transform 0.3s ease, width 0.3s ease;
   cursor: pointer;
-  border: 8px solid transparent;
+  border: 9px solid transparent;
   padding: 0;
 }
 .carousel-dot.active {

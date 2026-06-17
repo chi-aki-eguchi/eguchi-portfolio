@@ -3728,16 +3728,16 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
               ページの「間」の量を倍率で調整します。1.0 が現在のリズム。スマホは元の比率のまま縮みます。
             </p>
             <AdminField label="ヒーロー直下" hint="ヒーロー写真と作品セクションの間">
-              <TypoControl label="倍率" valueKey="spacingHeroBottom" current={current} set={set} min={0.5} max={2.5} step={0.05} unit="×" defaultVal="1" />
+              <TypoControl label="倍率" valueKey="spacingHeroBottom" current={current} set={set} min={0.2} max={4.0} step={0.05} unit="×" defaultVal="1" />
             </AdminField>
             <AdminField label="セクション間" hint="作品〜CTA〜フッターなどセクション同士の基本余白">
-              <TypoControl label="倍率" valueKey="spacingSectionGap" current={current} set={set} min={0.5} max={2.5} step={0.05} unit="×" defaultVal="1" />
+              <TypoControl label="倍率" valueKey="spacingSectionGap" current={current} set={set} min={0.2} max={4.0} step={0.05} unit="×" defaultVal="1" />
             </AdminField>
             <AdminField label="ページ冒頭" hint="ギャラリー・シリーズ・About・Contact など各ページ最初の「ため」">
-              <TypoControl label="倍率" valueKey="spacingPageTop" current={current} set={set} min={0.5} max={2.5} step={0.05} unit="×" defaultVal="1" />
+              <TypoControl label="倍率" valueKey="spacingPageTop" current={current} set={set} min={0.2} max={4.0} step={0.05} unit="×" defaultVal="1" />
             </AdminField>
             <AdminField label="フッター上" hint="ページ末尾とフッターの間">
-              <TypoControl label="倍率" valueKey="spacingFooterTop" current={current} set={set} min={0.5} max={2.5} step={0.05} unit="×" defaultVal="1" />
+              <TypoControl label="倍率" valueKey="spacingFooterTop" current={current} set={set} min={0.2} max={4.0} step={0.05} unit="×" defaultVal="1" />
             </AdminField>
             <button onClick={() => { ["spacingHeroBottom","spacingSectionGap","spacingPageTop","spacingFooterTop"].forEach(k => set(k, "")); }} className="text-[10px] text-[#555] hover:text-[#888] transition-colors">Reset to default</button>
           </Section>
@@ -3819,7 +3819,7 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
               </AdminField>
             )}
             <AdminField label="初期表示枚数" hint="トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます">
-              <TypoControl label="初期表示枚数" valueKey="homeGalleryCount" current={current} set={set} min={1} max={200} step={3} unit="枚" defaultVal="12" />
+              <TypoControl label="初期表示枚数" valueKey="homeGalleryCount" current={current} set={set} min={1} max={200} step={1} unit="枚" defaultVal="12" />
             </AdminField>
             {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
                 W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
@@ -3828,20 +3828,20 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
               <TypoControl label="最大列数" valueKey="galleryColumns" current={current} set={set} min={1} max={8} step={1} unit="列" defaultVal="3" />
             </AdminField>
             <AdminField label="写真の大きさ" hint="大きくすると1枚が広くなり、その分列数が自動で減ります">
-              <TypoControl label="大きさ" valueKey="gallerySizeScale" current={current} set={set} min={0.5} max={2.0} step={0.05} unit="×" defaultVal="1" />
+              <TypoControl label="大きさ" valueKey="gallerySizeScale" current={current} set={set} min={0.5} max={3.0} step={0.05} unit="×" defaultVal="1" />
             </AdminField>
             <AdminField label="間隔" hint="写真同士の余白の倍率（0.2=詰める / 3.0=広い）">
-              <TypoControl label="余白倍率" valueKey="galleryGapScale" current={current} set={set} min={0.2} max={3.0} step={0.05} unit="×" defaultVal="1" />
+              <TypoControl label="余白倍率" valueKey="galleryGapScale" current={current} set={set} min={0.2} max={5.0} step={0.05} unit="×" defaultVal="1" />
             </AdminField>
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">トップ（Works）の列数・大きさ・余白 — 動かすまではギャラリーと同じ値</p>
             <AdminField label="最大列数（トップ）" hint="トップ下部の作品の最大列数。ギャラリーとは独立です">
               <TypoControl label="最大列数" valueKey="topWorksColumns" current={current} set={set} min={1} max={8} step={1} unit="列" defaultVal={current["galleryColumns"] || "3"} />
             </AdminField>
             <AdminField label="写真の大きさ（トップ）" hint="トップ下部の作品の大きさ。ギャラリーとは独立です">
-              <TypoControl label="大きさ" valueKey="topWorksSizeScale" current={current} set={set} min={0.5} max={2.0} step={0.05} unit="×" defaultVal={current["gallerySizeScale"] || "1"} />
+              <TypoControl label="大きさ" valueKey="topWorksSizeScale" current={current} set={set} min={0.5} max={3.0} step={0.05} unit="×" defaultVal={current["gallerySizeScale"] || "1"} />
             </AdminField>
             <AdminField label="間隔（トップ）" hint="トップ下部の作品の余白倍率。ギャラリーとは独立です">
-              <TypoControl label="余白倍率" valueKey="topWorksGapScale" current={current} set={set} min={0.2} max={3.0} step={0.05} unit="×" defaultVal={current["galleryGapScale"] || "1"} />
+              <TypoControl label="余白倍率" valueKey="topWorksGapScale" current={current} set={set} min={0.2} max={5.0} step={0.05} unit="×" defaultVal={current["galleryGapScale"] || "1"} />
             </AdminField>
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">モザイクの調整</p>
             <AdminField label="抜け（空セル）の頻度" hint="0で抜けなし＝詰める。大きいほど余白が増える。スマホでは自動的に控えめになります">
@@ -3895,7 +3895,7 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
                 </div>
               </AdminField>
               <AdminField label="シリーズ列数（PC）" hint="タイルを大きく見せたいなら少なめ（2〜3列推奨）">
-                <TypoControl label="PC 列数" valueKey="seriesGridColumns" current={current} set={set} min={1} max={6} step={1} unit="列" defaultVal="3" />
+                <TypoControl label="PC 列数" valueKey="seriesGridColumns" current={current} set={set} min={1} max={8} step={1} unit="列" defaultVal="3" />
               </AdminField>
               <AdminField label="シリーズ列数（スマホ）" hint="スマホ表示時の列数">
                 <TypoControl label="スマホ 列数" valueKey="seriesGridColumnsMobile" current={current} set={set} min={1} max={3} step={1} unit="列" defaultVal="2" />
@@ -4130,22 +4130,22 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
           {/* Typography — 大きさ (D4: 軸別2階層。まず調整軸→対象) */}
           <Section title="Typography ｜ 大きさ" defaultOpen={false}>
             <AdminField label="全体スケール" hint="全部の文字をまとめて大小（モバイル縮小率と併用可）">
-              <TypoControl label="スケール" valueKey="globalFontScale" current={current} set={set} min={0.6} max={1.6} step={0.01} unit="×" defaultVal="1" />
+              <TypoControl label="スケール" valueKey="globalFontScale" current={current} set={set} min={0.5} max={2.0} step={0.01} unit="×" defaultVal="1" />
             </AdminField>
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">ヒーロー名 / サブタイトル</p>
             <TypoControl label="名前" valueKey="heroNameSize" current={current} set={set} min={16} max={160} step={1} unit="px" defaultVal="60" />
             <TypoControl label="EN名" valueKey="heroNameEnSize" current={current} set={set} min={8} max={80} step={1} unit="px" defaultVal="24" />
-            <TypoControl label="サブタイトル" valueKey="heroSubSize" current={current} set={set} min={6} max={40} step={1} unit="px" defaultVal="12" />
+            <TypoControl label="サブタイトル" valueKey="heroSubSize" current={current} set={set} min={6} max={60} step={1} unit="px" defaultVal="12" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">ナビゲーション</p>
-            <TypoControl label="サイズ" valueKey="navSize" current={current} set={set} min={8} max={32} step={1} unit="px" defaultVal="14" />
+            <TypoControl label="サイズ" valueKey="navSize" current={current} set={set} min={8} max={48} step={1} unit="px" defaultVal="14" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">セクション見出し（Recent Work / Contact 等）</p>
             <TypoControl label="サイズ" valueKey="sectionLabelSize" current={current} set={set} min={8} max={40} step={1} unit="px" defaultVal="16" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">ページ見出し（About名前）</p>
             <TypoControl label="サイズ" valueKey="headingSize" current={current} set={set} min={12} max={80} step={1} unit="px" defaultVal="30" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">本文</p>
-            <TypoControl label="サイズ" valueKey="bodySize" current={current} set={set} min={10} max={28} step={1} unit="px" defaultVal="16" />
+            <TypoControl label="サイズ" valueKey="bodySize" current={current} set={set} min={10} max={36} step={1} unit="px" defaultVal="16" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">フッター</p>
-            <TypoControl label="サイズ" valueKey="footerSize" current={current} set={set} min={7} max={24} step={1} unit="px" defaultVal="12" />
+            <TypoControl label="サイズ" valueKey="footerSize" current={current} set={set} min={7} max={32} step={1} unit="px" defaultVal="12" />
             <button onClick={() => { ["globalFontScale","heroNameSize","heroNameEnSize","heroSubSize","navSize","sectionLabelSize","headingSize","bodySize","footerSize"].forEach(k => set(k, "")); }} className="text-[10px] text-[#555] hover:text-[#888] transition-colors">Reset to default</button>
           </Section>
 
@@ -4180,15 +4180,15 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
           {/* Typography — 間隔（字間・行間） */}
           <Section title="Typography ｜ 間隔（字間・行間）" defaultOpen={false}>
             <p className="text-[9px] text-[#666] -mb-2">ヒーロー名</p>
-            <TypoControl label="名前 字間" valueKey="heroNameTracking" current={current} set={set} min={-0.06} max={0.5} step={0.01} unit="em" defaultVal="0.04" />
+            <TypoControl label="名前 字間" valueKey="heroNameTracking" current={current} set={set} min={-0.06} max={0.8} step={0.01} unit="em" defaultVal="0.04" />
             <TypoControl label="EN名 字間" valueKey="heroNameEnTracking" current={current} set={set} min={-0.06} max={0.6} step={0.01} unit="em" defaultVal="0.08" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">ナビゲーション</p>
-            <TypoControl label="字間" valueKey="navTracking" current={current} set={set} min={-0.06} max={0.5} step={0.01} unit="em" defaultVal="0.04" />
+            <TypoControl label="字間" valueKey="navTracking" current={current} set={set} min={-0.06} max={0.8} step={0.01} unit="em" defaultVal="0.04" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">セクション見出し</p>
             <TypoControl label="字間" valueKey="sectionLabelTracking" current={current} set={set} min={-0.06} max={0.6} step={0.01} unit="em" defaultVal="0.10" />
-            <TypoControl label="行間" valueKey="sectionLeading" current={current} set={set} min={0.9} max={2.2} step={0.05} unit="" defaultVal="1.2" />
+            <TypoControl label="行間" valueKey="sectionLeading" current={current} set={set} min={0.9} max={3.0} step={0.05} unit="" defaultVal="1.2" />
             <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">本文</p>
-            <TypoControl label="字間" valueKey="bodyTracking" current={current} set={set} min={-0.04} max={0.3} step={0.01} unit="em" defaultVal="0.01" />
+            <TypoControl label="字間" valueKey="bodyTracking" current={current} set={set} min={-0.04} max={0.5} step={0.01} unit="em" defaultVal="0.01" />
             <TypoControl label="行間" valueKey="bodyLeading" current={current} set={set} min={1.2} max={3.0} step={0.05} unit="" defaultVal="1.8" />
             <button onClick={() => { ["heroNameTracking","heroNameEnTracking","navTracking","sectionLabelTracking","sectionLeading","bodyTracking","bodyLeading"].forEach(k => set(k, "")); }} className="text-[10px] text-[#555] hover:text-[#888] transition-colors">Reset to default</button>
           </Section>

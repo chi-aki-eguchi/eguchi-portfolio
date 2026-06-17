@@ -217,7 +217,7 @@ const requireAdmin = async (c: any, next: any) => {
 // Only our own site (prod) and localhost (dev) may make credentialed cross-origin
 // requests. Reflecting an arbitrary Origin with credentials:true would let any
 // website call the admin API with the user's cookie.
-const ALLOWED_ORIGIN_RE = /^https?:\/\/(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|chi-aki-eguchi\.runable\.site|(www\.)?akieguchi\.com)$/;
+const ALLOWED_ORIGIN_RE = /^https?:\/\/(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|(www\.)?akieguchi\.com)$/;
 
 const app = new Hono()
   .basePath('api')

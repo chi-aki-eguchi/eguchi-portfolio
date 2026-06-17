@@ -243,7 +243,7 @@ export default function ContactPage() {
           </Field>
 
           {status === "error" && (
-            <p role="alert" className="text-xs text-red-500/60">{data?.contactErrorMessage ?? "Failed to send. Please try again."}</p>
+            <p role="alert" className="text-xs text-red-600">{data?.contactErrorMessage ?? "Failed to send. Please try again."}</p>
           )}
 
           <button
@@ -275,7 +275,7 @@ function Field({ label, htmlFor, error, children }: {
         {label}
       </label>
       {children}
-      {error && <p role="alert" className="text-xs text-red-400/50">{error}</p>}
+      {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }

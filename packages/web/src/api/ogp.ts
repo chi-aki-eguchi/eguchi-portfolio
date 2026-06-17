@@ -61,7 +61,13 @@ const PAGE_TITLES: Record<string, string> = {
 export function injectOgp(html: string, settings: Record<string, string>, pathname = "/", heroImg = "", override?: { title?: string; desc?: string; image?: string }): string {
   const siteName = settings.siteNameEn || settings.siteName || "Aki Eguchi";
   const subtitle = settings.heroSubtitle || "Photography";
-  const base = [siteName, subtitle].filter(Boolean).join(" | ");
+  // Bilingual base title (e.g. "江口秋 | Aki Eguchi | Photography") so the JA name
+  // leads for Japanese search while the EN name still reads in social cards.
+  // usePageTitle.ts mirrors this exact composition so the SPA tab title and the
+  // server-rendered <title>/og:title agree. (When siteName(JA) is unset the JA
+  // segment drops out, leaving "Aki Eguchi | Photography".)
+  const nameJa = settings.siteName || "";
+  const base = [nameJa && nameJa !== siteName ? nameJa : null, siteName, subtitle].filter(Boolean).join(" | ");
   const page = PAGE_TITLES[pathname];
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = override?.title ? `${override.title} | ${base}` : (page ? `${page} | ${base}` : base);
@@ -94,6 +100,10 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
   if (pathname.startsWith("/admin") || !isKnown) {
     out = setAttr(out, /(<meta\s+name="robots"\s+content=")[^"]*(")/, "noindex, nofollow");
   }
+  // Negation of the noindex condition above — pages we actually advertise. Used to
+  // skip JSON-LD + GA4 on /admin and soft-404s (no analytics pollution from the
+  // admin app; no structured data on pages marked noindex).
+  const indexable = !pathname.startsWith("/admin") && isKnown;
   // Canonical + og:url — per route, not always the homepage
   out = setAttr(out, /(<link\s+rel="canonical"\s+href=")[^"]*(")/,        canonical);
   out = setAttr(out, /(<meta\s+property="og:url"\s+content=")[^"]*(")/,   canonical);
@@ -104,6 +114,10 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
   if (ogImage) {
     out = setAttr(out, /(<meta\s+property="og:image"\s+content=")[^"]*(")/,      `${siteUrl}${ogImage}`);
     out = setAttr(out, /(<meta\s+name="twitter:image"\s+content=")[^"]*(")/,     `${siteUrl}${ogImage}`);
+    // Keep the image's alt describing the *actual* (per-series/hero) image, not the
+    // static index.html default — a shared series link otherwise advertises that
+    // series' cover with the generic site alt.
+    out = setAttr(out, /(<meta\s+property="og:image:alt"\s+content=")[^"]*(")/,  title);
   }
   // Twitter
   out = setAttr(out, /(<meta\s+name="twitter:title"\s+content=")[^"]*(")/,       title);
@@ -115,8 +129,8 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
   // sync runs (provider.tsx ~L147). setAttr replaces the meta in place (no duplicate).
   out = setAttr(out, /(<meta\s+name="theme-color"\s+content=")[^"]*(")/, settings.themeBg || "#f7f7f7");
 
-  // F: structured data (JSON-LD) for search engines.
-  let headInjection = buildJsonLd(settings, pathname, override);
+  // F: structured data (JSON-LD) for search engines — indexable pages only.
+  let headInjection = indexable ? buildJsonLd(settings, pathname, override) : "";
   // Search Console site verification — paste the `content` value of Google's
   // HTML-tag method into admin settings; without this, every verification
   // attempt would need a rebuild+redeploy cycle.
@@ -135,8 +149,10 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
     const heroSizes = settings.heroMode === "single" ? "100vw" : "(min-width: 1200px) 1152px, 100vw";
     headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
   }
-  // GA4
-  headInjection += `\n  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NKECCDLXYD"></script>\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-NKECCDLXYD');</script>`;
+  // GA4 — only on indexable public pages (don't track the admin app or soft-404s).
+  if (indexable) {
+    headInjection += `\n  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NKECCDLXYD"></script>\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-NKECCDLXYD');</script>`;
+  }
   // Use a function replacement so `$` in the injected markup isn't treated as a special pattern.
   out = out.replace("</head>", () => `${headInjection}\n  </head>`);
   return out;
@@ -189,6 +205,16 @@ function buildJsonLd(settings: Record<string, string>, pathname = "/", series?: 
       ...(series.image ? { image: `${siteUrl}${series.image}?w=1200&q=85` } : {}),
       author: { "@type": "Person", name },
       isPartOf: { "@type": "ImageGallery", name: `${nameEn} | Photography`, url: `${siteUrl}/gallery` },
+    });
+    // Home › Series › <title> trail so series pages can show breadcrumb rich
+    // results instead of a bare URL. All three items resolve to real routes.
+    graph.push({
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: nameEn, item: siteUrl },
+        { "@type": "ListItem", position: 2, name: "Series", item: `${siteUrl}/series` },
+        { "@type": "ListItem", position: 3, name: series.title, item: `${siteUrl}${pathname}` },
+      ],
     });
   }
   const json = JSON.stringify({ "@context": "https://schema.org", "@graph": graph })

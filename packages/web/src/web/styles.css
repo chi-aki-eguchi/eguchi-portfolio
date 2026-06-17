@@ -397,7 +397,9 @@ body[data-texture="paper"]::before {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.15);
+  /* Theme-aware: the dots sit on the page background below the photo, so a
+     hardcoded black is invisible on dark themes. Drive them from the foreground. */
+  background: rgba(var(--foreground-rgb), 0.18);
   background-clip: padding-box;
   transition: background 0.3s ease, transform 0.3s ease, width 0.3s ease;
   cursor: pointer;
@@ -405,7 +407,7 @@ body[data-texture="paper"]::before {
   padding: 0;
 }
 .carousel-dot.active {
-  background: rgba(0,0,0,0.50);
+  background: rgba(var(--foreground-rgb), 0.55);
   background-clip: padding-box;
   width: 18px;
   border-radius: 12px; /* inner (visible) radius = 12 - 8 border = 4px pill */

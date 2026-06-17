@@ -145,6 +145,7 @@ describe("shared components", () => {
     // Live-preview path (§0 3箇所同期の受信側): a settings payload with new keys
     // must never throw, even with empty / odd values.
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { themeBg: "#101010", topWorksMode: "manual", topWorksIds: "1,2", topWorksColumns: "", gallerySizeScale: "1.4", heroNameSize: "48", bodyLeading: "" } },
     }));
     await flush(10);
@@ -160,12 +161,14 @@ describe("shared components", () => {
     );
     // Preview path: texture on → data attribute lights the styles.css ::before
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { bgTexture: "grain-fine", bgTextureOpacity: "0.08" } },
     }));
     await flush(5);
     expect(dom.window.document.body.dataset.texture).toBe("grain-fine");
     // texture off → attribute removed (CSS default = no grain)
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { bgTexture: "none" } },
     }));
     await flush(5);
@@ -174,17 +177,20 @@ describe("shared components", () => {
     // clearing themeBg → property removed (CSS default multiply for light bg).
     const rootStyle = dom.window.document.documentElement.style;
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { themeBg: "#111111" } },
     }));
     await flush(5);
     expect(rootStyle.getPropertyValue("--bg-texture-blend")).toBe("screen");
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { themeBg: "" } },
     }));
     await flush(5);
     expect(rootStyle.getPropertyValue("--bg-texture-blend")).toBe("");
     // A3: font weights flow through the preview path as CSS vars
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { heroNameWeight: "500", bodyWeight: "300" } },
     }));
     await flush(5);
@@ -192,11 +198,13 @@ describe("shared components", () => {
     expect(rootStyle.getPropertyValue("--body-weight")).toBe("300");
     // photoRevealEffect: non-default variants set body[data-reveal]; fade/"" clear it
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { photoRevealEffect: "rise" } },
     }));
     await flush(5);
     expect(dom.window.document.body.dataset.reveal).toBe("rise");
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
       data: { type: "preview-settings", settings: { photoRevealEffect: "fade" } },
     }));
     await flush(5);

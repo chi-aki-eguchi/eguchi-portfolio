@@ -115,7 +115,7 @@ async function buildSitemap(): Promise<string> {
     );
   } catch (e) { console.error("[sitemap] photos fetch failed:", e); }
   const imageTag = (p: SitemapPhoto) =>
-    `<image:image><image:loc>${siteUrl}${escapeHtml(p.url)}</image:loc>${p.title ? `<image:title>${escapeHtml(p.title)}</image:title>` : ""}</image:image>`;
+    `<image:image><image:loc>${siteUrl}${escapeHtml(p.url)}</image:loc>${p.title ? `<image:title>${escapeHtml(p.title)}</image:title><image:caption>${escapeHtml(p.title)}</image:caption>` : ""}</image:image>`;
   const imagesFor = (path: string): string => {
     if (path === "/gallery") return livePhotos.map(imageTag).join("");
     const sid = seriesIdBySlugPath.get(path);
@@ -134,18 +134,19 @@ function buildRobots(siteUrl: string): string {
   return `User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: ${siteUrl}/sitemap.xml\n`;
 }
 
-// Baseline security headers for document/static responses. Framing is left open
-// (frame-ancestors *) because Runable's dashboard previews the site in a
-// cross-origin iframe — SAMEORIGIN/'self' blanked that preview out. ALLOWALL is
-// the conventional non-standard value browsers treat as "no framing restriction".
-// HSTS is set only when the original request arrived over HTTPS
-// (x-forwarded-proto behind Runable).
+// Baseline security headers for document/static responses. Framing is restricted
+// to same-origin: the only legitimate framer is the admin live-preview iframe
+// (src="/"), which is same-origin, so SAMEORIGIN / frame-ancestors 'self' allows
+// it while blocking cross-origin clickjacking of /admin. (The previous ALLOWALL /
+// frame-ancestors * was a Runable dashboard-preview workaround; Runable was
+// decommissioned in the 2026-06 Railway migration.) HSTS is set only when the
+// original request arrived over HTTPS (x-forwarded-proto behind the proxy).
 function withSecurityHeaders(res: Response, request: Request): Response {
   const headers = new Headers(res.headers);
   headers.set("X-Build", BUILD_ID); // deploy fingerprint — see ogp.ts
   headers.set("X-Content-Type-Options", "nosniff");
-  headers.set("X-Frame-Options", "ALLOWALL");
-  headers.set("Content-Security-Policy", "frame-ancestors *");
+  headers.set("X-Frame-Options", "SAMEORIGIN");
+  headers.set("Content-Security-Policy", "frame-ancestors 'self'");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
@@ -203,6 +204,11 @@ async function serveNonApi(_request: Request, url: URL): Promise<Response> {
         const immutable = url.pathname.startsWith("/assets/");
         if (immutable) {
           headers["Cache-Control"] = "public, max-age=31536000, immutable";
+        } else {
+          // Non-hashed static files (og-image.jpg, etc.) can't be immutable, but
+          // still deserve a revalidatable hour of browser/edge caching rather than
+          // the no-header heuristic default.
+          headers["Cache-Control"] = "public, max-age=3600";
         }
         return new Response(file, { headers });
       }

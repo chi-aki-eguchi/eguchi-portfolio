@@ -266,6 +266,9 @@ export function Provider({ children }: ProviderProps) {
   // Live preview: listen for postMessage from admin iframe parent
   useEffect(() => {
     function handlePreviewMessage(e: MessageEvent) {
+      // Same-origin guard: the only legitimate sender is the admin page embedding
+      // this site in a same-origin iframe. Ignore messages from any other origin.
+      if (e.origin !== window.location.origin) return;
       if (e.data?.type !== "preview-settings") return;
       const s = e.data.settings as Record<string, string>;
       const root = document.documentElement;
@@ -429,7 +432,7 @@ export function Provider({ children }: ProviderProps) {
     // first postMessage can fire before this listener exists (iframe just
     // mounted / reloaded) and silently vanish — the parent replies to this
     // ping with the current payload, so the initial state always arrives.
-    if (window.parent !== window) window.parent.postMessage({ type: "preview-ready" }, "*");
+    if (window.parent !== window) window.parent.postMessage({ type: "preview-ready" }, window.location.origin);
     return () => window.removeEventListener("message", handlePreviewMessage);
   }, [qc]);
 

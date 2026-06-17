@@ -486,7 +486,7 @@ export function Lightbox({
                 alt=""
                 aria-hidden="true"
                 draggable={false}
-                fetchPriority="high"
+                fetchPriority="low"
                 decoding="async"
                 style={{ display: "block", width: FIT_W, height: FIT_H, objectFit: "contain", filter: hiRes ? "blur(0px)" : "blur(14px)", transform: hiRes ? "scale(1)" : "scale(1.03)", transition: "filter 0.45s ease, transform 0.45s ease" }}
               />
@@ -495,7 +495,7 @@ export function Lightbox({
                 src={`${photo.url}?w=1600&q=88`}
                 srcSet={fitSrcSet(photo.url)}
                 sizes={FIT_SIZES}
-                alt={photo.title || photo.meta || "Photograph"}
+                alt={photo.title || photo.meta || `Photograph ${index + 1}`}
                 onLoad={() => setHiRes(true)}
                 onError={() => setImgError(true)}
                 fetchPriority="high"

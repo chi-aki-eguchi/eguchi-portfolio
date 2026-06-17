@@ -58,6 +58,7 @@ export default function ProfilePage() {
               sizes="(min-width: 768px) 300px, 90vw"
               alt={nameJa}
               decoding="async"
+              fetchPriority="high"
               onError={() => setPhotoBroken(true)}
               className="w-full aspect-[3/4] object-cover rounded-lg shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
             />

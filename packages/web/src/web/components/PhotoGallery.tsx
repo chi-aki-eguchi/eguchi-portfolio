@@ -123,7 +123,7 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
         onClick={() => openLightbox(idx)}
         // Warm the full-size image on hover-intent so the lightbox opens instantly.
         // Mirrors the lightbox's srcset/sizes so the browser caches the same candidate.
-        onMouseEnter={() => { const img = new Image(); img.sizes = FIT_SIZES; img.srcset = fitSrcSet(photo.url); img.src = `${photo.url}?w=1600&q=88`; }}
+        onMouseEnter={() => { const img = new Image(); img.fetchPriority = "low"; img.sizes = FIT_SIZES; img.srcset = fitSrcSet(photo.url); img.src = `${photo.url}?w=1600&q=88`; }}
       >
         <div
           className="photo-card fade-in-item"
@@ -133,8 +133,9 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
             src={`${photo.url}?w=600&q=84`}
             srcSet={`${photo.url}?w=400&q=82 400w, ${photo.url}?w=800&q=84 800w, ${photo.url}?w=1200&q=84 1200w, ${photo.url}?w=1600&q=86 1600w`}
             sizes={opts.sizes}
-            alt={photo.title || photo.meta || "Photograph"}
+            alt={photo.title || photo.meta || photo.filename || `Photograph ${idx + 1}`}
             loading={idx < 6 ? "eager" : "lazy"}
+            fetchPriority={idx === 0 ? "high" : undefined}
             decoding="async"
             width={photo.width || undefined}
             height={photo.height || undefined}

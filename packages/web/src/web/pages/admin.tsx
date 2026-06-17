@@ -581,7 +581,7 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
       const res = await adminApi.photos.reorder.$post({ json: { ids } });
       assertOk(res);
     },
-    onSuccess: () => { setActionError(""); qc.invalidateQueries({ queryKey: ["photos"] }); },
+    onSuccess: () => { setActionError(""); qc.invalidateQueries({ queryKey: ["photos"] }); setBatchToast("並び順を保存しました"); setTimeout(() => setBatchToast(null), 1500); },
     onError: onActionError("並び替えの保存に失敗しました。"),
   });
 
@@ -2470,6 +2470,9 @@ function CategoriesTab() {
       // Photos in the deleted category were reassigned to uncategorized server-side.
       qc.invalidateQueries({ queryKey: ["photos"] });
     },
+    // assertOk throws on a non-2xx; without an onError the row stays and the admin
+    // wrongly assumes the delete worked. Surface it in the existing error slot.
+    onError: () => setCatError("削除に失敗しました。"),
   });
 
   // Reorder controls the gallery filter order. Optimistically reorder the cache so
@@ -2659,6 +2662,7 @@ function SeriesTab() {
       // Photos were detached server-side — refresh so the inspector reflects it.
       qc.invalidateQueries({ queryKey: ["photos"] });
     },
+    onError: () => setRowError("削除に失敗しました。"),
   });
 
   const reorder = useMutation({
@@ -2896,7 +2900,7 @@ function PricingTab() {
     onSuccess: (created) => {
       refresh();
       // Open the new plan for editing straight away.
-      const id = (created as any)?.plan?.id;
+      const id = (created as { plan?: { id?: number } })?.plan?.id;
       if (typeof id === "number") { setEditId(id); setDraft({ title: "新しいプラン", price: "", description: "", features: "", note: "" }); }
     },
     onError: () => setRowError("追加に失敗しました。"),
@@ -2918,6 +2922,7 @@ function PricingTab() {
       assertOk(res);
     },
     onSuccess: refresh,
+    onError: () => setRowError("削除に失敗しました。"),
   });
 
   const reorder = useMutation({
@@ -3168,13 +3173,13 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
 
   useEffect(() => {
     if (!showPreview || !liveSync || !iframeRef.current?.contentWindow) return;
-    iframeRef.current.contentWindow.postMessage({ type: "preview-settings", settings: previewPayload }, "*");
+    iframeRef.current.contentWindow.postMessage({ type: "preview-settings", settings: previewPayload }, window.location.origin);
   }, [previewPayload, showPreview, liveSync]);
 
   // Also send on iframe load
   const handleIframeLoad = useCallback(() => {
     if (!iframeRef.current?.contentWindow) return;
-    iframeRef.current.contentWindow.postMessage({ type: "preview-settings", settings: previewPayload }, "*");
+    iframeRef.current.contentWindow.postMessage({ type: "preview-settings", settings: previewPayload }, window.location.origin);
   }, [previewPayload]);
 
   // Handshake reply: the iframe's React app pings "preview-ready" once its
@@ -3185,7 +3190,7 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
   useEffect(() => {
     const onReady = (e: MessageEvent) => {
       if (e.data?.type !== "preview-ready") return;
-      iframeRef.current?.contentWindow?.postMessage({ type: "preview-settings", settings: previewPayloadRef.current }, "*");
+      iframeRef.current?.contentWindow?.postMessage({ type: "preview-settings", settings: previewPayloadRef.current }, window.location.origin);
     };
     window.addEventListener("message", onReady);
     return () => window.removeEventListener("message", onReady);

@@ -86,7 +86,7 @@ export function SeriesGrid() {
                 src={`${s.coverUrl}?w=800&q=85`}
                 srcSet={`${s.coverUrl}?w=400&q=82 400w, ${s.coverUrl}?w=800&q=85 800w, ${s.coverUrl}?w=1100&q=85 1100w, ${s.coverUrl}?w=1600&q=86 1600w`}
                 sizes={sizes}
-                alt=""
+                alt={s.subtitle ? `${s.title} — ${s.subtitle}` : s.title}
                 loading="lazy"
                 decoding="async"
                 onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}

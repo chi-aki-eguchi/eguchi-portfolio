@@ -107,6 +107,12 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
   if (photos.length === 0) return <div className="w-full" style={{ height: '60vh' }}><div className="w-full h-full bg-[#eee] rounded-lg" /></div>;
 
   return (
+    // The autoplay-pause handlers below sit on the carousel container on purpose so
+    // hovering/focusing anywhere in it (photo, arrows, dots) pauses — moving them to
+    // the inner photo button would make the hover-reveal arrows vanish the instant
+    // the pointer reached them. They're presentational (pause moving content, WCAG
+    // 2.2.2), so this interactivity rule is a false positive here.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <section
       className="hero-carousel"
       ref={containerRef}
@@ -131,7 +137,7 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
               tabIndex: 0,
               "aria-label": "次の写真へ",
               title: "クリックで次の写真",
-              style: { cursor: "pointer", outline: "none" },
+              style: { cursor: "pointer" },
             }
           : {})}
       >
@@ -369,7 +375,7 @@ export default function TopPage() {
         <section ref={heroBoxRef} className={heroFullscreen ? "hero-fullscreen" : "pt-6 md:pt-10"}>
           <HeroSingle photo={heroPhotos[0]} titlePosition={heroTitlePosition} fxRef={heroFxRef}>
             <h1
-              className="font-bold leading-tight hero-text-reveal hero-text-reveal-1"
+              className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
               style={{ fontSize: "var(--hero-name-size, 1.75rem)", fontWeight: "var(--hero-name-weight, 700)" as never, color: "#fff", letterSpacing: "var(--hero-name-tracking, 0.04em)", textShadow: "0 1px 18px rgba(0,0,0,0.45)" }}
             >
               {siteNameJa}
@@ -404,7 +410,7 @@ export default function TopPage() {
             heroTitlePosition.endsWith("-left") ? "text-left" : heroTitlePosition.endsWith("-right") ? "text-right" : "text-center"
           }`}>
             <h1
-              className="font-bold leading-tight hero-text-reveal hero-text-reveal-1"
+              className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
               style={{ fontWeight: "var(--hero-name-weight, 700)" as never, fontSize: "var(--hero-name-size, 1.5rem)", color: "var(--hero-name-color, var(--foreground))", letterSpacing: "var(--hero-name-tracking, 0.04em)" }}
             >
               {siteNameJa}

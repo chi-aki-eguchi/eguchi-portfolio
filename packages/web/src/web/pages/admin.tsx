@@ -1702,25 +1702,16 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
 
       {/* Delete confirm modal */}
       {deleteConfirm && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "#252525", border: "1px solid #444", borderRadius: 6, padding: "24px 28px", minWidth: 280, display: "flex", flexDirection: "column", gap: 16 }}>
-            <p className="text-[13px] text-[#ddd]">{deleteConfirm.label}</p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="text-[11px] text-[#888] bg-[#333] px-4 py-1.5 rounded-sm hover:bg-[#3a3a3a] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { deletePhotos.mutate(deleteConfirm.ids); setDeleteConfirm(null); }}
-                className="text-[11px] text-red-400 bg-red-900/30 px-4 py-1.5 rounded-sm hover:bg-red-900/50 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
+        <Modal onClose={() => setDeleteConfirm(null)}>
+          <p className="text-[13px] text-[#ddd] mb-4">{deleteConfirm.label}</p>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors">Cancel</button>
+            <button
+              onClick={() => { deletePhotos.mutate(deleteConfirm.ids); setDeleteConfirm(null); }}
+              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+            >Delete</button>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* C3: Quick preview (Space) — full-screen image overlay */}
@@ -2117,8 +2108,8 @@ function BulkEditTable({
       <table className="w-full min-w-[860px] border-collapse text-[12px]">
         <thead className="sticky top-0 z-10 bg-[#2a2a2a] border-b border-[#444]">
           <tr>
-            <th className="w-7" />
-            <th className="w-12" />
+            <th className="w-7" aria-label="Select" />
+            <th className="w-12" aria-label="Thumbnail" />
             <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal">Title</th>
             <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-44">Camera</th>
             <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-48">Lens</th>

@@ -2399,10 +2399,9 @@ function HeroTab() {
 
   const cleanupDangling = useMutation({
     mutationFn: async () => {
-      for (const pid of danglingHeroIds) {
-        const res = await adminApi["hero-photos"][":id"].$delete({ param: { id: String(pid) } });
-        assertOk(res);
-      }
+      if (danglingHeroIds.length === 0) return;
+      const res = await adminApi["hero-photos"].cleanup.$post({ json: { photoIds: danglingHeroIds } });
+      assertOk(res);
     },
     onSuccess: () => { setHeroError(""); qc.invalidateQueries({ queryKey: ["hero-photos"] }); },
     onError: onHeroError,

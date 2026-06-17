@@ -1306,6 +1306,22 @@ const app = new Hono()
     return c.json({ ok: true }, 200);
   })
 
+  // Batch-remove dangling hero references (e.g. photos trashed/purged after
+  // being picked). Accepts any photoIds regardless of whether those photos
+  // still exist in the photos table — no existence check, no 404.
+  .post('/admin/hero-photos/cleanup', requireAdmin, async (c) => {
+    const { photoIds } = await c.req.json() as { photoIds: number[] };
+    const cleanIds = Array.isArray(photoIds)
+      ? photoIds.filter((n): n is number => Number.isInteger(n) && n > 0)
+      : [];
+    if (cleanIds.length > 0) {
+      await withRetry(() =>
+        db.delete(schema.heroPhotos).where(inArray(schema.heroPhotos.photoId, cleanIds))
+      );
+    }
+    return c.json({ ok: true }, 200);
+  })
+
   .post('/admin/hero-photos/reorder', requireAdmin, async (c) => {
     const { photoIds } = await c.req.json() as { photoIds: number[] };
     if (photoIds.length === 0) return c.json({ ok: true }, 200);

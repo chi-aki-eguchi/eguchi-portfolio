@@ -175,7 +175,7 @@ export default function ProfilePage() {
                   {post.thumbnail ? (
                     <img
                       src={post.thumbnail}
-                      alt=""
+                      alt={post.title || ""}
                       loading="lazy"
                       decoding="async"
                       onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}

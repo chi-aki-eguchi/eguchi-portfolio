@@ -32,14 +32,8 @@ export function setAttr(html: string, re: RegExp, value: string): string {
 // Resolution: admin setting (siteUrl) → SITE_URL env var → the custom domain.
 // The Runable hostname must never leak into these — Search Console treats it
 // as a separate (duplicate) property and errors on the mismatch.
-// Deploy fingerprint, served as the X-Build header (server.ts) so you can verify
-// WHICH build is live (curl -sI <site> | grep x-build / GET /api/health). Added
-// during the 2026-06-13 gzip/cache incident, where "is the new code actually
-// deployed?" was unanswerable from the outside. AUTO-STAMPED by scripts/deploy.sh
-// to the build timestamp — the SAME value mixed into every asset filename
-// (BUILD_TAG) — on each `bun run deploy`, so X-Build always matches what shipped.
-// Don't bump it by hand.
-export const BUILD_ID = "20260615-123147";
+// Deploy fingerprint — Railway sets RAILWAY_GIT_COMMIT_SHA automatically.
+export const BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev";
 
 export const DEFAULT_SITE_URL = "https://akieguchi.com";
 export function siteUrlFrom(settings: Record<string, string>): string {

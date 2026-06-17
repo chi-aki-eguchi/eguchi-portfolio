@@ -6,8 +6,8 @@
   --foreground: #1a1a1a;
   --foreground-rgb: 26,26,26;
 
-  --font-ja: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
-  --font-en: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-ja: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
+  --font-en: 'Cormorant Garamond', 'Georgia', serif;
 
   /* D4: global type scale (0.85–1.15) — multiplies all configured sizes */
   --global-font-scale: 1;

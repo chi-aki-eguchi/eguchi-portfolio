@@ -1098,13 +1098,15 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
               <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-0.5">
                 <button
                   onClick={() => batchOp.mutate({ operation: "publish" })}
-                  className="flex items-center gap-1 text-[11px] text-emerald-300/80 px-1.5 py-0.5 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                  disabled={batchOp.isPending}
+                  className="flex items-center gap-1 text-[11px] text-emerald-300/80 px-1.5 py-0.5 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Eye size={11} /> 公開
                 </button>
                 <button
                   onClick={() => batchOp.mutate({ operation: "unpublish" })}
-                  className="flex items-center gap-1 text-[11px] text-[#999] px-1.5 py-0.5 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                  disabled={batchOp.isPending}
+                  className="flex items-center gap-1 text-[11px] text-[#999] px-1.5 py-0.5 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <EyeOff size={11} /> 非公開
                 </button>
@@ -1178,7 +1180,8 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
                   <button
                     key={sz}
                     onClick={() => batchOp.mutate({ operation: "size", value: sz })}
-                    className="text-[11px] text-[#bbb] w-5 h-5 rounded-sm hover:bg-[#4a4a4a] transition-colors"
+                    disabled={batchOp.isPending}
+                    className="text-[11px] text-[#bbb] w-5 h-5 rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >{sz}</button>
                 ))}
               </div>
@@ -1186,13 +1189,15 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
               {/* M2: Feature / unfeature (hero) */}
               <button
                 onClick={() => batchOp.mutate({ operation: "feature" })}
-                className="flex items-center gap-1 text-[11px] text-amber-300/80 bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                disabled={batchOp.isPending}
+                className="flex items-center gap-1 text-[11px] text-amber-300/80 bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Star size={11} /> Feature
               </button>
               <button
                 onClick={() => batchOp.mutate({ operation: "unfeature" })}
-                className="flex items-center gap-1 text-[11px] text-[#999] bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                disabled={batchOp.isPending}
+                className="flex items-center gap-1 text-[11px] text-[#999] bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <StarOff size={11} /> Unfeature
               </button>
@@ -2490,8 +2495,9 @@ function HeroTab() {
                     </button>
                     <button
                       onClick={() => removeHero.mutate(photo.id)}
+                      disabled={removeHero.isPending}
                       aria-label="ヒーローから削除"
-                      className="w-7 h-7 flex items-center justify-center bg-red-500/80 text-white rounded-sm hover:bg-red-500"
+                      className="w-7 h-7 flex items-center justify-center bg-red-500/80 text-white rounded-sm hover:bg-red-500 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <X size={13} />
                     </button>
@@ -2526,9 +2532,10 @@ function HeroTab() {
                   key={photo.id}
                   type="button"
                   onClick={() => isHero ? removeHero.mutate(photo.id) : addHero.mutate(photo.id)}
+                  disabled={addHero.isPending || removeHero.isPending}
                   aria-pressed={isHero}
                   aria-label={`${photo.title || photo.filename || "写真"} をヒーローから${isHero ? "外す" : "追加"}`}
-                  className={`relative rounded-sm overflow-hidden cursor-pointer group border-2 transition-colors ${
+                  className={`relative rounded-sm overflow-hidden cursor-pointer group border-2 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
                     isHero ? "border-amber-400/70" : "border-transparent hover:border-white/20"
                   }`}
                 >

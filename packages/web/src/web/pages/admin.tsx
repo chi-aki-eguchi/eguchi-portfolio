@@ -9,7 +9,7 @@ import {
   LogOut, Upload, Trash2, Check, X, Plus,
   Settings, User, Tag, Image as ImageLucide, ExternalLink,
   Loader2, Grid, Columns, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, Monitor, Smartphone,
-  Star, StarOff, Shuffle, Layers, Pencil, Receipt, FolderOpen, Search,
+  Star, StarOff, Shuffle, Layers, Pencil, Receipt, FolderOpen, Search, LayoutList, AlertTriangle,
 } from "lucide-react";
 
 type Tab = "gallery" | "hero" | "profile" | "categories" | "series" | "pricing" | "settings";
@@ -243,6 +243,7 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
   const [showShortcuts, setShowShortcuts] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [bulkEditMode, setBulkEditMode] = usePersistentState("admin:bulkEditMode", false);
 
   const { data: photosData, isLoading } = useQuery({
     queryKey: ["photos", "all"],
@@ -584,6 +585,14 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
     onSuccess: () => { setActionError(""); qc.invalidateQueries({ queryKey: ["photos"] }); setBatchToast("並び順を保存しました"); setTimeout(() => setBatchToast(null), 1500); },
     onError: onActionError("並び替えの保存に失敗しました。"),
   });
+
+  // 一括編集テーブルからの単行セーブ（部分更新）
+  const bulkEditSave = async (id: number, data: BulkEditSaveData) => {
+    const res = await adminApi.photos[":id"].$patch({ param: { id: String(id) }, json: data });
+    assertOk(res);
+    qc.invalidateQueries({ queryKey: ["photos"] });
+    qc.invalidateQueries({ queryKey: ["series"] });
+  };
 
   // Upload — server-side resize (no more presigned URLs)
   const handleFiles = async (files: File[]) => {
@@ -1062,6 +1071,17 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
             ?
           </button>
 
+          <button
+            onClick={() => { setBulkEditMode(v => !v); setInspectPhoto(null); setSelected(new Set()); }}
+            aria-pressed={bulkEditMode}
+            title="表形式の一括編集モード"
+            className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+              bulkEditMode ? "bg-[#4a4a4a] text-[#eee] border-[#666]" : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
+            }`}
+          >
+            <LayoutList size={11} /> Table
+          </button>
+
           <div className="flex-1" />
 
           {/* Batch actions */}
@@ -1308,6 +1328,14 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
             <div className="flex items-center justify-center h-full gap-2 text-[#555] text-sm">
               <Loader2 size={14} className="animate-spin" /> Loading...
             </div>
+          ) : bulkEditMode ? (
+            <BulkEditTable
+              photos={displayed}
+              seriesList={seriesList}
+              cameraPresets={cameraPresets}
+              lensPresets={lensPresets}
+              onSave={bulkEditSave}
+            />
           ) : displayed.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
               <ImageLucide size={40} strokeWidth={1} className="text-[#444]" />
@@ -2019,6 +2047,252 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
         </div>
       )}
     </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════
+   BULK EDIT TABLE — スプレッドシート形式の一括編集
+══════════════════════════════════════════════════ */
+type BulkEditSaveData = {
+  title: string;
+  camera: string;
+  lens: string;
+  filmType: string;
+  seriesId: string;
+  displaySize: string;
+};
+type RowSaveStatus = "idle" | "saving" | "saved" | "error";
+
+function BulkEditTable({
+  photos,
+  seriesList,
+  cameraPresets,
+  lensPresets,
+  onSave,
+}: {
+  photos: Photo[];
+  seriesList: AdminSeries[];
+  cameraPresets: string[];
+  lensPresets: string[];
+  onSave: (id: number, data: BulkEditSaveData) => Promise<void>;
+}) {
+  if (photos.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
+        <ImageLucide size={40} strokeWidth={1} className="text-[#444]" />
+        <p className="text-sm">No photos</p>
+        <p className="text-[11px] text-[#444]">フィルターを変更するか、写真をインポートしてください</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto h-full">
+      <table className="w-full min-w-[860px] border-collapse text-[12px]">
+        <thead className="sticky top-0 z-10 bg-[#2a2a2a] border-b border-[#444]">
+          <tr>
+            <th className="w-7" />
+            <th className="w-12" />
+            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal">Title</th>
+            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-44">Camera</th>
+            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-48">Lens</th>
+            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-36">Series</th>
+            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-20">Size</th>
+            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-28">Medium</th>
+          </tr>
+        </thead>
+        <tbody>
+          {photos.map(photo => (
+            <BulkEditRow
+              key={photo.id}
+              photo={photo}
+              seriesList={seriesList}
+              cameraPresets={cameraPresets}
+              lensPresets={lensPresets}
+              onSave={onSave}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function BulkEditRow({
+  photo,
+  seriesList,
+  cameraPresets,
+  lensPresets,
+  onSave,
+}: {
+  photo: Photo;
+  seriesList: AdminSeries[];
+  cameraPresets: string[];
+  lensPresets: string[];
+  onSave: (id: number, data: BulkEditSaveData) => Promise<void>;
+}) {
+  const initDraft: BulkEditSaveData = {
+    title: photo.title ?? "",
+    camera: photo.camera ?? "",
+    lens: photo.lens ?? "",
+    filmType: photo.filmType ?? "",
+    seriesId: photo.seriesId ? String(photo.seriesId) : "",
+    displaySize: photo.displaySize ?? "M",
+  };
+  const [draft, setDraft] = useState<BulkEditSaveData>(initDraft);
+  const [status, setStatus] = useState<RowSaveStatus>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestRef = useRef<BulkEditSaveData>(initDraft);
+
+  // Cleanup timer on unmount
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  const handleChange = (field: keyof BulkEditSaveData, value: string) => {
+    const next = { ...latestRef.current, [field]: value };
+    latestRef.current = next;
+    setDraft(next);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      timerRef.current = null;
+      setStatus("saving");
+      try {
+        await onSave(photo.id, latestRef.current);
+        setStatus("saved");
+        setTimeout(() => setStatus("idle"), 2000);
+      } catch (e) {
+        setStatus("error");
+        setErrorMsg(e instanceof Error ? e.message : "保存失敗");
+      }
+    }, 500);
+  };
+
+  const rowBg =
+    status === "saved" ? "bg-emerald-900/10" :
+    status === "error" ? "bg-red-900/10" :
+    "";
+  const inputCls = "w-full bg-transparent text-[#ddd] outline-none border-b border-transparent focus:border-[#666] transition-colors py-0.5 placeholder:text-[#555] text-[12px]";
+  const cellCls = "px-2 py-1 align-middle";
+
+  return (
+    <tr className={`border-b border-[#333] transition-colors hover:bg-[#252525] ${rowBg} group`}>
+      {/* Save status indicator */}
+      <td className="w-7 px-1 text-center align-middle">
+        {status === "saving" && <Loader2 size={11} className="animate-spin text-[#888] mx-auto" />}
+        {status === "saved"  && <Check size={11} className="text-emerald-400 mx-auto" />}
+        {status === "error"  && (
+          <span title={errorMsg} className="cursor-help block">
+            <AlertTriangle size={11} className="text-amber-400 mx-auto" />
+          </span>
+        )}
+      </td>
+
+      {/* Thumbnail */}
+      <td className="w-12 py-1 pl-1 align-middle">
+        <img
+          src={`${photo.url}?w=100&q=60`}
+          alt={photo.title || photo.filename}
+          className="w-11 h-11 object-cover bg-[#2a2a2a] rounded-sm"
+          loading="lazy"
+        />
+      </td>
+
+      {/* Title */}
+      <td className={cellCls}>
+        <input
+          aria-label="タイトル"
+          value={draft.title}
+          onChange={e => handleChange("title", e.target.value)}
+          placeholder={photo.filename}
+          className={inputCls}
+        />
+      </td>
+
+      {/* Camera */}
+      <td className={`${cellCls} w-44`}>
+        <input
+          aria-label="カメラ"
+          list={`bulk-cam-${photo.id}`}
+          value={draft.camera}
+          onChange={e => handleChange("camera", e.target.value)}
+          placeholder="—"
+          className={inputCls}
+        />
+        <datalist id={`bulk-cam-${photo.id}`}>
+          {cameraPresets.map(p => <option key={p} value={p} aria-label={p} />)}
+        </datalist>
+      </td>
+
+      {/* Lens */}
+      <td className={`${cellCls} w-48`}>
+        <input
+          aria-label="レンズ"
+          list={`bulk-lens-${photo.id}`}
+          value={draft.lens}
+          onChange={e => handleChange("lens", e.target.value)}
+          placeholder="—"
+          className={inputCls}
+        />
+        <datalist id={`bulk-lens-${photo.id}`}>
+          {lensPresets.map(p => <option key={p} value={p} aria-label={p} />)}
+        </datalist>
+      </td>
+
+      {/* Series */}
+      <td className={`${cellCls} w-36`}>
+        <select
+          aria-label="シリーズ"
+          value={draft.seriesId}
+          onChange={e => handleChange("seriesId", e.target.value)}
+          className="w-full bg-[#2a2a2a] text-[#ddd] outline-none border border-transparent focus:border-[#666] transition-colors py-0.5 rounded-sm text-[11px]"
+        >
+          <option value="">—</option>
+          {seriesList.map(s => (
+            <option key={s.id} value={String(s.id)}>{s.title}</option>
+          ))}
+        </select>
+      </td>
+
+      {/* Display Size */}
+      <td className={`${cellCls} w-20`}>
+        <div className="flex gap-0.5">
+          {(["S", "M", "L"] as const).map(sz => (
+            <button
+              key={sz}
+              type="button"
+              onClick={() => handleChange("displaySize", sz)}
+              className={`flex-1 text-[10px] py-0.5 rounded-sm transition-colors ${
+                draft.displaySize === sz
+                  ? "bg-[#888] text-[#1e1e1e] font-medium"
+                  : "bg-[#333] text-[#888] hover:bg-[#3a3a3a]"
+              }`}
+            >
+              {sz}
+            </button>
+          ))}
+        </div>
+      </td>
+
+      {/* Medium (Film / Digital / —) */}
+      <td className={`${cellCls} w-28`}>
+        <div className="flex gap-0.5">
+          {([["フィルム", "フ"], ["デジタル", "デ"], ["", "—"]] as const).map(([val, lbl]) => (
+            <button
+              key={lbl}
+              type="button"
+              onClick={() => handleChange("filmType", val)}
+              className={`flex-1 text-[10px] py-0.5 rounded-sm transition-colors ${
+                draft.filmType === val
+                  ? "bg-[#888] text-[#1e1e1e] font-medium"
+                  : "bg-[#333] text-[#888] hover:bg-[#3a3a3a]"
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+      </td>
+    </tr>
   );
 }
 

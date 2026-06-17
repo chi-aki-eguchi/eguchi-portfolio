@@ -200,6 +200,51 @@ Playwright で全18セクションを展開し、38スライダー＋38数値入
 
 ---
 
+## 2026-06-17 夜間自走ラン Phase 1（Claude Opus 4.6）
+
+**実行内容**: `claude-code-night-run.md` に従い申し送り事項3件を解消。
+
+### 修正した問題
+
+1. **BUILD_ID stale 問題解消**（`ogp.ts`）
+   - `BUILD_ID = "20260615-123147"` のハードコードを `process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev"` に変更
+   - Railway が自動提供する commit SHA からデプロイごとに自動更新。ローカルでは `"dev"` にフォールバック
+   - deploy.sh 由来の陳腐化コメントも削除
+
+2. **font preload と :root フォント不一致修正**（`index.html` + `styles.css`）
+   - `styles.css` の `:root` デフォルトが `Noto Sans JP` + `Inter`（サンセリフ）だったが、写真家ポートフォリオの既定は `Shippori Mincho` + `Cormorant Garamond`（セリフ）
+   - `:root` のフォントを `Shippori Mincho` / `Cormorant Garamond` に修正
+   - `index.html` のプリロード URL を `provider.tsx` のフォント定義（weight 含む）と完全一致させた（不要な italic weight を削除、600 weight を追加）
+
+3. **バッチ操作・ヒーローボタンの多重送信ガード**（`admin.tsx`）
+   - バッチ操作ボタン 8 箇所（公開/非公開/Size S/M/L/Feature/Unfeature）に `disabled={batchOp.isPending}` 追加
+   - ヒーロー写真の追加/削除ボタンに `disabled={addHero.isPending || removeHero.isPending}` 追加
+   - ヒーロースライド内の削除ボタンに `disabled={removeHero.isPending}` 追加
+   - 前回ランで「admin.tsx が大きいため見送り」とされていた #16/#17 を安全に実装
+
+4. **note サムネイルの空 alt 修正**（`profile.tsx`）
+   - `/about` の note 記事サムネイル `alt=""` → `alt={post.title || ""}` に修正
+
+### スキップした項目
+
+- **フェーズ 2（UX・見た目）**: アニメーション/トランジションのイージングは全てexpo系で統一済み、break-words も適切に設定済み、LQIP blur-up 実装済み、reduced-motion 対応済み。大きな問題は見つからなかった
+- **フェーズ 3（SEO）**: JSON-LD（WebSite/Person/ImageGallery/BreadcrumbList）、OGP、alt 属性、robots 制御 — 前回の night run で網羅的に対応済み
+- **フェーズ 4（コード品質）**: `tsc -b` / `oxlint` / `bun test` 全てクリーン。不要な console.log なし
+
+### 検証 & デプロイ
+
+- `tsc -b` ✅ / `vite build` ✅ / `oxlint` ✅ / `bun test` ✅ **74 pass / 0 fail**（4907 expect）
+- `git push` でデプロイ（Railway 自動ビルド）
+- コミット: `1cadd03`
+
+### 次回への申し送り
+
+- `vite.config.ts` の `BUILD_TAG` はビルド時にアセット名に混ぜる用。`BUILD_ID`（X-Build ヘッダー）は今回修正済み。両者は別の目的（BUILD_TAG はキャッシュバスト、BUILD_ID はデプロイ識別）
+- admin.tsx の他の mutation（`batchCategory`, `batchMetaEdit`, `reorder` 等）にも同様の isPending ガードを追加検討
+- settings の font 変更時、index.html のプリロードは初回ロードで無駄になる可能性があるが、サーバー側で settings に合わせたプリロード注入は ogp.ts で既に行っている（heroImg）
+
+---
+
 ## 2026-06-17 バグ修正＆Playwright全面テスト（Claude Opus 4.6）
 
 **実行内容**: ギャラリーの2つのバグ修正 + Playwright E2Eテストで全ページ包括的にテスト

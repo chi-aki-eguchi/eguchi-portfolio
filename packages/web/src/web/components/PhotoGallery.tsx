@@ -14,14 +14,15 @@ export type GalleryPhoto = {
   camera?: string | null;
   lens?: string | null;
   filmType?: string | null;
+  shotAt?: string | null;
   displaySize?: string;
   width?: number | null;
   height?: number | null;
 };
 
 // N1/N4: the selectable grid layouts. Unknown / unset values fall back to mosaic.
-export type GalleryLayoutType = "mosaic" | "grid" | "scroll" | "stagger" | "editorial" | "collage";
-const KNOWN_LAYOUTS: GalleryLayoutType[] = ["mosaic", "grid", "scroll", "stagger", "editorial", "collage"];
+export type GalleryLayoutType = "mosaic" | "grid" | "scroll" | "stagger" | "editorial" | "collage" | "clean-grid" | "masonry" | "large-format";
+const KNOWN_LAYOUTS: GalleryLayoutType[] = ["mosaic", "grid", "scroll", "stagger", "editorial", "collage", "clean-grid", "masonry", "large-format"];
 
 /**
  * Photo grid + lightbox (グループG / N). Shared by the Gallery and Series pages.
@@ -137,8 +138,17 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
   // `staggerIdx` orders the fade-in; defaults to the photo index. Layouts whose DOM
   // order isn't the visual reading order (CSS columns = column-major) pass their
   // own row-major order so photos appear 左→右, 上→下.
-  const tile = (photo: GalleryPhoto, idx: number, opts: { width: string; justifySelf: string; sizes: string; staggerIdx?: number }) => {
+  const tile = (photo: GalleryPhoto, idx: number, opts: {
+    width: string;
+    justifySelf: string;
+    sizes: string;
+    staggerIdx?: number;
+    cardClassName?: string;
+    imgStyle?: React.CSSProperties;
+    showHoverCaption?: boolean;
+  }) => {
     const ratio = photo.width && photo.height ? `${photo.width} / ${photo.height}` : undefined;
+    const imgStyle = opts.imgStyle ?? (ratio ? { aspectRatio: ratio, width: "100%", height: "auto" } : undefined);
     return (
       <button
         key={photo.id}
@@ -151,7 +161,7 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
         onMouseEnter={() => { const img = new Image(); img.fetchPriority = "low"; img.sizes = FIT_SIZES; img.srcset = fitSrcSet(photo.url); img.src = `${photo.url}?w=1600&q=88`; }}
       >
         <div
-          className="photo-card fade-in-item"
+          className={`photo-card fade-in-item${opts.cardClassName ? ` ${opts.cardClassName}` : ""}`}
           style={{ "--stagger-delay": `${Math.min((opts.staggerIdx ?? idx) * 0.05, 0.4)}s` } as React.CSSProperties}
         >
           <img
@@ -164,13 +174,13 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
             decoding="async"
             width={photo.width || undefined}
             height={photo.height || undefined}
-            style={ratio ? { aspectRatio: ratio, width: "100%", height: "auto" } : undefined}
+            style={imgStyle}
             className="lqip-loading"
             onLoad={(e) => { const el = e.currentTarget; el.classList.remove("lqip-loading"); el.classList.add("lqip-loaded"); }}
             onError={(e) => { const el = e.currentTarget; el.classList.remove("lqip-loading"); el.classList.add("lqip-loaded"); el.closest(".photo-card")?.classList.add("photo-broken"); }}
           />
           {/* Hover-reveal title (CSS shows it on pointer devices only) */}
-          {photo.title && <span className="tile-caption" aria-hidden="true">{photo.title}</span>}
+          {(opts.showHoverCaption ?? true) && photo.title && <span className="tile-caption" aria-hidden="true">{photo.title}</span>}
         </div>
       </button>
     );
@@ -179,9 +189,84 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
   const colGap = (isMobile ? 24 : 40) * gapScale;
   const rowGap = (isMobile ? 48 : 80) * gapScale;
   const gridSizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
+  const quietCardClass = "photo-card-quiet";
+  const squareCoverStyle: React.CSSProperties = { aspectRatio: "1 / 1", width: "100%", height: "100%", objectFit: "cover" };
+  const displayMedium = (photo: GalleryPhoto) => {
+    if (photo.filmType === "フィルム") return "Film";
+    if (photo.filmType === "デジタル") return "Digital";
+    return photo.filmType || "";
+  };
+  const photoYear = (photo: GalleryPhoto) => {
+    if (!photo.shotAt) return "";
+    const y = new Date(photo.shotAt).getFullYear();
+    return Number.isFinite(y) ? String(y) : "";
+  };
 
   let body: React.ReactNode;
-  if (mode === "grid") {
+  if (mode === "clean-grid") {
+    // Layout expansion Phase 1: no frames, no rotation, almost no gap. A pure
+    // contact-sheet view where the photos carry the page.
+    const cols = isMobile ? 2 : 4;
+    body = (
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 2, padding: 2, alignItems: "start" }}>
+        {photos.map((photo, idx) => tile(photo, idx, {
+          width: "100%",
+          justifySelf: "stretch",
+          sizes: isMobile ? "50vw" : "25vw",
+          cardClassName: quietCardClass,
+          imgStyle: squareCoverStyle,
+          showHoverCaption: false,
+        }))}
+      </div>
+    );
+  } else if (mode === "masonry") {
+    // Layout expansion Phase 1: CSS columns preserve each photo's real aspect
+    // ratio with a quiet hover title. DOM order remains the same; visual flow is
+    // column-major, acceptable for a masonry index.
+    const cols = isMobile ? 2 : 3;
+    body = (
+      <div style={{ columnCount: cols, columnGap: 8 }}>
+        {photos.map((photo, idx) => (
+          <div key={photo.id} style={{ breakInside: "avoid", marginBottom: 8 }}>
+            {tile(photo, idx, {
+              width: "100%",
+              justifySelf: "stretch",
+              sizes: isMobile ? "50vw" : "33vw",
+              cardClassName: quietCardClass,
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  } else if (mode === "large-format") {
+    // Layout expansion Phase 1: exhibition-like large images with quiet metadata.
+    body = (
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))", columnGap: 20, rowGap: isMobile ? 34 : 46, alignItems: "start" }}>
+        {photos.map((photo, idx) => {
+          const medium = displayMedium(photo);
+          const year = photoYear(photo);
+          const sub = [medium, year].filter(Boolean).join(" — ");
+          return (
+            <figure key={photo.id} style={{ margin: 0 }}>
+              {tile(photo, idx, {
+                width: "100%",
+                justifySelf: "stretch",
+                sizes: isMobile ? "100vw" : "50vw",
+                cardClassName: quietCardClass,
+                showHoverCaption: false,
+              })}
+              {(photo.title || sub) && (
+                <figcaption style={{ marginTop: 9 }}>
+                  {photo.title && <p className="font-en" style={{ margin: 0, fontSize: 10, letterSpacing: "0.04em", lineHeight: 1.45, color: "#1a1a1a" }}>{photo.title}</p>}
+                  {sub && <p className="font-en" style={{ margin: "2px 0 0", fontSize: 9, letterSpacing: "0.06em", lineHeight: 1.45, color: "#bbb" }}>{sub}</p>}
+                </figcaption>
+              )}
+            </figure>
+          );
+        })}
+      </div>
+    );
+  } else if (mode === "grid") {
     // N3 grid: every photo the same, evenly aligned. Ignores S/M/L.
     body = (
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, columnGap: `${colGap}px`, rowGap: `${rowGap}px`, alignItems: "start" }}>

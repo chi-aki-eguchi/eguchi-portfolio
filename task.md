@@ -380,3 +380,100 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ### 触ったファイル
 - `packages/web/src/web/pages/admin.tsx`
 - `task.md`
+
+## 追記 2026-06-19 — agmsg 自動相談運用を採用
+
+### 決定
+- Claude Code / Codex のどちらかを固定窓口にしない。ユーザーが話している方をそのタスクの主担当にする。
+- agmsg は「常時会議」ではなく、主担当AIが必要時だけ相手へ短く相談するために使う。
+- 相談トリガー:
+  - 設計判断が2択以上で迷う
+  - 同じバグ修正を2回試して解決しない
+  - DB / auth / deploy / settings / 画像処理など高リスク箇所を触る
+  - commit / push 前に高リスク差分のレビューが必要
+- 相談は1セッション最大3回を目安にする。
+- 相談文には `目的` / `制約` / `触ったファイル` / `検証` / `返答形式` を含め、相手には「実装なし、P0/P1中心、短く」と依頼する。
+- delivery mode は Claude Code `monitor`、Codex `turn` を基本にする。消費を抑えたい時は一時的に `off`。
+
+### 反映
+- `AGENTS.md` に Claude Code / Codex 共通の agmsg 運用ルールを追加。
+- `CLAUDE.md` の「Codex との並行運用ルール」を更新。
+
+### 触ったファイル
+- `AGENTS.md`
+- `CLAUDE.md`
+- `task.md`
+
+## 追記 2026-06-19 — Codex 用ローカルユーザー文脈メモ
+
+### 実施
+- ユーザー希望により、Codex が秋さんの作業スタイル・サイト文脈・Claude/Codex運用を継続して参照できるローカルメモを作成。
+- 保存先: `.codex/USER_CONTEXT.md`
+  - `.codex/` は `.gitignore` 済みのためコミット対象外。
+  - 秘密情報・トークン・パスワード・不要な個人情報は書かない方針。
+- `AGENTS.md` に「存在すれば `.codex/USER_CONTEXT.md` を読む」旨を追記。
+- Claude Code へ agmsg で「Claude が持つ非秘密のユーザー文脈を Codex に引き継いでほしい」と依頼し、返信内容のうち非秘密・作業上有用な文脈を `.codex/USER_CONTEXT.md` に反映済み。
+  - 追加反映: 短く結果先出しの報告、絵文字なし、1サイクル1改善、`tsc -b` 優先、Ivy's House 別リポジトリと混同しない、ギャラリーレイアウト種別など。
+
+### 注意
+- Claude から追加返信が来た場合は、事実ベースかつ非秘密の内容だけ `.codex/USER_CONTEXT.md` に追記する。
+- `.codex/USER_CONTEXT.md` は gitignore 対象なので、他環境へ共有したい場合はユーザー確認のうえ、公開してよい範囲に要約して `AGENTS.md` 等へ移す。
+
+### 触ったファイル
+- `AGENTS.md`
+- `.codex/USER_CONTEXT.md`
+- `task.md`
+
+## 追記 2026-06-19 — Codex: Runable deploy script を legacy 退避
+
+### 実施
+- 旧 Runable ZIP 用の root `package.json` script を `deploy` から `deploy:runable:legacy` へリネーム。
+- これにより、通常作業で `bun run deploy` を誤実行して旧 Runable フローへ入ることを防ぐ。
+- Runable 復旧・検証が必要な場合だけ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` を使う。
+- `AGENTS.md` / `CLAUDE.md` の該当メモも退避後のコマンド名へ更新。
+
+### 検証
+- `bun run deploy` が `Script not found "deploy"` で止まることを確認。
+- `cd packages/web && bun run build` 相当（workdir: `packages/web` で `bun run build`）成功。
+- `git diff --check` 成功。
+
+### 触ったファイル
+- `package.json`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `task.md`
+
+## 追記 2026-06-19 — Codex: layout expansion Phase 1（Gallery 3 layouts）
+
+### 実施
+- 秋さん提供の参照HTML `/Users/chiaki/Downloads/ポートフォリオサイトの改善/Portfolio Redesign.dc.html` を確認し、まず影響範囲の小さい Gallery 側3レイアウトを追加。
+- `PhotoGallery` に以下3種を追加:
+  - `clean-grid`: 4列（mobile 2列）/ 2px gap / 正方形 crop / 装飾なしの contact sheet 風
+  - `masonry`: 3列（mobile 2列）/ 8px gap / 写真の縦横比維持 / quiet hover title
+  - `large-format`: 2列（mobile 1列）/ 大判表示 / 常時 title + `Film/Digital — year` caption
+- 管理画面の Settings（Gallery / Series / Top Works）と Series 個別設定の layout 選択肢へ、上記3種を追加。
+- レンダリングテストの対象レイアウトを 6 種から 9 種へ拡張。
+- `AGENTS.md` / `CLAUDE.md` / `.codex/USER_CONTEXT.md` のギャラリーレイアウト数メモを 9 種へ更新。
+
+### 判断
+- Home layout 3種は、hero/nav/section rhythm まで触る可能性があり変更範囲が大きいので今回は未実装。次フェーズで mockup と現行Top構造を見ながら分けて進める。
+- 新しい settings key は追加していない。既存の `galleryLayout` / `seriesLayout` / `topWorksLayout` の値を増やしただけなので、settings-preview 台帳や API default の追加更新は不要。
+- agmsg で Claude Code に方針レビューを依頼。Claude から P0 指摘なし、settings key を増やすなら同期注意という返答。今回は key 追加なしとして整理済み。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功（script 内で `tsc -b && vite build` 実行）。
+- `cd packages/web && bun test ./src` 成功（75 pass / 0 fail）。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+- ローカル dev server `/gallery` を browser で確認。写真 445 件表示、コンソール error なし。
+
+### 触ったファイル
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/styles.css`
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/components/PhotoGallery.render.test.tsx`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `.codex/USER_CONTEXT.md`
+- `task.md`

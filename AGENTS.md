@@ -8,7 +8,22 @@
 - Claude Code / Codex は実装着手前に `task.md` の最新 Handoff を確認し、未完了・検証済み・触ったファイルを追記する。
 - settings ライブプレビューの送信キーは `packages/web/src/web/lib/settings-preview.ts` が台帳。新規 settings キー追加時はここも更新し、`provider.tsx` の DB 適用 / preview 適用、API `/settings` の default を揃える。
 - 2026-06-16: Runable → Railway 移行完了。デプロイ正本は `git push`。ZIP 作成・Runable publish は legacy 手順であり、通常作業では使わない。
-- Runable 関連ファイル（`RUNABLE_AI.md`, `scripts/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから使う。
+- Runable 関連ファイル（`RUNABLE_AI.md`, `scripts/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
+- Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
+
+### Claude Code / Codex agmsg 運用
+
+- agmsg team は `eguchi-portfolio`。Claude Code は `claude-driver`、Codex は `codex-reviewer`。
+- 窓口AIは固定しない。ユーザーが話している方をそのタスクの主担当にし、もう片方は必要時だけ短く呼ぶ。
+- 主担当AIは次の場合だけ agmsg で相手に相談する:
+  - 設計判断が2択以上で迷う
+  - 同じバグ修正を2回試して解決しない
+  - DB / auth / deploy / settings / 画像処理など失敗時の影響が大きい箇所を触る
+  - commit / push 前に高リスク差分のレビューが必要
+- 相談は1セッション最大3回を目安にする。自動会議や雑談で両方のクレジットを消費しない。
+- 相談文には必ず `目的` / `制約` / `触ったファイル` / `検証` / `返答形式` を含める。相手には「実装なし、P0/P1中心、短く」と依頼する。
+- 相手AIからの返信は主担当AIが要約してユーザーへ伝える。ユーザーに agmsg の中継作業を戻さない。
+- delivery mode は Claude Code `monitor`、Codex `turn` を基本にする。消費を抑えたい時は一時的に `off` へ落とす。
 
 ## スタック
 
@@ -239,4 +254,4 @@ cd packages/web && bun run db:push  # deletedAt カラム追加
 - 写真の複製（O1）は同じ R2 オブジェクトを共有する。purge は他に参照が無い場合のみ R2 から削除
 - OGP メタタグはサーバサイドで `index.html` に注入（60 秒 TTL キャッシュ）
 - テンプレート由来の `packages/mobile/`・`packages/desktop/` は 2026-06 に削除済み（パッケージは `web` のみ）
-- ギャラリーレイアウトは 6 種（mosaic / grid / scroll / stagger / editorial / collage）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。未知の値は mosaic にフォールバック
+- ギャラリーレイアウトは 9 種（mosaic / grid / scroll / stagger / editorial / collage / clean-grid / masonry / large-format）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。未知の値は mosaic にフォールバック

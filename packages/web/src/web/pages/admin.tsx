@@ -3378,7 +3378,7 @@ function SeriesTab() {
                     <p className="text-[10px] tracking-wider uppercase text-[#555] mb-2">Layout &amp; Theme</p>
                     <AdminField label="レイアウト" hint="「グローバルに従う」はSettings→ギャラリー配置の設定を使います">
                       <div className="grid grid-cols-3 gap-1">
-                        {([["", "グローバル"], ["mosaic", "モザイク"], ["grid", "均等グリッド"], ["scroll", "縦スクロール"], ["stagger", "ずらし大"], ["editorial", "雑誌見開き"]] as const).map(([val, lbl]) => (
+                        {([["", "グローバル"], ["mosaic", "モザイク"], ["grid", "均等グリッド"], ["scroll", "縦スクロール"], ["stagger", "ずらし大"], ["editorial", "雑誌見開き"], ["collage", "コラージュ"], ["clean-grid", "クリーングリッド"], ["masonry", "マソンリー"], ["large-format", "大判"]] as const).map(([val, lbl]) => (
                           <button key={val} type="button" onClick={() => setThemeKey("layout", val)}
                             className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
                           >{lbl}</button>
@@ -4014,7 +4014,7 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
             {([["galleryLayout", "ギャラリーページ", "mosaic"], ["seriesLayout", "シリーズページ", "mosaic"], ["topWorksLayout", "トップ（Works）", "stagger"]] as const).map(([key, label, fallback]) => (
               <AdminField key={key} label={`${label}のレイアウト`}>
                 <div className="grid grid-cols-3 gap-1.5">
-                  {([["mosaic", "モザイク", "S/M/L混在・抜け感"], ["grid", "均等グリッド", "全部同サイズ・整列"], ["scroll", "縦スクロール1枚", "1枚ずつ大きく＋情報"], ["stagger", "ずらし大", "1枚ずつ左右互い違い"], ["editorial", "雑誌見開き", "2枚1組・左大右小"], ["collage", "コラージュ", "重なり・角度でスナップ風"]] as const).map(([val, name, desc]) => (
+                  {([["mosaic", "モザイク", "S/M/L混在・抜け感"], ["grid", "均等グリッド", "全部同サイズ・整列"], ["scroll", "縦スクロール1枚", "1枚ずつ大きく＋情報"], ["stagger", "ずらし大", "1枚ずつ左右互い違い"], ["editorial", "雑誌見開き", "2枚1組・左大右小"], ["collage", "コラージュ", "重なり・角度でスナップ風"], ["clean-grid", "クリーングリッド", "4列均一・装飾なし"], ["masonry", "マソンリー", "3列・縦横比維持"], ["large-format", "大判", "2列大判＋キャプション"]] as const).map(([val, name, desc]) => (
                     <button
                       key={val}
                       onClick={() => set(key, val)}

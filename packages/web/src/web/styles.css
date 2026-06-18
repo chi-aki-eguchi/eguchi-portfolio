@@ -80,6 +80,14 @@ body {
   transform: translateY(-4px);
   box-shadow: 0 10px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
 }
+.photo-card-quiet {
+  box-shadow: none;
+  background: transparent;
+}
+.photo-card-quiet:hover {
+  transform: none;
+  box-shadow: none;
+}
 
 /* A photo whose source failed to load (e.g. a purged R2 object) renders as a
    quiet tone-on-tone block instead of the browser's broken-image glyph. */

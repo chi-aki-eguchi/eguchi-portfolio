@@ -23,7 +23,14 @@
 
 ### Codex との並行運用ルール
 
-- **Codex の用途**: Claude のクレジット切れ時の緊急バグ修正、およびコードの監査。
+- **agmsg team**: `eguchi-portfolio`。Claude Code は `claude-driver`、Codex は `codex-reviewer`。
+- **窓口固定なし**: ユーザーが話している方をそのタスクの主担当にする。Codex を常時サブプロセス化しない。
+- **Codex を呼ぶ条件**: 設計判断が2択以上で迷う / 同じバグ修正を2回試して解決しない / DB・auth・deploy・settings・画像処理など高リスク箇所を触る / commit・push 前にレビューが必要。
+- **相談上限**: agmsg 相談は1セッション最大3回を目安にする。自動会議や雑談で両方のクレジットを消費しない。
+- **相談テンプレ**: `目的` / `制約` / `触ったファイル` / `検証` / `返答形式` を含め、「実装なし、P0/P1中心、短く」と依頼する。
+- **返信の扱い**: Codex の返信は Claude が要約してユーザーへ伝える。ユーザーに agmsg の中継作業を戻さない。
+- **delivery mode**: Claude Code は `monitor`、Codex は `turn` を基本にする。消費を抑えたい時は一時的に `off`。
+- **Codex の用途**: Claude のクレジット切れ時の緊急バグ修正、難所相談、およびコードの監査。
 - **同時に動かさない**: 片方の作業が終わってから次を動かす（同一ファイルへの競合編集を防ぐ）。
 - **引き継ぎ**: Codex が変更したファイルは、次に Claude Code に渡すとき「Codex が〇〇を変えた」と伝える。
 - **デプロイ**: どちらが作業した場合でも `tsc -b` + `vite build` でビルド確認してから `git push`（Railway が自動デプロイ）。
@@ -33,13 +40,13 @@
 
 最近の Runable → Railway 移行で、古い手順と新しい手順が混在している。作業前に以下を確認すること。
 
-- **`bun run deploy` は通常使わない**。中身の `scripts/deploy.sh` は Runable ZIP 用の legacy 手順で、現行の `ogp.ts` の `BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA...` と噛み合わない。Railway 正本は `tsc -b` + `bun run build` + `git push`。
+- **`bun run deploy` は通常使わない**。Runable ZIP 用の legacy 手順は `bun run deploy:runable:legacy` に退避済み。現行の Railway 正本は `tsc -b` + `bun run build` + `git push`。
 - **`task.md` は末尾の最新 Handoff を優先**。古い節には Runable ZIP / `bun run deploy` / ALLOWALL などの旧判断が残っている。
 - **`NIGHT-RUN-LOG.md` は時系列で読む**。前半に「BUILD_ID が stale」という未解決メモが残るが、後半で `RAILWAY_GIT_COMMIT_SHA` 化済み。
 - **`ecosystem.config.cjs` は Runable/PM2 時代の名残が多い**。Railway の実起動コマンドがこれを使っているか不明なため、触る前に Railway 側の start command を確認する。
 - **未追跡の `test-*.mjs` / `packages/web/test-*.mjs` は scratch Playwright 監査スクリプト**。管理パスワードを含むものがあるため、安易に `git add .` でコミットしない。
 - **`spec-layout-expansion.md` は参照HTML不足**。`design-reference/Portfolio_Redesign_dc.html` が現ワークツリーに無いので、レイアウト拡張に入る前に入手する。
-- **最初に直すなら `package.json` の `deploy`**。今の `"deploy": "bash scripts/deploy.sh"` は Claude/Codex を旧Runableフローへ誘導するため、`deploy:runable:legacy` へ退避するか、Railway用の検証スクリプトに置き換えるのが安全。
+- **`package.json` の旧 `deploy` は退避済み**。Runable 復旧が必要な場合だけ `deploy:runable:legacy` を使い、通常作業では Railway 手順に戻る。
 
 ## スタック
 
@@ -268,4 +275,4 @@ cd packages/web && bun run db:push  # deletedAt カラム追加
 - 写真の複製（O1）は同じ R2 オブジェクトを共有する。purge は他に参照が無い場合のみ R2 から削除
 - OGP メタタグはサーバサイドで `index.html` に注入（60 秒 TTL キャッシュ）
 - テンプレート由来の `packages/mobile/`・`packages/desktop/` は 2026-06 に削除済み（パッケージは `web` のみ）
-- ギャラリーレイアウトは 6 種（mosaic / grid / scroll / stagger / editorial / collage）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。未知の値は mosaic にフォールバック
+- ギャラリーレイアウトは 9 種（mosaic / grid / scroll / stagger / editorial / collage / clean-grid / masonry / large-format）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。未知の値は mosaic にフォールバック

@@ -47,7 +47,7 @@ const photos = [
 
 test("PhotoGallery renders tiles without crashing (every layout)", async () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
-  for (const layout of ["mosaic", "grid", "scroll", "stagger", "editorial", "collage"]) {
+  for (const layout of ["mosaic", "grid", "scroll", "stagger", "editorial", "collage", "clean-grid", "masonry", "large-format"]) {
     const host = dom.window.document.createElement("div");
     dom.window.document.body.appendChild(host);
     const root = createRoot(host);

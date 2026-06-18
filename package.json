@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "cd packages/web && bunx vite",
     "start": "pm2 delete web-app 2>/dev/null || true; pm2 start ecosystem.config.cjs --update-env",
-    "deploy": "bash scripts/deploy.sh",
+    "deploy:runable:legacy": "bash scripts/deploy.sh",
     "build": "turbo build",
     "build:web": "cd packages/web && bunx vite build",
     "lint": "oxlint . --deny-warnings --no-error-on-unmatched-pattern",

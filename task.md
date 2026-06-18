@@ -506,7 +506,9 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ### 結論
 - 今日の変更に対する P0/P1 は見つからず。
 - Claude の P2 懸念も実レスポンス確認で問題なし。
-- 未追跡の `TOMORROW-PLAN.md` / `spec-layout-expansion.md` は引き続き未 commit。`spec-layout-expansion.md` は更新して別 commit 候補、`TOMORROW-PLAN.md` はローカルメモ扱い推奨。
+- 未追跡だった `TOMORROW-PLAN.md` / `spec-layout-expansion.md` を整理。
+  - `TOMORROW-PLAN.md` は作業メモとして `.codex/TOMORROW-PLAN.md` へ退避（gitignore対象、未commit）。
+  - `spec-layout-expansion.md` は Phase 1 完了 / Phase 2-3 未実装が分かる公開仕様書として更新。
 
 ### 触ったファイル
 - `task.md`

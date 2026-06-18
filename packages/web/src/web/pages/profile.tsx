@@ -98,8 +98,8 @@ export default function ProfilePage() {
             <div className="mt-10 page-entrance page-entrance-delay-2">
               <h3 className="font-en uppercase text-[10px] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-3">Statement</h3>
               <div className="space-y-3">
-                {statement.split("\n").filter(Boolean).map((line, i) => (
-                  <p key={i} className="text-[rgba(var(--foreground-rgb),0.55)]" style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "var(--body-leading, 2)", letterSpacing: "var(--body-tracking, 0.01em)" }}>{line}</p>
+                {statement.split(/\n{2,}/).filter(Boolean).map((para, i) => (
+                  <p key={i} className="text-[rgba(var(--foreground-rgb),0.55)] text-pretty" style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "var(--body-leading, 2)", letterSpacing: "var(--body-tracking, 0.01em)" }}>{para.replace(/\n/g, " ")}</p>
                 ))}
               </div>
             </div>

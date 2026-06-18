@@ -326,3 +326,57 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/web/components/Lightbox.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `task.md`
+
+## 追記 2026-06-18 — Codex/Claude 連絡用 agmsg 導入
+
+### 状態
+- Codex が `agmsg` をインストール済み。インストール先はユーザーホーム配下で、リポジトリのアプリコードには触れていない。
+  - shared skill: `~/.agents/skills/agmsg/`
+  - Claude command: `~/.claude/commands/agmsg.md`
+  - Codex writable roots: `~/.codex/config.toml` に `~/.agents/skills/agmsg/db` と `~/.agents/skills/agmsg/teams` を追加
+- installed version: `02db087`
+- `sqlite3` は `/usr/bin/sqlite3` で利用可能。
+
+### 初回セットアップ
+- Claude Code / Codex を再起動してから使う。
+- Claude Code 側: `/agmsg`
+- Codex 側: `$agmsg`
+- 推奨チーム名: `eguchi-portfolio`
+- 推奨エージェント名:
+  - Claude Code: `claude-driver`
+  - Codex: `codex-reviewer`
+- 推奨 delivery mode:
+  - Claude Code: `monitor`（または不安定なら `both`）
+  - Codex: `turn`（Codex は monitor 非対応）
+
+### 運用ルール案
+- Claude Code は実装ドライバー、Codex はレビュー・難所相談・リリース前 sanity check を基本役割にする。
+- Claude から Codex に送るレビュー依頼には、目的・触ったファイル・懸念点・実行済み検証を含める。
+- Codex から Claude への返答は P0/P1/P2 と結論を先に書く。
+- commit / push は原則どちらか一方が担当し、同じ変更を二人で同時に触らない。
+
+## 追記 2026-06-18 — Codex: 管理画面 Photo 検索 + カメラ/レンズコピペ
+
+### 実装
+- 管理画面 Library の写真検索は既存の `searchQuery` 実装を確認。タイトル・ファイル名・カメラ・レンズ・説明・meta を横断検索する状態になっている。
+- `packages/web/src/web/pages/admin.tsx` にカメラ/レンズ情報のコピー/貼り付けを追加。
+  - Inspector の Camera/Lens 下に Copy / Paste ボタンを追加。
+  - Bulk Edit Table の各行 Camera セルにも Copy / Paste アイコンを追加。
+  - コピー形式は `Camera: ...` / `Lens: ...` の2行。
+  - 貼り付けはラベル付き形式、タブ区切り、2行テキストを受け付ける。
+- Bulk Edit Table 側では、貼り付けた camera/lens を既存の debounce save に乗せて保存する。
+
+### 注意
+- `admin.tsx` には作業前から BulkEditRow の draft 同期 / unmount flush 変更が入っていた。今回の実装はその変更を前提に足しているため、戻さないこと。
+- まだ commit / push はしていない。ワークツリーには別件の未コミット変更がある。
+
+### 検証
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（18 pass）。
+- `cd packages/web && bun run lint` 成功。
+- `cd packages/web && bun test ./src` 成功（75 pass / 0 fail / 4914 expect）。
+- `git diff --check` 成功。
+
+### 触ったファイル
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`

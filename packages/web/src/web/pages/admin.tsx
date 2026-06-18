@@ -9,7 +9,7 @@ import {
   LogOut, Upload, Trash2, Check, X, Plus,
   Settings, User, Tag, Image as ImageLucide, ExternalLink,
   Loader2, Grid, Columns, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, EyeOff, Monitor, Smartphone,
-  Star, StarOff, Shuffle, Layers, Pencil, Receipt, FolderOpen, Search, LayoutList, AlertTriangle,
+  Star, StarOff, Shuffle, Layers, Pencil, Receipt, FolderOpen, Search, LayoutList, AlertTriangle, Copy, ClipboardPaste,
 } from "lucide-react";
 
 type Tab = "gallery" | "hero" | "profile" | "categories" | "series" | "pricing" | "settings";
@@ -188,6 +188,70 @@ function effectivePresets(saved: string[], defaults: string[]): string[] {
   return saved.length > 0 ? saved : defaults;
 }
 
+type CaptureInfoDraft = { camera: string; lens: string };
+type CaptureClipboardStatus = "idle" | "copied" | "pasted" | "error";
+
+const captureStatusText: Record<Exclude<CaptureClipboardStatus, "idle">, string> = {
+  copied: "Copied",
+  pasted: "Pasted",
+  error: "失敗",
+};
+
+function formatCaptureInfo({ camera, lens }: CaptureInfoDraft): string {
+  const rows = [];
+  if (camera.trim()) rows.push(`Camera: ${camera.trim()}`);
+  if (lens.trim()) rows.push(`Lens: ${lens.trim()}`);
+  return rows.join("\n");
+}
+
+function parseCaptureInfo(raw: string): CaptureInfoDraft | null {
+  const text = raw.trim();
+  if (!text) return null;
+
+  const labeled: CaptureInfoDraft = { camera: "", lens: "" };
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*(camera|カメラ|body|lens|レンズ)\s*[:：]\s*(.+)\s*$/i);
+    if (!match) continue;
+    const key = match[1].toLowerCase();
+    if (key === "camera" || key === "カメラ" || key === "body") labeled.camera = match[2].trim();
+    if (key === "lens" || key === "レンズ") labeled.lens = match[2].trim();
+  }
+  if (labeled.camera || labeled.lens) return labeled;
+
+  const tabParts = text.split("\t").map(v => v.trim()).filter(Boolean);
+  if (tabParts.length >= 2) return { camera: tabParts[0], lens: tabParts[1] };
+
+  const lines = text.split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+  if (lines.length >= 2) return { camera: lines[0], lens: lines[1] };
+
+  return { camera: text, lens: "" };
+}
+
+async function writeClipboardText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    if (!document.execCommand("copy")) throw new Error("copy failed");
+  } finally {
+    textarea.remove();
+  }
+}
+
+async function readClipboardText() {
+  if (!navigator.clipboard?.readText) throw new Error("clipboard read unsupported");
+  return navigator.clipboard.readText();
+}
+
 type Photo = { id: number; url: string; title: string; meta: string; camera?: string | null; lens?: string | null; filmType?: string | null; shotAt?: string | null; description: string; category: string; filename: string; displaySize?: string; isPublished?: boolean; seriesId?: number | null; width?: number | null; height?: number | null; fileHash?: string | null; deletedAt?: number | null; createdAt?: string | number | null };
 // adminApi is loosely typed (see lib/api.ts) — these annotate its query results.
 type AdminSeries = { id: number; slug: string; title: string; subtitle?: string; statement?: string; coverPhotoId?: number | null; sortOrder?: number; isPublished?: boolean };
@@ -237,6 +301,8 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
   const [retryFiles, setRetryFiles] = useState<File[]>([]);
   const [metaSaved, setMetaSaved] = useState(false);
   const [metaError, setMetaError] = useState(false);
+  const [captureClipStatus, setCaptureClipStatus] = useState<CaptureClipboardStatus>("idle");
+  const captureClipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [actionError, setActionError] = useState(""); // surfaces otherwise-silent mutation failures
   // C3: keyboard navigation — quick preview (Space) + shortcuts help (?)
   const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null);
@@ -246,6 +312,40 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
   const [bulkEditMode, setBulkEditMode] = usePersistentState("admin:bulkEditMode", false);
   // 機能5: アップロード時のフィルム/デジタル選択（グループ単位。デフォルト=digital）
   const [uploadMedium, setUploadMedium] = usePersistentState<"digital" | "film">("admin:uploadMedium", "digital");
+
+  const showCaptureClipboardStatus = useCallback((status: CaptureClipboardStatus) => {
+    setCaptureClipStatus(status);
+    if (captureClipTimerRef.current) clearTimeout(captureClipTimerRef.current);
+    if (status !== "idle") {
+      captureClipTimerRef.current = setTimeout(() => setCaptureClipStatus("idle"), 1500);
+    }
+  }, []);
+
+  useEffect(() => () => {
+    if (captureClipTimerRef.current) clearTimeout(captureClipTimerRef.current);
+  }, []);
+
+  const copyInspectCaptureInfo = useCallback(async () => {
+    const text = formatCaptureInfo({ camera: editForm.camera, lens: editForm.lens });
+    if (!text) return;
+    try {
+      await writeClipboardText(text);
+      showCaptureClipboardStatus("copied");
+    } catch {
+      showCaptureClipboardStatus("error");
+    }
+  }, [editForm.camera, editForm.lens, showCaptureClipboardStatus]);
+
+  const pasteInspectCaptureInfo = useCallback(async () => {
+    try {
+      const parsed = parseCaptureInfo(await readClipboardText());
+      if (!parsed) throw new Error("empty clipboard");
+      setEditForm(f => ({ ...f, camera: parsed.camera, lens: parsed.lens }));
+      showCaptureClipboardStatus("pasted");
+    } catch {
+      showCaptureClipboardStatus("error");
+    }
+  }, [showCaptureClipboardStatus]);
 
   const { data: photosData, isLoading } = useQuery({
     queryKey: ["photos", "all"],
@@ -1871,6 +1971,33 @@ function GalleryTab({ onUploadingChange }: { onUploadingChange?: (v: boolean) =>
               </datalist>
             </InspectField>
 
+            <div className="flex items-center gap-1.5 -mt-1">
+              <button
+                type="button"
+                onClick={copyInspectCaptureInfo}
+                disabled={!editForm.camera.trim() && !editForm.lens.trim()}
+                title="カメラとレンズをコピー"
+                aria-label="カメラとレンズをコピー"
+                className="inline-flex items-center gap-1 text-[10px] text-[#999] bg-[#333] border border-[#444] rounded-sm px-2 py-1 hover:bg-[#3a3a3a] hover:text-[#ccc] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <Copy size={10} /> Copy
+              </button>
+              <button
+                type="button"
+                onClick={pasteInspectCaptureInfo}
+                title="クリップボードからカメラとレンズを貼り付け"
+                aria-label="クリップボードからカメラとレンズを貼り付け"
+                className="inline-flex items-center gap-1 text-[10px] text-[#999] bg-[#333] border border-[#444] rounded-sm px-2 py-1 hover:bg-[#3a3a3a] hover:text-[#ccc] transition-colors"
+              >
+                <ClipboardPaste size={10} /> Paste
+              </button>
+              {captureClipStatus !== "idle" && (
+                <span className={`text-[10px] ${captureClipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}>
+                  {captureStatusText[captureClipStatus]}
+                </span>
+              )}
+            </div>
+
             <InspectField label="Film / Digital" hint="Lightbox の撮影情報として表示">
               <div className="flex gap-1">
                 {([["フィルム", "フィルム"], ["デジタル", "デジタル"], ["", "—"]] as const).map(([val, lbl]) => (
@@ -2164,19 +2291,61 @@ function BulkEditRow({
   const [draft, setDraft] = useState<BulkEditSaveData>(initDraft);
   const [status, setStatus] = useState<RowSaveStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [clipStatus, setClipStatus] = useState<CaptureClipboardStatus>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef<BulkEditSaveData>(initDraft);
+  const dirtyRef = useRef(false);
+  const savingRef = useRef(false);
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const photoIdRef = useRef(photo.id);
+  photoIdRef.current = photo.id;
 
-  // Cleanup timer on unmount
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  // Sync draft from DB when photo prop changes externally (no pending edit/save).
+  // Prevents stale overwrites when inspector edits and BulkEditTable are used in the same session.
+  useEffect(() => {
+    if (dirtyRef.current || timerRef.current || savingRef.current) return;
+    const fresh: BulkEditSaveData = {
+      title: photo.title ?? "",
+      camera: photo.camera ?? "",
+      lens: photo.lens ?? "",
+      filmType: photo.filmType ?? "",
+      seriesId: photo.seriesId ? String(photo.seriesId) : "",
+      displaySize: photo.displaySize ?? "M",
+    };
+    setDraft(fresh);
+    latestRef.current = fresh;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo.id, photo.title, photo.camera, photo.lens, photo.filmType, photo.seriesId, photo.displaySize]);
 
-  const handleChange = (field: keyof BulkEditSaveData, value: string) => {
-    const next = { ...latestRef.current, [field]: value };
+  // Flush pending save on unmount instead of discarding it
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (clipTimerRef.current) clearTimeout(clipTimerRef.current);
+    if (dirtyRef.current) {
+      onSaveRef.current(photoIdRef.current, latestRef.current).catch(() => {});
+    }
+  }, []);
+
+  const showClipStatus = (nextStatus: CaptureClipboardStatus) => {
+    setClipStatus(nextStatus);
+    if (clipTimerRef.current) clearTimeout(clipTimerRef.current);
+    if (nextStatus !== "idle") {
+      clipTimerRef.current = setTimeout(() => setClipStatus("idle"), 1500);
+    }
+  };
+
+  const patchDraft = (patch: Partial<BulkEditSaveData>) => {
+    const next = { ...latestRef.current, ...patch };
     latestRef.current = next;
+    dirtyRef.current = true;
     setDraft(next);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
       timerRef.current = null;
+      dirtyRef.current = false;
+      savingRef.current = true;
       setStatus("saving");
       try {
         await onSave(photo.id, latestRef.current);
@@ -2185,8 +2354,36 @@ function BulkEditRow({
       } catch (e) {
         setStatus("error");
         setErrorMsg(e instanceof Error ? e.message : "保存失敗");
+      } finally {
+        savingRef.current = false;
       }
     }, 500);
+  };
+
+  const handleChange = (field: keyof BulkEditSaveData, value: string) => {
+    patchDraft({ [field]: value } as Partial<BulkEditSaveData>);
+  };
+
+  const copyRowCaptureInfo = async () => {
+    const text = formatCaptureInfo({ camera: draft.camera, lens: draft.lens });
+    if (!text) return;
+    try {
+      await writeClipboardText(text);
+      showClipStatus("copied");
+    } catch {
+      showClipStatus("error");
+    }
+  };
+
+  const pasteRowCaptureInfo = async () => {
+    try {
+      const parsed = parseCaptureInfo(await readClipboardText());
+      if (!parsed) throw new Error("empty clipboard");
+      patchDraft({ camera: parsed.camera, lens: parsed.lens });
+      showClipStatus("pasted");
+    } catch {
+      showClipStatus("error");
+    }
   };
 
   const rowBg =
@@ -2232,14 +2429,40 @@ function BulkEditRow({
 
       {/* Camera */}
       <td className={`${cellCls} w-44`}>
-        <input
-          aria-label="カメラ"
-          list={`bulk-cam-${photo.id}`}
-          value={draft.camera}
-          onChange={e => handleChange("camera", e.target.value)}
-          placeholder="—"
-          className={inputCls}
-        />
+        <div className="flex items-center gap-1">
+          <input
+            aria-label="カメラ"
+            list={`bulk-cam-${photo.id}`}
+            value={draft.camera}
+            onChange={e => handleChange("camera", e.target.value)}
+            placeholder="—"
+            className={`${inputCls} min-w-0`}
+          />
+          <button
+            type="button"
+            onClick={copyRowCaptureInfo}
+            disabled={!draft.camera.trim() && !draft.lens.trim()}
+            title="カメラとレンズをコピー"
+            aria-label="カメラとレンズをコピー"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[#777] hover:text-[#ccc] disabled:opacity-20 transition-opacity"
+          >
+            <Copy size={11} />
+          </button>
+          <button
+            type="button"
+            onClick={pasteRowCaptureInfo}
+            title="クリップボードからカメラとレンズを貼り付け"
+            aria-label="クリップボードからカメラとレンズを貼り付け"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[#777] hover:text-[#ccc] transition-opacity"
+          >
+            <ClipboardPaste size={11} />
+          </button>
+        </div>
+        {clipStatus !== "idle" && (
+          <span className={`text-[9px] ${clipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}>
+            {captureStatusText[clipStatus]}
+          </span>
+        )}
         <datalist id={`bulk-cam-${photo.id}`}>
           {cameraPresets.map(p => <option key={p} value={p} aria-label={p} />)}
         </datalist>

@@ -1,13 +1,14 @@
 # eguchi-portfolio-app
 
-写真家ポートフォリオサイト。Hono (API) + React 19 (SPA) + Drizzle/Turso (SQLite) + Bun。Runable にデプロイ。
+写真家ポートフォリオサイト。Hono (API) + React 19 (SPA) + Drizzle/Turso (SQLite) + Bun。Railway にデプロイ（git push で自動デプロイ）。
 
 ## AI共同作業メモ
 
-- 2026-06-11: Codex が保守メンバーとして参加。以後、Claude Code / Codex / Runable AI が同じ仕様書と `task.md` を見て作業する前提。
+- 2026-06-11: Codex が保守メンバーとして参加。以後、Claude Code / Codex が同じ仕様書と `task.md` を見て作業する前提。
 - Claude Code / Codex は実装着手前に `task.md` の最新 Handoff を確認し、未完了・検証済み・触ったファイルを追記する。
 - settings ライブプレビューの送信キーは `packages/web/src/web/lib/settings-preview.ts` が台帳。新規 settings キー追加時はここも更新し、`provider.tsx` の DB 適用 / preview 適用、API `/settings` の default を揃える。
-- Runable AI で publish する場合は `RUNABLE_AI.md` を先に読む。ZIP は必ず `bun run deploy` が生成した `eguchi-portfolio-deploy.zip` を使う。
+- 2026-06-16: Runable → Railway 移行完了。デプロイ正本は `git push`。ZIP 作成・Runable publish は legacy 手順であり、通常作業では使わない。
+- Runable 関連ファイル（`RUNABLE_AI.md`, `scripts/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから使う。
 
 ## スタック
 
@@ -20,7 +21,7 @@
 | ストレージ | Cloudflare R2 (S3 互換) |
 | 画像処理 | sharp (アップロード時に 3200px/mozjpeg q92 最適化、配信時にオンザフライリサイズ) |
 | モノレポ | Bun workspaces + Turborepo |
-| デプロイ | Runable (PM2 + `bun src/server.ts`) |
+| デプロイ | Railway (git push → 自動ビルド + `bun src/server.ts`) |
 
 ## プロジェクト構造
 
@@ -44,7 +45,7 @@ eguchi-portfolio-app/
 │       │           └── api.ts   # hono/client による型付き API クライアント
 │       ├── drizzle/             # マイグレーションファイル
 │       ├── vite.config.ts
-│       └── website.config.json  # Runable 設定
+│       └── website.config.json  # Runable legacy 設定（通常デプロイでは不使用）
 ├── ecosystem.config.cjs         # PM2 設定（本番起動）
 ├── task.md                      # 直近のタスクログ
 ├── admin-enhancement-spec.md    # 管理画面強化仕様書 P1〜P4（参照先）
@@ -94,30 +95,32 @@ bun run db:migrate     # マイグレーション実行
 bun run db:studio      # Drizzle Studio
 ```
 
-## 本番デプロイ（Runable）
+## 本番デプロイ（Railway）
 
 ```sh
-bun run build          # Vite ビルド → packages/web/dist/
-bun run start          # PM2 で web-app を起動 (bun src/server.ts)
+cd packages/web && tsc -b && bun run build
+git add -A && git commit -m "..."
+git push              # Railway が自動ビルド → bun src/server.ts で起動
 ```
 
-- Runable は `website.config.json` の `port: 8080` でルーティング
+- Railway は `PORT` 環境変数（自動設定）を `process.env.PORT` 経由で受け取る（`server.ts` は `PORT ?? 3000`）
 - `src/server.ts` が `Bun.serve` で静的ファイル配信 + API プロキシ + OGP インジェクションを担う
+- 環境変数は Railway ダッシュボードで管理（`.env` は gitignored のままでよい）
 
-### 実装完了時は必ずデプロイ ZIP を更新すること（必須ルール）
+### 実装完了時のデプロイ手順（必須ルール）
 
-機能の実装・修正が一区切りしたら、毎回以下を**セットで**実施する（`bun run deploy` 1コマンドにまとまっている。中身は `scripts/deploy.sh`）：
+機能の実装・修正が一区切りしたら、毎回以下を実施する：
 
-1. **ビルド確認** — `tsc --noEmit` + `vite build`（`cd packages/web && bun run build`）
-2. **スモークテスト** — サーバを起動し、主要ページ（`/` `/gallery` `/series` `/about` `/contact`）が 200 を返すか確認
-3. **デプロイ ZIP の作成・上書き** — `eguchi-portfolio-deploy.zip`（プロジェクトルート）。
-   除外: `.env` / `node_modules` / `.git` / `.bun` / `.turbo` / `dist` / **ルート直下の `*.png`** / `screenshots/`（加えて `deploys/` と自身の zip・`.claude/`・`.codex/`）。
-   `packages/web/public/` 等のネストした png 素材は残す。
-   同時に `deploys/eguchi-portfolio-deploy-YYYYMMDD-HHMMSS.zip` として日付つきで保存し、**直近3つだけ残して古いものは自動削除**。
-4. 報告に「**デプロイ可能な状態の ZIP を更新しました**」と明記する。
+1. **Handoff 確認** — `task.md` の最新 Handoff と `git status --short` を確認。
+2. **型チェック** — `cd packages/web && tsc -b`（`tsc --noEmit` は0ファイル検査の罠あり。必ず `-b`）。
+3. **ビルド確認** — `cd packages/web && bun run build`。
+4. **必要に応じてテスト** — 影響範囲がある場合は `cd packages/web && bun test ./src`、または該当 Playwright/手動確認。
+5. **git push** — Railway が自動デプロイ。数分後に本番が更新される。
+6. 報告に「**git push でデプロイしました**」と明記する。
 
 ```sh
-bun run deploy   # 上記1〜3を一括実行（いずれか失敗時は ZIP を更新せず終了）
+cd packages/web && tsc -b && bun run build
+git push
 ```
 
 ## ルーティング

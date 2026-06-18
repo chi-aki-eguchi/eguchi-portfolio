@@ -91,28 +91,69 @@ describe("shared components", () => {
 
   test("Lightbox mounts, navigates and closes without crashing", async () => {
     const { Lightbox } = await import("../components/Lightbox");
+    const originalBack = dom.window.history.back.bind(dom.window.history);
+    let historyBackCalls = 0;
+    dom.window.history.back = () => {
+      historyBackCalls += 1;
+      originalBack();
+    };
     let closed = 0;
     let index = 0;
     const photos = samplePhotos.map((p) => ({ url: p.url, title: p.title, camera: p.camera, lens: p.lens, filmType: p.filmType }));
-    const { cleanup } = await mount(
-      createElement(Lightbox, {
-        photos,
-        index,
-        onClose: () => { closed += 1; },
-        onPrev: () => { index = (index + photos.length - 1) % photos.length; },
-        onNext: () => { index = (index + 1) % photos.length; },
-      })
-    );
-    const dlg = dom.window.document.querySelector("dialog");
-    expect(dlg).not.toBeNull();
-    // Keyboard navigation + Escape-equivalent close button stay wired.
-    dom.window.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "ArrowRight" }));
-    const closeBtn = dom.window.document.querySelector('dialog button[aria-label="閉じる"]') as HTMLButtonElement | null;
-    expect(closeBtn).not.toBeNull();
-    closeBtn!.click();
-    expect(closed).toBe(1);
-    cleanup();
-    await flush(5); // popstate/scroll-restore cleanup must not throw after unmount
+    try {
+      const { cleanup } = await mount(
+        createElement(Lightbox, {
+          photos,
+          index,
+          onClose: () => { closed += 1; },
+          onPrev: () => { index = (index + photos.length - 1) % photos.length; },
+          onNext: () => { index = (index + 1) % photos.length; },
+        })
+      );
+      const dlg = dom.window.document.querySelector("dialog");
+      expect(dlg).not.toBeNull();
+      // StrictMode effect replay must not immediately history.back() and close the
+      // just-opened viewer (the real gallery symptom was a black flicker).
+      expect(historyBackCalls).toBe(0);
+      // Keyboard navigation + Escape-equivalent close button stay wired.
+      dom.window.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "ArrowRight" }));
+      const closeBtn = dom.window.document.querySelector('dialog button[aria-label="閉じる"]') as HTMLButtonElement | null;
+      expect(closeBtn).not.toBeNull();
+      closeBtn!.click();
+      expect(closed).toBe(1);
+      expect(historyBackCalls).toBe(0);
+      cleanup();
+      await flush(5); // popstate/scroll-restore cleanup must not throw after unmount
+      expect(historyBackCalls).toBe(1);
+    } finally {
+      dom.window.history.back = originalBack;
+    }
+  });
+
+  test("PhotoGallery click keeps the lightbox open under StrictMode", async () => {
+    const { PhotoGallery } = await import("../components/PhotoGallery");
+    const originalBack = dom.window.history.back.bind(dom.window.history);
+    let historyBackCalls = 0;
+    dom.window.history.back = () => {
+      historyBackCalls += 1;
+      originalBack();
+    };
+    try {
+      const { host, cleanup } = await mount(
+        createElement(PhotoGallery, { photos: samplePhotos, layoutType: "grid" })
+      );
+      const firstTile = host.querySelector('button[aria-label="A"]') as HTMLButtonElement | null;
+      expect(firstTile).not.toBeNull();
+      firstTile!.click();
+      await flush(30);
+      expect(dom.window.document.querySelector("dialog")).not.toBeNull();
+      expect(historyBackCalls).toBe(0);
+      cleanup();
+      await flush(5);
+      expect(historyBackCalls).toBe(1);
+    } finally {
+      dom.window.history.back = originalBack;
+    }
   });
 
   test("AdminPage: unauthenticated renders the redirect guard (null), no crash", async () => {

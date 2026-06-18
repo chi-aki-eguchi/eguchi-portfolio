@@ -54,3 +54,11 @@ deploys/
 
 # screenshots ディレクトリ
 /screenshots/
+
+# Scratch Playwright/debug scripts generated during audits.
+# Several have local admin credentials while being iterated on; promote real tests
+# into src/**/*.test.ts(x) or a sanitized tests/ directory before committing.
+/test-*.mjs
+/packages/web/test-*.mjs
+/packages/web/pw-*.mjs
+/test-results/

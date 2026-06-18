@@ -213,3 +213,116 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - クリーン再ビルド: `bun run deploy` 通過、新 **BUILD_TAG=20260615-123147**。最終検証: 同梱 js/css=19/タグ付き=19、index.html 参照5件すべて同梱、B0gIOhPX 混入ゼロ。ZIP 更新済み。
 - **秋さんへの次アクション**: この新 ZIP を Runable に Publish → `curl -sI https://akieguchi.com/ | grep -i x-build` が `20260615-123147` を返し、HTML 参照資産が `-20260615-123147` タグ付きで 200 か確認。もし X-Build だけ新しく資産が旧タグ無しのままなら **Runable 側の dist 保持/キャッシュが原因**確定（ecosystem ログの STALE 警告で判別）→ Runable の完全再デプロイ/キャッシュクリアが必要。
 - 触ったファイル: `scripts/deploy.sh`, `ecosystem.config.cjs`, `packages/web/src/api/ogp.ts`(BUILD_ID 自動スタンプ), `task.md`。
+
+## 追記 2026-06-18 — Codex 共通認識整理（Runable → Railway）
+
+### 結論
+- **現行の正本は Railway / git push デプロイ**。`CLAUDE.md` と `NIGHT-RUN-LOG.md` は 2026-06-16 の Runable → Railway 移行を前提に更新済み。
+- **Runable ZIP 運用は legacy**。`RUNABLE_AI.md` / `scripts/deploy.sh` / `packages/web/website.config.json` は過去運用・事故調査の参照用として残っているが、通常の実装完了フローでは使わない。
+- Claude Code / Codex は以後、作業前にこの Handoff と `CLAUDE.md` / `AGENTS.md` を読み、`tsc -b` + `bun run build` を確認してから `git push` でデプロイする。
+
+### なぜ Railway 正本を推奨するか
+- `CLAUDE.md` がすでに Railway 方針を明記しており、直近の夜間自走ログも `git push` デプロイで運用されている。
+- コード側も `BUILD_ID` が `process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev"` に変更済みで、Railway の自動ビルド前提。
+- Runable ZIP 用の `scripts/deploy.sh` は旧仕様の `BUILD_ID` 文字列置換と X-Build 検証に依存しており、現行 `ogp.ts` と噛み合わない。誤って使うと検証失敗または認識ズレを招く。
+- Runable 由来の `ALLOWALL` / credentialed CORS 許可などは 6/17-18 の夜間ランで撤去済み。セキュリティ面も Railway 前提に寄っている。
+
+### 今回 Codex が確認した状態
+- `main` は `origin/main` と一致。HEAD: `9cb799c fix(profile): Statement の改行を段落単位に変更し自然な折り返しを実現`。
+- 未コミット変更:
+  - `packages/web/src/web/pages/admin.tsx`: BulkEdit 行の draft 同期と unmount 時 flush。未保存の debounce 中編集を捨てないための変更。
+  - `claude-code-night-run.md`: 夜間自走指示の整理。Railway/git push 前提。
+  - `AGENTS.md`: Codex が本追記と同時に Railway/git push 正本へ更新。
+- 未追跡:
+  - `TOMORROW-PLAN.md`: 6/17-18 夜間ラン後の優先プラン。技術より問い合わせ導線・写真 title・Search Console・シリーズ statement が高ROIという整理。
+  - `spec-layout-expansion.md`: Claude Design 案の Home 3案 / Gallery 3案追加仕様。ただし参照先 `design-reference/Portfolio_Redesign_dc.html` は現ワークツリーに存在しないため、着手前に入手が必要。
+  - 多数の `test-*.mjs` / `packages/web/test-*.mjs`: Playwright 監査・再現用の作業スクリプト。管理パスワードを含むものがあるため、コミット対象にするなら整理・秘匿確認が必要。
+
+### 次に Claude Code / Codex がやるなら
+- まず `git status --short` で未コミット変更の所有者を確認し、ユーザー変更を巻き戻さない。
+- ドキュメント整合を続けるなら、`scripts/deploy.sh` と `package.json` の `deploy` スクリプトを legacy として退役させるか、Railway 用の検証スクリプトに作り替える。ただし通常作業では `git push` が正本。
+- レイアウト拡張に入るなら、先に `design-reference/Portfolio_Redesign_dc.html` を配置してもらう。
+- 管理画面改善なら、B2 写真検索が安全で効果が高い。A4 mobile-scale は settings 4箇所同期が必要で影響範囲が広め。
+
+### 検証
+- 今回は把握・ドキュメント更新のみ。`git diff --check` は更新前に問題なしを確認。
+- 実装コードは触っていないため、ビルド・テストは未実行。
+
+### 触ったファイル
+- `AGENTS.md`
+- `task.md`
+
+## 追記 2026-06-18 — Claude Code 挙動安定化メモ（Codex 監査）
+
+### 目的
+最近の Claude Code が古い Runable/ZIP 前提と新しい Railway/git push 前提を混ぜて判断しやすくなっているため、Codex が「おかしい点」「踏みやすい地雷」「次に直すならここ」を整理した。Claude Code はこの節を読んでから作業すること。
+
+### P0: すぐ共有すべき地雷
+- **`bun run deploy` は現行フローでは使わない**。`package.json` にはまだ `"deploy": "bash scripts/deploy.sh"` が残っているが、`scripts/deploy.sh` は Runable ZIP 用の legacy 手順。現行 `ogp.ts` は `BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev"` なので、deploy.sh の「BUILD_ID 文字列を sed 置換して X-Build と一致確認する」前提と噛み合わない。
+- **`scripts/deploy.sh` は実行すると失敗する可能性が高い**。sed は現行 `BUILD_ID` 行を置換できず、ローカルサーバの X-Build は `dev` のまま、BUILD_TAG は timestamp なので smoke の X-Build 一致検証で落ちるはず。ZIP は更新しない設計だが、Claude がこれを正本として時間を溶かすのが危険。
+- **`ecosystem.config.cjs` の診断は旧 literal BUILD_ID 前提**。`export const BUILD_ID = "..."` を regex で読むが、今は env 式なので `?` になる。Runable/PM2 をまだ使う場面では診断ログが信用できない。Railway の start command がこれを使っているかも要確認。
+- **Railway の build では `BUILD_TAG` が入らない可能性がある**。`vite.config.ts` は `process.env.BUILD_TAG || "b"` なので、Railway が BUILD_TAG を渡していなければ全アセット名が `-b` suffix になる。直近 build でも `dist/assets/*-b.js/css` を確認。Cloudflare 汚染対策としての「毎ビルド URL 変更」は Railway では効いていない可能性がある。
+- **`claude-code-night-run.md` の BUILD_ID 指示は古い**。`vite.config.ts define に __BUILD_ID__ を追加` と書いてあるが、実装済みの正解は `ogp.ts` の `RAILWAY_GIT_COMMIT_SHA` 化。二重実装しないこと。
+
+### P1: 誤コミット・情報漏れの危険
+- 未追跡の `test-*.mjs` / `packages/web/test-*.mjs` は scratch Playwright 監査スクリプト。`autumn00180` など管理パスワード文字列を含むものが複数ある。**`git add .` 厳禁**。必要ならパスワードを env 参照化してから正式な `tests/` 配下へ移す。
+- `test-results/.last-run.json` は `"status": "failed"` だが `failedTests: []` の一時ファイル。コミット不要。
+- `spec-layout-expansion.md` は `design-reference/Portfolio_Redesign_dc.html` を必須参照にしているが、そのファイルは現ワークツリーに存在しない。Claude が推測で実装し始めないよう注意。
+
+### P2: ドキュメントの古い記述
+- `proposals/09-modernization.md`、`improvement-roadmap.md`、`content.md`、`RUNABLE_AI.md`、`packages/web/website.config.json` には Runable 前提が残る。履歴資料として読むのはよいが、現在の運用手順として採用しない。
+- `task.md` の古い節にも Runable 再デプロイ待ち、ALLOWALL 許容、`bun run deploy` ゲートなどが残っている。末尾の 2026-06-18 Handoff を優先する。
+- `packages/web/src/api/index.ts` のコメントに「behind Runable's proxy」「Flip ... on Runable」などが残る。コード挙動は概ね問題ないが、コメントは Railway へ読み替える必要がある。
+
+### P3: 次に直すならおすすめ順
+1. `package.json` の `deploy` を無効化または `deploy:runable:legacy` に退避し、Claude が誤って使えないようにする。
+2. Railway 側で per-build asset tag が必要なら、`BUILD_TAG` を Railway build command で渡すか、Vite 側で commit SHA / timestamp を自動取得する。不要なら `BUILD_TAG` コメントを現状に合わせて整理する。
+3. `ecosystem.config.cjs` の Runable/PM2 診断を legacy 化するか、Railway start command で使うなら `BUILD_ID` env 式に対応させる。
+4. scratch Playwright `.mjs` を削除・ignore・正式テスト化のどれかに整理する。管理パスワード直書きは消す。
+5. `content.md` / `RUNABLE_AI.md` / `proposals/09-modernization.md` の先頭に「legacy / historical」と明記する。
+
+### 検証
+- `cd packages/web && bun run build` 成功（tsc -b + vite build、1838 modules）。
+- `cd packages/web && bun test ./src` 成功（74 pass / 0 fail / 4907 expect）。
+- build 出力で `dist/assets/*-b.js/css` を確認。これは `BUILD_TAG` 未指定時の現行挙動。
+
+### 触ったファイル
+- `CLAUDE.md`
+- `task.md`
+
+## 追記 2026-06-18 — Codex: Gallery Lightbox flicker 修正
+
+### 症状
+- `/gallery` で写真をクリックしても拡大表示されず、黒い Lightbox が一瞬ちらつくだけで閉じる。
+- Claude Code に修正依頼済みだったが、ユーザー環境では未解消。
+
+### 原因
+- `Lightbox.tsx` は開くときに `history.pushState({ lightbox: true }, "")`、閉じるときに cleanup で `history.back()` を呼ぶ。
+- React StrictMode / dev 実行では effect が `setup → cleanup → setup` と replay されるため、**実際にはまだ開いている最中なのに cleanup の `history.back()` が同期実行される**。
+- その `popstate` が `onClose` を呼び、結果として「開いた直後に閉じる」= flicker になる。特に dev server / StrictMode / start command のズレがある環境で再現しやすい。
+
+### 修正
+- `packages/web/src/web/components/Lightbox.tsx`
+  - history push を `historyPushedRef` で1回だけにした。
+  - cleanup の `history.back()` を `setTimeout(0)` へ遅延し、StrictMode replay の次 setup が来たら timer を cancel するようにした。
+  - 本当に unmount されたときだけ履歴を戻し、scroll restore もそのタイミングで行う。
+- `packages/web/src/web/test/pages.render.test.tsx`
+  - `Lightbox` mount 時に StrictMode replay で `history.back()` が走らないことを検証。
+  - `PhotoGallery` の実タイルクリックで `<dialog>` が残ることを検証（実症状に近い回帰テスト）。
+
+### Claude Code への注意
+- この修正は「history cleanup を同期で戻さない」ことが肝。`return () => { if (history.state?.lightbox) history.back(); }` の形に戻すと再発する。
+- Gallery クリック不具合を見るときは `Lightbox` 単体ではなく、`PhotoGallery` の tile click → portal `<dialog>` まで確認すること。
+- sandbox の localhost 接続制限で Codex 側では Playwright 実ブラウザ確認はできなかったが、jsdom + StrictMode の再発テストで flicker 条件を固定している。
+
+### 検証
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（18 pass）。
+- `cd packages/web && bun run build` 成功（tsc -b + vite build）。
+- `cd packages/web && bun test ./src` 成功（75 pass / 0 fail / 4914 expect）。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+
+### 触ったファイル
+- `packages/web/src/web/components/Lightbox.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`

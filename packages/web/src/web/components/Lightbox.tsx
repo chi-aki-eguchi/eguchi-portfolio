@@ -361,18 +361,36 @@ export function Lightbox({
   // Z2: the phone back gesture / browser back closes the viewer instead of
   // leaving the page, and the grid scroll position is restored on close.
   const onCloseRef = useRef(onClose);
+  const historyPushedRef = useRef(false);
+  const historyCleanupTimerRef = useRef<number | null>(null);
   useEffect(() => { onCloseRef.current = onClose; });
   useEffect(() => {
     const scrollY = window.scrollY;
     const onPop = () => onCloseRef.current();
-    window.history.pushState({ lightbox: true }, "");
+    if (historyCleanupTimerRef.current !== null) {
+      window.clearTimeout(historyCleanupTimerRef.current);
+      historyCleanupTimerRef.current = null;
+    }
+    if (!historyPushedRef.current) {
+      window.history.pushState({ lightbox: true }, "");
+      historyPushedRef.current = true;
+    }
     window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("popstate", onPop);
-      if (window.history.state?.lightbox) window.history.back();
-      // After the body scroll lock above is released (cleanup order isn't
-      // guaranteed, hence the rAF), put the viewer back where they were.
-      requestAnimationFrame(() => window.scrollTo(0, scrollY));
+      if (historyCleanupTimerRef.current !== null) window.clearTimeout(historyCleanupTimerRef.current);
+      // React StrictMode replays effects in dev: setup → cleanup → setup. Calling
+      // history.back() synchronously in that replay closes the just-opened viewer
+      // and looks like a black flicker. Defer the real cleanup; a replayed setup
+      // clears this timer before it can navigate.
+      historyCleanupTimerRef.current = window.setTimeout(() => {
+        historyCleanupTimerRef.current = null;
+        if (window.history.state?.lightbox) window.history.back();
+        historyPushedRef.current = false;
+        // After the body scroll lock above is released (cleanup order isn't
+        // guaranteed, hence the rAF), put the viewer back where they were.
+        requestAnimationFrame(() => window.scrollTo(0, scrollY));
+      }, 0);
     };
   }, []);
 

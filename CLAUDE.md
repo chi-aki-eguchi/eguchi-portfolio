@@ -29,6 +29,18 @@
 - **デプロイ**: どちらが作業した場合でも `tsc -b` + `vite build` でビルド確認してから `git push`（Railway が自動デプロイ）。
 - **§0 ルールは Codex にも同じく適用**: `withRetry` ラップ・settings キーの3箇所同期・`assertOk`（全書き込みの res.ok チェック）・実装完了ごとに git push でデプロイ。
 
+### 2026-06-18 Codex sanity notes（Claude Code 向け）
+
+最近の Runable → Railway 移行で、古い手順と新しい手順が混在している。作業前に以下を確認すること。
+
+- **`bun run deploy` は通常使わない**。中身の `scripts/deploy.sh` は Runable ZIP 用の legacy 手順で、現行の `ogp.ts` の `BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA...` と噛み合わない。Railway 正本は `tsc -b` + `bun run build` + `git push`。
+- **`task.md` は末尾の最新 Handoff を優先**。古い節には Runable ZIP / `bun run deploy` / ALLOWALL などの旧判断が残っている。
+- **`NIGHT-RUN-LOG.md` は時系列で読む**。前半に「BUILD_ID が stale」という未解決メモが残るが、後半で `RAILWAY_GIT_COMMIT_SHA` 化済み。
+- **`ecosystem.config.cjs` は Runable/PM2 時代の名残が多い**。Railway の実起動コマンドがこれを使っているか不明なため、触る前に Railway 側の start command を確認する。
+- **未追跡の `test-*.mjs` / `packages/web/test-*.mjs` は scratch Playwright 監査スクリプト**。管理パスワードを含むものがあるため、安易に `git add .` でコミットしない。
+- **`spec-layout-expansion.md` は参照HTML不足**。`design-reference/Portfolio_Redesign_dc.html` が現ワークツリーに無いので、レイアウト拡張に入る前に入手する。
+- **最初に直すなら `package.json` の `deploy`**。今の `"deploy": "bash scripts/deploy.sh"` は Claude/Codex を旧Runableフローへ誘導するため、`deploy:runable:legacy` へ退避するか、Railway用の検証スクリプトに置き換えるのが安全。
+
 ## スタック
 
 | レイヤー | 技術 |

@@ -477,3 +477,36 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `CLAUDE.md`
 - `.codex/USER_CONTEXT.md`
 - `task.md`
+
+## 追記 2026-06-19 — Codex + Claude: layout expansion 後の全体デバッグ
+
+### 実施
+- Codex が layout expansion Phase 1 push 後の締めデバッグを実施。
+- agmsg で Claude Code (`claude-driver`) に別視点レビューを依頼。
+  - Claude 回答: P0/P1 なし。
+  - P2 メモ: `large-format` の年表示に使う `shotAt` が `/api/photos` レスポンスに含まれるか確認。
+- Codex が API 実装と実レスポンスを確認し、`shotAt` はローカル/本番ともに含まれていることを確認済み。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（75 pass / 0 fail）。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+- ローカル `http://127.0.0.1:5173` で smoke:
+  - `/`, `/gallery`, `/series`, `/about`, `/contact`, `/admin/login`
+  - `/gallery` は写真 445 件、broken card 0、console error 0。
+  - Lightbox は写真クリックで `dialog[open]` になり、画像表示あり。
+- 本番 `https://akieguchi.com` で smoke:
+  - `/`, `/gallery`, `/series`, `/about`, `/contact`
+  - `/gallery` は写真 445 件、broken card 0、console error 0。
+  - Lightbox は写真クリックで `dialog[open]` になり、画像表示あり。
+  - `/api/photos` は 445 件、`shotAt` / `filmType` / `camera` / `lens` / `width` / `height` を含む。
+
+### 結論
+- 今日の変更に対する P0/P1 は見つからず。
+- Claude の P2 懸念も実レスポンス確認で問題なし。
+- 未追跡の `TOMORROW-PLAN.md` / `spec-layout-expansion.md` は引き続き未 commit。`spec-layout-expansion.md` は更新して別 commit 候補、`TOMORROW-PLAN.md` はローカルメモ扱い推奨。
+
+### 触ったファイル
+- `task.md`

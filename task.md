@@ -570,3 +570,47 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/api/index.ts`
 - `packages/web/src/api/ogp.ts`
 - `task.md`
+
+## 追記 2026-06-19 — Codex: 配布化 P0 静的 meta 安全化 + 受け取り手順
+
+### 実施
+- 前回残り P0 だった `packages/web/index.html` の静的 fallback meta から、江口秋 / `akieguchi.com` 固有値を削除。
+  - `<title>` / description / author / canonical / OGP / Twitter fallback を generic な `Photography Portfolio` / `https://example.com/` に変更。
+  - 実デプロイ時は Bun server の OGP injection が settings で置き換える前提。静的previewやserver injection前のHTMLでも本番固有値が漏れない状態にした。
+- `packages/web/src/api/static-template.test.ts` を追加。
+  - `index.html` に 江口秋 / Aki Eguchi / `akieguchi.com` / `G-NKECCDLXYD` が戻ったらテストで落ちる。
+- `docs/recipient-setup.md` を追加。
+  - 配布する側: repository copy、Turso、R2、Railway、env、`bun run db:push`、build/push、本番確認。
+  - 受け取る側: admin login、site identity、profile、contact、photos、layout、公開前チェック。
+  - 推奨配布形態として、非エンジニア向けは Concierge setup、自力で触れる人向けは Template copy と整理。
+- `README.md` から実務手順 guide へリンク追加。
+- `DISTRIBUTION.md` の P0/P1 進捗を更新。
+
+### 検証
+- `cd packages/web && bun test ./src/api` 成功（40 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+  - 一度 `canonical href="/"` で Vite が directory read して build 失敗。`https://example.com/` に修正して成功。
+- `cd packages/web && bun test ./src` 成功（81 pass / 0 fail）。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+
+### Claude 相談
+- agmsg で Claude Code (`claude-driver`) に push 前 P0/P1 レビュー依頼済み。
+- Claude 返答: P0なし、pushOK、akieguchi.com本番への影響なし。
+- 良い点として、`static-template.test` が固有値リグレッション防止として機能していること、`og:image` をルート相対にした判断は現サーバ構成では問題ないことを確認。
+- P1メモ: 将来静的エクスポート対応をするなら、injectOgp が走らないケースに備えて `og:image` の絶対URL化を再検討。
+
+### 残り
+- `packages/web/src/api/site-defaults.ts` には `akieguchi.com` 互換 fallback が残っている。テンプレート正式リリース時は本番 env を確認して中立 fallback へ切り替えるか、template branch で分ける。
+- root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
+- 空DB / 新規 Turso での起動確認は未実施。
+- 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
+
+### 触ったファイル
+- `packages/web/index.html`
+- `packages/web/src/api/static-template.test.ts`
+- `docs/recipient-setup.md`
+- `README.md`
+- `DISTRIBUTION.md`
+- `task.md`

@@ -130,9 +130,9 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 - Generalize hard-coded identity defaults:
   - Done: API settings defaults and OGP/JSON-LD fallbacks now read from
     `DEFAULT_*` env values via `packages/web/src/api/site-defaults.ts`.
-  - Remaining: `packages/web/index.html` still ships static fallback meta tags
-    for 江口秋 and `akieguchi.com`; this matters for static previews or any HTML
-    path before server-side OGP injection runs.
+  - Done: `packages/web/index.html` static fallback meta tags are generic, so
+    static previews or HTML before server-side OGP injection no longer leak
+    production-only names/domains.
   - Remaining: compatibility fallbacks in `site-defaults.ts` still preserve
     current `akieguchi.com` behavior. Template releases should either set
     generic env defaults or flip these to neutral fallbacks after production env
@@ -168,12 +168,9 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
   - root package name `sandbox-app-template`
   - web package name `@template/web`
 - Add deployment guide:
-  - create Turso database
-  - create R2 bucket and access keys
-  - create Railway service
-  - set env vars
-  - run `bun run db:push`
-  - connect custom domain
+  - Done: `docs/recipient-setup.md` covers Turso database, R2 bucket/access
+    keys, Railway service, env vars, `bun run db:push`, custom domain, and
+    recipient admin setup.
 - Add setup checklist in `/admin`:
   - site identity
   - profile
@@ -242,7 +239,9 @@ Outcome: a maintainer can repeatedly create new sites without improvising.
 
 - Add `docs/setup-railway.md`.
 - Add `docs/prelaunch-checklist.md`.
-- Add `docs/owner-guide.md`.
+- Done: add `docs/recipient-setup.md` as the first combined setup + owner guide.
+- Later: split into `docs/setup-railway.md`, `docs/prelaunch-checklist.md`,
+  and `docs/owner-guide.md` when the process stabilizes.
 - Add release checklist for secrets, screenshots, and sample data.
 
 ### Phase 5: Concierge Flow

@@ -89,3 +89,5 @@ Railway builds from the pushed commit and starts the app with
 Before this can be safely handed to another photographer, the hard-coded
 identity, analytics, allowed origins, setup docs, and first-run defaults need to
 be generalized. See [DISTRIBUTION.md](./DISTRIBUTION.md) for the live checklist.
+
+For the practical handoff flow, see [docs/recipient-setup.md](./docs/recipient-setup.md).

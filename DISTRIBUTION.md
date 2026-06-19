@@ -12,10 +12,10 @@
 
 ### v0: Template + Setup Guide
 
-配布の最初の形。利用者は repository を fork または template copy し、
-自分の Railway / Turso / R2 / domain を接続する。
+配布の最初の形。セットアップ担当者がサイトのファイル一式をコピーし、
+その人専用の Railway / Turso / R2 / domain を接続する。
 
-- 1 repository
+- 1 site-file copy
 - 1 Railway service
 - 1 Turso database
 - 1 Cloudflare R2 bucket
@@ -24,6 +24,14 @@
 
 これは現在の単一サイト構成と相性がよい。tenant 分離、課金、共有容量、
 サポート管理をまだ背負わないので、品質を守りやすい。
+
+用語メモ:
+
+- site-file copy: サイトのファイル一式を、その写真家用にコピーしたもの。
+- Railway: サイトをインターネットで動かす場所。
+- Turso: サイト名、プロフィール、写真一覧などを保存する場所。
+- R2: 写真ファイルそのものを保存する場所。
+- tenant: 1つのサービス内で複数の利用者を分ける仕組み。今はまだやらない。
 
 ### v0.5: Concierge Setup
 
@@ -35,7 +43,15 @@
 - 初期 settings を入れる
 - admin の使い方だけ渡す
 
-この方式なら、利用者は GitHub や env var をほぼ意識しなくてよい。
+写真家本人に渡すものは、原則として次の3つだけにする。
+
+- サイトURL
+- 管理画面URLとパスワード
+- `docs/photographer-guide.md`
+
+GitHub / Railway / Turso / R2 / 環境変数は、セットアップ担当者だけが見る。
+
+この方式なら、利用者は GitHub や環境変数をほぼ意識しなくてよい。
 
 ### v1 Later: Turnkey Template
 
@@ -74,7 +90,7 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 避けること:
 
 - 最初から大量のデザイン項目を触らせる
-- CSS や env var を直接編集させる
+- CSS や環境変数を直接編集させる
 - 秋さん固有の名前やドメインが見える
 
 ### 配布・セットアップする人
@@ -149,9 +165,10 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
     `GA_MEASUREMENT_ID` is not set, so current production analytics do not
     disappear accidentally.
 - Provide a first-run setup path:
-  - a new site currently falls back to 秋さん's identity until settings are
-    edited. A template should start blank, generic, or guide the admin through
-    site name, profile, URL, contact, and SEO setup.
+  - Done: `/admin` starts with a Japanese `はじめに` checklist for site name,
+    profile, contact, photos, published photos, and hero photos.
+  - Done: client-side public-page fallbacks now use generic photographer labels
+    while settings are still loading, instead of showing production identity.
 - Keep secrets out of distributed artifacts:
   - `.env.template` should stay placeholder-only.
   - real `.env`, R2 keys, DB tokens, local screenshots, and scratch notes must
@@ -168,9 +185,10 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
   - root package name `sandbox-app-template`
   - web package name `@template/web`
 - Add deployment guide:
-  - Done: `docs/recipient-setup.md` covers Turso database, R2 bucket/access
-    keys, Railway service, env vars, `bun run db:push`, custom domain, and
-    recipient admin setup.
+  - Done: `docs/setup-guide.md` covers Turso database, R2 bucket/access keys,
+    Railway service, env vars, `bun run db:push`, custom domain, and handoff.
+  - Done: `docs/photographer-guide.md` is a short no-code guide for the
+    photographer receiving the site.
 - Add setup checklist in `/admin`:
   - site identity
   - profile
@@ -239,7 +257,8 @@ Outcome: a maintainer can repeatedly create new sites without improvising.
 
 - Add `docs/setup-railway.md`.
 - Add `docs/prelaunch-checklist.md`.
-- Done: add `docs/recipient-setup.md` as the first combined setup + owner guide.
+- Done: split the first combined guide into `docs/setup-guide.md` for the
+  setup person and `docs/photographer-guide.md` for the photographer.
 - Later: split into `docs/setup-railway.md`, `docs/prelaunch-checklist.md`,
   and `docs/owner-guide.md` when the process stabilizes.
 - Add release checklist for secrets, screenshots, and sample data.

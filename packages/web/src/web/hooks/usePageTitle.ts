@@ -1,14 +1,13 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-
-const FALLBACK_TITLE = "Photography Portfolio";
+import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 
 /**
  * Sets document.title on SPA navigation.
  * Subscribes to the settings query so the title refreshes once settings load
  * (not only on the next navigation).
- * Pass a page name like "Gallery" → "Gallery | 江口秋 | Photography"
+ * Pass a page name like "Gallery" -> "Gallery | Site Name | Photography"
  * Pass nothing → base title.
  */
 export function usePageTitle(page?: string) {
@@ -20,7 +19,7 @@ export function usePageTitle(page?: string) {
   useEffect(() => {
     const siteName = settings?.siteName || "";
     const subtitle = settings?.heroSubtitle || "";
-    const base = [siteName, subtitle].filter(Boolean).join(" | ") || FALLBACK_TITLE;
+    const base = [siteName, subtitle].filter(Boolean).join(" | ") || CLIENT_SITE_FALLBACKS.title;
     document.title = page ? `${page} | ${base}` : base;
   }, [page, settings?.siteName, settings?.heroSubtitle]);
 }

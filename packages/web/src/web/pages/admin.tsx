@@ -3047,9 +3047,9 @@ function ProfileTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => voi
   if (isLoading) return <div className="flex items-center justify-center h-full gap-2 text-[#555] text-sm"><Loader2 size={14} className="animate-spin" /> Loading...</div>;
 
   const fields = [
-    { key: "profileName",      label: "Name (JP)",   placeholder: "江口秋" },
+    { key: "profileName",      label: "Name (JP)",   placeholder: "Photographer Name" },
     { key: "profileNameKata",  label: "振り仮名 (カタカナ)", placeholder: "エグチアキ" },
-    { key: "profileNameEn",    label: "Name (EN)",   placeholder: "Aki Eguchi" },
+    { key: "profileNameEn",    label: "Name (EN)",   placeholder: "Photographer Name" },
     { key: "profileBio",       label: "Bio",         multiline: true, placeholder: "Write your bio..." },
     { key: "profileStatement", label: "Statement (作家ステートメント)", multiline: true, placeholder: "空欄でも崩れません。後から追記OK" },
     { key: "profileGear",      label: "使用機材 (1行に1つ)", multiline: true, placeholder: "PENTAX 67\nLeica M6\n..." },
@@ -3975,13 +3975,13 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
   if (isLoading) return <div className="flex items-center justify-center h-full gap-2 text-[#555] text-sm"><Loader2 size={14} className="animate-spin" /> Loading...</div>;
 
   const fields = [
-    { key: "siteName",      label: "Site Name (Logo)",   placeholder: "江口秋",
+    { key: "siteName",      label: "Site Name (Logo)",   placeholder: "Photographer Name",
       hint: "全ページ左上のロゴ（日本語）" },
-    { key: "siteNameEn",    label: "Site Name (EN)",     placeholder: "Aki Eguchi",
+    { key: "siteNameEn",    label: "Site Name (EN)",     placeholder: "Photographer Name",
       hint: "ロゴ下・OGP等の英語表記" },
     { key: "heroSubtitle",  label: "Hero Subtitle",      placeholder: "Photography",
       hint: "トップの作家名の下に表示" },
-    { key: "siteDescription", label: "Site Description (SEO)", placeholder: "東京を拠点に活動する写真家・江口秋のポートフォリオ。宣材・ポートレート撮影のご依頼を受け付けています",
+    { key: "siteDescription", label: "Site Description (SEO)", placeholder: "Photography portfolio.",
       hint: "検索結果・OGP・SNSシェア時の説明文（meta description）。空欄なら左の文を自動使用" },
     { key: "footerText",    label: "Footer Text",        placeholder: "空欄 = © 今年 サイト名（自動）",
       hint: "全ページ下部のフッター。空欄なら「© 現在の年 サイト名」を自動表示" },
@@ -3991,8 +3991,8 @@ function SettingsTab({ onUnsavedChange }: { onUnsavedChange?: (v: boolean) => vo
       hint: "Displayed on the contact page for direct email" },
     { key: "formspreeUrl",  label: "Formspree URL",      placeholder: "https://formspree.io/f/...",
       hint: "Get your form URL from formspree.io to enable the contact form" },
-    { key: "siteUrl", label: "サイトURL（公開ドメイン）", placeholder: "https://akieguchi.com",
-      hint: "sitemap・canonical・OGP・JSON-LD の基準URL。空欄なら https://akieguchi.com。ドメイン移転時はここを変えるだけで全部に反映" },
+    { key: "siteUrl", label: "サイトURL（公開ドメイン）", placeholder: "https://example.com",
+      hint: "sitemap・canonical・OGP・JSON-LD の基準URL。空欄ならサーバー側の SITE_URL を使います" },
     { key: "googleSiteVerification", label: "Google サイト確認コード", placeholder: "例: AbC123xyz...",
       hint: "Search Console「HTMLタグ」方式の content=\"...\" の中身だけを貼り付け。保存後すぐ全ページの <head> に出力されます（画像サイトマップの登録に必要）" },
     { key: "footerCtaLabel", label: "フッター導線テキスト（任意）", placeholder: "例: 撮影のご相談はこちら",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { InquiryCta } from "../components/InquiryCta";
 
@@ -28,8 +29,8 @@ export default function ProfilePage() {
   const bio = data?.profileBio ?? "";
   const statement = data?.profileStatement ?? "";
   const gear = (data?.profileGear ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
-  const nameJa = data?.profileName ?? "江口秋";
-  const nameEn = data?.profileNameEn ?? "Aki Eguchi";
+  const nameJa = data?.profileName ?? CLIENT_SITE_FALLBACKS.profileName;
+  const nameEn = data?.profileNameEn ?? CLIENT_SITE_FALLBACKS.profileNameEn;
 
   const hasSns = data?.profileInstagram || data?.profileTwitter || data?.profileNote;
   // Re-run entrance observer when settings OR note data arrive so all

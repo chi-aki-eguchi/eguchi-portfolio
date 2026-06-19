@@ -66,6 +66,22 @@ describe("public pages render (empty state: 写真0枚・設定空)", () => {
       canned["/api/photos"] = prevPhotos;
     }
   });
+
+  test("empty public pages do not fall back to production identity", async () => {
+    const prevPhotos = canned["/api/photos"];
+    canned["/api/photos"] = { photos: [] };
+    try {
+      for (const [, load] of pages) {
+        const Page = (await load()).default;
+        const { host, cleanup } = await mount(createElement(Page));
+        expect(host.textContent).not.toContain("江口秋");
+        expect(host.textContent).not.toContain("Aki Eguchi");
+        cleanup();
+      }
+    } finally {
+      canned["/api/photos"] = prevPhotos;
+    }
+  });
 });
 
 describe("shared components", () => {

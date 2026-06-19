@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { BackToTop } from "./BackToTop";
 
 function useFooterReveal() {
@@ -48,7 +49,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   });
   const showSeries = seriesNav === "on" || (seriesAuto && (seriesData?.series.length ?? 0) > 0);
 
-  const siteNameJa = data?.siteName ?? "江口秋";
+  const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),

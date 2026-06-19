@@ -668,3 +668,62 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `docs/recipient-setup.md`
 - `README.md`
 - `task.md`
+
+## 追記 2026-06-19 — Codex + Claude: 配布導線の2層化と固有名フォールバック追加修正
+
+### 実施
+- 秋さんから「専門用語が多い。もっとやりやすく、わかりやすくできないか」と相談あり。
+- agmsg で Claude Code (`claude-driver`) に深めの方針相談。
+- Claude 返答要約:
+  - v0.5 Concierge 方式を先行するのが正解。
+  - 写真家本人に GitHub / Railway / Turso / R2 / 環境変数を説明しない。
+  - セットアップ担当者が裏側を作り、本人にはサイトURL・管理画面URL/パスワード・短い説明だけ渡す。
+  - 既存 `docs/recipient-setup.md` は「本人向け」と「セットアップ担当者向け」が混ざっていて混乱源。
+- `docs/setup-guide.md` を新設。
+  - セットアップ担当者向けに、Railway / Turso / R2 / env / db:push / 公開前チェック / 本人への手渡し物を整理。
+- `docs/photographer-guide.md` を新設。
+  - 写真家本人向けに、管理画面URLを開く → `はじめに` タブから始める、だけに絞った短いガイドにした。
+- `docs/recipient-setup.md` は旧名の案内ページに変更。
+  - セットアップ担当者は `setup-guide.md`、写真家本人は `photographer-guide.md` へ誘導。
+- `README.md` / `DISTRIBUTION.md` を2層導線に更新。
+  - 写真家本人に渡すものは原則「サイトURL / 管理画面URLとパスワード / photographer-guide」の3つだけと明記。
+  - `repository` などの表現を「サイトのファイル一式」に寄せ、用語メモを追加。
+- 公開ページのクライアント側 fallback を中立化。
+  - `packages/web/src/web/lib/site-fallbacks.ts` を追加。
+  - settings 読み込み前や空状態で、Top / Layout / Profile が `江口秋` / `Aki Eguchi` に戻らないようにした。
+  - 管理画面 Settings / Profile の placeholder も `Photographer Name` / `https://example.com` へ変更。
+- `pages.render.test.tsx` に空状態の公開ページが本番固有名へ fallback しない回帰テストを追加。
+
+### 検証
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（19 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（82 pass / 0 fail）。
+- `cd packages/web && bun run lint` 成功。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+- 本番 `https://akieguchi.com/api/settings` を確認。
+  - `siteName` / `profileName` などは DB 側に入っている。
+  - `siteUrl` は空。現状の canonical / OGP の URL は Railway `SITE_URL` またはサーバー側 fallback に依存している可能性がある。
+
+### 残り
+- `packages/web/src/api/site-defaults.ts` のサーバー側互換 fallback には、まだ `akieguchi.com` / `江口秋` / GA fallback が残っている。
+  - 今すぐ中立化すると、Railway `SITE_URL` が未設定だった場合に本番 SEO URL が変わるリスクがあるため今回は触らない。
+  - 次にやるなら、Railway に `SITE_URL=https://akieguchi.com` が入っていること、または admin の `siteUrl` を保存することを確認してから中立化する。
+- root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
+- 空DB / 新規 Turso での起動確認は未実施。
+- 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
+
+### 触ったファイル
+- `README.md`
+- `DISTRIBUTION.md`
+- `docs/setup-guide.md`
+- `docs/photographer-guide.md`
+- `docs/recipient-setup.md`
+- `packages/web/src/web/lib/site-fallbacks.ts`
+- `packages/web/src/web/components/Layout.tsx`
+- `packages/web/src/web/hooks/usePageTitle.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/profile.tsx`
+- `packages/web/src/web/pages/top.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`

@@ -91,4 +91,6 @@ Before this can be safely handed to another photographer, the hard-coded
 identity, analytics, allowed origins, setup docs, and first-run defaults need to
 be generalized. See [DISTRIBUTION.md](./DISTRIBUTION.md) for the live checklist.
 
-For the practical handoff flow, see [docs/recipient-setup.md](./docs/recipient-setup.md).
+For the setup side, see [docs/setup-guide.md](./docs/setup-guide.md).
+For the photographer receiving the site, see
+[docs/photographer-guide.md](./docs/photographer-guide.md).

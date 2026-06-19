@@ -3,16 +3,17 @@
 Editorial photography portfolio app built with Bun, Hono, React 19, Drizzle,
 Turso/libSQL, Cloudflare R2, and Railway.
 
-This repository currently powers `akieguchi.com`. We are preparing it to become
-a reusable portfolio template for other photographers. The distribution roadmap
-lives in [DISTRIBUTION.md](./DISTRIBUTION.md).
+This repository currently powers `akieguchi.com`. A repository means the full
+set of files needed to run the site. We are preparing it to become a reusable
+portfolio template for other photographers. The distribution roadmap lives in
+[DISTRIBUTION.md](./DISTRIBUTION.md).
 
 ## Status
 
 - Production app: yes, deployed through Railway from `git push`.
 - Turnkey template: not yet.
-- Recommended distribution model for now: one repository fork and one separate
-  Railway/Turso/R2 environment per photographer.
+- Recommended distribution model for now: one site-file copy and one separate
+  Railway/Turso/R2 setup per photographer.
 - SaaS/multi-tenant mode: intentionally out of scope until the template flow is
   stable.
 
@@ -35,15 +36,15 @@ bun install
 cp .env.template .env
 ```
 
-Fill `.env` with a Turso database, an R2 bucket, and an admin password. Then
-sync the database schema:
+Fill `.env` with a Turso database (where settings are stored), an R2 bucket
+(where photos are stored), and an admin password. Then sync the database schema:
 
 ```sh
 cd packages/web
 bun run db:push
 ```
 
-Run the development server from the repository root:
+Run the development server from the site folder:
 
 ```sh
 bun run dev

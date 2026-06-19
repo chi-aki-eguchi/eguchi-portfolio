@@ -614,3 +614,57 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `README.md`
 - `DISTRIBUTION.md`
 - `task.md`
+
+## 追記 2026-06-19 — Codex: Admin はじめにタブ + 用語の言い換え
+
+### 実施
+- 秋さんから「repo ってなに？専門用語を使いすぎるとわからない」と指摘あり。
+- 管理画面に `はじめに` タブを追加。
+  - 初期タブを `はじめに` に変更。
+  - 公開までに必要な項目をチェックリスト化:
+    - サイトの名前
+    - プロフィール
+    - 連絡先
+    - 写真
+    - 公開する写真
+    - トップ写真
+  - 公開前にできれば確認する項目として、公開URL / 写真の分類 / 見え方を表示。
+  - `GitHub` / `Railway` / `Turso` / `R2` / `repo` / `環境変数` / `deploy` / `OGP` を、管理画面内で平易な言葉に言い換え。
+- `docs/recipient-setup.md` も専門語だけにならないよう更新。
+  - `repository` を「サイトのファイル一式」と説明。
+  - Turso は「設定の保存場所」、R2 は「写真の保存場所」、Railway は「サイトの公開場所」と説明。
+- `README.md` も repository / Turso / R2 の説明を補足。
+- `packages/web/src/web/test/pages.render.test.tsx` に、認証済み admin で `公開までにやること` と `repo` 説明が出ることを追加確認。
+
+### 検証
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（18 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（81 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+- ローカル Vite server を起動し、Playwright で `/admin` を API 仮応答つき表示:
+  - `公開までにやること` 表示あり。
+  - `はじめに` タブ表示あり。
+  - `サイトのファイル一式` の説明あり。
+  - 1280px 幅で横はみ出しなし。
+
+### Claude 相談
+- agmsg で Claude Code (`claude-driver`) に push 前 P0/P1 レビュー依頼済み。
+- Claude 返答: P0なし、pushOK。
+- 良い点として、チェックリスト項目が API データから動的判定されていること、`isFilled()` guard、タブ直接ジャンプの UX が確認された。
+- P1確認:
+  - デフォルトタブを `gallery` から `setup` に変更したため、秋さんの既存ブラウザでは sessionStorage の `admin:tab` があればそのまま。別ブラウザやストレージクリア後は `はじめに` が初期表示になる。
+  - `contactEmail` / `formspreeUrl` は `/api/settings` レスポンスに含まれていることを確認済み（`packages/web/src/api/index.ts`）。
+
+### 残り
+- root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
+- 空DB / 新規 Turso での起動確認は未実施。
+- 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
+
+### 触ったファイル
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `docs/recipient-setup.md`
+- `README.md`
+- `task.md`

@@ -169,6 +169,8 @@ describe("shared components", () => {
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin));
+      expect(host.textContent).toContain("公開までにやること");
+      expect(host.textContent).toContain("repo");
       expect(host.textContent).toContain("Library");
       cleanup();
     } finally {

@@ -12,7 +12,7 @@ import {
   Star, StarOff, Shuffle, Layers, Pencil, Receipt, FolderOpen, Search, LayoutList, AlertTriangle, Copy, ClipboardPaste,
 } from "lucide-react";
 
-type Tab = "gallery" | "hero" | "profile" | "categories" | "series" | "pricing" | "settings";
+type Tab = "setup" | "gallery" | "hero" | "profile" | "categories" | "series" | "pricing" | "settings";
 
 // V (ux-refinements): admin UI state that must survive tab switches and page
 // moves. Tabs unmount on switch, so plain useState loses unsaved drafts and
@@ -69,7 +69,7 @@ function useAdminGuard() {
 export default function AdminPage() {
   const { isLoading, authenticated } = useAdminGuard();
   const [, navigate] = useLocation();
-  const [tab, setTab] = usePersistentState<Tab>("admin:tab", "gallery");
+  const [tab, setTab] = usePersistentState<Tab>("admin:tab", "setup");
   const [galleryUploading, setGalleryUploading] = useState(false);
   // Generic unsaved-draft flag reported by any tab with a draft form (Settings, Profile)
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -91,6 +91,7 @@ export default function AdminPage() {
   if (!authenticated) return null;
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: "setup",      label: "はじめに",   icon: <Check size={15} /> },
     { key: "gallery",    label: "Library",    icon: <ImageLucide size={15} /> },
     { key: "hero",       label: "Hero",       icon: <Grid size={15} /> },
     { key: "profile",    label: "Profile",    icon: <User size={15} /> },
@@ -140,6 +141,7 @@ export default function AdminPage() {
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
+        {tab === "setup"      && <SetupTab onOpenTab={setTab} />}
         {tab === "gallery"    && <GalleryTab onUploadingChange={setGalleryUploading} />}
         {tab === "hero"       && <HeroTab />}
         {tab === "profile"    && <ProfileTab onUnsavedChange={setHasUnsaved} />}
@@ -163,6 +165,188 @@ export default function AdminPage() {
           </div>
         </Modal>
       )}
+    </div>
+  );
+}
+
+function isFilled(v: unknown): boolean {
+  return typeof v === "string" && v.trim().length > 0;
+}
+
+function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
+  const { data: settingsData, isLoading: settingsLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => (await api.settings.$get()).json(),
+  });
+  const { data: photosData, isLoading: photosLoading } = useQuery({
+    queryKey: ["photos", "all"],
+    queryFn: async () => (await api.photos.$get({ query: { all: "1" } })).json(),
+  });
+  const { data: catsData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => (await api.categories.$get()).json(),
+  });
+  const { data: heroData } = useQuery({
+    queryKey: ["admin-hero-photos"],
+    queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> => (await adminApi["hero-photos"].$get()).json(),
+  });
+
+  const settings = (settingsData ?? {}) as Record<string, string>;
+  const photos = (photosData?.photos ?? []) as Photo[];
+  const activePhotos = photos.filter((p) => !p.deletedAt);
+  const publishedPhotos = activePhotos.filter((p) => p.isPublished !== false);
+  const categories = catsData?.categories ?? [];
+  const heroCount = heroData?.heroPhotos?.length ?? 0;
+
+  const checklist = [
+    {
+      title: "サイトの名前",
+      body: "表に出る名前と短い説明文。SNSで共有された時にも使われます。",
+      done: isFilled(settings.siteName) && isFilled(settings.siteDescription),
+      tab: "settings" as Tab,
+    },
+    {
+      title: "プロフィール",
+      body: "名前、自己紹介、プロフィール写真。まずここが入るとサイトらしくなります。",
+      done: isFilled(settings.profileName) && isFilled(settings.profileBio),
+      tab: "profile" as Tab,
+    },
+    {
+      title: "連絡先",
+      body: "メールか問い合わせフォーム。撮影依頼を受けたい場合は必ず確認します。",
+      done: isFilled(settings.contactEmail) || isFilled(settings.formspreeUrl),
+      tab: "settings" as Tab,
+    },
+    {
+      title: "写真",
+      body: "最初の写真をアップロードします。写真の保管場所が正しくつながっている確認にもなります。",
+      done: activePhotos.length > 0,
+      tab: "gallery" as Tab,
+    },
+    {
+      title: "公開する写真",
+      body: "公開状態の写真があるかを見ます。下書きだけだと、見る人には出ません。",
+      done: publishedPhotos.length > 0,
+      tab: "gallery" as Tab,
+    },
+    {
+      title: "トップ写真",
+      body: "最初に見せたい写真を選びます。サイトの第一印象になります。",
+      done: heroCount > 0,
+      tab: "hero" as Tab,
+    },
+  ];
+
+  const recommended = [
+    {
+      title: "公開URL",
+      body: "独自ドメインを使う時に入れます。検索結果やSNS共有のURLが安定します。",
+      done: isFilled(settings.siteUrl),
+      tab: "settings" as Tab,
+    },
+    {
+      title: "写真の分類",
+      body: "Gallery の絞り込みに使います。写真が増えてきたら整えると見やすくなります。",
+      done: categories.length > 0,
+      tab: "categories" as Tab,
+    },
+    {
+      title: "見え方",
+      body: "ギャラリーの並び方、余白、文字の大きさを確認します。最初は写真の順番と S/M/L が一番効きます。",
+      done: isFilled(settings.galleryLayout),
+      tab: "settings" as Tab,
+    },
+  ];
+
+  const doneCount = checklist.filter((item) => item.done).length;
+  const requiredDone = doneCount === checklist.length;
+  const loading = settingsLoading || photosLoading;
+
+  return (
+    <div className="h-full overflow-y-auto bg-[#1e1e1e]">
+      <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10 space-y-8">
+        <section className="space-y-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-[#777] mb-2">Start</p>
+              <h1 className="text-[22px] md:text-[26px] text-[#e5e5e5] font-normal tracking-normal">公開までにやること</h1>
+            </div>
+            <div className={`w-fit rounded-sm border px-3 py-2 text-[12px] ${requiredDone ? "border-[#5f7f68] bg-[#263126] text-[#b8d5bf]" : "border-[#444] bg-[#262626] text-[#aaa]"}`}>
+              {loading ? "確認中..." : `${doneCount} / ${checklist.length} 完了`}
+            </div>
+          </div>
+          <p className="max-w-2xl text-[13px] leading-7 text-[#9a9a9a]">
+            むずかしい設定は最初だけです。見る人に公開する前に、この画面の上から順に確認します。
+            写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。
+          </p>
+        </section>
+
+        <section className="grid gap-3 md:grid-cols-2">
+          {checklist.map((item) => (
+            <SetupChecklistRow key={item.title} item={item} onOpenTab={onOpenTab} />
+          ))}
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-[13px] uppercase tracking-[0.14em] text-[#888]">公開前にできれば確認</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            {recommended.map((item) => (
+              <SetupChecklistRow key={item.title} item={item} onOpenTab={onOpenTab} compact />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-3 md:grid-cols-2">
+          <div className="border border-[#333] bg-[#242424] rounded-sm p-5">
+            <h2 className="text-[14px] text-[#ddd] mb-3">最初だけ外で作るもの</h2>
+            <div className="space-y-3 text-[12px] leading-6 text-[#999]">
+              <p><span className="text-[#d0d0d0]">GitHub</span>: サイトのファイル一式を置く場所。</p>
+              <p><span className="text-[#d0d0d0]">Railway</span>: サイトをインターネットに公開する場所。</p>
+              <p><span className="text-[#d0d0d0]">Turso</span>: 名前、説明文、写真一覧などを保存する場所。</p>
+              <p><span className="text-[#d0d0d0]">R2</span>: 写真ファイルそのものを保存する場所。</p>
+            </div>
+          </div>
+          <div className="border border-[#333] bg-[#242424] rounded-sm p-5">
+            <h2 className="text-[14px] text-[#ddd] mb-3">言葉の置き換え</h2>
+            <div className="space-y-3 text-[12px] leading-6 text-[#999]">
+              <p><span className="text-[#d0d0d0]">repo</span>: サイトのファイル一式が入った箱。</p>
+              <p><span className="text-[#d0d0d0]">環境変数</span>: パスワードや接続先を書く、公開しない設定メモ。</p>
+              <p><span className="text-[#d0d0d0]">deploy</span>: 変更したサイトをネット上に反映すること。</p>
+              <p><span className="text-[#d0d0d0]">OGP</span>: SNSでURLを貼った時に出るタイトル・説明・画像。</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function SetupChecklistRow({
+  item,
+  onOpenTab,
+  compact = false,
+}: {
+  item: { title: string; body: string; done: boolean; tab: Tab };
+  onOpenTab: (tab: Tab) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className="border border-[#333] bg-[#242424] rounded-sm p-4 flex gap-3">
+      <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.done ? "bg-[#5f7f68] text-[#151515]" : "bg-[#333] text-[#777]"}`}>
+        {item.done ? <Check size={13} /> : <AlertTriangle size={12} />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-[13px] text-[#ddd]">{item.title}</h3>
+          <button
+            onClick={() => onOpenTab(item.tab)}
+            className="text-[11px] text-[#888] hover:text-[#ddd] transition-colors flex-shrink-0"
+          >
+            開く
+          </button>
+        </div>
+        <p className={`${compact ? "text-[11px] leading-5" : "text-[12px] leading-6"} text-[#888] mt-1`}>{item.body}</p>
+      </div>
     </div>
   );
 }

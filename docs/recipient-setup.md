@@ -9,13 +9,13 @@
 
 配布する側が渡すもの:
 
-- repository の fork または template copy
-- Railway service
-- Turso database
-- Cloudflare R2 bucket
-- custom domain
-- admin URL and password
-- owner guide
+- サイトのファイル一式のコピー
+- 公開場所（Railway）
+- 設定や写真一覧の保存場所（Turso）
+- 写真ファイルの保存場所（Cloudflare R2）
+- 独自ドメイン
+- 管理画面のURLとパスワード
+- 使い方メモ
 
 受け取る人がやること:
 
@@ -25,27 +25,40 @@
 - S/M/L サイズ、並び順、レイアウトを調整する
 - 公開前チェックを一緒に見る
 
+## 言葉の説明
+
+- `repo`: サイトのファイル一式が入った箱。GitHub 上のフォルダのようなもの。
+- `GitHub`: サイトのファイル一式を置く場所。
+- `Railway`: サイトをインターネットに公開する場所。
+- `Turso`: サイト名、説明文、写真一覧などを保存する場所。
+- `R2`: 写真ファイルそのものを保存する場所。
+- `環境変数`: パスワードや接続先を書く、公開しない設定メモ。
+- `deploy`: 変更したサイトをネット上に反映すること。
+- `OGP`: SNSでURLを貼った時に出るタイトル、説明、画像。
+
 ## 配布する側の手順
 
-### 1. 新しい repository を作る
+### 1. サイトのファイル一式をコピーする
 
-GitHub でこの repository を fork または template copy する。
+GitHub でこのサイトのファイル一式をコピーする。
 
-配布先ごとに repository を分けると、あとから個別の修正・更新・バックアップを
-追いやすい。
+配布先ごとにコピーを分けると、あとから個別の修正・更新・バックアップを
+追いやすい。ここで言うコピーは、GitHub の fork や template copy のこと。
 
-### 2. Turso database を作る
+### 2. 設定の保存場所を作る
 
 新しい写真家専用の Turso database を作り、以下を控える。
+Turso database は、サイト名、プロフィール文、写真一覧などを保存する場所。
 
 - `DATABASE_URL`
 - `DATABASE_AUTH_TOKEN`
 
 既存の秋さん本番 database は絶対に流用しない。
 
-### 3. Cloudflare R2 bucket を作る
+### 3. 写真の保存場所を作る
 
 新しい写真家専用の R2 bucket と S3 access key を作り、以下を控える。
+R2 bucket は、アップロードした写真ファイルそのものを保存する場所。
 
 - `S3_ENDPOINT`
 - `S3_BUCKET`
@@ -54,9 +67,10 @@ GitHub でこの repository を fork または template copy する。
 
 写真データの所有権と削除責任が分かりやすいよう、bucket は人ごとに分ける。
 
-### 4. Railway service を作る
+### 4. サイトの公開場所を作る
 
-Railway で新しい service を作り、repository を接続する。
+Railway で新しい service を作り、GitHub に置いたサイトのファイル一式を接続する。
+Railway service は、サイトをインターネット上で動かす場所。
 
 Start command:
 
@@ -72,7 +86,7 @@ packages/web
 
 Railway 側に `PORT` は自動設定されるので、通常は手入力しない。
 
-### 5. Environment variables を入れる
+### 5. 非公開の設定メモを入れる
 
 Railway に最低限これを設定する。
 
@@ -112,7 +126,7 @@ bun run db:push
 
 これを忘れると API が database table missing で動かない。
 
-### 7. Build を確認して push する
+### 7. 表示できるか確認して公開する
 
 ```sh
 cd packages/web
@@ -121,7 +135,7 @@ bun run build
 git push
 ```
 
-Railway が自動で build/deploy する。
+Railway が自動で公開する。ここで言う `git push` は、変更を GitHub に送る操作。
 
 ### 8. 本番確認
 

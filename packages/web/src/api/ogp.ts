@@ -1,3 +1,6 @@
+import { DEFAULT_SITE_URL as SITE_URL_DEFAULT, SITE_DEFAULTS, gaMeasurementIdForSite } from "./site-defaults";
+export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
+
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
 // so the (security-critical) escaping is unit-testable without importing server.ts,
 // which starts the HTTP server on import.
@@ -35,12 +38,11 @@ export function setAttr(html: string, re: RegExp, value: string): string {
 // Deploy fingerprint — Railway sets RAILWAY_GIT_COMMIT_SHA automatically.
 export const BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev";
 
-export const DEFAULT_SITE_URL = "https://akieguchi.com";
 export function siteUrlFrom(settings: Record<string, string>): string {
   return (settings.siteUrl || process.env.SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, "");
 }
 // Used when the admin hasn't set siteDescription — keep in sync with /api settings default.
-export const SITE_DESCRIPTION_DEFAULT = "東京を拠点に活動する写真家・江口秋のポートフォリオ。宣材・ポートレート撮影のご依頼を受け付けています";
+export const SITE_DESCRIPTION_DEFAULT = SITE_DEFAULTS.siteDescription;
 
 // Per-route titles so each page is distinct for search/social, not all "home".
 const PAGE_TITLES: Record<string, string> = {
@@ -53,7 +55,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 
 export function injectOgp(html: string, settings: Record<string, string>, pathname = "/", heroImg = "", override?: { title?: string; desc?: string; image?: string }): string {
-  const siteName = settings.siteNameEn || settings.siteName || "Aki Eguchi";
+  const siteName = settings.siteNameEn || settings.siteName || SITE_DEFAULTS.siteNameEn;
   const subtitle = settings.heroSubtitle || "Photography";
   // Bilingual base title (e.g. "江口秋 | Aki Eguchi | Photography") so the JA name
   // leads for Japanese search while the EN name still reads in social cards.
@@ -144,8 +146,10 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
     headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
   }
   // GA4 — only on indexable public pages (don't track the admin app or soft-404s).
-  if (indexable) {
-    headInjection += `\n  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NKECCDLXYD"></script>\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-NKECCDLXYD');</script>`;
+  const gaMeasurementId = gaMeasurementIdForSite(siteUrl);
+  if (indexable && gaMeasurementId) {
+    const safeGaId = escapeHtml(gaMeasurementId);
+    headInjection += `\n  <script async src="https://www.googletagmanager.com/gtag/js?id=${safeGaId}"></script>\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${safeGaId}');</script>`;
   }
   // Use a function replacement so `$` in the injected markup isn't treated as a special pattern.
   out = out.replace("</head>", () => `${headInjection}\n  </head>`);
@@ -157,8 +161,8 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
 // each body of work is its own recognised collection in search / social.
 function buildJsonLd(settings: Record<string, string>, pathname = "/", series?: { title?: string; desc?: string; image?: string }): string {
   const siteUrl = siteUrlFrom(settings);
-  const name = settings.siteName || settings.profileName || "江口秋";
-  const nameEn = settings.siteNameEn || settings.profileNameEn || "Aki Eguchi";
+  const name = settings.siteName || settings.profileName || SITE_DEFAULTS.profileName;
+  const nameEn = settings.siteNameEn || settings.profileNameEn || SITE_DEFAULTS.profileNameEn;
   const desc = settings.siteDescription || SITE_DESCRIPTION_DEFAULT;
   const sameAs = [settings.profileInstagram, settings.profileTwitter, settings.profileNote].filter(Boolean);
   const image = settings.profilePhotoUrl ? `${siteUrl}${settings.profilePhotoUrl}?w=800&q=85` : undefined;

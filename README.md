@@ -1,50 +1,91 @@
-# sandbox-app-template
+# Photographer Portfolio
 
-Monorepo: Bun workspaces + Turborepo.
+Editorial photography portfolio app built with Bun, Hono, React 19, Drizzle,
+Turso/libSQL, Cloudflare R2, and Railway.
 
-## Project Structure
+This repository currently powers `akieguchi.com`. We are preparing it to become
+a reusable portfolio template for other photographers. The distribution roadmap
+lives in [DISTRIBUTION.md](./DISTRIBUTION.md).
 
+## Status
+
+- Production app: yes, deployed through Railway from `git push`.
+- Turnkey template: not yet.
+- Recommended distribution model for now: one repository fork and one separate
+  Railway/Turso/R2 environment per photographer.
+- SaaS/multi-tenant mode: intentionally out of scope until the template flow is
+  stable.
+
+## Stack
+
+| Layer | Technology |
+| --- | --- |
+| Runtime | Bun |
+| API | Hono 4 under `/api` |
+| Frontend | React 19, Wouter, TanStack Query, Tailwind CSS 4 |
+| Database | Drizzle ORM + Turso/libSQL |
+| Storage | Cloudflare R2, S3-compatible |
+| Image processing | sharp |
+| Deploy | Railway, `bun src/server.ts` |
+
+## Local Setup
+
+```sh
+bun install
+cp .env.template .env
 ```
-.env                         Secrets (gitignored), loaded via Vite's loadEnv
-packages/
-  web/                       Unified server (API + web frontend via Vite)
-    vite.config.ts           Vite 7 config — loads .env, sets port, registers plugins
-    index.html               Frontend HTML entry
-    vite/plugins/
-      hono-dev-plugin.ts     Intercepts /api/* in dev, forwards to Hono via SSR
-      runable-analytics-plugin.ts
-    src/
-      api/
-        index.ts             Hono routes (.basePath('api')) + AppType export
-        database/
-          index.ts           Database client (Turso/LibSQL)
-          schema.ts          Drizzle schema
-      web/
-        main.tsx             App entry
-        app.tsx              Root component + Wouter routing
-        pages/               Page components
-        components/          UI components
-        hooks/
-        lib/
-          api.ts             Typed API client (hono client)
-          utils.ts           Shared utilities
-        styles.css           Tailwind CSS entry
-```
 
-## Environment Variables
-
-Secrets and credentials live in `.env` at the project root (gitignored). Vite's `loadEnv` loads them into `process.env` at dev/build time (configured in `packages/web/vite.config.ts`). In API code (Hono), use `process.env.YOUR_VAR`. In browser code, only `VITE_`-prefixed vars are exposed via `import.meta.env.VITE_YOUR_VAR`. Drizzle scripts use `bun --env-file=../../.env` to load env vars directly.
-
-## Servers
-
-Dev servers are started and managed automatically — no need to run them manually.
-
-## Database
+Fill `.env` with a Turso database, an R2 bucket, and an admin password. Then
+sync the database schema:
 
 ```sh
 cd packages/web
-bun run db:push        # Push schema to database
-bun run db:generate    # Generate migration files
-bun run db:migrate     # Run migrations
-bun run db:studio      # Open Drizzle Studio
+bun run db:push
 ```
+
+Run the development server from the repository root:
+
+```sh
+bun run dev
+```
+
+## Required Environment Variables
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Turso/libSQL database URL |
+| `DATABASE_AUTH_TOKEN` | Turso auth token |
+| `S3_ENDPOINT` | Cloudflare R2 S3 endpoint |
+| `S3_BUCKET` | R2 bucket name |
+| `S3_ACCESS_KEY_ID` | R2 access key |
+| `S3_SECRET_ACCESS_KEY` | R2 secret |
+| `ADMIN_PASSWORD` | Enables `/admin` login |
+| `SITE_URL` | Public origin for canonical URLs, sitemap, OGP, and JSON-LD |
+
+## Development Commands
+
+```sh
+bun run dev
+cd packages/web && bun x tsc -b
+cd packages/web && bun run build
+cd packages/web && bun test ./src
+```
+
+## Deploy
+
+The current production workflow is Railway:
+
+```sh
+cd packages/web && bun x tsc -b && bun run build
+git push
+```
+
+Railway builds from the pushed commit and starts the app with
+`bun src/server.ts`. The old Runable ZIP flow is legacy only and is kept as
+`bun run deploy:runable:legacy` for recovery/reference work.
+
+## Distribution Work
+
+Before this can be safely handed to another photographer, the hard-coded
+identity, analytics, allowed origins, setup docs, and first-run defaults need to
+be generalized. See [DISTRIBUTION.md](./DISTRIBUTION.md) for the live checklist.

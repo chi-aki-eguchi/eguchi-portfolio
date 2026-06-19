@@ -512,3 +512,61 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 
 ### 触ったファイル
 - `task.md`
+
+## 追記 2026-06-19 — Codex + Claude: 配布化 v0 方針と P0 下地
+
+### 実施
+- 秋さんの「他の人にも使えるように配布したい」という相談を受け、まず SaaS ではなく「写真家ごとに専用 Railway/Turso/R2 環境を作るテンプレート配布」を初手方針として整理。
+- `DISTRIBUTION.md` を新規追加し、以下を明文化:
+  - v0: Template + Setup Guide
+  - v0.5: Concierge Setup
+  - SaaS は別プロジェクトとして後回し
+  - 写真家本人 / セットアップ担当 / 開発AI の3者それぞれの使いやすさ
+  - 完成度を損なわない原則
+  - P0/P1/P2、Phase 1〜5、Template v0 の境界線
+- `README.md` を古い `sandbox-app-template` 内容から、現在の写真家ポートフォリオ / Railway / Turso / R2 前提の入口へ更新。
+- `.env.template` を現行コードに合わせて整理:
+  - `WEBSITE_URL`, `BETTER_AUTH_SECRET`, `AI_GATEWAY_*`, `AUTUMN_SECRET_KEY` など未使用・誤誘導になりやすい項目を削除。
+  - `SITE_URL`, `PORT`, `DEFAULT_*`, `ALLOWED_ORIGINS`, `GA_MEASUREMENT_ID` を追加。
+  - 未設定時の症状をコメントで追記。
+- 配布化 P0 の下地として `packages/web/src/api/site-defaults.ts` を追加。
+  - API settings default / OGP / JSON-LD の名前・説明文 fallback を env-configurable に整理。
+  - CORS を localhost + `SITE_URL` / `DEFAULT_SITE_URL` / `ALLOWED_ORIGINS` から判定する形へ変更。
+  - GA4 は `GA_MEASUREMENT_ID` 指定時のみ注入。空指定なら無効化。`akieguchi.com` だけ既存 GA ID の互換 fallback を残し、本番 analytics が突然消えないようにした。
+- `packages/web/src/api/site-defaults.test.ts` を追加し、CORS と GA fallback の振る舞いをテスト化。
+
+### Claude 相談
+- agmsg で Claude Code (`claude-driver`) に3回相談。
+- Claude 回答要約:
+  - fork → Railway/Turso/R2 テンプレート化は妥当。SaaS より前に正本整理が先。
+  - P0 は OGP/SEO 固有名、空DB起動確認、R2/DB/env 設定漏れ時の導入UX。
+  - 完成度を損なうリスクは R2 未設定、migrate 未実行、OGP 固有名残留、ADMIN_PASSWORD 未設定、Railway env 漏れ。
+  - Template v0 の境界は「秋さんが今使っているものが、そのまま別人に動く状態で渡せるか」まで。マルチユーザーや自動セットアップは後回し。
+- Claude 指摘を `DISTRIBUTION.md` と `site-defaults` 実装へ反映済み。
+- push 前レビューも依頼し、Claude から「P0なし。pushOK。akieguchi.com本番への影響なし（fallback維持・env未設定=従来動作）」の返答。
+- P1メモとして、`www` / apex 両方を使う配布先では `ALLOWED_ORIGINS` 追記が必要な可能性があるとの指摘があり、`.env.template` と `DISTRIBUTION.md` に補足済み。
+
+### 残り
+- `packages/web/index.html` の静的 fallback meta はまだ江口秋 / `akieguchi.com` のまま。サーバ側 OGP 注入前の静的プレビュー対策として次の P0。
+- `packages/web/src/api/site-defaults.ts` には `akieguchi.com` 互換 fallback を残している。テンプレート正式リリース時は Railway 本番 env を確認したうえで中立 fallback へ切り替えるか、テンプレート branch で分離する。
+- root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
+- 空DB / 新規 Turso での起動確認は未実施。
+- 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/api` 成功（39 pass / 0 fail）。
+- `cd packages/web && bun test ./src` 成功（80 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+
+### 触ったファイル
+- `README.md`
+- `.env.template`
+- `DISTRIBUTION.md`
+- `packages/web/src/api/site-defaults.ts`
+- `packages/web/src/api/site-defaults.test.ts`
+- `packages/web/src/api/index.ts`
+- `packages/web/src/api/ogp.ts`
+- `task.md`

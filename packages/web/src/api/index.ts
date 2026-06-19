@@ -16,6 +16,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 const asBody = (buf: Buffer): BodyInit => buf as unknown as BodyInit;
 import { parseNoteRss, type NotePost } from "./note-rss";
 import { BUILD_ID } from "./ogp";
+import { SITE_DEFAULTS, isAllowedOrigin } from "./site-defaults";
 
 // ── In-memory image caches (byte-budgeted true-LRU) ─────
 // The gallery has 100+ photos × ~5 srcset widths (~600 variants). The old
@@ -214,17 +215,12 @@ const requireAdmin = async (c: any, next: any) => {
   await next();
 };
 
-// Only our own site (prod) and localhost (dev) may make credentialed cross-origin
-// requests. Reflecting an arbitrary Origin with credentials:true would let any
-// website call the admin API with the user's cookie.
-const ALLOWED_ORIGIN_RE = /^https?:\/\/(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|(www\.)?akieguchi\.com)$/;
-
 const app = new Hono()
   .basePath('api')
   .use(cors({
     // Same-origin requests (no Origin header) need no ACAO; cross-origin is allowed
     // only for known origins. Everything else gets no CORS grant.
-    origin: (origin) => (origin && ALLOWED_ORIGIN_RE.test(origin) ? origin : ""),
+    origin: (origin) => (isAllowedOrigin(origin) ? origin : ""),
     credentials: true,
   }))
   // Stop browsers MIME-sniffing JSON/error bodies into something executable.
@@ -378,16 +374,16 @@ const app = new Hono()
     const settings: Record<string, string> = {};
     for (const r of rows) settings[r.key] = r.value;
     return c.json({
-      siteName:        settings.siteName        ?? "江口秋",
-      siteNameEn:      settings.siteNameEn      ?? "Aki Eguchi",
+      siteName:        settings.siteName        ?? SITE_DEFAULTS.siteName,
+      siteNameEn:      settings.siteNameEn      ?? SITE_DEFAULTS.siteNameEn,
       heroSubtitle:    settings.heroSubtitle    ?? "Photography",
       heroPhotoUrl:    settings.heroPhotoUrl    ?? "",
       profilePhotoUrl: settings.profilePhotoUrl ?? "",
-      siteDescription: settings.siteDescription ?? "東京を拠点に活動する写真家・江口秋のポートフォリオ。宣材・ポートレート撮影のご依頼を受け付けています",
-      profileName:     settings.profileName     ?? "江口秋",
-      profileNameKata: settings.profileNameKata ?? "エグチアキ",
-      profileNameEn:   settings.profileNameEn   ?? "Aki Eguchi",
-      profileBio:      settings.profileBio      ?? "東京を拠点に活動するフォトグラファー。",
+      siteDescription: settings.siteDescription ?? SITE_DEFAULTS.siteDescription,
+      profileName:     settings.profileName     ?? SITE_DEFAULTS.profileName,
+      profileNameKata: settings.profileNameKata ?? SITE_DEFAULTS.profileNameKata,
+      profileNameEn:   settings.profileNameEn   ?? SITE_DEFAULTS.profileNameEn,
+      profileBio:      settings.profileBio      ?? SITE_DEFAULTS.profileBio,
       profileInstagram:settings.profileInstagram?? "",
       profileTwitter:  settings.profileTwitter  ?? "",
       profileNote:     settings.profileNote     ?? "",
@@ -482,7 +478,7 @@ const app = new Hono()
       photoRevealEffect:   settings.photoRevealEffect   ?? "fade",
       // Search Console の HTML タグ検証（content 値のみ）。server の OGP 注入で出力
       googleSiteVerification: settings.googleSiteVerification ?? "",
-      // 公開オリジン。sitemap/canonical/og:url/JSON-LD の基底。空 = 既定 https://akieguchi.com
+      // 公開オリジン。sitemap/canonical/og:url/JSON-LD の基底。空 = SITE_URL/default
       siteUrl:             settings.siteUrl             ?? "",
       // CC: section spacing multipliers (empty = 1.0 = current rhythm)
       spacingHeroBottom:   settings.spacingHeroBottom   ?? "",

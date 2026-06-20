@@ -10,6 +10,21 @@ export const SITE_DEFAULTS = {
   profileBio: process.env.DEFAULT_PROFILE_BIO ?? "Photographer.",
 };
 
+export function displayNameFrom(settings: Record<string, string>): string {
+  return settings.siteName || settings.profileName || SITE_DEFAULTS.siteName;
+}
+
+export function displayNameEnFrom(settings: Record<string, string>): string {
+  return settings.siteNameEn || settings.profileNameEn || displayNameFrom(settings) || SITE_DEFAULTS.siteNameEn;
+}
+
+export function siteDescriptionFrom(settings: Record<string, string>): string {
+  if (settings.siteDescription) return settings.siteDescription;
+  const name = displayNameFrom(settings);
+  if (name && name !== SITE_DEFAULTS.siteName) return `${name}の写真ポートフォリオ。`;
+  return SITE_DEFAULTS.siteDescription;
+}
+
 function originFrom(value: string | undefined): string | null {
   const raw = value?.trim();
   if (!raw) return null;

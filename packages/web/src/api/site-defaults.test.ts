@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { gaMeasurementIdForSite, isAllowedOrigin } from "./site-defaults";
+import { displayNameEnFrom, gaMeasurementIdForSite, isAllowedOrigin, siteDescriptionFrom } from "./site-defaults";
 
 const envSnapshot = {
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
@@ -44,6 +44,13 @@ describe("isAllowedOrigin", () => {
     expect(isAllowedOrigin("https://client.example")).toBe(true);
     expect(isAllowedOrigin("https://preview.example")).toBe(true);
     expect(isAllowedOrigin("https://attacker.example")).toBe(false);
+  });
+});
+
+describe("derived site defaults", () => {
+  test("uses an existing site name instead of leaking the generic template label", () => {
+    expect(displayNameEnFrom({ siteName: "江口 秋" })).toBe("江口 秋");
+    expect(siteDescriptionFrom({ siteName: "江口 秋" })).toBe("江口 秋の写真ポートフォリオ。");
   });
 });
 

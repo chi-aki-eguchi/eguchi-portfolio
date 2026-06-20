@@ -180,6 +180,14 @@ describe("siteUrlFrom / base-URL unification", () => {
       else process.env.SITE_URL = prevSiteUrl;
     }
   });
+
+  test("missing English name and description derive from the stored site name", () => {
+    const out = injectOgp(page, { siteName: "江口 秋" }, "/", "", undefined, "https://akieguchi.com");
+    expect(out).toContain("<title>江口 秋 | Photography</title>");
+    expect(out).toContain('name="description" content="江口 秋の写真ポートフォリオ。"');
+    expect(out).toContain('"name":"江口 秋"');
+    expect(out).not.toContain("Photographer Name");
+  });
 });
 
 describe("injectOgp JSON-LD WebSite node", () => {

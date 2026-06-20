@@ -746,6 +746,9 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `x-forwarded-host` / `host` と `x-forwarded-proto` から public origin を作る `publicOriginFromRequest()` を追加。
   - HTML OGP injection / sitemap / robots に同じ public origin を渡すよう変更。
 - `DISTRIBUTION.md` の P0 状態を更新。
+- 本番反映後の確認で、DBに `siteNameEn` / `siteDescription` が保存されていないため、JSON-LD と meta description に generic fallback が出ることを発見。
+  - 追加修正として、保存済みの `siteName` / `profileName` から英語名 fallback と説明文 fallback を派生する `displayNameFrom()` / `displayNameEnFrom()` / `siteDescriptionFrom()` を追加。
+  - 秋さん固有の固定文を戻さず、`江口 秋` が保存されていれば `江口 秋の写真ポートフォリオ。` のように自然な説明を作る形にした。
 
 ### Claude 相談
 - agmsg で Claude Code (`claude-driver`) に P0/P1 レビュー依頼。
@@ -756,9 +759,9 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 今回実装は `x-forwarded-host` / `host` を使い、sitemap / robots にも反映済み。
 
 ### 検証
-- `cd packages/web && bun test ./src/api/site-defaults.test.ts ./src/api/ogp.test.ts` 成功（29 pass / 0 fail）。
+- `cd packages/web && bun test ./src/api/site-defaults.test.ts ./src/api/ogp.test.ts` 成功（31 pass / 0 fail）。
 - `cd packages/web && bun x tsc -b` 成功。
-- `cd packages/web && bun test ./src` 成功（84 pass / 0 fail）。
+- `cd packages/web && bun test ./src` 成功（86 pass / 0 fail）。
 - `cd packages/web && bun run lint` 成功。
 - `cd packages/web && bun run build` 成功。
 - `git diff --check` 成功。

@@ -1,4 +1,10 @@
-import { DEFAULT_SITE_URL as SITE_URL_DEFAULT, SITE_DEFAULTS, gaMeasurementIdForSite } from "./site-defaults";
+import {
+  DEFAULT_SITE_URL as SITE_URL_DEFAULT,
+  displayNameEnFrom,
+  displayNameFrom,
+  gaMeasurementIdForSite,
+  siteDescriptionFrom,
+} from "./site-defaults";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
@@ -41,9 +47,6 @@ export const BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev"
 export function siteUrlFrom(settings: Record<string, string>, fallbackOrigin = ""): string {
   return (settings.siteUrl || process.env.SITE_URL || fallbackOrigin || DEFAULT_SITE_URL).replace(/\/+$/, "");
 }
-// Used when the admin hasn't set siteDescription — keep in sync with /api settings default.
-export const SITE_DESCRIPTION_DEFAULT = SITE_DEFAULTS.siteDescription;
-
 // Per-route titles so each page is distinct for search/social, not all "home".
 const PAGE_TITLES: Record<string, string> = {
   "/gallery": "Gallery",
@@ -62,7 +65,7 @@ export function injectOgp(
   override?: { title?: string; desc?: string; image?: string },
   fallbackOrigin = "",
 ): string {
-  const siteName = settings.siteNameEn || settings.siteName || SITE_DEFAULTS.siteNameEn;
+  const siteName = displayNameEnFrom(settings);
   const subtitle = settings.heroSubtitle || "Photography";
   // Bilingual base title (e.g. "Name JP | Name EN | Photography") so the JA name
   // leads for Japanese search while the EN name still reads in social cards.
@@ -74,7 +77,7 @@ export function injectOgp(
   const page = PAGE_TITLES[pathname];
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = override?.title ? `${override.title} | ${base}` : (page ? `${page} | ${base}` : base);
-  const desc = override?.desc || settings.siteDescription || SITE_DESCRIPTION_DEFAULT;
+  const desc = override?.desc || siteDescriptionFrom(settings);
   // Prefer an override image (series cover), then the hero photo, then profile, then
   // the static default already in index.html.
   const imgBase = override?.image || heroImg || settings.heroPhotoUrl || settings.profilePhotoUrl;
@@ -173,9 +176,9 @@ function buildJsonLd(
   fallbackOrigin = "",
 ): string {
   const siteUrl = siteUrlFrom(settings, fallbackOrigin);
-  const name = settings.siteName || settings.profileName || SITE_DEFAULTS.profileName;
-  const nameEn = settings.siteNameEn || settings.profileNameEn || SITE_DEFAULTS.profileNameEn;
-  const desc = settings.siteDescription || SITE_DESCRIPTION_DEFAULT;
+  const name = displayNameFrom(settings);
+  const nameEn = displayNameEnFrom(settings);
+  const desc = siteDescriptionFrom(settings);
   const sameAs = [settings.profileInstagram, settings.profileTwitter, settings.profileNote].filter(Boolean);
   const image = settings.profilePhotoUrl ? `${siteUrl}${settings.profilePhotoUrl}?w=800&q=85` : undefined;
 

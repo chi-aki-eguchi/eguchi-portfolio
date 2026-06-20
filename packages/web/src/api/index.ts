@@ -16,7 +16,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 const asBody = (buf: Buffer): BodyInit => buf as unknown as BodyInit;
 import { parseNoteRss, type NotePost } from "./note-rss";
 import { BUILD_ID } from "./ogp";
-import { SITE_DEFAULTS, isAllowedOrigin } from "./site-defaults";
+import { SITE_DEFAULTS, displayNameEnFrom, displayNameFrom, isAllowedOrigin, siteDescriptionFrom } from "./site-defaults";
 
 // ── In-memory image caches (byte-budgeted true-LRU) ─────
 // The gallery has 100+ photos × ~5 srcset widths (~600 variants). The old
@@ -374,15 +374,15 @@ const app = new Hono()
     const settings: Record<string, string> = {};
     for (const r of rows) settings[r.key] = r.value;
     return c.json({
-      siteName:        settings.siteName        ?? SITE_DEFAULTS.siteName,
-      siteNameEn:      settings.siteNameEn      ?? SITE_DEFAULTS.siteNameEn,
+      siteName:        settings.siteName        ?? displayNameFrom(settings),
+      siteNameEn:      settings.siteNameEn      ?? displayNameEnFrom(settings),
       heroSubtitle:    settings.heroSubtitle    ?? "Photography",
       heroPhotoUrl:    settings.heroPhotoUrl    ?? "",
       profilePhotoUrl: settings.profilePhotoUrl ?? "",
-      siteDescription: settings.siteDescription ?? SITE_DEFAULTS.siteDescription,
-      profileName:     settings.profileName     ?? SITE_DEFAULTS.profileName,
+      siteDescription: settings.siteDescription ?? siteDescriptionFrom(settings),
+      profileName:     settings.profileName     ?? displayNameFrom(settings),
       profileNameKata: settings.profileNameKata ?? SITE_DEFAULTS.profileNameKata,
-      profileNameEn:   settings.profileNameEn   ?? SITE_DEFAULTS.profileNameEn,
+      profileNameEn:   settings.profileNameEn   ?? displayNameEnFrom(settings),
       profileBio:      settings.profileBio      ?? SITE_DEFAULTS.profileBio,
       profileInstagram:settings.profileInstagram?? "",
       profileTwitter:  settings.profileTwitter  ?? "",

@@ -1166,3 +1166,38 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `README.md`
 - `DISTRIBUTION.md`
 - `task.md`
+
+## 追記 2026-06-20 — Codex: admin login 後に reload しないと入れないバグ修正
+
+### 背景
+- 正しい `ADMIN_PASSWORD` を入れても、ログイン直後に `/admin` へ入れず、ページ reload 後だけ
+  入れる既存バグが本番・配布版の両方で発生。
+- 原因は frontend 側の `["admin-me"]` query cache。`AdminPage` は `useQuery(["admin-me"])` で
+  `/api/admin/me` を見て、未認証なら `/admin/login` へ戻す。QueryClient の `staleTime` が
+  60秒なので、ログイン前に取得した `{ authenticated: false }` が fresh のまま残ると、
+  ログイン成功直後の `navigate("/admin")` で古い false を読んで戻される。
+- reload すると in-memory cache が消え、cookie 付きで `/api/admin/me` を再取得するため入れる。
+
+### 対応
+- `packages/web/src/web/pages/admin-login.tsx`:
+  login 成功時に `qc.setQueryData(["admin-me"], { authenticated: true })` してから
+  `invalidateQueries(["admin-me"])` → `/admin` へ遷移。
+- `packages/web/src/web/test/pages.render.test.tsx`:
+  失敗再発防止として、未ログイン cache が残っていても login 成功後に `admin-me` が
+  `{ authenticated: true }` へ更新されるテストを追加。
+- Claude に agmsg 相談済み。原因仮説・修正方針とも承認。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 87 pass / 0 fail。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 反映方針
+- まず `main` に commit/push して本番 `akieguchi.com` へ反映。
+- 同じ commit を `codex/railway-all-in-one-experiment` へ cherry-pick して配布版にも反映。
+
+### 触ったファイル
+- `packages/web/src/web/pages/admin-login.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`

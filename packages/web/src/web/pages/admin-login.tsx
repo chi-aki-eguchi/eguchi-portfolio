@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { Lock } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [, navigate] = useLocation();
+  const qc = useQueryClient();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   // Focus the password field on mount. Done imperatively (not the autoFocus
@@ -23,7 +24,11 @@ export default function AdminLoginPage() {
       }
       return res.json();
     },
-    onSuccess: () => navigate("/admin"),
+    onSuccess: () => {
+      qc.setQueryData(["admin-me"], { authenticated: true });
+      void qc.invalidateQueries({ queryKey: ["admin-me"] });
+      navigate("/admin");
+    },
     onError: (e: Error) => setError(e.message || "パスワードが違います"),
   });
 

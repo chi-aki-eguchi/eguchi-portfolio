@@ -25,6 +25,7 @@ async function mount(node: unknown) {
   );
   await flush(30); // let queries resolve against the canned fetch and re-render
   return {
+    qc,
     host,
     cleanup: () => { root.unmount(); host.remove(); },
   };
@@ -192,6 +193,32 @@ describe("shared components", () => {
     } finally {
       canned["/api/admin/me"] = prev;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
+    }
+  });
+
+  test("AdminLogin marks admin auth fresh after successful login", async () => {
+    const prev = canned["/api/admin/login"];
+    canned["/api/admin/login"] = { ok: true };
+    try {
+      const AdminLogin = (await import("../pages/admin-login")).default;
+      const { qc, host, cleanup } = await mount(createElement(AdminLogin));
+      qc.setQueryData(["admin-me"], { authenticated: false });
+
+      const input = host.querySelector('input[aria-label="パスワード"]') as HTMLInputElement | null;
+      expect(input).not.toBeNull();
+      input!.value = "correct-password";
+      input!.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+      const form = host.querySelector("form") as HTMLFormElement | null;
+      expect(form).not.toBeNull();
+      form!.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
+      await flush(30);
+
+      const authState = qc.getQueryData(["admin-me"]) as { authenticated: boolean } | undefined;
+      expect(authState).toEqual({ authenticated: true });
+      cleanup();
+    } finally {
+      if (prev === undefined) delete canned["/api/admin/login"];
+      else canned["/api/admin/login"] = prev;
     }
   });
 

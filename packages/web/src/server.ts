@@ -1,8 +1,16 @@
 import app from "./api";
-import { db, withRetry } from "./api/database";
-import * as schema from "./api/database/schema";
+import { db, withRetry, schema } from "./api/database";
+import { runStartupMigrations } from "./api/database/migrate";
 import { eq, and, isNull } from "drizzle-orm";
 import { injectOgp, siteUrlFrom, escapeHtml, BUILD_ID } from "./api/ogp";
+
+// 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
+// 本番(turso)は no-op。失敗時はサーバを起動せず loud に落とす。
+try {
+  await runStartupMigrations();
+} catch {
+  process.exit(1);
+}
 
 const port = Number(process.env.PORT ?? 3000);
 const distDir = `${import.meta.dir}/../dist`;

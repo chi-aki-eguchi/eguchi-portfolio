@@ -1,9 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from "hono/cors";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { db, withRetry } from "./database";
-import * as schema from "./database/schema";
-import { eq, sql, isNull, isNotNull, inArray, lt, and } from "drizzle-orm";
+import { db, withRetry, schema } from "./database";
+import { eq, sql, isNull, isNotNull, inArray, lt, and, type SQL } from "drizzle-orm";
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import exifReader from "exif-reader";
@@ -21,7 +20,7 @@ import { SITE_DEFAULTS, displayNameEnFrom, displayNameFrom, isAllowedOrigin, sit
 // ── In-memory image caches (byte-budgeted true-LRU) ─────
 // The gallery has 100+ photos × ~5 srcset widths (~600 variants). The old
 // 200-entry cap thrashed badly: most scrolls evicted entries that were about to
-// be re-requested, so sharp re-encoded (and R2 re-fetched) the same thumbnails
+// be re-requested, so sharp re-encoded (and storage re-fetched) the same thumbnails
 // over and over — the main cause of slow / blank images in production. A byte
 // budget holds them all instead (thumbnails are small). Map insertion order is
 // the LRU order: get() moves an entry to the back, eviction drops the front.
@@ -48,8 +47,8 @@ function cacheSet(key: string, buf: Buffer, type: string) {
   }
 }
 
-// Short-lived cache of the *original* R2 object. Without it, the ~5 srcset widths
-// for one photo each do their own GetObject (1–2MB) on a cold load — 5× the R2
+// Short-lived cache of the original storage object. Without it, the ~5 srcset widths
+// for one photo each do their own GetObject (1–2MB) on a cold load — 5× the storage
 // round-trips. Caching the original for a minute collapses that burst into one.
 const ORIG_CACHE_BYTES = 96 * 1024 * 1024;
 const ORIG_TTL_MS = 60_000;
@@ -78,10 +77,11 @@ async function getOriginal(key: string): Promise<{ buf: Buffer; type: string }> 
   return entry;
 }
 
-// S3/R2 client
+// S3-compatible storage client (Cloudflare R2 in current prod; Railway Storage for template experiments).
 const s3 = new S3Client({
-  region: "auto",
+  region: process.env.S3_REGION ?? "auto",
   endpoint: process.env.S3_ENDPOINT,
+  forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "1" || process.env.S3_FORCE_PATH_STYLE === "true",
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY_ID!,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
@@ -165,8 +165,8 @@ async function optimiseImage(input: Buffer | Uint8Array, maxPx: number, quality:
     .toBuffer();
 }
 
-// Upload buffer to R2
-async function uploadToR2(key: string, buf: Buffer, contentType: string) {
+// Upload buffer to S3-compatible object storage.
+async function uploadToStorage(key: string, buf: Buffer, contentType: string) {
   await s3.send(new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
@@ -177,6 +177,16 @@ async function uploadToR2(key: string, buf: Buffer, contentType: string) {
 
 function keyToProxyUrl(key: string) {
   return `/api/images/${key}`;
+}
+
+async function executeRaw(query: SQL) {
+  const rawDb = db as typeof db & {
+    execute?: (query: SQL) => Promise<unknown>;
+    run?: (query: SQL) => Promise<unknown>;
+  };
+  if (typeof rawDb.execute === "function") return rawDb.execute(query);
+  if (typeof rawDb.run === "function") return rawDb.run(query);
+  throw new Error("Database raw execution is not supported.");
 }
 
 // Constant-time password check (hash both sides → fixed length, no length leak).
@@ -237,8 +247,8 @@ const app = new Hono()
   // ── Health ──────────────────────────────────────────────
   .get('/health', (c) => c.json({ status: 'ok', build: BUILD_ID }, 200))
 
-  // ── Image proxy (R2 → optional thumbnail resize → cache) ─
-  // R2 stores UPLOAD_MAX_PX (3200px) optimised images (~1-3MB), so
+  // ── Image proxy (storage → optional thumbnail resize → cache) ─
+  // Storage holds UPLOAD_MAX_PX (3200px) optimised images (~1-3MB), so
   // on-the-fly resize works from an already-small source and is fast
   // (resizing a few MB, not a ~60MB camera original).
   .get('/images/*', async (c) => {
@@ -607,8 +617,8 @@ const app = new Hono()
     return c.json({ ok: true }, 200);
   })
 
-  // ── Admin: Server-side upload (resize → R2) ─────────────
-  // Client sends raw file; server optimises (3200px/mozjpeg q92) and stores in R2. Max 60MB.
+  // ── Admin: Server-side upload (resize → storage) ───────
+  // Client sends raw file; server optimises (3200px/mozjpeg q92) and stores it. Max 60MB.
   .post('/admin/upload', requireAdmin, async (c) => {
     const formData = await c.req.formData();
     const file = formData.get('file') as File | null;
@@ -629,7 +639,7 @@ const app = new Hono()
         .limit(1)
     );
     if (dup) {
-      // Skip R2 upload + DB insert entirely; client counts it as a duplicate.
+      // Skip storage upload + DB insert entirely; client counts it as a duplicate.
       return c.json({ duplicate: true, fileHash }, 200);
     }
 
@@ -659,13 +669,13 @@ const app = new Hono()
     } catch { /* EXIFなし・壊れたEXIF → null のまま（手入力可） */ }
 
     const key = `photos/${Date.now()}-${file.name.replace(/\.[^.]+$/, '')}.jpg`;
-    await uploadToR2(key, optimised, 'image/jpeg');
+    await uploadToStorage(key, optimised, 'image/jpeg');
 
     const proxyUrl = keyToProxyUrl(key);
     return c.json({ url: proxyUrl, key, size: optimised.length, width, height, fileHash, shotAt, exifCamera, exifLens }, 201);
   })
 
-  // ── Admin: Hero image upload (resize → R2) ──────────────
+  // ── Admin: Hero image upload (resize → storage) ─────────
   .post('/admin/hero/upload', requireAdmin, async (c) => {
     const formData = await c.req.formData();
     const file = formData.get('file') as File | null;
@@ -678,13 +688,13 @@ const app = new Hono()
     const optimised = await optimiseImage(inputBuf, UPLOAD_MAX_PX, UPLOAD_QUALITY);
 
     const key = `hero/${Date.now()}-${file.name.replace(/\.[^.]+$/, '')}.jpg`;
-    await uploadToR2(key, optimised, 'image/jpeg');
+    await uploadToStorage(key, optimised, 'image/jpeg');
 
     const proxyUrl = keyToProxyUrl(key);
     return c.json({ url: proxyUrl, key, size: optimised.length }, 201);
   })
 
-  // ── Admin: Profile photo upload (resize → R2) ────────────
+  // ── Admin: Profile photo upload (resize → storage) ───────
   .post('/admin/profile/upload', requireAdmin, async (c) => {
     const formData = await c.req.formData();
     const file = formData.get('file') as File | null;
@@ -697,7 +707,7 @@ const app = new Hono()
     const optimised = await optimiseImage(inputBuf, UPLOAD_MAX_PX, UPLOAD_QUALITY);
 
     const key = `profile/${Date.now()}-${file.name.replace(/\.[^.]+$/, '')}.jpg`;
-    await uploadToR2(key, optimised, 'image/jpeg');
+    await uploadToStorage(key, optimised, 'image/jpeg');
 
     const proxyUrl = keyToProxyUrl(key);
     return c.json({ url: proxyUrl, key, size: optimised.length }, 201);
@@ -724,7 +734,7 @@ const app = new Hono()
     // Sanitise the original name before it becomes part of the storage key.
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const key = `fonts/${Date.now()}-${safeName}`;
-    await uploadToR2(key, buf, mimeMap[ext] ?? 'application/octet-stream');
+    await uploadToStorage(key, buf, mimeMap[ext] ?? 'application/octet-stream');
 
     const proxyUrl = keyToProxyUrl(key);
     return c.json({ url: proxyUrl, key, size: buf.length }, 201);
@@ -781,7 +791,7 @@ const app = new Hono()
   })
 
   // ── Admin: Duplicate a photo (O1) ───────────────────────
-  // New row inheriting all metadata, pointing at the SAME R2 image (no copy) — so
+  // New row inheriting all metadata, pointing at the SAME stored image (no copy) — so
   // one photo can live in multiple categories / series cheaply.
   .post('/admin/photos/:id/duplicate', requireAdmin, async (c) => {
     const id = Number(c.req.param("id"));
@@ -835,7 +845,7 @@ const app = new Hono()
       db.select().from(schema.photos).where(eq(schema.photos.id, id))
     );
     if (!photo) return c.json({ error: "Not found" }, 404);
-    // O1 duplicates share the same R2 object — only delete the file when no
+    // O1 duplicates share the same storage object — only delete the file when no
     // OTHER photo row (live or trashed) still points at the same URL.
     const [sharer] = await withRetry(() =>
       db.select({ id: schema.photos.id }).from(schema.photos)
@@ -862,14 +872,14 @@ const app = new Hono()
   .get('/admin/photos/trash', requireAdmin, async (c) => {
     // Lazy retention: there is no cron in this runtime, so opportunistically
     // purge items trashed more than TRASH_RETENTION_DAYS ago whenever the trash
-    // is opened. This keeps the bin (and R2 storage) from growing unbounded.
+    // is opened. This keeps the bin (and object storage) from growing unbounded.
     const cutoff = new Date(Date.now() - TRASH_RETENTION_MS);
     const stale = await withRetry(() =>
       db.select({ id: schema.photos.id, url: schema.photos.url }).from(schema.photos)
         .where(and(isNotNull(schema.photos.deletedAt), lt(schema.photos.deletedAt, cutoff)))
     );
     for (const p of stale) {
-      // O1 duplicates share R2 objects — keep the file if another row references it.
+      // O1 duplicates share storage objects — keep the file if another row references it.
       const [sharer] = await withRetry(() =>
         db.select({ id: schema.photos.id }).from(schema.photos)
           .where(sql`${eq(schema.photos.url, p.url)} AND ${schema.photos.id} != ${p.id}`)
@@ -902,7 +912,7 @@ const app = new Hono()
     );
     const inList = sql.join(ids.map(id => sql`${id}`), sql`, `);
     await withRetry(() =>
-      db.run(sql`UPDATE photos SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
+      executeRaw(sql`UPDATE photos SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
     );
     return c.json({ ok: true }, 200);
   })
@@ -1012,7 +1022,7 @@ const app = new Hono()
     );
     const inList = sql.join(ids.map(id => sql`${id}`), sql`, `);
     await withRetry(() =>
-      db.run(sql`UPDATE categories SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
+      executeRaw(sql`UPDATE categories SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
     );
     return c.json({ ok: true }, 200);
   })
@@ -1157,7 +1167,7 @@ const app = new Hono()
     );
     const inList = sql.join(ids.map(id => sql`${id}`), sql`, `);
     await withRetry(() =>
-      db.run(sql`UPDATE series SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
+      executeRaw(sql`UPDATE series SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
     );
     return c.json({ ok: true }, 200);
   })
@@ -1227,7 +1237,7 @@ const app = new Hono()
     );
     const inList = sql.join(ids.map(id => sql`${id}`), sql`, `);
     await withRetry(() =>
-      db.run(sql`UPDATE pricing_plans SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
+      executeRaw(sql`UPDATE pricing_plans SET sort_order = ${caseExpr} END WHERE id IN (${inList})`)
     );
     return c.json({ ok: true }, 200);
   })
@@ -1328,7 +1338,7 @@ const app = new Hono()
     );
     const inList = sql.join(photoIds.map(id => sql`${id}`), sql`, `);
     await withRetry(() =>
-      db.run(sql`UPDATE hero_photos SET sort_order = ${caseExpr} END WHERE photo_id IN (${inList})`)
+      executeRaw(sql`UPDATE hero_photos SET sort_order = ${caseExpr} END WHERE photo_id IN (${inList})`)
     );
     return c.json({ ok: true }, 200);
   });

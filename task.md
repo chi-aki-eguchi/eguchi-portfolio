@@ -783,6 +783,390 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/server.ts`
 - `task.md`
 
+## 追記 2026-06-20 — Codex + Claude: Railway All-in-One 配布版の実験開始
+
+### 実施
+- 秋さんから「こっちで用意することが多すぎる。配布ではなく個人取引になってしまう」と相談あり。
+- 方針を「秋さん本番は現行 Railway + Turso + R2 のまま」「配布版だけ Railway Template + PostgreSQL + Railway Storage へ寄せる」に整理。
+- 実験用ブランチ `codex/railway-all-in-one-experiment` を作成。
+- `docs/railway-all-in-one-experiment.md` を追加。
+  - クオリティを落とさずにRailway一本化できる見込み、壊れやすい箇所、役割分担、次の実験を記録。
+- PostgreSQL 用の Drizzle schema を別ファイルで追加。
+  - `packages/web/src/api/database/schema.postgres.ts`
+  - 既存 `schema.ts` はTurso本番用として未変更。
+- PostgreSQL 用の Drizzle config と生成 migration を追加。
+  - `packages/web/drizzle.postgres.config.ts`
+  - `packages/web/drizzle-postgres/0000_worried_sentry.sql`
+- Bun 本体の `SQL` と Drizzle `bun-sql` で、追加パッケージなしにPostgreSQL接続入口を作成できることを確認。
+  - `packages/web/src/api/database/postgres.ts`
+- Storage client を S3 互換前提へ少し一般化。
+  - `S3_REGION` / `S3_FORCE_PATH_STYLE` を追加。
+  - 既定値は現行R2本番の挙動を変えない。
+- `db.run(...)` 直呼びの並び替えSQLを `executeRaw(...)` に寄せた。
+  - 現行Tursoでは `run`、PostgreSQLでは `execute` を使えるようにするため。
+- 管理画面 `はじめに` の用語を、GitHub/Turso/R2 などの固有サービス名から「公開場所」「データの保存場所」「写真の保存場所」へ寄せた。
+
+### Claude 相談
+- agmsg で Claude Code (`claude-driver`) に P0/P1 レビュー依頼。
+- Claude 返答:
+  - 配布版だけ Railway All-in-One にする方針でよい。
+  - P0: `db.run()` はPostgreSQL側に無いので `execute` へ逃がす必要あり。
+  - P0: `schema.ts` は SQLite/Turso 前提なので配布版では pg-core 化が必要。
+  - P0: Storage は `forcePathStyle` が必要になる可能性あり。
+  - 良い点: 画像処理はアプリ側の `sharp` が担っているため、保存先変更だけで品質を落とす必要は低い。
+
+### 検証
+- `cd packages/web && bunx drizzle-kit generate --config=drizzle.postgres.config.ts` 成功。
+- `cd packages/web && DATABASE_URL=postgres://user:pass@localhost:5432/db bun -e 'const m = await import("./src/api/database/postgres.ts"); console.log(Boolean(m.db), typeof m.withRetry);'` 成功。
+- `cd packages/web && bunx tsc --noEmit --target ES2022 --lib ES2023 --module ESNext --moduleResolution bundler --strict --skipLibCheck src/api/database/schema.postgres.ts src/api/database/postgres.ts drizzle.postgres.config.ts` 成功。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（86 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+
+### 残り
+- PostgreSQL の実DBにはまだ接続していない。
+  - 次は空の Railway PostgreSQL かローカルPostgreSQLに schema を流し、`/api/settings` / `/api/photos` / `/admin/login` を確認する。
+- Railway Storage Bucket の実物検証は未実施。
+  - upload / image proxy / resize / delete / cache を写真1枚で確認する。
+- 配布用テンプレートでは、`schema.postgres.ts` / `postgres.ts` を実際の `schema.ts` / `database/index.ts` に切り替える必要がある。
+- 秋さん本番へのデプロイはしていない。実験ブランチ上の作業。
+- 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
+
+### 触ったファイル
+- `.env.template`
+- `docs/railway-all-in-one-experiment.md`
+- `packages/web/drizzle-postgres/0000_worried_sentry.sql`
+- `packages/web/drizzle-postgres/meta/0000_snapshot.json`
+- `packages/web/drizzle-postgres/meta/_journal.json`
+- `packages/web/drizzle.postgres.config.ts`
+- `packages/web/src/api/database/postgres.ts`
+- `packages/web/src/api/database/schema.postgres.ts`
+- `packages/web/src/api/index.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`
+
+## 追記 2026-06-20 — Claude: Railway All-in-One 配布版 DB/Storage プロバイダ切替 + 実環境 e2e
+
+### 実施
+- 配布版の最後の未配線を解消。`api/index.ts` と `server.ts` が `schema`（テーブル定義）を
+  sqlite-core のままハードコード参照していたため、`db` を pg に替えても schema が sqlite で
+  実行時に boolean/timestamp 型不一致になる状態だった。
+- `DATABASE_PROVIDER` 環境変数で **db / withRetry / schema を一括切替**する方式に変更。
+  - 未設定 → 従来の Turso/libSQL を動的 import（postgres.ts は一切ロードされない＝本番完全不変）。
+  - `=postgres` → `postgres.ts` + `schema.postgres` を選択。
+  - 旧 `database/index.ts` の libsql 実装は `database/libsql.ts` へ退避し、`index.ts` を切替境界に。
+  - 列名は両 schema で一致するため、クエリビルダ向けには libsql 側の型へ cast で統一。
+- `drizzle.postgres.config.ts` に欠けていた `dbCredentials.url`（env の DATABASE_URL）を追記。
+
+### 検証（実 Railway PostgreSQL + Storage、public proxy 経由）
+- Storage（S3互換）: PUT/GET/DELETE 往復バイト一致、`forcePathStyle=true` で動作。
+- migration: 生成 SQL を bun:sql で直接適用（drizzle-kit は pg driver 別途要求のため、
+  bun-sql 無依存方針を維持）。9文/9文適用、6テーブル作成確認。
+- API e2e 9/9 pass: settings / photos(空) / login / upload(storage) /
+  photos INSERT・RETURNING(id=1, sortOrder=MAX+1 相関サブクエリ可) /
+  timestamp 往復(createdAt 正しい ISO) / 一覧反映 / reorder(CASE SQL が executeRaw→db.execute(pg)で200) /
+  削除+purge。
+- 本番(turso/デフォルト)回帰: `tsc -b` exit0 / `bun test ./src` 86 pass・0 fail 維持 / `bun run build` 成功。
+
+### 接続の学び（配布 doc へ反映推奨）
+- ローカル/外部からの検証は Railway の **public URL**（`*.proxy.rlwy.net:PORT`）が必要。
+  内部 host（`*.railway.internal`）はこの Mac から到達不可。デプロイ後の Railway 内部は internal で OK。
+- 今回 `sslmode=require` は不要だった（public proxy で接続成功）。
+
+### 残り
+- 画像 PROXY + sharp リサイズの実 Storage 経由スポット確認（raw GET と sharp は個別に検証済みのため間接的に担保）。
+- Railway Template 化（`railway.json` + Deploy on Railway ボタン）。
+- 配布 doc に DATABASE_PUBLIC_URL 注記と、schema 2本（`schema.ts` / `schema.postgres.ts`）同期ルールの明文化。
+- 本番へのデプロイはしていない。実験ブランチ上の作業。`site-analysis-2026-06.md` は未追跡のまま不触。
+
+### 触ったファイル
+- `packages/web/src/api/database/index.ts`（切替境界へ書き換え）
+- `packages/web/src/api/database/libsql.ts`（新規・旧 index.ts の libsql 実装を退避）
+- `packages/web/src/api/index.ts`（schema import を ./database 経由へ）
+- `packages/web/src/server.ts`（schema import を ./api/database 経由へ）
+- `packages/web/drizzle.postgres.config.ts`（dbCredentials 追記）
+- `task.md`
+
+## 追記 2026-06-20 — Claude: Railway Template 化（railway.json + Deploy ボタン）
+
+### 実施
+- `railway.json`（リポジトリ root）を追加。Nixpacks + Bun。
+  - build: `bun install && bun run build`（= turbo build → tsc -b && vite build）
+  - start: `bun packages/web/src/server.ts`（server.ts は import.meta.dir で dist 解決＝cwd 非依存）
+  - healthcheck: `/`（空/未migration DB でも server が getSettings の例外を握って index.html を 200 で返す）
+  - restart: ON_FAILURE / 10 retries
+- `README.md` に「Deploy on Railway (distribution template)」節を追加。
+  - Deploy ボタン（テンプレ id は `<YOUR_TEMPLATE_ID>` プレースホルダ。dashboard で template 公開後に差し替える maintainer 注記つき）。
+  - テンプレ変数表（`DATABASE_PROVIDER=postgres` / `S3_FORCE_PATH_STYLE=true` 等）。
+  - 一度だけの migration 手順。
+  - `DATABASE_URL`(internal) vs `DATABASE_PUBLIC_URL`(`*.proxy.rlwy.net`) の注意書き。SSL 時は `?sslmode=require`。
+
+### 検証
+- railway.json valid JSON 確認。
+- buildCommand 実走: root `bun run build`（turbo build）成功、`packages/web/dist/index.html` 生成確認。
+- startCommand 実走: repo root から `bun packages/web/src/server.ts` 起動 → `GET /` 200、dist が import.meta.dir で解決されることを確認。
+- ビルドツール（vite/tsc/turbo 等）は devDependencies だが、`bun install` は NODE_ENV に関係なく devDeps を入れるため本番ビルドと同条件で問題なし。
+
+### 残り
+- Railway dashboard での template 公開（plugins=PostgreSQL+Storage、変数設定）→ `<YOUR_TEMPLATE_ID>` 差し替え（秋さん/セットアップ担当の手作業）。
+- 配布 doc（DISTRIBUTION.md / docs）への DATABASE_PUBLIC_URL・schema2本同期ルールの本反映。
+- migration の初回自動適用は未対応（現状は手動1回）。turnkey 化するなら release/pre-deploy フックを検討。
+- push はしていない。experiment ブランチにローカル commit のみ。
+
+### 触ったファイル
+- `railway.json`（新規）
+- `README.md`
+- `task.md`
+
+## 追記 2026-06-20 — Claude: 配布版の起動時 自動マイグレーション
+
+### 実施
+- `packages/web/src/api/database/migrate.ts`（新規）に `runStartupMigrations()` を追加。
+  - `DATABASE_PROVIDER !== "postgres"` なら即 return（本番 turso は完全 no-op）。
+  - postgres 時のみ `drizzle-orm/bun-sql/migrator` を動的 import し、`packages/web/drizzle-postgres`
+    の migration を適用。`import.meta.dir` 基準でフォルダ解決（cwd 非依存）。
+  - drizzle migrator は `drizzle.__drizzle_migrations` で適用済みを追跡＝再起動/再デプロイで
+    何度呼んでも安全（idempotent）。
+  - 失敗時は原因・対処（DATABASE_URL 到達性 / PostgreSQL plugin / README 参照）を明示ログして
+    例外を投げ直す。
+- `server.ts`: `Bun.serve` 前に `try { await runStartupMigrations(); } catch { process.exit(1); }`。
+  → 配布版は受け取った人が手で db:push / migrate を打たずに起動できる。失敗時はサーバを
+    起動せず loud に落ち、Railway が前バージョンを維持（壊れた新版がトラフィックを受けない）。
+
+### 検証（Railway テスト project、実 PostgreSQL）
+- 空 DB（`DROP SCHEMA public CASCADE` で再現）から `DATABASE_PROVIDER=postgres` 起動
+  → `[migrate] applying...` → `[migrate] up to date` → 6テーブル作成 → `GET /` 200 /
+    `GET /api/settings` 134キー返却。
+- 再起動（populated DB）→ 「up to date」・`already exists` エラーなし＝idempotency OK。
+  追跡表 `drizzle.__drizzle_migrations` 生成確認。
+- 到達不可 DB → exit code 1・サーバ listening せず・[migrate] の明示ログ出力（失敗が loud）。
+- 本番パス（DATABASE_PROVIDER 未設定）→ 起動ログに `[migrate]` 0行＝no-op、影響なし。
+- 本番回帰: `tsc -b` / `bun test ./src` 86 pass。
+
+### 残り
+- ② 配布ドキュメント整備（DISTRIBUTION.md / docs に自動マイグレーション挙動・DATABASE_PUBLIC_URL・
+  schema2本同期ルールを反映）。README の「One-time database setup」は自動化済みのため文言更新余地あり。
+- ① Railway dashboard で template 公開 → `<YOUR_TEMPLATE_ID>` 差し替え（手作業）。
+- push はしていない。experiment ブランチにローカル commit のみ。
+
+### 触ったファイル
+- `packages/web/src/api/database/migrate.ts`（新規）
+- `packages/web/src/server.ts`
+- `task.md`
+
+## 追記 2026-06-20 — Claude: 配布ドキュメント整備（自動migration / DATABASE_PUBLIC_URL / schema 2本同期）
+
+### 実施
+- `README.md`「One-time database setup」→「Database setup — automatic」に更新。
+  起動時自動適用・idempotent・失敗時 loud・本番 no-op を明記。手動 apply は fallback として残置。
+- `DISTRIBUTION.md` に「Railway All-in-One Template — Maintenance Notes」節を追加。
+  自動migration挙動 / `DATABASE_URL` vs `DATABASE_PUBLIC_URL` / **schema 2本同期ルール**
+  （schema.ts↔schema.postgres.ts、両 config で generate、`./database` 経由 import）を表つきで明文化。
+- `docs/setup-guide.md`: 冒頭に「Railway 一本化（推奨・新）/ Turso+R2（従来）」の2方式注記。
+  「Database schema を反映する」節に、Railway/PostgreSQL は起動時自動適用で db:push 不要と追記。
+- `CLAUDE.md` / `AGENTS.md` の §0 必須ルールに「DB schema は2ファイル同期必須」を追加
+  （PostgreSQL 側漏れは配布版だけ壊し本番で気づけない、を明記）。
+
+### 検証
+- 参照パス実在確認: `packages/web/drizzle/`（turso）/ `packages/web/drizzle-postgres/`（pg）両方存在。
+- ドキュメントのみの変更（コード不変）。
+
+### 残り
+- ① Railway dashboard で template 公開 → README の `<YOUR_TEMPLATE_ID>` 差し替え（秋さん手作業）。
+- push はしていない。experiment ブランチにローカル commit のみ。
+
+### 触ったファイル
+- `README.md` / `DISTRIBUTION.md` / `docs/setup-guide.md` / `CLAUDE.md` / `AGENTS.md` / `task.md`
+
+## 追記 2026-06-20 — Claude: Railway build の Node 18 EOL 恒久対応
+
+### 背景
+- Railway の template deploy で build image が失敗。ログに「Node.js 18.x has reached
+  End-Of-Life」。Nixpacks のデフォルト Node が 18 系で、ビルド環境の Node 指定問題
+  （DB/Bucket は無関係）。アプリ実行は Bun だが、Nixpacks がビルド時に Node を用意する。
+
+### 対応
+- 暫定（秋さん側・即時）: Railway Variables に `NIXPACKS_NODE_VERSION=22` を追加して再 Deploy。
+- 恒久（コミット）: root `package.json` に `"engines": { "node": "22.x" }` を追加。
+  Nixpacks は engines.node を読んで Node バージョンを決めるため、テンプレ利用者が
+  変数を手入力しなくて済む。Bun 版は既存 `packageManager: bun@1.3.5` で固定済み。
+- ランタイム不変: 起動は `bun packages/web/src/server.ts` のまま。engines.node はビルド時
+  Node のみに影響し、アプリ挙動は変わらない。本番は experiment ブランチ未マージのため影響なし
+  （将来 main へ入っても Node 22 ビルドは安全方向）。
+
+### 検証
+- `package.json` JSON valid、engines 反映確認。
+- `bun install` engines.node を許容（エラーなし）。`bun run build` 成功。
+- 実ビルド検証は Railway 再ビルドが必要（push 後）。失敗が続く場合は `.nvmrc`/`nixpacks.toml`
+  へエスカレーション予定。
+
+### 残り
+- push は秋さん確認後。push 後に Railway 再ビルドで Node 22 が効くか確認 →
+  効けば暫定変数 `NIXPACKS_NODE_VERSION` は不要。
+- ① template 公開 → README `<YOUR_TEMPLATE_ID>` 差し替え。
+
+### 触ったファイル
+- `package.json`（engines.node 追加）
+- `task.md`
+
+## 追記 2026-06-20 — Claude: Railway healthcheck を /api/health に変更
+
+### 背景
+- Node22修正で Build/Deploy は成功。次に Network > Healthcheck failure で落ちた。
+- railway.json は healthcheckPath: "/"。`/` は index.html 読込 + getSettings(DB) + OGP 注入が
+  絡み、初回起動の healthcheck には重く失敗しやすい。
+
+### 対応
+- `railway.json` の healthcheckPath を `/` → `/api/health` に変更。
+- `/api/health`（`api/index.ts:248`、Hono basePath='api'）は `{status:'ok', build}` を 200 で返す
+  DB非依存の軽量エンドポイント。Railway docs の「healthcheck は軽い200エンドポイント推奨」に合致。
+
+### 検証
+- ローカル起動で `GET /api/health` → 200 `{"status":"ok","build":"dev"}` を DB非依存(file::memory:)で確認。
+- `/health`(basePathなし)は SPA フォールバックHTMLの200なので不採用、正は `/api/health`。
+- railway.json JSON valid。
+
+### 残り
+- push 後に Railway 再デプロイで healthcheck 通過を確認。
+- ① template 公開 → README `<YOUR_TEMPLATE_ID>` 差し替え。
+
+### 触ったファイル
+- `railway.json`（healthcheckPath）
+- `task.md`
+
+## 追記 2026-06-20 — Codex: Railway 起動時 migration の診断ログ強化 + retry
+
+### 背景
+- Railway template deploy は Build/Deploy まで成功し、Network > Healthcheck で失敗。
+- Details/Diagnosis と Deploy Logs では、サーバ起動前の `runStartupMigrations()` が
+  `CREATE SCHEMA IF NOT EXISTS "drizzle"` で失敗しており、`/api/health` に届く前に
+  サーバが起動していないことを確認。
+- ローカルでは Railway と同じ start command（`bun packages/web/src/server.ts`）を
+  `packages/web/.env.railway-test.local` で実行し、migration 完了 → `GET /api/health` 200 /
+  `GET /` 200 を確認。コードの基本起動パスは通っている。
+
+### 対応
+- `packages/web/src/api/database/migrate.ts` に秘密を出さない `DATABASE_URL` 判定ログを追加。
+  - `*.railway.internal`（Railway private）
+  - `*.proxy.rlwy.net`（Railway public TCP proxy）
+  - sslmode の有無
+  をパスワードなしで判別できる。
+- migration 失敗時に `err.cause` / `code` / `syscall` などの原因情報もログに出すよう変更。
+  これで DNS / timeout / auth / permission のどこで落ちているか次回ログから判別可能。
+- Railway の Postgres 起動待ち・一時的な接続揺れに備え、起動時 migration に短い retry を追加。
+  本番(turso)は `DATABASE_PROVIDER !== "postgres"` で引き続き完全 no-op。
+- Railway 再デプロイ後の新ログで `DATABASE_URL target: *.railway.internal` かつ
+  `cause 1: code=ERR_POSTGRES_CONNECTION_CLOSED` を確認。変数の有無ではなく、Bun SQL が
+  Railway 内部Postgresへ SSL 指定なしで接続して閉じられている可能性が高い。
+- `packages/web/src/api/database/postgres.ts` で Railway PostgreSQL URL
+  (`*.railway.internal` / `*.proxy.rlwy.net`) かつ `sslmode` 未指定の場合、
+  アプリ側で `sslmode=require` を自動付与するよう追加。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 86 pass / 0 fail。
+- `cd packages/web && bun run build` 成功。
+- `PORT=4389 bun --env-file=packages/web/.env.railway-test.local packages/web/src/server.ts`
+  → `[migrate] DATABASE_URL target: *.proxy.rlwy.net ...` → up to date → server listen。
+- `GET /api/health` 200 / `GET /` 200。
+- SSL 自動付与後、再度 `tsc -b` / `bun test ./src` 86 pass / `bun run build` /
+  ローカル起動（`PORT=4390 ...`）→ `GET /api/health` 200 / `GET /` 200 を確認。
+
+### 残り
+- experiment ブランチに push 後、Railway 再デプロイで新ログを確認。
+- もし `DATABASE_URL target` が `*.railway.internal` で内部接続が失敗する場合は、
+  Railway private network 側の問題として、暫定的に `DATABASE_URL=${{Postgres.DATABASE_PUBLIC_URL}}`
+  を試す判断もあり。
+
+### 触ったファイル
+- `packages/web/src/api/database/migrate.ts`
+- `packages/web/src/api/database/postgres.ts`
+- `task.md`
+
+## 追記 2026-06-20 — Codex: PostgreSQL driver を `pg` に切替（Railway 内部接続対策）
+
+### 背景
+- `0e76be6`（Bun SQL に `sslmode=require` を付ける修正）でも Railway の
+  `@template/web` は失敗。GitHub status で最新 commit の Railway deploy failure を確認。
+- 失敗箇所は引き続き起動時 migration 前後で、`/api/health` に届く前に server が起動していない。
+- Railway docs では private networking が IPv6/dual-stack 前提で、ライブラリ側設定が必要な
+  ケースがある。Bun SQL は Railway の `*.railway.internal` との相性が不明で、テンプレ配布の
+  「押すだけ」体験にはリスクが残る。
+- Claude に agmsg で相談。Claude は「まず `DATABASE_PUBLIC_URL` に寄せる案」を推奨。
+  Codex 側では、人間の変数差し替えを増やさないため、まず DB driver をより実績のある
+  `pg`（node-postgres）へ切り替える方針で実装。
+
+### 対応
+- PostgreSQL provider を `drizzle-orm/bun-sql` → `drizzle-orm/node-postgres` + `pg` に変更。
+- startup migration も `drizzle-orm/node-postgres/migrator` に変更。
+- Railway PostgreSQL host（`*.railway.internal` / `*.proxy.rlwy.net`）では `pg` の TLS 設定を
+  アプリ側で付与（`ssl: { rejectUnauthorized: false }`）。
+- `pg` は connection string に `sslmode=require` 等が入っていると、config 側の `ssl` object を
+  上書きして `SELF_SIGNED_CERT_IN_CHAIN` になるため、Railway host では `sslmode` / `sslcert` /
+  `sslkey` / `sslrootcert` query を削除してから Pool を作る。
+- `pg` / `@types/pg` を追加。
+- 本番(turso)は `DATABASE_PROVIDER !== "postgres"` で `postgres.ts` をロードしないため不変。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 86 pass / 0 fail。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+- 実 Railway テストDB（`packages/web/.env.railway-test.local`、公開 TCP proxy）で起動:
+  `PORT=4391 bun --env-file=packages/web/.env.railway-test.local packages/web/src/server.ts`
+  → `[database] Railway PostgreSQL URL detected; using TLS for pg connection.`
+  → `[migrate] PostgreSQL schema is up to date.`
+  → `Web server listening on http://localhost:4391`
+- `GET /api/health` 200 / `GET /` 200 / `GET /api/settings` 200 を確認。
+
+### 残り
+- experiment ブランチへ push 後、Railway で `*.railway.internal` の実デプロイ確認。
+- まだ内部URLで落ちる場合は、Claude案どおり `DATABASE_URL=${{Postgres.DATABASE_PUBLIC_URL}}`
+  をテンプレ推奨に切り替える（写真家1人分のポートフォリオなら latency/egress の影響は小さい）。
+
+### 触ったファイル
+- `packages/web/src/api/database/postgres.ts`
+- `packages/web/src/api/database/migrate.ts`
+- `packages/web/package.json`
+- `bun.lock`
+- `task.md`
+
+## 追記 2026-06-20 — Codex: 配布版 DB URL 方針を `DATABASE_PUBLIC_URL` 優先に変更
+
+### 背景
+- `0355431`（PostgreSQL driver を `pg` に切替）を experiment ブランチへ push したが、
+  Railway の実デプロイは引き続き失敗。GitHub commit status で failure を確認。
+- つまり `*.railway.internal` の内部URLは、Bun SQL だけでなく `pg` でも今回の
+  template project では安定しない。配布版で受け取る人にここをデバッグさせるのは不適切。
+- Claude の提案どおり、実DB e2eで既に通っている Railway public TCP proxy
+  (`DATABASE_PUBLIC_URL`, `*.proxy.rlwy.net:PORT`) を配布版の優先ルートにする。
+
+### 対応
+- `postgres.ts` は `DATABASE_PUBLIC_URL` が存在すれば `DATABASE_URL` より優先して使う。
+  `DATABASE_URL` は後方互換の fallback として残す。
+- `migrate.ts` のログも実際に使う DB target（public / private）を表示するよう変更。
+- README / DISTRIBUTION.md のテンプレ変数説明を、`DATABASE_PUBLIC_URL` 優先に更新。
+
+### 判断
+- これはサイト品質・画質・管理画面品質には影響しない。DBの接続経路だけの変更。
+- 写真家1人分のポートフォリオでは public TCP proxy の latency/egress は小さく、
+  「ボタンで配布できる」わかりやすさを優先する。
+
+### 残り
+- この変更を push 後、Railway service の Variables に
+  `DATABASE_PUBLIC_URL=${{Postgres.DATABASE_PUBLIC_URL}}` が入っていれば自動でそちらを使う。
+- 現在の service に `DATABASE_PUBLIC_URL` が未設定なら、秋さん側で Variables に追加して
+  Redeploy が必要（`DATABASE_URL` を消す必要はない）。
+
+### 触ったファイル
+- `packages/web/src/api/database/postgres.ts`
+- `packages/web/src/api/database/migrate.ts`
+- `README.md`
+- `DISTRIBUTION.md`
+- `task.md`
+
 ## 追記 2026-06-20 — Codex: admin login 後に reload しないと入れないバグ修正
 
 ### 背景

@@ -1,35 +1,22 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient } from "@libsql/client";
-import * as schema from "./schema";
+// Database provider switch.
+//
+// 秋さん本番 (akieguchi.com) は DATABASE_PROVIDER 未設定 → Turso/libSQL のまま。
+// 配布版テンプレート (Railway All-in-One) は DATABASE_PROVIDER=postgres で
+// PostgreSQL + Railway Storage 構成に切り替わる。
+//
+// 動的 import なので、未選択側のドライバ・スキーマはロードされない。
+// = 本番(libsql)では postgres.ts の DATABASE_URL 必須チェックも走らず、
+//   挙動・テストは従来と完全に同一。
+import * as libsqlSchema from "./schema";
+import * as pgSchema from "./schema.postgres";
 
-const client = createClient({
-  url: process.env.DATABASE_URL!,
-  authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const usePostgres = process.env.DATABASE_PROVIDER === "postgres";
 
-export const db = drizzle(client, { schema });
+// 列名は両スキーマで一致しているため、クエリビルダ向けには libsql 側の型で
+// 統一して扱う。boolean/timestamp の保存形式差は実体テーブルが吸収する。
+export const schema = (usePostgres ? pgSchema : libsqlSchema) as typeof libsqlSchema;
 
-// ── Retry wrapper for Turso ECONNRESET ──────────────
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-  delayMs = 300,
-): Promise<T> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      const isTransient =
-        err?.code === "ECONNRESET" ||
-        err?.message?.includes("ECONNRESET") ||
-        err?.message?.includes("socket connection was closed") ||
-        err?.message?.includes("Failed query");
-      if (isTransient && attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, delayMs * attempt));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error("withRetry: unreachable");
-}
+const impl = usePostgres ? await import("./postgres") : await import("./libsql");
+
+export const db = impl.db as typeof import("./libsql").db;
+export const withRetry = impl.withRetry;

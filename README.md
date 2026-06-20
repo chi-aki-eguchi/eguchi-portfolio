@@ -17,6 +17,67 @@ portfolio template for other photographers. The distribution roadmap lives in
 - SaaS/multi-tenant mode: intentionally out of scope until the template flow is
   stable.
 
+## Deploy on Railway (distribution template)
+
+The distribution version runs entirely on Railway — PostgreSQL and a Storage
+bucket replace Turso and R2, so a photographer only needs one Railway account.
+The application code is the same; the database/storage backend is selected at
+runtime with `DATABASE_PROVIDER=postgres` (unset keeps the original
+Turso/libSQL + R2 setup that powers `akieguchi.com`).
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/<YOUR_TEMPLATE_ID>)
+
+> **Maintainer note:** the one-click button needs a published Railway template.
+> Create it once in the Railway dashboard (New Project → this repo → add a
+> **PostgreSQL** plugin and a **Storage** bucket → set the variables below →
+> *Save as Template*), then replace `<YOUR_TEMPLATE_ID>` above with the template
+> id Railway gives you. `railway.json` already pins the build/start/healthcheck,
+> so the service builds with no manual Root Directory or Start Command config.
+
+### Template variables
+
+| Variable | Value / source |
+| --- | --- |
+| `DATABASE_PROVIDER` | `postgres` (selects the PostgreSQL + Storage backend) |
+| `DATABASE_PUBLIC_URL` | reference the Railway PostgreSQL plugin's `DATABASE_PUBLIC_URL` |
+| `DATABASE_URL` | optional fallback; use `DATABASE_PUBLIC_URL` for the template |
+| `ADMIN_PASSWORD` | the photographer's admin login password |
+| `S3_ENDPOINT` | the Railway Storage bucket endpoint |
+| `S3_BUCKET` | the Railway Storage bucket name |
+| `S3_ACCESS_KEY_ID` | Storage bucket access key |
+| `S3_SECRET_ACCESS_KEY` | Storage bucket secret |
+| `S3_FORCE_PATH_STYLE` | `true` (Railway Storage uses path-style addressing) |
+| `S3_REGION` | the region Railway Storage reports (e.g. `us-east-1`) |
+| `SITE_URL` | the site's public origin once the domain is attached (optional) |
+
+### Database setup — automatic
+
+No manual migration step is needed. When `DATABASE_PROVIDER=postgres`, the
+server applies the PostgreSQL migrations on startup (`runStartupMigrations()` in
+`src/api/database/migrate.ts`), so a freshly deployed empty database gets its
+tables on the first boot. The migrator tracks applied migrations in
+`drizzle.__drizzle_migrations`, so restarts and redeploys are idempotent. If a
+migration fails (e.g. the database is unreachable) the server exits instead of
+serving a broken site, and Railway keeps the previous version running — check
+the deploy logs for the `[migrate]` lines.
+
+The original Turso/libSQL setup (production `akieguchi.com`, `DATABASE_PROVIDER`
+unset) is untouched: `runStartupMigrations()` is a no-op there.
+
+> **PostgreSQL URL choice:** the template uses Railway PostgreSQL's
+> `DATABASE_PUBLIC_URL` (`*.proxy.rlwy.net:PORT`) because it is the most reliable
+> path for one-click installs and local debugging. Railway's private
+> `DATABASE_URL` (`*.railway.internal`) remains supported as a fallback, but it
+> can be more sensitive to runtime/library networking details. Keep either value
+> in Railway variables or a gitignored `.env` file, never hard-coded.
+>
+> Manual apply (rarely needed — e.g. inspecting an existing DB locally):
+>
+> ```sh
+> cd packages/web
+> bun --env-file=../../.env x drizzle-kit migrate --config=drizzle.postgres.config.ts
+> ```
+
 ## Stack
 
 | Layer | Technology |

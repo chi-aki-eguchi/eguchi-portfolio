@@ -6,6 +6,16 @@
 [photographer-guide.md](./photographer-guide.md) と、サイトURL、管理画面URL、
 管理パスワードだけを渡します。
 
+> **2つの配布方法があります。**
+>
+> - **Railway 一本化（推奨・新）**: Turso も R2 も使わず、Railway だけで完結します。
+>   「Deploy on Railway」ボタン → PostgreSQL と Storage を足す → 環境変数
+>   （`DATABASE_PROVIDER=postgres` を含む）を入れる、で立ち上がります。
+>   **database schema は起動時に自動で作られる**ので `db:push` は不要です。
+>   手順は README の「Deploy on Railway (distribution template)」を参照。
+> - **Turso + R2（このページ・従来）**: 下記の手順。保存先を個別に用意する方式で、
+>   秋さん本番 `akieguchi.com` と同じ構成です。
+
 ## 考え方
 
 最初の配布形態は、1人の写真家につき1つの専用サイトを作る方式です。
@@ -83,6 +93,12 @@ ALLOWED_ORIGINS=https://www.example.com
 ## Database schema を反映する
 
 schema は、database に「写真テーブル」「設定テーブル」などの形を作る作業です。
+
+**Railway 一本化（PostgreSQL）の場合は、この作業は不要です。** サーバー起動時に
+自動で適用されます（`DATABASE_PROVIDER=postgres` のとき）。失敗したら起動ログに
+`[migrate]` の行で原因が出ます。
+
+Turso + R2（従来）の場合のみ、手動で反映します。
 
 ```sh
 cd packages/web

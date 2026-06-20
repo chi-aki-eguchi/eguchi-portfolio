@@ -2,6 +2,9 @@
   "name": "sandbox-app-template",
   "private": true,
   "packageManager": "bun@1.3.5",
+  "engines": {
+    "node": "22.x"
+  },
   "workspaces": [
     "packages/*"
   ],

@@ -979,3 +979,34 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 
 ### 触ったファイル
 - `README.md` / `DISTRIBUTION.md` / `docs/setup-guide.md` / `CLAUDE.md` / `AGENTS.md` / `task.md`
+
+## 追記 2026-06-20 — Claude: Railway build の Node 18 EOL 恒久対応
+
+### 背景
+- Railway の template deploy で build image が失敗。ログに「Node.js 18.x has reached
+  End-Of-Life」。Nixpacks のデフォルト Node が 18 系で、ビルド環境の Node 指定問題
+  （DB/Bucket は無関係）。アプリ実行は Bun だが、Nixpacks がビルド時に Node を用意する。
+
+### 対応
+- 暫定（秋さん側・即時）: Railway Variables に `NIXPACKS_NODE_VERSION=22` を追加して再 Deploy。
+- 恒久（コミット）: root `package.json` に `"engines": { "node": "22.x" }` を追加。
+  Nixpacks は engines.node を読んで Node バージョンを決めるため、テンプレ利用者が
+  変数を手入力しなくて済む。Bun 版は既存 `packageManager: bun@1.3.5` で固定済み。
+- ランタイム不変: 起動は `bun packages/web/src/server.ts` のまま。engines.node はビルド時
+  Node のみに影響し、アプリ挙動は変わらない。本番は experiment ブランチ未マージのため影響なし
+  （将来 main へ入っても Node 22 ビルドは安全方向）。
+
+### 検証
+- `package.json` JSON valid、engines 反映確認。
+- `bun install` engines.node を許容（エラーなし）。`bun run build` 成功。
+- 実ビルド検証は Railway 再ビルドが必要（push 後）。失敗が続く場合は `.nvmrc`/`nixpacks.toml`
+  へエスカレーション予定。
+
+### 残り
+- push は秋さん確認後。push 後に Railway 再ビルドで Node 22 が効くか確認 →
+  効けば暫定変数 `NIXPACKS_NODE_VERSION` は不要。
+- ① template 公開 → README `<YOUR_TEMPLATE_ID>` 差し替え。
+
+### 触ったファイル
+- `package.json`（engines.node 追加）
+- `task.md`

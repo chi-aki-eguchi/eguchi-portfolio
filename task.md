@@ -782,3 +782,67 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/api/ogp.test.ts`
 - `packages/web/src/server.ts`
 - `task.md`
+
+## 追記 2026-06-20 — Codex + Claude: Railway All-in-One 配布版の実験開始
+
+### 実施
+- 秋さんから「こっちで用意することが多すぎる。配布ではなく個人取引になってしまう」と相談あり。
+- 方針を「秋さん本番は現行 Railway + Turso + R2 のまま」「配布版だけ Railway Template + PostgreSQL + Railway Storage へ寄せる」に整理。
+- 実験用ブランチ `codex/railway-all-in-one-experiment` を作成。
+- `docs/railway-all-in-one-experiment.md` を追加。
+  - クオリティを落とさずにRailway一本化できる見込み、壊れやすい箇所、役割分担、次の実験を記録。
+- PostgreSQL 用の Drizzle schema を別ファイルで追加。
+  - `packages/web/src/api/database/schema.postgres.ts`
+  - 既存 `schema.ts` はTurso本番用として未変更。
+- PostgreSQL 用の Drizzle config と生成 migration を追加。
+  - `packages/web/drizzle.postgres.config.ts`
+  - `packages/web/drizzle-postgres/0000_worried_sentry.sql`
+- Bun 本体の `SQL` と Drizzle `bun-sql` で、追加パッケージなしにPostgreSQL接続入口を作成できることを確認。
+  - `packages/web/src/api/database/postgres.ts`
+- Storage client を S3 互換前提へ少し一般化。
+  - `S3_REGION` / `S3_FORCE_PATH_STYLE` を追加。
+  - 既定値は現行R2本番の挙動を変えない。
+- `db.run(...)` 直呼びの並び替えSQLを `executeRaw(...)` に寄せた。
+  - 現行Tursoでは `run`、PostgreSQLでは `execute` を使えるようにするため。
+- 管理画面 `はじめに` の用語を、GitHub/Turso/R2 などの固有サービス名から「公開場所」「データの保存場所」「写真の保存場所」へ寄せた。
+
+### Claude 相談
+- agmsg で Claude Code (`claude-driver`) に P0/P1 レビュー依頼。
+- Claude 返答:
+  - 配布版だけ Railway All-in-One にする方針でよい。
+  - P0: `db.run()` はPostgreSQL側に無いので `execute` へ逃がす必要あり。
+  - P0: `schema.ts` は SQLite/Turso 前提なので配布版では pg-core 化が必要。
+  - P0: Storage は `forcePathStyle` が必要になる可能性あり。
+  - 良い点: 画像処理はアプリ側の `sharp` が担っているため、保存先変更だけで品質を落とす必要は低い。
+
+### 検証
+- `cd packages/web && bunx drizzle-kit generate --config=drizzle.postgres.config.ts` 成功。
+- `cd packages/web && DATABASE_URL=postgres://user:pass@localhost:5432/db bun -e 'const m = await import("./src/api/database/postgres.ts"); console.log(Boolean(m.db), typeof m.withRetry);'` 成功。
+- `cd packages/web && bunx tsc --noEmit --target ES2022 --lib ES2023 --module ESNext --moduleResolution bundler --strict --skipLibCheck src/api/database/schema.postgres.ts src/api/database/postgres.ts drizzle.postgres.config.ts` 成功。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（86 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun run lint` 成功。
+- `git diff --check` 成功。
+
+### 残り
+- PostgreSQL の実DBにはまだ接続していない。
+  - 次は空の Railway PostgreSQL かローカルPostgreSQLに schema を流し、`/api/settings` / `/api/photos` / `/admin/login` を確認する。
+- Railway Storage Bucket の実物検証は未実施。
+  - upload / image proxy / resize / delete / cache を写真1枚で確認する。
+- 配布用テンプレートでは、`schema.postgres.ts` / `postgres.ts` を実際の `schema.ts` / `database/index.ts` に切り替える必要がある。
+- 秋さん本番へのデプロイはしていない。実験ブランチ上の作業。
+- 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
+
+### 触ったファイル
+- `.env.template`
+- `docs/railway-all-in-one-experiment.md`
+- `packages/web/drizzle-postgres/0000_worried_sentry.sql`
+- `packages/web/drizzle-postgres/meta/0000_snapshot.json`
+- `packages/web/drizzle-postgres/meta/_journal.json`
+- `packages/web/drizzle.postgres.config.ts`
+- `packages/web/src/api/database/postgres.ts`
+- `packages/web/src/api/database/schema.postgres.ts`
+- `packages/web/src/api/index.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`

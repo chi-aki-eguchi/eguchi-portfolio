@@ -298,12 +298,12 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
 
         <section className="grid gap-3 md:grid-cols-2">
           <div className="border border-[#333] bg-[#242424] rounded-sm p-5">
-            <h2 className="text-[14px] text-[#ddd] mb-3">最初だけ外で作るもの</h2>
+            <h2 className="text-[14px] text-[#ddd] mb-3">公開の裏側にあるもの</h2>
             <div className="space-y-3 text-[12px] leading-6 text-[#999]">
-              <p><span className="text-[#d0d0d0]">GitHub</span>: サイトのファイル一式を置く場所。</p>
-              <p><span className="text-[#d0d0d0]">Railway</span>: サイトをインターネットに公開する場所。</p>
-              <p><span className="text-[#d0d0d0]">Turso</span>: 名前、説明文、写真一覧などを保存する場所。</p>
-              <p><span className="text-[#d0d0d0]">R2</span>: 写真ファイルそのものを保存する場所。</p>
+              <p><span className="text-[#d0d0d0]">サイトのファイル一式</span>: 見た目や管理画面のもとになるもの。</p>
+              <p><span className="text-[#d0d0d0]">公開場所</span>: サイトをインターネットで動かす場所。</p>
+              <p><span className="text-[#d0d0d0]">データの保存場所</span>: 名前、説明文、写真一覧などを保存する場所。</p>
+              <p><span className="text-[#d0d0d0]">写真の保存場所</span>: アップロードした写真ファイルそのものを置く場所。</p>
             </div>
           </div>
           <div className="border border-[#333] bg-[#242424] rounded-sm p-5">

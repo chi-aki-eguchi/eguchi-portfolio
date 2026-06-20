@@ -1084,3 +1084,51 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/api/database/migrate.ts`
 - `packages/web/src/api/database/postgres.ts`
 - `task.md`
+
+## 追記 2026-06-20 — Codex: PostgreSQL driver を `pg` に切替（Railway 内部接続対策）
+
+### 背景
+- `0e76be6`（Bun SQL に `sslmode=require` を付ける修正）でも Railway の
+  `@template/web` は失敗。GitHub status で最新 commit の Railway deploy failure を確認。
+- 失敗箇所は引き続き起動時 migration 前後で、`/api/health` に届く前に server が起動していない。
+- Railway docs では private networking が IPv6/dual-stack 前提で、ライブラリ側設定が必要な
+  ケースがある。Bun SQL は Railway の `*.railway.internal` との相性が不明で、テンプレ配布の
+  「押すだけ」体験にはリスクが残る。
+- Claude に agmsg で相談。Claude は「まず `DATABASE_PUBLIC_URL` に寄せる案」を推奨。
+  Codex 側では、人間の変数差し替えを増やさないため、まず DB driver をより実績のある
+  `pg`（node-postgres）へ切り替える方針で実装。
+
+### 対応
+- PostgreSQL provider を `drizzle-orm/bun-sql` → `drizzle-orm/node-postgres` + `pg` に変更。
+- startup migration も `drizzle-orm/node-postgres/migrator` に変更。
+- Railway PostgreSQL host（`*.railway.internal` / `*.proxy.rlwy.net`）では `pg` の TLS 設定を
+  アプリ側で付与（`ssl: { rejectUnauthorized: false }`）。
+- `pg` は connection string に `sslmode=require` 等が入っていると、config 側の `ssl` object を
+  上書きして `SELF_SIGNED_CERT_IN_CHAIN` になるため、Railway host では `sslmode` / `sslcert` /
+  `sslkey` / `sslrootcert` query を削除してから Pool を作る。
+- `pg` / `@types/pg` を追加。
+- 本番(turso)は `DATABASE_PROVIDER !== "postgres"` で `postgres.ts` をロードしないため不変。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 86 pass / 0 fail。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+- 実 Railway テストDB（`packages/web/.env.railway-test.local`、公開 TCP proxy）で起動:
+  `PORT=4391 bun --env-file=packages/web/.env.railway-test.local packages/web/src/server.ts`
+  → `[database] Railway PostgreSQL URL detected; using TLS for pg connection.`
+  → `[migrate] PostgreSQL schema is up to date.`
+  → `Web server listening on http://localhost:4391`
+- `GET /api/health` 200 / `GET /` 200 / `GET /api/settings` 200 を確認。
+
+### 残り
+- experiment ブランチへ push 後、Railway で `*.railway.internal` の実デプロイ確認。
+- まだ内部URLで落ちる場合は、Claude案どおり `DATABASE_URL=${{Postgres.DATABASE_PUBLIC_URL}}`
+  をテンプレ推奨に切り替える（写真家1人分のポートフォリオなら latency/egress の影響は小さい）。
+
+### 触ったファイル
+- `packages/web/src/api/database/postgres.ts`
+- `packages/web/src/api/database/migrate.ts`
+- `packages/web/package.json`
+- `bun.lock`
+- `task.md`

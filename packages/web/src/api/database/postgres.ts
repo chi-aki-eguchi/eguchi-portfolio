@@ -1,7 +1,10 @@
-import { drizzle } from "drizzle-orm/bun-sql";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool, type PoolConfig } from "pg";
 import * as schema from "./schema.postgres";
 
-function normalizeDatabaseUrl(raw: string | undefined): string {
+const SSL_QUERY_PARAMS = ["sslmode", "sslcert", "sslkey", "sslrootcert"];
+
+function getDatabaseConfig(raw: string | undefined): PoolConfig {
   if (!raw) {
     throw new Error("DATABASE_URL is required for PostgreSQL database mode.");
   }
@@ -12,21 +15,29 @@ function normalizeDatabaseUrl(raw: string | undefined): string {
     const isRailwayPostgres =
       host.endsWith(".railway.internal") || host.endsWith(".proxy.rlwy.net");
 
-    if (isRailwayPostgres && !url.searchParams.has("sslmode")) {
-      url.searchParams.set("sslmode", "require");
-      console.log("[database] Railway PostgreSQL URL detected; using sslmode=require.");
-      return url.toString();
+    if (isRailwayPostgres) {
+      for (const param of SSL_QUERY_PARAMS) url.searchParams.delete(param);
+      console.log("[database] Railway PostgreSQL URL detected; using TLS for pg connection.");
+      return railwayPoolConfig(url.toString());
     }
   } catch {
-    // Let Bun SQL surface the real connection-string error below.
+    // Let node-postgres surface the real connection-string error below.
   }
 
-  return raw;
+  return { connectionString: raw, connectionTimeoutMillis: 15_000 };
 }
 
-const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
+function railwayPoolConfig(connectionString: string): PoolConfig {
+  return {
+    connectionString,
+    connectionTimeoutMillis: 15_000,
+    ssl: { rejectUnauthorized: false },
+  };
+}
 
-export const db = drizzle(databaseUrl, { schema });
+const pool = new Pool(getDatabaseConfig(process.env.DATABASE_URL));
+
+export const db = drizzle(pool, { schema });
 
 export async function withRetry<T>(
   fn: () => Promise<T>,

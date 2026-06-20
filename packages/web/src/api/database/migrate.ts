@@ -27,7 +27,7 @@ function databaseUrlSummary(raw: string | undefined): string {
       : host.endsWith(".proxy.rlwy.net")
         ? "*.proxy.rlwy.net (Railway public TCP proxy)"
         : "custom host";
-    const sslmode = url.searchParams.get("sslmode") ?? (isRailwayHost ? "not set (app adds require)" : "not set");
+    const sslmode = url.searchParams.get("sslmode") ?? (isRailwayHost ? "not set (app configures TLS)" : "not set");
 
     return `${hostKind}; protocol=${url.protocol.replace(":", "")}; sslmode=${sslmode}; database=${url.pathname ? "set" : "missing"}`;
   } catch {
@@ -63,7 +63,7 @@ export async function runStartupMigrations(): Promise<void> {
   // `./postgres` はプロバイダ切替境界と同じモジュール実体なので接続は共有される。
   const [{ db }, { migrate }] = await Promise.all([
     import("./postgres"),
-    import("drizzle-orm/bun-sql/migrator"),
+    import("drizzle-orm/node-postgres/migrator"),
   ]);
 
   // migrate.ts (= src/api/database) から見た packages/web/drizzle-postgres。

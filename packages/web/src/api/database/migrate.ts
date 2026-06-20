@@ -21,12 +21,13 @@ function databaseUrlSummary(raw: string | undefined): string {
   try {
     const url = new URL(raw);
     const host = url.hostname;
+    const isRailwayHost = host.endsWith(".railway.internal") || host.endsWith(".proxy.rlwy.net");
     const hostKind = host.endsWith(".railway.internal")
       ? "*.railway.internal (Railway private network)"
       : host.endsWith(".proxy.rlwy.net")
         ? "*.proxy.rlwy.net (Railway public TCP proxy)"
         : "custom host";
-    const sslmode = url.searchParams.get("sslmode") ?? "not set";
+    const sslmode = url.searchParams.get("sslmode") ?? (isRailwayHost ? "not set (app adds require)" : "not set");
 
     return `${hostKind}; protocol=${url.protocol.replace(":", "")}; sslmode=${sslmode}; database=${url.pathname ? "set" : "missing"}`;
   } catch {

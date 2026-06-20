@@ -1057,6 +1057,12 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   これで DNS / timeout / auth / permission のどこで落ちているか次回ログから判別可能。
 - Railway の Postgres 起動待ち・一時的な接続揺れに備え、起動時 migration に短い retry を追加。
   本番(turso)は `DATABASE_PROVIDER !== "postgres"` で引き続き完全 no-op。
+- Railway 再デプロイ後の新ログで `DATABASE_URL target: *.railway.internal` かつ
+  `cause 1: code=ERR_POSTGRES_CONNECTION_CLOSED` を確認。変数の有無ではなく、Bun SQL が
+  Railway 内部Postgresへ SSL 指定なしで接続して閉じられている可能性が高い。
+- `packages/web/src/api/database/postgres.ts` で Railway PostgreSQL URL
+  (`*.railway.internal` / `*.proxy.rlwy.net`) かつ `sslmode` 未指定の場合、
+  アプリ側で `sslmode=require` を自動付与するよう追加。
 
 ### 検証
 - `cd packages/web && bun x tsc -b` 成功。
@@ -1065,6 +1071,8 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `PORT=4389 bun --env-file=packages/web/.env.railway-test.local packages/web/src/server.ts`
   → `[migrate] DATABASE_URL target: *.proxy.rlwy.net ...` → up to date → server listen。
 - `GET /api/health` 200 / `GET /` 200。
+- SSL 自動付与後、再度 `tsc -b` / `bun test ./src` 86 pass / `bun run build` /
+  ローカル起動（`PORT=4390 ...`）→ `GET /api/health` 200 / `GET /` 200 を確認。
 
 ### 残り
 - experiment ブランチに push 後、Railway 再デプロイで新ログを確認。
@@ -1074,4 +1082,5 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 
 ### 触ったファイル
 - `packages/web/src/api/database/migrate.ts`
+- `packages/web/src/api/database/postgres.ts`
 - `task.md`

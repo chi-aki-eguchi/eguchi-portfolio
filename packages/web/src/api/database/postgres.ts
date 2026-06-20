@@ -4,9 +4,19 @@ import * as schema from "./schema.postgres";
 
 const SSL_QUERY_PARAMS = ["sslmode", "sslcert", "sslkey", "sslrootcert"];
 
+function selectedDatabaseUrl(): string | undefined {
+  const publicUrl = process.env.DATABASE_PUBLIC_URL?.trim();
+  if (publicUrl) {
+    console.log("[database] DATABASE_PUBLIC_URL detected; using Railway public TCP proxy.");
+    return publicUrl;
+  }
+
+  return process.env.DATABASE_URL;
+}
+
 function getDatabaseConfig(raw: string | undefined): PoolConfig {
   if (!raw) {
-    throw new Error("DATABASE_URL is required for PostgreSQL database mode.");
+    throw new Error("DATABASE_URL or DATABASE_PUBLIC_URL is required for PostgreSQL database mode.");
   }
 
   try {
@@ -35,7 +45,7 @@ function railwayPoolConfig(connectionString: string): PoolConfig {
   };
 }
 
-const pool = new Pool(getDatabaseConfig(process.env.DATABASE_URL));
+const pool = new Pool(getDatabaseConfig(selectedDatabaseUrl()));
 
 export const db = drizzle(pool, { schema });
 

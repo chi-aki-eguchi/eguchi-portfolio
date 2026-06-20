@@ -39,7 +39,8 @@ Turso/libSQL + R2 setup that powers `akieguchi.com`).
 | Variable | Value / source |
 | --- | --- |
 | `DATABASE_PROVIDER` | `postgres` (selects the PostgreSQL + Storage backend) |
-| `DATABASE_URL` | reference the Railway PostgreSQL plugin's `DATABASE_URL` |
+| `DATABASE_PUBLIC_URL` | reference the Railway PostgreSQL plugin's `DATABASE_PUBLIC_URL` |
+| `DATABASE_URL` | optional fallback; use `DATABASE_PUBLIC_URL` for the template |
 | `ADMIN_PASSWORD` | the photographer's admin login password |
 | `S3_ENDPOINT` | the Railway Storage bucket endpoint |
 | `S3_BUCKET` | the Railway Storage bucket name |
@@ -63,13 +64,12 @@ the deploy logs for the `[migrate]` lines.
 The original Turso/libSQL setup (production `akieguchi.com`, `DATABASE_PROVIDER`
 unset) is untouched: `runStartupMigrations()` is a no-op there.
 
-> **Connecting from your own machine (`DATABASE_URL` vs `DATABASE_PUBLIC_URL`):**
-> inside Railway, services reach PostgreSQL over the private
-> `*.railway.internal` host — correct for the running app. To connect *from your
-> own machine* (manual migration, debugging) use the **public** URL instead:
-> Railway PostgreSQL → Variables → `DATABASE_PUBLIC_URL` (a
-> `*.proxy.rlwy.net:PORT` host). If a connection is refused, append
-> `?sslmode=require`. Keep it in a gitignored `.env` file, never hard-coded.
+> **PostgreSQL URL choice:** the template uses Railway PostgreSQL's
+> `DATABASE_PUBLIC_URL` (`*.proxy.rlwy.net:PORT`) because it is the most reliable
+> path for one-click installs and local debugging. Railway's private
+> `DATABASE_URL` (`*.railway.internal`) remains supported as a fallback, but it
+> can be more sensitive to runtime/library networking details. Keep either value
+> in Railway variables or a gitignored `.env` file, never hard-coded.
 >
 > Manual apply (rarely needed — e.g. inspecting an existing DB locally):
 >

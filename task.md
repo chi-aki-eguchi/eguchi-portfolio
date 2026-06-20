@@ -1132,3 +1132,37 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/package.json`
 - `bun.lock`
 - `task.md`
+
+## 追記 2026-06-20 — Codex: 配布版 DB URL 方針を `DATABASE_PUBLIC_URL` 優先に変更
+
+### 背景
+- `0355431`（PostgreSQL driver を `pg` に切替）を experiment ブランチへ push したが、
+  Railway の実デプロイは引き続き失敗。GitHub commit status で failure を確認。
+- つまり `*.railway.internal` の内部URLは、Bun SQL だけでなく `pg` でも今回の
+  template project では安定しない。配布版で受け取る人にここをデバッグさせるのは不適切。
+- Claude の提案どおり、実DB e2eで既に通っている Railway public TCP proxy
+  (`DATABASE_PUBLIC_URL`, `*.proxy.rlwy.net:PORT`) を配布版の優先ルートにする。
+
+### 対応
+- `postgres.ts` は `DATABASE_PUBLIC_URL` が存在すれば `DATABASE_URL` より優先して使う。
+  `DATABASE_URL` は後方互換の fallback として残す。
+- `migrate.ts` のログも実際に使う DB target（public / private）を表示するよう変更。
+- README / DISTRIBUTION.md のテンプレ変数説明を、`DATABASE_PUBLIC_URL` 優先に更新。
+
+### 判断
+- これはサイト品質・画質・管理画面品質には影響しない。DBの接続経路だけの変更。
+- 写真家1人分のポートフォリオでは public TCP proxy の latency/egress は小さく、
+  「ボタンで配布できる」わかりやすさを優先する。
+
+### 残り
+- この変更を push 後、Railway service の Variables に
+  `DATABASE_PUBLIC_URL=${{Postgres.DATABASE_PUBLIC_URL}}` が入っていれば自動でそちらを使う。
+- 現在の service に `DATABASE_PUBLIC_URL` が未設定なら、秋さん側で Variables に追加して
+  Redeploy が必要（`DATABASE_URL` を消す必要はない）。
+
+### 触ったファイル
+- `packages/web/src/api/database/postgres.ts`
+- `packages/web/src/api/database/migrate.ts`
+- `README.md`
+- `DISTRIBUTION.md`
+- `task.md`

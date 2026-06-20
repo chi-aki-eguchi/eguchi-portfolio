@@ -337,12 +337,13 @@ is unchanged. See README → "Deploy on Railway (distribution template)".
 
 ### `DATABASE_URL` vs `DATABASE_PUBLIC_URL`
 
-- Inside Railway, the app reaches PostgreSQL over the private
-  `*.railway.internal` host (set this as `DATABASE_URL`).
-- To connect from your own machine (manual migration, debugging) use the public
-  URL: Railway PostgreSQL → Variables → `DATABASE_PUBLIC_URL`
-  (`*.proxy.rlwy.net:PORT`). Append `?sslmode=require` if a connection is
-  refused. Keep both in a gitignored `.env`, never hard-coded.
+- The template should set `DATABASE_PUBLIC_URL` from Railway PostgreSQL's
+  `DATABASE_PUBLIC_URL` (`*.proxy.rlwy.net:PORT`). This is the verified path for
+  one-click installs and local debugging.
+- `DATABASE_URL` (`*.railway.internal`) remains supported as a fallback, but
+  Railway private networking can be more sensitive to runtime/library details.
+  Do not make recipients debug that path during first install.
+- Keep both values in Railway variables or a gitignored `.env`, never hard-coded.
 
 ### Schema is maintained in two files — keep them in sync
 

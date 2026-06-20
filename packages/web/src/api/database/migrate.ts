@@ -56,6 +56,10 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
 }
 
+function selectedDatabaseUrlForLog(): string | undefined {
+  return process.env.DATABASE_PUBLIC_URL?.trim() || process.env.DATABASE_URL;
+}
+
 export async function runStartupMigrations(): Promise<void> {
   if (process.env.DATABASE_PROVIDER !== "postgres") return;
 
@@ -71,7 +75,7 @@ export async function runStartupMigrations(): Promise<void> {
   // cwd ではなくこのファイル基準で解決して取りこぼさない。
   const migrationsFolder = resolve(import.meta.dir, "../../../drizzle-postgres");
 
-  console.log(`[migrate] DATABASE_URL target: ${databaseUrlSummary(process.env.DATABASE_URL)}`);
+  console.log(`[migrate] DATABASE target: ${databaseUrlSummary(selectedDatabaseUrlForLog())}`);
 
   for (let attempt = 1; attempt <= MIGRATION_RETRY_DELAYS_MS.length + 1; attempt++) {
     try {
@@ -90,7 +94,7 @@ export async function runStartupMigrations(): Promise<void> {
 
       console.error("[migrate] FAILED to apply PostgreSQL migrations — the server will NOT start.");
       console.error("[migrate] (Failing loudly so the deploy is marked failed instead of serving a broken site.)");
-      console.error("[migrate] Check: is DATABASE_URL reachable and is the PostgreSQL plugin attached?");
+      console.error("[migrate] Check: is DATABASE_PUBLIC_URL or DATABASE_URL reachable and is the PostgreSQL plugin attached?");
       console.error("[migrate] See README → \"Deploy on Railway (distribution template)\".");
       for (const line of migrationErrorLines(err)) console.error(`[migrate] ${line}`);
       throw err;

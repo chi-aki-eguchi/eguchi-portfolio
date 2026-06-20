@@ -888,3 +888,34 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/server.ts`（schema import を ./api/database 経由へ）
 - `packages/web/drizzle.postgres.config.ts`（dbCredentials 追記）
 - `task.md`
+
+## 追記 2026-06-20 — Claude: Railway Template 化（railway.json + Deploy ボタン）
+
+### 実施
+- `railway.json`（リポジトリ root）を追加。Nixpacks + Bun。
+  - build: `bun install && bun run build`（= turbo build → tsc -b && vite build）
+  - start: `bun packages/web/src/server.ts`（server.ts は import.meta.dir で dist 解決＝cwd 非依存）
+  - healthcheck: `/`（空/未migration DB でも server が getSettings の例外を握って index.html を 200 で返す）
+  - restart: ON_FAILURE / 10 retries
+- `README.md` に「Deploy on Railway (distribution template)」節を追加。
+  - Deploy ボタン（テンプレ id は `<YOUR_TEMPLATE_ID>` プレースホルダ。dashboard で template 公開後に差し替える maintainer 注記つき）。
+  - テンプレ変数表（`DATABASE_PROVIDER=postgres` / `S3_FORCE_PATH_STYLE=true` 等）。
+  - 一度だけの migration 手順。
+  - `DATABASE_URL`(internal) vs `DATABASE_PUBLIC_URL`(`*.proxy.rlwy.net`) の注意書き。SSL 時は `?sslmode=require`。
+
+### 検証
+- railway.json valid JSON 確認。
+- buildCommand 実走: root `bun run build`（turbo build）成功、`packages/web/dist/index.html` 生成確認。
+- startCommand 実走: repo root から `bun packages/web/src/server.ts` 起動 → `GET /` 200、dist が import.meta.dir で解決されることを確認。
+- ビルドツール（vite/tsc/turbo 等）は devDependencies だが、`bun install` は NODE_ENV に関係なく devDeps を入れるため本番ビルドと同条件で問題なし。
+
+### 残り
+- Railway dashboard での template 公開（plugins=PostgreSQL+Storage、変数設定）→ `<YOUR_TEMPLATE_ID>` 差し替え（秋さん/セットアップ担当の手作業）。
+- 配布 doc（DISTRIBUTION.md / docs）への DATABASE_PUBLIC_URL・schema2本同期ルールの本反映。
+- migration の初回自動適用は未対応（現状は手動1回）。turnkey 化するなら release/pre-deploy フックを検討。
+- push はしていない。experiment ブランチにローカル commit のみ。
+
+### 触ったファイル
+- `railway.json`（新規）
+- `README.md`
+- `task.md`

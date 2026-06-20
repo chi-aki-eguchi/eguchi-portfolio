@@ -17,6 +17,57 @@ portfolio template for other photographers. The distribution roadmap lives in
 - SaaS/multi-tenant mode: intentionally out of scope until the template flow is
   stable.
 
+## Deploy on Railway (distribution template)
+
+The distribution version runs entirely on Railway — PostgreSQL and a Storage
+bucket replace Turso and R2, so a photographer only needs one Railway account.
+The application code is the same; the database/storage backend is selected at
+runtime with `DATABASE_PROVIDER=postgres` (unset keeps the original
+Turso/libSQL + R2 setup that powers `akieguchi.com`).
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/<YOUR_TEMPLATE_ID>)
+
+> **Maintainer note:** the one-click button needs a published Railway template.
+> Create it once in the Railway dashboard (New Project → this repo → add a
+> **PostgreSQL** plugin and a **Storage** bucket → set the variables below →
+> *Save as Template*), then replace `<YOUR_TEMPLATE_ID>` above with the template
+> id Railway gives you. `railway.json` already pins the build/start/healthcheck,
+> so the service builds with no manual Root Directory or Start Command config.
+
+### Template variables
+
+| Variable | Value / source |
+| --- | --- |
+| `DATABASE_PROVIDER` | `postgres` (selects the PostgreSQL + Storage backend) |
+| `DATABASE_URL` | reference the Railway PostgreSQL plugin's `DATABASE_URL` |
+| `ADMIN_PASSWORD` | the photographer's admin login password |
+| `S3_ENDPOINT` | the Railway Storage bucket endpoint |
+| `S3_BUCKET` | the Railway Storage bucket name |
+| `S3_ACCESS_KEY_ID` | Storage bucket access key |
+| `S3_SECRET_ACCESS_KEY` | Storage bucket secret |
+| `S3_FORCE_PATH_STYLE` | `true` (Railway Storage uses path-style addressing) |
+| `S3_REGION` | the region Railway Storage reports (e.g. `us-east-1`) |
+| `SITE_URL` | the site's public origin once the domain is attached (optional) |
+
+### One-time database setup
+
+The schema is not auto-applied on deploy. After the first deploy, apply the
+PostgreSQL migration once (Railway service shell, or locally against the public
+URL — see note below):
+
+```sh
+cd packages/web
+bun --env-file=../../.env x drizzle-kit migrate --config=drizzle.postgres.config.ts
+```
+
+> **`DATABASE_URL` vs `DATABASE_PUBLIC_URL`:** inside Railway, services reach
+> PostgreSQL over the private `*.railway.internal` host — correct for the running
+> app. To connect *from your own machine* (running the migration, debugging),
+> use the **public** URL instead: Railway PostgreSQL → Variables →
+> `DATABASE_PUBLIC_URL` (a `*.proxy.rlwy.net:PORT` host). If a connection is
+> refused, append `?sslmode=require`. Never hard-code either URL — keep it in a
+> gitignored `.env` file.
+
 ## Stack
 
 | Layer | Technology |

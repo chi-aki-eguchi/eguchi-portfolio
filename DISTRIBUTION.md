@@ -316,3 +316,56 @@ half-built business platform.
 - A maintainer can follow one setup checklist from blank services to live site.
 - The public site still feels like a quiet, edited photography portfolio.
 - `cd packages/web && bun x tsc -b && bun run build` succeeds.
+
+## Railway All-in-One Template — Maintenance Notes
+
+The distribution version runs entirely on Railway (PostgreSQL + Storage bucket)
+and is selected at runtime with `DATABASE_PROVIDER=postgres`. The original
+Turso/libSQL + R2 stack (production `akieguchi.com`, `DATABASE_PROVIDER` unset)
+is unchanged. See README → "Deploy on Railway (distribution template)".
+
+### Automatic migrations on startup
+
+- The server applies PostgreSQL migrations on boot via `runStartupMigrations()`
+  (`packages/web/src/api/database/migrate.ts`). A freshly deployed empty
+  database gets its tables on first boot — the recipient never runs `db:push`.
+- The migrator tracks applied migrations in `drizzle.__drizzle_migrations`, so
+  restarts and redeploys are idempotent.
+- On failure (e.g. unreachable DB) the process exits with a clear `[migrate]`
+  log instead of serving a broken site; Railway keeps the previous version up.
+- Production (turso) path: `runStartupMigrations()` returns immediately — no-op.
+
+### `DATABASE_URL` vs `DATABASE_PUBLIC_URL`
+
+- Inside Railway, the app reaches PostgreSQL over the private
+  `*.railway.internal` host (set this as `DATABASE_URL`).
+- To connect from your own machine (manual migration, debugging) use the public
+  URL: Railway PostgreSQL → Variables → `DATABASE_PUBLIC_URL`
+  (`*.proxy.rlwy.net:PORT`). Append `?sslmode=require` if a connection is
+  refused. Keep both in a gitignored `.env`, never hard-coded.
+
+### Schema is maintained in two files — keep them in sync
+
+Because SQLite/libSQL and PostgreSQL column types differ, the schema lives in
+two files. **Any schema change must be applied to both, with both migration sets
+regenerated:**
+
+| Backend | Schema | Drizzle config | Migrations dir |
+| --- | --- | --- | --- |
+| Turso/libSQL (production) | `packages/web/src/api/database/schema.ts` | `drizzle.config.ts` | `packages/web/drizzle/` |
+| PostgreSQL (distribution) | `packages/web/src/api/database/schema.postgres.ts` | `drizzle.postgres.config.ts` | `packages/web/drizzle-postgres/` |
+
+When adding/changing a column:
+
+1. Edit **both** `schema.ts` and `schema.postgres.ts` (same column names; types
+   per dialect — e.g. `integer({mode:"boolean"})` ↔ `boolean()`,
+   `integer({mode:"timestamp"})` ↔ `timestamp()`).
+2. Regenerate both: `bun x drizzle-kit generate` and
+   `bun x drizzle-kit generate --config=drizzle.postgres.config.ts`.
+3. The query code in `api/index.ts` / `server.ts` imports `schema` from
+   `./database` (the `DATABASE_PROVIDER` switch), so it automatically uses the
+   right table objects at runtime — do not import `schema.ts` directly.
+
+Forgetting the PostgreSQL side breaks only the distribution build, not
+production — so it is easy to miss. This rule is mirrored in `CLAUDE.md` /
+`AGENTS.md` §0.

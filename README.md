@@ -49,24 +49,34 @@ Turso/libSQL + R2 setup that powers `akieguchi.com`).
 | `S3_REGION` | the region Railway Storage reports (e.g. `us-east-1`) |
 | `SITE_URL` | the site's public origin once the domain is attached (optional) |
 
-### One-time database setup
+### Database setup — automatic
 
-The schema is not auto-applied on deploy. After the first deploy, apply the
-PostgreSQL migration once (Railway service shell, or locally against the public
-URL — see note below):
+No manual migration step is needed. When `DATABASE_PROVIDER=postgres`, the
+server applies the PostgreSQL migrations on startup (`runStartupMigrations()` in
+`src/api/database/migrate.ts`), so a freshly deployed empty database gets its
+tables on the first boot. The migrator tracks applied migrations in
+`drizzle.__drizzle_migrations`, so restarts and redeploys are idempotent. If a
+migration fails (e.g. the database is unreachable) the server exits instead of
+serving a broken site, and Railway keeps the previous version running — check
+the deploy logs for the `[migrate]` lines.
 
-```sh
-cd packages/web
-bun --env-file=../../.env x drizzle-kit migrate --config=drizzle.postgres.config.ts
-```
+The original Turso/libSQL setup (production `akieguchi.com`, `DATABASE_PROVIDER`
+unset) is untouched: `runStartupMigrations()` is a no-op there.
 
-> **`DATABASE_URL` vs `DATABASE_PUBLIC_URL`:** inside Railway, services reach
-> PostgreSQL over the private `*.railway.internal` host — correct for the running
-> app. To connect *from your own machine* (running the migration, debugging),
-> use the **public** URL instead: Railway PostgreSQL → Variables →
-> `DATABASE_PUBLIC_URL` (a `*.proxy.rlwy.net:PORT` host). If a connection is
-> refused, append `?sslmode=require`. Never hard-code either URL — keep it in a
-> gitignored `.env` file.
+> **Connecting from your own machine (`DATABASE_URL` vs `DATABASE_PUBLIC_URL`):**
+> inside Railway, services reach PostgreSQL over the private
+> `*.railway.internal` host — correct for the running app. To connect *from your
+> own machine* (manual migration, debugging) use the **public** URL instead:
+> Railway PostgreSQL → Variables → `DATABASE_PUBLIC_URL` (a
+> `*.proxy.rlwy.net:PORT` host). If a connection is refused, append
+> `?sslmode=require`. Keep it in a gitignored `.env` file, never hard-coded.
+>
+> Manual apply (rarely needed — e.g. inspecting an existing DB locally):
+>
+> ```sh
+> cd packages/web
+> bun --env-file=../../.env x drizzle-kit migrate --config=drizzle.postgres.config.ts
+> ```
 
 ## Stack
 

@@ -955,3 +955,27 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/api/database/migrate.ts`（新規）
 - `packages/web/src/server.ts`
 - `task.md`
+
+## 追記 2026-06-20 — Claude: 配布ドキュメント整備（自動migration / DATABASE_PUBLIC_URL / schema 2本同期）
+
+### 実施
+- `README.md`「One-time database setup」→「Database setup — automatic」に更新。
+  起動時自動適用・idempotent・失敗時 loud・本番 no-op を明記。手動 apply は fallback として残置。
+- `DISTRIBUTION.md` に「Railway All-in-One Template — Maintenance Notes」節を追加。
+  自動migration挙動 / `DATABASE_URL` vs `DATABASE_PUBLIC_URL` / **schema 2本同期ルール**
+  （schema.ts↔schema.postgres.ts、両 config で generate、`./database` 経由 import）を表つきで明文化。
+- `docs/setup-guide.md`: 冒頭に「Railway 一本化（推奨・新）/ Turso+R2（従来）」の2方式注記。
+  「Database schema を反映する」節に、Railway/PostgreSQL は起動時自動適用で db:push 不要と追記。
+- `CLAUDE.md` / `AGENTS.md` の §0 必須ルールに「DB schema は2ファイル同期必須」を追加
+  （PostgreSQL 側漏れは配布版だけ壊し本番で気づけない、を明記）。
+
+### 検証
+- 参照パス実在確認: `packages/web/drizzle/`（turso）/ `packages/web/drizzle-postgres/`（pg）両方存在。
+- ドキュメントのみの変更（コード不変）。
+
+### 残り
+- ① Railway dashboard で template 公開 → README の `<YOUR_TEMPLATE_ID>` 差し替え（秋さん手作業）。
+- push はしていない。experiment ブランチにローカル commit のみ。
+
+### 触ったファイル
+- `README.md` / `DISTRIBUTION.md` / `docs/setup-guide.md` / `CLAUDE.md` / `AGENTS.md` / `task.md`

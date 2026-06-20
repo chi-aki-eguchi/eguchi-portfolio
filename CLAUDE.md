@@ -193,6 +193,13 @@ git add -A && git commit -m "..." && git push
 
 - DB クエリは必ず `withRetry(() => db....)` でラップ
 - データ更新後は `qc.invalidateQueries({ queryKey: [...] })` で再取得
+- **DB schema は2ファイル同期必須**（配布版の Railway/PostgreSQL 対応）。カラム追加・変更時は
+  `schema.ts`（Turso/libSQL・本番）と `schema.postgres.ts`（PostgreSQL・配布版）の**両方**を
+  同じカラム名で更新し（型は方言ごと: `integer({mode:"boolean"})`↔`boolean()`、
+  `integer({mode:"timestamp"})`↔`timestamp()`）、`drizzle-kit generate` を両 config で再生成する。
+  クエリは `./database`（`DATABASE_PROVIDER` 切替境界）から `schema` を import すること
+  （`schema.ts` を直接 import しない）。PostgreSQL 側の更新漏れは配布版だけ壊し本番では気づけない。
+  詳細は `DISTRIBUTION.md`「Schema is maintained in two files」。
 - **新規 settingsキー追加時は以下4箇所を必ずセットで更新**（Codex により台帳化済み。admin.tsx は台帳から自動生成するため直接編集しない）:
   1. `lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS`（台帳。React レンダー駆動のキーは `JS_PREVIEW_KEYS` にも）
   2. API `GET /settings`（`api/index.ts`）の default 値

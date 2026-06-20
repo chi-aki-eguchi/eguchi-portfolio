@@ -173,6 +173,13 @@ git push
 
 - DB クエリは必ず `withRetry(() => db....)` でラップ
 - データ更新後は `qc.invalidateQueries({ queryKey: [...] })` で再取得
+- **DB schema は2ファイル同期必須**（配布版の Railway/PostgreSQL 対応）。カラム追加・変更時は
+  `schema.ts`（Turso/libSQL・本番）と `schema.postgres.ts`（PostgreSQL・配布版）の**両方**を
+  同じカラム名で更新し（型は方言ごと: `integer({mode:"boolean"})`↔`boolean()`、
+  `integer({mode:"timestamp"})`↔`timestamp()`）、`drizzle-kit generate` を両 config で再生成する。
+  クエリは `./database`（`DATABASE_PROVIDER` 切替境界）から `schema` を import すること
+  （`schema.ts` を直接 import しない）。PostgreSQL 側の更新漏れは配布版だけ壊し本番では気づけない。
+  詳細は `DISTRIBUTION.md`「Schema is maintained in two files」。
 - **新規 settingsキー追加時は以下3箇所を必ずセットで更新**:
   1. `admin.tsx` `SettingsTab` の `previewPayload` キー配列
   2. `provider.tsx` の DB適用 `useEffect`

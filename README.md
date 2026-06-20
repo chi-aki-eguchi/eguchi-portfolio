@@ -25,14 +25,20 @@ The application code is the same; the database/storage backend is selected at
 runtime with `DATABASE_PROVIDER=postgres` (unset keeps the original
 Turso/libSQL + R2 setup that powers `akieguchi.com`).
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/<YOUR_TEMPLATE_ID>)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/cool-wide)
 
-> **Maintainer note:** the one-click button needs a published Railway template.
-> Create it once in the Railway dashboard (New Project → this repo → add a
-> **PostgreSQL** plugin and a **Storage** bucket → set the variables below →
-> *Save as Template*), then replace `<YOUR_TEMPLATE_ID>` above with the template
-> id Railway gives you. `railway.json` already pins the build/start/healthcheck,
-> so the service builds with no manual Root Directory or Start Command config.
+> **Maintainer note:** the published template lives at
+> <https://railway.com/deploy/cool-wide>. There is **no `railway.json` on `main`**
+> — it is omitted on purpose so it cannot override production `akieguchi.com`'s
+> Railway deploy settings. Because of that, the template's web service must set
+> these explicitly in its Railway service config (the repo root `start` script is
+> pm2 and is **not** the Railway start command):
+>
+> - **Start Command:** `bun packages/web/src/server.ts`
+> - **Healthcheck Path:** `/api/health`
+>
+> When updating the template, re-deploy it once into a throwaway project and
+> confirm the build → migrate → `/api/health` flow before sharing the link.
 
 ### Template variables
 

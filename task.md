@@ -1035,3 +1035,43 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ### 触ったファイル
 - `railway.json`（healthcheckPath）
 - `task.md`
+
+## 追記 2026-06-20 — Codex: Railway 起動時 migration の診断ログ強化 + retry
+
+### 背景
+- Railway template deploy は Build/Deploy まで成功し、Network > Healthcheck で失敗。
+- Details/Diagnosis と Deploy Logs では、サーバ起動前の `runStartupMigrations()` が
+  `CREATE SCHEMA IF NOT EXISTS "drizzle"` で失敗しており、`/api/health` に届く前に
+  サーバが起動していないことを確認。
+- ローカルでは Railway と同じ start command（`bun packages/web/src/server.ts`）を
+  `packages/web/.env.railway-test.local` で実行し、migration 完了 → `GET /api/health` 200 /
+  `GET /` 200 を確認。コードの基本起動パスは通っている。
+
+### 対応
+- `packages/web/src/api/database/migrate.ts` に秘密を出さない `DATABASE_URL` 判定ログを追加。
+  - `*.railway.internal`（Railway private）
+  - `*.proxy.rlwy.net`（Railway public TCP proxy）
+  - sslmode の有無
+  をパスワードなしで判別できる。
+- migration 失敗時に `err.cause` / `code` / `syscall` などの原因情報もログに出すよう変更。
+  これで DNS / timeout / auth / permission のどこで落ちているか次回ログから判別可能。
+- Railway の Postgres 起動待ち・一時的な接続揺れに備え、起動時 migration に短い retry を追加。
+  本番(turso)は `DATABASE_PROVIDER !== "postgres"` で引き続き完全 no-op。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 86 pass / 0 fail。
+- `cd packages/web && bun run build` 成功。
+- `PORT=4389 bun --env-file=packages/web/.env.railway-test.local packages/web/src/server.ts`
+  → `[migrate] DATABASE_URL target: *.proxy.rlwy.net ...` → up to date → server listen。
+- `GET /api/health` 200 / `GET /` 200。
+
+### 残り
+- experiment ブランチに push 後、Railway 再デプロイで新ログを確認。
+- もし `DATABASE_URL target` が `*.railway.internal` で内部接続が失敗する場合は、
+  Railway private network 側の問題として、暫定的に `DATABASE_URL=${{Postgres.DATABASE_PUBLIC_URL}}`
+  を試す判断もあり。
+
+### 触ったファイル
+- `packages/web/src/api/database/migrate.ts`
+- `task.md`

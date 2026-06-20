@@ -144,20 +144,20 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 ## P0: Must Fix Before Public Distribution
 
 - Generalize hard-coded identity defaults:
-  - Done: API settings defaults and OGP/JSON-LD fallbacks now read from
-    `DEFAULT_*` env values via `packages/web/src/api/site-defaults.ts`.
+  - Done: API settings defaults now read from `DEFAULT_*` env values via
+    `packages/web/src/api/site-defaults.ts`, then fall back to generic
+    photographer labels.
+  - Done: OGP/JSON-LD/canonical/sitemap URL resolution now uses admin `siteUrl`,
+    then `SITE_URL`, then the request's current public origin, then generic
+    `https://example.com`.
   - Done: `packages/web/index.html` static fallback meta tags are generic, so
     static previews or HTML before server-side OGP injection no longer leak
     production-only names/domains.
-  - Remaining: compatibility fallbacks in `site-defaults.ts` still preserve
-    current `akieguchi.com` behavior. Template releases should either set
-    generic env defaults or flip these to neutral fallbacks after production env
-    is confirmed.
 - Generalize credentialed CORS:
   - Done: credentialed CORS now allows localhost plus configured `SITE_URL`,
     `DEFAULT_SITE_URL`, and comma-separated `ALLOWED_ORIGINS`.
-  - Note: template users who serve both apex and `www` domains should add the
-    extra variant to `ALLOWED_ORIGINS`.
+  - Done: configured custom domains automatically allow their `www` / non-`www`
+    pair.
 - Remove or configure hard-coded analytics:
   - Done: OGP injection reads `GA_MEASUREMENT_ID`; empty template installs do
     not get GA unless configured.

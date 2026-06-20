@@ -727,3 +727,55 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/web/pages/top.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `task.md`
+
+## 追記 2026-06-20 — Codex: サーバー側 fallback の配布向け中立化
+
+### 実施
+- 秋さんから、前回残した「サーバー側 fallback に `akieguchi.com` / `江口秋` が残る」件について「どうにかならんの？」と指摘あり。
+- 結論: どうにかできる。Railway env を直接触らず、コード側で安全に解決。
+- `packages/web/src/api/site-defaults.ts`
+  - `DEFAULT_SITE_URL` を `https://example.com` に変更。
+  - API settings の最終 fallback を `Photographer Name` / `Photography portfolio.` に変更。
+  - CORS は generic fallback URL を許可しないようにし、設定済み `SITE_URL` / `DEFAULT_SITE_URL` / `ALLOWED_ORIGINS` だけ許可。
+  - `www` / non-`www` 補完を `akieguchi.com` 専用から任意ドメイン向けに一般化。
+- `packages/web/src/api/ogp.ts`
+  - `siteUrlFrom(settings, fallbackOrigin)` に拡張。
+  - 解決順を `admin siteUrl` → `SITE_URL` env → request public origin → `https://example.com` に変更。
+  - OGP / canonical / JSON-LD が request public origin を使えるようにした。
+- `packages/web/src/server.ts`
+  - `x-forwarded-host` / `host` と `x-forwarded-proto` から public origin を作る `publicOriginFromRequest()` を追加。
+  - HTML OGP injection / sitemap / robots に同じ public origin を渡すよう変更。
+- `DISTRIBUTION.md` の P0 状態を更新。
+
+### Claude 相談
+- agmsg で Claude Code (`claude-driver`) に P0/P1 レビュー依頼。
+- Claude 返答:
+  - 方向性OK。
+  - P0注意は、`Origin` ヘッダーではなく `Host` / `x-forwarded-host` を使うこと。
+  - sitemap / robots も同じ基準にすること。
+- 今回実装は `x-forwarded-host` / `host` を使い、sitemap / robots にも反映済み。
+
+### 検証
+- `cd packages/web && bun test ./src/api/site-defaults.test.ts ./src/api/ogp.test.ts` 成功（29 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（84 pass / 0 fail）。
+- `cd packages/web && bun run lint` 成功。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 残り
+- GA4 の `akieguchi.com` fallback は、Railway に `GA_MEASUREMENT_ID` が入っているか確認できていないため残した。
+  - 今消すと本番のアクセス解析が止まる可能性がある。
+  - きれいに消すには Railway 側へ `GA_MEASUREMENT_ID=G-NKECCDLXYD` を入れてから、コード fallback を削除する。
+- root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
+- 空DB / 新規 Turso での起動確認は未実施。
+- 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
+
+### 触ったファイル
+- `DISTRIBUTION.md`
+- `packages/web/src/api/site-defaults.ts`
+- `packages/web/src/api/site-defaults.test.ts`
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/server.ts`
+- `task.md`

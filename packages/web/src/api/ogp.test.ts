@@ -142,10 +142,20 @@ describe("siteUrlFrom / base-URL unification", () => {
     <meta name="twitter:description" content="x" />
     </head><body></body></html>`;
 
-  test("resolution order: settings.siteUrl → SITE_URL env → akieguchi.com default", () => {
-    expect(DEFAULT_SITE_URL).toBe("https://akieguchi.com");
-    expect(siteUrlFrom({})).toBe(process.env.SITE_URL || "https://akieguchi.com");
-    expect(siteUrlFrom({ siteUrl: "https://example.jp/" })).toBe("https://example.jp"); // 末尾スラッシュ除去
+  test("resolution order: settings.siteUrl → SITE_URL env → request origin → generic default", () => {
+    const prevSiteUrl = process.env.SITE_URL;
+    delete process.env.SITE_URL;
+    try {
+      expect(DEFAULT_SITE_URL).toBe("https://example.com");
+      expect(siteUrlFrom({}, "https://portfolio.example")).toBe("https://portfolio.example");
+      expect(siteUrlFrom({})).toBe("https://example.com");
+      process.env.SITE_URL = "https://env.example/";
+      expect(siteUrlFrom({}, "https://portfolio.example")).toBe("https://env.example");
+      expect(siteUrlFrom({ siteUrl: "https://example.jp/" }, "https://portfolio.example")).toBe("https://example.jp"); // 末尾スラッシュ除去
+    } finally {
+      if (prevSiteUrl === undefined) delete process.env.SITE_URL;
+      else process.env.SITE_URL = prevSiteUrl;
+    }
   });
 
   test("canonical / og:url / JSON-LD all follow the configured base", () => {
@@ -154,6 +164,21 @@ describe("siteUrlFrom / base-URL unification", () => {
     expect(out).toContain('property="og:url" content="https://akieguchi.com/gallery"');
     expect(out).toContain('"url":"https://akieguchi.com/gallery"'); // JSON-LD ImageGallery
     expect(out).not.toContain("runable.site");
+  });
+
+  test("canonical / og:url can fall back to the request origin when no site URL is configured", () => {
+    const prevSiteUrl = process.env.SITE_URL;
+    delete process.env.SITE_URL;
+    try {
+      const out = injectOgp(page, {}, "/gallery", "", undefined, "https://portfolio.example");
+      expect(out).toContain('rel="canonical" href="https://portfolio.example/gallery"');
+      expect(out).toContain('property="og:url" content="https://portfolio.example/gallery"');
+      expect(out).toContain('"url":"https://portfolio.example/gallery"');
+      expect(out).not.toContain("akieguchi.com");
+    } finally {
+      if (prevSiteUrl === undefined) delete process.env.SITE_URL;
+      else process.env.SITE_URL = prevSiteUrl;
+    }
   });
 });
 

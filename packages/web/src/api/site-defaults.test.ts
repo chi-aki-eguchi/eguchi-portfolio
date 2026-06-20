@@ -3,21 +3,40 @@ import { gaMeasurementIdForSite, isAllowedOrigin } from "./site-defaults";
 
 const envSnapshot = {
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
+  DEFAULT_SITE_URL: process.env.DEFAULT_SITE_URL,
   GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID,
+  SITE_URL: process.env.SITE_URL,
 };
 
 afterEach(() => {
   if (envSnapshot.ALLOWED_ORIGINS === undefined) delete process.env.ALLOWED_ORIGINS;
   else process.env.ALLOWED_ORIGINS = envSnapshot.ALLOWED_ORIGINS;
 
+  if (envSnapshot.DEFAULT_SITE_URL === undefined) delete process.env.DEFAULT_SITE_URL;
+  else process.env.DEFAULT_SITE_URL = envSnapshot.DEFAULT_SITE_URL;
+
   if (envSnapshot.GA_MEASUREMENT_ID === undefined) delete process.env.GA_MEASUREMENT_ID;
   else process.env.GA_MEASUREMENT_ID = envSnapshot.GA_MEASUREMENT_ID;
+
+  if (envSnapshot.SITE_URL === undefined) delete process.env.SITE_URL;
+  else process.env.SITE_URL = envSnapshot.SITE_URL;
 });
 
 describe("isAllowedOrigin", () => {
   test("always allows localhost development origins", () => {
     expect(isAllowedOrigin("http://localhost:5173")).toBe(true);
     expect(isAllowedOrigin("http://127.0.0.1:4200")).toBe(true);
+  });
+
+  test("allows configured site origins but not the generic fallback URL", () => {
+    delete process.env.SITE_URL;
+    delete process.env.DEFAULT_SITE_URL;
+    delete process.env.ALLOWED_ORIGINS;
+    expect(isAllowedOrigin("https://example.com")).toBe(false);
+
+    process.env.SITE_URL = "https://portfolio.example";
+    expect(isAllowedOrigin("https://portfolio.example")).toBe(true);
+    expect(isAllowedOrigin("https://www.portfolio.example")).toBe(true);
   });
 
   test("allows configured extra origins and rejects arbitrary origins", () => {

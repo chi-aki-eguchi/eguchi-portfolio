@@ -38,8 +38,8 @@ export function setAttr(html: string, re: RegExp, value: string): string {
 // Deploy fingerprint — Railway sets RAILWAY_GIT_COMMIT_SHA automatically.
 export const BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev";
 
-export function siteUrlFrom(settings: Record<string, string>): string {
-  return (settings.siteUrl || process.env.SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, "");
+export function siteUrlFrom(settings: Record<string, string>, fallbackOrigin = ""): string {
+  return (settings.siteUrl || process.env.SITE_URL || fallbackOrigin || DEFAULT_SITE_URL).replace(/\/+$/, "");
 }
 // Used when the admin hasn't set siteDescription — keep in sync with /api settings default.
 export const SITE_DESCRIPTION_DEFAULT = SITE_DEFAULTS.siteDescription;
@@ -54,14 +54,21 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 
-export function injectOgp(html: string, settings: Record<string, string>, pathname = "/", heroImg = "", override?: { title?: string; desc?: string; image?: string }): string {
+export function injectOgp(
+  html: string,
+  settings: Record<string, string>,
+  pathname = "/",
+  heroImg = "",
+  override?: { title?: string; desc?: string; image?: string },
+  fallbackOrigin = "",
+): string {
   const siteName = settings.siteNameEn || settings.siteName || SITE_DEFAULTS.siteNameEn;
   const subtitle = settings.heroSubtitle || "Photography";
-  // Bilingual base title (e.g. "江口秋 | Aki Eguchi | Photography") so the JA name
+  // Bilingual base title (e.g. "Name JP | Name EN | Photography") so the JA name
   // leads for Japanese search while the EN name still reads in social cards.
   // usePageTitle.ts mirrors this exact composition so the SPA tab title and the
   // server-rendered <title>/og:title agree. (When siteName(JA) is unset the JA
-  // segment drops out, leaving "Aki Eguchi | Photography".)
+  // segment drops out, leaving "Name EN | Photography".)
   const nameJa = settings.siteName || "";
   const base = [nameJa && nameJa !== siteName ? nameJa : null, siteName, subtitle].filter(Boolean).join(" | ");
   const page = PAGE_TITLES[pathname];
@@ -72,7 +79,7 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
   // the static default already in index.html.
   const imgBase = override?.image || heroImg || settings.heroPhotoUrl || settings.profilePhotoUrl;
   const ogImage = imgBase ? `${imgBase}?w=1200&q=85` : "";
-  const siteUrl = siteUrlFrom(settings);
+  const siteUrl = siteUrlFrom(settings, fallbackOrigin);
   // /profile and /about render the same page — canonicalise /profile → /about so
   // search engines don't treat them as duplicate content.
   const canonPath = pathname === "/profile" ? "/about" : pathname;
@@ -126,7 +133,7 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
   out = setAttr(out, /(<meta\s+name="theme-color"\s+content=")[^"]*(")/, settings.themeBg || "#f7f7f7");
 
   // F: structured data (JSON-LD) for search engines — indexable pages only.
-  let headInjection = indexable ? buildJsonLd(settings, pathname, override) : "";
+  let headInjection = indexable ? buildJsonLd(settings, pathname, override, fallbackOrigin) : "";
   // Search Console site verification — paste the `content` value of Google's
   // HTML-tag method into admin settings; without this, every verification
   // attempt would need a rebuild+redeploy cycle.
@@ -159,8 +166,13 @@ export function injectOgp(html: string, settings: Record<string, string>, pathna
 // F: JSON-LD — WebSite (the domain itself) + Person (the photographer) +
 // ImageGallery (the site), plus a per-series ImageGallery on /series/:slug so
 // each body of work is its own recognised collection in search / social.
-function buildJsonLd(settings: Record<string, string>, pathname = "/", series?: { title?: string; desc?: string; image?: string }): string {
-  const siteUrl = siteUrlFrom(settings);
+function buildJsonLd(
+  settings: Record<string, string>,
+  pathname = "/",
+  series?: { title?: string; desc?: string; image?: string },
+  fallbackOrigin = "",
+): string {
+  const siteUrl = siteUrlFrom(settings, fallbackOrigin);
   const name = settings.siteName || settings.profileName || SITE_DEFAULTS.profileName;
   const nameEn = settings.siteNameEn || settings.profileNameEn || SITE_DEFAULTS.profileNameEn;
   const desc = settings.siteDescription || SITE_DESCRIPTION_DEFAULT;

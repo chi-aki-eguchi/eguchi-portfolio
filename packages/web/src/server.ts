@@ -84,8 +84,8 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
   return data;
 }
 
-async function buildSitemap(): Promise<string> {
-  const siteUrl = siteUrlFrom(await getSettings());
+async function buildSitemap(fallbackOrigin: string): Promise<string> {
+  const siteUrl = siteUrlFrom(await getSettings(), fallbackOrigin);
   const paths = ["/", "/gallery", "/series", "/about", "/contact"];
   // Include each published series detail page so crawlers discover the actual
   // work, not just the section index. Failure → static paths only (never throw).
@@ -134,6 +134,16 @@ function buildRobots(siteUrl: string): string {
   return `User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: ${siteUrl}/sitemap.xml\n`;
 }
 
+function publicOriginFromRequest(request: Request): string {
+  const requestUrl = new URL(request.url);
+  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim()
+    || requestUrl.protocol.replace(/:$/, "");
+  const host = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
+    || request.headers.get("host")
+    || requestUrl.host;
+  return `${proto}://${host}`.replace(/\/+$/, "");
+}
+
 // Baseline security headers for document/static responses. Framing is restricted
 // to same-origin: the only legitimate framer is the admin live-preview iframe
 // (src="/"), which is same-origin, so SAMEORIGIN / frame-ancestors 'self' allows
@@ -169,15 +179,16 @@ const server = Bun.serve({
   },
 });
 
-async function serveNonApi(_request: Request, url: URL): Promise<Response> {
+async function serveNonApi(request: Request, url: URL): Promise<Response> {
+    const publicOrigin = publicOriginFromRequest(request);
     // F: SEO endpoints
     if (url.pathname === "/sitemap.xml") {
-      return new Response(await buildSitemap(), {
+      return new Response(await buildSitemap(publicOrigin), {
         headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" },
       });
     }
     if (url.pathname === "/robots.txt") {
-      return new Response(buildRobots(siteUrlFrom(await getSettings())), {
+      return new Response(buildRobots(siteUrlFrom(await getSettings(), publicOrigin)), {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" },
       });
     }
@@ -231,7 +242,7 @@ async function serveNonApi(_request: Request, url: URL): Promise<Response> {
         const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
         if (og) override = { title: og.title, desc: og.desc, image: og.image || undefined };
       }
-      const injected = injectOgp(html, settings, url.pathname, heroImg, override);
+      const injected = injectOgp(html, settings, url.pathname, heroImg, override, publicOrigin);
       return new Response(injected, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",

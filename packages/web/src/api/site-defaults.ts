@@ -1,13 +1,13 @@
-export const DEFAULT_SITE_URL = (process.env.DEFAULT_SITE_URL || "https://akieguchi.com").replace(/\/+$/, "");
+export const DEFAULT_SITE_URL = (process.env.DEFAULT_SITE_URL || "https://example.com").replace(/\/+$/, "");
 
 export const SITE_DEFAULTS = {
-  siteName: process.env.DEFAULT_SITE_NAME ?? "江口秋",
-  siteNameEn: process.env.DEFAULT_SITE_NAME_EN ?? "Aki Eguchi",
-  siteDescription: process.env.DEFAULT_SITE_DESCRIPTION ?? "東京を拠点に活動する写真家・江口秋のポートフォリオ。宣材・ポートレート撮影のご依頼を受け付けています",
-  profileName: process.env.DEFAULT_PROFILE_NAME ?? process.env.DEFAULT_SITE_NAME ?? "江口秋",
-  profileNameKata: process.env.DEFAULT_PROFILE_NAME_KATA ?? "エグチアキ",
-  profileNameEn: process.env.DEFAULT_PROFILE_NAME_EN ?? process.env.DEFAULT_SITE_NAME_EN ?? "Aki Eguchi",
-  profileBio: process.env.DEFAULT_PROFILE_BIO ?? "東京を拠点に活動するフォトグラファー。",
+  siteName: process.env.DEFAULT_SITE_NAME ?? "Photographer Name",
+  siteNameEn: process.env.DEFAULT_SITE_NAME_EN ?? "Photographer Name",
+  siteDescription: process.env.DEFAULT_SITE_DESCRIPTION ?? "Photography portfolio.",
+  profileName: process.env.DEFAULT_PROFILE_NAME ?? process.env.DEFAULT_SITE_NAME ?? "Photographer Name",
+  profileNameKata: process.env.DEFAULT_PROFILE_NAME_KATA ?? "",
+  profileNameEn: process.env.DEFAULT_PROFILE_NAME_EN ?? process.env.DEFAULT_SITE_NAME_EN ?? "Photographer Name",
+  profileBio: process.env.DEFAULT_PROFILE_BIO ?? "Photographer.",
 };
 
 function originFrom(value: string | undefined): string | null {
@@ -25,7 +25,6 @@ function configuredOrigins(): Set<string> {
   for (const value of [
     process.env.SITE_URL,
     process.env.DEFAULT_SITE_URL,
-    DEFAULT_SITE_URL,
     ...(process.env.ALLOWED_ORIGINS ?? "").split(","),
   ]) {
     const origin = originFrom(value);
@@ -33,8 +32,11 @@ function configuredOrigins(): Set<string> {
     origins.add(origin);
     try {
       const url = new URL(origin);
-      if (url.hostname === "akieguchi.com") origins.add(`${url.protocol}//www.akieguchi.com`);
-      if (url.hostname === "www.akieguchi.com") origins.add(`${url.protocol}//akieguchi.com`);
+      if (url.hostname.startsWith("www.")) {
+        origins.add(`${url.protocol}//${url.hostname.slice(4)}${url.port ? `:${url.port}` : ""}`);
+      } else if (url.hostname.includes(".") && !/^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)) {
+        origins.add(`${url.protocol}//www.${url.hostname}${url.port ? `:${url.port}` : ""}`);
+      }
     } catch {
       // Non-URL values are kept verbatim above.
     }

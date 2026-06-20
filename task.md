@@ -919,3 +919,39 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `railway.json`（新規）
 - `README.md`
 - `task.md`
+
+## 追記 2026-06-20 — Claude: 配布版の起動時 自動マイグレーション
+
+### 実施
+- `packages/web/src/api/database/migrate.ts`（新規）に `runStartupMigrations()` を追加。
+  - `DATABASE_PROVIDER !== "postgres"` なら即 return（本番 turso は完全 no-op）。
+  - postgres 時のみ `drizzle-orm/bun-sql/migrator` を動的 import し、`packages/web/drizzle-postgres`
+    の migration を適用。`import.meta.dir` 基準でフォルダ解決（cwd 非依存）。
+  - drizzle migrator は `drizzle.__drizzle_migrations` で適用済みを追跡＝再起動/再デプロイで
+    何度呼んでも安全（idempotent）。
+  - 失敗時は原因・対処（DATABASE_URL 到達性 / PostgreSQL plugin / README 参照）を明示ログして
+    例外を投げ直す。
+- `server.ts`: `Bun.serve` 前に `try { await runStartupMigrations(); } catch { process.exit(1); }`。
+  → 配布版は受け取った人が手で db:push / migrate を打たずに起動できる。失敗時はサーバを
+    起動せず loud に落ち、Railway が前バージョンを維持（壊れた新版がトラフィックを受けない）。
+
+### 検証（Railway テスト project、実 PostgreSQL）
+- 空 DB（`DROP SCHEMA public CASCADE` で再現）から `DATABASE_PROVIDER=postgres` 起動
+  → `[migrate] applying...` → `[migrate] up to date` → 6テーブル作成 → `GET /` 200 /
+    `GET /api/settings` 134キー返却。
+- 再起動（populated DB）→ 「up to date」・`already exists` エラーなし＝idempotency OK。
+  追跡表 `drizzle.__drizzle_migrations` 生成確認。
+- 到達不可 DB → exit code 1・サーバ listening せず・[migrate] の明示ログ出力（失敗が loud）。
+- 本番パス（DATABASE_PROVIDER 未設定）→ 起動ログに `[migrate]` 0行＝no-op、影響なし。
+- 本番回帰: `tsc -b` / `bun test ./src` 86 pass。
+
+### 残り
+- ② 配布ドキュメント整備（DISTRIBUTION.md / docs に自動マイグレーション挙動・DATABASE_PUBLIC_URL・
+  schema2本同期ルールを反映）。README の「One-time database setup」は自動化済みのため文言更新余地あり。
+- ① Railway dashboard で template 公開 → `<YOUR_TEMPLATE_ID>` 差し替え（手作業）。
+- push はしていない。experiment ブランチにローカル commit のみ。
+
+### 触ったファイル
+- `packages/web/src/api/database/migrate.ts`（新規）
+- `packages/web/src/server.ts`
+- `task.md`

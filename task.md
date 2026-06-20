@@ -846,3 +846,45 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/api/index.ts`
 - `packages/web/src/web/pages/admin.tsx`
 - `task.md`
+
+## 追記 2026-06-20 — Claude: Railway All-in-One 配布版 DB/Storage プロバイダ切替 + 実環境 e2e
+
+### 実施
+- 配布版の最後の未配線を解消。`api/index.ts` と `server.ts` が `schema`（テーブル定義）を
+  sqlite-core のままハードコード参照していたため、`db` を pg に替えても schema が sqlite で
+  実行時に boolean/timestamp 型不一致になる状態だった。
+- `DATABASE_PROVIDER` 環境変数で **db / withRetry / schema を一括切替**する方式に変更。
+  - 未設定 → 従来の Turso/libSQL を動的 import（postgres.ts は一切ロードされない＝本番完全不変）。
+  - `=postgres` → `postgres.ts` + `schema.postgres` を選択。
+  - 旧 `database/index.ts` の libsql 実装は `database/libsql.ts` へ退避し、`index.ts` を切替境界に。
+  - 列名は両 schema で一致するため、クエリビルダ向けには libsql 側の型へ cast で統一。
+- `drizzle.postgres.config.ts` に欠けていた `dbCredentials.url`（env の DATABASE_URL）を追記。
+
+### 検証（実 Railway PostgreSQL + Storage、public proxy 経由）
+- Storage（S3互換）: PUT/GET/DELETE 往復バイト一致、`forcePathStyle=true` で動作。
+- migration: 生成 SQL を bun:sql で直接適用（drizzle-kit は pg driver 別途要求のため、
+  bun-sql 無依存方針を維持）。9文/9文適用、6テーブル作成確認。
+- API e2e 9/9 pass: settings / photos(空) / login / upload(storage) /
+  photos INSERT・RETURNING(id=1, sortOrder=MAX+1 相関サブクエリ可) /
+  timestamp 往復(createdAt 正しい ISO) / 一覧反映 / reorder(CASE SQL が executeRaw→db.execute(pg)で200) /
+  削除+purge。
+- 本番(turso/デフォルト)回帰: `tsc -b` exit0 / `bun test ./src` 86 pass・0 fail 維持 / `bun run build` 成功。
+
+### 接続の学び（配布 doc へ反映推奨）
+- ローカル/外部からの検証は Railway の **public URL**（`*.proxy.rlwy.net:PORT`）が必要。
+  内部 host（`*.railway.internal`）はこの Mac から到達不可。デプロイ後の Railway 内部は internal で OK。
+- 今回 `sslmode=require` は不要だった（public proxy で接続成功）。
+
+### 残り
+- 画像 PROXY + sharp リサイズの実 Storage 経由スポット確認（raw GET と sharp は個別に検証済みのため間接的に担保）。
+- Railway Template 化（`railway.json` + Deploy on Railway ボタン）。
+- 配布 doc に DATABASE_PUBLIC_URL 注記と、schema 2本（`schema.ts` / `schema.postgres.ts`）同期ルールの明文化。
+- 本番へのデプロイはしていない。実験ブランチ上の作業。`site-analysis-2026-06.md` は未追跡のまま不触。
+
+### 触ったファイル
+- `packages/web/src/api/database/index.ts`（切替境界へ書き換え）
+- `packages/web/src/api/database/libsql.ts`（新規・旧 index.ts の libsql 実装を退避）
+- `packages/web/src/api/index.ts`（schema import を ./database 経由へ）
+- `packages/web/src/server.ts`（schema import を ./api/database 経由へ）
+- `packages/web/drizzle.postgres.config.ts`（dbCredentials 追記）
+- `task.md`

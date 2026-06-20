@@ -1,8 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from "hono/cors";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { db, withRetry } from "./database";
-import * as schema from "./database/schema";
+import { db, withRetry, schema } from "./database";
 import { eq, sql, isNull, isNotNull, inArray, lt, and, type SQL } from "drizzle-orm";
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";

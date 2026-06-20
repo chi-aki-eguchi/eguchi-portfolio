@@ -1,6 +1,5 @@
 import app from "./api";
-import { db, withRetry } from "./api/database";
-import * as schema from "./api/database/schema";
+import { db, withRetry, schema } from "./api/database";
 import { eq, and, isNull } from "drizzle-orm";
 import { injectOgp, siteUrlFrom, escapeHtml, BUILD_ID } from "./api/ogp";
 

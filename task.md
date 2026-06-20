@@ -1010,3 +1010,28 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ### 触ったファイル
 - `package.json`（engines.node 追加）
 - `task.md`
+
+## 追記 2026-06-20 — Claude: Railway healthcheck を /api/health に変更
+
+### 背景
+- Node22修正で Build/Deploy は成功。次に Network > Healthcheck failure で落ちた。
+- railway.json は healthcheckPath: "/"。`/` は index.html 読込 + getSettings(DB) + OGP 注入が
+  絡み、初回起動の healthcheck には重く失敗しやすい。
+
+### 対応
+- `railway.json` の healthcheckPath を `/` → `/api/health` に変更。
+- `/api/health`（`api/index.ts:248`、Hono basePath='api'）は `{status:'ok', build}` を 200 で返す
+  DB非依存の軽量エンドポイント。Railway docs の「healthcheck は軽い200エンドポイント推奨」に合致。
+
+### 検証
+- ローカル起動で `GET /api/health` → 200 `{"status":"ok","build":"dev"}` を DB非依存(file::memory:)で確認。
+- `/health`(basePathなし)は SPA フォールバックHTMLの200なので不採用、正は `/api/health`。
+- railway.json JSON valid。
+
+### 残り
+- push 後に Railway 再デプロイで healthcheck 通過を確認。
+- ① template 公開 → README `<YOUR_TEMPLATE_ID>` 差し替え。
+
+### 触ったファイル
+- `railway.json`（healthcheckPath）
+- `task.md`

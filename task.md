@@ -1201,3 +1201,62 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/web/pages/admin-login.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `task.md`
+
+## 追記 2026-06-22 — Claude: 配布版整備（P0〜P2 ドキュメント + /service 案内・購入ページ）
+
+### 背景
+Cowork からの引き継ぎで Railway Template 配布の整備を実施。受け取る写真家が「迷わない」ことを
+最優先に、ドキュメント整備・管理画面の配布版対応・サイト内の案内/購入ページを作成。
+Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスクずつ進めた。
+
+### やったこと（すべて `main` に push・本番反映済み）
+- **P0-1 ADMIN_PASSWORD 固定値排除**: コードは元々 `process.env.ADMIN_PASSWORD` 参照でデフォルト
+  無し（`test-pass` 不在）を確認。未設定時は login 無効＋500。README の Template variables 表で
+  「必須・初期値なし」明記＋保守者ノート追加（Railway template composer で初期値/`secret()` を
+  使わない）。⚠ Railway 側テンプレ変数の初期値削除は秋さん手動が必要（repo からは不可、
+  `railway.json` 再追加は本番保護で不可）。
+- **P0-2 `docs/post-deploy-guide.md` 新規**: 非エンジニア写真家向けの公開手順
+  （Deploy→ADMIN_PASSWORD→Generate Domain→`/admin/login`→アップロード、つまずき表つき）。
+- **P1-3 管理画面「はじめに」配布版対応**: `SetupTab` を5ステップ（サイト名→プロフィール→写真1枚
+  →トップ写真→公開確認）に再編。完了 or 「閉じる」で1行バーに畳む（本番 akieguchi.com は
+  元々完了→畳まれるだけで無害）。frontのみ・`sessionStorage`、DB/API/auth/settings 不変。
+- **P1-4 `docs/sales-page.md`**: 販売・紹介1枚。料金は Cowork 確定（自分で ¥10,000 / おまかせ
+  ¥30,000 / 月額なし）。
+- **P2-5 `docs/setup-guide.md`**: 方法1=Railway テンプレ（推奨）を先頭、方法2=Turso+R2 を代替で温存。
+- **P2-6 `docs/faq.md` / P2-7 `docs/distribution-ideas.md`**（便利化アイデア優先度表）。
+- **`/service` ルート追加（案内・購入ページ）**: `packages/web/src/web/pages/service.tsx`。料金2カード
+  ＋購入ボタン（Stripe Payment Link 仮: `STRIPE_SELF` / `STRIPE_CONCIERGE` 定数）。仮の間はメール
+  申込にフォールバック＋「オンライン決済準備中」表示、実 https に差し替えると自動で Stripe 決済に
+  切替（`STRIPE_LIVE` 判定）。`/service` 専用 OGP（og:title=「写真家のためのポートフォリオサイト」、
+  og:image=`/og-service.jpg`）、`KNOWN_ROUTES`＋sitemap に追加（indexable）。ナビ未追加（URL直可）。
+- **`public/og-service.jpg`（1200x630）** を sharp で生成（`scripts/gen-og-service.mjs`）。Railway
+  Template Image URL 用にも流用可。
+- **`docs/sns-announcement.md`**（IG/X 告知下書き）、**`docs/purchase-thankyou.md`**（決済後メール
+  A=自分で / B=おまかせ）、**`docs/order-handling.md`**（秋くん用 申込対応 runbook）。
+
+### 検証
+- `tsc -b`=0、`bun run build` 成功、`bun test ./src` 87 pass / 0 fail（回帰なし）。
+- `injectOgp` 実行で `/service` の title / og:title / og:image / desc / indexable を確認。
+- 本番（build `ad776a5a`）: `/service`=200、`/og-service.jpg`=200、og:title 確認。P1-3 反映後も
+  `/admin/login`=200、`/`=200 確認。
+
+### 残り（秋さん側・repo ではできない）
+1. **Stripe**: アカウント作成→Payment Link 2本（自分で/おまかせ）発行→ `/service` の
+   `STRIPE_SELF` / `STRIPE_CONCIERGE` を実URLに差し替え（これだけでオンライン決済が有効化、
+   「準備中」表示も自動で消える）。
+2. **Railway Template Editor（cool-wide）**: Variables → `ADMIN_PASSWORD` の初期値（`test-pass` 等）
+   を削除・必須入力のまま。任意で各変数に説明文。Template Image URL に `og-service.jpg` を設定。
+
+### 次に再開するとき
+秋さんが Stripe リンクか Railway 設定を終えたら小さく再開。便利化アイデア
+（`docs/distribution-ideas.md`）着手なら、demo URL より「初回ウィザード / 『はじめに』の実運用確認」
+が効果大（Codex 評）。ただし、まず販売導線を実際に1回通す方が価値が高い。
+
+### 触ったファイル
+- `packages/web/src/web/pages/service.tsx`（新規）, `packages/web/src/web/app.tsx`
+- `packages/web/src/api/ogp.ts`, `packages/web/src/server.ts`
+- `packages/web/public/og-service.jpg`（新規）, `packages/web/scripts/gen-og-service.mjs`（新規）
+- `README.md`
+- `docs/`: `post-deploy-guide.md`, `sales-page.md`, `setup-guide.md`, `faq.md`,
+  `distribution-ideas.md`, `sns-announcement.md`, `purchase-thankyou.md`, `order-handling.md`
+- `task.md`

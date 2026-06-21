@@ -94,7 +94,7 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
 
 async function buildSitemap(fallbackOrigin: string): Promise<string> {
   const siteUrl = siteUrlFrom(await getSettings(), fallbackOrigin);
-  const paths = ["/", "/gallery", "/series", "/about", "/contact"];
+  const paths = ["/", "/gallery", "/series", "/about", "/contact", "/service"];
   // Include each published series detail page so crawlers discover the actual
   // work, not just the section index. Failure → static paths only (never throw).
   let seriesPaths: string[] = [];

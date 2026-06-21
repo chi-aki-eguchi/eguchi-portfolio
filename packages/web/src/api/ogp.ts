@@ -56,6 +56,15 @@ const PAGE_TITLES: Record<string, string> = {
   "/contact": "Contact",
 };
 
+// /service markets the portfolio product itself (to other photographers), so it
+// carries its own social card instead of the photographer-portfolio defaults — a
+// shared link should read "写真家向けポートフォリオサイト", not the owner's name.
+const SERVICE_OG = {
+  title: "写真家のためのポートフォリオサイト",
+  desc: "写真を上げて並べるだけで、雑誌のように見える、あなただけのポートフォリオ。自分で立てる ¥10,000 ／ おまかせ設定 ¥30,000。",
+  image: "/og-service.jpg",
+};
+
 
 export function injectOgp(
   html: string,
@@ -74,14 +83,18 @@ export function injectOgp(
   // segment drops out, leaving "Name EN | Photography".)
   const nameJa = settings.siteName || "";
   const base = [nameJa && nameJa !== siteName ? nameJa : null, siteName, subtitle].filter(Boolean).join(" | ");
+  const isService = pathname === "/service";
   const page = PAGE_TITLES[pathname];
   // A per-page override (e.g. a specific series) wins over the static route title.
-  const title = override?.title ? `${override.title} | ${base}` : (page ? `${page} | ${base}` : base);
-  const desc = override?.desc || siteDescriptionFrom(settings);
+  const title = isService
+    ? SERVICE_OG.title
+    : override?.title ? `${override.title} | ${base}` : (page ? `${page} | ${base}` : base);
+  const desc = isService ? SERVICE_OG.desc : (override?.desc || siteDescriptionFrom(settings));
   // Prefer an override image (series cover), then the hero photo, then profile, then
-  // the static default already in index.html.
-  const imgBase = override?.image || heroImg || settings.heroPhotoUrl || settings.profilePhotoUrl;
-  const ogImage = imgBase ? `${imgBase}?w=1200&q=85` : "";
+  // the static default already in index.html. /service uses its own fixed card image
+  // (a flat file, so no /api/images resize query is appended).
+  const imgBase = isService ? SERVICE_OG.image : (override?.image || heroImg || settings.heroPhotoUrl || settings.profilePhotoUrl);
+  const ogImage = imgBase ? (isService ? imgBase : `${imgBase}?w=1200&q=85`) : "";
   const siteUrl = siteUrlFrom(settings, fallbackOrigin);
   // /profile and /about render the same page — canonicalise /profile → /about so
   // search engines don't treat them as duplicate content.
@@ -96,7 +109,7 @@ export function injectOgp(
   out = setAttr(out, /(<meta\s+name="author"\s+content=")[^"]*(")/,       siteName);
   // Keep the admin app and unknown (404 fallback) paths out of search indexes so
   // junk URLs aren't indexed with the homepage's title (defence in depth with robots.txt).
-  const KNOWN_ROUTES = ["/", "/gallery", "/series", "/about", "/profile", "/contact"];
+  const KNOWN_ROUTES = ["/", "/gallery", "/series", "/about", "/profile", "/contact", "/service"];
   // /series/:slug is indexable only when the slug resolved to a real published
   // series (override.title set by the caller). Unknown/unpublished slugs render
   // the SPA's not-found view with HTTP 200 — without this they'd be indexable

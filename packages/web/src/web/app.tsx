@@ -13,6 +13,7 @@ const SeriesListPage = lazy(() => import("./pages/series"));
 const SeriesDetailPage = lazy(() => import("./pages/series-detail"));
 const ProfilePage = lazy(() => import("./pages/profile"));
 const ContactPage = lazy(() => import("./pages/contact"));
+const ServicePage = lazy(() => import("./pages/service"));
 const AdminLoginPage = lazy(() => import("./pages/admin-login"));
 const AdminPage = lazy(() => import("./pages/admin"));
 
@@ -99,6 +100,17 @@ function App() {
               <TitledRoute title="Contact">
                 <Suspense fallback={<PageFallback />}>
                   <ContactPage />
+                </Suspense>
+              </TitledRoute>
+            </PageTransition>
+          </Layout>
+        </Route>
+        <Route path="/service">
+          <Layout>
+            <PageTransition>
+              <TitledRoute title="ご案内">
+                <Suspense fallback={<PageFallback />}>
+                  <ServicePage />
                 </Suspense>
               </TitledRoute>
             </PageTransition>

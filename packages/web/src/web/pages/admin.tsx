@@ -173,6 +173,10 @@ function isFilled(v: unknown): boolean {
   return typeof v === "string" && v.trim().length > 0;
 }
 
+// A はじめに row either jumps to an admin tab (tab) or opens an external page
+// (href, e.g. the live site for the final "公開を確認する" step).
+type ChecklistItem = { title: string; body: string; done: boolean; tab?: Tab; href?: string };
+
 function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
@@ -198,69 +202,107 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   const categories = catsData?.categories ?? [];
   const heroCount = heroData?.heroPhotos?.length ?? 0;
 
-  const checklist = [
+  // The はじめに checklist is built for a fresh distribution install (empty DB):
+  // it guides the owner top-to-bottom to a published site. On a fully configured
+  // site (e.g. production akieguchi.com) every item is already done, so it
+  // collapses to a one-line bar; it can also be dismissed with 閉じる.
+  const [dismissed, setDismissed] = usePersistentState<boolean>("admin:setup-dismissed", false);
+  const [forceOpen, setForceOpen] = useState(false);
+
+  // Guided path for a brand-new site: name → profile → first photo → hero →
+  // confirm it is actually live. 連絡先 and other niceties go to the "できれば
+  // 確認" section below, so the main path stays a short 5 steps.
+  const checklist: ChecklistItem[] = [
     {
-      title: "サイトの名前",
+      title: "サイトの名前を入れる",
       body: "表に出る名前と短い説明文。SNSで共有された時にも使われます。",
       done: isFilled(settings.siteName) && isFilled(settings.siteDescription),
-      tab: "settings" as Tab,
+      tab: "settings",
     },
     {
-      title: "プロフィール",
+      title: "プロフィールを書く",
       body: "名前、自己紹介、プロフィール写真。まずここが入るとサイトらしくなります。",
       done: isFilled(settings.profileName) && isFilled(settings.profileBio),
-      tab: "profile" as Tab,
+      tab: "profile",
     },
     {
-      title: "連絡先",
-      body: "メールか問い合わせフォーム。撮影依頼を受けたい場合は必ず確認します。",
-      done: isFilled(settings.contactEmail) || isFilled(settings.formspreeUrl),
-      tab: "settings" as Tab,
-    },
-    {
-      title: "写真",
+      title: "写真を1枚あげる",
       body: "最初の写真をアップロードします。写真の保管場所が正しくつながっている確認にもなります。",
       done: activePhotos.length > 0,
-      tab: "gallery" as Tab,
+      tab: "gallery",
     },
     {
-      title: "公開する写真",
-      body: "公開状態の写真があるかを見ます。下書きだけだと、見る人には出ません。",
-      done: publishedPhotos.length > 0,
-      tab: "gallery" as Tab,
-    },
-    {
-      title: "トップ写真",
+      title: "トップ写真を選ぶ",
       body: "最初に見せたい写真を選びます。サイトの第一印象になります。",
       done: heroCount > 0,
-      tab: "hero" as Tab,
+      tab: "hero",
+    },
+    {
+      title: "公開を確認する",
+      body: "「開く」で実際のサイトを見て、トップに写真が出ているか確認します。ここまで来れば公開できています。",
+      done: publishedPhotos.length > 0 && heroCount > 0,
+      href: "/",
     },
   ];
 
-  const recommended = [
+  const recommended: ChecklistItem[] = [
+    {
+      title: "連絡先",
+      body: "メールか問い合わせフォーム。撮影依頼を受けたい場合は入れておきます。",
+      done: isFilled(settings.contactEmail) || isFilled(settings.formspreeUrl),
+      tab: "settings",
+    },
     {
       title: "公開URL",
       body: "独自ドメインを使う時に入れます。検索結果やSNS共有のURLが安定します。",
       done: isFilled(settings.siteUrl),
-      tab: "settings" as Tab,
+      tab: "settings",
     },
     {
       title: "写真の分類",
       body: "Gallery の絞り込みに使います。写真が増えてきたら整えると見やすくなります。",
       done: categories.length > 0,
-      tab: "categories" as Tab,
+      tab: "categories",
     },
     {
       title: "見え方",
       body: "ギャラリーの並び方、余白、文字の大きさを確認します。最初は写真の順番と S/M/L が一番効きます。",
       done: isFilled(settings.galleryLayout),
-      tab: "settings" as Tab,
+      tab: "settings",
     },
   ];
 
   const doneCount = checklist.filter((item) => item.done).length;
   const requiredDone = doneCount === checklist.length;
   const loading = settingsLoading || photosLoading;
+  // Once everything is done (or the owner pressed 閉じる), shrink to a one-line bar
+  // so a finished site's admin stays uncluttered. "もう一度見る" re-expands it.
+  const collapsed = !loading && (requiredDone || dismissed) && !forceOpen;
+
+  if (collapsed) {
+    return (
+      <div className="h-full overflow-y-auto bg-[#1e1e1e]">
+        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
+          <div className="flex items-center justify-between gap-3 border border-[#33402f] bg-[#222a20] rounded-sm px-4 py-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-5 h-5 rounded-full bg-[#5f7f68] text-[#151515] flex items-center justify-center flex-shrink-0">
+                <Check size={13} />
+              </div>
+              <p className="text-[12px] text-[#b8d5bf] truncate">
+                {requiredDone ? "公開に必要な項目はそろっています。" : "「はじめに」を閉じています。"}
+              </p>
+            </div>
+            <button
+              onClick={() => { setForceOpen(true); setDismissed(false); }}
+              className="text-[11px] text-[#9a9a9a] hover:text-[#ddd] transition-colors flex-shrink-0"
+            >
+              もう一度見る
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-[#1e1e1e]">
@@ -271,12 +313,20 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
               <p className="text-[11px] uppercase tracking-[0.16em] text-[#777] mb-2">Start</p>
               <h1 className="text-[22px] md:text-[26px] text-[#e5e5e5] font-normal tracking-normal">公開までにやること</h1>
             </div>
-            <div className={`w-fit rounded-sm border px-3 py-2 text-[12px] ${requiredDone ? "border-[#5f7f68] bg-[#263126] text-[#b8d5bf]" : "border-[#444] bg-[#262626] text-[#aaa]"}`}>
-              {loading ? "確認中..." : `${doneCount} / ${checklist.length} 完了`}
+            <div className="flex items-center gap-3">
+              <div className={`w-fit rounded-sm border px-3 py-2 text-[12px] ${requiredDone ? "border-[#5f7f68] bg-[#263126] text-[#b8d5bf]" : "border-[#444] bg-[#262626] text-[#aaa]"}`}>
+                {loading ? "確認中..." : `${doneCount} / ${checklist.length} 完了`}
+              </div>
+              <button
+                onClick={() => { setDismissed(true); setForceOpen(false); }}
+                className="text-[11px] text-[#777] hover:text-[#bbb] transition-colors flex-shrink-0"
+              >
+                閉じる
+              </button>
             </div>
           </div>
           <p className="max-w-2xl text-[13px] leading-7 text-[#9a9a9a]">
-            むずかしい設定は最初だけです。見る人に公開する前に、この画面の上から順に確認します。
+            むずかしい設定は最初だけです。見る人に公開する前に、上から順に5つを確認します。
             写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。
           </p>
         </section>
@@ -326,7 +376,7 @@ function SetupChecklistRow({
   onOpenTab,
   compact = false,
 }: {
-  item: { title: string; body: string; done: boolean; tab: Tab };
+  item: ChecklistItem;
   onOpenTab: (tab: Tab) => void;
   compact?: boolean;
 }) {
@@ -338,12 +388,23 @@ function SetupChecklistRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-[13px] text-[#ddd]">{item.title}</h3>
-          <button
-            onClick={() => onOpenTab(item.tab)}
-            className="text-[11px] text-[#888] hover:text-[#ddd] transition-colors flex-shrink-0"
-          >
-            開く
-          </button>
+          {item.href ? (
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener"
+              className="text-[11px] text-[#888] hover:text-[#ddd] transition-colors flex-shrink-0"
+            >
+              開く
+            </a>
+          ) : (
+            <button
+              onClick={() => item.tab && onOpenTab(item.tab)}
+              className="text-[11px] text-[#888] hover:text-[#ddd] transition-colors flex-shrink-0"
+            >
+              開く
+            </button>
+          )}
         </div>
         <p className={`${compact ? "text-[11px] leading-5" : "text-[12px] leading-6"} text-[#888] mt-1`}>{item.body}</p>
       </div>

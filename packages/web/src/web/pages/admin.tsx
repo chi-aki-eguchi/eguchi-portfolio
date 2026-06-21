@@ -2814,7 +2814,7 @@ function HeroTab() {
 
   // Selected hero photos (photoId list)
   const { data: heroData, isLoading: heroLoading } = useQuery({
-    queryKey: ["hero-photos"],
+    queryKey: ["admin-hero-photos"],
     queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> => (await adminApi["hero-photos"].$get()).json(),
   });
   const heroPhotoIds = new Set((heroData?.heroPhotos ?? []).map(h => h.photoId));
@@ -2839,7 +2839,11 @@ function HeroTab() {
       const res = await adminApi["hero-photos"].$post({ json: { photoId } });
       assertOk(res);
     },
-    onSuccess: () => { setHeroError(""); qc.invalidateQueries({ queryKey: ["hero-photos"] }); },
+    onSuccess: () => {
+      setHeroError("");
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+    },
     onError: onHeroError,
   });
 
@@ -2848,7 +2852,11 @@ function HeroTab() {
       const res = await adminApi["hero-photos"][":id"].$delete({ param: { id: String(photoId) } });
       assertOk(res);
     },
-    onSuccess: () => { setHeroError(""); qc.invalidateQueries({ queryKey: ["hero-photos"] }); },
+    onSuccess: () => {
+      setHeroError("");
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+    },
     onError: onHeroError,
   });
 
@@ -2857,7 +2865,11 @@ function HeroTab() {
       const res = await adminApi["hero-photos"].reorder.$post({ json: { photoIds } });
       assertOk(res);
     },
-    onSuccess: () => { setHeroError(""); qc.invalidateQueries({ queryKey: ["hero-photos"] }); },
+    onSuccess: () => {
+      setHeroError("");
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+    },
     onError: onHeroError,
   });
 
@@ -2867,7 +2879,11 @@ function HeroTab() {
       const res = await adminApi["hero-photos"].cleanup.$post({ json: { photoIds: danglingHeroIds } });
       assertOk(res);
     },
-    onSuccess: () => { setHeroError(""); qc.invalidateQueries({ queryKey: ["hero-photos"] }); },
+    onSuccess: () => {
+      setHeroError("");
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+    },
     onError: onHeroError,
   });
 

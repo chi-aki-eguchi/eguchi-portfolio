@@ -14,8 +14,9 @@ const { createElement, StrictMode } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 
-async function mount(node: unknown) {
+async function mount(node: unknown, setupQueryClient?: (qc: InstanceType<typeof QueryClient>) => void) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  setupQueryClient?.(qc);
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
@@ -193,6 +194,34 @@ describe("shared components", () => {
     } finally {
       canned["/api/admin/me"] = prev;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
+    }
+  });
+
+  test("AdminPage Hero tab ignores public hero cache shape", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevAdminHero = canned["/api/admin/hero-photos"];
+    const prevPublicHero = canned["/api/hero-photos"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/admin/hero-photos"] = { heroPhotos: [{ photoId: 1, sortOrder: 0 }] };
+    canned["/api/hero-photos"] = { heroPhotos: [samplePhotos[0]] };
+    dom.window.sessionStorage.setItem("admin:tab", JSON.stringify("hero"));
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        (qc) => qc.setQueryData(["hero-photos"], { heroPhotos: [samplePhotos[0]] })
+      );
+
+      expect(host.textContent).toContain("Hero Slides");
+      expect(host.textContent).not.toContain("削除済み");
+      expect(host.querySelector('button[aria-label="ヒーローから削除"]')).not.toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      if (prevAdminHero === undefined) delete canned["/api/admin/hero-photos"];
+      else canned["/api/admin/hero-photos"] = prevAdminHero;
+      canned["/api/hero-photos"] = prevPublicHero;
+      dom.window.sessionStorage.clear();
     }
   });
 

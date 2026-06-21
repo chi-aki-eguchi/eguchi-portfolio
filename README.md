@@ -27,6 +27,10 @@ Turso/libSQL + R2 setup that powers `akieguchi.com`).
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/cool-wide)
 
+A non-engineer photographer can run this whole flow themselves — from clicking the
+button to uploading the first photo. The step-by-step, jargon-free walkthrough is
+[docs/post-deploy-guide.md](./docs/post-deploy-guide.md).
+
 > **Maintainer note:** the published template lives at
 > <https://railway.com/deploy/cool-wide>. There is **no `railway.json` on `main`**
 > — it is omitted on purpose so it cannot override production `akieguchi.com`'s
@@ -36,6 +40,13 @@ Turso/libSQL + R2 setup that powers `akieguchi.com`).
 >
 > - **Start Command:** `bun packages/web/src/server.ts`
 > - **Healthcheck Path:** `/api/health`
+> - **`ADMIN_PASSWORD` variable:** in the Railway **template composer → Variables**,
+>   leave this with **no default value** (empty/required) so each deployer types
+>   their own password on the deploy form. If the template ever shows a baked-in
+>   default such as `test-pass`, remove it — a shipped default means every install
+>   shares one known admin password. Do **not** use `${{ secret() }}` for it
+>   either: the photographer must know the value to log in. A short description
+>   like "管理画面のログインパスワード（あなたが決める）" helps the deployer.
 >
 > When updating the template, re-deploy it once into a throwaway project and
 > confirm the build → migrate → `/api/health` flow before sharing the link.
@@ -47,7 +58,7 @@ Turso/libSQL + R2 setup that powers `akieguchi.com`).
 | `DATABASE_PROVIDER` | `postgres` (selects the PostgreSQL + Storage backend) |
 | `DATABASE_PUBLIC_URL` | reference the Railway PostgreSQL plugin's `DATABASE_PUBLIC_URL` |
 | `DATABASE_URL` | optional fallback; use `DATABASE_PUBLIC_URL` for the template |
-| `ADMIN_PASSWORD` | the photographer's admin login password |
+| `ADMIN_PASSWORD` | **Required — no default.** The admin login password the deployer types on the deploy form (8+ chars, hard to guess). Never ship a shared default like `test-pass`; each install must set its own. Do not auto-generate it either — the photographer needs to know the value to log in. |
 | `S3_ENDPOINT` | the Railway Storage bucket endpoint |
 | `S3_BUCKET` | the Railway Storage bucket name |
 | `S3_ACCESS_KEY_ID` | Storage bucket access key |
@@ -159,5 +170,7 @@ identity, analytics, allowed origins, setup docs, and first-run defaults need to
 be generalized. See [DISTRIBUTION.md](./DISTRIBUTION.md) for the live checklist.
 
 For the setup side, see [docs/setup-guide.md](./docs/setup-guide.md).
+For deploying from the Railway button yourself (no engineer needed), see
+[docs/post-deploy-guide.md](./docs/post-deploy-guide.md).
 For the photographer receiving the site, see
 [docs/photographer-guide.md](./docs/photographer-guide.md).

@@ -174,3 +174,4 @@ For deploying from the Railway button yourself (no engineer needed), see
 [docs/post-deploy-guide.md](./docs/post-deploy-guide.md).
 For the photographer receiving the site, see
 [docs/photographer-guide.md](./docs/photographer-guide.md).
+For common questions and stuck points, see [docs/faq.md](./docs/faq.md).

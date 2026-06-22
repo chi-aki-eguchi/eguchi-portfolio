@@ -4,26 +4,40 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
-import { PhotoGallery } from "../components/PhotoGallery";
+import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
+import { Lightbox, type LightboxPhoto } from "../components/Lightbox";
 import { InquiryCta } from "../components/InquiryCta";
 
 /** Hero carousel with auto-play, swipe, and arrow navigation */
-function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string }[]; fxRef?: React.Ref<HTMLDivElement> }) {
+function HeroCarousel({
+  photos,
+  fxRef,
+}: {
+  photos: { url: string; title: string }[];
+  fxRef?: React.Ref<HTMLDivElement>;
+}) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
   const [isHovering, setIsHovering] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   // Pause autoplay on hover OR keyboard focus (WCAG 2.2.2: moving content pausable).
   const paused = isHovering || isFocused;
-  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const touchRef = useRef<{ startX: number; startY: number; startTime: number } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined,
+  );
+  const touchRef = useRef<{
+    startX: number;
+    startY: number;
+    startTime: number;
+  } | null>(null);
   const containerRef = useRef<HTMLElement>(null);
 
   // Respect the OS "reduce motion" setting — don't auto-advance for those users
   // (WCAG 2.2.2: moving content must be pausable; reduced-motion = keep it still).
-  const prefersReducedMotion = typeof window !== "undefined"
-    && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -39,7 +53,9 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
       return;
     }
     resetTimer();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [photos.length, resetTimer, paused, prefersReducedMotion]);
 
   const goNext = useCallback(() => {
@@ -63,32 +79,45 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
   // Touch/swipe handlers
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
-    touchRef.current = { startX: touch.clientX, startY: touch.clientY, startTime: Date.now() };
+    touchRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: Date.now(),
+    };
   }, []);
 
   // A swipe that navigated must not also fire the click-to-advance handler
   // (touchend is followed by a synthetic click on most mobile browsers).
   const suppressClickRef = useRef(false);
 
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchRef.current.startX;
-    const dy = touch.clientY - touchRef.current.startY;
-    const dt = Date.now() - touchRef.current.startTime;
-    touchRef.current = null;
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchRef.current) return;
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchRef.current.startX;
+      const dy = touch.clientY - touchRef.current.startY;
+      const dt = Date.now() - touchRef.current.startTime;
+      touchRef.current = null;
 
-    // Must be mostly horizontal swipe, and either > 50px or fast flick
-    if (Math.abs(dx) > Math.abs(dy) * 1.2 && (Math.abs(dx) > 50 || (Math.abs(dx) > 20 && dt < 250))) {
-      suppressClickRef.current = true;
-      if (dx < 0) goNext();
-      else goPrev();
-    }
-  }, [goNext, goPrev]);
+      // Must be mostly horizontal swipe, and either > 50px or fast flick
+      if (
+        Math.abs(dx) > Math.abs(dy) * 1.2 &&
+        (Math.abs(dx) > 50 || (Math.abs(dx) > 20 && dt < 250))
+      ) {
+        suppressClickRef.current = true;
+        if (dx < 0) goNext();
+        else goPrev();
+      }
+    },
+    [goNext, goPrev],
+  );
 
   // Z1: クリック（タップ）でも次の写真へ。スワイプ直後の合成クリックは無視。
   const onClickAdvance = useCallback(() => {
-    if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
     if (photos.length > 1) goNext();
   }, [photos.length, goNext]);
 
@@ -105,7 +134,12 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
     return () => window.removeEventListener("keydown", handler);
   }, [goNext, goPrev]);
 
-  if (photos.length === 0) return <div className="w-full" style={{ height: '60vh' }}><div className="w-full h-full bg-[#eee] rounded-lg" /></div>;
+  if (photos.length === 0)
+    return (
+      <div className="w-full" style={{ height: "60vh" }}>
+        <div className="w-full h-full bg-[#eee] rounded-lg" />
+      </div>
+    );
 
   return (
     // The autoplay-pause handlers below sit on the carousel container on purpose so
@@ -133,7 +167,12 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
               onTouchStart,
               onTouchEnd,
               onClick: onClickAdvance,
-              onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClickAdvance(); } },
+              onKeyDown: (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onClickAdvance();
+                }
+              },
               role: "button",
               tabIndex: 0,
               "aria-label": "次の写真へ",
@@ -156,7 +195,9 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
               style={{ zIndex: i === current ? 1 : 0 }}
               fetchPriority={i === 0 ? "high" : "low"}
               loading={i === 0 ? "eager" : "lazy"}
-              onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+              onError={(e) => {
+                e.currentTarget.style.visibility = "hidden";
+              }}
               draggable={false}
             />
           ))}
@@ -171,14 +212,36 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
             onClick={goPrev}
             aria-label="前のスライド"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
           </button>
           <button
             className={`carousel-arrow carousel-arrow-right ${paused ? "visible" : ""}`}
             onClick={goNext}
             aria-label="次のスライド"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
           </button>
         </>
       )}
@@ -205,13 +268,25 @@ function HeroCarousel({ photos, fxRef }: { photos: { url: string; title: string 
 /** E1: single hero — one large photo with the name overlaid.
  *  AA2: titlePosition places the caption; AA3: fxRef is the scroll-effect layer
  *  (photo + overlay move/fade together, the caption stays put). */
-function HeroSingle({ photo, children, titlePosition = "center", fxRef }: {
+function HeroSingle({
+  photo,
+  children,
+  titlePosition = "center",
+  fxRef,
+}: {
   photo: { url: string; title: string };
   children?: React.ReactNode;
   titlePosition?: string;
   fxRef?: React.Ref<HTMLDivElement>;
 }) {
-  const posClass = ["bottom-left", "bottom-right", "top-left", "top-right"].includes(titlePosition) ? `pos-${titlePosition}` : "";
+  const posClass = [
+    "bottom-left",
+    "bottom-right",
+    "top-left",
+    "top-right",
+  ].includes(titlePosition)
+    ? `pos-${titlePosition}`
+    : "";
   const overlayTop = titlePosition.startsWith("top-") ? "overlay-top" : "";
   return (
     <div className="hero-single">
@@ -223,12 +298,188 @@ function HeroSingle({ photo, children, titlePosition = "center", fxRef }: {
           sizes="100vw"
           alt={photo.title || "Photograph"}
           fetchPriority="high"
-          onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+          onError={(e) => {
+            e.currentTarget.style.visibility = "hidden";
+          }}
           draggable={false}
         />
         <div className={`hero-single-overlay ${overlayTop}`} />
       </div>
       <div className={`hero-single-caption ${posClass}`}>{children}</div>
+    </div>
+  );
+}
+
+type HomeLayoutProps = {
+  heroPhotos: { url: string; title: string }[];
+  featured: GalleryPhoto[];
+  worksPoolLen: number;
+  worksSentinelRef: React.RefObject<HTMLDivElement | null>;
+  fadeRef: React.Ref<HTMLDivElement>;
+  settings: Record<string, string | undefined> | undefined;
+};
+
+function toLightboxPhotos(photos: GalleryPhoto[]): LightboxPhoto[] {
+  return photos.map((p) => ({
+    url: p.url,
+    title: p.title,
+    camera: p.camera,
+    lens: p.lens,
+    filmType: p.filmType,
+  }));
+}
+
+/** Phase 2 — Home A: quiet hero photo + clean 3-column square grid. */
+function HomeQuietGrid({
+  heroPhotos,
+  featured,
+  worksPoolLen,
+  worksSentinelRef,
+  fadeRef,
+  settings,
+}: HomeLayoutProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const heroPhoto = heroPhotos[0];
+
+  return (
+    <div>
+      {/* Hero: full-width photo with name overlay at bottom-left */}
+      <section
+        className="relative w-full overflow-hidden"
+        style={{ height: "min(280px, 50vh)" }}
+      >
+        {heroPhoto ? (
+          <>
+            <img
+              className="w-full h-full object-cover"
+              src={`${heroPhoto.url}?w=1800&q=88`}
+              srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w, ${heroPhoto.url}?w=2400&q=88 2400w`}
+              sizes="100vw"
+              alt={heroPhoto.title || "Photograph"}
+              fetchPriority="high"
+              draggable={false}
+              onError={(e) => {
+                e.currentTarget.style.visibility = "hidden";
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            <div className="absolute bottom-6 left-7">
+              <h1
+                className="font-serif leading-tight"
+                style={{
+                  fontSize: 32,
+                  fontWeight: 300,
+                  color: "#fff",
+                  letterSpacing: "0.02em",
+                  textShadow: "0 1px 8px rgba(0,0,0,0.3)",
+                }}
+              >
+                {siteNameJa}
+              </h1>
+              <p
+                className="font-en uppercase mt-0.5"
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.14em",
+                  color: "rgba(255,255,255,0.8)",
+                }}
+              >
+                {siteNameEn || "Photography"}
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full bg-[#eee]" />
+        )}
+      </section>
+
+      {/* Works: 3-column square grid */}
+      {featured.length > 0 && (
+        <section
+          className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
+          ref={fadeRef}
+        >
+          <div className="flex items-center justify-between mb-3.5">
+            <h2
+              className="font-en uppercase"
+              style={{
+                fontSize: 9,
+                letterSpacing: "0.16em",
+                color: "#aaa",
+              }}
+            >
+              {settings?.worksLabel ?? "Works"}
+            </h2>
+            <Link
+              to="/gallery"
+              className="font-en transition-colors duration-300 hover:text-[#888]"
+              style={{ fontSize: 9, color: "#aaa" }}
+            >
+              {settings?.viewAllLabel ?? "View all →"}
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-[5px]">
+            {featured.map((photo, idx) => (
+              <button
+                key={photo.id}
+                className="aspect-square overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)]"
+                onClick={() => setLightboxIndex(idx)}
+                aria-label={photo.title || `Photo ${idx + 1}`}
+              >
+                <img
+                  src={`${photo.url}?w=600&q=85`}
+                  srcSet={`${photo.url}?w=400&q=85 400w, ${photo.url}?w=600&q=85 600w`}
+                  sizes="(min-width: 768px) 33vw, 50vw"
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading={idx < 9 ? "eager" : "lazy"}
+                  draggable={false}
+                />
+              </button>
+            ))}
+          </div>
+
+          {featured.length < worksPoolLen && (
+            <div
+              ref={worksSentinelRef}
+              aria-hidden="true"
+              style={{ height: 1 }}
+            />
+          )}
+
+          <div className="mt-16 md:mt-24 text-center section-reveal">
+            <Link
+              to="/gallery"
+              className="inline-block font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.55)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+            >
+              {settings?.viewAllCtaLabel || "すべての作品を見る"}
+            </Link>
+          </div>
+        </section>
+      )}
+
+      <InquiryCta />
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={toLightboxPhotos(featured)}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={() =>
+            setLightboxIndex((i) =>
+              i !== null ? (i - 1 + featured.length) % featured.length : 0,
+            )
+          }
+          onNext={() =>
+            setLightboxIndex((i) =>
+              i !== null ? (i + 1) % featured.length : 0,
+            )
+          }
+        />
+      )}
     </div>
   );
 }
@@ -251,15 +502,16 @@ export default function TopPage() {
   const allPhotos = useMemo(() => photosData?.photos ?? [], [photosData]);
   // The API may return null entries for hero rows whose photo was deleted.
   const heroPhotosPicked = (heroData?.heroPhotos ?? []).filter(
-    (p): p is NonNullable<typeof p> => p != null
+    (p): p is NonNullable<typeof p> => p != null,
   );
   // Don't fall back to gallery photos while hero-photos is still loading —
   // that would briefly flash unrelated photos in the hero before the real ones arrive.
-  const heroPhotos = heroPhotosPicked.length > 0
-    ? heroPhotosPicked
-    : heroLoading
-      ? []
-      : allPhotos.slice(0, 5);
+  const heroPhotos =
+    heroPhotosPicked.length > 0
+      ? heroPhotosPicked
+      : heroLoading
+        ? []
+        : allPhotos.slice(0, 5);
   // Top Works pool honours topWorksMode:
   //  - auto (default): the whole library in Aki's order (design-spec 2-2 — the
   //    manual sortOrder × size composition flows into the top page as-is)
@@ -277,9 +529,18 @@ export default function TopPage() {
       // ID would map to the same photo object twice — PhotoGallery keys tiles by
       // photo.id, so duplicates trigger a React key collision (a tile vanishes /
       // its reveal transition breaks). Set preserves first-seen order.
-      const ids = [...new Set(topWorksIds.split(",").map((s: string) => parseInt(s.trim(), 10)).filter(Number.isFinite))];
+      const ids = [
+        ...new Set(
+          topWorksIds
+            .split(",")
+            .map((s: string) => parseInt(s.trim(), 10))
+            .filter(Number.isFinite),
+        ),
+      ];
       const byId = new Map(allPhotos.map((p) => [p.id, p]));
-      const picked = ids.map((id: number) => byId.get(id)).filter((p): p is (typeof allPhotos)[number] => Boolean(p));
+      const picked = ids
+        .map((id: number) => byId.get(id))
+        .filter((p): p is (typeof allPhotos)[number] => Boolean(p));
       if (picked.length > 0) return picked; // curated set only — no auto-append
     } else if (topWorksMode === "random") {
       const arr = [...allPhotos];
@@ -295,12 +556,18 @@ export default function TopPage() {
   // homeGalleryCount: initial batch from settings (default 12).
   // extraCount: additional photos revealed by infinite scroll.
   // worksCount = homeGalleryCount + extraCount — never shrinks while browsing.
-  const homeGalleryCount = Math.max(1, parseInt(settings?.homeGalleryCount ?? "12", 10) || 12);
+  const homeGalleryCount = Math.max(
+    1,
+    parseInt(settings?.homeGalleryCount ?? "12", 10) || 12,
+  );
   const WORKS_STEP = 9;
   const [extraCount, setExtraCount] = useState(0);
   const worksCount = homeGalleryCount + extraCount;
   const worksSentinelRef = useRef<HTMLDivElement>(null);
-  const featured = useMemo(() => worksPool.slice(0, worksCount), [worksPool, worksCount]);
+  const featured = useMemo(
+    () => worksPool.slice(0, worksCount),
+    [worksPool, worksCount],
+  );
   useEffect(() => {
     if (worksCount >= worksPool.length) return; // everything shown — stop observing
     const el = worksSentinelRef.current;
@@ -311,7 +578,7 @@ export default function TopPage() {
           setExtraCount((c) => c + WORKS_STEP);
         }
       },
-      { rootMargin: "900px 0px" }
+      { rootMargin: "900px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -322,10 +589,23 @@ export default function TopPage() {
   const fadeRef = useScrollFadeIn([featured, settings?.topWorksLayout]);
   const nameKata = settings?.profileNameKata ?? "";
   const heroMode = settings?.heroMode ?? "carousel";
+
+  const homeLayoutProps: HomeLayoutProps = {
+    heroPhotos,
+    featured,
+    worksPoolLen: worksPool.length,
+    worksSentinelRef,
+    fadeRef,
+    settings,
+  };
+
+  if (heroMode === "quiet-grid") return <HomeQuietGrid {...homeLayoutProps} />;
+
   const isSingle = heroMode === "single" && heroPhotos.length > 0;
 
   // AA: hero presentation settings — defaults reproduce the pre-AA look exactly.
-  const heroFullscreen = (settings?.heroDisplayMode || "normal") === "fullscreen";
+  const heroFullscreen =
+    (settings?.heroDisplayMode || "normal") === "fullscreen";
   const heroTitlePosition = settings?.heroTitlePosition || "center";
   const heroScrollEffect = settings?.heroScrollEffect || "none";
 
@@ -336,7 +616,9 @@ export default function TopPage() {
   useEffect(() => {
     const el = heroFxRef.current;
     if (!el) return;
-    const reduced = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (heroScrollEffect === "none" || reduced) {
       el.style.transform = "";
       el.style.opacity = "";
@@ -361,7 +643,9 @@ export default function TopPage() {
         layer.style.opacity = "";
       }
     };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(apply); };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(apply);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     apply();
     return () => {
@@ -376,28 +660,56 @@ export default function TopPage() {
     <div>
       {isSingle ? (
         /* Hero: single large photo with name overlaid */
-        <section ref={heroBoxRef} className={heroFullscreen ? "hero-fullscreen" : "pt-6 md:pt-10"}>
-          <HeroSingle photo={heroPhotos[0]} titlePosition={heroTitlePosition} fxRef={heroFxRef}>
+        <section
+          ref={heroBoxRef}
+          className={heroFullscreen ? "hero-fullscreen" : "pt-6 md:pt-10"}
+        >
+          <HeroSingle
+            photo={heroPhotos[0]}
+            titlePosition={heroTitlePosition}
+            fxRef={heroFxRef}
+          >
             <h1
               className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
-              style={{ fontSize: "var(--hero-name-size, 1.75rem)", fontWeight: "var(--hero-name-weight, 700)" as never, color: "#fff", letterSpacing: "var(--hero-name-tracking, 0.04em)", textShadow: "0 1px 18px rgba(0,0,0,0.45)" }}
+              style={{
+                fontSize: "var(--hero-name-size, 1.75rem)",
+                fontWeight: "var(--hero-name-weight, 700)" as never,
+                color: "#fff",
+                letterSpacing: "var(--hero-name-tracking, 0.04em)",
+                textShadow: "0 1px 18px rgba(0,0,0,0.45)",
+              }}
             >
               {siteNameJa}
             </h1>
             {nameKata && (
-              <p className="text-[10px] tracking-[0.18em] mt-1.5 hero-text-reveal hero-text-reveal-2" style={{ color: "rgba(255,255,255,0.70)", textShadow: "0 1px 12px rgba(0,0,0,0.4)" }}>
+              <p
+                className="text-[10px] tracking-[0.18em] mt-1.5 hero-text-reveal hero-text-reveal-2"
+                style={{
+                  color: "rgba(255,255,255,0.70)",
+                  textShadow: "0 1px 12px rgba(0,0,0,0.4)",
+                }}
+              >
                 {nameKata}
               </p>
             )}
             <p
               className="font-en mt-1 hero-text-reveal hero-text-reveal-2"
-              style={{ fontSize: "var(--hero-name-en-size, 0.9375rem)", color: "rgba(255,255,255,0.82)", letterSpacing: "var(--hero-name-en-tracking, 0.08em)", textShadow: "0 1px 14px rgba(0,0,0,0.4)" }}
+              style={{
+                fontSize: "var(--hero-name-en-size, 0.9375rem)",
+                color: "rgba(255,255,255,0.82)",
+                letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
+                textShadow: "0 1px 14px rgba(0,0,0,0.4)",
+              }}
             >
               {siteNameEn}
             </p>
             <p
               className="font-en tracking-[0.10em] mt-1 hero-text-reveal hero-text-reveal-3"
-              style={{ fontSize: "var(--hero-sub-size, 0.75rem)", color: "rgba(255,255,255,0.62)", textShadow: "0 1px 12px rgba(0,0,0,0.4)" }}
+              style={{
+                fontSize: "var(--hero-sub-size, 0.75rem)",
+                color: "rgba(255,255,255,0.62)",
+                textShadow: "0 1px 12px rgba(0,0,0,0.4)",
+              }}
             >
               {subtitle}
             </p>
@@ -405,17 +717,35 @@ export default function TopPage() {
         </section>
       ) : (
         /* Hero: Carousel + Name block */
-        <section ref={heroBoxRef} className={heroFullscreen ? "hero-fullscreen" : "max-w-6xl mx-auto px-4 md:px-10 pt-6 md:pt-10"}>
+        <section
+          ref={heroBoxRef}
+          className={
+            heroFullscreen
+              ? "hero-fullscreen"
+              : "max-w-6xl mx-auto px-4 md:px-10 pt-6 md:pt-10"
+          }
+        >
           <HeroCarousel photos={heroPhotos} fxRef={heroFxRef} />
 
           {/* Name block below carousel. AA2: in carousel mode the title sits
               under the photos, so the position setting maps to text alignment. */}
-          <div className={`mt-12 md:mt-16 mb-10 ${heroFullscreen ? "px-6" : ""} ${
-            heroTitlePosition.endsWith("-left") ? "text-left" : heroTitlePosition.endsWith("-right") ? "text-right" : "text-center"
-          }`}>
+          <div
+            className={`mt-12 md:mt-16 mb-10 ${heroFullscreen ? "px-6" : ""} ${
+              heroTitlePosition.endsWith("-left")
+                ? "text-left"
+                : heroTitlePosition.endsWith("-right")
+                  ? "text-right"
+                  : "text-center"
+            }`}
+          >
             <h1
               className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
-              style={{ fontWeight: "var(--hero-name-weight, 700)" as never, fontSize: "var(--hero-name-size, 1.5rem)", color: "var(--hero-name-color, var(--foreground))", letterSpacing: "var(--hero-name-tracking, 0.04em)" }}
+              style={{
+                fontWeight: "var(--hero-name-weight, 700)" as never,
+                fontSize: "var(--hero-name-size, 1.5rem)",
+                color: "var(--hero-name-color, var(--foreground))",
+                letterSpacing: "var(--hero-name-tracking, 0.04em)",
+              }}
             >
               {siteNameJa}
             </h1>
@@ -426,13 +756,22 @@ export default function TopPage() {
             )}
             <p
               className="font-en mt-1 hero-text-reveal hero-text-reveal-2"
-              style={{ fontSize: "var(--hero-name-en-size, 0.875rem)", color: "var(--hero-name-en-color, rgba(var(--foreground-rgb),0.40))", letterSpacing: "var(--hero-name-en-tracking, 0.08em)" }}
+              style={{
+                fontSize: "var(--hero-name-en-size, 0.875rem)",
+                color:
+                  "var(--hero-name-en-color, rgba(var(--foreground-rgb),0.40))",
+                letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
+              }}
             >
               {siteNameEn}
             </p>
             <p
               className="font-en tracking-[0.10em] mt-1 hero-text-reveal hero-text-reveal-3"
-              style={{ fontSize: "var(--hero-sub-size, 0.75rem)", color: "var(--hero-sub-color, rgba(var(--foreground-rgb),0.25))" }}
+              style={{
+                fontSize: "var(--hero-sub-size, 0.75rem)",
+                color:
+                  "var(--hero-sub-color, rgba(var(--foreground-rgb),0.25))",
+              }}
             >
               {subtitle}
             </p>
@@ -442,11 +781,19 @@ export default function TopPage() {
 
       {/* Photo Grid */}
       {featured.length > 0 && (
-        <section className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(2rem*var(--spacing-hero-bottom,1))] md:pt-[calc(3rem*var(--spacing-hero-bottom,1))] pb-[calc(5rem*var(--spacing-section-gap,1))] md:pb-[calc(8rem*var(--spacing-section-gap,1))]" ref={fadeRef}>
+        <section
+          className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(2rem*var(--spacing-hero-bottom,1))] md:pt-[calc(3rem*var(--spacing-hero-bottom,1))] pb-[calc(5rem*var(--spacing-section-gap,1))] md:pb-[calc(8rem*var(--spacing-section-gap,1))]"
+          ref={fadeRef}
+        >
           <div className="flex items-center justify-between mb-10 md:mb-14">
             <h2
               className="font-en uppercase section-reveal"
-              style={{ fontSize: "var(--section-label-size, 0.75rem)", color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.30))`, letterSpacing: "var(--section-label-tracking, 0.12em)", lineHeight: "var(--section-leading, 1.2)" }}
+              style={{
+                fontSize: "var(--section-label-size, 0.75rem)",
+                color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.30))`,
+                letterSpacing: "var(--section-label-tracking, 0.12em)",
+                lineHeight: "var(--section-leading, 1.2)",
+              }}
             >
               {settings?.worksLabel ?? "Works"}
             </h2>
@@ -465,11 +812,19 @@ export default function TopPage() {
           </div>
 
           {/* N: top Works section honours topWorksLayout (default ずらし大 / stagger) */}
-          <PhotoGallery photos={featured} layoutType={settings?.topWorksLayout ?? "stagger"} variant="top" />
+          <PhotoGallery
+            photos={featured}
+            layoutType={settings?.topWorksLayout ?? "stagger"}
+            variant="top"
+          />
 
           {/* Infinite-feed sentinel — fires ~900px before it scrolls into view. */}
           {featured.length < worksPool.length && (
-            <div ref={worksSentinelRef} aria-hidden="true" style={{ height: 1 }} />
+            <div
+              ref={worksSentinelRef}
+              aria-hidden="true"
+              style={{ height: 1 }}
+            />
           )}
 
           {/* Works → Gallery funnel: a quiet but unmissable CTA after the photos,

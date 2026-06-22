@@ -662,6 +662,211 @@ function HomeEditorial({
   );
 }
 
+/** Phase 2 — Home C: fullscreen hero with centered name + large-format works. */
+function HomeImmersive({
+  heroPhotos,
+  featured,
+  worksPoolLen,
+  worksSentinelRef,
+  fadeRef,
+  settings,
+}: HomeLayoutProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const heroPhoto = heroPhotos[0];
+
+  const displayMedium = (p: GalleryPhoto) => {
+    if (p.filmType === "film") return "Film";
+    if (p.filmType === "digital") return "Digital";
+    return "";
+  };
+  const photoYear = (p: GalleryPhoto) => {
+    if (!p.shotAt) return "";
+    const y = new Date(p.shotAt).getFullYear();
+    return Number.isFinite(y) ? String(y) : "";
+  };
+
+  // Scroll-hint fade: hide the arrow once the user starts scrolling
+  const hintRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = hintRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      el.style.opacity = window.scrollY > 60 ? "0" : "1";
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <div>
+      {/* Fullscreen hero with centered name */}
+      <section
+        className="relative w-full overflow-hidden"
+        style={{ height: "100vh" }}
+      >
+        {heroPhoto ? (
+          <img
+            className="w-full h-full object-cover"
+            src={`${heroPhoto.url}?w=1800&q=88`}
+            srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w, ${heroPhoto.url}?w=2400&q=88 2400w`}
+            sizes="100vw"
+            alt={heroPhoto.title || "Photograph"}
+            fetchPriority="high"
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.style.visibility = "hidden";
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-[#2a3a3a]" />
+        )}
+        <div className="absolute inset-0 bg-black/20" />
+        {/* Centered name */}
+        <div className="absolute inset-0 flex items-center justify-center text-center">
+          <div>
+            <h1
+              className="font-serif"
+              style={{
+                fontSize: "clamp(32px, 5vw, 40px)",
+                fontWeight: 300,
+                color: "#fff",
+                letterSpacing: "0.06em",
+                textShadow: "0 2px 16px rgba(0,0,0,0.4)",
+              }}
+            >
+              {siteNameJa}
+            </h1>
+            <p
+              className="font-en uppercase mt-1.5"
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                color: "rgba(255,255,255,0.7)",
+              }}
+            >
+              {siteNameEn || "Photography"}
+            </p>
+          </div>
+        </div>
+        {/* Scroll hint */}
+        <div
+          ref={hintRef}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 transition-opacity duration-500"
+        >
+          <div className="w-px h-5 bg-white/40" />
+          <div
+            className="w-1.5 h-1.5 border-r border-b border-white/50"
+            style={{ transform: "rotate(45deg)" }}
+          />
+        </div>
+      </section>
+
+      {/* Large-format works with captions */}
+      {featured.length > 0 && (
+        <section
+          className="max-w-4xl mx-auto px-6 md:px-12 pt-6 pb-20"
+          ref={fadeRef}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-8 md:gap-y-12">
+            {featured.map((photo, idx) => {
+              const medium = displayMedium(photo);
+              const year = photoYear(photo);
+              const sub = [medium, year].filter(Boolean).join(" — ");
+              return (
+                <figure key={photo.id} className="m-0">
+                  <button
+                    className="w-full overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)]"
+                    onClick={() => setLightboxIndex(idx)}
+                    aria-label={photo.title || `Photo ${idx + 1}`}
+                  >
+                    <img
+                      src={`${photo.url}?w=900&q=88`}
+                      srcSet={`${photo.url}?w=600&q=88 600w, ${photo.url}?w=900&q=88 900w, ${photo.url}?w=1200&q=88 1200w`}
+                      sizes="(min-width: 768px) 45vw, 100vw"
+                      alt=""
+                      className="w-full"
+                      loading={idx < 4 ? "eager" : "lazy"}
+                      draggable={false}
+                    />
+                  </button>
+                  {(photo.title || sub) && (
+                    <figcaption className="mt-2">
+                      {photo.title && (
+                        <p
+                          className="font-en"
+                          style={{
+                            fontSize: 9,
+                            letterSpacing: "0.06em",
+                            color: "#aaa",
+                          }}
+                        >
+                          {photo.title}
+                          {sub ? ` — ${sub}` : ""}
+                        </p>
+                      )}
+                      {!photo.title && sub && (
+                        <p
+                          className="font-en"
+                          style={{
+                            fontSize: 9,
+                            letterSpacing: "0.06em",
+                            color: "#aaa",
+                          }}
+                        >
+                          {sub}
+                        </p>
+                      )}
+                    </figcaption>
+                  )}
+                </figure>
+              );
+            })}
+          </div>
+
+          {featured.length < worksPoolLen && (
+            <div
+              ref={worksSentinelRef}
+              aria-hidden="true"
+              style={{ height: 1 }}
+            />
+          )}
+
+          <div className="mt-16 md:mt-24 text-center section-reveal">
+            <Link
+              to="/gallery"
+              className="inline-block font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.55)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+            >
+              {settings?.viewAllCtaLabel || "すべての作品を見る"}
+            </Link>
+          </div>
+        </section>
+      )}
+
+      <InquiryCta />
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={toLightboxPhotos(featured)}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={() =>
+            setLightboxIndex((i) =>
+              i !== null ? (i - 1 + featured.length) % featured.length : 0,
+            )
+          }
+          onNext={() =>
+            setLightboxIndex((i) =>
+              i !== null ? (i + 1) % featured.length : 0,
+            )
+          }
+        />
+      )}
+    </div>
+  );
+}
+
 export default function TopPage() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -779,6 +984,7 @@ export default function TopPage() {
 
   if (heroMode === "quiet-grid") return <HomeQuietGrid {...homeLayoutProps} />;
   if (heroMode === "editorial") return <HomeEditorial {...homeLayoutProps} />;
+  if (heroMode === "immersive") return <HomeImmersive {...homeLayoutProps} />;
 
   const isSingle = heroMode === "single" && heroPhotos.length > 0;
 

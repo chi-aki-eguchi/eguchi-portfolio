@@ -2,12 +2,12 @@
 
 :root {
   --background: #f7f7f7;
-  --background-rgb: 247,247,247;
+  --background-rgb: 247, 247, 247;
   --foreground: #1a1a1a;
-  --foreground-rgb: 26,26,26;
+  --foreground-rgb: 26, 26, 26;
 
-  --font-ja: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
-  --font-en: 'Cormorant Garamond', 'Georgia', serif;
+  --font-ja: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+  --font-en: "Cormorant Garamond", "Georgia", serif;
 
   /* D4: global type scale (0.85–1.15) — multiplies all configured sizes */
   --global-font-scale: 1;
@@ -15,19 +15,19 @@
   --link-underline: none;
 
   /* Typography controls (base sizes scaled by --global-font-scale) */
-  --nav-opacity: 0.50;
+  --nav-opacity: 0.5;
   --nav-size: calc(13px * var(--global-font-scale, 1));
   --body-size: calc(15px * var(--global-font-scale, 1));
   --heading-size: calc(28px * var(--global-font-scale, 1));
   --footer-opacity: 0.35;
   --footer-size: calc(11px * var(--global-font-scale, 1));
-  --sns-opacity: 0.30;
+  --sns-opacity: 0.3;
 
   /* A1: letter-spacing */
   --hero-name-tracking: 0.04em;
   --hero-name-en-tracking: 0.08em;
   --nav-tracking: 0.04em;
-  --section-label-tracking: 0.10em;
+  --section-label-tracking: 0.1em;
   --body-tracking: 0.01em;
 
   /* A2: line-height */
@@ -35,9 +35,13 @@
   --section-leading: 1.2;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html { scroll-behavior: auto; }
+html {
+  scroll-behavior: auto;
+}
 
 body {
   background-color: var(--background);
@@ -53,17 +57,28 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-.font-en { font-family: var(--font-en); }
+.font-en {
+  font-family: var(--font-en);
+}
 
 ::selection {
   background: rgba(26, 26, 26, 0.08);
   color: #1a1a1a;
 }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #aaa; }
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
 
 /* ─── Photo Card ─── */
 .photo-card {
@@ -71,14 +86,19 @@ body {
   border-radius: 0;
   overflow: hidden;
   background: transparent;
-  box-shadow: 0 1px 12px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
-  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
-              box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow:
+    0 1px 12px rgba(0, 0, 0, 0.06),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  transition:
+    transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   backface-visibility: hidden;
 }
 .photo-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
 }
 .photo-card-quiet {
   box-shadow: none;
@@ -91,13 +111,19 @@ body {
 
 /* A photo whose source failed to load (e.g. a purged R2 object) renders as a
    quiet tone-on-tone block instead of the browser's broken-image glyph. */
-.photo-broken { background: rgba(var(--foreground-rgb), 0.05); }
-.photo-broken img { opacity: 0 !important; }
+.photo-broken {
+  background: rgba(var(--foreground-rgb), 0.05);
+}
+.photo-broken img {
+  opacity: 0 !important;
+}
 
 /* Tile hover caption — the photographer-theme pattern (Format/Squarespace):
    the title fades up from the photo's lower edge on hover. Pointer devices
    only; touch users see titles in the lightbox caption instead. */
-.tile-caption { display: none; }
+.tile-caption {
+  display: none;
+}
 @media (hover: hover) {
   .tile-caption {
     display: block;
@@ -114,18 +140,27 @@ body {
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
     opacity: 0;
     transform: translateY(4px);
-    transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-                transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    transition:
+      opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+      transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
     pointer-events: none;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .photo-card { position: relative; }
-  .photo-card:hover .tile-caption { opacity: 1; transform: translateY(0); }
+  .photo-card {
+    position: relative;
+  }
+  .photo-card:hover .tile-caption {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tile-caption { transition: none; transform: none; }
+  .tile-caption {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* ─── Collage framed layout ───
@@ -133,20 +168,25 @@ body {
    inner .photo-card keeps its resting state so the photo doesn't slide
    around inside its own frame. */
 .collage-card {
-  transform: translateX(var(--collage-shift, 0px)) rotate(var(--collage-tilt, 0deg));
-  transition: transform 0.75s cubic-bezier(0.25, 1, 0.5, 1),
-              box-shadow 0.75s cubic-bezier(0.25, 1, 0.5, 1);
+  transform: translateX(var(--collage-shift, 0px))
+    rotate(var(--collage-tilt, 0deg));
+  transition:
+    transform 0.75s cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 0.75s cubic-bezier(0.25, 1, 0.5, 1);
   will-change: transform;
 }
 .collage-card:hover {
-  transform: translateX(var(--collage-shift, 0px)) rotate(var(--collage-tilt, 0deg)) translateY(-3px) scale(1.015);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.26) !important;
+  transform: translateX(var(--collage-shift, 0px))
+    rotate(var(--collage-tilt, 0deg)) translateY(-3px) scale(1.015);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26) !important;
 }
 /* Suppress inner photo-card hover inside framed cards — keep the resting
    shadow (not `none`) so nothing visibly flickers on hover. */
 .collage-card .photo-card:hover {
   transform: none;
-  box-shadow: 0 1px 12px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+  box-shadow:
+    0 1px 12px rgba(0, 0, 0, 0.06),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 .photo-card img {
   width: 100%;
@@ -154,8 +194,9 @@ body {
   display: block;
   background-color: #ebebeb;
   /* LQIP blur-up: blurred placeholder fades out when real img loads */
-  transition: filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .photo-card img.lqip-loading {
   /* 8px: visually equivalent placeholder blur at a fraction of the filter cost
@@ -172,9 +213,11 @@ body {
    Specificity (.nav-pos-* > header) beats the tailwind utility classes. */
 @media (min-width: 768px) {
   .nav-pos-left > header {
-    top: 0; left: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    bottom: 0;
     width: 11rem;
-    box-shadow: 1px 0 0 rgba(0,0,0,0.04);
+    box-shadow: 1px 0 0 rgba(0, 0, 0, 0.04);
   }
   .nav-pos-left > header > nav {
     max-width: none;
@@ -190,19 +233,67 @@ body {
     gap: 1.4rem;
   }
   .nav-pos-left > main,
-  .nav-pos-left > footer { padding-left: 11rem; }
-  .nav-pos-left > main { padding-top: 0; }
+  .nav-pos-left > footer {
+    padding-left: 11rem;
+  }
+  .nav-pos-left > main {
+    padding-top: 0;
+  }
 
-  .nav-pos-bottom > header { top: auto; bottom: 0; box-shadow: 0 -1px 0 rgba(0,0,0,0.05); }
-  .nav-pos-bottom > main { padding-top: 1.5rem; padding-bottom: 5rem; }
-  .nav-pos-bottom > footer { padding-bottom: 5rem; }
+  .nav-pos-bottom > header {
+    top: auto;
+    bottom: 0;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.05);
+  }
+  .nav-pos-bottom > main {
+    padding-top: 1.5rem;
+    padding-bottom: 5rem;
+  }
+  .nav-pos-bottom > footer {
+    padding-bottom: 5rem;
+  }
+
+  /* Phase 3: sidebar active indicator — horizontal line + outdent for active item */
+  .nav-pos-left > header > nav ul a {
+    position: relative;
+    transition:
+      color 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+      padding-left 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .nav-pos-left > header > nav ul a:not([aria-current="page"]) {
+    color: rgba(var(--foreground-rgb), 0.4) !important;
+    padding-left: 18px;
+  }
+  .nav-pos-left > header > nav ul a:not([aria-current="page"]):hover {
+    color: rgba(var(--foreground-rgb), 0.6) !important;
+  }
+  .nav-pos-left > header > nav ul a[aria-current="page"] {
+    color: var(--foreground) !important;
+    font-weight: 500;
+  }
+  .nav-pos-left > header > nav ul a[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    right: calc(100% + 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 1px;
+    background: var(--foreground);
+  }
 }
 
 /* ─── BB2: nav hover effects (fade = current default). Keyboard focus gets the
    same feedback as hover (BB3). All curves stay on the design-spec expo family. */
-header .nav-link-luxury:focus-visible::after { transform: scaleX(1); }
-.nav-fx-underline header .nav-link-luxury::after { transform-origin: left; }
-.nav-fx-dot header .nav-link-luxury::after { display: none; }
+header .nav-link-luxury:focus-visible::after {
+  transform: scaleX(1);
+}
+.nav-fx-underline header .nav-link-luxury::after {
+  transform-origin: left;
+}
+.nav-fx-dot header .nav-link-luxury::after {
+  display: none;
+}
 .nav-fx-dot header .nav-link-luxury::before {
   content: "";
   position: absolute;
@@ -214,7 +305,9 @@ header .nav-link-luxury:focus-visible::after { transform: scaleX(1); }
   background: var(--accent-color, currentColor);
   opacity: 0;
   transform: translateY(-50%) scale(0.4);
-  transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1), transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  transition:
+    opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+    transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .nav-fx-dot header .nav-link-luxury:hover::before,
 .nav-fx-dot header .nav-link-luxury:focus-visible::before {
@@ -222,17 +315,25 @@ header .nav-link-luxury:focus-visible::after { transform: scaleX(1); }
   transform: translateY(-50%) scale(1);
 }
 @keyframes nav-blur-in {
-  0% { filter: blur(2.5px); }
-  100% { filter: blur(0); }
+  0% {
+    filter: blur(2.5px);
+  }
+  100% {
+    filter: blur(0);
+  }
 }
-.nav-fx-blur header .nav-link-luxury::after { display: none; }
+.nav-fx-blur header .nav-link-luxury::after {
+  display: none;
+}
 .nav-fx-blur header .nav-link-luxury:hover,
 .nav-fx-blur header .nav-link-luxury:focus-visible {
   animation: nav-blur-in 0.45s cubic-bezier(0.25, 1, 0.5, 1);
 }
 @media (prefers-reduced-motion: reduce) {
   .nav-fx-blur header .nav-link-luxury:hover,
-  .nav-fx-blur header .nav-link-luxury:focus-visible { animation: none; }
+  .nav-fx-blur header .nav-link-luxury:focus-visible {
+    animation: none;
+  }
 }
 
 /* ─── DD: 紙っぽい質感 — feTurbulence ノイズ1枚を fixed で敷く。
@@ -323,9 +424,9 @@ body[data-texture="paper"]::before {
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    rgba(0,0,0,0) 45%,
-    rgba(0,0,0,calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
-    rgba(0,0,0,var(--hero-overlay-opacity, 0.38)) 100%
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
+    rgba(0, 0, 0, var(--hero-overlay-opacity, 0.38)) 100%
   );
 }
 .hero-single-caption {
@@ -354,18 +455,34 @@ body[data-texture="paper"]::before {
 /* ─── AA2: hero caption positions (single / fullscreen). Default stays the
    centered bottom caption; corners get generous clamp padding so the name
    never touches the edge on mobile. */
-.hero-single-caption.pos-bottom-left  { text-align: left;  padding: 0 clamp(20px, 5vw, 64px); }
-.hero-single-caption.pos-bottom-right { text-align: right; padding: 0 clamp(20px, 5vw, 64px); }
-.hero-single-caption.pos-top-left  { bottom: auto; top: clamp(24px, 6vh, 72px); text-align: left;  padding: 0 clamp(20px, 5vw, 64px); }
-.hero-single-caption.pos-top-right { bottom: auto; top: clamp(24px, 6vh, 72px); text-align: right; padding: 0 clamp(20px, 5vw, 64px); }
+.hero-single-caption.pos-bottom-left {
+  text-align: left;
+  padding: 0 clamp(20px, 5vw, 64px);
+}
+.hero-single-caption.pos-bottom-right {
+  text-align: right;
+  padding: 0 clamp(20px, 5vw, 64px);
+}
+.hero-single-caption.pos-top-left {
+  bottom: auto;
+  top: clamp(24px, 6vh, 72px);
+  text-align: left;
+  padding: 0 clamp(20px, 5vw, 64px);
+}
+.hero-single-caption.pos-top-right {
+  bottom: auto;
+  top: clamp(24px, 6vh, 72px);
+  text-align: right;
+  padding: 0 clamp(20px, 5vw, 64px);
+}
 /* Top captions read against the top of the photo — mirror the legibility
    gradient upward (still driven by the same overlay opacity setting). */
 .hero-single-overlay.overlay-top {
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0) 45%,
-    rgba(0,0,0,calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
-    rgba(0,0,0,var(--hero-overlay-opacity, 0.38)) 100%
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
+    rgba(0, 0, 0, var(--hero-overlay-opacity, 0.38)) 100%
   );
 }
 
@@ -407,7 +524,10 @@ body[data-texture="paper"]::before {
   border-radius: 50%;
   background: rgba(var(--foreground-rgb), 0.18);
   background-clip: padding-box;
-  transition: background 0.3s ease, transform 0.3s ease, width 0.3s ease;
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease,
+    width 0.3s ease;
   cursor: pointer;
   border: 9px solid transparent;
   padding: 0;
@@ -429,21 +549,24 @@ body[data-texture="paper"]::before {
   height: 38px;
   border-radius: 50%;
   border: none;
-  background: rgba(255,255,255,0.65);
+  background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  color: rgba(0,0,0,0.55);
+  color: rgba(0, 0, 0, 0.55);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.3s ease, background 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  transition:
+    opacity 0.3s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
 }
 .carousel-arrow:hover {
-  background: rgba(255,255,255,0.85);
-  color: rgba(0,0,0,0.75);
+  background: rgba(255, 255, 255, 0.85);
+  color: rgba(0, 0, 0, 0.75);
 }
 .carousel-arrow:active {
   transform: translateY(-50%) scale(0.94);
@@ -451,12 +574,18 @@ body[data-texture="paper"]::before {
 .carousel-arrow.visible {
   opacity: 1;
 }
-.carousel-arrow-left { left: 12px; }
-.carousel-arrow-right { right: 12px; }
+.carousel-arrow-left {
+  left: 12px;
+}
+.carousel-arrow-right {
+  right: 12px;
+}
 
 /* Hide arrows on mobile (touch devices use swipe) */
 @media (max-width: 768px) {
-  .carousel-arrow { display: none !important; }
+  .carousel-arrow {
+    display: none !important;
+  }
 }
 
 /* ─── Hero text entrance ─── */
@@ -466,9 +595,15 @@ body[data-texture="paper"]::before {
   animation: hero-text-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   backface-visibility: hidden;
 }
-.hero-text-reveal-1 { animation-delay: 0.15s; }
-.hero-text-reveal-2 { animation-delay: 0.3s; }
-.hero-text-reveal-3 { animation-delay: 0.45s; }
+.hero-text-reveal-1 {
+  animation-delay: 0.15s;
+}
+.hero-text-reveal-2 {
+  animation-delay: 0.3s;
+}
+.hero-text-reveal-3 {
+  animation-delay: 0.45s;
+}
 
 @keyframes hero-text-in {
   to {
@@ -484,8 +619,9 @@ body[data-texture="paper"]::before {
    items release their layer and GPU memory stays bounded on long galleries. */
 .fade-in-item {
   opacity: 0;
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
   transition-delay: var(--stagger-delay, 0s);
   will-change: opacity, transform;
   backface-visibility: hidden;
@@ -494,8 +630,12 @@ body[data-texture="paper"]::before {
    photoRevealEffect setting. No attribute (= fade, default) is opacity-only:
    a transform here moves the photo inside framed/tilted layouts (collage) and
    looks broken, which is why rise is opt-in rather than baked in. */
-body[data-reveal="rise"] .fade-in-item { transform: translate3d(0, 12px, 0); }
-body[data-reveal="scale"] .fade-in-item { transform: scale(0.97); }
+body[data-reveal="rise"] .fade-in-item {
+  transform: translate3d(0, 12px, 0);
+}
+body[data-reveal="scale"] .fade-in-item {
+  transform: scale(0.97);
+}
 .fade-in-item.visible {
   opacity: 1;
   transform: none;
@@ -511,8 +651,9 @@ body[data-reveal="none"] .fade-in-item {
 .section-reveal {
   opacity: 0;
   transform: translate3d(0, 10px, 0);
-  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
   backface-visibility: hidden;
 }
@@ -522,8 +663,12 @@ body[data-reveal="none"] .fade-in-item {
 }
 
 /* ─── D4: link underline / hover color (opt-in via settings) ─── */
-a { text-decoration: var(--link-underline, none); }
-a:hover { color: var(--link-hover-color, var(--accent-color, inherit)); }
+a {
+  text-decoration: var(--link-underline, none);
+}
+a:hover {
+  color: var(--link-hover-color, var(--accent-color, inherit));
+}
 
 /* ─── Nav link hover ─── */
 .nav-link-luxury {
@@ -531,7 +676,7 @@ a:hover { color: var(--link-hover-color, var(--accent-color, inherit)); }
   transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .nav-link-luxury::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -2px;
   left: 0;
@@ -550,8 +695,9 @@ a:hover { color: var(--link-hover-color, var(--accent-color, inherit)); }
 .footer-reveal {
   opacity: 0;
   transform: translate3d(0, 8px, 0);
-  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
-              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
   backface-visibility: hidden;
 }
 .footer-reveal.visible {
@@ -563,8 +709,9 @@ a:hover { color: var(--link-hover-color, var(--accent-color, inherit)); }
 .page-entrance {
   opacity: 0;
   transform: translate3d(0, 14px, 0);
-  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
   backface-visibility: hidden;
 }
@@ -572,11 +719,17 @@ a:hover { color: var(--link-hover-color, var(--accent-color, inherit)); }
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
-.page-entrance-delay-1 { transition-delay: 0.1s; }
-.page-entrance-delay-2 { transition-delay: 0.2s; }
+.page-entrance-delay-1 {
+  transition-delay: 0.1s;
+}
+.page-entrance-delay-2 {
+  transition-delay: 0.2s;
+}
 
 /* Image placeholder bg */
-img { background-color: transparent; }
+img {
+  background-color: transparent;
+}
 
 /* Keyboard focus must be clearly visible (WCAG 2.4.11/2.4.13). The previous
    alpha 0.12 was barely perceptible on the light ground; keep it editorial but
@@ -591,7 +744,9 @@ img { background-color: transparent; }
    scroll/entrance reveals must NOT stay stuck at opacity:0 if their animation is
    neutralised — so force the visible end-state regardless of the JS observer. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -605,5 +760,8 @@ img { background-color: transparent; }
     opacity: 1 !important;
     transform: none !important;
   }
-  .photo-card img.lqip-loading { filter: none !important; transform: none !important; }
+  .photo-card img.lqip-loading {
+    filter: none !important;
+    transform: none !important;
+  }
 }

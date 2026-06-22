@@ -11,7 +11,9 @@ export default function GalleryPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   // P1: Photos / Series toggle. `null` = follow the admin default; a click pins
   // the user's choice. Series tab only appears when published series exist.
-  const [pinnedView, setPinnedView] = useState<"photos" | "series" | null>(null);
+  const [pinnedView, setPinnedView] = useState<"photos" | "series" | null>(
+    null,
+  );
   // 機能8: フィルム/デジタルフィルター（URLクエリパラメータで状態管理）
   const [location, setLocation] = useLocation();
   const search = useSearch();
@@ -45,7 +47,8 @@ export default function GalleryPage() {
   });
 
   const hasSeries = (seriesData?.series.length ?? 0) > 0;
-  const defaultView = settings?.worksDefaultView === "series" ? "series" : "photos";
+  const defaultView =
+    settings?.worksDefaultView === "series" ? "series" : "photos";
   const view = hasSeries ? (pinnedView ?? defaultView) : "photos";
 
   // Memoise so references are stable across renders — otherwise dependent
@@ -53,10 +56,15 @@ export default function GalleryPage() {
   const allPhotos = useMemo(() => photosData?.photos ?? [], [photosData]);
   const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
   const filtered = useMemo(() => {
-    let list = activeFilter === "all" ? allPhotos : allPhotos.filter((p) => p.category === activeFilter);
+    let list =
+      activeFilter === "all"
+        ? allPhotos
+        : allPhotos.filter((p) => p.category === activeFilter);
     if (activeMedium !== "all") {
       const target = activeMedium === "film" ? "フィルム" : "デジタル";
-      list = list.filter((p) => (p as Record<string, unknown>).filmType === target);
+      list = list.filter(
+        (p) => (p as Record<string, unknown>).filmType === target,
+      );
     }
     return list;
   }, [allPhotos, activeFilter, activeMedium]);
@@ -64,7 +72,11 @@ export default function GalleryPage() {
   // If the active category no longer exists (e.g. it was deleted/renamed), fall
   // back to "All" instead of stranding the user on an empty, unhighlighted filter.
   useEffect(() => {
-    if (activeFilter !== "all" && categories.length > 0 && !categories.some((c) => c.slug === activeFilter)) {
+    if (
+      activeFilter !== "all" &&
+      categories.length > 0 &&
+      !categories.some((c) => c.slug === activeFilter)
+    ) {
       setActiveFilter("all");
     }
   }, [activeFilter, categories]);
@@ -82,23 +94,39 @@ export default function GalleryPage() {
   const prevViewKey = useRef<string | null>(null);
   useEffect(() => {
     const key = `${activeFilter}/${view}`;
-    if (prevViewKey.current === null) { prevViewKey.current = key; return; } // initial mount — don't scroll
+    if (prevViewKey.current === null) {
+      prevViewKey.current = key;
+      return;
+    } // initial mount — don't scroll
     if (prevViewKey.current === key) return;
     prevViewKey.current = key;
     const el = fadeRef.current;
     if (!el) return;
     const top = el.getBoundingClientRect().top + window.scrollY;
     if (window.scrollY > top + 40) {
-      const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      window.scrollTo({ top: Math.max(0, top - 70), behavior: reduce ? "auto" : "smooth" }); // 70px ≈ fixed header + breathing room
+      const reduce =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({
+        top: Math.max(0, top - 70),
+        behavior: reduce ? "auto" : "smooth",
+      }); // 70px ≈ fixed header + breathing room
     }
   }, [activeFilter, view, fadeRef]);
 
   return (
-    <section className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-16 md:pb-32" ref={fadeRef}>
+    <section
+      className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-16 md:pb-32"
+      ref={fadeRef}
+    >
       <h1
         className="font-en uppercase text-center mb-16 md:mb-24 section-reveal"
-        style={{ fontSize: "var(--section-label-size, 0.75rem)", color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`, letterSpacing: "var(--section-label-tracking, 0.10em)", lineHeight: "var(--section-leading, 1.2)" }}
+        style={{
+          fontSize: "var(--section-label-size, 0.75rem)",
+          color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`,
+          letterSpacing: "var(--section-label-tracking, 0.10em)",
+          lineHeight: "var(--section-leading, 1.2)",
+        }}
       >
         {settings?.galleryLabel ?? "Gallery"}
       </h1>
@@ -106,15 +134,20 @@ export default function GalleryPage() {
       {/* P1: Photos / Series view toggle — only when there are series to show */}
       {hasSeries && (
         <div className="flex justify-center gap-x-8 mb-12 md:mb-14 section-reveal">
-          {([["photos", "Photos"], ["series", "Series"]] as const).map(([val, label]) => (
+          {(
+            [
+              ["photos", "Photos"],
+              ["series", "Series"],
+            ] as const
+          ).map(([val, label]) => (
             <button
               key={val}
               onClick={() => setPinnedView(val)}
               aria-pressed={view === val}
-              className={`font-en text-xs tracking-[0.08em] py-1 transition-colors duration-300 nav-link-luxury ${
+              className={`font-en text-xs tracking-[0.08em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
                 view === val
-                  ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
-                  : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
+                  ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
+                  : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
               }`}
             >
               {label}
@@ -126,61 +159,78 @@ export default function GalleryPage() {
       {view === "series" ? (
         <SeriesGrid />
       ) : (
-      <>
-      {/* Filter — カテゴリ */}
-      {categories.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6 section-reveal" style={{ transitionDelay: "0.1s" }}>
-          {filterItems.map((cat) => (
-            <button
-              key={cat.slug}
-              onClick={() => setActiveFilter(cat.slug)}
-              aria-pressed={activeFilter === cat.slug}
-              className={`font-en text-xs tracking-[0.04em] py-1 transition-colors duration-300 nav-link-luxury ${
-                activeFilter === cat.slug
-                  ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
-                  : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
-              }`}
+        <>
+          {/* Filter — カテゴリ */}
+          {categories.length > 0 && (
+            <div
+              className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6 section-reveal"
+              style={{ transitionDelay: "0.1s" }}
             >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      )}
+              {filterItems.map((cat) => (
+                <button
+                  key={cat.slug}
+                  onClick={() => setActiveFilter(cat.slug)}
+                  aria-pressed={activeFilter === cat.slug}
+                  className={`font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
+                    activeFilter === cat.slug
+                      ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
+                      : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          )}
 
-      {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
-      {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal" style={{ transitionDelay: "0.15s" }}>
-          {([["all", settings?.filterAllLabel ?? "All"], ["film", "Film"], ["digital", "Digital"]] as const).map(([val, lbl]) => (
-            <button
-              key={val}
-              onClick={() => setActiveMedium(val)}
-              aria-pressed={activeMedium === val}
-              className={`font-en text-xs tracking-[0.04em] py-1 transition-colors duration-300 nav-link-luxury ${
-                activeMedium === val
-                  ? "text-[var(--accent-color,rgba(var(--foreground-rgb),0.70))] font-medium"
-                  : "text-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.50)]"
-              }`}
+          {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
+          {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
+            <div
+              className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal"
+              style={{ transitionDelay: "0.15s" }}
             >
-              {lbl}
-            </button>
-          ))}
-        </div>
-      )}
+              {(
+                [
+                  ["all", settings?.filterAllLabel ?? "All"],
+                  ["film", "Film"],
+                  ["digital", "Digital"],
+                ] as const
+              ).map(([val, lbl]) => (
+                <button
+                  key={val}
+                  onClick={() => setActiveMedium(val)}
+                  aria-pressed={activeMedium === val}
+                  className={`font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
+                    activeMedium === val
+                      ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
+                      : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          )}
 
-      {/* Grid */}
-      {filtered.length === 0 ? (
-        // Don't flash "No photos" while the first fetch is still in flight.
-        photosLoading ? (
-          <div className="py-24" aria-hidden="true" />
-        ) : (
-          <div className="py-24 text-center">
-            <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">No photos</p>
-          </div>
-        )
-      ) : (
-        <PhotoGallery photos={filtered} layoutType={settings?.galleryLayout} />
-      )}
-      </>
+          {/* Grid */}
+          {filtered.length === 0 ? (
+            // Don't flash "No photos" while the first fetch is still in flight.
+            photosLoading ? (
+              <div className="py-24" aria-hidden="true" />
+            ) : (
+              <div className="py-24 text-center">
+                <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">
+                  No photos
+                </p>
+              </div>
+            )
+          ) : (
+            <PhotoGallery
+              photos={filtered}
+              layoutType={settings?.galleryLayout}
+            />
+          )}
+        </>
       )}
 
       <InquiryCta />

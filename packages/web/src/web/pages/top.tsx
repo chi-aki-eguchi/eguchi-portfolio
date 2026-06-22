@@ -484,6 +484,184 @@ function HomeQuietGrid({
   );
 }
 
+/** Phase 2 — Home B: split hero + alternating large/small rhythm grid. */
+function HomeEditorial({
+  heroPhotos,
+  featured,
+  worksPoolLen,
+  worksSentinelRef,
+  fadeRef,
+  settings,
+}: HomeLayoutProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const statement = settings?.profileStatement ?? "";
+  const heroPhoto = heroPhotos[0];
+
+  const openLightbox = (idx: number) => setLightboxIndex(idx);
+  const tile = (photo: GalleryPhoto, idx: number, className?: string) => (
+    <button
+      key={photo.id}
+      className={`overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)] ${className ?? ""}`}
+      onClick={() => openLightbox(idx)}
+      aria-label={photo.title || `Photo ${idx + 1}`}
+    >
+      <img
+        src={`${photo.url}?w=800&q=88`}
+        srcSet={`${photo.url}?w=600&q=88 600w, ${photo.url}?w=800&q=88 800w, ${photo.url}?w=1200&q=88 1200w`}
+        sizes="(min-width: 768px) 40vw, 100vw"
+        alt=""
+        className="w-full h-full object-cover"
+        loading={idx < 6 ? "eager" : "lazy"}
+        draggable={false}
+      />
+    </button>
+  );
+
+  // Build alternating rows: odd rows = 1.6fr 1fr 1fr, even rows = 1fr 1fr 1.6fr
+  const rows: React.ReactNode[] = [];
+  for (let i = 0; i < featured.length; i += 3) {
+    const chunk = featured.slice(i, i + 3);
+    const rowIdx = Math.floor(i / 3);
+    const isOdd = rowIdx % 2 === 0;
+    rows.push(
+      <div
+        key={i}
+        className="grid gap-[5px]"
+        style={{
+          gridTemplateColumns:
+            chunk.length >= 3
+              ? isOdd
+                ? "1.6fr 1fr 1fr"
+                : "1fr 1fr 1.6fr"
+              : `repeat(${chunk.length}, 1fr)`,
+          height: "min(220px, 30vw)",
+        }}
+      >
+        {chunk.map((photo, j) => tile(photo, i + j, "w-full h-full"))}
+      </div>,
+    );
+  }
+
+  return (
+    <div>
+      {/* Split hero: photo left, text right */}
+      <section
+        className="flex flex-col md:flex-row"
+        style={{ minHeight: "min(340px, 50vh)" }}
+      >
+        <div
+          className="md:flex-[0_0_55%] relative overflow-hidden bg-[#eee]"
+          style={{ minHeight: 200 }}
+        >
+          {heroPhoto && (
+            <img
+              className="w-full h-full object-cover"
+              src={`${heroPhoto.url}?w=1400&q=88`}
+              srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w`}
+              sizes="(min-width: 768px) 55vw, 100vw"
+              alt={heroPhoto.title || "Photograph"}
+              fetchPriority="high"
+              draggable={false}
+              onError={(e) => {
+                e.currentTarget.style.visibility = "hidden";
+              }}
+            />
+          )}
+        </div>
+        <div className="flex-1 flex flex-col justify-center px-8 md:px-10 py-8 md:py-0">
+          <h1
+            className="font-serif leading-[1.1] mb-1.5"
+            style={{
+              fontSize: "clamp(28px, 4vw, 36px)",
+              fontWeight: 300,
+              color: "#1a1a1a",
+            }}
+          >
+            {siteNameJa}
+          </h1>
+          <p
+            className="font-en mb-5"
+            style={{ fontSize: 11, color: "#aaa", letterSpacing: "0.06em" }}
+          >
+            {siteNameEn || "Aki Eguchi"}
+          </p>
+          {statement && (
+            <p
+              className="font-ja"
+              style={{
+                fontSize: 10,
+                color: "#888",
+                lineHeight: 1.8,
+                maxWidth: 240,
+              }}
+            >
+              {statement}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Works: alternating large/small rhythm grid */}
+      {featured.length > 0 && (
+        <section
+          className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
+          ref={fadeRef}
+        >
+          <div className="mb-3.5">
+            <h2
+              className="font-en uppercase"
+              style={{ fontSize: 9, letterSpacing: "0.16em", color: "#aaa" }}
+            >
+              {settings?.worksLabel ?? "Works"}
+            </h2>
+          </div>
+
+          <div className="flex flex-col gap-[5px]">{rows}</div>
+
+          {featured.length < worksPoolLen && (
+            <div
+              ref={worksSentinelRef}
+              aria-hidden="true"
+              style={{ height: 1 }}
+            />
+          )}
+
+          <div className="mt-16 md:mt-24 text-center section-reveal">
+            <Link
+              to="/gallery"
+              className="inline-block font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.55)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+            >
+              {settings?.viewAllCtaLabel || "すべての作品を見る"}
+            </Link>
+          </div>
+        </section>
+      )}
+
+      <InquiryCta />
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={toLightboxPhotos(featured)}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={() =>
+            setLightboxIndex((i) =>
+              i !== null ? (i - 1 + featured.length) % featured.length : 0,
+            )
+          }
+          onNext={() =>
+            setLightboxIndex((i) =>
+              i !== null ? (i + 1) % featured.length : 0,
+            )
+          }
+        />
+      )}
+    </div>
+  );
+}
+
 export default function TopPage() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -600,6 +778,7 @@ export default function TopPage() {
   };
 
   if (heroMode === "quiet-grid") return <HomeQuietGrid {...homeLayoutProps} />;
+  if (heroMode === "editorial") return <HomeEditorial {...homeLayoutProps} />;
 
   const isSingle = heroMode === "single" && heroPhotos.length > 0;
 

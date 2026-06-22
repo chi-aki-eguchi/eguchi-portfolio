@@ -1,6 +1,6 @@
 # 申し込み対応の手順（秋くん用・内部メモ）
 
-申し込み（メール / SNS / 将来は Stripe）が来たときに、迷わず同じ手順で対応するための
+申し込み（Stripe決済 / メール / SNS）が来たときに、迷わず同じ手順で対応するための
 runbook です。買う人向けの文面は [purchase-thankyou.md](./purchase-thankyou.md) に、
 セットアップ手順は [setup-guide.md](./setup-guide.md) にあります。ここはその「順番」だけ。
 
@@ -41,11 +41,12 @@ runbook です。買う人向けの文面は [purchase-thankyou.md](./purchase-t
 - [ ] [photographer-guide.md](./photographer-guide.md)（本人向けの使い方）
 - [ ] 「困ったら連絡してね」の一言（IG / X / メール）
 
-## 将来（Stripe 自動化後）
+## Stripe 決済（有効化済み・2026-06-22〜）
 
-- Stripe Payment Link を2つ発行（自分で / おまかせ）したら、サイトの `/service` の
-  ボタン定数（`STRIPE_SELF` / `STRIPE_CONCIERGE`）を実URLに差し替える。
-  → ボタンが自動で Stripe 決済に切り替わり、「準備中」表示も消えます。
-- Stripe の「決済後ページ / 確認メール」に [purchase-thankyou.md](./purchase-thankyou.md)
-  の A・B を設定すると、入金後の一次返信が自動になります。
-- それでも、おまかせの構築・受け渡しは手作業のままでOK（件数が増えたら見直し）。
+- `/service` の購入ボタンは Stripe Payment Link（自分で / おまかせ）に接続済み。
+  購入者はオンラインでカード決済できる。「準備中」表示は消えている。
+- まだ設定していなければ、Stripe の「決済後ページ / 確認メール」に
+  [purchase-thankyou.md](./purchase-thankyou.md) の A・B を入れると、入金後の一次返信が
+  自動になる（任意・おすすめ）。
+- Stripe 決済が来たら、上の A / B と同じ手順で進める（入金確認は Stripe ダッシュボードで）。
+- おまかせの構築・受け渡しは引き続き手作業でOK（件数が増えたら見直し）。

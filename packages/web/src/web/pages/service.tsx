@@ -1,10 +1,11 @@
 import { usePageEntrance } from "../hooks/usePageEntrance";
 
-// Stripe Payment Links — placeholders until the real links are issued. Swap these
-// two constants for the live URLs (self-serve / concierge) and nothing else changes:
-// the buttons then point at Stripe and the "online payment in prep" note disappears.
-const STRIPE_SELF = "#stripe-self";
-const STRIPE_CONCIERGE = "#stripe-concierge";
+// Stripe Payment Links (live). These are public checkout links — safe to keep in
+// the repo. Never put Stripe secret keys / webhook secrets / dashboard URLs here.
+// Both being real https links flips STRIPE_LIVE → true: buttons point at Stripe and
+// the "online payment in prep" note disappears.
+const STRIPE_SELF = "https://buy.stripe.com/8x25kDdou8xldeEfHqgrS00";
+const STRIPE_CONCIERGE = "https://buy.stripe.com/aFa14n0BIcNB0rScvegrS01";
 // Until BOTH are real https links, the page shows the "in preparation" copy and the
 // buttons open an email inquiry instead of a dead anchor — so a click is never a
 // dead end, and nobody mistakes it for a completed purchase.

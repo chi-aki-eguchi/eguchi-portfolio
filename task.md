@@ -20,6 +20,84 @@
 - `CLAUDE.md`
 - `RUNABLE_AI.md`
 - `task.md`
+
+## 追記 2026-06-22 — Codex: Stripe URL組み込み用 Claude Code プロンプト作成
+
+### 背景
+- 秋さんから「Stripe のURLができたので、1時間後に Claude Code へ実行させるための仕様書
+  （プロンプト）を丁寧に書いてほしい」と依頼。
+- 直近 Handoff を確認し、`/service` はすでに作成済みで、Stripe Payment Link は
+  `packages/web/src/web/pages/service.tsx` の `STRIPE_SELF` / `STRIPE_CONCIERGE` を実URLに
+  差し替える設計になっていることを確認。
+- 現時点ではこの会話内に実際の Stripe URL は未共有。販売ページは2コース制のため、原則2本の
+  Stripe Payment Link が必要。
+
+### 対応
+- Claude Code にそのまま渡せる詳細プロンプトを
+  `claude-code-stripe-template-prompt-2026-06-22.md` として新規作成。
+- 内容には以下を含めた:
+  - Stripe URL差し替え手順
+  - 2コース分のURLが必要であること
+  - 片方だけURLがある場合の確認事項
+  - 購入後文面・運用runbook・販売ページdocsの見直し指示
+  - Claude Code / Codex 内部情報の整理方針
+  - `/service` まわりのコード整理・デバッグ観点
+  - テンプレート販売計画のP0/P1/P2レビュー観点
+  - 検証コマンドと Handoff / push 報告ルール
+
+### 検証
+- `task.md` 最新 Handoff、`.codex/USER_CONTEXT.md`、`packages/web/src/web/pages/service.tsx`、
+  `docs/order-handling.md`、`docs/purchase-thankyou.md` を確認。
+- `git status --short` で既存の未追跡 `site-analysis-2026-06.md` を確認。今回の作業では触らず。
+- 実コード変更ではなくプロンプト作成のため、`tsc -b` / build は未実行。
+
+### 残り
+- 秋さんが実際の Stripe Payment Link を2本（自分で立てる / おまかせ設定）用意し、
+  プロンプト内の `STRIPE_SELF_URL` / `STRIPE_CONCIERGE_URL` を置換してから Claude Code に渡す。
+- URLが1本だけの場合は、どちらのコースのURLかを Claude Code に伝え、片方だけStripe化するか、
+  2本そろうまでメール導線を維持するか判断する。
+
+### 触ったファイル
+- `claude-code-stripe-template-prompt-2026-06-22.md`
+- `task.md`
+
+## 追記 2026-06-22 — Codex: Claude Code の1時間後実行を `at` で予約
+
+### 背景
+- 秋さんから「Codexの自動化ではなく、Claude Code に作業させたい。ターミナル機能で1時間後に
+  このMDを読んで動き出すようにしたい」と依頼。
+
+### 対応
+- プロジェクトルートに `CLAUDE-STRIPE-TEMPLATE-RUN.md` を追加。
+  - ここに Stripe Payment Link 2本を入れる欄を用意。
+  - 詳細仕様は `claude-code-stripe-template-prompt-2026-06-22.md` を読むよう指示。
+- `scripts/run-claude-stripe-template-later.sh` を追加。
+  - `DELAY_SECONDS` 後に `/Users/chiaki/.local/bin/claude --print` でルートMDを渡す。
+  - ログは `.claude-delayed-runs/` に出す。
+- `.claude-delayed-runs/` を `.gitignore` に追加。
+- macOS の `at` で 2026-06-22 03:26 JST に1回実行するジョブを登録。
+  - job id: `1`
+  - 実行内容: `DELAY_SECONDS=0 CLAUDE_PERMISSION_MODE=acceptEdits ./scripts/run-claude-stripe-template-later.sh`
+
+### 検証
+- Claude CLI は `/Users/chiaki/.local/bin/claude` に存在。
+- `CLAUDE_BIN=/bin/echo DELAY_SECONDS=1 ./scripts/run-claude-stripe-template-later.sh` で
+  スクリプトのログ出力・プロンプト読み込みを確認。
+- `atq` で job `1 Mon Jun 22 03:26:00 2026` を確認。
+- `git diff --check` 成功。
+
+### 注意
+- 現在の permission mode は安全寄りの `acceptEdits`。Claude Code が追加許可を要求する操作で
+  止まる可能性がある。完全無人で commit / push まで通したい場合は、実行前に job を作り直して
+  `CLAUDE_PERMISSION_MODE=bypassPermissions` を使う必要があるが、危険度が上がる。
+- 実行前に `CLAUDE-STRIPE-TEMPLATE-RUN.md` の `STRIPE_SELF_URL` /
+  `STRIPE_CONCIERGE_URL` を実URLに置換すること。未入力なら Claude はURL不足として止まる。
+
+### 触ったファイル
+- `CLAUDE-STRIPE-TEMPLATE-RUN.md`
+- `scripts/run-claude-stripe-template-later.sh`
+- `.gitignore`
+- `task.md`
 - `scripts/deploy.sh`
 - `packages/web/website.config.json`
 - `packages/web/src/web/lib/settings-preview.ts`
@@ -1259,4 +1337,47 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
 - `README.md`
 - `docs/`: `post-deploy-guide.md`, `sales-page.md`, `setup-guide.md`, `faq.md`,
   `distribution-ideas.md`, `sns-announcement.md`, `purchase-thankyou.md`, `order-handling.md`
+- `task.md`
+
+## 追記 2026-06-22 — Claude: Stripe Payment Link を /service に組み込み（オンライン決済 有効化）
+
+### 目的
+仮値だった `/service` の購入ボタンを、実際の Stripe Payment Link（公開リンク）に差し替え、
+オンライン決済を有効化する。あわせて販売導線ドキュメントが「Stripe が来た後」の運用に
+追いついているか点検する。
+
+### やったこと（`main` に push 予定）
+- **Stripe URL 組み込み**（`packages/web/src/web/pages/service.tsx`）:
+  - `STRIPE_SELF` = `https://buy.stripe.com/8x25kDdou8xldeEfHqgrS00`（自分で立てる / ¥10,000）
+  - `STRIPE_CONCIERGE` = `https://buy.stripe.com/aFa14n0BIcNB0rScvegrS01`（おまかせ設定 / ¥30,000）
+  - 両方 https になったため `STRIPE_LIVE` が true に。2つのボタンは Stripe Checkout を
+    新規タブで開き（`target="_blank"` + `rel="noopener noreferrer"`）、ラベルは
+    「このプランを申し込む」のまま。メールフォールバックは無効化、ページ下部の文言は
+    「お支払いのあと…手順書/ご案内をお送りします」に自動で切替（「準備中」表示は消える）。
+  - コメントも「placeholder」→「live・公開リンク・秘密鍵を入れない」旨に更新。
+  - **公開リンクのみ。Stripe の秘密鍵 / Webhook secret / ダッシュボードURL は一切入れていない。**
+- **`docs/order-handling.md`**: Stripe を「将来」扱いから「有効化済み（2026-06-22〜）」に更新。
+  申し込み経路を「Stripe決済 / メール / SNS」に修正。入金確認は Stripe ダッシュボードで、
+  決済後ページ/確認メールに purchase-thankyou.md の A・B を入れる案内（任意）を明記。
+
+### 検証
+- `bun run --cwd packages/web build`（= `tsc -b && vite build`）成功・型エラー0。
+- `bun test ./src` = **88 pass / 0 fail**（回帰なし。OGP/sitemap の `/service` 含む）。
+- `git diff --check` = クリーン。
+- ルーティング・OGP・sitemap は既に `/service` を整合的に扱っており変更不要
+  （`app.tsx` / `api/ogp.ts` `KNOWN_ROUTES` / `server.ts` paths）。
+- ※ Stripe リンクへの実HTTPアクセス確認は本runの権限制約で未実施。URL は正規の
+  `buy.stripe.com/...` 形式。秋さん側で各ボタンを1回ずつ押して Stripe Checkout が
+  開くこと（実決済はしない）を確認推奨。
+
+### 残り（秋さん側・repo ではできない）
+1. **/service の本番動作確認**: push 後数分で各ボタンが正しい Stripe Checkout を開くか実機確認。
+2. **Stripe 決済後ページ / 確認メール**: `docs/purchase-thankyou.md` の A（自分で）/ B（おまかせ）を
+   各 Payment Link の確認ページ or メールに設定（任意だが一次返信が自動化されて楽）。
+3. **Railway Template Editor（cool-wide）**: `ADMIN_PASSWORD` 初期値削除・Template Image URL 設定
+   （前回 Handoff の残件のまま）。
+
+### 触ったファイル
+- `packages/web/src/web/pages/service.tsx`
+- `docs/order-handling.md`
 - `task.md`

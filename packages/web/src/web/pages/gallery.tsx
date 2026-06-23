@@ -116,11 +116,11 @@ export default function GalleryPage() {
 
   return (
     <section
-      className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-16 md:pb-32"
+      className="max-w-5xl mx-auto px-4 sm:px-6 md:px-12 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-12 md:pb-32"
       ref={fadeRef}
     >
       <h1
-        className="font-en uppercase text-center mb-16 md:mb-24 section-reveal"
+        className="font-en uppercase text-center mb-10 md:mb-24 section-reveal"
         style={{
           fontSize: "var(--section-label-size, 0.75rem)",
           color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`,
@@ -163,15 +163,15 @@ export default function GalleryPage() {
           {/* Filter — カテゴリ */}
           {categories.length > 0 && (
             <div
-              className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6 section-reveal"
-              style={{ transitionDelay: "0.1s" }}
+              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-6 section-reveal overflow-x-auto md:overflow-x-visible -mx-6 px-6 md:mx-0 md:px-0 scrollbar-hide"
+              style={{ transitionDelay: "0.1s", WebkitOverflowScrolling: "touch" }}
             >
               {filterItems.map((cat) => (
                 <button
                   key={cat.slug}
                   onClick={() => setActiveFilter(cat.slug)}
                   aria-pressed={activeFilter === cat.slug}
-                  className={`font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
+                  className={`font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] whitespace-nowrap shrink-0 ${
                     activeFilter === cat.slug
                       ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
                       : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
@@ -186,8 +186,8 @@ export default function GalleryPage() {
           {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
           {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
             <div
-              className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal"
-              style={{ transitionDelay: "0.15s" }}
+              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible -mx-6 px-6 md:mx-0 md:px-0 scrollbar-hide"
+              style={{ transitionDelay: "0.15s", WebkitOverflowScrolling: "touch" }}
             >
               {(
                 [

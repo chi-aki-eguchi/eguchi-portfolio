@@ -159,12 +159,29 @@ function publicOriginFromRequest(request: Request): string {
 // frame-ancestors * was a Runable dashboard-preview workaround; Runable was
 // decommissioned in the 2026-06 Railway migration.) HSTS is set only when the
 // original request arrived over HTTPS (x-forwarded-proto behind the proxy).
+// CSP report-only: observe violations without breaking anything. The inline
+// gtag script requires 'unsafe-inline' for script-src; Tailwind's runtime
+// styles need 'unsafe-inline' for style-src. Once violations are reviewed and
+// addressed, this can graduate to an enforcing Content-Security-Policy header.
+const CSP_REPORT_ONLY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: https:",
+  "font-src 'self' https://fonts.gstatic.com",
+  "connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+  "frame-ancestors 'self'",
+  "base-uri 'self'",
+  "form-action 'self' https://formspree.io https://buy.stripe.com",
+].join("; ");
+
 function withSecurityHeaders(res: Response, request: Request): Response {
   const headers = new Headers(res.headers);
-  headers.set("X-Build", BUILD_ID); // deploy fingerprint — see ogp.ts
+  headers.set("X-Build", BUILD_ID);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "SAMEORIGIN");
   headers.set("Content-Security-Policy", "frame-ancestors 'self'");
+  headers.set("Content-Security-Policy-Report-Only", CSP_REPORT_ONLY);
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();

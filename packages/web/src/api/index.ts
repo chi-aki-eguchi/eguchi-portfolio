@@ -788,6 +788,10 @@ const app = new Hono()
     let shotAt: string | null = null;
     let exifCamera: string | null = null;
     let exifLens: string | null = null;
+    let exifFocalLength: string | null = null;
+    let exifFNumber: string | null = null;
+    let exifExposureTime: string | null = null;
+    let exifIso: string | null = null;
     try {
       const { exif } = await sharp(inputBuf).metadata();
       if (exif) {
@@ -795,16 +799,25 @@ const app = new Hono()
         const dt = tags?.Photo?.DateTimeOriginal ?? tags?.Image?.DateTime;
         if (dt instanceof Date && !Number.isNaN(dt.getTime()))
           shotAt = dt.toISOString().slice(0, 19);
-        // Make + Model → camera (trim and join with a space, skip if empty)
         const make = (tags?.Image?.Make as string | undefined)?.trim() ?? "";
         const model = (tags?.Image?.Model as string | undefined)?.trim() ?? "";
         if (model)
           exifCamera =
             make && !model.startsWith(make) ? `${make} ${model}` : model;
-        // LensModel → lens
         const lensModel =
           (tags?.Photo?.LensModel as string | undefined)?.trim() ?? "";
         if (lensModel) exifLens = lensModel;
+        const fl = tags?.Photo?.FocalLength;
+        if (fl != null && Number.isFinite(Number(fl))) exifFocalLength = `${Math.round(Number(fl))}mm`;
+        const fn = tags?.Photo?.FNumber;
+        if (fn != null && Number.isFinite(Number(fn))) exifFNumber = `f/${Number(fn)}`;
+        const et = tags?.Photo?.ExposureTime;
+        if (et != null && Number.isFinite(Number(et))) {
+          const v = Number(et);
+          exifExposureTime = v >= 1 ? `${v}s` : `1/${Math.round(1 / v)}s`;
+        }
+        const iso = tags?.Photo?.ISOSpeedRatings ?? tags?.Photo?.PhotographicSensitivity;
+        if (iso != null) exifIso = `ISO ${Array.isArray(iso) ? iso[0] : iso}`;
       }
     } catch {
       /* EXIFなし・壊れたEXIF → null のまま（手入力可） */
@@ -825,6 +838,10 @@ const app = new Hono()
         shotAt,
         exifCamera,
         exifLens,
+        exifFocalLength,
+        exifFNumber,
+        exifExposureTime,
+        exifIso,
       },
       201,
     );
@@ -931,6 +948,10 @@ const app = new Hono()
           camera:
             typeof body.camera === "string" && body.camera ? body.camera : null,
           lens: typeof body.lens === "string" && body.lens ? body.lens : null,
+          focalLength: typeof body.focalLength === "string" && body.focalLength ? body.focalLength : null,
+          fNumber: typeof body.fNumber === "string" && body.fNumber ? body.fNumber : null,
+          exposureTime: typeof body.exposureTime === "string" && body.exposureTime ? body.exposureTime : null,
+          iso: typeof body.iso === "string" && body.iso ? body.iso : null,
           filmType:
             typeof body.filmType === "string" && body.filmType
               ? body.filmType
@@ -964,6 +985,18 @@ const app = new Hono()
     if (body.lens !== undefined)
       update.lens =
         typeof body.lens === "string" && body.lens.trim() ? body.lens : null;
+    if (body.focalLength !== undefined)
+      update.focalLength =
+        typeof body.focalLength === "string" && body.focalLength.trim() ? body.focalLength : null;
+    if (body.fNumber !== undefined)
+      update.fNumber =
+        typeof body.fNumber === "string" && body.fNumber.trim() ? body.fNumber : null;
+    if (body.exposureTime !== undefined)
+      update.exposureTime =
+        typeof body.exposureTime === "string" && body.exposureTime.trim() ? body.exposureTime : null;
+    if (body.iso !== undefined)
+      update.iso =
+        typeof body.iso === "string" && body.iso.trim() ? body.iso : null;
     if (body.filmType !== undefined)
       update.filmType =
         typeof body.filmType === "string" && body.filmType.trim()
@@ -1008,6 +1041,10 @@ const app = new Hono()
           meta: orig.meta,
           camera: orig.camera,
           lens: orig.lens,
+          focalLength: orig.focalLength,
+          fNumber: orig.fNumber,
+          exposureTime: orig.exposureTime,
+          iso: orig.iso,
           filmType: orig.filmType,
           description: orig.description,
           category: orig.category,

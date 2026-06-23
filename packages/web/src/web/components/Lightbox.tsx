@@ -19,7 +19,12 @@ export type LightboxPhoto = {
   meta?: string;
   camera?: string | null;
   lens?: string | null;
+  focalLength?: string | null;
+  fNumber?: string | null;
+  exposureTime?: string | null;
+  iso?: string | null;
   filmType?: string | null;
+  shotAt?: string | null;
 };
 
 /**
@@ -51,6 +56,7 @@ export function Lightbox({
   const [imgError, setImgError] = useState(false);
   const [chrome, setChrome] = useState(true); // counter / caption / nav visibility
   const [hiRes, setHiRes] = useState(false);  // has the full-size image arrived? (blur-up)
+  const [exifOpen, setExifOpen] = useState(false); // EXIF info panel
   const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fitImgRef = useRef<HTMLImageElement>(null);   // hi-res fitted image
@@ -330,6 +336,7 @@ export function Lightbox({
     setImgError(false);
     setChrome(true);
     setHiRes(false);
+    setExifOpen(false);
     setZoomSrcReady(false);
     resetZoom(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -547,19 +554,78 @@ export function Lightbox({
       </div>
 
       {/* Caption — overlaid at the bottom so it never shrinks the photo; part of chrome. */}
-      {(photo.title || photo.camera || photo.lens || photo.filmType) && (
+      {photo.title && (
         <div style={{ ...chromeVis, position: "absolute", bottom: "calc(18px + var(--sai-bottom))", left: "50%", transform: "translateX(-50%)", maxWidth: "90vw", textAlign: "center", zIndex: 10, textShadow: "0 1px 10px rgba(0,0,0,0.6)" }}>
-          {photo.title && (
-            <p style={{ fontFamily: "var(--font-en)", fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: "0.04em" }}>{photo.title}</p>
-          )}
-          {(() => {
-            const info = [photo.camera, photo.lens, photo.filmType].filter(Boolean).join("  ·  ");
-            return info ? (
-              <p style={{ fontFamily: "var(--font-en)", fontSize: 10.5, color: "rgba(255,255,255,0.35)", marginTop: 4, letterSpacing: "0.06em" }}>{info}</p>
-            ) : null;
-          })()}
+          <p style={{ fontFamily: "var(--font-en)", fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: "0.04em" }}>{photo.title}</p>
         </div>
       )}
+
+      {/* EXIF info button — only shown when there's data to display */}
+      {(() => {
+        const exifItems: [string, string][] = [];
+        if (photo.camera) exifItems.push(["Camera", photo.camera]);
+        if (photo.lens) exifItems.push(["Lens", photo.lens]);
+        if (photo.focalLength) exifItems.push(["Focal Length", photo.focalLength]);
+        if (photo.fNumber) exifItems.push(["Aperture", photo.fNumber]);
+        if (photo.exposureTime) exifItems.push(["Shutter", photo.exposureTime]);
+        if (photo.iso) exifItems.push(["ISO", photo.iso]);
+        if (photo.shotAt) {
+          const d = new Date(photo.shotAt);
+          if (!Number.isNaN(d.getTime())) exifItems.push(["Date", d.toLocaleDateString("ja-JP")]);
+        }
+        if (exifItems.length === 0) return null;
+        return (
+          <>
+            <button
+              data-lb-chrome
+              onClick={(e) => { e.stopPropagation(); setExifOpen((o) => !o); }}
+              aria-label={exifOpen ? "撮影情報を閉じる" : "撮影情報を表示"}
+              tabIndex={chromeTab}
+              style={{ ...chromeVis, position: "absolute", bottom: "calc(16px + var(--sai-bottom))", left: "calc(16px + var(--sai-left))", background: "none", border: "none", cursor: "pointer", color: exifOpen ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)", padding: 10, lineHeight: 0, zIndex: 10 }}
+              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
+              onMouseLeave={e => { if (!exifOpen) e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </button>
+            {/* EXIF panel — slides in from bottom-left */}
+            <div
+              data-lb-chrome
+              role="dialog"
+              aria-label="撮影情報"
+              style={{
+                position: "absolute",
+                bottom: "calc(52px + var(--sai-bottom))",
+                left: "calc(16px + var(--sai-left))",
+                background: "rgba(0,0,0,0.75)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                borderRadius: 8,
+                padding: exifOpen ? "14px 18px" : "0 18px",
+                maxHeight: exifOpen ? 320 : 0,
+                opacity: exifOpen ? 1 : 0,
+                overflow: "hidden",
+                transition: "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
+                zIndex: 10,
+                pointerEvents: exifOpen ? "auto" : "none",
+                minWidth: 180,
+              }}
+            >
+              <table style={{ borderCollapse: "collapse", fontFamily: "var(--font-en)", fontSize: 11, letterSpacing: "0.03em" }}>
+                <tbody>
+                  {exifItems.map(([label, value]) => (
+                    <tr key={label}>
+                      <td style={{ color: "rgba(255,255,255,0.4)", paddingRight: 14, paddingTop: 3, paddingBottom: 3, verticalAlign: "top", whiteSpace: "nowrap" }}>{label}</td>
+                      <td style={{ color: "rgba(255,255,255,0.75)", paddingTop: 3, paddingBottom: 3 }}>{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        );
+      })()}
     </dialog>,
     document.body
   );

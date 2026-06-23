@@ -22,6 +22,13 @@
       "when": 1781673649223,
       "tag": "0002_sleepy_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1782252260672,
+      "tag": "0003_material_apocalypse",
+      "breakpoints": true
     }
   ]
 }

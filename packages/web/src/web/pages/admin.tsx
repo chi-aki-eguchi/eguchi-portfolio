@@ -1470,28 +1470,31 @@ function GalleryTab({
           duplicates.push(file.name);
           return;
         }
-        const { url, width, height, fileHash, shotAt, exifCamera, exifLens } =
-          data;
+        const { url, width, height, fileHash, shotAt, exifCamera, exifLens, exifFocalLength, exifFNumber, exifExposureTime, exifIso } =
+          data as Record<string, unknown>;
         if (!url) throw new Error("no url returned");
-        // 機能5: デジタルはEXIF由来のカメラ・レンズを自動補完。フィルムは空欄（EXIFなし前提）。
         const isDigital = uploadMedium === "digital";
         const filmTypeVal = isDigital ? "デジタル" : "フィルム";
-        const cameraVal = isDigital ? (exifCamera ?? "") : "";
-        const lensVal = isDigital ? (exifLens ?? "") : "";
+        const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
+        const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
         const created = await adminApi.photos.$post({
           json: {
             filename: file.name,
-            url,
-            width,
-            height,
-            fileHash,
-            shotAt,
+            url: url as string,
+            width: width as number,
+            height: height as number,
+            fileHash: fileHash as string,
+            shotAt: shotAt as string,
             title: "",
             meta: "",
             category: "",
             filmType: filmTypeVal,
             camera: cameraVal,
             lens: lensVal,
+            focalLength: isDigital ? ((exifFocalLength as string) ?? "") : "",
+            fNumber: isDigital ? ((exifFNumber as string) ?? "") : "",
+            exposureTime: isDigital ? ((exifExposureTime as string) ?? "") : "",
+            iso: isDigital ? ((exifIso as string) ?? "") : "",
           },
         });
         assertOk(created);

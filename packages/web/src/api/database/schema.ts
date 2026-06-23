@@ -12,6 +12,10 @@ export const photos = sqliteTable("photos", {
   // D3: structured capture info (all nullable — film/manual gear has no EXIF)
   camera: text("camera"),
   lens: text("lens"),
+  focalLength: text("focal_length"),
+  fNumber: text("f_number"),
+  exposureTime: text("exposure_time"),
+  iso: text("iso"),
   filmType: text("film_type"), // "フィルム" | "デジタル"
   // U2: 撮影日時 (ISO "YYYY-MM-DD[THH:mm:ss]") — アップロード時に EXIF
   // DateTimeOriginal から自動設定。EXIF が無い写真は null（手入力も可）。

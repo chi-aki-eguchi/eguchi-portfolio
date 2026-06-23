@@ -303,7 +303,9 @@ export default function ContactPage() {
                 type="text"
                 name="name"
                 autoComplete="name"
-                aria-label={data?.contactFormName ?? "Name"}
+                aria-required="true"
+                aria-invalid={!!errors.name || undefined}
+                aria-describedby={errors.name ? "contact-name-error" : undefined}
                 onChange={() => setErrors((e) => ({ ...e, name: "" }))}
                 className={inputCls(!!errors.name)}
               />
@@ -320,7 +322,9 @@ export default function ContactPage() {
                 name="email"
                 autoComplete="email"
                 inputMode="email"
-                aria-label={data?.contactFormEmail ?? "Email"}
+                aria-required="true"
+                aria-invalid={!!errors.email || undefined}
+                aria-describedby={errors.email ? "contact-email-error" : undefined}
                 onChange={() => setErrors((e) => ({ ...e, email: "" }))}
                 className={inputCls(!!errors.email)}
               />
@@ -369,7 +373,9 @@ export default function ContactPage() {
                 id="contact-message"
                 name="message"
                 rows={5}
-                aria-label={data?.contactFormMessage ?? "Message"}
+                aria-required="true"
+                aria-invalid={!!errors.message || undefined}
+                aria-describedby={errors.message ? "contact-message-error" : undefined}
                 onChange={() => setErrors((e) => ({ ...e, message: "" }))}
                 className={`${inputCls(!!errors.message)} resize-y`}
               />
@@ -425,7 +431,7 @@ function Field({
       </label>
       {children}
       {error && (
-        <p role="alert" className="text-xs text-red-600">
+        <p id={`${htmlFor}-error`} role="alert" className="text-xs text-red-600">
           {error}
         </p>
       )}

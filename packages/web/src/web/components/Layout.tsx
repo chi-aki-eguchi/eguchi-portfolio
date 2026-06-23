@@ -195,7 +195,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-5xl mx-auto px-6 md:px-12 flex flex-col items-center gap-4">
           {/* SNS Links */}
           {(data?.profileInstagram || data?.profileTwitter || data?.profileNote) && (
-            <div className="flex gap-6">
+            <nav aria-label="SNS" className="flex gap-6">
               {data?.profileInstagram && (
                 <a href={data.profileInstagram} target="_blank" rel="noopener noreferrer"
                   className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
@@ -223,7 +223,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {data?.snsLabelNote ?? "note"}
                 </a>
               )}
-            </div>
+            </nav>
           )}
           {/* E6: optional, low-key lead-in to Contact (hidden when empty) */}
           {data?.footerCtaLabel && (

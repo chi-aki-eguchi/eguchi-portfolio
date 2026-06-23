@@ -297,6 +297,13 @@ const requireAdmin = async (c: any, next: any) => {
 
 const app = new Hono()
   .basePath("api")
+  .onError((err, c) => {
+    if (err.message?.includes("JSON")) {
+      return c.json({ error: "Invalid request body" }, 400);
+    }
+    console.error("[api] unhandled error:", err.message);
+    return c.json({ error: "Internal server error" }, 500);
+  })
   .use(
     cors({
       // Same-origin requests (no Origin header) need no ACAO; cross-origin is allowed

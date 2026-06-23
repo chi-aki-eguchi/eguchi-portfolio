@@ -102,10 +102,11 @@ unset) is untouched: `runStartupMigrations()` is a no-op there.
 | Runtime | Bun |
 | API | Hono 4 under `/api` |
 | Frontend | React 19, Wouter, TanStack Query, Tailwind CSS 4 |
-| Database | Drizzle ORM + Turso/libSQL |
-| Storage | Cloudflare R2, S3-compatible |
-| Image processing | sharp |
-| Deploy | Railway, `bun src/server.ts` |
+| Database | Drizzle ORM + Turso/libSQL (prod) or PostgreSQL (distribution template) |
+| Storage | Cloudflare R2 (prod) or Railway Storage (distribution), S3-compatible |
+| Image processing | sharp (upload: 3200px/mozjpeg q92, serve: on-the-fly resize with LRU cache) |
+| Deploy | Railway (`git push` auto-deploy) |
+| Security | CSP (report-only), HSTS, rate-limited login, MIME whitelist, path traversal guard |
 
 ## Local Setup
 
@@ -169,9 +170,11 @@ Before this can be safely handed to another photographer, the hard-coded
 identity, analytics, allowed origins, setup docs, and first-run defaults need to
 be generalized. See [DISTRIBUTION.md](./DISTRIBUTION.md) for the live checklist.
 
-For the setup side, see [docs/setup-guide.md](./docs/setup-guide.md).
-For deploying from the Railway button yourself (no engineer needed), see
-[docs/post-deploy-guide.md](./docs/post-deploy-guide.md).
-For the photographer receiving the site, see
-[docs/photographer-guide.md](./docs/photographer-guide.md).
-For common questions and stuck points, see [docs/faq.md](./docs/faq.md).
+| Document | Audience |
+| --- | --- |
+| [docs/setup-guide.md](./docs/setup-guide.md) | Engineer setting up the site |
+| [docs/post-deploy-guide.md](./docs/post-deploy-guide.md) | Non-engineer deploying via Railway button |
+| [docs/photographer-guide.md](./docs/photographer-guide.md) | Photographer receiving the site |
+| [docs/admin-guide.md](./docs/admin-guide.md) | Admin panel feature reference |
+| [docs/api.md](./docs/api.md) | API endpoint reference |
+| [docs/faq.md](./docs/faq.md) | Common questions and stuck points |

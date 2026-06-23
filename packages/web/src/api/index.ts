@@ -340,21 +340,20 @@ const app = new Hono()
     const width = clampImageWidth(c.req.query("w"));
     const quality = clampImageQuality(c.req.query("q"));
 
-    // Optional AVIF/WebP content negotiation. Gated behind an env flag and OFF by
-    // default: serving-layer changes that depend on the Runable edge (here, a new
-    // Content-Type + `Vary: Accept`) must be verified in prod before being trusted
-    // — same discipline the gzip incident taught (see task.md). When off, behaviour
-    // is byte-for-byte the previous JPEG-only path (the cache key just gains a
-    // `__jpeg` suffix). Flip IMAGE_FORMAT_NEGOTIATION=1 on Runable to enable AVIF/WebP.
-    const negotiate = process.env.IMAGE_FORMAT_NEGOTIATION === "1";
-    const accept = c.req.header("accept") ?? "";
-    const fmt = !negotiate
-      ? "jpeg"
-      : accept.includes("image/avif")
-        ? "avif"
-        : accept.includes("image/webp")
-          ? "webp"
-          : "jpeg";
+    // Format selection: explicit `fmt` query param (for <picture> sources) takes
+    // priority; otherwise Accept-header negotiation picks the best the browser
+    // supports. Always on — the old env-var gate was a Runable-era precaution.
+    const fmtParam = c.req.query("fmt");
+    const fmt: "jpeg" | "webp" | "avif" =
+      fmtParam === "avif" ? "avif"
+      : fmtParam === "webp" ? "webp"
+      : fmtParam === "jpeg" ? "jpeg"
+      : (() => {
+          const accept = c.req.header("accept") ?? "";
+          return accept.includes("image/avif") ? "avif" as const
+            : accept.includes("image/webp") ? "webp" as const
+            : "jpeg" as const;
+        })();
     const ctypeOf: Record<string, string> = {
       jpeg: "image/jpeg",
       webp: "image/webp",
@@ -368,7 +367,7 @@ const app = new Hono()
         headers: {
           "Content-Type": cached.type,
           "Cache-Control": "public, max-age=31536000, immutable",
-          ...(negotiate ? { Vary: "Accept" } : {}),
+          ...(!fmtParam ? { Vary: "Accept" } : {}),
           "X-Cache": "HIT",
         },
       });
@@ -393,13 +392,13 @@ const app = new Hono()
       });
       let out: Buffer;
       if (fmt === "avif") {
-        // effort bounded so a cold-cache MISS never blocks the request for
-        // hundreds of ms; AVIF's quality scale runs lower than JPEG's.
+        // AVIF quality scale runs ~10-20 points lower than JPEG for equivalent
+        // perceptual quality; effort bounded to avoid blocking the request.
         out = await base
-          .avif({ quality: Math.max(30, quality - 30), effort: 3 })
+          .avif({ quality: Math.max(40, quality - 10), effort: 4 })
           .toBuffer();
       } else if (fmt === "webp") {
-        out = await base.webp({ quality }).toBuffer();
+        out = await base.webp({ quality: Math.max(quality, 90) }).toBuffer();
       } else {
         // Full chroma for large/focal renders (gallery tiles, hero, lightbox);
         // 4:2:0 is fine for small thumbnails and keeps their bytes down.
@@ -418,7 +417,7 @@ const app = new Hono()
         headers: {
           "Content-Type": ctypeOf[fmt],
           "Cache-Control": "public, max-age=31536000, immutable",
-          ...(negotiate ? { Vary: "Accept" } : {}),
+          ...(!fmtParam ? { Vary: "Accept" } : {}),
           "X-Cache": "MISS",
         },
       });

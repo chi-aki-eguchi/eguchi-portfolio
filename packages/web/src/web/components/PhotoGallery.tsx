@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
 import { num, clamp } from "../lib/utils";
 import { Lightbox, FIT_SIZES, fitSrcSet } from "./Lightbox";
+import { srcSetFor } from "../lib/picture";
 
 export type GalleryPhoto = {
   id: number;
@@ -166,44 +167,52 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
             ...(ratio ? { aspectRatio: ratio } : {}),
           } as React.CSSProperties}
         >
-          <img
-            src={isNearViewport ? `${photo.url}?w=600&q=84` : `${photo.url}?w=20&q=20`}
-            data-src={isNearViewport ? undefined : `${photo.url}?w=600&q=84`}
-            srcSet={isNearViewport ? `${photo.url}?w=400&q=82 400w, ${photo.url}?w=800&q=84 800w, ${photo.url}?w=1200&q=84 1200w, ${photo.url}?w=1600&q=86 1600w` : undefined}
-            data-srcset={isNearViewport ? undefined : `${photo.url}?w=400&q=82 400w, ${photo.url}?w=800&q=84 800w, ${photo.url}?w=1200&q=84 1200w, ${photo.url}?w=1600&q=86 1600w`}
-            sizes={opts.sizes}
-            alt={photo.title || photo.meta || photo.filename || `Photograph ${idx + 1}`}
-            loading={isNearViewport ? "eager" : "lazy"}
-            fetchPriority={idx === 0 ? "high" : undefined}
-            decoding="async"
-            width={photo.width || undefined}
-            height={photo.height || undefined}
-            style={imgStyle}
-            className="lqip-loading"
-            onLoad={(e) => {
-              const el = e.currentTarget;
-              if (el.dataset.src) {
-                const realSrc = el.dataset.src;
-                const realSrcset = el.dataset.srcset;
-                delete el.dataset.src;
-                delete el.dataset.srcset;
-                const full = new Image();
-                full.onload = () => {
-                  el.srcset = realSrcset || "";
-                  el.src = realSrc;
-                  el.classList.remove("lqip-loading");
-                  el.classList.add("lqip-loaded");
-                };
-                full.src = realSrc;
-                if (realSrcset) full.srcset = realSrcset;
-                full.sizes = opts.sizes;
-                return;
-              }
-              el.classList.remove("lqip-loading");
-              el.classList.add("lqip-loaded");
-            }}
-            onError={(e) => { const el = e.currentTarget; el.classList.remove("lqip-loading"); el.classList.add("lqip-loaded"); el.closest(".photo-card")?.classList.add("photo-broken"); }}
-          />
+          <picture>
+            {isNearViewport && (
+              <>
+                <source type="image/avif" srcSet={srcSetFor(photo.url, "grid", "avif")} sizes={opts.sizes} />
+                <source type="image/webp" srcSet={srcSetFor(photo.url, "grid", "webp")} sizes={opts.sizes} />
+              </>
+            )}
+            <img
+              src={isNearViewport ? `${photo.url}?w=600&q=84` : `${photo.url}?w=20&q=20`}
+              data-src={isNearViewport ? undefined : `${photo.url}?w=600&q=84`}
+              srcSet={isNearViewport ? srcSetFor(photo.url, "grid") : undefined}
+              data-srcset={isNearViewport ? undefined : srcSetFor(photo.url, "grid")}
+              sizes={opts.sizes}
+              alt={photo.title || photo.meta || photo.filename || `Photograph ${idx + 1}`}
+              loading={isNearViewport ? "eager" : "lazy"}
+              fetchPriority={idx === 0 ? "high" : undefined}
+              decoding="async"
+              width={photo.width || undefined}
+              height={photo.height || undefined}
+              style={imgStyle}
+              className="lqip-loading"
+              onLoad={(e) => {
+                const el = e.currentTarget;
+                if (el.dataset.src) {
+                  const realSrc = el.dataset.src;
+                  const realSrcset = el.dataset.srcset;
+                  delete el.dataset.src;
+                  delete el.dataset.srcset;
+                  const full = new Image();
+                  full.onload = () => {
+                    el.srcset = realSrcset || "";
+                    el.src = realSrc;
+                    el.classList.remove("lqip-loading");
+                    el.classList.add("lqip-loaded");
+                  };
+                  full.src = realSrc;
+                  if (realSrcset) full.srcset = realSrcset;
+                  full.sizes = opts.sizes;
+                  return;
+                }
+                el.classList.remove("lqip-loading");
+                el.classList.add("lqip-loaded");
+              }}
+              onError={(e) => { const el = e.currentTarget; el.classList.remove("lqip-loading"); el.classList.add("lqip-loaded"); el.closest(".photo-card")?.classList.add("photo-broken"); }}
+            />
+          </picture>
           {(opts.showHoverCaption ?? true) && photo.title && <span className="tile-caption" aria-hidden="true">{photo.title}</span>}
         </div>
       </button>

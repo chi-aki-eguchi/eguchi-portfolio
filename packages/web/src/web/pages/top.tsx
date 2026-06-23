@@ -7,6 +7,33 @@ import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { Lightbox, type LightboxPhoto } from "../components/Lightbox";
 import { InquiryCta } from "../components/InquiryCta";
+import { srcSetFor, srcFor } from "../lib/picture";
+
+function HeroPicture({ url, alt, sizes, className, style, decoding, fetchPriority, loading, onError, draggable }: {
+  url: string; alt: string; sizes: string; className?: string; style?: React.CSSProperties;
+  decoding?: "sync" | "async"; fetchPriority?: "high" | "low"; loading?: "lazy" | "eager";
+  onError?: React.ReactEventHandler<HTMLImageElement>; draggable?: boolean;
+}) {
+  return (
+    <picture>
+      <source type="image/avif" srcSet={srcSetFor(url, "hero", "avif")} sizes={sizes} />
+      <source type="image/webp" srcSet={srcSetFor(url, "hero", "webp")} sizes={sizes} />
+      <img
+        src={srcFor(url, 1536, 88)}
+        srcSet={srcSetFor(url, "hero")}
+        sizes={sizes}
+        alt={alt}
+        className={className}
+        style={style}
+        decoding={decoding}
+        fetchPriority={fetchPriority}
+        loading={loading}
+        onError={onError}
+        draggable={draggable}
+      />
+    </picture>
+  );
+}
 
 /** Hero carousel with auto-play, swipe, and arrow navigation */
 function HeroCarousel({
@@ -185,22 +212,19 @@ function HeroCarousel({
         <div ref={fxRef} className="hero-fx-layer absolute inset-0">
           {/* Main photo layer — contain, no crop */}
           {photos.map((p, i) => (
-            <img
-              key={i}
-              src={`${p.url}?w=1800&q=88`}
-              srcSet={`${p.url}?w=900&q=88 900w, ${p.url}?w=1400&q=88 1400w, ${p.url}?w=1800&q=88 1800w, ${p.url}?w=2400&q=88 2400w`}
-              sizes="(min-width: 1200px) 1152px, 100vw"
-              alt={p.title || "Photograph"}
-              className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`}
-              style={{ zIndex: i === current ? 1 : 0 }}
-              decoding={i === 0 ? "sync" : "async"}
-              fetchPriority={i === 0 ? "high" : "low"}
-              loading={i === 0 ? "eager" : "lazy"}
-              onError={(e) => {
-                e.currentTarget.style.visibility = "hidden";
-              }}
-              draggable={false}
-            />
+            <div key={i} className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`} style={{ zIndex: i === current ? 1 : 0 }}>
+              <HeroPicture
+                url={p.url}
+                alt={p.title || "Photograph"}
+                sizes="(min-width: 1200px) 1152px, 100vw"
+                className="w-full h-full object-contain"
+                decoding={i === 0 ? "sync" : "async"}
+                fetchPriority={i === 0 ? "high" : "low"}
+                loading={i === 0 ? "eager" : "lazy"}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+                draggable={false}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -292,17 +316,14 @@ function HeroSingle({
   return (
     <div className="hero-single">
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
-        <img
-          className="hero-single-img"
-          src={`${photo.url}?w=1800&q=88`}
-          srcSet={`${photo.url}?w=900&q=88 900w, ${photo.url}?w=1400&q=88 1400w, ${photo.url}?w=1800&q=88 1800w, ${photo.url}?w=2400&q=88 2400w`}
-          sizes="100vw"
+        <HeroPicture
+          url={photo.url}
           alt={photo.title || "Photograph"}
+          sizes="100vw"
+          className="hero-single-img"
           decoding="sync"
           fetchPriority="high"
-          onError={(e) => {
-            e.currentTarget.style.visibility = "hidden";
-          }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
           draggable={false}
         />
         <div className={`hero-single-overlay ${overlayTop}`} />
@@ -354,18 +375,15 @@ function HomeQuietGrid({
       >
         {heroPhoto ? (
           <>
-            <img
-              className="w-full h-full object-cover"
-              src={`${heroPhoto.url}?w=1800&q=88`}
-              srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w, ${heroPhoto.url}?w=2400&q=88 2400w`}
-              sizes="100vw"
+            <HeroPicture
+              url={heroPhoto.url}
               alt={heroPhoto.title || "Photograph"}
+              sizes="100vw"
+              className="w-full h-full object-cover"
               decoding="sync"
               fetchPriority="high"
               draggable={false}
-              onError={(e) => {
-                e.currentTarget.style.visibility = "hidden";
-              }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             <div className="absolute bottom-6 left-7">
@@ -561,18 +579,15 @@ function HomeEditorial({
           style={{ minHeight: 200 }}
         >
           {heroPhoto && (
-            <img
-              className="w-full h-full object-cover"
-              src={`${heroPhoto.url}?w=1400&q=88`}
-              srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w`}
-              sizes="(min-width: 768px) 55vw, 100vw"
+            <HeroPicture
+              url={heroPhoto.url}
               alt={heroPhoto.title || "Photograph"}
+              sizes="(min-width: 768px) 55vw, 100vw"
+              className="w-full h-full object-cover"
               decoding="sync"
               fetchPriority="high"
               draggable={false}
-              onError={(e) => {
-                e.currentTarget.style.visibility = "hidden";
-              }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
             />
           )}
         </div>
@@ -713,18 +728,15 @@ function HomeImmersive({
         style={{ height: "100dvh" }}
       >
         {heroPhoto ? (
-          <img
-            className="w-full h-full object-cover"
-            src={`${heroPhoto.url}?w=1800&q=88`}
-            srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w, ${heroPhoto.url}?w=2400&q=88 2400w`}
-            sizes="100vw"
+          <HeroPicture
+            url={heroPhoto.url}
             alt={heroPhoto.title || "Photograph"}
+            sizes="100vw"
+            className="w-full h-full object-cover"
             decoding="sync"
             fetchPriority="high"
             draggable={false}
-            onError={(e) => {
-              e.currentTarget.style.visibility = "hidden";
-            }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
           />
         ) : (
           <div className="w-full h-full bg-[#2a3a3a]" />

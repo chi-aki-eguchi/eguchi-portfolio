@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { srcSetFor, srcFor } from "../lib/picture";
 
 // R2: the fitted (non-zoomed) photo claims ~95% of the viewport. The srcset lets
 // the browser pick by viewport × devicePixelRatio — phones get ~1200px, Retina
@@ -500,7 +501,7 @@ export function Lightbox({
                   placeholder's tiny natural size, so the photo renders large (R2). */}
               <img
                 ref={placeImgRef}
-                src={`${photo.url}?w=400&q=55`}
+                src={srcFor(photo.url, 400, 55)}
                 alt=""
                 aria-hidden="true"
                 draggable={false}
@@ -508,31 +509,37 @@ export function Lightbox({
                 decoding="async"
                 style={{ display: "block", width: FIT_W, height: FIT_H, objectFit: "contain", filter: hiRes ? "blur(0px)" : "blur(14px)", transform: hiRes ? "scale(1)" : "scale(1.03)", transition: "filter 0.45s ease, transform 0.45s ease" }}
               />
-              <img
-                ref={fitImgRef}
-                src={`${photo.url}?w=1600&q=88`}
-                srcSet={fitSrcSet(photo.url)}
-                sizes={FIT_SIZES}
-                alt={photo.title || photo.meta || `Photograph ${index + 1}`}
-                onLoad={() => setHiRes(true)}
-                onError={() => setImgError(true)}
-                fetchPriority="high"
-                decoding="async"
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: hiRes ? 1 : 0, transition: "opacity 0.45s ease" }}
-                draggable={false}
-              />
-              {/* Sharpness overlay while zoomed: the stored maximum (3200px). Fades
-                  in over the fitted image; scales with the same transform. */}
-              {isZoomed && (
+              <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+                <source type="image/avif" srcSet={srcSetFor(photo.url, "lightbox", "avif")} sizes={FIT_SIZES} />
+                <source type="image/webp" srcSet={srcSetFor(photo.url, "lightbox", "webp")} sizes={FIT_SIZES} />
                 <img
-                  src={`${photo.url}?w=3200&q=90`}
-                  alt=""
-                  aria-hidden="true"
-                  onLoad={() => setZoomSrcReady(true)}
+                  ref={fitImgRef}
+                  src={srcFor(photo.url, 1600, 88)}
+                  srcSet={fitSrcSet(photo.url)}
+                  sizes={FIT_SIZES}
+                  alt={photo.title || photo.meta || `Photograph ${index + 1}`}
+                  onLoad={() => setHiRes(true)}
+                  onError={() => setImgError(true)}
+                  fetchPriority="high"
                   decoding="async"
+                  style={{ width: "100%", height: "100%", objectFit: "contain", opacity: hiRes ? 1 : 0, transition: "opacity 0.45s ease" }}
                   draggable={false}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: zoomSrcReady ? 1 : 0, transition: "opacity 0.3s ease" }}
                 />
+              </picture>
+              {isZoomed && (
+                <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+                  <source type="image/avif" srcSet={srcFor(photo.url, 3200, 90, "avif")} />
+                  <source type="image/webp" srcSet={srcFor(photo.url, 3200, 90, "webp")} />
+                  <img
+                    src={srcFor(photo.url, 3200, 90)}
+                    alt=""
+                    aria-hidden="true"
+                    onLoad={() => setZoomSrcReady(true)}
+                    decoding="async"
+                    draggable={false}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", opacity: zoomSrcReady ? 1 : 0, transition: "opacity 0.3s ease" }}
+                  />
+                </picture>
               )}
             </button>
           </div>

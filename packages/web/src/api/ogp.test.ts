@@ -256,3 +256,60 @@ describe("injectOgp theme-color", () => {
     expect(out.match(/name="theme-color"/g)).toHaveLength(1);
   });
 });
+
+describe("injectOgp /service route", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    </head><body></body></html>`;
+
+  test("uses dedicated service OGP title and description, not the photographer's", () => {
+    const out = injectOgp(page, { siteName: "Aki Eguchi", siteNameEn: "Aki Eguchi" }, "/service");
+    expect(out).toContain("写真家のためのポートフォリオサイト");
+    expect(out).toContain("写真を上げて並べるだけで");
+    expect(out).not.toContain("<title>Aki Eguchi");
+  });
+
+  test("/service is indexable", () => {
+    const out = injectOgp(page, {}, "/service");
+    expect(out).toContain('name="robots" content="index, follow"');
+  });
+
+  test("/service title does not include the photographer name", () => {
+    const out = injectOgp(page, { siteName: "Aki Eguchi" }, "/service");
+    expect(out).toContain("<title>写真家のためのポートフォリオサイト</title>");
+    expect(out).not.toContain("<title>Aki Eguchi");
+  });
+});
+
+describe("injectOgp /profile canonical", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    </head><body></body></html>`;
+
+  test("/profile canonicalises to /about to avoid duplicate content", () => {
+    const out = injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/profile");
+    expect(out).toContain('rel="canonical" href="https://akieguchi.com/about"');
+    expect(out).toContain('property="og:url" content="https://akieguchi.com/about"');
+    expect(out).not.toContain("/profile");
+  });
+});

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 
-// PageTransition animates via inline styles/JS, so the CSS prefers-reduced-motion
-// rules don't reach it — check the media query directly and swap instantly for
-// users who asked to minimise motion (also removes the 500ms navigation delay).
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined"
     && typeof window.matchMedia === "function"
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function hasViewTransitions(): boolean {
+  return typeof document !== "undefined" && "startViewTransition" in document;
 }
 
 export default function PageTransition({ children }: { children: React.ReactNode }) {
@@ -19,7 +20,6 @@ export default function PageTransition({ children }: { children: React.ReactNode
   const containerRef = useRef<HTMLDivElement>(null);
 
   const swapAndFadeIn = useCallback((newChildren: React.ReactNode) => {
-    // hide container completely before swapping
     const el = containerRef.current;
     if (el) {
       el.style.visibility = "hidden";
@@ -31,7 +31,6 @@ export default function PageTransition({ children }: { children: React.ReactNode
     setDisplay(newChildren);
     window.scrollTo(0, 0);
 
-    // wait for React to paint the new content, then fade in
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (el) {
@@ -50,7 +49,6 @@ export default function PageTransition({ children }: { children: React.ReactNode
     if (location === prevLocation.current) return;
     prevLocation.current = location;
 
-    // Reduced motion: swap instantly, no fade-out delay or transform.
     if (prefersReducedMotion()) {
       setDisplay(children);
       setOpacity(1);
@@ -58,12 +56,21 @@ export default function PageTransition({ children }: { children: React.ReactNode
       return;
     }
 
-    transitioning.current = true;
+    // Use View Transitions API when available for smoother page switches.
+    if (hasViewTransitions()) {
+      transitioning.current = true;
+      (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(() => {
+        setDisplay(children);
+        setOpacity(1);
+        window.scrollTo(0, 0);
+        transitioning.current = false;
+      });
+      return;
+    }
 
-    // fade out current page
+    transitioning.current = true;
     setOpacity(0);
 
-    // wait for fade-out to finish fully, then swap
     const t = setTimeout(() => {
       swapAndFadeIn(children);
     }, 500);
@@ -71,7 +78,6 @@ export default function PageTransition({ children }: { children: React.ReactNode
     return () => clearTimeout(t);
   }, [location, children, swapAndFadeIn]);
 
-  // same-location data update (no transition)
   useEffect(() => {
     if (!transitioning.current) setDisplay(children);
   }, [children]);

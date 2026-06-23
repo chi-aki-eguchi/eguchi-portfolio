@@ -132,10 +132,9 @@ export function injectOgp(
   out = setAttr(out, /(<meta\s+property="og:site_name"\s+content=")[^"]*(")/,    `${siteName} Photography`);
   if (ogImage) {
     out = setAttr(out, /(<meta\s+property="og:image"\s+content=")[^"]*(")/,      `${siteUrl}${ogImage}`);
+    out = setAttr(out, /(<meta\s+property="og:image:width"\s+content=")[^"]*(")/,  "1200");
+    out = setAttr(out, /(<meta\s+property="og:image:height"\s+content=")[^"]*(")/,  "630");
     out = setAttr(out, /(<meta\s+name="twitter:image"\s+content=")[^"]*(")/,     `${siteUrl}${ogImage}`);
-    // Keep the image's alt describing the *actual* (per-series/hero) image, not the
-    // static index.html default — a shared series link otherwise advertises that
-    // series' cover with the generic site alt.
     out = setAttr(out, /(<meta\s+property="og:image:alt"\s+content=")[^"]*(")/,  title);
   }
   // Twitter

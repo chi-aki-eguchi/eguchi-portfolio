@@ -30,7 +30,7 @@ describe("buildGalleryLayout", () => {
 
   test("satisfies all invariants across sizes / columns / seeds (desktop & mobile)", () => {
     for (const n of [1, 2, 5, 17, 40, 100]) {
-      for (const columns of [2, 3, 4]) {
+      for (const columns of [1, 2, 3, 4]) {
         for (const seed of [1, 2, 99, 12345]) {
           for (const isMobile of [false, true]) {
             const cells = buildGalleryLayout(n, ids(n), { columns, emptyRate: 0.3, seed, isMobile });

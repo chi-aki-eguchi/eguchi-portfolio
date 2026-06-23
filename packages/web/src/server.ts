@@ -183,7 +183,7 @@ function withSecurityHeaders(res: Response, request: Request): Response {
   headers.set("Content-Security-Policy", "frame-ancestors 'self'");
   headers.set("Content-Security-Policy-Report-Only", CSP_REPORT_ONLY);
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=()");
   const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
   if (proto === "https") headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });

@@ -149,6 +149,7 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
   }) => {
     const ratio = photo.width && photo.height ? `${photo.width} / ${photo.height}` : undefined;
     const imgStyle = opts.imgStyle ?? (ratio ? { aspectRatio: ratio, width: "100%", height: "auto" } : undefined);
+    const isNearViewport = idx < 8;
     return (
       <button
         key={photo.id}
@@ -156,30 +157,53 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
         aria-label={photo.title || photo.meta || photo.filename || "写真を開く"}
         style={{ justifySelf: opts.justifySelf, width: opts.width, display: "block", padding: 0, border: "none", background: "none", font: "inherit", textAlign: "inherit", cursor: "pointer" }}
         onClick={() => openLightbox(idx)}
-        // Warm the full-size image on hover-intent so the lightbox opens instantly.
-        // Mirrors the lightbox's srcset/sizes so the browser caches the same candidate.
         onMouseEnter={() => { const img = new Image(); img.fetchPriority = "low"; img.sizes = FIT_SIZES; img.srcset = fitSrcSet(photo.url); img.src = `${photo.url}?w=1600&q=88`; }}
       >
         <div
           className={`photo-card fade-in-item${opts.cardClassName ? ` ${opts.cardClassName}` : ""}`}
-          style={{ "--stagger-delay": `${Math.min((opts.staggerIdx ?? idx) * 0.05, 0.4)}s` } as React.CSSProperties}
+          style={{
+            "--stagger-delay": `${Math.min((opts.staggerIdx ?? idx) * 0.05, 0.4)}s`,
+            ...(ratio ? { aspectRatio: ratio } : {}),
+          } as React.CSSProperties}
         >
           <img
-            src={`${photo.url}?w=600&q=84`}
-            srcSet={`${photo.url}?w=400&q=82 400w, ${photo.url}?w=800&q=84 800w, ${photo.url}?w=1200&q=84 1200w, ${photo.url}?w=1600&q=86 1600w`}
+            src={isNearViewport ? `${photo.url}?w=600&q=84` : `${photo.url}?w=20&q=20`}
+            data-src={isNearViewport ? undefined : `${photo.url}?w=600&q=84`}
+            srcSet={isNearViewport ? `${photo.url}?w=400&q=82 400w, ${photo.url}?w=800&q=84 800w, ${photo.url}?w=1200&q=84 1200w, ${photo.url}?w=1600&q=86 1600w` : undefined}
+            data-srcset={isNearViewport ? undefined : `${photo.url}?w=400&q=82 400w, ${photo.url}?w=800&q=84 800w, ${photo.url}?w=1200&q=84 1200w, ${photo.url}?w=1600&q=86 1600w`}
             sizes={opts.sizes}
             alt={photo.title || photo.meta || photo.filename || `Photograph ${idx + 1}`}
-            loading={idx < 6 ? "eager" : "lazy"}
+            loading={isNearViewport ? "eager" : "lazy"}
             fetchPriority={idx === 0 ? "high" : undefined}
             decoding="async"
             width={photo.width || undefined}
             height={photo.height || undefined}
             style={imgStyle}
             className="lqip-loading"
-            onLoad={(e) => { const el = e.currentTarget; el.classList.remove("lqip-loading"); el.classList.add("lqip-loaded"); }}
+            onLoad={(e) => {
+              const el = e.currentTarget;
+              if (el.dataset.src) {
+                const realSrc = el.dataset.src;
+                const realSrcset = el.dataset.srcset;
+                delete el.dataset.src;
+                delete el.dataset.srcset;
+                const full = new Image();
+                full.onload = () => {
+                  el.srcset = realSrcset || "";
+                  el.src = realSrc;
+                  el.classList.remove("lqip-loading");
+                  el.classList.add("lqip-loaded");
+                };
+                full.src = realSrc;
+                if (realSrcset) full.srcset = realSrcset;
+                full.sizes = opts.sizes;
+                return;
+              }
+              el.classList.remove("lqip-loading");
+              el.classList.add("lqip-loaded");
+            }}
             onError={(e) => { const el = e.currentTarget; el.classList.remove("lqip-loading"); el.classList.add("lqip-loaded"); el.closest(".photo-card")?.classList.add("photo-broken"); }}
           />
-          {/* Hover-reveal title (CSS shows it on pointer devices only) */}
           {(opts.showHoverCaption ?? true) && photo.title && <span className="tile-caption" aria-hidden="true">{photo.title}</span>}
         </div>
       </button>
@@ -380,8 +404,7 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
 
   return (
     <>
-      {/* W: the ref feeds the ResizeObserver that derives the column count. */}
-      <div ref={containerRef}>{body}</div>
+      <div ref={containerRef} className="filter-grid-animated">{body}</div>
       {lightboxIndex !== null && photos[lightboxIndex] && (
         <Lightbox
           photos={photos}

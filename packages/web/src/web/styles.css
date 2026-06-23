@@ -31,8 +31,18 @@
   --body-tracking: 0.01em;
 
   /* A2: line-height */
-  --body-leading: 1.8;
-  --section-leading: 1.2;
+  --body-leading: 1.85;
+  --section-leading: 1.25;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --body-size: calc(14px * var(--global-font-scale, 1));
+    --nav-size: calc(12px * var(--global-font-scale, 1));
+    --heading-size: calc(24px * var(--global-font-scale, 1));
+    --body-leading: 1.9;
+    --body-tracking: 0.015em;
+  }
 }
 
 * {
@@ -78,6 +88,15 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #aaa;
+}
+
+/* ─── Hide scrollbar for horizontal scroll areas (filters) ─── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* ─── Photo Card ─── */
@@ -743,6 +762,35 @@ img {
 /* Users who ask the OS to minimise motion get near-instant transitions, and the
    scroll/entrance reveals must NOT stay stuck at opacity:0 if their animation is
    neutralised — so force the visible end-state regardless of the JS observer. */
+/* ─── View Transitions API ─── */
+@supports (view-transition-name: none) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.3s;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  ::view-transition-old(root) {
+    animation-name: vt-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation-name: vt-fade-in;
+  }
+  @keyframes vt-fade-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-8px); }
+  }
+  @keyframes vt-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ─── Filter switch layout animation ─── */
+.filter-grid-animated > * {
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

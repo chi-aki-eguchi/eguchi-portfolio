@@ -298,5 +298,9 @@ function getStaticFilePath(pathname: string) {
     .replace(/^\/+/, "")
     .replaceAll("..", "");
 
-  return cleanPath ? `${distDir}/${cleanPath}` : indexPath;
+  if (!cleanPath) return indexPath;
+  const { resolve } = require("node:path") as typeof import("node:path");
+  const resolved = resolve(distDir, cleanPath);
+  if (!resolved.startsWith(distDir)) return indexPath;
+  return resolved;
 }

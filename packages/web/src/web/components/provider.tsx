@@ -65,6 +65,7 @@ function ensureGoogleFont(id: string, fontParam: string) {
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
+  link.crossOrigin = "anonymous";
   link.href = url;
   document.head.appendChild(link);
 }

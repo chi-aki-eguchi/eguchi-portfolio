@@ -20,7 +20,7 @@ import {
 } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import exifReader from "exif-reader";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 
 // Node's Buffer<ArrayBufferLike> isn't assignable to DOM BodyInit in TS lib
 // types, though Bun's Response accepts it at runtime. The cast is contained
@@ -36,6 +36,19 @@ import {
   isAllowedOrigin,
   siteDescriptionFrom,
 } from "./site-defaults";
+import {
+  ALLOWED_IMAGE_TYPES,
+  IMAGE_MAX_BYTES,
+  FONT_MAX_BYTES,
+  isAllowedImageKey,
+  clientIpFrom,
+  passwordMatches as _passwordMatches,
+  isHttpsRequest,
+  LOGIN_WINDOW_MS,
+  LOGIN_MAX_FAILS,
+  clampImageWidth,
+  clampImageQuality,
+} from "./security";
 
 // ── In-memory image caches (byte-budgeted true-LRU) ─────
 // The gallery has 100+ photos × ~5 srcset widths (~600 variants). The old
@@ -168,18 +181,7 @@ const UPLOAD_QUALITY = 92;
 const TRASH_RETENTION_DAYS = 30;
 const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
-// Upload size guards (prevent memory blow-ups from oversized inputs).
-const IMAGE_MAX_BYTES = 60 * 1024 * 1024; // 60MB raw input
-const FONT_MAX_BYTES = 2 * 1024 * 1024; // 2MB
-const ALLOWED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-  "image/tiff",
-  "image/avif",
-]);
+// Upload size guards and MIME whitelist imported from ./security
 
 // ── note RSS (J1) — server-side fetch + in-memory cache ─
 // Fetch note.com's per-user RSS, parse to a small post list, and cache so we
@@ -271,36 +273,17 @@ async function executeRaw(query: SQL) {
   throw new Error("Database raw execution is not supported.");
 }
 
-// Constant-time password check (hash both sides → fixed length, no length leak).
 function passwordMatches(input: unknown): boolean {
-  if (!ADMIN_PASSWORD || typeof input !== "string") return false;
-  const a = createHash("sha256").update(input).digest();
-  const b = createHash("sha256").update(ADMIN_PASSWORD).digest();
-  return timingSafeEqual(a, b);
+  return _passwordMatches(input, ADMIN_PASSWORD);
 }
 
-// In-memory brute-force throttle for /admin/login (resets on restart / single PM2 process).
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_MAX_FAILS = 10;
 const loginFails = new Map<string, { count: number; first: number }>();
 function clientIp(c: any): string {
-  const xff = c.req.header("x-forwarded-for");
-  return (
-    xff?.split(",").at(-1)?.trim() || c.req.header("x-real-ip") || "unknown"
-  );
+  return clientIpFrom(c.req.header("x-forwarded-for"), c.req.header("x-real-ip"));
 }
 
-// True when the original request is HTTPS (behind Runable's proxy, the scheme is in
-// x-forwarded-proto). Used to mark the session cookie Secure in prod without breaking
-// http://localhost in dev.
 function isHttps(c: any): boolean {
-  const proto = c.req.header("x-forwarded-proto");
-  if (proto) return proto.split(",")[0].trim() === "https";
-  try {
-    return new URL(c.req.url).protocol === "https:";
-  } catch {
-    return false;
-  }
+  return isHttpsRequest(c.req.header("x-forwarded-proto"), c.req.url);
 }
 
 // Auth middleware
@@ -344,22 +327,11 @@ const app = new Hono()
   .get("/images/*", async (c) => {
     const key = c.req.path.replace("/api/images/", "");
     const decodedKey = decodeURIComponent(key);
-    const ALLOWED_PREFIXES = ["photos/", "hero/", "profile/", "fonts/"];
-    if (!ALLOWED_PREFIXES.some((p) => decodedKey.startsWith(p))) {
+    if (!isAllowedImageKey(decodedKey)) {
       return c.json({ error: "Not found" }, 404);
     }
-    const wParam = c.req.query("w");
-    const qParam = c.req.query("q");
-    // Clamp, treating malformed numbers as "not provided" rather than passing NaN
-    // through to sharp (NaN quality would throw and 404 an otherwise-valid image).
-    const wNum = parseInt(wParam ?? "", 10);
-    const qNum = parseInt(qParam ?? "", 10);
-    const width = Number.isFinite(wNum)
-      ? Math.min(Math.max(wNum, 50), 3200)
-      : null;
-    const quality = Number.isFinite(qNum)
-      ? Math.min(Math.max(qNum, 10), 100)
-      : 90;
+    const width = clampImageWidth(c.req.query("w"));
+    const quality = clampImageQuality(c.req.query("q"));
 
     // Optional AVIF/WebP content negotiation. Gated behind an env flag and OFF by
     // default: serving-layer changes that depend on the Runable edge (here, a new

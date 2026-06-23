@@ -193,6 +193,7 @@ function HeroCarousel({
               alt={p.title || "Photograph"}
               className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`}
               style={{ zIndex: i === current ? 1 : 0 }}
+              decoding={i === 0 ? "sync" : "async"}
               fetchPriority={i === 0 ? "high" : "low"}
               loading={i === 0 ? "eager" : "lazy"}
               onError={(e) => {
@@ -297,6 +298,7 @@ function HeroSingle({
           srcSet={`${photo.url}?w=900&q=88 900w, ${photo.url}?w=1400&q=88 1400w, ${photo.url}?w=1800&q=88 1800w, ${photo.url}?w=2400&q=88 2400w`}
           sizes="100vw"
           alt={photo.title || "Photograph"}
+          decoding="sync"
           fetchPriority="high"
           onError={(e) => {
             e.currentTarget.style.visibility = "hidden";
@@ -358,6 +360,7 @@ function HomeQuietGrid({
               srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w, ${heroPhoto.url}?w=2400&q=88 2400w`}
               sizes="100vw"
               alt={heroPhoto.title || "Photograph"}
+              decoding="sync"
               fetchPriority="high"
               draggable={false}
               onError={(e) => {
@@ -435,6 +438,7 @@ function HomeQuietGrid({
                   sizes="(min-width: 768px) 33vw, 50vw"
                   alt=""
                   className="w-full h-full object-cover"
+                  decoding="async"
                   loading={idx < 9 ? "eager" : "lazy"}
                   draggable={false}
                 />
@@ -513,6 +517,7 @@ function HomeEditorial({
         sizes="(min-width: 768px) 40vw, 100vw"
         alt=""
         className="w-full h-full object-cover"
+        decoding="async"
         loading={idx < 6 ? "eager" : "lazy"}
         draggable={false}
       />
@@ -562,6 +567,7 @@ function HomeEditorial({
               srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w`}
               sizes="(min-width: 768px) 55vw, 100vw"
               alt={heroPhoto.title || "Photograph"}
+              decoding="sync"
               fetchPriority="high"
               draggable={false}
               onError={(e) => {
@@ -713,6 +719,7 @@ function HomeImmersive({
             srcSet={`${heroPhoto.url}?w=900&q=88 900w, ${heroPhoto.url}?w=1400&q=88 1400w, ${heroPhoto.url}?w=1800&q=88 1800w, ${heroPhoto.url}?w=2400&q=88 2400w`}
             sizes="100vw"
             alt={heroPhoto.title || "Photograph"}
+            decoding="sync"
             fetchPriority="high"
             draggable={false}
             onError={(e) => {
@@ -787,6 +794,7 @@ function HomeImmersive({
                       sizes="(min-width: 768px) 45vw, 100vw"
                       alt=""
                       className="w-full"
+                      decoding="async"
                       loading={idx < 4 ? "eager" : "lazy"}
                       draggable={false}
                     />

@@ -219,8 +219,30 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       });
     }
 
+    // Service Worker must not be cached (browsers require fresh checks)
+    if (url.pathname === "/sw.js") {
+      const file = Bun.file(`${distDir}/sw.js`);
+      if (await file.exists()) return new Response(file, {
+        headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-cache, no-store, must-revalidate" },
+      });
+    }
+    // Web App Manifest
+    if (url.pathname === "/manifest.json") {
+      const file = Bun.file(`${distDir}/manifest.json`);
+      if (await file.exists()) return new Response(file, {
+        headers: { "Content-Type": "application/manifest+json; charset=utf-8", "Cache-Control": "public, max-age=3600" },
+      });
+    }
+    // Offline fallback
+    if (url.pathname === "/offline.html") {
+      const file = Bun.file(`${distDir}/offline.html`);
+      if (await file.exists()) return new Response(file, {
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=3600" },
+      });
+    }
+
     // Serve favicon (no-cache to bust CDN)
-    if (url.pathname.startsWith("/favicon") || url.pathname === "/apple-touch-icon.png") {
+    if (url.pathname.startsWith("/favicon") || url.pathname === "/apple-touch-icon.png" || url.pathname.startsWith("/icon-")) {
       const file = Bun.file(`${distDir}${url.pathname}`);
       if (await file.exists()) return new Response(file, {
         headers: {

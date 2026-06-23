@@ -196,6 +196,24 @@ describe("clampImageWidth", () => {
   });
 });
 
+describe("clampImageWidth (edge cases)", () => {
+  test("rejects Infinity string (parseInt returns NaN)", () => {
+    expect(clampImageWidth("Infinity")).toBeNull();
+  });
+
+  test("rejects -Infinity string", () => {
+    expect(clampImageWidth("-Infinity")).toBeNull();
+  });
+
+  test("parses float as integer (parseInt truncates)", () => {
+    expect(clampImageWidth("800.7")).toBe(800);
+  });
+
+  test("rejects leading whitespace (parseInt quirk)", () => {
+    expect(clampImageWidth("  800")).toBe(800);
+  });
+});
+
 describe("clampImageQuality", () => {
   test("defaults to 90 for missing/undefined param", () => {
     expect(clampImageQuality(undefined)).toBe(90);

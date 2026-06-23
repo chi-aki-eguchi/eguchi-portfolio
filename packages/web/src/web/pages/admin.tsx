@@ -7389,39 +7389,7 @@ function SettingsTab({
                 label="ペアリング"
                 hint="和文と欧文の組み合わせをワンクリックで一括設定。下の個別選択でいつでも上書きできます"
               >
-                <div className="grid grid-cols-2 gap-1.5">
-                  {FONT_PAIRINGS.map(({ name, ja, en, desc }) => {
-                    const active =
-                      (current["fontJa"] || "") === ja &&
-                      (current["fontEn"] || "") === en;
-                    return (
-                      <button
-                        key={name}
-                        onClick={() => {
-                          set("fontJa", ja);
-                          set("fontEn", en);
-                        }}
-                        title={desc}
-                        className={`text-left px-2.5 py-2 rounded-sm transition-colors ${
-                          active
-                            ? "bg-[#888] text-[#1e1e1e]"
-                            : "bg-[#333] text-[#aaa] border border-[#444] hover:bg-[#3a3a3a]"
-                        }`}
-                      >
-                        <span
-                          className={`block text-[11px] ${active ? "font-medium" : ""}`}
-                        >
-                          {name}
-                        </span>
-                        <span
-                          className={`block text-[9px] mt-0.5 ${active ? "text-[#1e1e1e]/70" : "text-[#666]"}`}
-                        >
-                          {ja} × {en}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <PairingPicker current={current} set={set} />
               </AdminField>
               <FontPicker
                 label="日本語フォント"
@@ -8338,6 +8306,59 @@ function fontFallbackStr(category: "serif" | "sans-serif"): string {
   return category === "serif"
     ? "'Hiragino Mincho ProN', serif"
     : "'Hiragino Sans', sans-serif";
+}
+
+function PairingPicker({ current, set }: { current: Record<string, string>; set: (key: string, val: string) => void }) {
+  useEffect(() => {
+    const families = new Set<string>();
+    for (const { ja, en } of FONT_PAIRINGS) {
+      const jaDef = GOOGLE_FONTS_JA[ja];
+      const enDef = GOOGLE_FONTS_EN[en];
+      if (jaDef) families.add(jaDef.param);
+      if (enDef) families.add(enDef.param);
+    }
+    const url = `https://fonts.googleapis.com/css2?${[...families].map(f => `family=${f}`).join("&")}&display=swap`;
+    const id = "pairing-preview-fonts";
+    const existing = document.getElementById(id);
+    if (existing) {
+      if (existing.getAttribute("href") !== url) existing.setAttribute("href", url);
+      return;
+    }
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = url;
+    document.head.appendChild(link);
+  }, []);
+
+  return (
+    <div className="grid grid-cols-1 gap-1.5">
+      {FONT_PAIRINGS.map(({ name, ja, en, desc }) => {
+        const active = (current["fontJa"] || "") === ja && (current["fontEn"] || "") === en;
+        const jaDef = GOOGLE_FONTS_JA[ja];
+        const enDef = GOOGLE_FONTS_EN[en];
+        const jaFamily = jaDef ? `'${ja}', ${fontFallbackStr(jaDef.category)}` : undefined;
+        const enFamily = enDef ? `'${en}', ${fontFallbackStr(enDef.category)}` : undefined;
+        return (
+          <button
+            key={name}
+            onClick={() => { set("fontJa", ja); set("fontEn", en); }}
+            title={desc}
+            className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "bg-[#888] text-[#1e1e1e]" : "bg-[#333] text-[#aaa] border border-[#444] hover:bg-[#3a3a3a]"}`}
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <span className={`text-[11px] ${active ? "font-medium" : ""}`}>{name}</span>
+              <span className={`text-[9px] shrink-0 ${active ? "text-[#1e1e1e]/60" : "text-[#555]"}`}>{ja} × {en}</span>
+            </div>
+            <div className={`mt-1.5 flex gap-3 items-baseline ${active ? "text-[#1e1e1e]/80" : "text-[#999]"}`}>
+              {jaFamily && <span style={{ fontFamily: jaFamily, fontSize: 14, lineHeight: 1.3 }}>写真の記憶</span>}
+              {enFamily && <span style={{ fontFamily: enFamily, fontSize: 14, lineHeight: 1.3, letterSpacing: "0.02em" }}>Photography</span>}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function FontPicker({

@@ -21,12 +21,18 @@ export const GOOGLE_FONTS_JA: Record<string, FontDef> = {
 
 export const GOOGLE_FONTS_EN: Record<string, FontDef> = {
   "Cormorant Garamond": { param: "Cormorant+Garamond:wght@300;400;500",       category: "serif",      weights: [300, 400, 500] },
+  "Cormorant Infant":   { param: "Cormorant+Infant:wght@300;400;500",         category: "serif",      weights: [300, 400, 500] },
   "EB Garamond":        { param: "EB+Garamond:wght@400;500;600",              category: "serif",      weights: [400, 500, 600] },
   "Playfair Display":   { param: "Playfair+Display:wght@400;500;600",         category: "serif",      weights: [400, 500, 600] },
+  "Libre Baskerville":  { param: "Libre+Baskerville:wght@400;700",            category: "serif",      weights: [400, 700] },
   "Inter":              { param: "Inter:wght@300;400;500",                    category: "sans-serif", weights: [300, 400, 500] },
   "DM Sans":            { param: "DM+Sans:wght@300;400;500",                  category: "sans-serif", weights: [300, 400, 500] },
+  "Outfit":             { param: "Outfit:wght@300;400;500",                   category: "sans-serif", weights: [300, 400, 500] },
+  "Space Grotesk":      { param: "Space+Grotesk:wght@300;400;500",            category: "sans-serif", weights: [300, 400, 500] },
   "Lora":               { param: "Lora:wght@400;500;600",                     category: "serif",      weights: [400, 500, 600] },
-  "Libre Baskerville":  { param: "Libre+Baskerville:wght@400;700",            category: "serif",      weights: [400, 700] },
+  "Italiana":           { param: "Italiana",                                  category: "serif",      weights: [400] },
+  "Josefin Sans":       { param: "Josefin+Sans:wght@300;400;500",             category: "sans-serif", weights: [300, 400, 500] },
+  "Tenor Sans":         { param: "Tenor+Sans",                                category: "sans-serif", weights: [400] },
 };
 
 // A6: one-click 和英 pairing presets (admin Fonts section). Names must match
@@ -37,6 +43,10 @@ export const FONT_PAIRINGS: { name: string; ja: string; en: string; desc: string
   { name: "Modern Serif",   ja: "Noto Serif JP",   en: "Playfair Display",   desc: "現代的な明朝 × コントラストの強いセリフ" },
   { name: "Quiet Sans",     ja: "Noto Sans JP",    en: "Inter",              desc: "静かなゴシック × ニュートラルなサンセリフ" },
   { name: "Editorial",      ja: "Zen Old Mincho",  en: "Libre Baskerville",  desc: "オールド明朝 × 活版風セリフ（雑誌的）" },
+  { name: "Soft Modern",    ja: "Zen Kaku Gothic New", en: "DM Sans",        desc: "やわらかゴシック × ジオメトリックサンセリフ" },
+  { name: "Fashion",        ja: "Shippori Mincho", en: "Josefin Sans",       desc: "明朝 × 細身のサンセリフ（ファッション誌風）" },
+  { name: "Classic Elegant", ja: "Noto Serif JP",  en: "Cormorant Infant",   desc: "明朝 × 繊細なセリフ（柔らかな品格）" },
+  { name: "Geometric",      ja: "Zen Kaku Gothic New", en: "Space Grotesk",  desc: "ゴシック × テックサンセリフ（構築的）" },
 ];
 
 function fontFallback(category: "serif" | "sans-serif"): string {

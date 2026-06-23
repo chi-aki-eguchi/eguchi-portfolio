@@ -29,7 +29,7 @@ export function clientIpFrom(
   xRealIp: string | undefined,
 ): string {
   return (
-    xForwardedFor?.split(",").at(-1)?.trim() || xRealIp || "unknown"
+    (() => { const parts = xForwardedFor?.split(","); return parts?.[parts.length - 1]?.trim(); })() || xRealIp || "unknown"
   );
 }
 

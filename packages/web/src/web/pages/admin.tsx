@@ -1899,7 +1899,7 @@ function GalleryTab({
               value={librarySort}
               onChange={(e) => setLibrarySort(e.target.value)}
               aria-label="表示の並び替え"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
             >
               <option value="manual">手動（保存されている順）</option>
               <option value="createdAt-desc">アップロード日（新しい順）</option>
@@ -1950,7 +1950,7 @@ function GalleryTab({
             <select
               value={filterCat}
               onChange={(e) => setFilterCat(e.target.value)}
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
             >
               <option value="all">All ({allPhotos.length})</option>
               {categories.map((c) => (
@@ -1970,7 +1970,7 @@ function GalleryTab({
               value={filterSeries}
               onChange={(e) => setFilterSeries(e.target.value)}
               aria-label="シリーズで絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
             >
               <option value="all">All series</option>
               {seriesList.map((s) => (
@@ -1989,7 +1989,7 @@ function GalleryTab({
               value={filterSize}
               onChange={(e) => setFilterSize(e.target.value)}
               aria-label="表示サイズで絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
             >
               <option value="all">All sizes</option>
               {(["S", "M", "L"] as const).map((sz) => (
@@ -2020,7 +2020,7 @@ function GalleryTab({
               value={filterRecent}
               onChange={(e) => setFilterRecent(e.target.value)}
               aria-label="アップロード時期で絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
             >
               <option value="all">All time</option>
               <option value="7">直近7日</option>

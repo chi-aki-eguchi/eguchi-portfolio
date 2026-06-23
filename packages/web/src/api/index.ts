@@ -79,6 +79,8 @@ const ORIG_TTL_MS = 60_000;
 const origCache = new Map<string, { buf: Buffer; type: string; ts: number }>();
 let origBytes = 0;
 
+const origInFlight = new Map<string, Promise<{ buf: Buffer; type: string }>>();
+
 async function getOriginal(
   key: string,
 ): Promise<{ buf: Buffer; type: string }> {
@@ -89,22 +91,34 @@ async function getOriginal(
     origCache.set(key, cached); // LRU bump
     return cached;
   }
-  const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
-  const buf = Buffer.from(await obj.Body!.transformToByteArray());
-  const entry = { buf, type: obj.ContentType ?? "image/jpeg", ts: now };
-  const prev = origCache.get(key);
-  if (prev) {
-    origBytes -= prev.buf.length;
-    origCache.delete(key);
+  const pending = origInFlight.get(key);
+  if (pending) return pending;
+  const p = (async () => {
+    const obj = await s3.send(
+      new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+    );
+    const buf = Buffer.from(await obj.Body!.transformToByteArray());
+    const entry = { buf, type: obj.ContentType ?? "image/jpeg", ts: now };
+    const prev = origCache.get(key);
+    if (prev) {
+      origBytes -= prev.buf.length;
+      origCache.delete(key);
+    }
+    origCache.set(key, entry);
+    origBytes += buf.length;
+    while (origBytes > ORIG_CACHE_BYTES && origCache.size > 1) {
+      const oldest = origCache.keys().next().value as string;
+      origBytes -= origCache.get(oldest)!.buf.length;
+      origCache.delete(oldest);
+    }
+    return entry;
+  })();
+  origInFlight.set(key, p);
+  try {
+    return await p;
+  } finally {
+    origInFlight.delete(key);
   }
-  origCache.set(key, entry);
-  origBytes += buf.length;
-  while (origBytes > ORIG_CACHE_BYTES && origCache.size > 1) {
-    const oldest = origCache.keys().next().value as string;
-    origBytes -= origCache.get(oldest)!.buf.length;
-    origCache.delete(oldest);
-  }
-  return entry;
 }
 
 // S3-compatible storage client (Cloudflare R2 in current prod; Railway Storage for template experiments).
@@ -946,9 +960,19 @@ const app = new Hono()
     const update: Record<string, unknown> = {};
     if (body.title !== undefined) update.title = body.title;
     if (body.meta !== undefined) update.meta = body.meta;
-    if (body.camera !== undefined) update.camera = body.camera;
-    if (body.lens !== undefined) update.lens = body.lens;
-    if (body.filmType !== undefined) update.filmType = body.filmType;
+    if (body.camera !== undefined)
+      update.camera =
+        typeof body.camera === "string" && body.camera.trim()
+          ? body.camera
+          : null;
+    if (body.lens !== undefined)
+      update.lens =
+        typeof body.lens === "string" && body.lens.trim() ? body.lens : null;
+    if (body.filmType !== undefined)
+      update.filmType =
+        typeof body.filmType === "string" && body.filmType.trim()
+          ? body.filmType
+          : null;
     // U2: 撮影日 — "" / null clears it back to unset.
     if (body.shotAt !== undefined)
       update.shotAt =
@@ -1061,6 +1085,12 @@ const app = new Hono()
     await withRetry(() =>
       db.delete(schema.heroPhotos).where(eq(schema.heroPhotos.photoId, id)),
     );
+    await withRetry(() =>
+      db
+        .update(schema.series)
+        .set({ coverPhotoId: null })
+        .where(eq(schema.series.coverPhotoId, id)),
+    );
     return c.json({ ok: true }, 200);
   })
 
@@ -1105,6 +1135,12 @@ const app = new Hono()
       );
       await withRetry(() =>
         db.delete(schema.heroPhotos).where(eq(schema.heroPhotos.photoId, p.id)),
+      );
+      await withRetry(() =>
+        db
+          .update(schema.series)
+          .set({ coverPhotoId: null })
+          .where(eq(schema.series.coverPhotoId, p.id)),
       );
     }
 
@@ -1184,7 +1220,9 @@ const app = new Hono()
         await withRetry(() =>
           db
             .update(schema.photos)
-            .set({ camera: value ?? "" })
+            .set({
+              camera: typeof value === "string" && value.trim() ? value : null,
+            })
             .where(inArray(schema.photos.id, cleanIds)),
         );
         break;
@@ -1192,7 +1230,9 @@ const app = new Hono()
         await withRetry(() =>
           db
             .update(schema.photos)
-            .set({ lens: value ?? "" })
+            .set({
+              lens: typeof value === "string" && value.trim() ? value : null,
+            })
             .where(inArray(schema.photos.id, cleanIds)),
         );
         break;
@@ -1200,7 +1240,10 @@ const app = new Hono()
         await withRetry(() =>
           db
             .update(schema.photos)
-            .set({ filmType: value ?? "" })
+            .set({
+              filmType:
+                typeof value === "string" && value.trim() ? value : null,
+            })
             .where(inArray(schema.photos.id, cleanIds)),
         );
         break;

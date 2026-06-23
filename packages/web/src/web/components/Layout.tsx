@@ -97,9 +97,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             ? "bg-[rgba(var(--background-rgb),0.82)] backdrop-blur-[14px] shadow-[0_1px_0_rgba(0,0,0,0.04)]"
             : "bg-[var(--background)]"
         }`}
-        style={{ WebkitBackdropFilter: scrolled ? "blur(14px)" : "none" }}
+        style={{ WebkitBackdropFilter: scrolled ? "blur(14px)" : "none", paddingTop: "var(--sai-top)" }}
       >
-        <nav className="max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between">
+        <nav className="max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between" style={{ paddingLeft: "max(var(--sai-left), 0px)", paddingRight: "max(var(--sai-right), 0px)" }}>
           {/* Logo */}
           <Link
             to="/"
@@ -190,9 +190,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="pt-14 outline-none">{children}</main>
+      <main id="main-content" tabIndex={-1} className="outline-none" style={{ paddingTop: "calc(3.5rem + var(--sai-top))" }}>{children}</main>
 
-      <footer className="pt-[calc(3rem*var(--spacing-footer-top,1))] pb-8 footer-reveal" ref={footerRef}>
+      <footer className="pt-[calc(3rem*var(--spacing-footer-top,1))] footer-reveal" ref={footerRef} style={{ paddingBottom: "calc(2rem + var(--sai-bottom))" }}>
         <div className="max-w-5xl mx-auto px-6 md:px-12 flex flex-col items-center gap-4">
           {/* SNS Links */}
           {(data?.profileInstagram || data?.profileTwitter || data?.profileNote) && (

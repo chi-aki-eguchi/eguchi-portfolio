@@ -435,7 +435,7 @@ export function Lightbox({
       <div
         aria-live="polite"
         aria-atomic="true"
-        style={{ ...chromeVis, position: "absolute", top: 18, left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-en)", fontSize: 12, letterSpacing: "0.12em", color: "rgba(255,255,255,0.45)", zIndex: 10 }}
+        style={{ ...chromeVis, position: "absolute", top: "calc(18px + var(--sai-top))", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-en)", fontSize: 12, letterSpacing: "0.12em", color: "rgba(255,255,255,0.45)", zIndex: 10 }}
       >
         {index + 1} / {photos.length}
         {/* Title for SR context; visually the caption block below shows it */}
@@ -447,7 +447,7 @@ export function Lightbox({
         onClick={(e) => { e.stopPropagation(); toggleZoom(); }}
         aria-label={isZoomed ? "ズームを解除" : "拡大して細部を見る"}
         tabIndex={chromeTab}
-        style={{ ...chromeVis, position: "absolute", top: 12, left: 16, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 10, lineHeight: 0, zIndex: 10 }}
+        style={{ ...chromeVis, position: "absolute", top: "calc(12px + var(--sai-top))", left: "calc(16px + var(--sai-left))", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 10, lineHeight: 0, zIndex: 10 }}
         onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
         onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
       >
@@ -464,14 +464,14 @@ export function Lightbox({
         onClick={onClose}
         aria-label="閉じる"
         tabIndex={chromeTab}
-        style={{ ...chromeVis, position: "absolute", top: 10, right: 12, width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)", borderRadius: "50%", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 26, color: "rgba(255,255,255,0.75)", lineHeight: 1, zIndex: 10 }}
+        style={{ ...chromeVis, position: "absolute", top: "calc(10px + var(--sai-top))", right: "calc(12px + var(--sai-right))", width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)", borderRadius: "50%", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 26, color: "rgba(255,255,255,0.75)", lineHeight: 1, zIndex: 10 }}
         onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,1)")}
         onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
       >✕</button>
       {/* Prev / Next */}
       {photos.length > 1 && (<>
-        <button data-lb-chrome onClick={(e) => { e.stopPropagation(); onPrev(); }} aria-label="前の写真" tabIndex={chromeTab} style={{ ...chromeVis, position: "absolute", left: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 38, color: "rgba(255,255,255,0.45)", padding: "22px 16px", lineHeight: 1, zIndex: 10 }}>‹</button>
-        <button data-lb-chrome onClick={(e) => { e.stopPropagation(); onNext(); }} aria-label="次の写真" tabIndex={chromeTab} style={{ ...chromeVis, position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 38, color: "rgba(255,255,255,0.45)", padding: "22px 16px", lineHeight: 1, zIndex: 10 }}>›</button>
+        <button data-lb-chrome onClick={(e) => { e.stopPropagation(); onPrev(); }} aria-label="前の写真" tabIndex={chromeTab} style={{ ...chromeVis, position: "absolute", left: "calc(6px + var(--sai-left))", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 38, color: "rgba(255,255,255,0.45)", padding: "22px 16px", lineHeight: 1, zIndex: 10 }}>‹</button>
+        <button data-lb-chrome onClick={(e) => { e.stopPropagation(); onNext(); }} aria-label="次の写真" tabIndex={chromeTab} style={{ ...chromeVis, position: "absolute", right: "calc(6px + var(--sai-right))", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 38, color: "rgba(255,255,255,0.45)", padding: "22px 16px", lineHeight: 1, zIndex: 10 }}>›</button>
       </>)}
 
       {/* Photo. One fitted (object-fit: contain) box for every zoom level — the
@@ -541,7 +541,7 @@ export function Lightbox({
 
       {/* Caption — overlaid at the bottom so it never shrinks the photo; part of chrome. */}
       {(photo.title || photo.camera || photo.lens || photo.filmType) && (
-        <div style={{ ...chromeVis, position: "absolute", bottom: 18, left: "50%", transform: "translateX(-50%)", maxWidth: "90vw", textAlign: "center", zIndex: 10, textShadow: "0 1px 10px rgba(0,0,0,0.6)" }}>
+        <div style={{ ...chromeVis, position: "absolute", bottom: "calc(18px + var(--sai-bottom))", left: "50%", transform: "translateX(-50%)", maxWidth: "90vw", textAlign: "center", zIndex: 10, textShadow: "0 1px 10px rgba(0,0,0,0.6)" }}>
           {photo.title && (
             <p style={{ fontFamily: "var(--font-en)", fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: "0.04em" }}>{photo.title}</p>
           )}

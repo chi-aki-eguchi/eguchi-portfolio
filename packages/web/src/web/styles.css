@@ -49,6 +49,14 @@
   box-sizing: border-box;
 }
 
+/* ─── Safe area for iPhone notch / Dynamic Island / in-app browsers ─── */
+:root {
+  --sai-top: env(safe-area-inset-top, 0px);
+  --sai-right: env(safe-area-inset-right, 0px);
+  --sai-bottom: env(safe-area-inset-bottom, 0px);
+  --sai-left: env(safe-area-inset-left, 0px);
+}
+
 html {
   scroll-behavior: auto;
 }
@@ -266,10 +274,10 @@ body {
   }
   .nav-pos-bottom > main {
     padding-top: 1.5rem;
-    padding-bottom: 5rem;
+    padding-bottom: calc(5rem + var(--sai-bottom));
   }
   .nav-pos-bottom > footer {
-    padding-bottom: 5rem;
+    padding-bottom: calc(5rem + var(--sai-bottom));
   }
 
   /* Phase 3: sidebar active indicator — horizontal line + outdent for active item */

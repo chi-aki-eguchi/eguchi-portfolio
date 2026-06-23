@@ -1,12 +1,21 @@
-export const DEFAULT_SITE_URL = (process.env.DEFAULT_SITE_URL || "https://example.com").replace(/\/+$/, "");
+export const DEFAULT_SITE_URL = (
+  process.env.DEFAULT_SITE_URL || "https://example.com"
+).replace(/\/+$/, "");
 
 export const SITE_DEFAULTS = {
   siteName: process.env.DEFAULT_SITE_NAME ?? "Photographer Name",
   siteNameEn: process.env.DEFAULT_SITE_NAME_EN ?? "Photographer Name",
-  siteDescription: process.env.DEFAULT_SITE_DESCRIPTION ?? "Photography portfolio.",
-  profileName: process.env.DEFAULT_PROFILE_NAME ?? process.env.DEFAULT_SITE_NAME ?? "Photographer Name",
+  siteDescription:
+    process.env.DEFAULT_SITE_DESCRIPTION ?? "Photography portfolio.",
+  profileName:
+    process.env.DEFAULT_PROFILE_NAME ??
+    process.env.DEFAULT_SITE_NAME ??
+    "Photographer Name",
   profileNameKata: process.env.DEFAULT_PROFILE_NAME_KATA ?? "",
-  profileNameEn: process.env.DEFAULT_PROFILE_NAME_EN ?? process.env.DEFAULT_SITE_NAME_EN ?? "Photographer Name",
+  profileNameEn:
+    process.env.DEFAULT_PROFILE_NAME_EN ??
+    process.env.DEFAULT_SITE_NAME_EN ??
+    "Photographer Name",
   profileBio: process.env.DEFAULT_PROFILE_BIO ?? "Photographer.",
 };
 
@@ -15,13 +24,19 @@ export function displayNameFrom(settings: Record<string, string>): string {
 }
 
 export function displayNameEnFrom(settings: Record<string, string>): string {
-  return settings.siteNameEn || settings.profileNameEn || displayNameFrom(settings) || SITE_DEFAULTS.siteNameEn;
+  return (
+    settings.siteNameEn ||
+    settings.profileNameEn ||
+    displayNameFrom(settings) ||
+    SITE_DEFAULTS.siteNameEn
+  );
 }
 
 export function siteDescriptionFrom(settings: Record<string, string>): string {
   if (settings.siteDescription) return settings.siteDescription;
   const name = displayNameFrom(settings);
-  if (name && name !== SITE_DEFAULTS.siteName) return `${name}の写真ポートフォリオ。`;
+  if (name && name !== SITE_DEFAULTS.siteName)
+    return `${name}の写真ポートフォリオ。`;
   return SITE_DEFAULTS.siteDescription;
 }
 
@@ -48,9 +63,16 @@ function configuredOrigins(): Set<string> {
     try {
       const url = new URL(origin);
       if (url.hostname.startsWith("www.")) {
-        origins.add(`${url.protocol}//${url.hostname.slice(4)}${url.port ? `:${url.port}` : ""}`);
-      } else if (url.hostname.includes(".") && !/^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)) {
-        origins.add(`${url.protocol}//www.${url.hostname}${url.port ? `:${url.port}` : ""}`);
+        origins.add(
+          `${url.protocol}//${url.hostname.slice(4)}${url.port ? `:${url.port}` : ""}`,
+        );
+      } else if (
+        url.hostname.includes(".") &&
+        !/^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)
+      ) {
+        origins.add(
+          `${url.protocol}//www.${url.hostname}${url.port ? `:${url.port}` : ""}`,
+        );
       }
     } catch {
       // Non-URL values are kept verbatim above.
@@ -67,13 +89,6 @@ export function isAllowedOrigin(origin: string | undefined): boolean {
   return configuredOrigins().has(originFrom(origin) ?? "");
 }
 
-export function gaMeasurementIdForSite(siteUrl: string): string {
-  if (process.env.GA_MEASUREMENT_ID !== undefined) return process.env.GA_MEASUREMENT_ID.trim();
-  try {
-    const host = new URL(siteUrl).hostname;
-    if (host === "akieguchi.com" || host === "www.akieguchi.com") return "G-NKECCDLXYD";
-  } catch {
-    // Invalid site URLs simply disable analytics unless explicitly configured.
-  }
-  return "";
+export function gaMeasurementIdForSite(_siteUrl: string): string {
+  return (process.env.GA_MEASUREMENT_ID ?? "").trim();
 }

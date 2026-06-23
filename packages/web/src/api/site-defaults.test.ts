@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { displayNameEnFrom, gaMeasurementIdForSite, isAllowedOrigin, siteDescriptionFrom } from "./site-defaults";
+import {
+  displayNameEnFrom,
+  gaMeasurementIdForSite,
+  isAllowedOrigin,
+  siteDescriptionFrom,
+} from "./site-defaults";
 
 const envSnapshot = {
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
@@ -9,13 +14,16 @@ const envSnapshot = {
 };
 
 afterEach(() => {
-  if (envSnapshot.ALLOWED_ORIGINS === undefined) delete process.env.ALLOWED_ORIGINS;
+  if (envSnapshot.ALLOWED_ORIGINS === undefined)
+    delete process.env.ALLOWED_ORIGINS;
   else process.env.ALLOWED_ORIGINS = envSnapshot.ALLOWED_ORIGINS;
 
-  if (envSnapshot.DEFAULT_SITE_URL === undefined) delete process.env.DEFAULT_SITE_URL;
+  if (envSnapshot.DEFAULT_SITE_URL === undefined)
+    delete process.env.DEFAULT_SITE_URL;
   else process.env.DEFAULT_SITE_URL = envSnapshot.DEFAULT_SITE_URL;
 
-  if (envSnapshot.GA_MEASUREMENT_ID === undefined) delete process.env.GA_MEASUREMENT_ID;
+  if (envSnapshot.GA_MEASUREMENT_ID === undefined)
+    delete process.env.GA_MEASUREMENT_ID;
   else process.env.GA_MEASUREMENT_ID = envSnapshot.GA_MEASUREMENT_ID;
 
   if (envSnapshot.SITE_URL === undefined) delete process.env.SITE_URL;
@@ -40,7 +48,8 @@ describe("isAllowedOrigin", () => {
   });
 
   test("allows configured extra origins and rejects arbitrary origins", () => {
-    process.env.ALLOWED_ORIGINS = "https://client.example, https://preview.example/";
+    process.env.ALLOWED_ORIGINS =
+      "https://client.example, https://preview.example/";
     expect(isAllowedOrigin("https://client.example")).toBe(true);
     expect(isAllowedOrigin("https://preview.example")).toBe(true);
     expect(isAllowedOrigin("https://attacker.example")).toBe(false);
@@ -50,14 +59,18 @@ describe("isAllowedOrigin", () => {
 describe("derived site defaults", () => {
   test("uses an existing site name instead of leaking the generic template label", () => {
     expect(displayNameEnFrom({ siteName: "江口 秋" })).toBe("江口 秋");
-    expect(siteDescriptionFrom({ siteName: "江口 秋" })).toBe("江口 秋の写真ポートフォリオ。");
+    expect(siteDescriptionFrom({ siteName: "江口 秋" })).toBe(
+      "江口 秋の写真ポートフォリオ。",
+    );
   });
 });
 
 describe("gaMeasurementIdForSite", () => {
   test("uses the configured GA id when present", () => {
     process.env.GA_MEASUREMENT_ID = "G-EXAMPLE123";
-    expect(gaMeasurementIdForSite("https://portfolio.example")).toBe("G-EXAMPLE123");
+    expect(gaMeasurementIdForSite("https://portfolio.example")).toBe(
+      "G-EXAMPLE123",
+    );
   });
 
   test("an explicit empty GA env disables analytics for template installs", () => {
@@ -66,9 +79,9 @@ describe("gaMeasurementIdForSite", () => {
     expect(gaMeasurementIdForSite("https://akieguchi.com")).toBe("");
   });
 
-  test("keeps the legacy analytics fallback only for akieguchi.com", () => {
+  test("returns empty when GA_MEASUREMENT_ID is unset", () => {
     delete process.env.GA_MEASUREMENT_ID;
-    expect(gaMeasurementIdForSite("https://akieguchi.com")).toBe("G-NKECCDLXYD");
+    expect(gaMeasurementIdForSite("https://akieguchi.com")).toBe("");
     expect(gaMeasurementIdForSite("https://portfolio.example")).toBe("");
   });
 });

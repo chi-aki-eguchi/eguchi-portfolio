@@ -6104,6 +6104,7 @@ function SettingsTab({
   }, [previewPayload]);
   useEffect(() => {
     const onReady = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
       if (e.data?.type !== "preview-ready") return;
       iframeRef.current?.contentWindow?.postMessage(
         { type: "preview-settings", settings: previewPayloadRef.current },

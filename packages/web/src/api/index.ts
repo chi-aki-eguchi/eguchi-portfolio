@@ -171,6 +171,15 @@ const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 // Upload size guards (prevent memory blow-ups from oversized inputs).
 const IMAGE_MAX_BYTES = 60 * 1024 * 1024; // 60MB raw input
 const FONT_MAX_BYTES = 2 * 1024 * 1024; // 2MB
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "image/tiff",
+  "image/avif",
+]);
 
 // ── note RSS (J1) — server-side fetch + in-memory cache ─
 // Fetch note.com's per-user RSS, parse to a small post list, and cache so we
@@ -275,10 +284,9 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_FAILS = 10;
 const loginFails = new Map<string, { count: number; first: number }>();
 function clientIp(c: any): string {
+  const xff = c.req.header("x-forwarded-for");
   return (
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
-    c.req.header("x-real-ip") ||
-    "unknown"
+    xff?.split(",").at(-1)?.trim() || c.req.header("x-real-ip") || "unknown"
   );
 }
 
@@ -336,6 +344,10 @@ const app = new Hono()
   .get("/images/*", async (c) => {
     const key = c.req.path.replace("/api/images/", "");
     const decodedKey = decodeURIComponent(key);
+    const ALLOWED_PREFIXES = ["photos/", "hero/", "profile/", "fonts/"];
+    if (!ALLOWED_PREFIXES.some((p) => decodedKey.startsWith(p))) {
+      return c.json({ error: "Not found" }, 404);
+    }
     const wParam = c.req.query("w");
     const qParam = c.req.query("q");
     // Clamp, treating malformed numbers as "not provided" rather than passing NaN
@@ -758,6 +770,8 @@ const app = new Hono()
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return c.json({ error: "No file" }, 400);
+    if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type))
+      return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
       return c.json({ error: "画像は60MBまでです。" }, 413);
 
@@ -843,6 +857,8 @@ const app = new Hono()
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return c.json({ error: "No file" }, 400);
+    if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type))
+      return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
       return c.json({ error: "画像は60MBまでです。" }, 413);
 
@@ -867,6 +883,8 @@ const app = new Hono()
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return c.json({ error: "No file" }, 400);
+    if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type))
+      return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
       return c.json({ error: "画像は60MBまでです。" }, 413);
 

@@ -227,7 +227,7 @@ export default function ProfilePage() {
             {notePosts.map((post) => (
               <a
                 key={post.link}
-                href={post.link}
+                href={safeHref(post.link)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group block"

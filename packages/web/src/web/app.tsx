@@ -131,13 +131,15 @@ function App() {
         <Route>
           <Layout>
             <TitledRoute title="Not Found">
-              <section className="max-w-3xl mx-auto px-6 py-32 md:py-48 text-center min-h-[50vh]">
-                <p className="font-en text-5xl tracking-[0.1em] text-[rgba(var(--foreground-rgb),0.18)]">404</p>
-                <p className="mt-6 text-[rgba(var(--foreground-rgb),0.45)]" style={{ fontSize: "var(--body-size, 0.9rem)" }}>
-                  ページが見つかりませんでした。
+              <section className="max-w-3xl mx-auto px-6 py-32 md:py-48 text-center min-h-[60vh] flex flex-col items-center justify-center">
+                <p className="font-en text-[7rem] md:text-[9rem] leading-none tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.06)] font-light select-none" aria-hidden="true">404</p>
+                <p className="font-en text-sm tracking-[0.18em] uppercase text-[rgba(var(--foreground-rgb),0.35)] -mt-4 md:-mt-6">Page not found</p>
+                <div className="w-8 h-px bg-[rgba(var(--foreground-rgb),0.12)] mt-8 mb-8" />
+                <p className="text-[rgba(var(--foreground-rgb),0.40)]" style={{ fontSize: "var(--body-size, 0.85rem)", lineHeight: 1.9 }}>
+                  お探しのページは存在しないか、移動した可能性があります。
                 </p>
-                <Link to="/" className="inline-block mt-8 font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.40)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300">
-                  ← Back to top
+                <Link to="/" className="inline-block mt-10 font-en text-[11px] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300">
+                  Back to top
                 </Link>
               </section>
             </TitledRoute>

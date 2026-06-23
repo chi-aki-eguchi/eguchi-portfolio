@@ -92,7 +92,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         本文へスキップ
       </a>
       <header
-        className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+        className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
           scrolled
             ? "bg-[rgba(var(--background-rgb),0.82)] backdrop-blur-[14px] shadow-[0_1px_0_rgba(0,0,0,0.04)]"
             : "bg-[var(--background)]"

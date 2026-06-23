@@ -183,7 +183,7 @@ export default function ContactPage() {
       )}
 
       <section
-        className="max-w-md mx-auto px-6 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[calc(100vh-180px)]"
+        className="max-w-md mx-auto px-6 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[calc(100dvh-180px)]"
         ref={entranceRef}
       >
         <h1

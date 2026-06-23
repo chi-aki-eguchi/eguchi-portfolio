@@ -710,7 +710,7 @@ function HomeImmersive({
       {/* Fullscreen hero with centered name */}
       <section
         className="relative w-full overflow-hidden"
-        style={{ height: "100vh" }}
+        style={{ height: "100dvh" }}
       >
         {heroPhoto ? (
           <img

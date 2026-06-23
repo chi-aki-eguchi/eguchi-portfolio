@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 // the browser pick by viewport × devicePixelRatio — phones get ~1200px, Retina
 // desktops climb to 2400px — so it's sharp everywhere without over-downloading.
 const FIT_W = "95vw";
-const FIT_H = "94vh";
+const FIT_H = "94dvh";
 // Exported so grids can warm the exact candidate the lightbox will request
 // (a prefetch with a different w= is a wasted download, not a cache hit).
 export const FIT_SIZES = "95vw";

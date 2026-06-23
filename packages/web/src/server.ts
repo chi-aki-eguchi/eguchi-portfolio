@@ -1,3 +1,4 @@
+import { resolve as pathResolve } from "node:path";
 import app from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
@@ -299,8 +300,7 @@ function getStaticFilePath(pathname: string) {
     .replaceAll("..", "");
 
   if (!cleanPath) return indexPath;
-  const { resolve } = require("node:path") as typeof import("node:path");
-  const resolved = resolve(distDir, cleanPath);
+  const resolved = pathResolve(distDir, cleanPath);
   if (!resolved.startsWith(distDir)) return indexPath;
   return resolved;
 }

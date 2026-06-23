@@ -58,6 +58,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={login.isPending}
+            aria-busy={login.isPending || undefined}
             className="border border-[#c8a96e] text-[#c8a96e] text-xs tracking-[0.2em] uppercase py-3 hover:bg-[#c8a96e] hover:text-[#111] transition-colors disabled:opacity-50"
           >
             {login.isPending ? "..." : "ログイン"}

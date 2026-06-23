@@ -391,6 +391,7 @@ export default function ContactPage() {
             <button
               type="submit"
               disabled={status === "sending"}
+              aria-busy={status === "sending" || undefined}
               className="self-start font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-6 py-2 rounded-md hover:opacity-85 transition-opacity duration-300 disabled:opacity-30 mt-1"
             >
               {status === "sending"

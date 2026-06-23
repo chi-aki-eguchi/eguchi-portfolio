@@ -1,7 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, createContext, useContext } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
+import { useDarkMode } from "../hooks/useDarkMode";
+
+type DarkModeCtx = ReturnType<typeof useDarkMode>;
+const DarkModeContext = createContext<DarkModeCtx | null>(null);
+export function useDarkModeContext() {
+  return useContext(DarkModeContext);
+}
 
 export type FontDef = {
   param: string;
@@ -114,6 +121,7 @@ interface ProviderProps {
 
 export function Provider({ children }: ProviderProps) {
   const qc = useQueryClient();
+  const darkMode = useDarkMode();
   const { data } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => (await api.settings.$get()).json(),
@@ -447,5 +455,5 @@ export function Provider({ children }: ProviderProps) {
     return () => window.removeEventListener("message", handlePreviewMessage);
   }, [qc]);
 
-  return <>{children}</>;
+  return <DarkModeContext.Provider value={darkMode}>{children}</DarkModeContext.Provider>;
 }

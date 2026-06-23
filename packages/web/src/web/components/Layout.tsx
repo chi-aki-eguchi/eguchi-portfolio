@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
+import { useDarkModeContext } from "./provider";
 
 function useFooterReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -50,6 +51,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   });
   const showSeries = seriesNav === "on" || (seriesAuto && (seriesData?.series.length ?? 0) > 0);
 
+  const dm = useDarkModeContext();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
@@ -109,7 +111,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Desktop nav */}
-          <ul className="hidden md:flex gap-8">
+          <ul className="hidden md:flex gap-8 items-center">
             {navItems.map(({ href, label }) => (
               <li key={href}>
                 <Link
@@ -130,13 +132,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               </li>
             ))}
+            {dm && (
+              <li>
+                <button
+                  onClick={dm.toggle}
+                  aria-label={dm.resolved === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+                  className="w-9 h-9 flex items-center justify-center rounded-full transition-colors duration-300 hover:bg-[rgba(var(--foreground-rgb),0.06)]"
+                  style={{ color: `rgba(var(--foreground-rgb), var(--nav-opacity, 0.35))` }}
+                >
+                  {dm.resolved === "dark" ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                  )}
+                </button>
+              </li>
+            )}
           </ul>
 
-          {/* Mobile hamburger */}
+          {/* Dark mode toggle + Mobile hamburger */}
+          <div className="md:hidden flex items-center gap-0.5">
+            {dm && (
+              <button
+                onClick={dm.toggle}
+                aria-label={dm.resolved === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+                className="w-10 h-10 flex items-center justify-center text-[var(--foreground)]"
+                style={{ opacity: 0.45 }}
+              >
+                {dm.resolved === "dark" ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                )}
+              </button>
+            )}
           {/* 44px hit target (HIG minimum) — bars stay 20px; -mr keeps their visual
               right-edge where the old 32px button had it. */}
           <button
-            className="md:hidden w-11 h-11 -mr-1.5 flex flex-col items-center justify-center gap-[5px] text-[var(--foreground)]"
+            className="w-11 h-11 -mr-1.5 flex flex-col items-center justify-center gap-[5px] text-[var(--foreground)]"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Menu"
             aria-expanded={mobileOpen}
@@ -158,6 +191,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }`}
             />
           </button>
+          </div>
         </nav>
 
         {/* Mobile menu — `inert` when closed so its links aren't tabbable/announced

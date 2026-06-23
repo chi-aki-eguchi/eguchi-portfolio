@@ -41,6 +41,9 @@
     <link rel="stylesheet" crossorigin href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Shippori+Mincho:wght@400;500;600&display=swap" />
 
     <meta name="theme-color" content="#f7f7f7" />
+    <script>
+      (function(){var t=localStorage.getItem("theme-preference");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches);if(d)document.documentElement.dataset.theme="dark"})()
+    </script>
   </head>
   <body>
     <noscript>

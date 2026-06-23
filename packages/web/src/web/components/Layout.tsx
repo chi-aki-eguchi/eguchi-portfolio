@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
+import { safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
 
 function useFooterReveal() {
@@ -197,7 +198,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {(data?.profileInstagram || data?.profileTwitter || data?.profileNote) && (
             <nav aria-label="SNS" className="flex gap-6">
               {data?.profileInstagram && (
-                <a href={data.profileInstagram} target="_blank" rel="noopener noreferrer"
+                <a href={safeHref(data.profileInstagram)} target="_blank" rel="noopener noreferrer"
                   className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
                   style={{ color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))` }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`; }}
@@ -206,7 +207,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </a>
               )}
               {data?.profileTwitter && (
-                <a href={data.profileTwitter} target="_blank" rel="noopener noreferrer"
+                <a href={safeHref(data.profileTwitter)} target="_blank" rel="noopener noreferrer"
                   className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
                   style={{ color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))` }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`; }}
@@ -215,7 +216,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </a>
               )}
               {data?.profileNote && (
-                <a href={data.profileNote} target="_blank" rel="noopener noreferrer"
+                <a href={safeHref(data.profileNote)} target="_blank" rel="noopener noreferrer"
                   className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
                   style={{ color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))` }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`; }}

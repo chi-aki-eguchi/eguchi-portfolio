@@ -150,6 +150,7 @@ const s3 = new S3Client({
 });
 
 const BUCKET = process.env.S3_BUCKET!;
+const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 // NOTE: Do NOT throw at module load — a missing env var would crash the whole
 // process on startup (502). Instead we validate lazily inside the login route.
@@ -272,9 +273,14 @@ function photoWithThumbs<
 >(p: T): T & { thumbUrl: string | null; mediumUrl: string | null } {
   return {
     ...p,
-    thumbUrl: p.thumbKey ? keyToProxyUrl(p.thumbKey) : null,
-    mediumUrl: p.mediumKey ? keyToProxyUrl(p.mediumKey) : null,
+    thumbUrl: p.thumbKey ? keyToPublicUrl(p.thumbKey) : null,
+    mediumUrl: p.mediumKey ? keyToPublicUrl(p.mediumKey) : null,
   };
+}
+
+function keyToPublicUrl(key: string): string {
+  if (R2_PUBLIC_URL) return `${R2_PUBLIC_URL}/${key}`;
+  return keyToProxyUrl(key);
 }
 
 function thumbKeyFrom(originalKey: string): string {
@@ -442,12 +448,26 @@ const app = new Hono()
     };
 
     const cacheKey = `${decodedKey}__w${width ?? "orig"}__q${quality}__${fmt}`;
+    const etag = `"${createHash("md5").update(cacheKey).digest("hex")}"`;
+
+    const ifNoneMatch = c.req.header("if-none-match");
+    if (ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+
     const cached = cacheGet(cacheKey);
     if (cached) {
       return new Response(asBody(cached.buf), {
         headers: {
           "Content-Type": cached.type,
           "Cache-Control": "public, max-age=31536000, immutable",
+          ETag: etag,
           ...(!fmtParam ? { Vary: "Accept" } : {}),
           "X-Cache": "HIT",
         },
@@ -463,6 +483,7 @@ const app = new Hono()
           headers: {
             "Content-Type": original.type,
             "Cache-Control": "public, max-age=31536000, immutable",
+            ETag: etag,
           },
         });
       }
@@ -498,6 +519,7 @@ const app = new Hono()
         headers: {
           "Content-Type": ctypeOf[fmt],
           "Cache-Control": "public, max-age=31536000, immutable",
+          ETag: etag,
           ...(!fmtParam ? { Vary: "Accept" } : {}),
           "X-Cache": "MISS",
         },

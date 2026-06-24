@@ -12,6 +12,8 @@ const FIT_H = "94dvh";
 export const FIT_SIZES = "95vw";
 export const fitSrcSet = (url: string) =>
   `${url}?w=1200&q=88 1200w, ${url}?w=1600&q=88 1600w, ${url}?w=2000&q=90 2000w, ${url}?w=2400&q=90 2400w`;
+// Match the typical grid sizes so the browser picks the same cached entry.
+const GRID_THUMB_SIZES = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
 
 export type LightboxPhoto = {
   url: string;
@@ -342,22 +344,33 @@ export function Lightbox({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  // Preload the nearest neighbours (±2) so prev/next feels instant when paging.
-  // Mirrors the visible image's srcset/sizes so the browser caches the exact
-  // candidate it will pick when that photo is shown.
   useEffect(() => {
     const len = photos.length;
     if (len <= 1) return;
+    const wrapper = document.createElement("div");
+    wrapper.setAttribute("aria-hidden", "true");
+    wrapper.style.cssText = "position:fixed;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none";
     for (const off of [1, -1, 2, -2]) {
-      const img = new Image();
-      // Low priority so prefetching neighbours never competes with the photo the
-      // viewer is actually looking at (which is marked fetchpriority=high below).
-      img.fetchPriority = "low";
       const url = photos[(index + off + len * 2) % len].url;
-      img.sizes = FIT_SIZES;
+      const picture = document.createElement("picture");
+      for (const fmt of ["avif", "webp"] as const) {
+        const source = document.createElement("source");
+        source.type = `image/${fmt}`;
+        source.srcset = srcSetFor(url, "lightbox", fmt);
+        source.sizes = FIT_SIZES;
+        picture.appendChild(source);
+      }
+      const img = document.createElement("img");
       img.srcset = fitSrcSet(url);
-      img.src = `${url}?w=1600&q=88`;
+      img.sizes = FIT_SIZES;
+      img.src = srcFor(url, 1600, 88);
+      img.fetchPriority = "low";
+      img.decoding = "async";
+      picture.appendChild(img);
+      wrapper.appendChild(picture);
     }
+    document.body.appendChild(wrapper);
+    return () => wrapper.remove();
   }, [index, photos]);
 
   // Lock body scroll
@@ -501,21 +514,22 @@ export function Lightbox({
               aria-label={isZoomed ? "ズームを解除" : (chrome ? "UIを隠して写真だけ表示" : "UIを表示")}
               style={{ position: "relative", background: "none", border: "none", padding: 0, margin: 0, display: "block", lineHeight: 0, cursor: isZoomed ? "grab" : "pointer" }}
             >
-              {/* Blur-up: a tiny placeholder (usually already cached from the grid's
-                  srcset) loads near-instantly and is blurred until the full image fades
-                  in on top — so the photo appears immediately. The box is a fixed
-                  ~95% of the viewport (object-fit: contain) rather than the
-                  placeholder's tiny natural size, so the photo renders large (R2). */}
-              <img
-                ref={placeImgRef}
-                src={srcFor(photo.url, 400, 55)}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                fetchPriority="low"
-                decoding="async"
-                style={{ display: "block", width: FIT_W, height: FIT_H, objectFit: "contain", filter: hiRes ? "blur(0px)" : "blur(14px)", transform: hiRes ? "scale(1)" : "scale(1.03)", transition: "filter 0.45s ease, transform 0.45s ease" }}
-              />
+              <picture>
+                <source type="image/avif" srcSet={srcSetFor(photo.url, "grid", "avif")} sizes={GRID_THUMB_SIZES} />
+                <source type="image/webp" srcSet={srcSetFor(photo.url, "grid", "webp")} sizes={GRID_THUMB_SIZES} />
+                <img
+                  ref={placeImgRef}
+                  srcSet={srcSetFor(photo.url, "grid")}
+                  sizes={GRID_THUMB_SIZES}
+                  src={srcFor(photo.url, 600, 84)}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  fetchPriority="low"
+                  decoding="async"
+                  style={{ display: "block", width: FIT_W, height: FIT_H, objectFit: "contain", filter: hiRes ? "blur(0px)" : "blur(8px)", transform: hiRes ? "scale(1)" : "scale(1.02)", transition: "filter 0.45s ease, transform 0.45s ease" }}
+                />
+              </picture>
               <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
                 <source type="image/avif" srcSet={srcSetFor(photo.url, "lightbox", "avif")} sizes={FIT_SIZES} />
                 <source type="image/webp" srcSet={srcSetFor(photo.url, "lightbox", "webp")} sizes={FIT_SIZES} />

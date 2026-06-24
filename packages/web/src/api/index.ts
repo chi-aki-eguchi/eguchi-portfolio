@@ -237,6 +237,7 @@ async function optimiseImage(
   quality: number,
 ): Promise<Buffer> {
   return sharp(Buffer.from(input))
+    .rotate()
     .resize({
       width: maxPx,
       height: maxPx,
@@ -386,7 +387,7 @@ const app = new Hono()
         });
       }
 
-      const base = sharp(original.buf).resize({
+      const base = sharp(original.buf).rotate().resize({
         width,
         withoutEnlargement: true,
       });

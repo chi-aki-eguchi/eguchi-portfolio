@@ -160,10 +160,10 @@ export function injectOgp(
   // (imagesrcset/imagesizes matched to <HeroCarousel>/<HeroSingle> exactly) so the
   // browser starts the hero download straight from the HTML, parallel to the JS.
   if (pathname === "/" && heroImg) {
-    // q must match HeroCarousel/HeroSingle exactly (q=88) — a mismatched URL
+    // Must match HERO_WIDTHS in lib/picture.ts exactly — a mismatched URL
     // makes the preload useless and the hero downloads twice.
-    const heroHref = `${heroImg}?w=1800&q=88`;
-    const heroSrcset = [900, 1400, 1800, 2400].map((w) => `${heroImg}?w=${w}&q=88 ${w}w`).join(", ");
+    const heroHref = `${heroImg}?w=1536&q=88`;
+    const heroSrcset = [640, 1024, 1536, 2400].map((w) => `${heroImg}?w=${w}&q=88 ${w}w`).join(", ");
     const heroSizes = settings.heroMode === "single" ? "100vw" : "(min-width: 1200px) 1152px, 100vw";
     headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
   }

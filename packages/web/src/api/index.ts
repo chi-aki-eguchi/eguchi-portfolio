@@ -398,7 +398,7 @@ const app = new Hono()
           .avif({ quality: Math.max(40, quality - 10), effort: 4 })
           .toBuffer();
       } else if (fmt === "webp") {
-        out = await base.webp({ quality: Math.max(quality, 90) }).toBuffer();
+        out = await base.webp({ quality }).toBuffer();
       } else {
         // Full chroma for large/focal renders (gallery tiles, hero, lightbox);
         // 4:2:0 is fine for small thumbnails and keeps their bytes down.

@@ -86,7 +86,35 @@ export default function GalleryPage() {
     ...categories.map((c) => ({ slug: c.slug, label: c.label })),
   ];
 
-  const fadeRef = useScrollFadeIn([filtered, view, settings?.galleryLayout]);
+  const GALLERY_INITIAL = 24;
+  const GALLERY_STEP = 12;
+  const [extraCount, setExtraCount] = useState(0);
+  const renderCount = GALLERY_INITIAL + extraCount;
+  const rendered = useMemo(
+    () => filtered.slice(0, renderCount),
+    [filtered, renderCount],
+  );
+  const gallerySentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setExtraCount(0);
+  }, [activeFilter, activeMedium]);
+  useEffect(() => {
+    if (renderCount >= filtered.length) return;
+    const el = gallerySentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setExtraCount((c) => c + GALLERY_STEP);
+        }
+      },
+      { rootMargin: "900px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [renderCount, filtered.length]);
+
+  const fadeRef = useScrollFadeIn([rendered, view, settings?.galleryLayout]);
 
   // Switching the filter (or Photos/Series view) while scrolled deep can shrink
   // the page and strand the viewer at the footer of a now-short grid. Scroll
@@ -225,10 +253,15 @@ export default function GalleryPage() {
               </div>
             )
           ) : (
-            <PhotoGallery
-              photos={filtered}
-              layoutType={settings?.galleryLayout}
-            />
+            <>
+              <PhotoGallery
+                photos={rendered}
+                layoutType={settings?.galleryLayout}
+              />
+              {rendered.length < filtered.length && (
+                <div ref={gallerySentinelRef} aria-hidden="true" style={{ height: 1 }} />
+              )}
+            </>
           )}
         </>
       )}

@@ -3,8 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
 import { num, clamp } from "../lib/utils";
-import { Lightbox, FIT_SIZES, fitSrcSet } from "./Lightbox";
+import { Lightbox, FIT_SIZES } from "./Lightbox";
 import { srcSetFor } from "../lib/picture";
+
+const _preloaded = new Set<string>();
+function preloadForLightbox(url: string) {
+  if (_preloaded.has(url)) return;
+  _preloaded.add(url);
+  const img = new Image();
+  img.sizes = FIT_SIZES;
+  img.srcset = srcSetFor(url, "lightbox", "webp");
+  img.src = `${url}?w=1920&q=85&fmt=webp`;
+  img.fetchPriority = "low";
+  img.decoding = "async";
+}
 
 export type GalleryPhoto = {
   id: number;
@@ -213,7 +225,8 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
         aria-label={photo.title || photo.meta || photo.filename || "写真を開く"}
         style={{ justifySelf: opts.justifySelf, width: opts.width, display: "block", padding: 0, border: "none", background: "none", font: "inherit", textAlign: "inherit", cursor: "pointer" }}
         onClick={() => openLightbox(idx)}
-        onMouseEnter={() => { const img = new Image(); img.fetchPriority = "low"; img.sizes = FIT_SIZES; img.srcset = fitSrcSet(photo.url); img.src = `${photo.url}?w=1200&q=85`; }}
+        onMouseEnter={() => preloadForLightbox(photo.url)}
+        onTouchStart={() => preloadForLightbox(photo.url)}
       >
         <div
           className={`photo-card fade-in-item${opts.cardClassName ? ` ${opts.cardClassName}` : ""}`}

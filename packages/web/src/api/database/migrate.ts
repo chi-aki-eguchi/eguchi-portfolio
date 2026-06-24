@@ -12,6 +12,7 @@
 // 呼び出し側 (server.ts) は process.exit(1) する想定で、デプロイは loud に失敗し、
 // Railway は前バージョンを維持する（壊れた新版がトラフィックを受けない）。
 import { resolve } from "node:path";
+import { sql } from "drizzle-orm";
 
 const MIGRATION_RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 12_000, 16_000];
 
@@ -60,8 +61,33 @@ function selectedDatabaseUrlForLog(): string | undefined {
   return process.env.DATABASE_PUBLIC_URL?.trim() || process.env.DATABASE_URL;
 }
 
+async function ensureTursoColumns(): Promise<void> {
+  const { db } = await import("./libsql");
+  const columns: [string, string][] = [
+    ["photos", "focal_length"],
+    ["photos", "f_number"],
+    ["photos", "exposure_time"],
+    ["photos", "iso"],
+  ];
+  for (const [table, col] of columns) {
+    try {
+      await db.run(sql`SELECT ${sql.raw(col)} FROM ${sql.raw(table)} LIMIT 0`);
+    } catch {
+      try {
+        await db.run(sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN ${sql.raw(col)} text`);
+        console.log(`[migrate] added missing column ${table}.${col}`);
+      } catch (e) {
+        console.warn(`[migrate] failed to add ${table}.${col}:`, e);
+      }
+    }
+  }
+}
+
 export async function runStartupMigrations(): Promise<void> {
-  if (process.env.DATABASE_PROVIDER !== "postgres") return;
+  if (process.env.DATABASE_PROVIDER !== "postgres") {
+    await ensureTursoColumns();
+    return;
+  }
 
   // 動的 import: 本番(libsql)パスでは pg ドライバ/migrator を一切ロードしない。
   // `./postgres` はプロバイダ切替境界と同じモジュール実体なので接続は共有される。

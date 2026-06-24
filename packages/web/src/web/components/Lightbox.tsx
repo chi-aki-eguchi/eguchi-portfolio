@@ -54,12 +54,12 @@ export function Lightbox({
 }) {
   const [imgError, setImgError] = useState(false);
   const [chrome, setChrome] = useState(true); // counter / caption / nav visibility
-  const [hiRes, setHiRes] = useState(false);  // has the full-size image arrived? (blur-up)
+  const [loadStage, setLoadStage] = useState<'thumb' | 'medium' | 'full'>('thumb');
   const [exifOpen, setExifOpen] = useState(false); // EXIF info panel
   const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fitImgRef = useRef<HTMLImageElement>(null);   // hi-res fitted image
-  const placeImgRef = useRef<HTMLImageElement>(null); // blur-up placeholder (defines the box)
+  const placeImgRef = useRef<HTMLImageElement>(null); // thumbnail (defines the layout box)
 
   // ── Zoom / pan engine ────────────────────────────────────
   // scale/tx/ty live in refs and are written straight to the layer's style:
@@ -334,7 +334,7 @@ export function Lightbox({
   useEffect(() => {
     setImgError(false);
     setChrome(true);
-    setHiRes(false);
+    setLoadStage('thumb');
     setExifOpen(false);
     setZoomSrcReady(false);
     resetZoom(false);
@@ -511,6 +511,7 @@ export function Lightbox({
               aria-label={isZoomed ? "ズームを解除" : (chrome ? "UIを隠して写真だけ表示" : "UIを表示")}
               style={{ position: "relative", background: "none", border: "none", padding: 0, margin: 0, display: "block", lineHeight: 0, cursor: isZoomed ? "grab" : "pointer" }}
             >
+              {/* Stage 1: grid thumbnail — already in browser cache, appears instantly */}
               <picture>
                 <source type="image/avif" srcSet={srcSetFor(photo.url, "grid", "avif")} sizes={GRID_THUMB_SIZES} />
                 <source type="image/webp" srcSet={srcSetFor(photo.url, "grid", "webp")} sizes={GRID_THUMB_SIZES} />
@@ -524,9 +525,25 @@ export function Lightbox({
                   draggable={false}
                   fetchPriority="low"
                   decoding="async"
-                  style={{ display: "block", width: FIT_W, height: FIT_H, objectFit: "contain", filter: hiRes ? "blur(0px)" : "blur(8px)", transform: hiRes ? "scale(1)" : "scale(1.02)", transition: "filter 0.45s ease, transform 0.45s ease" }}
+                  style={{ display: "block", width: FIT_W, height: FIT_H, objectFit: "contain" }}
                 />
               </picture>
+              {/* Stage 2: medium (w=800) — skipped when the full image beats it (pre-cached) */}
+              <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+                <source type="image/avif" srcSet={srcFor(photo.url, 800, 80, "avif")} />
+                <source type="image/webp" srcSet={srcFor(photo.url, 800, 80, "webp")} />
+                <img
+                  src={srcFor(photo.url, 800, 80)}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  fetchPriority="high"
+                  decoding="async"
+                  onLoad={() => setLoadStage(s => s === 'thumb' ? 'medium' : s)}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", opacity: loadStage !== 'thumb' ? 1 : 0 }}
+                />
+              </picture>
+              {/* Stage 3: full quality (w=1920) */}
               <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
                 <source type="image/avif" srcSet={srcSetFor(photo.url, "lightbox", "avif")} sizes={FIT_SIZES} />
                 <source type="image/webp" srcSet={srcSetFor(photo.url, "lightbox", "webp")} sizes={FIT_SIZES} />
@@ -536,11 +553,10 @@ export function Lightbox({
                   srcSet={fitSrcSet(photo.url)}
                   sizes={FIT_SIZES}
                   alt={photo.title || photo.meta || `Photograph ${index + 1}`}
-                  onLoad={() => setHiRes(true)}
+                  onLoad={() => setLoadStage('full')}
                   onError={() => setImgError(true)}
-                  fetchPriority="high"
                   decoding="async"
-                  style={{ width: "100%", height: "100%", objectFit: "contain", opacity: hiRes ? 1 : 0, transition: "opacity 0.45s ease" }}
+                  style={{ width: "100%", height: "100%", objectFit: "contain", opacity: loadStage === 'full' ? 1 : 0 }}
                   draggable={false}
                 />
               </picture>

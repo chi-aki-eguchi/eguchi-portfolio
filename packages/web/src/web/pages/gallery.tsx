@@ -86,7 +86,8 @@ export default function GalleryPage() {
     ...categories.map((c) => ({ slug: c.slug, label: c.label })),
   ];
 
-  const GALLERY_INITIAL = 24;
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  const GALLERY_INITIAL = isMobile ? 12 : 24;
   const GALLERY_STEP = 12;
   const [extraCount, setExtraCount] = useState(0);
   const renderCount = GALLERY_INITIAL + extraCount;
@@ -192,7 +193,10 @@ export default function GalleryPage() {
           {categories.length > 0 && (
             <div
               className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-6 section-reveal overflow-x-auto md:overflow-x-visible -mx-6 px-6 md:mx-0 md:px-0 scrollbar-hide"
-              style={{ transitionDelay: "0.1s", WebkitOverflowScrolling: "touch" }}
+              style={{
+                transitionDelay: "0.1s",
+                WebkitOverflowScrolling: "touch",
+              }}
             >
               {filterItems.map((cat) => (
                 <button
@@ -215,7 +219,10 @@ export default function GalleryPage() {
           {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
             <div
               className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible -mx-6 px-6 md:mx-0 md:px-0 scrollbar-hide"
-              style={{ transitionDelay: "0.15s", WebkitOverflowScrolling: "touch" }}
+              style={{
+                transitionDelay: "0.15s",
+                WebkitOverflowScrolling: "touch",
+              }}
             >
               {(
                 [
@@ -257,10 +264,18 @@ export default function GalleryPage() {
               <PhotoGallery
                 photos={rendered}
                 layoutType={settings?.galleryLayout}
-                onRequestMore={rendered.length < filtered.length ? () => setExtraCount(c => c + GALLERY_STEP) : undefined}
+                onRequestMore={
+                  rendered.length < filtered.length
+                    ? () => setExtraCount((c) => c + GALLERY_STEP)
+                    : undefined
+                }
               />
               {rendered.length < filtered.length && (
-                <div ref={gallerySentinelRef} aria-hidden="true" style={{ height: 1 }} />
+                <div
+                  ref={gallerySentinelRef}
+                  aria-hidden="true"
+                  style={{ height: 1 }}
+                />
               )}
             </>
           )}

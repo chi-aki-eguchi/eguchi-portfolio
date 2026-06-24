@@ -13,6 +13,15 @@ try {
   process.exit(1);
 }
 
+// Prevent unhandled errors from silently crashing the process (shows as
+// Railway error page). Log the error and keep the server alive.
+process.on("uncaughtException", (err) => {
+  console.error("[FATAL] uncaughtException:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[FATAL] unhandledRejection:", reason);
+});
+
 const port = Number(process.env.PORT ?? 3000);
 const distDir = pathResolve(import.meta.dir, "..", "dist");
 const indexPath = `${distDir}/index.html`;
@@ -24,7 +33,10 @@ const SETTINGS_TTL = 60_000;
 
 async function getSettings(): Promise<Record<string, string>> {
   const now = Date.now();
-  if (now - settingsCacheTime < SETTINGS_TTL && Object.keys(settingsCache).length > 0) {
+  if (
+    now - settingsCacheTime < SETTINGS_TTL &&
+    Object.keys(settingsCache).length > 0
+  ) {
     return settingsCache;
   }
   try {
@@ -33,7 +45,9 @@ async function getSettings(): Promise<Record<string, string>> {
     for (const r of rows) s[r.key] = r.value;
     settingsCache = s;
     settingsCacheTime = now;
-  } catch (e) { console.error("[OGP] settings fetch failed:", e); /* use stale cache */ }
+  } catch (e) {
+    console.error("[OGP] settings fetch failed:", e); /* use stale cache */
+  }
   return settingsCache;
 }
 
@@ -44,21 +58,27 @@ let heroOgCache: string | null = null;
 let heroOgCacheTime = 0;
 async function getHeroOgImageUrl(): Promise<string> {
   const now = Date.now();
-  if (heroOgCache !== null && now - heroOgCacheTime < SETTINGS_TTL) return heroOgCache;
+  if (heroOgCache !== null && now - heroOgCacheTime < SETTINGS_TTL)
+    return heroOgCache;
   try {
     const heroRows = await withRetry(() =>
-      db.select().from(schema.heroPhotos).orderBy(schema.heroPhotos.sortOrder)
+      db.select().from(schema.heroPhotos).orderBy(schema.heroPhotos.sortOrder),
     );
     let url = "";
     for (const hr of heroRows) {
       const [p] = await withRetry(() =>
-        db.select().from(schema.photos).where(eq(schema.photos.id, hr.photoId))
+        db.select().from(schema.photos).where(eq(schema.photos.id, hr.photoId)),
       );
-      if (p && !p.deletedAt) { url = p.url; break; }
+      if (p && !p.deletedAt) {
+        url = p.url;
+        break;
+      }
     }
     heroOgCache = url;
     heroOgCacheTime = now;
-  } catch (e) { console.error("[OGP] hero image fetch failed:", e); /* use stale/empty */ }
+  } catch (e) {
+    console.error("[OGP] hero image fetch failed:", e); /* use stale/empty */
+  }
   return heroOgCache ?? "";
 }
 
@@ -68,14 +88,19 @@ let galleryPreloadCacheTime = 0;
 const GALLERY_PRELOAD_COUNT = 8;
 async function getGalleryPreloadUrls(): Promise<string[]> {
   const now = Date.now();
-  if (now - galleryPreloadCacheTime < SETTINGS_TTL && galleryPreloadCache.length > 0) return galleryPreloadCache;
+  if (
+    now - galleryPreloadCacheTime < SETTINGS_TTL &&
+    galleryPreloadCache.length > 0
+  )
+    return galleryPreloadCache;
   try {
     const [[sortRow]] = [
       await withRetry(() =>
-        db.select({ value: schema.siteSettings.value })
+        db
+          .select({ value: schema.siteSettings.value })
           .from(schema.siteSettings)
           .where(eq(schema.siteSettings.key, "gallerySortOrder"))
-          .limit(1)
+          .limit(1),
       ),
     ];
     const gallerySortOrder = sortRow?.value ?? "manual";
@@ -88,14 +113,23 @@ async function getGalleryPreloadUrls(): Promise<string[]> {
             ? sql`${schema.photos.createdAt} DESC`
             : schema.photos.sortOrder;
     const rows = await withRetry(() =>
-      db.select({ url: schema.photos.url }).from(schema.photos)
-        .where(and(isNull(schema.photos.deletedAt), eq(schema.photos.isPublished, true)))
+      db
+        .select({ url: schema.photos.url })
+        .from(schema.photos)
+        .where(
+          and(
+            isNull(schema.photos.deletedAt),
+            eq(schema.photos.isPublished, true),
+          ),
+        )
         .orderBy(orderExpr)
-        .limit(GALLERY_PRELOAD_COUNT)
+        .limit(GALLERY_PRELOAD_COUNT),
     );
-    galleryPreloadCache = rows.map(r => r.url);
+    galleryPreloadCache = rows.map((r) => r.url);
     galleryPreloadCacheTime = now;
-  } catch (e) { console.error("[preload] gallery photos fetch failed:", e); }
+  } catch (e) {
+    console.error("[preload] gallery photos fetch failed:", e);
+  }
   return galleryPreloadCache;
 }
 
@@ -111,21 +145,37 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
   let data: SeriesOg | null = null;
   try {
     const [s] = await withRetry(() =>
-      db.select().from(schema.series)
-        .where(and(eq(schema.series.slug, slug), eq(schema.series.isPublished, true)))
-        .limit(1)
+      db
+        .select()
+        .from(schema.series)
+        .where(
+          and(
+            eq(schema.series.slug, slug),
+            eq(schema.series.isPublished, true),
+          ),
+        )
+        .limit(1),
     );
     if (s) {
       let image = "";
       if (s.coverPhotoId) {
         const [p] = await withRetry(() =>
-          db.select().from(schema.photos).where(eq(schema.photos.id, s.coverPhotoId as number))
+          db
+            .select()
+            .from(schema.photos)
+            .where(eq(schema.photos.id, s.coverPhotoId as number)),
         );
         if (p && !p.deletedAt) image = p.url;
       }
-      data = { title: s.title, desc: (s.statement || s.subtitle || "").slice(0, 200), image };
+      data = {
+        title: s.title,
+        desc: (s.statement || s.subtitle || "").slice(0, 200),
+        image,
+      };
     }
-  } catch (e) { console.error("[OGP] series fetch failed:", e); /* fall back to generic */ }
+  } catch (e) {
+    console.error("[OGP] series fetch failed:", e); /* fall back to generic */
+  }
   seriesOgCache.set(slug, { data, ts: now });
   return data;
 }
@@ -139,13 +189,19 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
   let seriesIdBySlugPath = new Map<string, number>();
   try {
     const rows = await withRetry(() =>
-      db.select({ id: schema.series.id, slug: schema.series.slug }).from(schema.series)
+      db
+        .select({ id: schema.series.id, slug: schema.series.slug })
+        .from(schema.series)
         .where(eq(schema.series.isPublished, true))
-        .orderBy(schema.series.sortOrder)
+        .orderBy(schema.series.sortOrder),
     );
     seriesPaths = rows.map((r) => `/series/${encodeURIComponent(r.slug)}`);
-    seriesIdBySlugPath = new Map(rows.map((r) => [`/series/${encodeURIComponent(r.slug)}`, r.id]));
-  } catch (e) { console.error("[sitemap] series fetch failed:", e); }
+    seriesIdBySlugPath = new Map(
+      rows.map((r) => [`/series/${encodeURIComponent(r.slug)}`, r.id]),
+    );
+  } catch (e) {
+    console.error("[sitemap] series fetch failed:", e);
+  }
 
   // Image sitemap entries — Google Image Search is a real discovery channel for
   // a photographer. Every published photo is attached to /gallery; each series
@@ -154,24 +210,43 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
   let livePhotos: SitemapPhoto[] = [];
   try {
     livePhotos = await withRetry(() =>
-      db.select({ url: schema.photos.url, title: schema.photos.title, seriesId: schema.photos.seriesId })
+      db
+        .select({
+          url: schema.photos.url,
+          title: schema.photos.title,
+          seriesId: schema.photos.seriesId,
+        })
         .from(schema.photos)
-        .where(and(isNull(schema.photos.deletedAt), eq(schema.photos.isPublished, true)))
-        .orderBy(schema.photos.sortOrder)
+        .where(
+          and(
+            isNull(schema.photos.deletedAt),
+            eq(schema.photos.isPublished, true),
+          ),
+        )
+        .orderBy(schema.photos.sortOrder),
     );
-  } catch (e) { console.error("[sitemap] photos fetch failed:", e); }
+  } catch (e) {
+    console.error("[sitemap] photos fetch failed:", e);
+  }
   const imageTag = (p: SitemapPhoto) =>
     `<image:image><image:loc>${siteUrl}${escapeHtml(p.url)}</image:loc>${p.title ? `<image:title>${escapeHtml(p.title)}</image:title><image:caption>${escapeHtml(p.title)}</image:caption>` : ""}</image:image>`;
   const imagesFor = (path: string): string => {
     if (path === "/gallery") return livePhotos.map(imageTag).join("");
     const sid = seriesIdBySlugPath.get(path);
-    if (sid != null) return livePhotos.filter((p) => p.seriesId === sid).map(imageTag).join("");
+    if (sid != null)
+      return livePhotos
+        .filter((p) => p.seriesId === sid)
+        .map(imageTag)
+        .join("");
     return "";
   };
 
   const lastmod = new Date().toISOString().slice(0, 10);
   const urls = [...paths, ...seriesPaths]
-    .map((p) => `  <url><loc>${siteUrl}${p}</loc><lastmod>${lastmod}</lastmod><changefreq>${p === "/" || p === "/gallery" ? "weekly" : "monthly"}</changefreq><priority>${p === "/" ? "1.0" : "0.7"}</priority>${imagesFor(p)}</url>`)
+    .map(
+      (p) =>
+        `  <url><loc>${siteUrl}${p}</loc><lastmod>${lastmod}</lastmod><changefreq>${p === "/" || p === "/gallery" ? "weekly" : "monthly"}</changefreq><priority>${p === "/" ? "1.0" : "0.7"}</priority>${imagesFor(p)}</url>`,
+    )
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>\n`;
 }
@@ -182,11 +257,13 @@ function buildRobots(siteUrl: string): string {
 
 function publicOriginFromRequest(request: Request): string {
   const requestUrl = new URL(request.url);
-  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim()
-    || requestUrl.protocol.replace(/:$/, "");
-  const host = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
-    || request.headers.get("host")
-    || requestUrl.host;
+  const proto =
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
+    requestUrl.protocol.replace(/:$/, "");
+  const host =
+    request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+    request.headers.get("host") ||
+    requestUrl.host;
   return `${proto}://${host}`.replace(/\/+$/, "");
 }
 
@@ -221,149 +298,226 @@ function withSecurityHeaders(res: Response, request: Request): Response {
   headers.set("Content-Security-Policy", "frame-ancestors 'self'");
   headers.set("Content-Security-Policy-Report-Only", CSP_REPORT_ONLY);
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=()");
+  headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=()",
+  );
   const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  if (proto === "https") headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+  if (proto === "https")
+    headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
 }
 
 const server = Bun.serve({
   port,
   async fetch(request) {
-    const url = new URL(request.url);
+    try {
+      const url = new URL(request.url);
 
-    // API is handled by Hono (its own CORS + cookies); don't re-wrap its responses,
-    // so multi-value headers like Set-Cookie pass through untouched.
-    if (url.pathname.startsWith("/api")) {
-      return app.fetch(request);
+      // API is handled by Hono (its own CORS + cookies); don't re-wrap its responses,
+      // so multi-value headers like Set-Cookie pass through untouched.
+      if (url.pathname.startsWith("/api")) {
+        return app.fetch(request);
+      }
+
+      return withSecurityHeaders(await serveNonApi(request, url), request);
+    } catch (err) {
+      console.error("[server] request handler crash:", err);
+      return new Response("Internal Server Error", { status: 500 });
     }
-
-    return withSecurityHeaders(await serveNonApi(request, url), request);
   },
 });
 
 async function serveNonApi(request: Request, url: URL): Promise<Response> {
-    const publicOrigin = publicOriginFromRequest(request);
-    // F: SEO endpoints
-    if (url.pathname === "/sitemap.xml") {
-      return new Response(await buildSitemap(publicOrigin), {
-        headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" },
-      });
-    }
-    if (url.pathname === "/robots.txt") {
-      return new Response(buildRobots(siteUrlFrom(await getSettings(), publicOrigin)), {
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" },
-      });
-    }
-
-    // Service Worker must not be cached (browsers require fresh checks)
-    if (url.pathname === "/sw.js") {
-      const file = Bun.file(`${distDir}/sw.js`);
-      if (await file.exists()) return new Response(file, {
-        headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-cache, no-store, must-revalidate" },
-      });
-    }
-    // Web App Manifest
-    if (url.pathname === "/manifest.json") {
-      const file = Bun.file(`${distDir}/manifest.json`);
-      if (await file.exists()) return new Response(file, {
-        headers: { "Content-Type": "application/manifest+json; charset=utf-8", "Cache-Control": "public, max-age=3600" },
-      });
-    }
-    // Offline fallback
-    if (url.pathname === "/offline.html") {
-      const file = Bun.file(`${distDir}/offline.html`);
-      if (await file.exists()) return new Response(file, {
-        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=3600" },
-      });
-    }
-
-    // Serve favicon (no-cache to bust CDN)
-    if (url.pathname.startsWith("/favicon") || url.pathname === "/apple-touch-icon.png" || url.pathname.startsWith("/icon-")) {
-      const file = Bun.file(`${distDir}${url.pathname}`);
-      if (await file.exists()) return new Response(file, {
+  const publicOrigin = publicOriginFromRequest(request);
+  // F: SEO endpoints
+  if (url.pathname === "/sitemap.xml") {
+    return new Response(await buildSitemap(publicOrigin), {
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  }
+  if (url.pathname === "/robots.txt") {
+    return new Response(
+      buildRobots(siteUrlFrom(await getSettings(), publicOrigin)),
+      {
         headers: {
-          "Cache-Control": "no-cache, must-revalidate",
-          "Content-Type": url.pathname.endsWith(".svg") ? "image/svg+xml" : url.pathname.endsWith(".ico") ? "image/x-icon" : "image/png",
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "public, max-age=3600",
+        },
+      },
+    );
+  }
+
+  // Service Worker must not be cached (browsers require fresh checks)
+  if (url.pathname === "/sw.js") {
+    const file = Bun.file(`${distDir}/sw.js`);
+    if (await file.exists())
+      return new Response(file, {
+        headers: {
+          "Content-Type": "application/javascript; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
         },
       });
-    }
-
-    // Always inject OGP for HTML pages (root and SPA routes)
-    const isHtmlRequest = url.pathname === "/" || !url.pathname.includes(".");
-    if (!isHtmlRequest) {
-      const filePath = getStaticFilePath(url.pathname);
-      const file = Bun.file(filePath);
-      if (await file.exists()) {
-        const headers: Record<string, string> = {};
-        // Hashed assets (e.g. /assets/index-Bzsuqb-e.js) — cache forever
-        const immutable = url.pathname.startsWith("/assets/");
-        if (immutable) {
-          headers["Cache-Control"] = "public, max-age=31536000, immutable";
-        } else {
-          // Non-hashed static files (og-image.jpg, etc.) can't be immutable, but
-          // still deserve a revalidatable hour of browser/edge caching rather than
-          // the no-header heuristic default.
-          headers["Cache-Control"] = "public, max-age=3600";
-        }
-        return new Response(file, { headers });
-      }
-      // A request for a file with an extension that doesn't exist is a genuine 404
-      // (a missing asset / stale chunk) — don't fall through to serving index.html,
-      // which would return HTML (200) for a missing .png/.js and confuse caches.
-      return new Response("Not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
-    }
-
-    // Serve index.html with dynamic OGP injection
-    const index = Bun.file(indexPath);
-    if (await index.exists()) {
-      const html = await index.text();
-      const settings = await getSettings();
-      const heroImg = await getHeroOgImageUrl();
-      // Per-series OGP for /series/:slug so shared links carry that series' card.
-      let override: { title?: string; desc?: string; image?: string } | undefined;
-      const seriesMatch = url.pathname.match(/^\/series\/([^/]+)$/);
-      if (seriesMatch) {
-        const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
-        if (og) override = { title: og.title, desc: og.desc, image: og.image || undefined };
-      }
-      let injected = injectOgp(html, settings, url.pathname, heroImg, override, publicOrigin);
-      if (url.pathname === "/gallery" || url.pathname === "/") {
-        const preloadUrls = await getGalleryPreloadUrls();
-        if (preloadUrls.length > 0) {
-          const gridSizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
-          const preloadTags = preloadUrls.map(u => {
-            const href = escapeHtml(`${u}?w=600&q=84`);
-            const srcset = escapeHtml([400, 800, 1200, 1600].map((w, i) => `${u}?w=${w}&q=${[82,84,84,86][i]} ${w}w`).join(", "));
-            return `<link rel="preload" as="image" href="${href}" imagesrcset="${srcset}" imagesizes="${escapeHtml(gridSizes)}">`;
-          }).join("\n  ");
-          injected = injected.replace("</head>", () => `  ${preloadTags}\n  </head>`);
-        }
-      }
-      return new Response(injected, {
+  }
+  // Web App Manifest
+  if (url.pathname === "/manifest.json") {
+    const file = Bun.file(`${distDir}/manifest.json`);
+    if (await file.exists())
+      return new Response(file, {
+        headers: {
+          "Content-Type": "application/manifest+json; charset=utf-8",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+  }
+  // Offline fallback
+  if (url.pathname === "/offline.html") {
+    const file = Bun.file(`${distDir}/offline.html`);
+    if (await file.exists())
+      return new Response(file, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          // HTML must never be cached: it carries the current hashed asset URLs,
-          // so a stale HTML = stale app even though assets are immutable. The two
-          // CDN-* variants override Cache-Control specifically at the edge
-          // (Cloudflare), which otherwise may cache HTML independent of the
-          // browser-facing Cache-Control. See 2026-06-13 gzip/cache incident.
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "CDN-Cache-Control": "no-store",
-          "Cloudflare-CDN-Cache-Control": "no-store",
-          "Pragma": "no-cache",
-          "Expires": "0",
+          "Cache-Control": "public, max-age=3600",
         },
       });
-    }
+  }
 
-    return new Response("Build output not found. Run `bun run build` first.", {
-      status: 500,
+  // Serve favicon (no-cache to bust CDN)
+  if (
+    url.pathname.startsWith("/favicon") ||
+    url.pathname === "/apple-touch-icon.png" ||
+    url.pathname.startsWith("/icon-")
+  ) {
+    const file = Bun.file(`${distDir}${url.pathname}`);
+    if (await file.exists())
+      return new Response(file, {
+        headers: {
+          "Cache-Control": "no-cache, must-revalidate",
+          "Content-Type": url.pathname.endsWith(".svg")
+            ? "image/svg+xml"
+            : url.pathname.endsWith(".ico")
+              ? "image/x-icon"
+              : "image/png",
+        },
+      });
+  }
+
+  // Always inject OGP for HTML pages (root and SPA routes)
+  const isHtmlRequest = url.pathname === "/" || !url.pathname.includes(".");
+  if (!isHtmlRequest) {
+    const filePath = getStaticFilePath(url.pathname);
+    const file = Bun.file(filePath);
+    if (await file.exists()) {
+      const headers: Record<string, string> = {};
+      // Hashed assets (e.g. /assets/index-Bzsuqb-e.js) — cache forever
+      const immutable = url.pathname.startsWith("/assets/");
+      if (immutable) {
+        headers["Cache-Control"] = "public, max-age=31536000, immutable";
+      } else {
+        // Non-hashed static files (og-image.jpg, etc.) can't be immutable, but
+        // still deserve a revalidatable hour of browser/edge caching rather than
+        // the no-header heuristic default.
+        headers["Cache-Control"] = "public, max-age=3600";
+      }
+      return new Response(file, { headers });
+    }
+    // A request for a file with an extension that doesn't exist is a genuine 404
+    // (a missing asset / stale chunk) — don't fall through to serving index.html,
+    // which would return HTML (200) for a missing .png/.js and confuse caches.
+    return new Response("Not found", {
+      status: 404,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
+  }
+
+  // Serve index.html with dynamic OGP injection
+  const index = Bun.file(indexPath);
+  if (await index.exists()) {
+    const html = await index.text();
+    const settings = await getSettings();
+    const heroImg = await getHeroOgImageUrl();
+    // Per-series OGP for /series/:slug so shared links carry that series' card.
+    let override: { title?: string; desc?: string; image?: string } | undefined;
+    const seriesMatch = url.pathname.match(/^\/series\/([^/]+)$/);
+    if (seriesMatch) {
+      const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
+      if (og)
+        override = {
+          title: og.title,
+          desc: og.desc,
+          image: og.image || undefined,
+        };
+    }
+    let injected = injectOgp(
+      html,
+      settings,
+      url.pathname,
+      heroImg,
+      override,
+      publicOrigin,
+    );
+    if (url.pathname === "/gallery" || url.pathname === "/") {
+      const preloadUrls = await getGalleryPreloadUrls();
+      if (preloadUrls.length > 0) {
+        const gridSizes =
+          "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
+        const preloadTags = preloadUrls
+          .map((u) => {
+            const href = escapeHtml(`${u}?w=600&q=84`);
+            const srcset = escapeHtml(
+              [400, 800, 1200, 1600]
+                .map((w, i) => `${u}?w=${w}&q=${[82, 84, 84, 86][i]} ${w}w`)
+                .join(", "),
+            );
+            return `<link rel="preload" as="image" href="${href}" imagesrcset="${srcset}" imagesizes="${escapeHtml(gridSizes)}">`;
+          })
+          .join("\n  ");
+        injected = injected.replace(
+          "</head>",
+          () => `  ${preloadTags}\n  </head>`,
+        );
+      }
+    }
+    return new Response(injected, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        // HTML must never be cached: it carries the current hashed asset URLs,
+        // so a stale HTML = stale app even though assets are immutable. The two
+        // CDN-* variants override Cache-Control specifically at the edge
+        // (Cloudflare), which otherwise may cache HTML independent of the
+        // browser-facing Cache-Control. See 2026-06-13 gzip/cache incident.
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "CDN-Cache-Control": "no-store",
+        "Cloudflare-CDN-Cache-Control": "no-store",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+  }
+
+  return new Response("Build output not found. Run `bun run build` first.", {
+    status: 500,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }
 
 console.log(`Web server listening on http://localhost:${server.port}`);
+
+// Log memory usage every 5 minutes so Railway logs capture OOM trends.
+setInterval(() => {
+  const rss = process.memoryUsage.rss();
+  console.log(`[mem] rss=${Math.round(rss / 1024 / 1024)}MB`);
+}, 5 * 60_000);
 
 function getStaticFilePath(pathname: string) {
   const cleanPath = decodeURIComponent(pathname)

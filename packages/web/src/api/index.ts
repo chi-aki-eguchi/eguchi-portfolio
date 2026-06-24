@@ -19,6 +19,8 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import sharp from "sharp";
+sharp.cache(false);
+sharp.concurrency(1);
 import exifReader from "exif-reader";
 import { createHash } from "node:crypto";
 
@@ -57,7 +59,7 @@ import {
 // over and over — the main cause of slow / blank images in production. A byte
 // budget holds them all instead (thumbnails are small). Map insertion order is
 // the LRU order: get() moves an entry to the back, eviction drops the front.
-const RESIZE_CACHE_BYTES = 256 * 1024 * 1024; // resized thumbnails
+const RESIZE_CACHE_BYTES = 128 * 1024 * 1024; // resized thumbnails
 const resizeCache = new Map<string, { buf: Buffer; type: string }>();
 let resizeBytes = 0;
 
@@ -87,7 +89,7 @@ function cacheSet(key: string, buf: Buffer, type: string) {
 // Short-lived cache of the original storage object. Without it, the ~5 srcset widths
 // for one photo each do their own GetObject (1–2MB) on a cold load — 5× the storage
 // round-trips. Caching the original for a minute collapses that burst into one.
-const ORIG_CACHE_BYTES = 96 * 1024 * 1024;
+const ORIG_CACHE_BYTES = 48 * 1024 * 1024;
 const ORIG_TTL_MS = 60_000;
 const origCache = new Map<string, { buf: Buffer; type: string; ts: number }>();
 let origBytes = 0;
@@ -280,7 +282,10 @@ function passwordMatches(input: unknown): boolean {
 
 const loginFails = new Map<string, { count: number; first: number }>();
 function clientIp(c: any): string {
-  return clientIpFrom(c.req.header("x-forwarded-for"), c.req.header("x-real-ip"));
+  return clientIpFrom(
+    c.req.header("x-forwarded-for"),
+    c.req.header("x-real-ip"),
+  );
 }
 
 function isHttps(c: any): boolean {
@@ -326,7 +331,23 @@ const app = new Hono()
   })
 
   // ── Health ──────────────────────────────────────────────
-  .get("/health", (c) => c.json({ status: "ok", build: BUILD_ID }, 200))
+  .get("/health", (c) => {
+    const rss = process.memoryUsage.rss();
+    return c.json(
+      {
+        status: "ok",
+        build: BUILD_ID,
+        mem: {
+          rssMB: Math.round(rss / 1024 / 1024),
+          resizeCacheMB: Math.round(resizeBytes / 1024 / 1024),
+          resizeCacheEntries: resizeCache.size,
+          origCacheMB: Math.round(origBytes / 1024 / 1024),
+          origCacheEntries: origCache.size,
+        },
+      },
+      200,
+    );
+  })
 
   // ── Image proxy (storage → optional thumbnail resize → cache) ─
   // Storage holds UPLOAD_MAX_PX (3200px) optimised images (~1-3MB), so
@@ -346,15 +367,20 @@ const app = new Hono()
     // supports. Always on — the old env-var gate was a Runable-era precaution.
     const fmtParam = c.req.query("fmt");
     const fmt: "jpeg" | "webp" | "avif" =
-      fmtParam === "avif" ? "avif"
-      : fmtParam === "webp" ? "webp"
-      : fmtParam === "jpeg" ? "jpeg"
-      : (() => {
-          const accept = c.req.header("accept") ?? "";
-          return accept.includes("image/avif") ? "avif" as const
-            : accept.includes("image/webp") ? "webp" as const
-            : "jpeg" as const;
-        })();
+      fmtParam === "avif"
+        ? "avif"
+        : fmtParam === "webp"
+          ? "webp"
+          : fmtParam === "jpeg"
+            ? "jpeg"
+            : (() => {
+                const accept = c.req.header("accept") ?? "";
+                return accept.includes("image/avif")
+                  ? ("avif" as const)
+                  : accept.includes("image/webp")
+                    ? ("webp" as const)
+                    : ("jpeg" as const);
+              })();
     const ctypeOf: Record<string, string> = {
       jpeg: "image/jpeg",
       webp: "image/webp",
@@ -809,15 +835,18 @@ const app = new Hono()
           (tags?.Photo?.LensModel as string | undefined)?.trim() ?? "";
         if (lensModel) exifLens = lensModel;
         const fl = tags?.Photo?.FocalLength;
-        if (fl != null && Number.isFinite(Number(fl))) exifFocalLength = `${Math.round(Number(fl))}mm`;
+        if (fl != null && Number.isFinite(Number(fl)))
+          exifFocalLength = `${Math.round(Number(fl))}mm`;
         const fn = tags?.Photo?.FNumber;
-        if (fn != null && Number.isFinite(Number(fn))) exifFNumber = `f/${Number(fn)}`;
+        if (fn != null && Number.isFinite(Number(fn)))
+          exifFNumber = `f/${Number(fn)}`;
         const et = tags?.Photo?.ExposureTime;
         if (et != null && Number.isFinite(Number(et))) {
           const v = Number(et);
           exifExposureTime = v >= 1 ? `${v}s` : `1/${Math.round(1 / v)}s`;
         }
-        const iso = tags?.Photo?.ISOSpeedRatings ?? tags?.Photo?.PhotographicSensitivity;
+        const iso =
+          tags?.Photo?.ISOSpeedRatings ?? tags?.Photo?.PhotographicSensitivity;
         if (iso != null) exifIso = `ISO ${Array.isArray(iso) ? iso[0] : iso}`;
       }
     } catch {
@@ -949,9 +978,18 @@ const app = new Hono()
           camera:
             typeof body.camera === "string" && body.camera ? body.camera : null,
           lens: typeof body.lens === "string" && body.lens ? body.lens : null,
-          focalLength: typeof body.focalLength === "string" && body.focalLength ? body.focalLength : null,
-          fNumber: typeof body.fNumber === "string" && body.fNumber ? body.fNumber : null,
-          exposureTime: typeof body.exposureTime === "string" && body.exposureTime ? body.exposureTime : null,
+          focalLength:
+            typeof body.focalLength === "string" && body.focalLength
+              ? body.focalLength
+              : null,
+          fNumber:
+            typeof body.fNumber === "string" && body.fNumber
+              ? body.fNumber
+              : null,
+          exposureTime:
+            typeof body.exposureTime === "string" && body.exposureTime
+              ? body.exposureTime
+              : null,
           iso: typeof body.iso === "string" && body.iso ? body.iso : null,
           filmType:
             typeof body.filmType === "string" && body.filmType
@@ -988,13 +1026,19 @@ const app = new Hono()
         typeof body.lens === "string" && body.lens.trim() ? body.lens : null;
     if (body.focalLength !== undefined)
       update.focalLength =
-        typeof body.focalLength === "string" && body.focalLength.trim() ? body.focalLength : null;
+        typeof body.focalLength === "string" && body.focalLength.trim()
+          ? body.focalLength
+          : null;
     if (body.fNumber !== undefined)
       update.fNumber =
-        typeof body.fNumber === "string" && body.fNumber.trim() ? body.fNumber : null;
+        typeof body.fNumber === "string" && body.fNumber.trim()
+          ? body.fNumber
+          : null;
     if (body.exposureTime !== undefined)
       update.exposureTime =
-        typeof body.exposureTime === "string" && body.exposureTime.trim() ? body.exposureTime : null;
+        typeof body.exposureTime === "string" && body.exposureTime.trim()
+          ? body.exposureTime
+          : null;
     if (body.iso !== undefined)
       update.iso =
         typeof body.iso === "string" && body.iso.trim() ? body.iso : null;

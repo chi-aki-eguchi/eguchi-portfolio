@@ -2,16 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { srcSetFor, srcFor } from "../lib/picture";
 
-// R2: the fitted (non-zoomed) photo claims ~95% of the viewport. The srcset lets
-// the browser pick by viewport × devicePixelRatio — phones get ~1200px, Retina
-// desktops climb to 2400px — so it's sharp everywhere without over-downloading.
+// Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
+// srcset without pulling the full 3200px master stored in R2.
 const FIT_W = "95vw";
 const FIT_H = "94dvh";
-// Exported so grids can warm the exact candidate the lightbox will request
-// (a prefetch with a different w= is a wasted download, not a cache hit).
 export const FIT_SIZES = "95vw";
 export const fitSrcSet = (url: string) =>
-  `${url}?w=1200&q=88 1200w, ${url}?w=1600&q=88 1600w, ${url}?w=2000&q=90 2000w, ${url}?w=2400&q=90 2400w`;
+  `${url}?w=800&q=82 800w, ${url}?w=1200&q=85 1200w, ${url}?w=1600&q=85 1600w, ${url}?w=1920&q=85 1920w`;
 // Match the typical grid sizes so the browser picks the same cached entry.
 const GRID_THUMB_SIZES = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
 
@@ -363,7 +360,7 @@ export function Lightbox({
       const img = document.createElement("img");
       img.srcset = fitSrcSet(url);
       img.sizes = FIT_SIZES;
-      img.src = srcFor(url, 1600, 88);
+      img.src = srcFor(url, 1200, 85);
       img.fetchPriority = "low";
       img.decoding = "async";
       picture.appendChild(img);
@@ -535,7 +532,7 @@ export function Lightbox({
                 <source type="image/webp" srcSet={srcSetFor(photo.url, "lightbox", "webp")} sizes={FIT_SIZES} />
                 <img
                   ref={fitImgRef}
-                  src={srcFor(photo.url, 1600, 88)}
+                  src={srcFor(photo.url, 1200, 85)}
                   srcSet={fitSrcSet(photo.url)}
                   sizes={FIT_SIZES}
                   alt={photo.title || photo.meta || `Photograph ${index + 1}`}

@@ -15,10 +15,10 @@ const HERO_WIDTHS: SrcSetEntry[] = [
 ];
 
 const LIGHTBOX_WIDTHS: SrcSetEntry[] = [
-  { w: 1200, q: 88 },
-  { w: 1600, q: 88 },
-  { w: 2000, q: 90 },
-  { w: 2400, q: 90 },
+  { w: 800, q: 82 },
+  { w: 1200, q: 85 },
+  { w: 1600, q: 85 },
+  { w: 1920, q: 85 },
 ];
 
 export type ImagePreset = "grid" | "hero" | "lightbox";

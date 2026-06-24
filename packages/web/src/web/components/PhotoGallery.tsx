@@ -213,7 +213,7 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
         aria-label={photo.title || photo.meta || photo.filename || "写真を開く"}
         style={{ justifySelf: opts.justifySelf, width: opts.width, display: "block", padding: 0, border: "none", background: "none", font: "inherit", textAlign: "inherit", cursor: "pointer" }}
         onClick={() => openLightbox(idx)}
-        onMouseEnter={() => { const img = new Image(); img.fetchPriority = "low"; img.sizes = FIT_SIZES; img.srcset = fitSrcSet(photo.url); img.src = `${photo.url}?w=1600&q=88`; }}
+        onMouseEnter={() => { const img = new Image(); img.fetchPriority = "low"; img.sizes = FIT_SIZES; img.srcset = fitSrcSet(photo.url); img.src = `${photo.url}?w=1200&q=85`; }}
       >
         <div
           className={`photo-card fade-in-item${opts.cardClassName ? ` ${opts.cardClassName}` : ""}`}

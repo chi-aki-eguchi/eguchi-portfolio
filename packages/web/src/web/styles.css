@@ -283,9 +283,21 @@ body {
   transform: scale(1);
 }
 
+/* ─── Safe-area-aware nav padding — additive to base Tailwind px-6/md:px-12.
+   On notched devices in landscape the inset shifts the nav inward; on desktop
+   the vars are 0px so nothing changes. */
+header > nav {
+  padding-left: calc(1.5rem + var(--sai-left, 0px)) !important;
+  padding-right: calc(1.5rem + var(--sai-right, 0px)) !important;
+}
+
 /* ─── BB1: nav position — desktop only; mobile always keeps the hamburger.
    Specificity (.nav-pos-* > header) beats the tailwind utility classes. */
 @media (min-width: 768px) {
+  header > nav {
+    padding-left: calc(3rem + var(--sai-left, 0px)) !important;
+    padding-right: calc(3rem + var(--sai-right, 0px)) !important;
+  }
   .nav-pos-left > header {
     top: 0;
     left: 0;
@@ -300,7 +312,7 @@ body {
     align-items: flex-start;
     justify-content: flex-start;
     gap: 3rem;
-    padding: 2.5rem 2rem;
+    padding: 2.5rem 2rem !important;
   }
   .nav-pos-left > header > nav ul {
     flex-direction: column;

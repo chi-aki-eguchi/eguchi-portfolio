@@ -101,7 +101,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }`}
         style={{ WebkitBackdropFilter: scrolled ? "blur(14px)" : "none", paddingTop: "var(--sai-top)" }}
       >
-        <nav className="max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between" style={{ paddingLeft: "max(var(--sai-left), 0px)", paddingRight: "max(var(--sai-right), 0px)" }}>
+        <nav className="max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between">
           {/* Logo */}
           <Link
             to="/"

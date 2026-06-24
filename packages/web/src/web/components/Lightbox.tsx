@@ -24,6 +24,7 @@ export type LightboxPhoto = {
   iso?: string | null;
   filmType?: string | null;
   shotAt?: string | null;
+  lqipSrc?: string;
 };
 
 /**
@@ -45,12 +46,14 @@ export function Lightbox({
   onClose,
   onPrev,
   onNext,
+  onRequestMore,
 }: {
   photos: LightboxPhoto[];
   index: number;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onRequestMore?: () => void;
 }) {
   const [imgError, setImgError] = useState(false);
   const [chrome, setChrome] = useState(true); // counter / caption / nav visibility
@@ -60,6 +63,7 @@ export function Lightbox({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fitImgRef = useRef<HTMLImageElement>(null);   // hi-res fitted image
   const placeImgRef = useRef<HTMLImageElement>(null); // thumbnail (defines the layout box)
+  const genRef = useRef(0); // generation counter — stale onLoad handlers are no-ops
 
   // ── Zoom / pan engine ────────────────────────────────────
   // scale/tx/ty live in refs and are written straight to the layer's style:
@@ -332,12 +336,14 @@ export function Lightbox({
 
   // Reset transient view state when the index changes.
   useEffect(() => {
+    genRef.current += 1;
     setImgError(false);
     setChrome(true);
     setLoadStage('thumb');
     setExifOpen(false);
     setZoomSrcReady(false);
     resetZoom(false);
+    if (onRequestMore && photos.length - index <= 5) onRequestMore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
@@ -428,6 +434,7 @@ export function Lightbox({
   }, [onPrev, onNext]);
 
   const photo = photos[index];
+  const renderGen = genRef.current;
 
   // Chrome (overlay UI) fades out in immersive mode; also hidden while zoomed so
   // the detail view is unobstructed.
@@ -511,6 +518,16 @@ export function Lightbox({
               aria-label={isZoomed ? "ズームを解除" : (chrome ? "UIを隠して写真だけ表示" : "UIを表示")}
               style={{ position: "relative", background: "none", border: "none", padding: 0, margin: 0, display: "block", lineHeight: 0, cursor: isZoomed ? "grab" : "pointer" }}
             >
+              {/* LQIP blur — instant placeholder when grid thumb isn't cached yet */}
+              {photo.lqipSrc && loadStage === 'thumb' && (
+                <img
+                  src={photo.lqipSrc}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", filter: "blur(20px)", transform: "scale(1.1)" }}
+                />
+              )}
               {/* Stage 1: grid thumbnail — already in browser cache, appears instantly */}
               <picture>
                 <source type="image/avif" srcSet={srcSetFor(photo.url, "grid", "avif")} sizes={GRID_THUMB_SIZES} />
@@ -539,7 +556,7 @@ export function Lightbox({
                   draggable={false}
                   fetchPriority="high"
                   decoding="async"
-                  onLoad={() => setLoadStage(s => s === 'thumb' ? 'medium' : s)}
+                  onLoad={() => setLoadStage(s => genRef.current === renderGen && s === 'thumb' ? 'medium' : s)}
                   style={{ width: "100%", height: "100%", objectFit: "contain", opacity: loadStage !== 'thumb' ? 1 : 0 }}
                 />
               </picture>
@@ -553,7 +570,7 @@ export function Lightbox({
                   srcSet={fitSrcSet(photo.url)}
                   sizes={FIT_SIZES}
                   alt={photo.title || photo.meta || `Photograph ${index + 1}`}
-                  onLoad={() => setLoadStage('full')}
+                  onLoad={() => { if (genRef.current === renderGen) setLoadStage('full'); }}
                   onError={() => setImgError(true)}
                   decoding="async"
                   style={{ width: "100%", height: "100%", objectFit: "contain", opacity: loadStage === 'full' ? 1 : 0 }}

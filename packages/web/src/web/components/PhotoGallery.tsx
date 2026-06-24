@@ -97,7 +97,7 @@ const LqipImage = memo(function LqipImage({ url, alt, sizes, isNearViewport, isF
  * `layoutType` chooses the arrangement (admin-tunable per page); the lightbox,
  * preloading and tile rendering are shared across all layouts.
  */
-export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { photos: GalleryPhoto[]; layoutType?: string; variant?: "top" | "gallery" }) {
+export function PhotoGallery({ photos, layoutType, variant = "gallery", onRequestMore }: { photos: GalleryPhoto[]; layoutType?: string; variant?: "top" | "gallery"; onRequestMore?: () => void }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   // Track the ID of the photo that is currently open so we can detect real
   // filter-switches (photo disappears from the set) vs. array growth from
@@ -191,9 +191,17 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
       return ni;
     });
   }, [photos]);
+  const onRequestMoreRef = useRef(onRequestMore);
+  onRequestMoreRef.current = onRequestMore;
   const next = useCallback(() => {
     setLightboxIndex((i) => {
       if (i === null) return null;
+      if (i >= photos.length - 1) {
+        if (onRequestMoreRef.current) {
+          onRequestMoreRef.current();
+          return i;
+        }
+      }
       const ni = (i + 1) % photos.length;
       openPhotoIdRef.current = photos[ni]?.id ?? null;
       return ni;
@@ -456,11 +464,12 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
       <div ref={containerRef} className="filter-grid-animated">{body}</div>
       {lightboxIndex !== null && photos[lightboxIndex] && (
         <Lightbox
-          photos={photos}
+          photos={photos.map(p => ({ ...p, lqipSrc: `${p.url}?w=20&q=20` }))}
           index={lightboxIndex}
           onClose={closeLightbox}
           onPrev={prev}
           onNext={next}
+          onRequestMore={onRequestMore}
         />
       )}
     </>

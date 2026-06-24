@@ -257,6 +257,7 @@ export default function GalleryPage() {
               <PhotoGallery
                 photos={rendered}
                 layoutType={settings?.galleryLayout}
+                onRequestMore={rendered.length < filtered.length ? () => setExtraCount(c => c + GALLERY_STEP) : undefined}
               />
               {rendered.length < filtered.length && (
                 <div ref={gallerySentinelRef} aria-hidden="true" style={{ height: 1 }} />

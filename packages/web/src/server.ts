@@ -2,7 +2,7 @@ import { resolve as pathResolve } from "node:path";
 import app from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { injectOgp, siteUrlFrom, escapeHtml, BUILD_ID } from "./api/ogp";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
@@ -60,6 +60,43 @@ async function getHeroOgImageUrl(): Promise<string> {
     heroOgCacheTime = now;
   } catch (e) { console.error("[OGP] hero image fetch failed:", e); /* use stale/empty */ }
   return heroOgCache ?? "";
+}
+
+// First N gallery photo URLs for preloading grid thumbnails on /gallery.
+let galleryPreloadCache: string[] = [];
+let galleryPreloadCacheTime = 0;
+const GALLERY_PRELOAD_COUNT = 8;
+async function getGalleryPreloadUrls(): Promise<string[]> {
+  const now = Date.now();
+  if (now - galleryPreloadCacheTime < SETTINGS_TTL && galleryPreloadCache.length > 0) return galleryPreloadCache;
+  try {
+    const [[sortRow]] = [
+      await withRetry(() =>
+        db.select({ value: schema.siteSettings.value })
+          .from(schema.siteSettings)
+          .where(eq(schema.siteSettings.key, "gallerySortOrder"))
+          .limit(1)
+      ),
+    ];
+    const gallerySortOrder = sortRow?.value ?? "manual";
+    const orderExpr =
+      gallerySortOrder === "date_desc"
+        ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
+        : gallerySortOrder === "date_asc"
+          ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
+          : gallerySortOrder === "upload_desc"
+            ? sql`${schema.photos.createdAt} DESC`
+            : schema.photos.sortOrder;
+    const rows = await withRetry(() =>
+      db.select({ url: schema.photos.url }).from(schema.photos)
+        .where(and(isNull(schema.photos.deletedAt), eq(schema.photos.isPublished, true)))
+        .orderBy(orderExpr)
+        .limit(GALLERY_PRELOAD_COUNT)
+    );
+    galleryPreloadCache = rows.map(r => r.url);
+    galleryPreloadCacheTime = now;
+  } catch (e) { console.error("[preload] gallery photos fetch failed:", e); }
+  return galleryPreloadCache;
 }
 
 // Per-series OGP so a shared /series/:slug link shows that series' own title,
@@ -290,7 +327,19 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
         if (og) override = { title: og.title, desc: og.desc, image: og.image || undefined };
       }
-      const injected = injectOgp(html, settings, url.pathname, heroImg, override, publicOrigin);
+      let injected = injectOgp(html, settings, url.pathname, heroImg, override, publicOrigin);
+      if (url.pathname === "/gallery" || url.pathname === "/") {
+        const preloadUrls = await getGalleryPreloadUrls();
+        if (preloadUrls.length > 0) {
+          const gridSizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
+          const preloadTags = preloadUrls.map(u => {
+            const href = escapeHtml(`${u}?w=600&q=84`);
+            const srcset = escapeHtml([400, 800, 1200, 1600].map((w, i) => `${u}?w=${w}&q=${[82,84,84,86][i]} ${w}w`).join(", "));
+            return `<link rel="preload" as="image" href="${href}" imagesrcset="${srcset}" imagesizes="${escapeHtml(gridSizes)}">`;
+          }).join("\n  ");
+          injected = injected.replace("</head>", () => `  ${preloadTags}\n  </head>`);
+        }
+      }
       return new Response(injected, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",

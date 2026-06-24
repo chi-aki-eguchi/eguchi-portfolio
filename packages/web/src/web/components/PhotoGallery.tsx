@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
@@ -24,6 +24,61 @@ export type GalleryPhoto = {
 // N1/N4: the selectable grid layouts. Unknown / unset values fall back to mosaic.
 export type GalleryLayoutType = "mosaic" | "grid" | "scroll" | "stagger" | "editorial" | "collage" | "clean-grid" | "masonry" | "large-format";
 const KNOWN_LAYOUTS: GalleryLayoutType[] = ["mosaic", "grid", "scroll", "stagger", "editorial", "collage", "clean-grid", "masonry", "large-format"];
+
+const LqipImage = memo(function LqipImage({ url, alt, sizes, isNearViewport, isFirst, width, height, style }: {
+  url: string; alt: string; sizes: string; isNearViewport: boolean; isFirst: boolean;
+  width: number | null | undefined; height: number | null | undefined; style?: React.CSSProperties;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const swappedRef = useRef(false);
+
+  useEffect(() => {
+    setLoaded(false);
+    swappedRef.current = false;
+  }, [url]);
+
+  const onLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const el = e.currentTarget;
+    if (swappedRef.current) { setLoaded(true); return; }
+    if (el.dataset.src) {
+      const realSrc = el.dataset.src;
+      const realSrcset = el.dataset.srcset;
+      const full = new Image();
+      full.onload = () => {
+        swappedRef.current = true;
+        el.srcset = realSrcset || "";
+        el.src = realSrc;
+        setLoaded(true);
+      };
+      full.src = realSrc;
+      if (realSrcset) full.srcset = realSrcset;
+      full.sizes = sizes;
+      return;
+    }
+    swappedRef.current = true;
+    setLoaded(true);
+  }, [sizes]);
+
+  return (
+    <img
+      src={isNearViewport ? `${url}?w=600&q=84` : `${url}?w=20&q=20`}
+      data-src={isNearViewport ? undefined : `${url}?w=600&q=84`}
+      srcSet={isNearViewport ? srcSetFor(url, "grid") : undefined}
+      data-srcset={isNearViewport ? undefined : srcSetFor(url, "grid")}
+      sizes={sizes}
+      alt={alt}
+      loading={isNearViewport ? "eager" : "lazy"}
+      fetchPriority={isFirst ? "high" : undefined}
+      decoding="async"
+      width={width || undefined}
+      height={height || undefined}
+      style={style}
+      className={loaded ? "lqip-loaded" : "lqip-loading"}
+      onLoad={onLoad}
+      onError={(e) => { setLoaded(true); e.currentTarget.closest(".photo-card")?.classList.add("photo-broken"); }}
+    />
+  );
+});
 
 /**
  * Photo grid + lightbox (グループG / N). Shared by the Gallery and Series pages.
@@ -174,43 +229,15 @@ export function PhotoGallery({ photos, layoutType, variant = "gallery" }: { phot
                 <source type="image/webp" srcSet={srcSetFor(photo.url, "grid", "webp")} sizes={opts.sizes} />
               </>
             )}
-            <img
-              src={isNearViewport ? `${photo.url}?w=600&q=84` : `${photo.url}?w=20&q=20`}
-              data-src={isNearViewport ? undefined : `${photo.url}?w=600&q=84`}
-              srcSet={isNearViewport ? srcSetFor(photo.url, "grid") : undefined}
-              data-srcset={isNearViewport ? undefined : srcSetFor(photo.url, "grid")}
-              sizes={opts.sizes}
+            <LqipImage
+              url={photo.url}
               alt={photo.title || photo.meta || photo.filename || `Photograph ${idx + 1}`}
-              loading={isNearViewport ? "eager" : "lazy"}
-              fetchPriority={idx === 0 ? "high" : undefined}
-              decoding="async"
-              width={photo.width || undefined}
-              height={photo.height || undefined}
+              sizes={opts.sizes}
+              isNearViewport={isNearViewport}
+              isFirst={idx === 0}
+              width={photo.width}
+              height={photo.height}
               style={imgStyle}
-              className="lqip-loading"
-              onLoad={(e) => {
-                const el = e.currentTarget;
-                if (el.dataset.src) {
-                  const realSrc = el.dataset.src;
-                  const realSrcset = el.dataset.srcset;
-                  delete el.dataset.src;
-                  delete el.dataset.srcset;
-                  const full = new Image();
-                  full.onload = () => {
-                    el.srcset = realSrcset || "";
-                    el.src = realSrc;
-                    el.classList.remove("lqip-loading");
-                    el.classList.add("lqip-loaded");
-                  };
-                  full.src = realSrc;
-                  if (realSrcset) full.srcset = realSrcset;
-                  full.sizes = opts.sizes;
-                  return;
-                }
-                el.classList.remove("lqip-loading");
-                el.classList.add("lqip-loaded");
-              }}
-              onError={(e) => { const el = e.currentTarget; el.classList.remove("lqip-loading"); el.classList.add("lqip-loaded"); el.closest(".photo-card")?.classList.add("photo-broken"); }}
             />
           </picture>
           {(opts.showHoverCaption ?? true) && photo.title && <span className="tile-caption" aria-hidden="true">{photo.title}</span>}

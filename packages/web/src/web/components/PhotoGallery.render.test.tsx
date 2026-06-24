@@ -33,8 +33,9 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   Object.assign(globalThis, { ResizeObserver: RO });
   Object.assign(dom.window, { ResizeObserver: RO });
 }
+(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { createElement } = await import("react");
+const { createElement, act } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 const { PhotoGallery } = await import("./PhotoGallery");
@@ -51,12 +52,12 @@ test("PhotoGallery renders tiles without crashing (every layout)", async () => {
     const host = dom.window.document.createElement("div");
     dom.window.document.body.appendChild(host);
     const root = createRoot(host);
-    root.render(
-      createElement(QueryClientProvider, { client: qc },
-        createElement(PhotoGallery, { photos, layoutType: layout }))
-    );
-    // flush React's concurrent render
-    await new Promise((r) => setTimeout(r, 0));
+    await act(async () => {
+      root.render(
+        createElement(QueryClientProvider, { client: qc },
+          createElement(PhotoGallery, { photos, layoutType: layout }))
+      );
+    });
     const imgs = host.querySelectorAll("img");
     expect(imgs.length).toBeGreaterThanOrEqual(photos.length);
     root.unmount();
@@ -69,17 +70,18 @@ test("tile hover caption renders for titled photos only", async () => {
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
-  root.render(
-    createElement(QueryClientProvider, { client: qc },
-      createElement(PhotoGallery, {
-        photos: [
-          { id: 10, url: "/api/images/photos/t.jpg", title: "Titled" },
-          { id: 11, url: "/api/images/photos/u.jpg", title: "" },
-        ],
-        layoutType: "grid",
-      }))
-  );
-  await new Promise((r) => setTimeout(r, 0));
+  await act(async () => {
+    root.render(
+      createElement(QueryClientProvider, { client: qc },
+        createElement(PhotoGallery, {
+          photos: [
+            { id: 10, url: "/api/images/photos/t.jpg", title: "Titled" },
+            { id: 11, url: "/api/images/photos/u.jpg", title: "" },
+          ],
+          layoutType: "grid",
+        }))
+    );
+  });
   const captions = host.querySelectorAll(".tile-caption");
   expect(captions.length).toBe(1);
   expect(captions[0].textContent).toBe("Titled");
@@ -92,20 +94,20 @@ test("a failed image marks its card as photo-broken (quiet placeholder)", async 
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
-  root.render(
-    createElement(QueryClientProvider, { client: qc },
-      createElement(PhotoGallery, {
-        photos: [{ id: 21, url: "/api/images/photos/missing.jpg", title: "Gone" }],
-        layoutType: "collage", // the production layout — error path must hold inside the framed card too
-      }))
-  );
-  await new Promise((r) => setTimeout(r, 0));
+  await act(async () => {
+    root.render(
+      createElement(QueryClientProvider, { client: qc },
+        createElement(PhotoGallery, {
+          photos: [{ id: 21, url: "/api/images/photos/missing.jpg", title: "Gone" }],
+          layoutType: "collage",
+        }))
+    );
+  });
   const img = host.querySelector(".photo-card img") as HTMLImageElement;
   expect(img).not.toBeNull();
-  img.dispatchEvent(new dom.window.Event("error"));
-  await new Promise((r) => setTimeout(r, 0));
+  await act(async () => { img.dispatchEvent(new dom.window.Event("error", { bubbles: true })); });
   expect(img.closest(".photo-card")?.classList.contains("photo-broken")).toBe(true);
-  expect(img.classList.contains("lqip-loaded")).toBe(true); // blur is released, not stuck
+  expect(img.classList.contains("lqip-loaded")).toBe(true);
   root.unmount();
   host.remove();
 });

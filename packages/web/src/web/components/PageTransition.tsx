@@ -8,7 +8,9 @@ function prefersReducedMotion(): boolean {
 }
 
 function hasViewTransitions(): boolean {
-  return typeof document !== "undefined" && "startViewTransition" in document;
+  return typeof document !== "undefined"
+    && "startViewTransition" in document
+    && window.parent === window;
 }
 
 export default function PageTransition({ children }: { children: React.ReactNode }) {

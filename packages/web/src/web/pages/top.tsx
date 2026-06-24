@@ -993,29 +993,12 @@ export default function TopPage() {
   const nameKata = settings?.profileNameKata ?? "";
   const heroMode = settings?.heroMode ?? "carousel";
 
-  const homeLayoutProps: HomeLayoutProps = {
-    heroPhotos,
-    featured,
-    worksPoolLen: worksPool.length,
-    worksSentinelRef,
-    fadeRef,
-    settings,
-  };
-
-  if (heroMode === "quiet-grid") return <HomeQuietGrid {...homeLayoutProps} />;
-  if (heroMode === "editorial") return <HomeEditorial {...homeLayoutProps} />;
-  if (heroMode === "immersive") return <HomeImmersive {...homeLayoutProps} />;
-
   const isSingle = heroMode === "single" && heroPhotos.length > 0;
-
-  // AA: hero presentation settings — defaults reproduce the pre-AA look exactly.
   const heroFullscreen =
     (settings?.heroDisplayMode || "normal") === "fullscreen";
   const heroTitlePosition = settings?.heroTitlePosition || "center";
   const heroScrollEffect = settings?.heroScrollEffect || "none";
 
-  // AA3: scroll effect — rAF-throttled, transform/opacity only, applied to the
-  // fx layer inside the hero's overflow-hidden box (no layout movement).
   const heroFxRef = useRef<HTMLDivElement>(null);
   const heroBoxRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -1060,6 +1043,19 @@ export default function TopPage() {
       el.style.opacity = "";
     };
   }, [heroScrollEffect, isSingle, heroFullscreen]);
+
+  const homeLayoutProps: HomeLayoutProps = {
+    heroPhotos,
+    featured,
+    worksPoolLen: worksPool.length,
+    worksSentinelRef,
+    fadeRef,
+    settings,
+  };
+
+  if (heroMode === "quiet-grid") return <HomeQuietGrid {...homeLayoutProps} />;
+  if (heroMode === "editorial") return <HomeEditorial {...homeLayoutProps} />;
+  if (heroMode === "immersive") return <HomeImmersive {...homeLayoutProps} />;
 
   return (
     <div>

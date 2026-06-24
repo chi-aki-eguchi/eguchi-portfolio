@@ -24,10 +24,11 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: unknown) {
+  componentDidCatch(error: unknown, info: { componentStack?: string }) {
+    console.error("[ErrorBoundary]", error);
+    if (info.componentStack) console.error("[ErrorBoundary] component stack:", info.componentStack);
     if (isChunkLoadError(error)) {
       const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
-      // Reload at most once per cooldown so a genuinely-missing chunk can't loop.
       if (Date.now() - last > RELOAD_COOLDOWN_MS) {
         sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
         window.location.reload();

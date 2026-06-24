@@ -14,7 +14,7 @@ try {
 }
 
 const port = Number(process.env.PORT ?? 3000);
-const distDir = `${import.meta.dir}/../dist`;
+const distDir = pathResolve(import.meta.dir, "..", "dist");
 const indexPath = `${distDir}/index.html`;
 
 // Cache settings for OGP injection (refresh every 60s)

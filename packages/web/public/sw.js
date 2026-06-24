@@ -1,4 +1,4 @@
-const CACHE_STATIC = "static-v1";
+const CACHE_STATIC = "static-v2";
 const CACHE_IMAGES = "images-v1";
 const OFFLINE_URL = "/offline.html";
 
@@ -46,7 +46,8 @@ self.addEventListener("fetch", (e) => {
       caches.open(CACHE_STATIC).then((cache) =>
         cache.match(e.request).then((cached) => {
           const fetched = fetch(e.request).then((res) => {
-            if (res.ok) cache.put(e.request, res.clone());
+            const ct = res.headers.get("content-type") || "";
+            if (res.ok && !ct.includes("text/html")) cache.put(e.request, res.clone());
             return res;
           });
           return cached || fetched;

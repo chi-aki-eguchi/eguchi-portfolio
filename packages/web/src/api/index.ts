@@ -20,7 +20,7 @@ import {
 } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 sharp.cache(false);
-sharp.concurrency(1);
+sharp.concurrency(2);
 import exifReader from "exif-reader";
 import { createHash } from "node:crypto";
 
@@ -248,6 +248,60 @@ async function optimiseImage(
     })
     .jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:4:4" })
     .toBuffer();
+}
+
+const THUMB_WIDTH = 640;
+const THUMB_QUALITY = 82;
+const MEDIUM_WIDTH = 1920;
+const MEDIUM_QUALITY = 85;
+
+async function generateWebP(
+  input: Buffer,
+  maxWidth: number,
+  quality: number,
+): Promise<Buffer> {
+  return sharp(input)
+    .rotate()
+    .resize({ width: maxWidth, withoutEnlargement: true })
+    .webp({ quality })
+    .toBuffer();
+}
+
+function photoWithThumbs<
+  T extends { thumbKey?: string | null; mediumKey?: string | null },
+>(p: T): T & { thumbUrl: string | null; mediumUrl: string | null } {
+  return {
+    ...p,
+    thumbUrl: p.thumbKey ? keyToProxyUrl(p.thumbKey) : null,
+    mediumUrl: p.mediumKey ? keyToProxyUrl(p.mediumKey) : null,
+  };
+}
+
+function thumbKeyFrom(originalKey: string): string {
+  const name = originalKey.replace(/^photos\//, "").replace(/\.[^.]+$/, "");
+  return `thumbs/${name}.webp`;
+}
+
+function mediumKeyFrom(originalKey: string): string {
+  const name = originalKey.replace(/^photos\//, "").replace(/\.[^.]+$/, "");
+  return `medium/${name}.webp`;
+}
+
+async function generateAndUploadThumbnails(
+  optimisedBuf: Buffer,
+  originalKey: string,
+): Promise<{ thumbKey: string; mediumKey: string }> {
+  const tKey = thumbKeyFrom(originalKey);
+  const mKey = mediumKeyFrom(originalKey);
+  const [thumbBuf, mediumBuf] = await Promise.all([
+    generateWebP(optimisedBuf, THUMB_WIDTH, THUMB_QUALITY),
+    generateWebP(optimisedBuf, MEDIUM_WIDTH, MEDIUM_QUALITY),
+  ]);
+  await Promise.all([
+    uploadToStorage(tKey, thumbBuf, "image/webp"),
+    uploadToStorage(mKey, mediumBuf, "image/webp"),
+  ]);
+  return { thumbKey: tKey, mediumKey: mKey };
 }
 
 // Upload buffer to S3-compatible object storage.
@@ -736,7 +790,7 @@ const app = new Hono()
     const photos = await withRetry(() =>
       db.select().from(schema.photos).where(where).orderBy(orderExpr),
     );
-    return c.json({ photos }, 200);
+    return c.json({ photos: photos.map(photoWithThumbs) }, 200);
   })
 
   // ── Admin: Settings update ──────────────────────────────
@@ -856,6 +910,16 @@ const app = new Hono()
     const key = `photos/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.jpg`;
     await uploadToStorage(key, optimised, "image/jpeg");
 
+    let thumbKey: string | null = null;
+    let mediumKey: string | null = null;
+    try {
+      const keys = await generateAndUploadThumbnails(optimised, key);
+      thumbKey = keys.thumbKey;
+      mediumKey = keys.mediumKey;
+    } catch (e) {
+      console.error("[upload] thumbnail generation failed:", e);
+    }
+
     const proxyUrl = keyToProxyUrl(key);
     return c.json(
       {
@@ -865,6 +929,8 @@ const app = new Hono()
         width,
         height,
         fileHash,
+        thumbKey,
+        mediumKey,
         shotAt,
         exifCamera,
         exifLens,
@@ -998,6 +1064,14 @@ const app = new Hono()
           width: typeof body.width === "number" ? body.width : null,
           height: typeof body.height === "number" ? body.height : null,
           fileHash: typeof body.fileHash === "string" ? body.fileHash : null,
+          thumbKey:
+            typeof body.thumbKey === "string" && body.thumbKey
+              ? body.thumbKey
+              : null,
+          mediumKey:
+            typeof body.mediumKey === "string" && body.mediumKey
+              ? body.mediumKey
+              : null,
           shotAt:
             typeof body.shotAt === "string" && body.shotAt ? body.shotAt : null,
           // Atomic next sort order — avoids duplicate values when concurrent
@@ -1099,6 +1173,8 @@ const app = new Hono()
           width: orig.width,
           height: orig.height,
           fileHash: orig.fileHash,
+          thumbKey: orig.thumbKey,
+          mediumKey: orig.mediumKey,
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos)`,
         })
         .returning(),
@@ -1560,7 +1636,7 @@ const app = new Hono()
         )
         .orderBy(seriesOrderExpr),
     );
-    return c.json({ series: s, photos }, 200);
+    return c.json({ series: s, photos: photos.map(photoWithThumbs) }, 200);
   })
 
   // ── Admin: Series ───────────────────────────────────────
@@ -1787,7 +1863,7 @@ const app = new Hono()
           sql`${inArray(schema.photos.id, photoIds)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
         ),
     );
-    const photoMap = new Map(heroRows.map((p) => [p.id, p]));
+    const photoMap = new Map(heroRows.map((p) => [p.id, photoWithThumbs(p)]));
     const result = rows.map((r) => photoMap.get(r.photoId)).filter(Boolean);
     return c.json({ heroPhotos: result }, 200);
   })
@@ -1868,6 +1944,51 @@ const app = new Hono()
       ),
     );
     return c.json({ ok: true }, 200);
+  })
+
+  // ── Admin: Batch-generate thumbnails for existing photos ──
+  .post("/admin/generate-thumbnails", requireAdmin, async (c) => {
+    const photos = await withRetry(() =>
+      db
+        .select({
+          id: schema.photos.id,
+          url: schema.photos.url,
+          thumbKey: schema.photos.thumbKey,
+          mediumKey: schema.photos.mediumKey,
+        })
+        .from(schema.photos)
+        .where(isNull(schema.photos.deletedAt)),
+    );
+    const pending = photos.filter((p) => !p.thumbKey || !p.mediumKey);
+    if (pending.length === 0)
+      return c.json({ ok: true, processed: 0, total: photos.length }, 200);
+
+    let processed = 0;
+    let failed = 0;
+    for (const p of pending) {
+      const r2Key = p.url.replace("/api/images/", "");
+      try {
+        const obj = await s3.send(
+          new GetObjectCommand({ Bucket: BUCKET, Key: r2Key }),
+        );
+        const buf = Buffer.from(await obj.Body!.transformToByteArray());
+        const keys = await generateAndUploadThumbnails(buf, r2Key);
+        await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set({ thumbKey: keys.thumbKey, mediumKey: keys.mediumKey })
+            .where(eq(schema.photos.id, p.id)),
+        );
+        processed++;
+        console.log(
+          `[thumbnails] ${processed}/${pending.length} done: id=${p.id}`,
+        );
+      } catch (e) {
+        failed++;
+        console.error(`[thumbnails] failed id=${p.id}:`, e);
+      }
+    }
+    return c.json({ ok: true, processed, failed, total: photos.length }, 200);
   });
 
 export type AppType = typeof app;

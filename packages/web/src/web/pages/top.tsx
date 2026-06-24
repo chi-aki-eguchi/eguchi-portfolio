@@ -9,15 +9,41 @@ import { Lightbox, type LightboxPhoto } from "../components/Lightbox";
 import { InquiryCta } from "../components/InquiryCta";
 import { srcSetFor, srcFor } from "../lib/picture";
 
-function HeroPicture({ url, alt, sizes, className, style, decoding, fetchPriority, loading, onError, draggable }: {
-  url: string; alt: string; sizes: string; className?: string; style?: React.CSSProperties;
-  decoding?: "sync" | "async"; fetchPriority?: "high" | "low"; loading?: "lazy" | "eager";
-  onError?: React.ReactEventHandler<HTMLImageElement>; draggable?: boolean;
+function HeroPicture({
+  url,
+  alt,
+  sizes,
+  className,
+  style,
+  decoding,
+  fetchPriority,
+  loading,
+  onError,
+  draggable,
+}: {
+  url: string;
+  alt: string;
+  sizes: string;
+  className?: string;
+  style?: React.CSSProperties;
+  decoding?: "sync" | "async";
+  fetchPriority?: "high" | "low";
+  loading?: "lazy" | "eager";
+  onError?: React.ReactEventHandler<HTMLImageElement>;
+  draggable?: boolean;
 }) {
   return (
     <picture>
-      <source type="image/avif" srcSet={srcSetFor(url, "hero", "avif")} sizes={sizes} />
-      <source type="image/webp" srcSet={srcSetFor(url, "hero", "webp")} sizes={sizes} />
+      <source
+        type="image/avif"
+        srcSet={srcSetFor(url, "hero", "avif")}
+        sizes={sizes}
+      />
+      <source
+        type="image/webp"
+        srcSet={srcSetFor(url, "hero", "webp")}
+        sizes={sizes}
+      />
       <img
         src={srcFor(url, 1536, 88)}
         srcSet={srcSetFor(url, "hero")}
@@ -212,7 +238,11 @@ function HeroCarousel({
         <div ref={fxRef} className="hero-fx-layer absolute inset-0">
           {/* Main photo layer — contain, no crop */}
           {photos.map((p, i) => (
-            <div key={i} className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`} style={{ zIndex: i === current ? 1 : 0 }}>
+            <div
+              key={i}
+              className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`}
+              style={{ zIndex: i === current ? 1 : 0 }}
+            >
               <HeroPicture
                 url={p.url}
                 alt={p.title || "Photograph"}
@@ -221,7 +251,10 @@ function HeroCarousel({
                 decoding={i === 0 ? "sync" : "async"}
                 fetchPriority={i === 0 ? "high" : "low"}
                 loading={i === 0 ? "eager" : "lazy"}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.visibility =
+                    "hidden";
+                }}
                 draggable={false}
               />
             </div>
@@ -323,7 +356,9 @@ function HeroSingle({
           className="hero-single-img"
           decoding="sync"
           fetchPriority="high"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+          }}
           draggable={false}
         />
         <div className={`hero-single-overlay ${overlayTop}`} />
@@ -349,6 +384,7 @@ function toLightboxPhotos(photos: GalleryPhoto[]): LightboxPhoto[] {
     camera: p.camera,
     lens: p.lens,
     filmType: p.filmType,
+    mediumUrl: p.mediumUrl,
   }));
 }
 
@@ -383,7 +419,10 @@ function HomeQuietGrid({
               decoding="sync"
               fetchPriority="high"
               draggable={false}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.visibility =
+                  "hidden";
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             <div className="absolute bottom-6 left-7">
@@ -587,7 +626,10 @@ function HomeEditorial({
               decoding="sync"
               fetchPriority="high"
               draggable={false}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.visibility =
+                  "hidden";
+              }}
             />
           )}
         </div>
@@ -736,7 +778,9 @@ function HomeImmersive({
             decoding="sync"
             fetchPriority="high"
             draggable={false}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+            }}
           />
         ) : (
           <div className="w-full h-full bg-[#2a3a3a]" />

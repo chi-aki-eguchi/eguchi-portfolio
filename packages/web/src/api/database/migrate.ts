@@ -22,13 +22,16 @@ function databaseUrlSummary(raw: string | undefined): string {
   try {
     const url = new URL(raw);
     const host = url.hostname;
-    const isRailwayHost = host.endsWith(".railway.internal") || host.endsWith(".proxy.rlwy.net");
+    const isRailwayHost =
+      host.endsWith(".railway.internal") || host.endsWith(".proxy.rlwy.net");
     const hostKind = host.endsWith(".railway.internal")
       ? "*.railway.internal (Railway private network)"
       : host.endsWith(".proxy.rlwy.net")
         ? "*.proxy.rlwy.net (Railway public TCP proxy)"
         : "custom host";
-    const sslmode = url.searchParams.get("sslmode") ?? (isRailwayHost ? "not set (app configures TLS)" : "not set");
+    const sslmode =
+      url.searchParams.get("sslmode") ??
+      (isRailwayHost ? "not set (app configures TLS)" : "not set");
 
     return `${hostKind}; protocol=${url.protocol.replace(":", "")}; sslmode=${sslmode}; database=${url.pathname ? "set" : "missing"}`;
   } catch {
@@ -68,13 +71,17 @@ async function ensureTursoColumns(): Promise<void> {
     ["photos", "f_number"],
     ["photos", "exposure_time"],
     ["photos", "iso"],
+    ["photos", "thumb_key"],
+    ["photos", "medium_key"],
   ];
   for (const [table, col] of columns) {
     try {
       await db.run(sql`SELECT ${sql.raw(col)} FROM ${sql.raw(table)} LIMIT 0`);
     } catch {
       try {
-        await db.run(sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN ${sql.raw(col)} text`);
+        await db.run(
+          sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN ${sql.raw(col)} text`,
+        );
         console.log(`[migrate] added missing column ${table}.${col}`);
       } catch (e) {
         console.warn(`[migrate] failed to add ${table}.${col}:`, e);
@@ -99,30 +106,53 @@ export async function runStartupMigrations(): Promise<void> {
   // migrate.ts (= src/api/database) から見た packages/web/drizzle-postgres。
   // server は `bun packages/web/src/server.ts` でソース実行されるため、
   // cwd ではなくこのファイル基準で解決して取りこぼさない。
-  const migrationsFolder = resolve(import.meta.dir, "../../../drizzle-postgres");
+  const migrationsFolder = resolve(
+    import.meta.dir,
+    "../../../drizzle-postgres",
+  );
 
-  console.log(`[migrate] DATABASE target: ${databaseUrlSummary(selectedDatabaseUrlForLog())}`);
+  console.log(
+    `[migrate] DATABASE target: ${databaseUrlSummary(selectedDatabaseUrlForLog())}`,
+  );
 
-  for (let attempt = 1; attempt <= MIGRATION_RETRY_DELAYS_MS.length + 1; attempt++) {
+  for (
+    let attempt = 1;
+    attempt <= MIGRATION_RETRY_DELAYS_MS.length + 1;
+    attempt++
+  ) {
     try {
-      console.log(`[migrate] applying PostgreSQL migrations from ${migrationsFolder} ...`);
+      console.log(
+        `[migrate] applying PostgreSQL migrations from ${migrationsFolder} ...`,
+      );
       await migrate(db, { migrationsFolder });
       console.log("[migrate] PostgreSQL schema is up to date.");
       return;
     } catch (err) {
       const delayMs = MIGRATION_RETRY_DELAYS_MS[attempt - 1];
       if (delayMs !== undefined) {
-        console.warn(`[migrate] attempt ${attempt} failed; retrying in ${delayMs}ms.`);
-        for (const line of migrationErrorLines(err)) console.warn(`[migrate] ${line}`);
+        console.warn(
+          `[migrate] attempt ${attempt} failed; retrying in ${delayMs}ms.`,
+        );
+        for (const line of migrationErrorLines(err))
+          console.warn(`[migrate] ${line}`);
         await sleep(delayMs);
         continue;
       }
 
-      console.error("[migrate] FAILED to apply PostgreSQL migrations — the server will NOT start.");
-      console.error("[migrate] (Failing loudly so the deploy is marked failed instead of serving a broken site.)");
-      console.error("[migrate] Check: is DATABASE_PUBLIC_URL or DATABASE_URL reachable and is the PostgreSQL plugin attached?");
-      console.error("[migrate] See README → \"Deploy on Railway (distribution template)\".");
-      for (const line of migrationErrorLines(err)) console.error(`[migrate] ${line}`);
+      console.error(
+        "[migrate] FAILED to apply PostgreSQL migrations — the server will NOT start.",
+      );
+      console.error(
+        "[migrate] (Failing loudly so the deploy is marked failed instead of serving a broken site.)",
+      );
+      console.error(
+        "[migrate] Check: is DATABASE_PUBLIC_URL or DATABASE_URL reachable and is the PostgreSQL plugin attached?",
+      );
+      console.error(
+        '[migrate] See README → "Deploy on Railway (distribution template)".',
+      );
+      for (const line of migrationErrorLines(err))
+        console.error(`[migrate] ${line}`);
       throw err;
     }
   }

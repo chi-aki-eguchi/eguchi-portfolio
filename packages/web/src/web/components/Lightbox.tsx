@@ -10,7 +10,8 @@ export const FIT_SIZES = "95vw";
 export const fitSrcSet = (url: string) =>
   `${url}?w=800&q=82 800w, ${url}?w=1200&q=85 1200w, ${url}?w=1600&q=85 1600w, ${url}?w=1920&q=85 1920w`;
 // Match the typical grid sizes so the browser picks the same cached entry.
-const GRID_THUMB_SIZES = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
+const GRID_THUMB_SIZES =
+  "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
 
 export type LightboxPhoto = {
   url: string;
@@ -25,6 +26,7 @@ export type LightboxPhoto = {
   filmType?: string | null;
   shotAt?: string | null;
   lqipSrc?: string;
+  mediumUrl?: string | null;
 };
 
 /**
@@ -57,11 +59,13 @@ export function Lightbox({
 }) {
   const [imgError, setImgError] = useState(false);
   const [chrome, setChrome] = useState(true); // counter / caption / nav visibility
-  const [loadStage, setLoadStage] = useState<'thumb' | 'medium' | 'full'>('thumb');
+  const [loadStage, setLoadStage] = useState<"thumb" | "medium" | "full">(
+    "thumb",
+  );
   const [exifOpen, setExifOpen] = useState(false); // EXIF info panel
   const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const fitImgRef = useRef<HTMLImageElement>(null);   // hi-res fitted image
+  const fitImgRef = useRef<HTMLImageElement>(null); // hi-res fitted image
   const placeImgRef = useRef<HTMLImageElement>(null); // thumbnail (defines the layout box)
   const genRef = useRef(0); // generation counter — stale onLoad handlers are no-ops
 
@@ -82,20 +86,28 @@ export function Lightbox({
 
   // The photo's on-screen size at scale 1 (object-fit: contain inside the FIT box).
   const photoBaseDims = () => {
-    const meta = fitImgRef.current?.naturalWidth ? fitImgRef.current : placeImgRef.current;
+    const meta = fitImgRef.current?.naturalWidth
+      ? fitImgRef.current
+      : placeImgRef.current;
     const place = placeImgRef.current;
     if (!meta?.naturalWidth || !meta.naturalHeight || !place) return null;
-    const s0 = Math.min(place.offsetWidth / meta.naturalWidth, place.offsetHeight / meta.naturalHeight);
+    const s0 = Math.min(
+      place.offsetWidth / meta.naturalWidth,
+      place.offsetHeight / meta.naturalHeight,
+    );
     return { w: meta.naturalWidth * s0, h: meta.naturalHeight * s0 };
   };
 
   const applyTransform = (animate: boolean) => {
     const el = zoomLayerRef.current;
     if (!el) return;
-    el.style.transition = animate ? "transform 0.25s cubic-bezier(0.2, 0, 0.2, 1)" : "none";
-    el.style.transform = scaleRef.current === 1
-      ? "translate3d(0,0,0) scale(1)"
-      : `translate3d(${txRef.current}px, ${tyRef.current}px, 0) scale(${scaleRef.current})`;
+    el.style.transition = animate
+      ? "transform 0.25s cubic-bezier(0.2, 0, 0.2, 1)"
+      : "none";
+    el.style.transform =
+      scaleRef.current === 1
+        ? "translate3d(0,0,0) scale(1)"
+        : `translate3d(${txRef.current}px, ${tyRef.current}px, 0) scale(${scaleRef.current})`;
   };
 
   // Keep the photo from being panned off-screen: when the scaled photo exceeds
@@ -111,7 +123,12 @@ export function Lightbox({
 
   // Zoom to `next`, keeping the image point under (px, py) stationary.
   // The FIT box is flex-centred, so its centre == the viewport centre.
-  const setScaleAt = (next: number, px: number, py: number, animate = false) => {
+  const setScaleAt = (
+    next: number,
+    px: number,
+    py: number,
+    animate = false,
+  ) => {
     const s = scaleRef.current;
     const ns = Math.min(MAX_SCALE, Math.max(1, next));
     const cx = window.innerWidth / 2;
@@ -119,7 +136,10 @@ export function Lightbox({
     txRef.current = px - cx - ((px - cx - txRef.current) / s) * ns;
     tyRef.current = py - cy - ((py - cy - tyRef.current) / s) * ns;
     scaleRef.current = ns;
-    if (ns === 1) { txRef.current = 0; tyRef.current = 0; }
+    if (ns === 1) {
+      txRef.current = 0;
+      tyRef.current = 0;
+    }
     clampPan();
     applyTransform(animate);
     zoomedRef.current = ns > 1;
@@ -137,42 +157,80 @@ export function Lightbox({
 
   const toggleZoom = (px?: number, py?: number) => {
     if (scaleRef.current > 1) resetZoom();
-    else setScaleAt(2.5, px ?? window.innerWidth / 2, py ?? window.innerHeight / 2, true);
+    else
+      setScaleAt(
+        2.5,
+        px ?? window.innerWidth / 2,
+        py ?? window.innerHeight / 2,
+        true,
+      );
   };
 
   // Z1/Z2: where the photo actually renders inside the fitted (object-fit:
   // contain) box — clicks outside it are "background", clicks on its left /
   // right edges navigate, the middle toggles immersive mode.
   const visibleImageRect = () => {
-    const meta = fitImgRef.current?.naturalWidth ? fitImgRef.current : placeImgRef.current;
+    const meta = fitImgRef.current?.naturalWidth
+      ? fitImgRef.current
+      : placeImgRef.current;
     const box = placeImgRef.current?.getBoundingClientRect();
     if (!meta?.naturalWidth || !meta.naturalHeight || !box) return null;
-    const scale = Math.min(box.width / meta.naturalWidth, box.height / meta.naturalHeight);
+    const scale = Math.min(
+      box.width / meta.naturalWidth,
+      box.height / meta.naturalHeight,
+    );
     const w = meta.naturalWidth * scale;
     const h = meta.naturalHeight * scale;
-    return { x: box.left + (box.width - w) / 2, y: box.top + (box.height - h) / 2, w, h };
+    return {
+      x: box.left + (box.width - w) / 2,
+      y: box.top + (box.height - h) / 2,
+      w,
+      h,
+    };
   };
   const onPhotoActivate = (e: React.MouseEvent) => {
-    if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
     // The second click of a double-click (detail 2) belongs to the dblclick zoom
     // gesture — running the zone action too would e.g. navigate twice before
     // zooming when double-clicking near an edge.
     if (e.detail >= 2) return;
-    if (scaleRef.current > 1) { resetZoom(); return; }
+    if (scaleRef.current > 1) {
+      resetZoom();
+      return;
+    }
     // Keyboard activation (Enter/Space → detail 0) has no useful coordinates:
     // keep the documented behaviour of toggling the UI.
-    if (e.detail === 0) { setChrome(c => !c); return; }
+    if (e.detail === 0) {
+      setChrome((c) => !c);
+      return;
+    }
     const r = visibleImageRect();
     if (r) {
-      const inside = e.clientX >= r.x && e.clientX <= r.x + r.w && e.clientY >= r.y && e.clientY <= r.y + r.h;
-      if (!inside) { onClose(); return; } // letterbox around the photo = backdrop
+      const inside =
+        e.clientX >= r.x &&
+        e.clientX <= r.x + r.w &&
+        e.clientY >= r.y &&
+        e.clientY <= r.y + r.h;
+      if (!inside) {
+        onClose();
+        return;
+      } // letterbox around the photo = backdrop
       if (photos.length > 1) {
         const rel = (e.clientX - r.x) / r.w;
-        if (rel < 0.28) { onPrev(); return; }
-        if (rel > 0.72) { onNext(); return; }
+        if (rel < 0.28) {
+          onPrev();
+          return;
+        }
+        if (rel > 0.72) {
+          onNext();
+          return;
+        }
       }
     }
-    setChrome(c => !c);
+    setChrome((c) => !c);
   };
 
   useEffect(() => {
@@ -182,7 +240,10 @@ export function Lightbox({
 
     const onClick = (e: MouseEvent) => {
       if (e.target !== dlg) return;
-      if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        return;
+      }
       // Letterbox click while zoomed reads as "step back", not "leave the viewer".
       if (zoomedRef.current) resetZoom();
       else onClose();
@@ -205,7 +266,11 @@ export function Lightbox({
       gestureMoved = false;
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
-        pinchPrev = { dist: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+        pinchPrev = {
+          dist: Math.hypot(a.x - b.x, a.y - b.y),
+          mx: (a.x + b.x) / 2,
+          my: (a.y + b.y) / 2,
+        };
         hadPinch = true;
       }
     };
@@ -258,7 +323,10 @@ export function Lightbox({
       // under touch-action: none. Toggles zoom at the tapped point.
       if (e.pointerType === "touch") {
         const now = Date.now();
-        if (now - lastTap.t < 300 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
+        if (
+          now - lastTap.t < 300 &&
+          Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40
+        ) {
           lastTap = { t: 0, x: 0, y: 0 };
           suppressClickRef.current = true;
           touchRef.current = null;
@@ -272,7 +340,11 @@ export function Lightbox({
     // Mouse wheel / trackpad scroll zooms toward the cursor (PC).
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      setScaleAt(scaleRef.current * Math.exp(-e.deltaY * 0.0018), e.clientX, e.clientY);
+      setScaleAt(
+        scaleRef.current * Math.exp(-e.deltaY * 0.0018),
+        e.clientX,
+        e.clientY,
+      );
     };
     // Double-click zoom for mouse users (touch handled in onPointerUp).
     // Only in the photo's middle zone — the edges are prev/next click zones, so
@@ -280,10 +352,17 @@ export function Lightbox({
     // photo would feel random. While zoomed, anywhere toggles back.
     const onDblClick = (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest?.("[data-lb-chrome]")) return;
-      if (zoomedRef.current) { resetZoom(); return; }
+      if (zoomedRef.current) {
+        resetZoom();
+        return;
+      }
       const r = visibleImageRect();
       if (r) {
-        const inside = e.clientX >= r.x && e.clientX <= r.x + r.w && e.clientY >= r.y && e.clientY <= r.y + r.h;
+        const inside =
+          e.clientX >= r.x &&
+          e.clientX <= r.x + r.w &&
+          e.clientY >= r.y &&
+          e.clientY <= r.y + r.h;
         if (!inside) return;
         const rel = (e.clientX - r.x) / r.w;
         if (photos.length > 1 && (rel < 0.28 || rel > 0.72)) return;
@@ -296,15 +375,22 @@ export function Lightbox({
       touchRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
     };
     const onTouchEnd = (e: TouchEvent) => {
-      if (zoomedRef.current) { touchRef.current = null; return; } // panning, don't navigate
+      if (zoomedRef.current) {
+        touchRef.current = null;
+        return;
+      } // panning, don't navigate
       if (!touchRef.current) return;
       const t = e.changedTouches[0];
       const dx = t.clientX - touchRef.current.x;
       const dy = t.clientY - touchRef.current.y;
       const dt = Date.now() - touchRef.current.t;
       touchRef.current = null;
-      if (Math.abs(dx) > Math.abs(dy) * 1.2 && (Math.abs(dx) > 50 || (Math.abs(dx) > 20 && dt < 250))) {
-        if (dx < 0) onNext(); else onPrev();
+      if (
+        Math.abs(dx) > Math.abs(dy) * 1.2 &&
+        (Math.abs(dx) > 50 || (Math.abs(dx) > 20 && dt < 250))
+      ) {
+        if (dx < 0) onNext();
+        else onPrev();
       } else if (dy > 90 && dy > Math.abs(dx) * 1.5) {
         // Swipe down to dismiss — the expected mobile photo-viewer gesture. Safe
         // because the fitted (non-zoomed) view never scrolls vertically itself.
@@ -339,7 +425,7 @@ export function Lightbox({
     genRef.current += 1;
     setImgError(false);
     setChrome(true);
-    setLoadStage('thumb');
+    setLoadStage("thumb");
     setExifOpen(false);
     setZoomSrcReady(false);
     resetZoom(false);
@@ -352,25 +438,34 @@ export function Lightbox({
     if (len <= 1) return;
     const wrapper = document.createElement("div");
     wrapper.setAttribute("aria-hidden", "true");
-    wrapper.style.cssText = "position:fixed;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none";
+    wrapper.style.cssText =
+      "position:fixed;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none";
     for (const off of [1, -1, 2, -2]) {
-      const url = photos[(index + off + len * 2) % len].url;
-      const picture = document.createElement("picture");
-      for (const fmt of ["avif", "webp"] as const) {
-        const source = document.createElement("source");
-        source.type = `image/${fmt}`;
-        source.srcset = srcSetFor(url, "lightbox", fmt);
-        source.sizes = FIT_SIZES;
-        picture.appendChild(source);
+      const p = photos[(index + off + len * 2) % len];
+      if (p.mediumUrl) {
+        const img = document.createElement("img");
+        img.src = p.mediumUrl;
+        img.fetchPriority = "low";
+        img.decoding = "async";
+        wrapper.appendChild(img);
+      } else {
+        const picture = document.createElement("picture");
+        for (const fmt of ["avif", "webp"] as const) {
+          const source = document.createElement("source");
+          source.type = `image/${fmt}`;
+          source.srcset = srcSetFor(p.url, "lightbox", fmt);
+          source.sizes = FIT_SIZES;
+          picture.appendChild(source);
+        }
+        const img = document.createElement("img");
+        img.srcset = fitSrcSet(p.url);
+        img.sizes = FIT_SIZES;
+        img.src = srcFor(p.url, 1200, 85);
+        img.fetchPriority = "low";
+        img.decoding = "async";
+        picture.appendChild(img);
+        wrapper.appendChild(picture);
       }
-      const img = document.createElement("img");
-      img.srcset = fitSrcSet(url);
-      img.sizes = FIT_SIZES;
-      img.src = srcFor(url, 1200, 85);
-      img.fetchPriority = "low";
-      img.decoding = "async";
-      picture.appendChild(img);
-      wrapper.appendChild(picture);
     }
     document.body.appendChild(wrapper);
     return () => wrapper.remove();
@@ -379,7 +474,9 @@ export function Lightbox({
   // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   // Z2: the phone back gesture / browser back closes the viewer instead of
@@ -387,7 +484,9 @@ export function Lightbox({
   const onCloseRef = useRef(onClose);
   const historyPushedRef = useRef(false);
   const historyCleanupTimerRef = useRef<number | null>(null);
-  useEffect(() => { onCloseRef.current = onClose; });
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
   useEffect(() => {
     const scrollY = window.scrollY;
     const onPop = () => onCloseRef.current();
@@ -402,7 +501,8 @@ export function Lightbox({
     window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("popstate", onPop);
-      if (historyCleanupTimerRef.current !== null) window.clearTimeout(historyCleanupTimerRef.current);
+      if (historyCleanupTimerRef.current !== null)
+        window.clearTimeout(historyCleanupTimerRef.current);
       // React StrictMode replays effects in dev: setup → cleanup → setup. Calling
       // history.back() synchronously in that replay closes the just-opened viewer
       // and looks like a black flicker. Defer the real cleanup; a replayed setup
@@ -424,8 +524,20 @@ export function Lightbox({
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") onPrev();
       else if (e.key === "ArrowRight") onNext();
-      else if (e.key === "+" || e.key === "=") setScaleAt(scaleRef.current * 1.5, window.innerWidth / 2, window.innerHeight / 2, true);
-      else if (e.key === "-") setScaleAt(scaleRef.current / 1.5, window.innerWidth / 2, window.innerHeight / 2, true);
+      else if (e.key === "+" || e.key === "=")
+        setScaleAt(
+          scaleRef.current * 1.5,
+          window.innerWidth / 2,
+          window.innerHeight / 2,
+          true,
+        );
+      else if (e.key === "-")
+        setScaleAt(
+          scaleRef.current / 1.5,
+          window.innerWidth / 2,
+          window.innerHeight / 2,
+          true,
+        );
       else if (e.key === "0") resetZoom();
     };
     window.addEventListener("keydown", handler);
@@ -439,7 +551,11 @@ export function Lightbox({
   // Chrome (overlay UI) fades out in immersive mode; also hidden while zoomed so
   // the detail view is unobstructed.
   const chromeOn = chrome && !isZoomed;
-  const chromeVis = { opacity: chromeOn ? 1 : 0, pointerEvents: chromeOn ? "auto" as const : "none" as const, transition: "opacity 0.25s ease" };
+  const chromeVis = {
+    opacity: chromeOn ? 1 : 0,
+    pointerEvents: chromeOn ? ("auto" as const) : ("none" as const),
+    transition: "opacity 0.25s ease",
+  };
   const chromeTab = chromeOn ? 0 : -1;
 
   return createPortal(
@@ -450,8 +566,29 @@ export function Lightbox({
       // Staged Escape (standard viewer behaviour): first Esc steps back out of
       // the zoom, the next one closes — closing instantly from a zoomed detail
       // view loses the spot the viewer was studying.
-      onCancel={(e) => { e.preventDefault(); if (scaleRef.current > 1) resetZoom(); else onClose(); }}
-      style={{ position: "fixed", inset: 0, width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%", margin: 0, padding: 0, border: "none", zIndex: 99999, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", outline: "none" }}
+      onCancel={(e) => {
+        e.preventDefault();
+        if (scaleRef.current > 1) resetZoom();
+        else onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        maxWidth: "100%",
+        maxHeight: "100%",
+        margin: 0,
+        padding: 0,
+        border: "none",
+        zIndex: 99999,
+        background: "#000",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        touchAction: "none",
+        outline: "none",
+      }}
     >
       {/* Counter — a polite live region so arrow/swipe navigation announces the
           new position to screen readers (the image swap itself is silent).
@@ -460,25 +597,75 @@ export function Lightbox({
       <div
         aria-live="polite"
         aria-atomic="true"
-        style={{ ...chromeVis, position: "absolute", top: "calc(18px + var(--sai-top))", left: "50%", transform: "translateX(-50%)", fontFamily: "var(--font-en)", fontSize: 12, letterSpacing: "0.12em", color: "rgba(255,255,255,0.45)", zIndex: 10 }}
+        style={{
+          ...chromeVis,
+          position: "absolute",
+          top: "calc(18px + var(--sai-top))",
+          left: "50%",
+          transform: "translateX(-50%)",
+          fontFamily: "var(--font-en)",
+          fontSize: 12,
+          letterSpacing: "0.12em",
+          color: "rgba(255,255,255,0.45)",
+          zIndex: 10,
+        }}
       >
         {index + 1} / {photos.length}
         {/* Title for SR context; visually the caption block below shows it */}
-        <span className="sr-only">{photos[index]?.title ? ` ${photos[index].title}` : ""}</span>
+        <span className="sr-only">
+          {photos[index]?.title ? ` ${photos[index].title}` : ""}
+        </span>
       </div>
       {/* Zoom toggle */}
       <button
         data-lb-chrome
-        onClick={(e) => { e.stopPropagation(); toggleZoom(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleZoom();
+        }}
         aria-label={isZoomed ? "ズームを解除" : "拡大して細部を見る"}
         tabIndex={chromeTab}
-        style={{ ...chromeVis, position: "absolute", top: "calc(12px + var(--sai-top))", left: "calc(16px + var(--sai-left))", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 10, lineHeight: 0, zIndex: 10 }}
-        onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
-        onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+        style={{
+          ...chromeVis,
+          position: "absolute",
+          top: "calc(12px + var(--sai-top))",
+          left: "calc(16px + var(--sai-left))",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "rgba(255,255,255,0.4)",
+          padding: 10,
+          lineHeight: 0,
+          zIndex: 10,
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.color = "rgba(255,255,255,0.8)")
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.color = "rgba(255,255,255,0.4)")
+        }
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          {isZoomed ? <line x1="8" y1="11" x2="14" y2="11" /> : <><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" /></>}
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          {isZoomed ? (
+            <line x1="8" y1="11" x2="14" y2="11" />
+          ) : (
+            <>
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </>
+          )}
         </svg>
       </button>
       {/* Close */}
@@ -489,49 +676,181 @@ export function Lightbox({
         onClick={onClose}
         aria-label="閉じる"
         tabIndex={chromeTab}
-        style={{ ...chromeVis, position: "absolute", top: "calc(10px + var(--sai-top))", right: "calc(12px + var(--sai-right))", width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)", borderRadius: "50%", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 26, color: "rgba(255,255,255,0.75)", lineHeight: 1, zIndex: 10 }}
-        onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,1)")}
-        onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
-      >✕</button>
+        style={{
+          ...chromeVis,
+          position: "absolute",
+          top: "calc(10px + var(--sai-top))",
+          right: "calc(12px + var(--sai-right))",
+          width: 52,
+          height: 52,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(0,0,0,0.35)",
+          borderRadius: "50%",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "var(--font-en)",
+          fontSize: 26,
+          color: "rgba(255,255,255,0.75)",
+          lineHeight: 1,
+          zIndex: 10,
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.color = "rgba(255,255,255,1)")
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.color = "rgba(255,255,255,0.75)")
+        }
+      >
+        ✕
+      </button>
       {/* Prev / Next */}
-      {photos.length > 1 && (<>
-        <button data-lb-chrome onClick={(e) => { e.stopPropagation(); onPrev(); }} aria-label="前の写真" tabIndex={chromeTab} style={{ ...chromeVis, position: "absolute", left: "calc(6px + var(--sai-left))", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 38, color: "rgba(255,255,255,0.45)", padding: "22px 16px", lineHeight: 1, zIndex: 10 }}>‹</button>
-        <button data-lb-chrome onClick={(e) => { e.stopPropagation(); onNext(); }} aria-label="次の写真" tabIndex={chromeTab} style={{ ...chromeVis, position: "absolute", right: "calc(6px + var(--sai-right))", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-en)", fontSize: 38, color: "rgba(255,255,255,0.45)", padding: "22px 16px", lineHeight: 1, zIndex: 10 }}>›</button>
-      </>)}
+      {photos.length > 1 && (
+        <>
+          <button
+            data-lb-chrome
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrev();
+            }}
+            aria-label="前の写真"
+            tabIndex={chromeTab}
+            style={{
+              ...chromeVis,
+              position: "absolute",
+              left: "calc(6px + var(--sai-left))",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-en)",
+              fontSize: 38,
+              color: "rgba(255,255,255,0.45)",
+              padding: "22px 16px",
+              lineHeight: 1,
+              zIndex: 10,
+            }}
+          >
+            ‹
+          </button>
+          <button
+            data-lb-chrome
+            onClick={(e) => {
+              e.stopPropagation();
+              onNext();
+            }}
+            aria-label="次の写真"
+            tabIndex={chromeTab}
+            style={{
+              ...chromeVis,
+              position: "absolute",
+              right: "calc(6px + var(--sai-right))",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-en)",
+              fontSize: 38,
+              color: "rgba(255,255,255,0.45)",
+              padding: "22px 16px",
+              lineHeight: 1,
+              zIndex: 10,
+            }}
+          >
+            ›
+          </button>
+        </>
+      )}
 
       {/* Photo. One fitted (object-fit: contain) box for every zoom level — the
           zoom layer is scaled/panned with a GPU transform, so wheel / pinch /
           drag never relayout. While zoomed a 3200px source fades in on top for
           true detail sharpness. */}
-      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, overflow: "hidden" }}>
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 0,
+          overflow: "hidden",
+        }}
+      >
         {imgError ? (
-          <p style={{ fontFamily: "var(--font-en)", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>画像を読み込めませんでした</p>
+          <p
+            style={{
+              fontFamily: "var(--font-en)",
+              fontSize: 12,
+              color: "rgba(255,255,255,0.4)",
+            }}
+          >
+            画像を読み込めませんでした
+          </p>
         ) : (
           <div
             ref={zoomLayerRef}
-            style={{ transformOrigin: "center center", willChange: "transform", lineHeight: 0 }}
+            style={{
+              transformOrigin: "center center",
+              willChange: "transform",
+              lineHeight: 0,
+            }}
           >
             {/* A <button> wrapper so the photo is keyboard-operable. */}
             <button
               type="button"
               onClick={onPhotoActivate}
-              aria-label={isZoomed ? "ズームを解除" : (chrome ? "UIを隠して写真だけ表示" : "UIを表示")}
-              style={{ position: "relative", background: "none", border: "none", padding: 0, margin: 0, display: "block", lineHeight: 0, cursor: isZoomed ? "grab" : "pointer" }}
+              aria-label={
+                isZoomed
+                  ? "ズームを解除"
+                  : chrome
+                    ? "UIを隠して写真だけ表示"
+                    : "UIを表示"
+              }
+              style={{
+                position: "relative",
+                background: "none",
+                border: "none",
+                padding: 0,
+                margin: 0,
+                display: "block",
+                lineHeight: 0,
+                cursor: isZoomed ? "grab" : "pointer",
+              }}
             >
               {/* LQIP blur — instant placeholder when grid thumb isn't cached yet */}
-              {photo.lqipSrc && loadStage === 'thumb' && (
+              {photo.lqipSrc && loadStage === "thumb" && (
                 <img
                   src={photo.lqipSrc}
                   alt=""
                   aria-hidden="true"
                   draggable={false}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", filter: "blur(20px)", transform: "scale(1.1)" }}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                    filter: "blur(20px)",
+                    transform: "scale(1.1)",
+                  }}
                 />
               )}
               {/* Stage 1: grid thumbnail — already in browser cache, appears instantly */}
               <picture>
-                <source type="image/avif" srcSet={srcSetFor(photo.url, "grid", "avif")} sizes={GRID_THUMB_SIZES} />
-                <source type="image/webp" srcSet={srcSetFor(photo.url, "grid", "webp")} sizes={GRID_THUMB_SIZES} />
+                <source
+                  type="image/avif"
+                  srcSet={srcSetFor(photo.url, "grid", "avif")}
+                  sizes={GRID_THUMB_SIZES}
+                />
+                <source
+                  type="image/webp"
+                  srcSet={srcSetFor(photo.url, "grid", "webp")}
+                  sizes={GRID_THUMB_SIZES}
+                />
                 <img
                   ref={placeImgRef}
                   srcSet={srcSetFor(photo.url, "grid")}
@@ -542,13 +861,31 @@ export function Lightbox({
                   draggable={false}
                   fetchPriority="low"
                   decoding="async"
-                  style={{ display: "block", width: FIT_W, height: FIT_H, objectFit: "contain" }}
+                  style={{
+                    display: "block",
+                    width: FIT_W,
+                    height: FIT_H,
+                    objectFit: "contain",
+                  }}
                 />
               </picture>
               {/* Stage 2: medium (w=800) — skipped when the full image beats it (pre-cached) */}
-              <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-                <source type="image/avif" srcSet={srcFor(photo.url, 800, 80, "avif")} />
-                <source type="image/webp" srcSet={srcFor(photo.url, 800, 80, "webp")} />
+              <picture
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                <source
+                  type="image/avif"
+                  srcSet={srcFor(photo.url, 800, 80, "avif")}
+                />
+                <source
+                  type="image/webp"
+                  srcSet={srcFor(photo.url, 800, 80, "webp")}
+                />
                 <img
                   src={srcFor(photo.url, 800, 80)}
                   alt=""
@@ -556,31 +893,99 @@ export function Lightbox({
                   draggable={false}
                   fetchPriority="high"
                   decoding="async"
-                  onLoad={() => setLoadStage(s => genRef.current === renderGen && s === 'thumb' ? 'medium' : s)}
-                  style={{ width: "100%", height: "100%", objectFit: "contain", opacity: loadStage !== 'thumb' ? 1 : 0 }}
+                  onLoad={() =>
+                    setLoadStage((s) =>
+                      genRef.current === renderGen && s === "thumb"
+                        ? "medium"
+                        : s,
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                    opacity: loadStage !== "thumb" ? 1 : 0,
+                  }}
                 />
               </picture>
-              {/* Stage 3: full quality (w=1920) */}
-              <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-                <source type="image/avif" srcSet={srcSetFor(photo.url, "lightbox", "avif")} sizes={FIT_SIZES} />
-                <source type="image/webp" srcSet={srcSetFor(photo.url, "lightbox", "webp")} sizes={FIT_SIZES} />
+              {/* Stage 3: full quality (w=1920) — pre-generated WebP or on-the-fly */}
+              {photo.mediumUrl ? (
                 <img
                   ref={fitImgRef}
-                  src={srcFor(photo.url, 1200, 85)}
-                  srcSet={fitSrcSet(photo.url)}
-                  sizes={FIT_SIZES}
+                  src={photo.mediumUrl}
                   alt={photo.title || photo.meta || `Photograph ${index + 1}`}
-                  onLoad={() => { if (genRef.current === renderGen) setLoadStage('full'); }}
+                  onLoad={() => {
+                    if (genRef.current === renderGen) setLoadStage("full");
+                  }}
                   onError={() => setImgError(true)}
                   decoding="async"
-                  style={{ width: "100%", height: "100%", objectFit: "contain", opacity: loadStage === 'full' ? 1 : 0 }}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                    opacity: loadStage === "full" ? 1 : 0,
+                  }}
                   draggable={false}
                 />
-              </picture>
+              ) : (
+                <picture
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
+                  <source
+                    type="image/avif"
+                    srcSet={srcSetFor(photo.url, "lightbox", "avif")}
+                    sizes={FIT_SIZES}
+                  />
+                  <source
+                    type="image/webp"
+                    srcSet={srcSetFor(photo.url, "lightbox", "webp")}
+                    sizes={FIT_SIZES}
+                  />
+                  <img
+                    ref={fitImgRef}
+                    src={srcFor(photo.url, 1200, 85)}
+                    srcSet={fitSrcSet(photo.url)}
+                    sizes={FIT_SIZES}
+                    alt={photo.title || photo.meta || `Photograph ${index + 1}`}
+                    onLoad={() => {
+                      if (genRef.current === renderGen) setLoadStage("full");
+                    }}
+                    onError={() => setImgError(true)}
+                    decoding="async"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      opacity: loadStage === "full" ? 1 : 0,
+                    }}
+                    draggable={false}
+                  />
+                </picture>
+              )}
               {isZoomed && (
-                <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-                  <source type="image/avif" srcSet={srcFor(photo.url, 3200, 90, "avif")} />
-                  <source type="image/webp" srcSet={srcFor(photo.url, 3200, 90, "webp")} />
+                <picture
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
+                  <source
+                    type="image/avif"
+                    srcSet={srcFor(photo.url, 3200, 90, "avif")}
+                  />
+                  <source
+                    type="image/webp"
+                    srcSet={srcFor(photo.url, 3200, 90, "webp")}
+                  />
                   <img
                     src={srcFor(photo.url, 3200, 90)}
                     alt=""
@@ -588,7 +993,13 @@ export function Lightbox({
                     onLoad={() => setZoomSrcReady(true)}
                     decoding="async"
                     draggable={false}
-                    style={{ width: "100%", height: "100%", objectFit: "contain", opacity: zoomSrcReady ? 1 : 0, transition: "opacity 0.3s ease" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      opacity: zoomSrcReady ? 1 : 0,
+                      transition: "opacity 0.3s ease",
+                    }}
                   />
                 </picture>
               )}
@@ -599,8 +1010,29 @@ export function Lightbox({
 
       {/* Caption — overlaid at the bottom so it never shrinks the photo; part of chrome. */}
       {photo.title && (
-        <div style={{ ...chromeVis, position: "absolute", bottom: "calc(18px + var(--sai-bottom))", left: "50%", transform: "translateX(-50%)", maxWidth: "90vw", textAlign: "center", zIndex: 10, textShadow: "0 1px 10px rgba(0,0,0,0.6)" }}>
-          <p style={{ fontFamily: "var(--font-en)", fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: "0.04em" }}>{photo.title}</p>
+        <div
+          style={{
+            ...chromeVis,
+            position: "absolute",
+            bottom: "calc(18px + var(--sai-bottom))",
+            left: "50%",
+            transform: "translateX(-50%)",
+            maxWidth: "90vw",
+            textAlign: "center",
+            zIndex: 10,
+            textShadow: "0 1px 10px rgba(0,0,0,0.6)",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "var(--font-en)",
+              fontSize: 12,
+              color: "rgba(255,255,255,0.6)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {photo.title}
+          </p>
         </div>
       )}
 
@@ -609,28 +1041,64 @@ export function Lightbox({
         const exifItems: [string, string][] = [];
         if (photo.camera) exifItems.push(["Camera", photo.camera]);
         if (photo.lens) exifItems.push(["Lens", photo.lens]);
-        if (photo.focalLength) exifItems.push(["Focal Length", photo.focalLength]);
+        if (photo.focalLength)
+          exifItems.push(["Focal Length", photo.focalLength]);
         if (photo.fNumber) exifItems.push(["Aperture", photo.fNumber]);
         if (photo.exposureTime) exifItems.push(["Shutter", photo.exposureTime]);
         if (photo.iso) exifItems.push(["ISO", photo.iso]);
         if (photo.shotAt) {
           const d = new Date(photo.shotAt);
-          if (!Number.isNaN(d.getTime())) exifItems.push(["Date", d.toLocaleDateString("ja-JP")]);
+          if (!Number.isNaN(d.getTime()))
+            exifItems.push(["Date", d.toLocaleDateString("ja-JP")]);
         }
         if (exifItems.length === 0) return null;
         return (
           <>
             <button
               data-lb-chrome
-              onClick={(e) => { e.stopPropagation(); setExifOpen((o) => !o); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setExifOpen((o) => !o);
+              }}
               aria-label={exifOpen ? "撮影情報を閉じる" : "撮影情報を表示"}
               tabIndex={chromeTab}
-              style={{ ...chromeVis, position: "absolute", bottom: "calc(16px + var(--sai-bottom))", left: "calc(16px + var(--sai-left))", background: "none", border: "none", cursor: "pointer", color: exifOpen ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)", padding: 10, lineHeight: 0, zIndex: 10 }}
-              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
-              onMouseLeave={e => { if (!exifOpen) e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+              style={{
+                ...chromeVis,
+                position: "absolute",
+                bottom: "calc(16px + var(--sai-bottom))",
+                left: "calc(16px + var(--sai-left))",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: exifOpen
+                  ? "rgba(255,255,255,0.8)"
+                  : "rgba(255,255,255,0.4)",
+                padding: 10,
+                lineHeight: 0,
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "rgba(255,255,255,0.8)")
+              }
+              onMouseLeave={(e) => {
+                if (!exifOpen)
+                  e.currentTarget.style.color = "rgba(255,255,255,0.4)";
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
             </button>
             {/* EXIF panel — slides in from bottom-left */}
@@ -650,18 +1118,45 @@ export function Lightbox({
                 maxHeight: exifOpen ? 320 : 0,
                 opacity: exifOpen ? 1 : 0,
                 overflow: "hidden",
-                transition: "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
+                transition:
+                  "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
                 zIndex: 10,
                 pointerEvents: exifOpen ? "auto" : "none",
                 minWidth: 180,
               }}
             >
-              <table style={{ borderCollapse: "collapse", fontFamily: "var(--font-en)", fontSize: 11, letterSpacing: "0.03em" }}>
+              <table
+                style={{
+                  borderCollapse: "collapse",
+                  fontFamily: "var(--font-en)",
+                  fontSize: 11,
+                  letterSpacing: "0.03em",
+                }}
+              >
                 <tbody>
                   {exifItems.map(([label, value]) => (
                     <tr key={label}>
-                      <td style={{ color: "rgba(255,255,255,0.4)", paddingRight: 14, paddingTop: 3, paddingBottom: 3, verticalAlign: "top", whiteSpace: "nowrap" }}>{label}</td>
-                      <td style={{ color: "rgba(255,255,255,0.75)", paddingTop: 3, paddingBottom: 3 }}>{value}</td>
+                      <td
+                        style={{
+                          color: "rgba(255,255,255,0.4)",
+                          paddingRight: 14,
+                          paddingTop: 3,
+                          paddingBottom: 3,
+                          verticalAlign: "top",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {label}
+                      </td>
+                      <td
+                        style={{
+                          color: "rgba(255,255,255,0.75)",
+                          paddingTop: 3,
+                          paddingBottom: 3,
+                        }}
+                      >
+                        {value}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -671,6 +1166,6 @@ export function Lightbox({
         );
       })()}
     </dialog>,
-    document.body
+    document.body,
   );
 }

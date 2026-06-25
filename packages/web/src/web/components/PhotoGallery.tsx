@@ -23,6 +23,19 @@ function preloadForLightbox(url: string, mediumUrl?: string | null) {
   img.decoding = "async";
 }
 
+function preloadNearbyLightboxPhotos(
+  photos: GalleryPhoto[],
+  index: number,
+) {
+  const len = photos.length;
+  if (len === 0) return;
+  for (const off of [0, 1, -1, 2, -2]) {
+    const photo = photos[(index + off + len * 2) % len];
+    if (!photo) continue;
+    preloadForLightbox(photo.url, photo.mediumUrl);
+  }
+}
+
 export type GalleryPhoto = {
   id: number;
   url: string;
@@ -92,11 +105,49 @@ const LqipImage = memo(function LqipImage({
     swappedRef.current = false;
   }, [url]);
 
-  // Pre-generated thumbnail: skip the LQIP→swap dance entirely
+  const swapToGridImage = useCallback(
+    (el: HTMLImageElement, keepCurrentSharp = false) => {
+      if (swappedRef.current) {
+        setLoaded(true);
+        return;
+      }
+      const realSrc = el.dataset.src;
+      if (!realSrc) {
+        swappedRef.current = true;
+        setLoaded(true);
+        return;
+      }
+      const realSrcset = el.dataset.srcset;
+      if (keepCurrentSharp) setLoaded(true);
+      const full = new Image();
+      full.onload = () => {
+        swappedRef.current = true;
+        el.srcset = realSrcset || "";
+        el.src = realSrc;
+        setLoaded(true);
+      };
+      full.src = realSrc;
+      if (realSrcset) full.srcset = realSrcset;
+      full.sizes = sizes;
+    },
+    [sizes],
+  );
+
+  const onLoad = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      swapToGridImage(e.currentTarget);
+    },
+    [swapToGridImage],
+  );
+
+  // Use the pre-generated WebP as the instant first paint, then silently upgrade
+  // to the responsive grid source so large/editorial layouts stay crisp.
   if (thumbUrl) {
     return (
       <img
         src={thumbUrl}
+        data-src={`${url}?w=600&q=84`}
+        data-srcset={srcSetFor(url, "grid")}
         sizes={sizes}
         alt={alt}
         loading={isNearViewport ? "eager" : "lazy"}
@@ -106,7 +157,7 @@ const LqipImage = memo(function LqipImage({
         height={height || undefined}
         style={style}
         className={loaded ? "lqip-loaded" : "lqip-loading"}
-        onLoad={() => setLoaded(true)}
+        onLoad={(e) => swapToGridImage(e.currentTarget, true)}
         onError={(e) => {
           setLoaded(true);
           e.currentTarget.closest(".photo-card")?.classList.add("photo-broken");
@@ -114,34 +165,6 @@ const LqipImage = memo(function LqipImage({
       />
     );
   }
-
-  const onLoad = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => {
-      const el = e.currentTarget;
-      if (swappedRef.current) {
-        setLoaded(true);
-        return;
-      }
-      if (el.dataset.src) {
-        const realSrc = el.dataset.src;
-        const realSrcset = el.dataset.srcset;
-        const full = new Image();
-        full.onload = () => {
-          swappedRef.current = true;
-          el.srcset = realSrcset || "";
-          el.src = realSrc;
-          setLoaded(true);
-        };
-        full.src = realSrc;
-        if (realSrcset) full.srcset = realSrcset;
-        full.sizes = sizes;
-        return;
-      }
-      swappedRef.current = true;
-      setLoaded(true);
-    },
-    [sizes],
-  );
 
   return (
     <img
@@ -288,6 +311,7 @@ export function PhotoGallery({
 
   const openLightbox = (idx: number) => {
     openPhotoIdRef.current = photos[idx]?.id ?? null;
+    preloadNearbyLightboxPhotos(photos, idx);
     setLightboxIndex(idx);
   };
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
@@ -363,6 +387,7 @@ export function PhotoGallery({
         }}
         onClick={() => openLightbox(idx)}
         onMouseEnter={() => preloadForLightbox(photo.url, photo.mediumUrl)}
+        onPointerDown={() => preloadNearbyLightboxPhotos(photos, idx)}
         onTouchStart={() => preloadForLightbox(photo.url, photo.mediumUrl)}
       >
         <div
@@ -810,7 +835,10 @@ export function PhotoGallery({
       </div>
       {lightboxIndex !== null && photos[lightboxIndex] && (
         <Lightbox
-          photos={photos.map((p) => ({ ...p, lqipSrc: `${p.url}?w=20&q=20` }))}
+          photos={photos.map((p) => ({
+            ...p,
+            lqipSrc: p.thumbUrl ?? `${p.url}?w=20&q=20`,
+          }))}
           index={lightboxIndex}
           onClose={closeLightbox}
           onPrev={prev}

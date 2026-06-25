@@ -23,13 +23,10 @@ function preloadForLightbox(url: string, mediumUrl?: string | null) {
   img.decoding = "async";
 }
 
-function preloadNearbyLightboxPhotos(
-  photos: GalleryPhoto[],
-  index: number,
-) {
+function preloadNearbyLightboxPhotos(photos: GalleryPhoto[], index: number) {
   const len = photos.length;
   if (len === 0) return;
-  for (const off of [0, 1, -1, 2, -2]) {
+  for (const off of [0, 1, -1, 2, -2, 3, -3]) {
     const photo = photos[(index + off + len * 2) % len];
     if (!photo) continue;
     preloadForLightbox(photo.url, photo.mediumUrl);
@@ -206,6 +203,46 @@ export function PhotoGallery({
   variant?: "top" | "gallery";
   onRequestMore?: () => void;
 }) {
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        const e = entry as PerformanceResourceTiming;
+        if (
+          e.initiatorType !== "img" &&
+          e.initiatorType !== "css" &&
+          e.initiatorType !== "fetch"
+        )
+          continue;
+        const url = e.name;
+        const isImage =
+          url.includes("/api/images/") ||
+          url.includes("/thumbs/") ||
+          url.includes("/medium/") ||
+          url.includes("/photos/");
+        const isApi = url.includes("/api/photos");
+        if (!isImage && !isApi) continue;
+        const ttfb = Math.round(e.responseStart - e.requestStart);
+        const download = Math.round(e.responseEnd - e.responseStart);
+        const total = Math.round(e.responseEnd - e.startTime);
+        const size = e.transferSize
+          ? `${Math.round(e.transferSize / 1024)}KB`
+          : "cached";
+        const source = url.includes("/api/images/")
+          ? "proxy"
+          : url.startsWith("http")
+            ? "R2"
+            : "local";
+        const short = url.length > 80 ? `…${url.slice(-60)}` : url;
+        console.debug(
+          `[perf] ${source} TTFB=${ttfb}ms DL=${download}ms total=${total}ms ${size} ${short}`,
+        );
+      }
+    });
+    observer.observe({ type: "resource", buffered: false });
+    return () => observer.disconnect();
+  }, []);
+
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   // Track the ID of the photo that is currently open so we can detect real
   // filter-switches (photo disappears from the set) vs. array growth from
@@ -400,7 +437,7 @@ export function PhotoGallery({
           }
         >
           <picture>
-            {isNearViewport && (
+            {isNearViewport && !photo.thumbUrl && (
               <>
                 <source
                   type="image/avif"

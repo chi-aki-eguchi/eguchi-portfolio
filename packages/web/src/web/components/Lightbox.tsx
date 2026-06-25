@@ -437,6 +437,7 @@ export function Lightbox({
   }, [onClose, onNext, onPrev]);
 
   // Reset before paint so the counter and the visible image stage move together.
+  const lbOpenTimeRef = useRef(performance.now());
   useLayoutEffect(() => {
     setImgError(false);
     setChrome(true);
@@ -444,21 +445,33 @@ export function Lightbox({
     setExifOpen(false);
     setZoomSrcReady(false);
     resetZoom(false);
+    lbOpenTimeRef.current = performance.now();
     if (onRequestMore && photos.length - index <= 5) onRequestMore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      const p = photos[index];
+      const elapsed = Math.round(performance.now() - lbOpenTimeRef.current);
+      const src = p?.mediumUrl ? "R2-mediumUrl" : "server-proxy";
+      console.debug(
+        `[lightbox] stage=${loadStage} +${elapsed}ms photo=${index + 1}/${photos.length} src=${src}`,
+      );
+    }
+  }, [loadStage, index, photos]);
+
+  useEffect(() => {
     const len = photos.length;
     if (len <= 1) return;
-    for (const off of [0, 1, -1, 2, -2]) {
+    for (const off of [0, 1, -1, 2, -2, 3, -3]) {
       preloadPhoto(photos[(index + off + len * 2) % len]);
     }
     const wrapper = document.createElement("div");
     wrapper.setAttribute("aria-hidden", "true");
     wrapper.style.cssText =
       "position:fixed;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none";
-    for (const off of [1, -1, 2, -2]) {
+    for (const off of [1, -1, 2, -2, 3, -3]) {
       const p = photos[(index + off + len * 2) % len];
       if (p.mediumUrl) {
         const img = document.createElement("img");
@@ -887,47 +900,51 @@ export function Lightbox({
                   }}
                 />
               </picture>
-              {/* Stage 2: medium (w=800) — skipped when the full image beats it (pre-cached) */}
-              <picture
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                <source
-                  type="image/avif"
-                  srcSet={srcFor(photo.url, 800, 80, "avif")}
-                />
-                <source
-                  type="image/webp"
-                  srcSet={srcFor(photo.url, 800, 80, "webp")}
-                />
-                <img
-                  src={srcFor(photo.url, 800, 80)}
-                  alt=""
-                  aria-hidden="true"
-                  draggable={false}
-                  fetchPriority="high"
-                  decoding="async"
-                  onLoad={() =>
-                    setLoadStage((s) => (s === "thumb" ? "medium" : s))
-                  }
+              {/* Stage 2: medium (w=800) — skipped when pre-gen mediumUrl exists
+                  (the CDN-served 1920px WebP is faster than a server-processed 800px) */}
+              {!photo.mediumUrl && (
+                <picture
                   style={{
+                    position: "absolute",
+                    inset: 0,
                     width: "100%",
                     height: "100%",
-                    objectFit: "contain",
-                    opacity: loadStage !== "thumb" ? 1 : 0,
                   }}
-                />
-              </picture>
-              {/* Stage 3: full quality (w=1920) — pre-generated WebP or on-the-fly */}
+                >
+                  <source
+                    type="image/avif"
+                    srcSet={srcFor(photo.url, 800, 80, "avif")}
+                  />
+                  <source
+                    type="image/webp"
+                    srcSet={srcFor(photo.url, 800, 80, "webp")}
+                  />
+                  <img
+                    src={srcFor(photo.url, 800, 80)}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    fetchPriority="high"
+                    decoding="async"
+                    onLoad={() =>
+                      setLoadStage((s) => (s === "thumb" ? "medium" : s))
+                    }
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      opacity: loadStage !== "thumb" ? 1 : 0,
+                    }}
+                  />
+                </picture>
+              )}
+              {/* Stage 3: full quality — pre-gen 1920px WebP from CDN, or on-the-fly srcset */}
               {photo.mediumUrl ? (
                 <img
                   ref={fitImgRef}
                   src={photo.mediumUrl}
                   alt={photo.title || photo.meta || `Photograph ${index + 1}`}
+                  fetchPriority="high"
                   onLoad={() => {
                     setLoadStage("full");
                   }}

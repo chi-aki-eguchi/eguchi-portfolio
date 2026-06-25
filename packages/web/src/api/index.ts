@@ -274,8 +274,7 @@ function photoWithThumbs<
   return {
     ...p,
     thumbUrl: p.thumbKey ? keyToPublicUrl(p.thumbKey) : null,
-    mediumUrl:
-      p.mediumKey && R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${p.mediumKey}` : null,
+    mediumUrl: p.mediumKey ? keyToPublicUrl(p.mediumKey) : null,
   };
 }
 
@@ -319,6 +318,16 @@ async function generateAndUploadThumb(
   const thumbBuf = await generateWebP(optimisedBuf, THUMB_WIDTH, THUMB_QUALITY);
   await uploadToStorage(tKey, thumbBuf, "image/webp");
   return { thumbKey: tKey };
+}
+
+async function generateAndUploadMedium(
+  optimisedBuf: Buffer,
+  originalKey: string,
+): Promise<{ mediumKey: string }> {
+  const mKey = mediumKeyFrom(originalKey);
+  const mediumBuf = await generateWebP(optimisedBuf, MEDIUM_WIDTH, MEDIUM_QUALITY);
+  await uploadToStorage(mKey, mediumBuf, "image/webp");
+  return { mediumKey: mKey };
 }
 
 // Upload buffer to S3-compatible object storage.
@@ -1981,7 +1990,9 @@ const app = new Hono()
 
   // ── Admin: Batch-generate thumbnails for existing photos ──
   .post("/admin/generate-thumbnails", requireAdmin, async (c) => {
-    const variant = c.req.query("variant") === "thumb" ? "thumb" : "all";
+    const rawVariant = c.req.query("variant");
+    const variant =
+      rawVariant === "thumb" || rawVariant === "medium" ? rawVariant : "all";
     const limitParam = Number(c.req.query("limit") ?? "25");
     const limit = Math.min(
       50,
@@ -1999,9 +2010,11 @@ const app = new Hono()
         .where(isNull(schema.photos.deletedAt))
         .orderBy(schema.photos.sortOrder),
     );
-    const pending = photos.filter((p) =>
-      variant === "thumb" ? !p.thumbKey : !p.thumbKey || !p.mediumKey,
-    );
+    const pending = photos.filter((p) => {
+      if (variant === "thumb") return !p.thumbKey;
+      if (variant === "medium") return !p.mediumKey;
+      return !p.thumbKey || !p.mediumKey;
+    });
     if (pending.length === 0)
       return c.json(
         { ok: true, processed: 0, failed: 0, remaining: 0, total: photos.length },
@@ -2023,6 +2036,14 @@ const app = new Hono()
             db
               .update(schema.photos)
               .set({ thumbKey: keys.thumbKey })
+              .where(eq(schema.photos.id, p.id)),
+          );
+        } else if (variant === "medium") {
+          const keys = await generateAndUploadMedium(buf, r2Key);
+          await withRetry(() =>
+            db
+              .update(schema.photos)
+              .set({ mediumKey: keys.mediumKey })
               .where(eq(schema.photos.id, p.id)),
           );
         } else {

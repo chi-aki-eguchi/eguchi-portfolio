@@ -99,11 +99,17 @@ function assertOk(res: Response): void {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
+async function jsonOrThrow<T>(res: Response & { json(): Promise<T> }): Promise<T> {
+  assertOk(res);
+  return res.json();
+}
+
 function useAdminGuard() {
   const [, navigate] = useLocation();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-me"],
-    queryFn: async () => (await adminApi.me.$get()).json(),
+    queryFn: async () =>
+      jsonOrThrow<{ authenticated: boolean }>(await adminApi.me.$get()),
     retry: false,
   });
   // Redirect in an effect, not during render (render-phase navigation triggers
@@ -127,7 +133,7 @@ export default function AdminPage() {
   const [unsavedConfirm, setUnsavedConfirm] = useState<Tab | null>(null);
 
   const logout = useMutation({
-    mutationFn: async () => (await adminApi.logout.$post()).json(),
+    mutationFn: async () => jsonOrThrow(await adminApi.logout.$post()),
     // Either way, send the user to the login screen — staying on a half-logged-out
     // admin is worse than an over-eager redirect.
     onSuccess: () => navigate("/admin/login"),
@@ -261,21 +267,21 @@ type ChecklistItem = {
 function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const { data: photosData, isLoading: photosLoading } = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
-      (await api.photos.$get({ query: { all: "1" } })).json(),
+      jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
   });
   const { data: catsData } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => (await api.categories.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.categories.$get()),
   });
   const { data: heroData } = useQuery({
     queryKey: ["admin-hero-photos"],
     queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> =>
-      (await adminApi["hero-photos"].$get()).json(),
+      jsonOrThrow(await adminApi["hero-photos"].$get()),
   });
 
   const settings = (settingsData ?? {}) as Record<string, string>;
@@ -872,24 +878,24 @@ function GalleryTab({
   const { data: photosData, isLoading } = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
-      (await api.photos.$get({ query: { all: "1" } })).json(),
+      jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
   });
   const { data: catsData } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => (await api.categories.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.categories.$get()),
   });
   // I1: series list for the inspector's "Series" assignment dropdown
   const { data: seriesData } = useQuery({
     queryKey: ["admin-series"],
     queryFn: async (): Promise<{ series: AdminSeries[] }> =>
-      (await adminApi.series.$get()).json(),
+      jsonOrThrow(await adminApi.series.$get()),
   });
   const seriesList = useMemo(() => seriesData?.series ?? [], [seriesData]);
   // M3: hero membership, to mark/filter "featured" photos.
   const { data: heroData } = useQuery({
     queryKey: ["admin-hero-photos"],
     queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> =>
-      (await adminApi["hero-photos"].$get()).json(),
+      jsonOrThrow(await adminApi["hero-photos"].$get()),
   });
   const featuredIds = useMemo(
     () => new Set((heroData?.heroPhotos ?? []).map((h) => h.photoId)),
@@ -898,7 +904,7 @@ function GalleryTab({
   // D3: settings hold the camera/lens value presets (datalist suggestions)
   const { data: settingsData } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   // Effective presets: saved list (authoritative once set, managed in Settings) or
   // the built-in defaults when nothing has been saved yet.
@@ -937,7 +943,7 @@ function GalleryTab({
     queryKey: ["photos-trash"],
     queryFn: async () => {
       const res = await adminApi.photos.trash.$get();
-      return res.json() as Promise<{ photos: Photo[]; retentionDays?: number }>;
+      return jsonOrThrow(res) as Promise<{ photos: Photo[]; retentionDays?: number }>;
     },
     enabled: showTrash,
   });
@@ -1173,6 +1179,9 @@ function GalleryTab({
       setActionError("");
       qc.invalidateQueries({ queryKey: ["photos"] });
       qc.invalidateQueries({ queryKey: ["photos-trash"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["series"] });
       setSelected(new Set());
       setInspectPhoto(null);
       setUndoToast({ ids, count: ids.length });
@@ -1196,6 +1205,9 @@ function GalleryTab({
       setActionError("");
       qc.invalidateQueries({ queryKey: ["photos"] });
       qc.invalidateQueries({ queryKey: ["photos-trash"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["series"] });
       setUndoToast(null);
     },
     onError: onActionError(
@@ -1215,7 +1227,11 @@ function GalleryTab({
     },
     onSuccess: () => {
       setActionError("");
+      qc.invalidateQueries({ queryKey: ["photos"] });
       qc.invalidateQueries({ queryKey: ["photos-trash"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["series"] });
     },
     onError: onActionError("完全削除に失敗しました。"),
   });
@@ -1250,6 +1266,8 @@ function GalleryTab({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["photos"] });
       qc.invalidateQueries({ queryKey: ["series"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
     },
   });
 
@@ -4103,7 +4121,7 @@ function HeroTab() {
   const { data: photosData, isLoading: photosLoading } = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
-      (await api.photos.$get({ query: { all: "1" } })).json(),
+      jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
   });
   const allPhotos = photosData?.photos ?? [];
 
@@ -4111,7 +4129,7 @@ function HeroTab() {
   const { data: heroData, isLoading: heroLoading } = useQuery({
     queryKey: ["admin-hero-photos"],
     queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> =>
-      (await adminApi["hero-photos"].$get()).json(),
+      jsonOrThrow(await adminApi["hero-photos"].$get()),
   });
   const heroPhotoIds = new Set(
     (heroData?.heroPhotos ?? []).map((h) => h.photoId),
@@ -4409,7 +4427,7 @@ function ProfileTab({
   const [photoUploading, setPhotoUploading] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
 
   // V: the unsaved draft survives tab switches / page moves.
@@ -4677,7 +4695,7 @@ function CategoriesTab() {
 
   const { data, isLoading: catsLoading } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => (await api.categories.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.categories.$get()),
   });
   const categories = data?.categories ?? [];
 
@@ -4959,14 +4977,15 @@ function SeriesTab() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-series"],
-    queryFn: async () => (await adminApi.series.$get()).json(),
+    queryFn: async (): Promise<{ series: SeriesRow[] }> =>
+      jsonOrThrow(await adminApi.series.$get()),
   });
   const series = (data?.series ?? []) as SeriesRow[];
 
   const { data: photosData } = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
-      (await api.photos.$get({ query: { all: "1" } })).json(),
+      jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
   });
   const photos = photosData?.photos ?? [];
   const photoLabel = (id: number | null) => {
@@ -5595,7 +5614,8 @@ function PricingTab() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-pricing"],
-    queryFn: async () => (await adminApi.pricing.$get()).json(),
+    queryFn: async (): Promise<{ plans: PlanRow[] }> =>
+      jsonOrThrow(await adminApi.pricing.$get()),
   });
   const plans = (data?.plans ?? []) as PlanRow[];
 
@@ -5936,7 +5956,7 @@ function TopWorksPicker({
 }) {
   const { data } = useQuery({
     queryKey: ["photos"],
-    queryFn: async () => (await api.photos.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.photos.$get()),
   });
   const photos = data?.photos ?? [];
   const picked = value
@@ -5993,7 +6013,7 @@ function SettingsTab({
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
 
   // V: the unsaved draft and preview prefs survive tab switches / page moves.

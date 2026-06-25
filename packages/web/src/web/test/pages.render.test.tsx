@@ -138,6 +138,7 @@ describe("shared components", () => {
       const closeBtn = dom.window.document.querySelector('dialog button[aria-label="閉じる"]') as HTMLButtonElement | null;
       expect(closeBtn).not.toBeNull();
       closeBtn!.click();
+      await flush(320);
       expect(closed).toBe(1);
       expect(historyBackCalls).toBe(0);
       cleanup();
@@ -253,7 +254,7 @@ describe("shared components", () => {
 
   test("Provider applies empty settings and survives a preview-settings message", async () => {
     const { Provider } = await import("../components/provider");
-    const { host, cleanup } = await mount(
+    const { qc, host, cleanup } = await mount(
       createElement(Provider, null, createElement("p", null, "child"))
     );
     expect(host.textContent).toContain("child");
@@ -261,10 +262,41 @@ describe("shared components", () => {
     // must never throw, even with empty / odd values.
     dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
       origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { themeBg: "#101010", topWorksMode: "manual", topWorksIds: "1,2", topWorksColumns: "", gallerySizeScale: "1.4", heroNameSize: "48", bodyLeading: "" } },
+      data: { type: "preview-settings", settings: { themeBg: "#101010", siteName: "Preview Name", topWorksMode: "manual", topWorksIds: "1,2", topWorksColumns: "", gallerySizeScale: "1.4", heroNameSize: "48", bodyLeading: "" } },
     }));
     await flush(10);
+    expect((qc.getQueryData(["settings"]) as Record<string, string>).siteName).toBe("Preview Name");
     expect(host.textContent).toContain("child");
+    cleanup();
+  });
+
+  test("Provider preview message updates React-rendered site labels", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    const { host, cleanup } = await mount(
+      createElement(Provider, null, createElement(Layout, null, createElement("p", null, "child")))
+    );
+    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+      origin: dom.window.location.origin,
+      data: {
+        type: "preview-settings",
+        settings: {
+          navLabelTop: "Preview Studio",
+          navLabelGallery: "Portfolio",
+          navLabelAbout: "Bio",
+          navLabelContact: "Booking",
+          footerText: "Preview Footer",
+          footerCtaLabel: "Ask for a shoot",
+        },
+      },
+    }));
+    await flush(10);
+    expect(host.textContent).toContain("Preview Studio");
+    expect(host.textContent).toContain("Portfolio");
+    expect(host.textContent).toContain("Bio");
+    expect(host.textContent).toContain("Booking");
+    expect(host.textContent).toContain("Ask for a shoot");
+    expect(host.textContent).toContain("Preview Footer");
     cleanup();
   });
 

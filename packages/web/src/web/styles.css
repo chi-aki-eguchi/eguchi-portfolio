@@ -201,6 +201,9 @@ body {
   .photo-card {
     position: relative;
   }
+  .photo-card:hover img.lqip-loaded {
+    transform: scale(1.015);
+  }
   .photo-card:hover .tile-caption {
     opacity: 1;
     transform: translateY(0);
@@ -270,7 +273,8 @@ body {
   /* LQIP blur-up: blurred placeholder fades out when real img loads */
   transition:
     filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .photo-card img.lqip-loading {
   /* 8px: visually equivalent placeholder blur at a fraction of the filter cost
@@ -833,8 +837,8 @@ img {
 @supports (view-transition-name: none) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 0.3s;
-    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-duration: 0.45s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
   ::view-transition-old(root) {
     animation-name: vt-fade-out;
@@ -844,12 +848,43 @@ img {
   }
   @keyframes vt-fade-out {
     from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 0; transform: translateY(-5px); }
   }
   @keyframes vt-fade-in {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
   }
+}
+
+/* ─── Lightbox entrance/exit ─── */
+dialog.lightbox-enter {
+  animation: lb-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+dialog.lightbox-enter .lb-content {
+  animation: lb-content-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+}
+dialog.lightbox-exit {
+  animation: lb-out 0.3s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+dialog.lightbox-exit .lb-content {
+  animation: lb-content-out 0.25s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes lb-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes lb-content-in {
+  from { opacity: 0; transform: scale(0.965) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes lb-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes lb-content-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.965) translateY(6px); }
 }
 
 /* ─── Filter switch layout animation ─── */

@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery } from "../components/PhotoGallery";
 import { SeriesGrid } from "../components/SeriesGrid";
 import { InquiryCta } from "../components/InquiryCta";
+import { sortPhotosBySetting } from "../lib/photo-sort";
 
 export default function GalleryPage() {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -28,19 +29,19 @@ export default function GalleryPage() {
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const { data: photosData, isLoading: photosLoading } = useQuery({
     queryKey: ["photos"],
-    queryFn: async () => (await api.photos.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.photos.$get()),
   });
   const { data: seriesData } = useQuery({
     queryKey: ["series"],
-    queryFn: async () => (await api.series.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.series.$get()),
   });
   const { data: catsData } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => (await api.categories.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.categories.$get()),
     // Categories rarely change; keep them fresh longer so the prefetched data is
     // used as-is on navigation (no background refetch / flicker).
     staleTime: 5 * 60_000,
@@ -53,7 +54,10 @@ export default function GalleryPage() {
 
   // Memoise so references are stable across renders — otherwise dependent
   // useMemo/useEffect (and useScrollFadeIn) re-run every render.
-  const allPhotos = useMemo(() => photosData?.photos ?? [], [photosData]);
+  const allPhotos = useMemo(
+    () => sortPhotosBySetting(photosData?.photos ?? [], settings?.gallerySortOrder),
+    [photosData, settings?.gallerySortOrder],
+  );
   const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
   const filtered = useMemo(() => {
     let list =

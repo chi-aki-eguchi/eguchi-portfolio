@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { InquiryCta } from "../components/InquiryCta";
@@ -10,7 +10,7 @@ export default function ProfilePage() {
   const [photoBroken, setPhotoBroken] = useState(false);
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const data = settings;
 
@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const noteOn = data?.noteEnabled === "on";
   const { data: noteData } = useQuery({
     queryKey: ["note-posts"],
-    queryFn: async () => (await api["note-posts"].$get()).json(),
+    queryFn: async () => jsonOrThrow(await api["note-posts"].$get()),
     enabled: noteOn,
     staleTime: 10 * 60_000,
   });

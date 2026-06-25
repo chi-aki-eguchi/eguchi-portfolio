@@ -1,0 +1,71 @@
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude Code の操作が必要です\" with title \"Claude Code\" sound name \"Ping\"'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-invariants.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(ts|tsx|js|jsx|json|css|md)$'; then cd \"$CLAUDE_PROJECT_DIR\" && npx prettier --write \"$FILE\" 2>/dev/null; fi"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "BACKUP_DIR=\"$CLAUDE_PROJECT_DIR/.claude/chat-backups\"; mkdir -p \"$BACKUP_DIR\"; echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Pre-compaction backup\" >> \"$BACKUP_DIR/compaction-log.txt\"; echo \"Session: $CLAUDE_SESSION_ID\" >> \"$BACKUP_DIR/compaction-log.txt\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Compaction 後リマインダー: §0 invariants を確認 → withRetry, 4-place settings sync, assertOk, no manual Content-Encoding, dual schema sync。tsc -b を忘れずに。'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "変更されたファイルがある場合、bun typecheck が実行されたか確認してください。実行されていない場合は {\"ok\": false, \"reason\": \"bun typecheck を実行してから完了してください\"} を返してください。型チェックが実行済みか、ファイル変更がない場合は {\"ok\": true} を返してください。"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "security-guidance@claude-plugins-official": true
+  }
+}

@@ -1,6 +1,6 @@
 import { useEffect, createContext, useContext } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
 import { useDarkMode } from "../hooks/useDarkMode";
 
@@ -124,7 +124,7 @@ export function Provider({ children }: ProviderProps) {
   const darkMode = useDarkMode();
   const { data } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
     staleTime: 60_000,
   });
 
@@ -297,8 +297,9 @@ export function Provider({ children }: ProviderProps) {
       // iframe) can't overwrite the previewed values with the saved DB ones.
       qc.setQueryDefaults(["settings"], { staleTime: Infinity });
 
-      // G/I: bridge JS-driven settings into the query cache so the gallery /
-      // series pages (when navigated to in the preview iframe) reflect edits live.
+      // Bridge settings into the iframe's query cache so React-rendered labels,
+      // contact/profile fields, gallery toggles, and CSS-variable controls all
+      // preview from the same payload.
       if (JS_PREVIEW_KEYS.some((k) => s[k] !== undefined)) {
         qc.setQueryData(["settings"], (old: Record<string, string> | undefined) => {
           const next = { ...old };

@@ -1381,3 +1381,90 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
 - `packages/web/src/web/pages/service.tsx`
 - `docs/order-handling.md`
 - `task.md`
+
+## 追記 2026-06-22 — Codex: AGENTS.md §0 invariants 追記
+
+### 目的
+秋さん依頼により、今後の Claude Code / Codex 作業で守るべき invariants と
+`ivys-house` とのリポジトリ境界を `AGENTS.md` に明示した。
+
+### 対応
+- `AGENTS.md` に `§0 invariants` を追加。
+  - `withRetry`
+  - 3-place settings sync
+  - `assertOk()`
+  - `Content-Encoding` 手動設定禁止
+  - HTML `Cache-Control: no-store`
+  - 現行スタック / デプロイ構成
+- `eguchi-portfolio-app` と `ivys-house` のコード混在禁止を明記。
+- 既存のスタック / Railway デプロイ表記を GitHub auto-deploy 前提に更新。
+
+### 検証
+- `git diff --check -- AGENTS.md task.md` 成功。
+
+### 触ったファイル
+- `AGENTS.md`
+- `task.md`
+
+## 追記 2026-06-25 — Codex: 管理画面 settings / 公開サイト連動デバッグ
+
+### 目的
+秋さん依頼「管理画面の項目すべてとサイトの連動をすべてデバッグして」に対応。
+settings 台帳・API default・Provider / iframe live preview・公開ページ消費・admin mutation 後の
+再取得を横断確認し、実際にズレる経路を修正した。
+
+### 対応
+- `settings-preview.ts` の台帳を API `GET /settings` が返す全 settings キーへ拡張。
+  - サイト名 / ナビ文言 / Contact 文言 / Profile・SNS / CTA / note / print / SEO 系なども
+    iframe preview の TanStack Query cache に入るようにした。
+- `settings-preview.test.ts` に同期ガードを追加。
+  - 台帳 → API default
+  - API default → preview payload
+  - admin で編集している settings キー → preview 台帳
+- `Provider` の preview-message 受信で、CSS 変数系だけでなく React render 系の文言・toggle も
+  同じ payload から反映するようにした。
+- `gallerySortOrder` / `seriesSortOrder` は保存前 preview でも見た目が変わるよう、
+  client 側にも `sortPhotosBySetting()` を追加して Top / Gallery / Series detail に接続。
+- 写真の削除 / 復元 / 完全削除 / 更新時、Hero / Series 側の query cache も invalidate するよう補強。
+  ヒーロー選択中・シリーズ表紙中の写真を触った後に管理画面と公開表示がズレる経路を潰した。
+- 公開ページ / 管理画面 query の response body 読み取りを `jsonOrThrow()` / `assertOk()` 経由へ整理。
+- `pages.render.test.tsx` に、preview message 後に Layout の nav / footer 文言が即時反映される
+  回帰テストを追加。
+- 既存 Lightbox テストは実装どおり close callback が 300ms 後に走るため、待機してから検証する形へ調整。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（166 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は出るが失敗なし。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 未実施 / 注意
+- localhost dev server によるブラウザ実機確認は未実施。
+  - sandbox で `listen EPERM 127.0.0.1:5173`。
+  - 権限昇格は Codex 使用上限のため拒否され、迂回はしていない。
+- settings 高影響差分のため agmsg で Claude Code へ P0/P1 レビュー依頼を送ろうとしたが、
+  sandbox では agmsg SQLite が readonly、権限昇格も同じ使用上限で拒否されたため未送信。
+- 既存の未コミット変更が多数あるため、今回 Codex は commit / push していない。
+
+### 触ったファイル
+- `packages/web/src/web/lib/settings-preview.ts`
+- `packages/web/src/web/lib/settings-preview.test.ts`
+- `packages/web/src/web/lib/api.ts`
+- `packages/web/src/web/lib/photo-sort.ts`
+- `packages/web/src/web/lib/photo-sort.test.ts`
+- `packages/web/src/web/components/provider.tsx`
+- `packages/web/src/web/components/Layout.tsx`
+- `packages/web/src/web/components/SeriesGrid.tsx`
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/components/InquiryCta.tsx`
+- `packages/web/src/web/hooks/usePageTitle.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/top.tsx`
+- `packages/web/src/web/pages/gallery.tsx`
+- `packages/web/src/web/pages/series-detail.tsx`
+- `packages/web/src/web/pages/series.tsx`
+- `packages/web/src/web/pages/profile.tsx`
+- `packages/web/src/web/pages/contact.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`

@@ -49,8 +49,10 @@ deploys/
 # ルート直下のデバッグ用スクリーンショット（大容量）
 /*.png
 
-# Claude Code / Codex の設定・メモリ（ローカル専用）
-.claude/
+# Claude Code — ローカル専用（settings.json, rules/, skills/, agents/, hooks/ はコミット対象）
+.claude/settings.local.json
+.claude/chat-backups/
+.claude/scheduled_tasks.lock
 .codex/
 
 # screenshots ディレクトリ

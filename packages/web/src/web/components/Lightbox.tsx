@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { srcSetFor, srcFor } from "../lib/picture";
 
@@ -80,6 +80,16 @@ export function Lightbox({
     "thumb",
   );
   const [exifOpen, setExifOpen] = useState(false); // EXIF info panel
+  const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
+  const doClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    const noMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (noMotion) { onClose(); return; }
+    setClosing(true);
+    setTimeout(() => onClose(), 300);
+  }, [onClose]);
   const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fitImgRef = useRef<HTMLImageElement>(null); // hi-res fitted image
@@ -231,7 +241,7 @@ export function Lightbox({
         e.clientY >= r.y &&
         e.clientY <= r.y + r.h;
       if (!inside) {
-        onClose();
+        doClose();
         return;
       } // letterbox around the photo = backdrop
       if (photos.length > 1) {
@@ -262,7 +272,7 @@ export function Lightbox({
       }
       // Letterbox click while zoomed reads as "step back", not "leave the viewer".
       if (zoomedRef.current) resetZoom();
-      else onClose();
+      else doClose();
     };
 
     // ── Pointer gestures: drag-to-pan (mouse + touch) and two-finger pinch. ──
@@ -410,7 +420,7 @@ export function Lightbox({
       } else if (dy > 90 && dy > Math.abs(dx) * 1.5) {
         // Swipe down to dismiss — the expected mobile photo-viewer gesture. Safe
         // because the fitted (non-zoomed) view never scrolls vertically itself.
-        onClose();
+        doClose();
       }
     };
     dlg.addEventListener("click", onClick);
@@ -434,7 +444,7 @@ export function Lightbox({
       dlg.removeEventListener("dblclick", onDblClick);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onClose, onNext, onPrev]);
+  }, [doClose, onNext, onPrev]);
 
   // Reset before paint so the counter and the visible image stage move together.
   const lbOpenTimeRef = useRef(performance.now());
@@ -516,7 +526,7 @@ export function Lightbox({
   const historyPushedRef = useRef(false);
   const historyCleanupTimerRef = useRef<number | null>(null);
   useEffect(() => {
-    onCloseRef.current = onClose;
+    onCloseRef.current = doClose;
   });
   useEffect(() => {
     const scrollY = window.scrollY;
@@ -591,6 +601,7 @@ export function Lightbox({
   return createPortal(
     <dialog
       ref={dialogRef}
+      className={closing ? "lightbox-exit" : "lightbox-enter"}
       aria-modal="true"
       aria-label="写真ビューア"
       // Staged Escape (standard viewer behaviour): first Esc steps back out of
@@ -599,7 +610,7 @@ export function Lightbox({
       onCancel={(e) => {
         e.preventDefault();
         if (scaleRef.current > 1) resetZoom();
-        else onClose();
+        else doClose();
       }}
       style={{
         position: "fixed",
@@ -703,7 +714,7 @@ export function Lightbox({
           reads against bright photos. */}
       <button
         data-lb-chrome
-        onClick={onClose}
+        onClick={doClose}
         aria-label="閉じる"
         tabIndex={chromeTab}
         style={{
@@ -800,6 +811,7 @@ export function Lightbox({
           drag never relayout. While zoomed a 3200px source fades in on top for
           true detail sharpness. */}
       <div
+        className="lb-content"
         style={{
           width: "100%",
           height: "100%",

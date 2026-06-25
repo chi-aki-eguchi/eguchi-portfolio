@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
+import { sortPhotosBySetting } from "../lib/photo-sort";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -30,14 +31,14 @@ export default function SeriesDetailPage() {
   // N: series pages get their own layout setting.
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
 
   // Next-series navigation (wrap-around) — keeps an engaged viewer moving from
   // one body of work to the next instead of dead-ending at the foot of a page.
   const { data: seriesListData } = useQuery({
     queryKey: ["series"],
-    queryFn: async () => (await api.series.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.series.$get()),
   });
   const seriesList = seriesListData?.series ?? [];
   const curIdx = seriesList.findIndex((s) => s.slug === slug);
@@ -74,13 +75,18 @@ export default function SeriesDetailPage() {
     );
   }
 
-  const { series, photos } = data;
+  const { series } = data;
 
   // 機能9: シリーズ固有のthemeConfigを適用
   const themeConfig = (() => {
     try { return series.themeConfig ? (JSON.parse(series.themeConfig) as Record<string, string>) : {}; }
     catch { return {}; }
   })();
+  const photoOrder =
+    themeConfig.photoOrder && themeConfig.photoOrder !== "inherit" && themeConfig.photoOrder !== "manual_inherit"
+      ? themeConfig.photoOrder
+      : settings?.seriesSortOrder;
+  const photos = sortPhotosBySetting(data.photos, photoOrder);
   const seriesBgColor = themeConfig.bgColor ?? null;
   const seriesLayout = themeConfig.layout || settings?.seriesLayout;
 

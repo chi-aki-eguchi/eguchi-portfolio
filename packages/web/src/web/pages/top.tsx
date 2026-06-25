@@ -1,13 +1,14 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { Lightbox, type LightboxPhoto } from "../components/Lightbox";
 import { InquiryCta } from "../components/InquiryCta";
 import { srcSetFor, srcFor } from "../lib/picture";
+import { sortPhotosBySetting } from "../lib/photo-sort";
 
 function HeroPicture({
   url,
@@ -934,19 +935,22 @@ function HomeImmersive({
 export default function TopPage() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const { data: photosData } = useQuery({
     queryKey: ["photos"],
-    queryFn: async () => (await api.photos.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.photos.$get()),
   });
   const { data: heroData, isLoading: heroLoading } = useQuery({
     queryKey: ["hero-photos"],
-    queryFn: async () => (await api["hero-photos"].$get()).json(),
+    queryFn: async () => jsonOrThrow(await api["hero-photos"].$get()),
   });
 
   // Stable reference across renders so the `featured` useMemo doesn't recompute every render.
-  const allPhotos = useMemo(() => photosData?.photos ?? [], [photosData]);
+  const allPhotos = useMemo(
+    () => sortPhotosBySetting(photosData?.photos ?? [], settings?.gallerySortOrder),
+    [photosData, settings?.gallerySortOrder],
+  );
   // The API may return null entries for hero rows whose photo was deleted.
   const heroPhotosPicked = (heroData?.heroPhotos ?? []).filter(
     (p): p is NonNullable<typeof p> => p != null,

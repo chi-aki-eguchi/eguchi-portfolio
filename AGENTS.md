@@ -1,6 +1,6 @@
 # eguchi-portfolio-app
 
-写真家ポートフォリオサイト。Hono (API) + React 19 (SPA) + Drizzle/Turso (SQLite) + Bun。Railway にデプロイ（git push で自動デプロイ）。
+写真家ポートフォリオサイト。Hono (API) + React 19 (SPA) + Drizzle/Turso (SQLite) + Bun + Tailwind CSS 4。Railway にデプロイ（GitHub auto-deploy。通常は git push で反映）。
 
 ## AI共同作業メモ
 
@@ -10,6 +10,20 @@
 - 2026-06-16: Runable → Railway 移行完了。デプロイ正本は `git push`。ZIP 作成・Runable publish は legacy 手順であり、通常作業では使わない。
 - Runable 関連ファイル（`RUNABLE_AI.md`, `scripts/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
 - Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
+
+### §0 invariants
+
+- DB クエリは必ず `withRetry(() => db....)` のリトライラッパーを使う。
+- settings は 3-place settings sync パターンを維持する。`settings-preview.ts` の台帳、`provider.tsx` の DB 適用 / preview 適用、API `/settings` の default を揃える。
+- API / client のレスポンスは `assertOk()` で検証してから本文を読む。
+- `Content-Encoding` は手動設定しない。Railway / upstream proxy が自動処理する。
+- HTML レスポンスは `Cache-Control: no-store` にする。
+- スタックは Hono + React 19 + Drizzle/Turso + Bun + Tailwind CSS 4 を前提にする。
+- デプロイ構成は Railway（GitHub auto-deploy）、Cloudflare R2 + sharp、Turso。
+
+### リポジトリ境界（絶対禁止）
+
+- `eguchi-portfolio-app` と `ivys-house` リポジトリのコードを混ぜない。ファイルコピー、import、コード参照をすべて禁止する。
 
 ### Claude Code / Codex agmsg 運用
 
@@ -36,7 +50,7 @@
 | ストレージ | Cloudflare R2 (S3 互換) |
 | 画像処理 | sharp (アップロード時に 3200px/mozjpeg q92 最適化、配信時にオンザフライリサイズ) |
 | モノレポ | Bun workspaces + Turborepo |
-| デプロイ | Railway (git push → 自動ビルド + `bun src/server.ts`) |
+| デプロイ | Railway (GitHub auto-deploy / git push → 自動ビルド + `bun src/server.ts`) |
 
 ## プロジェクト構造
 
@@ -110,7 +124,7 @@ bun run db:migrate     # マイグレーション実行
 bun run db:studio      # Drizzle Studio
 ```
 
-## 本番デプロイ（Railway）
+## 本番デプロイ（Railway / GitHub auto-deploy）
 
 ```sh
 cd packages/web && tsc -b && bun run build
@@ -173,6 +187,8 @@ git push
 
 - DB クエリは必ず `withRetry(() => db....)` でラップ
 - データ更新後は `qc.invalidateQueries({ queryKey: [...] })` で再取得
+- API / client のレスポンスは `assertOk()` で検証してから本文を読む
+- HTML レスポンスは `Cache-Control: no-store`。`Content-Encoding` は手動設定せず Railway / upstream proxy に任せる
 - **DB schema は2ファイル同期必須**（配布版の Railway/PostgreSQL 対応）。カラム追加・変更時は
   `schema.ts`（Turso/libSQL・本番）と `schema.postgres.ts`（PostgreSQL・配布版）の**両方**を
   同じカラム名で更新し（型は方言ごと: `integer({mode:"boolean"})`↔`boolean()`、

@@ -36,8 +36,8 @@ test("every ledger key has a default in API GET /settings", async () => {
   const src = await Bun.file(
     new URL("../../api/index.ts", import.meta.url).pathname,
   ).text();
-  const start = src.indexOf('.get("/settings"');
-  const end = src.indexOf('.get("/categories"');
+  const start = src.indexOf('  // ── Site Settings');
+  const end = src.indexOf('  // ── Categories');
   expect(start).toBeGreaterThan(-1);
   expect(end).toBeGreaterThan(start);
   const block = src.slice(start, end);
@@ -47,5 +47,56 @@ test("every ledger key has a default in API GET /settings", async () => {
     [...block.matchAll(/^\s{6,8}([a-zA-Z0-9]+):/gm)].map((m) => m[1]),
   );
   const missing = SETTINGS_PREVIEW_KEYS.filter((k) => !apiKeys.has(k));
+  expect(missing).toEqual([]);
+});
+
+test("every API GET /settings response key is sent to the preview iframe", async () => {
+  const src = await Bun.file(
+    new URL("../../api/index.ts", import.meta.url).pathname,
+  ).text();
+  const start = src.indexOf('  // ── Site Settings');
+  const end = src.indexOf('  // ── Categories');
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  const block = src.slice(start, end);
+  const apiKeys = [
+    ...block.matchAll(/^\s{6,8}([a-zA-Z0-9]+):/gm),
+  ].map((m) => m[1]);
+  const previewKeys = new Set<string>(SETTINGS_PREVIEW_KEYS);
+  const missing = apiKeys.filter((k) => !previewKeys.has(k));
+  expect(missing).toEqual([]);
+});
+
+test("every admin-editable settings key is in the preview registry", async () => {
+  const src = await Bun.file(
+    new URL("../pages/admin.tsx", import.meta.url).pathname,
+  ).text();
+  const apiSrc = await Bun.file(
+    new URL("../../api/index.ts", import.meta.url).pathname,
+  ).text();
+  const start = apiSrc.indexOf('  // ── Site Settings');
+  const end = apiSrc.indexOf('  // ── Categories');
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  const apiBlock = apiSrc.slice(start, end);
+  const apiKeys = new Set(
+    [...apiBlock.matchAll(/^\s{6,8}([a-zA-Z0-9]+):/gm)].map((m) => m[1]),
+  );
+
+  const candidates = new Set<string>([
+    ...[...src.matchAll(/\bset\(\s*["']([a-zA-Z0-9]+)["']/g)].map(
+      (m) => m[1],
+    ),
+    ...[...src.matchAll(/valueKey=["']([a-zA-Z0-9]+)["']/g)].map(
+      (m) => m[1],
+    ),
+    ...[...src.matchAll(/key:\s*["']([a-zA-Z0-9]+)["']/g)].map(
+      (m) => m[1],
+    ),
+  ]);
+  const previewKeys = new Set<string>(SETTINGS_PREVIEW_KEYS);
+  const missing = [...candidates]
+    .filter((k) => apiKeys.has(k) && !previewKeys.has(k))
+    .sort();
   expect(missing).toEqual([]);
 });

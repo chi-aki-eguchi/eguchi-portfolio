@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 
 /**
@@ -13,7 +13,7 @@ import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 export function usePageTitle(page?: string) {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
 
   useEffect(() => {

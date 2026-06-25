@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
@@ -35,7 +35,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const { data } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
 
   // I1: Series nav visibility. "on"/"off" force it; "auto" (default) shows the
@@ -46,7 +46,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const seriesAuto = seriesNav !== "on" && seriesNav !== "off";
   const { data: seriesData } = useQuery({
     queryKey: ["series"],
-    queryFn: async () => (await api.series.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.series.$get()),
     enabled: seriesAuto,
   });
   const showSeries = seriesNav === "on" || (seriesAuto && (seriesData?.series.length ?? 0) > 0);

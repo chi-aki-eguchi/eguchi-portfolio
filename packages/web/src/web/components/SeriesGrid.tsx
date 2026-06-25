@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { num, clamp } from "../lib/utils";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 
@@ -16,11 +16,11 @@ import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 export function SeriesGrid() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const { data, isLoading } = useQuery({
     queryKey: ["series"],
-    queryFn: async () => (await api.series.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.series.$get()),
   });
   const series = data?.series ?? [];
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
 import { num, clamp } from "../lib/utils";
 import { Lightbox, FIT_SIZES } from "./Lightbox";
@@ -251,7 +251,7 @@ export function PhotoGallery({
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
 
   // Track the breakpoint so the layout matches the screen in use. Seeded from
@@ -527,20 +527,34 @@ export function PhotoGallery({
       </div>
     );
   } else if (mode === "masonry") {
-    // Layout expansion Phase 1: CSS columns preserve each photo's real aspect
-    // ratio with a quiet hover title. DOM order remains the same; visual flow is
-    // column-major, acceptable for a masonry index.
     const cols = isMobile ? 2 : 3;
+    const columns: { photo: (typeof photos)[number]; idx: number }[][] =
+      Array.from({ length: cols }, () => []);
+    for (let i = 0; i < photos.length; i++) {
+      columns[i % cols].push({ photo: photos[i], idx: i });
+    }
     body = (
-      <div style={{ columnCount: cols, columnGap: 8 }}>
-        {photos.map((photo, idx) => (
-          <div key={photo.id} style={{ breakInside: "avoid", marginBottom: 8 }}>
-            {tile(photo, idx, {
-              width: "100%",
-              justifySelf: "stretch",
-              sizes: isMobile ? "50vw" : "33vw",
-              cardClassName: quietCardClass,
-            })}
+      <div style={{ display: "flex", gap: 8 }}>
+        {columns.map((col, colIdx) => (
+          <div
+            key={colIdx}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              minWidth: 0,
+            }}
+          >
+            {col.map(({ photo, idx }) =>
+              tile(photo, idx, {
+                width: "100%",
+                justifySelf: "stretch",
+                sizes: isMobile ? "50vw" : "33vw",
+                cardClassName: quietCardClass,
+                staggerIdx: idx,
+              }),
+            )}
           </div>
         ))}
       </div>

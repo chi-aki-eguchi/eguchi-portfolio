@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { safeHref } from "../lib/utils";
 
@@ -9,12 +9,12 @@ type Status = "idle" | "sending" | "success" | "error";
 export default function ContactPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => (await api.settings.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   // H1: published pricing plans (撮影依頼の料金). Empty-safe — section hides when none.
   const { data: pricingData } = useQuery({
     queryKey: ["pricing"],
-    queryFn: async () => (await api.pricing.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.pricing.$get()),
   });
   const plans = pricingData?.plans ?? [];
 

@@ -26,7 +26,7 @@ export default function PageTransition({ children }: { children: React.ReactNode
     if (el) {
       el.style.visibility = "hidden";
       el.style.opacity = "0";
-      el.style.transform = "translateY(20px)";
+      el.style.transform = "translateY(12px)";
       el.style.transition = "none";
     }
 

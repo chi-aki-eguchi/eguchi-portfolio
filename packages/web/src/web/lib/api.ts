@@ -4,6 +4,15 @@ import type { AppType } from "../../api";
 const client = hc<AppType>("/");
 export const api = client.api;
 
+export function assertOk(res: Response): void {
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+export async function jsonOrThrow<T>(res: Response & { json(): Promise<T> }): Promise<T> {
+  assertOk(res);
+  return res.json();
+}
+
 // The admin subtree of AppType exceeds TypeScript's type-instantiation limits:
 // only the first few admin routes survive in the inferred client type, so
 // `api.admin.photos` etc. fail to typecheck even though they work at runtime

@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { SeriesGrid } from "../components/SeriesGrid";
 
 export default function SeriesListPage() {
   const { data } = useQuery({
     queryKey: ["series"],
-    queryFn: async () => (await api.series.$get()).json(),
+    queryFn: async () => jsonOrThrow(await api.series.$get()),
   });
   const entranceRef = usePageEntrance([data]);
 

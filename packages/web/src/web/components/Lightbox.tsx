@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { srcSetFor, srcFor } from "../lib/picture";
 
@@ -28,6 +28,23 @@ export type LightboxPhoto = {
   lqipSrc?: string;
   mediumUrl?: string | null;
 };
+
+const preloaded = new Set<string>();
+function preloadPhoto(photo: LightboxPhoto | undefined) {
+  if (!photo) return;
+  const preview = photo.lqipSrc || srcFor(photo.url, 600, 84, "webp");
+  for (const src of [
+    preview,
+    photo.mediumUrl || srcFor(photo.url, 1200, 85, "webp"),
+  ]) {
+    if (!src || preloaded.has(src)) continue;
+    preloaded.add(src);
+    const img = new Image();
+    img.src = src;
+    img.fetchPriority = "low";
+    img.decoding = "async";
+  }
+}
 
 /**
  * Full-screen photo viewer rendered via portal. Shared by the homepage "Works"
@@ -67,7 +84,6 @@ export function Lightbox({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fitImgRef = useRef<HTMLImageElement>(null); // hi-res fitted image
   const placeImgRef = useRef<HTMLImageElement>(null); // thumbnail (defines the layout box)
-  const genRef = useRef(0); // generation counter — stale onLoad handlers are no-ops
 
   // ── Zoom / pan engine ────────────────────────────────────
   // scale/tx/ty live in refs and are written straight to the layer's style:
@@ -420,9 +436,8 @@ export function Lightbox({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose, onNext, onPrev]);
 
-  // Reset transient view state when the index changes.
-  useEffect(() => {
-    genRef.current += 1;
+  // Reset before paint so the counter and the visible image stage move together.
+  useLayoutEffect(() => {
     setImgError(false);
     setChrome(true);
     setLoadStage("thumb");
@@ -436,6 +451,9 @@ export function Lightbox({
   useEffect(() => {
     const len = photos.length;
     if (len <= 1) return;
+    for (const off of [0, 1, -1, 2, -2]) {
+      preloadPhoto(photos[(index + off + len * 2) % len]);
+    }
     const wrapper = document.createElement("div");
     wrapper.setAttribute("aria-hidden", "true");
     wrapper.style.cssText =
@@ -546,7 +564,6 @@ export function Lightbox({
   }, [onPrev, onNext]);
 
   const photo = photos[index];
-  const renderGen = genRef.current;
 
   // Chrome (overlay UI) fades out in immersive mode; also hidden while zoomed so
   // the detail view is unobstructed.
@@ -801,6 +818,7 @@ export function Lightbox({
           >
             {/* A <button> wrapper so the photo is keyboard-operable. */}
             <button
+              key={photo.url}
               type="button"
               onClick={onPhotoActivate}
               aria-label={
@@ -894,11 +912,7 @@ export function Lightbox({
                   fetchPriority="high"
                   decoding="async"
                   onLoad={() =>
-                    setLoadStage((s) =>
-                      genRef.current === renderGen && s === "thumb"
-                        ? "medium"
-                        : s,
-                    )
+                    setLoadStage((s) => (s === "thumb" ? "medium" : s))
                   }
                   style={{
                     width: "100%",
@@ -915,7 +929,7 @@ export function Lightbox({
                   src={photo.mediumUrl}
                   alt={photo.title || photo.meta || `Photograph ${index + 1}`}
                   onLoad={() => {
-                    if (genRef.current === renderGen) setLoadStage("full");
+                    setLoadStage("full");
                   }}
                   onError={() => setImgError(true)}
                   decoding="async"
@@ -955,7 +969,7 @@ export function Lightbox({
                     sizes={FIT_SIZES}
                     alt={photo.title || photo.meta || `Photograph ${index + 1}`}
                     onLoad={() => {
-                      if (genRef.current === renderGen) setLoadStage("full");
+                      setLoadStage("full");
                     }}
                     onError={() => setImgError(true)}
                     decoding="async"

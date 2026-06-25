@@ -274,7 +274,8 @@ function photoWithThumbs<
   return {
     ...p,
     thumbUrl: p.thumbKey ? keyToPublicUrl(p.thumbKey) : null,
-    mediumUrl: p.mediumKey ? keyToPublicUrl(p.mediumKey) : null,
+    mediumUrl:
+      p.mediumKey && R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${p.mediumKey}` : null,
   };
 }
 

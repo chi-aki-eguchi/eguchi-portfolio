@@ -1,4 +1,10 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
 import { srcSetFor, srcFor } from "../lib/picture";
 
@@ -82,13 +88,22 @@ export function Lightbox({
   const [exifOpen, setExifOpen] = useState(false); // EXIF info panel
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
+  // Photo-swap crossfade: 'out'=instant hide, 'in'=transition to visible, null=idle
+  const [swapPhase, setSwapPhase] = useState<"out" | "in" | null>(null);
+  const hasNavigatedRef = useRef(false);
   const doClose = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
-    const noMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (noMotion) { onClose(); return; }
+    const noMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (noMotion) {
+      onClose();
+      return;
+    }
     setClosing(true);
-    setTimeout(() => onClose(), 300);
+    // content-out: 0.3s, backdrop-out: 0.12s delay + 0.25s = 0.37s total
+    setTimeout(() => onClose(), 370);
   }, [onClose]);
   const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -457,8 +472,23 @@ export function Lightbox({
     resetZoom(false);
     lbOpenTimeRef.current = performance.now();
     if (onRequestMore && photos.length - index <= 5) onRequestMore();
+    // Crossfade on navigation only — skip the initial open (hasNavigatedRef is false).
+    if (hasNavigatedRef.current) setSwapPhase("out");
+    hasNavigatedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
+
+  // Drive the swap crossfade: instant-hide → rAF → fade-in → clear.
+  useEffect(() => {
+    if (swapPhase !== "out") return;
+    const id = requestAnimationFrame(() => setSwapPhase("in"));
+    return () => cancelAnimationFrame(id);
+  }, [swapPhase]);
+  useEffect(() => {
+    if (swapPhase !== "in") return;
+    const t = setTimeout(() => setSwapPhase(null), 220);
+    return () => clearTimeout(t);
+  }, [swapPhase]);
 
   useEffect(() => {
     if (import.meta.env.DEV) {
@@ -815,194 +845,167 @@ export function Lightbox({
         style={{
           width: "100%",
           height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           padding: 0,
           overflow: "hidden",
         }}
       >
-        {imgError ? (
-          <p
-            style={{
-              fontFamily: "var(--font-en)",
-              fontSize: 12,
-              color: "rgba(255,255,255,0.4)",
-            }}
-          >
-            画像を読み込めませんでした
-          </p>
-        ) : (
-          <div
-            ref={zoomLayerRef}
-            style={{
-              transformOrigin: "center center",
-              willChange: "transform",
-              lineHeight: 0,
-            }}
-          >
-            {/* A <button> wrapper so the photo is keyboard-operable. */}
-            <button
-              key={photo.url}
-              type="button"
-              onClick={onPhotoActivate}
-              aria-label={
-                isZoomed
-                  ? "ズームを解除"
-                  : chrome
-                    ? "UIを隠して写真だけ表示"
-                    : "UIを表示"
-              }
+        {/* Inner wrapper owns the flex-centering and the per-photo crossfade.
+            Keeping it separate from lb-content lets the entry animation
+            (which controls lb-content opacity/transform) run independently. */}
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: swapPhase === "out" ? 0 : 1,
+            transition: swapPhase === "in" ? "opacity 0.2s ease" : "none",
+          }}
+        >
+          {imgError ? (
+            <p
               style={{
-                position: "relative",
-                background: "none",
-                border: "none",
-                padding: 0,
-                margin: 0,
-                display: "block",
-                lineHeight: 0,
-                cursor: isZoomed ? "grab" : "pointer",
+                fontFamily: "var(--font-en)",
+                fontSize: 12,
+                color: "rgba(255,255,255,0.4)",
               }}
             >
-              {/* LQIP blur — instant placeholder when grid thumb isn't cached yet */}
-              {photo.lqipSrc && loadStage === "thumb" && (
-                <img
-                  src={photo.lqipSrc}
-                  alt=""
-                  aria-hidden="true"
-                  draggable={false}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    filter: "blur(20px)",
-                    transform: "scale(1.1)",
-                  }}
-                />
-              )}
-              {/* Stage 1: grid thumbnail — already in browser cache, appears instantly */}
-              <picture>
-                <source
-                  type="image/avif"
-                  srcSet={srcSetFor(photo.url, "grid", "avif")}
-                  sizes={GRID_THUMB_SIZES}
-                />
-                <source
-                  type="image/webp"
-                  srcSet={srcSetFor(photo.url, "grid", "webp")}
-                  sizes={GRID_THUMB_SIZES}
-                />
-                <img
-                  ref={placeImgRef}
-                  srcSet={srcSetFor(photo.url, "grid")}
-                  sizes={GRID_THUMB_SIZES}
-                  src={srcFor(photo.url, 600, 84)}
-                  alt=""
-                  aria-hidden="true"
-                  draggable={false}
-                  fetchPriority="low"
-                  decoding="async"
-                  style={{
-                    display: "block",
-                    width: FIT_W,
-                    height: FIT_H,
-                    objectFit: "contain",
-                  }}
-                />
-              </picture>
-              {/* Stage 2: medium (w=800) — skipped when pre-gen mediumUrl exists
-                  (the CDN-served 1920px WebP is faster than a server-processed 800px) */}
-              {!photo.mediumUrl && (
-                <picture
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                  }}
-                >
-                  <source
-                    type="image/avif"
-                    srcSet={srcFor(photo.url, 800, 80, "avif")}
-                  />
-                  <source
-                    type="image/webp"
-                    srcSet={srcFor(photo.url, 800, 80, "webp")}
-                  />
+              画像を読み込めませんでした
+            </p>
+          ) : (
+            <div
+              ref={zoomLayerRef}
+              style={{
+                transformOrigin: "center center",
+                willChange: "transform",
+                lineHeight: 0,
+              }}
+            >
+              {/* A <button> wrapper so the photo is keyboard-operable. */}
+              <button
+                key={photo.url}
+                type="button"
+                onClick={onPhotoActivate}
+                aria-label={
+                  isZoomed
+                    ? "ズームを解除"
+                    : chrome
+                      ? "UIを隠して写真だけ表示"
+                      : "UIを表示"
+                }
+                style={{
+                  position: "relative",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  margin: 0,
+                  display: "block",
+                  lineHeight: 0,
+                  cursor: isZoomed ? "grab" : "pointer",
+                }}
+              >
+                {/* LQIP blur — instant placeholder when grid thumb isn't cached yet */}
+                {photo.lqipSrc && loadStage === "thumb" && (
                   <img
-                    src={srcFor(photo.url, 800, 80)}
+                    src={photo.lqipSrc}
                     alt=""
                     aria-hidden="true"
                     draggable={false}
-                    fetchPriority="high"
-                    decoding="async"
-                    onLoad={() =>
-                      setLoadStage((s) => (s === "thumb" ? "medium" : s))
-                    }
                     style={{
+                      position: "absolute",
+                      inset: 0,
                       width: "100%",
                       height: "100%",
                       objectFit: "contain",
-                      opacity: loadStage !== "thumb" ? 1 : 0,
+                      filter: "blur(20px)",
+                      transform: "scale(1.1)",
                     }}
                   />
-                </picture>
-              )}
-              {/* Stage 3: full quality — pre-gen 1920px WebP from CDN, or on-the-fly srcset */}
-              {photo.mediumUrl ? (
-                <img
-                  ref={fitImgRef}
-                  src={photo.mediumUrl}
-                  alt={photo.title || photo.meta || `Photograph ${index + 1}`}
-                  fetchPriority="high"
-                  onLoad={() => {
-                    setLoadStage("full");
-                  }}
-                  onError={() => setImgError(true)}
-                  decoding="async"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    opacity: loadStage === "full" ? 1 : 0,
-                  }}
-                  draggable={false}
-                />
-              ) : (
-                <picture
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                  }}
-                >
+                )}
+                {/* Stage 1: grid thumbnail — already in browser cache, appears instantly */}
+                <picture>
                   <source
                     type="image/avif"
-                    srcSet={srcSetFor(photo.url, "lightbox", "avif")}
-                    sizes={FIT_SIZES}
+                    srcSet={srcSetFor(photo.url, "grid", "avif")}
+                    sizes={GRID_THUMB_SIZES}
                   />
                   <source
                     type="image/webp"
-                    srcSet={srcSetFor(photo.url, "lightbox", "webp")}
-                    sizes={FIT_SIZES}
+                    srcSet={srcSetFor(photo.url, "grid", "webp")}
+                    sizes={GRID_THUMB_SIZES}
                   />
                   <img
+                    ref={placeImgRef}
+                    srcSet={srcSetFor(photo.url, "grid")}
+                    sizes={GRID_THUMB_SIZES}
+                    src={srcFor(photo.url, 600, 84)}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    fetchPriority="low"
+                    decoding="async"
+                    style={{
+                      display: "block",
+                      width: FIT_W,
+                      height: FIT_H,
+                      objectFit: "contain",
+                    }}
+                  />
+                </picture>
+                {/* Stage 2: medium (w=800) — skipped when pre-gen mediumUrl exists
+                  (the CDN-served 1920px WebP is faster than a server-processed 800px) */}
+                {!photo.mediumUrl && (
+                  <picture
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <source
+                      type="image/avif"
+                      srcSet={srcFor(photo.url, 800, 80, "avif")}
+                    />
+                    <source
+                      type="image/webp"
+                      srcSet={srcFor(photo.url, 800, 80, "webp")}
+                    />
+                    <img
+                      src={srcFor(photo.url, 800, 80)}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      fetchPriority="high"
+                      decoding="async"
+                      onLoad={() =>
+                        setLoadStage((s) => (s === "thumb" ? "medium" : s))
+                      }
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        opacity: loadStage !== "thumb" ? 1 : 0,
+                      }}
+                    />
+                  </picture>
+                )}
+                {/* Stage 3: full quality — pre-gen 1920px WebP from CDN, or on-the-fly srcset */}
+                {photo.mediumUrl ? (
+                  <img
                     ref={fitImgRef}
-                    src={srcFor(photo.url, 1200, 85)}
-                    srcSet={fitSrcSet(photo.url)}
-                    sizes={FIT_SIZES}
+                    src={photo.mediumUrl}
                     alt={photo.title || photo.meta || `Photograph ${index + 1}`}
+                    fetchPriority="high"
                     onLoad={() => {
                       setLoadStage("full");
                     }}
                     onError={() => setImgError(true)}
                     decoding="async"
                     style={{
+                      position: "absolute",
+                      inset: 0,
                       width: "100%",
                       height: "100%",
                       objectFit: "contain",
@@ -1010,45 +1013,86 @@ export function Lightbox({
                     }}
                     draggable={false}
                   />
-                </picture>
-              )}
-              {isZoomed && (
-                <picture
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                  }}
-                >
-                  <source
-                    type="image/avif"
-                    srcSet={srcFor(photo.url, 3200, 90, "avif")}
-                  />
-                  <source
-                    type="image/webp"
-                    srcSet={srcFor(photo.url, 3200, 90, "webp")}
-                  />
-                  <img
-                    src={srcFor(photo.url, 3200, 90)}
-                    alt=""
-                    aria-hidden="true"
-                    onLoad={() => setZoomSrcReady(true)}
-                    decoding="async"
-                    draggable={false}
+                ) : (
+                  <picture
                     style={{
+                      position: "absolute",
+                      inset: 0,
                       width: "100%",
                       height: "100%",
-                      objectFit: "contain",
-                      opacity: zoomSrcReady ? 1 : 0,
-                      transition: "opacity 0.3s ease",
                     }}
-                  />
-                </picture>
-              )}
-            </button>
-          </div>
-        )}
+                  >
+                    <source
+                      type="image/avif"
+                      srcSet={srcSetFor(photo.url, "lightbox", "avif")}
+                      sizes={FIT_SIZES}
+                    />
+                    <source
+                      type="image/webp"
+                      srcSet={srcSetFor(photo.url, "lightbox", "webp")}
+                      sizes={FIT_SIZES}
+                    />
+                    <img
+                      ref={fitImgRef}
+                      src={srcFor(photo.url, 1200, 85)}
+                      srcSet={fitSrcSet(photo.url)}
+                      sizes={FIT_SIZES}
+                      alt={
+                        photo.title || photo.meta || `Photograph ${index + 1}`
+                      }
+                      onLoad={() => {
+                        setLoadStage("full");
+                      }}
+                      onError={() => setImgError(true)}
+                      decoding="async"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        opacity: loadStage === "full" ? 1 : 0,
+                      }}
+                      draggable={false}
+                    />
+                  </picture>
+                )}
+                {isZoomed && (
+                  <picture
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <source
+                      type="image/avif"
+                      srcSet={srcFor(photo.url, 3200, 90, "avif")}
+                    />
+                    <source
+                      type="image/webp"
+                      srcSet={srcFor(photo.url, 3200, 90, "webp")}
+                    />
+                    <img
+                      src={srcFor(photo.url, 3200, 90)}
+                      alt=""
+                      aria-hidden="true"
+                      onLoad={() => setZoomSrcReady(true)}
+                      decoding="async"
+                      draggable={false}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        opacity: zoomSrcReady ? 1 : 0,
+                        transition: "opacity 0.3s ease",
+                      }}
+                    />
+                  </picture>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Caption — overlaid at the bottom so it never shrinks the photo; part of chrome. */}

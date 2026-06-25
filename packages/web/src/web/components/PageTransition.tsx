@@ -2,18 +2,26 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 
 function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined"
-    && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 }
 
 function hasViewTransitions(): boolean {
-  return typeof document !== "undefined"
-    && "startViewTransition" in document
-    && window.parent === window;
+  return (
+    typeof document !== "undefined" &&
+    "startViewTransition" in document &&
+    window.parent === window
+  );
 }
 
-export default function PageTransition({ children }: { children: React.ReactNode }) {
+export default function PageTransition({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [location] = useLocation();
   const [display, setDisplay] = useState(children);
   const [opacity, setOpacity] = useState(1);
@@ -37,7 +45,8 @@ export default function PageTransition({ children }: { children: React.ReactNode
       requestAnimationFrame(() => {
         if (el) {
           el.style.visibility = "visible";
-          el.style.transition = "opacity 600ms cubic-bezier(0.16,1,0.3,1), transform 600ms cubic-bezier(0.16,1,0.3,1)";
+          el.style.transition =
+            "opacity 600ms cubic-bezier(0.16,1,0.3,1), transform 600ms cubic-bezier(0.16,1,0.3,1)";
           el.style.opacity = "1";
           el.style.transform = "translateY(0)";
         }
@@ -61,7 +70,9 @@ export default function PageTransition({ children }: { children: React.ReactNode
     // Use View Transitions API when available for smoother page switches.
     if (hasViewTransitions()) {
       transitioning.current = true;
-      (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(() => {
+      (
+        document as unknown as { startViewTransition: (cb: () => void) => void }
+      ).startViewTransition(() => {
         setDisplay(children);
         setOpacity(1);
         window.scrollTo(0, 0);
@@ -75,7 +86,7 @@ export default function PageTransition({ children }: { children: React.ReactNode
 
     const t = setTimeout(() => {
       swapAndFadeIn(children);
-    }, 500);
+    }, 250);
 
     return () => clearTimeout(t);
   }, [location, children, swapAndFadeIn]);
@@ -89,7 +100,9 @@ export default function PageTransition({ children }: { children: React.ReactNode
       ref={containerRef}
       style={{
         opacity,
-        transition: prefersReducedMotion() ? "none" : "opacity 500ms cubic-bezier(0.16,1,0.3,1)",
+        transition: prefersReducedMotion()
+          ? "none"
+          : "opacity 250ms cubic-bezier(0.4,0,1,1)",
       }}
     >
       {display}

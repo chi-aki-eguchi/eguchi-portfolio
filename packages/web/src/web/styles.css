@@ -202,7 +202,9 @@ body {
     position: relative;
   }
   .photo-card:hover img.lqip-loaded {
-    transform: scale(1.015);
+    transform: scale(1.03);
+    filter: blur(0px) brightness(1.04);
+    transition-duration: 0.6s, 0.6s, 0.6s;
   }
   .photo-card:hover .tile-caption {
     opacity: 1;
@@ -270,20 +272,21 @@ body {
   height: auto;
   display: block;
   background-color: #ebebeb;
-  /* LQIP blur-up: blurred placeholder fades out when real img loads */
+  /* LQIP blur-up: blurred placeholder fades out when real img loads.
+     transform uses 0.9s so hover-out "breathes" slowly back; hover-in
+     overrides to 0.6s via transition-duration on the :hover rule. */
   transition:
     filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    transform 0.9s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .photo-card img.lqip-loading {
-  /* 8px: visually equivalent placeholder blur at a fraction of the filter cost
-     (blur cost scales with radius² — 12px was a measurable jank source). */
-  filter: blur(8px);
+  /* blur and brightness share the same filter list so they interpolate smoothly */
+  filter: blur(8px) brightness(1);
   transform: scale(1.02);
 }
 .photo-card img.lqip-loaded {
-  filter: blur(0px);
+  filter: blur(0px) brightness(1);
   transform: scale(1);
 }
 
@@ -835,62 +838,95 @@ img {
    neutralised — so force the visible end-state regardless of the JS observer. */
 /* ─── View Transitions API ─── */
 @supports (view-transition-name: none) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: 0.45s;
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  }
   ::view-transition-old(root) {
+    animation-duration: 0.2s;
+    animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
     animation-name: vt-fade-out;
   }
   ::view-transition-new(root) {
+    animation-duration: 0.55s;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     animation-name: vt-fade-in;
   }
   @keyframes vt-fade-out {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-5px); }
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
   }
   @keyframes vt-fade-in {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
 /* ─── Lightbox entrance/exit ─── */
 dialog.lightbox-enter {
-  animation: lb-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: lb-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 dialog.lightbox-enter .lb-content {
-  animation: lb-content-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+  animation: lb-content-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
 }
 dialog.lightbox-exit {
-  animation: lb-out 0.3s cubic-bezier(0.4, 0, 1, 1) both;
+  /* backdrop fades 0.12s after content starts closing */
+  animation: lb-out 0.25s cubic-bezier(0.4, 0, 1, 1) 0.12s both;
   pointer-events: none;
 }
 dialog.lightbox-exit .lb-content {
-  animation: lb-content-out 0.25s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: lb-content-out 0.3s cubic-bezier(0.4, 0, 1, 1) both;
 }
 @keyframes lb-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes lb-content-in {
-  from { opacity: 0; transform: scale(0.965) translateY(6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 @keyframes lb-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 @keyframes lb-content-out {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.965) translateY(6px); }
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
 }
 
 /* ─── Filter switch layout animation ─── */
 .filter-grid-animated > * {
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

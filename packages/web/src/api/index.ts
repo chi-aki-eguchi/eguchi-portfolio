@@ -1970,6 +1970,11 @@ const app = new Hono()
 
   // ── Admin: Batch-generate thumbnails for existing photos ──
   .post("/admin/generate-thumbnails", requireAdmin, async (c) => {
+    const limitParam = Number(c.req.query("limit") ?? "25");
+    const limit = Math.min(
+      50,
+      Math.max(1, Number.isFinite(limitParam) ? Math.floor(limitParam) : 25),
+    );
     const photos = await withRetry(() =>
       db
         .select({
@@ -1979,15 +1984,19 @@ const app = new Hono()
           mediumKey: schema.photos.mediumKey,
         })
         .from(schema.photos)
-        .where(isNull(schema.photos.deletedAt)),
+        .where(isNull(schema.photos.deletedAt))
+        .orderBy(schema.photos.sortOrder),
     );
     const pending = photos.filter((p) => !p.thumbKey || !p.mediumKey);
     if (pending.length === 0)
-      return c.json({ ok: true, processed: 0, total: photos.length }, 200);
+      return c.json(
+        { ok: true, processed: 0, failed: 0, remaining: 0, total: photos.length },
+        200,
+      );
 
     let processed = 0;
     let failed = 0;
-    for (const p of pending) {
+    for (const p of pending.slice(0, limit)) {
       const r2Key = p.url.replace("/api/images/", "");
       try {
         const obj = await s3.send(
@@ -2010,7 +2019,16 @@ const app = new Hono()
         console.error(`[thumbnails] failed id=${p.id}:`, e);
       }
     }
-    return c.json({ ok: true, processed, failed, total: photos.length }, 200);
+    return c.json(
+      {
+        ok: true,
+        processed,
+        failed,
+        remaining: Math.max(0, pending.length - processed),
+        total: photos.length,
+      },
+      200,
+    );
   });
 
 export type AppType = typeof app;

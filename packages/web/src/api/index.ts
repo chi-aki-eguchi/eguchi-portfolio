@@ -311,6 +311,16 @@ async function generateAndUploadThumbnails(
   return { thumbKey: tKey, mediumKey: mKey };
 }
 
+async function generateAndUploadThumb(
+  optimisedBuf: Buffer,
+  originalKey: string,
+): Promise<{ thumbKey: string }> {
+  const tKey = thumbKeyFrom(originalKey);
+  const thumbBuf = await generateWebP(optimisedBuf, THUMB_WIDTH, THUMB_QUALITY);
+  await uploadToStorage(tKey, thumbBuf, "image/webp");
+  return { thumbKey: tKey };
+}
+
 // Upload buffer to S3-compatible object storage.
 async function uploadToStorage(key: string, buf: Buffer, contentType: string) {
   await s3.send(
@@ -1971,6 +1981,7 @@ const app = new Hono()
 
   // ── Admin: Batch-generate thumbnails for existing photos ──
   .post("/admin/generate-thumbnails", requireAdmin, async (c) => {
+    const variant = c.req.query("variant") === "thumb" ? "thumb" : "all";
     const limitParam = Number(c.req.query("limit") ?? "25");
     const limit = Math.min(
       50,
@@ -1988,7 +1999,9 @@ const app = new Hono()
         .where(isNull(schema.photos.deletedAt))
         .orderBy(schema.photos.sortOrder),
     );
-    const pending = photos.filter((p) => !p.thumbKey || !p.mediumKey);
+    const pending = photos.filter((p) =>
+      variant === "thumb" ? !p.thumbKey : !p.thumbKey || !p.mediumKey,
+    );
     if (pending.length === 0)
       return c.json(
         { ok: true, processed: 0, failed: 0, remaining: 0, total: photos.length },
@@ -2004,13 +2017,23 @@ const app = new Hono()
           new GetObjectCommand({ Bucket: BUCKET, Key: r2Key }),
         );
         const buf = Buffer.from(await obj.Body!.transformToByteArray());
-        const keys = await generateAndUploadThumbnails(buf, r2Key);
-        await withRetry(() =>
-          db
-            .update(schema.photos)
-            .set({ thumbKey: keys.thumbKey, mediumKey: keys.mediumKey })
-            .where(eq(schema.photos.id, p.id)),
-        );
+        if (variant === "thumb") {
+          const keys = await generateAndUploadThumb(buf, r2Key);
+          await withRetry(() =>
+            db
+              .update(schema.photos)
+              .set({ thumbKey: keys.thumbKey })
+              .where(eq(schema.photos.id, p.id)),
+          );
+        } else {
+          const keys = await generateAndUploadThumbnails(buf, r2Key);
+          await withRetry(() =>
+            db
+              .update(schema.photos)
+              .set({ thumbKey: keys.thumbKey, mediumKey: keys.mediumKey })
+              .where(eq(schema.photos.id, p.id)),
+          );
+        }
         processed++;
         console.log(
           `[thumbnails] ${processed}/${pending.length} done: id=${p.id}`,

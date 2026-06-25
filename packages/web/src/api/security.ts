@@ -15,6 +15,8 @@ export const FONT_MAX_BYTES = 2 * 1024 * 1024;
 
 export const IMAGE_PROXY_ALLOWED_PREFIXES = [
   "photos/",
+  "thumbs/",
+  "medium/",
   "hero/",
   "profile/",
   "fonts/",

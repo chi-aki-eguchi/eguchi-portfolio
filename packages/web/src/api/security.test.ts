@@ -48,6 +48,8 @@ describe("size limits", () => {
 describe("isAllowedImageKey (path traversal prevention)", () => {
   test("allows valid prefixes", () => {
     expect(isAllowedImageKey("photos/123.jpg")).toBe(true);
+    expect(isAllowedImageKey("thumbs/123.webp")).toBe(true);
+    expect(isAllowedImageKey("medium/123.webp")).toBe(true);
     expect(isAllowedImageKey("hero/abc.jpg")).toBe(true);
     expect(isAllowedImageKey("profile/me.jpg")).toBe(true);
     expect(isAllowedImageKey("fonts/custom.woff2")).toBe(true);

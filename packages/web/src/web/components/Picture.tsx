@@ -2,6 +2,7 @@ import { srcSetFor, srcFor, type ImagePreset } from "../lib/picture";
 
 type PictureProps = {
   url: string;
+  rotationDeg?: number | null;
   alt: string;
   preset: ImagePreset;
   sizes: string;
@@ -18,25 +19,25 @@ type PictureProps = {
 };
 
 export function Picture({
-  url, alt, preset, sizes, fallbackW, fallbackQ,
+  url, rotationDeg, alt, preset, sizes, fallbackW, fallbackQ,
   className, style, loading, fetchPriority, onLoad, onError, draggable, imgRef,
 }: PictureProps) {
   return (
     <picture>
       <source
         type="image/avif"
-        srcSet={srcSetFor(url, preset, "avif")}
+        srcSet={srcSetFor(url, preset, "avif", rotationDeg)}
         sizes={sizes}
       />
       <source
         type="image/webp"
-        srcSet={srcSetFor(url, preset, "webp")}
+        srcSet={srcSetFor(url, preset, "webp", rotationDeg)}
         sizes={sizes}
       />
       <img
         ref={imgRef}
-        src={srcFor(url, fallbackW, fallbackQ)}
-        srcSet={srcSetFor(url, preset)}
+        src={srcFor(url, fallbackW, fallbackQ, undefined, rotationDeg)}
+        srcSet={srcSetFor(url, preset, undefined, rotationDeg)}
         sizes={sizes}
         alt={alt}
         className={className}

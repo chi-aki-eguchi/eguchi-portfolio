@@ -79,6 +79,7 @@ eguchi-portfolio-app/
 ├── task.md                      # 直近のタスクログ
 ├── admin-enhancement-spec.md    # 管理画面強化仕様書 P1〜P4（参照先）
 ├── admin-enhancement-spec-v2.md # 管理画面強化仕様書 v2 確定版（グループC〜F / Q1〜Q5）
+├── admin-enhancement-spec-v3-draft.md # 管理画面 v3 ドラフト（写真の向き・調整幅・UX改善）
 ├── design-spec.md               # デザイン仕様書（見た目・佇まいの設計図）
 └── layout-patterns.svg          # レイアウトパターン参考図（design-spec と対）
 ```
@@ -208,6 +209,7 @@ git push
 |---|---|
 | `admin-enhancement-spec.md` | 管理画面強化 P1〜P4（グループA: タイポグラフィ / グループB: 管理快適化）。下記「強化計画」を参照 |
 | `admin-enhancement-spec-v2.md` | 続編・全項目確定版。グループC（写真管理を Lightroom/Bridge 化: 重複検知・範囲選択・キーボード・D&D・メタ表示）/ D（編集UI刷新: 折りたたみ・サイト文言整理・インスペクタ構造化・Typography軸別再編・プレビュー幅切替）/ E（閲覧側デザイン: ヒーロー・余白・トランジション・srcset・About土台）/ F（SEO）。着手順 Q1〜Q5。§0 既存パターン厳守 |
+| `admin-enhancement-spec-v3-draft.md` | 写真の向き（90度回転）・見せる中心・写真ごとの調整幅・管理画面UX改善のドラフト。Claude Codeレビュー後に確定版へ更新する |
 | `design-spec.md` | デザイン（見た目・佇まい）の設計図。雑誌/写真集的な編集された佇まい・写真主役・余白主導。秋が S/M/L サイズ指定＋並べ替えでレイアウトを演出する仕組み（完全自由配置はしない、レスポンシブ自動対応）。色/タイポ/余白/動き/画質の原則 |
 | `layout-patterns.svg` | `design-spec.md` 1章のレイアウトパターン参考図（A: 不揃いグリッド / B: 見開き / C: ずらし大 / D: 整然グリッド） |
 

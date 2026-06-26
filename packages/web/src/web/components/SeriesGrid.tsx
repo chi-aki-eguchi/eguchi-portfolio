@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { num, clamp } from "../lib/utils";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
+import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 
 /**
  * P (works-series-grid): the Series view — each tile is a series' cover photo
@@ -83,13 +84,24 @@ export function SeriesGrid() {
           <div className="overflow-hidden bg-[rgba(var(--foreground-rgb),0.03)] aspect-[4/5]">
             {s.coverUrl ? (
               <img
-                src={`${s.coverUrl}?w=800&q=85`}
-                srcSet={`${s.coverUrl}?w=400&q=82 400w, ${s.coverUrl}?w=800&q=85 800w, ${s.coverUrl}?w=1100&q=85 1100w, ${s.coverUrl}?w=1600&q=86 1600w`}
+                src={srcFor(s.coverUrl, 800, 85, undefined, s.coverRotationDeg)}
+                srcSet={srcSetFor(
+                  s.coverUrl,
+                  "grid",
+                  undefined,
+                  s.coverRotationDeg,
+                )}
                 sizes={sizes}
                 alt={s.subtitle ? `${s.title} — ${s.subtitle}` : s.title}
                 loading="lazy"
                 decoding="async"
                 onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                style={{
+                  objectPosition: objectPositionFromFocal(
+                    s.coverFocalX,
+                    s.coverFocalY,
+                  ),
+                }}
                 className="w-full h-full object-cover transition-[transform,filter] duration-[1.1s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.04] group-hover:brightness-[1.04]"
               />
             ) : (

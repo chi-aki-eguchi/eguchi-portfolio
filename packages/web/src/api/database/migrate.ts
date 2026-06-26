@@ -66,21 +66,24 @@ function selectedDatabaseUrlForLog(): string | undefined {
 
 async function ensureTursoColumns(): Promise<void> {
   const { db } = await import("./libsql");
-  const columns: [string, string][] = [
-    ["photos", "focal_length"],
-    ["photos", "f_number"],
-    ["photos", "exposure_time"],
-    ["photos", "iso"],
-    ["photos", "thumb_key"],
-    ["photos", "medium_key"],
+  const columns: [string, string, string][] = [
+    ["photos", "focal_length", "text"],
+    ["photos", "f_number", "text"],
+    ["photos", "exposure_time", "text"],
+    ["photos", "iso", "text"],
+    ["photos", "thumb_key", "text"],
+    ["photos", "medium_key", "text"],
+    ["photos", "rotation_deg", "integer NOT NULL DEFAULT 0"],
+    ["photos", "focal_x", "integer NOT NULL DEFAULT 50"],
+    ["photos", "focal_y", "integer NOT NULL DEFAULT 50"],
   ];
-  for (const [table, col] of columns) {
+  for (const [table, col, type] of columns) {
     try {
       await db.run(sql`SELECT ${sql.raw(col)} FROM ${sql.raw(table)} LIMIT 0`);
     } catch {
       try {
         await db.run(
-          sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN ${sql.raw(col)} text`,
+          sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN ${sql.raw(col)} ${sql.raw(type)}`,
         );
         console.log(`[migrate] added missing column ${table}.${col}`);
       } catch (e) {

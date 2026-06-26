@@ -4,20 +4,30 @@ import { api, jsonOrThrow } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
 import { num, clamp } from "../lib/utils";
 import { Lightbox, FIT_SIZES } from "./Lightbox";
-import { srcSetFor } from "../lib/picture";
+import {
+  objectPositionFromFocal,
+  orientedAspectRatio,
+  orientedDimensions,
+  photoSrcFor,
+  photoSrcSetFor,
+  srcFor,
+  srcSetFor,
+} from "../lib/picture";
 
 const _preloaded = new Set<string>();
-function preloadForLightbox(url: string, mediumUrl?: string | null) {
-  const key = mediumUrl || url;
+function preloadForLightbox(
+  photo: Pick<GalleryPhoto, "url" | "mediumUrl" | "rotationDeg">,
+) {
+  const key = photo.mediumUrl || `${photo.url}:${photo.rotationDeg ?? 0}`;
   if (_preloaded.has(key)) return;
   _preloaded.add(key);
   const img = new Image();
-  if (mediumUrl) {
-    img.src = mediumUrl;
+  if (photo.mediumUrl) {
+    img.src = photo.mediumUrl;
   } else {
     img.sizes = FIT_SIZES;
-    img.srcset = srcSetFor(url, "lightbox", "webp");
-    img.src = `${url}?w=1920&q=85&fmt=webp`;
+    img.srcset = photoSrcSetFor(photo, "lightbox", "webp");
+    img.src = photoSrcFor(photo, 1920, 85, "webp");
   }
   img.fetchPriority = "low";
   img.decoding = "async";
@@ -29,7 +39,7 @@ function preloadNearbyLightboxPhotos(photos: GalleryPhoto[], index: number) {
   for (const off of [0, 1, -1, 2, -2, 3, -3]) {
     const photo = photos[(index + off + len * 2) % len];
     if (!photo) continue;
-    preloadForLightbox(photo.url, photo.mediumUrl);
+    preloadForLightbox(photo);
   }
 }
 
@@ -46,6 +56,9 @@ export type GalleryPhoto = {
   displaySize?: string;
   width?: number | null;
   height?: number | null;
+  rotationDeg?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
   thumbUrl?: string | null;
   mediumUrl?: string | null;
 };
@@ -82,6 +95,7 @@ const LqipImage = memo(function LqipImage({
   isFirst,
   width,
   height,
+  rotationDeg,
   style,
 }: {
   url: string;
@@ -92,6 +106,7 @@ const LqipImage = memo(function LqipImage({
   isFirst: boolean;
   width: number | null | undefined;
   height: number | null | undefined;
+  rotationDeg?: number | null;
   style?: React.CSSProperties;
 }) {
   const [loaded, setLoaded] = useState(false);
@@ -143,8 +158,8 @@ const LqipImage = memo(function LqipImage({
     return (
       <img
         src={thumbUrl}
-        data-src={`${url}?w=600&q=84`}
-        data-srcset={srcSetFor(url, "grid")}
+        data-src={srcFor(url, 600, 84, undefined, rotationDeg)}
+        data-srcset={srcSetFor(url, "grid", undefined, rotationDeg)}
         sizes={sizes}
         alt={alt}
         loading={isNearViewport ? "eager" : "lazy"}
@@ -165,10 +180,22 @@ const LqipImage = memo(function LqipImage({
 
   return (
     <img
-      src={isNearViewport ? `${url}?w=600&q=84` : `${url}?w=20&q=20`}
-      data-src={isNearViewport ? undefined : `${url}?w=600&q=84`}
-      srcSet={isNearViewport ? srcSetFor(url, "grid") : undefined}
-      data-srcset={isNearViewport ? undefined : srcSetFor(url, "grid")}
+      src={
+        isNearViewport
+          ? srcFor(url, 600, 84, undefined, rotationDeg)
+          : srcFor(url, 20, 20, undefined, rotationDeg)
+      }
+      data-src={
+        isNearViewport
+          ? undefined
+          : srcFor(url, 600, 84, undefined, rotationDeg)
+      }
+      srcSet={
+        isNearViewport ? srcSetFor(url, "grid", undefined, rotationDeg) : undefined
+      }
+      data-srcset={
+        isNearViewport ? undefined : srcSetFor(url, "grid", undefined, rotationDeg)
+      }
       sizes={sizes}
       alt={alt}
       loading={isNearViewport ? "eager" : "lazy"}
@@ -396,15 +423,21 @@ export function PhotoGallery({
       showHoverCaption?: boolean;
     },
   ) => {
-    const ratio =
-      photo.width && photo.height
-        ? `${photo.width} / ${photo.height}`
-        : undefined;
-    const imgStyle =
-      opts.imgStyle ??
-      (ratio
-        ? { aspectRatio: ratio, width: "100%", height: "auto" }
-        : undefined);
+    const ratio = orientedAspectRatio(
+      photo.width,
+      photo.height,
+      photo.rotationDeg,
+    );
+    const dims = orientedDimensions(
+      photo.width,
+      photo.height,
+      photo.rotationDeg,
+    );
+    const imgStyle = {
+      ...(opts.imgStyle ??
+        (ratio ? { aspectRatio: ratio, width: "100%", height: "auto" } : {})),
+      objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY),
+    };
     const isNearViewport = idx < 8;
     return (
       <button
@@ -423,9 +456,9 @@ export function PhotoGallery({
           cursor: "pointer",
         }}
         onClick={() => openLightbox(idx)}
-        onMouseEnter={() => preloadForLightbox(photo.url, photo.mediumUrl)}
+        onMouseEnter={() => preloadForLightbox(photo)}
         onPointerDown={() => preloadNearbyLightboxPhotos(photos, idx)}
-        onTouchStart={() => preloadForLightbox(photo.url, photo.mediumUrl)}
+        onTouchStart={() => preloadForLightbox(photo)}
       >
         <div
           className={`photo-card fade-in-item${opts.cardClassName ? ` ${opts.cardClassName}` : ""}`}
@@ -441,12 +474,12 @@ export function PhotoGallery({
               <>
                 <source
                   type="image/avif"
-                  srcSet={srcSetFor(photo.url, "grid", "avif")}
+                  srcSet={photoSrcSetFor(photo, "grid", "avif")}
                   sizes={opts.sizes}
                 />
                 <source
                   type="image/webp"
-                  srcSet={srcSetFor(photo.url, "grid", "webp")}
+                  srcSet={photoSrcSetFor(photo, "grid", "webp")}
                   sizes={opts.sizes}
                 />
               </>
@@ -463,8 +496,9 @@ export function PhotoGallery({
               sizes={opts.sizes}
               isNearViewport={isNearViewport}
               isFirst={idx === 0}
-              width={photo.width}
-              height={photo.height}
+              height={dims.height}
+              width={dims.width}
+              rotationDeg={photo.rotationDeg}
               style={imgStyle}
             />
           </picture>
@@ -888,7 +922,7 @@ export function PhotoGallery({
         <Lightbox
           photos={photos.map((p) => ({
             ...p,
-            lqipSrc: p.thumbUrl ?? `${p.url}?w=20&q=20`,
+            lqipSrc: p.thumbUrl ?? photoSrcFor(p, 20, 20),
           }))}
           index={lightboxIndex}
           onClose={closeLightbox}

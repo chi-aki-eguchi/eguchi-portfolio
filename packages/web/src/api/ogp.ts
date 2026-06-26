@@ -5,6 +5,7 @@ import {
   gaMeasurementIdForSite,
   siteDescriptionFrom,
 } from "./site-defaults";
+import { imageUrlWithParams } from "../shared/image-url";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
@@ -71,8 +72,14 @@ export function injectOgp(
   settings: Record<string, string>,
   pathname = "/",
   heroImg = "",
-  override?: { title?: string; desc?: string; image?: string },
+  override?: {
+    title?: string;
+    desc?: string;
+    image?: string;
+    imageRotationDeg?: number | null;
+  },
   fallbackOrigin = "",
+  heroRotationDeg?: number | null,
 ): string {
   const siteName = displayNameEnFrom(settings);
   const subtitle = settings.heroSubtitle || "Photography";
@@ -94,7 +101,12 @@ export function injectOgp(
   // the static default already in index.html. /service uses its own fixed card image
   // (a flat file, so no /api/images resize query is appended).
   const imgBase = isService ? SERVICE_OG.image : (override?.image || heroImg || settings.heroPhotoUrl || settings.profilePhotoUrl);
-  const ogImage = imgBase ? (isService ? imgBase : `${imgBase}?w=1200&q=85`) : "";
+  const imgRotationDeg = override?.image
+    ? override.imageRotationDeg
+    : heroImg && imgBase === heroImg
+      ? heroRotationDeg
+      : 0;
+  const ogImage = imgBase ? (isService ? imgBase : imageUrlWithParams(imgBase, { w: 1200, q: 85, rotationDeg: imgRotationDeg })) : "";
   const siteUrl = siteUrlFrom(settings, fallbackOrigin);
   // /profile and /about render the same page — canonicalise /profile → /about so
   // search engines don't treat them as duplicate content.
@@ -162,8 +174,17 @@ export function injectOgp(
   if (pathname === "/" && heroImg) {
     // Must match HERO_WIDTHS in lib/picture.ts exactly — a mismatched URL
     // makes the preload useless and the hero downloads twice.
-    const heroHref = `${heroImg}?w=1536&q=88`;
-    const heroSrcset = [640, 1024, 1536, 2400].map((w) => `${heroImg}?w=${w}&q=88 ${w}w`).join(", ");
+    const heroHref = imageUrlWithParams(heroImg, {
+      w: 1536,
+      q: 88,
+      rotationDeg: heroRotationDeg,
+    });
+    const heroSrcset = [640, 1024, 1536, 2400]
+      .map(
+        (w) =>
+          `${imageUrlWithParams(heroImg, { w, q: 88, rotationDeg: heroRotationDeg })} ${w}w`,
+      )
+      .join(", ");
     const heroSizes = settings.heroMode === "single" ? "100vw" : "(min-width: 1200px) 1152px, 100vw";
     headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
   }
@@ -184,7 +205,12 @@ export function injectOgp(
 function buildJsonLd(
   settings: Record<string, string>,
   pathname = "/",
-  series?: { title?: string; desc?: string; image?: string },
+  series?: {
+    title?: string;
+    desc?: string;
+    image?: string;
+    imageRotationDeg?: number | null;
+  },
   fallbackOrigin = "",
 ): string {
   const siteUrl = siteUrlFrom(settings, fallbackOrigin);
@@ -192,7 +218,9 @@ function buildJsonLd(
   const nameEn = displayNameEnFrom(settings);
   const desc = siteDescriptionFrom(settings);
   const sameAs = [settings.profileInstagram, settings.profileTwitter, settings.profileNote].filter(Boolean);
-  const image = settings.profilePhotoUrl ? `${siteUrl}${settings.profilePhotoUrl}?w=800&q=85` : undefined;
+  const image = settings.profilePhotoUrl
+    ? `${siteUrl}${imageUrlWithParams(settings.profilePhotoUrl, { w: 800, q: 85 })}`
+    : undefined;
 
   const graph: Record<string, unknown>[] = [
     {
@@ -227,7 +255,15 @@ function buildJsonLd(
       name: series.title,
       url: `${siteUrl}${pathname}`,
       ...(series.desc ? { description: series.desc } : {}),
-      ...(series.image ? { image: `${siteUrl}${series.image}?w=1200&q=85` } : {}),
+      ...(series.image
+        ? {
+            image: `${siteUrl}${imageUrlWithParams(series.image, {
+              w: 1200,
+              q: 85,
+              rotationDeg: series.imageRotationDeg,
+            })}`,
+          }
+        : {}),
       author: { "@type": "Person", name },
       isPartOf: { "@type": "ImageGallery", name: `${nameEn} | Photography`, url: `${siteUrl}/gallery` },
     });

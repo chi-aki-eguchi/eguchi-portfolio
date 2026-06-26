@@ -37,6 +37,11 @@ export const photos = sqliteTable(
     // aspect-ratio on the client and avoid layout shift (CLS) before load.
     width: integer("width"),
     height: integer("height"),
+    // V3: non-destructive presentation controls. The stored R2 object is not
+    // rewritten; the image proxy/rendering pipeline applies these values.
+    rotationDeg: integer("rotation_deg").notNull().default(0), // 0 | 90 | 180 | 270
+    focalX: integer("focal_x").notNull().default(50), // 0-100
+    focalY: integer("focal_y").notNull().default(50), // 0-100
     // SHA-256 of the optimised (stored) image — used to detect duplicate uploads.
     // Hashed post-optimisation so it matches the bytes actually in R2 (enables backfill).
     fileHash: text("file_hash"),

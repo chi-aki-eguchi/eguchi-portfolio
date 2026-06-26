@@ -89,6 +89,35 @@ test("tile hover caption renders for titled photos only", async () => {
   host.remove();
 });
 
+test("tile images apply focal point as object-position", async () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(QueryClientProvider, { client: qc },
+        createElement(PhotoGallery, {
+          photos: [
+            {
+              id: 12,
+              url: "/api/images/photos/focal.jpg",
+              title: "Focal",
+              focalX: 25,
+              focalY: 80,
+            },
+          ],
+          layoutType: "grid",
+        }))
+    );
+  });
+  const img = host.querySelector(".photo-card img") as HTMLImageElement;
+  expect(img).not.toBeNull();
+  expect(img.style.objectPosition).toBe("25% 80%");
+  root.unmount();
+  host.remove();
+});
+
 test("a failed image marks its card as photo-broken (quiet placeholder)", async () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   const host = dom.window.document.createElement("div");

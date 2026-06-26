@@ -1468,3 +1468,246 @@ settings 台帳・API default・Provider / iframe live preview・公開ページ
 - `packages/web/src/web/pages/contact.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `task.md`
+
+## 追記 2026-06-25 — Codex: 管理画面 v3 仕様ドラフト作成
+
+### 目的
+秋さん依頼「管理画面で写真の向きを変えられるようにしたい。加えて調整できることを増やし、既存項目を使いやすくしたい。まず仕様書を作って Claude に検討してもらう」に対応。
+
+### 対応
+- `admin-enhancement-spec-v3-draft.md` を新規作成。
+  - 写真ごとの `rotationDeg`（0/90/180/270）を中心に、非破壊で向きを変える方針を整理。
+  - 90/270度時の縦横比入れ替え、画像プロキシ `rot` query、srcset / Lightbox / Hero / Series cover 反映漏れ防止を明記。
+  - 管理画面 Inspector「見え方」セクション、Library クイック回転、一括回転、`focalX/Y` による見せる中心、使用状況 badge、Settings の使いやすさ改善案を整理。
+  - Claude Code へのレビュー依頼ポイント（proxy方式、DBカラム名、`focalX/Y` 同時導入可否、公開側反映漏れ、query invalidation）を末尾に記載。
+- `AGENTS.md` の仕様書一覧に v3 ドラフトを追加。
+
+### 検証
+- Markdown / docs 変更のみ。実装・型チェック・ビルドは未実施。
+
+### 触ったファイル
+- `admin-enhancement-spec-v3-draft.md`
+- `AGENTS.md`
+- `task.md`
+
+## 追記 2026-06-25 — Codex: Claude Codeレビュー反映
+
+### 目的
+agmsg 経由で Claude Code から `admin-enhancement-spec-v3-draft.md` の P0/P1 レビューが返ったため、実装前に落としやすい指摘を仕様書へ反映した。
+
+### 対応
+- `admin-enhancement-spec-v3-draft.md` に「Claude Codeレビュー結果（2026-06-25）」を追加。
+- P0として以下を明記。
+  - `photoWithThumbs()` の `thumbUrl` / `mediumUrl` は事前生成済み R2 URL であり、`rotationDeg != 0` の写真ではプロキシ `rot` を通らない。
+  - 画像プロキシ cache key に `rot` を含めないと、回転違いが同じキャッシュに混在する。
+- P1として以下を明記。
+  - OGP / server-side hero preload に hero photo の `rotationDeg` を渡す。
+  - `srcSetFor(url, preset)` は `rotationDeg` 渡し忘れが起きやすいため、写真オブジェクト渡し helper へ寄せる。
+  - `focalX/Y` は schema だけ V3-1 で追加し、UI / object-position 配線は V3-4 以降へ分けるのを推奨。
+
+### 検証
+- Markdown 差分チェックのみ実施。実装・型チェック・ビルドはこの時点では未実施。
+
+### 触ったファイル
+- `admin-enhancement-spec-v3-draft.md`
+- `task.md`
+
+## 追記 2026-06-25 — Codex: 管理画面 v3 V3-1 土台実装
+
+### 目的
+秋さん依頼「codexで実装しよう。困ったらclaudeに聞いて」に対応し、
+`admin-enhancement-spec-v3-draft.md` の V3-1（土台）を実装。
+管理画面UIの回転ボタンはまだ作らず、写真ごとの向き情報をDB/API/画像配信/公開表示へ通す基盤を先に作った。
+
+### 対応
+- `photos` に `rotationDeg` / `focalX` / `focalY` を追加。
+  - `schema.ts`（Turso/libSQL）と `schema.postgres.ts`（PostgreSQL配布版）の両方を更新。
+  - Turso 起動時補完 `ensureTursoColumns()` にも3カラムを追加。
+  - `drizzle/0004_flowery_bloodstorm.sql` と `drizzle-postgres/0001_woozy_chronomancer.sql` を生成。
+- 共通画像URL helper `src/shared/image-url.ts` を追加。
+  - `rot` query の付与、回転値バリデーション、90/270度時の縦横比入れ替えを共通化。
+  - 単体テスト `src/shared/image-url.test.ts` を追加。
+- 画像プロキシ `/api/images/:key` が `rot=0|90|180|270` を受け取り、cache key に `rot` を含めるようにした。
+  - `w` なしでも `rot` がある場合は sharp を通して回転後の画像を返す。
+- `photoWithThumbs()` を `rotationDeg` 対応。
+  - 回転ありの写真は `thumbUrl` / `mediumUrl` を R2直URLではなく proxy + `rot` 付きURLへ切り替える。
+- `PATCH /admin/photos/:id` と batch API に `rotationDeg` / `focalX` / `focalY` の土台を追加。
+  - batch: `rotate_left` / `rotate_right` / `reset_rotation` / `reset_focal_point`。
+- 公開側の主要表示経路を回転対応helperへ接続。
+  - `PhotoGallery` / `Lightbox` / `Top` Hero / `SeriesGrid` / `Picture`。
+  - `PhotoGallery` は 90/270度で `aspect-ratio` と width/height 属性を入れ替える。
+  - `Lightbox` の preloading / grid thumb / full quality / zoom 画像も `rotationDeg` を通す。
+- OGP / server-side preload を回転対応。
+  - home hero OGP / hero preload に `rotationDeg` を渡す。
+  - series cover OGP / JSON-LD image に `imageRotationDeg` を渡す。
+  - gallery preload も `rot` 付きURLを生成する。
+
+### DB反映
+- `cd packages/web && bun run db:push` は最初、Drizzle が既存474件への NOT NULL カラム追加を
+  対話確認しようとして非TTYで停止。
+- 代わりに libSQL へ存在確認つきSQLで以下3カラムを安全に追加。
+  - `rotation_deg integer NOT NULL DEFAULT 0`
+  - `focal_x integer NOT NULL DEFAULT 50`
+  - `focal_y integer NOT NULL DEFAULT 50`
+- その後 `cd packages/web && bun run db:push` を再実行し、`No changes detected` を確認済み。
+
+### 検証
+- `cd packages/web && bun test ./src/shared/image-url.test.ts` 成功（3 pass）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（169 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 注意 / 未実装
+- 管理画面の回転UI（Inspector「見え方」セクション、Library quick rotate）は未実装。次は V3-2。
+- `focalX/Y` は DB/API 土台のみ。object-position UI配線は Claude レビューどおり後続推奨。
+- commit / push は未実施。既存の未コミット変更・未追跡ファイルがあるため、範囲確認してから行うこと。
+
+### 触ったファイル
+- `packages/web/src/shared/image-url.ts`
+- `packages/web/src/shared/image-url.test.ts`
+- `packages/web/src/api/database/schema.ts`
+- `packages/web/src/api/database/schema.postgres.ts`
+- `packages/web/src/api/database/migrate.ts`
+- `packages/web/drizzle/0004_flowery_bloodstorm.sql`
+- `packages/web/drizzle/meta/0004_snapshot.json`
+- `packages/web/drizzle/meta/_journal.json`
+- `packages/web/drizzle-postgres/0001_woozy_chronomancer.sql`
+- `packages/web/drizzle-postgres/meta/0001_snapshot.json`
+- `packages/web/drizzle-postgres/meta/_journal.json`
+- `packages/web/src/api/index.ts`
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/server.ts`
+- `packages/web/src/web/lib/picture.ts`
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/components/Lightbox.tsx`
+- `packages/web/src/web/components/Picture.tsx`
+- `packages/web/src/web/components/SeriesGrid.tsx`
+- `packages/web/src/web/pages/top.tsx`
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
+## 追記 2026-06-25 — Codex: 管理画面 v3 V3-2 回転UI実装
+
+### 目的
+V3-1で追加した `rotationDeg` 土台を、管理画面から実際に操作できるようにする。
+
+### 対応
+- Library インスペクタに「向き」セクションを追加。
+  - 左90° / 0° / 90° / 180° / 270° / 右90° を操作可能。
+  - インスペクタ上のプレビューは保存前の `editForm.rotationDeg` を即時反映。
+  - Save で `PATCH /admin/photos/:id` に `rotationDeg` を保存。
+- Library グリッドの写真タイルにクイック回転ボタンを追加。
+  - hover / touch 表示で左90°・右90°を即保存。
+  - 保存後は `photos` / `series` / `hero-photos` / `admin-hero-photos` を invalidate。
+- 複数選択ツールバーに一括回転を追加。
+  - `rotate_left` / `rotate_right` / `reset_rotation` を batch API へ接続。
+- admin 内の写真サムネイルURLを `srcFor` helper 経由に統一。
+  - Library / Trash / Quick Preview / Bulk table / Hero / Series / Top works picker で `rotationDeg` を反映。
+- 共通 helper `rotateRotationDeg()` を追加。
+  - 左回転 `0° → 270°` の wraparound を単体テストで固定。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（170 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 注意 / 未実装
+- dev server / ブラウザ実機での管理画面クリック確認は未実施。
+- `focalX/Y` はまだUI未接続。V3-4以降で object-position / focal point UI を入れる想定。
+- commit / push は未実施。既存未コミット差分が多いため、範囲確認後に行うこと。
+
+### 触ったファイル
+- `packages/web/src/shared/image-url.ts`
+- `packages/web/src/shared/image-url.test.ts`
+- `packages/web/src/web/lib/picture.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`
+
+## 追記 2026-06-25 — Codex: 管理画面 v3 V3-3/V3-4 focal point 実装
+
+### 目的
+V3-1でDB/API土台だけ入れていた `focalX` / `focalY` を、公開サイトと管理画面の切り抜き表示へ接続する。
+あわせて、V3-3「公開サイト全反映」として Top 系レイアウトに残っていた古い画像URL直書きを helper 経由へ寄せた。
+
+### 対応
+- 共通 helper に focal point 正規化を追加。
+  - `normalizeFocalPoint()` / `objectPositionFromFocal()` を追加。
+  - `focalX/Y` を `0% 0%`〜`100% 100%` の `object-position` に変換。
+  - invalid / 未設定は `50% 50%` にフォールバック。
+- 公開側の crop 表示に `focalX/Y` を反映。
+  - `PhotoGallery` の全タイル画像に `object-position` を適用。
+  - `SeriesGrid` のシリーズ表紙に `coverFocalX/Y` を適用。
+  - Top の Hero / quiet-grid / editorial / immersive の crop 表示に focal point を適用。
+- Top 内に残っていた古い `photo.url?w=...` 直書きを `srcFor()` / `srcSetFor()` へ置換。
+  - Top Works 系の一部レイアウトでも `rotationDeg` が反映されるようになった。
+- 管理画面 Inspector に「見せる中心」UIを追加。
+  - 9点プリセット（左上 / 上 / 右上 / 左 / 中央 / 右 / 左下 / 下 / 右下）。
+  - 小さな正方形 crop preview 上で、保存前の `rotationDeg` と `focalX/Y` を即時反映。
+  - Save で `PATCH /admin/photos/:id` に `focalX/Y` を保存。
+- 一括操作ツールバーに「見せる中心を中央へ戻す」ボタンを追加。
+  - 既存 batch API の `reset_focal_point` に接続。
+- 管理画面内サムネイルにも focal point を反映。
+  - Library / Trash / Bulk table / Hero / Series / Top works picker。
+- 回帰テストを追加。
+  - `PhotoGallery.render.test.tsx` で `focalX/Y` が `object-position` に反映されることを確認。
+  - `image-url.test.ts` で focal point の clamp / fallback を確認。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（172 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 注意 / 未実装
+- dev server / ブラウザ実機での管理画面クリック確認は未実施。
+- focal point は9点プリセットのみ。ドラッグで任意位置を選ぶUIは未実装。
+- Lightbox は全体表示（contain）なので `focalX/Y` は意図的に反映しない。
+- commit / push は未実施。既存未コミット差分が多いため、範囲確認後に行うこと。
+
+### 触ったファイル
+- `packages/web/src/shared/image-url.ts`
+- `packages/web/src/shared/image-url.test.ts`
+- `packages/web/src/web/lib/picture.ts`
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/components/PhotoGallery.render.test.tsx`
+- `packages/web/src/web/components/SeriesGrid.tsx`
+- `packages/web/src/web/pages/top.tsx`
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`
+
+## 追記 2026-06-26 — Codex: 管理画面 v3 V3-4 回転ショートカット
+
+### 目的
+V3-2で入れた回転操作を、Library のキーボード操作からも使えるようにする。
+仕様書チェック項目「ショートカット一覧に新規操作が載る」に対応。
+
+### 対応
+- Library 画面で `[` / `]` ショートカットを追加。
+  - `[` = 選択写真を左90°回転。
+  - `]` = 選択写真を右90°回転。
+  - 入力欄 / textarea / select フォーカス中は無効。
+  - 複数選択中は既存 batch API の `rotate_left` / `rotate_right` を使う。
+  - 選択が無く keyboard cursor だけある場合は単体 quick rotate を使う。
+- batch operation の union 型を `BatchPhotoOperation` として切り出し、ショートカット側からも同じ operation 名を使えるよう整理。
+- キーボードショートカット一覧に `[ / ]` を追記。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（172 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 注意 / 未実装
+- dev server / ブラウザ実機でのショートカット確認は未実施。
+- commit / push は未実施。既存未コミット差分が多いため、範囲確認後に行うこと。
+
+### 触ったファイル
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`

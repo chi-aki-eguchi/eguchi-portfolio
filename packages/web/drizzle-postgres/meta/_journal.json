@@ -8,6 +8,13 @@
       "when": 1781929534685,
       "tag": "0000_worried_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782390896755,
+      "tag": "0001_woozy_chronomancer",
+      "breakpoints": true
     }
   ]
 }

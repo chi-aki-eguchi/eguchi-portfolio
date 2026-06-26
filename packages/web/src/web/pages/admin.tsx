@@ -2,6 +2,12 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
+import {
+  normalizeRotationDeg,
+  objectPositionFromFocal,
+  rotateRotationDeg,
+  srcFor,
+} from "../lib/picture";
 import { makeSettingsPreviewPayload } from "../lib/settings-preview";
 import { moveRelativeToViewNeighbor, moveToViewEdge } from "../lib/reorder";
 import {
@@ -47,6 +53,9 @@ import {
   AlertTriangle,
   Copy,
   ClipboardPaste,
+  Crosshair,
+  RotateCcw,
+  RotateCw,
 } from "lucide-react";
 
 type Tab =
@@ -693,10 +702,61 @@ type Photo = {
   seriesId?: number | null;
   width?: number | null;
   height?: number | null;
+  rotationDeg?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
   fileHash?: string | null;
   deletedAt?: number | null;
   createdAt?: string | number | null;
 };
+
+type BatchPhotoOperation =
+  | "publish"
+  | "unpublish"
+  | "series"
+  | "size"
+  | "feature"
+  | "unfeature"
+  | "rotate_left"
+  | "rotate_right"
+  | "reset_rotation"
+  | "reset_focal_point";
+
+const ROTATION_OPTIONS = [0, 90, 180, 270] as const;
+const FOCAL_PRESETS = [
+  { x: 0, y: 0, label: "左上" },
+  { x: 50, y: 0, label: "上" },
+  { x: 100, y: 0, label: "右上" },
+  { x: 0, y: 50, label: "左" },
+  { x: 50, y: 50, label: "中央" },
+  { x: 100, y: 50, label: "右" },
+  { x: 0, y: 100, label: "左下" },
+  { x: 50, y: 100, label: "下" },
+  { x: 100, y: 100, label: "右下" },
+] as const;
+
+function rotatedBy(
+  current: number | null | undefined,
+  delta: -90 | 90,
+): (typeof ROTATION_OPTIONS)[number] {
+  return rotateRotationDeg(current, delta);
+}
+
+function adminPhotoSrc(
+  photo: { url: string; rotationDeg?: number | null },
+  w: number,
+  q: number,
+): string {
+  return srcFor(photo.url, w, q, undefined, photo.rotationDeg);
+}
+
+function adminPhotoObjectPosition(photo: {
+  focalX?: number | null;
+  focalY?: number | null;
+}): string {
+  return objectPositionFromFocal(photo.focalX, photo.focalY);
+}
+
 // adminApi is loosely typed (see lib/api.ts) — these annotate its query results.
 type AdminSeries = {
   id: number;
@@ -782,6 +842,9 @@ function GalleryTab({
     displaySize: "M",
     seriesId: "",
     isPublished: true,
+    rotationDeg: 0,
+    focalX: 50,
+    focalY: 50,
   });
   const [dragSrcId, setDragSrcId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
@@ -1253,6 +1316,9 @@ function GalleryTab({
       displaySize?: string;
       seriesId?: string;
       isPublished?: boolean;
+      rotationDeg?: number;
+      focalX?: number;
+      focalY?: number;
     }) => {
       const res = await adminApi.photos[":id"].$patch({
         param: { id: String(id) },
@@ -1269,6 +1335,37 @@ function GalleryTab({
       qc.invalidateQueries({ queryKey: ["hero-photos"] });
       qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
     },
+  });
+
+  const quickRotatePhoto = useMutation({
+    mutationFn: async ({
+      id,
+      rotationDeg,
+    }: {
+      id: number;
+      rotationDeg: number;
+    }) => {
+      const res = await adminApi.photos[":id"].$patch({
+        param: { id: String(id) },
+        json: { rotationDeg },
+      });
+      assertOk(res);
+      return { id, rotationDeg };
+    },
+    onSuccess: ({ id, rotationDeg }) => {
+      setActionError("");
+      qc.invalidateQueries({ queryKey: ["photos"] });
+      qc.invalidateQueries({ queryKey: ["series"] });
+      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      setInspectPhoto((p) => (p?.id === id ? { ...p, rotationDeg } : p));
+      setEditForm((f) =>
+        inspectPhoto?.id === id ? { ...f, rotationDeg } : f,
+      );
+      setBatchToast(`向きを ${rotationDeg}° にしました`);
+      setTimeout(() => setBatchToast(null), 1500);
+    },
+    onError: onActionError("向きの変更に失敗しました。"),
   });
 
   // O1: duplicate a photo (same image, inherited metadata) and open the copy.
@@ -1353,13 +1450,7 @@ function GalleryTab({
       operation,
       value,
     }: {
-      operation:
-        | "publish"
-        | "unpublish"
-        | "series"
-        | "size"
-        | "feature"
-        | "unfeature";
+      operation: BatchPhotoOperation;
       value?: string;
     }) => {
       const res = await adminApi.photos.batch.$post({
@@ -1368,12 +1459,32 @@ function GalleryTab({
       assertOk(res);
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, vars) => {
       setActionError("");
       qc.invalidateQueries({ queryKey: ["photos"] });
       qc.invalidateQueries({ queryKey: ["series"] });
       qc.invalidateQueries({ queryKey: ["hero-photos"] });
       qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+      if (inspectPhoto && selected.has(inspectPhoto.id)) {
+        if (vars.operation === "rotate_left" || vars.operation === "rotate_right") {
+          const rotationDeg = rotatedBy(
+            inspectPhoto.rotationDeg,
+            vars.operation === "rotate_left" ? -90 : 90,
+          );
+          setInspectPhoto((p) =>
+            p ? { ...p, rotationDeg } : p,
+          );
+          setEditForm((f) => ({ ...f, rotationDeg }));
+        }
+        if (vars.operation === "reset_rotation") {
+          setInspectPhoto((p) => (p ? { ...p, rotationDeg: 0 } : p));
+          setEditForm((f) => ({ ...f, rotationDeg: 0 }));
+        }
+        if (vars.operation === "reset_focal_point") {
+          setInspectPhoto((p) => (p ? { ...p, focalX: 50, focalY: 50 } : p));
+          setEditForm((f) => ({ ...f, focalX: 50, focalY: 50 }));
+        }
+      }
       const count = (data as { count?: number })?.count ?? selected.size;
       setBatchToast(`${count}枚を更新しました`);
       setTimeout(() => setBatchToast(null), 2000);
@@ -1639,6 +1750,29 @@ function GalleryTab({
     if (ids) reorder.mutate(ids);
   };
 
+  const rotateLibraryPhoto = (photo: Photo, delta: -90 | 90) => {
+    quickRotatePhoto.mutate({
+      id: photo.id,
+      rotationDeg: rotatedBy(photo.rotationDeg, delta),
+    });
+  };
+
+  const rotateActivePhotos = (
+    operation: Extract<BatchPhotoOperation, "rotate_left" | "rotate_right">,
+  ) => {
+    if (batchOp.isPending || quickRotatePhoto.isPending) return;
+    if (selected.size > 0) {
+      batchOp.mutate({ operation });
+      return;
+    }
+    if (lastClicked === null) return;
+    const photo =
+      displayed.find((p) => p.id === lastClicked) ??
+      allPhotos.find((p) => p.id === lastClicked);
+    if (!photo) return;
+    rotateLibraryPhoto(photo, operation === "rotate_left" ? -90 : 90);
+  };
+
   // Auto-scroll the photo grid while dragging near the container's top/bottom edge,
   // so a photo can be dragged across a library taller than the viewport without
   // dropping mid-way to scroll. Velocity scales with edge proximity; a rAF loop
@@ -1725,6 +1859,9 @@ function GalleryTab({
       displaySize: photo.displaySize || "M",
       seriesId: photo.seriesId ? String(photo.seriesId) : "",
       isPublished: photo.isPublished !== false,
+      rotationDeg: normalizeRotationDeg(photo.rotationDeg),
+      focalX: photo.focalX ?? 50,
+      focalY: photo.focalY ?? 50,
     });
   };
 
@@ -1804,6 +1941,16 @@ function GalleryTab({
       if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setSelected(new Set(displayed.map((p) => p.id)));
+        return;
+      }
+      if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === "[") {
+        e.preventDefault();
+        rotateActivePhotos("rotate_left");
+        return;
+      }
+      if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === "]") {
+        e.preventDefault();
+        rotateActivePhotos("rotate_right");
         return;
       }
       // O3: Ctrl/Cmd + ↑↓ moves the cursor photo one position (same as the ↑↓
@@ -2311,6 +2458,52 @@ function GalleryTab({
                 ))}
               </div>
 
+              <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-1">
+                <span className="text-[10px] text-[#777]">Rotate</span>
+                <button
+                  type="button"
+                  onClick={() => batchOp.mutate({ operation: "rotate_left" })}
+                  disabled={batchOp.isPending}
+                  title="左へ90°回転"
+                  aria-label="選択写真を左へ90度回転"
+                  className="w-5 h-5 inline-flex items-center justify-center text-[#bbb] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <RotateCcw size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => batchOp.mutate({ operation: "rotate_right" })}
+                  disabled={batchOp.isPending}
+                  title="右へ90°回転"
+                  aria-label="選択写真を右へ90度回転"
+                  className="w-5 h-5 inline-flex items-center justify-center text-[#bbb] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <RotateCw size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => batchOp.mutate({ operation: "reset_rotation" })}
+                  disabled={batchOp.isPending}
+                  title="向きを0°に戻す"
+                  aria-label="選択写真の向きを0度に戻す"
+                  className="w-6 h-5 text-[10px] text-[#999] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  0°
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    batchOp.mutate({ operation: "reset_focal_point" })
+                  }
+                  disabled={batchOp.isPending}
+                  title="見せる中心を中央に戻す"
+                  aria-label="選択写真の見せる中心を中央に戻す"
+                  className="w-5 h-5 inline-flex items-center justify-center text-[#999] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <Crosshair size={12} />
+                </button>
+              </div>
+
               {/* M2: Feature / unfeature (hero) */}
               <button
                 onClick={() => batchOp.mutate({ operation: "feature" })}
@@ -2493,9 +2686,10 @@ function GalleryTab({
                     return (
                       <div key={photo.id} className="relative group">
                         <img
-                          src={`${photo.url}?w=400&q=70`}
+                          src={adminPhotoSrc(photo, 400, 70)}
                           alt={photo.title}
                           className="w-full aspect-square object-cover bg-[#2a2a2a] opacity-50"
+                          style={{ objectPosition: adminPhotoObjectPosition(photo) }}
                           loading="lazy"
                           draggable={false}
                         />
@@ -2638,9 +2832,10 @@ function GalleryTab({
                         className="absolute inset-0 z-[1] cursor-pointer"
                       />
                       <img
-                        src={`${photo.url}?w=400&q=70`}
+                        src={adminPhotoSrc(photo, 400, 70)}
                         alt={photo.title}
                         className={`w-full aspect-square object-cover bg-[#2a2a2a] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
+                        style={{ objectPosition: adminPhotoObjectPosition(photo) }}
                         loading="lazy"
                         decoding="async"
                         draggable={false}
@@ -2661,6 +2856,38 @@ function GalleryTab({
                       {isSelected && (
                         <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#aaa] rounded-sm flex items-center justify-center">
                           <Check size={10} className="text-[#1e1e1e]" />
+                        </div>
+                      )}
+                      {thumbSize >= 120 && (
+                        <div className="absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              rotateLibraryPhoto(photo, -90);
+                            }}
+                            disabled={quickRotatePhoto.isPending}
+                            aria-label="左へ90度回転"
+                            title="左へ90°回転"
+                            className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
+                          >
+                            <RotateCcw size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              rotateLibraryPhoto(photo, 90);
+                            }}
+                            disabled={quickRotatePhoto.isPending}
+                            aria-label="右へ90度回転"
+                            title="右へ90°回転"
+                            className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
+                          >
+                            <RotateCw size={13} />
+                          </button>
                         </div>
                       )}
                       {/* Title strip on hover */}
@@ -3137,7 +3364,7 @@ function GalleryTab({
             className="absolute inset-0 cursor-default"
           />
           <img
-            src={`${previewPhoto.url}?w=1600&q=85`}
+            src={adminPhotoSrc(previewPhoto, 1600, 85)}
             alt={previewPhoto.title || previewPhoto.filename}
             className="relative pointer-events-none max-w-full max-h-full object-contain shadow-2xl"
           />
@@ -3185,6 +3412,7 @@ function GalleryTab({
                 ["⌘/Ctrl + A", "全選択"],
                 ["← → ↑ ↓", "選択を移動"],
                 ["⌘/Ctrl + ↑ ↓", "写真を並べ替え（前後へ）"],
+                ["[ / ]", "選択写真を左 / 右へ90°回転"],
                 ["Enter", "インスペクタを開く"],
                 ["Space", "クイックプレビュー"],
                 ["Delete / Backspace", "選択を削除（ゴミ箱へ）"],
@@ -3223,7 +3451,13 @@ function GalleryTab({
           {/* Preview */}
           <div className="p-3">
             <img
-              src={`${inspectPhoto.url}?w=800&q=80`}
+              src={srcFor(
+                inspectPhoto.url,
+                800,
+                80,
+                undefined,
+                editForm.rotationDeg,
+              )}
               alt={inspectPhoto.title}
               className="w-full h-auto object-contain bg-[#1e1e1e]"
               style={{ maxHeight: "320px" }}
@@ -3279,6 +3513,131 @@ function GalleryTab({
                 </div>
               );
             })()}
+
+            <InspectField
+              label="向き"
+              hint="保存後、Gallery / Hero / Lightbox の表示に反映"
+            >
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditForm((f) => ({
+                      ...f,
+                      rotationDeg: rotatedBy(f.rotationDeg, -90),
+                    }))
+                  }
+                  aria-label="左へ90度回転"
+                  title="左へ90°回転"
+                  className="w-8 h-8 flex items-center justify-center bg-[#333] text-[#aaa] border border-[#444] rounded-sm hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                >
+                  <RotateCcw size={14} />
+                </button>
+                <div className="grid grid-cols-4 gap-1 flex-1">
+                  {ROTATION_OPTIONS.map((deg) => (
+                    <button
+                      key={deg}
+                      type="button"
+                      onClick={() =>
+                        setEditForm((f) => ({ ...f, rotationDeg: deg }))
+                      }
+                      aria-pressed={editForm.rotationDeg === deg}
+                      className={`h-8 text-[11px] rounded-sm transition-colors ${
+                        editForm.rotationDeg === deg
+                          ? "bg-[#888] text-[#1e1e1e] font-medium"
+                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                      }`}
+                    >
+                      {deg}°
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditForm((f) => ({
+                      ...f,
+                      rotationDeg: rotatedBy(f.rotationDeg, 90),
+                    }))
+                  }
+                  aria-label="右へ90度回転"
+                  title="右へ90°回転"
+                  className="w-8 h-8 flex items-center justify-center bg-[#333] text-[#aaa] border border-[#444] rounded-sm hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                >
+                  <RotateCw size={14} />
+                </button>
+              </div>
+            </InspectField>
+
+            <InspectField
+              label="見せる中心"
+              hint="正方形・ヒーローなど、切り抜き表示の中心"
+            >
+              <div className="grid grid-cols-[72px_1fr] gap-2">
+                <div className="relative aspect-square overflow-hidden bg-[#1e1e1e] border border-[#444] rounded-sm">
+                  <img
+                    src={srcFor(
+                      inspectPhoto.url,
+                      400,
+                      78,
+                      undefined,
+                      editForm.rotationDeg,
+                    )}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    style={{
+                      objectPosition: objectPositionFromFocal(
+                        editForm.focalX,
+                        editForm.focalY,
+                      ),
+                    }}
+                    draggable={false}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute w-2 h-2 rounded-full border border-white/80 bg-black/30 shadow-[0_0_0_1px_rgba(0,0,0,0.45)]"
+                    style={{
+                      left: `${editForm.focalX}%`,
+                      top: `${editForm.focalY}%`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {FOCAL_PRESETS.map((point) => {
+                    const active =
+                      editForm.focalX === point.x && editForm.focalY === point.y;
+                    return (
+                      <button
+                        key={`${point.x}-${point.y}`}
+                        type="button"
+                        onClick={() =>
+                          setEditForm((f) => ({
+                            ...f,
+                            focalX: point.x,
+                            focalY: point.y,
+                          }))
+                        }
+                        aria-label={`見せる中心: ${point.label}`}
+                        aria-pressed={active}
+                        title={point.label}
+                        className={`h-5 rounded-sm border flex items-center justify-center transition-colors ${
+                          active
+                            ? "bg-[#888] border-[#999]"
+                            : "bg-[#333] border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            active ? "bg-[#1e1e1e]" : "bg-[#777]"
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </InspectField>
 
             <InspectField label="Title" hint="Lightbox・SEO・alt に使用">
               <input
@@ -3594,6 +3953,9 @@ function GalleryTab({
                       ? String(inspectPhoto.seriesId)
                       : "",
                     isPublished: inspectPhoto.isPublished !== false,
+                    rotationDeg: normalizeRotationDeg(inspectPhoto.rotationDeg),
+                    focalX: inspectPhoto.focalX ?? 50,
+                    focalY: inspectPhoto.focalY ?? 50,
                   });
                 }}
                 className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[#666] bg-[#333] py-1.5 rounded-sm hover:bg-[#3a3a3a] transition-colors"
@@ -3940,9 +4302,10 @@ function BulkEditRow({
       {/* Thumbnail */}
       <td className="w-12 py-1 pl-1 align-middle">
         <img
-          src={`${photo.url}?w=100&q=60`}
+          src={adminPhotoSrc(photo, 100, 60)}
           alt={photo.title || photo.filename}
           className="w-11 h-11 object-cover bg-[#2a2a2a] rounded-sm"
+          style={{ objectPosition: adminPhotoObjectPosition(photo) }}
           loading="lazy"
         />
       </td>
@@ -4315,9 +4678,10 @@ function HeroTab() {
                 }`}
               >
                 <img
-                  src={`${photo.url}?w=400&q=75`}
+                  src={adminPhotoSrc(photo, 400, 75)}
                   alt={photo.title}
                   className="w-full aspect-[4/3] object-cover"
+                  style={{ objectPosition: adminPhotoObjectPosition(photo) }}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors">
                   <span className="absolute top-1 left-1 text-[9px] text-white/70 bg-black/50 px-1.5 py-0.5 rounded">
@@ -4392,9 +4756,10 @@ function HeroTab() {
                   }`}
                 >
                   <img
-                    src={`${photo.url}?w=200&q=60`}
+                    src={adminPhotoSrc(photo, 200, 60)}
                     alt={photo.title}
                     className={`w-full aspect-square object-cover transition-opacity ${isHero ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}
+                    style={{ objectPosition: adminPhotoObjectPosition(photo) }}
                   />
                   {isHero && (
                     <div className="absolute top-1 right-1">
@@ -5172,11 +5537,12 @@ function SeriesTab() {
             >
               {cover && (
                 <img
-                  src={`${cover.url}?w=600&q=80`}
+                  src={adminPhotoSrc(cover, 600, 80)}
                   alt={s.title}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-28 object-cover border-b border-[#333]"
+                  style={{ objectPosition: adminPhotoObjectPosition(cover) }}
                 />
               )}
               <div className="flex items-center justify-between px-3 py-2.5 group">
@@ -5357,9 +5723,12 @@ function SeriesTab() {
                                   }`}
                                 >
                                   <img
-                                    src={`${p.url}?w=120&q=60`}
+                                    src={adminPhotoSrc(p, 120, 60)}
                                     alt=""
                                     className="w-full h-full object-cover"
+                                    style={{
+                                      objectPosition: adminPhotoObjectPosition(p),
+                                    }}
                                     loading="lazy"
                                   />
                                   {(p as Photo).seriesId === editId && (
@@ -5986,12 +6355,13 @@ function TopWorksPicker({
             className={`relative aspect-square overflow-hidden rounded-[2px] transition-opacity ${pos >= 0 ? "ring-2 ring-[#aaa]" : "opacity-55 hover:opacity-100"}`}
           >
             <img
-              src={`${p.url}?w=200&q=60`}
+              src={adminPhotoSrc(p, 200, 60)}
               alt=""
               loading="lazy"
               decoding="async"
               draggable={false}
               className="w-full h-full object-cover bg-[#2a2a2a]"
+              style={{ objectPosition: adminPhotoObjectPosition(p) }}
             />
             {pos >= 0 && (
               <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 bg-[#ddd] text-[#1e1e1e] text-[9px] font-medium rounded-sm flex items-center justify-center">

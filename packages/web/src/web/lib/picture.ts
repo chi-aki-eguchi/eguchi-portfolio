@@ -1,3 +1,17 @@
+import {
+  imageUrlWithParams,
+  type ImageFormat,
+  type RotationDeg,
+} from "../../shared/image-url";
+export {
+  imageUrlWithParams,
+  normalizeRotationDeg,
+  objectPositionFromFocal,
+  orientedAspectRatio,
+  orientedDimensions,
+  rotateRotationDeg,
+} from "../../shared/image-url";
+
 type SrcSetEntry = { w: number; q: number };
 
 const GRID_WIDTHS: SrcSetEntry[] = [
@@ -31,14 +45,45 @@ function widthsFor(preset: ImagePreset): SrcSetEntry[] {
   }
 }
 
-export function srcSetFor(url: string, preset: ImagePreset, fmt?: "avif" | "webp"): string {
-  const fmtSuffix = fmt ? `&fmt=${fmt}` : "";
+type PhotoImage = { url: string; rotationDeg?: RotationDeg | number | null };
+
+export function srcSetFor(
+  url: string,
+  preset: ImagePreset,
+  fmt?: ImageFormat,
+  rotationDeg?: unknown,
+): string {
   return widthsFor(preset)
-    .map(({ w, q }) => `${url}?w=${w}&q=${q}${fmtSuffix} ${w}w`)
+    .map(
+      ({ w, q }) =>
+        `${imageUrlWithParams(url, { w, q, fmt, rotationDeg })} ${w}w`,
+    )
     .join(", ");
 }
 
-export function srcFor(url: string, w: number, q: number, fmt?: "avif" | "webp"): string {
-  const fmtSuffix = fmt ? `&fmt=${fmt}` : "";
-  return `${url}?w=${w}&q=${q}${fmtSuffix}`;
+export function srcFor(
+  url: string,
+  w: number,
+  q: number,
+  fmt?: ImageFormat,
+  rotationDeg?: unknown,
+): string {
+  return imageUrlWithParams(url, { w, q, fmt, rotationDeg });
+}
+
+export function photoSrcSetFor(
+  photo: PhotoImage,
+  preset: ImagePreset,
+  fmt?: ImageFormat,
+): string {
+  return srcSetFor(photo.url, preset, fmt, photo.rotationDeg);
+}
+
+export function photoSrcFor(
+  photo: PhotoImage,
+  w: number,
+  q: number,
+  fmt?: ImageFormat,
+): string {
+  return srcFor(photo.url, w, q, fmt, photo.rotationDeg);
 }

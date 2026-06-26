@@ -7,11 +7,14 @@ import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { Lightbox, type LightboxPhoto } from "../components/Lightbox";
 import { InquiryCta } from "../components/InquiryCta";
-import { srcSetFor, srcFor } from "../lib/picture";
+import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 
 function HeroPicture({
   url,
+  rotationDeg,
+  focalX,
+  focalY,
   alt,
   sizes,
   className,
@@ -23,6 +26,9 @@ function HeroPicture({
   draggable,
 }: {
   url: string;
+  rotationDeg?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
   alt: string;
   sizes: string;
   className?: string;
@@ -33,25 +39,30 @@ function HeroPicture({
   onError?: React.ReactEventHandler<HTMLImageElement>;
   draggable?: boolean;
 }) {
+  const imgStyle = {
+    ...style,
+    objectPosition:
+      style?.objectPosition ?? objectPositionFromFocal(focalX, focalY),
+  };
   return (
     <picture>
       <source
         type="image/avif"
-        srcSet={srcSetFor(url, "hero", "avif")}
+        srcSet={srcSetFor(url, "hero", "avif", rotationDeg)}
         sizes={sizes}
       />
       <source
         type="image/webp"
-        srcSet={srcSetFor(url, "hero", "webp")}
+        srcSet={srcSetFor(url, "hero", "webp", rotationDeg)}
         sizes={sizes}
       />
       <img
-        src={srcFor(url, 1536, 88)}
-        srcSet={srcSetFor(url, "hero")}
+        src={srcFor(url, 1536, 88, undefined, rotationDeg)}
+        srcSet={srcSetFor(url, "hero", undefined, rotationDeg)}
         sizes={sizes}
         alt={alt}
         className={className}
-        style={style}
+        style={imgStyle}
         decoding={decoding}
         fetchPriority={fetchPriority}
         loading={loading}
@@ -67,7 +78,13 @@ function HeroCarousel({
   photos,
   fxRef,
 }: {
-  photos: { url: string; title: string }[];
+  photos: {
+    url: string;
+    title: string;
+    rotationDeg?: number | null;
+    focalX?: number | null;
+    focalY?: number | null;
+  }[];
   fxRef?: React.Ref<HTMLDivElement>;
 }) {
   const [current, setCurrent] = useState(0);
@@ -246,6 +263,9 @@ function HeroCarousel({
             >
               <HeroPicture
                 url={p.url}
+                rotationDeg={p.rotationDeg}
+                focalX={p.focalX}
+                focalY={p.focalY}
                 alt={p.title || "Photograph"}
                 sizes="(min-width: 1200px) 1152px, 100vw"
                 className="w-full h-full object-contain"
@@ -333,7 +353,13 @@ function HeroSingle({
   titlePosition = "center",
   fxRef,
 }: {
-  photo: { url: string; title: string };
+  photo: {
+    url: string;
+    title: string;
+    rotationDeg?: number | null;
+    focalX?: number | null;
+    focalY?: number | null;
+  };
   children?: React.ReactNode;
   titlePosition?: string;
   fxRef?: React.Ref<HTMLDivElement>;
@@ -352,6 +378,9 @@ function HeroSingle({
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
         <HeroPicture
           url={photo.url}
+          rotationDeg={photo.rotationDeg}
+          focalX={photo.focalX}
+          focalY={photo.focalY}
           alt={photo.title || "Photograph"}
           sizes="100vw"
           className="hero-single-img"
@@ -370,7 +399,13 @@ function HeroSingle({
 }
 
 type HomeLayoutProps = {
-  heroPhotos: { url: string; title: string }[];
+  heroPhotos: {
+    url: string;
+    title: string;
+    rotationDeg?: number | null;
+    focalX?: number | null;
+    focalY?: number | null;
+  }[];
   featured: GalleryPhoto[];
   worksPoolLen: number;
   worksSentinelRef: React.RefObject<HTMLDivElement | null>;
@@ -386,6 +421,7 @@ function toLightboxPhotos(photos: GalleryPhoto[]): LightboxPhoto[] {
     lens: p.lens,
     filmType: p.filmType,
     mediumUrl: p.mediumUrl,
+    rotationDeg: p.rotationDeg,
   }));
 }
 
@@ -414,6 +450,9 @@ function HomeQuietGrid({
           <>
             <HeroPicture
               url={heroPhoto.url}
+              rotationDeg={heroPhoto.rotationDeg}
+              focalX={heroPhoto.focalX}
+              focalY={heroPhoto.focalY}
               alt={heroPhoto.title || "Photograph"}
               sizes="100vw"
               className="w-full h-full object-cover"
@@ -491,11 +530,22 @@ function HomeQuietGrid({
                 aria-label={photo.title || `Photo ${idx + 1}`}
               >
                 <img
-                  src={`${photo.url}?w=600&q=85`}
-                  srcSet={`${photo.url}?w=400&q=85 400w, ${photo.url}?w=600&q=85 600w`}
+                  src={srcFor(photo.url, 600, 85, undefined, photo.rotationDeg)}
+                  srcSet={srcSetFor(
+                    photo.url,
+                    "grid",
+                    undefined,
+                    photo.rotationDeg,
+                  )}
                   sizes="(min-width: 768px) 33vw, 50vw"
                   alt=""
                   className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: objectPositionFromFocal(
+                      photo.focalX,
+                      photo.focalY,
+                    ),
+                  }}
                   decoding="async"
                   loading={idx < 9 ? "eager" : "lazy"}
                   draggable={false}
@@ -570,11 +620,14 @@ function HomeEditorial({
       aria-label={photo.title || `Photo ${idx + 1}`}
     >
       <img
-        src={`${photo.url}?w=800&q=88`}
-        srcSet={`${photo.url}?w=600&q=88 600w, ${photo.url}?w=800&q=88 800w, ${photo.url}?w=1200&q=88 1200w`}
+        src={srcFor(photo.url, 800, 88, undefined, photo.rotationDeg)}
+        srcSet={srcSetFor(photo.url, "grid", undefined, photo.rotationDeg)}
         sizes="(min-width: 768px) 40vw, 100vw"
         alt=""
         className="w-full h-full object-cover"
+        style={{
+          objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY),
+        }}
         decoding="async"
         loading={idx < 6 ? "eager" : "lazy"}
         draggable={false}
@@ -621,6 +674,9 @@ function HomeEditorial({
           {heroPhoto && (
             <HeroPicture
               url={heroPhoto.url}
+              rotationDeg={heroPhoto.rotationDeg}
+              focalX={heroPhoto.focalX}
+              focalY={heroPhoto.focalY}
               alt={heroPhoto.title || "Photograph"}
               sizes="(min-width: 768px) 55vw, 100vw"
               className="w-full h-full object-cover"
@@ -773,6 +829,9 @@ function HomeImmersive({
         {heroPhoto ? (
           <HeroPicture
             url={heroPhoto.url}
+            rotationDeg={heroPhoto.rotationDeg}
+            focalX={heroPhoto.focalX}
+            focalY={heroPhoto.focalY}
             alt={heroPhoto.title || "Photograph"}
             sizes="100vw"
             className="w-full h-full object-cover"
@@ -846,8 +905,13 @@ function HomeImmersive({
                     aria-label={photo.title || `Photo ${idx + 1}`}
                   >
                     <img
-                      src={`${photo.url}?w=900&q=88`}
-                      srcSet={`${photo.url}?w=600&q=88 600w, ${photo.url}?w=900&q=88 900w, ${photo.url}?w=1200&q=88 1200w`}
+                      src={srcFor(photo.url, 900, 88, undefined, photo.rotationDeg)}
+                      srcSet={srcSetFor(
+                        photo.url,
+                        "grid",
+                        undefined,
+                        photo.rotationDeg,
+                      )}
                       sizes="(min-width: 768px) 45vw, 100vw"
                       alt=""
                       className="w-full"

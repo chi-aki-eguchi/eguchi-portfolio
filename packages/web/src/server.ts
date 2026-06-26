@@ -4,6 +4,7 @@ import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { injectOgp, siteUrlFrom, escapeHtml, BUILD_ID } from "./api/ogp";
+import { imageUrlWithParams } from "./shared/image-url";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
 // 本番(turso)は no-op。失敗時はサーバを起動せず loud に落とす。
@@ -54,9 +55,10 @@ async function getSettings(): Promise<Record<string, string>> {
 // The OGP/social share image: prefer the first (non-deleted) hero photo — the
 // actual front-of-site image — since the legacy `heroPhotoUrl` setting is no longer
 // written. Cached 60s; "" means "no hero, fall back to profile/default".
-let heroOgCache: string | null = null;
+type ImageRef = { url: string; rotationDeg: number };
+let heroOgCache: ImageRef | null = null;
 let heroOgCacheTime = 0;
-async function getHeroOgImageUrl(): Promise<string> {
+async function getHeroOgImage(): Promise<ImageRef> {
   const now = Date.now();
   if (heroOgCache !== null && now - heroOgCacheTime < SETTINGS_TTL)
     return heroOgCache;
@@ -64,29 +66,29 @@ async function getHeroOgImageUrl(): Promise<string> {
     const heroRows = await withRetry(() =>
       db.select().from(schema.heroPhotos).orderBy(schema.heroPhotos.sortOrder),
     );
-    let url = "";
+    let image: ImageRef = { url: "", rotationDeg: 0 };
     for (const hr of heroRows) {
       const [p] = await withRetry(() =>
         db.select().from(schema.photos).where(eq(schema.photos.id, hr.photoId)),
       );
       if (p && !p.deletedAt) {
-        url = p.url;
+        image = { url: p.url, rotationDeg: p.rotationDeg ?? 0 };
         break;
       }
     }
-    heroOgCache = url;
+    heroOgCache = image;
     heroOgCacheTime = now;
   } catch (e) {
     console.error("[OGP] hero image fetch failed:", e); /* use stale/empty */
   }
-  return heroOgCache ?? "";
+  return heroOgCache ?? { url: "", rotationDeg: 0 };
 }
 
 // First N gallery photo URLs for preloading grid thumbnails on /gallery.
-let galleryPreloadCache: string[] = [];
+let galleryPreloadCache: ImageRef[] = [];
 let galleryPreloadCacheTime = 0;
 const GALLERY_PRELOAD_COUNT = 8;
-async function getGalleryPreloadUrls(): Promise<string[]> {
+async function getGalleryPreloadImages(): Promise<ImageRef[]> {
   const now = Date.now();
   if (
     now - galleryPreloadCacheTime < SETTINGS_TTL &&
@@ -113,8 +115,11 @@ async function getGalleryPreloadUrls(): Promise<string[]> {
             ? sql`${schema.photos.createdAt} DESC`
             : schema.photos.sortOrder;
     const rows = await withRetry(() =>
-      db
-        .select({ url: schema.photos.url })
+        db
+        .select({
+          url: schema.photos.url,
+          rotationDeg: schema.photos.rotationDeg,
+        })
         .from(schema.photos)
         .where(
           and(
@@ -125,7 +130,10 @@ async function getGalleryPreloadUrls(): Promise<string[]> {
         .orderBy(orderExpr)
         .limit(GALLERY_PRELOAD_COUNT),
     );
-    galleryPreloadCache = rows.map((r) => r.url);
+    galleryPreloadCache = rows.map((r) => ({
+      url: r.url,
+      rotationDeg: r.rotationDeg ?? 0,
+    }));
     galleryPreloadCacheTime = now;
   } catch (e) {
     console.error("[preload] gallery photos fetch failed:", e);
@@ -136,7 +144,12 @@ async function getGalleryPreloadUrls(): Promise<string[]> {
 // Per-series OGP so a shared /series/:slug link shows that series' own title,
 // statement and cover image — not the generic site card. Cached per slug (60s);
 // null = unknown/unpublished slug (caller falls back to the generic card).
-type SeriesOg = { title: string; desc: string; image: string };
+type SeriesOg = {
+  title: string;
+  desc: string;
+  image: string;
+  imageRotationDeg: number;
+};
 const seriesOgCache = new Map<string, { data: SeriesOg | null; ts: number }>();
 async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
   const now = Date.now();
@@ -158,6 +171,7 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
     );
     if (s) {
       let image = "";
+      let imageRotationDeg = 0;
       if (s.coverPhotoId) {
         const [p] = await withRetry(() =>
           db
@@ -165,12 +179,16 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
             .from(schema.photos)
             .where(eq(schema.photos.id, s.coverPhotoId as number)),
         );
-        if (p && !p.deletedAt) image = p.url;
+        if (p && !p.deletedAt) {
+          image = p.url;
+          imageRotationDeg = p.rotationDeg ?? 0;
+        }
       }
       data = {
         title: s.title,
         desc: (s.statement || s.subtitle || "").slice(0, 200),
         image,
+        imageRotationDeg,
       };
     }
   } catch (e) {
@@ -445,9 +463,16 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
   if (await index.exists()) {
     const html = await index.text();
     const settings = await getSettings();
-    const heroImg = await getHeroOgImageUrl();
+    const heroImg = await getHeroOgImage();
     // Per-series OGP for /series/:slug so shared links carry that series' card.
-    let override: { title?: string; desc?: string; image?: string } | undefined;
+    let override:
+      | {
+          title?: string;
+          desc?: string;
+          image?: string;
+          imageRotationDeg?: number | null;
+        }
+      | undefined;
     const seriesMatch = url.pathname.match(/^\/series\/([^/]+)$/);
     if (seriesMatch) {
       const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
@@ -456,27 +481,42 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
           title: og.title,
           desc: og.desc,
           image: og.image || undefined,
+          imageRotationDeg: og.imageRotationDeg,
         };
     }
     let injected = injectOgp(
       html,
       settings,
       url.pathname,
-      heroImg,
+      heroImg.url,
       override,
       publicOrigin,
+      heroImg.rotationDeg,
     );
     if (url.pathname === "/gallery" || url.pathname === "/") {
-      const preloadUrls = await getGalleryPreloadUrls();
-      if (preloadUrls.length > 0) {
+      const preloadImages = await getGalleryPreloadImages();
+      if (preloadImages.length > 0) {
         const gridSizes =
           "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
-        const preloadTags = preloadUrls
-          .map((u) => {
-            const href = escapeHtml(`${u}?w=600&q=84`);
+        const preloadTags = preloadImages
+          .map((img) => {
+            const href = escapeHtml(
+              imageUrlWithParams(img.url, {
+                w: 600,
+                q: 84,
+                rotationDeg: img.rotationDeg,
+              }),
+            );
             const srcset = escapeHtml(
               [400, 800, 1200, 1600]
-                .map((w, i) => `${u}?w=${w}&q=${[82, 84, 84, 86][i]} ${w}w`)
+                .map(
+                  (w, i) =>
+                    `${imageUrlWithParams(img.url, {
+                      w,
+                      q: [82, 84, 84, 86][i],
+                      rotationDeg: img.rotationDeg,
+                    })} ${w}w`,
+                )
                 .join(", "),
             );
             return `<link rel="preload" as="image" href="${href}" imagesrcset="${srcset}" imagesizes="${escapeHtml(gridSizes)}">`;

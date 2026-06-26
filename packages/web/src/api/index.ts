@@ -23,6 +23,11 @@ sharp.cache(false);
 sharp.concurrency(2);
 import exifReader from "exif-reader";
 import { createHash } from "node:crypto";
+import {
+  imageUrlWithParams,
+  normalizeRotationDeg,
+  parseRotationDeg,
+} from "../shared/image-url";
 
 // Node's Buffer<ArrayBufferLike> isn't assignable to DOM BodyInit in TS lib
 // types, though Bun's Response accepts it at runtime. The cast is contained
@@ -269,12 +274,26 @@ async function generateWebP(
 }
 
 function photoWithThumbs<
-  T extends { thumbKey?: string | null; mediumKey?: string | null },
+  T extends {
+    thumbKey?: string | null;
+    mediumKey?: string | null;
+    rotationDeg?: number | null;
+  },
 >(p: T): T & { thumbUrl: string | null; mediumUrl: string | null } {
+  const rotationDeg = normalizeRotationDeg(p.rotationDeg);
+  const rotated = rotationDeg !== 0;
   return {
     ...p,
-    thumbUrl: p.thumbKey ? keyToPublicUrl(p.thumbKey) : null,
-    mediumUrl: p.mediumKey ? keyToPublicUrl(p.mediumKey) : null,
+    thumbUrl: p.thumbKey
+      ? rotated
+        ? keyToProxyUrl(p.thumbKey, { rotationDeg })
+        : keyToPublicUrl(p.thumbKey)
+      : null,
+    mediumUrl: p.mediumKey
+      ? rotated
+        ? keyToProxyUrl(p.mediumKey, { rotationDeg })
+        : keyToPublicUrl(p.mediumKey)
+      : null,
   };
 }
 
@@ -342,8 +361,17 @@ async function uploadToStorage(key: string, buf: Buffer, contentType: string) {
   );
 }
 
-function keyToProxyUrl(key: string) {
-  return `/api/images/${key}`;
+function keyToProxyUrl(
+  key: string,
+  params: { w?: number | null; q?: number | null; rotationDeg?: unknown } = {},
+) {
+  return imageUrlWithParams(`/api/images/${key}`, params);
+}
+
+function parseFocalPoint(value: unknown): number | null {
+  const n = typeof value === "string" ? Number(value) : value;
+  if (typeof n !== "number" || !Number.isFinite(n)) return null;
+  return Math.min(100, Math.max(0, Math.round(n)));
 }
 
 async function executeRaw(query: SQL) {
@@ -441,6 +469,10 @@ const app = new Hono()
     }
     const width = clampImageWidth(c.req.query("w"));
     const quality = clampImageQuality(c.req.query("q"));
+    const rotationDeg = parseRotationDeg(c.req.query("rot"));
+    if (rotationDeg === null) {
+      return c.json({ error: "Invalid rotation" }, 400);
+    }
 
     // Format selection: explicit `fmt` query param (for <picture> sources) takes
     // priority; otherwise Accept-header negotiation picks the best the browser
@@ -467,7 +499,7 @@ const app = new Hono()
       avif: "image/avif",
     };
 
-    const cacheKey = `${decodedKey}__w${width ?? "orig"}__q${quality}__${fmt}`;
+    const cacheKey = `${decodedKey}__w${width ?? "orig"}__q${quality}__${fmt}__rot${rotationDeg}`;
     const etag = `"${createHash("md5").update(cacheKey).digest("hex")}"`;
 
     const ifNoneMatch = c.req.header("if-none-match");
@@ -497,7 +529,7 @@ const app = new Hono()
     try {
       const original = await getOriginal(decodedKey);
 
-      if (!width) {
+      if (!width && rotationDeg === 0) {
         // No resize — return the (already optimised) original
         return new Response(asBody(original.buf), {
           headers: {
@@ -508,10 +540,14 @@ const app = new Hono()
         });
       }
 
-      const base = sharp(original.buf).rotate().resize({
-        width,
-        withoutEnlargement: true,
-      });
+      let base = sharp(original.buf).rotate();
+      if (rotationDeg !== 0) base = base.rotate(rotationDeg);
+      if (width) {
+        base = base.resize({
+          width,
+          withoutEnlargement: true,
+        });
+      }
       let out: Buffer;
       if (fmt === "avif") {
         // AVIF quality scale runs ~10-20 points lower than JPEG for equivalent
@@ -528,7 +564,7 @@ const app = new Hono()
           .jpeg({
             quality,
             mozjpeg: true,
-            chromaSubsampling: width >= 1000 ? "4:4:4" : "4:2:0",
+            chromaSubsampling: !width || width >= 1000 ? "4:4:4" : "4:2:0",
           })
           .toBuffer();
       }
@@ -1170,6 +1206,22 @@ const app = new Hono()
     if (body.description !== undefined) update.description = body.description;
     if (body.category !== undefined) update.category = body.category;
     if (body.displaySize !== undefined) update.displaySize = body.displaySize;
+    if (body.rotationDeg !== undefined) {
+      const rotationDeg = parseRotationDeg(body.rotationDeg);
+      if (rotationDeg === null)
+        return c.json({ error: "Invalid rotationDeg" }, 400);
+      update.rotationDeg = rotationDeg;
+    }
+    if (body.focalX !== undefined) {
+      const focalX = parseFocalPoint(body.focalX);
+      if (focalX === null) return c.json({ error: "Invalid focalX" }, 400);
+      update.focalX = focalX;
+    }
+    if (body.focalY !== undefined) {
+      const focalY = parseFocalPoint(body.focalY);
+      if (focalY === null) return c.json({ error: "Invalid focalY" }, 400);
+      update.focalY = focalY;
+    }
     if (body.isPublished !== undefined) update.isPublished = !!body.isPublished;
     // I1: series assignment — "" / null clears membership.
     if (body.seriesId !== undefined)
@@ -1214,6 +1266,9 @@ const app = new Hono()
           seriesId: orig.seriesId,
           width: orig.width,
           height: orig.height,
+          rotationDeg: orig.rotationDeg,
+          focalX: orig.focalX,
+          focalY: orig.focalY,
           fileHash: orig.fileHash,
           thumbKey: orig.thumbKey,
           mediumKey: orig.mediumKey,
@@ -1454,6 +1509,42 @@ const app = new Hono()
         );
         break;
       }
+      case "rotate_left":
+        await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set({
+              rotationDeg: sql`(${schema.photos.rotationDeg} + 270) % 360`,
+            })
+            .where(inArray(schema.photos.id, cleanIds)),
+        );
+        break;
+      case "rotate_right":
+        await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set({
+              rotationDeg: sql`(${schema.photos.rotationDeg} + 90) % 360`,
+            })
+            .where(inArray(schema.photos.id, cleanIds)),
+        );
+        break;
+      case "reset_rotation":
+        await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set({ rotationDeg: 0 })
+            .where(inArray(schema.photos.id, cleanIds)),
+        );
+        break;
+      case "reset_focal_point":
+        await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set({ focalX: 50, focalY: 50 })
+            .where(inArray(schema.photos.id, cleanIds)),
+        );
+        break;
       case "series": {
         const seriesId =
           value === undefined || value === null || value === ""
@@ -1578,26 +1669,43 @@ const app = new Hono()
     const covers = coverIds.length
       ? await withRetry(() =>
           db
-            .select({ id: schema.photos.id, url: schema.photos.url })
+            .select({
+              id: schema.photos.id,
+              url: schema.photos.url,
+              rotationDeg: schema.photos.rotationDeg,
+              focalX: schema.photos.focalX,
+              focalY: schema.photos.focalY,
+            })
             .from(schema.photos)
             .where(
               sql`${inArray(schema.photos.id, coverIds)} AND ${isNull(schema.photos.deletedAt)}`,
             ),
         )
       : [];
-    const coverMap = new Map(covers.map((p) => [p.id, p.url]));
+    const coverMap = new Map(covers.map((p) => [p.id, p]));
     // P5: a series whose cover is unset (or points at a deleted photo) falls back
     // to its first published photo so the grid tile is never blank. One query
     // grabs the lead photo for every series; we read it only when the cover misses.
     const needFallback = rows.filter(
       (s) => !s.coverPhotoId || !coverMap.get(s.coverPhotoId),
     );
-    const firstBySeries = new Map<number, string>();
+    const firstBySeries = new Map<
+      number,
+      {
+        url: string;
+        rotationDeg: number;
+        focalX: number;
+        focalY: number;
+      }
+    >();
     if (needFallback.length) {
       const leadPhotos = await withRetry(() =>
         db
           .select({
             url: schema.photos.url,
+            rotationDeg: schema.photos.rotationDeg,
+            focalX: schema.photos.focalX,
+            focalY: schema.photos.focalY,
             seriesId: schema.photos.seriesId,
             sortOrder: schema.photos.sortOrder,
           })
@@ -1613,15 +1721,21 @@ const app = new Hono()
       // orderBy sortOrder asc → the first row seen per series is its lead photo.
       for (const p of leadPhotos)
         if (p.seriesId != null && !firstBySeries.has(p.seriesId))
-          firstBySeries.set(p.seriesId, p.url);
+          firstBySeries.set(p.seriesId, p);
     }
-    const list = rows.map((s) => ({
-      ...s,
-      coverUrl:
+    const list = rows.map((s) => {
+      const cover =
         (s.coverPhotoId ? coverMap.get(s.coverPhotoId) : undefined) ??
         firstBySeries.get(s.id) ??
-        null,
-    }));
+        null;
+      return {
+        ...s,
+        coverUrl: cover?.url ?? null,
+        coverRotationDeg: cover?.rotationDeg ?? 0,
+        coverFocalX: cover?.focalX ?? 50,
+        coverFocalY: cover?.focalY ?? 50,
+      };
+    });
     return c.json({ series: list }, 200);
   })
 

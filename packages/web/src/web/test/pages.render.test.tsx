@@ -138,7 +138,7 @@ describe("shared components", () => {
       const closeBtn = dom.window.document.querySelector('dialog button[aria-label="閉じる"]') as HTMLButtonElement | null;
       expect(closeBtn).not.toBeNull();
       closeBtn!.click();
-      await flush(320);
+      await flush(420);
       expect(closed).toBe(1);
       expect(historyBackCalls).toBe(0);
       cleanup();

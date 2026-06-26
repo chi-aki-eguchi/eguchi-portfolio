@@ -6,15 +6,15 @@ import {
   useCallback,
 } from "react";
 import { createPortal } from "react-dom";
-import { srcSetFor, srcFor } from "../lib/picture";
+import { photoSrcFor, photoSrcSetFor } from "../lib/picture";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
 // srcset without pulling the full 3200px master stored in R2.
 const FIT_W = "95vw";
 const FIT_H = "94dvh";
 export const FIT_SIZES = "95vw";
-export const fitSrcSet = (url: string) =>
-  `${url}?w=800&q=82 800w, ${url}?w=1200&q=85 1200w, ${url}?w=1600&q=85 1600w, ${url}?w=1920&q=85 1920w`;
+type PhotoImage = { url: string; rotationDeg?: number | null };
+export const fitSrcSet = (photo: PhotoImage) => photoSrcSetFor(photo, "lightbox");
 // Match the typical grid sizes so the browser picks the same cached entry.
 const GRID_THUMB_SIZES =
   "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
@@ -33,15 +33,16 @@ export type LightboxPhoto = {
   shotAt?: string | null;
   lqipSrc?: string;
   mediumUrl?: string | null;
+  rotationDeg?: number | null;
 };
 
 const preloaded = new Set<string>();
 function preloadPhoto(photo: LightboxPhoto | undefined) {
   if (!photo) return;
-  const preview = photo.lqipSrc || srcFor(photo.url, 600, 84, "webp");
+  const preview = photo.lqipSrc || photoSrcFor(photo, 600, 84, "webp");
   for (const src of [
     preview,
-    photo.mediumUrl || srcFor(photo.url, 1200, 85, "webp"),
+    photo.mediumUrl || photoSrcFor(photo, 1200, 85, "webp"),
   ]) {
     if (!src || preloaded.has(src)) continue;
     preloaded.add(src);
@@ -524,14 +525,14 @@ export function Lightbox({
         for (const fmt of ["avif", "webp"] as const) {
           const source = document.createElement("source");
           source.type = `image/${fmt}`;
-          source.srcset = srcSetFor(p.url, "lightbox", fmt);
+          source.srcset = photoSrcSetFor(p, "lightbox", fmt);
           source.sizes = FIT_SIZES;
           picture.appendChild(source);
         }
         const img = document.createElement("img");
-        img.srcset = fitSrcSet(p.url);
+        img.srcset = fitSrcSet(p);
         img.sizes = FIT_SIZES;
-        img.src = srcFor(p.url, 1200, 85);
+        img.src = photoSrcFor(p, 1200, 85);
         img.fetchPriority = "low";
         img.decoding = "async";
         picture.appendChild(img);
@@ -927,19 +928,19 @@ export function Lightbox({
                 <picture>
                   <source
                     type="image/avif"
-                    srcSet={srcSetFor(photo.url, "grid", "avif")}
+                    srcSet={photoSrcSetFor(photo, "grid", "avif")}
                     sizes={GRID_THUMB_SIZES}
                   />
                   <source
                     type="image/webp"
-                    srcSet={srcSetFor(photo.url, "grid", "webp")}
+                    srcSet={photoSrcSetFor(photo, "grid", "webp")}
                     sizes={GRID_THUMB_SIZES}
                   />
                   <img
                     ref={placeImgRef}
-                    srcSet={srcSetFor(photo.url, "grid")}
+                    srcSet={photoSrcSetFor(photo, "grid")}
                     sizes={GRID_THUMB_SIZES}
-                    src={srcFor(photo.url, 600, 84)}
+                    src={photoSrcFor(photo, 600, 84)}
                     alt=""
                     aria-hidden="true"
                     draggable={false}
@@ -966,14 +967,14 @@ export function Lightbox({
                   >
                     <source
                       type="image/avif"
-                      srcSet={srcFor(photo.url, 800, 80, "avif")}
+                      srcSet={photoSrcFor(photo, 800, 80, "avif")}
                     />
                     <source
                       type="image/webp"
-                      srcSet={srcFor(photo.url, 800, 80, "webp")}
+                      srcSet={photoSrcFor(photo, 800, 80, "webp")}
                     />
                     <img
-                      src={srcFor(photo.url, 800, 80)}
+                      src={photoSrcFor(photo, 800, 80)}
                       alt=""
                       aria-hidden="true"
                       draggable={false}
@@ -1024,18 +1025,18 @@ export function Lightbox({
                   >
                     <source
                       type="image/avif"
-                      srcSet={srcSetFor(photo.url, "lightbox", "avif")}
+                      srcSet={photoSrcSetFor(photo, "lightbox", "avif")}
                       sizes={FIT_SIZES}
                     />
                     <source
                       type="image/webp"
-                      srcSet={srcSetFor(photo.url, "lightbox", "webp")}
+                      srcSet={photoSrcSetFor(photo, "lightbox", "webp")}
                       sizes={FIT_SIZES}
                     />
                     <img
                       ref={fitImgRef}
-                      src={srcFor(photo.url, 1200, 85)}
-                      srcSet={fitSrcSet(photo.url)}
+                      src={photoSrcFor(photo, 1200, 85)}
+                      srcSet={fitSrcSet(photo)}
                       sizes={FIT_SIZES}
                       alt={
                         photo.title || photo.meta || `Photograph ${index + 1}`
@@ -1066,14 +1067,14 @@ export function Lightbox({
                   >
                     <source
                       type="image/avif"
-                      srcSet={srcFor(photo.url, 3200, 90, "avif")}
+                      srcSet={photoSrcFor(photo, 3200, 90, "avif")}
                     />
                     <source
                       type="image/webp"
-                      srcSet={srcFor(photo.url, 3200, 90, "webp")}
+                      srcSet={photoSrcFor(photo, 3200, 90, "webp")}
                     />
                     <img
-                      src={srcFor(photo.url, 3200, 90)}
+                      src={photoSrcFor(photo, 3200, 90)}
                       alt=""
                       aria-hidden="true"
                       onLoad={() => setZoomSrcReady(true)}

@@ -1736,7 +1736,8 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
 ### 配布用ブランチ確認
 - `codex/railway-all-in-one-experiment` は `main` の祖先で、独自の未反映 commit はなかった。
 - `main` には配布版に必要な PostgreSQL schema / migration / service page / Railway template docs / 最新の画像回転・focal point 対応がすでに含まれている。
-- そのため、配布用ブランチは merge conflict なしの fast-forward で `main` に追従できる状態。
+- そのため、配布用ブランチは merge conflict なしの fast-forward で `main` に追従できる状態だった。
+- `main` を `7058b95` まで push 後、`codex/railway-all-in-one-experiment` も同じ `7058b95` へ fast-forward して push 済み。
 
 ### 検証
 - `cd packages/web && bun x tsc -b` 成功。
@@ -1747,6 +1748,7 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
 
 ### 注意
 - 本番の `/gallery` / `/contact` はデータ取得完了後は正常。初期ロード中の generic fallback 表示は残るため、気になる場合はサーバ注入済み meta から初期クライアント表示を作るなど、別タスクで改善候補。
+- `main` push 後に `/api/health` を2回確認したが、確認時点の本番 build は `3d05b86a` のまま。今回のアプリ本体はすでに `3d05b86a` として本番で動作確認済みで、`7058b95` は記録追記のみ。
 - `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の反映対象には含めない。
 
 ### 触ったファイル

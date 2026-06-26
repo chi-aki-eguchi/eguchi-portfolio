@@ -300,6 +300,26 @@ describe("shared components", () => {
     cleanup();
   });
 
+  test("Layout keeps the service link quiet and production-only", async () => {
+    const Layout = (await import("../components/Layout")).default;
+    const prevSettings = canned["/api/settings"];
+    try {
+      canned["/api/settings"] = {};
+      const hidden = await mount(createElement(Layout, null, createElement("p", null, "child")));
+      expect(hidden.host.querySelector('a[href="/service"]')).toBeNull();
+      hidden.cleanup();
+
+      canned["/api/settings"] = { siteUrl: "https://akieguchi.com" };
+      const visible = await mount(createElement(Layout, null, createElement("p", null, "child")));
+      expect(visible.host.querySelectorAll('a[href="/service"]').length).toBeGreaterThan(0);
+      expect(visible.host.textContent).toContain("Service");
+      expect(visible.host.textContent).toContain("Portfolio site");
+      visible.cleanup();
+    } finally {
+      canned["/api/settings"] = prevSettings;
+    }
+  });
+
   test("DD grain: preview toggles body[data-texture], Layout must not paint over it", async () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;

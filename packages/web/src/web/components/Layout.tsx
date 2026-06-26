@@ -27,6 +27,27 @@ function useFooterReveal() {
   return ref;
 }
 
+const SERVICE_LINK_HOST = "akieguchi.com";
+
+function normalizedHost(host: string): string {
+  return host.trim().toLowerCase().replace(/^www\./, "");
+}
+
+function hostFromUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    return normalizedHost(new URL(value).hostname);
+  } catch {
+    return null;
+  }
+}
+
+function shouldShowServiceLink(siteUrl: string | undefined): boolean {
+  if (hostFromUrl(siteUrl) === SERVICE_LINK_HOST) return true;
+  if (typeof window === "undefined") return false;
+  return normalizedHost(window.location.hostname) === SERVICE_LINK_HOST;
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -53,11 +74,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const dm = useDarkModeContext();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  const showServiceLink = shouldShowServiceLink(data?.siteUrl);
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
     { href: "/about", label: data?.navLabelAbout ?? "About" },
     { href: "/contact", label: data?.navLabelContact ?? "Contact" },
+    ...(showServiceLink ? [{ href: "/service", label: "Service" }] : []),
   ];
 
   // Highlight the nav item for the section you're in, not just its exact path:
@@ -270,6 +293,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               onMouseLeave={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--footer-opacity, 0.30))`; }}
             >
               {data.footerCtaLabel}
+            </Link>
+          )}
+          {showServiceLink && (
+            <Link
+              to="/service"
+              className="font-en tracking-[0.06em] nav-link-luxury transition-colors duration-300"
+              style={{ fontSize: "var(--footer-size, 11px)", color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.22))` }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.48)`; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--footer-opacity, 0.22))`; }}
+            >
+              Portfolio site
             </Link>
           )}
           <p

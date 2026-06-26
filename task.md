@@ -591,6 +591,36 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ### 触ったファイル
 - `task.md`
 
+## 追記 2026-06-26 — Codex: `/service` への控えめな導線追加
+
+### 目的
+秋さん依頼「購入サイトのレベルを上げて、扱いやすくしたい。今は自分でURLを打たないといけない」に対応。
+ただし「あんま目立たないように」という追加方針に合わせ、強い購入CTAではなく通常導線の中に控えめに入れる。
+
+### 対応
+- `Layout` に `/service` へのリンクを追加。
+  - デスクトップ / モバイルの通常ナビに `Service` を追加。
+  - フッターには薄い `Portfolio site` リンクを追加。
+- 配布先の写真家サイトに秋さんの販売導線が勝手に出ないよう、表示条件を `akieguchi.com` のみへ限定。
+  - `siteUrl` が `akieguchi.com` の場合、または閲覧中ホストが `akieguchi.com` の場合だけ表示。
+  - 空 settings / localhost / 配布テンプレート初期状態では非表示。
+- 回帰テストを追加。
+  - 空 settings では `/service` リンクが出ない。
+  - `siteUrl: "https://akieguchi.com"` では `Service` / `Portfolio site` が出る。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
+- `cd packages/web && bun test ./src` 成功（173 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+
+### 触ったファイル
+- `packages/web/src/web/components/Layout.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
 ## 追記 2026-06-19 — Codex + Claude: 配布化 v0 方針と P0 下地
 
 ### 実施

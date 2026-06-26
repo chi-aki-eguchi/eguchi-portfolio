@@ -1711,3 +1711,43 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
 ### 触ったファイル
 - `packages/web/src/web/pages/admin.tsx`
 - `task.md`
+
+## 追記 2026-06-26 — Codex: 本番デバッグ + 配布用ブランチ反映
+
+### 目的
+秋さん依頼「今のメインサイトをデバッグして、配布用（販売用）のサブサイトに現状を反映させたい」に対応。
+本番 `akieguchi.com` の現在の動作を確認し、配布用 Railway template ブランチ
+`codex/railway-all-in-one-experiment` が `main` より古い状態で止まっていないかを確認した。
+
+### 本番確認
+- `https://akieguchi.com/api/health` は 200。build は `3d05b86a`。
+- `/api/settings` は 200 で、江口秋 / Aki Eguchi の本番 settings を返している。
+- `/api/photos` は 200 で、公開写真 445 件を返している。`rotationDeg` / `focalX` / `focalY` / `thumbUrl` / `mediumUrl` も含まれている。
+- `/api/categories` は 200。
+- ブラウザで `/`, `/gallery`, `/series`, `/about`, `/contact`, `/service` を確認。
+  - 致命的な白画面・画像破損は確認されず。
+  - `/gallery` は初期ロード直後に一瞬だけ generic fallback 表示に見えるが、数秒待つと `Gallery`、フィルタ、24枚の初期画像が正常表示された。
+  - `/contact` も数秒待つと本番 settings が反映され、フォームが正常表示された。
+  - `/service` は Stripe Payment Link 2本へリンクされていることを確認。決済クリックは未実行。
+- `/gallery` の写真をクリックして Lightbox を開き、次の写真へ進めることを確認。
+  - 1枚目: medium 画像まで読み込み完了。
+  - 2枚目: counter が `2 / 24` へ進み、medium 画像が読み込み完了。
+
+### 配布用ブランチ確認
+- `codex/railway-all-in-one-experiment` は `main` の祖先で、独自の未反映 commit はなかった。
+- `main` には配布版に必要な PostgreSQL schema / migration / service page / Railway template docs / 最新の画像回転・focal point 対応がすでに含まれている。
+- そのため、配布用ブランチは merge conflict なしの fast-forward で `main` に追従できる状態。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/shared/image-url.test.ts ./src/api/site-defaults.test.ts ./src/api/static-template.test.ts` 成功（13 pass）。
+- `cd packages/web && bun test ./src` 成功（172 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `cd packages/web && bun run build` 成功。
+
+### 注意
+- 本番の `/gallery` / `/contact` はデータ取得完了後は正常。初期ロード中の generic fallback 表示は残るため、気になる場合はサーバ注入済み meta から初期クライアント表示を作るなど、別タスクで改善候補。
+- `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の反映対象には含めない。
+
+### 触ったファイル
+- `task.md`

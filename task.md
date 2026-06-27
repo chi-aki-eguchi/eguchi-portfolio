@@ -1861,3 +1861,43 @@ Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 - `packages/web/src/web/pages/admin.tsx`
 - `packages/web/vite/plugins/runable-analytics-plugin.ts`
 - `task.md`
+
+## 追記 2026-06-27 — Codex: `/service` 実例・管理画面訴求の再調整
+
+### 目的
+秋さん依頼「謎の空白グリッドをなくす」「ポートフォリオサイト内なら例はそこで見れるのでは」「管理画面をもっとアピールしたい」に対応。
+Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い指摘を反映。
+
+### 対応
+- ヒーロー直下の空グリッド風プレビューを廃止し、公開写真APIから取得した実写真で「このサイト自体が、そのまま実例です」と見せる構成に変更。
+  - `/gallery` / `/about` / `/contact` への導線を置き、実際の公開状態をそのまま見られるようにした。
+- 管理画面セクションを追加し、写真管理・S/M/Lサイズ指定・プロフィール/連絡先/SNS・見た目調整がブラウザからできることを明示。
+  - 実写真を使った管理画面プレビューを配置。
+  - ロード中や写真0枚時に空白のプレビュー枠だけ出ないよう、写真がある時だけ表示。
+- ヒーロー本文とページ内ナビに管理画面の価値を追加。
+- Pricingの主従を少しだけ強め、販売色が強くなりすぎない範囲で「Start here」とprimary枠を追加。
+
+### Claude Code 相談メモ
+- P0: APIロード中に `photos=[]` のまま AdminPreview の大きな空白枠が出る点を先に直すべき、という指摘。
+- P1: 管理画面プレビューはアクティブ行や操作感を少し足すと伝わりやすい、Pricingの階層差も薄い、という指摘。
+- 反映: 空枠ガード、サイドメニューのアクティブ表現、Live previewラベル、Pricingの控えめな主従を追加。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
+- `cd packages/web && bun test ./src` 成功（173 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `git diff --check` 成功。
+- ローカル `http://127.0.0.1:5173/service` を Playwright で確認。
+  - デスクトップ / モバイルとも横はみ出しなし。
+  - Runable / Railway / AI 文言なし。
+  - 実例写真5枚、管理画面プレビュー写真3枚が表示。
+  - 管理画面プレビューは写真読み込み後に表示され、空白枠だけの状態を避ける。
+
+### 注意
+- `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の対象外。
+
+### 触ったファイル
+- `packages/web/src/web/pages/service.tsx`
+- `task.md`

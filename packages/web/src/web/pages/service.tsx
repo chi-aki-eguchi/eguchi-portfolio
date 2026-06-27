@@ -1,4 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { usePageEntrance } from "../hooks/usePageEntrance";
+import { api, jsonOrThrow } from "../lib/api";
+import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 
 // Stripe Payment Links (live). These are public checkout links — safe to keep in
 // the repo. Never put Stripe secret keys / webhook secrets / dashboard URLs here.
@@ -44,6 +48,13 @@ const FEATURES = [
   },
 ] as const;
 
+const ADMIN_POINTS = [
+  "写真を追加して、タイトルやカテゴリを整理",
+  "S / M / L のサイズ指定と並び替えで見せ方を調整",
+  "プロフィール、連絡先、SNS、サイト名を更新",
+  "文字サイズ、余白、色などの見た目もブラウザから調整",
+] as const;
+
 const STEPS = [
   "申し込み後に、手順書または設定のご案内を送ります。",
   "サイト名、プロフィール文、連絡先、使いたい写真を準備します。",
@@ -66,6 +77,17 @@ const FAQS = [
   },
 ] as const;
 
+type ServicePhoto = {
+  id: number;
+  url: string;
+  title?: string | null;
+  thumbUrl?: string | null;
+  mediumUrl?: string | null;
+  rotationDeg?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+};
+
 function SectionLabel({ children }: { children: string }) {
   return (
     <p className={`${labelCls} mb-8`} style={labelStyle}>
@@ -74,49 +96,182 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
-function SitePreview() {
+function LiveExample({ photos }: { photos: ServicePhoto[] }) {
+  const examplePhotos = photos.slice(0, 5);
+  const hasPhotos = examplePhotos.length >= 3;
   return (
-    <figure
-      className="page-entrance page-entrance-delay-2 mt-12 md:mt-16 border-y border-[rgba(var(--foreground-rgb),0.08)] py-6 md:py-8"
-      aria-label="ポートフォリオサイトの表示イメージ"
-    >
-      <div className="mx-auto max-w-3xl">
-        <div className="flex items-center justify-between border-b border-[rgba(var(--foreground-rgb),0.07)] pb-4">
-          <p className="font-en text-[0.72rem] tracking-[0.16em] uppercase text-[rgba(var(--foreground-rgb),0.42)]">
-            Aki Eguchi
+    <section className="page-entrance page-entrance-delay-2 mt-14 md:mt-20 border-y border-[rgba(var(--foreground-rgb),0.08)] py-10 md:py-14">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.08fr)_minmax(19rem,0.72fr)] gap-10 md:gap-14 items-center">
+        {hasPhotos && (
+          <div className="grid grid-cols-12 gap-3 md:gap-4" aria-label="このサイトに掲載されている写真の例">
+            {examplePhotos.map((photo, i) => {
+              const layout = [
+                "col-span-7 row-span-2 aspect-[4/5]",
+                "col-span-5 aspect-[4/3]",
+                "col-span-5 aspect-[4/3]",
+                "col-span-4 aspect-[1/1]",
+                "col-span-8 aspect-[16/9]",
+              ][i] ?? "col-span-4 aspect-[1/1]";
+              return (
+                <Link
+                  key={photo.id}
+                  to="/gallery"
+                  className={`${layout} block overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)]`}
+                  aria-label="実例ギャラリーを見る"
+                >
+                  <img
+                    src={photo.mediumUrl ?? srcFor(photo.url, i === 0 ? 900 : 520, 84, undefined, photo.rotationDeg)}
+                    srcSet={photo.mediumUrl ? undefined : srcSetFor(photo.url, "grid", undefined, photo.rotationDeg)}
+                    sizes={i === 0 ? "(min-width: 1024px) 44vw, 58vw" : "(min-width: 1024px) 22vw, 42vw"}
+                    alt={photo.title || "Portfolio photograph"}
+                    className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.025]"
+                    style={{ objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY) }}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                  />
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        <div className={hasPhotos ? "" : "max-w-2xl mx-auto text-center"}>
+          <p className="font-en uppercase text-[rgba(var(--foreground-rgb),0.35)]" style={{ fontSize: "0.7rem", letterSpacing: "0.14em", lineHeight: 1.4 }}>
+            Live example
           </p>
-          <div className="hidden sm:flex gap-5 font-en text-[0.62rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.30)]">
-            <span>Gallery</span>
-            <span>About</span>
-            <span>Contact</span>
+          <h2 className="mt-5 font-ja text-[rgba(var(--foreground-rgb),0.82)]" style={{ fontSize: "clamp(1.18rem, 2vw, 1.55rem)", letterSpacing: "0.03em", lineHeight: 1.75 }}>
+            このサイト自体が、<wbr />そのまま実例です。
+          </h2>
+          <p className="mt-5 text-[rgba(var(--foreground-rgb),0.56)]" style={bodyStyle}>
+            いま見ている akieguchi.com は、このテンプレートで動いている実運用のポートフォリオです。
+            写真の見え方、プロフィール、問い合わせ導線まで、公開後の状態をそのまま確認できます。
+          </p>
+          <div className="mt-7 flex flex-wrap gap-x-7 gap-y-3">
+            {[
+              ["/gallery", "作品を見る"],
+              ["/about", "プロフィールを見る"],
+              ["/contact", "問い合わせ導線を見る"],
+            ].map(([href, label]) => (
+              <Link
+                key={href}
+                to={href}
+                className="font-ja text-[0.82rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.48)] hover:text-[rgba(var(--foreground-rgb),0.75)] nav-link-luxury transition-colors duration-300 py-1.5"
+              >
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-3 md:gap-4 pt-5 md:pt-6">
-          <div className="col-span-7 h-52 md:h-72 bg-[rgba(var(--foreground-rgb),0.12)]" />
-          <div className="col-span-5 grid gap-3 md:gap-4">
-            <div className="h-24 md:h-34 bg-[rgba(var(--foreground-rgb),0.07)]" />
-            <div className="h-25 md:h-34 bg-[rgba(var(--foreground-rgb),0.16)]" />
-          </div>
-          <div className="col-span-4 h-24 md:h-32 bg-[rgba(var(--foreground-rgb),0.08)]" />
-          <div className="col-span-4 h-24 md:h-32 bg-[rgba(var(--foreground-rgb),0.18)]" />
-          <div className="col-span-4 h-24 md:h-32 bg-[rgba(var(--foreground-rgb),0.10)]" />
-        </div>
-        <figcaption
-          className="mt-5 text-center text-[rgba(var(--foreground-rgb),0.38)]"
-          style={{ fontSize: "0.78rem", lineHeight: 1.8 }}
-        >
-          実際にこの仕組みで動いているサイト：
-          <a
-            href="https://akieguchi.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-en tracking-[0.04em] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300"
-          >
-            akieguchi.com
-          </a>
-        </figcaption>
       </div>
-    </figure>
+    </section>
+  );
+}
+
+function AdminPreview({ photos }: { photos: ServicePhoto[] }) {
+  const previewPhotos = photos.slice(5, 8);
+  const visiblePhotos = previewPhotos.length > 0 ? previewPhotos : photos.slice(0, 3);
+  if (visiblePhotos.length === 0) return null;
+
+  return (
+    <section id="admin" className="mt-16 md:mt-24 page-entrance scroll-mt-24">
+      <SectionLabel>Admin</SectionLabel>
+      <div className="max-w-3xl mx-auto text-center">
+        <h2 className="font-ja text-[rgba(var(--foreground-rgb),0.82)]" style={{ fontSize: "clamp(1.18rem, 2vw, 1.55rem)", letterSpacing: "0.03em", lineHeight: 1.75 }}>
+          写真も文章も、<wbr />管理画面から自分で更新できます。
+        </h2>
+        <p className="mt-5 text-[rgba(var(--foreground-rgb),0.56)]" style={bodyStyle}>
+          公開後に毎回コードを触る必要はありません。写真を入れる、順番を変える、プロフィールを直す。
+          作品を見せるための基本操作を、ブラウザの管理画面にまとめています。
+        </p>
+        <ul className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5 text-left">
+          {ADMIN_POINTS.map((point) => (
+            <li key={point} className="flex gap-2.5 text-[rgba(var(--foreground-rgb),0.55)]" style={{ fontSize: "var(--body-size, 0.86rem)", lineHeight: 1.75 }}>
+              <span aria-hidden="true" className="text-[rgba(var(--foreground-rgb),0.28)] select-none">—</span>
+              <span>{point}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-10 md:mt-12 max-w-3xl mx-auto border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.025)] p-3 md:p-4">
+        <div className="grid grid-cols-[5.4rem_1fr] min-h-[21rem] md:min-h-[24rem] border border-[rgba(var(--foreground-rgb),0.08)] bg-[var(--background)]">
+          <div className="border-r border-[rgba(var(--foreground-rgb),0.08)] p-3 md:p-4">
+            <p className="font-en text-[0.58rem] tracking-[0.16em] uppercase text-[rgba(var(--foreground-rgb),0.42)]">
+              Admin
+            </p>
+            <div className="mt-7 space-y-2 font-en text-[0.58rem] tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
+              {["Library", "Hero", "Profile", "Settings"].map((item, i) => (
+                <p
+                  key={item}
+                  className={`-mx-1.5 px-1.5 py-1.5 ${
+                    i === 0
+                      ? "bg-[rgba(var(--foreground-rgb),0.055)] text-[rgba(var(--foreground-rgb),0.72)]"
+                      : ""
+                  }`}
+                >
+                  {item}
+                </p>
+              ))}
+            </div>
+          </div>
+          <div className="p-4 md:p-5">
+            <div className="flex items-start justify-between gap-4 border-b border-[rgba(var(--foreground-rgb),0.08)] pb-4">
+              <div>
+                <p className="font-ja text-[rgba(var(--foreground-rgb),0.78)]" style={{ fontSize: "0.92rem", letterSpacing: "0.03em", lineHeight: 1.5 }}>
+                  写真管理
+                </p>
+                <p className="mt-1 font-en text-[0.58rem] tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
+                  {photos.length} photos / live site
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex border border-[rgba(var(--foreground-rgb),0.12)] px-2.5 py-1 font-en text-[0.54rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.38)]">
+                Live preview
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {visiblePhotos.map((photo, i) => (
+                <div key={photo.id} className="min-w-0">
+                  <div className="aspect-[4/5] overflow-hidden bg-[rgba(var(--foreground-rgb),0.05)]">
+                    <img
+                      src={photo.thumbUrl ?? photo.mediumUrl ?? srcFor(photo.url, 360, 82, undefined, photo.rotationDeg)}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      style={{ objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY) }}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="font-en text-[0.56rem] tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.35)]">
+                      {["L", "M", "S"][i] ?? "M"}
+                    </span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-[rgba(var(--foreground-rgb),0.30)]" aria-hidden="true" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[rgba(var(--foreground-rgb),0.08)] pt-4">
+              {[
+                ["Layout", "S / M / L"],
+                ["Status", "Published"],
+                ["Preview", "Mobile / PC"],
+              ].map(([k, v]) => (
+                <div key={k} className="min-w-0">
+                  <p className="font-en text-[0.54rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.32)]">
+                    {k}
+                  </p>
+                  <p className="mt-1 text-[rgba(var(--foreground-rgb),0.62)]" style={{ fontSize: "0.78rem", lineHeight: 1.5 }}>
+                    {v}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -132,7 +287,16 @@ function Plan({ name, price, sub, points, href, cta, primary }: {
     : `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent(`ポートフォリオサイトのお申し込み（${name}）`)}`;
   const cLabel = isLive ? cta : "メールで申し込む・相談する";
   return (
-    <article className="border border-[rgba(var(--foreground-rgb),0.10)] rounded-md p-6 md:p-8 flex flex-col min-h-full">
+    <article className={`relative rounded-md p-6 md:p-8 flex flex-col min-h-full ${
+      primary
+        ? "border border-[rgba(var(--foreground-rgb),0.24)] bg-[rgba(var(--foreground-rgb),0.025)]"
+        : "border border-[rgba(var(--foreground-rgb),0.10)]"
+    }`}>
+      {primary && (
+        <p className="absolute right-5 top-5 font-en text-[0.56rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.36)]">
+          Start here
+        </p>
+      )}
       <h3 className="font-ja font-medium break-words" style={{ fontSize: "1.08rem", color: `rgba(var(--foreground-rgb),0.82)`, letterSpacing: "0.02em", lineHeight: 1.5 }}>
         {name}
       </h3>
@@ -164,7 +328,13 @@ function Plan({ name, price, sub, points, href, cta, primary }: {
 }
 
 export default function ServicePage() {
-  const ref = usePageEntrance([]);
+  const { data: photosData } = useQuery({
+    queryKey: ["photos"],
+    queryFn: async () => jsonOrThrow(await api.photos.$get()),
+  });
+  const photos = (photosData?.photos ?? []) as ServicePhoto[];
+  const ref = usePageEntrance([photos.length]);
+
   return (
     <main ref={ref} className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28">
       <header className="max-w-3xl mx-auto text-center">
@@ -174,9 +344,15 @@ export default function ServicePage() {
         </h1>
         <p className="mt-7 text-[rgba(var(--foreground-rgb),0.58)] page-entrance page-entrance-delay-1 max-w-2xl mx-auto" style={bodyStyle}>
           テンプレートと格闘せずに持てる、静かで完成されたポートフォリオ。
-          写真を上げて、順番と大きさを整えるだけで、作品集のように見えるサイトになります。
+          管理画面から写真を上げて、順番と大きさを整えるだけで、作品集のように見えるサイトになります。
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 page-entrance page-entrance-delay-1">
+          <a
+            href="#admin"
+            className="font-en text-xs tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.55)] hover:text-[rgba(var(--foreground-rgb),0.82)] nav-link-luxury transition-colors duration-300 py-1.5"
+          >
+            Admin
+          </a>
           <a
             href="#pricing"
             className="font-en text-xs tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.55)] hover:text-[rgba(var(--foreground-rgb),0.82)] nav-link-luxury transition-colors duration-300 py-1.5"
@@ -192,7 +368,9 @@ export default function ServicePage() {
         </div>
       </header>
 
-      <SitePreview />
+      <LiveExample photos={photos} />
+
+      <AdminPreview photos={photos} />
 
       <section className="mt-16 md:mt-24 page-entrance">
         <SectionLabel>For photographers</SectionLabel>

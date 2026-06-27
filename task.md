@@ -1901,3 +1901,42 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 ### 触ったファイル
 - `packages/web/src/web/pages/service.tsx`
 - `task.md`
+
+## 追記 2026-06-27 — Codex: `/service` 実態に合わせた説明へ再修正
+
+### 目的
+秋さん指摘「Live example と Admin が実際のサイトに即していない」「S/M/L が同じサイズで、注目する理由がわからない」「購入後に何が起きるのか」に対応。
+
+### 対応
+- `/service` の `Live example` 風セクションを、実ページに即した `Actual site` セクションへ変更。
+  - 作った風の見本ではなく、`/gallery` / `/about` / `/contact` を実際に見られる導線として提示。
+  - 写真は「掲載写真の一部」として控えめに残し、実際のページ構造を見に行く流れにした。
+- 管理画面の疑似スクリーンショット風 UI を削除。
+  - 「管理画面で編集する内容」→「公開サイトのどこに反映されるか」の対応表に変更。
+  - 管理画面自体は購入者だけが使う場所で、公開サイトには見えないことを明記。
+- S/M/L の訴求を弱め、「写真の大きさ調整は強弱をつけるための機能。覚える必要はない」と説明に整理。
+- `After purchase` セクションを追加。
+  - Stripe 決済後、自動でサイトが完成するわけではないことを明記。
+  - 決済確認 → 自分で立てる場合の手順書/立ち上げ用リンク → おまかせ設定の場合のヒアリング/受け渡し、の流れを追加。
+- `docs/sales-page.md` も同じ方針に合わせて、S/M/L 強調を弱め、購入後フローを追記。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
+- `cd packages/web && bun test ./src` 成功（173 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `git diff --check` 成功。
+- ローカル `http://127.0.0.1:5173/service` を Playwright で確認。
+  - デスクトップ / モバイルとも横はみ出しなし。
+  - Runable / Railway 文言なし。
+  - 古い `Live example` / `Live preview` / `How it starts` 表現なし。
+  - `Actual site` / `Admin` / `After purchase` の各セクション表示を確認。
+
+### 注意
+- `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の対象外。
+
+### 触ったファイル
+- `packages/web/src/web/pages/service.tsx`
+- `docs/sales-page.md`
+- `task.md`

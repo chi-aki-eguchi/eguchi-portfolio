@@ -1783,3 +1783,34 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
 
 ### 触ったファイル
 - `task.md`
+
+## 追記 2026-06-27 — Codex: MacBook / Mac mini 2台運用手順
+
+### 目的
+秋さん依頼「プロジェクトをMacBookとMac miniで共通して作業できるようにするにはどうしたらいいか」に対応。
+Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
+
+### 対応
+- 2台運用の方針を `docs/two-mac-workflow.md` として追加。
+  - GitHub をコード正本にする。
+  - Railway は `git push` から auto-deploy。
+  - Turso / R2 をデータ正本にする。
+  - `.env` は各Macに置き、秘密情報はGitに入れない。
+  - iCloud / Dropbox でリポジトリ丸ごと同期しない。
+- `README.md` の Local Setup から2台運用ドキュメントへリンクを追加。
+- `AGENTS.md` にAI向けの2台運用ルールを追記。
+- Claude Code の助言を受け、`.env` 管理を楽にする選択肢として 1Password CLI / Railway CLI をドキュメントへ追記。
+
+### 検証
+- ドキュメントのみの変更。
+- `git diff --check -- README.md AGENTS.md docs/two-mac-workflow.md task.md` 成功。
+
+### 注意
+- Claude Code からは「採用可。iCloud/Dropbox排除は正解。P0注意点は `.env` の2台同期で、1Password CLI または Railway CLI を使うと楽」と返答あり。
+- `.env` の実値は扱っていない。
+
+### 触ったファイル
+- `README.md`
+- `docs/two-mac-workflow.md`
+- `AGENTS.md`
+- `task.md`

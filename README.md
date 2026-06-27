@@ -129,6 +129,11 @@ Run the development server from the site folder:
 bun run dev
 ```
 
+For working on the same project from both a MacBook and a Mac mini, use GitHub
+as the source of truth for code and keep secrets local to each machine. The
+recommended day-to-day workflow is documented in
+[docs/two-mac-workflow.md](./docs/two-mac-workflow.md).
+
 ## Required Environment Variables
 
 | Variable | Purpose |

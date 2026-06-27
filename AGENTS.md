@@ -10,6 +10,7 @@
 - 2026-06-16: Runable → Railway 移行完了。デプロイ正本は `git push`。ZIP 作成・Runable publish は legacy 手順であり、通常作業では使わない。
 - Runable 関連ファイル（`RUNABLE_AI.md`, `scripts/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
 - Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
+- MacBook / Mac mini の2台運用では、GitHub をコード正本にする。リポジトリを iCloud / Dropbox 等で丸ごと同期しない。`.env` は各Macに置き、秘密情報は 1Password 等の安全な保管場所から転記する。人間向け手順は `docs/two-mac-workflow.md` を参照。
 
 ### §0 invariants
 

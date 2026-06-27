@@ -844,7 +844,11 @@ function StickyCtaBar() {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
-      ([entry]) => setVisible(!entry.isIntersecting),
+      ([entry]) => {
+        // Show only when sentinel has scrolled above the viewport (user scrolled
+        // past pricing), not when it's below (initial load / hasn't reached yet).
+        setVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      },
       { threshold: 0, rootMargin: "0px" },
     );
     observer.observe(sentinel);
@@ -898,6 +902,14 @@ function StickyCtaBar() {
   );
 }
 
+const SERVICE_HOST = "akieguchi.com";
+
+function isServiceHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.replace(/^www\./, "").toLowerCase();
+  return host === SERVICE_HOST || host === "localhost" || host === "127.0.0.1";
+}
+
 export default function ServicePage() {
   const { data: photosData } = useQuery({
     queryKey: ["photos"],
@@ -906,8 +918,10 @@ export default function ServicePage() {
   const photos = (photosData?.photos ?? []) as ServicePhoto[];
   const ref = usePageEntrance([photos.length]);
 
+  if (!isServiceHost()) return null;
+
   return (
-    <main
+    <section
       ref={ref}
       className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
     >
@@ -1070,6 +1084,6 @@ export default function ServicePage() {
 
       {/* ── Final CTA (replaces old Contact section) ── */}
       <FinalCTA />
-    </main>
+    </section>
   );
 }

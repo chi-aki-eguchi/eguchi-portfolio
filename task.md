@@ -3,6 +3,7 @@
 ## 2026-06-11 Codex Maintenance Pass
 
 ### Done
+
 - Added `packages/web/src/web/lib/settings-preview.ts` as the single registry for Settings live-preview payload keys.
 - Updated `SettingsTab` to build preview payloads from the registry instead of a long inline key/dependency list.
 - Updated `provider.tsx` to import React-driven preview keys from the same registry.
@@ -12,11 +13,13 @@
 - Updated `CLAUDE.md` so Claude Code can see Codex joined the project.
 
 ### Handoff
+
 - New settings key flow: update API `/settings` defaults, `settings-preview.ts`, `provider.tsx` DB apply path, and `provider.tsx` `handlePreviewMessage`.
 - Publish flow: run `bun run deploy`, then upload the root `eguchi-portfolio-deploy.zip`.
 - Next useful cleanup: move more settings defaults into a typed shared registry so API defaults and admin/provider behavior are harder to drift.
 
 ### Touched Files
+
 - `CLAUDE.md`
 - `RUNABLE_AI.md`
 - `task.md`
@@ -24,6 +27,7 @@
 ## 追記 2026-06-22 — Codex: Stripe URL組み込み用 Claude Code プロンプト作成
 
 ### 背景
+
 - 秋さんから「Stripe のURLができたので、1時間後に Claude Code へ実行させるための仕様書
   （プロンプト）を丁寧に書いてほしい」と依頼。
 - 直近 Handoff を確認し、`/service` はすでに作成済みで、Stripe Payment Link は
@@ -33,6 +37,7 @@
   Stripe Payment Link が必要。
 
 ### 対応
+
 - Claude Code にそのまま渡せる詳細プロンプトを
   `claude-code-stripe-template-prompt-2026-06-22.md` として新規作成。
 - 内容には以下を含めた:
@@ -46,28 +51,33 @@
   - 検証コマンドと Handoff / push 報告ルール
 
 ### 検証
+
 - `task.md` 最新 Handoff、`.codex/USER_CONTEXT.md`、`packages/web/src/web/pages/service.tsx`、
   `docs/order-handling.md`、`docs/purchase-thankyou.md` を確認。
 - `git status --short` で既存の未追跡 `site-analysis-2026-06.md` を確認。今回の作業では触らず。
 - 実コード変更ではなくプロンプト作成のため、`tsc -b` / build は未実行。
 
 ### 残り
+
 - 秋さんが実際の Stripe Payment Link を2本（自分で立てる / おまかせ設定）用意し、
   プロンプト内の `STRIPE_SELF_URL` / `STRIPE_CONCIERGE_URL` を置換してから Claude Code に渡す。
 - URLが1本だけの場合は、どちらのコースのURLかを Claude Code に伝え、片方だけStripe化するか、
   2本そろうまでメール導線を維持するか判断する。
 
 ### 触ったファイル
+
 - `claude-code-stripe-template-prompt-2026-06-22.md`
 - `task.md`
 
 ## 追記 2026-06-22 — Codex: Claude Code の1時間後実行を `at` で予約
 
 ### 背景
+
 - 秋さんから「Codexの自動化ではなく、Claude Code に作業させたい。ターミナル機能で1時間後に
   このMDを読んで動き出すようにしたい」と依頼。
 
 ### 対応
+
 - プロジェクトルートに `CLAUDE-STRIPE-TEMPLATE-RUN.md` を追加。
   - ここに Stripe Payment Link 2本を入れる欄を用意。
   - 詳細仕様は `claude-code-stripe-template-prompt-2026-06-22.md` を読むよう指示。
@@ -80,6 +90,7 @@
   - 実行内容: `DELAY_SECONDS=0 CLAUDE_PERMISSION_MODE=acceptEdits ./scripts/run-claude-stripe-template-later.sh`
 
 ### 検証
+
 - Claude CLI は `/Users/chiaki/.local/bin/claude` に存在。
 - `CLAUDE_BIN=/bin/echo DELAY_SECONDS=1 ./scripts/run-claude-stripe-template-later.sh` で
   スクリプトのログ出力・プロンプト読み込みを確認。
@@ -87,6 +98,7 @@
 - `git diff --check` 成功。
 
 ### 注意
+
 - 現在の permission mode は安全寄りの `acceptEdits`。Claude Code が追加許可を要求する操作で
   止まる可能性がある。完全無人で commit / push まで通したい場合は、実行前に job を作り直して
   `CLAUDE_PERMISSION_MODE=bypassPermissions` を使う必要があるが、危険度が上がる。
@@ -94,6 +106,7 @@
   `STRIPE_CONCIERGE_URL` を実URLに置換すること。未入力なら Claude はURL不足として止まる。
 
 ### 触ったファイル
+
 - `CLAUDE-STRIPE-TEMPLATE-RUN.md`
 - `scripts/run-claude-stripe-template-later.sh`
 - `.gitignore`
@@ -108,7 +121,9 @@
 ## Previous: Settings → Page Reflection Fix Task
 
 ## Root Cause
+
 API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
+
 - sectionLabelSize, sectionLabelOpacity
 - heroNameSize, heroNameColor
 - heroNameEnSize, heroNameEnColor
@@ -117,27 +132,33 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## Fixes Applied
 
 ### API (api/index.ts)
+
 - [x] Added 8 missing keys to settings GET response
 
 ### Layout.tsx
+
 - [x] Nav links: use `var(--nav-opacity, 0.35)` via inline style
 - [x] Footer text: use `var(--footer-opacity, 0.20)` via inline style
 - [x] SNS links: use `var(--sns-opacity, 0.25)` via inline style
 
 ### top.tsx
+
 - [x] h1 (siteNameJa): use `var(--hero-name-size)` + `var(--hero-name-color)`
 - [x] EN name (siteNameEn): use `var(--hero-name-en-size)` + `var(--hero-name-en-color)`
 - [x] subtitle: use `var(--hero-sub-size)` + `var(--hero-sub-color)`
 - [x] Works h2: use `var(--section-label-size)` + `var(--section-label-opacity)`
 
 ### gallery.tsx
+
 - [x] Gallery h2: use `var(--section-label-size)` + `var(--section-label-opacity)`
 
 ### profile.tsx
+
 - [x] Profile h2: use `var(--section-label-size)` + `var(--section-label-opacity)`
 - [x] h3 (nameJa): use `var(--heading-size)`
 
 ### contact.tsx
+
 - [x] Contact h2: use `var(--section-label-size)` + `var(--section-label-opacity)`
 
 ## Status: COMPLETE
@@ -246,6 +267,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 運用: セッション上限のリセット時刻に自動で作業再開する仕組みを整備（下記）。
 
 ## 追記 2026-06-14 — 中断作業の継続（第2周 Verify 未検証分）＋ 再開ルール
+
 - budget 復活後、第2周で未検証(no verdict)のまま残った admin 系指摘を手動検証:
   - **§0違反を1件確定・修正**: `rememberPresets`(admin.tsx:482) が `adminApi.settings.$post` を res.ok 未チェックで実行 → assertOk 追加。ただし updatePhoto の onSuccess から fire-and-forget で呼ばれ await されないため、try/catch で握り（throw すると unhandled rejection）。挙動: プリセット記憶失敗時は console.error のみ、写真保存本体には影響なし。
   - 誤検知と確認: Lightbox popstate 二重pop（`if(history.state?.lightbox)` ガードで防止済）、sitemap hero N+1（livePhotos は単一 select、N+1 でない）。
@@ -264,23 +286,26 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 次に気になること: ①**Runable 本番に未反映の改善が多数たまっている**（本ログ 122行〜: グレイン/Lightbox/AVIF 等）。秋さんの手動再デプロイが律速。②AVIF/WebP(`IMAGE_FORMAT_NEGOTIATION=1`)は本番ON検証待ち（-77%）。③次の安全な1件候補: og:image:width/height・manifest・theme-color・alt フォールバック小改善。
 
 ### cycle 11 (06-15) — theme-color サーバ側注入
+
 - 実装: `ogp.ts` で `<meta name="theme-color">` を `settings.themeBg`（未設定時 `#f7f7f7`）で setAttr 置換。index.html の静的 `#f7f7f7` のままだと、ダークテーマ設定時に初回サーバ描画でモバイルのステータスバーが白→JS実行後に黒へ切替わるチラつきが出る。これを pre-JS 窓で解消（`provider.tsx`:147 のクライアント同期を補完。重複メタは作らない）。回帰テスト3件追加。
 - 検証: `bun run deploy` 通過（`tsc -b` + **74テスト[+3]** + `vite build` + 5ページ smoke 200）。ZIP更新（`...-20260615-084855.zip`）。**Runable 再デプロイは秋さん手動（未done）**。
 - 触ったファイル: `packages/web/src/api/ogp.ts`, `packages/web/src/api/ogp.test.ts`, `improvement-roadmap.md`, `task.md`。
 - 次候補: og:image:alt（共有画像のa11y）/ og:image:width=1200 / manifest。
 
 ### cycle 12 (06-15・秋さん明示タスク) — 白画面(CDN汚染)恒久対策を現行デプロイ方式へ
+
 - 受領仕様: `content.md`（Cloudflare エッジが壊れた gzip を1年キャッシュ→特定回線のみ真っ白）。3対策(A:vite資産名タグ / B:HTML no-store+CDN-Cache-Control / C:BUILD_ID)。
 - **重複チェック**: B は `server.ts:237-239` に**既実装**（2026-06-13 対応）、C も基盤既存（`ogp.ts` BUILD_ID + `server.ts:145` X-Build。値が古いだけ）。**未実装は A のみ**。
 - 実装:
   - `packages/web/vite.config.ts`: `entryFileNames`/`chunkFileNames`/`assetFileNames` に `-${process.env.BUILD_TAG || "b"}` 接尾辞。内容不変の vendor チャンクも毎ビルドで URL が変わり、エッジの汚染キャッシュを物理回避（実証: react-vendor のハッシュ不変でもタグでURL変化）。
-  - `scripts/deploy.sh`: **1ビルド=1タイムスタンプを自動付与**。`BUILD_TAG=$(date +%Y%m%d-%H%M%S)` を生成→ `ogp.ts` の BUILD_ID をその値に置換（BSD/GNU 両対応の temp 経由 sed）→ `BUILD_TAG=… bun run build` で全資産名に注入→ **資産名にタグが入ったか検証**（無ければ ZIP 更新せず exit）。スモークに **X-Build==BUILD_TAG 検証 + HTML 参照 /assets/*.js|css を全て200検証**（白画面の直接原因を出荷前に検出）を追加。末尾に **Publish 後の本番チェック手順**（x-build / cf-cache-status / gzip汚染）を表示。
+  - `scripts/deploy.sh`: **1ビルド=1タイムスタンプを自動付与**。`BUILD_TAG=$(date +%Y%m%d-%H%M%S)` を生成→ `ogp.ts` の BUILD_ID をその値に置換（BSD/GNU 両対応の temp 経由 sed）→ `BUILD_TAG=… bun run build` で全資産名に注入→ **資産名にタグが入ったか検証**（無ければ ZIP 更新せず exit）。スモークに **X-Build==BUILD_TAG 検証 + HTML 参照 /assets/\*.js|css を全て200検証**（白画面の直接原因を出荷前に検出）を追加。末尾に **Publish 後の本番チェック手順**（x-build / cf-cache-status / gzip汚染）を表示。
   - `ogp.ts`: BUILD_ID のコメントを「deploy.sh が自動スタンプ・手動bump不要」に更新（値は deploy.sh が上書き）。
 - **方針整合**: 仕様書の pm2 再起動 / サンドボックス内ビルドは**採らない**。Mac 側ビルド→dist 同梱 ZIP を Runable が配信するだけ、という現行方式に全てを寄せ、秋さんは手動コマンド/ファイル編集が一切不要。
 - 検証: `bun run deploy` 通過（BUILD_TAG=20260615-121245、アセット名・X-Build 一致、**74テスト**、5ページ+参照アセット全200）。ZIP更新（`...-20260615-121257.zip`）。**本番反映は秋さんの Runable Publish 待ち**。
 - 触ったファイル: `packages/web/vite.config.ts`, `packages/web/src/api/ogp.ts`, `scripts/deploy.sh`, `improvement-roadmap.md`, `task.md`。
 
 ### cycle 13 (06-15・緊急) — 本番「新サーバ×古dist」不整合の調査とビルド整合ガード
+
 - 症状(秋さん報告): 本番 X-Build=20260615-121245(新) なのに HTML 参照が `index-B0gIOhPX.js`(タグ無し=cycle12以前の旧ビルド)。サーバ新×dist旧。
 - **調査結果**: cycle12 で作った root ZIP は**完全整合**だった（index.html 参照=同梱資産=全て `-20260615-121245` タグ付き、ogp BUILD_ID も一致）。**`B0gIOhPX` は私のローカル・ZIP のどこにも存在しない**＝旧 vite.config(タグ無し)時代の古い成果物。よって不整合は**ZIP 側でなく Runable が古い dist を配信**している疑いが濃厚（`ecosystem.cjs` の既知issue「boot ビルド失敗→月単位で古い dist 配信」の再来か、永続dist/キャッシュ）。
 - **恒久ガードを deploy.sh に追加**（出荷物が二度と不整合にならないように）:
@@ -295,17 +320,20 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-18 — Codex 共通認識整理（Runable → Railway）
 
 ### 結論
+
 - **現行の正本は Railway / git push デプロイ**。`CLAUDE.md` と `NIGHT-RUN-LOG.md` は 2026-06-16 の Runable → Railway 移行を前提に更新済み。
 - **Runable ZIP 運用は legacy**。`RUNABLE_AI.md` / `scripts/deploy.sh` / `packages/web/website.config.json` は過去運用・事故調査の参照用として残っているが、通常の実装完了フローでは使わない。
 - Claude Code / Codex は以後、作業前にこの Handoff と `CLAUDE.md` / `AGENTS.md` を読み、`tsc -b` + `bun run build` を確認してから `git push` でデプロイする。
 
 ### なぜ Railway 正本を推奨するか
+
 - `CLAUDE.md` がすでに Railway 方針を明記しており、直近の夜間自走ログも `git push` デプロイで運用されている。
 - コード側も `BUILD_ID` が `process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev"` に変更済みで、Railway の自動ビルド前提。
 - Runable ZIP 用の `scripts/deploy.sh` は旧仕様の `BUILD_ID` 文字列置換と X-Build 検証に依存しており、現行 `ogp.ts` と噛み合わない。誤って使うと検証失敗または認識ズレを招く。
 - Runable 由来の `ALLOWALL` / credentialed CORS 許可などは 6/17-18 の夜間ランで撤去済み。セキュリティ面も Railway 前提に寄っている。
 
 ### 今回 Codex が確認した状態
+
 - `main` は `origin/main` と一致。HEAD: `9cb799c fix(profile): Statement の改行を段落単位に変更し自然な折り返しを実現`。
 - 未コミット変更:
   - `packages/web/src/web/pages/admin.tsx`: BulkEdit 行の draft 同期と unmount 時 flush。未保存の debounce 中編集を捨てないための変更。
@@ -317,25 +345,30 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - 多数の `test-*.mjs` / `packages/web/test-*.mjs`: Playwright 監査・再現用の作業スクリプト。管理パスワードを含むものがあるため、コミット対象にするなら整理・秘匿確認が必要。
 
 ### 次に Claude Code / Codex がやるなら
+
 - まず `git status --short` で未コミット変更の所有者を確認し、ユーザー変更を巻き戻さない。
 - ドキュメント整合を続けるなら、`scripts/deploy.sh` と `package.json` の `deploy` スクリプトを legacy として退役させるか、Railway 用の検証スクリプトに作り替える。ただし通常作業では `git push` が正本。
 - レイアウト拡張に入るなら、先に `design-reference/Portfolio_Redesign_dc.html` を配置してもらう。
 - 管理画面改善なら、B2 写真検索が安全で効果が高い。A4 mobile-scale は settings 4箇所同期が必要で影響範囲が広め。
 
 ### 検証
+
 - 今回は把握・ドキュメント更新のみ。`git diff --check` は更新前に問題なしを確認。
 - 実装コードは触っていないため、ビルド・テストは未実行。
 
 ### 触ったファイル
+
 - `AGENTS.md`
 - `task.md`
 
 ## 追記 2026-06-18 — Claude Code 挙動安定化メモ（Codex 監査）
 
 ### 目的
+
 最近の Claude Code が古い Runable/ZIP 前提と新しい Railway/git push 前提を混ぜて判断しやすくなっているため、Codex が「おかしい点」「踏みやすい地雷」「次に直すならここ」を整理した。Claude Code はこの節を読んでから作業すること。
 
 ### P0: すぐ共有すべき地雷
+
 - **`bun run deploy` は現行フローでは使わない**。`package.json` にはまだ `"deploy": "bash scripts/deploy.sh"` が残っているが、`scripts/deploy.sh` は Runable ZIP 用の legacy 手順。現行 `ogp.ts` は `BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev"` なので、deploy.sh の「BUILD_ID 文字列を sed 置換して X-Build と一致確認する」前提と噛み合わない。
 - **`scripts/deploy.sh` は実行すると失敗する可能性が高い**。sed は現行 `BUILD_ID` 行を置換できず、ローカルサーバの X-Build は `dev` のまま、BUILD_TAG は timestamp なので smoke の X-Build 一致検証で落ちるはず。ZIP は更新しない設計だが、Claude がこれを正本として時間を溶かすのが危険。
 - **`ecosystem.config.cjs` の診断は旧 literal BUILD_ID 前提**。`export const BUILD_ID = "..."` を regex で読むが、今は env 式なので `?` になる。Runable/PM2 をまだ使う場面では診断ログが信用できない。Railway の start command がこれを使っているかも要確認。
@@ -343,16 +376,19 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - **`claude-code-night-run.md` の BUILD_ID 指示は古い**。`vite.config.ts define に __BUILD_ID__ を追加` と書いてあるが、実装済みの正解は `ogp.ts` の `RAILWAY_GIT_COMMIT_SHA` 化。二重実装しないこと。
 
 ### P1: 誤コミット・情報漏れの危険
+
 - 未追跡の `test-*.mjs` / `packages/web/test-*.mjs` は scratch Playwright 監査スクリプト。`autumn00180` など管理パスワード文字列を含むものが複数ある。**`git add .` 厳禁**。必要ならパスワードを env 参照化してから正式な `tests/` 配下へ移す。
 - `test-results/.last-run.json` は `"status": "failed"` だが `failedTests: []` の一時ファイル。コミット不要。
 - `spec-layout-expansion.md` は `design-reference/Portfolio_Redesign_dc.html` を必須参照にしているが、そのファイルは現ワークツリーに存在しない。Claude が推測で実装し始めないよう注意。
 
 ### P2: ドキュメントの古い記述
+
 - `proposals/09-modernization.md`、`improvement-roadmap.md`、`content.md`、`RUNABLE_AI.md`、`packages/web/website.config.json` には Runable 前提が残る。履歴資料として読むのはよいが、現在の運用手順として採用しない。
 - `task.md` の古い節にも Runable 再デプロイ待ち、ALLOWALL 許容、`bun run deploy` ゲートなどが残っている。末尾の 2026-06-18 Handoff を優先する。
 - `packages/web/src/api/index.ts` のコメントに「behind Runable's proxy」「Flip ... on Runable」などが残る。コード挙動は概ね問題ないが、コメントは Railway へ読み替える必要がある。
 
 ### P3: 次に直すならおすすめ順
+
 1. `package.json` の `deploy` を無効化または `deploy:runable:legacy` に退避し、Claude が誤って使えないようにする。
 2. Railway 側で per-build asset tag が必要なら、`BUILD_TAG` を Railway build command で渡すか、Vite 側で commit SHA / timestamp を自動取得する。不要なら `BUILD_TAG` コメントを現状に合わせて整理する。
 3. `ecosystem.config.cjs` の Runable/PM2 診断を legacy 化するか、Railway start command で使うなら `BUILD_ID` env 式に対応させる。
@@ -360,26 +396,31 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 5. `content.md` / `RUNABLE_AI.md` / `proposals/09-modernization.md` の先頭に「legacy / historical」と明記する。
 
 ### 検証
+
 - `cd packages/web && bun run build` 成功（tsc -b + vite build、1838 modules）。
 - `cd packages/web && bun test ./src` 成功（74 pass / 0 fail / 4907 expect）。
 - build 出力で `dist/assets/*-b.js/css` を確認。これは `BUILD_TAG` 未指定時の現行挙動。
 
 ### 触ったファイル
+
 - `CLAUDE.md`
 - `task.md`
 
 ## 追記 2026-06-18 — Codex: Gallery Lightbox flicker 修正
 
 ### 症状
+
 - `/gallery` で写真をクリックしても拡大表示されず、黒い Lightbox が一瞬ちらつくだけで閉じる。
 - Claude Code に修正依頼済みだったが、ユーザー環境では未解消。
 
 ### 原因
+
 - `Lightbox.tsx` は開くときに `history.pushState({ lightbox: true }, "")`、閉じるときに cleanup で `history.back()` を呼ぶ。
 - React StrictMode / dev 実行では effect が `setup → cleanup → setup` と replay されるため、**実際にはまだ開いている最中なのに cleanup の `history.back()` が同期実行される**。
 - その `popstate` が `onClose` を呼び、結果として「開いた直後に閉じる」= flicker になる。特に dev server / StrictMode / start command のズレがある環境で再現しやすい。
 
 ### 修正
+
 - `packages/web/src/web/components/Lightbox.tsx`
   - history push を `historyPushedRef` で1回だけにした。
   - cleanup の `history.back()` を `setTimeout(0)` へ遅延し、StrictMode replay の次 setup が来たら timer を cancel するようにした。
@@ -389,11 +430,13 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `PhotoGallery` の実タイルクリックで `<dialog>` が残ることを検証（実症状に近い回帰テスト）。
 
 ### Claude Code への注意
+
 - この修正は「history cleanup を同期で戻さない」ことが肝。`return () => { if (history.state?.lightbox) history.back(); }` の形に戻すと再発する。
 - Gallery クリック不具合を見るときは `Lightbox` 単体ではなく、`PhotoGallery` の tile click → portal `<dialog>` まで確認すること。
 - sandbox の localhost 接続制限で Codex 側では Playwright 実ブラウザ確認はできなかったが、jsdom + StrictMode の再発テストで flicker 条件を固定している。
 
 ### 検証
+
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（18 pass）。
 - `cd packages/web && bun run build` 成功（tsc -b + vite build）。
 - `cd packages/web && bun test ./src` 成功（75 pass / 0 fail / 4914 expect）。
@@ -401,6 +444,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `git diff --check` 成功。
 
 ### 触ったファイル
+
 - `packages/web/src/web/components/Lightbox.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `task.md`
@@ -408,6 +452,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-18 — Codex/Claude 連絡用 agmsg 導入
 
 ### 状態
+
 - Codex が `agmsg` をインストール済み。インストール先はユーザーホーム配下で、リポジトリのアプリコードには触れていない。
   - shared skill: `~/.agents/skills/agmsg/`
   - Claude command: `~/.claude/commands/agmsg.md`
@@ -416,6 +461,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `sqlite3` は `/usr/bin/sqlite3` で利用可能。
 
 ### 初回セットアップ
+
 - Claude Code / Codex を再起動してから使う。
 - Claude Code 側: `/agmsg`
 - Codex 側: `$agmsg`
@@ -428,6 +474,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - Codex: `turn`（Codex は monitor 非対応）
 
 ### 運用ルール案
+
 - Claude Code は実装ドライバー、Codex はレビュー・難所相談・リリース前 sanity check を基本役割にする。
 - Claude から Codex に送るレビュー依頼には、目的・触ったファイル・懸念点・実行済み検証を含める。
 - Codex から Claude への返答は P0/P1/P2 と結論を先に書く。
@@ -436,6 +483,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-18 — Codex: 管理画面 Photo 検索 + カメラ/レンズコピペ
 
 ### 実装
+
 - 管理画面 Library の写真検索は既存の `searchQuery` 実装を確認。タイトル・ファイル名・カメラ・レンズ・説明・meta を横断検索する状態になっている。
 - `packages/web/src/web/pages/admin.tsx` にカメラ/レンズ情報のコピー/貼り付けを追加。
   - Inspector の Camera/Lens 下に Copy / Paste ボタンを追加。
@@ -445,10 +493,12 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - Bulk Edit Table 側では、貼り付けた camera/lens を既存の debounce save に乗せて保存する。
 
 ### 注意
+
 - `admin.tsx` には作業前から BulkEditRow の draft 同期 / unmount flush 変更が入っていた。今回の実装はその変更を前提に足しているため、戻さないこと。
 - まだ commit / push はしていない。ワークツリーには別件の未コミット変更がある。
 
 ### 検証
+
 - `cd packages/web && bun run build` 成功。
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（18 pass）。
 - `cd packages/web && bun run lint` 成功。
@@ -456,12 +506,14 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `git diff --check` 成功。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/admin.tsx`
 - `task.md`
 
 ## 追記 2026-06-19 — agmsg 自動相談運用を採用
 
 ### 決定
+
 - Claude Code / Codex のどちらかを固定窓口にしない。ユーザーが話している方をそのタスクの主担当にする。
 - agmsg は「常時会議」ではなく、主担当AIが必要時だけ相手へ短く相談するために使う。
 - 相談トリガー:
@@ -474,10 +526,12 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - delivery mode は Claude Code `monitor`、Codex `turn` を基本にする。消費を抑えたい時は一時的に `off`。
 
 ### 反映
+
 - `AGENTS.md` に Claude Code / Codex 共通の agmsg 運用ルールを追加。
 - `CLAUDE.md` の「Codex との並行運用ルール」を更新。
 
 ### 触ったファイル
+
 - `AGENTS.md`
 - `CLAUDE.md`
 - `task.md`
@@ -485,6 +539,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex 用ローカルユーザー文脈メモ
 
 ### 実施
+
 - ユーザー希望により、Codex が秋さんの作業スタイル・サイト文脈・Claude/Codex運用を継続して参照できるローカルメモを作成。
 - 保存先: `.codex/USER_CONTEXT.md`
   - `.codex/` は `.gitignore` 済みのためコミット対象外。
@@ -494,10 +549,12 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - 追加反映: 短く結果先出しの報告、絵文字なし、1サイクル1改善、`tsc -b` 優先、Ivy's House 別リポジトリと混同しない、ギャラリーレイアウト種別など。
 
 ### 注意
+
 - Claude から追加返信が来た場合は、事実ベースかつ非秘密の内容だけ `.codex/USER_CONTEXT.md` に追記する。
 - `.codex/USER_CONTEXT.md` は gitignore 対象なので、他環境へ共有したい場合はユーザー確認のうえ、公開してよい範囲に要約して `AGENTS.md` 等へ移す。
 
 ### 触ったファイル
+
 - `AGENTS.md`
 - `.codex/USER_CONTEXT.md`
 - `task.md`
@@ -505,17 +562,20 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex: Runable deploy script を legacy 退避
 
 ### 実施
+
 - 旧 Runable ZIP 用の root `package.json` script を `deploy` から `deploy:runable:legacy` へリネーム。
 - これにより、通常作業で `bun run deploy` を誤実行して旧 Runable フローへ入ることを防ぐ。
 - Runable 復旧・検証が必要な場合だけ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` を使う。
 - `AGENTS.md` / `CLAUDE.md` の該当メモも退避後のコマンド名へ更新。
 
 ### 検証
+
 - `bun run deploy` が `Script not found "deploy"` で止まることを確認。
 - `cd packages/web && bun run build` 相当（workdir: `packages/web` で `bun run build`）成功。
 - `git diff --check` 成功。
 
 ### 触ったファイル
+
 - `package.json`
 - `AGENTS.md`
 - `CLAUDE.md`
@@ -524,6 +584,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex: layout expansion Phase 1（Gallery 3 layouts）
 
 ### 実施
+
 - 秋さん提供の参照HTML `/Users/chiaki/Downloads/ポートフォリオサイトの改善/Portfolio Redesign.dc.html` を確認し、まず影響範囲の小さい Gallery 側3レイアウトを追加。
 - `PhotoGallery` に以下3種を追加:
   - `clean-grid`: 4列（mobile 2列）/ 2px gap / 正方形 crop / 装飾なしの contact sheet 風
@@ -534,11 +595,13 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `AGENTS.md` / `CLAUDE.md` / `.codex/USER_CONTEXT.md` のギャラリーレイアウト数メモを 9 種へ更新。
 
 ### 判断
+
 - Home layout 3種は、hero/nav/section rhythm まで触る可能性があり変更範囲が大きいので今回は未実装。次フェーズで mockup と現行Top構造を見ながら分けて進める。
 - 新しい settings key は追加していない。既存の `galleryLayout` / `seriesLayout` / `topWorksLayout` の値を増やしただけなので、settings-preview 台帳や API default の追加更新は不要。
 - agmsg で Claude Code に方針レビューを依頼。Claude から P0 指摘なし、settings key を増やすなら同期注意という返答。今回は key 追加なしとして整理済み。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun run build` 成功（script 内で `tsc -b && vite build` 実行）。
 - `cd packages/web && bun test ./src` 成功（75 pass / 0 fail）。
@@ -547,6 +610,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - ローカル dev server `/gallery` を browser で確認。写真 445 件表示、コンソール error なし。
 
 ### 触ったファイル
+
 - `packages/web/src/web/components/PhotoGallery.tsx`
 - `packages/web/src/web/styles.css`
 - `packages/web/src/web/pages/admin.tsx`
@@ -559,6 +623,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex + Claude: layout expansion 後の全体デバッグ
 
 ### 実施
+
 - Codex が layout expansion Phase 1 push 後の締めデバッグを実施。
 - agmsg で Claude Code (`claude-driver`) に別視点レビューを依頼。
   - Claude 回答: P0/P1 なし。
@@ -566,6 +631,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - Codex が API 実装と実レスポンスを確認し、`shotAt` はローカル/本番ともに含まれていることを確認済み。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun run build` 成功。
 - `cd packages/web && bun test ./src` 成功（75 pass / 0 fail）。
@@ -582,6 +648,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `/api/photos` は 445 件、`shotAt` / `filmType` / `camera` / `lens` / `width` / `height` を含む。
 
 ### 結論
+
 - 今日の変更に対する P0/P1 は見つからず。
 - Claude の P2 懸念も実レスポンス確認で問題なし。
 - 未追跡だった `TOMORROW-PLAN.md` / `spec-layout-expansion.md` を整理。
@@ -589,15 +656,18 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `spec-layout-expansion.md` は Phase 1 完了 / Phase 2-3 未実装が分かる公開仕様書として更新。
 
 ### 触ったファイル
+
 - `task.md`
 
 ## 追記 2026-06-26 — Codex: `/service` への控えめな導線追加
 
 ### 目的
+
 秋さん依頼「購入サイトのレベルを上げて、扱いやすくしたい。今は自分でURLを打たないといけない」に対応。
 ただし「あんま目立たないように」という追加方針に合わせ、強い購入CTAではなく通常導線の中に控えめに入れる。
 
 ### 対応
+
 - `Layout` に `/service` へのリンクを追加。
   - デスクトップ / モバイルの通常ナビに `Service` を追加。
   - フッターには薄い `Portfolio site` リンクを追加。
@@ -609,6 +679,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `siteUrl: "https://akieguchi.com"` では `Service` / `Portfolio site` が出る。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
 - `cd packages/web && bun test ./src` 成功（173 pass / 0 fail）。
@@ -617,6 +688,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `git diff --check` 成功。
 
 ### 触ったファイル
+
 - `packages/web/src/web/components/Layout.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `task.md`
@@ -624,6 +696,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex + Claude: 配布化 v0 方針と P0 下地
 
 ### 実施
+
 - 秋さんの「他の人にも使えるように配布したい」という相談を受け、まず SaaS ではなく「写真家ごとに専用 Railway/Turso/R2 環境を作るテンプレート配布」を初手方針として整理。
 - `DISTRIBUTION.md` を新規追加し、以下を明文化:
   - v0: Template + Setup Guide
@@ -644,6 +717,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/api/site-defaults.test.ts` を追加し、CORS と GA fallback の振る舞いをテスト化。
 
 ### Claude 相談
+
 - agmsg で Claude Code (`claude-driver`) に3回相談。
 - Claude 回答要約:
   - fork → Railway/Turso/R2 テンプレート化は妥当。SaaS より前に正本整理が先。
@@ -655,6 +729,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - P1メモとして、`www` / apex 両方を使う配布先では `ALLOWED_ORIGINS` 追記が必要な可能性があるとの指摘があり、`.env.template` と `DISTRIBUTION.md` に補足済み。
 
 ### 残り
+
 - `packages/web/index.html` の静的 fallback meta はまだ江口秋 / `akieguchi.com` のまま。サーバ側 OGP 注入前の静的プレビュー対策として次の P0。
 - `packages/web/src/api/site-defaults.ts` には `akieguchi.com` 互換 fallback を残している。テンプレート正式リリース時は Railway 本番 env を確認したうえで中立 fallback へ切り替えるか、テンプレート branch で分離する。
 - root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
@@ -662,6 +737,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src/api` 成功（39 pass / 0 fail）。
 - `cd packages/web && bun test ./src` 成功（80 pass / 0 fail）。
@@ -670,6 +746,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `git diff --check` 成功。
 
 ### 触ったファイル
+
 - `README.md`
 - `.env.template`
 - `DISTRIBUTION.md`
@@ -682,6 +759,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex: 配布化 P0 静的 meta 安全化 + 受け取り手順
 
 ### 実施
+
 - 前回残り P0 だった `packages/web/index.html` の静的 fallback meta から、江口秋 / `akieguchi.com` 固有値を削除。
   - `<title>` / description / author / canonical / OGP / Twitter fallback を generic な `Photography Portfolio` / `https://example.com/` に変更。
   - 実デプロイ時は Bun server の OGP injection が settings で置き換える前提。静的previewやserver injection前のHTMLでも本番固有値が漏れない状態にした。
@@ -695,6 +773,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `DISTRIBUTION.md` の P0/P1 進捗を更新。
 
 ### 検証
+
 - `cd packages/web && bun test ./src/api` 成功（40 pass / 0 fail）。
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun run build` 成功。
@@ -704,18 +783,21 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `git diff --check` 成功。
 
 ### Claude 相談
+
 - agmsg で Claude Code (`claude-driver`) に push 前 P0/P1 レビュー依頼済み。
 - Claude 返答: P0なし、pushOK、akieguchi.com本番への影響なし。
 - 良い点として、`static-template.test` が固有値リグレッション防止として機能していること、`og:image` をルート相対にした判断は現サーバ構成では問題ないことを確認。
 - P1メモ: 将来静的エクスポート対応をするなら、injectOgp が走らないケースに備えて `og:image` の絶対URL化を再検討。
 
 ### 残り
+
 - `packages/web/src/api/site-defaults.ts` には `akieguchi.com` 互換 fallback が残っている。テンプレート正式リリース時は本番 env を確認して中立 fallback へ切り替えるか、template branch で分ける。
 - root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
 - 空DB / 新規 Turso での起動確認は未実施。
 - 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
 
 ### 触ったファイル
+
 - `packages/web/index.html`
 - `packages/web/src/api/static-template.test.ts`
 - `docs/recipient-setup.md`
@@ -726,6 +808,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex: Admin はじめにタブ + 用語の言い換え
 
 ### 実施
+
 - 秋さんから「repo ってなに？専門用語を使いすぎるとわからない」と指摘あり。
 - 管理画面に `はじめに` タブを追加。
   - 初期タブを `はじめに` に変更。
@@ -745,6 +828,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `packages/web/src/web/test/pages.render.test.tsx` に、認証済み admin で `公開までにやること` と `repo` 説明が出ることを追加確認。
 
 ### 検証
+
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（18 pass / 0 fail）。
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（81 pass / 0 fail）。
@@ -758,6 +842,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - 1280px 幅で横はみ出しなし。
 
 ### Claude 相談
+
 - agmsg で Claude Code (`claude-driver`) に push 前 P0/P1 レビュー依頼済み。
 - Claude 返答: P0なし、pushOK。
 - 良い点として、チェックリスト項目が API データから動的判定されていること、`isFilled()` guard、タブ直接ジャンプの UX が確認された。
@@ -766,11 +851,13 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `contactEmail` / `formspreeUrl` は `/api/settings` レスポンスに含まれていることを確認済み（`packages/web/src/api/index.ts`）。
 
 ### 残り
+
 - root `package.json` の `sandbox-app-template`、`packages/web/package.json` の `@template/web` は未変更。
 - 空DB / 新規 Turso での起動確認は未実施。
 - 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/admin.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `docs/recipient-setup.md`
@@ -780,6 +867,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-19 — Codex + Claude: 配布導線の2層化と固有名フォールバック追加修正
 
 ### 実施
+
 - 秋さんから「専門用語が多い。もっとやりやすく、わかりやすくできないか」と相談あり。
 - agmsg で Claude Code (`claude-driver`) に深めの方針相談。
 - Claude 返答要約:
@@ -803,6 +891,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `pages.render.test.tsx` に空状態の公開ページが本番固有名へ fallback しない回帰テストを追加。
 
 ### 検証
+
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（19 pass / 0 fail）。
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（82 pass / 0 fail）。
@@ -814,6 +903,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `siteUrl` は空。現状の canonical / OGP の URL は Railway `SITE_URL` またはサーバー側 fallback に依存している可能性がある。
 
 ### 残り
+
 - `packages/web/src/api/site-defaults.ts` のサーバー側互換 fallback には、まだ `akieguchi.com` / `江口秋` / GA fallback が残っている。
   - 今すぐ中立化すると、Railway `SITE_URL` が未設定だった場合に本番 SEO URL が変わるリスクがあるため今回は触らない。
   - 次にやるなら、Railway に `SITE_URL=https://akieguchi.com` が入っていること、または admin の `siteUrl` を保存することを確認してから中立化する。
@@ -822,6 +912,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
 
 ### 触ったファイル
+
 - `README.md`
 - `DISTRIBUTION.md`
 - `docs/setup-guide.md`
@@ -839,6 +930,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Codex: サーバー側 fallback の配布向け中立化
 
 ### 実施
+
 - 秋さんから、前回残した「サーバー側 fallback に `akieguchi.com` / `江口秋` が残る」件について「どうにかならんの？」と指摘あり。
 - 結論: どうにかできる。Railway env を直接触らず、コード側で安全に解決。
 - `packages/web/src/api/site-defaults.ts`
@@ -859,6 +951,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - 秋さん固有の固定文を戻さず、`江口 秋` が保存されていれば `江口 秋の写真ポートフォリオ。` のように自然な説明を作る形にした。
 
 ### Claude 相談
+
 - agmsg で Claude Code (`claude-driver`) に P0/P1 レビュー依頼。
 - Claude 返答:
   - 方向性OK。
@@ -867,6 +960,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 今回実装は `x-forwarded-host` / `host` を使い、sitemap / robots にも反映済み。
 
 ### 検証
+
 - `cd packages/web && bun test ./src/api/site-defaults.test.ts ./src/api/ogp.test.ts` 成功（31 pass / 0 fail）。
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（86 pass / 0 fail）。
@@ -875,6 +969,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `git diff --check` 成功。
 
 ### 残り
+
 - GA4 の `akieguchi.com` fallback は、Railway に `GA_MEASUREMENT_ID` が入っているか確認できていないため残した。
   - 今消すと本番のアクセス解析が止まる可能性がある。
   - きれいに消すには Railway 側へ `GA_MEASUREMENT_ID=G-NKECCDLXYD` を入れてから、コード fallback を削除する。
@@ -883,6 +978,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
 
 ### 触ったファイル
+
 - `DISTRIBUTION.md`
 - `packages/web/src/api/site-defaults.ts`
 - `packages/web/src/api/site-defaults.test.ts`
@@ -894,6 +990,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Codex + Claude: Railway All-in-One 配布版の実験開始
 
 ### 実施
+
 - 秋さんから「こっちで用意することが多すぎる。配布ではなく個人取引になってしまう」と相談あり。
 - 方針を「秋さん本番は現行 Railway + Turso + R2 のまま」「配布版だけ Railway Template + PostgreSQL + Railway Storage へ寄せる」に整理。
 - 実験用ブランチ `codex/railway-all-in-one-experiment` を作成。
@@ -915,6 +1012,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 管理画面 `はじめに` の用語を、GitHub/Turso/R2 などの固有サービス名から「公開場所」「データの保存場所」「写真の保存場所」へ寄せた。
 
 ### Claude 相談
+
 - agmsg で Claude Code (`claude-driver`) に P0/P1 レビュー依頼。
 - Claude 返答:
   - 配布版だけ Railway All-in-One にする方針でよい。
@@ -924,6 +1022,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - 良い点: 画像処理はアプリ側の `sharp` が担っているため、保存先変更だけで品質を落とす必要は低い。
 
 ### 検証
+
 - `cd packages/web && bunx drizzle-kit generate --config=drizzle.postgres.config.ts` 成功。
 - `cd packages/web && DATABASE_URL=postgres://user:pass@localhost:5432/db bun -e 'const m = await import("./src/api/database/postgres.ts"); console.log(Boolean(m.db), typeof m.withRetry);'` 成功。
 - `cd packages/web && bunx tsc --noEmit --target ES2022 --lib ES2023 --module ESNext --moduleResolution bundler --strict --skipLibCheck src/api/database/schema.postgres.ts src/api/database/postgres.ts drizzle.postgres.config.ts` 成功。
@@ -934,6 +1033,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `git diff --check` 成功。
 
 ### 残り
+
 - PostgreSQL の実DBにはまだ接続していない。
   - 次は空の Railway PostgreSQL かローカルPostgreSQLに schema を流し、`/api/settings` / `/api/photos` / `/admin/login` を確認する。
 - Railway Storage Bucket の実物検証は未実施。
@@ -943,6 +1043,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 作業前から未追跡だった `site-analysis-2026-06.md` は触っていない。
 
 ### 触ったファイル
+
 - `.env.template`
 - `docs/railway-all-in-one-experiment.md`
 - `packages/web/drizzle-postgres/0000_worried_sentry.sql`
@@ -958,6 +1059,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Claude: Railway All-in-One 配布版 DB/Storage プロバイダ切替 + 実環境 e2e
 
 ### 実施
+
 - 配布版の最後の未配線を解消。`api/index.ts` と `server.ts` が `schema`（テーブル定義）を
   sqlite-core のままハードコード参照していたため、`db` を pg に替えても schema が sqlite で
   実行時に boolean/timestamp 型不一致になる状態だった。
@@ -969,6 +1071,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `drizzle.postgres.config.ts` に欠けていた `dbCredentials.url`（env の DATABASE_URL）を追記。
 
 ### 検証（実 Railway PostgreSQL + Storage、public proxy 経由）
+
 - Storage（S3互換）: PUT/GET/DELETE 往復バイト一致、`forcePathStyle=true` で動作。
 - migration: 生成 SQL を bun:sql で直接適用（drizzle-kit は pg driver 別途要求のため、
   bun-sql 無依存方針を維持）。9文/9文適用、6テーブル作成確認。
@@ -979,17 +1082,20 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 本番(turso/デフォルト)回帰: `tsc -b` exit0 / `bun test ./src` 86 pass・0 fail 維持 / `bun run build` 成功。
 
 ### 接続の学び（配布 doc へ反映推奨）
+
 - ローカル/外部からの検証は Railway の **public URL**（`*.proxy.rlwy.net:PORT`）が必要。
   内部 host（`*.railway.internal`）はこの Mac から到達不可。デプロイ後の Railway 内部は internal で OK。
 - 今回 `sslmode=require` は不要だった（public proxy で接続成功）。
 
 ### 残り
+
 - 画像 PROXY + sharp リサイズの実 Storage 経由スポット確認（raw GET と sharp は個別に検証済みのため間接的に担保）。
 - Railway Template 化（`railway.json` + Deploy on Railway ボタン）。
 - 配布 doc に DATABASE_PUBLIC_URL 注記と、schema 2本（`schema.ts` / `schema.postgres.ts`）同期ルールの明文化。
 - 本番へのデプロイはしていない。実験ブランチ上の作業。`site-analysis-2026-06.md` は未追跡のまま不触。
 
 ### 触ったファイル
+
 - `packages/web/src/api/database/index.ts`（切替境界へ書き換え）
 - `packages/web/src/api/database/libsql.ts`（新規・旧 index.ts の libsql 実装を退避）
 - `packages/web/src/api/index.ts`（schema import を ./database 経由へ）
@@ -1000,6 +1106,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Claude: Railway Template 化（railway.json + Deploy ボタン）
 
 ### 実施
+
 - `railway.json`（リポジトリ root）を追加。Nixpacks + Bun。
   - build: `bun install && bun run build`（= turbo build → tsc -b && vite build）
   - start: `bun packages/web/src/server.ts`（server.ts は import.meta.dir で dist 解決＝cwd 非依存）
@@ -1012,18 +1119,21 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   - `DATABASE_URL`(internal) vs `DATABASE_PUBLIC_URL`(`*.proxy.rlwy.net`) の注意書き。SSL 時は `?sslmode=require`。
 
 ### 検証
+
 - railway.json valid JSON 確認。
 - buildCommand 実走: root `bun run build`（turbo build）成功、`packages/web/dist/index.html` 生成確認。
 - startCommand 実走: repo root から `bun packages/web/src/server.ts` 起動 → `GET /` 200、dist が import.meta.dir で解決されることを確認。
 - ビルドツール（vite/tsc/turbo 等）は devDependencies だが、`bun install` は NODE_ENV に関係なく devDeps を入れるため本番ビルドと同条件で問題なし。
 
 ### 残り
+
 - Railway dashboard での template 公開（plugins=PostgreSQL+Storage、変数設定）→ `<YOUR_TEMPLATE_ID>` 差し替え（秋さん/セットアップ担当の手作業）。
 - 配布 doc（DISTRIBUTION.md / docs）への DATABASE_PUBLIC_URL・schema2本同期ルールの本反映。
 - migration の初回自動適用は未対応（現状は手動1回）。turnkey 化するなら release/pre-deploy フックを検討。
 - push はしていない。experiment ブランチにローカル commit のみ。
 
 ### 触ったファイル
+
 - `railway.json`（新規）
 - `README.md`
 - `task.md`
@@ -1031,6 +1141,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Claude: 配布版の起動時 自動マイグレーション
 
 ### 実施
+
 - `packages/web/src/api/database/migrate.ts`（新規）に `runStartupMigrations()` を追加。
   - `DATABASE_PROVIDER !== "postgres"` なら即 return（本番 turso は完全 no-op）。
   - postgres 時のみ `drizzle-orm/bun-sql/migrator` を動的 import し、`packages/web/drizzle-postgres`
@@ -1041,12 +1152,13 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
     例外を投げ直す。
 - `server.ts`: `Bun.serve` 前に `try { await runStartupMigrations(); } catch { process.exit(1); }`。
   → 配布版は受け取った人が手で db:push / migrate を打たずに起動できる。失敗時はサーバを
-    起動せず loud に落ち、Railway が前バージョンを維持（壊れた新版がトラフィックを受けない）。
+  起動せず loud に落ち、Railway が前バージョンを維持（壊れた新版がトラフィックを受けない）。
 
 ### 検証（Railway テスト project、実 PostgreSQL）
+
 - 空 DB（`DROP SCHEMA public CASCADE` で再現）から `DATABASE_PROVIDER=postgres` 起動
   → `[migrate] applying...` → `[migrate] up to date` → 6テーブル作成 → `GET /` 200 /
-    `GET /api/settings` 134キー返却。
+  `GET /api/settings` 134キー返却。
 - 再起動（populated DB）→ 「up to date」・`already exists` エラーなし＝idempotency OK。
   追跡表 `drizzle.__drizzle_migrations` 生成確認。
 - 到達不可 DB → exit code 1・サーバ listening せず・[migrate] の明示ログ出力（失敗が loud）。
@@ -1054,12 +1166,14 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 本番回帰: `tsc -b` / `bun test ./src` 86 pass。
 
 ### 残り
+
 - ② 配布ドキュメント整備（DISTRIBUTION.md / docs に自動マイグレーション挙動・DATABASE_PUBLIC_URL・
   schema2本同期ルールを反映）。README の「One-time database setup」は自動化済みのため文言更新余地あり。
 - ① Railway dashboard で template 公開 → `<YOUR_TEMPLATE_ID>` 差し替え（手作業）。
 - push はしていない。experiment ブランチにローカル commit のみ。
 
 ### 触ったファイル
+
 - `packages/web/src/api/database/migrate.ts`（新規）
 - `packages/web/src/server.ts`
 - `task.md`
@@ -1067,6 +1181,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Claude: 配布ドキュメント整備（自動migration / DATABASE_PUBLIC_URL / schema 2本同期）
 
 ### 実施
+
 - `README.md`「One-time database setup」→「Database setup — automatic」に更新。
   起動時自動適用・idempotent・失敗時 loud・本番 no-op を明記。手動 apply は fallback として残置。
 - `DISTRIBUTION.md` に「Railway All-in-One Template — Maintenance Notes」節を追加。
@@ -1078,24 +1193,29 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   （PostgreSQL 側漏れは配布版だけ壊し本番で気づけない、を明記）。
 
 ### 検証
+
 - 参照パス実在確認: `packages/web/drizzle/`（turso）/ `packages/web/drizzle-postgres/`（pg）両方存在。
 - ドキュメントのみの変更（コード不変）。
 
 ### 残り
+
 - ① Railway dashboard で template 公開 → README の `<YOUR_TEMPLATE_ID>` 差し替え（秋さん手作業）。
 - push はしていない。experiment ブランチにローカル commit のみ。
 
 ### 触ったファイル
+
 - `README.md` / `DISTRIBUTION.md` / `docs/setup-guide.md` / `CLAUDE.md` / `AGENTS.md` / `task.md`
 
 ## 追記 2026-06-20 — Claude: Railway build の Node 18 EOL 恒久対応
 
 ### 背景
+
 - Railway の template deploy で build image が失敗。ログに「Node.js 18.x has reached
   End-Of-Life」。Nixpacks のデフォルト Node が 18 系で、ビルド環境の Node 指定問題
   （DB/Bucket は無関係）。アプリ実行は Bun だが、Nixpacks がビルド時に Node を用意する。
 
 ### 対応
+
 - 暫定（秋さん側・即時）: Railway Variables に `NIXPACKS_NODE_VERSION=22` を追加して再 Deploy。
 - 恒久（コミット）: root `package.json` に `"engines": { "node": "22.x" }` を追加。
   Nixpacks は engines.node を読んで Node バージョンを決めるため、テンプレ利用者が
@@ -1105,48 +1225,57 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   （将来 main へ入っても Node 22 ビルドは安全方向）。
 
 ### 検証
+
 - `package.json` JSON valid、engines 反映確認。
 - `bun install` engines.node を許容（エラーなし）。`bun run build` 成功。
 - 実ビルド検証は Railway 再ビルドが必要（push 後）。失敗が続く場合は `.nvmrc`/`nixpacks.toml`
   へエスカレーション予定。
 
 ### 残り
+
 - push は秋さん確認後。push 後に Railway 再ビルドで Node 22 が効くか確認 →
   効けば暫定変数 `NIXPACKS_NODE_VERSION` は不要。
 - ① template 公開 → README `<YOUR_TEMPLATE_ID>` 差し替え。
 
 ### 触ったファイル
+
 - `package.json`（engines.node 追加）
 - `task.md`
 
 ## 追記 2026-06-20 — Claude: Railway healthcheck を /api/health に変更
 
 ### 背景
+
 - Node22修正で Build/Deploy は成功。次に Network > Healthcheck failure で落ちた。
 - railway.json は healthcheckPath: "/"。`/` は index.html 読込 + getSettings(DB) + OGP 注入が
   絡み、初回起動の healthcheck には重く失敗しやすい。
 
 ### 対応
+
 - `railway.json` の healthcheckPath を `/` → `/api/health` に変更。
 - `/api/health`（`api/index.ts:248`、Hono basePath='api'）は `{status:'ok', build}` を 200 で返す
   DB非依存の軽量エンドポイント。Railway docs の「healthcheck は軽い200エンドポイント推奨」に合致。
 
 ### 検証
+
 - ローカル起動で `GET /api/health` → 200 `{"status":"ok","build":"dev"}` を DB非依存(file::memory:)で確認。
 - `/health`(basePathなし)は SPA フォールバックHTMLの200なので不採用、正は `/api/health`。
 - railway.json JSON valid。
 
 ### 残り
+
 - push 後に Railway 再デプロイで healthcheck 通過を確認。
 - ① template 公開 → README `<YOUR_TEMPLATE_ID>` 差し替え。
 
 ### 触ったファイル
+
 - `railway.json`（healthcheckPath）
 - `task.md`
 
 ## 追記 2026-06-20 — Codex: Railway 起動時 migration の診断ログ強化 + retry
 
 ### 背景
+
 - Railway template deploy は Build/Deploy まで成功し、Network > Healthcheck で失敗。
 - Details/Diagnosis と Deploy Logs では、サーバ起動前の `runStartupMigrations()` が
   `CREATE SCHEMA IF NOT EXISTS "drizzle"` で失敗しており、`/api/health` に届く前に
@@ -1156,11 +1285,12 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   `GET /` 200 を確認。コードの基本起動パスは通っている。
 
 ### 対応
+
 - `packages/web/src/api/database/migrate.ts` に秘密を出さない `DATABASE_URL` 判定ログを追加。
   - `*.railway.internal`（Railway private）
   - `*.proxy.rlwy.net`（Railway public TCP proxy）
   - sslmode の有無
-  をパスワードなしで判別できる。
+    をパスワードなしで判別できる。
 - migration 失敗時に `err.cause` / `code` / `syscall` などの原因情報もログに出すよう変更。
   これで DNS / timeout / auth / permission のどこで落ちているか次回ログから判別可能。
 - Railway の Postgres 起動待ち・一時的な接続揺れに備え、起動時 migration に短い retry を追加。
@@ -1173,6 +1303,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   アプリ側で `sslmode=require` を自動付与するよう追加。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 86 pass / 0 fail。
 - `cd packages/web && bun run build` 成功。
@@ -1183,12 +1314,14 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   ローカル起動（`PORT=4390 ...`）→ `GET /api/health` 200 / `GET /` 200 を確認。
 
 ### 残り
+
 - experiment ブランチに push 後、Railway 再デプロイで新ログを確認。
 - もし `DATABASE_URL target` が `*.railway.internal` で内部接続が失敗する場合は、
   Railway private network 側の問題として、暫定的に `DATABASE_URL=${{Postgres.DATABASE_PUBLIC_URL}}`
   を試す判断もあり。
 
 ### 触ったファイル
+
 - `packages/web/src/api/database/migrate.ts`
 - `packages/web/src/api/database/postgres.ts`
 - `task.md`
@@ -1196,6 +1329,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Codex: PostgreSQL driver を `pg` に切替（Railway 内部接続対策）
 
 ### 背景
+
 - `0e76be6`（Bun SQL に `sslmode=require` を付ける修正）でも Railway の
   `@template/web` は失敗。GitHub status で最新 commit の Railway deploy failure を確認。
 - 失敗箇所は引き続き起動時 migration 前後で、`/api/health` に届く前に server が起動していない。
@@ -1207,6 +1341,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   `pg`（node-postgres）へ切り替える方針で実装。
 
 ### 対応
+
 - PostgreSQL provider を `drizzle-orm/bun-sql` → `drizzle-orm/node-postgres` + `pg` に変更。
 - startup migration も `drizzle-orm/node-postgres/migrator` に変更。
 - Railway PostgreSQL host（`*.railway.internal` / `*.proxy.rlwy.net`）では `pg` の TLS 設定を
@@ -1218,6 +1353,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - 本番(turso)は `DATABASE_PROVIDER !== "postgres"` で `postgres.ts` をロードしないため不変。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 86 pass / 0 fail。
 - `cd packages/web && bun run build` 成功。
@@ -1230,11 +1366,13 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - `GET /api/health` 200 / `GET /` 200 / `GET /api/settings` 200 を確認。
 
 ### 残り
+
 - experiment ブランチへ push 後、Railway で `*.railway.internal` の実デプロイ確認。
 - まだ内部URLで落ちる場合は、Claude案どおり `DATABASE_URL=${{Postgres.DATABASE_PUBLIC_URL}}`
   をテンプレ推奨に切り替える（写真家1人分のポートフォリオなら latency/egress の影響は小さい）。
 
 ### 触ったファイル
+
 - `packages/web/src/api/database/postgres.ts`
 - `packages/web/src/api/database/migrate.ts`
 - `packages/web/package.json`
@@ -1244,6 +1382,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Codex: 配布版 DB URL 方針を `DATABASE_PUBLIC_URL` 優先に変更
 
 ### 背景
+
 - `0355431`（PostgreSQL driver を `pg` に切替）を experiment ブランチへ push したが、
   Railway の実デプロイは引き続き失敗。GitHub commit status で failure を確認。
 - つまり `*.railway.internal` の内部URLは、Bun SQL だけでなく `pg` でも今回の
@@ -1252,23 +1391,27 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
   (`DATABASE_PUBLIC_URL`, `*.proxy.rlwy.net:PORT`) を配布版の優先ルートにする。
 
 ### 対応
+
 - `postgres.ts` は `DATABASE_PUBLIC_URL` が存在すれば `DATABASE_URL` より優先して使う。
   `DATABASE_URL` は後方互換の fallback として残す。
 - `migrate.ts` のログも実際に使う DB target（public / private）を表示するよう変更。
 - README / DISTRIBUTION.md のテンプレ変数説明を、`DATABASE_PUBLIC_URL` 優先に更新。
 
 ### 判断
+
 - これはサイト品質・画質・管理画面品質には影響しない。DBの接続経路だけの変更。
 - 写真家1人分のポートフォリオでは public TCP proxy の latency/egress は小さく、
   「ボタンで配布できる」わかりやすさを優先する。
 
 ### 残り
+
 - この変更を push 後、Railway service の Variables に
   `DATABASE_PUBLIC_URL=${{Postgres.DATABASE_PUBLIC_URL}}` が入っていれば自動でそちらを使う。
 - 現在の service に `DATABASE_PUBLIC_URL` が未設定なら、秋さん側で Variables に追加して
   Redeploy が必要（`DATABASE_URL` を消す必要はない）。
 
 ### 触ったファイル
+
 - `packages/web/src/api/database/postgres.ts`
 - `packages/web/src/api/database/migrate.ts`
 - `README.md`
@@ -1278,6 +1421,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-20 — Codex: admin login 後に reload しないと入れないバグ修正
 
 ### 背景
+
 - 正しい `ADMIN_PASSWORD` を入れても、ログイン直後に `/admin` へ入れず、ページ reload 後だけ
   入れる既存バグが本番・配布版の両方で発生。
 - 原因は frontend 側の `["admin-me"]` query cache。`AdminPage` は `useQuery(["admin-me"])` で
@@ -1287,6 +1431,7 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - reload すると in-memory cache が消え、cookie 付きで `/api/admin/me` を再取得するため入れる。
 
 ### 対応
+
 - `packages/web/src/web/pages/admin-login.tsx`:
   login 成功時に `qc.setQueryData(["admin-me"], { authenticated: true })` してから
   `invalidateQueries(["admin-me"])` → `/admin` へ遷移。
@@ -1296,16 +1441,19 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 - Claude に agmsg 相談済み。原因仮説・修正方針とも承認。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 87 pass / 0 fail。
 - `cd packages/web && bun run build` 成功。
 - `git diff --check` 成功。
 
 ### 反映方針
+
 - まず `main` に commit/push して本番 `akieguchi.com` へ反映。
 - 同じ commit を `codex/railway-all-in-one-experiment` へ cherry-pick して配布版にも反映。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/admin-login.tsx`
 - `packages/web/src/web/test/pages.render.test.tsx`
 - `task.md`
@@ -1313,11 +1461,13 @@ API `/settings` GET endpoint was missing 8 keys that the admin UI saves:
 ## 追記 2026-06-22 — Claude: 配布版整備（P0〜P2 ドキュメント + /service 案内・購入ページ）
 
 ### 背景
+
 Cowork からの引き継ぎで Railway Template 配布の整備を実施。受け取る写真家が「迷わない」ことを
 最優先に、ドキュメント整備・管理画面の配布版対応・サイト内の案内/購入ページを作成。
 Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスクずつ進めた。
 
 ### やったこと（すべて `main` に push・本番反映済み）
+
 - **P0-1 ADMIN_PASSWORD 固定値排除**: コードは元々 `process.env.ADMIN_PASSWORD` 参照でデフォルト
   無し（`test-pass` 不在）を確認。未設定時は login 無効＋500。README の Template variables 表で
   「必須・初期値なし」明記＋保守者ノート追加（Railway template composer で初期値/`secret()` を
@@ -1343,12 +1493,14 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
   A=自分で / B=おまかせ）、**`docs/order-handling.md`**（秋くん用 申込対応 runbook）。
 
 ### 検証
+
 - `tsc -b`=0、`bun run build` 成功、`bun test ./src` 87 pass / 0 fail（回帰なし）。
 - `injectOgp` 実行で `/service` の title / og:title / og:image / desc / indexable を確認。
 - 本番（build `ad776a5a`）: `/service`=200、`/og-service.jpg`=200、og:title 確認。P1-3 反映後も
   `/admin/login`=200、`/`=200 確認。
 
 ### 残り（秋さん側・repo ではできない）
+
 1. **Stripe**: アカウント作成→Payment Link 2本（自分で/おまかせ）発行→ `/service` の
    `STRIPE_SELF` / `STRIPE_CONCIERGE` を実URLに差し替え（これだけでオンライン決済が有効化、
    「準備中」表示も自動で消える）。
@@ -1356,11 +1508,13 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
    を削除・必須入力のまま。任意で各変数に説明文。Template Image URL に `og-service.jpg` を設定。
 
 ### 次に再開するとき
+
 秋さんが Stripe リンクか Railway 設定を終えたら小さく再開。便利化アイデア
 （`docs/distribution-ideas.md`）着手なら、demo URL より「初回ウィザード / 『はじめに』の実運用確認」
 が効果大（Codex 評）。ただし、まず販売導線を実際に1回通す方が価値が高い。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/service.tsx`（新規）, `packages/web/src/web/app.tsx`
 - `packages/web/src/api/ogp.ts`, `packages/web/src/server.ts`
 - `packages/web/public/og-service.jpg`（新規）, `packages/web/scripts/gen-og-service.mjs`（新規）
@@ -1372,11 +1526,13 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
 ## 追記 2026-06-22 — Claude: Stripe Payment Link を /service に組み込み（オンライン決済 有効化）
 
 ### 目的
+
 仮値だった `/service` の購入ボタンを、実際の Stripe Payment Link（公開リンク）に差し替え、
 オンライン決済を有効化する。あわせて販売導線ドキュメントが「Stripe が来た後」の運用に
 追いついているか点検する。
 
 ### やったこと（`main` に push 予定）
+
 - **Stripe URL 組み込み**（`packages/web/src/web/pages/service.tsx`）:
   - `STRIPE_SELF` = `https://buy.stripe.com/8x25kDdou8xldeEfHqgrS00`（自分で立てる / ¥10,000）
   - `STRIPE_CONCIERGE` = `https://buy.stripe.com/aFa14n0BIcNB0rScvegrS01`（おまかせ設定 / ¥30,000）
@@ -1391,6 +1547,7 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
   決済後ページ/確認メールに purchase-thankyou.md の A・B を入れる案内（任意）を明記。
 
 ### 検証
+
 - `bun run --cwd packages/web build`（= `tsc -b && vite build`）成功・型エラー0。
 - `bun test ./src` = **88 pass / 0 fail**（回帰なし。OGP/sitemap の `/service` 含む）。
 - `git diff --check` = クリーン。
@@ -1401,6 +1558,7 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
   開くこと（実決済はしない）を確認推奨。
 
 ### 残り（秋さん側・repo ではできない）
+
 1. **/service の本番動作確認**: push 後数分で各ボタンが正しい Stripe Checkout を開くか実機確認。
 2. **Stripe 決済後ページ / 確認メール**: `docs/purchase-thankyou.md` の A（自分で）/ B（おまかせ）を
    各 Payment Link の確認ページ or メールに設定（任意だが一次返信が自動化されて楽）。
@@ -1408,6 +1566,7 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
    （前回 Handoff の残件のまま）。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/service.tsx`
 - `docs/order-handling.md`
 - `task.md`
@@ -1415,10 +1574,12 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
 ## 追記 2026-06-22 — Codex: AGENTS.md §0 invariants 追記
 
 ### 目的
+
 秋さん依頼により、今後の Claude Code / Codex 作業で守るべき invariants と
 `ivys-house` とのリポジトリ境界を `AGENTS.md` に明示した。
 
 ### 対応
+
 - `AGENTS.md` に `§0 invariants` を追加。
   - `withRetry`
   - 3-place settings sync
@@ -1430,20 +1591,24 @@ Codex(`codex-reviewer`) と agmsg でレビューを回しながら 1タスク�
 - 既存のスタック / Railway デプロイ表記を GitHub auto-deploy 前提に更新。
 
 ### 検証
+
 - `git diff --check -- AGENTS.md task.md` 成功。
 
 ### 触ったファイル
+
 - `AGENTS.md`
 - `task.md`
 
 ## 追記 2026-06-25 — Codex: 管理画面 settings / 公開サイト連動デバッグ
 
 ### 目的
+
 秋さん依頼「管理画面の項目すべてとサイトの連動をすべてデバッグして」に対応。
 settings 台帳・API default・Provider / iframe live preview・公開ページ消費・admin mutation 後の
 再取得を横断確認し、実際にズレる経路を修正した。
 
 ### 対応
+
 - `settings-preview.ts` の台帳を API `GET /settings` が返す全 settings キーへ拡張。
   - サイト名 / ナビ文言 / Contact 文言 / Profile・SNS / CTA / note / print / SEO 系なども
     iframe preview の TanStack Query cache に入るようにした。
@@ -1463,6 +1628,7 @@ settings 台帳・API default・Provider / iframe live preview・公開ページ
 - 既存 Lightbox テストは実装どおり close callback が 300ms 後に走るため、待機してから検証する形へ調整。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（166 pass / 0 fail）。
   - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は出るが失敗なし。
@@ -1470,6 +1636,7 @@ settings 台帳・API default・Provider / iframe live preview・公開ページ
 - `git diff --check` 成功。
 
 ### 未実施 / 注意
+
 - localhost dev server によるブラウザ実機確認は未実施。
   - sandbox で `listen EPERM 127.0.0.1:5173`。
   - 権限昇格は Codex 使用上限のため拒否され、迂回はしていない。
@@ -1478,6 +1645,7 @@ settings 台帳・API default・Provider / iframe live preview・公開ページ
 - 既存の未コミット変更が多数あるため、今回 Codex は commit / push していない。
 
 ### 触ったファイル
+
 - `packages/web/src/web/lib/settings-preview.ts`
 - `packages/web/src/web/lib/settings-preview.test.ts`
 - `packages/web/src/web/lib/api.ts`
@@ -1502,9 +1670,11 @@ settings 台帳・API default・Provider / iframe live preview・公開ページ
 ## 追記 2026-06-25 — Codex: 管理画面 v3 仕様ドラフト作成
 
 ### 目的
+
 秋さん依頼「管理画面で写真の向きを変えられるようにしたい。加えて調整できることを増やし、既存項目を使いやすくしたい。まず仕様書を作って Claude に検討してもらう」に対応。
 
 ### 対応
+
 - `admin-enhancement-spec-v3-draft.md` を新規作成。
   - 写真ごとの `rotationDeg`（0/90/180/270）を中心に、非破壊で向きを変える方針を整理。
   - 90/270度時の縦横比入れ替え、画像プロキシ `rot` query、srcset / Lightbox / Hero / Series cover 反映漏れ防止を明記。
@@ -1513,9 +1683,11 @@ settings 台帳・API default・Provider / iframe live preview・公開ページ
 - `AGENTS.md` の仕様書一覧に v3 ドラフトを追加。
 
 ### 検証
+
 - Markdown / docs 変更のみ。実装・型チェック・ビルドは未実施。
 
 ### 触ったファイル
+
 - `admin-enhancement-spec-v3-draft.md`
 - `AGENTS.md`
 - `task.md`
@@ -1523,9 +1695,11 @@ settings 台帳・API default・Provider / iframe live preview・公開ページ
 ## 追記 2026-06-25 — Codex: Claude Codeレビュー反映
 
 ### 目的
+
 agmsg 経由で Claude Code から `admin-enhancement-spec-v3-draft.md` の P0/P1 レビューが返ったため、実装前に落としやすい指摘を仕様書へ反映した。
 
 ### 対応
+
 - `admin-enhancement-spec-v3-draft.md` に「Claude Codeレビュー結果（2026-06-25）」を追加。
 - P0として以下を明記。
   - `photoWithThumbs()` の `thumbUrl` / `mediumUrl` は事前生成済み R2 URL であり、`rotationDeg != 0` の写真ではプロキシ `rot` を通らない。
@@ -1536,20 +1710,24 @@ agmsg 経由で Claude Code から `admin-enhancement-spec-v3-draft.md` の P0/P
   - `focalX/Y` は schema だけ V3-1 で追加し、UI / object-position 配線は V3-4 以降へ分けるのを推奨。
 
 ### 検証
+
 - Markdown 差分チェックのみ実施。実装・型チェック・ビルドはこの時点では未実施。
 
 ### 触ったファイル
+
 - `admin-enhancement-spec-v3-draft.md`
 - `task.md`
 
 ## 追記 2026-06-25 — Codex: 管理画面 v3 V3-1 土台実装
 
 ### 目的
+
 秋さん依頼「codexで実装しよう。困ったらclaudeに聞いて」に対応し、
 `admin-enhancement-spec-v3-draft.md` の V3-1（土台）を実装。
 管理画面UIの回転ボタンはまだ作らず、写真ごとの向き情報をDB/API/画像配信/公開表示へ通す基盤を先に作った。
 
 ### 対応
+
 - `photos` に `rotationDeg` / `focalX` / `focalY` を追加。
   - `schema.ts`（Turso/libSQL）と `schema.postgres.ts`（PostgreSQL配布版）の両方を更新。
   - Turso 起動時補完 `ensureTursoColumns()` にも3カラムを追加。
@@ -1573,6 +1751,7 @@ agmsg 経由で Claude Code から `admin-enhancement-spec-v3-draft.md` の P0/P
   - gallery preload も `rot` 付きURLを生成する。
 
 ### DB反映
+
 - `cd packages/web && bun run db:push` は最初、Drizzle が既存474件への NOT NULL カラム追加を
   対話確認しようとして非TTYで停止。
 - 代わりに libSQL へ存在確認つきSQLで以下3カラムを安全に追加。
@@ -1582,6 +1761,7 @@ agmsg 経由で Claude Code から `admin-enhancement-spec-v3-draft.md` の P0/P
 - その後 `cd packages/web && bun run db:push` を再実行し、`No changes detected` を確認済み。
 
 ### 検証
+
 - `cd packages/web && bun test ./src/shared/image-url.test.ts` 成功（3 pass）。
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（169 pass / 0 fail）。
@@ -1590,11 +1770,13 @@ agmsg 経由で Claude Code から `admin-enhancement-spec-v3-draft.md` の P0/P
 - `git diff --check` 成功。
 
 ### 注意 / 未実装
+
 - 管理画面の回転UI（Inspector「見え方」セクション、Library quick rotate）は未実装。次は V3-2。
 - `focalX/Y` は DB/API 土台のみ。object-position UI配線は Claude レビューどおり後続推奨。
 - commit / push は未実施。既存の未コミット変更・未追跡ファイルがあるため、範囲確認してから行うこと。
 
 ### 触ったファイル
+
 - `packages/web/src/shared/image-url.ts`
 - `packages/web/src/shared/image-url.test.ts`
 - `packages/web/src/api/database/schema.ts`
@@ -1622,9 +1804,11 @@ agmsg 経由で Claude Code から `admin-enhancement-spec-v3-draft.md` の P0/P
 ## 追記 2026-06-25 — Codex: 管理画面 v3 V3-2 回転UI実装
 
 ### 目的
+
 V3-1で追加した `rotationDeg` 土台を、管理画面から実際に操作できるようにする。
 
 ### 対応
+
 - Library インスペクタに「向き」セクションを追加。
   - 左90° / 0° / 90° / 180° / 270° / 右90° を操作可能。
   - インスペクタ上のプレビューは保存前の `editForm.rotationDeg` を即時反映。
@@ -1640,6 +1824,7 @@ V3-1で追加した `rotationDeg` 土台を、管理画面から実際に操作�
   - 左回転 `0° → 270°` の wraparound を単体テストで固定。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（170 pass / 0 fail）。
   - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
@@ -1647,11 +1832,13 @@ V3-1で追加した `rotationDeg` 土台を、管理画面から実際に操作�
 - `git diff --check` 成功。
 
 ### 注意 / 未実装
+
 - dev server / ブラウザ実機での管理画面クリック確認は未実施。
 - `focalX/Y` はまだUI未接続。V3-4以降で object-position / focal point UI を入れる想定。
 - commit / push は未実施。既存未コミット差分が多いため、範囲確認後に行うこと。
 
 ### 触ったファイル
+
 - `packages/web/src/shared/image-url.ts`
 - `packages/web/src/shared/image-url.test.ts`
 - `packages/web/src/web/lib/picture.ts`
@@ -1661,10 +1848,12 @@ V3-1で追加した `rotationDeg` 土台を、管理画面から実際に操作�
 ## 追記 2026-06-25 — Codex: 管理画面 v3 V3-3/V3-4 focal point 実装
 
 ### 目的
+
 V3-1でDB/API土台だけ入れていた `focalX` / `focalY` を、公開サイトと管理画面の切り抜き表示へ接続する。
 あわせて、V3-3「公開サイト全反映」として Top 系レイアウトに残っていた古い画像URL直書きを helper 経由へ寄せた。
 
 ### 対応
+
 - 共通 helper に focal point 正規化を追加。
   - `normalizeFocalPoint()` / `objectPositionFromFocal()` を追加。
   - `focalX/Y` を `0% 0%`〜`100% 100%` の `object-position` に変換。
@@ -1688,6 +1877,7 @@ V3-1でDB/API土台だけ入れていた `focalX` / `focalY` を、公開サイ�
   - `image-url.test.ts` で focal point の clamp / fallback を確認。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（172 pass / 0 fail）。
   - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
@@ -1695,12 +1885,14 @@ V3-1でDB/API土台だけ入れていた `focalX` / `focalY` を、公開サイ�
 - `git diff --check` 成功。
 
 ### 注意 / 未実装
+
 - dev server / ブラウザ実機での管理画面クリック確認は未実施。
 - focal point は9点プリセットのみ。ドラッグで任意位置を選ぶUIは未実装。
 - Lightbox は全体表示（contain）なので `focalX/Y` は意図的に反映しない。
 - commit / push は未実施。既存未コミット差分が多いため、範囲確認後に行うこと。
 
 ### 触ったファイル
+
 - `packages/web/src/shared/image-url.ts`
 - `packages/web/src/shared/image-url.test.ts`
 - `packages/web/src/web/lib/picture.ts`
@@ -1714,10 +1906,12 @@ V3-1でDB/API土台だけ入れていた `focalX` / `focalY` を、公開サイ�
 ## 追記 2026-06-26 — Codex: 管理画面 v3 V3-4 回転ショートカット
 
 ### 目的
+
 V3-2で入れた回転操作を、Library のキーボード操作からも使えるようにする。
 仕様書チェック項目「ショートカット一覧に新規操作が載る」に対応。
 
 ### 対応
+
 - Library 画面で `[` / `]` ショートカットを追加。
   - `[` = 選択写真を左90°回転。
   - `]` = 選択写真を右90°回転。
@@ -1728,6 +1922,7 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
 - キーボードショートカット一覧に `[ / ]` を追記。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src` 成功（172 pass / 0 fail）。
   - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
@@ -1735,21 +1930,25 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
 - `git diff --check` 成功。
 
 ### 注意 / 未実装
+
 - dev server / ブラウザ実機でのショートカット確認は未実施。
 - commit / push は未実施。既存未コミット差分が多いため、範囲確認後に行うこと。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/admin.tsx`
 - `task.md`
 
 ## 追記 2026-06-26 — Codex: 本番デバッグ + 配布用ブランチ反映
 
 ### 目的
+
 秋さん依頼「今のメインサイトをデバッグして、配布用（販売用）のサブサイトに現状を反映させたい」に対応。
 本番 `akieguchi.com` の現在の動作を確認し、配布用 Railway template ブランチ
 `codex/railway-all-in-one-experiment` が `main` より古い状態で止まっていないかを確認した。
 
 ### 本番確認
+
 - `https://akieguchi.com/api/health` は 200。build は `3d05b86a`。
 - `/api/settings` は 200 で、江口秋 / Aki Eguchi の本番 settings を返している。
 - `/api/photos` は 200 で、公開写真 445 件を返している。`rotationDeg` / `focalX` / `focalY` / `thumbUrl` / `mediumUrl` も含まれている。
@@ -1764,12 +1963,14 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
   - 2枚目: counter が `2 / 24` へ進み、medium 画像が読み込み完了。
 
 ### 配布用ブランチ確認
+
 - `codex/railway-all-in-one-experiment` は `main` の祖先で、独自の未反映 commit はなかった。
 - `main` には配布版に必要な PostgreSQL schema / migration / service page / Railway template docs / 最新の画像回転・focal point 対応がすでに含まれている。
 - そのため、配布用ブランチは merge conflict なしの fast-forward で `main` に追従できる状態だった。
 - `main` を `7058b95` まで push 後、`codex/railway-all-in-one-experiment` も同じ `7058b95` へ fast-forward して push 済み。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun test ./src/shared/image-url.test.ts ./src/api/site-defaults.test.ts ./src/api/static-template.test.ts` 成功（13 pass）。
 - `cd packages/web && bun test ./src` 成功（172 pass / 0 fail）。
@@ -1777,20 +1978,24 @@ V3-2で入れた回転操作を、Library のキーボード操作からも使�
 - `cd packages/web && bun run build` 成功。
 
 ### 注意
+
 - 本番の `/gallery` / `/contact` はデータ取得完了後は正常。初期ロード中の generic fallback 表示は残るため、気になる場合はサーバ注入済み meta から初期クライアント表示を作るなど、別タスクで改善候補。
 - `main` push 後に `/api/health` を2回確認したが、確認時点の本番 build は `3d05b86a` のまま。今回のアプリ本体はすでに `3d05b86a` として本番で動作確認済みで、`7058b95` は記録追記のみ。
 - `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の反映対象には含めない。
 
 ### 触ったファイル
+
 - `task.md`
 
 ## 追記 2026-06-27 — Codex: MacBook / Mac mini 2台運用手順
 
 ### 目的
+
 秋さん依頼「プロジェクトをMacBookとMac miniで共通して作業できるようにするにはどうしたらいいか」に対応。
 Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 
 ### 対応
+
 - 2台運用の方針を `docs/two-mac-workflow.md` として追加。
   - GitHub をコード正本にする。
   - Railway は `git push` から auto-deploy。
@@ -1802,14 +2007,17 @@ Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 - Claude Code の助言を受け、`.env` 管理を楽にする選択肢として 1Password CLI / Railway CLI をドキュメントへ追記。
 
 ### 検証
+
 - ドキュメントのみの変更。
 - `git diff --check -- README.md AGENTS.md docs/two-mac-workflow.md task.md` 成功。
 
 ### 注意
+
 - Claude Code からは「採用可。iCloud/Dropbox排除は正解。P0注意点は `.env` の2台同期で、1Password CLI または Railway CLI を使うと楽」と返答あり。
 - `.env` の実値は扱っていない。
 
 ### 触ったファイル
+
 - `README.md`
 - `docs/two-mac-workflow.md`
 - `AGENTS.md`
@@ -1818,11 +2026,13 @@ Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 ## 追記 2026-06-27 — Codex: `/service` 完成版調整 + Runable要素除去
 
 ### 目的
+
 秋さん依頼「serviceページに書いてあること（あとデザイン）を完成版に仕上げたい。
 独自ドメイン対応って書いてあるけどそうなの？」に対応。
 あわせて「Runableのやつが表示されてるので、Runable要素をなくす」方針を反映。
 
 ### 対応
+
 - `/service` の構成を、ヒーロー → サイト表示イメージ → 想定読者 → できること → 料金 → 始め方 → FAQ → Contact に再編。
 - デザインを写真家サイト寄りの静かな編集調に調整。
   - 罫線中心、カード感を抑えた料金表、サイトプレビュー風のビジュアルを追加。
@@ -1837,6 +2047,7 @@ Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 - 管理画面に残っていた Runable バッジ前提コメントを削除。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun run build` 成功。
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
@@ -1850,10 +2061,12 @@ Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 - `public/og-image.jpg` / `public/og-service.jpg` を目視確認。
 
 ### 注意
+
 - `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の対象外。
 - push 後、本番でSNSプレビューを確認する場合は各SNS側のOGキャッシュが残る可能性あり。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/service.tsx`
 - `packages/web/public/og-image.jpg`
 - `packages/web/public/og-service.jpg`
@@ -1865,10 +2078,12 @@ Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 ## 追記 2026-06-27 — Codex: `/service` 実例・管理画面訴求の再調整
 
 ### 目的
+
 秋さん依頼「謎の空白グリッドをなくす」「ポートフォリオサイト内なら例はそこで見れるのでは」「管理画面をもっとアピールしたい」に対応。
 Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い指摘を反映。
 
 ### 対応
+
 - ヒーロー直下の空グリッド風プレビューを廃止し、公開写真APIから取得した実写真で「このサイト自体が、そのまま実例です」と見せる構成に変更。
   - `/gallery` / `/about` / `/contact` への導線を置き、実際の公開状態をそのまま見られるようにした。
 - 管理画面セクションを追加し、写真管理・S/M/Lサイズ指定・プロフィール/連絡先/SNS・見た目調整がブラウザからできることを明示。
@@ -1878,11 +2093,13 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - Pricingの主従を少しだけ強め、販売色が強くなりすぎない範囲で「Start here」とprimary枠を追加。
 
 ### Claude Code 相談メモ
+
 - P0: APIロード中に `photos=[]` のまま AdminPreview の大きな空白枠が出る点を先に直すべき、という指摘。
 - P1: 管理画面プレビューはアクティブ行や操作感を少し足すと伝わりやすい、Pricingの階層差も薄い、という指摘。
 - 反映: 空枠ガード、サイドメニューのアクティブ表現、Live previewラベル、Pricingの控えめな主従を追加。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun run build` 成功。
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
@@ -1896,18 +2113,22 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
   - 管理画面プレビューは写真読み込み後に表示され、空白枠だけの状態を避ける。
 
 ### 注意
+
 - `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の対象外。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/service.tsx`
 - `task.md`
 
 ## 追記 2026-06-27 — Codex: `/service` 実態に合わせた説明へ再修正
 
 ### 目的
+
 秋さん指摘「Live example と Admin が実際のサイトに即していない」「S/M/L が同じサイズで、注目する理由がわからない」「購入後に何が起きるのか」に対応。
 
 ### 対応
+
 - `/service` の `Live example` 風セクションを、実ページに即した `Actual site` セクションへ変更。
   - 作った風の見本ではなく、`/gallery` / `/about` / `/contact` を実際に見られる導線として提示。
   - 写真は「掲載写真の一部」として控えめに残し、実際のページ構造を見に行く流れにした。
@@ -1921,6 +2142,7 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `docs/sales-page.md` も同じ方針に合わせて、S/M/L 強調を弱め、購入後フローを追記。
 
 ### 検証
+
 - `cd packages/web && bun x tsc -b` 成功。
 - `cd packages/web && bun run build` 成功。
 - `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
@@ -1934,9 +2156,69 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
   - `Actual site` / `Admin` / `After purchase` の各セクション表示を確認。
 
 ### 注意
+
 - `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の対象外。
 
 ### 触ったファイル
+
 - `packages/web/src/web/pages/service.tsx`
 - `docs/sales-page.md`
 - `task.md`
+
+## 2026-06-27 — /service ページ バグ修正
+
+### 目的
+
+`/service` ページの表示バグ・導線バグ・配布版漏れを修正し、販売ページとして破綻なく読める状態にする。
+
+### 再現した不具合
+
+1. **Sticky CTA バーが初期読み込み時に表示される (P0)**
+   IntersectionObserver が sentinel（pricing セクション直後の 0px 要素）を「非交差」と判定し、ページ読み込み直後に sticky バーが表示されてしまう。sentinel はまだビューポート下方にあるが、Observer は「上方に通過した」と「まだ到達していない」を区別できていなかった。
+
+2. **Nested `<main>` 要素 (P1)**
+   ServicePage が `<main>` を使用。Layout が `<main id="main-content">` でラップするため、HTML5 違反のネスト `<main>` が発生。他の全ページは `<section>` を使用。
+
+3. **配布版での /service ルートアクセス可能 (P1)**
+   ナビリンクは `shouldShowServiceLink` で非表示にしているが、URL 直打ちで akieguchi 固有情報（メール、Stripe リンク、SNS、"akieguchi.com" テキスト）が配布版でも閲覧可能だった。
+
+### 修正内容
+
+1. **StickyCtaBar observer 修正**: `entry.boundingClientRect.top < 0` チェックを追加。sentinel がビューポート上方（ユーザーが pricing を通過した状態）のときのみバーを表示。
+
+2. **`<main>` → `<section>` に変更**: 他ページと同一パターンに統一。
+
+3. **`isServiceHost()` ガード追加**: `window.location.hostname` が akieguchi.com / localhost / 127.0.0.1 以外の場合、コンポーネントが `null` を返す。React hooks は条件分岐の前に呼び出し済み。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/service.tsx`
+- `task.md`
+
+### 検証コマンドと結果
+
+- `bunx tsc -b` → 成功
+- `bun run build` → 成功
+- `bun test ./src` → 173 テスト全パス
+- `bun run lint` → Lightbox.tsx の既存エラー（今回の変更と無関係）
+- `git diff --check` → whitespace 問題なし
+
+### ブラウザ確認した viewport
+
+- Desktop 1440x900: 全セクション表示正常、左ナビ表示、リンク正常
+- Tablet 768x1024: 左ナビ表示、レスポンシブ正常
+- Mobile 375x812: 初期表示で sticky バー非表示確認、スクロール後に正しく表示確認
+- 横スクロールなし（desktop/mobile 両方で確認）
+- Stripe Payment Link の href 2本とも正しい URL を確認
+- 全リンク先を Playwright で抽出・確認
+
+### Codex レビュー
+
+- agmsg で codex-reviewer に送信済み（レスポンス待ち）
+- レビュー観点: observer ロジック、distribution guard、dev 環境 allowlist
+
+### 未解決・今後確認すべき点
+
+- サーバー側 OGP 注入（ogp.ts）は `/service` パスで host をチェックしていない。配布版で `/service` の OGP だけ注入される可能性あり（ページ自体は空だが SEO 的に不整合）。
+- sitemap にも `/service` が全インスタンスで含まれる。配布版では除外が望ましい。
+- `claude-code-luxury-feel-prompt.md` と `service.tsx.handoff.md` は未追跡のまま（今回の対象外）。

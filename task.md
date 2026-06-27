@@ -2236,3 +2236,50 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 
 - P2: 配布版で `/service` にアクセスすると service.tsx チャンクがダウンロードされる（Stripe URL 等が JS ソース内に含まれる）。ルートレベルでの lazy-load ガードが理想だが、Stripe Payment Link は公開 URL のため実害は低い。
 - `claude-code-luxury-feel-prompt.md` と `service.tsx.handoff.md` は未追跡のまま（今回の対象外）。
+
+## 追記 2026-06-27 — Codex: `/service` 文字かぶり修正 + 改善案反映
+
+### 目的
+
+秋さん指摘「文字が写真にガンかぶりしてる」に対応し、あわせて Claude Design の改善案から
+ファーストビュー、ページ長、CTA、料金導線の優先度を整理する。
+
+### 再現した不具合
+
+- 本番 `https://akieguchi.com/service` の desktop 1440px で、ヒーロー左の縦写真が想定高さを超えて下の
+  `Actual site` セクションまで突き抜け、見出し・本文・リンク文字の上に重なっていた。
+- Playwright の DOM overlap 検査でも desktop で複数のテキスト/画像交差を検出。
+
+### 修正内容
+
+- `HeroShowcase` のグリッドを `overflow-hidden` / `h-full` / `min-h-0` / `grid-rows-3` で固定高さ内に閉じ込め、
+  縦長画像の intrinsic size でセクション外へ伸びないようにした。
+- ヒーロー内に「料金を見る」「実例を見る」の静かなCTAを追加。
+- `For photographers` と `What you get` を2カラムのコンパクトな1セクションへ統合。
+- `Pricing` を `Admin` 詳細より前に移動し、完成イメージ → 料金 → 詳細確認の順に読みやすくした。
+- `pages.render.test.tsx` の public page smoke に `service` を追加。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/service.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（24 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（175 pass / 0 fail）。
+- `git diff --check` 成功。
+- `cd packages/web && bun run lint` は既存の `Lightbox.tsx` `jsx-a11y(prefer-tag-over-role)` で失敗。今回差分外。
+- ローカル `http://127.0.0.1:5175/service` を Playwright で確認。
+  - desktop 1440x1100 / tablet 768x1024 / mobile 390x1200。
+  - テキストと画像の重なり検出 0。
+  - 横スクロールなし。
+  - Stripe Payment Link 2本の href 維持。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。

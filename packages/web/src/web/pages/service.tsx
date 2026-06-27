@@ -50,6 +50,21 @@ const FEATURES = [
   },
 ] as const;
 
+const CONCERNS = [
+  {
+    lead: "作品が流れてしまう",
+    body: "SNSに投稿した写真も、時間が経つと見つけてもらいにくくなります。",
+  },
+  {
+    lead: "仕事用に見せる場所がほしい",
+    body: "依頼や展示の話が来たとき、作品とプロフィールをまとめて渡せるURLを用意できます。",
+  },
+  {
+    lead: "写真の並びまで整えたい",
+    body: "写真の順番、余白、大きさをあとから調整して、自分の見せ方に寄せられます。",
+  },
+] as const;
+
 const LIVE_LINKS = [
   {
     href: "/gallery",
@@ -148,6 +163,29 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
+function ServiceButton({
+  href,
+  children,
+  variant = "solid",
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: "solid" | "outline";
+}) {
+  const cls =
+    variant === "solid"
+      ? "bg-[var(--foreground)] text-[var(--background)] hover:opacity-85"
+      : "border border-[rgba(var(--foreground-rgb),0.18)] text-[rgba(var(--foreground-rgb),0.64)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)]";
+  return (
+    <a
+      href={href}
+      className={`inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md px-7 py-2.5 font-en text-sm tracking-[0.03em] transition-all duration-300 ${cls}`}
+    >
+      {children}
+    </a>
+  );
+}
+
 /* ── Collapsible wrapper (grid-row animation) ── */
 function Collapsible({
   open,
@@ -228,15 +266,15 @@ function HeroShowcase({ photos }: { photos: ServicePhoto[] }) {
   const heroHeight = "clamp(260px, 40vw, 460px)";
 
   return (
-    <div className="mt-10 md:mt-14 page-entrance page-entrance-delay-2">
+    <div className="mt-9 md:mt-12 page-entrance page-entrance-delay-2">
       {/* Desktop: 1 large + up to 3 stacked */}
       <div
-        className="hidden sm:grid grid-cols-12 gap-2 md:gap-3"
+        className="hidden sm:grid grid-cols-12 gap-2 md:gap-3 overflow-hidden"
         style={{ height: heroHeight }}
       >
         <Link
           to="/gallery"
-          className="col-span-7 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] group"
+          className="col-span-7 block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] group"
           aria-label="Gallery"
         >
           <img
@@ -274,12 +312,12 @@ function HeroShowcase({ photos }: { photos: ServicePhoto[] }) {
             decoding="async"
           />
         </Link>
-        <div className="col-span-5 flex flex-col gap-2 md:gap-3">
+        <div className="col-span-5 grid h-full min-h-0 grid-rows-3 gap-2 md:gap-3 overflow-hidden">
           {heroPhotos.slice(1, 4).map((photo, i) => (
             <Link
               key={photo.id}
               to="/gallery"
-              className="flex-1 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] group"
+              className="block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] group"
               aria-label="Gallery"
             >
               <img
@@ -312,14 +350,14 @@ function HeroShowcase({ photos }: { photos: ServicePhoto[] }) {
 
       {/* Mobile: 2 photos side by side */}
       <div
-        className="grid sm:hidden grid-cols-2 gap-2"
+        className="grid sm:hidden grid-cols-2 gap-2 overflow-hidden"
         style={{ height: "clamp(200px, 52vw, 300px)" }}
       >
         {heroPhotos.slice(0, 2).map((photo) => (
           <Link
             key={photo.id}
             to="/gallery"
-            className="overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)]"
+            className="block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)]"
             aria-label="Gallery"
           >
             <img
@@ -355,7 +393,7 @@ function HeroShowcase({ photos }: { photos: ServicePhoto[] }) {
 /* ── Actual site proof (compact) ── */
 function PortfolioProof() {
   return (
-    <section id="example" className="mt-12 md:mt-16 page-entrance scroll-mt-24">
+    <section id="example" className="mt-10 md:mt-14 page-entrance scroll-mt-24">
       <SectionLabel>Actual site</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
         <h2
@@ -409,63 +447,76 @@ function PortfolioProof() {
           </Link>
         ))}
       </div>
+      <div className="mt-7 text-center">
+        <ServiceButton href="#pricing" variant="outline">
+          料金を見る
+        </ServiceButton>
+      </div>
     </section>
   );
 }
 
-/* ── For photographers (stronger messaging) ── */
-function ForPhotographers() {
-  const concerns = [
-    {
-      lead: "作品が流れてしまう",
-      body: "Instagramに投稿しても、時間が経てばタイムラインの下に沈んでしまう。見てほしい写真を、ずっと置いておける場所があれば。",
-    },
-    {
-      lead: "見せられる場所がない",
-      body: "撮影の仕事やコラボの話が来たとき、作品をまとめて見せられるURLがほしい。SNSのプロフィールだけでは足りない。",
-    },
-    {
-      lead: "見え方を自分で決めたい",
-      body: "写真の並び順、余白、大きさまで自分で整えたい。テンプレートの制約に合わせるのではなく。",
-    },
-  ] as const;
+/* ── Audience + value (compact) ── */
+function AudienceAndFeatures() {
   return (
-    <section className="mt-12 md:mt-16 page-entrance">
-      <SectionLabel>For photographers</SectionLabel>
-      <p
-        className="text-center font-ja text-[rgba(var(--foreground-rgb),0.72)] mb-8"
-        style={{
-          fontSize: "clamp(1.05rem, 1.8vw, 1.3rem)",
-          letterSpacing: "0.03em",
-          lineHeight: 1.75,
-        }}
-      >
-        こんな思いはありませんか?
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
-        {concerns.map((c) => (
-          <div
-            key={c.lead}
-            className="border-t border-[rgba(var(--foreground-rgb),0.10)] pt-5"
-          >
-            <p
-              className="font-ja text-[rgba(var(--foreground-rgb),0.74)]"
-              style={{
-                fontSize: "0.98rem",
-                letterSpacing: "0.03em",
-                lineHeight: 1.6,
-              }}
-            >
-              {c.lead}
-            </p>
-            <p
-              className="mt-2.5 text-[rgba(var(--foreground-rgb),0.48)]"
-              style={{ fontSize: "0.85rem", lineHeight: 1.85 }}
-            >
-              {c.body}
-            </p>
+    <section className="mt-10 md:mt-14 page-entrance">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
+        <div>
+          <SectionLabel>For photographers</SectionLabel>
+          <div className="border-y border-[rgba(var(--foreground-rgb),0.08)]">
+            {CONCERNS.map((item) => (
+              <div
+                key={item.lead}
+                className="border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
+              >
+                <h2
+                  className="font-ja text-[rgba(var(--foreground-rgb),0.76)]"
+                  style={{
+                    fontSize: "0.98rem",
+                    letterSpacing: "0.03em",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {item.lead}
+                </h2>
+                <p
+                  className="mt-1.5 text-[rgba(var(--foreground-rgb),0.50)]"
+                  style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
+                >
+                  {item.body}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        <div>
+          <SectionLabel>What you get</SectionLabel>
+          <div className="border-y border-[rgba(var(--foreground-rgb),0.08)]">
+            {FEATURES.map((item) => (
+              <div
+                key={item.title}
+                className="border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
+              >
+                <h2
+                  className="font-ja text-[rgba(var(--foreground-rgb),0.76)]"
+                  style={{
+                    fontSize: "0.98rem",
+                    letterSpacing: "0.03em",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {item.title}
+                </h2>
+                <p
+                  className="mt-1.5 text-[rgba(var(--foreground-rgb),0.50)]"
+                  style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
+                >
+                  {item.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -587,7 +638,7 @@ function AfterPurchase() {
   return (
     <section
       id="after-purchase"
-      className="mt-12 md:mt-16 page-entrance scroll-mt-24"
+      className="mt-10 md:mt-14 page-entrance scroll-mt-24"
     >
       <SectionLabel>After purchase</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
@@ -757,23 +808,6 @@ function Plan({
         {cLabel}
       </a>
     </article>
-  );
-}
-
-/* ── Inline CTA ── */
-function InlineCTA() {
-  return (
-    <div className="mt-10 text-center page-entrance">
-      <a
-        href="#pricing"
-        className="inline-flex items-center font-en text-sm tracking-[0.03em] text-[rgba(var(--foreground-rgb),0.50)] hover:text-[rgba(var(--foreground-rgb),0.78)] border border-[rgba(var(--foreground-rgb),0.12)] hover:border-[rgba(var(--foreground-rgb),0.28)] rounded-full px-5 py-2 transition-all duration-300 gap-2"
-      >
-        <span>Pricing</span>
-        <span aria-hidden="true" className="text-[0.65rem]">
-          &darr;
-        </span>
-      </a>
-    </div>
   );
 }
 
@@ -950,9 +984,15 @@ export default function ServicePage() {
           テンプレートと格闘せずに持てる、静かで完成されたポートフォリオ。
           管理画面から写真、プロフィール、連絡先を入れて、自分の作品を見せる場所として運用できます。
         </p>
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 page-entrance page-entrance-delay-1">
+          <ServiceButton href="#pricing">料金を見る</ServiceButton>
+          <ServiceButton href="#example" variant="outline">
+            実例を見る
+          </ServiceButton>
+        </div>
         {/* Sub-nav: pill-style buttons */}
         <nav
-          className="mt-8 flex flex-wrap items-center justify-center gap-3 page-entrance page-entrance-delay-1"
+          className="mt-6 flex flex-wrap items-center justify-center gap-2.5 page-entrance page-entrance-delay-1"
           aria-label="Page navigation"
         >
           {[
@@ -978,47 +1018,13 @@ export default function ServicePage() {
       {/* ── Actual site links ── */}
       <PortfolioProof />
 
-      {/* ── For photographers ── */}
-      <ForPhotographers />
-
-      {/* ── What you get ── */}
-      <section className="mt-12 md:mt-16 page-entrance">
-        <SectionLabel>What you get</SectionLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8 max-w-4xl mx-auto">
-          {FEATURES.map((item) => (
-            <section
-              key={item.title}
-              className="border-t border-[rgba(var(--foreground-rgb),0.09)] pt-5"
-            >
-              <h2
-                className="font-ja text-[rgba(var(--foreground-rgb),0.78)]"
-                style={{
-                  fontSize: "1rem",
-                  letterSpacing: "0.03em",
-                  lineHeight: 1.6,
-                }}
-              >
-                {item.title}
-              </h2>
-              <p
-                className="mt-2.5 text-[rgba(var(--foreground-rgb),0.52)]"
-                style={bodyStyle}
-              >
-                {item.body}
-              </p>
-            </section>
-          ))}
-        </div>
-        <InlineCTA />
-      </section>
-
-      {/* ── Admin (collapsible) ── */}
-      <AdminConnection />
+      {/* ── Fit + value ── */}
+      <AudienceAndFeatures />
 
       {/* ── Pricing ── */}
       <section
         id="pricing"
-        className="mt-14 md:mt-20 page-entrance scroll-mt-24"
+        className="mt-12 md:mt-16 page-entrance scroll-mt-24"
       >
         <SectionLabel>Pricing</SectionLabel>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 items-start">
@@ -1071,11 +1077,14 @@ export default function ServicePage() {
       {/* Sentinel for sticky CTA visibility */}
       <StickyCtaBar />
 
+      {/* ── Admin (collapsible) ── */}
+      <AdminConnection />
+
       {/* ── After purchase (collapsible) ── */}
       <AfterPurchase />
 
       {/* ── FAQ (accordion) ── */}
-      <section className="mt-12 md:mt-16 page-entrance">
+      <section className="mt-10 md:mt-14 page-entrance">
         <SectionLabel>FAQ</SectionLabel>
         <div className="max-w-2xl mx-auto">
           <Accordion items={FAQS.map((f) => ({ q: f.q, a: f.a }))} />

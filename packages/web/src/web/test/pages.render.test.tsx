@@ -39,6 +39,7 @@ const pages: [string, () => Promise<{ default: React.ComponentType }>][] = [
   ["series-detail", () => import("../pages/series-detail")],
   ["profile", () => import("../pages/profile")],
   ["contact", () => import("../pages/contact")],
+  ["service", () => import("../pages/service")],
   ["admin-login", () => import("../pages/admin-login")],
 ];
 

@@ -3,7 +3,13 @@ import app from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
 import { eq, and, isNull, sql } from "drizzle-orm";
-import { injectOgp, siteUrlFrom, escapeHtml, BUILD_ID } from "./api/ogp";
+import {
+  injectOgp,
+  siteUrlFrom,
+  escapeHtml,
+  BUILD_ID,
+  isServiceSiteUrl,
+} from "./api/ogp";
 import { imageUrlWithParams } from "./shared/image-url";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
@@ -115,7 +121,7 @@ async function getGalleryPreloadImages(): Promise<ImageRef[]> {
             ? sql`${schema.photos.createdAt} DESC`
             : schema.photos.sortOrder;
     const rows = await withRetry(() =>
-        db
+      db
         .select({
           url: schema.photos.url,
           rotationDeg: schema.photos.rotationDeg,
@@ -200,7 +206,14 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
 
 async function buildSitemap(fallbackOrigin: string): Promise<string> {
   const siteUrl = siteUrlFrom(await getSettings(), fallbackOrigin);
-  const paths = ["/", "/gallery", "/series", "/about", "/contact", "/service"];
+  const paths = [
+    "/",
+    "/gallery",
+    "/series",
+    "/about",
+    "/contact",
+    ...(isServiceSiteUrl(siteUrl) ? ["/service"] : []),
+  ];
   // Include each published series detail page so crawlers discover the actual
   // work, not just the section index. Failure → static paths only (never throw).
   let seriesPaths: string[] = [];

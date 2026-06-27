@@ -43,10 +43,19 @@ export function setAttr(html: string, re: RegExp, value: string): string {
 // The Runable hostname must never leak into these — Search Console treats it
 // as a separate (duplicate) property and errors on the mismatch.
 // Deploy fingerprint — Railway sets RAILWAY_GIT_COMMIT_SHA automatically.
-export const BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev";
+export const BUILD_ID =
+  process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ?? "dev";
 
-export function siteUrlFrom(settings: Record<string, string>, fallbackOrigin = ""): string {
-  return (settings.siteUrl || process.env.SITE_URL || fallbackOrigin || DEFAULT_SITE_URL).replace(/\/+$/, "");
+export function siteUrlFrom(
+  settings: Record<string, string>,
+  fallbackOrigin = "",
+): string {
+  return (
+    settings.siteUrl ||
+    process.env.SITE_URL ||
+    fallbackOrigin ||
+    DEFAULT_SITE_URL
+  ).replace(/\/+$/, "");
 }
 // Per-route titles so each page is distinct for search/social, not all "home".
 const PAGE_TITLES: Record<string, string> = {
@@ -57,15 +66,24 @@ const PAGE_TITLES: Record<string, string> = {
   "/contact": "Contact",
 };
 
-// /service markets the portfolio product itself (to other photographers), so it
-// carries its own social card instead of the photographer-portfolio defaults — a
-// shared link should read "写真家向けポートフォリオサイト", not the owner's name.
+const SERVICE_HOST = "akieguchi.com";
+
+export function isServiceSiteUrl(siteUrl: string): boolean {
+  try {
+    return (
+      new URL(siteUrl).hostname.replace(/^www\./, "").toLowerCase() ===
+      SERVICE_HOST
+    );
+  } catch {
+    return false;
+  }
+}
+
 const SERVICE_OG = {
   title: "写真家のためのポートフォリオサイト",
   desc: "写真を上げて並べるだけで、雑誌のように見える、あなただけのポートフォリオ。自分で立てる ¥10,000 ／ おまかせ設定 ¥30,000。",
   image: "/og-service.jpg",
 };
-
 
 export function injectOgp(
   html: string,
@@ -88,26 +106,52 @@ export function injectOgp(
   // usePageTitle.ts mirrors this exact composition so the SPA tab title and the
   // server-rendered <title>/og:title agree. (When siteName(JA) is unset the JA
   // segment drops out, leaving "Name EN | Photography".)
+  const siteUrl = siteUrlFrom(settings, fallbackOrigin);
   const nameJa = settings.siteName || "";
-  const base = [nameJa && nameJa !== siteName ? nameJa : null, siteName, subtitle].filter(Boolean).join(" | ");
-  const isService = pathname === "/service";
+  const base = [
+    nameJa && nameJa !== siteName ? nameJa : null,
+    siteName,
+    subtitle,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const isServiceSite = isServiceSiteUrl(siteUrl);
+  const isService = pathname === "/service" && isServiceSite;
   const page = PAGE_TITLES[pathname];
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = isService
     ? SERVICE_OG.title
-    : override?.title ? `${override.title} | ${base}` : (page ? `${page} | ${base}` : base);
-  const desc = isService ? SERVICE_OG.desc : (override?.desc || siteDescriptionFrom(settings));
+    : override?.title
+      ? `${override.title} | ${base}`
+      : page
+        ? `${page} | ${base}`
+        : base;
+  const desc = isService
+    ? SERVICE_OG.desc
+    : override?.desc || siteDescriptionFrom(settings);
   // Prefer an override image (series cover), then the hero photo, then profile, then
   // the static default already in index.html. /service uses its own fixed card image
   // (a flat file, so no /api/images resize query is appended).
-  const imgBase = isService ? SERVICE_OG.image : (override?.image || heroImg || settings.heroPhotoUrl || settings.profilePhotoUrl);
+  const imgBase = isService
+    ? SERVICE_OG.image
+    : override?.image ||
+      heroImg ||
+      settings.heroPhotoUrl ||
+      settings.profilePhotoUrl;
   const imgRotationDeg = override?.image
     ? override.imageRotationDeg
     : heroImg && imgBase === heroImg
       ? heroRotationDeg
       : 0;
-  const ogImage = imgBase ? (isService ? imgBase : imageUrlWithParams(imgBase, { w: 1200, q: 85, rotationDeg: imgRotationDeg })) : "";
-  const siteUrl = siteUrlFrom(settings, fallbackOrigin);
+  const ogImage = imgBase
+    ? isService
+      ? imgBase
+      : imageUrlWithParams(imgBase, {
+          w: 1200,
+          q: 85,
+          rotationDeg: imgRotationDeg,
+        })
+    : "";
   // /profile and /about render the same page — canonicalise /profile → /about so
   // search engines don't treat them as duplicate content.
   const canonPath = pathname === "/profile" ? "/about" : pathname;
@@ -115,52 +159,120 @@ export function injectOgp(
 
   let out = html;
   // Title (escaped; the <title> body can't contain raw < anyway)
-  out = out.replace(/<title>[^<]*<\/title>/, () => `<title>${escapeHtml(title)}</title>`);
+  out = out.replace(
+    /<title>[^<]*<\/title>/,
+    () => `<title>${escapeHtml(title)}</title>`,
+  );
   // Meta description / author
-  out = setAttr(out, /(<meta\s+name="description"\s+content=")[^"]*(")/,  desc);
-  out = setAttr(out, /(<meta\s+name="author"\s+content=")[^"]*(")/,       siteName);
+  out = setAttr(out, /(<meta\s+name="description"\s+content=")[^"]*(")/, desc);
+  out = setAttr(out, /(<meta\s+name="author"\s+content=")[^"]*(")/, siteName);
   // Keep the admin app and unknown (404 fallback) paths out of search indexes so
   // junk URLs aren't indexed with the homepage's title (defence in depth with robots.txt).
-  const KNOWN_ROUTES = ["/", "/gallery", "/series", "/about", "/profile", "/contact", "/service"];
+  const KNOWN_ROUTES = [
+    "/",
+    "/gallery",
+    "/series",
+    "/about",
+    "/profile",
+    "/contact",
+    "/service",
+  ];
   // /series/:slug is indexable only when the slug resolved to a real published
   // series (override.title set by the caller). Unknown/unpublished slugs render
   // the SPA's not-found view with HTTP 200 — without this they'd be indexable
   // soft-404 duplicates of the homepage title.
-  const isKnown = KNOWN_ROUTES.includes(pathname)
-    || (pathname.startsWith("/series/") && !!override?.title);
-  if (pathname.startsWith("/admin") || !isKnown) {
-    out = setAttr(out, /(<meta\s+name="robots"\s+content=")[^"]*(")/, "noindex, nofollow");
+  const isKnown =
+    KNOWN_ROUTES.includes(pathname) ||
+    (pathname.startsWith("/series/") && !!override?.title);
+  const serviceOnOtherHost = pathname === "/service" && !isServiceSite;
+  if (pathname.startsWith("/admin") || !isKnown || serviceOnOtherHost) {
+    out = setAttr(
+      out,
+      /(<meta\s+name="robots"\s+content=")[^"]*(")/,
+      "noindex, nofollow",
+    );
   }
   // Negation of the noindex condition above — pages we actually advertise. Used to
   // skip JSON-LD + GA4 on /admin and soft-404s (no analytics pollution from the
   // admin app; no structured data on pages marked noindex).
-  const indexable = !pathname.startsWith("/admin") && isKnown;
+  const indexable =
+    !pathname.startsWith("/admin") && isKnown && !serviceOnOtherHost;
   // Canonical + og:url — per route, not always the homepage
-  out = setAttr(out, /(<link\s+rel="canonical"\s+href=")[^"]*(")/,        canonical);
-  out = setAttr(out, /(<meta\s+property="og:url"\s+content=")[^"]*(")/,   canonical);
+  out = setAttr(out, /(<link\s+rel="canonical"\s+href=")[^"]*(")/, canonical);
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:url"\s+content=")[^"]*(")/,
+    canonical,
+  );
   // OGP
-  out = setAttr(out, /(<meta\s+property="og:title"\s+content=")[^"]*(")/,       title);
-  out = setAttr(out, /(<meta\s+property="og:description"\s+content=")[^"]*(")/,  desc);
-  out = setAttr(out, /(<meta\s+property="og:site_name"\s+content=")[^"]*(")/,    `${siteName} Photography`);
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:title"\s+content=")[^"]*(")/,
+    title,
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:description"\s+content=")[^"]*(")/,
+    desc,
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:site_name"\s+content=")[^"]*(")/,
+    `${siteName} Photography`,
+  );
   if (ogImage) {
-    out = setAttr(out, /(<meta\s+property="og:image"\s+content=")[^"]*(")/,      `${siteUrl}${ogImage}`);
-    out = setAttr(out, /(<meta\s+property="og:image:width"\s+content=")[^"]*(")/,  "1200");
-    out = setAttr(out, /(<meta\s+property="og:image:height"\s+content=")[^"]*(")/,  "630");
-    out = setAttr(out, /(<meta\s+name="twitter:image"\s+content=")[^"]*(")/,     `${siteUrl}${ogImage}`);
-    out = setAttr(out, /(<meta\s+property="og:image:alt"\s+content=")[^"]*(")/,  title);
+    out = setAttr(
+      out,
+      /(<meta\s+property="og:image"\s+content=")[^"]*(")/,
+      `${siteUrl}${ogImage}`,
+    );
+    out = setAttr(
+      out,
+      /(<meta\s+property="og:image:width"\s+content=")[^"]*(")/,
+      "1200",
+    );
+    out = setAttr(
+      out,
+      /(<meta\s+property="og:image:height"\s+content=")[^"]*(")/,
+      "630",
+    );
+    out = setAttr(
+      out,
+      /(<meta\s+name="twitter:image"\s+content=")[^"]*(")/,
+      `${siteUrl}${ogImage}`,
+    );
+    out = setAttr(
+      out,
+      /(<meta\s+property="og:image:alt"\s+content=")[^"]*(")/,
+      title,
+    );
   }
   // Twitter
-  out = setAttr(out, /(<meta\s+name="twitter:title"\s+content=")[^"]*(")/,       title);
-  out = setAttr(out, /(<meta\s+name="twitter:description"\s+content=")[^"]*(")/,  desc);
+  out = setAttr(
+    out,
+    /(<meta\s+name="twitter:title"\s+content=")[^"]*(")/,
+    title,
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+name="twitter:description"\s+content=")[^"]*(")/,
+    desc,
+  );
 
   // Mobile browser chrome: reflect the admin-configured background from the first
   // server paint. index.html ships a static light theme-color (#f7f7f7); without
   // this, a dark themeBg shows a light status bar until provider.tsx's client-side
   // sync runs (provider.tsx ~L147). setAttr replaces the meta in place (no duplicate).
-  out = setAttr(out, /(<meta\s+name="theme-color"\s+content=")[^"]*(")/, settings.themeBg || "#f7f7f7");
+  out = setAttr(
+    out,
+    /(<meta\s+name="theme-color"\s+content=")[^"]*(")/,
+    settings.themeBg || "#f7f7f7",
+  );
 
   // F: structured data (JSON-LD) for search engines — indexable pages only.
-  let headInjection = indexable ? buildJsonLd(settings, pathname, override, fallbackOrigin) : "";
+  let headInjection = indexable
+    ? buildJsonLd(settings, pathname, override, fallbackOrigin)
+    : "";
   // Search Console site verification — paste the `content` value of Google's
   // HTML-tag method into admin settings; without this, every verification
   // attempt would need a rebuild+redeploy cycle.
@@ -185,7 +297,10 @@ export function injectOgp(
           `${imageUrlWithParams(heroImg, { w, q: 88, rotationDeg: heroRotationDeg })} ${w}w`,
       )
       .join(", ");
-    const heroSizes = settings.heroMode === "single" ? "100vw" : "(min-width: 1200px) 1152px, 100vw";
+    const heroSizes =
+      settings.heroMode === "single"
+        ? "100vw"
+        : "(min-width: 1200px) 1152px, 100vw";
     headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
   }
   // GA4 — only on indexable public pages (don't track the admin app or soft-404s).
@@ -217,7 +332,11 @@ function buildJsonLd(
   const name = displayNameFrom(settings);
   const nameEn = displayNameEnFrom(settings);
   const desc = siteDescriptionFrom(settings);
-  const sameAs = [settings.profileInstagram, settings.profileTwitter, settings.profileNote].filter(Boolean);
+  const sameAs = [
+    settings.profileInstagram,
+    settings.profileTwitter,
+    settings.profileNote,
+  ].filter(Boolean);
   const image = settings.profilePhotoUrl
     ? `${siteUrl}${imageUrlWithParams(settings.profilePhotoUrl, { w: 800, q: 85 })}`
     : undefined;
@@ -265,7 +384,11 @@ function buildJsonLd(
           }
         : {}),
       author: { "@type": "Person", name },
-      isPartOf: { "@type": "ImageGallery", name: `${nameEn} | Photography`, url: `${siteUrl}/gallery` },
+      isPartOf: {
+        "@type": "ImageGallery",
+        name: `${nameEn} | Photography`,
+        url: `${siteUrl}/gallery`,
+      },
     });
     // Home › Series › <title> trail so series pages can show breadcrumb rich
     // results instead of a bare URL. All three items resolve to real routes.
@@ -273,12 +396,24 @@ function buildJsonLd(
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: nameEn, item: siteUrl },
-        { "@type": "ListItem", position: 2, name: "Series", item: `${siteUrl}/series` },
-        { "@type": "ListItem", position: 3, name: series.title, item: `${siteUrl}${pathname}` },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Series",
+          item: `${siteUrl}/series`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: series.title,
+          item: `${siteUrl}${pathname}`,
+        },
       ],
     });
   }
-  const json = JSON.stringify({ "@context": "https://schema.org", "@graph": graph })
-    .replace(/</g, "\\u003c"); // guard against </script> breakout
+  const json = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": graph,
+  }).replace(/</g, "\\u003c"); // guard against </script> breakout
   return `<script type="application/ld+json">${json}</script>`;
 }

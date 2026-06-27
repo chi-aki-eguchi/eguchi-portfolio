@@ -2214,11 +2214,25 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 
 ### Codex レビュー
 
-- agmsg で codex-reviewer に送信済み（レスポンス待ち）
-- レビュー観点: observer ロジック、distribution guard、dev 環境 allowlist
+- agmsg で codex-reviewer にレビュー依頼 → P1 残指摘を受領
+- 指摘内容: クライアント側ガードだけではサーバー側 OGP/sitemap が配布版でも `/service` を公開
+- 追加修正 (efbcc8a):
+  - `ogp.ts`: `isServiceSiteUrl()` ヘルパー追加。SERVICE_OG は akieguchi.com のみ適用、他ホストでは noindex
+  - `server.ts`: sitemap から `/service` を非 akieguchi ホストで除外
+  - `ogp.test.ts`: テスト更新 + 非 akieguchi noindex テスト追加（174 テスト全パス）
+
+### 追加で触ったファイル
+
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/server.ts`
+
+### Commit
+
+- `86dcd63` — クライアント側修正（sticky CTA、nested main、distribution guard）
+- `efbcc8a` — サーバー側修正（OGP/sitemap ホストゲート）
 
 ### 未解決・今後確認すべき点
 
-- サーバー側 OGP 注入（ogp.ts）は `/service` パスで host をチェックしていない。配布版で `/service` の OGP だけ注入される可能性あり（ページ自体は空だが SEO 的に不整合）。
-- sitemap にも `/service` が全インスタンスで含まれる。配布版では除外が望ましい。
+- P2: 配布版で `/service` にアクセスすると service.tsx チャンクがダウンロードされる（Stripe URL 等が JS ソース内に含まれる）。ルートレベルでの lazy-load ガードが理想だが、Stripe Payment Link は公開 URL のため実害は低い。
 - `claude-code-luxury-feel-prompt.md` と `service.tsx.handoff.md` は未追跡のまま（今回の対象外）。

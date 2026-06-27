@@ -2344,3 +2344,43 @@ Claude Design の追加レビューを受け、`/service` を「何のサービ�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 - commit hash は commit 作成後の最終報告に記載する。
+
+## 追記 2026-06-28 — Codex: `/service` コピー微調整
+
+### 目的
+
+Claude Design の最終レビューを受け、構成は維持したまま、説明的すぎる文言を写真家向けに少し近い言葉へ寄せる。
+
+### 修正内容
+
+- `ACTUAL SITE` の説明文を短くし、「このサイト自体が実例です。Gallery・About・Contact をそのまま確認できます。」へ変更。
+- `FOR PHOTOGRAPHERS` 内の `Need` / `Site` ラベルを `こんな悩み` / `このサイトなら` に変更。
+- `AFTER PURCHASE` の見出しを「購入後の流れ。」に絞り、本文をネガティブ始まりから「確認後、選んだプランに合わせて案内を送ります。」始まりに変更。
+- ヒーローのブラウザモックアップと `ACTUAL SITE` の間隔を少し詰めた。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/service.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（24 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（175 pass / 0 fail）。
+- `git diff --check` 成功。
+- `cd packages/web && bun run lint` は既存の `packages/web/src/web/components/Lightbox.tsx:1195`
+  `jsx-a11y(prefer-tag-over-role)` で失敗。今回差分外。
+- ローカル `http://127.0.0.1:5175/service` を Playwright で確認。
+  - Desktop 1440x1100 / Mobile 390x1200。
+  - 変更文言が反映され、古い「決済後すぐに自動発行」文言が消えていることを確認。
+  - 横スクロールなし。
+  - 初期表示のテキストと画像の重なり検出 0。
+  - console error なし。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+- commit hash は commit 作成後の最終報告に記載する。

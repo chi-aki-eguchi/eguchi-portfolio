@@ -413,7 +413,7 @@ function SitePagePreview({
 /* ── Actual site proof (compact) ── */
 function PortfolioProof({ photos }: { photos: ServicePhoto[] }) {
   return (
-    <section id="example" className="mt-10 md:mt-14 page-entrance scroll-mt-24">
+    <section id="example" className="mt-7 md:mt-10 page-entrance scroll-mt-24">
       <SectionLabel>Actual site</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
         <h2
@@ -432,8 +432,8 @@ function PortfolioProof({ photos }: { photos: ServicePhoto[] }) {
           className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
           style={bodyStyle}
         >
-          akieguchi.com
-          の作品一覧、プロフィール、問い合わせ導線が、そのまま公開後の見え方の参考になります。
+          このサイト自体が実例です。Gallery・About・Contact
+          をそのまま確認できます。
         </p>
       </div>
       <div className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
@@ -460,8 +460,8 @@ function AudienceAndFeatures() {
             className="grid grid-cols-1 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 md:gap-10 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-5"
           >
             <div>
-              <p className="font-en text-[0.58rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
-                Need
+              <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.36)]">
+                こんな悩み
               </p>
               <h2
                 className="mt-1.5 font-ja text-[rgba(var(--foreground-rgb),0.76)]"
@@ -481,8 +481,8 @@ function AudienceAndFeatures() {
               </p>
             </div>
             <div>
-              <p className="font-en text-[0.58rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
-                Site
+              <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.36)]">
+                このサイトなら
               </p>
               <h2
                 className="mt-1.5 font-ja text-[rgba(var(--foreground-rgb),0.76)]"
@@ -526,15 +526,13 @@ function PurchaseDetails() {
             lineHeight: 1.75,
           }}
         >
-          購入後の流れと、
-          <wbr />
-          管理画面でできること。
+          購入後の流れ。
         </h2>
         <p
           className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
           style={bodyStyle}
         >
-          決済後すぐに自動発行されるサービスではありません。確認後、選んだプランに合わせて案内します。
+          確認後、選んだプランに合わせて案内を送ります。写真の入れ方や管理画面での更新も、最初にまとめてお伝えします。
         </p>
         <button
           type="button"

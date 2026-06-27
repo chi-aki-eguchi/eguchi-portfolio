@@ -2283,3 +2283,64 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
+## 追記 2026-06-28 — Codex: `/service` Claude Design 再改善
+
+### 目的
+
+Claude Design の追加レビューを受け、`/service` を「何のサービスか一瞬で伝わる」「選択肢が多すぎない」
+販売ページへさらに整える。前回修正で残った表示崩れリスクもあわせて確認する。
+
+### 確認した課題
+
+- ファーストビューに「料金を見る」「実例を見る」に加えて、EXAMPLE / PRICING / ADMIN / AFTER の
+  セクションリンクが並び、CTA の選択肢が多かった。
+- ヒーロービジュアルが作品写真の直置きで、完成するポートフォリオサイトのイメージとしては伝わりにくかった。
+- `FOR PHOTOGRAPHERS` と `WHAT YOU GET` の左右項目数が合わず、課題と解決の対応関係が読み取りにくかった。
+- `ADMIN` と `AFTER PURCHASE` が別セクションで、購入後の流れとしてはやや散っていた。
+- 固定バーの `Plans` 表記が曖昧だった。
+
+### 修正内容
+
+- ヒーローのセクションリンクを削除し、CTA を「料金を見る」「実例を見る」の2つに整理。
+- ヒーロー写真グリッドを、ブラウザウィンドウ風の「サイトプレビュー」へ変更。大きい写真は `mediumUrl` を優先。
+- 実例セクションを、各ページへのテキストリンクだけでなく写真サムネイル付きの行に変更。
+- `FOR PHOTOGRAPHERS` を `Need` / `Site` の対応表にして、3つの課題と3つの解決を横並びで読めるようにした。
+- `ADMIN` と `AFTER PURCHASE` を `PurchaseDetails` に統合し、料金直下で「購入後の流れと管理画面」を開閉できるようにした。
+- 実例下の「料金を見る」は塗りボタンに変更。
+- 固定バーの `Plans` を「料金を見る」に変更し、初期表示では隠れ、ファーストビューを少し抜けると表示されるスクロール連動へ変更。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/service.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（24 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（175 pass / 0 fail）。
+- `git diff --check` 成功。
+- `cd packages/web && bun run lint` は既存の `packages/web/src/web/components/Lightbox.tsx:1195`
+  `jsx-a11y(prefer-tag-over-role)` で失敗。今回差分外。
+
+### ブラウザ確認
+
+- ローカル `http://127.0.0.1:5175/service` を Playwright で確認。
+- Desktop 1440x1100 / Tablet 768x1024 / Mobile 390x1200。
+- 初期表示で固定バー非表示、少しスクロール後に表示。
+- 横スクロールなし。
+- 初期表示のテキストと画像の重なり検出 0。
+- console error なし。
+- Stripe Payment Link 2本は既存 URL を維持。
+
+### Codex レビュー
+
+- 価格、Stripe URL、routing、settings、DB、OGP、sitemap は変更していないため agmsg レビューなし。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+- commit hash は commit 作成後の最終報告に記載する。

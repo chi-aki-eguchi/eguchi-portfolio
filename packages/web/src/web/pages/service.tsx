@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { usePageEntrance } from "../hooks/usePageEntrance";
@@ -31,37 +31,49 @@ const bodyStyle = {
   letterSpacing: "var(--body-tracking, 0.01em)",
 } as const;
 
-const FEATURES = [
+const PAIN_SOLUTIONS = [
   {
-    title: "写真が主役の見え方",
-    body: "余白、並び、サイズ感が最初から整ったポートフォリオ。写真を入れるだけで、作品集のように見せられます。",
+    concern: "作品が流れてしまう",
+    concernBody:
+      "SNSに投稿した写真も、時間が経つと見つけてもらいにくくなります。",
+    solution: "写真が主役の見え方",
+    solutionBody:
+      "余白、並び、サイズ感が最初から整った場所に、作品を長く置いておけます。",
   },
   {
-    title: "管理画面から更新",
-    body: "写真の追加、並び替え、プロフィール、連絡先をブラウザから編集。コードを触らずに運用できます。",
+    concern: "仕事用に見せる場所がほしい",
+    concernBody:
+      "依頼や展示の話が来たとき、作品とプロフィールをまとめて渡せるURLが必要になります。",
+    solution: "プロフィールと連絡先まで一体化",
+    solutionBody:
+      "作品一覧、プロフィール、問い合わせ導線をひとつのサイトとして見せられます。",
   },
   {
-    title: "作品ごとの見せ方",
-    body: "見せたい写真を大きく、流れで見せたい写真を控えめに。カテゴリやシリーズも含めて、作品の見え方を整えられます。",
-  },
-  {
-    title: "公開後の基本整備",
-    body: "スマホ表示、SNS共有、検索向けの情報、問い合わせ導線まで、写真家サイトに必要な土台を揃えています。",
+    concern: "写真の並びまで整えたい",
+    concernBody:
+      "写真の順番、余白、大きさまで、自分の見せ方に寄せたくなることがあります。",
+    solution: "管理画面から更新",
+    solutionBody:
+      "写真、並び順、プロフィール、連絡先、見た目をブラウザから調整できます。",
   },
 ] as const;
 
-const CONCERNS = [
+const PURCHASE_DETAILS = [
   {
-    lead: "作品が流れてしまう",
-    body: "SNSに投稿した写真も、時間が経つと見つけてもらいにくくなります。",
+    title: "決済後の案内",
+    body: "Stripe の支払い控えが届いたあと、こちらでも確認し、選んだプランに合わせて次の案内を送ります。",
   },
   {
-    lead: "仕事用に見せる場所がほしい",
-    body: "依頼や展示の話が来たとき、作品とプロフィールをまとめて渡せるURLを用意できます。",
+    title: "管理画面で更新",
+    body: "写真の追加、並び替え、プロフィール、連絡先、見た目の調整をブラウザから行えます。",
   },
   {
-    lead: "写真の並びまで整えたい",
-    body: "写真の順番、余白、大きさをあとから調整して、自分の見せ方に寄せられます。",
+    title: "自分で立てる場合",
+    body: "立ち上げ用リンクと手順書を見ながら公開します。つまずいたところは相談できます。",
+  },
+  {
+    title: "おまかせ設定の場合",
+    body: "写真・プロフィール・連絡先などを伺い、設定後にサイトURL、管理画面URL、パスワードを渡します。",
   },
 ] as const;
 
@@ -69,7 +81,7 @@ const LIVE_LINKS = [
   {
     href: "/gallery",
     title: "作品一覧",
-    body: "写真の並び、カテゴリ、余白の見え方を実際に確認できます。",
+    body: "写真の並び、カテゴリ、余白の見え方を確認できます。",
   },
   {
     href: "/about",
@@ -80,48 +92,6 @@ const LIVE_LINKS = [
     href: "/contact",
     title: "問い合わせ",
     body: "仕事につながる連絡先とSNS導線の置き方を確認できます。",
-  },
-] as const;
-
-const ADMIN_CONNECTIONS = [
-  {
-    admin: "写真を追加・並び替え",
-    public: "作品一覧とトップページの見え方に反映",
-    href: "/gallery",
-  },
-  {
-    admin: "プロフィール文と写真を更新",
-    public: "プロフィールページに反映",
-    href: "/about",
-  },
-  {
-    admin: "連絡先・SNS・問い合わせ先を更新",
-    public: "Contact とフッター導線に反映",
-    href: "/contact",
-  },
-  {
-    admin: "文字サイズ、余白、色を調整",
-    public: "サイト全体の雰囲気に反映",
-    href: undefined,
-  },
-] as const;
-
-const AFTER_PURCHASE = [
-  {
-    title: "決済完了",
-    body: "購入ボタンから Stripe の決済ページへ移動します。決済後、Stripe の支払い控えが届きます。",
-  },
-  {
-    title: "こちらで確認",
-    body: "入金を確認したら、決済時のメールアドレスまたは連絡先へ、次に必要な案内を送ります。",
-  },
-  {
-    title: "自分で立てる場合",
-    body: "立ち上げ用リンクと手順書を見ながら公開します。つまずいたところは相談できます。",
-  },
-  {
-    title: "おまかせ設定の場合",
-    body: "写真・プロフィール・連絡先などを伺い、設定後にサイトURL、管理画面URL、パスワードを渡します。",
   },
 ] as const;
 
@@ -258,8 +228,46 @@ function Accordion({ items }: { items: { q: string; a: string }[] }) {
   );
 }
 
-/* ── Hero photo showcase ── */
-function HeroShowcase({ photos }: { photos: ServicePhoto[] }) {
+function PhotoTile({
+  photo,
+  size,
+  loading = "lazy",
+}: {
+  photo: ServicePhoto;
+  size: "large" | "small";
+  loading?: "eager" | "lazy";
+}) {
+  const width = size === "large" ? 1200 : 600;
+  const quality = size === "large" ? 88 : 84;
+  const variantUrl =
+    size === "large"
+      ? (photo.mediumUrl ?? photo.thumbUrl)
+      : (photo.thumbUrl ?? photo.mediumUrl);
+  return (
+    <img
+      src={
+        variantUrl ??
+        srcFor(photo.url, width, quality, undefined, photo.rotationDeg)
+      }
+      srcSet={
+        variantUrl
+          ? undefined
+          : srcSetFor(photo.url, "grid", undefined, photo.rotationDeg)
+      }
+      sizes={size === "large" ? "(min-width: 1024px) 46vw, 65vw" : "30vw"}
+      alt={photo.title || "Portfolio photograph"}
+      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+      style={{
+        objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY),
+      }}
+      loading={loading}
+      decoding="async"
+    />
+  );
+}
+
+/* ── Hero site preview ── */
+function HeroSitePreview({ photos }: { photos: ServicePhoto[] }) {
   const heroPhotos = photos.slice(0, 4);
   if (heroPhotos.length === 0) return null;
 
@@ -267,131 +275,143 @@ function HeroShowcase({ photos }: { photos: ServicePhoto[] }) {
 
   return (
     <div className="mt-9 md:mt-12 page-entrance page-entrance-delay-2">
-      {/* Desktop: 1 large + up to 3 stacked */}
       <div
-        className="hidden sm:grid grid-cols-12 gap-2 md:gap-3 overflow-hidden"
-        style={{ height: heroHeight }}
+        className="overflow-hidden rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.018)] shadow-[0_18px_60px_rgba(var(--foreground-rgb),0.06)]"
+        aria-label="Portfolio site preview"
       >
-        <Link
-          to="/gallery"
-          className="col-span-7 block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] group"
-          aria-label="Gallery"
-        >
-          <img
-            src={
-              heroPhotos[0].thumbUrl ??
-              heroPhotos[0].mediumUrl ??
-              srcFor(
-                heroPhotos[0].url,
-                1200,
-                88,
-                undefined,
-                heroPhotos[0].rotationDeg,
-              )
-            }
-            srcSet={
-              heroPhotos[0].thumbUrl || heroPhotos[0].mediumUrl
-                ? undefined
-                : srcSetFor(
-                    heroPhotos[0].url,
-                    "grid",
-                    undefined,
-                    heroPhotos[0].rotationDeg,
-                  )
-            }
-            sizes="(min-width: 1024px) 55vw, 65vw"
-            alt={heroPhotos[0].title || "Portfolio photograph"}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-            style={{
-              objectPosition: objectPositionFromFocal(
-                heroPhotos[0].focalX,
-                heroPhotos[0].focalY,
-              ),
-            }}
-            loading="eager"
-            decoding="async"
-          />
-        </Link>
-        <div className="col-span-5 grid h-full min-h-0 grid-rows-3 gap-2 md:gap-3 overflow-hidden">
-          {heroPhotos.slice(1, 4).map((photo, i) => (
-            <Link
-              key={photo.id}
-              to="/gallery"
-              className="block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] group"
-              aria-label="Gallery"
-            >
-              <img
-                src={
-                  photo.thumbUrl ??
-                  photo.mediumUrl ??
-                  srcFor(photo.url, 600, 84, undefined, photo.rotationDeg)
-                }
-                srcSet={
-                  photo.thumbUrl || photo.mediumUrl
-                    ? undefined
-                    : srcSetFor(photo.url, "grid", undefined, photo.rotationDeg)
-                }
-                sizes="(min-width: 1024px) 28vw, 35vw"
-                alt={photo.title || "Portfolio photograph"}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                style={{
-                  objectPosition: objectPositionFromFocal(
-                    photo.focalX,
-                    photo.focalY,
-                  ),
-                }}
-                loading={i === 0 ? "eager" : "lazy"}
-                decoding="async"
-              />
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile: 2 photos side by side */}
-      <div
-        className="grid sm:hidden grid-cols-2 gap-2 overflow-hidden"
-        style={{ height: "clamp(200px, 52vw, 300px)" }}
-      >
-        {heroPhotos.slice(0, 2).map((photo) => (
+        <div className="flex items-center justify-between border-b border-[rgba(var(--foreground-rgb),0.08)] px-4 py-2.5">
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            <span className="block h-2 w-2 rounded-full bg-[rgba(var(--foreground-rgb),0.18)]" />
+            <span className="block h-2 w-2 rounded-full bg-[rgba(var(--foreground-rgb),0.14)]" />
+            <span className="block h-2 w-2 rounded-full bg-[rgba(var(--foreground-rgb),0.10)]" />
+          </div>
+          <p className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.36)]">
+            akieguchi.com / gallery
+          </p>
           <Link
-            key={photo.id}
             to="/gallery"
-            className="block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)]"
+            className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.36)] hover:text-[rgba(var(--foreground-rgb),0.62)] transition-colors duration-300"
+          >
+            Open
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-[7rem_1fr]">
+          <aside className="hidden md:flex flex-col justify-between border-r border-[rgba(var(--foreground-rgb),0.08)] px-5 py-6">
+            <div>
+              <p className="font-en text-[0.62rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.62)]">
+                Aki Eguchi
+              </p>
+              <nav className="mt-8 space-y-4" aria-label="Preview navigation">
+                {["Gallery", "About", "Contact"].map((label) => (
+                  <span
+                    key={label}
+                    className="block font-en text-[0.58rem] tracking-[0.10em] text-[rgba(var(--foreground-rgb),0.34)]"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </nav>
+            </div>
+            <p className="font-en text-[0.56rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.24)]">
+              Portfolio
+            </p>
+          </aside>
+
+          <Link
+            to="/gallery"
+            className="group block p-2 md:p-3"
             aria-label="Gallery"
           >
-            <img
-              src={
-                photo.thumbUrl ??
-                photo.mediumUrl ??
-                srcFor(photo.url, 600, 84, undefined, photo.rotationDeg)
-              }
-              srcSet={
-                photo.thumbUrl || photo.mediumUrl
-                  ? undefined
-                  : srcSetFor(photo.url, "grid", undefined, photo.rotationDeg)
-              }
-              sizes="48vw"
-              alt={photo.title || "Portfolio photograph"}
-              className="h-full w-full object-cover"
-              style={{
-                objectPosition: objectPositionFromFocal(
-                  photo.focalX,
-                  photo.focalY,
-                ),
-              }}
-              loading="eager"
-              decoding="async"
-            />
+            <div
+              className="hidden sm:grid grid-cols-12 gap-2 md:gap-3 overflow-hidden"
+              style={{ height: heroHeight }}
+            >
+              <div className="col-span-7 block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)]">
+                <PhotoTile photo={heroPhotos[0]} size="large" loading="eager" />
+              </div>
+              <div className="col-span-5 grid h-full min-h-0 grid-rows-3 gap-2 md:gap-3 overflow-hidden">
+                {heroPhotos.slice(1, 4).map((photo, i) => (
+                  <div
+                    key={photo.id}
+                    className="block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)]"
+                  >
+                    <PhotoTile
+                      photo={photo}
+                      size="small"
+                      loading={i === 0 ? "eager" : "lazy"}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="grid sm:hidden grid-cols-2 gap-2 overflow-hidden"
+              style={{ height: "clamp(200px, 52vw, 300px)" }}
+            >
+              {heroPhotos.slice(0, 2).map((photo) => (
+                <div
+                  key={photo.id}
+                  className="block h-full min-h-0 overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)]"
+                >
+                  <PhotoTile photo={photo} size="small" loading="eager" />
+                </div>
+              ))}
+            </div>
           </Link>
-        ))}
+        </div>
       </div>
     </div>
   );
 }
 
+function SitePagePreview({
+  item,
+  photo,
+}: {
+  item: (typeof LIVE_LINKS)[number];
+  photo: ServicePhoto | undefined;
+}) {
+  return (
+    <Link
+      to={item.href}
+      className="group grid grid-cols-[5.5rem_1fr] sm:grid-cols-[7rem_1fr] gap-4 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
+    >
+      <span className="block aspect-[4/3] overflow-hidden bg-[rgba(var(--foreground-rgb),0.035)]">
+        {photo ? (
+          <PhotoTile photo={photo} size="small" />
+        ) : (
+          <span className="block h-full w-full" />
+        )}
+      </span>
+      <span className="min-w-0">
+        <span className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.34)] group-hover:text-[rgba(var(--foreground-rgb),0.58)] transition-colors duration-300">
+          View
+        </span>
+        <span
+          className="mt-1.5 block font-ja text-[rgba(var(--foreground-rgb),0.76)]"
+          style={{
+            fontSize: "0.98rem",
+            letterSpacing: "0.03em",
+            lineHeight: 1.55,
+          }}
+        >
+          {item.title}
+        </span>
+        <span
+          className="mt-1.5 block text-[rgba(var(--foreground-rgb),0.50)]"
+          style={{ fontSize: "0.82rem", lineHeight: 1.8 }}
+        >
+          {item.body}
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 /* ── Actual site proof (compact) ── */
-function PortfolioProof() {
+function PortfolioProof({ photos }: { photos: ServicePhoto[] }) {
   return (
     <section id="example" className="mt-10 md:mt-14 page-entrance scroll-mt-24">
       <SectionLabel>Actual site</SectionLabel>
@@ -417,223 +437,79 @@ function PortfolioProof() {
         </p>
       </div>
       <div className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
-        {LIVE_LINKS.map((item) => (
-          <Link
-            key={item.href}
-            to={item.href}
-            className="grid grid-cols-[5rem_1fr] gap-5 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4 group"
-          >
-            <span className="font-en text-[0.62rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.34)] group-hover:text-[rgba(var(--foreground-rgb),0.58)] transition-colors duration-300">
-              View
-            </span>
-            <span>
-              <span
-                className="block font-ja text-[rgba(var(--foreground-rgb),0.76)]"
-                style={{
-                  fontSize: "0.98rem",
-                  letterSpacing: "0.03em",
-                  lineHeight: 1.55,
-                }}
-              >
-                {item.title}
-              </span>
-              <span
-                className="mt-1.5 block text-[rgba(var(--foreground-rgb),0.50)]"
-                style={{ fontSize: "0.82rem", lineHeight: 1.8 }}
-              >
-                {item.body}
-              </span>
-            </span>
-          </Link>
+        {LIVE_LINKS.map((item, i) => (
+          <SitePagePreview key={item.href} item={item} photo={photos[i]} />
         ))}
       </div>
       <div className="mt-7 text-center">
-        <ServiceButton href="#pricing" variant="outline">
-          料金を見る
-        </ServiceButton>
+        <ServiceButton href="#pricing">料金を見る</ServiceButton>
       </div>
     </section>
   );
 }
 
-/* ── Audience + value (compact) ── */
+/* ── Pain / solution pairs ── */
 function AudienceAndFeatures() {
   return (
     <section className="mt-10 md:mt-14 page-entrance">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
-        <div>
-          <SectionLabel>For photographers</SectionLabel>
-          <div className="border-y border-[rgba(var(--foreground-rgb),0.08)]">
-            {CONCERNS.map((item) => (
-              <div
-                key={item.lead}
-                className="border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
-              >
-                <h2
-                  className="font-ja text-[rgba(var(--foreground-rgb),0.76)]"
-                  style={{
-                    fontSize: "0.98rem",
-                    letterSpacing: "0.03em",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {item.lead}
-                </h2>
-                <p
-                  className="mt-1.5 text-[rgba(var(--foreground-rgb),0.50)]"
-                  style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
-                >
-                  {item.body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <SectionLabel>What you get</SectionLabel>
-          <div className="border-y border-[rgba(var(--foreground-rgb),0.08)]">
-            {FEATURES.map((item) => (
-              <div
-                key={item.title}
-                className="border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
-              >
-                <h2
-                  className="font-ja text-[rgba(var(--foreground-rgb),0.76)]"
-                  style={{
-                    fontSize: "0.98rem",
-                    letterSpacing: "0.03em",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {item.title}
-                </h2>
-                <p
-                  className="mt-1.5 text-[rgba(var(--foreground-rgb),0.50)]"
-                  style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
-                >
-                  {item.body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Admin (collapsible) ── */
-function AdminConnection() {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <section id="admin" className="mt-12 md:mt-16 page-entrance scroll-mt-24">
-      <SectionLabel>Admin</SectionLabel>
-      <div className="max-w-3xl mx-auto text-center">
-        <h2
-          className="font-ja text-[rgba(var(--foreground-rgb),0.82)]"
-          style={{
-            fontSize: "clamp(1.18rem, 2vw, 1.55rem)",
-            letterSpacing: "0.03em",
-            lineHeight: 1.75,
-          }}
-        >
-          管理画面で変えた内容が、
-          <wbr />
-          公開サイトに反映されます。
-        </h2>
-        <p
-          className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
-          style={bodyStyle}
-        >
-          写真、プロフィール、連絡先、見た目をブラウザで編集し、その結果が各ページに出ます。
-        </p>
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="mt-5 inline-flex items-center gap-2 font-en text-xs tracking-[0.08em] uppercase text-[rgba(var(--foreground-rgb),0.40)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 cursor-pointer"
-        >
-          <span>{isOpen ? "Close" : "Details"}</span>
-          <span
-            className="transition-transform duration-300"
-            style={{
-              transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
-              fontSize: "0.7rem",
-            }}
-            aria-hidden="true"
+      <SectionLabel>For photographers</SectionLabel>
+      <div className="max-w-4xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
+        {PAIN_SOLUTIONS.map((item) => (
+          <div
+            key={item.concern}
+            className="grid grid-cols-1 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 md:gap-10 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-5"
           >
-            +
-          </span>
-        </button>
-      </div>
-
-      <Collapsible open={isOpen}>
-        <div className="mt-8 max-w-4xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
-          {ADMIN_CONNECTIONS.map((item) => (
-            <div
-              key={item.admin}
-              className="grid grid-cols-1 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-2 md:gap-8 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4 md:py-5"
-            >
-              <div>
-                <p className="font-en text-[0.58rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
-                  Edit in admin
-                </p>
-                <p
-                  className="mt-1.5 text-[rgba(var(--foreground-rgb),0.72)]"
-                  style={{
-                    fontSize: "0.95rem",
-                    lineHeight: 1.7,
-                    letterSpacing: "0.03em",
-                  }}
-                >
-                  {item.admin}
-                </p>
-              </div>
-              <div>
-                <p className="font-en text-[0.58rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
-                  Public site
-                </p>
-                {item.href ? (
-                  <Link
-                    to={item.href}
-                    className="mt-1.5 inline-block text-[rgba(var(--foreground-rgb),0.56)] hover:text-[rgba(var(--foreground-rgb),0.78)] transition-colors duration-300"
-                    style={{
-                      fontSize: "0.95rem",
-                      lineHeight: 1.7,
-                      letterSpacing: "0.03em",
-                    }}
-                  >
-                    {item.public}
-                  </Link>
-                ) : (
-                  <p
-                    className="mt-1.5 text-[rgba(var(--foreground-rgb),0.56)]"
-                    style={{
-                      fontSize: "0.95rem",
-                      lineHeight: 1.7,
-                      letterSpacing: "0.03em",
-                    }}
-                  >
-                    {item.public}
-                  </p>
-                )}
-              </div>
+            <div>
+              <p className="font-en text-[0.58rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
+                Need
+              </p>
+              <h2
+                className="mt-1.5 font-ja text-[rgba(var(--foreground-rgb),0.76)]"
+                style={{
+                  fontSize: "0.98rem",
+                  letterSpacing: "0.03em",
+                  lineHeight: 1.6,
+                }}
+              >
+                {item.concern}
+              </h2>
+              <p
+                className="mt-1.5 text-[rgba(var(--foreground-rgb),0.48)]"
+                style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
+              >
+                {item.concernBody}
+              </p>
             </div>
-          ))}
-        </div>
-        <p
-          className="mt-5 max-w-2xl mx-auto text-center text-[rgba(var(--foreground-rgb),0.44)]"
-          style={{ fontSize: "0.82rem", lineHeight: 1.9 }}
-        >
-          写真の大きさ調整は、見せたい作品に強弱をつけるための機能です。
-          すべて同じ大きさで整えることもできるので、S/M/Lを覚える必要はありません。
-        </p>
-      </Collapsible>
+            <div>
+              <p className="font-en text-[0.58rem] tracking-[0.14em] uppercase text-[rgba(var(--foreground-rgb),0.34)]">
+                Site
+              </p>
+              <h2
+                className="mt-1.5 font-ja text-[rgba(var(--foreground-rgb),0.76)]"
+                style={{
+                  fontSize: "0.98rem",
+                  letterSpacing: "0.03em",
+                  lineHeight: 1.6,
+                }}
+              >
+                {item.solution}
+              </h2>
+              <p
+                className="mt-1.5 text-[rgba(var(--foreground-rgb),0.50)]"
+                style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
+              >
+                {item.solutionBody}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
 
-/* ── After purchase (collapsible) ── */
-function AfterPurchase() {
+/* ── Purchase details (collapsible) ── */
+function PurchaseDetails() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <section
@@ -650,15 +526,15 @@ function AfterPurchase() {
             lineHeight: 1.75,
           }}
         >
-          購入後は、
+          購入後の流れと、
           <wbr />
-          手順書か初期設定の案内へ進みます。
+          管理画面でできること。
         </h2>
         <p
           className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
           style={bodyStyle}
         >
-          決済確認後、選んだプランに合わせて次の案内を送ります。
+          決済後すぐに自動発行されるサービスではありません。確認後、選んだプランに合わせて案内します。
         </p>
         <button
           type="button"
@@ -678,9 +554,10 @@ function AfterPurchase() {
           </span>
         </button>
       </div>
+
       <Collapsible open={isOpen}>
         <ol className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
-          {AFTER_PURCHASE.map((step, i) => (
+          {PURCHASE_DETAILS.map((step, i) => (
             <li
               key={step.title}
               className="grid grid-cols-[2.5rem_1fr] gap-4 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
@@ -712,6 +589,13 @@ function AfterPurchase() {
             </li>
           ))}
         </ol>
+        <p
+          className="mt-5 max-w-2xl mx-auto text-center text-[rgba(var(--foreground-rgb),0.44)]"
+          style={{ fontSize: "0.82rem", lineHeight: 1.9 }}
+        >
+          写真の大きさ調整は、見せたい作品に強弱をつけるための機能です。
+          すべて同じ大きさで整えることもできます。
+        </p>
       </Collapsible>
     </section>
   );
@@ -872,21 +756,24 @@ function FinalCTA() {
 /* ── Sticky CTA bar ── */
 function StickyCtaBar() {
   const [visible, setVisible] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Show only when sentinel has scrolled above the viewport (user scrolled
-        // past pricing), not when it's below (initial load / hasn't reached yet).
-        setVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0);
-      },
-      { threshold: 0, rootMargin: "0px" },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setVisible(window.scrollY > Math.min(420, window.innerHeight * 0.35));
+      });
+    };
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, []);
 
   const href = STRIPE_LIVE
@@ -894,45 +781,43 @@ function StickyCtaBar() {
     : `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent("ポートフォリオサイトについて相談")}`;
 
   return (
-    <>
-      {/* Invisible sentinel placed right after pricing section */}
-      <div ref={sentinelRef} className="h-0 w-0" aria-hidden="true" />
-      <div
-        className="fixed bottom-0 left-0 right-0 md:left-[11rem] z-40 pointer-events-none transition-all duration-300"
-        style={{
-          transform: visible ? "translateY(0)" : "translateY(100%)",
-          opacity: visible ? 1 : 0,
-        }}
-      >
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pb-5">
-          <div className="pointer-events-auto bg-[var(--background)] border border-[rgba(var(--foreground-rgb),0.10)] backdrop-blur-md rounded-lg shadow-[0_-4px_24px_rgba(var(--foreground-rgb),0.08)] px-5 py-3 flex items-center justify-between gap-4">
-            <p
-              className="font-ja text-sm text-[rgba(var(--foreground-rgb),0.60)] hidden sm:block"
-              style={{ letterSpacing: "0.02em" }}
+    <div
+      className="fixed bottom-0 left-0 right-0 md:left-[11rem] z-40 pointer-events-none transition-all duration-300"
+      style={{
+        transform: visible ? "translateY(0)" : "translateY(100%)",
+        opacity: visible ? 1 : 0,
+      }}
+    >
+      <div className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pb-5">
+        <div
+          className="pointer-events-auto bg-[var(--background)] border border-[rgba(var(--foreground-rgb),0.10)] backdrop-blur-md rounded-lg shadow-[0_-4px_24px_rgba(var(--foreground-rgb),0.08)] px-5 py-3 flex items-center justify-between gap-4"
+        >
+          <p
+            className="font-ja text-sm text-[rgba(var(--foreground-rgb),0.60)] hidden sm:block"
+            style={{ letterSpacing: "0.02em" }}
+          >
+            ¥10,000 から始められます
+          </p>
+          <div className="flex items-center gap-3 ml-auto">
+            <a
+              href="#pricing"
+              className="font-ja text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.45)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1.5"
             >
-              ¥10,000 から始められます
-            </p>
-            <div className="flex items-center gap-3 ml-auto">
-              <a
-                href="#pricing"
-                className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.45)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1.5"
-              >
-                Plans
-              </a>
-              <a
-                href={href}
-                {...(STRIPE_LIVE
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-                className="inline-flex items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-5 py-2 rounded-md hover:opacity-85 transition-opacity duration-300"
-              >
-                {STRIPE_LIVE ? "申し込む" : "相談する"}
-              </a>
-            </div>
+              料金を見る
+            </a>
+            <a
+              href={href}
+              {...(STRIPE_LIVE
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : {})}
+              className="inline-flex items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-5 py-2 rounded-md hover:opacity-85 transition-opacity duration-300"
+            >
+              {STRIPE_LIVE ? "申し込む" : "相談する"}
+            </a>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -990,33 +875,13 @@ export default function ServicePage() {
             実例を見る
           </ServiceButton>
         </div>
-        {/* Sub-nav: pill-style buttons */}
-        <nav
-          className="mt-6 flex flex-wrap items-center justify-center gap-2.5 page-entrance page-entrance-delay-1"
-          aria-label="Page navigation"
-        >
-          {[
-            { href: "#example", label: "Example" },
-            { href: "#pricing", label: "Pricing" },
-            { href: "#admin", label: "Admin" },
-            { href: "#after-purchase", label: "After" },
-          ].map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="font-en text-[0.68rem] tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.50)] hover:text-[rgba(var(--foreground-rgb),0.80)] border border-[rgba(var(--foreground-rgb),0.12)] hover:border-[rgba(var(--foreground-rgb),0.28)] rounded-full px-4 py-1.5 transition-all duration-300"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
       </header>
 
-      {/* ── Hero photo showcase ── */}
-      <HeroShowcase photos={photos} />
+      {/* ── Hero site preview ── */}
+      <HeroSitePreview photos={photos} />
 
       {/* ── Actual site links ── */}
-      <PortfolioProof />
+      <PortfolioProof photos={photos} />
 
       {/* ── Fit + value ── */}
       <AudienceAndFeatures />
@@ -1077,11 +942,8 @@ export default function ServicePage() {
       {/* Sentinel for sticky CTA visibility */}
       <StickyCtaBar />
 
-      {/* ── Admin (collapsible) ── */}
-      <AdminConnection />
-
-      {/* ── After purchase (collapsible) ── */}
-      <AfterPurchase />
+      {/* ── Purchase details (collapsible) ── */}
+      <PurchaseDetails />
 
       {/* ── FAQ (accordion) ── */}
       <section className="mt-10 md:mt-14 page-entrance">

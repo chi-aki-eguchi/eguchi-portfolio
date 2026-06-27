@@ -4035,7 +4035,6 @@ function GalleryTab({
               </p>
             </div>
 
-            {/* pb clears the platform "Made with Runable" badge pinned bottom-right */}
             <div className="mt-auto pt-4 pb-16">
               <button
                 onClick={() =>

@@ -1814,3 +1814,50 @@ Claude Code にも agmsg で意見を依頼し、採用可の返答を受領。
 - `docs/two-mac-workflow.md`
 - `AGENTS.md`
 - `task.md`
+
+## 追記 2026-06-27 — Codex: `/service` 完成版調整 + Runable要素除去
+
+### 目的
+秋さん依頼「serviceページに書いてあること（あとデザイン）を完成版に仕上げたい。
+独自ドメイン対応って書いてあるけどそうなの？」に対応。
+あわせて「Runableのやつが表示されてるので、Runable要素をなくす」方針を反映。
+
+### 対応
+- `/service` の構成を、ヒーロー → サイト表示イメージ → 想定読者 → できること → 料金 → 始め方 → FAQ → Contact に再編。
+- デザインを写真家サイト寄りの静かな編集調に調整。
+  - 罫線中心、カード感を抑えた料金表、サイトプレビュー風のビジュアルを追加。
+  - デスクトップ / モバイルで横はみ出しが出ないよう確認。
+- 独自ドメイン表記を正確化。
+  - 「接続できる作り」であり、ドメイン取得費・更新費は料金に含まないことをFAQと料金注記に明記。
+  - おまかせ設定では接続作業まで対応、自分で立てる場合は手順案内、という表現に整理。
+- `/service` の見える文言から Railway などの基盤名を外し、「公開場所の実費」に言い換え。
+- Runable / AI テンプレート由来に見えていた `public/og-image.jpg` を写真ポートフォリオ用の静かなOG画像に差し替え。
+- `scripts/gen-og-service.mjs` を更新し、`og-service.jpg` と `og-image.jpg` の両方を生成するようにした。
+- 未使用の `packages/web/vite/plugins/runable-analytics-plugin.ts` を削除。
+- 管理画面に残っていた Runable バッジ前提コメントを削除。
+
+### 検証
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（23 pass）。
+- `cd packages/web && bun test ./src/api/ogp.test.ts` 成功（28 pass）。
+- `cd packages/web && bun test ./src` 成功（173 pass / 0 fail）。
+  - 既存の `PhotoGallery.render.test.tsx` 由来の React `act(...)` warning は継続。
+- `git diff --check` 成功。
+- ローカル `http://127.0.0.1:5173/service` をブラウザ確認。
+  - デスクトップ: 本文に Runable / Railway / AI 系文言なし。
+  - モバイル幅 390px: 横はみ出しなし、Runable / Railway 文言なし。
+- `public/og-image.jpg` / `public/og-service.jpg` を目視確認。
+
+### 注意
+- `claude-code-luxury-feel-prompt.md` は未追跡のまま残っており、今回の対象外。
+- push 後、本番でSNSプレビューを確認する場合は各SNS側のOGキャッシュが残る可能性あり。
+
+### 触ったファイル
+- `packages/web/src/web/pages/service.tsx`
+- `packages/web/public/og-image.jpg`
+- `packages/web/public/og-service.jpg`
+- `packages/web/scripts/gen-og-service.mjs`
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/vite/plugins/runable-analytics-plugin.ts`
+- `task.md`

@@ -2345,6 +2345,57 @@ Claude Design の追加レビューを受け、`/service` を「何のサービ�
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 - commit hash は commit 作成後の最終報告に記載する。
 
+## 追記 2026-06-28 — Codex: X/SNSカードのヒーロー写真表示を安定化
+
+### 目的
+
+X に `akieguchi.com` を貼った時、カード画像に HERO 写真が表示されずプレースホルダになる問題を直す。
+あわせて配布版テンプレートにも同じ OGP 安定化を反映する。
+
+### 本番で確認した事象
+
+- 本番 HTML の `og:image` / `twitter:image` は HERO 写真を指していた。
+- ただし URL は `/api/images/... ?w=1200&q=85` の動的変換画像で、実画像は 1200x960。
+- `HEAD` では `content-length: 0` になっており、SNS クローラの事前確認で画像なし扱いになる可能性があった。
+
+### 修正内容
+
+- OGP/SNS 用の HERO 画像 URL を `1200x630` 固定の JPEG 変換に変更。
+  - `w=1200&h=630&q=90&fmt=jpeg`
+  - 回転指定 `rot` も維持。
+- `og:image:secure_url`、`og:image:type`、`twitter:image:alt` を追加。
+- HERO / profile 写真がない配布版の空サイトでも、`/og-image.jpg` を絶対 URL の OGP 画像として注入するようにした。
+- 画像 API に `h` パラメータを追加し、`w+h` 指定時は `cover` で SNS 用比率に整えるようにした。
+- `/api/images/*` を `GET` / `HEAD` 対応にし、`HEAD` でも実バイト長の `Content-Length` を返すようにした。
+
+### 触ったファイル
+
+- `packages/web/index.html`
+- `packages/web/src/api/index.ts`
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/api/security.ts`
+- `packages/web/src/api/security.test.ts`
+- `packages/web/src/api/static-template.test.ts`
+- `packages/web/src/shared/image-url.ts`
+- `packages/web/src/shared/image-url.test.ts`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun test ./src/api/security.test.ts ./src/api/ogp.test.ts ./src/api/static-template.test.ts ./src/shared/image-url.test.ts` 成功（79 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（178 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+- ローカル本番サーバを実 DB/R2 付きで起動する検証は、起動時マイグレーションが実 DB に触れ得るため自動承認で停止。push 後に本番の `og:image` と画像ヘッダーで確認する。
+
+### 注意
+
+- 既に X に投稿済みの URL カードは X 側のキャッシュに残る場合がある。修正は新規投稿・再クロール後の表示改善が主目的。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-28 — Codex: `/service` 誤解されにくい販売文言へ調整
 
 ### 目的

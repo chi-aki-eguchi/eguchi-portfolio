@@ -10,6 +10,7 @@ import {
   LOGIN_WINDOW_MS,
   LOGIN_MAX_FAILS,
   clampImageWidth,
+  clampImageHeight,
   clampImageQuality,
 } from "./security";
 
@@ -213,6 +214,16 @@ describe("clampImageWidth (edge cases)", () => {
 
   test("rejects leading whitespace (parseInt quirk)", () => {
     expect(clampImageWidth("  800")).toBe(800);
+  });
+});
+
+describe("clampImageHeight", () => {
+  test("uses the same bounds as image width", () => {
+    expect(clampImageHeight(undefined)).toBeNull();
+    expect(clampImageHeight("10")).toBe(50);
+    expect(clampImageHeight("630")).toBe(630);
+    expect(clampImageHeight("5000")).toBe(3200);
+    expect(clampImageHeight("abc")).toBeNull();
   });
 });
 

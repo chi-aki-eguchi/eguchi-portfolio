@@ -13,11 +13,12 @@ describe("image-url helpers", () => {
     expect(
       imageUrlWithParams("/api/images/photos/a.jpg", {
         w: 1200,
+        h: 630,
         q: 85,
         fmt: "webp",
         rotationDeg: 90,
       }),
-    ).toBe("/api/images/photos/a.jpg?w=1200&q=85&fmt=webp&rot=90");
+    ).toBe("/api/images/photos/a.jpg?w=1200&h=630&q=85&fmt=webp&rot=90");
 
     expect(
       imageUrlWithParams("/api/images/photos/a.jpg?token=1", {

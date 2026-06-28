@@ -54,6 +54,7 @@ import {
   LOGIN_WINDOW_MS,
   LOGIN_MAX_FAILS,
   clampImageWidth,
+  clampImageHeight,
   clampImageQuality,
 } from "./security";
 
@@ -465,13 +466,28 @@ const app = new Hono()
   // Storage holds UPLOAD_MAX_PX (3200px) optimised images (~1-3MB), so
   // on-the-fly resize works from an already-small source and is fast
   // (resizing a few MB, not a ~60MB camera original).
-  .get("/images/*", async (c) => {
+  .on(["GET", "HEAD"], "/images/*", async (c) => {
+    const headOnly = c.req.raw.method === "HEAD";
+    const imageResponse = (
+      buf: Buffer,
+      type: string,
+      extraHeaders: Record<string, string> = {},
+    ) =>
+      new Response(headOnly ? null : asBody(buf), {
+        headers: {
+          "Content-Type": type,
+          "Content-Length": String(buf.length),
+          "Cache-Control": "public, max-age=31536000, immutable",
+          ...extraHeaders,
+        },
+      });
     const key = c.req.path.replace("/api/images/", "");
     const decodedKey = decodeURIComponent(key);
     if (!isAllowedImageKey(decodedKey)) {
       return c.json({ error: "Not found" }, 404);
     }
     const width = clampImageWidth(c.req.query("w"));
+    const height = clampImageHeight(c.req.query("h"));
     const quality = clampImageQuality(c.req.query("q"));
     const rotationDeg = parseRotationDeg(c.req.query("rot"));
     if (rotationDeg === null) {
@@ -503,7 +519,7 @@ const app = new Hono()
       avif: "image/avif",
     };
 
-    const cacheKey = `${decodedKey}__w${width ?? "orig"}__q${quality}__${fmt}__rot${rotationDeg}`;
+    const cacheKey = `${decodedKey}__w${width ?? "orig"}__h${height ?? "auto"}__q${quality}__${fmt}__rot${rotationDeg}`;
     const etag = `"${createHash("md5").update(cacheKey).digest("hex")}"`;
 
     const ifNoneMatch = c.req.header("if-none-match");
@@ -519,36 +535,28 @@ const app = new Hono()
 
     const cached = cacheGet(cacheKey);
     if (cached) {
-      return new Response(asBody(cached.buf), {
-        headers: {
-          "Content-Type": cached.type,
-          "Cache-Control": "public, max-age=31536000, immutable",
-          ETag: etag,
-          ...(!fmtParam ? { Vary: "Accept" } : {}),
-          "X-Cache": "HIT",
-        },
+      return imageResponse(cached.buf, cached.type, {
+        ETag: etag,
+        ...(!fmtParam ? { Vary: "Accept" } : {}),
+        "X-Cache": "HIT",
       });
     }
 
     try {
       const original = await getOriginal(decodedKey);
 
-      if (!width && rotationDeg === 0) {
+      if (!width && !height && rotationDeg === 0) {
         // No resize — return the (already optimised) original
-        return new Response(asBody(original.buf), {
-          headers: {
-            "Content-Type": original.type,
-            "Cache-Control": "public, max-age=31536000, immutable",
-            ETag: etag,
-          },
-        });
+        return imageResponse(original.buf, original.type, { ETag: etag });
       }
 
       let base = sharp(original.buf).rotate();
       if (rotationDeg !== 0) base = base.rotate(rotationDeg);
-      if (width) {
+      if (width || height) {
         base = base.resize({
-          width,
+          width: width ?? undefined,
+          height: height ?? undefined,
+          fit: width && height ? "cover" : "inside",
           withoutEnlargement: true,
         });
       }
@@ -575,14 +583,10 @@ const app = new Hono()
 
       cacheSet(cacheKey, out, ctypeOf[fmt]);
 
-      return new Response(asBody(out), {
-        headers: {
-          "Content-Type": ctypeOf[fmt],
-          "Cache-Control": "public, max-age=31536000, immutable",
-          ETag: etag,
-          ...(!fmtParam ? { Vary: "Accept" } : {}),
-          "X-Cache": "MISS",
-        },
+      return imageResponse(out, ctypeOf[fmt], {
+        ETag: etag,
+        ...(!fmtParam ? { Vary: "Accept" } : {}),
+        "X-Cache": "MISS",
       });
     } catch {
       return c.json({ error: "Not found" }, 404);

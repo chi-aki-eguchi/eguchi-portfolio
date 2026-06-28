@@ -65,6 +65,11 @@ export function clampImageWidth(raw: string | undefined): number | null {
   return Number.isFinite(n) ? Math.min(Math.max(n, 50), 3200) : null;
 }
 
+export function clampImageHeight(raw: string | undefined): number | null {
+  const n = parseInt(raw ?? "", 10);
+  return Number.isFinite(n) ? Math.min(Math.max(n, 50), 3200) : null;
+}
+
 export function clampImageQuality(raw: string | undefined): number {
   const n = parseInt(raw ?? "", 10);
   return Number.isFinite(n) ? Math.min(Math.max(n, 10), 100) : 90;

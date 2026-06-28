@@ -85,6 +85,22 @@ const SERVICE_OG = {
   image: "/og-service.jpg",
 };
 
+function socialImagePath(image: string, rotationDeg?: number | null): string {
+  if (!image.startsWith("/api/images/")) return image;
+  return imageUrlWithParams(image, {
+    w: 1200,
+    h: 630,
+    q: 90,
+    fmt: "jpeg",
+    rotationDeg,
+  });
+}
+
+function absoluteUrl(siteUrl: string, pathOrUrl: string): string {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return `${siteUrl}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+}
+
 export function injectOgp(
   html: string,
   settings: Record<string, string>,
@@ -137,21 +153,14 @@ export function injectOgp(
     : override?.image ||
       heroImg ||
       settings.heroPhotoUrl ||
-      settings.profilePhotoUrl;
+      settings.profilePhotoUrl ||
+      "/og-image.jpg";
   const imgRotationDeg = override?.image
     ? override.imageRotationDeg
     : heroImg && imgBase === heroImg
       ? heroRotationDeg
       : 0;
-  const ogImage = imgBase
-    ? isService
-      ? imgBase
-      : imageUrlWithParams(imgBase, {
-          w: 1200,
-          q: 85,
-          rotationDeg: imgRotationDeg,
-        })
-    : "";
+  const ogImage = socialImagePath(imgBase, imgRotationDeg);
   // /profile and /about render the same page — canonicalise /profile → /about so
   // search engines don't treat them as duplicate content.
   const canonPath = pathname === "/profile" ? "/about" : pathname;
@@ -220,33 +229,47 @@ export function injectOgp(
     /(<meta\s+property="og:site_name"\s+content=")[^"]*(")/,
     `${siteName} Photography`,
   );
-  if (ogImage) {
-    out = setAttr(
-      out,
-      /(<meta\s+property="og:image"\s+content=")[^"]*(")/,
-      `${siteUrl}${ogImage}`,
-    );
-    out = setAttr(
-      out,
-      /(<meta\s+property="og:image:width"\s+content=")[^"]*(")/,
-      "1200",
-    );
-    out = setAttr(
-      out,
-      /(<meta\s+property="og:image:height"\s+content=")[^"]*(")/,
-      "630",
-    );
-    out = setAttr(
-      out,
-      /(<meta\s+name="twitter:image"\s+content=")[^"]*(")/,
-      `${siteUrl}${ogImage}`,
-    );
-    out = setAttr(
-      out,
-      /(<meta\s+property="og:image:alt"\s+content=")[^"]*(")/,
-      title,
-    );
-  }
+  const absoluteOgImage = absoluteUrl(siteUrl, ogImage);
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:image"\s+content=")[^"]*(")/,
+    absoluteOgImage,
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:image:secure_url"\s+content=")[^"]*(")/,
+    absoluteOgImage,
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:image:type"\s+content=")[^"]*(")/,
+    "image/jpeg",
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:image:width"\s+content=")[^"]*(")/,
+    "1200",
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:image:height"\s+content=")[^"]*(")/,
+    "630",
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+name="twitter:image"\s+content=")[^"]*(")/,
+    absoluteOgImage,
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+name="twitter:image:alt"\s+content=")[^"]*(")/,
+    title,
+  );
+  out = setAttr(
+    out,
+    /(<meta\s+property="og:image:alt"\s+content=")[^"]*(")/,
+    title,
+  );
   // Twitter
   out = setAttr(
     out,

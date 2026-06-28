@@ -8,5 +8,9 @@ describe("static HTML template metadata", () => {
     expect(html).not.toContain("akieguchi.com");
     expect(html).not.toContain("G-NKECCDLXYD");
     expect(html).toContain("<title>Photography Portfolio</title>");
+    expect(html).toContain('property="og:image:type" content="image/jpeg"');
+    expect(html).toContain(
+      'name="twitter:image:alt" content="Photography Portfolio"',
+    );
   });
 });

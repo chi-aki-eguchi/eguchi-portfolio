@@ -257,6 +257,63 @@ describe("siteUrlFrom / base-URL unification", () => {
   });
 });
 
+describe("injectOgp social image metadata", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta property="og:image" content="x" />
+    <meta property="og:image:secure_url" content="x" />
+    <meta property="og:image:type" content="x" />
+    <meta property="og:image:width" content="x" />
+    <meta property="og:image:height" content="x" />
+    <meta property="og:image:alt" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    <meta name="twitter:image" content="x" />
+    <meta name="twitter:image:alt" content="x" />
+    </head><body></body></html>`;
+
+  test("uses the hero photo as a fixed-size JPEG card image", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/",
+      "/api/images/photos/hero.jpg",
+      undefined,
+      "",
+      90,
+    );
+    expect(out).toContain(
+      'property="og:image" content="https://akieguchi.com/api/images/photos/hero.jpg?w=1200&amp;h=630&amp;q=90&amp;fmt=jpeg&amp;rot=90"',
+    );
+    expect(out).toContain('property="og:image:type" content="image/jpeg"');
+    expect(out).toContain('property="og:image:width" content="1200"');
+    expect(out).toContain('property="og:image:height" content="630"');
+    expect(out).toContain('name="twitter:image:alt"');
+  });
+
+  test("falls back to the static template image as an absolute URL", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://portfolio.example" },
+      "/gallery",
+    );
+    expect(out).toContain(
+      'property="og:image" content="https://portfolio.example/og-image.jpg"',
+    );
+    expect(out).toContain(
+      'name="twitter:image" content="https://portfolio.example/og-image.jpg"',
+    );
+  });
+});
+
 describe("injectOgp JSON-LD WebSite node", () => {
   const { injectOgp } = require("./ogp") as typeof import("./ogp");
   const page = `<html><head><title>t</title>

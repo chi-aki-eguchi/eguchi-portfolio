@@ -38,11 +38,13 @@ export function imageUrlWithParams(
   url: string,
   {
     w,
+    h,
     q,
     fmt,
     rotationDeg,
   }: {
     w?: number | null;
+    h?: number | null;
     q?: number | null;
     fmt?: ImageFormat;
     rotationDeg?: unknown;
@@ -50,6 +52,7 @@ export function imageUrlWithParams(
 ): string {
   const params: string[] = [];
   if (typeof w === "number") params.push(`w=${w}`);
+  if (typeof h === "number") params.push(`h=${h}`);
   if (typeof q === "number") params.push(`q=${q}`);
   if (fmt) params.push(`fmt=${fmt}`);
   const rot = normalizeRotationDeg(rotationDeg);

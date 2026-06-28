@@ -89,6 +89,13 @@ export function isAllowedOrigin(origin: string | undefined): boolean {
   return configuredOrigins().has(originFrom(origin) ?? "");
 }
 
-export function gaMeasurementIdForSite(_siteUrl: string): string {
-  return (process.env.GA_MEASUREMENT_ID ?? "").trim();
+const AKIEGUCHI_GA_MEASUREMENT_ID = "G-NKECCDLXYD";
+
+export function gaMeasurementIdForSite(siteUrl: string): string {
+  if (process.env.GA_MEASUREMENT_ID !== undefined) {
+    return process.env.GA_MEASUREMENT_ID.trim();
+  }
+  return originFrom(siteUrl) === "https://akieguchi.com"
+    ? AKIEGUCHI_GA_MEASUREMENT_ID
+    : "";
 }

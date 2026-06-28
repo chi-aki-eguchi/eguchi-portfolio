@@ -2517,3 +2517,33 @@ Railway の "Application failed to respond" が出た件について、再起動
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 - Railway のクラッシュ時ログは未取得のため、これはログ確定ではなく、再現性のある負荷兆候に基づく対策。
+
+## 追記 2026-06-28 — Codex: Google Analyticsタグ復旧
+
+### 目的
+
+Google Analytics にアクセスが表示されない件を確認し、本番HTMLから消えていたGA4タグを復旧する。
+
+### 調査結果
+
+- 本番 `https://akieguchi.com/` のHTMLに `gtag` / `googletagmanager` / `G-NKECCDLXYD` が出ていなかった。
+- `packages/web/src/api/ogp.ts` は `gaMeasurementIdForSite(siteUrl)` が値を返す場合のみGA4タグを注入する。
+- `packages/web/src/api/site-defaults.ts` は `GA_MEASUREMENT_ID` 環境変数だけを見る実装になっており、`task.md` に残っていた `akieguchi.com` 用 fallback 方針とズレていた。
+- 既存のGA4 Measurement ID は過去ログ通り `G-NKECCDLXYD`。
+
+### 修正内容
+
+- `GA_MEASUREMENT_ID` が未設定で、site URL が `https://akieguchi.com` の場合だけ `G-NKECCDLXYD` へfallbackするように復旧。
+- 明示的に `GA_MEASUREMENT_ID=""` を入れたテンプレート環境ではGAを無効化できる挙動を維持。
+- `site-defaults.test.ts` に akieguchi.com fallback のテストを追加。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/api/site-defaults.test.ts ./src/api/ogp.test.ts ./src/api/static-template.test.ts` 成功（40 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+
+### 注意
+
+- 反映後に本番HTMLへ `https://www.googletagmanager.com/gtag/js?id=G-NKECCDLXYD` が戻っていることを確認する。
+- GA画面への反映はリアルタイムでも遅延やフィルタの影響を受ける場合がある。

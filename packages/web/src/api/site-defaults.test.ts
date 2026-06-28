@@ -79,9 +79,15 @@ describe("gaMeasurementIdForSite", () => {
     expect(gaMeasurementIdForSite("https://akieguchi.com")).toBe("");
   });
 
-  test("returns empty when GA_MEASUREMENT_ID is unset", () => {
+  test("falls back to the existing akieguchi.com GA id when env is unset", () => {
     delete process.env.GA_MEASUREMENT_ID;
-    expect(gaMeasurementIdForSite("https://akieguchi.com")).toBe("");
+    expect(gaMeasurementIdForSite("https://akieguchi.com")).toBe(
+      "G-NKECCDLXYD",
+    );
+  });
+
+  test("returns empty for template installs when GA_MEASUREMENT_ID is unset", () => {
+    delete process.env.GA_MEASUREMENT_ID;
     expect(gaMeasurementIdForSite("https://portfolio.example")).toBe("");
   });
 });

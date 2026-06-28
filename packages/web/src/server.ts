@@ -10,6 +10,7 @@ import {
   BUILD_ID,
   isServiceSiteUrl,
 } from "./api/ogp";
+import { htmlStatusForSpaPath, isSeriesDetailPath } from "./api/public-routes";
 import { imageUrlWithParams } from "./shared/image-url";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
@@ -493,16 +494,19 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
           imageRotationDeg?: number | null;
         }
       | undefined;
+    let seriesFound = false;
     const seriesMatch = url.pathname.match(/^\/series\/([^/]+)$/);
     if (seriesMatch) {
       const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
-      if (og)
+      if (og) {
+        seriesFound = true;
         override = {
           title: og.title,
           desc: og.desc,
           image: og.image || undefined,
           imageRotationDeg: og.imageRotationDeg,
         };
+      }
     }
     let injected = injectOgp(
       html,
@@ -552,7 +556,11 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         );
       }
     }
+    const htmlStatus = htmlStatusForSpaPath(url.pathname, {
+      seriesFound: isSeriesDetailPath(url.pathname) ? seriesFound : undefined,
+    });
     return new Response(injected, {
+      status: htmlStatus,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         // HTML must never be cached: it carries the current hashed asset URLs,

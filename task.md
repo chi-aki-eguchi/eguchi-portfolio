@@ -1,5 +1,27 @@
 # Task Log
 
+## 追記 2026-06-29 — Codex: 未知URLのHTTP 404化
+
+### 対応
+
+- 既知のSPAルート判定を `packages/web/src/api/public-routes.ts` に分離。
+- `/unknown-test-path` のような存在しない拡張子なしURLは、SPAのNot Found画面を表示しつつHTTPステータスを404にするようにした。
+- `/`, `/gallery`, `/series`, `/about`, `/profile`, `/contact`, `/service`, `/admin`, `/admin/login` は引き続き200。
+- `/series/:slug` はサーバ側でシリーズOGP解決できた場合は200、未解決なら404 HTMLにした。
+
+### 検証
+
+- `bun test ./packages/web/src/api/public-routes.test.ts ./packages/web/src/api/ogp.test.ts ./packages/web/src/web/test/pages.render.test.tsx`
+- `cd packages/web && bun x tsc -b && bun run build && bun test ./src`
+- `PORT=4301 bun src/server.ts` を起動し、`/`, `/gallery`, `/admin` が200、`/unknown-test-path` が404になることを確認。
+
+### 触ったファイル
+
+- `packages/web/src/api/public-routes.ts`
+- `packages/web/src/api/public-routes.test.ts`
+- `packages/web/src/server.ts`
+- `task.md`
+
 ## 追記 2026-06-29 — Codex: 撮影日ソートのアップロード日 fallback
 
 ### 対応

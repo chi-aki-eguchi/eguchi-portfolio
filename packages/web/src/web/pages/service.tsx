@@ -4,19 +4,17 @@ import { Link } from "wouter";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
-
-// Stripe Payment Links (live). These are public checkout links — safe to keep in
-// the repo. Never put Stripe secret keys / webhook secrets / dashboard URLs here.
-// Both being real https links flips STRIPE_LIVE → true: buttons point at Stripe and
-// the "online payment in prep" note disappears.
-const STRIPE_SELF = "https://buy.stripe.com/8x25kDdou8xldeEfHqgrS00";
-const STRIPE_CONCIERGE = "https://buy.stripe.com/aFa14n0BIcNB0rScvegrS01";
-// Until BOTH are real https links, the page shows the "in preparation" copy and the
-// buttons open an email inquiry instead of a dead anchor — so a click is never a
-// dead end, and nobody mistakes it for a completed purchase.
-const STRIPE_LIVE =
-  /^https?:/.test(STRIPE_SELF) && /^https?:/.test(STRIPE_CONCIERGE);
-const INQUIRY_EMAIL = "akieguchi33@gmail.com";
+import {
+  parseServicePageConfig,
+  isStripeLive,
+  anyPlanLive,
+  primaryStripeUrl,
+  mailtoFallback,
+  type ServicePageConfig,
+  type PlanItem,
+  type FaqItem,
+  type ExampleLinkItem,
+} from "../lib/service-config";
 
 const labelCls = "font-en uppercase text-center";
 const labelStyle = {
@@ -30,89 +28,6 @@ const bodyStyle = {
   lineHeight: "var(--body-leading, 1.95)",
   letterSpacing: "var(--body-tracking, 0.01em)",
 } as const;
-
-const PAIN_SOLUTIONS = [
-  {
-    concern: "作品が流れてしまう",
-    concernBody:
-      "SNSに投稿した写真は、時間が経つほど見つけてもらいにくくなります。",
-    solution: "写真が主役の見え方",
-    solutionBody:
-      "余白、並び、サイズ感が最初から整った場所に、作品を長く置いておけます。",
-  },
-  {
-    concern: "仕事用に見せる場所がほしい",
-    concernBody:
-      "依頼や展示の話が来たとき、作品・プロフィール・連絡先をまとめて見せられるURLが必要になります。",
-    solution: "プロフィールと連絡先まで一体化",
-    solutionBody:
-      "作品一覧、プロフィール、問い合わせ導線をひとつのサイトとして見せられます。",
-  },
-  {
-    concern: "写真の並びまで整えたい",
-    concernBody:
-      "写真の順番、余白、大きさまで、自分の見せ方に合わせて整えられます。",
-    solution: "管理画面から更新",
-    solutionBody:
-      "写真、並び順、プロフィール、連絡先をブラウザから更新できます。",
-  },
-] as const;
-
-const PURCHASE_DETAILS = [
-  {
-    title: "決済後の案内",
-    body: "Stripe の支払い控えが届いたあと、こちらでも確認し、選んだプランに合わせて次の案内を送ります。",
-  },
-  {
-    title: "管理画面で更新",
-    body: "写真の追加、並び替え、プロフィール、連絡先、見た目の調整をブラウザから行えます。",
-  },
-  {
-    title: "自分で立てる場合",
-    body: "立ち上げ用リンクと手順書を見ながら公開します。操作方法に関する初回相談も含みます。",
-  },
-  {
-    title: "公開おまかせの場合",
-    body: "写真・プロフィール・連絡先などを伺い、設定後にサイトURL、管理画面URL、パスワードを渡します。",
-  },
-] as const;
-
-const LIVE_LINKS = [
-  {
-    href: "/gallery",
-    title: "作品一覧",
-    body: "写真の並び、カテゴリ、余白の見え方を確認できます。",
-  },
-  {
-    href: "/about",
-    title: "プロフィール",
-    body: "作家情報、プロフィール写真、文章の入り方を確認できます。",
-  },
-  {
-    href: "/contact",
-    title: "問い合わせ",
-    body: "仕事につながる連絡先とSNS導線の置き方を確認できます。",
-  },
-] as const;
-
-const FAQS = [
-  {
-    q: "購入したあと、すぐサイトが自動でできますか？",
-    a: "いいえ。決済後すぐに自動生成されるサービスではありません。確認後、選んだプランに合わせてご案内します。自分で立てるプランは手順をお送りします。公開おまかせプランは、こちらで初期設定を進めます。",
-  },
-  {
-    q: "独自ドメイン対応ってどういう意味？",
-    a: "yourname.com のような自分のURLで公開できるように設定することです。すでにドメインをお持ちの場合は接続を案内します。まだお持ちでない場合は、取得方法からご案内できます。",
-  },
-  {
-    q: "月額料金はかかりますか？",
-    a: "このサービス自体の月額料金はありません。ただし、公開場所や独自ドメインなど、外部サービスの実費がかかる場合があります。目安は月500〜1,000円程度です。",
-  },
-  {
-    q: "あとから写真や文章を変えられますか？",
-    a: "はい。管理画面から写真、並び順、プロフィール、連絡先などを更新できます。大きなデザイン変更や個別カスタムは、内容に応じて別途ご相談になります。",
-  },
-] as const;
 
 type ServicePhoto = {
   id: number;
@@ -175,7 +90,7 @@ function Collapsible({
 }
 
 /* ── Accordion ── */
-function Accordion({ items }: { items: { q: string; a: string }[] }) {
+function Accordion({ items }: { items: FaqItem[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   return (
     <div className="border-y border-[rgba(var(--foreground-rgb),0.08)]">
@@ -370,7 +285,7 @@ function SitePagePreview({
   item,
   photo,
 }: {
-  item: (typeof LIVE_LINKS)[number];
+  item: ExampleLinkItem;
   photo: ServicePhoto | undefined;
 }) {
   return (
@@ -411,10 +326,16 @@ function SitePagePreview({
 }
 
 /* ── Actual site proof (compact) ── */
-function PortfolioProof({ photos }: { photos: ServicePhoto[] }) {
+function PortfolioProof({
+  photos,
+  config,
+}: {
+  photos: ServicePhoto[];
+  config: ServicePageConfig["examples"];
+}) {
   return (
     <section id="example" className="mt-7 md:mt-10 page-entrance scroll-mt-24">
-      <SectionLabel>Actual site</SectionLabel>
+      <SectionLabel>{config.label}</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
         <h2
           className="font-ja text-[rgba(var(--foreground-rgb),0.82)]"
@@ -424,37 +345,43 @@ function PortfolioProof({ photos }: { photos: ServicePhoto[] }) {
             lineHeight: 1.75,
           }}
         >
-          今見ているこのサイトが、
-          <wbr />
-          公開後の見え方の実例です。
+          {config.title.split("\n").map((line, i) => (
+            <span key={i} className={i > 0 ? "block" : undefined}>
+              {i > 0 && <wbr />}
+              {line}
+            </span>
+          ))}
         </h2>
         <p
           className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
           style={bodyStyle}
         >
-          今見ているこのサイトの Gallery・About・Contact
-          をそのまま確認できます。写真の並び、プロフィール、問い合わせ導線の参考にしてください。
+          {config.body}
         </p>
       </div>
       <div className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
-        {LIVE_LINKS.map((item, i) => (
+        {config.links.map((item, i) => (
           <SitePagePreview key={item.href} item={item} photo={photos[i]} />
         ))}
       </div>
       <div className="mt-7 text-center">
-        <ServiceButton href="#pricing">料金を見る</ServiceButton>
+        <ServiceButton href="#pricing">{config.cta}</ServiceButton>
       </div>
     </section>
   );
 }
 
 /* ── Pain / solution pairs ── */
-function AudienceAndFeatures() {
+function AudienceAndFeatures({
+  config,
+}: {
+  config: ServicePageConfig["painSolutions"];
+}) {
   return (
     <section className="mt-10 md:mt-14 page-entrance">
-      <SectionLabel>For photographers</SectionLabel>
+      <SectionLabel>{config.label}</SectionLabel>
       <div className="max-w-4xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
-        {PAIN_SOLUTIONS.map((item) => (
+        {config.items.map((item) => (
           <div
             key={item.concern}
             className="grid grid-cols-1 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 md:gap-10 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-5"
@@ -509,14 +436,18 @@ function AudienceAndFeatures() {
 }
 
 /* ── Purchase details (collapsible) ── */
-function PurchaseDetails() {
+function PurchaseDetails({
+  config,
+}: {
+  config: ServicePageConfig["purchaseFlow"];
+}) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <section
       id="after-purchase"
       className="mt-10 md:mt-14 page-entrance scroll-mt-24"
     >
-      <SectionLabel>After purchase</SectionLabel>
+      <SectionLabel>{config.label}</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
         <h2
           className="font-ja text-[rgba(var(--foreground-rgb),0.82)]"
@@ -526,13 +457,13 @@ function PurchaseDetails() {
             lineHeight: 1.75,
           }}
         >
-          購入後の流れ。
+          {config.title}
         </h2>
         <p
           className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
           style={bodyStyle}
         >
-          確認後、選んだプランに合わせて案内を送ります。写真の入れ方や管理画面での更新も、最初にまとめてお伝えします。
+          {config.body}
         </p>
         <button
           type="button"
@@ -555,7 +486,7 @@ function PurchaseDetails() {
 
       <Collapsible open={isOpen}>
         <ol className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
-          {PURCHASE_DETAILS.map((step, i) => (
+          {config.steps.map((step, i) => (
             <li
               key={step.title}
               className="grid grid-cols-[2.5rem_1fr] gap-4 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
@@ -587,50 +518,41 @@ function PurchaseDetails() {
             </li>
           ))}
         </ol>
-        <p
-          className="mt-5 max-w-2xl mx-auto text-center text-[rgba(var(--foreground-rgb),0.44)]"
-          style={{ fontSize: "0.82rem", lineHeight: 1.9 }}
-        >
-          写真の大きさ調整は、見せたい作品に強弱をつけるための機能です。
-          すべて同じ大きさで整えることもできます。
-        </p>
+        {config.footnote && (
+          <p
+            className="mt-5 max-w-2xl mx-auto text-center text-[rgba(var(--foreground-rgb),0.44)]"
+            style={{ fontSize: "0.82rem", lineHeight: 1.9 }}
+          >
+            {config.footnote}
+          </p>
+        )}
       </Collapsible>
     </section>
   );
 }
 
 /* ── Pricing card ── */
-function Plan({
-  name,
-  price,
-  sub,
-  points,
-  href,
-  cta,
-  primary,
+function PlanCard({
+  plan,
+  contactEmail,
 }: {
-  name: string;
-  price: string;
-  sub: string;
-  points: string[];
-  href: string;
-  cta: string;
-  primary?: boolean;
+  plan: PlanItem;
+  contactEmail: string;
 }) {
-  const isLive = /^https?:/.test(href);
-  const finalHref = isLive
-    ? href
-    : `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent(`ポートフォリオサイトのお申し込み（${name}）`)}`;
-  const cLabel = isLive ? cta : "メールで申し込む・相談する";
+  const live = isStripeLive(plan.stripeUrl);
+  const finalHref = live
+    ? plan.stripeUrl
+    : mailtoFallback(contactEmail, plan.name);
+  const cLabel = live ? plan.cta : "メールで申し込む・相談する";
   return (
     <article
       className={`relative rounded-md flex flex-col min-h-full transition-shadow duration-300 ${
-        primary
+        plan.primary
           ? "border-2 border-[rgba(var(--foreground-rgb),0.28)] bg-[rgba(var(--foreground-rgb),0.025)] p-7 md:p-9 shadow-[0_2px_20px_rgba(var(--foreground-rgb),0.06)]"
           : "border border-[rgba(var(--foreground-rgb),0.10)] p-6 md:p-8"
       }`}
     >
-      {primary && (
+      {plan.primary && (
         <p className="absolute right-5 top-5 font-en text-[0.60rem] tracking-[0.12em] uppercase bg-[var(--foreground)] text-[var(--background)] px-2.5 py-1 rounded-sm">
           Recommended
         </p>
@@ -638,28 +560,28 @@ function Plan({
       <h3
         className="font-ja font-medium break-words"
         style={{
-          fontSize: primary ? "1.15rem" : "1.08rem",
+          fontSize: plan.primary ? "1.15rem" : "1.08rem",
           color: `rgba(var(--foreground-rgb),0.82)`,
           letterSpacing: "0.02em",
           lineHeight: 1.5,
         }}
       >
-        {name}
+        {plan.name}
       </h3>
       <p
         className="mt-3 font-en tracking-[0.02em] text-[rgba(var(--foreground-rgb),0.68)]"
-        style={{ fontSize: primary ? "1.4rem" : "1.2rem" }}
+        style={{ fontSize: plan.primary ? "1.4rem" : "1.2rem" }}
       >
-        {price}
+        {plan.price}
       </p>
       <p
         className="mt-3 text-[rgba(var(--foreground-rgb),0.56)]"
         style={bodyStyle}
       >
-        {sub}
+        {plan.sub}
       </p>
       <ul className="mt-5 space-y-2.5 flex-1">
-        {points.map((p, i) => (
+        {plan.points.map((p, i) => (
           <li
             key={i}
             className="flex gap-2.5 text-[rgba(var(--foreground-rgb),0.55)]"
@@ -680,9 +602,9 @@ function Plan({
       </ul>
       <a
         href={finalHref}
-        {...(isLive ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+        {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className={`mt-7 inline-flex min-h-11 items-center self-start font-en text-sm tracking-[0.03em] px-7 py-2.5 rounded-md transition-opacity duration-300 ${
-          primary
+          plan.primary
             ? "bg-[var(--foreground)] text-[var(--background)] hover:opacity-85"
             : "border border-[rgba(var(--foreground-rgb),0.25)] text-[rgba(var(--foreground-rgb),0.70)] hover:opacity-70"
         }`}
@@ -693,11 +615,74 @@ function Plan({
   );
 }
 
+/* ── Admin showcase section ── */
+function AdminShowcase({
+  config,
+}: {
+  config: ServicePageConfig["adminShowcase"];
+}) {
+  return (
+    <section className="mt-10 md:mt-14 page-entrance">
+      <SectionLabel>{config.label}</SectionLabel>
+      <div className="max-w-3xl mx-auto text-center">
+        <h2
+          className="font-ja text-[rgba(var(--foreground-rgb),0.82)]"
+          style={{
+            fontSize: "clamp(1.18rem, 2vw, 1.55rem)",
+            letterSpacing: "0.03em",
+            lineHeight: 1.75,
+          }}
+        >
+          {config.title}
+        </h2>
+        <p
+          className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
+          style={bodyStyle}
+        >
+          {config.body}
+        </p>
+      </div>
+      <div className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
+        {config.features.map((feat) => (
+          <div
+            key={feat.title}
+            className="grid grid-cols-[5.5rem_1fr] sm:grid-cols-[7rem_1fr] gap-4 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
+          >
+            <span
+              className="font-ja text-[rgba(var(--foreground-rgb),0.74)]"
+              style={{
+                fontSize: "0.88rem",
+                letterSpacing: "0.03em",
+                lineHeight: 1.55,
+              }}
+            >
+              {feat.title}
+            </span>
+            <span
+              className="text-[rgba(var(--foreground-rgb),0.50)]"
+              style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
+            >
+              {feat.body}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ── Final CTA section ── */
-function FinalCTA() {
-  const href = STRIPE_LIVE
-    ? STRIPE_SELF
-    : `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent("ポートフォリオサイトについて相談")}`;
+function FinalCTA({
+  config,
+  stripeHref,
+  contactEmail,
+}: {
+  config: ServicePageConfig["finalCta"];
+  stripeHref: string | null;
+  contactEmail: string;
+}) {
+  const live = !!stripeHref;
+  const href = stripeHref ?? mailtoFallback(contactEmail);
   return (
     <section className="mt-14 md:mt-20 page-entrance text-center">
       <div className="max-w-2xl mx-auto border-t border-[rgba(var(--foreground-rgb),0.08)] pt-10 md:pt-14">
@@ -709,42 +694,37 @@ function FinalCTA() {
             lineHeight: 1.75,
           }}
         >
-          まずは写真を見せてください。
+          {config.title}
         </p>
         <p
           className="mt-4 text-[rgba(var(--foreground-rgb),0.50)]"
           style={bodyStyle}
         >
-          どんなサイトになるか、具体的にご案内します。
+          {config.body}
         </p>
         <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
             href={href}
-            {...(STRIPE_LIVE
-              ? { target: "_blank", rel: "noopener noreferrer" }
-              : {})}
+            {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             className="inline-flex min-h-11 items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-8 py-2.5 rounded-md hover:opacity-85 transition-opacity duration-300"
           >
-            {STRIPE_LIVE ? "申し込む" : "メールで相談する"}
+            {live ? config.ctaOnline : config.ctaOffline}
           </a>
-          <nav className="flex items-center gap-5" aria-label="SNS">
-            <a
-              href="https://instagram.com/chi._.aki._"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 py-1.5"
-            >
-              Instagram
-            </a>
-            <a
-              href="https://x.com/chi_aki_jpg"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 py-1.5"
-            >
-              X
-            </a>
-          </nav>
+          {config.snsLinks.length > 0 && (
+            <nav className="flex items-center gap-5" aria-label="SNS">
+              {config.snsLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 py-1.5"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          )}
         </div>
       </div>
     </section>
@@ -752,8 +732,17 @@ function FinalCTA() {
 }
 
 /* ── Sticky CTA bar ── */
-function StickyCtaBar() {
+function StickyCtaBar({
+  config,
+  stripeHref,
+  contactEmail,
+}: {
+  config: ServicePageConfig["stickyCta"];
+  stripeHref: string | null;
+  contactEmail: string;
+}) {
   const [visible, setVisible] = useState(false);
+  const live = !!stripeHref;
 
   useEffect(() => {
     let frame = 0;
@@ -774,9 +763,7 @@ function StickyCtaBar() {
     };
   }, []);
 
-  const href = STRIPE_LIVE
-    ? STRIPE_SELF
-    : `mailto:${INQUIRY_EMAIL}?subject=${encodeURIComponent("ポートフォリオサイトについて相談")}`;
+  const href = stripeHref ?? mailtoFallback(contactEmail);
 
   return (
     <div
@@ -787,30 +774,28 @@ function StickyCtaBar() {
       }}
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pb-5">
-        <div
-          className="pointer-events-auto bg-[var(--background)] border border-[rgba(var(--foreground-rgb),0.10)] backdrop-blur-md rounded-lg shadow-[0_-4px_24px_rgba(var(--foreground-rgb),0.08)] px-5 py-3 flex items-center justify-between gap-4"
-        >
+        <div className="pointer-events-auto bg-[var(--background)] border border-[rgba(var(--foreground-rgb),0.10)] backdrop-blur-md rounded-lg shadow-[0_-4px_24px_rgba(var(--foreground-rgb),0.08)] px-5 py-3 flex items-center justify-between gap-4">
           <p
             className="font-ja text-sm text-[rgba(var(--foreground-rgb),0.60)] hidden sm:block"
             style={{ letterSpacing: "0.02em" }}
           >
-            ¥10,000 から始められます
+            {config.text}
           </p>
           <div className="flex items-center gap-3 ml-auto">
             <a
               href="#pricing"
               className="font-ja text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.45)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1.5"
             >
-              料金を見る
+              {config.pricingCta}
             </a>
             <a
               href={href}
-              {...(STRIPE_LIVE
+              {...(live
                 ? { target: "_blank", rel: "noopener noreferrer" }
                 : {})}
               className="inline-flex items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-5 py-2 rounded-md hover:opacity-85 transition-opacity duration-300"
             >
-              {STRIPE_LIVE ? "申し込む" : "相談する"}
+              {live ? config.ctaOnline : config.ctaOffline}
             </a>
           </div>
         </div>
@@ -832,10 +817,18 @@ export default function ServicePage() {
     queryKey: ["photos"],
     queryFn: async () => jsonOrThrow(await api.photos.$get()),
   });
+  const { data: settingsData } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
   const photos = (photosData?.photos ?? []) as ServicePhoto[];
+  const config = parseServicePageConfig(settingsData?.servicePageConfig);
+  const contactEmail = settingsData?.contactEmail || "akieguchi33@gmail.com";
+  const live = anyPlanLive(config);
   const ref = usePageEntrance([photos.length]);
 
   if (!isServiceHost()) return null;
+  if (config.enabled === "off") return null;
 
   return (
     <section
@@ -845,7 +838,7 @@ export default function ServicePage() {
       {/* ── Hero ── */}
       <header className="max-w-3xl mx-auto text-center">
         <p className={`${labelCls} mb-8 page-entrance`} style={labelStyle}>
-          Service
+          {config.hero.label}
         </p>
         <h1
           className="font-ja page-entrance"
@@ -856,20 +849,29 @@ export default function ServicePage() {
             lineHeight: 1.65,
           }}
         >
-          <span className="block">写真が主役になる、</span>
-          <span className="block">静かなポートフォリオサイト</span>
+          {config.hero.title.split("\n").map((line, i) => (
+            <span key={i} className="block">
+              {line}
+            </span>
+          ))}
         </h1>
         <p
           className="mt-7 text-[rgba(var(--foreground-rgb),0.58)] page-entrance page-entrance-delay-1 max-w-2xl mx-auto"
           style={bodyStyle}
         >
-          テンプレートと格闘せずに持てる、写真家のためのポートフォリオサイト。
-          管理画面から写真、プロフィール、連絡先を入れて、自分の作品を見せる場所として運用できます。
+          {config.hero.body.split("\n").map((line, i, arr) => (
+            <span key={i}>
+              {line}
+              {i < arr.length - 1 && <br />}
+            </span>
+          ))}
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 page-entrance page-entrance-delay-1">
-          <ServiceButton href="#pricing">料金を見る</ServiceButton>
+          <ServiceButton href="#pricing">
+            {config.hero.ctaPricing}
+          </ServiceButton>
           <ServiceButton href="#example" variant="outline">
-            実例を見る
+            {config.hero.ctaExample}
           </ServiceButton>
         </div>
       </header>
@@ -878,80 +880,62 @@ export default function ServicePage() {
       <HeroSitePreview photos={photos} />
 
       {/* ── Actual site links ── */}
-      <PortfolioProof photos={photos} />
+      <PortfolioProof photos={photos} config={config.examples} />
 
       {/* ── Fit + value ── */}
-      <AudienceAndFeatures />
+      <AudienceAndFeatures config={config.painSolutions} />
 
       {/* ── Pricing ── */}
       <section
         id="pricing"
         className="mt-12 md:mt-16 page-entrance scroll-mt-24"
       >
-        <SectionLabel>Pricing</SectionLabel>
+        <SectionLabel>{config.pricing.label}</SectionLabel>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 items-start">
-          <Plan
-            name="自分で立てる"
-            price="¥10,000"
-            sub="手順を見ながら、ご自身でサイトを公開するプランです。"
-            points={[
-              "テンプレート利用料",
-              "公開までのガイド付き",
-              "チェックリスト付き",
-              "独自ドメイン接続の手順付き",
-              "操作方法に関する初回相談つき",
-            ]}
-            href={STRIPE_SELF}
-            cta="このプランを申し込む"
-          />
-          <Plan
-            name="公開おまかせ"
-            price="¥30,000"
-            sub="初期設定はこちらで行い、公開できる状態まで整えるプランです。"
-            points={[
-              "初期設定の代行",
-              "公開場所の設定",
-              "独自ドメイン接続対応",
-              "写真と文章の入れ方を案内",
-              "公開後7日間の簡単な操作相談つき",
-            ]}
-            href={STRIPE_CONCIERGE}
-            cta="このプランを申し込む"
-            primary
-          />
+          {config.pricing.plans.map((plan) => (
+            <PlanCard key={plan.name} plan={plan} contactEmail={contactEmail} />
+          ))}
         </div>
         <p
           className="text-center mt-7 text-[rgba(var(--foreground-rgb),0.45)]"
           style={{ fontSize: "0.82rem", lineHeight: 1.8 }}
         >
-          {STRIPE_LIVE
-            ? "決済後、Stripe の支払い控えが届きます。こちらでも確認後、手順書または公開おまかせの案内を送ります。"
-            : "いまはオンライン決済を準備中です。当面は上のボタン（メールが開きます）か、下の連絡先からお申し込みください。"}
+          {live ? config.pricing.noteOnline : config.pricing.noteOffline}
         </p>
         <p
           className="text-center mt-2 text-[rgba(var(--foreground-rgb),0.42)]"
           style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
         >
-          公開場所・独自ドメインなどの外部費用は別途かかります。デザイン変更や個別カスタムは別途お見積もりになります。
+          {config.pricing.disclaimer}
         </p>
       </section>
 
-      {/* Sentinel for sticky CTA visibility */}
-      <StickyCtaBar />
+      <StickyCtaBar
+        config={config.stickyCta}
+        stripeHref={primaryStripeUrl(config)}
+        contactEmail={contactEmail}
+      />
 
       {/* ── Purchase details (collapsible) ── */}
-      <PurchaseDetails />
+      <PurchaseDetails config={config.purchaseFlow} />
+
+      {/* ── Admin showcase ── */}
+      <AdminShowcase config={config.adminShowcase} />
 
       {/* ── FAQ (accordion) ── */}
       <section className="mt-10 md:mt-14 page-entrance">
-        <SectionLabel>FAQ</SectionLabel>
+        <SectionLabel>{config.faq.label}</SectionLabel>
         <div className="max-w-2xl mx-auto">
-          <Accordion items={FAQS.map((f) => ({ q: f.q, a: f.a }))} />
+          <Accordion items={config.faq.items} />
         </div>
       </section>
 
-      {/* ── Final CTA (replaces old Contact section) ── */}
-      <FinalCTA />
+      {/* ── Final CTA ── */}
+      <FinalCTA
+        config={config.finalCta}
+        stripeHref={primaryStripeUrl(config)}
+        contactEmail={contactEmail}
+      />
     </section>
   );
 }

@@ -66,6 +66,7 @@ type Tab =
   | "categories"
   | "series"
   | "pricing"
+  | "service"
   | "settings";
 
 // V (ux-refinements): admin UI state that must survive tab switches and page
@@ -108,7 +109,9 @@ function assertOk(res: Response): void {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-async function jsonOrThrow<T>(res: Response & { json(): Promise<T> }): Promise<T> {
+async function jsonOrThrow<T>(
+  res: Response & { json(): Promise<T> },
+): Promise<T> {
   assertOk(res);
   return res.json();
 }
@@ -165,6 +168,7 @@ export default function AdminPage() {
     { key: "categories", label: "Categories", icon: <Tag size={15} /> },
     { key: "series", label: "Series", icon: <Layers size={15} /> },
     { key: "pricing", label: "Pricing", icon: <Receipt size={15} /> },
+    { key: "service", label: "Service", icon: <ExternalLink size={15} /> },
     { key: "settings", label: "Settings", icon: <Settings size={15} /> },
   ];
 
@@ -225,6 +229,7 @@ export default function AdminPage() {
         {tab === "categories" && <CategoriesTab />}
         {tab === "series" && <SeriesTab />}
         {tab === "pricing" && <PricingTab />}
+        {tab === "service" && <ServiceTab onUnsavedChange={setHasUnsaved} />}
         {tab === "settings" && <SettingsTab onUnsavedChange={setHasUnsaved} />}
       </div>
 
@@ -1006,7 +1011,10 @@ function GalleryTab({
     queryKey: ["photos-trash"],
     queryFn: async () => {
       const res = await adminApi.photos.trash.$get();
-      return jsonOrThrow(res) as Promise<{ photos: Photo[]; retentionDays?: number }>;
+      return jsonOrThrow(res) as Promise<{
+        photos: Photo[];
+        retentionDays?: number;
+      }>;
     },
     enabled: showTrash,
   });
@@ -1359,9 +1367,7 @@ function GalleryTab({
       qc.invalidateQueries({ queryKey: ["hero-photos"] });
       qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
       setInspectPhoto((p) => (p?.id === id ? { ...p, rotationDeg } : p));
-      setEditForm((f) =>
-        inspectPhoto?.id === id ? { ...f, rotationDeg } : f,
-      );
+      setEditForm((f) => (inspectPhoto?.id === id ? { ...f, rotationDeg } : f));
       setBatchToast(`向きを ${rotationDeg}° にしました`);
       setTimeout(() => setBatchToast(null), 1500);
     },
@@ -1466,14 +1472,15 @@ function GalleryTab({
       qc.invalidateQueries({ queryKey: ["hero-photos"] });
       qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
       if (inspectPhoto && selected.has(inspectPhoto.id)) {
-        if (vars.operation === "rotate_left" || vars.operation === "rotate_right") {
+        if (
+          vars.operation === "rotate_left" ||
+          vars.operation === "rotate_right"
+        ) {
           const rotationDeg = rotatedBy(
             inspectPhoto.rotationDeg,
             vars.operation === "rotate_left" ? -90 : 90,
           );
-          setInspectPhoto((p) =>
-            p ? { ...p, rotationDeg } : p,
-          );
+          setInspectPhoto((p) => (p ? { ...p, rotationDeg } : p));
           setEditForm((f) => ({ ...f, rotationDeg }));
         }
         if (vars.operation === "reset_rotation") {
@@ -2482,7 +2489,9 @@ function GalleryTab({
                 </button>
                 <button
                   type="button"
-                  onClick={() => batchOp.mutate({ operation: "reset_rotation" })}
+                  onClick={() =>
+                    batchOp.mutate({ operation: "reset_rotation" })
+                  }
                   disabled={batchOp.isPending}
                   title="向きを0°に戻す"
                   aria-label="選択写真の向きを0度に戻す"
@@ -2689,7 +2698,9 @@ function GalleryTab({
                           src={adminPhotoSrc(photo, 400, 70)}
                           alt={photo.title}
                           className="w-full aspect-square object-cover bg-[#2a2a2a] opacity-50"
-                          style={{ objectPosition: adminPhotoObjectPosition(photo) }}
+                          style={{
+                            objectPosition: adminPhotoObjectPosition(photo),
+                          }}
                           loading="lazy"
                           draggable={false}
                         />
@@ -2835,7 +2846,9 @@ function GalleryTab({
                         src={adminPhotoSrc(photo, 400, 70)}
                         alt={photo.title}
                         className={`w-full aspect-square object-cover bg-[#2a2a2a] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
-                        style={{ objectPosition: adminPhotoObjectPosition(photo) }}
+                        style={{
+                          objectPosition: adminPhotoObjectPosition(photo),
+                        }}
                         loading="lazy"
                         decoding="async"
                         draggable={false}
@@ -3606,7 +3619,8 @@ function GalleryTab({
                 <div className="grid grid-cols-3 gap-1">
                   {FOCAL_PRESETS.map((point) => {
                     const active =
-                      editForm.focalX === point.x && editForm.focalY === point.y;
+                      editForm.focalX === point.x &&
+                      editForm.focalY === point.y;
                     return (
                       <button
                         key={`${point.x}-${point.y}`}
@@ -5726,7 +5740,8 @@ function SeriesTab() {
                                     alt=""
                                     className="w-full h-full object-cover"
                                     style={{
-                                      objectPosition: adminPhotoObjectPosition(p),
+                                      objectPosition:
+                                        adminPhotoObjectPosition(p),
                                     }}
                                     loading="lazy"
                                   />
@@ -6370,6 +6385,1029 @@ function TopWorksPicker({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════
+   SERVICE TAB
+══════════════════════════════════════════════════ */
+import {
+  parseServicePageConfig,
+  type ServicePageConfig,
+} from "../lib/service-config";
+
+function ServiceSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-[#333]">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[#888] hover:text-[#bbb] transition-colors cursor-pointer"
+      >
+        <span>{title}</span>
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </button>
+      {open && <div className="pb-5 space-y-3">{children}</div>}
+    </div>
+  );
+}
+
+function SvcInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-[10px] text-[#777] uppercase tracking-wider">
+        {label}
+      </span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="mt-1 w-full bg-[#2a2a2a] border border-[#444] rounded px-2.5 py-1.5 text-[12px] text-[#ccc] focus:border-[#666] outline-none"
+      />
+    </label>
+  );
+}
+
+function SvcTextarea({
+  label,
+  value,
+  onChange,
+  rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  rows?: number;
+}) {
+  return (
+    <label className="block">
+      <span className="text-[10px] text-[#777] uppercase tracking-wider">
+        {label}
+      </span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        className="mt-1 w-full bg-[#2a2a2a] border border-[#444] rounded px-2.5 py-1.5 text-[12px] text-[#ccc] focus:border-[#666] outline-none resize-y leading-relaxed"
+      />
+    </label>
+  );
+}
+
+function SvcArrayControls({
+  index,
+  total,
+  onMove,
+  onRemove,
+}: {
+  index: number;
+  total: number;
+  onMove: (from: number, to: number) => void;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 ml-auto shrink-0">
+      <button
+        type="button"
+        disabled={index === 0}
+        onClick={() => onMove(index, index - 1)}
+        className="p-0.5 text-[#666] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
+        title="上へ"
+      >
+        <ChevronUp size={12} />
+      </button>
+      <button
+        type="button"
+        disabled={index === total - 1}
+        onClick={() => onMove(index, index + 1)}
+        className="p-0.5 text-[#666] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
+        title="下へ"
+      >
+        <ChevronDown size={12} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="p-0.5 text-[#666] hover:text-red-400"
+        title="削除"
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
+function moveItem<T>(arr: T[], from: number, to: number): T[] {
+  const next = [...arr];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+function removeItem<T>(arr: T[], index: number): T[] {
+  return arr.filter((_, i) => i !== index);
+}
+
+function updateItem<T>(arr: T[], index: number, patch: Partial<T>): T[] {
+  return arr.map((item, i) => (i === index ? { ...item, ...patch } : item));
+}
+
+function ServiceTab({
+  onUnsavedChange,
+}: {
+  onUnsavedChange?: (v: boolean) => void;
+}) {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
+
+  const saved = parseServicePageConfig(data?.servicePageConfig);
+  const [draft, setDraft] = usePersistentState<ServicePageConfig>(
+    "admin:serviceDraft",
+    saved,
+  );
+  const [justSaved, setJustSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+
+  // Sync draft to server data on first load
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (data && !loadedRef.current) {
+      loadedRef.current = true;
+      const fromDb = parseServicePageConfig(data.servicePageConfig);
+      setDraft(fromDb);
+    }
+  }, [data]);
+
+  const hasChanges = JSON.stringify(draft) !== JSON.stringify(saved);
+
+  useEffect(() => {
+    onUnsavedChange?.(hasChanges);
+  }, [hasChanges, onUnsavedChange]);
+
+  useEffect(() => {
+    if (!hasChanges) return;
+    const handler = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasChanges]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const res = await adminApi.settings.$post({
+        json: { servicePageConfig: JSON.stringify(draft) },
+      });
+      assertOk(res);
+    },
+    onSuccess: () => {
+      setSaveError(false);
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      loadedRef.current = false;
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+    },
+    onError: () => setSaveError(true),
+  });
+
+  const reset = () => {
+    setDraft(saved);
+  };
+
+  const set = <K extends keyof ServicePageConfig>(
+    key: K,
+    val: ServicePageConfig[K],
+  ) => setDraft((d) => ({ ...d, [key]: val }));
+
+  const setHero = (patch: Partial<ServicePageConfig["hero"]>) =>
+    set("hero", { ...draft.hero, ...patch });
+  const setExamples = (patch: Partial<ServicePageConfig["examples"]>) =>
+    set("examples", { ...draft.examples, ...patch });
+  const setPainSolutions = (
+    patch: Partial<ServicePageConfig["painSolutions"]>,
+  ) => set("painSolutions", { ...draft.painSolutions, ...patch });
+  const setPricing = (patch: Partial<ServicePageConfig["pricing"]>) =>
+    set("pricing", { ...draft.pricing, ...patch });
+  const setPurchaseFlow = (patch: Partial<ServicePageConfig["purchaseFlow"]>) =>
+    set("purchaseFlow", { ...draft.purchaseFlow, ...patch });
+  const setFaq = (patch: Partial<ServicePageConfig["faq"]>) =>
+    set("faq", { ...draft.faq, ...patch });
+  const setFinalCta = (patch: Partial<ServicePageConfig["finalCta"]>) =>
+    set("finalCta", { ...draft.finalCta, ...patch });
+  const setStickyCta = (patch: Partial<ServicePageConfig["stickyCta"]>) =>
+    set("stickyCta", { ...draft.stickyCta, ...patch });
+  const setAdminShowcase = (
+    patch: Partial<ServicePageConfig["adminShowcase"]>,
+  ) => set("adminShowcase", { ...draft.adminShowcase, ...patch });
+
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 size={20} className="animate-spin text-[#555]" />
+      </div>
+    );
+
+  return (
+    <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
+      <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-2">
+        Service Page
+      </h2>
+      <p className="text-[11px] text-[#555] mb-6">
+        /service 販売ページの内容を編集します。akieguchi.com
+        でのみ表示されます。
+      </p>
+
+      {/* Save bar */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          type="button"
+          onClick={() => save.mutate()}
+          disabled={!hasChanges || save.isPending}
+          className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] tracking-wider bg-[#4a9eff] text-white rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3a8eef] transition-colors"
+        >
+          {save.isPending ? (
+            <Loader2 size={11} className="animate-spin" />
+          ) : (
+            <Check size={11} />
+          )}
+          保存
+        </button>
+        {hasChanges && (
+          <button
+            type="button"
+            onClick={reset}
+            className="text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          >
+            リセット
+          </button>
+        )}
+        {justSaved && (
+          <span className="text-[11px] text-green-400/80">保存しました</span>
+        )}
+        {saveError && (
+          <span className="text-[11px] text-red-400/80">
+            保存に失敗しました
+          </span>
+        )}
+      </div>
+
+      {/* Enabled toggle */}
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#333]">
+        <span className="text-[11px] text-[#888]">ページ公開</span>
+        <div className="flex gap-1">
+          {(["on", "off"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => set("enabled", v)}
+              className={`px-3 py-1 text-[10px] tracking-wider rounded transition-colors ${
+                draft.enabled === v
+                  ? "bg-[#3a3a3a] text-[#e0e0e0]"
+                  : "text-[#666] hover:text-[#aaa]"
+              }`}
+            >
+              {v === "on" ? "公開" : "非公開"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Hero ── */}
+      <ServiceSection title="Hero" defaultOpen>
+        <SvcInput
+          label="ラベル"
+          value={draft.hero.label}
+          onChange={(v) => setHero({ label: v })}
+        />
+        <SvcTextarea
+          label="見出し（改行で行分割）"
+          value={draft.hero.title}
+          onChange={(v) => setHero({ title: v })}
+          rows={2}
+        />
+        <SvcTextarea
+          label="説明文"
+          value={draft.hero.body}
+          onChange={(v) => setHero({ body: v })}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <SvcInput
+            label="CTA: 料金"
+            value={draft.hero.ctaPricing}
+            onChange={(v) => setHero({ ctaPricing: v })}
+          />
+          <SvcInput
+            label="CTA: 実例"
+            value={draft.hero.ctaExample}
+            onChange={(v) => setHero({ ctaExample: v })}
+          />
+        </div>
+      </ServiceSection>
+
+      {/* ── Examples ── */}
+      <ServiceSection title="実例セクション">
+        <SvcInput
+          label="ラベル"
+          value={draft.examples.label}
+          onChange={(v) => setExamples({ label: v })}
+        />
+        <SvcTextarea
+          label="見出し"
+          value={draft.examples.title}
+          onChange={(v) => setExamples({ title: v })}
+          rows={2}
+        />
+        <SvcTextarea
+          label="説明文"
+          value={draft.examples.body}
+          onChange={(v) => setExamples({ body: v })}
+        />
+        <SvcInput
+          label="CTA"
+          value={draft.examples.cta}
+          onChange={(v) => setExamples({ cta: v })}
+        />
+        <p className="text-[10px] text-[#666] mt-2">実例リンク</p>
+        {draft.examples.links.map((link, i) => (
+          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#555]">#{i + 1}</span>
+              <SvcArrayControls
+                index={i}
+                total={draft.examples.links.length}
+                onMove={(f, t) =>
+                  setExamples({
+                    links: moveItem(draft.examples.links, f, t),
+                  })
+                }
+                onRemove={(idx) =>
+                  setExamples({
+                    links: removeItem(draft.examples.links, idx),
+                  })
+                }
+              />
+            </div>
+            <SvcInput
+              label="タイトル"
+              value={link.title}
+              onChange={(v) =>
+                setExamples({
+                  links: updateItem(draft.examples.links, i, { title: v }),
+                })
+              }
+            />
+            <SvcInput
+              label="説明"
+              value={link.body}
+              onChange={(v) =>
+                setExamples({
+                  links: updateItem(draft.examples.links, i, { body: v }),
+                })
+              }
+            />
+            <SvcInput
+              label="リンク先"
+              value={link.href}
+              onChange={(v) =>
+                setExamples({
+                  links: updateItem(draft.examples.links, i, { href: v }),
+                })
+              }
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setExamples({
+              links: [
+                ...draft.examples.links,
+                { title: "", body: "", href: "/" },
+              ],
+            })
+          }
+          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+        >
+          <Plus size={11} /> 追加
+        </button>
+      </ServiceSection>
+
+      {/* ── Pain/Solutions ── */}
+      <ServiceSection title="こんな悩み / このサイトなら">
+        <SvcInput
+          label="ラベル"
+          value={draft.painSolutions.label}
+          onChange={(v) => setPainSolutions({ label: v })}
+        />
+        {draft.painSolutions.items.map((item, i) => (
+          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#555]">#{i + 1}</span>
+              <SvcArrayControls
+                index={i}
+                total={draft.painSolutions.items.length}
+                onMove={(f, t) =>
+                  setPainSolutions({
+                    items: moveItem(draft.painSolutions.items, f, t),
+                  })
+                }
+                onRemove={(idx) =>
+                  setPainSolutions({
+                    items: removeItem(draft.painSolutions.items, idx),
+                  })
+                }
+              />
+            </div>
+            <SvcInput
+              label="悩みタイトル"
+              value={item.concern}
+              onChange={(v) =>
+                setPainSolutions({
+                  items: updateItem(draft.painSolutions.items, i, {
+                    concern: v,
+                  }),
+                })
+              }
+            />
+            <SvcTextarea
+              label="悩み本文"
+              value={item.concernBody}
+              onChange={(v) =>
+                setPainSolutions({
+                  items: updateItem(draft.painSolutions.items, i, {
+                    concernBody: v,
+                  }),
+                })
+              }
+              rows={2}
+            />
+            <SvcInput
+              label="解決タイトル"
+              value={item.solution}
+              onChange={(v) =>
+                setPainSolutions({
+                  items: updateItem(draft.painSolutions.items, i, {
+                    solution: v,
+                  }),
+                })
+              }
+            />
+            <SvcTextarea
+              label="解決本文"
+              value={item.solutionBody}
+              onChange={(v) =>
+                setPainSolutions({
+                  items: updateItem(draft.painSolutions.items, i, {
+                    solutionBody: v,
+                  }),
+                })
+              }
+              rows={2}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setPainSolutions({
+              items: [
+                ...draft.painSolutions.items,
+                {
+                  concern: "",
+                  concernBody: "",
+                  solution: "",
+                  solutionBody: "",
+                },
+              ],
+            })
+          }
+          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+        >
+          <Plus size={11} /> 追加
+        </button>
+      </ServiceSection>
+
+      {/* ── Pricing ── */}
+      <ServiceSection title="料金">
+        <SvcInput
+          label="ラベル"
+          value={draft.pricing.label}
+          onChange={(v) => setPricing({ label: v })}
+        />
+        {draft.pricing.plans.map((plan, i) => (
+          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#555]">プラン {i + 1}</span>
+              {plan.primary && (
+                <span className="text-[9px] bg-[#4a9eff]/20 text-[#4a9eff] px-1.5 py-0.5 rounded">
+                  RECOMMENDED
+                </span>
+              )}
+              <SvcArrayControls
+                index={i}
+                total={draft.pricing.plans.length}
+                onMove={(f, t) =>
+                  setPricing({
+                    plans: moveItem(draft.pricing.plans, f, t),
+                  })
+                }
+                onRemove={(idx) =>
+                  setPricing({
+                    plans: removeItem(draft.pricing.plans, idx),
+                  })
+                }
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <SvcInput
+                label="プラン名"
+                value={plan.name}
+                onChange={(v) =>
+                  setPricing({
+                    plans: updateItem(draft.pricing.plans, i, { name: v }),
+                  })
+                }
+              />
+              <SvcInput
+                label="価格"
+                value={plan.price}
+                onChange={(v) =>
+                  setPricing({
+                    plans: updateItem(draft.pricing.plans, i, { price: v }),
+                  })
+                }
+              />
+            </div>
+            <SvcTextarea
+              label="説明文"
+              value={plan.sub}
+              onChange={(v) =>
+                setPricing({
+                  plans: updateItem(draft.pricing.plans, i, { sub: v }),
+                })
+              }
+              rows={2}
+            />
+            <SvcTextarea
+              label="特徴（1行ごとに箇条書き）"
+              value={plan.points.join("\n")}
+              onChange={(v) =>
+                setPricing({
+                  plans: updateItem(draft.pricing.plans, i, {
+                    points: v.split("\n").filter((l) => l.trim()),
+                  }),
+                })
+              }
+              rows={4}
+            />
+            <SvcInput
+              label="Stripe Payment Link"
+              value={plan.stripeUrl}
+              onChange={(v) =>
+                setPricing({
+                  plans: updateItem(draft.pricing.plans, i, {
+                    stripeUrl: v,
+                  }),
+                })
+              }
+              placeholder="https://buy.stripe.com/..."
+            />
+            <SvcInput
+              label="CTA文言"
+              value={plan.cta}
+              onChange={(v) =>
+                setPricing({
+                  plans: updateItem(draft.pricing.plans, i, { cta: v }),
+                })
+              }
+            />
+            <label className="flex items-center gap-2 text-[11px] text-[#888]">
+              <input
+                type="checkbox"
+                checked={plan.primary}
+                onChange={(e) =>
+                  setPricing({
+                    plans: updateItem(draft.pricing.plans, i, {
+                      primary: e.target.checked,
+                    }),
+                  })
+                }
+                className="accent-[#4a9eff]"
+              />
+              おすすめ表示
+            </label>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setPricing({
+              plans: [
+                ...draft.pricing.plans,
+                {
+                  name: "",
+                  price: "",
+                  sub: "",
+                  points: [],
+                  stripeUrl: "",
+                  cta: "このプランを申し込む",
+                  primary: false,
+                },
+              ],
+            })
+          }
+          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+        >
+          <Plus size={11} /> プラン追加
+        </button>
+        <SvcTextarea
+          label="決済後の案内文（Stripe有効時）"
+          value={draft.pricing.noteOnline}
+          onChange={(v) => setPricing({ noteOnline: v })}
+          rows={2}
+        />
+        <SvcTextarea
+          label="決済準備中の案内文"
+          value={draft.pricing.noteOffline}
+          onChange={(v) => setPricing({ noteOffline: v })}
+          rows={2}
+        />
+        <SvcTextarea
+          label="外部費用の注意書き"
+          value={draft.pricing.disclaimer}
+          onChange={(v) => setPricing({ disclaimer: v })}
+          rows={2}
+        />
+      </ServiceSection>
+
+      {/* ── Purchase Flow ── */}
+      <ServiceSection title="購入後の流れ">
+        <SvcInput
+          label="ラベル"
+          value={draft.purchaseFlow.label}
+          onChange={(v) => setPurchaseFlow({ label: v })}
+        />
+        <SvcInput
+          label="見出し"
+          value={draft.purchaseFlow.title}
+          onChange={(v) => setPurchaseFlow({ title: v })}
+        />
+        <SvcTextarea
+          label="説明文"
+          value={draft.purchaseFlow.body}
+          onChange={(v) => setPurchaseFlow({ body: v })}
+        />
+        <p className="text-[10px] text-[#666] mt-2">ステップ</p>
+        {draft.purchaseFlow.steps.map((step, i) => (
+          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#555]">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <SvcArrayControls
+                index={i}
+                total={draft.purchaseFlow.steps.length}
+                onMove={(f, t) =>
+                  setPurchaseFlow({
+                    steps: moveItem(draft.purchaseFlow.steps, f, t),
+                  })
+                }
+                onRemove={(idx) =>
+                  setPurchaseFlow({
+                    steps: removeItem(draft.purchaseFlow.steps, idx),
+                  })
+                }
+              />
+            </div>
+            <SvcInput
+              label="タイトル"
+              value={step.title}
+              onChange={(v) =>
+                setPurchaseFlow({
+                  steps: updateItem(draft.purchaseFlow.steps, i, {
+                    title: v,
+                  }),
+                })
+              }
+            />
+            <SvcTextarea
+              label="本文"
+              value={step.body}
+              onChange={(v) =>
+                setPurchaseFlow({
+                  steps: updateItem(draft.purchaseFlow.steps, i, { body: v }),
+                })
+              }
+              rows={2}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setPurchaseFlow({
+              steps: [...draft.purchaseFlow.steps, { title: "", body: "" }],
+            })
+          }
+          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+        >
+          <Plus size={11} /> ステップ追加
+        </button>
+        <SvcTextarea
+          label="脚注"
+          value={draft.purchaseFlow.footnote}
+          onChange={(v) => setPurchaseFlow({ footnote: v })}
+          rows={2}
+        />
+      </ServiceSection>
+
+      {/* ── FAQ ── */}
+      <ServiceSection title="FAQ">
+        <SvcInput
+          label="ラベル"
+          value={draft.faq.label}
+          onChange={(v) => setFaq({ label: v })}
+        />
+        {draft.faq.items.map((item, i) => (
+          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#555]">Q{i + 1}</span>
+              <SvcArrayControls
+                index={i}
+                total={draft.faq.items.length}
+                onMove={(f, t) =>
+                  setFaq({ items: moveItem(draft.faq.items, f, t) })
+                }
+                onRemove={(idx) =>
+                  setFaq({ items: removeItem(draft.faq.items, idx) })
+                }
+              />
+            </div>
+            <SvcTextarea
+              label="質問"
+              value={item.q}
+              onChange={(v) =>
+                setFaq({
+                  items: updateItem(draft.faq.items, i, { q: v }),
+                })
+              }
+              rows={2}
+            />
+            <SvcTextarea
+              label="回答"
+              value={item.a}
+              onChange={(v) =>
+                setFaq({
+                  items: updateItem(draft.faq.items, i, { a: v }),
+                })
+              }
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setFaq({
+              items: [...draft.faq.items, { q: "", a: "" }],
+            })
+          }
+          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+        >
+          <Plus size={11} /> 質問追加
+        </button>
+      </ServiceSection>
+
+      {/* ── Final CTA ── */}
+      <ServiceSection title="最下部CTA">
+        <SvcInput
+          label="見出し"
+          value={draft.finalCta.title}
+          onChange={(v) => setFinalCta({ title: v })}
+        />
+        <SvcTextarea
+          label="説明文"
+          value={draft.finalCta.body}
+          onChange={(v) => setFinalCta({ body: v })}
+          rows={2}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <SvcInput
+            label="CTA（Stripe有効時）"
+            value={draft.finalCta.ctaOnline}
+            onChange={(v) => setFinalCta({ ctaOnline: v })}
+          />
+          <SvcInput
+            label="CTA（オフライン時）"
+            value={draft.finalCta.ctaOffline}
+            onChange={(v) => setFinalCta({ ctaOffline: v })}
+          />
+        </div>
+        <p className="text-[10px] text-[#666] mt-2">SNSリンク</p>
+        {draft.finalCta.snsLinks.map((link, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={link.label}
+              onChange={(e) =>
+                setFinalCta({
+                  snsLinks: updateItem(draft.finalCta.snsLinks, i, {
+                    label: e.target.value,
+                  }),
+                })
+              }
+              placeholder="Label"
+              className="flex-1 bg-[#2a2a2a] border border-[#444] rounded px-2 py-1 text-[11px] text-[#ccc] focus:border-[#666] outline-none"
+            />
+            <input
+              type="text"
+              value={link.url}
+              onChange={(e) =>
+                setFinalCta({
+                  snsLinks: updateItem(draft.finalCta.snsLinks, i, {
+                    url: e.target.value,
+                  }),
+                })
+              }
+              placeholder="https://..."
+              className="flex-[2] bg-[#2a2a2a] border border-[#444] rounded px-2 py-1 text-[11px] text-[#ccc] focus:border-[#666] outline-none"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                setFinalCta({
+                  snsLinks: removeItem(draft.finalCta.snsLinks, i),
+                })
+              }
+              className="p-0.5 text-[#666] hover:text-red-400"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setFinalCta({
+              snsLinks: [...draft.finalCta.snsLinks, { label: "", url: "" }],
+            })
+          }
+          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+        >
+          <Plus size={11} /> SNS追加
+        </button>
+      </ServiceSection>
+
+      {/* ── Sticky CTA ── */}
+      <ServiceSection title="Sticky CTA">
+        <SvcInput
+          label="左側テキスト"
+          value={draft.stickyCta.text}
+          onChange={(v) => setStickyCta({ text: v })}
+        />
+        <SvcInput
+          label="料金リンク文言"
+          value={draft.stickyCta.pricingCta}
+          onChange={(v) => setStickyCta({ pricingCta: v })}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <SvcInput
+            label="CTA（Stripe有効時）"
+            value={draft.stickyCta.ctaOnline}
+            onChange={(v) => setStickyCta({ ctaOnline: v })}
+          />
+          <SvcInput
+            label="CTA（オフライン時）"
+            value={draft.stickyCta.ctaOffline}
+            onChange={(v) => setStickyCta({ ctaOffline: v })}
+          />
+        </div>
+      </ServiceSection>
+
+      {/* ── Admin Showcase ── */}
+      <ServiceSection title="管理画面紹介">
+        <SvcInput
+          label="ラベル"
+          value={draft.adminShowcase.label}
+          onChange={(v) => setAdminShowcase({ label: v })}
+        />
+        <SvcInput
+          label="見出し"
+          value={draft.adminShowcase.title}
+          onChange={(v) => setAdminShowcase({ title: v })}
+        />
+        <SvcTextarea
+          label="説明文"
+          value={draft.adminShowcase.body}
+          onChange={(v) => setAdminShowcase({ body: v })}
+        />
+        <p className="text-[10px] text-[#666] mt-2">機能リスト</p>
+        {draft.adminShowcase.features.map((feat, i) => (
+          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#555]">#{i + 1}</span>
+              <SvcArrayControls
+                index={i}
+                total={draft.adminShowcase.features.length}
+                onMove={(f, t) =>
+                  setAdminShowcase({
+                    features: moveItem(draft.adminShowcase.features, f, t),
+                  })
+                }
+                onRemove={(idx) =>
+                  setAdminShowcase({
+                    features: removeItem(draft.adminShowcase.features, idx),
+                  })
+                }
+              />
+            </div>
+            <SvcInput
+              label="タイトル"
+              value={feat.title}
+              onChange={(v) =>
+                setAdminShowcase({
+                  features: updateItem(draft.adminShowcase.features, i, {
+                    title: v,
+                  }),
+                })
+              }
+            />
+            <SvcTextarea
+              label="説明"
+              value={feat.body}
+              onChange={(v) =>
+                setAdminShowcase({
+                  features: updateItem(draft.adminShowcase.features, i, {
+                    body: v,
+                  }),
+                })
+              }
+              rows={2}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() =>
+            setAdminShowcase({
+              features: [
+                ...draft.adminShowcase.features,
+                { title: "", body: "" },
+              ],
+            })
+          }
+          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+        >
+          <Plus size={11} /> 機能追加
+        </button>
+      </ServiceSection>
+
+      {/* Bottom save */}
+      {hasChanges && (
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => save.mutate()}
+            disabled={save.isPending}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] tracking-wider bg-[#4a9eff] text-white rounded disabled:opacity-40 hover:bg-[#3a8eef] transition-colors"
+          >
+            {save.isPending ? (
+              <Loader2 size={11} className="animate-spin" />
+            ) : (
+              <Check size={11} />
+            )}
+            保存
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            className="text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          >
+            リセット
+          </button>
+        </div>
+      )}
     </div>
   );
 }

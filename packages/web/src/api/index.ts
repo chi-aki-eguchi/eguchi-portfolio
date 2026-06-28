@@ -344,7 +344,11 @@ async function generateAndUploadMedium(
   originalKey: string,
 ): Promise<{ mediumKey: string }> {
   const mKey = mediumKeyFrom(originalKey);
-  const mediumBuf = await generateWebP(optimisedBuf, MEDIUM_WIDTH, MEDIUM_QUALITY);
+  const mediumBuf = await generateWebP(
+    optimisedBuf,
+    MEDIUM_WIDTH,
+    MEDIUM_QUALITY,
+  );
   await uploadToStorage(mKey, mediumBuf, "image/webp");
   return { mediumKey: mKey };
 }
@@ -820,6 +824,7 @@ const app = new Hono()
         printStoreLabel: settings.printStoreLabel ?? "プリントを購入する",
         printEnabled: settings.printEnabled ?? "off", // "on" | "off"
         printDescription: settings.printDescription ?? "",
+        servicePageConfig: settings.servicePageConfig ?? "",
       },
       200,
     );
@@ -2131,7 +2136,13 @@ const app = new Hono()
     });
     if (pending.length === 0)
       return c.json(
-        { ok: true, processed: 0, failed: 0, remaining: 0, total: photos.length },
+        {
+          ok: true,
+          processed: 0,
+          failed: 0,
+          remaining: 0,
+          total: photos.length,
+        },
         200,
       );
 

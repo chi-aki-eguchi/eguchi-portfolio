@@ -133,6 +133,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "homeCtaText",
   "homeCtaButton",
   "homeGalleryCount",
+  "servicePageConfig",
 ] as const;
 
 export type SettingsPreviewKey = (typeof SETTINGS_PREVIEW_KEYS)[number];
@@ -142,7 +143,9 @@ export type SettingsPreviewKey = (typeof SETTINGS_PREVIEW_KEYS)[number];
 // and feature toggles preview the same way CSS-variable controls do.
 export const JS_PREVIEW_KEYS = SETTINGS_PREVIEW_KEYS;
 
-export function makeSettingsPreviewPayload(settings: Record<string, string | undefined>): Record<SettingsPreviewKey, string> {
+export function makeSettingsPreviewPayload(
+  settings: Record<string, string | undefined>,
+): Record<SettingsPreviewKey, string> {
   const payload = {} as Record<SettingsPreviewKey, string>;
   for (const key of SETTINGS_PREVIEW_KEYS) payload[key] = settings[key] ?? "";
   return payload;

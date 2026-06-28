@@ -114,6 +114,7 @@ export function injectOgp(
   },
   fallbackOrigin = "",
   heroRotationDeg?: number | null,
+  heroPreloadUrl?: string,
 ): string {
   const siteName = displayNameEnFrom(settings);
   const subtitle = settings.heroSubtitle || "Photography";
@@ -309,22 +310,26 @@ export function injectOgp(
   if (pathname === "/" && heroImg) {
     // Must match HERO_WIDTHS in lib/picture.ts exactly — a mismatched URL
     // makes the preload useless and the hero downloads twice.
-    const heroHref = imageUrlWithParams(heroImg, {
-      w: 1536,
-      q: 88,
-      rotationDeg: heroRotationDeg,
-    });
-    const heroSrcset = [640, 1024, 1536, 2400]
-      .map(
-        (w) =>
-          `${imageUrlWithParams(heroImg, { w, q: 88, rotationDeg: heroRotationDeg })} ${w}w`,
-      )
-      .join(", ");
     const heroSizes =
       settings.heroMode === "single"
         ? "100vw"
         : "(min-width: 1200px) 1152px, 100vw";
-    headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
+    if (heroPreloadUrl) {
+      headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroPreloadUrl)}">`;
+    } else {
+      const heroHref = imageUrlWithParams(heroImg, {
+        w: 1536,
+        q: 88,
+        rotationDeg: heroRotationDeg,
+      });
+      const heroSrcset = [640, 1024, 1536, 2400]
+        .map(
+          (w) =>
+            `${imageUrlWithParams(heroImg, { w, q: 88, rotationDeg: heroRotationDeg })} ${w}w`,
+        )
+        .join(", ");
+      headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
+    }
   }
   // GA4 — only on indexable public pages (don't track the admin app or soft-404s).
   const gaMeasurementId = gaMeasurementIdForSite(siteUrl);

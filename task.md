@@ -2656,3 +2656,62 @@ GA復旧・Railway OOM対策を含めて、本番サイト全体を2周デバッ
 - TopページはWorks/Lightbox/無限スクロールのため全量写真データをまだ使う。ここをさらに削るには、ページングAPIとTop/Galleryの追加読込設計が必要。
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
+## 追記 2026-06-28 — Codex: TOPランダム写真の白い待ち時間削減
+
+### 目的
+
+TOPを開いた時に、ランダム写真の読み込み待ちで白い時間が長くなる問題を改善する。
+
+### 調査結果
+
+- 本番設定は `heroMode=quiet-grid` / `topWorksMode=random` / `homeGalleryCount=12`。
+- TOPのランダムWorksは、従来 `/api/photos` 全量（348,666 bytes / 444 photos）を取得してからクライアントでシャッフルしていた。
+- HTML側では `/` にもギャラリー先頭8枚のpreloadが入っており、random Worksでは実際に表示されない写真を先に読み始める可能性があった。
+- ヒーロー画像は `/api/images/photos/...w=1536` の変換画像を待っており、生成済み `mediumUrl` を使っていなかった。
+- `quiet-grid` TOP専用Worksは `PhotoGallery` のLQIP経路を使わず、ランダムに選ばれた写真を `/api/images/photos/...w=800` で一斉に変換していた。
+
+### 修正内容
+
+- `/api/photos?order=random&limit=N` を追加。
+  - `limit` 付きの時だけ `random()` 並びを許可し、全件ランダム取得は避ける。
+- TOPでは `topWorksMode=random` の場合、`/api/photos?limit=48&order=random` を使うように変更。
+  - 従来の全量348,666 bytesから、ローカル実測で37,788 bytesへ削減。
+  - `main.tsx` の `/` 向け全量photos prefetchも停止。
+- ヒーロー画像は生成済み `mediumUrl` がある場合、それを優先して表示。
+- OGP/HTMLのTOPヒーローpreloadも `medium` URLに合わせ、二重ダウンロードを回避。
+- `/` で `topWorksMode=random` の時は、ギャラリー先頭8枚のgrid preloadを出さない。
+- `HomeQuietGrid` / `HomeEditorial` / `HomeImmersive` のTOP専用Works画像も、`thumbUrl` / `mediumUrl` を優先。
+  - 現行本番設定の `quiet-grid` では初期画像リクエストが `thumbs/` 中心になることを確認。
+- 回帰テストを追加: TOP random Worksが `/api/photos?limit=48&order=random` を使い、全量 `/api/photos` に戻らないことを検証。
+
+### ローカル本番確認
+
+- `PORT=4323 bun --env-file=../../.env src/server.ts` で確認。
+- `/` HTML:
+  - ヒーローpreloadは `/api/images/medium/1781326511791-_AK17487.webp`。
+  - random時の不要なgrid preloadは出ていない。
+- `/api/photos?limit=48&order=random`: 37,788 bytes。
+- `/api/photos`: 348,666 bytes。
+- Playwright mobile TOP:
+  - APIは `/api/photos?limit=48&order=random`。
+  - ヒーローは `/api/images/medium/...webp`。
+  - Works初期画像は `/api/images/thumbs/...webp` 中心。
+  - first visible image は complete=true / naturalWidth=1920。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（25 pass / 0 fail）。
+- `cd packages/web && bun test ./src/api/ogp.test.ts ./src/api/security.test.ts` 成功（73 pass / 0 fail）。
+- `cd packages/web && bun test ./src` 成功（180 pass / 0 fail、既存のReact act warningは継続）。
+- `cd packages/web && bun run build` 成功。
+- `bunx oxlint packages/web/src/api/index.ts packages/web/src/api/ogp.ts packages/web/src/server.ts packages/web/src/web/main.tsx packages/web/src/web/pages/top.tsx packages/web/src/web/test/pages.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功。
+- `git diff --check` 成功。
+
+### 注意
+
+- `topWorksMode=random` は初期ランダム候補を48件に制限する。TOPで全444件を延々スクロールするより初期表示速度を優先した判断。
+- 全件閲覧は `/gallery` が担当する。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。

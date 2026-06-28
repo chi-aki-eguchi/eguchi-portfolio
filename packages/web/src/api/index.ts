@@ -996,6 +996,7 @@ const app = new Hono()
       Number.isFinite(rawLimit) && rawLimit > 0
         ? Math.min(rawLimit, includeUnpublished ? 1000 : 60)
         : null;
+    const useRandomOrder = c.req.query("order") === "random" && limit !== null;
     // 機能8: gallerySortOrder 設定に従って並び順を変える
     const [[sortRow]] = [
       await withRetry(() =>
@@ -1008,7 +1009,9 @@ const app = new Hono()
     ];
     const gallerySortOrder = sortRow?.value ?? "manual";
     const orderExpr =
-      gallerySortOrder === "date_desc"
+      useRandomOrder
+        ? sql`random()`
+        : gallerySortOrder === "date_desc"
         ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
         : gallerySortOrder === "date_asc"
           ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`

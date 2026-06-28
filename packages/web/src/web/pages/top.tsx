@@ -12,6 +12,7 @@ import { sortPhotosBySetting } from "../lib/photo-sort";
 
 function HeroPicture({
   url,
+  mediumUrl,
   rotationDeg,
   focalX,
   focalY,
@@ -26,6 +27,7 @@ function HeroPicture({
   draggable,
 }: {
   url: string;
+  mediumUrl?: string | null;
   rotationDeg?: number | null;
   focalX?: number | null;
   focalY?: number | null;
@@ -44,21 +46,26 @@ function HeroPicture({
     objectPosition:
       style?.objectPosition ?? objectPositionFromFocal(focalX, focalY),
   };
+  const finalSrc = mediumUrl ?? srcFor(url, 1536, 88, undefined, rotationDeg);
   return (
     <picture>
-      <source
-        type="image/avif"
-        srcSet={srcSetFor(url, "hero", "avif", rotationDeg)}
-        sizes={sizes}
-      />
-      <source
-        type="image/webp"
-        srcSet={srcSetFor(url, "hero", "webp", rotationDeg)}
-        sizes={sizes}
-      />
+      {!mediumUrl && (
+        <>
+          <source
+            type="image/avif"
+            srcSet={srcSetFor(url, "hero", "avif", rotationDeg)}
+            sizes={sizes}
+          />
+          <source
+            type="image/webp"
+            srcSet={srcSetFor(url, "hero", "webp", rotationDeg)}
+            sizes={sizes}
+          />
+        </>
+      )}
       <img
-        src={srcFor(url, 1536, 88, undefined, rotationDeg)}
-        srcSet={srcSetFor(url, "hero", undefined, rotationDeg)}
+        src={finalSrc}
+        srcSet={mediumUrl ? undefined : srcSetFor(url, "hero", undefined, rotationDeg)}
         sizes={sizes}
         alt={alt}
         className={className}
@@ -73,18 +80,21 @@ function HeroPicture({
   );
 }
 
+type HomeHeroPhoto = {
+  url: string;
+  title: string;
+  mediumUrl?: string | null;
+  rotationDeg?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+};
+
 /** Hero carousel with auto-play, swipe, and arrow navigation */
 function HeroCarousel({
   photos,
   fxRef,
 }: {
-  photos: {
-    url: string;
-    title: string;
-    rotationDeg?: number | null;
-    focalX?: number | null;
-    focalY?: number | null;
-  }[];
+  photos: HomeHeroPhoto[];
   fxRef?: React.Ref<HTMLDivElement>;
 }) {
   const [current, setCurrent] = useState(0);
@@ -263,6 +273,7 @@ function HeroCarousel({
             >
               <HeroPicture
                 url={p.url}
+                mediumUrl={p.mediumUrl}
                 rotationDeg={p.rotationDeg}
                 focalX={p.focalX}
                 focalY={p.focalY}
@@ -353,13 +364,7 @@ function HeroSingle({
   titlePosition = "center",
   fxRef,
 }: {
-  photo: {
-    url: string;
-    title: string;
-    rotationDeg?: number | null;
-    focalX?: number | null;
-    focalY?: number | null;
-  };
+  photo: HomeHeroPhoto;
   children?: React.ReactNode;
   titlePosition?: string;
   fxRef?: React.Ref<HTMLDivElement>;
@@ -378,6 +383,7 @@ function HeroSingle({
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
         <HeroPicture
           url={photo.url}
+          mediumUrl={photo.mediumUrl}
           rotationDeg={photo.rotationDeg}
           focalX={photo.focalX}
           focalY={photo.focalY}
@@ -399,13 +405,7 @@ function HeroSingle({
 }
 
 type HomeLayoutProps = {
-  heroPhotos: {
-    url: string;
-    title: string;
-    rotationDeg?: number | null;
-    focalX?: number | null;
-    focalY?: number | null;
-  }[];
+  heroPhotos: HomeHeroPhoto[];
   featured: GalleryPhoto[];
   worksPoolLen: number;
   worksSentinelRef: React.RefObject<HTMLDivElement | null>;
@@ -423,6 +423,28 @@ function toLightboxPhotos(photos: GalleryPhoto[]): LightboxPhoto[] {
     mediumUrl: p.mediumUrl,
     rotationDeg: p.rotationDeg,
   }));
+}
+
+function fastPhotoSrc(
+  photo: GalleryPhoto,
+  fallbackW: number,
+  fallbackQ: number,
+  prefer: "thumb" | "medium" = "thumb",
+): string {
+  const generated =
+    prefer === "medium"
+      ? (photo.mediumUrl ?? photo.thumbUrl)
+      : (photo.thumbUrl ?? photo.mediumUrl);
+  return generated ?? srcFor(photo.url, fallbackW, fallbackQ, undefined, photo.rotationDeg);
+}
+
+function fastPhotoSrcSet(
+  photo: GalleryPhoto,
+  preset: "grid" | "hero" | "lightbox",
+): string | undefined {
+  return photo.thumbUrl || photo.mediumUrl
+    ? undefined
+    : srcSetFor(photo.url, preset, undefined, photo.rotationDeg);
 }
 
 /** Phase 2 — Home A: quiet hero photo + clean 3-column square grid. */
@@ -450,6 +472,7 @@ function HomeQuietGrid({
           <>
             <HeroPicture
               url={heroPhoto.url}
+              mediumUrl={heroPhoto.mediumUrl}
               rotationDeg={heroPhoto.rotationDeg}
               focalX={heroPhoto.focalX}
               focalY={heroPhoto.focalY}
@@ -530,13 +553,8 @@ function HomeQuietGrid({
                 aria-label={photo.title || `Photo ${idx + 1}`}
               >
                 <img
-                  src={srcFor(photo.url, 600, 85, undefined, photo.rotationDeg)}
-                  srcSet={srcSetFor(
-                    photo.url,
-                    "grid",
-                    undefined,
-                    photo.rotationDeg,
-                  )}
+                  src={fastPhotoSrc(photo, 600, 85, "thumb")}
+                  srcSet={fastPhotoSrcSet(photo, "grid")}
                   sizes="(min-width: 768px) 33vw, 50vw"
                   alt=""
                   className="w-full h-full object-cover"
@@ -548,6 +566,7 @@ function HomeQuietGrid({
                   }}
                   decoding="async"
                   loading={idx < 9 ? "eager" : "lazy"}
+                  fetchPriority={idx === 0 ? "high" : undefined}
                   draggable={false}
                 />
               </button>
@@ -620,8 +639,8 @@ function HomeEditorial({
       aria-label={photo.title || `Photo ${idx + 1}`}
     >
       <img
-        src={srcFor(photo.url, 800, 88, undefined, photo.rotationDeg)}
-        srcSet={srcSetFor(photo.url, "grid", undefined, photo.rotationDeg)}
+        src={fastPhotoSrc(photo, 800, 88, "medium")}
+        srcSet={fastPhotoSrcSet(photo, "grid")}
         sizes="(min-width: 768px) 40vw, 100vw"
         alt=""
         className="w-full h-full object-cover"
@@ -674,6 +693,7 @@ function HomeEditorial({
           {heroPhoto && (
             <HeroPicture
               url={heroPhoto.url}
+              mediumUrl={heroPhoto.mediumUrl}
               rotationDeg={heroPhoto.rotationDeg}
               focalX={heroPhoto.focalX}
               focalY={heroPhoto.focalY}
@@ -829,6 +849,7 @@ function HomeImmersive({
         {heroPhoto ? (
           <HeroPicture
             url={heroPhoto.url}
+            mediumUrl={heroPhoto.mediumUrl}
             rotationDeg={heroPhoto.rotationDeg}
             focalX={heroPhoto.focalX}
             focalY={heroPhoto.focalY}
@@ -905,13 +926,8 @@ function HomeImmersive({
                     aria-label={photo.title || `Photo ${idx + 1}`}
                   >
                     <img
-                      src={srcFor(photo.url, 900, 88, undefined, photo.rotationDeg)}
-                      srcSet={srcSetFor(
-                        photo.url,
-                        "grid",
-                        undefined,
-                        photo.rotationDeg,
-                      )}
+                      src={fastPhotoSrc(photo, 900, 88, "medium")}
+                      srcSet={fastPhotoSrcSet(photo, "grid")}
                       sizes="(min-width: 768px) 45vw, 100vw"
                       alt=""
                       className="w-full"
@@ -997,13 +1013,36 @@ function HomeImmersive({
 }
 
 export default function TopPage() {
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
+  const topWorksMode = settings?.topWorksMode || "auto";
+  const homeGalleryCount = Math.max(
+    1,
+    parseInt(settings?.homeGalleryCount ?? "12", 10) || 12,
+  );
+  const WORKS_STEP = 9;
+  const topRandomLimit = Math.min(
+    60,
+    Math.max(homeGalleryCount + WORKS_STEP * 4, 36),
+  );
   const { data: photosData } = useQuery({
-    queryKey: ["photos"],
-    queryFn: async () => jsonOrThrow(await api.photos.$get()),
+    queryKey:
+      topWorksMode === "random"
+        ? ["photos", "top-random", topRandomLimit]
+        : ["photos"],
+    queryFn: async () => {
+      if (topWorksMode === "random") {
+        return jsonOrThrow(
+          await api.photos.$get({
+            query: { limit: String(topRandomLimit), order: "random" },
+          }),
+        );
+      }
+      return jsonOrThrow(await api.photos.$get());
+    },
+    enabled: !settingsLoading,
   });
   const { data: heroData, isLoading: heroLoading } = useQuery({
     queryKey: ["hero-photos"],
@@ -1012,8 +1051,14 @@ export default function TopPage() {
 
   // Stable reference across renders so the `featured` useMemo doesn't recompute every render.
   const allPhotos = useMemo(
-    () => sortPhotosBySetting(photosData?.photos ?? [], settings?.gallerySortOrder),
-    [photosData, settings?.gallerySortOrder],
+    () =>
+      topWorksMode === "random"
+        ? (photosData?.photos ?? [])
+        : sortPhotosBySetting(
+            photosData?.photos ?? [],
+            settings?.gallerySortOrder,
+          ),
+    [photosData, settings?.gallerySortOrder, topWorksMode],
   );
   // The API may return null entries for hero rows whose photo was deleted.
   const heroPhotosPicked = (heroData?.heroPhotos ?? []).filter(
@@ -1036,7 +1081,6 @@ export default function TopPage() {
   // The pool reveals progressively as you scroll (Works infinite-feed): the page
   // starts with one composed screenful and keeps the 作品がどんどん出てくる
   // rhythm going without a click — the gallery CTA below stays as a destination.
-  const topWorksMode = settings?.topWorksMode || "auto";
   const topWorksIds = settings?.topWorksIds || "";
   const worksPool = useMemo(() => {
     if (topWorksMode === "manual") {
@@ -1071,11 +1115,6 @@ export default function TopPage() {
   // homeGalleryCount: initial batch from settings (default 12).
   // extraCount: additional photos revealed by infinite scroll.
   // worksCount = homeGalleryCount + extraCount — never shrinks while browsing.
-  const homeGalleryCount = Math.max(
-    1,
-    parseInt(settings?.homeGalleryCount ?? "12", 10) || 12,
-  );
-  const WORKS_STEP = 9;
   const [extraCount, setExtraCount] = useState(0);
   const worksCount = homeGalleryCount + extraCount;
   const worksSentinelRef = useRef<HTMLDivElement>(null);

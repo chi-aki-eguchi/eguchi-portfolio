@@ -52,6 +52,45 @@ describe("public pages render (populated API)", () => {
       cleanup();
     });
   }
+
+  test("top random works fetches a limited random photo payload", async () => {
+    const prevSettings = canned["/api/settings"];
+    const prevFetch = globalThis.fetch;
+    const seen: string[] = [];
+    canned["/api/settings"] = {
+      topWorksMode: "random",
+      homeGalleryCount: "12",
+    };
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const raw =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      const u = new URL(raw, "http://localhost/");
+      seen.push(`${u.pathname}${u.search}`);
+      return prevFetch(input);
+    }) as typeof fetch;
+    try {
+      const Top = (await import("../pages/top")).default;
+      const { cleanup } = await mount(createElement(Top));
+      await flush(60);
+
+      expect(
+        seen.some((url) =>
+          url.startsWith("/api/photos?") &&
+          url.includes("limit=48") &&
+          url.includes("order=random"),
+        ),
+      ).toBe(true);
+      expect(seen).not.toContain("/api/photos");
+      cleanup();
+    } finally {
+      canned["/api/settings"] = prevSettings;
+      globalThis.fetch = prevFetch;
+    }
+  });
 });
 
 describe("public pages render (empty state: 写真0枚・設定空)", () => {

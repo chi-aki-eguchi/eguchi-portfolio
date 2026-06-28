@@ -61,7 +61,7 @@ async function getSettings(): Promise<Record<string, string>> {
 // The OGP/social share image: prefer the first (non-deleted) hero photo — the
 // actual front-of-site image — since the legacy `heroPhotoUrl` setting is no longer
 // written. Cached 60s; "" means "no hero, fall back to profile/default".
-type ImageRef = { url: string; rotationDeg: number };
+type ImageRef = { url: string; rotationDeg: number; preloadUrl?: string };
 let heroOgCache: ImageRef | null = null;
 let heroOgCacheTime = 0;
 async function getHeroOgImage(): Promise<ImageRef> {
@@ -78,7 +78,14 @@ async function getHeroOgImage(): Promise<ImageRef> {
         db.select().from(schema.photos).where(eq(schema.photos.id, hr.photoId)),
       );
       if (p && !p.deletedAt) {
-        image = { url: p.url, rotationDeg: p.rotationDeg ?? 0 };
+        const rotationDeg = p.rotationDeg ?? 0;
+        image = {
+          url: p.url,
+          rotationDeg,
+          preloadUrl: p.mediumKey
+            ? imageUrlWithParams(`/api/images/${p.mediumKey}`, { rotationDeg })
+            : undefined,
+        };
         break;
       }
     }
@@ -505,8 +512,12 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       override,
       publicOrigin,
       heroImg.rotationDeg,
+      heroImg.preloadUrl,
     );
-    if (url.pathname === "/gallery" || url.pathname === "/") {
+    if (
+      url.pathname === "/gallery" ||
+      (url.pathname === "/" && (settings.topWorksMode ?? "auto") !== "random")
+    ) {
       const preloadImages = await getGalleryPreloadImages();
       if (preloadImages.length > 0) {
         const gridSizes =

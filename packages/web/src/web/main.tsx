@@ -31,9 +31,7 @@ if (initialPath === "/gallery") {
 		staleTime: 5 * 60_000,
 	});
 }
-const initialNeedsPhotos =
-	initialPath === "/" || initialPath === "/gallery";
-if (initialNeedsPhotos) {
+if (initialPath === "/gallery") {
 	queryClient.prefetchQuery({
 		queryKey: ["photos"],
 		queryFn: async () => (await api.photos.$get()).json(),

@@ -1,5 +1,29 @@
 # Task Log
 
+## 追記 2026-06-29 — Codex: Filmアップロード日時補完とadmin初期タブ改善
+
+### 対応
+
+- FilmアップロードでEXIF日時があれば `shotAt` に残し、EXIF日時がない場合もファイル更新日時を `shotAt` に入れるようにした。
+  - Film選択時もカメラ・レンズ・露出などのEXIF詳細は従来通り自動入力しない。
+  - 日付ソート時に新しいFilm写真が未日付扱いで最下部へ落ちる問題を避ける。
+- adminの前回タブを `localStorage` に保存するようにし、ブラウザを開き直しても前に触った画面を復元するようにした。
+- adminの保存済みタブがない初回表示は「はじめに」ではなく Library にした。「はじめに」は上部タブから引き続き開ける。
+- 既存の `sessionStorage` に残っている `admin:tab` は一度だけ読み取って `localStorage` に移行できるようにした。
+
+### 検証
+
+- `bun test ./packages/web/src/web/lib/upload-date.test.ts ./packages/web/src/web/test/pages.render.test.tsx`
+- `cd packages/web && bun x tsc -b && bun run build && bun test ./src`
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/lib/upload-date.ts`
+- `packages/web/src/web/lib/upload-date.test.ts`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
 ## 2026-06-11 Codex Maintenance Pass
 
 ### Done

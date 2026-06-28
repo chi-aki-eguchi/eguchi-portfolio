@@ -225,16 +225,18 @@ describe("shared components", () => {
   test("AdminPage: authenticated mounts the full admin UI", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin));
-      expect(host.textContent).toContain("公開までにやること");
-      expect(host.textContent).toContain("repo");
       expect(host.textContent).toContain("Library");
+      expect(host.textContent).toContain("Import");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
+      dom.window.localStorage.clear();
     }
   });
 
@@ -245,7 +247,7 @@ describe("shared components", () => {
     canned["/api/admin/me"] = { authenticated: true };
     canned["/api/admin/hero-photos"] = { heroPhotos: [{ photoId: 1, sortOrder: 0 }] };
     canned["/api/hero-photos"] = { heroPhotos: [samplePhotos[0]] };
-    dom.window.sessionStorage.setItem("admin:tab", JSON.stringify("hero"));
+    dom.window.localStorage.setItem("admin:tab", JSON.stringify("hero"));
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
@@ -263,6 +265,7 @@ describe("shared components", () => {
       else canned["/api/admin/hero-photos"] = prevAdminHero;
       canned["/api/hero-photos"] = prevPublicHero;
       dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
     }
   });
 

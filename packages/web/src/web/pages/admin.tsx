@@ -16,6 +16,7 @@ import {
   FONT_PAIRINGS,
   type FontDef,
 } from "../components/provider";
+import { shotAtForUploadedPhoto } from "../lib/upload-date";
 import {
   LogOut,
   Upload,
@@ -73,23 +74,50 @@ type Tab =
 // moves. Tabs unmount on switch, so plain useState loses unsaved drafts and
 // view preferences — sessionStorage keeps them for the browser session without
 // leaking drafts across devices the way the settings DB would.
-function usePersistentState<T>(key: string, initial: T) {
+type PersistentStorageKind = "session" | "local";
+
+function getStorage(kind: PersistentStorageKind): Storage | null {
+  try {
+    return kind === "local" ? window.localStorage : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredState<T>(
+  key: string,
+  storage: Storage | null,
+): T | undefined {
+  try {
+    const raw = storage?.getItem(key);
+    if (raw !== null && raw !== undefined) return JSON.parse(raw) as T;
+  } catch {
+    /* corrupt/unavailable storage falls back to the default */
+  }
+  return undefined;
+}
+
+function usePersistentState<T>(
+  key: string,
+  initial: T,
+  storageKind: PersistentStorageKind = "session",
+) {
   const [val, setVal] = useState<T>(() => {
-    try {
-      const raw = sessionStorage.getItem(key);
-      if (raw !== null) return JSON.parse(raw) as T;
-    } catch {
-      /* corrupt/unavailable storage falls back to the default */
+    const primary = readStoredState<T>(key, getStorage(storageKind));
+    if (primary !== undefined) return primary;
+    if (storageKind === "local") {
+      const legacy = readStoredState<T>(key, getStorage("session"));
+      if (legacy !== undefined) return legacy;
     }
     return initial;
   });
   useEffect(() => {
     try {
-      sessionStorage.setItem(key, JSON.stringify(val));
+      getStorage(storageKind)?.setItem(key, JSON.stringify(val));
     } catch {
       /* quota/private mode: state stays in-memory */
     }
-  }, [key, val]);
+  }, [key, storageKind, val]);
   return [val, setVal] as const;
 }
 
@@ -138,7 +166,11 @@ function useAdminGuard() {
 export default function AdminPage() {
   const { isLoading, authenticated } = useAdminGuard();
   const [, navigate] = useLocation();
-  const [tab, setTab] = usePersistentState<Tab>("admin:tab", "setup");
+  const [tab, setTab] = usePersistentState<Tab>(
+    "admin:tab",
+    "gallery",
+    "local",
+  );
   const [galleryUploading, setGalleryUploading] = useState(false);
   // Generic unsaved-draft flag reported by any tab with a draft form (Settings, Profile)
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -312,6 +344,7 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   const [dismissed, setDismissed] = usePersistentState<boolean>(
     "admin:setup-dismissed",
     false,
+    "local",
   );
   const [forceOpen, setForceOpen] = useState(false);
 
@@ -1626,6 +1659,11 @@ function GalleryTab({
         const filmTypeVal = isDigital ? "デジタル" : "フィルム";
         const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
         const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
+        const shotAtVal = shotAtForUploadedPhoto(
+          shotAt,
+          file,
+          uploadMedium,
+        );
         const created = await adminApi.photos.$post({
           json: {
             filename: file.name,
@@ -1635,7 +1673,7 @@ function GalleryTab({
             fileHash: fileHash as string,
             thumbKey: (thumbKey as string) ?? "",
             mediumKey: (mediumKey as string) ?? "",
-            shotAt: shotAt as string,
+            shotAt: shotAtVal,
             title: "",
             meta: "",
             category: "",

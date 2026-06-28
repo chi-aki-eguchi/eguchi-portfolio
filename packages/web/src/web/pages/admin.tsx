@@ -880,7 +880,7 @@ function GalleryTab({
   const [searchQuery, setSearchQuery] = usePersistentState(
     "admin:searchQuery",
     "",
-  ); // B2: free-text search (title/filename/camera/lens/description)
+  ); // B2: free-text search (title/filename/camera/lens/film/description)
   // U1: 表示用ソート。"manual" 以外はライブラリの見た目だけ並び替える（sortOrder
   // は不変）。「この並びを保存」で sortOrder へ書き込める。タブ切替で保持(V)。
   const [librarySort, setLibrarySort] = usePersistentState(
@@ -1145,9 +1145,15 @@ function GalleryTab({
       // B2: free-text search across the fields an editor remembers a photo by.
       if (
         q &&
-        ![p.title, p.filename, p.camera, p.lens, p.description, p.meta].some(
-          (v) => (v ?? "").toLowerCase().includes(q),
-        )
+        ![
+          p.title,
+          p.filename,
+          p.camera,
+          p.lens,
+          p.filmType,
+          p.description,
+          p.meta,
+        ].some((v) => (v ?? "").toLowerCase().includes(q))
       )
         return false;
       if (
@@ -2265,7 +2271,7 @@ function GalleryTab({
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="検索（タイトル・機材・ファイル名）"
+              placeholder="検索（タイトル・機材・フィルム・ファイル名）"
               aria-label="写真を検索"
               className="bg-[#333] text-[#ccc] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors w-44 placeholder:text-[#555]"
             />

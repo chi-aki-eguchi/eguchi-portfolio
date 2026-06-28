@@ -71,13 +71,17 @@ let resizeBytes = 0;
 const resizeInFlight = new Map<string, Promise<{ buf: Buffer; type: string }>>();
 const MAX_ACTIVE_IMAGE_TRANSFORMS = Math.min(
   Math.max(
-    parseInt(process.env.IMAGE_TRANSFORM_CONCURRENCY ?? "2", 10) || 2,
+    parseInt(process.env.IMAGE_TRANSFORM_CONCURRENCY ?? "1", 10) || 1,
     1,
   ),
   4,
 );
 let activeImageTransforms = 0;
-const imageTransformQueue: Array<() => void> = [];
+const imageTransformQueue: Array<{
+  resolve: () => void;
+}> = [];
+const ORIGINAL_FETCH_TIMEOUT_MS = 15_000;
+const IMAGE_VARIANT_TIMEOUT_MS = 30_000;
 
 function cacheGet(key: string) {
   const entry = resizeCache.get(key);
@@ -102,16 +106,80 @@ function cacheSet(key: string, buf: Buffer, type: string) {
   }
 }
 
-async function withImageTransformLimit<T>(fn: () => Promise<T>): Promise<T> {
-  if (activeImageTransforms >= MAX_ACTIVE_IMAGE_TRANSFORMS) {
-    await new Promise<void>((resolve) => imageTransformQueue.push(resolve));
+function imageAbortError() {
+  const err = new Error("Image request aborted");
+  err.name = "AbortError";
+  return err;
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error(`${label} timed out after ${ms}ms`)),
+          ms,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
+}
+
+async function waitForAbort<T>(
+  promise: Promise<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  if (signal.aborted) throw imageAbortError();
+  let onAbort: (() => void) | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        onAbort = () => reject(imageAbortError());
+        signal.addEventListener("abort", onAbort, { once: true });
+      }),
+    ]);
+  } finally {
+    if (onAbort) signal.removeEventListener("abort", onAbort);
+  }
+}
+
+async function withImageTransformLimit<T>(
+  signal: AbortSignal,
+  fn: () => Promise<T>,
+): Promise<T> {
+  if (signal.aborted) throw imageAbortError();
+  if (activeImageTransforms >= MAX_ACTIVE_IMAGE_TRANSFORMS) {
+    let entry: (typeof imageTransformQueue)[number] | undefined;
+    let onAbort: (() => void) | undefined;
+    await new Promise<void>((resolve, reject) => {
+      entry = { resolve };
+      onAbort = () => {
+        const idx = entry ? imageTransformQueue.indexOf(entry) : -1;
+        if (idx >= 0) imageTransformQueue.splice(idx, 1);
+        reject(imageAbortError());
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+      imageTransformQueue.push(entry);
+    }).finally(() => {
+      if (onAbort) signal.removeEventListener("abort", onAbort);
+    });
+  }
+  if (signal.aborted) throw imageAbortError();
   activeImageTransforms += 1;
   try {
     return await fn();
   } finally {
     activeImageTransforms -= 1;
-    imageTransformQueue.shift()?.();
+    imageTransformQueue.shift()?.resolve();
   }
 }
 
@@ -140,8 +208,14 @@ async function getOriginal(
   const p = (async () => {
     const obj = await s3.send(
       new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+      { abortSignal: AbortSignal.timeout(ORIGINAL_FETCH_TIMEOUT_MS) },
     );
-    const buf = Buffer.from(await obj.Body!.transformToByteArray());
+    const bytes = await withTimeout(
+      obj.Body!.transformToByteArray(),
+      ORIGINAL_FETCH_TIMEOUT_MS,
+      `R2 body ${key}`,
+    );
+    const buf = Buffer.from(bytes);
     const entry = { buf, type: obj.ContentType ?? "image/jpeg", ts: now };
     const prev = origCache.get(key);
     if (prev) {
@@ -482,6 +556,7 @@ const app = new Hono()
           queuedImageTransforms: imageTransformQueue.length,
           origCacheMB: Math.round(origBytes / 1024 / 1024),
           origCacheEntries: origCache.size,
+          origInFlightEntries: origInFlight.size,
         },
       },
       200,
@@ -544,6 +619,7 @@ const app = new Hono()
       webp: "image/webp",
       avif: "image/avif",
     };
+    const requestSignal = c.req.raw.signal;
 
     const cacheKey = `${decodedKey}__w${width ?? "orig"}__h${height ?? "auto"}__q${quality}__${fmt}__rot${rotationDeg}`;
     const etag = `"${createHash("md5").update(cacheKey).digest("hex")}"`;
@@ -571,7 +647,7 @@ const app = new Hono()
     try {
       const pending = resizeInFlight.get(cacheKey);
       if (pending) {
-        const waited = await pending;
+        const waited = await waitForAbort(pending, requestSignal);
         return imageResponse(waited.buf, waited.type, {
           ETag: etag,
           ...(!fmtParam ? { Vary: "Accept" } : {}),
@@ -588,7 +664,7 @@ const app = new Hono()
           return { buf: original.buf, type: original.type };
         }
 
-        const out = await withImageTransformLimit(async () => {
+        const out = await withImageTransformLimit(requestSignal, async () => {
           let base = sharp(original.buf).rotate();
           if (rotationDeg !== 0) base = base.rotate(rotationDeg);
           if (width || height) {
@@ -625,9 +701,14 @@ const app = new Hono()
         return result;
       })();
 
-      resizeInFlight.set(cacheKey, created);
+      const timedCreated = withTimeout(
+        created,
+        IMAGE_VARIANT_TIMEOUT_MS,
+        `image variant ${cacheKey}`,
+      );
+      resizeInFlight.set(cacheKey, timedCreated);
       try {
-        const result = await created;
+        const result = await waitForAbort(timedCreated, requestSignal);
         return imageResponse(result.buf, result.type, {
           ETag: etag,
           ...(!fmtParam ? { Vary: "Accept" } : {}),
@@ -636,7 +717,14 @@ const app = new Hono()
       } finally {
         resizeInFlight.delete(cacheKey);
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        return new Response(null, { status: 499 });
+      }
+      console.error(
+        "[image] proxy failed:",
+        e instanceof Error ? e.message : e,
+      );
       return c.json({ error: "Not found" }, 404);
     }
   })

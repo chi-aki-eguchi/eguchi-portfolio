@@ -2547,3 +2547,54 @@ Google Analytics にアクセスが表示されない件を確認し、本番HTM
 
 - 反映後に本番HTMLへ `https://www.googletagmanager.com/gtag/js?id=G-NKECCDLXYD` が戻っていることを確認する。
 - GA画面への反映はリアルタイムでも遅延やフィルタの影響を受ける場合がある。
+
+## 追記 2026-06-28 — Codex: 本番全体デバッグ2周と画像in-flight詰まり対策
+
+### 目的
+
+GA復旧・Railway OOM対策を含めて、本番サイト全体を2周デバッグし、再発リスクが残っている箇所を潰す。
+
+### 1周目: 本番実動作チェック
+
+- `https://akieguchi.com/` は `200`、`X-Build: 7ac0d6c7`。
+- 本番HTMLにGA4タグ `G-NKECCDLXYD` が出ていることを確認。
+- 主要ルート `/` / `/gallery` / `/series` / `/about` / `/profile` / `/contact` / `/service` / `/admin/login` / `/admin` はすべて `200`。
+- API `/api/health` / `/api/settings` / `/api/photos` / `/api/hero-photos` / `/api/categories` / `/api/series` は `200`。
+- `/api/admin/me` は未ログインで `{"authenticated":false}`。
+- `/api/photos?all=1` は未ログインでも `200` だが、コード上はadminでない場合 `all` flagを無視し、実レスポンスも未公開0・削除0で公開一覧と同じだった。
+- HTML参照アセット5件はすべて `200`。
+- OGP画像とhero preload画像は `HEAD` / `GET` とも `200`、`Content-Length` あり。HEAD後のGETは `X-Cache: HIT`。
+- Playwright mobileで `/` / `/gallery` / `/series` / `/about` / `/contact` / `/service` を確認。横スクロールなし、GAタグあり。
+
+### 2周目: 再発リスク確認
+
+- Playwright連続ページ移動時に、ブラウザが遅延画像を `ERR_ABORTED` するケースを確認。
+- その後、本番healthで `activeImageTransforms=0` / `queuedImageTransforms=0` なのに `resizeInFlightEntries` が残る状態を確認。
+- 画像自体は直接GETで `200`。破損ではなく、R2元画像取得またはvariant生成Promiseがタイムアウトなしで残るリスクと判断。
+
+### 修正内容
+
+- 画像変換の既定同時実行数を `2` から `1` に下げた。
+  - 必要なら `IMAGE_TRANSFORM_CONCURRENCY=2` などで戻せる。
+- R2元画像取得に `15s` timeoutを追加。
+- 画像variant生成に `30s` timeoutを追加。
+- 変換待ちキューをリクエストabortで取り除けるようにした。
+- 同じvariantを待っているリクエストもabort時に待ち続けないようにした。
+- `/api/health` に `origInFlightEntries` を追加。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/api/security.test.ts ./src/api/ogp.test.ts ./src/api/site-defaults.test.ts ./src/shared/image-url.test.ts` 成功（86 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（179 pass / 0 fail）。
+- `bunx oxlint packages/web/src/api/index.ts --deny-warnings --no-error-on-unmatched-pattern` をrepo rootから実行し成功。
+- ローカル本番サーバ `PORT=4321 bun --env-file=../../.env src/server.ts` で確認。
+  - OGP画像GET `200`。
+  - Playwright連続ページ移動後も `resizeInFlightEntries=0` / `activeImageTransforms=0` / `queuedImageTransforms=0` に収束。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+- 既存のReact test warning（`act(...)`）は出るが、テスト自体は成功。今回の対象外。

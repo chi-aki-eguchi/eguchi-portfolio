@@ -873,23 +873,56 @@ function GalleryTab({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [lastClicked, setLastClicked] = useState<number | null>(null);
   const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 180); // px
-  const [filterCat, setFilterCat] = useState("all");
-  const [searchQuery, setSearchQuery] = useState(""); // B2: free-text search (title/filename/camera/lens/description)
+  const [filterCat, setFilterCat] = usePersistentState(
+    "admin:filterCat",
+    "all",
+  );
+  const [searchQuery, setSearchQuery] = usePersistentState(
+    "admin:searchQuery",
+    "",
+  ); // B2: free-text search (title/filename/camera/lens/description)
   // U1: 表示用ソート。"manual" 以外はライブラリの見た目だけ並び替える（sortOrder
   // は不変）。「この並びを保存」で sortOrder へ書き込める。タブ切替で保持(V)。
   const [librarySort, setLibrarySort] = usePersistentState(
     "admin:librarySort",
     "manual",
   );
-  const [filterSeries, setFilterSeries] = useState("all"); // "all" | "__none__" | series id
-  const [filterSize, setFilterSize] = useState("all"); // "all" | S | M | L
-  const [filterOrientation, setFilterOrientation] = useState("all");
-  const [filterFeatured, setFilterFeatured] = useState(false); // M3: only hero-featured
-  const [filterPublished, setFilterPublished] = useState("all");
-  const [filterRecent, setFilterRecent] = useState("all"); // O4: "all" | "7" | "30" days
-  const [filterMissingShotAt, setFilterMissingShotAt] = useState(false);
-  const [filterMissingCapture, setFilterMissingCapture] = useState(false);
-  const [activeAlbumId, setActiveAlbumId] = useState<string | null>(null); // O6: applied smart album
+  const [filterSeries, setFilterSeries] = usePersistentState(
+    "admin:filterSeries",
+    "all",
+  ); // "all" | "__none__" | series id
+  const [filterSize, setFilterSize] = usePersistentState(
+    "admin:filterSize",
+    "all",
+  ); // "all" | S | M | L
+  const [filterOrientation, setFilterOrientation] = usePersistentState(
+    "admin:filterOrientation",
+    "all",
+  );
+  const [filterFeatured, setFilterFeatured] = usePersistentState(
+    "admin:filterFeatured",
+    false,
+  ); // M3: only hero-featured
+  const [filterPublished, setFilterPublished] = usePersistentState(
+    "admin:filterPublished",
+    "all",
+  );
+  const [filterRecent, setFilterRecent] = usePersistentState(
+    "admin:filterRecent",
+    "all",
+  ); // O4: "all" | "7" | "30" days
+  const [filterMissingShotAt, setFilterMissingShotAt] = usePersistentState(
+    "admin:filterMissingShotAt",
+    false,
+  );
+  const [filterMissingCapture, setFilterMissingCapture] = usePersistentState(
+    "admin:filterMissingCapture",
+    false,
+  );
+  const [activeAlbumId, setActiveAlbumId] = usePersistentState<string | null>(
+    "admin:activeAlbumId",
+    null,
+  ); // O6: applied smart album
   const [albumModalOpen, setAlbumModalOpen] = useState(false); // O6: create-album modal
   const [albumDraft, setAlbumDraft] = useState({ ...EMPTY_ALBUM_DRAFT });
   const [dragOver, setDragOver] = useState(false);

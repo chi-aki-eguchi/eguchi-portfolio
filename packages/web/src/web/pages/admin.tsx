@@ -868,6 +868,7 @@ function GalleryTab({
   const [filterPublished, setFilterPublished] = useState("all");
   const [filterRecent, setFilterRecent] = useState("all"); // O4: "all" | "7" | "30" days
   const [filterMissingShotAt, setFilterMissingShotAt] = useState(false);
+  const [filterMissingCapture, setFilterMissingCapture] = useState(false);
   const [activeAlbumId, setActiveAlbumId] = useState<string | null>(null); // O6: applied smart album
   const [albumModalOpen, setAlbumModalOpen] = useState(false); // O6: create-album modal
   const [albumDraft, setAlbumDraft] = useState({ ...EMPTY_ALBUM_DRAFT });
@@ -1115,6 +1116,7 @@ function GalleryTab({
       if (filterPublished === "unpublished" && p.isPublished !== false)
         return false;
       if (filterMissingShotAt && p.shotAt) return false;
+      if (filterMissingCapture && (p.camera || p.lens)) return false;
       if (recentCutoff) {
         const t = p.createdAt ? new Date(p.createdAt).getTime() : 0;
         if (!t || t < recentCutoff) return false;
@@ -1166,6 +1168,7 @@ function GalleryTab({
     filterFeatured,
     filterPublished,
     filterMissingShotAt,
+    filterMissingCapture,
     filterRecent,
     isUncategorized,
     featuredIds,
@@ -1180,6 +1183,7 @@ function GalleryTab({
     filterFeatured ||
     filterPublished !== "all" ||
     filterMissingShotAt ||
+    filterMissingCapture ||
     filterRecent !== "all" ||
     activeAlbumId !== null;
   const clearLibraryFilters = useCallback(() => {
@@ -1191,6 +1195,7 @@ function GalleryTab({
     setFilterFeatured(false);
     setFilterPublished("all");
     setFilterMissingShotAt(false);
+    setFilterMissingCapture(false);
     setFilterRecent("all");
     setActiveAlbumId(null);
   }, []);
@@ -1276,6 +1281,10 @@ function GalleryTab({
     () => allPhotos.filter((p) => !p.shotAt).length,
     [allPhotos],
   );
+  const missingCaptureCount = useMemo(
+    () => allPhotos.filter((p) => !p.camera && !p.lens).length,
+    [allPhotos],
+  );
   const unpublishedCount = useMemo(
     () => allPhotos.filter((p) => p.isPublished === false).length,
     [allPhotos],
@@ -1306,6 +1315,7 @@ function GalleryTab({
     !filterFeatured &&
     filterPublished === "all" &&
     !filterMissingShotAt &&
+    !filterMissingCapture &&
     filterRecent === "all" &&
     activeAlbumId === null;
   const reorderLocked =
@@ -2335,6 +2345,17 @@ function GalleryTab({
               }`}
             >
               日付なし ({missingShotAtCount})
+            </button>
+            <button
+              onClick={() => setFilterMissingCapture((v) => !v)}
+              aria-pressed={filterMissingCapture}
+              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                filterMissingCapture
+                  ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
+                  : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+              }`}
+            >
+              機材なし ({missingCaptureCount})
             </button>
             {/* O4: recently uploaded */}
             <select

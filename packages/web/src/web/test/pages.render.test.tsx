@@ -233,6 +233,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
       expect(host.textContent).toContain("日付なし");
+      expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("公開のみ");
       expect(host.textContent).toContain("縦写真");
       cleanup();

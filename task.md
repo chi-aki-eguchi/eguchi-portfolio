@@ -2427,6 +2427,31 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: 管理画面の機材未入力フィルター
+
+### 目的
+
+フィルム写真などで EXIF から機材情報を入れない運用でも、あとからカメラ/レンズ未入力の写真を探しやすくする。
+
+### 修正内容
+
+- Library フィルターに `機材なし (N)` ボタンを追加。
+- `camera` と `lens` がどちらも未入力の写真だけに絞り込めるようにした。
+- `すべて解除` と並び替え保存ロックの判定にも、このフィルター状態を反映。
+- Admin render テストに `機材なし` 表示確認を追加。
+
+### 検証
+
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（25 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（186 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: 管理画面フィルター一括解除
 
 ### 目的

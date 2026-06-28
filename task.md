@@ -2427,6 +2427,30 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: admin保存タブ値のフォールバック
+
+### 目的
+
+過去のタブ構成変更や壊れた localStorage により、admin が存在しないタブ値を復元して空画面になるリスクを防ぐ。
+
+### 修正内容
+
+- admin の有効タブ一覧を `ADMIN_TAB_KEYS` として定義。
+- 保存済み `admin:tab` が未知の値だった場合、`gallery` に自動で戻す。
+- 回帰テストとして、`localStorage.admin:tab = "old-tab"` でも Library が表示されることを確認。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（26 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（187 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: 管理画面Libraryのスクロール位置復元
 
 ### 目的

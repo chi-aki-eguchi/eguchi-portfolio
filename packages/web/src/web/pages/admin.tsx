@@ -71,6 +71,22 @@ type Tab =
   | "service"
   | "settings";
 
+const ADMIN_TAB_KEYS = new Set<Tab>([
+  "setup",
+  "gallery",
+  "hero",
+  "profile",
+  "categories",
+  "series",
+  "pricing",
+  "service",
+  "settings",
+]);
+
+function isAdminTab(value: unknown): value is Tab {
+  return typeof value === "string" && ADMIN_TAB_KEYS.has(value as Tab);
+}
+
 // V (ux-refinements): admin UI state that must survive tab switches and page
 // moves. Tabs unmount on switch, so plain useState loses unsaved drafts and
 // view preferences — sessionStorage keeps them for the browser session without
@@ -176,6 +192,10 @@ export default function AdminPage() {
   // Generic unsaved-draft flag reported by any tab with a draft form (Settings, Profile)
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [unsavedConfirm, setUnsavedConfirm] = useState<Tab | null>(null);
+
+  useEffect(() => {
+    if (!isAdminTab(tab)) setTab("gallery");
+  }, [tab, setTab]);
 
   const logout = useMutation({
     mutationFn: async () => jsonOrThrow(await adminApi.logout.$post()),

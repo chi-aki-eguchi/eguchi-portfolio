@@ -244,6 +244,26 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: invalid persisted tab falls back to Library", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    dom.window.localStorage.setItem("admin:tab", JSON.stringify("old-tab"));
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      await flush(30);
+      expect(host.textContent).toContain("Library");
+      expect(host.textContent).toContain("Import");
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage Hero tab ignores public hero cache shape", async () => {
     const prevAuth = canned["/api/admin/me"];
     const prevAdminHero = canned["/api/admin/hero-photos"];

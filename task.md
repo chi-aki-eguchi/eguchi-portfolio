@@ -2427,6 +2427,29 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: 管理画面フィルター一括解除
+
+### 目的
+
+管理画面 Library の絞り込みを複数触ったあと、前の状態をひとつずつ戻さずに一覧へ復帰できるようにする。
+
+### 修正内容
+
+- Library ツールバーに、絞り込み中だけ表示される `すべて解除` ボタンを追加。
+- 検索文字列、カテゴリ、シリーズ、サイズ、向き、Featured、公開状態、日付なし、最近追加、アルバム選択を一括で初期状態へ戻す。
+
+### 検証
+
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（25 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（186 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-28 — Codex: `/service` Claude Design 再改善
 
 ### 目的

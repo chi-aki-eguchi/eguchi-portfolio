@@ -1182,6 +1182,18 @@ function GalleryTab({
     filterMissingShotAt ||
     filterRecent !== "all" ||
     activeAlbumId !== null;
+  const clearLibraryFilters = useCallback(() => {
+    setSearchQuery("");
+    setFilterCat("all");
+    setFilterSeries("all");
+    setFilterSize("all");
+    setFilterOrientation("all");
+    setFilterFeatured(false);
+    setFilterPublished("all");
+    setFilterMissingShotAt(false);
+    setFilterRecent("all");
+    setActiveAlbumId(null);
+  }, []);
 
   // U1: display sort. Array.sort is stable, so ties keep the manual order.
   // shotAt-less photos always sink to the end regardless of direction.
@@ -2335,6 +2347,15 @@ function GalleryTab({
               <option value="7">直近7日</option>
               <option value="30">直近30日</option>
             </select>
+            {anyFilterActive && (
+              <button
+                type="button"
+                onClick={clearLibraryFilters}
+                className="text-[11px] px-2 py-1 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+              >
+                すべて解除
+              </button>
+            )}
           </div>
 
           {/* O6: smart albums — saved condition sets (virtual folders) */}

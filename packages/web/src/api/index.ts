@@ -991,6 +991,11 @@ const app = new Hono()
           isNull(schema.photos.deletedAt),
           eq(schema.photos.isPublished, true),
         );
+    const rawLimit = parseInt(c.req.query("limit") ?? "", 10);
+    const limit =
+      Number.isFinite(rawLimit) && rawLimit > 0
+        ? Math.min(rawLimit, includeUnpublished ? 1000 : 60)
+        : null;
     // 機能8: gallerySortOrder 設定に従って並び順を変える
     const [[sortRow]] = [
       await withRetry(() =>
@@ -1010,9 +1015,10 @@ const app = new Hono()
           : gallerySortOrder === "upload_desc"
             ? sql`${schema.photos.createdAt} DESC`
             : schema.photos.sortOrder;
-    const photos = await withRetry(() =>
-      db.select().from(schema.photos).where(where).orderBy(orderExpr),
-    );
+    const photos = await withRetry(() => {
+      const q = db.select().from(schema.photos).where(where).orderBy(orderExpr);
+      return limit ? q.limit(limit) : q;
+    });
     return c.json({ photos: photos.map(photoWithThumbs) }, 200);
   })
 

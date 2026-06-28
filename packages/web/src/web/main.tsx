@@ -17,29 +17,36 @@ const queryClient = new QueryClient({
 	},
 });
 
-// Warm the cache as early as possible — in parallel with the initial page chunk —
-// so navigating to the (lazy-loaded) gallery shows categories instantly instead of
-// waiting for chunk → mount → fetch. Categories rarely change, so keep them fresh
-// for longer. Fire-and-forget; failures are retried by the component's own query.
-queryClient.prefetchQuery({
-	queryKey: ["categories"],
-	queryFn: async () => (await api.categories.$get()).json(),
-	staleTime: 5 * 60_000,
-});
 queryClient.prefetchQuery({
 	queryKey: ["settings"],
 	queryFn: async () => (await api.settings.$get()).json(),
 });
-queryClient.prefetchQuery({
-	queryKey: ["photos"],
-	queryFn: async () => (await api.photos.$get()).json(),
-});
-// Warm hero-photos alongside photos so the top page hero renders with the
-// correct photos on first paint (prevents the gray-placeholder flash).
-queryClient.prefetchQuery({
-	queryKey: ["hero-photos"],
-	queryFn: async () => (await api["hero-photos"].$get()).json(),
-});
+
+const initialPath = window.location.pathname;
+if (initialPath === "/gallery") {
+	// Warm categories only for gallery. Other routes don't need this endpoint.
+	queryClient.prefetchQuery({
+		queryKey: ["categories"],
+		queryFn: async () => (await api.categories.$get()).json(),
+		staleTime: 5 * 60_000,
+	});
+}
+const initialNeedsPhotos =
+	initialPath === "/" || initialPath === "/gallery";
+if (initialNeedsPhotos) {
+	queryClient.prefetchQuery({
+		queryKey: ["photos"],
+		queryFn: async () => (await api.photos.$get()).json(),
+	});
+}
+if (initialPath === "/") {
+	// Warm hero-photos alongside the home chunk so the top page hero renders with
+	// the correct photos on first paint without making every route download it.
+	queryClient.prefetchQuery({
+		queryKey: ["hero-photos"],
+		queryFn: async () => (await api["hero-photos"].$get()).json(),
+	});
+}
 
 if ("serviceWorker" in navigator) {
 	window.addEventListener("load", () => {

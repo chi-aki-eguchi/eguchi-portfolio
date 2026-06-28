@@ -814,8 +814,9 @@ function isServiceHost(): boolean {
 
 export default function ServicePage() {
   const { data: photosData } = useQuery({
-    queryKey: ["photos"],
-    queryFn: async () => jsonOrThrow(await api.photos.$get()),
+    queryKey: ["photos", "service-preview"],
+    queryFn: async () =>
+      jsonOrThrow(await api.photos.$get({ query: { limit: "8" } })),
   });
   const { data: settingsData } = useQuery({
     queryKey: ["settings"],

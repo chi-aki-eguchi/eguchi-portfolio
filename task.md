@@ -2598,3 +2598,61 @@ GA復旧・Railway OOM対策を含めて、本番サイト全体を2周デバッ
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 - 既存のReact test warning（`act(...)`）は出るが、テスト自体は成功。今回の対象外。
+
+## 追記 2026-06-28 — Codex: 軽量化デバッグと不要API取得削減
+
+### 目的
+
+最適化・軽量化・無駄削減の観点で本番ネットワークとコードを確認し、不要なAPI取得を減らす。
+
+### 調査結果
+
+- 直接fetchでの本番APIサイズ:
+  - `/api/settings`: 4,831 bytes
+  - `/api/photos`: 348,666 bytes / 444 photos
+  - `/api/hero-photos`: 1,570 bytes
+  - `/api/categories`: 240 bytes
+  - `/api/series`: 577 bytes
+- Playwrightで初期表示ネットワークを確認したところ、`main.tsx` の全ページ共通prefetchにより、`/contact` など写真不要ページでも `/api/photos` 全量を取得していた。
+- `/service` もプレビュー用に数枚しか使わないのに `/api/photos` 全量を取得していた。
+- `/gallery` と `/` は写真一覧が実機能に必要なので全量取得を維持。
+
+### 修正内容
+
+- `main.tsx` のグローバルprefetchを削減。
+  - `/api/photos` は初期URLが `/` または `/gallery` の時だけprefetch。
+  - `/api/hero-photos` は初期URLが `/` の時だけprefetch。
+  - `/api/categories` は初期URLが `/gallery` の時だけprefetch。
+- `/api/photos?limit=N` を追加。既存の `/api/photos` デフォルト挙動は維持。
+  - 公開側limitは最大60。
+  - admin `all=1` 併用時は最大1000。
+- `/service` は `queryKey: ["photos", "service-preview"]` で `/api/photos?limit=8` を使うように変更。
+
+### ローカル本番サーバでの確認
+
+- `PORT=4322 bun --env-file=../../.env src/server.ts` で確認。
+- `/contact` 初期表示:
+  - 変更後: `/api/settings` / `/api/series` / `/api/pricing` のみ。
+  - `/api/photos` は消えた。
+- `/service` 初期表示:
+  - 変更後: `/api/photos?limit=8`。
+  - payload: 7,020 bytes。
+  - 全量 `/api/photos`: 348,666 bytes。
+- `/gallery` 初期表示:
+  - `/api/settings` / `/api/categories` / `/api/photos` / `/api/series`。
+  - 写真一覧ページなので全量取得を維持。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（24 pass / 0 fail）。
+- `cd packages/web && bun test ./src` 成功（179 pass / 0 fail）。
+- `bunx oxlint packages/web/src/api/index.ts packages/web/src/web/main.tsx packages/web/src/web/pages/service.tsx --deny-warnings --no-error-on-unmatched-pattern` をrepo rootから実行し成功。
+- `git diff --check` 成功。
+
+### 注意
+
+- TopページはWorks/Lightbox/無限スクロールのため全量写真データをまだ使う。ここをさらに削るには、ページングAPIとTop/Galleryの追加読込設計が必要。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。

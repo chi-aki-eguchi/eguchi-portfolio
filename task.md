@@ -2427,6 +2427,30 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: Libraryスクロール保存の軽量化
+
+### 目的
+
+Library のスクロール位置保存で、スクロールイベントごとに同期的な localStorage 書き込みが走らないようにする。
+
+### 修正内容
+
+- スクロール位置保存を `requestAnimationFrame` でまとめるように変更。
+- アンマウント時に未完了の rAF をキャンセル。
+- 復元処理の挙動は維持し、保存頻度だけを軽くした。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（26 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（187 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: admin保存タブ値のフォールバック
 
 ### 目的

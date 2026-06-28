@@ -945,6 +945,8 @@ function GalleryTab({
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const libraryScrollRestoredRef = useRef(false);
+  const libraryScrollSaveRafRef = useRef<number | null>(null);
+  const libraryScrollPendingTopRef = useRef(0);
   const [bulkEditMode, setBulkEditMode] = usePersistentState(
     "admin:bulkEditMode",
     false,
@@ -1923,15 +1925,27 @@ function GalleryTab({
   }, [displayed.length]);
 
   const rememberLibraryScroll = (el: HTMLDivElement) => {
-    try {
-      getStorage("local")?.setItem(
-        "admin:libraryScrollTop",
-        JSON.stringify(el.scrollTop),
-      );
-    } catch {
-      /* storage unavailable: the scroll position just stays in-memory */
-    }
+    libraryScrollPendingTopRef.current = el.scrollTop;
+    if (libraryScrollSaveRafRef.current !== null) return;
+    libraryScrollSaveRafRef.current = requestAnimationFrame(() => {
+      libraryScrollSaveRafRef.current = null;
+      try {
+        getStorage("local")?.setItem(
+          "admin:libraryScrollTop",
+          JSON.stringify(libraryScrollPendingTopRef.current),
+        );
+      } catch {
+        /* storage unavailable: the scroll position just stays in-memory */
+      }
+    });
   };
+  useEffect(
+    () => () => {
+      if (libraryScrollSaveRafRef.current !== null)
+        cancelAnimationFrame(libraryScrollSaveRafRef.current);
+    },
+    [],
+  );
 
   // Auto-scroll the photo grid while dragging near the container's top/bottom edge,
   // so a photo can be dragged across a library taller than the viewport without

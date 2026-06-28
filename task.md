@@ -2427,6 +2427,29 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: stale Smart Albumフィルター解除
+
+### 目的
+
+Library フィルター状態を保持するようにしたことで、削除済み/存在しない Smart Album ID が残った場合に、見えないフィルターとして並び替えをロックするリスクを防ぐ。
+
+### 修正内容
+
+- `settingsData` 読み込み後、保存済み `activeAlbumId` が `smartAlbums` に存在しない場合は自動で `null` に戻す。
+- 存在しない Smart Album 選択が残っても、Library が通常状態へ戻るようにした。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（26 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（187 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: Library検索でフィルム名を対象化
 
 ### 目的

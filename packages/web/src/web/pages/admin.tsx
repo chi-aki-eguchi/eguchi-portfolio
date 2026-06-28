@@ -1100,6 +1100,15 @@ function GalleryTab({
     () => smartAlbums.find((a) => a.id === activeAlbumId) ?? null,
     [smartAlbums, activeAlbumId],
   );
+  useEffect(() => {
+    if (
+      settingsData &&
+      activeAlbumId &&
+      !smartAlbums.some((a) => a.id === activeAlbumId)
+    ) {
+      setActiveAlbumId(null);
+    }
+  }, [settingsData, activeAlbumId, smartAlbums, setActiveAlbumId]);
 
   const { data: trashData } = useQuery({
     queryKey: ["photos-trash"],

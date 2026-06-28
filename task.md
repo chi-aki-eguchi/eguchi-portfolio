@@ -1,5 +1,24 @@
 # Task Log
 
+## 追記 2026-06-29 — Codex: manifest.webmanifest alias追加
+
+### 対応
+
+- 既存の `/manifest.json` と同じ内容を `/manifest.webmanifest` でも返すようにした。
+- 一般的な PWA/ブラウザ検査で `.webmanifest` を見に来ても404にならないようにした。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b && bun run build`
+- `cd packages/web && bun test ./src/api/public-routes.test.ts ./src/api/static-template.test.ts`
+- `PORT=4301 bun src/server.ts` を起動し、`/manifest.json` と `/manifest.webmanifest` がどちらも200 / `application/manifest+json` になることを確認。
+- `cd packages/web && bun test ./src`
+
+### 触ったファイル
+
+- `packages/web/src/server.ts`
+- `task.md`
+
 ## 追記 2026-06-29 — Codex: Library写真向きフィルター追加
 
 ### 対応

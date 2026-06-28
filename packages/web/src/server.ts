@@ -409,7 +409,10 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       });
   }
   // Web App Manifest
-  if (url.pathname === "/manifest.json") {
+  if (
+    url.pathname === "/manifest.json" ||
+    url.pathname === "/manifest.webmanifest"
+  ) {
     const file = Bun.file(`${distDir}/manifest.json`);
     if (await file.exists())
       return new Response(file, {

@@ -2427,6 +2427,30 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: 管理画面Libraryのスクロール位置復元
+
+### 目的
+
+写真一覧を深い位置まで見ていたあとに admin を開き直しても、毎回先頭から探し直さなくて済むようにする。
+
+### 修正内容
+
+- Library のスクロール位置を `localStorage` の `admin:libraryScrollTop` に保存。
+- 写真一覧が読み込まれたあと、保存済みスクロール位置へ1回だけ復元。
+- 写真枚数や画面サイズが変わっても、最大スクロール位置を超えないようにクランプ。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（25 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（186 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: 管理画面の機材未入力フィルター
 
 ### 目的

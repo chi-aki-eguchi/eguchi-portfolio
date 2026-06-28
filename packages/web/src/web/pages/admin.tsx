@@ -924,6 +924,7 @@ function GalleryTab({
   const [showShortcuts, setShowShortcuts] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const libraryScrollRestoredRef = useRef(false);
   const [bulkEditMode, setBulkEditMode] = usePersistentState(
     "admin:bulkEditMode",
     false,
@@ -1885,6 +1886,33 @@ function GalleryTab({
     rotateLibraryPhoto(photo, operation === "rotate_left" ? -90 : 90);
   };
 
+  useEffect(() => {
+    if (libraryScrollRestoredRef.current || displayed.length === 0) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const stored = readStoredState<number>(
+      "admin:libraryScrollTop",
+      getStorage("local"),
+    );
+    libraryScrollRestoredRef.current = true;
+    if (!stored || stored <= 0) return;
+    requestAnimationFrame(() => {
+      const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+      el.scrollTop = Math.min(stored, maxScroll);
+    });
+  }, [displayed.length]);
+
+  const rememberLibraryScroll = (el: HTMLDivElement) => {
+    try {
+      getStorage("local")?.setItem(
+        "admin:libraryScrollTop",
+        JSON.stringify(el.scrollTop),
+      );
+    } catch {
+      /* storage unavailable: the scroll position just stays in-memory */
+    }
+  };
+
   // Auto-scroll the photo grid while dragging near the container's top/bottom edge,
   // so a photo can be dragged across a library taller than the viewport without
   // dropping mid-way to scroll. Velocity scales with edge proximity; a rAF loop
@@ -2777,6 +2805,7 @@ function GalleryTab({
         <div
           ref={scrollRef}
           className={`flex-1 overflow-y-auto p-3 relative ${dragOver ? "ring-2 ring-inset ring-[#888]/40" : ""}`}
+          onScroll={(e) => rememberLibraryScroll(e.currentTarget)}
           onDragOver={(e) => {
             e.preventDefault();
             if (e.dataTransfer.types.includes("Files")) setDragOver(true);

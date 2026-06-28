@@ -1172,6 +1172,7 @@ function GalleryTab({
       const arr = [...list];
       const time = (v: string | number | null | undefined) =>
         v ? new Date(v).getTime() : 0;
+      const photoDate = (p: Photo) => time(p.shotAt) || time(p.createdAt);
       const seriesTitle = (id: number | null | undefined) =>
         id == null
           ? "￿"
@@ -1186,18 +1187,18 @@ function GalleryTab({
           break;
         case "shotAt-desc":
           arr.sort((a, b) => {
-            const A = a.shotAt ?? "",
-              B = b.shotAt ?? "";
+            const A = photoDate(a);
+            const B = photoDate(b);
             if (!A || !B) return Number(!A) - Number(!B);
-            return B.localeCompare(A);
+            return B - A;
           });
           break;
         case "shotAt-asc":
           arr.sort((a, b) => {
-            const A = a.shotAt ?? "",
-              B = b.shotAt ?? "";
+            const A = photoDate(a);
+            const B = photoDate(b);
             if (!A || !B) return Number(!A) - Number(!B);
-            return A.localeCompare(B);
+            return A - B;
           });
           break;
         case "series":

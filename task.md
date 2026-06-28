@@ -1,5 +1,25 @@
 # Task Log
 
+## 追記 2026-06-29 — Codex: 撮影日ソートのアップロード日 fallback
+
+### 対応
+
+- 公開側の共通写真ソート `sortPhotosBySetting()` で、`shotAt` がない写真は `createdAt` を日付ソートの代替値として使うようにした。
+- 管理画面 Library の「撮影日」表示ソートも同じく `shotAt ?? createdAt` 相当で並ぶようにした。
+- これにより、撮影日未入力でも最近アップロードした写真が日付順表示で常に最下部へ沈む挙動を避ける。
+
+### 検証
+
+- `bun test ./packages/web/src/web/lib/photo-sort.test.ts ./packages/web/src/web/test/pages.render.test.tsx`
+- `cd packages/web && bun x tsc -b && bun run build && bun test ./src`
+
+### 触ったファイル
+
+- `packages/web/src/web/lib/photo-sort.ts`
+- `packages/web/src/web/lib/photo-sort.test.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`
+
 ## 追記 2026-06-29 — Codex: Library「日付なし」フィルター追加
 
 ### 対応

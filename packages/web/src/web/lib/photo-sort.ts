@@ -12,6 +12,10 @@ function timeValue(value: string | null | undefined): number | null {
   return Number.isFinite(time) ? time : null;
 }
 
+function photoDateValue(photo: SortablePhoto): number | null {
+  return timeValue(photo.shotAt) ?? timeValue(photo.createdAt);
+}
+
 function sortOrderValue(photo: SortablePhoto): number {
   return typeof photo.sortOrder === "number" ? photo.sortOrder : Number.MAX_SAFE_INTEGER;
 }
@@ -28,8 +32,8 @@ export function sortPhotosBySetting<T extends SortablePhoto>(
     .map((photo, index) => ({ photo, index }))
     .sort((a, b) => {
       if (mode === "date_desc" || mode === "date_asc") {
-        const at = timeValue(a.photo.shotAt);
-        const bt = timeValue(b.photo.shotAt);
+        const at = photoDateValue(a.photo);
+        const bt = photoDateValue(b.photo);
         if (at !== null || bt !== null) {
           if (at === null) return 1;
           if (bt === null) return -1;

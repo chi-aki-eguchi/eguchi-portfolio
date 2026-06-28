@@ -2345,6 +2345,53 @@ Claude Design の追加レビューを受け、`/service` を「何のサービ�
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 - commit hash は commit 作成後の最終報告に記載する。
 
+## 追記 2026-06-28 — Codex: `/service` 誤解されにくい販売文言へ調整
+
+### 目的
+
+価格は維持したまま、テンプレート販売・初期設定代行として誤解されにくい文言に整える。
+特に「あなただけの」「ずっと無料」「月額なし」の強すぎる表現を避け、サポート範囲と外部費用を明確にする。
+
+### 修正内容
+
+- ヒーローコピーを「写真が主役になる、静かなポートフォリオサイト」に変更し、モバイルでも単語途中で割れない2行表示にした。
+- `ACTUAL SITE` を「今見ているこのサイトが、公開後の見え方の実例です。」へ変更。
+- `こんな悩み / このサイトなら` の本文をなめらかにし、自由度を広く誤解させる「見た目を調整」表現を削除。
+- 料金カードの `RECOMMENDED` を `公開おまかせ`（¥30,000）側へ移動。
+- `おまかせ設定` を `公開おまかせ` に変更。
+- `ずっと無料`、`月額なし`、`困ったときは相談OK` を削除し、初回相談・公開後7日間の簡単な操作相談に範囲を明確化。
+- 料金下の注意書きを、外部費用と個別カスタムの別途見積もりが分かる内容に変更。
+- FAQ を、購入後の流れ、独自ドメイン、外部費用、更新範囲が伝わる回答に更新。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/service.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（24 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（175 pass / 0 fail）。
+- `git diff --check` 成功。
+- `cd packages/web && bun run lint` は既存の `packages/web/src/web/components/Lightbox.tsx:1195`
+  `jsx-a11y(prefer-tag-over-role)` で失敗。今回差分外。
+- ローカル `http://127.0.0.1:5175/service` を Playwright で確認。
+  - Desktop 1440x1100 / Mobile 390x1200。
+  - `RECOMMENDED` が `公開おまかせ` 側に移動していることを確認。
+  - `あなただけの` / `ずっと無料` / `月額なし` / `おまかせ設定` が消えていることを確認。
+  - Stripe Payment Link 2本は既存 URL を維持。
+  - 横スクロールなし。
+  - 初期表示のテキストと画像の重なり検出 0。
+  - console error なし。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+- commit hash は commit 作成後の最終報告に記載する。
+
 ## 追記 2026-06-28 — Codex: `/service` コピー微調整
 
 ### 目的

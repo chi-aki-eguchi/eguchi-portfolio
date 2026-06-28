@@ -68,6 +68,16 @@ import {
 const RESIZE_CACHE_BYTES = 128 * 1024 * 1024; // resized thumbnails
 const resizeCache = new Map<string, { buf: Buffer; type: string }>();
 let resizeBytes = 0;
+const resizeInFlight = new Map<string, Promise<{ buf: Buffer; type: string }>>();
+const MAX_ACTIVE_IMAGE_TRANSFORMS = Math.min(
+  Math.max(
+    parseInt(process.env.IMAGE_TRANSFORM_CONCURRENCY ?? "2", 10) || 2,
+    1,
+  ),
+  4,
+);
+let activeImageTransforms = 0;
+const imageTransformQueue: Array<() => void> = [];
 
 function cacheGet(key: string) {
   const entry = resizeCache.get(key);
@@ -89,6 +99,19 @@ function cacheSet(key: string, buf: Buffer, type: string) {
     const oldest = resizeCache.keys().next().value as string;
     resizeBytes -= resizeCache.get(oldest)!.buf.length;
     resizeCache.delete(oldest);
+  }
+}
+
+async function withImageTransformLimit<T>(fn: () => Promise<T>): Promise<T> {
+  if (activeImageTransforms >= MAX_ACTIVE_IMAGE_TRANSFORMS) {
+    await new Promise<void>((resolve) => imageTransformQueue.push(resolve));
+  }
+  activeImageTransforms += 1;
+  try {
+    return await fn();
+  } finally {
+    activeImageTransforms -= 1;
+    imageTransformQueue.shift()?.();
   }
 }
 
@@ -454,6 +477,9 @@ const app = new Hono()
           rssMB: Math.round(rss / 1024 / 1024),
           resizeCacheMB: Math.round(resizeBytes / 1024 / 1024),
           resizeCacheEntries: resizeCache.size,
+          resizeInFlightEntries: resizeInFlight.size,
+          activeImageTransforms,
+          queuedImageTransforms: imageTransformQueue.length,
           origCacheMB: Math.round(origBytes / 1024 / 1024),
           origCacheEntries: origCache.size,
         },
@@ -543,51 +569,73 @@ const app = new Hono()
     }
 
     try {
-      const original = await getOriginal(decodedKey);
-
-      if (!width && !height && rotationDeg === 0) {
-        // No resize — return the (already optimised) original
-        return imageResponse(original.buf, original.type, { ETag: etag });
-      }
-
-      let base = sharp(original.buf).rotate();
-      if (rotationDeg !== 0) base = base.rotate(rotationDeg);
-      if (width || height) {
-        base = base.resize({
-          width: width ?? undefined,
-          height: height ?? undefined,
-          fit: width && height ? "cover" : "inside",
-          withoutEnlargement: true,
+      const pending = resizeInFlight.get(cacheKey);
+      if (pending) {
+        const waited = await pending;
+        return imageResponse(waited.buf, waited.type, {
+          ETag: etag,
+          ...(!fmtParam ? { Vary: "Accept" } : {}),
+          "X-Cache": "WAIT",
         });
       }
-      let out: Buffer;
-      if (fmt === "avif") {
-        // AVIF quality scale runs ~10-20 points lower than JPEG for equivalent
-        // perceptual quality; effort bounded to avoid blocking the request.
-        out = await base
-          .avif({ quality: Math.max(40, quality - 10), effort: 4 })
-          .toBuffer();
-      } else if (fmt === "webp") {
-        out = await base.webp({ quality }).toBuffer();
-      } else {
-        // Full chroma for large/focal renders (gallery tiles, hero, lightbox);
-        // 4:2:0 is fine for small thumbnails and keeps their bytes down.
-        out = await base
-          .jpeg({
-            quality,
-            mozjpeg: true,
-            chromaSubsampling: !width || width >= 1000 ? "4:4:4" : "4:2:0",
-          })
-          .toBuffer();
+
+      const created = (async () => {
+        const original = await getOriginal(decodedKey);
+
+        if (!width && !height && rotationDeg === 0) {
+          // No resize — return the already optimised original from the short-lived
+          // original cache rather than copying it into the resized variant cache.
+          return { buf: original.buf, type: original.type };
+        }
+
+        const out = await withImageTransformLimit(async () => {
+          let base = sharp(original.buf).rotate();
+          if (rotationDeg !== 0) base = base.rotate(rotationDeg);
+          if (width || height) {
+            base = base.resize({
+              width: width ?? undefined,
+              height: height ?? undefined,
+              fit: width && height ? "cover" : "inside",
+              withoutEnlargement: true,
+            });
+          }
+          if (fmt === "avif") {
+            // AVIF quality scale runs ~10-20 points lower than JPEG for equivalent
+            // perceptual quality; effort bounded to avoid blocking the request.
+            return base
+              .avif({ quality: Math.max(40, quality - 10), effort: 4 })
+              .toBuffer();
+          }
+          if (fmt === "webp") {
+            return base.webp({ quality }).toBuffer();
+          }
+          // Full chroma for large/focal renders (gallery tiles, hero, lightbox);
+          // 4:2:0 is fine for small thumbnails and keeps their bytes down.
+          return base
+            .jpeg({
+              quality,
+              mozjpeg: true,
+              chromaSubsampling: !width || width >= 1000 ? "4:4:4" : "4:2:0",
+            })
+            .toBuffer();
+        });
+
+        const result = { buf: out, type: ctypeOf[fmt] };
+        cacheSet(cacheKey, result.buf, result.type);
+        return result;
+      })();
+
+      resizeInFlight.set(cacheKey, created);
+      try {
+        const result = await created;
+        return imageResponse(result.buf, result.type, {
+          ETag: etag,
+          ...(!fmtParam ? { Vary: "Accept" } : {}),
+          "X-Cache": "MISS",
+        });
+      } finally {
+        resizeInFlight.delete(cacheKey);
       }
-
-      cacheSet(cacheKey, out, ctypeOf[fmt]);
-
-      return imageResponse(out, ctypeOf[fmt], {
-        ETag: etag,
-        ...(!fmtParam ? { Vary: "Accept" } : {}),
-        "X-Cache": "MISS",
-      });
     } catch {
       return c.json({ error: "Not found" }, 404);
     }

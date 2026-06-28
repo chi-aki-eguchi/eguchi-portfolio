@@ -2482,3 +2482,38 @@ Claude Design の最終レビューを受け、構成は維持したまま、説
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 - commit hash は commit 作成後の最終報告に記載する。
+
+## 追記 2026-06-28 — Codex: Railway一時クラッシュ後の画像変換安定化
+
+### 目的
+
+Railway の "Application failed to respond" が出た件について、再起動後の本番状態を確認し、直近の OGP 画像変更に伴う画像変換負荷の再発リスクを下げる。
+
+### 調査結果
+
+- 本番 `https://akieguchi.com/` と `/api/health` は再起動後 200。確認時の `X-Build` / health build は `886ae682`。
+- 実OG画像URLへの `GET` と `HEAD` を同時に投げると、修正前の本番では両方 `X-Cache: MISS` になり、RSS が約177MBから約472MBまで急増した。
+- 原因候補は、SNS/Instagram系クローラーが同じOG画像へ `HEAD` / `GET` を近接または同時に送り、同一の sharp 変換が複数回走ること。Railway CLI はこのMacに無く、クラッシュ時ログは未取得。
+
+### 修正内容
+
+- `packages/web/src/api/index.ts` の画像プロキシで、同じ `cacheKey` の変換中 Promise を `resizeInFlight` に集約。
+- 変換中の同一リクエストは新しい sharp 変換を起動せず、既存の結果を待って `X-Cache: WAIT` として返すようにした。
+- sharp 変換の同時実行数を `IMAGE_TRANSFORM_CONCURRENCY`（既定2、1〜4にクランプ）で制限。
+- `/api/health` に `resizeInFlightEntries` / `activeImageTransforms` / `queuedImageTransforms` を追加し、再発時に状態を見られるようにした。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/api/security.test.ts ./src/api/ogp.test.ts ./src/shared/image-url.test.ts` 成功（78 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- ローカル本番サーバ `PORT=4317 bun --env-file=../../.env src/server.ts` で実R2画像のOG URLを確認。
+  - 同時 `GET` / `HEAD`: 片方 `X-Cache: MISS`、片方 `X-Cache: WAIT`、RSS 約211MB。
+  - 同一URL 6本同時: 1本 `MISS`、5本 `WAIT`、RSS 約212MB。
+- `cd packages/web && bun test ./src` 成功（178 pass / 0 fail）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+- Railway のクラッシュ時ログは未取得のため、これはログ確定ではなく、再現性のある負荷兆候に基づく対策。

@@ -1,5 +1,24 @@
 # Task Log
 
+## 追記 2026-06-29 — Codex: Library公開状態フィルター追加
+
+### 対応
+
+- 管理画面 Library のフィルター群に「公開状態」セレクトを追加。
+- `公開のみ` / `非公開のみ` で絞り込めるようにした。
+- 公開状態フィルター中は、表示順を誤って公開順として保存できないよう既存の reorder lock 条件へ追加。
+
+### 検証
+
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx`
+- `cd packages/web && bun x tsc -b && bun run build && bun test ./src`
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
 ## 追記 2026-06-29 — Codex: 未知URLのHTTP 404化
 
 ### 対応

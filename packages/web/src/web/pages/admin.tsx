@@ -863,6 +863,7 @@ function GalleryTab({
   const [filterSeries, setFilterSeries] = useState("all"); // "all" | "__none__" | series id
   const [filterSize, setFilterSize] = useState("all"); // "all" | S | M | L
   const [filterFeatured, setFilterFeatured] = useState(false); // M3: only hero-featured
+  const [filterPublished, setFilterPublished] = useState("all");
   const [filterRecent, setFilterRecent] = useState("all"); // O4: "all" | "7" | "30" days
   const [filterMissingShotAt, setFilterMissingShotAt] = useState(false);
   const [activeAlbumId, setActiveAlbumId] = useState<string | null>(null); // O6: applied smart album
@@ -1099,6 +1100,10 @@ function GalleryTab({
       if (filterSize !== "all" && (p.displaySize || "M") !== filterSize)
         return false;
       if (filterFeatured && !featuredIds.has(p.id)) return false;
+      if (filterPublished === "published" && p.isPublished === false)
+        return false;
+      if (filterPublished === "unpublished" && p.isPublished !== false)
+        return false;
       if (filterMissingShotAt && p.shotAt) return false;
       if (recentCutoff) {
         const t = p.createdAt ? new Date(p.createdAt).getTime() : 0;
@@ -1148,6 +1153,7 @@ function GalleryTab({
     filterSeries,
     filterSize,
     filterFeatured,
+    filterPublished,
     filterMissingShotAt,
     filterRecent,
     isUncategorized,
@@ -1160,6 +1166,7 @@ function GalleryTab({
     filterSeries !== "all" ||
     filterSize !== "all" ||
     filterFeatured ||
+    filterPublished !== "all" ||
     filterMissingShotAt ||
     filterRecent !== "all" ||
     activeAlbumId !== null;
@@ -1245,6 +1252,10 @@ function GalleryTab({
     () => allPhotos.filter((p) => !p.shotAt).length,
     [allPhotos],
   );
+  const unpublishedCount = useMemo(
+    () => allPhotos.filter((p) => p.isPublished === false).length,
+    [allPhotos],
+  );
   // Reorder normally needs the full library in manual order. Exception: a single
   // concrete series filter with nothing else active — the public series page
   // follows the global sortOrder, so dragging inside that view is the only
@@ -1258,6 +1269,7 @@ function GalleryTab({
     searchQuery.trim() === "" &&
     filterSize === "all" &&
     !filterFeatured &&
+    filterPublished === "all" &&
     !filterMissingShotAt &&
     filterRecent === "all" &&
     activeAlbumId === null;
@@ -2253,6 +2265,18 @@ function GalleryTab({
             >
               <Star size={11} /> Featured ({featuredIds.size})
             </button>
+            <select
+              value={filterPublished}
+              onChange={(e) => setFilterPublished(e.target.value)}
+              aria-label="公開状態で絞り込み"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+            >
+              <option value="all">公開状態: All</option>
+              <option value="published">
+                公開のみ ({allPhotos.length - unpublishedCount})
+              </option>
+              <option value="unpublished">非公開のみ ({unpublishedCount})</option>
+            </select>
             <button
               onClick={() => setFilterMissingShotAt((v) => !v)}
               aria-pressed={filterMissingShotAt}

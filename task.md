@@ -1,5 +1,25 @@
 # Task Log
 
+## 追記 2026-06-29 — Codex: Library写真向きフィルター追加
+
+### 対応
+
+- 管理画面 Library のフィルター群に「写真の向き」セレクトを追加。
+- `縦写真` / `横写真` / `正方形` で絞り込めるようにした。
+- 判定は既存の `orientedDimensions()` を使い、90/270度回転済みの写真も表示上の向きで分類する。
+- 向きフィルター中は、表示順を誤って公開順として保存できないよう既存の reorder lock 条件へ追加。
+
+### 検証
+
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx`
+- `cd packages/web && bun x tsc -b && bun run build && bun test ./src`
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
 ## 追記 2026-06-29 — Codex: Library公開状態フィルター追加
 
 ### 対応

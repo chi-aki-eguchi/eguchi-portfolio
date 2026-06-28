@@ -5,6 +5,7 @@ import { api, adminApi } from "../lib/api";
 import {
   normalizeRotationDeg,
   objectPositionFromFocal,
+  orientedDimensions,
   rotateRotationDeg,
   srcFor,
 } from "../lib/picture";
@@ -862,6 +863,7 @@ function GalleryTab({
   );
   const [filterSeries, setFilterSeries] = useState("all"); // "all" | "__none__" | series id
   const [filterSize, setFilterSize] = useState("all"); // "all" | S | M | L
+  const [filterOrientation, setFilterOrientation] = useState("all");
   const [filterFeatured, setFilterFeatured] = useState(false); // M3: only hero-featured
   const [filterPublished, setFilterPublished] = useState("all");
   const [filterRecent, setFilterRecent] = useState("all"); // O4: "all" | "7" | "30" days
@@ -1068,6 +1070,12 @@ function GalleryTab({
     (p: Photo) => !p.category || !categories.some((c) => c.slug === p.category),
     [categories],
   );
+  const photoOrientation = useCallback((p: Photo) => {
+    const dims = orientedDimensions(p.width, p.height, p.rotationDeg);
+    if (!dims.width || !dims.height) return "unknown";
+    if (dims.width === dims.height) return "square";
+    return dims.width > dims.height ? "landscape" : "portrait";
+  }, []);
 
   // M3/O4: category / series / size / featured / recency combine as AND filters.
   const filtered = useMemo(() => {
@@ -1098,6 +1106,8 @@ function GalleryTab({
       )
         return false;
       if (filterSize !== "all" && (p.displaySize || "M") !== filterSize)
+        return false;
+      if (filterOrientation !== "all" && photoOrientation(p) !== filterOrientation)
         return false;
       if (filterFeatured && !featuredIds.has(p.id)) return false;
       if (filterPublished === "published" && p.isPublished === false)
@@ -1152,6 +1162,7 @@ function GalleryTab({
     searchQuery,
     filterSeries,
     filterSize,
+    filterOrientation,
     filterFeatured,
     filterPublished,
     filterMissingShotAt,
@@ -1165,6 +1176,7 @@ function GalleryTab({
     searchQuery.trim() !== "" ||
     filterSeries !== "all" ||
     filterSize !== "all" ||
+    filterOrientation !== "all" ||
     filterFeatured ||
     filterPublished !== "all" ||
     filterMissingShotAt ||
@@ -1256,6 +1268,16 @@ function GalleryTab({
     () => allPhotos.filter((p) => p.isPublished === false).length,
     [allPhotos],
   );
+  const orientationCounts = useMemo(
+    () => ({
+      landscape: allPhotos.filter((p) => photoOrientation(p) === "landscape")
+        .length,
+      portrait: allPhotos.filter((p) => photoOrientation(p) === "portrait")
+        .length,
+      square: allPhotos.filter((p) => photoOrientation(p) === "square").length,
+    }),
+    [allPhotos, photoOrientation],
+  );
   // Reorder normally needs the full library in manual order. Exception: a single
   // concrete series filter with nothing else active — the public series page
   // follows the global sortOrder, so dragging inside that view is the only
@@ -1268,6 +1290,7 @@ function GalleryTab({
     filterCat === "all" &&
     searchQuery.trim() === "" &&
     filterSize === "all" &&
+    filterOrientation === "all" &&
     !filterFeatured &&
     filterPublished === "all" &&
     !filterMissingShotAt &&
@@ -2252,6 +2275,19 @@ function GalleryTab({
                   )
                 </option>
               ))}
+            </select>
+            <select
+              value={filterOrientation}
+              onChange={(e) => setFilterOrientation(e.target.value)}
+              aria-label="写真の向きで絞り込み"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+            >
+              <option value="all">All orientations</option>
+              <option value="portrait">縦写真 ({orientationCounts.portrait})</option>
+              <option value="landscape">
+                横写真 ({orientationCounts.landscape})
+              </option>
+              <option value="square">正方形 ({orientationCounts.square})</option>
             </select>
             {/* M3: Featured filter */}
             <button

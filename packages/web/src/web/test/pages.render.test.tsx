@@ -232,6 +232,7 @@ describe("shared components", () => {
       const { host, cleanup } = await mount(createElement(Admin));
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
+      expect(host.textContent).toContain("日付なし");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;

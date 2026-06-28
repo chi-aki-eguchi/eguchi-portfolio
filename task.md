@@ -1,5 +1,24 @@
 # Task Log
 
+## 追記 2026-06-29 — Codex: Library「日付なし」フィルター追加
+
+### 対応
+
+- 管理画面 Library のフィルター群に `日付なし (N)` ボタンを追加。
+- `shotAt` が空の写真だけを絞り込めるようにした。
+- 日付なしフィルター中は、誤ってその表示順を公開順として保存できないように既存の reorder lock 条件へ追加。
+
+### 検証
+
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx`
+- `cd packages/web && bun x tsc -b && bun run build && bun test ./src`
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
 ## 追記 2026-06-29 — Codex: Filmアップロード日時補完とadmin初期タブ改善
 
 ### 対応

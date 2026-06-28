@@ -864,6 +864,7 @@ function GalleryTab({
   const [filterSize, setFilterSize] = useState("all"); // "all" | S | M | L
   const [filterFeatured, setFilterFeatured] = useState(false); // M3: only hero-featured
   const [filterRecent, setFilterRecent] = useState("all"); // O4: "all" | "7" | "30" days
+  const [filterMissingShotAt, setFilterMissingShotAt] = useState(false);
   const [activeAlbumId, setActiveAlbumId] = useState<string | null>(null); // O6: applied smart album
   const [albumModalOpen, setAlbumModalOpen] = useState(false); // O6: create-album modal
   const [albumDraft, setAlbumDraft] = useState({ ...EMPTY_ALBUM_DRAFT });
@@ -1098,6 +1099,7 @@ function GalleryTab({
       if (filterSize !== "all" && (p.displaySize || "M") !== filterSize)
         return false;
       if (filterFeatured && !featuredIds.has(p.id)) return false;
+      if (filterMissingShotAt && p.shotAt) return false;
       if (recentCutoff) {
         const t = p.createdAt ? new Date(p.createdAt).getTime() : 0;
         if (!t || t < recentCutoff) return false;
@@ -1146,6 +1148,7 @@ function GalleryTab({
     filterSeries,
     filterSize,
     filterFeatured,
+    filterMissingShotAt,
     filterRecent,
     isUncategorized,
     featuredIds,
@@ -1157,6 +1160,7 @@ function GalleryTab({
     filterSeries !== "all" ||
     filterSize !== "all" ||
     filterFeatured ||
+    filterMissingShotAt ||
     filterRecent !== "all" ||
     activeAlbumId !== null;
 
@@ -1236,6 +1240,10 @@ function GalleryTab({
     () => sortPhotosForView(filtered),
     [filtered, sortPhotosForView],
   );
+  const missingShotAtCount = useMemo(
+    () => allPhotos.filter((p) => !p.shotAt).length,
+    [allPhotos],
+  );
   // Reorder normally needs the full library in manual order. Exception: a single
   // concrete series filter with nothing else active — the public series page
   // follows the global sortOrder, so dragging inside that view is the only
@@ -1249,6 +1257,7 @@ function GalleryTab({
     searchQuery.trim() === "" &&
     filterSize === "all" &&
     !filterFeatured &&
+    !filterMissingShotAt &&
     filterRecent === "all" &&
     activeAlbumId === null;
   const reorderLocked =
@@ -2242,6 +2251,17 @@ function GalleryTab({
               }`}
             >
               <Star size={11} /> Featured ({featuredIds.size})
+            </button>
+            <button
+              onClick={() => setFilterMissingShotAt((v) => !v)}
+              aria-pressed={filterMissingShotAt}
+              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                filterMissingShotAt
+                  ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
+                  : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+              }`}
+            >
+              日付なし ({missingShotAtCount})
             </button>
             {/* O4: recently uploaded */}
             <select

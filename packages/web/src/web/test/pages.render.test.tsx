@@ -295,6 +295,10 @@ describe("shared components", () => {
       expect(host.textContent).toContain("1 / 3 photos");
       await setSearch("Indigo Days");
       expect(host.textContent).toContain("1 / 3 photos");
+      await setSearch("No such classification");
+      expect(host.textContent).toContain("0 / 3 photos");
+      expect(host.textContent).toContain("No matching photos");
+      expect(host.textContent).toContain("Clear filters");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prevAuth;

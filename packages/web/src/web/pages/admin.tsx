@@ -3239,10 +3239,28 @@ function GalleryTab({
           ) : displayed.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
               <ImageLucide size={40} strokeWidth={1} className="text-[#444]" />
-              <p className="text-sm">No photos</p>
-              <p className="text-[11px] text-[#444]">
-                Drop images here or click Import
-              </p>
+              {anyFilterActive && allPhotos.length > 0 ? (
+                <>
+                  <p className="text-sm">No matching photos</p>
+                  <p className="text-[11px] text-[#444]">
+                    Try another search or clear the current filters
+                  </p>
+                  <button
+                    type="button"
+                    onClick={clearLibraryFilters}
+                    className="text-[11px] px-2.5 py-1 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                  >
+                    Clear filters
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm">No photos</p>
+                  <p className="text-[11px] text-[#444]">
+                    Drop images here or click Import
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <>

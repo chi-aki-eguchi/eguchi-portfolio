@@ -3,6 +3,7 @@ import {
   htmlStatusForSpaPath,
   isKnownSpaPath,
   isSeriesDetailPath,
+  normalizeSpaPathname,
 } from "./public-routes";
 
 describe("public SPA route status", () => {
@@ -27,6 +28,16 @@ describe("public SPA route status", () => {
     expect(isSeriesDetailPath("/series/ishigakiisland")).toBe(true);
     expect(htmlStatusForSpaPath("/series/ishigakiisland", { seriesFound: true })).toBe(200);
     expect(htmlStatusForSpaPath("/series/zzz-not-exist", { seriesFound: false })).toBe(404);
+  });
+
+  test("normalizes trailing slashes for shared public URLs", () => {
+    expect(normalizeSpaPathname("/gallery/")).toBe("/gallery");
+    expect(isKnownSpaPath("/gallery/")).toBe(true);
+    expect(htmlStatusForSpaPath("/gallery/")).toBe(200);
+    expect(isSeriesDetailPath("/series/ishigakiisland/")).toBe(true);
+    expect(
+      htmlStatusForSpaPath("/series/ishigakiisland/", { seriesFound: true }),
+    ).toBe(200);
   });
 
   test("unknown extensionless paths still serve the SPA shell, but with 404 status", () => {

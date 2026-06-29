@@ -10,7 +10,11 @@ import {
   BUILD_ID,
   isServiceSiteUrl,
 } from "./api/ogp";
-import { htmlStatusForSpaPath, isSeriesDetailPath } from "./api/public-routes";
+import {
+  htmlStatusForSpaPath,
+  isSeriesDetailPath,
+  normalizeSpaPathname,
+} from "./api/public-routes";
 import { imageUrlWithParams } from "./shared/image-url";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
@@ -65,6 +69,21 @@ async function getSettings(): Promise<Record<string, string>> {
 type ImageRef = { url: string; rotationDeg: number; preloadUrl?: string };
 let heroOgCache: ImageRef | null = null;
 let heroOgCacheTime = 0;
+function socialSourceForPhoto(p: {
+  url: string;
+  mediumKey?: string | null;
+  rotationDeg?: number | null;
+}): ImageRef {
+  const rotationDeg = p.rotationDeg ?? 0;
+  const mediumUrl = p.mediumKey ? `/api/images/${p.mediumKey}` : "";
+  return {
+    url: mediumUrl || p.url,
+    rotationDeg,
+    preloadUrl: mediumUrl
+      ? imageUrlWithParams(mediumUrl, { rotationDeg })
+      : undefined,
+  };
+}
 async function getHeroOgImage(): Promise<ImageRef> {
   const now = Date.now();
   if (heroOgCache !== null && now - heroOgCacheTime < SETTINGS_TTL)
@@ -79,14 +98,7 @@ async function getHeroOgImage(): Promise<ImageRef> {
         db.select().from(schema.photos).where(eq(schema.photos.id, hr.photoId)),
       );
       if (p && !p.deletedAt) {
-        const rotationDeg = p.rotationDeg ?? 0;
-        image = {
-          url: p.url,
-          rotationDeg,
-          preloadUrl: p.mediumKey
-            ? imageUrlWithParams(`/api/images/${p.mediumKey}`, { rotationDeg })
-            : undefined,
-        };
+        image = socialSourceForPhoto(p);
         break;
       }
     }
@@ -194,8 +206,9 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
             .where(eq(schema.photos.id, s.coverPhotoId as number)),
         );
         if (p && !p.deletedAt) {
-          image = p.url;
-          imageRotationDeg = p.rotationDeg ?? 0;
+          const socialImage = socialSourceForPhoto(p);
+          image = socialImage.url;
+          imageRotationDeg = socialImage.rotationDeg;
         }
       }
       data = {
@@ -376,6 +389,12 @@ const server = Bun.serve({
 
 async function serveNonApi(request: Request, url: URL): Promise<Response> {
   const publicOrigin = publicOriginFromRequest(request);
+  const routePathname = normalizeSpaPathname(url.pathname);
+  if (routePathname !== url.pathname && !url.pathname.includes(".")) {
+    const redirectUrl = new URL(request.url);
+    redirectUrl.pathname = routePathname;
+    return Response.redirect(redirectUrl.toString(), 308);
+  }
   // F: SEO endpoints
   if (url.pathname === "/sitemap.xml") {
     return new Response(await buildSitemap(publicOrigin), {
@@ -498,7 +517,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         }
       | undefined;
     let seriesFound = false;
-    const seriesMatch = url.pathname.match(/^\/series\/([^/]+)$/);
+    const seriesMatch = routePathname.match(/^\/series\/([^/]+)$/);
     if (seriesMatch) {
       const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
       if (og) {
@@ -514,7 +533,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     let injected = injectOgp(
       html,
       settings,
-      url.pathname,
+      routePathname,
       heroImg.url,
       override,
       publicOrigin,
@@ -522,8 +541,8 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       heroImg.preloadUrl,
     );
     if (
-      url.pathname === "/gallery" ||
-      (url.pathname === "/" && (settings.topWorksMode ?? "auto") !== "random")
+      routePathname === "/gallery" ||
+      (routePathname === "/" && (settings.topWorksMode ?? "auto") !== "random")
     ) {
       const preloadImages = await getGalleryPreloadImages();
       if (preloadImages.length > 0) {
@@ -559,8 +578,8 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         );
       }
     }
-    const htmlStatus = htmlStatusForSpaPath(url.pathname, {
-      seriesFound: isSeriesDetailPath(url.pathname) ? seriesFound : undefined,
+    const htmlStatus = htmlStatusForSpaPath(routePathname, {
+      seriesFound: isSeriesDetailPath(routePathname) ? seriesFound : undefined,
     });
     return new Response(injected, {
       status: htmlStatus,

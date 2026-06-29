@@ -2427,6 +2427,53 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## Handoff 2026-06-30 — Codex: SNS/外部アプリ表示の安定化と配布版確認
+
+### 目的
+
+SNS・アプリ内ブラウザ・共有クローラーで開いた時の OGP / HTML 応答を安定させ、配布版（PostgreSQL template）にも同じ最新挙動が乗ることを確認する。
+
+### 変更内容
+
+- OGP / Twitter card の写真ソースを、生成済み `mediumKey` がある場合は `/api/images/medium/...` 優先に変更。
+  - 共有クローラーが重い元画像変換を待つリスクを減らす。
+  - `mediumKey` が無い古い写真は従来通り元画像URLへフォールバック。
+- series detail の OGP 画像も cover photo の `mediumKey` を優先。
+- `/gallery/` や `/series/foo/` のような末尾スラッシュ付きURLを正規化。
+  - 拡張子なしの末尾スラッシュURLは `308` で末尾スラッシュなしへリダイレクト。
+  - ルート判定も末尾スラッシュを正規化して、既知ページの 200 / unknown の 404 判定が揺れないようにした。
+- OGP test に `medium` variant をSNSカード画像として使える回帰テストを追加。
+- public route test に末尾スラッシュ正規化の回帰テストを追加。
+
+### 配布版確認
+
+- schema変更はなし。
+- `schema.ts` / `schema.postgres.ts` の両方に `mediumKey` / `thumbKey` があることを確認。
+- `drizzle-postgres/0001_woozy_chronomancer.sql` に `medium_key` / `thumb_key` 追加済みであることを確認。
+- `DATABASE_PROVIDER=postgres` を付けた build も成功。配布版でも同じ server path で今回の安定化が効く。
+
+### 触ったファイル
+
+- `packages/web/src/server.ts`
+- `packages/web/src/api/public-routes.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/api/public-routes.test.ts`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/api/ogp.test.ts ./src/api/public-routes.test.ts ./src/api/static-template.test.ts ./src/api/site-defaults.test.ts` 成功（45 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（193 pass / 0 fail）。
+- `cd packages/web && DATABASE_PROVIDER=postgres bun run build` 成功。
+
+### 注意
+
+- DB schema / migration の変更は今回なし。
+- 実画像URLが `mediumKey` 未生成の既存写真では従来の元画像URLを使う。必要なら既存写真の medium backfill は別途 `/api/admin/generate-thumbnails` で実施。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## Handoff 2026-06-29 — Codex: Library カードの未入力バッジ
 
 ### 目的

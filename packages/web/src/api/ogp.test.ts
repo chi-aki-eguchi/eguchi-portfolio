@@ -299,6 +299,24 @@ describe("injectOgp social image metadata", () => {
     expect(out).toContain('name="twitter:image:alt"');
   });
 
+  test("keeps generated medium variants usable as social card sources", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/",
+      "/api/images/medium/hero.webp",
+      undefined,
+      "",
+      180,
+    );
+    expect(out).toContain(
+      'property="og:image" content="https://akieguchi.com/api/images/medium/hero.webp?w=1200&amp;h=630&amp;q=90&amp;fmt=jpeg&amp;rot=180"',
+    );
+    expect(out).toContain(
+      'name="twitter:image" content="https://akieguchi.com/api/images/medium/hero.webp?w=1200&amp;h=630&amp;q=90&amp;fmt=jpeg&amp;rot=180"',
+    );
+  });
+
   test("falls back to the static template image as an absolute URL", () => {
     const out = injectOgp(
       page,

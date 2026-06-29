@@ -10,18 +10,25 @@ const SPA_STATIC_PATHS = new Set([
   "/admin/login",
 ]);
 
+export function normalizeSpaPathname(pathname: string): string {
+  if (pathname === "/") return "/";
+  return pathname.replace(/\/+$/, "") || "/";
+}
+
 export function isSeriesDetailPath(pathname: string): boolean {
-  return /^\/series\/[^/]+$/.test(pathname);
+  return /^\/series\/[^/]+$/.test(normalizeSpaPathname(pathname));
 }
 
 export function isKnownSpaPath(pathname: string): boolean {
-  return SPA_STATIC_PATHS.has(pathname) || isSeriesDetailPath(pathname);
+  const normalized = normalizeSpaPathname(pathname);
+  return SPA_STATIC_PATHS.has(normalized) || isSeriesDetailPath(normalized);
 }
 
 export function htmlStatusForSpaPath(
   pathname: string,
   options: { seriesFound?: boolean } = {},
 ): number {
-  if (isSeriesDetailPath(pathname)) return options.seriesFound ? 200 : 404;
-  return SPA_STATIC_PATHS.has(pathname) ? 200 : 404;
+  const normalized = normalizeSpaPathname(pathname);
+  if (isSeriesDetailPath(normalized)) return options.seriesFound ? 200 : 404;
+  return SPA_STATIC_PATHS.has(normalized) ? 200 : 404;
 }

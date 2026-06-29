@@ -1156,6 +1156,48 @@ function GalleryTab({
     if (!p.filmType) return "missing";
     return p.filmType === "デジタル" ? "digital" : "film";
   }, []);
+  const describeAlbumConditions = useCallback(
+    (cond: AlbumCond | null | undefined) => {
+      const labels: string[] = [];
+      if (!cond) return labels;
+      if (cond.camera) labels.push(`Camera: ${cond.camera}`);
+      if (cond.filmType) labels.push(cond.filmType);
+      if (cond.medium) {
+        labels.push(
+          cond.medium === "digital"
+            ? "Digital"
+            : cond.medium === "film"
+              ? "Film"
+              : "媒体なし",
+        );
+      }
+      if (cond.missingShotAt) labels.push("日付なし");
+      if (cond.missingCapture) labels.push("機材なし");
+      if (cond.category) {
+        labels.push(
+          cond.category === "__uncat__"
+            ? "カテゴリなし"
+            : (categories.find((c) => c.slug === cond.category)?.label ??
+                cond.category),
+        );
+      }
+      if (cond.series) {
+        labels.push(
+          cond.series === "__none__"
+            ? "シリーズなし"
+            : (seriesList.find((s) => String(s.id) === cond.series)?.title ??
+                `Series ${cond.series}`),
+        );
+      }
+      if (cond.size) labels.push(`Size ${cond.size}`);
+      if (cond.featured) labels.push("Featured");
+      if (cond.published === "published") labels.push("公開");
+      if (cond.published === "unpublished") labels.push("非公開");
+      if (cond.recent) labels.push(`直近${cond.recent}日`);
+      return labels;
+    },
+    [categories, seriesList],
+  );
   useEffect(() => {
     const hasUncategorized = allPhotos.some(isUncategorized);
     if (
@@ -2623,36 +2665,57 @@ function GalleryTab({
           {!showTrash && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <FolderOpen size={12} className="text-[#666]" />
-              {smartAlbums.map((a) => (
-                <span
-                  key={a.id}
-                  className={`group/al inline-flex items-center gap-1 text-[11px] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
-                    activeAlbumId === a.id
-                      ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                      : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
-                  }`}
-                >
-                  <button
-                    onClick={() =>
-                      setActiveAlbumId((id) => (id === a.id ? null : a.id))
-                    }
-                    className="flex items-center"
+              {smartAlbums.map((a) => {
+                const conditionLabels = describeAlbumConditions(a.cond);
+                const shownLabels = conditionLabels.slice(0, 3);
+                const hiddenLabelCount = conditionLabels.length - shownLabels.length;
+                return (
+                  <span
+                    key={a.id}
+                    className={`group/al inline-flex items-center gap-1 text-[11px] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
+                      activeAlbumId === a.id
+                        ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
+                        : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
+                    }`}
                   >
-                    {a.name}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const next = smartAlbums.filter((x) => x.id !== a.id);
-                      if (activeAlbumId === a.id) setActiveAlbumId(null);
-                      saveAlbums.mutate(next);
-                    }}
-                    aria-label={`${a.name}を削除`}
-                    className="opacity-50 group-hover/al:opacity-100 text-[#888] hover:text-red-400 transition-all"
-                  >
-                    <X size={11} />
-                  </button>
-                </span>
-              ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveAlbumId((id) => (id === a.id ? null : a.id))
+                      }
+                      className="flex items-center gap-1.5"
+                    >
+                      <span>{a.name}</span>
+                      {shownLabels.map((label) => (
+                        <span
+                          key={label}
+                          className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]"
+                          title={label}
+                        >
+                          {label}
+                        </span>
+                      ))}
+                      {hiddenLabelCount > 0 && (
+                        <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]">
+                          +{hiddenLabelCount}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = smartAlbums.filter((x) => x.id !== a.id);
+                        if (activeAlbumId === a.id) setActiveAlbumId(null);
+                        saveAlbums.mutate(next);
+                      }}
+                      aria-label={`${a.name}を削除`}
+                      className="opacity-50 group-hover/al:opacity-100 text-[#888] hover:text-red-400 transition-all"
+                    >
+                      <X size={11} />
+                    </button>
+                  </span>
+                );
+              })}
               <button
                 onClick={() => {
                   setAlbumDraft({ ...EMPTY_ALBUM_DRAFT });

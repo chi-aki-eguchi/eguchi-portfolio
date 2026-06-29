@@ -352,6 +352,43 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: saved smart albums show condition labels", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevSettings = canned["/api/settings"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/settings"] = {
+      smartAlbums: JSON.stringify([
+        {
+          id: "review",
+          name: "Needs review",
+          cond: {
+            medium: "film",
+            missingShotAt: true,
+            missingCapture: true,
+            recent: "7",
+          },
+        },
+      ]),
+    };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      expect(host.textContent).toContain("Needs review");
+      expect(host.textContent).toContain("Film");
+      expect(host.textContent).toContain("日付なし");
+      expect(host.textContent).toContain("機材なし");
+      expect(host.textContent).toContain("+1");
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      canned["/api/settings"] = prevSettings;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage Hero tab ignores public hero cache shape", async () => {
     const prevAuth = canned["/api/admin/me"];
     const prevAdminHero = canned["/api/admin/hero-photos"];

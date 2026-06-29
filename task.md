@@ -2427,6 +2427,39 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## Handoff 2026-06-29 — Codex: Smart Album 条件ラベル表示
+
+### 目的
+
+保存済み Smart Album が、名前だけでは何の条件で絞っているか分かりづらい問題を小さく改善する。
+
+### 変更内容
+
+- 管理画面 Library の保存済み Smart Album に、条件ラベルを最大3つまで表示。
+  - 例: `Film` / `日付なし` / `機材なし`
+  - 4つ目以降は `+1` のように省略表示。
+- camera / filmType / medium / 未入力（日付・機材）/ category / series / size / featured / 公開状態 / recent をラベル化。
+- 古い設定などで `cond` が欠けていても、ラベル表示だけで落ちないように防御。
+- render test に保存済み Smart Album の条件ラベル表示を追加。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（29 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（190 pass / 0 fail）。
+
+### 注意
+
+- DB schema / API / Smart Album の保存形式は変更なし。既存設定の表示改善のみ。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: Smart Album条件に媒体/未入力を追加
 
 ### 目的

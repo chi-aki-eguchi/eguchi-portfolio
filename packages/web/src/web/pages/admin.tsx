@@ -834,6 +834,9 @@ type HeroPhotoRow = { id: number; photoId: number; sortOrder: number };
 type AlbumCond = {
   camera?: string;
   filmType?: string;
+  medium?: string;
+  missingShotAt?: boolean;
+  missingCapture?: boolean;
   category?: string;
   series?: string;
   size?: string;
@@ -846,6 +849,9 @@ const EMPTY_ALBUM_DRAFT = {
   name: "",
   camera: "",
   filmType: "",
+  medium: "all",
+  missingShotAt: false,
+  missingCapture: false,
   category: "all",
   series: "all",
   size: "all",
@@ -1292,6 +1298,9 @@ function GalleryTab({
         )
           return false;
         if (c.filmType && (p.filmType ?? "") !== c.filmType) return false;
+        if (c.medium && photoMedium(p) !== c.medium) return false;
+        if (c.missingShotAt && p.shotAt) return false;
+        if (c.missingCapture && (p.camera || p.lens)) return false;
         if (
           c.category &&
           (c.category === "__uncat__"
@@ -3515,6 +3524,53 @@ function GalleryTab({
                 ))}
               </div>
             </AdminField>
+            <div className="flex gap-2">
+              <AdminField label="媒体">
+                <select
+                  aria-label="媒体条件"
+                  value={albumDraft.medium}
+                  onChange={(e) =>
+                    setAlbumDraft((d) => ({ ...d, medium: e.target.value }))
+                  }
+                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
+                >
+                  <option value="all">指定なし</option>
+                  <option value="digital">Digital</option>
+                  <option value="film">Film</option>
+                  <option value="missing">媒体なし</option>
+                </select>
+              </AdminField>
+              <AdminField label="未入力">
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAlbumDraft((d) => ({
+                        ...d,
+                        missingShotAt: !d.missingShotAt,
+                      }))
+                    }
+                    aria-pressed={albumDraft.missingShotAt}
+                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "bg-[#555] text-[#eee] border-[#666]" : "bg-[#333] text-[#888] border-[#444] hover:bg-[#3a3a3a]"}`}
+                  >
+                    日付
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAlbumDraft((d) => ({
+                        ...d,
+                        missingCapture: !d.missingCapture,
+                      }))
+                    }
+                    aria-pressed={albumDraft.missingCapture}
+                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "bg-[#555] text-[#eee] border-[#666]" : "bg-[#333] text-[#888] border-[#444] hover:bg-[#3a3a3a]"}`}
+                  >
+                    機材
+                  </button>
+                </div>
+              </AdminField>
+            </div>
             <AdminField label="カテゴリ">
               <select
                 aria-label="カテゴリ条件"
@@ -3625,6 +3681,10 @@ function GalleryTab({
                 if (albumDraft.camera.trim())
                   cond.camera = albumDraft.camera.trim();
                 if (albumDraft.filmType) cond.filmType = albumDraft.filmType;
+                if (albumDraft.medium !== "all")
+                  cond.medium = albumDraft.medium;
+                if (albumDraft.missingShotAt) cond.missingShotAt = true;
+                if (albumDraft.missingCapture) cond.missingCapture = true;
                 if (albumDraft.category !== "all")
                   cond.category = albumDraft.category;
                 if (albumDraft.series !== "all")

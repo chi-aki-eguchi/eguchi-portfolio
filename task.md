@@ -2427,6 +2427,31 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: Smart Album条件に媒体/未入力を追加
+
+### 目的
+
+Library の媒体フィルターや未入力フィルターを、Smart Album として保存できるようにする。
+
+### 修正内容
+
+- Smart Album 条件に `medium` / `missingShotAt` / `missingCapture` を追加。
+- 作成モーダルに媒体条件（Digital / Film / 媒体なし）と未入力条件（日付 / 機材）を追加。
+- Smart Album 適用時に、媒体分類・日付なし・機材なし条件で写真を絞り込むようにした。
+- Admin render テストに Smart Album モーダルの媒体/未入力条件表示確認を追加。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（28 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（189 pass / 0 fail）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: Library媒体/フィルムソート追加
 
 ### 目的

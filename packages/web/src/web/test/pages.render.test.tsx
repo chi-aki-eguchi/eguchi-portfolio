@@ -324,6 +324,33 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: smart album modal includes medium and missing metadata conditions", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      const albumButton = Array.from(host.querySelectorAll("button")).find(
+        (button) => button.textContent?.includes("アルバム"),
+      ) as HTMLButtonElement | undefined;
+      expect(albumButton).toBeDefined();
+      albumButton!.click();
+      await flush(30);
+      expect(dom.window.document.body.textContent).toContain("媒体");
+      expect(dom.window.document.body.textContent).toContain("媒体なし");
+      expect(dom.window.document.body.textContent).toContain("未入力");
+      expect(dom.window.document.body.textContent).toContain("日付");
+      expect(dom.window.document.body.textContent).toContain("機材");
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage Hero tab ignores public hero cache shape", async () => {
     const prevAuth = canned["/api/admin/me"];
     const prevAdminHero = canned["/api/admin/hero-photos"];

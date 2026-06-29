@@ -895,6 +895,10 @@ function GalleryTab({
     "admin:filterSize",
     "all",
   ); // "all" | S | M | L
+  const [filterMedium, setFilterMedium] = usePersistentState(
+    "admin:filterMedium",
+    "all",
+  );
   const [filterOrientation, setFilterOrientation] = usePersistentState(
     "admin:filterOrientation",
     "all",
@@ -1142,6 +1146,10 @@ function GalleryTab({
     if (dims.width === dims.height) return "square";
     return dims.width > dims.height ? "landscape" : "portrait";
   }, []);
+  const photoMedium = useCallback((p: Photo) => {
+    if (!p.filmType) return "missing";
+    return p.filmType === "デジタル" ? "digital" : "film";
+  }, []);
   useEffect(() => {
     const hasUncategorized = allPhotos.some(isUncategorized);
     if (
@@ -1162,6 +1170,8 @@ function GalleryTab({
       setFilterSeries("all");
     }
     if (!["all", "S", "M", "L"].includes(filterSize)) setFilterSize("all");
+    if (!["all", "digital", "film", "missing"].includes(filterMedium))
+      setFilterMedium("all");
     if (!["all", "portrait", "landscape", "square"].includes(filterOrientation))
       setFilterOrientation("all");
     if (!["all", "published", "unpublished"].includes(filterPublished))
@@ -1196,6 +1206,7 @@ function GalleryTab({
     categories,
     catsData,
     filterCat,
+    filterMedium,
     filterOrientation,
     filterPublished,
     filterRecent,
@@ -1207,6 +1218,7 @@ function GalleryTab({
     seriesData,
     seriesList,
     setFilterCat,
+    setFilterMedium,
     setFilterOrientation,
     setFilterPublished,
     setFilterRecent,
@@ -1254,6 +1266,8 @@ function GalleryTab({
       )
         return false;
       if (filterSize !== "all" && (p.displaySize || "M") !== filterSize)
+        return false;
+      if (filterMedium !== "all" && photoMedium(p) !== filterMedium)
         return false;
       if (filterOrientation !== "all" && photoOrientation(p) !== filterOrientation)
         return false;
@@ -1311,6 +1325,7 @@ function GalleryTab({
     searchQuery,
     filterSeries,
     filterSize,
+    filterMedium,
     filterOrientation,
     filterFeatured,
     filterPublished,
@@ -1320,12 +1335,14 @@ function GalleryTab({
     isUncategorized,
     featuredIds,
     activeAlbum,
+    photoMedium,
   ]);
   const anyFilterActive =
     filterCat !== "all" ||
     searchQuery.trim() !== "" ||
     filterSeries !== "all" ||
     filterSize !== "all" ||
+    filterMedium !== "all" ||
     filterOrientation !== "all" ||
     filterFeatured ||
     filterPublished !== "all" ||
@@ -1338,6 +1355,7 @@ function GalleryTab({
     setFilterCat("all");
     setFilterSeries("all");
     setFilterSize("all");
+    setFilterMedium("all");
     setFilterOrientation("all");
     setFilterFeatured(false);
     setFilterPublished("all");
@@ -1436,6 +1454,14 @@ function GalleryTab({
     () => allPhotos.filter((p) => p.isPublished === false).length,
     [allPhotos],
   );
+  const mediumCounts = useMemo(
+    () => ({
+      digital: allPhotos.filter((p) => photoMedium(p) === "digital").length,
+      film: allPhotos.filter((p) => photoMedium(p) === "film").length,
+      missing: allPhotos.filter((p) => photoMedium(p) === "missing").length,
+    }),
+    [allPhotos, photoMedium],
+  );
   const orientationCounts = useMemo(
     () => ({
       landscape: allPhotos.filter((p) => photoOrientation(p) === "landscape")
@@ -1458,6 +1484,7 @@ function GalleryTab({
     filterCat === "all" &&
     searchQuery.trim() === "" &&
     filterSize === "all" &&
+    filterMedium === "all" &&
     filterOrientation === "all" &&
     !filterFeatured &&
     filterPublished === "all" &&
@@ -2483,6 +2510,17 @@ function GalleryTab({
                   )
                 </option>
               ))}
+            </select>
+            <select
+              value={filterMedium}
+              onChange={(e) => setFilterMedium(e.target.value)}
+              aria-label="媒体で絞り込み"
+              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+            >
+              <option value="all">媒体: All</option>
+              <option value="digital">Digital ({mediumCounts.digital})</option>
+              <option value="film">Film ({mediumCounts.film})</option>
+              <option value="missing">媒体なし ({mediumCounts.missing})</option>
             </select>
             <select
               value={filterOrientation}

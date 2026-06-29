@@ -236,6 +236,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("公開のみ");
       expect(host.textContent).toContain("縦写真");
+      expect(host.textContent).toContain("媒体: All");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;
@@ -276,6 +277,10 @@ describe("shared components", () => {
       JSON.stringify("draft"),
     );
     dom.window.sessionStorage.setItem(
+      "admin:filterMedium",
+      JSON.stringify("slide"),
+    );
+    dom.window.sessionStorage.setItem(
       "admin:librarySort",
       JSON.stringify("random-old"),
     );
@@ -296,6 +301,9 @@ describe("shared components", () => {
         JSON.stringify("all"),
       );
       expect(dom.window.sessionStorage.getItem("admin:filterPublished")).toBe(
+        JSON.stringify("all"),
+      );
+      expect(dom.window.sessionStorage.getItem("admin:filterMedium")).toBe(
         JSON.stringify("all"),
       );
       expect(dom.window.sessionStorage.getItem("admin:librarySort")).toBe(

@@ -2427,6 +2427,31 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: Library媒体フィルター追加
+
+### 目的
+
+フィルム運用で、Digital / Film / 媒体未設定の写真をすぐ絞り込めるようにする。
+
+### 修正内容
+
+- Library フィルターに `媒体: All` select を追加。
+- `filmType === "デジタル"` を Digital、その他の `filmType` 入力ありを Film、空を `媒体なし` として分類。
+- フィルター状態の保持、`すべて解除`、stale 値正規化、並び替え保存ロックに媒体フィルターを接続。
+- Admin render テストに媒体フィルター表示と stale `filterMedium` の正規化確認を追加。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（27 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（188 pass / 0 fail）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: PhotoGalleryテストのact warning解消
 
 ### 目的

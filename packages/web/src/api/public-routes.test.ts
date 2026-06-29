@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
   isKnownSpaPath,
   isSeriesDetailPath,
@@ -38,6 +39,16 @@ describe("public SPA route status", () => {
     expect(
       htmlStatusForSpaPath("/series/ishigakiisland/", { seriesFound: true }),
     ).toBe(200);
+  });
+
+  test("canonical trailing-slash redirects keep the public https origin", () => {
+    expect(
+      canonicalSpaRedirectUrl(
+        "http://akieguchi.com/gallery/?utm_source=x",
+        "https://akieguchi.com",
+        "/gallery/",
+      ),
+    ).toBe("https://akieguchi.com/gallery?utm_source=x");
   });
 
   test("unknown extensionless paths still serve the SPA shell, but with 404 status", () => {

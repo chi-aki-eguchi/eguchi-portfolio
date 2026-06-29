@@ -11,6 +11,7 @@ import {
   isServiceSiteUrl,
 } from "./api/ogp";
 import {
+  canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
   isSeriesDetailPath,
   normalizeSpaPathname,
@@ -391,9 +392,10 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
   const publicOrigin = publicOriginFromRequest(request);
   const routePathname = normalizeSpaPathname(url.pathname);
   if (routePathname !== url.pathname && !url.pathname.includes(".")) {
-    const redirectUrl = new URL(request.url);
-    redirectUrl.pathname = routePathname;
-    return Response.redirect(redirectUrl.toString(), 308);
+    return Response.redirect(
+      canonicalSpaRedirectUrl(request.url, publicOrigin, routePathname),
+      308,
+    );
   }
   // F: SEO endpoints
   if (url.pathname === "/sitemap.xml") {

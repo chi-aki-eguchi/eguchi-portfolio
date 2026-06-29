@@ -15,6 +15,19 @@ export function normalizeSpaPathname(pathname: string): string {
   return pathname.replace(/\/+$/, "") || "/";
 }
 
+export function canonicalSpaRedirectUrl(
+  requestUrl: string,
+  publicOrigin: string,
+  pathname: string,
+): string {
+  const redirectUrl = new URL(requestUrl);
+  const origin = new URL(publicOrigin);
+  redirectUrl.protocol = origin.protocol;
+  redirectUrl.host = origin.host;
+  redirectUrl.pathname = normalizeSpaPathname(pathname);
+  return redirectUrl.toString();
+}
+
 export function isSeriesDetailPath(pathname: string): boolean {
   return /^\/series\/[^/]+$/.test(normalizeSpaPathname(pathname));
 }

@@ -2441,9 +2441,11 @@ SNS・アプリ内ブラウザ・共有クローラーで開いた時の OGP / H
 - series detail の OGP 画像も cover photo の `mediumKey` を優先。
 - `/gallery/` や `/series/foo/` のような末尾スラッシュ付きURLを正規化。
   - 拡張子なしの末尾スラッシュURLは `308` で末尾スラッシュなしへリダイレクト。
+  - Railway 内部 request URL が `http` でも、`Location` は公開origin（`https://akieguchi.com`）で返す。
   - ルート判定も末尾スラッシュを正規化して、既知ページの 200 / unknown の 404 判定が揺れないようにした。
 - OGP test に `medium` variant をSNSカード画像として使える回帰テストを追加。
 - public route test に末尾スラッシュ正規化の回帰テストを追加。
+- public route test に canonical redirect が `https` origin を維持する回帰テストを追加。
 
 ### 配布版確認
 
@@ -2462,7 +2464,7 @@ SNS・アプリ内ブラウザ・共有クローラーで開いた時の OGP / H
 ### 検証
 
 - `cd packages/web && bun x tsc -b` 成功。
-- `cd packages/web && bun test ./src/api/ogp.test.ts ./src/api/public-routes.test.ts ./src/api/static-template.test.ts ./src/api/site-defaults.test.ts` 成功（45 pass / 0 fail）。
+- `cd packages/web && bun test ./src/api/ogp.test.ts ./src/api/public-routes.test.ts ./src/api/static-template.test.ts ./src/api/site-defaults.test.ts` 成功（46 pass / 0 fail）。
 - `cd packages/web && bun run build` 成功。
 - `cd packages/web && bun test ./src` 成功（193 pass / 0 fail）。
 - `cd packages/web && DATABASE_PROVIDER=postgres bun run build` 成功。

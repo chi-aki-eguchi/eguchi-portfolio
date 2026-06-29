@@ -3218,3 +3218,33 @@ TOPを開いた時に、ランダム写真の読み込み待ちで白い時間�
 - 全件閲覧は `/gallery` が担当する。
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
+## Handoff 2026-06-29 — Codex: 管理画面 Library 件数表示の改善
+
+### 目的
+
+フィルタやSmart Albumを使った時に、今見えている写真数と全体数の関係をすぐ分かるようにする。
+
+### 変更内容
+
+- 管理画面 Library の件数表示を `表示中 / 全体 photos` 形式に変更。
+  - 例: `12 / 444 photos`
+  - フィルタ未使用時も `444 / 444 photos` と表示するため、現在の絞り込み状態が見分けやすい。
+- render test に件数表示の期待値を追加。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（28 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（189 pass / 0 fail）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。

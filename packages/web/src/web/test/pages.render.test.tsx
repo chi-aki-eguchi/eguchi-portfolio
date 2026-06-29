@@ -238,6 +238,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("縦写真");
       expect(host.textContent).toContain("媒体: All");
       expect(host.textContent).toContain("媒体/フィルム");
+      expect(host.textContent).toContain("3 / 3 photos");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;

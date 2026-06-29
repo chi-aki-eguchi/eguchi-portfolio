@@ -2686,7 +2686,7 @@ function GalleryTab({
 
           {/* Count */}
           <span className="text-[11px] text-[#777]">
-            {displayed.length} photos
+            {displayed.length} / {allPhotos.length} photos
             {selected.size > 0 && (
               <span className="text-[#aaa]"> · {selected.size} selected</span>
             )}

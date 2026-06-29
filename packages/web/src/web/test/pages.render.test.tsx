@@ -279,6 +279,11 @@ describe("shared components", () => {
       "admin:librarySort",
       JSON.stringify("random-old"),
     );
+    dom.window.sessionStorage.setItem("admin:thumbSize", JSON.stringify(9999));
+    dom.window.sessionStorage.setItem(
+      "admin:uploadMedium",
+      JSON.stringify("slide"),
+    );
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin));
@@ -295,6 +300,12 @@ describe("shared components", () => {
       );
       expect(dom.window.sessionStorage.getItem("admin:librarySort")).toBe(
         JSON.stringify("manual"),
+      );
+      expect(dom.window.sessionStorage.getItem("admin:thumbSize")).toBe(
+        JSON.stringify(300),
+      );
+      expect(dom.window.sessionStorage.getItem("admin:uploadMedium")).toBe(
+        JSON.stringify("digital"),
       );
       cleanup();
     } finally {

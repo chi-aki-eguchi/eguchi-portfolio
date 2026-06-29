@@ -2427,6 +2427,30 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: Library表示設定の正規化
+
+### 目的
+
+保存済みのサムネイルサイズやアップロード媒体設定が壊れた値になった時に、Library の表示崩れや Film/Digital 未選択状態を防ぐ。
+
+### 修正内容
+
+- `admin:thumbSize` が数値でない場合は `180`、範囲外の場合は range と同じ `80〜300` にクランプ。
+- `admin:uploadMedium` が `digital` / `film` 以外の場合、`digital` に戻す。
+- stale filter 回帰テストに `thumbSize=9999` と `uploadMedium="slide"` を追加。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（27 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（188 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: stale Libraryソート値の正規化
 
 ### 目的

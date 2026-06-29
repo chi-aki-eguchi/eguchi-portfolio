@@ -1167,6 +1167,13 @@ function GalleryTab({
     if (!["all", "published", "unpublished"].includes(filterPublished))
       setFilterPublished("all");
     if (!["all", "7", "30"].includes(filterRecent)) setFilterRecent("all");
+    const numericThumbSize = Number(thumbSize);
+    const normalizedThumbSize = Number.isFinite(numericThumbSize)
+      ? Math.min(300, Math.max(80, Math.round(numericThumbSize)))
+      : 180;
+    if (thumbSize !== normalizedThumbSize) setThumbSize(normalizedThumbSize);
+    if (uploadMedium !== "digital" && uploadMedium !== "film")
+      setUploadMedium("digital");
     if (
       ![
         "manual",
@@ -1206,6 +1213,10 @@ function GalleryTab({
     setFilterSeries,
     setFilterSize,
     setLibrarySort,
+    setThumbSize,
+    setUploadMedium,
+    thumbSize,
+    uploadMedium,
   ]);
 
   // M3/O4: category / series / size / featured / recency combine as AND filters.

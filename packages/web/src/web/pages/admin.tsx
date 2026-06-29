@@ -1156,6 +1156,21 @@ function GalleryTab({
     if (!p.filmType) return "missing";
     return p.filmType === "デジタル" ? "digital" : "film";
   }, []);
+  const categoryLabelFor = useCallback(
+    (slug: string | null | undefined) => {
+      if (!slug) return "";
+      return categories.find((c) => c.slug === slug)?.label ?? slug;
+    },
+    [categories],
+  );
+  const seriesTitleFor = useCallback(
+    (id: number | string | null | undefined) => {
+      if (id == null || id === "") return "";
+      const value = String(id);
+      return seriesList.find((s) => String(s.id) === value)?.title ?? value;
+    },
+    [seriesList],
+  );
   const describeAlbumConditions = useCallback(
     (cond: AlbumCond | null | undefined) => {
       const labels: string[] = [];
@@ -1177,16 +1192,14 @@ function GalleryTab({
         labels.push(
           cond.category === "__uncat__"
             ? "カテゴリなし"
-            : (categories.find((c) => c.slug === cond.category)?.label ??
-                cond.category),
+            : categoryLabelFor(cond.category),
         );
       }
       if (cond.series) {
         labels.push(
           cond.series === "__none__"
             ? "シリーズなし"
-            : (seriesList.find((s) => String(s.id) === cond.series)?.title ??
-                `Series ${cond.series}`),
+            : seriesTitleFor(cond.series),
         );
       }
       if (cond.size) labels.push(`Size ${cond.size}`);
@@ -1196,7 +1209,7 @@ function GalleryTab({
       if (cond.recent) labels.push(`直近${cond.recent}日`);
       return labels;
     },
-    [categories, seriesList],
+    [categoryLabelFor, seriesTitleFor],
   );
   useEffect(() => {
     const hasUncategorized = allPhotos.some(isUncategorized);
@@ -1297,6 +1310,8 @@ function GalleryTab({
           p.camera,
           p.lens,
           p.filmType,
+          categoryLabelFor(p.category),
+          seriesTitleFor(p.seriesId),
           p.description,
           p.meta,
         ].some((v) => (v ?? "").toLowerCase().includes(q))
@@ -1388,6 +1403,8 @@ function GalleryTab({
     featuredIds,
     activeAlbum,
     photoMedium,
+    categoryLabelFor,
+    seriesTitleFor,
   ]);
   const anyFilterActive =
     filterCat !== "all" ||
@@ -1427,9 +1444,7 @@ function GalleryTab({
         v ? new Date(v).getTime() : 0;
       const photoDate = (p: Photo) => time(p.shotAt) || time(p.createdAt);
       const seriesTitle = (id: number | null | undefined) =>
-        id == null
-          ? "￿"
-          : (seriesList.find((s) => s.id === id)?.title ?? String(id));
+        id == null ? "￿" : seriesTitleFor(id);
       const bySlot = (a: string, b: string) => a.localeCompare(b, "ja");
       switch (librarySort) {
         case "createdAt-desc":
@@ -1493,7 +1508,7 @@ function GalleryTab({
       }
       return arr;
     },
-    [librarySort, seriesList],
+    [librarySort, seriesTitleFor],
   );
   const displayed = useMemo(
     () => sortPhotosForView(filtered),
@@ -2440,7 +2455,7 @@ function GalleryTab({
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="検索（タイトル・機材・フィルム・ファイル名）"
+              placeholder="検索（タイトル・分類・機材・ファイル名）"
               aria-label="写真を検索"
               className="bg-[#333] text-[#ccc] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors w-44 placeholder:text-[#555]"
             />

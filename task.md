@@ -2427,6 +2427,39 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## Handoff 2026-06-29 — Codex: Library 検索対象にカテゴリ名・シリーズ名を追加
+
+### 目的
+
+管理画面 Library で、写真のタイトルや機材名だけでなく、人間が覚えている分類名からも写真を探せるようにする。
+
+### 変更内容
+
+- Library の検索対象にカテゴリラベルを追加。
+  - 例: category slug ではなく `Street Work` のような表示名でも検索できる。
+- Library の検索対象にシリーズタイトルを追加。
+  - シリーズに入れた写真を、シリーズ名から直接絞り込める。
+- 検索欄の placeholder を `検索（タイトル・分類・機材・ファイル名）` に更新。
+- render test にカテゴリラベル検索 / シリーズタイトル検索の回帰テストを追加。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（30 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（191 pass / 0 fail）。
+
+### 注意
+
+- UI構造・DB・APIは変更なし。クライアント側 Library 検索の対象フィールド拡張のみ。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## Handoff 2026-06-29 — Codex: Smart Album 条件ラベル表示
 
 ### 目的

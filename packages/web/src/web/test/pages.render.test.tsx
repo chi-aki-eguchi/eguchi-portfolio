@@ -247,6 +247,65 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: library search matches category labels and series titles", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevCategories = canned["/api/categories"];
+    const prevSeries = canned["/api/admin/series"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/categories"] = {
+      categories: [
+        { slug: "snap", label: "Street Work", sortOrder: 0 },
+        { slug: "portrait", label: "Portraits", sortOrder: 1 },
+      ],
+    };
+    canned["/api/admin/series"] = {
+      series: [
+        {
+          id: 3,
+          slug: "indigo",
+          title: "Indigo Days",
+          subtitle: "",
+          statement: "",
+          coverPhotoId: 2,
+          sortOrder: 0,
+          isPublished: true,
+        },
+      ],
+    };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      const input = host.querySelector(
+        'input[aria-label="写真を検索"]',
+      ) as HTMLInputElement | null;
+      expect(input).toBeDefined();
+      if (!input) throw new Error("Search input was not rendered");
+      const setSearch = async (value: string) => {
+        const setter = Object.getOwnPropertyDescriptor(
+          dom.window.HTMLInputElement.prototype,
+          "value",
+        )?.set;
+        setter?.call(input, value);
+        input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+        await flush(50);
+      };
+      await setSearch("Street Work");
+      expect(host.textContent).toContain("1 / 3 photos");
+      await setSearch("Indigo Days");
+      expect(host.textContent).toContain("1 / 3 photos");
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      canned["/api/categories"] = prevCategories;
+      if (prevSeries === undefined) delete canned["/api/admin/series"];
+      else canned["/api/admin/series"] = prevSeries;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage: invalid persisted tab falls back to Library", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };

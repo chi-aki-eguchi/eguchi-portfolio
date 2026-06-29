@@ -1193,6 +1193,7 @@ function GalleryTab({
         "shotAt-asc",
         "series",
         "size",
+        "filmType",
         "camera",
         "category",
         "title",
@@ -1416,6 +1417,11 @@ function GalleryTab({
           );
           break;
         }
+        case "filmType":
+          arr.sort((a, b) =>
+            bySlot(a.filmType || "￿", b.filmType || "￿"),
+          );
+          break;
         case "camera":
           arr.sort((a, b) => bySlot(a.camera || "￿", b.camera || "￿"));
           break;
@@ -2416,6 +2422,7 @@ function GalleryTab({
               <option value="shotAt-asc">撮影日（古い順）</option>
               <option value="series">シリーズ</option>
               <option value="size">表示サイズ（S→L）</option>
+              <option value="filmType">媒体/フィルム</option>
               <option value="camera">カメラ</option>
               <option value="category">カテゴリ</option>
               <option value="title">タイトル</option>

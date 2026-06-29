@@ -2427,6 +2427,31 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: Library媒体/フィルムソート追加
+
+### 目的
+
+媒体フィルター追加に合わせて、写真一覧を Digital / Film / フィルム名でまとめて見られるようにする。
+
+### 修正内容
+
+- Library の表示ソートに `媒体/フィルム` を追加。
+- `filmType` がある写真はその値で並び、未入力は末尾に寄る。
+- 保存済み `librarySort` の正規化対象にも `filmType` を追加。
+- Admin render テストに `媒体/フィルム` 選択肢の表示確認を追加。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（27 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（188 pass / 0 fail）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: Library媒体フィルター追加
 
 ### 目的

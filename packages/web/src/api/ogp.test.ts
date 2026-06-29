@@ -107,9 +107,15 @@ describe("injectOgp robots policy", () => {
 
   test("admin and unknown paths are noindex", () => {
     expect(robotsOf(injectOgp(page, {}, "/admin"))).toBe("noindex, nofollow");
-    expect(robotsOf(injectOgp(page, {}, "/no-such-page"))).toBe(
+    const unknown = injectOgp(page, {}, "/no-such-page");
+    expect(robotsOf(unknown)).toBe(
       "noindex, nofollow",
     );
+    expect(unknown).toContain("<title>Not Found | Photographer Name | Photography</title>");
+    expect(unknown).toContain(
+      'og:title" content="Not Found | Photographer Name | Photography"',
+    );
+    expect(unknown).toContain("お探しのページは見つかりませんでした。");
   });
 
   test("series override title reaches <title> and og:title", () => {
@@ -466,6 +472,7 @@ describe("injectOgp /service route", () => {
       "/service",
     );
     expect(out).toContain("noindex, nofollow");
+    expect(out).toContain("<title>Not Found | Photographer Name | Photography</title>");
     expect(out).not.toContain("写真家のためのポートフォリオサイト");
   });
 

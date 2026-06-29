@@ -2427,6 +2427,51 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## Handoff 2026-06-30 — Codex: 404/非対応URLのSNSメタ安定化
+
+### 目的
+
+未知URLや非対応ホストの `/service` をSNS/アプリ内ブラウザで開いた時、トップページと同じタイトルに見えて誤認される状態を避ける。
+
+### 調査結果
+
+- 本番 `/no-such-page` と `/series/zzz-not-exist` は HTTP 404 / `noindex, nofollow` になっていた。
+- ただし `<title>` / `og:title` はトップと同じ `江口 秋 | Aki Eguchi | Photography` だった。
+- 正常な series URL は `medium` variant の OGP 画像へ切り替わっていることを本番で確認。
+- OGP画像URL、`/og-service.jpg`、`/og-image.jpg` は HEAD で `200` / `image/jpeg` を確認。
+
+### 変更内容
+
+- `injectOgp()` で未知URL・未知series・非対応ホストの `/service` を `Not Found | ...` タイトルに変更。
+- description も `お探しのページは見つかりませんでした。` に変更。
+- 既存の `noindex, nofollow` と 404 ステータスは維持。
+- 非対応ホストの `/service` も販売ページ用OGPを出さず、`Not Found` として扱う。
+- OGP test に未知URL / 非対応 `/service` の回帰テストを追加。
+
+### 配布版確認
+
+- schema変更なし。
+- `DATABASE_PROVIDER=postgres bun run build` 成功。配布版でも同じ OGP path で反映される。
+
+### 触ったファイル
+
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/api/ogp.test.ts ./src/api/public-routes.test.ts` 成功（37 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（194 pass / 0 fail）。
+- `cd packages/web && DATABASE_PROVIDER=postgres bun run build` 成功。
+
+### 注意
+
+- 未知URLは noindex のままなので、検索・SNSクローラー向けの誤認防止が主目的。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## Handoff 2026-06-30 — Codex: SNS/外部アプリ表示の安定化と配布版確認
 
 ### 目的

@@ -135,17 +135,38 @@ export function injectOgp(
   const isServiceSite = isServiceSiteUrl(siteUrl);
   const isService = pathname === "/service" && isServiceSite;
   const page = PAGE_TITLES[pathname];
+  const KNOWN_ROUTES = [
+    "/",
+    "/gallery",
+    "/series",
+    "/about",
+    "/profile",
+    "/contact",
+    "/service",
+  ];
+  // /series/:slug is indexable only when the slug resolved to a real published
+  // series (override.title set by the caller). Unknown/unpublished slugs render
+  // the SPA's not-found view — without this they'd look like normal share cards.
+  const isKnown =
+    KNOWN_ROUTES.includes(pathname) ||
+    (pathname.startsWith("/series/") && !!override?.title);
+  const serviceOnOtherHost = pathname === "/service" && !isServiceSite;
+  const missingPublicPage = !isKnown || serviceOnOtherHost;
   // A per-page override (e.g. a specific series) wins over the static route title.
-  const title = isService
-    ? SERVICE_OG.title
-    : override?.title
-      ? `${override.title} | ${base}`
-      : page
-        ? `${page} | ${base}`
-        : base;
-  const desc = isService
-    ? SERVICE_OG.desc
-    : override?.desc || siteDescriptionFrom(settings);
+  const title = missingPublicPage
+    ? `Not Found | ${base}`
+    : isService
+      ? SERVICE_OG.title
+      : override?.title
+        ? `${override.title} | ${base}`
+        : page
+          ? `${page} | ${base}`
+          : base;
+  const desc = missingPublicPage
+    ? "お探しのページは見つかりませんでした。"
+    : isService
+      ? SERVICE_OG.desc
+      : override?.desc || siteDescriptionFrom(settings);
   // Prefer an override image (series cover), then the hero photo, then profile, then
   // the static default already in index.html. /service uses its own fixed card image
   // (a flat file, so no /api/images resize query is appended).
@@ -178,23 +199,6 @@ export function injectOgp(
   out = setAttr(out, /(<meta\s+name="author"\s+content=")[^"]*(")/, siteName);
   // Keep the admin app and unknown (404 fallback) paths out of search indexes so
   // junk URLs aren't indexed with the homepage's title (defence in depth with robots.txt).
-  const KNOWN_ROUTES = [
-    "/",
-    "/gallery",
-    "/series",
-    "/about",
-    "/profile",
-    "/contact",
-    "/service",
-  ];
-  // /series/:slug is indexable only when the slug resolved to a real published
-  // series (override.title set by the caller). Unknown/unpublished slugs render
-  // the SPA's not-found view with HTTP 200 — without this they'd be indexable
-  // soft-404 duplicates of the homepage title.
-  const isKnown =
-    KNOWN_ROUTES.includes(pathname) ||
-    (pathname.startsWith("/series/") && !!override?.title);
-  const serviceOnOtherHost = pathname === "/service" && !isServiceSite;
   if (pathname.startsWith("/admin") || !isKnown || serviceOnOtherHost) {
     out = setAttr(
       out,

@@ -60,7 +60,9 @@ test("PhotoGallery renders tiles without crashing (every layout)", async () => {
     });
     const imgs = host.querySelectorAll("img");
     expect(imgs.length).toBeGreaterThanOrEqual(photos.length);
-    root.unmount();
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
   }
 });
@@ -85,7 +87,9 @@ test("tile hover caption renders for titled photos only", async () => {
   const captions = host.querySelectorAll(".tile-caption");
   expect(captions.length).toBe(1);
   expect(captions[0].textContent).toBe("Titled");
-  root.unmount();
+  await act(async () => {
+    root.unmount();
+  });
   host.remove();
 });
 
@@ -114,7 +118,9 @@ test("tile images apply focal point as object-position", async () => {
   const img = host.querySelector(".photo-card img") as HTMLImageElement;
   expect(img).not.toBeNull();
   expect(img.style.objectPosition).toBe("25% 80%");
-  root.unmount();
+  await act(async () => {
+    root.unmount();
+  });
   host.remove();
 });
 
@@ -137,6 +143,8 @@ test("a failed image marks its card as photo-broken (quiet placeholder)", async 
   await act(async () => { img.dispatchEvent(new dom.window.Event("error", { bubbles: true })); });
   expect(img.closest(".photo-card")?.classList.contains("photo-broken")).toBe(true);
   expect(img.classList.contains("lqip-loaded")).toBe(true);
-  root.unmount();
+  await act(async () => {
+    root.unmount();
+  });
   host.remove();
 });

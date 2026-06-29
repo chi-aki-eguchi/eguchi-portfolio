@@ -2427,6 +2427,29 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: PhotoGalleryテストのact warning解消
+
+### 目的
+
+全体テストで毎回出ていた React `act(...)` warning を消し、今後のテスト失敗や新しい warning を見つけやすくする。
+
+### 修正内容
+
+- `PhotoGallery.render.test.tsx` の `root.unmount()` を `act()` で包むように変更。
+- 対象テスト単体と全体テストで、既存の `act(...)` warning が出ないことを確認。
+
+### 検証
+
+- `bun test ./packages/web/src/web/components/PhotoGallery.render.test.tsx` 成功（4 pass / 0 fail、warningなし）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（188 pass / 0 fail、warningなし）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: Library表示設定の正規化
 
 ### 目的

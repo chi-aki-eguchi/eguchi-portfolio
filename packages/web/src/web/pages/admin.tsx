@@ -1167,6 +1167,23 @@ function GalleryTab({
     if (!["all", "published", "unpublished"].includes(filterPublished))
       setFilterPublished("all");
     if (!["all", "7", "30"].includes(filterRecent)) setFilterRecent("all");
+    if (
+      ![
+        "manual",
+        "createdAt-desc",
+        "createdAt-asc",
+        "shotAt-desc",
+        "shotAt-asc",
+        "series",
+        "size",
+        "camera",
+        "category",
+        "title",
+        "published",
+      ].includes(librarySort)
+    ) {
+      setLibrarySort("manual");
+    }
   }, [
     allPhotos,
     categories,
@@ -1178,6 +1195,7 @@ function GalleryTab({
     filterSeries,
     filterSize,
     isUncategorized,
+    librarySort,
     photosData,
     seriesData,
     seriesList,
@@ -1187,6 +1205,7 @@ function GalleryTab({
     setFilterRecent,
     setFilterSeries,
     setFilterSize,
+    setLibrarySort,
   ]);
 
   // M3/O4: category / series / size / featured / recency combine as AND filters.

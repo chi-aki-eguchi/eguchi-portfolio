@@ -275,6 +275,10 @@ describe("shared components", () => {
       "admin:filterPublished",
       JSON.stringify("draft"),
     );
+    dom.window.sessionStorage.setItem(
+      "admin:librarySort",
+      JSON.stringify("random-old"),
+    );
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin));
@@ -288,6 +292,9 @@ describe("shared components", () => {
       );
       expect(dom.window.sessionStorage.getItem("admin:filterPublished")).toBe(
         JSON.stringify("all"),
+      );
+      expect(dom.window.sessionStorage.getItem("admin:librarySort")).toBe(
+        JSON.stringify("manual"),
       );
       cleanup();
     } finally {

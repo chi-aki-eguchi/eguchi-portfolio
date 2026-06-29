@@ -2427,6 +2427,29 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: stale Libraryソート値の正規化
+
+### 目的
+
+古い/不正な `admin:librarySort` が sessionStorage に残った時に、存在しない並び替え状態のまま `この並びを保存` が出るリスクを防ぐ。
+
+### 修正内容
+
+- Library の保存済み表示ソート値が既知の選択肢に含まれない場合、`manual` へ戻す。
+- stale filter 回帰テストに `admin:librarySort = "random-old"` を追加し、`manual` へ戻ることを確認。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（27 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（188 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: stale Libraryフィルター値の正規化
 
 ### 目的

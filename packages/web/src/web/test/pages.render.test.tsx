@@ -239,6 +239,11 @@ describe("shared components", () => {
       expect(host.textContent).toContain("媒体: All");
       expect(host.textContent).toContain("媒体/フィルム");
       expect(host.textContent).toContain("3 / 3 photos");
+      expect(
+        host.querySelector(
+          '[aria-label="未入力: 日付なし, 機材なし, 媒体なし"]',
+        ),
+      ).not.toBeNull();
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;

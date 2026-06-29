@@ -2427,6 +2427,39 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## Handoff 2026-06-29 — Codex: Library カードの未入力バッジ
+
+### 目的
+
+管理画面 Library で、日付・機材・媒体が未入力の写真に一覧上で気づきやすくする。
+
+### 変更内容
+
+- Library の写真カードに未入力バッジを追加。
+  - `日付なし`
+  - `機材なし`
+  - `媒体なし`
+- サムネイルサイズが120px以上の時だけ表示し、小さいサムネイルでは情報過多にならないようにした。
+- バッジ群に `aria-label` を付け、render test で表示を確認。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（30 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（191 pass / 0 fail）。
+
+### 注意
+
+- DB・API・フィルタ条件は変更なし。既存の未入力判定を一覧表示に使っただけ。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## Handoff 2026-06-29 — Codex: Library フィルタ0件時の空表示改善
 
 ### 目的

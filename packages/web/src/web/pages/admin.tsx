@@ -3293,6 +3293,11 @@ function GalleryTab({
                   const isInspect = inspectPhoto?.id === photo.id;
                   const catColor = catColors[photo.category] ?? "#666";
                   const isUnpublished = photo.isPublished === false;
+                  const metadataBadges = [
+                    !photo.shotAt ? "日付なし" : null,
+                    !(photo.camera || photo.lens) ? "機材なし" : null,
+                    photoMedium(photo) === "missing" ? "媒体なし" : null,
+                  ].filter((label): label is string => Boolean(label));
                   return (
                     <div
                       key={photo.id}
@@ -3363,6 +3368,21 @@ function GalleryTab({
                         style={{ background: catColor }}
                         title={photo.category}
                       />
+                      {thumbSize >= 120 && metadataBadges.length > 0 && (
+                        <div
+                          aria-label={`未入力: ${metadataBadges.join(", ")}`}
+                          className="absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
+                        >
+                          {metadataBadges.map((label) => (
+                            <span
+                              key={label}
+                              className="rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] leading-none text-white/70"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {/* Selection check */}
                       {isSelected && (
                         <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#aaa] rounded-sm flex items-center justify-center">

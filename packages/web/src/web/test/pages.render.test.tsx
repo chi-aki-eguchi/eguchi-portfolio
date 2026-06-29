@@ -264,6 +264,39 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: stale persisted library filters fall back to all", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    dom.window.sessionStorage.setItem("admin:filterCat", JSON.stringify("ghost"));
+    dom.window.sessionStorage.setItem("admin:filterSize", JSON.stringify("XL"));
+    dom.window.sessionStorage.setItem(
+      "admin:filterPublished",
+      JSON.stringify("draft"),
+    );
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      await flush(80);
+      expect(host.textContent).toContain("Library");
+      expect(dom.window.sessionStorage.getItem("admin:filterCat")).toBe(
+        JSON.stringify("all"),
+      );
+      expect(dom.window.sessionStorage.getItem("admin:filterSize")).toBe(
+        JSON.stringify("all"),
+      );
+      expect(dom.window.sessionStorage.getItem("admin:filterPublished")).toBe(
+        JSON.stringify("all"),
+      );
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage Hero tab ignores public hero cache shape", async () => {
     const prevAuth = canned["/api/admin/me"];
     const prevAdminHero = canned["/api/admin/hero-photos"];

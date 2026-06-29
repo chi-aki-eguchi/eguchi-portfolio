@@ -2427,6 +2427,31 @@ Claude Code に agmsg でデザインレビューも依頼し、P0/P1の短い�
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
 
+## 追記 2026-06-29 — Codex: stale Libraryフィルター値の正規化
+
+### 目的
+
+Library フィルター状態を保持するようにしたことで、削除済みカテゴリや古い不正値が sessionStorage に残った場合に、写真一覧が空になったり並び替えがロックされたりするリスクを防ぐ。
+
+### 修正内容
+
+- 保存済みカテゴリが存在しない場合、カテゴリ/写真データの読み込み後に `all` へ戻す。
+- 保存済みシリーズIDが取得済みシリーズ一覧に存在しない場合、`all` へ戻す。
+- サイズ、向き、公開状態、最近追加フィルターが未知値だった場合、`all` へ戻す。
+- 回帰テストとして、stale な `admin:filterCat` / `admin:filterSize` / `admin:filterPublished` が自動で `all` に戻ることを追加。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `bun test ./packages/web/src/web/test/pages.render.test.tsx` 成功（27 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（188 pass / 0 fail、既存のReact act warningは継続）。
+
+### 注意
+
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
 ## 追記 2026-06-29 — Codex: stale Smart Albumフィルター解除
 
 ### 目的

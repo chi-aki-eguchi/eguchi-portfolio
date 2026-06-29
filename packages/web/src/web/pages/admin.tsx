@@ -1142,6 +1142,52 @@ function GalleryTab({
     if (dims.width === dims.height) return "square";
     return dims.width > dims.height ? "landscape" : "portrait";
   }, []);
+  useEffect(() => {
+    const hasUncategorized = allPhotos.some(isUncategorized);
+    if (
+      catsData &&
+      photosData &&
+      filterCat !== "all" &&
+      !(filterCat === "__uncat__" && hasUncategorized) &&
+      !categories.some((c) => c.slug === filterCat)
+    ) {
+      setFilterCat("all");
+    }
+    if (
+      filterSeries !== "all" &&
+      filterSeries !== "__none__" &&
+      seriesData &&
+      !seriesList.some((s) => String(s.id) === filterSeries)
+    ) {
+      setFilterSeries("all");
+    }
+    if (!["all", "S", "M", "L"].includes(filterSize)) setFilterSize("all");
+    if (!["all", "portrait", "landscape", "square"].includes(filterOrientation))
+      setFilterOrientation("all");
+    if (!["all", "published", "unpublished"].includes(filterPublished))
+      setFilterPublished("all");
+    if (!["all", "7", "30"].includes(filterRecent)) setFilterRecent("all");
+  }, [
+    allPhotos,
+    categories,
+    catsData,
+    filterCat,
+    filterOrientation,
+    filterPublished,
+    filterRecent,
+    filterSeries,
+    filterSize,
+    isUncategorized,
+    photosData,
+    seriesData,
+    seriesList,
+    setFilterCat,
+    setFilterOrientation,
+    setFilterPublished,
+    setFilterRecent,
+    setFilterSeries,
+    setFilterSize,
+  ]);
 
   // M3/O4: category / series / size / featured / recency combine as AND filters.
   const filtered = useMemo(() => {

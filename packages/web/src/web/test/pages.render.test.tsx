@@ -298,6 +298,9 @@ describe("shared components", () => {
       };
       await setSearch("Street Work");
       expect(host.textContent).toContain("1 / 3 photos");
+      expect(host.textContent).toContain("表示条件");
+      expect(host.textContent).toContain("検索: Street Work");
+      expect(host.textContent).toContain("条件を解除");
       await setSearch("Indigo Days");
       expect(host.textContent).toContain("1 / 3 photos");
       await setSearch("No such classification");

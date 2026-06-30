@@ -859,6 +859,30 @@ const EMPTY_ALBUM_DRAFT = {
   published: "all",
   recent: "all",
 };
+const LIBRARY_SORT_LABELS: Record<string, string> = {
+  manual: "手動",
+  "createdAt-desc": "アップロード日 新しい順",
+  "createdAt-asc": "アップロード日 古い順",
+  "shotAt-desc": "撮影日 新しい順",
+  "shotAt-asc": "撮影日 古い順",
+  series: "シリーズ",
+  size: "表示サイズ",
+  filmType: "媒体/フィルム",
+  camera: "カメラ",
+  category: "カテゴリ",
+  title: "タイトル",
+  published: "公開状態",
+};
+const MEDIUM_FILTER_LABELS: Record<string, string> = {
+  digital: "Digital",
+  film: "Film",
+  missing: "媒体なし",
+};
+const ORIENTATION_FILTER_LABELS: Record<string, string> = {
+  portrait: "縦写真",
+  landscape: "横写真",
+  square: "正方形",
+};
 
 function GalleryTab({
   onUploadingChange,
@@ -1403,6 +1427,7 @@ function GalleryTab({
     featuredIds,
     activeAlbum,
     photoMedium,
+    photoOrientation,
     categoryLabelFor,
     seriesTitleFor,
   ]);
@@ -1419,6 +1444,74 @@ function GalleryTab({
     filterMissingCapture ||
     filterRecent !== "all" ||
     activeAlbumId !== null;
+  const activeFilterLabels = useMemo(() => {
+    const labels: { key: string; text: string }[] = [];
+    const query = searchQuery.trim();
+    if (query) labels.push({ key: "search", text: `検索: ${query}` });
+    if (activeAlbum)
+      labels.push({ key: "album", text: `Album: ${activeAlbum.name}` });
+    if (filterCat !== "all")
+      labels.push({
+        key: "category",
+        text:
+          filterCat === "__uncat__"
+            ? "カテゴリ: 未分類"
+            : `カテゴリ: ${categoryLabelFor(filterCat)}`,
+      });
+    if (filterSeries !== "all")
+      labels.push({
+        key: "series",
+        text:
+          filterSeries === "__none__"
+            ? "Series: 未割り当て"
+            : `Series: ${seriesTitleFor(filterSeries)}`,
+      });
+    if (filterSize !== "all")
+      labels.push({ key: "size", text: `Size: ${filterSize}` });
+    if (filterMedium !== "all")
+      labels.push({
+        key: "medium",
+        text: `媒体: ${MEDIUM_FILTER_LABELS[filterMedium] ?? filterMedium}`,
+      });
+    if (filterOrientation !== "all")
+      labels.push({
+        key: "orientation",
+        text: ORIENTATION_FILTER_LABELS[filterOrientation] ?? filterOrientation,
+      });
+    if (filterFeatured) labels.push({ key: "featured", text: "Featured" });
+    if (filterPublished !== "all")
+      labels.push({
+        key: "published",
+        text:
+          filterPublished === "published"
+            ? "公開のみ"
+            : filterPublished === "unpublished"
+              ? "非公開のみ"
+              : filterPublished,
+      });
+    if (filterMissingShotAt)
+      labels.push({ key: "missingShotAt", text: "日付なし" });
+    if (filterMissingCapture)
+      labels.push({ key: "missingCapture", text: "機材なし" });
+    if (filterRecent !== "all")
+      labels.push({ key: "recent", text: `直近${filterRecent}日` });
+    return labels;
+  }, [
+    activeAlbum,
+    categoryLabelFor,
+    filterCat,
+    filterFeatured,
+    filterMedium,
+    filterMissingCapture,
+    filterMissingShotAt,
+    filterOrientation,
+    filterPublished,
+    filterRecent,
+    filterSeries,
+    filterSize,
+    searchQuery,
+    seriesTitleFor,
+  ]);
   const clearLibraryFilters = useCallback(() => {
     setSearchQuery("");
     setFilterCat("all");
@@ -1432,7 +1525,20 @@ function GalleryTab({
     setFilterMissingCapture(false);
     setFilterRecent("all");
     setActiveAlbumId(null);
-  }, []);
+  }, [
+    setActiveAlbumId,
+    setFilterCat,
+    setFilterFeatured,
+    setFilterMedium,
+    setFilterMissingCapture,
+    setFilterMissingShotAt,
+    setFilterOrientation,
+    setFilterPublished,
+    setFilterRecent,
+    setFilterSeries,
+    setFilterSize,
+    setSearchQuery,
+  ]);
 
   // U1: display sort. Array.sort is stable, so ties keep the manual order.
   // shotAt-less photos always sink to the end regardless of direction.
@@ -3072,6 +3178,58 @@ function GalleryTab({
             onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
           />
         </div>
+
+        {!showTrash &&
+          (activeFilterLabels.length > 0 ||
+            librarySort !== "manual" ||
+            selected.size > 0) && (
+            <div
+              aria-label="Libraryの表示条件"
+              className="bg-[#232323] border-b border-[#333] px-2 sm:px-4 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
+            >
+              <span className="text-[10px] text-[#777] uppercase tracking-wider mr-1">
+                表示条件
+              </span>
+              <span className="text-[11px] text-[#aaa] bg-[#303030] border border-[#444] rounded-sm px-2 py-1">
+                {displayed.length} / {allPhotos.length} photos
+              </span>
+              {librarySort !== "manual" && (
+                <span className="text-[11px] text-[#aaa] bg-[#303030] border border-[#444] rounded-sm px-2 py-1">
+                  並び: {LIBRARY_SORT_LABELS[librarySort] ?? librarySort}
+                </span>
+              )}
+              {activeFilterLabels.map((item) => (
+                <span
+                  key={item.key}
+                  className="max-w-[220px] truncate text-[11px] text-[#bbb] bg-[#303030] border border-[#444] rounded-sm px-2 py-1"
+                  title={item.text}
+                >
+                  {item.text}
+                </span>
+              ))}
+              {selected.size > 0 && (
+                <span className="text-[11px] text-[#ddd] bg-[#3a3a3a] border border-[#555] rounded-sm px-2 py-1">
+                  選択: {selected.size}枚
+                </span>
+              )}
+              {reorderLocked && (
+                <span className="text-[11px] text-amber-300/80 bg-amber-900/20 border border-amber-900/30 rounded-sm px-2 py-1">
+                  {librarySort !== "manual"
+                    ? "手動順に戻すとドラッグ可"
+                    : "条件解除でドラッグ可"}
+                </span>
+              )}
+              {anyFilterActive && (
+                <button
+                  type="button"
+                  onClick={clearLibraryFilters}
+                  className="text-[11px] px-2 py-1 rounded-sm border border-[#444] text-[#aaa] bg-[#2f2f2f] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                >
+                  条件を解除
+                </button>
+              )}
+            </div>
+          )}
 
         {/* Upload progress bar */}
         {uploading && uploadProgress && (
@@ -7129,7 +7287,7 @@ function ServiceTab({
       const fromDb = parseServicePageConfig(data.servicePageConfig);
       setDraft(fromDb);
     }
-  }, [data]);
+  }, [data, setDraft]);
 
   const hasChanges = JSON.stringify(draft) !== JSON.stringify(saved);
 

@@ -290,6 +290,9 @@ describe("shared components", () => {
         'button[aria-label="B"]',
       ) as HTMLButtonElement | null;
       expect(tile).not.toBeNull();
+      expect(
+        host.querySelector('[aria-label="使用状況: Hero 1, Series, Size L"]'),
+      ).not.toBeNull();
       tile!.click();
       await flush(60);
 

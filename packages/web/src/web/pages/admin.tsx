@@ -3451,6 +3451,15 @@ function GalleryTab({
                   const isInspect = inspectPhoto?.id === photo.id;
                   const catColor = catColors[photo.category] ?? "#666";
                   const isUnpublished = photo.isPublished === false;
+                  const heroIndex = (heroData?.heroPhotos ?? []).findIndex(
+                    (h) => h.photoId === photo.id,
+                  );
+                  const displaySize = photo.displaySize || "M";
+                  const usageBadgeLabels = [
+                    heroIndex >= 0 ? `Hero ${heroIndex + 1}` : null,
+                    photo.seriesId != null ? "Series" : null,
+                    displaySize !== "M" ? `Size ${displaySize}` : null,
+                  ].filter((label): label is string => Boolean(label));
                   const metadataBadges = [
                     !photo.shotAt ? "日付なし" : null,
                     !(photo.camera || photo.lens) ? "機材なし" : null,
@@ -3539,6 +3548,28 @@ function GalleryTab({
                               {label}
                             </span>
                           ))}
+                        </div>
+                      )}
+                      {thumbSize >= 120 && usageBadgeLabels.length > 0 && (
+                        <div
+                          aria-label={`使用状況: ${usageBadgeLabels.join(", ")}`}
+                          className="absolute bottom-1 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
+                        >
+                          {heroIndex >= 0 && (
+                            <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-900/70 px-1.5 py-0.5 text-[9px] leading-none text-amber-200/90">
+                              <Star size={8} /> Hero {heroIndex + 1}
+                            </span>
+                          )}
+                          {photo.seriesId != null && (
+                            <span className="inline-flex items-center gap-0.5 rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
+                              <Layers size={8} /> Series
+                            </span>
+                          )}
+                          {displaySize !== "M" && (
+                            <span className="rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
+                              {displaySize}
+                            </span>
+                          )}
                         </div>
                       )}
                       {/* Selection check */}

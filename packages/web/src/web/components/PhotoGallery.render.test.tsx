@@ -124,6 +124,72 @@ test("tile images apply focal point as object-position", async () => {
   host.remove();
 });
 
+test("generated thumbnails do not auto-upgrade normal gallery grids", async () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(QueryClientProvider, { client: qc },
+        createElement(PhotoGallery, {
+          photos: [
+            {
+              id: 13,
+              url: "/api/images/photos/grid.jpg",
+              thumbUrl: "/api/images/thumbs/grid.webp",
+              mediumUrl: "/api/images/medium/grid.webp",
+              title: "Grid",
+            },
+          ],
+          layoutType: "masonry",
+        }))
+    );
+  });
+  const img = host.querySelector(".photo-card img") as HTMLImageElement;
+  expect(img).not.toBeNull();
+  expect(img.getAttribute("src")).toBe("/api/images/thumbs/grid.webp");
+  expect(img.getAttribute("data-src")).toBeNull();
+  expect(img.getAttribute("data-srcset")).toBeNull();
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});
+
+test("large gallery layouts may upgrade thumbnails to generated medium images", async () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(QueryClientProvider, { client: qc },
+        createElement(PhotoGallery, {
+          photos: [
+            {
+              id: 14,
+              url: "/api/images/photos/large.jpg",
+              thumbUrl: "/api/images/thumbs/large.webp",
+              mediumUrl: "/api/images/medium/large.webp",
+              title: "Large",
+            },
+          ],
+          layoutType: "large-format",
+        }))
+    );
+  });
+  const img = host.querySelector(".photo-card img") as HTMLImageElement;
+  expect(img).not.toBeNull();
+  expect(img.getAttribute("src")).toBe("/api/images/thumbs/large.webp");
+  expect(img.getAttribute("data-src")).toBe("/api/images/medium/large.webp");
+  expect(img.getAttribute("data-srcset")).toBeNull();
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});
+
 test("a failed image marks its card as photo-broken (quiet placeholder)", async () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   const host = dom.window.document.createElement("div");

@@ -89,6 +89,7 @@ const KNOWN_LAYOUTS: GalleryLayoutType[] = [
 const LqipImage = memo(function LqipImage({
   url,
   thumbUrl,
+  upgradeUrl,
   alt,
   sizes,
   isNearViewport,
@@ -100,6 +101,7 @@ const LqipImage = memo(function LqipImage({
 }: {
   url: string;
   thumbUrl?: string | null;
+  upgradeUrl?: string | null;
   alt: string;
   sizes: string;
   isNearViewport: boolean;
@@ -115,7 +117,7 @@ const LqipImage = memo(function LqipImage({
   useEffect(() => {
     setLoaded(false);
     swappedRef.current = false;
-  }, [url]);
+  }, [url, thumbUrl, upgradeUrl]);
 
   const swapToGridImage = useCallback(
     (el: HTMLImageElement, keepCurrentSharp = false) => {
@@ -153,13 +155,15 @@ const LqipImage = memo(function LqipImage({
   );
 
   // Use the pre-generated WebP as the instant first paint, then silently upgrade
-  // to the responsive grid source so large/editorial layouts stay crisp.
+  // only for layouts that genuinely render photos large. Normal gallery grids
+  // keep the generated thumbnail as final output to avoid flooding the image
+  // proxy with on-the-fly variants during long scrolls.
   if (thumbUrl) {
+    const hasUpgrade = Boolean(upgradeUrl && upgradeUrl !== thumbUrl);
     return (
       <img
         src={thumbUrl}
-        data-src={srcFor(url, 600, 84, undefined, rotationDeg)}
-        data-srcset={srcSetFor(url, "grid", undefined, rotationDeg)}
+        data-src={hasUpgrade ? upgradeUrl ?? undefined : undefined}
         sizes={sizes}
         alt={alt}
         loading={isNearViewport ? "eager" : "lazy"}
@@ -169,7 +173,14 @@ const LqipImage = memo(function LqipImage({
         height={height || undefined}
         style={style}
         className={loaded ? "lqip-loaded" : "lqip-loading"}
-        onLoad={(e) => swapToGridImage(e.currentTarget, true)}
+        onLoad={(e) => {
+          if (hasUpgrade) {
+            swapToGridImage(e.currentTarget, true);
+            return;
+          }
+          swappedRef.current = true;
+          setLoaded(true);
+        }}
         onError={(e) => {
           setLoaded(true);
           e.currentTarget.closest(".photo-card")?.classList.add("photo-broken");
@@ -421,6 +432,7 @@ export function PhotoGallery({
       cardClassName?: string;
       imgStyle?: React.CSSProperties;
       showHoverCaption?: boolean;
+      preferMediumGrid?: boolean;
     },
   ) => {
     const ratio = orientedAspectRatio(
@@ -487,6 +499,9 @@ export function PhotoGallery({
             <LqipImage
               url={photo.url}
               thumbUrl={photo.thumbUrl}
+              upgradeUrl={
+                opts.preferMediumGrid ? photo.mediumUrl : undefined
+              }
               alt={
                 photo.title ||
                 photo.meta ||
@@ -617,6 +632,7 @@ export function PhotoGallery({
                 sizes: isMobile ? "100vw" : "50vw",
                 cardClassName: quietCardClass,
                 showHoverCaption: false,
+                preferMediumGrid: true,
               })}
               {(photo.title || sub) && (
                 <figcaption style={{ marginTop: 9 }}>
@@ -707,6 +723,7 @@ export function PhotoGallery({
                 width: "100%",
                 justifySelf: "stretch",
                 sizes: isMobile ? "100vw" : "80vw",
+                preferMediumGrid: true,
               })}
               {(photo.title || info) && (
                 <figcaption style={{ marginTop: 14, textAlign: "center" }}>
@@ -765,6 +782,7 @@ export function PhotoGallery({
               width: "100%",
               justifySelf: "stretch",
               sizes: isMobile ? "88vw" : "82vw",
+              preferMediumGrid: true,
             })}
           </div>
         ))}
@@ -798,6 +816,7 @@ export function PhotoGallery({
                   width: "100%",
                   justifySelf: "stretch",
                   sizes: isMobile ? "88vw" : "60vw",
+                  preferMediumGrid: true,
                 })}
               </div>
             </div>
@@ -816,6 +835,7 @@ export function PhotoGallery({
                   width: "100%",
                   justifySelf: "stretch",
                   sizes: isMobile ? "58vw" : "56vw",
+                  preferMediumGrid: true,
                 })}
               </div>
               <div
@@ -829,6 +849,7 @@ export function PhotoGallery({
                   width: "100%",
                   justifySelf: "stretch",
                   sizes: isMobile ? "36vw" : "38vw",
+                  preferMediumGrid: true,
                 })}
               </div>
             </div>

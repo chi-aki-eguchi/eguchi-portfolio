@@ -10,6 +10,18 @@ export function useScrollFadeIn(deps: DependencyList = []) {
   useEffect(() => {
     const container = ref.current;
     if (!container) return;
+    const reveal = (el: HTMLElement) => {
+      el.classList.add("visible");
+      // Release the will-change GPU layer once settled — photos are numerous,
+      // and keeping every settled tile promoted would pin a lot of GPU memory.
+      el.addEventListener(
+        "transitionend",
+        () => {
+          el.style.willChange = "auto";
+        },
+        { once: true },
+      );
+    };
     const observer = new IntersectionObserver(
       (entries) => {
         // Collect first, then write classes in one rAF — a single style/layout
@@ -17,12 +29,7 @@ export function useScrollFadeIn(deps: DependencyList = []) {
         const targets = entries.filter((e) => e.isIntersecting).map((e) => e.target as HTMLElement);
         if (targets.length === 0) return;
         targets.forEach((el) => observer.unobserve(el));
-        requestAnimationFrame(() => targets.forEach((el) => {
-          el.classList.add("visible");
-          // Release the will-change GPU layer once settled — photos are numerous,
-          // and keeping every settled tile promoted would pin a lot of GPU memory.
-          el.addEventListener("transitionend", () => { el.style.willChange = "auto"; }, { once: true });
-        }));
+        requestAnimationFrame(() => targets.forEach(reveal));
       },
       // threshold 0 + positive bottom margin: start the fade ~120px before the
       // element scrolls into view, so it's already animating (not popping) on entry.
@@ -31,7 +38,23 @@ export function useScrollFadeIn(deps: DependencyList = []) {
     // Skip already-visible items so deps changes don't re-process the whole grid.
     const items = container.querySelectorAll(".fade-in-item:not(.visible), .section-reveal:not(.visible), .page-entrance:not(.visible)");
     items.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    const safetyTimer = window.setTimeout(() => {
+      const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+      container
+        .querySelectorAll(".fade-in-item:not(.visible), .section-reveal:not(.visible), .page-entrance:not(.visible)")
+        .forEach((el) => {
+          const target = el as HTMLElement;
+          const rect = target.getBoundingClientRect();
+          if (rect.top <= viewportH + 240 && rect.bottom >= -120) {
+            observer.unobserve(target);
+            reveal(target);
+          }
+        });
+    }, 900);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(safetyTimer);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return ref;

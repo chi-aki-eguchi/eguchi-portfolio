@@ -1,5 +1,56 @@
 # Task Log
 
+## Handoff 2026-06-30 — Codex: Gallery大量スクロール時の画像キュー詰まり対策
+
+### 目的
+
+`/gallery` を下へ大量スクロールすると白い写真枠が増え、画像読み込み完了までサイト復帰が遅くなる問題を改善する。
+
+### 本番で確認した症状
+
+- `https://akieguchi.com/api/photos` は 444件すべて `thumbUrl` / `mediumUrl` あり。生成済み画像不足ではない。
+- 本番 `/gallery` を Playwright で高速スクロールすると、228枚描画時点で未完了画像 86件。
+- 同時に `/api/health` は `resizeInFlightEntries: 100` / `queuedImageTransforms: 99` まで増加。通常スクロールで画像処理キューが詰まる状態だった。
+
+### 変更内容
+
+- `PhotoGallery` の通常グリッド / masonry / clean-grid / collage / mosaic は、生成済み `thumbUrl` を一覧の最終画像として使うように変更。
+  - 以前は `thumbUrl` 表示後に `/api/images/photos/...?...` のオンザフライ変換へ自動差し替えしていた。
+  - large-format / scroll / stagger / editorial のような大きく見せるレイアウトのみ、必要に応じて生成済み `mediumUrl` へアップグレードする。
+- `/gallery` の infinite scroll に背圧を追加。
+  - 未完了の `<img>` が多い時は次の12枚を即追加せず、450ms後に再判定する。
+  - sentinel の rootMargin を `900px` から `450px` に縮小。
+- `useScrollFadeIn` に画面付近の安全解除を追加。
+  - 重い読み込み中に IntersectionObserver のタイミングを逃しても、画面付近の `.fade-in-item` が白いまま残らないようにした。
+- render test を追加し、通常 gallery grid が `thumbUrl` から `/photos?w=` へ自動アップグレードしないことを固定。
+
+### 触ったファイル
+
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/pages/gallery.tsx`
+- `packages/web/src/web/hooks/useScrollFadeIn.ts`
+- `packages/web/src/web/components/PhotoGallery.render.test.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/components/PhotoGallery.render.test.tsx` 成功（6 pass）。
+- `cd packages/web && bun test ./src/web/components/PhotoGallery.render.test.tsx ./src/web/test/pages.render.test.tsx` 成功（37 pass / 0 fail、既存の React act warning は継続）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `bunx oxlint packages/web/src/web/components/PhotoGallery.tsx packages/web/src/web/hooks/useScrollFadeIn.ts packages/web/src/web/pages/gallery.tsx packages/web/src/web/components/PhotoGallery.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（205 pass / 0 fail）。
+- `PORT=4310 bun --env-file=.env packages/web/src/server.ts` でローカル本番相当サーバを起動し、Playwright で `/gallery` を25回高速スクロール。
+  - 修正前相当: 本番で `resizeInFlightEntries: 100` / `queuedImageTransforms: 99`。
+  - 修正後ローカル: `resizeInFlightEntries: 0` / `queuedImageTransforms: 0`。
+  - 修正後ローカル: 画面内の `invisibleInViewport: 0` / `pendingInViewport: 0` / `brokenInViewport: 0`。
+  - 修正後ローカル: 一覧画像の `currentSrc` は `thumbs/*.webp`。通常 masonry で `/photos?...` へ差し替わらないことを確認。
+- agmsg で Claude Code へ P0/P1 レビュー依頼を送信。2026-06-30 時点で新着返信なし。
+
+### 注意
+
+- 既存の未コミット差分 `packages/web/src/server.ts`、未追跡の静的ファイル配信テスト類、各種 handoff/prompt メモは今回の対象外。
+
 ## 追記 2026-06-29 — Codex: manifest.webmanifest alias追加
 
 ### 対応

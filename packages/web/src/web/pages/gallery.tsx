@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
@@ -100,8 +100,35 @@ export default function GalleryPage() {
     [filtered, renderCount],
   );
   const gallerySentinelRef = useRef<HTMLDivElement>(null);
+  const fadeRef = useScrollFadeIn([rendered, view, settings?.galleryLayout]);
+  const loadMoreRetryRef = useRef<number | null>(null);
+  const requestMorePhotos = useCallback(() => {
+    const pendingImages = Array.from(
+      fadeRef.current?.querySelectorAll<HTMLImageElement>(".photo-card img") ??
+        [],
+    ).filter((img) => !img.complete).length;
+    const maxPending = isMobile ? 8 : 12;
+    if (pendingImages > maxPending) {
+      if (loadMoreRetryRef.current === null) {
+        loadMoreRetryRef.current = window.setTimeout(() => {
+          loadMoreRetryRef.current = null;
+          requestMorePhotos();
+        }, 450);
+      }
+      return;
+    }
+    setExtraCount((c) => {
+      const current = GALLERY_INITIAL + c;
+      return current >= filtered.length ? c : c + GALLERY_STEP;
+    });
+  }, [GALLERY_INITIAL, fadeRef, filtered.length, isMobile]);
+
   useEffect(() => {
     setExtraCount(0);
+    if (loadMoreRetryRef.current !== null) {
+      window.clearTimeout(loadMoreRetryRef.current);
+      loadMoreRetryRef.current = null;
+    }
   }, [activeFilter, activeMedium]);
   useEffect(() => {
     if (renderCount >= filtered.length) return;
@@ -110,16 +137,14 @@ export default function GalleryPage() {
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setExtraCount((c) => c + GALLERY_STEP);
+          requestMorePhotos();
         }
       },
-      { rootMargin: "900px 0px" },
+      { rootMargin: "450px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [renderCount, filtered.length]);
-
-  const fadeRef = useScrollFadeIn([rendered, view, settings?.galleryLayout]);
+  }, [renderCount, filtered.length, requestMorePhotos]);
 
   // Switching the filter (or Photos/Series view) while scrolled deep can shrink
   // the page and strand the viewer at the footer of a now-short grid. Scroll
@@ -270,7 +295,7 @@ export default function GalleryPage() {
                 layoutType={settings?.galleryLayout}
                 onRequestMore={
                   rendered.length < filtered.length
-                    ? () => setExtraCount((c) => c + GALLERY_STEP)
+                    ? requestMorePhotos
                     : undefined
                 }
               />

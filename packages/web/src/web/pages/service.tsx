@@ -9,6 +9,7 @@ import {
   isStripeLive,
   anyPlanLive,
   primaryStripeUrl,
+  startingStripeUrl,
   mailtoFallback,
   type ServicePageConfig,
   type PlanItem,
@@ -913,7 +914,7 @@ export default function ServicePage() {
 
       <StickyCtaBar
         config={config.stickyCta}
-        stripeHref={primaryStripeUrl(config)}
+        stripeHref={startingStripeUrl(config)}
         contactEmail={contactEmail}
       />
 

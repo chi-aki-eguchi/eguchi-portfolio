@@ -247,7 +247,7 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
   finalCta: {
     title: "まずは写真を見せてください。",
     body: "どんなサイトになるか、具体的にご案内します。",
-    ctaOnline: "申し込む",
+    ctaOnline: "公開おまかせを申し込む",
     ctaOffline: "メールで相談する",
     snsLinks: [
       { label: "Instagram", url: "https://instagram.com/chi._.aki._" },
@@ -466,6 +466,14 @@ export function anyPlanLive(config: ServicePageConfig): boolean {
   return config.pricing.plans.some((p) => isStripeLive(p.stripeUrl));
 }
 
+function yenAmount(price: string): number | null {
+  const match = price.match(/[¥￥]\s*([0-9][0-9,]*)|([0-9][0-9,]*)\s*円/);
+  const raw = match?.[1] ?? match?.[2];
+  if (!raw) return null;
+  const value = Number(raw.replace(/,/g, ""));
+  return Number.isFinite(value) ? value : null;
+}
+
 export function primaryStripeUrl(config: ServicePageConfig): string | null {
   const primary = config.pricing.plans.find(
     (p) => p.primary && isStripeLive(p.stripeUrl),
@@ -473,6 +481,25 @@ export function primaryStripeUrl(config: ServicePageConfig): string | null {
   if (primary) return primary.stripeUrl;
   const first = config.pricing.plans.find((p) => isStripeLive(p.stripeUrl));
   return first?.stripeUrl ?? null;
+}
+
+export function startingStripeUrl(config: ServicePageConfig): string | null {
+  const livePlans = config.pricing.plans.filter((p) =>
+    isStripeLive(p.stripeUrl),
+  );
+  if (livePlans.length === 0) return null;
+
+  const cheapest = livePlans
+    .map((plan, index) => ({ plan, index, amount: yenAmount(plan.price) }))
+    .filter(
+      (
+        item,
+      ): item is { plan: PlanItem; index: number; amount: number } =>
+        item.amount !== null,
+    )
+    .sort((a, b) => a.amount - b.amount || a.index - b.index)[0];
+
+  return (cheapest?.plan ?? livePlans[0]).stripeUrl;
 }
 
 export function mailtoFallback(

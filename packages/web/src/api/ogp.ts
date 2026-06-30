@@ -81,7 +81,7 @@ export function isServiceSiteUrl(siteUrl: string): boolean {
 
 const SERVICE_OG = {
   title: "写真家のためのポートフォリオサイト",
-  desc: "写真を上げて並べるだけで、雑誌のように見える、あなただけのポートフォリオ。自分で立てる ¥10,000 ／ おまかせ設定 ¥30,000。",
+  desc: "写真を上げて並べるだけで、雑誌のように見える、あなただけのポートフォリオ。自分で立てる ¥10,000 ／ 公開おまかせ ¥30,000。",
   image: "/og-service.jpg",
 };
 

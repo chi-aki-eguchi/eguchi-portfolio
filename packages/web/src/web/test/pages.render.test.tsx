@@ -252,6 +252,68 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: inspector surfaces quick edit controls and usage", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevCategories = canned["/api/categories"];
+    const prevSeries = canned["/api/admin/series"];
+    const prevHero = canned["/api/admin/hero-photos"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/categories"] = {
+      categories: [
+        { slug: "snap", label: "Street Work", sortOrder: 0 },
+        { slug: "portrait", label: "Portraits", sortOrder: 1 },
+      ],
+    };
+    canned["/api/admin/series"] = {
+      series: [
+        {
+          id: 3,
+          slug: "indigo",
+          title: "Indigo Days",
+          subtitle: "",
+          statement: "",
+          coverPhotoId: 2,
+          sortOrder: 0,
+          isPublished: true,
+        },
+      ],
+    };
+    canned["/api/admin/hero-photos"] = {
+      heroPhotos: [{ id: 10, photoId: 2, sortOrder: 0 }],
+    };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      const tile = host.querySelector(
+        'button[aria-label="B"]',
+      ) as HTMLButtonElement | null;
+      expect(tile).not.toBeNull();
+      tile!.click();
+      await flush(60);
+
+      expect(host.textContent).toContain("よく使う");
+      expect(host.textContent).toContain("Hero 1");
+      expect(host.textContent).toContain("Portraits");
+      expect(host.textContent).toContain("Indigo Days");
+      expect(host.textContent).toContain("Size L");
+      expect(host.querySelector('[aria-label="写真の使用状況"]')).not.toBeNull();
+      expect(host.querySelector('[aria-label="クイックカテゴリ"]')).not.toBeNull();
+      expect(host.querySelector('[aria-label="クイックシリーズ"]')).not.toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      canned["/api/categories"] = prevCategories;
+      if (prevSeries === undefined) delete canned["/api/admin/series"];
+      else canned["/api/admin/series"] = prevSeries;
+      if (prevHero === undefined) delete canned["/api/admin/hero-photos"];
+      else canned["/api/admin/hero-photos"] = prevHero;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage: library search matches category labels and series titles", async () => {
     const prevAuth = canned["/api/admin/me"];
     const prevCategories = canned["/api/categories"];

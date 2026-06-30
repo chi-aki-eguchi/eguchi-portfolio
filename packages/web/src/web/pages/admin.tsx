@@ -4204,6 +4204,222 @@ function GalleryTab({
             />
           </div>
 
+          {(() => {
+            const heroIdx = (heroData?.heroPhotos ?? []).findIndex(
+              (h) => h.photoId === inspectPhoto.id,
+            );
+            const quickSeriesName = editForm.seriesId
+              ? seriesList.find((s) => s.id === Number(editForm.seriesId))?.title
+              : "";
+            const quickCategory = categories.find(
+              (c) => c.slug === editForm.category,
+            );
+            const quickDraftChanged =
+              editForm.category !== inspectPhoto.category ||
+              editForm.seriesId !==
+                (inspectPhoto.seriesId ? String(inspectPhoto.seriesId) : "") ||
+              editForm.displaySize !== (inspectPhoto.displaySize || "M") ||
+              editForm.isPublished !== (inspectPhoto.isPublished !== false) ||
+              editForm.rotationDeg !== normalizeRotationDeg(inspectPhoto.rotationDeg);
+
+            return (
+              <div className="mx-3 mb-3 rounded-sm border border-[#3a3a3a] bg-[#202020] p-2.5">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-[#777] uppercase tracking-wider">
+                    よく使う
+                  </span>
+                  {quickDraftChanged && (
+                    <span className="rounded-sm border border-amber-900/40 bg-amber-900/20 px-1.5 py-0.5 text-[10px] text-amber-300/80">
+                      未保存
+                    </span>
+                  )}
+                </div>
+
+                <div
+                  aria-label="写真の使用状況"
+                  className="mb-2 flex flex-wrap gap-1"
+                >
+                  {heroIdx >= 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-sm border border-amber-700/40 bg-amber-900/30 px-1.5 py-0.5 text-[10px] text-amber-300">
+                      <Star size={9} /> Hero {heroIdx + 1}
+                    </span>
+                  )}
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[10px] ${
+                      editForm.isPublished
+                        ? "border-emerald-700/40 bg-emerald-900/20 text-emerald-300/85"
+                        : "border-[#5a3a3a] bg-[#3a2a2a] text-[#d99]"
+                    }`}
+                  >
+                    {editForm.isPublished ? <Eye size={9} /> : <EyeOff size={9} />}
+                    {editForm.isPublished ? "公開" : "非公開"}
+                  </span>
+                  <span className="rounded-sm border border-[#444] bg-[#303030] px-1.5 py-0.5 text-[10px] text-[#bbb]">
+                    Size {editForm.displaySize}
+                  </span>
+                  <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[#444] bg-[#303030] px-1.5 py-0.5 text-[10px] text-[#bbb]">
+                    <span
+                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                      style={{
+                        background: quickCategory
+                          ? (catColors[quickCategory.slug] ?? "#888")
+                          : "transparent",
+                        border: quickCategory ? "none" : "1px solid #666",
+                      }}
+                    />
+                    <span className="truncate">
+                      {quickCategory?.label ?? "未分類"}
+                    </span>
+                  </span>
+                  {quickSeriesName && (
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[#444] bg-[#303030] px-1.5 py-0.5 text-[10px] text-[#bbb]">
+                      <Layers size={9} className="flex-shrink-0" />
+                      <span className="truncate">{quickSeriesName}</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div className="flex rounded-sm bg-[#2c2c2c] p-0.5">
+                    {(
+                      [
+                        [true, "公開"],
+                        [false, "非公開"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={lbl}
+                        type="button"
+                        onClick={() =>
+                          setEditForm((f) => ({ ...f, isPublished: val }))
+                        }
+                        aria-pressed={editForm.isPublished === val}
+                        className={`flex-1 rounded-sm px-1.5 py-1 text-[10px] transition-colors ${
+                          editForm.isPublished === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "text-[#888] hover:bg-[#3a3a3a] hover:text-[#bbb]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex rounded-sm bg-[#2c2c2c] p-0.5">
+                    {(["S", "M", "L"] as const).map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() =>
+                          setEditForm((f) => ({ ...f, displaySize: size }))
+                        }
+                        aria-pressed={editForm.displaySize === size}
+                        className={`flex-1 rounded-sm px-1.5 py-1 text-[10px] transition-colors ${
+                          editForm.displaySize === size
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "text-[#888] hover:bg-[#3a3a3a] hover:text-[#bbb]"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="col-span-2 grid grid-cols-[auto_1fr_auto] gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditForm((f) => ({
+                          ...f,
+                          rotationDeg: rotatedBy(f.rotationDeg, -90),
+                        }))
+                      }
+                      aria-label="左へ90度回転"
+                      title="左へ90°回転"
+                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[#444] bg-[#303030] text-[#aaa] transition-colors hover:bg-[#3a3a3a] hover:text-[#ddd]"
+                    >
+                      <RotateCcw size={13} />
+                    </button>
+                    <div className="grid grid-cols-4 gap-1">
+                      {ROTATION_OPTIONS.map((deg) => (
+                        <button
+                          key={deg}
+                          type="button"
+                          onClick={() =>
+                            setEditForm((f) => ({ ...f, rotationDeg: deg }))
+                          }
+                          aria-pressed={editForm.rotationDeg === deg}
+                          className={`h-7 rounded-sm text-[10px] transition-colors ${
+                            editForm.rotationDeg === deg
+                              ? "bg-[#888] text-[#1e1e1e] font-medium"
+                              : "border border-[#444] bg-[#303030] text-[#888] hover:bg-[#3a3a3a]"
+                          }`}
+                        >
+                          {deg}°
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditForm((f) => ({
+                          ...f,
+                          rotationDeg: rotatedBy(f.rotationDeg, 90),
+                        }))
+                      }
+                      aria-label="右へ90度回転"
+                      title="右へ90°回転"
+                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[#444] bg-[#303030] text-[#aaa] transition-colors hover:bg-[#3a3a3a] hover:text-[#ddd]"
+                    >
+                      <RotateCw size={13} />
+                    </button>
+                  </div>
+
+                  <select
+                    value={
+                      categories.some((c) => c.slug === editForm.category)
+                        ? editForm.category
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, category: e.target.value }))
+                    }
+                    aria-label="クイックカテゴリ"
+                    className="min-w-0 rounded-sm border border-[#444] bg-[#303030] px-2 py-1.5 text-[11px] text-[#ddd] outline-none transition-colors focus:border-[#888]"
+                  >
+                    <option value="">カテゴリなし</option>
+                    {categories.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={
+                      seriesList.some((s) => s.id === Number(editForm.seriesId))
+                        ? editForm.seriesId
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, seriesId: e.target.value }))
+                    }
+                    aria-label="クイックシリーズ"
+                    className="min-w-0 rounded-sm border border-[#444] bg-[#303030] px-2 py-1.5 text-[11px] text-[#ddd] outline-none transition-colors focus:border-[#888]"
+                  >
+                    <option value="">シリーズなし</option>
+                    {seriesList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
+                        {s.isPublished ? "" : "（下書き）"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Metadata form */}
           <div className="px-3 pb-4 flex flex-col gap-3 flex-1">
             <div className="border-b border-[#333] pb-2 mb-1">
@@ -4211,103 +4427,6 @@ function GalleryTab({
                 Metadata
               </span>
             </div>
-
-            {/* M4: status badges — at-a-glance featured / series / category state */}
-            {(() => {
-              const featured = featuredIds.has(inspectPhoto.id);
-              const seriesName = inspectPhoto.seriesId
-                ? seriesList.find((s) => s.id === inspectPhoto.seriesId)?.title
-                : null;
-              const catLabel = categories.find(
-                (c) => c.slug === inspectPhoto.category,
-              )?.label;
-              return (
-                <div className="flex flex-wrap gap-1.5">
-                  {inspectPhoto.isPublished === false && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#3a2a2a] text-[#d99] border border-[#5a3a3a]">
-                      <EyeOff size={9} /> 非公開
-                    </span>
-                  )}
-                  {featured && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300 border border-amber-700/40">
-                      <Star size={9} /> フィーチャー
-                    </span>
-                  )}
-                  {seriesName && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#333] text-[#bbb] border border-[#444]">
-                      <Layers size={9} /> {seriesName}
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#333] text-[#bbb] border border-[#444]">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{
-                        background: catLabel
-                          ? (catColors[inspectPhoto.category] ?? "#888")
-                          : "transparent",
-                        border: catLabel ? "none" : "1px solid #666",
-                      }}
-                    />
-                    {catLabel ?? "未分類"}
-                  </span>
-                </div>
-              );
-            })()}
-
-            <InspectField
-              label="向き"
-              hint="保存後、Gallery / Hero / Lightbox の表示に反映"
-            >
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setEditForm((f) => ({
-                      ...f,
-                      rotationDeg: rotatedBy(f.rotationDeg, -90),
-                    }))
-                  }
-                  aria-label="左へ90度回転"
-                  title="左へ90°回転"
-                  className="w-8 h-8 flex items-center justify-center bg-[#333] text-[#aaa] border border-[#444] rounded-sm hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
-                >
-                  <RotateCcw size={14} />
-                </button>
-                <div className="grid grid-cols-4 gap-1 flex-1">
-                  {ROTATION_OPTIONS.map((deg) => (
-                    <button
-                      key={deg}
-                      type="button"
-                      onClick={() =>
-                        setEditForm((f) => ({ ...f, rotationDeg: deg }))
-                      }
-                      aria-pressed={editForm.rotationDeg === deg}
-                      className={`h-8 text-[11px] rounded-sm transition-colors ${
-                        editForm.rotationDeg === deg
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {deg}°
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setEditForm((f) => ({
-                      ...f,
-                      rotationDeg: rotatedBy(f.rotationDeg, 90),
-                    }))
-                  }
-                  aria-label="右へ90度回転"
-                  title="右へ90°回転"
-                  className="w-8 h-8 flex items-center justify-center bg-[#333] text-[#aaa] border border-[#444] rounded-sm hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
-                >
-                  <RotateCw size={14} />
-                </button>
-              </div>
-            </InspectField>
 
             <InspectField
               label="見せる中心"
@@ -4526,103 +4645,6 @@ function GalleryTab({
                 placeholder="Photo description..."
                 className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors resize-y placeholder:text-[#555]"
               />
-            </InspectField>
-
-            <InspectField label="Category" hint="ギャラリーのフィルタ分類">
-              <select
-                value={
-                  categories.some((c) => c.slug === editForm.category)
-                    ? editForm.category
-                    : ""
-                }
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, category: e.target.value }))
-                }
-                className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors"
-              >
-                <option value="">— uncategorized —</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.slug}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </InspectField>
-
-            <InspectField
-              label="Series"
-              hint="作品群への割り当て（任意）。分類とは別軸。先頭を選ぶと割り当て解除"
-            >
-              <select
-                value={
-                  seriesList.some((s) => s.id === Number(editForm.seriesId))
-                    ? editForm.seriesId
-                    : ""
-                }
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, seriesId: e.target.value }))
-                }
-                className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors"
-              >
-                <option value="">— シリーズなし（割り当て解除）—</option>
-                {seriesList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}
-                    {s.isPublished ? "" : "（下書き）"}
-                  </option>
-                ))}
-              </select>
-            </InspectField>
-
-            <InspectField
-              label="Display Size"
-              hint="ギャラリーグリッドでの表示サイズ"
-            >
-              <div className="flex gap-1">
-                {(["S", "M", "L"] as const).map((size) => (
-                  <button
-                    key={size}
-                    onClick={() =>
-                      setEditForm((f) => ({ ...f, displaySize: size }))
-                    }
-                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                      editForm.displaySize === size
-                        ? "bg-[#888] text-[#1e1e1e] font-medium"
-                        : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </InspectField>
-
-            <InspectField
-              label="公開状態"
-              hint="非公開にするとサイトに表示されません（管理画面には残ります）"
-            >
-              <div className="flex gap-1">
-                {(
-                  [
-                    [true, "公開"],
-                    [false, "非公開"],
-                  ] as const
-                ).map(([val, lbl]) => (
-                  <button
-                    key={lbl}
-                    onClick={() =>
-                      setEditForm((f) => ({ ...f, isPublished: val }))
-                    }
-                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                      editForm.isPublished === val
-                        ? "bg-[#888] text-[#1e1e1e] font-medium"
-                        : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                    }`}
-                  >
-                    {lbl}
-                  </button>
-                ))}
-              </div>
             </InspectField>
 
             <div className="flex gap-2 mt-1">

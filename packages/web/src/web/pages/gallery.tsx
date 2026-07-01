@@ -59,6 +59,17 @@ export default function GalleryPage() {
     [photosData, settings?.gallerySortOrder],
   );
   const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
+  const seriesNameById = useMemo(
+    () =>
+      Object.fromEntries(
+        (seriesData?.series ?? []).map((s) => [s.id, s.title]),
+      ),
+    [seriesData],
+  );
+  const categoryLabelBySlug = useMemo(
+    () => Object.fromEntries(categories.map((c) => [c.slug, c.label])),
+    [categories],
+  );
   const filtered = useMemo(() => {
     let list =
       activeFilter === "all"
@@ -298,6 +309,8 @@ export default function GalleryPage() {
                     ? requestMorePhotos
                     : undefined
                 }
+                seriesNameById={seriesNameById}
+                categoryLabelBySlug={categoryLabelBySlug}
               />
               {rendered.length < filtered.length && (
                 <div

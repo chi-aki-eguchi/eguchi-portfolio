@@ -9,6 +9,7 @@ import { Lightbox, type LightboxPhoto } from "../components/Lightbox";
 import { InquiryCta } from "../components/InquiryCta";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
+import { photoAltText } from "../lib/photo-alt";
 
 function HeroPicture({
   url,
@@ -93,9 +94,11 @@ type HomeHeroPhoto = {
 function HeroCarousel({
   photos,
   fxRef,
+  photographerName,
 }: {
   photos: HomeHeroPhoto[];
   fxRef?: React.Ref<HTMLDivElement>;
+  photographerName?: string;
 }) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
@@ -277,7 +280,7 @@ function HeroCarousel({
                 rotationDeg={p.rotationDeg}
                 focalX={p.focalX}
                 focalY={p.focalY}
-                alt={p.title || "Photograph"}
+                alt={photoAltText(p, { photographerName })}
                 sizes="(min-width: 1200px) 1152px, 100vw"
                 className="w-full h-full object-contain"
                 decoding={i === 0 ? "sync" : "async"}
@@ -363,11 +366,13 @@ function HeroSingle({
   children,
   titlePosition = "center",
   fxRef,
+  photographerName,
 }: {
   photo: HomeHeroPhoto;
   children?: React.ReactNode;
   titlePosition?: string;
   fxRef?: React.Ref<HTMLDivElement>;
+  photographerName?: string;
 }) {
   const posClass = [
     "bottom-left",
@@ -387,7 +392,7 @@ function HeroSingle({
           rotationDeg={photo.rotationDeg}
           focalX={photo.focalX}
           focalY={photo.focalY}
-          alt={photo.title || "Photograph"}
+          alt={photoAltText(photo, { photographerName })}
           sizes="100vw"
           className="hero-single-img"
           decoding="sync"
@@ -422,6 +427,7 @@ function toLightboxPhotos(photos: GalleryPhoto[]): LightboxPhoto[] {
     filmType: p.filmType,
     mediumUrl: p.mediumUrl,
     rotationDeg: p.rotationDeg,
+    description: p.description,
   }));
 }
 
@@ -459,6 +465,7 @@ function HomeQuietGrid({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
 
   return (
@@ -476,7 +483,7 @@ function HomeQuietGrid({
               rotationDeg={heroPhoto.rotationDeg}
               focalX={heroPhoto.focalX}
               focalY={heroPhoto.focalY}
-              alt={heroPhoto.title || "Photograph"}
+              alt={photoAltText(heroPhoto, { photographerName })}
               sizes="100vw"
               className="w-full h-full object-cover"
               decoding="sync"
@@ -550,7 +557,7 @@ function HomeQuietGrid({
                 key={photo.id}
                 className="aspect-square overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)]"
                 onClick={() => setLightboxIndex(idx)}
-                aria-label={photo.title || `Photo ${idx + 1}`}
+                aria-label={photoAltText(photo, { photographerName })}
               >
                 <img
                   src={fastPhotoSrc(photo, 600, 85, "thumb")}
@@ -609,6 +616,7 @@ function HomeQuietGrid({
               i !== null ? (i + 1) % featured.length : 0,
             )
           }
+          photographerName={photographerName}
         />
       )}
     </div>
@@ -627,6 +635,7 @@ function HomeEditorial({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const photographerName = settings?.siteName || settings?.siteNameEn;
   const statement = settings?.profileStatement ?? "";
   const heroPhoto = heroPhotos[0];
 
@@ -636,7 +645,7 @@ function HomeEditorial({
       key={photo.id}
       className={`overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)] ${className ?? ""}`}
       onClick={() => openLightbox(idx)}
-      aria-label={photo.title || `Photo ${idx + 1}`}
+      aria-label={photoAltText(photo, { photographerName })}
     >
       <img
         src={fastPhotoSrc(photo, 800, 88, "medium")}
@@ -697,7 +706,7 @@ function HomeEditorial({
               rotationDeg={heroPhoto.rotationDeg}
               focalX={heroPhoto.focalX}
               focalY={heroPhoto.focalY}
-              alt={heroPhoto.title || "Photograph"}
+              alt={photoAltText(heroPhoto, { photographerName })}
               sizes="(min-width: 768px) 55vw, 100vw"
               className="w-full h-full object-cover"
               decoding="sync"
@@ -796,6 +805,7 @@ function HomeEditorial({
               i !== null ? (i + 1) % featured.length : 0,
             )
           }
+          photographerName={photographerName}
         />
       )}
     </div>
@@ -814,6 +824,7 @@ function HomeImmersive({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
 
   const displayMedium = (p: GalleryPhoto) => {
@@ -853,7 +864,7 @@ function HomeImmersive({
             rotationDeg={heroPhoto.rotationDeg}
             focalX={heroPhoto.focalX}
             focalY={heroPhoto.focalY}
-            alt={heroPhoto.title || "Photograph"}
+            alt={photoAltText(heroPhoto, { photographerName })}
             sizes="100vw"
             className="w-full h-full object-cover"
             decoding="sync"
@@ -923,7 +934,7 @@ function HomeImmersive({
                   <button
                     className="w-full overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)]"
                     onClick={() => setLightboxIndex(idx)}
-                    aria-label={photo.title || `Photo ${idx + 1}`}
+                    aria-label={photoAltText(photo, { photographerName })}
                   >
                     <img
                       src={fastPhotoSrc(photo, 900, 88, "medium")}
@@ -1006,6 +1017,7 @@ function HomeImmersive({
               i !== null ? (i + 1) % featured.length : 0,
             )
           }
+          photographerName={photographerName}
         />
       )}
     </div>
@@ -1139,6 +1151,7 @@ export default function TopPage() {
   }, [worksCount, worksPool.length]);
   const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const photographerName = settings?.siteName || settings?.siteNameEn;
   const subtitle = settings?.heroSubtitle ?? CLIENT_SITE_FALLBACKS.heroSubtitle;
   const fadeRef = useScrollFadeIn([featured, settings?.topWorksLayout]);
   const nameKata = settings?.profileNameKata ?? "";
@@ -1220,6 +1233,7 @@ export default function TopPage() {
             photo={heroPhotos[0]}
             titlePosition={heroTitlePosition}
             fxRef={heroFxRef}
+            photographerName={photographerName}
           >
             <h1
               className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
@@ -1277,7 +1291,11 @@ export default function TopPage() {
               : "max-w-6xl mx-auto px-4 md:px-10 pt-6 md:pt-10"
           }
         >
-          <HeroCarousel photos={heroPhotos} fxRef={heroFxRef} />
+          <HeroCarousel
+            photos={heroPhotos}
+            fxRef={heroFxRef}
+            photographerName={photographerName}
+          />
 
           {/* Name block below carousel. AA2: in carousel mode the title sits
               under the photos, so the position setting maps to text alignment. */}

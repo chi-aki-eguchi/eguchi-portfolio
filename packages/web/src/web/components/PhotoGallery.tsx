@@ -13,6 +13,7 @@ import {
   srcFor,
   srcSetFor,
 } from "../lib/picture";
+import { photoAltText } from "../lib/photo-alt";
 
 const _preloaded = new Set<string>();
 function preloadForLightbox(
@@ -61,6 +62,9 @@ export type GalleryPhoto = {
   focalY?: number | null;
   thumbUrl?: string | null;
   mediumUrl?: string | null;
+  description?: string | null;
+  category?: string | null;
+  seriesId?: number | null;
 };
 
 // N1/N4: the selectable grid layouts. Unknown / unset values fall back to mosaic.
@@ -235,11 +239,20 @@ export function PhotoGallery({
   layoutType,
   variant = "gallery",
   onRequestMore,
+  seriesName,
+  seriesNameById,
+  categoryLabelBySlug,
 }: {
   photos: GalleryPhoto[];
   layoutType?: string;
   variant?: "top" | "gallery";
   onRequestMore?: () => void;
+  // Used when every photo in this grid belongs to one known series (e.g. a
+  // series detail page). `seriesNameById` covers the mixed case (e.g. the
+  // general gallery grid, where photos may belong to different series).
+  seriesName?: string;
+  seriesNameById?: Record<number, string>;
+  categoryLabelBySlug?: Record<string, string>;
 }) {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -291,6 +304,7 @@ export function PhotoGallery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
+  const photographerName = settings?.siteName || settings?.siteNameEn;
 
   // Track the breakpoint so the layout matches the screen in use. Seeded from
   // window so the first paint already matches (no reflow on real mobile).
@@ -451,11 +465,22 @@ export function PhotoGallery({
       objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY),
     };
     const isNearViewport = idx < 8;
+    const tileSeriesName =
+      seriesName ??
+      (photo.seriesId != null ? seriesNameById?.[photo.seriesId] : undefined);
+    const categoryLabel = photo.category
+      ? categoryLabelBySlug?.[photo.category]
+      : undefined;
+    const alt = photoAltText(photo, {
+      photographerName,
+      seriesName: tileSeriesName,
+      categoryLabel,
+    });
     return (
       <button
         key={photo.id}
         type="button"
-        aria-label={photo.title || photo.meta || photo.filename || "写真を開く"}
+        aria-label={alt}
         style={{
           justifySelf: opts.justifySelf,
           width: opts.width,
@@ -502,12 +527,7 @@ export function PhotoGallery({
               upgradeUrl={
                 opts.preferMediumGrid ? photo.mediumUrl : undefined
               }
-              alt={
-                photo.title ||
-                photo.meta ||
-                photo.filename ||
-                `Photograph ${idx + 1}`
-              }
+              alt={alt}
               sizes={opts.sizes}
               isNearViewport={isNearViewport}
               isFirst={idx === 0}
@@ -950,6 +970,10 @@ export function PhotoGallery({
           onPrev={prev}
           onNext={next}
           onRequestMore={onRequestMore}
+          photographerName={photographerName}
+          seriesName={seriesName}
+          seriesNameById={seriesNameById}
+          categoryLabelBySlug={categoryLabelBySlug}
         />
       )}
     </>

@@ -794,6 +794,11 @@ const app = new Hono()
         profilePhotoUrl: settings.profilePhotoUrl ?? "",
         siteDescription:
           settings.siteDescription ?? siteDescriptionFrom(settings),
+        metaDescriptionHome: settings.metaDescriptionHome ?? "",
+        metaDescriptionGallery: settings.metaDescriptionGallery ?? "",
+        metaDescriptionAbout: settings.metaDescriptionAbout ?? "",
+        metaDescriptionSeries: settings.metaDescriptionSeries ?? "",
+        metaDescriptionContact: settings.metaDescriptionContact ?? "",
         profileName: settings.profileName ?? displayNameFrom(settings),
         profileNameKata:
           settings.profileNameKata ?? SITE_DEFAULTS.profileNameKata,

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { photoSrcFor, photoSrcSetFor } from "../lib/picture";
+import { photoAltText } from "../lib/photo-alt";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
 // srcset without pulling the full 3200px master stored in R2.
@@ -34,6 +35,9 @@ export type LightboxPhoto = {
   lqipSrc?: string;
   mediumUrl?: string | null;
   rotationDeg?: number | null;
+  description?: string | null;
+  category?: string | null;
+  seriesId?: number | null;
 };
 
 const preloaded = new Set<string>();
@@ -73,6 +77,10 @@ export function Lightbox({
   onPrev,
   onNext,
   onRequestMore,
+  photographerName,
+  seriesName,
+  seriesNameById,
+  categoryLabelBySlug,
 }: {
   photos: LightboxPhoto[];
   index: number;
@@ -80,6 +88,10 @@ export function Lightbox({
   onPrev: () => void;
   onNext: () => void;
   onRequestMore?: () => void;
+  photographerName?: string;
+  seriesName?: string;
+  seriesNameById?: Record<number, string>;
+  categoryLabelBySlug?: Record<string, string>;
 }) {
   const [imgError, setImgError] = useState(false);
   const [chrome, setChrome] = useState(true); // counter / caption / nav visibility
@@ -618,6 +630,15 @@ export function Lightbox({
   }, [onPrev, onNext]);
 
   const photo = photos[index];
+  const alt = photoAltText(photo, {
+    photographerName,
+    seriesName:
+      seriesName ??
+      (photo.seriesId != null ? seriesNameById?.[photo.seriesId] : undefined),
+    categoryLabel: photo.category
+      ? categoryLabelBySlug?.[photo.category]
+      : undefined,
+  });
 
   // Chrome (overlay UI) fades out in immersive mode; also hidden while zoomed so
   // the detail view is unobstructed.
@@ -997,7 +1018,7 @@ export function Lightbox({
                   <img
                     ref={fitImgRef}
                     src={photo.mediumUrl}
-                    alt={photo.title || photo.meta || `Photograph ${index + 1}`}
+                    alt={alt}
                     fetchPriority="high"
                     onLoad={() => {
                       setLoadStage("full");
@@ -1038,9 +1059,7 @@ export function Lightbox({
                       src={photoSrcFor(photo, 1200, 85)}
                       srcSet={fitSrcSet(photo)}
                       sizes={FIT_SIZES}
-                      alt={
-                        photo.title || photo.meta || `Photograph ${index + 1}`
-                      }
+                      alt={alt}
                       onLoad={() => {
                         setLoadStage("full");
                       }}

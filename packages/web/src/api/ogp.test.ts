@@ -133,6 +133,32 @@ describe("injectOgp robots policy", () => {
       'og:title" content="indigo blue | Aki Eguchi | Photography"',
     );
   });
+
+  test("home title merges the subtitle into the EN name (bilingual names configured)", () => {
+    // Regression guard: the client-side usePageTitle hook used to compose a
+    // different (2-segment, EN-name-less) title than this SSR output, so GA
+    // recorded two different titles for "/". Both now share composeHomeTitle.
+    const out = injectOgp(
+      page,
+      { siteName: "江口 秋", siteNameEn: "Aki Eguchi", heroSubtitle: "Photography" },
+      "/",
+    );
+    expect(out).toContain("<title>江口 秋 | Aki Eguchi Photography</title>");
+    expect(out).toContain(
+      'og:title" content="江口 秋 | Aki Eguchi Photography"',
+    );
+  });
+
+  test("subpages keep the pipe-separated pattern even with bilingual names", () => {
+    const out = injectOgp(
+      page,
+      { siteName: "江口 秋", siteNameEn: "Aki Eguchi", heroSubtitle: "Photography" },
+      "/gallery",
+    );
+    expect(out).toContain(
+      "<title>Gallery | 江口 秋 | Aki Eguchi | Photography</title>",
+    );
+  });
 });
 
 describe("injectOgp google-site-verification", () => {
@@ -390,6 +416,50 @@ describe("injectOgp JSON-LD WebSite node", () => {
     expect(types).toContain("Person");
     expect(types).toContain("ImageGallery");
   });
+
+  test("Person node has a Japanese jobTitle, sameAs from the configured SNS links, and a bio-derived description", () => {
+    const graph = ldOf(
+      injectOgp(
+        page,
+        {
+          siteUrl: "https://akieguchi.com",
+          siteName: "江口 秋",
+          siteNameEn: "Aki Eguchi",
+          profileBio: "東京在住の写真家です。\n\nBorn in Tokyo.",
+          profileInstagram: "https://www.instagram.com/chi._.aki._/",
+          profileTwitter: "https://x.com/chi_aki_jpg",
+          profileNote: "https://note.com/chi_aki_zip",
+          profilePhotoUrl: "/api/images/profile/1-x.jpg",
+        },
+        "/",
+      ),
+    )["@graph"];
+    const person = graph.find(
+      (n: { "@type": string }) => n["@type"] === "Person",
+    );
+    expect(person.jobTitle).toBe("写真家");
+    expect(person.description).toBe("東京在住の写真家です。");
+    expect(person.sameAs).toEqual([
+      "https://www.instagram.com/chi._.aki._/",
+      "https://x.com/chi_aki_jpg",
+      "https://note.com/chi_aki_zip",
+    ]);
+    expect(person.image).toContain("/api/images/profile/1-x.jpg");
+  });
+
+  test("Person description falls back to the site description when no bio is set", () => {
+    const graph = ldOf(
+      injectOgp(
+        page,
+        { siteUrl: "https://akieguchi.com", siteName: "江口 秋" },
+        "/",
+      ),
+    )["@graph"];
+    const person = graph.find(
+      (n: { "@type": string }) => n["@type"] === "Person",
+    );
+    expect(person.description).toBe("江口 秋の写真ポートフォリオ。");
+  });
 });
 
 describe("injectOgp theme-color", () => {
@@ -513,5 +583,97 @@ describe("injectOgp /profile canonical", () => {
       'property="og:url" content="https://akieguchi.com/about"',
     );
     expect(out).not.toContain("/profile");
+  });
+});
+
+describe("injectOgp per-page meta description", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    </head><body></body></html>`;
+  const descOf = (html: string) =>
+    html.match(/name="description" content="([^"]*)"/)?.[1];
+
+  test("each configured metaDescription* setting is used verbatim and doesn't leak to other pages", () => {
+    const settings = {
+      metaDescriptionHome: "home desc unique",
+      metaDescriptionGallery: "gallery desc unique",
+      metaDescriptionAbout: "about desc unique",
+      metaDescriptionSeries: "series desc unique",
+      metaDescriptionContact: "contact desc unique",
+    };
+    const home = injectOgp(page, settings, "/");
+    const gallery = injectOgp(page, settings, "/gallery");
+    const about = injectOgp(page, settings, "/about");
+    const seriesList = injectOgp(page, settings, "/series");
+    const contact = injectOgp(page, settings, "/contact");
+
+    expect(descOf(home)).toBe("home desc unique");
+    expect(descOf(gallery)).toBe("gallery desc unique");
+    expect(descOf(about)).toBe("about desc unique");
+    expect(descOf(seriesList)).toBe("series desc unique");
+    expect(descOf(contact)).toBe("contact desc unique");
+
+    // A page's own configured text must not show up on an unrelated page.
+    expect(contact).not.toContain("gallery desc unique");
+    expect(gallery).not.toContain("contact desc unique");
+  });
+
+  test("/profile shares the /about metaDescriptionAbout setting (same canonical page)", () => {
+    const out = injectOgp(
+      page,
+      { metaDescriptionAbout: "about desc unique" },
+      "/profile",
+    );
+    expect(descOf(out)).toBe("about desc unique");
+  });
+
+  test("with no settings configured, Home/Gallery/About/Series/Contact each get a different generic fallback", () => {
+    const home = descOf(injectOgp(page, {}, "/"));
+    const gallery = descOf(injectOgp(page, {}, "/gallery"));
+    const about = descOf(injectOgp(page, {}, "/about"));
+    const seriesList = descOf(injectOgp(page, {}, "/series"));
+    const contact = descOf(injectOgp(page, {}, "/contact"));
+
+    const all = [home, gallery, about, seriesList, contact];
+    expect(new Set(all).size).toBe(all.length);
+
+    expect(gallery).toContain("ギャラリー");
+    expect(seriesList).toContain("シリーズ");
+    expect(about).toContain("プロフィール");
+    expect(contact).toContain("連絡先");
+  });
+
+  test("a series with no statement/subtitle still names the series, not the fully generic site description", () => {
+    const out = injectOgp(
+      page,
+      { siteName: "江口 秋" },
+      "/series/indigoblue",
+      "",
+      { title: "indigo blue", desc: "" },
+    );
+    const desc = descOf(out);
+    expect(desc).toContain("indigo blue");
+    expect(desc).not.toBe("江口 秋の写真ポートフォリオ。");
+  });
+
+  test("a series with a configured statement/subtitle keeps using it verbatim", () => {
+    const out = injectOgp(
+      page,
+      { siteName: "江口 秋" },
+      "/series/indigoblue",
+      "",
+      { title: "indigo blue", desc: "藍染めをテーマにした作品群。" },
+    );
+    expect(descOf(out)).toBe("藍染めをテーマにした作品群。");
   });
 });

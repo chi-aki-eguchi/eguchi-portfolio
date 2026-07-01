@@ -18,7 +18,7 @@ export default function SeriesDetailPage() {
     // limits (see lib/api.ts) — the response shape is annotated manually instead.
     queryFn: async (): Promise<{
       series: { id: number; slug: string; title: string; subtitle: string; statement: string; themeConfig?: string | null };
-      photos: (GalleryPhoto & { description?: string })[];
+      photos: GalleryPhoto[];
     } | null> => {
       const res = await (api.series as Record<string, any>)[":slug"].$get({ param: { slug } });
       if (res.status === 404) return null;
@@ -125,7 +125,11 @@ export default function SeriesDetailPage() {
             <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">No photos in this series</p>
           </div>
         ) : (
-          <PhotoGallery photos={photos} layoutType={seriesLayout} />
+          <PhotoGallery
+            photos={photos}
+            layoutType={seriesLayout}
+            seriesName={data?.series.title}
+          />
         )}
       </div>
 

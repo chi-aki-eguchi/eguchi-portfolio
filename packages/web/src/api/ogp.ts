@@ -6,6 +6,7 @@ import {
   siteDescriptionFrom,
 } from "./site-defaults";
 import { imageUrlWithParams } from "../shared/image-url";
+import { composeBaseTitle, composeHomeTitle } from "../shared/site-title";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
@@ -66,6 +67,42 @@ const PAGE_TITLES: Record<string, string> = {
   "/contact": "Contact",
 };
 
+// Per-route settings key for a distinct meta description, mirroring PAGE_TITLES
+// above. Both /about and /profile map to the same key since they render the
+// same page (see the canonPath handling below).
+const META_DESCRIPTION_KEYS: Record<string, string> = {
+  "/": "metaDescriptionHome",
+  "/gallery": "metaDescriptionGallery",
+  "/series": "metaDescriptionSeries",
+  "/about": "metaDescriptionAbout",
+  "/profile": "metaDescriptionAbout",
+  "/contact": "metaDescriptionContact",
+};
+
+// Generic per-page description used when the corresponding admin setting is
+// empty. Kept template-safe: only `name` (the settings-resolved display name)
+// is interpolated — no hardcoded location/subject matter — so every distributed
+// site still gets distinct, non-generic text per page out of the box.
+function genericPageDescription(
+  pathname: string,
+  name: string,
+  settings: Record<string, string>,
+): string {
+  switch (pathname) {
+    case "/gallery":
+      return `${name}の作品を一覧できるギャラリーページ。`;
+    case "/series":
+      return `${name}の作品をシリーズ単位で紹介するページ。`;
+    case "/about":
+    case "/profile":
+      return `${name}のプロフィールページ。`;
+    case "/contact":
+      return `${name}への連絡先ページ。`;
+    default:
+      return siteDescriptionFrom(settings);
+  }
+}
+
 const SERVICE_HOST = "akieguchi.com";
 
 export function isServiceSiteUrl(siteUrl: string): boolean {
@@ -120,18 +157,20 @@ export function injectOgp(
   const subtitle = settings.heroSubtitle || "Photography";
   // Bilingual base title (e.g. "Name JP | Name EN | Photography") so the JA name
   // leads for Japanese search while the EN name still reads in social cards.
-  // usePageTitle.ts mirrors this exact composition so the SPA tab title and the
-  // server-rendered <title>/og:title agree. (When siteName(JA) is unset the JA
-  // segment drops out, leaving "Name EN | Photography".)
+  // web/hooks/usePageTitle.ts calls the same composeBaseTitle/composeHomeTitle
+  // helpers (from ../shared/site-title) so the SPA tab title and the
+  // server-rendered <title>/og:title always agree — a past divergence there
+  // caused GA to record two different titles for the same URL.
   const siteUrl = siteUrlFrom(settings, fallbackOrigin);
   const nameJa = settings.siteName || "";
-  const base = [
-    nameJa && nameJa !== siteName ? nameJa : null,
-    siteName,
-    subtitle,
-  ]
-    .filter(Boolean)
-    .join(" | ");
+  // JA-preferring display name — used to build the per-page generic
+  // description fallbacks below (distinct from `siteName`, which is EN).
+  const name = displayNameFrom(settings);
+  const titleParts = { nameJa, nameEn: siteName, subtitle };
+  const base = composeBaseTitle(titleParts);
+  // Home page only: "Name JA | Name EN Subtitle" (subtitle merges into the EN
+  // name without a pipe) — see composeHomeTitle for why this differs from `base`.
+  const homeTitle = composeHomeTitle(titleParts);
   const isServiceSite = isServiceSiteUrl(siteUrl);
   const isService = pathname === "/service" && isServiceSite;
   const page = PAGE_TITLES[pathname];
@@ -161,12 +200,24 @@ export function injectOgp(
         ? `${override.title} | ${base}`
         : page
           ? `${page} | ${base}`
-          : base;
+          : homeTitle;
+  // Per-page description, from most to least specific:
+  // 1. a series' own statement/subtitle (override.desc)
+  // 2. a series with no statement/subtitle configured — still name the series
+  //    (override.title, set only by the /series/:slug caller) rather than
+  //    falling all the way through to the generic site description
+  // 3. a static route's admin-configured meta description setting
+  // 4. that route's generic (template-safe) fallback sentence
   const desc = missingPublicPage
     ? "お探しのページは見つかりませんでした。"
     : isService
       ? SERVICE_OG.desc
-      : override?.desc || siteDescriptionFrom(settings);
+      : override?.desc
+        ? override.desc
+        : override?.title
+          ? seriesFallbackDescription(override.title, name)
+          : settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
+            genericPageDescription(pathname, name, settings);
   // Prefer an override image (series cover), then the hero photo, then profile, then
   // the static default already in index.html. /service uses its own fixed card image
   // (a flat file, so no /api/images resize query is appended).
@@ -346,6 +397,25 @@ export function injectOgp(
   return out;
 }
 
+// Automatic fallback description for a /series/:slug page whose series has no
+// statement/subtitle configured in the DB. Still names the series (rather than
+// falling through to the fully generic site description) so shared links /
+// search results distinguish one series from another.
+function seriesFallbackDescription(title: string, name: string): string {
+  return `写真シリーズ「${title}」の作品ページ。${name}が撮影。`;
+}
+
+// profileBio repeats the same self-intro across JA/EN/中文 paragraph blocks —
+// take just the first (JA) paragraph so the Person description stays a
+// natural 1-2 sentences in one language, matching the graph's inLanguage: "ja".
+function personDescriptionFrom(
+  settings: Record<string, string>,
+  fallback: string,
+): string {
+  const firstParagraph = (settings.profileBio || "").trim().split(/\n\s*\n/)[0]?.trim();
+  return firstParagraph || fallback;
+}
+
 // F: JSON-LD — WebSite (the domain itself) + Person (the photographer) +
 // ImageGallery (the site), plus a per-series ImageGallery on /series/:slug so
 // each body of work is its own recognised collection in search / social.
@@ -372,6 +442,7 @@ function buildJsonLd(
   const image = settings.profilePhotoUrl
     ? `${siteUrl}${imageUrlWithParams(settings.profilePhotoUrl, { w: 800, q: 85 })}`
     : undefined;
+  const personDesc = personDescriptionFrom(settings, desc);
 
   const graph: Record<string, unknown>[] = [
     {
@@ -388,7 +459,8 @@ function buildJsonLd(
       name,
       alternateName: nameEn,
       url: siteUrl,
-      jobTitle: "Photographer",
+      jobTitle: "写真家",
+      description: personDesc,
       ...(image ? { image } : {}),
       ...(sameAs.length ? { sameAs } : {}),
     },

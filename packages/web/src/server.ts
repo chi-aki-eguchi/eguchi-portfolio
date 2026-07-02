@@ -16,6 +16,7 @@ import {
   isSeriesDetailPath,
   normalizeSpaPathname,
 } from "./api/public-routes";
+import { contentTypeForStaticPath } from "./api/static-files";
 import { imageUrlWithParams } from "./shared/image-url";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
@@ -482,6 +483,8 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     const file = Bun.file(filePath);
     if (await file.exists()) {
       const headers: Record<string, string> = {};
+      const contentType = contentTypeForStaticPath(url.pathname);
+      if (contentType) headers["Content-Type"] = contentType;
       // Hashed assets (e.g. /assets/index-Bzsuqb-e.js) — cache forever
       const immutable = url.pathname.startsWith("/assets/");
       if (immutable) {

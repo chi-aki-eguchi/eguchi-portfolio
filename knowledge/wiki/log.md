@@ -19,6 +19,15 @@ it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-07-02 — TIFF upload validation fix
+
+Driver task for production admin upload bugs. Updated `pages/image-pipeline.md`
+to record that TIFF uploads are accepted (`image/tiff`, `image/x-tiff`,
+`.tif`, `.tiff`) and normalized into the standard JPEG master + WebP
+derivatives. Marked `pages/open-issues.md` item 32 resolved because upload
+validation now uses a shared allow-list even when the browser provides an
+empty or generic MIME type.
+
 ### 2026-07-02 — Full-site debug & safe improvement pass
 
 Bounded Driver task: read-only 10-dimension audit (correctness/API/

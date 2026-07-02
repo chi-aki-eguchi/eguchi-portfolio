@@ -26,11 +26,16 @@ sources:
 - **Upload flow**: browser → `POST /admin/upload` (raw file) → sharp
   optimizes to **one stored master**: max 3200px long edge, mozjpeg q92,
   4:4:4 chroma, **no `.withMetadata()`** so EXIF is stripped from the stored
-  master → uploaded to R2 as `photos/<ts>-<name>.jpg`. EXIF is read from the
-  **original** (pre-optimization) buffer via `exif-reader` and mapped to
-  discrete columns (`shotAt`, `exifCamera`, `exifLens`, `exifFocalLength`,
-  `exifFNumber`, `exifExposureTime`, `exifIso`) — the binary EXIF itself is
-  never stored. (packages/web/src/api/index.ts:283-284,340-372,1103-1158)
+  master → uploaded to R2 as `photos/<ts>-<name>.jpg`. TIFF files are accepted
+  at upload validation (`image/tiff`, `image/x-tiff`, `.tif`, `.tiff`) and
+  follow the same policy: decode the original, store the normalized JPEG
+  master, then generate WebP derivatives. EXIF is read from the **original**
+  (pre-optimization) buffer via `exif-reader` and mapped to discrete columns
+  (`shotAt`, `exifCamera`, `exifLens`, `exifFocalLength`, `exifFNumber`,
+  `exifExposureTime`, `exifIso`) — the binary EXIF itself is never stored.
+  (packages/web/src/api/index.ts:340-372,1063-1179;
+  packages/web/src/api/security.ts:3-55;
+  packages/web/src/web/lib/upload-file.ts:1-44)
 - The server **also generates two pre-generated WebP derivatives** from the
   optimized buffer: thumb (640px, q82) and medium (1920px, q85), uploaded to
   R2 as `thumbs/<name>.webp` / `medium/<name>.webp`, with keys stored as
@@ -98,8 +103,11 @@ sources:
   thumb/medium WebP generation was added, and is now stale documentation
   rather than intentional current policy — inferred from the direct code
   contradiction, not from a changelog confirming when it went stale.
-- None of this was verified by running the app or hitting the live R2
-  bucket/DB — all conclusions are from static source reading.
+- The 2026-07-02 TIFF validation update was verified locally with sharp
+  `0.34.5` / libtiff `4.7.1` decoding a generated TIFF into JPEG, plus
+  targeted upload-validation tests. Production DB/R2 were queried
+  read-only for the reported sample filenames (`DSCF1599`, `DSCF1607`,
+  `DSCF1609`) and found no leftover DB rows or R2 objects for those names.
 
 ## Open Questions
 

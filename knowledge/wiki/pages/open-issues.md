@@ -179,10 +179,13 @@ any item below.
     empty-state goal (DISTRIBUTION.md) — the other two variants correctly
     fall back to the generic `"Photography"`. `web/pages/top.tsx:737`. See
     also distribution.md.
-32. **Image upload MIME-type check is skipped when the browser sends no
-    `Content-Type`** on all 3 upload routes, letting unwhitelisted files
-    reach `sharp()` unchecked.
-    `api/index.ts:1069-1070,1188-1189,1214-1215`.
+32. **Resolved 2026-07-02**: Image upload validation now uses a shared
+    allow-list for all 3 upload routes and accepts TIFF variants
+    (`image/tiff`, `image/x-tiff`, `.tif`, `.tiff`) while still rejecting
+    unsupported image-ish files such as SVG. This also closes the former gap
+    where an empty browser `Content-Type` could reach `sharp()` unchecked.
+    `api/index.ts:1066-1070,1185-1189,1211-1215`;
+    `api/security.ts:3-55`; `web/lib/upload-file.ts:1-44`.
 33. **`/api/images/*` resize proxy collapses every failure mode (timeout,
     decode crash, real missing-key) into a blanket `404 Not found`**,
     hiding genuine 5xx-class infrastructure failures. `api/index.ts:720-728`.

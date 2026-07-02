@@ -129,6 +129,20 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 23. **Resolved 2026-07-02**: `AUDIT.report/` was owner-approved for deletion.
 24. **Resolved 2026-07-02**: the empty root-level `skills/` directory was
     owner-approved for deletion.
+25. **Extracted from `docs/archive/chatgpt-handoff.md` on 2026-07-02**:
+    cleanup archived the ChatGPT prompt handoff, but several listed follow-ups
+    still appear live or deliberately unverified: remove the production
+    `akieguchi.com` GA fallback after Railway has `GA_MEASUREMENT_ID`; verify
+    empty-database startup; decide whether to rename `sandbox-app-template` /
+    `@template/web`; decide whether focal-point drag UI is needed beyond the
+    current point controls; and run hands-on verification for rotation/focal
+    controls. (docs/archive/chatgpt-handoff.md:130-139, 167-173)
+26. **Extracted from `docs/archive/service-tsx-handoff.md` on 2026-07-02**:
+    BUG-1 and BUG-3 remain unverified in this cleanup pass. BUG-1: the service
+    page had a full-page `opacity:0` failure when `.page-entrance` elements did
+    not receive `visible`. BUG-3: pricing-card list markers were reported as
+    literal `--` instead of an em dash. (docs/archive/service-tsx-handoff.md:10-31,
+    51-61)
 
 ## Sources
 

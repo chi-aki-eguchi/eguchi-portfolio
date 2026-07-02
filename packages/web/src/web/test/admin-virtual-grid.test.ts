@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { computeVirtualGridWindow } from "../pages/admin";
+import { adminPhotoSrc, computeVirtualGridWindow } from "../pages/admin";
 
 describe("admin library virtual grid", () => {
   test("renders only visible rows plus buffer for a large library", () => {
@@ -14,8 +14,33 @@ describe("admin library virtual grid", () => {
     expect(window.columns).toBe(6);
     expect(window.startIndex).toBe(0);
     expect(window.endIndex).toBeLessThan(445);
-    expect(window.renderedCount).toBe(48);
+    expect(window.renderedCount).toBe(60);
     expect(window.isVirtualized).toBe(true);
+  });
+
+  test("admin tile images prefer pre-generated thumbnails", () => {
+    expect(
+      adminPhotoSrc(
+        {
+          url: "/api/images/photos/original.jpg",
+          thumbUrl: "/api/images/thumbs/original.webp",
+          mediumUrl: "/api/images/medium/original.webp",
+        },
+        400,
+        70,
+      ),
+    ).toBe("/api/images/thumbs/original.webp");
+    expect(
+      adminPhotoSrc(
+        {
+          url: "/api/images/photos/original.jpg",
+          thumbUrl: "/api/images/thumbs/original.webp",
+          mediumUrl: "/api/images/medium/original.webp",
+        },
+        1600,
+        85,
+      ),
+    ).toBe("/api/images/medium/original.webp");
   });
 
   test("keeps global indexes stable after scrolling", () => {

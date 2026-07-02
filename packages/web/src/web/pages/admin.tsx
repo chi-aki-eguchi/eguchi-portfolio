@@ -805,6 +805,8 @@ async function readClipboardText() {
 export type Photo = {
   id: number;
   url: string;
+  thumbUrl?: string | null;
+  mediumUrl?: string | null;
   title: string;
   meta: string;
   camera?: string | null;
@@ -860,10 +862,17 @@ function rotatedBy(
 }
 
 export function adminPhotoSrc(
-  photo: { url: string; rotationDeg?: number | null },
+  photo: {
+    url: string;
+    thumbUrl?: string | null;
+    mediumUrl?: string | null;
+    rotationDeg?: number | null;
+  },
   w: number,
   q: number,
 ): string {
+  if (w <= 640 && photo.thumbUrl) return photo.thumbUrl;
+  if (w <= 1920 && photo.mediumUrl) return photo.mediumUrl;
   return srcFor(photo.url, w, q, undefined, photo.rotationDeg);
 }
 
@@ -942,7 +951,9 @@ const ORIENTATION_FILTER_LABELS: Record<string, string> = {
   square: "正方形",
 };
 const LIBRARY_GRID_GAP = 3;
-const LIBRARY_GRID_OVERSCAN_ROWS = 3;
+// Keep roughly one extra screen of rows mounted so thumbnail requests start
+// before fast scrolling reveals the next window, without returning to all-445 rendering.
+const LIBRARY_GRID_OVERSCAN_ROWS = 5;
 
 type VirtualGridWindow = {
   startIndex: number;

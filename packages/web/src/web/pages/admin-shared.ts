@@ -97,6 +97,8 @@ export function effectivePresets(saved: string[], defaults: string[]): string[] 
 export type Photo = {
   id: number;
   url: string;
+  thumbUrl?: string | null;
+  mediumUrl?: string | null;
   title: string;
   meta: string;
   camera?: string | null;
@@ -120,10 +122,17 @@ export type Photo = {
 };
 
 export function adminPhotoSrc(
-  photo: { url: string; rotationDeg?: number | null },
+  photo: {
+    url: string;
+    thumbUrl?: string | null;
+    mediumUrl?: string | null;
+    rotationDeg?: number | null;
+  },
   w: number,
   q: number,
 ): string {
+  if (w <= 640 && photo.thumbUrl) return photo.thumbUrl;
+  if (w <= 1920 && photo.mediumUrl) return photo.mediumUrl;
   return srcFor(photo.url, w, q, undefined, photo.rotationDeg);
 }
 

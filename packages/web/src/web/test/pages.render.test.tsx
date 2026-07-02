@@ -24,6 +24,8 @@ function makeLargeAdminPhotos(count = 445) {
     id: index + 1,
     filename: `p-${String(index).padStart(3, "0")}.jpg`,
     url: `/api/images/photos/p-${String(index).padStart(3, "0")}.jpg`,
+    thumbUrl: `/api/images/thumbs/p-${String(index).padStart(3, "0")}.webp`,
+    mediumUrl: `/api/images/medium/p-${String(index).padStart(3, "0")}.webp`,
     title: `P${String(index).padStart(3, "0")}`,
     sortOrder: index,
     fileHash: `large-${index}`,
@@ -309,6 +311,11 @@ describe("shared components", () => {
       expect(firstTile).not.toBeNull();
       firstTile!.click();
       await flush(20);
+      const initialThumbs = Array.from(host.querySelectorAll("img"))
+        .map((img) => img.getAttribute("src") ?? "")
+        .filter((src) => src.includes("/api/images/thumbs/"));
+      expect(initialThumbs.length).toBeLessThanOrEqual(60);
+      expect(initialThumbs.length).toBeGreaterThan(0);
 
       for (let i = 0; i < 74; i += 1) {
         dom.window.dispatchEvent(

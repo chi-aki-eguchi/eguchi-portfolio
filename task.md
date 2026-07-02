@@ -1,5 +1,59 @@
 # Task Log
 
+## Handoff 2026-07-03 — Codex: large TIFF upload size follow-up
+
+### 目的
+
+TIFF対応後も本番で大きい `.tif` が失敗した件を、Codex Driverとして小さく調査・修正。pushは未実施（owner承認待ち）。
+
+### 原因
+
+- 本命の犯人はアプリ内の画像アップロード上限 60MB。ローカルAPIで 61MiB のファイルを投げると、DB/R2/sharp処理に入る前に HTTP 413 と `画像は60MBまでです。` が返ることを確認。
+- Railway公式公開ドキュメントでは、プロキシのリクエスト時間・ヘッダー・レート制限は確認できたが、固定のリクエスト本文サイズ上限は見つからなかった。
+- R2は単体アップロード 5GiB まで。sharpはTIFF対応ありで、標準の安全上限はバイト数ではなくピクセル数 `268402689`。
+
+### 変更内容
+
+- `packages/web/src/shared/upload-limits.ts`
+  - 画像アップロード上限を共有定数化し、300MBに設定。
+  - 大きすぎる時の文言を `画像が大きすぎます（上限: 300MB）。` に統一。
+- `packages/web/src/api/security.ts`, `packages/web/src/api/index.ts`
+  - 通常写真・Hero・Profileのサーバ側上限を300MBへ変更。
+  - 上限超過時はHTTP 413で明確な理由を返す。
+- `packages/web/src/web/lib/upload-file.ts`, `packages/web/src/web/pages/admin.tsx`
+  - 管理画面で300MB超のファイルをアップロード前に弾く。
+  - 60MB超〜300MB以下のファイルが含まれる時は、複数同時ではなく1件ずつ送る。
+- `knowledge/wiki/pages/image-pipeline.md`, `knowledge/wiki/pages/open-issues.md`, `knowledge/wiki/log.md`
+  - 大容量TIFFの上限方針と今回の診断結果を記録。
+
+### 本番データ読み取り調査
+
+- Turso DBを読み取り専用で確認:
+  - `.tif/.tiff/.TIF/.TIFF` の既存行は3件（`IMG_2247.TIF`, `IMG_2221.TIF`, `IMG_2220.TIF`）のみ。
+  - 2026-07-03の再試行で増えた大容量TIFF行は見つからなかった。
+- R2を読み取り専用で確認:
+  - 2026-07-03 JST以降に作られた `photos/`, `thumbs/`, `medium/` オブジェクトは0件。
+- 結論: 今回の大容量TIFF失敗では、DB行やR2オブジェクトの残骸は見つからなかった。 cleanup script は不要。
+
+### 検証
+
+- 変更前の再現:
+  - ローカルAPIで 61MiB upload → HTTP 413 / `画像は60MBまでです。`
+- 変更後:
+  - `cd packages/web && bun test ./src/api/security.test.ts ./src/web/lib/upload-file.test.ts` 成功（52 pass / 0 fail）
+  - `git diff --check` 成功
+  - `cd packages/web && bun x tsc -b` 成功
+  - `bunx oxlint packages/web/src/api/index.ts packages/web/src/api/security.ts packages/web/src/api/security.test.ts packages/web/src/shared/upload-limits.ts packages/web/src/web/lib/upload-file.ts packages/web/src/web/lib/upload-file.test.ts packages/web/src/web/pages/admin.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功
+  - `cd packages/web && bun run build` 成功
+  - `cd packages/web && bun test ./src` 成功（239 pass / 0 fail）
+  - `bun run lint` は既存の `packages/web/src/web/components/Lightbox.tsx:1214` `prefer-tag-over-role` 警告で失敗（今回差分外）
+
+### 注意
+
+- 300MBを超えるファイル、またはsharpのピクセル安全上限を超える巨大スキャンはまだ失敗する可能性がある。
+- Railway側に公開されていない本文サイズ上限がある場合、repo内だけでは上げられない。その場合はローカル縮小か、直R2 multipart/chunked upload設計が次の選択肢。
+- pushは未実施。owner承認後にpushする。
+
 ## Handoff 2026-07-02 — Codex: admin TIFF upload + film date investigation
 
 ### 目的

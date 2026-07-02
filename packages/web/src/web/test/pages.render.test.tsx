@@ -14,6 +14,10 @@ const { createElement, StrictMode } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 
+function seedAdminPhotos(qc: InstanceType<typeof QueryClient>) {
+  qc.setQueryData(["photos", "all"], { photos: samplePhotos });
+}
+
 async function mount(node: unknown, setupQueryClient?: (qc: InstanceType<typeof QueryClient>) => void) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   setupQueryClient?.(qc);
@@ -229,7 +233,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
       expect(host.textContent).toContain("日付なし");
@@ -285,7 +289,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       const tile = host.querySelector(
         'button[aria-label="B"]',
       ) as HTMLButtonElement | null;
@@ -346,7 +350,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       const input = host.querySelector(
         'input[aria-label="写真を検索"]',
       ) as HTMLInputElement | null;
@@ -391,7 +395,7 @@ describe("shared components", () => {
     dom.window.localStorage.setItem("admin:tab", JSON.stringify("old-tab"));
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       await flush(30);
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
@@ -429,7 +433,7 @@ describe("shared components", () => {
     );
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       await flush(80);
       expect(host.textContent).toContain("Library");
       expect(dom.window.sessionStorage.getItem("admin:filterCat")).toBe(
@@ -468,7 +472,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       const albumButton = Array.from(host.querySelectorAll("button")).find(
         (button) => button.textContent?.includes("アルバム"),
       ) as HTMLButtonElement | undefined;
@@ -510,7 +514,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       expect(host.textContent).toContain("Needs review");
       expect(host.textContent).toContain("Film");
       expect(host.textContent).toContain("日付なし");

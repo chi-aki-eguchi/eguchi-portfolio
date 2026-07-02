@@ -3966,6 +3966,47 @@ SNSクローラーや配布版環境で、静的カード画像・ビルド済�
 
 - この作業では既存の未コミット差分 `packages/web/src/server.ts`、未追跡の静的ファイル配信テスト類、各種 handoff/prompt メモは対象外。
 
+## Handoff 2026-07-03 — Codex: Admin Library 仮想化 + 非Libraryタブ lazy 化
+
+### 目的
+
+管理画面 Library が 445 枚以上でも重くなりにくいよう、表示中の写真カードだけを描画し、Hero/Profile/Settings など未使用タブのコードを初回 admin 表示から外す。
+
+### 変更内容
+
+- Library grid に行単位の仮想化を追加。
+  - 写真データ自体は従来通り全件取得するが、DOM に作る tile は表示範囲 + 余白行だけにした。
+  - 選択、複数選択、Inspector、キーボード移動、ドラッグ/ボタン並び替え、スクロール位置復元は既存経路を維持。
+- 非Libraryタブを `admin-tabs.tsx` に分割し、`React.lazy` / `Suspense` で初回タブオープン時に読み込むようにした。
+- 循環 import を避けるため、非Libraryタブが使う小さな共有 helper を `admin-shared.ts` に分離。
+- 仮想化計算の単体テストと、lazy 化後の Hero タブ render test 待機を追加。
+- wiki の performance finding #45/#46 を解決済みに更新。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `packages/web/src/web/pages/admin-shared.ts`
+- `packages/web/src/web/test/admin-virtual-grid.test.ts`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `knowledge/wiki/pages/open-issues.md`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+  - before: `admin-Qo7spuZJ-b.js` 399.41KB / gzip 64.63KB。
+  - after: `admin-D-vMJvnF-b.js` 191.48KB / gzip 33.68KB。
+  - lazy chunk: `admin-tabs-ZGdZLh2a-b.js` 218.75KB / gzip 34.05KB。
+- `cd packages/web && bun test ./src` 成功（243 pass / 0 fail）。
+- `cd packages/web && bun run lint` は既存の `Lightbox.tsx:1214` の `role="dialog"` 警告で失敗。今回触ったファイル由来の lint 失敗ではない。
+
+### 注意
+
+- サーバー側ページネーションは今回の範囲外。Library の API 取得はまだ `/api/photos?all=1` のまま。
+- push はしていない。owner の承認待ち。
+
 ## Handoff 2026-06-30 — Codex: Inspector 上部によく使う操作を集約
 
 ### 目的

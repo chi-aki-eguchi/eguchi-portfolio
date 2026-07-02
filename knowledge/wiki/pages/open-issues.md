@@ -262,18 +262,19 @@ verified correct across 7 indexable pages.
 
 ## Performance measurement findings — 2026-07-03
 
-45. **Admin Library renders the whole photo grid at once.** The admin Library
-    fetches all admin-visible photos via `/api/photos?all=1`, then renders the
-    visible grid with `displayed.map(...)` and no virtualization. With the
-    current ~445-photo library, this means hundreds of tile DOM nodes and lazy
-    image elements exist at once. This is owner/admin-only, but likely the
-    biggest perceived admin slowness lever. `web/pages/admin.tsx:1096-1100,
-    3481-3564`.
-46. **Admin is the largest production chunk.** Local production build on
-    2026-07-03 produced `admin-Qo7spuZJ-b.js` at 399,412 bytes, larger than
-    `react-vendor` (365,865 bytes). The admin route file contains all major
-    admin tabs/features in one bundle, so opening admin pays for many tools at
-    once. Owner/admin-only. `packages/web/dist/assets/*`; `web/pages/admin.tsx`.
+45. **Resolved 2026-07-03**: Admin Library no longer renders the whole photo
+    grid at once. It still fetches all admin-visible photos via
+    `/api/photos?all=1` (server-side pagination remains a future task), but the
+    grid now windows the rendered tiles to the visible rows plus buffer. Local
+    virtual-grid test evidence: a 445-photo, 1200px-wide grid renders 48 tiles
+    initially instead of 445. `web/pages/admin.tsx`; `web/test/admin-virtual-grid.test.ts`.
+46. **Resolved 2026-07-03**: Admin is no longer a single 399KB route chunk.
+    Non-Library tabs (Hero/Profile/Categories/Series/Pricing/Service/Settings)
+    are lazy-loaded through `admin-tabs`. Local production build changed the
+    initial admin chunk from 399.41KB / gzip 64.63KB to 191.48KB / gzip
+    33.68KB, with `admin-tabs` at 218.75KB / gzip 34.05KB loaded on first
+    non-Library tab open. `web/pages/admin.tsx`; `web/pages/admin-tabs.tsx`;
+    `web/pages/admin-shared.ts`.
 47. **Gallery fetches all photo metadata before showing the first 24.** The
     gallery page calls `api.photos.$get()` with no `limit`, then slices the
     already-fetched array to the initial render count (24 desktop / 12 mobile).

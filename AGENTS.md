@@ -281,3 +281,34 @@ cd packages/web && bun run db:push  # deletedAt カラム追加
 - OGP メタタグはサーバサイドで `index.html` に注入（60 秒 TTL キャッシュ）
 - テンプレート由来の `packages/mobile/`・`packages/desktop/` は 2026-06 に削除済み（パッケージは `web` のみ）
 - ギャラリーレイアウトは 9 種（mosaic / grid / scroll / stagger / editorial / collage / clean-grid / masonry / large-format）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。未知の値は mosaic にフォールバック
+
+## Shared Knowledge Wiki
+
+`knowledge/wiki/` is an AI-maintained index/compression layer over this
+repo's existing docs and code — it is **NOT the source of truth**. Canonical
+sources (code, CLAUDE.md/AGENTS.md, task.md, other docs/specs) always win on
+conflict; see `knowledge/WIKI_SCHEMA.md` for the full rules.
+
+- At the start of a session, read `knowledge/wiki/index.md` plus whichever
+  page(s) are relevant to the task at hand — not the whole wiki.
+- After a task produces durable knowledge (an architecture decision, a
+  discovered gotcha, a resolved contradiction), update the wiki in a
+  **docs-only** commit prefixed `docs(wiki):`.
+- Never mix wiki edits with implementation changes in the same commit or the
+  same task.
+- If a wiki page conflicts with a canonical source, fix the wiki (or log it
+  in `knowledge/wiki/pages/open-issues.md`) — never "fix" the canonical
+  source to match the wiki.
+
+## Agent Ownership: 1 task = 1 Driver
+
+Exactly one agent (Claude Code or Codex) is the **Driver** for a given task —
+the Driver may edit files, run commands, and commit/push. The other agent, if
+involved, acts as **Reviewer** only (reads, comments, does not edit).
+
+- Two agents must never edit the same files concurrently.
+- A Driver handoff requires an explicit handoff entry in `task.md`: current
+  state, what's done, what remains, and any gotchas the next Driver needs.
+- Scattered `*.handoff.md` files (e.g. sitting untracked at the repo root or
+  next to a component) are **deprecated** going forward — use the `task.md`
+  handoff entry instead.

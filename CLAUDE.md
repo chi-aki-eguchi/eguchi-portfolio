@@ -132,3 +132,9 @@ Drop:
 - ギャラリーレイアウト 9種: mosaic / grid / scroll / stagger / editorial / collage / clean-grid / masonry / large-format。未知値は mosaic フォールバック
 - 写真複製は R2 オブジェクト共有。purge は他参照なしの場合のみ
 - `test-*.mjs` は scratch スクリプト（管理パスワード含む可能性）— `git add .` でコミットしない
+
+## Agent rules & knowledge index
+
+Shared agent rules (Driver/Reviewer, wiki usage): see AGENTS.md.
+Knowledge index: `knowledge/wiki/index.md` — the wiki is an index, NOT the
+source of truth; canonical docs win on conflict.

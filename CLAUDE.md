@@ -104,10 +104,9 @@ git add ... && git commit && git push         # ② Railway 自動デプロイ
 
 | ファイル                       | 内容                                                            |
 | ------------------------------ | --------------------------------------------------------------- |
-| `admin-enhancement-spec.md`    | 管理画面強化 P1〜P4（タイポグラフィ A1-A10 / 管理快適化 B1-B6） |
-| `admin-enhancement-spec-v2.md` | 続編 C〜F / Q1〜Q5（写真管理・編集UI・閲覧側・SEO）             |
-| `design-spec.md`               | デザイン設計図（雑誌的佇まい・余白主導）                        |
-| `refine-and-loop-spec.md`      | 自走改善ループ運用方針                                          |
+| `docs/specs/admin-enhancement-spec.md` | 管理画面強化の現行仕様（写真の向き・調整幅・UX改善） |
+| `docs/specs/design-spec.md`            | デザイン設計図（雑誌的佇まい・余白主導）             |
+| `docs/specs/refine-and-loop-spec.md`   | 自走改善ループ運用方針                               |
 
 ## Compaction policy
 

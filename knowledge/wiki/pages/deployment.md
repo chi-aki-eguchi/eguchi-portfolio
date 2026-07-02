@@ -3,7 +3,7 @@ title: Deployment
 status: current
 last_verified: 2026-07-02
 sources:
-  - scripts/deploy.sh
+  - docs/archive/deploy.sh
   - ecosystem.config.cjs
   - docs/post-deploy-guide.md
   - docs/cloudflare-setup.md
@@ -29,19 +29,19 @@ sources:
   can't override akieguchi.com's own Railway settings).
   (README.md:13,34-52,159-170; CLAUDE.md "デプロイ（Railway）" section)
 - **Legacy/historical**: a ZIP-based flow for a platform called "Runable,"
-  implemented in `scripts/deploy.sh`, invoked via the now-renamed npm script
+  implemented in `docs/archive/deploy.sh`, invoked via the now-renamed npm script
   `deploy:runable:legacy` (there is **no plain `deploy` script** in
   `package.json` anymore). Per task.md's 2026-06-18/19 entries, this was
   deliberately demoted so it wouldn't be run by mistake instead of the
   Railway git-push flow. (package.json:11-24; task.md:620-633,862-868)
-- `scripts/deploy.sh` **still only knows about "Runable Publish"** — its
+- `docs/archive/deploy.sh` **still only knows about "Runable Publish"** — its
   header, BUILD_ID sed-replacement, and final production-check block never
   mention Railway. Its `X-Build`-header check logic **no longer matches**
   current `ogp.ts`, which now derives `BUILD_ID` from
   `RAILWAY_GIT_COMMIT_SHA` at runtime, not a sed-replaced literal — task.md
   flags this mismatch explicitly. Using `deploy.sh` in the current flow
   risks a verification failure or a mismatched mental model.
-  (scripts/deploy.sh:1-153; task.md:631-632,672,675)
+  (docs/archive/deploy.sh:1-153; task.md:631-632,672,675)
 - `ecosystem.config.cjs` is **PM2/Runable-era infrastructure**: runs
   `bun run db:push` before start (non-blocking on failure), skips a
   boot-time `vite build` if `packages/web/dist` is already shipped, logs a
@@ -82,7 +82,7 @@ sources:
 
 ## Assumptions
 
-- The `.zip` artifacts are presumed outputs of `scripts/deploy.sh`'s legacy
+- The `.zip` artifacts are presumed outputs of `docs/archive/deploy.sh`'s legacy
   flow, consistent with naming/paths — not opened to confirm contents.
 - Whether Railway's build actually injects a `BUILD_TAG` env var (flagged
   as an open risk in task.md:675) was not independently verified — no
@@ -106,7 +106,7 @@ sources:
 
 ## Sources
 
-- scripts/deploy.sh
+- docs/archive/deploy.sh
 - ecosystem.config.cjs
 - docs/post-deploy-guide.md
 - docs/cloudflare-setup.md

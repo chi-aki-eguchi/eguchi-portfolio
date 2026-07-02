@@ -25,10 +25,10 @@ literally name the full `caffeinate` + fixed-time draft example.
 
 ## Left In Place
 
-- `refine-and-loop-spec.md` still contains broader autonomous-loop language
+- `docs/specs/refine-and-loop-spec.md` still contains broader autonomous-loop language
   with credit-reset coupling. It was left untouched because that file covers
   more than the retired night-run setup.
-- `improvement-roadmap.md` still contains old autonomous-loop wording. It was
+- `docs/archive/improvement-roadmap.md` still contains old autonomous-loop wording. It was
   left untouched as historical roadmap context, not an active night-run setup.
 
 ## Sources

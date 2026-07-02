@@ -8,7 +8,7 @@
 - Claude Code / Codex は実装着手前に `task.md` の最新 Handoff を確認し、未完了・検証済み・触ったファイルを追記する。
 - settings は4箇所同期。新規 settings キー追加時は `packages/web/src/web/lib/settings-preview.ts` の台帳、API `/settings` の default、`provider.tsx` の DB 適用 `useEffect`、`provider.tsx` の `handlePreviewMessage` を揃える。
 - 2026-06-16: Runable → Railway 移行完了。デプロイ正本は `git push`。ZIP 作成・Runable publish は legacy 手順であり、通常作業では使わない。
-- Runable 関連ファイル（`RUNABLE_AI.md`, `scripts/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
+- Runable 関連ファイル（`docs/archive/RUNABLE_AI.md`, `docs/archive/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
 - Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
 - MacBook / Mac mini の2台運用では、GitHub をコード正本にする。リポジトリを iCloud / Dropbox 等で丸ごと同期しない。`.env` は各Macに置き、秘密情報は 1Password 等の安全な保管場所から転記する。人間向け手順は `docs/two-mac-workflow.md` を参照。
 
@@ -76,13 +76,16 @@ eguchi-portfolio-app/
 │       ├── drizzle/             # マイグレーションファイル
 │       ├── vite.config.ts
 │       └── website.config.json  # Runable legacy 設定（通常デプロイでは不使用）
-├── ecosystem.config.cjs         # PM2 設定（本番起動）
+├── ecosystem.config.cjs         # PM2 設定（現行 Railway 起動では通常不使用）
 ├── task.md                      # 直近のタスクログ
-├── admin-enhancement-spec.md    # 管理画面強化仕様書 P1〜P4（参照先）
-├── admin-enhancement-spec-v2.md # 管理画面強化仕様書 v2 確定版（グループC〜F / Q1〜Q5）
-├── admin-enhancement-spec-v3-draft.md # 管理画面 v3 ドラフト（写真の向き・調整幅・UX改善）
-├── design-spec.md               # デザイン仕様書（見た目・佇まいの設計図）
-└── layout-patterns.svg          # レイアウトパターン参考図（design-spec と対）
+├── docs/
+│   ├── specs/                   # 現行仕様（1 spec = 1 file、更新は同名で上書き）
+│   │   ├── admin-enhancement-spec.md
+│   │   ├── design-spec.md
+│   │   ├── refine-and-loop-spec.md
+│   │   └── spec-layout-expansion.md
+│   └── archive/                 # 完了・退役・歴史資料
+└── scratch/                     # gitignored scratch workspace（READMEのみ追跡）
 ```
 
 ## DB スキーマ
@@ -169,7 +172,7 @@ git push
 
 ## 管理画面
 
-詳細仕様: `admin-enhancement-spec.md`
+詳細仕様: `docs/specs/admin-enhancement-spec.md`
 
 ### 認証
 
@@ -209,13 +212,12 @@ git push
 
 | ファイル | 内容 |
 |---|---|
-| `admin-enhancement-spec.md` | 管理画面強化 P1〜P4（グループA: タイポグラフィ / グループB: 管理快適化）。下記「強化計画」を参照 |
-| `admin-enhancement-spec-v2.md` | 続編・全項目確定版。グループC（写真管理を Lightroom/Bridge 化: 重複検知・範囲選択・キーボード・D&D・メタ表示）/ D（編集UI刷新: 折りたたみ・サイト文言整理・インスペクタ構造化・Typography軸別再編・プレビュー幅切替）/ E（閲覧側デザイン: ヒーロー・余白・トランジション・srcset・About土台）/ F（SEO）。着手順 Q1〜Q5。§0 既存パターン厳守 |
-| `admin-enhancement-spec-v3-draft.md` | 写真の向き（90度回転）・見せる中心・写真ごとの調整幅・管理画面UX改善のドラフト。Claude Codeレビュー後に確定版へ更新する |
-| `design-spec.md` | デザイン（見た目・佇まい）の設計図。雑誌/写真集的な編集された佇まい・写真主役・余白主導。秋が S/M/L サイズ指定＋並べ替えでレイアウトを演出する仕組み（完全自由配置はしない、レスポンシブ自動対応）。色/タイポ/余白/動き/画質の原則 |
-| `layout-patterns.svg` | `design-spec.md` 1章のレイアウトパターン参考図（A: 不揃いグリッド / B: 見開き / C: ずらし大 / D: 整然グリッド） |
+| `docs/specs/admin-enhancement-spec.md` | 管理画面の現行仕様。写真の向き（90度回転）・見せる中心・写真ごとの調整幅・管理画面UX改善。旧P1〜P4/v2仕様は `docs/archive/` に保存 |
+| `docs/specs/design-spec.md` | デザイン（見た目・佇まい）の設計図。雑誌/写真集的な編集された佇まい・写真主役・余白主導。秋が S/M/L サイズ指定＋並べ替えでレイアウトを演出する仕組み（完全自由配置はしない、レスポンシブ自動対応）。色/タイポ/余白/動き/画質の原則 |
+| `docs/specs/refine-and-loop-spec.md` | 自走改善ループ運用方針。歴史的な運用文脈を含むため、実行前に現行方針と照合する |
+| `docs/specs/spec-layout-expansion.md` | レイアウト拡張仕様 |
 
-### 強化計画（admin-enhancement-spec.md）
+### 強化計画（旧 `docs/archive/admin-enhancement-spec.md`）
 
 #### グループA: タイポグラフィ編集強化
 

@@ -1,6 +1,6 @@
 # 修正・最適化・継続ループ 仕様書
 
-> Claude Code向け。既存仕様書群（CLAUDE.md / admin-enhancement-spec.md / v2 / design-spec.md / feature-expansion-spec.md / photo-management-spec.md / works-series-grid-spec.md）の続編。§0既存パターン厳守。
+> Claude Code向け。既存仕様書群（CLAUDE.md / docs/specs/admin-enhancement-spec.md / docs/specs/design-spec.md / docs/archive/feature-expansion-spec.md / docs/archive/photo-management-spec.md / docs/archive/works-series-grid-spec.md）の続編。§0既存パターン厳守。
 
 ---
 

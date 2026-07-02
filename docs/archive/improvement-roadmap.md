@@ -2,7 +2,7 @@
 
 > Claude が継続モードで育てる作業台帳。毎サイクルここを更新し、安全な実装ギャップを潰し、
 > 「秋さん待ち（content/外部アカウント）」と「実装キュー」を分けて管理する。
-> 原則（2026-06-15 改定・`refine-and-loop-spec.md` T0）: **毎サイクル安全な1件を実装＋デプロイZIP更新。「変更なし」報告は避ける。** 起動はクレジットリセット駆動（固定時刻cron不可）。
+> 原則（2026-06-15 改定・`docs/specs/refine-and-loop-spec.md` T0）: **毎サイクル安全な1件を実装＋デプロイZIP更新。「変更なし」報告は避ける。** 起動はクレジットリセット駆動（固定時刻cron不可）。
 > 大きい/risky な変更（要相談）は `proposals/` に企画書として蓄積し承認後に実装。安全・小は即実装。
 
 ## 企画書インデックス（proposals/）
@@ -92,12 +92,12 @@ LCP preload / 画像サイトマップ / GA4 / gzip撤去 / canonical統一。
   これ以上の新規企画は細粒度で価値が薄まるため、**間隔を 30分に延長**し秋さんの判断待ちモードへ。
   判断事項を roadmap 上部に集約。1度だけ通知を送る（8企画 ready・全て要判断）。
   以降の tick は「新依頼が来ていないか確認 → 無ければ静かに再予約」を基本に。
-- cycle 10 (06-15): **運用方針を改定（秋さん・`refine-and-loop-spec.md` T0）— 「企画書のみ」を終了し、毎サイクル安全な1件を実装＋ZIP更新する運用に戻す。起動はクレジットリセット駆動（固定時刻cron不可）。**
+- cycle 10 (06-15): **運用方針を改定（秋さん・`docs/specs/refine-and-loop-spec.md` T0）— 「企画書のみ」を終了し、毎サイクル安全な1件を実装＋ZIP更新する運用に戻す。起動はクレジットリセット駆動（固定時刻cron不可）。**
   実装: **WebSite JSON-LD ノード追加**（`ogp.ts` buildJsonLd）。@graph に Person/ImageGallery と並ぶ WebSite（url / name / alternateName / inLanguage:ja / description / publisher=Person）を追加し、ドメイン自体を検索エンジンの knowledge graph に認識させる。回帰テスト2件追加（`ogp.test.ts`）。追加のみ・視覚変化なし・巻き戻し不要。
   次サイクル候補（安全・小, #09由来）: og:image:width/height / manifest / theme-color / B項目の alt フォールバック小改善。
 - cycle 11 (06-15): **theme-color サーバ側注入**（`ogp.ts`）。index.html の静的 `#f7f7f7` を `settings.themeBg` で setAttr 置換（重複なし）。ダークテーマ設定時、初回サーバ描画でモバイルのステータスバーが白く光り JS 実行後に黒へ切替わるチラつきを解消（`provider.tsx`:147 のクライアント同期を **pre-JS 窓**で補完）。回帰テスト3件。安全・小・巻き戻し不要。
   次サイクル候補: og:image:alt（共有画像のa11y・完結）/ og:image:width=1200 / manifest / theme-color は完了。
-- cycle 12 (06-15・秋さん明示タスク): **白画面(CDN汚染)恒久対策を現行デプロイ方式に取込**（仕様 content.md）。
+- cycle 12 (06-15・秋さん明示タスク): **白画面(CDN汚染)恒久対策を現行デプロイ方式に取込**（仕様 docs/archive/content.md）。
   重複チェック: 修正B（HTML no-store + CDN-Cache-Control）は `server.ts:237-239` に既実装、修正C（BUILD_ID/X-Build）も基盤既存（値が古いだけ）。**真の未実装は修正A のみ**。
   実装: ①`vite.config` の entry/chunk/assetFileNames に `BUILD_TAG` 接尾辞（内容不変の vendor も毎ビルドでURL変化→エッジ汚染を物理回避）②`deploy.sh` が **1ビルド=1タイムスタンプ**を自動生成し、全アセット名＋`ogp.ts` の BUILD_ID(X-Build) に同一値を刻む（秋さん手動操作ゼロ）③`deploy.sh` スモークに「X-Build一致＋HTML参照アセット全200」検証を追加（白画面の直接原因を出荷前に検出）④末尾に Publish 後の本番チェック手順を表示。Runable はサンドボックス再ビルド/pm2 を前提にせず dist 同梱を配信するだけ、という現行方式に整合。
   検証: `bun run deploy` 通過（BUILD_TAG=20260615-121245、アセット名・X-Build 一致、74テスト、5ページ+アセット200）。ZIP更新済み。**本番反映は秋さんの Runable Publish 待ち**。

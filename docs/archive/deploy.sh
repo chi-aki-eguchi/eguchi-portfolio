@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 実装完了時のデプロイ準備を1コマンドにまとめたもの。
 #   1. ビルド確認 (tsc -b + bun test + vite build)。白画面(CDN汚染)恒久対策として
-#      BUILD_TAG を自動生成し、全アセット名と BUILD_ID(X-Build) に同一値を刻む（content.md）。
+#      BUILD_TAG を自動生成し、全アセット名と BUILD_ID(X-Build) に同一値を刻む（docs/archive/content.md）。
 #   2. スモークテスト（主要ページ200 + X-Build一致 + HTML参照アセット全200）。
 #   3. デプロイ用 ZIP を作成（ルートに上書き + deploys/ に日付つきで保存・直近3つ保持）。
 # いずれかが失敗したら ZIP は更新せず非0で終了する。
@@ -22,7 +22,7 @@ echo "▶ 1/3 ビルド確認 (tsc -b + bun test + vite build)"
 #
 # 白画面（CDN汚染）恒久対策 — 1ビルド = 1タイムスタンプを自動付与:
 #  ・BUILD_TAG を全アセット名に混ぜる（vite.config）→ 内容不変の vendor チャンクも毎回URLが変わり、
-#    Cloudflare エッジの汚染キャッシュを物理的に回避する（content.md 修正A）。
+#    Cloudflare エッジの汚染キャッシュを物理的に回避する（docs/archive/content.md 修正A）。
 #  ・同じ値を ogp.ts の BUILD_ID に刻む → X-Build ヘッダで本番反映を一目で確認（修正C）。
 #  秋さんが手動でコマンド/ファイル編集をせずに済むよう、ここで完全自動化する。
 BUILD_TAG="$(date +%Y%m%d-%H%M%S)"
@@ -73,7 +73,7 @@ for path in / /gallery /series /about /contact; do
   if [ "$code" = "200" ]; then echo "  ✓ ${path} → ${code}"; else echo "  ✗ ${path} → ${code}"; fail=1; fi
 done
 
-# 白画面恒久対策の検証（content.md 4章step4のローカル版）:
+# 白画面恒久対策の検証（docs/archive/content.md 4章step4のローカル版）:
 #  ・X-Build が今回の BUILD_TAG と一致するか（古い dist を掴んでいないか）。
 #  ・HTML が参照する全 /assets/*.js|css が 200 か（= 真っ白の直接原因「アセットが読めない」を事前検出）。
 xb=$(curl -s -D - -o /dev/null "http://localhost:${SMOKE_PORT}/" | awk 'tolower($1)=="x-build:"{print $2}' | tr -d '\r')
@@ -143,7 +143,7 @@ echo "  ✓ ${ZIP} (${SIZE}) を更新 / アーカイブ: ${ARCHIVE}"
 echo "  ✓ deploys/ の保持数: $(ls -1 deploys/eguchi-portfolio-deploy-*.zip | wc -l | tr -d ' ')"
 echo "✅ デプロイ可能な状態の ZIP を更新しました（BUILD_TAG: ${BUILD_TAG}）"
 
-# 本番（Runable Publish 後）の確認はローカルからは実行不可。手順だけ表示しておく（content.md 5章）。
+# 本番（Runable Publish 後）の確認はローカルからは実行不可。手順だけ表示しておく（docs/archive/content.md 5章）。
 cat <<EOF
 
 ── Runable Publish 後の本番チェック（手動）──

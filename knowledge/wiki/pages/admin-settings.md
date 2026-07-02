@@ -10,9 +10,9 @@ sources:
   - packages/web/src/web/components/provider.tsx
   - packages/web/src/web/pages/admin.tsx
   - docs/admin-guide.md
-  - admin-enhancement-spec.md
-  - admin-enhancement-spec-v2.md
-  - admin-enhancement-spec-v3-draft.md
+  - docs/specs/admin-enhancement-spec.md
+  - docs/archive/admin-enhancement-spec.md
+  - docs/archive/admin-enhancement-spec-v2.md
 ---
 
 > ⚠️ This wiki is an index/summary layer, NOT the source of truth. If this
@@ -56,20 +56,21 @@ sources:
   POSTs only the diff, `assertOk`s, optimistically merges into the cache,
   then calls `qc.invalidateQueries({queryKey:['settings']})`.
   (packages/web/src/web/pages/admin.tsx:8201-8341, 8278-8295)
-- **Spec history**: `admin-enhancement-spec.md` (v1) and
-  `admin-enhancement-spec-v2.md` ("確定版"/confirmed) both state the rule as
+- **Spec history**: `docs/archive/admin-enhancement-spec.md` (v1) and
+  `docs/archive/admin-enhancement-spec-v2.md` ("確定版"/confirmed) both state the rule as
   **3 places** (no separate ledger file — it lived ad hoc in `admin.tsx` at
-  that time). By `admin-enhancement-spec-v3-draft.md`, the ledger already
+  that time). By `docs/specs/admin-enhancement-spec.md`, the ledger already
   existed and the rule is correctly stated as 4 places.
-  (admin-enhancement-spec.md:15-19; -v2.md:1,13; -v3-draft.md:16)
-- `admin-enhancement-spec-v3-draft.md` is about an **unrelated** feature
-  (photo rotation/orientation). It is still titled "Draft" pending a
-  Claude Code P0/P1 review — but that review already happened and is
-  recorded in the same file (dated 2026-06-25). The reviewed feature
+  (docs/archive/admin-enhancement-spec.md:15-19;
+  docs/archive/admin-enhancement-spec-v2.md:1,13;
+  docs/specs/admin-enhancement-spec.md:16)
+- `docs/specs/admin-enhancement-spec.md` is about an **unrelated** feature
+  (photo rotation/orientation). It was promoted from the former v3 draft
+  during the 2026-07-02 file cleanup after the review had already happened
+  and was recorded in the same file (dated 2026-06-25). The reviewed feature
   (`rotationDeg`) is **already present** in `schema.ts` and referenced
-  across 8+ source files — the draft's core feature has functionally
-  shipped even though the document was never renamed/promoted.
-  (admin-enhancement-spec-v3-draft.md:1,5,458,462-494;
+  across 8+ source files.
+  (docs/specs/admin-enhancement-spec.md:1,5,458,462-494;
   packages/web/src/api/database/schema.ts:42)
 - `docs/admin-guide.md` documents the live-preview UX at a user level:
   settings changes preview live in an iframe before saving; lists the tab
@@ -86,17 +87,16 @@ sources:
 ## Open Questions
 
 - Has the `rotationDeg` image-proxy cache-key gap
-  (`admin-enhancement-spec-v3-draft.md:475-477`, P0) actually been closed?
+  (`docs/specs/admin-enhancement-spec.md:475-477`, P0) actually been closed?
   Out of scope for this settings/preview-focused read.
 - Is there any automated test that would catch a `provider.tsx`
   DB-apply-`useEffect`- or `handlePreviewMessage`-omission for a new
   settings key (the two sync points `settings-preview.test.ts` does not
   cover), or is that purely code-review-enforced today?
-- Should `admin-enhancement-spec-v3-draft.md` be renamed/archived now that
-  its core feature appears shipped, to avoid confusing future readers?
-- See invariants.md / open-issues.md for the AGENTS.md "3-place vs 4-place"
-  internal contradiction — this page describes the current, correct (4-place)
-  mechanics; AGENTS.md itself has not been reconciled.
+- The former root admin v3 draft has been renamed to
+  `docs/specs/admin-enhancement-spec.md`; v1/v2 remain in `docs/archive/`.
+- The former AGENTS.md "3-place vs 4-place" contradiction was reconciled on
+  2026-07-02; this page describes the current, correct (4-place) mechanics.
 
 ## Sources
 
@@ -106,4 +106,5 @@ sources:
 - packages/web/src/web/components/provider.tsx
 - packages/web/src/web/pages/admin.tsx (SettingsTab, ~lines 8201-8341)
 - docs/admin-guide.md
-- admin-enhancement-spec.md, admin-enhancement-spec-v2.md, admin-enhancement-spec-v3-draft.md
+- docs/specs/admin-enhancement-spec.md
+- docs/archive/admin-enhancement-spec.md, docs/archive/admin-enhancement-spec-v2.md

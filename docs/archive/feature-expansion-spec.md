@@ -1,6 +1,6 @@
 # 機能拡張 仕様書（料金表・シリーズ・note連携・プリント販売・ギャラリー配置）
 
-> Claude Code 向け実装仕様。既存の admin-enhancement-spec.md / -v2.md / design-spec.md の続編。§0 既存パターン厳守。
+> Claude Code 向け実装仕様。既存の docs/archive/admin-enhancement-spec.md / docs/archive/admin-enhancement-spec-v2.md / docs/specs/design-spec.md の続編。§0 既存パターン厳守。
 > 全項目確定済み。すべて「秋が管理画面から細かく調整できる」ことを前提とする。
 
 ---

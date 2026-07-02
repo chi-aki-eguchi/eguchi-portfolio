@@ -6,7 +6,7 @@ sources:
   - DISTRIBUTION.md
   - docs/distribution-ideas.md
   - docs/railway-all-in-one-experiment.md
-  - RUNABLE_AI.md
+  - docs/archive/RUNABLE_AI.md
   - README.md
   - site-analysis-2026-06.md
   - package.json
@@ -55,11 +55,11 @@ caution and check README.md/task.md for what's actually shipped.
   two separate builds instead — **the implementation that shipped did not
   follow that recommendation.** (DISTRIBUTION.md:320-372;
   docs/railway-all-in-one-experiment.md:17-20)
-- `RUNABLE_AI.md` describes a completely separate, ZIP-bundle-based deploy
+- `docs/archive/RUNABLE_AI.md` describes a completely separate, ZIP-bundle-based deploy
   mechanism ("Runable"), untouched since the repo's initial commit
   (2026-06-16), never cross-referenced by DISTRIBUTION.md or any
   Railway-focused doc — reads as an orphaned/legacy path. See deployment.md.
-  (RUNABLE_AI.md:1-47; git log -1 confirms 2026-06-16 only)
+  (docs/archive/RUNABLE_AI.md:1-47; git log -1 confirms 2026-06-16 only)
 - **DISTRIBUTION.md is stale relative to a substantial, unmentioned
   productization push**: a live `/service` sales page with two real Stripe
   Payment Links, a published Railway "Deploy" button
@@ -91,7 +91,7 @@ caution and check README.md/task.md for what's actually shipped.
 
 ## Assumptions
 
-- `RUNABLE_AI.md`'s "Runable" path is assumed legacy/abandoned based on it
+- `docs/archive/RUNABLE_AI.md`'s "Runable" path is assumed legacy/abandoned based on it
   never being cross-referenced by any distribution doc — inferred from
   absence of references, not a fact confirmed by any doc stating it's
   deprecated.
@@ -123,7 +123,7 @@ caution and check README.md/task.md for what's actually shipped.
 - DISTRIBUTION.md
 - docs/distribution-ideas.md
 - docs/railway-all-in-one-experiment.md
-- RUNABLE_AI.md
+- docs/archive/RUNABLE_AI.md
 - README.md
 - site-analysis-2026-06.md
 - package.json, packages/web/package.json

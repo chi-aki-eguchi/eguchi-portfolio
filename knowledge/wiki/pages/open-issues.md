@@ -42,7 +42,7 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
    `.claude/skills/night-run/` were removed. The former BUILD_ID
    contradiction is now historical only; see night-run.md.
 5. **Resolved 2026-07-02 by owner-approved retirement**:
-   `claude-code-setup-guide.md`'s embedded fixed 3:15am/3:10am
+   `docs/archive/claude-code-setup-guide.md`'s embedded fixed 3:15am/3:10am
    `caffeinate` + `sleep` draft example was removed. Precise wording:
    `docs/delayed-execution-sop.md` blacklists the unreliable
    delayed-execution class (`at`/`cron`, background `sleep N && claude`,
@@ -94,10 +94,12 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
     allow-entry for `grep ... pages/admin.tsx` — that relative path doesn't
     exist from repo root (the real file is
     `packages/web/src/web/pages/admin.tsx`), so the entry can never match.
-17. Codex's 2026-06-18 audit (`task.md` lines 686, 696) recommended adding
-    "legacy/historical" headers to `content.md`, `RUNABLE_AI.md`, and
-    `proposals/09-modernization.md` for containing stale Runable-era
-    assumptions — **never applied**, per current file contents.
+17. **Resolved 2026-07-02**: Codex's 2026-06-18 audit (`task.md` lines
+    686, 696) recommended adding "legacy/historical" headers to
+    the legacy content spec, Runable notes, and `proposals/09-modernization.md`.
+    This cleanup moved the first two to `docs/archive/`;
+    `proposals/09-modernization.md` remains outside this task's approved
+    scope.
 18. `DISTRIBUTION.md` overall is stale relative to a substantial,
     unmentioned productization push (live `/service` sales page, Stripe
     Payment Links, published Railway deploy button) that shipped after its
@@ -115,25 +117,18 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
     `pricing_plans`/several `photos` columns) something to regenerate/squash,
     or accepted because `db:push` is the real mechanism in use? See
     database.md.
-21. Are `improvement-roadmap.md` and `proposals/*.md` still an active
-    backlog track, or superseded by `task.md`'s handoff-log workflow?
-    (`improvement-roadmap.md` hasn't been touched since 2026-06-15 despite
-    `task.md` handoffs running through 2026-07-01.)
-22. Root inventory found several stray files whose described work already
-    appears to be implemented in the codebase (`claude-code-luxury-feel-prompt.md`,
-    `packages/web/src/web/pages/service.tsx.handoff.md`) plus one
-    untracked, unresolved working doc (`chatgpt-handoff.md`) — all
-    repeatedly flagged as "out of scope" across 15+ `task.md` handoffs
-    without ever being resolved. See the root-inventory findings in the
-    final audit report for the full classification table (report-only per
-    this audit's rules — no files were moved/deleted).
-23. `AUDIT.report/content.md` is an orphaned, unreferenced early audit
-    report (committed at the initial commit) — no other tracked file
-    references the `AUDIT.report` path. Possible delete candidate, needs
-    owner confirmation.
-24. Root-level `skills/` directory exists but is completely empty, versus
-    the populated `.claude/skills/` — unclear if intentional scaffolding or
-    a stray leftover.
+21. **Resolved 2026-07-02 for the improvement roadmap**: it was treated as
+    superseded by `task.md`/wiki workflow and moved to `docs/archive/`.
+    `proposals/*.md` remain undecided because this task did not include
+    proposal cleanup.
+22. **Resolved 2026-07-02**: root stray files were handled by owner-approved
+    cleanup. `claude-code-luxury-feel-prompt.md` was removed after verifying
+    the requested animation/style work exists in `styles.css`;
+    `chatgpt-handoff.md` and `service.tsx.handoff.md` were archived with
+    live issues extracted below.
+23. **Resolved 2026-07-02**: `AUDIT.report/` was owner-approved for deletion.
+24. **Resolved 2026-07-02**: the empty root-level `skills/` directory was
+    owner-approved for deletion.
 
 ## Sources
 

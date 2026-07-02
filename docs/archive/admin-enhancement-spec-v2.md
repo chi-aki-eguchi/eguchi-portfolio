@@ -1,12 +1,12 @@
 # 管理画面 強化仕様書 v2（確定版・写真管理・編集UI刷新）
 
 > AIコーディングエージェント（Claude Code）向け実装仕様。
-> 既存の admin-enhancement-spec.md（P1〜P4）の続編。§0 の既存パターンは引き続き厳守。
+> 既存の docs/archive/admin-enhancement-spec.md（P1〜P4）の続編。§0 の既存パターンは引き続き厳守。
 > 本仕様は全項目確定済み。記載通りに実装してよい。判断が必要な細部は各項目の注記に従う。
 
 ---
 
-## 0. 前提（admin-enhancement-spec.md §0 を継承）
+## 0. 前提（docs/archive/admin-enhancement-spec.md §0 を継承）
 
 - DBクエリは必ず `withRetry(() => db....)` でラップ
 - データ更新後は `qc.invalidateQueries`

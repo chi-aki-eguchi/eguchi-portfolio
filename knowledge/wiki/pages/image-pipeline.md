@@ -1,7 +1,7 @@
 ---
 title: Image Pipeline (R2, thumbnails, EXIF)
 status: current
-last_verified: 2026-07-02
+last_verified: 2026-07-03
 sources:
   - packages/web/src/api/index.ts
   - packages/web/src/api/security.ts
@@ -36,6 +36,20 @@ sources:
   (packages/web/src/api/index.ts:340-372,1063-1179;
   packages/web/src/api/security.ts:3-55;
   packages/web/src/web/lib/upload-file.ts:1-44)
+- **Upload size policy**: image uploads are capped at **300MB per file** via
+  shared server/client constants. Files over 300MB are rejected in the admin UI
+  before upload and by the API with HTTP 413 if they reach the server. Files
+  over 60MB but within the 300MB ceiling upload serially (one at a time) so
+  several large TIFFs do not overwhelm the server concurrently. As of
+  2026-07-03, Railway's public proxy docs list request duration/headers/rate
+  limits but no fixed public request-body-size ceiling; R2 single-part uploads
+  allow 5GiB, and sharp's default input safety limit is pixel-count based
+  (`268402689` pixels), not byte-size based.
+  (packages/web/src/shared/upload-limits.ts;
+  packages/web/src/api/security.ts:1-29;
+  packages/web/src/api/index.ts:1070-1073,1189-1192,1215-1218;
+  packages/web/src/web/lib/upload-file.ts:1-79;
+  packages/web/src/web/pages/admin.tsx:2048-2178)
 - The server **also generates two pre-generated WebP derivatives** from the
   optimized buffer: thumb (640px, q82) and medium (1920px, q85), uploaded to
   R2 as `thumbs/<name>.webp` / `medium/<name>.webp`, with keys stored as
@@ -108,6 +122,11 @@ sources:
   targeted upload-validation tests. Production DB/R2 were queried
   read-only for the reported sample filenames (`DSCF1599`, `DSCF1607`,
   `DSCF1609`) and found no leftover DB rows or R2 objects for those names.
+- The 2026-07-03 large-TIFF follow-up was verified by a local API upload
+  repro: a 61MiB file returned HTTP 413 with the old "画像は60MBまでです。"
+  message before the limit was raised. Production read-only checks found no
+  new TIFF rows and no R2 objects created on 2026-07-03 JST, so the retried
+  large-TIFF failures did not leave visible DB/R2 leftovers.
 
 ## Open Questions
 

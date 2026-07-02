@@ -1,7 +1,7 @@
 ---
 title: Wiki Maintenance Log
 status: current
-last_verified: 2026-07-02
+last_verified: 2026-07-03
 sources: []
 ---
 
@@ -18,6 +18,15 @@ feature/bugfix work here; record it in `task.md` instead, and only link to
 it from here if a wiki update was triggered by it.
 
 ## Entries
+
+### 2026-07-03 — Large TIFF upload size limit fix
+
+Driver follow-up after TIFF support shipped but production large film scans
+still failed. Updated `pages/image-pipeline.md` with the 300MB per-file image
+upload ceiling, 60MB serial-upload threshold, and the verified platform
+limits/unknowns. Marked `pages/open-issues.md` item 41 resolved because the
+former 60MB app ceiling now has explicit server/client handling and admin
+error text.
 
 ### 2026-07-02 — TIFF upload validation fix
 

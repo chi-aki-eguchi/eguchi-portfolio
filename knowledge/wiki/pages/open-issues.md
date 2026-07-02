@@ -1,7 +1,7 @@
 ---
 title: Open Issues (contradictions, stale docs, unknowns)
 status: current
-last_verified: 2026-07-02
+last_verified: 2026-07-03
 sources:
   - (see per-item citations below; each restates a finding also cited on its own topic page)
 ---
@@ -218,7 +218,13 @@ any item below.
     imported standalone today because `libsql.ts` connects to a database at
     module load time, so a real regression in retry behavior would not be
     caught. `api/database/withRetry.test.ts:3-25`.
-41. **Two candidates were demoted from "simple fix" to "proposal" after
+41. **Resolved 2026-07-03**: large TIFF uploads were still rejected after TIFF
+    support because the shared image upload ceiling was still 60MB. The limit
+    is now 300MB, the admin UI rejects files above that with an explicit
+    message, and files above 60MB upload one at a time.
+    `shared/upload-limits.ts`; `api/security.ts`; `web/lib/upload-file.ts`;
+    `web/pages/admin.tsx`.
+42. **Two candidates were demoted from "simple fix" to "proposal" after
     adversarial review**, because the obvious-looking fix wasn't actually
     singular: (a) non-numeric `:id` params crash to a generic 500 instead
     of 400 across ~11 routes — fixable, but 400-reject vs. a Hono route-
@@ -247,9 +253,9 @@ verified correct across 7 indexable pages.
 
 ### Resolved 2026-07-02 (fixed in this same pass)
 
-42. Dead code: `web/pages/index.tsx` (an unreferenced `Redirect`-to-`/`
+43. Dead code: `web/pages/index.tsx` (an unreferenced `Redirect`-to-`/`
     page, never imported by `app.tsx`) — deleted.
-43. Stale build config: `turbo.json`/`.oxlintrc.json` still referenced the
+44. Stale build config: `turbo.json`/`.oxlintrc.json` still referenced the
     removed `packages/mobile`/`packages/desktop` (Expo/Electron) paths —
     removed.
 
@@ -259,5 +265,5 @@ Each item above restates a finding fully cited (with exact file:line
 references) on its corresponding topic page — see invariants.md,
 database.md, image-pipeline.md, distribution.md, night-run.md, and the
 relevant task handoff for the full root-inventory / .claude-audit /
-docs-freshness tables. Items 27-43 are sourced from this task's own
+docs-freshness tables. Items 27-44 are sourced from this task's own
 10-dimension code audit (file:line citations inline above).

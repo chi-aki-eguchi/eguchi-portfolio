@@ -28,6 +28,7 @@ import {
   normalizeRotationDeg,
   parseRotationDeg,
 } from "../shared/image-url";
+import { imageTooLargeMessage } from "../shared/upload-limits";
 
 // Node's Buffer<ArrayBufferLike> isn't assignable to DOM BodyInit in TS lib
 // types, though Bun's Response accepts it at runtime. The cast is contained
@@ -1061,7 +1062,7 @@ const app = new Hono()
   })
 
   // ── Admin: Server-side upload (resize → storage) ───────
-  // Client sends raw file; server optimises (3200px/mozjpeg q92) and stores it. Max 60MB.
+  // Client sends raw file; server optimises (3200px/mozjpeg q92) and stores it.
   .post("/admin/upload", requireAdmin, async (c) => {
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
@@ -1069,7 +1070,7 @@ const app = new Hono()
     if (!isAllowedUploadImageFile(file))
       return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
-      return c.json({ error: "画像は60MBまでです。" }, 413);
+      return c.json({ error: imageTooLargeMessage() }, 413);
 
     const arrayBuf = await file.arrayBuffer();
     const inputBuf = Buffer.from(arrayBuf);
@@ -1188,7 +1189,7 @@ const app = new Hono()
     if (!isAllowedUploadImageFile(file))
       return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
-      return c.json({ error: "画像は60MBまでです。" }, 413);
+      return c.json({ error: imageTooLargeMessage() }, 413);
 
     const arrayBuf = await file.arrayBuffer();
     const inputBuf = Buffer.from(arrayBuf);
@@ -1214,7 +1215,7 @@ const app = new Hono()
     if (!isAllowedUploadImageFile(file))
       return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
-      return c.json({ error: "画像は60MBまでです。" }, 413);
+      return c.json({ error: imageTooLargeMessage() }, 413);
 
     const arrayBuf = await file.arrayBuffer();
     const inputBuf = Buffer.from(arrayBuf);

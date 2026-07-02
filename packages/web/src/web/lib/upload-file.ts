@@ -1,3 +1,10 @@
+import {
+  IMAGE_UPLOAD_MAX_BYTES,
+  LARGE_IMAGE_UPLOAD_BYTES,
+  formatUploadSizeLimit,
+  imageTooLargeMessage,
+} from "../../shared/upload-limits";
+
 const UPLOAD_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -35,6 +42,18 @@ export function isUploadableImageFile(file: {
   return !type || type === "application/octet-stream" || type === "image/tiff" || type === "image/x-tiff";
 }
 
+export function imageFileTooLarge(file: Pick<File, "size">): boolean {
+  return file.size > IMAGE_UPLOAD_MAX_BYTES;
+}
+
+export function shouldUploadImagesSerially(files: Pick<File, "size">[]): boolean {
+  return files.some((file) => file.size > LARGE_IMAGE_UPLOAD_BYTES);
+}
+
+export function uploadSizeLimitLabel(): string {
+  return formatUploadSizeLimit();
+}
+
 export function uploadFailureNotice(
   failures: { file: Pick<File, "name">; reason?: string }[],
 ): string | null {
@@ -44,4 +63,12 @@ export function uploadFailureNotice(
     .map(({ file, reason }) => `${file.name}${reason ? ` (${reason})` : ""}`)
     .join(", ");
   return `${failures.length} 件失敗: ${names}${failures.length > 3 ? " ほか" : ""}`;
+}
+
+export function uploadTooLargeNotice(files: Pick<File, "name" | "size">[]): string | null {
+  const tooLarge = files.filter(imageFileTooLarge);
+  if (!tooLarge.length) return null;
+  return uploadFailureNotice(
+    tooLarge.map((file) => ({ file, reason: imageTooLargeMessage() })),
+  );
 }

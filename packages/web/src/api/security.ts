@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { IMAGE_UPLOAD_MAX_BYTES } from "../shared/upload-limits";
 
 export const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -23,7 +24,7 @@ const ALLOWED_IMAGE_EXTENSIONS = new Set([
   "avif",
 ]);
 
-export const IMAGE_MAX_BYTES = 60 * 1024 * 1024;
+export const IMAGE_MAX_BYTES = IMAGE_UPLOAD_MAX_BYTES;
 export const FONT_MAX_BYTES = 2 * 1024 * 1024;
 
 export const IMAGE_PROXY_ALLOWED_PREFIXES = [

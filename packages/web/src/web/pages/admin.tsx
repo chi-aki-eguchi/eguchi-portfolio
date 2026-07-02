@@ -22,9 +22,12 @@ import {
   shotAtForUploadedPhoto,
 } from "../lib/upload-date";
 import {
+  imageFileTooLarge,
   isUploadableImageFile,
+  shouldUploadImagesSerially,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
+  uploadTooLargeNotice,
 } from "../lib/upload-file";
 import {
   LogOut,
@@ -2045,18 +2048,25 @@ function GalleryTab({
   const handleFiles = async (files: File[]) => {
     const imageFiles = files.filter(isUploadableImageFile);
     const skipped = files.length - imageFiles.length;
-    if (!imageFiles.length) {
+    const tooLargeNotice = uploadTooLargeNotice(imageFiles);
+    const uploadableFiles = imageFiles.filter((file) => !imageFileTooLarge(file));
+    if (!uploadableFiles.length) {
+      const parts: string[] = [];
+      if (tooLargeNotice) parts.push(tooLargeNotice);
+      if (skipped > 0) parts.push(`${skipped} 件は画像でないためスキップ`);
       setUploadNotice(
-        skipped > 0
-          ? `画像ファイルではないため ${skipped} 件をスキップしました`
-          : null,
+        parts.length
+          ? parts.join(" / ")
+          : skipped > 0
+            ? `画像ファイルではないため ${skipped} 件をスキップしました`
+            : null,
       );
       return;
     }
     setUploadNotice(null);
     setRetryFiles([]);
     setUploadingAndNotify(true);
-    setUploadProgress({ done: 0, total: imageFiles.length });
+    setUploadProgress({ done: 0, total: uploadableFiles.length });
     const failed: { file: File; reason?: string }[] = [];
     const duplicates: string[] = [];
     let done = 0;
@@ -2141,14 +2151,16 @@ function GalleryTab({
         });
       } finally {
         done += 1;
-        setUploadProgress({ done, total: imageFiles.length });
+        setUploadProgress({ done, total: uploadableFiles.length });
       }
     };
 
     try {
       // Limited concurrency — faster than serial without overwhelming the server
-      const queue = [...imageFiles];
-      const CONCURRENCY = Math.min(3, queue.length);
+      const queue = [...uploadableFiles];
+      const CONCURRENCY = shouldUploadImagesSerially(uploadableFiles)
+        ? 1
+        : Math.min(3, queue.length);
       await Promise.all(
         Array.from({ length: CONCURRENCY }, async () => {
           let next: File | undefined;
@@ -2163,6 +2175,7 @@ function GalleryTab({
       const parts: string[] = [];
       const failedNotice = uploadFailureNotice(failed);
       if (failedNotice) parts.push(failedNotice);
+      if (tooLargeNotice) parts.push(tooLargeNotice);
       if (duplicates.length)
         parts.push(
           `重複スキップ: ${duplicates.length}枚 (${duplicates.slice(0, 3).join(", ")}${duplicates.length > 3 ? " ほか" : ""})`,

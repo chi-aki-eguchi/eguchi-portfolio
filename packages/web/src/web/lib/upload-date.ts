@@ -25,3 +25,12 @@ export function shotAtForUploadedPhoto(
 
   return toShotAt(fileModified);
 }
+
+export function shotAtForDateInputSave(
+  currentShotAt: string | null | undefined,
+  dateInputValue: string,
+): string {
+  return dateInputValue === (currentShotAt || "").slice(0, 10)
+    ? currentShotAt || ""
+    : dateInputValue;
+}

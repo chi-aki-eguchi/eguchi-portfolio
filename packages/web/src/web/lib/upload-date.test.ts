@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { shotAtForUploadedPhoto } from "./upload-date";
+import {
+  shotAtForDateInputSave,
+  shotAtForUploadedPhoto,
+} from "./upload-date";
 
 describe("shotAtForUploadedPhoto", () => {
   test("keeps EXIF date for film uploads while other EXIF fields stay optional", () => {
@@ -30,5 +33,23 @@ describe("shotAtForUploadedPhoto", () => {
         "digital",
       ),
     ).toBe("");
+  });
+});
+
+describe("shotAtForDateInputSave", () => {
+  test("keeps the original timestamp when the date field is unchanged", () => {
+    expect(
+      shotAtForDateInputSave("2026-06-30T01:02:03", "2026-06-30"),
+    ).toBe("2026-06-30T01:02:03");
+  });
+
+  test("persists a manually changed film photo date", () => {
+    expect(
+      shotAtForDateInputSave("2026-06-30T01:02:03", "2026-07-01"),
+    ).toBe("2026-07-01");
+  });
+
+  test("clears the stored date when the date field is emptied", () => {
+    expect(shotAtForDateInputSave("2026-06-30T01:02:03", "")).toBe("");
   });
 });

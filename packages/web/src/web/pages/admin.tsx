@@ -17,7 +17,10 @@ import {
   FONT_PAIRINGS,
   type FontDef,
 } from "../components/provider";
-import { shotAtForUploadedPhoto } from "../lib/upload-date";
+import {
+  shotAtForDateInputSave,
+  shotAtForUploadedPhoto,
+} from "../lib/upload-date";
 import {
   isUploadableImageFile,
   UPLOAD_IMAGE_ACCEPT,
@@ -4708,10 +4711,10 @@ function GalleryTab({
                   setMetaSaved(false);
                   setMetaError(false);
                   // 撮影日は date 入力（日付まで）。未変更ならEXIF由来の時刻部分を保持する。
-                  const shotAtToSave =
-                    editForm.shotAt === (inspectPhoto.shotAt || "").slice(0, 10)
-                      ? inspectPhoto.shotAt || ""
-                      : editForm.shotAt;
+                  const shotAtToSave = shotAtForDateInputSave(
+                    inspectPhoto.shotAt,
+                    editForm.shotAt,
+                  );
                   updatePhoto.mutate(
                     { id: inspectPhoto.id, ...editForm, shotAt: shotAtToSave },
                     {

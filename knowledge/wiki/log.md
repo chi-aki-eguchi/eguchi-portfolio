@@ -19,6 +19,14 @@ it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-07-03 — Local TIFF conversion tool
+
+Driver task added `scripts/convert-tiffs.ts` and `docs/tiff-conversion.md` so
+the owner can convert huge lab TIFF scans locally before upload. Updated
+`pages/image-pipeline.md` to record the tool, its input/output folders,
+sequential/idempotent behavior, and its parity with the upload master JPEG
+settings.
+
 ### 2026-07-03 — Large TIFF upload size limit fix
 
 Driver follow-up after TIFF support shipped but production large film scans

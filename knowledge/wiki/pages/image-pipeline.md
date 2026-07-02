@@ -53,6 +53,14 @@ sources:
   packages/web/src/api/index.ts:1070-1073,1189-1192,1215-1218;
   packages/web/src/web/lib/upload-file.ts:1-79;
   packages/web/src/web/pages/admin.tsx:2048-2178)
+- **Local TIFF conversion tool**: `scripts/convert-tiffs.ts` is a maintained
+  owner-side Bun tool for converting lab-delivered TIFF scans before upload.
+  It reads TIFFs from `~/tiff-inbox`, writes JPEGs to `~/tiff-converted`, never
+  modifies source TIFFs, skips already-converted outputs, and processes files
+  sequentially. Its JPEG settings mirror the upload master settings
+  (3200px long edge, q92, mozjpeg, 4:4:4), while preserving EXIF metadata and
+  disabling sharp's pixel-count input limit in the local script only.
+  (scripts/convert-tiffs.ts; docs/tiff-conversion.md)
 - The server **also generates two pre-generated WebP derivatives** from the
   optimized buffer: thumb (640px, q82) and medium (1920px, q85), uploaded to
   R2 as `thumbs/<name>.webp` / `medium/<name>.webp`, with keys stored as

@@ -1,0 +1,147 @@
+import { useEffect, useState } from "react";
+import { objectPositionFromFocal, srcFor } from "../lib/picture";
+
+type PersistentStorageKind = "session" | "local";
+
+function getStorage(kind: PersistentStorageKind): Storage | null {
+  try {
+    return kind === "local" ? window.localStorage : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredState<T>(
+  key: string,
+  storage: Storage | null,
+): T | undefined {
+  try {
+    const raw = storage?.getItem(key);
+    return raw == null ? undefined : (JSON.parse(raw) as T);
+  } catch {
+    return undefined;
+  }
+}
+
+export function usePersistentState<T>(
+  key: string,
+  initial: T,
+  storageKind: PersistentStorageKind = "session",
+) {
+  const [val, setVal] = useState<T>(() => {
+    const primary = readStoredState<T>(key, getStorage(storageKind));
+    if (primary !== undefined) return primary;
+    if (storageKind === "local") {
+      const legacy = readStoredState<T>(key, getStorage("session"));
+      if (legacy !== undefined) return legacy;
+    }
+    return initial;
+  });
+  useEffect(() => {
+    try {
+      getStorage(storageKind)?.setItem(key, JSON.stringify(val));
+    } catch {
+      /* quota/private mode: state stays in-memory */
+    }
+  }, [key, storageKind, val]);
+  return [val, setVal] as const;
+}
+
+let redirectingToLogin = false;
+export function assertOk(res: Response): void {
+  if (res.status === 401) {
+    if (!redirectingToLogin) {
+      redirectingToLogin = true;
+      window.location.assign("/admin/login");
+    }
+    throw new Error("セッションが切れました。再ログインしてください。");
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+export async function jsonOrThrow<T>(
+  res: Response & { json(): Promise<T> },
+): Promise<T> {
+  assertOk(res);
+  return res.json();
+}
+
+export const DEFAULT_CAMERA_PRESETS = [
+  "PENTAX 67",
+  "Leica M6",
+  "Bronica S2",
+  "Sony α1",
+  "PENTAX 67II",
+];
+export const DEFAULT_LENS_PRESETS = [
+  "SMC Takumar 105mm f/2.4",
+  "SMC Takumar 55mm f/1.8",
+  "Nokton 50mm f/1.5",
+  "FE 35mm f/1.8",
+];
+
+export function parsePresetList(raw?: string): string[] {
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function effectivePresets(saved: string[], defaults: string[]): string[] {
+  return saved.length > 0 ? saved : defaults;
+}
+
+export type Photo = {
+  id: number;
+  url: string;
+  title: string;
+  meta: string;
+  camera?: string | null;
+  lens?: string | null;
+  filmType?: string | null;
+  shotAt?: string | null;
+  description: string;
+  category: string;
+  filename: string;
+  displaySize?: string;
+  isPublished?: boolean;
+  seriesId?: number | null;
+  width?: number | null;
+  height?: number | null;
+  rotationDeg?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  fileHash?: string | null;
+  deletedAt?: number | null;
+  createdAt?: string | number | null;
+};
+
+export function adminPhotoSrc(
+  photo: { url: string; rotationDeg?: number | null },
+  w: number,
+  q: number,
+): string {
+  return srcFor(photo.url, w, q, undefined, photo.rotationDeg);
+}
+
+export function adminPhotoObjectPosition(photo: {
+  focalX?: number | null;
+  focalY?: number | null;
+}): string {
+  return objectPositionFromFocal(photo.focalX, photo.focalY);
+}
+
+export type AdminSeries = {
+  id: number;
+  slug: string;
+  title: string;
+  subtitle?: string;
+  statement?: string;
+  coverPhotoId?: number | null;
+  sortOrder?: number;
+  isPublished?: boolean;
+};
+export type HeroPhotoRow = { id: number; photoId: number; sortOrder: number };

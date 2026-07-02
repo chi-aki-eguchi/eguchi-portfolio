@@ -1,5 +1,58 @@
 # Task Log
 
+## Handoff 2026-07-02 — Codex: owner-approved cleanup（night-run退役 / docs整合）
+
+### 目的
+
+前回の read-only wiki review で確認した stale docs / settings-sync 矛盾を、owner-approved scope だけで整理する。アプリ挙動は変えず、night-run setup の退役、AGENTS.md の settings-sync 4箇所化、DISTRIBUTION/README/docs の現状反映、`.claude` の stale cache/WebP 数値修正を行う。
+
+### 変更内容
+
+- `chore: remove night-run setup (owner decision)`
+  - `.claude/skills/night-run/`、`claude-code-night-run.md`、`NIGHT-RUN-LOG.md` を削除。
+  - `claude-code-setup-guide.md` から night-run draft / fixed 3:15 setup を削除。
+  - `knowledge/wiki/pages/night-run.md` を retirement note に差し替え、index のリンクを Retired へ移動。
+  - `knowledge/wiki/log.md` と `open-issues.md` に退役と wording 修正を記録。
+- `docs: reconcile settings-sync rule, refresh DISTRIBUTION/README/docs, fix migrate.ts comment`
+  - `AGENTS.md` の settings-sync を canonical 4箇所（`SETTINGS_PREVIEW_KEYS` / API `GET /settings` defaults / provider DB-apply / provider preview handler）へ統一。
+  - `DISTRIBUTION.md` と `README.md` を、Railway Deploy button 公開済み・`/service` Stripe Payment Links 実装済み・配布版は PostgreSQL + Railway Storage という現状へ更新。
+  - `packages/web/src/api/database/migrate.ts` 冒頭コメントだけを修正し、Turso path が `ensureTursoColumns()` を実行する実態に合わせた（挙動変更なし）。
+  - `docs/two-mac-workflow.md` の clone URL を実 remote 名に修正。
+- `chore(.claude): fix stale cache figures and WebP claim in r2-upload rule and perf-auditor agent`
+  - `.claude/rules/r2-upload.md` の「WebP変換なし」記述を削除し、thumb/medium WebP 生成を明記。
+  - `.claude/rules/r2-upload.md` / `.claude/agents/perf-auditor.md` の cache 数値を code reality（resize 128MB、original 48MB/60s）へ更新。
+
+### 触ったファイル
+
+- `.claude/skills/night-run/SKILL.md`（削除）
+- `.claude/rules/r2-upload.md`
+- `.claude/agents/perf-auditor.md`
+- `claude-code-night-run.md`（削除）
+- `NIGHT-RUN-LOG.md`（削除）
+- `claude-code-setup-guide.md`
+- `AGENTS.md`
+- `DISTRIBUTION.md`
+- `README.md`
+- `docs/two-mac-workflow.md`
+- `packages/web/src/api/database/migrate.ts`（コメントのみ）
+- `knowledge/wiki/index.md`
+- `knowledge/wiki/log.md`
+- `knowledge/wiki/pages/night-run.md`
+- `knowledge/wiki/pages/open-issues.md`
+- `task.md`（この handoff。既存の未コミット task.md 差分を巻き込まないよう、この hunk のみ stage）
+
+### 検証
+
+- 編集前に repo-wide grep で `night` / `caffeinate` / `3:15` / `3:10` / `クレジットリセット` を確認。
+- Stripe Payment Link は `packages/web/src/web/lib/service-config.ts`、Railway Deploy button は `README.md`、Turso compatibility migration は `ensureTursoColumns()`、R2 cache/WebP は `packages/web/src/api/index.ts` で確認してから docs を更新。
+- 最終確認として `git status --short`、`git diff --check`、`git log --oneline -6` を実行し、結果は最終報告に記載する。
+
+### 注意
+
+- `refine-and-loop-spec.md` と `improvement-roadmap.md` には旧 autonomous-loop / credit-reset coupling が残っている。night-run setup そのものではなく、より広い/歴史的な運用文脈なので今回は触らず報告対象。
+- 作業前から `packages/web/src/server.ts`、`task.md`、静的ファイル配信関連の未追跡ファイルなどが dirty。今回の commit では対象パスだけを明示 stage し、それらは revert / stage していない。
+- push は未実施（owner final summary 承認待ち）。
+
 ## Handoff 2026-06-30 — Codex: Gallery大量スクロール時の画像キュー詰まり対策
 
 ### 目的

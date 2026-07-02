@@ -1,7 +1,8 @@
-// 起動時の自動マイグレーション（配布版 = PostgreSQL のみ）。
+// 起動時の自動マイグレーション。
 //
-// 秋さん本番 (akieguchi.com) は DATABASE_PROVIDER 未設定 = Turso/libSQL のため、
-// この関数は即 return し本番には一切影響しない。
+// 秋さん本番 (akieguchi.com) は DATABASE_PROVIDER 未設定 = Turso/libSQL。
+// Drizzle migration は走らせないが、過去に追加された既知カラムだけ
+// ensureTursoColumns() で存在確認し、欠けていれば ALTER TABLE ADD COLUMN する。
 //
 // 配布版 (DATABASE_PROVIDER=postgres) では、Deploy on Railway 直後の空 DB に対し
 // 起動時に drizzle のマイグレーションを適用する。受け取った人が手で db:push /

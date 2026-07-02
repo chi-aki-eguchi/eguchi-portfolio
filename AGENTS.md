@@ -6,7 +6,7 @@
 
 - 2026-06-11: Codex が保守メンバーとして参加。以後、Claude Code / Codex が同じ仕様書と `task.md` を見て作業する前提。
 - Claude Code / Codex は実装着手前に `task.md` の最新 Handoff を確認し、未完了・検証済み・触ったファイルを追記する。
-- settings ライブプレビューの送信キーは `packages/web/src/web/lib/settings-preview.ts` が台帳。新規 settings キー追加時はここも更新し、`provider.tsx` の DB 適用 / preview 適用、API `/settings` の default を揃える。
+- settings は4箇所同期。新規 settings キー追加時は `packages/web/src/web/lib/settings-preview.ts` の台帳、API `/settings` の default、`provider.tsx` の DB 適用 `useEffect`、`provider.tsx` の `handlePreviewMessage` を揃える。
 - 2026-06-16: Runable → Railway 移行完了。デプロイ正本は `git push`。ZIP 作成・Runable publish は legacy 手順であり、通常作業では使わない。
 - Runable 関連ファイル（`RUNABLE_AI.md`, `scripts/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
 - Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
@@ -15,7 +15,7 @@
 ### §0 invariants
 
 - DB クエリは必ず `withRetry(() => db....)` のリトライラッパーを使う。
-- settings は 3-place settings sync パターンを維持する。`settings-preview.ts` の台帳、`provider.tsx` の DB 適用 / preview 適用、API `/settings` の default を揃える。
+- settings は 4-place settings sync パターンを維持する。`settings-preview.ts` の台帳、API `/settings` の default、`provider.tsx` の DB 適用 `useEffect`、`provider.tsx` の `handlePreviewMessage` を揃える。
 - API / client のレスポンスは `assertOk()` で検証してから本文を読む。
 - `Content-Encoding` は手動設定しない。Railway / upstream proxy が自動処理する。
 - HTML レスポンスは `Cache-Control: no-store` にする。
@@ -198,10 +198,11 @@ git push
   クエリは `./database`（`DATABASE_PROVIDER` 切替境界）から `schema` を import すること
   （`schema.ts` を直接 import しない）。PostgreSQL 側の更新漏れは配布版だけ壊し本番では気づけない。
   詳細は `DISTRIBUTION.md`「Schema is maintained in two files」。
-- **新規 settingsキー追加時は以下3箇所を必ずセットで更新**:
-  1. `admin.tsx` `SettingsTab` の `previewPayload` キー配列
-  2. `provider.tsx` の DB適用 `useEffect`
-  3. `provider.tsx` の `handlePreviewMessage`
+- **新規 settingsキー追加時は以下4箇所を必ずセットで更新**:
+  1. `packages/web/src/web/lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS`
+  2. API `GET /settings`（`packages/web/src/api/index.ts`）の default 値
+  3. `provider.tsx` の DB適用 `useEffect`
+  4. `provider.tsx` の `handlePreviewMessage`
 - ライブプレビュー: 管理画面の iframe(`src="/"`) に `postMessage({ type: "preview-settings", settings })` を送信。受信は `provider.tsx` の `handlePreviewMessage`
 
 ### 仕様書（参照先）

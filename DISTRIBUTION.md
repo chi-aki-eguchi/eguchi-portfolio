@@ -10,27 +10,31 @@
 
 ## 配布モデル
 
-### v0: Template + Setup Guide
+### v0: Railway Template + Setup Guide (shipped)
 
-配布の最初の形。セットアップ担当者がサイトのファイル一式をコピーし、
-その人専用の Railway / Turso / R2 / domain を接続する。
+配布の最初の形。公開済みの Railway Deploy button から、その人専用の
+Railway project を作る。配布版は `DATABASE_PROVIDER=postgres` で
+PostgreSQL + Railway Storage に切り替わり、`akieguchi.com` 本番だけが
+従来どおり Turso + Cloudflare R2 を使う。
 
-- 1 site-file copy
-- 1 Railway service
-- 1 Turso database
-- 1 Cloudflare R2 bucket
-- 1 custom domain
+- 1 Railway template deploy
+- 1 Railway web service
+- 1 Railway PostgreSQL database
+- 1 Railway Storage bucket
 - 1 admin password
+- optional custom domain
 
 これは現在の単一サイト構成と相性がよい。tenant 分離、課金、共有容量、
 サポート管理をまだ背負わないので、品質を守りやすい。
 
 用語メモ:
 
-- site-file copy: サイトのファイル一式を、その写真家用にコピーしたもの。
+- Railway template deploy: Deploy button から、その写真家用の Railway
+  project を作ること。
 - Railway: サイトをインターネットで動かす場所。
-- Turso: サイト名、プロフィール、写真一覧などを保存する場所。
-- R2: 写真ファイルそのものを保存する場所。
+- PostgreSQL: 配布版でサイト名、プロフィール、写真一覧などを保存する場所。
+- Railway Storage: 配布版で写真ファイルそのものを保存する場所。
+- Turso/R2: `akieguchi.com` 本番で使う既存の DB / 画像ストレージ。
 - tenant: 1つのサービス内で複数の利用者を分ける仕組み。今はまだやらない。
 
 ### v0.5: Concierge Setup
@@ -53,10 +57,11 @@ GitHub / Railway / Turso / R2 / 環境変数は、セットアップ担当者だ
 
 この方式なら、利用者は GitHub や環境変数をほぼ意識しなくてよい。
 
-### v1 Later: Turnkey Template
+### v1 Next: Template UX Polish
 
-Railway deploy button、初回セットアップウィザード、seed script まで整え、
-技術に詳しくない人でも自力で立てられる状態。
+Railway deploy button は公開済み。次は初回セットアップウィザード、
+seed script、テンプレート変数説明、デモ/OGP などを磨き、技術に詳しく
+ない人でも迷わず立てられる状態へ近づける。
 
 ### Not First: SaaS
 
@@ -174,7 +179,8 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
   - real `.env`, R2 keys, DB tokens, local screenshots, and scratch notes must
     never be included in a release bundle.
 - Verify empty-database startup:
-  - run schema setup against a fresh Turso/libSQL database
+  - deploy a fresh Railway template project with PostgreSQL + Storage
+  - confirm startup migrations create the schema without manual `db:push`
   - confirm public pages, `/api/settings`, `/api/photos`, `/admin/login`, and
     upload failure messages are understandable before any photos exist
   - confirm no production data, categories, settings, or photos are bundled
@@ -187,6 +193,8 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 - Add deployment guide:
   - Done: `docs/setup-guide.md` covers Turso database, R2 bucket/access keys,
     Railway service, env vars, `bun run db:push`, custom domain, and handoff.
+  - Done: README publishes the Railway Deploy button and
+    `docs/post-deploy-guide.md` covers the non-engineer one-click flow.
   - Done: `docs/photographer-guide.md` is a short no-code guide for the
     photographer receiving the site.
 - Add setup checklist in `/admin`:
@@ -211,7 +219,7 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 
 ## P2: Later Productization
 
-- Railway deploy button or setup script.
+- Improve Railway template variable descriptions and first-run setup flow.
 - First-run admin wizard.
 - Better storage health checks.
 - Optional local filesystem storage for development without R2.
@@ -333,7 +341,10 @@ is unchanged. See README → "Deploy on Railway (distribution template)".
   restarts and redeploys are idempotent.
 - On failure (e.g. unreachable DB) the process exits with a clear `[migrate]`
   log instead of serving a broken site; Railway keeps the previous version up.
-- Production (turso) path: `runStartupMigrations()` returns immediately — no-op.
+- Production (Turso/libSQL) path: `runStartupMigrations()` does not run the
+  PostgreSQL Drizzle migrator. It does run `ensureTursoColumns()`, which checks
+  for a small set of known legacy columns and `ALTER TABLE ADD COLUMN`s any that
+  are missing.
 
 ### `DATABASE_URL` vs `DATABASE_PUBLIC_URL`
 

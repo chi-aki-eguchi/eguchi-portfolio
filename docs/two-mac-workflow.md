@@ -19,13 +19,13 @@
 ```sh
 mkdir -p ~/Projects
 cd ~/Projects
-git clone git@github.com:OWNER/eguchi-portfolio-app.git
+git clone git@github.com:chi-aki-eguchi/eguchi-portfolio.git eguchi-portfolio-app
 cd eguchi-portfolio-app
 bun install
 cp .env.template .env
 ```
 
-`OWNER` は実際の GitHub owner / organization に置き換えます。HTTPS で clone する場合は、GitHub の repo 画面に出ている HTTPS URL を使います。
+HTTPS で clone する場合は、GitHub の repo 画面に出ている HTTPS URL を使います。
 
 `.env` には Turso、R2、admin password などを入れます。値は 1Password / Bitwarden / iCloud キーチェーンの安全なメモなどで管理し、チャットや GitHub には貼らないでください。
 

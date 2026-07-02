@@ -11,9 +11,9 @@ portfolio template for other photographers. The distribution roadmap lives in
 ## Status
 
 - Production app: yes, deployed through Railway from `git push`.
-- Turnkey template: not yet.
-- Recommended distribution model for now: one site-file copy and one separate
-  Railway/Turso/R2 setup per photographer.
+- Railway template: published through the Deploy on Railway button below.
+- Recommended distribution model for now: one Railway project per photographer
+  (web service + PostgreSQL + Storage bucket).
 - SaaS/multi-tenant mode: intentionally out of scope until the template flow is
   stable.
 
@@ -79,7 +79,9 @@ serving a broken site, and Railway keeps the previous version running — check
 the deploy logs for the `[migrate]` lines.
 
 The original Turso/libSQL setup (production `akieguchi.com`, `DATABASE_PROVIDER`
-unset) is untouched: `runStartupMigrations()` is a no-op there.
+unset) is untouched by the PostgreSQL migrator. On that path,
+`runStartupMigrations()` only runs `ensureTursoColumns()` to add a small set of
+known legacy columns if missing; it does not run Drizzle migrations.
 
 > **PostgreSQL URL choice:** the template uses Railway PostgreSQL's
 > `DATABASE_PUBLIC_URL` (`*.proxy.rlwy.net:PORT`) because it is the most reliable

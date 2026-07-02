@@ -290,6 +290,7 @@ describe("shared components", () => {
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      await flush(100);
       const tile = host.querySelector(
         'button[aria-label="B"]',
       ) as HTMLButtonElement | null;
@@ -543,6 +544,10 @@ describe("shared components", () => {
         createElement(Admin),
         (qc) => qc.setQueryData(["hero-photos"], { heroPhotos: [samplePhotos[0]] })
       );
+      host
+        .querySelector('button:nth-of-type(3)')
+        ?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+      await flush(500);
 
       expect(host.textContent).toContain("Hero Slides");
       expect(host.textContent).not.toContain("削除済み");

@@ -1,0 +1,50 @@
+import { describe, expect, test } from "bun:test";
+import { computeVirtualGridWindow } from "../pages/admin";
+
+describe("admin library virtual grid", () => {
+  test("renders only visible rows plus buffer for a large library", () => {
+    const window = computeVirtualGridWindow({
+      itemCount: 445,
+      scrollTop: 0,
+      viewportHeight: 900,
+      gridWidth: 1200,
+      minItemSize: 180,
+    });
+
+    expect(window.columns).toBe(6);
+    expect(window.startIndex).toBe(0);
+    expect(window.endIndex).toBeLessThan(445);
+    expect(window.renderedCount).toBe(48);
+    expect(window.isVirtualized).toBe(true);
+  });
+
+  test("keeps global indexes stable after scrolling", () => {
+    const window = computeVirtualGridWindow({
+      itemCount: 445,
+      scrollTop: 2400,
+      viewportHeight: 900,
+      gridWidth: 1200,
+      minItemSize: 180,
+    });
+
+    expect(window.startIndex).toBeGreaterThan(0);
+    expect(window.endIndex).toBeLessThan(445);
+    expect(window.topPadding).toBeGreaterThan(0);
+    expect(window.bottomPadding).toBeGreaterThan(0);
+  });
+
+  test("falls back to the full list when layout metrics are unavailable", () => {
+    const window = computeVirtualGridWindow({
+      itemCount: 12,
+      scrollTop: 0,
+      viewportHeight: 0,
+      gridWidth: 0,
+      minItemSize: 180,
+    });
+
+    expect(window.startIndex).toBe(0);
+    expect(window.endIndex).toBe(12);
+    expect(window.renderedCount).toBe(12);
+    expect(window.isVirtualized).toBe(false);
+  });
+});

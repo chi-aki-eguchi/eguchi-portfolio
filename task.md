@@ -16,10 +16,13 @@ TIFF対応後も本番で大きい `.tif` が失敗した件を、Codex Driver�
 
 - `packages/web/src/shared/upload-limits.ts`
   - 画像アップロード上限を共有定数化し、300MBに設定。
+  - Bunのリクエスト本文上限用に、multipartの包み分を足した305MBを設定。
   - 大きすぎる時の文言を `画像が大きすぎます（上限: 300MB）。` に統一。
 - `packages/web/src/api/security.ts`, `packages/web/src/api/index.ts`
   - 通常写真・Hero・Profileのサーバ側上限を300MBへ変更。
   - 上限超過時はHTTP 413で明確な理由を返す。
+- `packages/web/src/server.ts`
+  - `Bun.serve` の `maxRequestBodySize` を305MBに明示し、Bun入口の既定上限で128MB前後の大容量TIFFが切断される問題を防止。
 - `packages/web/src/web/lib/upload-file.ts`, `packages/web/src/web/pages/admin.tsx`
   - 管理画面で300MB超のファイルをアップロード前に弾く。
   - 60MB超〜300MB以下のファイルが含まれる時は、複数同時ではなく1件ずつ送る。
@@ -46,6 +49,16 @@ TIFF対応後も本番で大きい `.tif` が失敗した件を、Codex Driver�
   - `bunx oxlint packages/web/src/api/index.ts packages/web/src/api/security.ts packages/web/src/api/security.test.ts packages/web/src/shared/upload-limits.ts packages/web/src/web/lib/upload-file.ts packages/web/src/web/lib/upload-file.test.ts packages/web/src/web/pages/admin.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功
   - `cd packages/web && bun run build` 成功
   - `cd packages/web && bun test ./src` 成功（239 pass / 0 fail）
+  - `bun run lint` は既存の `packages/web/src/web/components/Lightbox.tsx:1214` `prefer-tag-over-role` 警告で失敗（今回差分外）
+- Reviewer指摘後の追加検証:
+  - Claude ReviewerからP0: `Bun.serve` の `maxRequestBodySize` 未指定だとBun入口で128MB前後の本文が切断され、Honoの300MB判定まで届かない可能性がある、という指摘。
+  - `Bun.serve({ maxRequestBodySize: 305MB })` の一時ローカルサーバで 140MiB POST → HTTP 200 / `146800640` bytes 到達を確認。
+  - `cd packages/web && bun x tsc -b` 成功
+  - `cd packages/web && bun test ./src/api/security.test.ts ./src/web/lib/upload-file.test.ts` 成功（53 pass / 0 fail）
+  - `bunx oxlint packages/web/src/server.ts packages/web/src/api/security.test.ts packages/web/src/shared/upload-limits.ts --deny-warnings --no-error-on-unmatched-pattern` 成功
+  - `cd packages/web && bun run build` 成功
+  - `cd packages/web && bun test ./src` 成功（240 pass / 0 fail）
+  - `git diff --check` 成功
   - `bun run lint` は既存の `packages/web/src/web/components/Lightbox.tsx:1214` `prefer-tag-over-role` 警告で失敗（今回差分外）
 
 ### 注意

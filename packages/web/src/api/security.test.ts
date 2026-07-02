@@ -40,8 +40,8 @@ describe("ALLOWED_IMAGE_TYPES", () => {
 });
 
 describe("size limits", () => {
-  test("image max is 60MB", () => {
-    expect(IMAGE_MAX_BYTES).toBe(60 * 1024 * 1024);
+  test("image max is 300MB", () => {
+    expect(IMAGE_MAX_BYTES).toBe(300 * 1024 * 1024);
   });
   test("font max is 2MB", () => {
     expect(FONT_MAX_BYTES).toBe(2 * 1024 * 1024);

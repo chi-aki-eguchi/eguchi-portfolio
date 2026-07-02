@@ -1,8 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
+  imageFileTooLarge,
   isUploadableImageFile,
+  shouldUploadImagesSerially,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
+  uploadSizeLimitLabel,
+  uploadTooLargeNotice,
 } from "./upload-file";
 
 describe("isUploadableImageFile", () => {
@@ -61,5 +65,27 @@ describe("uploadFailureNotice", () => {
     ).toBe(
       "4 件失敗: a.tif (HTTP 500), b.tif (HTTP 500), c.tif (HTTP 500) ほか",
     );
+  });
+});
+
+describe("upload size helpers", () => {
+  test("allows files up to 300MB and rejects files above it", () => {
+    expect(imageFileTooLarge({ size: 300 * 1024 * 1024 })).toBe(false);
+    expect(imageFileTooLarge({ size: 300 * 1024 * 1024 + 1 })).toBe(true);
+  });
+
+  test("labels the configured limit for admin messages", () => {
+    expect(uploadSizeLimitLabel()).toBe("300MB");
+    expect(
+      uploadTooLargeNotice([
+        { name: "small.tif", size: 300 * 1024 * 1024 },
+        { name: "huge.tif", size: 300 * 1024 * 1024 + 1 },
+      ]),
+    ).toBe("1 件失敗: huge.tif (画像が大きすぎます（上限: 300MB）。)");
+  });
+
+  test("large files upload one at a time to avoid overwhelming the server", () => {
+    expect(shouldUploadImagesSerially([{ size: 60 * 1024 * 1024 }])).toBe(false);
+    expect(shouldUploadImagesSerially([{ size: 60 * 1024 * 1024 + 1 }])).toBe(true);
   });
 });

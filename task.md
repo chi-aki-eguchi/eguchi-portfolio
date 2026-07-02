@@ -1,5 +1,45 @@
 # Task Log
 
+## Handoff 2026-07-03 — Codex: local TIFF to JPEG converter
+
+### 目的
+
+ラボ納品の巨大TIFF（135MB〜573MB程度）を本番サーバへ直接送らず、ownerのMac上でサイト取り込み用JPEGへ安全に変換する。
+
+### 変更内容
+
+- `scripts/convert-tiffs.ts`
+  - `~/tiff-inbox` を入力、`~/tiff-converted` を出力にするローカル変換スクリプトを追加。
+  - 元TIFFは変更・削除しない。
+  - 既に同名 `.jpg` があればスキップするため、再実行しても安全。
+  - 1枚ずつ順番に処理し、変換 / スキップ / 失敗を最後に集計表示。
+  - サイト取り込みmasterと同じ 3200px長辺 / mozjpeg / q92 / 4:4:4 に設定。
+  - ローカルスクリプトだけ `limitInputPixels: false` を使い、巨大Hasselbladスキャンでsharpのピクセル安全上限に当たりにくくした（サーバ側の制限は変更なし）。
+  - `.withMetadata()` でEXIFを保持。
+- `scripts/convert-tiffs.test.ts`
+  - 小さいTIFF fixtureを生成し、JPEG出力、3200pxリサイズ、4:4:4、q92定数、再実行スキップをテスト。
+- `docs/tiff-conversion.md`
+  - owner向けの短い日本語手順を追加。
+
+### 根拠
+
+- サイト取り込み設定は `packages/web/src/api/index.ts:279-285` と `packages/web/src/api/index.ts:340-355` で確認。
+
+### 検証
+
+- `bun test scripts/convert-tiffs.test.ts` 成功（1 pass / 0 fail）
+- `bunx oxlint scripts/convert-tiffs.ts scripts/convert-tiffs.test.ts --deny-warnings --no-error-on-unmatched-pattern` 成功
+- `git diff --check` 成功
+- `cd packages/web && bun x tsc -b` 成功
+- `cd packages/web && bun run build` 成功
+- `cd packages/web && bun test ./src` は初回1件だけ管理画面renderテストが失敗、同テスト単独再実行は成功。その後フル再実行で成功（240 pass / 0 fail）。
+- `bun run lint` は既存の `packages/web/src/web/components/Lightbox.tsx:1214` `prefer-tag-over-role` 警告で失敗（今回差分外）
+- `bun --check scripts/convert-tiffs.ts` はこのBun版ではスクリプトを実行してしまい、sandbox外の `~/tiff-inbox` 作成権限で停止。構文/実行確認は上記テストで代替。
+
+### 注意
+
+- pushは未実施。owner承認後にpushする。
+
 ## Handoff 2026-07-03 — Codex: large TIFF upload size follow-up
 
 ### 目的

@@ -1,5 +1,69 @@
 # Task Log
 
+## Handoff 2026-07-02 — Codex: admin TIFF upload + film date investigation
+
+### 目的
+
+本番管理画面で `.tif/.tiff` 52件が失敗した件と、フィルム写真の撮影日が再アップロード後に更新されない件を、Codex Driverとして調査・修正。pushは未実施（owner承認待ち）。
+
+### 原因
+
+- Bug A: TIFF自体はsharpでJPEGへ変換可能だったが、アップロード判定が `image/tiff` しか想定しておらず、環境によって来る `image/x-tiff` やMIME空/汎用ラベルの `.tif/.tiff` が落ちる余地があった。クライアント側も `image/*` だけで、拡張子明示がなかった。
+- Bug B: 撮影日保存APIと手入力保存ロジックは成立していた。今回の未更新は、TIFF再アップロードが失敗して新しい写真行が作られず、古い表示/状態を見ていた可能性が最も高い。日付保存ロジックはテスト化して固定。
+
+### 変更内容
+
+- `packages/web/src/api/security.ts`
+  - `image/x-tiff` と `.tif/.tiff` を許可する共通アップロード判定 `isAllowedUploadImageFile()` を追加。
+  - MIMEが空または `application/octet-stream` でも、拡張子が許可済み画像なら通す。SVG/PDFは拒否。
+- `packages/web/src/api/index.ts`
+  - 通常写真・Hero・Profileの3アップロード口を共通判定へ統一。
+  - 保存方針は既存通り: TIFFをR2にTIFFのまま置かず、標準JPEG masterへ変換し、thumb/medium WebPを生成。
+- `packages/web/src/web/lib/upload-file.ts`
+  - 管理画面のアップロード対象判定、`accept` 文字列、失敗バナー文言生成を追加。
+- `packages/web/src/web/pages/admin.tsx`
+  - ファイル選択で `.tif/.tiff` を明示。
+  - サーバが返したエラー理由をアップロード失敗バナーに出すよう改善。
+- `packages/web/src/web/lib/upload-date.ts`
+  - 撮影日inputの保存値変換を関数化し、未変更時はEXIF由来の時刻を保ち、変更時は新しい日付を保存する挙動をテストで固定。
+- `packages/web/src/web/test/pages.render.test.tsx`
+  - フルテスト時だけ管理画面テストが「写真0枚」固定データと干渉して落ちる既存不安定性を解消。
+- `knowledge/wiki/pages/image-pipeline.md`, `knowledge/wiki/pages/open-issues.md`, `knowledge/wiki/log.md`
+  - TIFF受け入れとJPEG master + WebP derivative方針を記録。open issue #32を解決済みに更新。
+
+### 本番データ読み取り調査
+
+- Turso DBを読み取り専用で確認:
+  - 全写真行: 614
+  - `.tif/.tiff` filename行: 3件（既に成功済みの `IMG_2220.TIF`, `IMG_2221.TIF`, `IMG_2247.TIF`）
+  - `DSCF1599`, `DSCF1607`, `DSCF1609` に一致するDB行: 0件
+- R2を読み取り専用で確認:
+  - `photos/`, `thumbs/`, `medium/` に `DSCF1599`, `DSCF1607`, `DSCF1609` の残骸: 0件
+- 結論: 少なくとも報告例3件については、DB行の残骸もR2オブジェクトの残骸も見つからなかった。52件全名は手元にないため、全件個別確認は未実施。
+
+### 検証
+
+- 変更前:
+  - `cd packages/web && bun x tsc -b` 成功
+  - `cd packages/web && bun run build` 成功
+  - `cd packages/web && bun test ./src` は 226件中224 pass / 2 fail（既存の管理画面renderテスト不安定）
+  - `bunx oxlint packages/web --deny-warnings --no-error-on-unmatched-pattern` は既存の `Lightbox.tsx` `role="dialog"` 警告で失敗
+- sharp確認:
+  - `sharp 0.34.5`, libtiff `4.7.1`
+  - ローカル生成TIFFをJPEGへ変換成功
+- 変更後:
+  - 変更ファイル対象 `oxlint` 成功
+  - `cd packages/web && bun x tsc -b` 成功
+  - `cd packages/web && bun run build` 成功
+  - `cd packages/web && bun test ./src` 成功（236 pass / 0 fail）
+  - `git diff --check` 成功
+
+### 注意
+
+- repo全体lintは今回の変更とは別の既存 `Lightbox.tsx` 警告でまだ失敗する。今回の変更ファイルだけのlintは成功。
+- agmsgでClaude CodeへP0/P1レビュー依頼を送信済み。現時点で新着返信なし。
+- pushは未実施。owner承認後にpushする。
+
 ## Handoff 2026-07-02 — Codex: owner-approved cleanup（night-run退役 / docs整合）
 
 ### 目的

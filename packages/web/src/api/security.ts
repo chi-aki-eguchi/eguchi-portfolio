@@ -7,7 +7,20 @@ export const ALLOWED_IMAGE_TYPES = new Set([
   "image/heic",
   "image/heif",
   "image/tiff",
+  "image/x-tiff",
   "image/avif",
+]);
+
+const ALLOWED_IMAGE_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "heic",
+  "heif",
+  "tif",
+  "tiff",
+  "avif",
 ]);
 
 export const IMAGE_MAX_BYTES = 60 * 1024 * 1024;
@@ -24,6 +37,17 @@ export const IMAGE_PROXY_ALLOWED_PREFIXES = [
 
 export function isAllowedImageKey(decodedKey: string): boolean {
   return IMAGE_PROXY_ALLOWED_PREFIXES.some((p) => decodedKey.startsWith(p));
+}
+
+export function isAllowedUploadImageFile(file: {
+  name?: string;
+  type?: string;
+}): boolean {
+  const type = file.type?.toLowerCase() ?? "";
+  const ext = file.name?.split(".").pop()?.toLowerCase() ?? "";
+  if (type && ALLOWED_IMAGE_TYPES.has(type)) return true;
+  if (!ALLOWED_IMAGE_EXTENSIONS.has(ext)) return false;
+  return !type || type === "application/octet-stream" || type === "image/tiff" || type === "image/x-tiff";
 }
 
 export function clientIpFrom(

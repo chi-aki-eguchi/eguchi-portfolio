@@ -44,10 +44,10 @@ import {
   siteDescriptionFrom,
 } from "./site-defaults";
 import {
-  ALLOWED_IMAGE_TYPES,
   IMAGE_MAX_BYTES,
   FONT_MAX_BYTES,
   isAllowedImageKey,
+  isAllowedUploadImageFile,
   clientIpFrom,
   passwordMatches as _passwordMatches,
   isHttpsRequest,
@@ -1066,7 +1066,7 @@ const app = new Hono()
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return c.json({ error: "No file" }, 400);
-    if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type))
+    if (!isAllowedUploadImageFile(file))
       return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
       return c.json({ error: "画像は60MBまでです。" }, 413);
@@ -1185,7 +1185,7 @@ const app = new Hono()
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return c.json({ error: "No file" }, 400);
-    if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type))
+    if (!isAllowedUploadImageFile(file))
       return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
       return c.json({ error: "画像は60MBまでです。" }, 413);
@@ -1211,7 +1211,7 @@ const app = new Hono()
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return c.json({ error: "No file" }, 400);
-    if (file.type && !ALLOWED_IMAGE_TYPES.has(file.type))
+    if (!isAllowedUploadImageFile(file))
       return c.json({ error: "許可されていないファイル形式です。" }, 415);
     if (file.size > IMAGE_MAX_BYTES)
       return c.json({ error: "画像は60MBまでです。" }, 413);

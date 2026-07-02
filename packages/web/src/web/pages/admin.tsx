@@ -19,6 +19,11 @@ import {
 } from "../components/provider";
 import { shotAtForUploadedPhoto } from "../lib/upload-date";
 import {
+  isUploadableImageFile,
+  UPLOAD_IMAGE_ACCEPT,
+  uploadFailureNotice,
+} from "../lib/upload-file";
+import {
   LogOut,
   Upload,
   Trash2,
@@ -159,6 +164,17 @@ async function jsonOrThrow<T>(
 ): Promise<T> {
   assertOk(res);
   return res.json();
+}
+
+async function responseErrorMessage(res: Response): Promise<string> {
+  try {
+    const data = (await res.clone().json()) as { error?: unknown };
+    if (typeof data.error === "string" && data.error.trim())
+      return data.error.trim();
+  } catch {
+    // Fall back below when the server returns a non-JSON error.
+  }
+  return `HTTP ${res.status}`;
 }
 
 function useAdminGuard() {
@@ -2024,7 +2040,7 @@ function GalleryTab({
 
   // Upload — server-side resize (no more presigned URLs)
   const handleFiles = async (files: File[]) => {
-    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+    const imageFiles = files.filter(isUploadableImageFile);
     const skipped = files.length - imageFiles.length;
     if (!imageFiles.length) {
       setUploadNotice(
@@ -2038,7 +2054,7 @@ function GalleryTab({
     setRetryFiles([]);
     setUploadingAndNotify(true);
     setUploadProgress({ done: 0, total: imageFiles.length });
-    const failed: File[] = [];
+    const failed: { file: File; reason?: string }[] = [];
     const duplicates: string[] = [];
     let done = 0;
 
@@ -2051,6 +2067,15 @@ function GalleryTab({
           body: formData,
           credentials: "include",
         });
+        if (!res.ok) {
+          const message = await responseErrorMessage(res);
+          try {
+            assertOk(res);
+          } catch (err) {
+            if (res.status === 401) throw err;
+          }
+          throw new Error(message);
+        }
         assertOk(res);
         const data = await res.json();
         // C1: server detected an identical image already registered — skip it.
@@ -2106,8 +2131,11 @@ function GalleryTab({
           },
         });
         assertOk(created);
-      } catch {
-        failed.push(file);
+      } catch (err) {
+        failed.push({
+          file,
+          reason: err instanceof Error ? err.message : undefined,
+        });
       } finally {
         done += 1;
         setUploadProgress({ done, total: imageFiles.length });
@@ -2128,15 +2156,10 @@ function GalleryTab({
     } finally {
       setUploadingAndNotify(false);
       setUploadProgress(null);
-      setRetryFiles(failed);
+      setRetryFiles(failed.map(({ file }) => file));
       const parts: string[] = [];
-      if (failed.length)
-        parts.push(
-          `${failed.length} 件失敗: ${failed
-            .slice(0, 3)
-            .map((f) => f.name)
-            .join(", ")}${failed.length > 3 ? " ほか" : ""}`,
-        );
+      const failedNotice = uploadFailureNotice(failed);
+      if (failedNotice) parts.push(failedNotice);
       if (duplicates.length)
         parts.push(
           `重複スキップ: ${duplicates.length}枚 (${duplicates.slice(0, 3).join(", ")}${duplicates.length > 3 ? " ほか" : ""})`,
@@ -3172,7 +3195,7 @@ function GalleryTab({
             aria-label="画像ファイルを選択"
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept={UPLOAD_IMAGE_ACCEPT}
             multiple
             className="hidden"
             onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}

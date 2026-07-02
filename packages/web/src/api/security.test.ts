@@ -12,6 +12,7 @@ import {
   clampImageWidth,
   clampImageHeight,
   clampImageQuality,
+  isAllowedUploadImageFile,
 } from "./security";
 
 describe("ALLOWED_IMAGE_TYPES", () => {
@@ -23,6 +24,7 @@ describe("ALLOWED_IMAGE_TYPES", () => {
       "image/heic",
       "image/heif",
       "image/tiff",
+      "image/x-tiff",
       "image/avif",
     ]) {
       expect(ALLOWED_IMAGE_TYPES.has(t)).toBe(true);
@@ -43,6 +45,30 @@ describe("size limits", () => {
   });
   test("font max is 2MB", () => {
     expect(FONT_MAX_BYTES).toBe(2 * 1024 * 1024);
+  });
+});
+
+describe("isAllowedUploadImageFile", () => {
+  test("accepts TIFF MIME variants and extension-only TIFF files", () => {
+    expect(isAllowedUploadImageFile({ name: "scan.tif", type: "image/tiff" }))
+      .toBe(true);
+    expect(
+      isAllowedUploadImageFile({ name: "scan.tiff", type: "image/x-tiff" }),
+    ).toBe(true);
+    expect(isAllowedUploadImageFile({ name: "scan.TIF", type: "" })).toBe(true);
+    expect(
+      isAllowedUploadImageFile({
+        name: "scan.tiff",
+        type: "application/octet-stream",
+      }),
+    ).toBe(true);
+  });
+
+  test("rejects unsupported image-ish or non-image files", () => {
+    expect(isAllowedUploadImageFile({ name: "vector.svg", type: "image/svg+xml" }))
+      .toBe(false);
+    expect(isAllowedUploadImageFile({ name: "notes.pdf", type: "application/pdf" }))
+      .toBe(false);
   });
 });
 

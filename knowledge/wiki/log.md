@@ -19,6 +19,15 @@ it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-07-02 — Retire night-run setup
+
+Owner-approved cleanup retired the night-run setup. The wiki page
+`pages/night-run.md` is now marked `stale` and kept only as a historical
+pointer. The index link moved to a Retired subsection, and `pages/open-issues.md`
+now records the former NIGHT-RUN / fixed-time contradictions as resolved by
+retirement. General delayed-execution guidance remains in
+`docs/delayed-execution-sop.md`.
+
 ### 2026-07-02 — Initial bootstrap
 
 Bootstrapped `knowledge/` from scratch (docs-only task: "AI Development

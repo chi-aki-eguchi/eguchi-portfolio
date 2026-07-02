@@ -37,15 +37,16 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
    "Turnkey template: not yet," while its own "Deploy on Railway" section
    documents an already-published deploy button
    (`https://railway.com/deploy/cool-wide`). See distribution.md.
-4. **`NIGHT-RUN-LOG.md` self-contradicts** on whether the BUILD_ID bug was
-   fixed (top/most-recent entry says still stale; an earlier entry in the
-   same file says it was fixed — code confirms the fix **is** in place, so
-   the top entry is the stale one). See night-run.md.
-5. **`claude-code-setup-guide.md`'s embedded night-run SKILL.md example**
-   (fixed 3:15am/3:10am, caffeinate+sleep) contradicts both the real, live
-   `.claude/skills/night-run/SKILL.md` (credit-reset-driven, dynamic) and
-   `docs/delayed-execution-sop.md`'s explicit blacklist of exactly that
-   sleep-timer pattern. See night-run.md.
+4. **Resolved 2026-07-02 by owner-approved retirement**:
+   `NIGHT-RUN-LOG.md`, `claude-code-night-run.md`, and
+   `.claude/skills/night-run/` were removed. The former BUILD_ID
+   contradiction is now historical only; see night-run.md.
+5. **Resolved 2026-07-02 by owner-approved retirement**:
+   `claude-code-setup-guide.md`'s embedded fixed 3:15am/3:10am
+   `caffeinate` + `sleep` draft example was removed. Precise wording:
+   `docs/delayed-execution-sop.md` blacklists the unreliable
+   delayed-execution class (`at`/`cron`, background `sleep N && claude`,
+   launchd), not the exact full draft phrase. See night-run.md.
 6. **Invariant #7 ("never `git add .`")** appears only inside CLAUDE.md's
    `test-*.mjs` bullet — AGENTS.md never states it, and AGENTS.md's own
    deploy steps use `git add -A`. See invariants.md.
@@ -138,6 +139,6 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 
 Each item above restates a finding fully cited (with exact file:line
 references) on its corresponding topic page — see invariants.md,
-database.md, image-pipeline.md, distribution.md, night-run.md, and this
-audit's final chat report for the full root-inventory / .claude-audit /
+database.md, image-pipeline.md, distribution.md, night-run.md, and the
+relevant task handoff for the full root-inventory / .claude-audit /
 docs-freshness tables.

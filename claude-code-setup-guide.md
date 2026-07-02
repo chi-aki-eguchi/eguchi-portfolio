@@ -9,7 +9,7 @@
 | CLAUDE.md (root) | ✅ §0 invariants 運用中 | 整理・200行以下に |
 | CLAUDE.md (subdirectory) | ❌ | packages/web, packages/api に配置 |
 | Rules (.claude/rules/) | ❌ | path-scoped ルール 5本 |
-| Skills (.claude/skills/) | ❌ | ナイトラン、デプロイ、コードレビュー等 |
+| Skills (.claude/skills/) | ❌ | デプロイ、ギャラリー、EXIF 等 |
 | Subagents (.claude/agents/) | ❌ | セキュリティ、パフォーマンス、EXIF監査 |
 | Hooks (settings.json) | ❌ | 通知、フォーマット、compaction保護 |
 | Plugins | ❌ | TypeScript LSP + 有用なもの |
@@ -31,7 +31,6 @@ eguchi-portfolio-app/
 │   │   ├── react-components.md        # React 19 コンポーネント向け
 │   │   └── no-manual-encoding.md      # §0 invariant 強制
 │   ├── skills/
-│   │   ├── night-run/SKILL.md         # ナイトラン手順
 │   │   ├── deploy/SKILL.md            # Railway デプロイ手順
 │   │   ├── gallery-feature/SKILL.md   # ギャラリー機能追加手順
 │   │   └── exif-preset/SKILL.md       # EXIF プリセット追加手順
@@ -136,43 +135,6 @@ Content-Encoding ヘッダを手動で設定するコードを書かない。
 ---
 
 ## 3. Skills（.claude/skills/）
-
-### night-run/SKILL.md
-```markdown
----
-name: night-run
-description: Claude Code ナイトラン（自律夜間ループ）のセットアップと実行手順
-disable-model-invocation: true
----
-# ナイトラン実行手順
-
-$ARGUMENTS にタスク指示がある場合はそれに従う。なければ以下のデフォルトフロー。
-
-## 前提
-- クレジットリセット: 午前 3:10 (JST)
-- 起動タイミング: 午前 3:15 (JST)
-- 詳細手順: claude-code-night-run.md を参照
-
-## セットアップ
-1. ターミナルで以下を実行：
-   ```bash
-   caffeinate -d &
-   sleep $(($(date -j -f "%H:%M" "03:15" +%s) - $(date +%s))) && claude
-   ```
-2. 起動後、CLAUDE.md を読み込んで現在の状態を把握
-3. 直近の git log と TODO/FIXME を確認
-
-## 実行ルール
-- `--effort high` で実行
-- 変更前に必ず `bun typecheck` を通す
-- 各機能実装後に `bun test` を実行
-- コミットは細かく、メッセージは英語で
-- エラーが3回連続したら方針を変える（同じアプローチを繰り返さない）
-
-## 終了条件
-- クレジット残量が少なくなったら現在の作業をコミットして終了
-- 未完了タスクは CLAUDE.md か issue に記録
-```
 
 ### deploy/SKILL.md
 ```markdown

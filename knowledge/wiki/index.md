@@ -41,10 +41,6 @@ be read selectively, not in full, each session.
   DISTRIBUTION.md freshness.
 - [Deployment](pages/deployment.md) — Railway git-push deploy, the legacy
   Runable ZIP path, env/config topology (names only, no secret values).
-- [Night-Run Setup](pages/night-run.md) — how the credit-reset-driven
-  autonomous night-run loop actually works, vs. stale/draft descriptions
-  found elsewhere.
-
 ## Tracking
 
 - [Open Issues](pages/open-issues.md) — contradictions between canonical
@@ -61,3 +57,8 @@ be read selectively, not in full, each session.
 - Content specific to the akieguchi.com production deployment (vs. the
   generic distributable template) is tagged inline with
   **[akieguchi-specific]**.
+
+## Retired
+
+- [Night-Run Setup](pages/night-run.md) — retired on 2026-07-02 by owner
+  decision; kept only as a historical pointer.

@@ -14,6 +14,7 @@ import {
   clampImageQuality,
   isAllowedUploadImageFile,
 } from "./security";
+import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "../shared/upload-limits";
 
 describe("ALLOWED_IMAGE_TYPES", () => {
   test("accepts standard photographic formats", () => {
@@ -42,6 +43,9 @@ describe("ALLOWED_IMAGE_TYPES", () => {
 describe("size limits", () => {
   test("image max is 300MB", () => {
     expect(IMAGE_MAX_BYTES).toBe(300 * 1024 * 1024);
+  });
+  test("request body max leaves multipart overhead for 300MB files", () => {
+    expect(IMAGE_UPLOAD_REQUEST_MAX_BYTES).toBe(305 * 1024 * 1024);
   });
   test("font max is 2MB", () => {
     expect(FONT_MAX_BYTES).toBe(2 * 1024 * 1024);

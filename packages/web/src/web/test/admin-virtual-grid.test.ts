@@ -33,6 +33,28 @@ describe("admin library virtual grid", () => {
     expect(window.bottomPadding).toBeGreaterThan(0);
   });
 
+  test("recomputes columns when the library width changes", () => {
+    const wide = computeVirtualGridWindow({
+      itemCount: 445,
+      scrollTop: 2400,
+      viewportHeight: 900,
+      gridWidth: 1200,
+      minItemSize: 180,
+    });
+    const narrow = computeVirtualGridWindow({
+      itemCount: 445,
+      scrollTop: 2400,
+      viewportHeight: 900,
+      gridWidth: 900,
+      minItemSize: 180,
+    });
+
+    expect(wide.columns).toBe(6);
+    expect(narrow.columns).toBe(4);
+    expect(narrow.rowHeight).toBeGreaterThan(wide.rowHeight);
+    expect(narrow.startIndex).not.toBe(wide.startIndex);
+  });
+
   test("falls back to the full list when layout metrics are unavailable", () => {
     const window = computeVirtualGridWindow({
       itemCount: 12,

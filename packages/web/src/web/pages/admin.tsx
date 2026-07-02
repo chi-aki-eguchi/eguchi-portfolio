@@ -1815,6 +1815,10 @@ function GalleryTab({
       thumbSize,
     ],
   );
+  const virtualGridRef = useRef(virtualGrid);
+  useLayoutEffect(() => {
+    virtualGridRef.current = virtualGrid;
+  }, [virtualGrid]);
   const visibleDisplayed = useMemo(
     () => displayed.slice(virtualGrid.startIndex, virtualGrid.endIndex),
     [displayed, virtualGrid.endIndex, virtualGrid.startIndex],
@@ -1822,10 +1826,11 @@ function GalleryTab({
   const scrollLibraryIndexIntoView = useCallback(
     (index: number) => {
       const el = scrollRef.current;
-      if (!el || index < 0 || virtualGrid.rowHeight <= 0) return;
-      const row = Math.floor(index / Math.max(1, virtualGrid.columns));
-      const rowTop = row * virtualGrid.rowHeight;
-      const rowBottom = rowTop + virtualGrid.rowHeight;
+      const latestVirtualGrid = virtualGridRef.current;
+      if (!el || index < 0 || latestVirtualGrid.rowHeight <= 0) return;
+      const row = Math.floor(index / Math.max(1, latestVirtualGrid.columns));
+      const rowTop = row * latestVirtualGrid.rowHeight;
+      const rowBottom = rowTop + latestVirtualGrid.rowHeight;
       if (rowTop < el.scrollTop) {
         el.scrollTop = rowTop;
       } else if (rowBottom > el.scrollTop + el.clientHeight) {
@@ -1833,7 +1838,7 @@ function GalleryTab({
       }
       measureLibraryGrid();
     },
-    [measureLibraryGrid, virtualGrid.columns, virtualGrid.rowHeight],
+    [measureLibraryGrid],
   );
   const missingShotAtCount = useMemo(
     () => allPhotos.filter((p) => !p.shotAt).length,
@@ -2622,7 +2627,7 @@ function GalleryTab({
     requestAnimationFrame(() =>
       document
         .getElementById(`admin-photo-${photo.id}`)
-        ?.scrollIntoView({ block: "nearest" }),
+        ?.scrollIntoView?.({ block: "nearest" }),
     );
   };
 

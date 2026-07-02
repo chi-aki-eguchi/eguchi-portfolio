@@ -18,6 +18,18 @@ function seedAdminPhotos(qc: InstanceType<typeof QueryClient>) {
   qc.setQueryData(["photos", "all"], { photos: samplePhotos });
 }
 
+function makeLargeAdminPhotos(count = 445) {
+  return Array.from({ length: count }, (_, index) => ({
+    ...samplePhotos[index % samplePhotos.length],
+    id: index + 1,
+    filename: `p-${String(index).padStart(3, "0")}.jpg`,
+    url: `/api/images/photos/p-${String(index).padStart(3, "0")}.jpg`,
+    title: `P${String(index).padStart(3, "0")}`,
+    sortOrder: index,
+    fileHash: `large-${index}`,
+  }));
+}
+
 async function mount(node: unknown, setupQueryClient?: (qc: InstanceType<typeof QueryClient>) => void) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   setupQueryClient?.(qc);
@@ -253,6 +265,100 @@ describe("shared components", () => {
       canned["/api/admin/me"] = prev;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
       dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminPage: virtualized keyboard navigation follows selection after resize", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevPhotos = canned["/api/photos"];
+    const widthDescriptor = Object.getOwnPropertyDescriptor(
+      dom.window.HTMLElement.prototype,
+      "clientWidth",
+    );
+    const heightDescriptor = Object.getOwnPropertyDescriptor(
+      dom.window.HTMLElement.prototype,
+      "clientHeight",
+    );
+    let layoutWidth = 1200;
+    Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", {
+      configurable: true,
+      get() {
+        return layoutWidth;
+      },
+    });
+    Object.defineProperty(dom.window.HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get() {
+        return 900;
+      },
+    });
+    const largePhotos = makeLargeAdminPhotos();
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/photos"] = { photos: largePhotos };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        (qc) => qc.setQueryData(["photos", "all"], { photos: largePhotos }),
+      );
+      const firstTile = host.querySelector(
+        'button[aria-label="P000"]',
+      ) as HTMLButtonElement | null;
+      expect(firstTile).not.toBeNull();
+      firstTile!.click();
+      await flush(20);
+
+      for (let i = 0; i < 74; i += 1) {
+        dom.window.dispatchEvent(
+          new dom.window.KeyboardEvent("keydown", {
+            key: "ArrowDown",
+            bubbles: true,
+          }),
+        );
+        await flush(1);
+      }
+      await flush(40);
+      expect(host.querySelector('button[aria-label="P444"]')).not.toBeNull();
+
+      layoutWidth = 900;
+      dom.window.dispatchEvent(new dom.window.Event("resize"));
+      await flush(40);
+      dom.window.dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", {
+          key: "ArrowUp",
+          bubbles: true,
+        }),
+      );
+      await flush(40);
+      expect(host.querySelector('button[aria-label="P440"]')).not.toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      canned["/api/photos"] = prevPhotos;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+      if (widthDescriptor) {
+        Object.defineProperty(
+          dom.window.HTMLElement.prototype,
+          "clientWidth",
+          widthDescriptor,
+        );
+      } else {
+        delete (dom.window.HTMLElement.prototype as { clientWidth?: number })
+          .clientWidth;
+      }
+      if (heightDescriptor) {
+        Object.defineProperty(
+          dom.window.HTMLElement.prototype,
+          "clientHeight",
+          heightDescriptor,
+        );
+      } else {
+        delete (dom.window.HTMLElement.prototype as { clientHeight?: number })
+          .clientHeight;
+      }
     }
   });
 

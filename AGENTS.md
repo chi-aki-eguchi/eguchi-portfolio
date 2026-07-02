@@ -333,3 +333,8 @@ involved, acts as **Reviewer** only (reads, comments, does not edit).
 - Untracked files must be resolved within a few working sessions.
 - Resolve untracked files by committing, gitignoring, archiving, moving to `scratch/`, or deleting with approval.
 - Each task's Driver checks `git status` before finishing and reports any remaining unrelated dirty files.
+
+## オーナー向け報告・質問のルール
+
+- オーナー（秋）はプログラマーではない。最終報告やオーナー宛の質問はすべて平易な言葉で書き、専門用語が出てきたら一行で意味を説明する。
+- オーナーに何かを質問するときは、必ず2〜3個の選択肢とそれぞれの長所・短所、そしておすすめの選択肢を添える。

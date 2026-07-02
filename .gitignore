@@ -46,6 +46,10 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 deploys/
 *.zip
 
+# scratch workspace
+scratch/*
+!scratch/README.md
+
 # ルート直下のデバッグ用スクリーンショット（大容量）
 /*.png
 

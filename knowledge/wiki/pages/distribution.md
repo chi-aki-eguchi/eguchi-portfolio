@@ -89,6 +89,18 @@ caution and check README.md/task.md for what's actually shipped.
   template descriptions + OGP image, easier "Generate Domain" step.
   (docs/distribution-ideas.md:1-41)
 
+- **2026-07-02 audit**: `schema.ts`/`schema.postgres.ts` were independently
+  diffed column-by-column and confirmed still in sync; `DATABASE_PROVIDER=
+  postgres bun run build` still passes per task.md, but no automated test or
+  CI exercises that runtime path (no CI workflow exists in this repo at
+  all). Also found: one of three homepage hero variants (`HomeEditorial`)
+  hardcodes the fallback name `"Aki Eguchi"` instead of the generic
+  `"Photography"` its sibling variants use, which would leak
+  akieguchi-specific text onto a template user's empty-state homepage.
+  Logged as a Tier 2 proposal (needs a design decision, not a doc
+  correction) in open-issues.md items 31 and the "no CI" note.
+  (`web/pages/top.tsx:737`)
+
 ## Assumptions
 
 - `docs/archive/RUNABLE_AI.md`'s "Runable" path is assumed legacy/abandoned based on it

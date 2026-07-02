@@ -144,10 +144,117 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
     literal `--` instead of an em dash. (docs/archive/service-tsx-handoff.md:10-31,
     51-61)
 
+## Full-site audit findings — 2026-07-02 (Tier 2 proposals, no code changed)
+
+Found by a 10-dimension read-only audit (correctness/API/frontend/
+compatibility/accessibility/SEO/security/performance/tests/distribution)
+during a bounded debug-and-improve task, then deduplicated and adversarially
+re-verified. These are code-level findings (not documentation
+contradictions like the items above) — logged here per that task's
+instructions so a future session doesn't have to rediscover them. Each
+needs an owner decision or touches a restricted area (design ambiguity,
+auth, schema, `/service`, performance rewrites), so no code was changed for
+any item below.
+
+27. **Lightbox EXIF panel `role="dialog"` misuse** — a non-modal slide-in
+    info panel is tagged `role="dialog"`; this is the one standing
+    `bun run lint` failure repo-wide. The mechanical fix the linter
+    suggests (swap to a native `<dialog>` tag) is unsafe here; the real fix
+    needs a role choice (`group`/`region`/none) plus `aria-expanded`/
+    `aria-controls` wiring — a judgment call. `Lightbox.tsx:1212-1234`.
+28. **Admin `:id` write routes silently return success on a nonexistent
+    id** (PATCH/DELETE on photos/series/pricing) instead of 404, unlike the
+    sibling `duplicate`/`purge` routes in the same file which do check.
+    `api/index.ts:1324-1395` (also 1442-1463, 1988-2024, 2088-2117).
+29. **Admin session cookie is compared with `===` instead of a
+    timing-safe compare**, unlike the password check which deliberately
+    uses `timingSafeEqual` (`security.ts`). `api/index.ts:508,780,991`.
+30. **Admin session token never rotates per login and `/admin/logout`
+    only clears the browser cookie** — a leaked cookie stays valid for its
+    full 7-day lifetime with no server-side revocation. A code comment
+    shows this was a deliberate tradeoff, not an oversight.
+    `api/index.ts:265-276,773-776`.
+31. **Distribution: one of three homepage hero variants hardcodes
+    `"Aki Eguchi"` as its fallback name**, contradicting the template's own
+    empty-state goal (DISTRIBUTION.md) — the other two variants correctly
+    fall back to the generic `"Photography"`. `web/pages/top.tsx:737`. See
+    also distribution.md.
+32. **Image upload MIME-type check is skipped when the browser sends no
+    `Content-Type`** on all 3 upload routes, letting unwhitelisted files
+    reach `sharp()` unchecked.
+    `api/index.ts:1069-1070,1188-1189,1214-1215`.
+33. **`/api/images/*` resize proxy collapses every failure mode (timeout,
+    decode crash, real missing-key) into a blanket `404 Not found`**,
+    hiding genuine 5xx-class infrastructure failures. `api/index.ts:720-728`.
+34. **Homepage "immersive" hero variant uses `100dvh` instead of
+    `100svh`**, contradicting the codebase's own documented reason
+    (`styles.css:535-541`'s comment) for avoiding `dvh` on the equivalent
+    fullscreen hero elsewhere. `web/pages/top.tsx:858`.
+35. **`/service` page's sticky CTA bar is missing `-webkit-backdrop-filter`**
+    (Safari) **and `env(safe-area-inset-bottom)` padding**, unlike every
+    other such element in the app. `web/pages/service.tsx:770-778`.
+36. **Public gallery/top-page photo queries never handle fetch errors**
+    (`isError` unused) — a persistent fetch failure renders the same
+    empty-state as a genuinely empty gallery. Reads as a repeated
+    deliberate "fail quiet" pattern across pages, not a one-off oversight.
+    `web/pages/gallery.tsx:34-37,291-301`.
+37. **`/service` page photo alt text bypasses the shared `photoAltText()`
+    helper** that every other photo-bearing page uses, falling back to a
+    generic English string instead. `web/pages/service.tsx:163-175`.
+38. **`GET /photos` always runs a `gallerySortOrder` settings lookup even
+    when random-order requests provably discard the result**, and has no
+    caching despite this file's own precedent (`noteCache`/`origCache`) for
+    exactly this kind of hot-path optimization. `api/index.ts:1004-1029`.
+39. **Zero test coverage** for: admin auth/session flow (login rate-limit,
+    cookie issuance, `requireAdmin` gate), the R2 upload + sharp resize
+    pipeline, and whether `provider.tsx`'s two hand-written ~110-line
+    settings-sync blocks (DB-apply vs. preview-apply) stay in sync with
+    each other (only 2 of the 4 sync places are mechanically checked today).
+40. **`withRetry.test.ts` tests a hand-duplicated copy of the retry
+    algorithm, not the real exported function** — the real one can't be
+    imported standalone today because `libsql.ts` connects to a database at
+    module load time, so a real regression in retry behavior would not be
+    caught. `api/database/withRetry.test.ts:3-25`.
+41. **Two candidates were demoted from "simple fix" to "proposal" after
+    adversarial review**, because the obvious-looking fix wasn't actually
+    singular: (a) non-numeric `:id` params crash to a generic 500 instead
+    of 400 across ~11 routes — fixable, but 400-reject vs. a Hono route-
+    level regex constraint (404) is a real design choice; (b) 5 `/reorder`
+    endpoints don't guard against a non-array request body — fixable, but
+    whether malformed input should 400-reject or silently 200-no-op is also
+    a real design choice, and the established sibling pattern
+    (`/admin/photos/batch`) does the former. `api/index.ts`, various
+    `:id`/`reorder` routes.
+
+Noted for context only, not actionable: the Lightbox iOS body-scroll-lock
+technique is a known-unreliable pattern but likely mitigated by the
+overlay's own `touchAction:"none"`; a few admin thumbnails set
+`alt={photo.title}` directly but sit next to an already-labeled button so
+no real gap exists; `/api/*` responses intentionally skip the shared
+security-headers wrapper (Set-Cookie handling); the admin trash-purge loop
+is a mild N+1 pattern but only runs on stale (30+ day) trashed rows; the
+`DATABASE_PROVIDER=postgres` path has no automated test or CI coverage
+(none exists in this repo at all), verified only by manual build checks in
+task.md.
+
+**Also confirmed still healthy, no regression found**: the June 2026 SEO
+work (meta descriptions, photo alt text, homepage title fix, Person
+JSON-LD) — canonical/og:url, JSON-LD, and per-page meta descriptions all
+verified correct across 7 indexable pages.
+
+### Resolved 2026-07-02 (fixed in this same pass)
+
+42. Dead code: `web/pages/index.tsx` (an unreferenced `Redirect`-to-`/`
+    page, never imported by `app.tsx`) — deleted.
+43. Stale build config: `turbo.json`/`.oxlintrc.json` still referenced the
+    removed `packages/mobile`/`packages/desktop` (Expo/Electron) paths —
+    removed.
+
 ## Sources
 
 Each item above restates a finding fully cited (with exact file:line
 references) on its corresponding topic page — see invariants.md,
 database.md, image-pipeline.md, distribution.md, night-run.md, and the
 relevant task handoff for the full root-inventory / .claude-audit /
-docs-freshness tables.
+docs-freshness tables. Items 27-43 are sourced from this task's own
+10-dimension code audit (file:line citations inline above).

@@ -19,6 +19,21 @@ it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-07-02 — Full-site debug & safe improvement pass
+
+Bounded Driver task: read-only 10-dimension audit (correctness/API/
+frontend/compatibility/accessibility/SEO/security/performance/tests/
+distribution) via a multi-agent workflow, deduplicated and adversarially
+re-verified. Result: 2 confirmed zero-risk (Tier 1) fixes applied directly
+(dead `web/pages/index.tsx` removed; stale Expo/Electron references removed
+from `turbo.json`/`.oxlintrc.json`) and 19 Tier 2 proposals logged for
+owner decision (no code changed for those — see `pages/open-issues.md`
+items 27-43). Also appended a "owner is not a programmer" communication
+rule to AGENTS.md (own append-only commit). Pre-existing uncommitted
+working-tree changes from a prior session (`server.ts`, `task.md`, and the
+static-file-serving Content-Type work) were read and reported on per the
+task's rules, but not touched, staged, or committed.
+
 ### 2026-07-02 — Add repo layout and file hygiene page
 
 Owner-approved repository cleanup added the permanent File Hygiene rules to

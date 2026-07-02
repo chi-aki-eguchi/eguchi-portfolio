@@ -53,6 +53,112 @@
 - 作業前から `packages/web/src/server.ts`、`task.md`、静的ファイル配信関連の未追跡ファイルなどが dirty。今回の commit では対象パスだけを明示 stage し、それらは revert / stage していない。
 - push は未実施（owner final summary 承認待ち）。
 
+## Handoff 2026-07-01 — Claude Code: meta description個別化 + 画像alt text改善
+
+### 目的
+
+akieguchi.com のSEO改善、続き。主要ページのmeta description個別化、ギャラリー/Lightbox画像のalt text改善、canonicalタグの確認。
+
+### 変更内容（Workflowで並行実装 + 独立検証エージェントでadversarial verify、詳細は各エージェントの報告を要約）
+
+**1. meta description個別化**
+- `api/index.ts` GET /settings に新規キー5つ追加: `metaDescriptionHome/Gallery/About/Series/Contact`（すべて `?? ""` デフォルト）。
+- `web/lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS` に同5キーを追加（§0 settings同期invariant）。
+- `api/ogp.ts`: `META_DESCRIPTION_KEYS`（pathname→設定キーのlookup、`PAGE_TITLES` と同型）と `genericPageDescription()`（設定未設定時のtemplate-safeな汎用フォールバック。`name`（displayNameFrom）のみ補間、配布版テンプレートに悪影響なし）、`seriesFallbackDescription()`（seriesにstatement/subtitle未設定の場合、展示名を含む自動フォールバック）を追加。優先順位: override.desc（seriesのstatement/subtitle）> seriesFallbackDescription（override.titleありdescなし）> 設定済みmetaDescriptionキー > genericPageDescription。
+- 実際に本番DB設定値（`metaDescriptionHome/Gallery/About/Series/Contact`）へ、サイトの他の文章のトーンに合わせた日本語コピーを投入（本ハンドオフの下で実施、`admin/settings` API経由）。
+- 管理画面（`admin.tsx`）にはこの5キーの入力欄はまだ無い（今回のスコープ外、ユーザー了承済み。今後admin UIを追加する場合は`admin.tsx`に textarea を5つ追加すればよい。DB直書き/API経由でのみ編集可能な状態）。
+
+**2. 画像alt text改善**
+- `web/lib/photo-alt.ts` 新規: `photoAltText(photo, ctx)` — title→description→(seriesName+categoryLabel+photographerName から自然文生成)→"写真" の優先順位。
+- `PhotoGallery.tsx`: `GalleryPhoto` 型に `description/category/seriesId` を追加。`seriesName`/`seriesNameById`/`categoryLabelBySlug` の新規propsを追加、`settings` から `photographerName` を導出。tile()のalt/aria-labelから filename フォールバックを撤去し `photoAltText` に統一。内部の `<Lightbox>` へも同コンテキストを転送。
+- `Lightbox.tsx`: `LightboxPhoto` 型に同フィールド追加、同じ4つのcontext propsを追加。実画像2箇所（mediumUrl分岐 / on-the-fly srcset分岐）のaltを `photoAltText` に統一。装飾用の `alt="" aria-hidden="true"` レイヤー（LQIPぼかし/サムネプレースホルダー/ズームオーバーレイ等）は無変更（Lightbox既存ロジック非破壊のルール厳守）。
+- `gallery.tsx`: 既に取得済みの `seriesData`/`categories` から `seriesNameById`/`categoryLabelBySlug` を構築し `<PhotoGallery>` に渡す。
+- `series-detail.tsx`: `seriesName={data?.series.title}` を渡す。
+- `top.tsx`: 各セクションで `photographerName` を導出し、`photo.title || "Photograph"` 等の弱いフォールバックを `photoAltText` に置換。`toLightboxPhotos()` に `description` を追加。
+
+**3. canonicalタグ**
+- 既存実装（`injectOgp` の `canonical` 計算 + `<link rel="canonical">` / `og:url` への反映）がそのまま主要ページ全部（Home/Gallery/About/Series一覧/Series詳細/Contact）に効いていることを確認済み。コード変更なし。
+
+### 検証（独立のadversarial verifyエージェントによる再確認込み）
+
+- `bun x tsc -b` / `bun test ./src`（226 pass, 0 fail）/ `bun run build` / `bunx oxlint packages/web --deny-warnings --no-error-on-unmatched-pattern` すべて成功。oxlintの唯一の指摘（`Lightbox.tsx` の `role="dialog"` warning）はこの変更以前から存在する既存の指摘で、対象外のEXIFパネル部分（既存の `<dialog>` 要素本体ではない）。
+- 本番DB設定（実データ、読み取りのみ）でローカルに実サーバを起動し、Home/Gallery/About/Series一覧/Contact + series詳細2件、計7ページのmeta descriptionがすべて異なる文字列であることを確認。
+- `photoAltText` を実DBの写真データ（title/description/category/seriesId 未設定の実例444件中1件のみtitleあり）でトレースし、意図通りの出力になることを確認。
+- 装飾用alt=""画像（Lightbox内4箇所）が変更前後で同じ位置・個数のまま残っていることを確認。
+- スコープ外ファイル（server.ts, static-files.ts等, task.md）への意図しない変更がないことを確認。
+
+### 注意
+
+- カテゴリ `nature` のラベルが英語 "nature" のまま（他のカテゴリも同様に管理画面で設定した表記がそのまま使われる）。該当カテゴリでtitle/description未設定の写真のalt textは「〇〇撮影のnature写真」のように英日混在になり得る。日本語ラベルにしたい場合は管理画面のカテゴリ設定から変更可能（コード変更不要）。
+- 2つの既存series（Ishigaki Island, indigo blue）は `statement`/`subtitle` が未設定のため、`seriesFallbackDescription` の自動フォールバック（展示名を含む）を使用中。内容を知らない前提でこれ以上凝った文言は書いていない。より具体的な個別descriptionにしたい場合は管理画面から各seriesの statement を設定すれば自動的にそちらが優先される。
+- commit/push は未実施。ユーザー確認後に実施予定。
+
+### 触ったファイル
+
+- `packages/web/src/api/index.ts`
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/web/lib/settings-preview.ts`
+- `packages/web/src/web/lib/photo-alt.ts`（新規）
+- `packages/web/src/web/lib/photo-alt.test.ts`（新規）
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/components/Lightbox.tsx`
+- `packages/web/src/web/pages/gallery.tsx`
+- `packages/web/src/web/pages/series-detail.tsx`
+- `packages/web/src/web/pages/top.tsx`
+- `task.md`
+
+## Handoff 2026-07-01 — Claude Code: トップページtitle重複解消 + Person JSON-LD強化
+
+### 目的
+
+akieguchi.com のSEO改善。GAでトップページが2種類のtitleで別ページ計測されている問題の解消と、Person構造化データの強化。
+
+### 根本原因（Playwrightで本番/ローカル両方のdocument.title遷移を実測して確認）
+
+- サーバ側 `injectOgp`（`api/ogp.ts`）は `siteName(JA) | siteNameEn(EN) | heroSubtitle` の3セグメントでSSR `<title>` を生成。
+- クライアント側 `usePageTitle`（`web/hooks/usePageTitle.ts`）は **siteNameEn を一切見ておらず**、`settings.siteName | heroSubtitle` の2セグメントのみ生成。加えて settings クエリが未解決の間にも実行され、一瞬 `CLIENT_SITE_FALLBACKS.title`（"Photography Portfolio"）で document.title を上書きしていた。
+- 本番で実測した遷移: `江口 秋 | Aki Eguchi | Photography`（SSR, 正）→ `Photography Portfolio`（クライアント初回, フォールバック上書きのバグ）→ `江口 秋 | Photography`（クライアント確定後, EN名欠落のバグ）。GA の自動ページビューがどのタイミングを掴むかで表示回数がほぼ二分していたと推定。
+
+### 変更内容
+
+- `packages/web/src/shared/site-title.ts` を新規追加。`composeBaseTitle`（サブページ用 `Name JA | Name EN | Subtitle`）と `composeHomeTitle`（トップページ用 `Name JA | Name EN Subtitle`。JA名がEN名と異なる場合のみ pipe なしでマージ、それ以外は composeBaseTitle と同じ pipe 区切りにフォールバックし配布版テンプレートでも不自然にならないようにした）、`composePageTitle` を実装。
+- `api/ogp.ts`: `injectOgp` のトップページ（page未指定・override未指定・404/serviceでない）分岐のみ `homeTitle`（= composeHomeTitle）に変更。サブページ・404・series override の pipe 区切りパターンは変更なし。
+- `web/hooks/usePageTitle.ts`: 上記共有関数を使うように書き換え。settings 未解決の間は `document.title` に触れないよう guard を追加（SSRタイトルを上書きしない）。
+- `web/lib/site-fallbacks.ts`: 未使用になった `CLIENT_SITE_FALLBACKS.title` を削除。
+- Person JSON-LD（`api/ogp.ts` の `buildJsonLd`。既存実装が WebSite/Person/ImageGallery を全indexableページに出力済みだった）:
+  - `jobTitle` を `"Photographer"` → `"写真家"` に変更。
+  - `description` を新規追加。`profileBio`（Aboutページ自己紹介文）の最初の段落（JA部分、1〜2文）を使用し、bio未設定時は既存の `siteDescriptionFrom` にフォールバック。
+  - `sameAs` / `image` / `url` は既存実装のまま（Instagram/X/note の実URL、`profilePhotoUrl`、`siteUrl` を使用済みだったため変更不要）。
+  - 設置範囲はトップ+Aboutに限定せず、既存どおり全indexableページ（Gallery/Series/Contactも含む）のまま維持。範囲を絞る指示だったが、既存の方が上位互換で退行がないため据え置いた。
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（216 pass / 0 fail）。うち新規: `shared/site-title.test.ts`、`api/ogp.test.ts` に home title / Person jobTitle・description のテストを追加。
+- `bunx oxlint packages/web/src/web/hooks/usePageTitle.ts packages/web/src/shared/site-title.ts packages/web/src/api/ogp.ts packages/web/src/web/lib/site-fallbacks.ts --deny-warnings --no-error-on-unmatched-pattern` 成功。
+- `cd packages/web && bun run build` 成功。
+- `git diff --check` 成功。
+- Playwright で本番 `https://akieguchi.com/` の document.title 遷移を実測（修正前バグの確認）。
+- ローカル `bun run dev`（Vite, 実DB接続）で `/`, `/about`, `/gallery` の document.title 遷移を複数回実測。修正後は静的フォールバックから一度で正しい最終値に遷移し、途中で誤った値に上書きされないことを確認。
+- ローカル `PORT=4201 bun src/server.ts`（本番相当）で実DB設定を使い、`/` のtitleが `江口 秋 | Aki Eguchi Photography`、`/about` が `About | 江口 秋 | Aki Eguchi | Photography`（既存パターン維持）、JSON-LD Personが `jobTitle: "写真家"` / `description` / 実SNS `sameAs` / `image` を正しく含むことを確認。
+
+### 注意
+
+- 依頼文の目標文字列は「江口秋」（スペースなし）だったが、実DBの `siteName` は `"江口 秋"`（スペースあり、他ページ・footer等でも同じ表記）。設定駆動のまま実装したため、実際の出力は `江口 秋 | Aki Eguchi Photography` になる。スペースなしにしたい場合は admin設定側の `siteName` を変更する必要がある（コード側のハードコードでは対応していない）。
+- 既存の未コミット差分 `packages/web/src/server.ts`、未追跡の `static-files.ts` 等・各種 handoff/prompt メモは今回の対象外、触っていない。
+- commit/push は未実施。ユーザー確認後に実施予定。
+
+### 触ったファイル
+
+- `packages/web/src/shared/site-title.ts`（新規）
+- `packages/web/src/shared/site-title.test.ts`（新規）
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/web/hooks/usePageTitle.ts`
+- `packages/web/src/web/lib/site-fallbacks.ts`
+- `task.md`
+
 ## Handoff 2026-06-30 — Codex: Gallery大量スクロール時の画像キュー詰まり対策
 
 ### 目的
@@ -3576,3 +3682,192 @@ TOPを開いた時に、ランダム写真の読み込み待ちで白い時間�
 
 - `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
   `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
+## Handoff 2026-06-30 — Codex: SNSカード静的配信の安定化
+
+### 目的
+
+SNSクローラーや配布版環境で、静的カード画像・ビルド済みJS/CSS/フォントのファイル種別が曖昧にならないようにする。
+
+### 変更内容
+
+- 非HTML静的ファイル配信で、拡張子ごとの `Content-Type` を明示する `contentTypeForStaticPath()` を追加。
+  - `/og-image.jpg` / `/og-service.jpg` は `image/jpeg`。
+  - `/assets/*.js` / `/assets/*.css` / フォント類も明示。
+- サーバーの静的ファイル配信経路で上記ヘルパーを使うように変更。
+- SNSカード用の静的JPEGが 1200x630 かつ軽量であることをテストで固定。
+
+### 触ったファイル
+
+- `packages/web/src/server.ts`
+- `packages/web/src/api/static-files.ts`
+- `packages/web/src/api/static-files.test.ts`
+- `packages/web/src/api/social-images.test.ts`
+
+### 検証
+
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src/api/static-files.test.ts ./src/api/social-images.test.ts ./src/api/static-template.test.ts ./src/api/ogp.test.ts ./src/api/public-routes.test.ts` 成功（43 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（199 pass / 0 fail）。
+- `cd packages/web && DATABASE_PROVIDER=postgres bun run build` 成功。
+- `bunx oxlint packages/web/src/server.ts packages/web/src/api/static-files.ts packages/web/src/api/static-files.test.ts packages/web/src/api/social-images.test.ts --deny-warnings --no-error-on-unmatched-pattern` 成功。
+- `git diff --check` 成功。
+
+### 注意
+
+- ローカル本番サーバ確認は、このCodex環境では任意の高番ポートでも `EADDRINUSE` で `Bun.serve` が起動できず未実施。
+- デプロイ後に本番 `/og-image.jpg` / `/og-service.jpg` の `Content-Type: image/jpeg` を確認する。
+- `chatgpt-handoff.md`、`claude-code-luxury-feel-prompt.md`、
+  `packages/web/src/web/pages/service.tsx.handoff.md` は未追跡のまま。今回の対象外。
+
+## Handoff 2026-06-30 — Codex: `/service` 料金CTAの遷移先修正
+
+### 目的
+
+`/service` の固定CTAで「¥10,000 から始められます」と表示しているのに、押すと `¥30,000` の公開おまかせプランへ進むズレを修正する。
+
+### 修正内容
+
+- `primaryStripeUrl()` は最下部CTA用の「おすすめプラン」選択として残した。
+- 新しく `startingStripeUrl()` を追加し、ライブな Stripe Payment Link を持つプランのうち、価格表示から読める最安プランを返すようにした。
+- 固定CTAバーの「申し込む」は `startingStripeUrl()` を使い、現在のデフォルトでは `¥10,000` の「自分で立てる」プランへ進む。
+- 最下部CTAは引き続きおすすめプランへ進むため、デフォルト文言を `公開おまかせを申し込む` に変更して、`¥30,000` プランへ進むことが事前に分かるようにした。
+- OGPのプラン名もページ本文の `公開おまかせ` に揃えた。
+- 回帰テストを追加し、`primaryStripeUrl()` と `startingStripeUrl()` の役割が混ざらないように固定した。
+
+### 触ったファイル
+
+- `packages/web/src/web/lib/service-config.ts`
+- `packages/web/src/web/lib/service-config.test.ts`
+- `packages/web/src/web/pages/service.tsx`
+- `packages/web/src/api/ogp.ts`
+
+### 検証
+
+- 本番 `https://akieguchi.com/api/settings` を確認し、`servicePageConfig` は空でコード側デフォルトが使われていることを確認。
+- `cd packages/web && bun test ./src/web/lib/service-config.test.ts ./src/api/ogp.test.ts` 成功（35 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（202 pass / 0 fail）。
+
+### 注意
+
+- `tsc -b` はこのシェルでは PATH が通っておらず `command not found`。同等の型チェックとして `bun x tsc -b` を実行済み。
+- 既存の未コミット差分 `packages/web/src/server.ts`、未追跡の静的ファイル配信テスト類、各種 handoff/prompt メモは今回の対象外として触っていない。
+
+## Handoff 2026-06-30 — Codex: 管理画面 Library の表示条件バー追加
+
+### 目的
+
+管理画面 Library で検索・フィルター・Smart Album・ソートが重なった時に、今の表示枚数の理由とドラッグ並び替え可否をすぐ分かるようにする。
+
+### 変更内容
+
+- Library ツールバー直下に「表示条件」バーを追加。
+  - 表示中/全体件数、検索語、カテゴリ、Series、Size、媒体、向き、公開状態、未入力条件、直近日数、Smart Album、ソート条件をチップ表示する。
+  - 条件が入っている時は同じバーから `条件を解除` できる。
+  - ドラッグ並び替えが止まっている時は、解除条件が分かる短いステータスを表示する。
+- `LIBRARY_SORT_LABELS` / `MEDIUM_FILTER_LABELS` / `ORIENTATION_FILTER_LABELS` を追加し、状態バーの表示文言を整理。
+- Library 検索の render test に、状態バーと検索チップの期待値を追加。
+- `admin.tsx` 内の hooks dependency lint 指摘を解消。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（30 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `bunx oxlint packages/web/src/web/pages/admin.tsx packages/web/src/web/test/pages.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（202 pass / 0 fail）。
+- `bun run dev` を `http://localhost:5175/` で起動し、Playwright で管理画面ログイン後に確認。
+  - デスクトップ幅: 検索 `Ishigaki` で `59 / 444 photos`、`検索: Ishigaki`、`条件を解除` が表示されることを確認。
+  - 390px 幅: 状態バーが全幅内で折り返し、テキスト重なりがないことをスクリーンショットで確認。
+- `git commit -m "Improve admin library status clarity"` → `git push` 成功。
+- 本番 `https://akieguchi.com/` の `X-Build: c8e9784d` を確認し、Railway 反映済み。
+
+### 注意
+
+- この作業では既存の未コミット差分 `packages/web/src/server.ts`、未追跡の静的ファイル配信テスト類、各種 handoff/prompt メモは対象外。
+
+## Handoff 2026-06-30 — Codex: Inspector 上部によく使う操作を集約
+
+### 目的
+
+管理画面 Library の Inspector で、写真ごとによく触る「公開状態 / 表示サイズ / 向き / カテゴリ / Series」と使用状況を上部で分かるようにする。
+
+### 変更内容
+
+- Inspector のプレビュー直下に「よく使う」ブロックを追加。
+  - 公開/非公開、S/M/L、0/90/180/270度、左右回転、カテゴリ、Series を上部から変更できる。
+  - Hero 使用中、公開状態、Size、カテゴリ、Series をバッジ表示する。
+  - 保存前に該当項目を変更した場合は `未保存` を表示する。
+- 下部 Metadata から重複していた向き / Category / Series / Display Size / 公開状態の入力を外し、撮影情報・説明に集中する構成へ整理。
+- render test に Inspector の quick edit / 使用状況表示を固定する回帰テストを追加。
+- 既存 Category select の key を `c.id` から `c.slug` に変更し、id の無いカテゴリデータでも React key warning が出ないようにした。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（31 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `bunx oxlint packages/web/src/web/pages/admin.tsx packages/web/src/web/test/pages.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（203 pass / 0 fail）。
+- `git diff --check` 成功。
+- `bun run dev` を `http://localhost:5175/` で起動し、Playwright で管理画面ログイン後に確認。
+  - デスクトップ幅: Inspector 右パネル内で「よく使う」ブロックが収まり、下部 Metadata と重複しないことを確認。
+  - 390px 幅: drawer 表示でも重なりなし。
+
+### 注意
+
+- この作業では既存の未コミット差分 `packages/web/src/server.ts`、未追跡の静的ファイル配信テスト類、各種 handoff/prompt メモは対象外。
+
+## Handoff 2026-06-30 — Codex: Library 一覧に使用状況バッジを追加
+
+### 目的
+
+Inspector を開かなくても、Library 一覧上で Hero / Series / 表示サイズの使用状況が分かるようにする。
+
+### 変更内容
+
+- Library tile に小さな使用状況バッジを追加。
+  - Hero 使用中は `Hero N`。
+  - Series 割り当て済みは `Series`。
+  - `S` / `L` の写真はサイズ文字を表示（Mは標準なので省略）。
+- バッジは `thumbSize >= 120` の時だけ表示し、小さいサムネイルでは写真を邪魔しないようにした。
+- `aria-label="使用状況: ..."` を付け、render test でも表示を固定。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（31 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `bunx oxlint packages/web/src/web/pages/admin.tsx packages/web/src/web/test/pages.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功。
+- `cd packages/web && bun run build` 成功。
+- `cd packages/web && bun test ./src` 成功（203 pass / 0 fail）。
+- `git diff --check` 成功。
+- `bun run dev` を `http://localhost:5175/` で起動し、Playwright で管理画面ログイン後に確認。
+  - 実データで `使用状況: Series, Size L` などのバッジが表示されることを確認。
+  - デスクトップ幅 / 390px 幅で重なりがないことを確認。
+- `git commit -m "Add admin library usage badges"` → `git push` 成功（commit `9e87de1`）。
+- 本番 `https://akieguchi.com/` の `X-Build: 9e87de1d` を確認し、Railway 反映済み。
+
+### 注意
+
+- この作業では既存の未コミット差分 `packages/web/src/server.ts`、未追跡の静的ファイル配信テスト類、各種 handoff/prompt メモは対象外。

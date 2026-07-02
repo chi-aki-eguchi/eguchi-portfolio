@@ -4007,6 +4007,52 @@ SNSクローラーや配布版環境で、静的カード画像・ビルド済�
 - サーバー側ページネーションは今回の範囲外。Library の API 取得はまだ `/api/photos?all=1` のまま。
 - push はしていない。owner の承認待ち。
 
+## Handoff 2026-07-03 — Codex: Admin Library thumbnail loading tune
+
+### 目的
+
+仮想化後、Library をスクロールした時にサムネイル表示が遅れて見える問題を診断し、最小範囲で改善する。
+
+### 診断
+
+- 主因は (b) per-thumbnail delivery latency。
+  - Library tile が `adminPhotoSrc(photo, 400, 70)` で `/api/images/photos/...jpg?w=400&q=70` を要求しており、pre-generated WebP thumb ではなく master JPEG からオンデマンド変換する経路だった。
+  - API は `/api/photos?all=1` で `thumbUrl`/`mediumUrl` を返しているため、admin 側で軽い生成済み variant を使える状態だった。
+- (a) overscan too small も補助的にあり得るため、3行→5行へ増やして約1画面先のリクエストを早めた。
+- (c) request stampede は主因とは判断せず。仮想化で同時描画は全445枚ではなく、1200px幅/900px高/180px tile では初回60枚に抑えられる。
+
+### 変更内容
+
+- `adminPhotoSrc()` が `thumbUrl`/`mediumUrl` を優先し、欠けている場合だけ従来の `/api/images/photos/...` resize URL へ戻るようにした。
+- Library grid の overscan を5行へ増やした。全件描画には戻さず、次のスクロール窓だけ少し早めに読む狙い。
+- 445枚テストデータに `thumbUrl`/`mediumUrl` を追加し、admin tile が generated thumbnail を使うことと、初回 request 相当の img 数が60枚以内であることを固定。
+- `knowledge/wiki/pages/image-pipeline.md` に admin Library も generated thumb を優先する旨を追記。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/admin-shared.ts`
+- `packages/web/src/web/test/admin-virtual-grid.test.ts`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `knowledge/wiki/pages/image-pipeline.md`
+- `task.md`
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/admin-virtual-grid.test.ts` 成功（5 pass / 0 fail）。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx --test-name-pattern "virtualized keyboard"` 成功。
+  - 445枚データで初回 img thumb request 相当は60枚以内。
+  - ArrowDown で末尾まで移動、幅変更後の ArrowUp 追従も確認。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（32 pass / 0 fail）。
+- `cd packages/web && bun x tsc -b` 成功。
+- `cd packages/web && bun test ./src` 成功（246 pass / 0 fail）。
+- `cd packages/web && bun run build` 成功。
+
+### 注意
+
+- 実ブラウザで本番 admin のログイン済み手動スクロールまでは、この環境では未実施。JSDOM の445枚データで request 相当の img 数と src の向き先を確認した。
+- push はしていない。owner の承認待ち。
+
 ## Handoff 2026-06-30 — Codex: Inspector 上部によく使う操作を集約
 
 ### 目的

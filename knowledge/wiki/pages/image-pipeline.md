@@ -71,12 +71,13 @@ sources:
   pre-generates and stores WebP thumb/medium variants at upload time *and*
   supports on-the-fly WebP/AVIF via the image proxy's Accept-header/`fmt`
   negotiation. See open-issues.md.
-- Serving: gallery/hero/lightbox prefer the pre-generated `thumbUrl`/
-  `mediumUrl` WebP files directly via plain `<img src>` — this doubles as
-  the "LQIP" mechanism (a CSS blur-up transition from `lqip-loading` to
-  `lqip-loaded`, not a base64/blurhash placeholder). When `thumbKey`/
-  `mediumKey` are missing (legacy photos, or generation failed), it falls
-  back to the on-the-fly proxy. (PhotoGallery.tsx:93-230,966;
+- Serving: gallery/hero/lightbox and admin Library thumbnails prefer the
+  pre-generated `thumbUrl`/`mediumUrl` WebP files directly via plain
+  `<img src>` — this doubles as the "LQIP" mechanism on public gallery
+  tiles (a CSS blur-up transition from `lqip-loading` to `lqip-loaded`, not
+  a base64/blurhash placeholder). When `thumbKey`/`mediumKey` are missing
+  (legacy photos, or generation failed), it falls back to the on-the-fly
+  proxy. (PhotoGallery.tsx:93-230,966; admin.tsx:862-873,3578,3766;
   styles.css:275-291)
 - **On-the-fly image proxy**: `GET/HEAD /api/images/*` validates the key
   against an allow-listed prefix set (`photos/`, `thumbs/`, `medium/`,

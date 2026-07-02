@@ -1,5 +1,7 @@
 export const IMAGE_UPLOAD_MAX_BYTES = 300 * 1024 * 1024;
 export const LARGE_IMAGE_UPLOAD_BYTES = 60 * 1024 * 1024;
+export const IMAGE_UPLOAD_REQUEST_MAX_BYTES =
+  IMAGE_UPLOAD_MAX_BYTES + 5 * 1024 * 1024;
 
 export function formatUploadSizeLimit(bytes = IMAGE_UPLOAD_MAX_BYTES): string {
   return `${Math.round(bytes / (1024 * 1024))}MB`;

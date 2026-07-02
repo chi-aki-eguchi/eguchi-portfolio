@@ -18,6 +18,7 @@ import {
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
 import { imageUrlWithParams } from "./shared/image-url";
+import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
 // 本番(turso)は no-op。失敗時はサーバを起動せず loud に落とす。
@@ -371,6 +372,7 @@ function withSecurityHeaders(res: Response, request: Request): Response {
 
 const server = Bun.serve({
   port,
+  maxRequestBodySize: IMAGE_UPLOAD_REQUEST_MAX_BYTES,
   async fetch(request) {
     try {
       const url = new URL(request.url);

@@ -8,7 +8,7 @@ sources:
   - docs/railway-all-in-one-experiment.md
   - docs/archive/RUNABLE_AI.md
   - README.md
-  - site-analysis-2026-06.md
+  - docs/archive/site-analysis-2026-06.md
   - package.json
   - packages/web/package.json
   - task.md
@@ -74,13 +74,13 @@ caution and check README.md/task.md for what's actually shipped.
   section says "Turnkey template: not yet" while its own "Deploy on Railway
   (distribution template)" section documents the already-published deploy
   button. (README.md lines 13-16 vs 20-30)
-- `site-analysis-2026-06.md` **[akieguchi-specific]** is a production SEO/
+- `docs/archive/site-analysis-2026-06.md` **[akieguchi-specific]** is a production SEO/
   marketing gap analysis (social proof, per-page meta descriptions, alt
   text, booking CTA, WebP, series discoverability) — it does not itself
   discuss the template/production boundary, but its recommendations
   (personalized copy, press logos) are exactly the kind of change
   DISTRIBUTION.md's own principle warns must not silently become a template
-  default. (site-analysis-2026-06.md:1-160; DISTRIBUTION.md:127-131)
+  default. (docs/archive/site-analysis-2026-06.md:1-160; DISTRIBUTION.md:127-131)
 - `docs/distribution-ideas.md` (2026-06-21) is a non-committal priority menu
   of UX improvements for the distributed product (demo URL, richer
   template-variable descriptions, OGP preview image, easier custom-domain
@@ -125,6 +125,6 @@ caution and check README.md/task.md for what's actually shipped.
 - docs/railway-all-in-one-experiment.md
 - docs/archive/RUNABLE_AI.md
 - README.md
-- site-analysis-2026-06.md
+- docs/archive/site-analysis-2026-06.md
 - package.json, packages/web/package.json
 - task.md (git log cross-references)

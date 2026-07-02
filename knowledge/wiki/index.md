@@ -22,6 +22,9 @@ be read selectively, not in full, each session.
   (hook/rule file) or prose-only.
 - [Database](pages/database.md) — the Turso/libSQL vs PostgreSQL dual-schema
   reality, migration history gaps, documented production incidents.
+- [Repository Layout & File Hygiene](pages/repo-layout.md) — root Markdown
+  whitelist, docs/specs vs docs/archive, scratch workspace, and handoff file
+  rules.
 
 ## Features
 

@@ -160,7 +160,7 @@ git add ... && git commit && git push         # Railway 自動デプロイ
 - 管理画面の focal point ドラッグUI（9点プリセットのみ実装済み、任意位置ドラッグは未）。
 - dev server / ブラウザ実機での回転UI・focal point の操作確認 — Codex sandbox 制約で未実施。
 - `claude-code-luxury-feel-prompt.md` — 未追跡のまま残っている。
-- `site-analysis-2026-06.md` — 未追跡のまま残っている。
+- `docs/archive/site-analysis-2026-06.md` — cleanupでarchive済み。
 
 ### 直近の git log（最新5件）
 
@@ -209,12 +209,12 @@ Claude Code と Codex は agmsg で非同期にやりとりできる。チーム
 | `CLAUDE.md` | Claude Code の基本指示書（スタック・§0・デプロイ手順・規約） |
 | `AGENTS.md` | Claude Code / Codex 共通ルール・agmsg 運用 |
 | `task.md` | 全作業ログ・Handoff 記録（1943行） |
-| `admin-enhancement-spec.md` | 管理画面強化 P1〜P4 |
-| `admin-enhancement-spec-v2.md` | 続編 C〜F / Q1〜Q5 |
-| `admin-enhancement-spec-v3-draft.md` | V3: 写真回転・focal point・管理画面改善（Claude レビュー済み） |
-| `design-spec.md` | デザイン設計図（雑誌的佇まい・余白主導） |
+| `docs/archive/admin-enhancement-spec.md` | 管理画面強化 P1〜P4 |
+| `docs/archive/admin-enhancement-spec-v2.md` | 続編 C〜F / Q1〜Q5 |
+| `docs/specs/admin-enhancement-spec.md` | V3: 写真回転・focal point・管理画面改善（Claude レビュー済み） |
+| `docs/specs/design-spec.md` | デザイン設計図（雑誌的佇まい・余白主導） |
 | `DISTRIBUTION.md` | 配布化の方針・P0〜P2・Railway All-in-One 保守ノート |
-| `refine-and-loop-spec.md` | 自走改善ループ運用方針 |
+| `docs/specs/refine-and-loop-spec.md` | 自走改善ループ運用方針 |
 | `docs/setup-guide.md` | セットアップ担当者向け手順 |
 | `docs/photographer-guide.md` | 写真家本人向けガイド |
 | `docs/post-deploy-guide.md` | 非エンジニア向け公開手順 |

@@ -19,6 +19,14 @@ it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-07-02 — Add repo layout and file hygiene page
+
+Owner-approved repository cleanup added the permanent File Hygiene rules to
+AGENTS.md and `.claude/rules/file-hygiene.md`, created
+`pages/repo-layout.md`, and linked it from the wiki index. The page records
+the new root Markdown whitelist, `docs/specs/`, `docs/archive/`, `scratch/`,
+handoff, and untracked-file rules.
+
 ### 2026-07-02 — Retire night-run setup
 
 Owner-approved cleanup retired the night-run setup. The wiki page

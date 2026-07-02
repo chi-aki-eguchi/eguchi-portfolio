@@ -23,10 +23,10 @@ it from here if a wiki update was triggered by it.
 
 Driver follow-up after TIFF support shipped but production large film scans
 still failed. Updated `pages/image-pipeline.md` with the 300MB per-file image
-upload ceiling, 60MB serial-upload threshold, and the verified platform
-limits/unknowns. Marked `pages/open-issues.md` item 41 resolved because the
-former 60MB app ceiling now has explicit server/client handling and admin
-error text.
+upload ceiling, 305MB Bun request-body ceiling, 60MB serial-upload threshold,
+and the verified platform limits/unknowns. Marked `pages/open-issues.md` item
+41 resolved because the former 60MB app ceiling now has explicit server/client
+handling and admin error text.
 
 ### 2026-07-02 — TIFF upload validation fix
 

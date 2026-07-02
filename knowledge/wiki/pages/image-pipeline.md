@@ -38,14 +38,17 @@ sources:
   packages/web/src/web/lib/upload-file.ts:1-44)
 - **Upload size policy**: image uploads are capped at **300MB per file** via
   shared server/client constants. Files over 300MB are rejected in the admin UI
-  before upload and by the API with HTTP 413 if they reach the server. Files
-  over 60MB but within the 300MB ceiling upload serially (one at a time) so
-  several large TIFFs do not overwhelm the server concurrently. As of
-  2026-07-03, Railway's public proxy docs list request duration/headers/rate
-  limits but no fixed public request-body-size ceiling; R2 single-part uploads
-  allow 5GiB, and sharp's default input safety limit is pixel-count based
-  (`268402689` pixels), not byte-size based.
+  before upload and by the API with HTTP 413 if they reach the server.
+  `Bun.serve` is configured with a **305MB request-body ceiling** so a 300MB
+  file has room for multipart form overhead. Files over 60MB but within the
+  300MB ceiling upload serially (one at a time) so several large TIFFs do not
+  overwhelm the server concurrently. As of 2026-07-03, Railway's public proxy
+  docs list request duration/headers/rate limits but no fixed public
+  request-body-size ceiling; R2 single-part uploads allow 5GiB, and sharp's
+  default input safety limit is pixel-count based (`268402689` pixels), not
+  byte-size based.
   (packages/web/src/shared/upload-limits.ts;
+  packages/web/src/server.ts:20-21,372-375;
   packages/web/src/api/security.ts:1-29;
   packages/web/src/api/index.ts:1070-1073,1189-1192,1215-1218;
   packages/web/src/web/lib/upload-file.ts:1-79;

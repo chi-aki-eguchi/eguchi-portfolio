@@ -221,7 +221,8 @@ any item below.
 41. **Resolved 2026-07-03**: large TIFF uploads were still rejected after TIFF
     support because the shared image upload ceiling was still 60MB. The limit
     is now 300MB, the admin UI rejects files above that with an explicit
-    message, and files above 60MB upload one at a time.
+    message, `Bun.serve` allows 305MB request bodies for multipart overhead,
+    and files above 60MB upload one at a time. `server.ts`;
     `shared/upload-limits.ts`; `api/security.ts`; `web/lib/upload-file.ts`;
     `web/pages/admin.tsx`.
 42. **Two candidates were demoted from "simple fix" to "proposal" after

@@ -260,6 +260,33 @@ verified correct across 7 indexable pages.
     removed `packages/mobile`/`packages/desktop` (Expo/Electron) paths —
     removed.
 
+## Performance measurement findings — 2026-07-03
+
+45. **Admin Library renders the whole photo grid at once.** The admin Library
+    fetches all admin-visible photos via `/api/photos?all=1`, then renders the
+    visible grid with `displayed.map(...)` and no virtualization. With the
+    current ~445-photo library, this means hundreds of tile DOM nodes and lazy
+    image elements exist at once. This is owner/admin-only, but likely the
+    biggest perceived admin slowness lever. `web/pages/admin.tsx:1096-1100,
+    3481-3564`.
+46. **Admin is the largest production chunk.** Local production build on
+    2026-07-03 produced `admin-Qo7spuZJ-b.js` at 399,412 bytes, larger than
+    `react-vendor` (365,865 bytes). The admin route file contains all major
+    admin tabs/features in one bundle, so opening admin pays for many tools at
+    once. Owner/admin-only. `packages/web/dist/assets/*`; `web/pages/admin.tsx`.
+47. **Gallery fetches all photo metadata before showing the first 24.** The
+    gallery page calls `api.photos.$get()` with no `limit`, then slices the
+    already-fetched array to the initial render count (24 desktop / 12 mobile).
+    Image loading is staged, but JSON payload/parse work still scales with the
+    full public photo count. Visitor-facing. `web/pages/gallery.tsx:34-37,
+    104-112`; `api/index.ts:1000-1031`.
+48. **2026-07-03 measurement gaps due environment limits.** Local production
+    server timing, browser waterfall, and production curl TTFB could not be
+    captured in this pass because the sandbox blocked Turso/network/listen and
+    escalated retries were rejected by the environment usage limit. The build
+    size and code-path findings above are verified; runtime timing still needs
+    a follow-up measurement window.
+
 ## Sources
 
 Each item above restates a finding fully cited (with exact file:line
@@ -267,4 +294,6 @@ references) on its corresponding topic page — see invariants.md,
 database.md, image-pipeline.md, distribution.md, night-run.md, and the
 relevant task handoff for the full root-inventory / .claude-audit /
 docs-freshness tables. Items 27-44 are sourced from this task's own
-10-dimension code audit (file:line citations inline above).
+10-dimension code audit (file:line citations inline above). Items 45-48 are
+from the 2026-07-03 measure-only performance pass and cite their local build
+or code-path evidence inline.

@@ -1161,6 +1161,7 @@ function GalleryTab({
   } | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [retryFiles, setRetryFiles] = useState<File[]>([]);
+  const [showLibraryFilters, setShowLibraryFilters] = useState(false);
   const [metaSaved, setMetaSaved] = useState(false);
   const [metaError, setMetaError] = useState(false);
   const [captureClipStatus, setCaptureClipStatus] =
@@ -2825,382 +2826,467 @@ function GalleryTab({
     <div className="flex h-full">
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Toolbar — Lr style */}
-        <div className="bg-[#2a2a2a] border-b border-[#333] px-2 sm:px-4 py-2 flex items-center gap-2 sm:gap-4 flex-wrap flex-shrink-0">
-          {/* B2: free-text search */}
-          <div className="relative">
-            <Search
-              size={11}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-[#666] pointer-events-none"
-            />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="検索（タイトル・分類・機材・ファイル名）"
-              aria-label="写真を検索"
-              className="bg-[#333] text-[#ccc] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors w-44 placeholder:text-[#555]"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                aria-label="検索をクリア"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#ccc] transition-colors"
-              >
-                <X size={11} />
-              </button>
-            )}
-          </div>
+        {/* Toolbar — quiet Library controls */}
+        <div className="bg-[#2a2a2a] border-b border-[#333] px-2 sm:px-4 py-2 flex flex-col gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="flex items-baseline gap-2 mr-auto min-w-0">
+              <span className="text-[11px] tracking-widest uppercase text-[#777]">
+                Library
+              </span>
+              <span className="text-[11px] text-[#777] whitespace-nowrap">
+                {displayed.length} / {allPhotos.length} photos
+                {selected.size > 0 && (
+                  <span className="text-[#aaa]"> · {selected.size} selected</span>
+                )}
+              </span>
+            </div>
 
-          {/* U1: view sort — display-only until explicitly written to sortOrder */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[#777] uppercase tracking-wider">
-              Sort
-            </span>
-            <select
-              value={librarySort}
-              onChange={(e) => setLibrarySort(e.target.value)}
-              aria-label="表示の並び替え"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
-            >
-              <option value="manual">手動（保存されている順）</option>
-              <option value="createdAt-desc">アップロード日（新しい順）</option>
-              <option value="createdAt-asc">アップロード日（古い順）</option>
-              <option value="shotAt-desc">撮影日（新しい順）</option>
-              <option value="shotAt-asc">撮影日（古い順）</option>
-              <option value="series">シリーズ</option>
-              <option value="size">表示サイズ（S→L）</option>
-              <option value="filmType">媒体/フィルム</option>
-              <option value="camera">カメラ</option>
-              <option value="category">カテゴリ</option>
-              <option value="title">タイトル</option>
-              <option value="published">公開状態</option>
-            </select>
-            {librarySort !== "manual" && (
-              <button
-                disabled={anyFilterActive || reorder.isPending}
-                title={
-                  anyFilterActive
-                    ? "フィルターを解除してから保存できます"
-                    : "現在の表示順を公開サイトの並び（sortOrder）に書き込みます"
-                }
-                onClick={() => {
-                  if (
-                    !confirm(
-                      "現在の表示順を公開サイトの並び順として保存します。よろしいですか？",
-                    )
-                  )
-                    return;
-                  reorder.mutate(
-                    sortPhotosForView(allPhotos).map((p) => p.id),
-                    {
-                      onSuccess: () => setLibrarySort("manual"),
-                    },
-                  );
-                }}
-                className="text-[10px] px-2 py-1 rounded-sm bg-[#555] text-[#1e1e1e] hover:bg-[#666] transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+            {/* U1: view sort — display-only until explicitly written to sortOrder */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#777] uppercase tracking-wider">
+                Sort
+              </span>
+              <select
+                value={librarySort}
+                onChange={(e) => setLibrarySort(e.target.value)}
+                aria-label="表示の並び替え"
+                className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
               >
-                この並びを保存
-              </button>
-            )}
-          </div>
-
-          {/* Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[#777] uppercase tracking-wider">
-              Filter
-            </span>
-            <select
-              value={filterCat}
-              onChange={(e) => setFilterCat(e.target.value)}
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
-            >
-              <option value="all">All ({allPhotos.length})</option>
-              {categories.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.label} (
-                  {allPhotos.filter((p) => p.category === c.slug).length})
-                </option>
-              ))}
-              {allPhotos.some(isUncategorized) && (
-                <option value="__uncat__">
-                  未分類 ({allPhotos.filter(isUncategorized).length})
-                </option>
-              )}
-            </select>
-            {/* M3: Series filter */}
-            <select
-              value={filterSeries}
-              onChange={(e) => setFilterSeries(e.target.value)}
-              aria-label="シリーズで絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
-            >
-              <option value="all">All series</option>
-              {seriesList.map((s) => (
-                <option key={s.id} value={String(s.id)}>
-                  {s.title} (
-                  {allPhotos.filter((p) => p.seriesId === s.id).length})
-                </option>
-              ))}
-              <option value="__none__">
-                未割り当て ({allPhotos.filter((p) => p.seriesId == null).length}
-                )
-              </option>
-            </select>
-            {/* M3: Size filter */}
-            <select
-              value={filterSize}
-              onChange={(e) => setFilterSize(e.target.value)}
-              aria-label="表示サイズで絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
-            >
-              <option value="all">All sizes</option>
-              {(["S", "M", "L"] as const).map((sz) => (
-                <option key={sz} value={sz}>
-                  {sz} (
-                  {
-                    allPhotos.filter((p) => (p.displaySize || "M") === sz)
-                      .length
+                <option value="manual">手動（保存されている順）</option>
+                <option value="createdAt-desc">アップロード日（新しい順）</option>
+                <option value="createdAt-asc">アップロード日（古い順）</option>
+                <option value="shotAt-desc">撮影日（新しい順）</option>
+                <option value="shotAt-asc">撮影日（古い順）</option>
+                <option value="series">シリーズ</option>
+                <option value="size">表示サイズ（S→L）</option>
+                <option value="filmType">媒体/フィルム</option>
+                <option value="camera">カメラ</option>
+                <option value="category">カテゴリ</option>
+                <option value="title">タイトル</option>
+                <option value="published">公開状態</option>
+              </select>
+              {librarySort !== "manual" && (
+                <button
+                  disabled={anyFilterActive || reorder.isPending}
+                  title={
+                    anyFilterActive
+                      ? "フィルターを解除してから保存できます"
+                      : "現在の表示順を公開サイトの並び（sortOrder）に書き込みます"
                   }
-                  )
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterMedium}
-              onChange={(e) => setFilterMedium(e.target.value)}
-              aria-label="媒体で絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
-            >
-              <option value="all">媒体: All</option>
-              <option value="digital">Digital ({mediumCounts.digital})</option>
-              <option value="film">Film ({mediumCounts.film})</option>
-              <option value="missing">媒体なし ({mediumCounts.missing})</option>
-            </select>
-            <select
-              value={filterOrientation}
-              onChange={(e) => setFilterOrientation(e.target.value)}
-              aria-label="写真の向きで絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
-            >
-              <option value="all">All orientations</option>
-              <option value="portrait">縦写真 ({orientationCounts.portrait})</option>
-              <option value="landscape">
-                横写真 ({orientationCounts.landscape})
-              </option>
-              <option value="square">正方形 ({orientationCounts.square})</option>
-            </select>
-            {/* M3: Featured filter */}
+                  onClick={() => {
+                    if (
+                      !confirm(
+                        "現在の表示順を公開サイトの並び順として保存します。よろしいですか？",
+                      )
+                    )
+                      return;
+                    reorder.mutate(
+                      sortPhotosForView(allPhotos).map((p) => p.id),
+                      {
+                        onSuccess: () => setLibrarySort("manual"),
+                      },
+                    );
+                  }}
+                  className="text-[10px] px-2 py-1 rounded-sm bg-[#555] text-[#1e1e1e] hover:bg-[#666] transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  この並びを保存
+                </button>
+              )}
+            </div>
+
             <button
-              onClick={() => setFilterFeatured((v) => !v)}
-              aria-pressed={filterFeatured}
-              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
-                filterFeatured
-                  ? "bg-amber-900/40 text-amber-300 border-amber-700/50"
-                  : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+              type="button"
+              onClick={() => setShowLibraryFilters((v) => !v)}
+              aria-expanded={showLibraryFilters}
+              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition-colors ${
+                showLibraryFilters || anyFilterActive
+                  ? "bg-[#3a3a3a] text-[#eee] border-[#555]"
+                  : "text-[#999] border-[#444] hover:bg-[#333] hover:text-[#ccc]"
               }`}
             >
-              <Star size={11} /> Featured ({featuredIds.size})
+              <Search size={11} /> 絞り込み
+              {activeFilterLabels.length > 0 && (
+                <span className="min-w-4 h-4 px-1 rounded-sm bg-[#777] text-[#1e1e1e] text-[10px] leading-4 text-center">
+                  {activeFilterLabels.length}
+                </span>
+              )}
             </button>
-            <select
-              value={filterPublished}
-              onChange={(e) => setFilterPublished(e.target.value)}
-              aria-label="公開状態で絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
-            >
-              <option value="all">公開状態: All</option>
-              <option value="published">
-                公開のみ ({allPhotos.length - unpublishedCount})
-              </option>
-              <option value="unpublished">非公開のみ ({unpublishedCount})</option>
-            </select>
+
+            <div className="hidden md:flex items-center gap-2">
+              <Grid size={12} className="text-[#666]" />
+              <input
+                aria-label="サムネイルサイズ"
+                type="range"
+                min={80}
+                max={300}
+                value={thumbSize}
+                onChange={(e) => setThumbSize(Number(e.target.value))}
+                className="w-24 accent-[#888] h-1"
+              />
+              <Columns size={12} className="text-[#666]" />
+            </div>
+
             <button
-              onClick={() => setFilterMissingShotAt((v) => !v)}
-              aria-pressed={filterMissingShotAt}
+              onClick={() => {
+                setBulkEditMode((v) => !v);
+                setInspectPhoto(null);
+                setSelected(new Set());
+              }}
+              aria-pressed={bulkEditMode}
+              title="表形式の一括編集モード"
               className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
-                filterMissingShotAt
+                bulkEditMode
                   ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                  : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+                  : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
               }`}
             >
-              撮影日なし ({missingShotAtCount})
+              <LayoutList size={11} /> Table
             </button>
+
             <button
-              onClick={() => setFilterMissingCapture((v) => !v)}
-              aria-pressed={filterMissingCapture}
-              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
-                filterMissingCapture
-                  ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                  : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+              onClick={() => {
+                setShowTrash((v) => !v);
+                setSelected(new Set());
+                setInspectPhoto(null);
+              }}
+              className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-sm transition-colors ${
+                showTrash
+                  ? "bg-amber-900/40 text-amber-400"
+                  : "text-[#666] hover:text-[#aaa] hover:bg-[#2a2a2a]"
               }`}
             >
-              機材なし ({missingCaptureCount})
+              <Trash2 size={11} />
+              Trash
+              {(trashData?.photos?.length ?? 0) > 0 &&
+                ` (${trashData!.photos.length})`}
             </button>
-            {/* O4: recently uploaded */}
-            <select
-              value={filterRecent}
-              onChange={(e) => setFilterRecent(e.target.value)}
-              aria-label="アップロード時期で絞り込み"
-              className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+
+            <button
+              onClick={() => setShowShortcuts(true)}
+              title="キーボードショートカット (?)"
+              aria-label="キーボードショートカット"
+              className="flex items-center justify-center w-6 h-6 text-[11px] text-[#666] hover:text-[#aaa] hover:bg-[#2a2a2a] rounded-sm transition-colors"
             >
-              <option value="all">All time</option>
-              <option value="7">直近7日</option>
-              <option value="30">直近30日</option>
-            </select>
-            {anyFilterActive && (
+              ?
+            </button>
+
+            <div className="flex items-center gap-1">
+              {[["digital", "Digital"] as const, ["film", "Film"] as const].map(
+                ([val, lbl]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setUploadMedium(val)}
+                    aria-pressed={uploadMedium === val}
+                    className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
+                      uploadMedium === val
+                        ? "bg-[#555] text-[#eee] border-[#666]"
+                        : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
+                    }`}
+                  >
+                    {lbl}
+                  </button>
+                ),
+              )}
+            </div>
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 text-[11px] text-[#1e1e1e] bg-[#888] px-3 py-1 rounded-sm hover:bg-[#999] transition-colors disabled:opacity-50"
+            >
+              <Upload size={11} /> Import
+            </button>
+            <input
+              aria-label="画像ファイルを選択"
+              ref={fileInputRef}
+              type="file"
+              accept={UPLOAD_IMAGE_ACCEPT}
+              multiple
+              className="hidden"
+              onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
+            />
+          </div>
+
+          {!showTrash && activeFilterLabels.length > 0 && (
+            <div className="flex items-center gap-1.5 text-[11px] text-[#aaa] min-w-0">
+              <span className="text-[10px] text-[#777] uppercase tracking-wider">
+                絞り込み中
+              </span>
+              <span className="truncate">
+                {activeFilterLabels.map((item) => item.text).join(" / ")}
+              </span>
               <button
                 type="button"
                 onClick={clearLibraryFilters}
-                className="text-[11px] px-2 py-1 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                className="text-[11px] px-2 py-0.5 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors flex-shrink-0"
               >
-                すべて解除
-              </button>
-            )}
-          </div>
-
-          {/* O6: smart albums — saved condition sets (virtual folders) */}
-          {!showTrash && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <FolderOpen size={12} className="text-[#666]" />
-              {smartAlbums.map((a) => {
-                const conditionLabels = describeAlbumConditions(a.cond);
-                const shownLabels = conditionLabels.slice(0, 3);
-                const hiddenLabelCount = conditionLabels.length - shownLabels.length;
-                return (
-                  <span
-                    key={a.id}
-                    className={`group/al inline-flex items-center gap-1 text-[11px] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
-                      activeAlbumId === a.id
-                        ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                        : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveAlbumId((id) => (id === a.id ? null : a.id))
-                      }
-                      className="flex items-center gap-1.5"
-                    >
-                      <span>{a.name}</span>
-                      {shownLabels.map((label) => (
-                        <span
-                          key={label}
-                          className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]"
-                          title={label}
-                        >
-                          {label}
-                        </span>
-                      ))}
-                      {hiddenLabelCount > 0 && (
-                        <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]">
-                          +{hiddenLabelCount}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = smartAlbums.filter((x) => x.id !== a.id);
-                        if (activeAlbumId === a.id) setActiveAlbumId(null);
-                        saveAlbums.mutate(next);
-                      }}
-                      aria-label={`${a.name}を削除`}
-                      className="opacity-50 group-hover/al:opacity-100 text-[#888] hover:text-red-400 transition-all"
-                    >
-                      <X size={11} />
-                    </button>
-                  </span>
-                );
-              })}
-              <button
-                onClick={() => {
-                  setAlbumDraft({ ...EMPTY_ALBUM_DRAFT });
-                  setAlbumModalOpen(true);
-                }}
-                className="flex items-center gap-1 text-[11px] text-[#888] px-2 py-1 rounded-sm border border-dashed border-[#444] hover:bg-[#333] transition-colors"
-              >
-                <Plus size={11} /> アルバム
+                解除
               </button>
             </div>
           )}
 
-          <div className="h-4 w-px bg-[#444] hidden md:block" />
+          {!showTrash && showLibraryFilters && (
+            <div className="border-t border-[#333] pt-2 flex flex-col gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* B2: free-text search */}
+                <div className="relative">
+                  <Search
+                    size={11}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-[#666] pointer-events-none"
+                  />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="検索（タイトル・分類・機材・ファイル名）"
+                    aria-label="写真を検索"
+                    className="bg-[#333] text-[#ccc] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors w-52 placeholder:text-[#555]"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      aria-label="検索をクリア"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#ccc] transition-colors"
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
 
-          {/* Thumb size slider — hidden on mobile (no precise drag) */}
-          <div className="hidden md:flex items-center gap-2">
-            <Grid size={12} className="text-[#666]" />
-            <input
-              aria-label="サムネイルサイズ"
-              type="range"
-              min={80}
-              max={300}
-              value={thumbSize}
-              onChange={(e) => setThumbSize(Number(e.target.value))}
-              className="w-24 accent-[#888] h-1"
-            />
-            <Columns size={12} className="text-[#666]" />
-          </div>
+                <select
+                  value={filterCat}
+                  onChange={(e) => setFilterCat(e.target.value)}
+                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                >
+                  <option value="all">All ({allPhotos.length})</option>
+                  {categories.map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {c.label} (
+                      {allPhotos.filter((p) => p.category === c.slug).length})
+                    </option>
+                  ))}
+                  {allPhotos.some(isUncategorized) && (
+                    <option value="__uncat__">
+                      未分類 ({allPhotos.filter(isUncategorized).length})
+                    </option>
+                  )}
+                </select>
 
-          <div className="h-4 w-px bg-[#444] hidden md:block" />
+                <select
+                  value={filterSeries}
+                  onChange={(e) => setFilterSeries(e.target.value)}
+                  aria-label="シリーズで絞り込み"
+                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                >
+                  <option value="all">All series</option>
+                  {seriesList.map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.title} (
+                      {allPhotos.filter((p) => p.seriesId === s.id).length})
+                    </option>
+                  ))}
+                  <option value="__none__">
+                    未割り当て (
+                    {allPhotos.filter((p) => p.seriesId == null).length})
+                  </option>
+                </select>
 
-          {/* Count */}
-          <span className="text-[11px] text-[#777]">
-            {displayed.length} / {allPhotos.length} photos
-            {selected.size > 0 && (
-              <span className="text-[#aaa]"> · {selected.size} selected</span>
-            )}
-          </span>
+                <select
+                  value={filterSize}
+                  onChange={(e) => setFilterSize(e.target.value)}
+                  aria-label="表示サイズで絞り込み"
+                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                >
+                  <option value="all">All sizes</option>
+                  {(["S", "M", "L"] as const).map((sz) => (
+                    <option key={sz} value={sz}>
+                      {sz} (
+                      {
+                        allPhotos.filter((p) => (p.displaySize || "M") === sz)
+                          .length
+                      }
+                      )
+                    </option>
+                  ))}
+                </select>
 
-          <button
-            onClick={() => {
-              setShowTrash((v) => !v);
-              setSelected(new Set());
-              setInspectPhoto(null);
-            }}
-            className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-sm transition-colors ${
-              showTrash
-                ? "bg-amber-900/40 text-amber-400"
-                : "text-[#666] hover:text-[#aaa] hover:bg-[#2a2a2a]"
-            }`}
-          >
-            <Trash2 size={11} />
-            Trash
-            {(trashData?.photos?.length ?? 0) > 0 &&
-              ` (${trashData!.photos.length})`}
-          </button>
+                <select
+                  value={filterMedium}
+                  onChange={(e) => setFilterMedium(e.target.value)}
+                  aria-label="媒体で絞り込み"
+                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                >
+                  <option value="all">媒体: All</option>
+                  <option value="digital">Digital ({mediumCounts.digital})</option>
+                  <option value="film">Film ({mediumCounts.film})</option>
+                  <option value="missing">媒体なし ({mediumCounts.missing})</option>
+                </select>
 
-          <button
-            onClick={() => setShowShortcuts(true)}
-            title="キーボードショートカット (?)"
-            aria-label="キーボードショートカット"
-            className="flex items-center justify-center w-6 h-6 text-[11px] text-[#666] hover:text-[#aaa] hover:bg-[#2a2a2a] rounded-sm transition-colors"
-          >
-            ?
-          </button>
+                <select
+                  value={filterOrientation}
+                  onChange={(e) => setFilterOrientation(e.target.value)}
+                  aria-label="写真の向きで絞り込み"
+                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                >
+                  <option value="all">All orientations</option>
+                  <option value="portrait">
+                    縦写真 ({orientationCounts.portrait})
+                  </option>
+                  <option value="landscape">
+                    横写真 ({orientationCounts.landscape})
+                  </option>
+                  <option value="square">
+                    正方形 ({orientationCounts.square})
+                  </option>
+                </select>
 
-          <button
-            onClick={() => {
-              setBulkEditMode((v) => !v);
-              setInspectPhoto(null);
-              setSelected(new Set());
-            }}
-            aria-pressed={bulkEditMode}
-            title="表形式の一括編集モード"
-            className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
-              bulkEditMode
-                ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
-            }`}
-          >
-            <LayoutList size={11} /> Table
-          </button>
+                <button
+                  onClick={() => setFilterFeatured((v) => !v)}
+                  aria-pressed={filterFeatured}
+                  className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                    filterFeatured
+                      ? "bg-amber-900/40 text-amber-300 border-amber-700/50"
+                      : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+                  }`}
+                >
+                  <Star size={11} /> Featured ({featuredIds.size})
+                </button>
 
-          <div className="flex-1" />
+                <select
+                  value={filterPublished}
+                  onChange={(e) => setFilterPublished(e.target.value)}
+                  aria-label="公開状態で絞り込み"
+                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                >
+                  <option value="all">公開状態: All</option>
+                  <option value="published">
+                    公開のみ ({allPhotos.length - unpublishedCount})
+                  </option>
+                  <option value="unpublished">
+                    非公開のみ ({unpublishedCount})
+                  </option>
+                </select>
+
+                <button
+                  onClick={() => setFilterMissingShotAt((v) => !v)}
+                  aria-pressed={filterMissingShotAt}
+                  className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                    filterMissingShotAt
+                      ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
+                      : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+                  }`}
+                >
+                  撮影日なし ({missingShotAtCount})
+                </button>
+
+                <button
+                  onClick={() => setFilterMissingCapture((v) => !v)}
+                  aria-pressed={filterMissingCapture}
+                  className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                    filterMissingCapture
+                      ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
+                      : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+                  }`}
+                >
+                  機材なし ({missingCaptureCount})
+                </button>
+
+                <select
+                  value={filterRecent}
+                  onChange={(e) => setFilterRecent(e.target.value)}
+                  aria-label="アップロード時期で絞り込み"
+                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                >
+                  <option value="all">All time</option>
+                  <option value="7">直近7日</option>
+                  <option value="30">直近30日</option>
+                </select>
+
+                {anyFilterActive && (
+                  <button
+                    type="button"
+                    onClick={clearLibraryFilters}
+                    className="text-[11px] px-2 py-1 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                  >
+                    すべて解除
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <FolderOpen size={12} className="text-[#666]" />
+                {smartAlbums.map((a) => {
+                  const conditionLabels = describeAlbumConditions(a.cond);
+                  const shownLabels = conditionLabels.slice(0, 3);
+                  const hiddenLabelCount =
+                    conditionLabels.length - shownLabels.length;
+                  return (
+                    <span
+                      key={a.id}
+                      className={`group/al inline-flex items-center gap-1 text-[11px] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
+                        activeAlbumId === a.id
+                          ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
+                          : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveAlbumId((id) => (id === a.id ? null : a.id))
+                        }
+                        className="flex items-center gap-1.5"
+                      >
+                        <span>{a.name}</span>
+                        {shownLabels.map((label) => (
+                          <span
+                            key={label}
+                            className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]"
+                            title={label}
+                          >
+                            {label}
+                          </span>
+                        ))}
+                        {hiddenLabelCount > 0 && (
+                          <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]">
+                            +{hiddenLabelCount}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = smartAlbums.filter((x) => x.id !== a.id);
+                          if (activeAlbumId === a.id) setActiveAlbumId(null);
+                          saveAlbums.mutate(next);
+                        }}
+                        aria-label={`${a.name}を削除`}
+                        className="opacity-50 group-hover/al:opacity-100 text-[#888] hover:text-red-400 transition-all"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    setAlbumDraft({ ...EMPTY_ALBUM_DRAFT });
+                    setAlbumModalOpen(true);
+                  }}
+                  className="flex items-center gap-1 text-[11px] text-[#888] px-2 py-1 rounded-sm border border-dashed border-[#444] hover:bg-[#333] transition-colors"
+                >
+                  <Plus size={11} /> アルバム
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Batch actions */}
-          {selected.size > 1 && !showTrash && (
-            <div className="flex items-center gap-2">
+          {selected.size > 0 && !showTrash && (
+            <div className="border-t border-[#333] pt-2 flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-[#777] uppercase tracking-wider">
+                選択中 {selected.size}枚
+              </span>
               {/* M2: Publish / Unpublish */}
               <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-0.5">
                 <button
@@ -3451,51 +3537,11 @@ function GalleryTab({
               </button>
             </div>
           )}
-
-          {/* 機能5: アップロード前のフィルム/デジタル選択 */}
-          <div className="flex items-center gap-1">
-            {[["digital", "Digital"] as const, ["film", "Film"] as const].map(
-              ([val, lbl]) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setUploadMedium(val)}
-                  aria-pressed={uploadMedium === val}
-                  className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
-                    uploadMedium === val
-                      ? "bg-[#555] text-[#eee] border-[#666]"
-                      : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
-                  }`}
-                >
-                  {lbl}
-                </button>
-              ),
-            )}
-          </div>
-
-          {/* Upload button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 text-[11px] text-[#1e1e1e] bg-[#888] px-3 py-1 rounded-sm hover:bg-[#999] transition-colors disabled:opacity-50"
-          >
-            <Upload size={11} /> Import
-          </button>
-          <input
-            aria-label="画像ファイルを選択"
-            ref={fileInputRef}
-            type="file"
-            accept={UPLOAD_IMAGE_ACCEPT}
-            multiple
-            className="hidden"
-            onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
-          />
         </div>
 
         {!showTrash &&
           (activeFilterLabels.length > 0 ||
-            librarySort !== "manual" ||
-            selected.size > 0) && (
+            librarySort !== "manual") && (
             <div
               aria-label="Libraryの表示条件"
               className="bg-[#232323] border-b border-[#333] px-2 sm:px-4 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
@@ -3520,11 +3566,6 @@ function GalleryTab({
                   {item.text}
                 </span>
               ))}
-              {selected.size > 0 && (
-                <span className="text-[11px] text-[#ddd] bg-[#3a3a3a] border border-[#555] rounded-sm px-2 py-1">
-                  選択: {selected.size}枚
-                </span>
-              )}
               {reorderLocked && (
                 <span className="text-[11px] text-amber-300/80 bg-amber-900/20 border border-amber-900/30 rounded-sm px-2 py-1">
                   {librarySort !== "manual"

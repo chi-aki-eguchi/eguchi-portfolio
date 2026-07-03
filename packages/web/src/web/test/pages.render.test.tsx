@@ -303,22 +303,56 @@ describe("shared components", () => {
       expect(host.textContent).toContain("サイト");
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
-      expect(host.textContent).toContain("撮影日なし");
-      expect(host.textContent).toContain("機材なし");
-      expect(host.textContent).toContain("公開のみ");
-      expect(host.textContent).toContain("縦写真");
-      expect(host.textContent).toContain("媒体: All");
-      expect(host.textContent).toContain("媒体/フィルム");
+      expect(host.textContent).toContain("絞り込み");
+      expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
       expect(host.textContent).toContain("3 / 3 photos");
       expect(
         host.querySelector(
           '[aria-label="未入力: 日付なし, 機材なし, 媒体なし"]',
         ),
       ).not.toBeNull();
+
+      buttonWithText(host, "絞り込み").click();
+      await flush(30);
+      expect(host.querySelector('input[aria-label="写真を検索"]')).not.toBeNull();
+      expect(host.textContent).toContain("撮影日なし");
+      expect(host.textContent).toContain("機材なし");
+      expect(host.textContent).toContain("公開のみ");
+      expect(host.textContent).toContain("縦写真");
+      expect(host.textContent).toContain("媒体: All");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminPage: Library keeps filters collapsed and shows batch actions only after selection", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
+      expect(host.textContent).not.toContain("選択中 1枚");
+
+      const firstTile = host.querySelector(
+        'button[aria-label="A"]',
+      ) as HTMLButtonElement | null;
+      expect(firstTile).not.toBeNull();
+      firstTile!.click();
+      await flush(30);
+      expect(host.textContent).toContain("選択中 1枚");
+      expect(host.textContent).toContain("公開");
+      expect(host.textContent).toContain("一括編集");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
       dom.window.localStorage.clear();
     }
   });
@@ -615,6 +649,8 @@ describe("shared components", () => {
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      buttonWithText(host, "絞り込み").click();
+      await flush(30);
       const input = host.querySelector(
         'input[aria-label="写真を検索"]',
       ) as HTMLInputElement | null;
@@ -737,6 +773,8 @@ describe("shared components", () => {
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      buttonWithText(host, "絞り込み").click();
+      await flush(30);
       const albumButton = Array.from(host.querySelectorAll("button")).find(
         (button) => button.textContent?.includes("アルバム"),
       ) as HTMLButtonElement | undefined;
@@ -779,6 +817,8 @@ describe("shared components", () => {
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      buttonWithText(host, "絞り込み").click();
+      await flush(30);
       expect(host.textContent).toContain("Needs review");
       expect(host.textContent).toContain("Film");
       expect(host.textContent).toContain("撮影日なし");

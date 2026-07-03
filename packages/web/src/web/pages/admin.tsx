@@ -68,17 +68,12 @@ import {
   RotateCcw,
   RotateCw,
 } from "lucide-react";
-
-type Tab =
-  | "setup"
-  | "gallery"
-  | "hero"
-  | "profile"
-  | "categories"
-  | "series"
-  | "pricing"
-  | "service"
-  | "settings";
+import {
+  ADMIN_TAB_GROUPS,
+  groupForTab,
+  isAdminTab,
+  type Tab,
+} from "./admin-shared";
 
 const LazyHeroTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.HeroTab })),
@@ -102,22 +97,6 @@ const LazySettingsTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.SettingsTab })),
 );
 
-const ADMIN_TAB_KEYS = new Set<Tab>([
-  "setup",
-  "gallery",
-  "hero",
-  "profile",
-  "categories",
-  "series",
-  "pricing",
-  "service",
-  "settings",
-]);
-
-function isAdminTab(value: unknown): value is Tab {
-  return typeof value === "string" && ADMIN_TAB_KEYS.has(value as Tab);
-}
-
 const ADMIN_TABS: Record<
   Tab,
   { label: string; icon: React.ReactNode }
@@ -132,25 +111,6 @@ const ADMIN_TABS: Record<
   service: { label: "Service", icon: <ExternalLink size={15} /> },
   settings: { label: "Settings", icon: <Settings size={15} /> },
 };
-
-type AdminTabGroup = { key: string; label: string; tabs: readonly Tab[] };
-
-const ADMIN_TAB_GROUPS: AdminTabGroup[] = [
-  { key: "photos", label: "写真", tabs: ["gallery"] },
-  { key: "presentation", label: "見せ方", tabs: ["hero", "series", "categories"] },
-  {
-    key: "site",
-    label: "サイト",
-    tabs: ["profile", "pricing", "service", "settings", "setup"],
-  },
-];
-
-function groupForTab(tab: Tab) {
-  return (
-    ADMIN_TAB_GROUPS.find((group) => group.tabs.includes(tab)) ??
-    ADMIN_TAB_GROUPS[0]
-  );
-}
 
 // V (ux-refinements): admin UI state that must survive tab switches and page
 // moves. Tabs unmount on switch, so plain useState loses unsaved drafts and

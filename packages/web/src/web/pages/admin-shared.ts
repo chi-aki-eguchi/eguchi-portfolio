@@ -1,6 +1,60 @@
 import { useEffect, useState } from "react";
 import { objectPositionFromFocal, srcFor } from "../lib/picture";
 
+export type Tab =
+  | "setup"
+  | "gallery"
+  | "hero"
+  | "profile"
+  | "categories"
+  | "series"
+  | "pricing"
+  | "service"
+  | "settings";
+
+export const ADMIN_TAB_KEYS = new Set<Tab>([
+  "setup",
+  "gallery",
+  "hero",
+  "profile",
+  "categories",
+  "series",
+  "pricing",
+  "service",
+  "settings",
+]);
+
+export type AdminTabGroup = {
+  key: string;
+  label: string;
+  tabs: readonly Tab[];
+};
+
+export const ADMIN_TAB_GROUPS: AdminTabGroup[] = [
+  { key: "photos", label: "写真", tabs: ["gallery"] },
+  {
+    key: "presentation",
+    label: "見せ方",
+    tabs: ["hero", "series", "categories"],
+  },
+  {
+    key: "site",
+    label: "サイト",
+    tabs: ["profile", "pricing", "service", "settings", "setup"],
+  },
+];
+
+export function isAdminTab(value: unknown): value is Tab {
+  return typeof value === "string" && ADMIN_TAB_KEYS.has(value as Tab);
+}
+
+export function groupForTab(tab: Tab): AdminTabGroup {
+  return (
+    ADMIN_TAB_GROUPS.find((group) => group.tabs.includes(tab)) ??
+    ADMIN_TAB_GROUPS[0]
+  );
+}
+
 type PersistentStorageKind = "session" | "local";
 
 function getStorage(kind: PersistentStorageKind): Storage | null {

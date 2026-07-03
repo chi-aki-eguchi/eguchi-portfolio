@@ -219,6 +219,11 @@ function useAdminGuard() {
 export default function AdminPage() {
   const { isLoading, authenticated } = useAdminGuard();
   const [, navigate] = useLocation();
+  const { data: shellSettings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () =>
+      jsonOrThrow<Record<string, string>>(await api.settings.$get()),
+  });
   const [tab, setTab] = usePersistentState<Tab>(
     "admin:tab",
     "gallery",
@@ -256,6 +261,10 @@ export default function AdminPage() {
     key,
     ...ADMIN_TABS[key],
   }));
+  const sidebarSiteName =
+    shellSettings?.siteNameEn?.trim() ||
+    shellSettings?.siteName?.trim() ||
+    "Photography";
   const requestTab = (nextTab: Tab) => {
     if (hasUnsaved && nextTab !== tab) {
       setUnsavedConfirm(nextTab);
@@ -276,7 +285,7 @@ export default function AdminPage() {
       <aside className="admin-sidebar hidden lg:flex">
         <div className="admin-sidebar__brand">
           <span className="admin-sidebar__eyebrow">Portfolio Admin</span>
-          <span className="admin-sidebar__title">Aki Eguchi</span>
+          <span className="admin-sidebar__title">{sidebarSiteName}</span>
         </div>
         <nav className="admin-sidebar__nav" aria-label="管理画面">
           {ADMIN_TAB_GROUPS.map((group) => (
@@ -485,7 +494,7 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
 
   // The はじめに checklist is built for a fresh distribution install (empty DB):
   // it guides the owner top-to-bottom to a published site. On a fully configured
-  // site (e.g. production akieguchi.com) every item is already done, so it
+  // established site every item is already done, so it
   // collapses to a one-line bar; it can also be dismissed with 閉じる.
   const [dismissed, setDismissed] = usePersistentState<boolean>(
     "admin:setup-dismissed",
@@ -3782,7 +3791,7 @@ function GalleryTab({
                   }}
                 >
                   {(trashData?.photos ?? []).map((photo) => {
-                    // Days until lazy auto-purge — lets 秋 triage what to rescue first.
+                    // Days until lazy auto-purge — helps the owner triage what to rescue first.
                     const delT = photo.deletedAt
                       ? new Date(photo.deletedAt).getTime()
                       : 0;

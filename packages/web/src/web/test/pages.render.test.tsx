@@ -307,12 +307,16 @@ describe("shared components", () => {
 
   test("AdminPage: authenticated mounts the full admin UI", async () => {
     const prev = canned["/api/admin/me"];
+    const prevSettings = canned["/api/settings"];
     canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/settings"] = { siteNameEn: "Template Studio" };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      expect(host.textContent).toContain("Template Studio");
+      expect(host.textContent).not.toContain("Aki Eguchi");
       expect(host.textContent).toContain("写真");
       expect(host.textContent).toContain("見せ方");
       expect(host.textContent).toContain("サイト");
@@ -338,6 +342,7 @@ describe("shared components", () => {
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;
+      canned["/api/settings"] = prevSettings;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
       dom.window.localStorage.clear();
     }

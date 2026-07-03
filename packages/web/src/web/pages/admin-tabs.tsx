@@ -2158,8 +2158,7 @@ export function ServiceTab({
         Service Page
       </h2>
       <p className="text-[11px] text-[#555] mb-6">
-        /service 販売ページの内容を編集します。akieguchi.com
-        でのみ表示されます。
+        /service 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。
       </p>
 
       {/* Save bar */}

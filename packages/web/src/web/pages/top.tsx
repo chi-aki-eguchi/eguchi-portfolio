@@ -734,7 +734,7 @@ function HomeEditorial({
             className="font-en mb-5"
             style={{ fontSize: 11, color: "#aaa", letterSpacing: "0.06em" }}
           >
-            {siteNameEn || "Aki Eguchi"}
+            {siteNameEn}
           </p>
           {statement && (
             <p

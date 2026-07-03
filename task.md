@@ -1,5 +1,52 @@
 # Task Log
 
+## Handoff 2026-07-03 — Codex: Admin renewal phase 1 finish through phase 3
+
+### 目的
+
+管理画面リニューアルの第1期仕上げから第3期までを、ローカルコミット単位で進める。pushはしない。
+
+### 変更内容
+
+- タスク0: 第1期ナビ3グループ化をコミット。
+  - commit: `45977f0 feat(admin): ナビを3グループ構成に再編(写真/見せ方/サイト)`
+- タスク1: タブ/グループ定義を一元化。
+  - `packages/web/src/web/pages/admin-shared.ts`
+    - `Tab`, `ADMIN_TAB_KEYS`, `ADMIN_TAB_GROUPS`, `isAdminTab()`, `groupForTab()` を共通定義として追加。
+  - `packages/web/src/web/pages/admin.tsx`
+    - タブキー/グループ定義の重複を削除し、共通定義を参照。
+  - commit: `104ddab refactor(admin): タブ/グループ定義を一元化`
+- タスク2: Libraryを写真主役のレイアウトに再構成。
+  - `packages/web/src/web/pages/admin.tsx`
+    - 常設バーを `Library` / 件数 / Sort / 絞り込み / 表示系 / Trash / Import 中心に整理。
+    - 検索・カテゴリ・シリーズ・サイズ・媒体・向き・公開状態・撮影日なし・機材なし・期間・スマートアルバムを「絞り込み」パネル内へ移動。
+    - 有効フィルタ数バッジと1行要約を追加。
+    - 一括操作バーを「1枚以上選択した時だけ」表示するよう変更。
+  - `packages/web/src/web/test/pages.render.test.tsx`
+    - 初期状態でフィルタパネルが閉じていることを確認。
+    - 選択時だけ一括操作バーが出ることを確認。
+    - 既存検索・スマートアルバム確認を新パネル構造に合わせて更新。
+  - commit: `c0ca702 feat(admin): Libraryを写真主役のレイアウトに再構成`
+- タスク3: 言葉の統一と明札。
+  - `packages/web/src/web/pages/admin.tsx`
+    - Library内の `Feature` / `Unfeature` / `Featured` 表記をHero向けの日本語に変更。
+  - `packages/web/src/web/pages/admin-tabs.tsx`
+    - Pricingタブに「Contactページに表示される料金です」と、Service側への案内を追加。
+    - Serviceタブの料金セクションに「/service 販売ページの料金です」と、Pricing側への案内を追加。
+  - `packages/web/src/web/test/pages.render.test.tsx`
+    - Hero表記と料金説明の表示確認を追加。
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（36 pass / 0 fail）
+
+### 注意
+
+- スキーマ・API・DBは触っていない。
+- 公開サイト側の文言・UIは触っていない。
+- 紙質感デザイン `e85bdc0` の要素は再導入していない。
+- pushは未実施。
+
 ## Handoff 2026-07-03 — Codex: Admin navigation 3-group structure
 
 ### 目的

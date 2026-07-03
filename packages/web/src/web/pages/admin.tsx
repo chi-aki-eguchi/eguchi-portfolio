@@ -1396,7 +1396,7 @@ function GalleryTab({
         );
       }
       if (cond.size) labels.push(`Size ${cond.size}`);
-      if (cond.featured) labels.push("Featured");
+      if (cond.featured) labels.push("Hero設定中");
       if (cond.published === "published") labels.push("公開");
       if (cond.published === "unpublished") labels.push("非公開");
       if (cond.recent) labels.push(`直近${cond.recent}日`);
@@ -1647,7 +1647,7 @@ function GalleryTab({
         key: "orientation",
         text: ORIENTATION_FILTER_LABELS[filterOrientation] ?? filterOrientation,
       });
-    if (filterFeatured) labels.push({ key: "featured", text: "Featured" });
+    if (filterFeatured) labels.push({ key: "featured", text: "Hero設定中" });
     if (filterPublished !== "all")
       labels.push({
         key: "published",
@@ -3150,7 +3150,7 @@ function GalleryTab({
                       : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
                   }`}
                 >
-                  <Star size={11} /> Featured ({featuredIds.size})
+                  <Star size={11} /> Hero設定中 ({featuredIds.size})
                 </button>
 
                 <select
@@ -3497,20 +3497,20 @@ function GalleryTab({
                 </button>
               </div>
 
-              {/* M2: Feature / unfeature (hero) */}
+              {/* M2: feature / unfeature control hero membership. */}
               <button
                 onClick={() => batchOp.mutate({ operation: "feature" })}
                 disabled={batchOp.isPending}
                 className="flex items-center gap-1 text-[11px] text-amber-300/80 bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
-                <Star size={11} /> Feature
+                <Star size={11} /> Heroに追加
               </button>
               <button
                 onClick={() => batchOp.mutate({ operation: "unfeature" })}
                 disabled={batchOp.isPending}
                 className="flex items-center gap-1 text-[11px] text-[#999] bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
-                <StarOff size={11} /> Unfeature
+                <StarOff size={11} /> Heroから外す
               </button>
 
               {/* O2: bulk metadata edit */}

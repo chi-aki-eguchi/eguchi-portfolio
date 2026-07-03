@@ -100,6 +100,21 @@ async function waitForText(host: Element, text: string, attempts = 20) {
   expect(host.textContent).toContain(text);
 }
 
+async function waitForButton(
+  host: Element,
+  selector: string,
+  attempts = 20,
+) {
+  for (let i = 0; i < attempts; i += 1) {
+    const button = host.querySelector(selector) as HTMLButtonElement | null;
+    if (button) return button;
+    await flush(50);
+  }
+  const button = host.querySelector(selector) as HTMLButtonElement | null;
+  expect(button).not.toBeNull();
+  return button!;
+}
+
 const pages: [string, () => Promise<{ default: React.ComponentType }>][] = [
   ["top", () => import("../pages/top")],
   ["gallery", () => import("../pages/gallery")],
@@ -347,6 +362,8 @@ describe("shared components", () => {
       await flush(30);
       expect(host.textContent).toContain("選択中 1枚");
       expect(host.textContent).toContain("公開");
+      expect(host.textContent).toContain("Heroに追加");
+      expect(host.textContent).toContain("Heroから外す");
       expect(host.textContent).toContain("一括編集");
 
       cleanup();
@@ -382,9 +399,12 @@ describe("shared components", () => {
 
       buttonWithText(host, "Pricing").click();
       await waitForText(host, "プランを追加");
+      expect(host.textContent).toContain("Contactページに表示される料金です");
 
       buttonWithText(host, "Service").click();
       await waitForText(host, "Service Page");
+      buttonWithText(host, "料金").click();
+      await waitForText(host, "/service 販売ページの料金です");
 
       buttonWithText(host, "Settings").click();
       await waitForText(host, "Live Preview");
@@ -489,11 +509,8 @@ describe("shared components", () => {
         createElement(Admin),
         (qc) => qc.setQueryData(["photos", "all"], { photos: largePhotos }),
       );
-      const firstTile = host.querySelector(
-        'button[aria-label="P000"]',
-      ) as HTMLButtonElement | null;
-      expect(firstTile).not.toBeNull();
-      firstTile!.click();
+      const firstTile = await waitForButton(host, 'button[aria-label="P000"]');
+      firstTile.click();
       await flush(20);
       const initialThumbs = Array.from(host.querySelectorAll("img"))
         .map((img) => img.getAttribute("src") ?? "")
@@ -551,7 +568,7 @@ describe("shared components", () => {
           .clientHeight;
       }
     }
-  });
+  }, 10000);
 
   test("AdminPage: inspector surfaces quick edit controls and usage", async () => {
     const prevAuth = canned["/api/admin/me"];

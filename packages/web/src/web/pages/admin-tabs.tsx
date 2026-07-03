@@ -1635,8 +1635,8 @@ export function PricingTab() {
         Pricing
       </h2>
       <p className="text-[11px] text-[#555] mb-6">
-        撮影依頼の料金プラン。↑↓で並び替え。公開トグルで下書き/公開。公開サイトでは
-        Contact ページに表示されます。
+        Contactページに表示される料金です。↑↓で並び替え。公開トグルで下書き/公開。
+        販売ページの料金は サイト &gt; Service で編集します。
       </p>
 
       {rowError && (
@@ -2430,6 +2430,10 @@ export function ServiceTab({
 
       {/* ── Pricing ── */}
       <ServiceSection title="料金">
+        <p className="text-[11px] leading-6 text-[#666]">
+          /service 販売ページの料金です。Contactページの料金は サイト &gt;
+          Pricing で編集します。
+        </p>
         <SvcInput
           label="ラベル"
           value={draft.pricing.label}

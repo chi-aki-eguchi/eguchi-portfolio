@@ -156,12 +156,10 @@ needs an owner decision or touches a restricted area (design ambiguity,
 auth, schema, `/service`, performance rewrites), so no code was changed for
 any item below.
 
-27. **Lightbox EXIF panel `role="dialog"` misuse** — a non-modal slide-in
-    info panel is tagged `role="dialog"`; this is the one standing
-    `bun run lint` failure repo-wide. The mechanical fix the linter
-    suggests (swap to a native `<dialog>` tag) is unsafe here; the real fix
-    needs a role choice (`group`/`region`/none) plus `aria-expanded`/
-    `aria-controls` wiring — a judgment call. `Lightbox.tsx:1212-1234`.
+27. **Resolved 2026-07-03**: Lightbox EXIF panel no longer uses
+    `role="dialog"` for a non-modal slide-in info panel. It is now a labeled
+    semantic `section`, which clears the standing repo-wide lint failure
+    without changing the visual behavior. `Lightbox.tsx:1212-1271`.
 28. **Admin `:id` write routes silently return success on a nonexistent
     id** (PATCH/DELETE on photos/series/pricing) instead of 404, unlike the
     sibling `duplicate`/`purge` routes in the same file which do check.
@@ -174,16 +172,16 @@ any item below.
     full 7-day lifetime with no server-side revocation. A code comment
     shows this was a deliberate tradeoff, not an oversight.
     `api/index.ts:265-276,773-776`.
-31. **Distribution: one of three homepage hero variants hardcodes
-    `"Aki Eguchi"` as its fallback name**, contradicting the template's own
-    empty-state goal (DISTRIBUTION.md) — the other two variants correctly
-    fall back to the generic `"Photography"`. `web/pages/top.tsx:737`. See
-    also distribution.md.
-32. **Resolved 2026-07-02**: Image upload validation now uses a shared
+31. **Resolved 2026-07-03**: Distribution homepage hero variants no longer
+    hardcode `"Aki Eguchi"` as a fallback name. The remaining variant now uses
+    the same settings-derived `siteNameEn` value as the rest of the top page,
+    so template copies keep their empty-state goal. `web/pages/top.tsx:737`.
+32. **Resolved 2026-07-02; tightened 2026-07-03**: Image upload validation now uses a shared
     allow-list for all 3 upload routes and accepts TIFF variants
     (`image/tiff`, `image/x-tiff`, `.tif`, `.tiff`) while still rejecting
-    unsupported image-ish files such as SVG. This also closes the former gap
-    where an empty browser `Content-Type` could reach `sharp()` unchecked.
+    unsupported image-ish files such as SVG. The 2026-07-03 tightening keeps
+    extension-only browser fallbacks only for TIFF; empty/`octet-stream`
+    JPEG/PNG-style uploads are rejected before `sharp()`.
     `api/index.ts:1066-1070,1185-1189,1211-1215`;
     `api/security.ts:3-55`; `web/lib/upload-file.ts:1-44`.
 33. **`/api/images/*` resize proxy collapses every failure mode (timeout,
@@ -275,6 +273,11 @@ verified correct across 7 indexable pages.
     33.68KB, with `admin-tabs` at 218.75KB / gzip 34.05KB loaded on first
     non-Library tab open. `web/pages/admin.tsx`; `web/pages/admin-tabs.tsx`;
     `web/pages/admin-shared.ts`.
+46a. **Resolved 2026-07-03**: Admin Library thumbnail loading after
+    virtualization now uses the pre-generated `thumbUrl` for normal grid
+    tiles and `mediumUrl` only for larger tiles. This keeps virtualized
+    scrolling from waiting on heavier image variants. `web/pages/admin.tsx`;
+    `web/test/admin-virtual-grid.test.ts`; `image-pipeline.md`.
 47. **Gallery fetches all photo metadata before showing the first 24.** The
     gallery page calls `api.photos.$get()` with no `limit`, then slices the
     already-fetched array to the initial render count (24 desktop / 12 mobile).

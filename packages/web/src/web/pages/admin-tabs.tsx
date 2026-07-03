@@ -707,7 +707,7 @@ export function CategoriesTab() {
       <div className="flex flex-col gap-1 mb-8">
         {categories.length === 0 && !catsLoading && (
           <p className="text-sm text-[#555] py-4 text-center">
-            No categories yet
+            まだカテゴリがありません。下の入力欄から追加できます。
           </p>
         )}
         {categories.map((cat, i) => (
@@ -804,14 +804,14 @@ export function CategoriesTab() {
       {deleteCatConfirm && (
         <Modal onClose={() => setDeleteCatConfirm(null)}>
           <p className="text-[13px] text-[#ddd] mb-4">
-            Delete "{deleteCatConfirm.label}"?
+            「{deleteCatConfirm.label}」を削除しますか？
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteCatConfirm(null)}
               className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
             >
-              Cancel
+              キャンセル
             </button>
             <button
               onClick={() => {
@@ -820,7 +820,7 @@ export function CategoriesTab() {
               }}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
-              Delete
+              削除する
             </button>
           </div>
         </Modal>
@@ -1049,7 +1049,9 @@ export function SeriesTab() {
 
       <div className="flex flex-col gap-2 mb-8">
         {series.length === 0 && !isLoading && (
-          <p className="text-sm text-[#555] py-4 text-center">No series yet</p>
+          <p className="text-sm text-[#555] py-4 text-center">
+            まだシリーズがありません。作品のまとまりを作るとここに表示されます。
+          </p>
         )}
         {series.map((s, i) => {
           const count = photos.filter(
@@ -1458,7 +1460,7 @@ export function SeriesTab() {
               onClick={() => setDeleteTarget(null)}
               className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
             >
-              Cancel
+              キャンセル
             </button>
             <button
               onClick={() => {
@@ -1468,7 +1470,7 @@ export function SeriesTab() {
               }}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
-              Delete
+              削除する
             </button>
           </div>
         </Modal>
@@ -1647,7 +1649,9 @@ export function PricingTab() {
 
       <div className="flex flex-col gap-2 mb-8">
         {plans.length === 0 && !isLoading && (
-          <p className="text-sm text-[#555] py-4 text-center">No plans yet</p>
+          <p className="text-sm text-[#555] py-4 text-center">
+            まだ料金プランがありません。下の「プランを追加」から追加できます。
+          </p>
         )}
         {plans.map((p, i) => (
           <div
@@ -1826,7 +1830,7 @@ export function PricingTab() {
               onClick={() => setDeleteTarget(null)}
               className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
             >
-              Cancel
+              キャンセル
             </button>
             <button
               onClick={() => {
@@ -1836,7 +1840,7 @@ export function PricingTab() {
               }}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
-              Delete
+              削除する
             </button>
           </div>
         </Modal>

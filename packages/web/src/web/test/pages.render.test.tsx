@@ -438,7 +438,9 @@ describe("shared components", () => {
       buttonWithText(host, "見せ方").click();
       await flush(80);
       expect(host.textContent).toContain("未保存の変更があります");
-      expect(host.textContent).toContain("保存せずにタブを移動しますか？");
+      expect(host.textContent).toContain(
+        "保存していない内容があります。このまま移動しますか？",
+      );
       expect(host.textContent).toContain("Profile Photo");
 
       cleanup();
@@ -467,7 +469,9 @@ describe("shared components", () => {
       await flush(80);
 
       expect(host.textContent).toContain("未保存の変更があります");
-      expect(host.textContent).toContain("保存せずにタブを移動しますか？");
+      expect(host.textContent).toContain(
+        "保存していない内容があります。このまま移動しますか？",
+      );
       expect(host.textContent).toContain("Library");
 
       cleanup();
@@ -757,8 +761,8 @@ describe("shared components", () => {
       expect(host.textContent).toContain("1 / 3 photos");
       await setSearch("No such classification");
       expect(host.textContent).toContain("0 / 3 photos");
-      expect(host.textContent).toContain("No matching photos");
-      expect(host.textContent).toContain("Clear filters");
+      expect(host.textContent).toContain("条件に合う写真が見つかりません。");
+      expect(host.textContent).toContain("絞り込みを解除");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prevAuth;

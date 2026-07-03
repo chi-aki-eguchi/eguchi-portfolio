@@ -53,18 +53,21 @@
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
   --admin-font-title: var(--font-en);
   --admin-font-ui: var(--font-ja);
-  --admin-radius-xs: 2px;
-  --admin-radius-sm: 3px;
-  --admin-radius-md: 4px;
+  --admin-radius-xs: 4px;
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 8px;
   --admin-space-1: 4px;
   --admin-space-2: 8px;
   --admin-space-3: 12px;
   --admin-space-4: 16px;
   --admin-space-5: 24px;
   --admin-space-6: 32px;
-  --admin-transition: 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  --admin-transition: 190ms cubic-bezier(0.16, 1, 0.3, 1);
+  --admin-hover-transition: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  --admin-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E");
   color-scheme: light;
-  background: var(--admin-paper);
+  background-color: var(--admin-paper);
+  background-image: var(--admin-paper-grain);
   color: var(--admin-ink);
   font-family: var(--admin-font-ui);
   letter-spacing: 0;
@@ -151,8 +154,8 @@
   line-height: 1.2;
   text-decoration: none;
   transition:
-    color var(--admin-transition),
-    background-color var(--admin-transition);
+    color var(--admin-hover-transition),
+    background-color var(--admin-hover-transition);
 }
 
 .admin-atelier .admin-sidebar__tab::before {
@@ -194,7 +197,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--admin-paper);
+  background-color: var(--admin-paper);
+  background-image: var(--admin-paper-grain);
 }
 
 .admin-atelier .admin-content {
@@ -259,6 +263,11 @@
 .admin-atelier label[class*="border"] {
   border-radius: var(--admin-radius-sm) !important;
   box-shadow: none !important;
+  transition:
+    color var(--admin-hover-transition),
+    background-color var(--admin-hover-transition),
+    border-color var(--admin-hover-transition),
+    opacity var(--admin-hover-transition) !important;
 }
 
 .admin-atelier button:not(.absolute):not([class*="bg-black"]):not([class*="text-red"]):not([class*="red-"]) {
@@ -306,6 +315,11 @@
   border-radius: var(--admin-radius-sm) !important;
   box-shadow: none !important;
   color-scheme: light;
+  transition:
+    color var(--admin-hover-transition),
+    background-color var(--admin-hover-transition),
+    border-color var(--admin-hover-transition),
+    outline-color var(--admin-hover-transition) !important;
 }
 
 .admin-atelier input::placeholder,
@@ -378,6 +392,9 @@
   color: var(--admin-ink) !important;
   border-radius: var(--admin-radius-md) !important;
   box-shadow: none !important;
+  transition:
+    opacity var(--admin-transition),
+    transform var(--admin-transition);
 }
 
 .admin-atelier dialog::backdrop {
@@ -490,6 +507,11 @@
   border-radius: var(--admin-radius-md) !important;
 }
 
+.admin-atelier .admin-content [class*="rounded-sm"],
+.admin-atelier .admin-content [class*="rounded-xs"] {
+  border-radius: var(--admin-radius-sm) !important;
+}
+
 .admin-atelier .admin-content [class*="shadow"] {
   box-shadow: none !important;
 }
@@ -526,6 +548,32 @@
 .admin-atelier .admin-content [class*="max-w-5xl"],
 .admin-atelier .admin-content [class*="max-w-6xl"] {
   max-width: 1120px !important;
+}
+
+.admin-atelier .admin-content [class*="max-w-md"],
+.admin-atelier .admin-content [class*="max-w-lg"],
+.admin-atelier .admin-content [class*="max-w-xl"] {
+  padding-top: clamp(32px, 5vw, 56px) !important;
+  padding-bottom: clamp(40px, 6vw, 72px) !important;
+}
+
+.admin-atelier .admin-content [class*="max-w-md"] > h2 + p,
+.admin-atelier .admin-content [class*="max-w-lg"] > h2 + p,
+.admin-atelier .admin-content [class*="max-w-xl"] > h2 + p {
+  margin-bottom: 32px !important;
+}
+
+.admin-atelier .admin-content [class*="max-w-md"] [class*="mb-8"],
+.admin-atelier .admin-content [class*="max-w-lg"] [class*="mb-8"],
+.admin-atelier .admin-content [class*="max-w-xl"] [class*="mb-8"] {
+  margin-bottom: 40px !important;
+}
+
+.admin-atelier .admin-content [class*="max-w-md"] [class*="border-t"],
+.admin-atelier .admin-content [class*="max-w-lg"] [class*="border-t"],
+.admin-atelier .admin-content [class*="max-w-xl"] [class*="border-t"] {
+  margin-top: 34px !important;
+  padding-top: 30px !important;
 }
 
 .admin-atelier .admin-content [class*="border"][class*="bg-"] {

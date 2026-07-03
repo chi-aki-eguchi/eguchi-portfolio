@@ -415,7 +415,7 @@ export default function AdminPage() {
         <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
           <p className="text-[13px] text-[#ddd] mb-1">未保存の変更があります</p>
           <p className="text-[11px] text-[#777] mb-5">
-            保存せずにタブを移動しますか？
+            保存していない内容があります。このまま移動しますか？
           </p>
           <div className="flex gap-2 justify-end">
             <button
@@ -433,7 +433,7 @@ export default function AdminPage() {
               }}
               className="px-4 py-1.5 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors"
             >
-              移動する
+              保存せず移動
             </button>
           </div>
         </Modal>
@@ -2821,7 +2821,7 @@ function GalleryTab({
           e.preventDefault();
           setDeleteConfirm({
             ids: Array.from(selected),
-            label: `${selected.size}枚の写真を削除しますか？`,
+            label: `${selected.size}枚の写真をゴミ箱に移動しますか？`,
           });
         }
         return;
@@ -3636,12 +3636,12 @@ function GalleryTab({
                 onClick={() =>
                   setDeleteConfirm({
                     ids: Array.from(selected),
-                    label: `${selected.size}枚を削除しますか？`,
+                    label: `${selected.size}枚の写真をゴミ箱に移動しますか？`,
                   })
                 }
                 className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[#333] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors"
               >
-                <Trash2 size={11} /> Delete
+                <Trash2 size={11} /> ゴミ箱へ
               </button>
             </div>
           )}
@@ -3749,7 +3749,9 @@ function GalleryTab({
             (trashData?.photos ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
                 <Trash2 size={40} strokeWidth={1} className="text-[#333]" />
-                <p className="text-sm">ゴミ箱は空です</p>
+                <p className="text-sm">
+                  ゴミ箱は空です。移動した写真はここに表示されます。
+                </p>
               </div>
             ) : (
               <div className="p-3">
@@ -3864,23 +3866,23 @@ function GalleryTab({
               <ImageLucide size={40} strokeWidth={1} className="text-[#444]" />
               {anyFilterActive && allPhotos.length > 0 ? (
                 <>
-                  <p className="text-sm">No matching photos</p>
+                  <p className="text-sm">条件に合う写真が見つかりません。</p>
                   <p className="text-[11px] text-[#444]">
-                    Try another search or clear the current filters
+                    絞り込みや検索語を少しゆるめてみてください。
                   </p>
                   <button
                     type="button"
                     onClick={clearLibraryFilters}
                     className="text-[11px] px-2.5 py-1 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
                   >
-                    Clear filters
+                    絞り込みを解除
                   </button>
                 </>
               ) : (
                 <>
-                  <p className="text-sm">No photos</p>
+                  <p className="text-sm">まだ写真がありません。</p>
                   <p className="text-[11px] text-[#444]">
-                    Drop images here or click Import
+                    Importから写真を追加できます。
                   </p>
                 </>
               )}
@@ -4225,7 +4227,7 @@ function GalleryTab({
               onClick={() => setBatchEditOpen(false)}
               className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
             >
-              Cancel
+              キャンセル
             </button>
             <button
               onClick={() => batchMetaEdit.mutate(batchEdit)}
@@ -4455,7 +4457,7 @@ function GalleryTab({
               onClick={() => setAlbumModalOpen(false)}
               className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
             >
-              Cancel
+              キャンセル
             </button>
             <button
               onClick={() => {
@@ -4526,7 +4528,7 @@ function GalleryTab({
       {/* Undo toast (B3) */}
       {undoToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#333] border border-[#444] text-[#ddd] text-[12px] px-4 py-2.5 rounded-sm shadow-xl">
-          <span>{undoToast.count}枚削除しました</span>
+          <span>{undoToast.count}枚をゴミ箱に移動しました</span>
           <button
             onClick={() => restorePhotos.mutate(undoToast.ids)}
             className="text-[#aaa] hover:text-white underline underline-offset-2 transition-colors"
@@ -4584,7 +4586,7 @@ function GalleryTab({
               onClick={() => setDeleteConfirm(null)}
               className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
             >
-              Cancel
+              キャンセル
             </button>
             <button
               onClick={() => {
@@ -4593,7 +4595,7 @@ function GalleryTab({
               }}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
-              Delete
+              ゴミ箱へ移動
             </button>
           </div>
         </Modal>
@@ -5293,12 +5295,12 @@ function GalleryTab({
                 onClick={() =>
                   setDeleteConfirm({
                     ids: [inspectPhoto.id],
-                    label: "Delete this photo?",
+                    label: "この写真をゴミ箱に移動しますか？",
                   })
                 }
                 className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[#333] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors"
               >
-                <Trash2 size={11} /> Delete Photo
+                <Trash2 size={11} /> 写真をゴミ箱へ
               </button>
             </div>
           </div>
@@ -5338,9 +5340,9 @@ function BulkEditTable({
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
         <ImageLucide size={40} strokeWidth={1} className="text-[#444]" />
-        <p className="text-sm">No photos</p>
+        <p className="text-sm">まだ写真がありません。</p>
         <p className="text-[11px] text-[#444]">
-          フィルターを変更するか、写真をインポートしてください
+          Gallery表示に戻ると、Importから追加できます。
         </p>
       </div>
     );

@@ -369,7 +369,7 @@ export default function AdminPage() {
                   : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
               }`}
             >
-              {t.icon} <span className="hidden sm:inline">{t.label}</span>
+              {t.icon} <span>{t.label}</span>
             </button>
           ))}
         </div>

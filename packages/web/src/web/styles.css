@@ -429,6 +429,157 @@
   color: var(--admin-muted) !important;
 }
 
+.admin-atelier .admin-content > div {
+  animation: admin-atelier-enter 170ms var(--admin-transition);
+}
+
+@keyframes admin-atelier-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-atelier .admin-content > div {
+    animation: none;
+  }
+}
+
+.admin-atelier .admin-content > div:not([class*="overflow-hidden"]) {
+  background:
+    linear-gradient(rgba(var(--admin-paper-rgb), 0.94), rgba(var(--admin-paper-rgb), 0.94)),
+    radial-gradient(circle at 20% 10%, rgba(var(--admin-ink-rgb), 0.025), transparent 30%);
+}
+
+.admin-atelier .admin-content [class*="px-5"],
+.admin-atelier .admin-content [class*="px-6"],
+.admin-atelier .admin-content [class*="p-5"],
+.admin-atelier .admin-content [class*="p-6"] {
+  padding-left: clamp(18px, 2.5vw, 34px) !important;
+  padding-right: clamp(18px, 2.5vw, 34px) !important;
+}
+
+.admin-atelier .admin-content h1 {
+  font-size: clamp(28px, 3vw, 42px) !important;
+  line-height: 1.05 !important;
+}
+
+.admin-atelier .admin-content h2 {
+  font-size: clamp(18px, 1.7vw, 26px) !important;
+  line-height: 1.15 !important;
+  text-transform: none !important;
+}
+
+.admin-atelier .admin-content h2 + p,
+.admin-atelier .admin-content h1 + p {
+  color: var(--admin-muted) !important;
+  max-width: 68ch;
+}
+
+.admin-atelier .admin-content [class*="border-t"],
+.admin-atelier .admin-content [class*="border-b"] {
+  border-color: var(--admin-line) !important;
+}
+
+.admin-atelier .admin-content [class*="rounded"] {
+  border-radius: var(--admin-radius-md) !important;
+}
+
+.admin-atelier .admin-content [class*="shadow"] {
+  box-shadow: none !important;
+}
+
+.admin-atelier .admin-content [class*="grid"][style*="repeat"] {
+  gap: 8px !important;
+}
+
+.admin-atelier .admin-content img[class*="aspect-square"],
+.admin-atelier .admin-content img[class*="object-cover"] {
+  background-color: #e7e1d4 !important;
+}
+
+.admin-atelier .admin-content [data-virtualized] {
+  padding: 10px;
+}
+
+.admin-atelier .admin-content [data-virtualized] + div,
+.admin-atelier .admin-content [data-rendered-count] {
+  background: transparent !important;
+}
+
+.admin-atelier .admin-content [class*="LIBRARY"],
+.admin-atelier .admin-content [class*="uppercase"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.admin-atelier .admin-content [class*="fixed"][class*="right-0"],
+.admin-atelier .admin-content [class*="sm\\:static"][class*="w-72"] {
+  background: var(--admin-paper-soft) !important;
+  border-color: var(--admin-line-strong) !important;
+}
+
+.admin-atelier .admin-content [class*="max-w-5xl"],
+.admin-atelier .admin-content [class*="max-w-6xl"] {
+  max-width: 1120px !important;
+}
+
+.admin-atelier .admin-content [class*="border"][class*="bg-"] {
+  border-color: var(--admin-line) !important;
+}
+
+.admin-atelier .admin-content [class*="border-dashed"] {
+  border-color: var(--admin-line-strong) !important;
+  background: rgba(var(--admin-paper-rgb), 0.46) !important;
+}
+
+.admin-atelier .admin-content [class*="bg-emerald"],
+.admin-atelier .admin-content [class*="bg-green"],
+.admin-atelier .admin-content [class*="bg-amber"] {
+  background-color: var(--admin-paper-deep) !important;
+  border-color: var(--admin-line-strong) !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-atelier .admin-content [class*="text-emerald"],
+.admin-atelier .admin-content [class*="text-green"],
+.admin-atelier .admin-content [class*="text-amber"] {
+  color: var(--admin-muted) !important;
+}
+
+.admin-atelier .admin-content [class*="bg-\\[\\#4a9eff\\]"] {
+  background: var(--admin-ink) !important;
+  color: var(--admin-paper) !important;
+}
+
+.admin-atelier .admin-content [class*="grid-cols-5"] button,
+.admin-atelier .admin-content [class*="grid-cols-4"] button,
+.admin-atelier .admin-content [class*="grid-cols-3"] button {
+  min-height: 28px;
+}
+
+.admin-atelier .admin-content table input,
+.admin-atelier .admin-content table select {
+  background: transparent !important;
+}
+
+.admin-atelier .admin-content table img {
+  border-radius: var(--admin-radius-xs) !important;
+}
+
+.admin-atelier .admin-content iframe {
+  background: white;
+  border-color: var(--admin-line) !important;
+}
+
+.admin-atelier .admin-content .admin-atelier-paper-note {
+  color: var(--admin-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-atelier,
   .admin-atelier * {

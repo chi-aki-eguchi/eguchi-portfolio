@@ -834,6 +834,7 @@ type BatchPhotoOperation =
   | "unpublish"
   | "series"
   | "size"
+  | "shotAt_missing_only"
   | "feature"
   | "unfeature"
   | "rotate_left"
@@ -1132,6 +1133,7 @@ function GalleryTab({
   const [batchSeriesOpen, setBatchSeriesOpen] = useState(false);
   const [batchToast, setBatchToast] = useState<string | null>(null);
   const [batchEditOpen, setBatchEditOpen] = useState(false); // O2: bulk metadata panel
+  const [batchShotAtDate, setBatchShotAtDate] = useState("");
   const [batchEdit, setBatchEdit] = useState({
     camera: "",
     lens: "",
@@ -1365,7 +1367,7 @@ function GalleryTab({
               : "媒体なし",
         );
       }
-      if (cond.missingShotAt) labels.push("日付なし");
+      if (cond.missingShotAt) labels.push("撮影日なし");
       if (cond.missingCapture) labels.push("機材なし");
       if (cond.category) {
         labels.push(
@@ -1645,7 +1647,7 @@ function GalleryTab({
               : filterPublished,
       });
     if (filterMissingShotAt)
-      labels.push({ key: "missingShotAt", text: "日付なし" });
+      labels.push({ key: "missingShotAt", text: "撮影日なし" });
     if (filterMissingCapture)
       labels.push({ key: "missingCapture", text: "機材なし" });
     if (filterRecent !== "all")
@@ -1854,6 +1856,10 @@ function GalleryTab({
   const missingShotAtCount = useMemo(
     () => allPhotos.filter((p) => !p.shotAt).length,
     [allPhotos],
+  );
+  const selectedMissingShotAtCount = useMemo(
+    () => allPhotos.filter((p) => selected.has(p.id) && !p.shotAt).length,
+    [allPhotos, selected],
   );
   const missingCaptureCount = useMemo(
     () => allPhotos.filter((p) => !p.camera && !p.lens).length,
@@ -2174,10 +2180,19 @@ function GalleryTab({
           setInspectPhoto((p) => (p ? { ...p, focalX: 50, focalY: 50 } : p));
           setEditForm((f) => ({ ...f, focalX: 50, focalY: 50 }));
         }
+        if (vars.operation === "shotAt_missing_only" && vars.value) {
+          setInspectPhoto((p) =>
+            p && !p.shotAt ? { ...p, shotAt: vars.value ?? null } : p,
+          );
+          setEditForm((f) =>
+            f.shotAt ? f : { ...f, shotAt: vars.value ?? "" },
+          );
+        }
       }
       const count = (data as { count?: number })?.count ?? selected.size;
       setBatchToast(`${count}枚を更新しました`);
       setTimeout(() => setBatchToast(null), 2000);
+      if (vars.operation === "shotAt_missing_only") setBatchShotAtDate("");
     },
     onError: onActionError("一括操作に失敗しました。"),
   });
@@ -2997,7 +3012,7 @@ function GalleryTab({
                   : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
               }`}
             >
-              日付なし ({missingShotAtCount})
+              撮影日なし ({missingShotAtCount})
             </button>
             <button
               onClick={() => setFilterMissingCapture((v) => !v)}
@@ -3345,6 +3360,43 @@ function GalleryTab({
                   className="w-5 h-5 inline-flex items-center justify-center text-[#999] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Crosshair size={12} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-1">
+                <span className="text-[10px] text-[#777]">Date</span>
+                <input
+                  type="date"
+                  value={batchShotAtDate}
+                  onChange={(e) => setBatchShotAtDate(e.target.value)}
+                  aria-label="選択写真に設定する撮影日"
+                  className="bg-[#2a2a2a] text-[#ccc] text-[11px] px-1.5 py-0.5 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!batchShotAtDate || selectedMissingShotAtCount === 0)
+                      return;
+                    if (
+                      !confirm(
+                        `${selectedMissingShotAtCount}枚に ${batchShotAtDate} を設定します`,
+                      )
+                    )
+                      return;
+                    batchOp.mutate({
+                      operation: "shotAt_missing_only",
+                      value: batchShotAtDate,
+                    });
+                  }}
+                  disabled={
+                    batchOp.isPending ||
+                    !batchShotAtDate ||
+                    selectedMissingShotAtCount === 0
+                  }
+                  title="撮影日が空の選択写真だけに設定します"
+                  className="text-[11px] text-[#bbb] px-1.5 py-0.5 rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  適用 ({selectedMissingShotAtCount})
                 </button>
               </div>
 

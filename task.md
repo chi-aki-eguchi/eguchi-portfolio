@@ -1,5 +1,39 @@
 # Task Log
 
+## Handoff 2026-07-03 — Codex: Library 撮影日なしフィルタ + 一括日付入力
+
+### 目的
+
+フィルムスキャン由来などで撮影日が空の写真を Library で絞り込み、選択した複数写真へ年月日をまとめて設定できるようにする。
+
+### 変更内容
+
+- `packages/web/src/web/pages/admin.tsx`
+  - Library の既存「日付なし」フィルタ表示を「撮影日なし」に変更。
+  - 複数選択時の一括操作バーに date 入力と `適用 (N)` ボタンを追加。
+  - 適用前に `N枚に YYYY-MM-DD を設定します` の確認ダイアログを表示。
+  - 選択中でも、既に撮影日がある写真は件数・更新対象に含めない。
+- `packages/web/src/api/index.ts`
+  - 既存 `/admin/photos/batch` に `shotAt_missing_only` 操作を追加。
+  - サーバ側でも `shot_at IS NULL OR TRIM(shot_at) = ''` の写真だけ更新するガードを追加。
+  - 日付は `YYYY-MM-DD` のみ受け付け、不正な日付は 400 を返す。
+- `packages/web/src/web/test/pages.render.test.tsx`
+  - 管理画面表示テストのラベル期待値を「撮影日なし」に更新。
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（32 pass / 0 fail）
+- `cd packages/web && bun x tsc -b` 成功
+- `git diff --check` 成功
+- `cd packages/web && bun run build` 成功
+- `bunx oxlint packages/web/src/api/index.ts packages/web/src/web/pages/admin.tsx packages/web/src/web/test/pages.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功
+- `cd packages/web && bun test ./src` 成功（248 pass / 0 fail）
+
+### 注意
+
+- DBスキーマ変更なし。`schema.ts` / `schema.postgres.ts` は触っていない。
+- pushは未実施。owner承認後に手動pushする。
+
 ## Handoff 2026-07-03 — Codex: local TIFF to JPEG converter
 
 ### 目的

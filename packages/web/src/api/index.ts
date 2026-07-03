@@ -1658,6 +1658,30 @@ const app = new Hono()
             .where(inArray(schema.photos.id, cleanIds)),
         );
         break;
+      case "shotAt_missing_only": {
+        const date = typeof value === "string" ? value.trim() : "";
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
+          return c.json({ error: "Invalid date" }, 400);
+        const parsed = new Date(`${date}T00:00:00Z`);
+        if (
+          Number.isNaN(parsed.getTime()) ||
+          parsed.toISOString().slice(0, 10) !== date
+        )
+          return c.json({ error: "Invalid date" }, 400);
+        const updated = await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set({ shotAt: date })
+            .where(
+              and(
+                inArray(schema.photos.id, cleanIds),
+                sql`(${schema.photos.shotAt} IS NULL OR TRIM(${schema.photos.shotAt}) = '')`,
+              ),
+            )
+            .returning({ id: schema.photos.id }),
+        );
+        return c.json({ ok: true, count: updated.length }, 200);
+      }
       case "size": {
         const size =
           value === "S" || value === "M" || value === "L" ? value : "M";

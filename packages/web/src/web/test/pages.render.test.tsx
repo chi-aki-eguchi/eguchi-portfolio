@@ -250,7 +250,7 @@ describe("shared components", () => {
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
-      expect(host.textContent).toContain("日付なし");
+      expect(host.textContent).toContain("撮影日なし");
       expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("公開のみ");
       expect(host.textContent).toContain("縦写真");
@@ -631,7 +631,7 @@ describe("shared components", () => {
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
       expect(host.textContent).toContain("Needs review");
       expect(host.textContent).toContain("Film");
-      expect(host.textContent).toContain("日付なし");
+      expect(host.textContent).toContain("撮影日なし");
       expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("+1");
       cleanup();

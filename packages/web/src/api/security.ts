@@ -24,6 +24,8 @@ const ALLOWED_IMAGE_EXTENSIONS = new Set([
   "avif",
 ]);
 
+const EXTENSION_ONLY_IMAGE_EXTENSIONS = new Set(["tif", "tiff"]);
+
 export const IMAGE_MAX_BYTES = IMAGE_UPLOAD_MAX_BYTES;
 export const FONT_MAX_BYTES = 2 * 1024 * 1024;
 
@@ -48,7 +50,10 @@ export function isAllowedUploadImageFile(file: {
   const ext = file.name?.split(".").pop()?.toLowerCase() ?? "";
   if (type && ALLOWED_IMAGE_TYPES.has(type)) return true;
   if (!ALLOWED_IMAGE_EXTENSIONS.has(ext)) return false;
-  return !type || type === "application/octet-stream" || type === "image/tiff" || type === "image/x-tiff";
+  return (
+    EXTENSION_ONLY_IMAGE_EXTENSIONS.has(ext) &&
+    (!type || type === "application/octet-stream")
+  );
 }
 
 export function clientIpFrom(

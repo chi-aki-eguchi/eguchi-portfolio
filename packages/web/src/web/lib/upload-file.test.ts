@@ -30,6 +30,13 @@ describe("isUploadableImageFile", () => {
     expect(isUploadableImageFile({ name: "notes.txt", type: "text/plain" }))
       .toBe(false);
   });
+
+  test("rejects empty MIME types except TIFF browser fallbacks", () => {
+    expect(isUploadableImageFile({ name: "renamed.jpg", type: "" })).toBe(false);
+    expect(isUploadableImageFile({ name: "renamed.png", type: "application/octet-stream" }))
+      .toBe(false);
+    expect(isUploadableImageFile({ name: "DSCF1609.TIF", type: "" })).toBe(true);
+  });
 });
 
 describe("UPLOAD_IMAGE_ACCEPT", () => {

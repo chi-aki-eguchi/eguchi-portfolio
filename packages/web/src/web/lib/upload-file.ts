@@ -28,6 +28,8 @@ const UPLOAD_IMAGE_EXTENSIONS = new Set([
   "avif",
 ]);
 
+const EXTENSION_ONLY_IMAGE_EXTENSIONS = new Set(["tif", "tiff"]);
+
 export const UPLOAD_IMAGE_ACCEPT =
   ".jpg,.jpeg,.png,.webp,.heic,.heif,.avif,.tif,.tiff,image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/tiff,image/x-tiff";
 
@@ -39,7 +41,10 @@ export function isUploadableImageFile(file: {
   const ext = file.name?.split(".").pop()?.toLowerCase() ?? "";
   if (type && UPLOAD_IMAGE_TYPES.has(type)) return true;
   if (!UPLOAD_IMAGE_EXTENSIONS.has(ext)) return false;
-  return !type || type === "application/octet-stream" || type === "image/tiff" || type === "image/x-tiff";
+  return (
+    EXTENSION_ONLY_IMAGE_EXTENSIONS.has(ext) &&
+    (!type || type === "application/octet-stream")
+  );
 }
 
 export function imageFileTooLarge(file: Pick<File, "size">): boolean {

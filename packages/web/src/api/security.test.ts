@@ -74,6 +74,13 @@ describe("isAllowedUploadImageFile", () => {
     expect(isAllowedUploadImageFile({ name: "notes.pdf", type: "application/pdf" }))
       .toBe(false);
   });
+
+  test("rejects empty MIME types except TIFF browser fallbacks", () => {
+    expect(isAllowedUploadImageFile({ name: "renamed.jpg", type: "" })).toBe(false);
+    expect(isAllowedUploadImageFile({ name: "renamed.png", type: "application/octet-stream" }))
+      .toBe(false);
+    expect(isAllowedUploadImageFile({ name: "scan.tif", type: "" })).toBe(true);
+  });
 });
 
 describe("isAllowedImageKey (path traversal prevention)", () => {

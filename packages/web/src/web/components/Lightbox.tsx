@@ -1209,9 +1209,8 @@ export function Lightbox({
               </svg>
             </button>
             {/* EXIF panel — slides in from bottom-left */}
-            <div
+            <section
               data-lb-chrome
-              role="dialog"
               aria-label="撮影情報"
               style={{
                 position: "absolute",
@@ -1268,7 +1267,7 @@ export function Lightbox({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </section>
           </>
         );
       })()}

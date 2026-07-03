@@ -102,6 +102,141 @@ body {
   font-family: var(--font-en);
 }
 
+/* Admin Library only: warm paper surface that keeps the existing controls and layout. */
+.admin-library-paper {
+  --library-paper: #f7f4ec;
+  --library-paper-soft: #f2ede2;
+  --library-paper-muted: #ece5d6;
+  --library-ink: #2e2c27;
+  --library-ink-muted: #6b6659;
+  --library-line: #e3ddcd;
+  background: var(--library-paper);
+  color: var(--library-ink);
+}
+
+.admin-library-paper h3 {
+  font-family: var(--font-en);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.admin-library-paper .uppercase.tracking-wider,
+.admin-library-paper .uppercase.tracking-\[0\.14em\],
+.admin-library-paper .uppercase.tracking-\[0\.16em\] {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+  letter-spacing: 0.14em;
+}
+
+.admin-library-paper .bg-\[\#1e1e1e\],
+.admin-library-paper .bg-\[\#202020\],
+.admin-library-paper .bg-\[\#232323\],
+.admin-library-paper .bg-\[\#242424\],
+.admin-library-paper .bg-\[\#252525\],
+.admin-library-paper .bg-\[\#2a2a2a\] {
+  background-color: var(--library-paper);
+}
+
+.admin-library-paper .bg-\[\#2c2c2c\],
+.admin-library-paper .bg-\[\#2f2f2f\],
+.admin-library-paper .bg-\[\#303030\],
+.admin-library-paper .bg-\[\#333\] {
+  background-color: var(--library-paper-soft);
+}
+
+.admin-library-paper .hover\:bg-\[\#2a2a2a\]:hover,
+.admin-library-paper .hover\:bg-\[\#333\]:hover,
+.admin-library-paper .hover\:bg-\[\#383838\]:hover,
+.admin-library-paper .hover\:bg-\[\#3a3a3a\]:hover,
+.admin-library-paper .hover\:bg-\[\#444\]:hover,
+.admin-library-paper .hover\:bg-\[\#4a4a4a\]:hover {
+  background-color: var(--library-paper-muted);
+}
+
+.admin-library-paper .bg-\[\#3a3a3a\],
+.admin-library-paper .bg-\[\#4a4a4a\],
+.admin-library-paper .bg-\[\#555\],
+.admin-library-paper .bg-\[\#666\],
+.admin-library-paper .bg-\[\#888\],
+.admin-library-paper .hover\:bg-\[\#555\]:hover,
+.admin-library-paper .hover\:bg-\[\#666\]:hover,
+.admin-library-paper .hover\:bg-\[\#777\]:hover,
+.admin-library-paper .hover\:bg-\[\#888\]:hover,
+.admin-library-paper .hover\:bg-\[\#999\]:hover {
+  background-color: var(--library-ink);
+}
+
+.admin-library-paper .text-\[\#d4d4d4\],
+.admin-library-paper .text-\[\#ddd\],
+.admin-library-paper .text-\[\#ccc\],
+.admin-library-paper .text-\[\#bbb\],
+.admin-library-paper .text-\[\#aaa\],
+.admin-library-paper .hover\:text-\[\#bbb\]:hover,
+.admin-library-paper .hover\:text-\[\#ccc\]:hover,
+.admin-library-paper .hover\:text-\[\#ddd\]:hover {
+  color: var(--library-ink);
+}
+
+.admin-library-paper .text-\[\#999\],
+.admin-library-paper .text-\[\#888\],
+.admin-library-paper .text-\[\#777\],
+.admin-library-paper .text-\[\#666\],
+.admin-library-paper .text-\[\#555\],
+.admin-library-paper .text-\[\#444\],
+.admin-library-paper .placeholder\:text-\[\#555\]::placeholder,
+.admin-library-paper .hover\:text-\[\#888\]:hover,
+.admin-library-paper .hover\:text-\[\#999\]:hover,
+.admin-library-paper .hover\:text-\[\#aaa\]:hover {
+  color: var(--library-ink-muted);
+}
+
+.admin-library-paper .text-\[\#1e1e1e\],
+.admin-library-paper .text-\[\#eee\],
+.admin-library-paper .hover\:text-white:hover {
+  color: var(--library-paper);
+}
+
+.admin-library-paper .border-\[\#333\],
+.admin-library-paper .border-\[\#3a3a3a\],
+.admin-library-paper .border-\[\#444\],
+.admin-library-paper .border-\[\#555\],
+.admin-library-paper .border-\[\#666\],
+.admin-library-paper .border-dashed,
+.admin-library-paper .focus\:border-\[\#666\]:focus,
+.admin-library-paper .focus\:border-\[\#888\]:focus {
+  border-color: var(--library-line);
+}
+
+.admin-library-paper .bg-black\/20 {
+  background-color: rgba(46, 44, 39, 0.08);
+}
+
+.admin-library-paper .bg-\[\#888\] {
+  color: var(--library-paper);
+}
+
+.admin-library-paper .accent-\[\#888\] {
+  accent-color: var(--library-ink);
+}
+
+.admin-library-paper .ring-\[\#aaa\],
+.admin-library-paper .hover\:ring-\[\#444\]:hover,
+.admin-library-paper .ring-\[\#666\] {
+  --tw-ring-color: var(--library-ink);
+}
+
+.admin-library-paper .ring-offset-\[\#1e1e1e\] {
+  --tw-ring-offset-color: var(--library-paper);
+}
+
+.admin-library-paper .shadow-xl,
+.admin-library-paper .shadow-2xl {
+  box-shadow: none;
+}
+
 ::selection {
   background: rgba(26, 26, 26, 0.08);
   color: #1a1a1a;

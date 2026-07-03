@@ -2811,7 +2811,7 @@ function GalleryTab({
   });
 
   return (
-    <div className="flex h-full">
+    <div className="admin-library-paper flex h-full">
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Toolbar — Lr style */}

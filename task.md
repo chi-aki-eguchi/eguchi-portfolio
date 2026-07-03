@@ -1,49 +1,5 @@
 # Task Log
 
-## Handoff 2026-07-03 — Codex: Admin Library paper-tone visual refresh
-
-### 目的
-
-管理画面 Library タブだけを、公開側の雰囲気に近い「温かい紙質感の静かなミニマル」へ寄せる。機能・レイアウト・操作は変えない。
-
-### 変更内容
-
-- `packages/web/src/web/pages/admin.tsx`
-  - `GalleryTab` の最外側に `admin-library-paper` スコープクラスを追加。
-  - 共通ヘッダーや他タブにはクラスを付けていない。
-- `packages/web/src/web/styles.css`
-  - `admin-library-paper` 配下だけに効く色・罫線・影・見出しフォント調整を追加。
-  - 背景は `#F7F4EC`、主要文字は `#2E2C27`、補助文字は `#6B6659`、罫線は `#E3DDCD`。
-  - 見出し系 `h3` は既存の `--font-en`（Cormorant Garamond）を再利用。新規フォント追加なし。
-  - 影は Library 配下のみ抑制。写真上の黒い操作オーバーレイは視認性維持のため残した。
-
-### 検証
-
-- `cd packages/web && bun x tsc -b` 成功。
-- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` は初回成功（32 pass / 0 fail）。
-- `git diff --check` 成功。
-- `cd packages/web && bun run build` 成功。
-- `bunx oxlint packages/web/src/web/pages/admin.tsx packages/web/src/web/styles.css --deny-warnings --no-error-on-unmatched-pattern` 成功。
-- Playwright + ローカルViteで `/admin` をテストAPIに差し替えて表示確認。
-  - Library root: `rgb(247, 244, 236)` / text `rgb(46, 44, 39)`
-  - toolbar border: `rgb(227, 221, 205)`
-  - input bg: `rgb(242, 237, 226)`
-  - screenshot: `/tmp/admin-library-paper.png`
-- コントラスト比確認:
-  - `#2E2C27` on `#F7F4EC`: 12.69:1
-  - `#2E2C27` on `#F2EDE2`: 11.95:1
-  - `#6B6659` on `#F7F4EC`: 5.21:1
-  - `#6B6659` on `#F2EDE2`: 4.90:1
-  - `#6B6659` on `#ECE5D6`: 4.56:1
-  - `#F7F4EC` on `#2E2C27`: 12.69:1
-- `cd packages/web && bun test --timeout 10000 ./src/web/test/pages.render.test.tsx` 成功（32 pass / 0 fail）。
-
-### 注意
-
-- 標準5秒タイムアウトの `bun test ./src/web/test/pages.render.test.tsx` は、再実行時に既存の仮想スクロールテストが 5.0秒を少し超えてタイムアウトすることがあった。`--timeout 10000` では通過。
-- `cd packages/web && bun test --timeout 10000 ./src` は 247 pass / 1 fail。失敗はフル実行時のみの Smart Album 表示テストで、同じ `pages.render.test.tsx` 単独実行では通過。今回CSS変更による機能差分ではなくテスト間状態の揺れの可能性が高い。
-- push / commit は未実施。
-
 ## Handoff 2026-07-03 — Codex: Library 撮影日なしフィルタ + 一括日付入力
 
 ### 目的

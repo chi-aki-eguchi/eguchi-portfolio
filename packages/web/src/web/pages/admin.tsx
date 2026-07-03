@@ -272,9 +272,51 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="h-screen bg-[#1e1e1e] text-[#d4d4d4] flex flex-col select-none overflow-hidden">
-      {/* Top bar — Lightroom style dark */}
-      <header className="bg-[#252525] border-b border-[#333] px-2 sm:px-4 py-1.5 flex flex-col gap-1.5 flex-shrink-0">
+    <div className="admin-atelier h-screen flex select-none overflow-hidden">
+      <aside className="admin-sidebar hidden lg:flex">
+        <div className="admin-sidebar__brand">
+          <span className="admin-sidebar__eyebrow">Portfolio Admin</span>
+          <span className="admin-sidebar__title">Aki Eguchi</span>
+        </div>
+        <nav className="admin-sidebar__nav" aria-label="管理画面">
+          {ADMIN_TAB_GROUPS.map((group) => (
+            <section key={group.key} className="admin-sidebar__group">
+              <h2 className="admin-sidebar__group-title">{group.label}</h2>
+              <div className="admin-sidebar__tabs">
+                {group.tabs.map((key) => {
+                  const item = ADMIN_TABS[key];
+                  const active = tab === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={galleryUploading && key !== "gallery"}
+                      onClick={() => requestTab(key)}
+                      aria-current={active ? "page" : undefined}
+                      className="admin-sidebar__tab"
+                      data-active={active || undefined}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </nav>
+        <div className="admin-sidebar__footer">
+          <a href="/" target="_blank" rel="noopener" className="admin-sidebar__link">
+            <ExternalLink size={13} /> Site
+          </a>
+          <button onClick={requestLogout} className="admin-sidebar__link">
+            <LogOut size={13} /> Logout
+          </button>
+        </div>
+      </aside>
+
+      <div className="admin-main">
+      <header className="admin-mobile-nav lg:hidden">
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
             {ADMIN_TAB_GROUPS.map((group) => {
@@ -334,7 +376,7 @@ export default function AdminPage() {
       </header>
 
       {/* Content */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="admin-content">
         {tab === "setup" && <SetupTab onOpenTab={requestTab} />}
         {tab === "gallery" && (
           <GalleryTab
@@ -365,6 +407,7 @@ export default function AdminPage() {
             )}
           </Suspense>
         )}
+      </div>
       </div>
 
       {/* Unsaved settings confirmation */}

@@ -79,6 +79,161 @@
   color: var(--admin-ink);
 }
 
+.admin-atelier .admin-sidebar {
+  width: 248px;
+  flex: 0 0 248px;
+  flex-direction: column;
+  background: var(--admin-paper-soft);
+  border-right: 1px solid var(--admin-line);
+  padding: 28px 18px 18px;
+  min-height: 0;
+}
+
+.admin-atelier .admin-sidebar__brand {
+  padding: 0 8px 28px;
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-atelier .admin-sidebar__eyebrow,
+.admin-atelier .admin-sidebar__group-title {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+
+.admin-atelier .admin-sidebar__title {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--admin-font-title);
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--admin-ink);
+}
+
+.admin-atelier .admin-sidebar__nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 26px 0;
+}
+
+.admin-atelier .admin-sidebar__group + .admin-sidebar__group {
+  margin-top: 24px;
+}
+
+.admin-atelier .admin-sidebar__group-title {
+  padding: 0 8px 9px;
+}
+
+.admin-atelier .admin-sidebar__tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-atelier .admin-sidebar__tab,
+.admin-atelier .admin-sidebar__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 8px 8px 13px;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    color var(--admin-transition),
+    background-color var(--admin-transition);
+}
+
+.admin-atelier .admin-sidebar__tab::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  background: transparent;
+}
+
+.admin-atelier .admin-sidebar__tab:hover,
+.admin-atelier .admin-sidebar__link:hover {
+  color: var(--admin-ink);
+  background: rgba(var(--admin-ink-rgb), 0.035);
+}
+
+.admin-atelier .admin-sidebar__tab[data-active="true"] {
+  color: var(--admin-ink);
+  background: var(--admin-paper);
+}
+
+.admin-atelier .admin-sidebar__tab[data-active="true"]::before {
+  background: var(--admin-accent);
+}
+
+.admin-atelier .admin-sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-atelier .admin-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--admin-paper);
+}
+
+.admin-atelier .admin-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-atelier .admin-mobile-nav {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--admin-paper-soft);
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-atelier .admin-mobile-nav button,
+.admin-atelier .admin-mobile-nav a {
+  border-radius: var(--admin-radius-sm) !important;
+}
+
+.admin-atelier .admin-mobile-nav .bg-\[\#3a3a3a\],
+.admin-atelier .admin-mobile-nav .bg-\[\#555\] {
+  background: var(--admin-paper) !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-atelier .admin-mobile-nav .text-\[\#888\],
+.admin-atelier .admin-mobile-nav .text-\[\#666\] {
+  color: var(--admin-muted) !important;
+}
+
+.admin-atelier .admin-mobile-nav .hover\:bg-\[\#2a2a2a\]:hover,
+.admin-atelier .admin-mobile-nav .hover\:bg-\[\#333\]:hover {
+  background: rgba(var(--admin-ink-rgb), 0.04) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-atelier,
   .admin-atelier * {

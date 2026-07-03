@@ -449,6 +449,72 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: photo detail edits warn before switching groups", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const tile = await waitForButton(host, 'button[aria-label="A"]');
+      tile.click();
+      await flush(60);
+
+      changeInput(inputByLabel(host, "タイトル"), "Unsaved photo title");
+      await flush(80);
+      buttonWithText(host, "見せ方").click();
+      await flush(80);
+
+      expect(host.textContent).toContain("未保存の変更があります");
+      expect(host.textContent).toContain("保存せずにタブを移動しますか？");
+      expect(host.textContent).toContain("Library");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminPage: saved photo detail edits do not warn before switching groups", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevPhoto = canned["/api/admin/photos/1"];
+    const prevSettings = canned["/api/admin/settings"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/admin/photos/1"] = { ok: true };
+    canned["/api/admin/settings"] = { ok: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const tile = await waitForButton(host, 'button[aria-label="A"]');
+      tile.click();
+      await flush(60);
+
+      changeInput(inputByLabel(host, "タイトル"), "Saved photo title");
+      await flush(80);
+      buttonWithText(host, "Save").click();
+      await waitForText(host, "Saved");
+
+      buttonWithText(host, "見せ方").click();
+      await waitForText(host, "Hero Slides");
+      expect(host.textContent).not.toContain("未保存の変更があります");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      if (prevPhoto === undefined) delete canned["/api/admin/photos/1"];
+      else canned["/api/admin/photos/1"] = prevPhoto;
+      if (prevSettings === undefined) delete canned["/api/admin/settings"];
+      else canned["/api/admin/settings"] = prevSettings;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage: setup checklist jumps update the active group", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };

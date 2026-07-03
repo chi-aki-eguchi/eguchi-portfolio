@@ -225,9 +225,11 @@ export default function AdminPage() {
     "local",
   );
   const [galleryUploading, setGalleryUploading] = useState(false);
-  // Generic unsaved-draft flag reported by any tab with a draft form (Settings, Profile)
+  // Generic unsaved-draft flag reported by any tab with a draft form.
   const [hasUnsaved, setHasUnsaved] = useState(false);
-  const [unsavedConfirm, setUnsavedConfirm] = useState<Tab | null>(null);
+  const [unsavedConfirm, setUnsavedConfirm] = useState<Tab | "logout" | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!isAdminTab(tab)) setTab("gallery");
@@ -260,6 +262,13 @@ export default function AdminPage() {
       return;
     }
     setTab(nextTab);
+  };
+  const requestLogout = () => {
+    if (hasUnsaved) {
+      setUnsavedConfirm("logout");
+      return;
+    }
+    logout.mutate();
   };
 
   return (
@@ -298,7 +307,7 @@ export default function AdminPage() {
               <span className="hidden sm:inline">Site</span>
             </a>
             <button
-              onClick={() => logout.mutate()}
+              onClick={requestLogout}
               className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
             >
               <LogOut size={11} />{" "}
@@ -328,7 +337,10 @@ export default function AdminPage() {
       <div className="flex-1 min-h-0 overflow-hidden">
         {tab === "setup" && <SetupTab onOpenTab={requestTab} />}
         {tab === "gallery" && (
-          <GalleryTab onUploadingChange={setGalleryUploading} />
+          <GalleryTab
+            onUploadingChange={setGalleryUploading}
+            onUnsavedChange={setHasUnsaved}
+          />
         )}
         {tab !== "setup" && tab !== "gallery" && (
           <Suspense
@@ -372,7 +384,8 @@ export default function AdminPage() {
             <button
               onClick={() => {
                 setHasUnsaved(false);
-                setTab(unsavedConfirm);
+                if (unsavedConfirm === "logout") logout.mutate();
+                else setTab(unsavedConfirm);
                 setUnsavedConfirm(null);
               }}
               className="px-4 py-1.5 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors"
@@ -853,6 +866,63 @@ type BatchPhotoOperation =
   | "reset_rotation"
   | "reset_focal_point";
 
+type PhotoEditForm = {
+  title: string;
+  camera: string;
+  lens: string;
+  filmType: string;
+  shotAt: string;
+  description: string;
+  category: string;
+  displaySize: string;
+  seriesId: string;
+  isPublished: boolean;
+  rotationDeg: number;
+  focalX: number;
+  focalY: number;
+};
+
+const EMPTY_PHOTO_EDIT_FORM: PhotoEditForm = {
+  title: "",
+  camera: "",
+  lens: "",
+  filmType: "",
+  shotAt: "",
+  description: "",
+  category: "",
+  displaySize: "M",
+  seriesId: "",
+  isPublished: true,
+  rotationDeg: 0,
+  focalX: 50,
+  focalY: 50,
+};
+
+function photoToEditForm(photo: Photo): PhotoEditForm {
+  return {
+    title: photo.title,
+    camera: photo.camera || "",
+    lens: photo.lens || "",
+    filmType: photo.filmType || "",
+    shotAt: (photo.shotAt || "").slice(0, 10),
+    description: photo.description || "",
+    category: photo.category,
+    displaySize: photo.displaySize || "M",
+    seriesId: photo.seriesId ? String(photo.seriesId) : "",
+    isPublished: photo.isPublished !== false,
+    rotationDeg: normalizeRotationDeg(photo.rotationDeg),
+    focalX: photo.focalX ?? 50,
+    focalY: photo.focalY ?? 50,
+  };
+}
+
+function photoEditFormChanged(form: PhotoEditForm, photo: Photo): boolean {
+  const saved = photoToEditForm(photo);
+  return (Object.keys(saved) as (keyof PhotoEditForm)[]).some(
+    (key) => form[key] !== saved[key],
+  );
+}
+
 const ROTATION_OPTIONS = [0, 90, 180, 270] as const;
 const FOCAL_PRESETS = [
   { x: 0, y: 0, label: "左上" },
@@ -1048,8 +1118,10 @@ export function computeVirtualGridWindow({
 
 function GalleryTab({
   onUploadingChange,
+  onUnsavedChange,
 }: {
   onUploadingChange?: (v: boolean) => void;
+  onUnsavedChange?: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1123,21 +1195,9 @@ function GalleryTab({
   const [albumDraft, setAlbumDraft] = useState({ ...EMPTY_ALBUM_DRAFT });
   const [dragOver, setDragOver] = useState(false);
   const [inspectPhoto, setInspectPhoto] = useState<Photo | null>(null);
-  const [editForm, setEditForm] = useState({
-    title: "",
-    camera: "",
-    lens: "",
-    filmType: "",
-    shotAt: "",
-    description: "",
-    category: "",
-    displaySize: "M",
-    seriesId: "",
-    isPublished: true,
-    rotationDeg: 0,
-    focalX: 50,
-    focalY: 50,
-  });
+  const [editForm, setEditForm] = useState<PhotoEditForm>(
+    EMPTY_PHOTO_EDIT_FORM,
+  );
   const [dragSrcId, setDragSrcId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [batchCatOpen, setBatchCatOpen] = useState(false);
@@ -1214,6 +1274,25 @@ function GalleryTab({
     },
     [],
   );
+
+  const inspectDraftChanged = useMemo(
+    () => (inspectPhoto ? photoEditFormChanged(editForm, inspectPhoto) : false),
+    [editForm, inspectPhoto],
+  );
+
+  useEffect(() => {
+    onUnsavedChange?.(inspectDraftChanged);
+  }, [inspectDraftChanged, onUnsavedChange]);
+  useEffect(() => () => onUnsavedChange?.(false), [onUnsavedChange]);
+
+  useEffect(() => {
+    if (!inspectDraftChanged) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [inspectDraftChanged]);
 
   const copyInspectCaptureInfo = useCallback(async () => {
     const text = formatCaptureInfo({
@@ -2627,21 +2706,7 @@ function GalleryTab({
   // Open the inspector for a photo (shared by click + Enter)
   const openInspector = (photo: Photo) => {
     setInspectPhoto(photo);
-    setEditForm({
-      title: photo.title,
-      camera: photo.camera || "",
-      lens: photo.lens || "",
-      filmType: photo.filmType || "",
-      shotAt: (photo.shotAt || "").slice(0, 10),
-      description: photo.description || "",
-      category: photo.category,
-      displaySize: photo.displaySize || "M",
-      seriesId: photo.seriesId ? String(photo.seriesId) : "",
-      isPublished: photo.isPublished !== false,
-      rotationDeg: normalizeRotationDeg(photo.rotationDeg),
-      focalX: photo.focalX ?? 50,
-      focalY: photo.focalY ?? 50,
-    });
+    setEditForm(photoToEditForm(photo));
   };
 
   // C3: move the keyboard cursor (lastClicked) by an offset within `displayed`.
@@ -4614,13 +4679,10 @@ function GalleryTab({
             const quickCategory = categories.find(
               (c) => c.slug === editForm.category,
             );
-            const quickDraftChanged =
-              editForm.category !== inspectPhoto.category ||
-              editForm.seriesId !==
-                (inspectPhoto.seriesId ? String(inspectPhoto.seriesId) : "") ||
-              editForm.displaySize !== (inspectPhoto.displaySize || "M") ||
-              editForm.isPublished !== (inspectPhoto.isPublished !== false) ||
-              editForm.rotationDeg !== normalizeRotationDeg(inspectPhoto.rotationDeg);
+            const quickDraftChanged = photoEditFormChanged(
+              editForm,
+              inspectPhoto,
+            );
 
             return (
               <div className="mx-3 mb-3 rounded-sm border border-[#3a3a3a] bg-[#202020] p-2.5">
@@ -5067,6 +5129,7 @@ function GalleryTab({
                         setInspectPhoto({
                           ...inspectPhoto,
                           ...editForm,
+                          shotAt: shotAtToSave ?? null,
                           seriesId:
                             editForm.seriesId === ""
                               ? null
@@ -5103,23 +5166,7 @@ function GalleryTab({
               <button
                 onClick={() => {
                   setMetaError(false);
-                  setEditForm({
-                    title: inspectPhoto.title,
-                    camera: inspectPhoto.camera || "",
-                    lens: inspectPhoto.lens || "",
-                    filmType: inspectPhoto.filmType || "",
-                    shotAt: (inspectPhoto.shotAt || "").slice(0, 10),
-                    description: inspectPhoto.description || "",
-                    category: inspectPhoto.category,
-                    displaySize: inspectPhoto.displaySize || "M",
-                    seriesId: inspectPhoto.seriesId
-                      ? String(inspectPhoto.seriesId)
-                      : "",
-                    isPublished: inspectPhoto.isPublished !== false,
-                    rotationDeg: normalizeRotationDeg(inspectPhoto.rotationDeg),
-                    focalX: inspectPhoto.focalX ?? 50,
-                    focalY: inspectPhoto.focalY ?? 50,
-                  });
+                  setEditForm(photoToEditForm(inspectPhoto));
                 }}
                 className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[#666] bg-[#333] py-1.5 rounded-sm hover:bg-[#3a3a3a] transition-colors"
               >

@@ -1,5 +1,47 @@
 # Task Log
 
+## Handoff 2026-07-03 — Codex: Photo detail unsaved guard P0
+
+### 目的
+
+管理画面Libraryの写真詳細パネルでタイトル等を変更したまま移動すると、未保存確認が出ず変更が失われる不具合を修正する。pushはしない。
+
+### 調査結果
+
+- リニューアル前の `0d1731e` 時点でも、写真詳細パネルは親画面の未保存ガードへ通知していなかった。
+- 現在ガード対象だったのは `ProfileTab` / `ServiceTab` / `SettingsTab` の draft 変更。
+- 写真詳細パネルは内部で「未保存」表示を出していたが、`GalleryTab` から親の `setHasUnsaved` へ接続されていなかった。
+
+### 変更内容
+
+- `packages/web/src/web/pages/admin.tsx`
+  - 写真詳細フォームと保存済み写真データを同じ基準で比較するヘルパーを追加。
+  - `GalleryTab` が写真詳細の未保存状態を既存の未保存ガードへ通知するよう修正。
+  - Logoutも未保存時は同じ確認ダイアログを出すよう修正。
+  - Save成功後、Reset後、開いただけの場合は未保存扱いにならないよう整理。
+- `packages/web/src/web/test/pages.render.test.tsx`
+  - 写真詳細変更後のグループ移動で確認ダイアログが出るテストを追加。
+  - Save後のグループ移動では確認ダイアログが出ないテストを追加。
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（38 pass / 0 fail）
+- `cd packages/web && bun x tsc -b` 成功
+- `git diff --check` 成功
+- `cd packages/web && bunx oxlint packages/web/src/web/pages/admin.tsx packages/web/src/web/test/pages.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功
+- `cd packages/web && bun run build` 成功
+- `cd packages/web && bun test ./src` 成功（254 pass / 0 fail）
+- Playwright確認:
+  - `scratch/renewal-check/08_unsaved_group_guard.png`
+  - `scratch/renewal-check/09_unsaved_logout_guard.png`
+  - `scratch/renewal-check/10_saved_move_no_guard.png`
+
+### 注意
+
+- スキーマ・API・DBは触っていない。
+- 公開サイト側は触っていない。
+- pushは未実施。
+
 ## Handoff 2026-07-03 — Codex: Admin renewal phase 1 finish through phase 3
 
 ### 目的

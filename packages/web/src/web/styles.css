@@ -35,6 +35,59 @@
   --section-leading: 1.25;
 }
 
+/* Admin atelier design tokens: scoped to /admin only via .admin-atelier. */
+.admin-atelier {
+  --admin-paper: #f7f4ec;
+  --admin-paper-rgb: 247, 244, 236;
+  --admin-paper-soft: #f2ede2;
+  --admin-paper-deep: #ece5d6;
+  --admin-ink: #2e2c27;
+  --admin-ink-rgb: 46, 44, 39;
+  --admin-muted: #6b6659;
+  --admin-muted-rgb: 107, 102, 89;
+  --admin-line: #e3ddcd;
+  --admin-line-strong: #d4cab5;
+  --admin-accent: #a33b2e;
+  --admin-accent-rgb: 163, 59, 46;
+  --admin-danger: #a33b2e;
+  --admin-photo-overlay: rgba(0, 0, 0, 0.62);
+  --admin-font-title: var(--font-en);
+  --admin-font-ui: var(--font-ja);
+  --admin-radius-xs: 2px;
+  --admin-radius-sm: 3px;
+  --admin-radius-md: 4px;
+  --admin-space-1: 4px;
+  --admin-space-2: 8px;
+  --admin-space-3: 12px;
+  --admin-space-4: 16px;
+  --admin-space-5: 24px;
+  --admin-space-6: 32px;
+  --admin-transition: 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
+  background: var(--admin-paper);
+  color: var(--admin-ink);
+  font-family: var(--admin-font-ui);
+  letter-spacing: 0;
+}
+
+.admin-atelier * {
+  scrollbar-color: var(--admin-line-strong) transparent;
+}
+
+.admin-atelier ::selection {
+  background: rgba(var(--admin-accent-rgb), 0.16);
+  color: var(--admin-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-atelier,
+  .admin-atelier * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 /* ─── Dark mode defaults ───
    Applied via [data-theme="dark"] on <html>. Admin's custom themeBg/themeText
    are set as inline styles (higher specificity) and override these. Photos

@@ -118,6 +118,40 @@ function isAdminTab(value: unknown): value is Tab {
   return typeof value === "string" && ADMIN_TAB_KEYS.has(value as Tab);
 }
 
+const ADMIN_TABS: Record<
+  Tab,
+  { label: string; icon: React.ReactNode }
+> = {
+  setup: { label: "はじめに", icon: <Check size={15} /> },
+  gallery: { label: "Library", icon: <ImageLucide size={15} /> },
+  hero: { label: "Hero", icon: <Grid size={15} /> },
+  profile: { label: "Profile", icon: <User size={15} /> },
+  categories: { label: "Categories", icon: <Tag size={15} /> },
+  series: { label: "Series", icon: <Layers size={15} /> },
+  pricing: { label: "Pricing", icon: <Receipt size={15} /> },
+  service: { label: "Service", icon: <ExternalLink size={15} /> },
+  settings: { label: "Settings", icon: <Settings size={15} /> },
+};
+
+type AdminTabGroup = { key: string; label: string; tabs: readonly Tab[] };
+
+const ADMIN_TAB_GROUPS: AdminTabGroup[] = [
+  { key: "photos", label: "写真", tabs: ["gallery"] },
+  { key: "presentation", label: "見せ方", tabs: ["hero", "series", "categories"] },
+  {
+    key: "site",
+    label: "サイト",
+    tabs: ["profile", "pricing", "service", "settings", "setup"],
+  },
+];
+
+function groupForTab(tab: Tab) {
+  return (
+    ADMIN_TAB_GROUPS.find((group) => group.tabs.includes(tab)) ??
+    ADMIN_TAB_GROUPS[0]
+  );
+}
+
 // V (ux-refinements): admin UI state that must survive tab switches and page
 // moves. Tabs unmount on switch, so plain useState loses unsaved drafts and
 // view preferences — sessionStorage keeps them for the browser session without
@@ -255,34 +289,69 @@ export default function AdminPage() {
     );
   if (!authenticated) return null;
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "setup", label: "はじめに", icon: <Check size={15} /> },
-    { key: "gallery", label: "Library", icon: <ImageLucide size={15} /> },
-    { key: "hero", label: "Hero", icon: <Grid size={15} /> },
-    { key: "profile", label: "Profile", icon: <User size={15} /> },
-    { key: "categories", label: "Categories", icon: <Tag size={15} /> },
-    { key: "series", label: "Series", icon: <Layers size={15} /> },
-    { key: "pricing", label: "Pricing", icon: <Receipt size={15} /> },
-    { key: "service", label: "Service", icon: <ExternalLink size={15} /> },
-    { key: "settings", label: "Settings", icon: <Settings size={15} /> },
-  ];
+  const activeGroup = groupForTab(tab);
+  const visibleTabs = activeGroup.tabs.map((key) => ({
+    key,
+    ...ADMIN_TABS[key],
+  }));
+  const requestTab = (nextTab: Tab) => {
+    if (hasUnsaved && nextTab !== tab) {
+      setUnsavedConfirm(nextTab);
+      return;
+    }
+    setTab(nextTab);
+  };
 
   return (
     <div className="h-screen bg-[#1e1e1e] text-[#d4d4d4] flex flex-col select-none overflow-hidden">
       {/* Top bar — Lightroom style dark */}
-      <header className="bg-[#252525] border-b border-[#333] px-2 sm:px-4 h-11 flex items-center justify-between gap-2 flex-shrink-0">
+      <header className="bg-[#252525] border-b border-[#333] px-2 sm:px-4 py-1.5 flex flex-col gap-1.5 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+            {ADMIN_TAB_GROUPS.map((group) => {
+              const targetTab = group.tabs[0];
+              const active = group.key === activeGroup.key;
+              return (
+                <button
+                  key={group.key}
+                  disabled={galleryUploading && targetTab !== "gallery"}
+                  onClick={() => requestTab(targetTab)}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                    active
+                      ? "bg-[#3a3a3a] text-[#e0e0e0]"
+                      : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  {group.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener"
+              className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+            >
+              <ExternalLink size={11} />{" "}
+              <span className="hidden sm:inline">Site</span>
+            </a>
+            <button
+              onClick={() => logout.mutate()}
+              className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+            >
+              <LogOut size={11} />{" "}
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        </div>
         <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-          {tabs.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t.key}
               disabled={galleryUploading && t.key !== "gallery"}
-              onClick={() => {
-                if (hasUnsaved && t.key !== tab) {
-                  setUnsavedConfirm(t.key);
-                  return;
-                }
-                setTab(t.key);
-              }}
+              onClick={() => requestTab(t.key)}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                 tab === t.key
                   ? "bg-[#3a3a3a] text-[#e0e0e0]"
@@ -293,29 +362,11 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <a
-            href="/"
-            target="_blank"
-            rel="noopener"
-            className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
-          >
-            <ExternalLink size={11} />{" "}
-            <span className="hidden sm:inline">Site</span>
-          </a>
-          <button
-            onClick={() => logout.mutate()}
-            className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
-          >
-            <LogOut size={11} />{" "}
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
       </header>
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {tab === "setup" && <SetupTab onOpenTab={setTab} />}
+        {tab === "setup" && <SetupTab onOpenTab={requestTab} />}
         {tab === "gallery" && (
           <GalleryTab onUploadingChange={setGalleryUploading} />
         )}

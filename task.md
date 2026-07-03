@@ -1,5 +1,48 @@
 # Task Log
 
+## Handoff 2026-07-03 — Codex: Admin navigation 3-group structure
+
+### 目的
+
+管理画面 `/admin` の9タブを、利用頻度と作業の流れに合わせて「写真 / 見せ方 / サイト」の3グループに整理する。今回はナビゲーション構造のみを変更し、各タブ内部の機能・UI・デザインは変更しない。
+
+### 変更内容
+
+- `packages/web/src/web/pages/admin.tsx`
+  - 既存タブ定義を `ADMIN_TABS` に集約。
+  - グループ定義 `ADMIN_TAB_GROUPS` を追加。
+    - 写真: `Library`
+    - 見せ方: `Hero`, `Series`, `Categories`
+    - サイト: `Profile`, `Pricing`, `Service`, `Settings`, `はじめに`
+  - ヘッダーを二段構成に変更。
+    - 上段: グループ3つ + 既存の `Site` / `Logout`
+    - 下段: 選択中グループ内のタブ
+  - 初期表示は従来どおり `Library`。
+  - 既存の `admin:tab` 状態をそのまま使い、URLは `/admin` のまま画面内切替。
+  - 未保存変更ガードをグループ移動・グループ内タブ移動・はじめにジャンプで共通利用。
+- `packages/web/src/web/test/pages.render.test.tsx`
+  - 管理画面の二段ナビ表示を確認。
+  - 全9タブへ2クリック以内で到達できることを確認。
+  - Profileの未保存変更中に別グループへ移動しようとすると確認モーダルが出ることを確認。
+  - `はじめに` のチェックリストから別グループのタブへジャンプでき、グループ表示も追従することを確認。
+  - 既存のHeroタブテストを、ボタン位置依存ではなくタブ名クリックに更新。
+
+### 検証
+
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx` 成功（35 pass / 0 fail）
+- `cd packages/web && bun x tsc -b` 成功
+- `git diff --check` 成功
+- `bunx oxlint packages/web/src/web/pages/admin.tsx packages/web/src/web/test/pages.render.test.tsx --deny-warnings --no-error-on-unmatched-pattern` 成功
+- `cd packages/web && bun run build` 成功
+- `cd packages/web && bun test ./src` 成功（251 pass / 0 fail）
+
+### 注意
+
+- スキーマ・API・DBは触っていない。
+- `admin-tabs.tsx` は触っていない。タブ内部の機能・UI・デザインは変更なし。
+- 直前にrevertした紙質感デザイン要素は再導入していない。
+- commit / push は未実施。
+
 ## Handoff 2026-07-03 — Codex: Library 撮影日なしフィルタ + 一括日付入力
 
 ### 目的

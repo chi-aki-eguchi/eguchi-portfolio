@@ -50,6 +50,56 @@ async function mount(node: unknown, setupQueryClient?: (qc: InstanceType<typeof 
   };
 }
 
+function buttonWithText(host: Element, text: string): HTMLButtonElement {
+  const button = Array.from(host.querySelectorAll("button")).find(
+    (el) => el.textContent?.includes(text),
+  ) as HTMLButtonElement | undefined;
+  if (!button) throw new Error(`Button not found: ${text}`);
+  return button;
+}
+
+function inputByLabel(host: Element, label: string): HTMLInputElement {
+  const input = host.querySelector(
+    `input[aria-label="${label}"]`,
+  ) as HTMLInputElement | null;
+  if (!input) throw new Error(`Input not found: ${label}`);
+  return input;
+}
+
+function changeInput(input: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(
+    dom.window.HTMLInputElement.prototype,
+    "value",
+  )?.set;
+  setter?.call(input, value);
+  input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+}
+
+function setupOpenButton(host: Element, rowTitle: string): HTMLButtonElement {
+  const row = Array.from(host.querySelectorAll("div"))
+    .filter(
+      (el) =>
+        el.textContent?.includes(rowTitle) &&
+        Array.from(el.querySelectorAll("button")).some(
+          (button) => button.textContent?.trim() === "開く",
+        ),
+    )
+    .sort(
+      (a, b) => (a.textContent?.length ?? 0) - (b.textContent?.length ?? 0),
+    )[0];
+  const button = row?.querySelector("button") as HTMLButtonElement | null;
+  if (!button) throw new Error(`Setup row button not found: ${rowTitle}`);
+  return button;
+}
+
+async function waitForText(host: Element, text: string, attempts = 20) {
+  for (let i = 0; i < attempts; i += 1) {
+    if (host.textContent?.includes(text)) return;
+    await flush(50);
+  }
+  expect(host.textContent).toContain(text);
+}
+
 const pages: [string, () => Promise<{ default: React.ComponentType }>][] = [
   ["top", () => import("../pages/top")],
   ["gallery", () => import("../pages/gallery")],
@@ -248,6 +298,9 @@ describe("shared components", () => {
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      expect(host.textContent).toContain("写真");
+      expect(host.textContent).toContain("見せ方");
+      expect(host.textContent).toContain("サイト");
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
       expect(host.textContent).toContain("撮影日なし");
@@ -266,6 +319,103 @@ describe("shared components", () => {
     } finally {
       canned["/api/admin/me"] = prev;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminPage: grouped navigation reaches every tab within two clicks", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+
+      expect(host.textContent).toContain("Library");
+
+      buttonWithText(host, "見せ方").click();
+      await waitForText(host, "Hero Slides");
+
+      buttonWithText(host, "Series").click();
+      await waitForText(host, "New Series");
+
+      buttonWithText(host, "Categories").click();
+      await waitForText(host, "New Category");
+
+      buttonWithText(host, "サイト").click();
+      await waitForText(host, "Profile Photo");
+
+      buttonWithText(host, "Pricing").click();
+      await waitForText(host, "プランを追加");
+
+      buttonWithText(host, "Service").click();
+      await waitForText(host, "Service Page");
+
+      buttonWithText(host, "Settings").click();
+      await waitForText(host, "Live Preview");
+
+      buttonWithText(host, "はじめに").click();
+      await waitForText(host, "公開までにやること");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminPage: unsaved guard appears when switching groups", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+
+      buttonWithText(host, "サイト").click();
+      await waitForText(host, "Profile Photo");
+      const nameInput = inputByLabel(host, "Name (JP)");
+      changeInput(nameInput, "Draft Name");
+      await flush(80);
+
+      buttonWithText(host, "見せ方").click();
+      await flush(80);
+      expect(host.textContent).toContain("未保存の変更があります");
+      expect(host.textContent).toContain("保存せずにタブを移動しますか？");
+      expect(host.textContent).toContain("Profile Photo");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminPage: setup checklist jumps update the active group", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    dom.window.localStorage.setItem("admin:tab", JSON.stringify("setup"));
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      await waitForText(host, "公開までにやること");
+
+      setupOpenButton(host, "サイトの名前を入れる").click();
+      await waitForText(host, "Live Preview");
+
+      buttonWithText(host, "写真").click();
+      await waitForText(host, "Library");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
       dom.window.localStorage.clear();
     }
   });
@@ -657,9 +807,7 @@ describe("shared components", () => {
         createElement(Admin),
         (qc) => qc.setQueryData(["hero-photos"], { heroPhotos: [samplePhotos[0]] })
       );
-      host
-        .querySelector('button:nth-of-type(3)')
-        ?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+      buttonWithText(host, "Hero").click();
       await flush(500);
 
       expect(host.textContent).toContain("Hero Slides");

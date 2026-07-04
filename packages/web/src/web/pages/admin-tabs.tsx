@@ -558,20 +558,15 @@ export function ProfileTab({
             )}
           </AdminField>
         ))}
-        <div className="flex items-center gap-3">
-          <SaveButton
-            onClick={() => save.mutate()}
-            disabled={save.isPending || Object.keys(form).length === 0}
-            saved={saved}
-            pending={save.isPending}
-          />
-          {saveError && (
-            <span className="text-[11px] text-red-400/80">
-              保存に失敗しました
-            </span>
-          )}
-        </div>
       </div>
+      <FloatingSaveBar
+        show={hasUnsaved}
+        pending={save.isPending}
+        saved={saved}
+        error={saveError}
+        onSave={() => save.mutate()}
+        onDiscard={() => setForm({})}
+      />
     </div>
   );
 }
@@ -2161,40 +2156,6 @@ export function ServiceTab({
         /service 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。
       </p>
 
-      {/* Save bar */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          type="button"
-          onClick={() => save.mutate()}
-          disabled={!hasChanges || save.isPending}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] tracking-wider bg-[#4a9eff] text-white rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#3a8eef] transition-colors"
-        >
-          {save.isPending ? (
-            <Loader2 size={11} className="animate-spin" />
-          ) : (
-            <Check size={11} />
-          )}
-          保存
-        </button>
-        {hasChanges && (
-          <button
-            type="button"
-            onClick={reset}
-            className="text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
-          >
-            リセット
-          </button>
-        )}
-        {justSaved && (
-          <span className="text-[11px] text-green-400/80">保存しました</span>
-        )}
-        {saveError && (
-          <span className="text-[11px] text-red-400/80">
-            保存に失敗しました
-          </span>
-        )}
-      </div>
-
       {/* Enabled toggle */}
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#333]">
         <span className="text-[11px] text-[#888]">ページ公開</span>
@@ -2909,31 +2870,14 @@ export function ServiceTab({
         </button>
       </ServiceSection>
 
-      {/* Bottom save */}
-      {hasChanges && (
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => save.mutate()}
-            disabled={save.isPending}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] tracking-wider bg-[#4a9eff] text-white rounded disabled:opacity-40 hover:bg-[#3a8eef] transition-colors"
-          >
-            {save.isPending ? (
-              <Loader2 size={11} className="animate-spin" />
-            ) : (
-              <Check size={11} />
-            )}
-            保存
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            className="text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
-          >
-            リセット
-          </button>
-        </div>
-      )}
+      <FloatingSaveBar
+        show={hasChanges}
+        pending={save.isPending}
+        saved={justSaved}
+        error={saveError}
+        onSave={() => save.mutate()}
+        onDiscard={reset}
+      />
     </div>
   );
 }
@@ -3190,11 +3134,6 @@ export function SettingsTab({
             <h2 className="text-[11px] tracking-widest uppercase text-[#666]">
               Settings
             </h2>
-            {Object.keys(form).length > 0 && (
-              <span className="text-[10px] text-[#c90] bg-[#c90]/10 px-2 py-0.5 rounded-sm">
-                {Object.keys(form).length} unsaved
-              </span>
-            )}
             {saveError && (
               <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-sm">
                 保存失敗
@@ -3202,12 +3141,6 @@ export function SettingsTab({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <SaveButton
-              onClick={() => save.mutate()}
-              disabled={save.isPending || Object.keys(form).length === 0}
-              saved={saved}
-              pending={save.isPending}
-            />
             <button
               onClick={() => setShowPreview(!showPreview)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wider rounded-sm transition-colors ${
@@ -5090,6 +5023,14 @@ export function SettingsTab({
             </div>
           </div>
         </div>
+        <FloatingSaveBar
+          show={hasUnsaved}
+          pending={save.isPending}
+          saved={saved}
+          error={saveError}
+          onSave={() => save.mutate()}
+          onDiscard={() => setForm({})}
+        />
       </div>
 
       {/* Live Preview Panel — mobile: full-screen overlay; desktop: side panel */}
@@ -5191,7 +5132,7 @@ function Section({
     <div className="border-b border-[#333] pb-4">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 w-full text-left py-2 text-[10px] tracking-widest uppercase text-[#666] hover:text-[#999] transition-colors"
+        className="flex items-center gap-1.5 w-full text-left py-2 text-[12px] font-medium text-[#666] hover:text-[#999] transition-colors"
       >
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         {title}
@@ -5771,34 +5712,57 @@ function ColorRow({
   );
 }
 
-function SaveButton({
-  onClick,
-  disabled,
-  saved,
+function FloatingSaveBar({
+  show,
   pending,
+  saved,
+  error,
+  onSave,
+  onDiscard,
 }: {
-  onClick: () => void;
-  disabled: boolean;
-  saved: boolean;
+  show: boolean;
   pending: boolean;
+  saved: boolean;
+  error: boolean;
+  onSave: () => void;
+  onDiscard: () => void;
 }) {
+  if (!show && !pending && !saved && !error) return null;
+  const message = error
+    ? "保存に失敗しました"
+    : saved && !show
+      ? "保存しました"
+      : "保存していない変更があります";
+
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="self-start flex items-center gap-1.5 px-5 py-2 text-[11px] tracking-wider bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40"
+    <output
+      className="admin-floating-save-bar"
+      aria-live="polite"
     >
-      {saved ? (
-        <>
-          <Check size={11} /> Saved
-        </>
-      ) : pending ? (
-        <>
-          <Loader2 size={11} className="animate-spin" /> Saving...
-        </>
-      ) : (
-        "Save"
+      <span className={error ? "admin-floating-save-bar__error" : ""}>
+        {message}
+      </span>
+      {show && (
+        <div className="admin-floating-save-bar__actions">
+          <button type="button" onClick={onDiscard} disabled={pending}>
+            <X size={13} />
+            破棄
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={pending}
+            className="admin-floating-save-bar__primary"
+          >
+            {pending ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Check size={13} />
+            )}
+            保存
+          </button>
+        </div>
       )}
-    </button>
+    </output>
   );
 }

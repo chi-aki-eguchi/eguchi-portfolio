@@ -53,9 +53,11 @@
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
   --admin-font-title: var(--font-en);
   --admin-font-ui: var(--font-ja);
-  --admin-radius-xs: 4px;
-  --admin-radius-sm: 6px;
-  --admin-radius-md: 8px;
+  --admin-radius-xs: 8px;
+  --admin-radius-sm: 10px;
+  --admin-radius-md: 12px;
+  --admin-shadow-soft: 0 18px 55px rgba(var(--admin-ink-rgb), 0.05);
+  --admin-shadow-tight: 0 8px 24px rgba(var(--admin-ink-rgb), 0.04);
   --admin-space-1: 4px;
   --admin-space-2: 8px;
   --admin-space-3: 12px;
@@ -165,7 +167,11 @@
   top: 7px;
   bottom: 7px;
   width: 2px;
+  border-radius: 999px;
   background: transparent;
+  transition:
+    background-color var(--admin-hover-transition),
+    width var(--admin-hover-transition);
 }
 
 .admin-atelier .admin-sidebar__tab:hover,
@@ -176,11 +182,12 @@
 
 .admin-atelier .admin-sidebar__tab[data-active="true"] {
   color: var(--admin-ink);
-  background: var(--admin-paper);
+  background: rgba(var(--admin-accent-rgb), 0.08);
 }
 
 .admin-atelier .admin-sidebar__tab[data-active="true"]::before {
   background: var(--admin-accent);
+  width: 3px;
 }
 
 .admin-atelier .admin-sidebar__footer {
@@ -269,6 +276,7 @@
 .admin-atelier label[class*="border"] {
   border-radius: var(--admin-radius-sm) !important;
   box-shadow: none !important;
+  min-height: 40px;
   transition:
     color var(--admin-hover-transition),
     background-color var(--admin-hover-transition),
@@ -326,6 +334,15 @@
     background-color var(--admin-hover-transition),
     border-color var(--admin-hover-transition),
     outline-color var(--admin-hover-transition) !important;
+}
+
+.admin-atelier button:focus-visible,
+.admin-atelier a:focus-visible,
+.admin-atelier input:focus-visible,
+.admin-atelier textarea:focus-visible,
+.admin-atelier select:focus-visible {
+  outline: 3px solid rgba(var(--admin-accent-rgb), 0.22) !important;
+  outline-offset: 2px;
 }
 
 .admin-atelier input::placeholder,
@@ -397,7 +414,7 @@
   border-color: var(--admin-line-strong) !important;
   color: var(--admin-ink) !important;
   border-radius: var(--admin-radius-md) !important;
-  box-shadow: none !important;
+  box-shadow: var(--admin-shadow-soft) !important;
   transition:
     opacity var(--admin-transition),
     transform var(--admin-transition);
@@ -412,7 +429,66 @@
   border-color: var(--admin-line-strong) !important;
   background-color: var(--admin-paper-soft) !important;
   color: var(--admin-ink) !important;
-  box-shadow: none !important;
+  box-shadow: var(--admin-shadow-tight) !important;
+}
+
+.admin-atelier .admin-floating-save-bar {
+  position: sticky;
+  bottom: 18px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(560px, calc(100% - 32px));
+  margin: 28px auto 0;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid rgba(var(--admin-ink-rgb), 0.08);
+  border-radius: var(--admin-radius-md);
+  background: rgba(var(--admin-paper-rgb), 0.94);
+  color: var(--admin-ink);
+  box-shadow: var(--admin-shadow-soft);
+  backdrop-filter: blur(18px);
+  animation: admin-atelier-save-bar 180ms var(--admin-transition);
+}
+
+.admin-atelier .admin-floating-save-bar__error {
+  color: var(--admin-danger);
+}
+
+.admin-atelier .admin-floating-save-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.admin-atelier .admin-floating-save-bar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--admin-radius-sm) !important;
+  font-size: 12px;
+}
+
+.admin-atelier .admin-floating-save-bar__primary {
+  background: var(--admin-ink) !important;
+  color: var(--admin-paper) !important;
+}
+
+@keyframes admin-atelier-save-bar {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .admin-atelier [class*="font-mono"],
@@ -468,7 +544,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-atelier .admin-content > div {
+  .admin-atelier .admin-content > div,
+  .admin-atelier .admin-floating-save-bar {
     animation: none;
   }
 }
@@ -519,7 +596,7 @@
 }
 
 .admin-atelier .admin-content [class*="shadow"] {
-  box-shadow: none !important;
+  box-shadow: var(--admin-shadow-tight) !important;
 }
 
 .admin-atelier .admin-content [class*="grid"][style*="repeat"] {

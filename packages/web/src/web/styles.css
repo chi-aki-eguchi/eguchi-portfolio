@@ -784,11 +784,39 @@
   background: rgba(var(--admin-ink-rgb), 0.025);
 }
 
-.admin-atelier .admin-content > div {
-  animation: admin-atelier-enter 170ms var(--admin-transition);
+/* 工程4: screen transition — old screen fades out (dur-fast/ease-in, driven
+   by AdminPage's screenPhase state machine), then the new one fades+lifts in
+   (dur-base/ease-out). transform+opacity only, so nothing recomputes layout
+   mid-transition. */
+.admin-atelier .admin-screen {
+  opacity: 1;
+  transform: translateY(0);
+}
+.admin-atelier .admin-screen[data-phase="enter"] {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.admin-atelier .admin-screen[data-phase="show"] {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.admin-atelier .admin-screen[data-phase="exit"] {
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-in);
 }
 
-@keyframes admin-atelier-enter {
+/* First-display stagger (header → card groups), 20ms apart, first 6 blocks
+   only — everything after appears together. Opted out for Library
+   (data-stagger unset there): it's a toolbar + virtualized grid, not a
+   handful of stackable sections, and staggering would fight the
+   virtualizer — it still gets the single screen-level fade above. */
+.admin-atelier .admin-screen[data-stagger="true"][data-phase="show"] > * > * {
+  animation: admin-stagger-in var(--dur-base) var(--ease-out) both;
+}
+@keyframes admin-stagger-in {
   from {
     opacity: 0;
     transform: translateY(6px);
@@ -798,9 +826,38 @@
     transform: translateY(0);
   }
 }
+.admin-atelier
+  .admin-screen[data-stagger="true"][data-phase="show"]
+  > *
+  > *:nth-child(2) {
+  animation-delay: 20ms;
+}
+.admin-atelier
+  .admin-screen[data-stagger="true"][data-phase="show"]
+  > *
+  > *:nth-child(3) {
+  animation-delay: 40ms;
+}
+.admin-atelier
+  .admin-screen[data-stagger="true"][data-phase="show"]
+  > *
+  > *:nth-child(4) {
+  animation-delay: 60ms;
+}
+.admin-atelier
+  .admin-screen[data-stagger="true"][data-phase="show"]
+  > *
+  > *:nth-child(5) {
+  animation-delay: 80ms;
+}
+.admin-atelier
+  .admin-screen[data-stagger="true"][data-phase="show"]
+  > *
+  > *:nth-child(n + 6) {
+  animation-delay: 100ms;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-atelier .admin-content > div,
   .admin-atelier .admin-floating-save-bar {
     animation: none;
   }
@@ -979,6 +1036,7 @@
   .admin-atelier * {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
   }
 }

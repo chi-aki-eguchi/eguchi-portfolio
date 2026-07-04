@@ -389,6 +389,35 @@ export default function AdminPage() {
     if (el) setIndicatorTop(el.offsetTop);
   }, [tab]);
 
+  // 工程4: screen transition — the content area crossfades (old screen out,
+  // then new screen in+up) instead of an instant swap. `tab` itself still
+  // switches the sidebar highlight immediately; `contentTab` is what the
+  // content area actually renders, lagging by the exit duration.
+  const [contentTab, setContentTab] = useState<Tab>(tab);
+  const [screenPhase, setScreenPhase] = useState<"enter" | "show" | "exit">(
+    "show",
+  );
+  useEffect(() => {
+    if (tab === contentTab) return;
+    if (prefersReducedMotion()) {
+      setContentTab(tab);
+      setScreenPhase("show");
+      return;
+    }
+    setScreenPhase("exit");
+    const t = setTimeout(() => {
+      setContentTab(tab);
+      setScreenPhase("enter");
+    }, 160);
+    return () => clearTimeout(t);
+  }, [tab, contentTab]);
+  useEffect(() => {
+    if (screenPhase === "enter") {
+      const id = requestAnimationFrame(() => setScreenPhase("show"));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [screenPhase]);
+
   if (isLoading)
     return (
       <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
@@ -545,36 +574,42 @@ export default function AdminPage() {
 
         {/* Content */}
         <div className="admin-content">
-          {tab === "setup" && <SetupTab onOpenTab={requestTab} />}
-          {tab === "gallery" && (
-            <GalleryTab
-              onUploadingChange={setGalleryUploading}
-              onUnsavedChange={setHasUnsaved}
-            />
-          )}
-          {tab !== "setup" && tab !== "gallery" && (
-            <Suspense
-              fallback={
-                <div className="h-full flex items-center justify-center">
-                  <Loader2 size={18} className="animate-spin text-[#555]" />
-                </div>
-              }
-            >
-              {tab === "hero" && <LazyHeroTab />}
-              {tab === "profile" && (
-                <LazyProfileTab onUnsavedChange={setHasUnsaved} />
-              )}
-              {tab === "categories" && <LazyCategoriesTab />}
-              {tab === "series" && <LazySeriesTab />}
-              {tab === "pricing" && <LazyPricingTab />}
-              {tab === "service" && (
-                <LazyServiceTab onUnsavedChange={setHasUnsaved} />
-              )}
-              {tab === "settings" && (
-                <LazySettingsTab onUnsavedChange={setHasUnsaved} />
-              )}
-            </Suspense>
-          )}
+          <div
+            className="admin-screen"
+            data-phase={screenPhase}
+            data-stagger={contentTab === "gallery" ? undefined : "true"}
+          >
+            {contentTab === "setup" && <SetupTab onOpenTab={requestTab} />}
+            {contentTab === "gallery" && (
+              <GalleryTab
+                onUploadingChange={setGalleryUploading}
+                onUnsavedChange={setHasUnsaved}
+              />
+            )}
+            {contentTab !== "setup" && contentTab !== "gallery" && (
+              <Suspense
+                fallback={
+                  <div className="h-full flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-[#555]" />
+                  </div>
+                }
+              >
+                {contentTab === "hero" && <LazyHeroTab />}
+                {contentTab === "profile" && (
+                  <LazyProfileTab onUnsavedChange={setHasUnsaved} />
+                )}
+                {contentTab === "categories" && <LazyCategoriesTab />}
+                {contentTab === "series" && <LazySeriesTab />}
+                {contentTab === "pricing" && <LazyPricingTab />}
+                {contentTab === "service" && (
+                  <LazyServiceTab onUnsavedChange={setHasUnsaved} />
+                )}
+                {contentTab === "settings" && (
+                  <LazySettingsTab onUnsavedChange={setHasUnsaved} />
+                )}
+              </Suspense>
+            )}
+          </div>
         </div>
       </div>
 

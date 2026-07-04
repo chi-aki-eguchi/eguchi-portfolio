@@ -2,9 +2,46 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import { makeSettingsPreviewPayload } from "../lib/settings-preview";
-import { GOOGLE_FONTS_JA, GOOGLE_FONTS_EN, FONT_PAIRINGS, type FontDef } from "../components/provider";
-import { Upload, Trash2, Check, X, Plus, User, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Eye, EyeOff, Monitor, Smartphone, Star, Shuffle, Pencil } from "lucide-react";
-import { adminPhotoObjectPosition, adminPhotoSrc, assertOk, DEFAULT_CAMERA_PRESETS, DEFAULT_LENS_PRESETS, effectivePresets, jsonOrThrow, parsePresetList, usePersistentState, type HeroPhotoRow, type Photo } from "./admin-shared";
+import {
+  GOOGLE_FONTS_JA,
+  GOOGLE_FONTS_EN,
+  FONT_PAIRINGS,
+  type FontDef,
+} from "../components/provider";
+import {
+  Upload,
+  Trash2,
+  Check,
+  X,
+  Plus,
+  User,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Monitor,
+  Smartphone,
+  Star,
+  Shuffle,
+  Pencil,
+} from "lucide-react";
+import {
+  adminPhotoObjectPosition,
+  adminPhotoSrc,
+  assertOk,
+  DEFAULT_CAMERA_PRESETS,
+  DEFAULT_LENS_PRESETS,
+  effectivePresets,
+  jsonOrThrow,
+  parsePresetList,
+  usePersistentState,
+  type HeroPhotoRow,
+  type Photo,
+} from "./admin-shared";
+import { PageHeader, PageHeaderButton } from "./admin-page-header";
 
 export function HeroTab() {
   const qc = useQueryClient();
@@ -143,6 +180,10 @@ export function HeroTab() {
 
   return (
     <div className="h-full overflow-y-auto p-6 max-w-4xl mx-auto">
+      <PageHeader
+        title="Hero"
+        description="トップページのカルーセルに表示する写真を選びます。"
+      />
       {heroError && (
         <div
           role="alert"
@@ -471,9 +512,10 @@ export function ProfileTab({
 
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
-      <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-6">
-        Profile
-      </h2>
+      <PageHeader
+        title="Profile"
+        description="About ページに表示する自己紹介とプロフィール写真です。"
+      />
 
       {/* Profile Photo Upload */}
       <div className="mb-8">
@@ -686,9 +728,10 @@ export function CategoriesTab() {
 
   return (
     <div className="h-full overflow-y-auto p-8 max-w-md mx-auto">
-      <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-2">
-        Categories
-      </h2>
+      <PageHeader
+        title="Categories"
+        description="Gallery の絞り込みに使うカテゴリを管理します。"
+      />
       <p className="text-[11px] text-[#555] mb-6">
         ギャラリーのフィルターとして使用。↑↓で並び替え（この順で表示されます）。
       </p>
@@ -708,7 +751,7 @@ export function CategoriesTab() {
         {categories.map((cat, i) => (
           <div
             key={cat.id}
-            className="flex items-center justify-between bg-[#2a2a2a] border border-[#333] px-3 py-2.5 rounded-sm group"
+            className="flex items-center justify-between bg-[color:var(--admin-paper-soft)] border border-[color:var(--admin-line)] px-3 py-2.5 rounded-sm group"
           >
             <div className="flex items-center gap-1.5 min-w-0">
               <div className="flex flex-col flex-shrink-0">
@@ -716,7 +759,7 @@ export function CategoriesTab() {
                   onClick={() => moveCat(cat.id, -1)}
                   disabled={i === 0 || reorderCats.isPending}
                   aria-label="上へ移動"
-                  className="text-[#555] hover:text-[#aaa] disabled:opacity-20 disabled:hover:text-[#555] transition-colors leading-none"
+                  className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                 >
                   <ChevronUp size={13} />
                 </button>
@@ -726,15 +769,15 @@ export function CategoriesTab() {
                     i === categories.length - 1 || reorderCats.isPending
                   }
                   aria-label="下へ移動"
-                  className="text-[#555] hover:text-[#aaa] disabled:opacity-20 disabled:hover:text-[#555] transition-colors leading-none"
+                  className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                 >
                   <ChevronDown size={13} />
                 </button>
               </div>
-              <span className="text-[12px] text-[#ccc] truncate">
+              <span className="text-[12px] text-[color:var(--admin-ink)] truncate">
                 {cat.label}
               </span>
-              <span className="text-[11px] text-[#555] font-mono truncate">
+              <span className="text-[11px] text-[color:var(--admin-muted)] font-mono truncate">
                 {cat.slug}
               </span>
             </div>
@@ -743,7 +786,7 @@ export function CategoriesTab() {
                 setDeleteCatConfirm({ id: cat.id, label: cat.label })
               }
               aria-label={`${cat.label} を削除`}
-              className="text-[#444] hover:text-red-400/80 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 ml-2"
+              className="text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 ml-2"
             >
               <Trash2 size={13} />
             </button>
@@ -1026,15 +1069,12 @@ export function SeriesTab() {
 
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
-      <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-2">
-        Series
-      </h2>
-      <p className="text-[11px] text-[#555] mb-6">
-        作品群（"Still, life"
-        のようなまとまり）。↑↓で並び替え。公開トグルで下書き/公開。写真の割り当ては
-        Library のインスペクタ「Series」から。シリーズ内の写真の並び替えは
-        Library でそのシリーズに絞り込んでドラッグ。
-      </p>
+      <PageHeader
+        title="Series"
+        description={
+          '作品群（"Still, life" のようなまとまり）。↑↓で並び替え。公開トグルで下書き/公開。写真の割り当てはLibraryのインスペクタ「Series」から。'
+        }
+      />
 
       {rowError && (
         <p role="alert" className="text-[11px] text-red-400/80 mb-3">
@@ -1062,7 +1102,7 @@ export function SeriesTab() {
           return (
             <div
               key={s.id}
-              className="bg-[#2a2a2a] border border-[#333] rounded-sm overflow-hidden"
+              className="bg-[color:var(--admin-paper-soft)] border border-[color:var(--admin-line)] rounded-sm overflow-hidden"
             >
               {cover && (
                 <img
@@ -1081,7 +1121,7 @@ export function SeriesTab() {
                       onClick={() => move(s.id, -1)}
                       disabled={i === 0 || reorder.isPending}
                       aria-label="上へ移動"
-                      className="text-[#555] hover:text-[#aaa] disabled:opacity-20 disabled:hover:text-[#555] transition-colors leading-none"
+                      className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                     >
                       <ChevronUp size={13} />
                     </button>
@@ -1089,21 +1129,21 @@ export function SeriesTab() {
                       onClick={() => move(s.id, 1)}
                       disabled={i === series.length - 1 || reorder.isPending}
                       aria-label="下へ移動"
-                      className="text-[#555] hover:text-[#aaa] disabled:opacity-20 disabled:hover:text-[#555] transition-colors leading-none"
+                      className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                     >
                       <ChevronDown size={13} />
                     </button>
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] text-[#ccc] truncate">
+                      <span className="text-[12px] text-[color:var(--admin-ink)] truncate">
                         {s.title}
                       </span>
-                      <span className="text-[11px] text-[#555] font-mono truncate">
+                      <span className="text-[11px] text-[color:var(--admin-muted)] font-mono truncate">
                         {s.slug}
                       </span>
                     </div>
-                    <span className="text-[10px] text-[#555]">
+                    <span className="text-[10px] text-[color:var(--admin-muted)]">
                       {count} 枚
                       {s.coverPhotoId
                         ? ` ・ 表紙: ${photoLabel(s.coverPhotoId)}`
@@ -1120,7 +1160,7 @@ export function SeriesTab() {
                       })
                     }
                     aria-pressed={s.isPublished}
-                    className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${s.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[#333] text-[#777] hover:bg-[#3a3a3a]"}`}
+                    className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${s.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"}`}
                   >
                     {s.isPublished ? "公開" : "下書き"}
                   </button>
@@ -1129,7 +1169,7 @@ export function SeriesTab() {
                       editId === s.id ? setEditId(null) : openEdit(s)
                     }
                     aria-label="編集"
-                    className="text-[#555] hover:text-[#bbb] transition-colors"
+                    className="text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
                   >
                     {editId === s.id ? (
                       <ChevronUp size={14} />
@@ -1142,7 +1182,7 @@ export function SeriesTab() {
                       setDeleteTarget({ id: s.id, title: s.title })
                     }
                     aria-label={`${s.title} を削除`}
-                    className="text-[#444] hover:text-red-400/80 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -1628,13 +1668,10 @@ export function PricingTab() {
 
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
-      <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-2">
-        Pricing
-      </h2>
-      <p className="text-[11px] text-[#555] mb-6">
-        Contactページに表示される料金です。↑↓で並び替え。公開トグルで下書き/公開。
-        販売ページの料金は サイト &gt; Service で編集します。
-      </p>
+      <PageHeader
+        title="Pricing"
+        description="Contactページに表示される料金です。↑↓で並び替え。販売ページの料金はService画面で編集します。"
+      />
 
       {rowError && (
         <p role="alert" className="text-[11px] text-red-400/80 mb-3">
@@ -1651,7 +1688,7 @@ export function PricingTab() {
         {plans.map((p, i) => (
           <div
             key={p.id}
-            className="bg-[#2a2a2a] border border-[#333] rounded-sm"
+            className="bg-[color:var(--admin-paper-soft)] border border-[color:var(--admin-line)] rounded-sm"
           >
             <div className="flex items-center justify-between px-3 py-2.5 group">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -1660,7 +1697,7 @@ export function PricingTab() {
                     onClick={() => move(p.id, -1)}
                     disabled={i === 0 || reorder.isPending}
                     aria-label="上へ移動"
-                    className="text-[#555] hover:text-[#aaa] disabled:opacity-20 disabled:hover:text-[#555] transition-colors leading-none"
+                    className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                   >
                     <ChevronUp size={13} />
                   </button>
@@ -1668,18 +1705,18 @@ export function PricingTab() {
                     onClick={() => move(p.id, 1)}
                     disabled={i === plans.length - 1 || reorder.isPending}
                     aria-label="下へ移動"
-                    className="text-[#555] hover:text-[#aaa] disabled:opacity-20 disabled:hover:text-[#555] transition-colors leading-none"
+                    className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                   >
                     <ChevronDown size={13} />
                   </button>
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-[#ccc] truncate">
+                    <span className="text-[12px] text-[color:var(--admin-ink)] truncate">
                       {p.title}
                     </span>
                     {p.price && (
-                      <span className="text-[11px] text-[#777] truncate">
+                      <span className="text-[11px] text-[color:var(--admin-muted)] truncate">
                         {p.price}
                       </span>
                     )}
@@ -1692,7 +1729,7 @@ export function PricingTab() {
                     patchPlan.mutate({ id: p.id, isPublished: !p.isPublished })
                   }
                   aria-pressed={p.isPublished}
-                  className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${p.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[#333] text-[#777] hover:bg-[#3a3a3a]"}`}
+                  className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${p.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"}`}
                 >
                   {p.isPublished ? "公開" : "下書き"}
                 </button>
@@ -1701,7 +1738,7 @@ export function PricingTab() {
                     editId === p.id ? setEditId(null) : openEdit(p)
                   }
                   aria-label="編集"
-                  className="text-[#555] hover:text-[#bbb] transition-colors"
+                  className="text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
                 >
                   {editId === p.id ? (
                     <ChevronUp size={14} />
@@ -1712,7 +1749,7 @@ export function PricingTab() {
                 <button
                   onClick={() => setDeleteTarget({ id: p.id, title: p.title })}
                   aria-label={`${p.title} を削除`}
-                  className="text-[#444] hover:text-red-400/80 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                  className="text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -1872,9 +1909,7 @@ function TopWorksPicker({
   };
   if (photos.length === 0)
     return (
-      <p className="text-[10px] text-[#666]">
-        公開中の写真はまだありません
-      </p>
+      <p className="text-[10px] text-[#666]">公開中の写真はまだありません</p>
     );
   return (
     <div className="max-h-64 overflow-y-auto border border-[#3a3a3a] rounded-sm p-1.5 grid grid-cols-5 gap-1">
@@ -1919,6 +1954,8 @@ import {
   type ServicePageConfig,
 } from "../lib/service-config";
 
+// Same always-mounted grid-rows technique as the Settings accordion (Section,
+// admin-tabs.tsx) — content stays mounted so toggling never flickers.
 function ServiceSection({
   title,
   defaultOpen = false,
@@ -1929,17 +1966,30 @@ function ServiceSection({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setAnimated(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   return (
     <div className="border-b border-[#333]">
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[#888] hover:text-[#bbb] transition-colors cursor-pointer"
       >
         <span>{title}</span>
         {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
       </button>
-      {open && <div className="pb-5 space-y-3">{children}</div>}
+      <div
+        className={`grid ${animated ? "transition-[grid-template-rows] duration-200 ease-out" : ""}`}
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="pb-5 space-y-3">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2153,16 +2203,16 @@ export function ServiceTab({
 
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
-      <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-2">
-        Service Page
-      </h2>
-      <p className="text-[11px] text-[#555] mb-6">
-        /service 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。
-      </p>
+      <PageHeader
+        title="Service Page"
+        description="/service 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。"
+      />
 
       {/* Enabled toggle */}
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#333]">
-        <span className="text-[11px] text-[#888]">ページ公開</span>
+        <span className="text-[11px] text-[color:var(--admin-muted)]">
+          ページ公開
+        </span>
         <div className="flex gap-1">
           {(["on", "off"] as const).map((v) => (
             <button
@@ -2171,8 +2221,8 @@ export function ServiceTab({
               onClick={() => set("enabled", v)}
               className={`px-3 py-1 text-[10px] tracking-wider rounded transition-colors ${
                 draft.enabled === v
-                  ? "bg-[#3a3a3a] text-[#e0e0e0]"
-                  : "text-[#666] hover:text-[#aaa]"
+                  ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)]"
+                  : "text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"
               }`}
             >
               {v === "on" ? "公開" : "非公開"}
@@ -3130,804 +3180,65 @@ export function SettingsTab({
     <div className="flex h-full overflow-hidden">
       {/* Settings panel */}
       <div
-        className={`flex flex-col overflow-hidden transition-all duration-300 ${showPreview ? "w-full md:w-[420px] md:flex-shrink-0" : "max-w-lg mx-auto flex-1"}`}
+        className={`flex flex-col overflow-hidden transition-all duration-300 ${showPreview ? "w-full md:w-[420px] md:flex-shrink-0" : "max-w-[760px] flex-1"}`}
       >
-        {/* Sticky header with save */}
-        <div className="z-10 bg-[#1e1e1e] border-b border-[#333] px-8 py-3 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <h2 className="text-[11px] tracking-widest uppercase text-[#666]">
-              Settings
-            </h2>
-            {saveError && (
-              <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-sm">
-                保存失敗
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wider rounded-sm transition-colors ${
-                showPreview
-                  ? "bg-[#4a6fa5] text-white hover:bg-[#5a7fb5]"
-                  : "bg-[#333] text-[#888] hover:text-[#ccc] hover:bg-[#3a3a3a]"
-              }`}
-            >
-              {showPreview ? <EyeOff size={11} /> : <Eye size={11} />}
-              {showPreview ? "Hide Preview" : "Live Preview"}
-            </button>
-          </div>
-        </div>
-
         {/* Scrollable content */}
         <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
-          <div className="flex flex-col gap-2">
+          <PageHeader
+            title="Settings"
+            description={
+              saveError ? "保存失敗 — もう一度お試しください" : undefined
+            }
+            actions={
+              <PageHeaderButton
+                active={showPreview}
+                onClick={() => setShowPreview(!showPreview)}
+                ariaLabel={showPreview ? "Hide Preview" : "Live Preview"}
+              >
+                {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
+                {showPreview ? "Hide Preview" : "Live Preview"}
+              </PageHeaderButton>
+            }
+          />
+          <div className="flex flex-col">
             {/* General */}
-            <Section title="General" defaultOpen={false}>
-              {fields.map((f) => (
-                <AdminField key={f.key} label={f.label} hint={f.hint}>
-                  <input
-                    type="text"
-                    aria-label={f.label}
-                    value={current[f.key] ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    placeholder={f.placeholder}
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                  />
-                </AdminField>
-              ))}
-            </Section>
+            <SettingsGroup title="基本・見た目">
+              <Section title="General" defaultOpen={false}>
+                {fields.map((f) => (
+                  <AdminField key={f.key} label={f.label} hint={f.hint}>
+                    <input
+                      type="text"
+                      aria-label={f.label}
+                      value={current[f.key] ?? ""}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    />
+                  </AdminField>
+                ))}
+              </Section>
 
-            {/* E1: Hero display mode */}
-            <Section title="Hero（ファーストビュー）" defaultOpen={false}>
-              <AdminField
-                label="表示モード"
-                hint="カルーセル/1枚絵=従来 / 静謐グリッド・エディトリアル・没入型=新レイアウト。切替は保存後に反映"
-              >
-                <div className="grid grid-cols-3 gap-1">
-                  {(
-                    [
-                      ["carousel", "カルーセル"],
-                      ["single", "1枚絵"],
-                      ["quiet-grid", "静謐グリッド"],
-                      ["editorial", "エディトリアル"],
-                      ["immersive", "没入型"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("heroMode", val)}
-                      className={`text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["heroMode"] || "carousel") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField
-                label="画面の使い方"
-                hint="フルスクリーン=最初の1画面を写真が覆う（下の「高さ」設定は無視されます）"
-              >
-                <div className="flex gap-1">
-                  {(
-                    [
-                      ["normal", "通常（高さ設定に従う）"],
-                      ["fullscreen", "フルスクリーン"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("heroDisplayMode", val)}
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["heroDisplayMode"] || "normal") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField
-                label="高さ"
-                hint="ビューポート高に対する割合。スマホは自動で上限調整。フルスクリーン時は無効"
-              >
-                <TypoControl
-                  label="高さ"
-                  valueKey="heroHeight"
-                  current={current}
-                  set={set}
-                  min={35}
-                  max={100}
-                  step={1}
-                  unit="vh"
-                  defaultVal="70"
-                />
-              </AdminField>
-              <AdminField
-                label="名前の表示位置"
-                hint="1枚絵/フルスクリーンでは写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます"
-              >
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(
-                    [
-                      ["center", "中央（既定）"],
-                      ["bottom-left", "左下"],
-                      ["bottom-right", "右下"],
-                      ["top-left", "左上"],
-                      ["top-right", "右上"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("heroTitlePosition", val)}
-                      className={`text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["heroTitlePosition"] || "center") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField
-                label="スクロール演出"
-                hint="トップを下にスクロールしたときの写真の動き。OS設定で「視差効果を減らす」の人には自動で無効になります"
-              >
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(
-                    [
-                      ["none", "なし（既定）"],
-                      ["fade", "フェード"],
-                      ["sink", "沈み込み"],
-                      ["parallax", "パララックス"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("heroScrollEffect", val)}
-                      className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
-                        (current["heroScrollEffect"] || "none") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField
-                label="オーバーレイ"
-                hint="1枚絵モードで名前を読みやすくする暗いグラデーション"
-              >
-                <div className="flex gap-1">
-                  {(
-                    [
-                      ["on", "あり"],
-                      ["off", "なし"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("heroOverlay", val)}
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["heroOverlay"] || "on") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <button
-                onClick={() => {
-                  [
-                    "heroMode",
-                    "heroHeight",
-                    "heroOverlay",
-                    "heroDisplayMode",
-                    "heroTitlePosition",
-                    "heroScrollEffect",
-                  ].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* BB: nav position + hover effect */}
-            <Section title="ナビゲーション（位置・ホバー）" defaultOpen={false}>
-              <AdminField
-                label="位置"
-                hint="スマホでは位置に関わらず従来のハンバーガーメニューになります"
-              >
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(
-                    [
-                      ["top", "上（既定）"],
-                      ["left", "左 縦置き"],
-                      ["bottom", "下 固定"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("navPosition", val)}
-                      className={`text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["navPosition"] || "top") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField
-                label="ホバー演出"
-                hint="マウスを乗せたとき/キーボードフォーカス時の反応"
-              >
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(
-                    [
-                      ["fade", "フェード（既定）"],
-                      ["underline", "下線が伸びる"],
-                      ["dot", "点がともる"],
-                      ["blur", "にじみ→くっきり"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("navHoverEffect", val)}
-                      className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
-                        (current["navHoverEffect"] || "fade") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <button
-                onClick={() => {
-                  ["navPosition", "navHoverEffect"].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* CC: section spacing multipliers */}
-            <Section title="余白・スペーシング" defaultOpen={false}>
-              <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
-                ページの「間」の量を倍率で調整します。1.0
-                が現在のリズム。スマホは元の比率のまま縮みます。
-              </p>
-              <AdminField
-                label="ヒーロー直下"
-                hint="ヒーロー写真と作品セクションの間"
-              >
-                <TypoControl
-                  label="倍率"
-                  valueKey="spacingHeroBottom"
-                  current={current}
-                  set={set}
-                  min={0.2}
-                  max={4.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal="1"
-                />
-              </AdminField>
-              <AdminField
-                label="セクション間"
-                hint="作品〜CTA〜フッターなどセクション同士の基本余白"
-              >
-                <TypoControl
-                  label="倍率"
-                  valueKey="spacingSectionGap"
-                  current={current}
-                  set={set}
-                  min={0.2}
-                  max={4.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal="1"
-                />
-              </AdminField>
-              <AdminField
-                label="ページ冒頭"
-                hint="ギャラリー・シリーズ・About・Contact など各ページ最初の「ため」"
-              >
-                <TypoControl
-                  label="倍率"
-                  valueKey="spacingPageTop"
-                  current={current}
-                  set={set}
-                  min={0.2}
-                  max={4.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal="1"
-                />
-              </AdminField>
-              <AdminField label="フッター上" hint="ページ末尾とフッターの間">
-                <TypoControl
-                  label="倍率"
-                  valueKey="spacingFooterTop"
-                  current={current}
-                  set={set}
-                  min={0.2}
-                  max={4.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal="1"
-                />
-              </AdminField>
-              <button
-                onClick={() => {
-                  [
-                    "spacingHeroBottom",
-                    "spacingSectionGap",
-                    "spacingPageTop",
-                    "spacingFooterTop",
-                  ].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* DD: paper/grain background texture */}
-            <Section title="背景の質感（グレイン）" defaultOpen={false}>
-              <AdminField
-                label="テクスチャ"
-                hint="背景にごく薄いノイズを敷きます。写真の上やLightboxには乗りません"
-              >
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(
-                    [
-                      ["none", "なし（既定）"],
-                      ["grain-fine", "フィルム粒子"],
-                      ["grain-coarse", "粗い紙"],
-                      ["paper", "和紙・繊維"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("bgTexture", val)}
-                      className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
-                        (current["bgTexture"] || "none") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField
-                label="濃度"
-                hint="0.05前後がおすすめ。上げすぎると写真より質感が目立ちます"
-              >
-                <TypoControl
-                  label="濃度"
-                  valueKey="bgTextureOpacity"
-                  current={current}
-                  set={set}
-                  min={0}
-                  max={0.15}
-                  step={0.01}
-                  unit=""
-                  defaultVal="0.05"
-                />
-              </AdminField>
-              <button
-                onClick={() => {
-                  ["bgTexture", "bgTextureOpacity"].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* 写真のフェードイン方式（photoRevealEffect） */}
-            <Section title="写真のフェードイン" defaultOpen={false}>
-              <AdminField
-                label="現れ方"
-                hint="写真がスクロールで現れるときの動き。コラージュのような枠・傾きつきレイアウトでは「浮き上がり」より「フェード」「なし」が自然に見えます"
-              >
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(
-                    [
-                      ["fade", "フェード（既定）"],
-                      ["none", "なし（即表示）"],
-                      ["rise", "浮き上がり"],
-                      ["scale", "ズーム"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("photoRevealEffect", val)}
-                      className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
-                        (current["photoRevealEffect"] || "fade") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <button
-                onClick={() => set("photoRevealEffect", "")}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* G/N: Gallery layout type + controlled-random tuning */}
-            <Section title="ギャラリー配置" defaultOpen={false}>
-              <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
-                ページごとに写真の並べ方を選べます。プレビューで{" "}
-                <span className="text-[#999]">トップ</span> /{" "}
-                <span className="text-[#999]">Gallery</span> /{" "}
-                <span className="text-[#999]">Series</span>{" "}
-                ページを開くと即反映。下の調整は「モザイク」に効きます。
-              </p>
-              {/* N1: layout-type pickers (more types arrive one at a time) */}
-              {(
-                [
-                  ["galleryLayout", "ギャラリーページ", "mosaic"],
-                  ["seriesLayout", "シリーズページ", "mosaic"],
-                  ["topWorksLayout", "トップ（Works）", "stagger"],
-                ] as const
-              ).map(([key, label, fallback]) => (
-                <AdminField key={key} label={`${label}のレイアウト`}>
-                  <div className="grid grid-cols-3 gap-1.5">
+              {/* E1: Hero display mode */}
+              <Section title="Hero（ファーストビュー）" defaultOpen={false}>
+                <AdminField
+                  label="表示モード"
+                  hint="カルーセル/1枚絵=従来 / 静謐グリッド・エディトリアル・没入型=新レイアウト。切替は保存後に反映"
+                >
+                  <div className="grid grid-cols-3 gap-1">
                     {(
                       [
-                        ["mosaic", "モザイク", "S/M/L混在・抜け感"],
-                        ["grid", "均等グリッド", "全部同サイズ・整列"],
-                        ["scroll", "縦スクロール1枚", "1枚ずつ大きく＋情報"],
-                        ["stagger", "ずらし大", "1枚ずつ左右互い違い"],
-                        ["editorial", "雑誌見開き", "2枚1組・左大右小"],
-                        ["collage", "コラージュ", "重なり・角度でスナップ風"],
-                        ["clean-grid", "クリーングリッド", "4列均一・装飾なし"],
-                        ["masonry", "マソンリー", "3列・縦横比維持"],
-                        ["large-format", "大判", "2列大判＋キャプション"],
-                      ] as const
-                    ).map(([val, name, desc]) => (
-                      <button
-                        key={val}
-                        onClick={() => set(key, val)}
-                        title={desc}
-                        className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
-                          (current[key] || fallback) === val
-                            ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
-                            : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
-                        }`}
-                      >
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-              ))}
-              {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定） */}
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                トップ（Works）に出す写真
-              </p>
-              <AdminField
-                label="選び方"
-                hint="自動=ギャラリーの並び順の先頭9枚 / ランダム=訪問ごとに入れ替え / 手動=下で選んだ写真を選んだ順に表示。最上部のヒーロー写真とは別の設定です"
-              >
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(
-                    [
-                      ["auto", "並び順から自動", "ギャラリーの並びの先頭9枚"],
-                      ["random", "ランダム", "訪問ごとにシャッフル"],
-                      ["manual", "手動で選択", "下で写真を選ぶ"],
-                    ] as const
-                  ).map(([val, name, desc]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("topWorksMode", val)}
-                      title={desc}
-                      className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
-                        (current["topWorksMode"] || "auto") === val
-                          ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
-                          : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              {(current["topWorksMode"] || "auto") === "manual" && (
-                <AdminField
-                  label="トップに出す写真"
-                  hint="クリックで選択/解除。番号の順（選んだ順）に表示されます。未選択のあいだは自動と同じ表示"
-                >
-                  <TopWorksPicker
-                    value={current["topWorksIds"] ?? ""}
-                    onChange={(v) => set("topWorksIds", v)}
-                  />
-                </AdminField>
-              )}
-              <AdminField
-                label="初期表示枚数"
-                hint="トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます"
-              >
-                <TypoControl
-                  label="初期表示枚数"
-                  valueKey="homeGalleryCount"
-                  current={current}
-                  set={set}
-                  min={1}
-                  max={200}
-                  step={1}
-                  unit="枚"
-                  defaultVal="12"
-                />
-              </AdminField>
-              {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
-                W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                ギャラリーの列数・大きさ・余白
-              </p>
-              <AdminField
-                label="最大列数"
-                hint="広い画面で最大何列まで並べるか。実際の列数は画面幅に応じて自動で減ります（スマホは1〜2列）"
-              >
-                <TypoControl
-                  label="最大列数"
-                  valueKey="galleryColumns"
-                  current={current}
-                  set={set}
-                  min={1}
-                  max={8}
-                  step={1}
-                  unit="列"
-                  defaultVal="3"
-                />
-              </AdminField>
-              <AdminField
-                label="写真の大きさ"
-                hint="大きくすると1枚が広くなり、その分列数が自動で減ります"
-              >
-                <TypoControl
-                  label="大きさ"
-                  valueKey="gallerySizeScale"
-                  current={current}
-                  set={set}
-                  min={0.5}
-                  max={3.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal="1"
-                />
-              </AdminField>
-              <AdminField
-                label="間隔"
-                hint="写真同士の余白の倍率（0.2=詰める / 3.0=広い）"
-              >
-                <TypoControl
-                  label="余白倍率"
-                  valueKey="galleryGapScale"
-                  current={current}
-                  set={set}
-                  min={0.2}
-                  max={5.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal="1"
-                />
-              </AdminField>
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                トップ（Works）の列数・大きさ・余白 —
-                動かすまではギャラリーと同じ値
-              </p>
-              <AdminField
-                label="最大列数（トップ）"
-                hint="トップ下部の作品の最大列数。ギャラリーとは独立です"
-              >
-                <TypoControl
-                  label="最大列数"
-                  valueKey="topWorksColumns"
-                  current={current}
-                  set={set}
-                  min={1}
-                  max={8}
-                  step={1}
-                  unit="列"
-                  defaultVal={current["galleryColumns"] || "3"}
-                />
-              </AdminField>
-              <AdminField
-                label="写真の大きさ（トップ）"
-                hint="トップ下部の作品の大きさ。ギャラリーとは独立です"
-              >
-                <TypoControl
-                  label="大きさ"
-                  valueKey="topWorksSizeScale"
-                  current={current}
-                  set={set}
-                  min={0.5}
-                  max={3.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal={current["gallerySizeScale"] || "1"}
-                />
-              </AdminField>
-              <AdminField
-                label="間隔（トップ）"
-                hint="トップ下部の作品の余白倍率。ギャラリーとは独立です"
-              >
-                <TypoControl
-                  label="余白倍率"
-                  valueKey="topWorksGapScale"
-                  current={current}
-                  set={set}
-                  min={0.2}
-                  max={5.0}
-                  step={0.05}
-                  unit="×"
-                  defaultVal={current["galleryGapScale"] || "1"}
-                />
-              </AdminField>
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                モザイクの調整
-              </p>
-              <AdminField
-                label="抜け（空セル）の頻度"
-                hint="0で抜けなし＝詰める。大きいほど余白が増える。スマホでは自動的に控えめになります"
-              >
-                <TypoControl
-                  label="抜け頻度"
-                  valueKey="galleryEmptyRate"
-                  current={current}
-                  set={set}
-                  min={0}
-                  max={0.4}
-                  step={0.01}
-                  unit=""
-                  defaultVal="0.1"
-                />
-              </AdminField>
-              <AdminField
-                label="サイズの緩急"
-                hint="S/M/L の大きさの差をどれだけ強調するか。0=ほぼ均一 / 1.0=メリハリ最大"
-              >
-                <TypoControl
-                  label="緩急の強さ"
-                  valueKey="gallerySizeVariation"
-                  current={current}
-                  set={set}
-                  min={0}
-                  max={1.0}
-                  step={0.05}
-                  unit=""
-                  defaultVal="0.5"
-                />
-              </AdminField>
-              <div className="pt-2 border-t border-[#333]">
-                <AdminField
-                  label="配置のシャッフル"
-                  hint="写真は同じまま、抜けの入る位置を別パターンに変えます。今の配置がイマイチなら押してみてください"
-                >
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        set(
-                          "gallerySeed",
-                          String(Math.floor(Math.random() * 1_000_000) + 1),
-                        )
-                      }
-                      className="flex items-center gap-1.5 px-3 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors"
-                    >
-                      <Shuffle size={12} /> 配置をシャッフル
-                    </button>
-                    <span className="text-[10px] text-[#666] tabular-nums">
-                      seed: {current["gallerySeed"] || "1"}
-                    </span>
-                  </div>
-                </AdminField>
-              </div>
-              <button
-                onClick={() => {
-                  [
-                    "galleryGapScale",
-                    "galleryEmptyRate",
-                    "gallerySizeVariation",
-                    "galleryColumns",
-                    "gallerySizeScale",
-                    "topWorksColumns",
-                    "topWorksSizeScale",
-                    "topWorksGapScale",
-                    "gallerySeed",
-                  ].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* I: Series navigation toggle */}
-            <Section title="シリーズ" defaultOpen={false}>
-              <AdminField
-                label="ナビに「Series」を表示"
-                hint="「自動」は公開シリーズが1つでもあればリンクを表示します（既定）。「表示」は常に表示、「非表示」は常に隠します。シリーズの作成・写真割り当ては上部の Series タブ・Library のインスペクタから"
-              >
-                <div className="flex gap-1">
-                  {(
-                    [
-                      ["auto", "自動"],
-                      ["on", "表示"],
-                      ["off", "非表示"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("seriesNavEnabled", val)}
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["seriesNavEnabled"] || "auto") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-
-              {/* P: series grid (Works series view) */}
-              <div className="pt-3 mt-1 border-t border-[#333] space-y-3">
-                <p className="text-[10px] text-[#666] leading-relaxed">
-                  シリーズ一覧（表紙写真のグリッド）の見せ方。プレビューで{" "}
-                  <span className="text-[#999]">Series</span> ページ、または{" "}
-                  <span className="text-[#999]">Gallery</span> ページ上部の
-                  Photos / Series
-                  切り替えで反映されます。タイルは表紙写真のみ（文字なし）。表紙未設定のシリーズは先頭写真が自動で使われます。
-                </p>
-                <AdminField
-                  label="Gallery で最初に見せるもの"
-                  hint="Gallery ページを開いたとき、写真一覧（Photos）とシリーズ一覧（Series）のどちらを先に表示するか"
-                >
-                  <div className="flex gap-1">
-                    {(
-                      [
-                        ["photos", "写真一覧"],
-                        ["series", "シリーズ"],
+                        ["carousel", "カルーセル"],
+                        ["single", "1枚絵"],
+                        ["quiet-grid", "静謐グリッド"],
+                        ["editorial", "エディトリアル"],
+                        ["immersive", "没入型"],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
                         key={val}
-                        onClick={() => set("worksDefaultView", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                          (current["worksDefaultView"] || "photos") === val
+                        onClick={() => set("heroMode", val)}
+                        className={`text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["heroMode"] || "carousel") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
                             : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
                         }`}
@@ -3938,12 +3249,513 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="シリーズ列数（PC）"
-                  hint="タイルを大きく見せたいなら少なめ（2〜3列推奨）"
+                  label="画面の使い方"
+                  hint="フルスクリーン=最初の1画面を写真が覆う（下の「高さ」設定は無視されます）"
+                >
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        ["normal", "通常（高さ設定に従う）"],
+                        ["fullscreen", "フルスクリーン"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("heroDisplayMode", val)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["heroDisplayMode"] || "normal") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label="高さ"
+                  hint="ビューポート高に対する割合。スマホは自動で上限調整。フルスクリーン時は無効"
                 >
                   <TypoControl
-                    label="PC 列数"
-                    valueKey="seriesGridColumns"
+                    label="高さ"
+                    valueKey="heroHeight"
+                    current={current}
+                    set={set}
+                    min={35}
+                    max={100}
+                    step={1}
+                    unit="vh"
+                    defaultVal="70"
+                  />
+                </AdminField>
+                <AdminField
+                  label="名前の表示位置"
+                  hint="1枚絵/フルスクリーンでは写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます"
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["center", "中央（既定）"],
+                        ["bottom-left", "左下"],
+                        ["bottom-right", "右下"],
+                        ["top-left", "左上"],
+                        ["top-right", "右上"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("heroTitlePosition", val)}
+                        className={`text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["heroTitlePosition"] || "center") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label="スクロール演出"
+                  hint="トップを下にスクロールしたときの写真の動き。OS設定で「視差効果を減らす」の人には自動で無効になります"
+                >
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(
+                      [
+                        ["none", "なし（既定）"],
+                        ["fade", "フェード"],
+                        ["sink", "沈み込み"],
+                        ["parallax", "パララックス"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("heroScrollEffect", val)}
+                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["heroScrollEffect"] || "none") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label="オーバーレイ"
+                  hint="1枚絵モードで名前を読みやすくする暗いグラデーション"
+                >
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        ["on", "あり"],
+                        ["off", "なし"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("heroOverlay", val)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["heroOverlay"] || "on") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <button
+                  onClick={() => {
+                    [
+                      "heroMode",
+                      "heroHeight",
+                      "heroOverlay",
+                      "heroDisplayMode",
+                      "heroTitlePosition",
+                      "heroScrollEffect",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
+
+              {/* BB: nav position + hover effect */}
+              <Section
+                title="ナビゲーション（位置・ホバー）"
+                defaultOpen={false}
+              >
+                <AdminField
+                  label="位置"
+                  hint="スマホでは位置に関わらず従来のハンバーガーメニューになります"
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["top", "上（既定）"],
+                        ["left", "左 縦置き"],
+                        ["bottom", "下 固定"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("navPosition", val)}
+                        className={`text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["navPosition"] || "top") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label="ホバー演出"
+                  hint="マウスを乗せたとき/キーボードフォーカス時の反応"
+                >
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(
+                      [
+                        ["fade", "フェード（既定）"],
+                        ["underline", "下線が伸びる"],
+                        ["dot", "点がともる"],
+                        ["blur", "にじみ→くっきり"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("navHoverEffect", val)}
+                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["navHoverEffect"] || "fade") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <button
+                  onClick={() => {
+                    ["navPosition", "navHoverEffect"].forEach((k) =>
+                      set(k, ""),
+                    );
+                  }}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
+
+              {/* CC: section spacing multipliers */}
+              <Section title="余白・スペーシング" defaultOpen={false}>
+                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                  ページの「間」の量を倍率で調整します。1.0
+                  が現在のリズム。スマホは元の比率のまま縮みます。
+                </p>
+                <AdminField
+                  label="ヒーロー直下"
+                  hint="ヒーロー写真と作品セクションの間"
+                >
+                  <TypoControl
+                    label="倍率"
+                    valueKey="spacingHeroBottom"
+                    current={current}
+                    set={set}
+                    min={0.2}
+                    max={4.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal="1"
+                  />
+                </AdminField>
+                <AdminField
+                  label="セクション間"
+                  hint="作品〜CTA〜フッターなどセクション同士の基本余白"
+                >
+                  <TypoControl
+                    label="倍率"
+                    valueKey="spacingSectionGap"
+                    current={current}
+                    set={set}
+                    min={0.2}
+                    max={4.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal="1"
+                  />
+                </AdminField>
+                <AdminField
+                  label="ページ冒頭"
+                  hint="ギャラリー・シリーズ・About・Contact など各ページ最初の「ため」"
+                >
+                  <TypoControl
+                    label="倍率"
+                    valueKey="spacingPageTop"
+                    current={current}
+                    set={set}
+                    min={0.2}
+                    max={4.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal="1"
+                  />
+                </AdminField>
+                <AdminField label="フッター上" hint="ページ末尾とフッターの間">
+                  <TypoControl
+                    label="倍率"
+                    valueKey="spacingFooterTop"
+                    current={current}
+                    set={set}
+                    min={0.2}
+                    max={4.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal="1"
+                  />
+                </AdminField>
+                <button
+                  onClick={() => {
+                    [
+                      "spacingHeroBottom",
+                      "spacingSectionGap",
+                      "spacingPageTop",
+                      "spacingFooterTop",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
+
+              {/* DD: paper/grain background texture */}
+              <Section title="背景の質感（グレイン）" defaultOpen={false}>
+                <AdminField
+                  label="テクスチャ"
+                  hint="背景にごく薄いノイズを敷きます。写真の上やLightboxには乗りません"
+                >
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(
+                      [
+                        ["none", "なし（既定）"],
+                        ["grain-fine", "フィルム粒子"],
+                        ["grain-coarse", "粗い紙"],
+                        ["paper", "和紙・繊維"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("bgTexture", val)}
+                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["bgTexture"] || "none") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label="濃度"
+                  hint="0.05前後がおすすめ。上げすぎると写真より質感が目立ちます"
+                >
+                  <TypoControl
+                    label="濃度"
+                    valueKey="bgTextureOpacity"
+                    current={current}
+                    set={set}
+                    min={0}
+                    max={0.15}
+                    step={0.01}
+                    unit=""
+                    defaultVal="0.05"
+                  />
+                </AdminField>
+                <button
+                  onClick={() => {
+                    ["bgTexture", "bgTextureOpacity"].forEach((k) =>
+                      set(k, ""),
+                    );
+                  }}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
+
+              {/* 写真のフェードイン方式（photoRevealEffect） */}
+              <Section title="写真のフェードイン" defaultOpen={false}>
+                <AdminField
+                  label="現れ方"
+                  hint="写真がスクロールで現れるときの動き。コラージュのような枠・傾きつきレイアウトでは「浮き上がり」より「フェード」「なし」が自然に見えます"
+                >
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(
+                      [
+                        ["fade", "フェード（既定）"],
+                        ["none", "なし（即表示）"],
+                        ["rise", "浮き上がり"],
+                        ["scale", "ズーム"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("photoRevealEffect", val)}
+                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["photoRevealEffect"] || "fade") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <button
+                  onClick={() => set("photoRevealEffect", "")}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
+
+              {/* G/N: Gallery layout type + controlled-random tuning */}
+              <Section title="ギャラリー配置" defaultOpen={false}>
+                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                  ページごとに写真の並べ方を選べます。プレビューで{" "}
+                  <span className="text-[color:var(--admin-ink)]">トップ</span>{" "}
+                  /{" "}
+                  <span className="text-[color:var(--admin-ink)]">Gallery</span>{" "}
+                  /{" "}
+                  <span className="text-[color:var(--admin-ink)]">Series</span>{" "}
+                  ページを開くと即反映。下の調整は「モザイク」に効きます。
+                </p>
+                {/* N1: layout-type pickers (more types arrive one at a time) */}
+                {(
+                  [
+                    ["galleryLayout", "ギャラリーページ", "mosaic"],
+                    ["seriesLayout", "シリーズページ", "mosaic"],
+                    ["topWorksLayout", "トップ（Works）", "stagger"],
+                  ] as const
+                ).map(([key, label, fallback]) => (
+                  <AdminField key={key} label={`${label}のレイアウト`}>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(
+                        [
+                          ["mosaic", "モザイク", "S/M/L混在・抜け感"],
+                          ["grid", "均等グリッド", "全部同サイズ・整列"],
+                          ["scroll", "縦スクロール1枚", "1枚ずつ大きく＋情報"],
+                          ["stagger", "ずらし大", "1枚ずつ左右互い違い"],
+                          ["editorial", "雑誌見開き", "2枚1組・左大右小"],
+                          ["collage", "コラージュ", "重なり・角度でスナップ風"],
+                          [
+                            "clean-grid",
+                            "クリーングリッド",
+                            "4列均一・装飾なし",
+                          ],
+                          ["masonry", "マソンリー", "3列・縦横比維持"],
+                          ["large-format", "大判", "2列大判＋キャプション"],
+                        ] as const
+                      ).map(([val, name, desc]) => (
+                        <button
+                          key={val}
+                          onClick={() => set(key, val)}
+                          title={desc}
+                          className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
+                            (current[key] || fallback) === val
+                              ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
+                              : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
+                          }`}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                ))}
+                {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定） */}
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  トップ（Works）に出す写真
+                </p>
+                <AdminField
+                  label="選び方"
+                  hint="自動=ギャラリーの並び順の先頭9枚 / ランダム=訪問ごとに入れ替え / 手動=下で選んだ写真を選んだ順に表示。最上部のヒーロー写真とは別の設定です"
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["auto", "並び順から自動", "ギャラリーの並びの先頭9枚"],
+                        ["random", "ランダム", "訪問ごとにシャッフル"],
+                        ["manual", "手動で選択", "下で写真を選ぶ"],
+                      ] as const
+                    ).map(([val, name, desc]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("topWorksMode", val)}
+                        title={desc}
+                        className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
+                          (current["topWorksMode"] || "auto") === val
+                            ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
+                            : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["topWorksMode"] || "auto") === "manual" && (
+                  <AdminField
+                    label="トップに出す写真"
+                    hint="クリックで選択/解除。番号の順（選んだ順）に表示されます。未選択のあいだは自動と同じ表示"
+                  >
+                    <TopWorksPicker
+                      value={current["topWorksIds"] ?? ""}
+                      onChange={(v) => set("topWorksIds", v)}
+                    />
+                  </AdminField>
+                )}
+                <AdminField
+                  label="初期表示枚数"
+                  hint="トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます"
+                >
+                  <TypoControl
+                    label="初期表示枚数"
+                    valueKey="homeGalleryCount"
+                    current={current}
+                    set={set}
+                    min={1}
+                    max={200}
+                    step={1}
+                    unit="枚"
+                    defaultVal="12"
+                  />
+                </AdminField>
+                {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
+                W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  ギャラリーの列数・大きさ・余白
+                </p>
+                <AdminField
+                  label="最大列数"
+                  hint="広い画面で最大何列まで並べるか。実際の列数は画面幅に応じて自動で減ります（スマホは1〜2列）"
+                >
+                  <TypoControl
+                    label="最大列数"
+                    valueKey="galleryColumns"
                     current={current}
                     set={set}
                     min={1}
@@ -3954,59 +3766,374 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <AdminField
-                  label="シリーズ列数（スマホ）"
-                  hint="スマホ表示時の列数"
+                  label="写真の大きさ"
+                  hint="大きくすると1枚が広くなり、その分列数が自動で減ります"
                 >
                   <TypoControl
-                    label="スマホ 列数"
-                    valueKey="seriesGridColumnsMobile"
+                    label="大きさ"
+                    valueKey="gallerySizeScale"
+                    current={current}
+                    set={set}
+                    min={0.5}
+                    max={3.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal="1"
+                  />
+                </AdminField>
+                <AdminField
+                  label="間隔"
+                  hint="写真同士の余白の倍率（0.2=詰める / 3.0=広い）"
+                >
+                  <TypoControl
+                    label="余白倍率"
+                    valueKey="galleryGapScale"
+                    current={current}
+                    set={set}
+                    min={0.2}
+                    max={5.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal="1"
+                  />
+                </AdminField>
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  トップ（Works）の列数・大きさ・余白 —
+                  動かすまではギャラリーと同じ値
+                </p>
+                <AdminField
+                  label="最大列数（トップ）"
+                  hint="トップ下部の作品の最大列数。ギャラリーとは独立です"
+                >
+                  <TypoControl
+                    label="最大列数"
+                    valueKey="topWorksColumns"
                     current={current}
                     set={set}
                     min={1}
-                    max={3}
+                    max={8}
                     step={1}
                     unit="列"
-                    defaultVal="2"
+                    defaultVal={current["galleryColumns"] || "3"}
                   />
                 </AdminField>
+                <AdminField
+                  label="写真の大きさ（トップ）"
+                  hint="トップ下部の作品の大きさ。ギャラリーとは独立です"
+                >
+                  <TypoControl
+                    label="大きさ"
+                    valueKey="topWorksSizeScale"
+                    current={current}
+                    set={set}
+                    min={0.5}
+                    max={3.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal={current["gallerySizeScale"] || "1"}
+                  />
+                </AdminField>
+                <AdminField
+                  label="間隔（トップ）"
+                  hint="トップ下部の作品の余白倍率。ギャラリーとは独立です"
+                >
+                  <TypoControl
+                    label="余白倍率"
+                    valueKey="topWorksGapScale"
+                    current={current}
+                    set={set}
+                    min={0.2}
+                    max={5.0}
+                    step={0.05}
+                    unit="×"
+                    defaultVal={current["galleryGapScale"] || "1"}
+                  />
+                </AdminField>
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  モザイクの調整
+                </p>
+                <AdminField
+                  label="抜け（空セル）の頻度"
+                  hint="0で抜けなし＝詰める。大きいほど余白が増える。スマホでは自動的に控えめになります"
+                >
+                  <TypoControl
+                    label="抜け頻度"
+                    valueKey="galleryEmptyRate"
+                    current={current}
+                    set={set}
+                    min={0}
+                    max={0.4}
+                    step={0.01}
+                    unit=""
+                    defaultVal="0.1"
+                  />
+                </AdminField>
+                <AdminField
+                  label="サイズの緩急"
+                  hint="S/M/L の大きさの差をどれだけ強調するか。0=ほぼ均一 / 1.0=メリハリ最大"
+                >
+                  <TypoControl
+                    label="緩急の強さ"
+                    valueKey="gallerySizeVariation"
+                    current={current}
+                    set={set}
+                    min={0}
+                    max={1.0}
+                    step={0.05}
+                    unit=""
+                    defaultVal="0.5"
+                  />
+                </AdminField>
+                <div className="pt-2 border-t border-[#333]">
+                  <AdminField
+                    label="配置のシャッフル"
+                    hint="写真は同じまま、抜けの入る位置を別パターンに変えます。今の配置がイマイチなら押してみてください"
+                  >
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          set(
+                            "gallerySeed",
+                            String(Math.floor(Math.random() * 1_000_000) + 1),
+                          )
+                        }
+                        className="flex items-center gap-1.5 px-3 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors"
+                      >
+                        <Shuffle size={12} /> 配置をシャッフル
+                      </button>
+                      <span className="text-[10px] text-[#666] tabular-nums">
+                        seed: {current["gallerySeed"] || "1"}
+                      </span>
+                    </div>
+                  </AdminField>
+                </div>
                 <button
                   onClick={() => {
                     [
-                      "worksDefaultView",
-                      "seriesGridColumns",
-                      "seriesGridColumnsMobile",
+                      "galleryGapScale",
+                      "galleryEmptyRate",
+                      "gallerySizeVariation",
+                      "galleryColumns",
+                      "gallerySizeScale",
+                      "topWorksColumns",
+                      "topWorksSizeScale",
+                      "topWorksGapScale",
+                      "gallerySeed",
                     ].forEach((k) => set(k, ""));
                   }}
                   className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
-              </div>
+              </Section>
 
-              {/* 機能8: 並び順独立設定 */}
-              <div className="pt-3 mt-1 border-t border-[#333] space-y-3">
-                <p className="text-[10px] text-[#666] leading-relaxed">
-                  写真の並び順。「手動順」は Library
-                  でドラッグした順番。シリーズごとに上書きしたい場合は Series
-                  タブの各シリーズ編集から設定できます。
+              {/* I: Series navigation toggle */}
+              <Section title="シリーズ" defaultOpen={false}>
+                <AdminField
+                  label="ナビに「Series」を表示"
+                  hint="「自動」は公開シリーズが1つでもあればリンクを表示します（既定）。「表示」は常に表示、「非表示」は常に隠します。シリーズの作成・写真割り当ては上部の Series タブ・Library のインスペクタから"
+                >
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        ["auto", "自動"],
+                        ["on", "表示"],
+                        ["off", "非表示"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("seriesNavEnabled", val)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["seriesNavEnabled"] || "auto") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+
+                {/* P: series grid (Works series view) */}
+                <div className="pt-3 mt-1 border-t border-[#333] space-y-3">
+                  <p className="text-[10px] text-[#666] leading-relaxed">
+                    シリーズ一覧（表紙写真のグリッド）の見せ方。プレビューで{" "}
+                    <span className="text-[color:var(--admin-ink)]">
+                      Series
+                    </span>{" "}
+                    ページ、または{" "}
+                    <span className="text-[color:var(--admin-ink)]">
+                      Gallery
+                    </span>{" "}
+                    ページ上部の Photos / Series
+                    切り替えで反映されます。タイルは表紙写真のみ（文字なし）。表紙未設定のシリーズは先頭写真が自動で使われます。
+                  </p>
+                  <AdminField
+                    label="Gallery で最初に見せるもの"
+                    hint="Gallery ページを開いたとき、写真一覧（Photos）とシリーズ一覧（Series）のどちらを先に表示するか"
+                  >
+                    <div className="flex gap-1">
+                      {(
+                        [
+                          ["photos", "写真一覧"],
+                          ["series", "シリーズ"],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("worksDefaultView", val)}
+                          className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                            (current["worksDefaultView"] || "photos") === val
+                              ? "bg-[#888] text-[#1e1e1e] font-medium"
+                              : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                  <AdminField
+                    label="シリーズ列数（PC）"
+                    hint="タイルを大きく見せたいなら少なめ（2〜3列推奨）"
+                  >
+                    <TypoControl
+                      label="PC 列数"
+                      valueKey="seriesGridColumns"
+                      current={current}
+                      set={set}
+                      min={1}
+                      max={8}
+                      step={1}
+                      unit="列"
+                      defaultVal="3"
+                    />
+                  </AdminField>
+                  <AdminField
+                    label="シリーズ列数（スマホ）"
+                    hint="スマホ表示時の列数"
+                  >
+                    <TypoControl
+                      label="スマホ 列数"
+                      valueKey="seriesGridColumnsMobile"
+                      current={current}
+                      set={set}
+                      min={1}
+                      max={3}
+                      step={1}
+                      unit="列"
+                      defaultVal="2"
+                    />
+                  </AdminField>
+                  <button
+                    onClick={() => {
+                      [
+                        "worksDefaultView",
+                        "seriesGridColumns",
+                        "seriesGridColumnsMobile",
+                      ].forEach((k) => set(k, ""));
+                    }}
+                    className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  >
+                    Reset to default
+                  </button>
+                </div>
+
+                {/* 機能8: 並び順独立設定 */}
+                <div className="pt-3 mt-1 border-t border-[#333] space-y-3">
+                  <p className="text-[10px] text-[#666] leading-relaxed">
+                    写真の並び順。「手動順」は Library
+                    でドラッグした順番。シリーズごとに上書きしたい場合は Series
+                    タブの各シリーズ編集から設定できます。
+                  </p>
+                  <AdminField
+                    label="ギャラリーの並び順"
+                    hint="ギャラリーページ・トップの写真の並べ方"
+                  >
+                    <div className="grid grid-cols-2 gap-1">
+                      {(
+                        [
+                          ["manual", "手動順（D&D）"],
+                          ["date_desc", "撮影日↓新しい順"],
+                          ["date_asc", "撮影日↑古い順"],
+                          ["upload_desc", "アップロード↓新しい順"],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("gallerySortOrder", val)}
+                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                  <AdminField
+                    label="シリーズ内の並び順"
+                    hint="各シリーズ詳細ページの写真の並べ方（シリーズ側で個別設定もできます）"
+                  >
+                    <div className="grid grid-cols-2 gap-1">
+                      {(
+                        [
+                          ["manual", "手動順（D&D）"],
+                          ["date_desc", "撮影日↓新しい順"],
+                          ["date_asc", "撮影日↑古い順"],
+                          ["upload_desc", "アップロード↓新しい順"],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("seriesSortOrder", val)}
+                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                  <button
+                    onClick={() => {
+                      ["gallerySortOrder", "seriesSortOrder"].forEach((k) =>
+                        set(k, ""),
+                      );
+                    }}
+                    className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  >
+                    Reset to default
+                  </button>
+                </div>
+              </Section>
+            </SettingsGroup>
+
+            <SettingsGroup title="連携・販売">
+              {/* J: note RSS integration */}
+              <Section title="note連携" defaultOpen={false}>
+                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                  note に投稿すると最新記事が About
+                  ページの「Journal」に自動表示されます（30分キャッシュ）。取得失敗時はセクションが消えるだけでサイトは壊れません。
                 </p>
                 <AdminField
-                  label="ギャラリーの並び順"
-                  hint="ギャラリーページ・トップの写真の並べ方"
+                  label="表示"
+                  hint="About ページに最新記事を表示するか"
                 >
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="flex gap-1">
                     {(
                       [
-                        ["manual", "手動順（D&D）"],
-                        ["date_desc", "撮影日↓新しい順"],
-                        ["date_asc", "撮影日↑古い順"],
-                        ["upload_desc", "アップロード↓新しい順"],
+                        ["on", "表示"],
+                        ["off", "非表示"],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
                         key={val}
-                        onClick={() => set("gallerySortOrder", val)}
-                        className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                        onClick={() => set("noteEnabled", val)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["noteEnabled"] || "off") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
                       >
                         {lbl}
                       </button>
@@ -4014,1013 +4141,960 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="シリーズ内の並び順"
-                  hint="各シリーズ詳細ページの写真の並べ方（シリーズ側で個別設定もできます）"
+                  label="note ユーザー名"
+                  hint="note.com/◯◯ の ◯◯ 部分（例: chi_aki_zip）"
                 >
-                  <div className="grid grid-cols-2 gap-1">
+                  <input
+                    aria-label="note ユーザー名"
+                    type="text"
+                    value={current["noteUsername"] ?? ""}
+                    onChange={(e) => set("noteUsername", e.target.value.trim())}
+                    placeholder="chi_aki_zip"
+                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+                  />
+                </AdminField>
+                <AdminField label="表示件数" hint="一覧に表示する記事数">
+                  <TypoControl
+                    label="件数"
+                    valueKey="noteShowCount"
+                    current={current}
+                    set={set}
+                    min={1}
+                    max={8}
+                    step={1}
+                    unit="件"
+                    defaultVal="3"
+                  />
+                </AdminField>
+              </Section>
+
+              {/* K: print sales (external store) */}
+              <Section title="プリント販売" defaultOpen={false}>
+                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                  外部ストア（BOOTH等）への控えめなリンクを About
+                  ページに表示します。未設定なら何も表示されません。
+                </p>
+                <AdminField
+                  label="表示"
+                  hint="About ページにプリント購入リンクを表示するか"
+                >
+                  <div className="flex gap-1">
                     {(
                       [
-                        ["manual", "手動順（D&D）"],
-                        ["date_desc", "撮影日↓新しい順"],
-                        ["date_asc", "撮影日↑古い順"],
-                        ["upload_desc", "アップロード↓新しい順"],
+                        ["on", "表示"],
+                        ["off", "非表示"],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
                         key={val}
-                        onClick={() => set("seriesSortOrder", val)}
-                        className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                        onClick={() => set("printEnabled", val)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["printEnabled"] || "off") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
                       >
                         {lbl}
                       </button>
                     ))}
                   </div>
                 </AdminField>
+                <AdminField label="ストアURL" hint="BOOTH等の販売ページURL">
+                  <input
+                    aria-label="ストアURL"
+                    type="url"
+                    value={current["printStoreUrl"] ?? ""}
+                    onChange={(e) =>
+                      set("printStoreUrl", e.target.value.trim())
+                    }
+                    placeholder="https://..."
+                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                  />
+                </AdminField>
+                <AdminField label="リンク文言" hint="ボタンの表示テキスト">
+                  <input
+                    aria-label="リンク文言"
+                    type="text"
+                    value={current["printStoreLabel"] ?? ""}
+                    onChange={(e) => set("printStoreLabel", e.target.value)}
+                    placeholder="プリントを購入する"
+                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                  />
+                </AdminField>
+                <AdminField
+                  label="説明文（任意）"
+                  hint="サイズ・価格の概要など"
+                >
+                  <textarea
+                    aria-label="プリント説明文"
+                    rows={2}
+                    value={current["printDescription"] ?? ""}
+                    onChange={(e) => set("printDescription", e.target.value)}
+                    placeholder="A4 / ¥3,000〜 ..."
+                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                  />
+                </AdminField>
+              </Section>
+
+              {/* 撮影依頼 CTA — closing "work with me" band */}
+              <Section title="撮影依頼 CTA" defaultOpen={false}>
+                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                  トップ・ギャラリー・シリーズ各ページの末尾に「撮影のご依頼」への導線を表示します。閲覧者が作品を見終えた直後に依頼へつなげる動線です。
+                </p>
+                <AdminField
+                  label="表示"
+                  hint="各ページ末尾に依頼CTAを表示するか"
+                >
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        ["on", "表示"],
+                        ["off", "非表示"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("homeCtaEnabled", val)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["homeCtaEnabled"] || "off") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label="見出し"
+                  hint="例: 撮影のご依頼 / Work with me"
+                >
+                  <input
+                    aria-label="CTA見出し"
+                    type="text"
+                    value={current["homeCtaTitle"] ?? ""}
+                    onChange={(e) => set("homeCtaTitle", e.target.value)}
+                    placeholder="撮影のご依頼"
+                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                  />
+                </AdminField>
+                <AdminField
+                  label="本文（任意）"
+                  hint="依頼を後押しする一言。撮影ジャンル・対応範囲など"
+                >
+                  <textarea
+                    aria-label="CTA本文"
+                    rows={2}
+                    value={current["homeCtaText"] ?? ""}
+                    onChange={(e) => set("homeCtaText", e.target.value)}
+                    placeholder="ポートレート・作品撮り・取材など、お気軽にご相談ください。"
+                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                  />
+                </AdminField>
+                <AdminField
+                  label="ボタン文言"
+                  hint="Contact ページへのリンク文言"
+                >
+                  <input
+                    aria-label="CTAボタン文言"
+                    type="text"
+                    value={current["homeCtaButton"] ?? ""}
+                    onChange={(e) => set("homeCtaButton", e.target.value)}
+                    placeholder="お問い合わせ"
+                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                  />
+                </AdminField>
+              </Section>
+            </SettingsGroup>
+
+            <SettingsGroup title="デザイン・文言">
+              {/* Theme Colors */}
+              <Section title="Theme Colors" defaultOpen={false}>
+                <div className="flex gap-4">
+                  <AdminField label="Background">
+                    <div className="flex items-center gap-2">
+                      <input
+                        aria-label="背景色"
+                        type="color"
+                        value={current["themeBg"] || "#F5F0EB"}
+                        onChange={(e) => set("themeBg", e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+                      />
+                      <input
+                        aria-label="背景色（HEX）"
+                        type="text"
+                        value={current["themeBg"] || ""}
+                        onChange={(e) => set("themeBg", e.target.value)}
+                        placeholder="#F5F0EB"
+                        className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      />
+                    </div>
+                  </AdminField>
+                  <AdminField label="Text">
+                    <div className="flex items-center gap-2">
+                      <input
+                        aria-label="文字色"
+                        type="color"
+                        value={current["themeText"] || "#1a1a1a"}
+                        onChange={(e) => set("themeText", e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+                      />
+                      <input
+                        aria-label="文字色（HEX）"
+                        type="text"
+                        value={current["themeText"] || ""}
+                        onChange={(e) => set("themeText", e.target.value)}
+                        placeholder="#1a1a1a"
+                        className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      />
+                    </div>
+                  </AdminField>
+                </div>
                 <button
                   onClick={() => {
-                    ["gallerySortOrder", "seriesSortOrder"].forEach((k) =>
-                      set(k, ""),
-                    );
+                    set("themeBg", "");
+                    set("themeText", "");
                   }}
                   className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
-              </div>
-            </Section>
+              </Section>
 
-            {/* J: note RSS integration */}
-            <Section title="note連携" defaultOpen={false}>
-              <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
-                note に投稿すると最新記事が About
-                ページの「Journal」に自動表示されます（30分キャッシュ）。取得失敗時はセクションが消えるだけでサイトは壊れません。
-              </p>
-              <AdminField
-                label="表示"
-                hint="About ページに最新記事を表示するか"
-              >
-                <div className="flex gap-1">
-                  {(
-                    [
-                      ["on", "表示"],
-                      ["off", "非表示"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("noteEnabled", val)}
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["noteEnabled"] || "off") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField
-                label="note ユーザー名"
-                hint="note.com/◯◯ の ◯◯ 部分（例: chi_aki_zip）"
-              >
-                <input
-                  aria-label="note ユーザー名"
-                  type="text"
-                  value={current["noteUsername"] ?? ""}
-                  onChange={(e) => set("noteUsername", e.target.value.trim())}
-                  placeholder="chi_aki_zip"
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
-                />
-              </AdminField>
-              <AdminField label="表示件数" hint="一覧に表示する記事数">
-                <TypoControl
-                  label="件数"
-                  valueKey="noteShowCount"
+              {/* Fonts */}
+              <Section title="Fonts" defaultOpen={false}>
+                {/* A6: one-click 和英 pairing presets — sets the existing fontJa/fontEn
+                keys, so live preview and Save work exactly like manual picks. */}
+                <AdminField
+                  label="ペアリング"
+                  hint="和文と欧文の組み合わせをワンクリックで一括設定。下の個別選択でいつでも上書きできます"
+                >
+                  <PairingPicker current={current} set={set} />
+                </AdminField>
+                <FontPicker
+                  label="日本語フォント"
+                  presets={Object.keys(GOOGLE_FONTS_JA)}
+                  valueKey="fontJa"
+                  customNameKey="customFontJaName"
+                  customUrlKey="customFontJaUrl"
+                  customCategoryKey="customFontJaCategory"
                   current={current}
                   set={set}
-                  min={1}
-                  max={8}
-                  step={1}
-                  unit="件"
-                  defaultVal="3"
+                  fontMap={GOOGLE_FONTS_JA}
                 />
-              </AdminField>
-            </Section>
-
-            {/* K: print sales (external store) */}
-            <Section title="プリント販売" defaultOpen={false}>
-              <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
-                外部ストア（BOOTH等）への控えめなリンクを About
-                ページに表示します。未設定なら何も表示されません。
-              </p>
-              <AdminField
-                label="表示"
-                hint="About ページにプリント購入リンクを表示するか"
-              >
-                <div className="flex gap-1">
-                  {(
-                    [
-                      ["on", "表示"],
-                      ["off", "非表示"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("printEnabled", val)}
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["printEnabled"] || "off") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField label="ストアURL" hint="BOOTH等の販売ページURL">
-                <input
-                  aria-label="ストアURL"
-                  type="url"
-                  value={current["printStoreUrl"] ?? ""}
-                  onChange={(e) => set("printStoreUrl", e.target.value.trim())}
-                  placeholder="https://..."
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                <FontPicker
+                  label="英語フォント"
+                  presets={Object.keys(GOOGLE_FONTS_EN)}
+                  valueKey="fontEn"
+                  customNameKey="customFontEnName"
+                  customUrlKey="customFontEnUrl"
+                  customCategoryKey="customFontEnCategory"
+                  current={current}
+                  set={set}
+                  fontMap={GOOGLE_FONTS_EN}
                 />
-              </AdminField>
-              <AdminField label="リンク文言" hint="ボタンの表示テキスト">
-                <input
-                  aria-label="リンク文言"
-                  type="text"
-                  value={current["printStoreLabel"] ?? ""}
-                  onChange={(e) => set("printStoreLabel", e.target.value)}
-                  placeholder="プリントを購入する"
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                />
-              </AdminField>
-              <AdminField label="説明文（任意）" hint="サイズ・価格の概要など">
-                <textarea
-                  aria-label="プリント説明文"
-                  rows={2}
-                  value={current["printDescription"] ?? ""}
-                  onChange={(e) => set("printDescription", e.target.value)}
-                  placeholder="A4 / ¥3,000〜 ..."
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
-                />
-              </AdminField>
-            </Section>
-
-            {/* 撮影依頼 CTA — closing "work with me" band */}
-            <Section title="撮影依頼 CTA" defaultOpen={false}>
-              <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
-                トップ・ギャラリー・シリーズ各ページの末尾に「撮影のご依頼」への導線を表示します。閲覧者が作品を見終えた直後に依頼へつなげる動線です。
-              </p>
-              <AdminField label="表示" hint="各ページ末尾に依頼CTAを表示するか">
-                <div className="flex gap-1">
-                  {(
-                    [
-                      ["on", "表示"],
-                      ["off", "非表示"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("homeCtaEnabled", val)}
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["homeCtaEnabled"] || "off") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <AdminField label="見出し" hint="例: 撮影のご依頼 / Work with me">
-                <input
-                  aria-label="CTA見出し"
-                  type="text"
-                  value={current["homeCtaTitle"] ?? ""}
-                  onChange={(e) => set("homeCtaTitle", e.target.value)}
-                  placeholder="撮影のご依頼"
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                />
-              </AdminField>
-              <AdminField
-                label="本文（任意）"
-                hint="依頼を後押しする一言。撮影ジャンル・対応範囲など"
-              >
-                <textarea
-                  aria-label="CTA本文"
-                  rows={2}
-                  value={current["homeCtaText"] ?? ""}
-                  onChange={(e) => set("homeCtaText", e.target.value)}
-                  placeholder="ポートレート・作品撮り・取材など、お気軽にご相談ください。"
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
-                />
-              </AdminField>
-              <AdminField
-                label="ボタン文言"
-                hint="Contact ページへのリンク文言"
-              >
-                <input
-                  aria-label="CTAボタン文言"
-                  type="text"
-                  value={current["homeCtaButton"] ?? ""}
-                  onChange={(e) => set("homeCtaButton", e.target.value)}
-                  placeholder="お問い合わせ"
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                />
-              </AdminField>
-            </Section>
-
-            {/* Theme Colors */}
-            <Section title="Theme Colors" defaultOpen={false}>
-              <div className="flex gap-4">
-                <AdminField label="Background">
-                  <div className="flex items-center gap-2">
-                    <input
-                      aria-label="背景色"
-                      type="color"
-                      value={current["themeBg"] || "#F5F0EB"}
-                      onChange={(e) => set("themeBg", e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
-                    />
-                    <input
-                      aria-label="背景色（HEX）"
-                      type="text"
-                      value={current["themeBg"] || ""}
-                      onChange={(e) => set("themeBg", e.target.value)}
-                      placeholder="#F5F0EB"
-                      className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                    />
-                  </div>
-                </AdminField>
-                <AdminField label="Text">
-                  <div className="flex items-center gap-2">
-                    <input
-                      aria-label="文字色"
-                      type="color"
-                      value={current["themeText"] || "#1a1a1a"}
-                      onChange={(e) => set("themeText", e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
-                    />
-                    <input
-                      aria-label="文字色（HEX）"
-                      type="text"
-                      value={current["themeText"] || ""}
-                      onChange={(e) => set("themeText", e.target.value)}
-                      placeholder="#1a1a1a"
-                      className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                    />
-                  </div>
-                </AdminField>
-              </div>
-              <button
-                onClick={() => {
-                  set("themeBg", "");
-                  set("themeText", "");
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* Fonts */}
-            <Section title="Fonts" defaultOpen={false}>
-              {/* A6: one-click 和英 pairing presets — sets the existing fontJa/fontEn
-                keys, so live preview and Save work exactly like manual picks. */}
-              <AdminField
-                label="ペアリング"
-                hint="和文と欧文の組み合わせをワンクリックで一括設定。下の個別選択でいつでも上書きできます"
-              >
-                <PairingPicker current={current} set={set} />
-              </AdminField>
-              <FontPicker
-                label="日本語フォント"
-                presets={Object.keys(GOOGLE_FONTS_JA)}
-                valueKey="fontJa"
-                customNameKey="customFontJaName"
-                customUrlKey="customFontJaUrl"
-                customCategoryKey="customFontJaCategory"
-                current={current}
-                set={set}
-                fontMap={GOOGLE_FONTS_JA}
-              />
-              <FontPicker
-                label="英語フォント"
-                presets={Object.keys(GOOGLE_FONTS_EN)}
-                valueKey="fontEn"
-                customNameKey="customFontEnName"
-                customUrlKey="customFontEnUrl"
-                customCategoryKey="customFontEnCategory"
-                current={current}
-                set={set}
-                fontMap={GOOGLE_FONTS_EN}
-              />
-              {/* A3: weights — options derive from the selected JA font's definition
+                {/* A3: weights — options derive from the selected JA font's definition
                 (loaded weights), falling back to a generic scale when unknown. */}
-              {(() => {
-                const jaDef = GOOGLE_FONTS_JA[current["fontJa"] || ""];
-                const weights = jaDef?.weights ?? [300, 400, 500, 700];
-                const row = (key: string, defWeight: string) => (
-                  <div className="flex gap-1.5 flex-wrap">
-                    <button
-                      onClick={() => set(key, "")}
-                      className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
-                        !(current[key] || "")
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      既定（{defWeight}）
-                    </button>
-                    {weights.map((w) => (
+                {(() => {
+                  const jaDef = GOOGLE_FONTS_JA[current["fontJa"] || ""];
+                  const weights = jaDef?.weights ?? [300, 400, 500, 700];
+                  const row = (key: string, defWeight: string) => (
+                    <div className="flex gap-1.5 flex-wrap">
                       <button
-                        key={w}
-                        onClick={() => set(key, String(w))}
+                        onClick={() => set(key, "")}
                         className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
-                          (current[key] || "") === String(w)
+                          !(current[key] || "")
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
                             : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
                         }`}
-                        style={{ fontWeight: w }}
                       >
-                        {w}
+                        既定（{defWeight}）
+                      </button>
+                      {weights.map((w) => (
+                        <button
+                          key={w}
+                          onClick={() => set(key, String(w))}
+                          className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
+                            (current[key] || "") === String(w)
+                              ? "bg-[#888] text-[#1e1e1e] font-medium"
+                              : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                          }`}
+                          style={{ fontWeight: w }}
+                        >
+                          {w}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                  const hint = jaDef
+                    ? "選択中の日本語フォントが読み込むウェイトから選択"
+                    : "フォント未選択/カスタムのため一般的なウェイトを表示（フォント側が未対応の値は近似表示になります）";
+                  return (
+                    <>
+                      <AdminField label="ヒーロー名の太さ" hint={hint}>
+                        {row("heroNameWeight", "700")}
+                      </AdminField>
+                      <AdminField
+                        label="本文の太さ"
+                        hint="サイト全体の本文の太さ"
+                      >
+                        {row("bodyWeight", "400")}
+                      </AdminField>
+                    </>
+                  );
+                })()}
+              </Section>
+
+              {/* Typography — 大きさ (D4: 軸別2階層。まず調整軸→対象) */}
+              <Section title="Typography ｜ 大きさ" defaultOpen={false}>
+                <AdminField
+                  label="全体スケール"
+                  hint="全部の文字をまとめて大小（モバイル縮小率と併用可）"
+                >
+                  <TypoControl
+                    label="スケール"
+                    valueKey="globalFontScale"
+                    current={current}
+                    set={set}
+                    min={0.5}
+                    max={2.0}
+                    step={0.01}
+                    unit="×"
+                    defaultVal="1"
+                  />
+                </AdminField>
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  ヒーロー名 / サブタイトル
+                </p>
+                <TypoControl
+                  label="名前"
+                  valueKey="heroNameSize"
+                  current={current}
+                  set={set}
+                  min={16}
+                  max={160}
+                  step={1}
+                  unit="px"
+                  defaultVal="60"
+                />
+                <TypoControl
+                  label="EN名"
+                  valueKey="heroNameEnSize"
+                  current={current}
+                  set={set}
+                  min={8}
+                  max={80}
+                  step={1}
+                  unit="px"
+                  defaultVal="24"
+                />
+                <TypoControl
+                  label="サブタイトル"
+                  valueKey="heroSubSize"
+                  current={current}
+                  set={set}
+                  min={6}
+                  max={60}
+                  step={1}
+                  unit="px"
+                  defaultVal="12"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  ナビゲーション
+                </p>
+                <TypoControl
+                  label="サイズ"
+                  valueKey="navSize"
+                  current={current}
+                  set={set}
+                  min={8}
+                  max={48}
+                  step={1}
+                  unit="px"
+                  defaultVal="14"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  セクション見出し（Recent Work / Contact 等）
+                </p>
+                <TypoControl
+                  label="サイズ"
+                  valueKey="sectionLabelSize"
+                  current={current}
+                  set={set}
+                  min={8}
+                  max={40}
+                  step={1}
+                  unit="px"
+                  defaultVal="16"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  ページ見出し（About名前）
+                </p>
+                <TypoControl
+                  label="サイズ"
+                  valueKey="headingSize"
+                  current={current}
+                  set={set}
+                  min={12}
+                  max={80}
+                  step={1}
+                  unit="px"
+                  defaultVal="30"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  本文
+                </p>
+                <TypoControl
+                  label="サイズ"
+                  valueKey="bodySize"
+                  current={current}
+                  set={set}
+                  min={10}
+                  max={36}
+                  step={1}
+                  unit="px"
+                  defaultVal="16"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  フッター
+                </p>
+                <TypoControl
+                  label="サイズ"
+                  valueKey="footerSize"
+                  current={current}
+                  set={set}
+                  min={7}
+                  max={32}
+                  step={1}
+                  unit="px"
+                  defaultVal="12"
+                />
+                <button
+                  onClick={() => {
+                    [
+                      "globalFontScale",
+                      "heroNameSize",
+                      "heroNameEnSize",
+                      "heroSubSize",
+                      "navSize",
+                      "sectionLabelSize",
+                      "headingSize",
+                      "bodySize",
+                      "footerSize",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
+
+              {/* Typography — 色 */}
+              <Section title="Typography ｜ 色" defaultOpen={false}>
+                <p className="text-[9px] text-[#666] -mb-2">
+                  ヒーロー名 / サブタイトル
+                </p>
+                <ColorRow
+                  label="名前"
+                  valueKey="heroNameColor"
+                  current={current}
+                  set={set}
+                  placeholder="#ffffff"
+                />
+                <ColorRow
+                  label="EN名"
+                  valueKey="heroNameEnColor"
+                  current={current}
+                  set={set}
+                  placeholder="rgba(255,255,255,0.75)"
+                />
+                <ColorRow
+                  label="サブタイトル"
+                  valueKey="heroSubColor"
+                  current={current}
+                  set={set}
+                  placeholder="rgba(255,255,255,0.75)"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  アクセントカラー（差し色）
+                </p>
+                <ColorRow
+                  label="アクセント"
+                  valueKey="accentColor"
+                  current={current}
+                  set={set}
+                  placeholder="未設定 = 従来の色"
+                  hint="ホバー・選択中・フォーカスにまとめて効く差し色。薄い色は背景とのコントラストが低く見えにくい場合があります"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  リンク
+                </p>
+                <ColorRow
+                  label="ホバー色"
+                  valueKey="linkHoverColor"
+                  current={current}
+                  set={set}
+                  placeholder="#1a1a1a"
+                  hint="本文中リンクのホバー色。未設定ならアクセントカラー→既定の順で適用"
+                />
+                <AdminField label="下線" hint="リンクに下線を表示するか">
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        ["on", "あり"],
+                        ["off", "なし"],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("linkUnderline", val)}
+                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          (current["linkUnderline"] || "off") === val
+                            ? "bg-[#888] text-[#1e1e1e] font-medium"
+                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        }`}
+                      >
+                        {lbl}
                       </button>
                     ))}
                   </div>
-                );
-                const hint = jaDef
-                  ? "選択中の日本語フォントが読み込むウェイトから選択"
-                  : "フォント未選択/カスタムのため一般的なウェイトを表示（フォント側が未対応の値は近似表示になります）";
-                return (
-                  <>
-                    <AdminField label="ヒーロー名の太さ" hint={hint}>
-                      {row("heroNameWeight", "700")}
-                    </AdminField>
-                    <AdminField
-                      label="本文の太さ"
-                      hint="サイト全体の本文の太さ"
-                    >
-                      {row("bodyWeight", "400")}
-                    </AdminField>
-                  </>
-                );
-              })()}
-            </Section>
-
-            {/* Typography — 大きさ (D4: 軸別2階層。まず調整軸→対象) */}
-            <Section title="Typography ｜ 大きさ" defaultOpen={false}>
-              <AdminField
-                label="全体スケール"
-                hint="全部の文字をまとめて大小（モバイル縮小率と併用可）"
-              >
+                </AdminField>
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  不透明度（詳細）
+                </p>
                 <TypoControl
-                  label="スケール"
-                  valueKey="globalFontScale"
+                  label="ナビ"
+                  valueKey="navOpacity"
                   current={current}
                   set={set}
-                  min={0.5}
-                  max={2.0}
+                  min={0.05}
+                  max={1}
                   step={0.01}
-                  unit="×"
-                  defaultVal="1"
+                  isOpacity
                 />
-              </AdminField>
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                ヒーロー名 / サブタイトル
-              </p>
-              <TypoControl
-                label="名前"
-                valueKey="heroNameSize"
-                current={current}
-                set={set}
-                min={16}
-                max={160}
-                step={1}
-                unit="px"
-                defaultVal="60"
-              />
-              <TypoControl
-                label="EN名"
-                valueKey="heroNameEnSize"
-                current={current}
-                set={set}
-                min={8}
-                max={80}
-                step={1}
-                unit="px"
-                defaultVal="24"
-              />
-              <TypoControl
-                label="サブタイトル"
-                valueKey="heroSubSize"
-                current={current}
-                set={set}
-                min={6}
-                max={60}
-                step={1}
-                unit="px"
-                defaultVal="12"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                ナビゲーション
-              </p>
-              <TypoControl
-                label="サイズ"
-                valueKey="navSize"
-                current={current}
-                set={set}
-                min={8}
-                max={48}
-                step={1}
-                unit="px"
-                defaultVal="14"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                セクション見出し（Recent Work / Contact 等）
-              </p>
-              <TypoControl
-                label="サイズ"
-                valueKey="sectionLabelSize"
-                current={current}
-                set={set}
-                min={8}
-                max={40}
-                step={1}
-                unit="px"
-                defaultVal="16"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                ページ見出し（About名前）
-              </p>
-              <TypoControl
-                label="サイズ"
-                valueKey="headingSize"
-                current={current}
-                set={set}
-                min={12}
-                max={80}
-                step={1}
-                unit="px"
-                defaultVal="30"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                本文
-              </p>
-              <TypoControl
-                label="サイズ"
-                valueKey="bodySize"
-                current={current}
-                set={set}
-                min={10}
-                max={36}
-                step={1}
-                unit="px"
-                defaultVal="16"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                フッター
-              </p>
-              <TypoControl
-                label="サイズ"
-                valueKey="footerSize"
-                current={current}
-                set={set}
-                min={7}
-                max={32}
-                step={1}
-                unit="px"
-                defaultVal="12"
-              />
-              <button
-                onClick={() => {
-                  [
-                    "globalFontScale",
-                    "heroNameSize",
-                    "heroNameEnSize",
-                    "heroSubSize",
-                    "navSize",
-                    "sectionLabelSize",
-                    "headingSize",
-                    "bodySize",
-                    "footerSize",
-                  ].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
-
-            {/* Typography — 色 */}
-            <Section title="Typography ｜ 色" defaultOpen={false}>
-              <p className="text-[9px] text-[#666] -mb-2">
-                ヒーロー名 / サブタイトル
-              </p>
-              <ColorRow
-                label="名前"
-                valueKey="heroNameColor"
-                current={current}
-                set={set}
-                placeholder="#ffffff"
-              />
-              <ColorRow
-                label="EN名"
-                valueKey="heroNameEnColor"
-                current={current}
-                set={set}
-                placeholder="rgba(255,255,255,0.75)"
-              />
-              <ColorRow
-                label="サブタイトル"
-                valueKey="heroSubColor"
-                current={current}
-                set={set}
-                placeholder="rgba(255,255,255,0.75)"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                アクセントカラー（差し色）
-              </p>
-              <ColorRow
-                label="アクセント"
-                valueKey="accentColor"
-                current={current}
-                set={set}
-                placeholder="未設定 = 従来の色"
-                hint="ホバー・選択中・フォーカスにまとめて効く差し色。薄い色は背景とのコントラストが低く見えにくい場合があります"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                リンク
-              </p>
-              <ColorRow
-                label="ホバー色"
-                valueKey="linkHoverColor"
-                current={current}
-                set={set}
-                placeholder="#1a1a1a"
-                hint="本文中リンクのホバー色。未設定ならアクセントカラー→既定の順で適用"
-              />
-              <AdminField label="下線" hint="リンクに下線を表示するか">
-                <div className="flex gap-1">
-                  {(
+                <TypoControl
+                  label="セクション見出し"
+                  valueKey="sectionLabelOpacity"
+                  current={current}
+                  set={set}
+                  min={0.05}
+                  max={1}
+                  step={0.01}
+                  isOpacity
+                />
+                <TypoControl
+                  label="フッター"
+                  valueKey="footerOpacity"
+                  current={current}
+                  set={set}
+                  min={0.05}
+                  max={1}
+                  step={0.01}
+                  isOpacity
+                />
+                <TypoControl
+                  label="SNSアイコン"
+                  valueKey="snsOpacity"
+                  current={current}
+                  set={set}
+                  min={0.05}
+                  max={1}
+                  step={0.01}
+                  isOpacity
+                />
+                <button
+                  onClick={() => {
                     [
-                      ["on", "あり"],
-                      ["off", "なし"],
-                    ] as const
-                  ).map(([val, lbl]) => (
-                    <button
-                      key={val}
-                      onClick={() => set("linkUnderline", val)}
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                        (current["linkUnderline"] || "off") === val
-                          ? "bg-[#888] text-[#1e1e1e] font-medium"
-                          : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </AdminField>
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                不透明度（詳細）
-              </p>
-              <TypoControl
-                label="ナビ"
-                valueKey="navOpacity"
-                current={current}
-                set={set}
-                min={0.05}
-                max={1}
-                step={0.01}
-                isOpacity
-              />
-              <TypoControl
-                label="セクション見出し"
-                valueKey="sectionLabelOpacity"
-                current={current}
-                set={set}
-                min={0.05}
-                max={1}
-                step={0.01}
-                isOpacity
-              />
-              <TypoControl
-                label="フッター"
-                valueKey="footerOpacity"
-                current={current}
-                set={set}
-                min={0.05}
-                max={1}
-                step={0.01}
-                isOpacity
-              />
-              <TypoControl
-                label="SNSアイコン"
-                valueKey="snsOpacity"
-                current={current}
-                set={set}
-                min={0.05}
-                max={1}
-                step={0.01}
-                isOpacity
-              />
-              <button
-                onClick={() => {
-                  [
-                    "heroNameColor",
-                    "heroNameEnColor",
-                    "heroSubColor",
-                    "accentColor",
-                    "linkHoverColor",
-                    "linkUnderline",
-                    "navOpacity",
-                    "sectionLabelOpacity",
-                    "footerOpacity",
-                    "snsOpacity",
-                  ].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                      "heroNameColor",
+                      "heroNameEnColor",
+                      "heroSubColor",
+                      "accentColor",
+                      "linkHoverColor",
+                      "linkUnderline",
+                      "navOpacity",
+                      "sectionLabelOpacity",
+                      "footerOpacity",
+                      "snsOpacity",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
+
+              {/* Typography — 間隔（字間・行間） */}
+              <Section
+                title="Typography ｜ 間隔（字間・行間）"
+                defaultOpen={false}
               >
-                Reset to default
-              </button>
-            </Section>
+                <p className="text-[9px] text-[#666] -mb-2">ヒーロー名</p>
+                <TypoControl
+                  label="名前 字間"
+                  valueKey="heroNameTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.8}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.04"
+                />
+                <TypoControl
+                  label="EN名 字間"
+                  valueKey="heroNameEnTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.6}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.08"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  ナビゲーション
+                </p>
+                <TypoControl
+                  label="字間"
+                  valueKey="navTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.8}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.04"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  セクション見出し
+                </p>
+                <TypoControl
+                  label="字間"
+                  valueKey="sectionLabelTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.6}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.10"
+                />
+                <TypoControl
+                  label="行間"
+                  valueKey="sectionLeading"
+                  current={current}
+                  set={set}
+                  min={0.9}
+                  max={3.0}
+                  step={0.05}
+                  unit=""
+                  defaultVal="1.2"
+                />
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  本文
+                </p>
+                <TypoControl
+                  label="字間"
+                  valueKey="bodyTracking"
+                  current={current}
+                  set={set}
+                  min={-0.04}
+                  max={0.5}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.01"
+                />
+                <TypoControl
+                  label="行間"
+                  valueKey="bodyLeading"
+                  current={current}
+                  set={set}
+                  min={1.2}
+                  max={3.0}
+                  step={0.05}
+                  unit=""
+                  defaultVal="1.8"
+                />
+                <button
+                  onClick={() => {
+                    [
+                      "heroNameTracking",
+                      "heroNameEnTracking",
+                      "navTracking",
+                      "sectionLabelTracking",
+                      "sectionLeading",
+                      "bodyTracking",
+                      "bodyLeading",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                >
+                  Reset to default
+                </button>
+              </Section>
 
-            {/* Typography — 間隔（字間・行間） */}
-            <Section
-              title="Typography ｜ 間隔（字間・行間）"
-              defaultOpen={false}
-            >
-              <p className="text-[9px] text-[#666] -mb-2">ヒーロー名</p>
-              <TypoControl
-                label="名前 字間"
-                valueKey="heroNameTracking"
-                current={current}
-                set={set}
-                min={-0.06}
-                max={0.8}
-                step={0.01}
-                unit="em"
-                defaultVal="0.04"
-              />
-              <TypoControl
-                label="EN名 字間"
-                valueKey="heroNameEnTracking"
-                current={current}
-                set={set}
-                min={-0.06}
-                max={0.6}
-                step={0.01}
-                unit="em"
-                defaultVal="0.08"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                ナビゲーション
-              </p>
-              <TypoControl
-                label="字間"
-                valueKey="navTracking"
-                current={current}
-                set={set}
-                min={-0.06}
-                max={0.8}
-                step={0.01}
-                unit="em"
-                defaultVal="0.04"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                セクション見出し
-              </p>
-              <TypoControl
-                label="字間"
-                valueKey="sectionLabelTracking"
-                current={current}
-                set={set}
-                min={-0.06}
-                max={0.6}
-                step={0.01}
-                unit="em"
-                defaultVal="0.10"
-              />
-              <TypoControl
-                label="行間"
-                valueKey="sectionLeading"
-                current={current}
-                set={set}
-                min={0.9}
-                max={3.0}
-                step={0.05}
-                unit=""
-                defaultVal="1.2"
-              />
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                本文
-              </p>
-              <TypoControl
-                label="字間"
-                valueKey="bodyTracking"
-                current={current}
-                set={set}
-                min={-0.04}
-                max={0.5}
-                step={0.01}
-                unit="em"
-                defaultVal="0.01"
-              />
-              <TypoControl
-                label="行間"
-                valueKey="bodyLeading"
-                current={current}
-                set={set}
-                min={1.2}
-                max={3.0}
-                step={0.05}
-                unit=""
-                defaultVal="1.8"
-              />
-              <button
-                onClick={() => {
+              {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
+              <Section title="サイト文言" defaultOpen={false}>
+                <p className="text-[9px] text-[#666] -mb-2">ナビゲーション</p>
+                {(
                   [
-                    "heroNameTracking",
-                    "heroNameEnTracking",
-                    "navTracking",
-                    "sectionLabelTracking",
-                    "sectionLeading",
-                    "bodyTracking",
-                    "bodyLeading",
-                  ].forEach((k) => set(k, ""));
-                }}
-                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Reset to default
-              </button>
-            </Section>
+                    {
+                      key: "navLabelTop",
+                      label: "ロゴ (TOP)",
+                      placeholder: "TOP",
+                      hint: "全ページ左上のロゴ／TOPリンク",
+                    },
+                    {
+                      key: "navLabelGallery",
+                      label: "Gallery リンク",
+                      placeholder: "Gallery",
+                      hint: "ヘッダーナビの Gallery リンク",
+                    },
+                    {
+                      key: "navLabelAbout",
+                      label: "About リンク",
+                      placeholder: "About",
+                      hint: "ヘッダーナビの About リンク",
+                    },
+                    {
+                      key: "navLabelContact",
+                      label: "Contact リンク",
+                      placeholder: "Contact",
+                      hint: "ヘッダーナビの Contact リンク",
+                    },
+                  ] as {
+                    key: string;
+                    label: string;
+                    placeholder: string;
+                    hint: string;
+                  }[]
+                ).map((f) => (
+                  <AdminField key={f.key} label={f.label} hint={f.hint}>
+                    <input
+                      type="text"
+                      aria-label={f.label}
+                      value={current[f.key] ?? ""}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    />
+                  </AdminField>
+                ))}
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  SNS ラベル
+                </p>
+                {(
+                  [
+                    {
+                      key: "snsLabelInstagram",
+                      label: "Instagram",
+                      placeholder: "Instagram",
+                      hint: "フッター等のSNSリンク表示名",
+                    },
+                    {
+                      key: "snsLabelTwitter",
+                      label: "X / Twitter",
+                      placeholder: "X",
+                      hint: "フッター等のSNSリンク表示名",
+                    },
+                    {
+                      key: "snsLabelNote",
+                      label: "note",
+                      placeholder: "note",
+                      hint: "フッター等のSNSリンク表示名",
+                    },
+                  ] as {
+                    key: string;
+                    label: string;
+                    placeholder: string;
+                    hint: string;
+                  }[]
+                ).map((f) => (
+                  <AdminField key={f.key} label={f.label} hint={f.hint}>
+                    <input
+                      type="text"
+                      aria-label={f.label}
+                      value={current[f.key] ?? ""}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    />
+                  </AdminField>
+                ))}
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  セクション見出し
+                </p>
+                {(
+                  [
+                    {
+                      key: "worksLabel",
+                      label: "Works 見出し",
+                      placeholder: "Works",
+                      hint: "トップの最新作品セクションの見出し",
+                    },
+                    {
+                      key: "viewAllLabel",
+                      label: "View all リンク",
+                      placeholder: "View all →",
+                      hint: "トップの作品セクション見出し横の小リンク文言",
+                    },
+                    {
+                      key: "viewAllCtaLabel",
+                      label: "View all ボタン",
+                      placeholder: "すべての作品を見る",
+                      hint: "トップの作品一覧の下に出る大きめボタンの文言",
+                    },
+                    {
+                      key: "galleryLabel",
+                      label: "Gallery 見出し",
+                      placeholder: "Gallery",
+                      hint: "ギャラリーページ上部の見出し",
+                    },
+                    {
+                      key: "filterAllLabel",
+                      label: "フィルター All",
+                      placeholder: "All",
+                      hint: "ギャラリー上部のフィルタ最左ボタン",
+                    },
+                    {
+                      key: "profileLabel",
+                      label: "Profile 見出し",
+                      placeholder: "Profile",
+                      hint: "プロフィールページ上部の見出し",
+                    },
+                    {
+                      key: "contactLabel",
+                      label: "Contact 見出し",
+                      placeholder: "Contact",
+                      hint: "お問い合わせページ上部の見出し",
+                    },
+                  ] as {
+                    key: string;
+                    label: string;
+                    placeholder: string;
+                    hint: string;
+                  }[]
+                ).map((f) => (
+                  <AdminField key={f.key} label={f.label} hint={f.hint}>
+                    <input
+                      type="text"
+                      aria-label={f.label}
+                      value={current[f.key] ?? ""}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    />
+                  </AdminField>
+                ))}
+                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                  コンタクトフォーム（お問い合わせページのフォーム内）
+                </p>
+                {(
+                  [
+                    {
+                      key: "contactFormName",
+                      label: "Name ラベル",
+                      placeholder: "Name",
+                    },
+                    {
+                      key: "contactFormEmail",
+                      label: "Email ラベル",
+                      placeholder: "Email",
+                    },
+                    {
+                      key: "contactFormSubject",
+                      label: "Subject ラベル",
+                      placeholder: "Subject",
+                    },
+                    {
+                      key: "contactSubjectOptions",
+                      label: "件名選択肢 (カンマ区切り)",
+                      placeholder: "Shooting,Press / Media,Collaboration,Other",
+                    },
+                    {
+                      key: "contactFormMessage",
+                      label: "Message ラベル",
+                      placeholder: "Message",
+                    },
+                    {
+                      key: "contactSendButton",
+                      label: "送信ボタン",
+                      placeholder: "Send",
+                    },
+                    {
+                      key: "contactSendingButton",
+                      label: "送信中ボタン",
+                      placeholder: "Sending...",
+                    },
+                    {
+                      key: "contactSentMessage",
+                      label: "送信完了メッセージ",
+                      placeholder: "Message sent.",
+                    },
+                    {
+                      key: "contactSendAnother",
+                      label: "もう一通送る",
+                      placeholder: "Send another",
+                    },
+                    {
+                      key: "contactErrorMessage",
+                      label: "エラーメッセージ",
+                      placeholder: "Failed to send. Please try again.",
+                    },
+                  ] as { key: string; label: string; placeholder: string }[]
+                ).map((f) => (
+                  <AdminField key={f.key} label={f.label}>
+                    <input
+                      type="text"
+                      aria-label={f.label}
+                      value={current[f.key] ?? ""}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    />
+                  </AdminField>
+                ))}
+              </Section>
 
-            {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
-            <Section title="サイト文言" defaultOpen={false}>
-              <p className="text-[9px] text-[#666] -mb-2">ナビゲーション</p>
-              {(
-                [
-                  {
-                    key: "navLabelTop",
-                    label: "ロゴ (TOP)",
-                    placeholder: "TOP",
-                    hint: "全ページ左上のロゴ／TOPリンク",
-                  },
-                  {
-                    key: "navLabelGallery",
-                    label: "Gallery リンク",
-                    placeholder: "Gallery",
-                    hint: "ヘッダーナビの Gallery リンク",
-                  },
-                  {
-                    key: "navLabelAbout",
-                    label: "About リンク",
-                    placeholder: "About",
-                    hint: "ヘッダーナビの About リンク",
-                  },
-                  {
-                    key: "navLabelContact",
-                    label: "Contact リンク",
-                    placeholder: "Contact",
-                    hint: "ヘッダーナビの Contact リンク",
-                  },
-                ] as {
-                  key: string;
-                  label: string;
-                  placeholder: string;
-                  hint: string;
-                }[]
-              ).map((f) => (
-                <AdminField key={f.key} label={f.label} hint={f.hint}>
-                  <input
-                    type="text"
-                    aria-label={f.label}
-                    value={current[f.key] ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    placeholder={f.placeholder}
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                  />
-                </AdminField>
-              ))}
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                SNS ラベル
-              </p>
-              {(
-                [
-                  {
-                    key: "snsLabelInstagram",
-                    label: "Instagram",
-                    placeholder: "Instagram",
-                    hint: "フッター等のSNSリンク表示名",
-                  },
-                  {
-                    key: "snsLabelTwitter",
-                    label: "X / Twitter",
-                    placeholder: "X",
-                    hint: "フッター等のSNSリンク表示名",
-                  },
-                  {
-                    key: "snsLabelNote",
-                    label: "note",
-                    placeholder: "note",
-                    hint: "フッター等のSNSリンク表示名",
-                  },
-                ] as {
-                  key: string;
-                  label: string;
-                  placeholder: string;
-                  hint: string;
-                }[]
-              ).map((f) => (
-                <AdminField key={f.key} label={f.label} hint={f.hint}>
-                  <input
-                    type="text"
-                    aria-label={f.label}
-                    value={current[f.key] ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    placeholder={f.placeholder}
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                  />
-                </AdminField>
-              ))}
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                セクション見出し
-              </p>
-              {(
-                [
-                  {
-                    key: "worksLabel",
-                    label: "Works 見出し",
-                    placeholder: "Works",
-                    hint: "トップの最新作品セクションの見出し",
-                  },
-                  {
-                    key: "viewAllLabel",
-                    label: "View all リンク",
-                    placeholder: "View all →",
-                    hint: "トップの作品セクション見出し横の小リンク文言",
-                  },
-                  {
-                    key: "viewAllCtaLabel",
-                    label: "View all ボタン",
-                    placeholder: "すべての作品を見る",
-                    hint: "トップの作品一覧の下に出る大きめボタンの文言",
-                  },
-                  {
-                    key: "galleryLabel",
-                    label: "Gallery 見出し",
-                    placeholder: "Gallery",
-                    hint: "ギャラリーページ上部の見出し",
-                  },
-                  {
-                    key: "filterAllLabel",
-                    label: "フィルター All",
-                    placeholder: "All",
-                    hint: "ギャラリー上部のフィルタ最左ボタン",
-                  },
-                  {
-                    key: "profileLabel",
-                    label: "Profile 見出し",
-                    placeholder: "Profile",
-                    hint: "プロフィールページ上部の見出し",
-                  },
-                  {
-                    key: "contactLabel",
-                    label: "Contact 見出し",
-                    placeholder: "Contact",
-                    hint: "お問い合わせページ上部の見出し",
-                  },
-                ] as {
-                  key: string;
-                  label: string;
-                  placeholder: string;
-                  hint: string;
-                }[]
-              ).map((f) => (
-                <AdminField key={f.key} label={f.label} hint={f.hint}>
-                  <input
-                    type="text"
-                    aria-label={f.label}
-                    value={current[f.key] ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    placeholder={f.placeholder}
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                  />
-                </AdminField>
-              ))}
-              <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
-                コンタクトフォーム（お問い合わせページのフォーム内）
-              </p>
-              {(
-                [
-                  {
-                    key: "contactFormName",
-                    label: "Name ラベル",
-                    placeholder: "Name",
-                  },
-                  {
-                    key: "contactFormEmail",
-                    label: "Email ラベル",
-                    placeholder: "Email",
-                  },
-                  {
-                    key: "contactFormSubject",
-                    label: "Subject ラベル",
-                    placeholder: "Subject",
-                  },
-                  {
-                    key: "contactSubjectOptions",
-                    label: "件名選択肢 (カンマ区切り)",
-                    placeholder: "Shooting,Press / Media,Collaboration,Other",
-                  },
-                  {
-                    key: "contactFormMessage",
-                    label: "Message ラベル",
-                    placeholder: "Message",
-                  },
-                  {
-                    key: "contactSendButton",
-                    label: "送信ボタン",
-                    placeholder: "Send",
-                  },
-                  {
-                    key: "contactSendingButton",
-                    label: "送信中ボタン",
-                    placeholder: "Sending...",
-                  },
-                  {
-                    key: "contactSentMessage",
-                    label: "送信完了メッセージ",
-                    placeholder: "Message sent.",
-                  },
-                  {
-                    key: "contactSendAnother",
-                    label: "もう一通送る",
-                    placeholder: "Send another",
-                  },
-                  {
-                    key: "contactErrorMessage",
-                    label: "エラーメッセージ",
-                    placeholder: "Failed to send. Please try again.",
-                  },
-                ] as { key: string; label: string; placeholder: string }[]
-              ).map((f) => (
-                <AdminField key={f.key} label={f.label}>
-                  <input
-                    type="text"
-                    aria-label={f.label}
-                    value={current[f.key] ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    placeholder={f.placeholder}
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
-                  />
-                </AdminField>
-              ))}
-            </Section>
+              {/* 撮影情報プリセット — インスペクタの Camera / Lens 候補 */}
+              <Section title="撮影情報プリセット" defaultOpen={false}>
+                <p className="text-[9px] text-[#666] -mb-1">
+                  写真編集インスペクタの Camera / Lens
+                  入力候補。初期候補も削除できます。
+                </p>
 
-            {/* 撮影情報プリセット — インスペクタの Camera / Lens 候補 */}
-            <Section title="撮影情報プリセット" defaultOpen={false}>
-              <p className="text-[9px] text-[#666] -mb-1">
-                写真編集インスペクタの Camera / Lens
-                入力候補。初期候補も削除できます。
-              </p>
-
-              <PresetEditor
-                label="カメラ"
-                items={cameraPresets}
-                value={newCamPreset}
-                onChange={setNewCamPreset}
-                onAdd={addCamPreset}
-                onRemove={removeCamPreset}
-                placeholder="例: Hasselblad 500C/M"
-                busy={savePresets.isPending}
-              />
-              <PresetEditor
-                label="レンズ"
-                items={lensPresets}
-                value={newLensPreset}
-                onChange={setNewLensPreset}
-                onAdd={addLensPreset}
-                onRemove={removeLensPreset}
-                placeholder="例: Planar 80mm f/2.8"
-                busy={savePresets.isPending}
-              />
-            </Section>
+                <PresetEditor
+                  label="カメラ"
+                  items={cameraPresets}
+                  value={newCamPreset}
+                  onChange={setNewCamPreset}
+                  onAdd={addCamPreset}
+                  onRemove={removeCamPreset}
+                  placeholder="例: Hasselblad 500C/M"
+                  busy={savePresets.isPending}
+                />
+                <PresetEditor
+                  label="レンズ"
+                  items={lensPresets}
+                  value={newLensPreset}
+                  onChange={setNewLensPreset}
+                  onAdd={addLensPreset}
+                  onRemove={removeLensPreset}
+                  placeholder="例: Planar 80mm f/2.8"
+                  busy={savePresets.isPending}
+                />
+              </Section>
+            </SettingsGroup>
 
             {/* Admin */}
-            <div className="pt-3">
-              <p className="text-[11px] tracking-wider uppercase text-[#555] mb-2">
+            <div className="pt-1 pb-4 px-1">
+              <p className="text-[11px] tracking-wider uppercase text-[color:var(--admin-muted)] mb-2">
                 Admin Password
               </p>
-              <p className="text-[11px] text-[#444] leading-relaxed">
+              <p className="text-[11px] text-[color:var(--admin-muted)] leading-relaxed">
                 Set via environment variable{" "}
-                <code className="text-[#666] bg-[#333] px-1 py-0.5 rounded-sm font-mono text-[10px]">
+                <code className="text-[color:var(--admin-ink)] bg-[color:var(--admin-paper-deep)] px-1 py-0.5 rounded-sm font-mono text-[10px]">
                   ADMIN_PASSWORD
                 </code>
               </p>
@@ -5122,6 +5196,11 @@ export function SettingsTab({
 }
 
 /* ── Collapsible Section ─────────────────────────── */
+// Settings accordion row. Content stays mounted at all times (open state only
+// changes a CSS grid-template-rows track) so toggling never unmounts/remounts
+// children — that mount/remount was what caused the open-moment flicker.
+// Transition is disabled for the first frame so a defaultOpen row never plays
+// an unwanted "opening" animation on initial mount.
 function Section({
   title,
   defaultOpen = false,
@@ -5132,16 +5211,61 @@ function Section({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setAnimated(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   return (
-    <div className="border-b border-[#333] pb-4">
+    <div>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 w-full text-left py-2 text-[12px] font-medium text-[#666] hover:text-[#999] transition-colors"
+        aria-expanded={open}
+        className="flex items-center justify-between gap-3 w-full min-h-[52px] px-4 text-left text-[15px] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)] transition-colors duration-[120ms]"
       >
-        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        {title}
+        <span>{title}</span>
+        <ChevronRight
+          size={15}
+          className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-200 ease-out"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+        />
       </button>
-      {open && <div className="pt-1 flex flex-col gap-4">{children}</div>}
+      <div
+        className={`grid px-4 ${animated ? "transition-[grid-template-rows] duration-200 ease-out" : ""}`}
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="pb-4 pt-1 flex flex-col gap-4">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// macOS-settings-style group card: an eyebrow label sits outside/above the
+// card, rows inside share one panel surface with a single 1px internal
+// divider between them (no separate borders + card double-boundary).
+function SettingsGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mb-6">
+      <p className="text-[13px] text-[color:var(--admin-muted)] mb-2 px-1">
+        {title}
+      </p>
+      <div
+        className="rounded-[12px] overflow-hidden [&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]"
+        style={{
+          background: "var(--admin-paper-soft)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -5282,13 +5406,13 @@ function PairingPicker({
                 {name}
               </span>
               <span
-                className={`text-[9px] shrink-0 ${active ? "text-[#1e1e1e]/60" : "text-[#555]"}`}
+                className={`text-[9px] shrink-0 ${active ? "text-white/70" : "text-[color:var(--admin-muted)]"}`}
               >
                 {ja} × {en}
               </span>
             </div>
             <div
-              className={`mt-1.5 flex gap-3 items-baseline ${active ? "text-[#1e1e1e]/80" : "text-[#999]"}`}
+              className={`mt-1.5 flex gap-3 items-baseline ${active ? "text-white/80" : "text-[color:var(--admin-muted)]"}`}
             >
               {jaFamily && (
                 <span
@@ -5667,7 +5791,7 @@ function AdminField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-[#777] uppercase tracking-wider mb-1">
+      <label className="block text-[10px] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
         {label}
       </label>
       {hint && (
@@ -5739,10 +5863,7 @@ function FloatingSaveBar({
       : "保存していない変更があります";
 
   return (
-    <output
-      className="admin-floating-save-bar"
-      aria-live="polite"
-    >
+    <output className="admin-floating-save-bar" aria-live="polite">
       <span className={error ? "admin-floating-save-bar__error" : ""}>
         {message}
       </span>

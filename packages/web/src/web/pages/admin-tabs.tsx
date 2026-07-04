@@ -539,7 +539,7 @@ export function ProfileTab({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={photoUploading}
-              className={`border border-dashed rounded-sm px-4 py-3 text-center transition-all w-full ${
+              className={`border border-dashed rounded-sm px-4 py-3 text-center transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] w-full ${
                 photoUploading
                   ? "border-[#555] cursor-default"
                   : "border-[#333] hover:border-[#555] cursor-pointer"
@@ -1285,7 +1285,7 @@ export function SeriesTab() {
                                     }))
                                   }
                                   title={p.title || p.filename}
-                                  className={`relative aspect-square overflow-hidden rounded-sm transition-all ${
+                                  className={`relative aspect-square overflow-hidden rounded-sm transition-[opacity,box-shadow] duration-[var(--dur-fast)] ease-[var(--ease-out)] ${
                                     String(p.id) === draft.coverPhotoId
                                       ? "ring-2 ring-white ring-offset-1 ring-offset-[#1e1e1e]"
                                       : "opacity-60 hover:opacity-100"
@@ -5173,7 +5173,7 @@ export function SettingsTab({
           {/* iframe container */}
           <div className="flex-1 flex items-start justify-center overflow-auto p-4">
             <div
-              className={`bg-white rounded-sm overflow-hidden shadow-lg transition-all duration-300 ${
+              className={`bg-white rounded-sm overflow-hidden shadow-lg transition-[width,height] duration-[var(--dur-slow)] ease-[var(--ease-inout)] ${
                 previewDevice === "mobile"
                   ? "w-[375px] h-[667px]"
                   : "w-full h-full"

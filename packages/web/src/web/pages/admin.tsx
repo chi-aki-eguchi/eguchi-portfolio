@@ -3665,7 +3665,7 @@ function GalleryTab({
                           saveAlbums.mutate(next);
                         }}
                         aria-label={`${a.name}を削除`}
-                        className="opacity-50 group-hover/al:opacity-100 text-[#888] hover:text-red-400 transition-all"
+                        className="opacity-50 group-hover/al:opacity-100 text-[#888] hover:text-red-400 transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
                       >
                         <X size={11} />
                       </button>
@@ -3997,7 +3997,7 @@ function GalleryTab({
             </span>
             <div className="flex-1 h-1 bg-[#333] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#888] transition-all duration-300 rounded-full"
+                className="h-full bg-[#888] transition-[width] duration-[var(--dur-slow)] ease-[var(--ease-out)] rounded-full"
                 style={{
                   width: `${(uploadProgress.done / uploadProgress.total) * 100}%`,
                 }}

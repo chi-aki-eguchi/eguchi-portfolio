@@ -612,6 +612,16 @@
   transition-timing-function: var(--ease-in);
 }
 
+/* Glass budget guard: sidebar + save bar is the steady-state pair (2). If a
+   dialog (Modal/QuickPalette) opens on top, drop the save bar's own glass so
+   we don't stack 3 blurred layers — the dialog::backdrop already dims/blurs
+   everything behind it, so the save bar reads fine as a flat panel here. */
+.admin-atelier:has(dialog[open]) .admin-floating-save-bar {
+  background: var(--admin-paper-soft);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 .admin-atelier .admin-floating-save-bar[data-phase="pulse"] {
   transform: translateY(0) scale(1.02);
   transition-duration: var(--dur-instant);

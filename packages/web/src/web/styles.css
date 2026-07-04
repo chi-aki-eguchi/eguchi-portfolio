@@ -53,19 +53,61 @@
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
   --admin-font-title: var(--font-en);
   --admin-font-ui: var(--font-ja);
-  --admin-radius-xs: 8px;
-  --admin-radius-sm: 10px;
-  --admin-radius-md: 12px;
-  --admin-shadow-soft: 0 18px 55px rgba(var(--admin-ink-rgb), 0.05);
-  --admin-shadow-tight: 0 8px 24px rgba(var(--admin-ink-rgb), 0.04);
+
+  /* ─── Motion & material tokens (admin only). Reference these — no
+     hardcoded durations/curves/shadows/radii below this point. ─── */
+  --dur-instant: 100ms;
+  --dur-fast: 160ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
+  --ease-inout: cubic-bezier(0.65, 0.05, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* Shadows: 3 steps only, warm-gray from the (theme-derived) ink color. */
+  --shadow-1:
+    0 1px 2px rgba(var(--admin-ink-rgb), 0.04),
+    0 1px 3px rgba(var(--admin-ink-rgb), 0.03);
+  --shadow-2:
+    0 2px 6px rgba(var(--admin-ink-rgb), 0.05),
+    0 8px 24px rgba(var(--admin-ink-rgb), 0.06);
+  --shadow-3:
+    0 4px 12px rgba(var(--admin-ink-rgb), 0.07),
+    0 16px 48px rgba(var(--admin-ink-rgb), 0.1);
+
+  /* Radius: concentric — control(s) < card(m) < floating layer(l). */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 18px;
+
+  /* Glass: structural layers only (sidebar / save bar / modal / ⌘K).
+     Max 2 on screen at once. See @supports/@media fallbacks below. */
+  --glass-bg: rgba(var(--admin-paper-rgb), 0.82);
+  --glass-blur: blur(20px) saturate(1.15);
+  --glass-tint: linear-gradient(
+    rgba(var(--admin-accent-rgb), 0.04),
+    rgba(var(--admin-accent-rgb), 0.04)
+  );
+
+  /* Legacy aliases — kept so existing call sites don't need a mass rename;
+     new code should reference the tokens above directly. */
+  --admin-radius-xs: var(--radius-s);
+  --admin-radius-sm: var(--radius-s);
+  --admin-radius-md: var(--radius-m);
+  --admin-radius-lg: var(--radius-l);
+  --admin-shadow-tight: var(--shadow-1);
+  --admin-shadow-soft: var(--shadow-2);
+  --admin-shadow-lg: var(--shadow-3);
+  --admin-transition: var(--dur-base) var(--ease-out);
+  --admin-hover-transition: var(--dur-fast) var(--ease-out);
+
   --admin-space-1: 4px;
   --admin-space-2: 8px;
   --admin-space-3: 12px;
   --admin-space-4: 16px;
   --admin-space-5: 24px;
   --admin-space-6: 32px;
-  --admin-transition: 190ms cubic-bezier(0.16, 1, 0.3, 1);
-  --admin-hover-transition: 120ms cubic-bezier(0.16, 1, 0.3, 1);
   --admin-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E");
   color-scheme: light;
   background-color: var(--admin-paper);
@@ -82,6 +124,29 @@
 .admin-atelier ::selection {
   background: rgba(var(--admin-accent-rgb), 0.16);
   color: var(--admin-ink);
+}
+
+/* ─── Glass surface (structural layers only — sidebar / save bar / modal /
+   ⌘K palette). Falls back to an opaque panel when backdrop-filter isn't
+   supported or the user asked for reduced transparency. ─── */
+.admin-atelier .admin-glass {
+  background: var(--glass-tint), var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .admin-atelier .admin-glass {
+    background: var(--admin-paper-soft);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .admin-atelier .admin-glass {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: var(--admin-paper-soft) !important;
+  }
 }
 
 .admin-atelier .admin-sidebar {

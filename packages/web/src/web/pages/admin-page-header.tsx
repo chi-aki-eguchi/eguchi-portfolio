@@ -57,7 +57,7 @@ export function PageHeaderButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className={`flex items-center gap-1.5 px-3 py-2 text-[11px] tracking-wide rounded-[8px] transition-colors ${
+      className={`flex items-center gap-1.5 px-3 py-2 text-[11px] tracking-wide rounded-[var(--radius-s)] transition-colors duration-[var(--dur-fast)] ${
         active
           ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)]"
           : "bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)]"

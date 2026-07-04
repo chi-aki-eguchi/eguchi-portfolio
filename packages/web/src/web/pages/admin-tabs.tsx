@@ -5258,10 +5258,10 @@ function SettingsGroup({
         {title}
       </p>
       <div
-        className="rounded-[12px] overflow-hidden [&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]"
+        className="rounded-[var(--radius-m)] overflow-hidden [&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]"
         style={{
           background: "var(--admin-paper-soft)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          boxShadow: "var(--shadow-1)",
         }}
       >
         {children}

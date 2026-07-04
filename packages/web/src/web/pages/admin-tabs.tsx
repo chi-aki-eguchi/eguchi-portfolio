@@ -3180,7 +3180,7 @@ export function SettingsTab({
     <div className="flex h-full overflow-hidden">
       {/* Settings panel */}
       <div
-        className={`flex flex-col overflow-hidden transition-all duration-300 ${showPreview ? "w-full md:w-[420px] md:flex-shrink-0" : "max-w-[760px] flex-1"}`}
+        className={`flex flex-col overflow-hidden transition-[width,max-width] duration-300 ${showPreview ? "w-full md:w-[420px] md:flex-shrink-0" : "max-w-[760px] flex-1"}`}
       >
         {/* Scrollable content */}
         <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">

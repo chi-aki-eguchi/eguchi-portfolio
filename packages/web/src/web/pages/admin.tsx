@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useMemo,
   Suspense,
+  type CSSProperties,
 } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -216,6 +217,127 @@ function useAdminGuard() {
 /* ══════════════════════════════════════════════════
    MAIN
 ══════════════════════════════════════════════════ */
+type Rgb = { r: number; g: number; b: number };
+
+const ATELIER_FALLBACK = {
+  paper: "#f7f4ec",
+  ink: "#2e2c27",
+  muted: "#6b6659",
+  accent: "#a33b2e",
+};
+
+function clampChannel(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function parseHexColor(value?: string): Rgb | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+  const hex = raw.startsWith("#") ? raw.slice(1) : raw;
+  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+    return {
+      r: parseInt(hex[0] + hex[0], 16),
+      g: parseInt(hex[1] + hex[1], 16),
+      b: parseInt(hex[2] + hex[2], 16),
+    };
+  }
+  if (/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return {
+      r: parseInt(hex.slice(0, 2), 16),
+      g: parseInt(hex.slice(2, 4), 16),
+      b: parseInt(hex.slice(4, 6), 16),
+    };
+  }
+  return null;
+}
+
+function toHex({ r, g, b }: Rgb): string {
+  return `#${[r, g, b]
+    .map((v) => clampChannel(v).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function rgbString({ r, g, b }: Rgb): string {
+  return `${clampChannel(r)}, ${clampChannel(g)}, ${clampChannel(b)}`;
+}
+
+function mix(a: Rgb, b: Rgb, amount: number): Rgb {
+  return {
+    r: a.r + (b.r - a.r) * amount,
+    g: a.g + (b.g - a.g) * amount,
+    b: a.b + (b.b - a.b) * amount,
+  };
+}
+
+function relativeLuminance({ r, g, b }: Rgb): number {
+  const channel = (v: number) => {
+    const n = clampChannel(v) / 255;
+    return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+function contrastRatio(a: Rgb, b: Rgb): number {
+  const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort(
+    (x, y) => y - x,
+  );
+  return (light + 0.05) / (dark + 0.05);
+}
+
+function ensureContrast(foreground: Rgb, background: Rgb, min: number): Rgb {
+  if (contrastRatio(foreground, background) >= min) return foreground;
+  const target = relativeLuminance(background) > 0.5
+    ? { r: 18, g: 17, b: 15 }
+    : { r: 250, g: 248, b: 242 };
+  let adjusted = foreground;
+  for (let i = 1; i <= 24; i += 1) {
+    adjusted = mix(foreground, target, i / 24);
+    if (contrastRatio(adjusted, background) >= min) return adjusted;
+  }
+  return target;
+}
+
+function adminThemeFromSettings(
+  settings?: Record<string, string>,
+): CSSProperties {
+  const neutral = parseHexColor(ATELIER_FALLBACK.paper)!;
+  const siteBg = parseHexColor(settings?.themeBg) ?? neutral;
+  const base = mix(mix(siteBg, neutral, 0.86), { r: 255, g: 255, b: 255 }, 0.06);
+  const soft = mix(base, { r: 46, g: 44, b: 39 }, 0.035);
+  const deep = mix(base, { r: 46, g: 44, b: 39 }, 0.075);
+  const line = mix(base, { r: 46, g: 44, b: 39 }, 0.14);
+  const lineStrong = mix(base, { r: 46, g: 44, b: 39 }, 0.22);
+  const ink = ensureContrast(
+    parseHexColor(settings?.themeText) ?? parseHexColor(ATELIER_FALLBACK.ink)!,
+    base,
+    7,
+  );
+  const muted = ensureContrast(mix(ink, base, 0.38), base, 4.5);
+  const accent = ensureContrast(
+    parseHexColor(settings?.accentColor) ??
+      parseHexColor(settings?.linkHoverColor) ??
+      parseHexColor(ATELIER_FALLBACK.accent)!,
+    base,
+    4.5,
+  );
+
+  return {
+    "--admin-paper": toHex(base),
+    "--admin-paper-rgb": rgbString(base),
+    "--admin-paper-soft": toHex(soft),
+    "--admin-paper-deep": toHex(deep),
+    "--admin-ink": toHex(ink),
+    "--admin-ink-rgb": rgbString(ink),
+    "--admin-muted": toHex(muted),
+    "--admin-muted-rgb": rgbString(muted),
+    "--admin-line": toHex(line),
+    "--admin-line-strong": toHex(lineStrong),
+    "--admin-accent": toHex(accent),
+    "--admin-accent-rgb": rgbString(accent),
+    "--admin-danger": toHex(accent),
+  } as CSSProperties;
+}
+
 export default function AdminPage() {
   const { isLoading, authenticated } = useAdminGuard();
   const [, navigate] = useLocation();
@@ -247,6 +369,10 @@ export default function AdminPage() {
     onSuccess: () => navigate("/admin/login"),
     onError: () => navigate("/admin/login"),
   });
+  const adminThemeVars = useMemo(
+    () => adminThemeFromSettings(shellSettings),
+    [shellSettings],
+  );
 
   if (isLoading)
     return (
@@ -281,7 +407,10 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="admin-atelier h-screen flex select-none overflow-hidden">
+    <div
+      className="admin-atelier h-screen flex select-none overflow-hidden"
+      style={adminThemeVars}
+    >
       <aside className="admin-sidebar hidden lg:flex">
         <div className="admin-sidebar__brand">
           <span className="admin-sidebar__eyebrow">Portfolio Admin</span>

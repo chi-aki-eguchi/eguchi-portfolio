@@ -263,7 +263,7 @@ export function HeroTab() {
         </p>
         {allPhotos.length === 0 ? (
           <p className="text-[12px] text-[#555] text-center py-8">
-            ギャラリーに写真がありません
+            まだ写真がありません。Libraryから追加できます。
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
@@ -1871,7 +1871,11 @@ function TopWorksPicker({
     onChange(next.join(","));
   };
   if (photos.length === 0)
-    return <p className="text-[10px] text-[#666]">公開中の写真がありません</p>;
+    return (
+      <p className="text-[10px] text-[#666]">
+        公開中の写真はまだありません
+      </p>
+    );
   return (
     <div className="max-h-64 overflow-y-auto border border-[#3a3a3a] rounded-sm p-1.5 grid grid-cols-5 gap-1">
       {photos.map((p) => {

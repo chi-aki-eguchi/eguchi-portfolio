@@ -430,6 +430,9 @@
   background-color: var(--admin-paper-soft) !important;
   color: var(--admin-ink) !important;
   box-shadow: var(--admin-shadow-tight) !important;
+  border-radius: var(--admin-radius-md) !important;
+  animation: admin-atelier-save-bar 180ms var(--admin-transition);
+  backdrop-filter: blur(14px);
 }
 
 .admin-atelier .admin-floating-save-bar {
@@ -526,6 +529,11 @@
 .admin-atelier [class*="text-center"][class*="py-8"],
 .admin-atelier [class*="justify-center"][class*="h-full"] {
   color: var(--admin-muted) !important;
+}
+
+.admin-atelier [class*="text-center"][class*="py-8"] {
+  border-radius: var(--admin-radius-md);
+  background: rgba(var(--admin-ink-rgb), 0.025);
 }
 
 .admin-atelier .admin-content > div {

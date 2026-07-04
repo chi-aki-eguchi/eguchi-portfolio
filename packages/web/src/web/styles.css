@@ -174,13 +174,22 @@
   border-bottom: 1px solid var(--admin-line);
 }
 
-.admin-atelier .admin-sidebar__eyebrow,
-.admin-atelier .admin-sidebar__group-title {
+.admin-atelier .admin-sidebar__eyebrow {
   display: block;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
   line-height: 1.2;
   letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+
+.admin-atelier .admin-sidebar__group-title {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--admin-muted);
 }
@@ -196,10 +205,26 @@
 }
 
 .admin-atelier .admin-sidebar__nav {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 26px 0;
+}
+
+/* Single shared active-tab indicator — slides via transform only (工程3),
+   replacing what used to be each tab fading its own bar in/out. */
+.admin-atelier .admin-sidebar__indicator {
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 3px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--admin-accent);
+  transition: transform var(--dur-base) var(--ease-inout);
+  pointer-events: none;
+  will-change: transform;
 }
 
 .admin-atelier .admin-sidebar__group + .admin-sidebar__group {
@@ -231,22 +256,8 @@
   line-height: 1.2;
   text-decoration: none;
   transition:
-    color var(--admin-hover-transition),
-    background-color var(--admin-hover-transition);
-}
-
-.admin-atelier .admin-sidebar__tab::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 7px;
-  bottom: 7px;
-  width: 2px;
-  border-radius: 999px;
-  background: transparent;
-  transition:
-    background-color var(--admin-hover-transition),
-    width var(--admin-hover-transition);
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
 }
 
 .admin-atelier .admin-sidebar__tab:hover,
@@ -258,11 +269,6 @@
 .admin-atelier .admin-sidebar__tab[data-active="true"] {
   color: var(--admin-ink);
   background: rgba(var(--admin-accent-rgb), 0.08);
-}
-
-.admin-atelier .admin-sidebar__tab[data-active="true"]::before {
-  background: var(--admin-accent);
-  width: 3px;
 }
 
 .admin-atelier .admin-sidebar__footer {
@@ -352,11 +358,17 @@
   border-radius: var(--admin-radius-sm) !important;
   box-shadow: none !important;
   min-height: 40px;
+  outline: 2px solid rgba(var(--admin-accent-rgb), 0);
+  outline-offset: 2px;
+  transform: scale(1);
   transition:
-    color var(--admin-hover-transition),
-    background-color var(--admin-hover-transition),
-    border-color var(--admin-hover-transition),
-    opacity var(--admin-hover-transition) !important;
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    outline-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-instant) var(--ease-out) !important;
 }
 
 .admin-atelier
@@ -371,6 +383,13 @@
 .admin-atelier button:not(.absolute):not([class*="bg-black"]):hover {
   background-color: var(--admin-paper-deep) !important;
   color: var(--admin-ink) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+
+.admin-atelier
+  button:not(.absolute):not([class*="bg-black"]):active:not(:disabled),
+.admin-atelier a[class*="px-"]:active {
+  transform: scale(0.97) !important;
 }
 
 .admin-atelier button:not(.absolute):not([class*="bg-black"]):disabled {
@@ -407,20 +426,21 @@
   border-radius: var(--admin-radius-sm) !important;
   box-shadow: none !important;
   color-scheme: light;
+  /* Base outline is always "solid" but fully transparent, so :focus only
+     ever animates the alpha channel — outline-style flipping none→solid
+     can't transition, which used to read as a blink. */
+  outline: 2px solid rgba(var(--admin-accent-rgb), 0);
+  outline-offset: 1px;
   transition:
-    color var(--admin-hover-transition),
-    background-color var(--admin-hover-transition),
-    border-color var(--admin-hover-transition),
-    outline-color var(--admin-hover-transition) !important;
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    outline-color var(--dur-fast) var(--ease-out) !important;
 }
 
 .admin-atelier button:focus-visible,
-.admin-atelier a:focus-visible,
-.admin-atelier input:focus-visible,
-.admin-atelier textarea:focus-visible,
-.admin-atelier select:focus-visible {
-  outline: 3px solid rgba(var(--admin-accent-rgb), 0.22) !important;
-  outline-offset: 2px;
+.admin-atelier a:focus-visible {
+  outline-color: rgba(var(--admin-accent-rgb), 0.3) !important;
 }
 
 .admin-atelier input::placeholder,
@@ -432,8 +452,31 @@
 .admin-atelier textarea:focus,
 .admin-atelier select:focus {
   border-color: var(--admin-accent) !important;
-  outline: 2px solid rgba(var(--admin-accent-rgb), 0.14) !important;
-  outline-offset: 1px;
+  outline-color: rgba(var(--admin-accent-rgb), 0.3) !important;
+}
+
+/* Error state (available for future per-field validation — no current call
+   site sets this yet). ±3px shake, twice, over 240ms; skipped entirely under
+   reduced-motion via the blanket rule further down. */
+.admin-atelier .field-error {
+  border-color: var(--admin-danger) !important;
+  outline-color: rgba(var(--admin-accent-rgb), 0.3) !important;
+  animation: admin-atelier-shake 240ms var(--ease-inout);
+}
+@keyframes admin-atelier-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
 }
 
 .admin-atelier [class*="bg-[#1e1e1e]"],
@@ -626,17 +669,103 @@
   box-shadow: none !important;
 }
 
-.admin-atelier [class*="ring-[#aaa]"]::after {
-  content: "";
+/* 工程3: hand-drawn selection mark (dermatologist-style grease-pencil
+   circle) — replaces the old static ::after background-image. Always
+   mounted per visible tile so opacity can transition both ways; only the
+   most-recently-selected tile actually draws the circle (perf guard for
+   large multi-select), others simply appear already-drawn. */
+.admin-atelier .admin-select-mark {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 4px;
+  top: 4px;
   z-index: 4;
   width: 28px;
   height: 28px;
-  border-radius: 999px;
-  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.4 16.7c2 2.2 3.5 3.6 5.1 5.4 2.5-4.6 5.1-8 9.3-12.2' fill='none' stroke='%23A33B2E' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M15.8 3.6c6.9-.2 11.9 5 12 12.2.1 7-4.9 12.5-12 12.6C8.8 28.5 3.6 23.2 3.8 16 4 8.7 8.9 3.8 15.8 3.6Z' fill='none' stroke='%23A33B2E' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
-    center/contain no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.admin-atelier .admin-select-mark[data-state="draw"],
+.admin-atelier .admin-select-mark[data-state="fade"] {
+  opacity: 1;
+}
+.admin-atelier .admin-select-mark__circle {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.admin-atelier
+  .admin-select-mark[data-state="draw"]
+  .admin-select-mark__circle {
+  animation: admin-select-draw 0.28s var(--ease-out) forwards;
+}
+@keyframes admin-select-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* SegmentedControl options must stay transparent so the one shared sliding
+   pill (rendered behind them) is what's visible, not each button's own
+   background. The generic button/aria-pressed rules above are !important
+   with high specificity (multiple chained :not()), so beating them needs
+   real specificity, not just source order — repeating .admin-atelier is
+   the standard, if inelegant, way to do that without touching those rules
+   (which many other unrelated buttons still rely on). */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-segmented__option {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-segmented__option[aria-pressed="true"] {
+  color: inherit !important;
+}
+
+/* Photo tile: hover lift + press, transform/box-shadow/opacity only. */
+.admin-atelier .admin-photo-tile {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+.admin-atelier .admin-photo-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.admin-atelier .admin-photo-tile:has(> button:active) {
+  transform: scale(0.98);
+}
+
+/* Toasts (工程3): enter/exit shell shared by batch/undo/error/upload toasts.
+   Position (bottom-center) kept as-is — the spec's "右下から" would put them
+   directly under the floating save bar's bottom-center slot and risks new
+   overlap; motion physics are what's fixed here. */
+.admin-atelier .admin-toast {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.admin-atelier .admin-toast[data-phase="show"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+.admin-atelier .admin-toast[data-phase="exit"] {
+  opacity: 0;
+  transform: translateY(8px);
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-in);
+}
+.admin-atelier .admin-toast__check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.admin-atelier .admin-toast[data-phase="show"] .admin-toast__check {
+  animation: admin-select-draw 0.2s var(--ease-out) forwards;
 }
 
 .admin-atelier .absolute[class*="bg-black"],

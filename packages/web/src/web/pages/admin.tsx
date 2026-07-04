@@ -380,6 +380,15 @@ export default function AdminPage() {
     [shellSettings],
   );
 
+  // 工程3: sidebar active indicator slides between tabs (transform only) —
+  // one shared bar instead of each tab fading its own in/out independently.
+  const tabButtonRefs = useRef<Partial<Record<Tab, HTMLButtonElement>>>({});
+  const [indicatorTop, setIndicatorTop] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = tabButtonRefs.current[tab];
+    if (el) setIndicatorTop(el.offsetTop);
+  }, [tab]);
+
   if (isLoading)
     return (
       <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
@@ -423,6 +432,13 @@ export default function AdminPage() {
           <span className="admin-sidebar__title">{sidebarSiteName}</span>
         </div>
         <nav className="admin-sidebar__nav" aria-label="管理画面">
+          {indicatorTop != null && (
+            <div
+              aria-hidden="true"
+              className="admin-sidebar__indicator"
+              style={{ transform: `translateY(${indicatorTop}px)` }}
+            />
+          )}
           {ADMIN_TAB_GROUPS.map((group) => (
             <section key={group.key} className="admin-sidebar__group">
               <h2 className="admin-sidebar__group-title">{group.label}</h2>
@@ -433,6 +449,9 @@ export default function AdminPage() {
                   return (
                     <button
                       key={key}
+                      ref={(el) => {
+                        if (el) tabButtonRefs.current[key] = el;
+                      }}
                       type="button"
                       disabled={galleryUploading && key !== "gallery"}
                       onClick={() => requestTab(key)}
@@ -4108,7 +4127,7 @@ function GalleryTab({
                           setDragSrcId(null);
                           setDragOverId(null);
                         }}
-                        className={`relative group transition-all ${
+                        className={`admin-photo-tile relative group ${
                           dragSrcId === photo.id ? "opacity-35" : ""
                         } ${
                           isSelected
@@ -4202,12 +4221,41 @@ function GalleryTab({
                             )}
                           </div>
                         )}
-                        {/* Selection check */}
-                        {isSelected && (
-                          <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#aaa] rounded-sm flex items-center justify-center">
-                            <Check size={10} className="text-[#1e1e1e]" />
-                          </div>
-                        )}
+                        {/* Selection mark — hand-drawn grease-pencil circle.
+                        Always mounted (for tiles the virtualizer renders) so
+                        opacity can transition on deselect too; only the most
+                        recently (de)selected tile pays for the stroke-draw
+                        animation — bulk selections just fade in already-drawn. */}
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 32 32"
+                          className="admin-select-mark"
+                          data-state={
+                            !isSelected
+                              ? "hidden"
+                              : photo.id === lastClicked
+                                ? "draw"
+                                : "fade"
+                          }
+                        >
+                          <path
+                            className="admin-select-mark__circle"
+                            d="M15.8 3.6c6.9-.2 11.9 5 12 12.2.1 7-4.9 12.5-12 12.6C8.8 28.5 3.6 23.2 3.8 16 4 8.7 8.9 3.8 15.8 3.6Z"
+                            fill="none"
+                            stroke="var(--admin-accent)"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            pathLength={1}
+                          />
+                          <path
+                            d="M9.4 16.7c2 2.2 3.5 3.6 5.1 5.4 2.5-4.6 5.1-8 9.3-12.2"
+                            fill="none"
+                            stroke="var(--admin-accent)"
+                            strokeWidth={2.7}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                         {thumbSize >= 120 && (
                           <div className="absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <button
@@ -4319,11 +4367,29 @@ function GalleryTab({
       </div>
 
       {/* M2: batch-operation result toast */}
-      {batchToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-emerald-800/70 border border-emerald-700/60 text-emerald-50 text-[12px] px-4 py-2.5 rounded-sm shadow-xl">
-          <Check size={13} /> <span>{batchToast}</span>
-        </div>
-      )}
+      <Toast
+        show={!!batchToast}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-emerald-800/70 border border-emerald-700/60 text-emerald-50 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          width={13}
+          height={13}
+          className="admin-toast__check flex-shrink-0"
+        >
+          <path
+            d="M4 12.5l5 5L20 6.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            pathLength={1}
+          />
+        </svg>
+        <span>{batchToast}</span>
+      </Toast>
 
       {/* O2: bulk metadata edit panel */}
       {batchEditOpen && (
@@ -4664,73 +4730,72 @@ function GalleryTab({
       )}
 
       {/* Action error toast — surfaces failures that would otherwise be silent */}
-      {actionError && (
-        <div
-          role="alert"
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-red-900/30 border border-red-900/50 text-red-200 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+      <Toast
+        show={!!actionError}
+        role="alert"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-red-900/30 border border-red-900/50 text-red-200 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+      >
+        <span className="truncate">{actionError}</span>
+        <button
+          onClick={() => setActionError("")}
+          aria-label="閉じる"
+          className="text-red-200/60 hover:text-red-100 transition-colors flex-shrink-0"
         >
-          <span className="truncate">{actionError}</span>
-          <button
-            onClick={() => setActionError("")}
-            aria-label="閉じる"
-            className="text-red-200/60 hover:text-red-100 transition-colors flex-shrink-0"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      )}
+          <X size={12} />
+        </button>
+      </Toast>
 
       {/* Undo toast (B3) */}
-      {undoToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#333] border border-[#444] text-[#ddd] text-[12px] px-4 py-2.5 rounded-sm shadow-xl">
-          <span>{undoToast.count}枚をゴミ箱に移動しました</span>
-          <button
-            onClick={() => restorePhotos.mutate(undoToast.ids)}
-            className="text-[#aaa] hover:text-white underline underline-offset-2 transition-colors"
-          >
-            ↩ 元に戻す
-          </button>
-          <button
-            onClick={() => setUndoToast(null)}
-            className="text-[#555] hover:text-[#888] transition-colors ml-1"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      )}
+      <Toast
+        show={!!undoToast}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#333] border border-[#444] text-[#ddd] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+      >
+        <span>{undoToast?.count}枚をゴミ箱に移動しました</span>
+        <button
+          onClick={() => undoToast && restorePhotos.mutate(undoToast.ids)}
+          className="text-[#aaa] hover:text-white underline underline-offset-2 transition-colors"
+        >
+          ↩ 元に戻す
+        </button>
+        <button
+          onClick={() => setUndoToast(null)}
+          className="text-[#555] hover:text-[#888] transition-colors ml-1"
+        >
+          <X size={12} />
+        </button>
+      </Toast>
 
       {/* Upload result notice (failures / skipped files) */}
-      {uploadNotice && (
-        <div
-          role="alert"
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-[#3a2a2a] border border-amber-700/50 text-amber-200 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
-        >
-          <span className="truncate">{uploadNotice}</span>
-          {retryFiles.length > 0 && (
-            <button
-              onClick={() => {
-                const files = retryFiles;
-                setRetryFiles([]);
-                setUploadNotice(null);
-                handleFiles(files);
-              }}
-              className="flex-shrink-0 flex items-center gap-1 text-amber-100 underline underline-offset-2 hover:text-white transition-colors"
-            >
-              <Upload size={11} /> 失敗分を再アップロード
-            </button>
-          )}
+      <Toast
+        show={!!uploadNotice}
+        role="alert"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-[#3a2a2a] border border-amber-700/50 text-amber-200 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+      >
+        <span className="truncate">{uploadNotice}</span>
+        {retryFiles.length > 0 && (
           <button
             onClick={() => {
-              setUploadNotice(null);
+              const files = retryFiles;
               setRetryFiles([]);
+              setUploadNotice(null);
+              handleFiles(files);
             }}
-            aria-label="閉じる"
-            className="text-amber-200/60 hover:text-amber-100 transition-colors ml-1 flex-shrink-0"
+            className="flex-shrink-0 flex items-center gap-1 text-amber-100 underline underline-offset-2 hover:text-white transition-colors"
           >
-            <X size={12} />
+            <Upload size={11} /> 失敗分を再アップロード
           </button>
-        </div>
-      )}
+        )}
+        <button
+          onClick={() => {
+            setUploadNotice(null);
+            setRetryFiles([]);
+          }}
+          aria-label="閉じる"
+          className="text-amber-200/60 hover:text-amber-100 transition-colors ml-1 flex-shrink-0"
+        >
+          <X size={12} />
+        </button>
+      </Toast>
 
       {/* Delete confirm modal */}
       {deleteConfirm && (
@@ -4947,50 +5012,28 @@ function GalleryTab({
                 </div>
 
                 <div className="grid grid-cols-2 gap-1.5">
-                  <div className="flex rounded-sm bg-[#2c2c2c] p-0.5">
-                    {(
-                      [
-                        [true, "公開"],
-                        [false, "非公開"],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={lbl}
-                        type="button"
-                        onClick={() =>
-                          setEditForm((f) => ({ ...f, isPublished: val }))
-                        }
-                        aria-pressed={editForm.isPublished === val}
-                        className={`flex-1 rounded-sm px-1.5 py-1 text-[10px] transition-colors ${
-                          editForm.isPublished === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "text-[#888] hover:bg-[#3a3a3a] hover:text-[#bbb]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl
+                    value={editForm.isPublished ? "true" : "false"}
+                    onChange={(v) =>
+                      setEditForm((f) => ({ ...f, isPublished: v === "true" }))
+                    }
+                    options={[
+                      { value: "true", label: "公開" },
+                      { value: "false", label: "非公開" },
+                    ]}
+                  />
 
-                  <div className="flex rounded-sm bg-[#2c2c2c] p-0.5">
-                    {(["S", "M", "L"] as const).map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() =>
-                          setEditForm((f) => ({ ...f, displaySize: size }))
-                        }
-                        aria-pressed={editForm.displaySize === size}
-                        className={`flex-1 rounded-sm px-1.5 py-1 text-[10px] transition-colors ${
-                          editForm.displaySize === size
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "text-[#888] hover:bg-[#3a3a3a] hover:text-[#bbb]"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl
+                    value={editForm.displaySize}
+                    onChange={(v) =>
+                      setEditForm((f) => ({ ...f, displaySize: v }))
+                    }
+                    options={[
+                      { value: "S", label: "S" },
+                      { value: "M", label: "M" },
+                      { value: "L", label: "L" },
+                    ]}
+                  />
 
                   <div className="col-span-2 grid grid-cols-[auto_1fr_auto] gap-1">
                     <button
@@ -5895,6 +5938,59 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+// 工程3: shared enter/exit shell for toasts — same delayed-unmount idiom as
+// Modal/FloatingSaveBar so translateY+opacity can animate out instead of the
+// toast just vanishing at its setTimeout.
+function Toast({
+  show,
+  className = "",
+  role,
+  children,
+}: {
+  show: boolean;
+  className?: string;
+  role?: string;
+  children: React.ReactNode;
+}) {
+  const [mounted, setMounted] = useState(show);
+  const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
+  const prevShowRef = useRef(show);
+
+  useEffect(() => {
+    if (show && !mounted) {
+      setMounted(true);
+      setPhase("enter");
+    }
+  }, [show, mounted]);
+
+  useEffect(() => {
+    if (mounted && phase === "enter") {
+      const id = requestAnimationFrame(() => setPhase("show"));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [mounted, phase]);
+
+  useEffect(() => {
+    if (prevShowRef.current && !show) {
+      setPhase("exit");
+      const t = setTimeout(
+        () => setMounted(false),
+        prefersReducedMotion() ? 0 : 160,
+      );
+      prevShowRef.current = show;
+      return () => clearTimeout(t);
+    }
+    prevShowRef.current = show;
+  }, [show]);
+
+  if (!mounted) return null;
+  return (
+    <div data-phase={phase} role={role} className={`admin-toast ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 function Modal({
   onClose,
   children,
@@ -5957,6 +6053,62 @@ function Modal({
     >
       {children}
     </dialog>
+  );
+}
+
+// 工程3: segmented control with one shared sliding pill (transform-driven)
+// instead of each option toggling its own background independently.
+function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  const btnRefs = useRef<Partial<Record<string, HTMLButtonElement>>>({});
+  const [pill, setPill] = useState<{ left: number; width: number } | null>(
+    null,
+  );
+
+  useLayoutEffect(() => {
+    const el = btnRefs.current[value];
+    if (el) setPill({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [value, options]);
+
+  return (
+    <div className="relative flex rounded-[var(--radius-s)] bg-[#2c2c2c] p-0.5">
+      {pill && (
+        <div
+          aria-hidden="true"
+          className="absolute top-0.5 bottom-0.5 rounded-[var(--radius-s)] bg-[#888] transition-[transform,width] duration-[var(--dur-base)] ease-[var(--ease-inout)]"
+          style={{
+            transform: `translateX(${pill.left}px)`,
+            width: pill.width,
+            boxShadow: "var(--shadow-1)",
+          }}
+        />
+      )}
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          ref={(el) => {
+            if (el) btnRefs.current[opt.value] = el;
+          }}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          aria-pressed={value === opt.value}
+          className={`admin-segmented__option relative z-[1] flex-1 rounded-[var(--radius-s)] px-1.5 py-1 text-[10px] transition-colors duration-[var(--dur-fast)] ${
+            value === opt.value
+              ? "text-[#1e1e1e] font-medium"
+              : "text-[#888] hover:text-[#bbb]"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
   );
 }
 

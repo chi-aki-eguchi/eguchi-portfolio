@@ -1980,10 +1980,14 @@ function ServiceSection({
         className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[#888] hover:text-[#bbb] transition-colors cursor-pointer"
       >
         <span>{title}</span>
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        <ChevronRight
+          size={12}
+          className="flex-shrink-0 transition-transform duration-[var(--dur-base)] ease-[var(--ease-inout)]"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+        />
       </button>
       <div
-        className={`grid ${animated ? "transition-[grid-template-rows] duration-200 ease-out" : ""}`}
+        className={`grid ${animated ? "transition-[grid-template-rows] duration-[var(--dur-base)] ease-[var(--ease-inout)]" : ""}`}
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">
@@ -5221,17 +5225,17 @@ function Section({
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex items-center justify-between gap-3 w-full min-h-[52px] px-4 text-left text-[15px] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)] transition-colors duration-[120ms]"
+        className="flex items-center justify-between gap-3 w-full min-h-[52px] px-4 text-left text-[15px] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)] transition-colors duration-[var(--dur-fast)]"
       >
         <span>{title}</span>
         <ChevronRight
           size={15}
-          className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-200 ease-out"
+          className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-[var(--dur-base)] ease-[var(--ease-inout)]"
           style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
         />
       </button>
       <div
-        className={`grid px-4 ${animated ? "transition-[grid-template-rows] duration-200 ease-out" : ""}`}
+        className={`grid px-4 ${animated ? "transition-[grid-template-rows] duration-[var(--dur-base)] ease-[var(--ease-inout)]" : ""}`}
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">

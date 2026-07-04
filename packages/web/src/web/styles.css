@@ -238,6 +238,12 @@
   background: rgba(var(--admin-ink-rgb), 0.04) !important;
 }
 
+@media (min-width: 1024px) {
+  .admin-atelier .admin-mobile-nav {
+    display: none !important;
+  }
+}
+
 .admin-atelier .admin-content {
   color: var(--admin-ink);
 }

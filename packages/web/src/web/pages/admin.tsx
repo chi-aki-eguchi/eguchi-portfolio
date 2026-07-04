@@ -75,6 +75,7 @@ import {
   isAdminTab,
   type Tab,
 } from "./admin-shared";
+import { PageHeader } from "./admin-page-header";
 
 const LazyHeroTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.HeroTab })),
@@ -98,10 +99,7 @@ const LazySettingsTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.SettingsTab })),
 );
 
-const ADMIN_TABS: Record<
-  Tab,
-  { label: string; icon: React.ReactNode }
-> = {
+const ADMIN_TABS: Record<Tab, { label: string; icon: React.ReactNode }> = {
   setup: { label: "はじめに", icon: <Check size={15} /> },
   gallery: { label: "Library", icon: <ImageLucide size={15} /> },
   hero: { label: "Hero", icon: <Grid size={15} /> },
@@ -286,9 +284,10 @@ function contrastRatio(a: Rgb, b: Rgb): number {
 
 function ensureContrast(foreground: Rgb, background: Rgb, min: number): Rgb {
   if (contrastRatio(foreground, background) >= min) return foreground;
-  const target = relativeLuminance(background) > 0.5
-    ? { r: 18, g: 17, b: 15 }
-    : { r: 250, g: 248, b: 242 };
+  const target =
+    relativeLuminance(background) > 0.5
+      ? { r: 18, g: 17, b: 15 }
+      : { r: 250, g: 248, b: 242 };
   let adjusted = foreground;
   for (let i = 1; i <= 24; i += 1) {
     adjusted = mix(foreground, target, i / 24);
@@ -302,7 +301,11 @@ function adminThemeFromSettings(
 ): CSSProperties {
   const neutral = parseHexColor(ATELIER_FALLBACK.paper)!;
   const siteBg = parseHexColor(settings?.themeBg) ?? neutral;
-  const base = mix(mix(siteBg, neutral, 0.86), { r: 255, g: 255, b: 255 }, 0.06);
+  const base = mix(
+    mix(siteBg, neutral, 0.86),
+    { r: 255, g: 255, b: 255 },
+    0.06,
+  );
   const soft = mix(base, { r: 46, g: 44, b: 39 }, 0.035);
   const deep = mix(base, { r: 46, g: 44, b: 39 }, 0.075);
   const line = mix(base, { r: 46, g: 44, b: 39 }, 0.14);
@@ -312,7 +315,10 @@ function adminThemeFromSettings(
     base,
     7,
   );
-  const muted = ensureContrast(mix(ink, base, 0.38), base, 4.5);
+  // Checked against `deep` (the darkest paper tone actually used behind text,
+  // e.g. the sidebar) rather than `base` — passing against the darkest paper
+  // variant guarantees the same minimum against the lighter ones too.
+  const muted = ensureContrast(mix(ink, base, 0.38), deep, 4.5);
   const accent = ensureContrast(
     parseHexColor(settings?.accentColor) ??
       parseHexColor(settings?.linkHoverColor) ??
@@ -444,7 +450,12 @@ export default function AdminPage() {
           ))}
         </nav>
         <div className="admin-sidebar__footer">
-          <a href="/" target="_blank" rel="noopener" className="admin-sidebar__link">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener"
+            className="admin-sidebar__link"
+          >
             <ExternalLink size={13} /> Site
           </a>
           <button onClick={requestLogout} className="admin-sidebar__link">
@@ -454,98 +465,98 @@ export default function AdminPage() {
       </aside>
 
       <div className="admin-main">
-      <header className="admin-mobile-nav lg:hidden">
-        <div className="flex items-center justify-between gap-2 min-w-0">
+        <header className="admin-mobile-nav lg:hidden">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+              {ADMIN_TAB_GROUPS.map((group) => {
+                const targetTab = group.tabs[0];
+                const active = group.key === activeGroup.key;
+                return (
+                  <button
+                    key={group.key}
+                    disabled={galleryUploading && targetTab !== "gallery"}
+                    onClick={() => requestTab(targetTab)}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                      active
+                        ? "bg-[#3a3a3a] text-[#e0e0e0]"
+                        : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
+                    }`}
+                  >
+                    {group.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener"
+                className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+              >
+                <ExternalLink size={11} />{" "}
+                <span className="hidden sm:inline">Site</span>
+              </a>
+              <button
+                onClick={requestLogout}
+                className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+              >
+                <LogOut size={11} />{" "}
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
+          </div>
           <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-            {ADMIN_TAB_GROUPS.map((group) => {
-              const targetTab = group.tabs[0];
-              const active = group.key === activeGroup.key;
-              return (
-                <button
-                  key={group.key}
-                  disabled={galleryUploading && targetTab !== "gallery"}
-                  onClick={() => requestTab(targetTab)}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                    active
-                      ? "bg-[#3a3a3a] text-[#e0e0e0]"
-                      : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
-                  }`}
-                >
-                  {group.label}
-                </button>
-              );
-            })}
+            {visibleTabs.map((t) => (
+              <button
+                key={t.key}
+                disabled={galleryUploading && t.key !== "gallery"}
+                onClick={() => requestTab(t.key)}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  tab === t.key
+                    ? "bg-[#3a3a3a] text-[#e0e0e0]"
+                    : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
+                }`}
+              >
+                {t.icon} <span>{t.label}</span>
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener"
-              className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
-            >
-              <ExternalLink size={11} />{" "}
-              <span className="hidden sm:inline">Site</span>
-            </a>
-            <button
-              onClick={requestLogout}
-              className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
-            >
-              <LogOut size={11} />{" "}
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-          {visibleTabs.map((t) => (
-            <button
-              key={t.key}
-              disabled={galleryUploading && t.key !== "gallery"}
-              onClick={() => requestTab(t.key)}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                tab === t.key
-                  ? "bg-[#3a3a3a] text-[#e0e0e0]"
-                  : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
-              }`}
-            >
-              {t.icon} <span>{t.label}</span>
-            </button>
-          ))}
-        </div>
-      </header>
+        </header>
 
-      {/* Content */}
-      <div className="admin-content">
-        {tab === "setup" && <SetupTab onOpenTab={requestTab} />}
-        {tab === "gallery" && (
-          <GalleryTab
-            onUploadingChange={setGalleryUploading}
-            onUnsavedChange={setHasUnsaved}
-          />
-        )}
-        {tab !== "setup" && tab !== "gallery" && (
-          <Suspense
-            fallback={
-              <div className="h-full flex items-center justify-center">
-                <Loader2 size={18} className="animate-spin text-[#555]" />
-              </div>
-            }
-          >
-            {tab === "hero" && <LazyHeroTab />}
-            {tab === "profile" && (
-              <LazyProfileTab onUnsavedChange={setHasUnsaved} />
-            )}
-            {tab === "categories" && <LazyCategoriesTab />}
-            {tab === "series" && <LazySeriesTab />}
-            {tab === "pricing" && <LazyPricingTab />}
-            {tab === "service" && (
-              <LazyServiceTab onUnsavedChange={setHasUnsaved} />
-            )}
-            {tab === "settings" && (
-              <LazySettingsTab onUnsavedChange={setHasUnsaved} />
-            )}
-          </Suspense>
-        )}
-      </div>
+        {/* Content */}
+        <div className="admin-content">
+          {tab === "setup" && <SetupTab onOpenTab={requestTab} />}
+          {tab === "gallery" && (
+            <GalleryTab
+              onUploadingChange={setGalleryUploading}
+              onUnsavedChange={setHasUnsaved}
+            />
+          )}
+          {tab !== "setup" && tab !== "gallery" && (
+            <Suspense
+              fallback={
+                <div className="h-full flex items-center justify-center">
+                  <Loader2 size={18} className="animate-spin text-[#555]" />
+                </div>
+              }
+            >
+              {tab === "hero" && <LazyHeroTab />}
+              {tab === "profile" && (
+                <LazyProfileTab onUnsavedChange={setHasUnsaved} />
+              )}
+              {tab === "categories" && <LazyCategoriesTab />}
+              {tab === "series" && <LazySeriesTab />}
+              {tab === "pricing" && <LazyPricingTab />}
+              {tab === "service" && (
+                <LazyServiceTab onUnsavedChange={setHasUnsaved} />
+              )}
+              {tab === "settings" && (
+                <LazySettingsTab onUnsavedChange={setHasUnsaved} />
+              )}
+            </Suspense>
+          )}
+        </div>
       </div>
 
       {/* Unsaved settings confirmation */}
@@ -704,14 +715,14 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
 
   if (collapsed) {
     return (
-      <div className="h-full overflow-y-auto bg-[#1e1e1e]">
+      <div className="h-full overflow-y-auto">
         <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
-          <div className="flex items-center justify-between gap-3 border border-[#33402f] bg-[#222a20] rounded-sm px-4 py-3">
+          <div className="flex items-center justify-between gap-3 border border-emerald-200 bg-emerald-50 rounded-sm px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-5 h-5 rounded-full bg-[#5f7f68] text-[#151515] flex items-center justify-center flex-shrink-0">
+              <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
                 <Check size={13} />
               </div>
-              <p className="text-[12px] text-[#b8d5bf] truncate">
+              <p className="text-[12px] text-emerald-800 truncate">
                 {requiredDone
                   ? "公開に必要な項目はそろっています。"
                   : "「はじめに」を閉じています。"}
@@ -722,7 +733,7 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
                 setForceOpen(true);
                 setDismissed(false);
               }}
-              className="text-[11px] text-[#9a9a9a] hover:text-[#ddd] transition-colors flex-shrink-0"
+              className="text-[11px] text-emerald-700 hover:text-emerald-900 transition-colors flex-shrink-0"
             >
               もう一度見る
             </button>
@@ -733,21 +744,15 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#1e1e1e]">
+    <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10 space-y-8">
-        <section className="space-y-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.16em] text-[#777] mb-2">
-                Start
-              </p>
-              <h1 className="text-[22px] md:text-[26px] text-[#e5e5e5] font-normal tracking-normal">
-                公開までにやること
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
+        <PageHeader
+          title="公開までにやること"
+          description="むずかしい設定は最初だけです。見る人に公開する前に、上から順に5つを確認します。写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。"
+          actions={
+            <>
               <div
-                className={`w-fit rounded-sm border px-3 py-2 text-[12px] ${requiredDone ? "border-[#5f7f68] bg-[#263126] text-[#b8d5bf]" : "border-[#444] bg-[#262626] text-[#aaa]"}`}
+                className={`w-fit rounded-sm border px-3 py-2 text-[12px] ${requiredDone ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-muted)]"}`}
               >
                 {loading
                   ? "確認中..."
@@ -758,17 +763,13 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
                   setDismissed(true);
                   setForceOpen(false);
                 }}
-                className="text-[11px] text-[#777] hover:text-[#bbb] transition-colors flex-shrink-0"
+                className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
               >
                 閉じる
               </button>
-            </div>
-          </div>
-          <p className="max-w-2xl text-[13px] leading-7 text-[#9a9a9a]">
-            むずかしい設定は最初だけです。見る人に公開する前に、上から順に5つを確認します。
-            写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。
-          </p>
-        </section>
+            </>
+          }
+        />
 
         <section className="grid gap-3 md:grid-cols-2">
           {checklist.map((item) => (
@@ -797,46 +798,50 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
         </section>
 
         <section className="grid gap-3 md:grid-cols-2">
-          <div className="border border-[#333] bg-[#242424] rounded-sm p-5">
-            <h2 className="text-[14px] text-[#ddd] mb-3">
-              公開の裏側にあるもの
-            </h2>
-            <div className="space-y-3 text-[12px] leading-6 text-[#999]">
+          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-5">
+            <h2 className="text-[14px] mb-3">公開の裏側にあるもの</h2>
+            <div className="space-y-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
               <p>
-                <span className="text-[#d0d0d0]">サイトのファイル一式</span>:
-                見た目や管理画面のもとになるもの。
+                <span className="text-[color:var(--admin-ink)]">
+                  サイトのファイル一式
+                </span>
+                : 見た目や管理画面のもとになるもの。
               </p>
               <p>
-                <span className="text-[#d0d0d0]">公開場所</span>:
+                <span className="text-[color:var(--admin-ink)]">公開場所</span>:
                 サイトをインターネットで動かす場所。
               </p>
               <p>
-                <span className="text-[#d0d0d0]">データの保存場所</span>:
-                名前、説明文、写真一覧などを保存する場所。
+                <span className="text-[color:var(--admin-ink)]">
+                  データの保存場所
+                </span>
+                : 名前、説明文、写真一覧などを保存する場所。
               </p>
               <p>
-                <span className="text-[#d0d0d0]">写真の保存場所</span>:
-                アップロードした写真ファイルそのものを置く場所。
+                <span className="text-[color:var(--admin-ink)]">
+                  写真の保存場所
+                </span>
+                : アップロードした写真ファイルそのものを置く場所。
               </p>
             </div>
           </div>
-          <div className="border border-[#333] bg-[#242424] rounded-sm p-5">
-            <h2 className="text-[14px] text-[#ddd] mb-3">言葉の置き換え</h2>
-            <div className="space-y-3 text-[12px] leading-6 text-[#999]">
+          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-5">
+            <h2 className="text-[14px] mb-3">言葉の置き換え</h2>
+            <div className="space-y-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
               <p>
-                <span className="text-[#d0d0d0]">repo</span>:
+                <span className="text-[color:var(--admin-ink)]">repo</span>:
                 サイトのファイル一式が入った箱。
               </p>
               <p>
-                <span className="text-[#d0d0d0]">環境変数</span>:
+                <span className="text-[color:var(--admin-ink)]">環境変数</span>:
                 パスワードや接続先を書く、公開しない設定メモ。
               </p>
               <p>
-                <span className="text-[#d0d0d0]">deploy</span>:
+                <span className="text-[color:var(--admin-ink)]">deploy</span>:
                 変更したサイトをネット上に反映すること。
               </p>
               <p>
-                <span className="text-[#d0d0d0]">OGP</span>:
+                <span className="text-[color:var(--admin-ink)]">OGP</span>:
                 SNSでURLを貼った時に出るタイトル・説明・画像。
               </p>
             </div>
@@ -857,35 +862,37 @@ function SetupChecklistRow({
   compact?: boolean;
 }) {
   return (
-    <div className="border border-[#333] bg-[#242424] rounded-sm p-4 flex gap-3">
+    <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-4 flex gap-3">
       <div
-        className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.done ? "bg-[#5f7f68] text-[#151515]" : "bg-[#333] text-[#777]"}`}
+        className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.done ? "bg-emerald-600 text-white" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)]"}`}
       >
         {item.done ? <Check size={13} /> : <AlertTriangle size={12} />}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-[13px] text-[#ddd]">{item.title}</h3>
+          <h3 className="text-[13px] text-[color:var(--admin-ink)]">
+            {item.title}
+          </h3>
           {item.href ? (
             <a
               href={item.href}
               target="_blank"
               rel="noopener"
-              className="text-[11px] text-[#888] hover:text-[#ddd] transition-colors flex-shrink-0"
+              className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
               開く
             </a>
           ) : (
             <button
               onClick={() => item.tab && onOpenTab(item.tab)}
-              className="text-[11px] text-[#888] hover:text-[#ddd] transition-colors flex-shrink-0"
+              className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
               開く
             </button>
           )}
         </div>
         <p
-          className={`${compact ? "text-[11px] leading-5" : "text-[12px] leading-6"} text-[#888] mt-1`}
+          className={`${compact ? "text-[11px] leading-5" : "text-[12px] leading-6"} text-[color:var(--admin-muted)] mt-1`}
         >
           {item.body}
         </p>
@@ -926,7 +933,10 @@ export function parsePresetList(raw?: string): string[] {
 // Effective preset list: once the admin has saved any presets, that list is
 // authoritative (so deleting a built-in default sticks); empty falls back to the
 // built-in defaults.
-export function effectivePresets(saved: string[], defaults: string[]): string[] {
+export function effectivePresets(
+  saved: string[],
+  defaults: string[],
+): string[] {
   return saved.length > 0 ? saved : defaults;
 }
 
@@ -1271,7 +1281,10 @@ export function computeVirtualGridWindow({
     };
   }
 
-  const columns = Math.max(1, Math.floor((gridWidth + gap) / (minItemSize + gap)));
+  const columns = Math.max(
+    1,
+    Math.floor((gridWidth + gap) / (minItemSize + gap)),
+  );
   const itemSize = (gridWidth - gap * (columns - 1)) / columns;
   const rowHeight = Math.max(1, itemSize + gap);
   const totalRows = Math.ceil(itemCount / columns);
@@ -1786,7 +1799,10 @@ function GalleryTab({
         return false;
       if (filterMedium !== "all" && photoMedium(p) !== filterMedium)
         return false;
-      if (filterOrientation !== "all" && photoOrientation(p) !== filterOrientation)
+      if (
+        filterOrientation !== "all" &&
+        photoOrientation(p) !== filterOrientation
+      )
         return false;
       if (filterFeatured && !featuredIds.has(p.id)) return false;
       if (filterPublished === "published" && p.isPublished === false)
@@ -2019,9 +2035,7 @@ function GalleryTab({
           break;
         }
         case "filmType":
-          arr.sort((a, b) =>
-            bySlot(a.filmType || "￿", b.filmType || "￿"),
-          );
+          arr.sort((a, b) => bySlot(a.filmType || "￿", b.filmType || "￿"));
           break;
         case "camera":
           arr.sort((a, b) => bySlot(a.camera || "￿", b.camera || "￿"));
@@ -2082,7 +2096,13 @@ function GalleryTab({
   }, [measureLibraryGrid]);
   useEffect(() => {
     measureLibraryGrid();
-  }, [bulkEditMode, displayed.length, measureLibraryGrid, showTrash, thumbSize]);
+  }, [
+    bulkEditMode,
+    displayed.length,
+    measureLibraryGrid,
+    showTrash,
+    thumbSize,
+  ]);
   const virtualGrid = useMemo(
     () =>
       computeVirtualGridWindow({
@@ -2545,7 +2565,9 @@ function GalleryTab({
     const imageFiles = files.filter(isUploadableImageFile);
     const skipped = files.length - imageFiles.length;
     const tooLargeNotice = uploadTooLargeNotice(imageFiles);
-    const uploadableFiles = imageFiles.filter((file) => !imageFileTooLarge(file));
+    const uploadableFiles = imageFiles.filter(
+      (file) => !imageFileTooLarge(file),
+    );
     if (!uploadableFiles.length) {
       const parts: string[] = [];
       if (tooLargeNotice) parts.push(tooLargeNotice);
@@ -2612,11 +2634,7 @@ function GalleryTab({
         const filmTypeVal = isDigital ? "デジタル" : "フィルム";
         const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
         const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
-        const shotAtVal = shotAtForUploadedPhoto(
-          shotAt,
-          file,
-          uploadMedium,
-        );
+        const shotAtVal = shotAtForUploadedPhoto(shotAt, file, uploadMedium);
         const created = await adminApi.photos.$post({
           json: {
             filename: file.name,
@@ -3072,21 +3090,15 @@ function GalleryTab({
     <div className="flex h-full">
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
+        <div className="px-2 sm:px-4 pt-4 flex-shrink-0">
+          <PageHeader
+            title="Library"
+            description={`${displayed.length} / ${allPhotos.length} photos${selected.size > 0 ? ` ・ ${selected.size} selected` : ""}`}
+          />
+        </div>
         {/* Toolbar — quiet Library controls */}
         <div className="bg-[#2a2a2a] border-b border-[#333] px-2 sm:px-4 py-2 flex flex-col gap-2 flex-shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <div className="flex items-baseline gap-2 mr-auto min-w-0">
-              <span className="text-[11px] tracking-widest uppercase text-[#777]">
-                Library
-              </span>
-              <span className="text-[11px] text-[#777] whitespace-nowrap">
-                {displayed.length} / {allPhotos.length} photos
-                {selected.size > 0 && (
-                  <span className="text-[#aaa]"> · {selected.size} selected</span>
-                )}
-              </span>
-            </div>
-
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[#777] uppercase tracking-wider">
@@ -3099,7 +3111,9 @@ function GalleryTab({
                 className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
               >
                 <option value="manual">手動（保存されている順）</option>
-                <option value="createdAt-desc">アップロード日（新しい順）</option>
+                <option value="createdAt-desc">
+                  アップロード日（新しい順）
+                </option>
                 <option value="createdAt-asc">アップロード日（古い順）</option>
                 <option value="shotAt-desc">撮影日（新しい順）</option>
                 <option value="shotAt-asc">撮影日（古い順）</option>
@@ -3146,8 +3160,8 @@ function GalleryTab({
               aria-expanded={showLibraryFilters}
               className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition-colors ${
                 showLibraryFilters || anyFilterActive
-                  ? "bg-[#3a3a3a] text-[#eee] border-[#555]"
-                  : "text-[#999] border-[#444] hover:bg-[#333] hover:text-[#ccc]"
+                  ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)] border-[color:var(--admin-ink)]"
+                  : "text-[color:var(--admin-muted)] border-[#444] hover:bg-[#333] hover:text-[color:var(--admin-ink)]"
               }`}
             >
               <Search size={11} /> 絞り込み
@@ -3364,9 +3378,13 @@ function GalleryTab({
                   className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
                 >
                   <option value="all">媒体: All</option>
-                  <option value="digital">Digital ({mediumCounts.digital})</option>
+                  <option value="digital">
+                    Digital ({mediumCounts.digital})
+                  </option>
                   <option value="film">Film ({mediumCounts.film})</option>
-                  <option value="missing">媒体なし ({mediumCounts.missing})</option>
+                  <option value="missing">
+                    媒体なし ({mediumCounts.missing})
+                  </option>
                 </select>
 
                 <select
@@ -3786,8 +3804,7 @@ function GalleryTab({
         </div>
 
         {!showTrash &&
-          (activeFilterLabels.length > 0 ||
-            librarySort !== "manual") && (
+          (activeFilterLabels.length > 0 || librarySort !== "manual") && (
             <div
               aria-label="Libraryの表示条件"
               className="bg-[#232323] border-b border-[#333] px-2 sm:px-4 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
@@ -4101,200 +4118,200 @@ function GalleryTab({
                               : "hover:ring-1 hover:ring-[#444]"
                         }`}
                       >
-                      {/* Drop-position indicator: a bar on the edge where the dragged
+                        {/* Drop-position indicator: a bar on the edge where the dragged
                         photo will land (drop takes the target's slot — before the
                         target when dragging up/left, after it when dragging down/right). */}
-                      {dragOverId === photo.id &&
-                        dragSrcId !== null &&
-                        dragSrcId !== photo.id && (
-                          <div
-                            aria-hidden="true"
-                            className={`absolute top-0 bottom-0 z-[3] w-[3px] bg-[#ddd] shadow-[0_0_6px_rgba(255,255,255,0.5)] pointer-events-none ${
-                              displayed.findIndex((p) => p.id === dragSrcId) <
-                              idx
-                                ? "-right-[3px]"
-                                : "-left-[3px]"
-                            }`}
-                          />
-                        )}
-                      {/* Full-card click target — a real <button> so select/open is keyboard
+                        {dragOverId === photo.id &&
+                          dragSrcId !== null &&
+                          dragSrcId !== photo.id && (
+                            <div
+                              aria-hidden="true"
+                              className={`absolute top-0 bottom-0 z-[3] w-[3px] bg-[#ddd] shadow-[0_0_6px_rgba(255,255,255,0.5)] pointer-events-none ${
+                                displayed.findIndex((p) => p.id === dragSrcId) <
+                                idx
+                                  ? "-right-[3px]"
+                                  : "-left-[3px]"
+                              }`}
+                            />
+                          )}
+                        {/* Full-card click target — a real <button> so select/open is keyboard
                         accessible; the reorder buttons sit above it (higher z). */}
-                      <button
-                        type="button"
-                        aria-label={photo.title || photo.filename || "写真"}
-                        onClick={(e) => handlePhotoClick(photo, idx, e)}
-                        className="absolute inset-0 z-[1] cursor-pointer"
-                      />
-                      <img
-                        src={adminPhotoSrc(photo, 400, 70)}
-                        alt={photo.title}
-                        className={`w-full aspect-square object-cover bg-[#2a2a2a] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
-                        style={{
-                          objectPosition: adminPhotoObjectPosition(photo),
-                        }}
-                        loading="lazy"
-                        decoding="async"
-                        draggable={false}
-                      />
-                      {/* M2: non-public badge (offset right so it clears the category dot) */}
-                      {isUnpublished && (
-                        <div className="absolute top-1 left-4 z-[2] flex items-center gap-0.5 bg-black/70 text-white/75 text-[9px] px-1 py-0.5 rounded-sm">
-                          <EyeOff size={9} /> 非公開
-                        </div>
-                      )}
-                      {/* Category color label — top-left dot */}
-                      <div
-                        className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full shadow-sm"
-                        style={{ background: catColor }}
-                        title={photo.category}
-                      />
-                      {thumbSize >= 120 && metadataBadges.length > 0 && (
+                        <button
+                          type="button"
+                          aria-label={photo.title || photo.filename || "写真"}
+                          onClick={(e) => handlePhotoClick(photo, idx, e)}
+                          className="absolute inset-0 z-[1] cursor-pointer"
+                        />
+                        <img
+                          src={adminPhotoSrc(photo, 400, 70)}
+                          alt={photo.title}
+                          className={`w-full aspect-square object-cover bg-[#2a2a2a] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
+                          style={{
+                            objectPosition: adminPhotoObjectPosition(photo),
+                          }}
+                          loading="lazy"
+                          decoding="async"
+                          draggable={false}
+                        />
+                        {/* M2: non-public badge (offset right so it clears the category dot) */}
+                        {isUnpublished && (
+                          <div className="absolute top-1 left-4 z-[2] flex items-center gap-0.5 bg-black/70 text-white/75 text-[9px] px-1 py-0.5 rounded-sm">
+                            <EyeOff size={9} /> 非公開
+                          </div>
+                        )}
+                        {/* Category color label — top-left dot */}
                         <div
-                          aria-label={`未入力: ${metadataBadges.join(", ")}`}
-                          className="absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
-                        >
-                          {metadataBadges.map((label) => (
-                            <span
-                              key={label}
-                              className="rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] leading-none text-white/70"
+                          className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full shadow-sm"
+                          style={{ background: catColor }}
+                          title={photo.category}
+                        />
+                        {thumbSize >= 120 && metadataBadges.length > 0 && (
+                          <div
+                            aria-label={`未入力: ${metadataBadges.join(", ")}`}
+                            className="absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
+                          >
+                            {metadataBadges.map((label) => (
+                              <span
+                                key={label}
+                                className="rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] leading-none text-white/70"
+                              >
+                                {label}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {thumbSize >= 120 && usageBadgeLabels.length > 0 && (
+                          <div
+                            aria-label={`使用状況: ${usageBadgeLabels.join(", ")}`}
+                            className="absolute bottom-1 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
+                          >
+                            {heroIndex >= 0 && (
+                              <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-900/70 px-1.5 py-0.5 text-[9px] leading-none text-amber-200/90">
+                                <Star size={8} /> Hero {heroIndex + 1}
+                              </span>
+                            )}
+                            {photo.seriesId != null && (
+                              <span className="inline-flex items-center gap-0.5 rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
+                                <Layers size={8} /> Series
+                              </span>
+                            )}
+                            {displaySize !== "M" && (
+                              <span className="rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
+                                {displaySize}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {/* Selection check */}
+                        {isSelected && (
+                          <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#aaa] rounded-sm flex items-center justify-center">
+                            <Check size={10} className="text-[#1e1e1e]" />
+                          </div>
+                        )}
+                        {thumbSize >= 120 && (
+                          <div className="absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                rotateLibraryPhoto(photo, -90);
+                              }}
+                              disabled={quickRotatePhoto.isPending}
+                              aria-label="左へ90度回転"
+                              title="左へ90°回転"
+                              className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
                             >
-                              {label}
-                            </span>
-                          ))}
+                              <RotateCcw size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                rotateLibraryPhoto(photo, 90);
+                              }}
+                              disabled={quickRotatePhoto.isPending}
+                              aria-label="右へ90度回転"
+                              title="右へ90°回転"
+                              className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
+                            >
+                              <RotateCw size={13} />
+                            </button>
+                          </div>
+                        )}
+                        {/* Title strip on hover */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-[10px] text-white/80 truncate">
+                            {photo.title || photo.filename}
+                          </p>
                         </div>
-                      )}
-                      {thumbSize >= 120 && usageBadgeLabels.length > 0 && (
-                        <div
-                          aria-label={`使用状況: ${usageBadgeLabels.join(", ")}`}
-                          className="absolute bottom-1 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
-                        >
-                          {heroIndex >= 0 && (
-                            <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-900/70 px-1.5 py-0.5 text-[9px] leading-none text-amber-200/90">
-                              <Star size={8} /> Hero {heroIndex + 1}
-                            </span>
-                          )}
-                          {photo.seriesId != null && (
-                            <span className="inline-flex items-center gap-0.5 rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
-                              <Layers size={8} /> Series
-                            </span>
-                          )}
-                          {displaySize !== "M" && (
-                            <span className="rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
-                              {displaySize}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {/* Selection check */}
-                      {isSelected && (
-                        <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#aaa] rounded-sm flex items-center justify-center">
-                          <Check size={10} className="text-[#1e1e1e]" />
-                        </div>
-                      )}
-                      {thumbSize >= 120 && (
-                        <div className="absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              rotateLibraryPhoto(photo, -90);
-                            }}
-                            disabled={quickRotatePhoto.isPending}
-                            aria-label="左へ90度回転"
-                            title="左へ90°回転"
-                            className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
-                          >
-                            <RotateCcw size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              rotateLibraryPhoto(photo, 90);
-                            }}
-                            disabled={quickRotatePhoto.isPending}
-                            aria-label="右へ90度回転"
-                            title="右へ90°回転"
-                            className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
-                          >
-                            <RotateCw size={13} />
-                          </button>
-                        </div>
-                      )}
-                      {/* Title strip on hover */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] text-white/80 truncate">
-                          {photo.title || photo.filename}
-                        </p>
-                      </div>
-                      {/* Move controls — touch-friendly reorder (drag isn't available on touch).
+                        {/* Move controls — touch-friendly reorder (drag isn't available on touch).
                         Always visible on mobile; hover-reveal on desktop. */}
-                      {!reorderLocked && !showTrash && (
-                        <div className="absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          {/* ⇤⇥ hide on small thumbnails — 4 buttons (~105px) overflow an 80px tile */}
-                          {thumbSize >= 120 && (
+                        {!reorderLocked && !showTrash && (
+                          <div className="absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            {/* ⇤⇥ hide on small thumbnails — 4 buttons (~105px) overflow an 80px tile */}
+                            {thumbSize >= 120 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  movePhotoTo(photo.id, "start");
+                                }}
+                                disabled={idx === 0}
+                                aria-label="先頭へ移動"
+                                title="先頭へ移動"
+                                className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                              >
+                                <ChevronsLeft size={13} />
+                              </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                movePhotoTo(photo.id, "start");
+                                movePhoto(photo.id, -1);
                               }}
                               disabled={idx === 0}
-                              aria-label="先頭へ移動"
-                              title="先頭へ移動"
+                              aria-label="前へ移動"
+                              title="前へ移動"
                               className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                             >
-                              <ChevronsLeft size={13} />
+                              <ChevronLeft size={13} />
                             </button>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              movePhoto(photo.id, -1);
-                            }}
-                            disabled={idx === 0}
-                            aria-label="前へ移動"
-                            title="前へ移動"
-                            className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                          >
-                            <ChevronLeft size={13} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              movePhoto(photo.id, 1);
-                            }}
-                            disabled={idx === displayed.length - 1}
-                            aria-label="後へ移動"
-                            title="後へ移動"
-                            className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                          >
-                            <ChevronRight size={13} />
-                          </button>
-                          {thumbSize >= 120 && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                movePhotoTo(photo.id, "end");
+                                movePhoto(photo.id, 1);
                               }}
                               disabled={idx === displayed.length - 1}
-                              aria-label="末尾へ移動"
-                              title="末尾へ移動"
+                              aria-label="後へ移動"
+                              title="後へ移動"
                               className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                             >
-                              <ChevronsRight size={13} />
+                              <ChevronRight size={13} />
                             </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              {virtualGrid.bottomPadding > 0 && (
-                <div style={{ height: virtualGrid.bottomPadding }} />
-              )}
+                            {thumbSize >= 120 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  movePhotoTo(photo.id, "end");
+                                }}
+                                disabled={idx === displayed.length - 1}
+                                aria-label="末尾へ移動"
+                                title="末尾へ移動"
+                                className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                              >
+                                <ChevronsRight size={13} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {virtualGrid.bottomPadding > 0 && (
+                  <div style={{ height: virtualGrid.bottomPadding }} />
+                )}
               </div>
             </>
           )}
@@ -4857,7 +4874,8 @@ function GalleryTab({
               (h) => h.photoId === inspectPhoto.id,
             );
             const quickSeriesName = editForm.seriesId
-              ? seriesList.find((s) => s.id === Number(editForm.seriesId))?.title
+              ? seriesList.find((s) => s.id === Number(editForm.seriesId))
+                  ?.title
               : "";
             const quickCategory = categories.find(
               (c) => c.slug === editForm.category,
@@ -4896,7 +4914,11 @@ function GalleryTab({
                         : "border-[#5a3a3a] bg-[#3a2a2a] text-[#d99]"
                     }`}
                   >
-                    {editForm.isPublished ? <Eye size={9} /> : <EyeOff size={9} />}
+                    {editForm.isPublished ? (
+                      <Eye size={9} />
+                    ) : (
+                      <EyeOff size={9} />
+                    )}
                     {editForm.isPublished ? "公開" : "非公開"}
                   </span>
                   <span className="rounded-sm border border-[#444] bg-[#303030] px-1.5 py-0.5 text-[10px] text-[#bbb]">
@@ -5852,7 +5874,7 @@ function InspectField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-[#777] uppercase tracking-wider mb-1">
+      <label className="block text-[10px] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
         {label}
       </label>
       {hint && (
@@ -5920,7 +5942,7 @@ function AdminField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-[#777] uppercase tracking-wider mb-1">
+      <label className="block text-[10px] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
         {label}
       </label>
       {hint && (

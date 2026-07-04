@@ -768,6 +768,104 @@
   animation: admin-select-draw 0.2s var(--ease-out) forwards;
 }
 
+/* ⌘K quick palette (工程5) — reuses the generic `dialog` glass/scale
+   entrance from 工程2, just re-anchored to the top instead of centered. */
+.admin-atelier .admin-palette {
+  margin: 12vh auto auto;
+  width: min(520px, calc(100vw - 48px));
+  max-height: min(60vh, 480px);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.admin-atelier .admin-palette__input {
+  margin: 10px 10px 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.admin-atelier .admin-palette__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+.admin-atelier .admin-palette__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 13px;
+  text-align: left;
+}
+.admin-atelier .admin-palette__group {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+.admin-atelier .admin-palette__empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+/* Same specificity workaround as SegmentedControl — options must stay
+   transparent (bar aside) so the active row's own tint is what shows. */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-palette__option {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  min-height: 0;
+}
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-palette__option[data-active] {
+  background-color: rgba(var(--admin-accent-rgb), 0.1) !important;
+}
+
+/* Library count "slot" swap (工程5) — old number slides up + fades, new one
+   slides in from below. Keyed remount (in JS) restarts these each change. */
+.admin-atelier .admin-count-swap__slot {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.admin-atelier .admin-count-swap__num {
+  display: inline-block;
+}
+.admin-atelier .admin-count-swap__num--current {
+  animation: admin-count-in var(--dur-base) var(--ease-out) both;
+}
+.admin-atelier .admin-count-swap__num--old {
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: admin-count-out var(--dur-base) var(--ease-out) both;
+}
+@keyframes admin-count-in {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes admin-count-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
 .admin-atelier .absolute[class*="bg-black"],
 .admin-atelier [class*="bg-black"],
 .admin-atelier [class*="from-black"] {

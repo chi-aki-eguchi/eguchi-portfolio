@@ -111,6 +111,14 @@ const ADMIN_TABS: Record<Tab, { label: string; icon: React.ReactNode }> = {
   settings: { label: "Settings", icon: <Settings size={15} /> },
 };
 
+type PaletteDestination = {
+  id: string;
+  label: string;
+  group: string;
+  icon: React.ReactNode;
+  action: () => void;
+};
+
 // V (ux-refinements): admin UI state that must survive tab switches and page
 // moves. Tabs unmount on switch, so plain useState loses unsaved drafts and
 // view preferences — sessionStorage keeps them for the browser session without
@@ -363,6 +371,10 @@ export default function AdminPage() {
   const [unsavedConfirm, setUnsavedConfirm] = useState<Tab | "logout" | null>(
     null,
   );
+  // 工程5: ⌘K quick palette (navigation only) + a signal GalleryTab watches
+  // to auto-open Trash, since that's a toggle inside the tab, not a Tab.
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [openTrashRequest, setOpenTrashRequest] = useState(0);
 
   useEffect(() => {
     if (!isAdminTab(tab)) setTab("gallery");
@@ -393,7 +405,12 @@ export default function AdminPage() {
   // then new screen in+up) instead of an instant swap. `tab` itself still
   // switches the sidebar highlight immediately; `contentTab` is what the
   // content area actually renders, lagging by the exit duration.
-  const [contentTab, setContentTab] = useState<Tab>(tab);
+  // Mirrors the invalid-tab correction below so a bad persisted value
+  // doesn't make the very first render take the animated exit/enter path
+  // (there's nothing valid on screen yet to fade out).
+  const [contentTab, setContentTab] = useState<Tab>(() =>
+    isAdminTab(tab) ? tab : "gallery",
+  );
   const [screenPhase, setScreenPhase] = useState<"enter" | "show" | "exit">(
     "show",
   );
@@ -417,6 +434,18 @@ export default function AdminPage() {
       return () => cancelAnimationFrame(id);
     }
   }, [screenPhase]);
+
+  // 工程5: ⌘K / Ctrl+K toggles the quick palette from anywhere in admin.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   if (isLoading)
     return (
@@ -449,6 +478,36 @@ export default function AdminPage() {
     }
     logout.mutate();
   };
+
+  // 工程5: ⌘K destinations — navigation only, no photo search / actions.
+  const paletteDestinations: PaletteDestination[] = [
+    ...ADMIN_TAB_GROUPS.flatMap((group) =>
+      group.tabs.map((key) => ({
+        id: key,
+        label: ADMIN_TABS[key].label,
+        group: group.label,
+        icon: ADMIN_TABS[key].icon,
+        action: () => requestTab(key),
+      })),
+    ),
+    {
+      id: "trash",
+      label: "Trash",
+      group: "写真",
+      icon: <Trash2 size={15} />,
+      action: () => {
+        requestTab("gallery");
+        setOpenTrashRequest((n) => n + 1);
+      },
+    },
+    {
+      id: "open-site",
+      label: "公開サイトを開く",
+      group: "サイト",
+      icon: <ExternalLink size={15} />,
+      action: () => window.open("/", "_blank", "noopener"),
+    },
+  ];
 
   return (
     <div
@@ -584,6 +643,7 @@ export default function AdminPage() {
               <GalleryTab
                 onUploadingChange={setGalleryUploading}
                 onUnsavedChange={setHasUnsaved}
+                openTrashSignal={openTrashRequest}
               />
             )}
             {contentTab !== "setup" && contentTab !== "gallery" && (
@@ -641,6 +701,13 @@ export default function AdminPage() {
           </div>
         </Modal>
       )}
+
+      {/* ⌘K quick palette (工程5) — navigation only */}
+      <QuickPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        destinations={paletteDestinations}
+      />
     </div>
   );
 }
@@ -1367,9 +1434,14 @@ export function computeVirtualGridWindow({
 function GalleryTab({
   onUploadingChange,
   onUnsavedChange,
+  openTrashSignal,
 }: {
   onUploadingChange?: (v: boolean) => void;
   onUnsavedChange?: (v: boolean) => void;
+  // 工程5: bumped by the ⌘K palette's "Trash" destination — Trash is a
+  // toggle inside this tab, not a Tab of its own, so it needs a signal
+  // rather than a route.
+  openTrashSignal?: number;
 }) {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1463,6 +1535,9 @@ function GalleryTab({
     label: string;
   } | null>(null);
   const [showTrash, setShowTrash] = useState(false);
+  useEffect(() => {
+    if (openTrashSignal) setShowTrash(true);
+  }, [openTrashSignal]);
   const [undoToast, setUndoToast] = useState<{
     ids: number[];
     count: number;
@@ -3147,7 +3222,18 @@ function GalleryTab({
         <div className="px-2 sm:px-4 pt-4 flex-shrink-0">
           <PageHeader
             title="Library"
-            description={`${displayed.length} / ${allPhotos.length} photos${selected.size > 0 ? ` ・ ${selected.size} selected` : ""}`}
+            description={
+              <>
+                <CountSwap value={displayed.length} /> /{" "}
+                <CountSwap value={allPhotos.length} /> photos
+                {selected.size > 0 && (
+                  <>
+                    {" "}
+                    ・ <CountSwap value={selected.size} /> selected
+                  </>
+                )}
+              </>
+            }
           />
         </div>
         {/* Toolbar — quiet Library controls */}
@@ -3957,7 +4043,7 @@ function GalleryTab({
             /* ── Trash view ── */
             (trashData?.photos ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
-                <Trash2 size={40} strokeWidth={1} className="text-[#333]" />
+                <EmptyTrashIllustration />
                 <p className="text-sm">
                   ゴミ箱は空です。移動した写真はここに表示されます。
                 </p>
@@ -4072,7 +4158,11 @@ function GalleryTab({
             />
           ) : displayed.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
-              <ImageLucide size={40} strokeWidth={1} className="text-[#444]" />
+              {anyFilterActive && allPhotos.length > 0 ? (
+                <EmptySearchIllustration />
+              ) : (
+                <EmptyContactSheetIllustration />
+              )}
               {anyFilterActive && allPhotos.length > 0 ? (
                 <>
                   <p className="text-sm">条件に合う写真が見つかりません。</p>
@@ -5577,7 +5667,7 @@ function BulkEditTable({
   if (photos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
-        <ImageLucide size={40} strokeWidth={1} className="text-[#444]" />
+        <EmptyContactSheetIllustration />
         <p className="text-sm">まだ写真がありません。</p>
         <p className="text-[11px] text-[#444]">
           Gallery表示に戻ると、Importから追加できます。
@@ -6026,6 +6116,165 @@ function Toast({
   );
 }
 
+// Simple subsequence fuzzy match (order-preserving, no ranking) — enough for
+// an 11-item destination list; a scoring/ranking matcher would be overkill.
+function fuzzyMatch(text: string, query: string): boolean {
+  const t = text.toLowerCase();
+  let ti = 0;
+  for (const ch of query.toLowerCase()) {
+    const idx = t.indexOf(ch, ti);
+    if (idx === -1) return false;
+    ti = idx + 1;
+  }
+  return true;
+}
+
+// 工程5: ⌘K quick palette — navigation only (jump to a tab / Trash / the
+// public site). Built on the same <dialog> + phase animation as Modal, just
+// top-anchored instead of centered and with its own search+list body.
+function QuickPalette({
+  open,
+  onClose,
+  destinations,
+}: {
+  open: boolean;
+  onClose: () => void;
+  destinations: PaletteDestination[];
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const [mounted, setMounted] = useState(open);
+  const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const closingRef = useRef(false);
+
+  useEffect(() => {
+    if (open && !mounted) {
+      setMounted(true);
+      setPhase("enter");
+      setQuery("");
+      setActiveIndex(0);
+      closingRef.current = false;
+    }
+  }, [open, mounted]);
+
+  useEffect(() => {
+    if (mounted && phase === "enter") {
+      const id = requestAnimationFrame(() => setPhase("show"));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [mounted, phase]);
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    onCloseRef.current();
+    if (prefersReducedMotion()) {
+      setMounted(false);
+      return;
+    }
+    setPhase("exit");
+    setTimeout(() => setMounted(false), 160);
+  }, []);
+
+  const prevOpenRef = useRef(open);
+  useEffect(() => {
+    if (prevOpenRef.current && !open) {
+      requestClose();
+    }
+    prevOpenRef.current = open;
+  }, [open, requestClose]);
+
+  useEffect(() => {
+    const d = ref.current;
+    if (!d || !mounted) return;
+    if (!d.open) d.showModal();
+    const onClick = (e: MouseEvent) => {
+      if (e.target === d) requestClose();
+    };
+    const onCancel = (e: Event) => {
+      e.preventDefault();
+      requestClose();
+    };
+    d.addEventListener("click", onClick);
+    d.addEventListener("cancel", onCancel);
+    return () => {
+      d.removeEventListener("click", onClick);
+      d.removeEventListener("cancel", onCancel);
+    };
+  }, [mounted, requestClose]);
+
+  useEffect(() => {
+    if (mounted) {
+      const id = requestAnimationFrame(() => inputRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [mounted]);
+
+  useEffect(() => setActiveIndex(0), [query]);
+
+  if (!mounted) return null;
+
+  const filtered = destinations.filter(
+    (d) =>
+      !query.trim() || fuzzyMatch(d.label, query) || fuzzyMatch(d.group, query),
+  );
+
+  const activate = (d: PaletteDestination) => {
+    d.action();
+    requestClose();
+  };
+
+  return (
+    <dialog ref={ref} data-phase={phase} className="admin-glass admin-palette">
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="移動先を検索…（Library / Hero / Settings / Trash など）"
+        aria-label="クイック移動"
+        className="admin-palette__input"
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIndex((i) => Math.max(i - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const d = filtered[activeIndex];
+            if (d) activate(d);
+          }
+        }}
+      />
+      <ul className="admin-palette__list" aria-label="移動先">
+        {filtered.map((d, i) => (
+          <li key={d.id}>
+            <button
+              type="button"
+              data-active={i === activeIndex || undefined}
+              onMouseEnter={() => setActiveIndex(i)}
+              onClick={() => activate(d)}
+              className="admin-palette__option"
+            >
+              {d.icon}
+              <span>{d.label}</span>
+              <span className="admin-palette__group">{d.group}</span>
+            </button>
+          </li>
+        ))}
+        {filtered.length === 0 && (
+          <li className="admin-palette__empty">見つかりません</li>
+        )}
+      </ul>
+    </dialog>
+  );
+}
+
 function Modal({
   onClose,
   children,
@@ -6088,6 +6337,166 @@ function Modal({
     >
       {children}
     </dialog>
+  );
+}
+
+// 工程5: empty-state illustrations — quiet line art, single ink color, no
+// external assets. Contact sheet (no photos at all), a loupe over an empty
+// frame (no search/filter results), a developing tray (empty trash).
+// 工程5: Library count "slot" swap — old number slides up + fades, new one
+// slides in from below (dur-base). Keyed children force React to remount
+// the swapped-in node so its CSS animation restarts on every value change.
+function CountSwap({ value }: { value: number }) {
+  const [display, setDisplay] = useState(value);
+  const [prevValue, setPrevValue] = useState<number | null>(null);
+  const prevRef = useRef(value);
+
+  useEffect(() => {
+    if (prevRef.current === value) return;
+    const from = prevRef.current;
+    prevRef.current = value;
+    if (prefersReducedMotion()) {
+      setDisplay(value);
+      return;
+    }
+    setPrevValue(from);
+    setDisplay(value);
+    const t = setTimeout(() => setPrevValue(null), 220);
+    return () => clearTimeout(t);
+  }, [value]);
+
+  return (
+    <span className="admin-count-swap tabular-nums">
+      <span className="admin-count-swap__slot">
+        <span
+          key={`cur-${display}`}
+          className="admin-count-swap__num admin-count-swap__num--current"
+        >
+          {display}
+        </span>
+        {prevValue !== null && (
+          <span
+            key={`old-${prevValue}`}
+            aria-hidden="true"
+            className="admin-count-swap__num admin-count-swap__num--old"
+          >
+            {prevValue}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+}
+
+function EmptyContactSheetIllustration() {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      width={56}
+      height={56}
+      fill="none"
+      aria-hidden="true"
+      className="text-[#444]"
+    >
+      <rect
+        x="6"
+        y="6"
+        width="52"
+        height="52"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      {[0, 1, 2].flatMap((row) =>
+        [0, 1, 2].map((col) => (
+          <rect
+            key={`${row}-${col}`}
+            x={14 + col * 14}
+            y={14 + row * 14}
+            width="8"
+            height="8"
+            rx="1"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            opacity={0.55}
+          />
+        )),
+      )}
+    </svg>
+  );
+}
+
+function EmptySearchIllustration() {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      width={56}
+      height={56}
+      fill="none"
+      aria-hidden="true"
+      className="text-[#444]"
+    >
+      <rect
+        x="8"
+        y="10"
+        width="30"
+        height="30"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        opacity={0.5}
+      />
+      <circle cx="40" cy="40" r="12" stroke="currentColor" strokeWidth="1.5" />
+      <line
+        x1="48.5"
+        y1="48.5"
+        x2="57"
+        y2="57"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function EmptyTrashIllustration() {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      width={56}
+      height={56}
+      fill="none"
+      aria-hidden="true"
+      className="text-[#444]"
+    >
+      <path
+        d="M14 24 L20 50 Q20 52 22 52 L42 52 Q44 52 44 50 L50 24"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 24 H54"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M25 33 Q32 30 39 33"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        opacity={0.5}
+        strokeLinecap="round"
+      />
+      <path
+        d="M25 40 Q32 37 39 40"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        opacity={0.5}
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

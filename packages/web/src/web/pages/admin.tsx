@@ -417,7 +417,7 @@ export default function AdminPage() {
       className="admin-atelier h-screen flex select-none overflow-hidden"
       style={adminThemeVars}
     >
-      <aside className="admin-sidebar hidden lg:flex">
+      <aside className="admin-sidebar admin-glass hidden lg:flex">
         <div className="admin-sidebar__brand">
           <span className="admin-sidebar__eyebrow">Portfolio Admin</span>
           <span className="admin-sidebar__title">{sidebarSiteName}</span>
@@ -5888,6 +5888,13 @@ function InspectField({
 /* ══════════════════════════════════════════════════
    HERO TAB
 ══════════════════════════════════════════════════ */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 function Modal({
   onClose,
   children,
@@ -5900,6 +5907,27 @@ function Modal({
   const ref = useRef<HTMLDialogElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  // 工程2: scale+opacity entrance/exit — backdrop click and Escape animate out
+  // (dur-fast/ease-in) before the parent actually unmounts us. Buttons inside
+  // `children` that call onClose directly still close instantly; wiring every
+  // such call site through this would mean touching every modal body, which
+  // is out of scope for this pass.
+  const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
+  const closingRef = useRef(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setPhase("show"));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    if (prefersReducedMotion()) {
+      onCloseRef.current();
+      return;
+    }
+    setPhase("exit");
+    setTimeout(() => onCloseRef.current(), 160);
+  }, []);
   // Wire Escape (native `cancel`) and backdrop click via the DOM rather than JSX
   // props: <dialog> is a non-interactive element, so JSX mouse/key handlers on it
   // trip jsx-a11y — addEventListener keeps the behaviour without the lint.
@@ -5908,11 +5936,11 @@ function Modal({
     if (!d) return;
     if (!d.open) d.showModal();
     const onClick = (e: MouseEvent) => {
-      if (e.target === d) onCloseRef.current();
+      if (e.target === d) requestClose();
     };
     const onCancel = (e: Event) => {
       e.preventDefault();
-      onCloseRef.current();
+      requestClose();
     };
     d.addEventListener("click", onClick);
     d.addEventListener("cancel", onCancel);
@@ -5920,11 +5948,12 @@ function Modal({
       d.removeEventListener("click", onClick);
       d.removeEventListener("cancel", onCancel);
     };
-  }, []);
+  }, [requestClose]);
   return (
     <dialog
       ref={ref}
-      className={`bg-[#2a2a2a] border border-[#444] rounded-sm p-6 ${widthClass} shadow-xl m-auto text-left backdrop:bg-black/60`}
+      data-phase={phase}
+      className={`admin-glass p-6 ${widthClass} m-auto text-left`}
     >
       {children}
     </dialog>

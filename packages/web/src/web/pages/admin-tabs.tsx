@@ -5749,6 +5749,27 @@ function Modal({
   const ref = useRef<HTMLDialogElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  // 工程2: scale+opacity entrance/exit — backdrop click and Escape animate out
+  // (dur-fast/ease-in) before the parent actually unmounts us. Buttons inside
+  // `children` that call onClose directly still close instantly; wiring every
+  // such call site through this would mean touching every modal body, which
+  // is out of scope for this pass.
+  const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
+  const closingRef = useRef(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setPhase("show"));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    if (prefersReducedMotion()) {
+      onCloseRef.current();
+      return;
+    }
+    setPhase("exit");
+    setTimeout(() => onCloseRef.current(), 160);
+  }, []);
   // Wire Escape (native `cancel`) and backdrop click via the DOM rather than JSX
   // props: <dialog> is a non-interactive element, so JSX mouse/key handlers on it
   // trip jsx-a11y — addEventListener keeps the behaviour without the lint.
@@ -5757,11 +5778,11 @@ function Modal({
     if (!d) return;
     if (!d.open) d.showModal();
     const onClick = (e: MouseEvent) => {
-      if (e.target === d) onCloseRef.current();
+      if (e.target === d) requestClose();
     };
     const onCancel = (e: Event) => {
       e.preventDefault();
-      onCloseRef.current();
+      requestClose();
     };
     d.addEventListener("click", onClick);
     d.addEventListener("cancel", onCancel);
@@ -5769,11 +5790,12 @@ function Modal({
       d.removeEventListener("click", onClick);
       d.removeEventListener("cancel", onCancel);
     };
-  }, []);
+  }, [requestClose]);
   return (
     <dialog
       ref={ref}
-      className={`bg-[#2a2a2a] border border-[#444] rounded-sm p-6 ${widthClass} shadow-xl m-auto text-left backdrop:bg-black/60`}
+      data-phase={phase}
+      className={`admin-glass p-6 ${widthClass} m-auto text-left`}
     >
       {children}
     </dialog>
@@ -5840,6 +5862,13 @@ function ColorRow({
   );
 }
 
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 function FloatingSaveBar({
   show,
   pending,
@@ -5855,7 +5884,61 @@ function FloatingSaveBar({
   onSave: () => void;
   onDiscard: () => void;
 }) {
-  if (!show && !pending && !saved && !error) return null;
+  const visible = show || pending || saved || error;
+  // Physical entrance/exit (工程2): mount lags on the falling edge so
+  // translateY/opacity can transition out before the bar leaves the DOM —
+  // same delayed-unmount idiom as Lightbox's closing state.
+  const [mounted, setMounted] = useState(visible);
+  const [phase, setPhase] = useState<"enter" | "show" | "pulse" | "exit">(
+    "enter",
+  );
+  const prevVisibleRef = useRef(visible);
+  const prevSavedRef = useRef(saved);
+
+  useEffect(() => {
+    if (visible && !mounted) {
+      setMounted(true);
+      setPhase("enter");
+    }
+  }, [visible, mounted]);
+
+  useEffect(() => {
+    if (mounted && phase === "enter") {
+      const id = requestAnimationFrame(() => setPhase("show"));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [mounted, phase]);
+
+  useEffect(() => {
+    if (prevVisibleRef.current && !visible) {
+      setPhase("exit");
+      const t = setTimeout(
+        () => setMounted(false),
+        prefersReducedMotion() ? 0 : 160,
+      );
+      prevVisibleRef.current = visible;
+      return () => clearTimeout(t);
+    }
+    prevVisibleRef.current = visible;
+  }, [visible]);
+
+  // Save success: a brief spring pulse before settling back to "shown" — the
+  // "喜び" beat the spec calls for. The bar then lingers with the "保存しま
+  // した" message (via the `saved` prop) until the caller clears it, which
+  // doubles as the hand-off the spec describes as "トーストへ引き継ぐ".
+  useEffect(() => {
+    if (saved && !prevSavedRef.current && phase === "show" && !pending) {
+      if (!prefersReducedMotion()) {
+        setPhase("pulse");
+        const t = setTimeout(() => setPhase("show"), 200);
+        prevSavedRef.current = saved;
+        return () => clearTimeout(t);
+      }
+    }
+    prevSavedRef.current = saved;
+  }, [saved, phase, pending]);
+
+  if (!mounted) return null;
   const message = error
     ? "保存に失敗しました"
     : saved && !show
@@ -5863,7 +5946,11 @@ function FloatingSaveBar({
       : "保存していない変更があります";
 
   return (
-    <output className="admin-floating-save-bar" aria-live="polite">
+    <output
+      data-phase={phase}
+      className="admin-floating-save-bar admin-glass"
+      aria-live="polite"
+    >
       <span className={error ? "admin-floating-save-bar__error" : ""}>
         {message}
       </span>

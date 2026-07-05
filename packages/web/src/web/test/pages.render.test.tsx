@@ -513,6 +513,51 @@ describe("shared components", () => {
     }
   });
 
+  // Library のサイトプレビュー: 並べ替え/S/M/L の結果をその場で誌面確認できる
+  test("AdminPage: Library site preview opens, switches pages and closes", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
+      expect(host.querySelector('iframe[title="サイトプレビュー"]')).toBeNull();
+
+      buttonWithText(host, "サイトで確認").click();
+      await flush(30);
+      const iframe = host.querySelector(
+        'iframe[title="サイトプレビュー"]',
+      ) as HTMLIFrameElement | null;
+      expect(iframe).not.toBeNull();
+      expect(iframe!.getAttribute("src")).toBe("/gallery");
+
+      buttonWithText(host, "トップ").click();
+      await flush(30);
+      expect(
+        host
+          .querySelector('iframe[title="サイトプレビュー"]')!
+          .getAttribute("src"),
+      ).toBe("/");
+
+      (
+        host.querySelector(
+          'button[aria-label="プレビューを閉じる"]',
+        ) as HTMLButtonElement
+      ).click();
+      await flush(30);
+      expect(host.querySelector('iframe[title="サイトプレビュー"]')).toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage: Library keeps filters collapsed and shows batch actions only after selection", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };

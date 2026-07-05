@@ -68,6 +68,8 @@ import {
   Crosshair,
   RotateCcw,
   RotateCw,
+  Monitor,
+  Smartphone,
 } from "lucide-react";
 import {
   ADMIN_TAB_GROUPS,
@@ -75,7 +77,7 @@ import {
   isAdminTab,
   type Tab,
 } from "./admin-shared";
-import { PageHeader } from "./admin-page-header";
+import { PageHeader, PageHeaderButton } from "./admin-page-header";
 
 const LazyHeroTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.HeroTab })),
@@ -1691,11 +1693,56 @@ function GalleryTab({
     }
   }, [showCaptureClipboardStatus]);
 
-  const { data: photosData, isLoading } = useQuery({
+  const {
+    data: photosData,
+    isLoading,
+    dataUpdatedAt: photosUpdatedAt,
+  } = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
       jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
   });
+
+  // サイトプレビュー: 並べ替え・S/M/L・回転の結果を、並べる場所(Library)の
+  // まま公開サイトの誌面で確かめる (design-spec §10 の確認フロー)。
+  // Library の編集は即DB保存されるため、iframe のリロードだけで反映される。
+  const [showSitePreview, setShowSitePreview] = usePersistentState(
+    "admin:librarySitePreview",
+    false,
+  );
+  const [sitePreviewPage, setSitePreviewPage] = usePersistentState<
+    "top" | "gallery"
+  >("admin:librarySitePreviewPage", "gallery");
+  const [sitePreviewDevice, setSitePreviewDevice] = usePersistentState<
+    "desktop" | "mobile"
+  >("admin:librarySitePreviewDevice", "desktop");
+  const sitePreviewRef = useRef<HTMLIFrameElement>(null);
+  // 写真データが更新されたら開いているプレビューを自動リロード
+  const lastPreviewDataAt = useRef(0);
+  useEffect(() => {
+    if (!showSitePreview) {
+      lastPreviewDataAt.current = photosUpdatedAt;
+      return;
+    }
+    if (photosUpdatedAt && photosUpdatedAt !== lastPreviewDataAt.current) {
+      lastPreviewDataAt.current = photosUpdatedAt;
+      sitePreviewRef.current?.contentWindow?.location.reload();
+    }
+  }, [photosUpdatedAt, showSitePreview]);
+  // PC幅プレビュー: パネル幅に収まるよう 1280px の紙面を縮小表示する
+  const previewStageRef = useRef<HTMLDivElement>(null);
+  const [previewStage, setPreviewStage] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    if (!showSitePreview) return;
+    const el = previewStageRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () =>
+      setPreviewStage({ w: el.clientWidth, h: el.clientHeight });
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    measure();
+    return () => ro.disconnect();
+  }, [showSitePreview]);
   const { data: catsData } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => jsonOrThrow(await api.categories.$get()),
@@ -3287,6 +3334,18 @@ function GalleryTab({
                   )}
                 </>
               )
+            }
+            actions={
+              <PageHeaderButton
+                active={showSitePreview}
+                onClick={() => setShowSitePreview(!showSitePreview)}
+                ariaLabel={
+                  showSitePreview ? "サイトで確認を閉じる" : "サイトで確認"
+                }
+              >
+                {showSitePreview ? <EyeOff size={13} /> : <Eye size={13} />}
+                サイトで確認
+              </PageHeaderButton>
             }
           />
         </div>
@@ -5710,6 +5769,129 @@ function GalleryTab({
                 <Trash2 size={11} /> 写真をゴミ箱へ
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* サイトプレビュー — 並べ替え・S/M/L・回転の結果を公開サイトの誌面で
+          その場で確認する。モバイル: 全画面オーバーレイ / デスクトップ: 右パネル */}
+      {showSitePreview && !showTrash && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#111] sm:static sm:z-auto sm:w-[440px] sm:flex-shrink-0 sm:border-l sm:border-[#333] min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-2 px-3 h-10 border-b border-[#333] bg-[#1a1a1a] flex-shrink-0">
+            <div className="flex items-center gap-1">
+              {(
+                [
+                  ["top", "トップ"],
+                  ["gallery", "ギャラリー"],
+                ] as const
+              ).map(([val, lbl]) => (
+                <button
+                  key={val}
+                  onClick={() => setSitePreviewPage(val)}
+                  aria-pressed={sitePreviewPage === val}
+                  className={`px-2 py-1 rounded-sm text-[10px] transition-colors ${
+                    sitePreviewPage === val
+                      ? "bg-[#333] text-[#ccc]"
+                      : "text-[#555] hover:text-[#888]"
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setSitePreviewDevice("desktop")}
+                aria-pressed={sitePreviewDevice === "desktop"}
+                title="PC幅で確認"
+                aria-label="PC幅で確認"
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
+                  sitePreviewDevice === "desktop"
+                    ? "bg-[#333] text-[#ccc]"
+                    : "text-[#555] hover:text-[#888]"
+                }`}
+              >
+                <Monitor size={13} /> PC幅
+              </button>
+              <button
+                onClick={() => setSitePreviewDevice("mobile")}
+                aria-pressed={sitePreviewDevice === "mobile"}
+                title="スマホ幅で確認"
+                aria-label="スマホ幅で確認"
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
+                  sitePreviewDevice === "mobile"
+                    ? "bg-[#333] text-[#ccc]"
+                    : "text-[#555] hover:text-[#888]"
+                }`}
+              >
+                <Smartphone size={13} /> スマホ幅
+              </button>
+              <button
+                onClick={() =>
+                  sitePreviewRef.current?.contentWindow?.location.reload()
+                }
+                className="ml-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
+              >
+                Reload
+              </button>
+              <button
+                onClick={() => setShowSitePreview(false)}
+                className="ml-1 p-1.5 rounded-sm text-[#888] hover:text-[#ccc] transition-colors"
+                title="プレビューを閉じる"
+                aria-label="プレビューを閉じる"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+          <div
+            ref={previewStageRef}
+            className="flex-1 overflow-hidden bg-[#111]"
+          >
+            {sitePreviewDevice === "mobile" ? (
+              <div className="h-full flex items-start justify-center overflow-auto p-3">
+                <div
+                  className="bg-white overflow-hidden shadow-lg w-[375px] max-w-full h-full max-h-[720px]"
+                  style={{ border: "8px solid #333", borderRadius: "20px" }}
+                >
+                  <iframe
+                    ref={sitePreviewRef}
+                    src={sitePreviewPage === "top" ? "/" : "/gallery"}
+                    className="w-full h-full border-0"
+                    title="サイトプレビュー"
+                  />
+                </div>
+              </div>
+            ) : (
+              // PC幅: 1280px の紙面をパネル幅に合わせて縮小して見せる
+              <div className="w-full h-full overflow-hidden">
+                {(() => {
+                  const scale =
+                    previewStage.w > 0
+                      ? Math.min(1, previewStage.w / 1280)
+                      : 0.33;
+                  return (
+                    <div
+                      style={{
+                        width: 1280,
+                        height:
+                          previewStage.h > 0 ? previewStage.h / scale : 2000,
+                        transform: `scale(${scale})`,
+                        transformOrigin: "top left",
+                      }}
+                      className="bg-white"
+                    >
+                      <iframe
+                        ref={sitePreviewRef}
+                        src={sitePreviewPage === "top" ? "/" : "/gallery"}
+                        className="w-full h-full border-0"
+                        title="サイトプレビュー"
+                      />
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
       )}

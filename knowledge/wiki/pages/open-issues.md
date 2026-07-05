@@ -1,7 +1,7 @@
 ---
 title: Open Issues (contradictions, stale docs, unknowns)
 status: current
-last_verified: 2026-07-03
+last_verified: 2026-07-06
 sources:
   - (see per-item citations below; each restates a finding also cited on its own topic page)
 ---
@@ -19,16 +19,12 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 
 ## Contradictions between canonical docs
 
-1. **Settings-sync place count**: CLAUDE.md and `.claude/rules/react-components.md`
-   both say "4-place" (SETTINGS_PREVIEW_KEYS / GET /settings defaults /
-   provider.tsx DB-apply useEffect / provider.tsx handlePreviewMessage).
-   AGENTS.md's own top-level §0 (line 18) calls it "3-place" bundling two of
-   those into one item, and AGENTS.md's *admin section* (lines 201-204)
-   gives a **third, different** 3-item list referencing `admin.tsx`'s
-   `previewPayload` array instead of `lib/settings-preview.ts`. Three
-   different counts across two files that are both supposed to be
-   authoritative. See invariants.md, admin-settings.md. **Needs a
-   maintainer decision + AGENTS.md edit** (out of this audit's write scope).
+1. **Resolved 2026-07-06**: Settings-sync place count. AGENTS.md was later
+   edited to say "4-place" with the correct list in both its §0 and admin
+   sections (verified this date). The last stale copy — `docs/specs/
+refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
+   was corrected to the canonical 4-place list on 2026-07-06. All canonical
+   docs now agree. See invariants.md, admin-settings.md.
 2. **DISTRIBUTION.md / README.md / migrate.ts's own comment all claim the
    Turso production path is a startup-migration no-op.** It is not:
    `ensureTursoColumns()` runs real `SELECT`/`ALTER TABLE ADD COLUMN` work
@@ -59,21 +55,21 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 
 ## Stale / incorrect documentation found
 
-8. **`.claude/rules/r2-upload.md`**: says "no WebP conversion; served as
-   JPEG" — wrong, the code generates and serves pre-generated WebP
-   thumb/medium variants. Also states the resize cache is "256MB" — actual
-   code constant is **128MB**. See image-pipeline.md.
-9. **`.claude/agents/perf-auditor.md`**: claims cache sizes "256MB
-   (thumbnail) + 96MB/60s TTL (original)" — actual code is **128MB** and
-   **48MB/60s**. Git history shows `r2-upload.md` was authored *hours after*
-   the code already used 128MB, so this was wrong from creation, not just
-   stale.
+8. **Resolved 2026-07-06 (verified)**: `.claude/rules/r2-upload.md` now
+   correctly describes the pre-generated WebP thumb (640px) / medium
+   (1920px) variants and the 128MB resize cache. See image-pipeline.md.
+9. **Resolved 2026-07-06**: `.claude/agents/perf-auditor.md` now states the
+   correct 128MB / 48MB/60s values (verified against `api/index.ts:69,190`).
+   The same stale "256MB + 96MB" numbers survived in CLAUDE.md:143 and
+   AGENTS.md:320 until 2026-07-06, when both were corrected and now point to
+   the code constants (`RESIZE_CACHE_BYTES` / `ORIG_CACHE_BYTES`) as the
+   source of truth.
 10. **`.claude/agents/exif-checker.md`**: stale line reference
     ("admin.tsx:L5 付近参照") — `DEFAULT_CAMERA_PRESETS` is actually at
     admin.tsx:639 in an 11,058-line file.
-11. **`docs/two-mac-workflow.md:22`**: git clone example uses repo name
-    `eguchi-portfolio-app.git`; the actual configured remote is
-    `eguchi-portfolio` (confirmed via `git remote -v` / `git ls-remote`).
+11. **Resolved 2026-07-06 (verified)**: `docs/two-mac-workflow.md:22` now
+    clones `eguchi-portfolio.git` (matching the configured remote) into a
+    local `eguchi-portfolio-app` directory.
 12. **`docs/setup-guide.md` env var list (方法2, Turso+R2)**: omits
     `S3_REGION`, `S3_FORCE_PATH_STYLE`, and `DEFAULT_PROFILE_NAME_KATA`,
     all of which exist in `.env.template` and are actively read in code.
@@ -273,7 +269,7 @@ verified correct across 7 indexable pages.
     33.68KB, with `admin-tabs` at 218.75KB / gzip 34.05KB loaded on first
     non-Library tab open. `web/pages/admin.tsx`; `web/pages/admin-tabs.tsx`;
     `web/pages/admin-shared.ts`.
-46a. **Resolved 2026-07-03**: Admin Library thumbnail loading after
+    46a. **Resolved 2026-07-03**: Admin Library thumbnail loading after
     virtualization now uses the pre-generated `thumbUrl` for normal grid
     tiles and `mediumUrl` only for larger tiles. This keeps virtualized
     scrolling from waiting on heavier image variants. `web/pages/admin.tsx`;
@@ -283,7 +279,7 @@ verified correct across 7 indexable pages.
     already-fetched array to the initial render count (24 desktop / 12 mobile).
     Image loading is staged, but JSON payload/parse work still scales with the
     full public photo count. Visitor-facing. `web/pages/gallery.tsx:34-37,
-    104-112`; `api/index.ts:1000-1031`.
+104-112`; `api/index.ts:1000-1031`.
 48. **2026-07-03 measurement gaps due environment limits.** Local production
     server timing, browser waterfall, and production curl TTFB could not be
     captured in this pass because the sandbox blocked Turso/network/listen and

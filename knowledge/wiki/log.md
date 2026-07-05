@@ -19,6 +19,19 @@ it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-07-06 — Mark resolved open-issues rows (Fable5 reform pass)
+
+Claude Code (Fable5 reform work, Balanced plan) re-verified open-issues
+items 1, 8, 9, 11 against the current files and marked them resolved:
+the settings-sync count is now consistently 4-place across AGENTS.md /
+CLAUDE.md / `.claude/rules/react-components.md` / `docs/specs/
+refine-and-loop-spec.md` (the last one fixed this date); `r2-upload.md`
+and `perf-auditor.md` already carried the corrected WebP/cache-size facts;
+the two-mac clone URL matches the real remote. The same pass fixed the
+stale 256MB/96MB cache numbers that still lived in CLAUDE.md and AGENTS.md
+themselves, and removed AGENTS.md's leftover "Driver may commit/push"
+wording that contradicted the 2026-07-05 owner-push policy.
+
 ### 2026-07-05 — Add AI collaboration and Fable5 reform page
 
 Codex added `pages/ai-collaboration.md` and linked it from the wiki index.

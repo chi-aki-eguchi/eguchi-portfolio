@@ -680,12 +680,6 @@
   letter-spacing: 0.08em;
 }
 
-.admin-atelier [class*="ring-[#aaa]"] {
-  outline: 2px solid var(--admin-accent) !important;
-  outline-offset: 3px;
-  box-shadow: none !important;
-}
-
 /* 工程3: hand-drawn selection mark (dermatologist-style grease-pencil
    circle) — replaces the old static ::after background-image. Always
    mounted per visible tile so opacity can transition both ways; only the

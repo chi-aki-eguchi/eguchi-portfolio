@@ -25,4 +25,27 @@ test.describe("admin — ホバー限定の赤クラスが常時赤くならな�
     // admin-danger は rgb(163, 59, 46) 系统 — ホバーしていない状態でこれになっていたら未修正。
     expect(restColor).not.toBe("rgb(163, 59, 46)");
   });
+
+  test("Library写真選択時のリングはニュートラルなグレーで、アクセント色(赤)に上書きされない", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop",
+      "サイドバー操作のため desktop のみで検証",
+    );
+    await loginAsAdmin(page);
+    await page.getByRole("button", { name: "Library" }).click();
+    await page.waitForTimeout(1500);
+
+    const tile = page.locator(".admin-photo-tile").first();
+    await tile.click();
+    await page.waitForTimeout(300);
+
+    const boxShadow = await tile.evaluate(
+      (el) => getComputedStyle(el).boxShadow,
+    );
+    // #aaaaaa = rgb(170, 170, 170)。admin-accent(163, 59, 46)に上書きされていたら未修正。
+    expect(boxShadow).toContain("rgb(170, 170, 170)");
+    expect(boxShadow).not.toContain("rgb(163, 59, 46)");
+  });
 });

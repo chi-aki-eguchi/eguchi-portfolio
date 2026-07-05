@@ -415,7 +415,14 @@ export default function AdminPage() {
     "show",
   );
   useEffect(() => {
-    if (tab === contentTab) return;
+    if (tab === contentTab) {
+      // Recover from an interrupted transition: if the user switched away and
+      // back before the exit timer below fired, that timer's cleanup cancels
+      // it, but screenPhase is left stuck at "exit" (opacity:0) forever since
+      // nothing else would ever set it back to "show".
+      setScreenPhase((prev) => (prev === "exit" ? "show" : prev));
+      return;
+    }
     if (prefersReducedMotion()) {
       setContentTab(tab);
       setScreenPhase("show");

@@ -51,16 +51,16 @@
 
 ## スタック
 
-| レイヤー | 技術 |
-|---|---|
-| ランタイム | Bun |
-| API | Hono 4 (`.basePath('api')`) |
-| フロントエンド | React 19 + Wouter + TanStack Query + Tailwind CSS 4 |
-| DB | Drizzle ORM + Turso (libsql) |
-| ストレージ | Cloudflare R2 (S3 互換) |
-| 画像処理 | sharp (アップロード時に 3200px/mozjpeg q92 最適化、配信時にオンザフライリサイズ) |
-| モノレポ | Bun workspaces + Turborepo |
-| デプロイ | Railway (GitHub auto-deploy / git push → 自動ビルド + `bun src/server.ts`) |
+| レイヤー       | 技術                                                                             |
+| -------------- | -------------------------------------------------------------------------------- |
+| ランタイム     | Bun                                                                              |
+| API            | Hono 4 (`.basePath('api')`)                                                      |
+| フロントエンド | React 19 + Wouter + TanStack Query + Tailwind CSS 4                              |
+| DB             | Drizzle ORM + Turso (libsql)                                                     |
+| ストレージ     | Cloudflare R2 (S3 互換)                                                          |
+| 画像処理       | sharp (アップロード時に 3200px/mozjpeg q92 最適化、配信時にオンザフライリサイズ) |
+| モノレポ       | Bun workspaces + Turborepo                                                       |
+| デプロイ       | Railway (GitHub auto-deploy / git push → 自動ビルド + `bun src/server.ts`)       |
 
 ## プロジェクト構造
 
@@ -150,34 +150,40 @@ git push              # Railway が自動ビルド → bun src/server.ts で起�
 - `src/server.ts` が `Bun.serve` で静的ファイル配信 + API プロキシ + OGP インジェクションを担う
 - 環境変数は Railway ダッシュボードで管理（`.env` は gitignored のままでよい）
 
-### 実装完了時のデプロイ手順（必須ルール）
+### 完了の定義（必須ルール）
 
-機能の実装・修正が一区切りしたら、毎回以下を実施する：
+コード変更を伴うタスクは、リポジトリルートで **`bun run check`** と
+**`bun run smoke`**（admin に触れた場合）の両方を通過してから完了報告する。
+`push` は常にオーナーの手で行う — エージェントは実施しない。
 
-1. **Handoff 確認** — `task.md` の最新 Handoff と `git status --short` を確認。
-2. **型チェック** — `cd packages/web && tsc -b`（`tsc --noEmit` は0ファイル検査の罠あり。必ず `-b`）。
-3. **ビルド確認** — `cd packages/web && bun run build`。
-4. **必要に応じてテスト** — 影響範囲がある場合は `cd packages/web && bun test ./src`、または該当 Playwright/手動確認。
-5. **git push** — Railway が自動デプロイ。数分後に本番が更新される。
-6. 報告に「**git push でデプロイしました**」と明記する。
+- **Handoff 確認** — `task.md` の最新 Handoff と `git status --short` を確認。
+- **`bun run check`** — `typecheck`(`tsc -b`。`tsc --noEmit` は0ファイル検査の罠) →
+  `lint`(oxlint) → `test`(`bun test`) → `build`(`vite build`) を順に実行し、
+  どれか失敗したら止まる。個別に確認したい場合は `bun run typecheck` /
+  `bun run lint` / `bun run test` / `bun run build` を単独実行してもよい。
+- **`bun run smoke`** — admin 画面(`/admin`)に触れる変更をした場合、
+  `scripts/smoke/` の Playwright スモークスイートも実行する
+  (詳細は「管理画面スモークテスト」節)。
+- **git push** — オーナーが実施。Railway が自動デプロイし、数分後に本番が更新される。
+- 報告では「local確認」「push」「Railway反映」「本番確認」を分けて書く。
 
 ```sh
-cd packages/web && tsc -b && bun run build
-git push
+bun run check
+bun run smoke   # admin に触れた場合
 ```
 
 ## ルーティング
 
-| パス | 説明 |
-|---|---|
-| `/` | トップ（ヒーロー写真 + 最新作品） |
-| `/gallery` | ギャラリー（カテゴリフィルタ + マソンリーグリッド） |
-| `/about` または `/profile` | プロフィール |
-| `/contact` | コンタクト |
-| `/admin/login` | 管理ログイン |
-| `/admin` | 管理画面（写真管理・設定） |
-| `/api/*` | Hono API |
-| `/api/images/:key?w=&q=` | R2 画像プロキシ（オンザフライリサイズ） |
+| パス                       | 説明                                                |
+| -------------------------- | --------------------------------------------------- |
+| `/`                        | トップ（ヒーロー写真 + 最新作品）                   |
+| `/gallery`                 | ギャラリー（カテゴリフィルタ + マソンリーグリッド） |
+| `/about` または `/profile` | プロフィール                                        |
+| `/contact`                 | コンタクト                                          |
+| `/admin/login`             | 管理ログイン                                        |
+| `/admin`                   | 管理画面（写真管理・設定）                          |
+| `/api/*`                   | Hono API                                            |
+| `/api/images/:key?w=&q=`   | R2 画像プロキシ（オンザフライリサイズ）             |
 
 ## 管理画面
 
@@ -189,13 +195,13 @@ git push
 
 ### 既存タブ構成
 
-| タブ | 内容 |
-|---|---|
-| GalleryTab | 写真一覧・アップロード・メタ編集・削除・並べ替え |
-| HeroTab | トップヒーロー写真の選択・並べ替え |
-| ProfileTab | プロフィール写真・テキスト設定 |
-| CategoriesTab | カテゴリ管理・並べ替え |
-| SettingsTab | タイポグラフィ・色・フォント等のサイト設定 |
+| タブ          | 内容                                             |
+| ------------- | ------------------------------------------------ |
+| GalleryTab    | 写真一覧・アップロード・メタ編集・削除・並べ替え |
+| HeroTab       | トップヒーロー写真の選択・並べ替え               |
+| ProfileTab    | プロフィール写真・テキスト設定                   |
+| CategoriesTab | カテゴリ管理・並べ替え                           |
+| SettingsTab   | タイポグラフィ・色・フォント等のサイト設定       |
 
 ### 実装ルール（§0 必須）
 
@@ -217,57 +223,76 @@ git push
   4. `provider.tsx` の `handlePreviewMessage`
 - ライブプレビュー: 管理画面の iframe(`src="/"`) に `postMessage({ type: "preview-settings", settings })` を送信。受信は `provider.tsx` の `handlePreviewMessage`
 
+### 管理画面スモークテスト
+
+`scripts/smoke/` に Playwright スモークスイートがある（2026-07 のadmin全体デバッグ
+で新設）。admin(`/admin`)のCSS/レイアウト/状態機械に触れた変更をしたら、
+コミット前に実行する。
+
+```sh
+bun run smoke                          # 全スペック(desktop/mobile両方)
+bun run smoke -- admin-scroll          # ファイル名でフィルタして実行
+```
+
+- 専用ポート(4310)で Vite を自動起動・終了する。手動 `bun run dev` と衝突しない。
+- ログインは `.env` の `ADMIN_PASSWORD` を自動で使う（未設定だとエラーで停止）。
+- タブの内容量に依存するテストは、オーバーフローが無ければ自動でskipする
+  (データ依存の誤検知を避けるため。0件失敗でもskip件数は確認すること)。
+- 新しいバグを直したら、同じ流儀(`scripts/smoke/helpers.ts` の
+  `loginAsAdmin`/`gotoAdminTab` 等を再利用)で回帰テストを1件追加する。
+
 ### 仕様書（参照先）
 
-| ファイル | 内容 |
-|---|---|
-| `docs/specs/admin-enhancement-spec.md` | 管理画面の現行仕様。写真の向き（90度回転）・見せる中心・写真ごとの調整幅・管理画面UX改善。旧P1〜P4/v2仕様は `docs/archive/` に保存 |
-| `docs/specs/design-spec.md` | デザイン（見た目・佇まい）の設計図。雑誌/写真集的な編集された佇まい・写真主役・余白主導。秋が S/M/L サイズ指定＋並べ替えでレイアウトを演出する仕組み（完全自由配置はしない、レスポンシブ自動対応）。色/タイポ/余白/動き/画質の原則 |
-| `docs/specs/refine-and-loop-spec.md` | 自走改善ループ運用方針。歴史的な運用文脈を含むため、実行前に現行方針と照合する |
-| `docs/specs/spec-layout-expansion.md` | レイアウト拡張仕様 |
+| ファイル                               | 内容                                                                                                                                                                                                                               |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/specs/admin-enhancement-spec.md` | 管理画面の現行仕様。写真の向き（90度回転）・見せる中心・写真ごとの調整幅・管理画面UX改善。旧P1〜P4/v2仕様は `docs/archive/` に保存                                                                                                 |
+| `docs/specs/design-spec.md`            | デザイン（見た目・佇まい）の設計図。雑誌/写真集的な編集された佇まい・写真主役・余白主導。秋が S/M/L サイズ指定＋並べ替えでレイアウトを演出する仕組み（完全自由配置はしない、レスポンシブ自動対応）。色/タイポ/余白/動き/画質の原則 |
+| `docs/specs/refine-and-loop-spec.md`   | 自走改善ループ運用方針。歴史的な運用文脈を含むため、実行前に現行方針と照合する                                                                                                                                                     |
+| `docs/specs/spec-layout-expansion.md`  | レイアウト拡張仕様                                                                                                                                                                                                                 |
 
 ### 強化計画（旧 `docs/archive/admin-enhancement-spec.md`）
 
 #### グループA: タイポグラフィ編集強化
 
-| ID | 内容 |
-|---|---|
-| A1 | 字間（letter-spacing）コントロール — 5つの CSS 変数（`--hero-name-tracking` 等）を追加、`styles.css` のハードコード `tracking-[...]` を変数参照に置換。**まずヒーロー/ナビ/セクション見出し3箇所のみ** |
-| A2 | 行間（line-height）コントロール — `--body-leading` / `--section-leading` 追加 |
-| A3 | フォントウェイト選択 — `--hero-name-weight` / `--body-weight`。選択肢はフォント定義から動的導出（固定リスト禁止） |
-| A4 | モバイル縮小率 — `--mobile-scale`（0.6〜1.0、既定 0.78）を `@media (max-width: 768px)` で各サイズ変数に `calc` 適用。**優先度高（ヒーロー名はみ出し解消）** |
-| A5 | フォントフォールバック修正（既知バグ） — `GOOGLE_FONTS_JA/EN` を `{ param, category: "serif"\|"sans-serif", weights: number[] }` 型に変更し、category に応じてフォールバックを切替 |
-| A6 | フォントペアリングプリセット — ワンクリックで和英フォントを一括設定（Classic Mincho / Modern Serif / Quiet Sans / Editorial） |
-| A7 | プレビュー体験改善 — 任意プレビュー文字入力・読込中スピナー・ウェイト別プレビュー |
-| A8 | カスタムフォントアップロードのバリデーション — 受理拡張子 `.woff2/.woff/.ttf/.otf`、2MB 上限、`alert()` 廃止→インラインエラー |
-| A9 | TypoControl 数値直接入力 — スライダーと双方向同期 |
-| A10 | Typography セクション再編 — Font Pairing / Hero / Navigation / Section Labels / Body / Footer / Mobile のグループ折りたたみ |
+| ID  | 内容                                                                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A1  | 字間（letter-spacing）コントロール — 5つの CSS 変数（`--hero-name-tracking` 等）を追加、`styles.css` のハードコード `tracking-[...]` を変数参照に置換。**まずヒーロー/ナビ/セクション見出し3箇所のみ** |
+| A2  | 行間（line-height）コントロール — `--body-leading` / `--section-leading` 追加                                                                                                                          |
+| A3  | フォントウェイト選択 — `--hero-name-weight` / `--body-weight`。選択肢はフォント定義から動的導出（固定リスト禁止）                                                                                      |
+| A4  | モバイル縮小率 — `--mobile-scale`（0.6〜1.0、既定 0.78）を `@media (max-width: 768px)` で各サイズ変数に `calc` 適用。**優先度高（ヒーロー名はみ出し解消）**                                            |
+| A5  | フォントフォールバック修正（既知バグ） — `GOOGLE_FONTS_JA/EN` を `{ param, category: "serif"\|"sans-serif", weights: number[] }` 型に変更し、category に応じてフォールバックを切替                     |
+| A6  | フォントペアリングプリセット — ワンクリックで和英フォントを一括設定（Classic Mincho / Modern Serif / Quiet Sans / Editorial）                                                                          |
+| A7  | プレビュー体験改善 — 任意プレビュー文字入力・読込中スピナー・ウェイト別プレビュー                                                                                                                      |
+| A8  | カスタムフォントアップロードのバリデーション — 受理拡張子 `.woff2/.woff/.ttf/.otf`、2MB 上限、`alert()` 廃止→インラインエラー                                                                          |
+| A9  | TypoControl 数値直接入力 — スライダーと双方向同期                                                                                                                                                      |
+| A10 | Typography セクション再編 — Font Pairing / Hero / Navigation / Section Labels / Body / Footer / Mobile のグループ折りたたみ                                                                            |
 
 #### グループB: 管理快適化
 
-| ID | 内容 |
-|---|---|
-| B1 | 写真メタ保存フィードバック — `updatePhoto` 成功時に 1.5秒 "Saved" 表示 |
-| B2 | 写真検索 — タイトル/meta/ファイル名でクライアント側フィルタ |
-| B3 | **論理削除 + Undo（最重要）** — `photos.deletedAt` カラム追加（マイグレーション必要）。`DELETE` を論理削除に変更、`POST /restore`・`DELETE /purge` を新規追加。管理画面にゴミ箱ビューと Undo トーストを追加 |
-| B4 | アップロード時 EXIF 自動補完 — `sharp().metadata()` から撮影日時を `meta` 初期値に設定（取得失敗時は空のまま） |
-| B5 | 並び替え保存フィードバック — reorder 成功時にハイライトまたはトースト |
-| B6 | キーボードショートカット一覧 — `?` キーでモーダル表示 |
+| ID  | 内容                                                                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | 写真メタ保存フィードバック — `updatePhoto` 成功時に 1.5秒 "Saved" 表示                                                                                                                                      |
+| B2  | 写真検索 — タイトル/meta/ファイル名でクライアント側フィルタ                                                                                                                                                 |
+| B3  | **論理削除 + Undo（最重要）** — `photos.deletedAt` カラム追加（マイグレーション必要）。`DELETE` を論理削除に変更、`POST /restore`・`DELETE /purge` を新規追加。管理画面にゴミ箱ビューと Undo トーストを追加 |
+| B4  | アップロード時 EXIF 自動補完 — `sharp().metadata()` から撮影日時を `meta` 初期値に設定（取得失敗時は空のまま）                                                                                              |
+| B5  | 並び替え保存フィードバック — reorder 成功時にハイライトまたはトースト                                                                                                                                       |
+| B6  | キーボードショートカット一覧 — `?` キーでモーダル表示                                                                                                                                                       |
 
 ### 実装フェーズ
 
-| フェーズ | 項目 |
-|---|---|
-| **P1** | A5（フォールバック修正）/ A1（字間）/ A2（行間）/ B3（論理削除） |
-| **P2** | A4（モバイル縮小）/ A7（プレビュー）/ B1（保存FB）/ B2（検索） |
-| **P3** | A6（ペアリング）/ A3（ウェイト）/ A10（セクション再編）/ B4（EXIF） |
-| **P4** | A8（アップロード検証）/ A9（数値入力）/ B5（並び替えFB）/ B6（ショートカット） |
+| フェーズ | 項目                                                                           |
+| -------- | ------------------------------------------------------------------------------ |
+| **P1**   | A5（フォールバック修正）/ A1（字間）/ A2（行間）/ B3（論理削除）               |
+| **P2**   | A4（モバイル縮小）/ A7（プレビュー）/ B1（保存FB）/ B2（検索）                 |
+| **P3**   | A6（ペアリング）/ A3（ウェイト）/ A10（セクション再編）/ B4（EXIF）            |
+| **P4**   | A8（アップロード検証）/ A9（数値入力）/ B5（並び替えFB）/ B6（ショートカット） |
 
 ### B3 実装時の注意
 
 ```sh
 cd packages/web && bun run db:push  # deletedAt カラム追加
 ```
+
 既存写真の `deletedAt` は null のまま（表示維持）。公開 `GET /photos` と管理一覧の通常取得に `isNull(photos.deletedAt)` を追加する。
 
 ## CSS カスタムプロパティ（サイト設定 → ページ反映）

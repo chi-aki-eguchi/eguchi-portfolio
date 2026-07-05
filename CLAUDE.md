@@ -50,18 +50,22 @@ bun run db:generate  # マイグレーション生成
 bun run db:studio    # Drizzle Studio
 ```
 
-## デプロイ（Railway）
+## 完了の定義（必須ルール）
 
-実装完了ごとに必ず実行：
+コード変更を伴うタスクは、リポジトリルートで **`bun run check`**
+（tsc -b → lint → bun test → build。どれか失敗したら止まる）と、
+admin(`/admin`)に触れた場合は **`bun run smoke`**
+（`scripts/smoke/` の Playwright スモークスイート）を通過してから完了報告する。
 
 ```sh
-cd packages/web && tsc -b && bun run build   # ① 型チェック + ビルド
-git add ... && git commit && git push         # ② Railway 自動デプロイ
+bun run check
+bun run smoke   # admin に触れた場合
 ```
 
-- `tsc --noEmit` は0ファイル検査の罠 — 必ず `tsc -b`
+- `tsc --noEmit` は0ファイル検査の罠 — `bun run check` は `tsc -b` を使う
+- **push は常にオーナーの手で行う。エージェントは実施しない**
 - 環境変数は Railway ダッシュボードで管理（`.env` は gitignored）
-- 報告に「**git push でデプロイしました**」と明記
+- 報告では「local確認」「push」「Railway反映」「本番確認」を分けて書く
 
 ## §0 Invariants（必守）
 
@@ -112,8 +116,8 @@ Fable5 など高性能モデルを使える時は、単発のコード量より�
 
 ## 仕様書
 
-| ファイル                       | 内容                                                            |
-| ------------------------------ | --------------------------------------------------------------- |
+| ファイル                               | 内容                                                 |
+| -------------------------------------- | ---------------------------------------------------- |
 | `docs/specs/admin-enhancement-spec.md` | 管理画面強化の現行仕様（写真の向き・調整幅・UX改善） |
 | `docs/specs/design-spec.md`            | デザイン設計図（雑誌的佇まい・余白主導）             |
 | `docs/specs/refine-and-loop-spec.md`   | 自走改善ループ運用方針                               |

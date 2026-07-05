@@ -17,6 +17,8 @@
     "lint": "oxlint . --deny-warnings --no-error-on-unmatched-pattern",
     "lint:fix": "oxlint . --fix --deny-warnings --no-error-on-unmatched-pattern",
     "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "check": "bun run typecheck && bun run lint && bun run test && bun run build",
     "smoke": "playwright test --config scripts/smoke/playwright.config.ts",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",

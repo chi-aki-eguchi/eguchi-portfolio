@@ -12,7 +12,8 @@ const dom = setupDom();
 
 const { createElement, StrictMode } = await import("react");
 const { createRoot } = await import("react-dom/client");
-const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+const { QueryClient, QueryClientProvider } =
+  await import("@tanstack/react-query");
 
 function seedAdminPhotos(qc: InstanceType<typeof QueryClient>) {
   qc.setQueryData(["photos", "all"], { photos: samplePhotos });
@@ -32,27 +33,36 @@ function makeLargeAdminPhotos(count = 445) {
   }));
 }
 
-async function mount(node: unknown, setupQueryClient?: (qc: InstanceType<typeof QueryClient>) => void) {
+async function mount(
+  node: unknown,
+  setupQueryClient?: (qc: InstanceType<typeof QueryClient>) => void,
+) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   setupQueryClient?.(qc);
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
   root.render(
-    createElement(StrictMode, null,
-      createElement(QueryClientProvider, { client: qc }, node as never))
+    createElement(
+      StrictMode,
+      null,
+      createElement(QueryClientProvider, { client: qc }, node as never),
+    ),
   );
   await flush(30); // let queries resolve against the canned fetch and re-render
   return {
     qc,
     host,
-    cleanup: () => { root.unmount(); host.remove(); },
+    cleanup: () => {
+      root.unmount();
+      host.remove();
+    },
   };
 }
 
 function buttonWithText(host: Element, text: string): HTMLButtonElement {
-  const button = Array.from(host.querySelectorAll("button")).find(
-    (el) => el.textContent?.includes(text),
+  const button = Array.from(host.querySelectorAll("button")).find((el) =>
+    el.textContent?.includes(text),
   ) as HTMLButtonElement | undefined;
   if (!button) throw new Error(`Button not found: ${text}`);
   return button;
@@ -100,11 +110,7 @@ async function waitForText(host: Element, text: string, attempts = 20) {
   expect(host.textContent).toContain(text);
 }
 
-async function waitForButton(
-  host: Element,
-  selector: string,
-  attempts = 20,
-) {
+async function waitForButton(host: Element, selector: string, attempts = 20) {
   for (let i = 0; i < attempts; i += 1) {
     const button = host.querySelector(selector) as HTMLButtonElement | null;
     if (button) return button;
@@ -161,10 +167,11 @@ describe("public pages render (populated API)", () => {
       await flush(60);
 
       expect(
-        seen.some((url) =>
-          url.startsWith("/api/photos?") &&
-          url.includes("limit=48") &&
-          url.includes("order=random"),
+        seen.some(
+          (url) =>
+            url.startsWith("/api/photos?") &&
+            url.includes("limit=48") &&
+            url.includes("order=random"),
         ),
       ).toBe(true);
       expect(seen).not.toContain("/api/photos");
@@ -219,7 +226,21 @@ describe("shared components", () => {
 
   test("SeriesGrid renders tiles with titles (R1)", async () => {
     const prev = canned["/api/series"];
-    canned["/api/series"] = { series: [{ id: 3, slug: "s", title: "indigo blue", subtitle: "2026", statement: "", coverPhotoId: 2, sortOrder: 0, isPublished: true, coverUrl: "/api/images/photos/b.jpg" }] };
+    canned["/api/series"] = {
+      series: [
+        {
+          id: 3,
+          slug: "s",
+          title: "indigo blue",
+          subtitle: "2026",
+          statement: "",
+          coverPhotoId: 2,
+          sortOrder: 0,
+          isPublished: true,
+          coverUrl: "/api/images/photos/b.jpg",
+        },
+      ],
+    };
     try {
       const { SeriesGrid } = await import("../components/SeriesGrid");
       const { host, cleanup } = await mount(createElement(SeriesGrid));
@@ -240,16 +261,28 @@ describe("shared components", () => {
     };
     let closed = 0;
     let index = 0;
-    const photos = samplePhotos.map((p) => ({ url: p.url, title: p.title, camera: p.camera, lens: p.lens, filmType: p.filmType }));
+    const photos = samplePhotos.map((p) => ({
+      url: p.url,
+      title: p.title,
+      camera: p.camera,
+      lens: p.lens,
+      filmType: p.filmType,
+    }));
     try {
       const { cleanup } = await mount(
         createElement(Lightbox, {
           photos,
           index,
-          onClose: () => { closed += 1; },
-          onPrev: () => { index = (index + photos.length - 1) % photos.length; },
-          onNext: () => { index = (index + 1) % photos.length; },
-        })
+          onClose: () => {
+            closed += 1;
+          },
+          onPrev: () => {
+            index = (index + photos.length - 1) % photos.length;
+          },
+          onNext: () => {
+            index = (index + 1) % photos.length;
+          },
+        }),
       );
       const dlg = dom.window.document.querySelector("dialog");
       expect(dlg).not.toBeNull();
@@ -257,8 +290,12 @@ describe("shared components", () => {
       // just-opened viewer (the real gallery symptom was a black flicker).
       expect(historyBackCalls).toBe(0);
       // Keyboard navigation + Escape-equivalent close button stay wired.
-      dom.window.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "ArrowRight" }));
-      const closeBtn = dom.window.document.querySelector('dialog button[aria-label="閉じる"]') as HTMLButtonElement | null;
+      dom.window.dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", { key: "ArrowRight" }),
+      );
+      const closeBtn = dom.window.document.querySelector(
+        'dialog button[aria-label="閉じる"]',
+      ) as HTMLButtonElement | null;
       expect(closeBtn).not.toBeNull();
       closeBtn!.click();
       await flush(420);
@@ -282,9 +319,14 @@ describe("shared components", () => {
     };
     try {
       const { host, cleanup } = await mount(
-        createElement(PhotoGallery, { photos: samplePhotos, layoutType: "grid" })
+        createElement(PhotoGallery, {
+          photos: samplePhotos,
+          layoutType: "grid",
+        }),
       );
-      const firstTile = host.querySelector('button[aria-label="A"]') as HTMLButtonElement | null;
+      const firstTile = host.querySelector(
+        'button[aria-label="A"]',
+      ) as HTMLButtonElement | null;
       expect(firstTile).not.toBeNull();
       firstTile!.click();
       await flush(30);
@@ -314,7 +356,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       expect(host.textContent).toContain("Template Studio");
       expect(host.textContent).not.toContain("Aki Eguchi");
       expect(host.textContent).toContain("写真");
@@ -333,7 +378,9 @@ describe("shared components", () => {
 
       buttonWithText(host, "絞り込み").click();
       await flush(30);
-      expect(host.querySelector('input[aria-label="写真を検索"]')).not.toBeNull();
+      expect(
+        host.querySelector('input[aria-label="写真を検索"]'),
+      ).not.toBeNull();
       expect(host.textContent).toContain("撮影日なし");
       expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("公開のみ");
@@ -348,6 +395,80 @@ describe("shared components", () => {
     }
   });
 
+  // 読込中の「偽のゼロ」防止: 写真クエリ解決前に 0 / 0 photos・0 枚 と断定表示しない
+  test("AdminPage: Library header shows … (not 0 / 0) while photos are loading", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const raw =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      const path = new URL(raw, "http://localhost/").pathname;
+      if (path === "/api/photos") return new Promise<Response>(() => {});
+      return origFetch(input);
+    }) as typeof fetch;
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(createElement(Admin));
+      expect(host.textContent).toContain("… photos");
+      expect(host.textContent).not.toContain("0 / 0 photos");
+      cleanup();
+    } finally {
+      globalThis.fetch = origFetch;
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("SeriesTab: series cards show … (not 0 枚) while photos are loading", async () => {
+    const prevSeries = canned["/api/admin/series"];
+    canned["/api/admin/series"] = {
+      series: [
+        {
+          id: 1,
+          slug: "still-life",
+          title: "Still life",
+          subtitle: "",
+          statement: "",
+          coverPhotoId: 9999,
+          sortOrder: 0,
+          isPublished: true,
+        },
+      ],
+    };
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const raw =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      const path = new URL(raw, "http://localhost/").pathname;
+      if (path === "/api/photos") return new Promise<Response>(() => {});
+      return origFetch(input);
+    }) as typeof fetch;
+    try {
+      const { SeriesTab } = await import("../pages/admin-tabs");
+      const { host, cleanup } = await mount(createElement(SeriesTab));
+      await waitForText(host, "Still life");
+      expect(host.textContent).toContain("…");
+      expect(host.textContent).not.toContain("0 枚");
+      expect(host.textContent).not.toContain("#9999");
+      cleanup();
+    } finally {
+      globalThis.fetch = origFetch;
+      canned["/api/admin/series"] = prevSeries;
+    }
+  });
+
   test("AdminPage: Library keeps filters collapsed and shows batch actions only after selection", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };
@@ -355,7 +476,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
       expect(host.textContent).not.toContain("選択中 1枚");
 
@@ -386,7 +510,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
 
       expect(host.textContent).toContain("Library");
 
@@ -432,7 +559,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
 
       buttonWithText(host, "サイト").click();
       await waitForText(host, "Profile Photo");
@@ -463,7 +593,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
       await flush(60);
@@ -498,7 +631,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
       await flush(60);
@@ -532,7 +668,10 @@ describe("shared components", () => {
     dom.window.localStorage.setItem("admin:tab", JSON.stringify("setup"));
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       await waitForText(host, "公開までにやること");
 
       setupOpenButton(host, "サイトの名前を入れる").click();
@@ -580,9 +719,8 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(
-        createElement(Admin),
-        (qc) => qc.setQueryData(["photos", "all"], { photos: largePhotos }),
+      const { host, cleanup } = await mount(createElement(Admin), (qc) =>
+        qc.setQueryData(["photos", "all"], { photos: largePhotos }),
       );
       const firstTile = await waitForButton(host, 'button[aria-label="P000"]');
       firstTile.click();
@@ -678,7 +816,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       await flush(100);
       const tile = host.querySelector(
         'button[aria-label="B"]',
@@ -695,9 +836,15 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Portraits");
       expect(host.textContent).toContain("Indigo Days");
       expect(host.textContent).toContain("Size L");
-      expect(host.querySelector('[aria-label="写真の使用状況"]')).not.toBeNull();
-      expect(host.querySelector('[aria-label="クイックカテゴリ"]')).not.toBeNull();
-      expect(host.querySelector('[aria-label="クイックシリーズ"]')).not.toBeNull();
+      expect(
+        host.querySelector('[aria-label="写真の使用状況"]'),
+      ).not.toBeNull();
+      expect(
+        host.querySelector('[aria-label="クイックカテゴリ"]'),
+      ).not.toBeNull();
+      expect(
+        host.querySelector('[aria-label="クイックシリーズ"]'),
+      ).not.toBeNull();
       cleanup();
     } finally {
       canned["/api/admin/me"] = prevAuth;
@@ -740,7 +887,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       buttonWithText(host, "絞り込み").click();
       await flush(30);
       const input = host.querySelector(
@@ -787,7 +937,10 @@ describe("shared components", () => {
     dom.window.localStorage.setItem("admin:tab", JSON.stringify("old-tab"));
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       await flush(30);
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
@@ -804,7 +957,10 @@ describe("shared components", () => {
     canned["/api/admin/me"] = { authenticated: true };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
-    dom.window.sessionStorage.setItem("admin:filterCat", JSON.stringify("ghost"));
+    dom.window.sessionStorage.setItem(
+      "admin:filterCat",
+      JSON.stringify("ghost"),
+    );
     dom.window.sessionStorage.setItem("admin:filterSize", JSON.stringify("XL"));
     dom.window.sessionStorage.setItem(
       "admin:filterPublished",
@@ -825,7 +981,10 @@ describe("shared components", () => {
     );
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       await flush(80);
       expect(host.textContent).toContain("Library");
       expect(dom.window.sessionStorage.getItem("admin:filterCat")).toBe(
@@ -864,7 +1023,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       buttonWithText(host, "絞り込み").click();
       await flush(30);
       const albumButton = Array.from(host.querySelectorAll("button")).find(
@@ -908,7 +1070,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), seedAdminPhotos);
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
       buttonWithText(host, "絞り込み").click();
       await flush(30);
       expect(host.textContent).toContain("Needs review");
@@ -930,21 +1095,24 @@ describe("shared components", () => {
     const prevAdminHero = canned["/api/admin/hero-photos"];
     const prevPublicHero = canned["/api/hero-photos"];
     canned["/api/admin/me"] = { authenticated: true };
-    canned["/api/admin/hero-photos"] = { heroPhotos: [{ photoId: 1, sortOrder: 0 }] };
+    canned["/api/admin/hero-photos"] = {
+      heroPhotos: [{ photoId: 1, sortOrder: 0 }],
+    };
     canned["/api/hero-photos"] = { heroPhotos: [samplePhotos[0]] };
     dom.window.localStorage.setItem("admin:tab", JSON.stringify("hero"));
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(
-        createElement(Admin),
-        (qc) => qc.setQueryData(["hero-photos"], { heroPhotos: [samplePhotos[0]] })
+      const { host, cleanup } = await mount(createElement(Admin), (qc) =>
+        qc.setQueryData(["hero-photos"], { heroPhotos: [samplePhotos[0]] }),
       );
       buttonWithText(host, "Hero").click();
       await flush(500);
 
       expect(host.textContent).toContain("Hero Slides");
       expect(host.textContent).not.toContain("削除済み");
-      expect(host.querySelector('button[aria-label="ヒーローから削除"]')).not.toBeNull();
+      expect(
+        host.querySelector('button[aria-label="ヒーローから削除"]'),
+      ).not.toBeNull();
       cleanup();
     } finally {
       canned["/api/admin/me"] = prevAuth;
@@ -964,16 +1132,21 @@ describe("shared components", () => {
       const { qc, host, cleanup } = await mount(createElement(AdminLogin));
       qc.setQueryData(["admin-me"], { authenticated: false });
 
-      const input = host.querySelector('input[aria-label="パスワード"]') as HTMLInputElement | null;
+      const input = host.querySelector(
+        'input[aria-label="パスワード"]',
+      ) as HTMLInputElement | null;
       expect(input).not.toBeNull();
       input!.value = "correct-password";
       input!.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
       const form = host.querySelector("form") as HTMLFormElement | null;
       expect(form).not.toBeNull();
-      form!.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
+      form!.dispatchEvent(
+        new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+      );
       await flush(30);
 
-      const authState = qc.getQueryData(["admin-me"]) as { authenticated: boolean } | undefined;
+      const authState = qc.getQueryData(["admin-me"]) as
+        { authenticated: boolean } | undefined;
       expect(authState).toEqual({ authenticated: true });
       cleanup();
     } finally {
@@ -985,17 +1158,33 @@ describe("shared components", () => {
   test("Provider applies empty settings and survives a preview-settings message", async () => {
     const { Provider } = await import("../components/provider");
     const { qc, host, cleanup } = await mount(
-      createElement(Provider, null, createElement("p", null, "child"))
+      createElement(Provider, null, createElement("p", null, "child")),
     );
     expect(host.textContent).toContain("child");
     // Live-preview path (§0 3箇所同期の受信側): a settings payload with new keys
     // must never throw, even with empty / odd values.
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { themeBg: "#101010", siteName: "Preview Name", topWorksMode: "manual", topWorksIds: "1,2", topWorksColumns: "", gallerySizeScale: "1.4", heroNameSize: "48", bodyLeading: "" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: {
+            themeBg: "#101010",
+            siteName: "Preview Name",
+            topWorksMode: "manual",
+            topWorksIds: "1,2",
+            topWorksColumns: "",
+            gallerySizeScale: "1.4",
+            heroNameSize: "48",
+            bodyLeading: "",
+          },
+        },
+      }),
+    );
     await flush(10);
-    expect((qc.getQueryData(["settings"]) as Record<string, string>).siteName).toBe("Preview Name");
+    expect(
+      (qc.getQueryData(["settings"]) as Record<string, string>).siteName,
+    ).toBe("Preview Name");
     expect(host.textContent).toContain("child");
     cleanup();
   });
@@ -1004,22 +1193,28 @@ describe("shared components", () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
     const { host, cleanup } = await mount(
-      createElement(Provider, null, createElement(Layout, null, createElement("p", null, "child")))
+      createElement(
+        Provider,
+        null,
+        createElement(Layout, null, createElement("p", null, "child")),
+      ),
     );
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: {
-        type: "preview-settings",
-        settings: {
-          navLabelTop: "Preview Studio",
-          navLabelGallery: "Portfolio",
-          navLabelAbout: "Bio",
-          navLabelContact: "Booking",
-          footerText: "Preview Footer",
-          footerCtaLabel: "Ask for a shoot",
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: {
+            navLabelTop: "Preview Studio",
+            navLabelGallery: "Portfolio",
+            navLabelAbout: "Bio",
+            navLabelContact: "Booking",
+            footerText: "Preview Footer",
+            footerCtaLabel: "Ask for a shoot",
+          },
         },
-      },
-    }));
+      }),
+    );
     await flush(10);
     expect(host.textContent).toContain("Preview Studio");
     expect(host.textContent).toContain("Portfolio");
@@ -1035,13 +1230,19 @@ describe("shared components", () => {
     const prevSettings = canned["/api/settings"];
     try {
       canned["/api/settings"] = {};
-      const hidden = await mount(createElement(Layout, null, createElement("p", null, "child")));
+      const hidden = await mount(
+        createElement(Layout, null, createElement("p", null, "child")),
+      );
       expect(hidden.host.querySelector('a[href="/service"]')).toBeNull();
       hidden.cleanup();
 
       canned["/api/settings"] = { siteUrl: "https://akieguchi.com" };
-      const visible = await mount(createElement(Layout, null, createElement("p", null, "child")));
-      expect(visible.host.querySelectorAll('a[href="/service"]').length).toBeGreaterThan(0);
+      const visible = await mount(
+        createElement(Layout, null, createElement("p", null, "child")),
+      );
+      expect(
+        visible.host.querySelectorAll('a[href="/service"]').length,
+      ).toBeGreaterThan(0);
       expect(visible.host.textContent).toContain("Service");
       expect(visible.host.textContent).toContain("Portfolio site");
       visible.cleanup();
@@ -1054,56 +1255,86 @@ describe("shared components", () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
     const { host, cleanup } = await mount(
-      createElement(Provider, null, createElement(Layout, null, createElement("p", null, "child")))
+      createElement(
+        Provider,
+        null,
+        createElement(Layout, null, createElement("p", null, "child")),
+      ),
     );
     // Preview path: texture on → data attribute lights the styles.css ::before
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { bgTexture: "grain-fine", bgTextureOpacity: "0.08" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: { bgTexture: "grain-fine", bgTextureOpacity: "0.08" },
+        },
+      }),
+    );
     await flush(5);
     expect(dom.window.document.body.dataset.texture).toBe("grain-fine");
     // texture off → attribute removed (CSS default = no grain)
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { bgTexture: "none" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: { type: "preview-settings", settings: { bgTexture: "none" } },
+      }),
+    );
     await flush(5);
     expect(dom.window.document.body.dataset.texture).toBeUndefined();
     // Dark themeBg → blend flips to `screen` (multiply is invisible on dark);
     // clearing themeBg → property removed (CSS default multiply for light bg).
     const rootStyle = dom.window.document.documentElement.style;
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { themeBg: "#111111" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: { type: "preview-settings", settings: { themeBg: "#111111" } },
+      }),
+    );
     await flush(5);
     expect(rootStyle.getPropertyValue("--bg-texture-blend")).toBe("screen");
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { themeBg: "" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: { type: "preview-settings", settings: { themeBg: "" } },
+      }),
+    );
     await flush(5);
     expect(rootStyle.getPropertyValue("--bg-texture-blend")).toBe("");
     // A3: font weights flow through the preview path as CSS vars
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { heroNameWeight: "500", bodyWeight: "300" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: { heroNameWeight: "500", bodyWeight: "300" },
+        },
+      }),
+    );
     await flush(5);
     expect(rootStyle.getPropertyValue("--hero-name-weight")).toBe("500");
     expect(rootStyle.getPropertyValue("--body-weight")).toBe("300");
     // photoRevealEffect: non-default variants set body[data-reveal]; fade/"" clear it
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { photoRevealEffect: "rise" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: { photoRevealEffect: "rise" },
+        },
+      }),
+    );
     await flush(5);
     expect(dom.window.document.body.dataset.reveal).toBe("rise");
-    dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
-      origin: dom.window.location.origin,
-      data: { type: "preview-settings", settings: { photoRevealEffect: "fade" } },
-    }));
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: { photoRevealEffect: "fade" },
+        },
+      }),
+    );
     await flush(5);
     expect(dom.window.document.body.dataset.reveal).toBeUndefined();
     // The grain lives on body::before at z-index:-1, which paints BELOW in-flow
@@ -1118,7 +1349,8 @@ describe("shared components", () => {
   test("A6 font pairings reference real font-map entries", async () => {
     // A typo (or a future font-map rename) would silently no-op the preset
     // button: provider falls back to system fonts and nothing errors.
-    const { FONT_PAIRINGS, GOOGLE_FONTS_JA, GOOGLE_FONTS_EN } = await import("../components/provider");
+    const { FONT_PAIRINGS, GOOGLE_FONTS_JA, GOOGLE_FONTS_EN } =
+      await import("../components/provider");
     expect(FONT_PAIRINGS.length).toBeGreaterThanOrEqual(4);
     for (const p of FONT_PAIRINGS) {
       expect(GOOGLE_FONTS_JA[p.ja]).toBeDefined();
@@ -1128,7 +1360,9 @@ describe("shared components", () => {
 
   test("PhotoGallery: empty photos renders null, missing settings keys fall back", async () => {
     const { PhotoGallery } = await import("../components/PhotoGallery");
-    const empty = await mount(createElement(PhotoGallery, { photos: [], layoutType: "mosaic" }));
+    const empty = await mount(
+      createElement(PhotoGallery, { photos: [], layoutType: "mosaic" }),
+    );
     // photos=[] → component renders nothing, and must not crash.
     empty.cleanup();
     const noDims = await mount(
@@ -1136,7 +1370,7 @@ describe("shared components", () => {
         photos: [{ id: 9, url: "/api/images/photos/x.jpg", title: "" }],
         layoutType: "unknown-layout-value",
         variant: "top",
-      })
+      }),
     );
     noDims.cleanup();
   });

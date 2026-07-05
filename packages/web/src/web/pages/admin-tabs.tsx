@@ -917,7 +917,7 @@ export function SeriesTab() {
   });
   const series = (data?.series ?? []) as SeriesRow[];
 
-  const { data: photosData } = useQuery({
+  const { data: photosData, isLoading: photosLoading } = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
       jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
@@ -1144,10 +1144,14 @@ export function SeriesTab() {
                       </span>
                     </div>
                     <span className="text-[10px] text-[color:var(--admin-muted)]">
-                      {count} 枚
-                      {s.coverPhotoId
-                        ? ` ・ 表紙: ${photoLabel(s.coverPhotoId)}`
-                        : ""}
+                      {/* 写真クエリ解決前に「0 枚」と断定表示しない */}
+                      {photosLoading
+                        ? "…"
+                        : `${count} 枚${
+                            s.coverPhotoId
+                              ? ` ・ 表紙: ${photoLabel(s.coverPhotoId)}`
+                              : ""
+                          }`}
                     </span>
                   </div>
                 </div>

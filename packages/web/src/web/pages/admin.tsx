@@ -857,6 +857,17 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   // so a finished site's admin stays uncluttered. "もう一度見る" re-expands it.
   const collapsed = !loading && (requiredDone || dismissed) && !forceOpen;
 
+  // 読込中は「未完了」マークだらけのチェックリストを一瞬見せない
+  if (loading) {
+    return (
+      <div className="h-full overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
+          <p className="text-[12px] text-[color:var(--admin-muted)]">…</p>
+        </div>
+      </div>
+    );
+  }
+
   if (collapsed) {
     return (
       <div className="h-full overflow-y-auto">
@@ -3261,16 +3272,21 @@ function GalleryTab({
           <PageHeader
             title="Library"
             description={
-              <>
-                <CountSwap value={displayed.length} /> /{" "}
-                <CountSwap value={allPhotos.length} /> photos
-                {selected.size > 0 && (
-                  <>
-                    {" "}
-                    ・ <CountSwap value={selected.size} /> selected
-                  </>
-                )}
-              </>
+              // 読込中に "0 / 0 photos" と断定表示しない — 写真家には消失に見える
+              isLoading ? (
+                <span aria-label="読み込み中">… photos</span>
+              ) : (
+                <>
+                  <CountSwap value={displayed.length} /> /{" "}
+                  <CountSwap value={allPhotos.length} /> photos
+                  {selected.size > 0 && (
+                    <>
+                      {" "}
+                      ・ <CountSwap value={selected.size} /> selected
+                    </>
+                  )}
+                </>
+              )
             }
           />
         </div>

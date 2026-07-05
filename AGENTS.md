@@ -11,6 +11,7 @@
 - Runable 関連ファイル（`docs/archive/RUNABLE_AI.md`, `docs/archive/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
 - Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
 - MacBook / Mac mini の2台運用では、GitHub をコード正本にする。リポジトリを iCloud / Dropbox 等で丸ごと同期しない。`.env` は各Macに置き、秘密情報は 1Password 等の安全な保管場所から転記する。人間向け手順は `docs/two-mac-workflow.md` を参照。
+- Fable5 など高性能モデルを使える時は、単発実装より先に `docs/specs/ai-collaboration-reform-fable5.md` を読み、全AIに残る作業ルール・検査表・Handoff品質の改善を優先する。
 
 ### §0 invariants
 
@@ -39,6 +40,14 @@
 - 相談文には必ず `目的` / `制約` / `触ったファイル` / `検証` / `返答形式` を含める。相手には「実装なし、P0/P1中心、短く」と依頼する。
 - 相手AIからの返信は主担当AIが要約してユーザーへ伝える。ユーザーに agmsg の中継作業を戻さない。
 - delivery mode は Claude Code `monitor`、Codex `turn` を基本にする。消費を抑えたい時は一時的に `off` へ落とす。
+
+### 高性能モデル利用時の優先順位
+
+- まず `git status --short` と `task.md` 最新 Handoff を確認し、既存の未コミット作業を踏まない。
+- Fable5 などの高性能モデルは、広範囲の現状診断、設計判断、検査表作成、引き継ぎ改善、P0/P1レビューに使う。
+- 実装者は原則1人に固定し、もう片方のAIは read-only reviewer として動かす。
+- 自動化や hooks を増やす前に、AGENTS.md / CLAUDE.md / task.md / wiki の役割を整理する。
+- push 済み、Railway 反映済み、本番確認済みは別物として報告する。
 
 ## スタック
 

@@ -4295,3 +4295,41 @@ Inspector を開かなくても、Library 一覧上で Hero / Series / 表示サ
 ### 注意
 
 - この作業では既存の未コミット差分 `packages/web/src/server.ts`、未追跡の静的ファイル配信テスト類、各種 handoff/prompt メモは対象外。
+
+## Handoff 2026-07-05 — Codex: Fable5向けAI共同作業改革の入口を追加
+
+### 目的
+
+Fable5 のような高性能モデルを、単発のコード修正ではなく、Claude Code / Codex / future agents 全体に残る改善へ使えるようにする。
+
+### 変更内容
+
+- `docs/specs/ai-collaboration-reform-fable5.md` を追加。
+  - Fable5 に渡す詳細プロンプト、読むべきファイル、Phase 1〜5、Stop rules、Handoff必須項目を明文化。
+  - dirty tree、secret、本番DB、push、Railway反映、本番確認を混同しないように制約を入れた。
+- `AGENTS.md` に高性能モデル利用時の優先順位を追記。
+  - まず `git status --short` と最新 Handoff を確認する。
+  - Fable5 は現状診断、設計判断、検査表、P0/P1レビューに使う。
+  - 実装者は原則1人、もう片方は read-only reviewer に回す。
+- `CLAUDE.md` に Claude Code 向けの入口として `docs/specs/ai-collaboration-reform-fable5.md` を追記。
+- `knowledge/wiki/pages/ai-collaboration.md` を追加し、wiki index / log から探せるようにした。
+
+### 触ったファイル
+
+- `docs/specs/ai-collaboration-reform-fable5.md`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `knowledge/wiki/pages/ai-collaboration.md`
+- `knowledge/wiki/index.md`
+- `knowledge/wiki/log.md`
+- `task.md`
+
+### 検証
+
+- ドキュメント変更のみ。コード実装・本番反映はしていない。
+- 管理画面まわりの既存未コミット差分はこの作業の対象外。作業中にも dirty tree が動いているため、次担当者は必ず最新の `git status --short` を確認すること。
+
+### 次の候補
+
+- Fable5 にこの仕様書を渡し、まず read-only audit と P0/P1レビューをさせる。
+- オーナー承認後、Fable5の提案を `AGENTS.md` / `CLAUDE.md` / wiki に小さく反映する。

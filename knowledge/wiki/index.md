@@ -1,7 +1,7 @@
 ---
 title: Knowledge Wiki Index
 status: current
-last_verified: 2026-07-02
+last_verified: 2026-07-05
 sources: []
 ---
 
@@ -44,6 +44,9 @@ be read selectively, not in full, each session.
   DISTRIBUTION.md freshness.
 - [Deployment](pages/deployment.md) — Railway git-push deploy, the legacy
   Runable ZIP path, env/config topology (names only, no secret values).
+- [AI Collaboration & Fable5 Reform](pages/ai-collaboration.md) — Claude
+  Code / Codex role split, high-performance model usage, durable handoff
+  rules, and where to start Fable5 reform work.
 ## Tracking
 
 - [Open Issues](pages/open-issues.md) — contradictions between canonical

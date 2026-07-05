@@ -100,6 +100,16 @@ git add ... && git commit && git push         # ② Railway 自動デプロイ
 - §0 ルールは Codex にも同じく適用
 - 実装着手前に `task.md` の最新 Handoff を確認
 
+## 高性能モデル利用時
+
+Fable5 など高性能モデルを使える時は、単発のコード量より、期間後も残る改善を優先する。
+
+- 入口: `docs/specs/ai-collaboration-reform-fable5.md`
+- 優先: 現状診断、P0/P1レビュー、AI分担整理、Handoffテンプレート改善、検査表作成
+- 実装: 既存の dirty tree を踏まない。実装者は1人に固定し、相手AIは read-only review に回す
+- 報告: local確認、push、Railway反映、本番確認を分けて書く
+- 説明: 秋さん向けに非エンジニアでも分かる言葉で、専門用語は一文で定義する
+
 ## 仕様書
 
 | ファイル                       | 内容                                                            |

@@ -1,7 +1,7 @@
 ---
 title: Wiki Maintenance Log
 status: current
-last_verified: 2026-07-03
+last_verified: 2026-07-05
 sources: []
 ---
 
@@ -18,6 +18,15 @@ feature/bugfix work here; record it in `task.md` instead, and only link to
 it from here if a wiki update was triggered by it.
 
 ## Entries
+
+### 2026-07-05 — Add AI collaboration and Fable5 reform page
+
+Codex added `pages/ai-collaboration.md` and linked it from the wiki index.
+The page summarizes the new canonical Fable5 work order in
+`docs/specs/ai-collaboration-reform-fable5.md`, the AGENTS.md / CLAUDE.md
+entry points, the current Claude Code / Codex role split, and the caution that
+the existing admin dirty tree should only be reviewed read-only unless the
+owner approves implementation.
 
 ### 2026-07-03 — Local TIFF conversion tool
 

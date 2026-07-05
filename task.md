@@ -4563,3 +4563,75 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - 未pushコミットのrebase・書き換え。
 - 本番DB・R2・Railway環境変数。
 - smoke で Save/Delete/Add など本番DBへ書き込む操作を増やすこと。
+
+## Handoff 2026-07-06 — Codex: 管理画面フォント・色の統一追加修正
+
+### 目的
+
+オーナー確認で「フォントが統一されていない」「サイトと管理画面の色が違う」と指摘あり。
+管理画面だけ別ブランドのように見える箇所を探し、公開サイト設定と管理画面の見た目を揃える。
+
+### 変更内容
+
+1. 管理画面の紙色を公開サイト背景へ統一
+   - `adminThemeFromSettings()` で、公開サイトの `themeBg` を混ぜ直さず
+     `--admin-paper` にそのまま使うよう変更。
+   - `themeBg` 未設定時の fallback も公開サイトの静的既定 `#f7f7f7` に合わせた。
+   - soft/deep/line は紙色と文字色から薄く派生させ、別色の warm paper にズレないようにした。
+2. 管理画面のフォントを公開サイト設定へ統一
+   - 見出し・サイドバーのサイト名は `--font-en`（公開サイトの英字フォント）を使用。
+   - サイドバー、ボタン、入力などのUI文字は `--font-ja`（公開サイトの日本語フォント）を使用。
+   - サイドバーの group label や admin 内の uppercase label も monospace 固定から外した。
+3. 旧色の救済CSSを追加調整
+   - 写真タイルの読み込み背景、iframe背景、青バッジ救済を admin theme 変数へ変更。
+   - Service の `RECOMMENDED` バッジが黒ベタにならないよう淡い紙色トーンへ修正。
+4. smoke test 更新
+   - `admin-font.spec.ts` を「Cormorant固定」確認から「公開サイトフォントと一致」確認へ変更。
+   - `admin-debug-sweep.spec.ts` に admin paper と公開サイト background の一致、
+     sidebar font と `--font-ja` の一致、page title と `--font-en` の一致を追加。
+   - 旧黒パネル検出は、実際に見えている枠線だけを見るよう調整し、
+     公開サイトの主文字色を使った小ボタンは誤検知しないようにした。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/styles.css`
+- `scripts/smoke/admin-font.spec.ts`
+- `scripts/smoke/admin-debug-sweep.spec.ts`
+- `task.md`
+
+### 検証したこと
+
+- ローカルブラウザで公開サイトと管理画面の計算後スタイルを比較。
+  - 公開サイト background: `#f7f7f7`
+  - 管理画面 `--admin-paper`: `#f7f7f7`
+  - 管理画面UI font: `Zen Kaku Gothic New`
+  - 管理画面見出し font: `Space Grotesk`
+- `bun run smoke -- admin-font admin-debug-sweep` 成功（6 passed / 2 skipped）。
+- `bun run check` 成功（typecheck / lint / test 258 pass / build）。
+- `bun run smoke` 成功（23 passed / 19 skipped / 0 failed）。
+
+### 検証していないこと
+
+- 本番 `akieguchi.com` での確認（push 前のため未実施）。
+- 実データを書き換える操作（保存・削除・アップロード・公開確定）は未実施。
+
+### push したか
+
+していない。この Handoff を含めてローカル commit する。push はオーナーの手で行う。
+
+### 本番で確認したか
+
+していない。push 後に Railway 反映と本番表示を別途確認すること。
+
+### 次の担当者が触ってよい場所
+
+- admin UI の追加 polish。
+- `scripts/smoke/` の read-only な見た目検査。
+- 公開サイト側のフォント設定そのものを変えたい場合は Settings タブからオーナー判断で変更。
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットのrebase・書き換え。
+- 本番DB・R2・Railway環境変数。
+- smoke で Save/Delete/Add など本番DBへ書き込む操作を増やすこと。

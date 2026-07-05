@@ -228,10 +228,11 @@ function useAdminGuard() {
 type Rgb = { r: number; g: number; b: number };
 
 const ATELIER_FALLBACK = {
-  paper: "#f7f4ec",
-  ink: "#2e2c27",
-  muted: "#6b6659",
-  accent: "#a33b2e",
+  paper: "#f7f7f7",
+  ink: "#1a1a1a",
+  muted: "#666666",
+  accent: "#1a1a1a",
+  danger: "#a33b2e",
 };
 
 function clampChannel(value: number): number {
@@ -309,22 +310,17 @@ function ensureContrast(foreground: Rgb, background: Rgb, min: number): Rgb {
 function adminThemeFromSettings(
   settings?: Record<string, string>,
 ): CSSProperties {
-  const neutral = parseHexColor(ATELIER_FALLBACK.paper)!;
-  const siteBg = parseHexColor(settings?.themeBg) ?? neutral;
-  const base = mix(
-    mix(siteBg, neutral, 0.86),
-    { r: 255, g: 255, b: 255 },
-    0.06,
-  );
-  const soft = mix(base, { r: 46, g: 44, b: 39 }, 0.035);
-  const deep = mix(base, { r: 46, g: 44, b: 39 }, 0.075);
-  const line = mix(base, { r: 46, g: 44, b: 39 }, 0.14);
-  const lineStrong = mix(base, { r: 46, g: 44, b: 39 }, 0.22);
+  const base =
+    parseHexColor(settings?.themeBg) ?? parseHexColor(ATELIER_FALLBACK.paper)!;
   const ink = ensureContrast(
     parseHexColor(settings?.themeText) ?? parseHexColor(ATELIER_FALLBACK.ink)!,
     base,
     7,
   );
+  const soft = mix(base, ink, 0.025);
+  const deep = mix(base, ink, 0.055);
+  const line = mix(base, ink, 0.11);
+  const lineStrong = mix(base, ink, 0.18);
   // Checked against `deep` (the darkest paper tone actually used behind text,
   // e.g. the sidebar) rather than `base` — passing against the darkest paper
   // variant guarantees the same minimum against the lighter ones too.
@@ -333,6 +329,11 @@ function adminThemeFromSettings(
     parseHexColor(settings?.accentColor) ??
       parseHexColor(settings?.linkHoverColor) ??
       parseHexColor(ATELIER_FALLBACK.accent)!,
+    base,
+    4.5,
+  );
+  const danger = ensureContrast(
+    parseHexColor(ATELIER_FALLBACK.danger)!,
     base,
     4.5,
   );
@@ -350,7 +351,7 @@ function adminThemeFromSettings(
     "--admin-line-strong": toHex(lineStrong),
     "--admin-accent": toHex(accent),
     "--admin-accent-rgb": rgbString(accent),
-    "--admin-danger": toHex(accent),
+    "--admin-danger": toHex(danger),
   } as CSSProperties;
 }
 

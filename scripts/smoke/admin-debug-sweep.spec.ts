@@ -9,6 +9,10 @@ const OLD_DARK_COLORS = [
   "rgb(56, 56, 56)",
 ] as const;
 
+function firstFamily(fontList: string): string {
+  return fontList.split(",")[0]?.trim().replace(/['"]/g, "") ?? "";
+}
+
 function isLocalRequest(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -48,29 +52,37 @@ test.describe("admin — 全体デバッグスイープ", () => {
     });
 
     await loginAsAdmin(page);
-    expect(
-      await page
-        .locator('link[href*="fonts.googleapis.com"][href*="Cormorant+Garamond"]')
-        .count(),
-    ).toBeGreaterThan(0);
 
     for (const tab of ADMIN_TABS) {
       await gotoAdminTab(page, tab);
       await expect(page.locator(".admin-atelier")).toBeVisible();
+
+      const adminShell = await page.locator(".admin-atelier").evaluate((el) => {
+        const root = getComputedStyle(document.documentElement);
+        const style = getComputedStyle(el);
+        return {
+          siteBackground: root.getPropertyValue("--background").trim(),
+          siteTitleFont: root.getPropertyValue("--font-en").trim(),
+          siteUiFont: root.getPropertyValue("--font-ja").trim(),
+          adminPaper: style.getPropertyValue("--admin-paper").trim(),
+          sidebarFont: getComputedStyle(
+            document.querySelector(".admin-sidebar__tab span") ?? el,
+          ).fontFamily,
+        };
+      });
+      expect(adminShell.adminPaper.toLowerCase()).toBe(
+        adminShell.siteBackground.toLowerCase(),
+      );
+      expect(adminShell.sidebarFont).toContain(
+        firstFamily(adminShell.siteUiFont),
+      );
 
       const title = page.locator(".admin-page-header__title").first();
       if ((await title.count()) > 0) {
         const titleFont = await title.evaluate(
           (el) => getComputedStyle(el).fontFamily,
         );
-        const configuredTitleFont = await page.evaluate(() => {
-          const value = getComputedStyle(
-            document.querySelector(".admin-atelier")!,
-          ).getPropertyValue("--admin-font-title");
-          return value.split(",")[0]?.trim().replace(/['"]/g, "") ?? "";
-        });
-        expect(configuredTitleFont).toBe("Cormorant Garamond");
-        expect(titleFont).toContain(configuredTitleFont);
+        expect(titleFont).toContain(firstFamily(adminShell.siteTitleFont));
       }
 
       const oldDarkOffenders = await page.evaluate(
@@ -95,6 +107,9 @@ test.describe("admin — 全体デバッグスイープ", () => {
             const text = el.textContent?.trim().replace(/\s+/g, " ").slice(0, 40);
             return `${tabName}: <${el.tagName.toLowerCase()}${cls ? `.${cls}` : ""}>${text ? ` "${text}"` : ""}`;
           };
+          const adminInk = getComputedStyle(
+            document.querySelector(".admin-atelier")!,
+          ).color;
           const offenders: string[] = [];
           for (const el of Array.from(
             document.querySelectorAll(".admin-content *"),
@@ -104,12 +119,42 @@ test.describe("admin — 全体デバッグスイープ", () => {
             const style = getComputedStyle(el);
             const checks = [
               ["background", style.backgroundColor],
-              ["border-top", style.borderTopColor],
-              ["border-right", style.borderRightColor],
-              ["border-bottom", style.borderBottomColor],
-              ["border-left", style.borderLeftColor],
+              [
+                "border-top",
+                style.borderTopStyle !== "none" &&
+                Number.parseFloat(style.borderTopWidth) > 0
+                  ? style.borderTopColor
+                  : "",
+              ],
+              [
+                "border-right",
+                style.borderRightStyle !== "none" &&
+                Number.parseFloat(style.borderRightWidth) > 0
+                  ? style.borderRightColor
+                  : "",
+              ],
+              [
+                "border-bottom",
+                style.borderBottomStyle !== "none" &&
+                Number.parseFloat(style.borderBottomWidth) > 0
+                  ? style.borderBottomColor
+                  : "",
+              ],
+              [
+                "border-left",
+                style.borderLeftStyle !== "none" &&
+                Number.parseFloat(style.borderLeftWidth) > 0
+                  ? style.borderLeftColor
+                  : "",
+              ],
             ] as const;
             for (const [prop, value] of checks) {
+              if (
+                value === adminInk &&
+                (el.tagName === "BUTTON" || el.closest("button,a"))
+              ) {
+                continue;
+              }
               if (oldColorSet.has(value)) {
                 offenders.push(`${prop} ${value} ${describe(el)}`);
                 break;

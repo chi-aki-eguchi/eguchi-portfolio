@@ -37,30 +37,44 @@
 
 /* Admin atelier design tokens: scoped to /admin only via .admin-atelier. */
 .admin-atelier {
-  --admin-paper: #f7f4ec;
-  --admin-paper-rgb: 247, 244, 236;
-  --admin-paper-soft: #f2ede2;
-  --admin-paper-deep: #ece5d6;
-  --admin-ink: #2e2c27;
-  --admin-ink-rgb: 46, 44, 39;
-  --admin-muted: #6b6659;
-  --admin-muted-rgb: 107, 102, 89;
-  --admin-line: #e3ddcd;
-  --admin-line-strong: #d4cab5;
-  --admin-accent: #a33b2e;
-  --admin-accent-rgb: 163, 59, 46;
+  --admin-paper: var(--background, #f7f7f7);
+  --admin-paper-rgb: var(--background-rgb, 247, 247, 247);
+  --admin-ink: var(--foreground, #1a1a1a);
+  --admin-ink-rgb: var(--foreground-rgb, 26, 26, 26);
+  --admin-paper-soft: color-mix(
+    in srgb,
+    var(--admin-paper) 97.5%,
+    var(--admin-ink)
+  );
+  --admin-paper-deep: color-mix(
+    in srgb,
+    var(--admin-paper) 94.5%,
+    var(--admin-ink)
+  );
+  --admin-muted: color-mix(
+    in srgb,
+    var(--admin-ink) 62%,
+    var(--admin-paper)
+  );
+  --admin-muted-rgb: 102, 102, 102;
+  --admin-line: color-mix(
+    in srgb,
+    var(--admin-paper) 89%,
+    var(--admin-ink)
+  );
+  --admin-line-strong: color-mix(
+    in srgb,
+    var(--admin-paper) 82%,
+    var(--admin-ink)
+  );
+  --admin-accent: var(--accent-color, var(--admin-ink));
+  --admin-accent-rgb: var(--admin-ink-rgb);
   --admin-danger: #a33b2e;
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
-  --admin-font-title: "Cormorant Garamond", "Georgia", serif;
-  /* Large branded elements (h1/h2/h3, sidebar title, page headers) keep the
-     admin renovation's fixed Cormorant voice. Dense UI chrome (buttons, tab
-     labels, table text, form inputs) used to inherit --font-ja directly — a
-     decorative display serif meant for public-site headings, applied at 11-15px
-     it read as dated rather than elegant. A fixed UI sans keeps that text
-     legible regardless of what the owner picks for the site's own typography. */
+  --admin-font-title:
+    var(--font-en), "Cormorant Garamond", "Georgia", serif;
   --admin-font-ui:
-    -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic",
-    "Noto Sans JP", sans-serif;
+    var(--font-ja), "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
 
   /* ─── Motion & material tokens (admin only). Reference these — no
      hardcoded durations/curves/shadows/radii below this point. ─── */
@@ -187,17 +201,18 @@
 
 .admin-atelier .admin-sidebar__eyebrow {
   display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--admin-font-title);
   font-size: 10px;
   line-height: 1.2;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--admin-muted);
 }
 
 .admin-atelier .admin-sidebar__group-title {
   display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--admin-font-ui);
+  font-weight: 400;
   font-size: 13px;
   line-height: 1.2;
   letter-spacing: 0.06em;
@@ -264,6 +279,7 @@
   border-radius: var(--admin-radius-sm);
   color: var(--admin-muted);
   font-size: 12px;
+  font-weight: 400;
   line-height: 1.2;
   text-decoration: none;
   transition:
@@ -279,6 +295,7 @@
 
 .admin-atelier .admin-sidebar__tab[data-active="true"] {
   color: var(--admin-ink);
+  font-weight: 500;
   background: rgba(var(--admin-accent-rgb), 0.08);
 }
 
@@ -366,6 +383,8 @@
 .admin-atelier button:not(.absolute):not([class*="bg-black"]),
 .admin-atelier a[class*="px-"],
 .admin-atelier label[class*="border"] {
+  font-family: var(--admin-font-ui);
+  font-weight: 400;
   border-radius: var(--admin-radius-sm) !important;
   box-shadow: none !important;
   min-height: 40px;
@@ -1070,7 +1089,7 @@
 
 .admin-atelier .admin-content img[class*="aspect-square"],
 .admin-atelier .admin-content img[class*="object-cover"] {
-  background-color: #e7e1d4 !important;
+  background-color: var(--admin-paper-deep) !important;
 }
 
 .admin-atelier .admin-content [data-virtualized] {
@@ -1084,7 +1103,7 @@
 
 .admin-atelier .admin-content [class*="LIBRARY"],
 .admin-atelier .admin-content [class*="uppercase"] {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--admin-font-title);
 }
 
 .admin-atelier .admin-content [class*="fixed"][class*="right-0"],
@@ -1148,8 +1167,8 @@
 }
 
 .admin-atelier .admin-content [class*="bg-[#4a9eff]"] {
-  background: var(--admin-ink) !important;
-  color: var(--admin-paper) !important;
+  background: rgba(var(--admin-ink-rgb), 0.08) !important;
+  color: var(--admin-ink) !important;
 }
 
 .admin-atelier .admin-content [class*="grid-cols-5"] button,
@@ -1168,7 +1187,7 @@
 }
 
 .admin-atelier .admin-content iframe {
-  background: white;
+  background: var(--admin-paper);
   border-color: var(--admin-line) !important;
 }
 

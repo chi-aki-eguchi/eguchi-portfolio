@@ -369,7 +369,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Import");
       // Digital/Film は Import 設定 — 絞り込みと誤読されない明札付きグループ
       expect(
-        host.querySelector('[role="group"][aria-label="取り込み媒体"]'),
+        host.querySelector('fieldset[aria-label="取り込み媒体"]'),
       ).not.toBeNull();
       expect(host.textContent).toContain("デジタル");
       expect(host.textContent).toContain("フィルム");

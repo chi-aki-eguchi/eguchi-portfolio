@@ -3484,11 +3484,10 @@ function GalleryTab({
             </button>
 
             {/* Importの設定であって絞り込みではない — 明札を付けてフィルタとの誤読を防ぐ */}
-            <div
-              role="group"
+            <fieldset
               aria-label="取り込み媒体"
               title="Importする写真に付く媒体ラベルです（絞り込みではありません）"
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 m-0 p-0 border-0 min-w-0"
             >
               <span className="text-[10px] text-[#666] uppercase tracking-wider whitespace-nowrap mr-0.5">
                 取り込み
@@ -3511,7 +3510,7 @@ function GalleryTab({
                   {lbl}
                 </button>
               ))}
-            </div>
+            </fieldset>
 
             <button
               onClick={() => fileInputRef.current?.click()}

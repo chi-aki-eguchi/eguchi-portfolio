@@ -370,11 +370,8 @@ describe("shared components", () => {
       expect(host.textContent).toContain("絞り込み");
       expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
       expect(host.textContent).toContain("3 / 3 photos");
-      expect(
-        host.querySelector(
-          '[aria-label="未入力: 日付なし, 機材なし, 媒体なし"]',
-        ),
-      ).not.toBeNull();
+      // 未入力バッジは通常表示ではタイルに載せない（写真が主役）
+      expect(host.querySelector('[aria-label^="未入力:"]')).toBeNull();
 
       buttonWithText(host, "絞り込み").click();
       await flush(30);
@@ -386,6 +383,19 @@ describe("shared components", () => {
       expect(host.textContent).toContain("公開のみ");
       expect(host.textContent).toContain("縦写真");
       expect(host.textContent).toContain("媒体: All");
+
+      // 機材なし絞り込みを有効にした時だけ、該当タイルにバッジが出る
+      buttonWithText(host, "機材なし (").click();
+      await flush(30);
+      const hygieneBadge = host.querySelector('[aria-label^="未入力:"]');
+      expect(hygieneBadge).not.toBeNull();
+      expect(hygieneBadge!.getAttribute("aria-label")).toContain("機材なし");
+      expect(hygieneBadge!.getAttribute("aria-label")).not.toContain(
+        "日付なし",
+      );
+      buttonWithText(host, "機材なし (").click();
+      await flush(30);
+      expect(host.querySelector('[aria-label^="未入力:"]')).toBeNull();
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;

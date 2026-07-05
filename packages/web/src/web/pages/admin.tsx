@@ -4288,10 +4288,24 @@ function GalleryTab({
                       photo.seriesId != null ? "Series" : null,
                       displaySize !== "M" ? `Size ${displaySize}` : null,
                     ].filter((label): label is string => Boolean(label));
+                    // 未入力バッジは、その整備をしている時（対応する絞り込みが
+                    // 有効な時）だけ写真に載せる。大半の写真に付く警告は情報では
+                    // なくノイズになり、コンタクトシートの佇まいを壊すため。
+                    const albumCond = activeAlbum?.cond;
                     const metadataBadges = [
-                      !photo.shotAt ? "日付なし" : null,
-                      !(photo.camera || photo.lens) ? "機材なし" : null,
-                      photoMedium(photo) === "missing" ? "媒体なし" : null,
+                      (filterMissingShotAt || albumCond?.missingShotAt) &&
+                      !photo.shotAt
+                        ? "日付なし"
+                        : null,
+                      (filterMissingCapture || albumCond?.missingCapture) &&
+                      !(photo.camera || photo.lens)
+                        ? "機材なし"
+                        : null,
+                      (filterMedium === "missing" ||
+                        albumCond?.medium === "missing") &&
+                      photoMedium(photo) === "missing"
+                        ? "媒体なし"
+                        : null,
                     ].filter((label): label is string => Boolean(label));
                     return (
                       <div
@@ -4378,10 +4392,11 @@ function GalleryTab({
                             ))}
                           </div>
                         )}
+                        {/* 右下に置く: 左下の移動ボタン（モバイルでは常時表示）と重ならない */}
                         {thumbSize >= 120 && usageBadgeLabels.length > 0 && (
                           <div
                             aria-label={`使用状況: ${usageBadgeLabels.join(", ")}`}
-                            className="absolute bottom-1 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
+                            className="absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
                           >
                             {heroIndex >= 0 && (
                               <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-900/70 px-1.5 py-0.5 text-[9px] leading-none text-amber-200/90">

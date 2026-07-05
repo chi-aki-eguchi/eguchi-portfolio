@@ -471,12 +471,16 @@ export default function AdminPage() {
     shellSettings?.siteNameEn?.trim() ||
     shellSettings?.siteName?.trim() ||
     "Photography";
-  const requestTab = (nextTab: Tab) => {
+  // Returns whether the switch actually happened (false when blocked by the
+  // unsaved-changes guard) — callers that queue a follow-up action (like
+  // opening Trash) must only do so once the switch has actually gone through.
+  const requestTab = (nextTab: Tab): boolean => {
     if (hasUnsaved && nextTab !== tab) {
       setUnsavedConfirm(nextTab);
-      return;
+      return false;
     }
     setTab(nextTab);
+    return true;
   };
   const requestLogout = () => {
     if (hasUnsaved) {
@@ -503,8 +507,7 @@ export default function AdminPage() {
       group: "写真",
       icon: <Trash2 size={15} />,
       action: () => {
-        requestTab("gallery");
-        setOpenTrashRequest((n) => n + 1);
+        if (requestTab("gallery")) setOpenTrashRequest((n) => n + 1);
       },
     },
     {
@@ -651,6 +654,7 @@ export default function AdminPage() {
                 onUploadingChange={setGalleryUploading}
                 onUnsavedChange={setHasUnsaved}
                 openTrashSignal={openTrashRequest}
+                onTrashSignalConsumed={() => setOpenTrashRequest(0)}
               />
             )}
             {contentTab !== "setup" && contentTab !== "gallery" && (
@@ -1442,6 +1446,7 @@ function GalleryTab({
   onUploadingChange,
   onUnsavedChange,
   openTrashSignal,
+  onTrashSignalConsumed,
 }: {
   onUploadingChange?: (v: boolean) => void;
   onUnsavedChange?: (v: boolean) => void;
@@ -1449,6 +1454,11 @@ function GalleryTab({
   // toggle inside this tab, not a Tab of its own, so it needs a signal
   // rather than a route.
   openTrashSignal?: number;
+  // Parent resets openTrashSignal back to 0 once consumed — otherwise a
+  // leftover nonzero value would re-open Trash on every later, unrelated
+  // mount of this tab (GalleryTab fully unmounts on tab switch, so its own
+  // local state can't remember "already handled this one").
+  onTrashSignalConsumed?: () => void;
 }) {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1542,8 +1552,17 @@ function GalleryTab({
     label: string;
   } | null>(null);
   const [showTrash, setShowTrash] = useState(false);
+  // Ref so a fresh onTrashSignalConsumed identity on every AdminPage render
+  // doesn't need to be (and shouldn't be) a dependency below.
+  const onTrashSignalConsumedRef = useRef(onTrashSignalConsumed);
   useEffect(() => {
-    if (openTrashSignal) setShowTrash(true);
+    onTrashSignalConsumedRef.current = onTrashSignalConsumed;
+  }, [onTrashSignalConsumed]);
+  useEffect(() => {
+    if (openTrashSignal) {
+      setShowTrash(true);
+      onTrashSignalConsumedRef.current?.();
+    }
   }, [openTrashSignal]);
   const [undoToast, setUndoToast] = useState<{
     ids: number[];

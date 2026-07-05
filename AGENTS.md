@@ -15,6 +15,9 @@
 
 ### §0 invariants
 
+> 高リスク領域（settings / DB / 画像 / admin / デプロイ）に触るときは、
+> 実行手順版の検査表 `docs/checklists.md` を着手前・完了前になぞる。
+
 - DB クエリは必ず `withRetry(() => db....)` のリトライラッパーを使う。
 - settings は 4-place settings sync パターンを維持する。`settings-preview.ts` の台帳、API `/settings` の default、`provider.tsx` の DB 適用 `useEffect`、`provider.tsx` の `handlePreviewMessage` を揃える。
 - API / client のレスポンスは `assertOk()` で検証してから本文を読む。
@@ -317,7 +320,7 @@ cd packages/web && bun run db:push  # deletedAt カラム追加
 
 - `ADMIN_PASSWORD` 未設定時はサーバ起動は続行するが管理ログインが無効になる（警告ログのみ）
 - R2 への画像は `3200px / mozjpeg q92 / 4:4:4` に最適化してから保存。元のサイズは保存しない
-- in-memory LRU キャッシュ（バイト予算 256MB + 元画像 96MB/60s TTL）でサムネイルをキャッシュ
+- in-memory LRU キャッシュ（リサイズ済み 128MB + 元画像 48MB/60s TTL。正はコード `api/index.ts` の `RESIZE_CACHE_BYTES` / `ORIG_CACHE_BYTES`）でサムネイルをキャッシュ
 - 写真の複製（O1）は同じ R2 オブジェクトを共有する。purge は他に参照が無い場合のみ R2 から削除
 - OGP メタタグはサーバサイドで `index.html` に注入（60 秒 TTL キャッシュ）
 - テンプレート由来の `packages/mobile/`・`packages/desktop/` は 2026-06 に削除済み（パッケージは `web` のみ）
@@ -344,7 +347,8 @@ conflict; see `knowledge/WIKI_SCHEMA.md` for the full rules.
 ## Agent Ownership: 1 task = 1 Driver
 
 Exactly one agent (Claude Code or Codex) is the **Driver** for a given task —
-the Driver may edit files, run commands, and commit/push. The other agent, if
+the Driver may edit files, run commands, and commit. **Push is always done by
+the owner's hand — agents never push** (see 完了の定義). The other agent, if
 involved, acts as **Reviewer** only (reads, comments, does not edit).
 
 - Two agents must never edit the same files concurrently.

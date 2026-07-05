@@ -1,5 +1,45 @@
 # Task Log
 
+<!--
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Handoff テンプレート（2026-07-06 設置。docs/specs/ai-collaboration-reform-fable5.md の必須項目）
+
+- 新しい Handoff はこのファイルの【末尾】に追記する（最新 = 末尾。途中挿入・冒頭挿入はしない）。
+- 見出しは `## Handoff YYYY-MM-DD — <担当AI>: <一行タイトル>`。
+- 下の9項目を埋める。該当なしでも「なし」と書き、項目自体は消さない。
+  「push したか / 本番で確認したか」は特に混同事故が多いので必ず区別して書く。
+
+## Handoff YYYY-MM-DD — Claude Code|Codex: タイトル
+
+### 目的
+（何のための作業か1〜3行）
+
+### 変更内容
+（何をどう変えたか）
+
+### 触ったファイル
+（パスを列挙）
+
+### 検証したこと
+（実行したコマンドと結果。例: bun run check 成功 / bun run smoke 19 pass）
+
+### 検証していないこと
+（やり残した確認。例: 実ブラウザでの手動確認、本番ヘッダー確認）
+
+### push したか
+（していない=ローカルのみ / した=commit hash。push は常にオーナーの手で行う）
+
+### 本番で確認したか
+（していない / した=確認方法。例: akieguchi.com の X-Build ヘッダー）
+
+### 次の担当者が触ってよい場所
+（続きを引き継げる範囲）
+
+### 次の担当者が触ってはいけない場所
+（未コミット差分・レビュー待ち・オーナー判断待ちの範囲）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-->
+
 ## Handoff 2026-07-03 — Codex: Photo detail unsaved guard P0
 
 ### 目的
@@ -399,6 +439,7 @@ akieguchi.com のSEO改善、続き。主要ページのmeta description個別�
 ### 変更内容（Workflowで並行実装 + 独立検証エージェントでadversarial verify、詳細は各エージェントの報告を要約）
 
 **1. meta description個別化**
+
 - `api/index.ts` GET /settings に新規キー5つ追加: `metaDescriptionHome/Gallery/About/Series/Contact`（すべて `?? ""` デフォルト）。
 - `web/lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS` に同5キーを追加（§0 settings同期invariant）。
 - `api/ogp.ts`: `META_DESCRIPTION_KEYS`（pathname→設定キーのlookup、`PAGE_TITLES` と同型）と `genericPageDescription()`（設定未設定時のtemplate-safeな汎用フォールバック。`name`（displayNameFrom）のみ補間、配布版テンプレートに悪影響なし）、`seriesFallbackDescription()`（seriesにstatement/subtitle未設定の場合、展示名を含む自動フォールバック）を追加。優先順位: override.desc（seriesのstatement/subtitle）> seriesFallbackDescription（override.titleありdescなし）> 設定済みmetaDescriptionキー > genericPageDescription。
@@ -406,6 +447,7 @@ akieguchi.com のSEO改善、続き。主要ページのmeta description個別�
 - 管理画面（`admin.tsx`）にはこの5キーの入力欄はまだ無い（今回のスコープ外、ユーザー了承済み。今後admin UIを追加する場合は`admin.tsx`に textarea を5つ追加すればよい。DB直書き/API経由でのみ編集可能な状態）。
 
 **2. 画像alt text改善**
+
 - `web/lib/photo-alt.ts` 新規: `photoAltText(photo, ctx)` — title→description→(seriesName+categoryLabel+photographerName から自然文生成)→"写真" の優先順位。
 - `PhotoGallery.tsx`: `GalleryPhoto` 型に `description/category/seriesId` を追加。`seriesName`/`seriesNameById`/`categoryLabelBySlug` の新規propsを追加、`settings` から `photographerName` を導出。tile()のalt/aria-labelから filename フォールバックを撤去し `photoAltText` に統一。内部の `<Lightbox>` へも同コンテキストを転送。
 - `Lightbox.tsx`: `LightboxPhoto` 型に同フィールド追加、同じ4つのcontext propsを追加。実画像2箇所（mediumUrl分岐 / on-the-fly srcset分岐）のaltを `photoAltText` に統一。装飾用の `alt="" aria-hidden="true"` レイヤー（LQIPぼかし/サムネプレースホルダー/ズームオーバーレイ等）は無変更（Lightbox既存ロジック非破壊のルール厳守）。
@@ -414,6 +456,7 @@ akieguchi.com のSEO改善、続き。主要ページのmeta description個別�
 - `top.tsx`: 各セクションで `photographerName` を導出し、`photo.title || "Photograph"` 等の弱いフォールバックを `photoAltText` に置換。`toLightboxPhotos()` に `description` を追加。
 
 **3. canonicalタグ**
+
 - 既存実装（`injectOgp` の `canonical` 計算 + `<link rel="canonical">` / `og:url` への反映）がそのまま主要ページ全部（Home/Gallery/About/Series一覧/Series詳細/Contact）に効いていることを確認済み。コード変更なし。
 
 ### 検証（独立のadversarial verifyエージェントによる再確認込み）
@@ -4333,3 +4376,57 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 
 - Fable5 にこの仕様書を渡し、まず read-only audit と P0/P1レビューをさせる。
 - オーナー承認後、Fable5の提案を `AGENTS.md` / `CLAUDE.md` / wiki に小さく反映する。
+
+## Handoff 2026-07-06 — Claude Code: Fable5改革 — push前レビュー + Balanced案ドキュメント整備
+
+### 目的
+
+`docs/specs/ai-collaboration-reform-fable5.md` に基づく作業。①未push 40 commit（`fe158da..6d79a8c`）の push 前レビュー、②Balanced 案（P1ドキュメント修正・open-issues 棚卸し・Handoff テンプレート・高リスク領域検査表）の実施。コードは一切変更していない。
+
+### 変更内容
+
+- push 前レビュー（read-only）: P0/P1 なしと判定。API・server.ts・drizzle は範囲内で無変更、provider.tsx の実質変更は same-origin ガード付きプレビューガードのみ、styles.css 追加分は全て admin スコープ内、§0 違反なしを確認。
+- AGENTS.md: 「Agent Ownership」の Driver may commit/push を「commit まで。push はオーナーのみ」に修正（2026-07-05 の push 方針変更の直し漏れ）。LRU キャッシュ数値 256MB/96MB → 128MB/48MB（正はコード定数と明記）。§0 に検査表への参照を追加。
+- CLAUDE.md: 同キャッシュ数値を修正。§0 に検査表への参照を追加。
+- docs/specs/refine-and-loop-spec.md: settings「3箇所同期」（旧 previewPayload リスト）→ 現行の4箇所リストに修正。
+- knowledge/wiki/pages/open-issues.md: 解決済みの #1（settings 表記counts）/#8（r2-upload）/#9（perf-auditor キャッシュ値）/#11（clone URL）を再検証の上 Resolved 化。last_verified 更新。
+- knowledge/wiki/log.md: 上記のメンテナンスログを追記。
+- task.md: 冒頭に Handoff テンプレート（必須9項目・末尾追記の規約）を設置。
+- docs/checklists.md（新規）: settings / DB スキーマ / 画像パイプライン / admin UI / Railway デプロイ+本番確認の5領域の着手前・完了前検査表。
+
+### 触ったファイル
+
+- AGENTS.md / CLAUDE.md
+- docs/specs/refine-and-loop-spec.md
+- docs/checklists.md（新規）
+- knowledge/wiki/pages/open-issues.md / knowledge/wiki/log.md
+- task.md
+
+### 検証したこと
+
+- レビューの裏取りとして `bun run check` 成功（typecheck→lint→test→build 全green）、`bun run smoke` 成功（19 pass / 0 fail / 17 skip=データ量依存の設計どおり）。
+- キャッシュ数値は `packages/web/src/api/index.ts:69,190` の実コードと突き合わせ。
+- ドキュメント変更後 `git diff --check` 成功。
+
+### 検証していないこと
+
+- 本番（akieguchi.com）での確認 — 40 commit がまだ push されていないため対象外。
+- スモークの skip 17 件が対象とするオーバーフロー系挙動の実データ確認。
+
+### push したか
+
+していない（ローカル commit のみ）。push はオーナーの手で行う。**未 push は本 Handoff 分を含め計 42 commit**（`git log origin/main..main` で確認可）。
+
+### 本番で確認したか
+
+していない。push 後に `curl -sI https://akieguchi.com/ | grep -i x-build` で反映 hash を確認すること（docs/checklists.md §5）。
+
+### 次の担当者が触ってよい場所
+
+- docs/checklists.md の増補（実際に使って足りない項目の追加）。
+- open-issues.md の残項目（#2, #3, #6, #7, #10, #12〜#18 等）の再検証・解消。
+
+### 次の担当者が触ってはいけない場所
+
+- 未 push の 42 commit の rebase・書き換え（push はオーナー待ち）。
+- 本番 DB・R2・Railway 環境変数。

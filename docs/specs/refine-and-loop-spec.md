@@ -8,7 +8,7 @@
 
 - DBクエリは `withRetry(() => db....)` でラップ
 - データ更新後は `qc.invalidateQueries`
-- 新規settingsキーは3箇所同期（admin previewPayload / provider DB適用useEffect / provider handlePreviewMessage）
+- 新規settingsキーは4箇所同期（`lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS` 台帳 / API `GET /settings` の default / `provider.tsx` DB適用useEffect / `provider.tsx` handlePreviewMessage。CLAUDE.md §0 と同期。旧「3箇所（admin previewPayload…）」は廃止済み）
 - スキーマ変更は `cd packages/web && bun run db:push`
 - 全書き込みres.ok/assertOkチェック・失敗時エラー表示
 - ロード中は空状態を出さない

@@ -69,6 +69,8 @@ bun run smoke   # admin に触れた場合
 
 ## §0 Invariants（必守）
 
+> 高リスク領域（settings / DB / 画像 / admin / デプロイ）の実行手順版検査表: `docs/checklists.md`
+
 1. **withRetry** — DB クエリは必ず `withRetry(() => db....)` でラップ
 2. **Settings 4箇所同期** — 新規キー追加時:
    - `lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS`（台帳）
@@ -140,7 +142,7 @@ Drop:
 ## 注意事項
 
 - R2 画像: 3200px / mozjpeg q92 / 4:4:4 で保存。元サイズは保存しない
-- LRU キャッシュ: サムネイル 256MB + 元画像 96MB/60s TTL
+- LRU キャッシュ: リサイズ済み 128MB + 元画像 48MB/60s TTL（正はコード `api/index.ts` の `RESIZE_CACHE_BYTES` / `ORIG_CACHE_BYTES`）
 - OGP: サーバサイドで index.html に注入（60s TTL）
 - ギャラリーレイアウト 9種: mosaic / grid / scroll / stagger / editorial / collage / clean-grid / masonry / large-format。未知値は mosaic フォールバック
 - 写真複製は R2 オブジェクト共有。purge は他参照なしの場合のみ

@@ -240,6 +240,10 @@ bun run smoke -- admin-scroll          # ファイル名でフィルタして実
   (データ依存の誤検知を避けるため。0件失敗でもskip件数は確認すること)。
 - 新しいバグを直したら、同じ流儀(`scripts/smoke/helpers.ts` の
   `loginAsAdmin`/`gotoAdminTab` 等を再利用)で回帰テストを1件追加する。
+- **本番と同じTurso DBに直接つながっている(ステージングDB分離なし)。** 新しいテストで
+  Save/Delete/Add確定など実際にデータを書き込む操作をクリックしないこと。現状の全スペックは
+  ログイン以外に非GETリクエストを発生させない設計(2026-07-05実測検証済み、
+  `scratch/debug-2026-07/findings.md`「検証用DB分離」参照)。
 
 ### 仕様書（参照先）
 

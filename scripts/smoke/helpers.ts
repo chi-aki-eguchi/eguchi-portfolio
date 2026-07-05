@@ -2,6 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Page } from "@playwright/test";
 
+// 【重要】この開発環境(bun run dev / bun run smoke)は本番と同じTursoデータベースに
+// 直接つながっている(ステージングDB分離なし)。スモークテストを追加する時は、
+// Save/Delete/Add確定などデータを実際に書き込む操作をクリックしないこと
+// (ローカルstateの変更・discard・確認ダイアログのキャンセルまでに留める)。
+// どうしても書き込みが必要な場合は、テスト終了時に必ず自分でデータを削除する
+// teardownを書くこと。現状の全スペックはログイン(セッションCookie発行のみ)以外
+// 非GETリクエストを一切発生させない設計(findings.md「検証用DB分離」参照)。
+
 // 9タブ全て(setup=はじめに含む)。追加/削除時はここを更新する。
 export const ADMIN_TABS = [
   "setup",

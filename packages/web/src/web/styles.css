@@ -52,7 +52,16 @@
   --admin-danger: #a33b2e;
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
   --admin-font-title: var(--font-en);
-  --admin-font-ui: var(--font-ja);
+  /* Large branded elements (h1/h2/h3, sidebar title, page headers) keep
+     --admin-font-title tied to the site's configured display font. Dense UI
+     chrome (buttons, tab labels, table text, form inputs) used to inherit
+     --font-ja directly — a decorative display serif meant for public-site
+     headings, applied at 11-15px it read as dated rather than elegant. A
+     fixed UI sans keeps that text legible regardless of what the owner picks
+     for the site's own typography. */
+  --admin-font-ui:
+    -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic",
+    "Noto Sans JP", sans-serif;
 
   /* ─── Motion & material tokens (admin only). Reference these — no
      hardcoded durations/curves/shadows/radii below this point. ─── */

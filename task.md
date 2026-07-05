@@ -4430,3 +4430,59 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 
 - 未 push の 42 commit の rebase・書き換え（push はオーナー待ち）。
 - 本番 DB・R2・Railway 環境変数。
+
+## Handoff 2026-07-06 — Claude Code: Fable5特別セッション — admin診断と磨き込み6件
+
+### 目的
+
+オーナーの「良くなったけどまだ何か足りない」を特定するため、admin全体を診断
+（コード読解+Playwright実操作・読み取り専用）し、効果大×安全な改善を実装する。
+
+### 変更内容
+
+診断15件は `scratch/fable-session/diagnosis.md`（gitignored・ローカルのみ）。実装は6 commit:
+
+1. `4c35980` 読み込み中の「偽のゼロ」撲滅 — Series「0枚」/Library「0 / 0 photos」/はじめにの未完了マークを、写真クエリ解決前は「…」表示に。
+2. `f8eb01e` Series表紙が削除済み写真を指す時、「#351」ではなく「元の写真は削除済み」と言葉で表示。
+3. `443e1e3` 未入力バッジ（機材なし等、497枚中415枚に常時表示）を対応する絞り込み有効時のみに。使用状況バッジは右下へ（モバイルの移動ボタンとの重なり解消）。
+4. `47320bf` Digital/Filmボタンに「取り込み」明札 + 日本語化（絞り込みとの誤読防止）。
+5. `a3992c6` **Libraryにサイトプレビュー** — トップ/ギャラリー切替・PC幅(1280px紙面を縮小)/スマホ幅・保存時自動リロード。design-specの「並べて→誌面で確かめる」ループを一画面に。smoke spec `admin-library-preview.spec.ts` 追加。
+6. `0dff109` 取り込み媒体グループのfieldset化（oxlint jsx-a11y対応）。
+
+### 触ったファイル
+
+- packages/web/src/web/pages/admin.tsx / admin-tabs.tsx
+- packages/web/src/web/test/pages.render.test.tsx
+- scripts/smoke/admin-library-preview.spec.ts（新規）
+- task.md
+
+### 検証したこと
+
+- `bun run check` 成功（tsc -b → oxlint → bun test 258 pass / 0 fail → build）。
+- `bun run smoke` 成功（19 passed / 19 skipped / 0 failed。新spec 2件含む）。
+- Playwright実ブラウザ（port 4311）でプレビュー開閉・ページ切替・PC/スマホ幅・
+  モバイル全画面オーバーレイをスクリーンショット確認。全操作で非GETリクエスト
+  ゼロを監視付きで確認（本番DBへの書き込みなし）。
+
+### 検証していないこと
+
+- 実データでの並べ替え保存→プレビュー自動リロードの目視（保存操作はDB書き込みのためセッション制約で未実施。ロジックはdataUpdatedAt監視で、query invalidate後の再取得で発火する設計）。
+- 本番確認（未push）。
+
+### push したか
+
+していない（ローカルのみ）。未pushは本Handoff分を含め計49 commit。
+
+### 本番で確認したか
+
+していない。push後に `curl -sI https://akieguchi.com/ | grep -i x-build` で確認。
+
+### 次の担当者が触ってよい場所
+
+- diagnosis.md の未実装項目（言葉の統一、Setup完了後ページ、Inspector「よく使う」のプレビューラベル、絞り込みドロップダウンの明札、ハードコード色のテーマ変数移行、admin.tsx分割）。
+- Libraryプレビューの磨き込み（Series詳細への切替追加等）。
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットのrebase・書き換え（pushはオーナーの手で）。
+- 本番DB・R2・Railway環境変数。データ側の宿題（"Still,life京都"シリーズ: 下書き・0枚・表紙欠損）はオーナー判断待ち。

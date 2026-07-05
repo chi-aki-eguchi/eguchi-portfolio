@@ -897,6 +897,13 @@
    (dur-base/ease-out). transform+opacity only, so nothing recomputes layout
    mid-transition. */
 .admin-atelier .admin-screen {
+  /* .admin-content (flex:1; overflow:hidden) gives *this* element its height,
+     but as a plain block child it doesn't inherit it — height:auto meant every
+     tab's own `h-full overflow-y-auto` resolved against an undefined parent
+     height and never scrolled; overflowing content was just clipped with no
+     way to reach it. */
+  height: 100%;
+  min-height: 0;
   opacity: 1;
   transform: translateY(0);
 }

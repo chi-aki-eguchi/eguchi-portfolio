@@ -404,14 +404,21 @@
   color: var(--admin-paper) !important;
 }
 
-.admin-atelier button[class*="red"],
+/* [class*="text-red"] / [class*="bg-red"] match the raw class attribute
+   string, so a hover-only utility like `hover:text-red-400` (meant to turn
+   red only on :hover) also matches unconditionally — the colon always sits
+   directly before the utility name, so excluding that combination targets
+   exactly the variant-prefixed case without touching a bare `text-red-400`. */
+.admin-atelier
+  button[class*="red"]:not([class*=":text-red"]):not([class*=":bg-red"]),
 .admin-atelier button[class*="Delete"],
-.admin-atelier [class*="text-red"] {
+.admin-atelier [class*="text-red"]:not([class*=":text-red"]) {
   color: var(--admin-danger) !important;
 }
 
-.admin-atelier button[class*="bg-red"],
-.admin-atelier [class*="bg-red"] {
+.admin-atelier
+  button[class*="bg-red"]:not([class*=":text-red"]):not([class*=":bg-red"]),
+.admin-atelier [class*="bg-red"]:not([class*=":bg-red"]) {
   background-color: rgba(var(--admin-accent-rgb), 0.12) !important;
   border-color: rgba(var(--admin-accent-rgb), 0.35) !important;
   color: var(--admin-danger) !important;

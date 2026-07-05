@@ -3424,24 +3424,34 @@ function GalleryTab({
               ?
             </button>
 
-            <div className="flex items-center gap-1">
-              {[["digital", "Digital"] as const, ["film", "Film"] as const].map(
-                ([val, lbl]) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setUploadMedium(val)}
-                    aria-pressed={uploadMedium === val}
-                    className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
-                      uploadMedium === val
-                        ? "bg-[#555] text-[#eee] border-[#666]"
-                        : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
-                    }`}
-                  >
-                    {lbl}
-                  </button>
-                ),
-              )}
+            {/* Importの設定であって絞り込みではない — 明札を付けてフィルタとの誤読を防ぐ */}
+            <div
+              role="group"
+              aria-label="取り込み媒体"
+              title="Importする写真に付く媒体ラベルです（絞り込みではありません）"
+              className="flex items-center gap-1"
+            >
+              <span className="text-[10px] text-[#666] uppercase tracking-wider whitespace-nowrap mr-0.5">
+                取り込み
+              </span>
+              {[
+                ["digital", "デジタル"] as const,
+                ["film", "フィルム"] as const,
+              ].map(([val, lbl]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setUploadMedium(val)}
+                  aria-pressed={uploadMedium === val}
+                  className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
+                    uploadMedium === val
+                      ? "bg-[#555] text-[#eee] border-[#666]"
+                      : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
             </div>
 
             <button

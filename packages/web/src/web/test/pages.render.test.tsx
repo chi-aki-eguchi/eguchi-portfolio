@@ -367,6 +367,12 @@ describe("shared components", () => {
       expect(host.textContent).toContain("サイト");
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("Import");
+      // Digital/Film は Import 設定 — 絞り込みと誤読されない明札付きグループ
+      expect(
+        host.querySelector('[role="group"][aria-label="取り込み媒体"]'),
+      ).not.toBeNull();
+      expect(host.textContent).toContain("デジタル");
+      expect(host.textContent).toContain("フィルム");
       expect(host.textContent).toContain("絞り込み");
       expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
       expect(host.textContent).toContain("3 / 3 photos");

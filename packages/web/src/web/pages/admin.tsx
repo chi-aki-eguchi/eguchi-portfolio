@@ -400,6 +400,18 @@ export default function AdminPage() {
     const el = tabButtonRefs.current[tab];
     if (el) setIndicatorTop(el.offsetTop);
   }, [tab]);
+  // The sidebar is `hidden lg:flex` — its buttons have no layout box (and
+  // offsetTop 0) below the lg breakpoint. Resizing back past it doesn't
+  // change `tab`, so the effect above never re-fires and the indicator stays
+  // wherever it last measured (usually the top). Re-measure on resize too.
+  useEffect(() => {
+    const onResize = () => {
+      const el = tabButtonRefs.current[tab];
+      if (el) setIndicatorTop(el.offsetTop);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [tab]);
 
   // 工程4: screen transition — the content area crossfades (old screen out,
   // then new screen in+up) instead of an instant swap. `tab` itself still

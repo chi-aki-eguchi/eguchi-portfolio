@@ -926,7 +926,8 @@ export function SeriesTab() {
   const photoLabel = (id: number | null) => {
     if (!id) return "";
     const p = photos.find((x) => x.id === id);
-    return p ? p.title || p.filename : `#${id}`;
+    // 表紙が削除済み写真を指したままの場合、裸のIDではなく言葉で伝える
+    return p ? p.title || p.filename : "元の写真は削除済み";
   };
 
   const addSeries = useMutation({

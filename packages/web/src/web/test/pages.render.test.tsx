@@ -469,6 +469,34 @@ describe("shared components", () => {
     }
   });
 
+  test("SeriesTab: dangling cover photo is explained in words, not a bare #id", async () => {
+    const prevSeries = canned["/api/admin/series"];
+    canned["/api/admin/series"] = {
+      series: [
+        {
+          id: 1,
+          slug: "still-life",
+          title: "Still life",
+          subtitle: "",
+          statement: "",
+          coverPhotoId: 9999, // canned photos に存在しない = 削除済み
+          sortOrder: 0,
+          isPublished: true,
+        },
+      ],
+    };
+    try {
+      const { SeriesTab } = await import("../pages/admin-tabs");
+      const { host, cleanup } = await mount(createElement(SeriesTab));
+      await waitForText(host, "枚");
+      expect(host.textContent).toContain("表紙: 元の写真は削除済み");
+      expect(host.textContent).not.toContain("#9999");
+      cleanup();
+    } finally {
+      canned["/api/admin/series"] = prevSeries;
+    }
+  });
+
   test("AdminPage: Library keeps filters collapsed and shows batch actions only after selection", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };

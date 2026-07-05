@@ -405,9 +405,17 @@
   opacity: 0.45;
 }
 
-.admin-atelier button[class*="bg-[#555]"]:not(.absolute),
-.admin-atelier button[class*="bg-[#888]"]:not(.absolute),
-.admin-atelier button[aria-pressed="true"]:not(.absolute) {
+/* Same specificity workaround as .admin-palette__option below — the reset
+   rule above ((0,5,1): 1 class + button + 4 :not()) otherwise outranks this
+   ((0,3,1)) and its !important always wins, so selected/primary buttons
+   (Series layout picker, Add/Save, aria-pressed toggles) never actually
+   showed their highlighted state. */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button[class*="bg-[#555]"]:not(.absolute),
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button[class*="bg-[#888]"]:not(.absolute),
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button[aria-pressed="true"]:not(.absolute) {
   background-color: var(--admin-ink) !important;
   border-color: var(--admin-ink) !important;
   color: var(--admin-paper) !important;

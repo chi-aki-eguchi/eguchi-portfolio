@@ -4486,3 +4486,80 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 
 - 未pushコミットのrebase・書き換え（pushはオーナーの手で）。
 - 本番DB・R2・Railway環境変数。データ側の宿題（"Still,life京都"シリーズ: 下書き・0枚・表紙欠損）はオーナー判断待ち。
+
+## Handoff 2026-07-06 — Codex: 管理画面スクロール点滅・テーマ反映漏れ修正
+
+### 目的
+
+管理画面、とくに Library など一覧画面のスクロール中に要素が高速点滅する問題と、
+先日の warm paper palette / Cormorant Garamond 見出し / 左サイドバー改装が
+一部に反映されていない問題を、Codex Driver として原因特定から修正・検証まで行う。
+
+### 変更内容
+
+1. Library 仮想グリッドの点滅対策
+   - CSS の実際の隙間と仮想化計算の隙間を 8px に統一。
+   - 幅計測から padding を差し引き、列数計算がスクロール中に揺れにくいよう修正。
+   - overscan を 5 行から 8 行に増やし、少し先まで描画して空白や点滅が出にくいようにした。
+   - スクロール中の計測更新を requestAnimationFrame にまとめ、細かすぎる再描画を抑制。
+   - backdrop-filter を使う `.admin-glass` に `translateZ(0)` / `backface-visibility` /
+     `will-change` を追加し、スクロール時のガラス風背景の再計算を安定化。
+2. 管理画面テーマ反映漏れ修正
+   - `--admin-font-title` をサイト側の英字フォント設定ではなく、管理画面固定の
+     Cormorant Garamond に変更。
+   - Library の「サイトで確認」プレビュー、Inspector「よく使う」、未公開バッジ、
+     SegmentedControl に残っていた旧黒・旧グレー指定を admin theme 変数へ移行。
+   - CSS の旧色救済マッピングを広げ、遅延読み込みタブに残った黒い panel も検出しやすくした。
+3. デバッグスイープ追加
+   - `scripts/smoke/admin-debug-sweep.spec.ts` を追加。
+   - 全 admin タブで console error、ローカル通信エラー、旧黒パネル、見出しフォント、
+     Cormorant 読み込みリンク、Library 仮想グリッド、サイトプレビュー背景を確認。
+   - 新規 smoke はログイン以外に Save/Delete/Add 等の書き込み操作を行わない。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/styles.css`
+- `packages/web/src/web/test/admin-virtual-grid.test.ts`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `scripts/smoke/admin-font.spec.ts`
+- `scripts/smoke/admin-debug-sweep.spec.ts`
+- `task.md`
+
+### 検証したこと
+
+- `bun test packages/web/src/web/test/admin-virtual-grid.test.ts` 成功。
+- `cd packages/web && bun test ./src/web/test/pages.render.test.tsx --timeout 10000 -t "virtualized keyboard navigation follows selection after resize"` 成功。
+- `bun run smoke -- admin-font admin-debug-sweep` 成功。
+- `bun run check` 成功（typecheck / lint / test 258 pass / build）。
+- `bun run smoke` 成功（23 passed / 19 skipped / 0 failed）。
+- ローカルブラウザで `/admin` にログインし、Library の仮想グリッド、Cormorant 適用、
+  旧黒背景ゼロ、サイトプレビュー背景が warm paper になっていることを確認。
+- §0 確認: `Content-Encoding` 手動設定なし、HTML no-store は既存維持、DB/settings/image/API
+  の本体ロジックは変更なし。
+
+### 検証していないこと
+
+- 本番 `akieguchi.com` での確認（push 前のため未実施）。
+- 実データを書き換える操作（保存・削除・アップロード・公開確定）は、本番DB直結のため
+  smoke では実行していない。
+
+### push したか
+
+していない。この Handoff を含めてローカル commit する。push はオーナーの手で行う。
+
+### 本番で確認したか
+
+していない。push 後に Railway 反映と本番表示を別途確認すること。
+
+### 次の担当者が触ってよい場所
+
+- admin UI の追加 polish。
+- `scripts/smoke/` の read-only な追加検査。
+- Library 仮想グリッドの実機スクロール確認と微調整。
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットのrebase・書き換え。
+- 本番DB・R2・Railway環境変数。
+- smoke で Save/Delete/Add など本番DBへ書き込む操作を増やすこと。

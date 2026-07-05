@@ -14,7 +14,7 @@ describe("admin library virtual grid", () => {
     expect(window.columns).toBe(6);
     expect(window.startIndex).toBe(0);
     expect(window.endIndex).toBeLessThan(445);
-    expect(window.renderedCount).toBe(60);
+    expect(window.renderedCount).toBe(78);
     expect(window.isVirtualized).toBe(true);
   });
 

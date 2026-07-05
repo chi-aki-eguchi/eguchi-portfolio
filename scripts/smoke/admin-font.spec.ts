@@ -3,7 +3,7 @@ import { loginAsAdmin } from "./helpers";
 
 // 回帰テスト(工程2 fix #5): 密なUI文字(サイドバーのタブ名等)が
 // サイト設定の装飾的な明朝体(--font-ja)にそのまま連動していたバグ。
-// オーナー報告「フォントがダサい」の原因。
+// 見出しは管理画面リニューアルの固定フォント(Cormorant)を使う。
 test.describe("admin — 密なUI文字が固定のサンセリフで表示される", () => {
   test("サイドバーのタブ名は --font-ja(サイトの明朝体等)ではなく固定のUIフォントを使う", async ({
     page,
@@ -27,7 +27,7 @@ test.describe("admin — 密なUI文字が固定のサンセリフで表示さ�
     expect(tabFont.toLowerCase()).toContain("sans");
   });
 
-  test("サイドバーのサイト名(ブランド見出し)は引き続き --admin-font-title を使う", async ({
+  test("サイドバーのサイト名(ブランド見出し)は固定のCormorantを使う", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -40,11 +40,17 @@ test.describe("admin — 密なUI文字が固定のサンセリフで表示さ�
     const titleFont = await page
       .locator(".admin-sidebar__title")
       .evaluate((el) => getComputedStyle(el).fontFamily);
-    const fontEn = await page.evaluate(() =>
-      getComputedStyle(document.documentElement).getPropertyValue("--font-en"),
-    );
+    const adminTitleFont = await page
+      .locator(".admin-atelier")
+      .evaluate((el) =>
+        getComputedStyle(el).getPropertyValue("--admin-font-title"),
+      );
 
-    const firstFontEn = fontEn.split(",")[0]?.trim().replace(/['"]/g, "");
-    expect(titleFont).toContain(firstFontEn);
+    const firstAdminTitleFont = adminTitleFont
+      .split(",")[0]
+      ?.trim()
+      .replace(/['"]/g, "");
+    expect(firstAdminTitleFont).toBe("Cormorant Garamond");
+    expect(titleFont).toContain(firstAdminTitleFont);
   });
 });

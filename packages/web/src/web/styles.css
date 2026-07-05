@@ -51,14 +51,13 @@
   --admin-accent-rgb: 163, 59, 46;
   --admin-danger: #a33b2e;
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
-  --admin-font-title: var(--font-en);
-  /* Large branded elements (h1/h2/h3, sidebar title, page headers) keep
-     --admin-font-title tied to the site's configured display font. Dense UI
-     chrome (buttons, tab labels, table text, form inputs) used to inherit
-     --font-ja directly — a decorative display serif meant for public-site
-     headings, applied at 11-15px it read as dated rather than elegant. A
-     fixed UI sans keeps that text legible regardless of what the owner picks
-     for the site's own typography. */
+  --admin-font-title: "Cormorant Garamond", "Georgia", serif;
+  /* Large branded elements (h1/h2/h3, sidebar title, page headers) keep the
+     admin renovation's fixed Cormorant voice. Dense UI chrome (buttons, tab
+     labels, table text, form inputs) used to inherit --font-ja directly — a
+     decorative display serif meant for public-site headings, applied at 11-15px
+     it read as dated rather than elegant. A fixed UI sans keeps that text
+     legible regardless of what the owner picks for the site's own typography. */
   --admin-font-ui:
     -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic",
     "Noto Sans JP", sans-serif;
@@ -142,6 +141,9 @@
   background: var(--glass-tint), var(--glass-bg);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 @supports not (
   (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
@@ -504,6 +506,9 @@
 }
 
 .admin-atelier [class*="bg-[#1e1e1e]"],
+.admin-atelier [class*="bg-[#111]"],
+.admin-atelier [class*="bg-[#1a1a1a]"],
+.admin-atelier [class*="bg-[#202020]"],
 .admin-atelier [class*="bg-[#252525]"],
 .admin-atelier [class*="bg-[#2a2a2a]"] {
   background-color: var(--admin-paper) !important;
@@ -511,13 +516,16 @@
 
 .admin-atelier [class*="bg-[#333]"],
 .admin-atelier [class*="bg-[#303030]"],
+.admin-atelier [class*="bg-[#2c2c2c]"],
 .admin-atelier [class*="bg-[#2f2f2f]"],
+.admin-atelier [class*="bg-[#383838]"],
 .admin-atelier [class*="bg-[#3a3a3a]"] {
   background-color: var(--admin-paper-soft) !important;
 }
 
 .admin-atelier [class*="border-[#333]"],
 .admin-atelier [class*="border-[#444]"],
+.admin-atelier [class*="border-[#999]"],
 .admin-atelier [class*="border-[#3a3a3a]"] {
   border-color: var(--admin-line) !important;
 }
@@ -533,6 +541,7 @@
 .admin-atelier [class*="text-[#777]"],
 .admin-atelier [class*="text-[#666]"],
 .admin-atelier [class*="text-[#555]"],
+.admin-atelier [class*="text-[#999]"],
 .admin-atelier [class*="text-[#444]"] {
   color: var(--admin-muted) !important;
 }
@@ -749,7 +758,10 @@
 }
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
   .admin-segmented__option[aria-pressed="true"] {
-  color: inherit !important;
+  color: var(--admin-paper) !important;
+}
+.admin-atelier .admin-segmented__indicator {
+  background: var(--admin-ink) !important;
 }
 
 /* Photo tile: hover lift + press, transform/box-shadow/opacity only. */

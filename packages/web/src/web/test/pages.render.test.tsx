@@ -817,7 +817,7 @@ describe("shared components", () => {
       const initialThumbs = Array.from(host.querySelectorAll("img"))
         .map((img) => img.getAttribute("src") ?? "")
         .filter((src) => src.includes("/api/images/thumbs/"));
-      expect(initialThumbs.length).toBeLessThanOrEqual(60);
+      expect(initialThumbs.length).toBeLessThanOrEqual(78);
       expect(initialThumbs.length).toBeGreaterThan(0);
 
       for (let i = 0; i < 74; i += 1) {

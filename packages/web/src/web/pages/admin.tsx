@@ -1380,10 +1380,10 @@ const ORIENTATION_FILTER_LABELS: Record<string, string> = {
   landscape: "横写真",
   square: "正方形",
 };
-const LIBRARY_GRID_GAP = 3;
-// Keep roughly one extra screen of rows mounted so thumbnail requests start
-// before fast scrolling reveals the next window, without returning to all-445 rendering.
-const LIBRARY_GRID_OVERSCAN_ROWS = 5;
+const LIBRARY_GRID_GAP = 8;
+// Keep more than one extra screen of rows mounted so fast trackpad scrolling
+// does not repeatedly tear down the next thumbnail rows at the viewport edge.
+const LIBRARY_GRID_OVERSCAN_ROWS = 8;
 
 type VirtualGridWindow = {
   startIndex: number;
@@ -1465,6 +1465,16 @@ export function computeVirtualGridWindow({
     renderedCount: Math.max(0, endIndex - startIndex),
     isVirtualized: endIndex - startIndex < itemCount,
   };
+}
+
+function measuredContentWidth(el: HTMLElement | null): number {
+  if (!el) return 0;
+  const width = el.clientWidth;
+  if (typeof window === "undefined") return width;
+  const style = window.getComputedStyle(el);
+  const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
+  const paddingRight = Number.parseFloat(style.paddingRight) || 0;
+  return Math.max(0, width - paddingLeft - paddingRight);
 }
 
 function GalleryTab({
@@ -1616,6 +1626,7 @@ function GalleryTab({
   });
   const libraryScrollRestoredRef = useRef(false);
   const libraryScrollSaveRafRef = useRef<number | null>(null);
+  const libraryGridMeasureRafRef = useRef<number | null>(null);
   const libraryScrollPendingTopRef = useRef(0);
   const [bulkEditMode, setBulkEditMode] = usePersistentState(
     "admin:bulkEditMode",
@@ -2294,7 +2305,7 @@ function GalleryTab({
     const next = {
       scrollTop: scrollEl?.scrollTop ?? 0,
       viewportHeight: scrollEl?.clientHeight ?? 0,
-      gridWidth: gridEl?.clientWidth ?? 0,
+      gridWidth: measuredContentWidth(gridEl),
     };
     setLibraryGridMetrics((prev) =>
       prev.scrollTop === next.scrollTop &&
@@ -2304,21 +2315,35 @@ function GalleryTab({
         : next,
     );
   }, []);
+  const scheduleLibraryGridMeasure = useCallback(() => {
+    if (libraryGridMeasureRafRef.current !== null) return;
+    libraryGridMeasureRafRef.current = requestAnimationFrame(() => {
+      libraryGridMeasureRafRef.current = null;
+      measureLibraryGrid();
+    });
+  }, [measureLibraryGrid]);
   useLayoutEffect(() => {
     measureLibraryGrid();
-    const onResize = () => measureLibraryGrid();
+    const onResize = () => scheduleLibraryGridMeasure();
     window.addEventListener("resize", onResize);
     const resizeObserver =
       typeof ResizeObserver === "undefined"
         ? null
-        : new ResizeObserver(() => measureLibraryGrid());
+        : new ResizeObserver(() => scheduleLibraryGridMeasure());
     if (gridRef.current) resizeObserver?.observe(gridRef.current);
     if (scrollRef.current) resizeObserver?.observe(scrollRef.current);
     return () => {
       window.removeEventListener("resize", onResize);
       resizeObserver?.disconnect();
     };
-  }, [measureLibraryGrid]);
+  }, [measureLibraryGrid, scheduleLibraryGridMeasure]);
+  useEffect(
+    () => () => {
+      if (libraryGridMeasureRafRef.current !== null)
+        cancelAnimationFrame(libraryGridMeasureRafRef.current);
+    },
+    [],
+  );
   useEffect(() => {
     measureLibraryGrid();
   }, [
@@ -3085,7 +3110,7 @@ function GalleryTab({
           return;
         }
         sc.scrollTop += dragScrollVel.current;
-        measureLibraryGrid();
+        scheduleLibraryGridMeasure();
         dragScrollRaf.current = requestAnimationFrame(step);
       };
       dragScrollRaf.current = requestAnimationFrame(step);
@@ -4134,7 +4159,7 @@ function GalleryTab({
           className={`flex-1 overflow-y-auto p-3 relative ${dragOver ? "ring-2 ring-inset ring-[#888]/40" : ""}`}
           onScroll={(e) => {
             rememberLibraryScroll(e.currentTarget);
-            measureLibraryGrid();
+            scheduleLibraryGridMeasure();
           }}
           onDragOver={(e) => {
             e.preventDefault();
@@ -4193,8 +4218,9 @@ function GalleryTab({
                   </button>
                 </div>
                 <div
-                  className="grid gap-[3px]"
+                  className="grid"
                   style={{
+                    gap: LIBRARY_GRID_GAP,
                     gridTemplateColumns: `repeat(auto-fill, minmax(${thumbSize}px, 1fr))`,
                   }}
                 >
@@ -4336,8 +4362,9 @@ function GalleryTab({
                   <div style={{ height: virtualGrid.topPadding }} />
                 )}
                 <div
-                  className="grid gap-[3px]"
+                  className="grid"
                   style={{
+                    gap: LIBRARY_GRID_GAP,
                     gridTemplateColumns: `repeat(auto-fill, minmax(${thumbSize}px, 1fr))`,
                   }}
                 >
@@ -5213,7 +5240,7 @@ function GalleryTab({
             );
 
             return (
-              <div className="mx-3 mb-3 rounded-sm border border-[#3a3a3a] bg-[#202020] p-2.5">
+              <div className="mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <span className="text-[10px] text-[#777] uppercase tracking-wider">
                     よく使う
@@ -5238,7 +5265,7 @@ function GalleryTab({
                     className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[10px] ${
                       editForm.isPublished
                         ? "border-emerald-700/40 bg-emerald-900/20 text-emerald-300/85"
-                        : "border-[#5a3a3a] bg-[#3a2a2a] text-[#d99]"
+                        : "border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.1)] text-[color:var(--admin-danger)]"
                     }`}
                   >
                     {editForm.isPublished ? (
@@ -5775,8 +5802,11 @@ function GalleryTab({
       {/* サイトプレビュー — 並べ替え・S/M/L・回転の結果を公開サイトの誌面で
           その場で確認する。モバイル: 全画面オーバーレイ / デスクトップ: 右パネル */}
       {showSitePreview && !showTrash && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#111] sm:static sm:z-auto sm:w-[440px] sm:flex-shrink-0 sm:border-l sm:border-[#333] min-w-0 overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-3 h-10 border-b border-[#333] bg-[#1a1a1a] flex-shrink-0">
+        <div
+          data-admin-preview-shell
+          className="fixed inset-0 z-50 flex flex-col bg-[color:var(--admin-paper)] sm:static sm:z-auto sm:w-[440px] sm:flex-shrink-0 sm:border-l sm:border-[color:var(--admin-line)] min-w-0 overflow-hidden"
+        >
+          <div className="flex items-center justify-between gap-2 px-3 h-10 border-b border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] flex-shrink-0">
             <div className="flex items-center gap-1">
               {(
                 [
@@ -5845,13 +5875,17 @@ function GalleryTab({
           </div>
           <div
             ref={previewStageRef}
-            className="flex-1 overflow-hidden bg-[#111]"
+            data-admin-preview-stage
+            className="flex-1 overflow-hidden bg-[color:var(--admin-paper)]"
           >
             {sitePreviewDevice === "mobile" ? (
               <div className="h-full flex items-start justify-center overflow-auto p-3">
                 <div
                   className="bg-white overflow-hidden shadow-lg w-[375px] max-w-full h-full max-h-[720px]"
-                  style={{ border: "8px solid #333", borderRadius: "20px" }}
+                  style={{
+                    border: "8px solid var(--admin-line-strong)",
+                    borderRadius: "20px",
+                  }}
                 >
                   <iframe
                     ref={sitePreviewRef}
@@ -6782,11 +6816,11 @@ function SegmentedControl<T extends string>({
   }, [value, options]);
 
   return (
-    <div className="relative flex rounded-[var(--radius-s)] bg-[#2c2c2c] p-0.5">
+    <div className="relative flex rounded-[var(--radius-s)] bg-[color:var(--admin-paper-deep)] p-0.5">
       {pill && (
         <div
           aria-hidden="true"
-          className="absolute top-0.5 bottom-0.5 rounded-[var(--radius-s)] bg-[#888] transition-[transform,width] duration-[var(--dur-base)] ease-[var(--ease-inout)]"
+          className="admin-segmented__indicator absolute top-0.5 bottom-0.5 rounded-[var(--radius-s)] transition-[transform,width] duration-[var(--dur-base)] ease-[var(--ease-inout)]"
           style={{
             transform: `translateX(${pill.left}px)`,
             width: pill.width,

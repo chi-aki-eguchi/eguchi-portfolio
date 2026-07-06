@@ -45,14 +45,15 @@ sources:
 - `migrate.ts`'s `runStartupMigrations()`: on the **Turso path it is NOT a
   true no-op** — it awaits `ensureTursoColumns()`, which `SELECT`s each of 9
   known-added columns (`focal_length, f_number, exposure_time, iso,
-  thumb_key, medium_key, rotation_deg, focal_x, focal_y`) and `ALTER TABLE
-  ADD COLUMN`s any that are missing, on every boot. On the **Postgres path**
+thumb_key, medium_key, rotation_deg, focal_x, focal_y`) and `ALTER TABLE
+ADD COLUMN`s any that are missing, on every boot. On the **Postgres path**
   it runs real drizzle migrations with up to 7 retries / increasing backoff,
   and rethrows (→ process exit) on final failure so Railway keeps the prior
-  deploy. (packages/web/src/api/database/migrate.ts:1-162, 67-99)
-  **DISTRIBUTION.md's "Production (turso) path: returns immediately —
-  no-op" claim, and migrate.ts's own top-of-file comment, are both stale
-  relative to this code** — see open-issues.md.
+  deploy. (packages/web/src/api/database/migrate.ts:1-163, 68-95)
+  **Resolved 2026-07-07**: DISTRIBUTION.md (§Automatic migrations),
+  README.md, migrate.ts's top-of-file comment, and server.ts's call-site
+  comment all now describe `ensureTursoColumns()` accurately — see
+  open-issues.md item 2.
 - Dual-schema sync is a real, enforced rule
   (`.claude/rules/db-migrations.md`): both `schema.ts` (sqlite-core,
   `integer('id').primaryKey({autoIncrement:true})`, `integer({mode:'boolean'})`,
@@ -129,8 +130,9 @@ sources:
   reflect `schema.ts` (mirroring how `drizzle-postgres/0000_worried_sentry.sql`
   was generated fresh), or is db:push considered the real mechanism and the
   mismatch accepted?
-- DISTRIBUTION.md's and `migrate.ts`'s own comment's "Turso path is a no-op"
-  claim needs correcting — see open-issues.md.
+- ~~DISTRIBUTION.md's and `migrate.ts`'s own comment's "Turso path is a
+  no-op" claim needs correcting~~ — resolved 2026-07-07 (all four places
+  corrected; see open-issues.md item 2).
 
 ## Sources
 

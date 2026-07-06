@@ -25,10 +25,13 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
    was corrected to the canonical 4-place list on 2026-07-06. All canonical
    docs now agree. See invariants.md, admin-settings.md.
-2. **DISTRIBUTION.md / README.md / migrate.ts's own comment all claim the
-   Turso production path is a startup-migration no-op.** It is not:
+2. **Resolved 2026-07-07**: the "Turso startup migration is a no-op" claim.
+   README.md and DISTRIBUTION.md (§Automatic migrations) had already been
+   corrected earlier, and migrate.ts's top-of-file comment was also already
+   accurate when re-verified. The last stale copy — `server.ts`'s call-site
+   comment「本番(turso)は no-op」— was corrected on 2026-07-07 to say
    `ensureTursoColumns()` runs real `SELECT`/`ALTER TABLE ADD COLUMN` work
-   on every boot. See database.md. Three places need the same correction.
+   on every boot. See database.md.
 3. **Resolved 2026-07-06 by buyer-only setup-link wording**:
    `README.md` no longer publishes the Railway setup link directly. It now
    points to a buyer-only setup handoff, and public docs avoid exposing the

@@ -29,10 +29,10 @@ refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
    Turso production path is a startup-migration no-op.** It is not:
    `ensureTursoColumns()` runs real `SELECT`/`ALTER TABLE ADD COLUMN` work
    on every boot. See database.md. Three places need the same correction.
-3. **`README.md` is internally inconsistent**: "Status" section says
-   "Turnkey template: not yet," while its own "Deploy on Railway" section
-   documents an already-published deploy button
-   (`https://railway.com/deploy/cool-wide`). See distribution.md.
+3. **Resolved 2026-07-06 by buyer-only setup-link wording**:
+   `README.md` no longer publishes the Railway setup link directly. It now
+   points to a buyer-only setup handoff, and public docs avoid exposing the
+   actual link.
 4. **Resolved 2026-07-02 by owner-approved retirement**:
    `NIGHT-RUN-LOG.md`, `claude-code-night-run.md`, and
    `.claude/skills/night-run/` were removed. The former BUILD_ID

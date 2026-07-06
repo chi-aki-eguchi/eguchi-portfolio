@@ -62,18 +62,17 @@ caution and check README.md/task.md for what's actually shipped.
   (docs/archive/RUNABLE_AI.md:1-47; git log -1 confirms 2026-06-16 only)
 - **DISTRIBUTION.md is stale relative to a substantial, unmentioned
   productization push**: a live `/service` sales page with two real Stripe
-  Payment Links, a published Railway "Deploy" button
-  (`https://railway.com/deploy/cool-wide`), and supporting docs
+  Payment Links, a buyer-only Railway setup link, and supporting docs
   (`docs/sales-page.md`, `docs/post-deploy-guide.md`,
   `docs/purchase-thankyou.md`, `docs/order-handling.md`, etc.) mostly
   last touched 2026-06-26/27, with task.md handoffs through 2026-06-30 —
   none of this is reflected in DISTRIBUTION.md, whose "v1 Later: Turnkey
   Template" section still frames turnkey deploy as future work.
-  (git log timestamps; README.md "Deploy on Railway" section)
+  (git log timestamps; README.md "Buyer-Only Railway Setup" section)
 - `README.md` is internally inconsistent on this exact point: its "Status"
-  section says "Turnkey template: not yet" while its own "Deploy on Railway
-  (distribution template)" section documents the already-published deploy
-  button. (README.md lines 13-16 vs 20-30)
+  section used to say the template was not turnkey while its setup section
+  documented the already-prepared buyer-only Railway setup path.
+  (historical README.md lines 13-30)
 - `docs/archive/site-analysis-2026-06.md` **[akieguchi-specific]** is a production SEO/
   marketing gap analysis (social proof, per-page meta descriptions, alt
   text, booking CTA, WebP, series discoverability) — it does not itself
@@ -107,9 +106,8 @@ caution and check README.md/task.md for what's actually shipped.
   never being cross-referenced by any distribution doc — inferred from
   absence of references, not a fact confirmed by any doc stating it's
   deprecated.
-- The Railway deploy button (`https://railway.com/deploy/cool-wide`) is
-  assumed live/functional because the repo's own docs describe and link to
-  it as published; this was not tested over the network.
+- The buyer-only Railway setup link is assumed live/functional because the
+  repo's own docs describe it as prepared; this was not tested over the network.
 
 ## Open Questions
 

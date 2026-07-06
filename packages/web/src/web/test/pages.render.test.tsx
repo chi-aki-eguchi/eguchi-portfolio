@@ -129,6 +129,7 @@ const pages: [string, () => Promise<{ default: React.ComponentType }>][] = [
   ["profile", () => import("../pages/profile")],
   ["contact", () => import("../pages/contact")],
   ["service", () => import("../pages/service")],
+  ["service-start", () => import("../pages/service-start")],
   ["admin-login", () => import("../pages/admin-login")],
 ];
 
@@ -203,7 +204,8 @@ describe("public pages render (empty state: 写真0枚・設定空)", () => {
     const prevPhotos = canned["/api/photos"];
     canned["/api/photos"] = { photos: [] };
     try {
-      for (const [, load] of pages) {
+      for (const [name, load] of pages) {
+        if (name.startsWith("service")) continue;
         const Page = (await load()).default;
         const { host, cleanup } = await mount(createElement(Page));
         expect(host.textContent).not.toContain("江口秋");
@@ -217,6 +219,31 @@ describe("public pages render (empty state: 写真0枚・設定空)", () => {
 });
 
 describe("shared components", () => {
+  test("Service pages stay hidden away from akieguchi.com", async () => {
+    dom.reconfigure({ url: "https://example.com/" });
+    try {
+      for (const load of [
+        () => import("../pages/service"),
+        () => import("../pages/service-start"),
+      ]) {
+        const Page = (await load()).default;
+        const { host, cleanup } = await mount(createElement(Page));
+        expect(host.innerHTML).toBe("");
+        cleanup();
+      }
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  test("ServiceStartPage does not expose the Railway Deploy link publicly", async () => {
+    const ServiceStartPage = (await import("../pages/service-start")).default;
+    const { host, cleanup } = await mount(createElement(ServiceStartPage));
+    expect(host.textContent).toContain("Aki Eguchi Portfolio Kit");
+    expect(host.innerHTML).not.toContain("railway.com/deploy");
+    cleanup();
+  });
+
   test("SeriesGrid renders its empty state", async () => {
     const { SeriesGrid } = await import("../components/SeriesGrid");
     const { host, cleanup } = await mount(createElement(SeriesGrid));

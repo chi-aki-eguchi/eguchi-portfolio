@@ -10,10 +10,11 @@
 
 ## 配布モデル
 
-### v0: Railway Template + Setup Guide (shipped)
+### v0: Railway Template + Setup Guide (buyer-only)
 
-配布の最初の形。公開済みの Railway Deploy button から、その人専用の
-Railway project を作る。配布版は `DATABASE_PROVIDER=postgres` で
+配布の最初の形。購入後にだけ渡す Railway setup link から、その人専用の
+Railway project を作る。公開ページや README には setup link を直接載せない。
+配布版は `DATABASE_PROVIDER=postgres` で
 PostgreSQL + Railway Storage に切り替わり、`akieguchi.com` 本番だけが
 従来どおり Turso + Cloudflare R2 を使う。
 
@@ -29,8 +30,8 @@ PostgreSQL + Railway Storage に切り替わり、`akieguchi.com` 本番だけ�
 
 用語メモ:
 
-- Railway template deploy: Deploy button から、その写真家用の Railway
-  project を作ること。
+- Railway template deploy: 購入後に渡す setup link から、その写真家用の
+  Railway project を作ること。
 - Railway: サイトをインターネットで動かす場所。
 - PostgreSQL: 配布版でサイト名、プロフィール、写真一覧などを保存する場所。
 - Railway Storage: 配布版で写真ファイルそのものを保存する場所。
@@ -197,8 +198,8 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 - Add deployment guide:
   - Done: `docs/setup-guide.md` covers Turso database, R2 bucket/access keys,
     Railway service, env vars, `bun run db:push`, custom domain, and handoff.
-  - Done: README publishes the Railway Deploy button and
-    `docs/post-deploy-guide.md` covers the non-engineer one-click flow.
+  - Done: README explains the buyer-only Railway setup flow without exposing the
+    setup link, and `docs/post-deploy-guide.md` covers the non-engineer flow.
   - Done: `docs/photographer-guide.md` is a short no-code guide for the
     photographer receiving the site.
 - Add setup checklist in `/admin`:
@@ -334,7 +335,7 @@ half-built business platform.
 The distribution version runs entirely on Railway (PostgreSQL + Storage bucket)
 and is selected at runtime with `DATABASE_PROVIDER=postgres`. The original
 Turso/libSQL + R2 stack (production `akieguchi.com`, `DATABASE_PROVIDER` unset)
-is unchanged. See README → "Deploy on Railway (distribution template)".
+is unchanged. See README → "Buyer-Only Railway Setup".
 
 ### Automatic migrations on startup
 

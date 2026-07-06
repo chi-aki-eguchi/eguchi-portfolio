@@ -15,9 +15,9 @@ runbook です。買う人向けの文面は [purchase-thankyou.md](./purchase-t
 
 1. 入金（または申し込み）を確認。
 2. [purchase-thankyou.md](./purchase-thankyou.md) の **A** の文面を送る
-   （Deploy リンク + [post-deploy-guide.md](./post-deploy-guide.md) + 連絡先）。
+   （購入後スタートページ + 購入者向けDeployリンク + 連絡先）。
 3. 質問が来たら、つまずきの多くは「公開URLを作る（手順④）」か「パスワード」。
-   [faq.md](./faq.md) / [post-deploy-guide.md](./post-deploy-guide.md) を案内。
+   [faq.md](./faq.md) / <https://akieguchi.com/service/start> を案内。
 4. 状態を「完了」に。
 
 ## B. おまかせ設定（¥30,000）
@@ -48,5 +48,6 @@ runbook です。買う人向けの文面は [purchase-thankyou.md](./purchase-t
 - まだ設定していなければ、Stripe の「決済後ページ / 確認メール」に
   [purchase-thankyou.md](./purchase-thankyou.md) の A・B を入れると、入金後の一次返信が
   自動になる（任意・おすすめ）。
+- 公開ページには Deploy リンクを置かない。Deploy リンクは決済後ページ・確認メール・個別連絡だけに載せる。
 - Stripe 決済が来たら、上の A / B と同じ手順で進める（入金確認は Stripe ダッシュボードで）。
 - おまかせの構築・受け渡しは引き続き手作業でOK（件数が増えたら見直し）。

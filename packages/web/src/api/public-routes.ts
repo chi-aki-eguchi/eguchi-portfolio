@@ -6,6 +6,7 @@ const SPA_STATIC_PATHS = new Set([
   "/profile",
   "/contact",
   "/service",
+  "/service/start",
   "/admin",
   "/admin/login",
 ]);

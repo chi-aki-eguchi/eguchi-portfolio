@@ -11,13 +11,13 @@ portfolio template for other photographers. The distribution roadmap lives in
 ## Status
 
 - Production app: yes, deployed through Railway from `git push`.
-- Railway template: published through the Deploy on Railway button below.
+- Railway template: buyer-only link, shared after purchase or by direct handoff.
 - Recommended distribution model for now: one Railway project per photographer
   (web service + PostgreSQL + Storage bucket).
 - SaaS/multi-tenant mode: intentionally out of scope until the template flow is
   stable.
 
-## Deploy on Railway (distribution template)
+## Buyer-Only Railway Setup
 
 The distribution version runs entirely on Railway — PostgreSQL and a Storage
 bucket replace Turso and R2, so a photographer only needs one Railway account.
@@ -25,18 +25,22 @@ The application code is the same; the database/storage backend is selected at
 runtime with `DATABASE_PROVIDER=postgres` (unset keeps the original
 Turso/libSQL + R2 setup that powers `akieguchi.com`).
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/cool-wide)
+A non-engineer photographer can run this whole flow themselves, but the actual
+Railway setup link is shared only after purchase. The public product page should
+send people to the checkout first; the buyer receives the setup link in the
+Stripe confirmation page, confirmation email, or a direct message from Aki.
 
-A non-engineer photographer can run this whole flow themselves — from clicking the
-button to uploading the first photo. The step-by-step, jargon-free walkthrough is
-[docs/post-deploy-guide.md](./docs/post-deploy-guide.md).
+After purchase, the step-by-step, jargon-free walkthrough is
+[docs/post-deploy-guide.md](./docs/post-deploy-guide.md), starting from the
+buyer-only Railway setup link.
 
-> **Maintainer note:** the published template lives at
-> <https://railway.com/deploy/cool-wide>. There is **no `railway.json` on `main`**
-> — it is omitted on purpose so it cannot override production `akieguchi.com`'s
-> Railway deploy settings. Because of that, the template's web service must set
-> these explicitly in its Railway service config (the repo root `start` script is
-> pm2 and is **not** the Railway start command):
+> **Maintainer note:** keep the Railway setup URL out of public pages and this
+> public README. Share it only in buyer-only confirmation copy or direct
+> messages. There is **no `railway.json` on `main`** — it is omitted on purpose
+> so it cannot override production `akieguchi.com`'s Railway deploy settings.
+> Because of that, the template's web service must set these explicitly in its
+> Railway service config (the repo root `start` script is pm2 and is **not** the
+> Railway start command):
 >
 > - **Start Command:** `bun packages/web/src/server.ts`
 > - **Healthcheck Path:** `/api/health`

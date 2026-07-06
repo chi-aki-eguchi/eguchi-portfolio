@@ -17,6 +17,7 @@ describe("public SPA route status", () => {
       "/profile",
       "/contact",
       "/service",
+      "/service/start",
       "/admin",
       "/admin/login",
     ]) {

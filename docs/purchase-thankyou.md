@@ -4,10 +4,9 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
 カスタムメッセージ）」または「確認メール」に載せる文面です。コースごとに2種類。
 
 > リンクの差し替え:
-> - Deploy リンク（自分で立てる）: <https://railway.com/deploy/cool-wide>
-> - 手順書（自分で立てる）: 公開リポジトリの
->   <https://github.com/chi-aki-eguchi/eguchi-portfolio/blob/main/docs/post-deploy-guide.md>
->   （見やすい配布用URLができたら差し替えてください）
+> - Deploy リンク（自分で立てる）: `{{BUYER_ONLY_DEPLOY_LINK}}`
+> - 購入後スタートページ: <https://akieguchi.com/service/start>
+> - Deploy リンクは購入者向けの案内内だけに載せる。公開ページには置かない。
 > - 連絡先: Instagram @chi._.aki._ ／ X @chi_aki_jpg ／ akieguchi33@gmail.com
 
 ---
@@ -21,15 +20,17 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
 
 1. まず、管理画面に使うパスワードを1つ決めておきます（8文字以上・メモを）。
 
-2. この「Deploy」リンクから公開します:
-   https://railway.com/deploy/cool-wide
+2. 購入後スタートページを開きます:
+   https://akieguchi.com/service/start
 
-3. 専門用語なしの手順書（画面のどこを押すかまで書いてあります）:
-   https://github.com/chi-aki-eguchi/eguchi-portfolio/blob/main/docs/post-deploy-guide.md
-   → パスワードを入れる → Deploy → 公開URLを作る（Generate Domain） →
-      /admin/login でログイン → 管理画面の「はじめに」から写真を入れる
+3. このメールにある「Deploy」リンクから公開します:
+   {{BUYER_ONLY_DEPLOY_LINK}}
 
-4. 困ったら、いつでも連絡してください。一緒に確認します。
+4. 流れはこの順番です:
+   パスワードを入れる → Deploy → 公開URLを作る（Generate Domain） →
+   /admin/login でログイン → 管理画面の「はじめに」から写真を入れる
+
+5. 困ったら、いつでも連絡してください。一緒に確認します。
    Instagram @chi._.aki._ ／ X @chi_aki_jpg ／ akieguchi33@gmail.com
 
 ※ サイトの公開には Railway という場所を使います。無料の試用枠のあと、
@@ -61,6 +62,8 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
    Instagram @chi._.aki._ ／ X @chi_aki_jpg ／ akieguchi33@gmail.com
 
 サイトが整ったら、すぐに写真を入れ始められるようにしてお渡しします。
+購入後スタートページはこちらです:
+https://akieguchi.com/service/start
 ```
 
 ---
@@ -69,7 +72,9 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
 
 - Stripe では Payment Link ごとに確認ページ／メールの文面を設定できます。コースを
   2つ（自分で／おまかせ）に分けているので、それぞれに上の A・B を入れてください。
-- 「自分で立てる」の手順書URLは、いまは GitHub の生ページです。読みやすい配布用ページ
-  （例: サイト内 `/service` からのリンクや専用ページ）を用意したら差し替えると親切です。
+- `{{BUYER_ONLY_DEPLOY_LINK}}` は Stripe の購入後画面・購入後メール・個別連絡でだけ
+  実際の link に差し替えてください。公開ページや README には入れない。
+- 「自分で立てる」の公開ページには Deploy リンクを直接置かない。Deploy リンクは決済後の
+  メッセージまたは個別連絡だけに載せる。
 - 文面は固定でも動きますが、購入者の名前を差し込めるなら冒頭を「◯◯さん、ありがとう
   ございます」にするとより丁寧です。

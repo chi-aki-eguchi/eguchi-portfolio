@@ -35,16 +35,15 @@ GitHub / Railway / Turso / R2 や環境変数は、セットアップ担当者�
 
 ### だれが立てるか（2通り）
 
-- **写真家本人にまかせる（おすすめ）**: 公開テンプレートのリンクと
-  [post-deploy-guide.md](./post-deploy-guide.md) を渡すだけ。本人が Deploy ボタンから
-  自分で立てられます。専門用語なしの手順書です。
+- **写真家本人にまかせる（おすすめ）**: 購入者向けの setup link と
+  [post-deploy-guide.md](./post-deploy-guide.md) を渡すだけ。本人が自分で
+  立てられます。専門用語なしの手順書です。
 - **担当者が代わりに立てる（コンシェルジュ）**: 下の手順で担当者がデプロイし、
   最後に URL と管理パスワードだけ本人に渡します。
 
 ### 手順（担当者が立てる場合）
 
-1. README の「Deploy on Railway (distribution template)」の Deploy ボタン
-   （公開テンプレート `cool-wide`）を開く。
+1. 購入者向けに管理している Railway setup link を開く。
 2. デプロイ画面の変数で **`ADMIN_PASSWORD`** に管理パスワードを入れる
    （本人に決めてもらう、または担当者が決めて後で伝える）。ほかの変数は
    テンプレート既定のままでよい。

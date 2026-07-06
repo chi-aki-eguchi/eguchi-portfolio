@@ -14,6 +14,7 @@ const SeriesDetailPage = lazy(() => import("./pages/series-detail"));
 const ProfilePage = lazy(() => import("./pages/profile"));
 const ContactPage = lazy(() => import("./pages/contact"));
 const ServicePage = lazy(() => import("./pages/service"));
+const ServiceStartPage = lazy(() => import("./pages/service-start"));
 const AdminLoginPage = lazy(() => import("./pages/admin-login"));
 const AdminPage = lazy(() => import("./pages/admin"));
 
@@ -100,6 +101,17 @@ function App() {
               <TitledRoute title="Contact">
                 <Suspense fallback={<PageFallback />}>
                   <ContactPage />
+                </Suspense>
+              </TitledRoute>
+            </PageTransition>
+          </Layout>
+        </Route>
+        <Route path="/service/start">
+          <Layout>
+            <PageTransition>
+              <TitledRoute title="Portfolio Kit Start">
+                <Suspense fallback={<PageFallback />}>
+                  <ServiceStartPage />
                 </Suspense>
               </TitledRoute>
             </PageTransition>

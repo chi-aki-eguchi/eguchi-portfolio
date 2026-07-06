@@ -153,7 +153,7 @@ export async function runStartupMigrations(): Promise<void> {
         "[migrate] Check: is DATABASE_PUBLIC_URL or DATABASE_URL reachable and is the PostgreSQL plugin attached?",
       );
       console.error(
-        '[migrate] See README → "Deploy on Railway (distribution template)".',
+        '[migrate] See README → "Buyer-Only Railway Setup".',
       );
       for (const line of migrationErrorLines(err))
         console.error(`[migrate] ${line}`);

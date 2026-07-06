@@ -4564,6 +4564,87 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - 本番DB・R2・Railway環境変数。
 - smoke で Save/Delete/Add など本番DBへ書き込む操作を増やすこと。
 
+## Handoff 2026-07-06 — Codex: Aki Eguchi Portfolio Kit の購入後入口
+
+### 目的
+
+オーナーから「テンプレートをコードが分からない人にも渡しやすい商品としてパッケージしたい」
+「買ってない人も使える状態にしないよう注意」と依頼あり。
+公開ページは商品説明と購入後の道案内にし、実際にサイトを立てる Deploy link は購入後メール・個別連絡だけに残す方針で実装した。
+
+### 変更内容
+
+1. `/service/start` を追加
+   - 商品名は `Aki Eguchi Portfolio Kit`。
+   - 自分で立てる人 / おまかせ設定の人の2ルートを、非エンジニア向けの言葉で整理。
+   - 公開ページには Railway Deploy link を載せない。
+   - 購入前の人には `/service` の料金ページへ戻る案内を表示。
+2. `/service` 系の公開範囲を整理
+   - `akieguchi.com` とローカル確認環境だけで表示する共通判定を `service-visibility.ts` に分離。
+   - `/service/start` を OGP・公開ルート・sitemap に追加。ただし akieguchi.com 以外では検索に出ない扱い。
+3. 購入後案内ドキュメントを更新
+   - `docs/purchase-thankyou.md` と `docs/order-handling.md` に、購入後入口ページと購入者限定 Deploy link の分け方を明記。
+   - `docs/sales-page.md` を `Aki Eguchi Portfolio Kit` 方向の説明に寄せた。
+4. 公開文書から実 Deploy URL を撤去
+   - `README.md` は buyer-only setup link の説明に変更し、公開 Deploy button を削除。
+   - `docs/purchase-thankyou.md` の実 URL は `{{BUYER_ONLY_DEPLOY_LINK}}` に差し替え。
+   - `DISTRIBUTION.md` / `docs/setup-guide.md` / wiki の古い公開ボタン前提も購入者限定導線へ修正。
+5. 再発防止テストを追加
+   - `/service/start` が表示できること。
+   - akieguchi.com 以外では隠れること。
+   - 公開ページと OGP に `railway.com/deploy` が出ないこと。
+
+### 触ったファイル
+
+- `README.md`
+- `DISTRIBUTION.md`
+- `docs/order-handling.md`
+- `docs/purchase-thankyou.md`
+- `docs/sales-page.md`
+- `docs/setup-guide.md`
+- `knowledge/wiki/pages/distribution.md`
+- `knowledge/wiki/pages/open-issues.md`
+- `packages/web/src/api/database/migrate.ts`
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/api/public-routes.ts`
+- `packages/web/src/api/public-routes.test.ts`
+- `packages/web/src/server.ts`
+- `packages/web/src/web/app.tsx`
+- `packages/web/src/web/lib/service-visibility.ts`
+- `packages/web/src/web/pages/service.tsx`
+- `packages/web/src/web/pages/service-start.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
+### 検証したこと
+
+- `bun test packages/web/src/api/public-routes.test.ts packages/web/src/api/ogp.test.ts packages/web/src/web/test/pages.render.test.tsx` 成功。
+- ローカルブラウザで desktop / mobile の `/service/start` を確認。文字かぶり・横はみ出し・console error なし。
+- ブラウザ検証で `railway.com/deploy` のリンクが0件であることを確認。
+- `rg` で通常ファイルから実 Deploy URL が消えていることを確認。残っているのは `task.md` の過去ログのみ。
+- `bun run check` 成功（typecheck / lint / test 263 pass / build）。
+
+### 検証していないこと
+
+- 本番 `akieguchi.com/service/start` での確認（push 前のため未実施）。
+- Stripe の実決済と購入後メール送信（本番決済を発生させないため未実施）。
+
+### push したか
+
+していない。この Handoff を含めてローカル commit する。push はオーナー判断で行う。
+
+### 次の担当者が触ってよい場所
+
+- 購入後メール本文の磨き込み。
+- Stripe の購入完了ページと `/service/start` のつなぎ込み。
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットのrebase・書き換え。
+- Railway Deploy link を公開ページへ直接掲載すること。
+- 本番DB・R2・Railway環境変数。
+
 ## Handoff 2026-07-06 — Codex: 管理画面フォント・色の統一追加修正
 
 ### 目的

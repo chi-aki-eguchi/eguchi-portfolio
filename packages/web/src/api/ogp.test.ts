@@ -535,6 +535,17 @@ describe("injectOgp /service route", () => {
     expect(out).toContain('name="robots" content="index, follow"');
   });
 
+  test("/service/start is indexable on akieguchi.com but does not replace the buyer-only Deploy link", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/service/start",
+    );
+    expect(out).toContain('name="robots" content="index, follow"');
+    expect(out).toContain("Aki Eguchi Portfolio Kit");
+    expect(out).not.toContain("railway.com/deploy");
+  });
+
   test("/service is noindex on non-akieguchi hosts", () => {
     const out = injectOgp(
       page,
@@ -544,6 +555,17 @@ describe("injectOgp /service route", () => {
     expect(out).toContain("noindex, nofollow");
     expect(out).toContain("<title>Not Found | Photographer Name | Photography</title>");
     expect(out).not.toContain("写真家のためのポートフォリオサイト");
+  });
+
+  test("/service/start is noindex on non-akieguchi hosts", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://other-site.com" },
+      "/service/start",
+    );
+    expect(out).toContain("noindex, nofollow");
+    expect(out).toContain("<title>Not Found | Photographer Name | Photography</title>");
+    expect(out).not.toContain("Aki Eguchi Portfolio Kit");
   });
 
   test("/service title does not include the photographer name", () => {

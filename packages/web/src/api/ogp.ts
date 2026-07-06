@@ -122,6 +122,14 @@ const SERVICE_OG = {
   image: "/og-service.jpg",
 };
 
+const SERVICE_START_OG = {
+  title: "Aki Eguchi Portfolio Kit — Start",
+  desc: "購入後に必要なことだけをまとめた、Aki Eguchi Portfolio Kit のスタートページ。",
+  image: "/og-service.jpg",
+};
+
+const SERVICE_PATHS = new Set(["/service", "/service/start"]);
+
 function socialImagePath(image: string, rotationDeg?: number | null): string {
   if (!image.startsWith("/api/images/")) return image;
   return imageUrlWithParams(image, {
@@ -172,7 +180,9 @@ export function injectOgp(
   // name without a pipe) — see composeHomeTitle for why this differs from `base`.
   const homeTitle = composeHomeTitle(titleParts);
   const isServiceSite = isServiceSiteUrl(siteUrl);
-  const isService = pathname === "/service" && isServiceSite;
+  const isServicePath = SERVICE_PATHS.has(pathname);
+  const isService = isServicePath && isServiceSite;
+  const serviceOg = pathname === "/service/start" ? SERVICE_START_OG : SERVICE_OG;
   const page = PAGE_TITLES[pathname];
   const KNOWN_ROUTES = [
     "/",
@@ -182,6 +192,7 @@ export function injectOgp(
     "/profile",
     "/contact",
     "/service",
+    "/service/start",
   ];
   // /series/:slug is indexable only when the slug resolved to a real published
   // series (override.title set by the caller). Unknown/unpublished slugs render
@@ -189,13 +200,13 @@ export function injectOgp(
   const isKnown =
     KNOWN_ROUTES.includes(pathname) ||
     (pathname.startsWith("/series/") && !!override?.title);
-  const serviceOnOtherHost = pathname === "/service" && !isServiceSite;
+  const serviceOnOtherHost = isServicePath && !isServiceSite;
   const missingPublicPage = !isKnown || serviceOnOtherHost;
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = missingPublicPage
     ? `Not Found | ${base}`
     : isService
-      ? SERVICE_OG.title
+      ? serviceOg.title
       : override?.title
         ? `${override.title} | ${base}`
         : page
@@ -211,7 +222,7 @@ export function injectOgp(
   const desc = missingPublicPage
     ? "お探しのページは見つかりませんでした。"
     : isService
-      ? SERVICE_OG.desc
+      ? serviceOg.desc
       : override?.desc
         ? override.desc
         : override?.title
@@ -222,7 +233,7 @@ export function injectOgp(
   // the static default already in index.html. /service uses its own fixed card image
   // (a flat file, so no /api/images resize query is appended).
   const imgBase = isService
-    ? SERVICE_OG.image
+    ? serviceOg.image
     : override?.image ||
       heroImg ||
       settings.heroPhotoUrl ||

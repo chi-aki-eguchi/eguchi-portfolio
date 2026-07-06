@@ -16,6 +16,7 @@ import {
   type FaqItem,
   type ExampleLinkItem,
 } from "../lib/service-config";
+import { isServiceHost } from "../lib/service-visibility";
 
 const labelCls = "font-en uppercase text-center";
 const labelStyle = {
@@ -803,14 +804,6 @@ function StickyCtaBar({
       </div>
     </div>
   );
-}
-
-const SERVICE_HOST = "akieguchi.com";
-
-function isServiceHost(): boolean {
-  if (typeof window === "undefined") return false;
-  const host = window.location.hostname.replace(/^www\./, "").toLowerCase();
-  return host === SERVICE_HOST || host === "localhost" || host === "127.0.0.1";
 }
 
 export default function ServicePage() {

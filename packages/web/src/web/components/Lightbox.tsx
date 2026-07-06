@@ -15,7 +15,8 @@ const FIT_W = "95vw";
 const FIT_H = "94dvh";
 export const FIT_SIZES = "95vw";
 type PhotoImage = { url: string; rotationDeg?: number | null };
-export const fitSrcSet = (photo: PhotoImage) => photoSrcSetFor(photo, "lightbox");
+export const fitSrcSet = (photo: PhotoImage) =>
+  photoSrcSetFor(photo, "lightbox");
 // Match the typical grid sizes so the browser picks the same cached entry.
 const GRID_THUMB_SIZES =
   "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
@@ -1168,6 +1169,7 @@ export function Lightbox({
                 setExifOpen((o) => !o);
               }}
               aria-label={exifOpen ? "撮影情報を閉じる" : "撮影情報を表示"}
+              aria-expanded={exifOpen}
               tabIndex={chromeTab}
               style={{
                 ...chromeVis,
@@ -1212,6 +1214,7 @@ export function Lightbox({
             <section
               data-lb-chrome
               aria-label="撮影情報"
+              aria-hidden={!exifOpen}
               style={{
                 position: "absolute",
                 bottom: "calc(52px + var(--sai-bottom))",

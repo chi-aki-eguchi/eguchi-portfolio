@@ -167,7 +167,7 @@ const LqipImage = memo(function LqipImage({
     return (
       <img
         src={thumbUrl}
-        data-src={hasUpgrade ? upgradeUrl ?? undefined : undefined}
+        data-src={hasUpgrade ? (upgradeUrl ?? undefined) : undefined}
         sizes={sizes}
         alt={alt}
         loading={isNearViewport ? "eager" : "lazy"}
@@ -206,10 +206,14 @@ const LqipImage = memo(function LqipImage({
           : srcFor(url, 600, 84, undefined, rotationDeg)
       }
       srcSet={
-        isNearViewport ? srcSetFor(url, "grid", undefined, rotationDeg) : undefined
+        isNearViewport
+          ? srcSetFor(url, "grid", undefined, rotationDeg)
+          : undefined
       }
       data-srcset={
-        isNearViewport ? undefined : srcSetFor(url, "grid", undefined, rotationDeg)
+        isNearViewport
+          ? undefined
+          : srcSetFor(url, "grid", undefined, rotationDeg)
       }
       sizes={sizes}
       alt={alt}
@@ -524,9 +528,7 @@ export function PhotoGallery({
             <LqipImage
               url={photo.url}
               thumbUrl={photo.thumbUrl}
-              upgradeUrl={
-                opts.preferMediumGrid ? photo.mediumUrl : undefined
-              }
+              upgradeUrl={opts.preferMediumGrid ? photo.mediumUrl : undefined}
               alt={alt}
               sizes={opts.sizes}
               isNearViewport={isNearViewport}
@@ -664,7 +666,7 @@ export function PhotoGallery({
                         fontSize: 10,
                         letterSpacing: "0.04em",
                         lineHeight: 1.45,
-                        color: "#1a1a1a",
+                        color: "var(--foreground)",
                       }}
                     >
                       {photo.title}
@@ -678,7 +680,7 @@ export function PhotoGallery({
                         fontSize: 9,
                         letterSpacing: "0.06em",
                         lineHeight: 1.45,
-                        color: "#bbb",
+                        color: "rgba(var(--foreground-rgb),0.30)",
                       }}
                     >
                       {sub}

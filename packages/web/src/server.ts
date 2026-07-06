@@ -21,7 +21,9 @@ import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
-// 本番(turso)は no-op。失敗時はサーバを起動せず loud に落とす。
+// 本番(turso)は Drizzle migration こそ走らせないが、ensureTursoColumns() が
+// 既知カラムの存在確認と欠落時の ALTER TABLE ADD COLUMN を行う(no-op ではない)。
+// 失敗時はサーバを起動せず loud に落とす。
 try {
   await runStartupMigrations();
 } catch {

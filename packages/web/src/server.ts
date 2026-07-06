@@ -236,7 +236,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/series",
     "/about",
     "/contact",
-    ...(isServiceSiteUrl(siteUrl) ? ["/service", "/service/start"] : []),
+    ...(isServiceSiteUrl(siteUrl) ? ["/service"] : []),
   ];
   // Include each published series detail page so crawlers discover the actual
   // work, not just the section index. Failure → static paths only (never throw).

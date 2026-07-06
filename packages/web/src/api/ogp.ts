@@ -181,6 +181,7 @@ export function injectOgp(
   const homeTitle = composeHomeTitle(titleParts);
   const isServiceSite = isServiceSiteUrl(siteUrl);
   const isServicePath = SERVICE_PATHS.has(pathname);
+  const isBuyerStartPath = pathname === "/service/start";
   const isService = isServicePath && isServiceSite;
   const serviceOg = pathname === "/service/start" ? SERVICE_START_OG : SERVICE_OG;
   const page = PAGE_TITLES[pathname];
@@ -261,7 +262,12 @@ export function injectOgp(
   out = setAttr(out, /(<meta\s+name="author"\s+content=")[^"]*(")/, siteName);
   // Keep the admin app and unknown (404 fallback) paths out of search indexes so
   // junk URLs aren't indexed with the homepage's title (defence in depth with robots.txt).
-  if (pathname.startsWith("/admin") || !isKnown || serviceOnOtherHost) {
+  if (
+    pathname.startsWith("/admin") ||
+    !isKnown ||
+    serviceOnOtherHost ||
+    isBuyerStartPath
+  ) {
     out = setAttr(
       out,
       /(<meta\s+name="robots"\s+content=")[^"]*(")/,
@@ -272,7 +278,10 @@ export function injectOgp(
   // skip JSON-LD + GA4 on /admin and soft-404s (no analytics pollution from the
   // admin app; no structured data on pages marked noindex).
   const indexable =
-    !pathname.startsWith("/admin") && isKnown && !serviceOnOtherHost;
+    !pathname.startsWith("/admin") &&
+    isKnown &&
+    !serviceOnOtherHost &&
+    !isBuyerStartPath;
   // Canonical + og:url — per route, not always the homepage
   out = setAttr(out, /(<link\s+rel="canonical"\s+href=")[^"]*(")/, canonical);
   out = setAttr(

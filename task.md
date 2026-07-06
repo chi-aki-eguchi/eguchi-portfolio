@@ -4645,6 +4645,65 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - Railway Deploy link を公開ページへ直接掲載すること。
 - 本番DB・R2・Railway環境変数。
 
+## Handoff 2026-07-07 — Codex: Portfolio Kit 本番確認と購入後入口の noindex 化
+
+### 目的
+
+オーナーが前回の `Aki Eguchi Portfolio Kit` 変更を push 済み。
+本番反映を確認し、さらに「買っていない人も使えるように見えない」状態を強めるため、
+購入後入口 `/service/start` を検索対象・sitemap 対象から外した。
+
+### 本番確認
+
+- `https://akieguchi.com/service/start` は HTTP 200。
+- `X-Build: 4ff60a57` で、push 済みの最新 commit `4ff60a5` が Railway に反映済み。
+- HTML は `Cache-Control: no-cache, no-store, must-revalidate`。
+- 実ブラウザ確認（desktop / mobile）で以下を確認:
+  - `Aki Eguchi Portfolio Kit` が表示される。
+  - 購入後向けの文言が表示される。
+  - `railway.com/deploy` のリンクは0件。
+  - console error / network error / 横はみ出しなし。
+
+### 変更内容
+
+1. `/service/start` を direct-link only に変更
+   - 直接URLを知っている人は開ける。
+   - ただし検索エンジン向け meta robots は `noindex, nofollow`。
+   - OGP には商品名を残すが、検索一覧には出さない方針。
+2. sitemap から `/service/start` を削除
+   - `/service` は商品ページとして残す。
+   - `/service/start` は購入後メール・個別案内からだけ使う。
+3. テストを更新
+   - `/service/start` が akieguchi.com でも `noindex, nofollow` になることを確認。
+   - buyer-only Deploy link が OGP に出ないことは引き続き確認。
+
+### 触ったファイル
+
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/server.ts`
+- `task.md`
+
+### 検証したこと
+
+- `bun test packages/web/src/api/ogp.test.ts packages/web/src/web/test/pages.render.test.tsx` 成功（88 pass）。
+- `bun run check` 成功（typecheck / lint / test 263 pass / build）。
+
+### 検証していないこと
+
+- この追加 noindex 化の本番反映（まだ未pushのため）。
+- Stripe の実決済と購入後メール送信。
+
+### push したか
+
+していない。この Handoff を含めてローカル commit する。push はオーナー判断で行う。
+
+### 次の一手候補
+
+- Stripe の購入完了画面・確認メールに `docs/purchase-thankyou.md` の文面を入れる。
+- `/service` の購入前ページから「買う前に分かること」と「買った後に届くもの」をもう少し明確にする。
+- 購入者に渡す「1通目メール」を、名前・コース・setup link を差し込めるテンプレートとして整える。
+
 ## Handoff 2026-07-06 — Codex: 管理画面フォント・色の統一追加修正
 
 ### 目的

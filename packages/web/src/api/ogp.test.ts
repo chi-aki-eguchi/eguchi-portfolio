@@ -535,13 +535,13 @@ describe("injectOgp /service route", () => {
     expect(out).toContain('name="robots" content="index, follow"');
   });
 
-  test("/service/start is indexable on akieguchi.com but does not replace the buyer-only Deploy link", () => {
+  test("/service/start is direct-link only on akieguchi.com and does not replace the buyer-only Deploy link", () => {
     const out = injectOgp(
       page,
       { siteUrl: "https://akieguchi.com" },
       "/service/start",
     );
-    expect(out).toContain('name="robots" content="index, follow"');
+    expect(out).toContain('name="robots" content="noindex, nofollow"');
     expect(out).toContain("Aki Eguchi Portfolio Kit");
     expect(out).not.toContain("railway.com/deploy");
   });

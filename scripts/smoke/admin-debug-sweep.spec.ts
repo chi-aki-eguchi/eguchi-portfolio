@@ -85,6 +85,20 @@ test.describe("admin — 全体デバッグスイープ", () => {
         expect(titleFont).toContain(firstFamily(adminShell.siteTitleFont));
       }
 
+      if (tab === "settings") {
+        const themeBg = await page.locator('[data-admin-setting="themeBg-color"]')
+          .evaluate((el) => (el as HTMLInputElement).value);
+        const themeBgPlaceholder = await page
+          .locator('[data-admin-setting="themeBg-text"]')
+          .getAttribute("placeholder");
+        expect(themeBg.toLowerCase()).toBe(
+          adminShell.siteBackground.toLowerCase(),
+        );
+        expect(themeBgPlaceholder?.toLowerCase()).toBe(
+          adminShell.siteBackground.toLowerCase(),
+        );
+      }
+
       const oldDarkOffenders = await page.evaluate(
         ({ tabName, oldColors }) => {
           const oldColorSet = new Set(oldColors);

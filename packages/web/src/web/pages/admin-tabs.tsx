@@ -43,6 +43,8 @@ import {
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 
+const DEFAULT_THEME_BG = "#f7f7f7";
+
 export function HeroTab() {
   const qc = useQueryClient();
   const [dragId, setDragId] = useState<number | null>(null);
@@ -4326,8 +4328,9 @@ export function SettingsTab({
                       <input
                         aria-label="背景色"
                         type="color"
-                        value={current["themeBg"] || "#F5F0EB"}
+                        value={current["themeBg"] || DEFAULT_THEME_BG}
                         onChange={(e) => set("themeBg", e.target.value)}
+                        data-admin-setting="themeBg-color"
                         className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
                       />
                       <input
@@ -4335,7 +4338,8 @@ export function SettingsTab({
                         type="text"
                         value={current["themeBg"] || ""}
                         onChange={(e) => set("themeBg", e.target.value)}
-                        placeholder="#F5F0EB"
+                        placeholder={DEFAULT_THEME_BG}
+                        data-admin-setting="themeBg-text"
                         className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                       />
                     </div>

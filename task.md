@@ -4635,3 +4635,59 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - 未pushコミットのrebase・書き換え。
 - 本番DB・R2・Railway環境変数。
 - smoke で Save/Delete/Add など本番DBへ書き込む操作を増やすこと。
+
+## Handoff 2026-07-06 — Codex: 管理画面の違和感デバッグ追加スイープ
+
+### 目的
+
+オーナーから「他の視点からもデバッグして。バグ以外の違和感も探して」と追加依頼あり。
+エラーだけでなく、設定画面が実際のサイトと違う情報を見せていないか、改装前の見た目が残っていないかを確認した。
+
+### 変更内容
+
+1. Settings の背景色表示を公開サイトの既定色へ統一
+   - 公開サイトの静的既定背景は `#f7f7f7`。
+   - Settings > Theme Colors の Background カラーピッカーと placeholder だけが古い `#F5F0EB` のままだったため、`#f7f7f7` に合わせた。
+   - 保存済みの `themeBg` がある場合は、これまで通り保存値を表示する。
+2. 再発防止の smoke test を追加
+   - Settings タブで、背景色カラーピッカーと placeholder が実際の公開サイト背景色と一致することを確認する検査を追加。
+   - 検査は表示値を見るだけで、Save/Delete/Add など本番DBへ書き込む操作はしない。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `scripts/smoke/admin-debug-sweep.spec.ts`
+- `task.md`
+
+### 見つけたが変更しなかったこと
+
+- 選択中ボタンの濃い色は、旧色の残骸ではなく「選択中だと分かるためにサイトの文字色を背景として使う」既存仕様だった。
+  `admin-selected-button.spec.ts` でも守られているため、今回は変更していない。
+- 画面内の input range などはブラウザ仕様上 `scrollWidth > clientWidth` と出ることがあるが、実表示の崩れではなかった。
+
+### 検証したこと
+
+- 追加ブラウザ検査で全タブを横断し、console error / ローカル通信失敗なしを確認。
+- `bun run smoke -- admin-debug-sweep` 成功（4 passed）。
+- `bun run check` 成功（typecheck / lint / test 258 pass / build）。
+- `bun run smoke` 成功（23 passed / 19 skipped / 0 failed）。
+
+### 検証していないこと
+
+- 本番 `akieguchi.com` での確認（push 前のため未実施）。
+- 実データを書き換える操作（保存・削除・アップロード・公開確定）は未実施。
+
+### push したか
+
+していない。この Handoff を含めてローカル commit する。push はオーナーの手で行う。
+
+### 次の担当者が触ってよい場所
+
+- admin UI の追加 polish。
+- `scripts/smoke/` の read-only な見た目検査。
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットのrebase・書き換え。
+- 本番DB・R2・Railway環境変数。
+- smoke で Save/Delete/Add など本番DBへ書き込む操作を増やすこと。

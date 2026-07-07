@@ -2,7 +2,7 @@ import { resolve as pathResolve } from "node:path";
 import app from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, inArray, sql } from "drizzle-orm";
 import {
   injectOgp,
   siteUrlFrom,
@@ -98,13 +98,30 @@ async function getHeroOgImage(): Promise<ImageRef> {
       db.select().from(schema.heroPhotos).orderBy(schema.heroPhotos.sortOrder),
     );
     let image: ImageRef = { url: "", rotationDeg: 0 };
-    for (const hr of heroRows) {
-      const [p] = await withRetry(() =>
-        db.select().from(schema.photos).where(eq(schema.photos.id, hr.photoId)),
+    // ヒーロー行ごとの個別クエリ(N+1)を避け、参照写真を1クエリでまとめて引く。
+    // 選択規則は従来どおり: sortOrder 順で最初の未削除写真。
+    if (heroRows.length > 0) {
+      const photoRows = await withRetry(() =>
+        db
+          .select()
+          .from(schema.photos)
+          .where(
+            and(
+              inArray(
+                schema.photos.id,
+                heroRows.map((hr) => hr.photoId),
+              ),
+              isNull(schema.photos.deletedAt),
+            ),
+          ),
       );
-      if (p && !p.deletedAt) {
-        image = socialSourceForPhoto(p);
-        break;
+      const photoById = new Map(photoRows.map((p) => [p.id, p]));
+      for (const hr of heroRows) {
+        const p = photoById.get(hr.photoId);
+        if (p) {
+          image = socialSourceForPhoto(p);
+          break;
+        }
       }
     }
     heroOgCache = image;

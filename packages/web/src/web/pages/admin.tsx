@@ -471,8 +471,8 @@ export default function AdminPage() {
 
   if (isLoading)
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <Loader2 size={20} className="animate-spin text-[#555]" />
+      <div className="min-h-screen bg-[var(--admin-paper)] flex items-center justify-center">
+        <Loader2 size={20} className="animate-spin text-[var(--admin-muted)]" />
       </div>
     );
   if (!authenticated) return null;
@@ -610,8 +610,8 @@ export default function AdminPage() {
                     onClick={() => requestTab(targetTab)}
                     className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                       active
-                        ? "bg-[#3a3a3a] text-[#e0e0e0]"
-                        : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
+                        ? "bg-[var(--admin-paper-soft)] text-[#e0e0e0]"
+                        : "text-[var(--admin-muted)] hover:text-[#bbb] hover:bg-[#2a2a2a]"
                     }`}
                   >
                     {group.label}
@@ -624,14 +624,14 @@ export default function AdminPage() {
                 href="/"
                 target="_blank"
                 rel="noopener"
-                className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+                className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
               >
                 <ExternalLink size={11} />{" "}
                 <span className="hidden sm:inline">Site</span>
               </a>
               <button
                 onClick={requestLogout}
-                className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+                className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
               >
                 <LogOut size={11} />{" "}
                 <span className="hidden sm:inline">Logout</span>
@@ -646,8 +646,8 @@ export default function AdminPage() {
                 onClick={() => requestTab(t.key)}
                 className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                   tab === t.key
-                    ? "bg-[#3a3a3a] text-[#e0e0e0]"
-                    : "text-[#888] hover:text-[#bbb] hover:bg-[#2a2a2a]"
+                    ? "bg-[var(--admin-paper-soft)] text-[#e0e0e0]"
+                    : "text-[var(--admin-muted)] hover:text-[#bbb] hover:bg-[#2a2a2a]"
                 }`}
               >
                 {t.icon} <span>{t.label}</span>
@@ -676,7 +676,7 @@ export default function AdminPage() {
               <Suspense
                 fallback={
                   <div className="h-full flex items-center justify-center">
-                    <Loader2 size={18} className="animate-spin text-[#555]" />
+                    <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
                   </div>
                 }
               >
@@ -702,14 +702,14 @@ export default function AdminPage() {
       {/* Unsaved settings confirmation */}
       {unsavedConfirm && (
         <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
-          <p className="text-[13px] text-[#ddd] mb-1">未保存の変更があります</p>
-          <p className="text-[11px] text-[#777] mb-5">
+          <p className="text-[13px] text-[var(--admin-ink)] mb-1">未保存の変更があります</p>
+          <p className="text-[11px] text-[var(--admin-muted)] mb-5">
             保存していない内容があります。このまま移動しますか？
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setUnsavedConfirm(null)}
-              className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
             >
               キャンセル
             </button>
@@ -940,7 +940,7 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-[13px] uppercase tracking-[0.14em] text-[#888]">
+          <h2 className="text-[13px] uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             公開前にできれば確認
           </h2>
           <div className="grid gap-3 md:grid-cols-3">
@@ -3376,18 +3376,18 @@ function GalleryTab({
           />
         </div>
         {/* Toolbar — quiet Library controls */}
-        <div className="bg-[#2a2a2a] border-b border-[#333] px-2 sm:px-4 py-2 flex flex-col gap-2 flex-shrink-0">
+        <div className="bg-[var(--admin-paper)] border-b border-[var(--admin-line)] px-2 sm:px-4 py-2 flex flex-col gap-2 flex-shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#777] uppercase tracking-wider">
+              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                 Sort
               </span>
               <select
                 value={librarySort}
                 onChange={(e) => setLibrarySort(e.target.value)}
                 aria-label="表示の並び替え"
-                className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
               >
                 <option value="manual">手動（保存されている順）</option>
                 <option value="createdAt-desc">
@@ -3440,7 +3440,7 @@ function GalleryTab({
               className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition-colors ${
                 showLibraryFilters || anyFilterActive
                   ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)] border-[color:var(--admin-ink)]"
-                  : "text-[color:var(--admin-muted)] border-[#444] hover:bg-[#333] hover:text-[color:var(--admin-ink)]"
+                  : "text-[color:var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#333] hover:text-[color:var(--admin-ink)]"
               }`}
             >
               <Search size={11} /> 絞り込み
@@ -3452,7 +3452,7 @@ function GalleryTab({
             </button>
 
             <div className="hidden md:flex items-center gap-2">
-              <Grid size={12} className="text-[#666]" />
+              <Grid size={12} className="text-[var(--admin-muted)]" />
               <input
                 aria-label="サムネイルサイズ"
                 type="range"
@@ -3462,7 +3462,7 @@ function GalleryTab({
                 onChange={(e) => setThumbSize(Number(e.target.value))}
                 className="w-24 accent-[#888] h-1"
               />
-              <Columns size={12} className="text-[#666]" />
+              <Columns size={12} className="text-[var(--admin-muted)]" />
             </div>
 
             <button
@@ -3476,7 +3476,7 @@ function GalleryTab({
               className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
                 bulkEditMode
                   ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                  : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
+                  : "text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#333] hover:text-[#aaa]"
               }`}
             >
               <LayoutList size={11} /> Table
@@ -3491,7 +3491,7 @@ function GalleryTab({
               className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-sm transition-colors ${
                 showTrash
                   ? "bg-amber-900/40 text-amber-400"
-                  : "text-[#666] hover:text-[#aaa] hover:bg-[#2a2a2a]"
+                  : "text-[var(--admin-muted)] hover:text-[#aaa] hover:bg-[#2a2a2a]"
               }`}
             >
               <Trash2 size={11} />
@@ -3504,7 +3504,7 @@ function GalleryTab({
               onClick={() => setShowShortcuts(true)}
               title="キーボードショートカット (?)"
               aria-label="キーボードショートカット"
-              className="flex items-center justify-center w-6 h-6 text-[11px] text-[#666] hover:text-[#aaa] hover:bg-[#2a2a2a] rounded-sm transition-colors"
+              className="flex items-center justify-center w-6 h-6 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] hover:bg-[#2a2a2a] rounded-sm transition-colors"
             >
               ?
             </button>
@@ -3515,7 +3515,7 @@ function GalleryTab({
               title="Importする写真に付く媒体ラベルです（絞り込みではありません）"
               className="flex items-center gap-1 m-0 p-0 border-0 min-w-0"
             >
-              <span className="text-[10px] text-[#666] uppercase tracking-wider whitespace-nowrap mr-0.5">
+              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider whitespace-nowrap mr-0.5">
                 取り込み
               </span>
               {[
@@ -3530,7 +3530,7 @@ function GalleryTab({
                   className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
                     uploadMedium === val
                       ? "bg-[#555] text-[#eee] border-[#666]"
-                      : "text-[#666] border-[#444] hover:bg-[#333] hover:text-[#aaa]"
+                      : "text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#333] hover:text-[#aaa]"
                   }`}
                 >
                   {lbl}
@@ -3557,8 +3557,8 @@ function GalleryTab({
           </div>
 
           {!showTrash && activeFilterLabels.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-[#aaa] min-w-0">
-              <span className="text-[10px] text-[#777] uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 text-[11px] text-[var(--admin-ink)] min-w-0">
+              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                 絞り込み中
               </span>
               <span className="truncate">
@@ -3567,7 +3567,7 @@ function GalleryTab({
               <button
                 type="button"
                 onClick={clearLibraryFilters}
-                className="text-[11px] px-2 py-0.5 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors flex-shrink-0"
+                className="text-[11px] px-2 py-0.5 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors flex-shrink-0"
               >
                 解除
               </button>
@@ -3575,13 +3575,13 @@ function GalleryTab({
           )}
 
           {!showTrash && showLibraryFilters && (
-            <div className="border-t border-[#333] pt-2 flex flex-col gap-2">
+            <div className="border-t border-[var(--admin-line)] pt-2 flex flex-col gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* B2: free-text search */}
                 <div className="relative">
                   <Search
                     size={11}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 text-[#666] pointer-events-none"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--admin-muted)] pointer-events-none"
                   />
                   <input
                     type="search"
@@ -3589,13 +3589,13 @@ function GalleryTab({
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="検索（タイトル・分類・機材・ファイル名）"
                     aria-label="写真を検索"
-                    className="bg-[#333] text-[#ccc] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors w-52 placeholder:text-[#555]"
+                    className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888] transition-colors w-52 placeholder:text-[#555]"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
                       aria-label="検索をクリア"
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#ccc] transition-colors"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
                     >
                       <X size={11} />
                     </button>
@@ -3605,7 +3605,7 @@ function GalleryTab({
                 <select
                   value={filterCat}
                   onChange={(e) => setFilterCat(e.target.value)}
-                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 >
                   <option value="all">All ({allPhotos.length})</option>
                   {categories.map((c) => (
@@ -3625,7 +3625,7 @@ function GalleryTab({
                   value={filterSeries}
                   onChange={(e) => setFilterSeries(e.target.value)}
                   aria-label="シリーズで絞り込み"
-                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 >
                   <option value="all">All series</option>
                   {seriesList.map((s) => (
@@ -3644,7 +3644,7 @@ function GalleryTab({
                   value={filterSize}
                   onChange={(e) => setFilterSize(e.target.value)}
                   aria-label="表示サイズで絞り込み"
-                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 >
                   <option value="all">All sizes</option>
                   {(["S", "M", "L"] as const).map((sz) => (
@@ -3663,7 +3663,7 @@ function GalleryTab({
                   value={filterMedium}
                   onChange={(e) => setFilterMedium(e.target.value)}
                   aria-label="媒体で絞り込み"
-                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 >
                   <option value="all">媒体: All</option>
                   <option value="digital">
@@ -3679,7 +3679,7 @@ function GalleryTab({
                   value={filterOrientation}
                   onChange={(e) => setFilterOrientation(e.target.value)}
                   aria-label="写真の向きで絞り込み"
-                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 >
                   <option value="all">All orientations</option>
                   <option value="portrait">
@@ -3699,7 +3699,7 @@ function GalleryTab({
                   className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
                     filterFeatured
                       ? "bg-amber-900/40 text-amber-300 border-amber-700/50"
-                      : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                   }`}
                 >
                   <Star size={11} /> Hero設定中 ({featuredIds.size})
@@ -3709,7 +3709,7 @@ function GalleryTab({
                   value={filterPublished}
                   onChange={(e) => setFilterPublished(e.target.value)}
                   aria-label="公開状態で絞り込み"
-                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 >
                   <option value="all">公開状態: All</option>
                   <option value="published">
@@ -3726,7 +3726,7 @@ function GalleryTab({
                   className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
                     filterMissingShotAt
                       ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                      : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                   }`}
                 >
                   撮影日なし ({missingShotAtCount})
@@ -3738,7 +3738,7 @@ function GalleryTab({
                   className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
                     filterMissingCapture
                       ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                      : "bg-[#333] text-[#999] border-[#444] hover:bg-[#3a3a3a]"
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                   }`}
                 >
                   機材なし ({missingCaptureCount})
@@ -3748,7 +3748,7 @@ function GalleryTab({
                   value={filterRecent}
                   onChange={(e) => setFilterRecent(e.target.value)}
                   aria-label="アップロード時期で絞り込み"
-                  className="bg-[#333] text-[#ccc] text-[11px] px-2 py-1 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 >
                   <option value="all">All time</option>
                   <option value="7">直近7日</option>
@@ -3759,7 +3759,7 @@ function GalleryTab({
                   <button
                     type="button"
                     onClick={clearLibraryFilters}
-                    className="text-[11px] px-2 py-1 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                    className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
                   >
                     すべて解除
                   </button>
@@ -3767,7 +3767,7 @@ function GalleryTab({
               </div>
 
               <div className="flex items-center gap-1.5 flex-wrap">
-                <FolderOpen size={12} className="text-[#666]" />
+                <FolderOpen size={12} className="text-[var(--admin-muted)]" />
                 {smartAlbums.map((a) => {
                   const conditionLabels = describeAlbumConditions(a.cond);
                   const shownLabels = conditionLabels.slice(0, 3);
@@ -3779,7 +3779,7 @@ function GalleryTab({
                       className={`group/al inline-flex items-center gap-1 text-[11px] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
                         activeAlbumId === a.id
                           ? "bg-[#4a4a4a] text-[#eee] border-[#666]"
-                          : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
+                          : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                       }`}
                     >
                       <button
@@ -3793,14 +3793,14 @@ function GalleryTab({
                         {shownLabels.map((label) => (
                           <span
                             key={label}
-                            className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]"
+                            className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[var(--admin-muted)]"
                             title={label}
                           >
                             {label}
                           </span>
                         ))}
                         {hiddenLabelCount > 0 && (
-                          <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[#888]">
+                          <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[var(--admin-muted)]">
                             +{hiddenLabelCount}
                           </span>
                         )}
@@ -3813,7 +3813,7 @@ function GalleryTab({
                           saveAlbums.mutate(next);
                         }}
                         aria-label={`${a.name}を削除`}
-                        className="opacity-50 group-hover/al:opacity-100 text-[#888] hover:text-red-400 transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
+                        className="opacity-50 group-hover/al:opacity-100 text-[var(--admin-muted)] hover:text-red-400 transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
                       >
                         <X size={11} />
                       </button>
@@ -3825,7 +3825,7 @@ function GalleryTab({
                     setAlbumDraft({ ...EMPTY_ALBUM_DRAFT });
                     setAlbumModalOpen(true);
                   }}
-                  className="flex items-center gap-1 text-[11px] text-[#888] px-2 py-1 rounded-sm border border-dashed border-[#444] hover:bg-[#333] transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] px-2 py-1 rounded-sm border border-dashed border-[var(--admin-line)] hover:bg-[#333] transition-colors"
                 >
                   <Plus size={11} /> アルバム
                 </button>
@@ -3835,12 +3835,12 @@ function GalleryTab({
 
           {/* Batch actions */}
           {selected.size > 0 && !showTrash && (
-            <div className="border-t border-[#333] pt-2 flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] text-[#777] uppercase tracking-wider">
+            <div className="border-t border-[var(--admin-line)] pt-2 flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                 選択中 {selected.size}枚
               </span>
               {/* M2: Publish / Unpublish */}
-              <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-0.5">
+              <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-0.5">
                 <button
                   onClick={() => batchOp.mutate({ operation: "publish" })}
                   disabled={batchOp.isPending}
@@ -3851,7 +3851,7 @@ function GalleryTab({
                 <button
                   onClick={() => batchOp.mutate({ operation: "unpublish" })}
                   disabled={batchOp.isPending}
-                  className="flex items-center gap-1 text-[11px] text-[#999] px-1.5 py-0.5 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <EyeOff size={11} /> 非公開
                 </button>
@@ -3860,12 +3860,12 @@ function GalleryTab({
               <div className="relative" data-batch-cat>
                 <button
                   onClick={() => setBatchCatOpen((v) => !v)}
-                  className="flex items-center gap-1 text-[11px] text-[#aaa] bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
                 >
                   <Tag size={11} /> Set Category <ChevronDown size={10} />
                 </button>
                 {batchCatOpen && (
-                  <div className="absolute top-full left-0 mt-1 bg-[#333] border border-[#444] rounded-sm shadow-xl z-20 min-w-[140px]">
+                  <div className="absolute top-full left-0 mt-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm shadow-xl z-20 min-w-[140px]">
                     {categories.map((c) => (
                       <button
                         key={c.slug}
@@ -3876,7 +3876,7 @@ function GalleryTab({
                           });
                           setBatchCatOpen(false);
                         }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-[#ccc] hover:bg-[#444] transition-colors flex items-center gap-2"
+                        className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-ink)] hover:bg-[#444] transition-colors flex items-center gap-2"
                       >
                         <span
                           className="w-2 h-2 rounded-full flex-shrink-0"
@@ -3894,7 +3894,7 @@ function GalleryTab({
                         });
                         setBatchCatOpen(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] text-[#999] hover:bg-[#444] transition-colors flex items-center gap-2 border-t border-[#444]"
+                      className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-muted)] hover:bg-[#444] transition-colors flex items-center gap-2 border-t border-[var(--admin-line)]"
                     >
                       <span className="w-2 h-2 rounded-full flex-shrink-0 border border-[#666]" />
                       未分類 (uncategorized)
@@ -3907,14 +3907,14 @@ function GalleryTab({
               <div className="relative" data-batch-series>
                 <button
                   onClick={() => setBatchSeriesOpen((v) => !v)}
-                  className="flex items-center gap-1 text-[11px] text-[#aaa] bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
                 >
                   <Layers size={11} /> Set Series <ChevronDown size={10} />
                 </button>
                 {batchSeriesOpen && (
-                  <div className="absolute top-full left-0 mt-1 bg-[#333] border border-[#444] rounded-sm shadow-xl z-20 min-w-[160px] max-h-64 overflow-y-auto">
+                  <div className="absolute top-full left-0 mt-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm shadow-xl z-20 min-w-[160px] max-h-64 overflow-y-auto">
                     {seriesList.length === 0 && (
-                      <div className="px-3 py-1.5 text-[11px] text-[#666]">
+                      <div className="px-3 py-1.5 text-[11px] text-[var(--admin-muted)]">
                         シリーズなし
                       </div>
                     )}
@@ -3928,7 +3928,7 @@ function GalleryTab({
                           });
                           setBatchSeriesOpen(false);
                         }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-[#ccc] hover:bg-[#444] transition-colors truncate"
+                        className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-ink)] hover:bg-[#444] transition-colors truncate"
                       >
                         {s.title}
                         {s.isPublished ? "" : "（下書き）"}
@@ -3939,7 +3939,7 @@ function GalleryTab({
                         batchOp.mutate({ operation: "series", value: "" });
                         setBatchSeriesOpen(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] text-[#999] hover:bg-[#444] transition-colors border-t border-[#444]"
+                      className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-muted)] hover:bg-[#444] transition-colors border-t border-[var(--admin-line)]"
                     >
                       割り当て解除
                     </button>
@@ -3948,8 +3948,8 @@ function GalleryTab({
               </div>
 
               {/* M2: Set display size */}
-              <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[#777]">Size</span>
+              <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
+                <span className="text-[10px] text-[var(--admin-muted)]">Size</span>
                 {(["S", "M", "L"] as const).map((sz) => (
                   <button
                     key={sz}
@@ -3957,22 +3957,22 @@ function GalleryTab({
                       batchOp.mutate({ operation: "size", value: sz })
                     }
                     disabled={batchOp.isPending}
-                    className="text-[11px] text-[#bbb] w-5 h-5 rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                    className="text-[11px] text-[var(--admin-ink)] w-5 h-5 rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {sz}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[#777]">Rotate</span>
+              <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
+                <span className="text-[10px] text-[var(--admin-muted)]">Rotate</span>
                 <button
                   type="button"
                   onClick={() => batchOp.mutate({ operation: "rotate_left" })}
                   disabled={batchOp.isPending}
                   title="左へ90°回転"
                   aria-label="選択写真を左へ90度回転"
-                  className="w-5 h-5 inline-flex items-center justify-center text-[#bbb] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <RotateCcw size={12} />
                 </button>
@@ -3982,7 +3982,7 @@ function GalleryTab({
                   disabled={batchOp.isPending}
                   title="右へ90°回転"
                   aria-label="選択写真を右へ90度回転"
-                  className="w-5 h-5 inline-flex items-center justify-center text-[#bbb] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <RotateCw size={12} />
                 </button>
@@ -3994,7 +3994,7 @@ function GalleryTab({
                   disabled={batchOp.isPending}
                   title="向きを0°に戻す"
                   aria-label="選択写真の向きを0度に戻す"
-                  className="w-6 h-5 text-[10px] text-[#999] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-6 h-5 text-[10px] text-[var(--admin-muted)] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   0°
                 </button>
@@ -4006,20 +4006,20 @@ function GalleryTab({
                   disabled={batchOp.isPending}
                   title="見せる中心を中央に戻す"
                   aria-label="選択写真の見せる中心を中央に戻す"
-                  className="w-5 h-5 inline-flex items-center justify-center text-[#999] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-5 h-5 inline-flex items-center justify-center text-[var(--admin-muted)] rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Crosshair size={12} />
                 </button>
               </div>
 
-              <div className="flex items-center gap-1 bg-[#333] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[#777]">Date</span>
+              <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
+                <span className="text-[10px] text-[var(--admin-muted)]">Date</span>
                 <input
                   type="date"
                   value={batchShotAtDate}
                   onChange={(e) => setBatchShotAtDate(e.target.value)}
                   aria-label="選択写真に設定する撮影日"
-                  className="bg-[#2a2a2a] text-[#ccc] text-[11px] px-1.5 py-0.5 rounded-sm border border-[#444] outline-none focus:border-[#888]"
+                  className="bg-[var(--admin-paper)] text-[var(--admin-ink)] text-[11px] px-1.5 py-0.5 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888]"
                 />
                 <button
                   type="button"
@@ -4043,7 +4043,7 @@ function GalleryTab({
                     selectedMissingShotAtCount === 0
                   }
                   title="撮影日が空の選択写真だけに設定します"
-                  className="text-[11px] text-[#bbb] px-1.5 py-0.5 rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="text-[11px] text-[var(--admin-ink)] px-1.5 py-0.5 rounded-sm hover:bg-[#4a4a4a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   適用 ({selectedMissingShotAtCount})
                 </button>
@@ -4053,14 +4053,14 @@ function GalleryTab({
               <button
                 onClick={() => batchOp.mutate({ operation: "feature" })}
                 disabled={batchOp.isPending}
-                className="flex items-center gap-1 text-[11px] text-amber-300/80 bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1 text-[11px] text-amber-300/80 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Star size={11} /> Heroに追加
               </button>
               <button
                 onClick={() => batchOp.mutate({ operation: "unfeature" })}
                 disabled={batchOp.isPending}
-                className="flex items-center gap-1 text-[11px] text-[#999] bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <StarOff size={11} /> Heroから外す
               </button>
@@ -4071,7 +4071,7 @@ function GalleryTab({
                   setBatchEdit({ camera: "", lens: "", filmType: "" });
                   setBatchEditOpen(true);
                 }}
-                className="flex items-center gap-1 text-[11px] text-[#aaa] bg-[#333] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-[#3a3a3a] transition-colors"
               >
                 <Pencil size={11} /> 一括編集
               </button>
@@ -4083,7 +4083,7 @@ function GalleryTab({
                     label: `${selected.size}枚の写真をゴミ箱に移動しますか？`,
                   })
                 }
-                className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[#333] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors"
+                className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors"
               >
                 <Trash2 size={11} /> ゴミ箱へ
               </button>
@@ -4095,23 +4095,23 @@ function GalleryTab({
           (activeFilterLabels.length > 0 || librarySort !== "manual") && (
             <div
               aria-label="Libraryの表示条件"
-              className="bg-[#232323] border-b border-[#333] px-2 sm:px-4 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
+              className="bg-[#232323] border-b border-[var(--admin-line)] px-2 sm:px-4 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
             >
-              <span className="text-[10px] text-[#777] uppercase tracking-wider mr-1">
+              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mr-1">
                 表示条件
               </span>
-              <span className="text-[11px] text-[#aaa] bg-[#303030] border border-[#444] rounded-sm px-2 py-1">
+              <span className="text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
                 {displayed.length} / {allPhotos.length} photos
               </span>
               {librarySort !== "manual" && (
-                <span className="text-[11px] text-[#aaa] bg-[#303030] border border-[#444] rounded-sm px-2 py-1">
+                <span className="text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
                   並び: {LIBRARY_SORT_LABELS[librarySort] ?? librarySort}
                 </span>
               )}
               {activeFilterLabels.map((item) => (
                 <span
                   key={item.key}
-                  className="max-w-[220px] truncate text-[11px] text-[#bbb] bg-[#303030] border border-[#444] rounded-sm px-2 py-1"
+                  className="max-w-[220px] truncate text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1"
                   title={item.text}
                 >
                   {item.text}
@@ -4128,7 +4128,7 @@ function GalleryTab({
                 <button
                   type="button"
                   onClick={clearLibraryFilters}
-                  className="text-[11px] px-2 py-1 rounded-sm border border-[#444] text-[#aaa] bg-[#2f2f2f] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                  className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
                 >
                   条件を解除
                 </button>
@@ -4138,12 +4138,12 @@ function GalleryTab({
 
         {/* Upload progress bar */}
         {uploading && uploadProgress && (
-          <div className="bg-[#252525] px-4 py-2 border-b border-[#333] flex items-center gap-3">
-            <Loader2 size={12} className="animate-spin text-[#888]" />
-            <span className="text-[11px] text-[#888]">
+          <div className="bg-[var(--admin-paper)] px-4 py-2 border-b border-[var(--admin-line)] flex items-center gap-3">
+            <Loader2 size={12} className="animate-spin text-[var(--admin-muted)]" />
+            <span className="text-[11px] text-[var(--admin-muted)]">
               Importing {uploadProgress.done} / {uploadProgress.total}
             </span>
-            <div className="flex-1 h-1 bg-[#333] rounded-full overflow-hidden">
+            <div className="flex-1 h-1 bg-[var(--admin-paper-soft)] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#888] transition-[width] duration-[var(--dur-slow)] ease-[var(--ease-out)] rounded-full"
                 style={{
@@ -4180,7 +4180,7 @@ function GalleryTab({
         >
           {dragOver && (
             <div className="absolute inset-2 z-10 flex items-center justify-center pointer-events-none rounded-md border-2 border-dashed border-[#888]/60 bg-[#888]/10">
-              <div className="flex flex-col items-center gap-2 text-[#aaa]">
+              <div className="flex flex-col items-center gap-2 text-[var(--admin-ink)]">
                 <Upload size={28} strokeWidth={1.5} />
                 <span className="text-sm">ここにドロップして読み込み</span>
               </div>
@@ -4190,7 +4190,7 @@ function GalleryTab({
           {showTrash ? (
             /* ── Trash view ── */
             (trashData?.photos ?? []).length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
                 <EmptyTrashIllustration />
                 <p className="text-sm">
                   ゴミ箱は空です。移動した写真はここに表示されます。
@@ -4246,7 +4246,7 @@ function GalleryTab({
                         <img
                           src={adminPhotoSrc(photo, 400, 70)}
                           alt={photo.title}
-                          className="w-full aspect-square object-cover bg-[#2a2a2a] opacity-50"
+                          className="w-full aspect-square object-cover bg-[var(--admin-paper)] opacity-50"
                           style={{
                             objectPosition: adminPhotoObjectPosition(photo),
                           }}
@@ -4294,7 +4294,7 @@ function GalleryTab({
               </div>
             )
           ) : isLoading ? (
-            <div className="flex items-center justify-center h-full gap-2 text-[#555] text-sm">
+            <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
               <Loader2 size={14} className="animate-spin" /> Loading...
             </div>
           ) : bulkEditMode ? (
@@ -4306,7 +4306,7 @@ function GalleryTab({
               onSave={bulkEditSave}
             />
           ) : displayed.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
               {anyFilterActive && allPhotos.length > 0 ? (
                 <EmptySearchIllustration />
               ) : (
@@ -4315,13 +4315,13 @@ function GalleryTab({
               {anyFilterActive && allPhotos.length > 0 ? (
                 <>
                   <p className="text-sm">条件に合う写真が見つかりません。</p>
-                  <p className="text-[11px] text-[#444]">
+                  <p className="text-[11px] text-[var(--admin-muted)]">
                     絞り込みや検索語を少しゆるめてみてください。
                   </p>
                   <button
                     type="button"
                     onClick={clearLibraryFilters}
-                    className="text-[11px] px-2.5 py-1 rounded-sm border border-[#444] text-[#999] bg-[#333] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
+                    className="text-[11px] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] hover:bg-[#3a3a3a] hover:text-[#ddd] transition-colors"
                   >
                     絞り込みを解除
                   </button>
@@ -4329,7 +4329,7 @@ function GalleryTab({
               ) : (
                 <>
                   <p className="text-sm">まだ写真がありません。</p>
-                  <p className="text-[11px] text-[#444]">
+                  <p className="text-[11px] text-[var(--admin-muted)]">
                     Importから写真を追加できます。
                   </p>
                 </>
@@ -4339,8 +4339,8 @@ function GalleryTab({
             <>
               {/* Reorder-lock warning (filters or a non-manual view sort) */}
               {reorderLocked && (
-                <div className="text-[10px] text-[#888] bg-[#2a2a2a] border border-[#444] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
-                  <span className="text-[#666]">⚠</span>{" "}
+                <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
+                  <span className="text-[var(--admin-muted)]">⚠</span>{" "}
                   {anyFilterActive
                     ? "フィルター中はドラッグ並び替えできません（シリーズ単独の絞り込みなら可）"
                     : "並び替え表示中はドラッグ並び替えできません（「手動」に戻すと有効）"}
@@ -4453,7 +4453,7 @@ function GalleryTab({
                         <img
                           src={adminPhotoSrc(photo, 400, 70)}
                           alt={photo.title}
-                          className={`w-full aspect-square object-cover bg-[#2a2a2a] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
+                          className={`w-full aspect-square object-cover bg-[var(--admin-paper)] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
                           style={{
                             objectPosition: adminPhotoObjectPosition(photo),
                           }}
@@ -4684,8 +4684,8 @@ function GalleryTab({
       {/* O2: bulk metadata edit panel */}
       {batchEditOpen && (
         <Modal onClose={() => setBatchEditOpen(false)} widthClass="w-80">
-          <p className="text-[13px] text-[#ddd] mb-1">一括メタ編集</p>
-          <p className="text-[11px] text-[#777] mb-4">
+          <p className="text-[13px] text-[var(--admin-ink)] mb-1">一括メタ編集</p>
+          <p className="text-[11px] text-[var(--admin-muted)] mb-4">
             選択中 {selected.size} 枚に適用。空欄の項目は変更しません。
           </p>
           <div className="flex flex-col gap-3">
@@ -4697,7 +4697,7 @@ function GalleryTab({
                   setBatchEdit((b) => ({ ...b, camera: e.target.value }))
                 }
                 placeholder="（変更しない）"
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
               />
             </AdminField>
             <AdminField label="Lens">
@@ -4708,7 +4708,7 @@ function GalleryTab({
                   setBatchEdit((b) => ({ ...b, lens: e.target.value }))
                 }
                 placeholder="（変更しない）"
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
               />
             </AdminField>
             <AdminField label="Film / Digital">
@@ -4725,7 +4725,7 @@ function GalleryTab({
                     onClick={() =>
                       setBatchEdit((b) => ({ ...b, filmType: val }))
                     }
-                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${batchEdit.filmType === val ? "bg-[#888] text-[#1e1e1e] font-medium" : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"}`}
+                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${batchEdit.filmType === val ? "bg-[#888] text-[#1e1e1e] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                   >
                     {lbl}
                   </button>
@@ -4736,7 +4736,7 @@ function GalleryTab({
           <div className="flex gap-2 justify-end mt-5">
             <button
               onClick={() => setBatchEditOpen(false)}
-              className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
             >
               キャンセル
             </button>
@@ -4765,8 +4765,8 @@ function GalleryTab({
       {/* O6: create smart album — name + optional conditions (saved as a virtual folder) */}
       {albumModalOpen && (
         <Modal onClose={() => setAlbumModalOpen(false)} widthClass="w-80">
-          <p className="text-[13px] text-[#ddd] mb-1">スマートアルバムを作成</p>
-          <p className="text-[11px] text-[#777] mb-4">
+          <p className="text-[13px] text-[var(--admin-ink)] mb-1">スマートアルバムを作成</p>
+          <p className="text-[11px] text-[var(--admin-muted)] mb-4">
             条件に合う写真を自動で集めます。空欄の項目は条件にしません。
           </p>
           <div className="flex flex-col gap-3">
@@ -4778,7 +4778,7 @@ function GalleryTab({
                   setAlbumDraft((d) => ({ ...d, name: e.target.value }))
                 }
                 placeholder="例: PENTAX 67"
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
               />
             </AdminField>
             <AdminField label="カメラを含む">
@@ -4790,7 +4790,7 @@ function GalleryTab({
                   setAlbumDraft((d) => ({ ...d, camera: e.target.value }))
                 }
                 placeholder="（指定なし）"
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
               />
               <datalist id="album-camera-presets">
                 {cameraPresets.map((p) => (
@@ -4812,7 +4812,7 @@ function GalleryTab({
                     onClick={() =>
                       setAlbumDraft((d) => ({ ...d, filmType: val }))
                     }
-                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${albumDraft.filmType === val ? "bg-[#888] text-[#1e1e1e] font-medium" : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"}`}
+                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${albumDraft.filmType === val ? "bg-[#888] text-[#1e1e1e] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                   >
                     {lbl}
                   </button>
@@ -4827,7 +4827,7 @@ function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, medium: e.target.value }))
                   }
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
                 >
                   <option value="all">指定なし</option>
                   <option value="digital">Digital</option>
@@ -4846,7 +4846,7 @@ function GalleryTab({
                       }))
                     }
                     aria-pressed={albumDraft.missingShotAt}
-                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "bg-[#555] text-[#eee] border-[#666]" : "bg-[#333] text-[#888] border-[#444] hover:bg-[#3a3a3a]"}`}
+                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "bg-[#555] text-[#eee] border-[#666]" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                   >
                     日付
                   </button>
@@ -4859,7 +4859,7 @@ function GalleryTab({
                       }))
                     }
                     aria-pressed={albumDraft.missingCapture}
-                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "bg-[#555] text-[#eee] border-[#666]" : "bg-[#333] text-[#888] border-[#444] hover:bg-[#3a3a3a]"}`}
+                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "bg-[#555] text-[#eee] border-[#666]" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                   >
                     機材
                   </button>
@@ -4873,7 +4873,7 @@ function GalleryTab({
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, category: e.target.value }))
                 }
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
               >
                 <option value="all">指定なし</option>
                 {categories.map((c) => (
@@ -4891,7 +4891,7 @@ function GalleryTab({
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, series: e.target.value }))
                 }
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
               >
                 <option value="all">指定なし</option>
                 {seriesList.map((s) => (
@@ -4910,7 +4910,7 @@ function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, size: e.target.value }))
                   }
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
                 >
                   <option value="all">指定なし</option>
                   {(["S", "M", "L"] as const).map((sz) => (
@@ -4927,7 +4927,7 @@ function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, published: e.target.value }))
                   }
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
                 >
                   <option value="all">指定なし</option>
                   <option value="published">公開のみ</option>
@@ -4943,7 +4943,7 @@ function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, recent: e.target.value }))
                   }
-                  className="w-full bg-[#333] border border-[#444] text-[#ddd] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm"
                 >
                   <option value="all">指定なし</option>
                   <option value="7">直近7日</option>
@@ -4956,7 +4956,7 @@ function GalleryTab({
                     setAlbumDraft((d) => ({ ...d, featured: !d.featured }))
                   }
                   aria-pressed={albumDraft.featured}
-                  className={`w-full flex items-center justify-center gap-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[#333] text-[#888] border-[#444] hover:bg-[#3a3a3a]"}`}
+                  className={`w-full flex items-center justify-center gap-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                 >
                   <Star size={11} /> {albumDraft.featured ? "のみ" : "条件なし"}
                 </button>
@@ -4966,7 +4966,7 @@ function GalleryTab({
           <div className="flex gap-2 justify-end mt-5">
             <button
               onClick={() => setAlbumModalOpen(false)}
-              className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
             >
               キャンセル
             </button>
@@ -5038,18 +5038,18 @@ function GalleryTab({
       {/* Undo toast (B3) */}
       <Toast
         show={!!undoToast}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#333] border border-[#444] text-[#ddd] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
       >
         <span>{undoToast?.count}枚をゴミ箱に移動しました</span>
         <button
           onClick={() => undoToast && restorePhotos.mutate(undoToast.ids)}
-          className="text-[#aaa] hover:text-white underline underline-offset-2 transition-colors"
+          className="text-[var(--admin-ink)] hover:text-white underline underline-offset-2 transition-colors"
         >
           ↩ 元に戻す
         </button>
         <button
           onClick={() => setUndoToast(null)}
-          className="text-[#555] hover:text-[#888] transition-colors ml-1"
+          className="text-[var(--admin-muted)] hover:text-[#888] transition-colors ml-1"
         >
           <X size={12} />
         </button>
@@ -5090,11 +5090,11 @@ function GalleryTab({
       {/* Delete confirm modal */}
       {deleteConfirm && (
         <Modal onClose={() => setDeleteConfirm(null)}>
-          <p className="text-[13px] text-[#ddd] mb-4">{deleteConfirm.label}</p>
+          <p className="text-[13px] text-[var(--admin-ink)] mb-4">{deleteConfirm.label}</p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteConfirm(null)}
-              className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
             >
               キャンセル
             </button>
@@ -5152,13 +5152,13 @@ function GalleryTab({
           widthClass="w-[360px] max-w-full"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[12px] tracking-widest uppercase text-[#888]">
+            <h3 className="text-[12px] tracking-widest uppercase text-[var(--admin-muted)]">
               キーボードショートカット
             </h3>
             <button
               onClick={() => setShowShortcuts(false)}
               aria-label="Close"
-              className="text-[#888] hover:text-[#ccc]"
+              className="text-[var(--admin-muted)] hover:text-[#ccc]"
             >
               <X size={15} />
             </button>
@@ -5181,10 +5181,10 @@ function GalleryTab({
               ] as const
             ).map(([k, desc]) => (
               <div key={k} className="flex items-center justify-between gap-4">
-                <dt className="text-[#aaa] font-mono text-[11px] whitespace-nowrap">
+                <dt className="text-[var(--admin-ink)] font-mono text-[11px] whitespace-nowrap">
                   {k}
                 </dt>
-                <dd className="text-[#777] text-right">{desc}</dd>
+                <dd className="text-[var(--admin-muted)] text-right">{desc}</dd>
               </div>
             ))}
           </dl>
@@ -5194,16 +5194,16 @@ function GalleryTab({
       {/* Right panel — Inspector (like Lr metadata panel).
           Mobile: full-width drawer overlay. Desktop: static side panel. */}
       {inspectPhoto && (
-        <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-72 sm:max-w-none sm:shadow-none bg-[#252525] border-l border-[#333] flex flex-col flex-shrink-0 overflow-y-auto">
+        <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-72 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto">
           {/* Header with close (close needed on mobile drawer) */}
           <div className="flex items-center justify-between px-3 pt-2 sm:hidden">
-            <span className="text-[10px] text-[#666] uppercase tracking-wider">
+            <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
               Edit Photo
             </span>
             <button
               onClick={() => setInspectPhoto(null)}
               aria-label="Close"
-              className="text-[#888] hover:text-[#ccc] transition-colors p-1 -mr-1"
+              className="text-[var(--admin-muted)] hover:text-[#ccc] transition-colors p-1 -mr-1"
             >
               <X size={16} />
             </button>
@@ -5219,7 +5219,7 @@ function GalleryTab({
                 editForm.rotationDeg,
               )}
               alt={inspectPhoto.title}
-              className="w-full h-auto object-contain bg-[#1e1e1e]"
+              className="w-full h-auto object-contain bg-[var(--admin-paper)]"
               style={{ maxHeight: "320px" }}
             />
           </div>
@@ -5243,7 +5243,7 @@ function GalleryTab({
             return (
               <div className="mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-[#777] uppercase tracking-wider">
+                  <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                     よく使う
                   </span>
                   {quickDraftChanged && (
@@ -5276,10 +5276,10 @@ function GalleryTab({
                     )}
                     {editForm.isPublished ? "公開" : "非公開"}
                   </span>
-                  <span className="rounded-sm border border-[#444] bg-[#303030] px-1.5 py-0.5 text-[10px] text-[#bbb]">
+                  <span className="rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
                     Size {editForm.displaySize}
                   </span>
-                  <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[#444] bg-[#303030] px-1.5 py-0.5 text-[10px] text-[#bbb]">
+                  <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
                     <span
                       className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
                       style={{
@@ -5294,7 +5294,7 @@ function GalleryTab({
                     </span>
                   </span>
                   {quickSeriesName && (
-                    <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[#444] bg-[#303030] px-1.5 py-0.5 text-[10px] text-[#bbb]">
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
                       <Layers size={9} className="flex-shrink-0" />
                       <span className="truncate">{quickSeriesName}</span>
                     </span>
@@ -5336,7 +5336,7 @@ function GalleryTab({
                       }
                       aria-label="左へ90度回転"
                       title="左へ90°回転"
-                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[#444] bg-[#303030] text-[#aaa] transition-colors hover:bg-[#3a3a3a] hover:text-[#ddd]"
+                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors hover:bg-[#3a3a3a] hover:text-[#ddd]"
                     >
                       <RotateCcw size={13} />
                     </button>
@@ -5352,7 +5352,7 @@ function GalleryTab({
                           className={`h-7 rounded-sm text-[10px] transition-colors ${
                             editForm.rotationDeg === deg
                               ? "bg-[#888] text-[#1e1e1e] font-medium"
-                              : "border border-[#444] bg-[#303030] text-[#888] hover:bg-[#3a3a3a]"
+                              : "border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] hover:bg-[#3a3a3a]"
                           }`}
                         >
                           {deg}°
@@ -5369,7 +5369,7 @@ function GalleryTab({
                       }
                       aria-label="右へ90度回転"
                       title="右へ90°回転"
-                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[#444] bg-[#303030] text-[#aaa] transition-colors hover:bg-[#3a3a3a] hover:text-[#ddd]"
+                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors hover:bg-[#3a3a3a] hover:text-[#ddd]"
                     >
                       <RotateCw size={13} />
                     </button>
@@ -5385,7 +5385,7 @@ function GalleryTab({
                       setEditForm((f) => ({ ...f, category: e.target.value }))
                     }
                     aria-label="クイックカテゴリ"
-                    className="min-w-0 rounded-sm border border-[#444] bg-[#303030] px-2 py-1.5 text-[11px] text-[#ddd] outline-none transition-colors focus:border-[#888]"
+                    className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors focus:border-[#888]"
                   >
                     <option value="">カテゴリなし</option>
                     {categories.map((c) => (
@@ -5405,7 +5405,7 @@ function GalleryTab({
                       setEditForm((f) => ({ ...f, seriesId: e.target.value }))
                     }
                     aria-label="クイックシリーズ"
-                    className="min-w-0 rounded-sm border border-[#444] bg-[#303030] px-2 py-1.5 text-[11px] text-[#ddd] outline-none transition-colors focus:border-[#888]"
+                    className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors focus:border-[#888]"
                   >
                     <option value="">シリーズなし</option>
                     {seriesList.map((s) => (
@@ -5422,8 +5422,8 @@ function GalleryTab({
 
           {/* Metadata form */}
           <div className="px-3 pb-4 flex flex-col gap-3 flex-1">
-            <div className="border-b border-[#333] pb-2 mb-1">
-              <span className="text-[10px] text-[#666] uppercase tracking-wider">
+            <div className="border-b border-[var(--admin-line)] pb-2 mb-1">
+              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                 Metadata
               </span>
             </div>
@@ -5433,7 +5433,7 @@ function GalleryTab({
               hint="正方形・ヒーローなど、切り抜き表示の中心"
             >
               <div className="grid grid-cols-[72px_1fr] gap-2">
-                <div className="relative aspect-square overflow-hidden bg-[#1e1e1e] border border-[#444] rounded-sm">
+                <div className="relative aspect-square overflow-hidden bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm">
                   <img
                     src={srcFor(
                       inspectPhoto.url,
@@ -5483,13 +5483,13 @@ function GalleryTab({
                         title={point.label}
                         className={`h-5 rounded-sm border flex items-center justify-center transition-colors ${
                           active
-                            ? "bg-[#888] border-[#999]"
-                            : "bg-[#333] border-[#444] hover:bg-[#3a3a3a]"
+                            ? "bg-[#888] border-[var(--admin-line)]"
+                            : "bg-[var(--admin-paper-soft)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            active ? "bg-[#1e1e1e]" : "bg-[#777]"
+                            active ? "bg-[var(--admin-paper)]" : "bg-[#777]"
                           }`}
                         />
                       </button>
@@ -5507,7 +5507,7 @@ function GalleryTab({
                   setEditForm((f) => ({ ...f, title: e.target.value }))
                 }
                 placeholder="Untitled"
-                className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888] transition-colors placeholder:text-[#555]"
               />
             </InspectField>
 
@@ -5520,7 +5520,7 @@ function GalleryTab({
                 }
                 placeholder="PENTAX 67"
                 list="meta-presets-camera"
-                className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888] transition-colors placeholder:text-[#555]"
               />
               <datalist id="meta-presets-camera">
                 {cameraPresets.map((p) => (
@@ -5538,7 +5538,7 @@ function GalleryTab({
                 }
                 placeholder="SMC Takumar 105mm f/2.4"
                 list="meta-presets-lens"
-                className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888] transition-colors placeholder:text-[#555]"
               />
               <datalist id="meta-presets-lens">
                 {lensPresets.map((p) => (
@@ -5554,7 +5554,7 @@ function GalleryTab({
                 disabled={!editForm.camera.trim() && !editForm.lens.trim()}
                 title="カメラとレンズをコピー"
                 aria-label="カメラとレンズをコピー"
-                className="inline-flex items-center gap-1 text-[10px] text-[#999] bg-[#333] border border-[#444] rounded-sm px-2 py-1 hover:bg-[#3a3a3a] hover:text-[#ccc] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 hover:bg-[#3a3a3a] hover:text-[#ccc] transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Copy size={10} /> Copy
               </button>
@@ -5563,7 +5563,7 @@ function GalleryTab({
                 onClick={pasteInspectCaptureInfo}
                 title="クリップボードからカメラとレンズを貼り付け"
                 aria-label="クリップボードからカメラとレンズを貼り付け"
-                className="inline-flex items-center gap-1 text-[10px] text-[#999] bg-[#333] border border-[#444] rounded-sm px-2 py-1 hover:bg-[#3a3a3a] hover:text-[#ccc] transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 hover:bg-[#3a3a3a] hover:text-[#ccc] transition-colors"
               >
                 <ClipboardPaste size={10} /> Paste
               </button>
@@ -5596,7 +5596,7 @@ function GalleryTab({
                     className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                       editForm.filmType === val
                         ? "bg-[#888] text-[#1e1e1e] font-medium"
-                        : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                        : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                     }`}
                   >
                     {lbl}
@@ -5617,13 +5617,13 @@ function GalleryTab({
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, shotAt: e.target.value }))
                   }
-                  className="flex-1 bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors [color-scheme:dark]"
+                  className="flex-1 bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888] transition-colors [color-scheme:dark]"
                 />
                 {editForm.shotAt && (
                   <button
                     onClick={() => setEditForm((f) => ({ ...f, shotAt: "" }))}
                     aria-label="撮影日をクリア"
-                    className="text-[10px] text-[#666] hover:text-[#999] transition-colors px-1.5"
+                    className="text-[10px] text-[var(--admin-muted)] hover:text-[#999] transition-colors px-1.5"
                   >
                     クリア
                   </button>
@@ -5643,7 +5643,7 @@ function GalleryTab({
                   setEditForm((f) => ({ ...f, description: e.target.value }))
                 }
                 placeholder="Photo description..."
-                className="w-full bg-[#333] text-[#ddd] text-[12px] px-2 py-1.5 rounded-sm border border-[#444] outline-none focus:border-[#888] transition-colors resize-y placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none focus:border-[#888] transition-colors resize-y placeholder:text-[#555]"
               />
             </InspectField>
 
@@ -5706,7 +5706,7 @@ function GalleryTab({
                   setMetaError(false);
                   setEditForm(photoToEditForm(inspectPhoto));
                 }}
-                className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[#666] bg-[#333] py-1.5 rounded-sm hover:bg-[#3a3a3a] transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] py-1.5 rounded-sm hover:bg-[#3a3a3a] transition-colors"
               >
                 <X size={11} /> Reset
               </button>
@@ -5715,7 +5715,7 @@ function GalleryTab({
             <button
               onClick={() => duplicatePhoto.mutate(inspectPhoto.id)}
               disabled={duplicatePhoto.isPending}
-              className="flex items-center justify-center gap-1.5 text-[11px] text-[#999] bg-[#2f2f2f] border border-[#444] py-1.5 rounded-sm hover:bg-[#383838] hover:text-[#ccc] transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] py-1.5 rounded-sm hover:bg-[#383838] hover:text-[#ccc] transition-colors disabled:opacity-50"
             >
               {duplicatePhoto.isPending ? (
                 <Loader2 size={11} className="animate-spin" />
@@ -5755,8 +5755,8 @@ function GalleryTab({
                 ],
               ];
               return (
-                <div className="border-t border-[#333] pt-3 mt-1 flex flex-col gap-1">
-                  <span className="text-[9px] text-[#555] uppercase tracking-wider mb-0.5">
+                <div className="border-t border-[var(--admin-line)] pt-3 mt-1 flex flex-col gap-1">
+                  <span className="text-[9px] text-[var(--admin-muted)] uppercase tracking-wider mb-0.5">
                     使用状況
                   </span>
                   {rows.map(([k, v]) => (
@@ -5764,8 +5764,8 @@ function GalleryTab({
                       key={k}
                       className="flex justify-between gap-2 text-[10px]"
                     >
-                      <span className="text-[#666] flex-shrink-0">{k}</span>
-                      <span className="text-[#bbb] text-right truncate">
+                      <span className="text-[var(--admin-muted)] flex-shrink-0">{k}</span>
+                      <span className="text-[var(--admin-ink)] text-right truncate">
                         {v}
                       </span>
                     </div>
@@ -5774,11 +5774,11 @@ function GalleryTab({
               );
             })()}
 
-            <div className="border-t border-[#333] pt-3 mt-2">
-              <span className="text-[10px] text-[#666] uppercase tracking-wider">
+            <div className="border-t border-[var(--admin-line)] pt-3 mt-2">
+              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                 File Info
               </span>
-              <p className="text-[11px] text-[#888] mt-2 break-all">
+              <p className="text-[11px] text-[var(--admin-muted)] mt-2 break-all">
                 {inspectPhoto.filename}
               </p>
             </div>
@@ -5791,7 +5791,7 @@ function GalleryTab({
                     label: "この写真をゴミ箱に移動しますか？",
                   })
                 }
-                className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[#333] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors"
               >
                 <Trash2 size={11} /> 写真をゴミ箱へ
               </button>
@@ -5821,8 +5821,8 @@ function GalleryTab({
                   aria-pressed={sitePreviewPage === val}
                   className={`px-2 py-1 rounded-sm text-[10px] transition-colors ${
                     sitePreviewPage === val
-                      ? "bg-[#333] text-[#ccc]"
-                      : "text-[#555] hover:text-[#888]"
+                      ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
+                      : "text-[var(--admin-muted)] hover:text-[#888]"
                   }`}
                 >
                   {lbl}
@@ -5837,8 +5837,8 @@ function GalleryTab({
                 aria-label="PC幅で確認"
                 className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
                   sitePreviewDevice === "desktop"
-                    ? "bg-[#333] text-[#ccc]"
-                    : "text-[#555] hover:text-[#888]"
+                    ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
+                    : "text-[var(--admin-muted)] hover:text-[#888]"
                 }`}
               >
                 <Monitor size={13} /> PC幅
@@ -5850,8 +5850,8 @@ function GalleryTab({
                 aria-label="スマホ幅で確認"
                 className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
                   sitePreviewDevice === "mobile"
-                    ? "bg-[#333] text-[#ccc]"
-                    : "text-[#555] hover:text-[#888]"
+                    ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
+                    : "text-[var(--admin-muted)] hover:text-[#888]"
                 }`}
               >
                 <Smartphone size={13} /> スマホ幅
@@ -5860,13 +5860,13 @@ function GalleryTab({
                 onClick={() =>
                   sitePreviewRef.current?.contentWindow?.location.reload()
                 }
-                className="ml-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                className="ml-1 text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
               >
                 Reload
               </button>
               <button
                 onClick={() => setShowSitePreview(false)}
-                className="ml-1 p-1.5 rounded-sm text-[#888] hover:text-[#ccc] transition-colors"
+                className="ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
                 title="プレビューを閉じる"
                 aria-label="プレビューを閉じる"
               >
@@ -5961,10 +5961,10 @@ function BulkEditTable({
 }) {
   if (photos.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-[#555]">
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
         <EmptyContactSheetIllustration />
         <p className="text-sm">まだ写真がありません。</p>
-        <p className="text-[11px] text-[#444]">
+        <p className="text-[11px] text-[var(--admin-muted)]">
           Gallery表示に戻ると、Importから追加できます。
         </p>
       </div>
@@ -5974,26 +5974,26 @@ function BulkEditTable({
   return (
     <div className="overflow-x-auto h-full">
       <table className="w-full min-w-[860px] border-collapse text-[12px]">
-        <thead className="sticky top-0 z-10 bg-[#2a2a2a] border-b border-[#444]">
+        <thead className="sticky top-0 z-10 bg-[var(--admin-paper)] border-b border-[var(--admin-line)]">
           <tr>
             <th className="w-7" aria-label="Select" />
             <th className="w-12" aria-label="Thumbnail" />
-            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal">
+            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal">
               Title
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-44">
+            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-44">
               Camera
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-48">
+            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-48">
               Lens
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-36">
+            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-36">
               Series
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-20">
+            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-20">
               Size
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[#777] uppercase tracking-wider font-normal w-28">
+            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-28">
               Medium
             </th>
           </tr>
@@ -6154,17 +6154,17 @@ function BulkEditRow({
         ? "bg-red-900/10"
         : "";
   const inputCls =
-    "w-full bg-transparent text-[#ddd] outline-none border-b border-transparent focus:border-[#666] transition-colors py-0.5 placeholder:text-[#555] text-[12px]";
+    "w-full bg-transparent text-[var(--admin-ink)] outline-none border-b border-transparent focus:border-[#666] transition-colors py-0.5 placeholder:text-[#555] text-[12px]";
   const cellCls = "px-2 py-1 align-middle";
 
   return (
     <tr
-      className={`border-b border-[#333] transition-colors hover:bg-[#252525] ${rowBg} group`}
+      className={`border-b border-[var(--admin-line)] transition-colors hover:bg-[#252525] ${rowBg} group`}
     >
       {/* Save status indicator */}
       <td className="w-7 px-1 text-center align-middle">
         {status === "saving" && (
-          <Loader2 size={11} className="animate-spin text-[#888] mx-auto" />
+          <Loader2 size={11} className="animate-spin text-[var(--admin-muted)] mx-auto" />
         )}
         {status === "saved" && (
           <Check size={11} className="text-emerald-400 mx-auto" />
@@ -6181,7 +6181,7 @@ function BulkEditRow({
         <img
           src={adminPhotoSrc(photo, 100, 60)}
           alt={photo.title || photo.filename}
-          className="w-11 h-11 object-cover bg-[#2a2a2a] rounded-sm"
+          className="w-11 h-11 object-cover bg-[var(--admin-paper)] rounded-sm"
           style={{ objectPosition: adminPhotoObjectPosition(photo) }}
           loading="lazy"
         />
@@ -6215,7 +6215,7 @@ function BulkEditRow({
             disabled={!draft.camera.trim() && !draft.lens.trim()}
             title="カメラとレンズをコピー"
             aria-label="カメラとレンズをコピー"
-            className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[#777] hover:text-[#ccc] disabled:opacity-20 transition-opacity"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--admin-muted)] hover:text-[#ccc] disabled:opacity-20 transition-opacity"
           >
             <Copy size={11} />
           </button>
@@ -6224,7 +6224,7 @@ function BulkEditRow({
             onClick={pasteRowCaptureInfo}
             title="クリップボードからカメラとレンズを貼り付け"
             aria-label="クリップボードからカメラとレンズを貼り付け"
-            className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[#777] hover:text-[#ccc] transition-opacity"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--admin-muted)] hover:text-[#ccc] transition-opacity"
           >
             <ClipboardPaste size={11} />
           </button>
@@ -6266,7 +6266,7 @@ function BulkEditRow({
           aria-label="シリーズ"
           value={draft.seriesId}
           onChange={(e) => handleChange("seriesId", e.target.value)}
-          className="w-full bg-[#2a2a2a] text-[#ddd] outline-none border border-transparent focus:border-[#666] transition-colors py-0.5 rounded-sm text-[11px]"
+          className="w-full bg-[var(--admin-paper)] text-[var(--admin-ink)] outline-none border border-transparent focus:border-[#666] transition-colors py-0.5 rounded-sm text-[11px]"
         >
           <option value="">—</option>
           {seriesList.map((s) => (
@@ -6288,7 +6288,7 @@ function BulkEditRow({
               className={`flex-1 text-[10px] py-0.5 rounded-sm transition-colors ${
                 draft.displaySize === sz
                   ? "bg-[#888] text-[#1e1e1e] font-medium"
-                  : "bg-[#333] text-[#888] hover:bg-[#3a3a3a]"
+                  : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] hover:bg-[#3a3a3a]"
               }`}
             >
               {sz}
@@ -6314,7 +6314,7 @@ function BulkEditRow({
               className={`flex-1 text-[10px] py-0.5 rounded-sm transition-colors ${
                 draft.filmType === val
                   ? "bg-[#888] text-[#1e1e1e] font-medium"
-                  : "bg-[#333] text-[#888] hover:bg-[#3a3a3a]"
+                  : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] hover:bg-[#3a3a3a]"
               }`}
             >
               {lbl}
@@ -6341,7 +6341,7 @@ function InspectField({
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[#555] mb-1.5 leading-relaxed">{hint}</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">{hint}</p>
       )}
       {children}
     </div>
@@ -6691,7 +6691,7 @@ function EmptyContactSheetIllustration() {
       height={56}
       fill="none"
       aria-hidden="true"
-      className="text-[#444]"
+      className="text-[var(--admin-muted)]"
     >
       <rect
         x="6"
@@ -6729,7 +6729,7 @@ function EmptySearchIllustration() {
       height={56}
       fill="none"
       aria-hidden="true"
-      className="text-[#444]"
+      className="text-[var(--admin-muted)]"
     >
       <rect
         x="8"
@@ -6763,7 +6763,7 @@ function EmptyTrashIllustration() {
       height={56}
       fill="none"
       aria-hidden="true"
-      className="text-[#444]"
+      className="text-[var(--admin-muted)]"
     >
       <path
         d="M14 24 L20 50 Q20 52 22 52 L42 52 Q44 52 44 50 L50 24"
@@ -6841,7 +6841,7 @@ function SegmentedControl<T extends string>({
           className={`admin-segmented__option relative z-[1] flex-1 rounded-[var(--radius-s)] px-1.5 py-1 text-[10px] transition-colors duration-[var(--dur-fast)] ${
             value === opt.value
               ? "text-[#1e1e1e] font-medium"
-              : "text-[#888] hover:text-[#bbb]"
+              : "text-[var(--admin-muted)] hover:text-[#bbb]"
           }`}
         >
           {opt.label}
@@ -6866,7 +6866,7 @@ function AdminField({
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[#555] mb-1.5 leading-relaxed">{hint}</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">{hint}</p>
       )}
       {children}
     </div>

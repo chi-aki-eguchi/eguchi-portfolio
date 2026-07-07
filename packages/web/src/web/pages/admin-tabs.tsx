@@ -174,7 +174,7 @@ export function HeroTab() {
 
   if (photosLoading || heroLoading) {
     return (
-      <div className="flex items-center justify-center h-full gap-2 text-[#555] text-sm">
+      <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
         <Loader2 size={14} className="animate-spin" /> Loading...
       </div>
     );
@@ -219,17 +219,17 @@ export function HeroTab() {
       )}
       {/* Selected Hero Photos */}
       <div className="mb-8">
-        <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-1">
+        <h2 className="text-[11px] tracking-widest uppercase text-[var(--admin-muted)] mb-1">
           Hero Slides
         </h2>
-        <p className="text-[10px] text-[#444] mb-4">
+        <p className="text-[10px] text-[var(--admin-muted)] mb-4">
           トップページのカルーセルに表示する写真。ドラッグで並び替え。未選択の場合はギャラリーの先頭から自動表示。
         </p>
         {heroPhotos.length === 0 ? (
-          <div className="border border-dashed border-[#333] rounded-sm p-8 text-center">
-            <Star size={18} className="mx-auto text-[#444] mb-2" />
-            <p className="text-[12px] text-[#555]">ヒーロー写真が未設定です</p>
-            <p className="text-[10px] text-[#444] mt-1">
+          <div className="border border-dashed border-[var(--admin-line)] rounded-sm p-8 text-center">
+            <Star size={18} className="mx-auto text-[var(--admin-muted)] mb-2" />
+            <p className="text-[12px] text-[var(--admin-muted)]">ヒーロー写真が未設定です</p>
+            <p className="text-[10px] text-[var(--admin-muted)] mt-1">
               下のギャラリーから写真を選んでください
             </p>
           </div>
@@ -298,14 +298,14 @@ export function HeroTab() {
 
       {/* Gallery: Pick photos */}
       <div>
-        <h2 className="text-[11px] tracking-widest uppercase text-[#666] mb-1">
+        <h2 className="text-[11px] tracking-widest uppercase text-[var(--admin-muted)] mb-1">
           Gallery
         </h2>
-        <p className="text-[10px] text-[#444] mb-4">
+        <p className="text-[10px] text-[var(--admin-muted)] mb-4">
           クリックでヒーローに追加 / 解除
         </p>
         {allPhotos.length === 0 ? (
-          <p className="text-[12px] text-[#555] text-center py-8">
+          <p className="text-[12px] text-[var(--admin-muted)] text-center py-8">
             まだ写真がありません。Libraryから追加できます。
           </p>
         ) : (
@@ -456,7 +456,7 @@ export function ProfileTab({
 
   if (isLoading)
     return (
-      <div className="flex items-center justify-center h-full gap-2 text-[#555] text-sm">
+      <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
         <Loader2 size={14} className="animate-spin" /> Loading...
       </div>
     );
@@ -521,7 +521,7 @@ export function ProfileTab({
 
       {/* Profile Photo Upload */}
       <div className="mb-8">
-        <p className="text-[10px] text-[#777] uppercase tracking-wider mb-3">
+        <p className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mb-3">
           Profile Photo (About page)
         </p>
         <div className="flex items-start gap-4">
@@ -529,11 +529,11 @@ export function ProfileTab({
             <img
               src={`${data.profilePhotoUrl}?w=300&q=80`}
               alt="Profile"
-              className="w-28 h-36 object-cover border border-[#333] rounded-sm"
+              className="w-28 h-36 object-cover border border-[var(--admin-line)] rounded-sm"
             />
           ) : (
-            <div className="w-28 h-36 bg-[#2a2a2a] border border-[#333] rounded-sm flex items-center justify-center">
-              <User size={20} className="text-[#444]" />
+            <div className="w-28 h-36 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm flex items-center justify-center">
+              <User size={20} className="text-[var(--admin-muted)]" />
             </div>
           )}
           <div className="flex flex-col gap-2">
@@ -544,18 +544,18 @@ export function ProfileTab({
               className={`border border-dashed rounded-sm px-4 py-3 text-center transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] w-full ${
                 photoUploading
                   ? "border-[#555] cursor-default"
-                  : "border-[#333] hover:border-[#555] cursor-pointer"
+                  : "border-[var(--admin-line)] hover:border-[#555] cursor-pointer"
               }`}
             >
               {photoUploading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 size={12} className="animate-spin text-[#888]" />
-                  <span className="text-[11px] text-[#666]">Uploading...</span>
+                  <Loader2 size={12} className="animate-spin text-[var(--admin-muted)]" />
+                  <span className="text-[11px] text-[var(--admin-muted)]">Uploading...</span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
-                  <Upload size={12} className="text-[#555]" />
-                  <span className="text-[11px] text-[#666]">Upload photo</span>
+                  <Upload size={12} className="text-[var(--admin-muted)]" />
+                  <span className="text-[11px] text-[var(--admin-muted)]">Upload photo</span>
                 </div>
               )}
             </button>
@@ -570,7 +570,7 @@ export function ProfileTab({
                 if (f) handleProfilePhoto(f);
               }}
             />
-            <p className="text-[10px] text-[#444]">3:4 portrait recommended</p>
+            <p className="text-[10px] text-[var(--admin-muted)]">3:4 portrait recommended</p>
             {photoError && (
               <p className="text-[10px] text-red-400/80">{photoError}</p>
             )}
@@ -588,7 +588,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors resize-y rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors resize-y rounded-sm placeholder:text-[#555]"
               />
             ) : (
               <input
@@ -597,7 +597,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
               />
             )}
           </AdminField>
@@ -734,7 +734,7 @@ export function CategoriesTab() {
         title="Categories"
         description="Gallery の絞り込みに使うカテゴリを管理します。"
       />
-      <p className="text-[11px] text-[#555] mb-6">
+      <p className="text-[11px] text-[var(--admin-muted)] mb-6">
         ギャラリーのフィルターとして使用。↑↓で並び替え（この順で表示されます）。
       </p>
 
@@ -746,7 +746,7 @@ export function CategoriesTab() {
 
       <div className="flex flex-col gap-1 mb-8">
         {categories.length === 0 && !catsLoading && (
-          <p className="text-sm text-[#555] py-4 text-center">
+          <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
             まだカテゴリがありません。下の入力欄から追加できます。
           </p>
         )}
@@ -796,8 +796,8 @@ export function CategoriesTab() {
         ))}
       </div>
 
-      <div className="border-t border-[#333] pt-5">
-        <p className="text-[11px] tracking-wider uppercase text-[#555] mb-4">
+      <div className="border-t border-[var(--admin-line)] pt-5">
+        <p className="text-[11px] tracking-wider uppercase text-[var(--admin-muted)] mb-4">
           New Category
         </p>
         <div className="flex flex-col gap-3">
@@ -810,7 +810,7 @@ export function CategoriesTab() {
                 setCatError("");
               }}
               placeholder="e.g. Street"
-              className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
             />
           </AdminField>
           <AdminField label="Slug">
@@ -824,7 +824,7 @@ export function CategoriesTab() {
                 setCatError("");
               }}
               placeholder="e.g. street"
-              className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
             />
           </AdminField>
           {catError && (
@@ -843,13 +843,13 @@ export function CategoriesTab() {
       {/* Delete confirm modal */}
       {deleteCatConfirm && (
         <Modal onClose={() => setDeleteCatConfirm(null)}>
-          <p className="text-[13px] text-[#ddd] mb-4">
+          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
             「{deleteCatConfirm.label}」を削除しますか？
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteCatConfirm(null)}
-              className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
             >
               キャンセル
             </button>
@@ -1087,7 +1087,7 @@ export function SeriesTab() {
 
       <div className="flex flex-col gap-2 mb-8">
         {series.length === 0 && !isLoading && (
-          <p className="text-sm text-[#555] py-4 text-center">
+          <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
             まだシリーズがありません。作品のまとまりを作るとここに表示されます。
           </p>
         )}
@@ -1113,7 +1113,7 @@ export function SeriesTab() {
                   alt={s.title}
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-28 object-cover border-b border-[#333]"
+                  className="w-full h-28 object-cover border-b border-[var(--admin-line)]"
                   style={{ objectPosition: adminPhotoObjectPosition(cover) }}
                 />
               )}
@@ -1198,7 +1198,7 @@ export function SeriesTab() {
 
               {/* Inline editor */}
               {editId === s.id && (
-                <div className="border-t border-[#333] px-3 py-3 flex flex-col gap-3">
+                <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
                   <AdminField label="Title">
                     <input
                       aria-label="シリーズのタイトル"
@@ -1207,7 +1207,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, title: e.target.value }))
                       }
                       placeholder="Still, life"
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                     />
                   </AdminField>
                   <AdminField label="Slug" hint="URL（/series/◯◯）に使用">
@@ -1223,7 +1223,7 @@ export function SeriesTab() {
                         }))
                       }
                       placeholder="still-life"
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
                     />
                   </AdminField>
                   <AdminField label="Subtitle" hint="任意のサブタイトル">
@@ -1234,7 +1234,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, subtitle: e.target.value }))
                       }
                       placeholder="2023–2024"
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                     />
                   </AdminField>
                   <AdminField
@@ -1249,7 +1249,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, statement: e.target.value }))
                       }
                       placeholder="このシリーズについて…"
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
                     />
                   </AdminField>
                   <AdminField
@@ -1274,13 +1274,13 @@ export function SeriesTab() {
                             className={`text-[11px] px-2 py-1 rounded-sm border transition-colors self-start ${
                               draft.coverPhotoId === ""
                                 ? "bg-[#555] text-[#1e1e1e] border-[#666]"
-                                : "bg-[#333] text-[#888] border-[#444] hover:bg-[#3a3a3a]"
+                                : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                             }`}
                           >
                             なし（自動）
                           </button>
                           {allForPicker.length > 0 ? (
-                            <div className="grid grid-cols-5 gap-1 max-h-44 overflow-y-auto rounded-sm border border-[#444] bg-[#1e1e1e] p-1">
+                            <div className="grid grid-cols-5 gap-1 max-h-44 overflow-y-auto rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper)] p-1">
                               {allForPicker.map((p) => (
                                 <button
                                   key={p.id}
@@ -1315,7 +1315,7 @@ export function SeriesTab() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-[11px] text-[#555]">
+                            <p className="text-[11px] text-[var(--admin-muted)]">
                               写真がありません
                             </p>
                           )}
@@ -1325,7 +1325,7 @@ export function SeriesTab() {
                                 (p) => String(p.id) === draft.coverPhotoId,
                               );
                               return sel ? (
-                                <p className="text-[10px] text-[#777] truncate">
+                                <p className="text-[10px] text-[var(--admin-muted)] truncate">
                                   選択中: {sel.title || sel.filename}
                                 </p>
                               ) : null;
@@ -1336,7 +1336,7 @@ export function SeriesTab() {
                   </AdminField>
                   {/* 機能9: シリーズ固有のレイアウト・テーマ設定 */}
                   <div className="border-t border-[#2a2a2a] pt-3 mt-1">
-                    <p className="text-[10px] tracking-wider uppercase text-[#555] mb-2">
+                    <p className="text-[10px] tracking-wider uppercase text-[var(--admin-muted)] mb-2">
                       Layout &amp; Theme
                     </p>
                     <AdminField
@@ -1362,7 +1362,7 @@ export function SeriesTab() {
                             key={val}
                             type="button"
                             onClick={() => setThemeKey("layout", val)}
-                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                           >
                             {lbl}
                           </button>
@@ -1386,7 +1386,7 @@ export function SeriesTab() {
                             key={val}
                             type="button"
                             onClick={() => setThemeKey("photoOrder", val)}
-                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                           >
                             {lbl}
                           </button>
@@ -1404,7 +1404,7 @@ export function SeriesTab() {
                           setThemeKey("bgColor", e.target.value.trim())
                         }
                         placeholder="（グローバル設定を使用）"
-                        className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+                        className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
                       />
                     </AdminField>
                   </div>
@@ -1430,7 +1430,7 @@ export function SeriesTab() {
                     </button>
                     <button
                       onClick={() => setEditId(null)}
-                      className="px-4 py-2 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+                      className="px-4 py-2 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
                     >
                       Close
                     </button>
@@ -1442,8 +1442,8 @@ export function SeriesTab() {
         })}
       </div>
 
-      <div className="border-t border-[#333] pt-5">
-        <p className="text-[11px] tracking-wider uppercase text-[#555] mb-4">
+      <div className="border-t border-[var(--admin-line)] pt-5">
+        <p className="text-[11px] tracking-wider uppercase text-[var(--admin-muted)] mb-4">
           New Series
         </p>
         <div className="flex flex-col gap-3">
@@ -1459,7 +1459,7 @@ export function SeriesTab() {
                 }
               }}
               placeholder="Still, life"
-              className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
             />
           </AdminField>
           <AdminField label="Slug">
@@ -1473,7 +1473,7 @@ export function SeriesTab() {
                 setAddError("");
               }}
               placeholder="still-life"
-              className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
             />
           </AdminField>
           {addError && (
@@ -1491,16 +1491,16 @@ export function SeriesTab() {
 
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
-          <p className="text-[13px] text-[#ddd] mb-1">
+          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
             「{deleteTarget.title}」を削除しますか？
           </p>
-          <p className="text-[11px] text-[#777] mb-5">
+          <p className="text-[11px] text-[var(--admin-muted)] mb-5">
             写真は削除されず、シリーズの割り当てだけが外れます。
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
             >
               キャンセル
             </button>
@@ -1688,7 +1688,7 @@ export function PricingTab() {
 
       <div className="flex flex-col gap-2 mb-8">
         {plans.length === 0 && !isLoading && (
-          <p className="text-sm text-[#555] py-4 text-center">
+          <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
             まだ料金プランがありません。下の「プランを追加」から追加できます。
           </p>
         )}
@@ -1764,7 +1764,7 @@ export function PricingTab() {
             </div>
 
             {editId === p.id && (
-              <div className="border-t border-[#333] px-3 py-3 flex flex-col gap-3">
+              <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
                 <AdminField label="Title">
                   <input
                     aria-label="プランのタイトル"
@@ -1773,7 +1773,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, title: e.target.value }))
                     }
                     placeholder="ポートレート"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField label="Price" hint="自由記述（例: ¥15,000〜）">
@@ -1784,7 +1784,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, price: e.target.value }))
                     }
                     placeholder="¥15,000〜"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField label="Description" hint="プランの説明（任意）">
@@ -1796,7 +1796,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, description: e.target.value }))
                     }
                     placeholder="2時間・データ20枚 など"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField label="含まれるもの" hint="1行に1項目（箇条書き）">
@@ -1808,7 +1808,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, features: e.target.value }))
                     }
                     placeholder={"撮影2時間\nデータ20枚\nレタッチ込み"}
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField label="補足" hint="注意書きなど（任意）">
@@ -1819,7 +1819,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, note: e.target.value }))
                     }
                     placeholder="交通費別途"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                   />
                 </AdminField>
                 <div className="flex gap-2">
@@ -1840,7 +1840,7 @@ export function PricingTab() {
                   </button>
                   <button
                     onClick={() => setEditId(null)}
-                    className="px-4 py-2 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+                    className="px-4 py-2 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
                   >
                     Close
                   </button>
@@ -1861,13 +1861,13 @@ export function PricingTab() {
 
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
-          <p className="text-[13px] text-[#ddd] mb-4">
+          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
             「{deleteTarget.title}」を削除しますか？
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-1.5 text-[11px] text-[#888] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
             >
               キャンセル
             </button>
@@ -1916,10 +1916,10 @@ function TopWorksPicker({
   };
   if (photos.length === 0)
     return (
-      <p className="text-[10px] text-[#666]">公開中の写真はまだありません</p>
+      <p className="text-[10px] text-[var(--admin-muted)]">公開中の写真はまだありません</p>
     );
   return (
-    <div className="max-h-64 overflow-y-auto border border-[#3a3a3a] rounded-sm p-1.5 grid grid-cols-5 gap-1">
+    <div className="max-h-64 overflow-y-auto border border-[var(--admin-line)] rounded-sm p-1.5 grid grid-cols-5 gap-1">
       {photos.map((p) => {
         const pos = picked.indexOf(p.id);
         return (
@@ -1938,7 +1938,7 @@ function TopWorksPicker({
               loading="lazy"
               decoding="async"
               draggable={false}
-              className="w-full h-full object-cover bg-[#2a2a2a]"
+              className="w-full h-full object-cover bg-[var(--admin-paper)]"
               style={{ objectPosition: adminPhotoObjectPosition(p) }}
             />
             {pos >= 0 && (
@@ -1979,12 +1979,12 @@ function ServiceSection({
     return () => cancelAnimationFrame(id);
   }, []);
   return (
-    <div className="border-b border-[#333]">
+    <div className="border-b border-[var(--admin-line)]">
       <button
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[#888] hover:text-[#bbb] transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[var(--admin-muted)] hover:text-[#bbb] transition-colors cursor-pointer"
       >
         <span>{title}</span>
         <ChevronRight
@@ -2018,7 +2018,7 @@ function SvcInput({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] text-[#777] uppercase tracking-wider">
+      <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
         {label}
       </span>
       <input
@@ -2026,7 +2026,7 @@ function SvcInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full bg-[#2a2a2a] border border-[#444] rounded px-2.5 py-1.5 text-[12px] text-[#ccc] focus:border-[#666] outline-none"
+        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] focus:border-[#666] outline-none"
       />
     </label>
   );
@@ -2045,14 +2045,14 @@ function SvcTextarea({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] text-[#777] uppercase tracking-wider">
+      <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
         {label}
       </span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className="mt-1 w-full bg-[#2a2a2a] border border-[#444] rounded px-2.5 py-1.5 text-[12px] text-[#ccc] focus:border-[#666] outline-none resize-y leading-relaxed"
+        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] focus:border-[#666] outline-none resize-y leading-relaxed"
       />
     </label>
   );
@@ -2075,7 +2075,7 @@ function SvcArrayControls({
         type="button"
         disabled={index === 0}
         onClick={() => onMove(index, index - 1)}
-        className="p-0.5 text-[#666] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-0.5 text-[var(--admin-muted)] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
         title="上へ"
       >
         <ChevronUp size={12} />
@@ -2084,7 +2084,7 @@ function SvcArrayControls({
         type="button"
         disabled={index === total - 1}
         onClick={() => onMove(index, index + 1)}
-        className="p-0.5 text-[#666] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-0.5 text-[var(--admin-muted)] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
         title="下へ"
       >
         <ChevronDown size={12} />
@@ -2092,7 +2092,7 @@ function SvcArrayControls({
       <button
         type="button"
         onClick={() => onRemove(index)}
-        className="p-0.5 text-[#666] hover:text-red-400"
+        className="p-0.5 text-[var(--admin-muted)] hover:text-red-400"
         title="削除"
       >
         <X size={12} />
@@ -2208,7 +2208,7 @@ export function ServiceTab({
   if (isLoading)
     return (
       <div className="flex items-center justify-center h-32">
-        <Loader2 size={20} className="animate-spin text-[#555]" />
+        <Loader2 size={20} className="animate-spin text-[var(--admin-muted)]" />
       </div>
     );
 
@@ -2220,7 +2220,7 @@ export function ServiceTab({
       />
 
       {/* Enabled toggle */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#333]">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[var(--admin-line)]">
         <span className="text-[11px] text-[color:var(--admin-muted)]">
           ページ公開
         </span>
@@ -2297,11 +2297,11 @@ export function ServiceTab({
           value={draft.examples.cta}
           onChange={(v) => setExamples({ cta: v })}
         />
-        <p className="text-[10px] text-[#666] mt-2">実例リンク</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">実例リンク</p>
         {draft.examples.links.map((link, i) => (
-          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#555]">#{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">#{i + 1}</span>
               <SvcArrayControls
                 index={i}
                 total={draft.examples.links.length}
@@ -2356,7 +2356,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
         >
           <Plus size={11} /> 追加
         </button>
@@ -2370,9 +2370,9 @@ export function ServiceTab({
           onChange={(v) => setPainSolutions({ label: v })}
         />
         {draft.painSolutions.items.map((item, i) => (
-          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#555]">#{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">#{i + 1}</span>
               <SvcArrayControls
                 index={i}
                 total={draft.painSolutions.items.length}
@@ -2451,7 +2451,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
         >
           <Plus size={11} /> 追加
         </button>
@@ -2459,7 +2459,7 @@ export function ServiceTab({
 
       {/* ── Pricing ── */}
       <ServiceSection title="料金">
-        <p className="text-[11px] leading-6 text-[#666]">
+        <p className="text-[11px] leading-6 text-[var(--admin-muted)]">
           /service 販売ページの料金です。Contactページの料金は サイト &gt;
           Pricing で編集します。
         </p>
@@ -2469,9 +2469,9 @@ export function ServiceTab({
           onChange={(v) => setPricing({ label: v })}
         />
         {draft.pricing.plans.map((plan, i) => (
-          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#555]">プラン {i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">プラン {i + 1}</span>
               {plan.primary && (
                 <span className="text-[9px] bg-[#4a9eff]/20 text-[#4a9eff] px-1.5 py-0.5 rounded">
                   RECOMMENDED
@@ -2555,7 +2555,7 @@ export function ServiceTab({
                 })
               }
             />
-            <label className="flex items-center gap-2 text-[11px] text-[#888]">
+            <label className="flex items-center gap-2 text-[11px] text-[var(--admin-muted)]">
               <input
                 type="checkbox"
                 checked={plan.primary}
@@ -2590,7 +2590,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
         >
           <Plus size={11} /> プラン追加
         </button>
@@ -2631,11 +2631,11 @@ export function ServiceTab({
           value={draft.purchaseFlow.body}
           onChange={(v) => setPurchaseFlow({ body: v })}
         />
-        <p className="text-[10px] text-[#666] mt-2">ステップ</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">ステップ</p>
         {draft.purchaseFlow.steps.map((step, i) => (
-          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#555]">
+              <span className="text-[10px] text-[var(--admin-muted)]">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <SvcArrayControls
@@ -2683,7 +2683,7 @@ export function ServiceTab({
               steps: [...draft.purchaseFlow.steps, { title: "", body: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
         >
           <Plus size={11} /> ステップ追加
         </button>
@@ -2703,9 +2703,9 @@ export function ServiceTab({
           onChange={(v) => setFaq({ label: v })}
         />
         {draft.faq.items.map((item, i) => (
-          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#555]">Q{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">Q{i + 1}</span>
               <SvcArrayControls
                 index={i}
                 total={draft.faq.items.length}
@@ -2745,7 +2745,7 @@ export function ServiceTab({
               items: [...draft.faq.items, { q: "", a: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
         >
           <Plus size={11} /> 質問追加
         </button>
@@ -2776,7 +2776,7 @@ export function ServiceTab({
             onChange={(v) => setFinalCta({ ctaOffline: v })}
           />
         </div>
-        <p className="text-[10px] text-[#666] mt-2">SNSリンク</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">SNSリンク</p>
         {draft.finalCta.snsLinks.map((link, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
@@ -2790,7 +2790,7 @@ export function ServiceTab({
                 })
               }
               placeholder="Label"
-              className="flex-1 bg-[#2a2a2a] border border-[#444] rounded px-2 py-1 text-[11px] text-[#ccc] focus:border-[#666] outline-none"
+              className="flex-1 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] focus:border-[#666] outline-none"
             />
             <input
               type="text"
@@ -2803,7 +2803,7 @@ export function ServiceTab({
                 })
               }
               placeholder="https://..."
-              className="flex-[2] bg-[#2a2a2a] border border-[#444] rounded px-2 py-1 text-[11px] text-[#ccc] focus:border-[#666] outline-none"
+              className="flex-[2] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] focus:border-[#666] outline-none"
             />
             <button
               type="button"
@@ -2812,7 +2812,7 @@ export function ServiceTab({
                   snsLinks: removeItem(draft.finalCta.snsLinks, i),
                 })
               }
-              className="p-0.5 text-[#666] hover:text-red-400"
+              className="p-0.5 text-[var(--admin-muted)] hover:text-red-400"
             >
               <X size={12} />
             </button>
@@ -2825,7 +2825,7 @@ export function ServiceTab({
               snsLinks: [...draft.finalCta.snsLinks, { label: "", url: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
         >
           <Plus size={11} /> SNS追加
         </button>
@@ -2874,11 +2874,11 @@ export function ServiceTab({
           value={draft.adminShowcase.body}
           onChange={(v) => setAdminShowcase({ body: v })}
         />
-        <p className="text-[10px] text-[#666] mt-2">機能リスト</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">機能リスト</p>
         {draft.adminShowcase.features.map((feat, i) => (
-          <div key={i} className="border border-[#333] rounded p-2.5 space-y-2">
+          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#555]">#{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">#{i + 1}</span>
               <SvcArrayControls
                 index={i}
                 total={draft.adminShowcase.features.length}
@@ -2929,7 +2929,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[#666] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
         >
           <Plus size={11} /> 機能追加
         </button>
@@ -3113,7 +3113,7 @@ export function SettingsTab({
 
   if (isLoading)
     return (
-      <div className="flex items-center justify-center h-full gap-2 text-[#555] text-sm">
+      <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
         <Loader2 size={14} className="animate-spin" /> Loading...
       </div>
     );
@@ -3223,7 +3223,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                     />
                   </AdminField>
                 ))}
@@ -3251,7 +3251,7 @@ export function SettingsTab({
                         className={`text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroMode"] || "carousel") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3276,7 +3276,7 @@ export function SettingsTab({
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroDisplayMode"] || "normal") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3320,7 +3320,7 @@ export function SettingsTab({
                         className={`text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroTitlePosition"] || "center") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3347,7 +3347,7 @@ export function SettingsTab({
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["heroScrollEffect"] || "none") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3372,7 +3372,7 @@ export function SettingsTab({
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroOverlay"] || "on") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3391,7 +3391,7 @@ export function SettingsTab({
                       "heroScrollEffect",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3420,7 +3420,7 @@ export function SettingsTab({
                         className={`text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["navPosition"] || "top") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3447,7 +3447,7 @@ export function SettingsTab({
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["navHoverEffect"] || "fade") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3461,7 +3461,7 @@ export function SettingsTab({
                       set(k, ""),
                     );
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3469,7 +3469,7 @@ export function SettingsTab({
 
               {/* CC: section spacing multipliers */}
               <Section title="余白・スペーシング" defaultOpen={false}>
-                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   ページの「間」の量を倍率で調整します。1.0
                   が現在のリズム。スマホは元の比率のまま縮みます。
                 </p>
@@ -3543,7 +3543,7 @@ export function SettingsTab({
                       "spacingFooterTop",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3570,7 +3570,7 @@ export function SettingsTab({
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["bgTexture"] || "none") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3600,7 +3600,7 @@ export function SettingsTab({
                       set(k, ""),
                     );
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3627,7 +3627,7 @@ export function SettingsTab({
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["photoRevealEffect"] || "fade") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3637,7 +3637,7 @@ export function SettingsTab({
                 </AdminField>
                 <button
                   onClick={() => set("photoRevealEffect", "")}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3645,7 +3645,7 @@ export function SettingsTab({
 
               {/* G/N: Gallery layout type + controlled-random tuning */}
               <Section title="ギャラリー配置" defaultOpen={false}>
-                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   ページごとに写真の並べ方を選べます。プレビューで{" "}
                   <span className="text-[color:var(--admin-ink)]">トップ</span>{" "}
                   /{" "}
@@ -3688,7 +3688,7 @@ export function SettingsTab({
                           className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
                             (current[key] || fallback) === val
                               ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
-                              : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                           }`}
                         >
                           {name}
@@ -3698,7 +3698,7 @@ export function SettingsTab({
                   </AdminField>
                 ))}
                 {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定） */}
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   トップ（Works）に出す写真
                 </p>
                 <AdminField
@@ -3720,7 +3720,7 @@ export function SettingsTab({
                         className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
                           (current["topWorksMode"] || "auto") === val
                             ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
-                            : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {name}
@@ -3757,7 +3757,7 @@ export function SettingsTab({
                 </AdminField>
                 {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
                 W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   ギャラリーの列数・大きさ・余白
                 </p>
                 <AdminField
@@ -3808,7 +3808,7 @@ export function SettingsTab({
                     defaultVal="1"
                   />
                 </AdminField>
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   トップ（Works）の列数・大きさ・余白 —
                   動かすまではギャラリーと同じ値
                 </p>
@@ -3860,7 +3860,7 @@ export function SettingsTab({
                     defaultVal={current["galleryGapScale"] || "1"}
                   />
                 </AdminField>
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   モザイクの調整
                 </p>
                 <AdminField
@@ -3895,7 +3895,7 @@ export function SettingsTab({
                     defaultVal="0.5"
                   />
                 </AdminField>
-                <div className="pt-2 border-t border-[#333]">
+                <div className="pt-2 border-t border-[var(--admin-line)]">
                   <AdminField
                     label="配置のシャッフル"
                     hint="写真は同じまま、抜けの入る位置を別パターンに変えます。今の配置がイマイチなら押してみてください"
@@ -3912,7 +3912,7 @@ export function SettingsTab({
                       >
                         <Shuffle size={12} /> 配置をシャッフル
                       </button>
-                      <span className="text-[10px] text-[#666] tabular-nums">
+                      <span className="text-[10px] text-[var(--admin-muted)] tabular-nums">
                         seed: {current["gallerySeed"] || "1"}
                       </span>
                     </div>
@@ -3932,7 +3932,7 @@ export function SettingsTab({
                       "gallerySeed",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3958,7 +3958,7 @@ export function SettingsTab({
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["seriesNavEnabled"] || "auto") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -3968,8 +3968,8 @@ export function SettingsTab({
                 </AdminField>
 
                 {/* P: series grid (Works series view) */}
-                <div className="pt-3 mt-1 border-t border-[#333] space-y-3">
-                  <p className="text-[10px] text-[#666] leading-relaxed">
+                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                  <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed">
                     シリーズ一覧（表紙写真のグリッド）の見せ方。プレビューで{" "}
                     <span className="text-[color:var(--admin-ink)]">
                       Series
@@ -3998,7 +3998,7 @@ export function SettingsTab({
                           className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                             (current["worksDefaultView"] || "photos") === val
                               ? "bg-[#888] text-[#1e1e1e] font-medium"
-                              : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                           }`}
                         >
                           {lbl}
@@ -4046,15 +4046,15 @@ export function SettingsTab({
                         "seriesGridColumnsMobile",
                       ].forEach((k) => set(k, ""));
                     }}
-                    className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                    className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                   >
                     Reset to default
                   </button>
                 </div>
 
                 {/* 機能8: 並び順独立設定 */}
-                <div className="pt-3 mt-1 border-t border-[#333] space-y-3">
-                  <p className="text-[10px] text-[#666] leading-relaxed">
+                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                  <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed">
                     写真の並び順。「手動順」は Library
                     でドラッグした順番。シリーズごとに上書きしたい場合は Series
                     タブの各シリーズ編集から設定できます。
@@ -4075,7 +4075,7 @@ export function SettingsTab({
                         <button
                           key={val}
                           onClick={() => set("gallerySortOrder", val)}
-                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                         >
                           {lbl}
                         </button>
@@ -4098,7 +4098,7 @@ export function SettingsTab({
                         <button
                           key={val}
                           onClick={() => set("seriesSortOrder", val)}
-                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[#333] text-[#aaa] border-[#444] hover:bg-[#3a3a3a]"}`}
+                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
                         >
                           {lbl}
                         </button>
@@ -4111,7 +4111,7 @@ export function SettingsTab({
                         set(k, ""),
                       );
                     }}
-                    className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                    className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                   >
                     Reset to default
                   </button>
@@ -4122,7 +4122,7 @@ export function SettingsTab({
             <SettingsGroup title="連携・販売">
               {/* J: note RSS integration */}
               <Section title="note連携" defaultOpen={false}>
-                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   note に投稿すると最新記事が About
                   ページの「Journal」に自動表示されます（30分キャッシュ）。取得失敗時はセクションが消えるだけでサイトは壊れません。
                 </p>
@@ -4143,7 +4143,7 @@ export function SettingsTab({
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["noteEnabled"] || "off") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -4161,7 +4161,7 @@ export function SettingsTab({
                     value={current["noteUsername"] ?? ""}
                     onChange={(e) => set("noteUsername", e.target.value.trim())}
                     placeholder="chi_aki_zip"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField label="表示件数" hint="一覧に表示する記事数">
@@ -4181,7 +4181,7 @@ export function SettingsTab({
 
               {/* K: print sales (external store) */}
               <Section title="プリント販売" defaultOpen={false}>
-                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   外部ストア（BOOTH等）への控えめなリンクを About
                   ページに表示します。未設定なら何も表示されません。
                 </p>
@@ -4202,7 +4202,7 @@ export function SettingsTab({
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["printEnabled"] || "off") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -4219,7 +4219,7 @@ export function SettingsTab({
                       set("printStoreUrl", e.target.value.trim())
                     }
                     placeholder="https://..."
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField label="リンク文言" hint="ボタンの表示テキスト">
@@ -4229,7 +4229,7 @@ export function SettingsTab({
                     value={current["printStoreLabel"] ?? ""}
                     onChange={(e) => set("printStoreLabel", e.target.value)}
                     placeholder="プリントを購入する"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField
@@ -4242,14 +4242,14 @@ export function SettingsTab({
                     value={current["printDescription"] ?? ""}
                     onChange={(e) => set("printDescription", e.target.value)}
                     placeholder="A4 / ¥3,000〜 ..."
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
                   />
                 </AdminField>
               </Section>
 
               {/* 撮影依頼 CTA — closing "work with me" band */}
               <Section title="撮影依頼 CTA" defaultOpen={false}>
-                <p className="text-[10px] text-[#666] leading-relaxed -mt-1">
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   トップ・ギャラリー・シリーズ各ページの末尾に「撮影のご依頼」への導線を表示します。閲覧者が作品を見終えた直後に依頼へつなげる動線です。
                 </p>
                 <AdminField
@@ -4269,7 +4269,7 @@ export function SettingsTab({
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["homeCtaEnabled"] || "off") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -4287,7 +4287,7 @@ export function SettingsTab({
                     value={current["homeCtaTitle"] ?? ""}
                     onChange={(e) => set("homeCtaTitle", e.target.value)}
                     placeholder="撮影のご依頼"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField
@@ -4300,7 +4300,7 @@ export function SettingsTab({
                     value={current["homeCtaText"] ?? ""}
                     onChange={(e) => set("homeCtaText", e.target.value)}
                     placeholder="ポートレート・作品撮り・取材など、お気軽にご相談ください。"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
                   />
                 </AdminField>
                 <AdminField
@@ -4313,7 +4313,7 @@ export function SettingsTab({
                     value={current["homeCtaButton"] ?? ""}
                     onChange={(e) => set("homeCtaButton", e.target.value)}
                     placeholder="お問い合わせ"
-                    className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                   />
                 </AdminField>
               </Section>
@@ -4340,7 +4340,7 @@ export function SettingsTab({
                         onChange={(e) => set("themeBg", e.target.value)}
                         placeholder={DEFAULT_THEME_BG}
                         data-admin-setting="themeBg-text"
-                        className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                       />
                     </div>
                   </AdminField>
@@ -4359,7 +4359,7 @@ export function SettingsTab({
                         value={current["themeText"] || ""}
                         onChange={(e) => set("themeText", e.target.value)}
                         placeholder="#1a1a1a"
-                        className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                       />
                     </div>
                   </AdminField>
@@ -4369,7 +4369,7 @@ export function SettingsTab({
                     set("themeBg", "");
                     set("themeText", "");
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4419,7 +4419,7 @@ export function SettingsTab({
                         className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
                           !(current[key] || "")
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         既定（{defWeight}）
@@ -4431,7 +4431,7 @@ export function SettingsTab({
                           className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
                             (current[key] || "") === String(w)
                               ? "bg-[#888] text-[#1e1e1e] font-medium"
-                              : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                           }`}
                           style={{ fontWeight: w }}
                         >
@@ -4477,7 +4477,7 @@ export function SettingsTab({
                     defaultVal="1"
                   />
                 </AdminField>
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   ヒーロー名 / サブタイトル
                 </p>
                 <TypoControl
@@ -4513,7 +4513,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="12"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   ナビゲーション
                 </p>
                 <TypoControl
@@ -4527,7 +4527,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="14"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   セクション見出し（Recent Work / Contact 等）
                 </p>
                 <TypoControl
@@ -4541,7 +4541,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="16"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   ページ見出し（About名前）
                 </p>
                 <TypoControl
@@ -4555,7 +4555,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="30"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   本文
                 </p>
                 <TypoControl
@@ -4569,7 +4569,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="16"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   フッター
                 </p>
                 <TypoControl
@@ -4597,7 +4597,7 @@ export function SettingsTab({
                       "footerSize",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4605,7 +4605,7 @@ export function SettingsTab({
 
               {/* Typography — 色 */}
               <Section title="Typography ｜ 色" defaultOpen={false}>
-                <p className="text-[9px] text-[#666] -mb-2">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
                   ヒーロー名 / サブタイトル
                 </p>
                 <ColorRow
@@ -4629,7 +4629,7 @@ export function SettingsTab({
                   set={set}
                   placeholder="rgba(255,255,255,0.75)"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   アクセントカラー（差し色）
                 </p>
                 <ColorRow
@@ -4640,7 +4640,7 @@ export function SettingsTab({
                   placeholder="未設定 = 従来の色"
                   hint="ホバー・選択中・フォーカスにまとめて効く差し色。薄い色は背景とのコントラストが低く見えにくい場合があります"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   リンク
                 </p>
                 <ColorRow
@@ -4665,7 +4665,7 @@ export function SettingsTab({
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["linkUnderline"] || "off") === val
                             ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[#333] text-[#888] border border-[#444] hover:bg-[#3a3a3a]"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                         }`}
                       >
                         {lbl}
@@ -4673,7 +4673,7 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   不透明度（詳細）
                 </p>
                 <TypoControl
@@ -4731,7 +4731,7 @@ export function SettingsTab({
                       "snsOpacity",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4742,7 +4742,7 @@ export function SettingsTab({
                 title="Typography ｜ 間隔（字間・行間）"
                 defaultOpen={false}
               >
-                <p className="text-[9px] text-[#666] -mb-2">ヒーロー名</p>
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">ヒーロー名</p>
                 <TypoControl
                   label="名前 字間"
                   valueKey="heroNameTracking"
@@ -4765,7 +4765,7 @@ export function SettingsTab({
                   unit="em"
                   defaultVal="0.08"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   ナビゲーション
                 </p>
                 <TypoControl
@@ -4779,7 +4779,7 @@ export function SettingsTab({
                   unit="em"
                   defaultVal="0.04"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   セクション見出し
                 </p>
                 <TypoControl
@@ -4804,7 +4804,7 @@ export function SettingsTab({
                   unit=""
                   defaultVal="1.2"
                 />
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   本文
                 </p>
                 <TypoControl
@@ -4841,7 +4841,7 @@ export function SettingsTab({
                       "bodyLeading",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4849,7 +4849,7 @@ export function SettingsTab({
 
               {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
               <Section title="サイト文言" defaultOpen={false}>
-                <p className="text-[9px] text-[#666] -mb-2">ナビゲーション</p>
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">ナビゲーション</p>
                 {(
                   [
                     {
@@ -4890,11 +4890,11 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                     />
                   </AdminField>
                 ))}
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   SNS ラベル
                 </p>
                 {(
@@ -4931,11 +4931,11 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                     />
                   </AdminField>
                 ))}
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   セクション見出し
                 </p>
                 {(
@@ -4996,11 +4996,11 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                     />
                   </AdminField>
                 ))}
-                <p className="text-[9px] text-[#666] -mb-2 pt-2 border-t border-[#333]">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   コンタクトフォーム（お問い合わせページのフォーム内）
                 </p>
                 {(
@@ -5064,7 +5064,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
                     />
                   </AdminField>
                 ))}
@@ -5072,7 +5072,7 @@ export function SettingsTab({
 
               {/* 撮影情報プリセット — インスペクタの Camera / Lens 候補 */}
               <Section title="撮影情報プリセット" defaultOpen={false}>
-                <p className="text-[9px] text-[#666] -mb-1">
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-1">
                   写真編集インスペクタの Camera / Lens
                   入力候補。初期候補も削除できます。
                 </p>
@@ -5126,16 +5126,16 @@ export function SettingsTab({
 
       {/* Live Preview Panel — mobile: full-screen overlay; desktop: side panel */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#111] md:static md:z-auto md:flex-1 md:border-l md:border-[#333] min-w-0 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--admin-paper)] md:static md:z-auto md:flex-1 md:border-l md:border-[#333] min-w-0 overflow-hidden">
           {/* Preview toolbar */}
-          <div className="flex items-center justify-between px-4 h-10 border-b border-[#333] bg-[#1a1a1a] flex-shrink-0">
-            <span className="text-[10px] tracking-widest uppercase text-[#555]">
+          <div className="flex items-center justify-between px-4 h-10 border-b border-[var(--admin-line)] bg-[var(--admin-paper)] flex-shrink-0">
+            <span className="text-[10px] tracking-widest uppercase text-[var(--admin-muted)]">
               Preview
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPreviewDevice("desktop")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "desktop" ? "bg-[#333] text-[#ccc]" : "text-[#555] hover:text-[#888]"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "desktop" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[#888]"}`}
                 title="PC幅で確認"
                 aria-label="PC幅で確認"
               >
@@ -5143,7 +5143,7 @@ export function SettingsTab({
               </button>
               <button
                 onClick={() => setPreviewDevice("mobile")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "mobile" ? "bg-[#333] text-[#ccc]" : "text-[#555] hover:text-[#888]"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "mobile" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[#888]"}`}
                 title="スマホ幅で確認"
                 aria-label="スマホ幅で確認"
               >
@@ -5164,14 +5164,14 @@ export function SettingsTab({
                 onClick={() =>
                   iframeRef.current?.contentWindow?.location.reload()
                 }
-                className="ml-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                className="ml-1 text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
               >
                 Reload
               </button>
               {/* Close — needed to dismiss the mobile full-screen overlay */}
               <button
                 onClick={() => setShowPreview(false)}
-                className="md:hidden ml-1 p-1.5 rounded-sm text-[#888] hover:text-[#ccc] transition-colors"
+                className="md:hidden ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
                 title="Close preview"
                 aria-label="Close preview"
               >
@@ -5305,22 +5305,22 @@ function PresetEditor({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[10px] text-[#888]">{label}</p>
+      <p className="text-[10px] text-[var(--admin-muted)]">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {items.length === 0 && (
-          <span className="text-[10px] text-[#555]">候補なし</span>
+          <span className="text-[10px] text-[var(--admin-muted)]">候補なし</span>
         )}
         {items.map((p) => (
           <span
             key={p}
-            className="inline-flex items-center gap-1 bg-[#333] border border-[#444] text-[#ccc] text-[11px] pl-2 pr-1 py-1 rounded-sm"
+            className="inline-flex items-center gap-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[11px] pl-2 pr-1 py-1 rounded-sm"
           >
             {p}
             <button
               onClick={() => onRemove(p)}
               disabled={busy}
               aria-label={`${p} を削除`}
-              className="text-[#777] hover:text-red-400 transition-colors disabled:opacity-40"
+              className="text-[var(--admin-muted)] hover:text-red-400 transition-colors disabled:opacity-40"
             >
               <X size={11} />
             </button>
@@ -5340,7 +5340,7 @@ function PresetEditor({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
         />
         <button
           onClick={onAdd}
@@ -5412,7 +5412,7 @@ function PairingPicker({
               set("fontEn", en);
             }}
             title={desc}
-            className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "bg-[#888] text-[#1e1e1e]" : "bg-[#333] text-[#aaa] border border-[#444] hover:bg-[#3a3a3a]"}`}
+            className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "bg-[#888] text-[#1e1e1e]" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
           >
             <div className="flex items-baseline justify-between gap-3">
               <span className={`text-[11px] ${active ? "font-medium" : ""}`}>
@@ -5545,9 +5545,9 @@ function FontPicker({
   };
 
   const selectCls =
-    "w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm appearance-none cursor-pointer";
+    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm appearance-none cursor-pointer";
   const inputCls =
-    "w-full bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]";
+    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]";
 
   // Correct fallback for preview
   const previewFamily = def
@@ -5558,7 +5558,7 @@ function FontPicker({
 
   return (
     <div>
-      <label className="block text-[10px] text-[#777] uppercase tracking-wider mb-1">
+      <label className="block text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mb-1">
         {label}
       </label>
       <select
@@ -5584,7 +5584,7 @@ function FontPicker({
       {/* Preview */}
       {previewFamily && (
         <p
-          className="mt-2 text-[13px] text-[#aaa]"
+          className="mt-2 text-[13px] text-[var(--admin-ink)]"
           style={{ fontFamily: previewFamily }}
         >
           あいうえお ABCabc 123
@@ -5615,7 +5615,7 @@ function FontPicker({
                 className={`flex-1 text-[11px] py-1 rounded-sm transition-colors ${
                   (current[customCategoryKey] || "sans-serif") === cat
                     ? "bg-[#888] text-[#1e1e1e]"
-                    : "bg-[#333] text-[#666] border border-[#444] hover:bg-[#3a3a3a]"
+                    : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
                 }`}
               >
                 {cat}
@@ -5624,10 +5624,10 @@ function FontPicker({
           </div>
           {current[customUrlKey] ? (
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#888] truncate flex-1">
+              <span className="text-[10px] text-[var(--admin-muted)] truncate flex-1">
                 {current[customUrlKey].split("/").pop()}
               </span>
-              <label className="text-[10px] text-[#666] hover:text-[#aaa] cursor-pointer transition-colors">
+              <label className="text-[10px] text-[var(--admin-muted)] hover:text-[#aaa] cursor-pointer transition-colors">
                 Replace
                 <input
                   aria-label="フォントファイルを選択"
@@ -5640,7 +5640,7 @@ function FontPicker({
             </div>
           ) : (
             <label
-              className={`inline-flex items-center gap-1.5 text-[11px] text-[#888] hover:text-[#ccc] cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+              className={`inline-flex items-center gap-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
             >
               <Upload size={12} />
               {uploading
@@ -5702,7 +5702,7 @@ function TypoControl({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[11px] text-[#666] w-32 shrink-0">{label}</span>
+      <span className="text-[11px] text-[var(--admin-muted)] w-32 shrink-0">{label}</span>
       <input
         aria-label={label}
         type="range"
@@ -5733,12 +5733,12 @@ function TypoControl({
               ? `単位: ${unit}`
               : undefined
         }
-        className="w-16 shrink-0 bg-[#333] border border-[#444] rounded-sm text-[11px] text-[#aaa] text-right px-1.5 py-0.5 tabular-nums outline-none focus:border-[#888] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-16 shrink-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm text-[11px] text-[var(--admin-ink)] text-right px-1.5 py-0.5 tabular-nums outline-none focus:border-[#888] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {unit ? (
-        <span className="text-[10px] text-[#555] w-4 shrink-0">{unit}</span>
+        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">{unit}</span>
       ) : isOpacity ? (
-        <span className="text-[10px] text-[#555] w-4 shrink-0">α</span>
+        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">α</span>
       ) : (
         <span className="w-4 shrink-0" />
       )}
@@ -5830,7 +5830,7 @@ function AdminField({
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[#555] mb-1.5 leading-relaxed">{hint}</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">{hint}</p>
       )}
       {children}
     </div>
@@ -5868,7 +5868,7 @@ function ColorRow({
           value={current[valueKey] || ""}
           onChange={(e) => set(valueKey, e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-[#333] border border-[#444] text-[#ddd] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
         />
       </div>
     </AdminField>

@@ -227,8 +227,13 @@ export function HeroTab() {
         </p>
         {heroPhotos.length === 0 ? (
           <div className="border border-dashed border-[var(--admin-line)] rounded-sm p-8 text-center">
-            <Star size={18} className="mx-auto text-[var(--admin-muted)] mb-2" />
-            <p className="text-[12px] text-[var(--admin-muted)]">ヒーロー写真が未設定です</p>
+            <Star
+              size={18}
+              className="mx-auto text-[var(--admin-muted)] mb-2"
+            />
+            <p className="text-[12px] text-[var(--admin-muted)]">
+              ヒーロー写真が未設定です
+            </p>
             <p className="text-[10px] text-[var(--admin-muted)] mt-1">
               下のギャラリーから写真を選んでください
             </p>
@@ -549,13 +554,20 @@ export function ProfileTab({
             >
               {photoUploading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 size={12} className="animate-spin text-[var(--admin-muted)]" />
-                  <span className="text-[11px] text-[var(--admin-muted)]">Uploading...</span>
+                  <Loader2
+                    size={12}
+                    className="animate-spin text-[var(--admin-muted)]"
+                  />
+                  <span className="text-[11px] text-[var(--admin-muted)]">
+                    Uploading...
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   <Upload size={12} className="text-[var(--admin-muted)]" />
-                  <span className="text-[11px] text-[var(--admin-muted)]">Upload photo</span>
+                  <span className="text-[11px] text-[var(--admin-muted)]">
+                    Upload photo
+                  </span>
                 </div>
               )}
             </button>
@@ -570,7 +582,9 @@ export function ProfileTab({
                 if (f) handleProfilePhoto(f);
               }}
             />
-            <p className="text-[10px] text-[var(--admin-muted)]">3:4 portrait recommended</p>
+            <p className="text-[10px] text-[var(--admin-muted)]">
+              3:4 portrait recommended
+            </p>
             {photoError && (
               <p className="text-[10px] text-red-400/80">{photoError}</p>
             )}
@@ -745,6 +759,14 @@ export function CategoriesTab() {
       )}
 
       <div className="flex flex-col gap-1 mb-8">
+        {catsLoading && (
+          <div className="flex items-center justify-center h-32">
+            <Loader2
+              size={20}
+              className="animate-spin text-[var(--admin-muted)]"
+            />
+          </div>
+        )}
         {categories.length === 0 && !catsLoading && (
           <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
             まだカテゴリがありません。下の入力欄から追加できます。
@@ -1086,6 +1108,14 @@ export function SeriesTab() {
       )}
 
       <div className="flex flex-col gap-2 mb-8">
+        {isLoading && (
+          <div className="flex items-center justify-center h-32">
+            <Loader2
+              size={20}
+              className="animate-spin text-[var(--admin-muted)]"
+            />
+          </div>
+        )}
         {series.length === 0 && !isLoading && (
           <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
             まだシリーズがありません。作品のまとまりを作るとここに表示されます。
@@ -1687,6 +1717,14 @@ export function PricingTab() {
       )}
 
       <div className="flex flex-col gap-2 mb-8">
+        {isLoading && (
+          <div className="flex items-center justify-center h-32">
+            <Loader2
+              size={20}
+              className="animate-spin text-[var(--admin-muted)]"
+            />
+          </div>
+        )}
         {plans.length === 0 && !isLoading && (
           <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
             まだ料金プランがありません。下の「プランを追加」から追加できます。
@@ -1916,7 +1954,9 @@ function TopWorksPicker({
   };
   if (photos.length === 0)
     return (
-      <p className="text-[10px] text-[var(--admin-muted)]">公開中の写真はまだありません</p>
+      <p className="text-[10px] text-[var(--admin-muted)]">
+        公開中の写真はまだありません
+      </p>
     );
   return (
     <div className="max-h-64 overflow-y-auto border border-[var(--admin-line)] rounded-sm p-1.5 grid grid-cols-5 gap-1">
@@ -2299,9 +2339,14 @@ export function ServiceTab({
         />
         <p className="text-[10px] text-[var(--admin-muted)] mt-2">実例リンク</p>
         {draft.examples.links.map((link, i) => (
-          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
+          <div
+            key={i}
+            className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
+          >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">#{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">
+                #{i + 1}
+              </span>
               <SvcArrayControls
                 index={i}
                 total={draft.examples.links.length}
@@ -2370,9 +2415,14 @@ export function ServiceTab({
           onChange={(v) => setPainSolutions({ label: v })}
         />
         {draft.painSolutions.items.map((item, i) => (
-          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
+          <div
+            key={i}
+            className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
+          >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">#{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">
+                #{i + 1}
+              </span>
               <SvcArrayControls
                 index={i}
                 total={draft.painSolutions.items.length}
@@ -2469,9 +2519,14 @@ export function ServiceTab({
           onChange={(v) => setPricing({ label: v })}
         />
         {draft.pricing.plans.map((plan, i) => (
-          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
+          <div
+            key={i}
+            className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
+          >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">プラン {i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">
+                プラン {i + 1}
+              </span>
               {plan.primary && (
                 <span className="text-[9px] bg-[#4a9eff]/20 text-[#4a9eff] px-1.5 py-0.5 rounded">
                   RECOMMENDED
@@ -2633,7 +2688,10 @@ export function ServiceTab({
         />
         <p className="text-[10px] text-[var(--admin-muted)] mt-2">ステップ</p>
         {draft.purchaseFlow.steps.map((step, i) => (
-          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
+          <div
+            key={i}
+            className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
+          >
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[var(--admin-muted)]">
                 {String(i + 1).padStart(2, "0")}
@@ -2703,9 +2761,14 @@ export function ServiceTab({
           onChange={(v) => setFaq({ label: v })}
         />
         {draft.faq.items.map((item, i) => (
-          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
+          <div
+            key={i}
+            className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
+          >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">Q{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">
+                Q{i + 1}
+              </span>
               <SvcArrayControls
                 index={i}
                 total={draft.faq.items.length}
@@ -2876,9 +2939,14 @@ export function ServiceTab({
         />
         <p className="text-[10px] text-[var(--admin-muted)] mt-2">機能リスト</p>
         {draft.adminShowcase.features.map((feat, i) => (
-          <div key={i} className="border border-[var(--admin-line)] rounded p-2.5 space-y-2">
+          <div
+            key={i}
+            className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
+          >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">#{i + 1}</span>
+              <span className="text-[10px] text-[var(--admin-muted)]">
+                #{i + 1}
+              </span>
               <SvcArrayControls
                 index={i}
                 total={draft.adminShowcase.features.length}
@@ -4742,7 +4810,9 @@ export function SettingsTab({
                 title="Typography ｜ 間隔（字間・行間）"
                 defaultOpen={false}
               >
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">ヒーロー名</p>
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
+                  ヒーロー名
+                </p>
                 <TypoControl
                   label="名前 字間"
                   valueKey="heroNameTracking"
@@ -4849,7 +4919,9 @@ export function SettingsTab({
 
               {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
               <Section title="サイト文言" defaultOpen={false}>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">ナビゲーション</p>
+                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
+                  ナビゲーション
+                </p>
                 {(
                   [
                     {
@@ -5308,7 +5380,9 @@ function PresetEditor({
       <p className="text-[10px] text-[var(--admin-muted)]">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {items.length === 0 && (
-          <span className="text-[10px] text-[var(--admin-muted)]">候補なし</span>
+          <span className="text-[10px] text-[var(--admin-muted)]">
+            候補なし
+          </span>
         )}
         {items.map((p) => (
           <span
@@ -5702,7 +5776,9 @@ function TypoControl({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[11px] text-[var(--admin-muted)] w-32 shrink-0">{label}</span>
+      <span className="text-[11px] text-[var(--admin-muted)] w-32 shrink-0">
+        {label}
+      </span>
       <input
         aria-label={label}
         type="range"
@@ -5736,9 +5812,13 @@ function TypoControl({
         className="w-16 shrink-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm text-[11px] text-[var(--admin-ink)] text-right px-1.5 py-0.5 tabular-nums outline-none focus:border-[#888] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {unit ? (
-        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">{unit}</span>
+        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">
+          {unit}
+        </span>
       ) : isOpacity ? (
-        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">α</span>
+        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">
+          α
+        </span>
       ) : (
         <span className="w-4 shrink-0" />
       )}
@@ -5830,7 +5910,9 @@ function AdminField({
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">{hint}</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
+          {hint}
+        </p>
       )}
       {children}
     </div>

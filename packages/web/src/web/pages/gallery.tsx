@@ -31,7 +31,12 @@ export default function GalleryPage() {
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
-  const { data: photosData, isLoading: photosLoading } = useQuery({
+  const {
+    data: photosData,
+    isLoading: photosLoading,
+    isError: photosError,
+    refetch: refetchPhotos,
+  } = useQuery({
     queryKey: ["photos"],
     queryFn: async () => jsonOrThrow(await api.photos.$get()),
   });
@@ -55,7 +60,8 @@ export default function GalleryPage() {
   // Memoise so references are stable across renders — otherwise dependent
   // useMemo/useEffect (and useScrollFadeIn) re-run every render.
   const allPhotos = useMemo(
-    () => sortPhotosBySetting(photosData?.photos ?? [], settings?.gallerySortOrder),
+    () =>
+      sortPhotosBySetting(photosData?.photos ?? [], settings?.gallerySortOrder),
     [photosData, settings?.gallerySortOrder],
   );
   const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
@@ -291,7 +297,25 @@ export default function GalleryPage() {
           {filtered.length === 0 ? (
             // Don't flash "No photos" while the first fetch is still in flight.
             photosLoading ? (
-              <div className="py-24" aria-hidden="true" />
+              <div className="gallery-skeleton" aria-hidden="true">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div key={i} />
+                ))}
+              </div>
+            ) : photosError ? (
+              // A failed fetch is not an empty gallery — say so, and offer a
+              // retry instead of quietly showing "No photos" (fail-quiet trap).
+              <div className="py-24 text-center">
+                <p className="text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.45)] mb-5">
+                  写真を読み込めませんでした
+                </p>
+                <button
+                  onClick={() => void refetchPhotos()}
+                  className="font-en text-xs tracking-[0.08em] pb-1 border-b-[1.5px] border-[rgba(var(--foreground-rgb),0.3)] text-[rgba(var(--foreground-rgb),0.55)] hover:text-[var(--foreground)] hover:border-[var(--foreground)] transition-colors duration-300"
+                >
+                  Retry
+                </button>
+              </div>
             ) : (
               <div className="py-24 text-center">
                 <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">

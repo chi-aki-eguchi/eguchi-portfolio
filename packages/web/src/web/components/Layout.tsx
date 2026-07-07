@@ -160,22 +160,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link
                   to={href}
                   aria-current={isActive(href) ? "page" : undefined}
-                  className="font-en transition-colors duration-300 nav-link-luxury"
-                  style={{
-                    ...navTextStyle,
-                    letterSpacing: "var(--nav-tracking, 0.04em)",
-                    color: isActive(href)
-                      ? `var(--accent-color, rgba(var(--foreground-rgb), 0.70))`
-                      : `rgba(var(--foreground-rgb), var(--nav-opacity, 0.35))`,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive(href))
-                      e.currentTarget.style.color = `var(--accent-color, rgba(var(--foreground-rgb), 0.60))`;
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive(href))
-                      e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--nav-opacity, 0.35))`;
-                  }}
+                  className="font-en nav-link-luxury nav-link-public"
+                  style={
+                    {
+                      ...navTextStyle,
+                      letterSpacing: "var(--nav-tracking, 0.04em)",
+                      "--link-rest": "var(--nav-opacity, 0.35)",
+                    } as React.CSSProperties
+                  }
                 >
                   {label}
                 </Link>
@@ -329,14 +321,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               key={href}
               to={href}
               aria-current={isActive(href) ? "page" : undefined}
-              className="block px-5 py-3 font-en transition-colors duration-300"
-              style={{
-                fontSize: "var(--nav-size, 14px)",
-                letterSpacing: "var(--nav-tracking, 0.04em)",
-                color: isActive(href)
-                  ? `rgba(var(--foreground-rgb), 0.70)`
-                  : `rgba(var(--foreground-rgb), var(--nav-opacity, 0.35))`,
-              }}
+              className="block px-5 py-3 font-en nav-link-public"
+              style={
+                {
+                  fontSize: "var(--nav-size, 14px)",
+                  letterSpacing: "var(--nav-tracking, 0.04em)",
+                  "--link-rest": "var(--nav-opacity, 0.35)",
+                } as React.CSSProperties
+              }
               onClick={() => setMobileOpen(false)}
             >
               {label}
@@ -370,16 +362,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileInstagram)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
-                  style={{
-                    color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`;
-                  }}
+                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  style={
+                    {
+                      "--link-rest": "var(--sns-opacity, 0.25)",
+                    } as React.CSSProperties
+                  }
                 >
                   {data?.snsLabelInstagram ?? "Instagram"}
                 </a>
@@ -389,16 +377,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileTwitter)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
-                  style={{
-                    color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`;
-                  }}
+                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  style={
+                    {
+                      "--link-rest": "var(--sns-opacity, 0.25)",
+                    } as React.CSSProperties
+                  }
                 >
                   {data?.snsLabelTwitter ?? "X"}
                 </a>
@@ -408,16 +392,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileNote)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury transition-colors duration-300 py-2"
-                  style={{
-                    color: `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.50)`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--sns-opacity, 0.25))`;
-                  }}
+                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  style={
+                    {
+                      "--link-rest": "var(--sns-opacity, 0.25)",
+                    } as React.CSSProperties
+                  }
                 >
                   {data?.snsLabelNote ?? "note"}
                 </a>
@@ -428,17 +408,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {data?.footerCtaLabel && (
             <Link
               to="/contact"
-              className="font-en tracking-[0.06em] nav-link-luxury transition-colors duration-300"
-              style={{
-                fontSize: "var(--footer-size, 11px)",
-                color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.30))`,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.55)`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--footer-opacity, 0.30))`;
-              }}
+              className="font-en tracking-[0.06em] nav-link-luxury footer-link-public"
+              style={
+                {
+                  fontSize: "var(--footer-size, 11px)",
+                  "--link-rest": "var(--footer-opacity, 0.30)",
+                } as React.CSSProperties
+              }
             >
               {data.footerCtaLabel}
             </Link>
@@ -446,17 +422,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {showServiceLink && (
             <Link
               to="/service"
-              className="font-en tracking-[0.06em] nav-link-luxury transition-colors duration-300"
-              style={{
-                fontSize: "var(--footer-size, 11px)",
-                color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.22))`,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.48)`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = `rgba(var(--foreground-rgb), var(--footer-opacity, 0.22))`;
-              }}
+              className="font-en tracking-[0.06em] nav-link-luxury footer-link-public"
+              style={
+                {
+                  fontSize: "var(--footer-size, 11px)",
+                  "--link-rest": "var(--footer-opacity, 0.22)",
+                } as React.CSSProperties
+              }
             >
               Portfolio site
             </Link>

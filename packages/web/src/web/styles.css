@@ -2026,6 +2026,64 @@ a:hover {
   color: var(--link-hover-color, var(--accent-color, inherit));
 }
 
+/* ─── Nav / footer link color states ───
+   CSS-only hover/focus (previously JS onMouseEnter/Leave inline styles, which
+   left keyboard focus without the hover feedback). Rest opacity comes from the
+   per-link --link-rest custom property (settings-driven). */
+.nav-link-public {
+  color: rgba(var(--foreground-rgb), var(--link-rest, 0.35));
+  transition: color var(--dur-hover) var(--ease-quart);
+}
+.nav-link-public:hover,
+.nav-link-public:focus-visible {
+  color: var(--accent-color, rgba(var(--foreground-rgb), 0.6));
+}
+.nav-link-public[aria-current="page"] {
+  color: var(--accent-color, rgba(var(--foreground-rgb), 0.7));
+}
+.footer-link-public {
+  color: rgba(var(--foreground-rgb), var(--link-rest, 0.25));
+  transition: color var(--dur-hover) var(--ease-quart);
+}
+.footer-link-public:hover,
+.footer-link-public:focus-visible {
+  color: rgba(var(--foreground-rgb), 0.55);
+}
+
+/* ─── Gallery loading skeleton — quiet placeholder tiles that reuse the
+   photo-placeholder tone; the pulse collapses to a static block under
+   reduced-motion via the blanket rule below. ─── */
+.gallery-skeleton {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+}
+@media (min-width: 768px) {
+  .gallery-skeleton {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.gallery-skeleton > div {
+  aspect-ratio: 4 / 3;
+  background: var(--photo-placeholder);
+  animation: gallery-skeleton-pulse 1.8s var(--ease-inout) infinite;
+}
+.gallery-skeleton > div:nth-child(2n) {
+  animation-delay: 0.3s;
+}
+.gallery-skeleton > div:nth-child(3n) {
+  animation-delay: 0.6s;
+}
+@keyframes gallery-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* ─── Nav link hover ─── */
 .nav-link-luxury {
   position: relative;

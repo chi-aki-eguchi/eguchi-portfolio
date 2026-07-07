@@ -4886,3 +4886,72 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 
 - 秋さんの未コミット変更: `CLAUDE.md`（修正あり）と未追跡 `autonomy-rules.md`（root 置き。docs/agents/ への移動は提案10）
 - 本番 DB・R2・Railway 環境変数
+
+## Handoff 2026-07-07 — Claude Code (Fable5): 公開/管理デザイン統一+質感・使用感底上げ
+
+### 目的
+
+公開サイトと管理画面のデザイン言語統一(photographer's atelier 軸)、
+デザイントークンの一元化、使用感の磨き込み。オーナー指示のフェーズ制タスク。
+
+### 変更内容
+
+`main` に3コミット(f9af998 / fda2cd4 / 8aae854)。詳細な判断記録は
+`docs/agent-logs/2026-07-07.md`、監査レポートとBefore/Afterスクショは
+`scratch/design-unify-2026-07/`。
+
+1. [f9af998] :root に共通デザイントークン層(motion/radius/shadow/placeholder/
+   scrollbar)を新設。admin atelier は同名トークンを継承(影のみ ink 由来で再スコープ)。
+   公開側 CSS/tsx のハードコード easing・duration をトークン参照化(値は現行維持)。
+   ダーク追従漏れ修正(LQIPプレースホルダ、top.tsx ヒーロー文字色、hairline 等)。
+   admin ログインを暗黒+金の旧スタイルから atelier の紙とインクへ刷新。
+2. [fda2cd4] admin.tsx / admin-tabs.tsx の旧ダークテーマ任意値 hex クラス約800箇所を
+   トークン参照クラスに一掃(救済セレクタで値が確定している素のクラスのみ。
+   バリアント付き・選択マーカー bg-[#555]/bg-[#888]・未救済生値は挙動維持のため残置)。
+3. [8aae854] Gallery のスケルトン+エラー状態(Retry付き)、admin 3タブのスピナー、
+   Layout の nav/footer ホバー JS→CSS 化(:focus-visible パリティ)。
+
+### 触ったファイル
+
+- packages/web/src/web/styles.css
+- packages/web/src/web/pages/{admin.tsx, admin-tabs.tsx, admin-login.tsx, top.tsx, gallery.tsx}
+- packages/web/src/web/components/{Layout.tsx, BackToTop.tsx, PageTransition.tsx, SeriesGrid.tsx}
+- docs/agent-logs/2026-07-07.md(新規)、task.md
+
+### 触らなかったもの(意図的)
+
+- Codex の flicker 修正領域(.admin-glass の GPU 安定化、仮想グリッド計測、[data-virtualized])
+- Lightbox の開閉ロジック、配信系(§0)、フォント読み込み(公開側は既に両フォント読込済みで追加なし)
+- オーナーの未コミット変更(CLAUDE.md / package.json / bun.lock / root の autonomy-rules.md)
+
+### 検証したこと
+
+- `bun run check` 各Phase完了時に成功(最終 263 tests / build OK)
+- `bun run smoke` Phase 3/4 後に 23 passed / 19 skipped / 0 failed
+- pixelmatch による before/after 比較: admin 全9タブ×desktop/mobile = 0%(mobile 0.01%)、
+  公開 gallery/lightbox/about/contact = 0%、top は写真ローテーションの内容差のみ
+- ライト/ダーク × 375px/1440px のスクショ一式を scratch/design-unify-2026-07/shots/ に保存
+  (ダークの Lightbox・キャプションは目視確認済み)
+
+### 検証していないこと
+
+- 本番 akieguchi.com(push 前のため)
+- 実データ書き込み操作(スモークは read-only 方針を維持)
+- カスタムテーマ色(themeBg/themeText を実際に変えた状態)での admin 目視確認
+  (トークン導出ロジック自体は不変更なので理論上影響なし)
+
+### push したか
+
+していない。ローカル3コミットのみ。push はオーナーの手で。
+
+### 次の担当者が触ってよい場所
+
+- docs/agent-logs/2026-07-07.md の「要相談/次回候補」(救済セレクタ層の撤去、
+  公開側アクセント色のコントラスト保証、未救済生値のトークン化)
+- 上記3コミットのレビュー
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットの rebase・書き換え
+- オーナーの未コミット変更(CLAUDE.md / package.json / bun.lock / autonomy-rules.md)
+- 本番 DB・R2・Railway 環境変数

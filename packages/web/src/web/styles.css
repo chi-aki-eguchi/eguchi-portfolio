@@ -1359,13 +1359,12 @@ body {
   overflow: hidden;
   background: transparent;
   box-shadow: var(--shadow-photo);
-  transition:
-    transform var(--dur-lift) var(--ease-quart),
-    box-shadow var(--dur-lift) var(--ease-quart);
+  /* Hover feedback is shadow-only (2026-07-08 決定): no lift/scale/brightness,
+     so the photo's rendering never changes under the cursor. */
+  transition: box-shadow var(--dur-lift) var(--ease-quart);
   backface-visibility: hidden;
 }
 .photo-card:hover {
-  transform: translateY(-4px);
   box-shadow: var(--shadow-photo-hover);
 }
 .photo-card-quiet {
@@ -1373,7 +1372,6 @@ body {
   background: transparent;
 }
 .photo-card-quiet:hover {
-  transform: none;
   box-shadow: none;
 }
 
@@ -1419,12 +1417,6 @@ body {
   .photo-card {
     position: relative;
   }
-  .photo-card:hover img.lqip-loaded {
-    transform: scale(1.03);
-    filter: blur(0px) brightness(1.04);
-    transition-duration:
-      var(--dur-reveal), var(--dur-reveal), var(--dur-reveal);
-  }
   .photo-card:hover .tile-caption {
     opacity: 1;
     transform: translateY(0);
@@ -1457,7 +1449,6 @@ body {
 /* Suppress inner photo-card hover inside framed cards — keep the resting
    shadow (not `none`) so nothing visibly flickers on hover. */
 .collage-card .photo-card:hover {
-  transform: none;
   box-shadow: var(--shadow-photo);
 }
 [data-theme="dark"] .photo-broken {
@@ -1480,8 +1471,7 @@ body {
   display: block;
   background-color: var(--photo-placeholder);
   /* LQIP blur-up: blurred placeholder fades out when real img loads.
-     transform uses --dur-breathe so hover-out "breathes" slowly back;
-     hover-in overrides to --dur-reveal via transition-duration on :hover. */
+     transform uses --dur-breathe so the load-in scale relaxes slowly. */
   transition:
     filter var(--dur-reveal) var(--ease-expo),
     opacity var(--dur-reveal) var(--ease-expo),

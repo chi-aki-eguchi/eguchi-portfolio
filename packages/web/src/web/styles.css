@@ -2127,6 +2127,23 @@ img {
   }
 }
 
+/* ─── Lightbox chrome buttons ───
+   Rest/hover colors via CSS (not JS mouseenter) so keyboard focus gets the
+   same feedback. Rest opacity comes from --lb-rest per button. The lightbox
+   is always dark chrome over the photo, independent of the site theme. */
+.lb-btn {
+  color: rgba(255, 255, 255, var(--lb-rest, 0.45));
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.lb-btn:hover,
+.lb-btn:focus-visible {
+  color: rgba(255, 255, 255, 0.9);
+}
+.lb-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
 /* ─── Lightbox entrance/exit ─── */
 dialog.lightbox-enter {
   animation: lb-in 0.5s var(--ease-expo) both;

@@ -630,6 +630,52 @@ export function Lightbox({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onPrev, onNext]);
 
+  // Idle auto-hide: chrome retreats after a still moment so the photo stands
+  // alone, and any movement (pointer, key, touch) brings it back. Tap-toggle
+  // (setChrome in onPhotoActivate) still works and wins — the timer only ever
+  // hides, never re-shows, so an explicit "hide" stays hidden and an explicit
+  // "show" simply starts a fresh still-moment countdown. Paused while the EXIF
+  // panel is open (reading) or zoomed (chrome is already hidden).
+  const idleTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    const dlg = dialogRef.current;
+    if (!dlg) return;
+    const IDLE_MS = 3500;
+    const arm = () => {
+      if (idleTimerRef.current !== null)
+        window.clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = window.setTimeout(() => {
+        idleTimerRef.current = null;
+        setExifOpen((exif) => {
+          if (!exif && !zoomedRef.current) setChrome(false);
+          return exif;
+        });
+      }, IDLE_MS);
+    };
+    const wake = () => {
+      setChrome(true);
+      arm();
+    };
+    // Touch taps emit tiny pointermoves that would fight the explicit
+    // tap-to-toggle (show would be pre-empted by wake, making the tap a
+    // no-op) — so only deliberate mouse/pen movement wakes the chrome.
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      wake();
+    };
+    arm();
+    dlg.addEventListener("pointermove", onMove, { passive: true });
+    dlg.addEventListener("pointerdown", arm, { passive: true });
+    window.addEventListener("keydown", wake);
+    return () => {
+      if (idleTimerRef.current !== null)
+        window.clearTimeout(idleTimerRef.current);
+      dlg.removeEventListener("pointermove", onMove);
+      dlg.removeEventListener("pointerdown", arm);
+      window.removeEventListener("keydown", wake);
+    };
+  }, []);
+
   const photo = photos[index];
   const alt = photoAltText(photo, {
     photographerName,
@@ -647,7 +693,7 @@ export function Lightbox({
   const chromeVis = {
     opacity: chromeOn ? 1 : 0,
     pointerEvents: chromeOn ? ("auto" as const) : ("none" as const),
-    transition: "opacity 0.25s ease",
+    transition: "opacity var(--dur-base) var(--ease-out)",
   };
   const chromeTab = chromeOn ? 0 : -1;
 
@@ -719,24 +765,21 @@ export function Lightbox({
         }}
         aria-label={isZoomed ? "ズームを解除" : "拡大して細部を見る"}
         tabIndex={chromeTab}
-        style={{
-          ...chromeVis,
-          position: "absolute",
-          top: "calc(12px + var(--sai-top))",
-          left: "calc(16px + var(--sai-left))",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "rgba(255,255,255,0.4)",
-          padding: 10,
-          lineHeight: 0,
-          zIndex: 10,
-        }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.color = "rgba(255,255,255,0.8)")
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.color = "rgba(255,255,255,0.4)")
+        className="lb-btn"
+        style={
+          {
+            ...chromeVis,
+            position: "absolute",
+            top: "calc(12px + var(--sai-top))",
+            left: "calc(16px + var(--sai-left))",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            "--lb-rest": 0.4,
+            padding: 10,
+            lineHeight: 0,
+            zIndex: 10,
+          } as React.CSSProperties
         }
       >
         <svg
@@ -770,6 +813,7 @@ export function Lightbox({
         onClick={doClose}
         aria-label="閉じる"
         tabIndex={chromeTab}
+        className="lb-btn"
         style={{
           ...chromeVis,
           position: "absolute",
@@ -786,16 +830,10 @@ export function Lightbox({
           cursor: "pointer",
           fontFamily: "var(--font-en)",
           fontSize: 26,
-          color: "rgba(255,255,255,0.75)",
+          "--lb-rest": 0.75,
           lineHeight: 1,
           zIndex: 10,
-        }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.color = "rgba(255,255,255,1)")
-        }
-        onMouseLeave={(e) =>
-          (e.currentTarget.style.color = "rgba(255,255,255,0.75)")
-        }
+        } as React.CSSProperties}
       >
         ✕
       </button>
@@ -810,6 +848,7 @@ export function Lightbox({
             }}
             aria-label="前の写真"
             tabIndex={chromeTab}
+            className="lb-btn"
             style={{
               ...chromeVis,
               position: "absolute",
@@ -821,11 +860,11 @@ export function Lightbox({
               cursor: "pointer",
               fontFamily: "var(--font-en)",
               fontSize: 38,
-              color: "rgba(255,255,255,0.45)",
+              "--lb-rest": 0.45,
               padding: "22px 16px",
               lineHeight: 1,
               zIndex: 10,
-            }}
+            } as React.CSSProperties}
           >
             ‹
           </button>
@@ -837,6 +876,7 @@ export function Lightbox({
             }}
             aria-label="次の写真"
             tabIndex={chromeTab}
+            className="lb-btn"
             style={{
               ...chromeVis,
               position: "absolute",
@@ -848,11 +888,11 @@ export function Lightbox({
               cursor: "pointer",
               fontFamily: "var(--font-en)",
               fontSize: 38,
-              color: "rgba(255,255,255,0.45)",
+              "--lb-rest": 0.45,
               padding: "22px 16px",
               lineHeight: 1,
               zIndex: 10,
-            }}
+            } as React.CSSProperties}
           >
             ›
           </button>
@@ -883,7 +923,10 @@ export function Lightbox({
             alignItems: "center",
             justifyContent: "center",
             opacity: swapPhase === "out" ? 0 : 1,
-            transition: swapPhase === "in" ? "opacity 0.2s ease" : "none",
+            transition:
+              swapPhase === "in"
+                ? "opacity var(--dur-base) var(--ease-out)"
+                : "none",
           }}
         >
           {imgError ? (
@@ -1105,7 +1148,7 @@ export function Lightbox({
                         height: "100%",
                         objectFit: "contain",
                         opacity: zoomSrcReady ? 1 : 0,
-                        transition: "opacity 0.3s ease",
+                        transition: "opacity var(--dur-slow) var(--ease-out)",
                       }}
                     />
                   </picture>
@@ -1171,28 +1214,22 @@ export function Lightbox({
               aria-label={exifOpen ? "撮影情報を閉じる" : "撮影情報を表示"}
               aria-expanded={exifOpen}
               tabIndex={chromeTab}
-              style={{
-                ...chromeVis,
-                position: "absolute",
-                bottom: "calc(16px + var(--sai-bottom))",
-                left: "calc(16px + var(--sai-left))",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: exifOpen
-                  ? "rgba(255,255,255,0.8)"
-                  : "rgba(255,255,255,0.4)",
-                padding: 10,
-                lineHeight: 0,
-                zIndex: 10,
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "rgba(255,255,255,0.8)")
+              className="lb-btn"
+              style={
+                {
+                  ...chromeVis,
+                  position: "absolute",
+                  bottom: "calc(16px + var(--sai-bottom))",
+                  left: "calc(16px + var(--sai-left))",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  "--lb-rest": exifOpen ? 0.8 : 0.4,
+                  padding: 10,
+                  lineHeight: 0,
+                  zIndex: 10,
+                } as React.CSSProperties
               }
-              onMouseLeave={(e) => {
-                if (!exifOpen)
-                  e.currentTarget.style.color = "rgba(255,255,255,0.4)";
-              }}
             >
               <svg
                 width="18"
@@ -1228,7 +1265,7 @@ export function Lightbox({
                 opacity: exifOpen ? 1 : 0,
                 overflow: "hidden",
                 transition:
-                  "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
+                  "max-height var(--dur-slow) var(--ease-out), opacity var(--dur-base) var(--ease-out), padding var(--dur-slow) var(--ease-out)",
                 zIndex: 10,
                 pointerEvents: exifOpen ? "auto" : "none",
                 minWidth: 180,

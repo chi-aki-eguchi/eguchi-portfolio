@@ -3043,6 +3043,7 @@ export function SettingsTab({
   const [liveSync, setLiveSync] = usePersistentState("admin:liveSync", true);
   const [newCamPreset, setNewCamPreset] = useState("");
   const [newLensPreset, setNewLensPreset] = useState("");
+  const [presetError, setPresetError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const current = { ...data, ...form } as Record<string, string>;
 
@@ -3065,7 +3066,12 @@ export function SettingsTab({
       const res = await adminApi.settings.$post({ json: payload });
       assertOk(res);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
+    onSuccess: () => {
+      setPresetError(false);
+      qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+    // Without this the add/remove just silently no-ops on a failed request.
+    onError: () => setPresetError(true),
   });
   const addCamPreset = () => {
     const v = newCamPreset.trim();
@@ -5169,6 +5175,11 @@ export function SettingsTab({
                   placeholder="例: Planar 80mm f/2.8"
                   busy={savePresets.isPending}
                 />
+                {presetError && (
+                  <p role="alert" className="text-[11px] text-red-400/80">
+                    プリセットの保存に失敗しました。もう一度お試しください。
+                  </p>
+                )}
               </Section>
             </SettingsGroup>
 

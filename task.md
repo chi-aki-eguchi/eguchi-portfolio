@@ -5013,3 +5013,57 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - Lightbox の wake はマウス/ペン限定(タッチのタップ切替との競合回避)— 変更時は要理解
 - 公開アクセント色は provider で AA 補正されるため、「設定した色がそのまま出ない」
   ことがある(薄い色を設定した場合のみ)。オーナーから色の見え方の相談が来たらこれ
+
+## Handoff 2026-07-08 — Claude Code (Fable5): 動線監査+一括削除フィードバック
+
+### 目的
+
+①訪問者の動線設計(監査→提案→承認待ち) ②管理画面の一括削除の進捗可視化。
+Part 0 として前回保留のギャラリーホバー演出を確定。
+
+### 変更内容(mainに4コミット)
+
+1. [6c33c48] gallery hover を案C(影のみ)に確定(浮き/拡大/明度補正を削除)
+2. [d4f038d] contact: 設定済み contactIntro がフォーム表示時に出ないバグ修正
+3. [e13d7bb] admin: 一括削除(ゴミ箱へ/復元/完全削除)の進捗バー+n/N件表示・
+   項目境界キャンセル・二重実行防止・失敗写真一覧+失敗分のみ再試行・
+   Purge確認のモーダル統一。API: purge が thumb/medium WebP 派生を
+   R2 に残すリークを修正(手動+遅延自動の両経路)
+4. [bc60240] admin: EXIFプリセット保存失敗の可視化
+
+### 動線監査の最重要発見
+
+- **公開写真が0枚**(gallery / series 2件 / hero 全て空)。本番も同じ。
+  意図的か事故かの確認が最優先(管理画面 Photos タブ)
+- /service は Stripe 決済リンク付き販売ページとして既に本番公開中
+  (「未商品化」前提の指示と食い違い → オーナー判断待ち)
+- レポート: scratch/journey-audit-2026-07/report.md、
+  提案(トーン別文言案+モック): 同 proposals.md
+
+### 検証
+
+- bun run check / bun run smoke(23 passed / 0 failed)を各段階で完走
+- 一括削除は API 全モックの Playwright 実ブラウザ試験で進捗/キャンセル/
+  部分失敗/再試行を確認(本番データ不可触。scratch/journey-audit-2026-07/
+  bulk-delete-test.mjs、スクショ shots/bulktest-*.png)
+- ライト/ダークは smoke がカバー。公開側変更(hover/contact)は375pxで目視確認
+
+### push したか
+
+していない。ローカル4コミットのみ。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない(未push)。本番へは読み取りアクセスのみ実施(公開API+公開ページ2枚)。
+
+### 承認待ち(次の担当者はここから)
+
+- Part 1 Phase 3 の実装一式 — scratch/journey-audit-2026-07/proposals.md の
+  🛑項目(文言トーン選択含む)。承認済みになったものだけ実装すること
+- /service の扱い(継続/決済リンク撤去/導線縮小)
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットの rebase・書き換え
+- オーナーの未コミット変更(CLAUDE.md / root の autonomy-rules.md)
+- 本番 DB・R2・Railway 環境変数

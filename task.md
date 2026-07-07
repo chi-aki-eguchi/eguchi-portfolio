@@ -4831,3 +4831,58 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - 未pushコミットのrebase・書き換え。
 - 本番DB・R2・Railway環境変数。
 - smoke で Save/Delete/Add など本番DBへ書き込む操作を増やすこと。
+
+## Handoff 2026-07-07 — Claude Code: 夜間自律改善セッション（多視点レビュー）
+
+### 目的
+
+セキュリティ / パフォーマンス / アクセシビリティ / ユーザー導線 / コード品質 / SEO / ドキュメントの7視点でサイトを点検し、low-risk 改善のみ実施、high-risk は提案として記録する。
+
+### 変更内容
+
+ブランチ `improve/night-20260707` に8コミット。詳細と提案リストは `docs/reports/night-20260707.md`。
+
+- [a11y/dark-mode] large-format キャプション色をテーマ変数化（ダークモードで不可視だった）
+- [a11y] Lightbox EXIF ボタンに aria-expanded / 閉パネルに aria-hidden（属性のみ）
+- [perf] OGP 用ヒーロー写真取得の N+1 を 1 クエリ化
+- [security] reorder 系 5 API に ids 実行時検証、loginFails Map の肥大対策
+- [security] GA 計測 ID を G- 形式チェックしてから注入
+- [docs] server.ts の「turso は no-op」誤コメント修正 + docs(wiki) 2件
+- コミット外: 旧 `test-*.mjs` 26本を `scratch/legacy-debug-2026-06/` へ移動（数本に平文パスワード → 報告書の提案2）、空の `.claude/skills/night-run/` を削除
+
+### 触ったファイル
+
+- packages/web/src/web/components/PhotoGallery.tsx / Lightbox.tsx
+- packages/web/src/server.ts
+- packages/web/src/api/index.ts / ogp.ts
+- knowledge/wiki/pages/database.md / open-issues.md / log.md
+- docs/reports/night-20260707.md（新規）、task.md
+
+### 検証したこと
+
+- `bun run check` 成功（作業前ベースラインと作業後の2回。263 tests / build OK）
+- `bun run smoke` 成功（作業前後とも 23 passed / 19 skipped / 0 failed）
+- GA 本番 ID `G-NKECCDLXYD` が新しい形式チェックを通ることを確認
+
+### 検証していないこと
+
+- 実ブラウザでのダークモード large-format 表示の目視確認
+- 本番（Railway 反映後）のヘッダー・OGP 確認
+
+### push したか
+
+していない（ローカルのみ、8コミット + この Handoff コミット）。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない。
+
+### 次の担当者が触ってよい場所
+
+- `docs/reports/night-20260707.md` の提案リスト（特に依存更新・設定保存一括化）
+- 上記コミットのレビュー・調整
+
+### 次の担当者が触ってはいけない場所
+
+- 秋さんの未コミット変更: `CLAUDE.md`（修正あり）と未追跡 `autonomy-rules.md`（root 置き。docs/agents/ への移動は提案10）
+- 本番 DB・R2・Railway 環境変数

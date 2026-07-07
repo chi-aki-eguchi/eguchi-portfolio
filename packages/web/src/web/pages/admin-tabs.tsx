@@ -3230,6 +3230,25 @@ export function SettingsTab({
       hint: "お問い合わせページ上部の案内文",
     },
     {
+      key: "contactNote",
+      label: "Contact 添え書き",
+      placeholder:
+        "「まだ決まっていないけれど相談したい」という段階でも歓迎です。",
+      hint: "案内文の下の一言(相談歓迎・返信目安など)。空欄で非表示",
+    },
+    {
+      key: "contactFlow",
+      label: "依頼の流れ",
+      placeholder: "ご相談 → すり合わせ → 撮影 → 納品",
+      hint: "フォーム上の「Flow」枠に表示。空欄で非表示",
+    },
+    {
+      key: "contactMessagePlaceholder",
+      label: "Message 入力例",
+      placeholder: "例: 希望する撮影の内容 / 希望日・場所",
+      hint: "メッセージ欄にうすく表示される記入例。空欄で非表示",
+    },
+    {
       key: "contactEmail",
       label: "Contact Email",
       placeholder: "you@example.com",
@@ -5101,7 +5120,8 @@ export function SettingsTab({
                     {
                       key: "contactSubjectOptions",
                       label: "件名選択肢 (カンマ区切り)",
-                      placeholder: "Shooting,Press / Media,Collaboration,Other",
+                      placeholder:
+                        "Shooting,Press / Media,Collaboration,テンプレートについて,Other",
                     },
                     {
                       key: "contactFormMessage",
@@ -5121,7 +5141,8 @@ export function SettingsTab({
                     {
                       key: "contactSentMessage",
                       label: "送信完了メッセージ",
-                      placeholder: "Message sent.",
+                      placeholder:
+                        "お送りいただきありがとうございます。2〜3日以内にお返事します。",
                     },
                     {
                       key: "contactSendAnother",

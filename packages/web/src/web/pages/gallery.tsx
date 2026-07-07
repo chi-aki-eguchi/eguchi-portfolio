@@ -72,6 +72,11 @@ export default function GalleryPage() {
       ),
     [seriesData],
   );
+  const seriesSlugById = useMemo(
+    () =>
+      Object.fromEntries((seriesData?.series ?? []).map((s) => [s.id, s.slug])),
+    [seriesData],
+  );
   const categoryLabelBySlug = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.slug, c.label])),
     [categories],
@@ -334,6 +339,7 @@ export default function GalleryPage() {
                     : undefined
                 }
                 seriesNameById={seriesNameById}
+                seriesSlugById={seriesSlugById}
                 categoryLabelBySlug={categoryLabelBySlug}
               />
               {rendered.length < filtered.length && (

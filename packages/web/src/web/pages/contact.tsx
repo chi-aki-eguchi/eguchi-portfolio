@@ -204,7 +204,7 @@ export default function ContactPage() {
             so the thank-you moment stays quiet). */}
         {formspreeUrl && status !== "success" && data?.contactIntro && (
           <p
-            className="text-center text-[rgba(var(--foreground-rgb),0.55)] -mt-4 mb-10 page-entrance page-entrance-delay-1"
+            className="text-center text-[rgba(var(--foreground-rgb),0.55)] -mt-4 mb-5 page-entrance page-entrance-delay-1"
             style={{
               fontSize: "var(--body-size, 0.875rem)",
               lineHeight: "var(--body-leading, 2)",
@@ -213,6 +213,29 @@ export default function ContactPage() {
           >
             {data.contactIntro}
           </p>
+        )}
+        {/* 2026-07-08 動線改善: 「頼んでいいんだ」と思える橋 — 相談歓迎の一言と
+            依頼の流れ。どちらも設定で空にすれば消える。 */}
+        {formspreeUrl && status !== "success" && data?.contactNote && (
+          <p
+            className="text-center text-[rgba(var(--foreground-rgb),0.42)] mb-8 page-entrance page-entrance-delay-1"
+            style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
+          >
+            {data.contactNote}
+          </p>
+        )}
+        {formspreeUrl && status !== "success" && data?.contactFlow && (
+          <div className="mb-10 px-5 py-4 border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg page-entrance page-entrance-delay-1">
+            <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-2">
+              Flow
+            </p>
+            <p
+              className="text-[rgba(var(--foreground-rgb),0.50)]"
+              style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
+            >
+              {data.contactFlow}
+            </p>
+          </div>
         )}
         {!formspreeUrl ? (
           <div className="py-4 space-y-6 page-entrance page-entrance-delay-1">
@@ -393,6 +416,7 @@ export default function ContactPage() {
                 id="contact-message"
                 name="message"
                 rows={5}
+                placeholder={data?.contactMessagePlaceholder || undefined}
                 aria-required="true"
                 aria-invalid={!!errors.message || undefined}
                 aria-describedby={

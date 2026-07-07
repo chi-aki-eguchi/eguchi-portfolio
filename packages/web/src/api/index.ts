@@ -877,6 +877,17 @@ const app = new Hono()
         contactIntro:
           settings.contactIntro ??
           "撮影依頼・取材・コラボレーションなど、お気軽にご連絡ください。",
+        // 2026-07-08 動線改善(トーンA・オーナー承認済み): 依頼の心理的ハードルを
+        // 下げる添え書き・流れの説明。空文字を保存すれば非表示にできる。
+        contactNote:
+          settings.contactNote ??
+          "「まだ決まっていないけれど相談したい」という段階でも歓迎です。通常2〜3日以内にお返事しています。",
+        contactFlow:
+          settings.contactFlow ??
+          "ご相談 → 日程と場所のすり合わせ → 撮影 → 1〜2週間でデータ納品、という流れです。",
+        contactMessagePlaceholder:
+          settings.contactMessagePlaceholder ??
+          "例: 希望する撮影の内容 / 希望日・場所 / 参考にしたい雰囲気(あれば)",
         contactEmail: settings.contactEmail ?? "",
         formspreeUrl: settings.formspreeUrl ?? "",
         // ── Labels / Text ──
@@ -894,14 +905,17 @@ const app = new Hono()
         filterAllLabel: settings.filterAllLabel ?? "All",
         profileLabel: settings.profileLabel ?? "Profile",
         contactLabel: settings.contactLabel ?? "Contact",
-        contactSentMessage: settings.contactSentMessage ?? "Message sent.",
+        contactSentMessage:
+          settings.contactSentMessage ??
+          "お送りいただきありがとうございます。2〜3日以内にお返事します。",
         contactSendAnother: settings.contactSendAnother ?? "Send another",
         contactFormName: settings.contactFormName ?? "Name",
         contactFormEmail: settings.contactFormEmail ?? "Email",
         contactFormSubject: settings.contactFormSubject ?? "Subject",
+        // 「テンプレートについて」はテンプレート需要の計測用(2026-07-08 承認)
         contactSubjectOptions:
           settings.contactSubjectOptions ??
-          "Shooting,Press / Media,Collaboration,Other",
+          "Shooting,Press / Media,Collaboration,テンプレートについて,Other",
         contactFormMessage: settings.contactFormMessage ?? "Message",
         contactErrorMessage:
           settings.contactErrorMessage ?? "Failed to send. Please try again.",

@@ -245,6 +245,7 @@ export function PhotoGallery({
   onRequestMore,
   seriesName,
   seriesNameById,
+  seriesSlugById,
   categoryLabelBySlug,
 }: {
   photos: GalleryPhoto[];
@@ -256,6 +257,7 @@ export function PhotoGallery({
   // general gallery grid, where photos may belong to different series).
   seriesName?: string;
   seriesNameById?: Record<number, string>;
+  seriesSlugById?: Record<number, string>;
   categoryLabelBySlug?: Record<string, string>;
 }) {
   useEffect(() => {
@@ -975,6 +977,7 @@ export function PhotoGallery({
           photographerName={photographerName}
           seriesName={seriesName}
           seriesNameById={seriesNameById}
+          seriesSlugById={seriesSlugById}
           categoryLabelBySlug={categoryLabelBySlug}
         />
       )}

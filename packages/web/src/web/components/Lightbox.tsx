@@ -6,6 +6,7 @@ import {
   useCallback,
 } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "wouter";
 import { photoSrcFor, photoSrcSetFor } from "../lib/picture";
 import { photoAltText } from "../lib/photo-alt";
 
@@ -81,6 +82,7 @@ export function Lightbox({
   photographerName,
   seriesName,
   seriesNameById,
+  seriesSlugById,
   categoryLabelBySlug,
 }: {
   photos: LightboxPhoto[];
@@ -92,6 +94,9 @@ export function Lightbox({
   photographerName?: string;
   seriesName?: string;
   seriesNameById?: Record<number, string>;
+  // When set, the caption links the photo's series name to its page — the one
+  // "next room" doorway while inside the viewer.
+  seriesSlugById?: Record<number, string>;
   categoryLabelBySlug?: Record<string, string>;
 }) {
   const [imgError, setImgError] = useState(false);
@@ -814,26 +819,28 @@ export function Lightbox({
         aria-label="閉じる"
         tabIndex={chromeTab}
         className="lb-btn"
-        style={{
-          ...chromeVis,
-          position: "absolute",
-          top: "calc(10px + var(--sai-top))",
-          right: "calc(12px + var(--sai-right))",
-          width: 52,
-          height: 52,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(0,0,0,0.35)",
-          borderRadius: "50%",
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "var(--font-en)",
-          fontSize: 26,
-          "--lb-rest": 0.75,
-          lineHeight: 1,
-          zIndex: 10,
-        } as React.CSSProperties}
+        style={
+          {
+            ...chromeVis,
+            position: "absolute",
+            top: "calc(10px + var(--sai-top))",
+            right: "calc(12px + var(--sai-right))",
+            width: 52,
+            height: 52,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.35)",
+            borderRadius: "50%",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "var(--font-en)",
+            fontSize: 26,
+            "--lb-rest": 0.75,
+            lineHeight: 1,
+            zIndex: 10,
+          } as React.CSSProperties
+        }
       >
         ✕
       </button>
@@ -849,22 +856,24 @@ export function Lightbox({
             aria-label="前の写真"
             tabIndex={chromeTab}
             className="lb-btn"
-            style={{
-              ...chromeVis,
-              position: "absolute",
-              left: "calc(6px + var(--sai-left))",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "var(--font-en)",
-              fontSize: 38,
-              "--lb-rest": 0.45,
-              padding: "22px 16px",
-              lineHeight: 1,
-              zIndex: 10,
-            } as React.CSSProperties}
+            style={
+              {
+                ...chromeVis,
+                position: "absolute",
+                left: "calc(6px + var(--sai-left))",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "var(--font-en)",
+                fontSize: 38,
+                "--lb-rest": 0.45,
+                padding: "22px 16px",
+                lineHeight: 1,
+                zIndex: 10,
+              } as React.CSSProperties
+            }
           >
             ‹
           </button>
@@ -877,22 +886,24 @@ export function Lightbox({
             aria-label="次の写真"
             tabIndex={chromeTab}
             className="lb-btn"
-            style={{
-              ...chromeVis,
-              position: "absolute",
-              right: "calc(6px + var(--sai-right))",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "var(--font-en)",
-              fontSize: 38,
-              "--lb-rest": 0.45,
-              padding: "22px 16px",
-              lineHeight: 1,
-              zIndex: 10,
-            } as React.CSSProperties}
+            style={
+              {
+                ...chromeVis,
+                position: "absolute",
+                right: "calc(6px + var(--sai-right))",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "var(--font-en)",
+                fontSize: 38,
+                "--lb-rest": 0.45,
+                padding: "22px 16px",
+                lineHeight: 1,
+                zIndex: 10,
+              } as React.CSSProperties
+            }
           >
             ›
           </button>
@@ -1160,32 +1171,63 @@ export function Lightbox({
       </div>
 
       {/* Caption — overlaid at the bottom so it never shrinks the photo; part of chrome. */}
-      {photo.title && (
-        <div
-          style={{
-            ...chromeVis,
-            position: "absolute",
-            bottom: "calc(18px + var(--sai-bottom))",
-            left: "50%",
-            transform: "translateX(-50%)",
-            maxWidth: "90vw",
-            textAlign: "center",
-            zIndex: 10,
-            textShadow: "0 1px 10px rgba(0,0,0,0.6)",
-          }}
-        >
-          <p
+      {(() => {
+        const captionSeries =
+          photo.seriesId != null && seriesSlugById?.[photo.seriesId]
+            ? {
+                slug: seriesSlugById[photo.seriesId],
+                name: seriesNameById?.[photo.seriesId] ?? "Series",
+              }
+            : null;
+        if (!photo.title && !captionSeries) return null;
+        return (
+          <div
             style={{
-              fontFamily: "var(--font-en)",
-              fontSize: "var(--text-meta)",
-              color: "rgba(255,255,255,0.6)",
-              letterSpacing: "0.04em",
+              ...chromeVis,
+              position: "absolute",
+              bottom: "calc(18px + var(--sai-bottom))",
+              left: "50%",
+              transform: "translateX(-50%)",
+              maxWidth: "90vw",
+              textAlign: "center",
+              zIndex: 10,
+              textShadow: "0 1px 10px rgba(0,0,0,0.6)",
             }}
           >
-            {photo.title}
-          </p>
-        </div>
-      )}
+            {photo.title && (
+              <p
+                style={{
+                  fontFamily: "var(--font-en)",
+                  fontSize: "var(--text-meta)",
+                  color: "rgba(255,255,255,0.6)",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {photo.title}
+              </p>
+            )}
+            {captionSeries && (
+              <Link
+                to={`/series/${captionSeries.slug}`}
+                data-lb-chrome
+                tabIndex={chromeTab}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  display: "inline-block",
+                  marginTop: photo.title ? 4 : 0,
+                  fontFamily: "var(--font-en)",
+                  fontSize: "var(--text-meta)",
+                  color: "rgba(255,255,255,0.45)",
+                  letterSpacing: "0.06em",
+                  textDecoration: "none",
+                }}
+              >
+                {captionSeries.name} →
+              </Link>
+            )}
+          </div>
+        );
+      })()}
 
       {/* EXIF info button — only shown when there's data to display */}
       {(() => {

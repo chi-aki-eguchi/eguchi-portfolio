@@ -548,8 +548,8 @@ export function ProfileTab({
               disabled={photoUploading}
               className={`border border-dashed rounded-sm px-4 py-3 text-center transition-colors duration-[var(--dur-fast)] ease-[var(--ease-out)] w-full ${
                 photoUploading
-                  ? "border-[#555] cursor-default"
-                  : "border-[var(--admin-line)] hover:border-[#555] cursor-pointer"
+                  ? "cursor-default"
+                  : "border-[var(--admin-line)] cursor-pointer"
               }`}
             >
               {photoUploading ? (
@@ -602,7 +602,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors resize-y rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors resize-y rounded-sm"
               />
             ) : (
               <input
@@ -611,7 +611,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
               />
             )}
           </AdminField>
@@ -832,7 +832,7 @@ export function CategoriesTab() {
                 setCatError("");
               }}
               placeholder="e.g. Street"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
             />
           </AdminField>
           <AdminField label="Slug">
@@ -846,7 +846,7 @@ export function CategoriesTab() {
                 setCatError("");
               }}
               placeholder="e.g. street"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
             />
           </AdminField>
           {catError && (
@@ -855,7 +855,7 @@ export function CategoriesTab() {
           <button
             onClick={handleAddCat}
             disabled={!newSlug || !newLabel || addCat.isPending}
-            className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
           >
             <Plus size={12} /> Add
           </button>
@@ -871,7 +871,7 @@ export function CategoriesTab() {
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteCatConfirm(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
               キャンセル
             </button>
@@ -1237,7 +1237,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, title: e.target.value }))
                       }
                       placeholder="Still, life"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                   <AdminField label="Slug" hint="URL（/series/◯◯）に使用">
@@ -1253,7 +1253,7 @@ export function SeriesTab() {
                         }))
                       }
                       placeholder="still-life"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
                     />
                   </AdminField>
                   <AdminField label="Subtitle" hint="任意のサブタイトル">
@@ -1264,7 +1264,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, subtitle: e.target.value }))
                       }
                       placeholder="2023–2024"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                   <AdminField
@@ -1279,7 +1279,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, statement: e.target.value }))
                       }
                       placeholder="このシリーズについて…"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                     />
                   </AdminField>
                   <AdminField
@@ -1303,8 +1303,8 @@ export function SeriesTab() {
                             }
                             className={`text-[11px] px-2 py-1 rounded-sm border transition-colors self-start ${
                               draft.coverPhotoId === ""
-                                ? "bg-[#555] text-[#1e1e1e] border-[#666]"
-                                : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                                ? "admin-btn-primary"
+                                : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
                             }`}
                           >
                             なし（自動）
@@ -1365,7 +1365,7 @@ export function SeriesTab() {
                     })()}
                   </AdminField>
                   {/* 機能9: シリーズ固有のレイアウト・テーマ設定 */}
-                  <div className="border-t border-[#2a2a2a] pt-3 mt-1">
+                  <div className="border-t border-[var(--admin-line)] pt-3 mt-1">
                     <p className="text-[10px] tracking-wider uppercase text-[var(--admin-muted)] mb-2">
                       Layout &amp; Theme
                     </p>
@@ -1392,7 +1392,7 @@ export function SeriesTab() {
                             key={val}
                             type="button"
                             onClick={() => setThemeKey("layout", val)}
-                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
+                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                           >
                             {lbl}
                           </button>
@@ -1416,7 +1416,7 @@ export function SeriesTab() {
                             key={val}
                             type="button"
                             onClick={() => setThemeKey("photoOrder", val)}
-                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
+                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                           >
                             {lbl}
                           </button>
@@ -1434,7 +1434,7 @@ export function SeriesTab() {
                           setThemeKey("bgColor", e.target.value.trim())
                         }
                         placeholder="（グローバル設定を使用）"
-                        className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+                        className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
                       />
                     </AdminField>
                   </div>
@@ -1445,7 +1445,7 @@ export function SeriesTab() {
                       disabled={
                         patchSeries.isPending || !draft.title || !draft.slug
                       }
-                      className="flex items-center gap-1.5 px-4 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
                     >
                       {patchSeries.isPending ? (
                         <>
@@ -1460,7 +1460,7 @@ export function SeriesTab() {
                     </button>
                     <button
                       onClick={() => setEditId(null)}
-                      className="px-4 py-2 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
+                      className="px-4 py-2 text-[11px] text-[var(--admin-muted)] transition-colors"
                     >
                       Close
                     </button>
@@ -1489,7 +1489,7 @@ export function SeriesTab() {
                 }
               }}
               placeholder="Still, life"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
             />
           </AdminField>
           <AdminField label="Slug">
@@ -1503,7 +1503,7 @@ export function SeriesTab() {
                 setAddError("");
               }}
               placeholder="still-life"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
             />
           </AdminField>
           {addError && (
@@ -1512,7 +1512,7 @@ export function SeriesTab() {
           <button
             onClick={handleAdd}
             disabled={!newSlug || !newTitle || addSeries.isPending}
-            className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
           >
             <Plus size={12} /> Add
           </button>
@@ -1530,7 +1530,7 @@ export function SeriesTab() {
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
               キャンセル
             </button>
@@ -1811,7 +1811,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, title: e.target.value }))
                     }
                     placeholder="ポートレート"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField label="Price" hint="自由記述（例: ¥15,000〜）">
@@ -1822,7 +1822,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, price: e.target.value }))
                     }
                     placeholder="¥15,000〜"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField label="Description" hint="プランの説明（任意）">
@@ -1834,7 +1834,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, description: e.target.value }))
                     }
                     placeholder="2時間・データ20枚 など"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
                 <AdminField label="含まれるもの" hint="1行に1項目（箇条書き）">
@@ -1846,7 +1846,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, features: e.target.value }))
                     }
                     placeholder={"撮影2時間\nデータ20枚\nレタッチ込み"}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
                 <AdminField label="補足" hint="注意書きなど（任意）">
@@ -1857,14 +1857,14 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, note: e.target.value }))
                     }
                     placeholder="交通費別途"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <div className="flex gap-2">
                   <button
                     onClick={saveEdit}
                     disabled={patchPlan.isPending || !draft.title}
-                    className="flex items-center gap-1.5 px-4 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
                   >
                     {patchPlan.isPending ? (
                       <>
@@ -1878,7 +1878,7 @@ export function PricingTab() {
                   </button>
                   <button
                     onClick={() => setEditId(null)}
-                    className="px-4 py-2 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
+                    className="px-4 py-2 text-[11px] text-[var(--admin-muted)] transition-colors"
                   >
                     Close
                   </button>
@@ -1892,7 +1892,7 @@ export function PricingTab() {
       <button
         onClick={() => addPlan.mutate()}
         disabled={addPlan.isPending}
-        className="flex items-center gap-1.5 px-4 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40"
+        className="flex items-center gap-1.5 px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
       >
         <Plus size={12} /> プランを追加
       </button>
@@ -1905,7 +1905,7 @@ export function PricingTab() {
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
               キャンセル
             </button>
@@ -2024,7 +2024,7 @@ function ServiceSection({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[var(--admin-muted)] hover:text-[#bbb] transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[var(--admin-muted)] transition-colors cursor-pointer"
       >
         <span>{title}</span>
         <ChevronRight
@@ -2066,7 +2066,7 @@ function SvcInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] focus:border-[#666] outline-none"
+        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] outline-none"
       />
     </label>
   );
@@ -2092,7 +2092,7 @@ function SvcTextarea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] focus:border-[#666] outline-none resize-y leading-relaxed"
+        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] outline-none resize-y leading-relaxed"
       />
     </label>
   );
@@ -2115,7 +2115,7 @@ function SvcArrayControls({
         type="button"
         disabled={index === 0}
         onClick={() => onMove(index, index - 1)}
-        className="p-0.5 text-[var(--admin-muted)] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-0.5 text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
         title="上へ"
       >
         <ChevronUp size={12} />
@@ -2124,7 +2124,7 @@ function SvcArrayControls({
         type="button"
         disabled={index === total - 1}
         onClick={() => onMove(index, index + 1)}
-        className="p-0.5 text-[var(--admin-muted)] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-0.5 text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
         title="下へ"
       >
         <ChevronDown size={12} />
@@ -2401,7 +2401,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> 追加
         </button>
@@ -2501,7 +2501,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> 追加
         </button>
@@ -2528,7 +2528,7 @@ export function ServiceTab({
                 プラン {i + 1}
               </span>
               {plan.primary && (
-                <span className="text-[9px] bg-[#4a9eff]/20 text-[#4a9eff] px-1.5 py-0.5 rounded">
+                <span className="text-[9px] bg-[rgba(var(--admin-ink-rgb),0.08)] text-[var(--admin-ink)] px-1.5 py-0.5 rounded">
                   RECOMMENDED
                 </span>
               )}
@@ -2621,7 +2621,7 @@ export function ServiceTab({
                     }),
                   })
                 }
-                className="accent-[#4a9eff]"
+                className="accent-[var(--admin-accent)]"
               />
               おすすめ表示
             </label>
@@ -2645,7 +2645,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> プラン追加
         </button>
@@ -2741,7 +2741,7 @@ export function ServiceTab({
               steps: [...draft.purchaseFlow.steps, { title: "", body: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> ステップ追加
         </button>
@@ -2808,7 +2808,7 @@ export function ServiceTab({
               items: [...draft.faq.items, { q: "", a: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> 質問追加
         </button>
@@ -2853,7 +2853,7 @@ export function ServiceTab({
                 })
               }
               placeholder="Label"
-              className="flex-1 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] focus:border-[#666] outline-none"
+              className="flex-1 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] outline-none"
             />
             <input
               type="text"
@@ -2866,7 +2866,7 @@ export function ServiceTab({
                 })
               }
               placeholder="https://..."
-              className="flex-[2] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] focus:border-[#666] outline-none"
+              className="flex-[2] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] outline-none"
             />
             <button
               type="button"
@@ -2888,7 +2888,7 @@ export function ServiceTab({
               snsLinks: [...draft.finalCta.snsLinks, { label: "", url: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> SNS追加
         </button>
@@ -2997,7 +2997,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[#aaa] transition-colors"
+          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> 機能追加
         </button>
@@ -3291,7 +3291,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
@@ -3318,8 +3318,8 @@ export function SettingsTab({
                         onClick={() => set("heroMode", val)}
                         className={`text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroMode"] || "carousel") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3343,8 +3343,8 @@ export function SettingsTab({
                         onClick={() => set("heroDisplayMode", val)}
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroDisplayMode"] || "normal") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3387,8 +3387,8 @@ export function SettingsTab({
                         onClick={() => set("heroTitlePosition", val)}
                         className={`text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroTitlePosition"] || "center") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3414,8 +3414,8 @@ export function SettingsTab({
                         onClick={() => set("heroScrollEffect", val)}
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["heroScrollEffect"] || "none") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3439,8 +3439,8 @@ export function SettingsTab({
                         onClick={() => set("heroOverlay", val)}
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["heroOverlay"] || "on") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3459,7 +3459,7 @@ export function SettingsTab({
                       "heroScrollEffect",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3487,8 +3487,8 @@ export function SettingsTab({
                         onClick={() => set("navPosition", val)}
                         className={`text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["navPosition"] || "top") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3514,8 +3514,8 @@ export function SettingsTab({
                         onClick={() => set("navHoverEffect", val)}
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["navHoverEffect"] || "fade") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3529,7 +3529,7 @@ export function SettingsTab({
                       set(k, ""),
                     );
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3611,7 +3611,7 @@ export function SettingsTab({
                       "spacingFooterTop",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3637,8 +3637,8 @@ export function SettingsTab({
                         onClick={() => set("bgTexture", val)}
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["bgTexture"] || "none") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3668,7 +3668,7 @@ export function SettingsTab({
                       set(k, ""),
                     );
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3694,8 +3694,8 @@ export function SettingsTab({
                         onClick={() => set("photoRevealEffect", val)}
                         className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["photoRevealEffect"] || "fade") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -3705,7 +3705,7 @@ export function SettingsTab({
                 </AdminField>
                 <button
                   onClick={() => set("photoRevealEffect", "")}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -3755,8 +3755,8 @@ export function SettingsTab({
                           title={desc}
                           className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
                             (current[key] || fallback) === val
-                              ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
                           }`}
                         >
                           {name}
@@ -3787,8 +3787,8 @@ export function SettingsTab({
                         title={desc}
                         className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
                           (current["topWorksMode"] || "auto") === val
-                            ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
                         }`}
                       >
                         {name}
@@ -3976,7 +3976,7 @@ export function SettingsTab({
                             String(Math.floor(Math.random() * 1_000_000) + 1),
                           )
                         }
-                        className="flex items-center gap-1.5 px-3 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors"
                       >
                         <Shuffle size={12} /> 配置をシャッフル
                       </button>
@@ -4000,7 +4000,7 @@ export function SettingsTab({
                       "gallerySeed",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4025,8 +4025,8 @@ export function SettingsTab({
                         onClick={() => set("seriesNavEnabled", val)}
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["seriesNavEnabled"] || "auto") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -4065,8 +4065,8 @@ export function SettingsTab({
                           onClick={() => set("worksDefaultView", val)}
                           className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                             (current["worksDefaultView"] || "photos") === val
-                              ? "bg-[#888] text-[#1e1e1e] font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                           }`}
                         >
                           {lbl}
@@ -4114,7 +4114,7 @@ export function SettingsTab({
                         "seriesGridColumnsMobile",
                       ].forEach((k) => set(k, ""));
                     }}
-                    className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                    className="text-[10px] text-[var(--admin-muted)] transition-colors"
                   >
                     Reset to default
                   </button>
@@ -4143,7 +4143,7 @@ export function SettingsTab({
                         <button
                           key={val}
                           onClick={() => set("gallerySortOrder", val)}
-                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
+                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                         >
                           {lbl}
                         </button>
@@ -4166,7 +4166,7 @@ export function SettingsTab({
                         <button
                           key={val}
                           onClick={() => set("seriesSortOrder", val)}
-                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "bg-[#888] text-[#1e1e1e] border-[#888] font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
+                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                         >
                           {lbl}
                         </button>
@@ -4179,7 +4179,7 @@ export function SettingsTab({
                         set(k, ""),
                       );
                     }}
-                    className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                    className="text-[10px] text-[var(--admin-muted)] transition-colors"
                   >
                     Reset to default
                   </button>
@@ -4210,8 +4210,8 @@ export function SettingsTab({
                         onClick={() => set("noteEnabled", val)}
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["noteEnabled"] || "off") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -4229,7 +4229,7 @@ export function SettingsTab({
                     value={current["noteUsername"] ?? ""}
                     onChange={(e) => set("noteUsername", e.target.value.trim())}
                     placeholder="chi_aki_zip"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm font-mono placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
                   />
                 </AdminField>
                 <AdminField label="表示件数" hint="一覧に表示する記事数">
@@ -4269,8 +4269,8 @@ export function SettingsTab({
                         onClick={() => set("printEnabled", val)}
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["printEnabled"] || "off") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -4287,7 +4287,7 @@ export function SettingsTab({
                       set("printStoreUrl", e.target.value.trim())
                     }
                     placeholder="https://..."
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField label="リンク文言" hint="ボタンの表示テキスト">
@@ -4297,7 +4297,7 @@ export function SettingsTab({
                     value={current["printStoreLabel"] ?? ""}
                     onChange={(e) => set("printStoreLabel", e.target.value)}
                     placeholder="プリントを購入する"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
@@ -4310,7 +4310,7 @@ export function SettingsTab({
                     value={current["printDescription"] ?? ""}
                     onChange={(e) => set("printDescription", e.target.value)}
                     placeholder="A4 / ¥3,000〜 ..."
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
               </Section>
@@ -4336,8 +4336,8 @@ export function SettingsTab({
                         onClick={() => set("homeCtaEnabled", val)}
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["homeCtaEnabled"] || "off") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -4355,7 +4355,7 @@ export function SettingsTab({
                     value={current["homeCtaTitle"] ?? ""}
                     onChange={(e) => set("homeCtaTitle", e.target.value)}
                     placeholder="撮影のご依頼"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
@@ -4368,7 +4368,7 @@ export function SettingsTab({
                     value={current["homeCtaText"] ?? ""}
                     onChange={(e) => set("homeCtaText", e.target.value)}
                     placeholder="ポートレート・作品撮り・取材など、お気軽にご相談ください。"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm resize-y placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
                 <AdminField
@@ -4381,7 +4381,7 @@ export function SettingsTab({
                     value={current["homeCtaButton"] ?? ""}
                     onChange={(e) => set("homeCtaButton", e.target.value)}
                     placeholder="お問い合わせ"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
               </Section>
@@ -4408,7 +4408,7 @@ export function SettingsTab({
                         onChange={(e) => set("themeBg", e.target.value)}
                         placeholder={DEFAULT_THEME_BG}
                         data-admin-setting="themeBg-text"
-                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                       />
                     </div>
                   </AdminField>
@@ -4427,7 +4427,7 @@ export function SettingsTab({
                         value={current["themeText"] || ""}
                         onChange={(e) => set("themeText", e.target.value)}
                         placeholder="#1a1a1a"
-                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                       />
                     </div>
                   </AdminField>
@@ -4437,7 +4437,7 @@ export function SettingsTab({
                     set("themeBg", "");
                     set("themeText", "");
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4486,8 +4486,8 @@ export function SettingsTab({
                         onClick={() => set(key, "")}
                         className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
                           !(current[key] || "")
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         既定（{defWeight}）
@@ -4498,8 +4498,8 @@ export function SettingsTab({
                           onClick={() => set(key, String(w))}
                           className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
                             (current[key] || "") === String(w)
-                              ? "bg-[#888] text-[#1e1e1e] font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                           }`}
                           style={{ fontWeight: w }}
                         >
@@ -4665,7 +4665,7 @@ export function SettingsTab({
                       "footerSize",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4732,8 +4732,8 @@ export function SettingsTab({
                         onClick={() => set("linkUnderline", val)}
                         className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
                           (current["linkUnderline"] || "off") === val
-                            ? "bg-[#888] text-[#1e1e1e] font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
                         {lbl}
@@ -4799,7 +4799,7 @@ export function SettingsTab({
                       "snsOpacity",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4911,7 +4911,7 @@ export function SettingsTab({
                       "bodyLeading",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
                   Reset to default
                 </button>
@@ -4962,7 +4962,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
@@ -5003,7 +5003,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
@@ -5068,7 +5068,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
@@ -5136,7 +5136,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
@@ -5198,7 +5198,7 @@ export function SettingsTab({
 
       {/* Live Preview Panel — mobile: full-screen overlay; desktop: side panel */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--admin-paper)] md:static md:z-auto md:flex-1 md:border-l md:border-[#333] min-w-0 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--admin-paper)] md:static md:z-auto md:flex-1 md:border-l md:border-[var(--admin-line)] min-w-0 overflow-hidden">
           {/* Preview toolbar */}
           <div className="flex items-center justify-between px-4 h-10 border-b border-[var(--admin-line)] bg-[var(--admin-paper)] flex-shrink-0">
             <span className="text-[10px] tracking-widest uppercase text-[var(--admin-muted)]">
@@ -5207,7 +5207,7 @@ export function SettingsTab({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPreviewDevice("desktop")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "desktop" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[#888]"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "desktop" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
                 title="PC幅で確認"
                 aria-label="PC幅で確認"
               >
@@ -5215,7 +5215,7 @@ export function SettingsTab({
               </button>
               <button
                 onClick={() => setPreviewDevice("mobile")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "mobile" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)] hover:text-[#888]"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "mobile" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
                 title="スマホ幅で確認"
                 aria-label="スマホ幅で確認"
               >
@@ -5223,7 +5223,8 @@ export function SettingsTab({
               </button>
               <button
                 onClick={() => setLiveSync(!liveSync)}
-                className={`ml-2 px-2 py-0.5 rounded-sm text-[10px] transition-colors ${liveSync ? "bg-[#2a3a2a] text-[#6c6]" : "bg-[#3a2a2a] text-[#c66]"}`}
+                aria-pressed={liveSync}
+                className="ml-2 px-2 py-0.5 rounded-sm text-[10px] transition-colors"
                 title={
                   liveSync
                     ? "設定変更がリアルタイム反映中"
@@ -5236,14 +5237,14 @@ export function SettingsTab({
                 onClick={() =>
                   iframeRef.current?.contentWindow?.location.reload()
                 }
-                className="ml-1 text-[10px] text-[var(--admin-muted)] hover:text-[#888] transition-colors"
+                className="ml-1 text-[10px] text-[var(--admin-muted)] transition-colors"
               >
                 Reload
               </button>
               {/* Close — needed to dismiss the mobile full-screen overlay */}
               <button
                 onClick={() => setShowPreview(false)}
-                className="md:hidden ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] hover:text-[#ccc] transition-colors"
+                className="md:hidden ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] transition-colors"
                 title="Close preview"
                 aria-label="Close preview"
               >
@@ -5414,12 +5415,12 @@ function PresetEditor({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
         />
         <button
           onClick={onAdd}
           disabled={busy || !value.trim()}
-          className="flex items-center gap-1 px-3 py-2 text-[11px] bg-[#555] text-[#1e1e1e] rounded-sm hover:bg-[#666] transition-colors disabled:opacity-40"
+          className="flex items-center gap-1 px-3 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
         >
           <Plus size={12} /> 追加
         </button>
@@ -5486,7 +5487,7 @@ function PairingPicker({
               set("fontEn", en);
             }}
             title={desc}
-            className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "bg-[#888] text-[#1e1e1e]" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"}`}
+            className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border border-[var(--admin-line)]"}`}
           >
             <div className="flex items-baseline justify-between gap-3">
               <span className={`text-[11px] ${active ? "font-medium" : ""}`}>
@@ -5619,9 +5620,9 @@ function FontPicker({
   };
 
   const selectCls =
-    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm appearance-none cursor-pointer";
+    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm appearance-none cursor-pointer";
   const inputCls =
-    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]";
+    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm";
 
   // Correct fallback for preview
   const previewFamily = def
@@ -5688,8 +5689,8 @@ function FontPicker({
                 onClick={() => set(customCategoryKey, cat)}
                 className={`flex-1 text-[11px] py-1 rounded-sm transition-colors ${
                   (current[customCategoryKey] || "sans-serif") === cat
-                    ? "bg-[#888] text-[#1e1e1e]"
-                    : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)] hover:bg-[#3a3a3a]"
+                    ? "admin-btn-primary"
+                    : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                 }`}
               >
                 {cat}
@@ -5701,7 +5702,7 @@ function FontPicker({
               <span className="text-[10px] text-[var(--admin-muted)] truncate flex-1">
                 {current[customUrlKey].split("/").pop()}
               </span>
-              <label className="text-[10px] text-[var(--admin-muted)] hover:text-[#aaa] cursor-pointer transition-colors">
+              <label className="text-[10px] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors">
                 Replace
                 <input
                   aria-label="フォントファイルを選択"
@@ -5714,7 +5715,7 @@ function FontPicker({
             </div>
           ) : (
             <label
-              className={`inline-flex items-center gap-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[#ccc] cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+              className={`inline-flex items-center gap-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
             >
               <Upload size={12} />
               {uploading
@@ -5787,7 +5788,7 @@ function TypoControl({
         step={step}
         value={value}
         onChange={(e) => set(valueKey, e.target.value)}
-        className="flex-1 h-1 accent-[#888] cursor-pointer"
+        className="flex-1 h-1 accent-[var(--admin-muted)] cursor-pointer"
       />
       <input
         aria-label={`${label}（数値入力）`}
@@ -5809,7 +5810,7 @@ function TypoControl({
               ? `単位: ${unit}`
               : undefined
         }
-        className="w-16 shrink-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm text-[11px] text-[var(--admin-ink)] text-right px-1.5 py-0.5 tabular-nums outline-none focus:border-[#888] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-16 shrink-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm text-[11px] text-[var(--admin-ink)] text-right px-1.5 py-0.5 tabular-nums outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {unit ? (
         <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">
@@ -5950,7 +5951,7 @@ function ColorRow({
           value={current[valueKey] || ""}
           onChange={(e) => set(valueKey, e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none focus:border-[#888] transition-colors rounded-sm placeholder:text-[#555]"
+          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
         />
       </div>
     </AdminField>

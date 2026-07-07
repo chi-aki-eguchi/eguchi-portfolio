@@ -371,22 +371,6 @@
   border-radius: var(--admin-radius-sm) !important;
 }
 
-.admin-atelier .admin-mobile-nav .bg-\[\#3a3a3a\],
-.admin-atelier .admin-mobile-nav .bg-\[\#555\] {
-  background: var(--admin-paper) !important;
-  color: var(--admin-ink) !important;
-}
-
-.admin-atelier .admin-mobile-nav .text-\[\#888\],
-.admin-atelier .admin-mobile-nav .text-\[\#666\] {
-  color: var(--admin-muted) !important;
-}
-
-.admin-atelier .admin-mobile-nav .hover\:bg-\[\#2a2a2a\]:hover,
-.admin-atelier .admin-mobile-nav .hover\:bg-\[\#333\]:hover {
-  background: rgba(var(--admin-ink-rgb), 0.04) !important;
-}
-
 @media (min-width: 1024px) {
   .admin-atelier .admin-mobile-nav {
     display: none !important;
@@ -465,9 +449,7 @@
    (Series layout picker, Add/Save, aria-pressed toggles) never actually
    showed their highlighted state. */
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button[class*="bg-[#555]"]:not(.absolute),
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button[class*="bg-[#888]"]:not(.absolute),
+  button.admin-btn-primary:not(.absolute),
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
   button[aria-pressed="true"]:not(.absolute) {
   background-color: var(--admin-ink) !important;
@@ -555,47 +537,6 @@
   75% {
     transform: translateX(-3px);
   }
-}
-
-.admin-atelier [class*="bg-[#1e1e1e]"],
-.admin-atelier [class*="bg-[#111]"],
-.admin-atelier [class*="bg-[#1a1a1a]"],
-.admin-atelier [class*="bg-[#202020]"],
-.admin-atelier [class*="bg-[#252525]"],
-.admin-atelier [class*="bg-[#2a2a2a]"] {
-  background-color: var(--admin-paper) !important;
-}
-
-.admin-atelier [class*="bg-[#333]"],
-.admin-atelier [class*="bg-[#303030]"],
-.admin-atelier [class*="bg-[#2c2c2c]"],
-.admin-atelier [class*="bg-[#2f2f2f]"],
-.admin-atelier [class*="bg-[#383838]"],
-.admin-atelier [class*="bg-[#3a3a3a]"] {
-  background-color: var(--admin-paper-soft) !important;
-}
-
-.admin-atelier [class*="border-[#333]"],
-.admin-atelier [class*="border-[#444]"],
-.admin-atelier [class*="border-[#999]"],
-.admin-atelier [class*="border-[#3a3a3a]"] {
-  border-color: var(--admin-line) !important;
-}
-
-.admin-atelier [class*="text-[#ddd]"],
-.admin-atelier [class*="text-[#ccc]"],
-.admin-atelier [class*="text-[#bbb]"],
-.admin-atelier [class*="text-[#aaa]"] {
-  color: var(--admin-ink) !important;
-}
-
-.admin-atelier [class*="text-[#888]"],
-.admin-atelier [class*="text-[#777]"],
-.admin-atelier [class*="text-[#666]"],
-.admin-atelier [class*="text-[#555]"],
-.admin-atelier [class*="text-[#999]"],
-.admin-atelier [class*="text-[#444]"] {
-  color: var(--admin-muted) !important;
 }
 
 .admin-atelier table {
@@ -1197,11 +1138,6 @@
 .admin-atelier .admin-content [class*="text-green"],
 .admin-atelier .admin-content [class*="text-amber"] {
   color: var(--admin-muted) !important;
-}
-
-.admin-atelier .admin-content [class*="bg-[#4a9eff]"] {
-  background: rgba(var(--admin-ink-rgb), 0.08) !important;
-  color: var(--admin-ink) !important;
 }
 
 .admin-atelier .admin-content [class*="grid-cols-5"] button,

@@ -13,13 +13,17 @@ export default function AdminLoginPage() {
   // attribute) since it's a dedicated full-page login — the focus is expected
   // and the declarative attribute is flagged by jsx-a11y for general use.
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const login = useMutation({
     mutationFn: async (pw: string) => {
       const res = await api.admin.login.$post({ json: { password: pw } });
       if (!res.ok) {
-        const body = await res.json().catch(() => null) as { error?: string } | null;
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
         throw new Error(body?.error || "パスワードが違います");
       }
       return res.json();
@@ -33,33 +37,55 @@ export default function AdminLoginPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#111] flex items-center justify-center px-4">
+    // The atelier's paper-and-ink front door. Deliberately NOT `.admin-atelier`
+    // (smoke helpers use that class to detect the logged-in shell); shares the
+    // same design tokens via `.admin-login` in styles.css instead, so it
+    // follows light/dark like the public site it sits between.
+    <div className="admin-login min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="flex justify-center mb-8">
-          <Lock size={28} className="text-[#c8a96e]" />
+        <div className="flex justify-center mb-6">
+          <Lock
+            size={24}
+            strokeWidth={1.5}
+            className="opacity-40"
+            aria-hidden="true"
+          />
         </div>
-        <h1 className="text-center text-xs tracking-[0.3em] uppercase text-[#555] mb-8">Admin Login</h1>
+        <p className="text-center font-en text-[10px] tracking-[0.12em] uppercase opacity-50 mb-1">
+          Portfolio Admin
+        </p>
+        <h1 className="admin-login__title text-center mb-10">Sign in</h1>
 
         <form
-          onSubmit={(e) => { e.preventDefault(); login.mutate(password); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            login.mutate(password);
+          }}
           className="flex flex-col gap-4"
         >
           <input
             ref={inputRef}
             type="password"
             value={password}
-            onChange={(e) => { setPassword(e.target.value); setError(""); }}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError("");
+            }}
             placeholder="パスワード"
             aria-label="パスワード"
             autoComplete="current-password"
-            className="bg-[#1c1c1c] border border-white/10 text-[#e8e8e8] px-4 py-3 text-sm outline-none focus:border-[#c8a96e] transition-colors placeholder:text-[#444] w-full"
+            className="admin-login__input w-full px-4 py-3 text-sm"
           />
-          {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
+          {error && (
+            <p role="alert" className="admin-login__error text-xs">
+              {error}
+            </p>
+          )}
           <button
             type="submit"
             disabled={login.isPending}
             aria-busy={login.isPending || undefined}
-            className="border border-[#c8a96e] text-[#c8a96e] text-xs tracking-[0.2em] uppercase py-3 hover:bg-[#c8a96e] hover:text-[#111] transition-colors disabled:opacity-50"
+            className="admin-login__submit text-xs tracking-[0.2em] uppercase py-3 disabled:opacity-50"
           >
             {login.isPending ? "..." : "ログイン"}
           </button>

@@ -221,7 +221,7 @@ function HeroCarousel({
   if (photos.length === 0)
     return (
       <div className="w-full" style={{ height: "60vh" }}>
-        <div className="w-full h-full bg-[#eee] rounded-lg" />
+        <div className="w-full h-full bg-[var(--photo-placeholder)] rounded-lg" />
       </div>
     );
 
@@ -521,7 +521,7 @@ function HomeQuietGrid({
             </div>
           </>
         ) : (
-          <div className="w-full h-full bg-[#eee]" />
+          <div className="w-full h-full bg-[var(--photo-placeholder)]" />
         )}
       </section>
 
@@ -537,15 +537,15 @@ function HomeQuietGrid({
               style={{
                 fontSize: 9,
                 letterSpacing: "0.16em",
-                color: "#aaa",
+                color: "rgba(var(--foreground-rgb),0.35)",
               }}
             >
               {settings?.worksLabel ?? "Works"}
             </h2>
             <Link
               to="/gallery"
-              className="font-en transition-colors duration-300 hover:text-[#888]"
-              style={{ fontSize: 9, color: "#aaa" }}
+              className="font-en transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.5)]"
+              style={{ fontSize: 9, color: "rgba(var(--foreground-rgb),0.35)" }}
             >
               {settings?.viewAllLabel ?? "View all →"}
             </Link>
@@ -696,7 +696,7 @@ function HomeEditorial({
         style={{ minHeight: "min(340px, 50vh)" }}
       >
         <div
-          className="md:flex-[0_0_55%] relative overflow-hidden bg-[#eee]"
+          className="md:flex-[0_0_55%] relative overflow-hidden bg-[var(--photo-placeholder)]"
           style={{ minHeight: 200 }}
         >
           {heroPhoto && (
@@ -725,14 +725,14 @@ function HomeEditorial({
             style={{
               fontSize: "clamp(28px, 4vw, 36px)",
               fontWeight: 300,
-              color: "#1a1a1a",
+              color: "var(--foreground)",
             }}
           >
             {siteNameJa}
           </h1>
           <p
             className="font-en mb-5"
-            style={{ fontSize: 11, color: "#aaa", letterSpacing: "0.06em" }}
+            style={{ fontSize: 11, color: "rgba(var(--foreground-rgb),0.35)", letterSpacing: "0.06em" }}
           >
             {siteNameEn}
           </p>
@@ -741,7 +741,7 @@ function HomeEditorial({
               className="font-ja"
               style={{
                 fontSize: 10,
-                color: "#888",
+                color: "rgba(var(--foreground-rgb),0.5)",
                 lineHeight: 1.8,
                 maxWidth: 240,
               }}
@@ -761,7 +761,7 @@ function HomeEditorial({
           <div className="mb-3.5">
             <h2
               className="font-en uppercase"
-              style={{ fontSize: 9, letterSpacing: "0.16em", color: "#aaa" }}
+              style={{ fontSize: 9, letterSpacing: "0.16em", color: "rgba(var(--foreground-rgb),0.35)" }}
             >
               {settings?.worksLabel ?? "Works"}
             </h2>
@@ -955,7 +955,7 @@ function HomeImmersive({
                           style={{
                             fontSize: 9,
                             letterSpacing: "0.06em",
-                            color: "#aaa",
+                            color: "rgba(var(--foreground-rgb),0.35)",
                           }}
                         >
                           {photo.title}
@@ -968,7 +968,7 @@ function HomeImmersive({
                           style={{
                             fontSize: 9,
                             letterSpacing: "0.06em",
-                            color: "#aaa",
+                            color: "rgba(var(--foreground-rgb),0.35)",
                           }}
                         >
                           {sub}

@@ -102,7 +102,7 @@ export function SeriesGrid() {
                     s.coverFocalY,
                   ),
                 }}
-                className="w-full h-full object-cover transition-[transform,filter] duration-[1.1s] ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.04] group-hover:brightness-[1.04]"
+                className="w-full h-full object-cover transition-[transform,filter] duration-[1.1s] ease-[var(--ease-quart)] group-hover:scale-[1.04] group-hover:brightness-[1.04]"
               />
             ) : (
               <div className="w-full h-full" />

@@ -33,6 +33,62 @@
   /* A2: line-height */
   --body-leading: 1.85;
   --section-leading: 1.25;
+
+  /* ─── Shared design tokens (public + admin) ───
+     One vocabulary, two tempos: the operational scale (instant→slow) drives
+     UI feedback everywhere; the editorial scale (hover→breathe) drives the
+     public site's slower, quieter reveals (design-spec §6: 500-700ms).
+     .admin-atelier inherits these and only re-scopes what must differ
+     (ink-derived shadows). Choreography one-offs (keyframe delays, unique
+     entrances) may stay local, but their easing must come from these. */
+  --dur-instant: 100ms;
+  --dur-fast: 160ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --dur-hover: 300ms; /* color/opacity hover feedback */
+  --dur-caption: 350ms; /* tile captions, filter grid */
+  --dur-lift: 400ms; /* photo-card hover lift */
+  --dur-reveal: 600ms; /* section/page/footer entrances, LQIP fade */
+  --dur-hero: 700ms; /* hero text + slide crossfade */
+  --dur-drift: 750ms; /* scroll fade-in, collage drift */
+  --dur-breathe: 900ms; /* photo hover-out relax */
+
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
+  --ease-inout: cubic-bezier(0.65, 0.05, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1); /* editorial reveals */
+  --ease-quart: cubic-bezier(0.25, 1, 0.5, 1); /* hovers, nav, header */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1); /* quick dismissals */
+
+  /* Radius: concentric — control(s) < card(m) < floating layer(l).
+     Photos themselves stay square-cornered (the frame principle). */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 18px;
+
+  /* UI shadows: 3 steps. Neutral black here; .admin-atelier re-derives the
+     same three from its (theme-aware) ink color. */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.07), 0 16px 48px rgba(0, 0, 0, 0.1);
+
+  /* Photo shadows stay black in both themes (photos cast real shadows);
+     dark mode deepens them and adds a hairline instead of lightening. */
+  --shadow-photo:
+    0 1px 12px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --shadow-photo-hover:
+    0 10px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  /* Loading placeholder behind photos — foreground-derived so it reads as
+     "paper under the print" in light mode and never flashes white in dark. */
+  --photo-placeholder: rgba(var(--foreground-rgb), 0.06);
+
+  --scrollbar-thumb: #d0d0d0;
+  --scrollbar-thumb-hover: #aaa;
+
+  /* Paper grain shared by the admin shell and its login page. */
+  --admin-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E");
 }
 
 /* Admin atelier design tokens: scoped to /admin only via .admin-atelier. */
@@ -51,17 +107,9 @@
     var(--admin-paper) 94.5%,
     var(--admin-ink)
   );
-  --admin-muted: color-mix(
-    in srgb,
-    var(--admin-ink) 62%,
-    var(--admin-paper)
-  );
+  --admin-muted: color-mix(in srgb, var(--admin-ink) 62%, var(--admin-paper));
   --admin-muted-rgb: 102, 102, 102;
-  --admin-line: color-mix(
-    in srgb,
-    var(--admin-paper) 89%,
-    var(--admin-ink)
-  );
+  --admin-line: color-mix(in srgb, var(--admin-paper) 89%, var(--admin-ink));
   --admin-line-strong: color-mix(
     in srgb,
     var(--admin-paper) 82%,
@@ -71,23 +119,14 @@
   --admin-accent-rgb: var(--admin-ink-rgb);
   --admin-danger: #a33b2e;
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
-  --admin-font-title:
-    var(--font-en), "Cormorant Garamond", "Georgia", serif;
+  --admin-font-title: var(--font-en), "Cormorant Garamond", "Georgia", serif;
   --admin-font-ui:
     var(--font-ja), "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
 
-  /* ─── Motion & material tokens (admin only). Reference these — no
-     hardcoded durations/curves/shadows/radii below this point. ─── */
-  --dur-instant: 100ms;
-  --dur-fast: 160ms;
-  --dur-base: 220ms;
-  --dur-slow: 320ms;
-  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
-  --ease-inout: cubic-bezier(0.65, 0.05, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
-
-  /* Shadows: 3 steps only, warm-gray from the (theme-derived) ink color. */
+  /* ─── Motion & material: inherited from the shared :root tokens above.
+     Reference those — no hardcoded durations/curves/shadows/radii below this
+     point. Only the shadows are re-scoped here, warm-gray from the
+     (theme-derived) ink color instead of neutral black. ─── */
   --shadow-1:
     0 1px 2px rgba(var(--admin-ink-rgb), 0.04),
     0 1px 3px rgba(var(--admin-ink-rgb), 0.03);
@@ -97,11 +136,6 @@
   --shadow-3:
     0 4px 12px rgba(var(--admin-ink-rgb), 0.07),
     0 16px 48px rgba(var(--admin-ink-rgb), 0.1);
-
-  /* Radius: concentric — control(s) < card(m) < floating layer(l). */
-  --radius-s: 8px;
-  --radius-m: 12px;
-  --radius-l: 18px;
 
   /* Glass: structural layers only (sidebar / save bar / modal / ⌘K).
      Max 2 on screen at once. See @supports/@media fallbacks below. */
@@ -130,7 +164,6 @@
   --admin-space-4: 16px;
   --admin-space-5: 24px;
   --admin-space-6: 32px;
-  --admin-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E");
   color-scheme: light;
   background-color: var(--admin-paper);
   background-image: var(--admin-paper-grain);
@@ -1205,6 +1238,75 @@
   }
 }
 
+/* ─── Admin login — the atelier's front door ───
+   Same paper-and-ink language as .admin-atelier, but built on the public
+   :root tokens (background/foreground) so it follows light/dark and never
+   collides with the `.admin-atelier` class the logged-in shell (and the
+   smoke suite's login detection) relies on. */
+.admin-login {
+  background-color: var(--background);
+  background-image: var(--admin-paper-grain);
+  color: var(--foreground);
+}
+
+.admin-login__title {
+  font-family: var(--font-en), "Cormorant Garamond", "Georgia", serif;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.admin-login__input {
+  border: 1px solid rgba(var(--foreground-rgb), 0.14);
+  border-radius: var(--radius-s);
+  background: rgba(var(--background-rgb), 0.72);
+  color: var(--foreground);
+  outline: 2px solid rgba(var(--foreground-rgb), 0);
+  outline-offset: 1px;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    outline-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-login__input::placeholder {
+  color: rgba(var(--foreground-rgb), 0.38);
+}
+
+.admin-login__input:focus {
+  border-color: rgba(var(--foreground-rgb), 0.55);
+  outline-color: rgba(var(--foreground-rgb), 0.25);
+}
+
+.admin-login__error {
+  color: #a33b2e;
+}
+
+.admin-login__submit {
+  border: 1px solid rgba(var(--foreground-rgb), 0.8);
+  border-radius: var(--radius-s);
+  background: var(--foreground);
+  color: var(--background);
+  transform: scale(1);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-instant) var(--ease-out);
+}
+
+.admin-login__submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.admin-login__submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.admin-login__submit:focus-visible {
+  outline: 2px solid rgba(var(--foreground-rgb), 0.55);
+  outline-offset: 2px;
+}
+
 /* ─── Dark mode defaults ───
    Applied via [data-theme="dark"] on <html>. Admin's custom themeBg/themeText
    are set as inline styles (higher specificity) and override these. Photos
@@ -1215,16 +1317,22 @@
   --foreground: #e8e8e8;
   --foreground-rgb: 232, 232, 232;
   color-scheme: dark;
+  /* Photos cast deeper shadows in the dark; a faint hairline separates the
+     print from the ground where a shadow can't. */
+  --shadow-photo:
+    0 1px 12px rgba(0, 0, 0, 0.25), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+  --shadow-photo-hover:
+    0 10px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb: #444;
+  --scrollbar-thumb-hover: #666;
 }
 [data-theme="dark"] ::selection {
-  background: rgba(232, 232, 232, 0.15);
-  color: #e8e8e8;
+  background: rgba(var(--foreground-rgb), 0.15);
+  color: var(--foreground);
 }
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #444;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: #666;
+/* The light-mode danger red drops below AA on a #121212 ground. */
+[data-theme="dark"] .admin-login__error {
+  color: #d4685a;
 }
 
 @media (max-width: 767px) {
@@ -1273,8 +1381,8 @@ body {
 }
 
 ::selection {
-  background: rgba(26, 26, 26, 0.08);
-  color: #1a1a1a;
+  background: rgba(var(--foreground-rgb), 0.08);
+  color: var(--foreground);
 }
 
 ::-webkit-scrollbar {
@@ -1284,11 +1392,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
+  background: var(--scrollbar-thumb);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* ─── Hide scrollbar for horizontal scroll areas (filters) ─── */
@@ -1306,19 +1414,15 @@ body {
   border-radius: 0;
   overflow: hidden;
   background: transparent;
-  box-shadow:
-    0 1px 12px rgba(0, 0, 0, 0.06),
-    0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-photo);
   transition:
-    transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
-    box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    transform var(--dur-lift) var(--ease-quart),
+    box-shadow var(--dur-lift) var(--ease-quart);
   backface-visibility: hidden;
 }
 .photo-card:hover {
   transform: translateY(-4px);
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-photo-hover);
 }
 .photo-card-quiet {
   box-shadow: none;
@@ -1361,8 +1465,8 @@ body {
     opacity: 0;
     transform: translateY(4px);
     transition:
-      opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-      transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+      opacity var(--dur-caption) var(--ease-quart),
+      transform var(--dur-caption) var(--ease-quart);
     pointer-events: none;
     overflow: hidden;
     white-space: nowrap;
@@ -1374,7 +1478,8 @@ body {
   .photo-card:hover img.lqip-loaded {
     transform: scale(1.03);
     filter: blur(0px) brightness(1.04);
-    transition-duration: 0.6s, 0.6s, 0.6s;
+    transition-duration:
+      var(--dur-reveal), var(--dur-reveal), var(--dur-reveal);
   }
   .photo-card:hover .tile-caption {
     opacity: 1;
@@ -1396,8 +1501,8 @@ body {
   transform: translateX(var(--collage-shift, 0px))
     rotate(var(--collage-tilt, 0deg));
   transition:
-    transform 0.75s cubic-bezier(0.25, 1, 0.5, 1),
-    box-shadow 0.75s cubic-bezier(0.25, 1, 0.5, 1);
+    transform var(--dur-drift) var(--ease-quart),
+    box-shadow var(--dur-drift) var(--ease-quart);
   will-change: transform;
 }
 .collage-card:hover {
@@ -1409,19 +1514,7 @@ body {
    shadow (not `none`) so nothing visibly flickers on hover. */
 .collage-card .photo-card:hover {
   transform: none;
-  box-shadow:
-    0 1px 12px rgba(0, 0, 0, 0.06),
-    0 0 0 0.5px rgba(0, 0, 0, 0.04);
-}
-[data-theme="dark"] .photo-card {
-  box-shadow:
-    0 1px 12px rgba(0, 0, 0, 0.25),
-    0 0 0 0.5px rgba(255, 255, 255, 0.06);
-}
-[data-theme="dark"] .photo-card:hover {
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.35),
-    0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-photo);
 }
 [data-theme="dark"] .photo-broken {
   background: rgba(var(--foreground-rgb), 0.08);
@@ -1441,14 +1534,14 @@ body {
   width: 100%;
   height: auto;
   display: block;
-  background-color: #ebebeb;
+  background-color: var(--photo-placeholder);
   /* LQIP blur-up: blurred placeholder fades out when real img loads.
-     transform uses 0.9s so hover-out "breathes" slowly back; hover-in
-     overrides to 0.6s via transition-duration on the :hover rule. */
+     transform uses --dur-breathe so hover-out "breathes" slowly back;
+     hover-in overrides to --dur-reveal via transition-duration on :hover. */
   transition:
-    filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.9s cubic-bezier(0.25, 1, 0.5, 1);
+    filter var(--dur-reveal) var(--ease-expo),
+    opacity var(--dur-reveal) var(--ease-expo),
+    transform var(--dur-breathe) var(--ease-quart);
 }
 .photo-card img.lqip-loading {
   /* blur and brightness share the same filter list so they interpolate smoothly */
@@ -1480,7 +1573,7 @@ header > nav {
     left: 0;
     bottom: 0;
     width: 11rem;
-    box-shadow: 1px 0 0 rgba(0, 0, 0, 0.04);
+    box-shadow: 1px 0 0 rgba(var(--foreground-rgb), 0.04);
   }
   .nav-pos-left > header > nav {
     max-width: none;
@@ -1506,7 +1599,7 @@ header > nav {
   .nav-pos-bottom > header {
     top: auto;
     bottom: 0;
-    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -1px 0 rgba(var(--foreground-rgb), 0.05);
   }
   .nav-pos-bottom > main {
     padding-top: 1.5rem;
@@ -1520,8 +1613,8 @@ header > nav {
   .nav-pos-left > header > nav ul a {
     position: relative;
     transition:
-      color 0.3s cubic-bezier(0.25, 1, 0.5, 1),
-      padding-left 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      color var(--dur-hover) var(--ease-quart),
+      padding-left var(--dur-hover) var(--ease-quart);
   }
   .nav-pos-left > header > nav ul a:not([aria-current="page"]) {
     color: rgba(var(--foreground-rgb), 0.4) !important;
@@ -1569,8 +1662,8 @@ header .nav-link-luxury:focus-visible::after {
   opacity: 0;
   transform: translateY(-50%) scale(0.4);
   transition:
-    opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1),
-    transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    opacity var(--dur-caption) var(--ease-quart),
+    transform var(--dur-caption) var(--ease-quart);
 }
 .nav-fx-dot header .nav-link-luxury:hover::before,
 .nav-fx-dot header .nav-link-luxury:focus-visible::before {
@@ -1590,7 +1683,7 @@ header .nav-link-luxury:focus-visible::after {
 }
 .nav-fx-blur header .nav-link-luxury:hover,
 .nav-fx-blur header .nav-link-luxury:focus-visible {
-  animation: nav-blur-in 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+  animation: nav-blur-in var(--dur-lift) var(--ease-quart);
 }
 @media (prefers-reduced-motion: reduce) {
   .nav-fx-blur header .nav-link-luxury:hover,
@@ -1763,7 +1856,7 @@ body[data-texture="paper"]::before {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--dur-hero) var(--ease-expo);
   backface-visibility: hidden;
   will-change: opacity;
 }
@@ -1788,9 +1881,9 @@ body[data-texture="paper"]::before {
   background: rgba(var(--foreground-rgb), 0.18);
   background-clip: padding-box;
   transition:
-    background 0.3s ease,
-    transform 0.3s ease,
-    width 0.3s ease;
+    background var(--dur-hover) var(--ease-quart),
+    transform var(--dur-hover) var(--ease-quart),
+    width var(--dur-hover) var(--ease-quart);
   cursor: pointer;
   border: 9px solid transparent;
   padding: 0;
@@ -1822,9 +1915,9 @@ body[data-texture="paper"]::before {
   justify-content: center;
   opacity: 0;
   transition:
-    opacity 0.3s ease,
-    background 0.2s ease,
-    transform 0.2s ease;
+    opacity var(--dur-hover) var(--ease-quart),
+    background var(--dur-fast) var(--ease-quart),
+    transform var(--dur-fast) var(--ease-quart);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
 }
 .carousel-arrow:hover {
@@ -1855,7 +1948,7 @@ body[data-texture="paper"]::before {
 .hero-text-reveal {
   opacity: 0;
   transform: translate3d(0, 12px, 0);
-  animation: hero-text-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: hero-text-in var(--dur-hero) var(--ease-expo) forwards;
   backface-visibility: hidden;
 }
 .hero-text-reveal-1 {
@@ -1883,8 +1976,8 @@ body[data-texture="paper"]::before {
 .fade-in-item {
   opacity: 0;
   transition:
-    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity var(--dur-drift) var(--ease-expo),
+    transform var(--dur-drift) var(--ease-expo);
   transition-delay: var(--stagger-delay, 0s);
   will-change: opacity, transform;
   backface-visibility: hidden;
@@ -1915,8 +2008,8 @@ body[data-reveal="none"] .fade-in-item {
   opacity: 0;
   transform: translate3d(0, 10px, 0);
   transition:
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity var(--dur-reveal) var(--ease-expo),
+    transform var(--dur-reveal) var(--ease-expo);
   will-change: opacity, transform;
   backface-visibility: hidden;
 }
@@ -1936,7 +2029,7 @@ a:hover {
 /* ─── Nav link hover ─── */
 .nav-link-luxury {
   position: relative;
-  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity var(--dur-hover) var(--ease-quart);
 }
 .nav-link-luxury::after {
   content: "";
@@ -1948,7 +2041,7 @@ a:hover {
   background: currentColor;
   transform: scaleX(0);
   transform-origin: center;
-  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform var(--dur-hover) var(--ease-quart);
 }
 .nav-link-luxury:hover::after {
   transform: scaleX(1);
@@ -1959,8 +2052,8 @@ a:hover {
   opacity: 0;
   transform: translate3d(0, 8px, 0);
   transition:
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
+    opacity var(--dur-reveal) var(--ease-expo) 0.05s,
+    transform var(--dur-reveal) var(--ease-expo) 0.05s;
   backface-visibility: hidden;
 }
 .footer-reveal.visible {
@@ -1973,8 +2066,8 @@ a:hover {
   opacity: 0;
   transform: translate3d(0, 14px, 0);
   transition:
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity var(--dur-reveal) var(--ease-expo),
+    transform var(--dur-reveal) var(--ease-expo);
   will-change: opacity, transform;
   backface-visibility: hidden;
 }
@@ -2010,12 +2103,12 @@ img {
 @supports (view-transition-name: none) {
   ::view-transition-old(root) {
     animation-duration: 0.2s;
-    animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+    animation-timing-function: var(--ease-exit);
     animation-name: vt-fade-out;
   }
   ::view-transition-new(root) {
     animation-duration: 0.55s;
-    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-timing-function: var(--ease-expo);
     animation-name: vt-fade-in;
   }
   @keyframes vt-fade-out {
@@ -2042,18 +2135,18 @@ img {
 
 /* ─── Lightbox entrance/exit ─── */
 dialog.lightbox-enter {
-  animation: lb-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: lb-in 0.5s var(--ease-expo) both;
 }
 dialog.lightbox-enter .lb-content {
-  animation: lb-content-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+  animation: lb-content-in 0.5s var(--ease-expo) 0.08s both;
 }
 dialog.lightbox-exit {
   /* backdrop fades 0.12s after content starts closing */
-  animation: lb-out 0.25s cubic-bezier(0.4, 0, 1, 1) 0.12s both;
+  animation: lb-out 0.25s var(--ease-exit) 0.12s both;
   pointer-events: none;
 }
 dialog.lightbox-exit .lb-content {
-  animation: lb-content-out 0.3s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: lb-content-out 0.3s var(--ease-exit) both;
 }
 @keyframes lb-in {
   from {
@@ -2095,8 +2188,8 @@ dialog.lightbox-exit .lb-content {
 /* ─── Filter switch layout animation ─── */
 .filter-grid-animated > * {
   transition:
-    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity var(--dur-caption) var(--ease-expo),
+    transform var(--dur-caption) var(--ease-expo);
 }
 
 @media (prefers-reduced-motion: reduce) {

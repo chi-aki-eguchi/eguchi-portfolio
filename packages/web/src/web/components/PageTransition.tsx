@@ -46,7 +46,7 @@ export default function PageTransition({
         if (el) {
           el.style.visibility = "visible";
           el.style.transition =
-            "opacity 600ms cubic-bezier(0.16,1,0.3,1), transform 600ms cubic-bezier(0.16,1,0.3,1)";
+            "opacity var(--dur-reveal) var(--ease-expo), transform var(--dur-reveal) var(--ease-expo)";
           el.style.opacity = "1";
           el.style.transform = "translateY(0)";
         }
@@ -102,7 +102,7 @@ export default function PageTransition({
         opacity,
         transition: prefersReducedMotion()
           ? "none"
-          : "opacity 250ms cubic-bezier(0.4,0,1,1)",
+          : "opacity 250ms var(--ease-exit)",
       }}
     >
       {display}

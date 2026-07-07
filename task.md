@@ -4982,3 +4982,34 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 ### push
 
 していない。オーナーの手で。
+
+## Handoff 2026-07-07 — Claude Code (Fable5): 公開サイト鑑賞体験の磨き(Part 2)
+
+### 変更内容(mainに4コミット)
+
+1. Lightbox: クローム自動退避(3.5s)+ボタンホバーのCSS化+モーショントークン化
+2. gallery: スクロール時スタガーをバッチ相対化(一律0.4s遅延の解消)
+3. typography: キャプション類26箇所をトークン化、global-font-scale 追従
+4. a11y: アクセント色の WCAG AA 機械保証(lib/color-contrast.ts、provider両経路、
+   ダーク切替対応、テスト5件)
+
+### 検証
+
+- bun run check(268 tests)/ bun run smoke(23 passed)を各領域後に完走
+- p1-base→p2-final pixelmatch: top(写真ローテ差)以外 0%
+- Lightbox 自動退避は Playwright 実ブラウザで動作確認
+
+### 保留(オーナー判断待ち)
+
+- scratch/design-unify-2026-07/p2-pending-list.md 参照
+  (ギャラリーホバー3案・Lightboxキャプション・余白係数・text-xs統一)
+
+### push
+
+していない。オーナーの手で。
+
+### 次の担当者への注意
+
+- Lightbox の wake はマウス/ペン限定(タッチのタップ切替との競合回避)— 変更時は要理解
+- 公開アクセント色は provider で AA 補正されるため、「設定した色がそのまま出ない」
+  ことがある(薄い色を設定した場合のみ)。オーナーから色の見え方の相談が来たらこれ

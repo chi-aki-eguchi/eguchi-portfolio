@@ -4955,3 +4955,30 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - 未pushコミットの rebase・書き換え
 - オーナーの未コミット変更(CLAUDE.md / package.json / bun.lock / autonomy-rules.md)
 - 本番 DB・R2・Railway 環境変数
+
+## Handoff 2026-07-07 — Claude Code (Fable5): 救済セレクタ層撤去+依存更新(Part 1)
+
+### 変更内容
+
+- [7b829b9] admin の救済セレクタ層(hex 部分一致ルール全て+mobile-nav 救済+4a9eff)を
+  styles.css から削除。tsx 側の残存レガシークラス約340箇所を個別確認の上、
+  死にクラス削除337 / マーカー→.admin-btn-primary 50 / 生きサイトのトークン化約20。
+  意図的差分5件(入力値テキストのインク化、hover復活、liveSyncのaria-pressed化、
+  スライダー/チェックボックスaccentのトークン化)は決定ログ参照。
+- [299ec0b] ws 8.21.0 / js-yaml 5.2.1(オーナーの作業ツリーにあった更新を整合させて確定)。
+
+### 検証
+
+- bun run check / bun run smoke(23 passed / 0 failed)を各段階で完走
+- 全9タブ × ライト・ダーク × desktop/mobile の pixelmatch — 差分は決定ログ記載の
+  意図的修復のみ。スクショ: scratch/design-unify-2026-07/shots/p1-{base,k1,k3}/
+
+### 残存(意図的維持)
+
+- ring-[#aaa] ×2(smoke が実値アサートする中立グレー選択リング)
+- 写真上リテラル3箇所(bg-[#ddd] ×2、text-[#1e1e1e] ×1 — photo-anchored)
+- red/emerald/amber のパレット→テーマ写像ルール(次回候補)
+
+### push
+
+していない。オーナーの手で。

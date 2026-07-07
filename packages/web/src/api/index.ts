@@ -1500,11 +1500,19 @@ const app = new Hono()
         .limit(1),
     );
     if (!sharer) {
-      const key = photo.url.replace("/api/images/", "");
-      try {
-        await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
-      } catch {
-        /* ignore */
+      // The WebP derivatives (thumb/medium) live as separate objects — leaving
+      // them behind on purge would leak storage forever.
+      const keys = [
+        photo.url.replace("/api/images/", ""),
+        photo.thumbKey,
+        photo.mediumKey,
+      ].filter((k): k is string => !!k);
+      for (const key of keys) {
+        try {
+          await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+        } catch {
+          /* ignore */
+        }
       }
     }
     await withRetry(() =>
@@ -1531,7 +1539,12 @@ const app = new Hono()
     const cutoff = new Date(Date.now() - TRASH_RETENTION_MS);
     const stale = await withRetry(() =>
       db
-        .select({ id: schema.photos.id, url: schema.photos.url })
+        .select({
+          id: schema.photos.id,
+          url: schema.photos.url,
+          thumbKey: schema.photos.thumbKey,
+          mediumKey: schema.photos.mediumKey,
+        })
         .from(schema.photos)
         .where(
           and(
@@ -1552,11 +1565,20 @@ const app = new Hono()
           .limit(1),
       );
       if (!sharer) {
-        const key = p.url.replace("/api/images/", "");
-        try {
-          await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
-        } catch {
-          /* ignore */
+        // Same as the manual purge: derivatives must go with the master.
+        const keys = [
+          p.url.replace("/api/images/", ""),
+          p.thumbKey,
+          p.mediumKey,
+        ].filter((k): k is string => !!k);
+        for (const key of keys) {
+          try {
+            await s3.send(
+              new DeleteObjectCommand({ Bucket: BUCKET, Key: key }),
+            );
+          } catch {
+            /* ignore */
+          }
         }
       }
       await withRetry(() =>

@@ -176,6 +176,12 @@ export function usePersistentState<T>(
 // bounce to login immediately rather than showing a generic "failed" message
 // (and rather than letting an action silently no-op). Other non-2xx → throw so the
 // caller's onError can surface it.
+const BULK_OP_LABEL = {
+  trash: "ゴミ箱へ移動",
+  restore: "復元",
+  purge: "完全削除",
+} as const;
+
 let redirectingToLogin = false;
 export function assertOk(res: Response): void {
   if (res.status === 401) {
@@ -676,7 +682,10 @@ export default function AdminPage() {
               <Suspense
                 fallback={
                   <div className="h-full flex items-center justify-center">
-                    <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
+                    <Loader2
+                      size={18}
+                      className="animate-spin text-[var(--admin-muted)]"
+                    />
                   </div>
                 }
               >
@@ -702,7 +711,9 @@ export default function AdminPage() {
       {/* Unsaved settings confirmation */}
       {unsavedConfirm && (
         <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
-          <p className="text-[13px] text-[var(--admin-ink)] mb-1">未保存の変更があります</p>
+          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
+            未保存の変更があります
+          </p>
           <p className="text-[11px] text-[var(--admin-muted)] mb-5">
             保存していない内容があります。このまま移動しますか？
           </p>
@@ -1604,6 +1615,40 @@ function GalleryTab({
     ids: number[];
     count: number;
   } | null>(null);
+  // Bulk trash/restore/purge run one item at a time; these expose the loop's
+  // live position (progress toast), its outcome (summary + per-photo retry),
+  // and a cancel flag the loop checks between items. One op at a time.
+  type BulkOp = "trash" | "restore" | "purge";
+  const [bulkRun, setBulkRun] = useState<{
+    op: BulkOp;
+    total: number;
+    done: number;
+  } | null>(null);
+  const [bulkResult, setBulkResult] = useState<{
+    op: BulkOp;
+    ok: number;
+    skipped: number;
+    failed: { id: number; name: string }[];
+  } | null>(null);
+  const bulkCancelRef = useRef(false);
+  // Leaving the tab (unmount) orphans the loop's UI — treat it as cancel so
+  // requests don't keep firing invisibly in the background.
+  useEffect(
+    () => () => {
+      bulkCancelRef.current = true;
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!bulkRun) return;
+    const h = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [bulkRun]);
+  const [purgeConfirm, setPurgeConfirm] = useState<{
+    ids: number[];
+    label: string;
+  } | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [retryFiles, setRetryFiles] = useState<File[]>([]);
   const [showLibraryFilters, setShowLibraryFilters] = useState(false);
@@ -2467,27 +2512,70 @@ function GalleryTab({
 
   const onActionError = (msg: string) => () => setActionError(msg);
 
+  // Bulk loop shared by trash/restore/purge: per-item try/catch so one failure
+  // doesn't abort the rest, progress reported between items, cancel honoured at
+  // item boundaries (each item is atomic server-side, so stopping is safe).
+  // Partial failure resolves (never throws) — invalidation must always run,
+  // otherwise the grid keeps showing photos the server already processed.
+  const photoNameById = (id: number) => {
+    const p =
+      allPhotos.find((x) => x.id === id) ??
+      trashData?.photos.find((x) => x.id === id);
+    return p?.title || p?.filename || `ID ${id}`;
+  };
+  const runBulk = async (
+    op: BulkOp,
+    ids: number[],
+    call: (id: number) => Promise<Response>,
+  ) => {
+    bulkCancelRef.current = false;
+    setBulkResult(null);
+    setBulkRun({ op, total: ids.length, done: 0 });
+    const succeeded: number[] = [];
+    const failed: { id: number; name: string }[] = [];
+    let done = 0;
+    for (const id of ids) {
+      if (bulkCancelRef.current) break;
+      try {
+        assertOk(await call(id));
+        succeeded.push(id);
+      } catch {
+        failed.push({ id, name: photoNameById(id) });
+      }
+      done += 1;
+      setBulkRun({ op, total: ids.length, done });
+    }
+    setBulkRun(null);
+    return { op, succeeded, failed, skipped: ids.length - done };
+  };
+  const invalidatePhotoViews = () => {
+    qc.invalidateQueries({ queryKey: ["photos"] });
+    qc.invalidateQueries({ queryKey: ["photos-trash"] });
+    qc.invalidateQueries({ queryKey: ["hero-photos"] });
+    qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+    qc.invalidateQueries({ queryKey: ["series"] });
+  };
+
   // Soft-delete (to trash)
   const deletePhotos = useMutation({
-    mutationFn: async (ids: number[]) => {
-      for (const id of ids) {
-        const res = await adminApi.photos[":id"].$delete({
-          param: { id: String(id) },
-        });
-        assertOk(res);
-      }
-      return ids;
-    },
-    onSuccess: (ids) => {
+    mutationFn: (ids: number[]) =>
+      runBulk("trash", ids, (id) =>
+        adminApi.photos[":id"].$delete({ param: { id: String(id) } }),
+      ),
+    onSuccess: (r) => {
       setActionError("");
-      qc.invalidateQueries({ queryKey: ["photos"] });
-      qc.invalidateQueries({ queryKey: ["photos-trash"] });
-      qc.invalidateQueries({ queryKey: ["hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["series"] });
+      invalidatePhotoViews();
       setSelected(new Set());
       setInspectPhoto(null);
-      setUndoToast({ ids, count: ids.length });
+      if (r.succeeded.length > 0)
+        setUndoToast({ ids: r.succeeded, count: r.succeeded.length });
+      if (r.failed.length > 0 || r.skipped > 0)
+        setBulkResult({
+          op: r.op,
+          ok: r.succeeded.length,
+          skipped: r.skipped,
+          failed: r.failed,
+        });
     },
     onError: onActionError(
       "削除に失敗しました。再ログインが必要かもしれません。",
@@ -2496,48 +2584,60 @@ function GalleryTab({
 
   // Restore from trash
   const restorePhotos = useMutation({
-    mutationFn: async (ids: number[]) => {
-      for (const id of ids) {
-        const res = await adminApi.photos[":id"].restore.$post({
-          param: { id: String(id) },
-        });
-        assertOk(res);
-      }
-    },
-    onSuccess: () => {
+    mutationFn: (ids: number[]) =>
+      runBulk("restore", ids, (id) =>
+        adminApi.photos[":id"].restore.$post({ param: { id: String(id) } }),
+      ),
+    onSuccess: (r) => {
       setActionError("");
-      qc.invalidateQueries({ queryKey: ["photos"] });
-      qc.invalidateQueries({ queryKey: ["photos-trash"] });
-      qc.invalidateQueries({ queryKey: ["hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["series"] });
+      invalidatePhotoViews();
       setUndoToast(null);
+      if (r.failed.length > 0 || r.skipped > 0)
+        setBulkResult({
+          op: r.op,
+          ok: r.succeeded.length,
+          skipped: r.skipped,
+          failed: r.failed,
+        });
     },
     onError: onActionError(
       "復元に失敗しました。再ログインが必要かもしれません。",
     ),
   });
 
-  // Permanently purge from trash
+  // Permanently purge from trash — irreversible, so the summary always shows.
   const purgePhotos = useMutation({
-    mutationFn: async (ids: number[]) => {
-      for (const id of ids) {
-        const res = await adminApi.photos[":id"].purge.$delete({
-          param: { id: String(id) },
-        });
-        assertOk(res);
-      }
-    },
-    onSuccess: () => {
+    mutationFn: (ids: number[]) =>
+      runBulk("purge", ids, (id) =>
+        adminApi.photos[":id"].purge.$delete({ param: { id: String(id) } }),
+      ),
+    onSuccess: (r) => {
       setActionError("");
-      qc.invalidateQueries({ queryKey: ["photos"] });
-      qc.invalidateQueries({ queryKey: ["photos-trash"] });
-      qc.invalidateQueries({ queryKey: ["hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["series"] });
+      invalidatePhotoViews();
+      setBulkResult({
+        op: r.op,
+        ok: r.succeeded.length,
+        skipped: r.skipped,
+        failed: r.failed,
+      });
     },
     onError: onActionError("完全削除に失敗しました。"),
   });
+
+  // One bulk op at a time; also read from the keyboard-delete handler via ref.
+  const bulkBusy =
+    deletePhotos.isPending || restorePhotos.isPending || purgePhotos.isPending;
+  const bulkBusyRef = useRef(bulkBusy);
+  bulkBusyRef.current = bulkBusy;
+  const retryFailedBulk = () => {
+    if (!bulkResult || bulkResult.failed.length === 0 || bulkBusy) return;
+    const ids = bulkResult.failed.map((f) => f.id);
+    const op = bulkResult.op;
+    setBulkResult(null);
+    if (op === "trash") deletePhotos.mutate(ids);
+    else if (op === "restore") restorePhotos.mutate(ids);
+    else purgePhotos.mutate(ids);
+  };
 
   // Update
   const updatePhoto = useMutation({
@@ -3224,7 +3324,7 @@ function GalleryTab({
       if (showTrash) return; // grid nav only applies to the library view
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (selected.size > 0) {
+        if (selected.size > 0 && !bulkBusyRef.current) {
           e.preventDefault();
           setDeleteConfirm({
             ids: Array.from(selected),
@@ -3949,7 +4049,9 @@ function GalleryTab({
 
               {/* M2: Set display size */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[var(--admin-muted)]">Size</span>
+                <span className="text-[10px] text-[var(--admin-muted)]">
+                  Size
+                </span>
                 {(["S", "M", "L"] as const).map((sz) => (
                   <button
                     key={sz}
@@ -3965,7 +4067,9 @@ function GalleryTab({
               </div>
 
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[var(--admin-muted)]">Rotate</span>
+                <span className="text-[10px] text-[var(--admin-muted)]">
+                  Rotate
+                </span>
                 <button
                   type="button"
                   onClick={() => batchOp.mutate({ operation: "rotate_left" })}
@@ -4013,7 +4117,9 @@ function GalleryTab({
               </div>
 
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[var(--admin-muted)]">Date</span>
+                <span className="text-[10px] text-[var(--admin-muted)]">
+                  Date
+                </span>
                 <input
                   type="date"
                   value={batchShotAtDate}
@@ -4083,7 +4189,8 @@ function GalleryTab({
                     label: `${selected.size}枚の写真をゴミ箱に移動しますか？`,
                   })
                 }
-                className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors"
+                disabled={bulkBusy}
+                className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Trash2 size={11} /> ゴミ箱へ
               </button>
@@ -4139,7 +4246,10 @@ function GalleryTab({
         {/* Upload progress bar */}
         {uploading && uploadProgress && (
           <div className="bg-[var(--admin-paper)] px-4 py-2 border-b border-[var(--admin-line)] flex items-center gap-3">
-            <Loader2 size={12} className="animate-spin text-[var(--admin-muted)]" />
+            <Loader2
+              size={12}
+              className="animate-spin text-[var(--admin-muted)]"
+            />
             <span className="text-[11px] text-[var(--admin-muted)]">
               Importing {uploadProgress.done} / {uploadProgress.total}
             </span>
@@ -4205,15 +4315,14 @@ function GalleryTab({
                     日後に自動で完全削除されます）
                   </span>
                   <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `${trashData!.photos.length}枚をすべて完全削除しますか？この操作は取り消せません。`,
-                        )
-                      )
-                        purgePhotos.mutate(trashData!.photos.map((p) => p.id));
-                    }}
-                    className="text-red-400/70 hover:text-red-400 transition-colors text-[10px]"
+                    onClick={() =>
+                      setPurgeConfirm({
+                        ids: trashData!.photos.map((p) => p.id),
+                        label: `${trashData!.photos.length}枚をすべて完全削除しますか？この操作は取り消せません。`,
+                      })
+                    }
+                    disabled={bulkBusy}
+                    className="text-red-400/70 hover:text-red-400 transition-colors text-[10px] disabled:opacity-40 disabled:pointer-events-none"
                   >
                     Purge All
                   </button>
@@ -4264,20 +4373,21 @@ function GalleryTab({
                         <div className="absolute inset-0 bg-black/0 sm:group-hover:bg-black/50 transition-colors flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                           <button
                             onClick={() => restorePhotos.mutate([photo.id])}
-                            className="text-[10px] admin-btn-primary text-white px-2 py-1 rounded-sm transition-colors flex items-center gap-1"
+                            disabled={bulkBusy}
+                            className="text-[10px] admin-btn-primary text-white px-2 py-1 rounded-sm transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
                           >
                             <Check size={10} /> 復元
                           </button>
                           <button
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  "完全削除しますか？この操作は取り消せません。",
-                                )
-                              )
-                                purgePhotos.mutate([photo.id]);
-                            }}
-                            className="text-[10px] bg-red-900/60 text-red-300 px-2 py-1 rounded-sm hover:bg-red-900/80 transition-colors flex items-center gap-1"
+                            onClick={() =>
+                              setPurgeConfirm({
+                                ids: [photo.id],
+                                label:
+                                  "この写真を完全削除しますか？この操作は取り消せません。",
+                              })
+                            }
+                            disabled={bulkBusy}
+                            className="text-[10px] bg-red-900/60 text-red-300 px-2 py-1 rounded-sm hover:bg-red-900/80 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
                           >
                             <Trash2 size={10} /> 完全削除
                           </button>
@@ -4684,7 +4794,9 @@ function GalleryTab({
       {/* O2: bulk metadata edit panel */}
       {batchEditOpen && (
         <Modal onClose={() => setBatchEditOpen(false)} widthClass="w-80">
-          <p className="text-[13px] text-[var(--admin-ink)] mb-1">一括メタ編集</p>
+          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
+            一括メタ編集
+          </p>
           <p className="text-[11px] text-[var(--admin-muted)] mb-4">
             選択中 {selected.size} 枚に適用。空欄の項目は変更しません。
           </p>
@@ -4765,7 +4877,9 @@ function GalleryTab({
       {/* O6: create smart album — name + optional conditions (saved as a virtual folder) */}
       {albumModalOpen && (
         <Modal onClose={() => setAlbumModalOpen(false)} widthClass="w-80">
-          <p className="text-[13px] text-[var(--admin-ink)] mb-1">スマートアルバムを作成</p>
+          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
+            スマートアルバムを作成
+          </p>
           <p className="text-[11px] text-[var(--admin-muted)] mb-4">
             条件に合う写真を自動で集めます。空欄の項目は条件にしません。
           </p>
@@ -5043,7 +5157,8 @@ function GalleryTab({
         <span>{undoToast?.count}枚をゴミ箱に移動しました</span>
         <button
           onClick={() => undoToast && restorePhotos.mutate(undoToast.ids)}
-          className="text-[var(--admin-ink)] hover:text-white underline underline-offset-2 transition-colors"
+          disabled={bulkBusy}
+          className="text-[var(--admin-ink)] hover:text-white underline underline-offset-2 transition-colors disabled:opacity-40"
         >
           ↩ 元に戻す
         </button>
@@ -5090,7 +5205,9 @@ function GalleryTab({
       {/* Delete confirm modal */}
       {deleteConfirm && (
         <Modal onClose={() => setDeleteConfirm(null)}>
-          <p className="text-[13px] text-[var(--admin-ink)] mb-4">{deleteConfirm.label}</p>
+          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
+            {deleteConfirm.label}
+          </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteConfirm(null)}
@@ -5100,16 +5217,128 @@ function GalleryTab({
             </button>
             <button
               onClick={() => {
+                if (bulkBusy) return;
                 deletePhotos.mutate(deleteConfirm.ids);
                 setDeleteConfirm(null);
               }}
-              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+              disabled={bulkBusy}
+              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
             >
               ゴミ箱へ移動
             </button>
           </div>
         </Modal>
       )}
+
+      {/* Purge confirm modal — replaces window.confirm so the count is styled,
+          the confirm button can be disabled mid-run, and the flow matches the
+          soft-delete modal. */}
+      {purgeConfirm && (
+        <Modal onClose={() => setPurgeConfirm(null)}>
+          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
+            {purgeConfirm.label}
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setPurgeConfirm(null)}
+              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={() => {
+                if (bulkBusy) return;
+                purgePhotos.mutate(purgeConfirm.ids);
+                setPurgeConfirm(null);
+              }}
+              disabled={bulkBusy}
+              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
+            >
+              完全削除
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Bulk progress toast — live count + cancel (checked between items) */}
+      <Toast
+        show={!!bulkRun}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+      >
+        {/* The count text is the accessible progress signal; the bar is decorative */}
+        <span aria-live="polite" className="whitespace-nowrap">
+          {bulkRun && BULK_OP_LABEL[bulkRun.op]}中 — {bulkRun?.done} /{" "}
+          {bulkRun?.total} 件
+        </span>
+        <div
+          aria-hidden="true"
+          className="w-28 h-1 bg-[var(--admin-line)] rounded-full overflow-hidden"
+        >
+          <div
+            className="h-full bg-[var(--admin-ink)] transition-[width] duration-200"
+            style={{
+              width: bulkRun
+                ? `${Math.round((bulkRun.done / Math.max(1, bulkRun.total)) * 100)}%`
+                : "0%",
+            }}
+          />
+        </div>
+        <button
+          onClick={() => {
+            bulkCancelRef.current = true;
+          }}
+          className="text-[var(--admin-muted)] hover:text-[var(--admin-ink)] underline underline-offset-2 transition-colors"
+        >
+          キャンセル
+        </button>
+      </Toast>
+
+      {/* Bulk result summary — per-photo failure list with retry */}
+      <Toast
+        show={!!bulkResult}
+        role="alert"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+      >
+        {bulkResult && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-3">
+              <span>
+                {BULK_OP_LABEL[bulkResult.op]}
+                {bulkResult.skipped > 0 ? "を中断しました" : "が完了しました"} —
+                成功 {bulkResult.ok}件
+                {bulkResult.failed.length > 0 &&
+                  ` / 失敗 ${bulkResult.failed.length}件`}
+                {bulkResult.skipped > 0 && ` / 未処理 ${bulkResult.skipped}件`}
+              </span>
+              {bulkResult.failed.length > 0 && (
+                <button
+                  onClick={retryFailedBulk}
+                  disabled={bulkBusy}
+                  className="flex-shrink-0 underline underline-offset-2 hover:text-white transition-colors disabled:opacity-40"
+                >
+                  失敗分のみ再試行
+                </button>
+              )}
+              <button
+                onClick={() => setBulkResult(null)}
+                aria-label="閉じる"
+                className="text-[var(--admin-muted)] transition-colors ml-auto flex-shrink-0"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            {bulkResult.failed.length > 0 && (
+              <ul className="max-h-24 overflow-y-auto text-[11px] text-[var(--admin-muted)] list-disc pl-4">
+                {bulkResult.failed.map((f) => (
+                  <li key={f.id} className="truncate">
+                    {f.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </Toast>
 
       {/* C3: Quick preview (Space) — full-screen image overlay */}
       {previewPhoto && (
@@ -5489,7 +5718,9 @@ function GalleryTab({
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            active ? "bg-[var(--admin-paper)]" : "bg-[var(--admin-muted)]"
+                            active
+                              ? "bg-[var(--admin-paper)]"
+                              : "bg-[var(--admin-muted)]"
                           }`}
                         />
                       </button>
@@ -5764,7 +5995,9 @@ function GalleryTab({
                       key={k}
                       className="flex justify-between gap-2 text-[10px]"
                     >
-                      <span className="text-[var(--admin-muted)] flex-shrink-0">{k}</span>
+                      <span className="text-[var(--admin-muted)] flex-shrink-0">
+                        {k}
+                      </span>
                       <span className="text-[var(--admin-ink)] text-right truncate">
                         {v}
                       </span>
@@ -6164,7 +6397,10 @@ function BulkEditRow({
       {/* Save status indicator */}
       <td className="w-7 px-1 text-center align-middle">
         {status === "saving" && (
-          <Loader2 size={11} className="animate-spin text-[var(--admin-muted)] mx-auto" />
+          <Loader2
+            size={11}
+            className="animate-spin text-[var(--admin-muted)] mx-auto"
+          />
         )}
         {status === "saved" && (
           <Check size={11} className="text-emerald-400 mx-auto" />
@@ -6341,7 +6577,9 @@ function InspectField({
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">{hint}</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
+          {hint}
+        </p>
       )}
       {children}
     </div>
@@ -6839,9 +7077,7 @@ function SegmentedControl<T extends string>({
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
           className={`admin-segmented__option relative z-[1] flex-1 rounded-[var(--radius-s)] px-1.5 py-1 text-[10px] transition-colors duration-[var(--dur-fast)] ${
-            value === opt.value
-              ? "font-medium"
-              : "text-[var(--admin-muted)]"
+            value === opt.value ? "font-medium" : "text-[var(--admin-muted)]"
           }`}
         >
           {opt.label}
@@ -6866,7 +7102,9 @@ function AdminField({
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">{hint}</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
+          {hint}
+        </p>
       )}
       {children}
     </div>

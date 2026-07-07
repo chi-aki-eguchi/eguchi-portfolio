@@ -198,6 +198,22 @@ export default function ContactPage() {
           {data?.contactLabel ?? "Contact"}
         </h1>
 
+        {/* contactIntro is the owner's own lead-in; it used to render only in the
+            no-form branch, leaving the configured text invisible once Formspree
+            was set up. Show it above the form too (success view keeps it hidden
+            so the thank-you moment stays quiet). */}
+        {formspreeUrl && status !== "success" && data?.contactIntro && (
+          <p
+            className="text-center text-[rgba(var(--foreground-rgb),0.55)] -mt-4 mb-10 page-entrance page-entrance-delay-1"
+            style={{
+              fontSize: "var(--body-size, 0.875rem)",
+              lineHeight: "var(--body-leading, 2)",
+              letterSpacing: "var(--body-tracking, 0.01em)",
+            }}
+          >
+            {data.contactIntro}
+          </p>
+        )}
         {!formspreeUrl ? (
           <div className="py-4 space-y-6 page-entrance page-entrance-delay-1">
             {data?.contactIntro && (
@@ -305,7 +321,9 @@ export default function ContactPage() {
                 autoComplete="name"
                 aria-required="true"
                 aria-invalid={!!errors.name || undefined}
-                aria-describedby={errors.name ? "contact-name-error" : undefined}
+                aria-describedby={
+                  errors.name ? "contact-name-error" : undefined
+                }
                 onChange={() => setErrors((e) => ({ ...e, name: "" }))}
                 className={inputCls(!!errors.name)}
               />
@@ -324,7 +342,9 @@ export default function ContactPage() {
                 inputMode="email"
                 aria-required="true"
                 aria-invalid={!!errors.email || undefined}
-                aria-describedby={errors.email ? "contact-email-error" : undefined}
+                aria-describedby={
+                  errors.email ? "contact-email-error" : undefined
+                }
                 onChange={() => setErrors((e) => ({ ...e, email: "" }))}
                 className={inputCls(!!errors.email)}
               />
@@ -375,7 +395,9 @@ export default function ContactPage() {
                 rows={5}
                 aria-required="true"
                 aria-invalid={!!errors.message || undefined}
-                aria-describedby={errors.message ? "contact-message-error" : undefined}
+                aria-describedby={
+                  errors.message ? "contact-message-error" : undefined
+                }
                 onChange={() => setErrors((e) => ({ ...e, message: "" }))}
                 className={`${inputCls(!!errors.message)} resize-y`}
               />
@@ -432,7 +454,11 @@ function Field({
       </label>
       {children}
       {error && (
-        <p id={`${htmlFor}-error`} role="alert" className="text-xs text-red-600">
+        <p
+          id={`${htmlFor}-error`}
+          role="alert"
+          className="text-xs text-red-600"
+        >
           {error}
         </p>
       )}

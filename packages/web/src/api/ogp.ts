@@ -183,7 +183,8 @@ export function injectOgp(
   const isServicePath = SERVICE_PATHS.has(pathname);
   const isBuyerStartPath = pathname === "/service/start";
   const isService = isServicePath && isServiceSite;
-  const serviceOg = pathname === "/service/start" ? SERVICE_START_OG : SERVICE_OG;
+  const serviceOg =
+    pathname === "/service/start" ? SERVICE_START_OG : SERVICE_OG;
   const page = PAGE_TITLES[pathname];
   const KNOWN_ROUTES = [
     "/",
@@ -407,7 +408,11 @@ export function injectOgp(
     }
   }
   // GA4 — only on indexable public pages (don't track the admin app or soft-404s).
-  const gaMeasurementId = gaMeasurementIdForSite(siteUrl);
+  // インライン <script> の JS 文字列リテラルに埋め込むため、escapeHtml では
+  // 防げない値(改行・バックスラッシュ等)を形式チェックで締め出す。
+  // 実在の GA4 ID は G-XXXXXXXXXX 形式のみ。
+  const rawGaId = gaMeasurementIdForSite(siteUrl);
+  const gaMeasurementId = /^G-[A-Z0-9]+$/.test(rawGaId) ? rawGaId : "";
   if (indexable && gaMeasurementId) {
     const safeGaId = escapeHtml(gaMeasurementId);
     headInjection += `\n  <script async src="https://www.googletagmanager.com/gtag/js?id=${safeGaId}"></script>\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${safeGaId}');</script>`;
@@ -432,7 +437,10 @@ function personDescriptionFrom(
   settings: Record<string, string>,
   fallback: string,
 ): string {
-  const firstParagraph = (settings.profileBio || "").trim().split(/\n\s*\n/)[0]?.trim();
+  const firstParagraph = (settings.profileBio || "")
+    .trim()
+    .split(/\n\s*\n/)[0]
+    ?.trim();
   return firstParagraph || fallback;
 }
 

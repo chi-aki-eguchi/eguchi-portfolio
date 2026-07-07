@@ -1,7 +1,8 @@
-import { useEffect, useRef, createContext, useContext } from "react";
+import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
+import { ensureAccentContrast } from "../lib/color-contrast";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 type DarkModeCtx = ReturnType<typeof useDarkMode>;
@@ -299,6 +300,18 @@ export function Provider({ children }: ProviderProps) {
       themeMeta.setAttribute("content", data?.themeBg || "#f7f7f7");
   }, [data?.themeBg, data?.themeText]);
 
+  // ライト/ダーク切替(data-theme)で実効背景が変わるので、アクセントの
+  // AA 補正をかけ直すために typography effect を再実行させるカウンタ。
+  const [themeVersion, setThemeVersion] = useState(0);
+  useEffect(() => {
+    const observer = new MutationObserver(() => setThemeVersion((v) => v + 1));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
   // Typography controls (size / opacity / tracking / leading)
   useEffect(() => {
     if (isPreviewRef.current) return;
@@ -311,9 +324,23 @@ export function Provider({ children }: ProviderProps) {
 
     // D4: global type scale + link styling
     set("--global-font-scale", data?.globalFontScale || undefined);
-    set("--link-hover-color", data?.linkHoverColor || undefined);
+    // 2-4: リンク/アクセントは実効背景(カスタムthemeBg・ダークモード込み)に
+    // 対して AA 4.5:1 を機械的に保証してから適用する — admin と同じ調整式。
+    // themeVersion がテーマ切替(data-theme)で増えるたびに再計算される。
+    const effectiveBg = getComputedStyle(document.body).backgroundColor;
+    set(
+      "--link-hover-color",
+      data?.linkHoverColor
+        ? ensureAccentContrast(data.linkHoverColor, effectiveBg)
+        : undefined,
+    );
     // EE: accent — hover/active/focus 差し色（unset時は各所が従来色にフォールバック）
-    set("--accent-color", data?.accentColor || undefined);
+    set(
+      "--accent-color",
+      data?.accentColor
+        ? ensureAccentContrast(data.accentColor, effectiveBg)
+        : undefined,
+    );
     // CC: section spacing multipliers (1 = current rhythm)
     set("--spacing-hero-bottom", data?.spacingHeroBottom || undefined);
     set("--spacing-section-gap", data?.spacingSectionGap || undefined);
@@ -414,6 +441,8 @@ export function Provider({ children }: ProviderProps) {
     data?.linkHoverColor,
     data?.linkUnderline,
     data?.accentColor,
+    data?.themeBg,
+    themeVersion,
     data?.spacingHeroBottom,
     data?.spacingSectionGap,
     data?.spacingPageTop,
@@ -594,8 +623,14 @@ export function Provider({ children }: ProviderProps) {
 
       // D4: global type scale + link styling
       applyVar("--global-font-scale", s.globalFontScale);
-      applyVar("--link-hover-color", s.linkHoverColor);
-      applyVar("--accent-color", s.accentColor);
+      // 2-4: DB適用側と同じ AA 保証をプレビューにもかける(実効背景基準)
+      const accentBg = () => getComputedStyle(document.body).backgroundColor;
+      applyVar("--link-hover-color", s.linkHoverColor, (v) =>
+        ensureAccentContrast(v, accentBg()),
+      );
+      applyVar("--accent-color", s.accentColor, (v) =>
+        ensureAccentContrast(v, accentBg()),
+      );
       applyVar("--spacing-hero-bottom", s.spacingHeroBottom);
       applyVar("--spacing-section-gap", s.spacingSectionGap);
       applyVar("--spacing-page-top", s.spacingPageTop);

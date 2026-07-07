@@ -69,7 +69,10 @@ import {
 const RESIZE_CACHE_BYTES = 128 * 1024 * 1024; // resized thumbnails
 const resizeCache = new Map<string, { buf: Buffer; type: string }>();
 let resizeBytes = 0;
-const resizeInFlight = new Map<string, Promise<{ buf: Buffer; type: string }>>();
+const resizeInFlight = new Map<
+  string,
+  Promise<{ buf: Buffer; type: string }>
+>();
 const MAX_ACTIVE_IMAGE_TRANSFORMS = Math.min(
   Math.max(
     parseInt(process.env.IMAGE_TRANSFORM_CONCURRENCY ?? "1", 10) || 1,
@@ -471,6 +474,15 @@ function keyToProxyUrl(
   return imageUrlWithParams(`/api/images/${key}`, params);
 }
 
+// reorder 系の ids は `as { ids: number[] }` キャストだけでは実行時検証に
+// ならない(配列以外で TypeError → 500)。batch エンドポイントと同じ基準で
+// 整数のみに絞る。
+function cleanIntIds(value: unknown): number[] {
+  return Array.isArray(value)
+    ? value.filter((n): n is number => Number.isInteger(n))
+    : [];
+}
+
 function parseFocalPoint(value: unknown): number | null {
   const n = typeof value === "string" ? Number(value) : value;
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
@@ -741,6 +753,13 @@ const app = new Hono()
     const ip = clientIp(c);
     const rec = loginFails.get(ip);
     const now = Date.now();
+    // 遅延削除(同一IP再訪時のみ)だけでは多数IPからの試行でエントリが溜まり
+    // 続けるため、肥大したらウィンドウ切れをまとめて掃除する。
+    if (loginFails.size > 500) {
+      for (const [k, v] of loginFails) {
+        if (now - v.first >= LOGIN_WINDOW_MS) loginFails.delete(k);
+      }
+    }
     // Drop the record once its window has elapsed.
     if (rec && now - rec.first >= LOGIN_WINDOW_MS) loginFails.delete(ip);
     const active = loginFails.get(ip);
@@ -1014,10 +1033,9 @@ const app = new Hono()
       ),
     ];
     const gallerySortOrder = sortRow?.value ?? "manual";
-    const orderExpr =
-      useRandomOrder
-        ? sql`random()`
-        : gallerySortOrder === "date_desc"
+    const orderExpr = useRandomOrder
+      ? sql`random()`
+      : gallerySortOrder === "date_desc"
         ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
         : gallerySortOrder === "date_asc"
           ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
@@ -1567,7 +1585,7 @@ const app = new Hono()
 
   // ── Admin: Reorder photos ───────────────────────────────
   .post("/admin/photos/reorder", requireAdmin, async (c) => {
-    const { ids } = (await c.req.json()) as { ids: number[] };
+    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
     // 1回のSQL CASE WHEN で全件まとめて更新
     const caseExpr = ids.reduce(
@@ -1596,9 +1614,7 @@ const app = new Hono()
       operation: string;
       value?: string;
     };
-    const cleanIds = Array.isArray(ids)
-      ? ids.filter((n): n is number => Number.isInteger(n))
-      : [];
+    const cleanIds = cleanIntIds(ids);
     if (cleanIds.length === 0) return c.json({ error: "No valid ids" }, 400);
 
     switch (operation) {
@@ -1818,7 +1834,7 @@ const app = new Hono()
 
   // ── Admin: Reorder categories (controls gallery filter order) ──
   .post("/admin/categories/reorder", requireAdmin, async (c) => {
-    const { ids } = (await c.req.json()) as { ids: number[] };
+    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
     const caseExpr = ids.reduce(
       (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
@@ -2049,7 +2065,7 @@ const app = new Hono()
   })
 
   .post("/admin/series/reorder", requireAdmin, async (c) => {
-    const { ids } = (await c.req.json()) as { ids: number[] };
+    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
     const caseExpr = ids.reduce(
       (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
@@ -2142,7 +2158,7 @@ const app = new Hono()
   })
 
   .post("/admin/pricing/reorder", requireAdmin, async (c) => {
-    const { ids } = (await c.req.json()) as { ids: number[] };
+    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
     const caseExpr = ids.reduce(
       (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
@@ -2267,7 +2283,9 @@ const app = new Hono()
   })
 
   .post("/admin/hero-photos/reorder", requireAdmin, async (c) => {
-    const { photoIds } = (await c.req.json()) as { photoIds: number[] };
+    const photoIds = cleanIntIds(
+      ((await c.req.json()) as { photoIds?: unknown }).photoIds,
+    );
     if (photoIds.length === 0) return c.json({ ok: true }, 200);
     // 1回のSQL CASE WHEN で全件まとめて更新
     const caseExpr = photoIds.reduce(

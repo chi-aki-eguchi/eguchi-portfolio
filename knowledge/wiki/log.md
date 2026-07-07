@@ -19,6 +19,17 @@ it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-07-07 — Resolve open-issues item 2 (Turso startup-migration no-op claim)
+
+Claude Code (autonomous night session) re-verified item 2: README.md,
+DISTRIBUTION.md and migrate.ts's own header comment were already accurate;
+the last stale copy was `server.ts`'s call-site comment「本番(turso)は
+no-op」, corrected the same night (branch `improve/night-20260707`).
+Updated `database.md` (fact + open-question rows) and `open-issues.md`
+item 2 to resolved. Also removed the empty leftover
+`.claude/skills/night-run/` directory (files were already deleted in
+`1a62960`; only the untracked empty dir remained on disk).
+
 ### 2026-07-06 — Mark resolved open-issues rows (Fable5 reform pass)
 
 Claude Code (Fable5 reform work, Balanced plan) re-verified open-issues

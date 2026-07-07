@@ -663,7 +663,7 @@ export function PhotoGallery({
                       className="font-en"
                       style={{
                         margin: 0,
-                        fontSize: 10,
+                        fontSize: "var(--text-note)",
                         letterSpacing: "0.04em",
                         lineHeight: 1.45,
                         color: "var(--foreground)",
@@ -677,7 +677,7 @@ export function PhotoGallery({
                       className="font-en"
                       style={{
                         margin: "2px 0 0",
-                        fontSize: 9,
+                        fontSize: "var(--text-caption)",
                         letterSpacing: "0.06em",
                         lineHeight: 1.45,
                         color: "rgba(var(--foreground-rgb),0.30)",
@@ -753,7 +753,7 @@ export function PhotoGallery({
                     <p
                       className="font-en"
                       style={{
-                        fontSize: 12,
+                        fontSize: "var(--text-meta)",
                         letterSpacing: "0.04em",
                         color: "rgba(var(--foreground-rgb),0.55)",
                       }}

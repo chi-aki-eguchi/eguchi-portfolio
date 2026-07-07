@@ -511,7 +511,7 @@ function HomeQuietGrid({
               <p
                 className="font-en uppercase mt-0.5"
                 style={{
-                  fontSize: 10,
+                  fontSize: "var(--text-note)",
                   letterSpacing: "0.14em",
                   color: "rgba(255,255,255,0.8)",
                 }}
@@ -535,7 +535,7 @@ function HomeQuietGrid({
             <h2
               className="font-en uppercase"
               style={{
-                fontSize: 9,
+                fontSize: "var(--text-caption)",
                 letterSpacing: "0.16em",
                 color: "rgba(var(--foreground-rgb),0.35)",
               }}
@@ -545,7 +545,7 @@ function HomeQuietGrid({
             <Link
               to="/gallery"
               className="font-en transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.5)]"
-              style={{ fontSize: 9, color: "rgba(var(--foreground-rgb),0.35)" }}
+              style={{ fontSize: "var(--text-caption)", color: "rgba(var(--foreground-rgb),0.35)" }}
             >
               {settings?.viewAllLabel ?? "View all →"}
             </Link>
@@ -732,7 +732,7 @@ function HomeEditorial({
           </h1>
           <p
             className="font-en mb-5"
-            style={{ fontSize: 11, color: "rgba(var(--foreground-rgb),0.35)", letterSpacing: "0.06em" }}
+            style={{ fontSize: "var(--text-small)", color: "rgba(var(--foreground-rgb),0.35)", letterSpacing: "0.06em" }}
           >
             {siteNameEn}
           </p>
@@ -740,7 +740,7 @@ function HomeEditorial({
             <p
               className="font-ja"
               style={{
-                fontSize: 10,
+                fontSize: "var(--text-note)",
                 color: "rgba(var(--foreground-rgb),0.5)",
                 lineHeight: 1.8,
                 maxWidth: 240,
@@ -761,7 +761,7 @@ function HomeEditorial({
           <div className="mb-3.5">
             <h2
               className="font-en uppercase"
-              style={{ fontSize: 9, letterSpacing: "0.16em", color: "rgba(var(--foreground-rgb),0.35)" }}
+              style={{ fontSize: "var(--text-caption)", letterSpacing: "0.16em", color: "rgba(var(--foreground-rgb),0.35)" }}
             >
               {settings?.worksLabel ?? "Works"}
             </h2>
@@ -896,7 +896,7 @@ function HomeImmersive({
             <p
               className="font-en uppercase mt-1.5"
               style={{
-                fontSize: 10,
+                fontSize: "var(--text-note)",
                 letterSpacing: "0.2em",
                 color: "rgba(255,255,255,0.7)",
               }}
@@ -953,7 +953,7 @@ function HomeImmersive({
                         <p
                           className="font-en"
                           style={{
-                            fontSize: 9,
+                            fontSize: "var(--text-caption)",
                             letterSpacing: "0.06em",
                             color: "rgba(var(--foreground-rgb),0.35)",
                           }}
@@ -966,7 +966,7 @@ function HomeImmersive({
                         <p
                           className="font-en"
                           style={{
-                            fontSize: 9,
+                            fontSize: "var(--text-caption)",
                             letterSpacing: "0.06em",
                             color: "rgba(var(--foreground-rgb),0.35)",
                           }}
@@ -1249,7 +1249,7 @@ export default function TopPage() {
             </h1>
             {nameKata && (
               <p
-                className="text-[10px] tracking-[0.18em] mt-1.5 hero-text-reveal hero-text-reveal-2"
+                className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 hero-text-reveal hero-text-reveal-2"
                 style={{
                   color: "rgba(255,255,255,0.70)",
                   textShadow: "0 1px 12px rgba(0,0,0,0.4)",
@@ -1320,7 +1320,7 @@ export default function TopPage() {
               {siteNameJa}
             </h1>
             {nameKata && (
-              <p className="text-[10px] tracking-[0.18em] text-[rgba(var(--foreground-rgb),0.35)] mt-1.5 hero-text-reveal hero-text-reveal-2">
+              <p className="text-[length:var(--text-note)] tracking-[0.18em] text-[rgba(var(--foreground-rgb),0.35)] mt-1.5 hero-text-reveal hero-text-reveal-2">
                 {nameKata}
               </p>
             )}

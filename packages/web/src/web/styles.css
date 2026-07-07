@@ -34,6 +34,14 @@
   --body-leading: 1.85;
   --section-leading: 1.25;
 
+  /* Caption / small-text scale — the whisper sizes photos are annotated with.
+     Wired to --global-font-scale like every other size token (raw 9-12px
+     literals previously ignored the admin's global type-scale setting). */
+  --text-caption: calc(9px * var(--global-font-scale, 1));
+  --text-note: calc(10px * var(--global-font-scale, 1));
+  --text-small: calc(11px * var(--global-font-scale, 1));
+  --text-meta: calc(12px * var(--global-font-scale, 1));
+
   /* ─── Shared design tokens (public + admin) ───
      One vocabulary, two tempos: the operational scale (instant→slow) drives
      UI feedback everywhere; the editorial scale (hover→breathe) drives the

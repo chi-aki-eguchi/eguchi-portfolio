@@ -744,7 +744,7 @@ export function Lightbox({
           left: "50%",
           transform: "translateX(-50%)",
           fontFamily: "var(--font-en)",
-          fontSize: 12,
+          fontSize: "var(--text-meta)",
           letterSpacing: "0.12em",
           color: "rgba(255,255,255,0.45)",
           zIndex: 10,
@@ -933,7 +933,7 @@ export function Lightbox({
             <p
               style={{
                 fontFamily: "var(--font-en)",
-                fontSize: 12,
+                fontSize: "var(--text-meta)",
                 color: "rgba(255,255,255,0.4)",
               }}
             >
@@ -1177,7 +1177,7 @@ export function Lightbox({
           <p
             style={{
               fontFamily: "var(--font-en)",
-              fontSize: 12,
+              fontSize: "var(--text-meta)",
               color: "rgba(255,255,255,0.6)",
               letterSpacing: "0.04em",
             }}
@@ -1275,7 +1275,7 @@ export function Lightbox({
                 style={{
                   borderCollapse: "collapse",
                   fontFamily: "var(--font-en)",
-                  fontSize: 11,
+                  fontSize: "var(--text-small)",
                   letterSpacing: "0.03em",
                 }}
               >

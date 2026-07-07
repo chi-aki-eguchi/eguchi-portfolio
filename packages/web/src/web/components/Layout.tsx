@@ -362,7 +362,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileInstagram)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  className="font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
                   style={
                     {
                       "--link-rest": "var(--sns-opacity, 0.25)",
@@ -377,7 +377,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileTwitter)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  className="font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
                   style={
                     {
                       "--link-rest": "var(--sns-opacity, 0.25)",
@@ -392,7 +392,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileNote)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[11px] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  className="font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
                   style={
                     {
                       "--link-rest": "var(--sns-opacity, 0.25)",

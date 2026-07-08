@@ -1669,16 +1669,18 @@ function GalleryTab({
     setPurgeCountdown(0);
   }, [purgeConfirm]);
   useEffect(() => {
-    if (!purgeAckChecked || !purgeNeedsExtraStep) {
-      setPurgeCountdown(0);
+    if (!purgeAckChecked || !purgeNeedsExtraStep || purgeCountdown <= 0) {
       return;
     }
-    setPurgeCountdown(PURGE_EXTRA_STEP_SECONDS);
-    const id = setInterval(() => {
+    const id = setTimeout(() => {
       setPurgeCountdown((s) => Math.max(0, s - 1));
     }, 1000);
-    return () => clearInterval(id);
-  }, [purgeAckChecked, purgeNeedsExtraStep]);
+    return () => clearTimeout(id);
+  }, [purgeAckChecked, purgeNeedsExtraStep, purgeCountdown]);
+  const handlePurgeAckChange = (checked: boolean) => {
+    setPurgeAckChecked(checked);
+    setPurgeCountdown(checked ? PURGE_EXTRA_STEP_SECONDS : 0);
+  };
   const purgeConfirmReady =
     !purgeNeedsExtraStep || (purgeAckChecked && purgeCountdown <= 0);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
@@ -5344,7 +5346,7 @@ function GalleryTab({
               <input
                 type="checkbox"
                 checked={purgeAckChecked}
-                onChange={(e) => setPurgeAckChecked(e.target.checked)}
+                onChange={(e) => handlePurgeAckChange(e.target.checked)}
                 className="mt-0.5"
               />
               {purgeConfirm.ids.length}

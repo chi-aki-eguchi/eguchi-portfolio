@@ -5297,3 +5297,44 @@ Claude Code のセッション5実装(削除UX案A+管理画面密度案D)をpus
 - 現在のブランチは `origin/main` より15コミット以上進んでいる。`git push` すると
   今回の2コミットだけでなく未pushコミット一式が送られる。
 - 未コミットのオーナー変更 `CLAUDE.md` と root `autonomy-rules.md` は触っていない。
+
+## Handoff 2026-07-08 — Claude Code (Fable5): 最終セッション(総点検+引き継ぎパッケージ)
+
+**次の Driver は Sonnet。** 着手前にこの Handoff と `docs/agents/task-queue.md` を読むこと。
+決定ログ詳細は `docs/agent-logs/2026-07-08.md`(セッション6)、
+オーナー向けサマリは `scratch/fable-final-2026-07/report.md`。
+
+### 完了したこと(すべて未push・コミット済み)
+
+1. **敵対的総点検** → `docs/specs/audit-2026-07.md`。§0 違反ゼロを機械的照合で確認。
+   P0×1(修正済) / P1×2 / P2×6 を順位付きで記録。
+2. **P0-1 修正**: `#` `?` `%` 等を含むファイル名の写真が永遠に表示されないバグ。
+   `security.ts` の `sanitizeUploadBaseName()` 新設+アップロード3経路に適用+
+   画像プロキシの decode ガード(500→404)。単体テスト4本追加。
+3. **task-queue.md 新設**(Q-1〜Q-10): Sonnet にそのまま貼れる指示書の束。
+4. **ルール締め直し**: autonomy-rules 判断表+8行・Hard Stops+2件 /
+   checklists 追記 / AGENTS.md に役割固定(Driver=Sonnet実装、Codex=read-only Reviewer)。
+5. **owner-guide.md 新設**(秋さん向け・A4 2枚以内)。
+
+### 検証
+
+- `bun run check` 成功(273 tests / typecheck / lint / build)
+- `bun run smoke` 23 passed / 0 failed / 19 skipped(admin upload API に触れたため実施)
+
+### push したか
+
+していない。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない(未push)。push後の確認推奨: 管理画面から写真を1枚アップロードして
+表示されること(記号入りファイル名なら理想的なテスト)。
+
+### 次の担当者(Sonnet)へ
+
+- 作業は `docs/agents/task-queue.md` から1枚ずつ。優先順は Q-2(点検・夜間可)→
+  Q-1(withRetry・Codexレビュー必須)→ 残り。
+- **触ってはいけない**: 未pushコミットの rebase・書き換え / 本番 DB・R2・Railway
+  環境変数 / ルート未追跡 `claude-code-night-run.md`(オーナー判断待ち) /
+  Lightbox.tsx のロジック。
+- 迷ったら autonomy-rules の判断表 → それでも迷えば「要相談」で保留して次へ。

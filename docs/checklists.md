@@ -41,6 +41,7 @@
 - [ ] `drizzle-kit generate` を両 config で再生成した（`cd packages/web` してから。DISTRIBUTION.md 参照）
 - [ ] クエリは `./database` 経由の `schema` import を使っている（`schema.ts` 直接 import 禁止）
 - [ ] 新しいクエリは `withRetry(() => db....)` でラップした
+- [ ] `withRetry` 本体（libsql.ts）の再試行条件を弱めたり広げたりしていない（変更するなら Codex レビュー必須 — 2026-07 監査 P1-1 参照）
 - [ ] 適用は `cd packages/web && bun run db:push`（本番と同じ DB に効くことを理解した上で）
 
 ## 3. 画像パイプライン（R2 / sharp / 配信）
@@ -52,6 +53,7 @@
 
 **完了前**
 
+- [ ] アップロードの保存キーに `file.name` を直接使っていない（必ず `sanitizeUploadBaseName()` 経由。`#` `?` `%` 入りファイル名で画像が永遠に404になる — 2026-07 監査 P0-1）
 - [ ] `Content-Encoding` を手動設定していない（§0。Railway プロキシが処理、違反すると二重圧縮）
 - [ ] R2 のキー・秘密情報をコードにハードコードしていない（`process.env.S3_*`）
 - [ ] 複製写真は R2 オブジェクト共有 — purge の挙動（他参照なしのときのみ削除）を壊していない
@@ -73,6 +75,8 @@
 - [ ] `bun run check` 成功
 - [ ] `bun run smoke` 成功（admin 必須ゲート。**本番と同じ DB に接続** — 新しいテストで Save/Delete/Add 確定など書き込み操作をクリックしない。0 fail でも skip 件数を確認）
 - [ ] 新しいバグを直した場合、`scripts/smoke/` に回帰テストを1件追加した（`helpers.ts` の `loginAsAdmin`/`gotoAdminTab` を再利用）
+- [ ] 既存テストの期待値を変えた場合、それが仕様変更への正当な追随であることを決定ログに書いた（実測合わせの緑化は禁止 — autonomy-rules §3）
+- [ ] グローバルなキーボードショートカットを追加した場合、`dialog[open]` ガード（admin.tsx のグリッド keydown 参照）を通している
 
 ## 5. Railway デプロイ + 本番確認
 

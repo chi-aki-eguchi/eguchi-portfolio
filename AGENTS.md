@@ -30,10 +30,17 @@
 
 - `eguchi-portfolio-app` と `ivys-house` リポジトリのコードを混ぜない。ファイルコピー、import、コード参照をすべて禁止する。
 
+### 役割分担（2026-07-08 固定 — Fable5 期間終了後の体制）
+
+- **Driver = Claude Code (Sonnet)**: 実装・コミット・検証（`bun run check` / `bun run smoke`）を行う唯一の役割。
+- **Reviewer = Codex**: **read-only**。push 前レビュー・高リスク差分（DB / 画像 / settings / deploy）の確認・三振（同じ失敗3回）時の相談相手。
+- **Codex に実装させない**（ファイル編集・コミットをさせない）。レビューで修正が必要なら、指摘を受けて Driver が直す。
+- 迷ったときの参照順: 各タスクの指示書（docs/agents/task-queue.md）→ docs/agents/autonomy-rules.md → 本ファイル §0。
+
 ### Claude Code / Codex agmsg 運用
 
 - agmsg team は `eguchi-portfolio`。Claude Code は `claude-driver`、Codex は `codex-reviewer`。
-- 窓口AIは固定しない。ユーザーが話している方をそのタスクの主担当にし、もう片方は必要時だけ短く呼ぶ。
+- 窓口は上記「役割分担」に従う（Driver=Claude Code 固定。Codex は Reviewer としてのみ呼ぶ）。
 - 主担当AIは次の場合だけ agmsg で相手に相談する:
   - 設計判断が2択以上で迷う
   - 同じバグ修正を2回試して解決しない
@@ -346,10 +353,11 @@ conflict; see `knowledge/WIKI_SCHEMA.md` for the full rules.
 
 ## Agent Ownership: 1 task = 1 Driver
 
-Exactly one agent (Claude Code or Codex) is the **Driver** for a given task —
-the Driver may edit files, run commands, and commit. **Push is always done by
-the owner's hand — agents never push** (see 完了の定義). The other agent, if
-involved, acts as **Reviewer** only (reads, comments, does not edit).
+Exactly one agent is the **Driver** for a given task — the Driver may edit
+files, run commands, and commit. As of 2026-07-08 the roles are **fixed**:
+Claude Code (Sonnet) is the Driver, Codex is the read-only Reviewer (see
+「役割分担」 above). **Push is always done by the owner's hand — agents never
+push** (see 完了の定義). The Reviewer reads and comments, never edits.
 
 - Two agents must never edit the same files concurrently.
 - A Driver handoff requires an explicit handoff entry in `task.md`: current

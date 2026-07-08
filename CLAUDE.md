@@ -2,6 +2,8 @@
 
 > akieguchi.com（個人ポートフォリオ・Hono構成）。Ivy's House（別リポジトリ・Astro）とは別物。混同しない。
 
+自律的に作業するセッションでは、開始前に必ず docs/agents/autonomy-rules.md を読み、その全ルールに従うこと。
+
 写真家ポートフォリオサイト。Hono (API) + React 19 (SPA) + Drizzle/Turso (SQLite) + Bun。Railway デプロイ（git push で自動）。
 
 ## スタック

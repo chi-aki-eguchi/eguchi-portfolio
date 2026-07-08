@@ -66,7 +66,9 @@ function HeroPicture({
       )}
       <img
         src={finalSrc}
-        srcSet={mediumUrl ? undefined : srcSetFor(url, "hero", undefined, rotationDeg)}
+        srcSet={
+          mediumUrl ? undefined : srcSetFor(url, "hero", undefined, rotationDeg)
+        }
         sizes={sizes}
         alt={alt}
         className={className}
@@ -441,7 +443,10 @@ function fastPhotoSrc(
     prefer === "medium"
       ? (photo.mediumUrl ?? photo.thumbUrl)
       : (photo.thumbUrl ?? photo.mediumUrl);
-  return generated ?? srcFor(photo.url, fallbackW, fallbackQ, undefined, photo.rotationDeg);
+  return (
+    generated ??
+    srcFor(photo.url, fallbackW, fallbackQ, undefined, photo.rotationDeg)
+  );
 }
 
 function fastPhotoSrcSet(
@@ -545,7 +550,10 @@ function HomeQuietGrid({
             <Link
               to="/gallery"
               className="font-en transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.5)]"
-              style={{ fontSize: "var(--text-caption)", color: "rgba(var(--foreground-rgb),0.35)" }}
+              style={{
+                fontSize: "var(--text-caption)",
+                color: "rgba(var(--foreground-rgb),0.35)",
+              }}
             >
               {settings?.viewAllLabel ?? "View all →"}
             </Link>
@@ -732,7 +740,11 @@ function HomeEditorial({
           </h1>
           <p
             className="font-en mb-5"
-            style={{ fontSize: "var(--text-small)", color: "rgba(var(--foreground-rgb),0.35)", letterSpacing: "0.06em" }}
+            style={{
+              fontSize: "var(--text-small)",
+              color: "rgba(var(--foreground-rgb),0.35)",
+              letterSpacing: "0.06em",
+            }}
           >
             {siteNameEn}
           </p>
@@ -761,7 +773,11 @@ function HomeEditorial({
           <div className="mb-3.5">
             <h2
               className="font-en uppercase"
-              style={{ fontSize: "var(--text-caption)", letterSpacing: "0.16em", color: "rgba(var(--foreground-rgb),0.35)" }}
+              style={{
+                fontSize: "var(--text-caption)",
+                letterSpacing: "0.16em",
+                color: "rgba(var(--foreground-rgb),0.35)",
+              }}
             >
               {settings?.worksLabel ?? "Works"}
             </h2>
@@ -852,10 +868,12 @@ function HomeImmersive({
 
   return (
     <div>
-      {/* Fullscreen hero with centered name */}
+      {/* Fullscreen hero with centered name. Header is fixed+opaque (not an
+          overlay) so its footprint must be subtracted from the viewport
+          height — see .hero-fullscreen in styles.css for the same fix. */}
       <section
         className="relative w-full overflow-hidden"
-        style={{ height: "100dvh" }}
+        style={{ height: "calc(100dvh - var(--header-h) - var(--sai-top))" }}
       >
         {heroPhoto ? (
           <HeroPicture

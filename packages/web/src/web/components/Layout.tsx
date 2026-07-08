@@ -341,7 +341,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         id="main-content"
         tabIndex={-1}
         className="outline-none"
-        style={{ paddingTop: "calc(3.5rem + var(--sai-top))" }}
+        style={{ paddingTop: "calc(var(--header-h) + var(--sai-top))" }}
       >
         {children}
       </main>

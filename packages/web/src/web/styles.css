@@ -1299,6 +1299,10 @@
   --sai-right: env(safe-area-inset-right, 0px);
   --sai-bottom: env(safe-area-inset-bottom, 0px);
   --sai-left: env(safe-area-inset-left, 0px);
+  /* Fixed header height (Layout.tsx nav, h-14). Single source of truth for
+     anything that needs to subtract the header's footprint from a
+     viewport-relative size (main's padding-top, fullscreen hero height). */
+  --header-h: 3.5rem;
 }
 
 html {
@@ -1729,13 +1733,16 @@ body[data-texture="paper"]::before {
   z-index: 2;
 }
 
-/* ─── AA1: fullscreen hero — the photo owns the first viewport. svh avoids
-   mobile URL-bar jumps. Overrides the height slider (noted in admin hint). */
+/* ─── AA1: fullscreen hero — the photo owns the first viewport below the
+   fixed header. svh avoids mobile URL-bar jumps. The header is opaque (not
+   an overlay), so its footprint must be subtracted — otherwise the section's
+   bottom (where the caption is anchored) overflows past the viewport edge.
+   Overrides the height slider (noted in admin hint). */
 .hero-fullscreen .hero-single,
 .hero-fullscreen .hero-carousel-contain {
-  height: 100svh;
+  height: calc(100svh - var(--header-h) - var(--sai-top));
   max-height: none;
-  min-height: 100svh;
+  min-height: calc(100svh - var(--header-h) - var(--sai-top));
 }
 /* In fullscreen the carousel should cover, not letterbox. */
 .hero-fullscreen .hero-slide-contain {

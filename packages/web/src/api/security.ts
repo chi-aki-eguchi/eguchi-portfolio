@@ -56,12 +56,28 @@ export function isAllowedUploadImageFile(file: {
   );
 }
 
+// アップロードキーのベース名。R2 キー自体はほぼ任意の文字を受けるが、
+// URL の区切り文字(# ? % & 等)が混ざるとプロキシ URL がその位置で
+// 途切れ、アップロード成功後も画像が永遠に 404 になる(フォント
+// アップロードは以前から別途サニタイズ済み)。日本語などの文字・数字は
+// URL エンコードで安全に往復できるため残し、それ以外を "_" に置換する。
+export function sanitizeUploadBaseName(fileName: string): string {
+  const base = fileName.replace(/\.[^.]+$/, "");
+  const cleaned = base.replace(/[^\p{L}\p{N}._-]/gu, "_");
+  return cleaned || "upload";
+}
+
 export function clientIpFrom(
   xForwardedFor: string | undefined,
   xRealIp: string | undefined,
 ): string {
   return (
-    (() => { const parts = xForwardedFor?.split(","); return parts?.[parts.length - 1]?.trim(); })() || xRealIp || "unknown"
+    (() => {
+      const parts = xForwardedFor?.split(",");
+      return parts?.[parts.length - 1]?.trim();
+    })() ||
+    xRealIp ||
+    "unknown"
   );
 }
 

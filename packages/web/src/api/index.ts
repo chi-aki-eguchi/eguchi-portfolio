@@ -50,6 +50,7 @@ import {
   isAllowedImageKey,
   isAllowedUploadImageFile,
   clientIpFrom,
+  sanitizeUploadBaseName,
   passwordMatches as _passwordMatches,
   isHttpsRequest,
   LOGIN_WINDOW_MS,
@@ -619,7 +620,14 @@ const app = new Hono()
         },
       });
     const key = c.req.path.replace("/api/images/", "");
-    const decodedKey = decodeURIComponent(key);
+    // 不正な % エンコード(例: "%zz")で decodeURIComponent が throw すると
+    // onError 経由の 500 になる。存在しないキーと同じ扱い(404)に落とす。
+    let decodedKey: string;
+    try {
+      decodedKey = decodeURIComponent(key);
+    } catch {
+      return c.json({ error: "Not found" }, 404);
+    }
     if (!isAllowedImageKey(decodedKey)) {
       return c.json({ error: "Not found" }, 404);
     }
@@ -1211,7 +1219,7 @@ const app = new Hono()
       /* EXIFなし・壊れたEXIF → null のまま（手入力可） */
     }
 
-    const key = `photos/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.jpg`;
+    const key = `photos/${Date.now()}-${sanitizeUploadBaseName(file.name)}.jpg`;
     await uploadToStorage(key, optimised, "image/jpeg");
 
     let thumbKey: string | null = null;
@@ -1267,7 +1275,7 @@ const app = new Hono()
       UPLOAD_QUALITY,
     );
 
-    const key = `hero/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.jpg`;
+    const key = `hero/${Date.now()}-${sanitizeUploadBaseName(file.name)}.jpg`;
     await uploadToStorage(key, optimised, "image/jpeg");
 
     const proxyUrl = keyToProxyUrl(key);
@@ -1293,7 +1301,7 @@ const app = new Hono()
       UPLOAD_QUALITY,
     );
 
-    const key = `profile/${Date.now()}-${file.name.replace(/\.[^.]+$/, "")}.jpg`;
+    const key = `profile/${Date.now()}-${sanitizeUploadBaseName(file.name)}.jpg`;
     await uploadToStorage(key, optimised, "image/jpeg");
 
     const proxyUrl = keyToProxyUrl(key);

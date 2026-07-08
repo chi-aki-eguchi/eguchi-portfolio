@@ -13,6 +13,7 @@ import {
   clampImageHeight,
   clampImageQuality,
   isAllowedUploadImageFile,
+  sanitizeUploadBaseName,
 } from "./security";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "../shared/upload-limits";
 
@@ -54,8 +55,9 @@ describe("size limits", () => {
 
 describe("isAllowedUploadImageFile", () => {
   test("accepts TIFF MIME variants and extension-only TIFF files", () => {
-    expect(isAllowedUploadImageFile({ name: "scan.tif", type: "image/tiff" }))
-      .toBe(true);
+    expect(
+      isAllowedUploadImageFile({ name: "scan.tif", type: "image/tiff" }),
+    ).toBe(true);
     expect(
       isAllowedUploadImageFile({ name: "scan.tiff", type: "image/x-tiff" }),
     ).toBe(true);
@@ -69,16 +71,24 @@ describe("isAllowedUploadImageFile", () => {
   });
 
   test("rejects unsupported image-ish or non-image files", () => {
-    expect(isAllowedUploadImageFile({ name: "vector.svg", type: "image/svg+xml" }))
-      .toBe(false);
-    expect(isAllowedUploadImageFile({ name: "notes.pdf", type: "application/pdf" }))
-      .toBe(false);
+    expect(
+      isAllowedUploadImageFile({ name: "vector.svg", type: "image/svg+xml" }),
+    ).toBe(false);
+    expect(
+      isAllowedUploadImageFile({ name: "notes.pdf", type: "application/pdf" }),
+    ).toBe(false);
   });
 
   test("rejects empty MIME types except TIFF browser fallbacks", () => {
-    expect(isAllowedUploadImageFile({ name: "renamed.jpg", type: "" })).toBe(false);
-    expect(isAllowedUploadImageFile({ name: "renamed.png", type: "application/octet-stream" }))
-      .toBe(false);
+    expect(isAllowedUploadImageFile({ name: "renamed.jpg", type: "" })).toBe(
+      false,
+    );
+    expect(
+      isAllowedUploadImageFile({
+        name: "renamed.png",
+        type: "application/octet-stream",
+      }),
+    ).toBe(false);
     expect(isAllowedUploadImageFile({ name: "scan.tif", type: "" })).toBe(true);
   });
 });
@@ -289,5 +299,34 @@ describe("clampImageQuality", () => {
     expect(clampImageQuality("10")).toBe(10);
     expect(clampImageQuality("100")).toBe(100);
     expect(clampImageQuality("75")).toBe(75);
+  });
+});
+
+describe("sanitizeUploadBaseName (upload key safety)", () => {
+  test("strips the extension and keeps plain names as-is", () => {
+    expect(sanitizeUploadBaseName("DSC_1234.jpg")).toBe("DSC_1234");
+    expect(sanitizeUploadBaseName("photo-01.final.jpeg")).toBe(
+      "photo-01.final",
+    );
+  });
+
+  test("keeps unicode letters (Japanese filenames survive)", () => {
+    expect(sanitizeUploadBaseName("夏祭り.jpg")).toBe("夏祭り");
+  });
+
+  test("replaces URL-breaking characters that would 404 the proxy URL", () => {
+    // "#" は URL フラグメント、"?" はクエリ、"%" は不正エンコードとして
+    // プロキシ URL をその位置で壊す — 過去に無反応404の原因になった同型。
+    expect(sanitizeUploadBaseName("#tokyo.jpg")).toBe("_tokyo");
+    expect(sanitizeUploadBaseName("sale 50%off.jpg")).toBe("sale_50_off");
+    expect(sanitizeUploadBaseName("what?.png")).toBe("what_");
+    expect(sanitizeUploadBaseName("a&b+c.jpg")).toBe("a_b_c");
+    expect(sanitizeUploadBaseName("nested/path.jpg")).toBe("nested_path");
+  });
+
+  test("never returns an empty base name", () => {
+    expect(sanitizeUploadBaseName("#.jpg")).toBe("_");
+    expect(sanitizeUploadBaseName(".jpg")).toBe("upload");
+    expect(sanitizeUploadBaseName("")).toBe("upload");
   });
 });

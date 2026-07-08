@@ -1397,6 +1397,10 @@ const LIBRARY_GRID_GAP = 8;
 // Keep more than one extra screen of rows mounted so fast trackpad scrolling
 // does not repeatedly tear down the next thumbnail rows at the viewport edge.
 const LIBRARY_GRID_OVERSCAN_ROWS = 8;
+// Large purges get an extra wrinkle (ack checkbox + countdown) — a fat-finger
+// "Purge All" on a big trash shouldn't be one accidental click away.
+const PURGE_EXTRA_STEP_THRESHOLD = 10;
+const PURGE_EXTRA_STEP_SECONDS = 3;
 
 type VirtualGridWindow = {
   startIndex: number;
@@ -1653,6 +1657,30 @@ function GalleryTab({
     ids: number[];
     label: string;
   } | null>(null);
+  // Extra wrinkle for large purges (>= PURGE_EXTRA_STEP_THRESHOLD): ack
+  // checkbox must be checked, then a short countdown before 完全削除 enables.
+  const [purgeAckChecked, setPurgeAckChecked] = useState(false);
+  const [purgeCountdown, setPurgeCountdown] = useState(0);
+  const purgeNeedsExtraStep =
+    (purgeConfirm?.ids.length ?? 0) >= PURGE_EXTRA_STEP_THRESHOLD;
+  useEffect(() => {
+    // New confirm dialog (or closed) — always start from the unacknowledged state.
+    setPurgeAckChecked(false);
+    setPurgeCountdown(0);
+  }, [purgeConfirm]);
+  useEffect(() => {
+    if (!purgeAckChecked || !purgeNeedsExtraStep) {
+      setPurgeCountdown(0);
+      return;
+    }
+    setPurgeCountdown(PURGE_EXTRA_STEP_SECONDS);
+    const id = setInterval(() => {
+      setPurgeCountdown((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [purgeAckChecked, purgeNeedsExtraStep]);
+  const purgeConfirmReady =
+    !purgeNeedsExtraStep || (purgeAckChecked && purgeCountdown <= 0);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [retryFiles, setRetryFiles] = useState<File[]>([]);
   const [showLibraryFilters, setShowLibraryFilters] = useState(false);
@@ -5308,6 +5336,21 @@ function GalleryTab({
               </div>
             );
           })()}
+          {/* Extra wrinkle for large purges: an explicit ack + a short
+              countdown before the confirm button enables — a fat-finger
+              click on "Purge All" for a big trash shouldn't be one click. */}
+          {purgeNeedsExtraStep && (
+            <label className="flex items-start gap-2 mb-4 text-[12px] text-[var(--admin-ink)] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={purgeAckChecked}
+                onChange={(e) => setPurgeAckChecked(e.target.checked)}
+                className="mt-0.5"
+              />
+              {purgeConfirm.ids.length}
+              枚の写真が完全に削除され、復元できないことを理解しました
+            </label>
+          )}
           <div className="flex gap-2 justify-end">
             <button
               data-autofocus
@@ -5318,14 +5361,16 @@ function GalleryTab({
             </button>
             <button
               onClick={() => {
-                if (bulkBusy) return;
+                if (bulkBusy || !purgeConfirmReady) return;
                 purgePhotos.mutate(purgeConfirm.ids);
                 setPurgeConfirm(null);
               }}
-              disabled={bulkBusy}
+              disabled={bulkBusy || !purgeConfirmReady}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
             >
-              完全削除
+              {purgeNeedsExtraStep && purgeAckChecked && purgeCountdown > 0
+                ? `完全削除（あと${purgeCountdown}秒）`
+                : "完全削除"}
             </button>
           </div>
         </Modal>

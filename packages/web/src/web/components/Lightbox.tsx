@@ -100,6 +100,41 @@ export function Lightbox({
   categoryLabelBySlug?: Record<string, string>;
 }) {
   const [imgError, setImgError] = useState(false);
+  // Full-size image load can fail transiently (R2/network blip — see api/index.ts
+  // getOriginal retry). Auto-retry a couple of times with a fresh URL (cache-bust
+  // query param) before giving up and showing the manual "再読み込み" button —
+  // avoids a dead end where the only fix used to be a full page reload.
+  const [retryToken, setRetryToken] = useState(0);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const MAX_AUTO_IMAGE_RETRIES = 2;
+  const handleFullImageError = useCallback(() => {
+    if (retryCountRef.current < MAX_AUTO_IMAGE_RETRIES) {
+      retryCountRef.current += 1;
+      const delay = 500 * retryCountRef.current;
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(
+        () => setRetryToken((t) => t + 1),
+        delay,
+      );
+    } else {
+      setImgError(true);
+    }
+  }, []);
+  const retryFullImage = useCallback(() => {
+    retryCountRef.current = 0;
+    setImgError(false);
+    setRetryToken((t) => t + 1);
+  }, []);
+  const withRetryParam = (url: string, token: number) =>
+    token > 0 ? `${url}${url.includes("?") ? "&" : "?"}retry=${token}` : url;
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, []);
   const [chrome, setChrome] = useState(true); // counter / caption / nav visibility
   const [loadStage, setLoadStage] = useState<"thumb" | "medium" | "full">(
     "thumb",
@@ -484,6 +519,9 @@ export function Lightbox({
   const lbOpenTimeRef = useRef(performance.now());
   useLayoutEffect(() => {
     setImgError(false);
+    retryCountRef.current = 0;
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    setRetryToken(0);
     setChrome(true);
     setLoadStage("thumb");
     setExifOpen(false);
@@ -941,15 +979,40 @@ export function Lightbox({
           }}
         >
           {imgError ? (
-            <p
+            <div
               style={{
-                fontFamily: "var(--font-en)",
-                fontSize: "var(--text-meta)",
-                color: "rgba(255,255,255,0.4)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 12,
               }}
             >
-              画像を読み込めませんでした
-            </p>
+              <p
+                style={{
+                  fontFamily: "var(--font-en)",
+                  fontSize: "var(--text-meta)",
+                  color: "rgba(255,255,255,0.4)",
+                }}
+              >
+                画像を読み込めませんでした
+              </p>
+              <button
+                type="button"
+                onClick={retryFullImage}
+                style={{
+                  fontFamily: "var(--font-en)",
+                  fontSize: "var(--text-meta)",
+                  color: "rgba(255,255,255,0.75)",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  borderRadius: 4,
+                  padding: "6px 16px",
+                  background: "none",
+                  cursor: "pointer",
+                }}
+              >
+                再読み込み
+              </button>
+            </div>
           ) : (
             <div
               ref={zoomLayerRef}
@@ -1072,13 +1135,13 @@ export function Lightbox({
                 {photo.mediumUrl ? (
                   <img
                     ref={fitImgRef}
-                    src={photo.mediumUrl}
+                    src={withRetryParam(photo.mediumUrl, retryToken)}
                     alt={alt}
                     fetchPriority="high"
                     onLoad={() => {
                       setLoadStage("full");
                     }}
-                    onError={() => setImgError(true)}
+                    onError={handleFullImageError}
                     decoding="async"
                     style={{
                       position: "absolute",
@@ -1111,14 +1174,17 @@ export function Lightbox({
                     />
                     <img
                       ref={fitImgRef}
-                      src={photoSrcFor(photo, 1200, 85)}
+                      src={withRetryParam(
+                        photoSrcFor(photo, 1200, 85),
+                        retryToken,
+                      )}
                       srcSet={fitSrcSet(photo)}
                       sizes={FIT_SIZES}
                       alt={alt}
                       onLoad={() => {
                         setLoadStage("full");
                       }}
-                      onError={() => setImgError(true)}
+                      onError={handleFullImageError}
                       decoding="async"
                       style={{
                         width: "100%",

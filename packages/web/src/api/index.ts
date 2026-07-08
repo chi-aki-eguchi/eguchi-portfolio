@@ -209,7 +209,7 @@ async function getOriginal(
   }
   const pending = origInFlight.get(key);
   if (pending) return pending;
-  const p = (async () => {
+  const fetchOnce = async () => {
     const obj = await s3.send(
       new GetObjectCommand({ Bucket: BUCKET, Key: key }),
       { abortSignal: AbortSignal.timeout(ORIGINAL_FETCH_TIMEOUT_MS) },
@@ -219,8 +219,31 @@ async function getOriginal(
       ORIGINAL_FETCH_TIMEOUT_MS,
       `R2 body ${key}`,
     );
-    const buf = Buffer.from(bytes);
-    const entry = { buf, type: obj.ContentType ?? "image/jpeg", ts: now };
+    return { bytes, contentType: obj.ContentType };
+  };
+  const p = (async () => {
+    // Lightbox reported intermittent "画像を読み込めませんでした" — a single
+    // failed GetObject (transient R2/network blip) used to be a permanent
+    // failure for that request (no retry existed here, unlike DB's withRetry).
+    // One retry absorbs the common transient case; genuine outages still fail
+    // through to the client's own retry/reload (see Lightbox.tsx).
+    let result: { bytes: Uint8Array; contentType: string | undefined };
+    try {
+      result = await fetchOnce();
+    } catch (err) {
+      // AbortError (client navigated away) and NoSuchKey (the object genuinely
+      // isn't in the bucket) are permanent — retrying wastes a round-trip and
+      // just delays the 404 the client is going to get either way.
+      if (
+        err instanceof Error &&
+        (err.name === "AbortError" || err.name === "NoSuchKey")
+      )
+        throw err;
+      await new Promise((r) => setTimeout(r, 250));
+      result = await fetchOnce();
+    }
+    const buf = Buffer.from(result.bytes);
+    const entry = { buf, type: result.contentType ?? "image/jpeg", ts: now };
     const prev = origCache.get(key);
     if (prev) {
       origBytes -= prev.buf.length;

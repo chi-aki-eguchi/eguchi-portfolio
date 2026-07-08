@@ -86,7 +86,8 @@ test.describe("admin — 全体デバッグスイープ", () => {
       }
 
       if (tab === "settings") {
-        const themeBg = await page.locator('[data-admin-setting="themeBg-color"]')
+        const themeBg = await page
+          .locator('[data-admin-setting="themeBg-color"]')
           .evaluate((el) => (el as HTMLInputElement).value);
         const themeBgPlaceholder = await page
           .locator('[data-admin-setting="themeBg-text"]')
@@ -118,7 +119,10 @@ test.describe("admin — 全体デバッグスイープ", () => {
             const cls = el.className
               ? String(el.className).replace(/\s+/g, ".").slice(0, 120)
               : "";
-            const text = el.textContent?.trim().replace(/\s+/g, " ").slice(0, 40);
+            const text = el.textContent
+              ?.trim()
+              .replace(/\s+/g, " ")
+              .slice(0, 40);
             return `${tabName}: <${el.tagName.toLowerCase()}${cls ? `.${cls}` : ""}>${text ? ` "${text}"` : ""}`;
           };
           const adminInk = getComputedStyle(
@@ -211,8 +215,11 @@ test.describe("admin — 全体デバッグスイープ", () => {
       !gridMetrics.isVirtualized,
       "実データ数が少なく、この環境ではLibrary仮想化が動いていない",
     );
+    // Threshold tracks admin:thumbSize's default (larger thumbs → fewer
+    // columns → smaller renderedCount) — margin below the real measured
+    // value at 220px, not an exact pixel-perfect count.
     if (testInfo.project.name === "desktop")
-      expect(gridMetrics.renderedCount).toBeGreaterThan(60);
+      expect(gridMetrics.renderedCount).toBeGreaterThan(40);
     else expect(gridMetrics.renderedCount).toBeGreaterThanOrEqual(10);
     expect(gridMetrics.rowGap).toBe("8px");
 

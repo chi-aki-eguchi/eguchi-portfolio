@@ -844,7 +844,11 @@ describe("shared components", () => {
       const initialThumbs = Array.from(host.querySelectorAll("img"))
         .map((img) => img.getAttribute("src") ?? "")
         .filter((src) => src.includes("/api/images/thumbs/"));
-      expect(initialThumbs.length).toBeLessThanOrEqual(78);
+      // Bounds below are computeVirtualGridWindow's exact output for the
+      // current admin:thumbSize default (220px) + LIBRARY_GRID_GAP (8px) at
+      // the widths this test drives — see computeVirtualGridWindow. Re-derive
+      // these if the default thumbnail size changes again.
+      expect(initialThumbs.length).toBeLessThanOrEqual(60);
       expect(initialThumbs.length).toBeGreaterThan(0);
 
       for (let i = 0; i < 74; i += 1) {
@@ -857,7 +861,8 @@ describe("shared components", () => {
         await flush(1);
       }
       await flush(40);
-      expect(host.querySelector('button[aria-label="P444"]')).not.toBeNull();
+      // 5 columns at gridWidth=1200 (220px thumbs) — 74 × 5 = 370
+      expect(host.querySelector('button[aria-label="P370"]')).not.toBeNull();
 
       layoutWidth = 900;
       dom.window.dispatchEvent(new dom.window.Event("resize"));
@@ -869,7 +874,8 @@ describe("shared components", () => {
         }),
       );
       await flush(40);
-      expect(host.querySelector('button[aria-label="P440"]')).not.toBeNull();
+      // 3 columns at gridWidth=900 (220px thumbs) — 370 - 3 = 367
+      expect(host.querySelector('button[aria-label="P367"]')).not.toBeNull();
       cleanup();
     } finally {
       canned["/api/admin/me"] = prevAuth;

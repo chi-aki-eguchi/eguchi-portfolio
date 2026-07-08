@@ -1525,7 +1525,7 @@ function GalleryTab({
   } | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [lastClicked, setLastClicked] = useState<number | null>(null);
-  const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 180); // px
+  const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 220); // px
   const [filterCat, setFilterCat] = usePersistentState(
     "admin:filterCat",
     "all",
@@ -3492,7 +3492,7 @@ function GalleryTab({
     <div className="flex h-full">
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="px-2 sm:px-4 pt-4 flex-shrink-0">
+        <div className="px-2 sm:px-4 pt-2 flex-shrink-0">
           <PageHeader
             title="Library"
             description={
@@ -3527,7 +3527,7 @@ function GalleryTab({
           />
         </div>
         {/* Toolbar — quiet Library controls */}
-        <div className="bg-[var(--admin-paper)] border-b border-[var(--admin-line)] px-2 sm:px-4 py-2 flex flex-col gap-2 flex-shrink-0">
+        <div className="bg-[var(--admin-paper)] border-b border-[var(--admin-line)] px-2 sm:px-4 py-1.5 flex flex-col gap-2 flex-shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
@@ -5539,7 +5539,7 @@ function GalleryTab({
       {/* Right panel — Inspector (like Lr metadata panel).
           Mobile: full-width drawer overlay. Desktop: static side panel. */}
       {inspectPhoto && (
-        <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-72 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto">
+        <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-64 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto">
           {/* Header with close (close needed on mobile drawer) */}
           <div className="flex items-center justify-between px-3 pt-2 sm:hidden">
             <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">

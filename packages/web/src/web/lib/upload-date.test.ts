@@ -1,23 +1,22 @@
 import { describe, expect, test } from "bun:test";
-import {
-  shotAtForDateInputSave,
-  shotAtForUploadedPhoto,
-} from "./upload-date";
+import { shotAtForDateInputSave, shotAtForUploadedPhoto } from "./upload-date";
 
 describe("shotAtForUploadedPhoto", () => {
-  test("keeps EXIF date for film uploads while other EXIF fields stay optional", () => {
+  test("film uploads prefer DateTimeDigitized over DateTimeOriginal — a scanner can't know the real shot date", () => {
     expect(
       shotAtForUploadedPhoto(
-        "2026-06-29T10:11:12",
+        "2026-06-29T10:11:12", // DateTimeOriginal ?? Image.DateTime — untrusted for film
+        "2026-07-01T09:00:00", // DateTimeDigitized — the scan/dupe moment
         { lastModified: Date.UTC(2026, 5, 30, 1, 2, 3) },
         "film",
       ),
-    ).toBe("2026-06-29T10:11:12");
+    ).toBe("2026-07-01T09:00:00");
   });
 
-  test("falls back to the file modified date for film uploads without EXIF date", () => {
+  test("falls back to the file modified date for film uploads without DateTimeDigitized", () => {
     expect(
       shotAtForUploadedPhoto(
+        "2026-06-29T10:11:12",
         null,
         { lastModified: Date.UTC(2026, 5, 30, 1, 2, 3) },
         "film",
@@ -25,9 +24,21 @@ describe("shotAtForUploadedPhoto", () => {
     ).toBe("2026-06-30T01:02:03");
   });
 
+  test("keeps EXIF date for digital uploads", () => {
+    expect(
+      shotAtForUploadedPhoto(
+        "2026-06-29T10:11:12",
+        null,
+        { lastModified: Date.UTC(2026, 5, 30, 1, 2, 3) },
+        "digital",
+      ),
+    ).toBe("2026-06-29T10:11:12");
+  });
+
   test("leaves digital uploads undated when EXIF date is missing", () => {
     expect(
       shotAtForUploadedPhoto(
+        null,
         null,
         { lastModified: Date.UTC(2026, 5, 30, 1, 2, 3) },
         "digital",
@@ -38,15 +49,15 @@ describe("shotAtForUploadedPhoto", () => {
 
 describe("shotAtForDateInputSave", () => {
   test("keeps the original timestamp when the date field is unchanged", () => {
-    expect(
-      shotAtForDateInputSave("2026-06-30T01:02:03", "2026-06-30"),
-    ).toBe("2026-06-30T01:02:03");
+    expect(shotAtForDateInputSave("2026-06-30T01:02:03", "2026-06-30")).toBe(
+      "2026-06-30T01:02:03",
+    );
   });
 
   test("persists a manually changed film photo date", () => {
-    expect(
-      shotAtForDateInputSave("2026-06-30T01:02:03", "2026-07-01"),
-    ).toBe("2026-07-01");
+    expect(shotAtForDateInputSave("2026-06-30T01:02:03", "2026-07-01")).toBe(
+      "2026-07-01",
+    );
   });
 
   test("clears the stored date when the date field is emptied", () => {

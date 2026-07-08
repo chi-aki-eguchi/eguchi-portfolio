@@ -1219,6 +1219,7 @@ type BatchPhotoOperation =
   | "series"
   | "size"
   | "shotAt_missing_only"
+  | "shotAt_clear"
   | "feature"
   | "unfeature"
   | "rotate_left"
@@ -2452,6 +2453,16 @@ function GalleryTab({
     () => allPhotos.filter((p) => selected.has(p.id) && !p.shotAt).length,
     [allPhotos, selected],
   );
+  // Film shotAt can't be re-read from EXIF after upload (R2 stores an
+  // EXIF-stripped master) — this counts selected film photos with a
+  // (possibly wrong) date, i.e. candidates for the "clear" rescue op below.
+  const selectedFilmShotAtSetCount = useMemo(
+    () =>
+      allPhotos.filter(
+        (p) => selected.has(p.id) && p.filmType === "フィルム" && p.shotAt,
+      ).length,
+    [allPhotos, selected],
+  );
   const missingCaptureCount = useMemo(
     () => allPhotos.filter((p) => !p.camera && !p.lens).length,
     [allPhotos],
@@ -2976,6 +2987,7 @@ function GalleryTab({
           thumbKey,
           mediumKey,
           shotAt,
+          exifDateDigitized,
           exifCamera,
           exifLens,
           exifFocalLength,
@@ -2988,7 +3000,12 @@ function GalleryTab({
         const filmTypeVal = isDigital ? "デジタル" : "フィルム";
         const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
         const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
-        const shotAtVal = shotAtForUploadedPhoto(shotAt, file, uploadMedium);
+        const shotAtVal = shotAtForUploadedPhoto(
+          shotAt,
+          exifDateDigitized,
+          file,
+          uploadMedium,
+        );
         const created = await adminApi.photos.$post({
           json: {
             filename: file.name,
@@ -4157,6 +4174,28 @@ function GalleryTab({
                   className="text-[11px] text-[var(--admin-ink)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   適用 ({selectedMissingShotAtCount})
+                </button>
+                {/* フィルムはR2保存時にEXIFが失われ「EXIFから再読込」ができない
+                    ため、代わりに誤った撮影日をクリア→上のDate適用で
+                    未設定として拾い直す救済フロー。 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedFilmShotAtSetCount === 0) return;
+                    setConfirmDialog({
+                      message: `選択したフィルム写真 ${selectedFilmShotAtSetCount}枚の撮影日をクリアします（未設定に戻ります）。よろしいですか？`,
+                      confirmLabel: "クリア",
+                      onConfirm: () =>
+                        batchOp.mutate({ operation: "shotAt_clear" }),
+                    });
+                  }}
+                  disabled={
+                    batchOp.isPending || selectedFilmShotAtSetCount === 0
+                  }
+                  title="選択したフィルム写真の撮影日を未設定に戻します（EXIFは保存時に失われるため再読込はできません）"
+                  className="text-[11px] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  フィルムの撮影日をクリア ({selectedFilmShotAtSetCount})
                 </button>
               </div>
 

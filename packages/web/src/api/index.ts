@@ -1136,7 +1136,15 @@ const app = new Hono()
     // U2: EXIF → shotAt / camera / lens. Read from *original* bytes — the
     // optimised JPEG has its metadata stripped. Datetimes are timezone-less
     // wall-clock values; exif-reader surfaces them as UTC Dates.
+    // shotAt (DateTimeOriginal ?? Image.DateTime) is trustworthy for digital
+    // captures, but not for film: a scanner/lab has no way to know when the
+    // film was actually shot, so DateTimeOriginal on a film scan is often the
+    // scan/export timestamp mislabeled as capture time. exifDateDigitized
+    // (DateTimeDigitized) is the EXIF-spec-correct tag for "when this became
+    // a digital file" — the client picks between the two based on medium
+    // (see shotAtForUploadedPhoto in lib/upload-date.ts).
     let shotAt: string | null = null;
+    let exifDateDigitized: string | null = null;
     let exifCamera: string | null = null;
     let exifLens: string | null = null;
     let exifFocalLength: string | null = null;
@@ -1150,6 +1158,9 @@ const app = new Hono()
         const dt = tags?.Photo?.DateTimeOriginal ?? tags?.Image?.DateTime;
         if (dt instanceof Date && !Number.isNaN(dt.getTime()))
           shotAt = dt.toISOString().slice(0, 19);
+        const dtDigitized = tags?.Photo?.DateTimeDigitized;
+        if (dtDigitized instanceof Date && !Number.isNaN(dtDigitized.getTime()))
+          exifDateDigitized = dtDigitized.toISOString().slice(0, 19);
         const make = (tags?.Image?.Make as string | undefined)?.trim() ?? "";
         const model = (tags?.Image?.Model as string | undefined)?.trim() ?? "";
         if (model)
@@ -1202,6 +1213,7 @@ const app = new Hono()
         thumbKey,
         mediumKey,
         shotAt,
+        exifDateDigitized,
         exifCamera,
         exifLens,
         exifFocalLength,
@@ -1734,6 +1746,18 @@ const app = new Hono()
         );
         return c.json({ ok: true, count: updated.length }, 200);
       }
+      // フィルムはR2に保存された時点でEXIFが完全に失われているため「EXIFから
+      // 再読込」は不可能（マスターJPEGはmetadata非保持でエンコードされる）。
+      // 代わりに、誤って入った撮影日をクリアして「未設定」に戻し、既存の
+      // shotAt_missing_only（一括手動設定）で拾い直せるようにする救済操作。
+      case "shotAt_clear":
+        await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set({ shotAt: null })
+            .where(inArray(schema.photos.id, cleanIds)),
+        );
+        break;
       case "size": {
         const size =
           value === "S" || value === "M" || value === "L" ? value : "M";

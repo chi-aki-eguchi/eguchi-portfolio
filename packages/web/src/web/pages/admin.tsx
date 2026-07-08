@@ -1594,9 +1594,12 @@ function GalleryTab({
     lens: "",
     filmType: "",
   });
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    ids: number[];
-    label: string;
+  // Non-destructive confirmations (replaces window.confirm) — Enter activates
+  // the primary button via data-autofocus; Esc cancels (native dialog).
+  const [confirmDialog, setConfirmDialog] = useState<{
+    message: string;
+    confirmLabel: string;
+    onConfirm: () => void;
   } | null>(null);
   const [showTrash, setShowTrash] = useState(false);
   // Ref so a fresh onTrashSignalConsumed identity on every AdminPage render
@@ -3299,6 +3302,11 @@ function GalleryTab({
         e.target instanceof HTMLSelectElement;
       if (typing) return;
 
+      // An open modal dialog owns the keyboard: without this, Esc would ALSO
+      // clear the selection underneath, and Delete would trash the selection
+      // from under a confirm dialog. <dialog> closes itself via `cancel`.
+      if (document.querySelector("dialog[open]")) return;
+
       // ? — shortcuts help (Shift+/ on most layouts)
       if (e.key === "?") {
         e.preventDefault();
@@ -3326,10 +3334,8 @@ function GalleryTab({
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selected.size > 0 && !bulkBusyRef.current) {
           e.preventDefault();
-          setDeleteConfirm({
-            ids: Array.from(selected),
-            label: `${selected.size}枚の写真をゴミ箱に移動しますか？`,
-          });
+          // Trash is reversible (undo toast + 30-day retention) — no confirm.
+          deletePhotos.mutate(Array.from(selected));
         }
         return;
       }
@@ -3512,20 +3518,20 @@ function GalleryTab({
                       ? "フィルターを解除してから保存できます"
                       : "現在の表示順を公開サイトの並び（sortOrder）に書き込みます"
                   }
-                  onClick={() => {
-                    if (
-                      !confirm(
+                  onClick={() =>
+                    setConfirmDialog({
+                      message:
                         "現在の表示順を公開サイトの並び順として保存します。よろしいですか？",
-                      )
-                    )
-                      return;
-                    reorder.mutate(
-                      sortPhotosForView(allPhotos).map((p) => p.id),
-                      {
-                        onSuccess: () => setLibrarySort("manual"),
-                      },
-                    );
-                  }}
+                      confirmLabel: "この並びを保存",
+                      onConfirm: () =>
+                        reorder.mutate(
+                          sortPhotosForView(allPhotos).map((p) => p.id),
+                          {
+                            onSuccess: () => setLibrarySort("manual"),
+                          },
+                        ),
+                    })
+                  }
                   className="text-[10px] px-2 py-1 rounded-sm admin-btn-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   この並びを保存
@@ -4132,15 +4138,14 @@ function GalleryTab({
                   onClick={() => {
                     if (!batchShotAtDate || selectedMissingShotAtCount === 0)
                       return;
-                    if (
-                      !confirm(
-                        `${selectedMissingShotAtCount}枚に ${batchShotAtDate} を設定します`,
-                      )
-                    )
-                      return;
-                    batchOp.mutate({
-                      operation: "shotAt_missing_only",
-                      value: batchShotAtDate,
+                    setConfirmDialog({
+                      message: `${selectedMissingShotAtCount}枚に撮影日 ${batchShotAtDate} を設定します。よろしいですか？`,
+                      confirmLabel: "適用",
+                      onConfirm: () =>
+                        batchOp.mutate({
+                          operation: "shotAt_missing_only",
+                          value: batchShotAtDate,
+                        }),
                     });
                   }}
                   disabled={
@@ -4183,12 +4188,7 @@ function GalleryTab({
               </button>
 
               <button
-                onClick={() =>
-                  setDeleteConfirm({
-                    ids: Array.from(selected),
-                    label: `${selected.size}枚の写真をゴミ箱に移動しますか？`,
-                  })
-                }
+                onClick={() => deletePhotos.mutate(Array.from(selected))}
                 disabled={bulkBusy}
                 className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
@@ -5202,44 +5202,76 @@ function GalleryTab({
         </button>
       </Toast>
 
-      {/* Delete confirm modal */}
-      {deleteConfirm && (
-        <Modal onClose={() => setDeleteConfirm(null)}>
+      {/* Non-destructive confirm dialog (sort-order save / batch shot date).
+          Enter = primary (data-autofocus), Esc = cancel. Destructive flows do
+          NOT use this — trash is undoable (no confirm), purge has its own. */}
+      {confirmDialog && (
+        <Modal onClose={() => setConfirmDialog(null)}>
           <p className="text-[13px] text-[var(--admin-ink)] mb-4">
-            {deleteConfirm.label}
+            {confirmDialog.message}
           </p>
           <div className="flex gap-2 justify-end">
             <button
-              onClick={() => setDeleteConfirm(null)}
+              onClick={() => setConfirmDialog(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
               キャンセル
             </button>
             <button
+              data-autofocus
               onClick={() => {
-                if (bulkBusy) return;
-                deletePhotos.mutate(deleteConfirm.ids);
-                setDeleteConfirm(null);
+                const act = confirmDialog.onConfirm;
+                setConfirmDialog(null);
+                act();
               }}
-              disabled={bulkBusy}
-              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
+              className="px-4 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors"
             >
-              ゴミ箱へ移動
+              {confirmDialog.confirmLabel}
             </button>
           </div>
         </Modal>
       )}
 
-      {/* Purge confirm modal — replaces window.confirm so the count is styled,
-          the confirm button can be disabled mid-run, and the flow matches the
-          soft-delete modal. */}
+      {/* Purge confirm modal — the ONLY delete flow that still confirms:
+          purge is irreversible, so it shows the targets (count + thumbnails)
+          in destructive styling. Focus starts on キャンセル (data-autofocus)
+          so a stray Enter can never confirm the purge. */}
       {purgeConfirm && (
         <Modal onClose={() => setPurgeConfirm(null)}>
-          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
+          <p className="flex items-center gap-2 text-[13px] text-red-400 mb-2">
+            <Trash2 size={14} className="flex-shrink-0" />
             {purgeConfirm.label}
           </p>
+          {(() => {
+            const targets = (trashData?.photos ?? []).filter((p) =>
+              purgeConfirm.ids.includes(p.id),
+            );
+            if (targets.length === 0) return null;
+            const shown = targets.slice(0, 6);
+            return (
+              <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+                {shown.map((p) => (
+                  <img
+                    key={p.id}
+                    src={adminPhotoSrc(p, 200, 60)}
+                    alt={p.title || p.filename}
+                    className="w-10 h-10 object-cover rounded-sm border border-red-900/40"
+                    style={{ objectPosition: adminPhotoObjectPosition(p) }}
+                    loading="lazy"
+                    draggable={false}
+                  />
+                ))}
+                {targets.length > shown.length && (
+                  <span className="text-[11px] text-[var(--admin-muted)]">
+                    +{targets.length - shown.length}枚
+                  </span>
+                )}
+              </div>
+            );
+          })()}
           <div className="flex gap-2 justify-end">
             <button
+              data-autofocus
               onClick={() => setPurgeConfirm(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
@@ -6018,13 +6050,9 @@ function GalleryTab({
 
             <div className="mt-auto pt-4 pb-16">
               <button
-                onClick={() =>
-                  setDeleteConfirm({
-                    ids: [inspectPhoto.id],
-                    label: "この写真をゴミ箱に移動しますか？",
-                  })
-                }
-                className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors"
+                onClick={() => deletePhotos.mutate([inspectPhoto.id])}
+                disabled={bulkBusy}
+                className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Trash2 size={11} /> 写真をゴミ箱へ
               </button>
@@ -6847,7 +6875,16 @@ function Modal({
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
+    // Native showModal gives us the focus trap; the browser only restores
+    // focus on close(), not on unmount, so capture/restore the opener here.
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     if (!d.open) d.showModal();
+    // React's autoFocus is a no-op inside a not-yet-shown <dialog>, so the
+    // preferred initial control opts in via data-autofocus instead.
+    d.querySelector<HTMLElement>("[data-autofocus]")?.focus();
     const onClick = (e: MouseEvent) => {
       if (e.target === d) requestClose();
     };
@@ -6860,6 +6897,10 @@ function Modal({
     return () => {
       d.removeEventListener("click", onClick);
       d.removeEventListener("cancel", onCancel);
+      // While the dialog sits in the top layer, focus() on outside elements
+      // is blocked — leave the top layer first, then hand focus back.
+      d.close();
+      opener?.focus();
     };
   }, [requestClose]);
   return (

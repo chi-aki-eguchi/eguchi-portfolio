@@ -5079,3 +5079,47 @@ Lightboxシリーズリンク=実施 / /service=現状維持+需要計測。
 - 未pushコミットの rebase・書き換え
 - オーナーの未コミット変更(CLAUDE.md / root の autonomy-rules.md)
 - 本番 DB・R2・Railway 環境変数
+
+## Handoff 2026-07-08 — Claude Code (Fable5): 削除まわりの確認UX刷新(残作業)
+
+### 変更内容(admin.tsx のみ、公開側不変更)
+
+1. ライブラリ→ゴミ箱を確認なし即実行+undoトーストに統一
+   (Deleteキー / 選択バー「ゴミ箱へ」/ インスペクタの3経路。
+   30日保持+遅延自動purgeをコードで確認済み=Phase 0 合格)
+2. window.confirm 全廃(表示順のsortOrder保存・撮影日一括設定 →
+   atelierトークンの自前ダイアログ)。grep証明はレポート参照
+3. purge確認モーダル強化: 対象サムネ最大6枚+「+n枚」・赤系見出し・
+   初期フォーカス=キャンセル(Enterでは確定しない)
+4. Modal: data-autofocus対応+フォーカス復帰(close()→focus()の順)。
+   既存バグ修正: ダイアログ表示中にグリッドのグローバルキーボードが
+   生きていた(Delete で下の選択写真が削除され得た)→ dialog[open] 中は無効化
+
+### 検証
+
+- bun run check(268 tests)/ bun run smoke(23 passed / 0 failed。
+  1回Turso接続断で落ち再実行合格)
+- API全モックPlaywright試験(scratch/delete-ux-2026-07/delete-ux-test.mjs):
+  ライト/ダーク×1440px/375pxの4構成×29チェック全合格。本番データ不可触
+- レポート+Before/Afterスクショ: scratch/delete-ux-2026-07/
+
+### 承認待ち(Phase 4 — 未実装)
+
+- 10枚以上のpurgeへの追加ワンクッション3案
+  (scratch/delete-ux-2026-07/shots/phase4-proposals.png)。
+  推奨=案A(チェックボックス+3秒待機)。承認までは現状維持
+
+### push したか
+
+していない。ローカルコミットのみ。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない(未push・本番への書き込み一切なし)。push 後に /admin で
+ゴミ箱移動→undo→Trash→完全削除の一巡確認を推奨。
+
+### 次の担当者が触ってはいけない場所
+
+- 未pushコミットの rebase・書き換え
+- オーナーの未コミット変更(CLAUDE.md / root の autonomy-rules.md)
+- 本番 DB・R2・Railway 環境変数

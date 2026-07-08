@@ -69,3 +69,6 @@ scratch/*
 /packages/web/test-*.mjs
 /packages/web/pw-*.mjs
 /test-results/
+
+# per-night scratch instructions (recreated per run)
+claude-code-night-run.md

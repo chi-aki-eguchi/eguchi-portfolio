@@ -5338,3 +5338,46 @@ Claude Code のセッション5実装(削除UX案A+管理画面密度案D)をpus
   環境変数 / ルート未追跡 `claude-code-night-run.md`(オーナー判断待ち) /
   Lightbox.tsx のロジック。
 - 迷ったら autonomy-rules の判断表 → それでも迷えば「要相談」で保留して次へ。
+
+## Handoff 2026-07-09 — Codex: galleryサムネイルぼけ残り+ページ切替チラつき修正
+
+オーナーから本番 `/gallery` のスクリーンショット付きで、
+サムネイルがぼけたまま残ること、Gallery/About などのページ名が切替時に
+チラつくこと、admin 側にも同種の問題がないか確認依頼。
+
+### 直したこと
+
+- `packages/web/src/web/components/PhotoGallery.tsx`
+  - 画像がブラウザキャッシュ等ですでに読み込み済みの場合でも、`img.complete` と
+    `naturalWidth` を見て `lqip-loaded` に進めるようにした。
+  - 通常ギャラリーでは生成済み `thumbUrl` を最終表示のままにする既存方針は維持。
+  - 大きく表示するレイアウトの `mediumUrl` への静かなアップグレードも維持。
+- `packages/web/src/web/components/PageTransition.tsx`
+  - Chrome の View Transitions API 経路を使わず、既存の制御済みフェードだけにした。
+    ブラウザ側スナップショットがページ見出しを一瞬見せる症状を避けるため。
+- `packages/web/src/web/components/PhotoGallery.render.test.tsx`
+  - キャッシュ済みサムネイルで `load` イベントを取り逃がしても、
+    `lqip-loaded` になる回帰テストを追加。
+
+### 検証
+
+- `bun test packages/web/src/web/components/PhotoGallery.render.test.tsx`: 成功(7 passed)。
+- `bun run check`: 成功(274 tests / typecheck / lint / build含む)。
+- Playwright 実ブラウザ(local `http://127.0.0.1:4321/gallery`):
+  - 先頭12枚すべて `lqip-loaded`。
+  - CSS filter はすべて `blur(0px) brightness(1)`。
+  - Gallery→About の遷移で View Transitions API 呼び出しは 0 回。
+  - スクリーンショット: `scratch/gallery-after-fix.png`。
+- `bun run smoke`: 成功(24 passed / 18 skipped / 0 failed)。
+  - admin のサイトプレビュー・タブ切替・スクロール等の既存スモークに失敗なし。
+
+### 触ったファイル
+
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/components/PageTransition.tsx`
+- `packages/web/src/web/components/PhotoGallery.render.test.tsx`
+- `task.md`
+
+### push したか
+
+していない。push はオーナーの手で。

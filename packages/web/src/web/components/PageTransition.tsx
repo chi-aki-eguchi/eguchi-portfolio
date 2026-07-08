@@ -9,14 +9,6 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-function hasViewTransitions(): boolean {
-  return (
-    typeof document !== "undefined" &&
-    "startViewTransition" in document &&
-    window.parent === window
-  );
-}
-
 export default function PageTransition({
   children,
 }: {
@@ -67,20 +59,8 @@ export default function PageTransition({
       return;
     }
 
-    // Use View Transitions API when available for smoother page switches.
-    if (hasViewTransitions()) {
-      transitioning.current = true;
-      (
-        document as unknown as { startViewTransition: (cb: () => void) => void }
-      ).startViewTransition(() => {
-        setDisplay(children);
-        setOpacity(1);
-        window.scrollTo(0, 0);
-        transitioning.current = false;
-      });
-      return;
-    }
-
+    // Keep page switches in this controlled fade. Chrome's native page snapshots
+    // can briefly flash the next page label before the route has settled.
     transitioning.current = true;
     setOpacity(0);
 

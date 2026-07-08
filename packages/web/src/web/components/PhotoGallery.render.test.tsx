@@ -157,6 +157,56 @@ test("generated thumbnails do not auto-upgrade normal gallery grids", async () =
   host.remove();
 });
 
+test("cached generated thumbnails are marked loaded even if the load event was missed", async () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  const imageProto = dom.window.HTMLImageElement.prototype;
+  const completeDescriptor = Object.getOwnPropertyDescriptor(imageProto, "complete");
+  const naturalWidthDescriptor = Object.getOwnPropertyDescriptor(imageProto, "naturalWidth");
+
+  Object.defineProperty(imageProto, "complete", { configurable: true, get: () => true });
+  Object.defineProperty(imageProto, "naturalWidth", { configurable: true, get: () => 320 });
+  try {
+    await act(async () => {
+      root.render(
+        createElement(QueryClientProvider, { client: qc },
+          createElement(PhotoGallery, {
+            photos: [
+              {
+                id: 15,
+                url: "/api/images/photos/cached.jpg",
+                thumbUrl: "/api/images/thumbs/cached.webp",
+                title: "Cached",
+              },
+            ],
+            layoutType: "masonry",
+          }))
+      );
+    });
+    const img = host.querySelector(".photo-card img") as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.classList.contains("lqip-loaded")).toBe(true);
+    expect(img.classList.contains("lqip-loading")).toBe(false);
+  } finally {
+    await act(async () => {
+      root.unmount();
+    });
+    if (completeDescriptor) {
+      Object.defineProperty(imageProto, "complete", completeDescriptor);
+    } else {
+      delete (imageProto as unknown as Record<string, unknown>).complete;
+    }
+    if (naturalWidthDescriptor) {
+      Object.defineProperty(imageProto, "naturalWidth", naturalWidthDescriptor);
+    } else {
+      delete (imageProto as unknown as Record<string, unknown>).naturalWidth;
+    }
+    host.remove();
+  }
+});
+
 test("large gallery layouts may upgrade thumbnails to generated medium images", async () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   const host = dom.window.document.createElement("div");

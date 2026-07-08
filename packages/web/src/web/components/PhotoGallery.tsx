@@ -1,4 +1,12 @@
-import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  memo,
+  useLayoutEffect,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
@@ -116,9 +124,11 @@ const LqipImage = memo(function LqipImage({
   style?: React.CSSProperties;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const swappedRef = useRef(false);
+  const hasThumbUpgrade = Boolean(thumbUrl && upgradeUrl && upgradeUrl !== thumbUrl);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setLoaded(false);
     swappedRef.current = false;
   }, [url, thumbUrl, upgradeUrl]);
@@ -151,12 +161,33 @@ const LqipImage = memo(function LqipImage({
     [sizes],
   );
 
-  const onLoad = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => {
-      swapToGridImage(e.currentTarget);
+  const handleLoadedImage = useCallback(
+    (el: HTMLImageElement) => {
+      if (thumbUrl && !hasThumbUpgrade) {
+        swappedRef.current = true;
+        setLoaded(true);
+        return;
+      }
+      swapToGridImage(el, hasThumbUpgrade);
     },
-    [swapToGridImage],
+    [hasThumbUpgrade, swapToGridImage, thumbUrl],
   );
+
+  const onLoad = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => handleLoadedImage(e.currentTarget),
+    [handleLoadedImage],
+  );
+
+  useLayoutEffect(() => {
+    const el = imgRef.current;
+    if (!el || !el.complete || el.naturalWidth <= 0) return;
+    if (!thumbUrl && !isNearViewport) return;
+    if (thumbUrl && hasThumbUpgrade && !isNearViewport) {
+      setLoaded(true);
+      return;
+    }
+    handleLoadedImage(el);
+  }, [handleLoadedImage, hasThumbUpgrade, isNearViewport, thumbUrl]);
 
   // Use the pre-generated WebP as the instant first paint, then silently upgrade
   // only for layouts that genuinely render photos large. Normal gallery grids
@@ -166,6 +197,7 @@ const LqipImage = memo(function LqipImage({
     const hasUpgrade = Boolean(upgradeUrl && upgradeUrl !== thumbUrl);
     return (
       <img
+        ref={imgRef}
         src={thumbUrl}
         data-src={hasUpgrade ? (upgradeUrl ?? undefined) : undefined}
         sizes={sizes}
@@ -177,14 +209,7 @@ const LqipImage = memo(function LqipImage({
         height={height || undefined}
         style={style}
         className={loaded ? "lqip-loaded" : "lqip-loading"}
-        onLoad={(e) => {
-          if (hasUpgrade) {
-            swapToGridImage(e.currentTarget, true);
-            return;
-          }
-          swappedRef.current = true;
-          setLoaded(true);
-        }}
+        onLoad={onLoad}
         onError={(e) => {
           setLoaded(true);
           e.currentTarget.closest(".photo-card")?.classList.add("photo-broken");
@@ -195,6 +220,7 @@ const LqipImage = memo(function LqipImage({
 
   return (
     <img
+      ref={imgRef}
       src={
         isNearViewport
           ? srcFor(url, 600, 84, undefined, rotationDeg)

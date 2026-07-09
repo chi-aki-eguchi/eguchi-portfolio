@@ -137,6 +137,7 @@ type LayoutIconRect = {
   w: number;
   h: number;
   rotate?: number;
+  opacity?: number;
 };
 
 // Rough per-layout diagrams (percentages of a 100x100 box) — a visual hint,
@@ -205,8 +206,11 @@ const LAYOUT_ICON_RECTS: Record<GalleryLayoutType, LayoutIconRect[]> = {
   ],
 };
 
-function LayoutIcon({ value }: { value: GalleryLayoutType }) {
-  const rects = LAYOUT_ICON_RECTS[value] ?? [];
+// Generic line-diagram renderer shared by every visual choice picker in
+// Settings (gallery layout, Hero mode, nav position, ...). Kept separate from
+// LayoutIcon's gallery-specific rect data so non-gallery pickers can supply
+// their own rects without depending on GalleryLayoutType.
+function MiniDiagram({ rects }: { rects: LayoutIconRect[] }) {
   return (
     <div
       aria-hidden="true"
@@ -223,7 +227,7 @@ function LayoutIcon({ value }: { value: GalleryLayoutType }) {
             height: `${r.h}%`,
             border: "1.5px solid currentColor",
             borderRadius: 1,
-            opacity: 0.7,
+            opacity: r.opacity ?? 0.7,
             transform: r.rotate ? `rotate(${r.rotate}deg)` : undefined,
           }}
         />
@@ -231,6 +235,229 @@ function LayoutIcon({ value }: { value: GalleryLayoutType }) {
     </div>
   );
 }
+
+function LayoutIcon({ value }: { value: GalleryLayoutType }) {
+  return <MiniDiagram rects={LAYOUT_ICON_RECTS[value] ?? []} />;
+}
+
+// Shared card for every "pick one, see what it looks like" control in
+// Settings (Settings可視化 Phase 1, 2026-07-09): a diagram or preview node,
+// a name, and an always-visible one-line description. Deliberately
+// monochrome (currentColor + admin-ink/admin-paper-soft only) — no color
+// badges, no icons beyond the diagram, per owner's "quiet, editorial" brief.
+function VisualChoiceCard({
+  active,
+  name,
+  desc,
+  preview,
+  onClick,
+}: {
+  active: boolean;
+  name: string;
+  desc: string;
+  preview: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left px-2 py-2 rounded-sm border transition-colors ${
+        active
+          ? "admin-btn-primary font-medium"
+          : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
+      }`}
+    >
+      {preview}
+      <span className="block text-[11px] leading-tight mt-1">{name}</span>
+      <span className="block text-[9px] leading-tight opacity-70 font-normal mt-0.5">
+        {desc}
+      </span>
+    </button>
+  );
+}
+
+// Hero display mode (heroMode) — 5 options, values/defaults unchanged.
+const HERO_MODE_OPTIONS: {
+  value: string;
+  name: string;
+  desc: string;
+  rects: LayoutIconRect[];
+}[] = [
+  {
+    value: "carousel",
+    name: "カルーセル",
+    desc: "複数写真が順番に切り替わる",
+    rects: [
+      { l: 6, t: 4, w: 88, h: 74 },
+      { l: 38, t: 86, w: 8, h: 8 },
+      { l: 50, t: 86, w: 8, h: 8 },
+      { l: 62, t: 86, w: 8, h: 8 },
+    ],
+  },
+  {
+    value: "single",
+    name: "1枚絵",
+    desc: "1枚を大きく固定表示",
+    rects: [{ l: 6, t: 4, w: 88, h: 92 }],
+  },
+  {
+    value: "quiet-grid",
+    name: "静謐グリッド",
+    desc: "複数枚を整然と見せる",
+    rects: [
+      { l: 2, t: 2, w: 46, h: 46 },
+      { l: 52, t: 2, w: 46, h: 46 },
+      { l: 2, t: 52, w: 46, h: 46 },
+      { l: 52, t: 52, w: 46, h: 46 },
+    ],
+  },
+  {
+    value: "editorial",
+    name: "エディトリアル",
+    desc: "大小をつけた写真集風",
+    rects: [
+      { l: 2, t: 4, w: 56, h: 92 },
+      { l: 62, t: 30, w: 36, h: 62 },
+    ],
+  },
+  {
+    value: "immersive",
+    name: "没入型",
+    desc: "画面いっぱいに写真を見せる",
+    rects: [{ l: 0, t: 0, w: 100, h: 100 }],
+  },
+];
+
+// Nav position (navPosition) — 3 options, values/defaults unchanged.
+const NAV_POSITION_OPTIONS: {
+  value: string;
+  name: string;
+  desc: string;
+  rects: LayoutIconRect[];
+}[] = [
+  {
+    value: "top",
+    name: "上",
+    desc: "画面上部に固定",
+    rects: [
+      { l: 4, t: 4, w: 92, h: 14 },
+      { l: 4, t: 30, w: 92, h: 66 },
+    ],
+  },
+  {
+    value: "left",
+    name: "左 縦置き",
+    desc: "画面左に縦のメニュー",
+    rects: [
+      { l: 4, t: 4, w: 14, h: 92 },
+      { l: 30, t: 4, w: 66, h: 92 },
+    ],
+  },
+  {
+    value: "bottom",
+    name: "下 固定",
+    desc: "画面下部に固定",
+    rects: [
+      { l: 4, t: 4, w: 92, h: 66 },
+      { l: 4, t: 82, w: 92, h: 14 },
+    ],
+  },
+];
+
+// Background texture (bgTexture) — 4 options. Preview swatches reuse the
+// exact feTurbulence SVGs from styles.css (body[data-texture=...]::before)
+// so the admin preview matches the real texture, not an abstract stand-in.
+const TEXTURE_PREVIEW_BG: Record<string, string | null> = {
+  none: null,
+  "grain-fine":
+    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+  "grain-coarse":
+    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+  paper:
+    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.04 0.18' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+};
+
+const BG_TEXTURE_OPTIONS: { value: string; name: string; desc: string }[] = [
+  { value: "none", name: "なし", desc: "質感を足さない" },
+  { value: "grain-fine", name: "フィルム粒子", desc: "細かく均一な粒子感" },
+  { value: "grain-coarse", name: "粗い紙", desc: "やや粗いざらつき" },
+  { value: "paper", name: "和紙・繊維", desc: "繊維状のムラ" },
+];
+
+// Fixed neutral swatch backdrop (not the admin theme color) so the texture's
+// own character reads the same in light/dark admin mode.
+function TexturePreview({ value }: { value: string }) {
+  const bg = TEXTURE_PREVIEW_BG[value];
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: "100%",
+        paddingTop: "62%",
+        position: "relative",
+        border: "1px solid currentColor",
+        borderRadius: 1,
+        opacity: 0.85,
+        background: "#e9e6e1",
+        overflow: "hidden",
+      }}
+    >
+      {bg && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: bg,
+            backgroundSize: "cover",
+            opacity: 0.55,
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Photo fade-in (photoRevealEffect) — 4 options. Static diagrams only (a
+// ghost + final-position rect pair) rather than looping animation previews —
+// owner explicitly asked to keep this calm rather than "noisy" (2026-07-09).
+const FADE_OPTIONS: {
+  value: string;
+  name: string;
+  desc: string;
+  rects: LayoutIconRect[];
+}[] = [
+  {
+    value: "fade",
+    name: "フェード",
+    desc: "透明から少しずつ現れる",
+    rects: [{ l: 15, t: 15, w: 70, h: 70, opacity: 0.35 }],
+  },
+  {
+    value: "none",
+    name: "なし",
+    desc: "即表示・動きなし",
+    rects: [{ l: 15, t: 15, w: 70, h: 70, opacity: 1 }],
+  },
+  {
+    value: "rise",
+    name: "浮き上がり",
+    desc: "少し下から上がってくる",
+    rects: [
+      { l: 20, t: 58, w: 60, h: 32, opacity: 0.3 },
+      { l: 20, t: 10, w: 60, h: 55, opacity: 0.9 },
+    ],
+  },
+  {
+    value: "scale",
+    name: "ズーム",
+    desc: "小さくから拡大して現れる",
+    rects: [
+      { l: 32, t: 32, w: 36, h: 36, opacity: 0.3 },
+      { l: 8, t: 8, w: 84, h: 84, opacity: 0.9 },
+    ],
+  },
+];
 
 export function HeroTab() {
   const qc = useQueryClient();
@@ -3489,7 +3716,7 @@ export function SettingsTab({
           <div className="flex flex-col">
             {/* General */}
             <SettingsGroup title="基本・見た目">
-              <Section title="General" defaultOpen={false}>
+              <Section title="サイト基本情報" defaultOpen={false}>
                 {fields.map((f) => (
                   <AdminField key={f.key} label={f.label} hint={f.hint}>
                     <input
@@ -3505,32 +3732,29 @@ export function SettingsTab({
               </Section>
 
               {/* E1: Hero display mode */}
-              <Section title="Hero（ファーストビュー）" defaultOpen={false}>
+              <Section
+                title="Hero（ファーストビュー）"
+                defaultOpen={false}
+                summary={`${HERO_MODE_OPTIONS.find((o) => o.value === (current["heroMode"] || "carousel"))?.name ?? "カルーセル"}・${(current["heroDisplayMode"] || "normal") === "fullscreen" ? "フルスクリーン" : "通常"}・高さ${current["heroHeight"] || "70"}`}
+              >
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                  トップページ最上部の写真表示です。ここで選んだ見せ方が、
+                  サイトに来た人が最初に見る1画面の印象を決めます。
+                </p>
                 <AdminField
                   label="表示モード"
                   hint="カルーセル/1枚絵=従来 / 静謐グリッド・エディトリアル・没入型=新レイアウト。切替は保存後に反映"
                 >
-                  <div className="grid grid-cols-3 gap-1">
-                    {(
-                      [
-                        ["carousel", "カルーセル"],
-                        ["single", "1枚絵"],
-                        ["quiet-grid", "静謐グリッド"],
-                        ["editorial", "エディトリアル"],
-                        ["immersive", "没入型"],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("heroMode", val)}
-                        className={`text-[11px] py-1.5 rounded-sm transition-colors ${
-                          (current["heroMode"] || "carousel") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {HERO_MODE_OPTIONS.map(({ value, name, desc, rects }) => (
+                      <VisualChoiceCard
+                        key={value}
+                        active={(current["heroMode"] || "carousel") === value}
+                        name={name}
+                        desc={desc}
+                        preview={<MiniDiagram rects={rects} />}
+                        onClick={() => set("heroMode", value)}
+                      />
                     ))}
                   </div>
                 </AdminField>
@@ -3668,7 +3892,7 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
@@ -3676,31 +3900,35 @@ export function SettingsTab({
               <Section
                 title="ナビゲーション（位置・ホバー）"
                 defaultOpen={false}
+                summary={`${NAV_POSITION_OPTIONS.find((o) => o.value === (current["navPosition"] || "top"))?.name ?? "上"}・${
+                  (
+                    {
+                      fade: "フェード",
+                      underline: "下線",
+                      dot: "点",
+                      blur: "にじみ",
+                    } as Record<string, string>
+                  )[current["navHoverEffect"] || "fade"]
+                }`}
               >
-                <AdminField
-                  label="位置"
-                  hint="スマホでは位置に関わらず従来のハンバーガーメニューになります"
-                >
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                  全ページ共通のメニューです（PC表示）。位置とホバー時の反応を
+                  変えられます。スマホでは位置に関わらず常にハンバーガーメニューです。
+                </p>
+                <AdminField label="位置">
                   <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["top", "上（既定）"],
-                        ["left", "左 縦置き"],
-                        ["bottom", "下 固定"],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("navPosition", val)}
-                        className={`text-[11px] py-1.5 rounded-sm transition-colors ${
-                          (current["navPosition"] || "top") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
+                    {NAV_POSITION_OPTIONS.map(
+                      ({ value, name, desc, rects }) => (
+                        <VisualChoiceCard
+                          key={value}
+                          active={(current["navPosition"] || "top") === value}
+                          name={name}
+                          desc={desc}
+                          preview={<MiniDiagram rects={rects} />}
+                          onClick={() => set("navPosition", value)}
+                        />
+                      ),
+                    )}
                   </div>
                 </AdminField>
                 <AdminField
@@ -3738,7 +3966,7 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
@@ -3820,36 +4048,38 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
               {/* DD: paper/grain background texture */}
-              <Section title="背景の質感（グレイン）" defaultOpen={false}>
+              <Section
+                title="背景の質感（グレイン）"
+                defaultOpen={false}
+                summary={
+                  BG_TEXTURE_OPTIONS.find(
+                    (o) => o.value === (current["bgTexture"] || "none"),
+                  )?.name ?? "なし"
+                }
+              >
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                  写真以外のサイト背景に、ごく薄いノイズを重ねます。写真自体や
+                  Lightboxには影響しません。
+                </p>
                 <AdminField
                   label="テクスチャ"
                   hint="背景にごく薄いノイズを敷きます。写真の上やLightboxには乗りません"
                 >
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(
-                      [
-                        ["none", "なし（既定）"],
-                        ["grain-fine", "フィルム粒子"],
-                        ["grain-coarse", "粗い紙"],
-                        ["paper", "和紙・繊維"],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("bgTexture", val)}
-                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["bgTexture"] || "none") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {BG_TEXTURE_OPTIONS.map(({ value, name, desc }) => (
+                      <VisualChoiceCard
+                        key={value}
+                        active={(current["bgTexture"] || "none") === value}
+                        name={name}
+                        desc={desc}
+                        preview={<TexturePreview value={value} />}
+                        onClick={() => set("bgTexture", value)}
+                      />
                     ))}
                   </div>
                 </AdminField>
@@ -3877,36 +4107,40 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
               {/* 写真のフェードイン方式（photoRevealEffect） */}
-              <Section title="写真のフェードイン" defaultOpen={false}>
+              <Section
+                title="写真のフェードイン"
+                defaultOpen={false}
+                summary={
+                  FADE_OPTIONS.find(
+                    (o) => o.value === (current["photoRevealEffect"] || "fade"),
+                  )?.name ?? "フェード"
+                }
+              >
+                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                  ギャラリーなどで写真がスクロールして画面に入ってきたときの
+                  動きです。
+                </p>
                 <AdminField
                   label="現れ方"
-                  hint="写真がスクロールで現れるときの動き。コラージュのような枠・傾きつきレイアウトでは「浮き上がり」より「フェード」「なし」が自然に見えます"
+                  hint="コラージュのような枠・傾きつきレイアウトでは「浮き上がり」より「フェード」「なし」が自然に見えます"
                 >
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(
-                      [
-                        ["fade", "フェード（既定）"],
-                        ["none", "なし（即表示）"],
-                        ["rise", "浮き上がり"],
-                        ["scale", "ズーム"],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("photoRevealEffect", val)}
-                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["photoRevealEffect"] || "fade") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {FADE_OPTIONS.map(({ value, name, desc, rects }) => (
+                      <VisualChoiceCard
+                        key={value}
+                        active={
+                          (current["photoRevealEffect"] || "fade") === value
+                        }
+                        name={name}
+                        desc={desc}
+                        preview={<MiniDiagram rects={rects} />}
+                        onClick={() => set("photoRevealEffect", value)}
+                      />
                     ))}
                   </div>
                 </AdminField>
@@ -3914,7 +4148,7 @@ export function SettingsTab({
                   onClick={() => set("photoRevealEffect", "")}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
@@ -3972,25 +4206,14 @@ export function SettingsTab({
                             {GALLERY_LAYOUT_OPTIONS.filter(
                               (o) => o.category === cat,
                             ).map(({ value, name, desc }) => (
-                              <button
+                              <VisualChoiceCard
                                 key={value}
-                                type="button"
+                                active={activeValue === value}
+                                name={name}
+                                desc={desc}
+                                preview={<LayoutIcon value={value} />}
                                 onClick={() => set(layoutTarget, value)}
-                                title={desc}
-                                className={`text-left px-2 py-2 rounded-sm border transition-colors ${
-                                  activeValue === value
-                                    ? "admin-btn-primary font-medium"
-                                    : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
-                                }`}
-                              >
-                                <LayoutIcon value={value} />
-                                <span className="block text-[11px] leading-tight mt-1">
-                                  {name}
-                                </span>
-                                <span className="block text-[9px] leading-tight opacity-70 font-normal mt-0.5">
-                                  {desc}
-                                </span>
-                              </button>
+                              />
                             ))}
                           </div>
                         </AdminField>
@@ -4235,7 +4458,7 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
@@ -4349,7 +4572,7 @@ export function SettingsTab({
                     }}
                     className="text-[10px] text-[var(--admin-muted)] transition-colors"
                   >
-                    Reset to default
+                    初期設定に戻す
                   </button>
                 </div>
 
@@ -4414,7 +4637,7 @@ export function SettingsTab({
                     }}
                     className="text-[10px] text-[var(--admin-muted)] transition-colors"
                   >
-                    Reset to default
+                    初期設定に戻す
                   </button>
                 </div>
               </Section>
@@ -4549,7 +4772,7 @@ export function SettingsTab({
               </Section>
 
               {/* 撮影依頼 CTA — closing "work with me" band */}
-              <Section title="撮影依頼 CTA" defaultOpen={false}>
+              <Section title="撮影依頼への案内" defaultOpen={false}>
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   トップ・ギャラリー・シリーズ各ページの末尾に「撮影のご依頼」への導線を表示します。閲覧者が作品を見終えた直後に依頼へつなげる動線です。
                 </p>
@@ -4622,7 +4845,7 @@ export function SettingsTab({
 
             <SettingsGroup title="デザイン・文言">
               {/* Theme Colors */}
-              <Section title="Theme Colors" defaultOpen={false}>
+              <Section title="背景・文字色" defaultOpen={false}>
                 <div className="flex gap-4">
                   <AdminField label="Background">
                     <div className="flex items-center gap-2">
@@ -4672,12 +4895,12 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
               {/* Fonts */}
-              <Section title="Fonts" defaultOpen={false}>
+              <Section title="フォント" defaultOpen={false}>
                 {/* A6: one-click 和英 pairing presets — sets the existing fontJa/fontEn
                 keys, so live preview and Save work exactly like manual picks. */}
                 <AdminField
@@ -4761,7 +4984,7 @@ export function SettingsTab({
               </Section>
 
               {/* Typography — 大きさ (D4: 軸別2階層。まず調整軸→対象) */}
-              <Section title="Typography ｜ 大きさ" defaultOpen={false}>
+              <Section title="文字の大きさ" defaultOpen={false}>
                 <AdminField
                   label="全体スケール"
                   hint="全部の文字をまとめて大小（モバイル縮小率と併用可）"
@@ -4900,12 +5123,12 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
               {/* Typography — 色 */}
-              <Section title="Typography ｜ 色" defaultOpen={false}>
+              <Section title="文字の色" defaultOpen={false}>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
                   ヒーロー名 / サブタイトル
                 </p>
@@ -5034,15 +5257,12 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
               {/* Typography — 間隔（字間・行間） */}
-              <Section
-                title="Typography ｜ 間隔（字間・行間）"
-                defaultOpen={false}
-              >
+              <Section title="文字の間隔" defaultOpen={false}>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
                   ヒーロー名
                 </p>
@@ -5146,7 +5366,7 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  Reset to default
+                  初期設定に戻す
                 </button>
               </Section>
 
@@ -5529,10 +5749,15 @@ export function SettingsTab({
 // an unwanted "opening" animation on initial mount.
 function Section({
   title,
+  summary,
   defaultOpen = false,
   children,
 }: {
   title: string;
+  // Short "current selection" hint shown next to the title even while
+  // collapsed, so the owner doesn't have to open every section to see what's
+  // already set (Settings可視化 Phase 1, 2026-07-09).
+  summary?: string;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
@@ -5549,7 +5774,14 @@ function Section({
         aria-expanded={open}
         className="flex items-center justify-between gap-3 w-full min-h-[52px] px-4 text-left text-[15px] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)] transition-colors duration-[var(--dur-fast)]"
       >
-        <span>{title}</span>
+        <span className="flex items-baseline gap-2 min-w-0">
+          <span>{title}</span>
+          {!open && summary && (
+            <span className="text-[11px] text-[color:var(--admin-muted)] font-normal truncate">
+              {summary}
+            </span>
+          )}
+        </span>
         <ChevronRight
           size={15}
           className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-[var(--dur-base)] ease-[var(--ease-inout)]"

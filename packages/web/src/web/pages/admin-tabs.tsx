@@ -71,6 +71,18 @@ const GALLERY_LAYOUT_OPTIONS: {
     category: "aligned",
   },
   {
+    value: "portrait-grid",
+    name: "縦長グリッド",
+    desc: "縦長4:5・人物写真向け",
+    category: "aligned",
+  },
+  {
+    value: "landscape-grid",
+    name: "横長グリッド",
+    desc: "横長3:2・風景写真向け",
+    category: "aligned",
+  },
+  {
     value: "masonry",
     name: "マソンリー",
     desc: "3列・縦横比を保って敷き詰め",
@@ -165,6 +177,19 @@ const LAYOUT_ICON_RECTS: Record<GalleryLayoutType, LayoutIconRect[]> = {
     { l: 0, t: 39, w: 31, h: 31 },
     { l: 33, t: 39, w: 31, h: 31 },
     { l: 66, t: 39, w: 31, h: 31 },
+  ],
+  "portrait-grid": [
+    // 3 equal tall columns — every cell forced to the same 4:5 ratio.
+    { l: 2, t: 4, w: 29, h: 92 },
+    { l: 35, t: 4, w: 29, h: 92 },
+    { l: 68, t: 4, w: 29, h: 92 },
+  ],
+  "landscape-grid": [
+    // 2 equal wide columns — every cell forced to the same 3:2 ratio.
+    { l: 2, t: 4, w: 46, h: 42 },
+    { l: 52, t: 4, w: 46, h: 42 },
+    { l: 2, t: 54, w: 46, h: 42 },
+    { l: 52, t: 54, w: 46, h: 42 },
   ],
   masonry: [
     { l: 2, t: 2, w: 28, h: 40 },

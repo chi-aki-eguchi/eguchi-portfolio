@@ -76,6 +76,7 @@ export type GalleryPhoto = {
 };
 
 // N1/N4: the selectable grid layouts. Unknown / unset values fall back to mosaic.
+// 11 types (owner-approved 2026-07-09 expansion from 9 — see task.md Handoff).
 export type GalleryLayoutType =
   | "mosaic"
   | "grid"
@@ -84,6 +85,8 @@ export type GalleryLayoutType =
   | "editorial"
   | "collage"
   | "clean-grid"
+  | "portrait-grid"
+  | "landscape-grid"
   | "masonry"
   | "large-format";
 const KNOWN_LAYOUTS: GalleryLayoutType[] = [
@@ -94,6 +97,8 @@ const KNOWN_LAYOUTS: GalleryLayoutType[] = [
   "editorial",
   "collage",
   "clean-grid",
+  "portrait-grid",
+  "landscape-grid",
   "masonry",
   "large-format",
 ];
@@ -632,6 +637,41 @@ export function PhotoGallery({
             imgStyle: squareCoverStyle,
             showHoverCaption: false,
             cardAspectRatio: "1 / 1",
+          }),
+        )}
+      </div>
+    );
+  } else if (mode === "portrait-grid" || mode === "landscape-grid") {
+    // Aligned grid with a fixed crop ratio (owner-approved 2026-07-09
+    // expansion): every cell — outer box and image alike — uses the same
+    // ratio regardless of the source photo's own orientation. object-fit:cover
+    // + focalX/focalY keep the subject framed; rotationDeg is already baked
+    // into the served image URL (see srcFor/srcSetFor above), same as every
+    // other layout.
+    const ratio = mode === "portrait-grid" ? "4 / 5" : "3 / 2";
+    const coverStyle: React.CSSProperties = {
+      aspectRatio: ratio,
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+    };
+    body = (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          columnGap: `${colGap}px`,
+          rowGap: `${rowGap}px`,
+          alignItems: "start",
+        }}
+      >
+        {photos.map((photo, idx) =>
+          tile(photo, idx, {
+            width: "100%",
+            justifySelf: "stretch",
+            sizes: gridSizes,
+            imgStyle: coverStyle,
+            cardAspectRatio: ratio,
           }),
         )}
       </div>

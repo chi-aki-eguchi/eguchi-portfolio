@@ -93,6 +93,8 @@ test("PhotoGallery renders tiles without crashing (every layout)", async () => {
     "editorial",
     "collage",
     "clean-grid",
+    "portrait-grid",
+    "landscape-grid",
     "masonry",
     "large-format",
   ]) {
@@ -147,6 +149,39 @@ test("clean-grid forces the outer tile box to a 1:1 square regardless of source 
   });
   host.remove();
 });
+
+test.each([
+  ["portrait-grid", "4 / 5"],
+  ["landscape-grid", "3 / 2"],
+])(
+  "%s forces the outer tile box to its fixed ratio regardless of source photo ratio",
+  async (layout, ratio) => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false, enabled: false } },
+    });
+    const host = dom.window.document.createElement("div");
+    dom.window.document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: qc },
+          createElement(PhotoGallery, { photos, layoutType: layout }),
+        ),
+      );
+    });
+    const cards = host.querySelectorAll<HTMLElement>(".photo-card");
+    expect(cards.length).toBe(photos.length);
+    for (const card of cards) {
+      expect(card.style.aspectRatio).toBe(ratio);
+    }
+    await act(async () => {
+      root.unmount();
+    });
+    host.remove();
+  },
+);
 
 test("tile hover caption renders for titled photos only", async () => {
   const qc = new QueryClient({

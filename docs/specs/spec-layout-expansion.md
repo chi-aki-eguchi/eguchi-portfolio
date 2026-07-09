@@ -195,3 +195,35 @@ Phase 1 では新規 settings key は追加していない。既存の `galleryL
 - Home B（エディトリアル）は横ナビになるため、他のレイアウトとナビ構造が異なる。レイアウトに応じてナビコンポーネントを切り替える設計にすること
 - 既存レイアウトは一切変更しない（追加のみ）
 - レスポンシブ対応: モバイルではカラム数を減らす（4列→2列、3列→2列、2列→1列）
+
+---
+
+## Phase 4: 2026-07-09 拡張（9種→11種）- 完了
+
+オーナーから「クリーングリッドをInstagram風の正方形に直し、グリッド方式を
+明確にして種類を増やしてほしい」という要望を受け、codex-reviewer 経由で
+実装依頼→Claude Code(Sonnet)実装→オーナー承認確認、という流れで実施。
+
+- [x] `clean-grid` の正方形化バグ修正（外枠 `.photo-card` が元写真の縦横比を
+      持ったままだった。`tile()` に `cardAspectRatio` オプションを追加）
+- [x] `grid` → 表示名「写真比率グリッド」、`clean-grid` → 表示名「正方形グリッド」
+      に変更。常時見える一行説明を追加
+- [x] admin Settings→ギャラリー配置UIを、Gallery/Series/Top 3反復の9択から
+      「対象ページ切替＋カテゴリ分け(整列グリッド/写真集レイアウト)＋
+      配置図付き1組の一覧」に再構成
+- [x] 新規レイアウト `portrait-grid`（4:5・人物写真向け）と
+      `landscape-grid`（3:2・風景写真向け）を追加、9種→11種に拡張
+      （`.claude/rules/react-components.md` 等の9種固定ルールをオーナー承認の上で改定）
+- [x] `GalleryLayoutType` / `KNOWN_LAYOUTS` / `GALLERY_LAYOUT_OPTIONS` /
+      `LAYOUT_ICON_RECTS` / 全レイアウト render test を11種に更新
+- [x] 正本ドキュメント同期: `AGENTS.md`, root `CLAUDE.md`, `packages/web/CLAUDE.md`,
+      `.claude/rules/react-components.md`, `.claude/skills/gallery-feature/SKILL.md`,
+      `packages/web/src/web/lib/service-config.ts`
+- [ ] `git push`（オーナーの手で実施）
+
+検証済み:
+- `bun run check`（typecheck / lint / test / build）
+- `bun run smoke`（admin に触れたため）
+- `PhotoGallery.render.test.tsx` に clean-grid / portrait-grid / landscape-grid の
+  外枠アスペクト比回帰テストを追加
+- 実ブラウザで新admin UIをPC/スマホでスクリーンショット確認

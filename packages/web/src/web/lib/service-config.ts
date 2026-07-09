@@ -273,7 +273,7 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
       },
       {
         title: "レイアウトの調整",
-        body: "9種のギャラリーレイアウト、カラム数、余白、サイズ感をスライダーで調整できます。",
+        body: "11種のギャラリーレイアウト、カラム数、余白、サイズ感をスライダーで調整できます。",
       },
       {
         title: "見た目のカスタマイズ",
@@ -492,9 +492,7 @@ export function startingStripeUrl(config: ServicePageConfig): string | null {
   const cheapest = livePlans
     .map((plan, index) => ({ plan, index, amount: yenAmount(plan.price) }))
     .filter(
-      (
-        item,
-      ): item is { plan: PlanItem; index: number; amount: number } =>
+      (item): item is { plan: PlanItem; index: number; amount: number } =>
         item.amount !== null,
     )
     .sort((a, b) => a.amount - b.amount || a.index - b.index)[0];

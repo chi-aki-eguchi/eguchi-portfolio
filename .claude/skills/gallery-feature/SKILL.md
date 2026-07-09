@@ -2,6 +2,7 @@
 name: gallery-feature
 description: 新しいカテゴリ・シリーズを追加する手順。ギャラリーレイアウト変更、シリーズ作成、写真割り当てを含む。
 ---
+
 # ギャラリー・シリーズ追加手順
 
 ## DB スキーマ（関連テーブル）
@@ -30,21 +31,23 @@ description: 新しいカテゴリ・シリーズを追加する手順。ギャ�
    - `themeConfig` — JSON形式のレイアウト設定（null でグローバル設定に従う）
 3. 写真の `seriesId` にシリーズのIDを設定すると、シリーズ詳細ページ（`/series/xxx`）に表示される
 
-## ギャラリーレイアウト（9種）
+## ギャラリーレイアウト（11種）
 
 有効なレイアウト値（未知の値は `mosaic` にフォールバック）:
 
-| 値 | 説明 |
-|---|---|
-| `mosaic` | 不揃いグリッド（デフォルト） |
-| `grid` | 整然グリッド |
-| `scroll` | 横スクロール |
-| `stagger` | ずらしレイアウト |
-| `editorial` | 雑誌的 |
-| `collage` | コラージュ |
-| `clean-grid` | クリーンな格子 |
-| `masonry` | マソンリー |
-| `large-format` | 大判 |
+| 値               | 説明                                              |
+| ---------------- | ------------------------------------------------- |
+| `mosaic`         | 不揃いグリッド（デフォルト）                      |
+| `grid`           | 写真比率グリッド（元の縦横比を保って整列）        |
+| `scroll`         | 縦スクロール1枚                                   |
+| `stagger`        | ずらしレイアウト                                  |
+| `editorial`      | 雑誌的                                            |
+| `collage`        | コラージュ                                        |
+| `clean-grid`     | 正方形グリッド（Instagram風・すべて正方形）       |
+| `portrait-grid`  | 縦長グリッド（4:5・人物写真向け、2026-07-09追加） |
+| `landscape-grid` | 横長グリッド（3:2・風景写真向け、2026-07-09追加） |
+| `masonry`        | マソンリー                                        |
+| `large-format`   | 大判                                              |
 
 レイアウトは `themeConfig`（シリーズ単位）または **Settings タブ** のグローバル設定で変更。
 
@@ -57,6 +60,7 @@ description: 新しいカテゴリ・シリーズを追加する手順。ギャ�
 ### ギャラリーページ追加時
 
 `packages/web/src/web/app.tsx` にルートを追加:
+
 ```tsx
 <Route path="/gallery/new-path" component={NewGalleryPage} />
 ```

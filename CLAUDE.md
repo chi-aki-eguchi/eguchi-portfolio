@@ -146,7 +146,7 @@ Drop:
 - R2 画像: 3200px / mozjpeg q92 / 4:4:4 で保存。元サイズは保存しない
 - LRU キャッシュ: リサイズ済み 128MB + 元画像 48MB/60s TTL（正はコード `api/index.ts` の `RESIZE_CACHE_BYTES` / `ORIG_CACHE_BYTES`）
 - OGP: サーバサイドで index.html に注入（60s TTL）
-- ギャラリーレイアウト 9種: mosaic / grid / scroll / stagger / editorial / collage / clean-grid / masonry / large-format。未知値は mosaic フォールバック
+- ギャラリーレイアウト 11種: mosaic / grid / scroll / stagger / editorial / collage / clean-grid / portrait-grid / landscape-grid / masonry / large-format。未知値は mosaic フォールバック
 - 写真複製は R2 オブジェクト共有。purge は他参照なしの場合のみ
 - `test-*.mjs` は scratch スクリプト（管理パスワード含む可能性）— `git add .` でコミットしない
 

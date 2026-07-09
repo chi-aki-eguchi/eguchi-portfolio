@@ -5,7 +5,6 @@ import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
-import { Lightbox, type LightboxPhoto } from "../components/Lightbox";
 import { InquiryCta } from "../components/InquiryCta";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
@@ -420,45 +419,10 @@ type HomeLayoutProps = {
   settings: Record<string, string | undefined> | undefined;
 };
 
-function toLightboxPhotos(photos: GalleryPhoto[]): LightboxPhoto[] {
-  return photos.map((p) => ({
-    url: p.url,
-    title: p.title,
-    camera: p.camera,
-    lens: p.lens,
-    filmType: p.filmType,
-    mediumUrl: p.mediumUrl,
-    rotationDeg: p.rotationDeg,
-    description: p.description,
-  }));
-}
-
-function fastPhotoSrc(
-  photo: GalleryPhoto,
-  fallbackW: number,
-  fallbackQ: number,
-  prefer: "thumb" | "medium" = "thumb",
-): string {
-  const generated =
-    prefer === "medium"
-      ? (photo.mediumUrl ?? photo.thumbUrl)
-      : (photo.thumbUrl ?? photo.mediumUrl);
-  return (
-    generated ??
-    srcFor(photo.url, fallbackW, fallbackQ, undefined, photo.rotationDeg)
-  );
-}
-
-function fastPhotoSrcSet(
-  photo: GalleryPhoto,
-  preset: "grid" | "hero" | "lightbox",
-): string | undefined {
-  return photo.thumbUrl || photo.mediumUrl
-    ? undefined
-    : srcSetFor(photo.url, preset, undefined, photo.rotationDeg);
-}
-
-/** Phase 2 — Home A: quiet hero photo + clean 3-column square grid. */
+/** Phase 2 — Home A: quiet hero photo + clean 3-column square grid.
+ * Works grid honours topWorksLayout (falls back to clean-grid, its original
+ * look) — previously hardcoded, which silently ignored the admin's ギャラリー
+ * 配置→Top picker whenever this Hero mode was selected (2026-07-09). */
 function HomeQuietGrid({
   heroPhotos,
   featured,
@@ -467,7 +431,6 @@ function HomeQuietGrid({
   fadeRef,
   settings,
 }: HomeLayoutProps) {
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const photographerName = settings?.siteName || settings?.siteNameEn;
@@ -559,34 +522,11 @@ function HomeQuietGrid({
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-[5px]">
-            {featured.map((photo, idx) => (
-              <button
-                key={photo.id}
-                className="aspect-square overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)]"
-                onClick={() => setLightboxIndex(idx)}
-                aria-label={photoAltText(photo, { photographerName })}
-              >
-                <img
-                  src={fastPhotoSrc(photo, 600, 85, "thumb")}
-                  srcSet={fastPhotoSrcSet(photo, "grid")}
-                  sizes="(min-width: 768px) 33vw, 50vw"
-                  alt=""
-                  className="w-full h-full object-cover"
-                  style={{
-                    objectPosition: objectPositionFromFocal(
-                      photo.focalX,
-                      photo.focalY,
-                    ),
-                  }}
-                  decoding="async"
-                  loading={idx < 9 ? "eager" : "lazy"}
-                  fetchPriority={idx === 0 ? "high" : undefined}
-                  draggable={false}
-                />
-              </button>
-            ))}
-          </div>
+          <PhotoGallery
+            photos={featured}
+            layoutType={settings?.topWorksLayout ?? "clean-grid"}
+            variant="top"
+          />
 
           {featured.length < worksPoolLen && (
             <div
@@ -608,30 +548,14 @@ function HomeQuietGrid({
       )}
 
       <InquiryCta />
-
-      {lightboxIndex !== null && (
-        <Lightbox
-          photos={toLightboxPhotos(featured)}
-          index={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onPrev={() =>
-            setLightboxIndex((i) =>
-              i !== null ? (i - 1 + featured.length) % featured.length : 0,
-            )
-          }
-          onNext={() =>
-            setLightboxIndex((i) =>
-              i !== null ? (i + 1) % featured.length : 0,
-            )
-          }
-          photographerName={photographerName}
-        />
-      )}
     </div>
   );
 }
 
-/** Phase 2 — Home B: split hero + alternating large/small rhythm grid. */
+/** Phase 2 — Home B: split hero + alternating large/small rhythm grid.
+ * Works grid honours topWorksLayout (falls back to editorial, its original
+ * look) — previously hardcoded, which silently ignored the admin's ギャラリー
+ * 配置→Top picker whenever this Hero mode was selected (2026-07-09). */
 function HomeEditorial({
   heroPhotos,
   featured,
@@ -640,61 +564,11 @@ function HomeEditorial({
   fadeRef,
   settings,
 }: HomeLayoutProps) {
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const statement = settings?.profileStatement ?? "";
   const heroPhoto = heroPhotos[0];
-
-  const openLightbox = (idx: number) => setLightboxIndex(idx);
-  const tile = (photo: GalleryPhoto, idx: number, className?: string) => (
-    <button
-      key={photo.id}
-      className={`overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)] ${className ?? ""}`}
-      onClick={() => openLightbox(idx)}
-      aria-label={photoAltText(photo, { photographerName })}
-    >
-      <img
-        src={fastPhotoSrc(photo, 800, 88, "medium")}
-        srcSet={fastPhotoSrcSet(photo, "grid")}
-        sizes="(min-width: 768px) 40vw, 100vw"
-        alt=""
-        className="w-full h-full object-cover"
-        style={{
-          objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY),
-        }}
-        decoding="async"
-        loading={idx < 6 ? "eager" : "lazy"}
-        draggable={false}
-      />
-    </button>
-  );
-
-  // Build alternating rows: odd rows = 1.6fr 1fr 1fr, even rows = 1fr 1fr 1.6fr
-  const rows: React.ReactNode[] = [];
-  for (let i = 0; i < featured.length; i += 3) {
-    const chunk = featured.slice(i, i + 3);
-    const rowIdx = Math.floor(i / 3);
-    const isOdd = rowIdx % 2 === 0;
-    rows.push(
-      <div
-        key={i}
-        className="grid gap-[5px]"
-        style={{
-          gridTemplateColumns:
-            chunk.length >= 3
-              ? isOdd
-                ? "1.6fr 1fr 1fr"
-                : "1fr 1fr 1.6fr"
-              : `repeat(${chunk.length}, 1fr)`,
-          height: "min(220px, 30vw)",
-        }}
-      >
-        {chunk.map((photo, j) => tile(photo, i + j, "w-full h-full"))}
-      </div>,
-    );
-  }
 
   return (
     <div>
@@ -783,7 +657,11 @@ function HomeEditorial({
             </h2>
           </div>
 
-          <div className="flex flex-col gap-[5px]">{rows}</div>
+          <PhotoGallery
+            photos={featured}
+            layoutType={settings?.topWorksLayout ?? "editorial"}
+            variant="top"
+          />
 
           {featured.length < worksPoolLen && (
             <div
@@ -805,25 +683,6 @@ function HomeEditorial({
       )}
 
       <InquiryCta />
-
-      {lightboxIndex !== null && (
-        <Lightbox
-          photos={toLightboxPhotos(featured)}
-          index={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onPrev={() =>
-            setLightboxIndex((i) =>
-              i !== null ? (i - 1 + featured.length) % featured.length : 0,
-            )
-          }
-          onNext={() =>
-            setLightboxIndex((i) =>
-              i !== null ? (i + 1) % featured.length : 0,
-            )
-          }
-          photographerName={photographerName}
-        />
-      )}
     </div>
   );
 }
@@ -837,22 +696,10 @@ function HomeImmersive({
   fadeRef,
   settings,
 }: HomeLayoutProps) {
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
-
-  const displayMedium = (p: GalleryPhoto) => {
-    if (p.filmType === "film") return "Film";
-    if (p.filmType === "digital") return "Digital";
-    return "";
-  };
-  const photoYear = (p: GalleryPhoto) => {
-    if (!p.shotAt) return "";
-    const y = new Date(p.shotAt).getFullYear();
-    return Number.isFinite(y) ? String(y) : "";
-  };
 
   // Scroll-hint fade: hide the arrow once the user starts scrolling
   const hintRef = useRef<HTMLDivElement>(null);
@@ -942,62 +789,11 @@ function HomeImmersive({
           className="max-w-4xl mx-auto px-6 md:px-12 pt-6 pb-20"
           ref={fadeRef}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-8 md:gap-y-12">
-            {featured.map((photo, idx) => {
-              const medium = displayMedium(photo);
-              const year = photoYear(photo);
-              const sub = [medium, year].filter(Boolean).join(" — ");
-              return (
-                <figure key={photo.id} className="m-0">
-                  <button
-                    className="w-full overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)]"
-                    onClick={() => setLightboxIndex(idx)}
-                    aria-label={photoAltText(photo, { photographerName })}
-                  >
-                    <img
-                      src={fastPhotoSrc(photo, 900, 88, "medium")}
-                      srcSet={fastPhotoSrcSet(photo, "grid")}
-                      sizes="(min-width: 768px) 45vw, 100vw"
-                      alt=""
-                      className="w-full"
-                      decoding="async"
-                      loading={idx < 4 ? "eager" : "lazy"}
-                      draggable={false}
-                    />
-                  </button>
-                  {(photo.title || sub) && (
-                    <figcaption className="mt-2">
-                      {photo.title && (
-                        <p
-                          className="font-en"
-                          style={{
-                            fontSize: "var(--text-caption)",
-                            letterSpacing: "0.06em",
-                            color: "rgba(var(--foreground-rgb),0.35)",
-                          }}
-                        >
-                          {photo.title}
-                          {sub ? ` — ${sub}` : ""}
-                        </p>
-                      )}
-                      {!photo.title && sub && (
-                        <p
-                          className="font-en"
-                          style={{
-                            fontSize: "var(--text-caption)",
-                            letterSpacing: "0.06em",
-                            color: "rgba(var(--foreground-rgb),0.35)",
-                          }}
-                        >
-                          {sub}
-                        </p>
-                      )}
-                    </figcaption>
-                  )}
-                </figure>
-              );
-            })}
-          </div>
+          <PhotoGallery
+            photos={featured}
+            layoutType={settings?.topWorksLayout ?? "large-format"}
+            variant="top"
+          />
 
           {featured.length < worksPoolLen && (
             <div
@@ -1019,25 +815,6 @@ function HomeImmersive({
       )}
 
       <InquiryCta />
-
-      {lightboxIndex !== null && (
-        <Lightbox
-          photos={toLightboxPhotos(featured)}
-          index={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onPrev={() =>
-            setLightboxIndex((i) =>
-              i !== null ? (i - 1 + featured.length) % featured.length : 0,
-            )
-          }
-          onNext={() =>
-            setLightboxIndex((i) =>
-              i !== null ? (i + 1) % featured.length : 0,
-            )
-          }
-          photographerName={photographerName}
-        />
-      )}
     </div>
   );
 }

@@ -962,8 +962,8 @@ const app = new Hono()
         navPosition: settings.navPosition ?? "top", // top | left | bottom
         navHoverEffect: settings.navHoverEffect ?? "fade", // fade | underline | dot | blur
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
-        bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper
-        bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.05
+        bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
+        bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06
         // 写真のフェードイン方式 — fade(既定) | none | rise | scale
         photoRevealEffect: settings.photoRevealEffect ?? "fade",
         // Search Console の HTML タグ検証（content 値のみ）。server の OGP 注入で出力

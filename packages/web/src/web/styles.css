@@ -1632,26 +1632,35 @@ header .nav-link-luxury:focus-visible::after {
 
 /* ─── DD: 紙っぽい質感 — feTurbulence ノイズ1枚を fixed で敷く。
    z-index:-1 なのでコンテンツ（写真含む）より下・背景色より上にだけ乗り、
-   Lightbox（不透明・z 99999）には一切影響しない。スクロールで再描画されない。 */
+   Lightbox（不透明・z 99999）には一切影響しない。スクロールで再描画されない。
+   2026-07-09: 全種見直し — タイルを大きく(160〜320→300〜640)・多オクターブ化し、
+   feComponentTransfer でコントラストを持ち上げて低opacityでも質感が視認できるように
+   した(旧版はopacity 0.05だと実質見えなかった)。marble/mist を新規追加。 */
 body[data-texture]::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: var(--bg-texture-opacity, 0.05);
+  opacity: var(--bg-texture-opacity, 0.06);
   /* multiply vanishes over dark themes — provider.tsx flips this to `screen`
      when themeBg is dark (--bg-texture-blend). */
   mix-blend-mode: var(--bg-texture-blend, multiply);
 }
 body[data-texture="grain-fine"]::before {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.4' intercept='-0.42'/><feFuncG type='linear' slope='2.4' intercept='-0.42'/><feFuncB type='linear' slope='2.4' intercept='-0.42'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 body[data-texture="grain-coarse"]::before {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='480'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.28' numOctaves='5' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.2' intercept='-0.38'/><feFuncG type='linear' slope='2.2' intercept='-0.38'/><feFuncB type='linear' slope='2.2' intercept='-0.38'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 body[data-texture="paper"]::before {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.04 0.18' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='640'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.018 0.11' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.0' intercept='-0.32'/><feFuncG type='linear' slope='2.0' intercept='-0.32'/><feFuncB type='linear' slope='2.0' intercept='-0.32'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+body[data-texture="marble"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='500'><filter id='n'><feTurbulence type='turbulence' baseFrequency='0.012 0.06' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='1.5' intercept='-0.18'/><feFuncG type='linear' slope='1.5' intercept='-0.18'/><feFuncB type='linear' slope='1.5' intercept='-0.18'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+body[data-texture="mist"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='560' height='560'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.0' intercept='-0.35'/><feFuncG type='linear' slope='2.0' intercept='-0.35'/><feFuncB type='linear' slope='2.0' intercept='-0.35'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
 /* ─── Hero Carousel ─── */

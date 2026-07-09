@@ -366,24 +366,30 @@ const NAV_POSITION_OPTIONS: {
   },
 ];
 
-// Background texture (bgTexture) — 4 options. Preview swatches reuse the
+// Background texture (bgTexture) — 6 options. Preview swatches reuse the
 // exact feTurbulence SVGs from styles.css (body[data-texture=...]::before)
 // so the admin preview matches the real texture, not an abstract stand-in.
+// 2026-07-09: 全種見直し(高解像度化+コントラスト強化) + marble/mist を追加。
 const TEXTURE_PREVIEW_BG: Record<string, string | null> = {
   none: null,
   "grain-fine":
-    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.4' intercept='-0.42'/><feFuncG type='linear' slope='2.4' intercept='-0.42'/><feFuncB type='linear' slope='2.4' intercept='-0.42'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
   "grain-coarse":
-    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='480'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.28' numOctaves='5' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.2' intercept='-0.38'/><feFuncG type='linear' slope='2.2' intercept='-0.38'/><feFuncB type='linear' slope='2.2' intercept='-0.38'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
   paper:
-    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.04 0.18' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='640' height='640'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.018 0.11' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.0' intercept='-0.32'/><feFuncG type='linear' slope='2.0' intercept='-0.32'/><feFuncB type='linear' slope='2.0' intercept='-0.32'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+  marble:
+    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='500'><filter id='n'><feTurbulence type='turbulence' baseFrequency='0.012 0.06' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='1.5' intercept='-0.18'/><feFuncG type='linear' slope='1.5' intercept='-0.18'/><feFuncB type='linear' slope='1.5' intercept='-0.18'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+  mist: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='560' height='560'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='2.0' intercept='-0.35'/><feFuncG type='linear' slope='2.0' intercept='-0.35'/><feFuncB type='linear' slope='2.0' intercept='-0.35'/></feComponentTransfer></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
 };
 
 const BG_TEXTURE_OPTIONS: { value: string; name: string; desc: string }[] = [
   { value: "none", name: "なし", desc: "質感を足さない" },
   { value: "grain-fine", name: "フィルム粒子", desc: "細かく均一な粒子感" },
-  { value: "grain-coarse", name: "粗い紙", desc: "やや粗いざらつき" },
-  { value: "paper", name: "和紙・繊維", desc: "繊維状のムラ" },
+  { value: "grain-coarse", name: "粗い紙", desc: "ざらついた紙の繊維感" },
+  { value: "paper", name: "和紙・繊維", desc: "縦に流れる繊維状のムラ" },
+  { value: "marble", name: "大理石調", desc: "波紋のような上品なムラ" },
+  { value: "mist", name: "霞（かすみ）", desc: "柔らかい雲のようなムラ" },
 ];
 
 // Fixed neutral swatch backdrop (not the admin theme color) so the texture's
@@ -4104,7 +4110,7 @@ export function SettingsTab({
                 </AdminField>
                 <AdminField
                   label="濃度"
-                  hint="0.05前後がおすすめ。上げすぎると写真より質感が目立ちます"
+                  hint="0.06前後がおすすめ。上げすぎると写真より質感が目立ちます"
                 >
                   <TypoControl
                     label="濃度"
@@ -4115,7 +4121,7 @@ export function SettingsTab({
                     max={0.15}
                     step={0.01}
                     unit=""
-                    defaultVal="0.05"
+                    defaultVal="0.06"
                   />
                 </AdminField>
                 <button
@@ -5794,7 +5800,7 @@ function Section({
         className="flex items-center justify-between gap-3 w-full min-h-[52px] px-4 text-left text-[15px] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)] transition-colors duration-[var(--dur-fast)]"
       >
         <span className="flex items-baseline gap-2 min-w-0">
-          <span>{title}</span>
+          <span className="shrink-0 whitespace-nowrap">{title}</span>
           {!open && summary && (
             <span className="text-[11px] text-[color:var(--admin-muted)] font-normal truncate">
               {summary}
@@ -6267,8 +6273,8 @@ function TypoControl({
   };
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-[11px] text-[var(--admin-muted)] w-32 shrink-0">
+    <div className="flex items-center gap-3 min-w-0">
+      <span className="text-[11px] text-[var(--admin-muted)] w-32 min-w-0 truncate">
         {label}
       </span>
       <input
@@ -6279,7 +6285,7 @@ function TypoControl({
         step={step}
         value={value}
         onChange={(e) => set(valueKey, e.target.value)}
-        className="flex-1 h-1 accent-[var(--admin-muted)] cursor-pointer"
+        className="flex-1 min-w-0 h-1 accent-[var(--admin-muted)] cursor-pointer"
       />
       <input
         aria-label={`${label}（数値入力）`}

@@ -369,11 +369,37 @@ export default function AdminPage() {
     queryFn: async () =>
       jsonOrThrow<Record<string, string>>(await api.settings.$get()),
   });
+  // はじめに強制導線の判定専用(表示はGalleryTab側の同じqueryKeyが担う。
+  // TanStack Queryはキー一致でキャッシュを共有するので二重フェッチにはならない)。
+  const { data: setupGuardPhotos } = useQuery({
+    queryKey: ["photos", "all"],
+    queryFn: async () =>
+      jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
+  });
   const [tab, setTab] = usePersistentState<Tab>(
     "admin:tab",
     "gallery",
     "local",
   );
+  // setupCompleted !== "true" の間は、/admin を開くたびに初期タブを「はじめに」
+  // にする(セッション中の自由なタブ移動は妨げないよう、マウントごとに一度だけ)。
+  // ただし新設フラグ導入前から写真がある=既存運用サイトは、明示操作なしに毎回
+  // 強制送りしない(バックフィルでフラグだけ立てる)。
+  const initialSetupRedirectDone = useRef(false);
+  useEffect(() => {
+    if (initialSetupRedirectDone.current) return;
+    if (shellSettings === undefined || setupGuardPhotos === undefined) return;
+    initialSetupRedirectDone.current = true;
+    if (shellSettings.setupCompleted === "true") return;
+    const hasExistingContent = (setupGuardPhotos.photos ?? []).length > 0;
+    if (hasExistingContent) {
+      adminApi.settings
+        .$post({ json: { setupCompleted: "true" } })
+        .catch(() => {});
+      return;
+    }
+    setTab("setup");
+  }, [shellSettings, setupGuardPhotos, setTab]);
   const [galleryUploading, setGalleryUploading] = useState(false);
   // Generic unsaved-draft flag reported by any tab with a draft form.
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -764,6 +790,7 @@ type ChecklistItem = {
 };
 
 function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
+  const qc = useQueryClient();
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -800,6 +827,32 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
     "local",
   );
   const [forceOpen, setForceOpen] = useState(false);
+
+  // setupCompleted は settings に保存する(=デバイス・ブラウザをまたいで有効)。
+  // これが true になるまで、初回ログイン時は毎回「はじめに」へ誘導される
+  // (AdminPage 側のリダイレクト判定)。dismissed(ローカルのみ)とは別物 —
+  // 閉じるだけでは完了扱いにしない。
+  const finishSetup = useMutation({
+    mutationFn: async () => {
+      const res = await adminApi.settings.$post({
+        json: { setupCompleted: "true" },
+      });
+      assertOk(res);
+    },
+    onSuccess: () => {
+      qc.setQueryData(
+        ["settings"],
+        (old: Record<string, string> | undefined) => ({
+          ...old,
+          setupCompleted: "true",
+        }),
+      );
+      qc.invalidateQueries({ queryKey: ["settings"] });
+      setDismissed(true);
+      setForceOpen(false);
+      onOpenTab("gallery");
+    },
+  });
 
   // Guided path for a brand-new site: name → profile → first photo → hero →
   // confirm it is actually live. 連絡先 and other niceties go to the "できれば
@@ -892,9 +945,11 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
                 <Check size={13} />
               </div>
               <p className="text-[12px] text-emerald-800 truncate">
-                {requiredDone
-                  ? "公開に必要な項目はそろっています。"
-                  : "「はじめに」を閉じています。"}
+                {settings.setupCompleted === "true"
+                  ? "セットアップ完了ずみです。"
+                  : requiredDone
+                    ? "公開に必要な項目はそろっています。"
+                    : "「はじめに」を閉じています。"}
               </p>
             </div>
             <button
@@ -928,13 +983,22 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
                   : `${doneCount} / ${checklist.length} 完了`}
               </div>
               <button
+                onClick={() => finishSetup.mutate()}
+                disabled={finishSetup.isPending}
+                className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-50 flex-shrink-0"
+              >
+                {finishSetup.isPending
+                  ? "保存中..."
+                  : "セットアップ完了 → ライブラリへ"}
+              </button>
+              <button
                 onClick={() => {
                   setDismissed(true);
                   setForceOpen(false);
                 }}
                 className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
               >
-                閉じる
+                あとで
               </button>
             </>
           }

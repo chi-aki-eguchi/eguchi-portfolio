@@ -142,6 +142,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "homeCtaButton",
   "homeGalleryCount",
   "servicePageConfig",
+  "setupCompleted",
 ] as const;
 
 export type SettingsPreviewKey = (typeof SETTINGS_PREVIEW_KEYS)[number];

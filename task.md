@@ -5664,3 +5664,133 @@ codex-reviewerのpush前read-onlyレビューで4件の小修正依頼を受け�
 ### 本番で確認したか
 
 していない(未push)。
+
+## Handoff 2026-07-09 (5) — Claude Code (Sonnet): 初回導線改善(/service/start設置ナビ + admin初回はじめに誘導)
+
+### 目的
+
+オーナーが第三者にRailwayテンプレートを実際に使ってもらったところ、
+(1) S3_BUCKET未設定で写真アップロードがInternal server errorになる
+(2) adminに初めて入っても「はじめに」ではなく普通にLibraryが開いてしまう、
+の2点で詰まった。README/docsではなく、実際に辿り着く公開URL
+(`/service/start`)に導線を集約し、admin初回導線を直す。
+
+### 変更内容
+
+1. **`/admin/settings`(`api/index.ts`)に `setupCompleted` キーを追加**
+   - GET `/settings` のdefault値に `settings.setupCompleted ?? "false"` を追加。
+   - 書き込みは既存の汎用 `POST /admin/settings`(key/value upsert)をそのまま使う。
+     新規エンドポイントは作っていない。
+   - `lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS` にも追加(§0の
+     「新規キー追加時4箇所同期」対応。実際にはCSS変数もLive Preview表示も
+     持たない管理内部フラグだが、このリポジトリの既存ledgerはGET /settings
+     の全キーを1対1でSETTINGS_PREVIEW_KEYSに含める運用になっているため、
+     既存の他の非表示系キー(smartAlbums等)と同じ扱いにした)。
+2. **`uploadToStorage()`(`api/index.ts`)に `assertStorageConfigured()` を追加**
+   - S3_ENDPOINT / S3_BUCKET / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY の
+     いずれかが空なら、値を含めずに変数名だけを列挙した分かりやすい
+     Errorを投げる(例:
+     `Missing storage env var(s): S3_BUCKET. If you use Railway Bucket, set them from the Bucket service reference, e.g. S3_BUCKET=${{ Bucket.BUCKET }}.`)。
+   - 既存の `app.onError` が `err.message` をRailway Logsにそのまま出す
+     設計なので、ここを直すだけでLogs側の可読性が上がる
+     (`Content-Encoding`等の§0は触っていない)。
+3. **`admin.tsx`: 初回ログインを「はじめに」へ誘導**
+   - `AdminPage` に `["photos","all"]` の軽量queryを追加(GalleryTab等と
+     同じqueryKeyでキャッシュ共有、二重フェッチにはならない)。
+   - マウントごとに一度だけ判定するeffectを追加: `settings.setupCompleted
+!== "true"` かつ既存写真が0枚なら `setTab("setup")`。写真が1枚でも
+     あれば「導入前から運用しているサイト」とみなし、強制リダイレクトは
+     せず `setupCompleted:"true"` をバックグラウンドでbest-effort書き込み
+     するだけ(バックフィル)。
+   - このバックフィルにより、**本番と同じTursoにつながる開発用DB
+     (akieguchi.com本番相当、写真496枚)には今回の検証中に自動で
+     `setupCompleted="true"` が書き込まれた**。既存運用サイトを壊さない
+     ための意図した挙動だが、書き込みが発生した事実は明記しておく。
+   - `SetupTab`(「はじめに」画面)に「セットアップ完了 → ライブラリへ」
+     ボタンを追加。押すと `setupCompleted:"true"` をPOSTし、Libraryタブへ
+     遷移する。既存の「あとで」(旧「閉じる」からラベル変更、ローカルの
+     dismissedのみ)と役割を分離。折りたたみ後の「もう一度見る」は従来どおり
+     残している。
+4. **`/service/start`(`service-start.tsx`)にRailwayテンプレート向け
+   詳細ナビ`SelfSetupGuide`を追加**
+   - 「自分で立てる人」パネルに「くわしい手順を見る」ボタンを追加、
+     `#guide` へアンカー遷移。
+   - 10セクション構成(目次付き): まず確認するもの / Railwayでテンプレートを
+     開く / GitHubアクセスエラーが出たら / Variablesで確認するもの
+     (S3_BUCKET等5変数のコード例) / 公開URLを開く / /admin にログイン /
+     初回セットアップを進める / 写真を1枚アップロードして確認 /
+     エラーが出たときの見方(今回の `No value provided for input HTTP
+label: Bucket.` 事例を具体的に記載) / こちらに送ってほしいスクショ
+     (3枚+値を隠す注意+メール下書きボタン)。
+   - 既存の「おまかせ設定の人」パネル・HandoffCardの構成・コピーは変更
+     していない。
+
+### 触ったファイル
+
+- `packages/web/src/api/index.ts`
+- `packages/web/src/web/lib/settings-preview.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/service-start.tsx`
+- `task.md`
+
+### 検証したこと
+
+- `bun run check`: 成功(277 tests / typecheck(`tsc -b`) / lint(oxlint) / build)。
+- `bun run smoke`: 22 passed / 19 skipped / **1 failed**
+  (`admin-trash-signal.spec.ts`)。この1件は今回の変更と無関係な
+  既存不具合であることを確認済み — 変更前の`main`(`git stash`で退避して
+  同テストのみ再実行)でも同じ理由で同じように失敗する。原因はテストが
+  「ゴミ箱が空」の文言(`ゴミ箱は空です...`)を期待しているのに対し、
+  実際の開発用DBのゴミ箱には既に32件入っており、非空時の文言
+  (`削除済み写真 — 復元するか...`)には該当テキストが含まれないため。
+  今回のスコープ外なので手を入れていない(別途チケット化を推奨)。
+- 実ブラウザ相当の確認(Playwrightスクラッチスペック、
+  `scripts/smoke/_verify-setup-flow.spec.ts` として一時的に作成し、
+  確認後に削除・コミットせず): 本番相当DB(写真496枚)でログイン→
+  Libraryにそのまま着地(強制リダイレクトされない)を確認、続けて
+  「はじめに」タブへ直接遷移→折りたたみ表示(セットアップ完了ずみです)→
+  「もう一度見る」で展開→「セットアップ完了 → ライブラリへ」ボタンの
+  表示を確認(クリックはしていない。既にsetupCompleted=trueなので
+  クリックしても実害はないが、house rule「Save系ボタンをクリックしない」
+  を尊重し押していない)。
+- `/service/start` は `bun run dev` (localhost:5173) にPlaywrightで
+  アクセスし、トップ+新設ガイドセクションをスクリーンショットで目視確認。
+  コードブロック・目次アンカー・エラー事例コールアウト・スクショ
+  チェックリストが意図通り表示されることを確認済み
+  (スクショはスクラッチ実行のみ、コミット対象外)。
+- 「ゼロ写真の真の新規インストール」パス(setupCompleted未設定 かつ
+  写真0枚 → 強制的に「はじめに」に着地する分岐)は、本番相当DBを
+  破壊的に空にできないため未検証。ロジックは admin.tsx のeffect内で
+  写真配列の `.length > 0` のみで分岐しており単純だが、実機での
+  最終確認はオーナー側でのRailwayテンプレート新規デプロイ時に
+  お願いしたい。
+
+### 検証していないこと
+
+- ゼロ写真の真の新規インストールでの「はじめに」強制着地(上記の理由で
+  未検証。次にRailwayテンプレートを新規デプロイする機会があれば確認を)。
+- 本番(akieguchi.com、Railway経由)での動作確認(未push)。
+
+### push したか
+
+していない。push は常にオーナーの手で。前回までのコミット
+(93b16abまで)は書き換えず、今回分は別コミットにする想定。
+
+### 本番で確認したか
+
+していない(未push)。ただし §「検証したこと」の通り、本番と同じTurso
+DBに接続する開発環境上では動作確認済み(読み取りのみ・意図した
+バックフィル書き込み1件を除く)。
+
+### 次の担当者が触ってよい場所
+
+- 今回のスコープ(`service-start.tsx` / admin初回導線 / setupCompleted)
+  の続き・微調整。
+
+### 次の担当者が触ってはいけない場所
+
+- 本番 DB・R2・Railway 環境変数(直接変更なし、今回も同様)。
+- `admin-trash-signal.spec.ts` の既存不具合(今回のスコープ外。直す場合は
+  テストのゴミ箱前提を「空にしてから検証」または非空文言を許容する
+  アサーションに直すか、テスト用DBの分離を検討)。
+- 未pushコミットの rebase・書き換え。

@@ -480,7 +480,27 @@ async function generateAndUploadMedium(
 }
 
 // Upload buffer to S3-compatible object storage.
+// Railwayテンプレート利用者が Bucket サービスの変数参照を貼り忘れると、SDKが
+// "No value provided for input HTTP label: Bucket." のような分かりにくいメッセージ
+// を投げる。/service/start のトラブルシュートと対応させるため、どの変数が
+// 空なのかを名前だけ(値は含めない)先に切り分けてログに出す。
+function assertStorageConfigured(): void {
+  const missing = [
+    ["S3_ENDPOINT", process.env.S3_ENDPOINT],
+    ["S3_BUCKET", process.env.S3_BUCKET],
+    ["S3_ACCESS_KEY_ID", process.env.S3_ACCESS_KEY_ID],
+    ["S3_SECRET_ACCESS_KEY", process.env.S3_SECRET_ACCESS_KEY],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+  if (missing.length === 0) return;
+  throw new Error(
+    `Missing storage env var(s): ${missing.join(", ")}. If you use Railway Bucket, set them from the Bucket service reference, e.g. S3_BUCKET=\${{ Bucket.BUCKET }}.`,
+  );
+}
+
 async function uploadToStorage(key: string, buf: Buffer, contentType: string) {
+  assertStorageConfigured();
   await s3.send(
     new PutObjectCommand({
       Bucket: BUCKET,
@@ -1035,6 +1055,8 @@ const app = new Hono()
         printEnabled: settings.printEnabled ?? "off", // "on" | "off"
         printDescription: settings.printDescription ?? "",
         servicePageConfig: settings.servicePageConfig ?? "",
+        // admin初回導線: 「はじめに」を最後まで終えたかどうか。"true"以外は未完了扱い。
+        setupCompleted: settings.setupCompleted ?? "false",
       },
       200,
     );

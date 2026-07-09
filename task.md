@@ -5619,3 +5619,48 @@ Settings可視化 Phase 1 の実装依頼を受信、実施した。
   次フェーズ(他セクションへの展開)があれば同じ部品を使えばよい。
 - Live Preview iframe の postMessage 反映が自動化スクリプトで不安定な件
   (前々回Handoff参照)は今回のスコープ外のため未着手。
+
+## Handoff 2026-07-09 (4) — Claude Code (Sonnet): Settings可視化Phase1 push前レビュー対応
+
+codex-reviewerのpush前read-onlyレビューで4件の小修正依頼を受け、対応した。
+コミット7e9dc3aはamendせず別コミット。
+
+### 対応した4件
+
+1. **背景テクスチャ見本の濃さ**: opacity 0.55→0.22に低減(実サイト既定0.05との
+   誤認を避けるため)。「見本は模様の違いが分かるよう少し強めに表示しています。
+   実際の濃さは下の「濃度」で調整します。」を常時表示のnoteとして追加。
+2. **Hero summaryのfullscreen時heroHeight非表示**: fullscreenなら
+   「1枚絵・フルスクリーン」、normalなら「1枚絵・通常・高さ100%」のように
+   %単位を付けて表示するよう修正(fullscreen時はheroHeightが効かないため)。
+3. **「Lightbox」表記の言い換え**: 背景の質感セクションの新規ガイド文+
+   既存AdminField hintの両方で「Lightbox」→「写真を拡大表示する画面」に
+   変更(オーナー向け画面から専門語を除去)。
+4. **VisualChoiceCardにaria-pressed追加**: 選択状態がスクリーンリーダーでも
+   分かるように。CSS側は既存の`button[aria-pressed="true"]`ハイライトルールが
+   そのまま効く(admin-btn-primaryクラスと同じ見た目、二重適用でも問題なし)。
+
+### 検証
+
+- `bun run check`: 成功(277 tests / typecheck / lint / build)。
+- `bun run smoke`: 1回目「[mobile] admin-scroll gallery」がタイムアウトで
+  1件失敗したが、単体再実行で即成功(12.2s)、Settings変更とは無関係のタブの
+  スクロールテストであり既存の非決定的flakeと判断。直後にフルスイート再実行し
+  23 passed / 0 failed / 19 skipped で確認。
+- 実ブラウザで4点とも修正内容を目視確認(背景テクスチャの見本が薄くなった+
+  noteが表示される、Heroのfullscreen/normal切替でsummary文言が正しく変わる)。
+  スクショ: `scratch/settings-visibility-2026-07-09/fix-*.png`(コミット対象外)。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `task.md`
+
+### push したか
+
+していない。push はオーナーの手で。前3コミット(1ce3141, e41a6f8, 7e9dc3a)は
+書き換えず、今回分は別コミット。
+
+### 本番で確認したか
+
+していない(未push)。

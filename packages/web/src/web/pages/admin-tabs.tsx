@@ -262,6 +262,7 @@ function VisualChoiceCard({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`text-left px-2 py-2 rounded-sm border transition-colors ${
         active
           ? "admin-btn-primary font-medium"
@@ -410,7 +411,10 @@ function TexturePreview({ value }: { value: string }) {
             inset: 0,
             backgroundImage: bg,
             backgroundSize: "cover",
-            opacity: 0.55,
+            // Exaggerated vs. the real default (0.05) so the pattern
+            // difference is visible at swatch size — see the note under the
+            // picker. Not a preview of the actual on-site strength.
+            opacity: 0.22,
           }}
         />
       )}
@@ -3735,7 +3739,19 @@ export function SettingsTab({
               <Section
                 title="Hero（ファーストビュー）"
                 defaultOpen={false}
-                summary={`${HERO_MODE_OPTIONS.find((o) => o.value === (current["heroMode"] || "carousel"))?.name ?? "カルーセル"}・${(current["heroDisplayMode"] || "normal") === "fullscreen" ? "フルスクリーン" : "通常"}・高さ${current["heroHeight"] || "70"}`}
+                summary={(() => {
+                  const modeName =
+                    HERO_MODE_OPTIONS.find(
+                      (o) => o.value === (current["heroMode"] || "carousel"),
+                    )?.name ?? "カルーセル";
+                  const isFullscreen =
+                    (current["heroDisplayMode"] || "normal") === "fullscreen";
+                  // heroHeight has no effect in fullscreen mode — showing it
+                  // there would imply a setting that isn't actually applied.
+                  return isFullscreen
+                    ? `${modeName}・フルスクリーン`
+                    : `${modeName}・通常・高さ${current["heroHeight"] || "70"}%`;
+                })()}
               >
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   トップページ最上部の写真表示です。ここで選んだ見せ方が、
@@ -4063,12 +4079,12 @@ export function SettingsTab({
                 }
               >
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  写真以外のサイト背景に、ごく薄いノイズを重ねます。写真自体や
-                  Lightboxには影響しません。
+                  写真以外のサイト背景に、ごく薄いノイズを重ねます。写真自体や、
+                  写真を拡大表示する画面には影響しません。
                 </p>
                 <AdminField
                   label="テクスチャ"
-                  hint="背景にごく薄いノイズを敷きます。写真の上やLightboxには乗りません"
+                  hint="背景にごく薄いノイズを敷きます。写真の上や、写真を拡大表示する画面には乗りません"
                 >
                   <div className="grid grid-cols-2 gap-1.5">
                     {BG_TEXTURE_OPTIONS.map(({ value, name, desc }) => (
@@ -4082,6 +4098,9 @@ export function SettingsTab({
                       />
                     ))}
                   </div>
+                  <p className="text-[9px] text-[var(--admin-muted)] leading-relaxed mt-1.5">
+                    見本は模様の違いが分かるよう少し強めに表示しています。実際の濃さは下の「濃度」で調整します。
+                  </p>
                 </AdminField>
                 <AdminField
                   label="濃度"

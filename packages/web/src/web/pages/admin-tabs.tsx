@@ -42,8 +42,170 @@ import {
   type Photo,
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
+import type { GalleryLayoutType } from "../components/PhotoGallery";
 
 const DEFAULT_THEME_BG = "#f7f7f7";
+
+// Single source of truth for the 9 gallery layout choices, shared by the
+// Settings→ギャラリー配置 picker and the per-series layout override picker.
+// Category grouping + one-line desc per docs/specs request (2026-07-09):
+// clarify what each layout looks like without relying on a hover title.
+type GalleryLayoutCategory = "aligned" | "editorial";
+
+const GALLERY_LAYOUT_OPTIONS: {
+  value: GalleryLayoutType;
+  name: string;
+  desc: string;
+  category: GalleryLayoutCategory;
+}[] = [
+  {
+    value: "grid",
+    name: "写真比率グリッド",
+    desc: "元の縦横比を保って整列",
+    category: "aligned",
+  },
+  {
+    value: "clean-grid",
+    name: "正方形グリッド",
+    desc: "Instagram風・すべて正方形",
+    category: "aligned",
+  },
+  {
+    value: "masonry",
+    name: "マソンリー",
+    desc: "3列・縦横比を保って敷き詰め",
+    category: "aligned",
+  },
+  {
+    value: "mosaic",
+    name: "モザイク",
+    desc: "S/M/L混在・抜け感のある並び",
+    category: "editorial",
+  },
+  {
+    value: "scroll",
+    name: "縦スクロール1枚",
+    desc: "1枚ずつ大きく＋情報を添えて表示",
+    category: "editorial",
+  },
+  {
+    value: "stagger",
+    name: "ずらし大",
+    desc: "1枚ずつ左右互い違いに配置",
+    category: "editorial",
+  },
+  {
+    value: "editorial",
+    name: "雑誌見開き",
+    desc: "2枚1組・左大右小の見開き風",
+    category: "editorial",
+  },
+  {
+    value: "collage",
+    name: "コラージュ",
+    desc: "重なりと角度でスナップ写真風",
+    category: "editorial",
+  },
+  {
+    value: "large-format",
+    name: "大判",
+    desc: "2列の大判表示＋キャプション",
+    category: "editorial",
+  },
+];
+
+const GALLERY_LAYOUT_CATEGORY_LABEL: Record<GalleryLayoutCategory, string> = {
+  aligned: "整列グリッド",
+  editorial: "写真集レイアウト",
+};
+
+type LayoutIconRect = {
+  l: number;
+  t: number;
+  w: number;
+  h: number;
+  rotate?: number;
+};
+
+// Rough per-layout diagrams (percentages of a 100x100 box) — a visual hint,
+// not a pixel-accurate preview of the real layout.
+const LAYOUT_ICON_RECTS: Record<GalleryLayoutType, LayoutIconRect[]> = {
+  mosaic: [
+    { l: 2, t: 6, w: 42, h: 60 },
+    { l: 48, t: 6, w: 50, h: 26 },
+    { l: 48, t: 40, w: 50, h: 26 },
+  ],
+  grid: [
+    // Each cell keeps its own (varied) aspect ratio, with a visible gap —
+    // distinguishes it from clean-grid's dense uniform squares below.
+    { l: 2, t: 2, w: 44, h: 34 },
+    { l: 54, t: 2, w: 44, h: 50 },
+    { l: 2, t: 44, w: 44, h: 54 },
+    { l: 54, t: 60, w: 44, h: 38 },
+  ],
+  scroll: [{ l: 30, t: 2, w: 40, h: 96 }],
+  stagger: [
+    { l: 4, t: 4, w: 58, h: 42 },
+    { l: 40, t: 54, w: 58, h: 42 },
+  ],
+  editorial: [
+    { l: 2, t: 4, w: 56, h: 92 },
+    { l: 62, t: 30, w: 36, h: 62 },
+  ],
+  collage: [
+    { l: 12, t: 14, w: 48, h: 48, rotate: -7 },
+    { l: 38, t: 32, w: 48, h: 48, rotate: 6 },
+  ],
+  "clean-grid": [
+    // Dense uniform squares, near-zero gap — mirrors the real 4-col/2-col
+    // contact-sheet grid, contrasted with grid's gapped varied-ratio cells.
+    { l: 0, t: 6, w: 31, h: 31 },
+    { l: 33, t: 6, w: 31, h: 31 },
+    { l: 66, t: 6, w: 31, h: 31 },
+    { l: 0, t: 39, w: 31, h: 31 },
+    { l: 33, t: 39, w: 31, h: 31 },
+    { l: 66, t: 39, w: 31, h: 31 },
+  ],
+  masonry: [
+    { l: 2, t: 2, w: 28, h: 40 },
+    { l: 2, t: 46, w: 28, h: 52 },
+    { l: 34, t: 2, w: 28, h: 60 },
+    { l: 34, t: 66, w: 28, h: 32 },
+    { l: 66, t: 2, w: 32, h: 30 },
+    { l: 66, t: 36, w: 32, h: 62 },
+  ],
+  "large-format": [
+    { l: 2, t: 4, w: 46, h: 78 },
+    { l: 52, t: 4, w: 46, h: 78 },
+  ],
+};
+
+function LayoutIcon({ value }: { value: GalleryLayoutType }) {
+  const rects = LAYOUT_ICON_RECTS[value] ?? [];
+  return (
+    <div
+      aria-hidden="true"
+      style={{ position: "relative", width: "100%", paddingTop: "62%" }}
+    >
+      {rects.map((r, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: `${r.l}%`,
+            top: `${r.t}%`,
+            width: `${r.w}%`,
+            height: `${r.h}%`,
+            border: "1.5px solid currentColor",
+            borderRadius: 1,
+            opacity: 0.7,
+            transform: r.rotate ? `rotate(${r.rotate}deg)` : undefined,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function HeroTab() {
   const qc = useQueryClient();
@@ -1376,25 +1538,17 @@ export function SeriesTab() {
                       <div className="grid grid-cols-3 gap-1">
                         {(
                           [
-                            ["", "グローバル"],
-                            ["mosaic", "モザイク"],
-                            ["grid", "均等グリッド"],
-                            ["scroll", "縦スクロール"],
-                            ["stagger", "ずらし大"],
-                            ["editorial", "雑誌見開き"],
-                            ["collage", "コラージュ"],
-                            ["clean-grid", "クリーングリッド"],
-                            ["masonry", "マソンリー"],
-                            ["large-format", "大判"],
+                            { value: "", name: "グローバル" },
+                            ...GALLERY_LAYOUT_OPTIONS,
                           ] as const
-                        ).map(([val, lbl]) => (
+                        ).map(({ value, name }) => (
                           <button
-                            key={val}
+                            key={value}
                             type="button"
-                            onClick={() => setThemeKey("layout", val)}
-                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
+                            onClick={() => setThemeKey("layout", value)}
+                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === value ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                           >
-                            {lbl}
+                            {name}
                           </button>
                         ))}
                       </div>
@@ -3041,6 +3195,9 @@ export function SettingsTab({
     "desktop" | "mobile"
   >("admin:previewDevice", "desktop");
   const [liveSync, setLiveSync] = usePersistentState("admin:liveSync", true);
+  const [layoutTarget, setLayoutTarget] = usePersistentState<
+    "galleryLayout" | "seriesLayout" | "topWorksLayout"
+  >("admin:layoutTarget", "galleryLayout");
   const [newCamPreset, setNewCamPreset] = useState("");
   const [newLensPreset, setNewLensPreset] = useState("");
   const [presetError, setPresetError] = useState(false);
@@ -3747,49 +3904,75 @@ export function SettingsTab({
                   <span className="text-[color:var(--admin-ink)]">Series</span>{" "}
                   ページを開くと即反映。下の調整は「モザイク」に効きます。
                 </p>
-                {/* N1: layout-type pickers (more types arrive one at a time) */}
-                {(
-                  [
-                    ["galleryLayout", "ギャラリーページ", "mosaic"],
-                    ["seriesLayout", "シリーズページ", "mosaic"],
-                    ["topWorksLayout", "トップ（Works）", "stagger"],
-                  ] as const
-                ).map(([key, label, fallback]) => (
-                  <AdminField key={key} label={`${label}のレイアウト`}>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(
-                        [
-                          ["mosaic", "モザイク", "S/M/L混在・抜け感"],
-                          ["grid", "均等グリッド", "全部同サイズ・整列"],
-                          ["scroll", "縦スクロール1枚", "1枚ずつ大きく＋情報"],
-                          ["stagger", "ずらし大", "1枚ずつ左右互い違い"],
-                          ["editorial", "雑誌見開き", "2枚1組・左大右小"],
-                          ["collage", "コラージュ", "重なり・角度でスナップ風"],
-                          [
-                            "clean-grid",
-                            "クリーングリッド",
-                            "4列均一・装飾なし",
-                          ],
-                          ["masonry", "マソンリー", "3列・縦横比維持"],
-                          ["large-format", "大判", "2列大判＋キャプション"],
-                        ] as const
-                      ).map(([val, name, desc]) => (
-                        <button
-                          key={val}
-                          onClick={() => set(key, val)}
-                          title={desc}
-                          className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
-                            (current[key] || fallback) === val
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
-                          }`}
+                {/* N1: layout-type picker. One list, applied to whichever
+                    target (Gallery/Series/Top) is selected above it — the
+                    9 choices used to repeat 3x (once per target), which made
+                    the differences between layouts hard to compare. */}
+                {(() => {
+                  const targets = [
+                    { key: "galleryLayout" as const, label: "Gallery" },
+                    { key: "seriesLayout" as const, label: "Series" },
+                    { key: "topWorksLayout" as const, label: "Top" },
+                  ];
+                  const fallbackFor = (key: (typeof targets)[number]["key"]) =>
+                    key === "topWorksLayout" ? "stagger" : "mosaic";
+                  const activeValue =
+                    current[layoutTarget] || fallbackFor(layoutTarget);
+                  return (
+                    <>
+                      <AdminField label="対象ページ">
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {targets.map(({ key, label }) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setLayoutTarget(key)}
+                              className={`text-[11px] py-1.5 rounded-sm border transition-colors ${
+                                layoutTarget === key
+                                  ? "admin-btn-primary font-medium"
+                                  : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </AdminField>
+                      {(["aligned", "editorial"] as const).map((cat) => (
+                        <AdminField
+                          key={cat}
+                          label={GALLERY_LAYOUT_CATEGORY_LABEL[cat]}
                         >
-                          {name}
-                        </button>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {GALLERY_LAYOUT_OPTIONS.filter(
+                              (o) => o.category === cat,
+                            ).map(({ value, name, desc }) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => set(layoutTarget, value)}
+                                title={desc}
+                                className={`text-left px-2 py-2 rounded-sm border transition-colors ${
+                                  activeValue === value
+                                    ? "admin-btn-primary font-medium"
+                                    : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
+                                }`}
+                              >
+                                <LayoutIcon value={value} />
+                                <span className="block text-[11px] leading-tight mt-1">
+                                  {name}
+                                </span>
+                                <span className="block text-[9px] leading-tight opacity-70 font-normal mt-0.5">
+                                  {desc}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </AdminField>
                       ))}
-                    </div>
-                  </AdminField>
-                ))}
+                    </>
+                  );
+                })()}
                 {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定） */}
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   トップ（Works）に出す写真

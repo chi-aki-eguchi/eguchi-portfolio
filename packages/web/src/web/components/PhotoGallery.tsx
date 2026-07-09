@@ -126,7 +126,9 @@ const LqipImage = memo(function LqipImage({
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const swappedRef = useRef(false);
-  const hasThumbUpgrade = Boolean(thumbUrl && upgradeUrl && upgradeUrl !== thumbUrl);
+  const hasThumbUpgrade = Boolean(
+    thumbUrl && upgradeUrl && upgradeUrl !== thumbUrl,
+  );
 
   useLayoutEffect(() => {
     setLoaded(false);
@@ -174,7 +176,8 @@ const LqipImage = memo(function LqipImage({
   );
 
   const onLoad = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => handleLoadedImage(e.currentTarget),
+    (e: React.SyntheticEvent<HTMLImageElement>) =>
+      handleLoadedImage(e.currentTarget),
     [handleLoadedImage],
   );
 
@@ -479,6 +482,7 @@ export function PhotoGallery({
       imgStyle?: React.CSSProperties;
       showHoverCaption?: boolean;
       preferMediumGrid?: boolean;
+      cardAspectRatio?: string;
     },
   ) => {
     const ratio = orientedAspectRatio(
@@ -534,7 +538,11 @@ export function PhotoGallery({
           style={
             {
               "--stagger-delay": `${Math.min((opts.staggerIdx ?? idx) * 0.05, 0.4)}s`,
-              ...(ratio ? { aspectRatio: ratio } : {}),
+              ...(opts.cardAspectRatio
+                ? { aspectRatio: opts.cardAspectRatio }
+                : ratio
+                  ? { aspectRatio: ratio }
+                  : {}),
             } as React.CSSProperties
           }
         >
@@ -600,8 +608,10 @@ export function PhotoGallery({
 
   let body: React.ReactNode;
   if (mode === "clean-grid") {
-    // Layout expansion Phase 1: no frames, no rotation, almost no gap. A pure
-    // contact-sheet view where the photos carry the page.
+    // Instagram-style square grid. The outer .photo-card box must be forced to
+    // 1/1 too — otherwise it inherits the source photo's own aspect ratio and
+    // squareCoverStyle's objectFit:cover just crops the image inside a
+    // non-square box instead of producing a square tile.
     const cols = isMobile ? 2 : 4;
     body = (
       <div
@@ -621,6 +631,7 @@ export function PhotoGallery({
             cardClassName: quietCardClass,
             imgStyle: squareCoverStyle,
             showHoverCaption: false,
+            cardAspectRatio: "1 / 1",
           }),
         )}
       </div>

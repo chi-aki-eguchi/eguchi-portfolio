@@ -7,10 +7,13 @@
 import { test, expect } from "bun:test";
 import { JSDOM } from "jsdom";
 
-const dom = new JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
-  url: "http://localhost/",
-  pretendToBeVisual: true,
-});
+const dom = new JSDOM(
+  "<!doctype html><html><body><div id='root'></div></body></html>",
+  {
+    url: "http://localhost/",
+    pretendToBeVisual: true,
+  },
+);
 // Minimal globals the component tree touches at render time.
 Object.assign(globalThis, {
   window: dom.window,
@@ -23,13 +26,23 @@ Object.assign(globalThis, {
   matchMedia: dom.window.matchMedia,
 });
 if (!dom.window.matchMedia) {
-  const mm = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+  const mm = () => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+  });
   // @ts-expect-error jsdom may lack matchMedia depending on version
   dom.window.matchMedia = mm;
   Object.assign(globalThis, { matchMedia: mm });
 }
 if (typeof globalThis.ResizeObserver === "undefined") {
-  class RO { observe() {} unobserve() {} disconnect() {} }
+  class RO {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
   Object.assign(globalThis, { ResizeObserver: RO });
   Object.assign(dom.window, { ResizeObserver: RO });
 }
@@ -37,25 +50,62 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 
 const { createElement, act } = await import("react");
 const { createRoot } = await import("react-dom/client");
-const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+const { QueryClient, QueryClientProvider } =
+  await import("@tanstack/react-query");
 const { PhotoGallery } = await import("./PhotoGallery");
 
 const photos = [
-  { id: 1, url: "/api/images/photos/a.jpg", title: "A", displaySize: "M", width: 3200, height: 2133 },
-  { id: 2, url: "/api/images/photos/b.jpg", title: "B", displaySize: "L", width: 2133, height: 3200 },
-  { id: 3, url: "/api/images/photos/c.jpg", title: "C", displaySize: "S", width: 3200, height: 2133 },
+  {
+    id: 1,
+    url: "/api/images/photos/a.jpg",
+    title: "A",
+    displaySize: "M",
+    width: 3200,
+    height: 2133,
+  },
+  {
+    id: 2,
+    url: "/api/images/photos/b.jpg",
+    title: "B",
+    displaySize: "L",
+    width: 2133,
+    height: 3200,
+  },
+  {
+    id: 3,
+    url: "/api/images/photos/c.jpg",
+    title: "C",
+    displaySize: "S",
+    width: 3200,
+    height: 2133,
+  },
 ];
 
 test("PhotoGallery renders tiles without crashing (every layout)", async () => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
-  for (const layout of ["mosaic", "grid", "scroll", "stagger", "editorial", "collage", "clean-grid", "masonry", "large-format"]) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  for (const layout of [
+    "mosaic",
+    "grid",
+    "scroll",
+    "stagger",
+    "editorial",
+    "collage",
+    "clean-grid",
+    "masonry",
+    "large-format",
+  ]) {
     const host = dom.window.document.createElement("div");
     dom.window.document.body.appendChild(host);
     const root = createRoot(host);
     await act(async () => {
       root.render(
-        createElement(QueryClientProvider, { client: qc },
-          createElement(PhotoGallery, { photos, layoutType: layout }))
+        createElement(
+          QueryClientProvider,
+          { client: qc },
+          createElement(PhotoGallery, { photos, layoutType: layout }),
+        ),
       );
     });
     const imgs = host.querySelectorAll("img");
@@ -67,21 +117,57 @@ test("PhotoGallery renders tiles without crashing (every layout)", async () => {
   }
 });
 
-test("tile hover caption renders for titled photos only", async () => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+test("clean-grid forces the outer tile box to a 1:1 square regardless of source photo ratio", async () => {
+  // Regression: imgStyle forced the <img> to 1:1, but the shared tile()
+  // helper still set the outer .photo-card box's aspectRatio from the
+  // source photo, so non-square photos rendered a non-square box with the
+  // image merely cropped inside it (2026-07-09 owner report).
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
   await act(async () => {
     root.render(
-      createElement(QueryClientProvider, { client: qc },
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(PhotoGallery, { photos, layoutType: "clean-grid" }),
+      ),
+    );
+  });
+  const cards = host.querySelectorAll<HTMLElement>(".photo-card");
+  expect(cards.length).toBe(photos.length);
+  for (const card of cards) {
+    expect(card.style.aspectRatio).toBe("1 / 1");
+  }
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});
+
+test("tile hover caption renders for titled photos only", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
         createElement(PhotoGallery, {
           photos: [
             { id: 10, url: "/api/images/photos/t.jpg", title: "Titled" },
             { id: 11, url: "/api/images/photos/u.jpg", title: "" },
           ],
           layoutType: "grid",
-        }))
+        }),
+      ),
     );
   });
   const captions = host.querySelectorAll(".tile-caption");
@@ -94,13 +180,17 @@ test("tile hover caption renders for titled photos only", async () => {
 });
 
 test("tile images apply focal point as object-position", async () => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
   await act(async () => {
     root.render(
-      createElement(QueryClientProvider, { client: qc },
+      createElement(
+        QueryClientProvider,
+        { client: qc },
         createElement(PhotoGallery, {
           photos: [
             {
@@ -112,7 +202,8 @@ test("tile images apply focal point as object-position", async () => {
             },
           ],
           layoutType: "grid",
-        }))
+        }),
+      ),
     );
   });
   const img = host.querySelector(".photo-card img") as HTMLImageElement;
@@ -125,13 +216,17 @@ test("tile images apply focal point as object-position", async () => {
 });
 
 test("generated thumbnails do not auto-upgrade normal gallery grids", async () => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
   await act(async () => {
     root.render(
-      createElement(QueryClientProvider, { client: qc },
+      createElement(
+        QueryClientProvider,
+        { client: qc },
         createElement(PhotoGallery, {
           photos: [
             {
@@ -143,7 +238,8 @@ test("generated thumbnails do not auto-upgrade normal gallery grids", async () =
             },
           ],
           layoutType: "masonry",
-        }))
+        }),
+      ),
     );
   });
   const img = host.querySelector(".photo-card img") as HTMLImageElement;
@@ -158,20 +254,36 @@ test("generated thumbnails do not auto-upgrade normal gallery grids", async () =
 });
 
 test("cached generated thumbnails are marked loaded even if the load event was missed", async () => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
   const imageProto = dom.window.HTMLImageElement.prototype;
-  const completeDescriptor = Object.getOwnPropertyDescriptor(imageProto, "complete");
-  const naturalWidthDescriptor = Object.getOwnPropertyDescriptor(imageProto, "naturalWidth");
+  const completeDescriptor = Object.getOwnPropertyDescriptor(
+    imageProto,
+    "complete",
+  );
+  const naturalWidthDescriptor = Object.getOwnPropertyDescriptor(
+    imageProto,
+    "naturalWidth",
+  );
 
-  Object.defineProperty(imageProto, "complete", { configurable: true, get: () => true });
-  Object.defineProperty(imageProto, "naturalWidth", { configurable: true, get: () => 320 });
+  Object.defineProperty(imageProto, "complete", {
+    configurable: true,
+    get: () => true,
+  });
+  Object.defineProperty(imageProto, "naturalWidth", {
+    configurable: true,
+    get: () => 320,
+  });
   try {
     await act(async () => {
       root.render(
-        createElement(QueryClientProvider, { client: qc },
+        createElement(
+          QueryClientProvider,
+          { client: qc },
           createElement(PhotoGallery, {
             photos: [
               {
@@ -182,7 +294,8 @@ test("cached generated thumbnails are marked loaded even if the load event was m
               },
             ],
             layoutType: "masonry",
-          }))
+          }),
+        ),
       );
     });
     const img = host.querySelector(".photo-card img") as HTMLImageElement;
@@ -208,13 +321,17 @@ test("cached generated thumbnails are marked loaded even if the load event was m
 });
 
 test("large gallery layouts may upgrade thumbnails to generated medium images", async () => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
   await act(async () => {
     root.render(
-      createElement(QueryClientProvider, { client: qc },
+      createElement(
+        QueryClientProvider,
+        { client: qc },
         createElement(PhotoGallery, {
           photos: [
             {
@@ -226,7 +343,8 @@ test("large gallery layouts may upgrade thumbnails to generated medium images", 
             },
           ],
           layoutType: "large-format",
-        }))
+        }),
+      ),
     );
   });
   const img = host.querySelector(".photo-card img") as HTMLImageElement;
@@ -241,23 +359,34 @@ test("large gallery layouts may upgrade thumbnails to generated medium images", 
 });
 
 test("a failed image marks its card as photo-broken (quiet placeholder)", async () => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
   await act(async () => {
     root.render(
-      createElement(QueryClientProvider, { client: qc },
+      createElement(
+        QueryClientProvider,
+        { client: qc },
         createElement(PhotoGallery, {
-          photos: [{ id: 21, url: "/api/images/photos/missing.jpg", title: "Gone" }],
+          photos: [
+            { id: 21, url: "/api/images/photos/missing.jpg", title: "Gone" },
+          ],
           layoutType: "collage",
-        }))
+        }),
+      ),
     );
   });
   const img = host.querySelector(".photo-card img") as HTMLImageElement;
   expect(img).not.toBeNull();
-  await act(async () => { img.dispatchEvent(new dom.window.Event("error", { bubbles: true })); });
-  expect(img.closest(".photo-card")?.classList.contains("photo-broken")).toBe(true);
+  await act(async () => {
+    img.dispatchEvent(new dom.window.Event("error", { bubbles: true }));
+  });
+  expect(img.closest(".photo-card")?.classList.contains("photo-broken")).toBe(
+    true,
+  );
   expect(img.classList.contains("lqip-loaded")).toBe(true);
   await act(async () => {
     root.unmount();

@@ -5381,3 +5381,101 @@ Claude Code のセッション5実装(削除UX案A+管理画面密度案D)をpus
 ### push したか
 
 していない。push はオーナーの手で。
+
+## Handoff 2026-07-09 — Claude Code (Sonnet): ギャラリーレイアウト再設計(clean-grid正方形化+admin UI再構成)
+
+codex-reviewer 経由でオーナー要望(agmsg)を受けて着手。要望は「クリーングリッドを
+Instagram風の正方形に直し、グリッド方式を明確にして種類を増やす」。
+
+### P0として先に返信したこと(実装前)
+
+依頼内容のうち「縦長グリッド(4:5)」「横長グリッド(3:2)」の新規追加は、
+`.claude/rules/react-components.md` および root/`packages/web` の CLAUDE.md に
+明記された「ギャラリーレイアウトは9種のみ・未知値はmosaicフォールバック・
+freeform/polaroid/timeline/fullbleed/compareは削除済みで復活させない」という
+チェックイン済みハードルールと衝突する。9種→11種になるため、実装前に
+codex-reviewer へ確認を送信し、オーナー判断待ちとした(このHandoff作成時点で
+未回答)。**縦長/横長グリッドの追加はこのセッションでは実装していない。**
+
+### 実装したこと(9種のまま、ルール衝突なし)
+
+1. **clean-grid の正方形化バグ修正**
+   - `packages/web/src/web/components/PhotoGallery.tsx` の共通 `tile()` ヘルパーが
+     外枠 `.photo-card` の `aspectRatio` を常に元写真の縦横比で設定していたため、
+     `imgStyle` で `1/1` を指定しても外枠が正方形にならず、画像が非正方形の箱の中で
+     クロップされるだけだった(オーナー報告のスクショと一致)。
+   - `tile()` に `cardAspectRatio` オプションを追加し、clean-grid ブランチで
+     `"1 / 1"` を渡すことで外枠ごと正方形にした。PC4列/スマホ2列・隙間2pxは
+     既存のまま(元から仕様通りだった)。
+2. **表示名・常時見える説明文の変更**
+   - `grid` → 表示名「写真比率グリッド」/ 説明「元の縦横比を保って整列」
+   - `clean-grid` → 表示名「正方形グリッド」/ 説明「Instagram風・すべて正方形」
+   - `admin-tabs.tsx` に `GALLERY_LAYOUT_OPTIONS`(単一ソース、value/name/desc/category)
+     を新設し、Settings→ギャラリー配置の主ピッカーと Series 個別レイアウト上書き
+     ピッカーの両方で共有。
+3. **admin UI 再構成(Settings→ギャラリー配置)**
+   - 旧: Gallery/Series/Top それぞれに9択ボタン(grid-cols-3・文字のみ・hint は
+     title属性でホバー時のみ)を3回繰り返す構成。
+   - 新: 「対象ページ」切替(Gallery/Series/Top、`usePersistentState`でタブ復帰後も
+     保持)を先に1つ配置 → その下にレイアウト一覧を1組だけ表示。
+   - 「整列グリッド」(写真比率グリッド/正方形グリッド/マソンリー)と
+     「写真集レイアウト」(モザイク/縦スクロール/ずらし大/雑誌見開き/コラージュ/大判)
+     の2カテゴリに分類。
+   - 各カードに簡易配置図(`LayoutIcon` — 9種それぞれ専用のミニ矩形パターン、
+     `currentColor`で選択状態と自動的にコントラストが揃う)+ 名前 + 常時見える
+     一行説明を表示。grid と clean-grid は見た目が紛らわしかったため、
+     grid は「隙間あり・セルごとに縦横比が違う」、clean-grid は「隙間なし・
+     3×2の均一正方形」という診断図にして区別できるようにした。
+   - グリッドは `grid-cols-2`(狭い設定欄で判読性優先、要望通り)。
+
+### 検証
+
+- `bun test packages/web/src/web/components/PhotoGallery.render.test.tsx`:
+  8 passed(clean-grid の外枠が非正方形写真でも `aspectRatio: "1 / 1"` になる
+  回帰テストを新規追加)。
+- `bun run check`: 成功(275 tests / typecheck(`tsc -b`) / lint / build)。
+- `bun run smoke`: 成功(23 passed / 19 skipped / 0 failed)。admin-selected-button
+  スペック(Series レイアウトボタンのハイライト)も通過 — 共有ピッカーへの
+  リファクタ後も選択状態のスタイリングが壊れていないことを確認。
+- 実ブラウザ(`bun run dev`、localhost:5173、admin ログイン)で Settings→
+  ギャラリー配置の新UI(対象ページ切替・カテゴリ分け・配置図・PC/スマホの
+  2列表示)をスクリーンショット確認。スクショは
+  `scratch/gallery-layout-2026-07-09/*.png`。
+- **確認できなかったこと**: 同じ自動化スクリプトで clean-grid 選択後に
+  Live Preview iframe を `/gallery` へ遷移させたところ、選択(clean-grid)が
+  反映されず既定のgrid(3列・非正方形)のまま表示された。admin側の選択状態・
+  ハイライトは正しく `clean-grid` になっていた(スクショで確認済み)ので、
+  admin側の状態管理は問題ない。postMessage→`provider.tsx`のhandshake経路が
+  ヘッドレスPlaywright自動操作のタイミングと噛み合わなかった可能性が高いが、
+  未確定。**このHandoffのCSS修正自体はjsdom回帰テストで決定的に検証済み**
+  (`.photo-card` の `style.aspectRatio` を直接アサート)なので機能面の信頼度は
+  高いが、次の担当者かオーナーが手動でLive Previewを一度目視確認することを推奨。
+
+### 触ったファイル
+
+- `packages/web/src/web/components/PhotoGallery.tsx`
+- `packages/web/src/web/components/PhotoGallery.render.test.tsx`
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `task.md`
+- (scratch、コミット対象外) `scratch/gallery-layout-2026-07-09/verify.mjs` と
+  スクリーンショット数枚
+
+### push したか
+
+していない。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない(未push)。push後の確認推奨: `/admin` → Settings → ギャラリー配置で
+新しいUI(対象ページ切替・カテゴリ・配置図)を開き、実際に「正方形グリッド」を
+選んで公開サイトの `/gallery` で正方形になることを目視確認。
+
+### 次の担当者が触ってはいけない場所 / 残課題
+
+- 縦長グリッド(4:5)・横長グリッド(3:2)の新規追加は **未実装・オーナー判断待ち**。
+  codex-reviewer への確認メッセージへの返信を確認してから着手すること
+  (9種固定ルールを緩和するか、既存9種の中で代替案を採るか)。
+- 未pushコミットの rebase・書き換え
+- 本番 DB・R2・Railway 環境変数
+- Live Preview の postMessage 反映(上記「確認できなかったこと」)は
+  今回のコード変更範囲外の既存挙動の可能性が高く、深追いしていない。

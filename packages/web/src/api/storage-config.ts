@@ -35,10 +35,23 @@ export function missingStorageVariables(
   return STORAGE_ENV_VARS.filter((name) => !env[name]);
 }
 
+// Railway配布版(DATABASE_PROVIDER=postgres)の Storage は path-style 必須。
+// composer で S3_FORCE_PATH_STYLE=true の貼り忘れがあると、4変数が揃っていても
+// アップロードだけ失敗するため、setup-health では不足扱いで名前を出す。
+// Cloudflare R2 本番(provider未設定)は virtual-host 形式で動くので対象外。
+function missingPathStyleForRailway(
+  env: Record<string, string | undefined>,
+): boolean {
+  if (env.DATABASE_PROVIDER !== "postgres") return false;
+  const value = env.S3_FORCE_PATH_STYLE;
+  return value !== "true" && value !== "1";
+}
+
 export function storageHealth(
   env: Record<string, string | undefined> = process.env,
 ): { storageConfigured: boolean; missingStorageVariables: string[] } {
   const missing = missingStorageVariables(env);
+  if (missingPathStyleForRailway(env)) missing.push("S3_FORCE_PATH_STYLE");
   return {
     storageConfigured: missing.length === 0,
     missingStorageVariables: missing,

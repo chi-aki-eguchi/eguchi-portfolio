@@ -48,6 +48,41 @@ describe("storageHealth", () => {
     ]);
   });
 
+  // Railway配布版のみ path-style を必須扱いにする(オーナー承認 2026-07-10)。
+  // R2 本番(provider未設定)の挙動が変わらないことを回帰テストで固定する。
+  test("Railway (postgres) + no S3_FORCE_PATH_STYLE → not configured", () => {
+    const env = { ...FULL_ENV, DATABASE_PROVIDER: "postgres" };
+    expect(storageHealth(env)).toEqual({
+      storageConfigured: false,
+      missingStorageVariables: ["S3_FORCE_PATH_STYLE"],
+    });
+  });
+
+  test("Railway (postgres) + S3_FORCE_PATH_STYLE=true → configured", () => {
+    const env = {
+      ...FULL_ENV,
+      DATABASE_PROVIDER: "postgres",
+      S3_FORCE_PATH_STYLE: "true",
+    };
+    expect(storageHealth(env).storageConfigured).toBe(true);
+  });
+
+  test("Railway (postgres) + S3_FORCE_PATH_STYLE=1 → configured", () => {
+    const env = {
+      ...FULL_ENV,
+      DATABASE_PROVIDER: "postgres",
+      S3_FORCE_PATH_STYLE: "1",
+    };
+    expect(storageHealth(env).storageConfigured).toBe(true);
+  });
+
+  test("R2 production (no provider) + no S3_FORCE_PATH_STYLE → still configured", () => {
+    expect(storageHealth(FULL_ENV)).toEqual({
+      storageConfigured: true,
+      missingStorageVariables: [],
+    });
+  });
+
   test("health payload never contains configured values", () => {
     const env = { ...FULL_ENV, S3_BUCKET: undefined };
     const json = JSON.stringify(storageHealth(env));
@@ -60,6 +95,13 @@ describe("storageHealth", () => {
 describe("assertStorageConfigured", () => {
   test("passes silently when everything is set", () => {
     expect(() => assertStorageConfigured(FULL_ENV)).not.toThrow();
+  });
+
+  // path-style チェックは setup-health(表示)のみ。アップロード経路は
+  // 従来どおり4変数だけで判定し、既存デプロイの動作を変えない。
+  test("does NOT throw for postgres without S3_FORCE_PATH_STYLE (upload path unchanged)", () => {
+    const env = { ...FULL_ENV, DATABASE_PROVIDER: "postgres" };
+    expect(() => assertStorageConfigured(env)).not.toThrow();
   });
 
   test("throws StorageConfigError carrying missing names only", () => {

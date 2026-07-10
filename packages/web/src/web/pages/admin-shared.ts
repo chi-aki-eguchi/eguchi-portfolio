@@ -144,8 +144,28 @@ export function parsePresetList(raw?: string): string[] {
   }
 }
 
-export function effectivePresets(saved: string[], defaults: string[]): string[] {
+export function effectivePresets(
+  saved: string[],
+  defaults: string[],
+): string[] {
   return saved.length > 0 ? saved : defaults;
+}
+
+// Library の並び替えロック判定。純関数にして admin.tsx から切り出し、
+// 「手動以外のソート / 複合フィルター / シリーズ単独例外 / リセット後」の
+// 4状態をテストで固定する(2026-07-11 先輩側並び替え不能調査の副産物)。
+// - librarySort が "manual" 以外 → 見た目だけの並びなので保存順は動かせない
+// - フィルター中 → 表示が部分集合になり index ずれで順序が壊れるため不可。
+//   ただしシリーズ単独絞り込みだけは例外(公開シリーズページの順序編集)。
+export type ReorderLockReason = "sort" | "filters" | null;
+export function reorderLockReason(
+  librarySort: string,
+  anyFilterActive: boolean,
+  onlySeriesFilter: boolean,
+): ReorderLockReason {
+  if (librarySort !== "manual") return "sort";
+  if (anyFilterActive && !onlySeriesFilter) return "filters";
+  return null;
 }
 
 export type Photo = {

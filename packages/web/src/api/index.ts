@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { db, withRetry, schema } from "./database";
+import { buildReorderUpdate } from "./reorder-sql";
 import {
   eq,
   sql,
@@ -528,6 +529,24 @@ async function executeRaw(query: SQL) {
   if (typeof rawDb.execute === "function") return rawDb.execute(query);
   if (typeof rawDb.run === "function") return rawDb.run(query);
   throw new Error("Database raw execution is not supported.");
+}
+
+// 並び替え共通ランナー。失敗時は Railway Logs から原因を特定できるよう、
+// テーブル名と DB エラーコード/メッセージのみ記録する(ids や値は残さない)。
+async function runReorder(
+  table: string,
+  idColumn: string,
+  ids: readonly number[],
+) {
+  try {
+    await withRetry(() => executeRaw(buildReorderUpdate(table, idColumn, ids)));
+  } catch (err) {
+    const e = err as { code?: unknown; message?: unknown };
+    console.error(
+      `[reorder] ${table} update failed: code=${String(e?.code ?? "")} message=${String(e?.message ?? "")}`,
+    );
+    throw err;
+  }
 }
 
 function passwordMatches(input: unknown): boolean {
@@ -1711,19 +1730,7 @@ const app = new Hono()
     const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
     // 1回のSQL CASE WHEN で全件まとめて更新
-    const caseExpr = ids.reduce(
-      (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
-      sql`CASE id`,
-    );
-    const inList = sql.join(
-      ids.map((id) => sql`${id}`),
-      sql`, `,
-    );
-    await withRetry(() =>
-      executeRaw(
-        sql`UPDATE photos SET sort_order = ${caseExpr} END WHERE id IN (${inList})`,
-      ),
-    );
+    await runReorder("photos", "id", ids);
     return c.json({ ok: true }, 200);
   })
 
@@ -1971,19 +1978,7 @@ const app = new Hono()
   .post("/admin/categories/reorder", requireAdmin, async (c) => {
     const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
-    const caseExpr = ids.reduce(
-      (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
-      sql`CASE id`,
-    );
-    const inList = sql.join(
-      ids.map((id) => sql`${id}`),
-      sql`, `,
-    );
-    await withRetry(() =>
-      executeRaw(
-        sql`UPDATE categories SET sort_order = ${caseExpr} END WHERE id IN (${inList})`,
-      ),
-    );
+    await runReorder("categories", "id", ids);
     return c.json({ ok: true }, 200);
   })
 
@@ -2202,19 +2197,7 @@ const app = new Hono()
   .post("/admin/series/reorder", requireAdmin, async (c) => {
     const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
-    const caseExpr = ids.reduce(
-      (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
-      sql`CASE id`,
-    );
-    const inList = sql.join(
-      ids.map((id) => sql`${id}`),
-      sql`, `,
-    );
-    await withRetry(() =>
-      executeRaw(
-        sql`UPDATE series SET sort_order = ${caseExpr} END WHERE id IN (${inList})`,
-      ),
-    );
+    await runReorder("series", "id", ids);
     return c.json({ ok: true }, 200);
   })
 
@@ -2295,19 +2278,7 @@ const app = new Hono()
   .post("/admin/pricing/reorder", requireAdmin, async (c) => {
     const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
     if (ids.length === 0) return c.json({ ok: true }, 200);
-    const caseExpr = ids.reduce(
-      (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
-      sql`CASE id`,
-    );
-    const inList = sql.join(
-      ids.map((id) => sql`${id}`),
-      sql`, `,
-    );
-    await withRetry(() =>
-      executeRaw(
-        sql`UPDATE pricing_plans SET sort_order = ${caseExpr} END WHERE id IN (${inList})`,
-      ),
-    );
+    await runReorder("pricing_plans", "id", ids);
     return c.json({ ok: true }, 200);
   })
 
@@ -2423,19 +2394,7 @@ const app = new Hono()
     );
     if (photoIds.length === 0) return c.json({ ok: true }, 200);
     // 1回のSQL CASE WHEN で全件まとめて更新
-    const caseExpr = photoIds.reduce(
-      (expr, id, i) => sql`${expr} WHEN ${id} THEN ${i}`,
-      sql`CASE photo_id`,
-    );
-    const inList = sql.join(
-      photoIds.map((id) => sql`${id}`),
-      sql`, `,
-    );
-    await withRetry(() =>
-      executeRaw(
-        sql`UPDATE hero_photos SET sort_order = ${caseExpr} END WHERE photo_id IN (${inList})`,
-      ),
-    );
+    await runReorder("hero_photos", "photo_id", photoIds);
     return c.json({ ok: true }, 200);
   })
 

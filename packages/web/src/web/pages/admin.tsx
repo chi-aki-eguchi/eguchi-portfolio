@@ -81,6 +81,7 @@ import {
   ADMIN_TAB_GROUPS,
   groupForTab,
   isAdminTab,
+  reorderLockReason,
   type Tab,
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
@@ -1561,7 +1562,9 @@ function measuredContentWidth(el: HTMLElement | null): number {
   return Math.max(0, width - paddingLeft - paddingRight);
 }
 
-function GalleryTab({
+// render テスト(admin-reorder-lock.render.test.tsx)から直接マウントするため
+// SetupTab と同様に export する。アプリ内の利用は AdminPage 経由のみ。
+export function GalleryTab({
   onUploadingChange,
   onUnsavedChange,
   openTrashSignal,
@@ -2371,6 +2374,13 @@ function GalleryTab({
     setSearchQuery,
   ]);
 
+  // reorderLocked からの1クリック復帰。表示条件とソートのローカル状態を
+  // 初期値に戻すだけで、写真データ・sortOrder には一切触れない。
+  const unlockReorder = useCallback(() => {
+    clearLibraryFilters();
+    setLibrarySort("manual");
+  }, [clearLibraryFilters, setLibrarySort]);
+
   // U1: display sort. Array.sort is stable, so ties keep the manual order.
   // shotAt-less photos always sink to the end regardless of direction.
   const sortPhotosForView = useCallback(
@@ -2609,8 +2619,12 @@ function GalleryTab({
     !filterMissingCapture &&
     filterRecent === "all" &&
     activeAlbumId === null;
-  const reorderLocked =
-    librarySort !== "manual" || (anyFilterActive && !onlySeriesFilter);
+  const reorderLockCause = reorderLockReason(
+    librarySort,
+    anyFilterActive,
+    onlySeriesFilter,
+  );
+  const reorderLocked = reorderLockCause !== null;
 
   // Close batch dropdowns on outside click
   useEffect(() => {
@@ -4598,13 +4612,27 @@ function GalleryTab({
             </div>
           ) : (
             <>
-              {/* Reorder-lock warning (filters or a non-manual view sort) */}
+              {/* Reorder-lock warning (filters or a non-manual view sort).
+                  原因の説明だけでなく、初心者が迷わないよう1クリックの復帰
+                  ボタンを置く(先輩サポート 2026-07-11)。 */}
               {reorderLocked && (
-                <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
-                  <span className="text-[var(--admin-muted)]">⚠</span>{" "}
-                  {anyFilterActive
-                    ? "フィルター中はドラッグ並び替えできません（シリーズ単独の絞り込みなら可）"
-                    : "並び替え表示中はドラッグ並び替えできません（「手動」に戻すと有効）"}
+                <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-x-2 gap-y-1 flex-wrap">
+                  <span className="text-[var(--admin-muted)]">⚠</span>
+                  <span>
+                    {reorderLockCause === "sort"
+                      ? "並びが「手動」以外になっているため、いまは並び替えを保存できません。"
+                      : "検索・絞り込み中のため、いまは並び替えを保存できません（シリーズ単独の絞り込みなら可）。"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={unlockReorder}
+                    className="text-[10px] px-2 py-0.5 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] hover:bg-[var(--admin-paper-deep)] transition-colors"
+                  >
+                    並び替えできる状態に戻す
+                  </button>
+                  <span>
+                    戻したあとは、パソコンでは写真をドラッグ、スマホでは写真の左下の矢印ボタンで並び替えられます。
+                  </span>
                 </div>
               )}
               {/* Series-scoped reorder: the order set here IS the public series page order */}
@@ -4668,7 +4696,7 @@ function GalleryTab({
                       <div
                         key={photo.id}
                         id={`admin-photo-${photo.id}`}
-                        draggable
+                        draggable={!reorderLocked}
                         onDragStart={() => handleDragStart(photo.id)}
                         onDragOver={(e) => handleDragOver(e, photo.id)}
                         onDrop={() => handleDrop(photo.id)}

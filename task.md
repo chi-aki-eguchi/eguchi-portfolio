@@ -6002,3 +6002,58 @@ R2/画像アップロード・DB schema・service/start・Railwayテンプレー
 - 本番 DB・R2・Railway 環境変数。
 - `admin-trash-signal.spec.ts` の既存不具合(別チケット)。
 - 未pushコミットの rebase・書き換え。
+
+---
+
+## Handoff — 2026-07-10 Railwayテンプレート監査+案A実装 (Driver: Claude Code / Fable5)
+
+### 目的・経緯
+
+オーナー承認済みタスク「Railwayテンプレート手直しゼロ設置」のread-only監査を
+実施(全文: scratch/railway-template-audit-2026-07-10.md、Haiku helper 2体に
+機械調査を委任)。Codexのcomposer実画面確認で S3_BUCKET 参照ミス
+(`${{Bucket.BUCKET_NAME}}`、正は `${{Bucket.BUCKET}}`)が確定。
+オーナーが案A 3点(①composer修正 ②文書サービス名統一+GitHubエラー対処
+③Railway版限定のsetup-health確認強化)を承認し、②③を実装した。
+
+### 変更内容
+
+1. **`docs/post-deploy-guide.md`** — サービス名「web」5箇所を composer 実名
+   **eguchi-portfolio-app** に統一。「うまくいかないとき」表に GitHub
+   リポジトリアクセスエラーの対処行を追加。
+2. **`pages/service-start.tsx`** — 表記「app(eguchi-portfolio-app)」6箇所を
+   実名 eguchi-portfolio-app に統一(文言のみ、ロジック不変更)。
+3. **`api/storage-config.ts`** — `storageHealth` のみ拡張:
+   `DATABASE_PROVIDER=postgres`(配布版)のとき `S3_FORCE_PATH_STYLE` が
+   "true"/"1" でなければ不足変数として報告。`assertStorageConfigured`
+   (アップロード経路)と `STORAGE_ENV_VARS` は不変更 = **Cloudflare R2 本番
+   (provider未設定)の判定・挙動は完全に従来どおり**。
+4. **`api/storage-config.test.ts`** — 追加6件: postgres+flag無し→不足 /
+   "true"・"1"→緑 / R2(provider無し)→緑のまま(回帰) / assertは postgres+
+   flag無しでも throw しない(アップロード不変更の固定)。
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(310 tests / tsc -b / oxlint / build)。
+- `bun run smoke`: 22 passed / 19 skipped / 1 failed — 失敗は既知の
+  `admin-trash-signal.spec.ts` のみ(スコープ外・分離報告)。今回変更起因 0件。
+
+### push したか
+
+**していない**(オーナーの手で)。
+
+### Railway反映 / 本番確認
+
+未実施(未push)。**①composer の S3_BUCKET 1行修正は Railway ダッシュボード
+操作のためオーナー実施待ち**: template composer → eguchi-portfolio-app
+サービス → Variables → `S3_BUCKET` を `${{Bucket.BUCKET}}` へ(現在は誤って
+`${{Bucket.BUCKET_NAME}}`)。テンプレート公開停止と使い捨てデプロイ検証は
+オーナーと別途確認してから。
+
+### 次の担当者への注意
+
+- 監査で未確定のまま残っている2点: テンプレのソースrepo方針(fork/autodeploy)
+  と Generate Domain 自動化可否 → オーナー判断待ち。
+- `admin-trash-signal.spec.ts` の既存不具合は別チケット。
+- scratch/railway-template-audit-2026-07-10.md は gitignored の参照資料。
+  必要になったら docs/ へ正式化を検討(オーナー判断)。

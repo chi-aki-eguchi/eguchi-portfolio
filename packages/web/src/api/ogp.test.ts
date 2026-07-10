@@ -107,15 +107,35 @@ describe("injectOgp robots policy", () => {
 
   test("admin and unknown paths are noindex", () => {
     expect(robotsOf(injectOgp(page, {}, "/admin"))).toBe("noindex, nofollow");
-    const unknown = injectOgp(page, {}, "/no-such-page");
-    expect(robotsOf(unknown)).toBe(
+    expect(robotsOf(injectOgp(page, {}, "/admin/login"))).toBe(
       "noindex, nofollow",
     );
-    expect(unknown).toContain("<title>Not Found | Photographer Name | Photography</title>");
+    const unknown = injectOgp(page, {}, "/no-such-page");
+    expect(robotsOf(unknown)).toBe("noindex, nofollow");
+    expect(unknown).toContain(
+      "<title>Not Found | Photographer Name | Photography</title>",
+    );
     expect(unknown).toContain(
       'og:title" content="Not Found | Photographer Name | Photography"',
     );
     expect(unknown).toContain("お探しのページは見つかりませんでした。");
+  });
+
+  // 2026-07-10: 正常表示される admin ページが Not Found title になる不整合の
+  // 回帰ガード。noindex のまま title だけ実ページ名になること。
+  test("admin pages keep noindex but get their real titles (not Not Found)", () => {
+    const admin = injectOgp(page, {}, "/admin");
+    expect(admin).toContain(
+      "<title>Admin | Photographer Name | Photography</title>",
+    );
+    expect(admin).not.toContain("Not Found");
+
+    const login = injectOgp(page, {}, "/admin/login");
+    expect(login).toContain(
+      "<title>Admin Login | Photographer Name | Photography</title>",
+    );
+    expect(login).not.toContain("Not Found");
+    expect(login).not.toContain("お探しのページは見つかりませんでした。");
   });
 
   test("series override title reaches <title> and og:title", () => {
@@ -140,7 +160,11 @@ describe("injectOgp robots policy", () => {
     // recorded two different titles for "/". Both now share composeHomeTitle.
     const out = injectOgp(
       page,
-      { siteName: "江口 秋", siteNameEn: "Aki Eguchi", heroSubtitle: "Photography" },
+      {
+        siteName: "江口 秋",
+        siteNameEn: "Aki Eguchi",
+        heroSubtitle: "Photography",
+      },
       "/",
     );
     expect(out).toContain("<title>江口 秋 | Aki Eguchi Photography</title>");
@@ -152,7 +176,11 @@ describe("injectOgp robots policy", () => {
   test("subpages keep the pipe-separated pattern even with bilingual names", () => {
     const out = injectOgp(
       page,
-      { siteName: "江口 秋", siteNameEn: "Aki Eguchi", heroSubtitle: "Photography" },
+      {
+        siteName: "江口 秋",
+        siteNameEn: "Aki Eguchi",
+        heroSubtitle: "Photography",
+      },
       "/gallery",
     );
     expect(out).toContain(
@@ -553,7 +581,9 @@ describe("injectOgp /service route", () => {
       "/service",
     );
     expect(out).toContain("noindex, nofollow");
-    expect(out).toContain("<title>Not Found | Photographer Name | Photography</title>");
+    expect(out).toContain(
+      "<title>Not Found | Photographer Name | Photography</title>",
+    );
     expect(out).not.toContain("写真家のためのポートフォリオサイト");
   });
 
@@ -564,7 +594,9 @@ describe("injectOgp /service route", () => {
       "/service/start",
     );
     expect(out).toContain("noindex, nofollow");
-    expect(out).toContain("<title>Not Found | Photographer Name | Photography</title>");
+    expect(out).toContain(
+      "<title>Not Found | Photographer Name | Photography</title>",
+    );
     expect(out).not.toContain("Aki Eguchi Portfolio Kit");
   });
 

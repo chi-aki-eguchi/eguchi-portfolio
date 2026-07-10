@@ -65,6 +65,10 @@ const PAGE_TITLES: Record<string, string> = {
   "/about": "About",
   "/profile": "About",
   "/contact": "Contact",
+  // admin は正常表示されるページなので Not Found title にしない。検索除外は
+  // 下の startsWith("/admin") noindex 条件が isKnown と無関係に維持する。
+  "/admin": "Admin",
+  "/admin/login": "Admin Login",
 };
 
 // Per-route settings key for a distinct meta description, mirroring PAGE_TITLES
@@ -195,6 +199,8 @@ export function injectOgp(
     "/contact",
     "/service",
     "/service/start",
+    "/admin",
+    "/admin/login",
   ];
   // /series/:slug is indexable only when the slug resolved to a real published
   // series (override.title set by the caller). Unknown/unpublished slugs render

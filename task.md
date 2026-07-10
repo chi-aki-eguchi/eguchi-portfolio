@@ -6057,3 +6057,41 @@ R2/画像アップロード・DB schema・service/start・Railwayテンプレー
 - `admin-trash-signal.spec.ts` の既存不具合は別チケット。
 - scratch/railway-template-audit-2026-07-10.md は gitignored の参照資料。
   必要になったら docs/ へ正式化を検討(オーナー判断)。
+
+---
+
+## Handoff — 2026-07-10 /admin/loginタイトル修正 (Driver: Claude Code / Fable5)
+
+### 目的・経緯
+
+管理ログイン画面は正常表示なのに server-rendered の `<title>` が
+「Not Found」になる不整合を修正(オーナー承認済み・Codex経由タスク)。
+
+### 変更内容
+
+1. **`api/ogp.ts`** — `PAGE_TITLES` に `/admin`→Admin、`/admin/login`→
+   Admin Login を追加し、`KNOWN_ROUTES` にも両パスを追加。noindex は既存の
+   `startsWith("/admin")` 条件が isKnown と無関係に効くため検索除外は不変。
+   未知URLの Not Found title / soft-404 挙動も不変。
+2. **`web/app.tsx`** — admin 2ルートを `TitledRoute`(title="Admin Login" /
+   "Admin")で包み、SPA遷移後の document.title も composePageTitle 経由で
+   server title と一致。サイト名ハードコードなし。
+3. **`api/ogp.test.ts`** — 追加: /admin・/admin/login が noindex のまま
+   実ページ名 title になる回帰ガード。既存 admin/unknown noindex テストに
+   /admin/login を追記。
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(311 tests / tsc -b / oxlint / build)。
+- `bun run smoke`: 22 passed / 19 skipped / 1 failed — 既知の
+  `admin-trash-signal.spec.ts` のみ(スコープ外・分離報告)。今回起因 0件。
+
+### push したか
+
+**していない**(オーナーの手で)。未pushはこれで5コミット。
+
+### Railway反映 / 本番確認
+
+未実施(未push)。push後、本番 /admin/login のタブ表示が
+「Admin Login | サイト名」になることを確認。robots は noindex,nofollow の
+まま変わらないこと。

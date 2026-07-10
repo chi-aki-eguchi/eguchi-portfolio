@@ -73,8 +73,8 @@ const S3_BUCKET_VARS = [
 
 const screenshotChecklist = [
   "Railwayのプロジェクト全体画面(サービスが並んでいる画面)",
-  "app(eguchi-portfolio-app)サービスの Logs 画面",
-  "app(eguchi-portfolio-app)サービスの Variables のキー名一覧",
+  "eguchi-portfolio-appサービスの Logs 画面",
+  "eguchi-portfolio-appサービスの Variables のキー名一覧",
 ] as const;
 
 function ExternalButton({
@@ -310,7 +310,7 @@ function SelfSetupGuide() {
           <p>
             少し待つと、
             <strong className="text-[rgba(var(--foreground-rgb),0.84)]">
-              Postgres・app(eguchi-portfolio-app)・Bucket
+              Postgres・eguchi-portfolio-app・Bucket
             </strong>
             の3つのサービスが自動で作られます。3つとも緑色(Deployed)になるまで待ちます。
           </p>
@@ -335,7 +335,7 @@ function SelfSetupGuide() {
 
         <GuideSection n={4} title="Variablesで確認するもの">
           <p>
-            app(eguchi-portfolio-app)サービスを開き、
+            eguchi-portfolio-appサービスを開き、
             <strong className="text-[rgba(var(--foreground-rgb),0.84)]">
               {" "}
               Variables{" "}
@@ -361,7 +361,7 @@ function SelfSetupGuide() {
 
         <GuideSection n={5} title="公開URLを開く">
           <p>
-            app(eguchi-portfolio-app)サービスの Settings → Networking にある
+            eguchi-portfolio-appサービスの Settings → Networking にある
             <strong className="text-[rgba(var(--foreground-rgb),0.84)]">
               {" "}
               Generate Domain{" "}
@@ -408,7 +408,7 @@ function SelfSetupGuide() {
           </p>
           <ol className="list-decimal pl-5 space-y-1.5">
             <li>Railwayのプロジェクト画面を開く</li>
-            <li>app(eguchi-portfolio-app)サービスを開く</li>
+            <li>eguchi-portfolio-appサービスを開く</li>
             <li>
               <strong className="text-[rgba(var(--foreground-rgb),0.84)]">
                 Logs

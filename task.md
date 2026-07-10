@@ -6095,3 +6095,66 @@ R2/画像アップロード・DB schema・service/start・Railwayテンプレー
 未実施(未push)。push後、本番 /admin/login のタブ表示が
 「Admin Login | サイト名」になることを確認。robots は noindex,nofollow の
 まま変わらないこと。
+
+---
+
+## Handoff — 2026-07-11 /service/start v2 + 配布版reorder修正 (Driver: Claude Code / Fable5)
+
+### 目的・経緯
+
+オーナー承認の2タスク(Codex経由)。
+A) 2026-07-10のbuyer用Shareリンクからの使い捨て実デプロイ実測に合わせ、
+/service/start を初心者向け3ステップ導線へ再設計。
+B) 先輩側テンプレート(Postgres)だけ「並び替えに失敗」する件。当初仮説は
+reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失敗)を確認し
+保存経路の調査へ切替。**PGlite(実Postgres/WASM)で根本原因を再現・特定した。**
+
+### 変更内容
+
+1. **コミット 51ace8f (A)** — `service-start.tsx` を3ステップ通常導線+
+   `<details>`折りたたみ「困ったときだけ」構成に置換(旧10節ガイド廃止)。
+   「入力するのはADMIN_PASSWORDだけ」を冒頭明記。実機文言
+   (Configure/Save Config/Generate Domain/Bucket empty正常)を採用。
+   buyer Deployリンク非露出・noindex・akieguchi.com限定表示は不変。
+   `pages.render.test.tsx` に実機文言・折りたたみ構造・秘密値注意・
+   fork限定注記の回帰テスト追加。
+2. **コミット fa030d0 (B)** — 根本原因: PostgreSQLは「THEN側が全て未型付け
+   パラメータのCASE」をtextと型解決し、integer列sort_orderへの代入が
+   **42804** で失敗する(SQLiteは動的型付けのため本番Tursoでは発現しない)。
+   `api/reorder-sql.ts` 新設で CASE を `CAST(? AS INTEGER)` に固定し、
+   photos/categories/series/pricing/hero-photos の5 reorder全てを置換。
+   失敗時はテーブル名+エラーコードのみログ(秘密値なし)。
+   Pg/SQLite両dialectのSQL生成回帰テスト追加。
+   あわせて reorderLocked 時の1クリック復帰「並び替えできる状態に戻す」
+   (librarySort=manual+全フィルター解除)、`draggable={!reorderLocked}`、
+   pure関数 `reorderLockReason` 切り出し+判定/renderテストを追加。
+3. **コミット(docs)** — `post-deploy-guide.md` ②③を実測に合わせ最小更新
+   (Configure/Save Config手順、Deploy disabledは正常、Bucket empty正常)。
+   本Handoff+決定ログ `docs/agent-logs/2026-07-11.md`。
+
+### 検証したこと(local確認)
+
+- PGliteで修正前SQLの42804失敗と修正後SQLの成功を実行確認
+  (scratch/pg-reorder-repro/、gitignored。PGliteはrepo依存に含めていない)。
+- `bun run check`: 成功(323 tests / 0 fail / tsc -b / oxlint / build)。
+- `bun run smoke`: 22 passed / 19 skipped / 1 failed — 失敗は既知の
+  `admin-trash-signal.spec.ts` のみ(スコープ外・今回起因0件)。
+
+### push したか
+
+**していない**(オーナーの手で)。
+
+### Railway反映 / 本番確認
+
+未実施(未push)。push後に先輩側で確認してもらうこと(1回だけ):
+**Libraryで写真をドラッグ(または矢印ボタン)で1枚動かし、「並び替えに失敗」が
+出ないこと**。もし復帰ボタン付きの警告が出た場合は「並び替えできる状態に戻す」を
+押してから試す。修正前のRailway Logsに `42804` /
+`is of type integer but expression is of type text` が残っていれば原因の裏取りも完了。
+
+### 次の担当者への注意
+
+- 実Postgres環境での最終確認は上記の先輩側1操作のみ未了。
+- admin-trash-signal.spec.ts の既存failは別チケット(2026-07-10から継続)。
+- 新しいreorderエンドポイントを作る場合は必ず `buildReorderUpdate` を使う
+  (CAST必須の理由は reorder-sql.ts 冒頭コメント参照)。

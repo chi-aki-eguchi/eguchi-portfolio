@@ -259,6 +259,49 @@ describe("shared components", () => {
     cleanup();
   });
 
+  // 2026-07-10 の使い捨て実デプロイで確認した buyer 導線の回帰ガード。
+  // 実機画面の文言(Configure / Save Config / Generate Domain / Bucket empty)と
+  // 「入力は ADMIN_PASSWORD だけ」の約束が通常導線から消えないことを固定する。
+  test("ServiceStartPage normal flow promises ADMIN_PASSWORD-only input with real screen names", async () => {
+    const ServiceStartPage = (await import("../pages/service-start")).default;
+    const { host, cleanup } = await mount(createElement(ServiceStartPage));
+    const text = host.textContent ?? "";
+    expect(text).toContain("ADMIN_PASSWORD");
+    expect(text).toContain("ひとつだけ");
+    expect(text).toContain("Configure");
+    expect(text).toContain("Save Config");
+    expect(text).toContain("Generate Domain");
+    expect(text).toContain("/admin/login");
+    expect(text).toContain("写真を1枚");
+    // Bucket empty は写真0枚の正常状態、という実測の説明
+    expect(text).toContain("empty");
+    expect(text).toContain("正常な状態");
+    cleanup();
+  });
+
+  test("ServiceStartPage keeps trouble-only content collapsed behind details", async () => {
+    const ServiceStartPage = (await import("../pages/service-start")).default;
+    const { host, cleanup } = await mount(createElement(ServiceStartPage));
+    const details = host.querySelectorAll("details");
+    expect(details.length).toBeGreaterThanOrEqual(3);
+    for (const d of details) {
+      expect(d.open).toBe(false);
+    }
+    // Variables のコードブロックと Logs 手順は折りたたみの中にだけ存在する
+    const insideDetails = Array.from(details)
+      .map((d) => d.textContent ?? "")
+      .join("\n");
+    expect(insideDetails).toContain("S3_BUCKET");
+    expect(insideDetails).toContain("Logs");
+    // fork した人だけの条件付き GitHub 注記
+    expect(insideDetails).toContain("場合のみ");
+    expect(insideDetails).toContain("Repository");
+    // スクショで秘密値を隠す注意
+    expect(insideDetails).toContain("SECRET_ACCESS_KEY");
+    expect(insideDetails).toContain("隠す");
+    cleanup();
+  });
+
   test("SeriesGrid renders its empty state", async () => {
     const { SeriesGrid } = await import("../components/SeriesGrid");
     const { host, cleanup } = await mount(createElement(SeriesGrid));

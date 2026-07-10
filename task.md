@@ -5794,3 +5794,103 @@ DBに接続する開発環境上では動作確認済み(読み取りのみ・�
   テストのゴミ箱前提を「空にしてから検証」または非空文言を許容する
   アサーションに直すか、テスト用DBの分離を検討)。
 - 未pushコミットの rebase・書き換え。
+
+---
+
+## Handoff — 2026-07-10 保存先未設定エラーの可視化 (Driver: Claude Code / Fable5)
+
+### 目的
+
+Railwayテンプレート利用者が S3系変数の設定不足で写真アップロードに失敗した
+とき、「Internal server error」ではなく、管理画面だけで原因(どの変数が
+不足か)と対処(Variablesを直して再デプロイ)が分かるようにする。
+
+### 変更内容
+
+1. **`src/api/storage-config.ts`(新規)** — S3_ENDPOINT / S3_BUCKET /
+   S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY の不足判定を純関数に切り出し。
+   `StorageConfigError`(missing変数名のみ保持、値は一切含めない)、
+   `storageHealth()`、`assertStorageConfigured()` をエクスポート。
+   旧 `api/index.ts` 内のインライン `assertStorageConfigured` はここへ移設
+   (Railway Bucket 参照のヒント付きログメッセージは従来どおり)。
+2. **`/admin/upload` の入口チェック(`api/index.ts`)** — sharp縮小・DB照会を
+   始める前に不足を判定し、`{ error: "写真の保存先がまだ接続されていません。",
+   code: "STORAGE_NOT_CONFIGURED", missing: [...] }` を **503** で返す。
+3. **`app.onError` に `StorageConfigError` 分岐** — hero/profile/fonts など
+   `uploadToStorage` を使う他ルートでも同じ503 JSONになる(認証済みルート
+   からしか到達しない)。その他の予期しない500は従来どおり
+   「Internal server error」のみ。
+4. **`GET /api/admin/setup-health`(新規、requireAdmin)** —
+   `{ storageConfigured, missingStorageVariables }` を返す読み取り専用API。
+   環境変数の有無だけを見る。ストレージへの書き込み・接続テストはしない。
+5. **`admin.tsx`** —
+   - アップロード失敗時に code=STORAGE_NOT_CONFIGURED を検出したら、
+     通常の件数トーストの代わりに専用バナーを表示(自動では消えない)。
+     文面: タイトル+不足変数名(値なし)+「Variablesを確認して再デプロイ
+     するまで再アップロードしても失敗する」+「分からない場合はサイトを
+     設定した人へこの画面を送る」。「設定を直したあとに再試行する」ボタン
+     も残している(連打を促す表示にはしていない)。
+   - SetupTab(「はじめに」)上部に「写真の保存先: 接続済み / 未接続」の
+     静かな表示を追加(折りたたみ時も表示)。未接続時は不足変数名と対処を
+     添えて、写真を選ぶ前に気づけるようにした。
+6. **`lib/upload-file.ts`** — `storageMissingFromErrorBody()`(503ボディの
+   パース、名前のみ)と `storageNotConfiguredNotice()`(初心者向け日本語
+   文面)を追加。admin.tsx はこれを使う。
+
+R2互換性: 判定は既存のS3互換4変数の有無のみで、Railway Bucket 限定の
+ロジックは無い。`S3_FORCE_PATH_STYLE` の既定値は変更していない(別タスク)。
+DBスキーマ・setupCompleted設計・/service/start は触っていない。
+
+### 触ったファイル
+
+- `packages/web/src/api/storage-config.ts`(新規)
+- `packages/web/src/api/storage-config.test.ts`(新規)
+- `packages/web/src/api/index.ts`
+- `packages/web/src/web/lib/upload-file.ts`
+- `packages/web/src/web/lib/upload-file.test.ts`
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md` / `docs/agent-logs/2026-07-10.md`
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(291 tests / tsc -b / oxlint / vite build)。
+- 追加テスト23件: 全変数あり→configured / S3_BUCKETなし→missingに
+  S3_BUCKET / 複数不足→名前のみ・台帳順 / 空文字も不足扱い /
+  レスポンス・エラーメッセージにダミー秘密値が含まれない /
+  専用日本語文面(不足名表示・値なし・再デプロイ誘導・引き継ぎ文言)。
+- `bun run smoke`: 22 passed / 19 skipped / 1 failed。失敗は既知の
+  `admin-trash-signal.spec.ts` のみ — **クリーンなmainでも3回連続で同一
+  失敗を再現**し、今回の変更とは無関係と確認(共有DBのゴミ箱32件が原因。
+  前回Handoffの既知事項)。書き込み系ボタンはクリックしていない
+  (smokeスイートは従来どおりログイン以外非GETなし)。
+- setup-health が書き込みを呼ばないこと: ハンドラは純関数
+  `storageHealth()` を返すだけの1行で、DB・S3クライアントに触れない
+  (コードレビューで自明。ネットワークI/Oなし)。
+
+### 検証していないこと
+
+- 実際に変数を欠いた環境での実機E2E(ローカル環境は実R2設定済みのため、
+  未設定状態はユニットテストでのみ検証。Railwayテンプレート新規デプロイ時
+  に「はじめに」の未接続表示とアップロード時バナーの実機確認を推奨)。
+- smoke への STORAGE_NOT_CONFIGURED 回帰テスト追加は見送り(実環境の
+  env を欠落させられないため。将来 dev server の env 注入手段ができたら
+  追加を検討)。
+
+### push したか
+
+**していない**。push は常にオーナーの手で。
+
+### Railway反映 / 本番確認
+
+未実施(未pushのため該当なし)。
+
+### 次の担当者が触ってよい場所
+
+- 専用バナー・「はじめに」接続表示の文言微調整。
+- `S3_FORCE_PATH_STYLE` の既定値検討(別タスク、実機確認してから)。
+
+### 次の担当者が触ってはいけない場所
+
+- 本番 DB・R2・Railway 環境変数。
+- `admin-trash-signal.spec.ts` の既存不具合(前回からの持ち越し、別チケット)。
+- 未pushコミットの rebase・書き換え。

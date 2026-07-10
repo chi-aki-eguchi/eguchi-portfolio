@@ -51,7 +51,9 @@ export function imageFileTooLarge(file: Pick<File, "size">): boolean {
   return file.size > IMAGE_UPLOAD_MAX_BYTES;
 }
 
-export function shouldUploadImagesSerially(files: Pick<File, "size">[]): boolean {
+export function shouldUploadImagesSerially(
+  files: Pick<File, "size">[],
+): boolean {
   return files.some((file) => file.size > LARGE_IMAGE_UPLOAD_BYTES);
 }
 
@@ -70,10 +72,40 @@ export function uploadFailureNotice(
   return `${failures.length} 件失敗: ${names}${failures.length > 3 ? " ほか" : ""}`;
 }
 
-export function uploadTooLargeNotice(files: Pick<File, "name" | "size">[]): string | null {
+export function uploadTooLargeNotice(
+  files: Pick<File, "name" | "size">[],
+): string | null {
   const tooLarge = files.filter(imageFileTooLarge);
   if (!tooLarge.length) return null;
   return uploadFailureNotice(
     tooLarge.map((file) => ({ file, reason: imageTooLargeMessage() })),
   );
+}
+
+export const STORAGE_NOT_CONFIGURED_CODE = "STORAGE_NOT_CONFIGURED";
+
+// サーバの保存先未設定エラー(503)のボディから、不足している環境変数の
+// 「名前だけ」を取り出す。該当エラーでなければ null。値は扱わない。
+export function storageMissingFromErrorBody(data: unknown): string[] | null {
+  if (typeof data !== "object" || data === null) return null;
+  const { code, missing } = data as { code?: unknown; missing?: unknown };
+  if (code !== STORAGE_NOT_CONFIGURED_CODE) return null;
+  return Array.isArray(missing)
+    ? missing.filter((name): name is string => typeof name === "string")
+    : [];
+}
+
+// 初心者(非エンジニア)向けの専用メッセージ。再アップロードの連打ではなく
+// 「設定を直して再デプロイする」必要があると分かる文面にする。
+export function storageNotConfiguredNotice(missing: string[]): {
+  title: string;
+  detail: string;
+  handoff: string;
+} {
+  const names = missing.length > 0 ? missing.join(", ") : "S3_BUCKET など";
+  return {
+    title: "写真の保存先がまだ接続されていません。",
+    detail: `Railway の Variables で ${names} を確認してください。設定を直して再デプロイされるまで、再アップロードしても失敗します。`,
+    handoff: "分からない場合は、サイトを設定した人へこの画面を送ってください。",
+  };
 }

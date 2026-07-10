@@ -28,6 +28,8 @@ import {
   imageFileTooLarge,
   isUploadableImageFile,
   shouldUploadImagesSerially,
+  storageMissingFromErrorBody,
+  storageNotConfiguredNotice,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
   uploadTooLargeNotice,
@@ -809,6 +811,15 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
     queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> =>
       jsonOrThrow(await adminApi["hero-photos"].$get()),
   });
+  // 写真の保存先(S3互換ストレージ)が接続済みか。環境変数の有無だけを見る
+  // 読み取り専用APIで、写真を選ぶ前に未接続へ気づけるようにする。
+  const { data: setupHealth } = useQuery({
+    queryKey: ["admin-setup-health"],
+    queryFn: async (): Promise<{
+      storageConfigured: boolean;
+      missingStorageVariables: string[];
+    }> => jsonOrThrow(await adminApi["setup-health"].$get()),
+  });
 
   const settings = (settingsData ?? {}) as Record<string, string>;
   const photos = (photosData?.photos ?? []) as Photo[];
@@ -938,7 +949,8 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   if (collapsed) {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
+        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 space-y-3">
+          <StorageHealthLine health={setupHealth} />
           <div className="flex items-center justify-between gap-3 border border-emerald-200 bg-emerald-50 rounded-sm px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
@@ -970,6 +982,7 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10 space-y-8">
+        <StorageHealthLine health={setupHealth} />
         <PageHeader
           title="公開までにやること"
           description="むずかしい設定は最初だけです。見る人に公開する前に、上から順に5つを確認します。写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。"
@@ -1081,6 +1094,35 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
           </div>
         </section>
       </div>
+    </div>
+  );
+}
+
+// 「写真保存先 接続済み / 未接続」の静かな表示。未接続のときだけ、写真を
+// 選ぶ前に気づけるよう不足変数名(値は出さない)と対処を添える。
+function StorageHealthLine({
+  health,
+}: {
+  health?: { storageConfigured: boolean; missingStorageVariables: string[] };
+}) {
+  if (!health) return null;
+  if (health.storageConfigured) {
+    return (
+      <p className="text-[11px] text-[color:var(--admin-muted)]">
+        写真の保存先: 接続済み
+      </p>
+    );
+  }
+  return (
+    <div className="border border-amber-300 bg-amber-50 rounded-sm px-4 py-3 space-y-1">
+      <p className="text-[12px] text-amber-900">
+        写真の保存先: 未接続 — このままでは写真をアップロードできません。
+      </p>
+      <p className="text-[11px] leading-5 text-amber-800">
+        Railway の Variables で{" "}
+        {health.missingStorageVariables.join(", ") || "S3_BUCKET など"}{" "}
+        を確認し、設定を直して再デプロイしてください。分からない場合は、サイトを設定した人へこの画面を送ってください。
+      </p>
     </div>
   );
 }
@@ -1749,6 +1791,9 @@ function GalleryTab({
     !purgeNeedsExtraStep || (purgeAckChecked && purgeCountdown <= 0);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [retryFiles, setRetryFiles] = useState<File[]>([]);
+  // 保存先未接続(STORAGE_NOT_CONFIGURED)は通常の失敗トーストと分けて、
+  // 不足している変数名(値は含まない)つきの説明バナーを出す。
+  const [storageAlert, setStorageAlert] = useState<string[] | null>(null);
   const [showLibraryFilters, setShowLibraryFilters] = useState(false);
   const [metaSaved, setMetaSaved] = useState(false);
   const [metaError, setMetaError] = useState(false);
@@ -3042,10 +3087,12 @@ function GalleryTab({
     }
     setUploadNotice(null);
     setRetryFiles([]);
+    setStorageAlert(null);
     setUploadingAndNotify(true);
     setUploadProgress({ done: 0, total: uploadableFiles.length });
     const failed: { file: File; reason?: string }[] = [];
     const duplicates: string[] = [];
+    let storageMissing: string[] | null = null;
     let done = 0;
 
     const uploadOne = async (file: File) => {
@@ -3058,6 +3105,13 @@ function GalleryTab({
           credentials: "include",
         });
         if (!res.ok) {
+          try {
+            const body = (await res.clone().json()) as unknown;
+            const missing = storageMissingFromErrorBody(body);
+            if (missing) storageMissing = missing;
+          } catch {
+            // 非JSONエラーは従来どおり下の汎用メッセージに任せる
+          }
           const message = await responseErrorMessage(res);
           try {
             assertOk(res);
@@ -3151,8 +3205,11 @@ function GalleryTab({
       setUploadingAndNotify(false);
       setUploadProgress(null);
       setRetryFiles(failed.map(({ file }) => file));
+      setStorageAlert(storageMissing);
       const parts: string[] = [];
-      const failedNotice = uploadFailureNotice(failed);
+      // 保存先未接続のときは件数トーストではなく専用バナーで説明する
+      // (再アップロード連打では直らないため)
+      const failedNotice = storageMissing ? null : uploadFailureNotice(failed);
       if (failedNotice) parts.push(failedNotice);
       if (tooLargeNotice) parts.push(tooLargeNotice);
       if (duplicates.length)
@@ -5302,6 +5359,57 @@ function GalleryTab({
           <X size={12} />
         </button>
       </Toast>
+
+      {/* 保存先未接続バナー — 通常のアップロード失敗と分けた説明表示。
+          自動では消えない(設定を直すまで何度試しても失敗するため)。 */}
+      {storageAlert &&
+        (() => {
+          const notice = storageNotConfiguredNotice(storageAlert);
+          return (
+            <div
+              role="alert"
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[min(560px,90vw)] bg-[var(--admin-paper-soft)] border border-amber-700/60 rounded-sm shadow-xl px-5 py-4 space-y-2"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[13px] text-[var(--admin-ink)]">
+                  {notice.title}
+                </p>
+                <button
+                  onClick={() => setStorageAlert(null)}
+                  aria-label="閉じる"
+                  className="text-[var(--admin-muted)] hover:text-[var(--admin-ink)] transition-colors flex-shrink-0"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+              {storageAlert.length > 0 && (
+                <p className="text-[12px] leading-5 text-amber-300">
+                  不足している設定: {storageAlert.join(", ")}
+                </p>
+              )}
+              <p className="text-[12px] leading-5 text-[var(--admin-muted)]">
+                {notice.detail}
+              </p>
+              <p className="text-[12px] leading-5 text-[var(--admin-muted)]">
+                {notice.handoff}
+              </p>
+              {retryFiles.length > 0 && (
+                <button
+                  onClick={() => {
+                    const files = retryFiles;
+                    setRetryFiles([]);
+                    setUploadNotice(null);
+                    setStorageAlert(null);
+                    handleFiles(files);
+                  }}
+                  className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] underline underline-offset-2 hover:opacity-70 transition-opacity"
+                >
+                  <Upload size={11} /> 設定を直したあとに再試行する
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
       {/* Upload result notice (failures / skipped files) */}
       <Toast

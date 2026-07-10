@@ -3,6 +3,9 @@ import {
   imageFileTooLarge,
   isUploadableImageFile,
   shouldUploadImagesSerially,
+  STORAGE_NOT_CONFIGURED_CODE,
+  storageMissingFromErrorBody,
+  storageNotConfiguredNotice,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
   uploadSizeLimitLabel,
@@ -11,8 +14,9 @@ import {
 
 describe("isUploadableImageFile", () => {
   test("accepts TIFF MIME variants and extension-only TIFF files", () => {
-    expect(isUploadableImageFile({ name: "DSCF1599.tif", type: "image/tiff" }))
-      .toBe(true);
+    expect(
+      isUploadableImageFile({ name: "DSCF1599.tif", type: "image/tiff" }),
+    ).toBe(true);
     expect(
       isUploadableImageFile({
         name: "DSCF1607.tiff",
@@ -25,17 +29,27 @@ describe("isUploadableImageFile", () => {
   });
 
   test("keeps unsupported files out before upload", () => {
-    expect(isUploadableImageFile({ name: "vector.svg", type: "image/svg+xml" }))
-      .toBe(false);
-    expect(isUploadableImageFile({ name: "notes.txt", type: "text/plain" }))
-      .toBe(false);
+    expect(
+      isUploadableImageFile({ name: "vector.svg", type: "image/svg+xml" }),
+    ).toBe(false);
+    expect(
+      isUploadableImageFile({ name: "notes.txt", type: "text/plain" }),
+    ).toBe(false);
   });
 
   test("rejects empty MIME types except TIFF browser fallbacks", () => {
-    expect(isUploadableImageFile({ name: "renamed.jpg", type: "" })).toBe(false);
-    expect(isUploadableImageFile({ name: "renamed.png", type: "application/octet-stream" }))
-      .toBe(false);
-    expect(isUploadableImageFile({ name: "DSCF1609.TIF", type: "" })).toBe(true);
+    expect(isUploadableImageFile({ name: "renamed.jpg", type: "" })).toBe(
+      false,
+    );
+    expect(
+      isUploadableImageFile({
+        name: "renamed.png",
+        type: "application/octet-stream",
+      }),
+    ).toBe(false);
+    expect(isUploadableImageFile({ name: "DSCF1609.TIF", type: "" })).toBe(
+      true,
+    );
   });
 });
 
@@ -56,9 +70,7 @@ describe("uploadFailureNotice", () => {
           reason: "許可されていないファイル形式です。",
         },
       ]),
-    ).toBe(
-      "1 件失敗: DSCF1599.tif (許可されていないファイル形式です。)",
-    );
+    ).toBe("1 件失敗: DSCF1599.tif (許可されていないファイル形式です。)");
   });
 
   test("keeps the compact three-name summary for many failures", () => {
@@ -92,7 +104,67 @@ describe("upload size helpers", () => {
   });
 
   test("large files upload one at a time to avoid overwhelming the server", () => {
-    expect(shouldUploadImagesSerially([{ size: 60 * 1024 * 1024 }])).toBe(false);
-    expect(shouldUploadImagesSerially([{ size: 60 * 1024 * 1024 + 1 }])).toBe(true);
+    expect(shouldUploadImagesSerially([{ size: 60 * 1024 * 1024 }])).toBe(
+      false,
+    );
+    expect(shouldUploadImagesSerially([{ size: 60 * 1024 * 1024 + 1 }])).toBe(
+      true,
+    );
+  });
+});
+
+describe("storageMissingFromErrorBody", () => {
+  test("extracts missing variable names from the dedicated 503 body", () => {
+    expect(
+      storageMissingFromErrorBody({
+        error: "写真の保存先がまだ接続されていません。",
+        code: STORAGE_NOT_CONFIGURED_CODE,
+        missing: ["S3_BUCKET", "S3_ENDPOINT"],
+      }),
+    ).toEqual(["S3_BUCKET", "S3_ENDPOINT"]);
+  });
+
+  test("returns null for ordinary errors so the generic path stays intact", () => {
+    expect(
+      storageMissingFromErrorBody({ error: "Internal server error" }),
+    ).toBe(null);
+    expect(storageMissingFromErrorBody(null)).toBe(null);
+    expect(storageMissingFromErrorBody("oops")).toBe(null);
+  });
+
+  test("tolerates a malformed missing field (names only, strings only)", () => {
+    expect(
+      storageMissingFromErrorBody({
+        code: STORAGE_NOT_CONFIGURED_CODE,
+        missing: ["S3_BUCKET", 42, null],
+      }),
+    ).toEqual(["S3_BUCKET"]);
+    expect(
+      storageMissingFromErrorBody({ code: STORAGE_NOT_CONFIGURED_CODE }),
+    ).toEqual([]);
+  });
+});
+
+describe("storageNotConfiguredNotice", () => {
+  test("builds the dedicated beginner-friendly Japanese message", () => {
+    const notice = storageNotConfiguredNotice(["S3_BUCKET"]);
+    expect(notice.title).toBe("写真の保存先がまだ接続されていません。");
+    expect(notice.detail).toContain("S3_BUCKET");
+    expect(notice.detail).toContain("Railway の Variables");
+    expect(notice.detail).toContain("再デプロイ");
+    expect(notice.handoff).toContain(
+      "サイトを設定した人へこの画面を送ってください",
+    );
+  });
+
+  test("shows variable names only — never values", () => {
+    const notice = storageNotConfiguredNotice(["S3_SECRET_ACCESS_KEY"]);
+    const text = `${notice.title}${notice.detail}${notice.handoff}`;
+    expect(text).toContain("S3_SECRET_ACCESS_KEY");
+    expect(text).not.toContain("=");
+  });
+
+  test("falls back to a generic hint when the list is empty", () => {
+    expect(storageNotConfiguredNotice([]).detail).toContain("S3_BUCKET など");
   });
 });

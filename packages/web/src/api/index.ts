@@ -29,6 +29,13 @@ import {
   parseRotationDeg,
 } from "../shared/image-url";
 import { imageTooLargeMessage } from "../shared/upload-limits";
+import {
+  StorageConfigError,
+  STORAGE_NOT_CONFIGURED_CODE,
+  STORAGE_NOT_CONFIGURED_MESSAGE,
+  assertStorageConfigured,
+  storageHealth,
+} from "./storage-config";
 
 // Node's Buffer<ArrayBufferLike> isn't assignable to DOM BodyInit in TS lib
 // types, though Bun's Response accepts it at runtime. The cast is contained
@@ -479,26 +486,6 @@ async function generateAndUploadMedium(
   return { mediumKey: mKey };
 }
 
-// Upload buffer to S3-compatible object storage.
-// Railwayテンプレート利用者が Bucket サービスの変数参照を貼り忘れると、SDKが
-// "No value provided for input HTTP label: Bucket." のような分かりにくいメッセージ
-// を投げる。/service/start のトラブルシュートと対応させるため、どの変数が
-// 空なのかを名前だけ(値は含めない)先に切り分けてログに出す。
-function assertStorageConfigured(): void {
-  const missing = [
-    ["S3_ENDPOINT", process.env.S3_ENDPOINT],
-    ["S3_BUCKET", process.env.S3_BUCKET],
-    ["S3_ACCESS_KEY_ID", process.env.S3_ACCESS_KEY_ID],
-    ["S3_SECRET_ACCESS_KEY", process.env.S3_SECRET_ACCESS_KEY],
-  ]
-    .filter(([, value]) => !value)
-    .map(([name]) => name);
-  if (missing.length === 0) return;
-  throw new Error(
-    `Missing storage env var(s): ${missing.join(", ")}. If you use Railway Bucket, set them from the Bucket service reference, e.g. S3_BUCKET=\${{ Bucket.BUCKET }}.`,
-  );
-}
-
 async function uploadToStorage(key: string, buf: Buffer, contentType: string) {
   assertStorageConfigured();
   await s3.send(
@@ -573,6 +560,20 @@ const app = new Hono()
   .onError((err, c) => {
     if (err.message?.includes("JSON")) {
       return c.json({ error: "Invalid request body" }, 400);
+    }
+    // 保存先設定不足は「サーバの一時的な設定問題」であって呼び出し側の
+    // バグではないので、汎用500に潰さず変数名だけを503で返す(値は含めない)。
+    // uploadToStorage は認証済み admin ルートからしか呼ばれない。
+    if (err instanceof StorageConfigError) {
+      console.error("[api] storage not configured:", err.message);
+      return c.json(
+        {
+          error: STORAGE_NOT_CONFIGURED_MESSAGE,
+          code: STORAGE_NOT_CONFIGURED_CODE,
+          missing: err.missing,
+        },
+        503,
+      );
     }
     console.error("[api] unhandled error:", err.message);
     return c.json({ error: "Internal server error" }, 500);
@@ -849,6 +850,14 @@ const app = new Hono()
   .get("/admin/me", async (c) => {
     const session = getCookie(c, SESSION_KEY);
     return c.json({ authenticated: session === SESSION_VALUE }, 200);
+  })
+
+  // ── Admin: Setup health (read-only) ─────────────────────
+  // 「はじめに」画面が写真を選ぶ前に保存先の未接続へ気づけるようにする。
+  // 環境変数の有無だけを見る純粋な判定で、ストレージへの読み書きや
+  // 接続テストは行わない。値(秘密情報)は返さない。
+  .get("/admin/setup-health", requireAdmin, (c) => {
+    return c.json(storageHealth(), 200);
   })
 
   // ── Site Settings ───────────────────────────────────────
@@ -1149,6 +1158,19 @@ const app = new Hono()
   // ── Admin: Server-side upload (resize → storage) ───────
   // Client sends raw file; server optimises (3200px/mozjpeg q92) and stores it.
   .post("/admin/upload", requireAdmin, async (c) => {
+    // 保存先が未設定なら、sharp での縮小や DB 照会を始める前に止める。
+    // 変数は名前だけ返し、値は返さない(§0 / セキュリティ)。
+    const storage = storageHealth();
+    if (!storage.storageConfigured) {
+      return c.json(
+        {
+          error: STORAGE_NOT_CONFIGURED_MESSAGE,
+          code: STORAGE_NOT_CONFIGURED_CODE,
+          missing: storage.missingStorageVariables,
+        },
+        503,
+      );
+    }
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return c.json({ error: "No file" }, 400);

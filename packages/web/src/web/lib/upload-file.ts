@@ -95,6 +95,29 @@ export function storageMissingFromErrorBody(data: unknown): string[] | null {
     : [];
 }
 
+// アップロード系レスポンスの失敗ボディから利用者向けメッセージを1つ作る
+// 共通経路。保存先未設定(STORAGE_NOT_CONFIGURED)は専用の案内文にし、
+// それ以外はサーバの error 文字列 → fallback の順で使う。
+export async function uploadErrorMessageFromResponse(
+  res: { clone(): { json(): Promise<unknown> } },
+  fallback: string,
+): Promise<string> {
+  let data: unknown;
+  try {
+    data = await res.clone().json();
+  } catch {
+    return fallback;
+  }
+  const missing = storageMissingFromErrorBody(data);
+  if (missing) {
+    const notice = storageNotConfiguredNotice(missing);
+    return `${notice.title} ${notice.detail} ${notice.handoff}`;
+  }
+  const err = (data as { error?: unknown } | null)?.error;
+  if (typeof err === "string" && err.trim()) return err.trim();
+  return fallback;
+}
+
 // 初心者(非エンジニア)向けの専用メッセージ。再アップロードの連打ではなく
 // 「設定を直して再デプロイする」必要があると分かる文面にする。
 export function storageNotConfiguredNotice(missing: string[]): {

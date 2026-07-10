@@ -5894,3 +5894,26 @@ DBスキーマ・setupCompleted設計・/service/start は触っていない。
 - 本番 DB・R2・Railway 環境変数。
 - `admin-trash-signal.spec.ts` の既存不具合(前回からの持ち越し、別チケット)。
 - 未pushコミットの rebase・書き換え。
+
+### 追記 (2026-07-10, 同日) — Codex read-onlyレビュー P1 3件対応
+
+コミット `35392ce`(28e88f2はrebaseせず別コミット)。
+
+1. **P1-1**: プロフィール写真・フォントのアップロード経路(`admin-tabs.tsx`)が
+   503専用エラーを汎用文言に潰していた → `lib/upload-file.ts` に共通helper
+   `uploadErrorMessageFromResponse()` を追加し、両経路とも保存先未設定の
+   専用案内(不足変数名+再デプロイ)を表示するようにした。
+2. **P1-2**: setup-healthは環境変数の有無しか見ないため「接続済み」は
+   言い過ぎ → 「必要な設定は入力済み（実際につながるかは最初の
+   アップロードで確認されます）」へ文言修正。
+3. **P1-3**: バナーの不足変数名が text-amber-300 で明背景で読めない →
+   text-amber-800 へ変更。
+4. Codexの依頼どおり該当UIのrenderテストを追加: 専用UIを
+   `components/AdminStorageNotice.tsx`(StorageHealthLine /
+   StorageAlertBanner)へ抽出し、`AdminStorageNotice.render.test.tsx`
+   (jsdom)で文面・変数名表示・色クラスを検証(5テスト)。
+   `uploadErrorMessageFromResponse` のユニットテスト3件も追加。
+
+検証: `bun run check` 成功(299 tests)。`bun run smoke` 22 passed /
+19 skipped / 1 failed(既知の `admin-trash-signal` のみ、クリーンmainで
+3連続再現済み・無関係)。push未実施。Codexへ再レビュー依頼済み。

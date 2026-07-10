@@ -13,6 +13,10 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import {
+  StorageAlertBanner,
+  StorageHealthLine,
+} from "../components/AdminStorageNotice";
+import {
   normalizeRotationDeg,
   objectPositionFromFocal,
   orientedDimensions,
@@ -29,7 +33,6 @@ import {
   isUploadableImageFile,
   shouldUploadImagesSerially,
   storageMissingFromErrorBody,
-  storageNotConfiguredNotice,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
   uploadTooLargeNotice,
@@ -1094,35 +1097,6 @@ function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
           </div>
         </section>
       </div>
-    </div>
-  );
-}
-
-// 「写真保存先 接続済み / 未接続」の静かな表示。未接続のときだけ、写真を
-// 選ぶ前に気づけるよう不足変数名(値は出さない)と対処を添える。
-function StorageHealthLine({
-  health,
-}: {
-  health?: { storageConfigured: boolean; missingStorageVariables: string[] };
-}) {
-  if (!health) return null;
-  if (health.storageConfigured) {
-    return (
-      <p className="text-[11px] text-[color:var(--admin-muted)]">
-        写真の保存先: 接続済み
-      </p>
-    );
-  }
-  return (
-    <div className="border border-amber-300 bg-amber-50 rounded-sm px-4 py-3 space-y-1">
-      <p className="text-[12px] text-amber-900">
-        写真の保存先: 未接続 — このままでは写真をアップロードできません。
-      </p>
-      <p className="text-[11px] leading-5 text-amber-800">
-        Railway の Variables で{" "}
-        {health.missingStorageVariables.join(", ") || "S3_BUCKET など"}{" "}
-        を確認し、設定を直して再デプロイしてください。分からない場合は、サイトを設定した人へこの画面を送ってください。
-      </p>
     </div>
   );
 }
@@ -5362,54 +5336,20 @@ function GalleryTab({
 
       {/* 保存先未接続バナー — 通常のアップロード失敗と分けた説明表示。
           自動では消えない(設定を直すまで何度試しても失敗するため)。 */}
-      {storageAlert &&
-        (() => {
-          const notice = storageNotConfiguredNotice(storageAlert);
-          return (
-            <div
-              role="alert"
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[min(560px,90vw)] bg-[var(--admin-paper-soft)] border border-amber-700/60 rounded-sm shadow-xl px-5 py-4 space-y-2"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-[13px] text-[var(--admin-ink)]">
-                  {notice.title}
-                </p>
-                <button
-                  onClick={() => setStorageAlert(null)}
-                  aria-label="閉じる"
-                  className="text-[var(--admin-muted)] hover:text-[var(--admin-ink)] transition-colors flex-shrink-0"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-              {storageAlert.length > 0 && (
-                <p className="text-[12px] leading-5 text-amber-300">
-                  不足している設定: {storageAlert.join(", ")}
-                </p>
-              )}
-              <p className="text-[12px] leading-5 text-[var(--admin-muted)]">
-                {notice.detail}
-              </p>
-              <p className="text-[12px] leading-5 text-[var(--admin-muted)]">
-                {notice.handoff}
-              </p>
-              {retryFiles.length > 0 && (
-                <button
-                  onClick={() => {
-                    const files = retryFiles;
-                    setRetryFiles([]);
-                    setUploadNotice(null);
-                    setStorageAlert(null);
-                    handleFiles(files);
-                  }}
-                  className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] underline underline-offset-2 hover:opacity-70 transition-opacity"
-                >
-                  <Upload size={11} /> 設定を直したあとに再試行する
-                </button>
-              )}
-            </div>
-          );
-        })()}
+      {storageAlert && (
+        <StorageAlertBanner
+          missing={storageAlert}
+          canRetry={retryFiles.length > 0}
+          onRetry={() => {
+            const files = retryFiles;
+            setRetryFiles([]);
+            setUploadNotice(null);
+            setStorageAlert(null);
+            handleFiles(files);
+          }}
+          onClose={() => setStorageAlert(null)}
+        />
+      )}
 
       {/* Upload result notice (failures / skipped files) */}
       <Toast

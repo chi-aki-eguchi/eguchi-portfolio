@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import { makeSettingsPreviewPayload } from "../lib/settings-preview";
+import { uploadErrorMessageFromResponse } from "../lib/upload-file";
 import {
   GOOGLE_FONTS_JA,
   GOOGLE_FONTS_EN,
@@ -869,7 +870,18 @@ export function ProfileTab({
         body: formData,
         credentials: "include",
       });
-      assertOk(res);
+      if (!res.ok) {
+        if (res.status === 401) assertOk(res); // 401はログイン画面へ
+        // 保存先未設定(STORAGE_NOT_CONFIGURED)は初回セットアップの主要経路
+        // なので、汎用の失敗文言に潰さず専用の案内(不足変数名+再デプロイ)を出す
+        setPhotoError(
+          await uploadErrorMessageFromResponse(
+            res,
+            "プロフィール写真のアップロードに失敗しました",
+          ),
+        );
+        return;
+      }
       const { url } = await res.json();
       if (!url) throw new Error("no url");
       await saveSettings.mutateAsync({ profilePhotoUrl: url });
@@ -6101,8 +6113,14 @@ function FontPicker({
         credentials: "include",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setUploadError(err.error || "アップロードに失敗しました");
+        // 保存先未設定は専用の案内文(不足変数名+再デプロイ)、それ以外は
+        // サーバのerror文字列 → 汎用文言の順
+        setUploadError(
+          await uploadErrorMessageFromResponse(
+            res,
+            "アップロードに失敗しました",
+          ),
+        );
         return;
       }
       const data = await res.json();

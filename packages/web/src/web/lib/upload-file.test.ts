@@ -6,6 +6,7 @@ import {
   STORAGE_NOT_CONFIGURED_CODE,
   storageMissingFromErrorBody,
   storageNotConfiguredNotice,
+  uploadErrorMessageFromResponse,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
   uploadSizeLimitLabel,
@@ -166,5 +167,42 @@ describe("storageNotConfiguredNotice", () => {
 
   test("falls back to a generic hint when the list is empty", () => {
     expect(storageNotConfiguredNotice([]).detail).toContain("S3_BUCKET など");
+  });
+});
+
+describe("uploadErrorMessageFromResponse", () => {
+  test("returns the dedicated storage guidance for STORAGE_NOT_CONFIGURED", async () => {
+    const res = new Response(
+      JSON.stringify({
+        error: "写真の保存先がまだ接続されていません。",
+        code: STORAGE_NOT_CONFIGURED_CODE,
+        missing: ["S3_BUCKET"],
+      }),
+      { status: 503 },
+    );
+    const message = await uploadErrorMessageFromResponse(res, "失敗しました");
+    expect(message).toContain("写真の保存先がまだ接続されていません。");
+    expect(message).toContain("S3_BUCKET");
+    expect(message).toContain("再デプロイ");
+    expect(message).toContain("サイトを設定した人へこの画面を送ってください");
+  });
+
+  test("keeps the server's error string for ordinary failures", async () => {
+    const res = new Response(
+      JSON.stringify({ error: "許可されていないファイル形式です。" }),
+      { status: 415 },
+    );
+    expect(await uploadErrorMessageFromResponse(res, "失敗しました")).toBe(
+      "許可されていないファイル形式です。",
+    );
+  });
+
+  test("falls back on non-JSON bodies and leaves the body readable", async () => {
+    const res = new Response("<html>bad gateway</html>", { status: 502 });
+    expect(await uploadErrorMessageFromResponse(res, "失敗しました")).toBe(
+      "失敗しました",
+    );
+    // clone() を使っているので呼び出し元は本文を再読可能
+    expect(await res.text()).toContain("bad gateway");
   });
 });

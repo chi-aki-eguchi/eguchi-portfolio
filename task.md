@@ -5897,7 +5897,7 @@ DBスキーマ・setupCompleted設計・/service/start は触っていない。
 
 ### 追記 (2026-07-10, 同日) — Codex read-onlyレビュー P1 3件対応
 
-コミット `35392ce`(28e88f2はrebaseせず別コミット)。
+コミット `c56e7b9`(28e88f2はrebaseせず別コミット)。
 
 1. **P1-1**: プロフィール写真・フォントのアップロード経路(`admin-tabs.tsx`)が
    503専用エラーを汎用文言に潰していた → `lib/upload-file.ts` に共通helper

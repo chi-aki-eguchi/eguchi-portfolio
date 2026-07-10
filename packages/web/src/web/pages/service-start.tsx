@@ -319,18 +319,21 @@ function SelfSetupGuide() {
         <GuideSection n={3} title="GitHubアクセスエラーが出たら">
           <p>
             「repository
-            へのアクセス権限がありません」のようなエラーで止まった場合、Railway側ではなく
-            GitHub側の権限設定が原因です。
+            へのアクセス権限がありません」のようなエラーで止まった場合は、次の順で確認します。
           </p>
           <ol className="list-decimal pl-5 space-y-1.5">
-            <li>GitHubの Settings → Applications → Railway を開く</li>
-            <li>
-              「Repository
-              access」を確認し、対象のリポジトリにチェックが入っているか見る
-            </li>
-            <li>入っていなければチェックして Save</li>
+            <li>RailwayとGitHubの両方にログインできているか確認する</li>
             <li>Railwayの画面に戻り、もう一度 Deploy をやり直す</li>
+            <li>
+              それでも同じエラーになる場合は、プロジェクト全体画面とエラー画面のスクリーンショットを、テンプレートを渡してくれた人に送って相談する
+            </li>
           </ol>
+          <p>
+            ※
+            自分でリポジトリをfork(複製)して自分のGitHubリポジトリからデプロイしている場合のみ、GitHubの
+            Settings → Applications → Railway の「Repository
+            access」で対象リポジトリにチェックが入っているかを確認してください。テンプレートをそのまま使っている場合、この設定は関係ありません。
+          </p>
         </GuideSection>
 
         <GuideSection n={4} title="Variablesで確認するもの">

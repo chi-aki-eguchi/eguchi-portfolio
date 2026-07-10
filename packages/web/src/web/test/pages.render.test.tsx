@@ -19,6 +19,21 @@ function seedAdminPhotos(qc: InstanceType<typeof QueryClient>) {
   qc.setQueryData(["photos", "all"], { photos: samplePhotos });
 }
 
+// 2026-07-10仕様変更への追随: setupCompletedがtrueでないと初回マウントで
+// 「はじめに」へ着地するようになった(自動バックフィル削除)。Library着地を
+// 前提とするテストは「セットアップ完了済みの既存運用サイト」を明示する。
+// admin-me も同時にseedする: 認証確定が settings の再フェッチ(canned {})より
+// 遅れると、初回判定が「未完了」で走って「はじめに」へ着地してしまうため。
+function seedCompletedSetup(qc: InstanceType<typeof QueryClient>) {
+  qc.setQueryData(["settings"], { setupCompleted: "true" });
+  qc.setQueryData(["admin-me"], { authenticated: true });
+}
+
+function seedEstablishedAdminSite(qc: InstanceType<typeof QueryClient>) {
+  seedAdminPhotos(qc);
+  seedCompletedSetup(qc);
+}
+
 function makeLargeAdminPhotos(count = 445) {
   return Array.from({ length: count }, (_, index) => ({
     ...samplePhotos[index % samplePhotos.length],
@@ -711,7 +726,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
@@ -749,7 +764,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
@@ -835,9 +850,10 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin), (qc) =>
-        qc.setQueryData(["photos", "all"], { photos: largePhotos }),
-      );
+      const { host, cleanup } = await mount(createElement(Admin), (qc) => {
+        qc.setQueryData(["photos", "all"], { photos: largePhotos });
+        seedCompletedSetup(qc);
+      });
       const firstTile = await waitForButton(host, 'button[aria-label="P000"]');
       firstTile.click();
       await flush(20);
@@ -940,7 +956,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       await flush(100);
       const tile = host.querySelector(
@@ -1011,7 +1027,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       buttonWithText(host, "絞り込み").click();
       await flush(30);

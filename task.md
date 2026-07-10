@@ -5924,3 +5924,81 @@ DBスキーマ・setupCompleted設計・/service/start は触っていない。
 git diff --check問題なしを確認済み。コミット 28e88f2 / c56e7b9 / c519bbc は
 **オーナーpush待ち**の状態(エージェントはpushしない)。push後はRailway反映と
 本番確認を別々に実施のこと。
+
+---
+
+## Handoff — 2026-07-10 setupCompleted自動バックフィル削除 (Driver: Claude Code / Fable5)
+
+### 目的・経緯
+
+初回セットアップ完了の確定を「セットアップ完了 → ライブラリへ」ボタンの
+明示操作だけにし、「写真があるだけで画面表示中に裏で完了扱いを書き込む」
+自動バックフィルを削除する。Codex経由で依頼→セッション指示書の
+「setupCompleted設計変更禁止」と衝突するため一旦保留→**オーナーが案Aを
+セッション内で明示承認**(「写真あり・未保存のサイトで初回1回だけ
+『はじめに』へ着地する挙動も意図どおり」)して着手。
+
+### 変更内容
+
+1. **`lib/setup-flow.ts`(新規)** — 着地判定の純関数 `shouldLandOnSetup(
+   authenticated, settings)`。認証済み かつ settings読込済み かつ
+   `setupCompleted !== "true"` のときだけ true。写真の有無は引数に取らない
+   (=バックフィル廃止が型で分かる)。
+2. **`admin.tsx` AdminPage** — 初回判定effectから写真query
+   (`setupGuardPhotos`)と `adminApi.settings.$post` バックフィルを削除。
+   判定は認証確定+settings読込後にマウントごと一度だけ。表示だけでは
+   書き込みゼロ。`SetupTab` をrenderテスト用にexport化。
+3. **テスト追加** —
+   - `lib/setup-flow.test.ts`(5件): 未完了+写真0枚/写真あり(判定は写真に
+     依存しない)/完了済み/未認証/設定読込前。
+   - `pages/admin-setup-flow.render.test.tsx`(fetch全モック):
+     SetupTab表示だけでは非GETリクエスト0回、完了ボタンで
+     `POST /api/admin/settings {setupCompleted:"true"}` がちょうど1回+
+     ライブラリ遷移。production相当DBへの書き込みなし。
+   - `test/pages.render.test.tsx`: Library着地前提の既存5テストを
+     「セットアップ完了済みサイト」seed(`seedEstablishedAdminSite`/
+     `seedCompletedSetup`)へ追随(仕様変更に伴う正当な期待値更新。
+     admin-me も同時にseedするのは、認証確定がsettings再フェッチより
+     遅れると初回判定が未完了側に倒れるレース対策)。
+
+R2/画像アップロード・DB schema・service/start・Railwayテンプレート定義は
+未変更。SetupTabの完了ボタン自体は従来どおり(assertOk+成功後遷移)。
+
+### 触ったファイル
+
+- `packages/web/src/web/lib/setup-flow.ts`(新規) / `setup-flow.test.ts`(新規)
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/admin-setup-flow.render.test.tsx`(新規)
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md` / `docs/agent-logs/2026-07-10.md`
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(305 tests / tsc -b / oxlint / build)。
+- `bun run smoke`: 22 passed / 19 skipped / 1 failed — 失敗は既知の
+  `admin-trash-signal.spec.ts` のみ(本日クリーンmainで3連続再現済み・
+  今回のスコープ外)。**分離報告**: 今回変更分に起因するsmoke失敗は0件。
+- smokeは本番相当DBに接続するが、新コードは表示で一切書き込まないため
+  今回の実行での書き込みは発生していない(旧バックフィルのような
+  意図しない書き込みも今後発生しない)。
+
+### 検証していないこと
+
+- 実機(Railwayテンプレート新規デプロイ)での「はじめに」強制着地。
+  ロジックはrenderテスト+純関数テストで検証済みだが、実ブラウザでの
+  初回着地は次回の新規デプロイ時に確認を推奨。
+
+### push したか
+
+**していない**。push は常にオーナーの手で。
+
+### Railway反映 / 本番確認
+
+未実施(未push)。本番(akieguchi.com)は既に setupCompleted="true" 保存済み
+のため、push後も強制導線は出ない(要件6)。
+
+### 次の担当者が触ってはいけない場所
+
+- 本番 DB・R2・Railway 環境変数。
+- `admin-trash-signal.spec.ts` の既存不具合(別チケット)。
+- 未pushコミットの rebase・書き換え。

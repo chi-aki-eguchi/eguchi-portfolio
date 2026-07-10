@@ -24,6 +24,7 @@ import {
   srcFor,
 } from "../lib/picture";
 import { moveRelativeToViewNeighbor, moveToViewEdge } from "../lib/reorder";
+import { shouldLandOnSetup } from "../lib/setup-flow";
 import {
   shotAtForDateInputSave,
   shotAtForUploadedPhoto,
@@ -374,13 +375,6 @@ export default function AdminPage() {
     queryFn: async () =>
       jsonOrThrow<Record<string, string>>(await api.settings.$get()),
   });
-  // はじめに強制導線の判定専用(表示はGalleryTab側の同じqueryKeyが担う。
-  // TanStack Queryはキー一致でキャッシュを共有するので二重フェッチにはならない)。
-  const { data: setupGuardPhotos } = useQuery({
-    queryKey: ["photos", "all"],
-    queryFn: async () =>
-      jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
-  });
   const [tab, setTab] = usePersistentState<Tab>(
     "admin:tab",
     "gallery",
@@ -388,23 +382,15 @@ export default function AdminPage() {
   );
   // setupCompleted !== "true" の間は、/admin を開くたびに初期タブを「はじめに」
   // にする(セッション中の自由なタブ移動は妨げないよう、マウントごとに一度だけ)。
-  // ただし新設フラグ導入前から写真がある=既存運用サイトは、明示操作なしに毎回
-  // 強制送りしない(バックフィルでフラグだけ立てる)。
+  // 完了確定は SetupTab の「セットアップ完了」ボタンの明示操作のみ — 表示した
+  // だけでは何も書き込まない(旧・自動バックフィルは削除。setup-flow.ts 参照)。
   const initialSetupRedirectDone = useRef(false);
   useEffect(() => {
     if (initialSetupRedirectDone.current) return;
-    if (shellSettings === undefined || setupGuardPhotos === undefined) return;
+    if (authenticated !== true || shellSettings === undefined) return;
     initialSetupRedirectDone.current = true;
-    if (shellSettings.setupCompleted === "true") return;
-    const hasExistingContent = (setupGuardPhotos.photos ?? []).length > 0;
-    if (hasExistingContent) {
-      adminApi.settings
-        .$post({ json: { setupCompleted: "true" } })
-        .catch(() => {});
-      return;
-    }
-    setTab("setup");
-  }, [shellSettings, setupGuardPhotos, setTab]);
+    if (shouldLandOnSetup(authenticated, shellSettings)) setTab("setup");
+  }, [authenticated, shellSettings, setTab]);
   const [galleryUploading, setGalleryUploading] = useState(false);
   // Generic unsaved-draft flag reported by any tab with a draft form.
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -794,7 +780,8 @@ type ChecklistItem = {
   href?: string;
 };
 
-function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
+// exportはrenderテスト用(表示だけでPOSTしない/完了ボタンでのみ保存する検証)
+export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   const qc = useQueryClient();
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],

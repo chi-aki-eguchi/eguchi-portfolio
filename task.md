@@ -5917,3 +5917,10 @@ DBスキーマ・setupCompleted設計・/service/start は触っていない。
 検証: `bun run check` 成功(299 tests)。`bun run smoke` 22 passed /
 19 skipped / 1 failed(既知の `admin-trash-signal` のみ、クリーンmainで
 3連続再現済み・無関係)。push未実施。Codexへ再レビュー依頼済み。
+
+### 追記2 (2026-07-10) — Codex再レビュー完了
+
+再レビュー結果「指摘なし(P0/P1なし)」。Codex側でも関連テスト76件成功・
+git diff --check問題なしを確認済み。コミット 28e88f2 / c56e7b9 / c519bbc は
+**オーナーpush待ち**の状態(エージェントはpushしない)。push後はRailway反映と
+本番確認を別々に実施のこと。

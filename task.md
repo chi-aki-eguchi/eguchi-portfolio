@@ -6283,3 +6283,66 @@ reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失�
 
 - Escapeの確認表示時に選択解除が先に走る既存挙動は今回未変更(決定ログ参照)。
 - packages/web/.env は古い(6/1)。ADMIN_PASSWORD 等はルートの .env が正。
+
+---
+
+## Handoff 2026-07-11 — Claude Code: スマホLibraryを2列コンタクトシート化
+
+### 目的
+
+スマホのadmin Libraryで写真が1枚ずつしか見えないストレスを解消する
+(thumbSize初期220px+sliderがhidden md:flexのため375/390px幅で1列に落ちていた)。
+
+### 変更内容
+
+- `admin.tsx`: 純関数 `effectiveLibraryThumbSize` を追加。実測grid幅で2列を
+  割る時だけ2列に収まる実効幅へ縮める(375→167px/390→175px)。PCの
+  thumbSize slider・保存値・Trash/Table/Bulk editは不変。
+  gridTemplateColumns / virtualGrid minItemSize / keyboard gridCols /
+  バッジ・ボタン表示ゲートを同じ実効幅に統一(ずれると矢印移動が壊れるため)。
+  gridColsはauto-fill minmaxと同式(gap8込み)に修正(旧式は+3近似)。
+- Codexレビュー P1対応: pointer:coarseではadmin-tap-smが40px角になり
+  ⇤前次⇥4ボタン+gap=172pxが167pxカードからはみ出すため、
+  `showLibraryJumpButtons`(coarse=180px/fine=120pxの実寸根拠定数)で
+  先頭/末尾ジャンプを出し分け。前/次だけで並び替えは維持。
+- `admin-virtual-grid.test.ts`: 両純関数の境界値テスト8件追加。
+- `scripts/smoke/admin-mobile-library.spec.ts` 新規: hasTouch=trueで
+  pointer:coarseを再現し、375x667/390x844で 2列以上・横はみ出し0・
+  ボタンのカード内収まり・ジャンプ非表示・タイルタップ→Inspector開閉
+  (編集なし×=即閉じ・非書き込み)を検証。desktopはminmax(220px)不変を固定。
+
+### 触ったファイル
+
+- packages/web/src/web/pages/admin.tsx
+- packages/web/src/web/test/admin-virtual-grid.test.ts
+- scripts/smoke/admin-mobile-library.spec.ts (新規)
+- task.md / docs/agent-logs/2026-07-11.md
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(334 tests / 0 fail)。
+- `bun run smoke`: 26 passed / 23 skipped / 1 failed — 既知の
+  admin-trash-signal.spec.ts のみ(別チケット・今回起因0件)。
+- 列数実測(smoke内アサーション): 375px幅=2列(実効167px)、390px幅=2列
+  (実効175px)。横はみ出し0、タイルタップでInspectorが開き×で閉じる。
+
+### 検証していないこと
+
+- 実機(iPhone/Android)での確認。エミュレーション(hasTouch+viewport)のみ。
+
+### push したか
+
+**していない**。Codexがオーナー明示許可のもとレビュー後に実施予定
+(Claudeはautonomy-rulesに従いpushしない)。
+
+### 本番で確認したか
+
+していない(push後にakieguchi.comのadminで要確認)。
+
+### 次の担当者が触ってよい場所
+
+- Libraryのモバイル表示の追加改善(実効幅ロジックは純関数に隔離済み)。
+
+### 次の担当者が触ってはいけない場所
+
+- Trash/Tableのgrid(意図的にthumbSize直参照のまま)。

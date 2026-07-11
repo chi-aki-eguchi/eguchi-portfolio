@@ -1501,6 +1501,55 @@ export function computeVirtualGridWindow({
   };
 }
 
+// 2列未満に落ちる実効幅では、移動ボタン最大4個(≈108px)+バッジが
+// タイルからはみ出すため、これ未満へは縮めず従来の1列表示を維持する。
+export const LIBRARY_MIN_EFFECTIVE_THUMB = 120;
+
+// スマホの Library は thumbSize(初期220・sliderは hidden md:flex で変更不能)
+// のまま minmax に入ると 375/390px 幅で1列になり、写真が1枚ずつしか見えない。
+// 実測 grid 幅で2列を割る時だけ「2列に収まる幅」へ縮める。通常の thumbSize
+// (PCの slider / 保存値)には触れないので、PC 表示は不変。
+// grid / 仮想化 / キーボード列数 / スクロール計算は全てこの戻り値を参照する
+// こと — どれかが生の thumbSize を見ると列数の解釈がずれて矢印移動や
+// 仮想ウィンドウが壊れる。
+export function effectiveLibraryThumbSize({
+  thumbSize,
+  gridWidth,
+  gap = LIBRARY_GRID_GAP,
+}: {
+  thumbSize: number;
+  gridWidth: number;
+  gap?: number;
+}): number {
+  // 未計測(マウント直後・jsdom)は従来どおり
+  if (gridWidth <= 0) return thumbSize;
+  const columns = Math.floor((gridWidth + gap) / (thumbSize + gap));
+  if (columns >= 2) return thumbSize;
+  const twoColumnSize = Math.floor((gridWidth - gap) / 2);
+  if (twoColumnSize < LIBRARY_MIN_EFFECTIVE_THUMB) return thumbSize;
+  // columns < 2 ⇔ gridWidth < 2*thumbSize + gap なので必ず縮む方向
+  // (ユーザーが PC で小さくした値を巨大化させることはない)
+  return twoColumnSize;
+}
+
+// pointer:coarse では .admin-tap-sm の当たり判定が 40px 角へ広がる
+// (styles.css の @media (pointer: coarse))。並び替え4ボタン+gap(4px×3)で
+// 最低 40*4+12=172px 必要になり、2列時の実効幅(167px前後)からはみ出す。
+// ジャンプ(先頭/末尾)ボタンはカードに実寸で収まる時だけ表示する。
+export const LIBRARY_JUMP_MIN_THUMB_COARSE = 180; // 172px + 余白
+export const LIBRARY_JUMP_MIN_THUMB_FINE = 120; // 24*4+12=108px + 余白
+export function showLibraryJumpButtons(
+  effectiveThumbSize: number,
+  coarsePointer: boolean,
+): boolean {
+  return (
+    effectiveThumbSize >=
+    (coarsePointer
+      ? LIBRARY_JUMP_MIN_THUMB_COARSE
+      : LIBRARY_JUMP_MIN_THUMB_FINE)
+  );
+}
+
 function measuredContentWidth(el: HTMLElement | null): number {
   if (!el) return 0;
   const width = el.clientWidth;
@@ -2462,6 +2511,25 @@ export function GalleryTab({
     showTrash,
     thumbSize,
   ]);
+  // スマホ幅で1列に落ちないための実効サムネイル幅。Library の grid CSS・
+  // 仮想化・キーボード列数はこの値で統一する(Trash/Table は従来どおり)。
+  const effectiveThumbSize = useMemo(
+    () =>
+      effectiveLibraryThumbSize({
+        thumbSize,
+        gridWidth: libraryGridMetrics.gridWidth,
+      }),
+    [thumbSize, libraryGridMetrics.gridWidth],
+  );
+  // ポインタ種別は実行中に変わらない前提で初回のみ判定(タッチ端末の
+  // タップ領域40px化に合わせてジャンプボタンの出し分けに使う)
+  const coarsePointer = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches,
+    [],
+  );
   const virtualGrid = useMemo(
     () =>
       computeVirtualGridWindow({
@@ -2469,14 +2537,14 @@ export function GalleryTab({
         scrollTop: libraryGridMetrics.scrollTop,
         viewportHeight: libraryGridMetrics.viewportHeight,
         gridWidth: libraryGridMetrics.gridWidth,
-        minItemSize: thumbSize,
+        minItemSize: effectiveThumbSize,
       }),
     [
       displayed.length,
+      effectiveThumbSize,
       libraryGridMetrics.gridWidth,
       libraryGridMetrics.scrollTop,
       libraryGridMetrics.viewportHeight,
-      thumbSize,
     ],
   );
   const virtualGridRef = useRef(virtualGrid);
@@ -3440,9 +3508,16 @@ export function GalleryTab({
   };
 
   // Number of grid columns, derived from the rendered grid width / thumb size.
+  // auto-fill minmax と同じ式(gap 込み)で数え、実効幅を使う — ここが CSS と
+  // ずれると ↑↓ の移動先が実際の列数と食い違う。
   const gridCols = () => {
     const w = gridRef.current?.clientWidth ?? 0;
-    return Math.max(1, Math.floor(w / (thumbSize + 3))); // +3 ≈ grid gap
+    return Math.max(
+      1,
+      Math.floor(
+        (w + LIBRARY_GRID_GAP) / (effectiveThumbSize + LIBRARY_GRID_GAP),
+      ),
+    );
   };
 
   // Keyboard
@@ -3569,7 +3644,7 @@ export function GalleryTab({
     showTrash,
     previewPhoto,
     showShortcuts,
-    thumbSize,
+    effectiveThumbSize,
     inspectPhoto,
     // requestCloseInspector が最新の下書きを見て未保存判定できるように
     editForm,
@@ -4667,7 +4742,7 @@ export function GalleryTab({
                   className="grid"
                   style={{
                     gap: LIBRARY_GRID_GAP,
-                    gridTemplateColumns: `repeat(auto-fill, minmax(${thumbSize}px, 1fr))`,
+                    gridTemplateColumns: `repeat(auto-fill, minmax(${effectiveThumbSize}px, 1fr))`,
                   }}
                 >
                   {visibleDisplayed.map((photo, localIdx) => {
@@ -4774,44 +4849,46 @@ export function GalleryTab({
                           style={{ background: catColor }}
                           title={photo.category}
                         />
-                        {thumbSize >= 120 && metadataBadges.length > 0 && (
-                          <div
-                            aria-label={`未入力: ${metadataBadges.join(", ")}`}
-                            className="absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
-                          >
-                            {metadataBadges.map((label) => (
-                              <span
-                                key={label}
-                                className="rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] leading-none text-white/70"
-                              >
-                                {label}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {effectiveThumbSize >= 120 &&
+                          metadataBadges.length > 0 && (
+                            <div
+                              aria-label={`未入力: ${metadataBadges.join(", ")}`}
+                              className="absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
+                            >
+                              {metadataBadges.map((label) => (
+                                <span
+                                  key={label}
+                                  className="rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] leading-none text-white/70"
+                                >
+                                  {label}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         {/* 右下に置く: 左下の移動ボタン（モバイルでは常時表示）と重ならない */}
-                        {thumbSize >= 120 && usageBadgeLabels.length > 0 && (
-                          <div
-                            aria-label={`使用状況: ${usageBadgeLabels.join(", ")}`}
-                            className="absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
-                          >
-                            {heroIndex >= 0 && (
-                              <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-900/70 px-1.5 py-0.5 text-[9px] leading-none text-amber-200/90">
-                                <Star size={8} /> Hero {heroIndex + 1}
-                              </span>
-                            )}
-                            {photo.seriesId != null && (
-                              <span className="inline-flex items-center gap-0.5 rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
-                                <Layers size={8} /> Series
-                              </span>
-                            )}
-                            {displaySize !== "M" && (
-                              <span className="rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
-                                {displaySize}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        {effectiveThumbSize >= 120 &&
+                          usageBadgeLabels.length > 0 && (
+                            <div
+                              aria-label={`使用状況: ${usageBadgeLabels.join(", ")}`}
+                              className="absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
+                            >
+                              {heroIndex >= 0 && (
+                                <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-900/70 px-1.5 py-0.5 text-[9px] leading-none text-amber-200/90">
+                                  <Star size={8} /> Hero {heroIndex + 1}
+                                </span>
+                              )}
+                              {photo.seriesId != null && (
+                                <span className="inline-flex items-center gap-0.5 rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
+                                  <Layers size={8} /> Series
+                                </span>
+                              )}
+                              {displaySize !== "M" && (
+                                <span className="rounded-sm bg-black/65 px-1.5 py-0.5 text-[9px] leading-none text-white/75">
+                                  {displaySize}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         {/* Selection mark — hand-drawn grease-pencil circle.
                         Always mounted (for tiles the virtualizer renders) so
                         opacity can transition on deselect too; only the most
@@ -4847,7 +4924,7 @@ export function GalleryTab({
                             strokeLinejoin="round"
                           />
                         </svg>
-                        {thumbSize >= 120 && (
+                        {effectiveThumbSize >= 120 && (
                           <div className="absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <button
                               type="button"
@@ -4889,8 +4966,12 @@ export function GalleryTab({
                         Always visible on mobile; hover-reveal on desktop. */}
                         {!reorderLocked && !showTrash && (
                           <div className="absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                            {/* ⇤⇥ hide on small thumbnails — 4 buttons (~105px) overflow an 80px tile */}
-                            {thumbSize >= 120 && (
+                            {/* ⇤⇥ はカードに実寸で収まる時だけ(coarse時は40px角×4個)。
+                            前/次だけでも並び替えは完結する */}
+                            {showLibraryJumpButtons(
+                              effectiveThumbSize,
+                              coarsePointer,
+                            ) && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -4928,7 +5009,10 @@ export function GalleryTab({
                             >
                               <ChevronRight size={13} />
                             </button>
-                            {thumbSize >= 120 && (
+                            {showLibraryJumpButtons(
+                              effectiveThumbSize,
+                              coarsePointer,
+                            ) && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();

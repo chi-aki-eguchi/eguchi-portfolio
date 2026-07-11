@@ -3354,6 +3354,21 @@ export function GalleryTab({
     setEditForm(photoToEditForm(photo));
   };
 
+  // ×/Escape での閉じは未保存の編集を無言で失わない(背景タップ保護と一貫、
+  // Codexレビュー 2026-07-11)。編集がなければ即閉じ、あれば既存の
+  // confirmDialog(キャンセル=編集を続ける)で明示確認してから破棄する。
+  const requestCloseInspector = () => {
+    if (inspectPhoto && photoEditFormChanged(editForm, inspectPhoto)) {
+      setConfirmDialog({
+        message: "保存していない編集があります。保存せずに閉じますか？",
+        confirmLabel: "保存せず閉じる",
+        onConfirm: () => setInspectPhoto(null),
+      });
+      return;
+    }
+    setInspectPhoto(null);
+  };
+
   // C3: move the keyboard cursor (lastClicked) by an offset within `displayed`.
   // Arrow nav collapses to a single selection (Bridge/Finder behaviour).
   const navByOffset = (offset: number) => {
@@ -3417,7 +3432,8 @@ export function GalleryTab({
           return;
         }
         setSelected(new Set());
-        setInspectPhoto(null);
+        // 未保存編集の無言破棄を防ぐ(×と同じ確認導線)
+        requestCloseInspector();
         return;
       }
 
@@ -3510,6 +3526,8 @@ export function GalleryTab({
     showShortcuts,
     thumbSize,
     inspectPhoto,
+    // requestCloseInspector が最新の下書きを見て未保存判定できるように
+    editForm,
   ]);
 
   // Undo toast auto-dismiss after 5s
@@ -5638,7 +5656,7 @@ export function GalleryTab({
                 Edit Photo
               </span>
               <button
-                onClick={() => setInspectPhoto(null)}
+                onClick={requestCloseInspector}
                 aria-label="Close"
                 className="admin-tap text-[var(--admin-muted)] transition-colors p-1 -mr-1 flex items-center justify-center"
               >

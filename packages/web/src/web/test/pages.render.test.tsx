@@ -872,6 +872,68 @@ describe("shared components", () => {
     }
   });
 
+  // 2026-07-11: Inspector の × は未保存編集を無言で破棄しない(背景タップ
+  // 保護と一貫)。未編集なら即閉じ、未保存なら confirmDialog を通す。
+  test("AdminPage: inspector × closes immediately when clean, confirms when dirty", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      const inspectorClose = () =>
+        host.querySelector(
+          'button[aria-label="Close"]',
+        ) as HTMLButtonElement | null;
+
+      // 未編集: × は直ちに閉じる(確認なし)
+      const tile = await waitForButton(host, 'button[aria-label="A"]');
+      tile.click();
+      await flush(60);
+      expect(host.textContent).toContain("Edit Photo");
+      inspectorClose()!.click();
+      await flush(60);
+      expect(host.textContent).not.toContain("Edit Photo");
+      expect(host.textContent).not.toContain("保存せずに閉じますか");
+
+      // 未保存の編集あり: × で確認が出て、キャンセルなら編集を続けられる
+      tile.click();
+      await flush(60);
+      changeInput(inputByLabel(host, "タイトル"), "Dirty close title");
+      await flush(80);
+      inspectorClose()!.click();
+      await flush(60);
+      expect(host.textContent).toContain(
+        "保存していない編集があります。保存せずに閉じますか？",
+      );
+      expect(host.textContent).toContain("Edit Photo");
+      buttonWithText(host, "キャンセル").click();
+      await flush(60);
+      expect(host.textContent).not.toContain("保存せずに閉じますか");
+      expect(host.textContent).toContain("Edit Photo");
+      expect((inputByLabel(host, "タイトル") as HTMLInputElement).value).toBe(
+        "Dirty close title",
+      );
+
+      // 「保存せず閉じる」を選ぶと閉じる
+      inspectorClose()!.click();
+      await flush(60);
+      buttonWithText(host, "保存せず閉じる").click();
+      await flush(60);
+      expect(host.textContent).not.toContain("Edit Photo");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage: setup checklist jumps update the active group", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };

@@ -6212,3 +6212,38 @@ reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失�
 - admin のグローバル button リセットと Tailwind `!min-h-0` の CSS 優先度の罠は
   決定ログ 2026-07-11 に記録(新しい admin UI 部品を作る際は必読)。
 - admin-trash-signal.spec.ts の既存 fail は別チケット(2026-07-10から継続)。
+
+---
+
+## Handoff — 2026-07-11 Inspector ×の未保存ガード (Driver: Claude Code / Fable5)
+
+### 目的・経緯
+
+スマホadmin改善の仕上げ(Codex経由)。写真編集パネルの × / Escape で
+未保存編集が無言で消える経路を塞ぎ、背景タップ保護と一貫させた。
+
+### 変更内容
+
+- `admin.tsx` に `requestCloseInspector` を追加し × と Escape を配線。
+  編集なし=即閉じ / 編集あり=既存 confirmDialog で
+  「保存せず閉じる」or「キャンセル(編集を続ける)」。
+- Library keydown effect の依存に editForm を追加(入力直後の Escape が
+  古い下書きで判定される stale closure を予防)。
+- render テスト1件追加(即閉じ/確認/下書き保持/破棄の4経路を固定)。
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(326 tests / 0 fail)。
+- `bun run smoke`: 24 passed / 21 skipped / 1 failed — 既知の
+  admin-trash-signal.spec.ts のみ(別チケット・今回起因0件)。
+- 390x844 実ブラウザで 未編集×即閉じ / 未保存×→確認→続ける(下書き保持) /
+  保存せず閉じる を確認。
+
+### push したか
+
+**していない**(オーナーの手で)。
+
+### 次の担当者への注意
+
+- 矢印キーで編集中に別写真へ移ると下書きが置き換わる件は未対応の残課題
+  (決定ログ参照・要相談)。

@@ -6346,3 +6346,59 @@ reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失�
 ### 次の担当者が触ってはいけない場所
 
 - Trash/Tableのgrid(意図的にthumbSize直参照のまま)。
+
+## Handoff 2026-07-12 — Claude Code: admin Library高速スワイプのタイルちらつき修正
+
+### 目的
+
+admin Libraryを高速スワイプした際、写真タイルが強くチラつく(白抜けする)問題の
+再現・原因特定と安定化。公開ギャラリーも同症状がないか確認する(codex-reviewer経由の依頼)。
+
+### 変更内容
+
+- Library仮想グリッドのタイル画像を `loading="lazy"` → `loading="eager"` に変更。
+  仮想化が既にマウント数を可視+overscan 8行へ絞っているため、lazyは二重のゲートに
+  なっており、高速スワイプ中のremountでキャッシュ済みサムネイルすら読み込みが
+  保留されて viewport 全面が白抜けしていた(Playwrightで毎フレーム実測: 修正前は
+  戻りスワイプで可視8枚全部が白・静止後475ms未回復 → 修正後は白抜け0フレーム)。
+- 読込中の下地色を `--admin-paper` → `--admin-paper-deep` へ。読込待ちが
+  「白い穴」ではなく「台紙」に見えるように。
+- 公開ギャラリーは非仮想化でremountがなく、戻りスクロール白抜けゼロ・初回blankは
+  フェード演出+初回フェッチ(静止後150ms解消)のため変更なし。
+- Trashグリッドは非仮想化なのでlazyのまま(正しい用法)。
+
+### 触ったファイル
+
+- packages/web/src/web/pages/admin.tsx(img 1箇所+WHYコメント)
+- packages/web/src/web/test/pages.render.test.tsx(回帰テスト追加)
+- docs/agent-logs/2026-07-12.md(決定ログ)
+- scratch/flicker-repro.mjs, scratch/flicker-repro-public.mjs(調査用・gitignored)
+
+### 検証したこと
+
+- bun run check 成功(335 tests / 0 fail、build成功)
+- bun run smoke: 26 passed / 1 failed(既知のadmin-trash-signalのみ・今回と無関係)
+- Playwright実ブラウザ(headless Chromium, hasTouch)で375x812/390x844の両方:
+  admin Libraryの戻りスワイプ白抜け0フレーム、仮想ウィンドウ空白なし、
+  公開gallery /gallery も戻りスクロール白抜けゼロを確認
+
+### 検証していないこと
+
+- 実機(iPhone実物)での確認
+- 本番環境での確認
+
+### push したか
+
+していない(ローカルコミットのみ)。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない。
+
+### 次の担当者が触ってよい場所
+
+admin.tsx のLibraryタイル周り(このHandoffの続きの調整)。
+
+### 次の担当者が触ってはいけない場所
+
+なし(working tree はコミット済みでクリーン)。

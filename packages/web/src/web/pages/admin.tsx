@@ -4826,14 +4826,18 @@ export function GalleryTab({
                           onClick={(e) => handlePhotoClick(photo, idx, e)}
                           className="absolute inset-0 z-[1] cursor-pointer"
                         />
+                        {/* eager固定: マウント範囲は仮想化が既に絞っている(可視+overscan)。
+                        lazyだと高速スワイプ中のremountでキャッシュ済み画像すら白抜けし
+                        (Chromeはスクロール中lazy読込を後回しにする)、静止後まで持続する
+                        強いチラつきになる。背景はpaper-deepで「読込中の台紙」に見せる */}
                         <img
                           src={adminPhotoSrc(photo, 400, 70)}
                           alt={photo.title}
-                          className={`w-full aspect-square object-cover bg-[var(--admin-paper)] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
+                          className={`w-full aspect-square object-cover bg-[var(--admin-paper-deep)] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
                           style={{
                             objectPosition: adminPhotoObjectPosition(photo),
                           }}
-                          loading="lazy"
+                          loading="eager"
                           decoding="async"
                           draggable={false}
                         />

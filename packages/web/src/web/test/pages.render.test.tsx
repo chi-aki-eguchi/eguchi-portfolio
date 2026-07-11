@@ -548,6 +548,39 @@ describe("shared components", () => {
     }
   });
 
+  // 回帰(2026-07-12): Library仮想グリッドのタイル画像はeager固定。lazyへ戻すと
+  // 高速スワイプ中のremountでキャッシュ済みサムネイルまで白抜けする強いチラつきが
+  // 再発する(マウント数は仮想化が既に可視+overscanへ絞っており、eagerでも
+  // 読込対象はその範囲に留まる)。scratch/flicker-repro.mjs で実測済み。
+  test("AdminPage: Library tile images load eagerly (virtualized grid must not use lazy)", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevPhotos = canned["/api/photos"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/photos"] = { photos: samplePhotos };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      const tileImages = Array.from(
+        host.querySelectorAll(".admin-photo-tile img"),
+      );
+      expect(tileImages.length).toBeGreaterThan(0);
+      for (const img of tileImages) {
+        expect(img.getAttribute("loading")).toBe("eager");
+      }
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      canned["/api/photos"] = prevPhotos;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("SeriesTab: series cards show … (not 0 枚) while photos are loading", async () => {
     const prevSeries = canned["/api/admin/series"];
     canned["/api/admin/series"] = {

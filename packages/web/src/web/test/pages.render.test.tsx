@@ -934,6 +934,84 @@ describe("shared components", () => {
     }
   });
 
+  // 2026-07-11: ×/Escape 保護の拡張 — 未保存の下書きがある間、別写真への
+  // 切替(矢印キー/タイルクリック)も無言で下書きを置き換えない。
+  test("AdminPage: inspector photo switch confirms when dirty (arrow / tile click)", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      const pressArrowRight = async () => {
+        dom.window.dispatchEvent(
+          new dom.window.KeyboardEvent("keydown", {
+            key: "ArrowRight",
+            bubbles: true,
+          }),
+        );
+        await flush(60);
+      };
+      const titleInput = () => inputByLabel(host, "タイトル");
+
+      // 下書きなし: ArrowRight は確認なしで次の写真(B)へ
+      const tileA = await waitForButton(host, 'button[aria-label="A"]');
+      tileA.click();
+      await flush(60);
+      expect(titleInput().value).toBe("A");
+      await pressArrowRight();
+      expect(titleInput().value).toBe("B");
+      expect(host.textContent).not.toContain("別の写真へ移動しますか");
+
+      // 下書きあり: ArrowRight で確認。キャンセル=写真・入力・選択を維持
+      changeInput(titleInput(), "dirty-nav");
+      await flush(80);
+      await pressArrowRight();
+      expect(host.textContent).toContain(
+        "保存していない編集があります。保存せずに別の写真へ移動しますか？",
+      );
+      buttonWithText(host, "キャンセル").click();
+      await flush(60);
+      expect(titleInput().value).toBe("dirty-nav");
+      expect(host.textContent).toContain("b.jpg"); // File Info = まだ B のまま
+      expect(host.textContent).toContain("選択中 1枚"); // 選択も維持
+
+      // 破棄を明示した時だけ次の写真(C)へ移動する
+      await pressArrowRight();
+      buttonWithText(host, "保存せず移動").click();
+      await flush(60);
+      expect(host.textContent).toContain("c.jpg");
+      expect(titleInput().value).toBe("");
+
+      // タイルクリック入口も同じ3経路(下書きあり→確認→キャンセル→破棄)
+      changeInput(titleInput(), "dirty-click");
+      await flush(80);
+      tileA.click();
+      await flush(60);
+      expect(host.textContent).toContain("保存せずに別の写真へ移動しますか？");
+      buttonWithText(host, "キャンセル").click();
+      await flush(60);
+      expect(titleInput().value).toBe("dirty-click");
+      expect(host.textContent).toContain("c.jpg");
+      tileA.click();
+      await flush(60);
+      buttonWithText(host, "保存せず移動").click();
+      await flush(60);
+      expect(host.textContent).toContain("a.jpg");
+      expect(titleInput().value).toBe("A");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("AdminPage: setup checklist jumps update the active group", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };

@@ -6247,3 +6247,39 @@ reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失�
 
 - 矢印キーで編集中に別写真へ移ると下書きが置き換わる件は未対応の残課題
   (決定ログ参照・要相談)。
+
+---
+
+## Handoff — 2026-07-11 Inspector 写真切替の下書きガード (Driver: Claude Code / Fable5)
+
+### 目的・経緯
+
+未保存の編集中に矢印キーや別写真クリックで写真を切り替えると下書きが
+無言で消える P1 を修正(×/Escape保護 b17c7cc の拡張。Codex経由)。
+
+### 変更内容
+
+- `admin.tsx`: `guardInspectorSwitch`+`openInspectorFor` を追加し、
+  タイルクリック/矢印キー/Enter の3入口を保護。キャンセルは写真・入力・
+  選択状態を完全維持、「保存せず移動」で明示破棄時のみ移動。
+  複製(duplicate)の自動オープンは下書きがある間だけ抑止。
+  同一写真の再クリックで editForm がリセットされる問題も解消。
+- render テスト1件追加(矢印/クリック両入口の clean/確認/キャンセル/破棄)。
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(327 tests / 0 fail)。
+- `bun run smoke`: 24 passed / 21 skipped / 1 failed — 既知の
+  admin-trash-signal.spec.ts のみ(別チケット・今回起因0件)。
+- 実ブラウザ: desktop(1440x900)でクリック/矢印の全経路、mobile(390x844)で
+  矢印経路を確認。モバイルは全面ドロワー+backdrop保護により
+  「開いたまま別タイルタップ」の入口自体が存在しないことも確認。
+
+### push したか
+
+**していない**(オーナーの手で)。
+
+### 次の担当者への注意
+
+- Escapeの確認表示時に選択解除が先に走る既存挙動は今回未変更(決定ログ参照)。
+- packages/web/.env は古い(6/1)。ADMIN_PASSWORD 等はルートの .env が正。

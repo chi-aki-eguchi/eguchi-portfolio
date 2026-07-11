@@ -2796,7 +2796,14 @@ export function GalleryTab({
       qc.invalidateQueries({ queryKey: ["photos"] });
       qc.invalidateQueries({ queryKey: ["series"] });
       const dup = (data as { photo?: Photo })?.photo;
-      if (dup) openInspector(dup);
+      // 未保存の下書きがある間は複製の自動オープンで下書きを消さない
+      // (複製自体は成功済み。トーストのみ表示し、現在の編集を続けられる)。
+      if (
+        dup &&
+        !(inspectPhoto && photoEditFormChanged(editForm, inspectPhoto))
+      ) {
+        openInspector(dup);
+      }
       setBatchToast("複製しました");
       setTimeout(() => setBatchToast(null), 2000);
     },
@@ -3183,8 +3190,14 @@ export function GalleryTab({
         });
       }
     } else {
-      setSelected(new Set([photo.id]));
-      openInspector(photo);
+      // 未保存の下書きがある間はガードを通す。キャンセル時は選択状態も
+      // カーソル(lastClicked)も動かさないため、ここで早期 return する。
+      guardInspectorSwitch(photo, () => {
+        setSelected(new Set([photo.id]));
+        openInspectorFor(photo);
+        setLastClicked(photo.id);
+      });
+      return;
     }
     setLastClicked(photo.id);
   };
@@ -3354,6 +3367,34 @@ export function GalleryTab({
     setEditForm(photoToEditForm(photo));
   };
 
+  // 既に同じ写真を開いている時は再オープンしない — openInspector は
+  // editForm を保存値でリセットするため、下書きの無言消失につながる。
+  const openInspectorFor = (photo: Photo) => {
+    if (inspectPhoto?.id === photo.id) return;
+    openInspector(photo);
+  };
+
+  // ×/Escape 保護(requestCloseInspector)を写真切替にも拡張(Codex経由
+  // 2026-07-11)。未保存の下書きがある間、別写真への切替(クリック/矢印/
+  // Enter)は明示確認を通す。キャンセル時は現在の写真・入力内容・選択状態を
+  // すべて維持するため、切替の副作用は proceed に閉じ込めて丸ごと保留する。
+  const guardInspectorSwitch = (target: Photo, proceed: () => void): void => {
+    if (
+      inspectPhoto &&
+      inspectPhoto.id !== target.id &&
+      photoEditFormChanged(editForm, inspectPhoto)
+    ) {
+      setConfirmDialog({
+        message:
+          "保存していない編集があります。保存せずに別の写真へ移動しますか？",
+        confirmLabel: "保存せず移動",
+        onConfirm: proceed,
+      });
+      return;
+    }
+    proceed();
+  };
+
   // ×/Escape での閉じは未保存の編集を無言で失わない(背景タップ保護と一貫、
   // Codexレビュー 2026-07-11)。編集がなければ即閉じ、あれば既存の
   // confirmDialog(キャンセル=編集を続ける)で明示確認してから破棄する。
@@ -3382,16 +3423,20 @@ export function GalleryTab({
         ? 0
         : Math.min(displayed.length - 1, Math.max(0, curIdx + offset));
     const photo = displayed[nextIdx];
-    setSelected(new Set([photo.id]));
-    setLastClicked(photo.id);
-    setPreviewPhoto((prev) => (prev ? photo : prev)); // keep quick-preview in sync if open
-    if (inspectPhoto) openInspector(photo); // keep inspector panel in sync if open
-    scrollLibraryIndexIntoView(nextIdx);
-    requestAnimationFrame(() =>
-      document
-        .getElementById(`admin-photo-${photo.id}`)
-        ?.scrollIntoView?.({ block: "nearest" }),
-    );
+    // 未保存の下書きがある間はガードを通す。キャンセル時はカーソル・選択・
+    // プレビュー・スクロールのどれも動かさない。
+    guardInspectorSwitch(photo, () => {
+      setSelected(new Set([photo.id]));
+      setLastClicked(photo.id);
+      setPreviewPhoto((prev) => (prev ? photo : prev)); // keep quick-preview in sync if open
+      if (inspectPhoto) openInspectorFor(photo); // keep inspector panel in sync if open
+      scrollLibraryIndexIntoView(nextIdx);
+      requestAnimationFrame(() =>
+        document
+          .getElementById(`admin-photo-${photo.id}`)
+          ?.scrollIntoView?.({ block: "nearest" }),
+      );
+    });
   };
 
   // Number of grid columns, derived from the rendered grid width / thumb size.
@@ -3500,7 +3545,7 @@ export function GalleryTab({
         const photo = displayed.find((p) => p.id === lastClicked);
         if (photo) {
           e.preventDefault();
-          openInspector(photo);
+          guardInspectorSwitch(photo, () => openInspectorFor(photo));
         }
         return;
       }

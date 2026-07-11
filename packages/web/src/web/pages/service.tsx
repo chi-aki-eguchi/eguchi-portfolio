@@ -207,7 +207,7 @@ function HeroSitePreview({ photos }: { photos: ServicePhoto[] }) {
           </p>
           <Link
             to="/gallery"
-            className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.36)] hover:text-[rgba(var(--foreground-rgb),0.62)] transition-colors duration-300"
+            className="tap-target font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.36)] hover:text-[rgba(var(--foreground-rgb),0.62)] transition-colors duration-300"
           >
             Open
           </Link>

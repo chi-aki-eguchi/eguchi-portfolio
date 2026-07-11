@@ -117,6 +117,26 @@ function setupOpenButton(host: Element, rowTitle: string): HTMLButtonElement {
   return button;
 }
 
+// 2026-07-11 スマホナビ再設計: グループボタンはボトムシートを開き、
+// タブはシート内の行から選ぶ(グループ→タブの2クリック導線は不変)。
+// グループは .admin-bottom-nav__btn を直接探す — buttonWithText だと
+// 「サイトで確認」等の同語ボタンに先にマッチするため。
+function navGroup(host: Element, label: string): HTMLButtonElement {
+  const btn = Array.from(host.querySelectorAll(".admin-bottom-nav__btn")).find(
+    (el) => el.textContent?.includes(label),
+  ) as HTMLButtonElement | undefined;
+  if (!btn) throw new Error(`Bottom nav group not found: ${label}`);
+  return btn;
+}
+
+function sheetRow(host: Element, label: string): HTMLButtonElement {
+  const row = Array.from(host.querySelectorAll(".admin-sheet__row")).find(
+    (el) => el.textContent?.includes(label),
+  ) as HTMLButtonElement | undefined;
+  if (!row) throw new Error(`Sheet row not found: ${label}`);
+  return row;
+}
+
 async function waitForText(host: Element, text: string, attempts = 20) {
   for (let i = 0; i < attempts; i += 1) {
     if (host.textContent?.includes(text)) return;
@@ -691,19 +711,29 @@ describe("shared components", () => {
 
       expect(host.textContent).toContain("Library");
 
-      buttonWithText(host, "見せ方").click();
+      navGroup(host, "見せ方").click();
+      await flush(30);
+      sheetRow(host, "Hero").click();
       await waitForText(host, "Hero Slides");
 
-      buttonWithText(host, "Series").click();
+      navGroup(host, "見せ方").click();
+      await flush(30);
+      sheetRow(host, "Series").click();
       await waitForText(host, "New Series");
 
-      buttonWithText(host, "Categories").click();
+      navGroup(host, "見せ方").click();
+      await flush(30);
+      sheetRow(host, "Categories").click();
       await waitForText(host, "New Category");
 
-      buttonWithText(host, "サイト").click();
+      navGroup(host, "サイト").click();
+      await flush(30);
+      sheetRow(host, "Profile").click();
       await waitForText(host, "Profile Photo");
 
-      buttonWithText(host, "Pricing").click();
+      navGroup(host, "サイト").click();
+      await flush(30);
+      sheetRow(host, "Pricing").click();
       await waitForText(host, "プランを追加");
       expect(host.textContent).toContain("Contactページに表示される料金です");
 
@@ -738,13 +768,17 @@ describe("shared components", () => {
         seedAdminPhotos,
       );
 
-      buttonWithText(host, "サイト").click();
+      navGroup(host, "サイト").click();
+      await flush(30);
+      sheetRow(host, "Profile").click();
       await waitForText(host, "Profile Photo");
       const nameInput = inputByLabel(host, "Name (JP)");
       changeInput(nameInput, "Draft Name");
       await flush(80);
 
-      buttonWithText(host, "見せ方").click();
+      navGroup(host, "見せ方").click();
+      await flush(30);
+      sheetRow(host, "Hero").click();
       await flush(80);
       expect(host.textContent).toContain("未保存の変更があります");
       expect(host.textContent).toContain(
@@ -777,7 +811,9 @@ describe("shared components", () => {
 
       changeInput(inputByLabel(host, "タイトル"), "Unsaved photo title");
       await flush(80);
-      buttonWithText(host, "見せ方").click();
+      navGroup(host, "見せ方").click();
+      await flush(30);
+      sheetRow(host, "Hero").click();
       await flush(80);
 
       expect(host.textContent).toContain("未保存の変更があります");
@@ -818,7 +854,9 @@ describe("shared components", () => {
       buttonWithText(host, "Save").click();
       await waitForText(host, "Saved");
 
-      buttonWithText(host, "見せ方").click();
+      navGroup(host, "見せ方").click();
+      await flush(30);
+      sheetRow(host, "Hero").click();
       await waitForText(host, "Hero Slides");
       expect(host.textContent).not.toContain("未保存の変更があります");
 

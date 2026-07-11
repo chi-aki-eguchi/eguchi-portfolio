@@ -698,7 +698,7 @@ export function HeroTab() {
                       onClick={() => moveHero(photo.id, -1)}
                       disabled={i === 0}
                       aria-label="前へ移動"
-                      className="w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
+                      className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft size={14} />
                     </button>
@@ -706,7 +706,7 @@ export function HeroTab() {
                       onClick={() => removeHero.mutate(photo.id)}
                       disabled={removeHero.isPending}
                       aria-label="ヒーローから削除"
-                      className="w-7 h-7 flex items-center justify-center bg-red-500/80 text-white rounded-sm hover:bg-red-500 disabled:opacity-40 disabled:pointer-events-none"
+                      className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-red-500/80 text-white rounded-sm hover:bg-red-500 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <X size={13} />
                     </button>
@@ -714,7 +714,7 @@ export function HeroTab() {
                       onClick={() => moveHero(photo.id, 1)}
                       disabled={i === heroPhotos.length - 1}
                       aria-label="後へ移動"
-                      className="w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
+                      className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
                     >
                       <ChevronRight size={14} />
                     </button>
@@ -1219,7 +1219,7 @@ export function CategoriesTab() {
                   onClick={() => moveCat(cat.id, -1)}
                   disabled={i === 0 || reorderCats.isPending}
                   aria-label="上へ移動"
-                  className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
+                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                 >
                   <ChevronUp size={13} />
                 </button>
@@ -1229,7 +1229,7 @@ export function CategoriesTab() {
                     i === categories.length - 1 || reorderCats.isPending
                   }
                   aria-label="下へ移動"
-                  className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
+                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                 >
                   <ChevronDown size={13} />
                 </button>
@@ -1246,7 +1246,7 @@ export function CategoriesTab() {
                 setDeleteCatConfirm({ id: cat.id, label: cat.label })
               }
               aria-label={`${cat.label} を削除`}
-              className="text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 ml-2"
+              className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 ml-2"
             >
               <Trash2 size={13} />
             </button>
@@ -1590,7 +1590,7 @@ export function SeriesTab() {
                       onClick={() => move(s.id, -1)}
                       disabled={i === 0 || reorder.isPending}
                       aria-label="上へ移動"
-                      className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
+                      className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                     >
                       <ChevronUp size={13} />
                     </button>
@@ -1598,7 +1598,7 @@ export function SeriesTab() {
                       onClick={() => move(s.id, 1)}
                       disabled={i === series.length - 1 || reorder.isPending}
                       aria-label="下へ移動"
-                      className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
+                      className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                     >
                       <ChevronDown size={13} />
                     </button>
@@ -1642,7 +1642,7 @@ export function SeriesTab() {
                       editId === s.id ? setEditId(null) : openEdit(s)
                     }
                     aria-label="編集"
-                    className="text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
+                    className="admin-tap-sm text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
                   >
                     {editId === s.id ? (
                       <ChevronUp size={14} />
@@ -1655,7 +1655,7 @@ export function SeriesTab() {
                       setDeleteTarget({ id: s.id, title: s.title })
                     }
                     aria-label={`${s.title} を削除`}
-                    className="text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -2170,7 +2170,7 @@ export function PricingTab() {
                     onClick={() => move(p.id, -1)}
                     disabled={i === 0 || reorder.isPending}
                     aria-label="上へ移動"
-                    className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
+                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                   >
                     <ChevronUp size={13} />
                   </button>
@@ -2178,7 +2178,7 @@ export function PricingTab() {
                     onClick={() => move(p.id, 1)}
                     disabled={i === plans.length - 1 || reorder.isPending}
                     aria-label="下へ移動"
-                    className="!min-h-0 text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
+                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                   >
                     <ChevronDown size={13} />
                   </button>
@@ -2211,7 +2211,7 @@ export function PricingTab() {
                     editId === p.id ? setEditId(null) : openEdit(p)
                   }
                   aria-label="編集"
-                  className="text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
+                  className="admin-tap-sm text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
                 >
                   {editId === p.id ? (
                     <ChevronUp size={14} />
@@ -2222,7 +2222,7 @@ export function PricingTab() {
                 <button
                   onClick={() => setDeleteTarget({ id: p.id, title: p.title })}
                   aria-label={`${p.title} を削除`}
-                  className="text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                  className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                 >
                   <Trash2 size={13} />
                 </button>

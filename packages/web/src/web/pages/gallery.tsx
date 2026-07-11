@@ -224,7 +224,7 @@ export default function GalleryPage() {
               key={val}
               onClick={() => setPinnedView(val)}
               aria-pressed={view === val}
-              className={`font-en text-xs tracking-[0.08em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
+              className={`tap-target font-en text-xs tracking-[0.08em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
                 view === val
                   ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
                   : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
@@ -254,7 +254,7 @@ export default function GalleryPage() {
                   key={cat.slug}
                   onClick={() => setActiveFilter(cat.slug)}
                   aria-pressed={activeFilter === cat.slug}
-                  className={`font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] whitespace-nowrap shrink-0 ${
+                  className={`tap-target font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] whitespace-nowrap shrink-0 ${
                     activeFilter === cat.slug
                       ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
                       : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
@@ -286,7 +286,7 @@ export default function GalleryPage() {
                   key={val}
                   onClick={() => setActiveMedium(val)}
                   aria-pressed={activeMedium === val}
-                  className={`font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
+                  className={`tap-target font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
                     activeMedium === val
                       ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
                       : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
@@ -316,7 +316,7 @@ export default function GalleryPage() {
                 </p>
                 <button
                   onClick={() => void refetchPhotos()}
-                  className="font-en text-xs tracking-[0.08em] pb-1 border-b-[1.5px] border-[rgba(var(--foreground-rgb),0.3)] text-[rgba(var(--foreground-rgb),0.55)] hover:text-[var(--foreground)] hover:border-[var(--foreground)] transition-colors duration-300"
+                  className="tap-target font-en text-xs tracking-[0.08em] pb-1 border-b-[1.5px] border-[rgba(var(--foreground-rgb),0.3)] text-[rgba(var(--foreground-rgb),0.55)] hover:text-[var(--foreground)] hover:border-[var(--foreground)] transition-colors duration-300"
                 >
                   Retry
                 </button>

@@ -6158,3 +6158,57 @@ reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失�
 - admin-trash-signal.spec.ts の既存failは別チケット(2026-07-10から継続)。
 - 新しいreorderエンドポイントを作る場合は必ず `buildReorderUpdate` を使う
   (CAST必須の理由は reorder-sql.ts 冒頭コメント参照)。
+
+---
+
+## Handoff — 2026-07-11 スマホ操作性の大幅改善(admin優先) (Driver: Claude Code / Fable5)
+
+### 目的・経緯
+
+秋さんの依頼(Codex経由): スマホでの公開サイトとadmin、特にadminの操作性を
+「PC版の縮小」でなくスマホ専用の操作設計として大きめに改善する。
+実ブラウザ監査(390x844/375x667、36スクショ+計測)でP0/P1を確定して実装。
+
+### 変更内容
+
+1. **adminモバイルナビ再設計(P0)** — 上部2段横スクロール(activeタブが画面外へ
+   流れる・親指が届かない)を廃止し、**下部固定バー3グループ+ボトムシート**へ。
+   上部は「現在タブ名+Site/Logout」の細いバーに。`admin-mobile-nav.tsx` 新設。
+   100dvh化・safe-area対応。未保存ガード・アップロード中無効化は旧ナビと同一。
+2. **タップ領域44px化(P0)** — `admin-tap`/`admin-tap-sm`(pointer:coarse限定、
+   デスクトップ不変)を並び替え↑↓・削除・編集・写真カード回転/移動・hero・
+   inspector内コントロール等 約30箇所へ適用。改善後の実測で32px未満 **0件**。
+3. **inspector改善(P1)** — 背景タップclose+暗転を追加。未保存編集がある間は
+   背景タップで閉じない(Codexレビュー指摘採用)。
+4. **公開側(P1)** — galleryフィルタ/Retry・serviceのOpenへ `tap-target`
+   (疑似要素で44px相当へ拡張、見た目不変)。
+5. **テスト** — 新規render+smoke(非書き込み)。既存4+1件は新導線へ追随
+   (検証内容の緩和なし)。詳細は決定ログ 2026-07-11。
+
+### 検証したこと(local確認)
+
+- `bun run check`: 成功(325 tests / 0 fail / tsc -b / oxlint / build)。
+- `bun run smoke`: 24 passed / 21 skipped / 1 failed — 既知の
+  admin-trash-signal.spec.ts のみ(スコープ外・今回起因0件)。
+- 改善前後のモバイル実ブラウザスクショ: scratch/mobile-audit/shots/
+  (gitignored。before=390x844-*, after=after-*)。
+
+### push したか
+
+**していない**(オーナーの手で)。
+
+### Railway反映 / 本番確認
+
+未実施(未push)。push後にスマホ実機で確認してほしいこと:
+1. /admin を開くと下部に「写真/見せ方/サイト」のバーが出て、タップでシートが
+   開きタブ移動できる(はじめに含む全9タブに2タップ以内で到達)。
+2. Libraryで写真タップ→右から編集パネル。編集途中に左の暗い部分をタップしても
+   閉じない(Xか保存/破棄でのみ閉じる)。
+3. categories/series/pricing の↑↓・ゴミ箱・鉛筆が指で押しやすくなっている。
+4. 公開ギャラリーのカテゴリ/Film/Digitalフィルタが押しやすい(見た目は不変)。
+
+### 次の担当者への注意
+
+- admin のグローバル button リセットと Tailwind `!min-h-0` の CSS 優先度の罠は
+  決定ログ 2026-07-11 に記録(新しい admin UI 部品を作る際は必読)。
+- admin-trash-signal.spec.ts の既存 fail は別チケット(2026-07-10から継続)。

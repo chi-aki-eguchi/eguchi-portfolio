@@ -364,24 +364,192 @@
   overflow: hidden;
 }
 
-.admin-atelier .admin-mobile-nav {
+/* --- スマホ admin ナビ(2026-07-11) ---------------------------------------
+   上部: 現在タブ名 + Site/Logout の細いバー。
+   下部: 3グループの固定バー + ボトムシート(タブ一覧)。
+   iOS Safari の URL バーで 100vh がはみ出さないよう dvh を優先する。 */
+.admin-atelier {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.admin-atelier .admin-mobile-topbar {
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 6px 0 14px;
+  padding-top: var(--sai-top, 0px);
   background: var(--admin-paper-soft);
   border-bottom: 1px solid var(--admin-line);
 }
 
-.admin-atelier .admin-mobile-nav button,
-.admin-atelier .admin-mobile-nav a {
-  border-radius: var(--admin-radius-sm) !important;
+.admin-atelier .admin-bottom-nav {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  background: var(--admin-paper-soft);
+  border-top: 1px solid var(--admin-line);
+  padding-bottom: var(--sai-bottom, 0px);
+}
+
+/* 三重クラスは同ファイルの button リセット((0,3,1)・後方定義)より優先させる
+   ための specificity 稼ぎ(.admin-btn-primary と同じ手法)。 */
+.admin-atelier.admin-atelier.admin-atelier .admin-bottom-nav__btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 6px 4px;
+  color: var(--admin-muted);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.admin-atelier .admin-bottom-nav__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 色はグローバル button リセットが color:!important を持つため、
+   button ではなく内側の span 側で active/inactive を描き分ける */
+.admin-atelier .admin-bottom-nav__label {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  color: var(--admin-muted);
+}
+
+.admin-atelier
+  .admin-bottom-nav__btn[data-active="true"]
+  .admin-bottom-nav__label {
+  color: var(--admin-ink);
+  font-weight: 500;
+}
+
+.admin-atelier .admin-bottom-nav__sub {
+  font-size: 10px;
+  line-height: 1.2;
+  min-height: 12px;
+  color: var(--admin-muted);
+}
+
+.admin-atelier
+  .admin-bottom-nav__btn[data-active="true"]
+  .admin-bottom-nav__sub {
+  color: var(--admin-accent);
+}
+
+.admin-atelier .admin-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.admin-atelier .admin-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.admin-atelier .admin-sheet__panel {
+  position: relative;
+  background: var(--admin-paper);
+  border-top: 1px solid var(--admin-line);
+  border-radius: 14px 14px 0 0;
+  padding: 6px 10px calc(10px + var(--sai-bottom, 0px));
+  box-shadow: var(--shadow-3);
+  animation: admin-sheet-in var(--dur-base) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-atelier .admin-sheet__panel {
+    animation: none;
+  }
+}
+
+@keyframes admin-sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.admin-atelier .admin-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 4px 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+
+.admin-atelier.admin-atelier.admin-atelier .admin-sheet__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: var(--admin-radius-sm);
+  font-size: 14px;
+  color: var(--admin-muted);
+}
+
+.admin-atelier .admin-sheet__row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 四重クラス+!important: グローバル button リセットの background/color
+   !important に active 行のハイライトが負けないようにする */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-sheet__row[data-active="true"] {
+  background-color: rgba(var(--admin-accent-rgb), 0.08) !important;
+  color: var(--admin-ink) !important;
 }
 
 @media (min-width: 1024px) {
-  .admin-atelier .admin-mobile-nav {
+  .admin-atelier .admin-mobile-topbar,
+  .admin-atelier .admin-bottom-nav,
+  .admin-atelier .admin-sheet {
     display: none !important;
+  }
+}
+
+/* 旧 `!min-h-0`(Tailwind)の置き換え。Tailwind の !important は
+   @layer utilities 内にあり、unlayered の !important より優先されるため
+   タッチ時の admin-tap-sm が効かなかった。normal 宣言 + 三重クラスで
+   グローバル button リセットの min-height:40px だけを打ち消す。 */
+.admin-atelier.admin-atelier.admin-atelier .admin-compact {
+  min-height: 0;
+}
+
+/* タッチ端末のみ、見た目を変えずに当たり判定を44px相当へ広げる。
+   アイコンサイズや余白のデザインはそのまま(quiet を保つ)。 */
+@media (pointer: coarse) {
+  /* !important: Tailwind の `!min-h-0`(細身チェブロン等のオプトアウト)より
+     タッチ時の当たり判定を優先する */
+  .admin-atelier .admin-tap {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  .admin-atelier .admin-tap-sm {
+    min-width: 40px !important;
+    min-height: 40px !important;
   }
 }
 
@@ -1291,6 +1459,23 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* 公開側テキストリンク型フィルタ(Gallery の Photos/Series・カテゴリ・
+   Film/Digital)用: タッチ端末のみ、見た目を変えずに疑似要素で当たり判定を
+   44px相当へ広げる。隣接ボタンとは gap-x-6(24px)なので ±8px は重ならない。 */
+@media (pointer: coarse) {
+  .tap-target {
+    position: relative;
+  }
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    left: -8px;
+    right: -8px;
+    top: -11px;
+    bottom: -11px;
+  }
 }
 
 /* ─── Safe area for iPhone notch / Dynamic Island / in-app browsers ─── */

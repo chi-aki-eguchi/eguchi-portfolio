@@ -79,12 +79,12 @@ import {
 } from "lucide-react";
 import {
   ADMIN_TAB_GROUPS,
-  groupForTab,
   isAdminTab,
   reorderLockReason,
   type Tab,
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
+import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 
 const LazyHeroTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.HeroTab })),
@@ -501,11 +501,6 @@ export default function AdminPage() {
     );
   if (!authenticated) return null;
 
-  const activeGroup = groupForTab(tab);
-  const visibleTabs = activeGroup.tabs.map((key) => ({
-    key,
-    ...ADMIN_TABS[key],
-  }));
   const sidebarSiteName =
     shellSettings?.siteNameEn?.trim() ||
     shellSettings?.siteName?.trim() ||
@@ -560,7 +555,7 @@ export default function AdminPage() {
 
   return (
     <div
-      className="admin-atelier h-screen flex select-none overflow-hidden"
+      className="admin-atelier flex select-none overflow-hidden"
       style={adminThemeVars}
     >
       <aside className="admin-sidebar admin-glass hidden lg:flex">
@@ -621,64 +616,11 @@ export default function AdminPage() {
       </aside>
 
       <div className="admin-main">
-        <header className="admin-mobile-nav lg:hidden">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-              {ADMIN_TAB_GROUPS.map((group) => {
-                const targetTab = group.tabs[0];
-                const active = group.key === activeGroup.key;
-                return (
-                  <button
-                    key={group.key}
-                    disabled={galleryUploading && targetTab !== "gallery"}
-                    onClick={() => requestTab(targetTab)}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                      active
-                        ? "bg-[var(--admin-paper-soft)]"
-                        : "text-[var(--admin-muted)]"
-                    }`}
-                  >
-                    {group.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <a
-                href="/"
-                target="_blank"
-                rel="noopener"
-                className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] transition-colors"
-              >
-                <ExternalLink size={11} />{" "}
-                <span className="hidden sm:inline">Site</span>
-              </a>
-              <button
-                onClick={requestLogout}
-                className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
-              >
-                <LogOut size={11} />{" "}
-                <span className="hidden sm:inline">Logout</span>
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-            {visibleTabs.map((t) => (
-              <button
-                key={t.key}
-                disabled={galleryUploading && t.key !== "gallery"}
-                onClick={() => requestTab(t.key)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-wide rounded-sm transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                  tab === t.key
-                    ? "bg-[var(--admin-paper-soft)]"
-                    : "text-[var(--admin-muted)]"
-                }`}
-              >
-                {t.icon} <span>{t.label}</span>
-              </button>
-            ))}
-          </div>
-        </header>
+        <AdminMobileTopBar
+          tab={tab}
+          tabMeta={ADMIN_TABS}
+          onLogout={requestLogout}
+        />
 
         {/* Content */}
         <div className="admin-content">
@@ -724,6 +666,13 @@ export default function AdminPage() {
             )}
           </div>
         </div>
+
+        <AdminMobileTabBar
+          tab={tab}
+          tabMeta={ADMIN_TABS}
+          galleryUploading={galleryUploading}
+          onSelectTab={requestTab}
+        />
       </div>
 
       {/* Unsaved settings confirmation */}
@@ -3636,7 +3585,7 @@ export function GalleryTab({
                 value={librarySort}
                 onChange={(e) => setLibrarySort(e.target.value)}
                 aria-label="表示の並び替え"
-                className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                className="admin-tap-sm bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
               >
                 <option value="manual">手動（保存されている順）</option>
                 <option value="createdAt-desc">
@@ -3753,7 +3702,7 @@ export function GalleryTab({
               onClick={() => setShowShortcuts(true)}
               title="キーボードショートカット (?)"
               aria-label="キーボードショートカット"
-              className="flex items-center justify-center w-6 h-6 text-[11px] text-[var(--admin-muted)] rounded-sm transition-colors"
+              className="admin-tap-sm flex items-center justify-center w-6 h-6 text-[11px] text-[var(--admin-muted)] rounded-sm transition-colors"
             >
               ?
             </button>
@@ -4208,7 +4157,7 @@ export function GalleryTab({
                       batchOp.mutate({ operation: "size", value: sz })
                     }
                     disabled={batchOp.isPending}
-                    className="text-[11px] text-[var(--admin-ink)] w-5 h-5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                    className="admin-tap-sm text-[11px] text-[var(--admin-ink)] w-5 h-5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {sz}
                   </button>
@@ -4225,7 +4174,7 @@ export function GalleryTab({
                   disabled={batchOp.isPending}
                   title="左へ90°回転"
                   aria-label="選択写真を左へ90度回転"
-                  className="w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="admin-tap-sm w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <RotateCcw size={12} />
                 </button>
@@ -4235,7 +4184,7 @@ export function GalleryTab({
                   disabled={batchOp.isPending}
                   title="右へ90°回転"
                   aria-label="選択写真を右へ90度回転"
-                  className="w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="admin-tap-sm w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <RotateCw size={12} />
                 </button>
@@ -4247,7 +4196,7 @@ export function GalleryTab({
                   disabled={batchOp.isPending}
                   title="向きを0°に戻す"
                   aria-label="選択写真の向きを0度に戻す"
-                  className="w-6 h-5 text-[10px] text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="admin-tap-sm w-6 h-5 text-[10px] text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   0°
                 </button>
@@ -4259,7 +4208,7 @@ export function GalleryTab({
                   disabled={batchOp.isPending}
                   title="見せる中心を中央に戻す"
                   aria-label="選択写真の見せる中心を中央に戻す"
-                  className="w-5 h-5 inline-flex items-center justify-center text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="admin-tap-sm w-5 h-5 inline-flex items-center justify-center text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Crosshair size={12} />
                 </button>
@@ -4847,7 +4796,7 @@ export function GalleryTab({
                               disabled={quickRotatePhoto.isPending}
                               aria-label="左へ90度回転"
                               title="左へ90°回転"
-                              className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
+                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
                             >
                               <RotateCcw size={13} />
                             </button>
@@ -4861,7 +4810,7 @@ export function GalleryTab({
                               disabled={quickRotatePhoto.isPending}
                               aria-label="右へ90度回転"
                               title="右へ90°回転"
-                              className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
+                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
                             >
                               <RotateCw size={13} />
                             </button>
@@ -4887,7 +4836,7 @@ export function GalleryTab({
                                 disabled={idx === 0}
                                 aria-label="先頭へ移動"
                                 title="先頭へ移動"
-                                className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                                className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                               >
                                 <ChevronsLeft size={13} />
                               </button>
@@ -4900,7 +4849,7 @@ export function GalleryTab({
                               disabled={idx === 0}
                               aria-label="前へ移動"
                               title="前へ移動"
-                              className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                             >
                               <ChevronLeft size={13} />
                             </button>
@@ -4912,7 +4861,7 @@ export function GalleryTab({
                               disabled={idx === displayed.length - 1}
                               aria-label="後へ移動"
                               title="後へ移動"
-                              className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                             >
                               <ChevronRight size={13} />
                             </button>
@@ -4925,7 +4874,7 @@ export function GalleryTab({
                                 disabled={idx === displayed.length - 1}
                                 aria-label="末尾へ移動"
                                 title="末尾へ移動"
-                                className="w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                                className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                               >
                                 <ChevronsRight size={13} />
                               </button>
@@ -5668,610 +5617,637 @@ export function GalleryTab({
       {/* Right panel — Inspector (like Lr metadata panel).
           Mobile: full-width drawer overlay. Desktop: static side panel. */}
       {inspectPhoto && (
-        <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-64 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto">
-          {/* Header with close (close needed on mobile drawer) */}
-          <div className="flex items-center justify-between px-3 pt-2 sm:hidden">
-            <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-              Edit Photo
-            </span>
-            <button
-              onClick={() => setInspectPhoto(null)}
-              aria-label="Close"
-              className="text-[var(--admin-muted)] transition-colors p-1 -mr-1"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          {/* Preview */}
-          <div className="p-3">
-            <img
-              src={srcFor(
-                inspectPhoto.url,
-                800,
-                80,
-                undefined,
-                editForm.rotationDeg,
-              )}
-              alt={inspectPhoto.title}
-              className="w-full h-auto object-contain bg-[var(--admin-paper)]"
-              style={{ maxHeight: "320px" }}
-            />
-          </div>
-
-          {(() => {
-            const heroIdx = (heroData?.heroPhotos ?? []).findIndex(
-              (h) => h.photoId === inspectPhoto.id,
-            );
-            const quickSeriesName = editForm.seriesId
-              ? seriesList.find((s) => s.id === Number(editForm.seriesId))
-                  ?.title
-              : "";
-            const quickCategory = categories.find(
-              (c) => c.slug === editForm.category,
-            );
-            const quickDraftChanged = photoEditFormChanged(
-              editForm,
-              inspectPhoto,
-            );
-
-            return (
-              <div className="mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                    よく使う
-                  </span>
-                  {quickDraftChanged && (
-                    <span className="rounded-sm border border-amber-900/40 bg-amber-900/20 px-1.5 py-0.5 text-[10px] text-amber-300/80">
-                      未保存
-                    </span>
-                  )}
-                </div>
-
-                <div
-                  aria-label="写真の使用状況"
-                  className="mb-2 flex flex-wrap gap-1"
-                >
-                  {heroIdx >= 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-sm border border-amber-700/40 bg-amber-900/30 px-1.5 py-0.5 text-[10px] text-amber-300">
-                      <Star size={9} /> Hero {heroIdx + 1}
-                    </span>
-                  )}
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[10px] ${
-                      editForm.isPublished
-                        ? "border-emerald-700/40 bg-emerald-900/20 text-emerald-300/85"
-                        : "border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.1)] text-[color:var(--admin-danger)]"
-                    }`}
-                  >
-                    {editForm.isPublished ? (
-                      <Eye size={9} />
-                    ) : (
-                      <EyeOff size={9} />
-                    )}
-                    {editForm.isPublished ? "公開" : "非公開"}
-                  </span>
-                  <span className="rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
-                    Size {editForm.displaySize}
-                  </span>
-                  <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
-                    <span
-                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                      style={{
-                        background: quickCategory
-                          ? (catColors[quickCategory.slug] ?? "#888")
-                          : "transparent",
-                        border: quickCategory ? "none" : "1px solid #666",
-                      }}
-                    />
-                    <span className="truncate">
-                      {quickCategory?.label ?? "未分類"}
-                    </span>
-                  </span>
-                  {quickSeriesName && (
-                    <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
-                      <Layers size={9} className="flex-shrink-0" />
-                      <span className="truncate">{quickSeriesName}</span>
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-1.5">
-                  <SegmentedControl
-                    value={editForm.isPublished ? "true" : "false"}
-                    onChange={(v) =>
-                      setEditForm((f) => ({ ...f, isPublished: v === "true" }))
-                    }
-                    options={[
-                      { value: "true", label: "公開" },
-                      { value: "false", label: "非公開" },
-                    ]}
-                  />
-
-                  <SegmentedControl
-                    value={editForm.displaySize}
-                    onChange={(v) =>
-                      setEditForm((f) => ({ ...f, displaySize: v }))
-                    }
-                    options={[
-                      { value: "S", label: "S" },
-                      { value: "M", label: "M" },
-                      { value: "L", label: "L" },
-                    ]}
-                  />
-
-                  <div className="col-span-2 grid grid-cols-[auto_1fr_auto] gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEditForm((f) => ({
-                          ...f,
-                          rotationDeg: rotatedBy(f.rotationDeg, -90),
-                        }))
-                      }
-                      aria-label="左へ90度回転"
-                      title="左へ90°回転"
-                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors"
-                    >
-                      <RotateCcw size={13} />
-                    </button>
-                    <div className="grid grid-cols-4 gap-1">
-                      {ROTATION_OPTIONS.map((deg) => (
-                        <button
-                          key={deg}
-                          type="button"
-                          onClick={() =>
-                            setEditForm((f) => ({ ...f, rotationDeg: deg }))
-                          }
-                          aria-pressed={editForm.rotationDeg === deg}
-                          className={`h-7 rounded-sm text-[10px] transition-colors ${
-                            editForm.rotationDeg === deg
-                              ? "admin-btn-primary font-medium"
-                              : "border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-muted)]"
-                          }`}
-                        >
-                          {deg}°
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEditForm((f) => ({
-                          ...f,
-                          rotationDeg: rotatedBy(f.rotationDeg, 90),
-                        }))
-                      }
-                      aria-label="右へ90度回転"
-                      title="右へ90°回転"
-                      className="flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors"
-                    >
-                      <RotateCw size={13} />
-                    </button>
-                  </div>
-
-                  <select
-                    value={
-                      categories.some((c) => c.slug === editForm.category)
-                        ? editForm.category
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setEditForm((f) => ({ ...f, category: e.target.value }))
-                    }
-                    aria-label="クイックカテゴリ"
-                    className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
-                  >
-                    <option value="">カテゴリなし</option>
-                    {categories.map((c) => (
-                      <option key={c.slug} value={c.slug}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={
-                      seriesList.some((s) => s.id === Number(editForm.seriesId))
-                        ? editForm.seriesId
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setEditForm((f) => ({ ...f, seriesId: e.target.value }))
-                    }
-                    aria-label="クイックシリーズ"
-                    className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
-                  >
-                    <option value="">シリーズなし</option>
-                    {seriesList.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.title}
-                        {s.isPublished ? "" : "（下書き）"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Metadata form */}
-          <div className="px-3 pb-4 flex flex-col gap-3 flex-1">
-            <div className="border-b border-[var(--admin-line)] pb-2 mb-1">
+        <>
+          {/* モバイルのみ: ドロワー外タップで閉じる。背景を薄く暗くして
+              「一覧の上に詳細が乗っている」ことを分かりやすく。
+              未保存の編集がある間は誤タップで内容を失わないよう閉じない
+              (X/保存/破棄の明示操作のみ — Codexレビュー 2026-07-11)。 */}
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 z-30 bg-black/30 sm:hidden"
+            onClick={() => {
+              if (!photoEditFormChanged(editForm, inspectPhoto)) {
+                setInspectPhoto(null);
+              }
+            }}
+          />
+          <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-64 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto">
+            {/* Header with close (close needed on mobile drawer) */}
+            <div className="flex items-center justify-between px-3 pt-2 sm:hidden">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                Metadata
+                Edit Photo
               </span>
-            </div>
-
-            <InspectField
-              label="見せる中心"
-              hint="正方形・ヒーローなど、切り抜き表示の中心"
-            >
-              <div className="grid grid-cols-[72px_1fr] gap-2">
-                <div className="relative aspect-square overflow-hidden bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm">
-                  <img
-                    src={srcFor(
-                      inspectPhoto.url,
-                      400,
-                      78,
-                      undefined,
-                      editForm.rotationDeg,
-                    )}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    style={{
-                      objectPosition: objectPositionFromFocal(
-                        editForm.focalX,
-                        editForm.focalY,
-                      ),
-                    }}
-                    draggable={false}
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="absolute w-2 h-2 rounded-full border border-white/80 bg-black/30 shadow-[0_0_0_1px_rgba(0,0,0,0.45)]"
-                    style={{
-                      left: `${editForm.focalX}%`,
-                      top: `${editForm.focalY}%`,
-                      transform: "translate(-50%, -50%)",
-                    }}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-1">
-                  {FOCAL_PRESETS.map((point) => {
-                    const active =
-                      editForm.focalX === point.x &&
-                      editForm.focalY === point.y;
-                    return (
-                      <button
-                        key={`${point.x}-${point.y}`}
-                        type="button"
-                        onClick={() =>
-                          setEditForm((f) => ({
-                            ...f,
-                            focalX: point.x,
-                            focalY: point.y,
-                          }))
-                        }
-                        aria-label={`見せる中心: ${point.label}`}
-                        aria-pressed={active}
-                        title={point.label}
-                        className={`h-5 rounded-sm border flex items-center justify-center transition-colors ${
-                          active
-                            ? "admin-btn-primary border-[var(--admin-line)]"
-                            : "bg-[var(--admin-paper-soft)] border-[var(--admin-line)]"
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            active
-                              ? "bg-[var(--admin-paper)]"
-                              : "bg-[var(--admin-muted)]"
-                          }`}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </InspectField>
-
-            <InspectField label="Title" hint="Lightbox・SEO・alt に使用">
-              <input
-                aria-label="タイトル"
-                value={editForm.title}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, title: e.target.value }))
-                }
-                placeholder="Untitled"
-                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
-              />
-            </InspectField>
-
-            <InspectField label="Camera" hint="Lightbox の撮影情報として表示">
-              <input
-                aria-label="カメラ"
-                value={editForm.camera}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, camera: e.target.value }))
-                }
-                placeholder="PENTAX 67"
-                list="meta-presets-camera"
-                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
-              />
-              <datalist id="meta-presets-camera">
-                {cameraPresets.map((p) => (
-                  <option key={p} value={p} aria-label={p} />
-                ))}
-              </datalist>
-            </InspectField>
-
-            <InspectField label="Lens" hint="Lightbox の撮影情報として表示">
-              <input
-                aria-label="レンズ"
-                value={editForm.lens}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, lens: e.target.value }))
-                }
-                placeholder="SMC Takumar 105mm f/2.4"
-                list="meta-presets-lens"
-                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
-              />
-              <datalist id="meta-presets-lens">
-                {lensPresets.map((p) => (
-                  <option key={p} value={p} aria-label={p} />
-                ))}
-              </datalist>
-            </InspectField>
-
-            <div className="flex items-center gap-1.5 -mt-1">
               <button
-                type="button"
-                onClick={copyInspectCaptureInfo}
-                disabled={!editForm.camera.trim() && !editForm.lens.trim()}
-                title="カメラとレンズをコピー"
-                aria-label="カメラとレンズをコピー"
-                className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                onClick={() => setInspectPhoto(null)}
+                aria-label="Close"
+                className="admin-tap text-[var(--admin-muted)] transition-colors p-1 -mr-1 flex items-center justify-center"
               >
-                <Copy size={10} /> Copy
+                <X size={16} />
               </button>
-              <button
-                type="button"
-                onClick={pasteInspectCaptureInfo}
-                title="クリップボードからカメラとレンズを貼り付け"
-                aria-label="クリップボードからカメラとレンズを貼り付け"
-                className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors"
-              >
-                <ClipboardPaste size={10} /> Paste
-              </button>
-              {captureClipStatus !== "idle" && (
-                <span
-                  className={`text-[10px] ${captureClipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
-                >
-                  {captureStatusText[captureClipStatus]}
-                </span>
-              )}
             </div>
-
-            <InspectField
-              label="Film / Digital"
-              hint="Lightbox の撮影情報として表示"
-            >
-              <div className="flex gap-1">
-                {(
-                  [
-                    ["フィルム", "フィルム"],
-                    ["デジタル", "デジタル"],
-                    ["", "—"],
-                  ] as const
-                ).map(([val, lbl]) => (
-                  <button
-                    key={lbl}
-                    onClick={() =>
-                      setEditForm((f) => ({ ...f, filmType: val }))
-                    }
-                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
-                      editForm.filmType === val
-                        ? "admin-btn-primary font-medium"
-                        : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                    }`}
-                  >
-                    {lbl}
-                  </button>
-                ))}
-              </div>
-            </InspectField>
-
-            <InspectField
-              label="撮影日"
-              hint="アップロード時にEXIFから自動設定。EXIFが無い写真はここで手入力（任意・空欄可）"
-            >
-              <div className="flex gap-1.5 items-center">
-                <input
-                  aria-label="撮影日"
-                  type="date"
-                  value={editForm.shotAt}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, shotAt: e.target.value }))
-                  }
-                  className="flex-1 bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors [color-scheme:dark]"
-                />
-                {editForm.shotAt && (
-                  <button
-                    onClick={() => setEditForm((f) => ({ ...f, shotAt: "" }))}
-                    aria-label="撮影日をクリア"
-                    className="text-[10px] text-[var(--admin-muted)] transition-colors px-1.5"
-                  >
-                    クリア
-                  </button>
+            {/* Preview */}
+            <div className="p-3">
+              <img
+                src={srcFor(
+                  inspectPhoto.url,
+                  800,
+                  80,
+                  undefined,
+                  editForm.rotationDeg,
                 )}
-              </div>
-            </InspectField>
-
-            <InspectField
-              label="Description"
-              hint="Lightbox の写真説明（任意）"
-            >
-              <textarea
-                aria-label="説明"
-                rows={3}
-                value={editForm.description}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, description: e.target.value }))
-                }
-                placeholder="Photo description..."
-                className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors resize-y"
+                alt={inspectPhoto.title}
+                className="w-full h-auto object-contain bg-[var(--admin-paper)]"
+                style={{ maxHeight: "320px" }}
               />
-            </InspectField>
-
-            <div className="flex gap-2 mt-1">
-              <button
-                disabled={updatePhoto.isPending}
-                onClick={() => {
-                  setMetaSaved(false);
-                  setMetaError(false);
-                  // 撮影日は date 入力（日付まで）。未変更ならEXIF由来の時刻部分を保持する。
-                  const shotAtToSave = shotAtForDateInputSave(
-                    inspectPhoto.shotAt,
-                    editForm.shotAt,
-                  );
-                  updatePhoto.mutate(
-                    { id: inspectPhoto.id, ...editForm, shotAt: shotAtToSave },
-                    {
-                      // Update the local inspect view only once the server confirms
-                      onSuccess: () => {
-                        // editForm.seriesId is a string ("" = none); store it back as number|null
-                        setInspectPhoto({
-                          ...inspectPhoto,
-                          ...editForm,
-                          shotAt: shotAtToSave ?? null,
-                          seriesId:
-                            editForm.seriesId === ""
-                              ? null
-                              : Number(editForm.seriesId),
-                        });
-                        rememberPresets(editForm.camera, editForm.lens);
-                        setMetaSaved(true);
-                        setTimeout(() => setMetaSaved(false), 1500);
-                      },
-                      onError: () => setMetaError(true),
-                    },
-                  );
-                }}
-                className={`flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5 rounded-sm transition-colors disabled:opacity-60 ${
-                  metaSaved
-                    ? "bg-emerald-700/70 text-white"
-                    : "admin-btn-primary"
-                }`}
-              >
-                {updatePhoto.isPending ? (
-                  <>
-                    <Loader2 size={11} className="animate-spin" /> Saving...
-                  </>
-                ) : metaSaved ? (
-                  <>
-                    <Check size={11} /> Saved
-                  </>
-                ) : (
-                  <>
-                    <Check size={11} /> Save
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setMetaError(false);
-                  setEditForm(photoToEditForm(inspectPhoto));
-                }}
-                className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] py-1.5 rounded-sm transition-colors"
-              >
-                <X size={11} /> Reset
-              </button>
             </div>
-            {/* O1: duplicate this photo (same image, copied metadata) */}
-            <button
-              onClick={() => duplicatePhoto.mutate(inspectPhoto.id)}
-              disabled={duplicatePhoto.isPending}
-              className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] py-1.5 rounded-sm transition-colors disabled:opacity-50"
-            >
-              {duplicatePhoto.isPending ? (
-                <Loader2 size={11} className="animate-spin" />
-              ) : (
-                <ImageLucide size={11} />
-              )}{" "}
-              この写真を複製
-            </button>
-            {metaError && (
-              <p role="alert" className="text-[11px] text-red-400/80 -mt-1">
-                保存に失敗しました。もう一度お試しください。
-              </p>
-            )}
 
-            {/* O5: usage — where this photo appears */}
             {(() => {
               const heroIdx = (heroData?.heroPhotos ?? []).findIndex(
                 (h) => h.photoId === inspectPhoto.id,
               );
-              const seriesName = inspectPhoto.seriesId
-                ? seriesList.find((s) => s.id === inspectPhoto.seriesId)?.title
-                : null;
-              const catLabel = categories.find(
-                (c) => c.slug === inspectPhoto.category,
-              )?.label;
-              const pos = allPhotos.findIndex((p) => p.id === inspectPhoto.id);
-              const rows: [string, string][] = [
-                [
-                  "ヒーロー",
-                  heroIdx >= 0 ? `✓ 設定中（${heroIdx + 1}番目）` : "未設定",
-                ],
-                ["シリーズ", seriesName ?? "未割り当て"],
-                ["カテゴリ", catLabel ?? "未分類"],
-                [
-                  "表示順",
-                  pos >= 0 ? `${pos + 1} / ${allPhotos.length}番目` : "—",
-                ],
-              ];
+              const quickSeriesName = editForm.seriesId
+                ? seriesList.find((s) => s.id === Number(editForm.seriesId))
+                    ?.title
+                : "";
+              const quickCategory = categories.find(
+                (c) => c.slug === editForm.category,
+              );
+              const quickDraftChanged = photoEditFormChanged(
+                editForm,
+                inspectPhoto,
+              );
+
               return (
-                <div className="border-t border-[var(--admin-line)] pt-3 mt-1 flex flex-col gap-1">
-                  <span className="text-[9px] text-[var(--admin-muted)] uppercase tracking-wider mb-0.5">
-                    使用状況
-                  </span>
-                  {rows.map(([k, v]) => (
-                    <div
-                      key={k}
-                      className="flex justify-between gap-2 text-[10px]"
+                <div className="mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+                      よく使う
+                    </span>
+                    {quickDraftChanged && (
+                      <span className="rounded-sm border border-amber-900/40 bg-amber-900/20 px-1.5 py-0.5 text-[10px] text-amber-300/80">
+                        未保存
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    aria-label="写真の使用状況"
+                    className="mb-2 flex flex-wrap gap-1"
+                  >
+                    {heroIdx >= 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-sm border border-amber-700/40 bg-amber-900/30 px-1.5 py-0.5 text-[10px] text-amber-300">
+                        <Star size={9} /> Hero {heroIdx + 1}
+                      </span>
+                    )}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[10px] ${
+                        editForm.isPublished
+                          ? "border-emerald-700/40 bg-emerald-900/20 text-emerald-300/85"
+                          : "border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.1)] text-[color:var(--admin-danger)]"
+                      }`}
                     >
-                      <span className="text-[var(--admin-muted)] flex-shrink-0">
-                        {k}
+                      {editForm.isPublished ? (
+                        <Eye size={9} />
+                      ) : (
+                        <EyeOff size={9} />
+                      )}
+                      {editForm.isPublished ? "公開" : "非公開"}
+                    </span>
+                    <span className="rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
+                      Size {editForm.displaySize}
+                    </span>
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
+                      <span
+                        className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                        style={{
+                          background: quickCategory
+                            ? (catColors[quickCategory.slug] ?? "#888")
+                            : "transparent",
+                          border: quickCategory ? "none" : "1px solid #666",
+                        }}
+                      />
+                      <span className="truncate">
+                        {quickCategory?.label ?? "未分類"}
                       </span>
-                      <span className="text-[var(--admin-ink)] text-right truncate">
-                        {v}
+                    </span>
+                    {quickSeriesName && (
+                      <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
+                        <Layers size={9} className="flex-shrink-0" />
+                        <span className="truncate">{quickSeriesName}</span>
                       </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <SegmentedControl
+                      value={editForm.isPublished ? "true" : "false"}
+                      onChange={(v) =>
+                        setEditForm((f) => ({
+                          ...f,
+                          isPublished: v === "true",
+                        }))
+                      }
+                      options={[
+                        { value: "true", label: "公開" },
+                        { value: "false", label: "非公開" },
+                      ]}
+                    />
+
+                    <SegmentedControl
+                      value={editForm.displaySize}
+                      onChange={(v) =>
+                        setEditForm((f) => ({ ...f, displaySize: v }))
+                      }
+                      options={[
+                        { value: "S", label: "S" },
+                        { value: "M", label: "M" },
+                        { value: "L", label: "L" },
+                      ]}
+                    />
+
+                    <div className="col-span-2 grid grid-cols-[auto_1fr_auto] gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditForm((f) => ({
+                            ...f,
+                            rotationDeg: rotatedBy(f.rotationDeg, -90),
+                          }))
+                        }
+                        aria-label="左へ90度回転"
+                        title="左へ90°回転"
+                        className="admin-tap-sm flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors"
+                      >
+                        <RotateCcw size={13} />
+                      </button>
+                      <div className="grid grid-cols-4 gap-1">
+                        {ROTATION_OPTIONS.map((deg) => (
+                          <button
+                            key={deg}
+                            type="button"
+                            onClick={() =>
+                              setEditForm((f) => ({ ...f, rotationDeg: deg }))
+                            }
+                            aria-pressed={editForm.rotationDeg === deg}
+                            className={`admin-tap-sm h-7 rounded-sm text-[10px] transition-colors ${
+                              editForm.rotationDeg === deg
+                                ? "admin-btn-primary font-medium"
+                                : "border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-muted)]"
+                            }`}
+                          >
+                            {deg}°
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditForm((f) => ({
+                            ...f,
+                            rotationDeg: rotatedBy(f.rotationDeg, 90),
+                          }))
+                        }
+                        aria-label="右へ90度回転"
+                        title="右へ90°回転"
+                        className="admin-tap-sm flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors"
+                      >
+                        <RotateCw size={13} />
+                      </button>
                     </div>
-                  ))}
+
+                    <select
+                      value={
+                        categories.some((c) => c.slug === editForm.category)
+                          ? editForm.category
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setEditForm((f) => ({ ...f, category: e.target.value }))
+                      }
+                      aria-label="クイックカテゴリ"
+                      className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
+                    >
+                      <option value="">カテゴリなし</option>
+                      {categories.map((c) => (
+                        <option key={c.slug} value={c.slug}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={
+                        seriesList.some(
+                          (s) => s.id === Number(editForm.seriesId),
+                        )
+                          ? editForm.seriesId
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setEditForm((f) => ({ ...f, seriesId: e.target.value }))
+                      }
+                      aria-label="クイックシリーズ"
+                      className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
+                    >
+                      <option value="">シリーズなし</option>
+                      {seriesList.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.title}
+                          {s.isPublished ? "" : "（下書き）"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               );
             })()}
 
-            <div className="border-t border-[var(--admin-line)] pt-3 mt-2">
-              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                File Info
-              </span>
-              <p className="text-[11px] text-[var(--admin-muted)] mt-2 break-all">
-                {inspectPhoto.filename}
-              </p>
-            </div>
+            {/* Metadata form */}
+            <div className="px-3 pb-4 flex flex-col gap-3 flex-1">
+              <div className="border-b border-[var(--admin-line)] pb-2 mb-1">
+                <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+                  Metadata
+                </span>
+              </div>
 
-            <div className="mt-auto pt-4 pb-16">
-              <button
-                onClick={() => deletePhotos.mutate([inspectPhoto.id])}
-                disabled={bulkBusy}
-                className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              <InspectField
+                label="見せる中心"
+                hint="正方形・ヒーローなど、切り抜き表示の中心"
               >
-                <Trash2 size={11} /> 写真をゴミ箱へ
+                <div className="grid grid-cols-[72px_1fr] gap-2">
+                  <div className="relative aspect-square overflow-hidden bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm">
+                    <img
+                      src={srcFor(
+                        inspectPhoto.url,
+                        400,
+                        78,
+                        undefined,
+                        editForm.rotationDeg,
+                      )}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      style={{
+                        objectPosition: objectPositionFromFocal(
+                          editForm.focalX,
+                          editForm.focalY,
+                        ),
+                      }}
+                      draggable={false}
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="absolute w-2 h-2 rounded-full border border-white/80 bg-black/30 shadow-[0_0_0_1px_rgba(0,0,0,0.45)]"
+                      style={{
+                        left: `${editForm.focalX}%`,
+                        top: `${editForm.focalY}%`,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {FOCAL_PRESETS.map((point) => {
+                      const active =
+                        editForm.focalX === point.x &&
+                        editForm.focalY === point.y;
+                      return (
+                        <button
+                          key={`${point.x}-${point.y}`}
+                          type="button"
+                          onClick={() =>
+                            setEditForm((f) => ({
+                              ...f,
+                              focalX: point.x,
+                              focalY: point.y,
+                            }))
+                          }
+                          aria-label={`見せる中心: ${point.label}`}
+                          aria-pressed={active}
+                          title={point.label}
+                          className={`admin-tap-sm h-5 rounded-sm border flex items-center justify-center transition-colors ${
+                            active
+                              ? "admin-btn-primary border-[var(--admin-line)]"
+                              : "bg-[var(--admin-paper-soft)] border-[var(--admin-line)]"
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              active
+                                ? "bg-[var(--admin-paper)]"
+                                : "bg-[var(--admin-muted)]"
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </InspectField>
+
+              <InspectField label="Title" hint="Lightbox・SEO・alt に使用">
+                <input
+                  aria-label="タイトル"
+                  value={editForm.title}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, title: e.target.value }))
+                  }
+                  placeholder="Untitled"
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
+                />
+              </InspectField>
+
+              <InspectField label="Camera" hint="Lightbox の撮影情報として表示">
+                <input
+                  aria-label="カメラ"
+                  value={editForm.camera}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, camera: e.target.value }))
+                  }
+                  placeholder="PENTAX 67"
+                  list="meta-presets-camera"
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
+                />
+                <datalist id="meta-presets-camera">
+                  {cameraPresets.map((p) => (
+                    <option key={p} value={p} aria-label={p} />
+                  ))}
+                </datalist>
+              </InspectField>
+
+              <InspectField label="Lens" hint="Lightbox の撮影情報として表示">
+                <input
+                  aria-label="レンズ"
+                  value={editForm.lens}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, lens: e.target.value }))
+                  }
+                  placeholder="SMC Takumar 105mm f/2.4"
+                  list="meta-presets-lens"
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
+                />
+                <datalist id="meta-presets-lens">
+                  {lensPresets.map((p) => (
+                    <option key={p} value={p} aria-label={p} />
+                  ))}
+                </datalist>
+              </InspectField>
+
+              <div className="flex items-center gap-1.5 -mt-1">
+                <button
+                  type="button"
+                  onClick={copyInspectCaptureInfo}
+                  disabled={!editForm.camera.trim() && !editForm.lens.trim()}
+                  title="カメラとレンズをコピー"
+                  aria-label="カメラとレンズをコピー"
+                  className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <Copy size={10} /> Copy
+                </button>
+                <button
+                  type="button"
+                  onClick={pasteInspectCaptureInfo}
+                  title="クリップボードからカメラとレンズを貼り付け"
+                  aria-label="クリップボードからカメラとレンズを貼り付け"
+                  className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors"
+                >
+                  <ClipboardPaste size={10} /> Paste
+                </button>
+                {captureClipStatus !== "idle" && (
+                  <span
+                    className={`text-[10px] ${captureClipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
+                  >
+                    {captureStatusText[captureClipStatus]}
+                  </span>
+                )}
+              </div>
+
+              <InspectField
+                label="Film / Digital"
+                hint="Lightbox の撮影情報として表示"
+              >
+                <div className="flex gap-1">
+                  {(
+                    [
+                      ["フィルム", "フィルム"],
+                      ["デジタル", "デジタル"],
+                      ["", "—"],
+                    ] as const
+                  ).map(([val, lbl]) => (
+                    <button
+                      key={lbl}
+                      onClick={() =>
+                        setEditForm((f) => ({ ...f, filmType: val }))
+                      }
+                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        editForm.filmType === val
+                          ? "admin-btn-primary font-medium"
+                          : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                      }`}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </InspectField>
+
+              <InspectField
+                label="撮影日"
+                hint="アップロード時にEXIFから自動設定。EXIFが無い写真はここで手入力（任意・空欄可）"
+              >
+                <div className="flex gap-1.5 items-center">
+                  <input
+                    aria-label="撮影日"
+                    type="date"
+                    value={editForm.shotAt}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, shotAt: e.target.value }))
+                    }
+                    className="flex-1 bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors [color-scheme:dark]"
+                  />
+                  {editForm.shotAt && (
+                    <button
+                      onClick={() => setEditForm((f) => ({ ...f, shotAt: "" }))}
+                      aria-label="撮影日をクリア"
+                      className="text-[10px] text-[var(--admin-muted)] transition-colors px-1.5"
+                    >
+                      クリア
+                    </button>
+                  )}
+                </div>
+              </InspectField>
+
+              <InspectField
+                label="Description"
+                hint="Lightbox の写真説明（任意）"
+              >
+                <textarea
+                  aria-label="説明"
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, description: e.target.value }))
+                  }
+                  placeholder="Photo description..."
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors resize-y"
+                />
+              </InspectField>
+
+              <div className="flex gap-2 mt-1">
+                <button
+                  disabled={updatePhoto.isPending}
+                  onClick={() => {
+                    setMetaSaved(false);
+                    setMetaError(false);
+                    // 撮影日は date 入力（日付まで）。未変更ならEXIF由来の時刻部分を保持する。
+                    const shotAtToSave = shotAtForDateInputSave(
+                      inspectPhoto.shotAt,
+                      editForm.shotAt,
+                    );
+                    updatePhoto.mutate(
+                      {
+                        id: inspectPhoto.id,
+                        ...editForm,
+                        shotAt: shotAtToSave,
+                      },
+                      {
+                        // Update the local inspect view only once the server confirms
+                        onSuccess: () => {
+                          // editForm.seriesId is a string ("" = none); store it back as number|null
+                          setInspectPhoto({
+                            ...inspectPhoto,
+                            ...editForm,
+                            shotAt: shotAtToSave ?? null,
+                            seriesId:
+                              editForm.seriesId === ""
+                                ? null
+                                : Number(editForm.seriesId),
+                          });
+                          rememberPresets(editForm.camera, editForm.lens);
+                          setMetaSaved(true);
+                          setTimeout(() => setMetaSaved(false), 1500);
+                        },
+                        onError: () => setMetaError(true),
+                      },
+                    );
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5 rounded-sm transition-colors disabled:opacity-60 ${
+                    metaSaved
+                      ? "bg-emerald-700/70 text-white"
+                      : "admin-btn-primary"
+                  }`}
+                >
+                  {updatePhoto.isPending ? (
+                    <>
+                      <Loader2 size={11} className="animate-spin" /> Saving...
+                    </>
+                  ) : metaSaved ? (
+                    <>
+                      <Check size={11} /> Saved
+                    </>
+                  ) : (
+                    <>
+                      <Check size={11} /> Save
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setMetaError(false);
+                    setEditForm(photoToEditForm(inspectPhoto));
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] py-1.5 rounded-sm transition-colors"
+                >
+                  <X size={11} /> Reset
+                </button>
+              </div>
+              {/* O1: duplicate this photo (same image, copied metadata) */}
+              <button
+                onClick={() => duplicatePhoto.mutate(inspectPhoto.id)}
+                disabled={duplicatePhoto.isPending}
+                className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] py-1.5 rounded-sm transition-colors disabled:opacity-50"
+              >
+                {duplicatePhoto.isPending ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <ImageLucide size={11} />
+                )}{" "}
+                この写真を複製
               </button>
+              {metaError && (
+                <p role="alert" className="text-[11px] text-red-400/80 -mt-1">
+                  保存に失敗しました。もう一度お試しください。
+                </p>
+              )}
+
+              {/* O5: usage — where this photo appears */}
+              {(() => {
+                const heroIdx = (heroData?.heroPhotos ?? []).findIndex(
+                  (h) => h.photoId === inspectPhoto.id,
+                );
+                const seriesName = inspectPhoto.seriesId
+                  ? seriesList.find((s) => s.id === inspectPhoto.seriesId)
+                      ?.title
+                  : null;
+                const catLabel = categories.find(
+                  (c) => c.slug === inspectPhoto.category,
+                )?.label;
+                const pos = allPhotos.findIndex(
+                  (p) => p.id === inspectPhoto.id,
+                );
+                const rows: [string, string][] = [
+                  [
+                    "ヒーロー",
+                    heroIdx >= 0 ? `✓ 設定中（${heroIdx + 1}番目）` : "未設定",
+                  ],
+                  ["シリーズ", seriesName ?? "未割り当て"],
+                  ["カテゴリ", catLabel ?? "未分類"],
+                  [
+                    "表示順",
+                    pos >= 0 ? `${pos + 1} / ${allPhotos.length}番目` : "—",
+                  ],
+                ];
+                return (
+                  <div className="border-t border-[var(--admin-line)] pt-3 mt-1 flex flex-col gap-1">
+                    <span className="text-[9px] text-[var(--admin-muted)] uppercase tracking-wider mb-0.5">
+                      使用状況
+                    </span>
+                    {rows.map(([k, v]) => (
+                      <div
+                        key={k}
+                        className="flex justify-between gap-2 text-[10px]"
+                      >
+                        <span className="text-[var(--admin-muted)] flex-shrink-0">
+                          {k}
+                        </span>
+                        <span className="text-[var(--admin-ink)] text-right truncate">
+                          {v}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              <div className="border-t border-[var(--admin-line)] pt-3 mt-2">
+                <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+                  File Info
+                </span>
+                <p className="text-[11px] text-[var(--admin-muted)] mt-2 break-all">
+                  {inspectPhoto.filename}
+                </p>
+              </div>
+
+              <div className="mt-auto pt-4 pb-16">
+                <button
+                  onClick={() => deletePhotos.mutate([inspectPhoto.id])}
+                  disabled={bulkBusy}
+                  className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <Trash2 size={11} /> 写真をゴミ箱へ
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* サイトプレビュー — 並べ替え・S/M/L・回転の結果を公開サイトの誌面で
@@ -7330,7 +7306,7 @@ function SegmentedControl<T extends string>({
           type="button"
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
-          className={`admin-segmented__option relative z-[1] flex-1 rounded-[var(--radius-s)] px-1.5 py-1 text-[10px] transition-colors duration-[var(--dur-fast)] ${
+          className={`admin-tap-sm admin-segmented__option relative z-[1] flex-1 rounded-[var(--radius-s)] px-1.5 py-1 text-[10px] transition-colors duration-[var(--dur-fast)] ${
             value === opt.value ? "font-medium" : "text-[var(--admin-muted)]"
           }`}
         >

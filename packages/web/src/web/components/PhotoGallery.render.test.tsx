@@ -97,6 +97,7 @@ test("PhotoGallery renders tiles without crashing (every layout)", async () => {
     "landscape-grid",
     "masonry",
     "large-format",
+    "justified",
   ]) {
     const host = dom.window.document.createElement("div");
     dom.window.document.body.appendChild(host);
@@ -182,6 +183,45 @@ test.each([
     host.remove();
   },
 );
+
+test("justified keeps each tile's natural (rotation-aware) ratio and pixel width", async () => {
+  // The 12th layout must never crop to a fixed grid ratio: the outer card box
+  // carries the photo's own oriented ratio and an explicit px width computed
+  // by computeJustifiedRows (unit-tested in lib/justified-layout.test.ts).
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(PhotoGallery, { photos, layoutType: "justified" }),
+      ),
+    );
+  });
+  const cards = host.querySelectorAll<HTMLElement>(".photo-card");
+  expect(cards.length).toBe(photos.length);
+  const expected = [3200 / 2133, 2133 / 3200, 3200 / 2133];
+  cards.forEach((card, i) => {
+    // jsdom normalizes the value to "<w> / 1" — parseFloat reads the w part
+    expect(Number.parseFloat(card.style.aspectRatio)).toBeCloseTo(
+      expected[i],
+      3,
+    );
+    // tile() puts the computed px width on the clickable wrapper around the card
+    const wrapper = card.closest("button") as HTMLElement;
+    expect(wrapper.style.width.endsWith("px")).toBe(true);
+    expect(Number.parseFloat(wrapper.style.width)).toBeGreaterThan(0);
+  });
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});
 
 test("tile hover caption renders for titled photos only", async () => {
   const qc = new QueryClient({

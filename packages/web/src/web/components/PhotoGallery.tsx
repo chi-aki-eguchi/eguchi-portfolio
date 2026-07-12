@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
+import { computeJustifiedRows } from "../lib/justified-layout";
 import { num, clamp } from "../lib/utils";
 import { Lightbox, FIT_SIZES } from "./Lightbox";
 import {
@@ -76,7 +77,8 @@ export type GalleryPhoto = {
 };
 
 // N1/N4: the selectable grid layouts. Unknown / unset values fall back to mosaic.
-// 11 types (owner-approved 2026-07-09 expansion from 9 — see task.md Handoff).
+// 12 types (owner-approved 2026-07-09 expansion to 11, justified added
+// 2026-07-12 by owner request — see task.md Handoff).
 export type GalleryLayoutType =
   | "mosaic"
   | "grid"
@@ -88,7 +90,8 @@ export type GalleryLayoutType =
   | "portrait-grid"
   | "landscape-grid"
   | "masonry"
-  | "large-format";
+  | "large-format"
+  | "justified";
 const KNOWN_LAYOUTS: GalleryLayoutType[] = [
   "mosaic",
   "grid",
@@ -101,6 +104,7 @@ const KNOWN_LAYOUTS: GalleryLayoutType[] = [
   "landscape-grid",
   "masonry",
   "large-format",
+  "justified",
 ];
 
 const LqipImage = memo(function LqipImage({
@@ -705,6 +709,52 @@ export function PhotoGallery({
                 staggerIdx: idx,
               }),
             )}
+          </div>
+        ))}
+      </div>
+    );
+  } else if (mode === "justified") {
+    // Justified 行組み (owner-approved 12th layout, 2026-07-12): photos flow
+    // strictly in sortOrder 左→右・上→下, keep their natural rotation-aware
+    // ratio uncropped, and every packed row is flush. S/M/L weights the target
+    // row height — the math lives in lib/justified-layout.ts (unit-tested).
+    const jGap = Math.round((isMobile ? 6 : 10) * gapScale);
+    const jRows = computeJustifiedRows(photos, {
+      containerWidth: containerW,
+      gap: jGap,
+      baseRowHeight: (isMobile ? 200 : 250) * sizeScale,
+    });
+    body = (
+      <div style={{ display: "flex", flexDirection: "column", gap: jGap }}>
+        {jRows.map((row) => (
+          <div
+            key={photos[row.items[0].index].id}
+            style={{ display: "flex", gap: jGap, alignItems: "flex-start" }}
+          >
+            {row.items.map((it) => {
+              const photo = photos[it.index];
+              const ratio = String(it.ratio);
+              const pct = Math.max(
+                10,
+                Math.round((it.width / containerW) * 100),
+              );
+              return tile(photo, it.index, {
+                width: `${it.width}px`,
+                justifySelf: "start",
+                sizes: `${pct}vw`,
+                cardClassName: quietCardClass,
+                // The layout ratio equals the natural oriented ratio except for
+                // photos with missing dimensions (3:2 fallback) — cover keeps
+                // those flush in the row instead of breaking its height.
+                cardAspectRatio: ratio,
+                imgStyle: {
+                  aspectRatio: ratio,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                },
+              });
+            })}
           </div>
         ))}
       </div>

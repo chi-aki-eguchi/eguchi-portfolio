@@ -6402,3 +6402,74 @@ admin.tsx のLibraryタイル周り(このHandoffの続きの調整)。
 ### 次の担当者が触ってはいけない場所
 
 なし(working tree はコミット済みでクリーン)。
+
+## Handoff 2026-07-13 — Claude Code: justified（行組み）レイアウト実装(Stage2=B) 完成
+
+### 目的
+
+秋さんの要望「縦横比を保ち正方形cropしない、既存の順番＋S/M/Lで演出できる柔軟な
+公開ギャラリー」を実装する。設計判断はA(Hero専用DB機能=Stage1)/B(本レイアウト
+=Stage2)に分割済みで、Stage1は本番Turso列追加を伴うため今回は対象外。
+Stage2のみ、このClaudeアプリ内で単独実装(新規ターミナル・agmsg spawn・
+子エージェント無し)。途中でDriver交代があり、前セッションの実装を引き継いで完成させた。
+
+### 変更内容
+
+- 12番目のギャラリーレイアウト「justified(行組み)」を追加。
+  - 元の縦横比を一切cropせず、sortOrder順(左→右・上→下)を厳密維持。
+  - 行は同じ高さで敷き詰め、行幅ぴったりに揃える(flush)。最終行は非stretch。
+  - **S/M/Lの効き方(今回の主な修正点)**: 行は「同じ表示サイズだけ」で構成する
+    よう強制break条件を追加。これによりL/Sはどこに現れても必ず専用の行を得て、
+    Mに埋もれて効果が消えることがなくなった(修正前は位置依存でL/Sの効果が
+    ばらつく/消えるバグがあった。詳細は決定ログ参照)。
+  - rotationDeg 90/270で見た目の縦横入れ替え、width/height欠損時は3:2フォールバック。
+- Settings→ギャラリー配置ピッカーに選択肢追加(縮小見本つき)。
+
+### 触ったファイル
+
+- packages/web/src/web/lib/justified-layout.ts(新規・純関数、前Driver実装+今回force-break修正)
+- packages/web/src/web/lib/justified-layout.test.ts(新規・14 unit tests、うち3件は今回追加の回帰テスト)
+- packages/web/src/web/components/PhotoGallery.tsx(`mode === "justified"`分岐、前Driver実装)
+- packages/web/src/web/components/PhotoGallery.render.test.tsx(前Driver実装のrenderテスト1件)
+- packages/web/src/web/pages/admin-tabs.tsx(レイアウト選択肢+縮小見本、前Driver実装)
+- CLAUDE.md(11→12種、前Driver実装)
+- docs/specs/design-spec.md(2-5節を追記)
+- docs/agent-logs/2026-07-13.md(決定ログ、バグ発見の実測根拠含む)
+- task.md(本Handoff)
+
+### 検証したこと
+
+- bun run check 成功(350 tests / 0 fail、build成功)
+- bun run smoke: 26 passed / 1 failed(既知のadmin-trash-signalのみ・今回と無関係)
+- Playwright実ブラウザ(/api/settings・/api/photosをネットワーク層でモック、
+  実DBには一切書き込まない)で375px/1440pxの両方:
+  - 縦横混在・S/M/L混在・rotation 90/270・width/height欠損を含む13枚の合成データで
+    比率保持(crop無し)・L=全幅の目立つ大行・S=詰まった小さい行・rotation反転・
+    欠損フォールバック・最終行非stretchをスクリーンショット+実測で確認
+  - 横overflow: desktop 0px。mobile 8pxは既存のカテゴリフィルタチップ由来と確認
+    (mosaic等の既存レイアウトでも同一値、justified固有の問題ではない)
+  - ランダム500構成のシミュレーションで、L含有行が必ずM平均行を上回ることを確認
+    (最悪でも+12.7%、0/1510件が下回らない)
+
+### 検証していないこと
+
+- 実機(iPhone/Android実物)での確認
+- 本番環境での確認
+- Stage1(Hero専用DB機能)は今回の対象外・未着手
+
+### push したか
+
+していない(ローカルコミットのみ)。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない。
+
+### 次の担当者が触ってよい場所
+
+- Stage1(Hero専用DB機能)の設計・実装
+- justifiedレイアウトの微調整(baseRowHeight・gap等の値のチューニング)
+
+### 次の担当者が触ってはいけない場所
+
+なし(working tree はコミット済みでクリーン)。

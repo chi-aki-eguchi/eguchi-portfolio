@@ -90,6 +90,12 @@ const GALLERY_LAYOUT_OPTIONS: {
     category: "aligned",
   },
   {
+    value: "justified",
+    name: "行組み",
+    desc: "縦横比を保ち行ごとに敷き詰め・S/M/Lで大小",
+    category: "aligned",
+  },
+  {
     value: "mosaic",
     name: "モザイク",
     desc: "S/M/L混在・抜け感のある並び",
@@ -204,6 +210,17 @@ const LAYOUT_ICON_RECTS: Record<GalleryLayoutType, LayoutIconRect[]> = {
   "large-format": [
     { l: 2, t: 4, w: 46, h: 78 },
     { l: 52, t: 4, w: 46, h: 78 },
+  ],
+  justified: [
+    // Flush rows of varied widths; the last row deliberately stops short —
+    // mirrors the real layout's non-stretched final row.
+    { l: 2, t: 4, w: 40, h: 27 },
+    { l: 45, t: 4, w: 23, h: 27 },
+    { l: 71, t: 4, w: 27, h: 27 },
+    { l: 2, t: 35, w: 29, h: 31 },
+    { l: 34, t: 35, w: 64, h: 31 },
+    { l: 2, t: 70, w: 44, h: 26 },
+    { l: 49, t: 70, w: 25, h: 26 },
   ],
 };
 

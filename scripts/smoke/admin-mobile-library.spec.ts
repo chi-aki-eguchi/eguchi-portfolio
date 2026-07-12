@@ -49,6 +49,17 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   expect(overflow.doc).toBeLessThanOrEqual(0);
   expect(overflow.grids).toEqual([]);
 
+  // 回帰(2026-07-12): 仮想グリッドのタイル画像はeager固定。lazyへ戻すと
+  // 高速スワイプ中のremountでキャッシュ済みサムネイルまで白抜けする
+  // 強いチラつきが再発する(読み取りのみの検証)。
+  const lazyTileImages = await page.evaluate(
+    () =>
+      Array.from(document.querySelectorAll(".admin-photo-tile img")).filter(
+        (img) => img.getAttribute("loading") !== "eager",
+      ).length,
+  );
+  expect(lazyTileImages, "Libraryタイル画像は全てloading=eager").toBe(0);
+
   // カード上の回転/移動ボタンがタイルからはみ出さない
   // (hasTouch=pointer:coarse なので admin-tap-sm は40px角に拡大された状態)
   const tileBox = box1!;

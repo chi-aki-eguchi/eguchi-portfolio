@@ -6884,3 +6884,46 @@ repo-scout.tomlの現状・AGENTS.mdのgit add -A残存・task.mdのHandoff番�
 ### 次の担当者が触ってはいけない場所
 
 - `withRetry`の呼び出し側145箇所(今回意図的に不変更)
+
+## Handoff 2026-07-13 (8) — Claude Code(Sonnet 5): Q-1完了マーカー付け忘れの訂正
+
+### 目的
+
+commit 07a6eae(Q-1完成)の際、`docs/agents/task-queue.md`のQ-1見出しへの完了マーカー
+付与を忘れていた。オーナー指示で手順(task.md Handoff・git status・autonomy-rules.md・
+docs/checklists.md確認)を再実施し、この1点だけを訂正する。
+
+### 変更内容
+
+- `docs/agents/task-queue.md`: Q-1見出しに`✅ 済 (2026-07-13)`を追記。
+- `docs/checklists.md`§2 DBスキーマ節の「withRetry再試行条件変更はCodexレビュー必須」
+  項目を確認し、07a6eae時点で既にレビュー依頼済み(前Handoffで送信済み)であることを
+  再確認した(コード変更なし)。
+
+### 触ったファイル
+
+- `docs/agents/task-queue.md`
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- `git status --short`が本コミット前は空(clean)だったことを確認。
+- `docs/checklists.md`の該当チェック項目(Codexレビュー必須)が満たされていることを確認。
+- コード変更なし(ドキュメントのみ)のため`bun run check`は対象外。
+
+### push したか
+
+していない。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- 引き続きCodexのpush前レビュー結果待ち
+
+### 次の担当者が触ってはいけない場所
+
+- `withRetry`の呼び出し側145箇所(意図的に不変更)

@@ -22,7 +22,7 @@
 
 ---
 
-## Q-1. withRetry の再試行条件を締める [昼推奨] [Codexレビュー必須]
+## Q-1. withRetry の再試行条件を締める [昼推奨] [Codexレビュー必須] ✅ 済 (2026-07-13)
 
 背景: docs/specs/audit-2026-07.md P1-1。drizzle-orm 0.45 が全クエリ失敗を
 「Failed query: …」で包むため、`packages/web/src/api/database/libsql.ts` の

@@ -6540,3 +6540,293 @@ commit 106f837のjustified実装に対するCodexのpush前レビューで発見
 ### 次の担当者が触ってはいけない場所
 
 なし(working tree はコミット済みでクリーン)。
+
+## Handoff 2026-07-13 (3) — Claude Code: Claude/Codex連携の不調・権限問題を診断し改善
+
+### 目的
+
+秋さんから「Claude CodeとCodexの連携が調子悪い。権限の問題で動けなくなることが多い。
+得意分野で仕事を分け合いクレジットを節約してほしい」という相談を受け、診断と改善を行った。
+
+### 変更内容
+
+- **[根本原因・最重要]** agmsg(Claude↔Codexの連絡係)の名簿で`claude-driver`の登録先が
+  リポジトリではなくホームディレクトリ(`/Users/chiaki`)になっていたバグを発見。これが
+  2026-07-12の複数セッション同時編集事故(停止指示・プロセス強制終了合戦)の直接原因と
+  agmsgログから特定した。`join.sh`/`reset.sh`で正しいパスに修正済み(オーナー承認済み)。
+- `.claude/settings.json`に読み取り専用・非破壊コマンドの許可リストを追加(オーナー承認済み)。
+  `bun run check/typecheck/lint/build/smoke`、`bun test`、`bunx tsc -b`、agmsgの読み取り
+  確認系スクリプト4種のみ。書き込み/送信系コマンドは一切含めていない。
+- `AGENTS.md`のagmsg運用節に「識別名は`claude-driver`固定・単一Driver厳守・Codexレビュー
+  は非ブロッキング・権限プロンプトで止まったら要相談へ」を追記。新設「小さいモデルへの
+  委譲基準」節で既存3サブエージェント(exif-checker/perf-auditor/security-reviewer)の
+  呼び出し目安と節約ルールを明記。
+- `.claude/agents/perf-auditor.md`・`security-reviewer.md`の旧世代モデルID
+  (`claude-sonnet-4-6`)を`claude-sonnet-5`へ更新。`exif-checker.md`の古い行番号参照を修正。
+
+詳細な調査手法・発見事項は決定ログ参照: `docs/agent-logs/2026-07-13.md`
+「タスク: Claude Code / Codex 連携の不調・権限問題の診断と改善」節。
+
+### 触ったファイル
+
+- `.claude/settings.json`(permissions.allow 新設)
+- `AGENTS.md`(agmsg運用節への追記、小さいモデルへの委譲基準の新設)
+- `.claude/agents/perf-auditor.md` / `security-reviewer.md`(モデルID更新)
+- `.claude/agents/exif-checker.md`(古い行番号参照の修正)
+- `~/.agents/skills/agmsg/teams/eguchi-portfolio/config.json`(リポジトリ外・
+  スクリプト経由で修正。直接編集はしていない)
+- `docs/agent-logs/2026-07-13.md`(決定ログ追記)
+- `task.md`(本Handoff)
+
+コード変更は無し(ドキュメント・設定ファイルのみ)。
+
+### 検証したこと
+
+- `git diff --check`成功(空白エラーなし)。
+- `.claude/settings.json`のJSON構文有効性(PostToolUse prettierフック通過)。
+- agmsg修正後、`whoami.sh`で`claude-driver`が正しくこのリポジトリの候補として
+  出るようになったことを確認。
+
+### 検証していないこと
+
+- 実際に新しいセッションで権限プロンプトが減るかの実地確認。
+- Codexが今回のAGENTS.md追記(非ブロッキング運用・小モデル委譲基準)に従って
+  動くかどうか(次回Codexレビュー時に確認)。
+
+### push したか
+
+していない(コミットもしていない。ファイル変更のみ、working treeは未コミット)。
+
+### 本番で確認したか
+
+対象外(本番デプロイ対象コードの変更なし)。
+
+### 次の担当者が触ってよい場所
+
+- 今回の変更内容のレビュー・commit(内容に問題なければ)
+- 決定ログの「要相談」1件(クレジット最小化案の細則追加要否)。もう1件
+  (即席agmsg名前の削除可否)は解消済み — その後Codexが正式スクリプトで
+  `claude-library-driver`/`claude-perf-driver`を削除し、現在の登録は
+  `claude-driver`/`codex-reviewer`の2件のみ(`identities.sh`で確認済み)。
+
+### 次の担当者が触ってはいけない場所
+
+- `~/.agents/skills/agmsg/`配下の直接編集(スクリプト経由でのみ操作すること。
+  Codexとも共有する外部設定のため)
+
+## Handoff 2026-07-13 (4) — Claude Code: モデル非固定化・権限絞り込み(オーナー方針反映)
+
+### 目的
+
+オーナー方針「Claude Code / Codex ともメインモデルを恒久固定しない」を反映し、上記(3)の
+Fable差分をレビュー・完成させた。役割分担(Driver=Claude Code編集/Reviewer=Codex読み取り専用)
+は維持。詳細は決定ログ参照: `docs/agent-logs/2026-07-13.md`「タスク: モデル非固定化・
+権限の絞り込み」節。
+
+### 変更内容(要約)
+
+- `AGENTS.md`/`docs/agents/autonomy-rules.md`/`docs/agents/task-queue.md`から
+  「Claude Code = Sonnet固定」表現を除去。AGENTS.mdにクレジット切れ復旧の短い手順を追加。
+  **訂正(2026-07-13、後続タスクで判明)**: `CLAUDE.md`はもともとモデル中立な記載で
+  今回は変更していない。当初この一覧に含めていたのは誤り（`git diff`で無変更を確認済み）。
+- `~/.claude/settings.json`の固定`model`削除。`~/.claude/settings.json`と
+  `.claude/settings.local.json`の`Bash(bun run *)`を削除。
+- 共有`.claude/settings.json`にgit push/db:push/db:migrate/deploy/kill -9のdenyを追加、
+  status/diff/rg等をallowに追加。未導入prettierのPostToolUseフックと、毎回別モデルを
+  呼ぶStopフック(prompt型)を削除。
+- `.claude/agents/`の3サブエージェントをRead/Grep/Glob専用に縮小。
+  exif-checker/perf-auditorは`model: haiku`、security-reviewerは`model: inherit`。
+- `~/.codex/config.toml`に`[sandbox_workspace_write]`でagmsgのdb/teamsのみ書き込み許可
+  (network_access=false)追加。model/model_reasoning_effortは不変更。
+- `.codex/agents/repo-scout.toml`新規作成(read-only・低reasoning)。
+  `.codex/USER_CONTEXT.md`のDriver表現をAGENTS.md優先へ修正。
+- `.claude/skills/deploy/SKILL.md`・`gallery-feature/SKILL.md`のpush/db:push直接指示を
+  commitまでに修正(push・db:pushはオーナーへ)。
+- Fableログの「即席名2件が未削除」という記述を、Codexによる削除済みの事実へ訂正。
+
+### 触ったファイル
+
+- `AGENTS.md` / `docs/agents/autonomy-rules.md` / `docs/agents/task-queue.md`
+- `~/.claude/settings.json`(ホーム個人設定) / `.claude/settings.json` / `.claude/settings.local.json`
+- `.claude/agents/exif-checker.md` / `perf-auditor.md` / `security-reviewer.md`
+- `~/.codex/config.toml`(ホーム個人設定) / `.codex/agents/repo-scout.toml`(新規) / `.codex/USER_CONTEXT.md`
+- `.claude/skills/deploy/SKILL.md` / `.claude/skills/gallery-feature/SKILL.md`
+- `docs/agent-logs/2026-07-13.md`(訂正+追記) / `task.md`(本Handoff)
+
+コード変更は無し(`packages/web/`等アプリ本体は未変更)。
+
+### 検証したこと
+
+- 変更した3つのJSON設定ファイルは構文有効(`.claude/settings.json`・
+  `.claude/settings.local.json`・`~/.claude/settings.json`)。
+- `~/.codex/config.toml`はトップレベルキーとテーブルの順序を確認し、
+  TOML構文として妥当な配置にした(このMacにtomllib/tomliが無く自動構文検証は
+  未実施 — 次点でCodex側の設定読込確認を推奨)。
+- `git diff --check`実行(空白エラーなし)。
+- `git status --short`でアプリ本体コードに変更が無いことを確認。
+
+### 検証していないこと
+
+- `~/.codex/config.toml`の自動構文検証(pythonのtomllib/tomliがこのMacに無いため)。
+  Codexを一度起動して設定が壊れずロードされることを次回確認するのが望ましい。
+- 新しい`.claude/settings.json`のdeny設定が実際のセッションでgit push等を
+  ブロックするかの実地確認。
+
+### push したか
+
+していない。commitもしていない(オーナー承認後にオーナー自身が行う想定)。
+
+### 本番で確認したか
+
+対象外(ドキュメント・設定ファイルのみで、本番デプロイ対象コードの変更なし)。
+
+### 次の担当者が触ってよい場所
+
+- 今回の変更内容のレビュー・commit(内容に問題なければ)
+- `~/.codex/config.toml`の実地読み込み確認(Codex起動時にエラーが出ないか)
+
+### 次の担当者が触ってはいけない場所
+
+- `~/.agents/skills/agmsg/`配下の直接編集(スクリプト経由でのみ操作すること)
+- アプリ本体コード(`packages/web/`等、今回のタスク範囲外)
+
+## Handoff 2026-07-13 (5) — Claude Code(Sonnet 5): Codexレビュー反映(agmsg run追加・権限整理・deploy安全化)
+
+（訂正: 本Handoffは当初 (4) と付番していたが、上記「モデル非固定化・権限絞り込み」の
+Handoffと番号が重複していたため (5) に修正した。）
+
+### 目的
+
+前Handoffの「モデル非固定化・権限の絞り込み」差分をCodexが読み取り専用でレビューし、
+その指摘をオーナー(秋さん)が確認・明示承認した上で反映した。実装はClaude Code単独
+(このセッション、Sonnet 5)。Codexは今回もファイル編集していない。
+
+依頼メッセージが技術的に精密すぎたため、着手前に「本当にオーナー本人か」を一度確認し、
+オーナーから「秋本人であり6項目は意図した依頼」との明示回答を得てから実行した。
+
+### 変更内容
+
+1. `.claude/settings.local.json`: タスク固有grep許可2件・重複`Bash(bun test *)`を削除。
+   `permissions.additionalDirectories`にagmsgの`run`/`db`/`teams`の3フォルダのみ追加。
+2. `/Users/chiaki/.codex/config.toml`(リポジトリ外): `sandbox_workspace_write.writable_roots`に
+   `agmsg/run`を追加。`db`/`teams`/`network_access=false`/`model`/`model_reasoning_effort`は不変。
+3. `.claude/settings.json`: `Bash(bunx tsc -b)`をallowから削除(`bun run typecheck`で足りるため)。
+4. `.claude/skills/deploy/SKILL.md`: `git add -A`禁止→`git status --short`確認後に触ったファイル
+   だけ明示stage。`git revert HEAD`は自動実行不可、候補提示のみでオーナー承認後に限定。
+5. `/Users/chiaki/.claude/settings.json`(グローバル・リポジトリ外): タスク固有grep許可2件を削除。
+6. `docs/agent-logs/2026-07-13.md`: CLAUDE.md誤記(実際は無変更)を訂正、agmsg識別名2件削除が
+   Codex公式スクリプト経由(ファイル直接編集ではない)である旨を明記。
+
+すべて`model`の固定・追加はしていない(オーナー方針「メインモデルを恒久固定しない」に従う)。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: Codexレビュー反映」節。
+
+### 触ったファイル
+
+- `.claude/settings.local.json`
+- `/Users/chiaki/.codex/config.toml`(リポジトリ外)
+- `.claude/settings.json`
+- `.claude/skills/deploy/SKILL.md`
+- `/Users/chiaki/.claude/settings.json`(リポジトリ外・グローバル)
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- JSON構文3件(`.claude/settings.local.json`・`.claude/settings.json`・
+  `/Users/chiaki/.claude/settings.json`)を`python3 json.load`で検証、いずれもOK。
+- `/Users/chiaki/.codex/config.toml`: このマシンのPython 3.9には`tomllib`が無く、
+  install/network禁止のためパーサー追加もできなかった。括弧対応数チェック・目視確認・
+  他フィールド不変確認で代替した(厳密なTOML文法検証ではない)。
+- `git diff --check`成功。
+- `git status --short`で`packages/web/`配下に変更が無いことを確認。
+- commit / push / DB操作 / deploy は実行していない。
+
+### 検証していないこと
+
+- 新しいセッションでagmsgの`run`ディレクトリへの書き込みが実際に権限プロンプト無しで
+  通るかの実地確認。
+
+### push したか
+
+していない。commitもしていない。
+
+### 本番で確認したか
+
+対象外(設定ファイル・ドキュメントのみ)。
+
+### 次の担当者が触ってよい場所
+
+- 今回の変更内容のレビュー・commit(内容に問題なければ)
+
+### 次の担当者が触ってはいけない場所
+
+- `~/.agents/skills/agmsg/`配下の直接編集(スクリプト経由でのみ操作すること)
+- アプリ本体コード(`packages/web/`等、今回のタスク範囲外)
+
+## Handoff 2026-07-13 (6) — Claude Code(Sonnet 5): Codexレビュー第2弾(記録訂正・厳密検証・モデル固定解除)
+
+### 目的
+
+前Handoff(5)へのCodex最終read-onlyレビュー(P0なし、運用上P1複数)をオーナー(秋さん)
+経由で受け取り、Claude Code単独実装として反映した。着手前に指摘内容(代替Pythonの実在・
+repo-scout.tomlの現状・AGENTS.mdのgit add -A残存・task.mdのHandoff番号重複とCLAUDE.md誤記)
+を独立して裏取りし、5件すべて実測と一致したことを確認してから実行した。
+
+### 変更内容
+
+1. `AGENTS.md`本番デプロイ節: コード例の`git add -A`→`git status --short`確認後に
+   触ったファイルだけ明示stageする形へ変更。
+2. `task.md`: 「モデル非固定化」Handoffの変更内容一覧からCLAUDE.mdの誤記を削除。
+   重複していたHandoff番号(4)のうち後発の「Codexレビュー反映」を(5)に修正済み。
+3. JSON 3件・TOML 2件をCodex同梱Python 3.12(`tomllib`同梱)で厳密再検証、すべてOK。
+4. `~/.codex/config.toml`から`model`/`model_reasoning_effort`の固定値を削除
+   (メインモデル恒久固定なしのオーナー方針に従う)。
+5. `.codex/agents/repo-scout.toml`に`model = "gpt-5.3-codex-spark"`を追加(検索・仕様差分・
+   ログ要約の3用途限定の軽量補助役。主モデル固定とは別物)。AGENTS.mdにこの3用途限定の
+   運用ルールを1行追加。
+6. Claude側安全強化: `/Users/chiaki/.claude/settings.json`から`skipDangerousModePermissionPrompt`
+   削除。`.claude/settings.json`のdenyへ`git add -A`・語境界付き`git push *`系3パターン・
+   `drizzle-kit push/migrate`・`railway up/deploy`を追加。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: Codexレビュー第2弾」節。
+
+### 触ったファイル
+
+- `AGENTS.md`
+- `task.md`(本Handoff、および上記Handoff(4)→(5)の番号修正・CLAUDE.md誤記修正)
+- `/Users/chiaki/.codex/config.toml`(リポジトリ外)
+- `.codex/agents/repo-scout.toml`
+- `/Users/chiaki/.claude/settings.json`(リポジトリ外・グローバル)
+- `.claude/settings.json`
+- `docs/agent-logs/2026-07-13.md`
+
+### 検証したこと
+
+- JSON 3件・TOML 2件、Codex同梱tomllib入りPython 3.12で厳密検証しOK。
+- `git diff --check`成功。
+- `git status --short`で対象ファイルのみの変更を確認。
+- `packages/web/`・`CLAUDE.md`に差分なしを確認。
+- commit / push / DB操作 / deploy / install / network / agmsg配下直接編集、いずれも未実行。
+
+### 検証していないこと
+
+- `gpt-5.3-codex-spark`がCodex側で実在する有効なモデルIDかどうか。
+- モデル固定解除・repo-scout追加が現在進行中のCodexセッションに即座に反映されるか。
+
+### push したか
+
+していない。commitもしていない。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- 今回までの一連の変更内容のレビュー・commit(内容に問題なければ)
+
+### 次の担当者が触ってはいけない場所
+
+- `~/.agents/skills/agmsg/`配下の直接編集(スクリプト経由でのみ操作すること)
+- アプリ本体コード(`packages/web/`等、今回のタスク範囲外)

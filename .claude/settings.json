@@ -1,4 +1,38 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(bun run check)",
+      "Bash(bun run typecheck)",
+      "Bash(bun run lint)",
+      "Bash(bun run build)",
+      "Bash(bun run smoke)",
+      "Bash(bun run smoke -- *)",
+      "Bash(bun test *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(rg *)",
+      "Bash(~/.agents/skills/agmsg/scripts/inbox.sh *)",
+      "Bash(~/.agents/skills/agmsg/scripts/whoami.sh *)",
+      "Bash(~/.agents/skills/agmsg/scripts/history.sh *)",
+      "Bash(~/.agents/skills/agmsg/scripts/identities.sh *)"
+    ],
+    "deny": [
+      "Bash(git add -A)",
+      "Bash(git push *)",
+      "Bash(git -C * push *)",
+      "Bash(/usr/bin/git push *)",
+      "Bash(bun run db:push*)",
+      "Bash(bun run db:migrate*)",
+      "Bash(bun run deploy*)",
+      "Bash(bunx drizzle-kit push *)",
+      "Bash(bunx drizzle-kit migrate *)",
+      "Bash(railway up *)",
+      "Bash(railway deploy *)",
+      "Bash(kill -9*)"
+    ]
+  },
   "hooks": {
     "Notification": [
       {
@@ -22,17 +56,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path // empty'); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(ts|tsx|js|jsx|json|css|md)$'; then cd \"$CLAUDE_PROJECT_DIR\" && npx prettier --write \"$FILE\" 2>/dev/null; fi"
-          }
-        ]
-      }
-    ],
     "PreCompact": [
       {
         "hooks": [
@@ -50,16 +73,6 @@
           {
             "type": "command",
             "command": "echo 'Compaction 後リマインダー: §0 invariants を確認 → withRetry, 4-place settings sync, assertOk, no manual Content-Encoding, dual schema sync。tsc -b を忘れずに。'"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "変更されたファイルがある場合、bun typecheck が実行されたか確認してください。実行されていない場合は {\"ok\": false, \"reason\": \"bun typecheck を実行してから完了してください\"} を返してください。型チェックが実行済みか、ファイル変更がない場合は {\"ok\": true} を返してください。"
           }
         ]
       }

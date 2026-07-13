@@ -30,17 +30,32 @@
 
 - `eguchi-portfolio-app` と `ivys-house` リポジトリのコードを混ぜない。ファイルコピー、import、コード参照をすべて禁止する。
 
-### 役割分担（2026-07-08 固定 — Fable5 期間終了後の体制）
+### 役割分担（2026-07-08 固定・2026-07-13 モデル非固定化）
 
-- **Driver = Claude Code (Sonnet)**: 実装・コミット・検証（`bun run check` / `bun run smoke`）を行う唯一の役割。
+役割（Driver/Reviewer）は固定するが、**各AIが内部で使うモデル（Sonnet/Fable/Opus や特定の Codex モデル等）は固定しない**。作業内容・利用可能性・残りクレジットに応じてその都度選ぶ。定型調査は小さいモデル・低い思考量へ渡してよいが、重要判断と統合は主担当（Driver）が行う。
+
+- **Driver = Claude Code**: 実装・コミット・検証（`bun run check` / `bun run smoke`）を行う唯一の役割。
 - **Reviewer = Codex**: **read-only**。push 前レビュー・高リスク差分（DB / 画像 / settings / deploy）の確認・三振（同じ失敗3回）時の相談相手。
 - **Codex に実装させない**（ファイル編集・コミットをさせない）。レビューで修正が必要なら、指摘を受けて Driver が直す。
 - 迷ったときの参照順: 各タスクの指示書（docs/agents/task-queue.md）→ docs/agents/autonomy-rules.md → 本ファイル §0。
+
+#### クレジット切れ時の復旧手順（短縮版）
+
+前担当がクレジット切れ等で途中終了した場合、次の担当は次の順で動く。
+
+1. `git status --short` と `git diff` で未コミット差分を確認し、**破棄しない**（他人の途中成果として保護する）。
+2. 差分と `task.md` 最新 Handoff を読み、ファイルごとに「続行（このまま仕上げる）」「保留（触らずオーナー判断待ち）」「戻す（要相談で理由付きの差し戻し）」に分類する。
+3. 分類結果を `task.md` の Handoff に短く追記してからオーナーへ報告する。commit は内容確定後のみ、push は行わない。
 
 ### Claude Code / Codex agmsg 運用
 
 - agmsg team は `eguchi-portfolio`。Claude Code は `claude-driver`、Codex は `codex-reviewer`。
 - 窓口は上記「役割分担」に従う（Driver=Claude Code 固定。Codex は Reviewer としてのみ呼ぶ）。
+- **識別名は `claude-driver` の1つに固定する。** 即席の別名（`claude-library-driver` 等）を新規に作らない — 名前が増えると agmsg の宛先ズレ・同時多重編集事故の温床になる（2026-07-12 に実際に発生: 複数セッションが同一 working tree を同時編集し、停止指示とプロセス強制終了合戦になった）。
+- 作業開始時に `~/.agents/skills/agmsg/scripts/whoami.sh "$(pwd)" claude-code` で、自分が `claude-driver` として登録されているか、project がこのリポジトリのパスになっているかを確認する。ズレていたら編集作業をせず、状況を報告して停止する。
+- 実装セッションは常に1つだけ開く。同一 working tree を複数セッションで同時編集しない（1 task = 1 Driver。詳細は本ファイル下部「Agent Ownership」参照）。
+- Codex への相談は非ブロッキングとして扱う。返信を無期限に待たない。同一セッション内に返信が無ければ `docs/checklists.md` のセルフチェックで代替し、Handoff に「Codex未応答・検査表で代替」と明記してよい。
+- 権限プロンプトで進めなくなったタスクは、autonomy-rules.md の原則どおり「要相談」に回して次のタスクへ進む。セッション全体を承認待ちで止めない。
 - 主担当AIは次の場合だけ agmsg で相手に相談する:
   - 設計判断が2択以上で迷う
   - 同じバグ修正を2回試して解決しない
@@ -50,6 +65,14 @@
 - 相談文には必ず `目的` / `制約` / `触ったファイル` / `検証` / `返答形式` を含める。相手には「実装なし、P0/P1中心、短く」と依頼する。
 - 相手AIからの返信は主担当AIが要約してユーザーへ伝える。ユーザーに agmsg の中継作業を戻さない。
 - delivery mode は Claude Code `monitor`、Codex `turn` を基本にする。消費を抑えたい時は一時的に `off` へ落とす。
+
+### 小さいモデルへの委譲基準（クレジット節約）
+
+- 調査・照合・定型チェック（grepでの影響範囲探索、ドキュメントとコードの食い違い確認、写真データ整合性など「判断ではなく確認」の作業）は `.claude/agents/` のサブエージェント（読み取り専用・軽量モデル）に投げてよい。実装・commit は投げない — 編集権限は Driver 本体のみ。サブエージェントの報告は証拠収集であり、最終判断は Driver または Codex レビューが行う。
+- 既存のサブエージェント: `exif-checker`（写真データ整合性、`model: haiku`）、`perf-auditor`（性能監査、`model: haiku`）、`security-reviewer`（セキュリティ監査、高リスク判断のため `model: inherit` でセッションの主モデルへ追従）。呼び出しの目安: 画像・キャッシュ周りを触った直後は `perf-auditor`、認証・admin周りを触った直後は `security-reviewer`、写真データを触った直後は `exif-checker`。月次の定期健診用途にも使ってよい。
+- サブエージェントには「ファイルを丸ごと読む」のではなく「grepで当たりをつけてから該当範囲だけ読む」よう指示し、返答は「パス:行番号＋1行要約（最大30件程度）」に絞ってもらう。長文レポートは Driver 本体のコンテキストを消費するため避ける。
+- Codex レビュー依頼も同じ考え方で: ①目的1行 ②触ったファイル一覧 ③§0該当の有無 ④見てほしい点1〜3個、に絞ったテンプレを使う。ファイル本文を貼らず、Codex 側で読ませる。
+- Codex 側の軽量調査役 `repo-scout`（`.codex/agents/repo-scout.toml`、read-only・低reasoning・小型モデル）は「検索・仕様差分の洗い出し・長いテスト結果の要約」の3用途だけに使う。push前レビューや§0該当の高リスク差分レビューには使わない（そちらは Codex 本体のレビューに任せる）。
 
 ### 高性能モデル利用時の優先順位
 
@@ -152,8 +175,10 @@ bun run db:studio      # Drizzle Studio
 
 ```sh
 cd packages/web && tsc -b && bun run build
-git add -A && git commit -m "..."
-git push              # Railway が自動ビルド → bun src/server.ts で起動
+git status --short                      # 変更ファイルを確認
+git add <このタスクで変更したファイルを1つずつ列挙>   # git add -A は使わない
+git commit -m "..."
+git push              # ← オーナー操作。エージェントは実行しない（Railway が自動ビルド → bun src/server.ts で起動）
 ```
 
 - Railway は `PORT` 環境変数（自動設定）を `process.env.PORT` 経由で受け取る（`server.ts` は `PORT ?? 3000`）
@@ -355,8 +380,9 @@ conflict; see `knowledge/WIKI_SCHEMA.md` for the full rules.
 
 Exactly one agent is the **Driver** for a given task — the Driver may edit
 files, run commands, and commit. As of 2026-07-08 the roles are **fixed**:
-Claude Code (Sonnet) is the Driver, Codex is the read-only Reviewer (see
-「役割分担」 above). **Push is always done by the owner's hand — agents never
+Claude Code is the Driver, Codex is the read-only Reviewer (see 「役割分担」
+above). Neither AI's underlying model is pinned — the model in use may change
+session to session. **Push is always done by the owner's hand — agents never
 push** (see 完了の定義). The Reviewer reads and comments, never edits.
 
 - Two agents must never edit the same files concurrently.

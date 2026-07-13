@@ -74,4 +74,4 @@ description: 新しいカテゴリ・シリーズを追加する手順。ギャ�
 
 - `withRetry` — 新規 DB クエリは全てラップ
 - `qc.invalidateQueries` — データ更新後に再取得
-- `tsc -b` + `bun run build` 通過後に `git push`
+- `tsc -b` + `bun run build` 通過後に commit まで行う。**`git push` はオーナーの手で行う**（エージェントは実施しない）

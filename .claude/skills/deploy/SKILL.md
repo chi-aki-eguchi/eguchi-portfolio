@@ -18,37 +18,34 @@ cd packages/web && bun run build
 cd packages/web && bun run lint
 ```
 
-## デプロイ
+## コミットまで（エージェントが行う範囲）
+
+`git add -A` は使わない（無関係なファイルを巻き込むリスクがあるため禁止）。
+まず `git status --short` で現在の変更を確認し、このタスクで実際に触ったファイルだけを
+明示的に指定して stage する。
 
 ```sh
-git add -A
+git status --short
+git add <このタスクで変更したファイルを1つずつ列挙>
 git commit -m "feat/fix/chore: 変更内容の説明"
-git push   # Railway が自動ビルド → bun src/server.ts で起動
 ```
 
-- Railway は `main` ブランチへの push で自動デプロイ
-- デプロイ完了まで数分かかる
-- 本番確認: https://akieguchi.com
+- **`git push` はオーナーの手で行う。エージェントは実施しない**（AGENTS.md「完了の定義」）
+- Railway は `main` ブランチへの push で自動デプロイ（push 後、数分でRailway反映）
+- 本番確認: https://akieguchi.com（push・Railway反映後にオーナーが確認）
 
 ## DB マイグレーション
 
-スキーマ変更を含む場合は**デプロイ前**に手動実行:
-
-```sh
-cd packages/web && bun run db:push   # Turso (本番) に適用
-```
-
-スキーマ変更時は `schema.ts` と `schema.postgres.ts` の**両方**を更新してから実行すること。
+スキーマ変更を含む場合、`bun run db:push`（Turso 本番へ適用）は**本番DB書き込みのためエージェントは実行しない**。
+スキーマ変更時は `schema.ts` と `schema.postgres.ts` の**両方**をコードとして更新し、
+実行が必要なことと実行コマンドを決定ログ/Handoffに明記してオーナーに引き継ぐ。
 
 ## ロールバック
 
-```sh
-# git revert して再 push
-git revert HEAD
-git push
-
-# または Railway ダッシュボードから前のデプロイに revert
-```
+- `git revert HEAD` はエージェントが自動実行しない。必要になった場合は候補として
+  内容（何をrevertするか・なぜ必要か）をオーナーに説明し、**オーナーの明示的な承認後にのみ**
+  commitまで行う。その後の **push はオーナーが行う**
+- または Railway ダッシュボードから前のデプロイに revert（オーナー操作）
 
 ## 注意事項
 

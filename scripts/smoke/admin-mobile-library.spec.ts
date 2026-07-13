@@ -106,6 +106,24 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   );
   expect(lazyTileImages, "Libraryタイル画像は全てloading=eager").toBe(0);
 
+  // 回帰(Claude review P1): 画像エラー時も「読込中」の透明状態へ固定しない。
+  const firstImage = tiles.nth(0).locator("img");
+  await firstImage.evaluate((image) => {
+    image.dataset.loaded = "false";
+    image.dispatchEvent(new Event("error"));
+  });
+  await expect(firstImage).toHaveAttribute("data-loaded", "true");
+  await expect(firstImage).toHaveAttribute("data-broken", "true");
+
+  // 3列は写真を一覧する密度優先モード。40px角の並べ替えボタンは写真を
+  // 覆うため隠し、2列へ戻すと再び操作できる。
+  await expect(
+    tiles.nth(0).getByRole("button", { name: "前へ移動" }),
+  ).toHaveCount(0);
+  await expect(
+    tiles.nth(0).getByRole("button", { name: "後へ移動" }),
+  ).toHaveCount(0);
+
   // カード上の回転/移動ボタンがタイルからはみ出さない
   // (hasTouch=pointer:coarse なので admin-tap-sm は40px角に拡大された状態)
   const tileBox = box1!;

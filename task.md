@@ -7455,10 +7455,17 @@ Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1�
 - `bun run smoke`: 28 passed / 25 skipped / 1 failed。失敗は2026-07-10から
   既知の`admin-trash-signal.spec.ts`のみ。今回対象のdesktop/mobile Library検査は成功。
 - ログイン以外のDB書き込み操作、push、Railway操作は行っていない。
-- Claude Code read-only review: P0なし、P1が1件。並べ替えボタンのtouchstartが
+- 一回限りのClaude Code CLI read-only review: P0なし、P1が1件。並べ替えボタンのtouchstartが
   スクロール扱いになり約140ms消える問題を指摘。`onTouchStart`判定を削除し、
-  実scrollのみで判定する修正と回帰smokeを追加。Claude再レビューで解消確認、
-  最終結果はP0/P1なし。
+  実scrollのみで判定する修正と回帰smokeを追加。同じ一回限りのCLI reviewerが
+  再確認して解消判定。`claude-driver`の追加agmsgレビューとは別セッション。
+- commit後にClaudeの追加agmsgレビューが遅延到着し、P1を3件検出。
+  1) 画像404時に台紙のまま永久に見えない問題は`onError`で破損表示へ戻した。
+  2) スマホの常時表示ボタンまでスクロール中に隠す問題はhover抑制をマウスに限定。
+  3) 3列の109/114pxカードを40px角移動ボタンが覆う問題は、3列を閲覧優先にして
+  移動ボタンを非表示（2列へ戻すと操作可能）。3件とも回帰smokeを追加。
+- 最新working diffを一回限りのClaude Code CLI reviewerが最終確認しP0/P1なし。
+  `claude-driver`にも同じ差分の再確認をagmsgで依頼済み（非ブロッキング）。
 
 ### 検証していないこと
 

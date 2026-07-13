@@ -4938,6 +4938,13 @@ export function GalleryTab({
                           onLoad={(e) => {
                             e.currentTarget.dataset.loaded = "true";
                           }}
+                          onError={(e) => {
+                            // A broken R2 key must not look like an image that
+                            // is still loading forever. Reveal the native
+                            // broken-image/alt fallback on the paper backdrop.
+                            e.currentTarget.dataset.loaded = "true";
+                            e.currentTarget.dataset.broken = "true";
+                          }}
                           loading="eager"
                           decoding="async"
                           draggable={false}
@@ -5068,71 +5075,73 @@ export function GalleryTab({
                           </p>
                         </div>
                         {/* Move controls — touch-friendly reorder (drag isn't available on touch).
-                        Always visible on mobile; hover-reveal on desktop. */}
-                        {!reorderLocked && !showTrash && (
-                          <div className="admin-photo-hover-only absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                            {/* ⇤⇥ はカードに実寸で収まる時だけ(coarse時は40px角×4個)。
-                            前/次だけでも並び替えは完結する */}
-                            {showLibraryJumpButtons(
-                              effectiveThumbSize,
-                              coarsePointer,
-                            ) && (
+                        Dense 3-column cards are view-first; switch to 2 columns to reorder. */}
+                        {effectiveThumbSize >= LIBRARY_MIN_EFFECTIVE_THUMB &&
+                          !reorderLocked &&
+                          !showTrash && (
+                            <div className="admin-photo-hover-only admin-photo-move-controls absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                              {/* ⇤⇥ はカードに実寸で収まる時だけ(coarse時は40px角×4個)。
+                              前/次だけでも並び替えは完結する */}
+                              {showLibraryJumpButtons(
+                                effectiveThumbSize,
+                                coarsePointer,
+                              ) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    movePhotoTo(photo.id, "start");
+                                  }}
+                                  disabled={idx === 0}
+                                  aria-label="先頭へ移動"
+                                  title="先頭へ移動"
+                                  className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                                >
+                                  <ChevronsLeft size={13} />
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  movePhotoTo(photo.id, "start");
+                                  movePhoto(photo.id, -1);
                                 }}
                                 disabled={idx === 0}
-                                aria-label="先頭へ移動"
-                                title="先頭へ移動"
+                                aria-label="前へ移動"
+                                title="前へ移動"
                                 className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                               >
-                                <ChevronsLeft size={13} />
+                                <ChevronLeft size={13} />
                               </button>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                movePhoto(photo.id, -1);
-                              }}
-                              disabled={idx === 0}
-                              aria-label="前へ移動"
-                              title="前へ移動"
-                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                            >
-                              <ChevronLeft size={13} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                movePhoto(photo.id, 1);
-                              }}
-                              disabled={idx === displayed.length - 1}
-                              aria-label="後へ移動"
-                              title="後へ移動"
-                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                            >
-                              <ChevronRight size={13} />
-                            </button>
-                            {showLibraryJumpButtons(
-                              effectiveThumbSize,
-                              coarsePointer,
-                            ) && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  movePhotoTo(photo.id, "end");
+                                  movePhoto(photo.id, 1);
                                 }}
                                 disabled={idx === displayed.length - 1}
-                                aria-label="末尾へ移動"
-                                title="末尾へ移動"
+                                aria-label="後へ移動"
+                                title="後へ移動"
                                 className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                               >
-                                <ChevronsRight size={13} />
+                                <ChevronRight size={13} />
                               </button>
-                            )}
-                          </div>
-                        )}
+                              {showLibraryJumpButtons(
+                                effectiveThumbSize,
+                                coarsePointer,
+                              ) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    movePhotoTo(photo.id, "end");
+                                  }}
+                                  disabled={idx === displayed.length - 1}
+                                  aria-label="末尾へ移動"
+                                  title="末尾へ移動"
+                                  className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
+                                >
+                                  <ChevronsRight size={13} />
+                                </button>
+                              )}
+                            </div>
+                          )}
                       </div>
                     );
                   })}

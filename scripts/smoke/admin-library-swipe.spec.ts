@@ -10,6 +10,7 @@ type SwipeSample = {
   shadowedTiles: number;
   visibleTiles: number;
   revealedHoverStrips: number;
+  hiddenMoveControls: number;
 };
 
 async function sampleLibrary(page: Page): Promise<SwipeSample> {
@@ -27,6 +28,7 @@ async function sampleLibrary(page: Page): Promise<SwipeSample> {
         shadowedTiles: 0,
         visibleTiles: 0,
         revealedHoverStrips: 0,
+        hiddenMoveControls: 0,
       };
     }
 
@@ -66,6 +68,14 @@ async function sampleLibrary(page: Page): Promise<SwipeSample> {
           tile.querySelectorAll<HTMLElement>(".admin-photo-hover-only"),
         ).some((strip) => Number(getComputedStyle(strip).opacity) > 0.01),
       ).length,
+      hiddenMoveControls: visibleTiles.filter((tile) => {
+        const controls = tile.querySelector<HTMLElement>(
+          ".admin-photo-move-controls",
+        );
+        return controls
+          ? Number(getComputedStyle(controls).opacity) < 0.99
+          : false;
+      }).length,
     };
   });
 }
@@ -189,7 +199,7 @@ test.describe("admin — Library高速スワイプの表示安定性", () => {
         Math.min(...samples.map((sample) => sample.visibleTiles)),
       ).toBeGreaterThan(0);
       expect(
-        Math.max(...samples.map((sample) => sample.revealedHoverStrips)),
+        Math.max(...samples.map((sample) => sample.hiddenMoveControls)),
       ).toBe(0);
 
       const reverseJumps = (

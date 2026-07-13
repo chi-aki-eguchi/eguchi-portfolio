@@ -960,13 +960,15 @@
   opacity: 0.4;
 }
 
-/* A stationary pointer re-triggers hover controls on every tile that passes
-   beneath it. Hide that paint-heavy overlay until scrolling settles. */
-.admin-atelier
-  [data-library-scroll][data-scrolling="true"]
-  .admin-photo-hover-only {
-  opacity: 0 !important;
-  transition: none !important;
+/* A stationary mouse re-triggers hover controls on every tile that passes
+   beneath it. Touch controls are persistent UI, so never hide them here. */
+@media (hover: hover) and (pointer: fine) {
+  .admin-atelier
+    [data-library-scroll][data-scrolling="true"]
+    .admin-photo-hover-only {
+    opacity: 0 !important;
+    transition: none !important;
+  }
 }
 
 /* Toasts (工程3): enter/exit shell shared by batch/undo/error/upload toasts.

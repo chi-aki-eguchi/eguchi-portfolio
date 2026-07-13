@@ -6830,3 +6830,57 @@ repo-scout.tomlの現状・AGENTS.mdのgit add -A残存・task.mdのHandoff番�
 
 - `~/.agents/skills/agmsg/`配下の直接編集(スクリプト経由でのみ操作すること)
 - アプリ本体コード(`packages/web/`等、今回のタスク範囲外)
+
+## Handoff 2026-07-13 (7) — Claude Code(Sonnet 5): task-queue.md Q-1「withRetry再試行条件」完成
+
+### 目的
+
+`docs/agents/task-queue.md` Q-1。drizzle-orm 0.45が全クエリ失敗を「Failed query: …」で
+包むため、`withRetry`が非一時的エラー(重複登録等)まで3回再試行していた問題を修正。
+
+### 変更内容
+
+- `packages/web/src/api/database/libsql.ts`: `isTransientDbError(err)`ヘルパーを新設し、
+  `err.cause`を再帰的に辿ってECONNRESET/socket-closedを判定する方式に変更。
+  `"Failed query"`単独マッチは削除。`withRetry`本体のシグネチャ・呼び出し側は無変更。
+- `packages/web/src/api/database/withRetry.test.ts`: 手動複製していたロジックを同じ判定へ
+  同期。旧「Failed query単独で再試行」テストを新behavior検証へ置換、新規2件
+  (cause=ECONNRESETは再試行/cause=制約違反は再試行しない)を追加。9 pass/0 fail。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-1」節。
+
+### 触ったファイル
+
+- `packages/web/src/api/database/libsql.ts`
+- `packages/web/src/api/database/withRetry.test.ts`
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- `bun run check`成功: typecheck / lint / test(351 pass, 0 fail) / build。
+- `withRetry.test.ts`単体: 9 pass / 0 fail。
+- 呼び出し側145箇所・他ファイルへの変更なし。
+
+### 検証していないこと
+
+- 実際のTurso本番環境での通信断再現(ローカルではモックエラーのみ)。
+- `withRetry.test.ts`が実装を手動複製している構造自体の解消(範囲外、
+  `knowledge/wiki/pages/open-issues.md`#40として既知)。
+
+### push したか
+
+していない。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- push前にCodexのread-onlyレビューを受ける(Q-1指定の依頼文どおり)
+- `docs/agents/task-queue.md`のQ-1に完了マーカーを付ける
+
+### 次の担当者が触ってはいけない場所
+
+- `withRetry`の呼び出し側145箇所(今回意図的に不変更)

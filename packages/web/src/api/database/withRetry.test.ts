@@ -1,5 +1,26 @@
 import { describe, test, expect } from "bun:test";
 
+// Hand-duplicated from libsql.ts (kept in sync manually), because the real
+// module creates a Turso client at import time and can't be loaded standalone
+// in a unit test. Mirror any change to libsql.ts's withRetry here too.
+function isTransientDbError(err: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current: any = err;
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    if (current.code === "ECONNRESET") return true;
+    if (
+      typeof current.message === "string" &&
+      (current.message.includes("ECONNRESET") ||
+        current.message.includes("socket connection was closed"))
+    ) {
+      return true;
+    }
+    current = current.cause;
+  }
+  return false;
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
@@ -8,13 +29,8 @@ async function withRetry<T>(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (err: any) {
-      const isTransient =
-        err?.code === "ECONNRESET" ||
-        err?.message?.includes("ECONNRESET") ||
-        err?.message?.includes("socket connection was closed") ||
-        err?.message?.includes("Failed query");
-      if (isTransient && attempt < maxRetries) {
+    } catch (err) {
+      if (isTransientDbError(err) && attempt < maxRetries) {
         await new Promise((r) => setTimeout(r, delayMs * attempt));
         continue;
       }
@@ -52,15 +68,43 @@ describe("withRetry", () => {
     expect(attempts).toBe(2);
   });
 
-  test("retries on Failed query", async () => {
+  test("does not retry on bare 'Failed query' with no transient cause", async () => {
+    // drizzle-orm 0.45+ wraps every query failure in "Failed query: …", so a
+    // bare match on that message alone must not trigger a retry anymore.
+    let attempts = 0;
+    await expect(
+      withRetry(async () => {
+        attempts++;
+        throw new Error("Failed query: some reason");
+      }),
+    ).rejects.toThrow("Failed query");
+    expect(attempts).toBe(1);
+  });
+
+  test("retries when a drizzle-wrapped error's cause is ECONNRESET", async () => {
     let attempts = 0;
     const result = await withRetry(async () => {
       attempts++;
-      if (attempts === 1) throw new Error("Failed query: some reason");
+      if (attempts === 1) {
+        const cause = Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" });
+        throw new Error("Failed query: SELECT * FROM photos", { cause });
+      }
       return "recovered";
     });
     expect(result).toBe("recovered");
     expect(attempts).toBe(2);
+  });
+
+  test("does not retry when a drizzle-wrapped error's cause is a constraint violation", async () => {
+    let attempts = 0;
+    await expect(
+      withRetry(async () => {
+        attempts++;
+        const cause = new Error("UNIQUE constraint failed: photos.filename");
+        throw new Error("Failed query: INSERT INTO photos", { cause });
+      }),
+    ).rejects.toThrow("Failed query");
+    expect(attempts).toBe(1);
   });
 
   test("throws after max retries on persistent transient error", async () => {

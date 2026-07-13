@@ -10,6 +10,27 @@ const client = createClient({
 export const db = drizzle(client, { schema });
 
 // ── Retry wrapper for Turso ECONNRESET ──────────────
+// drizzle-orm 0.45+ wraps every query failure in a generic "Failed query: …"
+// message, so the transient/non-transient signal now lives in `err.cause`
+// (the original driver error) rather than the top-level message.
+function isTransientDbError(err: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current: any = err;
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    if (current.code === "ECONNRESET") return true;
+    if (
+      typeof current.message === "string" &&
+      (current.message.includes("ECONNRESET") ||
+        current.message.includes("socket connection was closed"))
+    ) {
+      return true;
+    }
+    current = current.cause;
+  }
+  return false;
+}
+
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
@@ -18,13 +39,8 @@ export async function withRetry<T>(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (err: any) {
-      const isTransient =
-        err?.code === "ECONNRESET" ||
-        err?.message?.includes("ECONNRESET") ||
-        err?.message?.includes("socket connection was closed") ||
-        err?.message?.includes("Failed query");
-      if (isTransient && attempt < maxRetries) {
+    } catch (err) {
+      if (isTransientDbError(err) && attempt < maxRetries) {
         await new Promise((r) => setTimeout(r, delayMs * attempt));
         continue;
       }

@@ -7355,3 +7355,66 @@ GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVary�
 ### 次の担当者が触ってはいけない場所
 
 - 特になし
+
+## Handoff 2026-07-13 (16) — Claude Code(Sonnet 5): 統合レビューP1指摘2件を修正・完了
+
+### 目的
+
+Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1が2件。
+オーナー方針(Codexへの相談は最後の1回のみ)どおり、以下を直してself-checkのみで
+完了とし、再レビューは依頼しない。
+
+### 変更内容
+
+- **P1-1(Q-5)**: 全8箇所の設定保存呼び出しが`assertOk`だけでレスポンスの
+  `ignoredKeys`を読んでおらず、将来キーが台帳から漏れても画面が「保存成功」の
+  ままになる問題。`packages/web/src/web/pages/admin-shared.ts`に共通ヘルパー
+  `postAdminSettings(json)`を新設し、`ignoredKeys`が1件でもあれば例外を投げて
+  既存の失敗表示に流れるようにした。`admin.tsx`3箇所・`admin-tabs.tsx`5箇所を
+  置換。テスト`admin-shared.test.ts`(新規4件)で実際のPOSTレスポンス形状から
+  分岐を確認。
+- **P1-2(Q-4案A)**: 決定ログの「hero/profile画像はphotos行と共有され得ない」との
+  断定を訂正。`profilePhotoUrl`は許可キーで値は任意文字列を保存できるため、
+  将来案Aを実装する際は旧キーが`profile/`/`hero/`prefixで始まる場合のみ削除する
+  必須ガードを決定ログに追記(実装自体はまだしない)。
+
+詳細: `docs/agent-logs/2026-07-13.md`「追記: Q-4〜Q-10統合レビュー結果と対応」節。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin-shared.ts`
+- `packages/web/src/web/pages/admin-shared.test.ts`(新規)
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `docs/agent-logs/2026-07-13.md`(Q-4節の訂正+本追記)
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- `bun run check`成功: test 362 pass(旧358→+4)、typecheck/lint/build含む。
+- `bun run smoke`: 26 passed / 1 failed(既知の`admin-trash-signal.spec.ts`のみ)。
+  `admin-live-preview.spec.ts`(実ブラウザでSettings保存を経由)が緑 —
+  `postAdminSettings`置換後も実際の保存フローが壊れていないことを確認。
+
+### 検証していないこと
+
+- 台帳から実際にキーが漏れた状態(意図的に許可リストから既存キーを外す)での
+  ブラウザ上のエラー表示そのもの(unitテストで分岐のみ確認)。
+
+### push したか
+
+していない。commitのみ実施。**このセッションを通じてpushは一度もしていない**
+(オーナー承認のもとcommitのみ)。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- push判断はオーナー。`git log origin/main..main`で今回分のcommit一覧を確認できる。
+- オーナーが`pending-owner-decisions.md`のいずれかを選んだら実装へ進んでよい
+
+### 次の担当者が触ってはいけない場所
+
+- 特になし

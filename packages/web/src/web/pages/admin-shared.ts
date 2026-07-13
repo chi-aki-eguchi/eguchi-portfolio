@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { objectPositionFromFocal, srcFor } from "../lib/picture";
+import { adminApi } from "../lib/api";
 
 export type Tab =
   | "setup"
@@ -118,6 +119,24 @@ export async function jsonOrThrow<T>(
 ): Promise<T> {
   assertOk(res);
   return res.json();
+}
+
+// POST /admin/settings の許可リスト外キーはAPI側で無視され保存されない
+// (Q-5)。API はどのキーを無視したかを ignoredKeys で返すが、呼び出し元が
+// res.json() を読まず assertOk() だけ見ていると、画面は「保存成功」のまま
+// 実際は一部保存されない事故に気づけない(codex-reviewer P1指摘)。
+// 全ての settings 保存呼び出しはこの関数を経由させ、無視されたキーがあれば
+// 必ずエラーとして表面化させる。
+export async function postAdminSettings(
+  json: Record<string, string | undefined>,
+): Promise<void> {
+  const res = await adminApi.settings.$post({ json });
+  const body = await jsonOrThrow<{ ok: boolean; ignoredKeys?: string[] }>(res);
+  if (body.ignoredKeys && body.ignoredKeys.length > 0) {
+    throw new Error(
+      `一部の設定が保存されませんでした（未対応のキー: ${body.ignoredKeys.join(", ")}）`,
+    );
+  }
 }
 
 export const DEFAULT_CAMERA_PRESETS = [

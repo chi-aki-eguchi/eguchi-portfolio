@@ -80,6 +80,7 @@ import {
 import {
   ADMIN_TAB_GROUPS,
   isAdminTab,
+  postAdminSettings,
   reorderLockReason,
   type Tab,
 } from "./admin-shared";
@@ -785,10 +786,7 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   // 閉じるだけでは完了扱いにしない。
   const finishSetup = useMutation({
     mutationFn: async () => {
-      const res = await adminApi.settings.$post({
-        json: { setupCompleted: "true" },
-      });
-      assertOk(res);
+      await postAdminSettings({ setupCompleted: "true" });
     },
     onSuccess: () => {
       qc.setQueryData(
@@ -2893,8 +2891,7 @@ export function GalleryTab({
     // saved), so a failure is logged rather than thrown — throwing here would be an
     // unhandled rejection at the call site.
     try {
-      const res = await adminApi.settings.$post({ json: updates });
-      assertOk(res);
+      await postAdminSettings(updates);
       qc.invalidateQueries({ queryKey: ["settings"] });
     } catch (e) {
       console.error("rememberPresets failed:", e);
@@ -3025,10 +3022,7 @@ export function GalleryTab({
   // O6: persist the smart-album list (stored as a JSON string in site_settings).
   const saveAlbums = useMutation({
     mutationFn: async (next: SmartAlbum[]) => {
-      const res = await adminApi.settings.$post({
-        json: { smartAlbums: JSON.stringify(next) },
-      });
-      assertOk(res);
+      await postAdminSettings({ smartAlbums: JSON.stringify(next) });
     },
     onSuccess: () => {
       setActionError("");

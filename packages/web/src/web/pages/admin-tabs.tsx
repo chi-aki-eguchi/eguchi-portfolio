@@ -38,6 +38,7 @@ import {
   effectivePresets,
   jsonOrThrow,
   parsePresetList,
+  postAdminSettings,
   usePersistentState,
   type HeroPhotoRow,
   type Photo,
@@ -845,8 +846,7 @@ export function ProfileTab({
 
   const save = useMutation({
     mutationFn: async () => {
-      const res = await adminApi.settings.$post({ json: form });
-      assertOk(res);
+      await postAdminSettings(form);
     },
     onSuccess: () => {
       setSaveError(false);
@@ -864,8 +864,7 @@ export function ProfileTab({
 
   const saveSettings = useMutation({
     mutationFn: async (body: Record<string, string>) => {
-      const res = await adminApi.settings.$post({ json: body });
-      assertOk(res);
+      await postAdminSettings(body);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
@@ -2645,10 +2644,7 @@ export function ServiceTab({
 
   const save = useMutation({
     mutationFn: async () => {
-      const res = await adminApi.settings.$post({
-        json: { servicePageConfig: JSON.stringify(draft) },
-      });
-      assertOk(res);
+      await postAdminSettings({ servicePageConfig: JSON.stringify(draft) });
     },
     onSuccess: () => {
       setSaveError(false);
@@ -3511,8 +3507,7 @@ export function SettingsTab({
       metaPresetsCamera?: string;
       metaPresetsLens?: string;
     }) => {
-      const res = await adminApi.settings.$post({ json: payload });
-      assertOk(res);
+      await postAdminSettings(payload);
     },
     onSuccess: () => {
       setPresetError(false);
@@ -3554,8 +3549,7 @@ export function SettingsTab({
 
   const save = useMutation({
     mutationFn: async () => {
-      const res = await adminApi.settings.$post({ json: form });
-      assertOk(res);
+      await postAdminSettings(form);
     },
     onSuccess: () => {
       setSaveError(false);

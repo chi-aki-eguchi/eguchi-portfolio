@@ -7190,3 +7190,54 @@ codex-reviewer経由で「オーナーが言った」という伝聞の継続指
 ### 次の担当者が触ってはいけない場所
 
 - 特になし
+
+## Handoff 2026-07-13 (13) — Claude Code(Sonnet 5): task-queue.md Q-6「画像パイプライン小修正2件」完了
+
+### 目的
+
+`docs/agents/task-queue.md` Q-6。`audit-2026-07.md` P2-5(generate-thumbnailsの
+GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVaryヘッダが無い)の
+2件の小修正。
+
+### 変更内容
+
+- `packages/web/src/api/index.ts`の`POST /admin/generate-thumbnails`内
+  `GetObjectCommand`に、`getOriginal()`と同じ`AbortSignal.timeout(ORIGINAL_FETCH_TIMEOUT_MS)`
+  を追加。
+- `/images/*`の304レスポンスに、200と同じ`!fmtParam`条件で`Vary: Accept`を追加。
+  devサーバ実機(port 3000, GETのみ)でfmt未指定/指定両パターンの200・304の
+  ヘッダを確認済み。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-6」節。
+
+### 触ったファイル
+
+- `packages/web/src/api/index.ts`
+- `docs/agents/task-queue.md`
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- `bun run check`成功: test 358 pass、typecheck/lint/build含む。
+- devサーバでの実機curl確認(304ヘッダがfmt未指定/指定の両方で200と一致)。
+
+### 検証していないこと
+
+- 実際にR2がハングする状況でのタイムアウト発火。
+
+### push したか
+
+していない。commitのみ実施(Q-6完了条件どおり)。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- Q-7(公開ページtext-xsトークン統一)の実装へ進む
+
+### 次の担当者が触ってはいけない場所
+
+- 特になし

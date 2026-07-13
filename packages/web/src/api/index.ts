@@ -723,6 +723,7 @@ const app = new Hono()
         headers: {
           ETag: etag,
           "Cache-Control": "public, max-age=31536000, immutable",
+          ...(!fmtParam ? { Vary: "Accept" } : {}),
         },
       });
     }
@@ -2453,6 +2454,7 @@ const app = new Hono()
       try {
         const obj = await s3.send(
           new GetObjectCommand({ Bucket: BUCKET, Key: r2Key }),
+          { abortSignal: AbortSignal.timeout(ORIGINAL_FETCH_TIMEOUT_MS) },
         );
         const buf = Buffer.from(await obj.Body!.transformToByteArray());
         if (variant === "thumb") {

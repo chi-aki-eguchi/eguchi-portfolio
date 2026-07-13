@@ -7304,3 +7304,54 @@ GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVary�
 ### 次の担当者が触ってはいけない場所
 
 - 特になし
+
+## Handoff 2026-07-13 (15) — Claude Code(Sonnet 5): task-queue.md Q-8〜Q-10をアイデアノートへ移設
+
+### 目的
+
+オーナー直接指示「Q-8〜Q-10は実装せず、私の判断待ちのアイデアノートへ移してください」。
+調査・モック作成などの新規作業はせず、純粋にキューの整理のみを行った。
+
+### 変更内容
+
+- `docs/agents/pending-owner-decisions.md`(新規): Q-8(Contactフォームラベル日本語化)/
+  Q-9(footerCtaLabel・About→Gallery導線)/ Q-10(Lightboxキャプション2案モック)の
+  背景・やること・成果物をそのまま移設し、各項目に「オーナーへの選択肢」を追記。
+- `docs/agents/task-queue.md`: Q-8〜Q-10の本文を、移設先へのポインタ1段落に縮小
+  (見出し番号は履歴として残す)。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-8〜Q-10」節。
+
+### 触ったファイル
+
+- `docs/agents/pending-owner-decisions.md`(新規)
+- `docs/agents/task-queue.md`
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- コード変更なし(`git status`で確認)。`bun run check`は対象外。
+
+### 検証していないこと
+
+- 対象外(移設のみのタスク)。
+
+### push したか
+
+していない。commitのみ実施(ドキュメントのみ)。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- Q-4〜Q-7の統合レビューをcodex-reviewerへ1回だけ依頼する（このセッションの
+  最後のタスク）
+- オーナーが`pending-owner-decisions.md`のいずれかを選んだら、`task-queue.md`へ
+  具体的な指示書として書き戻して実装してよい
+
+### 次の担当者が触ってはいけない場所
+
+- 特になし

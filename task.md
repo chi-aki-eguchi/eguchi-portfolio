@@ -7418,3 +7418,66 @@ Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1�
 ### 次の担当者が触ってはいけない場所
 
 - 特になし
+
+## Handoff 2026-07-14 (17) — Codex Driver trial: admin Library高速スクロール安定化 + 2/3列切替
+
+### 目的
+
+オーナー申告の`/admin` Library高速スワイプ時のチラつき・スマホでの逆方向
+スクロールに対処し、スマホで一度に見える写真を2列/3列から選べるようにする。
+本タスク限定でCodex=Driver、Claude Code=read-only Reviewerを試行。
+
+### 変更内容
+
+- 仮想グリッド前後8行のサムネイル先読みと、紙色台紙からの画像フェード表示を追加。
+- スクロール中のhover表示を停止し、写真カードのhover浮上/影/押下縮小を廃止。
+- `overflow-anchor: none`で仮想スペーサー差替え時の逆方向補正を予防。
+- スマホLibraryに2列/3列切替を追加（375px/390pxで3列を実ブラウザ確認）。
+- 高速スワイプの白抜け・変形・影・逆方向ジャンプを測るsmokeを新設し、
+  既存モバイルLibrary smokeへ列数切替の回帰確認を追加。
+
+詳細: `docs/agent-logs/2026-07-14.md`。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/styles.css`
+- `packages/web/src/web/test/admin-virtual-grid.test.ts`
+- `scripts/smoke/admin-mobile-library.spec.ts`
+- `scripts/smoke/admin-library-swipe.spec.ts`（新規）
+- `docs/agent-logs/2026-07-14.md`（新規）
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `bun run check`: 成功（363 tests、typecheck/lint/build含む）。
+- 専用smoke: 4 passed / 4 skipped。
+- `bun run smoke`: 28 passed / 25 skipped / 1 failed。失敗は2026-07-10から
+  既知の`admin-trash-signal.spec.ts`のみ。今回対象のdesktop/mobile Library検査は成功。
+- ログイン以外のDB書き込み操作、push、Railway操作は行っていない。
+- Claude Code read-only review: P0なし、P1が1件。並べ替えボタンのtouchstartが
+  スクロール扱いになり約140ms消える問題を指摘。`onTouchStart`判定を削除し、
+  実scrollのみで判定する修正と回帰smokeを追加。Claude再レビューで解消確認、
+  最終結果はP0/P1なし。
+
+### 検証していないこと
+
+- iPhone Safari実機でのスワイプ（Chromium相当では6往復の逆方向ジャンプ0件）。
+- push / Railway反映 / 本番確認。
+
+### push したか
+
+していない。pushはオーナーのみ。
+
+### 本番で確認したか
+
+していない。今回の変更はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- オーナーがpush前にiPhone実機で確認し、まだ逆方向へ動く場合は、端末/OSと
+  発生直前の操作（2列/3列、上向き/下向き）を記録して追加調査してよい。
+
+### 次の担当者が触ってはいけない場所
+
+- 本タスクのpushはオーナー判断まで行わない。

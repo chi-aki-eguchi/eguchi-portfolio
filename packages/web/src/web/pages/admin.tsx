@@ -1412,6 +1412,10 @@ const LIBRARY_GRID_GAP = 8;
 // Keep more than one extra screen of rows mounted so fast trackpad scrolling
 // does not repeatedly tear down the next thumbnail rows at the viewport edge.
 const LIBRARY_GRID_OVERSCAN_ROWS = 8;
+// Fetch one more overscan-sized band without mounting extra tiles. The browser
+// cache can then supply thumbnails when a fast trackpad gesture jumps beyond
+// the currently mounted rows, without giving up DOM virtualization.
+const LIBRARY_GRID_PRELOAD_ROWS = LIBRARY_GRID_OVERSCAN_ROWS;
 // Large purges get an extra wrinkle (ack checkbox + countdown) — a fat-finger
 // "Purge All" on a big trash shouldn't be one accidental click away.
 const PURGE_EXTRA_STEP_THRESHOLD = 10;
@@ -1502,6 +1506,7 @@ export function computeVirtualGridWindow({
 // 2列未満に落ちる実効幅では、移動ボタン最大4個(≈108px)+バッジが
 // タイルからはみ出すため、これ未満へは縮めず従来の1列表示を維持する。
 export const LIBRARY_MIN_EFFECTIVE_THUMB = 120;
+export const LIBRARY_MIN_DENSE_THUMB = 96;
 
 // スマホの Library は thumbSize(初期220・sliderは hidden md:flex で変更不能)
 // のまま minmax に入ると 375/390px 幅で1列になり、写真が1枚ずつしか見えない。
@@ -1513,14 +1518,22 @@ export const LIBRARY_MIN_EFFECTIVE_THUMB = 120;
 export function effectiveLibraryThumbSize({
   thumbSize,
   gridWidth,
+  preferredColumns,
   gap = LIBRARY_GRID_GAP,
 }: {
   thumbSize: number;
   gridWidth: number;
+  preferredColumns?: 2 | 3;
   gap?: number;
 }): number {
   // 未計測(マウント直後・jsdom)は従来どおり
   if (gridWidth <= 0) return thumbSize;
+  if (preferredColumns) {
+    const preferredSize = Math.floor(
+      (gridWidth - gap * (preferredColumns - 1)) / preferredColumns,
+    );
+    if (preferredSize >= LIBRARY_MIN_DENSE_THUMB) return preferredSize;
+  }
   const columns = Math.floor((gridWidth + gap) / (thumbSize + gap));
   if (columns >= 2) return thumbSize;
   const twoColumnSize = Math.floor((gridWidth - gap) / 2);
@@ -1592,6 +1605,9 @@ export function GalleryTab({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [lastClicked, setLastClicked] = useState<number | null>(null);
   const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 220); // px
+  const [mobileLibraryColumns, setMobileLibraryColumns] = usePersistentState<
+    2 | 3
+  >("admin:mobileLibraryColumns", 2);
   const [filterCat, setFilterCat] = usePersistentState(
     "admin:filterCat",
     "all",
@@ -1777,6 +1793,11 @@ export function GalleryTab({
   const libraryScrollSaveRafRef = useRef<number | null>(null);
   const libraryGridMeasureRafRef = useRef<number | null>(null);
   const libraryScrollPendingTopRef = useRef(0);
+  const libraryScrollIdleTimerRef = useRef<number | null>(null);
+  const libraryThumbnailRequestsRef = useRef(new Set<string>());
+  const libraryThumbnailPreloadsRef = useRef(
+    new Map<string, HTMLImageElement>(),
+  );
   const [bulkEditMode, setBulkEditMode] = usePersistentState(
     "admin:bulkEditMode",
     false,
@@ -2094,6 +2115,8 @@ export function GalleryTab({
       ? Math.min(300, Math.max(80, Math.round(numericThumbSize)))
       : 180;
     if (thumbSize !== normalizedThumbSize) setThumbSize(normalizedThumbSize);
+    if (mobileLibraryColumns !== 2 && mobileLibraryColumns !== 3)
+      setMobileLibraryColumns(2);
     if (uploadMedium !== "digital" && uploadMedium !== "film")
       setUploadMedium("digital");
     if (
@@ -2127,6 +2150,7 @@ export function GalleryTab({
     filterSize,
     isUncategorized,
     librarySort,
+    mobileLibraryColumns,
     photosData,
     seriesData,
     seriesList,
@@ -2138,6 +2162,7 @@ export function GalleryTab({
     setFilterSeries,
     setFilterSize,
     setLibrarySort,
+    setMobileLibraryColumns,
     setThumbSize,
     setUploadMedium,
     thumbSize,
@@ -2509,16 +2534,6 @@ export function GalleryTab({
     showTrash,
     thumbSize,
   ]);
-  // スマホ幅で1列に落ちないための実効サムネイル幅。Library の grid CSS・
-  // 仮想化・キーボード列数はこの値で統一する(Trash/Table は従来どおり)。
-  const effectiveThumbSize = useMemo(
-    () =>
-      effectiveLibraryThumbSize({
-        thumbSize,
-        gridWidth: libraryGridMetrics.gridWidth,
-      }),
-    [thumbSize, libraryGridMetrics.gridWidth],
-  );
   // ポインタ種別は実行中に変わらない前提で初回のみ判定(タッチ端末の
   // タップ領域40px化に合わせてジャンプボタンの出し分けに使う)
   const coarsePointer = useMemo(
@@ -2527,6 +2542,22 @@ export function GalleryTab({
       typeof window.matchMedia === "function" &&
       window.matchMedia("(pointer: coarse)").matches,
     [],
+  );
+  // スマホは2列/3列をオーナーが選べる。Library の grid CSS・仮想化・
+  // キーボード列数はこの実効幅で統一する(Trash/Table・PC sliderは従来どおり)。
+  const effectiveThumbSize = useMemo(
+    () =>
+      effectiveLibraryThumbSize({
+        thumbSize,
+        gridWidth: libraryGridMetrics.gridWidth,
+        preferredColumns: coarsePointer ? mobileLibraryColumns : undefined,
+      }),
+    [
+      coarsePointer,
+      libraryGridMetrics.gridWidth,
+      mobileLibraryColumns,
+      thumbSize,
+    ],
   );
   const virtualGrid = useMemo(
     () =>
@@ -2552,6 +2583,48 @@ export function GalleryTab({
   const visibleDisplayed = useMemo(
     () => displayed.slice(virtualGrid.startIndex, virtualGrid.endIndex),
     [displayed, virtualGrid.endIndex, virtualGrid.startIndex],
+  );
+  useEffect(() => {
+    if (!virtualGrid.isVirtualized || typeof Image === "undefined") return;
+    const preloadItems = virtualGrid.columns * LIBRARY_GRID_PRELOAD_ROWS;
+    const start = Math.max(0, virtualGrid.startIndex - preloadItems);
+    const end = Math.min(displayed.length, virtualGrid.endIndex + preloadItems);
+    for (const photo of displayed.slice(start, end)) {
+      const url = adminPhotoSrc(photo, 400, 70);
+      if (libraryThumbnailRequestsRef.current.has(url)) continue;
+      libraryThumbnailRequestsRef.current.add(url);
+      const image = new Image();
+      image.decoding = "async";
+      image.fetchPriority = "auto";
+      image.onload = () => {
+        libraryThumbnailPreloadsRef.current.delete(url);
+      };
+      image.onerror = () => {
+        libraryThumbnailPreloadsRef.current.delete(url);
+        libraryThumbnailRequestsRef.current.delete(url);
+      };
+      libraryThumbnailPreloadsRef.current.set(url, image);
+      image.src = url;
+    }
+  }, [displayed, virtualGrid]);
+  const markLibraryScrolling = useCallback((element: HTMLDivElement) => {
+    element.dataset.scrolling = "true";
+    if (libraryScrollIdleTimerRef.current !== null) {
+      window.clearTimeout(libraryScrollIdleTimerRef.current);
+    }
+    libraryScrollIdleTimerRef.current = window.setTimeout(() => {
+      element.dataset.scrolling = "false";
+      libraryScrollIdleTimerRef.current = null;
+    }, 140);
+  }, []);
+  useEffect(
+    () => () => {
+      if (libraryScrollIdleTimerRef.current !== null) {
+        window.clearTimeout(libraryScrollIdleTimerRef.current);
+      }
+      libraryThumbnailPreloadsRef.current.clear();
+    },
+    [],
   );
   const scrollLibraryIndexIntoView = useCallback(
     (index: number) => {
@@ -3795,6 +3868,28 @@ export function GalleryTab({
               <Columns size={12} className="text-[var(--admin-muted)]" />
             </div>
 
+            <div
+              className="flex md:hidden items-center gap-1"
+              aria-label="写真の表示列数"
+            >
+              {([2, 3] as const).map((columns) => (
+                <button
+                  key={columns}
+                  type="button"
+                  aria-label={`${columns}列表示`}
+                  aria-pressed={mobileLibraryColumns === columns}
+                  onClick={() => setMobileLibraryColumns(columns)}
+                  className={`min-w-9 px-2 py-1 rounded-sm border text-[11px] transition-colors ${
+                    mobileLibraryColumns === columns
+                      ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
+                      : "text-[var(--admin-muted)] border-[var(--admin-line)]"
+                  }`}
+                >
+                  {columns}列
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={() => {
                 setBulkEditMode((v) => !v);
@@ -4513,8 +4608,12 @@ export function GalleryTab({
         {/* Drop zone overlay */}
         <div
           ref={scrollRef}
+          data-library-scroll
+          data-scrolling="false"
           className={`flex-1 overflow-y-auto p-3 relative ${dragOver ? "ring-2 ring-inset ring-[rgba(var(--admin-ink-rgb),0.2)]" : ""}`}
+          onWheel={(e) => markLibraryScrolling(e.currentTarget)}
           onScroll={(e) => {
+            markLibraryScrolling(e.currentTarget);
             rememberLibraryScroll(e.currentTarget);
             scheduleLibraryGridMeasure();
           }}
@@ -4793,7 +4892,7 @@ export function GalleryTab({
                             ? "ring-2 ring-[#aaa] ring-offset-1 ring-offset-[var(--admin-paper)]"
                             : isInspect
                               ? "ring-1 ring-[var(--admin-muted)]"
-                              : "hover:ring-1 hover:ring-[var(--admin-ink)]"
+                              : ""
                         }`}
                       >
                         {/* Drop-position indicator: a bar on the edge where the dragged
@@ -4825,11 +4924,19 @@ export function GalleryTab({
                         (Chromeはスクロール中lazy読込を後回しにする)、静止後まで持続する
                         強いチラつきになる。背景はpaper-deepで「読込中の台紙」に見せる */}
                         <img
+                          ref={(image) => {
+                            if (image?.complete && image.naturalWidth > 0)
+                              image.dataset.loaded = "true";
+                          }}
                           src={adminPhotoSrc(photo, 400, 70)}
                           alt={photo.title}
-                          className={`w-full aspect-square object-cover bg-[var(--admin-paper-deep)] ${isUnpublished ? "opacity-40 grayscale" : ""}`}
+                          className={`admin-library-thumbnail w-full aspect-square object-cover bg-[var(--admin-paper-deep)] ${isUnpublished ? "grayscale" : ""}`}
+                          data-unpublished={isUnpublished ? "true" : "false"}
                           style={{
                             objectPosition: adminPhotoObjectPosition(photo),
+                          }}
+                          onLoad={(e) => {
+                            e.currentTarget.dataset.loaded = "true";
                           }}
                           loading="eager"
                           decoding="async"
@@ -4923,7 +5030,7 @@ export function GalleryTab({
                           />
                         </svg>
                         {effectiveThumbSize >= 120 && (
-                          <div className="absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <div className="admin-photo-hover-only absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <button
                               type="button"
                               onPointerDown={(e) => e.stopPropagation()}
@@ -4955,7 +5062,7 @@ export function GalleryTab({
                           </div>
                         )}
                         {/* Title strip on hover */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="admin-photo-hover-only absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <p className="text-[10px] text-white/80 truncate">
                             {photo.title || photo.filename}
                           </p>
@@ -4963,7 +5070,7 @@ export function GalleryTab({
                         {/* Move controls — touch-friendly reorder (drag isn't available on touch).
                         Always visible on mobile; hover-reveal on desktop. */}
                         {!reorderLocked && !showTrash && (
-                          <div className="absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <div className="admin-photo-hover-only absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             {/* ⇤⇥ はカードに実寸で収まる時だけ(coarse時は40px角×4個)。
                             前/次だけでも並び替えは完結する */}
                             {showLibraryJumpButtons(

@@ -933,19 +933,40 @@
   background: var(--admin-ink) !important;
 }
 
-/* Photo tile: hover lift + press, transform/box-shadow/opacity only. */
+/* Photo tile: keep selection opacity smooth, but do not move the image card.
+   A stationary pointer otherwise lifts a different tile under every wheel
+   frame, which reads as flicker during fast Library scrolling. */
 .admin-atelier .admin-photo-tile {
-  transition:
-    transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
-.admin-atelier .admin-photo-tile:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-2);
+
+.admin-atelier [data-library-scroll] {
+  /* The Library owns its virtual top/bottom spacers. Browser scroll anchoring
+     must not counter-adjust scrollTop while those spacers are replaced. */
+  overflow-anchor: none;
 }
-.admin-atelier .admin-photo-tile:has(> button:active) {
-  transform: scale(0.98);
+
+.admin-atelier .admin-library-thumbnail {
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.admin-atelier .admin-library-thumbnail[data-loaded="true"] {
+  opacity: 1;
+}
+
+.admin-atelier
+  .admin-library-thumbnail[data-loaded="true"][data-unpublished="true"] {
+  opacity: 0.4;
+}
+
+/* A stationary pointer re-triggers hover controls on every tile that passes
+   beneath it. Hide that paint-heavy overlay until scrolling settles. */
+.admin-atelier
+  [data-library-scroll][data-scrolling="true"]
+  .admin-photo-hover-only {
+  opacity: 0 !important;
+  transition: none !important;
 }
 
 /* Toasts (工程3): enter/exit shell shared by batch/undo/error/upload toasts.

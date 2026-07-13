@@ -32,7 +32,53 @@ async function assertContactSheet(page: Page, width: number, height: number) {
     )
     .toBeGreaterThanOrEqual(2);
 
-  // 1行目の先頭2タイルが同じ高さに横並びしている(=本当に2列)
+  const twoColumns = page.getByRole("button", { name: "2列表示" });
+  const threeColumns = page.getByRole("button", { name: "3列表示" });
+  await twoColumns.click();
+  await expect(twoColumns).toHaveAttribute("aria-pressed", "true");
+
+  // 回帰(Claude review P1): 並べ替えボタンを触っただけではスクロール扱いに
+  // しない。touchstartでボタンが140ms消えると、タッチ操作が点滅して見える。
+  const moveButton = tiles.nth(0).getByRole("button", { name: "後へ移動" });
+  if ((await moveButton.count()) > 0) {
+    await moveButton.evaluate((button) => {
+      const touch = new Touch({
+        identifier: 1,
+        target: button,
+        clientX: 20,
+        clientY: 20,
+      });
+      button.dispatchEvent(
+        new TouchEvent("touchstart", {
+          bubbles: true,
+          cancelable: true,
+          touches: [touch],
+          targetTouches: [touch],
+          changedTouches: [touch],
+        }),
+      );
+    });
+    await expect(page.locator("[data-library-scroll]")).toHaveAttribute(
+      "data-scrolling",
+      "false",
+    );
+    await expect(moveButton).toBeVisible();
+  }
+
+  await expect(threeColumns).toBeVisible();
+  await threeColumns.click();
+  await expect(threeColumns).toHaveAttribute("aria-pressed", "true");
+  await expect
+    .poll(
+      async () =>
+        tileGrid(page).evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        ),
+      { timeout: 10_000, message: `${width}pxで3列表示へ切替` },
+    )
+    .toBe(3);
+
+  // 1行目の先頭2タイルが同じ高さに横並びしている(=密な複数列表示)
   const box1 = await tiles.nth(0).boundingBox();
   const box2 = await tiles.nth(1).boundingBox();
   expect(box1!.y).toBeCloseTo(box2!.y, 0);

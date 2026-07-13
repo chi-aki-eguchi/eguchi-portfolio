@@ -123,6 +123,23 @@ describe("effectiveLibraryThumbSize", () => {
     expect(Math.floor((358 + 8) / (size + 8))).toBe(2);
   });
 
+  test("owner can choose a denser 3-column mobile contact sheet", () => {
+    expect(
+      effectiveLibraryThumbSize({
+        thumbSize: 220,
+        gridWidth: 343,
+        preferredColumns: 3,
+      }),
+    ).toBe(109);
+    expect(
+      effectiveLibraryThumbSize({
+        thumbSize: 220,
+        gridWidth: 358,
+        preferredColumns: 3,
+      }),
+    ).toBe(114);
+  });
+
   test("a small user-set thumbSize that already fits 2+ columns is kept", () => {
     // 100px なら 343px 幅で3列入る — 巨大化させない
     expect(effectiveLibraryThumbSize({ thumbSize: 100, gridWidth: 343 })).toBe(

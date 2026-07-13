@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { db, withRetry, schema } from "./database";
 import { buildReorderUpdate } from "./reorder-sql";
+import { writeSettingsAtomic } from "./database/settings-write";
 import {
   eq,
   sql,
@@ -1153,24 +1154,19 @@ const app = new Hono()
     // partial update. 50KB is generous even for long bios/statements.
     const MAX_KEY_LEN = 100;
     const MAX_VALUE_LEN = 50_000;
+    const entries: Array<[string, string]> = [];
     for (const [key, value] of Object.entries(body)) {
       if (typeof value !== "string") continue;
       if (key.length > MAX_KEY_LEN || value.length > MAX_VALUE_LEN) {
         return c.json({ error: "設定値が大きすぎます。" }, 413);
       }
+      entries.push([key, value]);
     }
-    for (const [key, value] of Object.entries(body)) {
-      if (typeof value !== "string") continue;
-      await withRetry(() =>
-        db
-          .insert(schema.siteSettings)
-          .values({ key, value })
-          .onConflictDoUpdate({
-            target: schema.siteSettings.key,
-            set: { value },
-          }),
-      );
-    }
+    // 1トランザクションで一括反映(Q-3 / audit-2026-07.md P2-1)。
+    // 途中の1件が失敗しても、それ以前に実行された insert/update ごと
+    // ロールバックされる(settings-write.test.ts で libsql 実トランザクション
+    // により検証済み)。
+    await withRetry(() => writeSettingsAtomic(db, schema.siteSettings, entries));
     return c.json({ ok: true }, 200);
   })
 

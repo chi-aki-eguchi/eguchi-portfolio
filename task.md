@@ -6992,3 +6992,75 @@ docs/checklists.md確認)を再実施し、この1点だけを訂正する。
 ### 次の担当者が触ってはいけない場所
 
 - 特になし(今回はドキュメントのみの変更)
+
+## Handoff 2026-07-13 (10) — Claude Code(Sonnet 5): task-queue.md Q-3「設定保存の1トランザクション化」完了
+
+### 目的
+
+`docs/agents/task-queue.md` Q-3。`POST /admin/settings`(`packages/web/src/api/index.ts`)が
+キーごとに逐次upsertしており、途中失敗で部分反映になり得た
+(`docs/specs/audit-2026-07.md` P2-1)。オーナー指示により、この1件のみをDriverとして
+実施。着手前に`task.md`最新Handoff・`git status`・`docs/agents/autonomy-rules.md`・
+`docs/checklists.md`・`./database`境界のコードを確認済み。
+
+### 変更内容
+
+- `packages/web/src/api/database/settings-write.ts`(新規): `writeSettingsAtomic(db, siteSettingsTable, entries)`を追加。
+  `db.transaction()`と`tx.insert().values().onConflictDoUpdate()`という、
+  provider(libsql/postgres)間で共通のクエリビルダAPIのみを使用(libsql固有API不使用)。
+  `import type`のみで`./database`集約層への実行時importを持たない
+  (`withRetry.test.ts`と同じ制約 — `DATABASE_URL`未設定のテスト環境でも
+  安全に単体テストできる)。
+- `packages/web/src/api/index.ts`: `/admin/settings`ハンドラの逐次書き込みループを
+  `writeSettingsAtomic`呼び出しに置き換え。事前バリデーション(413)・成功レスポンス
+  (`{ok:true}`)は無変更。
+- `packages/web/src/api/database/settings-write.test.ts`(新規): 一時ファイルSQLite
+  (`@libsql/client`)+テスト専用CHECK制約で、バッチ途中の失敗時に前後の
+  insert/updateごとロールバックされることを実機検証(4テスト)。
+- postgres側は実DB/PGlite等の新規依存を追加せず、`drizzle-orm/libsql`と
+  `drizzle-orm/node-postgres`双方のドライバ実装(`session.cjs`)を読み、
+  `db.transaction()`が両方とも実際のBEGIN/COMMIT/ROLLBACKで失敗時ロールバックする
+  ことを確認する静的検証で足りると判断(詳細: 決定ログ参照)。
+- `docs/agents/task-queue.md`のQ-3見出しに`✅ 済 (2026-07-13)`を追記。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-3」節。
+
+### 触ったファイル
+
+- `packages/web/src/api/database/settings-write.ts`(新規)
+- `packages/web/src/api/database/settings-write.test.ts`(新規)
+- `packages/web/src/api/index.ts`
+- `docs/agents/task-queue.md`
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- `bun run check`成功: typecheck / lint / test(355 pass, 0 fail、旧351→+4) / build。
+- `bun run smoke`: 26 passed / 1 failed(既知の`admin-trash-signal.spec.ts`のみ・
+  2026-07-10から継続する既存不具合・今回変更起因0件)。
+- `/admin/settings`の呼び出し元・レスポンス形状・413文言をdiffで無変更確認。
+
+### 検証していないこと
+
+- 実際の`DATABASE_PROVIDER=postgres`環境での実機トランザクションロールバック
+  (新規依存を追加しない方針のため、ドライバ実装の静的検証で代替)。
+- 実際のTurso本番環境・同時実行下での挙動(ローカル一時ファイルDBのみ検証)。
+
+### push したか
+
+していない。commitのみ実施(Q-3完了条件どおり)。オーナー承認によりcommitは実施済み、
+push未実施。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- push前にCodexのread-onlyレビューを受ける(Q-3指定の依頼文どおり、agmsgで依頼済み)
+- `docs/agents/task-queue.md`の次のタスク(Q-4以降)へ進んでよい
+
+### 次の担当者が触ってはいけない場所
+
+- 特になし(今回はQ-3スコープの3ファイル+ドキュメントのみ)

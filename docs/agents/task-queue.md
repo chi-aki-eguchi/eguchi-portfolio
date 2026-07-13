@@ -59,7 +59,7 @@ Codex への依頼文: 「libsql.ts withRetry の判定変更を read-only で�
 
 検証: コード変更なしのため check 不要。成果物: 決定ログに点検結果。
 
-## Q-3. 設定保存を1トランザクションにする [昼推奨] [Codexレビュー必須]
+## Q-3. 設定保存を1トランザクションにする [昼推奨] [Codexレビュー必須] ✅ 済 (2026-07-13)
 
 背景: audit-2026-07.md P2-1。`POST /admin/settings`（packages/web/src/api/index.ts）が
 キーごとに逐次 upsert しており、途中失敗で部分反映になり得る。

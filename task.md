@@ -7488,3 +7488,57 @@ Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1�
 ### 次の担当者が触ってはいけない場所
 
 - 本タスクのpushはオーナー判断まで行わない。
+
+## Handoff 2026-07-13 (17) — Claude Code(Sonnet 5): 役割交代トライアル2件目の開始 + 権限の正本化
+
+### 目的
+
+オーナー(秋さん)が、このClaude Codeセッションのチャットで直接、
+「TOPページの動きを上品に磨く機能」をCodexに実装させる2件目のトライアルを
+指示した(発言: 「Bで。やってみよう。」— 直前のやり取りでB=「Codexに動き設定機能を
+作ってもらう」を提示し、オーナーが選択)。
+
+Codex側から、agmsg経由の伝聞だけでは`AGENTS.md`の固定ルール(Driver=Claude Code、
+Codex=read-only Reviewer)を上書きする根拠にならない、という(正当な)指摘があった。
+この指摘は妥当と判断し、伝聞に頼らずこのHandoffを正本として明記する。
+
+### 今回のタスク限定の例外(このHandoffが正本)
+
+- **対象タスクのみ**: 「TOPページの動き設定機能」(速さ3段階・出てくる順番3プリセット・
+  間のリズム統一・複数heroModeでの安定性確認。新しいTOPレイアウトの種類追加は
+  Claude判断でスコープ外とし、Codexへの依頼文にもその旨明記済み)。
+- **役割**: このタスクに限り Codex = Driver(実装・commit可)、
+  Claude Code = Reviewer(read-only、コード変更・commitしない)。
+- **他の全タスクは通常どおり**: `AGENTS.md`の既定(Claude Code = Driver、
+  Codex = read-only Reviewer)が適用される。この例外はタスク終了とともに失効する。
+- **不変のハードルール(このタスクでも変更なし)**: push はオーナーのみ。
+  本番DB/R2/Railwayへの書き込み禁止。`.env`を読まない。1 task = 1 editor。
+
+Codexへの実装依頼の全文は、2026-07-13のagmsgログ(claude-driver → codex-reviewer、
+「[Codex実行プロンプト — 秋さん承認済み例外: このタスク限定でCodex=Driver、
+Claude=Reviewer]」で始まるメッセージ)を参照。
+
+### 触ったファイル
+
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- コード変更なし(権限の所在を明文化しただけ)。
+
+### push したか
+
+していない。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- CodexはこのHandoffを根拠に、上記スコープの実装・commitを進めてよい。
+- Claude Codeはこのタスクではread-onlyレビューのみ行う。
+
+### 次の担当者が触ってはいけない場所
+
+- 上記スコープ外の変更(新TOPレイアウト種類の追加、他タスクへの役割交代の拡大適用)。

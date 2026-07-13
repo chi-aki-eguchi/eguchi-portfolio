@@ -6473,3 +6473,70 @@ Stage2のみ、このClaudeアプリ内で単独実装(新規ターミナル・a
 ### 次の担当者が触ってはいけない場所
 
 なし(working tree はコミット済みでクリーン)。
+
+## Handoff 2026-07-13 (2) — Claude Code: justified P1修正(非最終行flush保証)
+
+### 目的
+
+commit 106f837のjustified実装に対するCodexのpush前レビューで発見されたP1
+(非最終行が行幅ぴったりでない=gap発生)を修正する。
+
+### 変更内容
+
+- Codexの指摘・自己検証済み: 前回commitの「強制break」(S/M/Lを毎回確実に見せる仕組み)は、
+  強制break後の行が常にnon-flushだったため、containerWidth=976のM,M,S,M,M構成で
+  非最終行にgap最大676pxが生じる重大なバグだった。
+- 設計判断: Option A(行組みの完全flush優先)を採用。「justified」の核となる定義
+  (最終行以外は行幅ぴったり)を非交渉として、S/M/Lは「行の目標高さへの強い影響
+  (保証ではない)」へソフト化。強制break機構を撤去し、ループ中は必ずflush、
+  配列末尾の余りだけがnon-flush、という構造で非最終行flushを保証する実装に変更。
+- lookback(直前アイテムを含める/除外する案)も試作したが、2000試行スイープで
+  Sの信頼性を悪化させた(44.8% vs lookback無し70.0%)ため不採用、単純greedyを採用。
+- 修正後の実測(2000試行): 非最終行flush違反 0/13093件(完全ゼロ)。
+  L含有行がM平均行より高い割合81.7%、S含有行がM平均行より低い割合70.0%
+  (「毎回確実」ではなく「統計的に強い傾向」——設計上受け入れたトレードオフ)。
+- P2: 11種のまま残っていた記載をAGENTS.md / packages/web/CLAUDE.md /
+  .claude/rules/react-components.md / .claude/skills/gallery-feature/SKILL.md /
+  service-config.ts で12種へ同期。
+
+### 触ったファイル
+
+- packages/web/src/web/lib/justified-layout.ts(強制break撤去、シンプルなflush優先ループへ)
+- packages/web/src/web/lib/justified-layout.test.ts(前回の3回帰テストを新設計向け2件に置換)
+- docs/specs/design-spec.md(2-5節をflush優先・ソフトターゲットの説明に更新)
+- AGENTS.md / packages/web/CLAUDE.md / .claude/rules/react-components.md /
+  .claude/skills/gallery-feature/SKILL.md / packages/web/src/web/lib/service-config.ts
+  (11→12種の記載同期)
+- docs/agent-logs/2026-07-13.md(追記)
+
+### 検証したこと
+
+- bun run check 成功(349 tests / 0 fail、build成功)
+- bun run smoke: 26 passed / 1 failed(既知のadmin-trash-signalのみ・今回と無関係)
+- Playwright実ブラウザ(DB書込み無し、/api/settings・/api/photosをネットワーク層でモック)で
+  Codexの再現条件(M,M,S,M,M・3:2写真)を再現し、非最終行が行幅ぴったり(928px)・
+  最終行のみ意図的な余白であることを確認。前回の13枚合成データ(縦横混在・rotation・
+  欠損値)でも同様に全非最終行flush・overflow/枚数は前回と変化なしを確認。
+
+### 検証していないこと
+
+- 実機(iPhone/Android実物)での確認
+- 本番環境での確認
+- Stage1(Hero専用DB機能)は今回の対象外・未着手
+
+### push したか
+
+していない(ローカルコミットのみ)。push はオーナーの手で。
+
+### 本番で確認したか
+
+していない。
+
+### 次の担当者が触ってよい場所
+
+- Stage1(Hero専用DB機能)の設計・実装
+- justifiedレイアウトの微調整(baseRowHeight・gap等の値のチューニング)
+
+### 次の担当者が触ってはいけない場所
+
+なし(working tree はコミット済みでクリーン)。

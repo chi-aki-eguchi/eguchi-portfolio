@@ -10,7 +10,7 @@ Tailwind CSS 4 のユーティリティクラスを使う。カスタム CSS 変
 
 **Lightbox は既存の修正済みロジックを壊さないこと**（`Lightbox.tsx`）。
 
-ギャラリーレイアウトは mosaic / grid / scroll / stagger / editorial / collage / clean-grid / portrait-grid / landscape-grid / masonry / large-format の11種のみ（2026-07-09: オーナー承認により9種から拡張、portrait-grid/landscape-gridを追加）。未知の値は mosaic にフォールバック。freeform / polaroid / timeline / fullbleed / compare は削除済み — 復活させない。
+ギャラリーレイアウトは mosaic / grid / scroll / stagger / editorial / collage / clean-grid / portrait-grid / landscape-grid / masonry / large-format / justified の12種のみ（2026-07-09: オーナー承認により9種から拡張、portrait-grid/landscape-gridを追加。2026-07-12〜13: justifiedを追加）。未知の値は mosaic にフォールバック。freeform / polaroid / timeline / fullbleed / compare は削除済み — 復活させない。
 
 データ取得は TanStack Query を使う。更新後は `qc.invalidateQueries({ queryKey: [...] })` で再取得する。
 

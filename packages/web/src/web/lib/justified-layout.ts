@@ -3,12 +3,22 @@ import { orientedDimensions } from "../../shared/image-url";
 // Justified (行組み) gallery layout — 12th layout, owner-approved 2026-07-12.
 // Pure math so the row-packing behaviour is unit-testable without a DOM:
 // photos flow 左→右・上→下 in sortOrder, every photo keeps its natural
-// (rotation-aware) aspect ratio, and each closed row is flush — all items in
-// a row share one height and together fill the container width exactly.
-// S/M/L acts as a *target row height* weight: every row is weight-homogeneous
-// (a size change always starts a fresh row, see the force-break guard below),
-// so an L always gets its own taller row and an S always gets its own
-// shorter, denser row — regardless of what precedes or follows it.
+// (rotation-aware) aspect ratio, and every row except the very last is flush
+// — all items in a row share one height and together fill the container
+// width exactly. That flush guarantee is non-negotiable (it's the literal
+// definition of "justified"); see the loop below for how it's structurally
+// enforced (not just checked).
+//
+// S/M/L acts as a *target row height* weight (an L-heavy row aims taller, an
+// S-heavy row aims shorter and denser) — a strong influence on how rows are
+// packed, not an ironclad per-photo guarantee. A single isolated S or L
+// surrounded by a different size can't be made reliably bigger/smaller
+// without leaving that row short of the container width, which would break
+// the flush guarantee above — so this layout accepts that trade-off. (An
+// earlier revision force-broke a new row on every size change to make S/M/L
+// 100% reliable; that made rows mid-gallery non-flush — e.g. a lone S landing
+// with ~70% of the container width unfilled — which is a worse defect than
+// an occasional diluted size cue. Reverted per 2026-07-13 review.)
 
 export type JustifiedPhotoInput = {
   width?: number | null;
@@ -76,6 +86,8 @@ export function justifiedRatio(photo: JustifiedPhotoInput): number {
   return Math.min(MAX_RATIO, Math.max(MIN_RATIO, w / h));
 }
 
+type Entry = { index: number; ratio: number; weight: number };
+
 export function computeJustifiedRows(
   photos: JustifiedPhotoInput[],
   opts: { containerWidth: number; gap: number; baseRowHeight: number },
@@ -85,19 +97,17 @@ export function computeJustifiedRows(
   const base = Math.max(60, opts.baseRowHeight || 0);
 
   const rows: JustifiedRow[] = [];
-  let current: { index: number; ratio: number; weight: number }[] = [];
 
-  const closeRow = (justify: boolean) => {
+  // `justify=true` (used for every row closed inside the loop below) always
+  // stretches the row flush to the container width. `justify=false` (used
+  // only once, for whatever is left after the loop) caps at the row's own
+  // target instead of stretching a couple of leftover photos across the
+  // full width.
+  const closeRow = (current: Entry[], justify: boolean) => {
     if (current.length === 0) return;
     const available = containerWidth - gap * (current.length - 1);
     const sumRatio = current.reduce((s, it) => s + it.ratio, 0);
-    // Every row built by the loop below is weight-homogeneous (see the
-    // force-break guard), so any member's weight is the row's target weight.
-    const target = base * current[0].weight;
-    // A justified row is flush: height derives from the container so the
-    // widths sum to it exactly. The final row keeps its target height
-    // instead of stretching a couple of photos across the full width —
-    // unless even at target height it would overflow, then it justifies too.
+    const target = base * Math.max(...current.map((it) => it.weight));
     const height = justify
       ? available / sumRatio
       : Math.min(target, available / sumRatio);
@@ -110,37 +120,30 @@ export function computeJustifiedRows(
       height,
       justified: justify || available / sumRatio <= target,
     });
-    current = [];
   };
 
+  // Plain greedy: keep adding photos to the current row; once shrinking it to
+  // fit the container would take it at/below its target height, close it
+  // flush. A lookback ("would excluding the last photo fit its own target
+  // better?") was tried here to make L/S less position-dependent, but a
+  // 2000-trial sweep showed it *hurts* S's reliability (S shorter than a
+  // same-trial M row: 70% plain vs 45% with lookback) while barely helping L
+  // (81.7% vs 87.7%) — the extra complexity wasn't worth a net regression.
+  let current: Entry[] = [];
   for (let i = 0; i < photos.length; i++) {
-    const ratio = justifiedRatio(photos[i]);
-    const weight = sizeWeight(photos[i].displaySize);
-    // Force-break guard: rows are packed to a *single shared* target height,
-    // so mixing weight classes inside one row silently erases whichever one
-    // isn't the max. An S folded in after an M/L never shows (max stays at
-    // the bigger weight) — S's "smaller" cue would never appear. And an L
-    // arriving after several M's had already spent most of the row's width
-    // budget under the *old* (lower) target overshoots the new, taller
-    // target and can close *smaller* than a plain M-only row — L sometimes
-    // renders bigger, sometimes not at all, purely depending on scan order.
-    // Fix: keep every row's weight class homogeneous. The moment the
-    // incoming photo's weight differs from the row already being built,
-    // close that row now (at its own honestly-earned, capped/non-stretched
-    // height) and start a fresh row with the new photo. Runs of the same
-    // displaySize still pack multiple photos together as before; S and L
-    // each reliably get their own dedicated target no matter what precedes
-    // or follows them.
-    if (current.length > 0 && weight !== current[0].weight) {
-      closeRow(false);
-    }
-    current.push({ index: i, ratio, weight });
+    current.push({
+      index: i,
+      ratio: justifiedRatio(photos[i]),
+      weight: sizeWeight(photos[i].displaySize),
+    });
     const available = containerWidth - gap * (current.length - 1);
     const sumRatio = current.reduce((s, it) => s + it.ratio, 0);
-    const target = base * weight;
-    // Row is full once shrinking to fit would take it at/below target height.
-    if (sumRatio >= available / target) closeRow(true);
+    const target = base * Math.max(...current.map((it) => it.weight));
+    if (sumRatio >= available / target) {
+      closeRow(current, true); // every mid-loop close is flush — non-negotiable
+      current = [];
+    }
   }
-  closeRow(false);
+  closeRow(current, false); // only the true leftover may be non-flush
   return rows;
 }

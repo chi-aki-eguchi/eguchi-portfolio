@@ -273,7 +273,7 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
       },
       {
         title: "レイアウトの調整",
-        body: "11種のギャラリーレイアウト、カラム数、余白、サイズ感をスライダーで調整できます。",
+        body: "12種のギャラリーレイアウト、カラム数、余白、サイズ感をスライダーで調整できます。",
       },
       {
         title: "見た目のカスタマイズ",

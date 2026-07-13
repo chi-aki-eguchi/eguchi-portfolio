@@ -59,7 +59,7 @@ bun run db:migrate    # マイグレーション実行
 - 書き込み系レスポンスは `assertOk(res)` で検証する（admin.tsx パターン参照）
 - TanStack Query でデータ取得。更新後は `qc.invalidateQueries` で再取得
 - **Lightbox は `Lightbox.tsx` の既存ロジックを壊さないこと**
-- ギャラリーレイアウトは11種のみ（mosaic/grid/scroll/stagger/editorial/collage/clean-grid/portrait-grid/landscape-grid/masonry/large-format）
+- ギャラリーレイアウトは12種のみ（mosaic/grid/scroll/stagger/editorial/collage/clean-grid/portrait-grid/landscape-grid/masonry/large-format/justified）
 - **settings キー追加時は `settings-preview.ts` / API default / provider.tsx の DB適用・handlePreviewMessage の4箇所セットで更新**
 
 ## §0 必須チェック（実装完了ごと）

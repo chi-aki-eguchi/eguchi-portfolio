@@ -331,7 +331,7 @@ cd packages/web && bun run db:push  # deletedAt カラム追加
 - 写真の複製（O1）は同じ R2 オブジェクトを共有する。purge は他に参照が無い場合のみ R2 から削除
 - OGP メタタグはサーバサイドで `index.html` に注入（60 秒 TTL キャッシュ）
 - テンプレート由来の `packages/mobile/`・`packages/desktop/` は 2026-06 に削除済み（パッケージは `web` のみ）
-- ギャラリーレイアウトは 11 種（mosaic / grid / scroll / stagger / editorial / collage / clean-grid / portrait-grid / landscape-grid / masonry / large-format）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。portrait-grid / landscape-grid は 2026-07-09 にオーナー承認の上で追加。未知の値は mosaic にフォールバック
+- ギャラリーレイアウトは 12 種（mosaic / grid / scroll / stagger / editorial / collage / clean-grid / portrait-grid / landscape-grid / masonry / large-format / justified）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。portrait-grid / landscape-grid は 2026-07-09、justified は 2026-07-12〜13 にオーナー承認の上で追加。未知の値は mosaic にフォールバック
 
 ## Shared Knowledge Wiki
 

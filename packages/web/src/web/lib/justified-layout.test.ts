@@ -161,32 +161,58 @@ describe("computeJustifiedRows", () => {
     }
   });
 
-  test("regression: L is reliably bigger even when it arrives mid-row after several Ms", () => {
-    // Bug found in review: with a shared max-weight target, an L landing
-    // *after* a few M's had already consumed most of the row's width budget
-    // (under the lower M target) could overshoot the new taller threshold and
-    // close *smaller* than a plain M-only row — L's "bigger" cue depended on
-    // scan position and sometimes vanished entirely. Two orderings of the
-    // same photo set must not swing the L-row's height around.
-    const build = (order: string[]) =>
-      order.map((displaySize) => ({ ...landscape, displaySize }));
-    const heightOfLRow = (photos: ReturnType<typeof build>) => {
-      const rows = computeJustifiedRows(photos, OPTS);
-      const row = rows.find((r) =>
-        r.items.some((it) => photos[it.index].displaySize === "L"),
-      );
-      expect(row).toBeDefined();
-      return row!.height;
+  test("regression(2026-07-13 P1): every non-final row is flush across a large randomized sweep — zero exceptions", () => {
+    // Bug found in review: an earlier revision force-broke a new row whenever
+    // displaySize changed, to make L/S 100% reliable — but that forced break
+    // always closed *non-flush* (capped), even mid-gallery. A lone S landing
+    // right after that break could leave ~70% of the row width empty on a
+    // row that was NOT the last one, violating the core "justified" contract
+    // (only the true final row may fall short of the container width).
+    // This sweep locks in the fix: with real-world container/gap/row-height
+    // variation, every non-final row must sum (widths + gaps) to the
+    // container width, with no exceptions.
+    let seed = 7;
+    const rnd = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
     };
-    const h1 = heightOfLRow(build(["M", "M", "M", "L"]));
-    const h2 = heightOfLRow(build(["L", "M", "M", "M"]));
-    // Same weight/ratio composition, different scan order — must land on the
-    // same height (previously h1 could be *smaller* than a plain M row).
-    expect(h1).toBeCloseTo(h2, 3);
+    let checked = 0;
+    for (let t = 0; t < 300; t++) {
+      const n = 5 + Math.floor(rnd() * 30);
+      const containerWidth = 300 + Math.floor(rnd() * 1200);
+      const gap = Math.floor(rnd() * 20);
+      const baseRowHeight = 150 + Math.floor(rnd() * 200);
+      const photos = Array.from({ length: n }, () => {
+        const r = rnd();
+        const displaySize = r < 0.15 ? "S" : r < 0.3 ? "L" : "M";
+        return {
+          ...(rnd() < 0.4 ? portrait : landscape),
+          displaySize,
+        };
+      });
+      const rows = computeJustifiedRows(photos, {
+        containerWidth,
+        gap,
+        baseRowHeight,
+      });
+      rows.forEach((row, i) => {
+        if (i === rows.length - 1) return; // only the true final row may fall short
+        checked++;
+        const total =
+          row.items.reduce((s, it) => s + it.width, 0) +
+          gap * (row.items.length - 1);
+        expect(total).toBeCloseTo(containerWidth, 1);
+      });
+    }
+    expect(checked).toBeGreaterThan(1000); // sanity: the sweep actually exercised non-final rows
   });
 
-  test("regression: every L-containing row stays visibly taller than plain M rows across randomized mixes", () => {
-    // Deterministic PRNG so the sweep is reproducible in CI.
+  test("displaySize is a strong (not absolute) statistical influence: L rows usually taller than M-avg, S usually shorter", () => {
+    // Documents the accepted trade-off (2026-07-13 review): guaranteeing
+    // every single occurrence would require sometimes leaving a non-final
+    // row short of the container width, which the test above forbids. So
+    // this only asserts the *tendency* holds clearly across many mixes —
+    // not a 100% per-occurrence guarantee.
     let seed = 42;
     const rnd = () => {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
@@ -194,7 +220,8 @@ describe("computeJustifiedRows", () => {
     };
     const mHeights: number[] = [];
     const lHeights: number[] = [];
-    for (let t = 0; t < 60; t++) {
+    const sHeights: number[] = [];
+    for (let t = 0; t < 300; t++) {
       const n = 15 + Math.floor(rnd() * 20);
       const photos = Array.from({ length: n }, () => {
         const r = rnd();
@@ -205,35 +232,19 @@ describe("computeJustifiedRows", () => {
       for (const row of rows) {
         const sizes = row.items.map((it) => photos[it.index].displaySize);
         if (sizes.includes("L")) lHeights.push(row.height);
+        else if (sizes.every((s) => s === "S")) sHeights.push(row.height);
         else if (sizes.every((s) => s === "M")) mHeights.push(row.height);
       }
     }
     const avgM = mHeights.reduce((a, b) => a + b, 0) / mHeights.length;
+    const shareTaller =
+      lHeights.filter((h) => h > avgM).length / lHeights.length;
+    const shareShorter =
+      sHeights.filter((h) => h < avgM).length / sHeights.length;
     expect(lHeights.length).toBeGreaterThan(0);
-    expect(mHeights.length).toBeGreaterThan(0);
-    // Every single L-containing row must exceed the average M-only row —
-    // not just on average, but with zero exceptions across the whole sweep.
-    for (const h of lHeights) expect(h).toBeGreaterThan(avgM);
-  });
-
-  test("S immediately preceding a size-up transition gets its own smaller row instead of folding invisibly", () => {
-    const photos = [
-      { ...landscape, displaySize: "M" },
-      { ...landscape, displaySize: "M" },
-      { ...portrait, displaySize: "S" },
-      { ...landscape, displaySize: "M" },
-    ];
-    const rows = computeJustifiedRows(photos, OPTS);
-    const sRow = rows.find((r) =>
-      r.items.some((it) => photos[it.index].displaySize === "S"),
-    );
-    expect(sRow).toBeDefined();
-    // The S got a dedicated row at (approximately) its own target height,
-    // not silently absorbed into a neighboring M-targeted row.
-    expect(sRow!.height).toBeCloseTo(
-      OPTS.baseRowHeight * JUSTIFIED_SIZE_WEIGHT.S,
-      1,
-    );
+    expect(sHeights.length).toBeGreaterThan(0);
+    expect(shareTaller).toBeGreaterThan(0.7);
+    expect(shareShorter).toBeGreaterThan(0.5);
   });
 
   test("empty input and degenerate options do not throw", () => {

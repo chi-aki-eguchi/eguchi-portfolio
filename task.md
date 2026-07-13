@@ -6927,3 +6927,68 @@ docs/checklists.md確認)を再実施し、この1点だけを訂正する。
 ### 次の担当者が触ってはいけない場所
 
 - `withRetry`の呼び出し側145箇所(意図的に不変更)
+
+## Handoff 2026-07-13 (9) — Claude Code(Sonnet 5): task-queue.md Q-2「既存写真の壊れキー点検」完了
+
+### 目的
+
+`docs/agents/task-queue.md` Q-2。P0-1修正(2026-07-08、`sanitizeUploadBaseName()`導入)
+以前にアップロードされた写真のキーに`#` `?` `%` `&`が含まれていないか、
+読み取り専用で点検する。オーナー承認によりGET-only監査として実施。
+
+### 変更内容
+
+- `scratch/audit-keycheck/`に一時Playwright spec(`audit.spec.ts`)と専用config
+  (`playwright.config.ts`、port 4310、`scripts/smoke/`と同じwebServer構成)を作成し、
+  `scripts/smoke/helpers.ts`の`loginAsAdmin`を再利用してログイン
+  (`POST /admin/login`のみ)、続けて`GET /api/photos?all=1`のみを実行。
+  他の書き込みAPIは一切呼んでいない。新規コードで`.env`を直接読む処理は
+  追加していない(既存ヘルパーへ委譲)。
+- 検査結果: 496枚の写真の`url` / `thumbKey` / `mediumKey`を走査し、
+  `#` `?` `%` `&`を含む行は**該当ゼロ**。修復不要のため案の提示・停止は発生せず。
+- 結果を`docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-2」節へ恒久記録した後、
+  `scratch/audit-keycheck/`(このタスクで新規作成した3ファイルのみ)を削除。
+  `scratch/`配下の他の既存ファイルには触れていない。
+- `docs/agents/task-queue.md`のQ-2見出しに`✅ 済 (2026-07-13)`を追記。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-2」節。
+
+### 触ったファイル
+
+- `docs/agents/task-queue.md`(Q-2完了マーカー)
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+- (一時作成し削除済み: `scratch/audit-keycheck/playwright.config.ts` /
+  `audit.spec.ts` / `result.json` — commit対象外)
+
+### 検証したこと
+
+- `bunx playwright test --config scratch/audit-keycheck/playwright.config.ts`で
+  1 passed。標準出力で「496枚検査・0件該当」を確認。
+- トレース上、発生したリクエストが`POST /admin/login`と
+  `GET /api/photos?all=1`の2本のみであることを確認(他の書き込み系
+  エンドポイントへのアクセスなし)。
+- `packages/web/`配下に差分なし(コード変更なし)を確認。
+  Q-2の検証条件どおり`bun run check`は対象外。
+- `git status --short`で対象ドキュメントファイルのみの変更であることを確認。
+
+### 検証していないこと
+
+- 496枚以外(削除済み写真など、`all=1`でも返らない行)の存在有無。
+  `deletedAt IS NULL`の行のみが対象(API仕様どおり)。
+
+### push したか
+
+していない。commitのみ実施(ドキュメントのみ、コード変更なし)。
+
+### 本番で確認したか
+
+対象外(読み取り専用の点検)。
+
+### 次の担当者が触ってよい場所
+
+- `docs/agents/task-queue.md`の次のタスク(Q-3以降)へ進んでよい
+
+### 次の担当者が触ってはいけない場所
+
+- 特になし(今回はドキュメントのみの変更)

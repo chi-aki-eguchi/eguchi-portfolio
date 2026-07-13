@@ -7241,3 +7241,66 @@ GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVary�
 ### 次の担当者が触ってはいけない場所
 
 - 特になし
+
+## Handoff 2026-07-13 (14) — Claude Code(Sonnet 5): task-queue.md Q-7「公開ページtext-xsトークン統一」完了
+
+### 目的
+
+`docs/agents/task-queue.md` Q-7。対象7ファイルの固定サイズ`text-xs`(28箇所)が
+管理画面のタイポグラフィ設定(`--section-label-size`等)に追従しない問題。
+
+### 変更内容
+
+- 28箇所を1つずつ役割判定。**2箇所**(`series-detail.tsx:108`の`series.subtitle`、
+  `service-start.tsx:376`の"Aki Eguchi Portfolio Kit")がuppercase eyebrow見出し
+  パターンと判断し、`style={{fontSize: "var(--section-label-size, 0.75rem)")}}`を
+  追加(`text-xs`クラス自体は line-height 維持のため残置)。
+- **残り26箇所は変更なし**: SNS/戻るリンク・フィルタータブ・エラー/空状態
+  メッセージ・フォームラベル・数字バッジなど、`--section-label-size`にも
+  `--footer-size`(実フッターはLayout.tsxのみで、今回の対象7ファイルには
+  Layout.tsxが含まれないため文字通りの「フッター」は存在しない)にも
+  属さないと判断。誤って紐付けると無関係な箇所がオーナーの意図しない形で
+  連動する事故になるため、あえて据え置いた。全件の判定理由は決定ログに列挙。
+- 実機確認: このサイトは`sectionLabelSize`が既に`"11"`(px)に設定済みのため、
+  2箇所は修正により12px→11pxへ実際に1px縮み、他の全section-labelと統一される
+  (意図した挙動)。`sectionLabelSize`未設定サイトではfallback 0.75rem=12pxで
+  変化なし。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-7」節
+(28箇所の役割判定を全件記載)。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/series-detail.tsx`
+- `packages/web/src/web/pages/service-start.tsx`
+- `docs/agents/task-queue.md`
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- `bun run check`成功: test 358 pass(renderテスト含む、件数変化なし)、
+  typecheck/lint/build含む。
+- devサーバ実機確認(`sectionLabelSize=11px`への追従を`getComputedStyle`で確認)。
+
+### 検証していないこと
+
+- `series.subtitle`が実際に設定された状態でのブラウザ表示(本番データに該当なし)。
+
+### push したか
+
+していない。commitのみ実施(Q-7完了条件どおり)。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- Q-8〜10のアイデアノートへの移設へ進む
+- 26件の据え置き箇所は、オーナーが決定ログの分類を見て再分類を指示すれば
+  別チケットで対応可能
+
+### 次の担当者が触ってはいけない場所
+
+- 特になし

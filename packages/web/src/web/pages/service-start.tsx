@@ -373,7 +373,10 @@ function HandoffCard() {
           </p>
         </div>
         <div className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.025)] p-4 sm:p-5">
-          <p className="font-en text-xs uppercase tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.36)]">
+          <p
+            className="font-en text-xs uppercase tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.36)]"
+            style={{ fontSize: "var(--section-label-size, 0.75rem)" }}
+          >
             Aki Eguchi Portfolio Kit
           </p>
           <div className="mt-5 divide-y divide-[rgba(var(--foreground-rgb),0.08)]">

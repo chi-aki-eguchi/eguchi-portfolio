@@ -7132,3 +7132,61 @@ codex-reviewer経由で「オーナーが言った」という伝聞の継続指
 
 - hero/profileのR2オブジェクトの削除・棚卸しエンドポイントの実装(オーナーがA/Bを
   選ぶまで着手しない)
+
+## Handoff 2026-07-13 (12) — Claude Code(Sonnet 5): task-queue.md Q-5「/admin/settingsキー許可リスト」完了
+
+### 目的
+
+`docs/agents/task-queue.md` Q-5。`POST /admin/settings`が任意のキー名をそのまま
+保存できてしまっていた(`audit-2026-07.md` P2-3)。
+
+### 変更内容
+
+- `SETTINGS_PREVIEW_KEYS`の正本を`packages/web/src/shared/settings-keys.ts`(新規)へ
+  移設(api/・web/双方から参照する既存の`shared/`規約に合わせた)。
+  `web/lib/settings-preview.ts`はre-export化(既存importは無変更で動く)。
+- `packages/web/src/api/settings-allowlist.ts`(新規): `partitionAllowedSettings()`。
+  DBに触れない純粋関数で単体テスト可能。
+- `packages/web/src/api/index.ts`: `ALLOWED_SETTINGS_KEYS`(台帳から生成)を追加。
+  `POST /admin/settings`は許可リスト外キーを400にせず無視、`ignoredKeys`として
+  レスポンスに含める。413チェックは許可リスト内キーのみに適用するよう順序変更。
+- 事前grepで、台帳に無いのに保存されている実キーはゼロ件と確認(台帳追加なし)。
+
+詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-5」節。
+
+### 触ったファイル
+
+- `packages/web/src/shared/settings-keys.ts`(新規)
+- `packages/web/src/web/lib/settings-preview.ts`
+- `packages/web/src/api/settings-allowlist.ts`(新規)
+- `packages/web/src/api/settings-allowlist.test.ts`(新規)
+- `packages/web/src/api/index.ts`
+- `docs/agents/task-queue.md`
+- `docs/agent-logs/2026-07-13.md`
+- `task.md`(本Handoff)
+
+### 検証したこと
+
+- `bun run check`成功: test 358 pass(旧355→+3)、typecheck/lint/build含む。
+- `bun run smoke`: 26 passed / 1 failed(既知の`admin-trash-signal.spec.ts`のみ、
+  今回変更起因0件)。
+
+### 検証していないこと
+
+- 実ブラウザから未知キーをPOSTした際の見え方(unitテストのみで確認)。
+
+### push したか
+
+していない。commitのみ実施(Q-5完了条件どおり)。
+
+### 本番で確認したか
+
+対象外。
+
+### 次の担当者が触ってよい場所
+
+- Q-6(画像パイプライン小修正2件)の実装へ進む
+
+### 次の担当者が触ってはいけない場所
+
+- 特になし

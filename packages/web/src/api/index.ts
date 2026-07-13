@@ -4,6 +4,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { db, withRetry, schema } from "./database";
 import { buildReorderUpdate } from "./reorder-sql";
 import { writeSettingsAtomic } from "./database/settings-write";
+import { partitionAllowedSettings } from "./settings-allowlist";
 import {
   eq,
   sql,
@@ -31,6 +32,7 @@ import {
   parseRotationDeg,
 } from "../shared/image-url";
 import { imageTooLargeMessage } from "../shared/upload-limits";
+import { SETTINGS_PREVIEW_KEYS } from "../shared/settings-keys";
 import {
   StorageConfigError,
   STORAGE_NOT_CONFIGURED_CODE,
@@ -288,6 +290,11 @@ const s3 = new S3Client({
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
   },
 });
+
+// site_settings に保存してよいキーの許可リスト(Q-5 / audit-2026-07.md P2-3)。
+// 正本は SETTINGS_PREVIEW_KEYS(shared/settings-keys.ts) — 新キー追加時は §0 の
+// 4箇所同期にこの許可リストが自動的に含まれる(台帳を直接参照するため)。
+const ALLOWED_SETTINGS_KEYS = new Set<string>(SETTINGS_PREVIEW_KEYS);
 
 const BUCKET = process.env.S3_BUCKET!;
 const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
@@ -1154,9 +1161,15 @@ const app = new Hono()
     // partial update. 50KB is generous even for long bios/statements.
     const MAX_KEY_LEN = 100;
     const MAX_VALUE_LEN = 50_000;
+    // 許可リスト外のキーは無視する(Q-5 / audit-2026-07.md P2-3)。400にはしない —
+    // 既存クライアントが将来のキーを送ってきても壊れないようにするため。無視した
+    // キー名はレスポンスで可視化し、正当キーが黙って保存されない事故に気づけるようにする。
+    const { allowed, ignoredKeys } = partitionAllowedSettings(
+      body,
+      ALLOWED_SETTINGS_KEYS,
+    );
     const entries: Array<[string, string]> = [];
-    for (const [key, value] of Object.entries(body)) {
-      if (typeof value !== "string") continue;
+    for (const [key, value] of allowed) {
       if (key.length > MAX_KEY_LEN || value.length > MAX_VALUE_LEN) {
         return c.json({ error: "設定値が大きすぎます。" }, 413);
       }
@@ -1167,7 +1180,7 @@ const app = new Hono()
     // ロールバックされる(settings-write.test.ts で libsql 実トランザクション
     // により検証済み)。
     await withRetry(() => writeSettingsAtomic(db, schema.siteSettings, entries));
-    return c.json({ ok: true }, 200);
+    return c.json({ ok: true, ignoredKeys }, 200);
   })
 
   // ── Admin: Server-side upload (resize → storage) ───────

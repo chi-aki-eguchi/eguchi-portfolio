@@ -22,14 +22,19 @@ test.describe("admin — ⌘KのTrashが後続のLibrary表示に持ち越され
     await page.keyboard.press("Enter");
     await page.waitForTimeout(800);
 
-    expect(await page.getByText("ゴミ箱").count()).toBeGreaterThan(0);
+    // Trash画面の文言はDB状態で変わる（空=「ゴミ箱は空です」/ 非空=「削除済み
+    // 写真 —」バナー）。本番DBに接続するsmokeでは空を前提にできない。
+    const trashMarker = /ゴミ箱は空です|削除済み写真 —/;
+    expect(await page.getByText(trashMarker).count()).toBeGreaterThan(0);
 
     await page.getByRole("button", { name: "Hero" }).click();
     await page.waitForTimeout(500);
     await page.getByRole("button", { name: "Library" }).click();
     await page.waitForTimeout(1000);
 
-    // 修正前はここで再び Trash が開いてしまい、通常のツールバーが出なかった。
+    // 修正前はここで再び Trash が開いてしまっていた。ツールバー（絞り込み）は
+    // Trash表示中も出るため、Trash画面のマーカー不在まで確認して判定する。
     expect(await page.getByText("絞り込み").count()).toBeGreaterThan(0);
+    expect(await page.getByText(trashMarker).count()).toBe(0);
   });
 });

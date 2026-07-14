@@ -7617,3 +7617,68 @@ Claude=Reviewer]」で始まるメッセージ)を参照。
 
 - 新TOPレイアウトの追加、今回の役割交代を他タスクへ広げること。
 - push、本番DB/R2/Railwayへの書き込み。
+
+## Handoff 2026-07-14 (19) — Claude Code(Fable 5): smoke修理 + Q-4案A実装(Codex APPROVED)
+
+### 変更内容
+
+- **smoke修理**(commit 7f0630c・push済み): `admin-trash-signal.spec.ts`が
+  「ゴミ箱が空のときの文言」にしか無い文字を探しており、本番DBのゴミ箱に
+  32枚入っている現在は必ず落ちるデータ依存だった。空/非空どちらでも通る
+  マーカーに変更し、「Trashが持ち越されない」側の検証も強化。機能コード無変更。
+- **Q-4 案A実装**(commit ca3f4f8・push済み): オーナーが2026-07-14に直接チャットで
+  案Aを選択。`POST /admin/settings`でprofilePhotoUrl/heroPhotoUrlが差し替わったら、
+  書き込み成功後に旧R2オブジェクトをbest-effort削除(prefixガード付き)。
+- **レビュー修正1**(commit a579080・未push): codex-reviewer P1/P2対応。
+  直列化キュー+削除直前のDB再確認、settings書き込みでOGP用キャッシュ即失効
+  (settingsVersion)。
+- **レビュー修正2**(commit a734324・未push): 再レビューP1対応。
+  (1)対象キーは自キー専用prefixのURLか空文字のみ受け付け(違反400)、
+  (2)pending参照カウントで待機中リクエストの新値をlive扱い、
+  (3)cleanup本体を依存注入型runnerへ切り出し、実キュー順の統合テスト追加。
+- 2026-07-14 codex-reviewer最終判定: **P0/P1なし・APPROVED**。
+
+### 触ったファイル
+
+- `scripts/smoke/admin-trash-signal.spec.ts`
+- `packages/web/src/api/settings-image-cleanup.ts`（新規）
+- `packages/web/src/api/settings-image-cleanup.test.ts`（新規）
+- `packages/web/src/api/serial-queue.ts`（新規）
+- `packages/web/src/api/serial-queue.test.ts`（新規）
+- `packages/web/src/api/settings-version.ts`（新規）
+- `packages/web/src/api/index.ts`
+- `packages/web/src/server.ts`
+- `docs/agents/task-queue.md` / `docs/agents/pending-owner-decisions.md`
+- `docs/agent-logs/2026-07-14.md` / `task.md`（本Handoff）
+
+### 検証したこと
+
+- `bun run check`: 成功（389 tests、typecheck/lint/build含む）。
+- `bun run smoke`: 31 passed / 27 skipped / 0 failed。
+- codex-reviewerによるread-onlyレビュー3周（P1指摘2回→解消→APPROVED、
+  独立実行でcheck 389 pass確認済み）。
+
+### 検証していないこと
+
+- push（a579080 / a734324 の2commit）/ Railway反映 / 本番確認。
+- HTTP層での実並行POST（純粋関数+実キューの統合テストで実行順を網羅）。
+
+### 運用前提（重要）
+
+- 直列化キュー・pending参照カウント・settingsVersionは**Railway単一インスタンス
+  前提**。将来replicaを増やす場合はこの3点の再設計が必要。
+
+### push したか
+
+ca3f4f8まではオーナーがpush済み（Railway反映済みのはず・本番確認は未実施）。
+a579080 / a734324 は未push。pushはオーナーのみ。
+
+### 次の担当者が触ってよい場所
+
+- pending-owner-decisions.md の3案件はオーナー指示があるまで着手しない。
+- Q-4はAPPROVED済み。オーナーのpush後、本番でprofile画像差し替えの動作確認をしてよい。
+
+### 次の担当者が触ってはいけない場所
+
+- push、本番DB/R2/Railwayへの書き込み。
+- Lightbox.tsxのロジック、§0 invariants。

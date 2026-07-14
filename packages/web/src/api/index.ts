@@ -1078,6 +1078,10 @@ const app = new Hono()
         profileGear: settings.profileGear ?? "",
         // ── E6: optional, low-key contact lead-in (off when empty) ──
         footerCtaLabel: settings.footerCtaLabel ?? "",
+        templateCreditLabel:
+          settings.templateCreditLabel ?? "Site template by Aki Eguchi",
+        templateCreditUrl:
+          settings.templateCreditUrl ?? "https://akieguchi.com/service",
         // ── 撮影依頼 CTA — a closing "work with me" band on Top / Gallery / Series ──
         homeCtaEnabled: settings.homeCtaEnabled ?? "off", // "on" | "off"
         homeCtaTitle: settings.homeCtaTitle ?? "撮影のご依頼",

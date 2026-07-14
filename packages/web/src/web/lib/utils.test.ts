@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { num, clamp, safeHref } from "./utils";
+import { num, clamp, httpHrefOrNull, safeHref } from "./utils";
 
 describe("num", () => {
   test("parses a valid number string", () => {
@@ -86,5 +86,26 @@ describe("safeHref", () => {
     expect(safeHref("HTTPS://example.com")).toBe("HTTPS://example.com");
     expect(safeHref("HTTP://example.com")).toBe("HTTP://example.com");
     expect(safeHref("MAILTO:x@y.z")).toBe("MAILTO:x@y.z");
+  });
+});
+
+describe("httpHrefOrNull", () => {
+  test("allows absolute HTTP and HTTPS URLs", () => {
+    expect(httpHrefOrNull("http://example.com")).toBe("http://example.com");
+    expect(httpHrefOrNull(" https://example.com/service ")).toBe(
+      "https://example.com/service",
+    );
+  });
+
+  test("blocks executable and non-web schemes", () => {
+    expect(httpHrefOrNull("javascript:alert(1)")).toBeNull();
+    expect(httpHrefOrNull("data:text/html,test")).toBeNull();
+    expect(httpHrefOrNull("mailto:user@example.com")).toBeNull();
+  });
+
+  test("blocks empty, relative, and malformed URLs", () => {
+    expect(httpHrefOrNull("")).toBeNull();
+    expect(httpHrefOrNull("/service")).toBeNull();
+    expect(httpHrefOrNull("not a URL")).toBeNull();
   });
 });

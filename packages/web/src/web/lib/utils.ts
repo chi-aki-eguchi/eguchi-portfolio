@@ -10,3 +10,16 @@ const SAFE_HREF_RE = /^(https?:|mailto:)/i;
 export function safeHref(url: string): string {
   return SAFE_HREF_RE.test(url) ? url : "#";
 }
+
+export function httpHrefOrNull(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? trimmed
+      : null;
+  } catch {
+    return null;
+  }
+}

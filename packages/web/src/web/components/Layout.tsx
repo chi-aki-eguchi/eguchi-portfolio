@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
-import { safeHref } from "../lib/utils";
+import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 
@@ -55,6 +55,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const dm = useDarkModeContext();
   const { showService } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  const templateCreditUrl = httpHrefOrNull(data?.templateCreditUrl ?? "");
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
@@ -409,16 +410,47 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               Portfolio site
             </Link>
           )}
-          <p
-            className="font-en text-center"
-            style={{
-              fontSize: "var(--footer-size, 11px)",
-              letterSpacing: "0.04em",
-              color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.20))`,
-            }}
-          >
-            {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
-          </p>
+          <div className="flex flex-col items-center gap-2">
+            <p
+              className="font-en text-center"
+              style={{
+                fontSize: "var(--footer-size, 11px)",
+                letterSpacing: "0.04em",
+                color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.20))`,
+              }}
+            >
+              {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
+            </p>
+            {data?.templateCreditLabel &&
+              (templateCreditUrl ? (
+                <a
+                  href={templateCreditUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-en tracking-[0.05em] nav-link-luxury footer-link-public"
+                  style={
+                    {
+                      fontSize:
+                        "max(8px, calc(var(--footer-size, 11px) - 2px))",
+                      "--link-rest": "var(--footer-opacity, 0.13)",
+                    } as React.CSSProperties
+                  }
+                >
+                  {data.templateCreditLabel}
+                </a>
+              ) : (
+                <span
+                  className="font-en tracking-[0.05em] text-center"
+                  style={{
+                    fontSize:
+                      "max(8px, calc(var(--footer-size, 11px) - 2px))",
+                    color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.13))`,
+                  }}
+                >
+                  {data.templateCreditLabel}
+                </span>
+              ))}
+          </div>
         </div>
       </footer>
 

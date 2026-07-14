@@ -7875,3 +7875,72 @@ P1修正: 旧パス`/favicon.ico`（48px ICO）と`/favicon.svg`（64px SVG）�
 ### pushしたか
 
 していない。git commitもしていない。
+
+## Handoff 2026-07-15 (23) — T-3 フッターにテンプレート購入クレジット
+
+### 目的
+
+配布テンプレートの販売導線として、公開サイトのフッター最下部に控えめな
+購入クレジットを追加し、管理画面から文言とリンク先を変更できるようにする。
+
+### 変更内容
+
+- 新settingsキー`templateCreditLabel` / `templateCreditUrl`を追加。未保存時の既定値は
+  `Site template by Aki Eguchi` / `https://akieguchi.com/service`。labelを空にすると
+  要素ごと非表示、URLを空にすると文字だけ表示する。
+- shared台帳とAPI defaultを同期。providerは`JS_PREVIEW_KEYS = SETTINGS_PREVIEW_KEYS`
+  の共通経路でDB取得値とpreview messageをReact Query cacheへ適用する現行構造のため、
+  台帳への追加で両キーがDB表示・ライブプレビューの両方へ反映される。render testで
+  保存前previewの表示・URL差し替え・label空欄を確認した。
+- フッターのコピーライト直下に、既存`font-en` / `nav-link-luxury`のトーンを使い、
+  さらに小さく低コントラストな1行を追加した。
+- URLは純粋関数`httpHrefOrNull()`で検査し、絶対`http:` / `https:`だけをリンク化。
+  `javascript:` / `data:` / `mailto:` / 相対URL / 不正URLはリンク無しの文字表示にする。
+- Settingsタブに文言とURLの入力欄を追加。保存は既存`postAdminSettings()`
+  （内部で`assertOk()`）経路をそのまま使用する。
+
+### 触ったファイル
+
+- `packages/web/src/shared/settings-keys.ts`
+- `packages/web/src/api/index.ts`
+- `packages/web/src/web/components/Layout.tsx`
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `packages/web/src/web/lib/utils.ts`
+- `packages/web/src/web/lib/utils.test.ts`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `cd packages/web && bun run typecheck`: 成功（`tsc -b`）。
+- `cd packages/web && bun test ./src`: 成功（最終`bun run check`内、409 pass / 0 fail）。
+- `bun run check`: 成功（typecheck / lint / 409 tests / build）。
+- `bun run smoke`: 成功（31 passed / 27 skipped / 0 failed）。ログイン以外の
+  保存・削除・追加操作はしていない。
+- URL判定はhttp/https、前後空白、危険scheme、空、相対、不正URLの分岐を単体テスト。
+- `settings-preview.test.ts`の台帳 / API default / admin編集キー整合テストが成功。
+- render testで安全なリンクの`target` / `rel`、危険URLのリンク無し表示、label空欄の
+  非表示、providerのライブプレビュー反映を確認。
+- `git diff --check`: 成功。
+
+### 検証していないこと
+
+- 操作可能なBrowserが環境に接続されていなかったため、目視によるブラウザ確認。
+- push / Railway反映 / 本番確認。
+
+### pushしたか
+
+していない。git commitもしていない。変更はworking treeに残している。
+
+### 本番で確認したか
+
+していない。今回の確認はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- 上記差分のread-onlyレビュー。
+- オーナー確認後、Settingsでクレジット文言と販売ページURLを差し替える。
+
+### 次の担当者が触ってはいけない場所
+
+- scratch、push、本番DB/R2/Railwayへの書き込み。

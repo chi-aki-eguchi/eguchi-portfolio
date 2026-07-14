@@ -3709,6 +3709,18 @@ export function SettingsTab({
       placeholder: "例: 撮影のご相談はこちら",
       hint: "入力するとフッターに Contact への控えめなリンクを表示。空欄なら非表示",
     },
+    {
+      key: "templateCreditLabel",
+      label: "テンプレート購入クレジット",
+      placeholder: "Site template by Aki Eguchi",
+      hint: "フッター最下部に小さく表示する文言。空欄なら非表示",
+    },
+    {
+      key: "templateCreditUrl",
+      label: "テンプレート購入クレジット URL",
+      placeholder: "https://akieguchi.com/service",
+      hint: "http:// または https:// のURLだけリンクになります。空欄・無効なURLは文字だけ表示",
+    },
   ];
 
   return (

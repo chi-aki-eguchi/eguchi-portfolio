@@ -1616,6 +1616,8 @@ describe("shared components", () => {
             navLabelContact: "Booking",
             footerText: "Preview Footer",
             footerCtaLabel: "Ask for a shoot",
+            templateCreditLabel: "Template credit",
+            templateCreditUrl: "https://example.com/template",
             servicePageMode: "on",
           },
         },
@@ -1628,6 +1630,12 @@ describe("shared components", () => {
     expect(host.textContent).toContain("Booking");
     expect(host.textContent).toContain("Ask for a shoot");
     expect(host.textContent).toContain("Preview Footer");
+    const templateCredit = host.querySelector(
+      'a[href="https://example.com/template"]',
+    );
+    expect(templateCredit?.textContent).toBe("Template credit");
+    expect(templateCredit?.getAttribute("target")).toBe("_blank");
+    expect(templateCredit?.getAttribute("rel")).toBe("noopener noreferrer");
     expect(host.querySelector('a[href="/service"]')).not.toBeNull();
 
     dom.window.dispatchEvent(
@@ -1635,12 +1643,29 @@ describe("shared components", () => {
         origin: dom.window.location.origin,
         data: {
           type: "preview-settings",
-          settings: { servicePageMode: "off" },
+          settings: {
+            servicePageMode: "off",
+            templateCreditUrl: "javascript:alert(1)",
+          },
         },
       }),
     );
     await flush(10);
     expect(host.querySelector('a[href="/service"]')).toBeNull();
+    expect(host.textContent).toContain("Template credit");
+    expect(host.querySelector('a[href^="javascript:"]')).toBeNull();
+
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: { templateCreditLabel: "" },
+        },
+      }),
+    );
+    await flush(10);
+    expect(host.textContent).not.toContain("Template credit");
     cleanup();
   });
 

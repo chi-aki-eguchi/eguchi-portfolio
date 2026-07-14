@@ -113,6 +113,8 @@ export const SETTINGS_PREVIEW_KEYS = [
   "profileStatement",
   "profileGear",
   "footerCtaLabel",
+  "templateCreditLabel",
+  "templateCreditUrl",
   "galleryGapScale",
   "galleryEmptyRate",
   "gallerySizeVariation",

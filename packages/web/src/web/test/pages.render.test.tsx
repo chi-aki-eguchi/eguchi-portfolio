@@ -254,7 +254,7 @@ describe("public pages render (empty state: 写真0枚・設定空)", () => {
 });
 
 describe("shared components", () => {
-  test("Service pages stay hidden away from akieguchi.com", async () => {
+  test("Service page bodies render independently of the shared route gate", async () => {
     dom.reconfigure({ url: "https://example.com/" });
     try {
       for (const load of [
@@ -263,7 +263,7 @@ describe("shared components", () => {
       ]) {
         const Page = (await load()).default;
         const { host, cleanup } = await mount(createElement(Page));
-        expect(host.innerHTML).toBe("");
+        expect(host.innerHTML.length).toBeGreaterThan(0);
         cleanup();
       }
     } finally {
@@ -732,7 +732,12 @@ describe("shared components", () => {
 
   test("AdminPage: grouped navigation reaches every tab within two clicks", async () => {
     const prev = canned["/api/admin/me"];
+    const prevSettings = canned["/api/settings"];
     canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/settings"] = {
+      ...(prevSettings as Record<string, unknown>),
+      servicePageMode: "on",
+    };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
     try {
@@ -777,6 +782,13 @@ describe("shared components", () => {
 
       buttonWithText(host, "Settings").click();
       await waitForText(host, "Live Preview");
+      const serviceModeSelect = host.querySelector(
+        'select[aria-label="Serviceページを表示する"]',
+      ) as HTMLSelectElement | null;
+      expect(serviceModeSelect).not.toBeNull();
+      expect(
+        Array.from(serviceModeSelect!.options).map((option) => option.value),
+      ).toEqual(["", "on", "off"]);
 
       buttonWithText(host, "はじめに").click();
       await waitForText(host, "公開までにやること");
@@ -784,6 +796,7 @@ describe("shared components", () => {
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;
+      canned["/api/settings"] = prevSettings;
       dom.window.sessionStorage.clear();
       dom.window.localStorage.clear();
     }
@@ -1603,6 +1616,7 @@ describe("shared components", () => {
             navLabelContact: "Booking",
             footerText: "Preview Footer",
             footerCtaLabel: "Ask for a shoot",
+            servicePageMode: "on",
           },
         },
       }),
@@ -1614,23 +1628,45 @@ describe("shared components", () => {
     expect(host.textContent).toContain("Booking");
     expect(host.textContent).toContain("Ask for a shoot");
     expect(host.textContent).toContain("Preview Footer");
+    expect(host.querySelector('a[href="/service"]')).not.toBeNull();
+
+    dom.window.dispatchEvent(
+      new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: {
+          type: "preview-settings",
+          settings: { servicePageMode: "off" },
+        },
+      }),
+    );
+    await flush(10);
+    expect(host.querySelector('a[href="/service"]')).toBeNull();
     cleanup();
   });
 
   test("Layout keeps the service link quiet and production-only", async () => {
+    const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
     const prevSettings = canned["/api/settings"];
     try {
       canned["/api/settings"] = {};
       const hidden = await mount(
-        createElement(Layout, null, createElement("p", null, "child")),
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
       );
       expect(hidden.host.querySelector('a[href="/service"]')).toBeNull();
       hidden.cleanup();
 
       canned["/api/settings"] = { siteUrl: "https://akieguchi.com" };
       const visible = await mount(
-        createElement(Layout, null, createElement("p", null, "child")),
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
       );
       expect(
         visible.host.querySelectorAll('a[href="/service"]').length,

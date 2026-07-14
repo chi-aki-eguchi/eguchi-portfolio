@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { ExternalLink, LogOut, X } from "lucide-react";
-import { ADMIN_TAB_GROUPS, groupForTab, type Tab } from "./admin-shared";
+import {
+  ADMIN_TAB_GROUPS,
+  groupForTab,
+  type AdminTabGroup,
+  type Tab,
+} from "./admin-shared";
 
 // スマホ admin ナビ(2026-07-11 モバイル操作性改善)。
 // 旧・上部2段横スクロールナビは activeタブが画面外へ流れ、片手の親指で
@@ -53,19 +58,21 @@ export function AdminMobileTopBar({
 export function AdminMobileTabBar({
   tab,
   tabMeta,
+  tabGroups = ADMIN_TAB_GROUPS,
   galleryUploading,
   onSelectTab,
 }: {
   tab: Tab;
   tabMeta: AdminTabMeta;
+  tabGroups?: readonly AdminTabGroup[];
   galleryUploading: boolean;
   // requestTab と同じ契約: 未保存ガードで拒否されたら false。
   onSelectTab: (tab: Tab) => boolean;
 }) {
   const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
-  const activeGroup = groupForTab(tab);
+  const activeGroup = groupForTab(tab, tabGroups);
   const openGroup =
-    ADMIN_TAB_GROUPS.find((g) => g.key === openGroupKey) ?? null;
+    tabGroups.find((g) => g.key === openGroupKey) ?? null;
 
   useEffect(() => {
     if (!openGroup) return;
@@ -126,7 +133,7 @@ export function AdminMobileTabBar({
         </div>
       )}
       <nav className="admin-bottom-nav lg:hidden" aria-label="管理画面">
-        {ADMIN_TAB_GROUPS.map((group) => {
+        {tabGroups.map((group) => {
           const active = group.key === activeGroup.key;
           const single = group.tabs.length === 1;
           return (

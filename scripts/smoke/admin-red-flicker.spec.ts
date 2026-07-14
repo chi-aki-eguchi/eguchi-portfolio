@@ -13,7 +13,12 @@ test.describe("admin — ホバー限定の赤クラスが常時赤くならな�
       "サイドバー操作のため desktop のみで検証",
     );
     await loginAsAdmin(page);
-    await page.getByRole("button", { name: "Service" }).click();
+    const serviceTab = page.getByRole("button", { name: "Service" });
+    test.skip(
+      (await serviceTab.count()) === 0,
+      "Serviceページが設定で非表示のため、この見た目検査は対象外",
+    );
+    await serviceTab.click();
     await page.waitForTimeout(1500);
     await page.getByRole("button", { name: "実例セクション" }).click();
     await page.waitForTimeout(400);

@@ -7748,3 +7748,130 @@ a579080 / a734324 は未push。pushはオーナーのみ。
 - public内の静的アイコン削除、scratch、push、本番DB/R2/Railwayへの書き込み。
 
 P1修正: 旧パス`/favicon.ico`（48px ICO）と`/favicon.svg`（64px SVG）も動的生成対象に追加し、全7パスの形式・サイズをテストで網羅した。
+
+## Handoff 2026-07-15 (21) — T-2 Service機能の設定ON/OFF化
+
+### 目的
+
+配布先でもService機能を選択して使えるようにしつつ、未設定のakieguchi.comは
+従来どおり表示、未設定の配布先は従来どおり非表示になる互換性を維持する。
+
+### 変更内容
+
+- 新settingsキー`servicePageMode`を追加。`""`は従来のホスト判定、`"on"`は常時表示、
+  `"off"`は常時非表示。
+- settings 4箇所同期を実施: shared台帳、API default、providerのDB適用、
+  providerのライブプレビュー受信。Settingsタブに「自動（既定）/表示/非表示」の
+  3状態selectを追加し、既存`postAdminSettings()`（`assertOk`を含む）経路で保存する。
+- 判定をsharedの純粋関数`resolveServiceVisibility()`へ集約。公開ヘッダー/フッター、
+  `/service`、`/service/start`、adminのPCサイドバー/スマホナビ/⌘Kを同じ判定へ統一。
+- 非表示中に`/service`または`/service/start`を開いた場合は、設定読込後にトップへ
+  replaceリダイレクトする。adminで保存済みServiceタブが非表示になった場合は
+  Settingsタブへ戻す。
+- server側も同じ判定を使い、非表示時はsitemapから`/service`を除外し、
+  `/service`・`/service/start`のOGPをNot Found/noindex扱いに揃えた。
+- 旧`servicePageConfig.enabled`によるページ単独の公開判定とServiceタブ内の
+  二重トグルは使用をやめた。既存JSONフィールド自体は互換性のため残している。
+- Service非表示を正しい状態として扱えるよう、既存smoke 1件を「表示中のみ検査」に
+  更新した。設定OFF時にServiceタブを探してタイムアウトしない。
+
+### 触ったファイル
+
+- `packages/web/src/shared/settings-keys.ts`
+- `packages/web/src/shared/service-visibility.ts`（新規）
+- `packages/web/src/shared/service-visibility.test.ts`（新規）
+- `packages/web/src/api/index.ts`
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/server.ts`
+- `packages/web/src/web/app.tsx`
+- `packages/web/src/web/components/Layout.tsx`
+- `packages/web/src/web/components/provider.tsx`
+- `packages/web/src/web/lib/service-visibility.ts`（sharedへ移動のため削除）
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/admin-mobile-nav.tsx`
+- `packages/web/src/web/pages/admin-shared.ts`
+- `packages/web/src/web/pages/admin-shared.test.ts`
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `packages/web/src/web/pages/service.tsx`
+- `packages/web/src/web/pages/service-start.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `scripts/smoke/admin-red-flicker.spec.ts`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `cd packages/web && bun run typecheck`: 成功（`tsc -b`）。
+- `cd packages/web && bun test ./src`: 成功（最終`bun run check`内、406 pass / 0 fail）。
+- `bun run check`: 成功（typecheck / lint / 406 tests / build）。
+- `bun run smoke`: 成功（28 passed / 30 skipped / 0 failed）。ログイン以外の
+  保存・削除・追加操作はしていない。
+- `resolveServiceVisibility()`のon/off/未設定siteUrl/未設定window host/配布先/不正値を
+  単体テスト。settings台帳とAPI default/previewの整合も成功。
+- providerライブプレビューで`on`→Serviceリンク表示、`off`→非表示を確認。
+- OGPは配布先`on`とakieguchi.com`off`の両方向をテスト。
+- `git diff --check`: 成功。
+- 未設定時はakieguchi.com判定がtrue、配布先判定がfalseになるため、
+  akieguchi.comの既定表示にCSS/レイアウト変更は入らない。
+
+### 検証していないこと
+
+- iPhone Safari実機。
+- 配布先の実デプロイで`on`保存後の公開確認。
+- push / Railway反映 / akieguchi.com本番確認。
+
+### pushしたか
+
+していない。git commitもしていない。変更はworking treeに残している。
+
+### 本番で確認したか
+
+していない。今回の確認はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- 上記差分のread-onlyレビュー。
+- オーナーが配布先でServiceを使う場合、Settings → Serviceページを「表示」にして保存。
+
+### 次の担当者が触ってはいけない場所
+
+- scratch、push、本番DB/R2/Railwayへの書き込み。
+
+## Handoff 2026-07-15 (22) — T-2レビュー指摘 P1修正
+
+### 目的
+
+本番DBの`siteUrl`が空でも、localhostで動く管理画面とsmokeテストからServiceタブが
+消えないようにする。公開側のService表示判定は変更しない。
+
+### 変更内容
+
+- adminのService表示判定に限り、Vite開発モードでは常に表示するフォールバックを追加。
+- WHYコメントを付け、localhostでのローカル開発とViteを使うsmokeテストの検査対象を
+  維持する理由を明記。
+- PCサイドバー、コマンドパレット、スマホナビ、Serviceタブ内容は同じadmin内判定を
+  使うため、開発モードでは一貫して操作できる。
+- 公開ナビ、公開`/service`・`/service/start`、OGP、sitemapの判定は変更していない。
+- `admin-red-flicker.spec.ts`の条件skipは、本番相当でServiceがOFFのケースを許容する
+  ため現状のまま残した。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `cd packages/web && bun run typecheck`: 成功（内部で`tsc -b`を実行）。
+- `cd packages/web && bun test ./src`: 成功（406 pass / 0 fail）。
+- コード上ではsmokeが使うVite開発モードでadminのServiceタブが表示されるため、
+  Service依存3検査がlocalhost判定だけを理由にskipされない構造を確認。
+
+### 検証していないこと
+
+- `bun run smoke`（依頼元が実行予定）。
+- push / Railway反映 / 本番確認。
+
+### pushしたか
+
+していない。git commitもしていない。

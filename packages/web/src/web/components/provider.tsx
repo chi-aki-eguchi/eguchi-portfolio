@@ -4,12 +4,27 @@ import { api, jsonOrThrow } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
 import { ensureAccentContrast } from "../lib/color-contrast";
 import { heroMotionCssVars } from "../lib/hero-motion";
+import { resolveServiceVisibility } from "../../shared/service-visibility";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 type DarkModeCtx = ReturnType<typeof useDarkMode>;
 const DarkModeContext = createContext<DarkModeCtx | null>(null);
 export function useDarkModeContext() {
   return useContext(DarkModeContext);
+}
+
+type ServiceVisibilityCtx = {
+  isResolved: boolean;
+  showService: boolean;
+};
+
+const ServiceVisibilityContext = createContext<ServiceVisibilityCtx>({
+  isResolved: false,
+  showService: false,
+});
+
+export function useServiceVisibility() {
+  return useContext(ServiceVisibilityContext);
 }
 
 export type FontDef = {
@@ -255,6 +270,20 @@ export function Provider({ children }: ProviderProps) {
   // values back to the saved DB ones — the effects below would re-apply
   // `data` the moment that fetch's result lands in the query cache.
   const isPreviewRef = useRef(false);
+  const [serviceSettings, setServiceSettings] = useState({
+    mode: "",
+    siteUrl: "",
+    isResolved: false,
+  });
+
+  useEffect(() => {
+    if (isPreviewRef.current || data === undefined) return;
+    setServiceSettings({
+      mode: data.servicePageMode ?? "",
+      siteUrl: data.siteUrl ?? "",
+      isResolved: true,
+    });
+  }, [data?.servicePageMode, data?.siteUrl, data]);
 
   // Theme colors
   useEffect(() => {
@@ -551,6 +580,14 @@ export function Provider({ children }: ProviderProps) {
       // fetch resolves after this message (see isPreviewRef declaration).
       isPreviewRef.current = true;
 
+      if (s.servicePageMode !== undefined || s.siteUrl !== undefined) {
+        setServiceSettings((previous) => ({
+          mode: s.servicePageMode ?? previous.mode,
+          siteUrl: s.siteUrl ?? previous.siteUrl,
+          isResolved: true,
+        }));
+      }
+
       // We're now a live-preview surface: pin the settings cache so a background
       // refetch (staleTime elapsing while navigating between pages inside the
       // iframe) can't overwrite the previewed values with the saved DB ones.
@@ -773,9 +810,20 @@ export function Provider({ children }: ProviderProps) {
     return () => window.removeEventListener("message", handlePreviewMessage);
   }, [qc]);
 
+  const serviceVisibility = {
+    isResolved: serviceSettings.isResolved,
+    showService: resolveServiceVisibility(
+      serviceSettings.mode,
+      serviceSettings.siteUrl,
+      typeof window === "undefined" ? "" : window.location.hostname,
+    ),
+  };
+
   return (
     <DarkModeContext.Provider value={darkMode}>
-      {children}
+      <ServiceVisibilityContext.Provider value={serviceVisibility}>
+        {children}
+      </ServiceVisibilityContext.Provider>
     </DarkModeContext.Provider>
   );
 }

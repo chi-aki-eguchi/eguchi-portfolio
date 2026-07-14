@@ -587,6 +587,32 @@ describe("injectOgp /service route", () => {
     expect(out).not.toContain("写真家のためのポートフォリオサイト");
   });
 
+  test("servicePageMode on exposes /service on a distributed host", () => {
+    const out = injectOgp(
+      page,
+      { servicePageMode: "on", siteUrl: "https://portfolio.example" },
+      "/service",
+      "",
+      undefined,
+      "https://portfolio.example",
+    );
+    expect(out).toContain('name="robots" content="index, follow"');
+    expect(out).toContain("写真家のためのポートフォリオサイト");
+  });
+
+  test("servicePageMode off makes /service unavailable on akieguchi.com", () => {
+    const out = injectOgp(
+      page,
+      { servicePageMode: "off", siteUrl: "https://akieguchi.com" },
+      "/service",
+      "",
+      undefined,
+      "https://akieguchi.com",
+    );
+    expect(out).toContain('name="robots" content="noindex, nofollow"');
+    expect(out).toContain("Not Found");
+  });
+
   test("/service/start is noindex on non-akieguchi hosts", () => {
     const out = injectOgp(
       page,

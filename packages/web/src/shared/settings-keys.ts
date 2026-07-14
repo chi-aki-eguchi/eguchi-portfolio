@@ -146,6 +146,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "homeCtaText",
   "homeCtaButton",
   "homeGalleryCount",
+  "servicePageMode",
   "servicePageConfig",
   "setupCompleted",
 ] as const;

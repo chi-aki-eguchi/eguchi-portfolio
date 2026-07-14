@@ -7,6 +7,7 @@ import {
 } from "./site-defaults";
 import { imageUrlWithParams } from "../shared/image-url";
 import { composeBaseTitle, composeHomeTitle } from "../shared/site-title";
+import { resolveServiceVisibility } from "../shared/service-visibility";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
@@ -107,17 +108,8 @@ function genericPageDescription(
   }
 }
 
-const SERVICE_HOST = "akieguchi.com";
-
 export function isServiceSiteUrl(siteUrl: string): boolean {
-  try {
-    return (
-      new URL(siteUrl).hostname.replace(/^www\./, "").toLowerCase() ===
-      SERVICE_HOST
-    );
-  } catch {
-    return false;
-  }
+  return resolveServiceVisibility("", siteUrl, "");
 }
 
 const SERVICE_OG = {
@@ -183,7 +175,11 @@ export function injectOgp(
   // Home page only: "Name JA | Name EN Subtitle" (subtitle merges into the EN
   // name without a pipe) — see composeHomeTitle for why this differs from `base`.
   const homeTitle = composeHomeTitle(titleParts);
-  const isServiceSite = isServiceSiteUrl(siteUrl);
+  const isServiceSite = resolveServiceVisibility(
+    settings.servicePageMode,
+    siteUrl,
+    "",
+  );
   const isServicePath = SERVICE_PATHS.has(pathname);
   const isBuyerStartPath = pathname === "/service/start";
   const isService = isServicePath && isServiceSite;
@@ -208,8 +204,8 @@ export function injectOgp(
   const isKnown =
     KNOWN_ROUTES.includes(pathname) ||
     (pathname.startsWith("/series/") && !!override?.title);
-  const serviceOnOtherHost = isServicePath && !isServiceSite;
-  const missingPublicPage = !isKnown || serviceOnOtherHost;
+  const serviceUnavailable = isServicePath && !isServiceSite;
+  const missingPublicPage = !isKnown || serviceUnavailable;
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = missingPublicPage
     ? `Not Found | ${base}`
@@ -272,7 +268,7 @@ export function injectOgp(
   if (
     pathname.startsWith("/admin") ||
     !isKnown ||
-    serviceOnOtherHost ||
+    serviceUnavailable ||
     isBuyerStartPath
   ) {
     out = setAttr(
@@ -287,7 +283,7 @@ export function injectOgp(
   const indexable =
     !pathname.startsWith("/admin") &&
     isKnown &&
-    !serviceOnOtherHost &&
+    !serviceUnavailable &&
     !isBuyerStartPath;
   // Canonical + og:url — per route, not always the homepage
   out = setAttr(out, /(<link\s+rel="canonical"\s+href=")[^"]*(")/, canonical);

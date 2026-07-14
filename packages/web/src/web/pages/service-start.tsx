@@ -8,7 +8,6 @@ import {
   Mail,
 } from "lucide-react";
 import { Link } from "wouter";
-import { isServiceHost } from "../lib/service-visibility";
 
 const CONTACT_EMAIL = "akieguchi33@gmail.com";
 
@@ -399,8 +398,6 @@ function HandoffCard() {
 }
 
 export default function ServiceStartPage() {
-  if (!isServiceHost()) return null;
-
   return (
     <section className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28">
       <header className="grid gap-10 md:grid-cols-[1.02fr_0.98fr] md:items-center">

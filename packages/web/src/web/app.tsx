@@ -1,6 +1,6 @@
-import { Route, Switch, Link } from "wouter";
-import { lazy, Suspense } from "react";
-import { Provider } from "./components/provider";
+import { Route, Switch, Link, useLocation } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
+import { Provider, useServiceVisibility } from "./components/provider";
 import PageTransition from "./components/PageTransition";
 import { usePageTitle } from "./hooks/usePageTitle";
 import Layout from "./components/Layout";
@@ -30,6 +30,18 @@ function TitledRoute({
 }
 
 const PageFallback = () => <div className="h-screen w-full" />;
+
+function ServiceVisibilityGate({ children }: { children: React.ReactNode }) {
+  const [, navigate] = useLocation();
+  const { isResolved, showService } = useServiceVisibility();
+
+  useEffect(() => {
+    if (isResolved && !showService) navigate("/", { replace: true });
+  }, [isResolved, navigate, showService]);
+
+  if (!isResolved || !showService) return <PageFallback />;
+  return <>{children}</>;
+}
 
 function App() {
   return (
@@ -117,26 +129,30 @@ function App() {
             </Layout>
           </Route>
           <Route path="/service/start">
-            <Layout>
-              <PageTransition>
-                <TitledRoute title="Portfolio Kit Start">
-                  <Suspense fallback={<PageFallback />}>
-                    <ServiceStartPage />
-                  </Suspense>
-                </TitledRoute>
-              </PageTransition>
-            </Layout>
+            <ServiceVisibilityGate>
+              <Layout>
+                <PageTransition>
+                  <TitledRoute title="Portfolio Kit Start">
+                    <Suspense fallback={<PageFallback />}>
+                      <ServiceStartPage />
+                    </Suspense>
+                  </TitledRoute>
+                </PageTransition>
+              </Layout>
+            </ServiceVisibilityGate>
           </Route>
           <Route path="/service">
-            <Layout>
-              <PageTransition>
-                <TitledRoute title="ご案内">
-                  <Suspense fallback={<PageFallback />}>
-                    <ServicePage />
-                  </Suspense>
-                </TitledRoute>
-              </PageTransition>
-            </Layout>
+            <ServiceVisibilityGate>
+              <Layout>
+                <PageTransition>
+                  <TitledRoute title="ご案内">
+                    <Suspense fallback={<PageFallback />}>
+                      <ServicePage />
+                    </Suspense>
+                  </TitledRoute>
+                </PageTransition>
+              </Layout>
+            </ServiceVisibilityGate>
           </Route>
           <Route path="/">
             <Layout>

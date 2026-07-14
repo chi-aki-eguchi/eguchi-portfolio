@@ -8,7 +8,6 @@ import {
   siteUrlFrom,
   escapeHtml,
   BUILD_ID,
-  isServiceSiteUrl,
 } from "./api/ogp";
 import {
   canonicalSpaRedirectUrl,
@@ -20,6 +19,7 @@ import { contentTypeForStaticPath } from "./api/static-files";
 import { settingsVersion } from "./api/settings-version";
 import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
+import { resolveServiceVisibility } from "./shared/service-visibility";
 import {
   DYNAMIC_FAVICON_PATHS,
   generateFaviconAsset,
@@ -291,14 +291,17 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
 }
 
 async function buildSitemap(fallbackOrigin: string): Promise<string> {
-  const siteUrl = siteUrlFrom(await getSettings(), fallbackOrigin);
+  const settings = await getSettings();
+  const siteUrl = siteUrlFrom(settings, fallbackOrigin);
   const paths = [
     "/",
     "/gallery",
     "/series",
     "/about",
     "/contact",
-    ...(isServiceSiteUrl(siteUrl) ? ["/service"] : []),
+    ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
+      ? ["/service"]
+      : []),
   ];
   // Include each published series detail page so crawlers discover the actual
   // work, not just the section index. Failure → static paths only (never throw).

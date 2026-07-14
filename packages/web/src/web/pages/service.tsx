@@ -16,7 +16,6 @@ import {
   type FaqItem,
   type ExampleLinkItem,
 } from "../lib/service-config";
-import { isServiceHost } from "../lib/service-visibility";
 
 const labelCls = "font-en uppercase text-center";
 const labelStyle = {
@@ -821,9 +820,6 @@ export default function ServicePage() {
   const contactEmail = settingsData?.contactEmail || "akieguchi33@gmail.com";
   const live = anyPlanLive(config);
   const ref = usePageEntrance([photos.length]);
-
-  if (!isServiceHost()) return null;
-  if (config.enabled === "off") return null;
 
   return (
     <section

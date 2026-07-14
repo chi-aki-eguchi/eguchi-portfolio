@@ -164,7 +164,7 @@ Lightbox キャプションの佇まい2案モック の3件は、いずれも�
 (未設定時はsiteName頭文字のモノグラム)に切り替える。詳細指示は
 scratch/codex-task-favicon.md、進行は task.md Handoff 参照。
 
-## T-2. 配布テンプレート: Service機能を設定でON/OFF化して開放 [昼推奨] [Codexレビュー必須]
+## T-2. 配布テンプレート: Service機能を設定でON/OFF化して開放 [昼推奨] [Codexレビュー必須] ✅ 済 (2026-07-15 実装=Codex/レビュー=Claude。P1 1件差し戻し→解消。commit 80ffc42)
 
 背景: 公開ナビのServiceリンクは akieguchi.com ホスト判定で出し分けているが、
 adminのServiceタブは配布先にも見える。オーナー決定(2026-07-14): 隠すのではなく

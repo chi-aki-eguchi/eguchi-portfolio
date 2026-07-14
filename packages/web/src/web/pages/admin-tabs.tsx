@@ -2712,29 +2712,6 @@ export function ServiceTab({
         description="/service 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。"
       />
 
-      {/* Enabled toggle */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[var(--admin-line)]">
-        <span className="text-[11px] text-[color:var(--admin-muted)]">
-          ページ公開
-        </span>
-        <div className="flex gap-1">
-          {(["on", "off"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => set("enabled", v)}
-              className={`px-3 py-1 text-[10px] tracking-wider rounded transition-colors ${
-                draft.enabled === v
-                  ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)]"
-                  : "text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"
-              }`}
-            >
-              {v === "on" ? "公開" : "非公開"}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ── Hero ── */}
       <ServiceSection title="Hero" defaultOpen>
         <SvcInput
@@ -3774,6 +3751,34 @@ export function SettingsTab({
                     />
                   </AdminField>
                 ))}
+              </Section>
+
+              <Section
+                title="Serviceページ"
+                defaultOpen={false}
+                summary={
+                  current["servicePageMode"] === "on"
+                    ? "表示"
+                    : current["servicePageMode"] === "off"
+                      ? "非表示"
+                      : "自動（既定）"
+                }
+              >
+                <AdminField
+                  label="Serviceページを表示する"
+                  hint="自動はakieguchi.comだけに表示する従来動作です。配布先で使う場合は「表示」を選びます"
+                >
+                  <select
+                    aria-label="Serviceページを表示する"
+                    value={current["servicePageMode"] ?? ""}
+                    onChange={(e) => set("servicePageMode", e.target.value)}
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm appearance-none cursor-pointer"
+                  >
+                    <option value="">自動（既定）</option>
+                    <option value="on">表示</option>
+                    <option value="off">非表示</option>
+                  </select>
+                </AdminField>
               </Section>
 
               {/* E1: Hero display mode */}

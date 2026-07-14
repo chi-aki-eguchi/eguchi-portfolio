@@ -1128,6 +1128,7 @@ const app = new Hono()
         printStoreLabel: settings.printStoreLabel ?? "プリントを購入する",
         printEnabled: settings.printEnabled ?? "off", // "on" | "off"
         printDescription: settings.printDescription ?? "",
+        servicePageMode: settings.servicePageMode ?? "", // "" (legacy host check) | "on" | "off"
         servicePageConfig: settings.servicePageConfig ?? "",
         // admin初回導線: 「はじめに」を最後まで終えたかどうか。"true"以外は未完了扱い。
         setupCompleted: settings.setupCompleted ?? "false",

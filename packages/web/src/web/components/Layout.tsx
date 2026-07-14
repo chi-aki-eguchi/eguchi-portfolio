@@ -5,7 +5,7 @@ import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
-import { useDarkModeContext } from "./provider";
+import { useDarkModeContext, useServiceVisibility } from "./provider";
 
 function useFooterReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,30 +25,6 @@ function useFooterReveal() {
     return () => observer.disconnect();
   }, []);
   return ref;
-}
-
-const SERVICE_LINK_HOST = "akieguchi.com";
-
-function normalizedHost(host: string): string {
-  return host
-    .trim()
-    .toLowerCase()
-    .replace(/^www\./, "");
-}
-
-function hostFromUrl(value: string | undefined): string | null {
-  if (!value) return null;
-  try {
-    return normalizedHost(new URL(value).hostname);
-  } catch {
-    return null;
-  }
-}
-
-function shouldShowServiceLink(siteUrl: string | undefined): boolean {
-  if (hostFromUrl(siteUrl) === SERVICE_LINK_HOST) return true;
-  if (typeof window === "undefined") return false;
-  return normalizedHost(window.location.hostname) === SERVICE_LINK_HOST;
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -77,14 +53,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     seriesNav === "on" || (seriesAuto && (seriesData?.series.length ?? 0) > 0);
 
   const dm = useDarkModeContext();
+  const { showService } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
-  const showServiceLink = shouldShowServiceLink(data?.siteUrl);
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
     { href: "/about", label: data?.navLabelAbout ?? "About" },
     { href: "/contact", label: data?.navLabelContact ?? "Contact" },
-    ...(showServiceLink ? [{ href: "/service", label: "Service" }] : []),
+    ...(showService ? [{ href: "/service", label: "Service" }] : []),
   ];
 
   // Highlight the nav item for the section you're in, not just its exact path:
@@ -419,7 +395,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {data.footerCtaLabel}
             </Link>
           )}
-          {showServiceLink && (
+          {showService && (
             <Link
               to="/service"
               className="font-en tracking-[0.06em] nav-link-luxury footer-link-public"

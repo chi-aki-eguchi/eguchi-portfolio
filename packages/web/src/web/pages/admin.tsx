@@ -78,12 +78,13 @@ import {
   Smartphone,
 } from "lucide-react";
 import {
-  ADMIN_TAB_GROUPS,
+  adminTabGroupsForService,
   isAdminTab,
   postAdminSettings,
   reorderLockReason,
   type Tab,
 } from "./admin-shared";
+import { resolveServiceVisibility } from "../../shared/service-visibility";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 
@@ -403,10 +404,31 @@ export default function AdminPage() {
   // to auto-open Trash, since that's a toggle inside the tab, not a Tab.
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [openTrashRequest, setOpenTrashRequest] = useState(0);
+  const serviceVisibilityResolved = shellSettings !== undefined;
+  // Vite dev also powers the local admin and smoke suite. Keep Service
+  // reachable there even when legacy auto-detection sees an empty siteUrl on
+  // localhost; production admin still follows the configured/host gate.
+  const showService =
+    import.meta.env.DEV ||
+    resolveServiceVisibility(
+      shellSettings?.servicePageMode,
+      shellSettings?.siteUrl,
+      typeof window === "undefined" ? "" : window.location.hostname,
+    );
+  const adminTabGroups = useMemo(
+    () => adminTabGroupsForService(showService),
+    [showService],
+  );
 
   useEffect(() => {
     if (!isAdminTab(tab)) setTab("gallery");
   }, [tab, setTab]);
+
+  useEffect(() => {
+    if (serviceVisibilityResolved && !showService && tab === "service") {
+      setTab("settings");
+    }
+  }, [serviceVisibilityResolved, setTab, showService, tab]);
 
   const logout = useMutation({
     mutationFn: async () => jsonOrThrow(await adminApi.logout.$post()),
@@ -510,6 +532,7 @@ export default function AdminPage() {
   // unsaved-changes guard) — callers that queue a follow-up action (like
   // opening Trash) must only do so once the switch has actually gone through.
   const requestTab = (nextTab: Tab): boolean => {
+    if (nextTab === "service" && !showService) return false;
     if (hasUnsaved && nextTab !== tab) {
       setUnsavedConfirm(nextTab);
       return false;
@@ -527,7 +550,7 @@ export default function AdminPage() {
 
   // 工程5: ⌘K destinations — navigation only, no photo search / actions.
   const paletteDestinations: PaletteDestination[] = [
-    ...ADMIN_TAB_GROUPS.flatMap((group) =>
+    ...adminTabGroups.flatMap((group) =>
       group.tabs.map((key) => ({
         id: key,
         label: ADMIN_TABS[key].label,
@@ -572,7 +595,7 @@ export default function AdminPage() {
               style={{ transform: `translateY(${indicatorTop}px)` }}
             />
           )}
-          {ADMIN_TAB_GROUPS.map((group) => (
+          {adminTabGroups.map((group) => (
             <section key={group.key} className="admin-sidebar__group">
               <h2 className="admin-sidebar__group-title">{group.label}</h2>
               <div className="admin-sidebar__tabs">
@@ -657,7 +680,7 @@ export default function AdminPage() {
                 {contentTab === "categories" && <LazyCategoriesTab />}
                 {contentTab === "series" && <LazySeriesTab />}
                 {contentTab === "pricing" && <LazyPricingTab />}
-                {contentTab === "service" && (
+                {contentTab === "service" && showService && (
                   <LazyServiceTab onUnsavedChange={setHasUnsaved} />
                 )}
                 {contentTab === "settings" && (
@@ -671,6 +694,7 @@ export default function AdminPage() {
         <AdminMobileTabBar
           tab={tab}
           tabMeta={ADMIN_TABS}
+          tabGroups={adminTabGroups}
           galleryUploading={galleryUploading}
           onSelectTab={requestTab}
         />

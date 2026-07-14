@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { postAdminSettings } from "./admin-shared";
+import {
+  adminTabGroupsForService,
+  postAdminSettings,
+} from "./admin-shared";
 
 // codex-reviewer P1指摘(2026-07-13統合レビュー): APIはignoredKeysを返すが、
 // 呼び出し元がassertOk()だけ見てres.json()を読まないと、台帳から漏れた
@@ -52,5 +55,23 @@ describe("postAdminSettings", () => {
     await expect(
       postAdminSettings({ siteName: "x".repeat(200) }),
     ).rejects.toThrow("413");
+  });
+});
+
+describe("adminTabGroupsForService", () => {
+  test("keeps the Service tab when the feature is visible", () => {
+    const tabs = adminTabGroupsForService(true).flatMap((group) => group.tabs);
+    expect(tabs).toContain("service");
+  });
+
+  test("removes only the Service tab when the feature is hidden", () => {
+    const visible = adminTabGroupsForService(true).flatMap(
+      (group) => group.tabs,
+    );
+    const hidden = adminTabGroupsForService(false).flatMap(
+      (group) => group.tabs,
+    );
+    expect(hidden).not.toContain("service");
+    expect(hidden).toEqual(visible.filter((tab) => tab !== "service"));
   });
 });

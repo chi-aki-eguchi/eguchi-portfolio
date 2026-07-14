@@ -45,14 +45,26 @@ export const ADMIN_TAB_GROUPS: AdminTabGroup[] = [
   },
 ];
 
+export function adminTabGroupsForService(
+  showService: boolean,
+): AdminTabGroup[] {
+  if (showService) return ADMIN_TAB_GROUPS;
+  return ADMIN_TAB_GROUPS.map((group) => ({
+    ...group,
+    tabs: group.tabs.filter((tab) => tab !== "service"),
+  }));
+}
+
 export function isAdminTab(value: unknown): value is Tab {
   return typeof value === "string" && ADMIN_TAB_KEYS.has(value as Tab);
 }
 
-export function groupForTab(tab: Tab): AdminTabGroup {
+export function groupForTab(
+  tab: Tab,
+  groups: readonly AdminTabGroup[] = ADMIN_TAB_GROUPS,
+): AdminTabGroup {
   return (
-    ADMIN_TAB_GROUPS.find((group) => group.tabs.includes(tab)) ??
-    ADMIN_TAB_GROUPS[0]
+    groups.find((group) => group.tabs.includes(tab)) ?? groups[0]
   );
 }
 

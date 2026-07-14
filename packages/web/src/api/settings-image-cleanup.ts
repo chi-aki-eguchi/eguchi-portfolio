@@ -24,6 +24,21 @@ function proxyValueToRawKey(value: string | undefined): string | null {
   return value.slice(PROXY_PREFIX.length);
 }
 
+// 書き込み後のDB実値でもう一度参照を確認し、まだ参照されているキーを候補から
+// 除外する。api/index.ts の直列化キューと併用し、並行保存レースへの二重の保険
+// (2026-07-14 codex-reviewer P1指摘)。誤削除ゼロ優先 — 迷ったら消さない。
+export function unreferencedImageKeys(
+  candidates: ReadonlyArray<string>,
+  current: ReadonlyMap<string, string>,
+): string[] {
+  const live = new Set<string>();
+  for (const value of current.values()) {
+    const raw = proxyValueToRawKey(value);
+    if (raw) live.add(raw);
+  }
+  return candidates.filter((key) => !live.has(key));
+}
+
 export function staleSettingsImageKeys(
   entries: ReadonlyArray<[string, string]>,
   previous: ReadonlyMap<string, string>,

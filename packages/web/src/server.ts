@@ -17,6 +17,7 @@ import {
   normalizeSpaPathname,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
+import { settingsVersion } from "./api/settings-version";
 import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 
@@ -46,22 +47,29 @@ const indexPath = `${distDir}/index.html`;
 // Cache settings for OGP injection (refresh every 60s)
 let settingsCache: Record<string, string> = {};
 let settingsCacheTime = 0;
+// settings書き込み(POST /admin/settings)で世代が上がると、TTL内でも失効させる。
+// 差し替えで旧R2オブジェクトを削除した後のHTMLが最大60秒、削除済みURLを
+// 出し続ける穴への対処(2026-07-14 codex-reviewer P2)。同一プロセス前提。
+let settingsCacheVersion = -1;
 const SETTINGS_TTL = 60_000;
 
 async function getSettings(): Promise<Record<string, string>> {
   const now = Date.now();
   if (
     now - settingsCacheTime < SETTINGS_TTL &&
+    settingsCacheVersion === settingsVersion() &&
     Object.keys(settingsCache).length > 0
   ) {
     return settingsCache;
   }
+  const version = settingsVersion();
   try {
     const rows = await withRetry(() => db.select().from(schema.siteSettings));
     const s: Record<string, string> = {};
     for (const r of rows) s[r.key] = r.value;
     settingsCache = s;
     settingsCacheTime = now;
+    settingsCacheVersion = version;
   } catch (e) {
     console.error("[OGP] settings fetch failed:", e); /* use stale cache */
   }

@@ -112,6 +112,16 @@ export function isServiceSiteUrl(siteUrl: string): boolean {
   return resolveServiceVisibility("", siteUrl, "");
 }
 
+export function ogCardTitleFrom(settings: Record<string, string>): string {
+  return (
+    composeBaseTitle({
+      nameJa: settings.siteName?.trim() ?? "",
+      nameEn: settings.siteNameEn?.trim() ?? "",
+      subtitle: settings.heroSubtitle?.trim() || "Photography",
+    }) || "Photography"
+  );
+}
+
 const SERVICE_OG = {
   title: "写真家のためのポートフォリオサイト",
   desc: "写真を上げて並べるだけで、雑誌のように見える、あなただけのポートフォリオ。自分で立てる ¥10,000 ／ 公開おまかせ ¥30,000。",
@@ -180,6 +190,7 @@ export function injectOgp(
     siteUrl,
     "",
   );
+  const isServiceHost = isServiceSiteUrl(siteUrl);
   const isServicePath = SERVICE_PATHS.has(pathname);
   const isBuyerStartPath = pathname === "/service/start";
   const isService = isServicePath && isServiceSite;
@@ -233,16 +244,17 @@ export function injectOgp(
           ? seriesFallbackDescription(override.title, name)
           : settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
             genericPageDescription(pathname, name, settings);
-  // Prefer an override image (series cover), then the hero photo, then profile, then
-  // the static default already in index.html. /service uses its own fixed card image
-  // (a flat file, so no /api/images resize query is appended).
+  // Owner-branded flat files remain exclusive to akieguchi.com; distributed sites
+  // without a photo use their settings-derived card instead.
   const imgBase = isService
-    ? serviceOg.image
+    ? isServiceHost
+      ? serviceOg.image
+      : "/og-default.png"
     : override?.image ||
       heroImg ||
       settings.heroPhotoUrl ||
       settings.profilePhotoUrl ||
-      "/og-image.jpg";
+      (isServiceHost ? "/og-image.jpg" : "/og-default.png");
   const imgRotationDeg = override?.image
     ? override.imageRotationDeg
     : heroImg && imgBase === heroImg
@@ -322,7 +334,7 @@ export function injectOgp(
   out = setAttr(
     out,
     /(<meta\s+property="og:image:type"\s+content=")[^"]*(")/,
-    "image/jpeg",
+    imgBase === "/og-default.png" ? "image/png" : "image/jpeg",
   );
   out = setAttr(
     out,

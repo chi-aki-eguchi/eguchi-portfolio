@@ -8,7 +8,9 @@ import {
   siteUrlFrom,
   escapeHtml,
   BUILD_ID,
+  ogCardTitleFrom,
 } from "./api/ogp";
+import { generateOgCardPng } from "./api/og-card";
 import {
   canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
@@ -63,6 +65,9 @@ const dynamicFaviconPaths = new Set<string>(DYNAMIC_FAVICON_PATHS);
 const faviconCache = new Map<DynamicFaviconPath, CachedFavicon>();
 let faviconCacheVersion = -1;
 
+let ogCardCache: Buffer | null = null;
+let ogCardCacheVersion = -1;
+
 async function getFavicon(path: DynamicFaviconPath): Promise<CachedFavicon> {
   const version = settingsVersion();
   if (faviconCacheVersion !== version) {
@@ -85,6 +90,21 @@ async function getFavicon(path: DynamicFaviconPath): Promise<CachedFavicon> {
   );
   if (settingsVersion() !== version) return getFavicon(path);
   faviconCache.set(path, generated);
+  return generated;
+}
+
+async function getOgCard(): Promise<Buffer> {
+  const version = settingsVersion();
+  if (ogCardCacheVersion !== version) {
+    ogCardCache = null;
+    ogCardCacheVersion = version;
+  }
+  if (ogCardCache) return ogCardCache;
+
+  const settings = await getSettings();
+  const generated = await generateOgCardPng(ogCardTitleFrom(settings));
+  if (settingsVersion() !== version) return getOgCard();
+  ogCardCache = generated;
   return generated;
 }
 
@@ -530,6 +550,16 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       headers: {
         "Cache-Control": "no-cache, must-revalidate",
         "Content-Type": favicon.contentType,
+      },
+    });
+  }
+
+  if (url.pathname === "/og-default.png") {
+    const card = await getOgCard();
+    return new Response(card as unknown as BodyInit, {
+      headers: {
+        "Cache-Control": "no-cache, must-revalidate",
+        "Content-Type": "image/png",
       },
     });
   }

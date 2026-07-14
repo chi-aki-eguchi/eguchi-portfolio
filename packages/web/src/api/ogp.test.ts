@@ -317,6 +317,27 @@ describe("siteUrlFrom / base-URL unification", () => {
   });
 });
 
+describe("ogCardTitleFrom", () => {
+  const { ogCardTitleFrom } = require("./ogp") as typeof import("./ogp");
+
+  test("reuses the bilingual title parts and subtitle", () => {
+    expect(
+      ogCardTitleFrom({
+        siteName: "江口 秋",
+        siteNameEn: "Aki Eguchi",
+        heroSubtitle: "Photography",
+      }),
+    ).toBe("江口 秋 | Aki Eguchi | Photography");
+  });
+
+  test("uses Photography when the site name and subtitle are empty", () => {
+    expect(ogCardTitleFrom({})).toBe("Photography");
+    expect(ogCardTitleFrom({ siteName: " ", heroSubtitle: " " })).toBe(
+      "Photography",
+    );
+  });
+});
+
 describe("injectOgp social image metadata", () => {
   const { injectOgp } = require("./ogp") as typeof import("./ogp");
   const page = `<html><head><title>t</title>
@@ -377,18 +398,88 @@ describe("injectOgp social image metadata", () => {
     );
   });
 
-  test("falls back to the static template image as an absolute URL", () => {
-    const out = injectOgp(
-      page,
-      { siteUrl: "https://portfolio.example" },
-      "/gallery",
-    );
-    expect(out).toContain(
-      'property="og:image" content="https://portfolio.example/og-image.jpg"',
-    );
-    expect(out).toContain(
-      'name="twitter:image" content="https://portfolio.example/og-image.jpg"',
-    );
+  test.each([
+    {
+      label: "owner normal page without hero",
+      settings: { siteUrl: "https://akieguchi.com" },
+      pathname: "/gallery",
+      hero: "",
+      expected: "https://akieguchi.com/og-image.jpg",
+      type: "image/jpeg",
+    },
+    {
+      label: "owner normal page with hero",
+      settings: { siteUrl: "https://akieguchi.com" },
+      pathname: "/gallery",
+      hero: "/api/images/photos/hero.jpg",
+      expected:
+        "https://akieguchi.com/api/images/photos/hero.jpg?w=1200&amp;h=630&amp;q=90&amp;fmt=jpeg",
+      type: "image/jpeg",
+    },
+    {
+      label: "distributed normal page without hero",
+      settings: { siteUrl: "https://portfolio.example" },
+      pathname: "/gallery",
+      hero: "",
+      expected: "https://portfolio.example/og-default.png",
+      type: "image/png",
+    },
+    {
+      label: "distributed normal page with hero",
+      settings: { siteUrl: "https://portfolio.example" },
+      pathname: "/gallery",
+      hero: "/api/images/photos/hero.jpg",
+      expected:
+        "https://portfolio.example/api/images/photos/hero.jpg?w=1200&amp;h=630&amp;q=90&amp;fmt=jpeg",
+      type: "image/jpeg",
+    },
+    {
+      label: "owner service page without hero",
+      settings: { siteUrl: "https://akieguchi.com" },
+      pathname: "/service",
+      hero: "",
+      expected: "https://akieguchi.com/og-service.jpg",
+      type: "image/jpeg",
+    },
+    {
+      label: "owner service page with hero",
+      settings: { siteUrl: "https://akieguchi.com" },
+      pathname: "/service",
+      hero: "/api/images/photos/hero.jpg",
+      expected: "https://akieguchi.com/og-service.jpg",
+      type: "image/jpeg",
+    },
+    {
+      label: "distributed service page without hero",
+      settings: {
+        siteUrl: "https://portfolio.example",
+        servicePageMode: "on",
+      },
+      pathname: "/service",
+      hero: "",
+      expected: "https://portfolio.example/og-default.png",
+      type: "image/png",
+    },
+    {
+      label: "distributed service page with hero",
+      settings: {
+        siteUrl: "https://portfolio.example",
+        servicePageMode: "on",
+      },
+      pathname: "/service",
+      hero: "/api/images/photos/hero.jpg",
+      expected: "https://portfolio.example/og-default.png",
+      type: "image/png",
+    },
+  ])("selects the expected card for $label", ({ settings, pathname, hero, expected, type }) => {
+    const out = injectOgp(page, settings, pathname, hero);
+
+    expect(out).toContain(`property="og:image" content="${expected}"`);
+    expect(out).toContain(`name="twitter:image" content="${expected}"`);
+    expect(out).toContain(`property="og:image:type" content="${type}"`);
+    if (expected.endsWith("/og-default.png")) {
+      expect(out).not.toContain("og-default.png?");
+    }
   });
 });
 

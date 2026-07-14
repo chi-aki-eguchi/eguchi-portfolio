@@ -7944,3 +7944,71 @@ P1修正: 旧パス`/favicon.ico`（48px ICO）と`/favicon.svg`（64px SVG）�
 ### 次の担当者が触ってはいけない場所
 
 - scratch、push、本番DB/R2/Railwayへの書き込み。
+
+## Handoff 2026-07-15 (24) — T-4 OGP画像の自動生成
+
+### 目的
+
+写真が未設定の配布テンプレートで、akieguchi.comオーナー用の静的カードを出さず、
+配布先自身のサイト名を使ったSNS共有カードを自動生成する。
+
+### 変更内容
+
+- 紙色`#f4f1ea`とink色`#1a1917`、細い罫線、中央セリフ体による1200x630 SVGを
+  純粋関数で組み立て、sharpでPNGへ変換する`og-card.ts`を追加した。
+- カードの文字は既存`composeBaseTitle()`を流用し、`siteName` / `siteNameEn` /
+  `heroSubtitle`を合成する。すべて空なら`Photography`になる。
+- serverに`/og-default.png`を追加。faviconと同じくプロセス内キャッシュを使い、
+  settings保存で`settingsVersion`が変わると即時失効する。
+- 通常ページは、シリーズ画像→hero→settings hero→profileの順を維持し、最後だけ
+  akieguchi.comでは従来`/og-image.jpg`、配布先では`/og-default.png`に分岐した。
+- Serviceページは、akieguchi.comでは従来`/og-service.jpg`、ServiceをONにした
+  配布先では`/og-default.png`に分岐した。Service公開判定とホスト判定は既存
+  `resolveServiceVisibility()` / `isServiceSiteUrl()`を再利用している。
+- 動的PNGには画像リサイズ用クエリを付けず、OGPの画像種別を`image/png`にした。
+- `public/og-image.jpg`と`public/og-service.jpg`、settingsキー、DBは変更していない。
+
+### 触ったファイル
+
+- `packages/web/src/api/og-card.ts`（新規）
+- `packages/web/src/api/og-card.test.ts`（新規）
+- `packages/web/src/api/ogp.ts`
+- `packages/web/src/api/ogp.test.ts`
+- `packages/web/src/server.ts`
+- `docs/agent-logs/2026-07-15.md`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `cd packages/web && bun run typecheck`: 成功（`tsc -b`）。
+- `cd packages/web && bun test ./src`: 成功（421 pass / 0 fail）。
+- `bun run check`: 成功（typecheck / lint / 421 tests / build）。
+- `cd packages/web && DATABASE_PROVIDER=postgres bun run build`: 成功（配布版確認）。
+- SVGのXMLエスケープ、空タイトル、色・寸法、sharpによる1200x630 PNG化を単体テスト。
+- OGP画像選択を、サービスホスト/配布先 × hero有無 × 通常/Serviceの8分岐で固定。
+  akieguchi.comは`/og-image.jpg`・`/og-service.jpg`の従来出力を明示的に確認した。
+- `/og-default.png`にリサイズ用クエリが付かないこと、`image/png`になることを確認。
+- 生成見本を目視し、文字・枠がカード内に収まることを確認。
+- `git diff --check`: 成功。
+
+### 検証していないこと
+
+- push / Railway反映 / akieguchi.com本番確認。
+- 配布先の実デプロイでのSNSクローラー取得。
+- admin未変更のため`bun run smoke`は対象外。
+
+### pushしたか
+
+していない。git commitもしていない。変更はworking treeに残している。
+
+### 本番で確認したか
+
+していない。今回の確認はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- 上記差分のread-onlyレビュー。
+
+### 次の担当者が触ってはいけない場所
+
+- `scratch/`、push、本番DB/R2/Railwayへの書き込み。

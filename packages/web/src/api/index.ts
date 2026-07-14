@@ -7,8 +7,8 @@ import { writeSettingsAtomic } from "./database/settings-write";
 import { partitionAllowedSettings } from "./settings-allowlist";
 import {
   SETTINGS_IMAGE_CLEANUP_KEYS,
-  staleSettingsImageKeys,
-  unreferencedImageKeys,
+  createSettingsImageCleanupRunner,
+  invalidImageSettingKeys,
 } from "./settings-image-cleanup";
 import { createSerialQueue } from "./serial-queue";
 import { bumpSettingsVersion } from "./settings-version";
@@ -305,10 +305,33 @@ const ALLOWED_SETTINGS_KEYS = new Set<string>(SETTINGS_PREVIEW_KEYS);
 
 const BUCKET = process.env.S3_BUCKET!;
 
-// profile/hero画像差し替えの read→write→再確認→delete を1本ずつ実行する
-// (Q-4 / 2026-07-14 codex-reviewer P1)。プロセス内キューで足りるのは
-// Railway が単一インスタンス構成のため。
-const settingsImageCleanupQueue = createSerialQueue();
+// profile/hero画像差し替えの read→write→再確認→delete 一式(Q-4 /
+// 2026-07-14 codex-reviewer P1)。実行順序のロジックは
+// settings-image-cleanup.ts 側にあり、ここでは実DB/R2を注入するだけ。
+// プロセス内キューで足りるのは Railway が単一インスタンス構成のため。
+const runSettingsImageCleanup = createSettingsImageCleanupRunner({
+  queue: createSerialQueue(),
+  readManagedValues: async () => {
+    const rows = await withRetry(() =>
+      db
+        .select()
+        .from(schema.siteSettings)
+        .where(
+          inArray(schema.siteSettings.key, [...SETTINGS_IMAGE_CLEANUP_KEYS]),
+        ),
+    );
+    return new Map(rows.map((row) => [row.key, row.value]));
+  },
+  write: async (entries) => {
+    await withRetry(() =>
+      writeSettingsAtomic(db, schema.siteSettings, [...entries]),
+    );
+    bumpSettingsVersion();
+  },
+  deleteObject: async (key) => {
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+  },
+});
 const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 // NOTE: Do NOT throw at module load — a missing env var would crash the whole
@@ -1190,63 +1213,35 @@ const app = new Hono()
       }
       entries.push([key, value]);
     }
+    // profile/hero画像キーは自分専用のアップロードprefixのURLしか受け付けない
+    // (Q-4 / codex-reviewer P1再指摘: 削除済みの旧URLを別キーへ書き戻す
+    // 「入れ替え」をAPI境界で不可能にする)。UIはアップロード直後の新URLしか
+    // 書かないため、正規の操作はこの検証に掛からない。
+    const badImageKeys = invalidImageSettingKeys(entries);
+    if (badImageKeys.length > 0) {
+      return c.json(
+        {
+          error: `画像設定の値が不正です(${badImageKeys.join(", ")})。画像アップロードで発行されたURL、または空文字(解除)のみ保存できます。`,
+        },
+        400,
+      );
+    }
     // 1トランザクションで一括反映(Q-3 / audit-2026-07.md P2-1)。
     // 途中の1件が失敗しても、それ以前に実行された insert/update ごと
     // ロールバックされる(settings-write.test.ts で libsql 実トランザクション
     // により検証済み)。書き込み成功ごとに世代を上げ、server.ts のOGP用
     // settingsキャッシュを即失効させる(codex-reviewer P2)。
-    const writeEntries = async () => {
+    if (!entries.some(([key]) => SETTINGS_IMAGE_CLEANUP_KEYS.has(key))) {
       await withRetry(() =>
         writeSettingsAtomic(db, schema.siteSettings, entries),
       );
       bumpSettingsVersion();
-    };
-    if (!entries.some(([key]) => SETTINGS_IMAGE_CLEANUP_KEYS.has(key))) {
-      await writeEntries();
       return c.json({ ok: true, ignoredKeys }, 200);
     }
     // Q-4 案A(2026-07-14 オーナー承認): profile/hero画像の差し替えで参照が
-    // 外れる旧R2オブジェクトを、書き込み成功後に best-effort で片付ける。
-    // 対象キーを含む保存は read→write→再確認→delete をキューで直列化し、
-    // 並行保存が同じ旧snapshotから最終参照オブジェクトを消す競合を防ぐ
-    // (codex-reviewer P1)。
-    await settingsImageCleanupQueue(async () => {
-      const readManagedRows = () =>
-        withRetry(() =>
-          db
-            .select()
-            .from(schema.siteSettings)
-            .where(
-              inArray(schema.siteSettings.key, [
-                ...SETTINGS_IMAGE_CLEANUP_KEYS,
-              ]),
-            ),
-        );
-      // 旧値の読み取りは書き込み前でなければならない(書き込み後では旧値が消える)。
-      const prevRows = await readManagedRows();
-      const candidates = staleSettingsImageKeys(
-        entries,
-        new Map(prevRows.map((row) => [row.key, row.value])),
-      );
-      await writeEntries();
-      if (candidates.length === 0) return;
-      // 削除は必ず書き込み成功の後(先に消すと、書き込みが失敗した場合に
-      // 「今表示されているはずの画像」が消える)。削除直前に書き込み後の実DB値で
-      // 参照を再確認する二重の保険を挟み、失敗は握りつぶす — 誤削除ゼロを優先し、
-      // 取りこぼしは許容する設計(2026-07-13 決定ログ 案A)。
-      const afterRows = await readManagedRows();
-      const staleImageKeys = unreferencedImageKeys(
-        candidates,
-        new Map(afterRows.map((row) => [row.key, row.value])),
-      );
-      for (const key of staleImageKeys) {
-        try {
-          await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
-        } catch {
-          /* ignore */
-        }
-      }
-    });
+    // 外れた旧R2オブジェクトを片付ける。順序保証と削除ガードの本体は
+    // settings-image-cleanup.ts(書き込みも runner 経由で同じatomic実装を使う)。
+    await runSettingsImageCleanup(entries);
     return c.json({ ok: true, ignoredKeys }, 200);
   })
 

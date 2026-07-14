@@ -6,6 +6,10 @@ import { buildReorderUpdate } from "./reorder-sql";
 import { writeSettingsAtomic } from "./database/settings-write";
 import { partitionAllowedSettings } from "./settings-allowlist";
 import {
+  SETTINGS_IMAGE_CLEANUP_KEYS,
+  staleSettingsImageKeys,
+} from "./settings-image-cleanup";
+import {
   eq,
   sql,
   isNull,
@@ -1178,11 +1182,39 @@ const app = new Hono()
       }
       entries.push([key, value]);
     }
+    // Q-4 案A(2026-07-14 オーナー承認): profile/hero画像の差し替えで参照が
+    // 外れる旧R2オブジェクトを、書き込み成功後に best-effort で片付ける。
+    // 旧値の読み取りは書き込み前でなければならない(書き込み後では旧値が消える)。
+    let staleImageKeys: string[] = [];
+    if (entries.some(([key]) => SETTINGS_IMAGE_CLEANUP_KEYS.has(key))) {
+      const prevRows = await withRetry(() =>
+        db
+          .select()
+          .from(schema.siteSettings)
+          .where(
+            inArray(schema.siteSettings.key, [...SETTINGS_IMAGE_CLEANUP_KEYS]),
+          ),
+      );
+      staleImageKeys = staleSettingsImageKeys(
+        entries,
+        new Map(prevRows.map((row) => [row.key, row.value])),
+      );
+    }
     // 1トランザクションで一括反映(Q-3 / audit-2026-07.md P2-1)。
     // 途中の1件が失敗しても、それ以前に実行された insert/update ごと
     // ロールバックされる(settings-write.test.ts で libsql 実トランザクション
     // により検証済み)。
     await withRetry(() => writeSettingsAtomic(db, schema.siteSettings, entries));
+    // 削除は必ず書き込み成功の後(先に消すと、書き込みが失敗した場合に
+    // 「今表示されているはずの画像」が消える)。失敗は握りつぶす — 誤削除ゼロを
+    // 優先し、取りこぼしは許容する設計(2026-07-13 決定ログ 案A)。
+    for (const key of staleImageKeys) {
+      try {
+        await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+      } catch {
+        /* ignore */
+      }
+    }
     return c.json({ ok: true, ignoredKeys }, 200);
   })
 

@@ -157,6 +157,38 @@ Lightbox キャプションの佇まい2案モック の3件は、いずれも�
 
 ---
 
+## T-1. 配布テンプレート: faviconをプロフィール写真から自動生成 [昼推奨] [Codexレビュー必須] ✅ 済 (2026-07-14 実装=Codex/レビュー=Claude。P1 1件差し戻し→解消。commit 0bd0eb6)
+
+背景: 配布先サイト(例: Ryo Photography)のタブアイコンがオーナーの静的favicon
+のまま。favicon-v2系5パス+旧favicon.ico/svgを、profilePhotoUrl からの動的生成
+(未設定時はsiteName頭文字のモノグラム)に切り替える。詳細指示は
+scratch/codex-task-favicon.md、進行は task.md Handoff 参照。
+
+## T-2. 配布テンプレート: Service機能を設定でON/OFF化して開放 [昼推奨] [Codexレビュー必須]
+
+背景: 公開ナビのServiceリンクは akieguchi.com ホスト判定で出し分けているが、
+adminのServiceタブは配布先にも見える。オーナー決定(2026-07-14): 隠すのではなく
+「使える機能」として開放し、設定キー(例: servicePageEnabled)で公開ページ・
+adminタブ・ナビ表示をまとめてON/OFF。配布既定OFF・akieguchi.comはON。
+ホスト名決め打ち(SERVICE_LINK_HOST)はこの設定ゲートに置き換える。
+§0の settings 4箇所同期を忘れない。
+
+## T-3. 配布テンプレート: フッターにテンプレート購入クレジット [昼推奨] [Codexレビュー必須]
+
+背景: オーナー決定(2026-07-14): フッター最下部に小さな「Site template by …」
+的クレジット(文言+リンク先は設定キー、配布既定ON・サイト側で消すのも自由)。
+akieguchi.com では「このサイトのテンプレートを販売中」導線としても使える。
+既存 footerCtaLabel の実装パターンを踏襲。リンク先URLの正はオーナーに確認
+(販売LPが未定なら暫定で akieguchi.com/service)。
+
+## T-4. 配布テンプレート: OGP画像の自動生成 [昼推奨] [Codexレビュー必須]
+
+背景: オーナー決定(2026-07-14): SNS共有カードの既定画像 public/og-image.jpg も
+オーナーの写真のまま。ヒーロー写真が無い場合の最終フォールバックを、
+ヒーロー写真+サイト名からの自動生成(またはモノグラム系の中立カード)に
+切り替え、配布先で他人の写真が出る経路を faviconと同様に塞ぐ。
+ogp.ts の imgBase フォールバック鎖と og-service.jpg の扱いも棚卸しする。
+
 ## 運用メモ
 
 - 新しいタスクを足すときも上の書式（背景/やること/検証/成果物+タグ）を踏襲する。

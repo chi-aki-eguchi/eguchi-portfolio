@@ -1,5 +1,5 @@
 import { resolve as pathResolve } from "node:path";
-import app from "./api";
+import app, { getOriginal } from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
 import { eq, and, isNull, inArray, sql } from "drizzle-orm";
@@ -20,6 +20,11 @@ import { contentTypeForStaticPath } from "./api/static-files";
 import { settingsVersion } from "./api/settings-version";
 import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
+import {
+  DYNAMIC_FAVICON_PATHS,
+  generateFaviconAsset,
+  type DynamicFaviconPath,
+} from "./api/favicon";
 
 // 配布版(DATABASE_PROVIDER=postgres)は起動時に空DBへ自動マイグレーション。
 // 本番(turso)は Drizzle migration こそ走らせないが、ensureTursoColumns() が
@@ -52,6 +57,36 @@ let settingsCacheTime = 0;
 // 出し続ける穴への対処(2026-07-14 codex-reviewer P2)。同一プロセス前提。
 let settingsCacheVersion = -1;
 const SETTINGS_TTL = 60_000;
+
+type CachedFavicon = { body: Buffer; contentType: string };
+const dynamicFaviconPaths = new Set<string>(DYNAMIC_FAVICON_PATHS);
+const faviconCache = new Map<DynamicFaviconPath, CachedFavicon>();
+let faviconCacheVersion = -1;
+
+async function getFavicon(path: DynamicFaviconPath): Promise<CachedFavicon> {
+  const version = settingsVersion();
+  if (faviconCacheVersion !== version) {
+    faviconCache.clear();
+    faviconCacheVersion = version;
+  }
+  const cached = faviconCache.get(path);
+  if (cached) return cached;
+
+  const settings = await getSettings();
+  const generated = await generateFaviconAsset(
+    path,
+    settings,
+    async (key) => (await getOriginal(key)).buf,
+    (error) =>
+      console.error(
+        "[favicon] profile image unavailable, using monogram:",
+        error,
+      ),
+  );
+  if (settingsVersion() !== version) return getFavicon(path);
+  faviconCache.set(path, generated);
+  return generated;
+}
 
 async function getSettings(): Promise<Record<string, string>> {
   const now = Date.now();
@@ -485,7 +520,18 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       });
   }
 
-  // Serve favicon (no-cache to bust CDN)
+  // 配布先で静的なオーナー写真を出さないため、同名のdistファイルより常に優先する。
+  if (dynamicFaviconPaths.has(url.pathname)) {
+    const favicon = await getFavicon(url.pathname as DynamicFaviconPath);
+    return new Response(favicon.body as unknown as BodyInit, {
+      headers: {
+        "Cache-Control": "no-cache, must-revalidate",
+        "Content-Type": favicon.contentType,
+      },
+    });
+  }
+
+  // Serve legacy favicon aliases from dist (no-cache to bust CDN)
   if (
     url.pathname.startsWith("/favicon") ||
     url.pathname === "/apple-touch-icon.png" ||

@@ -216,7 +216,7 @@ let origBytes = 0;
 
 const origInFlight = new Map<string, Promise<{ buf: Buffer; type: string }>>();
 
-async function getOriginal(
+export async function getOriginal(
   key: string,
 ): Promise<{ buf: Buffer; type: string }> {
   const now = Date.now();

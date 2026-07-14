@@ -7682,3 +7682,69 @@ a579080 / a734324 は未push。pushはオーナーのみ。
 
 - push、本番DB/R2/Railwayへの書き込み。
 - Lightbox.tsxのロジック、§0 invariants。
+
+## Handoff 2026-07-14 (20) — Codex: 配布テンプレートのfavicon自動生成
+
+### 目的
+
+配布先サイトにakieguchi.comオーナーの静的アイコンが出ないよう、既存の
+`profilePhotoUrl`からfavicon / app iconを動的生成する。プロフィール写真が使えない
+場合も静的ファイルへ戻さず、サイト名のモノグラムを返す。
+
+### 変更内容
+
+- `/favicon-v2.svg`はプロフィール写真を64px正方形に中央クロップしたPNGを
+  data URIとして埋め込む。
+- `/apple-touch-icon.png`、`/icon-192.png`、`/icon-512.png`は各指定サイズの
+  正方形PNGを返す。
+- `/favicon-v2.ico`は48px PNGを単一エントリのICOコンテナに包んで返す。
+- プロフィール画像は既存`getOriginal()`をexportして再利用し、ストレージ読み出しを
+  重複実装していない。
+- 未設定・不正URL・取得失敗・画像変換失敗は、紙色`#f4f1ea`とink色`#1a1917`の
+  モノグラムへ明示的にフォールバック。サイト名も空なら`P`。
+- 生成物はプロセス内Mapへ保持し、`settingsVersion()`変更時に全件失効する。
+- 同名のdist静的ファイルより動的応答を先にし、HTTP cacheは従来どおり
+  `no-cache, must-revalidate`。public内の静的ファイルは削除していない。
+
+### 触ったファイル
+
+- `packages/web/src/api/favicon.ts`（新規）
+- `packages/web/src/api/favicon.test.ts`（新規）
+- `packages/web/src/api/index.ts`
+- `packages/web/src/server.ts`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `bun run check`: 成功（395 tests、typecheck / lint / build含む）。
+- ICOヘッダと単一PNGエントリ、モノグラムの文字・色・XML escape、
+  profile proxy path制限、プロフィール写真SVG正常系、取得失敗時PNG fallbackを単体テスト。
+- `git diff --check`: 成功。
+- 既存`packages/web/public/`のアイコン5点が残っていることを確認。
+- 新しいsettingsキー・DBクエリ・`Content-Encoding`設定は追加していない。
+- 高リスク画像差分として`claude-driver`へagmsgでread-onlyレビュー依頼済み。
+  同一セッション内は未応答のため、`docs/checklists.md`の画像検査表で代替確認した。
+
+### 検証していないこと
+
+- 実ストレージ上のプロフィール写真を使ったHTTP応答（単体テストでは画像loaderを注入）。
+- push / Railway反映 / 本番確認。
+
+### push したか
+
+していない。git commitもしていない。変更はworking treeに残している。
+
+### 本番で確認したか
+
+していない。今回の変更はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- 上記5ファイルのread-onlyレビューと、必要なら実ストレージを変更しないGET確認。
+- レビュー指摘の修正は、オーナーが指定したDriverが行う。
+
+### 次の担当者が触ってはいけない場所
+
+- public内の静的アイコン削除、scratch、push、本番DB/R2/Railwayへの書き込み。
+
+P1修正: 旧パス`/favicon.ico`（48px ICO）と`/favicon.svg`（64px SVG）も動的生成対象に追加し、全7パスの形式・サイズをテストで網羅した。

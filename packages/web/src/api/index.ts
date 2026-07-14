@@ -1011,6 +1011,8 @@ const app = new Hono()
         contactSendingButton: settings.contactSendingButton ?? "Sending...",
         // ── E1: hero display mode ──
         heroMode: settings.heroMode ?? "carousel", // "carousel" | "single" | "quiet-grid" | "editorial" | "immersive"
+        heroMotionSpeed: settings.heroMotionSpeed ?? "standard", // slow | standard | quick
+        heroRevealOrder: settings.heroRevealOrder ?? "photo-first", // text-first | photo-first | together
         heroHeight: settings.heroHeight ?? "", // vh number, e.g. "70"
         heroOverlay: settings.heroOverlay ?? "on", // "on" | "off"
         // EE: accent colour for hover/active/focus (empty = per-spot fallbacks)

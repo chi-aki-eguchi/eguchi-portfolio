@@ -68,9 +68,13 @@ test("every API GET /settings response key is sent to the preview iframe", async
 });
 
 test("every admin-editable settings key is in the preview registry", async () => {
-  const src = await Bun.file(
+  const adminSrc = await Bun.file(
     new URL("../pages/admin.tsx", import.meta.url).pathname,
   ).text();
+  const adminTabsSrc = await Bun.file(
+    new URL("../pages/admin-tabs.tsx", import.meta.url).pathname,
+  ).text();
+  const src = `${adminSrc}\n${adminTabsSrc}`;
   const apiSrc = await Bun.file(
     new URL("../../api/index.ts", import.meta.url).pathname,
   ).text();

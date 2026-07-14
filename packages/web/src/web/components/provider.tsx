@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
 import { ensureAccentContrast } from "../lib/color-contrast";
+import { heroMotionCssVars } from "../lib/hero-motion";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 type DarkModeCtx = ReturnType<typeof useDarkMode>;
@@ -355,6 +356,11 @@ export function Provider({ children }: ProviderProps) {
     if (data?.photoRevealEffect && data.photoRevealEffect !== "fade")
       document.body.dataset.reveal = data.photoRevealEffect;
     else delete document.body.dataset.reveal;
+    for (const [key, value] of Object.entries(
+      heroMotionCssVars(data?.heroMotionSpeed, data?.heroRevealOrder),
+    )) {
+      set(key, value);
+    }
     set(
       "--link-underline",
       data?.linkUnderline === "on"
@@ -450,6 +456,8 @@ export function Provider({ children }: ProviderProps) {
     data?.bgTexture,
     data?.bgTextureOpacity,
     data?.photoRevealEffect,
+    data?.heroMotionSpeed,
+    data?.heroRevealOrder,
     data?.heroHeight,
     data?.heroOverlay,
   ]);
@@ -645,6 +653,17 @@ export function Provider({ children }: ProviderProps) {
         if (s.photoRevealEffect && s.photoRevealEffect !== "fade")
           document.body.dataset.reveal = s.photoRevealEffect;
         else delete document.body.dataset.reveal;
+      }
+      if (
+        s.heroMotionSpeed !== undefined ||
+        s.heroRevealOrder !== undefined
+      ) {
+        for (const [key, value] of Object.entries(
+          heroMotionCssVars(s.heroMotionSpeed, s.heroRevealOrder),
+        )) {
+          if (value) root.style.setProperty(key, value);
+          else root.style.removeProperty(key);
+        }
       }
       if (s.linkUnderline !== undefined) {
         if (s.linkUnderline === "on")

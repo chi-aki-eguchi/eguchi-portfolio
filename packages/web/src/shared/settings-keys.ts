@@ -101,6 +101,8 @@ export const SETTINGS_PREVIEW_KEYS = [
   "navPosition",
   "navHoverEffect",
   "heroMode",
+  "heroMotionSpeed",
+  "heroRevealOrder",
   "heroHeight",
   "heroOverlay",
   "heroDisplayMode",

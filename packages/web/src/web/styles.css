@@ -61,6 +61,14 @@
   --dur-drift: 750ms; /* scroll fade-in, collage drift */
   --dur-breathe: 900ms; /* photo hover-out relax */
 
+  /* TOP entrance choreography. Provider overrides only the non-default
+     choices; these stylesheet values are the standard/photo-first fallback. */
+  --top-motion-duration: 600ms;
+  --hero-photo-delay: 0s;
+  --hero-text-delay-1: 0.2s;
+  --hero-text-delay-2: 0.3s;
+  --hero-text-delay-3: 0.4s;
+
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
   --ease-inout: cubic-bezier(0.65, 0.05, 0.36, 1);
@@ -2103,20 +2111,35 @@ body[data-texture="mist"]::before {
 }
 
 /* ─── Hero text entrance ─── */
+.top-page {
+  --dur-reveal: var(--top-motion-duration);
+}
+.hero-photo-reveal {
+  opacity: 0;
+  animation: hero-photo-in var(--top-motion-duration) var(--ease-expo)
+    var(--hero-photo-delay) both;
+  backface-visibility: hidden;
+}
 .hero-text-reveal {
   opacity: 0;
   transform: translate3d(0, 12px, 0);
-  animation: hero-text-in var(--dur-hero) var(--ease-expo) forwards;
+  animation: hero-text-in var(--top-motion-duration) var(--ease-expo) forwards;
   backface-visibility: hidden;
 }
 .hero-text-reveal-1 {
-  animation-delay: 0.15s;
+  animation-delay: var(--hero-text-delay-1);
 }
 .hero-text-reveal-2 {
-  animation-delay: 0.3s;
+  animation-delay: var(--hero-text-delay-2);
 }
 .hero-text-reveal-3 {
-  animation-delay: 0.45s;
+  animation-delay: var(--hero-text-delay-3);
+}
+
+@keyframes hero-photo-in {
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes hero-text-in {
@@ -2438,6 +2461,7 @@ dialog.lightbox-exit .lb-content {
   .section-reveal,
   .page-entrance,
   .footer-reveal,
+  .hero-photo-reveal,
   .hero-text-reveal {
     opacity: 1 !important;
     transform: none !important;

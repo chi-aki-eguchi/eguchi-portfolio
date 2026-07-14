@@ -268,33 +268,35 @@ function HeroCarousel({
       >
         {/* AA3: scroll-effect layer — transform/opacity only, clipped by the box */}
         <div ref={fxRef} className="hero-fx-layer absolute inset-0">
-          {/* Main photo layer — contain, no crop */}
-          {photos.map((p, i) => (
-            <div
-              key={i}
-              className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`}
-              style={{ zIndex: i === current ? 1 : 0 }}
-            >
-              <HeroPicture
-                url={p.url}
-                mediumUrl={p.mediumUrl}
-                rotationDeg={p.rotationDeg}
-                focalX={p.focalX}
-                focalY={p.focalY}
-                alt={photoAltText(p, { photographerName })}
-                sizes="(min-width: 1200px) 1152px, 100vw"
-                className="w-full h-full object-contain"
-                decoding={i === 0 ? "sync" : "async"}
-                fetchPriority={i === 0 ? "high" : "low"}
-                loading={i === 0 ? "eager" : "lazy"}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.visibility =
-                    "hidden";
-                }}
-                draggable={false}
-              />
-            </div>
-          ))}
+          <div className="hero-photo-reveal absolute inset-0">
+            {/* Main photo layer — contain, no crop */}
+            {photos.map((p, i) => (
+              <div
+                key={i}
+                className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`}
+                style={{ zIndex: i === current ? 1 : 0 }}
+              >
+                <HeroPicture
+                  url={p.url}
+                  mediumUrl={p.mediumUrl}
+                  rotationDeg={p.rotationDeg}
+                  focalX={p.focalX}
+                  focalY={p.focalY}
+                  alt={photoAltText(p, { photographerName })}
+                  sizes="(min-width: 1200px) 1152px, 100vw"
+                  className="w-full h-full object-contain"
+                  decoding={i === 0 ? "sync" : "async"}
+                  fetchPriority={i === 0 ? "high" : "low"}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.visibility =
+                      "hidden";
+                  }}
+                  draggable={false}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -387,23 +389,25 @@ function HeroSingle({
   return (
     <div className="hero-single">
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
-        <HeroPicture
-          url={photo.url}
-          mediumUrl={photo.mediumUrl}
-          rotationDeg={photo.rotationDeg}
-          focalX={photo.focalX}
-          focalY={photo.focalY}
-          alt={photoAltText(photo, { photographerName })}
-          sizes="100vw"
-          className="hero-single-img"
-          decoding="sync"
-          fetchPriority="high"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-          }}
-          draggable={false}
-        />
-        <div className={`hero-single-overlay ${overlayTop}`} />
+        <div className="hero-photo-reveal absolute inset-0">
+          <HeroPicture
+            url={photo.url}
+            mediumUrl={photo.mediumUrl}
+            rotationDeg={photo.rotationDeg}
+            focalX={photo.focalX}
+            focalY={photo.focalY}
+            alt={photoAltText(photo, { photographerName })}
+            sizes="100vw"
+            className="hero-single-img"
+            decoding="sync"
+            fetchPriority="high"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+            }}
+            draggable={false}
+          />
+          <div className={`hero-single-overlay ${overlayTop}`} />
+        </div>
       </div>
       <div className={`hero-single-caption ${posClass}`}>{children}</div>
     </div>
@@ -418,6 +422,12 @@ type HomeLayoutProps = {
   fadeRef: React.Ref<HTMLDivElement>;
   settings: Record<string, string | undefined> | undefined;
 };
+
+function heroMotionKey(
+  settings: Record<string, string | undefined> | undefined,
+): string {
+  return `${settings?.heroMotionSpeed || "standard"}:${settings?.heroRevealOrder || "photo-first"}`;
+}
 
 /** Phase 2 — Home A: quiet hero photo + clean 3-column square grid.
  * Works grid honours topWorksLayout (falls back to clean-grid, its original
@@ -437,35 +447,38 @@ function HomeQuietGrid({
   const heroPhoto = heroPhotos[0];
 
   return (
-    <div>
+    <div className="top-page" data-hero-mode="quiet-grid">
       {/* Hero: full-width photo with name overlay at bottom-left */}
       <section
-        className="relative w-full overflow-hidden"
+        key={heroMotionKey(settings)}
+        className="hero-motion-stage relative w-full overflow-hidden"
         style={{ height: "min(280px, 50vh)" }}
       >
         {heroPhoto ? (
           <>
-            <HeroPicture
-              url={heroPhoto.url}
-              mediumUrl={heroPhoto.mediumUrl}
-              rotationDeg={heroPhoto.rotationDeg}
-              focalX={heroPhoto.focalX}
-              focalY={heroPhoto.focalY}
-              alt={photoAltText(heroPhoto, { photographerName })}
-              sizes="100vw"
-              className="w-full h-full object-cover"
-              decoding="sync"
-              fetchPriority="high"
-              draggable={false}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.visibility =
-                  "hidden";
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            <div className="hero-photo-reveal absolute inset-0">
+              <HeroPicture
+                url={heroPhoto.url}
+                mediumUrl={heroPhoto.mediumUrl}
+                rotationDeg={heroPhoto.rotationDeg}
+                focalX={heroPhoto.focalX}
+                focalY={heroPhoto.focalY}
+                alt={photoAltText(heroPhoto, { photographerName })}
+                sizes="100vw"
+                className="w-full h-full object-cover"
+                decoding="sync"
+                fetchPriority="high"
+                draggable={false}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.visibility =
+                    "hidden";
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
             <div className="absolute bottom-6 left-7">
               <h1
-                className="font-serif leading-tight"
+                className="font-serif leading-tight hero-text-reveal hero-text-reveal-1"
                 style={{
                   fontSize: 32,
                   fontWeight: 300,
@@ -477,7 +490,7 @@ function HomeQuietGrid({
                 {siteNameJa}
               </h1>
               <p
-                className="font-en uppercase mt-0.5"
+                className="font-en uppercase mt-0.5 hero-text-reveal hero-text-reveal-2"
                 style={{
                   fontSize: "var(--text-note)",
                   letterSpacing: "0.14em",
@@ -489,7 +502,7 @@ function HomeQuietGrid({
             </div>
           </>
         ) : (
-          <div className="w-full h-full bg-[var(--photo-placeholder)]" />
+          <div className="hero-photo-reveal w-full h-full bg-[var(--photo-placeholder)]" />
         )}
       </section>
 
@@ -571,14 +584,15 @@ function HomeEditorial({
   const heroPhoto = heroPhotos[0];
 
   return (
-    <div>
+    <div className="top-page" data-hero-mode="editorial">
       {/* Split hero: photo left, text right */}
       <section
-        className="flex flex-col md:flex-row"
+        key={heroMotionKey(settings)}
+        className="hero-motion-stage flex flex-col md:flex-row"
         style={{ minHeight: "min(340px, 50vh)" }}
       >
         <div
-          className="md:flex-[0_0_55%] relative overflow-hidden bg-[var(--photo-placeholder)]"
+          className="hero-photo-reveal md:flex-[0_0_55%] relative overflow-hidden bg-[var(--photo-placeholder)]"
           style={{ minHeight: 200 }}
         >
           {heroPhoto && (
@@ -603,7 +617,7 @@ function HomeEditorial({
         </div>
         <div className="flex-1 flex flex-col justify-center px-8 md:px-10 py-8 md:py-0">
           <h1
-            className="font-serif leading-[1.1] mb-1.5"
+            className="font-serif leading-[1.1] mb-1.5 hero-text-reveal hero-text-reveal-1"
             style={{
               fontSize: "clamp(28px, 4vw, 36px)",
               fontWeight: 300,
@@ -613,7 +627,7 @@ function HomeEditorial({
             {siteNameJa}
           </h1>
           <p
-            className="font-en mb-5"
+            className="font-en mb-5 hero-text-reveal hero-text-reveal-2"
             style={{
               fontSize: "var(--text-small)",
               color: "rgba(var(--foreground-rgb),0.35)",
@@ -624,7 +638,7 @@ function HomeEditorial({
           </p>
           {statement && (
             <p
-              className="font-ja"
+              className="font-ja hero-text-reveal hero-text-reveal-3"
               style={{
                 fontSize: "var(--text-note)",
                 color: "rgba(var(--foreground-rgb),0.5)",
@@ -714,40 +728,44 @@ function HomeImmersive({
   }, []);
 
   return (
-    <div>
+    <div className="top-page" data-hero-mode="immersive">
       {/* Fullscreen hero with centered name. Header is fixed+opaque (not an
           overlay) so its footprint must be subtracted from the viewport
           height — see .hero-fullscreen in styles.css for the same fix. */}
       <section
-        className="relative w-full overflow-hidden"
+        key={heroMotionKey(settings)}
+        className="hero-motion-stage relative w-full overflow-hidden"
         style={{ height: "calc(100dvh - var(--header-h) - var(--sai-top))" }}
       >
-        {heroPhoto ? (
-          <HeroPicture
-            url={heroPhoto.url}
-            mediumUrl={heroPhoto.mediumUrl}
-            rotationDeg={heroPhoto.rotationDeg}
-            focalX={heroPhoto.focalX}
-            focalY={heroPhoto.focalY}
-            alt={photoAltText(heroPhoto, { photographerName })}
-            sizes="100vw"
-            className="w-full h-full object-cover"
-            decoding="sync"
-            fetchPriority="high"
-            draggable={false}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-            }}
-          />
-        ) : (
-          <div className="w-full h-full bg-[#2a3a3a]" />
-        )}
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="hero-photo-reveal absolute inset-0">
+          {heroPhoto ? (
+            <HeroPicture
+              url={heroPhoto.url}
+              mediumUrl={heroPhoto.mediumUrl}
+              rotationDeg={heroPhoto.rotationDeg}
+              focalX={heroPhoto.focalX}
+              focalY={heroPhoto.focalY}
+              alt={photoAltText(heroPhoto, { photographerName })}
+              sizes="100vw"
+              className="w-full h-full object-cover"
+              decoding="sync"
+              fetchPriority="high"
+              draggable={false}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.visibility =
+                  "hidden";
+              }}
+            />
+          ) : (
+            <div className="w-full h-full bg-[#2a3a3a]" />
+          )}
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
         {/* Centered name */}
         <div className="absolute inset-0 flex items-center justify-center text-center">
           <div>
             <h1
-              className="font-serif"
+              className="font-serif hero-text-reveal hero-text-reveal-1"
               style={{
                 fontSize: "clamp(32px, 5vw, 40px)",
                 fontWeight: 300,
@@ -759,7 +777,7 @@ function HomeImmersive({
               {siteNameJa}
             </h1>
             <p
-              className="font-en uppercase mt-1.5"
+              className="font-en uppercase mt-1.5 hero-text-reveal hero-text-reveal-2"
               style={{
                 fontSize: "var(--text-note)",
                 letterSpacing: "0.2em",
@@ -1017,12 +1035,16 @@ export default function TopPage() {
   if (heroMode === "immersive") return <HomeImmersive {...homeLayoutProps} />;
 
   return (
-    <div>
+    <div
+      className="top-page"
+      data-hero-mode={isSingle ? "single" : "carousel"}
+    >
       {isSingle ? (
         /* Hero: single large photo with name overlaid */
         <section
+          key={heroMotionKey(settings)}
           ref={heroBoxRef}
-          className={heroFullscreen ? "hero-fullscreen" : "pt-6 md:pt-10"}
+          className={`hero-motion-stage ${heroFullscreen ? "hero-fullscreen" : "pt-6 md:pt-10"}`}
         >
           <HeroSingle
             photo={heroPhotos[0]}
@@ -1079,11 +1101,12 @@ export default function TopPage() {
       ) : (
         /* Hero: Carousel + Name block */
         <section
+          key={heroMotionKey(settings)}
           ref={heroBoxRef}
           className={
             heroFullscreen
-              ? "hero-fullscreen"
-              : "max-w-6xl mx-auto px-4 md:px-10 pt-6 md:pt-10"
+              ? "hero-motion-stage hero-fullscreen"
+              : "hero-motion-stage max-w-6xl mx-auto px-4 md:px-10 pt-6 md:pt-10"
           }
         >
           <HeroCarousel
@@ -1166,7 +1189,7 @@ export default function TopPage() {
               to="/gallery"
               className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5"
               style={{
-                transitionDelay: "0.05s",
+                transitionDelay: "0.1s",
                 fontSize: "var(--section-label-size, 0.6875rem)",
                 letterSpacing: "var(--section-label-tracking, 0.06em)",
                 color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.30))`,

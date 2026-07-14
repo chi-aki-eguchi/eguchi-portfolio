@@ -7549,3 +7549,71 @@ Claude=Reviewer]」で始まるメッセージ)を参照。
 ### 次の担当者が触ってはいけない場所
 
 - 上記スコープ外の変更(新TOPレイアウト種類の追加、他タスクへの役割交代の拡大適用)。
+
+## Handoff 2026-07-14 (18) — Codex Driver trial: TOPページの動き設定
+
+### 目的
+
+既存のTOP表示5種類で、写真と文字が現れる速さ・順番を管理画面から分かりやすく
+選べるようにする。派手な動きは足さず、既存の静かなデザイン方針を維持する。
+
+### 変更内容
+
+- Settings → Hero に「登場する速さ（ゆっくり / 標準 / すばやく）」と
+  「出てくる順番（文字から / 写真から / 同時に）」を追加。
+- `heroMotionSpeed` / `heroRevealOrder`をsettingsの4箇所へ同期。
+- carousel / single / quiet-grid / editorial / immersive の写真・作家名へ共通適用。
+- 写真は透明度だけで表示し、前後で位置・幅・高さを変えない。設定変更時は
+  ライブプレビューで一度だけ再生し、スクロール復帰では再生し直さない。
+- TOP内のdelayを0.1秒刻みに統一。既存easing、hover速度、カルーセル自動切替は維持。
+- **新しいTOPレイアウトの種類は追加していない**。今回は既存5種類の動き調整だけ。
+
+詳細: `docs/agent-logs/2026-07-14.md`「TOPページの動きを上品に調整できる設定」。
+
+### 触ったファイル
+
+- `packages/web/src/shared/settings-keys.ts`
+- `packages/web/src/api/index.ts`
+- `packages/web/src/web/components/provider.tsx`
+- `packages/web/src/web/lib/hero-motion.ts`（新規）
+- `packages/web/src/web/lib/hero-motion.test.ts`（新規）
+- `packages/web/src/web/lib/settings-preview.test.ts`
+- `packages/web/src/web/pages/admin-tabs.tsx`
+- `packages/web/src/web/pages/top.tsx`
+- `packages/web/src/web/styles.css`
+- `scripts/smoke/admin-hero-motion.spec.ts`（新規）
+- `docs/agent-logs/2026-07-14.md`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `bun run check`: 成功（368 tests、typecheck/lint/build含む）。
+- 専用smoke: 2 passed。3段階×3順番、全5 Hero、CLSなし、スクロール復帰時の
+  二重再生なし、reduced-motion即表示を確認。
+- `bun run smoke`: 30 passed / 27 skipped / 1 failed。失敗は既知の
+  `admin-trash-signal.spec.ts`のみ。今回追加した2件は成功。
+- ローカル実画面のeditorial表示で、写真・作家名・余白の崩れとconsole errorなし。
+- 書き込みは管理ログイン以外に行っていない。
+
+### 検証していないこと
+
+- iPhone Safari実機。
+- push / Railway反映 / 本番確認。
+
+### push したか
+
+していない。pushはオーナーのみ。
+
+### 本番で確認したか
+
+していない。今回の変更はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- Claude Codeは本commitをread-onlyでP0/P1レビューしてよい。
+- レビュー解消後のpush判断はオーナー。
+
+### 次の担当者が触ってはいけない場所
+
+- 新TOPレイアウトの追加、今回の役割交代を他タスクへ広げること。
+- push、本番DB/R2/Railwayへの書き込み。

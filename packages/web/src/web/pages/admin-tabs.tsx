@@ -349,6 +349,18 @@ const HERO_MODE_OPTIONS: {
   },
 ];
 
+const HERO_MOTION_SPEED_OPTIONS = [
+  { value: "slow", label: "ゆっくり" },
+  { value: "standard", label: "標準" },
+  { value: "quick", label: "すばやく" },
+] as const;
+
+const HERO_REVEAL_ORDER_OPTIONS = [
+  { value: "text-first", label: "文字から" },
+  { value: "photo-first", label: "写真から" },
+  { value: "together", label: "同時に" },
+] as const;
+
 // Nav position (navPosition) — 3 options, values/defaults unchanged.
 const NAV_POSITION_OPTIONS: {
   value: string;
@@ -3804,6 +3816,58 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
+                  label="登場する速さ"
+                  hint="トップページを開いたときに、写真と文字が静かに現れる速さです"
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {HERO_MOTION_SPEED_OPTIONS.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={`登場する速さ: ${label}`}
+                        aria-pressed={
+                          (current["heroMotionSpeed"] || "standard") === value
+                        }
+                        onClick={() => set("heroMotionSpeed", value)}
+                        className={`text-[11px] py-2 rounded-sm border transition-colors ${
+                          (current["heroMotionSpeed"] || "standard") === value
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label="出てくる順番"
+                  hint="文字と写真のどちらを先に見せるかを選びます。標準は「写真から」です"
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {HERO_REVEAL_ORDER_OPTIONS.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={`出てくる順番: ${label}`}
+                        aria-pressed={
+                          (current["heroRevealOrder"] || "photo-first") ===
+                          value
+                        }
+                        onClick={() => set("heroRevealOrder", value)}
+                        className={`text-[11px] py-2 rounded-sm border transition-colors ${
+                          (current["heroRevealOrder"] || "photo-first") ===
+                          value
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
                   label="画面の使い方"
                   hint="フルスクリーン=最初の1画面を写真が覆う（下の「高さ」設定は無視されます）"
                 >
@@ -3928,6 +3992,8 @@ export function SettingsTab({
                   onClick={() => {
                     [
                       "heroMode",
+                      "heroMotionSpeed",
+                      "heroRevealOrder",
                       "heroHeight",
                       "heroOverlay",
                       "heroDisplayMode",

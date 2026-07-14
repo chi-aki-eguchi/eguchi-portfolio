@@ -39,6 +39,21 @@
 - **Codex に実装させない**（ファイル編集・コミットをさせない）。レビューで修正が必要なら、指摘を受けて Driver が直す。
 - 迷ったときの参照順: 各タスクの指示書（docs/agents/task-queue.md）→ docs/agents/autonomy-rules.md → 本ファイル §0。
 
+#### 期間限定の役割反転（2026-07-14 オーナー直接指示「実行はしばらくcodexを使おうね」・撤回まで有効）
+
+上記の恒久ルールに対する、オーナーがチャットで直接出した期間限定の上書き。
+
+- **実装 = Codex**: claude-driver が `codex exec`（workspace-write sandbox）で起動し、
+  指示書を渡して実装させる。
+- **Claude Code = レビュー・統合・進行管理**: 依頼文の作成、差分の read-only レビュー、
+  `bun run check` / `bun run smoke` の実行（Codex の sandbox はネットワーク不可のため
+  smoke は Claude 側でしか回せない）、commit 整理、task.md Handoff・決定ログ、
+  オーナーへの報告。
+- §0 invariants・完了の定義・**push はオーナーのみ**は従来どおり両AIに適用。
+- Codex の利用枠節約のため、実装依頼は原則 medium 推論で出し、難所のみ引き上げる。
+- この反転はオーナーが撤回した時点で終了し、恒久ルール（Driver = Claude Code）へ戻る。
+  autonomy-rules.md の「Codex に実装をさせること」ハードストップは、この期間中は適用しない。
+
 #### クレジット切れ時の復旧手順（短縮版）
 
 前担当がクレジット切れ等で途中終了した場合、次の担当は次の順で動く。

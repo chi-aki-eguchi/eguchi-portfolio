@@ -66,7 +66,9 @@
 - リポジトリ直下への新規 markdown ファイル追加（5枚ルール。文書は docs/ 配下へ）
 - ユーザーがアップロードした写真・画像ファイルの削除や上書き
 - テストの skip 化・削除・期待値の根拠なき緩和（§3 の判断表参照）
-- Codex に実装をさせること（Codex は read-only Reviewer。AGENTS.md「役割分担」参照）
+- Codex に実装をさせること（Codex は read-only Reviewer。AGENTS.md「役割分担」参照。
+  **例外**: AGENTS.md「期間限定の役割反転」が有効な間（2026-07-14 オーナー直接指示〜撤回まで）は、
+  claude-driver が起動する `codex exec` での実装を許可する）
 
 ## 6. 決定ログ
 

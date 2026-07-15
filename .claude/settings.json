@@ -34,6 +34,17 @@
     ]
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/credit-status.mjs"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "",
@@ -68,11 +79,31 @@
     ],
     "SessionStart": [
       {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/credit-status.mjs"
+          }
+        ]
+      },
+      {
         "matcher": "compact",
         "hooks": [
           {
             "type": "command",
             "command": "echo 'Compaction 後リマインダー: §0 invariants を確認 → withRetry, 4-place settings sync, assertOk, no manual Content-Encoding, dual schema sync。tsc -b を忘れずに。'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/credit-status.mjs"
           }
         ]
       }

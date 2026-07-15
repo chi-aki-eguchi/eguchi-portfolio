@@ -8448,3 +8448,14 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 
 ### 必要なコミット情報
 - T-7本体+文言はスクショでオーナー確認済み(2026-07-15)。ナビは本番では非表示(servicePageMode未設定=自動)。
+
+## Handoff 2026-07-15 (32) — CodexBarクレジット残量の自動確認
+
+- 完了したこと: CodexBarのClaude/Codex一括JSONから残量・リセット・枯渇予測を取得し、
+  5分キャッシュとnormal/saving/closing/critical判定を追加した。`credits.remaining`は不使用。
+- 現在の状態: Claude CodeのSessionStart/UserPromptSubmit/Stopで短い状態を受け取る。
+  状態ファイルは`~/.claude/credit-status/`。実測・キャッシュ・失敗時フォールバックを確認済み。
+- 残っている問題: なし。
+- 次に行うこと: 新しいClaude Codeセッション開始時にhook表示を1回目視する。
+- 重要な制約: push未実施。認証トークン、Cookie、APIキー、メールアドレスは保存しない。
+- 必要なcommit情報: このHandoffと`.claude/hooks/credit-status.mjs`等を同一commitに含める。

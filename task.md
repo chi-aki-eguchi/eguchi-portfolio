@@ -8423,3 +8423,28 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 次: オーナーがpush後にRailway反映と新旧URL・OGP・PC/スマホ表示を確認し、
   本番`templateCreditUrl`を`https://akieguchi.com/portfolio-kit`へ更新する。
 - 制約: push未実施。本番DB/R2/Railwayへの書き込みなし。`scratch/`はcommit対象外。
+
+## Handoff 2026-07-15 (28) — セッション引き継ぎ(省トークン運用への切替後・T-7完了)
+
+### 完了したこと
+- T-1〜T-7 全完了(配布テンプレート独自化+Portfolio Kit再構成)。T-1〜T-4はpush済み・本番稼働確認済み。
+- 省トークン型ワークフロー導入(正本: docs/agents/codex-workflow.md。一括指示/短縮報告/リスク別レビュー/ゲート二重実行禁止/クレジット残量運用)。
+
+### 現在の状態
+- tree clean。未push 6 commit: 3f01487(T-5更新手順) / 72a6834(T-6フォント修正) / 8fd2368・その後のdocs2件(ワークフロー) / 4629793(T-7 Portfolio Kit)。
+- push前バッチゲート実施済み: check exit0 / smoke 31 passed・0 failed。**push可能な状態**(オーナー許可待ち)。
+
+### 残っている問題
+- なし(コード面)。push後のオーナー操作1件: 管理画面SettingsでtemplateCreditUrlを https://akieguchi.com/portfolio-kit へ更新(旧URLも転送されるので急ぎではない)。
+
+### 次に行うこと
+1. オーナーのpush許可 → push → 本番確認3点: /portfolio-kit表示・/service転送・/og-default.pngの日本語描画(T-6分)。
+2. その後の候補: Ryoサイトの実地更新(T-5手順の検証)/残りの独自性案/保留3案件。
+
+### 重要な制約
+- 実装=Codex(commit込み)・Claude=リスク別レビュー・push=オーナー明示許可時のみ(実行者はどちらでも可)。
+- §0 invariants / codex-workflow.md(依頼9項目・報告7項目・残量運用)厳守。
+- codex execは単発起動+`< /dev/null`+10分watchdog(連結起動はハングする)。
+
+### 必要なコミット情報
+- T-7本体+文言はスクショでオーナー確認済み(2026-07-15)。ナビは本番では非表示(servicePageMode未設定=自動)。

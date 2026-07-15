@@ -8519,3 +8519,20 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 ### 次の担当者が触ってはいけない場所
 
 - オーナー許可前のpush、本番DB/R2/Railwayへの書き込み、非公開の設置リンクの文書化。
+
+## Handoff 2026-07-16 (34) — セッション締め: 購入対応運用の整備まで
+
+- 完了: メール漏れ修正の本番確認(akieguchi.com/テストサイト両方) / release notesに
+  5ea948b版エントリ追加(3de8cd3) / 購入対応の運用手順書+販売ページ24時間約束(f7a3c18,
+  実装=Codex・レビュー=Claude) / launch.json追加(cf4c7c6)。
+- 現在: tree clean・未push 3 commit(3de8cd3/f7a3c18/cf4c7c6)。バッチゲート
+  bun run check 成功(430 pass)。admin未変更のためsmoke対象外。
+- 残問題: なし。文言のローカルスクショは省略(dev DBはsiteUrl未設定で販売ページ非表示の
+  設計のため)。push後に本番/portfolio-kitでオーナー目視。
+- 次(オーナー): ①git push ②本番で/portfolio-kitと/startの新文言を目視
+  ③docs/portfolio-kit-operations.mdのStripe設定チェック5項目を実施・確認日を記入
+  ④templateCreditUrl更新(管理画面) ⑤Ryoサイト手動更新(template-update-guide.md、
+  目標commit 5ea948b ※push後はrelease notesの目標commitより新しいbuildになる点は
+  「先頭8文字一致」でなく最新commitで読み替え)。
+- 制約: push未実施(オーナー許可制)。本番DB/R2/Railway書き込みなし。
+- commit: 3de8cd3 / f7a3c18 / cf4c7c6。

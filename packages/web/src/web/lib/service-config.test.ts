@@ -81,6 +81,11 @@ describe("service Stripe URL selection", () => {
 });
 
 describe("Portfolio Kit config migration", () => {
+  test("promises the post-purchase email within 24 hours", () => {
+    expect(DEFAULT_SERVICE_CONFIG.pricing.noteOnline).toContain("24時間以内");
+    expect(DEFAULT_SERVICE_CONFIG.purchaseFlow.body).toContain("24時間以内");
+  });
+
   test("fills new first-view facts into older saved configs", () => {
     const parsed = parseServicePageConfig(
       JSON.stringify({

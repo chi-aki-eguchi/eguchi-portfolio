@@ -8467,3 +8467,55 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - オーナー本番: akieguchi.comでは従来のメールフォールバックを維持する。
 - 検証: `bunx tsc -b`成功、`bun test ./src` 429 pass / 0 fail、lint・`git diff --check`成功。
 - 制約: push、本番DB/R2/Railway操作、`.env`読み取りは未実施。
+
+## Handoff 2026-07-16 — Codex: Portfolio Kit 購入対応手順と24時間案内
+
+### 目的
+
+購入通知から初回案内、おまかせ納品までのオーナー向け手順を整え、購入前後のページへ
+「購入後24時間以内に設置リンクをメールで送る」という約束を明記する。
+
+### 変更内容
+
+- Stripeの初回確認、セルフ・おまかせのメール雛形、納品、トラブル一次対応を1文書にした。
+- 販売ページの既定文言とスタートページに24時間以内のメール案内を追加した。
+- 新しいsettingsキー、DB、API、RailwayテンプレートURLは追加・変更していない。
+
+### 触ったファイル
+
+- `docs/portfolio-kit-operations.md`
+- `packages/web/src/web/lib/service-config.ts`
+- `packages/web/src/web/lib/service-config.test.ts`
+- `packages/web/src/web/pages/service-start.tsx`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `task.md`
+
+### 検証したこと
+
+- `cd packages/web && bunx tsc -b`: 成功（エラー0件）。
+- `cd packages/web && bun test ./src`: 成功（430 pass / 0 fail）。
+- `bun run check`: 成功（typecheck / lint / 430 tests / build）。
+- `git diff --check`: 成功。
+
+### 検証していないこと
+
+- 実ブラウザでの目視確認、push、Railway反映、本番表示。
+- Stripeダッシュボードの実設定（オーナーが手順書に沿って1回確認する項目）。
+
+### push したか
+
+していない。ローカルcommitのみ作成予定。
+
+### 本番で確認したか
+
+していない。今回の確認はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- 本差分のread-onlyレビュー。
+- オーナーpush後の販売ページ、スタートページの文言目視確認。
+- オーナーによるStripe初回チェックリストの実施。
+
+### 次の担当者が触ってはいけない場所
+
+- オーナー許可前のpush、本番DB/R2/Railwayへの書き込み、非公開の設置リンクの文書化。

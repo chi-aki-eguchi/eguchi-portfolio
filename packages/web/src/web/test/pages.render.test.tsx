@@ -305,6 +305,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("¥10,000〜（買い切り）");
       expect(host.textContent).toContain("サイト一式・管理画面・公開ガイド");
       expect(host.textContent).toContain("自分で10〜15分");
+      expect(host.textContent).toContain("購入後は24時間以内");
       expect(host.textContent).toContain("維持費や月額料金はいくらですか？");
       expect(host.textContent).toContain("やめたいときはどうなりますか？");
       cleanup();
@@ -317,6 +318,7 @@ describe("shared components", () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(createElement(ServiceStartPage));
     expect(host.textContent).toContain("Aki Eguchi Portfolio Kit");
+    expect(host.textContent).toContain("購入後は24時間以内");
     expect(host.innerHTML).not.toContain("railway.com/deploy");
     cleanup();
   });

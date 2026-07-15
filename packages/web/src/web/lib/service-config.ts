@@ -169,7 +169,7 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
   pricing: {
     label: "Pricing",
     noteOnline:
-      "決済後、Stripe の支払い控えが届きます。こちらでも確認後、手順書または公開おまかせの案内を送ります。",
+      "購入後は24時間以内に、設置リンクと選んだプランのご案内をメールでお送りします。Stripe の支払い控えも届きます。",
     noteOffline:
       "いまはオンライン決済を準備中です。当面は上のボタン（メールが開きます）か、下の連絡先からお申し込みください。",
     disclaimer:
@@ -211,11 +211,11 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
   purchaseFlow: {
     label: "After purchase",
     title: "購入後の流れ。",
-    body: "確認後、選んだプランに合わせて案内を送ります。写真の入れ方や管理画面での更新も、最初にまとめてお伝えします。",
+    body: "購入後は24時間以内に、設置リンクと選んだプランのご案内をメールでお送りします。写真の入れ方や管理画面での更新も、最初にまとめてお伝えします。",
     steps: [
       {
         title: "決済後の案内",
-        body: "Stripe の支払い控えが届いたあと、こちらでも確認し、選んだプランに合わせて次の案内を送ります。",
+        body: "Stripe の支払い控えが届いたあと、24時間以内に設置リンクと次の案内をメールでお送りします。",
       },
       {
         title: "管理画面で更新",

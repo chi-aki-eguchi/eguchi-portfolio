@@ -432,7 +432,8 @@ export default function ServiceStartPage() {
             className="mt-7 max-w-xl text-[rgba(var(--foreground-rgb),0.56)]"
             style={bodyStyle}
           >
-            設置のためのリンクは公開されておらず、購入後に案内メールまたは個別メッセージでお送りします。
+            設置のためのリンクは公開していません。購入後は24時間以内に、案内メールでお送りします。
+            24時間を過ぎても届かない場合は、購入時のメールアドレスからお問い合わせください。
             あなたが入力するのは
             <strong className="text-[rgba(var(--foreground-rgb),0.8)]">
               管理画面用のパスワード(ADMIN_PASSWORD)ひとつだけ

@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
+import { resolveServiceContactEmail } from "../../shared/service-visibility";
 import {
   parseServicePageConfig,
   isStripeLive,
@@ -543,8 +544,14 @@ function PlanCard({
   const live = isStripeLive(plan.stripeUrl);
   const finalHref = live
     ? plan.stripeUrl
-    : mailtoFallback(contactEmail, plan.name);
-  const cLabel = live ? plan.cta : "メールで申し込む・相談する";
+    : contactEmail
+      ? mailtoFallback(contactEmail, plan.name)
+      : "/contact";
+  const cLabel = live
+    ? plan.cta
+    : contactEmail
+      ? "メールで申し込む・相談する"
+      : "問い合わせる";
   return (
     <article
       className={`relative rounded-md flex flex-col min-h-full transition-shadow duration-300 ${
@@ -683,7 +690,8 @@ function FinalCTA({
   contactEmail: string;
 }) {
   const live = !!stripeHref;
-  const href = stripeHref ?? mailtoFallback(contactEmail);
+  const href =
+    stripeHref ?? (contactEmail ? mailtoFallback(contactEmail) : "/contact");
   return (
     <section className="mt-14 md:mt-20 page-entrance text-center">
       <div className="max-w-2xl mx-auto border-t border-[rgba(var(--foreground-rgb),0.08)] pt-10 md:pt-14">
@@ -764,7 +772,8 @@ function StickyCtaBar({
     };
   }, []);
 
-  const href = stripeHref ?? mailtoFallback(contactEmail);
+  const href =
+    stripeHref ?? (contactEmail ? mailtoFallback(contactEmail) : "/contact");
 
   return (
     <div
@@ -817,7 +826,11 @@ export default function ServicePage() {
   });
   const photos = (photosData?.photos ?? []) as ServicePhoto[];
   const config = parseServicePageConfig(settingsData?.servicePageConfig);
-  const contactEmail = settingsData?.contactEmail || "akieguchi33@gmail.com";
+  const contactEmail = resolveServiceContactEmail(
+    settingsData?.contactEmail,
+    settingsData?.siteUrl,
+    typeof window === "undefined" ? undefined : window.location.hostname,
+  );
   const live = anyPlanLive(config);
   const ref = usePageEntrance([photos.length]);
 

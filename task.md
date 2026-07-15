@@ -8459,3 +8459,11 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 次に行うこと: 新しいClaude Codeセッション開始時にhook表示を1回目視する。
 - 重要な制約: push未実施。認証トークン、Cookie、APIキー、メールアドレスは保存しない。
 - 必要なcommit情報: このHandoffと`.claude/hooks/credit-status.mjs`等を同一commitに含める。
+
+## Handoff 2026-07-15 (33) — 配布先のオーナーメール漏れ防止
+
+- 完了: Portfolio Kitで`contactEmail`未設定時の個人メール補完をakieguchi.comだけに限定した。
+- 配布先: 販売ページは`/contact`へ誘導し、開始案内のメール専用ボタンは非表示。設定済みメールは従来どおり使用する。
+- オーナー本番: akieguchi.comでは従来のメールフォールバックを維持する。
+- 検証: `bunx tsc -b`成功、`bun test ./src` 429 pass / 0 fail、lint・`git diff --check`成功。
+- 制約: push、本番DB/R2/Railway操作、`.env`読み取りは未実施。

@@ -8,8 +8,9 @@ import {
   Mail,
 } from "lucide-react";
 import { Link } from "wouter";
-
-const CONTACT_EMAIL = "akieguchi33@gmail.com";
+import { useQuery } from "@tanstack/react-query";
+import { resolveServiceContactEmail } from "../../shared/service-visibility";
+import { api, jsonOrThrow } from "../lib/api";
 
 const bodyStyle = {
   fontSize: "var(--body-size, 0.9rem)",
@@ -211,7 +212,7 @@ function TroubleItem({
   );
 }
 
-function TroubleSection() {
+function TroubleSection({ contactEmail }: { contactEmail: string }) {
   return (
     <section className="mt-12 md:mt-16">
       <p className="font-en uppercase mb-3" style={labelStyle}>
@@ -322,18 +323,20 @@ function TroubleSection() {
               </span>
             </span>
           </Callout>
-          <div className="pt-1">
-            <ExternalButton
-              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-                "セットアップでのエラー相談",
-              )}&body=${encodeURIComponent(
-                "困っている内容:\n\n\n(できれば) 添付:\n- Railwayのプロジェクト全体画面\n- eguchi-portfolio-app の Logs\n- eguchi-portfolio-app の Variables のキー名一覧(値は隠す)",
-              )}`}
-            >
-              <Mail size={15} />
-              エラー相談メールを送る
-            </ExternalButton>
-          </div>
+          {contactEmail && (
+            <div className="pt-1">
+              <ExternalButton
+                href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                  "セットアップでのエラー相談",
+                )}&body=${encodeURIComponent(
+                  "困っている内容:\n\n\n(できれば) 添付:\n- Railwayのプロジェクト全体画面\n- eguchi-portfolio-app の Logs\n- eguchi-portfolio-app の Variables のキー名一覧(値は隠す)",
+                )}`}
+              >
+                <Mail size={15} />
+                エラー相談メールを送る
+              </ExternalButton>
+            </div>
+          )}
         </TroubleItem>
       </div>
     </section>
@@ -398,6 +401,16 @@ function HandoffCard() {
 }
 
 export default function ServiceStartPage() {
+  const { data: settingsData } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
+  const contactEmail = resolveServiceContactEmail(
+    settingsData?.contactEmail,
+    settingsData?.siteUrl,
+    typeof window === "undefined" ? undefined : window.location.hostname,
+  );
+
   return (
     <section className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28">
       <header className="grid gap-10 md:grid-cols-[1.02fr_0.98fr] md:items-center">
@@ -427,14 +440,16 @@ export default function ServiceStartPage() {
             。あとの設定はすべて自動で入ります。
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            <ExternalButton
-              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-                "Portfolio Kit 購入後の相談",
-              )}`}
-            >
-              <Mail size={15} />
-              購入後の相談をする
-            </ExternalButton>
+            {contactEmail && (
+              <ExternalButton
+                href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                  "Portfolio Kit 購入後の相談",
+                )}`}
+              >
+                <Mail size={15} />
+                購入後の相談をする
+              </ExternalButton>
+            )}
             <Link
               to="/portfolio-kit"
               className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-ja text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
@@ -469,15 +484,17 @@ export default function ServiceStartPage() {
           subtitle="Self setup"
           steps={selfSteps}
         >
-          <ExternalButton
-            href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-              "自分で立てるコースの案内再送",
-            )}`}
-            variant="outline"
-          >
-            <Mail size={15} />
-            設置リンクの案内メールを確認する
-          </ExternalButton>
+          {contactEmail && (
+            <ExternalButton
+              href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                "自分で立てるコースの案内再送",
+              )}`}
+              variant="outline"
+            >
+              <Mail size={15} />
+              設置リンクの案内メールを確認する
+            </ExternalButton>
+          )}
           <Link
             to="/portfolio-kit"
             className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-ja text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
@@ -491,14 +508,16 @@ export default function ServiceStartPage() {
           subtitle="Concierge setup"
           steps={conciergeSteps}
         >
-          <ExternalButton
-            href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-              "公開おまかせの素材送付",
-            )}`}
-          >
-            <Mail size={15} />
-            素材を送る
-          </ExternalButton>
+          {contactEmail && (
+            <ExternalButton
+              href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                "公開おまかせの素材送付",
+              )}`}
+            >
+              <Mail size={15} />
+              素材を送る
+            </ExternalButton>
+          )}
           <ExternalButton href="/admin/login" variant="outline">
             <KeyRound size={15} />
             管理画面へ
@@ -506,7 +525,7 @@ export default function ServiceStartPage() {
         </StepPanel>
       </div>
 
-      <TroubleSection />
+      <TroubleSection contactEmail={contactEmail} />
 
       <HandoffCard />
     </section>

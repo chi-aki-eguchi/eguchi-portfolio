@@ -1,4 +1,5 @@
 const SERVICE_HOST = "akieguchi.com";
+const SERVICE_OWNER_EMAIL = "akieguchi33@gmail.com";
 
 function normalizeHost(host: string | undefined): string {
   return (host ?? "").trim().toLowerCase().replace(/^www\./, "");
@@ -13,6 +14,26 @@ function hostFromUrl(siteUrl: string | undefined): string {
   }
 }
 
+export function isServiceOwnerSite(
+  siteUrl: string | undefined,
+  windowHost: string | undefined,
+): boolean {
+  return (
+    hostFromUrl(siteUrl) === SERVICE_HOST ||
+    normalizeHost(windowHost) === SERVICE_HOST
+  );
+}
+
+export function resolveServiceContactEmail(
+  contactEmail: string | undefined,
+  siteUrl: string | undefined,
+  windowHost: string | undefined,
+): string {
+  const configuredEmail = contactEmail?.trim();
+  if (configuredEmail) return configuredEmail;
+  return isServiceOwnerSite(siteUrl, windowHost) ? SERVICE_OWNER_EMAIL : "";
+}
+
 export function resolveServiceVisibility(
   mode: string | undefined,
   siteUrl: string | undefined,
@@ -20,10 +41,7 @@ export function resolveServiceVisibility(
 ): boolean {
   if (mode === "on") return true;
   if (mode === "off") return false;
-  return (
-    hostFromUrl(siteUrl) === SERVICE_HOST ||
-    normalizeHost(windowHost) === SERVICE_HOST
-  );
+  return isServiceOwnerSite(siteUrl, windowHost);
 }
 
 export function resolveServiceNavVisibility(mode: string | undefined): boolean {

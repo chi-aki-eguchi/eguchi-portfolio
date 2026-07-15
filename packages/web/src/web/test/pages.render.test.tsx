@@ -271,6 +271,30 @@ describe("shared components", () => {
     }
   });
 
+  test("distributed Portfolio Kit pages never render the owner email fallback", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      servicePageMode: "on",
+      siteUrl: "https://portfolio.example",
+      contactEmail: "",
+    };
+    dom.reconfigure({ url: "https://portfolio.example/portfolio-kit" });
+    try {
+      for (const load of [
+        () => import("../pages/service"),
+        () => import("../pages/service-start"),
+      ]) {
+        const Page = (await load()).default;
+        const { host, cleanup } = await mount(createElement(Page));
+        expect(host.innerHTML).not.toContain("akieguchi33@gmail.com");
+        cleanup();
+      }
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
   test("Portfolio Kit answers the core buying questions in its default copy", async () => {
     const previousSettings = canned["/api/settings"];
     canned["/api/settings"] = { servicePageConfig: "" };

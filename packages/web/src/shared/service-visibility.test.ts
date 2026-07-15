@@ -1,8 +1,30 @@
 import { describe, expect, test } from "bun:test";
 import {
+  resolveServiceContactEmail,
   resolveServiceNavVisibility,
   resolveServiceVisibility,
 } from "./service-visibility";
+
+describe("resolveServiceContactEmail", () => {
+  test("uses configured contact details on distributed sites", () => {
+    expect(
+      resolveServiceContactEmail(
+        "hello@example.com",
+        "https://portfolio.example",
+        "portfolio.example",
+      ),
+    ).toBe("hello@example.com");
+  });
+
+  test("keeps the owner fallback only on akieguchi.com", () => {
+    expect(resolveServiceContactEmail("", "https://akieguchi.com", "")).toBe(
+      "akieguchi33@gmail.com",
+    );
+    expect(
+      resolveServiceContactEmail("", "https://portfolio.example", "localhost"),
+    ).toBe("");
+  });
+});
 
 describe("resolveServiceVisibility", () => {
   test("on always shows Service", () => {

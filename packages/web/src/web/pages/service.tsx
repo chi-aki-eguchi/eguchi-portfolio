@@ -857,6 +857,24 @@ export default function ServicePage() {
             </span>
           ))}
         </p>
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 border-y border-[rgba(var(--foreground-rgb),0.10)] page-entrance page-entrance-delay-1">
+          {config.hero.facts.map((fact) => (
+            <div
+              key={fact.title}
+              className="px-4 py-4 sm:border-l sm:first:border-l-0 border-[rgba(var(--foreground-rgb),0.10)]"
+            >
+              <p className={labelCls} style={labelStyle}>
+                {fact.title}
+              </p>
+              <p
+                className="mt-2 font-ja text-[rgba(var(--foreground-rgb),0.72)]"
+                style={{ fontSize: "0.82rem", lineHeight: 1.7 }}
+              >
+                {fact.body}
+              </p>
+            </div>
+          ))}
+        </div>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 page-entrance page-entrance-delay-1">
           <ServiceButton href="#pricing">
             {config.hero.ctaPricing}

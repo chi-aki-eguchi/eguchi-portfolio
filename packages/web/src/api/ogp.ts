@@ -123,8 +123,8 @@ export function ogCardTitleFrom(settings: Record<string, string>): string {
 }
 
 const SERVICE_OG = {
-  title: "写真家のためのポートフォリオサイト",
-  desc: "写真を上げて並べるだけで、雑誌のように見える、あなただけのポートフォリオ。自分で立てる ¥10,000 ／ 公開おまかせ ¥30,000。",
+  title: "Aki Eguchi Portfolio Kit",
+  desc: "いま見ているサイトが、そのまま見本。写真家のためのポートフォリオを、自分で立てる ¥10,000 ／ 公開おまかせ ¥30,000。",
   image: "/og-service.jpg",
 };
 
@@ -134,7 +134,7 @@ const SERVICE_START_OG = {
   image: "/og-service.jpg",
 };
 
-const SERVICE_PATHS = new Set(["/service", "/service/start"]);
+const SERVICE_PATHS = new Set(["/portfolio-kit", "/portfolio-kit/start"]);
 
 function socialImagePath(image: string, rotationDeg?: number | null): string {
   if (!image.startsWith("/api/images/")) return image;
@@ -192,10 +192,10 @@ export function injectOgp(
   );
   const isServiceHost = isServiceSiteUrl(siteUrl);
   const isServicePath = SERVICE_PATHS.has(pathname);
-  const isBuyerStartPath = pathname === "/service/start";
+  const isBuyerStartPath = pathname === "/portfolio-kit/start";
   const isService = isServicePath && isServiceSite;
   const serviceOg =
-    pathname === "/service/start" ? SERVICE_START_OG : SERVICE_OG;
+    pathname === "/portfolio-kit/start" ? SERVICE_START_OG : SERVICE_OG;
   const page = PAGE_TITLES[pathname];
   const KNOWN_ROUTES = [
     "/",
@@ -204,8 +204,8 @@ export function injectOgp(
     "/about",
     "/profile",
     "/contact",
-    "/service",
-    "/service/start",
+    "/portfolio-kit",
+    "/portfolio-kit/start",
     "/admin",
     "/admin/login",
   ];

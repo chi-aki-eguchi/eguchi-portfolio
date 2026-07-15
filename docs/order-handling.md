@@ -17,7 +17,7 @@ runbook です。買う人向けの文面は [purchase-thankyou.md](./purchase-t
 2. [purchase-thankyou.md](./purchase-thankyou.md) の **A** の文面を送る
    （購入後スタートページ + 購入者向けDeployリンク + 連絡先）。
 3. 質問が来たら、つまずきの多くは「公開URLを作る（手順④）」か「パスワード」。
-   [faq.md](./faq.md) / <https://akieguchi.com/service/start> を案内。
+   [faq.md](./faq.md) / <https://akieguchi.com/portfolio-kit/start> を案内。
 4. 状態を「完了」に。
 
 ## B. おまかせ設定（¥30,000）
@@ -43,7 +43,7 @@ runbook です。買う人向けの文面は [purchase-thankyou.md](./purchase-t
 
 ## Stripe 決済（有効化済み・2026-06-22〜）
 
-- `/service` の購入ボタンは Stripe Payment Link（自分で / おまかせ）に接続済み。
+- `/portfolio-kit` の購入ボタンは Stripe Payment Link（自分で / おまかせ）に接続済み。
   購入者はオンラインでカード決済できる。「準備中」表示は消えている。
 - まだ設定していなければ、Stripe の「決済後ページ / 確認メール」に
   [purchase-thankyou.md](./purchase-thankyou.md) の A・B を入れると、入金後の一次返信が

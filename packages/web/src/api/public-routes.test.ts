@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  canonicalPortfolioKitPath,
   canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
   isKnownSpaPath,
@@ -16,14 +17,24 @@ describe("public SPA route status", () => {
       "/about",
       "/profile",
       "/contact",
-      "/service",
-      "/service/start",
+      "/portfolio-kit",
+      "/portfolio-kit/start",
       "/admin",
       "/admin/login",
     ]) {
       expect(isKnownSpaPath(path)).toBe(true);
       expect(htmlStatusForSpaPath(path)).toBe(200);
     }
+  });
+
+  test("maps legacy service URLs to Portfolio Kit and keeps canonical paths", () => {
+    expect(canonicalPortfolioKitPath("/service")).toBe("/portfolio-kit");
+    expect(canonicalPortfolioKitPath("/service/start/")).toBe(
+      "/portfolio-kit/start",
+    );
+    expect(canonicalPortfolioKitPath("/portfolio-kit")).toBe(
+      "/portfolio-kit",
+    );
   });
 
   test("series detail routes depend on whether the slug resolves", () => {

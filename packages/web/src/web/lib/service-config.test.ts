@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   DEFAULT_SERVICE_CONFIG,
+  parseServicePageConfig,
   primaryStripeUrl,
   startingStripeUrl,
   type PlanItem,
@@ -76,5 +77,22 @@ describe("service Stripe URL selection", () => {
     ]);
 
     expect(startingStripeUrl(config)).toBe("https://buy.stripe.com/custom");
+  });
+});
+
+describe("Portfolio Kit config migration", () => {
+  test("fills new first-view facts into older saved configs", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({
+        hero: {
+          label: "Old label",
+          title: "Old title",
+          body: "Old body",
+        },
+      }),
+    );
+
+    expect(parsed.hero.title).toBe("Old title");
+    expect(parsed.hero.facts).toEqual(DEFAULT_SERVICE_CONFIG.hero.facts);
   });
 });

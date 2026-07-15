@@ -43,6 +43,16 @@ function ServiceVisibilityGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function LegacyPortfolioKitRedirect({ to }: { to: string }) {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    navigate(to, { replace: true });
+  }, [navigate, to]);
+
+  return <PageFallback />;
+}
+
 function App() {
   return (
     <Provider>
@@ -129,6 +139,12 @@ function App() {
             </Layout>
           </Route>
           <Route path="/service/start">
+            <LegacyPortfolioKitRedirect to="/portfolio-kit/start" />
+          </Route>
+          <Route path="/service">
+            <LegacyPortfolioKitRedirect to="/portfolio-kit" />
+          </Route>
+          <Route path="/portfolio-kit/start">
             <ServiceVisibilityGate>
               <Layout>
                 <PageTransition>
@@ -141,11 +157,11 @@ function App() {
               </Layout>
             </ServiceVisibilityGate>
           </Route>
-          <Route path="/service">
+          <Route path="/portfolio-kit">
             <ServiceVisibilityGate>
               <Layout>
                 <PageTransition>
-                  <TitledRoute title="ご案内">
+                  <TitledRoute title="Portfolio Kit">
                     <Suspense fallback={<PageFallback />}>
                       <ServicePage />
                     </Suspense>

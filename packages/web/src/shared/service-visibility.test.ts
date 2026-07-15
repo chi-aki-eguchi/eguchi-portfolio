@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { resolveServiceVisibility } from "./service-visibility";
+import {
+  resolveServiceNavVisibility,
+  resolveServiceVisibility,
+} from "./service-visibility";
 
 describe("resolveServiceVisibility", () => {
   test("on always shows Service", () => {
@@ -42,5 +45,14 @@ describe("resolveServiceVisibility", () => {
     expect(
       resolveServiceVisibility("unexpected", undefined, "akieguchi.com"),
     ).toBe(true);
+  });
+});
+
+describe("resolveServiceNavVisibility", () => {
+  test("only an explicit on setting adds Portfolio Kit to navigation", () => {
+    expect(resolveServiceNavVisibility("on")).toBe(true);
+    expect(resolveServiceNavVisibility("")).toBe(false);
+    expect(resolveServiceNavVisibility(undefined)).toBe(false);
+    expect(resolveServiceNavVisibility("off")).toBe(false);
   });
 });

@@ -12,10 +12,10 @@ import {
 } from "./api/ogp";
 import { generateOgCardPng } from "./api/og-card";
 import {
+  canonicalPortfolioKitPath,
   canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
   isSeriesDetailPath,
-  normalizeSpaPathname,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
 import { settingsVersion } from "./api/settings-version";
@@ -320,7 +320,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/about",
     "/contact",
     ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
-      ? ["/service"]
+      ? ["/portfolio-kit"]
       : []),
   ];
   // Include each published series detail page so crawlers discover the actual
@@ -478,7 +478,7 @@ const server = Bun.serve({
 
 async function serveNonApi(request: Request, url: URL): Promise<Response> {
   const publicOrigin = publicOriginFromRequest(request);
-  const routePathname = normalizeSpaPathname(url.pathname);
+  const routePathname = canonicalPortfolioKitPath(url.pathname);
   if (routePathname !== url.pathname && !url.pathname.includes(".")) {
     return Response.redirect(
       canonicalSpaRedirectUrl(request.url, publicOrigin, routePathname),

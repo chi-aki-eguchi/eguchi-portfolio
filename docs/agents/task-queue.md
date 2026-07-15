@@ -179,7 +179,7 @@ adminタブ・ナビ表示をまとめてON/OFF。配布既定OFF・akieguchi.co
 的クレジット(文言+リンク先は設定キー、配布既定ON・サイト側で消すのも自由)。
 akieguchi.com では「このサイトのテンプレートを販売中」導線としても使える。
 既存 footerCtaLabel の実装パターンを踏襲。リンク先URLの正はオーナーに確認
-(販売LPが未定なら暫定で akieguchi.com/service)。
+(販売LPは akieguchi.com/portfolio-kit)。
 
 ## T-4. 配布テンプレート: OGP画像の自動生成 [昼推奨] [Codexレビュー必須] ✅ 済 (2026-07-15 実装=Codex/レビュー=Claude・指摘なし1周。本番デプロイ後に/og-default.pngの日本語描画を要目視)
 
@@ -199,7 +199,7 @@ ogp.ts の imgBase フォールバック鎖と og-service.jpg の扱いも棚卸
 背景: T-4の /og-default.png が本番Railwayコンテナで全文字豆腐化(フォント皆無)。
 日本語サイト名を含めて環境に依存せず描画されるようにする。
 
-## T-7. Serviceページを「Portfolio Kit」として再構成 [昼推奨] [Codexレビュー必須] 🔄 実装中 (2026-07-15 オーナー決定: 呼称=Portfolio Kit / メインナビから除外 / 「このサイトが見本」軸で再構成)
+## T-7. Serviceページを「Portfolio Kit」として再構成 [昼推奨] [Codexレビュー必須] ✅ 済 (2026-07-15 実装=Codex。URL/ナビ/OGP/本文/admin/Handoff完了、全テスト成功、push後にtemplateCreditUrl更新が必要)
 
 背景: 「Service」という名前は撮影サービスと誤解され、メインナビの販売リンクは
 ポートフォリオの体験を汚す。買う前の「何これ?」を消す。

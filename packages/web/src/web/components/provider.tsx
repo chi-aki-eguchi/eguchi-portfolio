@@ -4,7 +4,10 @@ import { api, jsonOrThrow } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
 import { ensureAccentContrast } from "../lib/color-contrast";
 import { heroMotionCssVars } from "../lib/hero-motion";
-import { resolveServiceVisibility } from "../../shared/service-visibility";
+import {
+  resolveServiceNavVisibility,
+  resolveServiceVisibility,
+} from "../../shared/service-visibility";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 type DarkModeCtx = ReturnType<typeof useDarkMode>;
@@ -16,11 +19,13 @@ export function useDarkModeContext() {
 type ServiceVisibilityCtx = {
   isResolved: boolean;
   showService: boolean;
+  showServiceInNav: boolean;
 };
 
 const ServiceVisibilityContext = createContext<ServiceVisibilityCtx>({
   isResolved: false,
   showService: false,
+  showServiceInNav: false,
 });
 
 export function useServiceVisibility() {
@@ -817,6 +822,7 @@ export function Provider({ children }: ProviderProps) {
       serviceSettings.siteUrl,
       typeof window === "undefined" ? "" : window.location.hostname,
     ),
+    showServiceInNav: resolveServiceNavVisibility(serviceSettings.mode),
   };
 
   return (

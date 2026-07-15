@@ -5,7 +5,7 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
 
 > リンクの差し替え:
 > - Deploy リンク（自分で立てる）: `{{BUYER_ONLY_DEPLOY_LINK}}`
-> - 購入後スタートページ: <https://akieguchi.com/service/start>
+> - 購入後スタートページ: <https://akieguchi.com/portfolio-kit/start>
 > - Deploy リンクは購入者向けの案内内だけに載せる。公開ページには置かない。
 > - 連絡先: Instagram @chi._.aki._ ／ X @chi_aki_jpg ／ akieguchi33@gmail.com
 
@@ -21,7 +21,7 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
 1. まず、管理画面に使うパスワードを1つ決めておきます（8文字以上・メモを）。
 
 2. 購入後スタートページを開きます:
-   https://akieguchi.com/service/start
+   https://akieguchi.com/portfolio-kit/start
 
 3. このメールにある「Deploy」リンクから公開します:
    {{BUYER_ONLY_DEPLOY_LINK}}
@@ -63,7 +63,7 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
 
 サイトが整ったら、すぐに写真を入れ始められるようにしてお渡しします。
 購入後スタートページはこちらです:
-https://akieguchi.com/service/start
+https://akieguchi.com/portfolio-kit/start
 ```
 
 ---

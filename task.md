@@ -8156,6 +8156,156 @@ Railwayコンテナにシステムフォントが無くても、`/og-default.png
 
 - `scratch/`、オーナー承認前のpush、本番DB/R2/Railwayへの書き込み。
 
+## Handoff 2026-07-15 (29) — T-7 最終状態
+
+- T-7の実装・検証は完了。詳細は上の`T-7実装詳細`と`Handoff (28)`を参照。
+- 正式URLは`/portfolio-kit`、購入後は`/portfolio-kit/start`。旧`/service`系は`308`転送。
+- akieguchi.comの`servicePageMode`と`servicePageConfig`は本番公開API上で空。
+  push後は新しい既定本文が使われ、メインナビにはPortfolio Kitを出さない。
+- 本番DBの`templateCreditUrl`だけ旧`https://akieguchi.com/service`が保存済み。
+  push後、オーナーが管理画面の`Settings` → `基本・見た目` → `サイト基本情報`で
+  `https://akieguchi.com/portfolio-kit`へ更新して保存する。旧URL転送があるため更新前もリンク切れしない。
+- 将来、配布先がslugを変える機能は今回のスコープ外。
+- 最終検証: `bunx tsc -b`成功、`bun test ./src` 426 pass、`bun run smoke`
+  30 pass / 28条件skip / 0 fail、`git diff --check`成功。
+- `claude-driver`へP0/P1 read-onlyレビューをagmsgで依頼したが同一セッション内に返信なし。
+  `docs/checklists.md`のSettings/Admin/Railway項目と必須テストで代替確認した。
+- commit / push / Railway反映 / 変更後の本番確認は未実施。変更はworking treeに残している。
+  pushはオーナーのみ。`scratch/`と本番DB/R2/Railwayへの無断書き込みは禁止。
+
+## T-7実装詳細 — Portfolio Kit再構成（Handoff 28参照）
+
+### 目的
+
+販売ページの呼称を`Portfolio Kit`へ統一し、ポートフォリオ本体の静かな動線を守りながら、
+買う前に必要な「見本・価格・内容・公開目安・FAQ」を最初に理解できるページへ再構成する。
+
+### 変更内容
+
+- 正式URLを`/portfolio-kit`、購入後ページを`/portfolio-kit/start`へ変更した。
+  旧`/service`と`/service/start`（末尾スラッシュ・query付き含む）はサーバーで対応する
+  新URLへ`308`恒久転送する。SPA内の旧URLも同じ新URLへ置換遷移する。
+- OGPのタイトル・説明・canonical・対象ルート・sitemapをPortfolio Kitの正式URLへ更新し、
+  OGP画像も`AKI EGUCHI / PORTFOLIO KIT`表記で再生成した。
+- ページを開ける条件とナビ表示条件を分離した。`akieguchi.com`は`servicePageMode`未設定の
+  ままページを直リンクで開けるが、メインナビには出ない。配布先を含め、
+  `servicePageMode='on'`を明示したサイトだけメインナビに`Portfolio Kit`を表示する。
+- 以前の独立したフッター`Portfolio site`リンクを削除し、入口を既存のテンプレート
+  クレジットと直リンクに一本化した。`templateCreditUrl`のコード既定値と管理画面の例を
+  `https://akieguchi.com/portfolio-kit`へ更新した。
+- 冒頭を「いま見ているこのサイトが、そのまま見本です。」へ変更し、同じ画面内に
+  `¥10,000〜（買い切り）`、含まれるもの、公開までの目安を3項目で表示した。
+  この3項目は既存`servicePageConfig`内の`hero.facts`として管理画面から編集できる。
+  古い保存済みJSONに`facts`が無い場合は新しい既定値を補う互換処理とテストを追加した。
+- FAQを維持費・独自ドメイン・自分で更新・終了時の扱いが明示される文面へ更新した。
+- adminの表示名・説明を`Portfolio Kit`と`/portfolio-kit`へ変更した。内部tabキー`service`、
+  settingsキー`servicePageMode` / `servicePageConfig`は変更していない。
+- 購入後案内・注文対応・SNS告知文書の公開URLを新URLへ更新した。
+- 新しいsettingsキー、npm依存、DB schema、R2/画像配信処理は追加・変更していない。
+  既存3キーは`shared/settings-keys.ts`の台帳、API default、providerのDB適用・preview受信経路を
+  確認済み。`Content-Encoding`も変更していない。
+
+### 本番DBの確認と必要なオーナー操作
+
+- 2026-07-15に公開`GET https://akieguchi.com/api/settings`をread-only確認した。
+- `servicePageMode=''`、`servicePageConfig=''`なので、push後のページ本文は今回更新した
+  `DEFAULT_SERVICE_CONFIG`が使われ、akieguchi.comのメインナビは非表示になる。
+- `templateCreditUrl='https://akieguchi.com/service'`は本番DBに保存済みのため、
+  コード既定値だけでは置き換わらない。旧URLは転送で動作を維持するが、push後にオーナーが
+  管理画面の`Settings` → `基本・見た目` → `サイト基本情報` →
+  `テンプレート購入クレジット URL`へ
+  `https://akieguchi.com/portfolio-kit`を入力して保存する必要がある。
+- 配布先で将来Portfolio Kitのslugを変更可能にする機能は今回のスコープ外。次回検討事項。
+
+### 触ったファイル
+
+- URL / OGP / sitemap: `packages/web/src/server.ts`, `packages/web/src/api/ogp.ts`,
+  `packages/web/src/api/public-routes.ts`と各test、`packages/web/public/og-service.jpg`,
+  `packages/web/scripts/gen-og-service.mjs`
+- 表示条件 / routing / layout: `packages/web/src/shared/service-visibility.ts`とtest、
+  `packages/web/src/web/app.tsx`, `packages/web/src/web/components/provider.tsx`,
+  `packages/web/src/web/components/Layout.tsx`
+- ページ / admin / config: `packages/web/src/web/pages/service.tsx`,
+  `packages/web/src/web/pages/service-start.tsx`, `packages/web/src/web/lib/service-config.ts`とtest、
+  `packages/web/src/web/pages/admin.tsx`, `packages/web/src/web/pages/admin-tabs.tsx`,
+  `packages/web/src/web/test/pages.render.test.tsx`, `packages/web/src/api/index.ts`
+- 文書: `docs/agents/task-queue.md`, `docs/order-handling.md`, `docs/purchase-thankyou.md`,
+  `docs/sns-announcement.md`, `task.md`
+
+### 検証したこと
+
+- `cd packages/web && bunx tsc -b`: 成功。
+- `cd packages/web && bun test ./src`: 成功（426 pass / 0 fail）。
+- `bun run smoke`: 再実行で成功（30 pass / 28データ・画面幅条件skip / 0 fail）。
+  初回は今回未変更のHero motion 1件が写真要素0件で一時失敗したが、対象単体は2 pass、
+  続く全体再実行も0 failだった。Portfolio Kitタブのscroll検査はdesktop/mobileとも成功。
+- `git diff --check`: 成功。
+- OGP画像を目視し、`AKI EGUCHI / PORTFOLIO KIT / akieguchi.com`が1200x630内に収まることを確認。
+- 旧URL変換、正式URLの200判定、canonical/OGP、未設定時ナビ非表示、`on`時だけナビ表示、
+  古い`servicePageConfig`への冒頭3項目補完、FAQ主要文言を自動テストで固定した。
+
+### 検証していないこと
+
+- push / Railway反映 / 本番の旧URL転送・新ページ表示・OGPカード・ナビ非表示の確認。
+- push後の管理画面による本番`templateCreditUrl`更新（上記オーナー操作）。
+
+### pushしたか
+
+していない。git commitもしていない。変更はworking treeに残している。
+
+### 本番で確認したか
+
+変更後の本番表示は確認していない。本番公開APIのsettings値だけread-onlyで確認した。
+
+### 次の担当者が触ってよい場所
+
+- 上記差分のread-onlyレビュー。
+- オーナーがcommit/pushした後のRailway反映、新旧URL・OGP・PC/スマホ表示確認。
+- push後の管理画面で`templateCreditUrl`を正式URLへ更新するオーナー操作。
+
+### 次の担当者が触ってはいけない場所
+
+- `scratch/`、オーナー承認前のpush、本番DB/R2/Railwayへの書き込み。
+
+## Handoff 2026-07-15 (28) — T-7 Portfolio Kit再構成
+
+### 完了内容
+
+- 正式URLを`/portfolio-kit`（購入後は`/portfolio-kit/start`）へ変更し、旧`/service`系は
+  queryを保った`308`恒久転送にした。OGP・canonical・sitemap・OGP画像もPortfolio Kitへ統一。
+- `akieguchi.com`は未設定のまま直リンクでページを開けるが、メインナビには出さない。
+  `servicePageMode='on'`を明示した配布先だけ、ナビに`Portfolio Kit`を表示する。
+- フッターの独立販売リンクを削除し、テンプレートクレジットと直リンクだけを入口にした。
+- 冒頭に「このサイトが見本」、価格、含まれるもの、公開目安を表示し、維持費・ドメイン・
+  自分での更新・終了時をFAQで明示した。admin表示名もPortfolio Kitへ変更。内部キーは維持。
+- 詳細な変更ファイル・互換処理・§0確認は直前の
+  `T-7実装詳細 — Portfolio Kit再構成（Handoff 28参照）`に記録した。
+
+### 本番settings確認と必須オーナー操作
+
+- 公開APIのread-only確認では`servicePageMode=''`、`servicePageConfig=''`。
+  push後は新しいコード既定本文が使われ、akieguchi.comのメインナビは非表示になる。
+- 本番DBには`templateCreditUrl='https://akieguchi.com/service'`が保存済み。
+  旧URL転送でリンク切れにはならないが、push後に管理画面の`Settings` → `基本・見た目` →
+  `サイト基本情報` → `テンプレート購入クレジット URL`を
+  `https://akieguchi.com/portfolio-kit`へ変更して保存する。
+- 配布先が将来slugを変更できる機能は今回のスコープ外として記録。
+
+### 検証
+
+- `cd packages/web && bunx tsc -b`: 成功。
+- `cd packages/web && bun test ./src`: 426 pass / 0 fail。
+- `bun run smoke`: 最終全体実行 30 pass / 28条件skip / 0 fail。
+- `git diff --check`: 成功。新npm依存、DB schema、scratch変更なし。
+- OGP画像を目視確認。`claude-driver`へagmsgでP0/P1 read-onlyレビュー依頼済み。
+
+### 状態
+
+- git commit / push / Railway反映 / 変更後の本番確認はしていない。
+- 変更はworking treeに残している。pushはオーナーのみ。
+- 次の担当者は差分レビューと、オーナーpush後の新旧URL・OGP・PC/スマホ表示確認のみ可。
+  `scratch/`と本番DB/R2/Railwayへの無断書き込みは禁止。
+
 ## Handoff 2026-07-15 (27) — T-6 P1 OS非依存フォント描画
 
 ### 目的
@@ -8239,3 +8389,37 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 ### 次の担当者が触ってはいけない場所
 
 - `scratch/`、オーナー承認前のpush、本番DB/R2/Railwayへの書き込み。
+
+## Handoff 2026-07-15 (30) — T-7 Portfolio Kit（最新）
+
+- T-7実装完了。正式URLは`/portfolio-kit`、購入後は`/portfolio-kit/start`。
+  旧`/service`系はqueryを保った`308`転送。OGP・canonical・sitemap・OGP画像も統一。
+- akieguchi.comは`servicePageMode`未設定のまま直リンク可、メインナビ非表示。
+  `servicePageMode='on'`を明示した配布先だけナビ表示。
+- 冒頭に見本宣言・価格・含まれるもの・公開目安を表示し、指定4テーマのFAQを追加。
+  admin表示名もPortfolio Kitへ変更。内部settings/tabキーは維持。
+- 本番公開APIでは`servicePageConfig=''`のため新しい既定本文が反映される。
+  ただし本番DBの`templateCreditUrl`は旧URL保存済み。push後、オーナーが管理画面の
+  `Settings` → `基本・見た目` → `サイト基本情報`で
+  `https://akieguchi.com/portfolio-kit`へ更新して保存する（更新前も旧URL転送でリンク切れなし）。
+- 配布先が将来slugを変える機能は今回のスコープ外。
+- 検証: `bunx tsc -b`成功、`bun test ./src` 426 pass、`bun run smoke`
+  30 pass / 28条件skip / 0 fail、`git diff --check`成功。
+- ClaudeへagmsgでP0/P1レビュー依頼済みだが同一セッション内に返信なし。
+  検査表と必須テストで代替。commit / push / Railway反映 / 変更後の本番確認は未実施。
+- 詳細な変更ファイルと判断記録は上の`T-7実装詳細`・Handoff (28)/(29)を参照。
+  working treeの変更を保護し、`scratch/`と本番DB/R2/Railwayへ無断で書き込まない。
+
+## Handoff 2026-07-15 (31) — T-7 Portfolio Kit 完了
+
+- 完了: admin の `Service` 表示を `Portfolio Kit` へ統一し、正式URL・旧URL転送・OGP・
+  販売ページ本文・関連資料をT-7仕様へ更新した。
+- 現在: `admin-red-flicker.spec.ts` のタブセレクタも新表示名へ追随し、黙ってskipしていた
+  desktop検査を復活させた。UIの見た目は追加変更していない。
+- 残問題: なし。初回smokeの全タブ巡回1件は画面起動待ちで一時timeoutしたが、
+  無変更での再実行は31 pass / 27条件skip / 0 fail。
+- 検証: `bun run check`成功（426 pass / 0 fail）、`bun run smoke`成功
+  （31 pass / 27条件skip / 0 fail）、対象spec単独は2 pass / 2条件skip。
+- 次: オーナーがpush後にRailway反映と新旧URL・OGP・PC/スマホ表示を確認し、
+  本番`templateCreditUrl`を`https://akieguchi.com/portfolio-kit`へ更新する。
+- 制約: push未実施。本番DB/R2/Railwayへの書き込みなし。`scratch/`はcommit対象外。

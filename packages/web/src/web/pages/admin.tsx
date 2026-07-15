@@ -118,7 +118,7 @@ const ADMIN_TABS: Record<Tab, { label: string; icon: React.ReactNode }> = {
   categories: { label: "Categories", icon: <Tag size={15} /> },
   series: { label: "Series", icon: <Layers size={15} /> },
   pricing: { label: "Pricing", icon: <Receipt size={15} /> },
-  service: { label: "Service", icon: <ExternalLink size={15} /> },
+  service: { label: "Portfolio Kit", icon: <ExternalLink size={15} /> },
   settings: { label: "Settings", icon: <Settings size={15} /> },
 };
 

@@ -271,6 +271,24 @@ describe("shared components", () => {
     }
   });
 
+  test("Portfolio Kit answers the core buying questions in its default copy", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = { servicePageConfig: "" };
+    try {
+      const PortfolioKitPage = (await import("../pages/service")).default;
+      const { host, cleanup } = await mount(createElement(PortfolioKitPage));
+      expect(host.textContent).toContain("いま見ているこのサイトが");
+      expect(host.textContent).toContain("¥10,000〜（買い切り）");
+      expect(host.textContent).toContain("サイト一式・管理画面・公開ガイド");
+      expect(host.textContent).toContain("自分で10〜15分");
+      expect(host.textContent).toContain("維持費や月額料金はいくらですか？");
+      expect(host.textContent).toContain("やめたいときはどうなりますか？");
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+
   test("ServiceStartPage does not expose the Railway Deploy link publicly", async () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(createElement(ServiceStartPage));
@@ -775,15 +793,15 @@ describe("shared components", () => {
       await waitForText(host, "プランを追加");
       expect(host.textContent).toContain("Contactページに表示される料金です");
 
-      buttonWithText(host, "Service").click();
-      await waitForText(host, "Service Page");
+      buttonWithText(host, "Portfolio Kit").click();
+      await waitForText(host, "/portfolio-kit 販売ページの内容を編集します");
       buttonWithText(host, "料金").click();
-      await waitForText(host, "/service 販売ページの料金です");
+      await waitForText(host, "/portfolio-kit 販売ページの料金です");
 
       buttonWithText(host, "Settings").click();
       await waitForText(host, "Live Preview");
       const serviceModeSelect = host.querySelector(
-        'select[aria-label="Serviceページを表示する"]',
+        'select[aria-label="Portfolio Kitの表示"]',
       ) as HTMLSelectElement | null;
       expect(serviceModeSelect).not.toBeNull();
       expect(
@@ -1636,7 +1654,7 @@ describe("shared components", () => {
     expect(templateCredit?.textContent).toBe("Template credit");
     expect(templateCredit?.getAttribute("target")).toBe("_blank");
     expect(templateCredit?.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(host.querySelector('a[href="/service"]')).not.toBeNull();
+    expect(host.querySelector('a[href="/portfolio-kit"]')).not.toBeNull();
 
     dom.window.dispatchEvent(
       new dom.window.MessageEvent("message", {
@@ -1651,7 +1669,7 @@ describe("shared components", () => {
       }),
     );
     await flush(10);
-    expect(host.querySelector('a[href="/service"]')).toBeNull();
+    expect(host.querySelector('a[href="/portfolio-kit"]')).toBeNull();
     expect(host.textContent).toContain("Template credit");
     expect(host.querySelector('a[href^="javascript:"]')).toBeNull();
 
@@ -1669,7 +1687,7 @@ describe("shared components", () => {
     cleanup();
   });
 
-  test("Layout keeps the service link quiet and production-only", async () => {
+  test("Layout keeps Portfolio Kit out of nav unless mode is explicitly on", async () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
     const prevSettings = canned["/api/settings"];
@@ -1682,10 +1700,28 @@ describe("shared components", () => {
           createElement(Layout, null, createElement("p", null, "child")),
         ),
       );
-      expect(hidden.host.querySelector('a[href="/service"]')).toBeNull();
+      expect(
+        hidden.host.querySelector('a[href="/portfolio-kit"]'),
+      ).toBeNull();
       hidden.cleanup();
 
       canned["/api/settings"] = { siteUrl: "https://akieguchi.com" };
+      const ownerDefault = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      expect(
+        ownerDefault.host.querySelectorAll('a[href="/portfolio-kit"]').length,
+      ).toBe(0);
+      ownerDefault.cleanup();
+
+      canned["/api/settings"] = {
+        siteUrl: "https://portfolio.example",
+        servicePageMode: "on",
+      };
       const visible = await mount(
         createElement(
           Provider,
@@ -1694,10 +1730,9 @@ describe("shared components", () => {
         ),
       );
       expect(
-        visible.host.querySelectorAll('a[href="/service"]').length,
+        visible.host.querySelectorAll('a[href="/portfolio-kit"]').length,
       ).toBeGreaterThan(0);
-      expect(visible.host.textContent).toContain("Service");
-      expect(visible.host.textContent).toContain("Portfolio site");
+      expect(visible.host.textContent).toContain("Portfolio Kit");
       visible.cleanup();
     } finally {
       canned["/api/settings"] = prevSettings;

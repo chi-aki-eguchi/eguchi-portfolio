@@ -25,3 +25,7 @@ export function resolveServiceVisibility(
     normalizeHost(windowHost) === SERVICE_HOST
   );
 }
+
+export function resolveServiceNavVisibility(mode: string | undefined): boolean {
+  return mode === "on";
+}

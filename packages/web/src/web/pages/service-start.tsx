@@ -436,7 +436,7 @@ export default function ServiceStartPage() {
               購入後の相談をする
             </ExternalButton>
             <Link
-              to="/service"
+              to="/portfolio-kit"
               className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-ja text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
             >
               料金ページへ戻る
@@ -479,7 +479,7 @@ export default function ServiceStartPage() {
             設置リンクの案内メールを確認する
           </ExternalButton>
           <Link
-            to="/service"
+            to="/portfolio-kit"
             className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-ja text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
           >
             料金ページへ戻る

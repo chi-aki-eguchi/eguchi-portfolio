@@ -28,6 +28,7 @@ export type ServicePageConfig = {
     label: string;
     title: string;
     body: string;
+    facts: FeatureItem[];
     ctaPricing: string;
     ctaExample: string;
   };
@@ -93,11 +94,22 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
   enabled: "on",
 
   hero: {
-    label: "Service",
-    title: "写真が主役になる、\n静かなポートフォリオサイト",
-    body: "テンプレートと格闘せずに持てる、写真家のためのポートフォリオサイト。\n管理画面から写真、プロフィール、連絡先を入れて、自分の作品を見せる場所として運用できます。",
-    ctaPricing: "料金を見る",
-    ctaExample: "実例を見る",
+    label: "Portfolio Kit",
+    title: "いま見ているこのサイトが、\nそのまま見本です。",
+    body: "Aki Eguchi Portfolio Kit は、写真家のための完成済みポートフォリオサイト。\n写真と文章を入れ替えれば、あなたの名前とドメインで公開できます。",
+    facts: [
+      { title: "Price", body: "¥10,000〜（買い切り）" },
+      {
+        title: "Included",
+        body: "サイト一式・管理画面・公開ガイド",
+      },
+      {
+        title: "Launch",
+        body: "自分で10〜15分／公開おまかせも選べます",
+      },
+    ],
+    ctaPricing: "プランと料金を見る",
+    ctaExample: "サイト内を見る",
   },
 
   examples: {
@@ -230,16 +242,20 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
         a: "いいえ。決済後すぐに自動生成されるサービスではありません。確認後、選んだプランに合わせてご案内します。自分で立てるプランは手順をお送りします。公開おまかせプランは、こちらで初期設定を進めます。",
       },
       {
-        q: "独自ドメイン対応ってどういう意味？",
+        q: "自分のドメインを使えますか？",
         a: "yourname.com のような自分のURLで公開できるように設定することです。すでにドメインをお持ちの場合は接続を案内します。まだお持ちでない場合は、取得方法からご案内できます。",
       },
       {
-        q: "月額料金はかかりますか？",
-        a: "このサービス自体の月額料金はありません。ただし、公開場所や独自ドメインなど、外部サービスの実費がかかる場合があります。目安は月500〜1,000円程度です。",
+        q: "維持費や月額料金はいくらですか？",
+        a: "Portfolio Kit自体の月額料金はありません。ただし、公開場所や独自ドメインなど、外部サービスの実費がかかります。公開場所は月500〜1,000円程度が目安で、料金改定や使用量により変わります。",
       },
       {
         q: "あとから写真や文章を変えられますか？",
         a: "はい。管理画面から写真、並び順、プロフィール、連絡先などを更新できます。大きなデザイン変更や個別カスタムは、内容に応じて別途ご相談になります。",
+      },
+      {
+        q: "やめたいときはどうなりますか？",
+        a: "公開場所の契約を止めれば、月々の実費も止められます。プロジェクトを削除すると写真や設定も消えるため、必要な写真や文章は先に手元へ保存してください。",
       },
     ],
   },
@@ -387,6 +403,7 @@ export function parseServicePageConfig(
       label: str(hero.label, D.hero.label),
       title: str(hero.title, D.hero.title),
       body: str(hero.body, D.hero.body),
+      facts: arr(hero.facts, D.hero.facts, isFeature),
       ctaPricing: str(hero.ctaPricing, D.hero.ctaPricing),
       ctaExample: str(hero.ctaExample, D.hero.ctaExample),
     },

@@ -2163,7 +2163,7 @@ export function PricingTab() {
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
       <PageHeader
         title="Pricing"
-        description="Contactページに表示される料金です。↑↓で並び替え。販売ページの料金はService画面で編集します。"
+        description="Contactページに表示される料金です。↑↓で並び替え。販売ページの料金はPortfolio Kit画面で編集します。"
       />
 
       {rowError && (
@@ -2708,8 +2708,8 @@ export function ServiceTab({
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
       <PageHeader
-        title="Service Page"
-        description="/service 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。"
+        title="Portfolio Kit"
+        description="/portfolio-kit 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。"
       />
 
       {/* ── Hero ── */}
@@ -2730,6 +2730,31 @@ export function ServiceTab({
           value={draft.hero.body}
           onChange={(v) => setHero({ body: v })}
         />
+        <p className="text-[10px] tracking-[0.04em] text-[var(--admin-muted)] pt-2">
+          冒頭に出す要点（価格・含まれるもの・公開目安）
+        </p>
+        {draft.hero.facts.map((fact, i) => (
+          <div key={i} className="grid grid-cols-[0.8fr_1.2fr] gap-2">
+            <SvcInput
+              label={`要点 ${i + 1}: ラベル`}
+              value={fact.title}
+              onChange={(v) =>
+                setHero({
+                  facts: updateItem(draft.hero.facts, i, { title: v }),
+                })
+              }
+            />
+            <SvcInput
+              label={`要点 ${i + 1}: 内容`}
+              value={fact.body}
+              onChange={(v) =>
+                setHero({
+                  facts: updateItem(draft.hero.facts, i, { body: v }),
+                })
+              }
+            />
+          </div>
+        ))}
         <div className="grid grid-cols-2 gap-2">
           <SvcInput
             label="CTA: 料金"
@@ -2940,7 +2965,7 @@ export function ServiceTab({
       {/* ── Pricing ── */}
       <ServiceSection title="料金">
         <p className="text-[11px] leading-6 text-[var(--admin-muted)]">
-          /service 販売ページの料金です。Contactページの料金は サイト &gt;
+          /portfolio-kit 販売ページの料金です。Contactページの料金は サイト &gt;
           Pricing で編集します。
         </p>
         <SvcInput
@@ -3718,7 +3743,7 @@ export function SettingsTab({
     {
       key: "templateCreditUrl",
       label: "テンプレート購入クレジット URL",
-      placeholder: "https://akieguchi.com/service",
+      placeholder: "https://akieguchi.com/portfolio-kit",
       hint: "http:// または https:// のURLだけリンクになります。空欄・無効なURLは文字だけ表示",
     },
   ];
@@ -3766,7 +3791,7 @@ export function SettingsTab({
               </Section>
 
               <Section
-                title="Serviceページ"
+                title="Portfolio Kit"
                 defaultOpen={false}
                 summary={
                   current["servicePageMode"] === "on"
@@ -3777,11 +3802,11 @@ export function SettingsTab({
                 }
               >
                 <AdminField
-                  label="Serviceページを表示する"
-                  hint="自動はakieguchi.comだけに表示する従来動作です。配布先で使う場合は「表示」を選びます"
+                  label="Portfolio Kitの表示"
+                  hint="自動はakieguchi.comで直リンクとクレジットだけ有効、ナビは非表示です。「表示」はページとナビを有効化、「非表示」はページも無効化します"
                 >
                   <select
-                    aria-label="Serviceページを表示する"
+                    aria-label="Portfolio Kitの表示"
                     value={current["servicePageMode"] ?? ""}
                     onChange={(e) => set("servicePageMode", e.target.value)}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm appearance-none cursor-pointer"

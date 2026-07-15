@@ -436,7 +436,7 @@ describe("injectOgp social image metadata", () => {
     {
       label: "owner service page without hero",
       settings: { siteUrl: "https://akieguchi.com" },
-      pathname: "/service",
+      pathname: "/portfolio-kit",
       hero: "",
       expected: "https://akieguchi.com/og-service.jpg",
       type: "image/jpeg",
@@ -444,7 +444,7 @@ describe("injectOgp social image metadata", () => {
     {
       label: "owner service page with hero",
       settings: { siteUrl: "https://akieguchi.com" },
-      pathname: "/service",
+      pathname: "/portfolio-kit",
       hero: "/api/images/photos/hero.jpg",
       expected: "https://akieguchi.com/og-service.jpg",
       type: "image/jpeg",
@@ -455,7 +455,7 @@ describe("injectOgp social image metadata", () => {
         siteUrl: "https://portfolio.example",
         servicePageMode: "on",
       },
-      pathname: "/service",
+      pathname: "/portfolio-kit",
       hero: "",
       expected: "https://portfolio.example/og-default.png",
       type: "image/png",
@@ -466,7 +466,7 @@ describe("injectOgp social image metadata", () => {
         siteUrl: "https://portfolio.example",
         servicePageMode: "on",
       },
-      pathname: "/service",
+      pathname: "/portfolio-kit",
       hero: "/api/images/photos/hero.jpg",
       expected: "https://portfolio.example/og-default.png",
       type: "image/png",
@@ -615,7 +615,7 @@ describe("injectOgp theme-color", () => {
   });
 });
 
-describe("injectOgp /service route", () => {
+describe("injectOgp /portfolio-kit route", () => {
   const { injectOgp } = require("./ogp") as typeof import("./ogp");
   const page = `<html><head><title>t</title>
     <meta name="description" content="d" />
@@ -638,77 +638,37 @@ describe("injectOgp /service route", () => {
         siteNameEn: "Aki Eguchi",
         siteUrl: "https://akieguchi.com",
       },
-      "/service",
+      "/portfolio-kit",
     );
-    expect(out).toContain("写真家のためのポートフォリオサイト");
-    expect(out).toContain("写真を上げて並べるだけで");
-    expect(out).not.toContain("<title>Aki Eguchi");
+    expect(out).toContain("<title>Aki Eguchi Portfolio Kit</title>");
+    expect(out).toContain("いま見ているサイトが、そのまま見本");
   });
 
-  test("/service is indexable on akieguchi.com", () => {
+  test("/portfolio-kit is indexable on akieguchi.com", () => {
     const out = injectOgp(
       page,
       { siteUrl: "https://akieguchi.com" },
-      "/service",
+      "/portfolio-kit",
     );
     expect(out).toContain('name="robots" content="index, follow"');
   });
 
-  test("/service/start is direct-link only on akieguchi.com and does not replace the buyer-only Deploy link", () => {
+  test("/portfolio-kit/start is direct-link only on akieguchi.com and does not replace the buyer-only Deploy link", () => {
     const out = injectOgp(
       page,
       { siteUrl: "https://akieguchi.com" },
-      "/service/start",
+      "/portfolio-kit/start",
     );
     expect(out).toContain('name="robots" content="noindex, nofollow"');
     expect(out).toContain("Aki Eguchi Portfolio Kit");
     expect(out).not.toContain("railway.com/deploy");
   });
 
-  test("/service is noindex on non-akieguchi hosts", () => {
+  test("/portfolio-kit is noindex on non-akieguchi hosts", () => {
     const out = injectOgp(
       page,
       { siteUrl: "https://other-site.com" },
-      "/service",
-    );
-    expect(out).toContain("noindex, nofollow");
-    expect(out).toContain(
-      "<title>Not Found | Photographer Name | Photography</title>",
-    );
-    expect(out).not.toContain("写真家のためのポートフォリオサイト");
-  });
-
-  test("servicePageMode on exposes /service on a distributed host", () => {
-    const out = injectOgp(
-      page,
-      { servicePageMode: "on", siteUrl: "https://portfolio.example" },
-      "/service",
-      "",
-      undefined,
-      "https://portfolio.example",
-    );
-    expect(out).toContain('name="robots" content="index, follow"');
-    expect(out).toContain("写真家のためのポートフォリオサイト");
-  });
-
-  test("servicePageMode off makes /service unavailable on akieguchi.com", () => {
-    const out = injectOgp(
-      page,
-      { servicePageMode: "off", siteUrl: "https://akieguchi.com" },
-      "/service",
-      "",
-      undefined,
-      "https://akieguchi.com",
-    );
-    expect(out).toContain('name="robots" content="noindex, nofollow"');
-    expect(out).toContain("Not Found");
-  });
-
-  test("/service/start is noindex on non-akieguchi hosts", () => {
-    const out = injectOgp(
-      page,
-      { siteUrl: "https://other-site.com" },
-      "/service/start",
+      "/portfolio-kit",
     );
     expect(out).toContain("noindex, nofollow");
     expect(out).toContain(
@@ -717,14 +677,52 @@ describe("injectOgp /service route", () => {
     expect(out).not.toContain("Aki Eguchi Portfolio Kit");
   });
 
-  test("/service title does not include the photographer name", () => {
+  test("servicePageMode on exposes /portfolio-kit on a distributed host", () => {
+    const out = injectOgp(
+      page,
+      { servicePageMode: "on", siteUrl: "https://portfolio.example" },
+      "/portfolio-kit",
+      "",
+      undefined,
+      "https://portfolio.example",
+    );
+    expect(out).toContain('name="robots" content="index, follow"');
+    expect(out).toContain("Aki Eguchi Portfolio Kit");
+  });
+
+  test("servicePageMode off makes /portfolio-kit unavailable on akieguchi.com", () => {
+    const out = injectOgp(
+      page,
+      { servicePageMode: "off", siteUrl: "https://akieguchi.com" },
+      "/portfolio-kit",
+      "",
+      undefined,
+      "https://akieguchi.com",
+    );
+    expect(out).toContain('name="robots" content="noindex, nofollow"');
+    expect(out).toContain("Not Found");
+  });
+
+  test("/portfolio-kit/start is noindex on non-akieguchi hosts", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://other-site.com" },
+      "/portfolio-kit/start",
+    );
+    expect(out).toContain("noindex, nofollow");
+    expect(out).toContain(
+      "<title>Not Found | Photographer Name | Photography</title>",
+    );
+    expect(out).not.toContain("Aki Eguchi Portfolio Kit");
+  });
+
+  test("/portfolio-kit title uses the product name", () => {
     const out = injectOgp(
       page,
       { siteName: "Aki Eguchi", siteUrl: "https://akieguchi.com" },
-      "/service",
+      "/portfolio-kit",
     );
-    expect(out).toContain("<title>写真家のためのポートフォリオサイト</title>");
-    expect(out).not.toContain("<title>Aki Eguchi");
+    expect(out).toContain("<title>Aki Eguchi Portfolio Kit</title>");
   });
 });
 

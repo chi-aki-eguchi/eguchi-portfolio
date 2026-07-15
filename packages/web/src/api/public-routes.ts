@@ -5,15 +5,25 @@ const SPA_STATIC_PATHS = new Set([
   "/about",
   "/profile",
   "/contact",
-  "/service",
-  "/service/start",
+  "/portfolio-kit",
+  "/portfolio-kit/start",
   "/admin",
   "/admin/login",
 ]);
 
+const LEGACY_PORTFOLIO_KIT_PATHS: Record<string, string> = {
+  "/service": "/portfolio-kit",
+  "/service/start": "/portfolio-kit/start",
+};
+
 export function normalizeSpaPathname(pathname: string): string {
   if (pathname === "/") return "/";
   return pathname.replace(/\/+$/, "") || "/";
+}
+
+export function canonicalPortfolioKitPath(pathname: string): string {
+  const normalized = normalizeSpaPathname(pathname);
+  return LEGACY_PORTFOLIO_KIT_PATHS[normalized] ?? normalized;
 }
 
 export function canonicalSpaRedirectUrl(

@@ -53,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     seriesNav === "on" || (seriesAuto && (seriesData?.series.length ?? 0) > 0);
 
   const dm = useDarkModeContext();
-  const { showService } = useServiceVisibility();
+  const { showServiceInNav } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const templateCreditUrl = httpHrefOrNull(data?.templateCreditUrl ?? "");
   const navItems = [
@@ -61,7 +61,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
     { href: "/about", label: data?.navLabelAbout ?? "About" },
     { href: "/contact", label: data?.navLabelContact ?? "Contact" },
-    ...(showService ? [{ href: "/service", label: "Service" }] : []),
+    ...(showServiceInNav
+      ? [{ href: "/portfolio-kit", label: "Portfolio Kit" }]
+      : []),
   ];
 
   // Highlight the nav item for the section you're in, not just its exact path:
@@ -394,20 +396,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }
             >
               {data.footerCtaLabel}
-            </Link>
-          )}
-          {showService && (
-            <Link
-              to="/service"
-              className="font-en tracking-[0.06em] nav-link-luxury footer-link-public"
-              style={
-                {
-                  fontSize: "var(--footer-size, 11px)",
-                  "--link-rest": "var(--footer-opacity, 0.22)",
-                } as React.CSSProperties
-              }
-            >
-              Portfolio site
             </Link>
           )}
           <div className="flex flex-col items-center gap-2">

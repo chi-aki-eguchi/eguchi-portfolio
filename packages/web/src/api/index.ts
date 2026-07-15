@@ -1081,7 +1081,8 @@ const app = new Hono()
         templateCreditLabel:
           settings.templateCreditLabel ?? "Site template by Aki Eguchi",
         templateCreditUrl:
-          settings.templateCreditUrl ?? "https://akieguchi.com/service",
+          settings.templateCreditUrl ??
+          "https://akieguchi.com/portfolio-kit",
         // ── 撮影依頼 CTA — a closing "work with me" band on Top / Gallery / Series ──
         homeCtaEnabled: settings.homeCtaEnabled ?? "off", // "on" | "off"
         homeCtaTitle: settings.homeCtaTitle ?? "撮影のご依頼",

@@ -7,6 +7,10 @@
 [post-deploy-guide.md](./post-deploy-guide.md) も）と、サイトURL・管理画面URL・
 管理パスワードを渡します。
 
+納品済みサイトへ最新版を届けるときは、作り直さず
+[配布先サイトの更新手順](./template-update-guide.md) を使います。写真・文章・管理設定を
+残したまま、セットアップ担当者がRailwayで約10分で更新します。
+
 > **配布方法は2つ。まず方法1（Railway テンプレート）を検討してください。**
 >
 > - **方法1: Railway テンプレート（推奨）** — Turso も R2 も使わず、Railway だけで
@@ -63,6 +67,9 @@ GitHub / Railway / Turso / R2 や環境変数は、セットアップ担当者�
   ため置いていません）。
 - database schema は起動時に自動適用されます（`DATABASE_PROVIDER=postgres`）。
   `db:push` は不要。失敗時は起動ログの `[migrate]` 行に原因が出ます。
+- 既存サイトの更新はRailwayのtemplate更新通知を優先します。通知が無く元repoの`main`へ
+  直接接続している場合は、Command Paletteの`Deploy Latest Commit`を使います。
+  過去deploymentの`Redeploy`は選んだ古いコードを再利用するため、更新になりません。
 
 ---
 

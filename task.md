@@ -8012,3 +8012,83 @@ P1修正: 旧パス`/favicon.ico`（48px ICO）と`/favicon.svg`（64px SVG）�
 ### 次の担当者が触ってはいけない場所
 
 - `scratch/`、push、本番DB/R2/Railwayへの書き込み。
+
+## Handoff 2026-07-15 (25) — T-5 配布先サイトの更新手順
+
+### 目的
+
+T-1〜T-4を含む今後の改善を、納品済みのRailway配布先へ、写真・文章・管理設定を
+保持したままセットアップ担当者が約10分で届けられる手順を整備する。
+
+### 調査結果
+
+- Railway template / setup / photographer向け既存文書と、実装上の
+  `DATABASE_PROVIDER=postgres` 切替、`runStartupMigrations()`、PostgreSQL migration
+  追跡、`/api/health` のbuild IDを照合した。
+- PostgreSQL版は起動時に未適用migrationだけを適用し、失敗時はserverを起動しない。
+  healthcheckが`/api/health`なら、新版が200を返すまで旧版が公開側に残る。
+- Railway公式仕様では、templateのupstream更新通知が標準経路。通知が無く元repoの
+  `main`へ直接接続している場合は`Deploy Latest Commit`を使う。過去deploymentの
+  `Redeploy`は同じ古いコードを再利用するため更新にはならない。
+- RailwayのRollbackはコードと環境変数を戻すが、適用済みDB migrationは戻さない。
+  そのためrelease notesに`10分更新: 可/不可`を必須化し、DB migrationがある版は
+  原則不可（個別のバックアップ・復旧手順がある場合だけ例外）とした。
+- T-1〜T-4の目標commitは`88bd42d`。DB migration追加は無く、10分更新可と記録した。
+
+### 変更内容
+
+- `docs/template-update-guide.md`を新設。更新済み判定、Source/Variables/healthcheck確認、
+  upstream通知優先、`Deploy Latest Commit`、build ID確認、失敗時の停止/rollback、
+  保守担当者のリリース条件を1本の手順にした。
+- `docs/template-release-notes.md`を新設。版ごとに目標commit、DB変更、10分更新可否、
+  更新後の目視項目を残す形式にした。
+- `recipient-setup.md` / `setup-guide.md` / `post-deploy-guide.md` / `DISTRIBUTION.md`から
+  更新手順へ導線を追加し、写真家本人にはRailway操作を依頼しない境界を明記した。
+- スクリプトは追加していない。今回の更新操作はRailway標準UIで完結し、秘密情報や
+  接続先をローカルスクリプトへ持たせない方が安全と判断した。
+
+### 触ったファイル
+
+- `docs/template-update-guide.md`（新規）
+- `docs/template-release-notes.md`（新規）
+- `docs/recipient-setup.md`
+- `docs/setup-guide.md`
+- `docs/post-deploy-guide.md`
+- `docs/agents/task-queue.md`（T-5を完了へ更新）
+- `DISTRIBUTION.md`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- Railway公式のTemplate Updates / Deployment Actions / Healthchecksと手順を照合。
+- `runStartupMigrations()`、PostgreSQL migrator、`server.ts`の起動失敗処理、
+  `/api/health`の`build`値、`X-Build`をコードで確認。
+- T-1〜T-4差分に`drizzle-postgres/`変更が無いことを`git diff`で確認。
+- 文書内の相対リンク先が存在することを確認。`git diff --check`: 成功。
+- DB/R2/Railway本番への書き込み、commit、pushは実施していない。
+- `claude-driver`へP0/P1のread-onlyレビューをagmsgで依頼したが、同一セッション内の
+  返信は無かったため、`docs/checklists.md`とRailway公式資料によるセルフチェックで代替。
+
+### 検証していないこと
+
+- 操作可能なBrowserが接続されていなかったため、Ryo PhotographyのRailway Source設定と
+  実際のupdate通知表示は未確認。手順はdirect source / upstream通知の両方を分岐した。
+- 実配布先での更新実行。今回は本番書き込み禁止のため未実施。
+- コード変更が無いため、依頼条件に従い`tsc -b`と`bun test ./src`は対象外。
+
+### pushしたか
+
+していない。git commitもしていない。
+
+### 本番で確認したか
+
+していない。配布先を含め、本番環境は変更していない。
+
+### 次の担当者が触ってよい場所
+
+- 上記文書のread-onlyレビュー。
+- 実際の配布先Railway画面を開ける担当者による、Source / Upstream Repo表示名の照合。
+
+### 次の担当者が触ってはいけない場所
+
+- オーナー承認前の配布先更新、DB/Storage/Variables変更、scratch、push。

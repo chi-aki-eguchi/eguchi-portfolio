@@ -56,6 +56,11 @@ PostgreSQL + Railway Storage に切り替わり、`akieguchi.com` 本番だけ�
 
 GitHub / Railway / Turso / R2 / 環境変数は、セットアップ担当者だけが見る。
 
+納品後の更新もコンシェルジュ作業として扱う。セットアップ担当者は
+`docs/template-release-notes.md` で対象版を確認し、
+`docs/template-update-guide.md` の10分手順で既存Railway projectを更新する。
+写真家本人にはRailway操作を依頼しない。
+
 この方式なら、利用者は GitHub や環境変数をほぼ意識しなくてよい。
 
 ### v1 Next: Template UX Polish
@@ -230,7 +235,8 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 - Optional local filesystem storage for development without R2.
 - Theme presets for different photography styles.
 - Template documentation for non-engineers.
-- Versioned template releases and changelog.
+- Done: `docs/template-release-notes.md` で目標commit・DB変更・更新後確認を版ごとに記録。
+- Done: `docs/template-update-guide.md` で既存配布先の更新・確認・rollback手順を固定。
 
 ## Recommended Build Path
 

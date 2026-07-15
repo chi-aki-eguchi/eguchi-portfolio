@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-dev",
+      "runtimeExecutable": "bunx",
+      "runtimeArgs": ["vite"],
+      "cwd": "packages/web",
+      "port": 5173
+    }
+  ]
+}

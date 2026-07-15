@@ -8092,3 +8092,150 @@ T-1〜T-4を含む今後の改善を、納品済みのRailway配布先へ、写�
 ### 次の担当者が触ってはいけない場所
 
 - オーナー承認前の配布先更新、DB/Storage/Variables変更、scratch、push。
+
+## Handoff 2026-07-15 (26) — T-6 OGカードの同梱フォント配線
+
+### 目的
+
+Railwayコンテナにシステムフォントが無くても、`/og-default.png`の日本語サイト名を
+同梱のNoto Serif JPで確実に描画し、ローカルMacとの見た目の差をなくす。
+
+### 変更内容
+
+- `assets/fonts/fonts.conf`を追加し、設定ファイル自身からの相対パスで同ディレクトリの
+  フォントだけをfontconfigへ登録するようにした。Railwayの作業ディレクトリには依存しない。
+- `og-card.ts`で`import.meta.dir`から`fonts.conf`の絶対パスを解決し、sharpがSVGを
+  描画する前に`FONTCONFIG_FILE`へ設定した。sharp自体も設定後に読み込むよう遅延importした。
+- SVG内のタイトルと`PHOTOGRAPHY`の`font-family`を`Noto Serif JP`へ統一した。
+- 同じ文字数の異なる日本語タイトル2件をPNG化し、タイトル領域に文字があり、かつ
+  両者の字形が十分に異なることを画素比較する回帰テストを追加した。フォント欠落時に
+  全文字が同じ豆腐記号へ潰れる退行を検出する。
+- 新しいnpm依存、DB/settings/R2/画像リサイズ処理、`Content-Encoding`は変更していない。
+
+### 触ったファイル
+
+- `packages/web/assets/fonts/NotoSerifJP.ttf`（オーナー提供・新規）
+- `packages/web/assets/fonts/OFL.txt`（オーナー提供・新規）
+- `packages/web/assets/fonts/fonts.conf`（新規）
+- `packages/web/src/api/og-card.ts`
+- `packages/web/src/api/og-card.test.ts`
+- `task.md`（本Handoff）
+
+### 検証したこと
+
+- `cd packages/web && bun run typecheck`: 成功（実行内容は`tsc -b`）。
+- `cd packages/web && bun test ./src`: 成功（422 pass / 0 fail）。
+- `bun run check`: 成功（typecheck / lint / 422 tests / build）。
+- リポジトリ直下と`packages/web`直下から同じ日本語タイトルを生成し、PNGのSHA-256が
+  一致することを確認。どちらも同じ絶対`FONTCONFIG_FILE`へ解決された。
+- `git diff --check`: 成功。
+- admin未変更のため`bun run smoke`は対象外。
+- `claude-driver`へP0/P1のread-onlyレビューをagmsgで依頼した。同一セッション内の
+  返信待ちで作業を止めず、`docs/checklists.md`の画像パイプライン項目でセルフチェックした。
+
+### 検証していないこと
+
+- push / Railway反映 / 本番`/og-default.png`の目視確認。
+- 実Railwayコンテナ上での生成。コンテナと同じ「同梱フォントだけを登録したfontconfig」
+  経路はローカルのsharpで検証済み。
+
+### pushしたか
+
+していない。git commitもしていない。変更はworking treeに残している。
+
+### 本番で確認したか
+
+していない。今回の確認はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- 上記差分のread-onlyレビュー。
+- オーナーがcommit/pushした後のRailway反映確認と`/og-default.png`目視確認。
+
+### 次の担当者が触ってはいけない場所
+
+- `scratch/`、オーナー承認前のpush、本番DB/R2/Railwayへの書き込み。
+
+## Handoff 2026-07-15 (27) — T-6 P1 OS非依存フォント描画
+
+### 目的
+
+Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへフォールバックし、
+同梱フォント使用をローカルで証明できないP1を解消する。ローカルとRailwayでOSの
+フォント環境に依存せず、同梱Noto Serif JPの同じ字形を描く。
+
+### 事前実験
+
+- SVGの`@font-face`へ13.6MB TTFをbase64 data URIで埋め込む方式は、現在の
+  macOS sharp 0.34.5 / librsvg 2.61.2では無視された。埋め込み有無のPNGが全画素一致。
+  18.1MB SVGの処理は約98ms、RSSは約116MB増えたため、不採用。
+- `@font-face`の`file://` URLも埋め込み有無のPNGが全画素一致し、不採用。
+- sharpの`text.fontfile`も、明示ファイル有無で同じフォールバック画像になり、
+  macOSで同梱フォント使用を証明できないため不採用。
+
+### 変更内容
+
+- `og-card-font.ts`を追加。同梱TTFの文字対応表と輪郭データを直接読み、必要な文字を
+  SVGの`<path>`（字形の線座標）へ変換する。OSのフォント検索・fontconfig・
+  `@font-face`・システムフォントを一切通らない。
+- `og-card.ts`はタイトルと`PHOTOGRAPHY`を文字要素ではなく上記の輪郭で描く。
+  空タイトル、文字サイズ、色、罫線、1200x630 PNG、プロセス内キャッシュは維持した。
+- 旧`fonts.conf`と`FONTCONFIG_FILE`副作用を削除した。
+- テストは、生成SVGに`<text>` / `font-family` / `@font-face`が存在せず同梱TTF由来の
+  `<path>`だけがあり、日本語2タイトルが500画素超の異なる字形になることを確認する。
+  これにより、システム側に同名フォントがある場合もテストをすり抜けない。
+- 新しいnpm依存、DB/settings/R2/画像リサイズ、`Content-Encoding`は変更していない。
+
+### 触ったファイル
+
+- `packages/web/assets/fonts/NotoSerifJP.ttf`（オーナー提供・新規、変更なし）
+- `packages/web/assets/fonts/OFL.txt`（オーナー提供・新規、変更なし）
+- `packages/web/assets/fonts/fonts.conf`（Handoff (26)で追加した未追跡ファイルを削除）
+- `packages/web/src/api/og-card-font.ts`（新規）
+- `packages/web/src/api/og-card.ts`
+- `packages/web/src/api/og-card.test.ts`
+- `task.md`（本Handoff）
+
+### 性能計測
+
+- 日本語＋英字タイトルのSVGは約14.9KB、PNGは約34.2KB。
+- 新規プロセスでモジュール読込約9.5ms、初回PNG生成約35.4ms、同じタイトルの2回目は
+  約5.6ms。2回のPNGはバイト一致。
+- モジュール読込時RSS増は約24.5MB。sharp読込・初回処理を含むプロセス全体のRSS増は
+  約84.1MB。生成結果は既存キャッシュに保持されるため、設定変更後の初回だけが主な負荷。
+- 目視で日本語が明朝体、英字と`PHOTOGRAPHY`も同梱書体として中央に収まることを確認。
+
+### 検証したこと
+
+- `cd packages/web && bunx tsc -b`: 成功。
+- `cd packages/web && bun test ./src`: 成功（422 pass / 0 fail）。
+- 決定的テスト`renders Japanese from bundled outlines without font resolution`: 成功。
+- `bun run check`: 成功（typecheck / lint / 422 tests / build）。
+- `git diff --check`: 成功。
+- `docs/checklists.md`の画像パイプライン項目を確認。R2・既存画像配信経路は未変更。
+- admin未変更のため`bun run smoke`は対象外。
+- `claude-driver`へP0/P1のread-onlyレビューをagmsgで依頼した。同一セッション内の
+  返信は無かったため、必須テストと検査表による確認で作業を止めずに完了した。
+
+### 検証していないこと
+
+- push / Railway反映 / 本番`/og-default.png`の目視確認。
+- 実Railwayコンテナ上での生成。ただし実行時はTTFの輪郭をSVG pathへ変換し、
+  OSのフォント解決処理自体を呼ばない構造をローカルテストで固定した。
+
+### pushしたか
+
+していない。git commitもしていない。変更はworking treeに残している。
+
+### 本番で確認したか
+
+していない。今回の確認はローカルのみ。
+
+### 次の担当者が触ってよい場所
+
+- 上記差分のread-onlyレビュー。
+- オーナーがcommit/pushした後のRailway反映確認と`/og-default.png`目視確認。
+
+### 次の担当者が触ってはいけない場所
+
+- `scratch/`、オーナー承認前のpush、本番DB/R2/Railwayへの書き込み。

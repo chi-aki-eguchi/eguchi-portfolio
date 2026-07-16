@@ -8580,3 +8580,12 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 運用: Stripe支払い一覧を1日1回確認する予備手順と、購入記録の定型表を追加した。購入記録は公開リポジトリへ保存しない注意も明記した。
 - 検証: `cd packages/web && bunx tsc -b && bun test ./src` 成功（439 pass / 0 fail）、`bun run check` 成功、`git diff --check` 成功。admin文言未変更のためsmoke対象外。
 - 制約: 新settingsキー・DB/API・販売ロジック変更なし。push、本番書き込み、`.env`読み取りなし。実装=Codex。
+
+## Handoff 2026-07-16 (40) — 成長・マネタイズ計画の文書化
+
+- 完了したこと: オーナー選定6項目（SEO/SNS・英語導線・Kit磨き込み・コンシェルジュ3段価格・プリント販売土台・AIノウハウ文書化）を `docs/specs/growth-monetization-plan.md` に計画化。AI運用の道のりとノウハウの元原稿を `docs/ai-collaboration-story.md` に新規作成（Runable期〜現在、note記事/教材/Kit特典に切り出せる構成）。
+- 現在の状態: docs のみの変更。コード・settings・DB・販売文言は未変更。`bun run check` 成功。
+- 残っている問題: なし。
+- 次に行うこと（オーナー）: ①2文書を読む ②計画書末尾「秋さんが決めること」への回答（特に C コース価格・検索語3つ・Ryoさん掲載許可）③ノウハウ原稿の公開形態と伏せる範囲の判断。
+- 重要な制約: push 未実施（オーナー承認制）。本番書き込み・`.env` 読み取りなし。
+- 必要なcommit情報: 実装=Claude（Fable5）。docs 3ファイル追加のみ。

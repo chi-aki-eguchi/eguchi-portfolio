@@ -221,20 +221,23 @@ async function responseErrorMessage(res: Response): Promise<string> {
   return `HTTP ${res.status}`;
 }
 
-function useAdminGuard() {
+function useAdminGuard(demoMode = false) {
   const [, navigate] = useLocation();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-me"],
     queryFn: async () =>
       jsonOrThrow<{ authenticated: boolean }>(await adminApi.me.$get()),
     retry: false,
+    enabled: !demoMode,
   });
   // Redirect in an effect, not during render (render-phase navigation triggers
   // React warnings and can fire repeatedly).
   useEffect(() => {
-    if (!isLoading && !data?.authenticated) navigate("/admin/login");
-  }, [isLoading, data?.authenticated, navigate]);
-  return { isLoading, authenticated: data?.authenticated };
+    if (!demoMode && !isLoading && !data?.authenticated) navigate("/admin/login");
+  }, [demoMode, isLoading, data?.authenticated, navigate]);
+  return demoMode
+    ? { isLoading: false, authenticated: true }
+    : { isLoading, authenticated: data?.authenticated };
 }
 
 /* ══════════════════════════════════════════════════
@@ -370,8 +373,8 @@ function adminThemeFromSettings(
   } as CSSProperties;
 }
 
-export default function AdminPage() {
-  const { isLoading, authenticated } = useAdminGuard();
+export default function AdminPage({ demoMode = false }: { demoMode?: boolean }) {
+  const { isLoading, authenticated } = useAdminGuard(demoMode);
   const [, navigate] = useLocation();
   const { data: shellSettings } = useQuery({
     queryKey: ["settings"],
@@ -579,9 +582,15 @@ export default function AdminPage() {
 
   return (
     <div
-      className="admin-atelier flex select-none overflow-hidden"
+      className="admin-atelier relative flex select-none overflow-hidden"
       style={adminThemeVars}
     >
+      {demoMode && (
+        <div className="fixed inset-x-0 top-0 z-[100] flex flex-wrap items-center justify-center gap-x-5 gap-y-1 bg-[#f1e8cf] px-4 py-2 text-center text-[12px] font-medium tracking-[0.04em] text-[#594b2c] shadow-sm" data-admin-demo-banner>
+          <span>これは体験版です。変更は実際には保存されません。</span>
+          <a href="/portfolio-kit#admin-panel" className="underline underline-offset-4">販売ページへ戻る</a>
+        </div>
+      )}
       <aside className="admin-sidebar admin-glass hidden lg:flex">
         <div className="admin-sidebar__brand">
           <span className="admin-sidebar__eyebrow">Portfolio Admin</span>

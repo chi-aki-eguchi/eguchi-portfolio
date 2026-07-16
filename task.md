@@ -8554,3 +8554,12 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 残っている問題: なし。実ブラウザ目視、push、Railway反映、本番確認は未実施。
 - 重要な制約: push、本番DB/R2/Railway操作、`.env`読み取りは未実施。
 - 必要なcommit情報: 実装=Codex。
+
+## Handoff 2026-07-16 (37) — 保存されない体験用admin
+
+- 完了したこと: `/admin/demo` に実admin UIを再利用するログイン不要の体験版を追加し、販売ページのヒーローとADMIN PANELから主CTAで接続した。
+- 現在の状態: 公開GETデータを初期値にし、デモ中のGET以外の通信をfetch層でメモリ応答へ差し替える。常設バナーと保存時通知があり、リロードで初期化される。
+- 残っている問題: なし。画像アップロードは体験版用の非保存エラーを表示する。
+- 次に行うこと: Claudeがfetch差し替え境界・オーナーサイト制限・実adminへの回帰なしをread-onlyレビューする。
+- 重要な制約: 配布先とservicePageMode=offでは404相当。adminルート既存noindexを継承。push、本番DB/R2/Railway書き込みなし。新settingsキーなし。
+- 必要なcommit情報: 実装=Codex。check 436 pass / smoke 32 pass・26条件skip・0 fail。

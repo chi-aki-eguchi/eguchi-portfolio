@@ -544,6 +544,35 @@ describe("shared components", () => {
     cleanup();
   });
 
+  test("Admin demo reuses the full admin and shows the permanent experience banner", async () => {
+    dom.reconfigure({ url: "https://akieguchi.com/admin/demo" });
+    dom.window.localStorage.clear();
+    try {
+      const Demo = (await import("../pages/admin-demo")).default;
+      const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
+      await waitForText(host, "これは体験版です");
+      expect(host.querySelector("[data-admin-demo-banner]")).not.toBeNull();
+      expect(host.textContent).toContain("Library");
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("Admin demo is a 404-equivalent on distribution hosts", async () => {
+    dom.reconfigure({ url: "https://portfolio.example/admin/demo" });
+    try {
+      const Demo = (await import("../pages/admin-demo")).default;
+      const { host, cleanup } = await mount(createElement(Demo));
+      expect(host.textContent).toContain("404");
+      expect(host.querySelector("[data-admin-demo-banner]")).toBeNull();
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
   test("AdminPage: authenticated mounts the full admin UI", async () => {
     const prev = canned["/api/admin/me"];
     const prevSettings = canned["/api/settings"];

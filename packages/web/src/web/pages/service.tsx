@@ -682,12 +682,12 @@ function AdminShowcase({
         ))}
       </div>
       <div className="mt-8 text-center">
-        <ServiceButton href="/?portfolio-kit-experience=1">
-          {config.demoCta}
+        <ServiceButton href="/admin/demo">
+          管理画面を触ってみる
         </ServiceButton>
-        <p className="mt-3 text-[0.76rem] leading-7 text-[rgba(var(--foreground-rgb),0.42)]">
-          トップページを、あなた好みに変えてみる
-        </p>
+        <div className="mt-3">
+          <a className="text-[0.76rem] leading-7 text-[rgba(var(--foreground-rgb),0.48)] underline underline-offset-4" href="/?portfolio-kit-experience=1">{config.demoCta}</a>
+        </div>
       </div>
     </section>
   );
@@ -903,11 +903,11 @@ export default function ServicePage() {
           ))}
         </div>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 page-entrance page-entrance-delay-1">
-          <ServiceButton href="#pricing">
-            {config.hero.ctaPricing}
+          <ServiceButton href="/admin/demo">
+            管理画面を触ってみる
           </ServiceButton>
-          <ServiceButton href="#example" variant="outline">
-            {config.hero.ctaExample}
+          <ServiceButton href="#pricing" variant="outline">
+            {config.hero.ctaPricing}
           </ServiceButton>
         </div>
       </header>

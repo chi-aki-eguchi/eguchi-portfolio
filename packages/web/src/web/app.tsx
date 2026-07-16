@@ -17,6 +17,7 @@ const ServicePage = lazy(() => import("./pages/service"));
 const ServiceStartPage = lazy(() => import("./pages/service-start"));
 const AdminLoginPage = lazy(() => import("./pages/admin-login"));
 const AdminPage = lazy(() => import("./pages/admin"));
+const AdminDemoPage = lazy(() => import("./pages/admin-demo"));
 
 function TitledRoute({
   title,
@@ -59,6 +60,13 @@ function App() {
       <ErrorBoundary>
         <Switch>
           {/* Admin — no layout */}
+          <Route path="/admin/demo">
+            <Suspense fallback={<PageFallback />}>
+              <TitledRoute title="Admin Demo">
+                <AdminDemoPage />
+              </TitledRoute>
+            </Suspense>
+          </Route>
           <Route path="/admin/login">
             <Suspense fallback={<PageFallback />}>
               <TitledRoute title="Admin Login">

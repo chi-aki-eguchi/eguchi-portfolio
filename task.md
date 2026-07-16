@@ -8545,3 +8545,12 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 次に行うこと: Claudeが公開ページ構造・ホスト制限・既存プレビュー経路の再利用をread-only確認し、オーナーpush後にPC/スマホで販売ページと体験パネルを目視する。
 - 重要な制約: push、本番DB/R2/Railway書き込み、`.env`読み取りは未実施。新しいsettingsキー・API・localStorageは追加していない。
 - 必要なcommit情報: 実装=Codex。`bunx tsc -b`成功、`bun test ./src` 433 pass / 0 fail、lint成功、`git diff --check`成功。
+
+## Handoff 2026-07-16 (36) — Portfolio Kit 管理画面紹介の統合
+
+- 完了したこと: 重複していた管理画面紹介を1セクションへ統合し、見出しに「並べ方12種類・140以上の設定」を残した。旧紹介の写真管理・シリーズ・連絡先・共有設定を含め、カードは6枚に整理した。
+- 現在の状態: ADMIN PANELは1箇所だけ表示し、トップ体験デモへのボタンは維持。新しいsettingsキーは追加していない。
+- 検証: `cd packages/web && bunx tsc -b`成功、`bun test ./src` 433 pass / 0 fail、`git diff --check`成功。
+- 残っている問題: なし。実ブラウザ目視、push、Railway反映、本番確認は未実施。
+- 重要な制約: push、本番DB/R2/Railway操作、`.env`読み取りは未実施。
+- 必要なcommit情報: 実装=Codex。

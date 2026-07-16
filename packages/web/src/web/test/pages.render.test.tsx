@@ -308,8 +308,13 @@ describe("shared components", () => {
       expect(host.textContent).toContain("購入後は24時間以内");
       expect(host.textContent).toContain("維持費や月額料金はいくらですか？");
       expect(host.textContent).toContain("やめたいときはどうなりますか？");
-      expect(host.textContent).toContain("写真の並べ方12種類");
-      expect(host.textContent).toContain("140以上の設定");
+      expect(host.textContent).toContain("並べ方12種類・140以上の設定");
+      const adminPanels = host.querySelectorAll("#admin-panel");
+      expect(adminPanels).toHaveLength(1);
+      expect(
+        adminPanels[0]?.querySelector("[data-admin-feature-list]")?.children
+          .length,
+      ).toBeLessThanOrEqual(6);
       expect(
         host.querySelector('a[href="/?portfolio-kit-experience=1"]'),
       ).not.toBeNull();

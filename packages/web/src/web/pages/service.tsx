@@ -630,7 +630,10 @@ function AdminShowcase({
   config: ServicePageConfig["adminShowcase"];
 }) {
   return (
-    <section className="mt-10 md:mt-14 page-entrance">
+    <section
+      id="admin-panel"
+      className="mt-10 md:mt-14 page-entrance scroll-mt-24"
+    >
       <SectionLabel>{config.label}</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
         <h2
@@ -650,7 +653,10 @@ function AdminShowcase({
           {config.body}
         </p>
       </div>
-      <div className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]">
+      <div
+        data-admin-feature-list
+        className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]"
+      >
         {config.features.map((feat) => (
           <div
             key={feat.title}

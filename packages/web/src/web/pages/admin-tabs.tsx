@@ -3472,8 +3472,10 @@ export function ServiceTab({
 
 export function SettingsTab({
   onUnsavedChange,
+  demoSeed,
 }: {
   onUnsavedChange?: (v: boolean) => void;
+  demoSeed?: string;
 }) {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
@@ -3483,7 +3485,7 @@ export function SettingsTab({
 
   // V: the unsaved draft and preview prefs survive tab switches / page moves.
   const [form, setForm] = usePersistentState<Record<string, string>>(
-    "admin:settingsDraft",
+    demoSeed ? `admin-demo:settingsDraft:${demoSeed}` : "admin:settingsDraft",
     {},
   );
   const [saved, setSaved] = useState(false);
@@ -5884,7 +5886,7 @@ export function SettingsTab({
             >
               <iframe
                 ref={iframeRef}
-                src="/"
+                src={demoSeed ? `/?admin-demo-preview=${encodeURIComponent(demoSeed)}` : "/"}
                 onLoad={handleIframeLoad}
                 className="w-full h-full border-0"
                 title="Site Preview"

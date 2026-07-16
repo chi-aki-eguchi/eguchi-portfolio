@@ -5,6 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./styles.css";
 import App from "./app.tsx";
 import { api } from "./lib/api";
+import { ADMIN_DEMO_PREVIEW_PARAM } from "./lib/admin-demo-data";
+import { installAdminDemoFetch } from "./lib/admin-demo-fetch";
+
+const demoPreviewSeed = new URLSearchParams(window.location.search).get(
+	ADMIN_DEMO_PREVIEW_PARAM,
+);
+if (demoPreviewSeed) installAdminDemoFetch(demoPreviewSeed);
 
 const queryClient = new QueryClient({
 	defaultOptions: {

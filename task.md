@@ -8563,3 +8563,12 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 次に行うこと: Claudeがfetch差し替え境界・オーナーサイト制限・実adminへの回帰なしをread-onlyレビューする。
 - 重要な制約: 配布先とservicePageMode=offでは404相当。adminルート既存noindexを継承。push、本番DB/R2/Railway書き込みなし。新settingsキーなし。
 - 必要なcommit情報: 実装=Codex。check 436 pass / smoke 32 pass・26条件skip・0 fail。
+
+## Handoff 2026-07-16 (38) — /admin/demo サンプル化・体験ガイド
+
+- 完了したこと: デモ設定を配布テンプレートの中立値だけで生成し、公開写真を毎回最大20枚へ絞った。関連カテゴリ・シリーズ・ヒーローも同じ写真集合へ揃えた。
+- 現在の状態: 初回3操作ガイド、購入導線、リセットを追加。デモ本体と2種類のiframeプレビューは同じ一時データを共有し、設定・並び替えをその場で確認できる。
+- 残っている問題: なし。in-app Browserは利用可能な接続先がなく追加目視できなかったが、Playwright smoke全体は成功。
+- 次に行うこと: Claudeが実settings非取込・iframe用query・書き込み遮断境界をread-only確認し、オーナーpush後にPC/スマホで3導線を目視する。
+- 重要な制約: 新settingsキー、DB/API変更なし。push、本番DB/R2/Railway書き込み、`.env`読み取りなし。
+- 必要なcommit情報: 実装=Codex。check 438 pass / smoke 31 pass・27条件skip・0 fail。

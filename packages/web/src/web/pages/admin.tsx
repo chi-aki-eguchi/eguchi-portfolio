@@ -373,7 +373,7 @@ function adminThemeFromSettings(
   } as CSSProperties;
 }
 
-export default function AdminPage({ demoMode = false }: { demoMode?: boolean }) {
+export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: boolean; demoSeed?: string }) {
   const { isLoading, authenticated } = useAdminGuard(demoMode);
   const [, navigate] = useLocation();
   const { data: shellSettings } = useQuery({
@@ -588,7 +588,8 @@ export default function AdminPage({ demoMode = false }: { demoMode?: boolean }) 
       {demoMode && (
         <div className="fixed inset-x-0 top-0 z-[100] flex flex-wrap items-center justify-center gap-x-5 gap-y-1 bg-[#f1e8cf] px-4 py-2 text-center text-[12px] font-medium tracking-[0.04em] text-[#594b2c] shadow-sm" data-admin-demo-banner>
           <span>これは体験版です。変更は実際には保存されません。</span>
-          <a href="/portfolio-kit#admin-panel" className="underline underline-offset-4">販売ページへ戻る</a>
+          <a href="/portfolio-kit#pricing" className="underline underline-offset-4">気に入ったら ¥10,000 から</a>
+          <button type="button" onClick={() => window.location.reload()} className="underline underline-offset-4">最初からやり直す</button>
         </div>
       )}
       <aside className="admin-sidebar admin-glass hidden lg:flex">
@@ -665,6 +666,7 @@ export default function AdminPage({ demoMode = false }: { demoMode?: boolean }) 
             {contentTab === "setup" && <SetupTab onOpenTab={requestTab} />}
             {contentTab === "gallery" && (
               <GalleryTab
+                demoSeed={demoSeed}
                 onUploadingChange={setGalleryUploading}
                 onUnsavedChange={setHasUnsaved}
                 openTrashSignal={openTrashRequest}
@@ -693,7 +695,7 @@ export default function AdminPage({ demoMode = false }: { demoMode?: boolean }) 
                   <LazyServiceTab onUnsavedChange={setHasUnsaved} />
                 )}
                 {contentTab === "settings" && (
-                  <LazySettingsTab onUnsavedChange={setHasUnsaved} />
+                  <LazySettingsTab onUnsavedChange={setHasUnsaved} demoSeed={demoSeed} />
                 )}
               </Suspense>
             )}
@@ -1607,11 +1609,13 @@ function measuredContentWidth(el: HTMLElement | null): number {
 // render テスト(admin-reorder-lock.render.test.tsx)から直接マウントするため
 // SetupTab と同様に export する。アプリ内の利用は AdminPage 経由のみ。
 export function GalleryTab({
+  demoSeed,
   onUploadingChange,
   onUnsavedChange,
   openTrashSignal,
   onTrashSignalConsumed,
 }: {
+  demoSeed?: string;
   onUploadingChange?: (v: boolean) => void;
   onUnsavedChange?: (v: boolean) => void;
   // 工程5: bumped by the ⌘K palette's "Trash" destination — Trash is a
@@ -6634,7 +6638,7 @@ export function GalleryTab({
                 >
                   <iframe
                     ref={sitePreviewRef}
-                    src={sitePreviewPage === "top" ? "/" : "/gallery"}
+                    src={`${sitePreviewPage === "top" ? "/" : "/gallery"}${demoSeed ? `?admin-demo-preview=${encodeURIComponent(demoSeed)}` : ""}`}
                     className="w-full h-full border-0"
                     title="サイトプレビュー"
                   />
@@ -6661,7 +6665,7 @@ export function GalleryTab({
                     >
                       <iframe
                         ref={sitePreviewRef}
-                        src={sitePreviewPage === "top" ? "/" : "/gallery"}
+                        src={`${sitePreviewPage === "top" ? "/" : "/gallery"}${demoSeed ? `?admin-demo-preview=${encodeURIComponent(demoSeed)}` : ""}`}
                         className="w-full h-full border-0"
                         title="サイトプレビュー"
                       />

@@ -8601,3 +8601,16 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   OKなら販売ページ反映を指示 ②Search Console 登録 ③【秋さん】欄はいつでも。
 - 重要な制約: push 未実施。本番書き込み・`.env` 読み取りなし。
 - 必要なcommit情報: 実装=Claude（Fable5）。
+
+## Handoff 2026-07-16 (42) — C条件更新・英語対応仕様（i18n-en）起こし
+
+- 完了したこと: growth-monetization-plan の C コースを「相談当面無制限」へ更新し、
+  写真代行は「目安50枚・選定は購入者」を推奨案として記載。英語方針の決定
+  （JP/EN切り替え・Kit販売優先）を受けて docs/specs/i18n-en-spec.md を新規作成
+  （Phase 1=Kit販売英語化 / 2=公開サイトJP/EN / 3=管理画面ほか。正直な制約と決済の扱い含む）。
+- 現在の状態: docs のみの変更。コード未変更。check 成功。
+- 残っている問題: なし。
+- 次に行うこと: オーナーの Phase 1 着手 GO が出たら、i18n-en-spec の実装順に従い
+  LP英語文面ドラフト → 実装。写真代行範囲（目安50枚案)の確認も待ち。
+- 重要な制約: push 未実施。本番書き込みなし。新 settings キーは Phase 2 まで追加しない。
+- 必要なcommit情報: 実装=Claude（Fable5）。

@@ -44,6 +44,7 @@ import {
   type Photo,
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
+import { useAdminI18n } from "./admin-i18n";
 import type { GalleryLayoutType } from "../components/PhotoGallery";
 
 const DEFAULT_THEME_BG = "#f7f7f7";
@@ -502,6 +503,7 @@ const FADE_OPTIONS: {
 
 export function HeroTab() {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [heroError, setHeroError] = useState("");
@@ -638,8 +640,8 @@ export function HeroTab() {
   return (
     <div className="h-full overflow-y-auto p-6 max-w-4xl mx-auto">
       <PageHeader
-        title="Hero"
-        description="トップページのカルーセルに表示する写真を選びます。"
+        title={t.navigation.tabs.hero}
+        description={t.headers.hero}
       />
       {heroError && (
         <div
@@ -649,7 +651,7 @@ export function HeroTab() {
           <span>{heroError}</span>
           <button
             onClick={() => setHeroError("")}
-            aria-label="閉じる"
+            aria-label={t.common.close}
             className="text-red-300/60 hover:text-red-200 transition-colors"
           >
             <X size={12} />
@@ -823,6 +825,7 @@ export function ProfileTab({
   onUnsavedChange?: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const { data, isLoading } = useQuery({
@@ -984,8 +987,8 @@ export function ProfileTab({
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
       <PageHeader
-        title="Profile"
-        description="About ページに表示する自己紹介とプロフィール写真です。"
+        title={t.navigation.tabs.profile}
+        description={t.headers.profile}
       />
 
       {/* Profile Photo Upload */}
@@ -1098,6 +1101,7 @@ export function ProfileTab({
 ══════════════════════════════════════════════════ */
 export function CategoriesTab() {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const [newSlug, setNewSlug] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [catError, setCatError] = useState("");
@@ -1209,8 +1213,8 @@ export function CategoriesTab() {
   return (
     <div className="h-full overflow-y-auto p-8 max-w-md mx-auto">
       <PageHeader
-        title="Categories"
-        description="Gallery の絞り込みに使うカテゴリを管理します。"
+        title={t.navigation.tabs.categories}
+        description={t.headers.categories}
       />
       <p className="text-[11px] text-[var(--admin-muted)] mb-6">
         ギャラリーのフィルターとして使用。↑↓で並び替え（この順で表示されます）。
@@ -1337,7 +1341,7 @@ export function CategoriesTab() {
               onClick={() => setDeleteCatConfirm(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={() => {
@@ -1346,7 +1350,7 @@ export function CategoriesTab() {
               }}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
-              削除する
+              {t.common.deleteAction}
             </button>
           </div>
         </Modal>
@@ -1380,6 +1384,7 @@ type SeriesDraft = {
 
 export function SeriesTab() {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const [newTitle, setNewTitle] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [addError, setAddError] = useState("");
@@ -1559,10 +1564,8 @@ export function SeriesTab() {
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
       <PageHeader
-        title="Series"
-        description={
-          '作品群（"Still, life" のようなまとまり）。↑↓で並び替え。公開トグルで下書き/公開。写真の割り当てはLibraryのインスペクタ「Series」から。'
-        }
+        title={t.navigation.tabs.series}
+        description={t.headers.series}
       />
 
       {rowError && (
@@ -1988,7 +1991,7 @@ export function SeriesTab() {
               onClick={() => setDeleteTarget(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={() => {
@@ -1998,7 +2001,7 @@ export function SeriesTab() {
               }}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
-              削除する
+              {t.common.deleteAction}
             </button>
           </div>
         </Modal>
@@ -2030,6 +2033,7 @@ type PlanDraft = {
 
 export function PricingTab() {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const [editId, setEditId] = useState<number | null>(null);
   const [draft, setDraft] = useState<PlanDraft>({
     title: "",
@@ -2162,8 +2166,8 @@ export function PricingTab() {
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
       <PageHeader
-        title="Pricing"
-        description="Contactページに表示される料金です。↑↓で並び替え。販売ページの料金はPortfolio Kit画面で編集します。"
+        title={t.navigation.tabs.pricing}
+        description={t.headers.pricing}
       />
 
       {rowError && (
@@ -2363,7 +2367,7 @@ export function PricingTab() {
               onClick={() => setDeleteTarget(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={() => {
@@ -2373,7 +2377,7 @@ export function PricingTab() {
               }}
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
-              削除する
+              {t.common.deleteAction}
             </button>
           </div>
         </Modal>
@@ -2618,6 +2622,7 @@ export function ServiceTab({
   onUnsavedChange?: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -2708,8 +2713,8 @@ export function ServiceTab({
   return (
     <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
       <PageHeader
-        title="Portfolio Kit"
-        description="/portfolio-kit 販売ページの内容を編集します。公開サイト側の表示条件は現在の設定に従います。"
+        title={t.navigation.tabs.service}
+        description={t.headers.service}
       />
 
       {/* ── Hero ── */}
@@ -3478,6 +3483,7 @@ export function SettingsTab({
   demoSeed?: string;
 }) {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -3759,10 +3765,8 @@ export function SettingsTab({
         {/* Scrollable content */}
         <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
           <PageHeader
-            title="Settings"
-            description={
-              saveError ? "保存失敗 — もう一度お試しください" : undefined
-            }
+            title={t.navigation.tabs.settings}
+            description={saveError ? t.headers.settingsSaveFailed : undefined}
             actions={
               <PageHeaderButton
                 active={showPreview}
@@ -6616,6 +6620,7 @@ function FloatingSaveBar({
   onSave: () => void;
   onDiscard: () => void;
 }) {
+  const { t } = useAdminI18n();
   const visible = show || pending || saved || error;
   // Physical entrance/exit (工程2): mount lags on the falling edge so
   // translateY/opacity can transition out before the bar leaves the DOM —
@@ -6672,10 +6677,10 @@ function FloatingSaveBar({
 
   if (!mounted) return null;
   const message = error
-    ? "保存に失敗しました"
+    ? t.floatingSave.failed
     : saved && !show
-      ? "保存しました"
-      : "保存していない変更があります";
+      ? t.floatingSave.saved
+      : t.floatingSave.unsaved;
 
   return (
     <output
@@ -6690,7 +6695,7 @@ function FloatingSaveBar({
         <div className="admin-floating-save-bar__actions">
           <button type="button" onClick={onDiscard} disabled={pending}>
             <X size={13} />
-            破棄
+            {t.common.discard}
           </button>
           <button
             type="button"
@@ -6703,7 +6708,7 @@ function FloatingSaveBar({
             ) : (
               <Check size={13} />
             )}
-            保存
+            {t.common.save}
           </button>
         </div>
       )}

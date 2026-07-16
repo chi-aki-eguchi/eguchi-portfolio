@@ -85,8 +85,18 @@ import {
   type Tab,
 } from "./admin-shared";
 import { resolveServiceVisibility } from "../../shared/service-visibility";
-import { PageHeader, PageHeaderButton } from "./admin-page-header";
+import {
+  AdminDesktopLanguageBar,
+  PageHeader,
+  PageHeaderButton,
+} from "./admin-page-header";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
+import {
+  AdminLanguageProvider,
+  AdminLanguageToggle,
+  getStoredAdminMessages,
+  useAdminI18n,
+} from "./admin-i18n";
 
 const LazyHeroTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.HeroTab })),
@@ -110,16 +120,16 @@ const LazySettingsTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.SettingsTab })),
 );
 
-const ADMIN_TABS: Record<Tab, { label: string; icon: React.ReactNode }> = {
-  setup: { label: "はじめに", icon: <Check size={15} /> },
-  gallery: { label: "Library", icon: <ImageLucide size={15} /> },
-  hero: { label: "Hero", icon: <Grid size={15} /> },
-  profile: { label: "Profile", icon: <User size={15} /> },
-  categories: { label: "Categories", icon: <Tag size={15} /> },
-  series: { label: "Series", icon: <Layers size={15} /> },
-  pricing: { label: "Pricing", icon: <Receipt size={15} /> },
-  service: { label: "Portfolio Kit", icon: <ExternalLink size={15} /> },
-  settings: { label: "Settings", icon: <Settings size={15} /> },
+const ADMIN_TAB_ICONS: Record<Tab, React.ReactNode> = {
+  setup: <Check size={15} />,
+  gallery: <ImageLucide size={15} />,
+  hero: <Grid size={15} />,
+  profile: <User size={15} />,
+  categories: <Tag size={15} />,
+  series: <Layers size={15} />,
+  pricing: <Receipt size={15} />,
+  service: <ExternalLink size={15} />,
+  settings: <Settings size={15} />,
 };
 
 type PaletteDestination = {
@@ -198,7 +208,7 @@ export function assertOk(res: Response): void {
       redirectingToLogin = true;
       window.location.assign("/admin/login");
     }
-    throw new Error("セッションが切れました。再ログインしてください。");
+    throw new Error(getStoredAdminMessages().common.sessionExpired);
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
@@ -373,8 +383,31 @@ function adminThemeFromSettings(
   } as CSSProperties;
 }
 
-export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: boolean; demoSeed?: string }) {
+export default function AdminPage({
+  demoMode = false,
+  demoSeed,
+}: {
+  demoMode?: boolean;
+  demoSeed?: string;
+}) {
+  return (
+    <AdminLanguageProvider>
+      <AdminPageContent demoMode={demoMode} demoSeed={demoSeed} />
+    </AdminLanguageProvider>
+  );
+}
+
+function AdminPageContent({
+  demoMode = false,
+  demoSeed,
+}: {
+  demoMode?: boolean;
+  demoSeed?: string;
+}) {
   const { isLoading, authenticated } = useAdminGuard(demoMode);
+  const { language, t } = useAdminI18n();
+  const adminRootRef = useRef<HTMLDivElement>(null);
+  const demoBannerRef = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
   const { data: shellSettings } = useQuery({
     queryKey: ["settings"],
@@ -418,9 +451,30 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
       shellSettings?.siteUrl,
       typeof window === "undefined" ? "" : window.location.hostname,
     );
+  const adminTabs = useMemo(
+    () =>
+      Object.fromEntries(
+        (Object.keys(ADMIN_TAB_ICONS) as Tab[]).map((key) => [
+          key,
+          { label: t.navigation.tabs[key], icon: ADMIN_TAB_ICONS[key] },
+        ]),
+      ) as Record<Tab, { label: string; icon: React.ReactNode }>,
+    [t],
+  );
   const adminTabGroups = useMemo(
-    () => adminTabGroupsForService(showService),
-    [showService],
+    () =>
+      adminTabGroupsForService(showService).map((group) => ({
+        ...group,
+        label:
+          group.key === "photos"
+            ? t.navigation.groups.photos
+            : group.key === "presentation"
+              ? t.navigation.groups.presentation
+              : group.key === "site"
+                ? t.navigation.groups.site
+                : group.label,
+      })),
+    [showService, t],
   );
 
   useEffect(() => {
@@ -444,6 +498,24 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
     () => adminThemeFromSettings(shellSettings),
     [shellSettings],
   );
+
+  useLayoutEffect(() => {
+    if (!demoMode) return;
+    const root = adminRootRef.current;
+    const banner = demoBannerRef.current;
+    if (!root || !banner) return;
+    const updateOffset = () => {
+      root.style.setProperty(
+        "--admin-demo-banner-height",
+        `${Math.ceil(banner.getBoundingClientRect().height)}px`,
+      );
+    };
+    updateOffset();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateOffset);
+    observer.observe(banner);
+    return () => observer.disconnect();
+  }, [demoMode, language]);
 
   // 工程3: sidebar active indicator slides between tabs (transform only) —
   // one shared bar instead of each tab fading its own in/out independently.
@@ -556,16 +628,16 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
     ...adminTabGroups.flatMap((group) =>
       group.tabs.map((key) => ({
         id: key,
-        label: ADMIN_TABS[key].label,
+        label: adminTabs[key].label,
         group: group.label,
-        icon: ADMIN_TABS[key].icon,
+        icon: adminTabs[key].icon,
         action: () => requestTab(key),
       })),
     ),
     {
       id: "trash",
-      label: "Trash",
-      group: "写真",
+      label: t.navigation.trash,
+      group: t.navigation.groups.photos,
       icon: <Trash2 size={15} />,
       action: () => {
         if (requestTab("gallery")) setOpenTrashRequest((n) => n + 1);
@@ -573,8 +645,8 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
     },
     {
       id: "open-site",
-      label: "公開サイトを開く",
-      group: "サイト",
+      label: t.navigation.openSite,
+      group: t.navigation.groups.site,
       icon: <ExternalLink size={15} />,
       action: () => window.open("/", "_blank", "noopener"),
     },
@@ -582,22 +654,50 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
 
   return (
     <div
+      ref={adminRootRef}
       className="admin-atelier relative flex select-none overflow-hidden"
-      style={adminThemeVars}
+      style={{
+        ...adminThemeVars,
+        ...(demoMode
+          ? { paddingTop: "var(--admin-demo-banner-height, 84px)" }
+          : {}),
+      }}
     >
       {demoMode && (
-        <div className="fixed inset-x-0 top-0 z-[100] flex flex-wrap items-center justify-center gap-x-5 gap-y-1 bg-[#f1e8cf] px-4 py-2 text-center text-[12px] font-medium tracking-[0.04em] text-[#594b2c] shadow-sm" data-admin-demo-banner>
-          <span>これは体験版です。変更は実際には保存されません。</span>
-          <a href="/portfolio-kit#pricing" className="underline underline-offset-4">気に入ったら ¥10,000 から</a>
-          <button type="button" onClick={() => window.location.reload()} className="underline underline-offset-4">最初からやり直す</button>
+        <div
+          ref={demoBannerRef}
+          className="fixed inset-x-0 top-0 z-[100] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-[#f1e8cf] px-4 py-2 text-[12px] font-medium tracking-[0.04em] text-[#594b2c] shadow-sm"
+          data-admin-demo-banner
+        >
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-center">
+            <span>{t.demo.banner}</span>
+            <a
+              href={
+                language === "en"
+                  ? "/portfolio-kit/en#pricing"
+                  : "/portfolio-kit#pricing"
+              }
+              className="underline underline-offset-4"
+            >
+              {t.demo.purchase}
+            </a>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="underline underline-offset-4"
+            >
+              {t.demo.reset}
+            </button>
+          </div>
+          <AdminLanguageToggle className="text-[#594b2c]" />
         </div>
       )}
       <aside className="admin-sidebar admin-glass hidden lg:flex">
         <div className="admin-sidebar__brand">
-          <span className="admin-sidebar__eyebrow">Portfolio Admin</span>
+          <span className="admin-sidebar__eyebrow">{t.login.eyebrow}</span>
           <span className="admin-sidebar__title">{sidebarSiteName}</span>
         </div>
-        <nav className="admin-sidebar__nav" aria-label="管理画面">
+        <nav className="admin-sidebar__nav" aria-label={t.navigation.label}>
           {indicatorTop != null && (
             <div
               aria-hidden="true"
@@ -610,7 +710,7 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
               <h2 className="admin-sidebar__group-title">{group.label}</h2>
               <div className="admin-sidebar__tabs">
                 {group.tabs.map((key) => {
-                  const item = ADMIN_TABS[key];
+                  const item = adminTabs[key];
                   const active = tab === key;
                   return (
                     <button
@@ -641,10 +741,10 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
             rel="noopener"
             className="admin-sidebar__link"
           >
-            <ExternalLink size={13} /> Site
+            <ExternalLink size={13} /> {t.navigation.siteButton}
           </a>
           <button onClick={requestLogout} className="admin-sidebar__link">
-            <LogOut size={13} /> Logout
+            <LogOut size={13} /> {t.navigation.logoutButton}
           </button>
         </div>
       </aside>
@@ -652,9 +752,11 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
       <div className="admin-main">
         <AdminMobileTopBar
           tab={tab}
-          tabMeta={ADMIN_TABS}
+          tabMeta={adminTabs}
           onLogout={requestLogout}
+          showLanguageToggle={!demoMode}
         />
+        {!demoMode && <AdminDesktopLanguageBar />}
 
         {/* Content */}
         <div className="admin-content">
@@ -695,7 +797,10 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
                   <LazyServiceTab onUnsavedChange={setHasUnsaved} />
                 )}
                 {contentTab === "settings" && (
-                  <LazySettingsTab onUnsavedChange={setHasUnsaved} demoSeed={demoSeed} />
+                  <LazySettingsTab
+                    onUnsavedChange={setHasUnsaved}
+                    demoSeed={demoSeed}
+                  />
                 )}
               </Suspense>
             )}
@@ -704,7 +809,7 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
 
         <AdminMobileTabBar
           tab={tab}
-          tabMeta={ADMIN_TABS}
+          tabMeta={adminTabs}
           tabGroups={adminTabGroups}
           galleryUploading={galleryUploading}
           onSelectTab={requestTab}
@@ -715,17 +820,17 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
       {unsavedConfirm && (
         <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
           <p className="text-[13px] text-[var(--admin-ink)] mb-1">
-            未保存の変更があります
+            {t.shell.unsavedTitle}
           </p>
           <p className="text-[11px] text-[var(--admin-muted)] mb-5">
-            保存していない内容があります。このまま移動しますか？
+            {t.shell.unsavedBody}
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setUnsavedConfirm(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={() => {
@@ -736,7 +841,7 @@ export default function AdminPage({ demoMode = false, demoSeed }: { demoMode?: b
               }}
               className="px-4 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors"
             >
-              保存せず移動
+              {t.shell.leaveWithoutSaving}
             </button>
           </div>
         </Modal>
@@ -769,6 +874,7 @@ type ChecklistItem = {
 // exportはrenderテスト用(表示だけでPOSTしない/完了ボタンでのみ保存する検証)
 export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -843,32 +949,27 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   // 確認" section below, so the main path stays a short 5 steps.
   const checklist: ChecklistItem[] = [
     {
-      title: "サイトの名前を入れる",
-      body: "表に出る名前と短い説明文。SNSで共有された時にも使われます。",
+      ...t.setup.checklist.siteName,
       done: isFilled(settings.siteName) && isFilled(settings.siteDescription),
       tab: "settings",
     },
     {
-      title: "プロフィールを書く",
-      body: "名前、自己紹介、プロフィール写真。まずここが入るとサイトらしくなります。",
+      ...t.setup.checklist.profile,
       done: isFilled(settings.profileName) && isFilled(settings.profileBio),
       tab: "profile",
     },
     {
-      title: "写真を1枚あげる",
-      body: "最初の写真をアップロードします。写真の保管場所が正しくつながっている確認にもなります。",
+      ...t.setup.checklist.firstPhoto,
       done: activePhotos.length > 0,
       tab: "gallery",
     },
     {
-      title: "トップ写真を選ぶ",
-      body: "最初に見せたい写真を選びます。サイトの第一印象になります。",
+      ...t.setup.checklist.hero,
       done: heroCount > 0,
       tab: "hero",
     },
     {
-      title: "公開を確認する",
-      body: "「開く」で実際のサイトを見て、トップに写真が出ているか確認します。ここまで来れば公開できています。",
+      ...t.setup.checklist.liveSite,
       done: publishedPhotos.length > 0 && heroCount > 0,
       href: "/",
     },
@@ -876,26 +977,22 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
 
   const recommended: ChecklistItem[] = [
     {
-      title: "連絡先",
-      body: "メールか問い合わせフォーム。撮影依頼を受けたい場合は入れておきます。",
+      ...t.setup.recommended.contact,
       done: isFilled(settings.contactEmail) || isFilled(settings.formspreeUrl),
       tab: "settings",
     },
     {
-      title: "公開URL",
-      body: "独自ドメインを使う時に入れます。検索結果やSNS共有のURLが安定します。",
+      ...t.setup.recommended.publicUrl,
       done: isFilled(settings.siteUrl),
       tab: "settings",
     },
     {
-      title: "写真の分類",
-      body: "Gallery の絞り込みに使います。写真が増えてきたら整えると見やすくなります。",
+      ...t.setup.recommended.categories,
       done: categories.length > 0,
       tab: "categories",
     },
     {
-      title: "見え方",
-      body: "ギャラリーの並び方、余白、文字の大きさを確認します。最初は写真の順番と S/M/L が一番効きます。",
+      ...t.setup.recommended.appearance,
       done: isFilled(settings.galleryLayout),
       tab: "settings",
     },
@@ -923,7 +1020,10 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
     return (
       <div className="h-full overflow-y-auto">
         <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 space-y-3">
-          <StorageHealthLine health={setupHealth} />
+          <StorageHealthLine
+            health={setupHealth}
+            copy={t.setup.storageHealth}
+          />
           <div className="flex items-center justify-between gap-3 border border-emerald-200 bg-emerald-50 rounded-sm px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
@@ -931,10 +1031,10 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
               </div>
               <p className="text-[12px] text-emerald-800 truncate">
                 {settings.setupCompleted === "true"
-                  ? "セットアップ完了ずみです。"
+                  ? t.setup.collapsedCompleted
                   : requiredDone
-                    ? "公開に必要な項目はそろっています。"
-                    : "「はじめに」を閉じています。"}
+                    ? t.setup.collapsedReady
+                    : t.setup.collapsedDismissed}
               </p>
             </div>
             <button
@@ -944,7 +1044,7 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
               }}
               className="text-[11px] text-emerald-700 hover:text-emerald-900 transition-colors flex-shrink-0"
             >
-              もう一度見る
+              {t.setup.reopen}
             </button>
           </div>
         </div>
@@ -955,18 +1055,21 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10 space-y-8">
-        <StorageHealthLine health={setupHealth} />
+        <StorageHealthLine
+          health={setupHealth}
+          copy={t.setup.storageHealth}
+        />
         <PageHeader
-          title="公開までにやること"
-          description="むずかしい設定は最初だけです。見る人に公開する前に、上から順に5つを確認します。写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。"
+          title={t.setup.title}
+          description={t.setup.description}
           actions={
             <>
               <div
                 className={`w-fit rounded-sm border px-3 py-2 text-[12px] ${requiredDone ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-muted)]"}`}
               >
                 {loading
-                  ? "確認中..."
-                  : `${doneCount} / ${checklist.length} 完了`}
+                  ? t.setup.checking
+                  : t.setup.progress(doneCount, checklist.length)}
               </div>
               <button
                 onClick={() => finishSetup.mutate()}
@@ -974,8 +1077,8 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
                 className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-50 flex-shrink-0"
               >
                 {finishSetup.isPending
-                  ? "保存中..."
-                  : "セットアップ完了 → ライブラリへ"}
+                  ? t.common.saving
+                  : t.setup.finish}
               </button>
               <button
                 onClick={() => {
@@ -984,7 +1087,7 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
                 }}
                 className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
               >
-                あとで
+                {t.setup.later}
               </button>
             </>
           }
@@ -1002,7 +1105,7 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
 
         <section className="space-y-3">
           <h2 className="text-[13px] uppercase tracking-[0.14em] text-[var(--admin-muted)]">
-            公開前にできれば確認
+            {t.setup.recommendedTitle}
           </h2>
           <div className="grid gap-3 md:grid-cols-3">
             {recommended.map((item) => (
@@ -1018,50 +1121,56 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
 
         <section className="grid gap-3 md:grid-cols-2">
           <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-5">
-            <h2 className="text-[14px] mb-3">公開の裏側にあるもの</h2>
+            <h2 className="text-[14px] mb-3">
+              {t.setup.infrastructure.title}
+            </h2>
             <div className="space-y-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
               <p>
                 <span className="text-[color:var(--admin-ink)]">
-                  サイトのファイル一式
+                  {t.setup.infrastructure.websiteFiles.title}
                 </span>
-                : 見た目や管理画面のもとになるもの。
-              </p>
-              <p>
-                <span className="text-[color:var(--admin-ink)]">公開場所</span>:
-                サイトをインターネットで動かす場所。
+                : {t.setup.infrastructure.websiteFiles.body}
               </p>
               <p>
                 <span className="text-[color:var(--admin-ink)]">
-                  データの保存場所
+                  {t.setup.infrastructure.hosting.title}
                 </span>
-                : 名前、説明文、写真一覧などを保存する場所。
+                : {t.setup.infrastructure.hosting.body}
               </p>
               <p>
                 <span className="text-[color:var(--admin-ink)]">
-                  写真の保存場所
+                  {t.setup.infrastructure.dataStorage.title}
                 </span>
-                : アップロードした写真ファイルそのものを置く場所。
+                : {t.setup.infrastructure.dataStorage.body}
+              </p>
+              <p>
+                <span className="text-[color:var(--admin-ink)]">
+                  {t.setup.infrastructure.photoStorage.title}
+                </span>
+                : {t.setup.infrastructure.photoStorage.body}
               </p>
             </div>
           </div>
           <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-5">
-            <h2 className="text-[14px] mb-3">言葉の置き換え</h2>
+            <h2 className="text-[14px] mb-3">{t.setup.glossary.title}</h2>
             <div className="space-y-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
               <p>
                 <span className="text-[color:var(--admin-ink)]">repo</span>:
-                サイトのファイル一式が入った箱。
+                {t.setup.glossary.repo}
               </p>
               <p>
-                <span className="text-[color:var(--admin-ink)]">環境変数</span>:
-                パスワードや接続先を書く、公開しない設定メモ。
+                <span className="text-[color:var(--admin-ink)]">
+                  {t.setup.glossary.environmentVariables.title}
+                </span>
+                : {t.setup.glossary.environmentVariables.body}
               </p>
               <p>
                 <span className="text-[color:var(--admin-ink)]">deploy</span>:
-                変更したサイトをネット上に反映すること。
+                {t.setup.glossary.deploy}
               </p>
               <p>
                 <span className="text-[color:var(--admin-ink)]">OGP</span>:
-                SNSでURLを貼った時に出るタイトル・説明・画像。
+                {t.setup.glossary.ogp}
               </p>
             </div>
           </div>
@@ -1080,6 +1189,7 @@ function SetupChecklistRow({
   onOpenTab: (tab: Tab) => void;
   compact?: boolean;
 }) {
+  const { t } = useAdminI18n();
   return (
     <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-4 flex gap-3">
       <div
@@ -1099,14 +1209,14 @@ function SetupChecklistRow({
               rel="noopener"
               className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
-              開く
+              {t.common.open}
             </a>
           ) : (
             <button
               onClick={() => item.tab && onOpenTab(item.tab)}
               className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
-              開く
+              {t.common.open}
             </button>
           )}
         </div>
@@ -1629,6 +1739,7 @@ export function GalleryTab({
   onTrashSignalConsumed?: () => void;
 }) {
   const qc = useQueryClient();
+  const { t } = useAdminI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const setUploadingAndNotify = (v: boolean) => {
@@ -3787,15 +3898,15 @@ export function GalleryTab({
             description={
               // 読込中に "0 / 0 photos" と断定表示しない — 写真家には消失に見える
               isLoading ? (
-                <span aria-label="読み込み中">… photos</span>
+                <span aria-label={t.headers.libraryLoading}>… photos</span>
               ) : (
                 <>
                   <CountSwap value={displayed.length} /> /{" "}
                   <CountSwap value={allPhotos.length} /> photos
                   {selected.size > 0 && (
                     <>
-                      {" "}
-                      ・ <CountSwap value={selected.size} /> selected
+                      {" ・ "}
+                      <CountSwap value={selected.size} /> {t.headers.librarySelected}
                     </>
                   )}
                 </>
@@ -3806,11 +3917,13 @@ export function GalleryTab({
                 active={showSitePreview}
                 onClick={() => setShowSitePreview(!showSitePreview)}
                 ariaLabel={
-                  showSitePreview ? "サイトで確認を閉じる" : "サイトで確認"
+                  showSitePreview
+                    ? t.headers.closeViewSite
+                    : t.headers.viewSite
                 }
               >
                 {showSitePreview ? <EyeOff size={13} /> : <Eye size={13} />}
-                サイトで確認
+                {t.headers.viewSite}
               </PageHeaderButton>
             }
           />
@@ -5276,7 +5389,7 @@ export function GalleryTab({
               onClick={() => setBatchEditOpen(false)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={() => batchMetaEdit.mutate(batchEdit)}
@@ -5508,7 +5621,7 @@ export function GalleryTab({
               onClick={() => setAlbumModalOpen(false)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={() => {
@@ -5568,7 +5681,7 @@ export function GalleryTab({
         <span className="truncate">{actionError}</span>
         <button
           onClick={() => setActionError("")}
-          aria-label="閉じる"
+          aria-label={t.common.close}
           className="text-red-200/60 hover:text-red-100 transition-colors flex-shrink-0"
         >
           <X size={12} />
@@ -5638,7 +5751,7 @@ export function GalleryTab({
             setUploadNotice(null);
             setRetryFiles([]);
           }}
-          aria-label="閉じる"
+          aria-label={t.common.close}
           className="text-amber-200/60 hover:text-amber-100 transition-colors ml-1 flex-shrink-0"
         >
           <X size={12} />
@@ -5658,7 +5771,7 @@ export function GalleryTab({
               onClick={() => setConfirmDialog(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               data-autofocus
@@ -5733,7 +5846,7 @@ export function GalleryTab({
               onClick={() => setPurgeConfirm(null)}
               className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
             >
-              キャンセル
+              {t.common.cancel}
             </button>
             <button
               onClick={() => {
@@ -5781,7 +5894,7 @@ export function GalleryTab({
           }}
           className="text-[var(--admin-muted)] hover:text-[var(--admin-ink)] underline underline-offset-2 transition-colors"
         >
-          キャンセル
+          {t.common.cancel}
         </button>
       </Toast>
 
@@ -5813,7 +5926,7 @@ export function GalleryTab({
               )}
               <button
                 onClick={() => setBulkResult(null)}
-                aria-label="閉じる"
+                aria-label={t.common.close}
                 className="text-[var(--admin-muted)] transition-colors ml-auto flex-shrink-0"
               >
                 <X size={12} />
@@ -7189,6 +7302,7 @@ function QuickPalette({
   onClose: () => void;
   destinations: PaletteDestination[];
 }) {
+  const { t } = useAdminI18n();
   const ref = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const onCloseRef = useRef(onClose);
@@ -7282,8 +7396,8 @@ function QuickPalette({
         ref={inputRef}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="移動先を検索…（Library / Hero / Settings / Trash など）"
-        aria-label="クイック移動"
+        placeholder={t.navigation.palettePlaceholder}
+        aria-label={t.navigation.paletteLabel}
         className="admin-palette__input"
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {
@@ -7299,7 +7413,10 @@ function QuickPalette({
           }
         }}
       />
-      <ul className="admin-palette__list" aria-label="移動先">
+      <ul
+        className="admin-palette__list"
+        aria-label={t.navigation.paletteDestinationsLabel}
+      >
         {filtered.map((d, i) => (
           <li key={d.id}>
             <button
@@ -7316,7 +7433,9 @@ function QuickPalette({
           </li>
         ))}
         {filtered.length === 0 && (
-          <li className="admin-palette__empty">見つかりません</li>
+          <li className="admin-palette__empty">
+            {t.navigation.paletteEmpty}
+          </li>
         )}
       </ul>
     </dialog>

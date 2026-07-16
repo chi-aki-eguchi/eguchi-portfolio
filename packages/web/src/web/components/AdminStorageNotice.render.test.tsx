@@ -25,6 +25,8 @@ const { createElement, act } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { StorageAlertBanner, StorageHealthLine } =
   await import("./AdminStorageNotice");
+const { ADMIN_DICTIONARY } = await import("../pages/admin-i18n");
+const jaStorageCopy = ADMIN_DICTIONARY.ja.setup.storageHealth;
 
 function renderToText(element: React.ReactElement): {
   text: string;
@@ -51,6 +53,7 @@ test("StorageHealthLine — 設定入力済みでも「接続済み」と言い�
   const { text } = renderToText(
     createElement(StorageHealthLine, {
       health: { storageConfigured: true, missingStorageVariables: [] },
+      copy: jaStorageCopy,
     }),
   );
   expect(text).toContain("必要な設定は入力済み");
@@ -65,6 +68,7 @@ test("StorageHealthLine — 不足時は変数名と対処を表示する(値は
         storageConfigured: false,
         missingStorageVariables: ["S3_BUCKET", "S3_ENDPOINT"],
       },
+      copy: jaStorageCopy,
     }),
   );
   expect(text).toContain("設定が不足しています");
@@ -74,8 +78,25 @@ test("StorageHealthLine — 不足時は変数名と対処を表示する(値は
 });
 
 test("StorageHealthLine — health未取得なら何も出さない", () => {
-  const { text } = renderToText(createElement(StorageHealthLine, {}));
+  const { text } = renderToText(
+    createElement(StorageHealthLine, { copy: jaStorageCopy }),
+  );
   expect(text).toBe("");
+});
+
+test("StorageHealthLine — 英語辞書で接続状態と対処を表示する", () => {
+  const { text } = renderToText(
+    createElement(StorageHealthLine, {
+      health: {
+        storageConfigured: false,
+        missingStorageVariables: ["S3_BUCKET"],
+      },
+      copy: ADMIN_DICTIONARY.en.setup.storageHealth,
+    }),
+  );
+  expect(text).toContain("Photo storage: Settings are missing");
+  expect(text).toContain("In Railway Variables, check S3_BUCKET");
+  expect(text).toContain("redeploy");
 });
 
 test("StorageAlertBanner — 専用日本語文面+明背景で読める色の不足変数名", () => {

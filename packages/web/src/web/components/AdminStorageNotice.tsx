@@ -7,28 +7,34 @@ import { storageNotConfiguredNotice } from "../lib/upload-file";
 // 確認される旨を添える)。
 export function StorageHealthLine({
   health,
+  copy,
 }: {
   health?: { storageConfigured: boolean; missingStorageVariables: string[] };
+  copy: {
+    configured: string;
+    missingSummary: string;
+    missingVariables: string;
+    missingFallback: string;
+    missingAction: string;
+  };
 }) {
   if (!health) return null;
   if (health.storageConfigured) {
     return (
       <p className="text-[11px] text-[color:var(--admin-muted)]">
-        写真の保存先:
-        必要な設定は入力済み（実際につながるかは最初のアップロードで確認されます）
+        {copy.configured}
       </p>
     );
   }
   return (
     <div className="border border-amber-300 bg-amber-50 rounded-sm px-4 py-3 space-y-1">
       <p className="text-[12px] text-amber-900">
-        写真の保存先: 設定が不足しています —
-        このままでは写真をアップロードできません。
+        {copy.missingSummary}
       </p>
       <p className="text-[11px] leading-5 text-amber-800">
-        Railway の Variables で{" "}
-        {health.missingStorageVariables.join(", ") || "S3_BUCKET など"}{" "}
-        を確認し、設定を直して再デプロイしてください。分からない場合は、サイトを設定した人へこの画面を送ってください。
+        {copy.missingVariables}{" "}
+        {health.missingStorageVariables.join(", ") || copy.missingFallback}{" "}
+        {copy.missingAction}
       </p>
     </div>
   );

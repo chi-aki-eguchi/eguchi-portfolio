@@ -1,4 +1,13 @@
 import type { ReactNode } from "react";
+import { AdminLanguageToggle } from "./admin-i18n";
+
+export function AdminDesktopLanguageBar() {
+  return (
+    <div className="hidden min-h-11 flex-shrink-0 items-center justify-end border-b border-[color:var(--admin-line)] px-5 lg:flex">
+      <AdminLanguageToggle className="text-[var(--admin-muted)]" />
+    </div>
+  );
+}
 
 // Common header for all 9 admin screens: title + optional one-line description
 // on the left, screen-specific actions on the right. Sits directly on the page

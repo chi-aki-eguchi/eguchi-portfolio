@@ -7,6 +7,7 @@ import {
   type AdminTabGroup,
   type Tab,
 } from "./admin-shared";
+import { AdminLanguageToggle, useAdminI18n } from "./admin-i18n";
 
 // スマホ admin ナビ(2026-07-11 モバイル操作性改善)。
 // 旧・上部2段横スクロールナビは activeタブが画面外へ流れ、片手の親指で
@@ -20,11 +21,14 @@ export function AdminMobileTopBar({
   tab,
   tabMeta,
   onLogout,
+  showLanguageToggle = true,
 }: {
   tab: Tab;
   tabMeta: AdminTabMeta;
   onLogout: () => void;
+  showLanguageToggle?: boolean;
 }) {
+  const { t } = useAdminI18n();
   const meta = tabMeta[tab];
   return (
     <header className="admin-mobile-topbar lg:hidden">
@@ -33,22 +37,25 @@ export function AdminMobileTopBar({
         <span className="text-[13px] tracking-wide truncate">{meta.label}</span>
       </div>
       <div className="flex items-center flex-shrink-0">
+        {showLanguageToggle && (
+          <AdminLanguageToggle className="mr-1 text-[var(--admin-muted)]" />
+        )}
         <a
           href="/"
           target="_blank"
           rel="noopener"
-          aria-label="公開サイトを開く"
+          aria-label={t.navigation.openSite}
           className="admin-tap flex items-center gap-1 px-2 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <ExternalLink size={14} /> Site
+          <ExternalLink size={14} /> {t.navigation.siteButton}
         </a>
         <button
           type="button"
           onClick={onLogout}
-          aria-label="ログアウト"
+          aria-label={t.navigation.logout}
           className="admin-tap flex items-center gap-1 px-2 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <LogOut size={14} /> Logout
+          <LogOut size={14} /> {t.navigation.logoutButton}
         </button>
       </div>
     </header>
@@ -69,6 +76,7 @@ export function AdminMobileTabBar({
   // requestTab と同じ契約: 未保存ガードで拒否されたら false。
   onSelectTab: (tab: Tab) => boolean;
 }) {
+  const { t } = useAdminI18n();
   const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
   const activeGroup = groupForTab(tab, tabGroups);
   const openGroup =
@@ -88,27 +96,33 @@ export function AdminMobileTabBar({
     onSelectTab(next);
     setOpenGroupKey(null);
   };
+  const groupLabel = (group: AdminTabGroup) => {
+    if (group.key === "photos") return t.navigation.groups.photos;
+    if (group.key === "presentation") return t.navigation.groups.presentation;
+    if (group.key === "site") return t.navigation.groups.site;
+    return group.label;
+  };
 
   return (
     <>
       {openGroup && (
         <div
           className="admin-sheet lg:hidden"
-          aria-label={`${openGroup.label}のタブ`}
+          aria-label={t.navigation.groupTabs(groupLabel(openGroup))}
         >
           {/* `absolute` はグローバル button リセット(:not(.absolute))の除外用 */}
           <button
             type="button"
-            aria-label="閉じる"
+            aria-label={t.common.close}
             className="admin-sheet__backdrop absolute"
             onClick={() => setOpenGroupKey(null)}
           />
           <div className="admin-sheet__panel">
             <div className="admin-sheet__head">
-              <span>{openGroup.label}</span>
+              <span>{groupLabel(openGroup)}</span>
               <button
                 type="button"
-                aria-label="シートを閉じる"
+                aria-label={t.navigation.closeSheet}
                 className="admin-tap text-[var(--admin-muted)]"
                 onClick={() => setOpenGroupKey(null)}
               >
@@ -132,7 +146,10 @@ export function AdminMobileTabBar({
           </div>
         </div>
       )}
-      <nav className="admin-bottom-nav lg:hidden" aria-label="管理画面">
+      <nav
+        className="admin-bottom-nav lg:hidden"
+        aria-label={t.navigation.label}
+      >
         {tabGroups.map((group) => {
           const active = group.key === activeGroup.key;
           const single = group.tabs.length === 1;
@@ -152,7 +169,9 @@ export function AdminMobileTabBar({
                 }
               }}
             >
-              <span className="admin-bottom-nav__label">{group.label}</span>
+              <span className="admin-bottom-nav__label">
+                {groupLabel(group)}
+              </span>
               <span className="admin-bottom-nav__sub">
                 {active ? tabMeta[tab].label : " "}
               </span>

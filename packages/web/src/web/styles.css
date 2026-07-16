@@ -197,6 +197,35 @@
   color: var(--admin-ink);
 }
 
+.admin-language-toggle button {
+  min-height: 24px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.admin-language-toggle button[data-active="true"] {
+  font-weight: 500;
+  opacity: 1;
+}
+
+.admin-language-toggle button:hover {
+  opacity: 0.8;
+}
+
+/* Keep the compact language switch outside the admin's 40px button reset. */
+.admin-atelier.admin-atelier .admin-language-toggle button:not(.absolute) {
+  min-height: 24px !important;
+  padding: 0 2px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+
 /* ─── Glass surface (structural layers only — sidebar / save bar / modal /
    ⌘K palette). Falls back to an opaque panel when backdrop-filter isn't
    supported or the user asked for reduced transparency. ─── */

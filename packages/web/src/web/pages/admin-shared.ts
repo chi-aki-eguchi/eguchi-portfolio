@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { objectPositionFromFocal, srcFor } from "../lib/picture";
 import { adminApi } from "../lib/api";
+import { getStoredAdminMessages } from "./admin-i18n";
 
 export type Tab =
   | "setup"
@@ -121,7 +122,7 @@ export function assertOk(res: Response): void {
       redirectingToLogin = true;
       window.location.assign("/admin/login");
     }
-    throw new Error("セッションが切れました。再ログインしてください。");
+    throw new Error(getStoredAdminMessages().common.sessionExpired);
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
@@ -146,7 +147,9 @@ export async function postAdminSettings(
   const body = await jsonOrThrow<{ ok: boolean; ignoredKeys?: string[] }>(res);
   if (body.ignoredKeys && body.ignoredKeys.length > 0) {
     throw new Error(
-      `一部の設定が保存されませんでした（未対応のキー: ${body.ignoredKeys.join(", ")}）`,
+      getStoredAdminMessages().common.unsupportedSettings(
+        body.ignoredKeys.join(", "),
+      ),
     );
   }
 }

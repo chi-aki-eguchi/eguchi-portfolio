@@ -63,6 +63,8 @@ const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } =
   await import("@tanstack/react-query");
 const { SetupTab } = await import("./admin");
+const { ADMIN_LANGUAGE_STORAGE_KEY, AdminLanguageProvider } =
+  await import("./admin-i18n");
 
 const flush = async () => {
   await act(async () => {
@@ -71,6 +73,8 @@ const flush = async () => {
 };
 
 test("SetupTab — 表示しただけではPOSTを1回もしない / 完了ボタンで1回だけPOSTしライブラリへ", async () => {
+  dom.window.localStorage.clear();
+  requests.length = 0;
   const qc = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -124,4 +128,49 @@ test("SetupTab — 表示しただけではPOSTを1回もしない / 完了ボ�
     root.unmount();
   });
   container.remove();
+});
+
+test("SetupTab — ENではPhase 2aチェックリストを英語表示し、表示だけでは書き込まない", async () => {
+  dom.window.localStorage.clear();
+  dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
+  requests.length = 0;
+  const qc = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  const container = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(
+          AdminLanguageProvider,
+          null,
+          createElement(SetupTab, { onOpenTab: () => undefined }),
+        ),
+      ),
+    );
+  });
+  for (let i = 0; i < 10; i++) {
+    await flush();
+    if (container.textContent?.includes("Finish setup")) break;
+  }
+
+  expect(container.textContent).toContain("Before you publish");
+  expect(container.textContent).toContain("Add your site name");
+  expect(container.textContent).toContain("Upload one photo");
+  expect(container.textContent).toContain("Choose a hero photo");
+  expect(container.textContent).toContain("Check the live site");
+  expect(container.textContent).toContain("Finish setup → Library");
+  expect(requests.filter((request) => request.method !== "GET")).toEqual([]);
+
+  await act(async () => root.unmount());
+  container.remove();
+  dom.window.localStorage.clear();
 });

@@ -701,6 +701,51 @@ describe("shared components", () => {
     }
   });
 
+  test("Admin demo renders its banner, guide, purchase route, and save notice in EN", async () => {
+    dom.reconfigure({ url: "https://akieguchi.com/admin/demo" });
+    dom.window.localStorage.clear();
+    const { ADMIN_LANGUAGE_STORAGE_KEY } =
+      await import("../pages/admin-i18n");
+    dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
+    try {
+      const Demo = (await import("../pages/admin-demo")).default;
+      const { ADMIN_DEMO_WRITE_EVENT } =
+        await import("../lib/admin-demo-fetch");
+      const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
+      await waitForText(host, "This is a demo");
+      expect(host.textContent).toContain("Start with these three steps");
+      expect(host.textContent).toContain("Change a photo layout in Gallery");
+      expect(host.textContent).toContain("Start exploring");
+      expect(host.textContent).toContain("Start over");
+      expect(
+        host
+          .querySelector('[data-admin-demo-banner] a')
+          ?.getAttribute("href"),
+      ).toBe("/portfolio-kit/en#pricing");
+      expect(
+        (host.querySelector(".admin-atelier") as HTMLElement).style.paddingTop,
+      ).toContain("--admin-demo-banner-height");
+      const guide = host.querySelector(
+        "[data-admin-demo-guide]",
+      ) as HTMLDialogElement;
+      expect(guide.hasAttribute("open")).toBe(true);
+      expect(guide.contains(dom.window.document.activeElement)).toBe(true);
+      guide.dispatchEvent(
+        new dom.window.Event("cancel", { cancelable: true }),
+      );
+      await flush(30);
+      expect(host.querySelector("[data-admin-demo-guide]")).toBeNull();
+
+      dom.window.dispatchEvent(new dom.window.Event(ADMIN_DEMO_WRITE_EVENT));
+      await waitForText(host, "Applied on this screen only");
+      expect(host.textContent).toContain("Nothing was saved");
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("Admin demo is a 404-equivalent on distribution hosts", async () => {
     dom.reconfigure({ url: "https://portfolio.example/admin/demo" });
     try {
@@ -774,6 +819,61 @@ describe("shared components", () => {
       canned["/api/admin/me"] = prev;
       canned["/api/settings"] = prevSettings;
       dom.window.sessionStorage.clear(); // don't leak persisted tab/sort into other tests
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminPage: EN localStorage translates the shared shell, headers, and unsaved UI", async () => {
+    const prev = canned["/api/admin/me"];
+    const prevSettings = canned["/api/settings"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/settings"] = {
+      setupCompleted: "true",
+      siteNameEn: "Template Studio",
+      servicePageMode: "on",
+    };
+    const { ADMIN_LANGUAGE_STORAGE_KEY } =
+      await import("../pages/admin-i18n");
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedAdminPhotos,
+      );
+      expect(host.textContent).toContain("Photos");
+      expect(host.textContent).toContain("Presentation");
+      expect(host.textContent).toContain("Getting started");
+      expect(host.textContent).toContain("View on site");
+      expect(
+        host.querySelector('[data-admin-language-toggle][data-language="en"]'),
+      ).not.toBeNull();
+
+      navGroup(host, "Site").click();
+      await flush(30);
+      sheetRow(host, "Profile").click();
+      await waitForText(
+        host,
+        "Your biography and profile photo shown on the About page.",
+      );
+      changeInput(inputByLabel(host, "Name (JP)"), "Draft Name");
+      await waitForText(host, "You have unsaved changes");
+      expect(host.textContent).toContain("Discard");
+      expect(host.textContent).toContain("Save");
+
+      navGroup(host, "Presentation").click();
+      await flush(30);
+      sheetRow(host, "Hero").click();
+      await waitForText(host, "Your changes have not been saved");
+      expect(host.textContent).toContain("Cancel");
+      expect(host.textContent).toContain("Leave without saving");
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      canned["/api/settings"] = prevSettings;
+      dom.window.sessionStorage.clear();
       dom.window.localStorage.clear();
     }
   });
@@ -1794,6 +1894,7 @@ describe("shared components", () => {
   test("AdminLogin marks admin auth fresh after successful login", async () => {
     const prev = canned["/api/admin/login"];
     canned["/api/admin/login"] = { ok: true };
+    dom.window.localStorage.clear();
     try {
       const AdminLogin = (await import("../pages/admin-login")).default;
       const { qc, host, cleanup } = await mount(createElement(AdminLogin));
@@ -1819,6 +1920,37 @@ describe("shared components", () => {
     } finally {
       if (prev === undefined) delete canned["/api/admin/login"];
       else canned["/api/admin/login"] = prev;
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("AdminLogin toggles to EN and restores the choice after remount", async () => {
+    const { ADMIN_LANGUAGE_STORAGE_KEY } =
+      await import("../pages/admin-i18n");
+    dom.window.localStorage.clear();
+    try {
+      const AdminLogin = (await import("../pages/admin-login")).default;
+      const first = await mount(createElement(AdminLogin));
+      expect(first.host.querySelector('input[aria-label="パスワード"]')).not.toBeNull();
+      buttonWithText(first.host, "EN").click();
+      await flush(20);
+      expect(first.host.querySelector('input[aria-label="Password"]')).not.toBeNull();
+      expect(first.host.textContent).toContain("Sign in");
+      expect(dom.window.localStorage.getItem(ADMIN_LANGUAGE_STORAGE_KEY)).toBe(
+        "en",
+      );
+      first.cleanup();
+
+      const second = await mount(createElement(AdminLogin));
+      expect(second.host.querySelector('input[aria-label="Password"]')).not.toBeNull();
+      expect(
+        second.host.querySelector(
+          '[data-admin-language-toggle][data-language="en"]',
+        ),
+      ).not.toBeNull();
+      second.cleanup();
+    } finally {
+      dom.window.localStorage.clear();
     }
   });
 

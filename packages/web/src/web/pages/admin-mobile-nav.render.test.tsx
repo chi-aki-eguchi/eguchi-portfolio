@@ -27,8 +27,14 @@ Object.assign(globalThis, {
 
 const { createElement, act } = await import("react");
 const { createRoot } = await import("react-dom/client");
-const { AdminMobileTabBar } = await import("./admin-mobile-nav");
+const { AdminMobileTabBar, AdminMobileTopBar } =
+  await import("./admin-mobile-nav");
 const { ADMIN_TAB_GROUPS } = await import("./admin-shared");
+const {
+  ADMIN_DICTIONARY,
+  ADMIN_LANGUAGE_STORAGE_KEY,
+  AdminLanguageProvider,
+} = await import("./admin-i18n");
 type Tab = import("./admin-shared").Tab;
 
 const TAB_META = Object.fromEntries(
@@ -47,6 +53,7 @@ function findButton(host: HTMLElement, text: string) {
 }
 
 test("下部バー: 3グループ表示 → シートからタブ選択、setupにも到達できる", async () => {
+  dom.window.localStorage.clear();
   const selected: Tab[] = [];
   const host = document.getElementById("root")!;
   const root = createRoot(host);
@@ -130,4 +137,59 @@ test("下部バー: 3グループ表示 → シートからタブ選択、setup�
   await act(async () => {
     root.unmount();
   });
+});
+
+test("EN: 上部トグルと英語グループ名・Getting startedを表示する", async () => {
+  dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  const enMeta = Object.fromEntries(
+    ADMIN_TAB_GROUPS.flatMap((group) =>
+      group.tabs.map((tab) => [
+        tab,
+        { label: ADMIN_DICTIONARY.en.navigation.tabs[tab], icon: null },
+      ]),
+    ),
+  ) as Record<Tab, { label: string; icon: null }>;
+
+  await act(async () => {
+    root.render(
+      createElement(
+        AdminLanguageProvider,
+        null,
+        createElement(
+          "div",
+          null,
+          createElement(AdminMobileTopBar, {
+            tab: "gallery",
+            tabMeta: enMeta,
+            onLogout: () => undefined,
+          }),
+          createElement(AdminMobileTabBar, {
+            tab: "gallery",
+            tabMeta: enMeta,
+            galleryUploading: false,
+            onSelectTab: () => true,
+          }),
+        ),
+      ),
+    );
+  });
+
+  expect(host.querySelector('[data-admin-language-toggle][data-language="en"]')).not.toBeNull();
+  expect(findButton(host, "Photos")).toBeDefined();
+  expect(findButton(host, "Presentation")).toBeDefined();
+  expect(findButton(host, "Site")).toBeDefined();
+  await act(async () => click(findButton(host, "Site")!));
+  expect(host.querySelector(".admin-sheet")?.textContent).toContain(
+    "Getting started",
+  );
+  expect(host.querySelector(".admin-sheet")?.getAttribute("aria-label")).toBe(
+    "Site tabs",
+  );
+
+  await act(async () => root.unmount());
+  host.remove();
+  dom.window.localStorage.clear();
 });

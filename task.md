@@ -8628,3 +8628,13 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   オーナーはpush後に /portfolio-kit/en と /start/en をPC/スマホで目視。
 - 重要な制約: push未実施。本番書き込みなし。新settingsキー追加なし。
 - 必要なcommit情報: 5d4分の実装commit(git log参照)。
+
+## Handoff 2026-07-16 (44) — i18n Phase 2a 完了（管理画面の共通シェル）
+
+- 完了したこと: ログイン・実admin・デモadminへ `JP | EN` を追加し、`localStorage` で選択を維持する型付き日英辞書を実装。ナビ、ヘッダー、共通操作、はじめに、デモのバナー・ガイド・購入導線を英語化した。
+- 現在の状態: 既定は日本語。2b/2c対象の写真管理・シリーズ・カテゴリ本文とSettings個別ラベルは日本語のまま。デモの書き込み遮断、既存の保存・プレビュー挙動は変更していない。
+- 検証: `cd packages/web && bunx tsc -b && bun test ./src` 成功（457 pass / 0 fail）、`bun run check` 成功、`bun run smoke` 成功（33 pass / 27条件skip / 0 fail）。375px実測でデモバナー重なり0、ガイドはモーダル・初期フォーカス・Escape対応を確認。
+- レビュー: P0/P1なし。共通Cancel/Deleteの辞書接続、日本語文言不変、2a/2b境界、`html lang`、デモの高さ予約をread-only再確認済み。
+- 残っている問題: なし。高速スワイプsmokeは初回に画像1枚の一時読込失敗が出たが、対象再実行2 pass / 0 fail、全体再実行も成功。
+- 次に行うこと: Claudeがcommit差分を最終確認。Phase 2bは別タスクで着手し、Phase 2全完了までは英語LPのJapanese-first注記を維持する。
+- 重要な制約: push未実施。本番DB/R2/Railway操作なし。新settingsキー・DB・API・公開側ページの変更なし。実装・commit=Codex。

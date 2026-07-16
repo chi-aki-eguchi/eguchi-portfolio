@@ -462,6 +462,9 @@ export default function ServiceStartPage() {
             className="mt-5 text-[rgba(var(--foreground-rgb),0.42)]"
             style={{ fontSize: "0.78rem", lineHeight: 1.8 }}
           >
+            セルフは操作方法の初回相談、おまかせは公開後7日間の操作相談を含みます。
+            それ以降の相談・作業は、内容に応じて別途お見積もりします。
+            <br />
             まだ購入していない方は、先に料金ページからコースを選んでください。
           </p>
         </div>

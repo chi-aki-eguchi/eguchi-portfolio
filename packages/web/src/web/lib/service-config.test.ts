@@ -86,6 +86,19 @@ describe("Portfolio Kit config migration", () => {
     expect(DEFAULT_SERVICE_CONFIG.purchaseFlow.body).toContain("24時間以内");
   });
 
+  test("states the purchase scope and concierge delivery terms", () => {
+    const faqText = DEFAULT_SERVICE_CONFIG.faq.items
+      .map(({ q, a }) => `${q}${a}`)
+      .join("");
+    expect(faqText).toContain("1回の購入につき1サイト");
+    expect(faqText).toContain("再販売・再配布はできません");
+    expect(faqText).toContain("現時点では無償");
+    expect(faqText).toContain("公開後7日間");
+    expect(DEFAULT_SERVICE_CONFIG.purchaseFlow.steps[3]?.body).toContain(
+      "素材が揃ってから3日以内",
+    );
+  });
+
   test("fills new first-view facts into older saved configs", () => {
     const parsed = parseServicePageConfig(
       JSON.stringify({

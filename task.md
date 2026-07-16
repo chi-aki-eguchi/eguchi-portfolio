@@ -8572,3 +8572,11 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 次に行うこと: Claudeが実settings非取込・iframe用query・書き込み遮断境界をread-only確認し、オーナーpush後にPC/スマホで3導線を目視する。
 - 重要な制約: 新settingsキー、DB/API変更なし。push、本番DB/R2/Railway書き込み、`.env`読み取りなし。
 - 必要なcommit情報: 実装=Codex。check 438 pass / smoke 31 pass・27条件skip・0 fail。
+
+## Handoff 2026-07-16 (39) — Portfolio Kit 販売条件の統一
+
+- 完了したこと: LP・購入後スタートページ・購入後文面・販売メモ・運用手順を、24時間以内の初回案内、素材完備後3日以内の納品、セルフ初回相談、おまかせ公開後7日間の相談へ統一した。
+- 買い切り範囲: 1購入1サイト、再販売・再配布禁止、更新は現時点で無償（将来変更の可能性あり）、追加購入・別見積もりの対象をLPのFAQ付近へ追加した。
+- 運用: Stripe支払い一覧を1日1回確認する予備手順と、購入記録の定型表を追加した。購入記録は公開リポジトリへ保存しない注意も明記した。
+- 検証: `cd packages/web && bunx tsc -b && bun test ./src` 成功（439 pass / 0 fail）、`bun run check` 成功、`git diff --check` 成功。admin文言未変更のためsmoke対象外。
+- 制約: 新settingsキー・DB/API・販売ロジック変更なし。push、本番書き込み、`.env`読み取りなし。実装=Codex。

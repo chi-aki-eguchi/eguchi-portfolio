@@ -435,6 +435,37 @@ const ADMIN_PHASE_2B_JA = {
       closeInspectorAction: "保存せず閉じる",
     },
   },
+  hero: {
+    error:
+      "操作に失敗しました。通信状況を確認するか、再ログインしてください。",
+    danglingWarning: (count: number) =>
+      `${count} 件のヒーロー選択が削除済み（ゴミ箱内含む）の写真を参照しています。公開サイトには表示されず、ゴミ箱から復元すると突然ヒーローに再表示されます。`,
+    cleaningUp: "整理中...",
+    removeFromSelection: "選択から外す",
+    slidesHint:
+      "トップページのカルーセルに表示する写真。ドラッグで並び替え。未選択の場合はギャラリーの先頭から自動表示。",
+    noneSelected: "ヒーロー写真が未設定です",
+    selectFromGalleryHint: "下のギャラリーから写真を選んでください",
+    movePrevious: "前へ移動",
+    moveNext: "後へ移動",
+    removeAria: "ヒーローから削除",
+    galleryHint: "クリックでヒーローに追加 / 解除",
+    noPhotosYet: "まだ写真がありません。Libraryから追加できます。",
+    toggleAria: (name: string, isHero: boolean) =>
+      `${name} をヒーローから${isHero ? "外す" : "追加"}`,
+  },
+  profile: {
+    selectImageFile: "画像ファイルを選択してください",
+    uploadFailed: "プロフィール写真のアップロードに失敗しました",
+    selectPhotoAria: "プロフィール写真を選択",
+    fields: {
+      nameKataLabel: "振り仮名 (カタカナ)",
+      nameKataPlaceholder: "エグチアキ",
+      statementLabel: "Statement (作家ステートメント)",
+      statementPlaceholder: "空欄でも崩れません。後から追記OK",
+      gearLabel: "使用機材 (1行に1つ)",
+    },
+  },
   categories: {
     description:
       "ギャラリーのフィルターとして使用。↑↓で並び替え（この順で表示されます）。",
@@ -531,6 +562,37 @@ const ADMIN_PHASE_2B_JA = {
         "追加に失敗しました。スラッグが重複していないか確認してください。",
       duplicateSlug: (slug: string) =>
         `スラッグ "${slug}" は既に存在します。`,
+      saveFailed: "保存に失敗しました。",
+      deleteFailed: "削除に失敗しました。",
+      reorderFailed: "並び替えの保存に失敗しました。",
+    },
+  },
+  pricing: {
+    moveUp: "上へ移動",
+    moveDown: "下へ移動",
+    published: "公開",
+    draft: "下書き",
+    edit: "編集",
+    deleteAria: (title: string) => `${title} を削除`,
+    titleAria: "プランのタイトル",
+    titlePlaceholder: "ポートレート",
+    priceHint: "自由記述（例: ¥15,000〜）",
+    priceAria: "価格",
+    descriptionHint: "プランの説明（任意）",
+    descriptionAria: "プランの説明",
+    descriptionPlaceholder: "2時間・データ20枚 など",
+    featuresLabel: "含まれるもの",
+    featuresHint: "1行に1項目（箇条書き）",
+    featuresPlaceholder: "撮影2時間\nデータ20枚\nレタッチ込み",
+    noteLabel: "補足",
+    noteHint: "注意書きなど（任意）",
+    notePlaceholder: "交通費別途",
+    add: "プランを追加",
+    empty:
+      "まだ料金プランがありません。下の「プランを追加」から追加できます。",
+    deleteConfirm: (title: string) => `「${title}」を削除しますか？`,
+    errors: {
+      addFailed: "追加に失敗しました。",
       saveFailed: "保存に失敗しました。",
       deleteFailed: "削除に失敗しました。",
       reorderFailed: "並び替えの保存に失敗しました。",
@@ -951,6 +1013,37 @@ const ADMIN_PHASE_2B_EN = {
       closeInspectorAction: "Close without saving",
     },
   },
+  hero: {
+    error: "The operation failed. Check your connection or sign in again.",
+    danglingWarning: (count: number) =>
+      `Hero has ${count} selection${count === 1 ? "" : "s"} pointing to a deleted photo (including photos in Trash). It won't appear on the public site, and restoring the photo from Trash will make it reappear in Hero unexpectedly.`,
+    cleaningUp: "Cleaning up...",
+    removeFromSelection: "Remove from selection",
+    slidesHint:
+      "Photos shown in the home-page carousel. Drag to reorder. If none are selected, the first photos in Gallery are shown automatically.",
+    noneSelected: "No hero photos selected yet",
+    selectFromGalleryHint: "Choose photos from the gallery below",
+    movePrevious: "Move earlier",
+    moveNext: "Move later",
+    removeAria: "Remove from Hero",
+    galleryHint: "Click to add to or remove from Hero",
+    noPhotosYet: "No photos yet. Add photos from Library.",
+    toggleAria: (name: string, isHero: boolean) =>
+      isHero ? `Remove ${name} from Hero` : `Add ${name} to Hero`,
+  },
+  profile: {
+    selectImageFile: "Please choose an image file",
+    uploadFailed: "Could not upload the profile photo",
+    selectPhotoAria: "Choose profile photo",
+    fields: {
+      nameKataLabel: "Phonetic reading (katakana)",
+      nameKataPlaceholder: "エグチアキ",
+      statementLabel: "Statement",
+      statementPlaceholder:
+        "It's fine to leave this blank — you can add it later.",
+      gearLabel: "Equipment used (one per line)",
+    },
+  },
   categories: {
     description:
       "Used as Gallery filters. Reorder with ↑↓; this is the public display order.",
@@ -1044,6 +1137,37 @@ const ADMIN_PHASE_2B_EN = {
       saveFailed: "Could not save the series.",
       deleteFailed: "Could not delete the series.",
       reorderFailed: "Could not save the series order.",
+    },
+  },
+  pricing: {
+    moveUp: "Move up",
+    moveDown: "Move down",
+    published: "Published",
+    draft: "Draft",
+    edit: "Edit",
+    deleteAria: (title: string) => `Delete ${title}`,
+    titleAria: "Plan title",
+    titlePlaceholder: "Portrait",
+    priceHint: "Free text (e.g. ¥15,000+)",
+    priceAria: "Price",
+    descriptionHint: "Plan description (optional)",
+    descriptionAria: "Plan description",
+    descriptionPlaceholder: "e.g. 2 hours, 20 edited images",
+    featuresLabel: "What's included",
+    featuresHint: "One item per line",
+    featuresPlaceholder:
+      "2-hour session\n20 edited images\nRetouching included",
+    noteLabel: "Notes",
+    noteHint: "Additional notes (optional)",
+    notePlaceholder: "Travel expenses billed separately",
+    add: "Add Plan",
+    empty: "No pricing plans yet. Add one with “Add Plan” below.",
+    deleteConfirm: (title: string) => `Delete “${title}”?`,
+    errors: {
+      addFailed: "Could not add the plan.",
+      saveFailed: "Could not save.",
+      deleteFailed: "Could not delete the plan.",
+      reorderFailed: "Could not save the sort order.",
     },
   },
 } as const satisfies AdminPhase2bMessages;

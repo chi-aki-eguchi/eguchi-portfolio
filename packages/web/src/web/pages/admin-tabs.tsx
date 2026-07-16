@@ -504,6 +504,7 @@ const FADE_OPTIONS: {
 export function HeroTab() {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
+  const copy = t.phase2b.hero;
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [heroError, setHeroError] = useState("");
@@ -541,10 +542,7 @@ export function HeroTab() {
         .filter((h) => !allPhotos.some((p) => p.id === h.photoId))
         .map((h) => h.photoId);
 
-  const onHeroError = () =>
-    setHeroError(
-      "操作に失敗しました。通信状況を確認するか、再ログインしてください。",
-    );
+  const onHeroError = () => setHeroError(copy.error);
 
   const addHero = useMutation({
     mutationFn: async (photoId: number) => {
@@ -661,16 +659,15 @@ export function HeroTab() {
       {/* Dangling selections — photos that were trashed/purged after being picked */}
       {danglingHeroIds.length > 0 && (
         <div className="mb-4 flex items-center justify-between gap-3 text-[11px] text-amber-200/90 bg-amber-900/20 border border-amber-900/40 rounded-sm px-3 py-2">
-          <span>
-            {danglingHeroIds.length}{" "}
-            件のヒーロー選択が削除済み（ゴミ箱内含む）の写真を参照しています。公開サイトには表示されず、ゴミ箱から復元すると突然ヒーローに再表示されます。
-          </span>
+          <span>{copy.danglingWarning(danglingHeroIds.length)}</span>
           <button
             onClick={() => cleanupDangling.mutate()}
             disabled={cleanupDangling.isPending}
             className="flex-shrink-0 text-[10px] px-2.5 py-1 rounded-sm bg-amber-900/40 hover:bg-amber-900/60 transition-colors disabled:opacity-50"
           >
-            {cleanupDangling.isPending ? "整理中..." : "選択から外す"}
+            {cleanupDangling.isPending
+              ? copy.cleaningUp
+              : copy.removeFromSelection}
           </button>
         </div>
       )}
@@ -680,7 +677,7 @@ export function HeroTab() {
           Hero Slides
         </h2>
         <p className="text-[10px] text-[var(--admin-muted)] mb-4">
-          トップページのカルーセルに表示する写真。ドラッグで並び替え。未選択の場合はギャラリーの先頭から自動表示。
+          {copy.slidesHint}
         </p>
         {heroPhotos.length === 0 ? (
           <div className="border border-dashed border-[var(--admin-line)] rounded-sm p-8 text-center">
@@ -689,10 +686,10 @@ export function HeroTab() {
               className="mx-auto text-[var(--admin-muted)] mb-2"
             />
             <p className="text-[12px] text-[var(--admin-muted)]">
-              ヒーロー写真が未設定です
+              {copy.noneSelected}
             </p>
             <p className="text-[10px] text-[var(--admin-muted)] mt-1">
-              下のギャラリーから写真を選んでください
+              {copy.selectFromGalleryHint}
             </p>
           </div>
         ) : (
@@ -729,7 +726,7 @@ export function HeroTab() {
                     <button
                       onClick={() => moveHero(photo.id, -1)}
                       disabled={i === 0}
-                      aria-label="前へ移動"
+                      aria-label={copy.movePrevious}
                       className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft size={14} />
@@ -737,7 +734,7 @@ export function HeroTab() {
                     <button
                       onClick={() => removeHero.mutate(photo.id)}
                       disabled={removeHero.isPending}
-                      aria-label="ヒーローから削除"
+                      aria-label={copy.removeAria}
                       className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-red-500/80 text-white rounded-sm hover:bg-red-500 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <X size={13} />
@@ -745,7 +742,7 @@ export function HeroTab() {
                     <button
                       onClick={() => moveHero(photo.id, 1)}
                       disabled={i === heroPhotos.length - 1}
-                      aria-label="後へ移動"
+                      aria-label={copy.moveNext}
                       className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
                     >
                       <ChevronRight size={14} />
@@ -764,11 +761,11 @@ export function HeroTab() {
           Gallery
         </h2>
         <p className="text-[10px] text-[var(--admin-muted)] mb-4">
-          クリックでヒーローに追加 / 解除
+          {copy.galleryHint}
         </p>
         {allPhotos.length === 0 ? (
           <p className="text-[12px] text-[var(--admin-muted)] text-center py-8">
-            まだ写真がありません。Libraryから追加できます。
+            {copy.noPhotosYet}
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
@@ -785,7 +782,12 @@ export function HeroTab() {
                   }
                   disabled={addHero.isPending || removeHero.isPending}
                   aria-pressed={isHero}
-                  aria-label={`${photo.title || photo.filename || "写真"} をヒーローから${isHero ? "外す" : "追加"}`}
+                  aria-label={copy.toggleAria(
+                    photo.title ||
+                      photo.filename ||
+                      t.phase2b.library.inspector.photoFallback,
+                    isHero,
+                  )}
                   className={`relative rounded-sm overflow-hidden cursor-pointer group border-2 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
                     isHero
                       ? "border-amber-400/70"
@@ -826,6 +828,7 @@ export function ProfileTab({
 }) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
+  const copy = t.phase2b.profile;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const { data, isLoading } = useQuery({
@@ -888,7 +891,7 @@ export function ProfileTab({
 
   const handleProfilePhoto = async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setPhotoError("画像ファイルを選択してください");
+      setPhotoError(copy.selectImageFile);
       return;
     }
     setPhotoError("");
@@ -906,10 +909,7 @@ export function ProfileTab({
         // 保存先未設定(STORAGE_NOT_CONFIGURED)は初回セットアップの主要経路
         // なので、汎用の失敗文言に潰さず専用の案内(不足変数名+再デプロイ)を出す
         setPhotoError(
-          await uploadErrorMessageFromResponse(
-            res,
-            "プロフィール写真のアップロードに失敗しました",
-          ),
+          await uploadErrorMessageFromResponse(res, copy.uploadFailed),
         );
         return;
       }
@@ -917,7 +917,7 @@ export function ProfileTab({
       if (!url) throw new Error("no url");
       await saveSettings.mutateAsync({ profilePhotoUrl: url });
     } catch {
-      setPhotoError("プロフィール写真のアップロードに失敗しました");
+      setPhotoError(copy.uploadFailed);
     } finally {
       setPhotoUploading(false);
     }
@@ -941,8 +941,8 @@ export function ProfileTab({
     },
     {
       key: "profileNameKata",
-      label: "振り仮名 (カタカナ)",
-      placeholder: "エグチアキ",
+      label: copy.fields.nameKataLabel,
+      placeholder: copy.fields.nameKataPlaceholder,
     },
     {
       key: "profileNameEn",
@@ -957,13 +957,13 @@ export function ProfileTab({
     },
     {
       key: "profileStatement",
-      label: "Statement (作家ステートメント)",
+      label: copy.fields.statementLabel,
       multiline: true,
-      placeholder: "空欄でも崩れません。後から追記OK",
+      placeholder: copy.fields.statementPlaceholder,
     },
     {
       key: "profileGear",
-      label: "使用機材 (1行に1つ)",
+      label: copy.fields.gearLabel,
       multiline: true,
       placeholder: "PENTAX 67\nLeica M6\n...",
     },
@@ -1039,7 +1039,7 @@ export function ProfileTab({
               )}
             </button>
             <input
-              aria-label="プロフィール写真を選択"
+              aria-label={copy.selectPhotoAria}
               ref={fileInputRef}
               type="file"
               accept="image/*"
@@ -2039,6 +2039,7 @@ type PlanDraft = {
 export function PricingTab() {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
+  const copy = t.phase2b.pricing;
   const [editId, setEditId] = useState<number | null>(null);
   const [draft, setDraft] = useState<PlanDraft>({
     title: "",
@@ -2090,7 +2091,7 @@ export function PricingTab() {
         });
       }
     },
-    onError: () => setRowError("追加に失敗しました。"),
+    onError: () => setRowError(copy.errors.addFailed),
   });
 
   const patchPlan = useMutation({
@@ -2106,7 +2107,7 @@ export function PricingTab() {
       refresh();
       setRowError("");
     },
-    onError: () => setRowError("保存に失敗しました。"),
+    onError: () => setRowError(copy.errors.saveFailed),
   });
 
   const deletePlan = useMutation({
@@ -2117,7 +2118,7 @@ export function PricingTab() {
       assertOk(res);
     },
     onSuccess: refresh,
-    onError: () => setRowError("削除に失敗しました。"),
+    onError: () => setRowError(copy.errors.deleteFailed),
   });
 
   const reorder = useMutation({
@@ -2130,7 +2131,7 @@ export function PricingTab() {
       refresh();
     },
     onError: () => {
-      setRowError("並び替えの保存に失敗しました。");
+      setRowError(copy.errors.reorderFailed);
       qc.invalidateQueries({ queryKey: ["admin-pricing"] });
     },
   });
@@ -2192,7 +2193,7 @@ export function PricingTab() {
         )}
         {plans.length === 0 && !isLoading && (
           <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
-            まだ料金プランがありません。下の「プランを追加」から追加できます。
+            {copy.empty}
           </p>
         )}
         {plans.map((p, i) => (
@@ -2206,7 +2207,7 @@ export function PricingTab() {
                   <button
                     onClick={() => move(p.id, -1)}
                     disabled={i === 0 || reorder.isPending}
-                    aria-label="上へ移動"
+                    aria-label={copy.moveUp}
                     className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                   >
                     <ChevronUp size={13} />
@@ -2214,7 +2215,7 @@ export function PricingTab() {
                   <button
                     onClick={() => move(p.id, 1)}
                     disabled={i === plans.length - 1 || reorder.isPending}
-                    aria-label="下へ移動"
+                    aria-label={copy.moveDown}
                     className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                   >
                     <ChevronDown size={13} />
@@ -2241,13 +2242,13 @@ export function PricingTab() {
                   aria-pressed={p.isPublished}
                   className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${p.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"}`}
                 >
-                  {p.isPublished ? "公開" : "下書き"}
+                  {p.isPublished ? copy.published : copy.draft}
                 </button>
                 <button
                   onClick={() =>
                     editId === p.id ? setEditId(null) : openEdit(p)
                   }
-                  aria-label="編集"
+                  aria-label={copy.edit}
                   className="admin-tap-sm text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
                 >
                   {editId === p.id ? (
@@ -2258,7 +2259,7 @@ export function PricingTab() {
                 </button>
                 <button
                   onClick={() => setDeleteTarget({ id: p.id, title: p.title })}
-                  aria-label={`${p.title} を削除`}
+                  aria-label={copy.deleteAria(p.title)}
                   className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                 >
                   <Trash2 size={13} />
@@ -2270,18 +2271,18 @@ export function PricingTab() {
               <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
                 <AdminField label="Title">
                   <input
-                    aria-label="プランのタイトル"
+                    aria-label={copy.titleAria}
                     value={draft.title}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, title: e.target.value }))
                     }
-                    placeholder="ポートレート"
+                    placeholder={copy.titlePlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
-                <AdminField label="Price" hint="自由記述（例: ¥15,000〜）">
+                <AdminField label="Price" hint={copy.priceHint}>
                   <input
-                    aria-label="価格"
+                    aria-label={copy.priceAria}
                     value={draft.price}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, price: e.target.value }))
@@ -2290,38 +2291,38 @@ export function PricingTab() {
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
-                <AdminField label="Description" hint="プランの説明（任意）">
+                <AdminField label="Description" hint={copy.descriptionHint}>
                   <textarea
-                    aria-label="プランの説明"
+                    aria-label={copy.descriptionAria}
                     rows={2}
                     value={draft.description}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, description: e.target.value }))
                     }
-                    placeholder="2時間・データ20枚 など"
+                    placeholder={copy.descriptionPlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
-                <AdminField label="含まれるもの" hint="1行に1項目（箇条書き）">
+                <AdminField label={copy.featuresLabel} hint={copy.featuresHint}>
                   <textarea
-                    aria-label="含まれるもの"
+                    aria-label={copy.featuresLabel}
                     rows={4}
                     value={draft.features}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, features: e.target.value }))
                     }
-                    placeholder={"撮影2時間\nデータ20枚\nレタッチ込み"}
+                    placeholder={copy.featuresPlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
-                <AdminField label="補足" hint="注意書きなど（任意）">
+                <AdminField label={copy.noteLabel} hint={copy.noteHint}>
                   <input
-                    aria-label="補足"
+                    aria-label={copy.noteLabel}
                     value={draft.note}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, note: e.target.value }))
                     }
-                    placeholder="交通費別途"
+                    placeholder={copy.notePlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
@@ -2359,13 +2360,13 @@ export function PricingTab() {
         disabled={addPlan.isPending}
         className="flex items-center gap-1.5 px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
       >
-        <Plus size={12} /> プランを追加
+        <Plus size={12} /> {copy.add}
       </button>
 
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
           <p className="text-[13px] text-[var(--admin-ink)] mb-4">
-            「{deleteTarget.title}」を削除しますか？
+            {copy.deleteConfirm(deleteTarget.title)}
           </p>
           <div className="flex gap-2 justify-end">
             <button

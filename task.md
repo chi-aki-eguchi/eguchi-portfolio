@@ -8668,3 +8668,21 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   英語LPの「Japanese-first」注記差し替え。
 - 重要な制約: push未実施(オーナー)。本番書き込みなし。新settingsキーなし。
 - 必要なcommit情報: 実装=Claude(Fable5)。
+
+## Handoff 2026-07-17 (46) — i18n 2c スライス1〜3完了(Sonnet5実装・Fable5指揮)
+
+- 完了したこと: 管理画面EN化を大幅前進。2c-1 Hero/Profile/Pricing、2c-2 Portfolio Kit
+  タブ全部、2c-3 設定タブ「基本・見た目」9セクション(サイト基本情報〜シリーズ)。
+  保存値・option value・レイアウト12種valueは全スライスで無傷を確認。
+- 現在の状態: tree clean。check 461 pass / smoke 35 pass・27 skip・0 fail
+  (2b境界マーカーはSite Basicsへ意図的更新)。commit: 1a0908a / b5c90c6 / 直近。
+- 残っている問題: ①2c-4: 設定タブ「連携・販売」「デザイン・文言」「撮影情報プリセット」
+  が日本語のまま(約207行) ②2c-5: admin.tsx残り34行・admin-shared 3行・翻訳全体の
+  品質パス・英語LPのJapanese-first注記差し替え・言語FAQ更新 ③公開サイト(Phase 3:
+  ナビ/プロフィール/問い合わせ)のEN化は未着手(settingsキー追加を伴うため個別に)。
+- 次に行うこと: 次セッションで2c-4→2c-5をSonnet5直列委任(本Handoffの安全規則:
+  保存値1文字も変えない・ja文言は移すだけ・英式綴り・写真用語慣例、を依頼文に再掲)。
+  完了後にオーナーpush→本番で管理画面ENを目視。
+- 重要な制約: push未実施(オーナー)。本番書き込みなし。新settingsキーなし。
+  クレジット指示により本セッションはここで区切り(Codex新規委任なし)。
+- 必要なcommit情報: 実装=Sonnet5 subagent(3体・直列)、検証・修正・commit=Claude(Fable5)。

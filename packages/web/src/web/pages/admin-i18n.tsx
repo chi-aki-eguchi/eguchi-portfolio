@@ -2769,6 +2769,7 @@ export type AdminMessages = {
     settingsSaveFailed: string;
     libraryLoading: string;
     librarySelected: string;
+    dotSeparator: string;
     viewSite: string;
     closeViewSite: string;
   };
@@ -2916,6 +2917,7 @@ export const ADMIN_DICTIONARY = {
       settingsSaveFailed: "保存失敗 — もう一度お試しください",
       libraryLoading: "読み込み中",
       librarySelected: "selected",
+      dotSeparator: " ・ ",
       viewSite: "サイトで確認",
       closeViewSite: "サイトで確認を閉じる",
     },
@@ -3113,6 +3115,7 @@ export const ADMIN_DICTIONARY = {
       settingsSaveFailed: "Could not save — please try again",
       libraryLoading: "Loading",
       librarySelected: "selected",
+      dotSeparator: " · ",
       viewSite: "View on site",
       closeViewSite: "Close site preview",
     },

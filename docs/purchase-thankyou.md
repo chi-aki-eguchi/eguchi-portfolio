@@ -94,7 +94,7 @@ You can publish your portfolio in about 10–15 minutes with the steps below.
    is provided in Japanese and simple English. You can reply to this email or use:
    Instagram @chi._.aki._ / X @chi_aki_jpg / akieguchi33@gmail.com
 
-The admin panel is currently Japanese-first; an English admin UI is in progress.
+The admin panel is available in English and Japanese — switch anytime with the JP | EN toggle.
 
 Railway hosts the site separately from Portfolio Kit. Its prices can change and
 are based on usage; a small portfolio is usually inexpensive to run. If Railway
@@ -129,7 +129,7 @@ quoted separately. Support is provided in Japanese and simple English. You can r
 this email or use:
 Instagram @chi._.aki._ / X @chi_aki_jpg / akieguchi33@gmail.com
 
-The admin panel is currently Japanese-first; an English admin UI is in progress.
+The admin panel is available in English and Japanese — switch anytime with the JP | EN toggle.
 
 English start guide:
 https://akieguchi.com/start/en

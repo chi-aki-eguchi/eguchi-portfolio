@@ -104,7 +104,7 @@ const selfStepsEn = [
   },
   {
     title: "Sign in and add one photograph",
-    body: "Add /admin/login to the public URL and sign in with the password you chose. Open the Japanese-first “はじめに” (Getting started) screen, upload one photograph, and check that it appears on the public site.",
+    body: "Add /admin/login to the public URL and sign in with the password you chose. Open the “Getting started” screen (switch the admin panel to English with the JP | EN toggle if you prefer), upload one photograph, and check that it appears on the public site.",
   },
 ] as const;
 
@@ -656,8 +656,8 @@ function EnglishServiceStartContent({
           </p>
           <div className="mt-6 rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-4 py-3 text-[rgba(var(--foreground-rgb),0.58)]" style={bodyStyle}>
             <p>
-              The admin panel is currently Japanese-first; an English admin UI
-              is in progress.
+              The admin panel is available in English and Japanese — switch
+              anytime with the JP | EN toggle.
             </p>
             <p className="mt-2">
               Support is provided in Japanese and simple English.

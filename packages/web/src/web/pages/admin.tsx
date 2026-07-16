@@ -3951,7 +3951,7 @@ export function GalleryTab({
                   <CountSwap value={allPhotos.length} /> photos
                   {selected.size > 0 && (
                     <>
-                      {" ・ "}
+                      {t.headers.dotSeparator}
                       <CountSwap value={selected.size} /> {t.headers.librarySelected}
                     </>
                   )}

@@ -32,6 +32,12 @@ export type AdminTabGroup = {
   tabs: readonly Tab[];
 };
 
+// label はここでは JA 固定値だが未使用のフォールバック — 表示側
+// (admin.tsx の adminTabGroups useMemo / admin-mobile-nav.tsx の
+// groupLabel())が group.key で t.navigation.groups.* に必ず差し替えるため、
+// 実際の画面には出ない(EN/JP 両方とも辞書側で解決済み)。値を動的化すると
+// admin-mobile-nav.render.test.tsx と scripts/smoke/admin-mobile-nav.spec.ts
+// が参照する固定文字列と食い違うリスクがあるため、ここでは変更しない。
 export const ADMIN_TAB_GROUPS: AdminTabGroup[] = [
   { key: "photos", label: "写真", tabs: ["gallery"] },
   {

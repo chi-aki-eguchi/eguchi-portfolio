@@ -254,7 +254,7 @@ function englishServiceConfigFrom(
         },
         {
           q: "What languages are available?",
-          a: "The admin panel is currently Japanese-first; an English admin UI is in progress. Support is provided in Japanese and simple English.",
+          a: "The admin panel is available in English and Japanese — switch anytime with the JP | EN toggle. Support is provided in Japanese and simple English.",
         },
         {
           q: "What happens if I stop using the site?",
@@ -1018,8 +1018,8 @@ function AdminShowcase({
           style={bodyStyle}
         >
           <p>
-            The admin panel is currently Japanese-first; an English admin UI is
-            in progress.
+            The admin panel is available in English and Japanese — switch
+            anytime with the JP | EN toggle.
           </p>
           <p className="mt-2">
             Support is provided in Japanese and simple English.

@@ -346,7 +346,7 @@ describe("shared components", () => {
       expect(text).toContain("¥30,000 (approx. $195 USD)");
       expect(text).toContain("exchange rates and your card provider");
       expect(text).toContain(
-        "The admin panel is currently Japanese-first; an English admin UI is in progress.",
+        "The admin panel is available in English and Japanese — switch anytime with the JP | EN toggle.",
       );
       expect(text).toContain(
         "Support is provided in Japanese and simple English.",
@@ -474,7 +474,9 @@ describe("shared components", () => {
     expect(text).toContain("Configure");
     expect(text).toContain("Save Config");
     expect(text).toContain("Generate Domain");
-    expect(text).toContain("Japanese-first");
+    expect(text).toContain(
+      "The admin panel is available in English and Japanese",
+    );
     expect(host.innerHTML).not.toContain("railway.com/deploy");
     expect(host.querySelector('a[href="/start"]')).not.toBeNull();
     expect(

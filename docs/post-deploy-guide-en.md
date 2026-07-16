@@ -37,9 +37,9 @@ expected part of its setup. Ask before continuing if the cost is unclear.
 
 ## Admin language and support
 
-The admin panel is currently Japanese-first; an English admin UI is in progress.
-Support is provided in Japanese and simple English. The English purchase start
-page is <https://akieguchi.com/start/en>.
+The admin panel is available in English and Japanese — switch anytime with the
+JP | EN toggle. Support is provided in Japanese and simple English. The
+English purchase start page is <https://akieguchi.com/start/en>.
 
 ## If something stops
 

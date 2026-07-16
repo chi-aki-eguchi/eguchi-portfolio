@@ -134,7 +134,41 @@ const SERVICE_START_OG = {
   image: "/og-service.jpg",
 };
 
-const SERVICE_PATHS = new Set(["/portfolio-kit", "/portfolio-kit/start"]);
+const SERVICE_OG_EN = {
+  title: "Aki Eguchi Portfolio Kit — For Photographers",
+  desc: "A quiet, finished portfolio website for photographers. Self setup ¥10,000 or assisted setup ¥30,000. Prices are charged in JPY.",
+  image: "/og-service.jpg",
+};
+
+const SERVICE_START_OG_EN = {
+  title: "Aki Eguchi Portfolio Kit — Start Guide",
+  desc: "A concise post-purchase guide to setting up and publishing the Aki Eguchi Portfolio Kit.",
+  image: "/og-service.jpg",
+};
+
+const SERVICE_LP_PATHS = new Set(["/portfolio-kit", "/portfolio-kit/en"]);
+const SERVICE_START_PATHS = new Set([
+  "/portfolio-kit/start",
+  "/start",
+  "/start/en",
+]);
+const SERVICE_PATHS = new Set([
+  ...SERVICE_LP_PATHS,
+  ...SERVICE_START_PATHS,
+]);
+const ENGLISH_SERVICE_PATHS = new Set(["/portfolio-kit/en", "/start/en"]);
+
+function serviceLanguageAlternates(
+  pathname: string,
+): { ja: string; en: string } | null {
+  if (SERVICE_LP_PATHS.has(pathname)) {
+    return { ja: "/portfolio-kit", en: "/portfolio-kit/en" };
+  }
+  if (pathname === "/start" || pathname === "/start/en") {
+    return { ja: "/start", en: "/start/en" };
+  }
+  return null;
+}
 
 function socialImagePath(image: string, rotationDeg?: number | null): string {
   if (!image.startsWith("/api/images/")) return image;
@@ -192,10 +226,16 @@ export function injectOgp(
   );
   const isServiceHost = isServiceSiteUrl(siteUrl);
   const isServicePath = SERVICE_PATHS.has(pathname);
-  const isBuyerStartPath = pathname === "/portfolio-kit/start";
+  const isBuyerStartPath = SERVICE_START_PATHS.has(pathname);
+  const isEnglishServicePath = ENGLISH_SERVICE_PATHS.has(pathname);
   const isService = isServicePath && isServiceSite;
-  const serviceOg =
-    pathname === "/portfolio-kit/start" ? SERVICE_START_OG : SERVICE_OG;
+  const serviceOg = isBuyerStartPath
+    ? isEnglishServicePath
+      ? SERVICE_START_OG_EN
+      : SERVICE_START_OG
+    : isEnglishServicePath
+      ? SERVICE_OG_EN
+      : SERVICE_OG;
   const page = PAGE_TITLES[pathname];
   const KNOWN_ROUTES = [
     "/",
@@ -205,7 +245,10 @@ export function injectOgp(
     "/profile",
     "/contact",
     "/portfolio-kit",
+    "/portfolio-kit/en",
     "/portfolio-kit/start",
+    "/start",
+    "/start/en",
     "/admin",
     "/admin/login",
   ];
@@ -267,6 +310,14 @@ export function injectOgp(
   const canonical = `${siteUrl}${canonPath === "/" ? "/" : canonPath}`;
 
   let out = html;
+  if (isService && isEnglishServicePath) {
+    out = out.replace(/<html\s+lang="[^"]*"/, '<html lang="en"');
+    out = setAttr(
+      out,
+      /(<meta\s+property="og:locale"\s+content=")[^"]*(")/,
+      "en_US",
+    );
+  }
   // Title (escaped; the <title> body can't contain raw < anyway)
   out = out.replace(
     /<title>[^<]*<\/title>/,
@@ -387,6 +438,13 @@ export function injectOgp(
   let headInjection = indexable
     ? buildJsonLd(settings, pathname, override, fallbackOrigin)
     : "";
+  const alternates = isService
+    ? serviceLanguageAlternates(pathname)
+    : null;
+  if (alternates) {
+    headInjection += `\n  <link rel="alternate" hreflang="ja" href="${escapeHtml(`${siteUrl}${alternates.ja}`)}">`;
+    headInjection += `\n  <link rel="alternate" hreflang="en" href="${escapeHtml(`${siteUrl}${alternates.en}`)}">`;
+  }
   // Search Console site verification — paste the `content` value of Google's
   // HTML-tag method into admin settings; without this, every verification
   // attempt would need a rebuild+redeploy cycle.

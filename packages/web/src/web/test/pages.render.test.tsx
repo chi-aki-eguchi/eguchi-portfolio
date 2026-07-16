@@ -318,6 +318,92 @@ describe("shared components", () => {
       expect(
         host.querySelector('a[href="/?portfolio-kit-experience=1"]'),
       ).not.toBeNull();
+      expect(
+        host.querySelector('a[href="/portfolio-kit/en"]'),
+      ).not.toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+
+  test("English Portfolio Kit renders the current A/B terms and language link", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = { servicePageConfig: "" };
+    try {
+      const PortfolioKitPage = (await import("../pages/service")).default;
+      const { host, cleanup } = await mount(
+        createElement(PortfolioKitPage, { language: "en" }),
+      );
+      const text = host.textContent ?? "";
+      expect(text).toContain("Within 24 hours of payment");
+      expect(text).toContain("delivered within three days");
+      expect(text).toContain("One purchase covers one website");
+      expect(text).toContain("may not be resold or redistributed");
+      expect(text).toContain("currently provided at no additional charge");
+      expect(text).toContain("may change in the future");
+      expect(text).toContain("¥10,000 (approx. $65 USD)");
+      expect(text).toContain("¥30,000 (approx. $195 USD)");
+      expect(text).toContain("exchange rates and your card provider");
+      expect(text).toContain(
+        "The admin panel is currently Japanese-first; an English admin UI is in progress.",
+      );
+      expect(text).toContain(
+        "Support is provided in Japanese and simple English.",
+      );
+      expect(host.querySelectorAll("#pricing article")).toHaveLength(2);
+      expect(text).not.toContain("¥50,000");
+      expect(host.querySelector('a[href="/portfolio-kit"]')).not.toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+
+  test("English Portfolio Kit keeps A/B checkout links correct after plan reordering", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      servicePageConfig: JSON.stringify({
+        pricing: {
+          plans: [
+            {
+              name: "公開おまかせ",
+              price: "¥30,000",
+              sub: "B",
+              points: [],
+              stripeUrl: "https://buy.stripe.com/assisted-plan",
+              cta: "B",
+              primary: true,
+            },
+            {
+              name: "自分で立てる",
+              price: "¥10,000",
+              sub: "A",
+              points: [],
+              stripeUrl: "https://buy.stripe.com/self-plan",
+              cta: "A",
+              primary: false,
+            },
+          ],
+        },
+      }),
+    };
+    try {
+      const PortfolioKitPage = (await import("../pages/service")).default;
+      const { host, cleanup } = await mount(
+        createElement(PortfolioKitPage, { language: "en" }),
+      );
+      const cards = host.querySelectorAll("#pricing article");
+      expect(cards[0]?.textContent).toContain("Self setup");
+      expect(cards[0]?.textContent).toContain("¥10,000");
+      expect(cards[0]?.querySelector("a")?.getAttribute("href")).toBe(
+        "https://buy.stripe.com/self-plan",
+      );
+      expect(cards[1]?.textContent).toContain("Assisted setup");
+      expect(cards[1]?.textContent).toContain("¥30,000");
+      expect(cards[1]?.querySelector("a")?.getAttribute("href")).toBe(
+        "https://buy.stripe.com/assisted-plan",
+      );
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -370,7 +456,60 @@ describe("shared components", () => {
     expect(host.textContent).toContain("セルフは操作方法の初回相談");
     expect(host.textContent).toContain("おまかせは公開後7日間");
     expect(host.innerHTML).not.toContain("railway.com/deploy");
+    expect(host.querySelector('a[href="/start/en"]')).not.toBeNull();
     cleanup();
+  });
+
+  test("English start page renders the buyer flow and reciprocal JP link", async () => {
+    const ServiceStartPage = (await import("../pages/service-start")).default;
+    const { host, cleanup } = await mount(
+      createElement(ServiceStartPage, { language: "en" }),
+    );
+    const text = host.textContent ?? "";
+    expect(text).toContain("Within 24 hours of payment");
+    expect(text).toContain("within three days");
+    expect(text).toContain("ADMIN_PASSWORD");
+    expect(text).toContain("Configure");
+    expect(text).toContain("Save Config");
+    expect(text).toContain("Generate Domain");
+    expect(text).toContain("Japanese-first");
+    expect(host.innerHTML).not.toContain("railway.com/deploy");
+    expect(host.querySelector('a[href="/start"]')).not.toBeNull();
+    expect(
+      host.querySelector('a[href="/portfolio-kit/en"]'),
+    ).not.toBeNull();
+    cleanup();
+  });
+
+  test("English Portfolio Kit routes render through the shared visibility gate", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      servicePageMode: "on",
+      siteUrl: "https://portfolio.example",
+      servicePageConfig: "",
+    };
+    const App = (await import("../app")).default;
+    try {
+      for (const [url, expected] of [
+        [
+          "https://portfolio.example/portfolio-kit/en",
+          "ready for your photographs.",
+        ],
+        [
+          "https://portfolio.example/start/en",
+          "A clear starting point for publishing your Portfolio Kit.",
+        ],
+      ] as const) {
+        dom.reconfigure({ url });
+        const { host, cleanup } = await mount(createElement(App));
+        await waitForText(host, expected);
+        expect(host.textContent).toContain(expected);
+        cleanup();
+      }
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      dom.reconfigure({ url: "http://localhost/" });
+    }
   });
 
   // 2026-07-10 の使い捨て実デプロイで確認した buyer 導線の回帰ガード。

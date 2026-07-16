@@ -31,6 +31,326 @@ const bodyStyle = {
   letterSpacing: "var(--body-tracking, 0.01em)",
 } as const;
 
+type ServiceLanguage = "ja" | "en";
+
+const ENGLISH_PLAN_COPY = [
+  {
+    yen: 10_000,
+    namePattern: /自分|self/i,
+    name: "Self setup",
+    sub: "Publish the site yourself with a clear, step-by-step guide.",
+    points: [
+      "Portfolio Kit licence",
+      "Setup guide and checklist",
+      "Instructions for connecting your own domain",
+      "One initial round of guidance on using the admin panel",
+    ],
+    cta: "Choose self setup",
+  },
+  {
+    yen: 30_000,
+    namePattern: /おまかせ|assisted|concierge/i,
+    name: "Assisted setup",
+    sub: "I prepare the initial setup and hand over a site that is ready to use.",
+    points: [
+      "Initial setup handled for you",
+      "Hosting and domain connection support",
+      "Guidance for adding photographs and text",
+      "Seven days of basic guidance on using the site and admin panel after launch",
+    ],
+    cta: "Choose assisted setup",
+  },
+] as const;
+
+function yenAmountFromPrice(price: string): number | null {
+  const match = price.match(/[¥￥]\s*([0-9][0-9,]*)/);
+  if (!match) return null;
+  const yen = Number(match[1].replace(/,/g, ""));
+  return Number.isFinite(yen) ? yen : null;
+}
+
+function priceWithUsdEstimate(price: string): string {
+  const yen = yenAmountFromPrice(price);
+  if (yen === null) return price;
+  const usd = Math.round(yen / 154 / 5) * 5;
+  return `${price} (approx. $${usd} USD)`;
+}
+
+function englishPlanSources(source: ServicePageConfig): (PlanItem | undefined)[] {
+  const remaining = [...source.pricing.plans];
+  return ENGLISH_PLAN_COPY.map((copy) => {
+    const matches = [
+      (plan: PlanItem) => yenAmountFromPrice(plan.price) === copy.yen,
+      (plan: PlanItem) => copy.namePattern.test(plan.name),
+    ];
+    let index = -1;
+    for (const matchesPlan of matches) {
+      index = remaining.findIndex(matchesPlan);
+      if (index >= 0) break;
+    }
+    return index >= 0 ? remaining.splice(index, 1)[0] : undefined;
+  });
+}
+
+function englishServiceConfigFrom(
+  source: ServicePageConfig,
+): ServicePageConfig {
+  const planSources = englishPlanSources(source);
+  const plans: PlanItem[] = ENGLISH_PLAN_COPY.flatMap((copy, index) => {
+    const plan = planSources[index];
+    if (!plan) return [];
+    const { yen: _yen, namePattern: _namePattern, ...text } = copy;
+    return [
+      {
+        ...text,
+        points: [...text.points],
+        price: priceWithUsdEstimate(plan.price),
+        stripeUrl: plan.stripeUrl,
+        primary: plan.primary,
+      },
+    ];
+  });
+  const startingPlan = planSources
+    .filter((plan): plan is PlanItem => plan !== undefined)
+    .sort(
+      (a, b) =>
+        (yenAmountFromPrice(a.price) ?? Number.POSITIVE_INFINITY) -
+        (yenAmountFromPrice(b.price) ?? Number.POSITIVE_INFINITY),
+    )[0];
+  const startingPrice = startingPlan?.price ?? "¥10,000";
+
+  return {
+    enabled: source.enabled,
+    hero: {
+      label: "Portfolio Kit",
+      title: "A quiet portfolio,\nready for your photographs.",
+      body: "Aki Eguchi Portfolio Kit is a finished portfolio site made for photographers.\nReplace the photographs and words, then publish it under your own name and domain.",
+      facts: [
+        {
+          title: "Price",
+          body: `${priceWithUsdEstimate(startingPrice)}, one-time`,
+        },
+        {
+          title: "Included",
+          body: "Complete site, admin panel, and setup guide",
+        },
+        {
+          title: "Launch",
+          body: "Self setup in 10–15 minutes, or assisted setup",
+        },
+      ],
+      ctaPricing: "View plans and pricing",
+      ctaExample: "Explore the example site",
+    },
+    examples: {
+      label: "Actual site",
+      title: "The site you are viewing is\nthe working example.",
+      body: "Explore its Gallery, About, and Contact pages to see the pacing, spacing, and path from photographs to inquiries.",
+      cta: "View pricing",
+      links: [
+        {
+          title: "Gallery",
+          body: "See how photographs, categories, and white space work together.",
+          href: "/gallery",
+        },
+        {
+          title: "About",
+          body: "See how a portrait, biography, and artist information are presented.",
+          href: "/about",
+        },
+        {
+          title: "Contact",
+          body: "See a simple path to inquiries and social links.",
+          href: "/contact",
+        },
+      ],
+    },
+    painSolutions: {
+      label: "For photographers",
+      items: [
+        {
+          concern: "Your work disappears into the feed",
+          concernBody:
+            "Photographs shared on social media become harder to find as time passes.",
+          solution: "A lasting home for the work",
+          solutionBody:
+            "Keep photographs in a considered space where sequence, scale, and white space are already part of the design.",
+        },
+        {
+          concern: "You need one professional link",
+          concernBody:
+            "When an assignment or exhibition comes up, you need one place for your work, profile, and contact details.",
+          solution: "Work, profile, and contact together",
+          solutionBody:
+            "Share one site that moves quietly from the photographs to the person and a clear way to get in touch.",
+        },
+        {
+          concern: "You want control over the edit",
+          concernBody:
+            "The order, size, and spacing of photographs are part of how the work is read.",
+          solution: "Update it from the admin panel",
+          solutionBody:
+            "Add photographs, change their order, and edit your profile and contact details in the browser.",
+        },
+      ],
+    },
+    pricing: {
+      label: "Pricing",
+      noteOnline:
+        "Within 24 hours of payment, I will email your setup link and the next steps for your chosen plan. Stripe will also send a payment receipt.",
+      noteOffline:
+        "Online checkout is being prepared. For now, use the email button or the contact details below.",
+      disclaimer:
+        "Checkout is charged in JPY. USD amounts are estimates only and vary with exchange rates and your card provider. Hosting, a custom domain, design changes, and individual customisation may involve separate costs.",
+      plans,
+    },
+    purchaseFlow: {
+      label: "After purchase",
+      title: "A clear handover, without a hidden wait.",
+      body: "Within 24 hours of payment, I will email the private setup link and next steps. You will also receive a concise guide to adding photographs and making future updates.",
+      steps: [
+        {
+          title: "Your first email",
+          body: "Within 24 hours of payment, you will receive the private setup link and instructions for your plan.",
+        },
+        {
+          title: "Update in the browser",
+          body: "The admin panel lets you add and reorder photographs, edit your profile and contact details, and adjust the presentation.",
+        },
+        {
+          title: "For self setup",
+          body: "Follow the setup link and guide to publish the site. One initial round of guidance on using the admin panel is included.",
+        },
+        {
+          title: "For assisted setup",
+          body: "Once all requested photographs, profile text, and contact details are ready, your site will be delivered within three days. Seven days of basic guidance on using the site and admin panel after launch are included.",
+        },
+      ],
+      footnote:
+        "Photograph sizing is there to create rhythm and emphasis. You can also keep every image at the same size.",
+    },
+    faq: {
+      label: "FAQ",
+      items: [
+        {
+          q: "Is the site created automatically as soon as I pay?",
+          a: "No. This is not an instant, automated site generator. I confirm the purchase and email the next steps within 24 hours. Self-setup buyers receive the private setup link and guide; assisted-setup buyers receive a request for their materials.",
+        },
+        {
+          q: "Can I use my own domain?",
+          a: "Yes. You can publish at an address such as yourname.com. If you already own a domain, the guide explains how to connect it. If not, I can help you understand the options.",
+        },
+        {
+          q: "Are there monthly costs?",
+          a: "Portfolio Kit has no monthly subscription. Hosting and an optional custom domain are separate services with their own charges. A small portfolio often costs about ¥500–¥1,000 per month to host, but provider prices and usage can change.",
+        },
+        {
+          q: "Can I change photographs and text later?",
+          a: "Yes. You can update photographs, order, profile text, and contact details from the admin panel. Larger design changes and individual customisation are quoted separately.",
+        },
+        {
+          q: "What does one purchase allow?",
+          a: "One purchase covers one website. A second website requires another purchase. The kit may not be resold or redistributed as a template. Kit updates are currently provided at no additional charge, but this may change in the future. Work beyond the included support is quoted separately.",
+        },
+        {
+          q: "What languages are available?",
+          a: "The admin panel is currently Japanese-first; an English admin UI is in progress. Support is provided in Japanese and simple English.",
+        },
+        {
+          q: "What happens if I stop using the site?",
+          a: "You can stop the recurring hosting cost by ending the hosting service. Deleting the project also deletes its photographs and settings, so save anything you need first.",
+        },
+      ],
+    },
+    finalCta: {
+      title: "Begin with the photographs.",
+      body: "Tell me what you want the site to hold, and I will explain the most suitable way to begin.",
+      ctaOnline: "Choose assisted setup",
+      ctaOffline: "Ask by email",
+      snsLinks: source.finalCta.snsLinks,
+    },
+    stickyCta: {
+      text: `Plans from ${priceWithUsdEstimate(startingPrice)}`,
+      ctaOnline: "Choose a plan",
+      ctaOffline: "Ask a question",
+      pricingCta: "View pricing",
+    },
+    adminShowcase: {
+      label: "Admin panel",
+      title: "Twelve layouts and more than 140 settings, in one place.",
+      body: "Without editing code, you can add photographs and shape their sequence, spacing, typography, profile, and contact path at your own pace.",
+      features: [
+        {
+          title: "Photographs",
+          body: "Upload, reorder, categorise, and adjust the focal point of each image.",
+        },
+        {
+          title: "Layout and space",
+          body: "Choose from twelve layouts, then tune order, scale, and white space to suit the work.",
+        },
+        {
+          title: "Type and colour",
+          body: "Choose Japanese and Latin typefaces, size, leading, background colour, and subtle paper or film textures.",
+        },
+        {
+          title: "Profile and contact",
+          body: "Edit your name, biography, social links, and inquiry details in Japanese and English.",
+        },
+        {
+          title: "Series and categories",
+          body: "Group work into series or categories, with a cover image and statement.",
+        },
+        {
+          title: "Sharing and search",
+          body: "Prepare the image and description shown on social platforms and in search results.",
+        },
+      ],
+      demoCta: "See the visual preview",
+    },
+  };
+}
+
+function serviceMailtoFallback(
+  contactEmail: string,
+  language: ServiceLanguage,
+  planName?: string,
+): string {
+  if (language === "ja") return mailtoFallback(contactEmail, planName);
+  const subject = planName
+    ? `Portfolio Kit inquiry (${planName})`
+    : "Portfolio Kit inquiry";
+  return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}`;
+}
+
+function LanguageSwitch({ language }: { language: ServiceLanguage }) {
+  return (
+    <nav
+      aria-label="Language"
+      className="mb-8 flex items-center justify-end gap-2 font-en text-[0.7rem] tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.42)]"
+    >
+      {language === "ja" ? (
+        <span aria-current="page" className="text-[rgba(var(--foreground-rgb),0.76)]">
+          JP
+        </span>
+      ) : (
+        <Link to="/portfolio-kit" className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
+          JP
+        </Link>
+      )}
+      <span aria-hidden="true">|</span>
+      {language === "en" ? (
+        <span aria-current="page" className="text-[rgba(var(--foreground-rgb),0.76)]">
+          EN
+        </span>
+      ) : (
+        <Link to="/portfolio-kit/en" className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
+          EN
+        </Link>
+      )}
+    </nav>
+  );
+}
+
 type ServicePhoto = {
   id: number;
   url: string;
@@ -376,8 +696,10 @@ function PortfolioProof({
 /* ── Pain / solution pairs ── */
 function AudienceAndFeatures({
   config,
+  language,
 }: {
   config: ServicePageConfig["painSolutions"];
+  language: ServiceLanguage;
 }) {
   return (
     <section className="mt-10 md:mt-14 page-entrance">
@@ -390,7 +712,7 @@ function AudienceAndFeatures({
           >
             <div>
               <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.36)]">
-                こんな悩み
+                {language === "en" ? "What feels difficult" : "こんな悩み"}
               </p>
               <h2
                 className="mt-1.5 font-ja text-[rgba(var(--foreground-rgb),0.76)]"
@@ -411,7 +733,7 @@ function AudienceAndFeatures({
             </div>
             <div>
               <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.36)]">
-                このサイトなら
+                {language === "en" ? "With this kit" : "このサイトなら"}
               </p>
               <h2
                 className="mt-1.5 font-ja text-[rgba(var(--foreground-rgb),0.76)]"
@@ -537,21 +859,27 @@ function PurchaseDetails({
 function PlanCard({
   plan,
   contactEmail,
+  language,
 }: {
   plan: PlanItem;
   contactEmail: string;
+  language: ServiceLanguage;
 }) {
   const live = isStripeLive(plan.stripeUrl);
   const finalHref = live
     ? plan.stripeUrl
     : contactEmail
-      ? mailtoFallback(contactEmail, plan.name)
+      ? serviceMailtoFallback(contactEmail, language, plan.name)
       : "/contact";
   const cLabel = live
     ? plan.cta
     : contactEmail
-      ? "メールで申し込む・相談する"
-      : "問い合わせる";
+      ? language === "en"
+        ? "Apply or ask by email"
+        : "メールで申し込む・相談する"
+      : language === "en"
+        ? "Contact"
+        : "問い合わせる";
   return (
     <article
       className={`relative rounded-md flex flex-col min-h-full transition-shadow duration-300 ${
@@ -626,8 +954,10 @@ function PlanCard({
 /* ── Admin showcase section ── */
 function AdminShowcase({
   config,
+  language,
 }: {
   config: ServicePageConfig["adminShowcase"];
+  language: ServiceLanguage;
 }) {
   return (
     <section
@@ -681,9 +1011,24 @@ function AdminShowcase({
           </div>
         ))}
       </div>
+      {language === "en" && (
+        <div
+          role="note"
+          className="mt-7 max-w-3xl mx-auto rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-5 py-4 text-left text-[rgba(var(--foreground-rgb),0.58)]"
+          style={bodyStyle}
+        >
+          <p>
+            The admin panel is currently Japanese-first; an English admin UI is
+            in progress.
+          </p>
+          <p className="mt-2">
+            Support is provided in Japanese and simple English.
+          </p>
+        </div>
+      )}
       <div className="mt-8 text-center">
         <ServiceButton href="/admin/demo">
-          管理画面を触ってみる
+          {language === "en" ? "Try the current admin demo" : "管理画面を触ってみる"}
         </ServiceButton>
         <div className="mt-3">
           <a className="text-[0.76rem] leading-7 text-[rgba(var(--foreground-rgb),0.48)] underline underline-offset-4" href="/?portfolio-kit-experience=1">{config.demoCta}</a>
@@ -698,14 +1043,19 @@ function FinalCTA({
   config,
   stripeHref,
   contactEmail,
+  language,
 }: {
   config: ServicePageConfig["finalCta"];
   stripeHref: string | null;
   contactEmail: string;
+  language: ServiceLanguage;
 }) {
   const live = !!stripeHref;
   const href =
-    stripeHref ?? (contactEmail ? mailtoFallback(contactEmail) : "/contact");
+    stripeHref ??
+    (contactEmail
+      ? serviceMailtoFallback(contactEmail, language)
+      : "/contact");
   return (
     <section className="mt-14 md:mt-20 page-entrance text-center">
       <div className="max-w-2xl mx-auto border-t border-[rgba(var(--foreground-rgb),0.08)] pt-10 md:pt-14">
@@ -759,10 +1109,12 @@ function StickyCtaBar({
   config,
   stripeHref,
   contactEmail,
+  language,
 }: {
   config: ServicePageConfig["stickyCta"];
   stripeHref: string | null;
   contactEmail: string;
+  language: ServiceLanguage;
 }) {
   const [visible, setVisible] = useState(false);
   const live = !!stripeHref;
@@ -787,7 +1139,10 @@ function StickyCtaBar({
   }, []);
 
   const href =
-    stripeHref ?? (contactEmail ? mailtoFallback(contactEmail) : "/contact");
+    stripeHref ??
+    (contactEmail
+      ? serviceMailtoFallback(contactEmail, language)
+      : "/contact");
 
   return (
     <div
@@ -828,7 +1183,11 @@ function StickyCtaBar({
   );
 }
 
-export default function ServicePage() {
+export default function ServicePage({
+  language = "ja",
+}: {
+  language?: ServiceLanguage;
+}) {
   const { data: photosData } = useQuery({
     queryKey: ["photos", "service-preview"],
     queryFn: async () =>
@@ -839,20 +1198,33 @@ export default function ServicePage() {
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const photos = (photosData?.photos ?? []) as ServicePhoto[];
-  const config = parseServicePageConfig(settingsData?.servicePageConfig);
+  const sourceConfig = parseServicePageConfig(settingsData?.servicePageConfig);
+  const config =
+    language === "en"
+      ? englishServiceConfigFrom(sourceConfig)
+      : sourceConfig;
   const contactEmail = resolveServiceContactEmail(
     settingsData?.contactEmail,
     settingsData?.siteUrl,
     typeof window === "undefined" ? undefined : window.location.hostname,
   );
   const live = anyPlanLive(config);
-  const ref = usePageEntrance([photos.length]);
+  const ref = usePageEntrance([photos.length, language]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    return () => {
+      document.documentElement.lang = "ja";
+    };
+  }, [language]);
 
   return (
     <section
       ref={ref}
+      lang={language}
       className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
     >
+      <LanguageSwitch language={language} />
       {/* ── Hero ── */}
       <header className="max-w-3xl mx-auto text-center">
         <p className={`${labelCls} mb-8 page-entrance`} style={labelStyle}>
@@ -904,7 +1276,7 @@ export default function ServicePage() {
         </div>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 page-entrance page-entrance-delay-1">
           <ServiceButton href="/admin/demo">
-            管理画面を触ってみる
+            {language === "en" ? "Try the current admin demo" : "管理画面を触ってみる"}
           </ServiceButton>
           <ServiceButton href="#pricing" variant="outline">
             {config.hero.ctaPricing}
@@ -919,7 +1291,7 @@ export default function ServicePage() {
       <PortfolioProof photos={photos} config={config.examples} />
 
       {/* ── Fit + value ── */}
-      <AudienceAndFeatures config={config.painSolutions} />
+      <AudienceAndFeatures config={config.painSolutions} language={language} />
 
       {/* ── Pricing ── */}
       <section
@@ -929,7 +1301,12 @@ export default function ServicePage() {
         <SectionLabel>{config.pricing.label}</SectionLabel>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 items-start">
           {config.pricing.plans.map((plan) => (
-            <PlanCard key={plan.name} plan={plan} contactEmail={contactEmail} />
+            <PlanCard
+              key={plan.name}
+              plan={plan}
+              contactEmail={contactEmail}
+              language={language}
+            />
           ))}
         </div>
         <p
@@ -950,13 +1327,14 @@ export default function ServicePage() {
         config={config.stickyCta}
         stripeHref={startingStripeUrl(config)}
         contactEmail={contactEmail}
+        language={language}
       />
 
       {/* ── Purchase details (collapsible) ── */}
       <PurchaseDetails config={config.purchaseFlow} />
 
       {/* ── Admin showcase ── */}
-      <AdminShowcase config={config.adminShowcase} />
+      <AdminShowcase config={config.adminShowcase} language={language} />
 
       {/* ── FAQ (accordion) ── */}
       <section className="mt-10 md:mt-14 page-entrance">
@@ -971,6 +1349,7 @@ export default function ServicePage() {
         config={config.finalCta}
         stripeHref={primaryStripeUrl(config)}
         contactEmail={contactEmail}
+        language={language}
       />
     </section>
   );

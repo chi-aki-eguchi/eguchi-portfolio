@@ -7,6 +7,7 @@ import {
   KeyRound,
   Mail,
 } from "lucide-react";
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { resolveServiceContactEmail } from "../../shared/service-visibility";
@@ -24,6 +25,37 @@ const labelStyle = {
   letterSpacing: "var(--section-label-tracking, 0.10em)",
   lineHeight: "var(--section-leading, 1.2)",
 } as const;
+
+type ServiceStartLanguage = "ja" | "en";
+
+function LanguageSwitch({ language }: { language: ServiceStartLanguage }) {
+  return (
+    <nav
+      aria-label="Language"
+      className="mb-8 flex items-center justify-end gap-2 font-en text-[0.7rem] tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.42)]"
+    >
+      {language === "ja" ? (
+        <span aria-current="page" className="text-[rgba(var(--foreground-rgb),0.76)]">
+          JP
+        </span>
+      ) : (
+        <Link to="/start" className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
+          JP
+        </Link>
+      )}
+      <span aria-hidden="true">|</span>
+      {language === "en" ? (
+        <span aria-current="page" className="text-[rgba(var(--foreground-rgb),0.76)]">
+          EN
+        </span>
+      ) : (
+        <Link to="/start/en" className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
+          EN
+        </Link>
+      )}
+    </nav>
+  );
+}
 
 // テンプレートは非公開(unpublished)で、購入者だけに設置リンクを渡す運用。
 // 2026-07-10 の使い捨て実デプロイで確認した実機挙動が正:
@@ -58,6 +90,36 @@ const conciergeSteps = [
   {
     title: "URLとパスワードを受け取る",
     body: "完成後は、サイトURL、管理画面URL、パスワード、最初にやることだけをまとめて渡します。",
+  },
+] as const;
+
+const selfStepsEn = [
+  {
+    title: "Open the private setup link and set your password",
+    body: "The private link in your purchase email opens a Railway screen labelled “2 services and 1 bucket.” On the eguchi-portfolio-app card, select Configure, enter an ADMIN_PASSWORD of at least eight characters, and select Save Config. The Deploy button will then become available. This password is the only value you need to enter.",
+  },
+  {
+    title: "Wait for Online, then create your public URL",
+    body: "After a few minutes, Postgres and eguchi-portfolio-app will show Online. A Bucket marked empty is normal before you upload photographs. Open eguchi-portfolio-app, go to Settings → Networking, and select Generate Domain to create your public URL.",
+  },
+  {
+    title: "Sign in and add one photograph",
+    body: "Add /admin/login to the public URL and sign in with the password you chose. Open the Japanese-first “はじめに” (Getting started) screen, upload one photograph, and check that it appears on the public site.",
+  },
+] as const;
+
+const conciergeStepsEn = [
+  {
+    title: "Send your materials",
+    body: "Send the name you want to display, profile text, contact details, social links, and the first photographs you want to show. A small first selection is enough.",
+  },
+  {
+    title: "I prepare the initial site",
+    body: "Once all requested materials are ready, I will prepare the hosting, admin access, and initial content within three days. I can also help connect a custom domain.",
+  },
+  {
+    title: "Receive the site and admin details",
+    body: "You will receive the public site URL, admin URL, password, and a short list of the first things to know. Seven days of basic guidance on using the site and admin panel after launch are included.",
   },
 ] as const;
 
@@ -400,7 +462,307 @@ function HandoffCard() {
   );
 }
 
-export default function ServiceStartPage() {
+function EnglishTroubleSection({ contactEmail }: { contactEmail: string }) {
+  const screenshots = [
+    "The Railway project overview showing all services",
+    "The Logs screen for eguchi-portfolio-app",
+    "The variable names shown for eguchi-portfolio-app (hide all values)",
+  ];
+
+  return (
+    <section className="mt-12 md:mt-16">
+      <p className="font-en uppercase mb-3" style={labelStyle}>
+        Troubleshooting
+      </p>
+      <h2
+        className="font-en text-[rgba(var(--foreground-rgb),0.84)]"
+        style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)", lineHeight: 1.55 }}
+      >
+        Open this section only if something stops.
+      </h2>
+      <p
+        className="mt-4 max-w-2xl text-[rgba(var(--foreground-rgb),0.56)]"
+        style={bodyStyle}
+      >
+        Most sites are ready with the three steps above. These notes cover the
+        few places where the Railway screen can be unclear.
+      </p>
+
+      <div className="mt-7 space-y-3">
+        <TroubleItem title="The Deploy button is disabled or GitHub reports an error">
+          <p>
+            First confirm that ADMIN_PASSWORD has been entered under Configure
+            and that you selected Save Config. If Railway reports a repository
+            access error, confirm that you are signed in to both Railway and
+            GitHub, then try Deploy again. If the same message remains, send a
+            screenshot instead of changing unrelated settings.
+          </p>
+        </TroubleItem>
+
+        <TroubleItem title="The public URL is missing">
+          <p>
+            Open the eguchi-portfolio-app service, select Settings, scroll to
+            Networking, and select Generate Domain. Do this on the app service,
+            not Postgres or Bucket.
+          </p>
+        </TroubleItem>
+
+        <TroubleItem title="A photograph will not upload">
+          <p>
+            First read the storage notice on the Japanese “はじめに” screen. If
+            it reports missing storage settings, take a screenshot of that
+            notice and ask for help. Do not edit the Bucket or S3 variables
+            without guidance; changing a reference value can disconnect the
+            photograph storage.
+          </p>
+        </TroubleItem>
+
+        <TroubleItem title="What to send when asking for help">
+          <p>These three screenshots are usually enough to identify the issue:</p>
+          <ul className="space-y-2">
+            {screenshots.map((row) => (
+              <li key={row} className="flex items-start gap-2.5">
+                <ImageIcon
+                  size={15}
+                  className="mt-0.5 shrink-0 text-[rgba(var(--foreground-rgb),0.4)]"
+                />
+                <span>{row}</span>
+              </li>
+            ))}
+          </ul>
+          <Callout>
+            <span className="flex items-start gap-2.5">
+              <AlertTriangle
+                size={15}
+                className="mt-0.5 shrink-0 text-[rgba(var(--foreground-rgb),0.42)]"
+              />
+              <span>
+                Show variable names only. Hide passwords, access keys, and every
+                SECRET_ACCESS_KEY value before sending a screenshot.
+              </span>
+            </span>
+          </Callout>
+          {contactEmail && (
+            <div className="pt-1">
+              <ExternalButton
+                href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                  "Portfolio Kit setup help",
+                )}&body=${encodeURIComponent(
+                  "What happened:\n\n\nIf possible, attach:\n- Railway project overview\n- eguchi-portfolio-app Logs\n- Variable names only (hide all values)",
+                )}`}
+              >
+                <Mail size={15} />
+                Ask for setup help
+              </ExternalButton>
+            </div>
+          )}
+        </TroubleItem>
+      </div>
+    </section>
+  );
+}
+
+function EnglishHandoffCard() {
+  const rows = [
+    "Your public site URL",
+    "Your admin URL",
+    "Your admin password",
+    "The first photographs to add",
+    "Where to ask for help",
+  ];
+  return (
+    <section className="mt-12 md:mt-16 rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--background-rgb),0.52)] p-5 sm:p-7">
+      <div className="grid gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-start">
+        <div>
+          <p className="font-en uppercase mb-3" style={labelStyle}>
+            Handoff card
+          </p>
+          <h2
+            className="font-en text-[rgba(var(--foreground-rgb),0.84)]"
+            style={{
+              fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)",
+              lineHeight: 1.55,
+            }}
+          >
+            Assisted setup ends with one simple handover.
+          </h2>
+          <p
+            className="mt-4 text-[rgba(var(--foreground-rgb),0.52)]"
+            style={bodyStyle}
+          >
+            You receive the entrances you will actually use, without a long list
+            of technical settings.
+          </p>
+        </div>
+        <div className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.025)] p-4 sm:p-5">
+          <p className="font-en text-xs uppercase tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.36)]">
+            Aki Eguchi Portfolio Kit
+          </p>
+          <div className="mt-5 divide-y divide-[rgba(var(--foreground-rgb),0.08)]">
+            {rows.map((row) => (
+              <div key={row} className="flex items-center gap-3 py-3">
+                <CheckCircle2
+                  size={16}
+                  className="shrink-0 text-[rgba(var(--foreground-rgb),0.42)]"
+                />
+                <span className="font-en text-sm text-[rgba(var(--foreground-rgb),0.66)]">
+                  {row}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function EnglishServiceStartContent({
+  contactEmail,
+}: {
+  contactEmail: string;
+}) {
+  return (
+    <section
+      lang="en"
+      className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
+    >
+      <LanguageSwitch language="en" />
+      <header className="grid gap-10 md:grid-cols-[1.02fr_0.98fr] md:items-center">
+        <div>
+          <p className="font-en uppercase mb-7" style={labelStyle}>
+            Start guide
+          </p>
+          <h1
+            className="font-en text-[rgba(var(--foreground-rgb),0.88)]"
+            style={{
+              fontSize: "clamp(1.75rem, 4vw, 3rem)",
+              lineHeight: 1.45,
+              letterSpacing: "0.02em",
+            }}
+          >
+            A clear starting point for publishing your Portfolio Kit.
+          </h1>
+          <p
+            className="mt-7 max-w-xl text-[rgba(var(--foreground-rgb),0.56)]"
+            style={bodyStyle}
+          >
+            The setup link is kept private. Within 24 hours of payment, I will
+            email the link and the next steps for your plan. If it has not
+            arrived after 24 hours, contact me from the email address used for
+            payment. For self setup, the only value you enter is your admin
+            password (ADMIN_PASSWORD); the remaining services are prepared
+            automatically.
+          </p>
+          <div className="mt-6 rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-4 py-3 text-[rgba(var(--foreground-rgb),0.58)]" style={bodyStyle}>
+            <p>
+              The admin panel is currently Japanese-first; an English admin UI
+              is in progress.
+            </p>
+            <p className="mt-2">
+              Support is provided in Japanese and simple English.
+            </p>
+          </div>
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
+            {contactEmail && (
+              <ExternalButton
+                href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                  "Portfolio Kit purchase support",
+                )}`}
+              >
+                <Mail size={15} />
+                Ask about your purchase
+              </ExternalButton>
+            )}
+            <Link
+              to="/portfolio-kit/en"
+              className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-en text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
+            >
+              Back to plans and pricing
+            </Link>
+          </div>
+          <p
+            className="mt-5 text-[rgba(var(--foreground-rgb),0.42)]"
+            style={{ fontSize: "0.78rem", lineHeight: 1.8 }}
+          >
+            Self setup includes one initial round of guidance on using the admin
+            panel. Assisted setup includes seven days of basic guidance on using
+            the site and admin panel after launch. Further work or guidance is
+            quoted separately.
+          </p>
+        </div>
+
+        <figure className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.018)] p-3 shadow-[0_20px_70px_rgba(var(--foreground-rgb),0.06)]">
+          <img
+            src="/og-service.jpg"
+            alt="Aki Eguchi Portfolio Kit"
+            width="1200"
+            height="630"
+            className="aspect-[1200/630] w-full rounded-[4px] object-cover"
+            loading="eager"
+            decoding="async"
+          />
+        </figure>
+      </header>
+
+      <div className="mt-12 grid gap-6 lg:grid-cols-2">
+        <StepPanel
+          title="Self setup in three steps"
+          subtitle="Self setup"
+          steps={selfStepsEn}
+        >
+          {contactEmail && (
+            <ExternalButton
+              href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                "Please resend my Portfolio Kit setup link",
+              )}`}
+              variant="outline"
+            >
+              <Mail size={15} />
+              Ask to resend the setup email
+            </ExternalButton>
+          )}
+          <Link
+            to="/portfolio-kit/en"
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-en text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
+          >
+            Back to pricing
+          </Link>
+        </StepPanel>
+
+        <StepPanel
+          title="For assisted setup"
+          subtitle="Assisted setup"
+          steps={conciergeStepsEn}
+        >
+          {contactEmail && (
+            <ExternalButton
+              href={`mailto:${contactEmail}?subject=${encodeURIComponent(
+                "Portfolio Kit materials for assisted setup",
+              )}`}
+            >
+              <Mail size={15} />
+              Send your materials
+            </ExternalButton>
+          )}
+          <ExternalButton href="/admin/login" variant="outline">
+            <KeyRound size={15} />
+            Open the admin login
+          </ExternalButton>
+        </StepPanel>
+      </div>
+
+      <EnglishTroubleSection contactEmail={contactEmail} />
+      <EnglishHandoffCard />
+    </section>
+  );
+}
+
+export default function ServiceStartPage({
+  language = "ja",
+}: {
+  language?: ServiceStartLanguage;
+}) {
   const { data: settingsData } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -411,8 +773,23 @@ export default function ServiceStartPage() {
     typeof window === "undefined" ? undefined : window.location.hostname,
   );
 
+  useEffect(() => {
+    document.documentElement.lang = language;
+    return () => {
+      document.documentElement.lang = "ja";
+    };
+  }, [language]);
+
+  if (language === "en") {
+    return <EnglishServiceStartContent contactEmail={contactEmail} />;
+  }
+
   return (
-    <section className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28">
+    <section
+      lang="ja"
+      className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
+    >
+      <LanguageSwitch language="ja" />
       <header className="grid gap-10 md:grid-cols-[1.02fr_0.98fr] md:items-center">
         <div>
           <p className="font-en uppercase mb-7" style={labelStyle}>

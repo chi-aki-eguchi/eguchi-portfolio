@@ -629,6 +629,12 @@ describe("injectOgp /portfolio-kit route", () => {
     <meta name="twitter:title" content="x" />
     <meta name="twitter:description" content="x" />
     </head><body></body></html>`;
+  const localizedPage = page
+    .replace("<html>", '<html lang="ja">')
+    .replace(
+      "</head>",
+      '<meta property="og:locale" content="ja_JP" /></head>',
+    );
 
   test("uses dedicated service OGP title and description, not the photographer's", () => {
     const out = injectOgp(
@@ -723,6 +729,86 @@ describe("injectOgp /portfolio-kit route", () => {
       "/portfolio-kit",
     );
     expect(out).toContain("<title>Aki Eguchi Portfolio Kit</title>");
+  });
+
+  test("English Portfolio Kit uses English OGP, locale, canonical, and reciprocal hreflang", () => {
+    const out = injectOgp(
+      localizedPage,
+      { siteUrl: "https://akieguchi.com" },
+      "/portfolio-kit/en",
+    );
+    expect(out).toContain(
+      "<title>Aki Eguchi Portfolio Kit — For Photographers</title>",
+    );
+    expect(out).toContain("A quiet, finished portfolio website for photographers");
+    expect(out).toContain(
+      'rel="canonical" href="https://akieguchi.com/portfolio-kit/en"',
+    );
+    expect(out).toContain(
+      'property="og:url" content="https://akieguchi.com/portfolio-kit/en"',
+    );
+    expect(out).toContain(
+      'name="twitter:title" content="Aki Eguchi Portfolio Kit — For Photographers"',
+    );
+    expect(out).toContain('<html lang="en">');
+    expect(out).toContain('property="og:locale" content="en_US"');
+    expect(out).toContain(
+      'hreflang="ja" href="https://akieguchi.com/portfolio-kit"',
+    );
+    expect(out).toContain(
+      'hreflang="en" href="https://akieguchi.com/portfolio-kit/en"',
+    );
+    expect(out).toContain('name="robots" content="index, follow"');
+  });
+
+  test("Japanese Portfolio Kit points back to the English alternate", () => {
+    const out = injectOgp(
+      localizedPage,
+      { siteUrl: "https://akieguchi.com" },
+      "/portfolio-kit",
+    );
+    expect(out).toContain(
+      'hreflang="ja" href="https://akieguchi.com/portfolio-kit"',
+    );
+    expect(out).toContain(
+      'hreflang="en" href="https://akieguchi.com/portfolio-kit/en"',
+    );
+  });
+
+  test("English start guide has English OGP and hreflang while staying noindex", () => {
+    const out = injectOgp(
+      localizedPage,
+      { siteUrl: "https://akieguchi.com" },
+      "/start/en",
+    );
+    expect(out).toContain(
+      "<title>Aki Eguchi Portfolio Kit — Start Guide</title>",
+    );
+    expect(out).toContain(
+      'rel="canonical" href="https://akieguchi.com/start/en"',
+    );
+    expect(out).toContain(
+      'hreflang="ja" href="https://akieguchi.com/start"',
+    );
+    expect(out).toContain(
+      'hreflang="en" href="https://akieguchi.com/start/en"',
+    );
+    expect(out).toContain('name="robots" content="noindex, nofollow"');
+    expect(out).toContain('<html lang="en">');
+  });
+
+  test("hidden English Portfolio Kit is Not Found and omits hreflang", () => {
+    const out = injectOgp(
+      localizedPage,
+      {
+        servicePageMode: "off",
+        siteUrl: "https://akieguchi.com",
+      },
+      "/portfolio-kit/en",
+    );
+    expect(out).toContain("<title>Not Found");
+    expect(out).toContain('name="robots" content="noindex, nofollow"');
+    expect(out).not.toContain('rel="alternate"');
   });
 });
 

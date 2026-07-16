@@ -146,11 +146,46 @@ function App() {
               </PageTransition>
             </Layout>
           </Route>
+          <Route path="/service/start/en">
+            <LegacyPortfolioKitRedirect to="/start/en" />
+          </Route>
+          <Route path="/service/en">
+            <LegacyPortfolioKitRedirect to="/portfolio-kit/en" />
+          </Route>
           <Route path="/service/start">
             <LegacyPortfolioKitRedirect to="/portfolio-kit/start" />
           </Route>
           <Route path="/service">
             <LegacyPortfolioKitRedirect to="/portfolio-kit" />
+          </Route>
+          <Route path="/portfolio-kit/start/en">
+            <LegacyPortfolioKitRedirect to="/start/en" />
+          </Route>
+          <Route path="/start/en">
+            <ServiceVisibilityGate>
+              <Layout>
+                <PageTransition>
+                  <TitledRoute title="Portfolio Kit Start — English">
+                    <Suspense fallback={<PageFallback />}>
+                      <ServiceStartPage language="en" />
+                    </Suspense>
+                  </TitledRoute>
+                </PageTransition>
+              </Layout>
+            </ServiceVisibilityGate>
+          </Route>
+          <Route path="/start">
+            <ServiceVisibilityGate>
+              <Layout>
+                <PageTransition>
+                  <TitledRoute title="Portfolio Kit Start">
+                    <Suspense fallback={<PageFallback />}>
+                      <ServiceStartPage />
+                    </Suspense>
+                  </TitledRoute>
+                </PageTransition>
+              </Layout>
+            </ServiceVisibilityGate>
           </Route>
           <Route path="/portfolio-kit/start">
             <ServiceVisibilityGate>
@@ -159,6 +194,19 @@ function App() {
                   <TitledRoute title="Portfolio Kit Start">
                     <Suspense fallback={<PageFallback />}>
                       <ServiceStartPage />
+                    </Suspense>
+                  </TitledRoute>
+                </PageTransition>
+              </Layout>
+            </ServiceVisibilityGate>
+          </Route>
+          <Route path="/portfolio-kit/en">
+            <ServiceVisibilityGate>
+              <Layout>
+                <PageTransition>
+                  <TitledRoute title="Portfolio Kit — English">
+                    <Suspense fallback={<PageFallback />}>
+                      <ServicePage language="en" />
                     </Suspense>
                   </TitledRoute>
                 </PageTransition>

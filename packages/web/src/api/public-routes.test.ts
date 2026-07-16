@@ -18,7 +18,10 @@ describe("public SPA route status", () => {
       "/profile",
       "/contact",
       "/portfolio-kit",
+      "/portfolio-kit/en",
       "/portfolio-kit/start",
+      "/start",
+      "/start/en",
       "/admin",
       "/admin/login",
     ]) {
@@ -31,6 +34,13 @@ describe("public SPA route status", () => {
     expect(canonicalPortfolioKitPath("/service")).toBe("/portfolio-kit");
     expect(canonicalPortfolioKitPath("/service/start/")).toBe(
       "/portfolio-kit/start",
+    );
+    expect(canonicalPortfolioKitPath("/service/en")).toBe(
+      "/portfolio-kit/en",
+    );
+    expect(canonicalPortfolioKitPath("/service/start/en")).toBe("/start/en");
+    expect(canonicalPortfolioKitPath("/portfolio-kit/start/en")).toBe(
+      "/start/en",
     );
     expect(canonicalPortfolioKitPath("/portfolio-kit")).toBe(
       "/portfolio-kit",

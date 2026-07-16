@@ -6,14 +6,20 @@ const SPA_STATIC_PATHS = new Set([
   "/profile",
   "/contact",
   "/portfolio-kit",
+  "/portfolio-kit/en",
   "/portfolio-kit/start",
+  "/start",
+  "/start/en",
   "/admin",
   "/admin/login",
 ]);
 
 const LEGACY_PORTFOLIO_KIT_PATHS: Record<string, string> = {
   "/service": "/portfolio-kit",
+  "/service/en": "/portfolio-kit/en",
   "/service/start": "/portfolio-kit/start",
+  "/service/start/en": "/start/en",
+  "/portfolio-kit/start/en": "/start/en",
 };
 
 export function normalizeSpaPathname(pathname: string): string {

@@ -320,7 +320,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/about",
     "/contact",
     ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
-      ? ["/portfolio-kit"]
+      ? ["/portfolio-kit", "/portfolio-kit/en"]
       : []),
   ];
   // Include each published series detail page so crawlers discover the actual

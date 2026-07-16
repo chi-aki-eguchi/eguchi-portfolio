@@ -69,6 +69,74 @@ https://akieguchi.com/portfolio-kit/start
 
 ---
 
+## English A. Self setup (¥10,000) — confirmation message / email
+
+```
+Thank you for purchasing Aki Eguchi Portfolio Kit — Self setup.
+
+You can publish your portfolio in about 10–15 minutes with the steps below.
+
+1. Choose one password for the admin panel (at least eight characters) and keep
+   it somewhere safe.
+
+2. Open the English start guide:
+   https://akieguchi.com/start/en
+
+3. Within 24 hours of payment, I will email your private Deploy link and the
+   next steps:
+   {{BUYER_ONLY_DEPLOY_LINK}}
+
+4. The setup order is:
+   enter your password → Deploy → Generate Domain → add /admin/login to the
+   public URL → open 「はじめに」 (Getting started) and add your first photograph.
+
+5. One initial round of guidance on using the admin panel is included. Support
+   is provided in Japanese and simple English. You can reply to this email or use:
+   Instagram @chi._.aki._ / X @chi_aki_jpg / akieguchi33@gmail.com
+
+The admin panel is currently Japanese-first; an English admin UI is in progress.
+
+Railway hosts the site separately from Portfolio Kit. Its prices can change and
+are based on usage; a small portfolio is usually inexpensive to run. If Railway
+asks for a payment card during setup, that is an expected part of activating its
+hosting service.
+
+Wishing you a good edit, and a good place for the work to live.
+```
+
+---
+
+## English B. Assisted setup (¥30,000) — confirmation message / email
+
+```
+Thank you for purchasing Aki Eguchi Portfolio Kit — Assisted setup.
+
+Within 24 hours of payment, I will email you with a short request for the
+materials needed to prepare the site. Once all requested materials are ready,
+your site will be delivered within three days. The handover includes the public
+site URL, admin URL, and admin password.
+
+To begin, please reply with the following when convenient:
+
+  - The name you want displayed on the site
+  - The photographs you want to begin with (a small selection is enough)
+  - Profile text, contact details, and social links
+  - A custom domain, if you already have one (it is fine not to have one)
+
+Seven days of basic guidance on using the site and admin panel are included after
+launch. Further guidance, design changes, and individual customisation are quoted
+separately. Support is provided in Japanese and simple English. You can reply to
+this email or use:
+Instagram @chi._.aki._ / X @chi_aki_jpg / akieguchi33@gmail.com
+
+The admin panel is currently Japanese-first; an English admin UI is in progress.
+
+English start guide:
+https://akieguchi.com/start/en
+```
+
+---
+
 ## メモ
 
 - Stripe では Payment Link ごとに確認ページ／メールの文面を設定できます。コースを
@@ -79,3 +147,5 @@ https://akieguchi.com/portfolio-kit/start
   メッセージまたは個別連絡だけに載せる。
 - 文面は固定でも動きますが、購入者の名前を差し込めるなら冒頭を「◯◯さん、ありがとう
   ございます」にするとより丁寧です。
+- 英語版はオーナーが手動で送り分ける。判断しづらい場合は、日本語版と英語版を同じ
+  メールに併記してよい。

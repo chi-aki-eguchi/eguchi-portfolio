@@ -3487,6 +3487,8 @@ export function SettingsTab({
   const qc = useQueryClient();
   const { t } = useAdminI18n();
   const copy = t.phase2b.settingsBasic;
+  const copyIntegrations = t.phase2b.settingsIntegrations;
+  const copyDesign = t.phase2b.settingsDesign;
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -4838,22 +4840,21 @@ export function SettingsTab({
               </Section>
             </SettingsGroup>
 
-            <SettingsGroup title="連携・販売">
+            <SettingsGroup title={copyIntegrations.groupTitle}>
               {/* J: note RSS integration */}
-              <Section title="note連携" defaultOpen={false}>
+              <Section title={copyIntegrations.note.title} defaultOpen={false}>
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  note に投稿すると最新記事が About
-                  ページの「Journal」に自動表示されます（30分キャッシュ）。取得失敗時はセクションが消えるだけでサイトは壊れません。
+                  {copyIntegrations.note.intro}
                 </p>
                 <AdminField
-                  label="表示"
-                  hint="About ページに最新記事を表示するか"
+                  label={copyIntegrations.note.visibilityLabel}
+                  hint={copyIntegrations.note.visibilityHint}
                 >
                   <div className="flex gap-1">
                     {(
                       [
-                        ["on", "表示"],
-                        ["off", "非表示"],
+                        ["on", copyIntegrations.visibilityOn],
+                        ["off", copyIntegrations.visibilityOff],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -4871,48 +4872,50 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="note ユーザー名"
-                  hint="note.com/◯◯ の ◯◯ 部分（例: chi_aki_zip）"
+                  label={copyIntegrations.note.usernameLabel}
+                  hint={copyIntegrations.note.usernameHint}
                 >
                   <input
-                    aria-label="note ユーザー名"
+                    aria-label={copyIntegrations.note.usernameLabel}
                     type="text"
                     value={current["noteUsername"] ?? ""}
                     onChange={(e) => set("noteUsername", e.target.value.trim())}
-                    placeholder="chi_aki_zip"
+                    placeholder={copyIntegrations.note.usernamePlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
                   />
                 </AdminField>
-                <AdminField label="表示件数" hint="一覧に表示する記事数">
+                <AdminField
+                  label={copyIntegrations.note.displayCountLabel}
+                  hint={copyIntegrations.note.displayCountHint}
+                >
                   <TypoControl
-                    label="件数"
+                    label={copyIntegrations.note.countControlLabel}
                     valueKey="noteShowCount"
                     current={current}
                     set={set}
                     min={1}
                     max={8}
                     step={1}
-                    unit="件"
+                    unit={copyIntegrations.note.countUnit}
                     defaultVal="3"
                   />
                 </AdminField>
               </Section>
 
               {/* K: print sales (external store) */}
-              <Section title="プリント販売" defaultOpen={false}>
+              <Section title={copyIntegrations.print.title} defaultOpen={false}>
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  外部ストア（BOOTH等）への控えめなリンクを About
-                  ページに表示します。未設定なら何も表示されません。
+                  {copyIntegrations.print.intro}
                 </p>
                 <AdminField
-                  label="表示"
-                  hint="About ページにプリント購入リンクを表示するか"
+                  label={copyIntegrations.print.visibilityLabel}
+                  hint={copyIntegrations.print.visibilityHint}
                 >
                   <div className="flex gap-1">
                     {(
                       [
-                        ["on", "表示"],
-                        ["off", "非表示"],
+                        ["on", copyIntegrations.visibilityOn],
+                        ["off", copyIntegrations.visibilityOff],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -4929,57 +4932,63 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
-                <AdminField label="ストアURL" hint="BOOTH等の販売ページURL">
+                <AdminField
+                  label={copyIntegrations.print.storeUrlLabel}
+                  hint={copyIntegrations.print.storeUrlHint}
+                >
                   <input
-                    aria-label="ストアURL"
+                    aria-label={copyIntegrations.print.storeUrlLabel}
                     type="url"
                     value={current["printStoreUrl"] ?? ""}
                     onChange={(e) =>
                       set("printStoreUrl", e.target.value.trim())
                     }
-                    placeholder="https://..."
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
-                  />
-                </AdminField>
-                <AdminField label="リンク文言" hint="ボタンの表示テキスト">
-                  <input
-                    aria-label="リンク文言"
-                    type="text"
-                    value={current["printStoreLabel"] ?? ""}
-                    onChange={(e) => set("printStoreLabel", e.target.value)}
-                    placeholder="プリントを購入する"
+                    placeholder={copyIntegrations.print.storeUrlPlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
-                  label="説明文（任意）"
-                  hint="サイズ・価格の概要など"
+                  label={copyIntegrations.print.linkLabelLabel}
+                  hint={copyIntegrations.print.linkLabelHint}
+                >
+                  <input
+                    aria-label={copyIntegrations.print.linkLabelLabel}
+                    type="text"
+                    value={current["printStoreLabel"] ?? ""}
+                    onChange={(e) => set("printStoreLabel", e.target.value)}
+                    placeholder={copyIntegrations.print.linkLabelPlaceholder}
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                  />
+                </AdminField>
+                <AdminField
+                  label={copyIntegrations.print.descriptionLabel}
+                  hint={copyIntegrations.print.descriptionHint}
                 >
                   <textarea
-                    aria-label="プリント説明文"
+                    aria-label={copyIntegrations.print.descriptionAria}
                     rows={2}
                     value={current["printDescription"] ?? ""}
                     onChange={(e) => set("printDescription", e.target.value)}
-                    placeholder="A4 / ¥3,000〜 ..."
+                    placeholder={copyIntegrations.print.descriptionPlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
               </Section>
 
               {/* 撮影依頼 CTA — closing "work with me" band */}
-              <Section title="撮影依頼への案内" defaultOpen={false}>
+              <Section title={copyIntegrations.cta.title} defaultOpen={false}>
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  トップ・ギャラリー・シリーズ各ページの末尾に「撮影のご依頼」への導線を表示します。閲覧者が作品を見終えた直後に依頼へつなげる動線です。
+                  {copyIntegrations.cta.intro}
                 </p>
                 <AdminField
-                  label="表示"
-                  hint="各ページ末尾に依頼CTAを表示するか"
+                  label={copyIntegrations.cta.visibilityLabel}
+                  hint={copyIntegrations.cta.visibilityHint}
                 >
                   <div className="flex gap-1">
                     {(
                       [
-                        ["on", "表示"],
-                        ["off", "非表示"],
+                        ["on", copyIntegrations.visibilityOn],
+                        ["off", copyIntegrations.visibilityOff],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -4997,55 +5006,55 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="見出し"
-                  hint="例: 撮影のご依頼 / Work with me"
+                  label={copyIntegrations.cta.headingLabel}
+                  hint={copyIntegrations.cta.headingHint}
                 >
                   <input
-                    aria-label="CTA見出し"
+                    aria-label={copyIntegrations.cta.headingAria}
                     type="text"
                     value={current["homeCtaTitle"] ?? ""}
                     onChange={(e) => set("homeCtaTitle", e.target.value)}
-                    placeholder="撮影のご依頼"
+                    placeholder={copyIntegrations.cta.headingPlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
-                  label="本文（任意）"
-                  hint="依頼を後押しする一言。撮影ジャンル・対応範囲など"
+                  label={copyIntegrations.cta.bodyLabel}
+                  hint={copyIntegrations.cta.bodyHint}
                 >
                   <textarea
-                    aria-label="CTA本文"
+                    aria-label={copyIntegrations.cta.bodyAria}
                     rows={2}
                     value={current["homeCtaText"] ?? ""}
                     onChange={(e) => set("homeCtaText", e.target.value)}
-                    placeholder="ポートレート・作品撮り・取材など、お気軽にご相談ください。"
+                    placeholder={copyIntegrations.cta.bodyPlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
                 <AdminField
-                  label="ボタン文言"
-                  hint="Contact ページへのリンク文言"
+                  label={copyIntegrations.cta.buttonLabel}
+                  hint={copyIntegrations.cta.buttonHint}
                 >
                   <input
-                    aria-label="CTAボタン文言"
+                    aria-label={copyIntegrations.cta.buttonAria}
                     type="text"
                     value={current["homeCtaButton"] ?? ""}
                     onChange={(e) => set("homeCtaButton", e.target.value)}
-                    placeholder="お問い合わせ"
+                    placeholder={copyIntegrations.cta.buttonPlaceholder}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
               </Section>
             </SettingsGroup>
 
-            <SettingsGroup title="デザイン・文言">
+            <SettingsGroup title={copyDesign.groupTitle}>
               {/* Theme Colors */}
-              <Section title="背景・文字色" defaultOpen={false}>
+              <Section title={copyDesign.themeColors.title} defaultOpen={false}>
                 <div className="flex gap-4">
                   <AdminField label="Background">
                     <div className="flex items-center gap-2">
                       <input
-                        aria-label="背景色"
+                        aria-label={copyDesign.themeColors.backgroundSwatchAria}
                         type="color"
                         value={current["themeBg"] || DEFAULT_THEME_BG}
                         onChange={(e) => set("themeBg", e.target.value)}
@@ -5053,7 +5062,7 @@ export function SettingsTab({
                         className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
                       />
                       <input
-                        aria-label="背景色（HEX）"
+                        aria-label={copyDesign.themeColors.backgroundHexAria}
                         type="text"
                         value={current["themeBg"] || ""}
                         onChange={(e) => set("themeBg", e.target.value)}
@@ -5066,14 +5075,14 @@ export function SettingsTab({
                   <AdminField label="Text">
                     <div className="flex items-center gap-2">
                       <input
-                        aria-label="文字色"
+                        aria-label={copyDesign.themeColors.textSwatchAria}
                         type="color"
                         value={current["themeText"] || "#1a1a1a"}
                         onChange={(e) => set("themeText", e.target.value)}
                         className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
                       />
                       <input
-                        aria-label="文字色（HEX）"
+                        aria-label={copyDesign.themeColors.textHexAria}
                         type="text"
                         value={current["themeText"] || ""}
                         onChange={(e) => set("themeText", e.target.value)}
@@ -5090,22 +5099,22 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* Fonts */}
-              <Section title="フォント" defaultOpen={false}>
+              <Section title={copyDesign.fonts.title} defaultOpen={false}>
                 {/* A6: one-click 和英 pairing presets — sets the existing fontJa/fontEn
                 keys, so live preview and Save work exactly like manual picks. */}
                 <AdminField
-                  label="ペアリング"
-                  hint="和文と欧文の組み合わせをワンクリックで一括設定。下の個別選択でいつでも上書きできます"
+                  label={copyDesign.fonts.pairingLabel}
+                  hint={copyDesign.fonts.pairingHint}
                 >
                   <PairingPicker current={current} set={set} />
                 </AdminField>
                 <FontPicker
-                  label="日本語フォント"
+                  label={copyDesign.fonts.jaFontLabel}
                   presets={Object.keys(GOOGLE_FONTS_JA)}
                   valueKey="fontJa"
                   customNameKey="customFontJaName"
@@ -5116,7 +5125,7 @@ export function SettingsTab({
                   fontMap={GOOGLE_FONTS_JA}
                 />
                 <FontPicker
-                  label="英語フォント"
+                  label={copyDesign.fonts.enFontLabel}
                   presets={Object.keys(GOOGLE_FONTS_EN)}
                   valueKey="fontEn"
                   customNameKey="customFontEnName"
@@ -5141,7 +5150,7 @@ export function SettingsTab({
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
-                        既定（{defWeight}）
+                        {copyDesign.fonts.defaultWeight(defWeight)}
                       </button>
                       {weights.map((w) => (
                         <button
@@ -5160,16 +5169,16 @@ export function SettingsTab({
                     </div>
                   );
                   const hint = jaDef
-                    ? "選択中の日本語フォントが読み込むウェイトから選択"
-                    : "フォント未選択/カスタムのため一般的なウェイトを表示（フォント側が未対応の値は近似表示になります）";
+                    ? copyDesign.fonts.heroWeightHintKnown
+                    : copyDesign.fonts.heroWeightHintUnknown;
                   return (
                     <>
-                      <AdminField label="ヒーロー名の太さ" hint={hint}>
+                      <AdminField label={copyDesign.fonts.heroWeightLabel} hint={hint}>
                         {row("heroNameWeight", "700")}
                       </AdminField>
                       <AdminField
-                        label="本文の太さ"
-                        hint="サイト全体の本文の太さ"
+                        label={copyDesign.fonts.bodyWeightLabel}
+                        hint={copyDesign.fonts.bodyWeightHint}
                       >
                         {row("bodyWeight", "400")}
                       </AdminField>
@@ -5179,13 +5188,13 @@ export function SettingsTab({
               </Section>
 
               {/* Typography — 大きさ (D4: 軸別2階層。まず調整軸→対象) */}
-              <Section title="文字の大きさ" defaultOpen={false}>
+              <Section title={copyDesign.fontSize.title} defaultOpen={false}>
                 <AdminField
-                  label="全体スケール"
-                  hint="全部の文字をまとめて大小（モバイル縮小率と併用可）"
+                  label={copyDesign.fontSize.globalScaleLabel}
+                  hint={copyDesign.fontSize.globalScaleHint}
                 >
                   <TypoControl
-                    label="スケール"
+                    label={copyDesign.fontSize.globalScaleControlLabel}
                     valueKey="globalFontScale"
                     current={current}
                     set={set}
@@ -5197,10 +5206,10 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  ヒーロー名 / サブタイトル
+                  {copyDesign.fontSize.heroGroupLabel}
                 </p>
                 <TypoControl
-                  label="名前"
+                  label={copyDesign.fontSize.nameLabel}
                   valueKey="heroNameSize"
                   current={current}
                   set={set}
@@ -5211,7 +5220,7 @@ export function SettingsTab({
                   defaultVal="60"
                 />
                 <TypoControl
-                  label="EN名"
+                  label={copyDesign.fontSize.enNameLabel}
                   valueKey="heroNameEnSize"
                   current={current}
                   set={set}
@@ -5222,7 +5231,7 @@ export function SettingsTab({
                   defaultVal="24"
                 />
                 <TypoControl
-                  label="サブタイトル"
+                  label={copyDesign.fontSize.subtitleLabel}
                   valueKey="heroSubSize"
                   current={current}
                   set={set}
@@ -5233,10 +5242,10 @@ export function SettingsTab({
                   defaultVal="12"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  ナビゲーション
+                  {copyDesign.fontSize.navGroupLabel}
                 </p>
                 <TypoControl
-                  label="サイズ"
+                  label={copyDesign.fontSize.sizeLabel}
                   valueKey="navSize"
                   current={current}
                   set={set}
@@ -5247,10 +5256,10 @@ export function SettingsTab({
                   defaultVal="14"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  セクション見出し（Recent Work / Contact 等）
+                  {copyDesign.fontSize.sectionGroupLabel}
                 </p>
                 <TypoControl
-                  label="サイズ"
+                  label={copyDesign.fontSize.sizeLabel}
                   valueKey="sectionLabelSize"
                   current={current}
                   set={set}
@@ -5261,10 +5270,10 @@ export function SettingsTab({
                   defaultVal="16"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  ページ見出し（About名前）
+                  {copyDesign.fontSize.pageHeadingGroupLabel}
                 </p>
                 <TypoControl
-                  label="サイズ"
+                  label={copyDesign.fontSize.sizeLabel}
                   valueKey="headingSize"
                   current={current}
                   set={set}
@@ -5275,10 +5284,10 @@ export function SettingsTab({
                   defaultVal="30"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  本文
+                  {copyDesign.fontSize.bodyGroupLabel}
                 </p>
                 <TypoControl
-                  label="サイズ"
+                  label={copyDesign.fontSize.sizeLabel}
                   valueKey="bodySize"
                   current={current}
                   set={set}
@@ -5289,10 +5298,10 @@ export function SettingsTab({
                   defaultVal="16"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  フッター
+                  {copyDesign.fontSize.footerGroupLabel}
                 </p>
                 <TypoControl
-                  label="サイズ"
+                  label={copyDesign.fontSize.sizeLabel}
                   valueKey="footerSize"
                   current={current}
                   set={set}
@@ -5318,64 +5327,67 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* Typography — 色 */}
-              <Section title="文字の色" defaultOpen={false}>
+              <Section title={copyDesign.fontColor.title} defaultOpen={false}>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
-                  ヒーロー名 / サブタイトル
+                  {copyDesign.fontColor.heroGroupLabel}
                 </p>
                 <ColorRow
-                  label="名前"
+                  label={copyDesign.fontColor.nameLabel}
                   valueKey="heroNameColor"
                   current={current}
                   set={set}
                   placeholder="#ffffff"
                 />
                 <ColorRow
-                  label="EN名"
+                  label={copyDesign.fontColor.enNameLabel}
                   valueKey="heroNameEnColor"
                   current={current}
                   set={set}
                   placeholder="rgba(255,255,255,0.75)"
                 />
                 <ColorRow
-                  label="サブタイトル"
+                  label={copyDesign.fontColor.subtitleLabel}
                   valueKey="heroSubColor"
                   current={current}
                   set={set}
                   placeholder="rgba(255,255,255,0.75)"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  アクセントカラー（差し色）
+                  {copyDesign.fontColor.accentGroupLabel}
                 </p>
                 <ColorRow
-                  label="アクセント"
+                  label={copyDesign.fontColor.accentLabel}
                   valueKey="accentColor"
                   current={current}
                   set={set}
-                  placeholder="未設定 = 従来の色"
-                  hint="ホバー・選択中・フォーカスにまとめて効く差し色。薄い色は背景とのコントラストが低く見えにくい場合があります"
+                  placeholder={copyDesign.fontColor.accentPlaceholder}
+                  hint={copyDesign.fontColor.accentHint}
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  リンク
+                  {copyDesign.fontColor.linkGroupLabel}
                 </p>
                 <ColorRow
-                  label="ホバー色"
+                  label={copyDesign.fontColor.linkHoverLabel}
                   valueKey="linkHoverColor"
                   current={current}
                   set={set}
                   placeholder="#1a1a1a"
-                  hint="本文中リンクのホバー色。未設定ならアクセントカラー→既定の順で適用"
+                  hint={copyDesign.fontColor.linkHoverHint}
                 />
-                <AdminField label="下線" hint="リンクに下線を表示するか">
+                <AdminField
+                  label={copyDesign.fontColor.underlineLabel}
+                  hint={copyDesign.fontColor.underlineHint}
+                >
                   <div className="flex gap-1">
                     {(
                       [
-                        ["on", "あり"],
-                        ["off", "なし"],
+                        ["on", copyDesign.fontColor.underlineOn],
+                        ["off", copyDesign.fontColor.underlineOff],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -5393,10 +5405,10 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  不透明度（詳細）
+                  {copyDesign.fontColor.opacityGroupLabel}
                 </p>
                 <TypoControl
-                  label="ナビ"
+                  label={copyDesign.fontColor.navOpacityLabel}
                   valueKey="navOpacity"
                   current={current}
                   set={set}
@@ -5406,7 +5418,7 @@ export function SettingsTab({
                   isOpacity
                 />
                 <TypoControl
-                  label="セクション見出し"
+                  label={copyDesign.fontColor.sectionOpacityLabel}
                   valueKey="sectionLabelOpacity"
                   current={current}
                   set={set}
@@ -5416,7 +5428,7 @@ export function SettingsTab({
                   isOpacity
                 />
                 <TypoControl
-                  label="フッター"
+                  label={copyDesign.fontColor.footerOpacityLabel}
                   valueKey="footerOpacity"
                   current={current}
                   set={set}
@@ -5426,7 +5438,7 @@ export function SettingsTab({
                   isOpacity
                 />
                 <TypoControl
-                  label="SNSアイコン"
+                  label={copyDesign.fontColor.snsOpacityLabel}
                   valueKey="snsOpacity"
                   current={current}
                   set={set}
@@ -5452,17 +5464,17 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* Typography — 間隔（字間・行間） */}
-              <Section title="文字の間隔" defaultOpen={false}>
+              <Section title={copyDesign.fontTracking.title} defaultOpen={false}>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
-                  ヒーロー名
+                  {copyDesign.fontTracking.heroGroupLabel}
                 </p>
                 <TypoControl
-                  label="名前 字間"
+                  label={copyDesign.fontTracking.nameTrackingLabel}
                   valueKey="heroNameTracking"
                   current={current}
                   set={set}
@@ -5473,7 +5485,7 @@ export function SettingsTab({
                   defaultVal="0.04"
                 />
                 <TypoControl
-                  label="EN名 字間"
+                  label={copyDesign.fontTracking.enNameTrackingLabel}
                   valueKey="heroNameEnTracking"
                   current={current}
                   set={set}
@@ -5484,10 +5496,10 @@ export function SettingsTab({
                   defaultVal="0.08"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  ナビゲーション
+                  {copyDesign.fontTracking.navGroupLabel}
                 </p>
                 <TypoControl
-                  label="字間"
+                  label={copyDesign.fontTracking.trackingLabel}
                   valueKey="navTracking"
                   current={current}
                   set={set}
@@ -5498,10 +5510,10 @@ export function SettingsTab({
                   defaultVal="0.04"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  セクション見出し
+                  {copyDesign.fontTracking.sectionGroupLabel}
                 </p>
                 <TypoControl
-                  label="字間"
+                  label={copyDesign.fontTracking.trackingLabel}
                   valueKey="sectionLabelTracking"
                   current={current}
                   set={set}
@@ -5512,7 +5524,7 @@ export function SettingsTab({
                   defaultVal="0.10"
                 />
                 <TypoControl
-                  label="行間"
+                  label={copyDesign.fontTracking.leadingLabel}
                   valueKey="sectionLeading"
                   current={current}
                   set={set}
@@ -5523,10 +5535,10 @@ export function SettingsTab({
                   defaultVal="1.2"
                 />
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  本文
+                  {copyDesign.fontTracking.bodyGroupLabel}
                 </p>
                 <TypoControl
-                  label="字間"
+                  label={copyDesign.fontTracking.trackingLabel}
                   valueKey="bodyTracking"
                   current={current}
                   set={set}
@@ -5537,7 +5549,7 @@ export function SettingsTab({
                   defaultVal="0.01"
                 />
                 <TypoControl
-                  label="行間"
+                  label={copyDesign.fontTracking.leadingLabel}
                   valueKey="bodyLeading"
                   current={current}
                   set={set}
@@ -5561,40 +5573,32 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
-              <Section title="サイト文言" defaultOpen={false}>
+              <Section title={copyDesign.siteCopy.title} defaultOpen={false}>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
-                  ナビゲーション
+                  {copyDesign.siteCopy.navGroupLabel}
                 </p>
                 {(
                   [
                     {
                       key: "navLabelTop",
-                      label: "ロゴ (TOP)",
-                      placeholder: "TOP",
-                      hint: "全ページ左上のロゴ／TOPリンク",
+                      ...copyDesign.siteCopy.fields.navLabelTop,
                     },
                     {
                       key: "navLabelGallery",
-                      label: "Gallery リンク",
-                      placeholder: "Gallery",
-                      hint: "ヘッダーナビの Gallery リンク",
+                      ...copyDesign.siteCopy.fields.navLabelGallery,
                     },
                     {
                       key: "navLabelAbout",
-                      label: "About リンク",
-                      placeholder: "About",
-                      hint: "ヘッダーナビの About リンク",
+                      ...copyDesign.siteCopy.fields.navLabelAbout,
                     },
                     {
                       key: "navLabelContact",
-                      label: "Contact リンク",
-                      placeholder: "Contact",
-                      hint: "ヘッダーナビの Contact リンク",
+                      ...copyDesign.siteCopy.fields.navLabelContact,
                     },
                   ] as {
                     key: string;
@@ -5615,27 +5619,21 @@ export function SettingsTab({
                   </AdminField>
                 ))}
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  SNS ラベル
+                  {copyDesign.siteCopy.snsGroupLabel}
                 </p>
                 {(
                   [
                     {
                       key: "snsLabelInstagram",
-                      label: "Instagram",
-                      placeholder: "Instagram",
-                      hint: "フッター等のSNSリンク表示名",
+                      ...copyDesign.siteCopy.fields.snsLabelInstagram,
                     },
                     {
                       key: "snsLabelTwitter",
-                      label: "X / Twitter",
-                      placeholder: "X",
-                      hint: "フッター等のSNSリンク表示名",
+                      ...copyDesign.siteCopy.fields.snsLabelTwitter,
                     },
                     {
                       key: "snsLabelNote",
-                      label: "note",
-                      placeholder: "note",
-                      hint: "フッター等のSNSリンク表示名",
+                      ...copyDesign.siteCopy.fields.snsLabelNote,
                     },
                   ] as {
                     key: string;
@@ -5656,51 +5654,37 @@ export function SettingsTab({
                   </AdminField>
                 ))}
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  セクション見出し
+                  {copyDesign.siteCopy.sectionGroupLabel}
                 </p>
                 {(
                   [
                     {
                       key: "worksLabel",
-                      label: "Works 見出し",
-                      placeholder: "Works",
-                      hint: "トップの最新作品セクションの見出し",
+                      ...copyDesign.siteCopy.fields.worksLabel,
                     },
                     {
                       key: "viewAllLabel",
-                      label: "View all リンク",
-                      placeholder: "View all →",
-                      hint: "トップの作品セクション見出し横の小リンク文言",
+                      ...copyDesign.siteCopy.fields.viewAllLabel,
                     },
                     {
                       key: "viewAllCtaLabel",
-                      label: "View all ボタン",
-                      placeholder: "すべての作品を見る",
-                      hint: "トップの作品一覧の下に出る大きめボタンの文言",
+                      ...copyDesign.siteCopy.fields.viewAllCtaLabel,
                     },
                     {
                       key: "galleryLabel",
-                      label: "Gallery 見出し",
-                      placeholder: "Gallery",
-                      hint: "ギャラリーページ上部の見出し",
+                      ...copyDesign.siteCopy.fields.galleryLabel,
                     },
                     {
                       key: "filterAllLabel",
-                      label: "フィルター All",
-                      placeholder: "All",
-                      hint: "ギャラリー上部のフィルタ最左ボタン",
+                      ...copyDesign.siteCopy.fields.filterAllLabel,
                     },
                     {
                       key: "profileLabel",
-                      label: "Profile 見出し",
-                      placeholder: "Profile",
-                      hint: "プロフィールページ上部の見出し",
+                      ...copyDesign.siteCopy.fields.profileLabel,
                     },
                     {
                       key: "contactLabel",
-                      label: "Contact 見出し",
-                      placeholder: "Contact",
-                      hint: "お問い合わせページ上部の見出し",
+                      ...copyDesign.siteCopy.fields.contactLabel,
                     },
                   ] as {
                     key: string;
@@ -5721,61 +5705,49 @@ export function SettingsTab({
                   </AdminField>
                 ))}
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  コンタクトフォーム（お問い合わせページのフォーム内）
+                  {copyDesign.siteCopy.formGroupLabel}
                 </p>
                 {(
                   [
                     {
                       key: "contactFormName",
-                      label: "Name ラベル",
-                      placeholder: "Name",
+                      ...copyDesign.siteCopy.fields.contactFormName,
                     },
                     {
                       key: "contactFormEmail",
-                      label: "Email ラベル",
-                      placeholder: "Email",
+                      ...copyDesign.siteCopy.fields.contactFormEmail,
                     },
                     {
                       key: "contactFormSubject",
-                      label: "Subject ラベル",
-                      placeholder: "Subject",
+                      ...copyDesign.siteCopy.fields.contactFormSubject,
                     },
                     {
                       key: "contactSubjectOptions",
-                      label: "件名選択肢 (カンマ区切り)",
-                      placeholder:
-                        "Shooting,Press / Media,Collaboration,テンプレートについて,Other",
+                      ...copyDesign.siteCopy.fields.contactSubjectOptions,
                     },
                     {
                       key: "contactFormMessage",
-                      label: "Message ラベル",
-                      placeholder: "Message",
+                      ...copyDesign.siteCopy.fields.contactFormMessage,
                     },
                     {
                       key: "contactSendButton",
-                      label: "送信ボタン",
-                      placeholder: "Send",
+                      ...copyDesign.siteCopy.fields.contactSendButton,
                     },
                     {
                       key: "contactSendingButton",
-                      label: "送信中ボタン",
-                      placeholder: "Sending...",
+                      ...copyDesign.siteCopy.fields.contactSendingButton,
                     },
                     {
                       key: "contactSentMessage",
-                      label: "送信完了メッセージ",
-                      placeholder:
-                        "お送りいただきありがとうございます。2〜3日以内にお返事します。",
+                      ...copyDesign.siteCopy.fields.contactSentMessage,
                     },
                     {
                       key: "contactSendAnother",
-                      label: "もう一通送る",
-                      placeholder: "Send another",
+                      ...copyDesign.siteCopy.fields.contactSendAnother,
                     },
                     {
                       key: "contactErrorMessage",
-                      label: "エラーメッセージ",
-                      placeholder: "Failed to send. Please try again.",
+                      ...copyDesign.siteCopy.fields.contactErrorMessage,
                     },
                   ] as { key: string; label: string; placeholder: string }[]
                 ).map((f) => (
@@ -5793,35 +5765,34 @@ export function SettingsTab({
               </Section>
 
               {/* 撮影情報プリセット — インスペクタの Camera / Lens 候補 */}
-              <Section title="撮影情報プリセット" defaultOpen={false}>
+              <Section title={copyDesign.presets.title} defaultOpen={false}>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-1">
-                  写真編集インスペクタの Camera / Lens
-                  入力候補。初期候補も削除できます。
+                  {copyDesign.presets.intro}
                 </p>
 
                 <PresetEditor
-                  label="カメラ"
+                  label={copyDesign.presets.cameraLabel}
                   items={cameraPresets}
                   value={newCamPreset}
                   onChange={setNewCamPreset}
                   onAdd={addCamPreset}
                   onRemove={removeCamPreset}
-                  placeholder="例: Hasselblad 500C/M"
+                  placeholder={copyDesign.presets.cameraPlaceholder}
                   busy={savePresets.isPending}
                 />
                 <PresetEditor
-                  label="レンズ"
+                  label={copyDesign.presets.lensLabel}
                   items={lensPresets}
                   value={newLensPreset}
                   onChange={setNewLensPreset}
                   onAdd={addLensPreset}
                   onRemove={removeLensPreset}
-                  placeholder="例: Planar 80mm f/2.8"
+                  placeholder={copyDesign.presets.lensPlaceholder}
                   busy={savePresets.isPending}
                 />
                 {presetError && (
                   <p role="alert" className="text-[11px] text-red-400/80">
-                    プリセットの保存に失敗しました。もう一度お試しください。
+                    {copyDesign.presets.saveFailed}
                   </p>
                 )}
               </Section>
@@ -5863,18 +5834,18 @@ export function SettingsTab({
               <button
                 onClick={() => setPreviewDevice("desktop")}
                 className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "desktop" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
-                title="PC幅で確認"
-                aria-label="PC幅で確認"
+                title={t.phase2b.library.sitePreview.desktopTitle}
+                aria-label={t.phase2b.library.sitePreview.desktopTitle}
               >
-                <Monitor size={13} /> PC幅
+                <Monitor size={13} /> {t.phase2b.library.sitePreview.desktop}
               </button>
               <button
                 onClick={() => setPreviewDevice("mobile")}
                 className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "mobile" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
-                title="スマホ幅で確認"
-                aria-label="スマホ幅で確認"
+                title={t.phase2b.library.sitePreview.mobileTitle}
+                aria-label={t.phase2b.library.sitePreview.mobileTitle}
               >
-                <Smartphone size={13} /> スマホ幅
+                <Smartphone size={13} /> {t.phase2b.library.sitePreview.mobile}
               </button>
               <button
                 onClick={() => setLiveSync(!liveSync)}
@@ -5882,8 +5853,8 @@ export function SettingsTab({
                 className="ml-2 px-2 py-0.5 rounded-sm text-[10px] transition-colors"
                 title={
                   liveSync
-                    ? "設定変更がリアルタイム反映中"
-                    : "リアルタイム反映OFF"
+                    ? copyDesign.preview.syncOnTitle
+                    : copyDesign.preview.syncOffTitle
                 }
               >
                 {liveSync ? "Sync ON" : "Sync OFF"}
@@ -6043,13 +6014,15 @@ function PresetEditor({
   placeholder: string;
   busy?: boolean;
 }) {
+  const { t } = useAdminI18n();
+  const copy = t.phase2b.settingsDesign.presets;
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[10px] text-[var(--admin-muted)]">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {items.length === 0 && (
           <span className="text-[10px] text-[var(--admin-muted)]">
-            候補なし
+            {copy.empty}
           </span>
         )}
         {items.map((p) => (
@@ -6061,7 +6034,7 @@ function PresetEditor({
             <button
               onClick={() => onRemove(p)}
               disabled={busy}
-              aria-label={`${p} を削除`}
+              aria-label={copy.removeAria(p)}
               className="text-[var(--admin-muted)] hover:text-red-400 transition-colors disabled:opacity-40"
             >
               <X size={11} />
@@ -6089,7 +6062,7 @@ function PresetEditor({
           disabled={busy || !value.trim()}
           className="flex items-center gap-1 px-3 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
         >
-          <Plus size={12} /> 追加
+          <Plus size={12} /> {copy.add}
         </button>
       </div>
     </div>
@@ -6221,6 +6194,8 @@ function FontPicker({
   set: (key: string, val: string) => void;
   fontMap?: Record<string, FontDef>;
 }) {
+  const { t } = useAdminI18n();
+  const copy = t.phase2b.settingsDesign.fontPicker;
   const value = current[valueKey] || "";
   const isCustom = value === "custom";
   const [uploading, setUploading] = useState(false);
@@ -6253,11 +6228,11 @@ function FontPicker({
     // A8: validate before uploading — clearer than a server round-trip failure.
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (!["woff2", "woff", "ttf", "otf"].includes(ext)) {
-      setUploadError("対応形式は .woff2 / .woff / .ttf / .otf です");
+      setUploadError(copy.formatError);
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      setUploadError("フォントファイルは2MBまでです");
+      setUploadError(copy.sizeError);
       return;
     }
     setUploadError("");
@@ -6276,7 +6251,7 @@ function FontPicker({
         setUploadError(
           await uploadErrorMessageFromResponse(
             res,
-            "アップロードに失敗しました",
+            t.phase2b.library.import.failedReason,
           ),
         );
         return;
@@ -6286,7 +6261,7 @@ function FontPicker({
       set(customNameKey, name);
       set(customUrlKey, data.url);
     } catch {
-      setUploadError("アップロードに失敗しました（ネットワークエラー）");
+      setUploadError(copy.networkError);
     } finally {
       setUploading(false);
     }
@@ -6347,7 +6322,7 @@ function FontPicker({
             </p>
           )}
           <input
-            aria-label="フォント名"
+            aria-label={copy.nameAria}
             type="text"
             value={current[customNameKey] || ""}
             onChange={(e) => set(customNameKey, e.target.value)}
@@ -6378,7 +6353,7 @@ function FontPicker({
               <label className="text-[10px] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors">
                 Replace
                 <input
-                  aria-label="フォントファイルを選択"
+                  aria-label={copy.fileAria}
                   type="file"
                   accept=".woff2,.woff,.ttf,.otf"
                   onChange={handleUpload}
@@ -6395,7 +6370,7 @@ function FontPicker({
                 ? "Uploading..."
                 : "Upload font file (.woff2, .woff, .ttf, .otf)"}
               <input
-                aria-label="フォントファイルを選択"
+                aria-label={copy.fileAria}
                 type="file"
                 accept=".woff2,.woff,.ttf,.otf"
                 onChange={handleUpload}
@@ -6613,12 +6588,13 @@ function ColorRow({
   placeholder?: string;
   hint?: string;
 }) {
+  const { t } = useAdminI18n();
   return (
     <AdminField label={label} hint={hint}>
       <div className="flex items-center gap-2">
         <input
           type="color"
-          aria-label={`${label} color picker`}
+          aria-label={t.phase2b.settingsDesign.colorPickerAria(label)}
           value={current[valueKey] || "#ffffff"}
           onChange={(e) => set(valueKey, e.target.value)}
           className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"

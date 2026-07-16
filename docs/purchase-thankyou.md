@@ -30,7 +30,7 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
    パスワードを入れる → Deploy → 公開URLを作る（Generate Domain） →
    /admin/login でログイン → 管理画面の「はじめに」から写真を入れる
 
-5. 操作方法の初回相談が含まれます。分からないことがあればご連絡ください。
+5. 操作方法の相談が含まれます（当面は期間・回数の制限なし）。分からないことがあればいつでもご連絡ください。
    Instagram @chi._.aki._ ／ X @chi_aki_jpg ／ akieguchi33@gmail.com
 
 ※ サイトの公開には Railway という場所を使います。無料の試用枠のあと、
@@ -58,8 +58,8 @@ Stripe Payment Link の「支払い後に表示するページ（After payment �
   ・プロフィール文・連絡先・SNSアカウント
   ・使いたい独自ドメイン（あれば。なくてもOK）
 
-公開後7日間は、操作方法をご相談いただけます。それ以降の相談・作業は、
-内容に応じて別途お見積もりします。ご連絡は、このメールへの返信かSNSへお願いします。
+操作方法の相談は、当面は期間・回数の制限なく受け付けます（今後、期間制に
+変更する可能性があります）。デザイン変更・作業の代行は、内容に応じて別途お見積もりします。ご連絡は、このメールへの返信かSNSへお願いします。
    Instagram @chi._.aki._ ／ X @chi_aki_jpg ／ akieguchi33@gmail.com
 
 サイトが整ったら、すぐに写真を入れ始められるようにしてお渡しします。
@@ -90,7 +90,7 @@ You can publish your portfolio in about 10–15 minutes with the steps below.
    enter your password → Deploy → Generate Domain → add /admin/login to the
    public URL → open 「はじめに」 (Getting started) and add your first photograph.
 
-5. One initial round of guidance on using the admin panel is included. Support
+5. Guidance on using the admin panel is included — currently unlimited. Support
    is provided in Japanese and simple English. You can reply to this email or use:
    Instagram @chi._.aki._ / X @chi_aki_jpg / akieguchi33@gmail.com
 
@@ -123,9 +123,9 @@ To begin, please reply with the following when convenient:
   - Profile text, contact details, and social links
   - A custom domain, if you already have one (it is fine not to have one)
 
-Seven days of basic guidance on using the site and admin panel are included after
-launch. Further guidance, design changes, and individual customisation are quoted
-separately. Support is provided in Japanese and simple English. You can reply to
+Guidance on everyday use of the site and admin panel is currently unlimited
+(this may become time-limited in the future). Design changes and custom work are
+quoted separately. Support is provided in Japanese and simple English. You can reply to
 this email or use:
 Instagram @chi._.aki._ / X @chi_aki_jpg / akieguchi33@gmail.com
 

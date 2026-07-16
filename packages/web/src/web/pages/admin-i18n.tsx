@@ -1123,6 +1123,7 @@ export type AdminMessages = {
     savedNotice: string;
   };
   setup: {
+    demoIntro: string;
     collapsedCompleted: string;
     collapsedReady: string;
     collapsedDismissed: string;
@@ -1283,6 +1284,8 @@ export const ADMIN_DICTIONARY = {
       description:
         "むずかしい設定は最初だけです。見る人に公開する前に、上から順に5つを確認します。写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。",
       checking: "確認中...",
+      demoIntro:
+        "これは、購入後にご自身のサイトを公開まで進める手順表の見本です。体験版ではサンプル一式が入っているためすべて完了になっていますが、実際は空の状態から、この順に埋めていくだけで公開できます。",
       progress: (done, total) => `${done} / ${total} 完了`,
       finish: "セットアップ完了 → ライブラリへ",
       later: "あとで",
@@ -1454,7 +1457,7 @@ export const ADMIN_DICTIONARY = {
     },
     demo: {
       banner: "This is a demo. Changes are not saved to a live site.",
-      purchase: "Like it? From ¥10,000",
+      purchase: "Get your own — from ¥10,000",
       reset: "Start over",
       guideEyebrow: "Quick tour",
       guideTitle: "Start with these three steps",
@@ -1478,6 +1481,8 @@ export const ADMIN_DICTIONARY = {
       description:
         "The initial setup is the only detailed part. Check these five items in order before sharing the site. For most photographers, completing this admin panel is enough.",
       checking: "Checking...",
+      demoIntro:
+        "This is a preview of the checklist that guides you from a fresh install to a published site. In this demo everything is marked complete because sample content is preloaded — on your own site, you simply work through these steps from the top.",
       progress: (done, total) => `${done} / ${total} complete`,
       finish: "Finish setup → Library",
       later: "Later",

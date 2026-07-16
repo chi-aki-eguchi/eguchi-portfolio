@@ -119,7 +119,7 @@ const conciergeStepsEn = [
   },
   {
     title: "Receive the site and admin details",
-    body: "You will receive the public site URL, admin URL, password, and a short list of the first things to know. Seven days of basic guidance on using the site and admin panel after launch are included.",
+    body: "You will receive the public site URL, admin URL, password, and a short list of the first things to know. Guidance on using the site and admin panel is included — currently with no time limit.",
   },
 ] as const;
 
@@ -685,10 +685,9 @@ function EnglishServiceStartContent({
             className="mt-5 text-[rgba(var(--foreground-rgb),0.42)]"
             style={{ fontSize: "0.78rem", lineHeight: 1.8 }}
           >
-            Self setup includes one initial round of guidance on using the admin
-            panel. Assisted setup includes seven days of basic guidance on using
-            the site and admin panel after launch. Further work or guidance is
-            quoted separately.
+            Every plan currently includes unlimited guidance on everyday use of the
+            site and admin panel (this may become time-limited in the future).
+            Design changes and custom work are quoted separately.
           </p>
         </div>
 
@@ -839,8 +838,8 @@ export default function ServiceStartPage({
             className="mt-5 text-[rgba(var(--foreground-rgb),0.42)]"
             style={{ fontSize: "0.78rem", lineHeight: 1.8 }}
           >
-            セルフは操作方法の初回相談、おまかせは公開後7日間の操作相談を含みます。
-            それ以降の相談・作業は、内容に応じて別途お見積もりします。
+            操作方法の相談は、どのプランも当面は期間・回数の制限なく受け付けます
+            （今後、期間制に変更する可能性があります）。デザイン変更・作業の代行は、内容に応じて別途お見積もりします。
             <br />
             まだ購入していない方は、先に料金ページからコースを選んでください。
           </p>

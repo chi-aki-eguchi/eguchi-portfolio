@@ -93,7 +93,10 @@ describe("Portfolio Kit config migration", () => {
     expect(faqText).toContain("1回の購入につき1サイト");
     expect(faqText).toContain("再販売・再配布はできません");
     expect(faqText).toContain("現時点では無償");
-    expect(faqText).toContain("公開後7日間");
+    expect(faqText).toContain(
+      "どちらのプランも当面は期間・回数の制限なく受け付けます",
+    );
+    expect(faqText).not.toContain("公開後7日間");
     expect(DEFAULT_SERVICE_CONFIG.purchaseFlow.steps[3]?.body).toContain(
       "素材が揃ってから3日以内",
     );

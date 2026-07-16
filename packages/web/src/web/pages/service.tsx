@@ -43,7 +43,7 @@ const ENGLISH_PLAN_COPY = [
       "Portfolio Kit licence",
       "Setup guide and checklist",
       "Instructions for connecting your own domain",
-      "One initial round of guidance on using the admin panel",
+      "Guidance on using the admin panel — currently unlimited",
     ],
     cta: "Choose self setup",
   },
@@ -56,7 +56,7 @@ const ENGLISH_PLAN_COPY = [
       "Initial setup handled for you",
       "Hosting and domain connection support",
       "Guidance for adding photographs and text",
-      "Seven days of basic guidance on using the site and admin panel after launch",
+      "Guidance on using the site and admin panel — currently unlimited",
     ],
     cta: "Choose assisted setup",
   },
@@ -219,11 +219,11 @@ function englishServiceConfigFrom(
         },
         {
           title: "For self setup",
-          body: "Follow the setup link and guide to publish the site. One initial round of guidance on using the admin panel is included.",
+          body: "Follow the setup link and guide to publish the site. Guidance on using the admin panel is included — currently unlimited.",
         },
         {
           title: "For assisted setup",
-          body: "Once all requested photographs, profile text, and contact details are ready, your site will be delivered within three days. Seven days of basic guidance on using the site and admin panel after launch are included.",
+          body: "Once all requested photographs, profile text, and contact details are ready, your site will be delivered within three days. Guidance on using the site and admin panel is included — currently with no time limit.",
         },
       ],
       footnote:
@@ -250,7 +250,7 @@ function englishServiceConfigFrom(
         },
         {
           q: "What does one purchase allow?",
-          a: "One purchase covers one website. A second website requires another purchase. The kit may not be resold or redistributed as a template. Kit updates are currently provided at no additional charge, but this may change in the future. Work beyond the included support is quoted separately.",
+          a: "One purchase covers one website. A second website requires another purchase. The kit may not be resold or redistributed as a template. Kit updates are currently provided at no additional charge, but this may change in the future. Guidance on everyday use is currently unlimited for every plan, though this may become time-limited in the future. Design changes and custom work are quoted separately.",
         },
         {
           q: "What languages are available?",

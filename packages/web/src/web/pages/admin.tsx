@@ -423,8 +423,11 @@ function AdminPageContent({
     if (initialSetupRedirectDone.current) return;
     if (authenticated !== true || shellSettings === undefined) return;
     initialSetupRedirectDone.current = true;
+    // 体験版はセットアップ導線ではなく3操作ガイド+Libraryが入口。
+    // サンプル一式が入力済みのため「はじめに」に飛ばすと完了表示だけが残る。
+    if (demoMode) return;
     if (shouldLandOnSetup(authenticated, shellSettings)) setTab("setup");
-  }, [authenticated, shellSettings, setTab]);
+  }, [authenticated, shellSettings, setTab, demoMode]);
   const [galleryUploading, setGalleryUploading] = useState(false);
   // Generic unsaved-draft flag reported by any tab with a draft form.
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -760,7 +763,9 @@ function AdminPageContent({
             data-phase={screenPhase}
             data-stagger={contentTab === "gallery" ? undefined : "true"}
           >
-            {contentTab === "setup" && <SetupTab onOpenTab={requestTab} />}
+            {contentTab === "setup" && (
+              <SetupTab onOpenTab={requestTab} demoMode={demoMode} />
+            )}
             {contentTab === "gallery" && (
               <GalleryTab
                 demoSeed={demoSeed}
@@ -867,7 +872,13 @@ type ChecklistItem = {
 };
 
 // exportはrenderテスト用(表示だけでPOSTしない/完了ボタンでのみ保存する検証)
-export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
+export function SetupTab({
+  onOpenTab,
+  demoMode = false,
+}: {
+  onOpenTab: (tab: Tab) => void;
+  demoMode?: boolean;
+}) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
   const { data: settingsData, isLoading: settingsLoading } = useQuery({
@@ -998,7 +1009,10 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   const loading = settingsLoading || photosLoading;
   // Once everything is done (or the owner pressed 閉じる), shrink to a one-line bar
   // so a finished site's admin stays uncluttered. "もう一度見る" re-expands it.
-  const collapsed = !loading && (requiredDone || dismissed) && !forceOpen;
+  // 体験版はサンプル一式が入力済みで常に「完了」になるため、折りたたまず
+  // 「購入後はこう進む」の見本として全文を見せる(SetupTab demoMode)。
+  const collapsed =
+    !demoMode && !loading && (requiredDone || dismissed) && !forceOpen;
 
   // 読込中は「未完了」マークだらけのチェックリストを一瞬見せない
   if (loading) {
@@ -1050,10 +1064,17 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10 space-y-8">
-        <StorageHealthLine
-          health={setupHealth}
-          copy={t.setup.storageHealth}
-        />
+        {!demoMode && (
+          <StorageHealthLine
+            health={setupHealth}
+            copy={t.setup.storageHealth}
+          />
+        )}
+        {demoMode && (
+          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm px-4 py-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
+            {t.setup.demoIntro}
+          </div>
+        )}
         <PageHeader
           title={t.setup.title}
           description={t.setup.description}
@@ -1066,24 +1087,28 @@ export function SetupTab({ onOpenTab }: { onOpenTab: (tab: Tab) => void }) {
                   ? t.setup.checking
                   : t.setup.progress(doneCount, checklist.length)}
               </div>
-              <button
-                onClick={() => finishSetup.mutate()}
-                disabled={finishSetup.isPending}
-                className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-50 flex-shrink-0"
-              >
-                {finishSetup.isPending
-                  ? t.common.saving
-                  : t.setup.finish}
-              </button>
-              <button
-                onClick={() => {
-                  setDismissed(true);
-                  setForceOpen(false);
-                }}
-                className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
-              >
-                {t.setup.later}
-              </button>
+              {!demoMode && (
+                <>
+                  <button
+                    onClick={() => finishSetup.mutate()}
+                    disabled={finishSetup.isPending}
+                    className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-50 flex-shrink-0"
+                  >
+                    {finishSetup.isPending
+                      ? t.common.saving
+                      : t.setup.finish}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDismissed(true);
+                      setForceOpen(false);
+                    }}
+                    className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
+                  >
+                    {t.setup.later}
+                  </button>
+                </>
+              )}
             </>
           }
         />

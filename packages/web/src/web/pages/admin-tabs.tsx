@@ -2403,6 +2403,7 @@ function TopWorksPicker({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t } = useAdminI18n();
   const { data } = useQuery({
     queryKey: ["photos"],
     queryFn: async () => jsonOrThrow(await api.photos.$get()),
@@ -2421,7 +2422,7 @@ function TopWorksPicker({
   if (photos.length === 0)
     return (
       <p className="text-[10px] text-[var(--admin-muted)]">
-        公開中の写真はまだありません
+        {t.phase2b.service.topWorksEmpty}
       </p>
     );
   return (
@@ -2434,7 +2435,7 @@ function TopWorksPicker({
             type="button"
             onClick={() => toggle(p.id)}
             title={p.title || p.filename}
-            aria-label={`${p.title || p.filename}${pos >= 0 ? "（選択中）" : ""}`}
+            aria-label={`${p.title || p.filename}${pos >= 0 ? t.phase2b.service.topWorksSelectedSuffix : ""}`}
             aria-pressed={pos >= 0}
             className={`relative aspect-square overflow-hidden rounded-[2px] transition-opacity ${pos >= 0 ? "ring-2 ring-[#aaa]" : "opacity-55 hover:opacity-100"}`}
           >
@@ -2575,6 +2576,7 @@ function SvcArrayControls({
   onMove: (from: number, to: number) => void;
   onRemove: (index: number) => void;
 }) {
+  const { t } = useAdminI18n();
   return (
     <div className="flex items-center gap-1 ml-auto shrink-0">
       <button
@@ -2582,7 +2584,7 @@ function SvcArrayControls({
         disabled={index === 0}
         onClick={() => onMove(index, index - 1)}
         className="p-0.5 text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
-        title="上へ"
+        title={t.phase2b.service.arrayControls.up}
       >
         <ChevronUp size={12} />
       </button>
@@ -2591,7 +2593,7 @@ function SvcArrayControls({
         disabled={index === total - 1}
         onClick={() => onMove(index, index + 1)}
         className="p-0.5 text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
-        title="下へ"
+        title={t.phase2b.service.arrayControls.down}
       >
         <ChevronDown size={12} />
       </button>
@@ -2599,7 +2601,7 @@ function SvcArrayControls({
         type="button"
         onClick={() => onRemove(index)}
         className="p-0.5 text-[var(--admin-muted)] hover:text-red-400"
-        title="削除"
+        title={t.phase2b.service.arrayControls.remove}
       >
         <X size={12} />
       </button>
@@ -2726,28 +2728,28 @@ export function ServiceTab({
       {/* ── Hero ── */}
       <ServiceSection title="Hero" defaultOpen>
         <SvcInput
-          label="ラベル"
+          label={t.phase2b.service.hero.label}
           value={draft.hero.label}
           onChange={(v) => setHero({ label: v })}
         />
         <SvcTextarea
-          label="見出し（改行で行分割）"
+          label={t.phase2b.service.hero.headingHint}
           value={draft.hero.title}
           onChange={(v) => setHero({ title: v })}
           rows={2}
         />
         <SvcTextarea
-          label="説明文"
+          label={t.phase2b.service.hero.description}
           value={draft.hero.body}
           onChange={(v) => setHero({ body: v })}
         />
         <p className="text-[10px] tracking-[0.04em] text-[var(--admin-muted)] pt-2">
-          冒頭に出す要点（価格・含まれるもの・公開目安）
+          {t.phase2b.service.hero.factsHint}
         </p>
         {draft.hero.facts.map((fact, i) => (
           <div key={i} className="grid grid-cols-[0.8fr_1.2fr] gap-2">
             <SvcInput
-              label={`要点 ${i + 1}: ラベル`}
+              label={t.phase2b.service.hero.factLabel(i + 1)}
               value={fact.title}
               onChange={(v) =>
                 setHero({
@@ -2756,7 +2758,7 @@ export function ServiceTab({
               }
             />
             <SvcInput
-              label={`要点 ${i + 1}: 内容`}
+              label={t.phase2b.service.hero.factBody(i + 1)}
               value={fact.body}
               onChange={(v) =>
                 setHero({
@@ -2768,12 +2770,12 @@ export function ServiceTab({
         ))}
         <div className="grid grid-cols-2 gap-2">
           <SvcInput
-            label="CTA: 料金"
+            label={t.phase2b.service.hero.ctaPricing}
             value={draft.hero.ctaPricing}
             onChange={(v) => setHero({ ctaPricing: v })}
           />
           <SvcInput
-            label="CTA: 実例"
+            label={t.phase2b.service.hero.ctaExample}
             value={draft.hero.ctaExample}
             onChange={(v) => setHero({ ctaExample: v })}
           />
@@ -2781,20 +2783,20 @@ export function ServiceTab({
       </ServiceSection>
 
       {/* ── Examples ── */}
-      <ServiceSection title="実例セクション">
+      <ServiceSection title={t.phase2b.service.examples.sectionTitle}>
         <SvcInput
-          label="ラベル"
+          label={t.phase2b.service.examples.label}
           value={draft.examples.label}
           onChange={(v) => setExamples({ label: v })}
         />
         <SvcTextarea
-          label="見出し"
+          label={t.phase2b.service.examples.heading}
           value={draft.examples.title}
           onChange={(v) => setExamples({ title: v })}
           rows={2}
         />
         <SvcTextarea
-          label="説明文"
+          label={t.phase2b.service.examples.description}
           value={draft.examples.body}
           onChange={(v) => setExamples({ body: v })}
         />
@@ -2803,7 +2805,7 @@ export function ServiceTab({
           value={draft.examples.cta}
           onChange={(v) => setExamples({ cta: v })}
         />
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">実例リンク</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.examples.linksHint}</p>
         {draft.examples.links.map((link, i) => (
           <div
             key={i}
@@ -2829,7 +2831,7 @@ export function ServiceTab({
               />
             </div>
             <SvcInput
-              label="タイトル"
+              label={t.phase2b.service.examples.linkTitle}
               value={link.title}
               onChange={(v) =>
                 setExamples({
@@ -2838,7 +2840,7 @@ export function ServiceTab({
               }
             />
             <SvcInput
-              label="説明"
+              label={t.phase2b.service.examples.linkBody}
               value={link.body}
               onChange={(v) =>
                 setExamples({
@@ -2847,7 +2849,7 @@ export function ServiceTab({
               }
             />
             <SvcInput
-              label="リンク先"
+              label={t.phase2b.service.examples.linkHref}
               value={link.href}
               onChange={(v) =>
                 setExamples({
@@ -2869,14 +2871,14 @@ export function ServiceTab({
           }
           className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <Plus size={11} /> 追加
+          <Plus size={11} /> {t.phase2b.service.examples.add}
         </button>
       </ServiceSection>
 
       {/* ── Pain/Solutions ── */}
-      <ServiceSection title="こんな悩み / このサイトなら">
+      <ServiceSection title={t.phase2b.service.painSolutions.sectionTitle}>
         <SvcInput
-          label="ラベル"
+          label={t.phase2b.service.painSolutions.label}
           value={draft.painSolutions.label}
           onChange={(v) => setPainSolutions({ label: v })}
         />
@@ -2905,7 +2907,7 @@ export function ServiceTab({
               />
             </div>
             <SvcInput
-              label="悩みタイトル"
+              label={t.phase2b.service.painSolutions.concernTitle}
               value={item.concern}
               onChange={(v) =>
                 setPainSolutions({
@@ -2916,7 +2918,7 @@ export function ServiceTab({
               }
             />
             <SvcTextarea
-              label="悩み本文"
+              label={t.phase2b.service.painSolutions.concernBody}
               value={item.concernBody}
               onChange={(v) =>
                 setPainSolutions({
@@ -2928,7 +2930,7 @@ export function ServiceTab({
               rows={2}
             />
             <SvcInput
-              label="解決タイトル"
+              label={t.phase2b.service.painSolutions.solutionTitle}
               value={item.solution}
               onChange={(v) =>
                 setPainSolutions({
@@ -2939,7 +2941,7 @@ export function ServiceTab({
               }
             />
             <SvcTextarea
-              label="解決本文"
+              label={t.phase2b.service.painSolutions.solutionBody}
               value={item.solutionBody}
               onChange={(v) =>
                 setPainSolutions({
@@ -2969,18 +2971,17 @@ export function ServiceTab({
           }
           className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <Plus size={11} /> 追加
+          <Plus size={11} /> {t.phase2b.service.painSolutions.add}
         </button>
       </ServiceSection>
 
       {/* ── Pricing ── */}
-      <ServiceSection title="料金">
+      <ServiceSection title={t.phase2b.service.pricing.sectionTitle}>
         <p className="text-[11px] leading-6 text-[var(--admin-muted)]">
-          /portfolio-kit 販売ページの料金です。Contactページの料金は サイト &gt;
-          Pricing で編集します。
+          {t.phase2b.service.pricing.intro}
         </p>
         <SvcInput
-          label="ラベル"
+          label={t.phase2b.service.pricing.label}
           value={draft.pricing.label}
           onChange={(v) => setPricing({ label: v })}
         />
@@ -2991,7 +2992,7 @@ export function ServiceTab({
           >
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[var(--admin-muted)]">
-                プラン {i + 1}
+                {t.phase2b.service.pricing.plan(i + 1)}
               </span>
               {plan.primary && (
                 <span className="text-[9px] bg-[rgba(var(--admin-ink-rgb),0.08)] text-[var(--admin-ink)] px-1.5 py-0.5 rounded">
@@ -3015,7 +3016,7 @@ export function ServiceTab({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <SvcInput
-                label="プラン名"
+                label={t.phase2b.service.pricing.planName}
                 value={plan.name}
                 onChange={(v) =>
                   setPricing({
@@ -3024,7 +3025,7 @@ export function ServiceTab({
                 }
               />
               <SvcInput
-                label="価格"
+                label={t.phase2b.service.pricing.price}
                 value={plan.price}
                 onChange={(v) =>
                   setPricing({
@@ -3034,7 +3035,7 @@ export function ServiceTab({
               />
             </div>
             <SvcTextarea
-              label="説明文"
+              label={t.phase2b.service.pricing.description}
               value={plan.sub}
               onChange={(v) =>
                 setPricing({
@@ -3044,7 +3045,7 @@ export function ServiceTab({
               rows={2}
             />
             <SvcTextarea
-              label="特徴（1行ごとに箇条書き）"
+              label={t.phase2b.service.pricing.features}
               value={plan.points.join("\n")}
               onChange={(v) =>
                 setPricing({
@@ -3068,7 +3069,7 @@ export function ServiceTab({
               placeholder="https://buy.stripe.com/..."
             />
             <SvcInput
-              label="CTA文言"
+              label={t.phase2b.service.pricing.ctaText}
               value={plan.cta}
               onChange={(v) =>
                 setPricing({
@@ -3089,7 +3090,7 @@ export function ServiceTab({
                 }
                 className="accent-[var(--admin-accent)]"
               />
-              おすすめ表示
+              {t.phase2b.service.pricing.recommended}
             </label>
           </div>
         ))}
@@ -3113,22 +3114,22 @@ export function ServiceTab({
           }
           className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <Plus size={11} /> プラン追加
+          <Plus size={11} /> {t.phase2b.service.pricing.add}
         </button>
         <SvcTextarea
-          label="決済後の案内文（Stripe有効時）"
+          label={t.phase2b.service.pricing.noteOnline}
           value={draft.pricing.noteOnline}
           onChange={(v) => setPricing({ noteOnline: v })}
           rows={2}
         />
         <SvcTextarea
-          label="決済準備中の案内文"
+          label={t.phase2b.service.pricing.noteOffline}
           value={draft.pricing.noteOffline}
           onChange={(v) => setPricing({ noteOffline: v })}
           rows={2}
         />
         <SvcTextarea
-          label="外部費用の注意書き"
+          label={t.phase2b.service.pricing.disclaimer}
           value={draft.pricing.disclaimer}
           onChange={(v) => setPricing({ disclaimer: v })}
           rows={2}
@@ -3136,23 +3137,23 @@ export function ServiceTab({
       </ServiceSection>
 
       {/* ── Purchase Flow ── */}
-      <ServiceSection title="購入後の流れ">
+      <ServiceSection title={t.phase2b.service.purchaseFlow.sectionTitle}>
         <SvcInput
-          label="ラベル"
+          label={t.phase2b.service.purchaseFlow.label}
           value={draft.purchaseFlow.label}
           onChange={(v) => setPurchaseFlow({ label: v })}
         />
         <SvcInput
-          label="見出し"
+          label={t.phase2b.service.purchaseFlow.heading}
           value={draft.purchaseFlow.title}
           onChange={(v) => setPurchaseFlow({ title: v })}
         />
         <SvcTextarea
-          label="説明文"
+          label={t.phase2b.service.purchaseFlow.description}
           value={draft.purchaseFlow.body}
           onChange={(v) => setPurchaseFlow({ body: v })}
         />
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">ステップ</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.purchaseFlow.stepsHint}</p>
         {draft.purchaseFlow.steps.map((step, i) => (
           <div
             key={i}
@@ -3178,7 +3179,7 @@ export function ServiceTab({
               />
             </div>
             <SvcInput
-              label="タイトル"
+              label={t.phase2b.service.purchaseFlow.stepTitle}
               value={step.title}
               onChange={(v) =>
                 setPurchaseFlow({
@@ -3189,7 +3190,7 @@ export function ServiceTab({
               }
             />
             <SvcTextarea
-              label="本文"
+              label={t.phase2b.service.purchaseFlow.stepBody}
               value={step.body}
               onChange={(v) =>
                 setPurchaseFlow({
@@ -3209,10 +3210,10 @@ export function ServiceTab({
           }
           className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <Plus size={11} /> ステップ追加
+          <Plus size={11} /> {t.phase2b.service.purchaseFlow.add}
         </button>
         <SvcTextarea
-          label="脚注"
+          label={t.phase2b.service.purchaseFlow.footnote}
           value={draft.purchaseFlow.footnote}
           onChange={(v) => setPurchaseFlow({ footnote: v })}
           rows={2}
@@ -3222,7 +3223,7 @@ export function ServiceTab({
       {/* ── FAQ ── */}
       <ServiceSection title="FAQ">
         <SvcInput
-          label="ラベル"
+          label={t.phase2b.service.faq.label}
           value={draft.faq.label}
           onChange={(v) => setFaq({ label: v })}
         />
@@ -3247,7 +3248,7 @@ export function ServiceTab({
               />
             </div>
             <SvcTextarea
-              label="質問"
+              label={t.phase2b.service.faq.question}
               value={item.q}
               onChange={(v) =>
                 setFaq({
@@ -3257,7 +3258,7 @@ export function ServiceTab({
               rows={2}
             />
             <SvcTextarea
-              label="回答"
+              label={t.phase2b.service.faq.answer}
               value={item.a}
               onChange={(v) =>
                 setFaq({
@@ -3276,36 +3277,36 @@ export function ServiceTab({
           }
           className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <Plus size={11} /> 質問追加
+          <Plus size={11} /> {t.phase2b.service.faq.add}
         </button>
       </ServiceSection>
 
       {/* ── Final CTA ── */}
-      <ServiceSection title="最下部CTA">
+      <ServiceSection title={t.phase2b.service.finalCta.sectionTitle}>
         <SvcInput
-          label="見出し"
+          label={t.phase2b.service.finalCta.heading}
           value={draft.finalCta.title}
           onChange={(v) => setFinalCta({ title: v })}
         />
         <SvcTextarea
-          label="説明文"
+          label={t.phase2b.service.finalCta.description}
           value={draft.finalCta.body}
           onChange={(v) => setFinalCta({ body: v })}
           rows={2}
         />
         <div className="grid grid-cols-2 gap-2">
           <SvcInput
-            label="CTA（Stripe有効時）"
+            label={t.phase2b.service.finalCta.ctaOnline}
             value={draft.finalCta.ctaOnline}
             onChange={(v) => setFinalCta({ ctaOnline: v })}
           />
           <SvcInput
-            label="CTA（オフライン時）"
+            label={t.phase2b.service.finalCta.ctaOffline}
             value={draft.finalCta.ctaOffline}
             onChange={(v) => setFinalCta({ ctaOffline: v })}
           />
         </div>
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">SNSリンク</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.finalCta.snsHint}</p>
         {draft.finalCta.snsLinks.map((link, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
@@ -3356,30 +3357,30 @@ export function ServiceTab({
           }
           className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <Plus size={11} /> SNS追加
+          <Plus size={11} /> {t.phase2b.service.finalCta.add}
         </button>
       </ServiceSection>
 
       {/* ── Sticky CTA ── */}
       <ServiceSection title="Sticky CTA">
         <SvcInput
-          label="左側テキスト"
+          label={t.phase2b.service.stickyCta.leftText}
           value={draft.stickyCta.text}
           onChange={(v) => setStickyCta({ text: v })}
         />
         <SvcInput
-          label="料金リンク文言"
+          label={t.phase2b.service.stickyCta.pricingCta}
           value={draft.stickyCta.pricingCta}
           onChange={(v) => setStickyCta({ pricingCta: v })}
         />
         <div className="grid grid-cols-2 gap-2">
           <SvcInput
-            label="CTA（Stripe有効時）"
+            label={t.phase2b.service.stickyCta.ctaOnline}
             value={draft.stickyCta.ctaOnline}
             onChange={(v) => setStickyCta({ ctaOnline: v })}
           />
           <SvcInput
-            label="CTA（オフライン時）"
+            label={t.phase2b.service.stickyCta.ctaOffline}
             value={draft.stickyCta.ctaOffline}
             onChange={(v) => setStickyCta({ ctaOffline: v })}
           />
@@ -3387,23 +3388,23 @@ export function ServiceTab({
       </ServiceSection>
 
       {/* ── Admin Showcase ── */}
-      <ServiceSection title="管理画面紹介">
+      <ServiceSection title={t.phase2b.service.adminShowcase.sectionTitle}>
         <SvcInput
-          label="ラベル"
+          label={t.phase2b.service.adminShowcase.label}
           value={draft.adminShowcase.label}
           onChange={(v) => setAdminShowcase({ label: v })}
         />
         <SvcInput
-          label="見出し"
+          label={t.phase2b.service.adminShowcase.heading}
           value={draft.adminShowcase.title}
           onChange={(v) => setAdminShowcase({ title: v })}
         />
         <SvcTextarea
-          label="説明文"
+          label={t.phase2b.service.adminShowcase.description}
           value={draft.adminShowcase.body}
           onChange={(v) => setAdminShowcase({ body: v })}
         />
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">機能リスト</p>
+        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.adminShowcase.featuresHint}</p>
         {draft.adminShowcase.features.map((feat, i) => (
           <div
             key={i}
@@ -3429,7 +3430,7 @@ export function ServiceTab({
               />
             </div>
             <SvcInput
-              label="タイトル"
+              label={t.phase2b.service.adminShowcase.featureTitle}
               value={feat.title}
               onChange={(v) =>
                 setAdminShowcase({
@@ -3440,7 +3441,7 @@ export function ServiceTab({
               }
             />
             <SvcTextarea
-              label="説明"
+              label={t.phase2b.service.adminShowcase.featureBody}
               value={feat.body}
               onChange={(v) =>
                 setAdminShowcase({
@@ -3465,7 +3466,7 @@ export function ServiceTab({
           }
           className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <Plus size={11} /> 機能追加
+          <Plus size={11} /> {t.phase2b.service.adminShowcase.add}
         </button>
       </ServiceSection>
 

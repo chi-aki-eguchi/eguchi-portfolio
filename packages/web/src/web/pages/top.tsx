@@ -1,4 +1,12 @@
-import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import {
+  lazy,
+  Suspense,
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
@@ -9,6 +17,11 @@ import { InquiryCta } from "../components/InquiryCta";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../lib/photo-alt";
+import { isServiceOwnerSite } from "../../shared/service-visibility";
+
+const PortfolioKitExperience = lazy(
+  () => import("../components/PortfolioKitExperience"),
+);
 
 function HeroPicture({
   url,
@@ -1030,15 +1043,49 @@ export default function TopPage() {
     settings,
   };
 
-  if (heroMode === "quiet-grid") return <HomeQuietGrid {...homeLayoutProps} />;
-  if (heroMode === "editorial") return <HomeEditorial {...homeLayoutProps} />;
-  if (heroMode === "immersive") return <HomeImmersive {...homeLayoutProps} />;
+  const experienceRequested =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get(
+      "portfolio-kit-experience",
+    ) === "1";
+  const experienceEnabled =
+    experienceRequested &&
+    typeof window !== "undefined" &&
+    isServiceOwnerSite(undefined, window.location.hostname);
+  const experiencePanel = experienceEnabled && settings && (
+    <Suspense fallback={null}>
+      <PortfolioKitExperience initialSettings={settings} />
+    </Suspense>
+  );
+
+  if (heroMode === "quiet-grid")
+    return (
+      <>
+        <HomeQuietGrid {...homeLayoutProps} />
+        {experiencePanel}
+      </>
+    );
+  if (heroMode === "editorial")
+    return (
+      <>
+        <HomeEditorial {...homeLayoutProps} />
+        {experiencePanel}
+      </>
+    );
+  if (heroMode === "immersive")
+    return (
+      <>
+        <HomeImmersive {...homeLayoutProps} />
+        {experiencePanel}
+      </>
+    );
 
   return (
     <div
       className="top-page"
       data-hero-mode={isSingle ? "single" : "carousel"}
     >
+      {experiencePanel}
       {isSingle ? (
         /* Hero: single large photo with name overlaid */
         <section

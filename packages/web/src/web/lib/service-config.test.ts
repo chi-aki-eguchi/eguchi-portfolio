@@ -100,4 +100,13 @@ describe("Portfolio Kit config migration", () => {
     expect(parsed.hero.title).toBe("Old title");
     expect(parsed.hero.facts).toEqual(DEFAULT_SERVICE_CONFIG.hero.facts);
   });
+
+  test("fills the experience CTA into older saved configs", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({ adminShowcase: { title: "以前の見出し" } }),
+    );
+
+    expect(parsed.adminShowcase.title).toBe("以前の見出し");
+    expect(parsed.adminShowcase.demoCta).toBe("実際に触って確かめる");
+  });
 });

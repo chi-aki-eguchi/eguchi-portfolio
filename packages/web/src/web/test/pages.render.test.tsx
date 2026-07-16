@@ -308,10 +308,53 @@ describe("shared components", () => {
       expect(host.textContent).toContain("購入後は24時間以内");
       expect(host.textContent).toContain("維持費や月額料金はいくらですか？");
       expect(host.textContent).toContain("やめたいときはどうなりますか？");
+      expect(host.textContent).toContain("写真の並べ方12種類");
+      expect(host.textContent).toContain("140以上の設定");
+      expect(
+        host.querySelector('a[href="/?portfolio-kit-experience=1"]'),
+      ).not.toBeNull();
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
     }
+  });
+
+  test("TopPage shows the experience panel only on the owner host with the experience query", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = { topWorksLayout: "large-format" };
+    dom.reconfigure({
+      url: "https://akieguchi.com/?portfolio-kit-experience=1",
+    });
+    try {
+      const TopPage = (await import("../pages/top")).default;
+      const { host, cleanup } = await mount(createElement(TopPage));
+      await waitForText(host, "これは体験です。実際のサイトは変わりません。");
+      expect(
+        host.querySelector('[aria-label="Portfolio Kit 体験モード"]'),
+      ).not.toBeNull();
+      expect(host.querySelector('a[href="/portfolio-kit"]')).not.toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  test("TopPage omits the experience panel for normal visits and distributed hosts", async () => {
+    const TopPage = (await import("../pages/top")).default;
+    for (const url of [
+      "https://akieguchi.com/",
+      "https://portfolio.example/?portfolio-kit-experience=1",
+    ]) {
+      dom.reconfigure({ url });
+      const { host, cleanup } = await mount(createElement(TopPage));
+      await flush(20);
+      expect(
+        host.querySelector('[aria-label="Portfolio Kit 体験モード"]'),
+      ).toBeNull();
+      cleanup();
+    }
+    dom.reconfigure({ url: "http://localhost/" });
   });
 
   test("ServiceStartPage does not expose the Railway Deploy link publicly", async () => {

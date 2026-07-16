@@ -87,6 +87,7 @@ export type ServicePageConfig = {
     title: string;
     body: string;
     features: FeatureItem[];
+    demoCta: string;
   };
 };
 
@@ -280,34 +281,35 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
 
   adminShowcase: {
     label: "Admin panel",
-    title: "管理画面から、作品の見せ方を整えられます。",
-    body: "写真の追加、並び替え、プロフィール、連絡先の更新まで、ブラウザから行えます。公開後も、自分の作品に合わせて少しずつ整えていけます。",
+    title: "コードは触らず、ぜんぶ管理画面から。",
+    body: "写真の並べ方12種類。フォント・余白・色・文言まで、140以上の設定を自分の感覚で整えられます。",
     features: [
       {
-        title: "写真の管理",
-        body: "ドラッグ&ドロップでアップロード。並び替え、カテゴリ分け、焦点位置の調整まで管理画面から。",
+        title: "写真の並べ方",
+        body: "12種類から選び、順番や大きさも作品に合わせて調整できます。",
       },
       {
-        title: "レイアウトの調整",
-        body: "12種のギャラリーレイアウト、カラム数、余白、サイズ感をスライダーで調整できます。",
+        title: "文字と余白",
+        body: "書体、文字の大きさ、行間、余白の広さまで整えられます。",
       },
       {
-        title: "見た目のカスタマイズ",
-        body: "テーマカラー、和英フォント、文字サイズ、紙質テクスチャをリアルタイムプレビュー付きで変更できます。",
+        title: "色と背景",
+        body: "背景色、文字色、紙やフィルムのような質感を選べます。",
       },
       {
-        title: "プロフィールと連絡先",
-        body: "名前、経歴、SNSリンク、問い合わせフォームの文面まで管理画面から編集できます。",
+        title: "案内の言葉",
+        body: "メニュー、フッター、プロフィール、問い合わせの文言を変えられます。",
       },
       {
-        title: "シリーズ・カテゴリ",
-        body: "作品をシリーズやカテゴリに整理。カバー写真やステートメントも設定できます。",
+        title: "共有の見え方",
+        body: "SNSで見せる画像や、ブラウザに出る小さなアイコンを自動で作れます。",
       },
       {
-        title: "SEO・OGP",
-        body: "サイトURL、メタディスクリプション、OGP画像、Google Search Console 認証コードに対応しています。",
+        title: "日本語と英語",
+        body: "名前や案内を、日本語と英語の両方で自分らしく整えられます。",
       },
     ],
+    demoCta: "実際に触って確かめる",
   },
 };
 
@@ -466,6 +468,7 @@ export function parseServicePageConfig(
         D.adminShowcase.features,
         isFeature,
       ),
+      demoCta: str(adminShowcase.demoCta, D.adminShowcase.demoCta),
     },
   };
 }

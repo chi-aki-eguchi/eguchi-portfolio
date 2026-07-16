@@ -675,6 +675,14 @@ function AdminShowcase({
           </div>
         ))}
       </div>
+      <div className="mt-8 text-center">
+        <ServiceButton href="/?portfolio-kit-experience=1">
+          {config.demoCta}
+        </ServiceButton>
+        <p className="mt-3 text-[0.76rem] leading-7 text-[rgba(var(--foreground-rgb),0.42)]">
+          トップページを、あなた好みに変えてみる
+        </p>
+      </div>
     </section>
   );
 }

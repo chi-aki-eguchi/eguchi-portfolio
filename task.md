@@ -8536,3 +8536,12 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   「先頭8文字一致」でなく最新commitで読み替え)。
 - 制約: push未実施(オーナー許可制)。本番DB/R2/Railway書き込みなし。
 - commit: 3de8cd3 / f7a3c18 / cf4c7c6。
+
+## Handoff 2026-07-16 (35) — Portfolio Kit 自由度訴求・体験モード
+
+- 完了したこと: `/portfolio-kit` に12種類・140以上を明示した管理画面紹介と、トップページの見た目を4項目だけ一時変更できる体験導線を追加した。
+- 現在の状態: 体験パネルは `akieguchi.com/?portfolio-kit-experience=1` だけで遅延読込され、通常URLと配布先では表示されない。既存の `preview-settings` 経路だけを使い、保存処理は追加していない。
+- 残っている問題: なし。
+- 次に行うこと: Claudeが公開ページ構造・ホスト制限・既存プレビュー経路の再利用をread-only確認し、オーナーpush後にPC/スマホで販売ページと体験パネルを目視する。
+- 重要な制約: push、本番DB/R2/Railway書き込み、`.env`読み取りは未実施。新しいsettingsキー・API・localStorageは追加していない。
+- 必要なcommit情報: 実装=Codex。`bunx tsc -b`成功、`bun test ./src` 433 pass / 0 fail、lint成功、`git diff --check`成功。

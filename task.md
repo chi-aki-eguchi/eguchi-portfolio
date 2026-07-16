@@ -8614,3 +8614,17 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   LP英語文面ドラフト → 実装。写真代行範囲（目安50枚案)の確認も待ち。
 - 重要な制約: push 未実施。本番書き込みなし。新 settings キーは Phase 2 まで追加しない。
 - 必要なcommit情報: 実装=Claude（Fable5）。
+
+## Handoff 2026-07-16 (43) — i18n Phase 1 完了（Kit販売の英語導線）
+
+- 完了したこと: /portfolio-kit/en と /start/en を追加し、両言語ページに JP|EN 切り替えを設置。
+  hreflang・英語OGP・sitemap・購入後メール英語文面(purchase-thankyou.md併記)・
+  英語ミニ手順(docs/post-deploy-guide-en.md)まで docs/specs/i18n-en-spec.md Phase 1 を実装。
+- 現在の状態: tree clean。check 成功(447 pass / 0 fail)。admin未変更のためsmoke対象外。
+  実装=Codex(sol ultra・容量エラーで最終工程中断)→検証・commit=Claude。
+- 残っている問題: ①「相談無制限(当面)」を現行Bコース(公開後7日間)にも適用するか未確定。
+  適用ならJP/EN両LPを同時更新する ②C コースは日英とも未掲載(条件確定待ち)。
+- 次に行うこと: Phase 2a(管理画面シェルのEN/JP切り替え)をCodexに委任。
+  オーナーはpush後に /portfolio-kit/en と /start/en をPC/スマホで目視。
+- 重要な制約: push未実施。本番書き込みなし。新settingsキー追加なし。
+- 必要なcommit情報: 5d4分の実装commit(git log参照)。

@@ -8686,3 +8686,19 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 重要な制約: push未実施(オーナー)。本番書き込みなし。新settingsキーなし。
   クレジット指示により本セッションはここで区切り(Codex新規委任なし)。
 - 必要なcommit情報: 実装=Sonnet5 subagent(3体・直列)、検証・修正・commit=Claude(Fable5)。
+
+## Handoff 2026-07-17 (47) — i18n 2c 完了(管理画面EN/JP全タブ対応)
+
+- 完了したこと: 2c-4(設定タブ残り3グループ+プレビューツールバー)、2c-5(掃討+
+  「Japanese-first」注記を「available in English and Japanese」へ全面差し替え:
+  LP FAQ/本文・/startステップ文・購入後メール・英語手順書)。管理画面のEN/JP切り替えは
+  ログイン〜全タブで完成。
+- 現在の状態: tree clean。check 461 pass / smoke 35 pass・27 skip・0 fail。
+  実装=Sonnet5 subagent(2体・直列)+Claude、検証・commit=Claude(Fable5)。Codex未使用。
+- 残っている問題: Phase 3(公開サイトのナビ/プロフィール/問い合わせのEN)が未着手。
+  profileTextEn系のsettingsキー追加=4箇所同期を伴うため、着手時は個別スライスで。
+  翻訳の気になる箇所があればオーナー目視後に指摘をもらい微修正する。
+- 次に行うこと: オーナーpush→本番で①/admin/demoをENで一周②/portfolio-kit/enの
+  新注記③購入後メール文面の確認。その後Phase 3の着手判断。
+- 重要な制約: push未実施(オーナー)。本番書き込みなし。新settingsキーなし(2c全体で)。
+- 必要なcommit情報: 2c-4/2c-5 の2commit(git log参照)。

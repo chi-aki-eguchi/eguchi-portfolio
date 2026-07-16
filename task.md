@@ -8638,3 +8638,18 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 残っている問題: なし。高速スワイプsmokeは初回に画像1枚の一時読込失敗が出たが、対象再実行2 pass / 0 fail、全体再実行も成功。
 - 次に行うこと: Claudeがcommit差分を最終確認。Phase 2bは別タスクで着手し、Phase 2全完了までは英語LPのJapanese-first注記を維持する。
 - 重要な制約: push未実施。本番DB/R2/Railway操作なし。新settingsキー・DB・API・公開側ページの変更なし。実装・commit=Codex。
+
+## Handoff 2026-07-16 (44) — i18n Phase 2b 完了(写真・シリーズ・カテゴリのEN対応)
+
+- 完了したこと: 管理画面の写真管理(ライブラリ・一括編集・取り込み)・シリーズ・
+  カテゴリを EN/JP 切り替え対応。絞り込みチップの Digital/Film 表記(両言語共通の意匠)を
+  専用辞書キーで復元し、既存テストの期待値は変更せず実装側を修正。
+- 現在の状態: tree clean。check 461 pass / smoke 35 pass・27 skip・0 fail。
+  実装=Codex(sol ultra・ネットワーク断で報告前終了)→検証・修正・commit=Claude。
+- 残っている問題: Phase 2c(設定タブ140項目)が未着手。英語LPの「Japanese-first admin」
+  注記の差し替えは 2c 完了後。Bコースの相談無制限化はオーナー回答待ち。
+- 次に行うこと: ①オーナーpush→本番で /portfolio-kit/en・/start/en・/admin/demo(EN)目視
+  ②次セッションでCodex残量確認後に Phase 2c(タブ単位で分割実装を推奨)。
+- 重要な制約: push未実施。本番書き込みなし。新settingsキーなし。Codex週残量36%のため
+  2cは新セッションで残量を見てから。
+- 必要なcommit情報: 48d2c44(2a) / 直近commit(2b+修正)。

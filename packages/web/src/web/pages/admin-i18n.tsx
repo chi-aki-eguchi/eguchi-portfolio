@@ -696,6 +696,409 @@ const ADMIN_PHASE_2B_JA = {
       add: "機能追加",
     },
   },
+  settingsBasic: {
+    groupTitle: "基本・見た目",
+    resetToDefault: "初期設定に戻す",
+    units: {
+      columns: "列",
+      photos: "枚",
+    },
+    typoControl: {
+      numericInputAriaLabel: (label: string) => `${label}（数値入力）`,
+      opacityTitle: (percent: number) => `0〜1（現在 ${percent}%）`,
+      unitTitle: (unit: string) => `単位: ${unit}`,
+    },
+    siteBasics: {
+      title: "サイト基本情報",
+      fields: {
+        siteName: {
+          label: "Site Name (Logo)",
+          placeholder: "Photographer Name",
+          hint: "全ページ左上のロゴ（日本語）",
+        },
+        siteNameEn: {
+          label: "Site Name (EN)",
+          placeholder: "Photographer Name",
+          hint: "ロゴ下・OGP等の英語表記",
+        },
+        heroSubtitle: {
+          label: "Hero Subtitle",
+          placeholder: "Photography",
+          hint: "トップの作家名の下に表示",
+        },
+        siteDescription: {
+          label: "Site Description (SEO)",
+          placeholder: "Photography portfolio.",
+          hint: "検索結果・OGP・SNSシェア時の説明文（meta description）。空欄なら左の文を自動使用",
+        },
+        footerText: {
+          label: "Footer Text",
+          placeholder: "空欄 = © 今年 サイト名（自動）",
+          hint: "全ページ下部のフッター。空欄なら「© 現在の年 サイト名」を自動表示",
+        },
+        contactIntro: {
+          label: "Contact Page Intro",
+          placeholder: "Feel free to...",
+          hint: "お問い合わせページ上部の案内文",
+        },
+        contactNote: {
+          label: "Contact 添え書き",
+          placeholder:
+            "「まだ決まっていないけれど相談したい」という段階でも歓迎です。",
+          hint: "案内文の下の一言(相談歓迎・返信目安など)。空欄で非表示",
+        },
+        contactFlow: {
+          label: "依頼の流れ",
+          placeholder: "ご相談 → すり合わせ → 撮影 → 納品",
+          hint: "フォーム上の「Flow」枠に表示。空欄で非表示",
+        },
+        contactMessagePlaceholder: {
+          label: "Message 入力例",
+          placeholder: "例: 希望する撮影の内容 / 希望日・場所",
+          hint: "メッセージ欄にうすく表示される記入例。空欄で非表示",
+        },
+        contactEmail: {
+          label: "Contact Email",
+          placeholder: "you@example.com",
+          hint: "Displayed on the contact page for direct email",
+        },
+        formspreeUrl: {
+          label: "Formspree URL",
+          placeholder: "https://formspree.io/f/...",
+          hint: "Get your form URL from formspree.io to enable the contact form",
+        },
+        siteUrl: {
+          label: "サイトURL（公開ドメイン）",
+          placeholder: "https://example.com",
+          hint: "sitemap・canonical・OGP・JSON-LD の基準URL。空欄ならサーバー側の SITE_URL を使います",
+        },
+        googleSiteVerification: {
+          label: "Google サイト確認コード",
+          placeholder: "例: AbC123xyz...",
+          hint: 'Search Console「HTMLタグ」方式の content="..." の中身だけを貼り付け。保存後すぐ全ページの <head> に出力されます（画像サイトマップの登録に必要）',
+        },
+        footerCtaLabel: {
+          label: "フッター導線テキスト（任意）",
+          placeholder: "例: 撮影のご相談はこちら",
+          hint: "入力するとフッターに Contact への控えめなリンクを表示。空欄なら非表示",
+        },
+        templateCreditLabel: {
+          label: "テンプレート購入クレジット",
+          placeholder: "Site template by Aki Eguchi",
+          hint: "フッター最下部に小さく表示する文言。空欄なら非表示",
+        },
+        templateCreditUrl: {
+          label: "テンプレート購入クレジット URL",
+          placeholder: "https://akieguchi.com/portfolio-kit",
+          hint: "http:// または https:// のURLだけリンクになります。空欄・無効なURLは文字だけ表示",
+        },
+      },
+    },
+    portfolioKit: {
+      title: "Portfolio Kit",
+      fieldLabel: "Portfolio Kitの表示",
+      fieldHint:
+        "自動はakieguchi.comで直リンクとクレジットだけ有効、ナビは非表示です。「表示」はページとナビを有効化、「非表示」はページも無効化します",
+      modeLabels: {
+        auto: "自動（既定）",
+        on: "表示",
+        off: "非表示",
+      },
+    },
+    hero: {
+      title: "Hero（ファーストビュー）",
+      intro:
+        "トップページ最上部の写真表示です。ここで選んだ見せ方が、サイトに来た人が最初に見る1画面の印象を決めます。",
+      summaryFullscreen: (modeName: string) => `${modeName}・フルスクリーン`,
+      summaryNormal: (modeName: string, height: string) =>
+        `${modeName}・通常・高さ${height}%`,
+      modeLabel: "表示モード",
+      modeHint:
+        "カルーセル/1枚絵=従来 / 静謐グリッド・エディトリアル・没入型=新レイアウト。切替は保存後に反映",
+      modeNames: {
+        carousel: "カルーセル",
+        single: "1枚絵",
+        "quiet-grid": "静謐グリッド",
+        editorial: "エディトリアル",
+        immersive: "没入型",
+      },
+      modeDescriptions: {
+        carousel: "複数写真が順番に切り替わる",
+        single: "1枚を大きく固定表示",
+        "quiet-grid": "複数枚を整然と見せる",
+        editorial: "大小をつけた写真集風",
+        immersive: "画面いっぱいに写真を見せる",
+      },
+      speedLabel: "登場する速さ",
+      speedHint: "トップページを開いたときに、写真と文字が静かに現れる速さです",
+      speedAriaLabel: (label: string) => `登場する速さ: ${label}`,
+      speedNames: {
+        slow: "ゆっくり",
+        standard: "標準",
+        quick: "すばやく",
+      },
+      orderLabel: "出てくる順番",
+      orderHint:
+        "文字と写真のどちらを先に見せるかを選びます。標準は「写真から」です",
+      orderAriaLabel: (label: string) => `出てくる順番: ${label}`,
+      orderNames: {
+        "text-first": "文字から",
+        "photo-first": "写真から",
+        together: "同時に",
+      },
+      displayModeLabel: "画面の使い方",
+      displayModeHint:
+        "フルスクリーン=最初の1画面を写真が覆う（下の「高さ」設定は無視されます）",
+      displayModeOptions: {
+        normal: "通常（高さ設定に従う）",
+        fullscreen: "フルスクリーン",
+      },
+      heightLabel: "高さ",
+      heightHint:
+        "ビューポート高に対する割合。スマホは自動で上限調整。フルスクリーン時は無効",
+      titlePositionLabel: "名前の表示位置",
+      titlePositionHint:
+        "1枚絵/フルスクリーンでは写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます",
+      titlePositionOptions: {
+        center: "中央（既定）",
+        "bottom-left": "左下",
+        "bottom-right": "右下",
+        "top-left": "左上",
+        "top-right": "右上",
+      },
+      scrollEffectLabel: "スクロール演出",
+      scrollEffectHint:
+        "トップを下にスクロールしたときの写真の動き。OS設定で「視差効果を減らす」の人には自動で無効になります",
+      scrollEffectOptions: {
+        none: "なし（既定）",
+        fade: "フェード",
+        sink: "沈み込み",
+        parallax: "パララックス",
+      },
+      overlayLabel: "オーバーレイ",
+      overlayHint: "1枚絵モードで名前を読みやすくする暗いグラデーション",
+      overlayOptions: {
+        on: "あり",
+        off: "なし",
+      },
+    },
+    nav: {
+      title: "ナビゲーション（位置・ホバー）",
+      summary: (positionName: string, hoverName: string) =>
+        `${positionName}・${hoverName}`,
+      intro:
+        "全ページ共通のメニューです（PC表示）。位置とホバー時の反応を変えられます。スマホでは位置に関わらず常にハンバーガーメニューです。",
+      positionLabel: "位置",
+      positionNames: {
+        top: "上",
+        left: "左 縦置き",
+        bottom: "下 固定",
+      },
+      positionDescriptions: {
+        top: "画面上部に固定",
+        left: "画面左に縦のメニュー",
+        bottom: "画面下部に固定",
+      },
+      hoverLabel: "ホバー演出",
+      hoverHint: "マウスを乗せたとき/キーボードフォーカス時の反応",
+      hoverOptions: {
+        fade: "フェード（既定）",
+        underline: "下線が伸びる",
+        dot: "点がともる",
+        blur: "にじみ→くっきり",
+      },
+      hoverShortNames: {
+        fade: "フェード",
+        underline: "下線",
+        dot: "点",
+        blur: "にじみ",
+      },
+    },
+    spacing: {
+      title: "余白・スペーシング",
+      intro:
+        "ページの「間」の量を倍率で調整します。1.0 が現在のリズム。スマホは元の比率のまま縮みます。",
+      heroBottomLabel: "ヒーロー直下",
+      heroBottomHint: "ヒーロー写真と作品セクションの間",
+      sectionGapLabel: "セクション間",
+      sectionGapHint: "作品〜CTA〜フッターなどセクション同士の基本余白",
+      pageTopLabel: "ページ冒頭",
+      pageTopHint:
+        "ギャラリー・シリーズ・About・Contact など各ページ最初の「ため」",
+      footerTopLabel: "フッター上",
+      footerTopHint: "ページ末尾とフッターの間",
+      ratioControlLabel: "倍率",
+    },
+    bgTexture: {
+      title: "背景の質感（グレイン）",
+      intro:
+        "写真以外のサイト背景に、ごく薄いノイズを重ねます。写真自体や、写真を拡大表示する画面には影響しません。",
+      textureLabel: "テクスチャ",
+      textureHint:
+        "背景にごく薄いノイズを敷きます。写真の上や、写真を拡大表示する画面には乗りません",
+      names: {
+        none: "なし",
+        "grain-fine": "フィルム粒子",
+        "grain-coarse": "粗い紙",
+        paper: "和紙・繊維",
+        marble: "大理石調",
+        mist: "霞（かすみ）",
+      },
+      descriptions: {
+        none: "質感を足さない",
+        "grain-fine": "細かく均一な粒子感",
+        "grain-coarse": "ざらついた紙の繊維感",
+        paper: "縦に流れる繊維状のムラ",
+        marble: "波紋のような上品なムラ",
+        mist: "柔らかい雲のようなムラ",
+      },
+      previewNote:
+        "見本は模様の違いが分かるよう少し強めに表示しています。実際の濃さは下の「濃度」で調整します。",
+      opacityLabel: "濃度",
+      opacityHint: "0.06前後がおすすめ。上げすぎると写真より質感が目立ちます",
+    },
+    fade: {
+      title: "写真のフェードイン",
+      intro: "ギャラリーなどで写真がスクロールして画面に入ってきたときの動きです。",
+      appearanceLabel: "現れ方",
+      appearanceHint:
+        "コラージュのような枠・傾きつきレイアウトでは「浮き上がり」より「フェード」「なし」が自然に見えます",
+      names: {
+        fade: "フェード",
+        none: "なし",
+        rise: "浮き上がり",
+        scale: "ズーム",
+      },
+      descriptions: {
+        fade: "透明から少しずつ現れる",
+        none: "即表示・動きなし",
+        rise: "少し下から上がってくる",
+        scale: "小さくから拡大して現れる",
+      },
+    },
+    galleryLayout: {
+      title: "ギャラリー配置",
+      introPrefix: "ページごとに写真の並べ方を選べます。プレビューで",
+      introTop: "トップ",
+      introSuffix:
+        "ページを開くと即反映。下の調整は「モザイク」に効きます。",
+      targetLabel: "対象ページ",
+      categoryLabels: {
+        aligned: "整列グリッド",
+        editorial: "写真集レイアウト",
+      },
+      descriptions: {
+        grid: "元の縦横比を保って整列",
+        "clean-grid": "Instagram風・すべて正方形",
+        "portrait-grid": "縦長4:5・人物写真向け",
+        "landscape-grid": "横長3:2・風景写真向け",
+        masonry: "3列・縦横比を保って敷き詰め",
+        justified: "縦横比を保ち行ごとに敷き詰め・S/M/Lで大小",
+        mosaic: "S/M/L混在・抜け感のある並び",
+        scroll: "1枚ずつ大きく＋情報を添えて表示",
+        stagger: "1枚ずつ左右互い違いに配置",
+        editorial: "2枚1組・左大右小の見開き風",
+        collage: "重なりと角度でスナップ写真風",
+        "large-format": "2列の大判表示＋キャプション",
+      },
+      topWorksHeading: "トップ（Works）に出す写真",
+      topWorksModeLabel: "選び方",
+      topWorksModeHint:
+        "自動=ギャラリーの並び順の先頭9枚 / ランダム=訪問ごとに入れ替え / 手動=下で選んだ写真を選んだ順に表示。最上部のヒーロー写真とは別の設定です",
+      topWorksModeOptions: {
+        auto: {
+          name: "並び順から自動",
+          desc: "ギャラリーの並びの先頭9枚",
+        },
+        random: {
+          name: "ランダム",
+          desc: "訪問ごとにシャッフル",
+        },
+        manual: {
+          name: "手動で選択",
+          desc: "下で写真を選ぶ",
+        },
+      },
+      topWorksPickerLabel: "トップに出す写真",
+      topWorksPickerHint:
+        "クリックで選択/解除。番号の順（選んだ順）に表示されます。未選択のあいだは自動と同じ表示",
+      initialCountLabel: "初期表示枚数",
+      initialCountHint:
+        "トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます",
+      gridHeading: "ギャラリーの列数・大きさ・余白",
+      maxColumnsLabel: "最大列数",
+      maxColumnsHint:
+        "広い画面で最大何列まで並べるか。実際の列数は画面幅に応じて自動で減ります（スマホは1〜2列）",
+      photoSizeLabel: "写真の大きさ",
+      photoSizeControlLabel: "大きさ",
+      photoSizeHint: "大きくすると1枚が広くなり、その分列数が自動で減ります",
+      gapLabel: "間隔",
+      gapControlLabel: "余白倍率",
+      gapHint: "写真同士の余白の倍率（0.2=詰める / 3.0=広い）",
+      topGridHeading:
+        "トップ（Works）の列数・大きさ・余白 — 動かすまではギャラリーと同じ値",
+      topMaxColumnsLabel: "最大列数（トップ）",
+      topMaxColumnsHint: "トップ下部の作品の最大列数。ギャラリーとは独立です",
+      topPhotoSizeLabel: "写真の大きさ（トップ）",
+      topPhotoSizeHint: "トップ下部の作品の大きさ。ギャラリーとは独立です",
+      topGapLabel: "間隔（トップ）",
+      topGapHint: "トップ下部の作品の余白倍率。ギャラリーとは独立です",
+      mosaicHeading: "モザイクの調整",
+      emptyRateLabel: "抜け（空セル）の頻度",
+      emptyRateControlLabel: "抜け頻度",
+      emptyRateHint:
+        "0で抜けなし＝詰める。大きいほど余白が増える。スマホでは自動的に控えめになります",
+      sizeVariationLabel: "サイズの緩急",
+      sizeVariationControlLabel: "緩急の強さ",
+      sizeVariationHint:
+        "S/M/L の大きさの差をどれだけ強調するか。0=ほぼ均一 / 1.0=メリハリ最大",
+      shuffleLabel: "配置のシャッフル",
+      shuffleHint:
+        "写真は同じまま、抜けの入る位置を別パターンに変えます。今の配置がイマイチなら押してみてください",
+      shuffleButton: "配置をシャッフル",
+    },
+    seriesSection: {
+      title: "シリーズ",
+      navLabel: "ナビに「Series」を表示",
+      navHint:
+        "「自動」は公開シリーズが1つでもあればリンクを表示します（既定）。「表示」は常に表示、「非表示」は常に隠します。シリーズの作成・写真割り当ては上部の Series タブ・Library のインスペクタから",
+      navOptions: {
+        auto: "自動",
+        on: "表示",
+        off: "非表示",
+      },
+      gridIntroPrefix: "シリーズ一覧（表紙写真のグリッド）の見せ方。プレビューで",
+      gridIntroMid: "ページ、または",
+      gridIntroSuffix:
+        "ページ上部の Photos / Series 切り替えで反映されます。タイルは表紙写真のみ（文字なし）。表紙未設定のシリーズは先頭写真が自動で使われます。",
+      defaultViewLabel: "Gallery で最初に見せるもの",
+      defaultViewHint:
+        "Gallery ページを開いたとき、写真一覧（Photos）とシリーズ一覧（Series）のどちらを先に表示するか",
+      defaultViewOptions: {
+        photos: "写真一覧",
+        series: "シリーズ",
+      },
+      columnsPcLabel: "シリーズ列数（PC）",
+      columnsPcHint: "タイルを大きく見せたいなら少なめ（2〜3列推奨）",
+      columnsPcControlLabel: "PC 列数",
+      columnsMobileLabel: "シリーズ列数（スマホ）",
+      columnsMobileHint: "スマホ表示時の列数",
+      columnsMobileControlLabel: "スマホ 列数",
+      orderIntro:
+        "写真の並び順。「手動順」は Library でドラッグした順番。シリーズごとに上書きしたい場合は Series タブの各シリーズ編集から設定できます。",
+      gallerySortLabel: "ギャラリーの並び順",
+      gallerySortHint: "ギャラリーページ・トップの写真の並べ方",
+      seriesSortLabel: "シリーズ内の並び順",
+      seriesSortHint:
+        "各シリーズ詳細ページの写真の並べ方（シリーズ側で個別設定もできます）",
+      sortOptions: {
+        manual: "手動順（D&D）",
+        date_desc: "撮影日↓新しい順",
+        date_asc: "撮影日↑古い順",
+        upload_desc: "アップロード↓新しい順",
+      },
+    },
+  },
 } as const;
 
 type AdminPhase2bMessages = MessageShape<typeof ADMIN_PHASE_2B_JA>;
@@ -1365,6 +1768,413 @@ const ADMIN_PHASE_2B_EN = {
       featureTitle: "Title",
       featureBody: "Description",
       add: "Add Feature",
+    },
+  },
+  settingsBasic: {
+    groupTitle: "Basics & Appearance",
+    resetToDefault: "Reset to default",
+    units: {
+      columns: "cols",
+      photos: "photos",
+    },
+    typoControl: {
+      numericInputAriaLabel: (label: string) => `${label} (numeric input)`,
+      opacityTitle: (percent: number) => `0 to 1 (currently ${percent}%)`,
+      unitTitle: (unit: string) => `Unit: ${unit}`,
+    },
+    siteBasics: {
+      title: "Site Basics",
+      fields: {
+        siteName: {
+          label: "Site Name (Logo)",
+          placeholder: "Photographer Name",
+          hint: "The logo shown at the top-left of every page (Japanese).",
+        },
+        siteNameEn: {
+          label: "Site Name (EN)",
+          placeholder: "Photographer Name",
+          hint: "English wording used below the logo, in OGP, and elsewhere.",
+        },
+        heroSubtitle: {
+          label: "Hero Subtitle",
+          placeholder: "Photography",
+          hint: "Shown below the photographer's name on the home page.",
+        },
+        siteDescription: {
+          label: "Site Description (SEO)",
+          placeholder: "Photography portfolio.",
+          hint: "The meta description used in search results, OGP, and social sharing. Uses the text on the left automatically when left blank.",
+        },
+        footerText: {
+          label: "Footer Text",
+          placeholder: "Leave blank for “© this year Site Name” (automatic)",
+          hint: "Shown in the footer on every page. Automatically shows “© current year Site Name” when left blank.",
+        },
+        contactIntro: {
+          label: "Contact Page Intro",
+          placeholder: "Feel free to...",
+          hint: "Intro text shown at the top of the Contact page.",
+        },
+        contactNote: {
+          label: "Contact Note",
+          placeholder:
+            "e.g. “Even if it's not decided yet, feel free to reach out.”",
+          hint: "A short note below the intro text (e.g. welcoming enquiries, reply-time estimate). Hidden when left blank.",
+        },
+        contactFlow: {
+          label: "Booking Flow",
+          placeholder: "Consultation → Planning → Shoot → Delivery",
+          hint: "Shown in the “Flow” box on the form. Hidden when left blank.",
+        },
+        contactMessagePlaceholder: {
+          label: "Message Example",
+          placeholder: "e.g. The kind of shoot you want / preferred date & location",
+          hint: "Faint example text shown in the message field. Hidden when left blank.",
+        },
+        contactEmail: {
+          label: "Contact Email",
+          placeholder: "you@example.com",
+          hint: "Displayed on the contact page for direct email",
+        },
+        formspreeUrl: {
+          label: "Formspree URL",
+          placeholder: "https://formspree.io/f/...",
+          hint: "Get your form URL from formspree.io to enable the contact form",
+        },
+        siteUrl: {
+          label: "Site URL (Public Domain)",
+          placeholder: "https://example.com",
+          hint: "The base URL used for the sitemap, canonical tag, OGP, and JSON-LD. Uses the server's SITE_URL when left blank.",
+        },
+        googleSiteVerification: {
+          label: "Google Site Verification Code",
+          placeholder: "e.g. AbC123xyz...",
+          hint: 'Paste just the content="..." value from Search Console\'s “HTML tag” method. It is written to every page\'s <head> as soon as you save (required to register the image sitemap).',
+        },
+        footerCtaLabel: {
+          label: "Footer CTA Text (Optional)",
+          placeholder: "e.g. Enquire about a shoot",
+          hint: "When set, shows a subtle link to Contact in the footer. Hidden when left blank.",
+        },
+        templateCreditLabel: {
+          label: "Template Purchase Credit",
+          placeholder: "Site template by Aki Eguchi",
+          hint: "Small text shown at the very bottom of the footer. Hidden when left blank.",
+        },
+        templateCreditUrl: {
+          label: "Template Purchase Credit URL",
+          placeholder: "https://akieguchi.com/portfolio-kit",
+          hint: "Only a URL starting with http:// or https:// becomes a link. Blank or invalid URLs show as plain text.",
+        },
+      },
+    },
+    portfolioKit: {
+      title: "Portfolio Kit",
+      fieldLabel: "Show Portfolio Kit",
+      fieldHint:
+        "Auto enables only the direct link and credit on akieguchi.com, with the nav item hidden. “Shown” enables both the page and the nav item; “Hidden” disables the page too.",
+      modeLabels: {
+        auto: "Auto (default)",
+        on: "Shown",
+        off: "Hidden",
+      },
+    },
+    hero: {
+      title: "Hero (First View)",
+      intro:
+        "The photo display at the very top of the home page. The style you choose here sets the first impression for anyone who visits the site.",
+      summaryFullscreen: (modeName: string) => `${modeName} · Fullscreen`,
+      summaryNormal: (modeName: string, height: string) =>
+        `${modeName} · Normal · Height ${height}%`,
+      modeLabel: "Display Mode",
+      modeHint:
+        "Carousel and Single Photo are the original layouts; Quiet Grid, Editorial, and Immersive are newer ones. Switching takes effect after you save.",
+      modeNames: {
+        carousel: "Carousel",
+        single: "Single Photo",
+        "quiet-grid": "Quiet Grid",
+        editorial: "Editorial",
+        immersive: "Immersive",
+      },
+      modeDescriptions: {
+        carousel: "Multiple photos cycle in sequence",
+        single: "One large, fixed photo",
+        "quiet-grid": "Several photos shown in an orderly grid",
+        editorial: "A photobook-style mix of large and small",
+        immersive: "A single photo fills the screen",
+      },
+      speedLabel: "Reveal Speed",
+      speedHint:
+        "How quickly the photo and text quietly appear when the home page loads.",
+      speedAriaLabel: (label: string) => `Reveal speed: ${label}`,
+      speedNames: {
+        slow: "Slow",
+        standard: "Standard",
+        quick: "Quick",
+      },
+      orderLabel: "Reveal Order",
+      orderHint:
+        "Choose whether the text or the photo appears first. The default is “Photo first.”",
+      orderAriaLabel: (label: string) => `Reveal order: ${label}`,
+      orderNames: {
+        "text-first": "Text first",
+        "photo-first": "Photo first",
+        together: "Together",
+      },
+      displayModeLabel: "Screen Usage",
+      displayModeHint:
+        "Fullscreen fills the entire first screen with the photo (the “Height” setting below is ignored).",
+      displayModeOptions: {
+        normal: "Normal (uses the Height setting)",
+        fullscreen: "Fullscreen",
+      },
+      heightLabel: "Height",
+      heightHint:
+        "A percentage of the viewport height. The upper limit adjusts automatically on mobile. Not used in Fullscreen mode.",
+      titlePositionLabel: "Name Position",
+      titlePositionHint:
+        "In Single Photo or Fullscreen this positions the name over the photo; in Carousel (Normal) it aligns the name below the photo.",
+      titlePositionOptions: {
+        center: "Center (default)",
+        "bottom-left": "Bottom left",
+        "bottom-right": "Bottom right",
+        "top-left": "Top left",
+        "top-right": "Top right",
+      },
+      scrollEffectLabel: "Scroll Effect",
+      scrollEffectHint:
+        "How the photo moves as visitors scroll down the home page. Automatically disabled for visitors with “Reduce Motion” enabled in their OS settings.",
+      scrollEffectOptions: {
+        none: "None (default)",
+        fade: "Fade",
+        sink: "Sink",
+        parallax: "Parallax",
+      },
+      overlayLabel: "Overlay",
+      overlayHint: "A dark gradient that keeps the name readable in Single Photo mode.",
+      overlayOptions: {
+        on: "On",
+        off: "Off",
+      },
+    },
+    nav: {
+      title: "Navigation (Position & Hover)",
+      summary: (positionName: string, hoverName: string) =>
+        `${positionName} · ${hoverName}`,
+      intro:
+        "The menu shared by every page (desktop view). You can change its position and its hover response. On mobile it is always a hamburger menu, regardless of position.",
+      positionLabel: "Position",
+      positionNames: {
+        top: "Top",
+        left: "Left, Vertical",
+        bottom: "Bottom, Fixed",
+      },
+      positionDescriptions: {
+        top: "Fixed to the top of the screen",
+        left: "A vertical menu on the left",
+        bottom: "Fixed to the bottom of the screen",
+      },
+      hoverLabel: "Hover Effect",
+      hoverHint: "The response on mouse hover or keyboard focus.",
+      hoverOptions: {
+        fade: "Fade (default)",
+        underline: "Underline grows",
+        dot: "Dot lights up",
+        blur: "Blur to sharp",
+      },
+      hoverShortNames: {
+        fade: "Fade",
+        underline: "Underline",
+        dot: "Dot",
+        blur: "Blur",
+      },
+    },
+    spacing: {
+      title: "Spacing",
+      intro:
+        "Adjust the amount of “space between” on the page as a multiplier. 1.0 is the current rhythm. Mobile scales down at the same ratio.",
+      heroBottomLabel: "Below Hero",
+      heroBottomHint: "Between the hero photo and the works section",
+      sectionGapLabel: "Between Sections",
+      sectionGapHint: "The base spacing between sections, such as works, CTA, and footer",
+      pageTopLabel: "Page Top",
+      pageTopHint:
+        "The pause at the top of each page — Gallery, Series, About, Contact, and so on",
+      footerTopLabel: "Above Footer",
+      footerTopHint: "Between the end of the page and the footer",
+      ratioControlLabel: "Ratio",
+    },
+    bgTexture: {
+      title: "Grain Texture",
+      intro:
+        "Overlays a very faint noise on the site background, away from photos. It does not affect the photos themselves or any screen where a photo is shown enlarged.",
+      textureLabel: "Texture",
+      textureHint:
+        "Lays a very faint noise over the background. It does not appear over photos or on screens where a photo is shown enlarged.",
+      names: {
+        none: "None",
+        "grain-fine": "Fine Grain",
+        "grain-coarse": "Coarse Paper",
+        paper: "Washi Fiber",
+        marble: "Marbled",
+        mist: "Mist",
+      },
+      descriptions: {
+        none: "No texture added",
+        "grain-fine": "Fine, even film-grain texture",
+        "grain-coarse": "Rough, fibrous paper texture",
+        paper: "Vertical, fiber-like variation",
+        marble: "Subtle, wave-like marbling",
+        mist: "Soft, cloud-like haze",
+      },
+      previewNote:
+        "The samples are shown a little stronger than actual so the patterns are easy to tell apart. Adjust the real strength with “Opacity” below.",
+      opacityLabel: "Opacity",
+      opacityHint: "Around 0.06 is recommended. Too high and the texture competes with the photos.",
+    },
+    fade: {
+      title: "Photo Fade-In",
+      intro: "The motion used when photos scroll into view, such as in the Gallery.",
+      appearanceLabel: "Appearance",
+      appearanceHint:
+        "For framed, tilted layouts like Collage, “Fade” or “None” tend to look more natural than “Rise.”",
+      names: {
+        fade: "Fade",
+        none: "None",
+        rise: "Rise",
+        scale: "Zoom",
+      },
+      descriptions: {
+        fade: "Appears gradually from transparent",
+        none: "Appears instantly, no motion",
+        rise: "Rises up slightly from below",
+        scale: "Scales up from smaller to full size",
+      },
+    },
+    galleryLayout: {
+      title: "Gallery Layout",
+      introPrefix: "Choose how photos are arranged, per page. Changes apply as soon as you open the",
+      introTop: "Top",
+      introSuffix:
+        "preview page. The controls below apply to Mosaic.",
+      targetLabel: "Target Page",
+      categoryLabels: {
+        aligned: "Aligned Grids",
+        editorial: "Editorial Layouts",
+      },
+      descriptions: {
+        grid: "Aligned in a grid, keeping each photo's original aspect ratio",
+        "clean-grid": "Instagram-style — every photo cropped to a square",
+        "portrait-grid": "Portrait 4:5 crop, suited to people and portraits",
+        "landscape-grid": "Landscape 3:2 crop, suited to scenery and landscapes",
+        masonry: "Three columns, packed tightly while keeping aspect ratio",
+        justified: "Packed row by row at true aspect ratio; S/M/L sets the size",
+        mosaic: "A mix of S/M/L sizes with open, airy gaps",
+        scroll: "One large photo at a time, with its details alongside",
+        stagger: "One photo at a time, alternating left and right",
+        editorial: "Pairs of photos in a magazine-spread layout, large left / small right",
+        collage: "Overlapping, tilted photos, like a stack of snapshots",
+        "large-format": "Two large-format columns with captions",
+      },
+      topWorksHeading: "Photos Shown in Top (Works)",
+      topWorksModeLabel: "Selection",
+      topWorksModeHint:
+        "Auto shows the first 9 photos in the Gallery order; Random reshuffles on every visit; Manual shows the photos you choose below, in the order you chose them. This is separate from the hero photos at the very top.",
+      topWorksModeOptions: {
+        auto: {
+          name: "Auto, from sort order",
+          desc: "The first 9 photos in the Gallery order",
+        },
+        random: {
+          name: "Random",
+          desc: "Reshuffled on every visit",
+        },
+        manual: {
+          name: "Choose manually",
+          desc: "Choose photos below",
+        },
+      },
+      topWorksPickerLabel: "Photos Shown in Top",
+      topWorksPickerHint:
+        "Click to select or deselect. Photos display in the numbered order you chose them. Behaves like Auto until you make a selection.",
+      initialCountLabel: "Initial Count",
+      initialCountHint:
+        "How many photos appear initially in the Works section below the hero on the home page. More load in as visitors scroll.",
+      gridHeading: "Gallery Columns, Size & Spacing",
+      maxColumnsLabel: "Max Columns",
+      maxColumnsHint:
+        "The maximum number of columns on a wide screen. The actual count automatically decreases with screen width (1–2 columns on mobile).",
+      photoSizeLabel: "Photo Size",
+      photoSizeControlLabel: "Size",
+      photoSizeHint: "Larger values widen each photo, which automatically reduces the column count.",
+      gapLabel: "Spacing",
+      gapControlLabel: "Spacing Ratio",
+      gapHint: "A multiplier for the spacing between photos (0.2 = tight, 3.0 = wide).",
+      topGridHeading:
+        "Top (Works) Columns, Size & Spacing — Matches Gallery Until Changed",
+      topMaxColumnsLabel: "Max Columns (Top)",
+      topMaxColumnsHint:
+        "The maximum column count for the works at the bottom of the home page. Independent of Gallery.",
+      topPhotoSizeLabel: "Photo Size (Top)",
+      topPhotoSizeHint:
+        "The photo size for the works at the bottom of the home page. Independent of Gallery.",
+      topGapLabel: "Spacing (Top)",
+      topGapHint:
+        "The spacing multiplier for the works at the bottom of the home page. Independent of Gallery.",
+      mosaicHeading: "Mosaic Adjustments",
+      emptyRateLabel: "Gap (Empty Cell) Frequency",
+      emptyRateControlLabel: "Gap Frequency",
+      emptyRateHint:
+        "0 means no gaps — everything packed tight. Higher values add more empty space. Automatically kept subtle on mobile.",
+      sizeVariationLabel: "Size Contrast",
+      sizeVariationControlLabel: "Contrast Strength",
+      sizeVariationHint:
+        "How much to emphasize the size difference between S/M/L. 0 = nearly uniform, 1.0 = maximum contrast.",
+      shuffleLabel: "Shuffle Arrangement",
+      shuffleHint:
+        "Keeps the same photos but tries a different pattern of gaps. Press this if the current arrangement doesn't feel right.",
+      shuffleButton: "Shuffle Arrangement",
+    },
+    seriesSection: {
+      title: "Series",
+      navLabel: "Show “Series” in Nav",
+      navHint:
+        "“Auto” shows the link whenever at least one series is published (default). “Show” always displays it; “Hide” always hides it. Create series and assign photos from the Series tab above or the Library inspector.",
+      navOptions: {
+        auto: "Auto",
+        on: "Show",
+        off: "Hide",
+      },
+      gridIntroPrefix: "The look of the Series list (a grid of cover photos). Reflected in the",
+      gridIntroMid: "preview page, or the",
+      gridIntroSuffix:
+        "Photos / Series switch at the top of the page. Tiles show only the cover photo (no text). A series without a cover automatically uses its first photo.",
+      defaultViewLabel: "Shown First in Gallery",
+      defaultViewHint:
+        "Which the Gallery page shows first when opened: the photo list (Photos) or the series list (Series).",
+      defaultViewOptions: {
+        photos: "Photos",
+        series: "Series",
+      },
+      columnsPcLabel: "Series Columns (PC)",
+      columnsPcHint: "Use fewer columns to show larger tiles (2–3 recommended).",
+      columnsPcControlLabel: "PC Columns",
+      columnsMobileLabel: "Series Columns (Mobile)",
+      columnsMobileHint: "The column count on mobile.",
+      columnsMobileControlLabel: "Mobile Columns",
+      orderIntro:
+        "The photo sort order. “Manual” follows the order you dragged in Library. To override it per series, use each series' edit screen in the Series tab.",
+      gallerySortLabel: "Gallery Sort Order",
+      gallerySortHint: "How photos are ordered on the Gallery page and the home page.",
+      seriesSortLabel: "Sort Order Within Series",
+      seriesSortHint:
+        "How photos are ordered on each series detail page (can also be set individually per series).",
+      sortOptions: {
+        manual: "Manual (drag & drop)",
+        date_desc: "Date taken ↓ newest first",
+        date_asc: "Date taken ↑ oldest first",
+        upload_desc: "Upload date ↓ newest first",
+      },
     },
   },
 } as const satisfies AdminPhase2bMessages;

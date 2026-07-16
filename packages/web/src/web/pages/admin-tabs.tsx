@@ -135,11 +135,6 @@ const GALLERY_LAYOUT_OPTIONS: {
   },
 ];
 
-const GALLERY_LAYOUT_CATEGORY_LABEL: Record<GalleryLayoutCategory, string> = {
-  aligned: "整列グリッド",
-  editorial: "写真集レイアウト",
-};
-
 type LayoutIconRect = {
   l: number;
   t: number;
@@ -3491,6 +3486,7 @@ export function SettingsTab({
 }) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
+  const copy = t.phase2b.settingsBasic;
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -3664,103 +3660,31 @@ export function SettingsTab({
     );
 
   const fields = [
-    {
-      key: "siteName",
-      label: "Site Name (Logo)",
-      placeholder: "Photographer Name",
-      hint: "全ページ左上のロゴ（日本語）",
-    },
-    {
-      key: "siteNameEn",
-      label: "Site Name (EN)",
-      placeholder: "Photographer Name",
-      hint: "ロゴ下・OGP等の英語表記",
-    },
-    {
-      key: "heroSubtitle",
-      label: "Hero Subtitle",
-      placeholder: "Photography",
-      hint: "トップの作家名の下に表示",
-    },
-    {
-      key: "siteDescription",
-      label: "Site Description (SEO)",
-      placeholder: "Photography portfolio.",
-      hint: "検索結果・OGP・SNSシェア時の説明文（meta description）。空欄なら左の文を自動使用",
-    },
-    {
-      key: "footerText",
-      label: "Footer Text",
-      placeholder: "空欄 = © 今年 サイト名（自動）",
-      hint: "全ページ下部のフッター。空欄なら「© 現在の年 サイト名」を自動表示",
-    },
-    {
-      key: "contactIntro",
-      label: "Contact Page Intro",
-      placeholder: "Feel free to...",
-      hint: "お問い合わせページ上部の案内文",
-    },
-    {
-      key: "contactNote",
-      label: "Contact 添え書き",
-      placeholder:
-        "「まだ決まっていないけれど相談したい」という段階でも歓迎です。",
-      hint: "案内文の下の一言(相談歓迎・返信目安など)。空欄で非表示",
-    },
-    {
-      key: "contactFlow",
-      label: "依頼の流れ",
-      placeholder: "ご相談 → すり合わせ → 撮影 → 納品",
-      hint: "フォーム上の「Flow」枠に表示。空欄で非表示",
-    },
+    { key: "siteName", ...copy.siteBasics.fields.siteName },
+    { key: "siteNameEn", ...copy.siteBasics.fields.siteNameEn },
+    { key: "heroSubtitle", ...copy.siteBasics.fields.heroSubtitle },
+    { key: "siteDescription", ...copy.siteBasics.fields.siteDescription },
+    { key: "footerText", ...copy.siteBasics.fields.footerText },
+    { key: "contactIntro", ...copy.siteBasics.fields.contactIntro },
+    { key: "contactNote", ...copy.siteBasics.fields.contactNote },
+    { key: "contactFlow", ...copy.siteBasics.fields.contactFlow },
     {
       key: "contactMessagePlaceholder",
-      label: "Message 入力例",
-      placeholder: "例: 希望する撮影の内容 / 希望日・場所",
-      hint: "メッセージ欄にうすく表示される記入例。空欄で非表示",
+      ...copy.siteBasics.fields.contactMessagePlaceholder,
     },
-    {
-      key: "contactEmail",
-      label: "Contact Email",
-      placeholder: "you@example.com",
-      hint: "Displayed on the contact page for direct email",
-    },
-    {
-      key: "formspreeUrl",
-      label: "Formspree URL",
-      placeholder: "https://formspree.io/f/...",
-      hint: "Get your form URL from formspree.io to enable the contact form",
-    },
-    {
-      key: "siteUrl",
-      label: "サイトURL（公開ドメイン）",
-      placeholder: "https://example.com",
-      hint: "sitemap・canonical・OGP・JSON-LD の基準URL。空欄ならサーバー側の SITE_URL を使います",
-    },
+    { key: "contactEmail", ...copy.siteBasics.fields.contactEmail },
+    { key: "formspreeUrl", ...copy.siteBasics.fields.formspreeUrl },
+    { key: "siteUrl", ...copy.siteBasics.fields.siteUrl },
     {
       key: "googleSiteVerification",
-      label: "Google サイト確認コード",
-      placeholder: "例: AbC123xyz...",
-      hint: 'Search Console「HTMLタグ」方式の content="..." の中身だけを貼り付け。保存後すぐ全ページの <head> に出力されます（画像サイトマップの登録に必要）',
+      ...copy.siteBasics.fields.googleSiteVerification,
     },
-    {
-      key: "footerCtaLabel",
-      label: "フッター導線テキスト（任意）",
-      placeholder: "例: 撮影のご相談はこちら",
-      hint: "入力するとフッターに Contact への控えめなリンクを表示。空欄なら非表示",
-    },
+    { key: "footerCtaLabel", ...copy.siteBasics.fields.footerCtaLabel },
     {
       key: "templateCreditLabel",
-      label: "テンプレート購入クレジット",
-      placeholder: "Site template by Aki Eguchi",
-      hint: "フッター最下部に小さく表示する文言。空欄なら非表示",
+      ...copy.siteBasics.fields.templateCreditLabel,
     },
-    {
-      key: "templateCreditUrl",
-      label: "テンプレート購入クレジット URL",
-      placeholder: "https://akieguchi.com/portfolio-kit",
-      hint: "http:// または https:// のURLだけリンクになります。空欄・無効なURLは文字だけ表示",
-    },
+    { key: "templateCreditUrl", ...copy.siteBasics.fields.templateCreditUrl },
   ];
 
   return (
@@ -3787,8 +3711,8 @@ export function SettingsTab({
           />
           <div className="flex flex-col">
             {/* General */}
-            <SettingsGroup title="基本・見た目">
-              <Section title="サイト基本情報" defaultOpen={false}>
+            <SettingsGroup title={copy.groupTitle}>
+              <Section title={copy.siteBasics.title} defaultOpen={false}>
                 {fields.map((f) => (
                   <AdminField key={f.key} label={f.label} hint={f.hint}>
                     <input
@@ -3804,66 +3728,74 @@ export function SettingsTab({
               </Section>
 
               <Section
-                title="Portfolio Kit"
+                title={copy.portfolioKit.title}
                 defaultOpen={false}
                 summary={
                   current["servicePageMode"] === "on"
-                    ? "表示"
+                    ? copy.portfolioKit.modeLabels.on
                     : current["servicePageMode"] === "off"
-                      ? "非表示"
-                      : "自動（既定）"
+                      ? copy.portfolioKit.modeLabels.off
+                      : copy.portfolioKit.modeLabels.auto
                 }
               >
                 <AdminField
-                  label="Portfolio Kitの表示"
-                  hint="自動はakieguchi.comで直リンクとクレジットだけ有効、ナビは非表示です。「表示」はページとナビを有効化、「非表示」はページも無効化します"
+                  label={copy.portfolioKit.fieldLabel}
+                  hint={copy.portfolioKit.fieldHint}
                 >
                   <select
-                    aria-label="Portfolio Kitの表示"
+                    aria-label={copy.portfolioKit.fieldLabel}
                     value={current["servicePageMode"] ?? ""}
                     onChange={(e) => set("servicePageMode", e.target.value)}
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm appearance-none cursor-pointer"
                   >
-                    <option value="">自動（既定）</option>
-                    <option value="on">表示</option>
-                    <option value="off">非表示</option>
+                    <option value="">{copy.portfolioKit.modeLabels.auto}</option>
+                    <option value="on">{copy.portfolioKit.modeLabels.on}</option>
+                    <option value="off">{copy.portfolioKit.modeLabels.off}</option>
                   </select>
                 </AdminField>
               </Section>
 
               {/* E1: Hero display mode */}
               <Section
-                title="Hero（ファーストビュー）"
+                title={copy.hero.title}
                 defaultOpen={false}
                 summary={(() => {
+                  const modeValue = current["heroMode"] || "carousel";
                   const modeName =
-                    HERO_MODE_OPTIONS.find(
-                      (o) => o.value === (current["heroMode"] || "carousel"),
-                    )?.name ?? "カルーセル";
+                    copy.hero.modeNames[
+                      modeValue as keyof typeof copy.hero.modeNames
+                    ] ?? copy.hero.modeNames.carousel;
                   const isFullscreen =
                     (current["heroDisplayMode"] || "normal") === "fullscreen";
                   // heroHeight has no effect in fullscreen mode — showing it
                   // there would imply a setting that isn't actually applied.
                   return isFullscreen
-                    ? `${modeName}・フルスクリーン`
-                    : `${modeName}・通常・高さ${current["heroHeight"] || "70"}%`;
+                    ? copy.hero.summaryFullscreen(modeName)
+                    : copy.hero.summaryNormal(
+                        modeName,
+                        current["heroHeight"] || "70",
+                      );
                 })()}
               >
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  トップページ最上部の写真表示です。ここで選んだ見せ方が、
-                  サイトに来た人が最初に見る1画面の印象を決めます。
+                  {copy.hero.intro}
                 </p>
-                <AdminField
-                  label="表示モード"
-                  hint="カルーセル/1枚絵=従来 / 静謐グリッド・エディトリアル・没入型=新レイアウト。切替は保存後に反映"
-                >
+                <AdminField label={copy.hero.modeLabel} hint={copy.hero.modeHint}>
                   <div className="grid grid-cols-2 gap-1.5">
-                    {HERO_MODE_OPTIONS.map(({ value, name, desc, rects }) => (
+                    {HERO_MODE_OPTIONS.map(({ value, rects }) => (
                       <VisualChoiceCard
                         key={value}
                         active={(current["heroMode"] || "carousel") === value}
-                        name={name}
-                        desc={desc}
+                        name={
+                          copy.hero.modeNames[
+                            value as keyof typeof copy.hero.modeNames
+                          ]
+                        }
+                        desc={
+                          copy.hero.modeDescriptions[
+                            value as keyof typeof copy.hero.modeDescriptions
+                          ]
+                        }
                         preview={<MiniDiagram rects={rects} />}
                         onClick={() => set("heroMode", value)}
                       />
@@ -3871,66 +3803,83 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="登場する速さ"
-                  hint="トップページを開いたときに、写真と文字が静かに現れる速さです"
+                  label={copy.hero.speedLabel}
+                  hint={copy.hero.speedHint}
                 >
                   <div className="grid grid-cols-3 gap-1.5">
-                    {HERO_MOTION_SPEED_OPTIONS.map(({ value, label }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        aria-label={`登場する速さ: ${label}`}
-                        aria-pressed={
-                          (current["heroMotionSpeed"] || "standard") === value
-                        }
-                        onClick={() => set("heroMotionSpeed", value)}
-                        className={`text-[11px] py-2 rounded-sm border transition-colors ${
-                          (current["heroMotionSpeed"] || "standard") === value
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                    {HERO_MOTION_SPEED_OPTIONS.map(({ value, label }) => {
+                      const text =
+                        copy.hero.speedNames[
+                          value as keyof typeof copy.hero.speedNames
+                        ] ?? label;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-label={copy.hero.speedAriaLabel(text)}
+                          aria-pressed={
+                            (current["heroMotionSpeed"] || "standard") ===
+                            value
+                          }
+                          onClick={() => set("heroMotionSpeed", value)}
+                          className={`text-[11px] py-2 rounded-sm border transition-colors ${
+                            (current["heroMotionSpeed"] || "standard") ===
+                            value
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {text}
+                        </button>
+                      );
+                    })}
                   </div>
                 </AdminField>
                 <AdminField
-                  label="出てくる順番"
-                  hint="文字と写真のどちらを先に見せるかを選びます。標準は「写真から」です"
+                  label={copy.hero.orderLabel}
+                  hint={copy.hero.orderHint}
                 >
                   <div className="grid grid-cols-3 gap-1.5">
-                    {HERO_REVEAL_ORDER_OPTIONS.map(({ value, label }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        aria-label={`出てくる順番: ${label}`}
-                        aria-pressed={
-                          (current["heroRevealOrder"] || "photo-first") ===
-                          value
-                        }
-                        onClick={() => set("heroRevealOrder", value)}
-                        className={`text-[11px] py-2 rounded-sm border transition-colors ${
-                          (current["heroRevealOrder"] || "photo-first") ===
-                          value
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                    {HERO_REVEAL_ORDER_OPTIONS.map(({ value, label }) => {
+                      const text =
+                        copy.hero.orderNames[
+                          value as keyof typeof copy.hero.orderNames
+                        ] ?? label;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-label={copy.hero.orderAriaLabel(text)}
+                          aria-pressed={
+                            (current["heroRevealOrder"] || "photo-first") ===
+                            value
+                          }
+                          onClick={() => set("heroRevealOrder", value)}
+                          className={`text-[11px] py-2 rounded-sm border transition-colors ${
+                            (current["heroRevealOrder"] || "photo-first") ===
+                            value
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {text}
+                        </button>
+                      );
+                    })}
                   </div>
                 </AdminField>
                 <AdminField
-                  label="画面の使い方"
-                  hint="フルスクリーン=最初の1画面を写真が覆う（下の「高さ」設定は無視されます）"
+                  label={copy.hero.displayModeLabel}
+                  hint={copy.hero.displayModeHint}
                 >
                   <div className="flex gap-1">
                     {(
                       [
-                        ["normal", "通常（高さ設定に従う）"],
-                        ["fullscreen", "フルスクリーン"],
+                        ["normal", copy.hero.displayModeOptions.normal],
+                        [
+                          "fullscreen",
+                          copy.hero.displayModeOptions.fullscreen,
+                        ],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -3948,11 +3897,11 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="高さ"
-                  hint="ビューポート高に対する割合。スマホは自動で上限調整。フルスクリーン時は無効"
+                  label={copy.hero.heightLabel}
+                  hint={copy.hero.heightHint}
                 >
                   <TypoControl
-                    label="高さ"
+                    label={copy.hero.heightLabel}
                     valueKey="heroHeight"
                     current={current}
                     set={set}
@@ -3964,17 +3913,29 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <AdminField
-                  label="名前の表示位置"
-                  hint="1枚絵/フルスクリーンでは写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます"
+                  label={copy.hero.titlePositionLabel}
+                  hint={copy.hero.titlePositionHint}
                 >
                   <div className="grid grid-cols-3 gap-1.5">
                     {(
                       [
-                        ["center", "中央（既定）"],
-                        ["bottom-left", "左下"],
-                        ["bottom-right", "右下"],
-                        ["top-left", "左上"],
-                        ["top-right", "右上"],
+                        ["center", copy.hero.titlePositionOptions.center],
+                        [
+                          "bottom-left",
+                          copy.hero.titlePositionOptions["bottom-left"],
+                        ],
+                        [
+                          "bottom-right",
+                          copy.hero.titlePositionOptions["bottom-right"],
+                        ],
+                        [
+                          "top-left",
+                          copy.hero.titlePositionOptions["top-left"],
+                        ],
+                        [
+                          "top-right",
+                          copy.hero.titlePositionOptions["top-right"],
+                        ],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -3992,16 +3953,16 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="スクロール演出"
-                  hint="トップを下にスクロールしたときの写真の動き。OS設定で「視差効果を減らす」の人には自動で無効になります"
+                  label={copy.hero.scrollEffectLabel}
+                  hint={copy.hero.scrollEffectHint}
                 >
                   <div className="grid grid-cols-4 gap-1.5">
                     {(
                       [
-                        ["none", "なし（既定）"],
-                        ["fade", "フェード"],
-                        ["sink", "沈み込み"],
-                        ["parallax", "パララックス"],
+                        ["none", copy.hero.scrollEffectOptions.none],
+                        ["fade", copy.hero.scrollEffectOptions.fade],
+                        ["sink", copy.hero.scrollEffectOptions.sink],
+                        ["parallax", copy.hero.scrollEffectOptions.parallax],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -4019,14 +3980,14 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
-                  label="オーバーレイ"
-                  hint="1枚絵モードで名前を読みやすくする暗いグラデーション"
+                  label={copy.hero.overlayLabel}
+                  hint={copy.hero.overlayHint}
                 >
                   <div className="flex gap-1">
                     {(
                       [
-                        ["on", "あり"],
-                        ["off", "なし"],
+                        ["on", copy.hero.overlayOptions.on],
+                        ["off", copy.hero.overlayOptions.off],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -4058,56 +4019,61 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* BB: nav position + hover effect */}
               <Section
-                title="ナビゲーション（位置・ホバー）"
+                title={copy.nav.title}
                 defaultOpen={false}
-                summary={`${NAV_POSITION_OPTIONS.find((o) => o.value === (current["navPosition"] || "top"))?.name ?? "上"}・${
-                  (
-                    {
-                      fade: "フェード",
-                      underline: "下線",
-                      dot: "点",
-                      blur: "にじみ",
-                    } as Record<string, string>
-                  )[current["navHoverEffect"] || "fade"]
-                }`}
+                summary={copy.nav.summary(
+                  copy.nav.positionNames[
+                    (current["navPosition"] ||
+                      "top") as keyof typeof copy.nav.positionNames
+                  ] ?? copy.nav.positionNames.top,
+                  copy.nav.hoverShortNames[
+                    (current["navHoverEffect"] ||
+                      "fade") as keyof typeof copy.nav.hoverShortNames
+                  ],
+                )}
               >
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  全ページ共通のメニューです（PC表示）。位置とホバー時の反応を
-                  変えられます。スマホでは位置に関わらず常にハンバーガーメニューです。
+                  {copy.nav.intro}
                 </p>
-                <AdminField label="位置">
+                <AdminField label={copy.nav.positionLabel}>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {NAV_POSITION_OPTIONS.map(
-                      ({ value, name, desc, rects }) => (
-                        <VisualChoiceCard
-                          key={value}
-                          active={(current["navPosition"] || "top") === value}
-                          name={name}
-                          desc={desc}
-                          preview={<MiniDiagram rects={rects} />}
-                          onClick={() => set("navPosition", value)}
-                        />
-                      ),
-                    )}
+                    {NAV_POSITION_OPTIONS.map(({ value, rects }) => (
+                      <VisualChoiceCard
+                        key={value}
+                        active={(current["navPosition"] || "top") === value}
+                        name={
+                          copy.nav.positionNames[
+                            value as keyof typeof copy.nav.positionNames
+                          ]
+                        }
+                        desc={
+                          copy.nav.positionDescriptions[
+                            value as keyof typeof copy.nav.positionDescriptions
+                          ]
+                        }
+                        preview={<MiniDiagram rects={rects} />}
+                        onClick={() => set("navPosition", value)}
+                      />
+                    ))}
                   </div>
                 </AdminField>
                 <AdminField
-                  label="ホバー演出"
-                  hint="マウスを乗せたとき/キーボードフォーカス時の反応"
+                  label={copy.nav.hoverLabel}
+                  hint={copy.nav.hoverHint}
                 >
                   <div className="grid grid-cols-4 gap-1.5">
                     {(
                       [
-                        ["fade", "フェード（既定）"],
-                        ["underline", "下線が伸びる"],
-                        ["dot", "点がともる"],
-                        ["blur", "にじみ→くっきり"],
+                        ["fade", copy.nav.hoverOptions.fade],
+                        ["underline", copy.nav.hoverOptions.underline],
+                        ["dot", copy.nav.hoverOptions.dot],
+                        ["blur", copy.nav.hoverOptions.blur],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -4132,22 +4098,21 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* CC: section spacing multipliers */}
-              <Section title="余白・スペーシング" defaultOpen={false}>
+              <Section title={copy.spacing.title} defaultOpen={false}>
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  ページの「間」の量を倍率で調整します。1.0
-                  が現在のリズム。スマホは元の比率のまま縮みます。
+                  {copy.spacing.intro}
                 </p>
                 <AdminField
-                  label="ヒーロー直下"
-                  hint="ヒーロー写真と作品セクションの間"
+                  label={copy.spacing.heroBottomLabel}
+                  hint={copy.spacing.heroBottomHint}
                 >
                   <TypoControl
-                    label="倍率"
+                    label={copy.spacing.ratioControlLabel}
                     valueKey="spacingHeroBottom"
                     current={current}
                     set={set}
@@ -4159,11 +4124,11 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <AdminField
-                  label="セクション間"
-                  hint="作品〜CTA〜フッターなどセクション同士の基本余白"
+                  label={copy.spacing.sectionGapLabel}
+                  hint={copy.spacing.sectionGapHint}
                 >
                   <TypoControl
-                    label="倍率"
+                    label={copy.spacing.ratioControlLabel}
                     valueKey="spacingSectionGap"
                     current={current}
                     set={set}
@@ -4175,11 +4140,11 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <AdminField
-                  label="ページ冒頭"
-                  hint="ギャラリー・シリーズ・About・Contact など各ページ最初の「ため」"
+                  label={copy.spacing.pageTopLabel}
+                  hint={copy.spacing.pageTopHint}
                 >
                   <TypoControl
-                    label="倍率"
+                    label={copy.spacing.ratioControlLabel}
                     valueKey="spacingPageTop"
                     current={current}
                     set={set}
@@ -4190,9 +4155,12 @@ export function SettingsTab({
                     defaultVal="1"
                   />
                 </AdminField>
-                <AdminField label="フッター上" hint="ページ末尾とフッターの間">
+                <AdminField
+                  label={copy.spacing.footerTopLabel}
+                  hint={copy.spacing.footerTopHint}
+                >
                   <TypoControl
-                    label="倍率"
+                    label={copy.spacing.ratioControlLabel}
                     valueKey="spacingFooterTop"
                     current={current}
                     set={set}
@@ -4214,50 +4182,58 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* DD: paper/grain background texture */}
               <Section
-                title="背景の質感（グレイン）"
+                title={copy.bgTexture.title}
                 defaultOpen={false}
                 summary={
-                  BG_TEXTURE_OPTIONS.find(
-                    (o) => o.value === (current["bgTexture"] || "none"),
-                  )?.name ?? "なし"
+                  copy.bgTexture.names[
+                    (current["bgTexture"] ||
+                      "none") as keyof typeof copy.bgTexture.names
+                  ] ?? copy.bgTexture.names.none
                 }
               >
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  写真以外のサイト背景に、ごく薄いノイズを重ねます。写真自体や、
-                  写真を拡大表示する画面には影響しません。
+                  {copy.bgTexture.intro}
                 </p>
                 <AdminField
-                  label="テクスチャ"
-                  hint="背景にごく薄いノイズを敷きます。写真の上や、写真を拡大表示する画面には乗りません"
+                  label={copy.bgTexture.textureLabel}
+                  hint={copy.bgTexture.textureHint}
                 >
                   <div className="grid grid-cols-2 gap-1.5">
-                    {BG_TEXTURE_OPTIONS.map(({ value, name, desc }) => (
+                    {BG_TEXTURE_OPTIONS.map(({ value }) => (
                       <VisualChoiceCard
                         key={value}
                         active={(current["bgTexture"] || "none") === value}
-                        name={name}
-                        desc={desc}
+                        name={
+                          copy.bgTexture.names[
+                            value as keyof typeof copy.bgTexture.names
+                          ]
+                        }
+                        desc={
+                          copy.bgTexture.descriptions[
+                            value as keyof typeof copy.bgTexture.descriptions
+                          ]
+                        }
                         preview={<TexturePreview value={value} />}
                         onClick={() => set("bgTexture", value)}
                       />
                     ))}
                   </div>
                   <p className="text-[9px] text-[var(--admin-muted)] leading-relaxed mt-1.5">
-                    見本は模様の違いが分かるよう少し強めに表示しています。実際の濃さは下の「濃度」で調整します。
+                    {copy.bgTexture.previewNote}
                   </p>
                 </AdminField>
                 <AdminField
-                  label="濃度"
-                  hint="0.06前後がおすすめ。上げすぎると写真より質感が目立ちます"
+                  label={copy.bgTexture.opacityLabel}
+                  hint={copy.bgTexture.opacityHint}
                 >
                   <TypoControl
-                    label="濃度"
+                    label={copy.bgTexture.opacityLabel}
                     valueKey="bgTextureOpacity"
                     current={current}
                     set={set}
@@ -4276,37 +4252,45 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* 写真のフェードイン方式（photoRevealEffect） */}
               <Section
-                title="写真のフェードイン"
+                title={copy.fade.title}
                 defaultOpen={false}
                 summary={
-                  FADE_OPTIONS.find(
-                    (o) => o.value === (current["photoRevealEffect"] || "fade"),
-                  )?.name ?? "フェード"
+                  copy.fade.names[
+                    (current["photoRevealEffect"] ||
+                      "fade") as keyof typeof copy.fade.names
+                  ] ?? copy.fade.names.fade
                 }
               >
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  ギャラリーなどで写真がスクロールして画面に入ってきたときの
-                  動きです。
+                  {copy.fade.intro}
                 </p>
                 <AdminField
-                  label="現れ方"
-                  hint="コラージュのような枠・傾きつきレイアウトでは「浮き上がり」より「フェード」「なし」が自然に見えます"
+                  label={copy.fade.appearanceLabel}
+                  hint={copy.fade.appearanceHint}
                 >
                   <div className="grid grid-cols-2 gap-1.5">
-                    {FADE_OPTIONS.map(({ value, name, desc, rects }) => (
+                    {FADE_OPTIONS.map(({ value, rects }) => (
                       <VisualChoiceCard
                         key={value}
                         active={
                           (current["photoRevealEffect"] || "fade") === value
                         }
-                        name={name}
-                        desc={desc}
+                        name={
+                          copy.fade.names[
+                            value as keyof typeof copy.fade.names
+                          ]
+                        }
+                        desc={
+                          copy.fade.descriptions[
+                            value as keyof typeof copy.fade.descriptions
+                          ]
+                        }
                         preview={<MiniDiagram rects={rects} />}
                         onClick={() => set("photoRevealEffect", value)}
                       />
@@ -4317,20 +4301,22 @@ export function SettingsTab({
                   onClick={() => set("photoRevealEffect", "")}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* G/N: Gallery layout type + controlled-random tuning */}
-              <Section title="ギャラリー配置" defaultOpen={false}>
+              <Section title={copy.galleryLayout.title} defaultOpen={false}>
                 <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  ページごとに写真の並べ方を選べます。プレビューで{" "}
-                  <span className="text-[color:var(--admin-ink)]">トップ</span>{" "}
+                  {copy.galleryLayout.introPrefix}{" "}
+                  <span className="text-[color:var(--admin-ink)]">
+                    {copy.galleryLayout.introTop}
+                  </span>{" "}
                   /{" "}
                   <span className="text-[color:var(--admin-ink)]">Gallery</span>{" "}
                   /{" "}
                   <span className="text-[color:var(--admin-ink)]">Series</span>{" "}
-                  ページを開くと即反映。下の調整は「モザイク」に効きます。
+                  {copy.galleryLayout.introSuffix}
                 </p>
                 {/* N1: layout-type picker. One list, applied to whichever
                     target (Gallery/Series/Top) is selected above it — the
@@ -4348,7 +4334,7 @@ export function SettingsTab({
                     current[layoutTarget] || fallbackFor(layoutTarget);
                   return (
                     <>
-                      <AdminField label="対象ページ">
+                      <AdminField label={copy.galleryLayout.targetLabel}>
                         <div className="grid grid-cols-3 gap-1.5">
                           {targets.map(({ key, label }) => (
                             <button
@@ -4369,17 +4355,25 @@ export function SettingsTab({
                       {(["aligned", "editorial"] as const).map((cat) => (
                         <AdminField
                           key={cat}
-                          label={GALLERY_LAYOUT_CATEGORY_LABEL[cat]}
+                          label={copy.galleryLayout.categoryLabels[cat]}
                         >
                           <div className="grid grid-cols-2 gap-1.5">
                             {GALLERY_LAYOUT_OPTIONS.filter(
                               (o) => o.category === cat,
-                            ).map(({ value, name, desc }) => (
+                            ).map(({ value }) => (
                               <VisualChoiceCard
                                 key={value}
                                 active={activeValue === value}
-                                name={name}
-                                desc={desc}
+                                name={
+                                  t.phase2b.series.layoutNames[
+                                    value as keyof typeof t.phase2b.series.layoutNames
+                                  ]
+                                }
+                                desc={
+                                  copy.galleryLayout.descriptions[
+                                    value as keyof typeof copy.galleryLayout.descriptions
+                                  ]
+                                }
                                 preview={<LayoutIcon value={value} />}
                                 onClick={() => set(layoutTarget, value)}
                               />
@@ -4392,18 +4386,30 @@ export function SettingsTab({
                 })()}
                 {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定） */}
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  トップ（Works）に出す写真
+                  {copy.galleryLayout.topWorksHeading}
                 </p>
                 <AdminField
-                  label="選び方"
-                  hint="自動=ギャラリーの並び順の先頭9枚 / ランダム=訪問ごとに入れ替え / 手動=下で選んだ写真を選んだ順に表示。最上部のヒーロー写真とは別の設定です"
+                  label={copy.galleryLayout.topWorksModeLabel}
+                  hint={copy.galleryLayout.topWorksModeHint}
                 >
                   <div className="grid grid-cols-3 gap-1.5">
                     {(
                       [
-                        ["auto", "並び順から自動", "ギャラリーの並びの先頭9枚"],
-                        ["random", "ランダム", "訪問ごとにシャッフル"],
-                        ["manual", "手動で選択", "下で写真を選ぶ"],
+                        [
+                          "auto",
+                          copy.galleryLayout.topWorksModeOptions.auto.name,
+                          copy.galleryLayout.topWorksModeOptions.auto.desc,
+                        ],
+                        [
+                          "random",
+                          copy.galleryLayout.topWorksModeOptions.random.name,
+                          copy.galleryLayout.topWorksModeOptions.random.desc,
+                        ],
+                        [
+                          "manual",
+                          copy.galleryLayout.topWorksModeOptions.manual.name,
+                          copy.galleryLayout.topWorksModeOptions.manual.desc,
+                        ],
                       ] as const
                     ).map(([val, name, desc]) => (
                       <button
@@ -4423,8 +4429,8 @@ export function SettingsTab({
                 </AdminField>
                 {(current["topWorksMode"] || "auto") === "manual" && (
                   <AdminField
-                    label="トップに出す写真"
-                    hint="クリックで選択/解除。番号の順（選んだ順）に表示されます。未選択のあいだは自動と同じ表示"
+                    label={copy.galleryLayout.topWorksPickerLabel}
+                    hint={copy.galleryLayout.topWorksPickerHint}
                   >
                     <TopWorksPicker
                       value={current["topWorksIds"] ?? ""}
@@ -4433,48 +4439,48 @@ export function SettingsTab({
                   </AdminField>
                 )}
                 <AdminField
-                  label="初期表示枚数"
-                  hint="トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます"
+                  label={copy.galleryLayout.initialCountLabel}
+                  hint={copy.galleryLayout.initialCountHint}
                 >
                   <TypoControl
-                    label="初期表示枚数"
+                    label={copy.galleryLayout.initialCountLabel}
                     valueKey="homeGalleryCount"
                     current={current}
                     set={set}
                     min={1}
                     max={200}
                     step={1}
-                    unit="枚"
+                    unit={copy.units.photos}
                     defaultVal="12"
                   />
                 </AdminField>
                 {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
                 W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  ギャラリーの列数・大きさ・余白
+                  {copy.galleryLayout.gridHeading}
                 </p>
                 <AdminField
-                  label="最大列数"
-                  hint="広い画面で最大何列まで並べるか。実際の列数は画面幅に応じて自動で減ります（スマホは1〜2列）"
+                  label={copy.galleryLayout.maxColumnsLabel}
+                  hint={copy.galleryLayout.maxColumnsHint}
                 >
                   <TypoControl
-                    label="最大列数"
+                    label={copy.galleryLayout.maxColumnsLabel}
                     valueKey="galleryColumns"
                     current={current}
                     set={set}
                     min={1}
                     max={8}
                     step={1}
-                    unit="列"
+                    unit={copy.units.columns}
                     defaultVal="3"
                   />
                 </AdminField>
                 <AdminField
-                  label="写真の大きさ"
-                  hint="大きくすると1枚が広くなり、その分列数が自動で減ります"
+                  label={copy.galleryLayout.photoSizeLabel}
+                  hint={copy.galleryLayout.photoSizeHint}
                 >
                   <TypoControl
-                    label="大きさ"
+                    label={copy.galleryLayout.photoSizeControlLabel}
                     valueKey="gallerySizeScale"
                     current={current}
                     set={set}
@@ -4486,11 +4492,11 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <AdminField
-                  label="間隔"
-                  hint="写真同士の余白の倍率（0.2=詰める / 3.0=広い）"
+                  label={copy.galleryLayout.gapLabel}
+                  hint={copy.galleryLayout.gapHint}
                 >
                   <TypoControl
-                    label="余白倍率"
+                    label={copy.galleryLayout.gapControlLabel}
                     valueKey="galleryGapScale"
                     current={current}
                     set={set}
@@ -4502,31 +4508,30 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  トップ（Works）の列数・大きさ・余白 —
-                  動かすまではギャラリーと同じ値
+                  {copy.galleryLayout.topGridHeading}
                 </p>
                 <AdminField
-                  label="最大列数（トップ）"
-                  hint="トップ下部の作品の最大列数。ギャラリーとは独立です"
+                  label={copy.galleryLayout.topMaxColumnsLabel}
+                  hint={copy.galleryLayout.topMaxColumnsHint}
                 >
                   <TypoControl
-                    label="最大列数"
+                    label={copy.galleryLayout.maxColumnsLabel}
                     valueKey="topWorksColumns"
                     current={current}
                     set={set}
                     min={1}
                     max={8}
                     step={1}
-                    unit="列"
+                    unit={copy.units.columns}
                     defaultVal={current["galleryColumns"] || "3"}
                   />
                 </AdminField>
                 <AdminField
-                  label="写真の大きさ（トップ）"
-                  hint="トップ下部の作品の大きさ。ギャラリーとは独立です"
+                  label={copy.galleryLayout.topPhotoSizeLabel}
+                  hint={copy.galleryLayout.topPhotoSizeHint}
                 >
                   <TypoControl
-                    label="大きさ"
+                    label={copy.galleryLayout.photoSizeControlLabel}
                     valueKey="topWorksSizeScale"
                     current={current}
                     set={set}
@@ -4538,11 +4543,11 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <AdminField
-                  label="間隔（トップ）"
-                  hint="トップ下部の作品の余白倍率。ギャラリーとは独立です"
+                  label={copy.galleryLayout.topGapLabel}
+                  hint={copy.galleryLayout.topGapHint}
                 >
                   <TypoControl
-                    label="余白倍率"
+                    label={copy.galleryLayout.gapControlLabel}
                     valueKey="topWorksGapScale"
                     current={current}
                     set={set}
@@ -4554,14 +4559,14 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  モザイクの調整
+                  {copy.galleryLayout.mosaicHeading}
                 </p>
                 <AdminField
-                  label="抜け（空セル）の頻度"
-                  hint="0で抜けなし＝詰める。大きいほど余白が増える。スマホでは自動的に控えめになります"
+                  label={copy.galleryLayout.emptyRateLabel}
+                  hint={copy.galleryLayout.emptyRateHint}
                 >
                   <TypoControl
-                    label="抜け頻度"
+                    label={copy.galleryLayout.emptyRateControlLabel}
                     valueKey="galleryEmptyRate"
                     current={current}
                     set={set}
@@ -4573,11 +4578,11 @@ export function SettingsTab({
                   />
                 </AdminField>
                 <AdminField
-                  label="サイズの緩急"
-                  hint="S/M/L の大きさの差をどれだけ強調するか。0=ほぼ均一 / 1.0=メリハリ最大"
+                  label={copy.galleryLayout.sizeVariationLabel}
+                  hint={copy.galleryLayout.sizeVariationHint}
                 >
                   <TypoControl
-                    label="緩急の強さ"
+                    label={copy.galleryLayout.sizeVariationControlLabel}
                     valueKey="gallerySizeVariation"
                     current={current}
                     set={set}
@@ -4590,8 +4595,8 @@ export function SettingsTab({
                 </AdminField>
                 <div className="pt-2 border-t border-[var(--admin-line)]">
                   <AdminField
-                    label="配置のシャッフル"
-                    hint="写真は同じまま、抜けの入る位置を別パターンに変えます。今の配置がイマイチなら押してみてください"
+                    label={copy.galleryLayout.shuffleLabel}
+                    hint={copy.galleryLayout.shuffleHint}
                   >
                     <div className="flex items-center gap-2">
                       <button
@@ -4603,7 +4608,7 @@ export function SettingsTab({
                         }
                         className="flex items-center gap-1.5 px-3 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors"
                       >
-                        <Shuffle size={12} /> 配置をシャッフル
+                        <Shuffle size={12} /> {copy.galleryLayout.shuffleButton}
                       </button>
                       <span className="text-[10px] text-[var(--admin-muted)] tabular-nums">
                         seed: {current["gallerySeed"] || "1"}
@@ -4627,22 +4632,22 @@ export function SettingsTab({
                   }}
                   className="text-[10px] text-[var(--admin-muted)] transition-colors"
                 >
-                  初期設定に戻す
+                  {copy.resetToDefault}
                 </button>
               </Section>
 
               {/* I: Series navigation toggle */}
-              <Section title="シリーズ" defaultOpen={false}>
+              <Section title={copy.seriesSection.title} defaultOpen={false}>
                 <AdminField
-                  label="ナビに「Series」を表示"
-                  hint="「自動」は公開シリーズが1つでもあればリンクを表示します（既定）。「表示」は常に表示、「非表示」は常に隠します。シリーズの作成・写真割り当ては上部の Series タブ・Library のインスペクタから"
+                  label={copy.seriesSection.navLabel}
+                  hint={copy.seriesSection.navHint}
                 >
                   <div className="flex gap-1">
                     {(
                       [
-                        ["auto", "自動"],
-                        ["on", "表示"],
-                        ["off", "非表示"],
+                        ["auto", copy.seriesSection.navOptions.auto],
+                        ["on", copy.seriesSection.navOptions.on],
+                        ["off", copy.seriesSection.navOptions.off],
                       ] as const
                     ).map(([val, lbl]) => (
                       <button
@@ -4663,26 +4668,31 @@ export function SettingsTab({
                 {/* P: series grid (Works series view) */}
                 <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
                   <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed">
-                    シリーズ一覧（表紙写真のグリッド）の見せ方。プレビューで{" "}
+                    {copy.seriesSection.gridIntroPrefix}{" "}
                     <span className="text-[color:var(--admin-ink)]">
                       Series
                     </span>{" "}
-                    ページ、または{" "}
+                    {copy.seriesSection.gridIntroMid}{" "}
                     <span className="text-[color:var(--admin-ink)]">
                       Gallery
                     </span>{" "}
-                    ページ上部の Photos / Series
-                    切り替えで反映されます。タイルは表紙写真のみ（文字なし）。表紙未設定のシリーズは先頭写真が自動で使われます。
+                    {copy.seriesSection.gridIntroSuffix}
                   </p>
                   <AdminField
-                    label="Gallery で最初に見せるもの"
-                    hint="Gallery ページを開いたとき、写真一覧（Photos）とシリーズ一覧（Series）のどちらを先に表示するか"
+                    label={copy.seriesSection.defaultViewLabel}
+                    hint={copy.seriesSection.defaultViewHint}
                   >
                     <div className="flex gap-1">
                       {(
                         [
-                          ["photos", "写真一覧"],
-                          ["series", "シリーズ"],
+                          [
+                            "photos",
+                            copy.seriesSection.defaultViewOptions.photos,
+                          ],
+                          [
+                            "series",
+                            copy.seriesSection.defaultViewOptions.series,
+                          ],
                         ] as const
                       ).map(([val, lbl]) => (
                         <button
@@ -4700,34 +4710,34 @@ export function SettingsTab({
                     </div>
                   </AdminField>
                   <AdminField
-                    label="シリーズ列数（PC）"
-                    hint="タイルを大きく見せたいなら少なめ（2〜3列推奨）"
+                    label={copy.seriesSection.columnsPcLabel}
+                    hint={copy.seriesSection.columnsPcHint}
                   >
                     <TypoControl
-                      label="PC 列数"
+                      label={copy.seriesSection.columnsPcControlLabel}
                       valueKey="seriesGridColumns"
                       current={current}
                       set={set}
                       min={1}
                       max={8}
                       step={1}
-                      unit="列"
+                      unit={copy.units.columns}
                       defaultVal="3"
                     />
                   </AdminField>
                   <AdminField
-                    label="シリーズ列数（スマホ）"
-                    hint="スマホ表示時の列数"
+                    label={copy.seriesSection.columnsMobileLabel}
+                    hint={copy.seriesSection.columnsMobileHint}
                   >
                     <TypoControl
-                      label="スマホ 列数"
+                      label={copy.seriesSection.columnsMobileControlLabel}
                       valueKey="seriesGridColumnsMobile"
                       current={current}
                       set={set}
                       min={1}
                       max={3}
                       step={1}
-                      unit="列"
+                      unit={copy.units.columns}
                       defaultVal="2"
                     />
                   </AdminField>
@@ -4741,28 +4751,35 @@ export function SettingsTab({
                     }}
                     className="text-[10px] text-[var(--admin-muted)] transition-colors"
                   >
-                    初期設定に戻す
+                    {copy.resetToDefault}
                   </button>
                 </div>
 
                 {/* 機能8: 並び順独立設定 */}
                 <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
                   <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed">
-                    写真の並び順。「手動順」は Library
-                    でドラッグした順番。シリーズごとに上書きしたい場合は Series
-                    タブの各シリーズ編集から設定できます。
+                    {copy.seriesSection.orderIntro}
                   </p>
                   <AdminField
-                    label="ギャラリーの並び順"
-                    hint="ギャラリーページ・トップの写真の並べ方"
+                    label={copy.seriesSection.gallerySortLabel}
+                    hint={copy.seriesSection.gallerySortHint}
                   >
                     <div className="grid grid-cols-2 gap-1">
                       {(
                         [
-                          ["manual", "手動順（D&D）"],
-                          ["date_desc", "撮影日↓新しい順"],
-                          ["date_asc", "撮影日↑古い順"],
-                          ["upload_desc", "アップロード↓新しい順"],
+                          ["manual", copy.seriesSection.sortOptions.manual],
+                          [
+                            "date_desc",
+                            copy.seriesSection.sortOptions.date_desc,
+                          ],
+                          [
+                            "date_asc",
+                            copy.seriesSection.sortOptions.date_asc,
+                          ],
+                          [
+                            "upload_desc",
+                            copy.seriesSection.sortOptions.upload_desc,
+                          ],
                         ] as const
                       ).map(([val, lbl]) => (
                         <button
@@ -4776,16 +4793,25 @@ export function SettingsTab({
                     </div>
                   </AdminField>
                   <AdminField
-                    label="シリーズ内の並び順"
-                    hint="各シリーズ詳細ページの写真の並べ方（シリーズ側で個別設定もできます）"
+                    label={copy.seriesSection.seriesSortLabel}
+                    hint={copy.seriesSection.seriesSortHint}
                   >
                     <div className="grid grid-cols-2 gap-1">
                       {(
                         [
-                          ["manual", "手動順（D&D）"],
-                          ["date_desc", "撮影日↓新しい順"],
-                          ["date_asc", "撮影日↑古い順"],
-                          ["upload_desc", "アップロード↓新しい順"],
+                          ["manual", copy.seriesSection.sortOptions.manual],
+                          [
+                            "date_desc",
+                            copy.seriesSection.sortOptions.date_desc,
+                          ],
+                          [
+                            "date_asc",
+                            copy.seriesSection.sortOptions.date_asc,
+                          ],
+                          [
+                            "upload_desc",
+                            copy.seriesSection.sortOptions.upload_desc,
+                          ],
                         ] as const
                       ).map(([val, lbl]) => (
                         <button
@@ -4806,7 +4832,7 @@ export function SettingsTab({
                     }}
                     className="text-[10px] text-[var(--admin-muted)] transition-colors"
                   >
-                    初期設定に戻す
+                    {copy.resetToDefault}
                   </button>
                 </div>
               </Section>
@@ -6406,6 +6432,7 @@ function TypoControl({
   unit?: string;
   defaultVal?: string;
 }) {
+  const { t } = useAdminI18n();
   const raw = current[valueKey] ?? "";
   const parsed = parseFloat(raw);
   const value = isNaN(parsed)
@@ -6438,7 +6465,9 @@ function TypoControl({
         className="flex-1 min-w-0 h-1 accent-[var(--admin-muted)] cursor-pointer"
       />
       <input
-        aria-label={`${label}（数値入力）`}
+        aria-label={t.phase2b.settingsBasic.typoControl.numericInputAriaLabel(
+          label,
+        )}
         type="number"
         min={min}
         max={max}
@@ -6452,9 +6481,11 @@ function TypoControl({
         onBlur={() => setEditing(null)}
         title={
           isOpacity
-            ? `0〜1（現在 ${Math.round(value * 100)}%）`
+            ? t.phase2b.settingsBasic.typoControl.opacityTitle(
+                Math.round(value * 100),
+              )
             : unit
-              ? `単位: ${unit}`
+              ? t.phase2b.settingsBasic.typoControl.unitTitle(unit)
               : undefined
         }
         className="w-16 shrink-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm text-[11px] text-[var(--admin-ink)] text-right px-1.5 py-0.5 tabular-nums outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

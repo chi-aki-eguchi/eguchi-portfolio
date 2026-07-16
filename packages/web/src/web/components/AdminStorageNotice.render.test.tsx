@@ -129,3 +129,21 @@ test("StorageAlertBanner — 再試行できない時はボタンを出さない
   expect(text).not.toContain("再試行");
   expect(text).toContain("S3_BUCKET など");
 });
+
+test("StorageAlertBanner — Phase 2bの英語辞書で不足設定と再試行を表示する", () => {
+  const { text, html } = renderToText(
+    createElement(StorageAlertBanner, {
+      missing: ["S3_BUCKET"],
+      canRetry: true,
+      onRetry: () => {},
+      onClose: () => {},
+      copy: ADMIN_DICTIONARY.en.phase2b.library.storageAlert,
+    }),
+  );
+  expect(text).toContain("Photo storage is not connected yet.");
+  expect(text).toContain("Missing settings: S3_BUCKET");
+  expect(text).toContain("Railway Variables");
+  expect(text).toContain("redeployed");
+  expect(text).toContain("Retry after correcting the settings");
+  expect(html).toContain('aria-label="Close"');
+});

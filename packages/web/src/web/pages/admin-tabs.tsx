@@ -1102,6 +1102,7 @@ export function ProfileTab({
 export function CategoriesTab() {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
+  const copy = t.phase2b.categories;
   const [newSlug, setNewSlug] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [catError, setCatError] = useState("");
@@ -1136,19 +1137,17 @@ export function CategoriesTab() {
       setCatError("");
     },
     onError: () =>
-      setCatError(
-        "追加に失敗しました。スラッグが重複していないか確認してください。",
-      ),
+      setCatError(copy.errors.addFailed),
   });
 
   const handleAddCat = () => {
     const slug = newSlug.trim();
     if (RESERVED_SLUGS.includes(slug)) {
-      setCatError(`"${slug}" は予約語のため使用できません。`);
+      setCatError(copy.errors.reservedSlug(slug));
       return;
     }
     if (categories.some((c) => c.slug === slug)) {
-      setCatError(`スラッグ "${slug}" は既に存在します。`);
+      setCatError(copy.errors.duplicateSlug(slug));
       return;
     }
     setCatError("");
@@ -1169,7 +1168,7 @@ export function CategoriesTab() {
     },
     // assertOk throws on a non-2xx; without an onError the row stays and the admin
     // wrongly assumes the delete worked. Surface it in the existing error slot.
-    onError: () => setCatError("削除に失敗しました。"),
+    onError: () => setCatError(copy.errors.deleteFailed),
   });
 
   // Reorder controls the gallery filter order. Optimistically reorder the cache so
@@ -1186,7 +1185,7 @@ export function CategoriesTab() {
     // Revert the optimistic reorder and surface the failure instead of leaving the
     // UI showing an order that wasn't saved.
     onError: () => {
-      setReorderError("並び替えの保存に失敗しました。");
+      setReorderError(copy.errors.reorderFailed);
       qc.invalidateQueries({ queryKey: ["categories"] });
     },
   });
@@ -1217,7 +1216,7 @@ export function CategoriesTab() {
         description={t.headers.categories}
       />
       <p className="text-[11px] text-[var(--admin-muted)] mb-6">
-        ギャラリーのフィルターとして使用。↑↓で並び替え（この順で表示されます）。
+        {copy.description}
       </p>
 
       {reorderError && (
@@ -1237,7 +1236,7 @@ export function CategoriesTab() {
         )}
         {categories.length === 0 && !catsLoading && (
           <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
-            まだカテゴリがありません。下の入力欄から追加できます。
+            {copy.empty}
           </p>
         )}
         {categories.map((cat, i) => (
@@ -1250,7 +1249,7 @@ export function CategoriesTab() {
                 <button
                   onClick={() => moveCat(cat.id, -1)}
                   disabled={i === 0 || reorderCats.isPending}
-                  aria-label="上へ移動"
+                  aria-label={copy.moveUp}
                   className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                 >
                   <ChevronUp size={13} />
@@ -1260,7 +1259,7 @@ export function CategoriesTab() {
                   disabled={
                     i === categories.length - 1 || reorderCats.isPending
                   }
-                  aria-label="下へ移動"
+                  aria-label={copy.moveDown}
                   className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                 >
                   <ChevronDown size={13} />
@@ -1277,7 +1276,7 @@ export function CategoriesTab() {
               onClick={() =>
                 setDeleteCatConfirm({ id: cat.id, label: cat.label })
               }
-              aria-label={`${cat.label} を削除`}
+              aria-label={copy.deleteAria(cat.label)}
               className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 ml-2"
             >
               <Trash2 size={13} />
@@ -1288,12 +1287,12 @@ export function CategoriesTab() {
 
       <div className="border-t border-[var(--admin-line)] pt-5">
         <p className="text-[11px] tracking-wider uppercase text-[var(--admin-muted)] mb-4">
-          New Category
+          {copy.newCategory}
         </p>
         <div className="flex flex-col gap-3">
-          <AdminField label="Label">
+          <AdminField label={copy.label}>
             <input
-              aria-label="カテゴリ名"
+              aria-label={copy.labelAria}
               value={newLabel}
               onChange={(e) => {
                 setNewLabel(e.target.value);
@@ -1303,9 +1302,9 @@ export function CategoriesTab() {
               className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
             />
           </AdminField>
-          <AdminField label="Slug">
+          <AdminField label={copy.slug}>
             <input
-              aria-label="スラッグ"
+              aria-label={copy.slugAria}
               value={newSlug}
               onChange={(e) => {
                 setNewSlug(
@@ -1325,7 +1324,7 @@ export function CategoriesTab() {
             disabled={!newSlug || !newLabel || addCat.isPending}
             className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
           >
-            <Plus size={12} /> Add
+            <Plus size={12} /> {copy.add}
           </button>
         </div>
       </div>
@@ -1334,7 +1333,7 @@ export function CategoriesTab() {
       {deleteCatConfirm && (
         <Modal onClose={() => setDeleteCatConfirm(null)}>
           <p className="text-[13px] text-[var(--admin-ink)] mb-4">
-            「{deleteCatConfirm.label}」を削除しますか？
+            {copy.deleteConfirm(deleteCatConfirm.label)}
           </p>
           <div className="flex gap-2 justify-end">
             <button
@@ -1385,6 +1384,7 @@ type SeriesDraft = {
 export function SeriesTab() {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
+  const copy = t.phase2b.series;
   const [newTitle, setNewTitle] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [addError, setAddError] = useState("");
@@ -1420,7 +1420,7 @@ export function SeriesTab() {
     if (!id) return "";
     const p = photos.find((x) => x.id === id);
     // 表紙が削除済み写真を指したままの場合、裸のIDではなく言葉で伝える
-    return p ? p.title || p.filename : "元の写真は削除済み";
+    return p ? p.title || p.filename : copy.deletedCover;
   };
 
   const addSeries = useMutation({
@@ -1438,15 +1438,13 @@ export function SeriesTab() {
       setAddError("");
     },
     onError: () =>
-      setAddError(
-        "追加に失敗しました。スラッグが重複していないか確認してください。",
-      ),
+      setAddError(copy.errors.addFailed),
   });
   const handleAdd = () => {
     const slug = newSlug.trim();
     if (!slug || !newTitle.trim()) return;
     if (series.some((s) => s.slug === slug)) {
-      setAddError(`スラッグ "${slug}" は既に存在します。`);
+      setAddError(copy.errors.duplicateSlug(slug));
       return;
     }
     setAddError("");
@@ -1467,7 +1465,7 @@ export function SeriesTab() {
       qc.invalidateQueries({ queryKey: ["series"] });
       setRowError("");
     },
-    onError: () => setRowError("保存に失敗しました。"),
+    onError: () => setRowError(copy.errors.saveFailed),
   });
 
   const deleteSeries = useMutation({
@@ -1483,7 +1481,7 @@ export function SeriesTab() {
       // Photos were detached server-side — refresh so the inspector reflects it.
       qc.invalidateQueries({ queryKey: ["photos"] });
     },
-    onError: () => setRowError("削除に失敗しました。"),
+    onError: () => setRowError(copy.errors.deleteFailed),
   });
 
   const reorder = useMutation({
@@ -1497,7 +1495,7 @@ export function SeriesTab() {
       qc.invalidateQueries({ queryKey: ["series"] });
     },
     onError: () => {
-      setRowError("並び替えの保存に失敗しました。");
+      setRowError(copy.errors.reorderFailed);
       qc.invalidateQueries({ queryKey: ["admin-series"] });
     },
   });
@@ -1585,7 +1583,7 @@ export function SeriesTab() {
         )}
         {series.length === 0 && !isLoading && (
           <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
-            まだシリーズがありません。作品のまとまりを作るとここに表示されます。
+            {copy.empty}
           </p>
         )}
         {series.map((s, i) => {
@@ -1620,7 +1618,7 @@ export function SeriesTab() {
                     <button
                       onClick={() => move(s.id, -1)}
                       disabled={i === 0 || reorder.isPending}
-                      aria-label="上へ移動"
+                      aria-label={copy.moveUp}
                       className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                     >
                       <ChevronUp size={13} />
@@ -1628,7 +1626,7 @@ export function SeriesTab() {
                     <button
                       onClick={() => move(s.id, 1)}
                       disabled={i === series.length - 1 || reorder.isPending}
-                      aria-label="下へ移動"
+                      aria-label={copy.moveDown}
                       className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
                     >
                       <ChevronDown size={13} />
@@ -1647,11 +1645,12 @@ export function SeriesTab() {
                       {/* 写真クエリ解決前に「0 枚」と断定表示しない */}
                       {photosLoading
                         ? "…"
-                        : `${count} 枚${
+                        : copy.cardSummary(
+                            count,
                             s.coverPhotoId
-                              ? ` ・ 表紙: ${photoLabel(s.coverPhotoId)}`
-                              : ""
-                          }`}
+                              ? photoLabel(s.coverPhotoId)
+                              : "",
+                          )}
                     </span>
                   </div>
                 </div>
@@ -1666,13 +1665,13 @@ export function SeriesTab() {
                     aria-pressed={s.isPublished}
                     className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${s.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"}`}
                   >
-                    {s.isPublished ? "公開" : "下書き"}
+                    {s.isPublished ? copy.published : copy.draft}
                   </button>
                   <button
                     onClick={() =>
                       editId === s.id ? setEditId(null) : openEdit(s)
                     }
-                    aria-label="編集"
+                    aria-label={copy.edit}
                     className="admin-tap-sm text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
                   >
                     {editId === s.id ? (
@@ -1685,7 +1684,7 @@ export function SeriesTab() {
                     onClick={() =>
                       setDeleteTarget({ id: s.id, title: s.title })
                     }
-                    aria-label={`${s.title} を削除`}
+                    aria-label={copy.deleteAria(s.title)}
                     className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 size={13} />
@@ -1696,9 +1695,9 @@ export function SeriesTab() {
               {/* Inline editor */}
               {editId === s.id && (
                 <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
-                  <AdminField label="Title">
+                  <AdminField label={copy.title}>
                     <input
-                      aria-label="シリーズのタイトル"
+                      aria-label={copy.titleAria}
                       value={draft.title}
                       onChange={(e) =>
                         setDraft((d) => ({ ...d, title: e.target.value }))
@@ -1707,9 +1706,9 @@ export function SeriesTab() {
                       className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
-                  <AdminField label="Slug" hint="URL（/series/◯◯）に使用">
+                  <AdminField label={copy.slug} hint={copy.slugHint}>
                     <input
-                      aria-label="シリーズのスラッグ"
+                      aria-label={copy.slugAria}
                       value={draft.slug}
                       onChange={(e) =>
                         setDraft((d) => ({
@@ -1723,9 +1722,9 @@ export function SeriesTab() {
                       className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
                     />
                   </AdminField>
-                  <AdminField label="Subtitle" hint="任意のサブタイトル">
+                  <AdminField label={copy.subtitle} hint={copy.subtitleHint}>
                     <input
-                      aria-label="サブタイトル"
+                      aria-label={copy.subtitleAria}
                       value={draft.subtitle}
                       onChange={(e) =>
                         setDraft((d) => ({ ...d, subtitle: e.target.value }))
@@ -1735,23 +1734,23 @@ export function SeriesTab() {
                     />
                   </AdminField>
                   <AdminField
-                    label="Statement"
-                    hint="シリーズのコンセプト文（改行可）"
+                    label={copy.statement}
+                    hint={copy.statementHint}
                   >
                     <textarea
-                      aria-label="ステートメント"
+                      aria-label={copy.statementAria}
                       rows={4}
                       value={draft.statement}
                       onChange={(e) =>
                         setDraft((d) => ({ ...d, statement: e.target.value }))
                       }
-                      placeholder="このシリーズについて…"
+                      placeholder={copy.statementPlaceholder}
                       className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
                     />
                   </AdminField>
                   <AdminField
-                    label="Cover Photo"
-                    hint="シリーズ一覧の表紙。未設定ならシリーズ先頭の写真を自動使用"
+                    label={copy.coverPhoto}
+                    hint={copy.coverHint}
                   >
                     {(() => {
                       const members = photos.filter(
@@ -1774,7 +1773,7 @@ export function SeriesTab() {
                                 : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
                             }`}
                           >
-                            なし（自動）
+                            {copy.automaticCover}
                           </button>
                           {allForPicker.length > 0 ? (
                             <div className="grid grid-cols-5 gap-1 max-h-44 overflow-y-auto rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper)] p-1">
@@ -1813,7 +1812,7 @@ export function SeriesTab() {
                             </div>
                           ) : (
                             <p className="text-[11px] text-[var(--admin-muted)]">
-                              写真がありません
+                              {copy.noPhotos}
                             </p>
                           )}
                           {draft.coverPhotoId &&
@@ -1823,7 +1822,7 @@ export function SeriesTab() {
                               );
                               return sel ? (
                                 <p className="text-[10px] text-[var(--admin-muted)] truncate">
-                                  選択中: {sel.title || sel.filename}
+                                  {copy.selectedCover(sel.title || sel.filename)}
                                 </p>
                               ) : null;
                             })()}
@@ -1834,17 +1833,23 @@ export function SeriesTab() {
                   {/* 機能9: シリーズ固有のレイアウト・テーマ設定 */}
                   <div className="border-t border-[var(--admin-line)] pt-3 mt-1">
                     <p className="text-[10px] tracking-wider uppercase text-[var(--admin-muted)] mb-2">
-                      Layout &amp; Theme
+                      {copy.layoutTheme}
                     </p>
                     <AdminField
-                      label="レイアウト"
-                      hint="「グローバルに従う」はSettings→ギャラリー配置の設定を使います"
+                      label={copy.layout}
+                      hint={copy.layoutHint}
                     >
                       <div className="grid grid-cols-3 gap-1">
                         {(
                           [
-                            { value: "", name: "グローバル" },
-                            ...GALLERY_LAYOUT_OPTIONS,
+                            { value: "", name: copy.global },
+                            ...GALLERY_LAYOUT_OPTIONS.map((option) => ({
+                              ...option,
+                              name:
+                                copy.layoutNames[
+                                  option.value as keyof typeof copy.layoutNames
+                                ],
+                            })),
                           ] as const
                         ).map(({ value, name }) => (
                           <button
@@ -1859,16 +1864,16 @@ export function SeriesTab() {
                       </div>
                     </AdminField>
                     <AdminField
-                      label="写真の並び順"
-                      hint="「グローバルに従う」はSettings→シリーズ並び順の設定を使います"
+                      label={copy.photoOrder}
+                      hint={copy.photoOrderHint}
                     >
                       <div className="grid grid-cols-2 gap-1">
                         {(
                           [
-                            ["inherit", "グローバル"],
-                            ["manual", "手動順"],
-                            ["date_desc", "撮影日↓新しい順"],
-                            ["date_asc", "撮影日↑古い順"],
+                            ["inherit", copy.global],
+                            ["manual", copy.manualOrder],
+                            ["date_desc", copy.dateNewest],
+                            ["date_asc", copy.dateOldest],
                           ] as const
                         ).map(([val, lbl]) => (
                           <button
@@ -1883,8 +1888,8 @@ export function SeriesTab() {
                       </div>
                     </AdminField>
                     <AdminField
-                      label="背景色"
-                      hint="空欄=グローバル設定。#fff / #000 / #1a1a1a など"
+                      label={copy.background}
+                      hint={copy.backgroundHint}
                     >
                       <input
                         type="text"
@@ -1892,7 +1897,7 @@ export function SeriesTab() {
                         onChange={(e) =>
                           setThemeKey("bgColor", e.target.value.trim())
                         }
-                        placeholder="（グローバル設定を使用）"
+                        placeholder={copy.backgroundPlaceholder}
                         className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
                       />
                     </AdminField>
@@ -1909,11 +1914,11 @@ export function SeriesTab() {
                       {patchSeries.isPending ? (
                         <>
                           <Loader2 size={11} className="animate-spin" />{" "}
-                          Saving...
+                          {copy.saving}
                         </>
                       ) : (
                         <>
-                          <Check size={11} /> Save
+                          <Check size={11} /> {copy.save}
                         </>
                       )}
                     </button>
@@ -1921,7 +1926,7 @@ export function SeriesTab() {
                       onClick={() => setEditId(null)}
                       className="px-4 py-2 text-[11px] text-[var(--admin-muted)] transition-colors"
                     >
-                      Close
+                      {copy.close}
                     </button>
                   </div>
                 </div>
@@ -1933,12 +1938,12 @@ export function SeriesTab() {
 
       <div className="border-t border-[var(--admin-line)] pt-5">
         <p className="text-[11px] tracking-wider uppercase text-[var(--admin-muted)] mb-4">
-          New Series
+          {copy.newSeries}
         </p>
         <div className="flex flex-col gap-3">
-          <AdminField label="Title">
+          <AdminField label={copy.title}>
             <input
-              aria-label="新しいシリーズのタイトル"
+              aria-label={copy.newTitleAria}
               value={newTitle}
               onChange={(e) => {
                 setNewTitle(e.target.value);
@@ -1951,9 +1956,9 @@ export function SeriesTab() {
               className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
             />
           </AdminField>
-          <AdminField label="Slug">
+          <AdminField label={copy.slug}>
             <input
-              aria-label="新しいシリーズのスラッグ"
+              aria-label={copy.newSlugAria}
               value={newSlug}
               onChange={(e) => {
                 setNewSlug(
@@ -1973,7 +1978,7 @@ export function SeriesTab() {
             disabled={!newSlug || !newTitle || addSeries.isPending}
             className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
           >
-            <Plus size={12} /> Add
+            <Plus size={12} /> {copy.add}
           </button>
         </div>
       </div>
@@ -1981,10 +1986,10 @@ export function SeriesTab() {
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
           <p className="text-[13px] text-[var(--admin-ink)] mb-1">
-            「{deleteTarget.title}」を削除しますか？
+            {copy.deleteConfirm(deleteTarget.title)}
           </p>
           <p className="text-[11px] text-[var(--admin-muted)] mb-5">
-            写真は削除されず、シリーズの割り当てだけが外れます。
+            {copy.deleteKeepsPhotos}
           </p>
           <div className="flex gap-2 justify-end">
             <button

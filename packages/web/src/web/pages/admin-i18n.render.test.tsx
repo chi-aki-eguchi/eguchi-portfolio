@@ -34,6 +34,28 @@ test("common action copy keeps Japanese wording and provides English labels", ()
   expect(ADMIN_DICTIONARY.en.common.deleteAction).toBe("Delete");
 });
 
+test("Phase 2b copy preserves JP and uses standard photography terms in EN", () => {
+  const ja = ADMIN_DICTIONARY.ja.phase2b;
+  const en = ADMIN_DICTIONARY.en.phase2b;
+
+  expect(ja.library.sort.options.manual).toBe("手動（保存されている順）");
+  expect(ja.library.inspector.shotDate).toBe("撮影日");
+  expect(ja.series.coverPhoto).toBe("Cover Photo");
+  expect(ja.categories.description).toBe(
+    "ギャラリーのフィルターとして使用。↑↓で並び替え（この順で表示されます）。",
+  );
+
+  expect(en.library.sort.options.displaySize).toBe("Display size (S→L)");
+  expect(en.library.import.film).toBe("Film");
+  expect(en.library.import.digital).toBe("Digital");
+  expect(en.library.inspector.shotDate).toBe("Date taken");
+  expect(en.library.inspector.focalPoint).toBe("Focal point");
+  expect(en.library.inspector.sortOrder).toBe("Sort order");
+  expect(en.series.cardSummary(1, "Still life")).toBe(
+    "1 photo · Cover: Still life",
+  );
+});
+
 function CopyProbe() {
   const { language, t } = useAdminI18n();
   return createElement(

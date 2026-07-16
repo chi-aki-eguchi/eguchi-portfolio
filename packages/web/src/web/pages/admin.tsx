@@ -36,6 +36,7 @@ import {
   storageMissingFromErrorBody,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
+  uploadSizeLimitLabel,
   uploadTooLargeNotice,
 } from "../lib/upload-file";
 import {
@@ -195,12 +196,6 @@ export function usePersistentState<T>(
 // bounce to login immediately rather than showing a generic "failed" message
 // (and rather than letting an action silently no-op). Other non-2xx → throw so the
 // caller's onError can surface it.
-const BULK_OP_LABEL = {
-  trash: "ゴミ箱へ移動",
-  restore: "復元",
-  purge: "完全削除",
-} as const;
-
 let redirectingToLogin = false;
 export function assertOk(res: Response): void {
   if (res.status === 401) {
@@ -1272,15 +1267,6 @@ export function effectivePresets(
 type CaptureInfoDraft = { camera: string; lens: string };
 type CaptureClipboardStatus = "idle" | "copied" | "pasted" | "error";
 
-const captureStatusText: Record<
-  Exclude<CaptureClipboardStatus, "idle">,
-  string
-> = {
-  copied: "Copied",
-  pasted: "Pasted",
-  error: "失敗",
-};
-
 function formatCaptureInfo({ camera, lens }: CaptureInfoDraft): string {
   const rows = [];
   if (camera.trim()) rows.push(`Camera: ${camera.trim()}`);
@@ -1446,15 +1432,15 @@ function photoEditFormChanged(form: PhotoEditForm, photo: Photo): boolean {
 
 const ROTATION_OPTIONS = [0, 90, 180, 270] as const;
 const FOCAL_PRESETS = [
-  { x: 0, y: 0, label: "左上" },
-  { x: 50, y: 0, label: "上" },
-  { x: 100, y: 0, label: "右上" },
-  { x: 0, y: 50, label: "左" },
-  { x: 50, y: 50, label: "中央" },
-  { x: 100, y: 50, label: "右" },
-  { x: 0, y: 100, label: "左下" },
-  { x: 50, y: 100, label: "下" },
-  { x: 100, y: 100, label: "右下" },
+  { x: 0, y: 0, key: "topLeft" },
+  { x: 50, y: 0, key: "top" },
+  { x: 100, y: 0, key: "topRight" },
+  { x: 0, y: 50, key: "left" },
+  { x: 50, y: 50, key: "center" },
+  { x: 100, y: 50, key: "right" },
+  { x: 0, y: 100, key: "bottomLeft" },
+  { x: 50, y: 100, key: "bottom" },
+  { x: 100, y: 100, key: "bottomRight" },
 ] as const;
 
 function rotatedBy(
@@ -1528,30 +1514,6 @@ const EMPTY_ALBUM_DRAFT = {
   featured: false,
   published: "all",
   recent: "all",
-};
-const LIBRARY_SORT_LABELS: Record<string, string> = {
-  manual: "手動",
-  "createdAt-desc": "アップロード日 新しい順",
-  "createdAt-asc": "アップロード日 古い順",
-  "shotAt-desc": "撮影日 新しい順",
-  "shotAt-asc": "撮影日 古い順",
-  series: "シリーズ",
-  size: "表示サイズ",
-  filmType: "媒体/フィルム",
-  camera: "カメラ",
-  category: "カテゴリ",
-  title: "タイトル",
-  published: "公開状態",
-};
-const MEDIUM_FILTER_LABELS: Record<string, string> = {
-  digital: "Digital",
-  film: "Film",
-  missing: "媒体なし",
-};
-const ORIENTATION_FILTER_LABELS: Record<string, string> = {
-  portrait: "縦写真",
-  landscape: "横写真",
-  square: "正方形",
 };
 const LIBRARY_GRID_GAP = 8;
 // Keep more than one extra screen of rows mounted so fast trackpad scrolling
@@ -1739,7 +1701,8 @@ export function GalleryTab({
   onTrashSignalConsumed?: () => void;
 }) {
   const qc = useQueryClient();
-  const { t } = useAdminI18n();
+  const { language, t } = useAdminI18n();
+  const copy = t.phase2b.library;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const setUploadingAndNotify = (v: boolean) => {
@@ -2196,40 +2159,49 @@ export function GalleryTab({
       const labels: string[] = [];
       if (!cond) return labels;
       if (cond.camera) labels.push(`Camera: ${cond.camera}`);
-      if (cond.filmType) labels.push(cond.filmType);
+      if (cond.filmType)
+        labels.push(
+          cond.filmType === "デジタル"
+            ? copy.filters.mediumDigital
+            : cond.filmType === "フィルム"
+              ? copy.filters.mediumFilm
+              : cond.filmType,
+        );
       if (cond.medium) {
         labels.push(
           cond.medium === "digital"
-            ? "Digital"
+            ? copy.filters.mediumDigital
             : cond.medium === "film"
-              ? "Film"
-              : "媒体なし",
+              ? copy.filters.mediumFilm
+              : copy.filters.mediumMissing,
         );
       }
-      if (cond.missingShotAt) labels.push("撮影日なし");
-      if (cond.missingCapture) labels.push("機材なし");
+      if (cond.missingShotAt) labels.push(copy.filters.missingDate);
+      if (cond.missingCapture) labels.push(copy.filters.missingCapture);
       if (cond.category) {
         labels.push(
           cond.category === "__uncat__"
-            ? "カテゴリなし"
+            ? copy.inspector.noCategory
             : categoryLabelFor(cond.category),
         );
       }
       if (cond.series) {
         labels.push(
           cond.series === "__none__"
-            ? "シリーズなし"
+            ? copy.inspector.noSeries
             : seriesTitleFor(cond.series),
         );
       }
       if (cond.size) labels.push(`Size ${cond.size}`);
-      if (cond.featured) labels.push("Hero設定中");
-      if (cond.published === "published") labels.push("公開");
-      if (cond.published === "unpublished") labels.push("非公開");
-      if (cond.recent) labels.push(`直近${cond.recent}日`);
+      if (cond.featured) labels.push(copy.filters.featured);
+      if (cond.published === "published")
+        labels.push(copy.inspector.published);
+      if (cond.published === "unpublished")
+        labels.push(copy.inspector.unpublished);
+      if (cond.recent) labels.push(copy.filters.recentDays(cond.recent));
       return labels;
     },
-    [categoryLabelFor, seriesTitleFor],
+    [categoryLabelFor, copy, seriesTitleFor],
   );
   useEffect(() => {
     const hasUncategorized = allPhotos.some(isUncategorized);
@@ -2450,7 +2422,8 @@ export function GalleryTab({
   const activeFilterLabels = useMemo(() => {
     const labels: { key: string; text: string }[] = [];
     const query = searchQuery.trim();
-    if (query) labels.push({ key: "search", text: `検索: ${query}` });
+    if (query)
+      labels.push({ key: "search", text: copy.filters.searchCondition(query) });
     if (activeAlbum)
       labels.push({ key: "album", text: `Album: ${activeAlbum.name}` });
     if (filterCat !== "all")
@@ -2458,50 +2431,70 @@ export function GalleryTab({
         key: "category",
         text:
           filterCat === "__uncat__"
-            ? "カテゴリ: 未分類"
-            : `カテゴリ: ${categoryLabelFor(filterCat)}`,
+            ? copy.filters.categoryCondition(copy.filters.uncategorized)
+            : copy.filters.categoryCondition(categoryLabelFor(filterCat)),
       });
     if (filterSeries !== "all")
       labels.push({
         key: "series",
         text:
           filterSeries === "__none__"
-            ? "Series: 未割り当て"
-            : `Series: ${seriesTitleFor(filterSeries)}`,
+            ? copy.filters.seriesCondition(copy.filters.unassigned)
+            : copy.filters.seriesCondition(seriesTitleFor(filterSeries)),
       });
     if (filterSize !== "all")
       labels.push({ key: "size", text: `Size: ${filterSize}` });
     if (filterMedium !== "all")
       labels.push({
         key: "medium",
-        text: `媒体: ${MEDIUM_FILTER_LABELS[filterMedium] ?? filterMedium}`,
+        text: copy.filters.mediumCondition(
+          filterMedium === "digital"
+            ? copy.filters.mediumDigital
+            : filterMedium === "film"
+              ? copy.filters.mediumFilm
+              : filterMedium === "missing"
+                ? copy.filters.mediumMissing
+                : filterMedium,
+        ),
       });
     if (filterOrientation !== "all")
       labels.push({
         key: "orientation",
-        text: ORIENTATION_FILTER_LABELS[filterOrientation] ?? filterOrientation,
+        text:
+          filterOrientation === "portrait"
+            ? copy.filters.portrait
+            : filterOrientation === "landscape"
+              ? copy.filters.landscape
+              : filterOrientation === "square"
+                ? copy.filters.square
+                : filterOrientation,
       });
-    if (filterFeatured) labels.push({ key: "featured", text: "Hero設定中" });
+    if (filterFeatured)
+      labels.push({ key: "featured", text: copy.filters.featured });
     if (filterPublished !== "all")
       labels.push({
         key: "published",
         text:
           filterPublished === "published"
-            ? "公開のみ"
+            ? copy.filters.publishedOnly
             : filterPublished === "unpublished"
-              ? "非公開のみ"
+              ? copy.filters.unpublishedOnly
               : filterPublished,
       });
     if (filterMissingShotAt)
-      labels.push({ key: "missingShotAt", text: "撮影日なし" });
+      labels.push({ key: "missingShotAt", text: copy.filters.missingDate });
     if (filterMissingCapture)
-      labels.push({ key: "missingCapture", text: "機材なし" });
+      labels.push({ key: "missingCapture", text: copy.filters.missingCapture });
     if (filterRecent !== "all")
-      labels.push({ key: "recent", text: `直近${filterRecent}日` });
+      labels.push({
+        key: "recent",
+        text: copy.filters.recentDays(filterRecent),
+      });
     return labels;
   }, [
     activeAlbum,
     categoryLabelFor,
+    copy,
     filterCat,
     filterFeatured,
     filterMedium,
@@ -2941,9 +2934,7 @@ export function GalleryTab({
           failed: r.failed,
         });
     },
-    onError: onActionError(
-      "削除に失敗しました。再ログインが必要かもしれません。",
-    ),
+    onError: onActionError(copy.feedback.deleteFailed),
   });
 
   // Restore from trash
@@ -2964,9 +2955,7 @@ export function GalleryTab({
           failed: r.failed,
         });
     },
-    onError: onActionError(
-      "復元に失敗しました。再ログインが必要かもしれません。",
-    ),
+    onError: onActionError(copy.feedback.restoreFailed),
   });
 
   // Permanently purge from trash — irreversible, so the summary always shows.
@@ -2985,7 +2974,7 @@ export function GalleryTab({
         failed: r.failed,
       });
     },
-    onError: onActionError("完全削除に失敗しました。"),
+    onError: onActionError(copy.feedback.purgeFailed),
   });
 
   // One bulk op at a time; also read from the keyboard-delete handler via ref.
@@ -3064,10 +3053,10 @@ export function GalleryTab({
       qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
       setInspectPhoto((p) => (p?.id === id ? { ...p, rotationDeg } : p));
       setEditForm((f) => (inspectPhoto?.id === id ? { ...f, rotationDeg } : f));
-      setBatchToast(`向きを ${rotationDeg}° にしました`);
+      setBatchToast(copy.feedback.rotationChanged(rotationDeg));
       setTimeout(() => setBatchToast(null), 1500);
     },
-    onError: onActionError("向きの変更に失敗しました。"),
+    onError: onActionError(copy.feedback.rotationFailed),
   });
 
   // O1: duplicate a photo (same image, inherited metadata) and open the copy.
@@ -3091,10 +3080,10 @@ export function GalleryTab({
       ) {
         openInspector(dup);
       }
-      setBatchToast("複製しました");
+      setBatchToast(copy.feedback.duplicated);
       setTimeout(() => setBatchToast(null), 2000);
     },
-    onError: onActionError("複製に失敗しました。"),
+    onError: onActionError(copy.feedback.duplicateFailed),
   });
 
   // D3: remember newly entered camera/lens values as presets for next time.
@@ -3148,7 +3137,7 @@ export function GalleryTab({
       qc.invalidateQueries({ queryKey: ["photos"] });
       setSelected(new Set());
     },
-    onError: onActionError("カテゴリの一括変更に失敗しました。"),
+    onError: onActionError(copy.feedback.batchCategoryFailed),
   });
 
   // M2: batch operations via the single /admin/photos/batch endpoint. Selection is
@@ -3203,11 +3192,11 @@ export function GalleryTab({
         }
       }
       const count = (data as { count?: number })?.count ?? selected.size;
-      setBatchToast(`${count}枚を更新しました`);
+      setBatchToast(copy.feedback.updated(count));
       setTimeout(() => setBatchToast(null), 2000);
       if (vars.operation === "shotAt_missing_only") setBatchShotAtDate("");
     },
-    onError: onActionError("一括操作に失敗しました。"),
+    onError: onActionError(copy.feedback.batchFailed),
   });
 
   // O2: bulk metadata edit. Only fields the user filled are sent (empty = leave as-is).
@@ -3233,11 +3222,11 @@ export function GalleryTab({
       setBatchEditOpen(false);
       setBatchEdit({ camera: "", lens: "", filmType: "" });
       if (changed > 0) {
-        setBatchToast(`${selected.size}枚を更新しました`);
+        setBatchToast(copy.feedback.updated(selected.size));
         setTimeout(() => setBatchToast(null), 2000);
       }
     },
-    onError: onActionError("一括メタ編集に失敗しました。"),
+    onError: onActionError(copy.feedback.bulkMetadataFailed),
   });
 
   // O6: persist the smart-album list (stored as a JSON string in site_settings).
@@ -3249,7 +3238,7 @@ export function GalleryTab({
       setActionError("");
       qc.invalidateQueries({ queryKey: ["settings"] });
     },
-    onError: onActionError("スマートアルバムの保存に失敗しました。"),
+    onError: onActionError(copy.feedback.albumSaveFailed),
   });
 
   // Reorder
@@ -3261,10 +3250,10 @@ export function GalleryTab({
     onSuccess: () => {
       setActionError("");
       qc.invalidateQueries({ queryKey: ["photos"] });
-      setBatchToast("並び順を保存しました");
+      setBatchToast(copy.feedback.orderSaved);
       setTimeout(() => setBatchToast(null), 1500);
     },
-    onError: onActionError("並び替えの保存に失敗しました。"),
+    onError: onActionError(copy.feedback.reorderFailed),
   });
 
   // 一括編集テーブルからの単行セーブ（部分更新）
@@ -3278,23 +3267,47 @@ export function GalleryTab({
     qc.invalidateQueries({ queryKey: ["series"] });
   };
 
+  const localizedUploadFailureNotice = (
+    failures: { file: Pick<File, "name">; reason?: string }[],
+  ) => {
+    if (language === "ja") return uploadFailureNotice(failures);
+    if (failures.length === 0) return null;
+    const names = failures
+      .slice(0, 3)
+      .map(({ file, reason }) => `${file.name}${reason ? ` (${reason})` : ""}`)
+      .join(", ");
+    return copy.import.failureSummary(
+      failures.length,
+      names,
+      failures.length > 3,
+    );
+  };
+
   // Upload — server-side resize (no more presigned URLs)
   const handleFiles = async (files: File[]) => {
     const imageFiles = files.filter(isUploadableImageFile);
     const skipped = files.length - imageFiles.length;
-    const tooLargeNotice = uploadTooLargeNotice(imageFiles);
+    const tooLargeNotice =
+      language === "ja"
+        ? uploadTooLargeNotice(imageFiles)
+        : localizedUploadFailureNotice(
+            imageFiles.filter(imageFileTooLarge).map((file) => ({
+              file,
+              reason: copy.import.tooLargeReason(uploadSizeLimitLabel()),
+            })),
+          );
     const uploadableFiles = imageFiles.filter(
       (file) => !imageFileTooLarge(file),
     );
     if (!uploadableFiles.length) {
       const parts: string[] = [];
       if (tooLargeNotice) parts.push(tooLargeNotice);
-      if (skipped > 0) parts.push(`${skipped} 件は画像でないためスキップ`);
+      if (skipped > 0) parts.push(copy.import.skippedNonImages(skipped));
       setUploadNotice(
         parts.length
           ? parts.join(" / ")
           : skipped > 0
-            ? `画像ファイルではないため ${skipped} 件をスキップしました`
+            ? copy.import.skippedOnlyNonImages(skipped)
             : null,
       );
       return;
@@ -3326,7 +3339,10 @@ export function GalleryTab({
           } catch {
             // 非JSONエラーは従来どおり下の汎用メッセージに任せる
           }
-          const message = await responseErrorMessage(res);
+          const message =
+            language === "en"
+              ? `${copy.import.failedReason} (HTTP ${res.status})`
+              : await responseErrorMessage(res);
           try {
             assertOk(res);
           } catch (err) {
@@ -3423,14 +3439,20 @@ export function GalleryTab({
       const parts: string[] = [];
       // 保存先未接続のときは件数トーストではなく専用バナーで説明する
       // (再アップロード連打では直らないため)
-      const failedNotice = storageMissing ? null : uploadFailureNotice(failed);
+      const failedNotice = storageMissing
+        ? null
+        : localizedUploadFailureNotice(failed);
       if (failedNotice) parts.push(failedNotice);
       if (tooLargeNotice) parts.push(tooLargeNotice);
       if (duplicates.length)
         parts.push(
-          `重複スキップ: ${duplicates.length}枚 (${duplicates.slice(0, 3).join(", ")}${duplicates.length > 3 ? " ほか" : ""})`,
+          copy.import.duplicateSummary(
+            duplicates.length,
+            duplicates.slice(0, 3).join(", "),
+            duplicates.length > 3,
+          ),
         );
-      if (skipped > 0) parts.push(`${skipped} 件は画像でないためスキップ`);
+      if (skipped > 0) parts.push(copy.import.skippedNonImages(skipped));
       setUploadNotice(parts.length ? parts.join(" / ") : null);
     }
   };
@@ -3668,9 +3690,8 @@ export function GalleryTab({
       photoEditFormChanged(editForm, inspectPhoto)
     ) {
       setConfirmDialog({
-        message:
-          "保存していない編集があります。保存せずに別の写真へ移動しますか？",
-        confirmLabel: "保存せず移動",
+        message: copy.feedback.switchPhotoConfirm,
+        confirmLabel: copy.feedback.switchPhotoAction,
         onConfirm: proceed,
       });
       return;
@@ -3684,8 +3705,8 @@ export function GalleryTab({
   const requestCloseInspector = () => {
     if (inspectPhoto && photoEditFormChanged(editForm, inspectPhoto)) {
       setConfirmDialog({
-        message: "保存していない編集があります。保存せずに閉じますか？",
-        confirmLabel: "保存せず閉じる",
+        message: copy.feedback.closeInspectorConfirm,
+        confirmLabel: copy.feedback.closeInspectorAction,
         onConfirm: () => setInspectPhoto(null),
       });
       return;
@@ -3934,42 +3955,49 @@ export function GalleryTab({
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                Sort
+                {copy.sort.label}
               </span>
               <select
                 value={librarySort}
                 onChange={(e) => setLibrarySort(e.target.value)}
-                aria-label="表示の並び替え"
+                aria-label={copy.sort.ariaLabel}
                 className="admin-tap-sm bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
               >
-                <option value="manual">手動（保存されている順）</option>
+                <option value="manual">{copy.sort.options.manual}</option>
                 <option value="createdAt-desc">
-                  アップロード日（新しい順）
+                  {copy.sort.options.uploadedNewest}
                 </option>
-                <option value="createdAt-asc">アップロード日（古い順）</option>
-                <option value="shotAt-desc">撮影日（新しい順）</option>
-                <option value="shotAt-asc">撮影日（古い順）</option>
-                <option value="series">シリーズ</option>
-                <option value="size">表示サイズ（S→L）</option>
-                <option value="filmType">媒体/フィルム</option>
-                <option value="camera">カメラ</option>
-                <option value="category">カテゴリ</option>
-                <option value="title">タイトル</option>
-                <option value="published">公開状態</option>
+                <option value="createdAt-asc">
+                  {copy.sort.options.uploadedOldest}
+                </option>
+                <option value="shotAt-desc">
+                  {copy.sort.options.dateNewest}
+                </option>
+                <option value="shotAt-asc">
+                  {copy.sort.options.dateOldest}
+                </option>
+                <option value="series">{copy.sort.options.series}</option>
+                <option value="size">{copy.sort.options.displaySize}</option>
+                <option value="filmType">{copy.sort.options.medium}</option>
+                <option value="camera">{copy.sort.options.camera}</option>
+                <option value="category">{copy.sort.options.category}</option>
+                <option value="title">{copy.sort.options.title}</option>
+                <option value="published">
+                  {copy.sort.options.publication}
+                </option>
               </select>
               {librarySort !== "manual" && (
                 <button
                   disabled={anyFilterActive || reorder.isPending}
                   title={
                     anyFilterActive
-                      ? "フィルターを解除してから保存できます"
-                      : "現在の表示順を公開サイトの並び（sortOrder）に書き込みます"
+                      ? copy.sort.clearFiltersFirst
+                      : copy.sort.saveHint
                   }
                   onClick={() =>
                     setConfirmDialog({
-                      message:
-                        "現在の表示順を公開サイトの並び順として保存します。よろしいですか？",
-                      confirmLabel: "この並びを保存",
+                      message: copy.sort.saveConfirm,
+                      confirmLabel: copy.sort.saveAction,
                       onConfirm: () =>
                         reorder.mutate(
                           sortPhotosForView(allPhotos).map((p) => p.id),
@@ -3981,7 +4009,7 @@ export function GalleryTab({
                   }
                   className="text-[10px] px-2 py-1 rounded-sm admin-btn-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                 >
-                  この並びを保存
+                  {copy.sort.saveAction}
                 </button>
               )}
             </div>
@@ -3996,7 +4024,7 @@ export function GalleryTab({
                   : "text-[color:var(--admin-muted)] border-[var(--admin-line)] hover:text-[color:var(--admin-ink)]"
               }`}
             >
-              <Search size={11} /> 絞り込み
+              <Search size={11} /> {copy.toolbar.filters}
               {activeFilterLabels.length > 0 && (
                 <span className="min-w-4 h-4 px-1 rounded-sm bg-[var(--admin-muted)] text-[var(--admin-paper)] text-[10px] leading-4 text-center">
                   {activeFilterLabels.length}
@@ -4007,7 +4035,7 @@ export function GalleryTab({
             <div className="hidden md:flex items-center gap-2">
               <Grid size={12} className="text-[var(--admin-muted)]" />
               <input
-                aria-label="サムネイルサイズ"
+                aria-label={copy.toolbar.thumbnailSize}
                 type="range"
                 min={80}
                 max={300}
@@ -4020,13 +4048,13 @@ export function GalleryTab({
 
             <div
               className="flex md:hidden items-center gap-1"
-              aria-label="写真の表示列数"
+              aria-label={copy.toolbar.photoColumns}
             >
               {([2, 3] as const).map((columns) => (
                 <button
                   key={columns}
                   type="button"
-                  aria-label={`${columns}列表示`}
+                  aria-label={copy.toolbar.columns(columns)}
                   aria-pressed={mobileLibraryColumns === columns}
                   onClick={() => setMobileLibraryColumns(columns)}
                   className={`min-w-9 px-2 py-1 rounded-sm border text-[11px] transition-colors ${
@@ -4035,7 +4063,7 @@ export function GalleryTab({
                       : "text-[var(--admin-muted)] border-[var(--admin-line)]"
                   }`}
                 >
-                  {columns}列
+                  {copy.toolbar.columnsText(columns)}
                 </button>
               ))}
             </div>
@@ -4047,7 +4075,7 @@ export function GalleryTab({
                 setSelected(new Set());
               }}
               aria-pressed={bulkEditMode}
-              title="表形式の一括編集モード"
+              title={copy.toolbar.tableMode}
               className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
                 bulkEditMode
                   ? ""
@@ -4077,8 +4105,8 @@ export function GalleryTab({
 
             <button
               onClick={() => setShowShortcuts(true)}
-              title="キーボードショートカット (?)"
-              aria-label="キーボードショートカット"
+              title={copy.toolbar.shortcutsTitle}
+              aria-label={copy.toolbar.shortcutsAria}
               className="admin-tap-sm flex items-center justify-center w-6 h-6 text-[11px] text-[var(--admin-muted)] rounded-sm transition-colors"
             >
               ?
@@ -4086,16 +4114,16 @@ export function GalleryTab({
 
             {/* Importの設定であって絞り込みではない — 明札を付けてフィルタとの誤読を防ぐ */}
             <fieldset
-              aria-label="取り込み媒体"
-              title="Importする写真に付く媒体ラベルです（絞り込みではありません）"
+              aria-label={copy.import.mediumAria}
+              title={copy.import.mediumHint}
               className="flex items-center gap-1 m-0 p-0 border-0 min-w-0"
             >
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider whitespace-nowrap mr-0.5">
-                取り込み
+                {copy.import.mediumLabel}
               </span>
               {[
-                ["digital", "デジタル"] as const,
-                ["film", "フィルム"] as const,
+                ["digital", copy.import.digital] as const,
+                ["film", copy.import.film] as const,
               ].map(([val, lbl]) => (
                 <button
                   key={val}
@@ -4121,7 +4149,7 @@ export function GalleryTab({
               <Upload size={11} /> Import
             </button>
             <input
-              aria-label="画像ファイルを選択"
+              aria-label={copy.import.chooseImages}
               ref={fileInputRef}
               type="file"
               accept={UPLOAD_IMAGE_ACCEPT}
@@ -4134,7 +4162,7 @@ export function GalleryTab({
           {!showTrash && activeFilterLabels.length > 0 && (
             <div className="flex items-center gap-1.5 text-[11px] text-[var(--admin-ink)] min-w-0">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                絞り込み中
+                {copy.filters.active}
               </span>
               <span className="truncate">
                 {activeFilterLabels.map((item) => item.text).join(" / ")}
@@ -4144,7 +4172,7 @@ export function GalleryTab({
                 onClick={clearLibraryFilters}
                 className="text-[11px] px-2 py-0.5 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors flex-shrink-0"
               >
-                解除
+                {copy.filters.clear}
               </button>
             </div>
           )}
@@ -4162,14 +4190,14 @@ export function GalleryTab({
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="検索（タイトル・分類・機材・ファイル名）"
-                    aria-label="写真を検索"
+                    placeholder={copy.filters.searchPlaceholder}
+                    aria-label={copy.filters.searchAria}
                     className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none transition-colors w-52"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      aria-label="検索をクリア"
+                      aria-label={copy.filters.clearSearch}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--admin-muted)] hover:text-[var(--admin-ink)] transition-colors"
                     >
                       <X size={11} />
@@ -4191,7 +4219,7 @@ export function GalleryTab({
                   ))}
                   {allPhotos.some(isUncategorized) && (
                     <option value="__uncat__">
-                      未分類 ({allPhotos.filter(isUncategorized).length})
+                      {copy.filters.uncategorized} ({allPhotos.filter(isUncategorized).length})
                     </option>
                   )}
                 </select>
@@ -4199,7 +4227,7 @@ export function GalleryTab({
                 <select
                   value={filterSeries}
                   onChange={(e) => setFilterSeries(e.target.value)}
-                  aria-label="シリーズで絞り込み"
+                  aria-label={copy.filters.seriesAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All series</option>
@@ -4210,7 +4238,7 @@ export function GalleryTab({
                     </option>
                   ))}
                   <option value="__none__">
-                    未割り当て (
+                    {copy.filters.unassigned} (
                     {allPhotos.filter((p) => p.seriesId == null).length})
                   </option>
                 </select>
@@ -4218,7 +4246,7 @@ export function GalleryTab({
                 <select
                   value={filterSize}
                   onChange={(e) => setFilterSize(e.target.value)}
-                  aria-label="表示サイズで絞り込み"
+                  aria-label={copy.filters.displaySizeAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All sizes</option>
@@ -4237,34 +4265,36 @@ export function GalleryTab({
                 <select
                   value={filterMedium}
                   onChange={(e) => setFilterMedium(e.target.value)}
-                  aria-label="媒体で絞り込み"
+                  aria-label={copy.filters.mediumAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
-                  <option value="all">媒体: All</option>
+                  <option value="all">{copy.filters.mediumAll}</option>
                   <option value="digital">
-                    Digital ({mediumCounts.digital})
+                    {copy.filters.mediumDigital} ({mediumCounts.digital})
                   </option>
-                  <option value="film">Film ({mediumCounts.film})</option>
+                  <option value="film">
+                    {copy.filters.mediumFilm} ({mediumCounts.film})
+                  </option>
                   <option value="missing">
-                    媒体なし ({mediumCounts.missing})
+                    {copy.filters.mediumMissing} ({mediumCounts.missing})
                   </option>
                 </select>
 
                 <select
                   value={filterOrientation}
                   onChange={(e) => setFilterOrientation(e.target.value)}
-                  aria-label="写真の向きで絞り込み"
+                  aria-label={copy.filters.orientationAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All orientations</option>
                   <option value="portrait">
-                    縦写真 ({orientationCounts.portrait})
+                    {copy.filters.portrait} ({orientationCounts.portrait})
                   </option>
                   <option value="landscape">
-                    横写真 ({orientationCounts.landscape})
+                    {copy.filters.landscape} ({orientationCounts.landscape})
                   </option>
                   <option value="square">
-                    正方形 ({orientationCounts.square})
+                    {copy.filters.square} ({orientationCounts.square})
                   </option>
                 </select>
 
@@ -4277,21 +4307,21 @@ export function GalleryTab({
                       : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
                   }`}
                 >
-                  <Star size={11} /> Hero設定中 ({featuredIds.size})
+                  <Star size={11} /> {copy.filters.featured} ({featuredIds.size})
                 </button>
 
                 <select
                   value={filterPublished}
                   onChange={(e) => setFilterPublished(e.target.value)}
-                  aria-label="公開状態で絞り込み"
+                  aria-label={copy.filters.publicationAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
-                  <option value="all">公開状態: All</option>
+                  <option value="all">{copy.filters.publicationAll}</option>
                   <option value="published">
-                    公開のみ ({allPhotos.length - unpublishedCount})
+                    {copy.filters.publishedOnly} ({allPhotos.length - unpublishedCount})
                   </option>
                   <option value="unpublished">
-                    非公開のみ ({unpublishedCount})
+                    {copy.filters.unpublishedOnly} ({unpublishedCount})
                   </option>
                 </select>
 
@@ -4304,7 +4334,7 @@ export function GalleryTab({
                       : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
                   }`}
                 >
-                  撮影日なし ({missingShotAtCount})
+                  {copy.filters.missingDate} ({missingShotAtCount})
                 </button>
 
                 <button
@@ -4316,18 +4346,18 @@ export function GalleryTab({
                       : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
                   }`}
                 >
-                  機材なし ({missingCaptureCount})
+                  {copy.filters.missingCapture} ({missingCaptureCount})
                 </button>
 
                 <select
                   value={filterRecent}
                   onChange={(e) => setFilterRecent(e.target.value)}
-                  aria-label="アップロード時期で絞り込み"
+                  aria-label={copy.filters.uploadedAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All time</option>
-                  <option value="7">直近7日</option>
-                  <option value="30">直近30日</option>
+                  <option value="7">{copy.filters.recentDays(7)}</option>
+                  <option value="30">{copy.filters.recentDays(30)}</option>
                 </select>
 
                 {anyFilterActive && (
@@ -4336,7 +4366,7 @@ export function GalleryTab({
                     onClick={clearLibraryFilters}
                     className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
                   >
-                    すべて解除
+                    {copy.filters.clearAll}
                   </button>
                 )}
               </div>
@@ -4387,7 +4417,7 @@ export function GalleryTab({
                           if (activeAlbumId === a.id) setActiveAlbumId(null);
                           saveAlbums.mutate(next);
                         }}
-                        aria-label={`${a.name}を削除`}
+                        aria-label={copy.albums.deleteAria(a.name)}
                         className="opacity-50 group-hover/al:opacity-100 text-[var(--admin-muted)] hover:text-red-400 transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
                       >
                         <X size={11} />
@@ -4402,7 +4432,7 @@ export function GalleryTab({
                   }}
                   className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] px-2 py-1 rounded-sm border border-dashed border-[var(--admin-line)] transition-colors"
                 >
-                  <Plus size={11} /> アルバム
+                  <Plus size={11} /> {copy.albums.add}
                 </button>
               </div>
             </div>
@@ -4412,7 +4442,7 @@ export function GalleryTab({
           {selected.size > 0 && !showTrash && (
             <div className="border-t border-[var(--admin-line)] pt-2 flex items-center gap-2 flex-wrap">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                選択中 {selected.size}枚
+                {copy.selection.selected(selected.size)}
               </span>
               {/* M2: Publish / Unpublish */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-0.5">
@@ -4421,14 +4451,14 @@ export function GalleryTab({
                   disabled={batchOp.isPending}
                   className="flex items-center gap-1 text-[11px] text-emerald-300/80 px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  <Eye size={11} /> 公開
+                  <Eye size={11} /> {copy.selection.publish}
                 </button>
                 <button
                   onClick={() => batchOp.mutate({ operation: "unpublish" })}
                   disabled={batchOp.isPending}
                   className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  <EyeOff size={11} /> 非公開
+                  <EyeOff size={11} /> {copy.selection.unpublish}
                 </button>
               </div>
 
@@ -4437,7 +4467,8 @@ export function GalleryTab({
                   onClick={() => setBatchCatOpen((v) => !v)}
                   className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
                 >
-                  <Tag size={11} /> Set Category <ChevronDown size={10} />
+                  <Tag size={11} /> {copy.selection.setCategory}{" "}
+                  <ChevronDown size={10} />
                 </button>
                 {batchCatOpen && (
                   <div className="absolute top-full left-0 mt-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm shadow-xl z-20 min-w-[140px]">
@@ -4472,7 +4503,7 @@ export function GalleryTab({
                       className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors flex items-center gap-2 border-t border-[var(--admin-line)]"
                     >
                       <span className="w-2 h-2 rounded-full flex-shrink-0 border border-[var(--admin-muted)]" />
-                      未分類 (uncategorized)
+                      {copy.selection.uncategorized}
                     </button>
                   </div>
                 )}
@@ -4484,13 +4515,14 @@ export function GalleryTab({
                   onClick={() => setBatchSeriesOpen((v) => !v)}
                   className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
                 >
-                  <Layers size={11} /> Set Series <ChevronDown size={10} />
+                  <Layers size={11} /> {copy.selection.setSeries}{" "}
+                  <ChevronDown size={10} />
                 </button>
                 {batchSeriesOpen && (
                   <div className="absolute top-full left-0 mt-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm shadow-xl z-20 min-w-[160px] max-h-64 overflow-y-auto">
                     {seriesList.length === 0 && (
                       <div className="px-3 py-1.5 text-[11px] text-[var(--admin-muted)]">
-                        シリーズなし
+                        {copy.selection.noSeries}
                       </div>
                     )}
                     {seriesList.map((s) => (
@@ -4506,7 +4538,7 @@ export function GalleryTab({
                         className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-ink)] transition-colors truncate"
                       >
                         {s.title}
-                        {s.isPublished ? "" : "（下書き）"}
+                        {s.isPublished ? "" : copy.selection.draftSuffix}
                       </button>
                     ))}
                     <button
@@ -4516,7 +4548,7 @@ export function GalleryTab({
                       }}
                       className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors border-t border-[var(--admin-line)]"
                     >
-                      割り当て解除
+                      {copy.selection.unassign}
                     </button>
                   </div>
                 )}
@@ -4525,7 +4557,7 @@ export function GalleryTab({
               {/* M2: Set display size */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
                 <span className="text-[10px] text-[var(--admin-muted)]">
-                  Size
+                  {copy.selection.size}
                 </span>
                 {(["S", "M", "L"] as const).map((sz) => (
                   <button
@@ -4543,14 +4575,14 @@ export function GalleryTab({
 
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
                 <span className="text-[10px] text-[var(--admin-muted)]">
-                  Rotate
+                  {copy.selection.rotate}
                 </span>
                 <button
                   type="button"
                   onClick={() => batchOp.mutate({ operation: "rotate_left" })}
                   disabled={batchOp.isPending}
-                  title="左へ90°回転"
-                  aria-label="選択写真を左へ90度回転"
+                  title={copy.rotation.leftTitle}
+                  aria-label={copy.rotation.selectedLeftAria}
                   className="admin-tap-sm w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <RotateCcw size={12} />
@@ -4559,8 +4591,8 @@ export function GalleryTab({
                   type="button"
                   onClick={() => batchOp.mutate({ operation: "rotate_right" })}
                   disabled={batchOp.isPending}
-                  title="右へ90°回転"
-                  aria-label="選択写真を右へ90度回転"
+                  title={copy.rotation.rightTitle}
+                  aria-label={copy.rotation.selectedRightAria}
                   className="admin-tap-sm w-5 h-5 inline-flex items-center justify-center text-[var(--admin-ink)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <RotateCw size={12} />
@@ -4571,8 +4603,8 @@ export function GalleryTab({
                     batchOp.mutate({ operation: "reset_rotation" })
                   }
                   disabled={batchOp.isPending}
-                  title="向きを0°に戻す"
-                  aria-label="選択写真の向きを0度に戻す"
+                  title={copy.rotation.resetTitle}
+                  aria-label={copy.rotation.resetAria}
                   className="admin-tap-sm w-6 h-5 text-[10px] text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   0°
@@ -4583,8 +4615,8 @@ export function GalleryTab({
                     batchOp.mutate({ operation: "reset_focal_point" })
                   }
                   disabled={batchOp.isPending}
-                  title="見せる中心を中央に戻す"
-                  aria-label="選択写真の見せる中心を中央に戻す"
+                  title={copy.rotation.resetFocalTitle}
+                  aria-label={copy.rotation.resetFocalAria}
                   className="admin-tap-sm w-5 h-5 inline-flex items-center justify-center text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Crosshair size={12} />
@@ -4593,13 +4625,13 @@ export function GalleryTab({
 
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
                 <span className="text-[10px] text-[var(--admin-muted)]">
-                  Date
+                  {copy.selection.date}
                 </span>
                 <input
                   type="date"
                   value={batchShotAtDate}
                   onChange={(e) => setBatchShotAtDate(e.target.value)}
-                  aria-label="選択写真に設定する撮影日"
+                  aria-label={copy.selection.dateAria}
                   className="bg-[var(--admin-paper)] text-[var(--admin-ink)] text-[11px] px-1.5 py-0.5 rounded-sm border border-[var(--admin-line)] outline-none"
                 />
                 <button
@@ -4608,8 +4640,11 @@ export function GalleryTab({
                     if (!batchShotAtDate || selectedMissingShotAtCount === 0)
                       return;
                     setConfirmDialog({
-                      message: `${selectedMissingShotAtCount}枚に撮影日 ${batchShotAtDate} を設定します。よろしいですか？`,
-                      confirmLabel: "適用",
+                      message: copy.selection.dateConfirm(
+                        selectedMissingShotAtCount,
+                        batchShotAtDate,
+                      ),
+                      confirmLabel: copy.selection.apply,
                       onConfirm: () =>
                         batchOp.mutate({
                           operation: "shotAt_missing_only",
@@ -4622,10 +4657,10 @@ export function GalleryTab({
                     !batchShotAtDate ||
                     selectedMissingShotAtCount === 0
                   }
-                  title="撮影日が空の選択写真だけに設定します"
+                  title={copy.selection.applyMissingDateHint}
                   className="text-[11px] text-[var(--admin-ink)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  適用 ({selectedMissingShotAtCount})
+                  {copy.selection.applyCount(selectedMissingShotAtCount)}
                 </button>
                 {/* フィルムはR2保存時にEXIFが失われ「EXIFから再読込」ができない
                     ため、代わりに誤った撮影日をクリア→上のDate適用で
@@ -4635,8 +4670,10 @@ export function GalleryTab({
                   onClick={() => {
                     if (selectedFilmShotAtSetCount === 0) return;
                     setConfirmDialog({
-                      message: `選択したフィルム写真 ${selectedFilmShotAtSetCount}枚の撮影日をクリアします（未設定に戻ります）。よろしいですか？`,
-                      confirmLabel: "クリア",
+                      message: copy.selection.clearFilmDateConfirm(
+                        selectedFilmShotAtSetCount,
+                      ),
+                      confirmLabel: copy.selection.clear,
                       onConfirm: () =>
                         batchOp.mutate({ operation: "shotAt_clear" }),
                     });
@@ -4644,10 +4681,10 @@ export function GalleryTab({
                   disabled={
                     batchOp.isPending || selectedFilmShotAtSetCount === 0
                   }
-                  title="選択したフィルム写真の撮影日を未設定に戻します（EXIFは保存時に失われるため再読込はできません）"
+                  title={copy.selection.clearFilmDateHint}
                   className="text-[11px] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  フィルムの撮影日をクリア ({selectedFilmShotAtSetCount})
+                  {copy.selection.clearFilmDate(selectedFilmShotAtSetCount)}
                 </button>
               </div>
 
@@ -4657,14 +4694,14 @@ export function GalleryTab({
                 disabled={batchOp.isPending}
                 className="flex items-center gap-1 text-[11px] text-amber-300/80 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
-                <Star size={11} /> Heroに追加
+                <Star size={11} /> {copy.selection.addHero}
               </button>
               <button
                 onClick={() => batchOp.mutate({ operation: "unfeature" })}
                 disabled={batchOp.isPending}
                 className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
-                <StarOff size={11} /> Heroから外す
+                <StarOff size={11} /> {copy.selection.removeHero}
               </button>
 
               {/* O2: bulk metadata edit */}
@@ -4675,7 +4712,7 @@ export function GalleryTab({
                 }}
                 className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
               >
-                <Pencil size={11} /> 一括編集
+                <Pencil size={11} /> {copy.selection.bulkEdit}
               </button>
 
               <button
@@ -4683,7 +4720,7 @@ export function GalleryTab({
                 disabled={bulkBusy}
                 className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
-                <Trash2 size={11} /> ゴミ箱へ
+                <Trash2 size={11} /> {copy.selection.moveToTrash}
               </button>
             </div>
           )}
@@ -4692,18 +4729,42 @@ export function GalleryTab({
         {!showTrash &&
           (activeFilterLabels.length > 0 || librarySort !== "manual") && (
             <div
-              aria-label="Libraryの表示条件"
+              aria-label={copy.conditions.aria}
               className="bg-[var(--admin-paper-soft)] border-b border-[var(--admin-line)] px-2 sm:px-4 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
             >
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mr-1">
-                表示条件
+                {copy.conditions.label}
               </span>
               <span className="text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
                 {displayed.length} / {allPhotos.length} photos
               </span>
               {librarySort !== "manual" && (
                 <span className="text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
-                  並び: {LIBRARY_SORT_LABELS[librarySort] ?? librarySort}
+                  {copy.sort.condition(
+                    librarySort === "createdAt-desc"
+                      ? copy.sort.options.uploadedNewestShort
+                      : librarySort === "createdAt-asc"
+                        ? copy.sort.options.uploadedOldestShort
+                        : librarySort === "shotAt-desc"
+                          ? copy.sort.options.dateNewestShort
+                          : librarySort === "shotAt-asc"
+                            ? copy.sort.options.dateOldestShort
+                            : librarySort === "series"
+                              ? copy.sort.options.series
+                              : librarySort === "size"
+                                ? copy.sort.options.displaySizeShort
+                                : librarySort === "filmType"
+                                  ? copy.sort.options.medium
+                                  : librarySort === "camera"
+                                    ? copy.sort.options.camera
+                                    : librarySort === "category"
+                                      ? copy.sort.options.category
+                                      : librarySort === "title"
+                                        ? copy.sort.options.title
+                                        : librarySort === "published"
+                                          ? copy.sort.options.publication
+                                          : librarySort,
+                  )}
                 </span>
               )}
               {activeFilterLabels.map((item) => (
@@ -4718,8 +4779,8 @@ export function GalleryTab({
               {reorderLocked && (
                 <span className="text-[11px] text-amber-300/80 bg-amber-900/20 border border-amber-900/30 rounded-sm px-2 py-1">
                   {librarySort !== "manual"
-                    ? "手動順に戻すとドラッグ可"
-                    : "条件解除でドラッグ可"}
+                    ? copy.conditions.manualToDrag
+                    : copy.conditions.clearToDrag}
                 </span>
               )}
               {anyFilterActive && (
@@ -4728,7 +4789,7 @@ export function GalleryTab({
                   onClick={clearLibraryFilters}
                   className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
                 >
-                  条件を解除
+                  {copy.conditions.clear}
                 </button>
               )}
             </div>
@@ -4787,7 +4848,7 @@ export function GalleryTab({
             <div className="absolute inset-2 z-10 flex items-center justify-center pointer-events-none rounded-md border-2 border-dashed border-[rgba(var(--admin-ink-rgb),0.3)] bg-[rgba(var(--admin-ink-rgb),0.05)]">
               <div className="flex flex-col items-center gap-2 text-[var(--admin-ink)]">
                 <Upload size={28} strokeWidth={1.5} />
-                <span className="text-sm">ここにドロップして読み込み</span>
+                <span className="text-sm">{copy.import.dropHere}</span>
               </div>
             </div>
           )}
@@ -4797,29 +4858,27 @@ export function GalleryTab({
             (trashData?.photos ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
                 <EmptyTrashIllustration />
-                <p className="text-sm">
-                  ゴミ箱は空です。移動した写真はここに表示されます。
-                </p>
+                <p className="text-sm">{copy.trash.empty}</p>
               </div>
             ) : (
               <div className="p-3">
                 <div className="text-[10px] text-amber-500/70 bg-amber-900/20 border border-amber-900/30 rounded-sm px-3 py-1.5 mb-3 flex items-center justify-between">
                   <span>
-                    削除済み写真 — 復元するか、完全削除してください（
-                    {trashData?.retentionDays ?? 30}
-                    日後に自動で完全削除されます）
+                    {copy.trash.retention(trashData?.retentionDays ?? 30)}
                   </span>
                   <button
                     onClick={() =>
                       setPurgeConfirm({
                         ids: trashData!.photos.map((p) => p.id),
-                        label: `${trashData!.photos.length}枚をすべて完全削除しますか？この操作は取り消せません。`,
+                        label: copy.trash.purgeAllConfirm(
+                          trashData!.photos.length,
+                        ),
                       })
                     }
                     disabled={bulkBusy}
                     className="text-red-400/70 hover:text-red-400 transition-colors text-[10px] disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    Purge All
+                    {copy.trash.purgeAll}
                   </button>
                 </div>
                 <div
@@ -4861,7 +4920,7 @@ export function GalleryTab({
                           <span
                             className={`absolute top-1 left-1 z-[2] text-[9px] px-1.5 py-0.5 rounded-sm bg-black/65 ${daysLeft <= 5 ? "text-red-300/90" : "text-amber-300/80"}`}
                           >
-                            残り{daysLeft}日
+                            {copy.trash.daysLeft(daysLeft)}
                           </span>
                         )}
                         {/* Buttons always visible on touch (no hover there); hover-reveal on desktop */}
@@ -4871,20 +4930,19 @@ export function GalleryTab({
                             disabled={bulkBusy}
                             className="text-[10px] admin-btn-primary text-white px-2 py-1 rounded-sm transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
                           >
-                            <Check size={10} /> 復元
+                            <Check size={10} /> {copy.trash.restore}
                           </button>
                           <button
                             onClick={() =>
                               setPurgeConfirm({
                                 ids: [photo.id],
-                                label:
-                                  "この写真を完全削除しますか？この操作は取り消せません。",
+                                label: copy.trash.purgeOneConfirm,
                               })
                             }
                             disabled={bulkBusy}
                             className="text-[10px] bg-red-900/60 text-red-300 px-2 py-1 rounded-sm hover:bg-red-900/80 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
                           >
-                            <Trash2 size={10} /> 完全削除
+                            <Trash2 size={10} /> {copy.trash.purge}
                           </button>
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
@@ -4919,23 +4977,23 @@ export function GalleryTab({
               )}
               {anyFilterActive && allPhotos.length > 0 ? (
                 <>
-                  <p className="text-sm">条件に合う写真が見つかりません。</p>
+                  <p className="text-sm">{copy.empty.noMatches}</p>
                   <p className="text-[11px] text-[var(--admin-muted)]">
-                    絞り込みや検索語を少しゆるめてみてください。
+                    {copy.empty.relaxFilters}
                   </p>
                   <button
                     type="button"
                     onClick={clearLibraryFilters}
                     className="text-[11px] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
                   >
-                    絞り込みを解除
+                    {copy.empty.clearFilters}
                   </button>
                 </>
               ) : (
                 <>
-                  <p className="text-sm">まだ写真がありません。</p>
+                  <p className="text-sm">{copy.empty.noPhotos}</p>
                   <p className="text-[11px] text-[var(--admin-muted)]">
-                    Importから写真を追加できます。
+                    {copy.empty.importHint}
                   </p>
                 </>
               )}
@@ -4950,26 +5008,25 @@ export function GalleryTab({
                   <span className="text-[var(--admin-muted)]">⚠</span>
                   <span>
                     {reorderLockCause === "sort"
-                      ? "並びが「手動」以外になっているため、いまは並び替えを保存できません。"
-                      : "検索・絞り込み中のため、いまは並び替えを保存できません（シリーズ単独の絞り込みなら可）。"}
+                      ? copy.reorder.lockedBySort
+                      : copy.reorder.lockedByFilter}
                   </span>
                   <button
                     type="button"
                     onClick={unlockReorder}
                     className="text-[10px] px-2 py-0.5 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] hover:bg-[var(--admin-paper-deep)] transition-colors"
                   >
-                    並び替えできる状態に戻す
+                    {copy.reorder.unlock}
                   </button>
                   <span>
-                    戻したあとは、パソコンでは写真をドラッグ、スマホでは写真の左下の矢印ボタンで並び替えられます。
+                    {copy.reorder.hint}
                   </span>
                 </div>
               )}
               {/* Series-scoped reorder: the order set here IS the public series page order */}
               {!reorderLocked && onlySeriesFilter && (
                 <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-deep)] border border-[var(--admin-line-strong)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
-                  <span>↕</span> シリーズ内の並び替え —
-                  ここでの並びが公開シリーズページの表示順になります
+                  <span>↕</span> {copy.reorder.seriesHint}
                 </div>
               )}
               {/* Grid */}
@@ -5010,16 +5067,16 @@ export function GalleryTab({
                     const metadataBadges = [
                       (filterMissingShotAt || albumCond?.missingShotAt) &&
                       !photo.shotAt
-                        ? "日付なし"
+                        ? copy.badges.noDate
                         : null,
                       (filterMissingCapture || albumCond?.missingCapture) &&
                       !(photo.camera || photo.lens)
-                        ? "機材なし"
+                        ? copy.badges.noCapture
                         : null,
                       (filterMedium === "missing" ||
                         albumCond?.medium === "missing") &&
                       photoMedium(photo) === "missing"
-                        ? "媒体なし"
+                        ? copy.badges.noMedium
                         : null,
                     ].filter((label): label is string => Boolean(label));
                     return (
@@ -5065,7 +5122,11 @@ export function GalleryTab({
                         accessible; the reorder buttons sit above it (higher z). */}
                         <button
                           type="button"
-                          aria-label={photo.title || photo.filename || "写真"}
+                          aria-label={
+                            photo.title ||
+                            photo.filename ||
+                            copy.inspector.photoFallback
+                          }
                           onClick={(e) => handlePhotoClick(photo, idx, e)}
                           className="absolute inset-0 z-[1] cursor-pointer"
                         />
@@ -5102,7 +5163,7 @@ export function GalleryTab({
                         {/* M2: non-public badge (offset right so it clears the category dot) */}
                         {isUnpublished && (
                           <div className="absolute top-1 left-4 z-[2] flex items-center gap-0.5 bg-black/70 text-white/75 text-[9px] px-1 py-0.5 rounded-sm">
-                            <EyeOff size={9} /> 非公開
+                            <EyeOff size={9} /> {copy.badges.unpublished}
                           </div>
                         )}
                         {/* Category color label — top-left dot */}
@@ -5114,7 +5175,9 @@ export function GalleryTab({
                         {effectiveThumbSize >= 120 &&
                           metadataBadges.length > 0 && (
                             <div
-                              aria-label={`未入力: ${metadataBadges.join(", ")}`}
+                              aria-label={copy.badges.missingAria(
+                                metadataBadges.join(", "),
+                              )}
                               className="absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
                             >
                               {metadataBadges.map((label) => (
@@ -5131,7 +5194,9 @@ export function GalleryTab({
                         {effectiveThumbSize >= 120 &&
                           usageBadgeLabels.length > 0 && (
                             <div
-                              aria-label={`使用状況: ${usageBadgeLabels.join(", ")}`}
+                              aria-label={copy.badges.usageAria(
+                                usageBadgeLabels.join(", "),
+                              )}
                               className="absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
                             >
                               {heroIndex >= 0 && (
@@ -5196,8 +5261,8 @@ export function GalleryTab({
                                 rotateLibraryPhoto(photo, -90);
                               }}
                               disabled={quickRotatePhoto.isPending}
-                              aria-label="左へ90度回転"
-                              title="左へ90°回転"
+                              aria-label={copy.rotation.leftAria}
+                              title={copy.rotation.leftTitle}
                               className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
                             >
                               <RotateCcw size={13} />
@@ -5210,8 +5275,8 @@ export function GalleryTab({
                                 rotateLibraryPhoto(photo, 90);
                               }}
                               disabled={quickRotatePhoto.isPending}
-                              aria-label="右へ90度回転"
-                              title="右へ90°回転"
+                              aria-label={copy.rotation.rightAria}
+                              title={copy.rotation.rightTitle}
                               className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
                             >
                               <RotateCw size={13} />
@@ -5242,8 +5307,8 @@ export function GalleryTab({
                                     movePhotoTo(photo.id, "start");
                                   }}
                                   disabled={idx === 0}
-                                  aria-label="先頭へ移動"
-                                  title="先頭へ移動"
+                                  aria-label={copy.reorder.moveFirst}
+                                  title={copy.reorder.moveFirst}
                                   className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                                 >
                                   <ChevronsLeft size={13} />
@@ -5255,8 +5320,8 @@ export function GalleryTab({
                                   movePhoto(photo.id, -1);
                                 }}
                                 disabled={idx === 0}
-                                aria-label="前へ移動"
-                                title="前へ移動"
+                                aria-label={copy.reorder.movePrevious}
+                                title={copy.reorder.movePrevious}
                                 className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                               >
                                 <ChevronLeft size={13} />
@@ -5267,8 +5332,8 @@ export function GalleryTab({
                                   movePhoto(photo.id, 1);
                                 }}
                                 disabled={idx === displayed.length - 1}
-                                aria-label="後へ移動"
-                                title="後へ移動"
+                                aria-label={copy.reorder.moveNext}
+                                title={copy.reorder.moveNext}
                                 className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                               >
                                 <ChevronRight size={13} />
@@ -5283,8 +5348,8 @@ export function GalleryTab({
                                     movePhotoTo(photo.id, "end");
                                   }}
                                   disabled={idx === displayed.length - 1}
-                                  aria-label="末尾へ移動"
-                                  title="末尾へ移動"
+                                  aria-label={copy.reorder.moveLast}
+                                  title={copy.reorder.moveLast}
                                   className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
                                 >
                                   <ChevronsRight size={13} />
@@ -5334,10 +5399,10 @@ export function GalleryTab({
       {batchEditOpen && (
         <Modal onClose={() => setBatchEditOpen(false)} widthClass="w-80">
           <p className="text-[13px] text-[var(--admin-ink)] mb-1">
-            一括メタ編集
+            {copy.bulkMetadata.title}
           </p>
           <p className="text-[11px] text-[var(--admin-muted)] mb-4">
-            選択中 {selected.size} 枚に適用。空欄の項目は変更しません。
+            {copy.bulkMetadata.description(selected.size)}
           </p>
           <div className="flex flex-col gap-3">
             <AdminField label="Camera">
@@ -5347,7 +5412,7 @@ export function GalleryTab({
                 onChange={(e) =>
                   setBatchEdit((b) => ({ ...b, camera: e.target.value }))
                 }
-                placeholder="（変更しない）"
+                placeholder={copy.bulkMetadata.unchanged}
                 className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
               />
             </AdminField>
@@ -5358,7 +5423,7 @@ export function GalleryTab({
                 onChange={(e) =>
                   setBatchEdit((b) => ({ ...b, lens: e.target.value }))
                 }
-                placeholder="（変更しない）"
+                placeholder={copy.bulkMetadata.unchanged}
                 className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
               />
             </AdminField>
@@ -5366,9 +5431,9 @@ export function GalleryTab({
               <div className="flex gap-1">
                 {(
                   [
-                    ["", "変更しない"],
-                    ["フィルム", "フィルム"],
-                    ["デジタル", "デジタル"],
+                    ["", copy.bulkMetadata.noChange],
+                    ["フィルム", copy.import.film],
+                    ["デジタル", copy.import.digital],
                   ] as const
                 ).map(([val, lbl]) => (
                   <button
@@ -5401,11 +5466,12 @@ export function GalleryTab({
             >
               {batchMetaEdit.isPending ? (
                 <>
-                  <Loader2 size={11} className="animate-spin" /> 適用中
+                  <Loader2 size={11} className="animate-spin" />{" "}
+                  {copy.bulkMetadata.applying}
                 </>
               ) : (
                 <>
-                  <Check size={11} /> 適用
+                  <Check size={11} /> {copy.bulkMetadata.apply}
                 </>
               )}
             </button>
@@ -5417,32 +5483,32 @@ export function GalleryTab({
       {albumModalOpen && (
         <Modal onClose={() => setAlbumModalOpen(false)} widthClass="w-80">
           <p className="text-[13px] text-[var(--admin-ink)] mb-1">
-            スマートアルバムを作成
+            {copy.albums.title}
           </p>
           <p className="text-[11px] text-[var(--admin-muted)] mb-4">
-            条件に合う写真を自動で集めます。空欄の項目は条件にしません。
+            {copy.albums.description}
           </p>
           <div className="flex flex-col gap-3">
-            <AdminField label="名前">
+            <AdminField label={copy.albums.name}>
               <input
-                aria-label="アルバム名"
+                aria-label={copy.albums.nameAria}
                 value={albumDraft.name}
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, name: e.target.value }))
                 }
-                placeholder="例: PENTAX 67"
+                placeholder={copy.albums.namePlaceholder}
                 className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
               />
             </AdminField>
-            <AdminField label="カメラを含む">
+            <AdminField label={copy.albums.cameraContains}>
               <input
-                aria-label="カメラ"
+                aria-label={copy.albums.cameraAria}
                 list="album-camera-presets"
                 value={albumDraft.camera}
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, camera: e.target.value }))
                 }
-                placeholder="（指定なし）"
+                placeholder={copy.albums.unspecifiedPlaceholder}
                 className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
               />
               <datalist id="album-camera-presets">
@@ -5451,13 +5517,13 @@ export function GalleryTab({
                 ))}
               </datalist>
             </AdminField>
-            <AdminField label="フィルム / デジタル">
+            <AdminField label={copy.albums.filmDigital}>
               <div className="flex gap-1">
                 {(
                   [
-                    ["", "指定なし"],
-                    ["フィルム", "フィルム"],
-                    ["デジタル", "デジタル"],
+                    ["", copy.albums.unspecified],
+                    ["フィルム", copy.import.film],
+                    ["デジタル", copy.import.digital],
                   ] as const
                 ).map(([val, lbl]) => (
                   <button
@@ -5473,22 +5539,22 @@ export function GalleryTab({
               </div>
             </AdminField>
             <div className="flex gap-2">
-              <AdminField label="媒体">
+              <AdminField label={copy.albums.medium}>
                 <select
-                  aria-label="媒体条件"
+                  aria-label={copy.albums.mediumAria}
                   value={albumDraft.medium}
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, medium: e.target.value }))
                   }
                   className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
                 >
-                  <option value="all">指定なし</option>
-                  <option value="digital">Digital</option>
-                  <option value="film">Film</option>
-                  <option value="missing">媒体なし</option>
+                  <option value="all">{copy.albums.unspecified}</option>
+                  <option value="digital">{copy.filters.mediumDigital}</option>
+                  <option value="film">{copy.filters.mediumFilm}</option>
+                  <option value="missing">{copy.filters.mediumMissing}</option>
                 </select>
               </AdminField>
-              <AdminField label="未入力">
+              <AdminField label={copy.albums.missing}>
                 <div className="flex gap-1">
                   <button
                     type="button"
@@ -5501,7 +5567,7 @@ export function GalleryTab({
                     aria-pressed={albumDraft.missingShotAt}
                     className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
                   >
-                    日付
+                    {copy.albums.date}
                   </button>
                   <button
                     type="button"
@@ -5514,58 +5580,58 @@ export function GalleryTab({
                     aria-pressed={albumDraft.missingCapture}
                     className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
                   >
-                    機材
+                    {copy.albums.capture}
                   </button>
                 </div>
               </AdminField>
             </div>
-            <AdminField label="カテゴリ">
+            <AdminField label={copy.albums.category}>
               <select
-                aria-label="カテゴリ条件"
+                aria-label={copy.albums.categoryAria}
                 value={albumDraft.category}
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, category: e.target.value }))
                 }
                 className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
               >
-                <option value="all">指定なし</option>
+                <option value="all">{copy.albums.unspecified}</option>
                 {categories.map((c) => (
                   <option key={c.slug} value={c.slug}>
                     {c.label}
                   </option>
                 ))}
-                <option value="__uncat__">未分類</option>
+                <option value="__uncat__">{copy.filters.uncategorized}</option>
               </select>
             </AdminField>
-            <AdminField label="シリーズ">
+            <AdminField label={copy.albums.series}>
               <select
-                aria-label="シリーズ条件"
+                aria-label={copy.albums.seriesAria}
                 value={albumDraft.series}
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, series: e.target.value }))
                 }
                 className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
               >
-                <option value="all">指定なし</option>
+                <option value="all">{copy.albums.unspecified}</option>
                 {seriesList.map((s) => (
                   <option key={s.id} value={String(s.id)}>
                     {s.title}
                   </option>
                 ))}
-                <option value="__none__">未割り当て</option>
+                <option value="__none__">{copy.filters.unassigned}</option>
               </select>
             </AdminField>
             <div className="flex gap-2">
-              <AdminField label="サイズ">
+              <AdminField label={copy.albums.size}>
                 <select
-                  aria-label="サイズ条件"
+                  aria-label={copy.albums.sizeAria}
                   value={albumDraft.size}
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, size: e.target.value }))
                   }
                   className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
                 >
-                  <option value="all">指定なし</option>
+                  <option value="all">{copy.albums.unspecified}</option>
                   {(["S", "M", "L"] as const).map((sz) => (
                     <option key={sz} value={sz}>
                       {sz}
@@ -5573,37 +5639,41 @@ export function GalleryTab({
                   ))}
                 </select>
               </AdminField>
-              <AdminField label="公開状態">
+              <AdminField label={copy.albums.publication}>
                 <select
-                  aria-label="公開状態条件"
+                  aria-label={copy.albums.publicationAria}
                   value={albumDraft.published}
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, published: e.target.value }))
                   }
                   className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
                 >
-                  <option value="all">指定なし</option>
-                  <option value="published">公開のみ</option>
-                  <option value="unpublished">非公開のみ</option>
+                  <option value="all">{copy.albums.unspecified}</option>
+                  <option value="published">
+                    {copy.filters.publishedOnly}
+                  </option>
+                  <option value="unpublished">
+                    {copy.filters.unpublishedOnly}
+                  </option>
                 </select>
               </AdminField>
             </div>
             <div className="flex gap-2">
-              <AdminField label="アップロード時期">
+              <AdminField label={copy.albums.uploaded}>
                 <select
-                  aria-label="時期条件"
+                  aria-label={copy.albums.uploadedAria}
                   value={albumDraft.recent}
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, recent: e.target.value }))
                   }
                   className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
                 >
-                  <option value="all">指定なし</option>
-                  <option value="7">直近7日</option>
-                  <option value="30">直近30日</option>
+                  <option value="all">{copy.albums.unspecified}</option>
+                  <option value="7">{copy.filters.recentDays(7)}</option>
+                  <option value="30">{copy.filters.recentDays(30)}</option>
                 </select>
               </AdminField>
-              <AdminField label="フィーチャー">
+              <AdminField label={copy.albums.featured}>
                 <button
                   onClick={() =>
                     setAlbumDraft((d) => ({ ...d, featured: !d.featured }))
@@ -5611,7 +5681,10 @@ export function GalleryTab({
                   aria-pressed={albumDraft.featured}
                   className={`w-full flex items-center justify-center gap-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
                 >
-                  <Star size={11} /> {albumDraft.featured ? "のみ" : "条件なし"}
+                  <Star size={11} />{" "}
+                  {albumDraft.featured
+                    ? copy.albums.only
+                    : copy.albums.noCondition}
                 </button>
               </AdminField>
             </div>
@@ -5660,11 +5733,12 @@ export function GalleryTab({
             >
               {saveAlbums.isPending ? (
                 <>
-                  <Loader2 size={11} className="animate-spin" /> 保存中
+                  <Loader2 size={11} className="animate-spin" />{" "}
+                  {copy.albums.saving}
                 </>
               ) : (
                 <>
-                  <Check size={11} /> 作成
+                  <Check size={11} /> {copy.albums.create}
                 </>
               )}
             </button>
@@ -5693,13 +5767,13 @@ export function GalleryTab({
         show={!!undoToast}
         className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
       >
-        <span>{undoToast?.count}枚をゴミ箱に移動しました</span>
+        <span>{copy.trash.moved(undoToast?.count ?? 0)}</span>
         <button
           onClick={() => undoToast && restorePhotos.mutate(undoToast.ids)}
           disabled={bulkBusy}
           className="text-[var(--admin-ink)] hover:text-white underline underline-offset-2 transition-colors disabled:opacity-40"
         >
-          ↩ 元に戻す
+          ↩ {copy.trash.undo}
         </button>
         <button
           onClick={() => setUndoToast(null)}
@@ -5715,6 +5789,7 @@ export function GalleryTab({
         <StorageAlertBanner
           missing={storageAlert}
           canRetry={retryFiles.length > 0}
+          copy={copy.storageAlert}
           onRetry={() => {
             const files = retryFiles;
             setRetryFiles([]);
@@ -5743,7 +5818,7 @@ export function GalleryTab({
             }}
             className="flex-shrink-0 flex items-center gap-1 text-amber-100 underline underline-offset-2 hover:text-white transition-colors"
           >
-            <Upload size={11} /> 失敗分を再アップロード
+            <Upload size={11} /> {copy.import.retryFailed}
           </button>
         )}
         <button
@@ -5819,7 +5894,7 @@ export function GalleryTab({
                 ))}
                 {targets.length > shown.length && (
                   <span className="text-[11px] text-[var(--admin-muted)]">
-                    +{targets.length - shown.length}枚
+                    {copy.trash.more(targets.length - shown.length)}
                   </span>
                 )}
               </div>
@@ -5836,8 +5911,7 @@ export function GalleryTab({
                 onChange={(e) => handlePurgeAckChange(e.target.checked)}
                 className="mt-0.5"
               />
-              {purgeConfirm.ids.length}
-              枚の写真が完全に削除され、復元できないことを理解しました
+              {copy.trash.acknowledge(purgeConfirm.ids.length)}
             </label>
           )}
           <div className="flex gap-2 justify-end">
@@ -5858,8 +5932,8 @@ export function GalleryTab({
               className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
             >
               {purgeNeedsExtraStep && purgeAckChecked && purgeCountdown > 0
-                ? `完全削除（あと${purgeCountdown}秒）`
-                : "完全削除"}
+                ? copy.trash.purgeCountdown(purgeCountdown)
+                : copy.trash.purge}
             </button>
           </div>
         </Modal>
@@ -5872,8 +5946,12 @@ export function GalleryTab({
       >
         {/* The count text is the accessible progress signal; the bar is decorative */}
         <span aria-live="polite" className="whitespace-nowrap">
-          {bulkRun && BULK_OP_LABEL[bulkRun.op]}中 — {bulkRun?.done} /{" "}
-          {bulkRun?.total} 件
+          {bulkRun &&
+            copy.purgeResult.progress(
+              copy.bulkOperation[bulkRun.op],
+              bulkRun.done,
+              bulkRun.total,
+            )}
         </span>
         <div
           aria-hidden="true"
@@ -5908,12 +5986,18 @@ export function GalleryTab({
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
               <span>
-                {BULK_OP_LABEL[bulkResult.op]}
-                {bulkResult.skipped > 0 ? "を中断しました" : "が完了しました"} —
-                成功 {bulkResult.ok}件
+                {bulkResult.skipped > 0
+                  ? copy.purgeResult.stopped(
+                      copy.bulkOperation[bulkResult.op],
+                    )
+                  : copy.purgeResult.completed(
+                      copy.bulkOperation[bulkResult.op],
+                    )}{" "}
+                — {copy.purgeResult.success(bulkResult.ok)}
                 {bulkResult.failed.length > 0 &&
-                  ` / 失敗 ${bulkResult.failed.length}件`}
-                {bulkResult.skipped > 0 && ` / 未処理 ${bulkResult.skipped}件`}
+                  ` / ${copy.purgeResult.failed(bulkResult.failed.length)}`}
+                {bulkResult.skipped > 0 &&
+                  ` / ${copy.purgeResult.unprocessed(bulkResult.skipped)}`}
               </span>
               {bulkResult.failed.length > 0 && (
                 <button
@@ -5921,7 +6005,7 @@ export function GalleryTab({
                   disabled={bulkBusy}
                   className="flex-shrink-0 underline underline-offset-2 hover:text-white transition-colors disabled:opacity-40"
                 >
-                  失敗分のみ再試行
+                  {copy.purgeResult.retryFailed}
                 </button>
               )}
               <button
@@ -5953,7 +6037,7 @@ export function GalleryTab({
               as before. Arrow/Space/Esc are handled by the grid's global keydown. */}
           <button
             type="button"
-            aria-label="プレビューを閉じる"
+            aria-label={copy.preview.closeAria}
             onClick={() => setPreviewPhoto(null)}
             className="absolute inset-0 cursor-default"
           />
@@ -5963,8 +6047,9 @@ export function GalleryTab({
             className="relative pointer-events-none max-w-full max-h-full object-contain shadow-2xl"
           />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] text-white/60 bg-black/40 px-3 py-1 rounded-sm">
-            {previewPhoto.title || previewPhoto.filename} · ← → で移動 · Space /
-            Esc で閉じる
+            {copy.preview.instructions(
+              previewPhoto.title || previewPhoto.filename,
+            )}
           </div>
           <button
             onClick={(e) => {
@@ -5987,7 +6072,7 @@ export function GalleryTab({
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[12px] tracking-widest uppercase text-[var(--admin-muted)]">
-              キーボードショートカット
+              {copy.preview.shortcutsTitle}
             </h3>
             <button
               onClick={() => setShowShortcuts(false)}
@@ -6000,18 +6085,24 @@ export function GalleryTab({
           <dl className="flex flex-col gap-2 text-[12px]">
             {(
               [
-                ["クリック", "選択 / インスペクタを開く"],
-                ["⌘/Ctrl + クリック", "複数選択の切替"],
-                ["Shift + クリック", "範囲選択"],
-                ["⌘/Ctrl + A", "全選択"],
-                ["← → ↑ ↓", "選択を移動"],
-                ["⌘/Ctrl + ↑ ↓", "写真を並べ替え（前後へ）"],
-                ["[ / ]", "選択写真を左 / 右へ90°回転"],
-                ["Enter", "インスペクタを開く"],
-                ["Space", "クイックプレビュー"],
-                ["Delete / Backspace", "選択を削除（ゴミ箱へ）"],
-                ["Esc", "閉じる / 選択解除"],
-                ["?", "このヘルプ"],
+                [copy.preview.shortcutClick, copy.preview.shortcutOpen],
+                [
+                  `⌘/Ctrl + ${copy.preview.shortcutClick}`,
+                  copy.preview.shortcutMulti,
+                ],
+                [
+                  `Shift + ${copy.preview.shortcutClick}`,
+                  copy.preview.shortcutRange,
+                ],
+                ["⌘/Ctrl + A", copy.preview.shortcutAll],
+                ["← → ↑ ↓", copy.preview.shortcutMove],
+                ["⌘/Ctrl + ↑ ↓", copy.preview.shortcutReorder],
+                ["[ / ]", copy.preview.shortcutRotate],
+                ["Enter", copy.preview.shortcutInspector],
+                ["Space", copy.preview.shortcutPreview],
+                ["Delete / Backspace", copy.preview.shortcutDelete],
+                ["Esc", copy.preview.shortcutClose],
+                ["?", copy.preview.shortcutHelp],
               ] as const
             ).map(([k, desc]) => (
               <div key={k} className="flex items-center justify-between gap-4">
@@ -6046,7 +6137,7 @@ export function GalleryTab({
             {/* Header with close (close needed on mobile drawer) */}
             <div className="flex items-center justify-between px-3 pt-2 sm:hidden">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                Edit Photo
+                {copy.inspector.editPhoto}
               </span>
               <button
                 onClick={requestCloseInspector}
@@ -6092,17 +6183,17 @@ export function GalleryTab({
                 <div className="mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                      よく使う
+                      {copy.inspector.quick}
                     </span>
                     {quickDraftChanged && (
                       <span className="rounded-sm border border-amber-900/40 bg-amber-900/20 px-1.5 py-0.5 text-[10px] text-amber-300/80">
-                        未保存
+                        {copy.inspector.unsaved}
                       </span>
                     )}
                   </div>
 
                   <div
-                    aria-label="写真の使用状況"
+                    aria-label={copy.inspector.usageAria}
                     className="mb-2 flex flex-wrap gap-1"
                   >
                     {heroIdx >= 0 && (
@@ -6122,7 +6213,9 @@ export function GalleryTab({
                       ) : (
                         <EyeOff size={9} />
                       )}
-                      {editForm.isPublished ? "公開" : "非公開"}
+                      {editForm.isPublished
+                        ? copy.inspector.published
+                        : copy.inspector.unpublished}
                     </span>
                     <span className="rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
                       Size {editForm.displaySize}
@@ -6138,7 +6231,7 @@ export function GalleryTab({
                         }}
                       />
                       <span className="truncate">
-                        {quickCategory?.label ?? "未分類"}
+                        {quickCategory?.label ?? copy.inspector.uncategorized}
                       </span>
                     </span>
                     {quickSeriesName && (
@@ -6159,8 +6252,8 @@ export function GalleryTab({
                         }))
                       }
                       options={[
-                        { value: "true", label: "公開" },
-                        { value: "false", label: "非公開" },
+                        { value: "true", label: copy.inspector.published },
+                        { value: "false", label: copy.inspector.unpublished },
                       ]}
                     />
 
@@ -6185,8 +6278,8 @@ export function GalleryTab({
                             rotationDeg: rotatedBy(f.rotationDeg, -90),
                           }))
                         }
-                        aria-label="左へ90度回転"
-                        title="左へ90°回転"
+                        aria-label={copy.rotation.leftAria}
+                        title={copy.rotation.leftTitle}
                         className="admin-tap-sm flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors"
                       >
                         <RotateCcw size={13} />
@@ -6218,8 +6311,8 @@ export function GalleryTab({
                             rotationDeg: rotatedBy(f.rotationDeg, 90),
                           }))
                         }
-                        aria-label="右へ90度回転"
-                        title="右へ90°回転"
+                        aria-label={copy.rotation.rightAria}
+                        title={copy.rotation.rightTitle}
                         className="admin-tap-sm flex h-7 w-8 items-center justify-center rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] transition-colors"
                       >
                         <RotateCw size={13} />
@@ -6235,10 +6328,10 @@ export function GalleryTab({
                       onChange={(e) =>
                         setEditForm((f) => ({ ...f, category: e.target.value }))
                       }
-                      aria-label="クイックカテゴリ"
+                      aria-label={copy.inspector.quickCategory}
                       className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
                     >
-                      <option value="">カテゴリなし</option>
+                      <option value="">{copy.inspector.noCategory}</option>
                       {categories.map((c) => (
                         <option key={c.slug} value={c.slug}>
                           {c.label}
@@ -6257,14 +6350,14 @@ export function GalleryTab({
                       onChange={(e) =>
                         setEditForm((f) => ({ ...f, seriesId: e.target.value }))
                       }
-                      aria-label="クイックシリーズ"
+                      aria-label={copy.inspector.quickSeries}
                       className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
                     >
-                      <option value="">シリーズなし</option>
+                      <option value="">{copy.inspector.noSeries}</option>
                       {seriesList.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.title}
-                          {s.isPublished ? "" : "（下書き）"}
+                          {s.isPublished ? "" : copy.selection.draftSuffix}
                         </option>
                       ))}
                     </select>
@@ -6276,14 +6369,14 @@ export function GalleryTab({
             {/* Metadata form */}
             <div className="px-3 pb-4 flex flex-col gap-3 flex-1">
               <div className="border-b border-[var(--admin-line)] pb-2 mb-1">
-                <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                  Metadata
+                  <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+                  {copy.inspector.metadata}
                 </span>
               </div>
 
               <InspectField
-                label="見せる中心"
-                hint="正方形・ヒーローなど、切り抜き表示の中心"
+                label={copy.inspector.focalPoint}
+                hint={copy.inspector.focalPointHint}
               >
                 <div className="grid grid-cols-[72px_1fr] gap-2">
                   <div className="relative aspect-square overflow-hidden bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm">
@@ -6317,6 +6410,7 @@ export function GalleryTab({
                   </div>
                   <div className="grid grid-cols-3 gap-1">
                     {FOCAL_PRESETS.map((point) => {
+                      const label = copy.focalPoints[point.key];
                       const active =
                         editForm.focalX === point.x &&
                         editForm.focalY === point.y;
@@ -6331,9 +6425,9 @@ export function GalleryTab({
                               focalY: point.y,
                             }))
                           }
-                          aria-label={`見せる中心: ${point.label}`}
+                          aria-label={copy.inspector.focalPointAria(label)}
                           aria-pressed={active}
-                          title={point.label}
+                          title={label}
                           className={`admin-tap-sm h-5 rounded-sm border flex items-center justify-center transition-colors ${
                             active
                               ? "admin-btn-primary border-[var(--admin-line)]"
@@ -6354,9 +6448,12 @@ export function GalleryTab({
                 </div>
               </InspectField>
 
-              <InspectField label="Title" hint="Lightbox・SEO・alt に使用">
+              <InspectField
+                label={copy.inspector.title}
+                hint={copy.inspector.titleHint}
+              >
                 <input
-                  aria-label="タイトル"
+                  aria-label={copy.inspector.titleAria}
                   value={editForm.title}
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, title: e.target.value }))
@@ -6366,9 +6463,12 @@ export function GalleryTab({
                 />
               </InspectField>
 
-              <InspectField label="Camera" hint="Lightbox の撮影情報として表示">
+              <InspectField
+                label={copy.inspector.camera}
+                hint={copy.inspector.captureHint}
+              >
                 <input
-                  aria-label="カメラ"
+                  aria-label={copy.inspector.cameraAria}
                   value={editForm.camera}
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, camera: e.target.value }))
@@ -6384,9 +6484,12 @@ export function GalleryTab({
                 </datalist>
               </InspectField>
 
-              <InspectField label="Lens" hint="Lightbox の撮影情報として表示">
+              <InspectField
+                label={copy.inspector.lens}
+                hint={copy.inspector.captureHint}
+              >
                 <input
-                  aria-label="レンズ"
+                  aria-label={copy.inspector.lensAria}
                   value={editForm.lens}
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, lens: e.target.value }))
@@ -6407,8 +6510,8 @@ export function GalleryTab({
                   type="button"
                   onClick={copyInspectCaptureInfo}
                   disabled={!editForm.camera.trim() && !editForm.lens.trim()}
-                  title="カメラとレンズをコピー"
-                  aria-label="カメラとレンズをコピー"
+                  title={copy.inspector.copyCapture}
+                  aria-label={copy.inspector.copyCapture}
                   className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Copy size={10} /> Copy
@@ -6416,8 +6519,8 @@ export function GalleryTab({
                 <button
                   type="button"
                   onClick={pasteInspectCaptureInfo}
-                  title="クリップボードからカメラとレンズを貼り付け"
-                  aria-label="クリップボードからカメラとレンズを貼り付け"
+                  title={copy.inspector.pasteCapture}
+                  aria-label={copy.inspector.pasteCapture}
                   className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors"
                 >
                   <ClipboardPaste size={10} /> Paste
@@ -6426,20 +6529,20 @@ export function GalleryTab({
                   <span
                     className={`text-[10px] ${captureClipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
                   >
-                    {captureStatusText[captureClipStatus]}
+                    {copy.captureStatus[captureClipStatus]}
                   </span>
                 )}
               </div>
 
               <InspectField
-                label="Film / Digital"
-                hint="Lightbox の撮影情報として表示"
+                label={copy.inspector.filmDigital}
+                hint={copy.inspector.captureHint}
               >
                 <div className="flex gap-1">
                   {(
                     [
-                      ["フィルム", "フィルム"],
-                      ["デジタル", "デジタル"],
+                      ["フィルム", copy.import.film],
+                      ["デジタル", copy.import.digital],
                       ["", "—"],
                     ] as const
                   ).map(([val, lbl]) => (
@@ -6461,12 +6564,12 @@ export function GalleryTab({
               </InspectField>
 
               <InspectField
-                label="撮影日"
-                hint="アップロード時にEXIFから自動設定。EXIFが無い写真はここで手入力（任意・空欄可）"
+                label={copy.inspector.shotDate}
+                hint={copy.inspector.shotDateHint}
               >
                 <div className="flex gap-1.5 items-center">
                   <input
-                    aria-label="撮影日"
+                    aria-label={copy.inspector.shotDateAria}
                     type="date"
                     value={editForm.shotAt}
                     onChange={(e) =>
@@ -6477,21 +6580,21 @@ export function GalleryTab({
                   {editForm.shotAt && (
                     <button
                       onClick={() => setEditForm((f) => ({ ...f, shotAt: "" }))}
-                      aria-label="撮影日をクリア"
+                      aria-label={copy.inspector.clearShotDate}
                       className="text-[10px] text-[var(--admin-muted)] transition-colors px-1.5"
                     >
-                      クリア
+                      {copy.inspector.clear}
                     </button>
                   )}
                 </div>
               </InspectField>
 
               <InspectField
-                label="Description"
-                hint="Lightbox の写真説明（任意）"
+                label={copy.inspector.description}
+                hint={copy.inspector.descriptionHint}
               >
                 <textarea
-                  aria-label="説明"
+                  aria-label={copy.inspector.descriptionAria}
                   rows={3}
                   value={editForm.description}
                   onChange={(e) =>
@@ -6548,15 +6651,16 @@ export function GalleryTab({
                 >
                   {updatePhoto.isPending ? (
                     <>
-                      <Loader2 size={11} className="animate-spin" /> Saving...
+                      <Loader2 size={11} className="animate-spin" />{" "}
+                      {copy.inspector.saving}
                     </>
                   ) : metaSaved ? (
                     <>
-                      <Check size={11} /> Saved
+                      <Check size={11} /> {copy.inspector.saved}
                     </>
                   ) : (
                     <>
-                      <Check size={11} /> Save
+                      <Check size={11} /> {copy.inspector.save}
                     </>
                   )}
                 </button>
@@ -6567,7 +6671,7 @@ export function GalleryTab({
                   }}
                   className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] py-1.5 rounded-sm transition-colors"
                 >
-                  <X size={11} /> Reset
+                  <X size={11} /> {copy.inspector.reset}
                 </button>
               </div>
               {/* O1: duplicate this photo (same image, copied metadata) */}
@@ -6581,11 +6685,11 @@ export function GalleryTab({
                 ) : (
                   <ImageLucide size={11} />
                 )}{" "}
-                この写真を複製
+                {copy.inspector.duplicate}
               </button>
               {metaError && (
                 <p role="alert" className="text-[11px] text-red-400/80 -mt-1">
-                  保存に失敗しました。もう一度お試しください。
+                  {copy.inspector.saveFailed}
                 </p>
               )}
 
@@ -6606,20 +6710,30 @@ export function GalleryTab({
                 );
                 const rows: [string, string][] = [
                   [
-                    "ヒーロー",
-                    heroIdx >= 0 ? `✓ 設定中（${heroIdx + 1}番目）` : "未設定",
+                    copy.inspector.hero,
+                    heroIdx >= 0
+                      ? copy.inspector.heroSet(heroIdx + 1)
+                      : copy.inspector.notSet,
                   ],
-                  ["シリーズ", seriesName ?? "未割り当て"],
-                  ["カテゴリ", catLabel ?? "未分類"],
                   [
-                    "表示順",
-                    pos >= 0 ? `${pos + 1} / ${allPhotos.length}番目` : "—",
+                    copy.inspector.series,
+                    seriesName ?? copy.inspector.unassigned,
+                  ],
+                  [
+                    copy.inspector.category,
+                    catLabel ?? copy.inspector.uncategorized,
+                  ],
+                  [
+                    copy.inspector.sortOrder,
+                    pos >= 0
+                      ? copy.inspector.orderPosition(pos + 1, allPhotos.length)
+                      : "—",
                   ],
                 ];
                 return (
                   <div className="border-t border-[var(--admin-line)] pt-3 mt-1 flex flex-col gap-1">
                     <span className="text-[9px] text-[var(--admin-muted)] uppercase tracking-wider mb-0.5">
-                      使用状況
+                      {copy.inspector.usage}
                     </span>
                     {rows.map(([k, v]) => (
                       <div
@@ -6640,7 +6754,7 @@ export function GalleryTab({
 
               <div className="border-t border-[var(--admin-line)] pt-3 mt-2">
                 <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                  File Info
+                  {copy.inspector.fileInfo}
                 </span>
                 <p className="text-[11px] text-[var(--admin-muted)] mt-2 break-all">
                   {inspectPhoto.filename}
@@ -6653,7 +6767,7 @@ export function GalleryTab({
                   disabled={bulkBusy}
                   className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  <Trash2 size={11} /> 写真をゴミ箱へ
+                  <Trash2 size={11} /> {copy.inspector.moveToTrash}
                 </button>
               </div>
             </div>
@@ -6672,8 +6786,8 @@ export function GalleryTab({
             <div className="flex items-center gap-1">
               {(
                 [
-                  ["top", "トップ"],
-                  ["gallery", "ギャラリー"],
+                  ["top", copy.sitePreview.top],
+                  ["gallery", copy.sitePreview.gallery],
                 ] as const
               ).map(([val, lbl]) => (
                 <button
@@ -6694,28 +6808,28 @@ export function GalleryTab({
               <button
                 onClick={() => setSitePreviewDevice("desktop")}
                 aria-pressed={sitePreviewDevice === "desktop"}
-                title="PC幅で確認"
-                aria-label="PC幅で確認"
+                title={copy.sitePreview.desktopTitle}
+                aria-label={copy.sitePreview.desktopTitle}
                 className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
                   sitePreviewDevice === "desktop"
                     ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
                     : "text-[var(--admin-muted)]"
                 }`}
               >
-                <Monitor size={13} /> PC幅
+                <Monitor size={13} /> {copy.sitePreview.desktop}
               </button>
               <button
                 onClick={() => setSitePreviewDevice("mobile")}
                 aria-pressed={sitePreviewDevice === "mobile"}
-                title="スマホ幅で確認"
-                aria-label="スマホ幅で確認"
+                title={copy.sitePreview.mobileTitle}
+                aria-label={copy.sitePreview.mobileTitle}
                 className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
                   sitePreviewDevice === "mobile"
                     ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
                     : "text-[var(--admin-muted)]"
                 }`}
               >
-                <Smartphone size={13} /> スマホ幅
+                <Smartphone size={13} /> {copy.sitePreview.mobile}
               </button>
               <button
                 onClick={() =>
@@ -6728,8 +6842,8 @@ export function GalleryTab({
               <button
                 onClick={() => setShowSitePreview(false)}
                 className="ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] transition-colors"
-                title="プレビューを閉じる"
-                aria-label="プレビューを閉じる"
+                title={copy.sitePreview.close}
+                aria-label={copy.sitePreview.close}
               >
                 <X size={14} />
               </button>
@@ -6753,7 +6867,7 @@ export function GalleryTab({
                     ref={sitePreviewRef}
                     src={`${sitePreviewPage === "top" ? "/" : "/gallery"}${demoSeed ? `?admin-demo-preview=${encodeURIComponent(demoSeed)}` : ""}`}
                     className="w-full h-full border-0"
-                    title="サイトプレビュー"
+                    title={copy.sitePreview.title}
                   />
                 </div>
               </div>
@@ -6780,7 +6894,7 @@ export function GalleryTab({
                         ref={sitePreviewRef}
                         src={`${sitePreviewPage === "top" ? "/" : "/gallery"}${demoSeed ? `?admin-demo-preview=${encodeURIComponent(demoSeed)}` : ""}`}
                         className="w-full h-full border-0"
-                        title="サイトプレビュー"
+                        title={copy.sitePreview.title}
                       />
                     </div>
                   );
@@ -6820,13 +6934,15 @@ function BulkEditTable({
   lensPresets: string[];
   onSave: (id: number, data: BulkEditSaveData) => Promise<void>;
 }) {
+  const { t } = useAdminI18n();
+  const copy = t.phase2b.library;
   if (photos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
         <EmptyContactSheetIllustration />
-        <p className="text-sm">まだ写真がありません。</p>
+        <p className="text-sm">{copy.empty.noPhotos}</p>
         <p className="text-[11px] text-[var(--admin-muted)]">
-          Gallery表示に戻ると、Importから追加できます。
+          {copy.empty.tableHint}
         </p>
       </div>
     );
@@ -6840,22 +6956,22 @@ function BulkEditTable({
             <th className="w-7" aria-label="Select" />
             <th className="w-12" aria-label="Thumbnail" />
             <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal">
-              Title
+              {copy.inspector.title}
             </th>
             <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-44">
-              Camera
+              {copy.inspector.camera}
             </th>
             <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-48">
-              Lens
+              {copy.inspector.lens}
             </th>
             <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-36">
-              Series
+              {copy.inspector.series}
             </th>
             <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-20">
               Size
             </th>
             <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-28">
-              Medium
+              {copy.albums.medium}
             </th>
           </tr>
         </thead>
@@ -6889,6 +7005,8 @@ function BulkEditRow({
   lensPresets: string[];
   onSave: (id: number, data: BulkEditSaveData) => Promise<void>;
 }) {
+  const { t } = useAdminI18n();
+  const copy = t.phase2b.library;
   const initDraft: BulkEditSaveData = {
     title: photo.title ?? "",
     camera: photo.camera ?? "",
@@ -6975,7 +7093,7 @@ function BulkEditRow({
         setTimeout(() => setStatus("idle"), 2000);
       } catch (e) {
         setStatus("error");
-        setErrorMsg(e instanceof Error ? e.message : "保存失敗");
+        setErrorMsg(e instanceof Error ? e.message : copy.bulkTable.saveFailed);
       } finally {
         savingRef.current = false;
       }
@@ -7054,7 +7172,7 @@ function BulkEditRow({
       {/* Title */}
       <td className={cellCls}>
         <input
-          aria-label="タイトル"
+          aria-label={copy.bulkTable.titleAria}
           value={draft.title}
           onChange={(e) => handleChange("title", e.target.value)}
           placeholder={photo.filename}
@@ -7066,7 +7184,7 @@ function BulkEditRow({
       <td className={`${cellCls} w-44`}>
         <div className="flex items-center gap-1">
           <input
-            aria-label="カメラ"
+            aria-label={copy.bulkTable.cameraAria}
             list={`bulk-cam-${photo.id}`}
             value={draft.camera}
             onChange={(e) => handleChange("camera", e.target.value)}
@@ -7077,8 +7195,8 @@ function BulkEditRow({
             type="button"
             onClick={copyRowCaptureInfo}
             disabled={!draft.camera.trim() && !draft.lens.trim()}
-            title="カメラとレンズをコピー"
-            aria-label="カメラとレンズをコピー"
+            title={copy.inspector.copyCapture}
+            aria-label={copy.inspector.copyCapture}
             className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--admin-muted)] disabled:opacity-20 transition-opacity"
           >
             <Copy size={11} />
@@ -7086,8 +7204,8 @@ function BulkEditRow({
           <button
             type="button"
             onClick={pasteRowCaptureInfo}
-            title="クリップボードからカメラとレンズを貼り付け"
-            aria-label="クリップボードからカメラとレンズを貼り付け"
+            title={copy.inspector.pasteCapture}
+            aria-label={copy.inspector.pasteCapture}
             className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--admin-muted)] transition-opacity"
           >
             <ClipboardPaste size={11} />
@@ -7097,7 +7215,7 @@ function BulkEditRow({
           <span
             className={`text-[9px] ${clipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
           >
-            {captureStatusText[clipStatus]}
+            {copy.captureStatus[clipStatus]}
           </span>
         )}
         <datalist id={`bulk-cam-${photo.id}`}>
@@ -7110,7 +7228,7 @@ function BulkEditRow({
       {/* Lens */}
       <td className={`${cellCls} w-48`}>
         <input
-          aria-label="レンズ"
+          aria-label={copy.bulkTable.lensAria}
           list={`bulk-lens-${photo.id}`}
           value={draft.lens}
           onChange={(e) => handleChange("lens", e.target.value)}
@@ -7127,7 +7245,7 @@ function BulkEditRow({
       {/* Series */}
       <td className={`${cellCls} w-36`}>
         <select
-          aria-label="シリーズ"
+          aria-label={copy.bulkTable.seriesAria}
           value={draft.seriesId}
           onChange={(e) => handleChange("seriesId", e.target.value)}
           className="w-full bg-[var(--admin-paper)] text-[var(--admin-ink)] outline-none border border-transparent transition-colors py-0.5 rounded-sm text-[11px]"
@@ -7166,8 +7284,8 @@ function BulkEditRow({
         <div className="flex gap-0.5">
           {(
             [
-              ["フィルム", "フ"],
-              ["デジタル", "デ"],
+              ["フィルム", copy.bulkTable.filmShort],
+              ["デジタル", copy.bulkTable.digitalShort],
               ["", "—"],
             ] as const
           ).map(([val, lbl]) => (

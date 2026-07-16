@@ -878,6 +878,166 @@ describe("shared components", () => {
     }
   });
 
+  test("AdminPage: EN translates Phase 2b Library filters, metadata, and bulk edit", async () => {
+    const prevAuth = canned["/api/admin/me"];
+    const prevCategories = canned["/api/categories"];
+    const prevSeries = canned["/api/admin/series"];
+    const prevHero = canned["/api/admin/hero-photos"];
+    canned["/api/admin/me"] = { authenticated: true };
+    canned["/api/categories"] = {
+      categories: [
+        { id: 1, slug: "snap", label: "Street Work", sortOrder: 0 },
+        { id: 2, slug: "portrait", label: "Portraits", sortOrder: 1 },
+      ],
+    };
+    canned["/api/admin/series"] = {
+      series: [
+        {
+          id: 3,
+          slug: "indigo",
+          title: "Indigo Days",
+          subtitle: "",
+          statement: "",
+          coverPhotoId: 2,
+          sortOrder: 0,
+          isPublished: true,
+        },
+      ],
+    };
+    canned["/api/admin/hero-photos"] = { heroPhotos: [] };
+    const { ADMIN_LANGUAGE_STORAGE_KEY } =
+      await import("../pages/admin-i18n");
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      await waitForText(host, "Filters");
+      expect(
+        host.querySelector('select[aria-label="Sort Library view"]'),
+      ).not.toBeNull();
+      expect(
+        host.querySelector('fieldset[aria-label="Import medium"]'),
+      ).not.toBeNull();
+      expect(host.textContent).toContain("Import as");
+      expect(host.textContent).toContain("Digital");
+      expect(host.textContent).toContain("Film");
+
+      buttonWithText(host, "Filters").click();
+      await flush(30);
+      expect(
+        host.querySelector('input[aria-label="Search photos"]'),
+      ).not.toBeNull();
+      expect(host.textContent).toContain("No date taken");
+      expect(host.textContent).toContain("Publication: All");
+      expect(host.textContent).toContain("Portrait");
+
+      const tile = host.querySelector(
+        ".admin-photo-tile > button",
+      ) as HTMLButtonElement | null;
+      expect(tile).not.toBeNull();
+      tile!.click();
+      await waitForText(host, "Focal point");
+      expect(host.textContent).toContain("Date taken");
+      expect(host.textContent).toContain("Duplicate this photo");
+      expect(host.textContent).toContain("Move photo to Trash");
+
+      buttonWithText(host, "Bulk edit").click();
+      await waitForText(host, "Bulk metadata edit");
+      expect(host.textContent).toContain("Leave unchanged");
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prevAuth;
+      canned["/api/categories"] = prevCategories;
+      if (prevSeries === undefined) delete canned["/api/admin/series"];
+      else canned["/api/admin/series"] = prevSeries;
+      if (prevHero === undefined) delete canned["/api/admin/hero-photos"];
+      else canned["/api/admin/hero-photos"] = prevHero;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  test("CategoriesTab and SeriesTab render their Phase 2b controls in EN", async () => {
+    const prevCategories = canned["/api/categories"];
+    const prevSeries = canned["/api/admin/series"];
+    canned["/api/categories"] = {
+      categories: [
+        { id: 1, slug: "portrait", label: "Portraits", sortOrder: 0 },
+      ],
+    };
+    canned["/api/admin/series"] = {
+      series: [
+        {
+          id: 3,
+          slug: "indigo",
+          title: "Indigo Days",
+          subtitle: "",
+          statement: "",
+          coverPhotoId: 2,
+          sortOrder: 0,
+          isPublished: true,
+          themeConfig: "",
+        },
+      ],
+    };
+    const { ADMIN_LANGUAGE_STORAGE_KEY, AdminLanguageProvider } =
+      await import("../pages/admin-i18n");
+    const { CategoriesTab, SeriesTab } =
+      await import("../pages/admin-tabs");
+    dom.window.localStorage.clear();
+    dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
+    try {
+      const categories = await mount(
+        createElement(
+          AdminLanguageProvider,
+          null,
+          createElement(CategoriesTab),
+        ),
+      );
+      await waitForText(categories.host, "Used as Gallery filters");
+      expect(categories.host.textContent).toContain("New Category");
+      expect(
+        categories.host.querySelector('input[aria-label="Category name"]'),
+      ).not.toBeNull();
+      expect(
+        categories.host.querySelector('button[aria-label="Move up"]'),
+      ).not.toBeNull();
+      categories.cleanup();
+
+      const series = await mount(
+        createElement(
+          AdminLanguageProvider,
+          null,
+          createElement(SeriesTab),
+        ),
+      );
+      await waitForText(series.host, "1 photo · Cover: B");
+      expect(series.host.textContent).toContain("Published");
+      expect(series.host.textContent).toContain("New Series");
+      const edit = series.host.querySelector(
+        'button[aria-label="Edit"]',
+      ) as HTMLButtonElement | null;
+      expect(edit).not.toBeNull();
+      edit!.click();
+      await waitForText(series.host, "Layout & Theme");
+      expect(series.host.textContent).toContain("Cover Photo");
+      expect(series.host.textContent).toContain("Photo order");
+      expect(series.host.textContent).toContain("Background color");
+      expect(series.host.textContent).toContain("Aspect-ratio grid");
+      series.cleanup();
+    } finally {
+      canned["/api/categories"] = prevCategories;
+      if (prevSeries === undefined) delete canned["/api/admin/series"];
+      else canned["/api/admin/series"] = prevSeries;
+      dom.window.localStorage.clear();
+    }
+  });
+
   // 読込中の「偽のゼロ」防止: 写真クエリ解決前に 0 / 0 photos・0 枚 と断定表示しない
   test("AdminPage: Library header shows … (not 0 / 0) while photos are loading", async () => {
     const prev = canned["/api/admin/me"];

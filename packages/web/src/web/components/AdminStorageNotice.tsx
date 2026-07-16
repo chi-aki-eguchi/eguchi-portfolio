@@ -48,23 +48,36 @@ export function StorageAlertBanner({
   canRetry,
   onRetry,
   onClose,
+  copy,
 }: {
   missing: string[];
   canRetry: boolean;
   onRetry: () => void;
   onClose: () => void;
+  copy?: {
+    title: string;
+    close: string;
+    missing: (names: string) => string;
+    detail: (names: string) => string;
+    handoff: string;
+    retry: string;
+  };
 }) {
   const notice = storageNotConfiguredNotice(missing);
+  const names = missing.join(", ");
+  const title = copy?.title ?? notice.title;
+  const detail = copy?.detail(names) ?? notice.detail;
+  const handoff = copy?.handoff ?? notice.handoff;
   return (
     <div
       role="alert"
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[min(560px,90vw)] bg-[var(--admin-paper-soft)] border border-amber-700/60 rounded-sm shadow-xl px-5 py-4 space-y-2"
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[13px] text-[var(--admin-ink)]">{notice.title}</p>
+        <p className="text-[13px] text-[var(--admin-ink)]">{title}</p>
         <button
           onClick={onClose}
-          aria-label="閉じる"
+          aria-label={copy?.close ?? "閉じる"}
           className="text-[var(--admin-muted)] hover:text-[var(--admin-ink)] transition-colors flex-shrink-0"
         >
           <X size={12} />
@@ -72,21 +85,21 @@ export function StorageAlertBanner({
       </div>
       {missing.length > 0 && (
         <p className="text-[12px] leading-5 text-amber-800">
-          不足している設定: {missing.join(", ")}
+          {copy?.missing(names) ?? `不足している設定: ${names}`}
         </p>
       )}
       <p className="text-[12px] leading-5 text-[var(--admin-muted)]">
-        {notice.detail}
+        {detail}
       </p>
       <p className="text-[12px] leading-5 text-[var(--admin-muted)]">
-        {notice.handoff}
+        {handoff}
       </p>
       {canRetry && (
         <button
           onClick={onRetry}
           className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] underline underline-offset-2 hover:opacity-70 transition-opacity"
         >
-          <Upload size={11} /> 設定を直したあとに再試行する
+          <Upload size={11} /> {copy?.retry ?? "設定を直したあとに再試行する"}
         </button>
       )}
     </div>

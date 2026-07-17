@@ -8725,3 +8725,16 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 重要な制約: push未実施（オーナー）。本番書き込みなし。DBスキーマ変更なし。
   新キーはsite_settings(key-value)のみで migration不要。
 - 必要なcommit情報: 8306f8c（3-1）/ c5f692d（3-2+3-3）/ docsコミット（本Handoff）。
+
+## Handoff 2026-07-17 (49) — Phase 3 補: 配布テンプレート向けENガード
+
+- 完了したこと: 英語文（profileBioEn等5キー）が1つも入力されていないサイトでは
+  hreflang / sitemapの/en/* / ヘッダーJP|EN を出さないガードを追加（commit参照）。
+  Handoff(48)の残問題2は解消。秋さんのサイトはadminで英語文を1つ入れた時点で
+  全て有効化される（それまで本番でもJP|ENは出ない点に注意）。
+- 現在の状態: tree clean。check 481 pass。admin未変更のためsmoke対象外。
+  実装=Claude(Fable5)直接（小規模のためsubagent委任なし）。
+- 残っている問題: Handoff(48)の1(EN文の実入力=オーナー)と3(flaky smoke)のみ。
+- 次に行うこと: オーナーpush→本番確認は「adminでBio(EN)等を入力→JP|ENが出現→
+  /en/aboutに英語文」の順で見る。
+- 重要な制約: push未実施（オーナー）。本番書き込みなし。

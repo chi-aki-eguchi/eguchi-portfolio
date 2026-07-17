@@ -6,6 +6,7 @@ import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
+import { hasPublicEnglishContent } from "../../shared/public-english";
 
 // i18n Phase 3 スライス1: /about・/contact の英語ペア。/profile は /about の
 // エイリアスなので EN→JA 側は常に /about を正とする（ogp.ts の canonPath 扱いに合わせる）。
@@ -127,6 +128,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // i18n Phase 3 スライス1: /en/about・/en/contact 表示中は About/Contact の
   // リンク先を英語パスへ。Gallery・Series・Portfolio Kit は対象外（JPのまま）。
   const isEnglishPage = location in EN_TO_JA_PATH;
+  // 英語文が一つも入力されていないサイト(配布テンプレート既定)では JP|EN を
+  // 出さない。ENページ表示中だけは例外 — 直接URLで来た人がJPへ戻れるように。
+  const showLanguageSwitch =
+    isEnglishPage || hasPublicEnglishContent(data ?? {});
   const languagePairHref = isEnglishPage
     ? EN_TO_JA_PATH[location]
     : JA_TO_EN_PATH[location];
@@ -292,7 +297,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </li>
             )}
-            {languagePairHref && (
+            {showLanguageSwitch && languagePairHref && (
               <li>
                 <LanguageSwitchLinks
                   isEnglishPage={isEnglishPage}
@@ -413,7 +418,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {label}
             </Link>
           ))}
-          {languagePairHref && (
+          {showLanguageSwitch && languagePairHref && (
             <div className="px-5 py-3">
               <LanguageSwitchLinks
                 isEnglishPage={isEnglishPage}

@@ -21,6 +21,7 @@ import { contentTypeForStaticPath } from "./api/static-files";
 import { settingsVersion } from "./api/settings-version";
 import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
+import { hasPublicEnglishContent } from "./shared/public-english";
 import { resolveServiceVisibility } from "./shared/service-visibility";
 import {
   DYNAMIC_FAVICON_PATHS,
@@ -319,9 +320,9 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/series",
     "/about",
     "/contact",
-    // i18n Phase 3 スライス1: /en/about・/en/contact の英語URL
-    "/en/about",
-    "/en/contact",
+    // i18n Phase 3: 英語文が入力済みのサイトのみ /en/* を sitemap に載せる
+    // （配布テンプレート既定では日本語のままの英語URLを検索対象にしない）
+    ...(hasPublicEnglishContent(settings) ? ["/en/about", "/en/contact"] : []),
     ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
       ? ["/portfolio-kit", "/portfolio-kit/en"]
       : []),

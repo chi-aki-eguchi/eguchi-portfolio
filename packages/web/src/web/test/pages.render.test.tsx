@@ -2474,10 +2474,13 @@ describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
     }
   });
 
-  test("Layout's JP|EN switch on /contact links to /en/contact", async () => {
+  test("Layout's JP|EN switch on /contact links to /en/contact once English text exists", async () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
     dom.reconfigure({ url: "http://localhost/contact" });
+    const prevSettings = canned["/api/settings"];
+    // ガード条件: 公開EN文が1つでも入力されていれば JP|EN を出す。
+    canned["/api/settings"] = { contactIntroEn: "Feel free to reach out." };
     try {
       const { host, cleanup } = await mount(
         createElement(
@@ -2494,6 +2497,32 @@ describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
       expect(host.textContent).not.toContain("Skip to content");
       cleanup();
     } finally {
+      canned["/api/settings"] = prevSettings;
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  test("Layout hides the JP|EN switch on JP pages while no English text is configured (distributed-template guard)", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    dom.reconfigure({ url: "http://localhost/contact" });
+    const prevSettings = canned["/api/settings"];
+    // contactEnglishNote はJPページ用の添え書きなので、これだけでは有効化しない。
+    canned["/api/settings"] = {
+      contactEnglishNote: "English inquiries welcome.",
+    };
+    try {
+      const { host, cleanup } = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      expect(host.querySelector('a[href="/en/contact"]')).toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/settings"] = prevSettings;
       dom.reconfigure({ url: "http://localhost/" });
     }
   });

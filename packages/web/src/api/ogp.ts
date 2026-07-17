@@ -8,6 +8,7 @@ import {
 import { imageUrlWithParams } from "../shared/image-url";
 import { composeBaseTitle, composeHomeTitle } from "../shared/site-title";
 import { resolveServiceVisibility } from "../shared/service-visibility";
+import { hasPublicEnglishContent } from "../shared/public-english";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
@@ -470,9 +471,13 @@ export function injectOgp(
   let headInjection = indexable
     ? buildJsonLd(settings, pathname, override, fallbackOrigin)
     : "";
+  // 英語文が一つも入力されていないサイト(配布テンプレート既定)では hreflang を
+  // 出さない — 内容が日本語のままの /en/* を「英語版」と主張しないため。
   const alternates = isService
     ? serviceLanguageAlternates(pathname)
-    : publicPageLanguageAlternates(pathname);
+    : hasPublicEnglishContent(settings)
+      ? publicPageLanguageAlternates(pathname)
+      : null;
   if (alternates) {
     headInjection += `\n  <link rel="alternate" hreflang="ja" href="${escapeHtml(`${siteUrl}${alternates.ja}`)}">`;
     headInjection += `\n  <link rel="alternate" hreflang="en" href="${escapeHtml(`${siteUrl}${alternates.en}`)}">`;

@@ -1010,17 +1010,15 @@ describe("injectOgp /en/about and /en/contact (i18n Phase 3 slice 1)", () => {
     );
   });
 
+  // hreflang は英語文が入力済みのサイトでのみ出す（配布テンプレートのガード）。
+  const enSettings = {
+    siteUrl: "https://akieguchi.com",
+    profileBioEn: "English bio.",
+  };
+
   test("reciprocal hreflang between /about and /en/about, and /contact and /en/contact", () => {
-    const ja = injectOgp(
-      page,
-      { siteUrl: "https://akieguchi.com" },
-      "/about",
-    );
-    const en = injectOgp(
-      page,
-      { siteUrl: "https://akieguchi.com" },
-      "/en/about",
-    );
+    const ja = injectOgp(page, enSettings, "/about");
+    const en = injectOgp(page, enSettings, "/en/about");
     for (const out of [ja, en]) {
       expect(out).toContain(
         'hreflang="ja" href="https://akieguchi.com/about"',
@@ -1030,16 +1028,8 @@ describe("injectOgp /en/about and /en/contact (i18n Phase 3 slice 1)", () => {
       );
     }
 
-    const jaContact = injectOgp(
-      page,
-      { siteUrl: "https://akieguchi.com" },
-      "/contact",
-    );
-    const enContact = injectOgp(
-      page,
-      { siteUrl: "https://akieguchi.com" },
-      "/en/contact",
-    );
+    const jaContact = injectOgp(page, enSettings, "/contact");
+    const enContact = injectOgp(page, enSettings, "/en/contact");
     for (const out of [jaContact, enContact]) {
       expect(out).toContain(
         'hreflang="ja" href="https://akieguchi.com/contact"',
@@ -1051,16 +1041,45 @@ describe("injectOgp /en/about and /en/contact (i18n Phase 3 slice 1)", () => {
   });
 
   test("/profile's hreflang alternates point at /about (its canonical), not /profile", () => {
-    const out = injectOgp(
-      page,
-      { siteUrl: "https://akieguchi.com" },
-      "/profile",
-    );
+    const out = injectOgp(page, enSettings, "/profile");
     expect(out).toContain(
       'hreflang="ja" href="https://akieguchi.com/about"',
     );
     expect(out).toContain(
       'hreflang="en" href="https://akieguchi.com/en/about"',
+    );
+  });
+
+  test("without any public English text configured, /about and /en/about emit no hreflang (distributed-template guard)", () => {
+    for (const path of ["/about", "/en/about", "/contact", "/en/contact"]) {
+      const out = injectOgp(
+        page,
+        { siteUrl: "https://akieguchi.com" },
+        path,
+      );
+      expect(out).not.toContain('hreflang=');
+    }
+    // 判定対象は公開EN文のみ — contactEnglishNote(JPページ用の添え書き)では有効化しない。
+    const noteOnly = injectOgp(
+      page,
+      {
+        siteUrl: "https://akieguchi.com",
+        contactEnglishNote: "English inquiries welcome.",
+      },
+      "/about",
+    );
+    expect(noteOnly).not.toContain('hreflang=');
+    // どのEN文キーでも1つ入力されれば有効化される。
+    const introOnly = injectOgp(
+      page,
+      {
+        siteUrl: "https://akieguchi.com",
+        contactIntroEn: "Feel free to reach out.",
+      },
+      "/contact",
+    );
+    expect(introOnly).toContain(
+      'hreflang="en" href="https://akieguchi.com/en/contact"',
     );
   });
 

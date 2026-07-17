@@ -66,6 +66,9 @@ const PAGE_TITLES: Record<string, string> = {
   "/about": "About",
   "/profile": "About",
   "/contact": "Contact",
+  // i18n Phase 3 スライス1: /en/about・/en/contact の英語URL
+  "/en/about": "About",
+  "/en/contact": "Contact",
   // admin は正常表示されるページなので Not Found title にしない。検索除外は
   // 下の startsWith("/admin") noindex 条件が isKnown と無関係に維持する。
   "/admin": "Admin",
@@ -82,6 +85,11 @@ const META_DESCRIPTION_KEYS: Record<string, string> = {
   "/about": "metaDescriptionAbout",
   "/profile": "metaDescriptionAbout",
   "/contact": "metaDescriptionContact",
+  // i18n Phase 3 スライス1: /en/about・/en/contact は専用キーを増やさず既存の
+  // metaDescriptionAbout/metaDescriptionContact に相乗り(settings未設定時は
+  // genericPageDescription側で英文フォールバックを出す)。
+  "/en/about": "metaDescriptionAbout",
+  "/en/contact": "metaDescriptionContact",
 };
 
 // Generic per-page description used when the corresponding admin setting is
@@ -103,6 +111,10 @@ function genericPageDescription(
       return `${name}のプロフィールページ。`;
     case "/contact":
       return `${name}への連絡先ページ。`;
+    case "/en/about":
+      return `${displayNameEnFrom(settings)}'s profile page.`;
+    case "/en/contact":
+      return `Contact ${displayNameEnFrom(settings)}.`;
     default:
       return siteDescriptionFrom(settings);
   }
@@ -166,6 +178,22 @@ function serviceLanguageAlternates(
   }
   if (pathname === "/start" || pathname === "/start/en") {
     return { ja: "/start", en: "/start/en" };
+  }
+  return null;
+}
+
+// i18n Phase 3 スライス1: /about・/contact の JA/EN 相互参照。/profile は
+// /about のエイリアスなので ja 側は常に /about を正とする(canonPath と同じ扱い)。
+const ENGLISH_PUBLIC_PATHS = new Set(["/en/about", "/en/contact"]);
+
+function publicPageLanguageAlternates(
+  pathname: string,
+): { ja: string; en: string } | null {
+  if (pathname === "/about" || pathname === "/profile" || pathname === "/en/about") {
+    return { ja: "/about", en: "/en/about" };
+  }
+  if (pathname === "/contact" || pathname === "/en/contact") {
+    return { ja: "/contact", en: "/en/contact" };
   }
   return null;
 }
@@ -244,6 +272,8 @@ export function injectOgp(
     "/about",
     "/profile",
     "/contact",
+    "/en/about",
+    "/en/contact",
     "/portfolio-kit",
     "/portfolio-kit/en",
     "/portfolio-kit/start",
@@ -310,7 +340,9 @@ export function injectOgp(
   const canonical = `${siteUrl}${canonPath === "/" ? "/" : canonPath}`;
 
   let out = html;
-  if (isService && isEnglishServicePath) {
+  // i18n Phase 3 スライス1: サービスLP(/portfolio-kit/en 等)だけでなく、
+  // /en/about・/en/contact も同じ英語ページ扱いで lang/og:locale を切り替える。
+  if ((isService && isEnglishServicePath) || ENGLISH_PUBLIC_PATHS.has(pathname)) {
     out = out.replace(/<html\s+lang="[^"]*"/, '<html lang="en"');
     out = setAttr(
       out,
@@ -440,7 +472,7 @@ export function injectOgp(
     : "";
   const alternates = isService
     ? serviceLanguageAlternates(pathname)
-    : null;
+    : publicPageLanguageAlternates(pathname);
   if (alternates) {
     headInjection += `\n  <link rel="alternate" hreflang="ja" href="${escapeHtml(`${siteUrl}${alternates.ja}`)}">`;
     headInjection += `\n  <link rel="alternate" hreflang="en" href="${escapeHtml(`${siteUrl}${alternates.en}`)}">`;

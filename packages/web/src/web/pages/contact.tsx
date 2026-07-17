@@ -6,7 +6,11 @@ import { safeHref } from "../lib/utils";
 
 type Status = "idle" | "sending" | "success" | "error";
 
-export default function ContactPage() {
+export default function ContactPage({
+  language = "ja",
+}: {
+  language?: "ja" | "en";
+}) {
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -177,7 +181,9 @@ export default function ContactPage() {
             className="text-center mt-10 md:mt-12 text-[rgba(var(--foreground-rgb),0.40)] page-entrance page-entrance-delay-2"
             style={{ fontSize: "var(--body-size, 0.85rem)" }}
           >
-            ご依頼・ご相談は下記フォームよりお気軽にどうぞ。
+            {language === "en"
+              ? "For inquiries or requests, please use the form below."
+              : "ご依頼・ご相談は下記フォームよりお気軽にどうぞ。"}
           </p>
         </section>
       )}
@@ -296,7 +302,7 @@ export default function ContactPage() {
                     lineHeight: "var(--body-leading, 2)",
                   }}
                 >
-                  準備中です。
+                  {language === "en" ? "Coming soon." : "準備中です。"}
                 </p>
               )}
           </div>

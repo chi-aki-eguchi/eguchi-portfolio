@@ -146,6 +146,28 @@ function App() {
               </PageTransition>
             </Layout>
           </Route>
+          <Route path="/en/about">
+            <Layout>
+              <PageTransition>
+                <TitledRoute title="About">
+                  <Suspense fallback={<PageFallback />}>
+                    <ProfilePage />
+                  </Suspense>
+                </TitledRoute>
+              </PageTransition>
+            </Layout>
+          </Route>
+          <Route path="/en/contact">
+            <Layout>
+              <PageTransition>
+                <TitledRoute title="Contact">
+                  <Suspense fallback={<PageFallback />}>
+                    <ContactPage language="en" />
+                  </Suspense>
+                </TitledRoute>
+              </PageTransition>
+            </Layout>
+          </Route>
           <Route path="/service/start/en">
             <LegacyPortfolioKitRedirect to="/start/en" />
           </Route>

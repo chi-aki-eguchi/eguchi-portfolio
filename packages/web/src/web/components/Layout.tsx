@@ -7,6 +7,18 @@ import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 
+// i18n Phase 3 スライス1: /about・/contact の英語ペア。/profile は /about の
+// エイリアスなので EN→JA 側は常に /about を正とする（ogp.ts の canonPath 扱いに合わせる）。
+const JA_TO_EN_PATH: Record<string, string> = {
+  "/about": "/en/about",
+  "/profile": "/en/about",
+  "/contact": "/en/contact",
+};
+const EN_TO_JA_PATH: Record<string, string> = {
+  "/en/about": "/about",
+  "/en/contact": "/contact",
+};
+
 function useFooterReveal() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -25,6 +37,61 @@ function useFooterReveal() {
     return () => observer.disconnect();
   }, []);
   return ref;
+}
+
+// i18n Phase 3 スライス1: nav末尾に出す JP | EN 切り替え。他の nav リンクと
+// 同じ font-en の控えめなトーン。現在の言語は非リンクで濃く表示し、もう一方は
+// 通常の nav リンクとして遷移可能にする。
+function LanguageSwitchLinks({
+  isEnglishPage,
+  jaHref,
+  enHref,
+}: {
+  isEnglishPage: boolean;
+  jaHref: string;
+  enHref: string;
+}) {
+  const linkStyle = {
+    letterSpacing: "var(--nav-tracking, 0.04em)",
+    "--link-rest": "var(--nav-opacity, 0.35)",
+  } as React.CSSProperties;
+  return (
+    <span
+      className="font-en inline-flex items-center gap-1.5"
+      style={{ fontSize: "0.7rem" }}
+    >
+      {isEnglishPage ? (
+        <Link to={jaHref} className="nav-link-luxury nav-link-public" style={linkStyle}>
+          JP
+        </Link>
+      ) : (
+        <span
+          aria-current="page"
+          style={{ color: `rgba(var(--foreground-rgb),0.76)` }}
+        >
+          JP
+        </span>
+      )}
+      <span
+        aria-hidden="true"
+        style={{ color: `rgba(var(--foreground-rgb),0.20)` }}
+      >
+        |
+      </span>
+      {isEnglishPage ? (
+        <span
+          aria-current="page"
+          style={{ color: `rgba(var(--foreground-rgb),0.76)` }}
+        >
+          EN
+        </span>
+      ) : (
+        <Link to={enHref} className="nav-link-luxury nav-link-public" style={linkStyle}>
+          EN
+        </Link>
+      )}
+    </span>
+  );
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -56,21 +123,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { showServiceInNav } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const templateCreditUrl = httpHrefOrNull(data?.templateCreditUrl ?? "");
+
+  // i18n Phase 3 スライス1: /en/about・/en/contact 表示中は About/Contact の
+  // リンク先を英語パスへ。Gallery・Series・Portfolio Kit は対象外（JPのまま）。
+  const isEnglishPage = location in EN_TO_JA_PATH;
+  const languagePairHref = isEnglishPage
+    ? EN_TO_JA_PATH[location]
+    : JA_TO_EN_PATH[location];
+
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
-    { href: "/about", label: data?.navLabelAbout ?? "About" },
-    { href: "/contact", label: data?.navLabelContact ?? "Contact" },
+    {
+      href: isEnglishPage ? "/en/about" : "/about",
+      label: data?.navLabelAbout ?? "About",
+    },
+    {
+      href: isEnglishPage ? "/en/contact" : "/contact",
+      label: data?.navLabelContact ?? "Contact",
+    },
     ...(showServiceInNav
       ? [{ href: "/portfolio-kit", label: "Portfolio Kit" }]
       : []),
   ];
 
   // Highlight the nav item for the section you're in, not just its exact path:
-  // Series stays active on /series/:slug, and About covers its /profile alias.
+  // Series stays active on /series/:slug, About covers its /profile alias, and
+  // both About/Contact stay active across their /en/* counterpart.
+  const canonicalSection = (path: string): "about" | "contact" | null => {
+    if (path === "/about" || path === "/profile" || path === "/en/about")
+      return "about";
+    if (path === "/contact" || path === "/en/contact") return "contact";
+    return null;
+  };
   const isActive = (href: string) => {
-    if (href === "/about")
-      return location === "/about" || location === "/profile";
+    const section = canonicalSection(href);
+    if (section) return canonicalSection(location) === section;
     return location === href || location.startsWith(`${href}/`);
   };
 
@@ -110,7 +198,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-[var(--background)] focus:text-[var(--foreground)] focus:px-4 focus:py-2 focus:rounded focus:shadow focus:font-en focus:text-sm focus:border focus:border-[rgba(var(--foreground-rgb),0.2)]"
       >
-        本文へスキップ
+        {isEnglishPage ? "Skip to content" : "本文へスキップ"}
       </a>
       <header
         className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[var(--ease-quart)] ${
@@ -204,6 +292,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </li>
             )}
+            {languagePairHref && (
+              <li>
+                <LanguageSwitchLinks
+                  isEnglishPage={isEnglishPage}
+                  jaHref={isEnglishPage ? languagePairHref : location}
+                  enHref={isEnglishPage ? location : languagePairHref}
+                />
+              </li>
+            )}
           </ul>
 
           {/* Dark mode toggle + Mobile hamburger */}
@@ -291,7 +388,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           inert={!mobileOpen}
           className={`md:hidden overflow-hidden transition-all duration-350 ease-[var(--ease-quart)] ${
             mobileOpen
-              ? "max-h-52 border-t border-[rgba(var(--foreground-rgb),0.05)]"
+              ? // i18n Phase 3 スライス1: About/Contact ページで JP|EN 行が1段追加され
+                // うるため、既存 max-h-52 では最大構成(Gallery/Series/About/Contact/
+                // Portfolio Kit)時に切れる余地があった。実測余裕を見て max-h-64 に。
+                "max-h-64 border-t border-[rgba(var(--foreground-rgb),0.05)]"
               : "max-h-0"
           } bg-[var(--background)]`}
         >
@@ -313,6 +413,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {label}
             </Link>
           ))}
+          {languagePairHref && (
+            <div className="px-5 py-3">
+              <LanguageSwitchLinks
+                isEnglishPage={isEnglishPage}
+                jaHref={isEnglishPage ? languagePairHref : location}
+                enHref={isEnglishPage ? location : languagePairHref}
+              />
+            </div>
+          )}
         </div>
       </header>
 

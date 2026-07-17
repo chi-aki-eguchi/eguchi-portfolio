@@ -932,3 +932,165 @@ describe("injectOgp per-page meta description", () => {
     expect(descOf(out)).toBe("藍染めをテーマにした作品群。");
   });
 });
+
+describe("injectOgp /en/about and /en/contact (i18n Phase 3 slice 1)", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    </head><body></body></html>`;
+  const localizedPage = page
+    .replace("<html>", '<html lang="ja">')
+    .replace(
+      "</head>",
+      '<meta property="og:locale" content="ja_JP" /></head>',
+    );
+  const descOf = (html: string) =>
+    html.match(/name="description" content="([^"]*)"/)?.[1];
+
+  test("titles and stays indexable", () => {
+    const about = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/en/about",
+    );
+    const contact = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/en/contact",
+    );
+    expect(about).toContain("<title>About |");
+    expect(about).toContain('name="robots" content="index, follow"');
+    expect(contact).toContain("<title>Contact |");
+    expect(contact).toContain('name="robots" content="index, follow"');
+  });
+
+  test("sets html lang and og:locale to English, unlike the Japanese pages", () => {
+    const enAbout = injectOgp(
+      localizedPage,
+      { siteUrl: "https://akieguchi.com" },
+      "/en/about",
+    );
+    expect(enAbout).toContain('<html lang="en">');
+    expect(enAbout).toContain('property="og:locale" content="en_US"');
+
+    const jaAbout = injectOgp(
+      localizedPage,
+      { siteUrl: "https://akieguchi.com" },
+      "/about",
+    );
+    expect(jaAbout).toContain('<html lang="ja">');
+    expect(jaAbout).toContain('property="og:locale" content="ja_JP"');
+  });
+
+  test("canonical for /en/about and /en/contact is the English URL itself, not the JA page", () => {
+    const about = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/en/about",
+    );
+    const contact = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/en/contact",
+    );
+    expect(about).toContain(
+      'rel="canonical" href="https://akieguchi.com/en/about"',
+    );
+    expect(contact).toContain(
+      'rel="canonical" href="https://akieguchi.com/en/contact"',
+    );
+  });
+
+  test("reciprocal hreflang between /about and /en/about, and /contact and /en/contact", () => {
+    const ja = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/about",
+    );
+    const en = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/en/about",
+    );
+    for (const out of [ja, en]) {
+      expect(out).toContain(
+        'hreflang="ja" href="https://akieguchi.com/about"',
+      );
+      expect(out).toContain(
+        'hreflang="en" href="https://akieguchi.com/en/about"',
+      );
+    }
+
+    const jaContact = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/contact",
+    );
+    const enContact = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/en/contact",
+    );
+    for (const out of [jaContact, enContact]) {
+      expect(out).toContain(
+        'hreflang="ja" href="https://akieguchi.com/contact"',
+      );
+      expect(out).toContain(
+        'hreflang="en" href="https://akieguchi.com/en/contact"',
+      );
+    }
+  });
+
+  test("/profile's hreflang alternates point at /about (its canonical), not /profile", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/profile",
+    );
+    expect(out).toContain(
+      'hreflang="ja" href="https://akieguchi.com/about"',
+    );
+    expect(out).toContain(
+      'hreflang="en" href="https://akieguchi.com/en/about"',
+    );
+  });
+
+  test("with no settings configured, /en/about and /en/contact get distinct English generic descriptions", () => {
+    const about = descOf(injectOgp(page, {}, "/en/about"));
+    const contact = descOf(injectOgp(page, {}, "/en/contact"));
+    expect(about).toContain("profile page");
+    expect(contact).toContain("Contact");
+    expect(about).not.toBe(contact);
+    // Must not silently fall through to the Japanese generic fallback.
+    expect(about).not.toContain("プロフィール");
+    expect(contact).not.toContain("連絡先");
+  });
+
+  test("/en/about and /en/contact ride on the existing metaDescriptionAbout/metaDescriptionContact settings (no new keys)", () => {
+    const settings = {
+      metaDescriptionAbout: "about desc unique",
+      metaDescriptionContact: "contact desc unique",
+    };
+    expect(descOf(injectOgp(page, settings, "/about"))).toBe(
+      "about desc unique",
+    );
+    expect(descOf(injectOgp(page, settings, "/en/about"))).toBe(
+      "about desc unique",
+    );
+    expect(descOf(injectOgp(page, settings, "/contact"))).toBe(
+      "contact desc unique",
+    );
+    expect(descOf(injectOgp(page, settings, "/en/contact"))).toBe(
+      "contact desc unique",
+    );
+  });
+});

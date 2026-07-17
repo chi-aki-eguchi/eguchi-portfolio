@@ -319,6 +319,9 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/series",
     "/about",
     "/contact",
+    // i18n Phase 3 スライス1: /en/about・/en/contact の英語URL
+    "/en/about",
+    "/en/contact",
     ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
       ? ["/portfolio-kit", "/portfolio-kit/en"]
       : []),

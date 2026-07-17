@@ -2403,3 +2403,143 @@ describe("shared components", () => {
     noDims.cleanup();
   });
 });
+
+describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
+  test("English ContactPage shows English copy instead of the Japanese placeholder", async () => {
+    const ContactPage = (await import("../pages/contact")).default;
+    const { host, cleanup } = await mount(
+      createElement(ContactPage, { language: "en" }),
+    );
+    expect(host.textContent).toContain("Coming soon.");
+    expect(host.textContent).not.toContain("準備中です。");
+    cleanup();
+  });
+
+  test("Japanese ContactPage (default/no language prop) keeps the Japanese placeholder", async () => {
+    const ContactPage = (await import("../pages/contact")).default;
+    const { host, cleanup } = await mount(createElement(ContactPage));
+    expect(host.textContent).toContain("準備中です。");
+    expect(host.textContent).not.toContain("Coming soon.");
+    cleanup();
+  });
+
+  test("English ContactPage shows an English pricing lead-in when plans are published", async () => {
+    const prevPricing = canned["/api/pricing"];
+    canned["/api/pricing"] = {
+      plans: [
+        {
+          id: 1,
+          title: "Shoot",
+          price: "¥30,000",
+          description: "",
+          features: "",
+          note: "",
+        },
+      ],
+    };
+    try {
+      const ContactPage = (await import("../pages/contact")).default;
+      const { host, cleanup } = await mount(
+        createElement(ContactPage, { language: "en" }),
+      );
+      expect(host.textContent).toContain(
+        "For inquiries or requests, please use the form below.",
+      );
+      expect(host.textContent).not.toContain(
+        "ご依頼・ご相談は下記フォームよりお気軽にどうぞ。",
+      );
+      cleanup();
+    } finally {
+      canned["/api/pricing"] = prevPricing;
+    }
+  });
+
+  test("Layout only shows the JP|EN switch on paired pages", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    dom.reconfigure({ url: "http://localhost/gallery" });
+    try {
+      const { host, cleanup } = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      expect(host.querySelector('a[href="/en/contact"]')).toBeNull();
+      expect(host.querySelector('a[href="/en/about"]')).toBeNull();
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  test("Layout's JP|EN switch on /contact links to /en/contact", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    dom.reconfigure({ url: "http://localhost/contact" });
+    try {
+      const { host, cleanup } = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      const enLinks = Array.from(
+        host.querySelectorAll('a[href="/en/contact"]'),
+      );
+      expect(enLinks.some((a) => a.textContent === "EN")).toBe(true);
+      expect(host.textContent).toContain("本文へスキップ");
+      expect(host.textContent).not.toContain("Skip to content");
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  test("Layout's JP|EN switch on /en/contact links back to /contact, and About/Contact nav point at /en/*", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    dom.reconfigure({ url: "http://localhost/en/contact" });
+    try {
+      const { host, cleanup } = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      const jaLinks = Array.from(host.querySelectorAll('a[href="/contact"]'));
+      expect(jaLinks.some((a) => a.textContent === "JP")).toBe(true);
+      expect(host.querySelector('a[href="/en/about"]')).not.toBeNull();
+      // Gallery must stay JP even while an /en/* page is showing.
+      expect(host.querySelector('a[href="/gallery"]')).not.toBeNull();
+      expect(host.textContent).toContain("Skip to content");
+      expect(host.textContent).not.toContain("本文へスキップ");
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  test("Layout marks About/Contact active on their /en/* counterpart", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    dom.reconfigure({ url: "http://localhost/en/about" });
+    try {
+      const { host, cleanup } = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      const aboutLink = host.querySelector('a[href="/en/about"]');
+      expect(aboutLink?.getAttribute("aria-current")).toBe("page");
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+});

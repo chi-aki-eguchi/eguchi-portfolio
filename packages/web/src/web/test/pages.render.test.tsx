@@ -2543,3 +2543,73 @@ describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
     }
   });
 });
+
+describe("i18n Phase 3 slice 2+3: EN profile/contact copy + English welcome note", () => {
+  test("English ProfilePage shows profileBioEn instead of the Japanese bio", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      profileBio: "日本語の自己紹介です。",
+      profileBioEn: "English bio goes here.",
+    };
+    try {
+      const ProfilePage = (await import("../pages/profile")).default;
+      const { host, cleanup } = await mount(
+        createElement(ProfilePage, { language: "en" }),
+      );
+      expect(host.textContent).toContain("English bio goes here.");
+      expect(host.textContent).not.toContain("日本語の自己紹介です。");
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+
+  test("English ProfilePage falls back to the Japanese bio when profileBioEn is unset", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = { profileBio: "日本語の自己紹介です。" };
+    try {
+      const ProfilePage = (await import("../pages/profile")).default;
+      const { host, cleanup } = await mount(
+        createElement(ProfilePage, { language: "en" }),
+      );
+      expect(host.textContent).toContain("日本語の自己紹介です。");
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+
+  test("English ContactPage shows contactIntroEn instead of the Japanese intro", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      contactIntro: "日本語の案内文です。",
+      contactIntroEn: "English intro copy goes here.",
+    };
+    try {
+      const ContactPage = (await import("../pages/contact")).default;
+      const { host, cleanup } = await mount(
+        createElement(ContactPage, { language: "en" }),
+      );
+      expect(host.textContent).toContain("English intro copy goes here.");
+      expect(host.textContent).not.toContain("日本語の案内文です。");
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+
+  test("contactEnglishNote shows on the default JP ContactPage (language unspecified)", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      contactEnglishNote: "English inquiries welcome.",
+    };
+    try {
+      const ContactPage = (await import("../pages/contact")).default;
+      const { host, cleanup } = await mount(createElement(ContactPage));
+      expect(host.textContent).toContain("English inquiries welcome.");
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+});

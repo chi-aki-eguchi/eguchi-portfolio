@@ -951,10 +951,22 @@ export function ProfileTab({
       placeholder: "Write your bio...",
     },
     {
+      key: "profileBioEn",
+      label: "Bio (EN)",
+      multiline: true,
+      placeholder: "Write your bio in English... (blank falls back to Bio)",
+    },
+    {
       key: "profileStatement",
       label: copy.fields.statementLabel,
       multiline: true,
       placeholder: copy.fields.statementPlaceholder,
+    },
+    {
+      key: "profileStatementEn",
+      label: `${copy.fields.statementLabel} (EN)`,
+      multiline: true,
+      placeholder: "English version (blank falls back to Statement)",
     },
     {
       key: "profileGear",
@@ -3668,8 +3680,15 @@ export function SettingsTab({
     { key: "siteDescription", ...copy.siteBasics.fields.siteDescription },
     { key: "footerText", ...copy.siteBasics.fields.footerText },
     { key: "contactIntro", ...copy.siteBasics.fields.contactIntro },
+    { key: "contactIntroEn", ...copy.siteBasics.fields.contactIntroEn },
     { key: "contactNote", ...copy.siteBasics.fields.contactNote },
+    { key: "contactNoteEn", ...copy.siteBasics.fields.contactNoteEn },
     { key: "contactFlow", ...copy.siteBasics.fields.contactFlow },
+    { key: "contactFlowEn", ...copy.siteBasics.fields.contactFlowEn },
+    {
+      key: "contactEnglishNote",
+      ...copy.siteBasics.fields.contactEnglishNote,
+    },
     {
       key: "contactMessagePlaceholder",
       ...copy.siteBasics.fields.contactMessagePlaceholder,

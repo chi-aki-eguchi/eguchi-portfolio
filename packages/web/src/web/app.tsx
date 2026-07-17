@@ -151,7 +151,7 @@ function App() {
               <PageTransition>
                 <TitledRoute title="About">
                   <Suspense fallback={<PageFallback />}>
-                    <ProfilePage />
+                    <ProfilePage language="en" />
                   </Suspense>
                 </TitledRoute>
               </PageTransition>

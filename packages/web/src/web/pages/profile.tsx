@@ -6,7 +6,11 @@ import { usePageEntrance } from "../hooks/usePageEntrance";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
 
-export default function ProfilePage() {
+export default function ProfilePage({
+  language = "ja",
+}: {
+  language?: "ja" | "en";
+}) {
   const [photoBroken, setPhotoBroken] = useState(false);
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -27,8 +31,16 @@ export default function ProfilePage() {
   // K1: print store link (external). Shown only when enabled + URL present.
   const printOn = data?.printEnabled === "on" && !!data?.printStoreUrl;
 
-  const bio = data?.profileBio ?? "";
-  const statement = data?.profileStatement ?? "";
+  // i18n Phase 3: English page falls back to the JP copy when no EN text is set,
+  // so /en/about never goes blank while the owner is still translating.
+  const bio =
+    language === "en"
+      ? data?.profileBioEn || data?.profileBio || ""
+      : (data?.profileBio ?? "");
+  const statement =
+    language === "en"
+      ? data?.profileStatementEn || data?.profileStatement || ""
+      : (data?.profileStatement ?? "");
   const gear = (data?.profileGear ?? "")
     .split("\n")
     .map((l) => l.trim())

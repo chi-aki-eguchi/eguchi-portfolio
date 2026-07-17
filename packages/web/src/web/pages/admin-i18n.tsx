@@ -741,16 +741,37 @@ const ADMIN_PHASE_2B_JA = {
           placeholder: "Feel free to...",
           hint: "お問い合わせページ上部の案内文",
         },
+        contactIntroEn: {
+          label: "Contact Page Intro (英語)",
+          placeholder: "Feel free to...",
+          hint: "/en/contact 用の英語版案内文。空欄なら日本語文を表示",
+        },
         contactNote: {
           label: "Contact 添え書き",
           placeholder:
             "「まだ決まっていないけれど相談したい」という段階でも歓迎です。",
           hint: "案内文の下の一言(相談歓迎・返信目安など)。空欄で非表示",
         },
+        contactNoteEn: {
+          label: "Contact 添え書き (英語)",
+          placeholder:
+            "e.g. “Even if it's not decided yet, feel free to reach out.”",
+          hint: "添え書きの英語版。空欄なら日本語文を表示",
+        },
         contactFlow: {
           label: "依頼の流れ",
           placeholder: "ご相談 → すり合わせ → 撮影 → 納品",
           hint: "フォーム上の「Flow」枠に表示。空欄で非表示",
+        },
+        contactFlowEn: {
+          label: "依頼の流れ (英語)",
+          placeholder: "Consultation → Planning → Shoot → Delivery",
+          hint: "「Flow」枠の英語版。空欄なら日本語文を表示",
+        },
+        contactEnglishNote: {
+          label: "英語対応の一言",
+          placeholder: "English inquiries welcome.",
+          hint: "Contactページの見出し付近に、JP/EN どちらでも常時表示。空欄で非表示",
         },
         contactMessagePlaceholder: {
           label: "Message 入力例",
@@ -2078,16 +2099,37 @@ const ADMIN_PHASE_2B_EN = {
           placeholder: "Feel free to...",
           hint: "Intro text shown at the top of the Contact page.",
         },
+        contactIntroEn: {
+          label: "Contact Page Intro (English)",
+          placeholder: "Feel free to...",
+          hint: "English intro text for /en/contact. Falls back to the Japanese text when left blank.",
+        },
         contactNote: {
           label: "Contact Note",
           placeholder:
             "e.g. “Even if it's not decided yet, feel free to reach out.”",
           hint: "A short note below the intro text (e.g. welcoming enquiries, reply-time estimate). Hidden when left blank.",
         },
+        contactNoteEn: {
+          label: "Contact Note (English)",
+          placeholder:
+            "e.g. “Even if it's not decided yet, feel free to reach out.”",
+          hint: "English version of the note. Falls back to the Japanese text when left blank.",
+        },
         contactFlow: {
           label: "Booking Flow",
           placeholder: "Consultation → Planning → Shoot → Delivery",
           hint: "Shown in the “Flow” box on the form. Hidden when left blank.",
+        },
+        contactFlowEn: {
+          label: "Booking Flow (English)",
+          placeholder: "Consultation → Planning → Shoot → Delivery",
+          hint: "English version of the “Flow” box. Falls back to the Japanese text when left blank.",
+        },
+        contactEnglishNote: {
+          label: "English Welcome Note",
+          placeholder: "English inquiries welcome.",
+          hint: "Always shown near the heading on the Contact page, in both JP and EN. Hidden when left blank.",
         },
         contactMessagePlaceholder: {
           label: "Message Example",

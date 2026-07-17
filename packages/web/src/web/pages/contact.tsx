@@ -23,6 +23,20 @@ export default function ContactPage({
   const plans = pricingData?.plans ?? [];
 
   const formspreeUrl = data?.formspreeUrl ?? "";
+  // i18n Phase 3: EN page falls back to the JP copy per field when no EN text is
+  // set yet, so /en/contact never goes blank while the owner is still translating.
+  const intro =
+    language === "en"
+      ? data?.contactIntroEn || data?.contactIntro
+      : data?.contactIntro;
+  const note =
+    language === "en"
+      ? data?.contactNoteEn || data?.contactNote
+      : data?.contactNote;
+  const flow =
+    language === "en"
+      ? data?.contactFlowEn || data?.contactFlow
+      : data?.contactFlow;
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement>(null);
@@ -204,11 +218,22 @@ export default function ContactPage({
           {data?.contactLabel ?? "Contact"}
         </h1>
 
+        {/* i18n Phase 3: "English inquiries welcome" note — always visible near the
+            heading regardless of the JP/EN toggle, so an English-only visitor on the
+            default JP page still sees they can reach out. Hidden when set to "". */}
+        {status !== "success" && data?.contactEnglishNote && (
+          <p
+            className="text-center font-en text-xs tracking-[0.02em] text-[rgba(var(--foreground-rgb),0.35)] -mt-6 mb-8 page-entrance page-entrance-delay-1"
+          >
+            {data.contactEnglishNote}
+          </p>
+        )}
+
         {/* contactIntro is the owner's own lead-in; it used to render only in the
             no-form branch, leaving the configured text invisible once Formspree
             was set up. Show it above the form too (success view keeps it hidden
             so the thank-you moment stays quiet). */}
-        {formspreeUrl && status !== "success" && data?.contactIntro && (
+        {formspreeUrl && status !== "success" && intro && (
           <p
             className="text-center text-[rgba(var(--foreground-rgb),0.55)] -mt-4 mb-5 page-entrance page-entrance-delay-1"
             style={{
@@ -217,20 +242,20 @@ export default function ContactPage({
               letterSpacing: "var(--body-tracking, 0.01em)",
             }}
           >
-            {data.contactIntro}
+            {intro}
           </p>
         )}
         {/* 2026-07-08 動線改善: 「頼んでいいんだ」と思える橋 — 相談歓迎の一言と
             依頼の流れ。どちらも設定で空にすれば消える。 */}
-        {formspreeUrl && status !== "success" && data?.contactNote && (
+        {formspreeUrl && status !== "success" && note && (
           <p
             className="text-center text-[rgba(var(--foreground-rgb),0.42)] mb-8 page-entrance page-entrance-delay-1"
             style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
           >
-            {data.contactNote}
+            {note}
           </p>
         )}
-        {formspreeUrl && status !== "success" && data?.contactFlow && (
+        {formspreeUrl && status !== "success" && flow && (
           <div className="mb-10 px-5 py-4 border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg page-entrance page-entrance-delay-1">
             <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-2">
               Flow
@@ -239,13 +264,13 @@ export default function ContactPage({
               className="text-[rgba(var(--foreground-rgb),0.50)]"
               style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
             >
-              {data.contactFlow}
+              {flow}
             </p>
           </div>
         )}
         {!formspreeUrl ? (
           <div className="py-4 space-y-6 page-entrance page-entrance-delay-1">
-            {data?.contactIntro && (
+            {intro && (
               <p
                 className="text-[rgba(var(--foreground-rgb),0.55)]"
                 style={{
@@ -254,7 +279,7 @@ export default function ContactPage({
                   letterSpacing: "var(--body-tracking, 0.01em)",
                 }}
               >
-                {data.contactIntro}
+                {intro}
               </p>
             )}
             {data?.contactEmail && (
@@ -291,7 +316,7 @@ export default function ContactPage({
             )}
             {/* Nothing configured yet — avoid a blank page (but not while still loading) */}
             {!isLoading &&
-              !data?.contactIntro &&
+              !intro &&
               !data?.contactEmail &&
               !data?.profileInstagram &&
               !data?.profileTwitter && (

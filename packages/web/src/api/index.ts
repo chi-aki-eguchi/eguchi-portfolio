@@ -947,6 +947,8 @@ const app = new Hono()
           settings.profileNameKata ?? SITE_DEFAULTS.profileNameKata,
         profileNameEn: settings.profileNameEn ?? displayNameEnFrom(settings),
         profileBio: settings.profileBio ?? SITE_DEFAULTS.profileBio,
+        // i18n Phase 3: English counterpart. Empty = ProfilePage falls back to profileBio.
+        profileBioEn: settings.profileBioEn ?? "",
         profileInstagram: settings.profileInstagram ?? "",
         profileTwitter: settings.profileTwitter ?? "",
         profileNote: settings.profileNote ?? "",
@@ -1000,14 +1002,22 @@ const app = new Hono()
         contactIntro:
           settings.contactIntro ??
           "撮影依頼・取材・コラボレーションなど、お気軽にご連絡ください。",
+        // i18n Phase 3: English counterpart for /en/contact. Empty = falls back to contactIntro.
+        contactIntroEn: settings.contactIntroEn ?? "",
         // 2026-07-08 動線改善(トーンA・オーナー承認済み): 依頼の心理的ハードルを
         // 下げる添え書き・流れの説明。空文字を保存すれば非表示にできる。
         contactNote:
           settings.contactNote ??
           "「まだ決まっていないけれど相談したい」という段階でも歓迎です。通常2〜3日以内にお返事しています。",
+        contactNoteEn: settings.contactNoteEn ?? "",
         contactFlow:
           settings.contactFlow ??
           "ご相談 → 日程と場所のすり合わせ → 撮影 → 1〜2週間でデータ納品、という流れです。",
+        contactFlowEn: settings.contactFlowEn ?? "",
+        // i18n Phase 3: always-visible "English welcome" note on /contact and /en/contact,
+        // shown regardless of language toggle. Empty = hidden.
+        contactEnglishNote:
+          settings.contactEnglishNote ?? "English inquiries welcome.",
         contactMessagePlaceholder:
           settings.contactMessagePlaceholder ??
           "例: 希望する撮影の内容 / 希望日・場所 / 参考にしたい雰囲気(あれば)",
@@ -1075,6 +1085,8 @@ const app = new Hono()
         heroScrollEffect: settings.heroScrollEffect ?? "none", // none | fade | sink | parallax
         // ── E5: About / Profile foundation (empty-safe) ──
         profileStatement: settings.profileStatement ?? "",
+        // i18n Phase 3: English counterpart. Empty = ProfilePage falls back to profileStatement.
+        profileStatementEn: settings.profileStatementEn ?? "",
         profileGear: settings.profileGear ?? "",
         // ── E6: optional, low-key contact lead-in (off when empty) ──
         footerCtaLabel: settings.footerCtaLabel ?? "",

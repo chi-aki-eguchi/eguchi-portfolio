@@ -8702,3 +8702,26 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   新注記③購入後メール文面の確認。その後Phase 3の着手判断。
 - 重要な制約: push未実施(オーナー)。本番書き込みなし。新settingsキーなし(2c全体で)。
 - 必要なcommit情報: 2c-4/2c-5 の2commit(git log参照)。
+
+## Handoff 2026-07-17 (48) — i18n Phase 3 完了(公開サイトのEN対応)
+
+- 完了したこと: Phase 3 全スライス。①/en/about・/en/contact ルート+ヘッダーJP|EN
+  切り替え+hreflang/sitemap/OGP（3-1）②英語文settingsキー6個
+  (profileBioEn/profileStatementEn/contactIntroEn/contactNoteEn/contactFlowEn/
+  contactEnglishNote)+admin編集欄+ENページ表示・日本語フォールバック（3-2/3-3）。
+  これで i18n-en-spec の Phase 1〜3 が完了（Phase 4 は海外購入者が現れてから）。
+- 現在の状態: tree clean（このHandoff含むdocsコミット後）。check 479 pass。
+  smoke 34 pass・27 skip・1 fail → failはadmin-library-swipeのhover演出（未変更領域・
+  単体再実行でpass、flaky）。実装=Sonnet5 subagent 2体（直列）、指揮・レビュー・検証
+  =Claude(Fable5)。Codex未使用。
+- 残っている問題:
+  1. 英語文の実入力はオーナー作業（admin → Profileタブ Bio(EN)/Statement(EN)、
+     設定「基本」のcontact系EN欄）。未入力の間、ENページは日本語文を表示
+  2. 配布テンプレートでも /en/* と hreflang が常時有効（要オーナー判断: 気になるなら
+     EN文未入力時にhreflangを抑制するガードを次スライスで）
+  3. admin-library-swipe の flaky smoke（余裕がある時に安定化）
+- 次に行うこと: オーナーpush→本番で ①/en/about・/en/contact 表示 ②ヘッダーJP|EN往復
+  ③adminからEN文を入れて反映確認 ④contactの"English inquiries welcome."の見え方確認。
+- 重要な制約: push未実施（オーナー）。本番書き込みなし。DBスキーマ変更なし。
+  新キーはsite_settings(key-value)のみで migration不要。
+- 必要なcommit情報: 8306f8c（3-1）/ c5f692d（3-2+3-3）/ docsコミット（本Handoff）。

@@ -365,6 +365,47 @@ function isFeature(v: unknown): v is FeatureItem {
 
 const D = DEFAULT_SERVICE_CONFIG;
 
+// 2026-07-18 単一プラン化のlegacy migration。旧2プラン時代(自分で立てる¥10,000
+// + 公開おまかせ¥30,000)のservicePageConfigがDBに残っているサイトでは、保存値を
+// そのまま優先すると廃止済みの¥10,000プランと旧販売条件をJAだけが再表示し、
+// EN(ENGLISH_PLAN_COPY=30kのみ)と商品・約束が食い違う。そこで旧プラン署名を
+// 検出したら、販売条件に関わる節(hero/pricing/purchaseFlow/faq/finalCta/
+// stickyCta)を現行既定へ差し替える。無関係なカスタム値(snsLinks・examples等)と
+// 30kプランの既存Stripe URLは保持する。
+function legacyPlanYen(price: unknown): number | null {
+  if (typeof price !== "string") return null;
+  const match = price.match(/[¥￥]\s*([0-9][0-9,]*)|([0-9][0-9,]*)\s*円/);
+  const rawYen = match?.[1] ?? match?.[2];
+  if (!rawYen) return null;
+  const value = Number(rawYen.replace(/,/g, ""));
+  return Number.isFinite(value) ? value : null;
+}
+
+function isLegacySelfPlan(plan: PlanItem): boolean {
+  return (
+    legacyPlanYen(plan.price) === 10_000 || /自分で立てる|self/i.test(plan.name)
+  );
+}
+
+function migrateLegacyPlans(plans: PlanItem[]): PlanItem[] {
+  if (!plans.some(isLegacySelfPlan)) return plans;
+  const assisted = plans.find(
+    (plan) =>
+      !isLegacySelfPlan(plan) &&
+      (legacyPlanYen(plan.price) === 30_000 ||
+        /おまかせ|assisted|concierge/i.test(plan.name)),
+  );
+  const [current] = D.pricing.plans;
+  return [
+    {
+      ...current,
+      points: [...current.points],
+      // 配布先が独自のPayment Linkを設定済みの場合はそれを残す
+      stripeUrl: assisted?.stripeUrl ?? current.stripeUrl,
+    },
+  ];
+}
+
 export function parseServicePageConfig(
   raw: string | undefined,
 ): ServicePageConfig {
@@ -386,6 +427,49 @@ export function parseServicePageConfig(
   const finalCta = isObj(parsed.finalCta) ? parsed.finalCta : {};
   const stickyCta = isObj(parsed.stickyCta) ? parsed.stickyCta : {};
   const adminShowcase = isObj(parsed.adminShowcase) ? parsed.adminShowcase : {};
+
+  const savedPlans = arr(pricing.plans, D.pricing.plans, isPlan);
+  const isLegacyTwoPlan = savedPlans.some(isLegacySelfPlan);
+  const plans = migrateLegacyPlans(savedPlans);
+
+  if (isLegacyTwoPlan) {
+    return {
+      enabled: parsed.enabled === "off" ? "off" : "on",
+      // 販売条件に関わる節は現行既定で上書き(冒頭のmigrationコメント参照)
+      hero: D.hero,
+      pricing: { ...D.pricing, plans },
+      purchaseFlow: D.purchaseFlow,
+      faq: D.faq,
+      stickyCta: D.stickyCta,
+      finalCta: {
+        ...D.finalCta,
+        snsLinks: arr(finalCta.snsLinks, D.finalCta.snsLinks, isSnsLink),
+      },
+      // 販売条件と無関係な節はカスタム値を維持
+      examples: {
+        label: str(examples.label, D.examples.label),
+        title: str(examples.title, D.examples.title),
+        body: str(examples.body, D.examples.body),
+        cta: str(examples.cta, D.examples.cta),
+        links: arr(examples.links, D.examples.links, isExampleLink),
+      },
+      painSolutions: {
+        label: str(painSolutions.label, D.painSolutions.label),
+        items: arr(painSolutions.items, D.painSolutions.items, isPainSolution),
+      },
+      adminShowcase: {
+        label: str(adminShowcase.label, D.adminShowcase.label),
+        title: str(adminShowcase.title, D.adminShowcase.title),
+        body: str(adminShowcase.body, D.adminShowcase.body),
+        features: arr(
+          adminShowcase.features,
+          D.adminShowcase.features,
+          isFeature,
+        ),
+        demoCta: str(adminShowcase.demoCta, D.adminShowcase.demoCta),
+      },
+    };
+  }
 
   return {
     enabled: parsed.enabled === "off" ? "off" : "on",
@@ -417,7 +501,7 @@ export function parseServicePageConfig(
       noteOnline: str(pricing.noteOnline, D.pricing.noteOnline),
       noteOffline: str(pricing.noteOffline, D.pricing.noteOffline),
       disclaimer: str(pricing.disclaimer, D.pricing.disclaimer),
-      plans: arr(pricing.plans, D.pricing.plans, isPlan),
+      plans,
     },
 
     purchaseFlow: {

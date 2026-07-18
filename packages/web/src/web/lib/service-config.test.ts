@@ -27,13 +27,15 @@ const configWithPlans = (plans: PlanItem[]): ServicePageConfig => ({
   },
 });
 
+// fixtureの複数プランは汎用ヘルパーの分岐を残すための架空カタログ。
+// 現行の販売カタログ(単一プラン)を表すものではない。
 describe("service Stripe URL selection", () => {
   test("keeps primary CTA on the recommended plan", () => {
     const config = configWithPlans([
       plan({
-        name: "自分で立てる",
-        price: "¥10,000",
-        stripeUrl: "https://buy.stripe.com/starter",
+        name: "ライトプラン",
+        price: "¥20,000",
+        stripeUrl: "https://buy.stripe.com/light",
       }),
       plan({
         name: "公開おまかせ",
@@ -55,13 +57,13 @@ describe("service Stripe URL selection", () => {
         primary: true,
       }),
       plan({
-        name: "自分で立てる",
-        price: "¥10,000",
-        stripeUrl: "https://buy.stripe.com/starter",
+        name: "ライトプラン",
+        price: "¥20,000",
+        stripeUrl: "https://buy.stripe.com/light",
       }),
     ]);
 
-    expect(startingStripeUrl(config)).toBe("https://buy.stripe.com/starter");
+    expect(startingStripeUrl(config)).toBe("https://buy.stripe.com/light");
   });
 
   test("falls back to the first live plan when prices are not numeric", () => {
@@ -111,6 +113,94 @@ describe("Portfolio Kit config migration", () => {
     expect(allText).not.toContain("自分で立てる");
     expect(allText).not.toContain("¥10,000");
     expect(allText).not.toContain("設置リンク");
+  });
+
+  // Codex T-8 P1: 旧2プラン設定が保存済みのサイトで、廃止済み¥10,000と
+  // 旧販売条件がJAにだけ再表示され、EN(30kのみ)と食い違う縮退の回帰ガード
+  test("migrates a saved two-plan config to the single assisted plan", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({
+        hero: { title: "旧ヒーロー", body: "¥10,000から" },
+        pricing: {
+          noteOnline: "設置リンクをお送りします",
+          plans: [
+            {
+              name: "自分で立てる",
+              price: "¥10,000",
+              sub: "旧",
+              points: [],
+              stripeUrl: "https://buy.stripe.com/self-custom",
+              cta: "旧",
+              primary: false,
+            },
+            {
+              name: "公開おまかせ",
+              price: "¥30,000",
+              sub: "旧",
+              points: [],
+              stripeUrl: "https://buy.stripe.com/assisted-custom",
+              cta: "旧",
+              primary: true,
+            },
+          ],
+        },
+        examples: { title: "カスタム実例タイトル" },
+        finalCta: {
+          title: "旧CTA",
+          snsLinks: [{ label: "IG", url: "https://instagram.com/custom" }],
+        },
+      }),
+    );
+
+    expect(parsed.pricing.plans).toHaveLength(1);
+    expect(parsed.pricing.plans[0]?.name).toBe("公開おまかせ");
+    expect(parsed.pricing.plans[0]?.price).toBe("¥30,000");
+    // 配布先が独自に設定したPayment Linkは維持する
+    expect(parsed.pricing.plans[0]?.stripeUrl).toBe(
+      "https://buy.stripe.com/assisted-custom",
+    );
+    // 販売条件の節は現行既定へ
+    expect(parsed.hero).toEqual(DEFAULT_SERVICE_CONFIG.hero);
+    expect(parsed.pricing.noteOnline).toBe(
+      DEFAULT_SERVICE_CONFIG.pricing.noteOnline,
+    );
+    expect(parsed.faq).toEqual(DEFAULT_SERVICE_CONFIG.faq);
+    expect(parsed.stickyCta).toEqual(DEFAULT_SERVICE_CONFIG.stickyCta);
+    expect(parsed.finalCta.title).toBe(DEFAULT_SERVICE_CONFIG.finalCta.title);
+    // 販売条件と無関係なカスタム値は維持
+    expect(parsed.finalCta.snsLinks).toEqual([
+      { label: "IG", url: "https://instagram.com/custom" },
+    ]);
+    expect(parsed.examples.title).toBe("カスタム実例タイトル");
+    // 廃止プランの痕跡が出力に残らない
+    expect(JSON.stringify(parsed)).not.toContain("¥10,000");
+    expect(JSON.stringify(parsed)).not.toContain("自分で立てる");
+  });
+
+  test("keeps a saved single-plan config untouched by the migration", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({
+        pricing: {
+          plans: [
+            {
+              name: "公開おまかせ",
+              price: "¥30,000",
+              sub: "カスタム説明",
+              points: ["カスタム項目"],
+              stripeUrl: "https://buy.stripe.com/assisted-custom",
+              cta: "申し込む",
+              primary: true,
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(parsed.pricing.plans).toHaveLength(1);
+    expect(parsed.pricing.plans[0]?.sub).toBe("カスタム説明");
+    expect(parsed.pricing.plans[0]?.stripeUrl).toBe(
+      "https://buy.stripe.com/assisted-custom",
+    );
   });
 
   test("fills new first-view facts into older saved configs", () => {

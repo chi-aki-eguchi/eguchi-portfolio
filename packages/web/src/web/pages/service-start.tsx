@@ -420,6 +420,9 @@ export default function ServiceStartPage({
                 Guidance on everyday use of the site and admin panel is
                 currently unlimited (this may become time-limited in the
                 future). Design changes and custom work are quoted separately.
+                <br />
+                If you have not purchased yet, please start from the pricing
+                page.
               </>
             ) : (
               <>

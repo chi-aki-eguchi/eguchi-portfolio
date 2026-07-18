@@ -8769,3 +8769,29 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 次に行うこと: オーナーpush → 本番 /en/about が200を確認 → adminでEN文貼り付け
   → ヘッダーJP|EN出現と /en/about・/en/contact の英語文表示を確認。
 - 重要な制約: push未実施（オーナー）。本番書き込みは結果的になし。
+
+## Handoff 2026-07-18 (52) — 販売プラン一本化: 公開おまかせ ¥30,000 のみ
+
+- 決定(オーナー): A(自分で立てる¥10,000)廃止・C(¥50,000)中止。B相当を
+  「ドメイン取得サポート(本人名義・実費別)+接続+公開した状態で納品。写真は
+  購入者がadminから入れる」に強化し ¥30,000 単一プランに。狙い=設置リンクを
+  購入者に渡さない販売形態(再利用リスク遮断)・サポート負荷減・LP明快化。
+- 完了(0e79b7c=コード / docsコミット参照):
+  LP日英(単一カード・実費常設・4step流れ・FAQ書き換え)、/start日英全面書き換え
+  (セルフ設置ガイド廃止→素材を送るだけの購入後案内。購入者ページから
+  Railway等の技術用語を排除するテストを追加)、OGP/adminデモバナー価格追随、
+  sales-page/purchase-thankyou(deploy link記載を全廃)/portfolio-kit-operations/
+  order-handling/sns-announcement/faq/growth-monetization-plan§4決定注記/
+  DISTRIBUTION.md(v0をoperator-onlyに)。
+- 検証: check 482 pass / smoke 35 pass 0 fail(admin-i18n触のため実施)/
+  Playwright実描画スクショで LP・/start 確認(servicePageModeモック。
+  localhostはホスト判定ゲートで通常非表示のため)。本番servicePageConfigは
+  空でコードデフォルトが正=デプロイで文言反映。
+- 残タスク(オーナー・Stripe側): ①旧「自分で立てる」Payment Linkを無効化
+  (アーカイブ) ②決済完了画面に purchase-thankyou.md の新文面を貼る
+  ③Railwayテンプレートが公開マーケットプレイスに載っていないことを確認。
+- 次に行うこと: オーナーpush→本番で /portfolio-kit(日英)・/start(日英)の
+  表示確認→Stripe側の上記3点→(反応を見て)sns-announcement.mdで告知。
+- 重要な制約: push未実施(オーナー)。本番書き込みなし。DBスキーマ変更なし。
+  Codexへ相談送信済み(返答未着。プラン構成はオーナー決定で確定済みのため、
+  返答はLP改善観点のみ取り込み予定)。

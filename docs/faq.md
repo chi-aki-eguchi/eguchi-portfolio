@@ -3,7 +3,7 @@
 よくある質問と、つまずいたときの確認先をまとめたページです。
 手順そのものは各ガイドにあります。ここは「迷ったらまずここ」の入り口です。
 
-- 自分で立てる手順: [post-deploy-guide.md](./post-deploy-guide.md)
+- 設置手順（設置担当者向け）: [post-deploy-guide.md](./post-deploy-guide.md)
 - 受け取った写真家本人向け: [photographer-guide.md](./photographer-guide.md)
 - 配布・セットアップ担当者向け: [setup-guide.md](./setup-guide.md)
 - これは何・いくら: [sales-page.md](./sales-page.md)
@@ -13,15 +13,17 @@
 ## 公開・立ち上げ
 
 **Q. どうやってサイトを公開するの？**
-自分で立てるなら [post-deploy-guide.md](./post-deploy-guide.md) の手順どおりに。
-おまかせ（コンシェルジュ）なら、設定担当者に頼めば URL とパスワードを受け取るだけです。
+公開までの設定は担当者が行います。素材（名前・プロフィール・写真）を渡して、
+URL とパスワードを受け取るだけです。（設置作業そのものの手順は
+[post-deploy-guide.md](./post-deploy-guide.md)。設置担当者向けです。）
 
 **Q. 公開したのに URL が見つからない／ページが真っ白。**
-[post-deploy-guide.md の「うまくいかないとき」](./post-deploy-guide.md#うまくいかないとき)を見てください。
-多くは「公開URLを作る（Generate Domain）」のやり忘れか、起動直後の数分待ちです。
+設置直後の数分待ちで直ることが多いです。直らなければ、画面のスクリーンショットを
+添えて設置担当者に連絡してください。（担当者向けの確認先:
+[post-deploy-guide.md の「うまくいかないとき」](./post-deploy-guide.md#うまくいかないとき)）
 
 **Q. 公開までどれくらいかかる？**
-自分で立てて、だいたい 10〜15 分です（うち数分は組み立ての待ち時間）。
+素材が揃ってから3日以内に、公開した状態で納品します。
 
 ## ログイン・パスワード
 
@@ -70,8 +72,9 @@ Railway の **web** サービス → **Settings → Networking → Custom Domain
 ## 料金
 
 **Q. いくらかかる？**
-始め方によって変わります。詳しくは [sales-page.md](./sales-page.md)。Railway の実費は、
-Railway 側の料金改定や使用量によって変わります。
+公開おまかせ ¥30,000（買い切り・月額なし）+ 外部サービスの実費です。詳しくは
+[sales-page.md](./sales-page.md)。Railway の実費は、Railway 側の料金改定や使用量に
+よって変わります。
 
 **Q. 支払い方法を登録したくない。**
 公開には基本的に必要です。金額や支払いが不安なときは、登録の前に設定担当者に相談して

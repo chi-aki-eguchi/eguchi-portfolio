@@ -10,10 +10,12 @@
 
 ## 配布モデル
 
-### v0: Railway Template + Setup Guide (buyer-only)
+### v0: Railway Template + Setup Guide (operator-only)
 
-配布の最初の形。購入後にだけ渡す Railway setup link から、その人専用の
-Railway project を作る。公開ページや README には setup link を直接載せない。
+配布の最初の形。Railway setup link から、その写真家専用の Railway project を作る。
+**2026-07-18 更新: 販売プランは「公開おまかせ」のみになり、setup link は購入者には
+渡さないオーナー専用の設置ツールになった**（それ以前は buyer-only で購入者にも
+渡していた）。公開ページや README には setup link を直接載せない。
 配布版は `DATABASE_PROVIDER=postgres` で
 PostgreSQL + Railway Storage に切り替わり、`akieguchi.com` 本番だけが
 従来どおり Turso + Cloudflare R2 を使う。
@@ -30,8 +32,8 @@ PostgreSQL + Railway Storage に切り替わり、`akieguchi.com` 本番だけ�
 
 用語メモ:
 
-- Railway template deploy: 購入後に渡す setup link から、その写真家用の
-  Railway project を作ること。
+- Railway template deploy: オーナー専用の setup link から、その写真家用の
+  Railway project を作ること（購入者には渡さない）。
 - Railway: サイトをインターネットで動かす場所。
 - PostgreSQL: 配布版でサイト名、プロフィール、写真一覧などを保存する場所。
 - Railway Storage: 配布版で写真ファイルそのものを保存する場所。

@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
 type SwipeSample = {
+  scrolling: boolean;
   scrollTop: number;
   blankImages: number;
   exposedBlankImages: number;
@@ -20,6 +21,7 @@ async function sampleLibrary(page: Page): Promise<SwipeSample> {
     );
     if (!scrollElement) {
       return {
+        scrolling: false,
         scrollTop: 0,
         blankImages: 0,
         exposedBlankImages: 0,
@@ -47,6 +49,7 @@ async function sampleLibrary(page: Page): Promise<SwipeSample> {
       );
 
     return {
+      scrolling: scrollElement.dataset.scrolling === "true",
       scrollTop: scrollElement.scrollTop,
       blankImages: blankImages.length,
       exposedBlankImages: blankImages.filter(
@@ -277,6 +280,12 @@ test.describe("admin — Library高速スワイプの表示安定性", () => {
     expect(Math.max(...samples.map((sample) => sample.scrollTop))).toBeGreaterThan(
       setup!.scrollTop,
     );
+    // hover演出はアプリ仕様上「最後のスクロールから140ms後」に復帰する
+    // (admin.tsx markLibraryScrolling)。サンプリングが140ms以上遅れた回は
+    // 復帰後の正常なhoverを拾ってflakeするため、hover由来メトリクスは
+    // data-scrolling=true の間のサンプルだけで判定する(Handoff 48 問題3)。
+    const scrollingSamples = samples.filter((sample) => sample.scrolling);
+    expect(scrollingSamples.length).toBeGreaterThan(0);
     expect({
       maxExposedBlankImages: Math.max(
         ...samples.map((sample) => sample.exposedBlankImages),
@@ -285,16 +294,16 @@ test.describe("admin — Library高速スワイプの表示安定性", () => {
         ...samples.map((sample) => sample.transparentBlankImages),
       ),
       maxTransformedTiles: Math.max(
-        ...samples.map((sample) => sample.transformedTiles),
+        ...scrollingSamples.map((sample) => sample.transformedTiles),
       ),
       maxShadowedTiles: Math.max(
-        ...samples.map((sample) => sample.shadowedTiles),
+        ...scrollingSamples.map((sample) => sample.shadowedTiles),
       ),
       minVisibleTiles: Math.min(
         ...samples.map((sample) => sample.visibleTiles),
       ),
       maxRevealedHoverStrips: Math.max(
-        ...samples.map((sample) => sample.revealedHoverStrips),
+        ...scrollingSamples.map((sample) => sample.revealedHoverStrips),
       ),
     }).toEqual({
       maxExposedBlankImages: 0,

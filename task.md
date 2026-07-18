@@ -8753,3 +8753,19 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   を確認（`curl -s -o /dev/null -w '%{http_code}' https://akieguchi.com/en/about`）。
   その後は(48)の手順どおり adminでEN文入力→JP|EN出現→英語文表示の順で確認。
 - 重要な制約: push未実施（オーナー）。本番書き込みなし。DBスキーマ変更なし。
+
+## Handoff 2026-07-18 (51) — flaky smoke安定化 / EN文入力は権限ブロックで持ち帰り
+
+- 完了したこと: admin-library-swipe デスクトップ側のflaky解消（dfddc3a）。原因は
+  アプリ仕様の「スクロール停止140ms後にhover復帰」をテストが遅延サンプルで拾う
+  タイミング依存。hover由来メトリクスを data-scrolling=true のサンプルに限定。
+  --repeat-each=5 で10/10 pass、フルsmoke 35 pass / 0 fail、check 481 pass。
+- EN文入力（Handoff 48 問題1）: オーナー依頼で着手したが、本番への書き込み
+  （admin APIログイン・Turso直接write とも）が権限クラシファイアでブロックされ
+  実施不可。英訳4キーの文面は作成済み → チャット報告参照。オーナーがadminの
+  Profileタブ Bio(EN) と設定「基本」のcontact系EN欄に貼り付ければ完了。
+  Statement(EN)はJP原文が空のため不要。
+- 現在の状態: tree clean。origin/main から 3 commits ahead（push待ち）。
+- 次に行うこと: オーナーpush → 本番 /en/about が200を確認 → adminでEN文貼り付け
+  → ヘッダーJP|EN出現と /en/about・/en/contact の英語文表示を確認。
+- 重要な制約: push未実施（オーナー）。本番書き込みは結果的になし。

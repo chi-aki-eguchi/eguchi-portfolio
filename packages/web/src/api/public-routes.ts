@@ -5,6 +5,9 @@ const SPA_STATIC_PATHS = new Set([
   "/about",
   "/profile",
   "/contact",
+  // /en/* は英語文未入力でも直接アクセスでJPフォールバック表示するため常に200
+  "/en/about",
+  "/en/contact",
   "/portfolio-kit",
   "/portfolio-kit/en",
   "/portfolio-kit/start",

@@ -137,7 +137,7 @@ export function ogCardTitleFrom(settings: Record<string, string>): string {
 
 const SERVICE_OG = {
   title: "Aki Eguchi Portfolio Kit",
-  desc: "いま見ているサイトが、そのまま見本。写真家のためのポートフォリオを、自分で立てる ¥10,000 ／ 公開おまかせ ¥30,000。",
+  desc: "いま見ているサイトが、そのまま見本。設定は全部おまかせで、公開した状態で納品。¥30,000（買い切り）。",
   image: "/og-service.jpg",
 };
 
@@ -149,7 +149,7 @@ const SERVICE_START_OG = {
 
 const SERVICE_OG_EN = {
   title: "Aki Eguchi Portfolio Kit — For Photographers",
-  desc: "A quiet, finished portfolio website for photographers. Self setup ¥10,000 or assisted setup ¥30,000. Prices are charged in JPY.",
+  desc: "A quiet, finished portfolio website for photographers. Setup fully handled, delivered published — ¥30,000 one-time, charged in JPY.",
   image: "/og-service.jpg",
 };
 

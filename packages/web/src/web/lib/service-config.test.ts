@@ -93,13 +93,24 @@ describe("Portfolio Kit config migration", () => {
     expect(faqText).toContain("1回の購入につき1サイト");
     expect(faqText).toContain("再販売・再配布はできません");
     expect(faqText).toContain("現時点では無償");
-    expect(faqText).toContain(
-      "どちらのプランも当面は期間・回数の制限なく受け付けます",
-    );
+    expect(faqText).toContain("当面は期間・回数の制限なく受け付けます");
     expect(faqText).not.toContain("公開後7日間");
-    expect(DEFAULT_SERVICE_CONFIG.purchaseFlow.steps[3]?.body).toContain(
+    expect(DEFAULT_SERVICE_CONFIG.purchaseFlow.steps[2]?.body).toContain(
       "素材が揃ってから3日以内",
     );
+  });
+
+  test("sells a single assisted plan with the domain promise", () => {
+    expect(DEFAULT_SERVICE_CONFIG.pricing.plans).toHaveLength(1);
+    const [assisted] = DEFAULT_SERVICE_CONFIG.pricing.plans;
+    expect(assisted?.name).toBe("公開おまかせ");
+    expect(assisted?.price).toBe("¥30,000");
+    expect(assisted?.primary).toBe(true);
+    expect(assisted?.points.join("")).toContain("独自ドメイン");
+    const allText = JSON.stringify(DEFAULT_SERVICE_CONFIG);
+    expect(allText).not.toContain("自分で立てる");
+    expect(allText).not.toContain("¥10,000");
+    expect(allText).not.toContain("設置リンク");
   });
 
   test("fills new first-view facts into older saved configs", () => {

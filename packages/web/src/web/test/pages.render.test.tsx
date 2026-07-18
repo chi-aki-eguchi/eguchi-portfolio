@@ -302,10 +302,12 @@ describe("shared components", () => {
       const PortfolioKitPage = (await import("../pages/service")).default;
       const { host, cleanup } = await mount(createElement(PortfolioKitPage));
       expect(host.textContent).toContain("いま見ているこのサイトが");
-      expect(host.textContent).toContain("¥10,000〜（買い切り）");
-      expect(host.textContent).toContain("サイト一式・管理画面・公開ガイド");
-      expect(host.textContent).toContain("自分で10〜15分");
-      expect(host.textContent).toContain("購入後は24時間以内");
+      expect(host.textContent).toContain("¥30,000（買い切り・月額なし）");
+      expect(host.textContent).toContain(
+        "ドメイン取得から公開設定まで、全部おまかせ",
+      );
+      expect(host.textContent).toContain("素材が揃ってから3日以内");
+      expect(host.textContent).toContain("24時間以内に素材のお願い");
       expect(host.textContent).toContain("維持費や月額料金はいくらですか？");
       expect(host.textContent).toContain("やめたいときはどうなりますか？");
       expect(host.textContent).toContain("並べ方12種類・140以上の設定");
@@ -327,7 +329,7 @@ describe("shared components", () => {
     }
   });
 
-  test("English Portfolio Kit renders the current A/B terms and language link", async () => {
+  test("English Portfolio Kit renders the single-plan terms and language link", async () => {
     const previousSettings = canned["/api/settings"];
     canned["/api/settings"] = { servicePageConfig: "" };
     try {
@@ -342,7 +344,6 @@ describe("shared components", () => {
       expect(text).toContain("may not be resold or redistributed");
       expect(text).toContain("currently provided at no additional charge");
       expect(text).toContain("may change in the future");
-      expect(text).toContain("¥10,000 (approx. $65 USD)");
       expect(text).toContain("¥30,000 (approx. $195 USD)");
       expect(text).toContain("exchange rates and your card provider");
       expect(text).toContain(
@@ -351,8 +352,10 @@ describe("shared components", () => {
       expect(text).toContain(
         "Support is provided in Japanese and simple English.",
       );
-      expect(host.querySelectorAll("#pricing article")).toHaveLength(2);
+      expect(host.querySelectorAll("#pricing article")).toHaveLength(1);
       expect(text).not.toContain("¥50,000");
+      expect(text).not.toContain("¥10,000");
+      expect(text).not.toContain("Self setup");
       expect(host.querySelector('a[href="/portfolio-kit"]')).not.toBeNull();
       cleanup();
     } finally {
@@ -360,7 +363,7 @@ describe("shared components", () => {
     }
   });
 
-  test("English Portfolio Kit keeps A/B checkout links correct after plan reordering", async () => {
+  test("English Portfolio Kit sells only the assisted plan from a stale two-plan config", async () => {
     const previousSettings = canned["/api/settings"];
     canned["/api/settings"] = {
       servicePageConfig: JSON.stringify({
@@ -394,14 +397,10 @@ describe("shared components", () => {
         createElement(PortfolioKitPage, { language: "en" }),
       );
       const cards = host.querySelectorAll("#pricing article");
-      expect(cards[0]?.textContent).toContain("Self setup");
-      expect(cards[0]?.textContent).toContain("¥10,000");
+      expect(cards).toHaveLength(1);
+      expect(cards[0]?.textContent).toContain("Assisted setup");
+      expect(cards[0]?.textContent).toContain("¥30,000");
       expect(cards[0]?.querySelector("a")?.getAttribute("href")).toBe(
-        "https://buy.stripe.com/self-plan",
-      );
-      expect(cards[1]?.textContent).toContain("Assisted setup");
-      expect(cards[1]?.textContent).toContain("¥30,000");
-      expect(cards[1]?.querySelector("a")?.getAttribute("href")).toBe(
         "https://buy.stripe.com/assisted-plan",
       );
       cleanup();
@@ -448,21 +447,22 @@ describe("shared components", () => {
     dom.reconfigure({ url: "http://localhost/" });
   });
 
-  test("ServiceStartPage does not expose the Railway Deploy link publicly", async () => {
+  test("ServiceStartPage promises the assisted delivery without any deploy path", async () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(createElement(ServiceStartPage));
-    expect(host.textContent).toContain("Aki Eguchi Portfolio Kit");
-    expect(host.textContent).toContain("購入後は24時間以内");
-    expect(host.textContent).toContain(
-      "どのプランも当面は期間・回数の制限なく受け付けます",
-    );
-    expect(host.textContent).not.toContain("公開後7日間");
+    const text = host.textContent ?? "";
+    expect(text).toContain("Aki Eguchi Portfolio Kit");
+    expect(text).toContain("決済後24時間以内に素材のお願い");
+    expect(text).toContain("素材が揃ってから3日以内");
+    expect(text).toContain("当面は期間・回数の制限なく受け付けます");
+    expect(text).not.toContain("公開後7日間");
+    expect(text).not.toContain("設置リンク");
     expect(host.innerHTML).not.toContain("railway.com/deploy");
     expect(host.querySelector('a[href="/start/en"]')).not.toBeNull();
     cleanup();
   });
 
-  test("English start page renders the buyer flow and reciprocal JP link", async () => {
+  test("English start page renders the assisted flow and reciprocal JP link", async () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(
       createElement(ServiceStartPage, { language: "en" }),
@@ -470,10 +470,8 @@ describe("shared components", () => {
     const text = host.textContent ?? "";
     expect(text).toContain("Within 24 hours of payment");
     expect(text).toContain("within three days");
-    expect(text).toContain("ADMIN_PASSWORD");
-    expect(text).toContain("Configure");
-    expect(text).toContain("Save Config");
-    expect(text).toContain("Generate Domain");
+    expect(text).toContain("Send your materials");
+    expect(text).toContain("Handover");
     expect(text).toContain(
       "The admin panel is available in English and Japanese",
     );
@@ -501,7 +499,7 @@ describe("shared components", () => {
         ],
         [
           "https://portfolio.example/start/en",
-          "A clear starting point for publishing your Portfolio Kit.",
+          "After purchase, you send materials and wait.",
         ],
       ] as const) {
         dom.reconfigure({ url });
@@ -516,46 +514,35 @@ describe("shared components", () => {
     }
   });
 
-  // 2026-07-10 の使い捨て実デプロイで確認した buyer 導線の回帰ガード。
-  // 実機画面の文言(Configure / Save Config / Generate Domain / Bucket empty)と
-  // 「入力は ADMIN_PASSWORD だけ」の約束が通常導線から消えないことを固定する。
-  test("ServiceStartPage normal flow promises ADMIN_PASSWORD-only input with real screen names", async () => {
+  // 2026-07-18 単一プラン化の回帰ガード: 購入者ページから Railway の画面名や
+  // 環境変数などの技術用語が完全に消えていること(設置は全てオーナー側の作業)。
+  test("ServiceStartPage keeps technical setup jargon away from buyers", async () => {
+    const ServiceStartPage = (await import("../pages/service-start")).default;
+    for (const language of ["ja", "en"] as const) {
+      const { host, cleanup } = await mount(
+        createElement(ServiceStartPage, { language }),
+      );
+      const text = host.textContent ?? "";
+      expect(text).not.toContain("ADMIN_PASSWORD");
+      expect(text).not.toContain("Configure");
+      expect(text).not.toContain("Generate Domain");
+      expect(text).not.toContain("S3_BUCKET");
+      expect(text).not.toContain("SECRET_ACCESS_KEY");
+      expect(text).not.toContain("Railway");
+      expect(
+        host.querySelector('a[href="/admin/login"]'),
+      ).not.toBeNull();
+      cleanup();
+    }
+  });
+
+  test("ServiceStartPage walks the buyer from handover to the first photograph", async () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(createElement(ServiceStartPage));
     const text = host.textContent ?? "";
-    expect(text).toContain("ADMIN_PASSWORD");
-    expect(text).toContain("ひとつだけ");
-    expect(text).toContain("Configure");
-    expect(text).toContain("Save Config");
-    expect(text).toContain("Generate Domain");
-    expect(text).toContain("/admin/login");
+    expect(text).toContain("納品後の最初の一歩");
     expect(text).toContain("写真を1枚");
-    // Bucket empty は写真0枚の正常状態、という実測の説明
-    expect(text).toContain("empty");
-    expect(text).toContain("正常な状態");
-    cleanup();
-  });
-
-  test("ServiceStartPage keeps trouble-only content collapsed behind details", async () => {
-    const ServiceStartPage = (await import("../pages/service-start")).default;
-    const { host, cleanup } = await mount(createElement(ServiceStartPage));
-    const details = host.querySelectorAll("details");
-    expect(details.length).toBeGreaterThanOrEqual(3);
-    for (const d of details) {
-      expect(d.open).toBe(false);
-    }
-    // Variables のコードブロックと Logs 手順は折りたたみの中にだけ存在する
-    const insideDetails = Array.from(details)
-      .map((d) => d.textContent ?? "")
-      .join("\n");
-    expect(insideDetails).toContain("S3_BUCKET");
-    expect(insideDetails).toContain("Logs");
-    // fork した人だけの条件付き GitHub 注記
-    expect(insideDetails).toContain("場合のみ");
-    expect(insideDetails).toContain("Repository");
-    // スクショで秘密値を隠す注意
-    expect(insideDetails).toContain("SECRET_ACCESS_KEY");
-    expect(insideDetails).toContain("隠す");
+    expect(text).toContain("はじめに");
     cleanup();
   });
 

@@ -2965,7 +2965,7 @@ export const ADMIN_DICTIONARY = {
     },
     demo: {
       banner: "これは体験版です。変更は実際には保存されません。",
-      purchase: "気に入ったら ¥10,000 から",
+      purchase: "気に入ったら ¥30,000・公開までおまかせ",
       reset: "最初からやり直す",
       guideEyebrow: "Quick tour",
       guideTitle: "まず、3つだけ触ってみてください",
@@ -3163,7 +3163,7 @@ export const ADMIN_DICTIONARY = {
     },
     demo: {
       banner: "This is a demo. Changes are not saved to a live site.",
-      purchase: "Get your own — from ¥10,000",
+      purchase: "Get your own — ¥30,000, fully set up",
       reset: "Start over",
       guideEyebrow: "Quick tour",
       guideTitle: "Start with these three steps",

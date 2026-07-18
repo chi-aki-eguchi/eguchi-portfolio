@@ -35,27 +35,15 @@ type ServiceLanguage = "ja" | "en";
 
 const ENGLISH_PLAN_COPY = [
   {
-    yen: 10_000,
-    namePattern: /自分|self/i,
-    name: "Self setup",
-    sub: "Publish the site yourself with a clear, step-by-step guide.",
-    points: [
-      "Portfolio Kit licence",
-      "Setup guide and checklist",
-      "Instructions for connecting your own domain",
-      "Guidance on using the admin panel — currently unlimited",
-    ],
-    cta: "Choose self setup",
-  },
-  {
     yen: 30_000,
     namePattern: /おまかせ|assisted|concierge/i,
     name: "Assisted setup",
-    sub: "I prepare the initial setup and hand over a site that is ready to use.",
+    sub: "I prepare everything and hand over a site that is already published. You only add photographs.",
     points: [
-      "Initial setup handled for you",
-      "Hosting and domain connection support",
-      "Guidance for adding photographs and text",
+      "Hosting and admin panel set up for you",
+      "Custom domain purchase support and connection (registered in your name; fee separate)",
+      "Name, profile, and contact details prepared before handover",
+      "After handover, you only add photographs from the admin panel",
       "Guidance on using the site and admin panel — currently unlimited",
     ],
     cta: "Choose assisted setup",
@@ -117,14 +105,14 @@ function englishServiceConfigFrom(
         (yenAmountFromPrice(a.price) ?? Number.POSITIVE_INFINITY) -
         (yenAmountFromPrice(b.price) ?? Number.POSITIVE_INFINITY),
     )[0];
-  const startingPrice = startingPlan?.price ?? "¥10,000";
+  const startingPrice = startingPlan?.price ?? "¥30,000";
 
   return {
     enabled: source.enabled,
     hero: {
       label: "Portfolio Kit",
       title: "A quiet portfolio,\nready for your photographs.",
-      body: "Aki Eguchi Portfolio Kit is a finished portfolio site made for photographers.\nReplace the photographs and words, then publish it under your own name and domain.",
+      body: "Aki Eguchi Portfolio Kit is a finished portfolio site made for photographers.\nI set everything up and hand it over already published, under your own name and domain.",
       facts: [
         {
           title: "Price",
@@ -132,14 +120,14 @@ function englishServiceConfigFrom(
         },
         {
           title: "Included",
-          body: "Complete site, admin panel, and setup guide",
+          body: "Domain, hosting, and setup — all handled for you",
         },
         {
           title: "Launch",
-          body: "Self setup in 10–15 minutes, or assisted setup",
+          body: "Delivered within three days of receiving your materials",
         },
       ],
-      ctaPricing: "View plans and pricing",
+      ctaPricing: "View pricing and the process",
       ctaExample: "Explore the example site",
     },
     examples: {
@@ -197,33 +185,33 @@ function englishServiceConfigFrom(
     pricing: {
       label: "Pricing",
       noteOnline:
-        "Within 24 hours of payment, I will email your setup link and the next steps for your chosen plan. Stripe will also send a payment receipt.",
+        "You can close the checkout page safely. Within 24 hours of payment, I will email a short request for your materials (Stripe also sends a receipt automatically).",
       noteOffline:
         "Online checkout is being prepared. For now, use the email button or the contact details below.",
       disclaimer:
-        "Checkout is charged in JPY. USD amounts are estimates only and vary with exchange rates and your card provider. Hosting, a custom domain, design changes, and individual customisation may involve separate costs.",
+        "Checkout is charged in JPY. USD amounts are estimates only and vary with exchange rates and your card provider. Separate running costs: hosting is usually about ¥500–¥1,000 per month, and a custom domain about ¥1,500–¥2,000 per year, registered in your name. Design changes and custom work are quoted separately.",
       plans,
     },
     purchaseFlow: {
       label: "After purchase",
       title: "A clear handover, without a hidden wait.",
-      body: "Within 24 hours of payment, I will email the private setup link and next steps. You will also receive a concise guide to adding photographs and making future updates.",
+      body: "Within 24 hours of payment you receive a request for your materials, and once they are ready, the site is delivered within three days, already published.",
       steps: [
         {
-          title: "Your first email",
-          body: "Within 24 hours of payment, you will receive the private setup link and instructions for your plan.",
+          title: "Your first email (within 24 hours)",
+          body: "Within 24 hours of payment, I will email a short request for your materials. Even if you close the checkout page, the same guidance arrives by email.",
         },
         {
-          title: "Update in the browser",
-          body: "The admin panel lets you add and reorder photographs, edit your profile and contact details, and adjust the presentation.",
+          title: "Send your materials",
+          body: "Reply with the name you want displayed, profile text, contact details, social links, and the first photographs. A small selection is enough. If you want a custom domain, we register it together in about 30 minutes over screen share, in your name.",
         },
         {
-          title: "For self setup",
-          body: "Follow the setup link and guide to publish the site. Guidance on using the admin panel is included — currently unlimited.",
+          title: "I set everything up (within three days)",
+          body: "Once your materials are ready, I prepare the hosting, connect the domain, and set up your profile and contact details — the site is handed over already published.",
         },
         {
-          title: "For assisted setup",
-          body: "Once all requested photographs, profile text, and contact details are ready, your site will be delivered within three days. Guidance on using the site and admin panel is included — currently with no time limit.",
+          title: "Handover",
+          body: "You receive the public site URL, admin URL, and password. From there, you only add photographs. Guidance on everyday use stays available — currently unlimited.",
         },
       ],
       footnote:
@@ -234,15 +222,15 @@ function englishServiceConfigFrom(
       items: [
         {
           q: "Is the site created automatically as soon as I pay?",
-          a: "No. This is not an instant, automated site generator. I confirm the purchase and email the next steps within 24 hours. Self-setup buyers receive the private setup link and guide; assisted-setup buyers receive a request for their materials.",
+          a: "No — I prepare each site personally. Within 24 hours of payment you receive a request for your materials, and once they are ready, the site is delivered within three days, already published.",
         },
         {
           q: "Can I use my own domain?",
-          a: "Yes. You can publish at an address such as yourname.com. If you already own a domain, the guide explains how to connect it. If not, I can help you understand the options.",
+          a: "Yes. You can publish at an address such as yourname.com. If you already own a domain, I connect it for you. If not, we register one together (about ¥1,500–¥2,000 per year, in your name).",
         },
         {
           q: "Are there monthly costs?",
-          a: "Portfolio Kit has no monthly subscription. Hosting and an optional custom domain are separate services with their own charges. A small portfolio often costs about ¥500–¥1,000 per month to host, but provider prices and usage can change.",
+          a: "Portfolio Kit has no monthly subscription. The only running costs are external services: hosting is usually about ¥500–¥1,000 per month, and a custom domain about ¥1,500–¥2,000 per year. Provider prices and usage can change.",
         },
         {
           q: "Can I change photographs and text later?",
@@ -250,7 +238,7 @@ function englishServiceConfigFrom(
         },
         {
           q: "What does one purchase allow?",
-          a: "One purchase covers one website. A second website requires another purchase. The kit may not be resold or redistributed as a template. Kit updates are currently provided at no additional charge, but this may change in the future. Guidance on everyday use is currently unlimited for every plan, though this may become time-limited in the future. Design changes and custom work are quoted separately.",
+          a: "One purchase covers one website. A second website requires another purchase. The kit may not be resold or redistributed as a template. Kit updates are currently provided at no additional charge, but this may change in the future. Guidance on everyday use is currently unlimited, though this may become time-limited in the future. Design changes and custom work are quoted separately.",
         },
         {
           q: "What languages are available?",
@@ -270,8 +258,8 @@ function englishServiceConfigFrom(
       snsLinks: source.finalCta.snsLinks,
     },
     stickyCta: {
-      text: `Plans from ${priceWithUsdEstimate(startingPrice)}`,
-      ctaOnline: "Choose a plan",
+      text: `${priceWithUsdEstimate(startingPrice)} — publishing handled for you`,
+      ctaOnline: "Apply",
       ctaOffline: "Ask a question",
       pricingCta: "View pricing",
     },
@@ -1299,7 +1287,13 @@ export default function ServicePage({
         className="mt-12 md:mt-16 page-entrance scroll-mt-24"
       >
         <SectionLabel>{config.pricing.label}</SectionLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 items-start">
+        <div
+          className={`grid grid-cols-1 gap-6 md:gap-8 items-start ${
+            config.pricing.plans.length > 1
+              ? "sm:grid-cols-2"
+              : "max-w-xl mx-auto"
+          }`}
+        >
           {config.pricing.plans.map((plan) => (
             <PlanCard
               key={plan.name}

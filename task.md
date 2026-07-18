@@ -8738,3 +8738,18 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 次に行うこと: オーナーpush→本番確認は「adminでBio(EN)等を入力→JP|ENが出現→
   /en/aboutに英語文」の順で見る。
 - 重要な制約: push未実施（オーナー）。本番書き込みなし。
+
+## Handoff 2026-07-18 (50) — Phase 3 補2: /en/* が本番404だったバグ修正
+
+- 完了したこと: 本番確認で /en/about・/en/contact がHTTP 404を返すのを発見・修正
+  （ee40229）。原因は 3-1 でWouterルート追加時にサーバ側の既知SPAパス台帳
+  `api/public-routes.ts` の SPA_STATIC_PATHS 更新漏れ。本文(index.html)は返って
+  いたため画面は見えるが、EN文入力後に sitemap/hreflang が404ページを検索エンジン
+  に案内する状態だった。テストの既知パス一覧にも /en/* を追加。
+- 現在の状態: tree clean。check 481 pass / 0 fail。ローカルで server.ts 実起動し
+  /en/about・/en/contact=200、未知パス=404 を実測確認。admin未変更のためsmoke対象外。
+- 残っている問題: Handoff(48)の1(EN文の実入力=オーナー)と3(flaky smoke)のみ。
+- 次に行うこと: オーナーpush→本番で /en/about・/en/contact がHTTP 200になること
+  を確認（`curl -s -o /dev/null -w '%{http_code}' https://akieguchi.com/en/about`）。
+  その後は(48)の手順どおり adminでEN文入力→JP|EN出現→英語文表示の順で確認。
+- 重要な制約: push未実施（オーナー）。本番書き込みなし。DBスキーマ変更なし。

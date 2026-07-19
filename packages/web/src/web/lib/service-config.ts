@@ -387,21 +387,33 @@ function isLegacySelfPlan(plan: PlanItem): boolean {
   );
 }
 
-function migrateLegacyPlans(plans: PlanItem[]): PlanItem[] {
-  if (!plans.some(isLegacySelfPlan)) return plans;
-  const assisted = plans.find(
-    (plan) =>
-      !isLegacySelfPlan(plan) &&
-      (legacyPlanYen(plan.price) === 30_000 ||
-        /おまかせ|assisted|concierge/i.test(plan.name)),
+function isLegacyAssistedPlan(plan: PlanItem): boolean {
+  return (
+    legacyPlanYen(plan.price) === 30_000 ||
+    /おまかせ|assisted|concierge/i.test(plan.name)
   );
+}
+
+// self署名プラン単独では発動しない: 配布先が正当に使う単一¥10,000カスタム
+// プラン等を既定で上書きしないため、旧カタログの「組み合わせ」(self署名 +
+// 別のおまかせ/30k署名の併存)を必須にする(Codex T-8 2周目P1)。
+function findLegacyAssistedPlan(plans: PlanItem[]): PlanItem | undefined {
+  if (!plans.some(isLegacySelfPlan)) return undefined;
+  return plans.find(
+    (plan) => !isLegacySelfPlan(plan) && isLegacyAssistedPlan(plan),
+  );
+}
+
+function migrateLegacyPlans(plans: PlanItem[]): PlanItem[] {
+  const assisted = findLegacyAssistedPlan(plans);
+  if (!assisted) return plans;
   const [current] = D.pricing.plans;
   return [
     {
       ...current,
       points: [...current.points],
       // 配布先が独自のPayment Linkを設定済みの場合はそれを残す
-      stripeUrl: assisted?.stripeUrl ?? current.stripeUrl,
+      stripeUrl: assisted.stripeUrl,
     },
   ];
 }
@@ -429,7 +441,7 @@ export function parseServicePageConfig(
   const adminShowcase = isObj(parsed.adminShowcase) ? parsed.adminShowcase : {};
 
   const savedPlans = arr(pricing.plans, D.pricing.plans, isPlan);
-  const isLegacyTwoPlan = savedPlans.some(isLegacySelfPlan);
+  const isLegacyTwoPlan = findLegacyAssistedPlan(savedPlans) !== undefined;
   const plans = migrateLegacyPlans(savedPlans);
 
   if (isLegacyTwoPlan) {

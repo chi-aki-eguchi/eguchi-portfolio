@@ -177,6 +177,71 @@ describe("Portfolio Kit config migration", () => {
     expect(JSON.stringify(parsed)).not.toContain("自分で立てる");
   });
 
+  // Codex T-8 2周目P1: self署名プラン単独では発動しない(配布先の正当な
+  // カスタムカタログを既定で上書きしない)
+  test("leaves a legitimate single ¥10,000 custom plan untouched", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({
+        hero: { title: "配布先カスタムヒーロー" },
+        pricing: {
+          noteOnline: "配布先カスタム案内",
+          plans: [
+            {
+              name: "ミニプラン",
+              price: "¥10,000",
+              sub: "配布先の独自商品",
+              points: ["独自内容"],
+              stripeUrl: "https://buy.stripe.com/distributed-mini",
+              cta: "申し込む",
+              primary: true,
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(parsed.pricing.plans).toHaveLength(1);
+    expect(parsed.pricing.plans[0]?.name).toBe("ミニプラン");
+    expect(parsed.pricing.plans[0]?.price).toBe("¥10,000");
+    expect(parsed.hero.title).toBe("配布先カスタムヒーロー");
+    expect(parsed.pricing.noteOnline).toBe("配布先カスタム案内");
+  });
+
+  test("leaves a self-signature plan beside an unrelated plan untouched", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({
+        pricing: {
+          plans: [
+            {
+              name: "Self shooting plan",
+              price: "¥10,000",
+              sub: "独自",
+              points: [],
+              stripeUrl: "https://buy.stripe.com/self-shooting",
+              cta: "Book",
+              primary: false,
+            },
+            {
+              name: "プレミアム",
+              price: "¥50,000",
+              sub: "独自",
+              points: [],
+              stripeUrl: "https://buy.stripe.com/premium",
+              cta: "申し込む",
+              primary: true,
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(parsed.pricing.plans).toHaveLength(2);
+    expect(parsed.pricing.plans.map((p) => p.price)).toEqual([
+      "¥10,000",
+      "¥50,000",
+    ]);
+  });
+
   test("keeps a saved single-plan config untouched by the migration", () => {
     const parsed = parseServicePageConfig(
       JSON.stringify({

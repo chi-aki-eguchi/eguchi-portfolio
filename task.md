@@ -8795,3 +8795,24 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 重要な制約: push未実施(オーナー)。本番書き込みなし。DBスキーマ変更なし。
   Codexへ相談送信済み(返答未着。プラン構成はオーナー決定で確定済みのため、
   返答はLP改善観点のみ取り込み予定)。
+
+## Handoff 2026-07-19 (53) — T-8レビュー完走(APPROVED)とCodex連携の運用整理
+
+- 完了したこと: 単一プラン化のpush前レビュー(T-8)が3周で完走。
+  1周目P1=旧2プランservicePageConfigの縮退 → bab4056 でlegacy migration。
+  2周目P1=migrationの誤検知(self署名単独で発動し配布先の正当な¥10,000カスタム
+  プランを上書き) → 46b331c で旧カタログの組み合わせ判定(self署名+おまかせ/30k
+  署名の併存必須)+非干渉テスト2件。3周目=**APPROVED**(codex exec・read-only)。
+  check 486 pass / 0 fail。
+- Codex連携の運用知見(オーナー指摘で判明):
+  呼び出しは2系統 — ①`codex exec --sandbox read-only "..." < /dev/null`
+  (同期・単発・10分watchdog。レビューはこちらが確実) ②agmsg(対話セッション文通。
+  **Codexはアイドル中受信箱を読まない**ため、依頼後に無反応なら spawn.sh で
+  起こし直すか execへ切替)。今回①へ切替えて完走。対話セッションは停止済み。
+- 現在の状態: tree clean。未push 5コミット(0e79b7c 単一プラン化 / ab0c211 docs /
+  bab4056 P1-1 / 46b331c P1-2 / 本Handoff)。
+- 次に行うこと: オーナーpush → 本番で /portfolio-kit・/start(日英)表示確認 →
+  Stripe側3点(旧¥10,000リンクのアーカイブ・完了画面に purchase-thankyou.md 新文面・
+  Railwayテンプレートが公開マーケットプレイス非掲載の確認) → 反応を見てSNS告知。
+- 重要な制約: push未実施(オーナー)。本番書き込みなし。実装=Claude/レビュー=Codex
+  (役割交代する場合は毎回チャットでオーナーconfirm)。

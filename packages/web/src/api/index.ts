@@ -11,6 +11,13 @@ import {
   invalidImageSettingKeys,
 } from "./settings-image-cleanup";
 import { createSerialQueue } from "./serial-queue";
+import {
+  purgeEligibility,
+  unsharedPhotoStorageKeys,
+  uploadedPhotoStorageKeys,
+  withUploadRegistrationCompensation,
+  purgeDbThenStorage,
+} from "./photo-integrity";
 import { bumpSettingsVersion } from "./settings-version";
 import {
   eq,
@@ -20,6 +27,7 @@ import {
   inArray,
   lt,
   and,
+  or,
   type SQL,
 } from "drizzle-orm";
 import {
@@ -386,6 +394,88 @@ const UPLOAD_QUALITY = 92;
 // Trash retention — items soft-deleted longer ago than this are purged for good.
 const TRASH_RETENTION_DAYS = 30;
 const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+// 写真行と共有R2オブジェクトの整合性に関わる変更を直列化する。同じ画像を
+// 参照する duplicate / register / purge が同一プロセス内で割り込まないための
+// 補助で、DB側のtransactionと組み合わせて使う。
+const runPhotoIntegrityMutation = createSerialQueue();
+
+type PurgeResult =
+  | { status: "not-found" | "not-trashed" | "restored" }
+  | { status: "purged"; storageKeys: string[] };
+
+async function purgePhotoFromDb(
+  id: number,
+  expiredBefore?: Date,
+): Promise<PurgeResult> {
+  return withRetry(() =>
+    db.transaction(async (tx) => {
+      // This read happens inside the same transaction as deletion. In particular,
+      // lazy retention must not trust the earlier candidate list: a restore may
+      // have happened after that list was built.
+      const [photo] = await tx
+        .select()
+        .from(schema.photos)
+        .where(eq(schema.photos.id, id))
+        .limit(1);
+      if (!photo) return { status: "not-found" } as const;
+      const eligibility = purgeEligibility(photo, expiredBefore);
+      if (eligibility !== "eligible") return { status: eligibility } as const;
+
+      // DB is the source of truth: remove the row and its references atomically.
+      // Storage cleanup is deliberately deferred until this transaction commits.
+      await tx.delete(schema.photos).where(eq(schema.photos.id, id));
+      await tx
+        .delete(schema.heroPhotos)
+        .where(eq(schema.heroPhotos.photoId, id));
+      await tx
+        .update(schema.series)
+        .set({ coverPhotoId: null })
+        .where(eq(schema.series.coverPhotoId, id));
+
+      const [sharer] = await tx
+        .select({ id: schema.photos.id })
+        .from(schema.photos)
+        .where(eq(schema.photos.url, photo.url))
+        .limit(1);
+      const storageKeys = unsharedPhotoStorageKeys(photo, !!sharer);
+      return { status: "purged", storageKeys } as const;
+    }),
+  );
+}
+
+async function deleteStorageKeys(keys: readonly string[]) {
+  for (const key of keys) {
+    try {
+      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+    } catch (error) {
+      // DB deletion has already committed. A leftover object is safer than a DB
+      // photo whose image disappeared; the orphan audit can remove it later.
+      console.error(`[purge] storage cleanup failed for ${key}:`, error);
+    }
+  }
+}
+
+async function deleteUnreferencedStorageKeys(keys: readonly string[]) {
+  const unreferenced: string[] = [];
+  for (const key of keys) {
+    const [reference] = await withRetry(() =>
+      db
+        .select({ id: schema.photos.id })
+        .from(schema.photos)
+        .where(
+          or(
+            eq(schema.photos.url, keyToProxyUrl(key)),
+            eq(schema.photos.thumbKey, key),
+            eq(schema.photos.mediumKey, key),
+          ),
+        )
+        .limit(1),
+    );
+    if (!reference) unreferenced.push(key);
+  }
+  await deleteStorageKeys(unreferenced);
+}
 
 // Upload size guards and MIME whitelist imported from ./security
 
@@ -1533,10 +1623,31 @@ const app = new Hono()
   // ── Admin: Add photo ────────────────────────────────────
   .post("/admin/photos", requireAdmin, async (c) => {
     const body = await c.req.json();
-    const [photo] = await withRetry(() =>
-      db
-        .insert(schema.photos)
-        .values({
+    const uploadedKeys = uploadedPhotoStorageKeys(body);
+    const result = await withUploadRegistrationCompensation(
+      uploadedKeys,
+      () => runPhotoIntegrityMutation(() =>
+        withRetry(() =>
+          db.transaction(async (tx) => {
+            // The upload endpoint's early check is only an optimisation. This
+            // transaction-time check is authoritative for simultaneous uploads.
+            if (typeof body.fileHash === "string" && body.fileHash) {
+              const [duplicate] = await tx
+                .select({ id: schema.photos.id })
+                .from(schema.photos)
+                .where(
+                  and(
+                    eq(schema.photos.fileHash, body.fileHash),
+                    isNull(schema.photos.deletedAt),
+                  ),
+                )
+                .limit(1);
+              if (duplicate)
+                return { duplicate: true, photoId: duplicate.id } as const;
+            }
+            const [photo] = await tx
+              .insert(schema.photos)
+              .values({
           filename: body.filename,
           url: body.url,
           title: body.title ?? "",
@@ -1578,10 +1689,19 @@ const app = new Hono()
           // Atomic next sort order — avoids duplicate values when concurrent
           // uploads insert in parallel (SQLite serializes writes).
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos)`,
-        })
-        .returning(),
+              })
+              .returning();
+            return { duplicate: false, photo } as const;
+          }),
+        ),
+      ),
+      deleteUnreferencedStorageKeys,
     );
-    return c.json({ photo }, 201);
+    if (result.duplicate) {
+      await deleteUnreferencedStorageKeys(uploadedKeys);
+      return c.json({ duplicate: true, photoId: result.photoId }, 200);
+    }
+    return c.json({ photo: result.photo }, 201);
   })
 
   // ── Admin: Update photo ─────────────────────────────────
@@ -1663,12 +1783,16 @@ const app = new Hono()
   // one photo can live in multiple categories / series cheaply.
   .post("/admin/photos/:id/duplicate", requireAdmin, async (c) => {
     const id = Number(c.req.param("id"));
-    const [orig] = await withRetry(() =>
-      db.select().from(schema.photos).where(eq(schema.photos.id, id)),
-    );
-    if (!orig) return c.json({ error: "Not found" }, 404);
-    const [row] = await withRetry(() =>
-      db
+    const row = await runPhotoIntegrityMutation(() =>
+      withRetry(() =>
+        db.transaction(async (tx) => {
+          const [orig] = await tx
+            .select()
+            .from(schema.photos)
+            .where(and(eq(schema.photos.id, id), isNull(schema.photos.deletedAt)))
+            .limit(1);
+          if (!orig) return null;
+          const [created] = await tx
         .insert(schema.photos)
         .values({
           filename: orig.filename,
@@ -1697,82 +1821,58 @@ const app = new Hono()
           mediumKey: orig.mediumKey,
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos)`,
         })
-        .returning(),
+            .returning();
+          return created;
+        }),
+      ),
     );
+    if (!row) return c.json({ error: "Not found" }, 404);
     return c.json({ photo: row }, 201);
   })
 
   // ── Admin: Soft-delete photo (moves to trash) ──────────
   .delete("/admin/photos/:id", requireAdmin, async (c) => {
     const id = Number(c.req.param("id"));
-    await withRetry(() =>
-      db
-        .update(schema.photos)
-        .set({ deletedAt: new Date() })
-        .where(eq(schema.photos.id, id)),
+    const [row] = await runPhotoIntegrityMutation(() =>
+      withRetry(() =>
+        db
+          .update(schema.photos)
+          .set({ deletedAt: new Date() })
+          .where(eq(schema.photos.id, id))
+          .returning({ id: schema.photos.id }),
+      ),
     );
+    if (!row) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 
   // ── Admin: Restore photo from trash ────────────────────
   .post("/admin/photos/:id/restore", requireAdmin, async (c) => {
     const id = Number(c.req.param("id"));
-    await withRetry(() =>
-      db
-        .update(schema.photos)
-        .set({ deletedAt: null })
-        .where(eq(schema.photos.id, id)),
+    const [row] = await runPhotoIntegrityMutation(() =>
+      withRetry(() =>
+        db
+          .update(schema.photos)
+          .set({ deletedAt: null })
+          .where(eq(schema.photos.id, id))
+          .returning({ id: schema.photos.id }),
+      ),
     );
+    if (!row) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 
   // ── Admin: Permanently delete photo from trash ─────────
   .delete("/admin/photos/:id/purge", requireAdmin, async (c) => {
     const id = Number(c.req.param("id"));
-    const [photo] = await withRetry(() =>
-      db.select().from(schema.photos).where(eq(schema.photos.id, id)),
-    );
-    if (!photo) return c.json({ error: "Not found" }, 404);
-    // O1 duplicates share the same storage object — only delete the file when no
-    // OTHER photo row (live or trashed) still points at the same URL.
-    const [sharer] = await withRetry(() =>
-      db
-        .select({ id: schema.photos.id })
-        .from(schema.photos)
-        .where(
-          sql`${eq(schema.photos.url, photo.url)} AND ${schema.photos.id} != ${id}`,
-        )
-        .limit(1),
-    );
-    if (!sharer) {
-      // The WebP derivatives (thumb/medium) live as separate objects — leaving
-      // them behind on purge would leak storage forever.
-      const keys = [
-        photo.url.replace("/api/images/", ""),
-        photo.thumbKey,
-        photo.mediumKey,
-      ].filter((k): k is string => !!k);
-      for (const key of keys) {
-        try {
-          await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-    await withRetry(() =>
-      db.delete(schema.photos).where(eq(schema.photos.id, id)),
-    );
-    // Clean up any dangling hero reference to the now-deleted photo.
-    await withRetry(() =>
-      db.delete(schema.heroPhotos).where(eq(schema.heroPhotos.photoId, id)),
-    );
-    await withRetry(() =>
-      db
-        .update(schema.series)
-        .set({ coverPhotoId: null })
-        .where(eq(schema.series.coverPhotoId, id)),
-    );
+    const result = await runPhotoIntegrityMutation(() => purgePhotoFromDb(id));
+    if (result.status === "not-found")
+      return c.json({ error: "Not found" }, 404);
+    if (result.status === "not-trashed")
+      return c.json({ error: "Photo is not in trash" }, 400);
+    if (result.status !== "purged")
+      return c.json({ error: "Photo was restored" }, 409);
+    await purgeDbThenStorage(async () => result, deleteStorageKeys);
     return c.json({ ok: true }, 200);
   })
 
@@ -1799,45 +1899,11 @@ const app = new Hono()
         ),
     );
     for (const p of stale) {
-      // O1 duplicates share storage objects — keep the file if another row references it.
-      const [sharer] = await withRetry(() =>
-        db
-          .select({ id: schema.photos.id })
-          .from(schema.photos)
-          .where(
-            sql`${eq(schema.photos.url, p.url)} AND ${schema.photos.id} != ${p.id}`,
-          )
-          .limit(1),
+      const result = await runPhotoIntegrityMutation(() =>
+        purgePhotoFromDb(p.id, cutoff),
       );
-      if (!sharer) {
-        // Same as the manual purge: derivatives must go with the master.
-        const keys = [
-          p.url.replace("/api/images/", ""),
-          p.thumbKey,
-          p.mediumKey,
-        ].filter((k): k is string => !!k);
-        for (const key of keys) {
-          try {
-            await s3.send(
-              new DeleteObjectCommand({ Bucket: BUCKET, Key: key }),
-            );
-          } catch {
-            /* ignore */
-          }
-        }
-      }
-      await withRetry(() =>
-        db.delete(schema.photos).where(eq(schema.photos.id, p.id)),
-      );
-      await withRetry(() =>
-        db.delete(schema.heroPhotos).where(eq(schema.heroPhotos.photoId, p.id)),
-      );
-      await withRetry(() =>
-        db
-          .update(schema.series)
-          .set({ coverPhotoId: null })
-          .where(eq(schema.series.coverPhotoId, p.id)),
-      );
+      if (result.status === "purged")
+        await deleteStorageKeys(result.storageKeys);
     }
 
     const photos = await withRetry(() =>
@@ -2078,24 +2144,21 @@ const app = new Hono()
     const id = Number(c.req.param("id"));
     // Reassign this category's photos to "uncategorized" so they don't become
     // orphans (a category slug that no longer exists = unfilterable on the site).
-    const [cat] = await withRetry(() =>
-      db
-        .select({ slug: schema.categories.slug })
-        .from(schema.categories)
-        .where(eq(schema.categories.id, id))
-        .limit(1),
-    );
     await withRetry(() =>
-      db.delete(schema.categories).where(eq(schema.categories.id, id)),
-    );
-    if (cat) {
-      await withRetry(() =>
-        db
+      db.transaction(async (tx) => {
+        const [cat] = await tx
+          .select({ slug: schema.categories.slug })
+          .from(schema.categories)
+          .where(eq(schema.categories.id, id))
+          .limit(1);
+        if (!cat) return;
+        await tx
           .update(schema.photos)
           .set({ category: "" })
-          .where(eq(schema.photos.category, cat.slug)),
-      );
-    }
+          .where(eq(schema.photos.category, cat.slug));
+        await tx.delete(schema.categories).where(eq(schema.categories.id, id));
+      }),
+    );
     return c.json({ ok: true }, 200);
   })
 

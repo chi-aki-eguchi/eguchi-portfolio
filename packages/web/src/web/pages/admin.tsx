@@ -3464,6 +3464,8 @@ export function GalleryTab({
           },
         });
         assertOk(created);
+        const createdBody = (await created.json()) as { duplicate?: boolean };
+        if (createdBody.duplicate) duplicates.push(file.name);
       } catch (err) {
         failed.push({
           file,

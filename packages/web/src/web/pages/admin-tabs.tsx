@@ -46,6 +46,7 @@ import {
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { useAdminI18n } from "./admin-i18n";
 import type { GalleryLayoutType } from "../components/PhotoGallery";
+import { draftAfterSuccessfulSave } from "../lib/saved-draft";
 
 const DEFAULT_THEME_BG = "#f7f7f7";
 
@@ -859,15 +860,17 @@ export function ProfileTab({
 
   const save = useMutation({
     mutationFn: async () => {
-      await postAdminSettings(form);
+      const submitted = { ...form };
+      await postAdminSettings(submitted);
+      return submitted;
     },
-    onSuccess: () => {
+    onSuccess: (submitted) => {
       setSaveError(false);
       qc.setQueryData(
         ["settings"],
-        (old: Record<string, string> | undefined) => ({ ...old, ...form }),
+        (old: Record<string, string> | undefined) => ({ ...old, ...submitted }),
       );
-      setForm({});
+      setForm((current) => draftAfterSuccessfulSave(submitted, current));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       qc.invalidateQueries({ queryKey: ["settings"] });
@@ -3588,15 +3591,17 @@ export function SettingsTab({
 
   const save = useMutation({
     mutationFn: async () => {
-      await postAdminSettings(form);
+      const submitted = { ...form };
+      await postAdminSettings(submitted);
+      return submitted;
     },
-    onSuccess: () => {
+    onSuccess: (submitted) => {
       setSaveError(false);
       qc.setQueryData(
         ["settings"],
-        (old: Record<string, string> | undefined) => ({ ...old, ...form }),
+        (old: Record<string, string> | undefined) => ({ ...old, ...submitted }),
       );
-      setForm({});
+      setForm((current) => draftAfterSuccessfulSave(submitted, current));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       qc.invalidateQueries({ queryKey: ["settings"] });

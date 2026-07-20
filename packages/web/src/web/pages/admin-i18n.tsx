@@ -2835,6 +2835,12 @@ export type AdminMessages = {
     title: string;
     description: string;
     checking: string;
+    loadError: {
+      title: string;
+      body: string;
+      retry: string;
+      contact: string;
+    };
     progress: (done: number, total: number) => string;
     resumeSummary: (done: number, total: number, next: string) => string;
     nextAction: (next: string) => string;
@@ -2855,20 +2861,6 @@ export type AdminMessages = {
       publicUrl: ChecklistCopy;
       categories: ChecklistCopy;
       appearance: ChecklistCopy;
-    };
-    infrastructure: {
-      title: string;
-      websiteFiles: ChecklistCopy;
-      hosting: ChecklistCopy;
-      dataStorage: ChecklistCopy;
-      photoStorage: ChecklistCopy;
-    };
-    glossary: {
-      title: string;
-      repo: string;
-      environmentVariables: ChecklistCopy;
-      deploy: string;
-      ogp: string;
     };
     storageHealth: {
       configured: string;
@@ -2991,6 +2983,13 @@ export const ADMIN_DICTIONARY = {
       description:
         "まずは写真を1枚追加し、トップページに表示されることを確かめましょう。この3つだけ終えれば、最初の準備は完了です。名前やプロフィールは、あとからゆっくり整えられます。",
       checking: "確認中...",
+      loadError: {
+        title: "読み込めませんでした",
+        body: "設定や写真の状態を確認できないため、完了状況は表示していません。",
+        retry: "再試行",
+        contact:
+          "再試行しても解決しない場合は、この画面が表示されたことを設定担当者へ連絡してください。",
+      },
       demoIntro:
         "これは、購入後にご自身のサイトを公開まで進める手順表の見本です。体験版ではサンプル一式が入っているためすべて完了になっていますが、実際は空の状態から、この順に埋めていくだけで公開できます。",
       progress: (done, total) => `${done} / ${total} 完了`,
@@ -3047,35 +3046,6 @@ export const ADMIN_DICTIONARY = {
           title: "見え方",
           body: "ギャラリーの並び方、余白、文字の大きさを確認します。最初は写真の順番と S/M/L が一番効きます。",
         },
-      },
-      infrastructure: {
-        title: "公開の裏側にあるもの",
-        websiteFiles: {
-          title: "サイトのファイル一式",
-          body: "見た目や管理画面のもとになるもの。",
-        },
-        hosting: {
-          title: "公開場所",
-          body: "サイトをインターネットで動かす場所。",
-        },
-        dataStorage: {
-          title: "データの保存場所",
-          body: "名前、説明文、写真一覧などを保存する場所。",
-        },
-        photoStorage: {
-          title: "写真の保存場所",
-          body: "アップロードした写真ファイルそのものを置く場所。",
-        },
-      },
-      glossary: {
-        title: "言葉の置き換え",
-        repo: "サイトのファイル一式が入った箱。",
-        environmentVariables: {
-          title: "環境変数",
-          body: "パスワードや接続先を書く、公開しない設定メモ。",
-        },
-        deploy: "変更したサイトをネット上に反映すること。",
-        ogp: "SNSでURLを貼った時に出るタイトル・説明・画像。",
       },
       storageHealth: {
         configured:
@@ -3198,6 +3168,14 @@ export const ADMIN_DICTIONARY = {
       description:
         "Start by adding one photo and confirming that it appears on the home page. Once these three steps are done, the initial setup is complete. You can take your time with your name and profile later.",
       checking: "Checking...",
+      loadError: {
+        title: "Could not load your setup",
+        body:
+          "We could not check your settings and photos, so no steps are being marked incomplete.",
+        retry: "Try again",
+        contact:
+          "If trying again does not help, tell the person who set up your site that you saw this screen.",
+      },
       demoIntro:
         "This is a preview of the checklist that guides you from a fresh install to a published site. In this demo everything is marked complete because sample content is preloaded — on your own site, you simply work through these steps from the top.",
       progress: (done, total) => `${done} / ${total} complete`,
@@ -3254,35 +3232,6 @@ export const ADMIN_DICTIONARY = {
           title: "Appearance",
           body: "Review the gallery layout, spacing, and type sizes. Photo order and S/M/L sizes make the biggest difference first.",
         },
-      },
-      infrastructure: {
-        title: "What runs behind the site",
-        websiteFiles: {
-          title: "Website files",
-          body: "The files that create the site’s appearance and admin panel.",
-        },
-        hosting: {
-          title: "Hosting",
-          body: "The service that keeps the site available on the internet.",
-        },
-        dataStorage: {
-          title: "Data storage",
-          body: "Where names, descriptions, and the photo list are stored.",
-        },
-        photoStorage: {
-          title: "Photo storage",
-          body: "Where the uploaded photo files themselves are stored.",
-        },
-      },
-      glossary: {
-        title: "Plain-language terms",
-        repo: "A folder that contains the complete set of website files.",
-        environmentVariables: {
-          title: "Environment variables",
-          body: "Private settings for passwords and connection details. They are not shown publicly.",
-        },
-        deploy: "To publish the latest website changes to the internet.",
-        ogp: "The title, description, and image shown when a URL is shared on social media.",
       },
       storageHealth: {
         configured:

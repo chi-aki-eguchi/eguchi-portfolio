@@ -29,6 +29,8 @@ Object.assign(globalThis, {
 const requests: { method: string; url: string; body: string }[] = [];
 let mockPhotos: unknown[] = [];
 let mockHeroPhotos: unknown[] = [];
+let mockSettings: Record<string, string> = {};
+let failingPath = "";
 globalThis.fetch = (async (
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -49,13 +51,15 @@ globalThis.fetch = (async (
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
+  if (failingPath && url.includes(failingPath))
+    return new Response("unavailable", { status: 503 });
   if (url.includes("/api/admin/settings") && method === "POST")
     return json({ ok: true });
   if (url.includes("/api/admin/hero-photos"))
     return json({ heroPhotos: mockHeroPhotos });
   if (url.includes("/api/admin/setup-health"))
     return json({ storageConfigured: true, missingStorageVariables: [] });
-  if (url.includes("/api/settings")) return json({});
+  if (url.includes("/api/settings")) return json(mockSettings);
   if (url.includes("/api/photos")) return json({ photos: mockPhotos });
   if (url.includes("/api/categories")) return json({ categories: [] });
   return json({});
@@ -74,6 +78,34 @@ const flush = async () => {
     await new Promise((r) => setTimeout(r, 20));
   });
 };
+
+async function renderSetup(language: "ja" | "en", width: number) {
+  dom.window.localStorage.clear();
+  dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, language);
+  Object.defineProperty(dom.window, "innerWidth", { value: width, configurable: true });
+  dom.window.dispatchEvent(new dom.window.Event("resize"));
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  const container = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(
+          AdminLanguageProvider,
+          null,
+          createElement(SetupTab, { onOpenTab: () => undefined }),
+        ),
+      ),
+    );
+  });
+  for (let i = 0; i < 10; i++) await flush();
+  return { container, root };
+}
 
 test("SetupTab — 未完了時は完了保存せず、次の項目へ案内する", async () => {
   dom.window.localStorage.clear();
@@ -222,4 +254,89 @@ test("SetupTab — ENではPhase 2aチェックリストを英語表示し、表
   await act(async () => root.unmount());
   container.remove();
   dom.window.localStorage.clear();
+});
+
+test("SetupTab — 日英・desktop/mobileで取得失敗を未完了扱いにせず再試行を案内する", async () => {
+  mockSettings = {};
+  mockPhotos = [];
+  mockHeroPhotos = [];
+  for (const language of ["ja", "en"] as const) {
+    for (const width of [1280, 390]) {
+      for (const path of ["/api/settings", "/api/photos", "/api/admin/hero-photos"]) {
+        failingPath = path;
+        const { container, root } = await renderSetup(language, width);
+        expect(container.textContent).toContain(
+          language === "ja" ? "読み込めませんでした" : "Could not load your setup",
+        );
+        expect(container.textContent).toContain(
+          language === "ja" ? "再試行" : "Try again",
+        );
+        expect(container.textContent).not.toContain("0 / 3");
+        await act(async () => root.unmount());
+        container.remove();
+      }
+    }
+  }
+  failingPath = "";
+});
+
+test("SetupTab — setupCompletedは別端末でも3項目の完了状態を復元する", async () => {
+  failingPath = "";
+  mockSettings = { setupCompleted: "true" };
+  mockPhotos = [];
+  mockHeroPhotos = [];
+  for (const language of ["ja", "en"] as const) {
+    for (const width of [1280, 390]) {
+      const { container, root } = await renderSetup(language, width);
+      expect(container.textContent).toContain(
+        language === "ja" ? "セットアップ完了ずみです" : "Setup is complete",
+      );
+      expect(container.textContent).not.toContain("2 / 3");
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  }
+  mockSettings = {};
+});
+
+test("SetupTab — 非公開のトップ写真と開けなかったトップページは完了にしない", async () => {
+  failingPath = "";
+  mockSettings = {};
+  mockPhotos = [{ id: 7, deletedAt: null, isPublished: false }];
+  mockHeroPhotos = [{ id: 1, photoId: 7 }];
+  const originalOpen = dom.window.open;
+  dom.window.open = (() => null) as typeof dom.window.open;
+  const { container, root } = await renderSetup("ja", 1280);
+  expect(container.textContent).toContain("1 / 3 完了");
+
+  const openButton = Array.from(container.querySelectorAll("button")).find(
+    (button) => button.textContent === "開く" && button.closest("div")?.textContent?.includes("トップページで確認する"),
+  );
+  expect(openButton).toBeDefined();
+  await act(async () => openButton!.click());
+  expect(
+    JSON.parse(
+      dom.window.localStorage.getItem("admin:setup-home-page-confirmed") ??
+        "false",
+    ),
+  ).toBe(false);
+
+  await act(async () => root.unmount());
+  container.remove();
+  dom.window.open = originalOpen;
+  mockPhotos = [];
+  mockHeroPhotos = [];
+});
+
+test("SetupTab — 初回画面から設定担当者向けの技術説明を隔離する", async () => {
+  failingPath = "";
+  mockSettings = {};
+  mockPhotos = [];
+  mockHeroPhotos = [];
+  const { container, root } = await renderSetup("ja", 390);
+  expect(container.textContent).not.toContain("公開の裏側");
+  expect(container.textContent).not.toContain("環境変数");
+  expect(container.textContent).not.toContain("OGP");
+  await act(async () => root.unmount());
+  container.remove();
 });

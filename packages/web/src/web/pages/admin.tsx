@@ -869,7 +869,7 @@ type ChecklistItem = {
   done: boolean;
   tab?: Tab;
   href?: string;
-  onOpen?: () => void;
+  onOpen?: () => boolean;
 };
 
 // exportはrenderテスト用(表示だけでPOSTしない/完了ボタンでのみ保存する検証)
@@ -882,11 +882,11 @@ export function SetupTab({
 }) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
-  const { data: settingsData, isLoading: settingsLoading } = useQuery({
+  const settingsQuery = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
-  const { data: photosData, isLoading: photosLoading } = useQuery({
+  const photosQuery = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
       jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
@@ -895,7 +895,7 @@ export function SetupTab({
     queryKey: ["categories"],
     queryFn: async () => jsonOrThrow(await api.categories.$get()),
   });
-  const { data: heroData } = useQuery({
+  const heroQuery = useQuery({
     queryKey: ["admin-hero-photos"],
     queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> =>
       jsonOrThrow(await adminApi["hero-photos"].$get()),
@@ -910,12 +910,16 @@ export function SetupTab({
     }> => jsonOrThrow(await adminApi["setup-health"].$get()),
   });
 
-  const settings = (settingsData ?? {}) as Record<string, string>;
-  const photos = (photosData?.photos ?? []) as Photo[];
+  const settings = (settingsQuery.data ?? {}) as Record<string, string>;
+  const photos = (photosQuery.data?.photos ?? []) as Photo[];
   const activePhotos = photos.filter((p) => !p.deletedAt);
   const publishedPhotos = activePhotos.filter((p) => p.isPublished !== false);
   const categories = catsData?.categories ?? [];
-  const heroCount = heroData?.heroPhotos?.length ?? 0;
+  const heroPhotos = heroQuery.data?.heroPhotos ?? [];
+  const publishedPhotoIds = new Set(publishedPhotos.map((photo) => photo.id));
+  const hasPublishedHero = heroPhotos.some((hero) =>
+    publishedPhotoIds.has(hero.photoId),
+  );
 
   // The はじめに checklist is built for a fresh distribution install (empty DB):
   // it guides the owner top-to-bottom to a published site. On a fully configured
@@ -933,6 +937,14 @@ export function SetupTab({
       false,
       "local",
     );
+  const setupRestored = settings.setupCompleted === "true";
+  const openHomePage = () => {
+    const opened = window.open("/", "_blank");
+    if (opened === null) return false;
+    opened.opener = null;
+    setHomePageConfirmed(true);
+    return true;
+  };
 
   // setupCompleted は settings に保存する(=デバイス・ブラウザをまたいで有効)。
   // これが true になるまで、初回ログイン時は毎回「はじめに」へ誘導される
@@ -963,22 +975,20 @@ export function SetupTab({
   const checklist: ChecklistItem[] = [
     {
       ...t.setup.checklist.firstPhoto,
-      done: activePhotos.length > 0,
+      done: setupRestored || activePhotos.length > 0,
       tab: "gallery",
     },
     {
       ...t.setup.checklist.hero,
-      done: heroCount > 0,
+      done: setupRestored || hasPublishedHero,
       tab: "hero",
     },
     {
       ...t.setup.checklist.liveSite,
       done:
-        publishedPhotos.length > 0 &&
-        heroCount > 0 &&
-        (demoMode || homePageConfirmed),
+        setupRestored || (hasPublishedHero && (demoMode || homePageConfirmed)),
       href: "/",
-      onOpen: () => setHomePageConfirmed(true),
+      onOpen: openHomePage,
     },
   ];
 
@@ -1018,7 +1028,17 @@ export function SetupTab({
   const doneCount = checklist.filter((item) => item.done).length;
   const requiredDone = doneCount === checklist.length;
   const nextItem = checklist.find((item) => !item.done);
-  const loading = settingsLoading || photosLoading;
+  const loading =
+    settingsQuery.isLoading || photosQuery.isLoading || heroQuery.isLoading;
+  const loadFailed =
+    settingsQuery.isError || photosQuery.isError || heroQuery.isError;
+  const retrySetup = () => {
+    void Promise.all([
+      settingsQuery.refetch(),
+      photosQuery.refetch(),
+      heroQuery.refetch(),
+    ]);
+  };
   // Once everything is done (or the owner pressed 閉じる), shrink to a one-line bar
   // so a finished site's admin stays uncluttered. "もう一度見る" re-expands it.
   // 体験版はサンプル一式が入力済みで常に「完了」になるため、折りたたまず
@@ -1035,6 +1055,33 @@ export function SetupTab({
       <div className="h-full overflow-y-auto">
         <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
           <p className="text-[12px] text-[color:var(--admin-muted)]">…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="h-full overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
+          <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
+            <h2 className="text-[14px] text-amber-900">
+              {t.setup.loadError.title}
+            </h2>
+            <p className="text-[12px] leading-6 text-amber-800">
+              {t.setup.loadError.body}
+            </p>
+            <button
+              type="button"
+              onClick={retrySetup}
+              className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm"
+            >
+              {t.setup.loadError.retry}
+            </button>
+            <p className="text-[11px] leading-5 text-amber-800">
+              {t.setup.loadError.contact}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -1118,7 +1165,6 @@ export function SetupTab({
                           // 忘れると、メインボタンだけ使う購入者が永遠に
                           // 「トップページを確認」を完了できない
                           nextItem.onOpen?.();
-                          window.open(nextItem.href, "_blank", "noopener");
                         }
                         return;
                       }
@@ -1182,62 +1228,6 @@ export function SetupTab({
           </div>
         </section>
 
-        <section className="grid gap-3 md:grid-cols-2">
-          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-5">
-            <h2 className="text-[14px] mb-3">
-              {t.setup.infrastructure.title}
-            </h2>
-            <div className="space-y-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
-              <p>
-                <span className="text-[color:var(--admin-ink)]">
-                  {t.setup.infrastructure.websiteFiles.title}
-                </span>
-                : {t.setup.infrastructure.websiteFiles.body}
-              </p>
-              <p>
-                <span className="text-[color:var(--admin-ink)]">
-                  {t.setup.infrastructure.hosting.title}
-                </span>
-                : {t.setup.infrastructure.hosting.body}
-              </p>
-              <p>
-                <span className="text-[color:var(--admin-ink)]">
-                  {t.setup.infrastructure.dataStorage.title}
-                </span>
-                : {t.setup.infrastructure.dataStorage.body}
-              </p>
-              <p>
-                <span className="text-[color:var(--admin-ink)]">
-                  {t.setup.infrastructure.photoStorage.title}
-                </span>
-                : {t.setup.infrastructure.photoStorage.body}
-              </p>
-            </div>
-          </div>
-          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-5">
-            <h2 className="text-[14px] mb-3">{t.setup.glossary.title}</h2>
-            <div className="space-y-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
-              <p>
-                <span className="text-[color:var(--admin-ink)]">repo</span>:
-                {t.setup.glossary.repo}
-              </p>
-              <p>
-                <span className="text-[color:var(--admin-ink)]">
-                  {t.setup.glossary.environmentVariables.title}
-                </span>
-                : {t.setup.glossary.environmentVariables.body}
-              </p>
-              <p>
-                <span className="text-[color:var(--admin-ink)]">deploy</span>:
-                {t.setup.glossary.deploy}
-              </p>
-              <p>
-                <span className="text-[color:var(--admin-ink)]">OGP</span>:
-                {t.setup.glossary.ogp}
-              </p>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );
@@ -1266,15 +1256,13 @@ function SetupChecklistRow({
             {item.title}
           </h3>
           {item.href ? (
-            <a
-              href={item.href}
+            <button
+              type="button"
               onClick={item.onOpen}
-              target="_blank"
-              rel="noopener"
               className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
               {t.common.open}
-            </a>
+            </button>
           ) : (
             <button
               onClick={() => item.tab && onOpenTab(item.tab)}

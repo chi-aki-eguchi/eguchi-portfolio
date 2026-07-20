@@ -17,6 +17,7 @@ export const canned: Record<string, unknown> = {
   "/api/settings": {},
   "/api/photos": { photos: samplePhotos },
   "/api/hero-photos": { heroPhotos: [] },
+  "/api/admin/hero-photos": { heroPhotos: [] },
   "/api/series": { series: [] },
   "/api/categories": { categories: [] },
   "/api/pricing": { plans: [] },

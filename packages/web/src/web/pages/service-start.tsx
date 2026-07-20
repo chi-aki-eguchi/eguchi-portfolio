@@ -20,7 +20,29 @@ const labelStyle = {
 
 type ServiceStartLanguage = "ja" | "en";
 
-function LanguageSwitch({ language }: { language: ServiceStartLanguage }) {
+// Stripe Payment Link は決済後にこのページへリダイレクトする(Stripe側の設定は
+// /start?thanks=1)。専用の完了画面が無いため、着地時のお礼と支払い完了の明示は
+// このページが担う。素の /start はこれまでどおり購入後ガイドとして振る舞い、
+// お礼は出さない(LPからの下見アクセスに「購入済み」と誤って伝えないため)。
+// checkout_session_id は Stripe が {CHECKOUT_SESSION_ID} 付きリダイレクト設定
+// だった場合の保険。
+function checkoutArrivalSearch(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.search;
+}
+
+function isCheckoutArrival(search: string): boolean {
+  const params = new URLSearchParams(search);
+  return params.has("thanks") || params.has("checkout_session_id");
+}
+
+function LanguageSwitch({
+  language,
+  search,
+}: {
+  language: ServiceStartLanguage;
+  search: string;
+}) {
   return (
     <nav
       aria-label="Language"
@@ -31,7 +53,7 @@ function LanguageSwitch({ language }: { language: ServiceStartLanguage }) {
           JP
         </span>
       ) : (
-        <Link to="/start" className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
+        <Link to={`/start${search}`} className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
           JP
         </Link>
       )}
@@ -41,11 +63,70 @@ function LanguageSwitch({ language }: { language: ServiceStartLanguage }) {
           EN
         </span>
       ) : (
-        <Link to="/start/en" className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
+        <Link to={`/start/en${search}`} className="hover:text-[rgba(var(--foreground-rgb),0.76)]">
           EN
         </Link>
       )}
     </nav>
+  );
+}
+
+// docs/purchase-thankyou.md の送付項目リストをメール下書きに差し込む。
+// 決済から着地した購入者が、何を書けばいいか迷わず送れるようにする
+function materialsMailtoHref(contactEmail: string, en: boolean): string {
+  const subject = en ? "Portfolio Kit materials" : "Portfolio Kit 素材の送付";
+  const body = en
+    ? [
+        "Please fill in what you can — additions and changes are welcome later.",
+        "",
+        "- Name to display on the site:",
+        "",
+        "- Photographs (attach them or paste a transfer-service link; a few are enough):",
+        "",
+        "- Profile text, contact details, social links:",
+        "",
+        '- Custom domain (or write "let\'s register one together"):',
+        "",
+      ].join("\n")
+    : [
+        "わかる範囲でご記入ください（あとからの追加・変更も大丈夫です）。",
+        "",
+        "■ お名前（サイトに出す表記）:",
+        "",
+        "■ 載せたい写真（添付か、ファイル転送サービスの共有URL。数枚でも大丈夫です）:",
+        "",
+        "■ プロフィール文・連絡先・SNS:",
+        "",
+        "■ 独自ドメイン（あれば。これからの場合は「取得から相談したい」で大丈夫です）:",
+        "",
+      ].join("\n");
+  return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function PurchaseThanksBanner({ language }: { language: ServiceStartLanguage }) {
+  const en = language === "en";
+  return (
+    <section className="mb-10 rounded-md border border-[rgba(var(--foreground-rgb),0.16)] bg-[rgba(var(--foreground-rgb),0.03)] p-5 sm:p-7">
+      <p className="font-en uppercase mb-2" style={labelStyle}>
+        Payment complete
+      </p>
+      <h2
+        className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.86)]`}
+        style={{ fontSize: "clamp(1.15rem, 2.2vw, 1.5rem)", lineHeight: 1.55 }}
+      >
+        {en
+          ? "Thank you — your payment is complete."
+          : "ご購入ありがとうございます。お支払いは完了しています。"}
+      </h2>
+      <p
+        className="mt-3 max-w-2xl text-[rgba(var(--foreground-rgb),0.56)]"
+        style={bodyStyle}
+      >
+        {en
+          ? "A receipt is sent to the email address used at checkout. This page is your start guide: you can send your materials right away, or simply wait for my email — it arrives within 24 hours."
+          : "領収書は購入時のメールアドレスに届きます。このページがスタートガイドです。今すぐ素材を送っていただいても、24時間以内に届くご案内メールをお待ちいただいても、どちらでも大丈夫です。"}
+      </p>
+    </section>
   );
 }
 
@@ -322,6 +403,8 @@ export default function ServiceStartPage({
     typeof window === "undefined" ? undefined : window.location.hostname,
   );
   const en = language === "en";
+  const search = checkoutArrivalSearch();
+  const arrivedFromCheckout = isCheckoutArrival(search);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -335,7 +418,8 @@ export default function ServiceStartPage({
       lang={language}
       className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
     >
-      <LanguageSwitch language={language} />
+      <LanguageSwitch language={language} search={search} />
+      {arrivedFromCheckout && <PurchaseThanksBanner language={language} />}
       <header className="grid gap-10 md:grid-cols-[1.02fr_0.98fr] md:items-center">
         <div>
           <p className="font-en uppercase mb-7" style={labelStyle}>
@@ -393,13 +477,7 @@ export default function ServiceStartPage({
           )}
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             {contactEmail && (
-              <ExternalButton
-                href={`mailto:${contactEmail}?subject=${encodeURIComponent(
-                  en
-                    ? "Portfolio Kit materials"
-                    : "Portfolio Kit 素材の送付",
-                )}`}
-              >
+              <ExternalButton href={materialsMailtoHref(contactEmail, en)}>
                 <Mail size={15} />
                 {en ? "Send your materials" : "素材を送る"}
               </ExternalButton>
@@ -455,11 +533,7 @@ export default function ServiceStartPage({
           steps={en ? deliveryStepsEn : deliverySteps}
         >
           {contactEmail && (
-            <ExternalButton
-              href={`mailto:${contactEmail}?subject=${encodeURIComponent(
-                en ? "Portfolio Kit materials" : "Portfolio Kit 素材の送付",
-              )}`}
-            >
+            <ExternalButton href={materialsMailtoHref(contactEmail, en)}>
               <Mail size={15} />
               {en ? "Send your materials" : "素材を送る"}
             </ExternalButton>

@@ -536,6 +536,75 @@ describe("shared components", () => {
     }
   });
 
+  // 2026-07-20: Stripe Payment Linkは完了画面を出さず /start?thanks=1 へ
+  // リダイレクトする(オーナー設定)。決済帰りの着地だけ購入お礼を表示し、
+  // 素の /start(LPからの下見)には出さない
+  test("ServiceStartPage thanks the buyer only when arriving from checkout", async () => {
+    const ServiceStartPage = (await import("../pages/service-start")).default;
+    try {
+      dom.reconfigure({ url: "http://localhost/start?thanks=1" });
+      {
+        const { host, cleanup } = await mount(createElement(ServiceStartPage));
+        const text = host.textContent ?? "";
+        expect(text).toContain("ご購入ありがとうございます");
+        expect(text).toContain("お支払いは完了しています");
+        // 言語切替でお礼が消えないよう、クエリはJP|ENリンクにも引き継ぐ
+        expect(
+          host.querySelector('a[href="/start/en?thanks=1"]'),
+        ).not.toBeNull();
+        cleanup();
+      }
+      dom.reconfigure({
+        url: "http://localhost/start?checkout_session_id=cs_test_123",
+      });
+      {
+        const { host, cleanup } = await mount(
+          createElement(ServiceStartPage, { language: "en" }),
+        );
+        expect(host.textContent ?? "").toContain(
+          "your payment is complete",
+        );
+        cleanup();
+      }
+      dom.reconfigure({ url: "http://localhost/start" });
+      {
+        const { host, cleanup } = await mount(createElement(ServiceStartPage));
+        expect(host.textContent ?? "").not.toContain(
+          "ご購入ありがとうございます",
+        );
+        cleanup();
+      }
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  // 2026-07-20: 「素材を送る」は白紙メールではなく、送付項目リスト
+  // (docs/purchase-thankyou.md 由来)を本文の下書きに差し込む
+  test("ServiceStartPage prefills the materials email with the checklist", async () => {
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      servicePageMode: "on",
+      siteUrl: "https://portfolio.example",
+      contactEmail: "owner@portfolio.example",
+    };
+    try {
+      const ServiceStartPage = (await import("../pages/service-start")).default;
+      const { host, cleanup } = await mount(createElement(ServiceStartPage));
+      const href =
+        host
+          .querySelector('a[href^="mailto:owner@portfolio.example"]')
+          ?.getAttribute("href") ?? "";
+      expect(href).toContain(encodeURIComponent("お名前（サイトに出す表記）"));
+      expect(href).toContain(encodeURIComponent("載せたい写真"));
+      expect(href).toContain(encodeURIComponent("プロフィール文・連絡先・SNS"));
+      expect(href).toContain(encodeURIComponent("独自ドメイン"));
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+    }
+  });
+
   test("ServiceStartPage walks the buyer from handover to the first photograph", async () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(createElement(ServiceStartPage));

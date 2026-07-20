@@ -554,6 +554,7 @@ describe("shared components", () => {
         const text = host.textContent ?? "";
         expect(text).toContain("ご購入ありがとうございます");
         expect(text).toContain("お支払いは完了しています");
+        expect(text).toContain("すぐに何かをしなくても大丈夫です");
         // 言語切替でお礼が消えないよう、クエリはJP|ENリンクにも引き継ぐ
         expect(
           host.querySelector('a[href="/start/en?thanks=1"]'),
@@ -605,6 +606,8 @@ describe("shared components", () => {
       expect(href).toContain(encodeURIComponent("載せたい写真"));
       expect(href).toContain(encodeURIComponent("プロフィール文・連絡先・SNS"));
       expect(href).toContain(encodeURIComponent("独自ドメイン"));
+      expect(href).toContain(encodeURIComponent("なくても大丈夫です"));
+      expect(href).toContain(encodeURIComponent("あなた名義"));
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -618,7 +621,32 @@ describe("shared components", () => {
     expect(text).toContain("納品後の最初の一歩");
     expect(text).toContain("写真を1枚");
     expect(text).toContain("はじめに");
+    expect(text).toContain("トップ写真に選んだあと");
+    expect(text).toContain("実際のトップページ");
     cleanup();
+  });
+
+  test("ServiceStartPage reassures first-time buyers about domains in JA and EN", async () => {
+    const ServiceStartPage = (await import("../pages/service-start")).default;
+    {
+      const { host, cleanup } = await mount(createElement(ServiceStartPage));
+      const text = host.textContent ?? "";
+      expect(text).toContain("独自ドメインを持っていなくても、大丈夫です");
+      expect(text).toContain("あなた名義");
+      expect(text).toContain("実費だけ別にかかります");
+      expect(text).toContain("購入前に内容と金額を確認");
+      cleanup();
+    }
+    {
+      const { host, cleanup } = await mount(
+        createElement(ServiceStartPage, { language: "en" }),
+      );
+      const text = host.textContent ?? "";
+      expect(text).toContain("You do not need to own a domain yet");
+      expect(text).toContain("registered in your name");
+      expect(text).toContain("actual fee separately");
+      cleanup();
+    }
   });
 
   test("SeriesGrid renders its empty state", async () => {

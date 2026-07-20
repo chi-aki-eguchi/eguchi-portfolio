@@ -85,7 +85,7 @@ function materialsMailtoHref(contactEmail: string, en: boolean): string {
         "",
         "- Profile text, contact details, social links:",
         "",
-        '- Custom domain (or write "let\'s register one together"):',
+        '- Custom domain (if you do not have one, write "let\'s register one together"; it will be in your name and the provider fee is separate):',
         "",
       ].join("\n")
     : [
@@ -97,7 +97,7 @@ function materialsMailtoHref(contactEmail: string, en: boolean): string {
         "",
         "■ プロフィール文・連絡先・SNS:",
         "",
-        "■ 独自ドメイン（あれば。これからの場合は「取得から相談したい」で大丈夫です）:",
+        "■ 独自ドメイン（なくても大丈夫です。「取得から相談したい」と書いてください。あなた名義・ドメイン会社への実費別で一緒に取得します）:",
         "",
       ].join("\n");
   return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -123,8 +123,35 @@ function PurchaseThanksBanner({ language }: { language: ServiceStartLanguage }) 
         style={bodyStyle}
       >
         {en
-          ? "A receipt is sent to the email address used at checkout. This page is your start guide: you can send your materials right away, or simply wait for my email — it arrives within 24 hours."
-          : "領収書は購入時のメールアドレスに届きます。このページがスタートガイドです。今すぐ素材を送っていただいても、24時間以内に届くご案内メールをお待ちいただいても、どちらでも大丈夫です。"}
+          ? "There is nothing you need to do immediately. A receipt is sent to the email address used at checkout, and I will send a separate guidance email within 24 hours. You may send your materials from this page now, or wait for that email — either is completely fine."
+          : "このあと、すぐに何かをしなくても大丈夫です。領収書は購入時のメールアドレスに届き、24時間以内に私からもご案内メールをお送りします。このページから今すぐ素材を送っても、メールを待ってからでも、どちらでも大丈夫です。"}
+      </p>
+    </section>
+  );
+}
+
+function DomainReassurance({ language }: { language: ServiceStartLanguage }) {
+  const en = language === "en";
+  return (
+    <section className="mt-12 md:mt-16 rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.025)] p-5 sm:p-7">
+      <p className="font-en uppercase mb-3" style={labelStyle}>
+        Your domain
+      </p>
+      <h2
+        className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.84)]`}
+        style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)", lineHeight: 1.55 }}
+      >
+        {en
+          ? "You do not need to own a domain yet."
+          : "独自ドメインを持っていなくても、大丈夫です。"}
+      </h2>
+      <p
+        className="mt-4 max-w-3xl text-[rgba(var(--foreground-rgb),0.56)]"
+        style={bodyStyle}
+      >
+        {en
+          ? "A domain is the address people use to open your site. If you already have one, I will connect it. If not, we will choose and register one together over screen share. It will be registered in your name, and you only pay the domain provider's actual fee separately. I will explain each step before anything is purchased."
+          : "独自ドメインとは、あなたのサイトを開くための専用の住所です。すでにお持ちなら、こちらでサイトにつなぎます。まだお持ちでなければ、画面を一緒に見ながら候補を選び、あなた名義で取得します。ドメイン会社へ支払う実費だけ別にかかりますが、購入前に内容と金額を確認しながら進めます。"}
       </p>
     </section>
   );
@@ -141,11 +168,11 @@ const deliverySteps = [
   },
   {
     title: "こちらで設置（3日以内）",
-    body: "素材が揃ってから3日以内に、公開場所の設定、独自ドメインの接続、プロフィールの初期設定まで整えます。ドメインをこれから取る場合は、画面共有で30分ほど、一緒に取得します（あなた名義）。",
+    body: "素材が揃ってから3日以内に、サイトの公開準備、独自ドメインの接続、プロフィールの初期設定まで、こちらで整えます。途中で確認が必要なことがあれば、勝手に決めずにご相談します。",
   },
   {
     title: "納品",
-    body: "サイトURL・管理画面URL・パスワードをお渡しします。公開された状態で届くので、あとは写真を入れるだけです。",
+    body: "サイトURL・管理画面URL・パスワードを、ひとつにまとめてお渡しします。すでに公開された状態なので、難しい設定は必要ありません。",
   },
 ] as const;
 
@@ -156,7 +183,7 @@ const afterHandoffSteps = [
   },
   {
     title: "「はじめに」で写真を1枚",
-    body: "最初に「はじめに」画面が開きます。案内にしたがって写真を1枚アップロードし、サイトに表示されるのを確かめてください。",
+    body: "最初に「はじめに」画面が開きます。案内に沿って写真を1枚追加し、トップ写真に選んだあと、実際のトップページに表示されるところまで確認できます。",
   },
   {
     title: "あとは自分のペースで",
@@ -171,11 +198,11 @@ const deliveryStepsEn = [
   },
   {
     title: "I set everything up (within three days)",
-    body: "Once your materials are ready, I prepare the hosting, connect your domain, and set up your profile within three days. If you do not have a domain yet, we register one together in about 30 minutes over screen share, in your name.",
+    body: "Once your materials are ready, I prepare the site for publication, connect your domain, and set up your profile within three days. If I need you to confirm anything, I will ask rather than deciding on your behalf.",
   },
   {
     title: "Handover",
-    body: "You receive the public site URL, admin URL, and password. The site arrives already published — from there, you only add photographs.",
+    body: "You receive the public site URL, admin URL, and password together in one clear message. The site is already published, so no technical setup is required.",
   },
 ] as const;
 
@@ -186,7 +213,7 @@ const afterHandoffStepsEn = [
   },
   {
     title: "Add one photograph from “Getting started”",
-    body: "The “Getting started” screen opens first. Follow it to upload one photograph and confirm it appears on your public site.",
+    body: "The “Getting started” screen opens first. Follow it to add one photograph, choose it as your lead image, and confirm it appears on the actual home page.",
   },
   {
     title: "Continue at your own pace",
@@ -296,8 +323,8 @@ function SupportSection({
         style={bodyStyle}
       >
         {en
-          ? "Technical settings are handled on my side, so you never need to touch them. When something looks wrong, email me what happened — a screenshot helps. Please hide passwords before sending one."
-          : "サーバーやドメインなどの技術的な設定はこちらで持つので、あなたが触る必要はありません。何かおかしいと感じたら、状況をそのままメールで送ってください。画面のスクリーンショットがあると確認が早いです（パスワードは映さないようご注意ください）。"}
+          ? "I handle the technical settings for you. If something does not look right, you do not need to diagnose it yourself — just email me what you were trying to do. A screenshot helps; please hide any passwords before sending one."
+          : "難しい設定はこちらで対応します。何かおかしいと感じても、ご自身で原因を調べなくて大丈夫です。「何をしようとしたか」をそのままメールで教えてください。画面のスクリーンショットがあると確認が早いです（パスワードは映さないようご注意ください）。"}
       </p>
       {contactEmail && (
         <div className="mt-6">
@@ -359,8 +386,8 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
             style={bodyStyle}
           >
             {en
-              ? "You receive the entrances you will actually use, without a long list of technical settings."
-              : "サーバーや環境変数の話は出しません。あなたが実際に使う入口だけをまとめて渡します。"}
+              ? "I will put the links and details you actually use into one clear message, with no long list of technical settings."
+              : "普段使うリンクと必要な情報だけを、迷わないようひとつにまとめてお渡しします。"}
           </p>
         </div>
         <div className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.025)] p-4 sm:p-5">
@@ -525,6 +552,8 @@ export default function ServiceStartPage({
           />
         </figure>
       </header>
+
+      <DomainReassurance language={language} />
 
       <div className="mt-12 grid gap-6 lg:grid-cols-2">
         <StepPanel

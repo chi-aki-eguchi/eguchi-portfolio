@@ -101,7 +101,7 @@ export default function ProfilePage({
           >
             {nameJa}
           </h2>
-          <p className="font-en text-sm tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.40)] mt-1 page-entrance page-entrance-delay-1">
+          <p className="font-en text-sm tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.55)] mt-1 page-entrance page-entrance-delay-1">
             {nameEn}
           </p>
 
@@ -142,7 +142,7 @@ export default function ProfilePage({
           {/* E5: Statement (作家ステートメント) — 空欄なら非表示 */}
           {statement && (
             <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-3">
+              <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.55)] mb-3">
                 Statement
               </h3>
               <div className="space-y-3">
@@ -169,7 +169,7 @@ export default function ProfilePage({
           {/* E5: Equipment (使用機材) — 空欄なら非表示 */}
           {gear.length > 0 && (
             <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-3">
+              <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.55)] mb-3">
                 Equipment
               </h3>
               <ul className="space-y-1.5">
@@ -198,7 +198,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileInstagram)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.55)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelInstagram ?? "Instagram"}
                 </a>
@@ -208,7 +208,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileTwitter)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.55)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelTwitter ?? "X"}
                 </a>
@@ -218,7 +218,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileNote)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.55)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelNote ?? "note"}
                 </a>
@@ -232,7 +232,7 @@ export default function ProfilePage({
           Hidden if disabled or fetch returned nothing. */}
       {noteOn && notePosts.length > 0 && (
         <div className="mt-20 md:mt-28 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
-          <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-8">
+          <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.55)] mb-8">
             Journal
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
@@ -261,7 +261,7 @@ export default function ProfilePage({
                 </div>
                 {/* Date */}
                 {post.date && (
-                  <p className="font-en text-[length:var(--text-note)] tracking-[0.10em] text-[rgba(var(--foreground-rgb),0.30)] mb-2">
+                  <p className="font-en text-[length:var(--text-note)] tracking-[0.10em] text-[rgba(var(--foreground-rgb),0.55)] mb-2">
                     {formatNoteDate(post.date)}
                   </p>
                 )}
@@ -279,7 +279,7 @@ export default function ProfilePage({
                 {/* Excerpt — first ~120 chars, 2-line clamp */}
                 {post.excerpt && (
                   <p
-                    className="line-clamp-2 text-[rgba(var(--foreground-rgb),0.38)]"
+                    className="line-clamp-2 text-[rgba(var(--foreground-rgb),0.55)]"
                     style={{
                       fontSize: "0.78rem",
                       lineHeight: "1.75",
@@ -308,7 +308,7 @@ export default function ProfilePage({
       {/* K1: Prints — quiet external store link. Hidden unless enabled + URL set. */}
       {printOn && (
         <div className="mt-16 md:mt-20 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
-          <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-4">
+          <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.55)] mb-4">
             Prints
           </h3>
           {data?.printDescription && (

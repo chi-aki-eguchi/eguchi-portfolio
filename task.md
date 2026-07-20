@@ -8977,3 +8977,15 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   3. 拡張方面は前々回提示のとおり§3 Kit実績づくり(お父様の声)が最有力
 - 重要な制約: push未実施(オーナー)。本番書き込みなし。DBスキーマ変更なし
   (既存fileHashカラムを再利用)。
+
+## Handoff 2026-07-21 (61) — T-11プロフィール文字コントラストAA対応
+
+- 完了したこと: 公開Profileページの補助文字10箇所（英字名、セクション見出し4、
+  SNSリンク3、Journal日付・抜粋）を既存本文と同じopacity 0.55へ統一。
+  背景rgb(18,18,18)・文字rgb(232,232,232)で実測5.26:1となりWCAG AAを満たす。
+- 回帰テスト: 対象文言が描画後に実際の0.55クラスを持つことを追加。
+- Layout.tsx:508はクレジットではなく任意Contact誘導リンク。本番は文言未設定で
+  非表示、footerOpacity=1のため変更不要と判断。
+- 検証: bun run check成功（511 pass / 0 fail、typecheck・lint・build成功）。
+  admin非接触のためsmoke未実施。
+- 現在の状態: commit / push未実施。変更はworking treeに保持。

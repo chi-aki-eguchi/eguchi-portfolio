@@ -217,6 +217,68 @@ describe("public pages render (populated API)", () => {
       globalThis.fetch = prevFetch;
     }
   });
+
+  test("profile secondary text keeps the WCAG AA opacity floor", async () => {
+    const previousSettings = canned["/api/settings"];
+    const previousNotePosts = canned["/api/note-posts"];
+    canned["/api/settings"] = {
+      profileName: "江口 秋",
+      profileNameEn: "Aki Eguchi",
+      profileBio: "Biography",
+      profileStatement: "Statement body",
+      profileGear: "Camera",
+      profileInstagram: "https://example.com/instagram",
+      profileTwitter: "https://example.com/x",
+      profileNote: "https://example.com/note",
+      noteEnabled: "on",
+      printEnabled: "on",
+      printStoreUrl: "https://example.com/prints",
+    };
+    canned["/api/note-posts"] = {
+      posts: [
+        {
+          link: "https://example.com/journal",
+          title: "Journal title",
+          excerpt: "Journal excerpt",
+          date: "2026-07-21T00:00:00.000Z",
+          thumbnail: "",
+        },
+      ],
+    };
+    try {
+      const ProfilePage = (await import("../pages/profile")).default;
+      const { host, cleanup } = await mount(createElement(ProfilePage));
+      await waitForText(host, "Journal excerpt");
+
+      const accessibleSecondaryText = Array.from(
+        host.querySelectorAll(".text-\\[rgba\\(var\\(--foreground-rgb\\)\\,0\\.55\\)\\]"),
+      );
+      const expectedText = [
+        "Aki Eguchi",
+        "Statement",
+        "Equipment",
+        "Instagram",
+        "X",
+        "note",
+        "Journal",
+        "2026.07.21",
+        "Journal excerpt",
+        "Prints",
+      ];
+      for (const text of expectedText) {
+        expect(
+          accessibleSecondaryText.some((element) =>
+            element.textContent?.includes(text),
+          ),
+        ).toBe(true);
+      }
+      expect(accessibleSecondaryText.length).toBeGreaterThanOrEqual(11);
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      canned["/api/note-posts"] = previousNotePosts;
+    }
+  });
 });
 
 describe("public pages render (empty state: 写真0枚・設定空)", () => {

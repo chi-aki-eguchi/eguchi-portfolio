@@ -13,8 +13,6 @@ export function StorageHealthLine({
   copy: {
     configured: string;
     missingSummary: string;
-    missingVariables: string;
-    missingFallback: string;
     missingAction: string;
   };
 }) {
@@ -32,8 +30,6 @@ export function StorageHealthLine({
         {copy.missingSummary}
       </p>
       <p className="text-[11px] leading-5 text-amber-800">
-        {copy.missingVariables}{" "}
-        {health.missingStorageVariables.join(", ") || copy.missingFallback}{" "}
         {copy.missingAction}
       </p>
     </div>
@@ -57,16 +53,15 @@ export function StorageAlertBanner({
   copy?: {
     title: string;
     close: string;
-    missing: (names: string) => string;
-    detail: (names: string) => string;
+    missing: string;
+    detail: string;
     handoff: string;
     retry: string;
   };
 }) {
   const notice = storageNotConfiguredNotice(missing);
-  const names = missing.join(", ");
   const title = copy?.title ?? notice.title;
-  const detail = copy?.detail(names) ?? notice.detail;
+  const detail = copy?.detail ?? notice.detail;
   const handoff = copy?.handoff ?? notice.handoff;
   return (
     <div
@@ -85,7 +80,7 @@ export function StorageAlertBanner({
       </div>
       {missing.length > 0 && (
         <p className="text-[12px] leading-5 text-amber-800">
-          {copy?.missing(names) ?? `不足している設定: ${names}`}
+          {copy?.missing ?? "写真の追加に必要な準備が完了していません。"}
         </p>
       )}
       <p className="text-[12px] leading-5 text-[var(--admin-muted)]">

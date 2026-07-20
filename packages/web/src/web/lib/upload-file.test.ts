@@ -150,23 +150,20 @@ describe("storageNotConfiguredNotice", () => {
   test("builds the dedicated beginner-friendly Japanese message", () => {
     const notice = storageNotConfiguredNotice(["S3_BUCKET"]);
     expect(notice.title).toBe("写真の保存先がまだ接続されていません。");
-    expect(notice.detail).toContain("S3_BUCKET");
-    expect(notice.detail).toContain("Railway の Variables");
-    expect(notice.detail).toContain("再デプロイ");
-    expect(notice.handoff).toContain(
-      "サイトを設定した人へこの画面を送ってください",
-    );
+    expect(notice.detail).toContain("設定担当者へご連絡");
+    expect(notice.handoff).toContain("スクリーンショット");
+    expect(notice.handoff).toContain("時刻");
   });
 
-  test("shows variable names only — never values", () => {
+  test("does not show internal setting names or values", () => {
     const notice = storageNotConfiguredNotice(["S3_SECRET_ACCESS_KEY"]);
     const text = `${notice.title}${notice.detail}${notice.handoff}`;
-    expect(text).toContain("S3_SECRET_ACCESS_KEY");
+    expect(text).not.toContain("S3_SECRET_ACCESS_KEY");
     expect(text).not.toContain("=");
   });
 
-  test("falls back to a generic hint when the list is empty", () => {
-    expect(storageNotConfiguredNotice([]).detail).toContain("S3_BUCKET など");
+  test("uses the same buyer-safe guidance when the list is empty", () => {
+    expect(storageNotConfiguredNotice([]).detail).toContain("設定担当者");
   });
 });
 
@@ -182,9 +179,9 @@ describe("uploadErrorMessageFromResponse", () => {
     );
     const message = await uploadErrorMessageFromResponse(res, "失敗しました");
     expect(message).toContain("写真の保存先がまだ接続されていません。");
-    expect(message).toContain("S3_BUCKET");
-    expect(message).toContain("再デプロイ");
-    expect(message).toContain("サイトを設定した人へこの画面を送ってください");
+    expect(message).toContain("設定担当者へご連絡");
+    expect(message).toContain("スクリーンショット");
+    expect(message).not.toContain("S3_BUCKET");
   });
 
   test("keeps the server's error string for ordinary failures", async () => {

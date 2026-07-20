@@ -1660,7 +1660,9 @@ describe("shared components", () => {
       );
       await waitForText(host, "公開までにやること");
 
-      setupOpenButton(host, "サイトの名前を入れる").click();
+      // 2026-07-20仕様変更: 名前は最短の必須導線から「あとで整える」へ
+      // 移したが、Settingsへの移動ボタンは引き続き機能する。
+      setupOpenButton(host, "サイトの名前と説明").click();
       await waitForText(host, "Live Preview");
 
       buttonWithText(host, "写真").click();

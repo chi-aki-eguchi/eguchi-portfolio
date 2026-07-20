@@ -1,6 +1,6 @@
 /**
  * Render test: 保存先未設定の専用UI(はじめにの状態表示+アップロード時バナー)
- * が、実際のDOMで初心者向け日本語文面・不足変数名(値なし)・再デプロイ案内を
+ * が、実際のDOMで初心者向けの連絡方法を表示し、内部の設定用語を
  * 表示することを検証する(Codexレビュー P1-1/P1-2/P1-3 のフォローアップ)。
  */
 import { test, expect } from "bun:test";
@@ -61,7 +61,7 @@ test("StorageHealthLine — 設定入力済みでも「接続済み」と言い�
   expect(text).not.toContain("接続済み");
 });
 
-test("StorageHealthLine — 不足時は変数名と対処を表示する(値は出さない)", () => {
+test("StorageHealthLine — 不足時は内部設定名を出さず連絡方法を表示する", () => {
   const { text } = renderToText(
     createElement(StorageHealthLine, {
       health: {
@@ -72,9 +72,10 @@ test("StorageHealthLine — 不足時は変数名と対処を表示する(値は
     }),
   );
   expect(text).toContain("設定が不足しています");
-  expect(text).toContain("S3_BUCKET, S3_ENDPOINT");
-  expect(text).toContain("再デプロイ");
-  expect(text).toContain("サイトを設定した人へこの画面を送ってください");
+  expect(text).toContain("設定担当者へご連絡");
+  expect(text).toContain("スクリーンショット");
+  expect(text).not.toContain("S3_BUCKET");
+  expect(text).not.toContain("Railway");
 });
 
 test("StorageHealthLine — health未取得なら何も出さない", () => {
@@ -95,8 +96,9 @@ test("StorageHealthLine — 英語辞書で接続状態と対処を表示する"
     }),
   );
   expect(text).toContain("Photo storage: Settings are missing");
-  expect(text).toContain("In Railway Variables, check S3_BUCKET");
-  expect(text).toContain("redeploy");
+  expect(text).toContain("Contact the person who set up your site");
+  expect(text).toContain("screenshot");
+  expect(text).not.toContain("S3_BUCKET");
 });
 
 test("StorageAlertBanner — 専用日本語文面+明背景で読める色の不足変数名", () => {
@@ -109,9 +111,9 @@ test("StorageAlertBanner — 専用日本語文面+明背景で読める色の�
     }),
   );
   expect(text).toContain("写真の保存先がまだ接続されていません。");
-  expect(text).toContain("不足している設定: S3_BUCKET");
-  expect(text).toContain("再デプロイ");
-  expect(text).toContain("設定を直したあとに再試行する");
+  expect(text).toContain("写真の追加に必要な準備");
+  expect(text).toContain("設定担当者へご連絡");
+  expect(text).not.toContain("S3_BUCKET");
   // P1-3: 明るいadmin背景で読めない text-amber-300 を使わない
   expect(html).not.toContain("text-amber-300");
   expect(html).toContain("text-amber-800");
@@ -127,7 +129,7 @@ test("StorageAlertBanner — 再試行できない時はボタンを出さない
     }),
   );
   expect(text).not.toContain("再試行");
-  expect(text).toContain("S3_BUCKET など");
+  expect(text).toContain("設定担当者へご連絡");
 });
 
 test("StorageAlertBanner — Phase 2bの英語辞書で不足設定と再試行を表示する", () => {
@@ -141,9 +143,9 @@ test("StorageAlertBanner — Phase 2bの英語辞書で不足設定と再試行�
     }),
   );
   expect(text).toContain("Photo storage is not connected yet.");
-  expect(text).toContain("Missing settings: S3_BUCKET");
-  expect(text).toContain("Railway Variables");
-  expect(text).toContain("redeployed");
-  expect(text).toContain("Retry after correcting the settings");
+  expect(text).toContain("preparation required to add photos");
+  expect(text).toContain("contact the person who set up your site");
+  expect(text).toContain("Retry after your setup contact confirms it is ready");
+  expect(text).not.toContain("S3_BUCKET");
   expect(html).toContain('aria-label="Close"');
 });

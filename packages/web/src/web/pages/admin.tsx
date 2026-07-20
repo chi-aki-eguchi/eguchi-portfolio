@@ -869,6 +869,7 @@ type ChecklistItem = {
   done: boolean;
   tab?: Tab;
   href?: string;
+  onOpen?: () => void;
 };
 
 // exportはrenderテスト用(表示だけでPOSTしない/完了ボタンでのみ保存する検証)
@@ -926,6 +927,12 @@ export function SetupTab({
     "local",
   );
   const [forceOpen, setForceOpen] = useState(false);
+  const [homePageConfirmed, setHomePageConfirmed] =
+    usePersistentState<boolean>(
+      "admin:setup-home-page-confirmed",
+      false,
+      "local",
+    );
 
   // setupCompleted は settings に保存する(=デバイス・ブラウザをまたいで有効)。
   // これが true になるまで、初回ログイン時は毎回「はじめに」へ誘導される
@@ -950,20 +957,10 @@ export function SetupTab({
     },
   });
 
-  // Guided path for a brand-new site: name → profile → first photo → hero →
-  // confirm it is actually live. 連絡先 and other niceties go to the "できれば
-  // 確認" section below, so the main path stays a short 5 steps.
+  // A first-time buyer only needs one successful experience here: add a photo,
+  // place it on the home page, then see it there. Identity and presentation
+  // fields are useful, but must not stand between the buyer and that first win.
   const checklist: ChecklistItem[] = [
-    {
-      ...t.setup.checklist.siteName,
-      done: isFilled(settings.siteName) && isFilled(settings.siteDescription),
-      tab: "settings",
-    },
-    {
-      ...t.setup.checklist.profile,
-      done: isFilled(settings.profileName) && isFilled(settings.profileBio),
-      tab: "profile",
-    },
     {
       ...t.setup.checklist.firstPhoto,
       done: activePhotos.length > 0,
@@ -976,12 +973,26 @@ export function SetupTab({
     },
     {
       ...t.setup.checklist.liveSite,
-      done: publishedPhotos.length > 0 && heroCount > 0,
+      done:
+        publishedPhotos.length > 0 &&
+        heroCount > 0 &&
+        (demoMode || homePageConfirmed),
       href: "/",
+      onOpen: () => setHomePageConfirmed(true),
     },
   ];
 
   const recommended: ChecklistItem[] = [
+    {
+      ...t.setup.recommended.siteName,
+      done: isFilled(settings.siteName) && isFilled(settings.siteDescription),
+      tab: "settings",
+    },
+    {
+      ...t.setup.recommended.profile,
+      done: isFilled(settings.profileName) && isFilled(settings.profileBio),
+      tab: "profile",
+    },
     {
       ...t.setup.recommended.contact,
       done: isFilled(settings.contactEmail) || isFilled(settings.formspreeUrl),
@@ -1006,13 +1017,17 @@ export function SetupTab({
 
   const doneCount = checklist.filter((item) => item.done).length;
   const requiredDone = doneCount === checklist.length;
+  const nextItem = checklist.find((item) => !item.done);
   const loading = settingsLoading || photosLoading;
   // Once everything is done (or the owner pressed 閉じる), shrink to a one-line bar
   // so a finished site's admin stays uncluttered. "もう一度見る" re-expands it.
   // 体験版はサンプル一式が入力済みで常に「完了」になるため、折りたたまず
   // 「購入後はこう進む」の見本として全文を見せる(SetupTab demoMode)。
   const collapsed =
-    !demoMode && !loading && (requiredDone || dismissed) && !forceOpen;
+    !demoMode &&
+    !loading &&
+    (settings.setupCompleted === "true" || dismissed) &&
+    !forceOpen;
 
   // 読込中は「未完了」マークだらけのチェックリストを一瞬見せない
   if (loading) {
@@ -1056,6 +1071,11 @@ export function SetupTab({
               {t.setup.reopen}
             </button>
           </div>
+          {!requiredDone && nextItem && (
+            <p className="text-[12px] leading-6 text-[color:var(--admin-muted)] px-1">
+              {t.setup.resumeSummary(doneCount, checklist.length, nextItem.title)}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -1090,13 +1110,28 @@ export function SetupTab({
               {!demoMode && (
                 <>
                   <button
-                    onClick={() => finishSetup.mutate()}
+                    onClick={() => {
+                      if (!requiredDone) {
+                        if (nextItem?.tab) onOpenTab(nextItem.tab);
+                        else if (nextItem?.href) {
+                          // 項目行の「開く」と同じ完了フラグを立てる。ここを
+                          // 忘れると、メインボタンだけ使う購入者が永遠に
+                          // 「トップページを確認」を完了できない
+                          nextItem.onOpen?.();
+                          window.open(nextItem.href, "_blank", "noopener");
+                        }
+                        return;
+                      }
+                      finishSetup.mutate();
+                    }}
                     disabled={finishSetup.isPending}
                     className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-50 flex-shrink-0"
                   >
                     {finishSetup.isPending
                       ? t.common.saving
-                      : t.setup.finish}
+                      : requiredDone
+                        ? t.setup.finish
+                        : t.setup.nextAction(nextItem?.title ?? "")}
                   </button>
                   <button
                     onClick={() => {
@@ -1112,6 +1147,14 @@ export function SetupTab({
             </>
           }
         />
+
+        {!requiredDone && nextItem && (
+          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm px-4 py-3">
+            <p className="text-[12px] leading-6 text-[color:var(--admin-ink)]">
+              {t.setup.resumeSummary(doneCount, checklist.length, nextItem.title)}
+            </p>
+          </div>
+        )}
 
         <section className="grid gap-3 md:grid-cols-2">
           {checklist.map((item) => (
@@ -1225,6 +1268,7 @@ function SetupChecklistRow({
           {item.href ? (
             <a
               href={item.href}
+              onClick={item.onOpen}
               target="_blank"
               rel="noopener"
               className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"

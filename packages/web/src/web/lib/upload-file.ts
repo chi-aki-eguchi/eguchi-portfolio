@@ -118,17 +118,19 @@ export async function uploadErrorMessageFromResponse(
   return fallback;
 }
 
-// 初心者(非エンジニア)向けの専用メッセージ。再アップロードの連打ではなく
-// 「設定を直して再デプロイする」必要があると分かる文面にする。
+// 購入者には内部の設定名や公開作業を見せず、連絡先と
+// 送る情報だけを案内する。missing は診断用に受け取るが表示しない。
 export function storageNotConfiguredNotice(missing: string[]): {
   title: string;
   detail: string;
   handoff: string;
 } {
-  const names = missing.length > 0 ? missing.join(", ") : "S3_BUCKET など";
+  void missing;
   return {
     title: "写真の保存先がまだ接続されていません。",
-    detail: `Railway の Variables で ${names} を確認してください。設定を直して再デプロイされるまで、再アップロードしても失敗します。`,
-    handoff: "分からない場合は、サイトを設定した人へこの画面を送ってください。",
+    detail:
+      "この状態では写真を追加できません。同じ操作を繰り返さず、設定担当者へご連絡ください。",
+    handoff:
+      "連絡時は、この画面のスクリーンショットと、写真を追加しようとした時刻をお送りください。",
   };
 }

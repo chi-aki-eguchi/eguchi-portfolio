@@ -27,6 +27,8 @@ Object.assign(globalThis, {
 // fetch を丸ごとモックし、全リクエストを記録する。POST は成功を返すが
 // どこにも書き込まれない(production相当DBへの書き込みゼロ)。
 const requests: { method: string; url: string; body: string }[] = [];
+let mockPhotos: unknown[] = [];
+let mockHeroPhotos: unknown[] = [];
 globalThis.fetch = (async (
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -49,11 +51,12 @@ globalThis.fetch = (async (
     });
   if (url.includes("/api/admin/settings") && method === "POST")
     return json({ ok: true });
-  if (url.includes("/api/admin/hero-photos")) return json({ heroPhotos: [] });
+  if (url.includes("/api/admin/hero-photos"))
+    return json({ heroPhotos: mockHeroPhotos });
   if (url.includes("/api/admin/setup-health"))
     return json({ storageConfigured: true, missingStorageVariables: [] });
   if (url.includes("/api/settings")) return json({});
-  if (url.includes("/api/photos")) return json({ photos: [] });
+  if (url.includes("/api/photos")) return json({ photos: mockPhotos });
   if (url.includes("/api/categories")) return json({ categories: [] });
   return json({});
 }) as typeof fetch;
@@ -72,9 +75,11 @@ const flush = async () => {
   });
 };
 
-test("SetupTab — 表示しただけではPOSTを1回もしない / 完了ボタンで1回だけPOSTしライブラリへ", async () => {
+test("SetupTab — 未完了時は完了保存せず、次の項目へ案内する", async () => {
   dom.window.localStorage.clear();
   requests.length = 0;
+  mockPhotos = [];
+  mockHeroPhotos = [];
   const qc = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -100,16 +105,16 @@ test("SetupTab — 表示しただけではPOSTを1回もしない / 完了ボ�
   // クエリ(GET)が全部返って画面が確定するまで待つ
   for (let i = 0; i < 10; i++) {
     await flush();
-    if (container.textContent?.includes("セットアップ完了")) break;
+    if (container.textContent?.includes("次へ：写真を1枚追加する")) break;
   }
 
   // (2) 画面を開いただけでは書き込みゼロ(POSTに限らず非GETゼロ)
   expect(requests.length).toBeGreaterThan(0);
   expect(requests.filter((r) => r.method !== "GET")).toEqual([]);
 
-  // (3) 明示操作: 「セットアップ完了 → ライブラリへ」を押した時だけ保存
+  // 未完了時の主ボタンは完了保存ではなく、最初の作業へ移動する。
   const button = Array.from(container.querySelectorAll("button")).find((b) =>
-    b.textContent?.includes("セットアップ完了"),
+    b.textContent?.includes("次へ：写真を1枚追加する"),
   );
   expect(button).toBeDefined();
   await act(async () => {
@@ -117,11 +122,7 @@ test("SetupTab — 表示しただけではPOSTを1回もしない / 完了ボ�
   });
   await flush();
 
-  const posts = requests.filter((r) => r.method === "POST");
-  expect(posts.length).toBe(1);
-  expect(posts[0].url).toContain("/api/admin/settings");
-  expect(JSON.parse(posts[0].body)).toEqual({ setupCompleted: "true" });
-  // 成功後にライブラリへ遷移する
+  expect(requests.filter((r) => r.method === "POST")).toEqual([]);
   expect(openedTabs).toEqual(["gallery"]);
 
   await act(async () => {
@@ -130,10 +131,59 @@ test("SetupTab — 表示しただけではPOSTを1回もしない / 完了ボ�
   container.remove();
 });
 
+test("SetupTab — 3項目完了後だけsetupCompletedを保存する", async () => {
+  dom.window.localStorage.clear();
+  dom.window.localStorage.setItem(
+    "admin:setup-home-page-confirmed",
+    JSON.stringify(true),
+  );
+  requests.length = 0;
+  mockPhotos = [{ id: 1, deletedAt: null, isPublished: true }];
+  mockHeroPhotos = [{ id: 1, photoId: 1 }];
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  const openedTabs: string[] = [];
+  const container = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(SetupTab, {
+          onOpenTab: (tab: string) => openedTabs.push(tab),
+        }),
+      ),
+    );
+  });
+  for (let i = 0; i < 10; i++) {
+    await flush();
+    if (container.textContent?.includes("セットアップ完了")) break;
+  }
+  const button = Array.from(container.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("セットアップ完了"),
+  );
+  expect(button).toBeDefined();
+  await act(async () => button!.click());
+  await flush();
+  const posts = requests.filter((r) => r.method === "POST");
+  expect(posts).toHaveLength(1);
+  expect(JSON.parse(posts[0].body)).toEqual({ setupCompleted: "true" });
+  expect(openedTabs).toEqual(["gallery"]);
+  await act(async () => root.unmount());
+  container.remove();
+  mockPhotos = [];
+  mockHeroPhotos = [];
+});
+
 test("SetupTab — ENではPhase 2aチェックリストを英語表示し、表示だけでは書き込まない", async () => {
   dom.window.localStorage.clear();
   dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
   requests.length = 0;
+  mockPhotos = [];
+  mockHeroPhotos = [];
   const qc = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -159,15 +209,14 @@ test("SetupTab — ENではPhase 2aチェックリストを英語表示し、表
   });
   for (let i = 0; i < 10; i++) {
     await flush();
-    if (container.textContent?.includes("Finish setup")) break;
+    if (container.textContent?.includes("Next: Upload one photo")) break;
   }
 
   expect(container.textContent).toContain("Before you publish");
-  expect(container.textContent).toContain("Add your site name");
   expect(container.textContent).toContain("Upload one photo");
   expect(container.textContent).toContain("Choose a hero photo");
-  expect(container.textContent).toContain("Check the live site");
-  expect(container.textContent).toContain("Finish setup → Library");
+  expect(container.textContent).toContain("Check the home page");
+  expect(container.textContent).toContain("Next: Upload one photo");
   expect(requests.filter((request) => request.method !== "GET")).toEqual([]);
 
   await act(async () => root.unmount());

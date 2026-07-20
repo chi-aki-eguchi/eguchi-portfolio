@@ -299,12 +299,12 @@ const ADMIN_PHASE_2B_JA = {
     storageAlert: {
       title: "写真の保存先がまだ接続されていません。",
       close: "閉じる",
-      missing: (names: string) => `不足している設定: ${names}`,
-      detail: (names: string) =>
-        `Railway の Variables で ${names || "S3_BUCKET など"} を確認してください。設定を直して再デプロイされるまで、再アップロードしても失敗します。`,
+      missing: "写真の追加に必要な準備が完了していません。",
+      detail:
+        "この状態では写真を追加できません。同じ操作を繰り返さず、設定担当者へご連絡ください。",
       handoff:
-        "分からない場合は、サイトを設定した人へこの画面を送ってください。",
-      retry: "設定を直したあとに再試行する",
+        "連絡時は、この画面のスクリーンショットと、写真を追加しようとした時刻をお送りください。",
+      retry: "設定担当者から完了の連絡が来たら再試行する",
     },
     purgeResult: {
       progress: (operation: string, done: number, total: number) =>
@@ -1660,12 +1660,12 @@ const ADMIN_PHASE_2B_EN = {
     storageAlert: {
       title: "Photo storage is not connected yet.",
       close: "Close",
-      missing: (names: string) => `Missing settings: ${names}`,
-      detail: (names: string) =>
-        `Check ${names || "S3_BUCKET and related settings"} in Railway Variables. Uploads will continue to fail until the settings are corrected and the site is redeployed.`,
+      missing: "The preparation required to add photos is not complete.",
+      detail:
+        "Photos cannot be added yet. Please do not repeat the same action; contact the person who set up your site.",
       handoff:
-        "If you are unsure, send this screen to the person who set up the site.",
-      retry: "Retry after correcting the settings",
+        "Send them a screenshot of this message and the time when you tried to add the photo.",
+      retry: "Retry after your setup contact confirms it is ready",
     },
     purgeResult: {
       progress: (operation: string, done: number, total: number) =>
@@ -2836,6 +2836,8 @@ export type AdminMessages = {
     description: string;
     checking: string;
     progress: (done: number, total: number) => string;
+    resumeSummary: (done: number, total: number, next: string) => string;
+    nextAction: (next: string) => string;
     finish: string;
     later: string;
     recommendedTitle: string;
@@ -2847,6 +2849,8 @@ export type AdminMessages = {
       liveSite: ChecklistCopy;
     };
     recommended: {
+      siteName: ChecklistCopy;
+      profile: ChecklistCopy;
       contact: ChecklistCopy;
       publicUrl: ChecklistCopy;
       categories: ChecklistCopy;
@@ -2869,8 +2873,6 @@ export type AdminMessages = {
     storageHealth: {
       configured: string;
       missingSummary: string;
-      missingVariables: string;
-      missingFallback: string;
       missingAction: string;
     };
   };
@@ -2987,14 +2989,17 @@ export const ADMIN_DICTIONARY = {
       reopen: "もう一度見る",
       title: "公開までにやること",
       description:
-        "むずかしい設定は最初だけです。見る人に公開する前に、上から順に5つを確認します。写真家本人は、基本的にこの管理画面を埋めれば大丈夫です。",
+        "まずは写真を1枚追加し、トップページに表示されることを確かめましょう。この3つだけ終えれば、最初の準備は完了です。名前やプロフィールは、あとからゆっくり整えられます。",
       checking: "確認中...",
       demoIntro:
         "これは、購入後にご自身のサイトを公開まで進める手順表の見本です。体験版ではサンプル一式が入っているためすべて完了になっていますが、実際は空の状態から、この順に埋めていくだけで公開できます。",
       progress: (done, total) => `${done} / ${total} 完了`,
+      resumeSummary: (done, total, next) =>
+        `${done} / ${total} まで進んでいます。次は「${next}」です。`,
+      nextAction: (next) => `次へ：${next}`,
       finish: "セットアップ完了 → ライブラリへ",
       later: "あとで",
-      recommendedTitle: "公開前にできれば確認",
+      recommendedTitle: "あとでゆっくり整える",
       checklist: {
         siteName: {
           title: "サイトの名前を入れる",
@@ -3005,19 +3010,27 @@ export const ADMIN_DICTIONARY = {
           body: "名前、自己紹介、プロフィール写真。まずここが入るとサイトらしくなります。",
         },
         firstPhoto: {
-          title: "写真を1枚あげる",
-          body: "最初の写真をアップロードします。写真の保管場所が正しくつながっている確認にもなります。",
+          title: "写真を1枚追加する",
+          body: "Libraryを開き、まずはお気に入りの写真を1枚だけ追加します。うまくいかない時は、表示される案内を設定担当者に送れば大丈夫です。",
         },
         hero: {
           title: "トップ写真を選ぶ",
           body: "最初に見せたい写真を選びます。サイトの第一印象になります。",
         },
         liveSite: {
-          title: "公開を確認する",
-          body: "「開く」で実際のサイトを見て、トップに写真が出ているか確認します。ここまで来れば公開できています。",
+          title: "トップページで確認する",
+          body: "「開く」を押し、選んだ写真がトップページに表示されるか確かめます。写真が見えたら、最初の準備は完了です。",
         },
       },
       recommended: {
+        siteName: {
+          title: "サイトの名前と説明",
+          body: "表に出る名前と短い説明文です。写真の表示を確認したあとで整えても大丈夫です。",
+        },
+        profile: {
+          title: "プロフィール",
+          body: "名前と自己紹介を入れます。最初から完璧に書かず、あとで書き直せます。",
+        },
         contact: {
           title: "連絡先",
           body: "メールか問い合わせフォーム。撮影依頼を受けたい場合は入れておきます。",
@@ -3069,10 +3082,8 @@ export const ADMIN_DICTIONARY = {
           "写真の保存先: 必要な設定は入力済み（実際につながるかは最初のアップロードで確認されます）",
         missingSummary:
           "写真の保存先: 設定が不足しています — このままでは写真をアップロードできません。",
-        missingVariables: "Railway の Variables で",
-        missingFallback: "S3_BUCKET など",
         missingAction:
-          "を確認し、設定を直して再デプロイしてください。分からない場合は、サイトを設定した人へこの画面を送ってください。",
+          "設定担当者へご連絡ください。その際は、この画面のスクリーンショットと、写真を追加しようとした時刻をお送りください。",
       },
     },
     phase2b: ADMIN_PHASE_2B_JA,
@@ -3185,14 +3196,17 @@ export const ADMIN_DICTIONARY = {
       reopen: "View again",
       title: "Before you publish",
       description:
-        "The initial setup is the only detailed part. Check these five items in order before sharing the site. For most photographers, completing this admin panel is enough.",
+        "Start by adding one photo and confirming that it appears on the home page. Once these three steps are done, the initial setup is complete. You can take your time with your name and profile later.",
       checking: "Checking...",
       demoIntro:
         "This is a preview of the checklist that guides you from a fresh install to a published site. In this demo everything is marked complete because sample content is preloaded — on your own site, you simply work through these steps from the top.",
       progress: (done, total) => `${done} / ${total} complete`,
+      resumeSummary: (done, total, next) =>
+        `You have completed ${done} of ${total}. Next: ${next}.`,
+      nextAction: (next) => `Next: ${next}`,
       finish: "Finish setup → Library",
       later: "Later",
-      recommendedTitle: "Recommended before publishing",
+      recommendedTitle: "Take your time with these later",
       checklist: {
         siteName: {
           title: "Add your site name",
@@ -3204,18 +3218,26 @@ export const ADMIN_DICTIONARY = {
         },
         firstPhoto: {
           title: "Upload one photo",
-          body: "Upload your first photo. This also checks that photo storage is connected correctly.",
+          body: "Open Library and add just one favourite photo to begin. If it does not work, send the message shown on screen to the person who set up your site.",
         },
         hero: {
           title: "Choose a hero photo",
           body: "Choose the first photo visitors see. It sets the site’s first impression.",
         },
         liveSite: {
-          title: "Check the live site",
-          body: "Select “Open” and confirm that a photo appears on the home page. Once it does, the site is ready to publish.",
+          title: "Check the home page",
+          body: "Select “Open” and confirm that your chosen photo appears on the home page. Once you can see it, the initial setup is complete.",
         },
       },
       recommended: {
+        siteName: {
+          title: "Site name and description",
+          body: "Add the public name and a short description. It is fine to do this after you have confirmed that your photo appears.",
+        },
+        profile: {
+          title: "Profile",
+          body: "Add your name and biography. It does not need to be perfect now; you can revise it at any time.",
+        },
         contact: {
           title: "Contact",
           body: "Add an email address or contact form if you want to receive photography enquiries.",
@@ -3267,10 +3289,8 @@ export const ADMIN_DICTIONARY = {
           "Photo storage: Required settings are present. The first upload confirms the connection.",
         missingSummary:
           "Photo storage: Settings are missing — photos cannot be uploaded yet.",
-        missingVariables: "In Railway Variables, check",
-        missingFallback: "S3_BUCKET and related settings",
         missingAction:
-          "then correct the settings and redeploy. If you are unsure, send this screen to the person who set up the site.",
+          "Contact the person who set up your site. Send them a screenshot of this message and the time when you tried to add the photo.",
       },
     },
     phase2b: ADMIN_PHASE_2B_EN,

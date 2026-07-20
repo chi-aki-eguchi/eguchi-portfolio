@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { isServiceOwnerSite, resolveServiceVisibility } from "../../shared/service-visibility";
 import { ADMIN_DEMO_WRITE_EVENT, installAdminDemoFetch } from "../lib/admin-demo-fetch";
+import { api } from "../lib/api";
 import AdminPage from "./admin";
 import {
   AdminLanguageProvider,
@@ -36,7 +37,8 @@ function AdminDemoContent() {
       setSavedNotice(true);
       window.setTimeout(() => setSavedNotice(false), 2400);
     };
-    void fetch("/api/settings")
+    void api.settings
+      .$get()
       .then((res) => res.json() as Promise<Record<string, string>>)
       .then((settings) => {
         if (cancelled) return;
@@ -54,7 +56,13 @@ function AdminDemoContent() {
     return () => {
       cancelled = true;
       window.removeEventListener(ADMIN_DEMO_WRITE_EVENT, onWrite);
-      restore?.();
+      if (restore) {
+        restore();
+        // デモ中に共有Query cacheへ入った偽のsettings/カテゴリ等を破棄する。
+        // fetchを戻すだけではstaleTime内(設定60s・一覧5分)の通常ページが
+        // デモ内容を表示し続ける(Codexデバッグ 2026-07-20 P2)
+        queryClient.removeQueries();
+      }
     };
   }, [demoSeed, ownerSite, queryClient]);
 

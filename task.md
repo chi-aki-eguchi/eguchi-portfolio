@@ -8816,3 +8816,31 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   Railwayテンプレートが公開マーケットプレイス非掲載の確認) → 反応を見てSNS告知。
 - 重要な制約: push未実施(オーナー)。本番書き込みなし。実装=Claude/レビュー=Codex
   (役割交代する場合は毎回チャットでオーナーconfirm)。
+
+## Handoff 2026-07-20 (54) — 全面監査 + Codexデバッグ5件の修正(APPROVED)
+
+- 完了したこと:
+  1. Handoff(53)の宿題消化: オーナーpush済み・本番反映を実測確認
+     (/portfolio-kit 日英・/start 日英とも200で¥30,000単一プラン表示、
+     EN文入力済み、OG画像の日本語描画OK、templateCreditUrl更新済み)。
+     残るオーナー作業はStripe側3点とSNS告知のみ。
+  2. 三方向監査(Haiku低コスト分担): セキュリティ=HIGH/MEDIUMなし /
+     パフォーマンス=指摘0 / §0規約=素fetch 1件のみ(修正済。FormData 2件は必要悪で維持)。
+     本番実ブラウザ確認: コンソールエラー0・全リクエスト200。
+  3. Codexデバッグ(exec read-only)でP1×3+P2×2検出 → 全件裏取りのうえ修正:
+     - service-config: migration誤検知(金額のみ→¥10,000+名称署名のAND化)
+     - service-config: points要素の型チェック漏れ(壊れたJSONで販売ページ全落ち防止)
+     - api/index.ts: 画像in-flight共有abort(最初の閲覧者の中断が後続を巻き込み499
+       →waiter refcount化+決着時abort。実行中sharpの中断とtimeout後二重変換抑止は
+       理由付きで見送り、Codex承認済み)
+     - admin-demo: 終了時にqueryClient.removeQueries()(デモ偽データの残留防止)
+     - /admin/demo をSPA known pathsへ(HTTP 404→200)
+- 検証: check 488 pass / 0 fail、smoke 35 passed×2回、Codexレビュー2周目APPROVED。
+  Codex呼び出し3回(デバッグ1+レビュー2)で上限どおり。
+- 現在の状態: 上記を本コミットに含めて tree clean。push待ち1コミット。
+- 次に行うこと: オーナーpush → 本番で /admin/demo がHTTP 200を確認
+  (`curl -s -o /dev/null -w '%{http_code}' https://akieguchi.com/admin/demo`)。
+  Stripe側3点(旧¥10,000リンクのアーカイブ・完了画面新文面・Railwayテンプレート
+  非掲載確認)とSNS告知は(53)から変更なし。
+- 重要な制約: push未実施(オーナー)。本番書き込みなし。DBスキーマ変更なし。
+  決定ログ: docs/agent-logs/2026-07-20.md(FormData素fetchの規約例外注記は要オーナー判断)。

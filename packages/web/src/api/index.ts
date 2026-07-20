@@ -88,10 +88,12 @@ import {
 const RESIZE_CACHE_BYTES = 128 * 1024 * 1024; // resized thumbnails
 const resizeCache = new Map<string, { buf: Buffer; type: string }>();
 let resizeBytes = 0;
-const resizeInFlight = new Map<
-  string,
-  Promise<{ buf: Buffer; type: string }>
->();
+type InFlightVariant = {
+  promise: Promise<{ buf: Buffer; type: string }>;
+  controller: AbortController;
+  waiters: number;
+};
+const resizeInFlight = new Map<string, InFlightVariant>();
 const MAX_ACTIVE_IMAGE_TRANSFORMS = Math.min(
   Math.max(
     parseInt(process.env.IMAGE_TRANSFORM_CONCURRENCY ?? "1", 10) || 1,
@@ -172,6 +174,25 @@ async function waitForAbort<T>(
     ]);
   } finally {
     if (onAbort) signal.removeEventListener("abort", onAbort);
+  }
+}
+
+// 共有中の変換を1リクエストとして待つ。中断は「全wait者が去ったとき」だけ
+// 共有側へ伝える — 最初の閲覧者のabort信号を共有Promiseへ直結すると、同じ
+// 画像を待つ後続リクエストまで巻き込んで499になる(Codexデバッグ 2026-07-20 P1)。
+async function joinInFlightVariant(
+  entry: InFlightVariant,
+  signal: AbortSignal,
+): Promise<{ buf: Buffer; type: string }> {
+  entry.waiters += 1;
+  try {
+    return await waitForAbort(entry.promise, signal);
+  } catch (e) {
+    if (signal.aborted) {
+      entry.waiters -= 1;
+      if (entry.waiters <= 0) entry.controller.abort();
+    }
+    throw e;
   }
 }
 
@@ -775,7 +796,7 @@ const app = new Hono()
     try {
       const pending = resizeInFlight.get(cacheKey);
       if (pending) {
-        const waited = await waitForAbort(pending, requestSignal);
+        const waited = await joinInFlightVariant(pending, requestSignal);
         return imageResponse(waited.buf, waited.type, {
           ETag: etag,
           ...(!fmtParam ? { Vary: "Accept" } : {}),
@@ -783,6 +804,7 @@ const app = new Hono()
         });
       }
 
+      const controller = new AbortController();
       const created = (async () => {
         const original = await getOriginal(decodedKey);
 
@@ -792,7 +814,7 @@ const app = new Hono()
           return { buf: original.buf, type: original.type };
         }
 
-        const out = await withImageTransformLimit(requestSignal, async () => {
+        const out = await withImageTransformLimit(controller.signal, async () => {
           let base = sharp(original.buf).rotate();
           if (rotationDeg !== 0) base = base.rotate(rotationDeg);
           if (width || height) {
@@ -834,17 +856,31 @@ const app = new Hono()
         IMAGE_VARIANT_TIMEOUT_MS,
         `image variant ${cacheKey}`,
       );
-      resizeInFlight.set(cacheKey, timedCreated);
-      try {
-        const result = await waitForAbort(timedCreated, requestSignal);
-        return imageResponse(result.buf, result.type, {
-          ETag: etag,
-          ...(!fmtParam ? { Vary: "Accept" } : {}),
-          "X-Cache": "MISS",
+      const inFlight: InFlightVariant = {
+        promise: timedCreated,
+        controller,
+        waiters: 0,
+      };
+      resizeInFlight.set(cacheKey, inFlight);
+      // 掃除は共有Promiseの決着に紐づける。最初のリクエストの応答完了で消すと、
+      // 変換継続中にエントリが消えて後続が同じ変換を二重に始めてしまう。
+      // 決着時は必ずabortし、timeout・失敗後も変換枠の待ち行列に残った処理を
+      // 打ち切る(Codexレビュー 2026-07-20 P1)。実行中のsharpは中断APIが無く
+      // 従来どおり完走してcacheに入る。成功後のabortは全listener解除済みのno-op
+      void timedCreated
+        .catch(() => {})
+        .finally(() => {
+          controller.abort();
+          if (resizeInFlight.get(cacheKey) === inFlight) {
+            resizeInFlight.delete(cacheKey);
+          }
         });
-      } finally {
-        resizeInFlight.delete(cacheKey);
-      }
+      const result = await joinInFlightVariant(inFlight, requestSignal);
+      return imageResponse(result.buf, result.type, {
+        ETag: etag,
+        ...(!fmtParam ? { Vary: "Accept" } : {}),
+        "X-Cache": "MISS",
+      });
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") {
         return new Response(null, { status: 499 });

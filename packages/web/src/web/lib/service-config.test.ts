@@ -242,6 +242,76 @@ describe("Portfolio Kit config migration", () => {
     ]);
   });
 
+  // Codexデバッグ 2026-07-20 P1: 金額の一致だけでは旧構成とみなさない
+  // (¥10,000+¥30,000の正当なカスタム2プランを保存時に既定へ上書きしない)
+  test("leaves a custom two-tier catalog without legacy names untouched", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({
+        pricing: {
+          plans: [
+            {
+              name: "Basic",
+              price: "¥10,000",
+              sub: "独自ベーシック",
+              points: ["独自内容"],
+              stripeUrl: "https://buy.stripe.com/custom-basic",
+              cta: "申し込む",
+              primary: false,
+            },
+            {
+              name: "Premium",
+              price: "¥30,000",
+              sub: "独自プレミアム",
+              points: ["独自内容"],
+              stripeUrl: "https://buy.stripe.com/custom-premium",
+              cta: "申し込む",
+              primary: true,
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(parsed.pricing.plans).toHaveLength(2);
+    expect(parsed.pricing.plans.map((p) => p.name)).toEqual([
+      "Basic",
+      "Premium",
+    ]);
+  });
+
+  // Codexデバッグ 2026-07-20 P1: points内の非文字列要素は描画時にReactの子に
+  // できず販売ページ全体が落ちるため、壊れたプランだけを除外する
+  test("drops a plan whose points contain non-string entries", () => {
+    const parsed = parseServicePageConfig(
+      JSON.stringify({
+        pricing: {
+          plans: [
+            {
+              name: "壊れたプラン",
+              price: "¥30,000",
+              sub: "",
+              points: [{}],
+              stripeUrl: "https://buy.stripe.com/broken",
+              cta: "申し込む",
+              primary: true,
+            },
+            {
+              name: "正常プラン",
+              price: "¥30,000",
+              sub: "カスタム説明",
+              points: ["正常項目"],
+              stripeUrl: "https://buy.stripe.com/valid",
+              cta: "申し込む",
+              primary: true,
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(parsed.pricing.plans.map((p) => p.name)).toEqual(["正常プラン"]);
+  });
+
   test("keeps a saved single-plan config untouched by the migration", () => {
     const parsed = parseServicePageConfig(
       JSON.stringify({

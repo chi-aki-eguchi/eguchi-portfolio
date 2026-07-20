@@ -331,7 +331,10 @@ function isPlan(v: unknown): v is PlanItem {
     typeof v.name === "string" &&
     typeof v.price === "string" &&
     typeof v.sub === "string" &&
+    // 要素の型まで確認しないと、壊れた保存JSON(points内のオブジェクト等)を
+    // 通してしまい、描画側がReactの子として出力できずページ全体が落ちる
     Array.isArray(v.points) &&
+    v.points.every((p) => typeof p === "string") &&
     typeof v.stripeUrl === "string" &&
     typeof v.cta === "string" &&
     typeof v.primary === "boolean"
@@ -381,9 +384,12 @@ function legacyPlanYen(price: unknown): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+// 金額と名称の両方が旧カタログ一致の場合のみself署名とみなす。金額だけでは
+// 正当なカスタム2プラン(例: Basic ¥10,000 + Premium ¥30,000)を旧構成と誤検知
+// し、保存時に既定文面で上書きしてしまう(Codexデバッグ 2026-07-20 P1)。
 function isLegacySelfPlan(plan: PlanItem): boolean {
   return (
-    legacyPlanYen(plan.price) === 10_000 || /自分で立てる|self/i.test(plan.name)
+    legacyPlanYen(plan.price) === 10_000 && /自分で立てる|self/i.test(plan.name)
   );
 }
 

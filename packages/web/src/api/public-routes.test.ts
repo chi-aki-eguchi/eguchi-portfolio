@@ -26,6 +26,7 @@ describe("public SPA route status", () => {
       "/start/en",
       "/admin",
       "/admin/login",
+      "/admin/demo",
     ]) {
       expect(isKnownSpaPath(path)).toBe(true);
       expect(htmlStatusForSpaPath(path)).toBe(200);

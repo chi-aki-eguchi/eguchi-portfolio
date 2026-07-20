@@ -103,28 +103,74 @@ function materialsMailtoHref(contactEmail: string, en: boolean): string {
   return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+// 「情報が少ない」というオーナー指摘への対応(2026-07-20): 支払い完了の一文だけでなく、
+// 何を・いくらで買ったかが本人にもすぐ確認できる「領収書」に近い情報量を持たせる。
+// プラン名・金額は単一プラン(公開おまかせ ¥30,000)前提の固定値 — 複数プランに
+// 戻す場合はservice-config.tsのDEFAULT_SERVICE_CONFIGと合わせて見直すこと。
 function PurchaseThanksBanner({ language }: { language: ServiceStartLanguage }) {
   const en = language === "en";
+  const summaryRows = en
+    ? [
+        { label: "Plan", value: "Assisted Publishing — ¥30,000" },
+        { label: "Payment", value: "Completed (via Stripe)" },
+        { label: "Receipt", value: "Sent to your checkout email address" },
+      ]
+    : [
+        { label: "ご購入プラン", value: "公開おまかせ（¥30,000）" },
+        { label: "お支払い", value: "Stripeにて完了" },
+        { label: "領収書", value: "購入時のメールアドレスへ送付" },
+      ];
   return (
-    <section className="mb-10 rounded-md border border-[rgba(var(--foreground-rgb),0.16)] bg-[rgba(var(--foreground-rgb),0.03)] p-5 sm:p-7">
-      <p className="font-en uppercase mb-2" style={labelStyle}>
-        Payment complete
-      </p>
-      <h2
-        className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.86)]`}
-        style={{ fontSize: "clamp(1.15rem, 2.2vw, 1.5rem)", lineHeight: 1.55 }}
-      >
-        {en
-          ? "Thank you — your payment is complete."
-          : "ご購入ありがとうございます。お支払いは完了しています。"}
-      </h2>
+    <section className="mb-10 rounded-md border border-[rgba(var(--foreground-rgb),0.20)] bg-[rgba(var(--foreground-rgb),0.035)] p-6 sm:p-8">
+      <div className="flex items-start gap-3">
+        <CheckCircle2
+          size={22}
+          className="mt-1 shrink-0 text-[rgba(var(--foreground-rgb),0.72)]"
+          aria-hidden="true"
+        />
+        <div>
+          <p className="font-en uppercase mb-1" style={labelStyle}>
+            Payment complete
+          </p>
+          <h2
+            className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.88)]`}
+            style={{ fontSize: "clamp(1.25rem, 2.6vw, 1.7rem)", lineHeight: 1.5 }}
+          >
+            {en
+              ? "Thank you for your purchase."
+              : "ご購入、誠にありがとうございます。"}
+          </h2>
+        </div>
+      </div>
+      <dl className="mt-6 grid gap-x-8 gap-y-4 sm:grid-cols-3 border-t border-[rgba(var(--foreground-rgb),0.10)] pt-5">
+        {summaryRows.map((row) => (
+          <div key={row.label}>
+            <dt
+              className="font-en uppercase"
+              style={{
+                fontSize: "0.68rem",
+                letterSpacing: "0.10em",
+                color: "rgba(var(--foreground-rgb), 0.42)",
+              }}
+            >
+              {row.label}
+            </dt>
+            <dd
+              className={`${en ? "font-en" : "font-ja"} mt-1 text-[rgba(var(--foreground-rgb),0.80)]`}
+              style={{ fontSize: "0.95rem" }}
+            >
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
       <p
-        className="mt-3 max-w-2xl text-[rgba(var(--foreground-rgb),0.56)]"
+        className="mt-6 max-w-2xl text-[rgba(var(--foreground-rgb),0.56)]"
         style={bodyStyle}
       >
         {en
-          ? "There is nothing you need to do immediately. A receipt is sent to the email address used at checkout, and I will send a separate guidance email within 24 hours. You may send your materials from this page now, or wait for that email — either is completely fine."
-          : "このあと、すぐに何かをしなくても大丈夫です。領収書は購入時のメールアドレスに届き、24時間以内に私からもご案内メールをお送りします。このページから今すぐ素材を送っても、メールを待ってからでも、どちらでも大丈夫です。"}
+          ? "There is nothing you need to do immediately. I will send a separate guidance email — with the same checklist as the button below — within 24 hours. You may send your materials from this page right now, or simply wait for that email; either is completely fine."
+          : "このあと、すぐに何かをしなくても大丈夫です。24時間以内に、下のボタンと同じ内容の案内メールを私からお送りします。このページから今すぐ素材を送っていただいても、メールを待っていただいても、どちらでも大丈夫です。"}
       </p>
     </section>
   );

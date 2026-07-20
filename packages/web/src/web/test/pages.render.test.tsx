@@ -552,9 +552,13 @@ describe("shared components", () => {
       {
         const { host, cleanup } = await mount(createElement(ServiceStartPage));
         const text = host.textContent ?? "";
-        expect(text).toContain("ご購入ありがとうございます");
-        expect(text).toContain("お支払いは完了しています");
+        expect(text).toContain("ご購入、誠にありがとうございます");
         expect(text).toContain("すぐに何かをしなくても大丈夫です");
+        // 2026-07-20: 「情報が少ない」というオーナー指摘を受け、
+        // プラン・支払い方法・領収書送付先を明記した領収書調の要約を追加
+        expect(text).toContain("公開おまかせ（¥30,000）");
+        expect(text).toContain("Stripeにて完了");
+        expect(text).toContain("購入時のメールアドレスへ送付");
         // 言語切替でお礼が消えないよう、クエリはJP|ENリンクにも引き継ぐ
         expect(
           host.querySelector('a[href="/start/en?thanks=1"]'),
@@ -568,16 +572,16 @@ describe("shared components", () => {
         const { host, cleanup } = await mount(
           createElement(ServiceStartPage, { language: "en" }),
         );
-        expect(host.textContent ?? "").toContain(
-          "your payment is complete",
-        );
+        const text = host.textContent ?? "";
+        expect(text).toContain("Thank you for your purchase.");
+        expect(text).toContain("Assisted Publishing — ¥30,000");
         cleanup();
       }
       dom.reconfigure({ url: "http://localhost/start" });
       {
         const { host, cleanup } = await mount(createElement(ServiceStartPage));
         expect(host.textContent ?? "").not.toContain(
-          "ご購入ありがとうございます",
+          "ご購入、誠にありがとうございます",
         );
         cleanup();
       }

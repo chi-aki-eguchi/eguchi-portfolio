@@ -323,6 +323,8 @@ describe("shared components", () => {
       expect(
         host.querySelector('a[href="/portfolio-kit/en"]'),
       ).not.toBeNull();
+      const startPreview = host.querySelector('a[href="/start"]');
+      expect(startPreview?.textContent).toContain("購入後の流れを先に見る");
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -357,6 +359,10 @@ describe("shared components", () => {
       expect(text).not.toContain("¥10,000");
       expect(text).not.toContain("Self setup");
       expect(host.querySelector('a[href="/portfolio-kit"]')).not.toBeNull();
+      const startPreview = host.querySelector('a[href="/start/en"]');
+      expect(startPreview?.textContent).toContain(
+        "Preview what happens after purchase",
+      );
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;

@@ -1315,6 +1315,16 @@ export default function ServicePage({
         >
           {config.pricing.disclaimer}
         </p>
+        <p className="mt-4 text-center">
+          <Link
+            to={language === "en" ? "/start/en" : "/start"}
+            className="text-[0.76rem] leading-7 text-[rgba(var(--foreground-rgb),0.48)] underline underline-offset-4 transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.70)]"
+          >
+            {language === "en"
+              ? "Preview what happens after purchase"
+              : "購入後の流れを先に見る"}
+          </Link>
+        </p>
       </section>
 
       <StickyCtaBar

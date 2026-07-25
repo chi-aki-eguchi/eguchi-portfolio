@@ -5807,52 +5807,56 @@ export function GalleryTab({
                 ))}
               </div>
             </AdminField>
-            <div className="flex gap-2">
-              <AdminField label={copy.albums.medium}>
-                <select
-                  aria-label={copy.albums.mediumAria}
-                  value={albumDraft.medium}
-                  onChange={(e) =>
-                    setAlbumDraft((d) => ({ ...d, medium: e.target.value }))
-                  }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-                >
-                  <option value="all">{copy.albums.unspecified}</option>
-                  <option value="digital">{copy.filters.mediumDigital}</option>
-                  <option value="film">{copy.filters.mediumFilm}</option>
-                  <option value="missing">{copy.filters.mediumMissing}</option>
-                </select>
-              </AdminField>
-              <AdminField label={copy.albums.missing}>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAlbumDraft((d) => ({
-                        ...d,
-                        missingShotAt: !d.missingShotAt,
-                      }))
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex-1 min-w-0">
+                <AdminField label={copy.albums.medium}>
+                  <select
+                    aria-label={copy.albums.mediumAria}
+                    value={albumDraft.medium}
+                    onChange={(e) =>
+                      setAlbumDraft((d) => ({ ...d, medium: e.target.value }))
                     }
-                    aria-pressed={albumDraft.missingShotAt}
-                    className={`flex-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   >
-                    {copy.albums.date}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAlbumDraft((d) => ({
-                        ...d,
-                        missingCapture: !d.missingCapture,
-                      }))
-                    }
-                    aria-pressed={albumDraft.missingCapture}
-                    className={`flex-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
-                  >
-                    {copy.albums.capture}
-                  </button>
-                </div>
-              </AdminField>
+                    <option value="all">{copy.albums.unspecified}</option>
+                    <option value="digital">{copy.filters.mediumDigital}</option>
+                    <option value="film">{copy.filters.mediumFilm}</option>
+                    <option value="missing">{copy.filters.mediumMissing}</option>
+                  </select>
+                </AdminField>
+              </div>
+              <div className="flex-1 min-w-0">
+                <AdminField label={copy.albums.missing}>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAlbumDraft((d) => ({
+                          ...d,
+                          missingShotAt: !d.missingShotAt,
+                        }))
+                      }
+                      aria-pressed={albumDraft.missingShotAt}
+                      className={`flex-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                    >
+                      {copy.albums.date}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAlbumDraft((d) => ({
+                          ...d,
+                          missingCapture: !d.missingCapture,
+                        }))
+                      }
+                      aria-pressed={albumDraft.missingCapture}
+                      className={`flex-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                    >
+                      {copy.albums.capture}
+                    </button>
+                  </div>
+                </AdminField>
+              </div>
             </div>
             <AdminField label={copy.albums.category}>
               <select
@@ -5890,72 +5894,80 @@ export function GalleryTab({
                 <option value="__none__">{copy.filters.unassigned}</option>
               </select>
             </AdminField>
-            <div className="flex gap-2">
-              <AdminField label={copy.albums.size}>
-                <select
-                  aria-label={copy.albums.sizeAria}
-                  value={albumDraft.size}
-                  onChange={(e) =>
-                    setAlbumDraft((d) => ({ ...d, size: e.target.value }))
-                  }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-                >
-                  <option value="all">{copy.albums.unspecified}</option>
-                  {(["S", "M", "L"] as const).map((sz) => (
-                    <option key={sz} value={sz}>
-                      {sz}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex-1 min-w-0">
+                <AdminField label={copy.albums.size}>
+                  <select
+                    aria-label={copy.albums.sizeAria}
+                    value={albumDraft.size}
+                    onChange={(e) =>
+                      setAlbumDraft((d) => ({ ...d, size: e.target.value }))
+                    }
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                  >
+                    <option value="all">{copy.albums.unspecified}</option>
+                    {(["S", "M", "L"] as const).map((sz) => (
+                      <option key={sz} value={sz}>
+                        {sz}
+                      </option>
+                    ))}
+                  </select>
+                </AdminField>
+              </div>
+              <div className="flex-1 min-w-0">
+                <AdminField label={copy.albums.publication}>
+                  <select
+                    aria-label={copy.albums.publicationAria}
+                    value={albumDraft.published}
+                    onChange={(e) =>
+                      setAlbumDraft((d) => ({ ...d, published: e.target.value }))
+                    }
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                  >
+                    <option value="all">{copy.albums.unspecified}</option>
+                    <option value="published">
+                      {copy.filters.publishedOnly}
                     </option>
-                  ))}
-                </select>
-              </AdminField>
-              <AdminField label={copy.albums.publication}>
-                <select
-                  aria-label={copy.albums.publicationAria}
-                  value={albumDraft.published}
-                  onChange={(e) =>
-                    setAlbumDraft((d) => ({ ...d, published: e.target.value }))
-                  }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-                >
-                  <option value="all">{copy.albums.unspecified}</option>
-                  <option value="published">
-                    {copy.filters.publishedOnly}
-                  </option>
-                  <option value="unpublished">
-                    {copy.filters.unpublishedOnly}
-                  </option>
-                </select>
-              </AdminField>
+                    <option value="unpublished">
+                      {copy.filters.unpublishedOnly}
+                    </option>
+                  </select>
+                </AdminField>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <AdminField label={copy.albums.uploaded}>
-                <select
-                  aria-label={copy.albums.uploadedAria}
-                  value={albumDraft.recent}
-                  onChange={(e) =>
-                    setAlbumDraft((d) => ({ ...d, recent: e.target.value }))
-                  }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-                >
-                  <option value="all">{copy.albums.unspecified}</option>
-                  <option value="7">{copy.filters.recentDays(7)}</option>
-                  <option value="30">{copy.filters.recentDays(30)}</option>
-                </select>
-              </AdminField>
-              <AdminField label={copy.albums.featured}>
-                <button
-                  onClick={() =>
-                    setAlbumDraft((d) => ({ ...d, featured: !d.featured }))
-                  }
-                  aria-pressed={albumDraft.featured}
-                  className={`w-full flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
-                >
-                  <Star size={11} />{" "}
-                  {albumDraft.featured
-                    ? copy.albums.only
-                    : copy.albums.noCondition}
-                </button>
-              </AdminField>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex-1 min-w-0">
+                <AdminField label={copy.albums.uploaded}>
+                  <select
+                    aria-label={copy.albums.uploadedAria}
+                    value={albumDraft.recent}
+                    onChange={(e) =>
+                      setAlbumDraft((d) => ({ ...d, recent: e.target.value }))
+                    }
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                  >
+                    <option value="all">{copy.albums.unspecified}</option>
+                    <option value="7">{copy.filters.recentDays(7)}</option>
+                    <option value="30">{copy.filters.recentDays(30)}</option>
+                  </select>
+                </AdminField>
+              </div>
+              <div className="flex-1 min-w-0">
+                <AdminField label={copy.albums.featured}>
+                  <button
+                    onClick={() =>
+                      setAlbumDraft((d) => ({ ...d, featured: !d.featured }))
+                    }
+                    aria-pressed={albumDraft.featured}
+                    className={`w-full flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                  >
+                    <Star size={11} />{" "}
+                    {albumDraft.featured
+                      ? copy.albums.only
+                      : copy.albums.noCondition}
+                  </button>
+                </AdminField>
+              </div>
             </div>
           </div>
           <div className="flex gap-2 justify-end mt-5">

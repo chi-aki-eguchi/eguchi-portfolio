@@ -3329,7 +3329,7 @@ export function ServiceTab({
         </div>
         <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-2">{t.phase2b.service.finalCta.snsHint}</p>
         {draft.finalCta.snsLinks.map((link, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="text"
               value={link.label}
@@ -3341,7 +3341,7 @@ export function ServiceTab({
                 })
               }
               placeholder="Label"
-              className="flex-1 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
+              className="flex-1 min-w-0 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
             />
             <input
               type="text"
@@ -3354,7 +3354,7 @@ export function ServiceTab({
                 })
               }
               placeholder="https://..."
-              className="flex-[2] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
+              className="flex-[2] min-w-0 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
             />
             <button
               type="button"
@@ -5086,47 +5086,51 @@ export function SettingsTab({
             <SettingsGroup title={copyDesign.groupTitle}>
               {/* Theme Colors */}
               <Section title={copyDesign.themeColors.title} defaultOpen={false}>
-                <div className="flex gap-4">
-                  <AdminField label="Background" uppercase>
-                    <div className="flex items-center gap-2">
-                      <input
-                        aria-label={copyDesign.themeColors.backgroundSwatchAria}
-                        type="color"
-                        value={current["themeBg"] || DEFAULT_THEME_BG}
-                        onChange={(e) => set("themeBg", e.target.value)}
-                        data-admin-setting="themeBg-color"
-                        className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
-                      />
-                      <input
-                        aria-label={copyDesign.themeColors.backgroundHexAria}
-                        type="text"
-                        value={current["themeBg"] || ""}
-                        onChange={(e) => set("themeBg", e.target.value)}
-                        placeholder={DEFAULT_THEME_BG}
-                        data-admin-setting="themeBg-text"
-                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-                      />
-                    </div>
-                  </AdminField>
-                  <AdminField label="Text" uppercase>
-                    <div className="flex items-center gap-2">
-                      <input
-                        aria-label={copyDesign.themeColors.textSwatchAria}
-                        type="color"
-                        value={current["themeText"] || "#1a1a1a"}
-                        onChange={(e) => set("themeText", e.target.value)}
-                        className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
-                      />
-                      <input
-                        aria-label={copyDesign.themeColors.textHexAria}
-                        type="text"
-                        value={current["themeText"] || ""}
-                        onChange={(e) => set("themeText", e.target.value)}
-                        placeholder="#1a1a1a"
-                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-                      />
-                    </div>
-                  </AdminField>
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  <div className="flex-1 min-w-0">
+                    <AdminField label="Background" uppercase>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <input
+                          aria-label={copyDesign.themeColors.backgroundSwatchAria}
+                          type="color"
+                          value={current["themeBg"] || DEFAULT_THEME_BG}
+                          onChange={(e) => set("themeBg", e.target.value)}
+                          data-admin-setting="themeBg-color"
+                          className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+                        />
+                        <input
+                          aria-label={copyDesign.themeColors.backgroundHexAria}
+                          type="text"
+                          value={current["themeBg"] || ""}
+                          onChange={(e) => set("themeBg", e.target.value)}
+                          placeholder={DEFAULT_THEME_BG}
+                          data-admin-setting="themeBg-text"
+                          className="flex-1 min-w-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                        />
+                      </div>
+                    </AdminField>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <AdminField label="Text" uppercase>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <input
+                          aria-label={copyDesign.themeColors.textSwatchAria}
+                          type="color"
+                          value={current["themeText"] || "#1a1a1a"}
+                          onChange={(e) => set("themeText", e.target.value)}
+                          className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+                        />
+                        <input
+                          aria-label={copyDesign.themeColors.textHexAria}
+                          type="text"
+                          value={current["themeText"] || ""}
+                          onChange={(e) => set("themeText", e.target.value)}
+                          placeholder="#1a1a1a"
+                          className="flex-1 min-w-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                        />
+                      </div>
+                    </AdminField>
+                  </div>
                 </div>
                 <button
                   onClick={() => {

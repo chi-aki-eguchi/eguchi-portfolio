@@ -4257,7 +4257,7 @@ export function GalleryTab({
                   aria-label={copy.toolbar.columns(columns)}
                   aria-pressed={mobileLibraryColumns === columns}
                   onClick={() => setMobileLibraryColumns(columns)}
-                  className={`min-w-9 px-2 py-1 rounded-sm border text-[length:var(--admin-text-note)] transition-colors ${
+                  className={`min-w-9 admin-tap-sm px-2 py-1 rounded-sm border text-[length:var(--admin-text-note)] transition-colors ${
                     mobileLibraryColumns === columns
                       ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
                       : "text-[var(--admin-muted)] border-[var(--admin-line)]"

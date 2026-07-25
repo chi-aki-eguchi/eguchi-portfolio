@@ -331,7 +331,7 @@ function ensureContrast(foreground: Rgb, background: Rgb, min: number): Rgb {
   return target;
 }
 
-function adminThemeFromSettings(
+export function adminThemeFromSettings(
   settings?: Record<string, string>,
 ): CSSProperties {
   const base =

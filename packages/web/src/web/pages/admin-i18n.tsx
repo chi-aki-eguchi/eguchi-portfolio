@@ -89,6 +89,19 @@ const ADMIN_PHASE_2B_JA = {
       shortcutsTitle: "キーボードショートカット (?)",
       shortcutsAria: "キーボードショートカット",
     },
+    mode: {
+      group: "Libraryの操作モード",
+      normal: "通常",
+      select: "選択",
+      arrange: "並べる",
+      startSelect: "選択モードを開始",
+      startArrange: "並べるモードを開始",
+      endSelection: "選択終了",
+      finishArrange: "完了",
+      selectionHint: "写真を押すと選択・解除できます",
+      arrangeHint:
+        "パソコンではドラッグ、スマホでは写真上の矢印で並べ替えます",
+    },
     import: {
       mediumAria: "取り込み媒体",
       mediumHint:
@@ -1449,6 +1462,19 @@ const ADMIN_PHASE_2B_EN = {
       tableMode: "Bulk edit in table view",
       shortcutsTitle: "Keyboard shortcuts (?)",
       shortcutsAria: "Keyboard shortcuts",
+    },
+    mode: {
+      group: "Library interaction mode",
+      normal: "Normal",
+      select: "Select",
+      arrange: "Arrange",
+      startSelect: "Start selection mode",
+      startArrange: "Start arrange mode",
+      endSelection: "End selection",
+      finishArrange: "Done",
+      selectionHint: "Tap a photo to select or deselect it",
+      arrangeHint:
+        "Drag on desktop, or use the arrow buttons on photos on mobile",
     },
     import: {
       mediumAria: "Import medium",

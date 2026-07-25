@@ -42,6 +42,10 @@ test.describe("admin — ホバー限定の赤クラスが常時赤くならな�
     await page.getByRole("button", { name: "Library" }).click();
     await page.waitForTimeout(1500);
 
+    // モード分離(2026-07-23承認)後、通常モードのタイルクリックは詳細を開くだけで
+    // 選択しない。選択リング(ring-[#aaa])と詳細リング(ring-[--admin-muted])は
+    // 別物なので、このテストの主題である選択リングを測るには選択モードへ入る。
+    await page.locator('[data-library-mode-action="select"]').click();
     const tile = page.locator(".admin-photo-tile").first();
     await tile.click();
     await page.waitForTimeout(300);

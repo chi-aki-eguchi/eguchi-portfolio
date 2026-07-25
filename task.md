@@ -8989,3 +8989,180 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
 - 検証: bun run check成功（511 pass / 0 fail、typecheck・lint・build成功）。
   admin非接触のためsmoke未実施。
 - 現在の状態: commit / push未実施。変更はworking treeに保持。
+
+## Handoff 2026-07-25 (62) — Library「通常/選択/並べる」モード分離が実装途中・checkが赤
+
+### 目的
+
+**まず `docs/specs/library-redesign-spec.md` を読むこと。** 何のための再設計かが書いてある
+（2026-07-25 起票。それまで決定は Obsidian にしかなく、リポジトリから辿れなかった）。
+
+要約: Library は秋さんが毎日使う道具であり、同時に Portfolio Kit として売っている商品の
+一部でもある。目指すのは「長時間疲れない / 迷わない / 整理が速い / 反応が気持ちいい /
+自分の道具として愛着が持てる」の5つ。写真を大きく見せることでも余白で作品性を出すことでもない
+（2026-07-23 17:21 に方針転換済み）。
+
+今回はその第1段階として、写真クリックが「単独選択」と「詳細表示」を兼ねている現状を解体し、
+**通常 / 選択 / 並べる** の3モードへ分離する。同じ場所の操作内容をモードで置き換える。
+
+### 変更内容
+
+2026-07-23 17:39〜17:49 に実装され、そこで中断している（オーナーのセッションが終了）。
+実装者・実装モデルは記録に残っていない。**未コミット。commitもpushもされていない。**
+
+- `admin.tsx` — 3モードの状態管理とUI（+389行/-129行）。モード切替、選択ツールバー、
+  並べ替えツールバー、インスペクタ、空状態、検索中の並べ替えロックを実装
+- `admin-i18n.tsx` — モード関連の文言をJA/ENに追加（`mode.normal` / `select` / `arrange` ほか26行）
+- `scripts/smoke/admin-library-modes.spec.ts` — **新規**。モード分離のsmokeテスト3本（165行）
+- `scripts/smoke/admin-mobile-library.spec.ts` — 既存smokeをモード分離前提に更新（+90行相当）
+- `admin-reorder-lock.render.test.tsx` — 並べ替えロックのテストを更新（+12行）
+
+実装側のdata属性は、新smokeが期待する13種すべてがadmin.tsxに存在することを確認済み
+（`data-library-mode` / `-photo-action` / `-mode-action` / `-selection-toolbar` /
+`-arrange-toolbar` / `-inspector` / `-batch-actions` / `-selected-count` /
+`-filters-toggle` / `-search-input` / `-empty` / `data-reorder-locked` / `-lock-cause`）。
+
+### 触ったファイル
+
+- `packages/web/src/web/pages/admin.tsx`
+- `packages/web/src/web/pages/admin-i18n.tsx`
+- `packages/web/src/web/pages/admin-reorder-lock.render.test.tsx`
+- `scripts/smoke/admin-library-modes.spec.ts`（新規・未追跡）
+- `scripts/smoke/admin-mobile-library.spec.ts`
+
+同じ working tree に、本日 2026-07-25 のAI運用ルール更新も未コミットで同居している
+（`AGENTS.md` / `docs/agents/autonomy-rules.md` / `docs/specs/ai-collaboration-reform-fable5.md`
+/ `.codex/agents/repo-scout.toml`）。**これはLibraryとは別件なので、コミットを分けること。**
+`docs/specs/growth-monetization-plan.md` の未コミット差分は 2026-07-22 のもので、さらに別件。
+
+### 検証したこと
+
+`bun run check` を 2026-07-25 に実行 → **失敗（507 pass / 4 fail）**。typecheck・lint・buildは成功、
+落ちているのは4件すべて `packages/web/src/web/test/pages.render.test.tsx` の既存ユニットテスト。
+
+| 行 | テスト | 失敗内容 |
+| --- | --- | --- |
+| 1109 | EN translates Phase 2b Library filters... | `Button not found: Bulk edit` |
+| 1401 | Library keeps filters collapsed and shows batch actions only after selection | `選択中 1枚` が出ない |
+| 1709 | inspector photo switch confirms when dirty (arrow / tile click) | `選択中 1枚` が維持されない |
+| 1832 | virtualized keyboard navigation follows selection after resize | `button[aria-label="P370"]` が null |
+
+**4件とも、旧テストが「タイルクリック＝選択」という分離前の仕様を前提にしていることが原因。**
+実装が壊れているのではない。根拠: 失敗時のDOMダンプに新モードUIの「通常選択並べる」が
+実際に描画されている。1109の `Bulk edit` も、選択モードに入らないと出さない新仕様と整合する。
+
+### 検証していないこと
+
+- `bun run smoke`（Playwright）は**未実施**。checkが赤の状態で回しても判断材料にならないため、
+  check緑化を先に行うこと。新規の `admin-library-modes.spec.ts` は一度も実行されていない。
+- 実ブラウザでの手動確認（1440px / 1024px / 390px）は未実施。
+- iPhone実機Safariでの確認は未実施（2026-07-23の調査時点から継続する未確認事項）。
+
+### push したか
+
+していない。ローカルのみ。commitもされていない（working treeに保持）。
+
+### 本番で確認したか
+
+していない。
+
+### 次の担当者が触ってよい場所
+
+- `pages.render.test.tsx` の失敗4件を**新仕様に合わせて書き換える**。
+  これは「期待値の根拠なき緩和」ではなく仕様変更への追随だが、autonomy-rules §3 の
+  判断表に従い、書き換えた理由を1件ずつ決定ログに残すこと。
+- 1109 / 1401 / 1709 の3件は、選択モードへ入る操作を挟む形へ直せば追随できる見込み。
+- `admin.tsx` のモード分離実装本体（バグが見つかった場合）。
+
+### 次の担当者が触ってはいけない場所
+
+- **1832（仮想スクロール＋キーボードナビが選択に追従）は単純なテスト更新で済ませない。**
+  モード分離後にキーボードナビゲーションが「どのモードで」「何に追従すべきか」は
+  未決定の設計判断。テストを通すために実装を曲げないこと。設計側（Claude Code）が
+  仕様を決めてから着手する。
+- AI運用ルール更新分（AGENTS.md ほか）とLibrary実装分を同じコミットに混ぜないこと。
+- `git push`（オーナーのみ）。
+
+## Handoff 2026-07-25 (63) — モード分離: check緑化・smoke desktop全緑・mobileに実UX欠陥1件
+
+### 目的
+
+Handoff (62) で赤だった状態を緑にし、モード分離を完了可能な状態へ進める。
+
+### 変更内容
+
+**実装 = Claude Code (Opus 5)。** 2026-07-25 のみの一時例外（オーナー指示: Opus 5 試用と
+Codex クレジット節約。AGENTS.md「役割分担」の一時例外を参照）。恒久ルールは実装=Codex。
+
+1. `pages.render.test.tsx` の失敗4件を新仕様へ追随
+   - 1109 / 1401: 一括操作は選択モードで1枚選んでから出る、という手順を挟んだ
+   - 1709: 「選択が維持される」→「選択に入っていない」の確認へ置換（assertionを消していない）
+   - 1832: 通常モードのままカーソルを置いて Esc で詳細を閉じ、全幅で↓移動を検証
+   - `modeAction()` ヘルパーを追加（JA/EN で文言が変わるため data 属性で引く）
+2. `admin-library-modes.spec.ts`: `Control` → `ControlOrMeta`
+   （macOS では Control+クリックが右クリック扱いになり onClick が発火しないため）
+3. `admin-red-flicker.spec.ts`: 選択リング(`ring-[#aaa]`)を測るため選択モードへ入る手順を追加
+   （通常モードのままでは詳細リング `ring-[var(--admin-muted)]` を測っていた）
+
+### 触ったファイル
+
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `scripts/smoke/admin-library-modes.spec.ts`
+- `scripts/smoke/admin-red-flicker.spec.ts`
+
+`admin.tsx` などの実装コードは**変更していない**。
+
+### 検証したこと
+
+- `bun run check` → **511 pass / 0 fail**（typecheck・lint・build すべて成功）
+- `bun run smoke` 全体 → 36 passed / 3 failed（修正前）
+- 修正後の再実行（該当2 spec のみ）→ **desktop 5件すべて緑**、mobile 1件のみ失敗
+
+Codex (`gpt-5.6-luna`, read-only) にテスト差分をレビューさせ、P1を1件受領:
+「1832 を選択モード限定にすると通常モードの Arrow 移動の退行を検知できなくなり、
+未決定の設計判断をテスト側で固定する」。**妥当だったため上記のとおり修正済み**。
+他2点（`not.toContain("選択中")` 化、一括操作テストの選択モード化）は
+「承認済み仕様に沿っており不当な緩和ではない」と判定された。
+
+### 検証していないこと
+
+- 実ブラウザでの手動確認（1440px / 1024px / 390px）
+- iPhone 実機 Safari
+- `bun run smoke` の全体再実行（該当2 spec のみ再実行した）
+
+### push したか
+
+していない。commit もしていない。
+
+### 本番で確認したか
+
+していない。
+
+### 次の担当者が触ってよい場所
+
+`bun run smoke` の全体再実行。
+
+### 次の担当者が触ってはいけない場所
+
+**解決済みの扱い (2026-07-25 オーナー判断=B): スマートフォン幅で写真詳細がモード切替を覆う。**
+
+オーナーが「モード分離をここで区切り、下側シートは次段の別タスク」を選択した。
+`docs/agents/task-queue.md` に **Q-11** として起票済み。仕様書にも §5-2 として追記した。
+smoke には `test.fixme("スマホ幅で詳細を開いたままモード切替できる…")` を置き、
+skip ではなく fixme にすることで欠陥をレポート上に残し続ける。Q-11 の完了条件に
+「fixme を通常の test へ戻す」を含めた。
+
+以下は欠陥の内容（Q-11 の背景として保持）。
+
+390px で詳細を開くと、詳細が `fixed inset-y-0 right-0 w-full max-w-xs` の右側オーバーレイ
+として全高に出るため、通常/選択/並べるの切替ボタンに触れなくなる（Playwright が
+`subtree intercepts pointer events` で click をリトライし続けて失敗する）。
+
+**これはテストの不備ではなく実装の欠陥。** 承認済み設計（`docs/specs/library-redesign-spec.md`
+§2-2）は「390px: 詳細は**下側シート**として全幅表示」と決めており、現在の実装は
+デスクトップと同じ右側オーバーレイをスマホ幅でも使っている。
+
+対応は2択でオーナー判断が要る。テストを通すために詳細を先に閉じる回避を入れないこと
+（実欠陥を隠すことになる）。
+- A: 下側シートを今回のスコープに入れて実装する（承認済み設計に合わせる）
+- B: モード分離をここで区切り、下側シートを次段として別タスクに切る

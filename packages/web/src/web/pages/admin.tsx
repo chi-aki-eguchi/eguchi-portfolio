@@ -1737,6 +1737,8 @@ function measuredContentWidth(el: HTMLElement | null): number {
 
 // render テスト(admin-reorder-lock.render.test.tsx)から直接マウントするため
 // SetupTab と同様に export する。アプリ内の利用は AdminPage 経由のみ。
+type LibraryMode = "normal" | "select" | "arrange";
+
 export function GalleryTab({
   demoSeed,
   onUploadingChange,
@@ -1771,6 +1773,7 @@ export function GalleryTab({
     total: number;
   } | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [libraryMode, setLibraryMode] = useState<LibraryMode>("normal");
   const [lastClicked, setLastClicked] = useState<number | null>(null);
   const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 220); // px
   const [mobileLibraryColumns, setMobileLibraryColumns] = usePersistentState<
@@ -1866,6 +1869,9 @@ export function GalleryTab({
   useEffect(() => {
     if (openTrashSignal) {
       setShowTrash(true);
+      setLibraryMode("normal");
+      setSelected(new Set());
+      setInspectPhoto(null);
       onTrashSignalConsumedRef.current?.();
     }
   }, [openTrashSignal]);
@@ -3530,38 +3536,94 @@ export function GalleryTab({
     setMetaError(false);
   }, [inspectPhoto?.id]);
 
-  // Click handler with multi-select
+  const applyLibraryMode = (
+    nextMode: LibraryMode,
+    afterChange?: () => void,
+  ) => {
+    setLibraryMode(nextMode);
+    setBatchCatOpen(false);
+    setBatchSeriesOpen(false);
+    setDragSrcId(null);
+    setDragOverId(null);
+    setPreviewPhoto(null);
+    setSelected(new Set());
+    if (nextMode !== "normal") setInspectPhoto(null);
+    afterChange?.();
+  };
+
+  // モード切替でも詳細欄の未保存保護を通す。写真切替と同じ確認部品を使い、
+  // 確認前には選択・詳細・ドラッグ状態を一切変えない。
+  const requestLibraryMode = (
+    nextMode: LibraryMode,
+    afterChange?: () => void,
+  ) => {
+    const proceed = () => applyLibraryMode(nextMode, afterChange);
+    if (
+      nextMode !== "normal" &&
+      inspectPhoto &&
+      photoEditFormChanged(editForm, inspectPhoto)
+    ) {
+      setConfirmDialog({
+        message: copy.feedback.closeInspectorConfirm,
+        confirmLabel: copy.feedback.closeInspectorAction,
+        onConfirm: proceed,
+      });
+      return;
+    }
+    proceed();
+  };
+
+  const selectRangeThrough = (photo: Photo, idx: number) => {
+    const lastIdx =
+      lastClicked === null
+        ? -1
+        : displayed.findIndex((p) => p.id === lastClicked);
+    if (lastIdx < 0) {
+      setSelected(new Set([photo.id]));
+      return;
+    }
+    const start = Math.min(lastIdx, idx);
+    const end = Math.max(lastIdx, idx);
+    const range = displayed.slice(start, end + 1).map((p) => p.id);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      range.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  // 通常=詳細、選択=選択/解除、並べる=クリック操作なし。
+  // Cmd/Ctrl・Shiftクリックは従来どおり選択モードへの近道として残す。
   const handlePhotoClick = (photo: Photo, idx: number, e: React.MouseEvent) => {
-    if (e.metaKey || e.ctrlKey) {
-      // Toggle selection
+    if (libraryMode === "arrange") return;
+
+    if (libraryMode === "normal" && !(e.metaKey || e.ctrlKey || e.shiftKey)) {
+      guardInspectorSwitch(photo, () => {
+        setSelected(new Set());
+        openInspectorFor(photo);
+        setLastClicked(photo.id);
+      });
+      return;
+    }
+
+    if (libraryMode === "normal") {
+      requestLibraryMode("select", () => {
+        if (e.shiftKey) selectRangeThrough(photo, idx);
+        else setSelected(new Set([photo.id]));
+        setLastClicked(photo.id);
+      });
+      return;
+    }
+
+    if (e.shiftKey) {
+      selectRangeThrough(photo, idx);
+    } else {
       setSelected((prev) => {
         const next = new Set(prev);
         if (next.has(photo.id)) next.delete(photo.id);
         else next.add(photo.id);
         return next;
       });
-    } else if (e.shiftKey && lastClicked !== null) {
-      // Range select
-      const lastIdx = displayed.findIndex((p) => p.id === lastClicked);
-      if (lastIdx >= 0) {
-        const start = Math.min(lastIdx, idx);
-        const end = Math.max(lastIdx, idx);
-        const range = displayed.slice(start, end + 1).map((p) => p.id);
-        setSelected((prev) => {
-          const next = new Set(prev);
-          range.forEach((id) => next.add(id));
-          return next;
-        });
-      }
-    } else {
-      // 未保存の下書きがある間はガードを通す。キャンセル時は選択状態も
-      // カーソル(lastClicked)も動かさないため、ここで早期 return する。
-      guardInspectorSwitch(photo, () => {
-        setSelected(new Set([photo.id]));
-        openInspectorFor(photo);
-        setLastClicked(photo.id);
-      });
-      return;
     }
     setLastClicked(photo.id);
   };
@@ -3569,7 +3631,7 @@ export function GalleryTab({
   // Move a photo by ±1 / to the start/end of the VISIBLE list (series scope
   // aware — see lib/reorder.ts for the subset-vs-global splice semantics).
   const movePhoto = (id: number, delta: number) => {
-    if (reorderLocked) return;
+    if (libraryMode !== "arrange" || reorderLocked) return;
     const ids = moveRelativeToViewNeighbor(
       allPhotos.map((p) => p.id),
       displayed.map((p) => p.id),
@@ -3580,7 +3642,7 @@ export function GalleryTab({
   };
 
   const movePhotoTo = (id: number, pos: "start" | "end") => {
-    if (reorderLocked) return;
+    if (libraryMode !== "arrange" || reorderLocked) return;
     const ids = moveToViewEdge(
       allPhotos.map((p) => p.id),
       displayed.map((p) => p.id),
@@ -3600,11 +3662,13 @@ export function GalleryTab({
   const rotateActivePhotos = (
     operation: Extract<BatchPhotoOperation, "rotate_left" | "rotate_right">,
   ) => {
+    if (libraryMode === "arrange") return;
     if (batchOp.isPending || quickRotatePhoto.isPending) return;
-    if (selected.size > 0) {
+    if (libraryMode === "select" && selected.size > 0) {
       batchOp.mutate({ operation });
       return;
     }
+    if (libraryMode === "select") return;
     if (lastClicked === null) return;
     const photo =
       displayed.find((p) => p.id === lastClicked) ??
@@ -3693,9 +3757,10 @@ export function GalleryTab({
 
   // Drag reorder (no-op while locked so the drop indicator never appears)
   const handleDragStart = (id: number) => {
-    if (!reorderLocked) setDragSrcId(id);
+    if (libraryMode === "arrange" && !reorderLocked) setDragSrcId(id);
   };
   const handleDragOver = (e: React.DragEvent, id: number) => {
+    if (libraryMode !== "arrange" || reorderLocked) return;
     e.preventDefault();
     setDragOverId(id);
     updateDragScroll(e.clientY);
@@ -3709,7 +3774,7 @@ export function GalleryTab({
     }
     // ロック中（複合フィルター・並び替え表示）はドロップを無視。シリーズ単独
     // 絞り込みは許可 — グローバル index への splice なので順序は壊れない。
-    if (reorderLocked) {
+    if (libraryMode !== "arrange" || reorderLocked) {
       setDragSrcId(null);
       setDragOverId(null);
       return;
@@ -3774,7 +3839,7 @@ export function GalleryTab({
   };
 
   // C3: move the keyboard cursor (lastClicked) by an offset within `displayed`.
-  // Arrow nav collapses to a single selection (Bridge/Finder behaviour).
+  // 選択モードだけ単独選択へ寄せ、通常モードでは詳細表示用カーソルとして扱う。
   const navByOffset = (offset: number) => {
     if (displayed.length === 0) return;
     const curIdx =
@@ -3789,10 +3854,12 @@ export function GalleryTab({
     // 未保存の下書きがある間はガードを通す。キャンセル時はカーソル・選択・
     // プレビュー・スクロールのどれも動かさない。
     guardInspectorSwitch(photo, () => {
-      setSelected(new Set([photo.id]));
+      setSelected(
+        libraryMode === "select" ? new Set([photo.id]) : new Set(),
+      );
       setLastClicked(photo.id);
       setPreviewPhoto((prev) => (prev ? photo : prev)); // keep quick-preview in sync if open
-      if (inspectPhoto) openInspectorFor(photo); // keep inspector panel in sync if open
+      if (libraryMode === "normal" && inspectPhoto) openInspectorFor(photo);
       scrollLibraryIndexIntoView(nextIdx);
       requestAnimationFrame(() =>
         document
@@ -3836,7 +3903,7 @@ export function GalleryTab({
         return;
       }
 
-      // Escape closes overlays in priority order, else clears selection
+      // Escape closes overlays in priority order, then exits the current mode.
       if (e.key === "Escape") {
         if (showShortcuts) {
           setShowShortcuts(false);
@@ -3846,7 +3913,10 @@ export function GalleryTab({
           setPreviewPhoto(null);
           return;
         }
-        setSelected(new Set());
+        if (libraryMode !== "normal") {
+          requestLibraryMode("normal");
+          return;
+        }
         // 未保存編集の無言破棄を防ぐ(×と同じ確認導線)
         requestCloseInspector();
         return;
@@ -3855,7 +3925,11 @@ export function GalleryTab({
       if (showTrash) return; // grid nav only applies to the library view
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (selected.size > 0 && !bulkBusyRef.current) {
+        if (
+          libraryMode === "select" &&
+          selected.size > 0 &&
+          !bulkBusyRef.current
+        ) {
           e.preventDefault();
           // Trash is reversible (undo toast + 30-day retention) — no confirm.
           deletePhotos.mutate(Array.from(selected));
@@ -3864,7 +3938,9 @@ export function GalleryTab({
       }
       if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setSelected(new Set(displayed.map((p) => p.id)));
+        requestLibraryMode("select", () =>
+          setSelected(new Set(displayed.map((p) => p.id))),
+        );
         return;
       }
       if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === "[") {
@@ -3883,12 +3959,17 @@ export function GalleryTab({
         (e.metaKey || e.ctrlKey) &&
         (e.key === "ArrowUp" || e.key === "ArrowDown")
       ) {
-        if (lastClicked !== null && !reorderLocked) {
+        if (
+          libraryMode === "arrange" &&
+          lastClicked !== null &&
+          !reorderLocked
+        ) {
           e.preventDefault();
           movePhoto(lastClicked, e.key === "ArrowUp" ? -1 : 1);
         }
         return;
       }
+      if (libraryMode === "arrange") return;
       // Arrow navigation
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -3911,7 +3992,11 @@ export function GalleryTab({
         return;
       }
       // Enter — open inspector for the cursor photo
-      if (e.key === "Enter" && lastClicked !== null) {
+      if (
+        libraryMode === "normal" &&
+        e.key === "Enter" &&
+        lastClicked !== null
+      ) {
         const photo = displayed.find((p) => p.id === lastClicked);
         if (photo) {
           e.preventDefault();
@@ -3920,7 +4005,11 @@ export function GalleryTab({
         return;
       }
       // Space — quick preview (toggle) for the cursor photo
-      if (e.key === " " && lastClicked !== null) {
+      if (
+        libraryMode === "normal" &&
+        e.key === " " &&
+        lastClicked !== null
+      ) {
         const photo = displayed.find((p) => p.id === lastClicked);
         if (photo) {
           e.preventDefault();
@@ -3941,6 +4030,7 @@ export function GalleryTab({
     showShortcuts,
     effectiveThumbSize,
     inspectPhoto,
+    libraryMode,
     // requestCloseInspector が最新の下書きを見て未保存判定できるように
     editForm,
   ]);
@@ -3969,7 +4059,7 @@ export function GalleryTab({
   });
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full" data-library-mode={libraryMode}>
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="px-2 sm:px-4 pt-2 flex-shrink-0">
@@ -3983,7 +4073,7 @@ export function GalleryTab({
                 <>
                   <CountSwap value={displayed.length} /> /{" "}
                   <CountSwap value={allPhotos.length} /> photos
-                  {selected.size > 0 && (
+                  {libraryMode === "select" && selected.size > 0 && (
                     <>
                       {t.headers.dotSeparator}
                       <CountSwap value={selected.size} /> {t.headers.librarySelected}
@@ -4011,6 +4101,52 @@ export function GalleryTab({
         {/* Toolbar — quiet Library controls */}
         <div className="bg-[var(--admin-paper)] border-b border-[var(--admin-line)] px-2 sm:px-4 py-1.5 flex flex-col gap-2 flex-shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {libraryMode === "normal" && (
+              <>
+                <fieldset
+                  aria-label={copy.mode.group}
+                  data-library-mode-switcher
+                  className="m-0 flex items-center gap-1 border-0 border-r border-[var(--admin-line)] p-0 pr-2 sm:pr-3"
+                >
+                  <button
+                    type="button"
+                    data-library-mode-action="normal"
+                    aria-pressed="true"
+                    className="text-[11px] px-2 py-1 rounded-sm admin-btn-primary"
+                  >
+                    {copy.mode.normal}
+                  </button>
+                  <button
+                    type="button"
+                    data-library-mode-action="select"
+                    onClick={() => requestLibraryMode("select")}
+                    disabled={
+                      uploading ||
+                      showTrash ||
+                      bulkEditMode ||
+                      displayed.length === 0
+                    }
+                    aria-label={copy.mode.startSelect}
+                    className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {copy.mode.select}
+                  </button>
+                  <button
+                    type="button"
+                    data-library-mode-action="arrange"
+                    onClick={() => requestLibraryMode("arrange")}
+                    disabled={
+                      uploading ||
+                      showTrash ||
+                      bulkEditMode ||
+                      allPhotos.length === 0
+                    }
+                    aria-label={copy.mode.startArrange}
+                    className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {copy.mode.arrange}
+                  </button>
+                </fieldset>
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
@@ -4075,6 +4211,7 @@ export function GalleryTab({
 
             <button
               type="button"
+              data-library-filters-toggle
               onClick={() => setShowLibraryFilters((v) => !v)}
               aria-expanded={showLibraryFilters}
               className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition-colors ${
@@ -4216,9 +4353,13 @@ export function GalleryTab({
               className="hidden"
               onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
             />
+              </>
+            )}
           </div>
 
-          {!showTrash && activeFilterLabels.length > 0 && (
+          {libraryMode === "normal" &&
+            !showTrash &&
+            activeFilterLabels.length > 0 && (
             <div className="flex items-center gap-1.5 text-[11px] text-[var(--admin-ink)] min-w-0">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                 {copy.filters.active}
@@ -4236,7 +4377,9 @@ export function GalleryTab({
             </div>
           )}
 
-          {!showTrash && showLibraryFilters && (
+          {libraryMode === "normal" &&
+            !showTrash &&
+            showLibraryFilters && (
             <div className="border-t border-[var(--admin-line)] pt-2 flex flex-col gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* B2: free-text search */}
@@ -4247,6 +4390,7 @@ export function GalleryTab({
                   />
                   <input
                     type="search"
+                    data-library-search-input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={copy.filters.searchPlaceholder}
@@ -4498,11 +4642,33 @@ export function GalleryTab({
           )}
 
           {/* Batch actions */}
-          {selected.size > 0 && !showTrash && (
-            <div className="border-t border-[var(--admin-line)] pt-2 flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
-                {copy.selection.selected(selected.size)}
-              </span>
+          {libraryMode === "select" && !showTrash && (
+            <div
+              data-library-selection-toolbar
+              data-library-selected-count={selected.size}
+              className="flex items-center gap-2 flex-wrap"
+            >
+              <div className="flex items-center gap-2 border-r border-[var(--admin-line)] pr-2 sm:pr-3">
+                <span
+                  className="text-[11px] text-[var(--admin-ink)]"
+                  aria-live="polite"
+                >
+                  {copy.selection.selected(selected.size)}
+                </span>
+                <span className="hidden lg:inline text-[10px] text-[var(--admin-muted)]">
+                  {copy.mode.selectionHint}
+                </span>
+                <button
+                  type="button"
+                  data-library-mode-action="end-select"
+                  onClick={() => requestLibraryMode("normal")}
+                  className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
+                >
+                  {copy.mode.endSelection}
+                </button>
+              </div>
+              {selected.size > 0 && (
+                <div data-library-batch-actions className="contents">
               {/* M2: Publish / Unpublish */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-0.5">
                 <button
@@ -4781,11 +4947,51 @@ export function GalleryTab({
               >
                 <Trash2 size={11} /> {copy.selection.moveToTrash}
               </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {libraryMode === "arrange" && !showTrash && (
+            <div
+              data-library-arrange-toolbar
+              data-reorder-locked={reorderLocked ? "true" : "false"}
+              data-reorder-lock-cause={reorderLockCause ?? "none"}
+              className="flex items-center gap-2 flex-wrap"
+            >
+              <span className="text-[11px] text-[var(--admin-ink)]">
+                {copy.mode.arrange}
+              </span>
+              <span className="text-[10px] text-[var(--admin-muted)]">
+                {reorderLocked
+                  ? reorderLockCause === "sort"
+                    ? copy.reorder.lockedBySort
+                    : copy.reorder.lockedByFilter
+                  : copy.mode.arrangeHint}
+              </span>
+              {reorderLocked && (
+                <button
+                  type="button"
+                  onClick={unlockReorder}
+                  className="text-[10px] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
+                >
+                  {copy.reorder.unlock}
+                </button>
+              )}
+              <button
+                type="button"
+                data-library-mode-action="finish-arrange"
+                onClick={() => requestLibraryMode("normal")}
+                className="text-[11px] px-2 py-1 rounded-sm admin-btn-primary"
+              >
+                {copy.mode.finishArrange}
+              </button>
             </div>
           )}
         </div>
 
-        {!showTrash &&
+        {libraryMode === "normal" &&
+          !showTrash &&
           (activeFilterLabels.length > 0 || librarySort !== "manual") && (
             <div
               aria-label={copy.conditions.aria}
@@ -5028,7 +5234,12 @@ export function GalleryTab({
               onSave={bulkEditSave}
             />
           ) : displayed.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
+            <div
+              data-library-empty={
+                anyFilterActive && allPhotos.length > 0 ? "search" : "photos"
+              }
+              className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]"
+            >
               {anyFilterActive && allPhotos.length > 0 ? (
                 <EmptySearchIllustration />
               ) : (
@@ -5062,7 +5273,7 @@ export function GalleryTab({
               {/* Reorder-lock warning (filters or a non-manual view sort).
                   原因の説明だけでなく、初心者が迷わないよう1クリックの復帰
                   ボタンを置く(先輩サポート 2026-07-11)。 */}
-              {reorderLocked && (
+              {libraryMode === "arrange" && reorderLocked && (
                 <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-x-2 gap-y-1 flex-wrap">
                   <span className="text-[var(--admin-muted)]">⚠</span>
                   <span>
@@ -5083,14 +5294,17 @@ export function GalleryTab({
                 </div>
               )}
               {/* Series-scoped reorder: the order set here IS the public series page order */}
-              {!reorderLocked && onlySeriesFilter && (
-                <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-deep)] border border-[var(--admin-line-strong)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
-                  <span>↕</span> {copy.reorder.seriesHint}
-                </div>
-              )}
+              {libraryMode === "arrange" &&
+                !reorderLocked &&
+                onlySeriesFilter && (
+                  <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-deep)] border border-[var(--admin-line-strong)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
+                    <span>↕</span> {copy.reorder.seriesHint}
+                  </div>
+                )}
               {/* Grid */}
               <div
                 ref={gridRef}
+                data-library-grid-mode={libraryMode}
                 data-virtualized={virtualGrid.isVirtualized ? "true" : "false"}
                 data-rendered-count={virtualGrid.renderedCount}
               >
@@ -5106,8 +5320,11 @@ export function GalleryTab({
                 >
                   {visibleDisplayed.map((photo, localIdx) => {
                     const idx = virtualGrid.startIndex + localIdx;
-                    const isSelected = selected.has(photo.id);
-                    const isInspect = inspectPhoto?.id === photo.id;
+                    const isSelected =
+                      libraryMode === "select" && selected.has(photo.id);
+                    const isInspect =
+                      libraryMode === "normal" &&
+                      inspectPhoto?.id === photo.id;
                     const catColor = catColors[photo.category] ?? "#666";
                     const isUnpublished = photo.isPublished === false;
                     const heroIndex = (heroData?.heroPhotos ?? []).findIndex(
@@ -5142,7 +5359,9 @@ export function GalleryTab({
                       <div
                         key={photo.id}
                         id={`admin-photo-${photo.id}`}
-                        draggable={!reorderLocked}
+                        draggable={
+                          libraryMode === "arrange" && !reorderLocked
+                        }
                         onDragStart={() => handleDragStart(photo.id)}
                         onDragOver={(e) => handleDragOver(e, photo.id)}
                         onDrop={() => handleDrop(photo.id)}
@@ -5181,13 +5400,20 @@ export function GalleryTab({
                         accessible; the reorder buttons sit above it (higher z). */}
                         <button
                           type="button"
+                          data-library-photo-action
                           aria-label={
                             photo.title ||
                             photo.filename ||
                             copy.inspector.photoFallback
                           }
                           onClick={(e) => handlePhotoClick(photo, idx, e)}
-                          className="absolute inset-0 z-[1] cursor-pointer"
+                          className={`absolute inset-0 z-[1] ${
+                            libraryMode === "arrange"
+                              ? reorderLocked
+                                ? "cursor-not-allowed"
+                                : "cursor-grab active:cursor-grabbing"
+                              : "cursor-pointer"
+                          }`}
                         />
                         {/* eager固定: マウント範囲は仮想化が既に絞っている(可視+overscan)。
                         lazyだと高速スワイプ中のremountでキャッシュ済み画像すら白抜けし
@@ -5310,38 +5536,6 @@ export function GalleryTab({
                             strokeLinejoin="round"
                           />
                         </svg>
-                        {effectiveThumbSize >= 120 && (
-                          <div className="admin-photo-hover-only absolute top-6 right-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                rotateLibraryPhoto(photo, -90);
-                              }}
-                              disabled={quickRotatePhoto.isPending}
-                              aria-label={copy.rotation.leftAria}
-                              title={copy.rotation.leftTitle}
-                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
-                            >
-                              <RotateCcw size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                rotateLibraryPhoto(photo, 90);
-                              }}
-                              disabled={quickRotatePhoto.isPending}
-                              aria-label={copy.rotation.rightAria}
-                              title={copy.rotation.rightTitle}
-                              className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-35 disabled:cursor-wait"
-                            >
-                              <RotateCw size={13} />
-                            </button>
-                          </div>
-                        )}
                         {/* Title strip on hover */}
                         <div className="admin-photo-hover-only absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <p className="text-[10px] text-white/80 truncate">
@@ -5350,7 +5544,9 @@ export function GalleryTab({
                         </div>
                         {/* Move controls — touch-friendly reorder (drag isn't available on touch).
                         Dense 3-column cards are view-first; switch to 2 columns to reorder. */}
-                        {effectiveThumbSize >= LIBRARY_MIN_EFFECTIVE_THUMB &&
+                        {libraryMode === "arrange" &&
+                          effectiveThumbSize >=
+                            LIBRARY_MIN_EFFECTIVE_THUMB &&
                           !reorderLocked &&
                           !showTrash && (
                             <div className="admin-photo-hover-only admin-photo-move-controls absolute bottom-1 left-1 z-[2] flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -6192,7 +6388,10 @@ export function GalleryTab({
               }
             }}
           />
-          <div className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-64 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto">
+          <div
+            data-library-inspector
+            className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-64 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto"
+          >
             {/* Header with close (close needed on mobile drawer) */}
             <div className="flex items-center justify-between px-3 pt-2 sm:hidden">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">

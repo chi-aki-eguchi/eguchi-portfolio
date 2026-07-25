@@ -83,6 +83,16 @@ function buttonWithText(host: Element, text: string): HTMLButtonElement {
   return button;
 }
 
+// モード分離(2026-07-23承認・docs/specs/library-redesign-spec.md)後、通常/選択/
+// 並べるの切替はこの data 属性が入口になる。テキストは JA/EN で変わるため属性で引く。
+function modeAction(host: Element, action: string): HTMLButtonElement {
+  const button = host.querySelector(
+    `[data-library-mode-action="${action}"]`,
+  ) as HTMLButtonElement | null;
+  if (!button) throw new Error(`Mode action not found: ${action}`);
+  return button;
+}
+
 function inputByLabel(host: Element, label: string): HTMLInputElement {
   const input = host.querySelector(
     `input[aria-label="${label}"]`,
@@ -1106,6 +1116,13 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Duplicate this photo");
       expect(host.textContent).toContain("Move photo to Trash");
 
+      // モード分離(2026-07-23承認)後、一括編集は選択モードで1枚以上選んでから出る。
+      modeAction(host, "select").click();
+      await flush(30);
+      (
+        host.querySelector(".admin-photo-tile > button") as HTMLButtonElement
+      ).click();
+      await flush(30);
       buttonWithText(host, "Bulk edit").click();
       await waitForText(host, "Bulk metadata edit");
       expect(host.textContent).toContain("Leave unchanged");
@@ -1392,11 +1409,24 @@ describe("shared components", () => {
       expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
       expect(host.textContent).not.toContain("選択中 1枚");
 
+      // モード分離(2026-07-23承認)後: 通常モードのタイルクリックは詳細を開くだけで、
+      // 選択にも一括操作にも入らない。一括操作は選択モードに入ってから出る。
       const firstTile = host.querySelector(
         'button[aria-label="A"]',
       ) as HTMLButtonElement | null;
       expect(firstTile).not.toBeNull();
       firstTile!.click();
+      await flush(30);
+      expect(host.textContent).not.toContain("選択中 1枚");
+      expect(host.textContent).not.toContain("一括編集");
+
+      modeAction(host, "select").click();
+      await flush(30);
+      const tileInSelectMode = host.querySelector(
+        'button[aria-label="A"]',
+      ) as HTMLButtonElement | null;
+      expect(tileInSelectMode).not.toBeNull();
+      tileInSelectMode!.click();
       await flush(30);
       expect(host.textContent).toContain("選択中 1枚");
       expect(host.textContent).toContain("公開");
@@ -1706,7 +1736,9 @@ describe("shared components", () => {
       await flush(60);
       expect(titleInput().value).toBe("dirty-nav");
       expect(host.textContent).toContain("b.jpg"); // File Info = まだ B のまま
-      expect(host.textContent).toContain("選択中 1枚"); // 選択も維持
+      // モード分離(2026-07-23承認)後、通常モードでの詳細移動は選択を伴わない。
+      // 「選択が維持される」ではなく「選択に入っていない」ことを確認する。
+      expect(host.textContent).not.toContain("選択中");
 
       // 破棄を明示した時だけ次の写真(C)へ移動する
       await pressArrowRight();
@@ -1805,9 +1837,24 @@ describe("shared components", () => {
         qc.setQueryData(["photos", "all"], { photos: largePhotos });
         seedCompletedSetup(qc);
       });
+      // モード分離(2026-07-23承認)後、通常モードのタイルクリックは詳細を開く。
+      // 詳細が開いたままだとグリッド幅が縮んで列数が変わり、↓の移動先計算が
+      // 前提と食い違う。ここで見たいのは「カーソル移動に仮想ウィンドウが追従
+      // するか」なので、カーソル(lastClicked)を置いた上で Esc で詳細を閉じ、
+      // 通常モードのまま全幅で検証する。
+      // キーボード移動をどのモードの道具とするかは未決定
+      // (docs/specs/library-redesign-spec.md §5)。このテストはその判断を
+      // 先取りせず、通常モードでの退行検知を保つ。
       const firstTile = await waitForButton(host, 'button[aria-label="P000"]');
       firstTile.click();
       await flush(20);
+      dom.window.dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+        }),
+      );
+      await flush(30);
       const initialThumbs = Array.from(host.querySelectorAll("img"))
         .map((img) => img.getAttribute("src") ?? "")
         .filter((src) => src.includes("/api/images/thumbs/"));

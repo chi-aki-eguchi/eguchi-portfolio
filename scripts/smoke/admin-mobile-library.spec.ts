@@ -37,33 +37,13 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await twoColumns.click();
   await expect(twoColumns).toHaveAttribute("aria-pressed", "true");
 
-  // 回帰(Claude review P1): 並べ替えボタンを触っただけではスクロール扱いに
-  // しない。touchstartでボタンが140ms消えると、タッチ操作が点滅して見える。
-  const moveButton = tiles.nth(0).getByRole("button", { name: "後へ移動" });
-  if ((await moveButton.count()) > 0) {
-    await moveButton.evaluate((button) => {
-      const touch = new Touch({
-        identifier: 1,
-        target: button,
-        clientX: 20,
-        clientY: 20,
-      });
-      button.dispatchEvent(
-        new TouchEvent("touchstart", {
-          bubbles: true,
-          cancelable: true,
-          touches: [touch],
-          targetTouches: [touch],
-          changedTouches: [touch],
-        }),
-      );
-    });
-    await expect(page.locator("[data-library-scroll]")).toHaveAttribute(
-      "data-scrolling",
-      "false",
-    );
-    await expect(moveButton).toBeVisible();
-  }
+  // 通常モードは詳細を開くための状態。回転・移動操作は写真上に置かない。
+  await expect(
+    tiles.nth(0).getByRole("button", { name: "右へ90度回転" }),
+  ).toHaveCount(0);
+  await expect(
+    tiles.nth(0).getByRole("button", { name: "後へ移動" }),
+  ).toHaveCount(0);
 
   await expect(threeColumns).toBeVisible();
   await threeColumns.click();
@@ -115,21 +95,62 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await expect(firstImage).toHaveAttribute("data-loaded", "true");
   await expect(firstImage).toHaveAttribute("data-broken", "true");
 
-  // 3列は写真を一覧する密度優先モード。40px角の並べ替えボタンは写真を
-  // 覆うため隠し、2列へ戻すと再び操作できる。
+  // 3列は写真を一覧する密度優先。並べるモードへ入っても40px角の
+  // 移動ボタンは写真を覆うため出さない。
+  await page.locator('[data-library-mode-action="arrange"]').click();
+  await expect(page.locator("[data-library-mode]")).toHaveAttribute(
+    "data-library-mode",
+    "arrange",
+  );
   await expect(
     tiles.nth(0).getByRole("button", { name: "前へ移動" }),
   ).toHaveCount(0);
   await expect(
     tiles.nth(0).getByRole("button", { name: "後へ移動" }),
   ).toHaveCount(0);
+  await page.locator('[data-library-mode-action="finish-arrange"]').click();
 
-  // カード上の回転/移動ボタンがタイルからはみ出さない
+  // 2列へ戻して明示的に並べるモードへ入ると、既存のスマホ移動操作が使える。
+  await twoColumns.click();
+  await page.locator('[data-library-mode-action="arrange"]').click();
+  const unlock = page.getByRole("button", {
+    name: "並べ替えできる状態に戻す",
+  });
+  if ((await unlock.count()) > 0) await unlock.first().click();
+
+  const moveButton = tiles.nth(0).getByRole("button", { name: "後へ移動" });
+  await expect(moveButton).toBeVisible();
+
+  // 回帰(Claude review P1): 並べ替えボタンを触っただけではスクロール扱いに
+  // しない。touchstartでボタンが140ms消えると、タッチ操作が点滅して見える。
+  await moveButton.evaluate((button) => {
+    const touch = new Touch({
+      identifier: 1,
+      target: button,
+      clientX: 20,
+      clientY: 20,
+    });
+    button.dispatchEvent(
+      new TouchEvent("touchstart", {
+        bubbles: true,
+        cancelable: true,
+        touches: [touch],
+        targetTouches: [touch],
+        changedTouches: [touch],
+      }),
+    );
+  });
+  await expect(page.locator("[data-library-scroll]")).toHaveAttribute(
+    "data-scrolling",
+    "false",
+  );
+  await expect(moveButton).toBeVisible();
+
+  // カード上の移動ボタンがタイルからはみ出さない
   // (hasTouch=pointer:coarse なので admin-tap-sm は40px角に拡大された状態)
-  const tileBox = box1!;
-  for (const label of ["右へ90度回転", "前へ移動", "後へ移動"]) {
+  const tileBox = (await tiles.nth(0).boundingBox())!;
+  for (const label of ["前へ移動", "後へ移動"]) {
     const btn = tiles.nth(0).getByRole("button", { name: label });
-    if ((await btn.count()) === 0) continue; // reorderロック中は移動ボタン非表示
     const b = await btn.boundingBox();
     if (!b) continue;
     expect(b.x + b.width).toBeLessThanOrEqual(tileBox.x + tileBox.width + 1);
@@ -144,10 +165,11 @@ async function assertContactSheet(page: Page, width: number, height: number) {
       tiles.nth(0).getByRole("button", { name: "先頭へ移動" }),
     ).toHaveCount(0);
   }
+  await page.locator('[data-library-mode-action="finish-arrange"]').click();
 
   // タイルタップ → Inspector(モバイルはドロワー)が開く。編集していないので
   // × は即閉じ(確認ダイアログなし・非書き込み)。
-  await tiles.nth(0).locator("button").first().click();
+  await tiles.nth(0).locator("[data-library-photo-action]").click();
   await expect(page.getByText("Edit Photo")).toBeVisible({ timeout: 5_000 });
   await page.getByRole("button", { name: "Close" }).click();
   await expect(page.getByText("Edit Photo")).toBeHidden();

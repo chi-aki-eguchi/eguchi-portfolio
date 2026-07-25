@@ -124,6 +124,18 @@ test("並び替えロック中は復帰ボタンが出て、押すと手動順�
   await flush();
   await flush();
 
+  // 明示的に「並べる」へ入った時だけ、ロック理由と復帰操作を前面に出す。
+  const arrange = host.querySelector<HTMLButtonElement>(
+    '[data-library-mode-action="arrange"]',
+  );
+  expect(arrange).not.toBeNull();
+  await act(async () => {
+    arrange!.dispatchEvent(
+      new dom.window.MouseEvent("click", { bubbles: true }),
+    );
+  });
+  await flush();
+
   // ロック警告と復帰ボタン(文言固定)
   expect(host.textContent).toContain("いまは並び替えを保存できません");
   const buttons = Array.from(host.querySelectorAll("button"));

@@ -40,10 +40,18 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
 
   expect(ja.library.sort.options.manual).toBe("手動（保存されている順）");
   expect(ja.library.inspector.shotDate).toBe("撮影日");
-  expect(ja.series.coverPhoto).toBe("Cover Photo");
+  expect(ja.series.coverPhoto).toBe("表紙写真");
   expect(ja.categories.description).toBe(
     "ギャラリーのフィルターとして使用。↑↓で並び替え（この順で表示されます）。",
   );
+  expect(ja.hero.slidesTitle).toBe("トップページの写真");
+  expect(ja.hero.galleryTitle).toBe("ギャラリー");
+  expect(ja.profile.photoTitle).toBe("プロフィール写真（Aboutページ）");
+  expect(ja.profile.uploadPhoto).toBe("写真を選ぶ");
+  expect(ja.profile.fields.nameLabel).toBe("名前（日本語）");
+  expect(ja.profile.fields.nameEnLabel).toBe("名前（英語）");
+  expect(ja.profile.fields.bioLabel).toBe("自己紹介");
+  expect(ja.profile.fields.bioEnLabel).toBe("自己紹介（英語）");
 
   expect(en.library.sort.options.displaySize).toBe("Display size (S→L)");
   expect(en.library.import.film).toBe("Film");
@@ -54,6 +62,14 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   expect(en.series.cardSummary(1, "Still life")).toBe(
     "1 photo · Cover: Still life",
   );
+  expect(en.hero.slidesTitle).toBe("Hero Slides");
+  expect(en.hero.galleryTitle).toBe("Gallery");
+  expect(en.profile.photoTitle).toBe("Profile Photo (About page)");
+  expect(en.profile.uploadPhoto).toBe("Upload photo");
+  expect(en.profile.fields.nameLabel).toBe("Name (JP)");
+  expect(en.profile.fields.nameEnLabel).toBe("Name (EN)");
+  expect(en.profile.fields.bioLabel).toBe("Bio");
+  expect(en.profile.fields.bioEnLabel).toBe("Bio (EN)");
 });
 
 function CopyProbe() {

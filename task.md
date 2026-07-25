@@ -9380,3 +9380,20 @@ Chromium は初期スタイル適用と属性変更を1回のスタイル解決�
 - `.admin-library-thumbnail` のフェード（`styles.css` 986〜998行）。
   初回読込の演出は意図的に残している。全廃しない
 - `styles.css` の `.admin-atelier [class*="fixed"][class*="bottom-"]` ルール（Handoff 64 参照）
+
+## Handoff 2026-07-25 (66) — 管理画面日本語化の指示訂正を反映
+
+### 変更内容
+
+- Series の写真数読込中表示 `…` を、意図を示す元コメントごと復元。既存テストは変更なし
+- SetupTab の loading / loadFailed / collapsed / 通常の見出しを `t.setup.title` に統一し、
+  通常分岐の `t.setup.description` を復元。見出し追加と smoke の fixme 解除は維持
+- プロフィール写真の比率案内を辞書化し、JA は「縦3:4がおすすめ」、EN は既存文言を維持
+- 日本語化に追随する既存テストの期待文言だけを更新（アサーション削除・緩和なし）
+
+### 検証
+
+- `bun run check` → **511 pass / 0 fail**。typecheck / lint / build も成功
+- `scripts/smoke/admin-page-frame.spec.ts` は通常の `test`（`fixme` なし）
+- `bun run smoke` はオーナー指示どおり実行していない
+- commit / push はしていない

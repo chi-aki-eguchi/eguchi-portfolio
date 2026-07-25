@@ -1054,6 +1054,7 @@ export function SetupTab({
   if (loading) {
     return (
       <PageShell width="wide">
+        <PageHeader title={t.setup.title} />
         <p className="text-[12px] text-[color:var(--admin-muted)]">…</p>
       </PageShell>
     );
@@ -1062,6 +1063,7 @@ export function SetupTab({
   if (loadFailed) {
     return (
       <PageShell width="wide">
+        <PageHeader title={t.setup.title} />
         <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
           <h2 className="text-[14px] text-amber-900">
             {t.setup.loadError.title}
@@ -1087,6 +1089,7 @@ export function SetupTab({
   if (collapsed) {
     return (
       <PageShell width="wide">
+        <PageHeader title={t.setup.title} />
         <div className="space-y-3">
           <StorageHealthLine
             health={setupHealth}

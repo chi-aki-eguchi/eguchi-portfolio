@@ -636,7 +636,6 @@ export function HeroTab() {
     <PageShell width="wide">
       <PageHeader
         title={t.navigation.tabs.hero}
-        description={t.headers.hero}
       />
       {heroError && (
         <div
@@ -671,7 +670,7 @@ export function HeroTab() {
       {/* Selected Hero Photos */}
       <div className="mb-8">
         <h2 className="text-[11px] tracking-widest uppercase text-[var(--admin-muted)] mb-1">
-          Hero Slides
+          {copy.slidesTitle}
         </h2>
         <p className="text-[10px] text-[var(--admin-muted)] mb-4">
           {copy.slidesHint}
@@ -755,7 +754,7 @@ export function HeroTab() {
       {/* Gallery: Pick photos */}
       <div>
         <h2 className="text-[11px] tracking-widest uppercase text-[var(--admin-muted)] mb-1">
-          Gallery
+          {copy.galleryTitle}
         </h2>
         <p className="text-[10px] text-[var(--admin-muted)] mb-4">
           {copy.galleryHint}
@@ -935,8 +934,8 @@ export function ProfileTab({
   const fields = [
     {
       key: "profileName",
-      label: "Name (JP)",
-      placeholder: "Photographer Name",
+      label: copy.fields.nameLabel,
+      placeholder: copy.fields.namePlaceholder,
     },
     {
       key: "profileNameKata",
@@ -945,20 +944,20 @@ export function ProfileTab({
     },
     {
       key: "profileNameEn",
-      label: "Name (EN)",
-      placeholder: "Photographer Name",
+      label: copy.fields.nameEnLabel,
+      placeholder: copy.fields.nameEnPlaceholder,
     },
     {
       key: "profileBio",
-      label: "Bio",
+      label: copy.fields.bioLabel,
       multiline: true,
-      placeholder: "Write your bio...",
+      placeholder: copy.fields.bioPlaceholder,
     },
     {
       key: "profileBioEn",
-      label: "Bio (EN)",
+      label: copy.fields.bioEnLabel,
       multiline: true,
-      placeholder: "Write your bio in English... (blank falls back to Bio)",
+      placeholder: copy.fields.bioEnPlaceholder,
     },
     {
       key: "profileStatement",
@@ -968,30 +967,30 @@ export function ProfileTab({
     },
     {
       key: "profileStatementEn",
-      label: `${copy.fields.statementLabel} (EN)`,
+      label: copy.fields.statementEnLabel,
       multiline: true,
-      placeholder: "English version (blank falls back to Statement)",
+      placeholder: copy.fields.statementEnPlaceholder,
     },
     {
       key: "profileGear",
       label: copy.fields.gearLabel,
       multiline: true,
-      placeholder: "PENTAX 67\nLeica M6\n...",
+      placeholder: copy.fields.gearPlaceholder,
     },
     {
       key: "profileInstagram",
-      label: "Instagram",
-      placeholder: "https://instagram.com/...",
+      label: copy.fields.instagramLabel,
+      placeholder: copy.fields.instagramPlaceholder,
     },
     {
       key: "profileTwitter",
-      label: "X URL",
-      placeholder: "https://twitter.com/...",
+      label: copy.fields.xUrlLabel,
+      placeholder: copy.fields.xUrlPlaceholder,
     },
     {
       key: "profileNote",
-      label: "note URL",
-      placeholder: "https://note.com/...",
+      label: copy.fields.noteUrlLabel,
+      placeholder: copy.fields.noteUrlPlaceholder,
     },
   ];
 
@@ -1005,7 +1004,7 @@ export function ProfileTab({
       {/* Profile Photo Upload */}
       <div className="mb-8">
         <p className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mb-3">
-          Profile Photo (About page)
+          {copy.photoTitle}
         </p>
         <div className="flex items-start gap-4">
           {data?.profilePhotoUrl ? (
@@ -1044,7 +1043,7 @@ export function ProfileTab({
                 <div className="flex items-center justify-center gap-2">
                   <Upload size={12} className="text-[var(--admin-muted)]" />
                   <span className="text-[11px] text-[var(--admin-muted)]">
-                    Upload photo
+                    {copy.uploadPhoto}
                   </span>
                 </div>
               )}
@@ -1061,7 +1060,7 @@ export function ProfileTab({
               }}
             />
             <p className="text-[10px] text-[var(--admin-muted)]">
-              3:4 portrait recommended
+              {copy.portraitRecommendation}
             </p>
             {photoError && (
               <p className="text-[10px] text-red-400/80">{photoError}</p>

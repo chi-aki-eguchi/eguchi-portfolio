@@ -1464,22 +1464,22 @@ describe("shared components", () => {
       navGroup(host, "見せ方").click();
       await flush(30);
       sheetRow(host, "Hero").click();
-      await waitForText(host, "Hero Slides");
+      await waitForText(host, "トップページの写真");
 
       navGroup(host, "見せ方").click();
       await flush(30);
       sheetRow(host, "Series").click();
-      await waitForText(host, "New Series");
+      await waitForText(host, "新しいシリーズ");
 
       navGroup(host, "見せ方").click();
       await flush(30);
       sheetRow(host, "Categories").click();
-      await waitForText(host, "New Category");
+      await waitForText(host, "新しいカテゴリ");
 
       navGroup(host, "サイト").click();
       await flush(30);
       sheetRow(host, "Profile").click();
-      await waitForText(host, "Profile Photo");
+      await waitForText(host, "プロフィール写真（Aboutページ）");
 
       navGroup(host, "サイト").click();
       await flush(30);
@@ -1529,8 +1529,8 @@ describe("shared components", () => {
       navGroup(host, "サイト").click();
       await flush(30);
       sheetRow(host, "Profile").click();
-      await waitForText(host, "Profile Photo");
-      const nameInput = inputByLabel(host, "Name (JP)");
+      await waitForText(host, "プロフィール写真（Aboutページ）");
+      const nameInput = inputByLabel(host, "名前（日本語）");
       changeInput(nameInput, "Draft Name");
       await flush(80);
 
@@ -1542,7 +1542,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain(
         "保存していない内容があります。このまま移動しますか？",
       );
-      expect(host.textContent).toContain("Profile Photo");
+      expect(host.textContent).toContain("プロフィール写真（Aboutページ）");
 
       cleanup();
     } finally {
@@ -1615,7 +1615,7 @@ describe("shared components", () => {
       navGroup(host, "見せ方").click();
       await flush(30);
       sheetRow(host, "Hero").click();
-      await waitForText(host, "Hero Slides");
+      await waitForText(host, "トップページの写真");
       expect(host.textContent).not.toContain("未保存の変更があります");
 
       cleanup();
@@ -2244,7 +2244,7 @@ describe("shared components", () => {
       buttonWithText(host, "Hero").click();
       await flush(500);
 
-      expect(host.textContent).toContain("Hero Slides");
+      expect(host.textContent).toContain("トップページの写真");
       expect(host.textContent).not.toContain("削除済み");
       expect(
         host.querySelector('button[aria-label="ヒーローから削除"]'),

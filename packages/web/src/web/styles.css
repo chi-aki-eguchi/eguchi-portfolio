@@ -992,6 +992,11 @@
   opacity: 1;
 }
 
+.admin-atelier .admin-library-thumbnail[data-no-fade="true"] {
+  opacity: 1;
+  transition: none;
+}
+
 .admin-atelier
   .admin-library-thumbnail[data-loaded="true"][data-unpublished="true"] {
   opacity: 0.4;

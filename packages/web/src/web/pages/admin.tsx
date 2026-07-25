@@ -1969,6 +1969,10 @@ export function GalleryTab({
   const libraryScrollPendingTopRef = useRef(0);
   const libraryScrollIdleTimerRef = useRef<number | null>(null);
   const libraryThumbnailRequestsRef = useRef(new Set<string>());
+  // Virtualized tiles are recreated as the Library scrolls. Keep successful
+  // image URLs outside React state so a cached remount can render opaque from
+  // its first style calculation without triggering another grid render.
+  const loadedLibraryThumbnailUrlsRef = useRef(new Set<string>());
   const libraryThumbnailPreloadsRef = useRef(
     new Map<string, HTMLImageElement>(),
   );
@@ -5327,6 +5331,9 @@ export function GalleryTab({
                       inspectPhoto?.id === photo.id;
                     const catColor = catColors[photo.category] ?? "#666";
                     const isUnpublished = photo.isPublished === false;
+                    const thumbnailSrc = adminPhotoSrc(photo, 400, 70);
+                    const thumbnailWasLoaded =
+                      loadedLibraryThumbnailUrlsRef.current.has(thumbnailSrc);
                     const heroIndex = (heroData?.heroPhotos ?? []).findIndex(
                       (h) => h.photoId === photo.id,
                     );
@@ -5424,14 +5431,21 @@ export function GalleryTab({
                             if (image?.complete && image.naturalWidth > 0)
                               image.dataset.loaded = "true";
                           }}
-                          src={adminPhotoSrc(photo, 400, 70)}
+                          src={thumbnailSrc}
                           alt={photo.title}
                           className={`admin-library-thumbnail w-full aspect-square object-cover bg-[var(--admin-paper-deep)] ${isUnpublished ? "grayscale" : ""}`}
+                          data-loaded={thumbnailWasLoaded ? "true" : undefined}
+                          data-no-fade={
+                            thumbnailWasLoaded ? "true" : undefined
+                          }
                           data-unpublished={isUnpublished ? "true" : "false"}
                           style={{
                             objectPosition: adminPhotoObjectPosition(photo),
                           }}
                           onLoad={(e) => {
+                            loadedLibraryThumbnailUrlsRef.current.add(
+                              thumbnailSrc,
+                            );
                             e.currentTarget.dataset.loaded = "true";
                           }}
                           onError={(e) => {

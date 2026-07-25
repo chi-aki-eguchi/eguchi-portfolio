@@ -44,6 +44,7 @@ import {
   type Photo,
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
+import { PageShell } from "./admin-page-shell";
 import { useAdminI18n } from "./admin-i18n";
 import type { GalleryLayoutType } from "../components/PhotoGallery";
 import { draftAfterSuccessfulSave } from "../lib/saved-draft";
@@ -632,7 +633,7 @@ export function HeroTab() {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-6 max-w-4xl mx-auto">
+    <PageShell width="wide">
       <PageHeader
         title={t.navigation.tabs.hero}
         description={t.headers.hero}
@@ -810,7 +811,7 @@ export function HeroTab() {
           </div>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }
 
@@ -995,7 +996,7 @@ export function ProfileTab({
   ];
 
   return (
-    <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
+    <PageShell width="form">
       <PageHeader
         title={t.navigation.tabs.profile}
         description={t.headers.profile}
@@ -1102,7 +1103,7 @@ export function ProfileTab({
         onSave={() => save.mutate()}
         onDiscard={() => setForm({})}
       />
-    </div>
+    </PageShell>
   );
 }
 
@@ -1220,7 +1221,7 @@ export function CategoriesTab() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-8 max-w-md mx-auto">
+    <PageShell width="form">
       <PageHeader
         title={t.navigation.tabs.categories}
         description={t.headers.categories}
@@ -1364,7 +1365,7 @@ export function CategoriesTab() {
           </div>
         </Modal>
       )}
-    </div>
+    </PageShell>
   );
 }
 
@@ -1570,7 +1571,7 @@ export function SeriesTab() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
+    <PageShell width="wide">
       <PageHeader
         title={t.navigation.tabs.series}
         description={t.headers.series}
@@ -2021,7 +2022,7 @@ export function SeriesTab() {
           </div>
         </Modal>
       )}
-    </div>
+    </PageShell>
   );
 }
 
@@ -2180,7 +2181,7 @@ export function PricingTab() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
+    <PageShell width="wide">
       <PageHeader
         title={t.navigation.tabs.pricing}
         description={t.headers.pricing}
@@ -2398,7 +2399,7 @@ export function PricingTab() {
           </div>
         </Modal>
       )}
-    </div>
+    </PageShell>
   );
 }
 
@@ -2729,7 +2730,7 @@ export function ServiceTab({
     );
 
   return (
-    <div className="h-full overflow-y-auto p-8 max-w-lg mx-auto">
+    <PageShell width="wide">
       <PageHeader
         title={t.navigation.tabs.service}
         description={t.headers.service}
@@ -3488,7 +3489,7 @@ export function ServiceTab({
         onSave={() => save.mutate()}
         onDiscard={reset}
       />
-    </div>
+    </PageShell>
   );
 }
 
@@ -3717,27 +3718,28 @@ export function SettingsTab({
     <div className="flex h-full overflow-hidden">
       {/* Settings panel */}
       <div
-        className={`flex flex-col overflow-hidden transition-[width,max-width] duration-300 ${showPreview ? "w-full md:w-[420px] md:flex-shrink-0" : "max-w-[760px] flex-1"}`}
+        className={`flex flex-col overflow-hidden transition-[width,max-width] duration-300 ${showPreview ? "w-full md:w-[420px] md:flex-shrink-0" : "flex-1"}`}
       >
         {/* Scrollable content */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
-          <PageHeader
-            title={t.navigation.tabs.settings}
-            description={saveError ? t.headers.settingsSaveFailed : undefined}
-            actions={
-              <PageHeaderButton
-                active={showPreview}
-                onClick={() => setShowPreview(!showPreview)}
-                ariaLabel={showPreview ? "Hide Preview" : "Live Preview"}
-              >
-                {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
-                {showPreview ? "Hide Preview" : "Live Preview"}
-              </PageHeaderButton>
-            }
-          />
-          <div className="flex flex-col">
-            {/* General */}
-            <SettingsGroup title={copy.groupTitle}>
+        <div className="flex-1 min-h-0">
+          <PageShell width="wide">
+            <PageHeader
+              title={t.navigation.tabs.settings}
+              description={saveError ? t.headers.settingsSaveFailed : undefined}
+              actions={
+                <PageHeaderButton
+                  active={showPreview}
+                  onClick={() => setShowPreview(!showPreview)}
+                  ariaLabel={showPreview ? "Hide Preview" : "Live Preview"}
+                >
+                  {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
+                  {showPreview ? "Hide Preview" : "Live Preview"}
+                </PageHeaderButton>
+              }
+            />
+            <div className="flex flex-col">
+              {/* General */}
+              <SettingsGroup title={copy.groupTitle}>
               <Section title={copy.siteBasics.title} defaultOpen={false}>
                 {fields.map((f) => (
                   <AdminField key={f.key} label={f.label} hint={f.hint}>
@@ -5820,21 +5822,22 @@ export function SettingsTab({
                   </p>
                 )}
               </Section>
-            </SettingsGroup>
+              </SettingsGroup>
 
-            {/* Admin */}
-            <div className="pt-1 pb-4 px-1">
-              <p className="text-[11px] tracking-wider uppercase text-[color:var(--admin-muted)] mb-2">
-                Admin Password
-              </p>
-              <p className="text-[11px] text-[color:var(--admin-muted)] leading-relaxed">
-                Set via environment variable{" "}
-                <code className="text-[color:var(--admin-ink)] bg-[color:var(--admin-paper-deep)] px-1 py-0.5 rounded-sm font-mono text-[10px]">
-                  ADMIN_PASSWORD
-                </code>
-              </p>
+              {/* Admin */}
+              <div className="pt-1 pb-4 px-1">
+                <p className="text-[11px] tracking-wider uppercase text-[color:var(--admin-muted)] mb-2">
+                  Admin Password
+                </p>
+                <p className="text-[11px] text-[color:var(--admin-muted)] leading-relaxed">
+                  Set via environment variable{" "}
+                  <code className="text-[color:var(--admin-ink)] bg-[color:var(--admin-paper-deep)] px-1 py-0.5 rounded-sm font-mono text-[10px]">
+                    ADMIN_PASSWORD
+                  </code>
+                </p>
+              </div>
             </div>
-          </div>
+          </PageShell>
         </div>
         <FloatingSaveBar
           show={hasUnsaved}

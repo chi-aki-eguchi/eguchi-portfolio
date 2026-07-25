@@ -91,6 +91,7 @@ import {
   PageHeader,
   PageHeaderButton,
 } from "./admin-page-header";
+import { PageShell } from "./admin-page-shell";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 import {
   AdminLanguageProvider,
@@ -1052,45 +1053,41 @@ export function SetupTab({
   // 読込中は「未完了」マークだらけのチェックリストを一瞬見せない
   if (loading) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
-          <p className="text-[12px] text-[color:var(--admin-muted)]">…</p>
-        </div>
-      </div>
+      <PageShell width="wide">
+        <p className="text-[12px] text-[color:var(--admin-muted)]">…</p>
+      </PageShell>
     );
   }
 
   if (loadFailed) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8">
-          <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
-            <h2 className="text-[14px] text-amber-900">
-              {t.setup.loadError.title}
-            </h2>
-            <p className="text-[12px] leading-6 text-amber-800">
-              {t.setup.loadError.body}
-            </p>
-            <button
-              type="button"
-              onClick={retrySetup}
-              className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm"
-            >
-              {t.setup.loadError.retry}
-            </button>
-            <p className="text-[11px] leading-5 text-amber-800">
-              {t.setup.loadError.contact}
-            </p>
-          </div>
+      <PageShell width="wide">
+        <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
+          <h2 className="text-[14px] text-amber-900">
+            {t.setup.loadError.title}
+          </h2>
+          <p className="text-[12px] leading-6 text-amber-800">
+            {t.setup.loadError.body}
+          </p>
+          <button
+            type="button"
+            onClick={retrySetup}
+            className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm"
+          >
+            {t.setup.loadError.retry}
+          </button>
+          <p className="text-[11px] leading-5 text-amber-800">
+            {t.setup.loadError.contact}
+          </p>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   if (collapsed) {
     return (
-      <div className="h-full overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 space-y-3">
+      <PageShell width="wide">
+        <div className="space-y-3">
           <StorageHealthLine
             health={setupHealth}
             copy={t.setup.storageHealth}
@@ -1124,13 +1121,13 @@ export function SetupTab({
             </p>
           )}
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-10 space-y-8">
+    <PageShell width="wide">
+      <div className="space-y-8">
         {!demoMode && (
           <StorageHealthLine
             health={setupHealth}
@@ -1229,7 +1226,7 @@ export function SetupTab({
         </section>
 
       </div>
-    </div>
+    </PageShell>
   );
 }
 
@@ -4066,7 +4063,7 @@ export function GalleryTab({
     <div className="flex h-full" data-library-mode={libraryMode}>
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="px-2 sm:px-4 pt-2 flex-shrink-0">
+        <div className="px-4 sm:px-10 pt-2 flex-shrink-0">
           <PageHeader
             title="Library"
             description={
@@ -4103,7 +4100,7 @@ export function GalleryTab({
           />
         </div>
         {/* Toolbar — quiet Library controls */}
-        <div className="bg-[var(--admin-paper)] border-b border-[var(--admin-line)] px-2 sm:px-4 py-1.5 flex flex-col gap-2 flex-shrink-0">
+        <div className="bg-[var(--admin-paper)] border-b border-[var(--admin-line)] px-4 sm:px-10 py-1.5 flex flex-col gap-2 flex-shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {libraryMode === "normal" && (
               <>
@@ -4999,7 +4996,7 @@ export function GalleryTab({
           (activeFilterLabels.length > 0 || librarySort !== "manual") && (
             <div
               aria-label={copy.conditions.aria}
-              className="bg-[var(--admin-paper-soft)] border-b border-[var(--admin-line)] px-2 sm:px-4 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
+              className="bg-[var(--admin-paper-soft)] border-b border-[var(--admin-line)] px-4 sm:px-10 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
             >
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mr-1">
                 {copy.conditions.label}

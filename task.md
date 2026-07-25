@@ -9291,3 +9291,92 @@ Codex へは5回に分けて渡した。**2〜5回目はいずれも設計側の
   背景・角丸・影が `!important` で上書きされる。**新しい固定要素を追加するときは
   このルールに当たっていないか実測（`getComputedStyle`）で確かめること**
 - 仕様書 §2-2 の境界値（640 / 1280）。オーナー承認済み
+
+## Handoff 2026-07-25 (65) — Claude Code: ゴールを明文化・Safariのチラつきを解消
+
+### 目的
+
+オーナーからゴールの訂正を受けた。**このプロジェクトのゴールは管理画面の刷新**であり、
+それまで担当AIが最優先と報告していた `growth-monetization-plan.md`（事業計画）ではない。
+ゴールがリポジトリのどこにも書かれていなかったことが誤認の原因。正本を作る。
+あわせてオーナーが実機 iPhone Safari で報告した「スワイプすると写真がチラつく」を直す。
+
+### 変更内容
+
+**1. ゴールの明文化 (`bd30381`)**
+
+`docs/specs/admin-renewal-goal.md` を新設。オーナーの言葉:
+「デザインと使用感と完成度と高級感とAI感の削減。あと可愛さ。」
+
+- 対象は `/admin` の全タブ。`library-redesign-spec.md` はその Library 部分の下位仕様
+- 6軸それぞれの定義と現在地を記載。タスク起票時は「どの軸のためか」を書く
+- **「AI感の削減」と「可愛さ」の定義はオーナー未確認**。設計側で定義したものなので
+  違うと言われたら差し替える
+- `CLAUDE.md` の冒頭に「現在のゴール」節を追加し、ここへ誘導。
+  `growth-monetization-plan.md` はゴールではないと明記した
+
+**2. Safari のチラつき解消 (`e558e41`・実装=Codex `gpt-5.6-terra` medium)**
+
+原因: Library は仮想スクロールなので画面外へ出たタイルは新しい要素として作り直される。
+`.admin-library-thumbnail` は `opacity: 0` から始まり読込完了で 1 へ遷移するため、
+**キャッシュ済みの写真でも戻ってくるたびにフェードが再生される**。
+
+両エンジンで同一操作を実測して確定（一番上のタイルを下端へ送って戻す）:
+
+| エンジン | 再マウント直後の画像 | 再マウント直後の opacity |
+| --- | --- | --- |
+| WebKit (iPhone 13) | `complete: true` / `naturalWidth: 640` | **0.00** → 400ms後に 1.00 |
+| Chromium (Pixel 5) | `complete: true` / `naturalWidth: 640` | 1.00（遷移なし） |
+
+Chromium は初期スタイル適用と属性変更を1回のスタイル解決にまとめるため遷移が起きない。
+**要素の最初の計算済みスタイルが `opacity: 0` である限り、この挙動はエンジン依存になる。**
+
+修正: 読込完了した画像URLを `useRef` の `Set` で保持し、再マウント時は **JSX の初期属性として**
+`data-loaded` と `data-no-fade` を付けて描画する。CSS 側で `data-no-fade` は
+`opacity: 1` / `transition: none`。初回読込のフェードは残している。
+
+### 触ったファイル
+
+- `CLAUDE.md`、`docs/specs/admin-renewal-goal.md`（新規）
+- `packages/web/src/web/pages/admin.tsx`、`packages/web/src/web/styles.css`
+- `scripts/smoke/playwright.config.ts`、
+  `scripts/smoke/admin-library-remount-fade.spec.ts`（新規）
+
+### 検証したこと
+
+- `bun run check` → **511 pass / 0 fail**
+- `bun run smoke` → **41 passed / 0 failed / 30 skipped**（40→41 は新規分）
+- **新テストは修正を一時退避すると落ちることを確認済み**（回帰テストとして機能している）
+- 原因特定は Playwright で `getComputedStyle` を両エンジンで実測。推測ではない
+
+### 検証していないこと
+
+- **実機 iPhone Safari での確認**（オーナーの手が必要）。desktop WebKit では iOS の
+  慣性スクロールを再現できないため、**慣性スクロール特有の別要因が残っている可能性は
+  否定できない**。実機で直っていなければ追加調査が必要
+- Q-11 の 390px 下側シートの実機確認（Handoff 64 から継続）
+- Q-12 は未着手
+
+### push したか
+
+していない。commit は2本（`bd30381` / `e558e41`）。
+
+### 本番で確認したか
+
+していない。Handoff (64) 分は反映済み（`x-build: 0144ef56` を確認）。
+
+### 次の担当者が触ってよい場所
+
+- ゴールの残り4軸（デザイン / 高級感 / AI感の削減 / 可愛さ）。**未着手**。
+  視覚設計をまとめて扱う必要があり、設計側の仕事
+- Q-12（選択モード中も検索・絞り込みを残す）
+
+### 次の担当者が触ってはいけない場所
+
+- `git push`（オーナーのみ）
+- **`scripts/smoke/playwright.config.ts` の `mobile-safari` プロジェクトを消さないこと。**
+  Safari 専用の不具合はこれまで一度も検出できていなかった（smoke が Chromium だけだった）。
+  **smoke の実行には `bunx playwright install webkit` が必要**になった
+- `.admin-library-thumbnail` のフェード（`styles.css` 986〜998行）。
+  初回読込の演出は意図的に残している。全廃しない
+- `styles.css` の `.admin-atelier [class*="fixed"][class*="bottom-"]` ルール（Handoff 64 参照）

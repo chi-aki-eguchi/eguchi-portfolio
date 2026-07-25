@@ -6372,16 +6372,16 @@ export function GalleryTab({
       )}
 
       {/* Right panel — Inspector (like Lr metadata panel).
-          Mobile: full-width drawer overlay. Desktop: static side panel. */}
+          Mobile: bottom sheet. Tablet: right drawer overlay. Desktop: static side panel. */}
       {inspectPhoto && (
         <>
-          {/* モバイルのみ: ドロワー外タップで閉じる。背景を薄く暗くして
+          {/* 1280px未満（スマホ・タブレット）: ドロワー外タップで閉じる。背景を薄く暗くして
               「一覧の上に詳細が乗っている」ことを分かりやすく。
               未保存の編集がある間は誤タップで内容を失わないよう閉じない
               (X/保存/破棄の明示操作のみ — Codexレビュー 2026-07-11)。 */}
           <div
             aria-hidden="true"
-            className="fixed inset-0 z-30 bg-black/30 sm:hidden"
+            className="fixed top-56 inset-x-0 bottom-0 z-30 bg-black/30 xl:hidden"
             onClick={() => {
               if (!photoEditFormChanged(editForm, inspectPhoto)) {
                 setInspectPhoto(null);
@@ -6390,10 +6390,10 @@ export function GalleryTab({
           />
           <div
             data-library-inspector
-            className="fixed inset-y-0 right-0 z-40 w-full max-w-xs shadow-2xl sm:static sm:z-auto sm:w-64 sm:max-w-none sm:shadow-none bg-[var(--admin-paper)] border-l border-[var(--admin-line)] flex flex-col flex-shrink-0 overflow-y-auto"
+            className="fixed inset-x-0 bottom-0 z-40 w-full max-h-[60vh] shadow-2xl rounded-t-lg border-t border-[var(--admin-line)] sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-w-xs sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l xl:static xl:z-auto xl:w-64 xl:max-w-none xl:shadow-none bg-[var(--admin-paper)] flex flex-col flex-shrink-0 overflow-y-auto"
           >
             {/* Header with close (close needed on mobile drawer) */}
-            <div className="flex items-center justify-between px-3 pt-2 sm:hidden">
+            <div className="flex items-center justify-between px-3 pt-2 xl:hidden">
               <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
                 {copy.inspector.editPhoto}
               </span>

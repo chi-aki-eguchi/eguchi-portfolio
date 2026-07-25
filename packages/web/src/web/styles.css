@@ -806,7 +806,7 @@
 }
 
 .admin-atelier [role="alert"],
-.admin-atelier [class*="fixed"][class*="bottom-"] {
+.admin-atelier [class*="fixed"][class*="bottom-"]:not([aria-hidden="true"]):not([data-library-inspector]) {
   border-color: var(--admin-line-strong) !important;
   background-color: var(--admin-paper-soft) !important;
   color: var(--admin-ink) !important;

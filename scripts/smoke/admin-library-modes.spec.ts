@@ -11,7 +11,7 @@ const modeAction = (page: Page, action: string) =>
 test.describe("admin — Libraryの通常・選択・並べる分離", () => {
   test("通常は詳細、選択は選択だけ、並べるは並べ替えだけを行う", async ({
     page,
-  }, testInfo) => {
+  }) => {
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
 
@@ -43,14 +43,6 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     );
 
     // 詳細を開いたまま選択へ切り替えると、未編集なら詳細を閉じて0枚から始まる。
-    // ただしスマホ幅では、詳細が右側の全高オーバーレイとしてモード切替を覆うため
-    // この遷移が物理的に行えない（既知欠陥。承認済み設計 §2-2 の「下側シート」が
-    // 入るまで解消しない。追跡は task-queue.md Q-11、専用の fixme を下に置いた）。
-    // ここで詳細を閉じるのは欠陥の回避ではなく、以降の検証を続けるための前処理。
-    if (testInfo.project.name === "mobile") {
-      await page.keyboard.press("Escape");
-      await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
-    }
     await modeAction(page, "select").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "select");
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
@@ -173,22 +165,26 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
   });
 
-  // 既知欠陥（2026-07-25 オーナー判断で次段へ切り出し・task-queue.md Q-11）。
-  // 390px では写真詳細が `fixed inset-y-0 right-0` の全高オーバーレイとして出るため、
-  // 通常/選択/並べるの切替ボタンを覆って押せなくなる。承認済み設計
-  // (docs/specs/library-redesign-spec.md §2-2) は「390px は下側シート」であり、
-  // 下側シートを実装すればこの fixme は外せる。skip ではなく fixme にしているのは、
-  // 欠陥を緑の中に埋もれさせず、レポート上に残し続けるため。
-  test.fixme(
-    "スマホ幅で詳細を開いたままモード切替できる（下側シート実装まで未達・Q-11）",
+  // 390px では詳細を下側シートで出すため、開いたままでも通常/選択/並べるを切り替えられる。
+  test(
+    "スマホ幅で詳細を開いたままモード切替できる（下側シート）",
     async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name !== "mobile", "スマホ幅のみの欠陥");
+      test.skip(testInfo.project.name !== "mobile", "スマホ幅のみの挙動");
       await loginAsAdmin(page);
       await gotoAdminTab(page, "gallery");
       test.skip((await tiles(page).count()) < 1, "写真が1枚以上必要");
 
       await photoAction(page, 0).click();
       await expect(page.locator("[data-library-inspector]")).toBeVisible();
+      const inspectorBox = await page
+        .locator("[data-library-inspector]")
+        .boundingBox();
+      const selectModeBox = await modeAction(page, "select").boundingBox();
+      expect(inspectorBox).not.toBeNull();
+      expect(selectModeBox).not.toBeNull();
+      expect(inspectorBox!.y).toBeGreaterThan(
+        selectModeBox!.y + selectModeBox!.height,
+      );
       // 下側シートになれば、詳細を開いたままでもモード切替に手が届く。
       await modeAction(page, "select").click({ timeout: 3000 });
       await expect(library(page)).toHaveAttribute("data-library-mode", "select");

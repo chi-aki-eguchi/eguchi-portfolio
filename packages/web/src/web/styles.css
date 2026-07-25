@@ -652,7 +652,11 @@
   color: var(--admin-ink) !important;
 }
 
-.admin-atelier button:not(.absolute):not([class*="bg-black"]):hover {
+/* 通常状態のリセット (0,5,1) に勝つため .admin-atelier を重ねる。
+   上の同種の回避と同じ理由。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button:not(.absolute):not([class*="bg-black"]):hover {
+  background-color: rgba(var(--admin-ink-rgb), 0.035) !important;
   border-color: var(--admin-line-strong) !important;
   color: var(--admin-ink) !important;
 }

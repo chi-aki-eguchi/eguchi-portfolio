@@ -62,12 +62,12 @@ export default function SeriesDetailPage() {
   if (isError || !data) {
     return (
       <section className="max-w-3xl mx-auto px-6 py-32 md:py-48 text-center min-h-[50vh]">
-        <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.30)]">
+        <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
           シリーズが見つかりませんでした。
         </p>
         <Link
           to="/series"
-          className="inline-block mt-8 font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.40)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300"
+          className="inline-block mt-8 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300"
         >
           ← Series
         </Link>
@@ -106,7 +106,7 @@ export default function SeriesDetailPage() {
         </h1>
         {series.subtitle && (
           <p
-            className="mt-3 font-en text-xs tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.35)]"
+            className="mt-3 font-en text-xs tracking-[0.10em] uppercase text-[color:var(--text-quiet)]"
             style={{ fontSize: "var(--section-label-size, 0.75rem)" }}
           >
             {series.subtitle}
@@ -125,7 +125,7 @@ export default function SeriesDetailPage() {
       <div ref={fadeRef}>
         {photos.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">No photos in this series</p>
+            <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">No photos in this series</p>
           </div>
         ) : (
           <PhotoGallery
@@ -141,16 +141,16 @@ export default function SeriesDetailPage() {
       <div className={`mt-20 md:mt-28 flex items-baseline ${nextSeries ? "justify-between" : "justify-center"}`}>
         <Link
           to="/series"
-          className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
+          className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
         >
           ← Series
         </Link>
         {nextSeries && (
           <Link
             to={`/series/${nextSeries.slug}`}
-            className="text-right font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
+            className="text-right font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
           >
-            <span className="block text-[0.6rem] uppercase tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.25)] mb-1">Next</span>
+            <span className="block text-[0.6rem] uppercase tracking-[0.14em] text-[color:var(--text-quiet)] mb-1">Next</span>
             <span className="font-ja">{nextSeries.title}</span> →
           </Link>
         )}

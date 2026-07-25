@@ -228,6 +228,8 @@ describe("public pages render (populated API)", () => {
     }
   });
 
+  // 0.55 は AA(4.5:1) を満たしていなかった（実測3.82:1）。
+  // T-11 の記録にあった 5.26:1 は誤り。--text-quiet（0.62 / 約4.77:1）へ移行した。
   test("profile secondary text keeps the WCAG AA opacity floor", async () => {
     const previousSettings = canned["/api/settings"];
     const previousNotePosts = canned["/api/note-posts"];
@@ -261,7 +263,7 @@ describe("public pages render (populated API)", () => {
       await waitForText(host, "Journal excerpt");
 
       const accessibleSecondaryText = Array.from(
-        host.querySelectorAll(".text-\\[rgba\\(var\\(--foreground-rgb\\)\\,0\\.55\\)\\]"),
+        host.querySelectorAll(".text-\\[color\\:var\\(--text-quiet\\)\\]"),
       );
       const expectedText = [
         "Aki Eguchi",

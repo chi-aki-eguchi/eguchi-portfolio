@@ -13,7 +13,7 @@ const bodyStyle = {
 
 const labelStyle = {
   fontSize: "var(--section-label-size, 0.75rem)",
-  color: "rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))",
+  color: "var(--text-quiet)",
   letterSpacing: "var(--section-label-tracking, 0.10em)",
   lineHeight: "var(--section-leading, 1.2)",
 } as const;
@@ -46,7 +46,7 @@ function LanguageSwitch({
   return (
     <nav
       aria-label="Language"
-      className="mb-8 flex items-center justify-end gap-2 font-en text-[0.7rem] tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.42)]"
+      className="mb-8 flex items-center justify-end gap-2 font-en text-[0.7rem] tracking-[0.12em] text-[color:var(--text-quiet)]"
     >
       {language === "ja" ? (
         <span aria-current="page" className="text-[rgba(var(--foreground-rgb),0.76)]">
@@ -150,7 +150,7 @@ function PurchaseThanksBanner({ language }: { language: ServiceStartLanguage }) 
               style={{
                 fontSize: "0.68rem",
                 letterSpacing: "0.10em",
-                color: "rgba(var(--foreground-rgb), 0.42)",
+                color: "var(--text-quiet)",
               }}
             >
               {row.label}
@@ -165,7 +165,7 @@ function PurchaseThanksBanner({ language }: { language: ServiceStartLanguage }) 
         ))}
       </dl>
       <p
-        className="mt-6 max-w-2xl text-[rgba(var(--foreground-rgb),0.56)]"
+        className="mt-6 max-w-2xl text-[color:var(--text-quiet)]"
         style={bodyStyle}
       >
         {en
@@ -192,7 +192,7 @@ function DomainReassurance({ language }: { language: ServiceStartLanguage }) {
           : "独自ドメインを持っていなくても、大丈夫です。"}
       </h2>
       <p
-        className="mt-4 max-w-3xl text-[rgba(var(--foreground-rgb),0.56)]"
+        className="mt-4 max-w-3xl text-[color:var(--text-quiet)]"
         style={bodyStyle}
       >
         {en
@@ -319,7 +319,7 @@ function StepPanel({
         {steps.map((step, index) => (
           <li key={step.title} className="grid grid-cols-[2rem_1fr] gap-4">
             <span
-              className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(var(--foreground-rgb),0.14)] font-en text-xs text-[rgba(var(--foreground-rgb),0.52)]"
+              className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(var(--foreground-rgb),0.14)] font-en text-xs text-[color:var(--text-quiet)]"
               aria-hidden="true"
             >
               {index + 1}
@@ -329,7 +329,7 @@ function StepPanel({
                 {step.title}
               </h3>
               <p
-                className="mt-1 text-[rgba(var(--foreground-rgb),0.52)]"
+                className="mt-1 text-[color:var(--text-quiet)]"
                 style={bodyStyle}
               >
                 {step.body}
@@ -365,7 +365,7 @@ function SupportSection({
         {en ? "If anything is unclear, just ask." : "困ったら、そのまま聞いてください。"}
       </h2>
       <p
-        className="mt-4 max-w-2xl text-[rgba(var(--foreground-rgb),0.56)]"
+        className="mt-4 max-w-2xl text-[color:var(--text-quiet)]"
         style={bodyStyle}
       >
         {en
@@ -428,7 +428,7 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
               : "納品時に渡すのは、これだけです。"}
           </h2>
           <p
-            className="mt-4 text-[rgba(var(--foreground-rgb),0.52)]"
+            className="mt-4 text-[color:var(--text-quiet)]"
             style={bodyStyle}
           >
             {en
@@ -437,7 +437,7 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
           </p>
         </div>
         <div className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.025)] p-4 sm:p-5">
-          <p className="font-en text-xs uppercase tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.36)]">
+          <p className="font-en text-xs uppercase tracking-[0.12em] text-[color:var(--text-quiet)]">
             Aki Eguchi Portfolio Kit
           </p>
           <div className="mt-5 divide-y divide-[rgba(var(--foreground-rgb),0.08)]">
@@ -445,7 +445,7 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
               <div key={row} className="flex items-center gap-3 py-3">
                 <CheckCircle2
                   size={16}
-                  className="shrink-0 text-[rgba(var(--foreground-rgb),0.42)]"
+                  className="shrink-0 text-[color:var(--text-quiet)]"
                 />
                 <span
                   className={`${en ? "font-en" : "font-ja"} text-sm text-[rgba(var(--foreground-rgb),0.66)]`}
@@ -511,7 +511,7 @@ export default function ServiceStartPage({
               : "購入後は、素材を送って待つだけ。"}
           </h1>
           <p
-            className="mt-7 max-w-xl text-[rgba(var(--foreground-rgb),0.56)]"
+            className="mt-7 max-w-xl text-[color:var(--text-quiet)]"
             style={bodyStyle}
           >
             {en ? (
@@ -536,7 +536,7 @@ export default function ServiceStartPage({
           </p>
           {en && (
             <div
-              className="mt-6 rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-4 py-3 text-[rgba(var(--foreground-rgb),0.58)]"
+              className="mt-6 rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-4 py-3 text-[color:var(--text-quiet)]"
               style={bodyStyle}
             >
               <p>
@@ -563,7 +563,7 @@ export default function ServiceStartPage({
             </Link>
           </div>
           <p
-            className="mt-5 text-[rgba(var(--foreground-rgb),0.42)]"
+            className="mt-5 text-[color:var(--text-quiet)]"
             style={{ fontSize: "0.78rem", lineHeight: 1.8 }}
           >
             {en ? (

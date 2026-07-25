@@ -106,7 +106,7 @@ export default function ContactPage({
             className="font-en uppercase text-center mb-12 md:mb-16 page-entrance"
             style={{
               fontSize: "var(--section-label-size, 0.75rem)",
-              color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`,
+              color: "var(--text-quiet)",
               letterSpacing: "var(--section-label-tracking, 0.10em)",
               lineHeight: "var(--section-leading, 1.2)",
             }}
@@ -147,7 +147,7 @@ export default function ContactPage({
                   )}
                   {p.description && (
                     <p
-                      className="mt-4 text-[rgba(var(--foreground-rgb),0.55)]"
+                      className="mt-4 text-[color:var(--text-quiet)]"
                       style={{
                         fontSize: "var(--body-size, 0.875rem)",
                         lineHeight: "var(--body-leading, 1.9)",
@@ -162,7 +162,7 @@ export default function ContactPage({
                       {features.map((f, j) => (
                         <li
                           key={j}
-                          className="flex gap-2 text-[rgba(var(--foreground-rgb),0.55)]"
+                          className="flex gap-2 text-[color:var(--text-quiet)]"
                           style={{
                             fontSize: "var(--body-size, 0.85rem)",
                             lineHeight: "1.6",
@@ -170,7 +170,7 @@ export default function ContactPage({
                         >
                           <span
                             aria-hidden="true"
-                            className="text-[rgba(var(--foreground-rgb),0.30)] select-none"
+                            className="text-[color:var(--text-quiet)] select-none"
                           >
                             —
                           </span>
@@ -181,7 +181,7 @@ export default function ContactPage({
                   )}
                   {p.note && (
                     <p
-                      className="mt-5 pt-4 border-t border-[rgba(var(--foreground-rgb),0.06)] text-[rgba(var(--foreground-rgb),0.40)]"
+                      className="mt-5 pt-4 border-t border-[rgba(var(--foreground-rgb),0.06)] text-[color:var(--text-quiet)]"
                       style={{ fontSize: "0.78rem", lineHeight: "1.7" }}
                     >
                       {p.note}
@@ -192,7 +192,7 @@ export default function ContactPage({
             })}
           </div>
           <p
-            className="text-center mt-10 md:mt-12 text-[rgba(var(--foreground-rgb),0.40)] page-entrance page-entrance-delay-2"
+            className="text-center mt-10 md:mt-12 text-[color:var(--text-quiet)] page-entrance page-entrance-delay-2"
             style={{ fontSize: "var(--body-size, 0.85rem)" }}
           >
             {language === "en"
@@ -210,7 +210,7 @@ export default function ContactPage({
           className="font-en uppercase text-center mb-12 page-entrance"
           style={{
             fontSize: "var(--section-label-size, 0.75rem)",
-            color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`,
+            color: "var(--text-quiet)",
             letterSpacing: "var(--section-label-tracking, 0.10em)",
             lineHeight: "var(--section-leading, 1.2)",
           }}
@@ -223,7 +223,7 @@ export default function ContactPage({
             default JP page still sees they can reach out. Hidden when set to "". */}
         {status !== "success" && data?.contactEnglishNote && (
           <p
-            className="text-center font-en text-xs tracking-[0.02em] text-[rgba(var(--foreground-rgb),0.35)] -mt-6 mb-8 page-entrance page-entrance-delay-1"
+            className="text-center font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] -mt-6 mb-8 page-entrance page-entrance-delay-1"
           >
             {data.contactEnglishNote}
           </p>
@@ -235,7 +235,7 @@ export default function ContactPage({
             so the thank-you moment stays quiet). */}
         {formspreeUrl && status !== "success" && intro && (
           <p
-            className="text-center text-[rgba(var(--foreground-rgb),0.55)] -mt-4 mb-5 page-entrance page-entrance-delay-1"
+            className="text-center text-[color:var(--text-quiet)] -mt-4 mb-5 page-entrance page-entrance-delay-1"
             style={{
               fontSize: "var(--body-size, 0.875rem)",
               lineHeight: "var(--body-leading, 2)",
@@ -249,7 +249,7 @@ export default function ContactPage({
             依頼の流れ。どちらも設定で空にすれば消える。 */}
         {formspreeUrl && status !== "success" && note && (
           <p
-            className="text-center text-[rgba(var(--foreground-rgb),0.42)] mb-8 page-entrance page-entrance-delay-1"
+            className="text-center text-[color:var(--text-quiet)] mb-8 page-entrance page-entrance-delay-1"
             style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
           >
             {note}
@@ -257,11 +257,11 @@ export default function ContactPage({
         )}
         {formspreeUrl && status !== "success" && flow && (
           <div className="mb-10 px-5 py-4 border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg page-entrance page-entrance-delay-1">
-            <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[rgba(var(--foreground-rgb),0.30)] mb-2">
+            <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
               Flow
             </p>
             <p
-              className="text-[rgba(var(--foreground-rgb),0.50)]"
+              className="text-[color:var(--text-quiet)]"
               style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
             >
               {flow}
@@ -272,7 +272,7 @@ export default function ContactPage({
           <div className="py-4 space-y-6 page-entrance page-entrance-delay-1">
             {intro && (
               <p
-                className="text-[rgba(var(--foreground-rgb),0.55)]"
+                className="text-[color:var(--text-quiet)]"
                 style={{
                   fontSize: "var(--body-size, 0.875rem)",
                   lineHeight: "var(--body-leading, 2)",
@@ -285,7 +285,7 @@ export default function ContactPage({
             {data?.contactEmail && (
               <a
                 href={`mailto:${data.contactEmail}`}
-                className="inline-block font-en text-sm tracking-[0.03em] text-[rgba(var(--foreground-rgb),0.45)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1"
+                className="inline-block font-en text-sm tracking-[0.03em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1"
               >
                 {data.contactEmail}
               </a>
@@ -297,7 +297,7 @@ export default function ContactPage({
                     href={safeHref(data.profileInstagram)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.55)] nav-link-luxury transition-colors duration-300 py-1.5"
+                    className="font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
                   >
                     {data?.snsLabelInstagram ?? "Instagram"}
                   </a>
@@ -307,7 +307,7 @@ export default function ContactPage({
                     href={safeHref(data.profileTwitter)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.55)] nav-link-luxury transition-colors duration-300 py-1.5"
+                    className="font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
                   >
                     {data?.snsLabelTwitter ?? "X"}
                   </a>
@@ -321,7 +321,7 @@ export default function ContactPage({
               !data?.profileInstagram &&
               !data?.profileTwitter && (
                 <p
-                  className="text-[rgba(var(--foreground-rgb),0.35)] italic"
+                  className="text-[color:var(--text-quiet)] italic"
                   style={{
                     fontSize: "var(--body-size, 0.875rem)",
                     lineHeight: "var(--body-leading, 2)",
@@ -335,13 +335,13 @@ export default function ContactPage({
           <div className="text-center py-12 page-entrance page-entrance-delay-1">
             <p
               aria-live="polite"
-              className="text-sm text-[rgba(var(--foreground-rgb),0.50)]"
+              className="text-sm text-[color:var(--text-quiet)]"
             >
               {data?.contactSentMessage ?? "Message sent."}
             </p>
             <button
               onClick={() => setStatus("idle")}
-              className="mt-6 font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.30)] hover:text-[rgba(var(--foreground-rgb),0.55)] transition-colors duration-300"
+              className="mt-6 font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] transition-colors duration-300"
             >
               {data?.contactSendAnother ?? "Send another"}
             </button>
@@ -485,7 +485,7 @@ export default function ContactPage({
 function inputCls(hasError: boolean) {
   return `w-full bg-[var(--background)] border ${
     hasError ? "border-red-400/50" : "border-[rgba(var(--foreground-rgb),0.10)]"
-  } text-[var(--foreground)] px-3 py-2.5 text-sm rounded-md outline-none focus:border-[var(--accent-color,rgba(var(--foreground-rgb),0.25))] transition-colors duration-300 placeholder:text-[rgba(var(--foreground-rgb),0.20)]`;
+  } text-[var(--foreground)] px-3 py-2.5 text-sm rounded-md outline-none focus:border-[var(--accent-color,rgba(var(--foreground-rgb),0.25))] transition-colors duration-300 placeholder:text-[color:var(--text-quiet)]`;
 }
 
 function Field({
@@ -503,7 +503,7 @@ function Field({
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={htmlFor}
-        className="font-en text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.40)]"
+        className="font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)]"
       >
         {label}
       </label>

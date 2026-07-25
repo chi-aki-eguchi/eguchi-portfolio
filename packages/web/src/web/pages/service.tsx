@@ -21,7 +21,7 @@ import {
 const labelCls = "font-en uppercase text-center";
 const labelStyle = {
   fontSize: "var(--section-label-size, 0.75rem)",
-  color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`,
+  color: "var(--text-quiet)",
   letterSpacing: "var(--section-label-tracking, 0.10em)",
   lineHeight: "var(--section-leading, 1.2)",
 } as const;
@@ -314,7 +314,7 @@ function LanguageSwitch({ language }: { language: ServiceLanguage }) {
   return (
     <nav
       aria-label="Language"
-      className="mb-8 flex items-center justify-end gap-2 font-en text-[0.7rem] tracking-[0.12em] text-[rgba(var(--foreground-rgb),0.42)]"
+      className="mb-8 flex items-center justify-end gap-2 font-en text-[0.7rem] tracking-[0.12em] text-[color:var(--text-quiet)]"
     >
       {language === "ja" ? (
         <span aria-current="page" className="text-[rgba(var(--foreground-rgb),0.76)]">
@@ -428,7 +428,7 @@ function Accordion({ items }: { items: FaqItem[] }) {
                 {item.q}
               </span>
               <span
-                className="mt-1 shrink-0 text-[rgba(var(--foreground-rgb),0.30)] transition-transform duration-300"
+                className="mt-1 shrink-0 text-[color:var(--text-quiet)] transition-transform duration-300"
                 style={{
                   fontSize: "0.75rem",
                   transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
@@ -440,7 +440,7 @@ function Accordion({ items }: { items: FaqItem[] }) {
             </button>
             <Collapsible open={isOpen}>
               <p
-                className="pb-5 text-[rgba(var(--foreground-rgb),0.53)]"
+                className="pb-5 text-[color:var(--text-quiet)]"
                 style={bodyStyle}
               >
                 {item.a}
@@ -510,12 +510,12 @@ function HeroSitePreview({ photos }: { photos: ServicePhoto[] }) {
             <span className="block h-2 w-2 rounded-full bg-[rgba(var(--foreground-rgb),0.14)]" />
             <span className="block h-2 w-2 rounded-full bg-[rgba(var(--foreground-rgb),0.10)]" />
           </div>
-          <p className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.36)]">
+          <p className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[color:var(--text-quiet)]">
             akieguchi.com / gallery
           </p>
           <Link
             to="/gallery"
-            className="tap-target font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.36)] hover:text-[rgba(var(--foreground-rgb),0.62)] transition-colors duration-300"
+            className="tap-target font-en text-[0.58rem] tracking-[0.12em] uppercase text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.62)] transition-colors duration-300"
           >
             Open
           </Link>
@@ -531,14 +531,14 @@ function HeroSitePreview({ photos }: { photos: ServicePhoto[] }) {
                 {["Gallery", "About", "Contact"].map((label) => (
                   <span
                     key={label}
-                    className="block font-en text-[0.58rem] tracking-[0.10em] text-[rgba(var(--foreground-rgb),0.34)]"
+                    className="block font-en text-[0.58rem] tracking-[0.10em] text-[color:var(--text-quiet)]"
                   >
                     {label}
                   </span>
                 ))}
               </nav>
             </div>
-            <p className="font-en text-[0.56rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.24)]">
+            <p className="font-en text-[0.56rem] tracking-[0.12em] uppercase text-[color:var(--text-quiet)]">
               Portfolio
             </p>
           </aside>
@@ -611,7 +611,7 @@ function SitePagePreview({
         )}
       </span>
       <span className="min-w-0">
-        <span className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.34)] group-hover:text-[rgba(var(--foreground-rgb),0.58)] transition-colors duration-300">
+        <span className="font-en text-[0.58rem] tracking-[0.12em] uppercase text-[color:var(--text-quiet)] group-hover:text-[color:var(--text-quiet)] transition-colors duration-300">
           View
         </span>
         <span
@@ -625,7 +625,7 @@ function SitePagePreview({
           {item.title}
         </span>
         <span
-          className="mt-1.5 block text-[rgba(var(--foreground-rgb),0.50)]"
+          className="mt-1.5 block text-[color:var(--text-quiet)]"
           style={{ fontSize: "0.82rem", lineHeight: 1.8 }}
         >
           {item.body}
@@ -663,7 +663,7 @@ function PortfolioProof({
           ))}
         </h2>
         <p
-          className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
+          className="mt-4 text-[color:var(--text-quiet)]"
           style={bodyStyle}
         >
           {config.body}
@@ -699,7 +699,7 @@ function AudienceAndFeatures({
             className="grid grid-cols-1 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 md:gap-10 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-5"
           >
             <div>
-              <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.36)]">
+              <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[color:var(--text-quiet)]">
                 {language === "en" ? "What feels difficult" : "こんな悩み"}
               </p>
               <h2
@@ -713,14 +713,14 @@ function AudienceAndFeatures({
                 {item.concern}
               </h2>
               <p
-                className="mt-1.5 text-[rgba(var(--foreground-rgb),0.48)]"
+                className="mt-1.5 text-[color:var(--text-quiet)]"
                 style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
               >
                 {item.concernBody}
               </p>
             </div>
             <div>
-              <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.36)]">
+              <p className="font-ja text-[0.62rem] tracking-[0.04em] text-[color:var(--text-quiet)]">
                 {language === "en" ? "With this kit" : "このサイトなら"}
               </p>
               <h2
@@ -734,7 +734,7 @@ function AudienceAndFeatures({
                 {item.solution}
               </h2>
               <p
-                className="mt-1.5 text-[rgba(var(--foreground-rgb),0.50)]"
+                className="mt-1.5 text-[color:var(--text-quiet)]"
                 style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
               >
                 {item.solutionBody}
@@ -772,7 +772,7 @@ function PurchaseDetails({
           {config.title}
         </h2>
         <p
-          className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
+          className="mt-4 text-[color:var(--text-quiet)]"
           style={bodyStyle}
         >
           {config.body}
@@ -780,7 +780,7 @@ function PurchaseDetails({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="mt-5 inline-flex items-center gap-2 font-en text-xs tracking-[0.08em] uppercase text-[rgba(var(--foreground-rgb),0.40)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 cursor-pointer"
+          className="mt-5 inline-flex items-center gap-2 font-en text-xs tracking-[0.08em] uppercase text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 cursor-pointer"
         >
           <span>{isOpen ? "Close" : "Details"}</span>
           <span
@@ -804,7 +804,7 @@ function PurchaseDetails({
               className="grid grid-cols-[2.5rem_1fr] gap-4 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
             >
               <span
-                className="font-en text-[rgba(var(--foreground-rgb),0.35)] tracking-[0.08em]"
+                className="font-en text-[color:var(--text-quiet)] tracking-[0.08em]"
                 style={{ fontSize: "0.82rem" }}
               >
                 {String(i + 1).padStart(2, "0")}
@@ -821,7 +821,7 @@ function PurchaseDetails({
                   {step.title}
                 </span>
                 <span
-                  className="mt-1.5 block text-[rgba(var(--foreground-rgb),0.52)]"
+                  className="mt-1.5 block text-[color:var(--text-quiet)]"
                   style={bodyStyle}
                 >
                   {step.body}
@@ -832,7 +832,7 @@ function PurchaseDetails({
         </ol>
         {config.footnote && (
           <p
-            className="mt-5 max-w-2xl mx-auto text-center text-[rgba(var(--foreground-rgb),0.44)]"
+            className="mt-5 max-w-2xl mx-auto text-center text-[color:var(--text-quiet)]"
             style={{ fontSize: "0.82rem", lineHeight: 1.9 }}
           >
             {config.footnote}
@@ -899,7 +899,7 @@ function PlanCard({
         {plan.price}
       </p>
       <p
-        className="mt-3 text-[rgba(var(--foreground-rgb),0.56)]"
+        className="mt-3 text-[color:var(--text-quiet)]"
         style={bodyStyle}
       >
         {plan.sub}
@@ -908,7 +908,7 @@ function PlanCard({
         {plan.points.map((p, i) => (
           <li
             key={i}
-            className="flex gap-2.5 text-[rgba(var(--foreground-rgb),0.55)]"
+            className="flex gap-2.5 text-[color:var(--text-quiet)]"
             style={{
               fontSize: "var(--body-size, 0.85rem)",
               lineHeight: "1.75",
@@ -916,7 +916,7 @@ function PlanCard({
           >
             <span
               aria-hidden="true"
-              className="text-[rgba(var(--foreground-rgb),0.30)] select-none"
+              className="text-[color:var(--text-quiet)] select-none"
             >
               —
             </span>
@@ -965,7 +965,7 @@ function AdminShowcase({
           {config.title}
         </h2>
         <p
-          className="mt-4 text-[rgba(var(--foreground-rgb),0.56)]"
+          className="mt-4 text-[color:var(--text-quiet)]"
           style={bodyStyle}
         >
           {config.body}
@@ -991,7 +991,7 @@ function AdminShowcase({
               {feat.title}
             </span>
             <span
-              className="text-[rgba(var(--foreground-rgb),0.50)]"
+              className="text-[color:var(--text-quiet)]"
               style={{ fontSize: "0.84rem", lineHeight: 1.85 }}
             >
               {feat.body}
@@ -1002,7 +1002,7 @@ function AdminShowcase({
       {language === "en" && (
         <div
           role="note"
-          className="mt-7 max-w-3xl mx-auto rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-5 py-4 text-left text-[rgba(var(--foreground-rgb),0.58)]"
+          className="mt-7 max-w-3xl mx-auto rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-5 py-4 text-left text-[color:var(--text-quiet)]"
           style={bodyStyle}
         >
           <p>
@@ -1019,7 +1019,7 @@ function AdminShowcase({
           {language === "en" ? "Try the current admin demo" : "管理画面を触ってみる"}
         </ServiceButton>
         <div className="mt-3">
-          <a className="text-[0.76rem] leading-7 text-[rgba(var(--foreground-rgb),0.48)] underline underline-offset-4" href="/?portfolio-kit-experience=1">{config.demoCta}</a>
+          <a className="text-[0.76rem] leading-7 text-[color:var(--text-quiet)] underline underline-offset-4" href="/?portfolio-kit-experience=1">{config.demoCta}</a>
         </div>
       </div>
     </section>
@@ -1058,7 +1058,7 @@ function FinalCTA({
           {config.title}
         </p>
         <p
-          className="mt-4 text-[rgba(var(--foreground-rgb),0.50)]"
+          className="mt-4 text-[color:var(--text-quiet)]"
           style={bodyStyle}
         >
           {config.body}
@@ -1079,7 +1079,7 @@ function FinalCTA({
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.06em] text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 py-1.5"
+                  className="font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 py-1.5"
                 >
                   {link.label}
                 </a>
@@ -1151,7 +1151,7 @@ function StickyCtaBar({
           <div className="flex items-center gap-3 ml-auto">
             <a
               href="#pricing"
-              className="font-ja text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.45)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1.5"
+              className="font-ja text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1.5"
             >
               {config.pricingCta}
             </a>
@@ -1234,7 +1234,7 @@ export default function ServicePage({
           ))}
         </h1>
         <p
-          className="mt-7 text-[rgba(var(--foreground-rgb),0.58)] page-entrance page-entrance-delay-1 max-w-2xl mx-auto"
+          className="mt-7 text-[color:var(--text-quiet)] page-entrance page-entrance-delay-1 max-w-2xl mx-auto"
           style={bodyStyle}
         >
           {config.hero.body.split("\n").map((line, i, arr) => (
@@ -1304,13 +1304,13 @@ export default function ServicePage({
           ))}
         </div>
         <p
-          className="text-center mt-7 text-[rgba(var(--foreground-rgb),0.45)]"
+          className="text-center mt-7 text-[color:var(--text-quiet)]"
           style={{ fontSize: "0.82rem", lineHeight: 1.8 }}
         >
           {live ? config.pricing.noteOnline : config.pricing.noteOffline}
         </p>
         <p
-          className="text-center mt-2 text-[rgba(var(--foreground-rgb),0.42)]"
+          className="text-center mt-2 text-[color:var(--text-quiet)]"
           style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
         >
           {config.pricing.disclaimer}
@@ -1318,7 +1318,7 @@ export default function ServicePage({
         <p className="mt-4 text-center">
           <Link
             to={language === "en" ? "/start/en" : "/start"}
-            className="text-[0.76rem] leading-7 text-[rgba(var(--foreground-rgb),0.48)] underline underline-offset-4 transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.70)]"
+            className="text-[0.76rem] leading-7 text-[color:var(--text-quiet)] underline underline-offset-4 transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.70)]"
           >
             {language === "en"
               ? "Preview what happens after purchase"

@@ -203,7 +203,7 @@ export default function GalleryPage() {
         className="font-en uppercase text-center mb-10 md:mb-24 section-reveal"
         style={{
           fontSize: "var(--section-label-size, 0.75rem)",
-          color: `rgba(var(--foreground-rgb), var(--section-label-opacity, 0.35))`,
+          color: "var(--text-quiet)",
           letterSpacing: "var(--section-label-tracking, 0.10em)",
           lineHeight: "var(--section-leading, 1.2)",
         }}
@@ -227,7 +227,7 @@ export default function GalleryPage() {
               className={`tap-target font-en text-xs tracking-[0.08em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
                 view === val
                   ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
-                  : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
+                  : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
               }`}
             >
               {label}
@@ -257,7 +257,7 @@ export default function GalleryPage() {
                   className={`tap-target font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] whitespace-nowrap shrink-0 ${
                     activeFilter === cat.slug
                       ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
-                      : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
+                      : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
                   }`}
                 >
                   {cat.label}
@@ -289,7 +289,7 @@ export default function GalleryPage() {
                   className={`tap-target font-en text-xs tracking-[0.04em] pb-1 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
                     activeMedium === val
                       ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
-                      : "text-[rgba(var(--foreground-rgb),0.35)] border-transparent hover:text-[rgba(var(--foreground-rgb),0.50)]"
+                      : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
                   }`}
                 >
                   {lbl}
@@ -311,19 +311,19 @@ export default function GalleryPage() {
               // A failed fetch is not an empty gallery — say so, and offer a
               // retry instead of quietly showing "No photos" (fail-quiet trap).
               <div className="py-24 text-center">
-                <p className="text-xs tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.45)] mb-5">
+                <p className="text-xs tracking-[0.04em] text-[color:var(--text-quiet)] mb-5">
                   写真を読み込めませんでした
                 </p>
                 <button
                   onClick={() => void refetchPhotos()}
-                  className="tap-target font-en text-xs tracking-[0.08em] pb-1 border-b-[1.5px] border-[rgba(var(--foreground-rgb),0.3)] text-[rgba(var(--foreground-rgb),0.55)] hover:text-[var(--foreground)] hover:border-[var(--foreground)] transition-colors duration-300"
+                  className="tap-target font-en text-xs tracking-[0.08em] pb-1 border-b-[1.5px] border-[rgba(var(--foreground-rgb),0.3)] text-[color:var(--text-quiet)] hover:text-[var(--foreground)] hover:border-[var(--foreground)] transition-colors duration-300"
                 >
                   Retry
                 </button>
               </div>
             ) : (
               <div className="py-24 text-center">
-                <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">
+                <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
                   No photos
                 </p>
               </div>

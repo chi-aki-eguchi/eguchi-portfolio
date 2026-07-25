@@ -32,7 +32,7 @@ function ExperienceSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-1.5 text-[0.68rem] leading-5 text-[rgba(var(--foreground-rgb),0.52)]">
+    <label className="grid gap-1.5 text-[0.68rem] leading-5 text-[color:var(--text-quiet)]">
       {label}
       <select
         aria-label={label}
@@ -94,7 +94,7 @@ export default function PortfolioKitExperience({
           <p className="font-ja text-[0.78rem] text-[rgba(var(--foreground-rgb),0.78)]">
             見た目を体験する
           </p>
-          <p className="mt-1 text-[0.65rem] leading-5 text-[rgba(var(--foreground-rgb),0.48)]">
+          <p className="mt-1 text-[0.65rem] leading-5 text-[color:var(--text-quiet)]">
             これは体験です。実際のサイトは変わりません。
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function PortfolioKitExperience({
           type="button"
           aria-expanded={!collapsed}
           onClick={() => setCollapsed((value) => !value)}
-          className="min-h-9 shrink-0 rounded border border-[rgba(var(--foreground-rgb),0.12)] px-2.5 text-[0.68rem] text-[rgba(var(--foreground-rgb),0.55)]"
+          className="min-h-9 shrink-0 rounded border border-[rgba(var(--foreground-rgb),0.12)] px-2.5 text-[0.68rem] text-[color:var(--text-quiet)]"
         >
           {collapsed ? "開く" : "閉じる"}
         </button>
@@ -161,7 +161,7 @@ export default function PortfolioKitExperience({
 
       <a
         href="/portfolio-kit"
-        className="mt-3 inline-flex min-h-9 items-center text-[0.7rem] tracking-[0.04em] text-[rgba(var(--foreground-rgb),0.58)] underline underline-offset-4"
+        className="mt-3 inline-flex min-h-9 items-center text-[0.7rem] tracking-[0.04em] text-[color:var(--text-quiet)] underline underline-offset-4"
       >
         販売ページへ戻る
       </a>

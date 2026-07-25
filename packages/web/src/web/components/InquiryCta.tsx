@@ -38,7 +38,7 @@ export function InquiryCta() {
       {text && (
         <p
           className="section-reveal mt-5 md:mt-6 mx-auto max-w-md"
-          style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "0.02em", color: `rgba(var(--foreground-rgb), 0.5)`, transitionDelay: "0.05s" }}
+          style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "0.02em", color: "var(--text-quiet)", transitionDelay: "0.05s" }}
         >
           {text}
         </p>
@@ -47,9 +47,9 @@ export function InquiryCta() {
         <Link
           to="/contact"
           className="font-en inline-block uppercase nav-link-luxury transition-colors duration-300"
-          style={{ fontSize: "0.8125rem", letterSpacing: "0.14em", paddingBottom: 6, color: `rgba(var(--foreground-rgb), 0.6)`, borderBottom: `1px solid rgba(var(--foreground-rgb), 0.25)` }}
+          style={{ fontSize: "0.8125rem", letterSpacing: "0.14em", paddingBottom: 6, color: "var(--text-quiet)", borderBottom: `1px solid rgba(var(--foreground-rgb), 0.25)` }}
           onMouseEnter={(e) => { e.currentTarget.style.color = `var(--accent-color, rgba(var(--foreground-rgb), 0.9))`; e.currentTarget.style.borderColor = `var(--accent-color, rgba(var(--foreground-rgb), 0.6))`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = `rgba(var(--foreground-rgb), 0.6)`; e.currentTarget.style.borderColor = `rgba(var(--foreground-rgb), 0.25)`; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-quiet)"; e.currentTarget.style.borderColor = `rgba(var(--foreground-rgb), 0.25)`; }}
         >
           {button}
         </Link>

@@ -1592,6 +1592,9 @@
   --sai-right: env(safe-area-inset-right, 0px);
   --sai-bottom: env(safe-area-inset-bottom, 0px);
   --sai-left: env(safe-area-inset-left, 0px);
+  /* AA(4.5:1)を満たす最小値0.60に余裕を持たせた値。階層は大きさと余白で作る
+     （design-spec §0-3）ので、これより薄くしない。 */
+  --text-quiet: rgba(var(--foreground-rgb), 0.62);
   /* Fixed header height (Layout.tsx nav, h-14). Single source of truth for
      anything that needs to subtract the header's footprint from a
      viewport-relative size (main's padding-top, fullscreen hero height). */

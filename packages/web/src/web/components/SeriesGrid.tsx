@@ -60,7 +60,7 @@ export function SeriesGrid() {
       <div className="py-24" aria-hidden="true" />
     ) : (
       <div className="py-24 text-center">
-        <p className="font-en text-xs tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.25)]">No series yet</p>
+        <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">No series yet</p>
       </div>
     );
   }
@@ -112,7 +112,7 @@ export function SeriesGrid() {
             {s.title}
           </p>
           {s.subtitle && (
-            <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] uppercase text-[rgba(var(--foreground-rgb),0.35)]">
+            <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] uppercase text-[color:var(--text-quiet)]">
               {s.subtitle}
             </p>
           )}

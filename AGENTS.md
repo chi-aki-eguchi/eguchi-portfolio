@@ -11,7 +11,7 @@
 - Runable 関連ファイル（`docs/archive/RUNABLE_AI.md`, `docs/archive/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
 - Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
 - MacBook / Mac mini の2台運用では、GitHub をコード正本にする。リポジトリを iCloud / Dropbox 等で丸ごと同期しない。`.env` は各Macに置き、秘密情報は 1Password 等の安全な保管場所から転記する。人間向け手順は `docs/two-mac-workflow.md` を参照。
-- Fable5 など高性能モデルを使える時は、単発実装より先に `docs/specs/ai-collaboration-reform-fable5.md` を読み、全AIに残る作業ルール・検査表・Handoff品質の改善を優先する。
+- 高性能モデル（2026-07 現在は Claude Opus 5。旧記述の Fable5 はこれに読み替える）を使える時は、単発実装より先に `docs/specs/ai-collaboration-reform-fable5.md` を読み、全AIに残る作業ルール・検査表・Handoff品質の改善を優先する。
 
 ### §0 invariants
 
@@ -30,31 +30,55 @@
 
 - `eguchi-portfolio-app` と `ivys-house` リポジトリのコードを混ぜない。ファイルコピー、import、コード参照をすべて禁止する。
 
-### 役割分担（2026-07-08 固定・2026-07-13 モデル非固定化）
+### 役割分担（2026-07-25 恒久化: 設計=Claude Code / 実装=Codex）
 
-役割（Driver/Reviewer）は固定するが、**各AIが内部で使うモデル（Sonnet/Fable/Opus や特定の Codex モデル等）は固定しない**。作業内容・利用可能性・残りクレジットに応じてその都度選ぶ。定型調査は小さいモデル・低い思考量へ渡してよいが、重要判断と統合は主担当（Driver）が行う。
+**設計する側と実装する側を分ける。** 2026-07-14 に期間限定の上書きとして始めた役割反転を、
+2026-07-25 のオーナー判断で恒久ルールに昇格させたもの（それ以前の「Driver=Claude Code が実装する」
+恒久ルールは廃止）。判断の根拠は Obsidian `40_開発ログ/2026-07-25.md`。
 
-- **Driver = Claude Code**: 実装・コミット・検証（`bun run check` / `bun run smoke`）を行う唯一の役割。
-- **Reviewer = Codex**: **read-only**。push 前レビュー・高リスク差分（DB / 画像 / settings / deploy）の確認・三振（同じ失敗3回）時の相談相手。
-- **Codex に実装させない**（ファイル編集・コミットをさせない）。レビューで修正が必要なら、指摘を受けて Driver が直す。
-- 迷ったときの参照順: 各タスクの指示書（docs/agents/task-queue.md）→ docs/agents/autonomy-rules.md → 本ファイル §0。
+各AIが内部で使うモデルは固定しない。作業内容・利用可能性・残りクレジットに応じてその都度選ぶ
+（選び方は下の「Codex のモデル選択」）。
 
-#### 期間限定の役割反転（2026-07-14 オーナー直接指示「実行はしばらくcodexを使おうね」・撤回まで有効）
-
-上記の恒久ルールに対する、オーナーがチャットで直接出した期間限定の上書き。
-
-- **実装 = Codex**: claude-driver が `codex exec`（workspace-write sandbox）で起動し、
-  指示書を渡して実装させる。
-- **Claude Code = レビュー・統合・進行管理**: 依頼文の作成、差分の read-only レビュー、
-  `bun run check` / `bun run smoke` の実行（Codex の sandbox はネットワーク不可のため
-  smoke は Claude 側でしか回せない）、commit 整理、task.md Handoff・決定ログ、
-  オーナーへの報告。
+- **設計 = Claude Code**: 何を作るか決める。オーナーとの相談、現状調査、仕様・指示書の作成、
+  差分の read-only レビュー、`bun run check` / `bun run smoke` の実行、commit 整理、
+  `task.md` Handoff・決定ログ、オーナーへの報告。
+- **実装 = Codex**: 決まったものをコードにする。claude-driver が `codex exec`
+  （workspace-write sandbox）で起動し、指示書を渡して実装させる。commit は Codex が行う。
+- **検証は Claude Code が持つ**: Codex の sandbox は `network_access = false` のため
+  `bun run smoke`（Playwright）を回せない。「実装=Codex」は「検証まで Codex」を意味しない。
 - §0 invariants・完了の定義・**push はオーナーのみ**は従来どおり両AIに適用。
-- Codex の利用枠節約のため、実装依頼は原則 medium 推論で出し、難所のみ引き上げる。
-- この反転はオーナーが撤回した時点で終了し、恒久ルール（Driver = Claude Code）へ戻る。
-  autonomy-rules.md の「Codex に実装をさせること」ハードストップは、この期間中は適用しない。
+- 迷ったときの参照順: 各タスクの指示書（docs/agents/task-queue.md）→ docs/agents/autonomy-rules.md → 本ファイル §0。
 - **省トークン運用(2026-07-15 オーナー指示)**: 依頼は一括指示・報告は短縮形式・レビューは
   リスク階層別・ゲート二重実行禁止・commitはCodex。詳細は docs/agents/codex-workflow.md が正本。
+
+> **一時例外 (2026-07-25 のみ・オーナー直接指示)**: この日は Claude Opus 5 の試用と
+> Codex クレジット節約のため、実装も Claude Code が行う。Codex は補助に回す
+> （`repo-scout` での検索、commit 前の read-only 差分レビュー）。**この例外は
+> 2026-07-25 のセッション限りで、上の恒久ルールを書き換えるものではない。**
+> 翌日以降は実装=Codex に戻す。
+
+#### Codex へ渡す指示書の必須項目
+
+設計が曖昧なまま渡すと、Codex が実装の中で設計判断をしてしまい、この役割分担が壊れる
+（GPT-5.6 Sol は特にスコープを広げ、過剰に作り込む傾向がある）。実装依頼には必ず含める:
+
+1. 変更してよいファイル（列挙する。「この辺り」で済ませない）
+2. やらないこと（例: APIの形は変えない / データ構造は変えない / 既存テストの期待値を緩めない）
+3. 完了の判定方法（どのコマンドが通れば完了か）
+4. 迷ったら止めて報告する。勝手に設計判断をしない
+
+#### Codex のモデル選択
+
+設計済みの状態で渡すため判断が減る。**既定は `gpt-5.6-terra` の medium**。
+
+| モデル | 使う場面 |
+|---|---|
+| `gpt-5.6-luna` high | 手順を最後まで言葉で書ける単純作業（リネーム、テスト追加、文言修正） |
+| `gpt-5.6-terra` medium | 通常の実装（**既定**） |
+| `gpt-5.6-sol` medium | 触る範囲が広い / 壊すと影響が大きい（DB・画像・settings・deploy） |
+| `gpt-5.6-sol` xhigh | 原則使わない。medium で二度失敗した時だけ |
+
+失敗したときは同じモデルで投げ直さない。一段上げ、失敗した理由を添えて渡す。
 
 #### クレジット切れ時の復旧手順（短縮版）
 
@@ -67,7 +91,9 @@
 ### Claude Code / Codex agmsg 運用
 
 - agmsg team は `eguchi-portfolio`。Claude Code は `claude-driver`、Codex は `codex-reviewer`。
-- 窓口は上記「役割分担」に従う（Driver=Claude Code 固定。Codex は Reviewer としてのみ呼ぶ）。
+  識別名は 2026-07-14 以前の役割名の名残であり、実際の役割は上記「役割分担」（設計=Claude / 実装=Codex）に従う。
+  混乱を避けるため識別名そのものは変更しない（変えると宛先ズレ事故の元になる）。
+- agmsg は「相談」の経路。実装依頼は agmsg ではなく `codex exec` で直接渡す。
 - **識別名は `claude-driver` の1つに固定する。** 即席の別名（`claude-library-driver` 等）を新規に作らない — 名前が増えると agmsg の宛先ズレ・同時多重編集事故の温床になる（2026-07-12 に実際に発生: 複数セッションが同一 working tree を同時編集し、停止指示とプロセス強制終了合戦になった）。
 - 作業開始時に `~/.agents/skills/agmsg/scripts/whoami.sh "$(pwd)" claude-code` で、自分が `claude-driver` として登録されているか、project がこのリポジトリのパスになっているかを確認する。ズレていたら編集作業をせず、状況を報告して停止する。
 - 実装セッションは常に1つだけ開く。同一 working tree を複数セッションで同時編集しない（1 task = 1 Driver。詳細は本ファイル下部「Agent Ownership」参照）。
@@ -94,8 +120,8 @@
 ### 高性能モデル利用時の優先順位
 
 - まず `git status --short` と `task.md` 最新 Handoff を確認し、既存の未コミット作業を踏まない。
-- Fable5 などの高性能モデルは、広範囲の現状診断、設計判断、検査表作成、引き継ぎ改善、P0/P1レビューに使う。
-- 実装者は原則1人に固定し、もう片方のAIは read-only reviewer として動かす。
+- 高性能モデル（2026-07 現在は Claude Opus 5。旧記述の Fable5 はこれに読み替える）は、広範囲の現状診断、設計判断、検査表作成、引き継ぎ改善、P0/P1レビューに使う。
+- 実装者は原則1人に固定する（現行ルールでは Codex）。もう片方のAIは read-only reviewer として動かす。
 - 自動化や hooks を増やす前に、AGENTS.md / CLAUDE.md / task.md / wiki の役割を整理する。
 - push 済み、Railway 反映済み、本番確認済みは別物として報告する。
 

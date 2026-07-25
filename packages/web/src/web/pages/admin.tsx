@@ -4153,7 +4153,7 @@ export function GalleryTab({
                 </fieldset>
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
                 {copy.sort.label}
               </span>
               <select
@@ -4315,7 +4315,7 @@ export function GalleryTab({
               title={copy.import.mediumHint}
               className="flex items-center gap-1 m-0 p-0 border-0 min-w-0"
             >
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider whitespace-nowrap mr-0.5">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider whitespace-nowrap mr-0.5">
                 {copy.import.mediumLabel}
               </span>
               {[

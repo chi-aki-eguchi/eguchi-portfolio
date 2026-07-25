@@ -2286,7 +2286,7 @@ export function PricingTab() {
 
             {editId === p.id && (
               <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
-                <AdminField label="Title" uppercase>
+                <AdminField label={copy.titleLabel}>
                   <input
                     aria-label={copy.titleAria}
                     value={draft.title}
@@ -2297,7 +2297,7 @@ export function PricingTab() {
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
-                <AdminField label="Price" hint={copy.priceHint} uppercase>
+                <AdminField label={copy.priceLabel} hint={copy.priceHint}>
                   <input
                     aria-label={copy.priceAria}
                     value={draft.price}
@@ -2309,9 +2309,8 @@ export function PricingTab() {
                   />
                 </AdminField>
                 <AdminField
-                  label="Description"
+                  label={copy.descriptionLabel}
                   hint={copy.descriptionHint}
-                  uppercase
                 >
                   <textarea
                     aria-label={copy.descriptionAria}
@@ -2822,7 +2821,7 @@ export function ServiceTab({
           onChange={(v) => setExamples({ body: v })}
         />
         <SvcInput
-          label="CTA"
+          label={t.phase2b.service.examples.ctaLabel}
           value={draft.examples.cta}
           onChange={(v) => setExamples({ cta: v })}
         />
@@ -3078,7 +3077,7 @@ export function ServiceTab({
               rows={4}
             />
             <SvcInput
-              label="Stripe Payment Link"
+              label={t.phase2b.service.pricing.stripePaymentLink}
               value={plan.stripeUrl}
               onChange={(v) =>
                 setPricing({
@@ -5088,7 +5087,7 @@ export function SettingsTab({
               <Section title={copyDesign.themeColors.title} defaultOpen={false}>
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <div className="flex-1 min-w-0">
-                    <AdminField label="Background" uppercase>
+                    <AdminField label={copyDesign.themeColors.backgroundLabel}>
                       <div className="flex items-center gap-2 min-w-0">
                         <input
                           aria-label={copyDesign.themeColors.backgroundSwatchAria}
@@ -5111,7 +5110,7 @@ export function SettingsTab({
                     </AdminField>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <AdminField label="Text" uppercase>
+                    <AdminField label={copyDesign.themeColors.textLabel}>
                       <div className="flex items-center gap-2 min-w-0">
                         <input
                           aria-label={copyDesign.themeColors.textSwatchAria}
@@ -5840,8 +5839,8 @@ export function SettingsTab({
 
               {/* Admin */}
               <div className="pt-1 pb-4 px-1">
-                <p className="text-[length:var(--admin-text-note)] tracking-wider uppercase text-[color:var(--admin-muted)] mb-2">
-                  Admin Password
+                <p className="text-[length:var(--admin-text-note)] tracking-wider text-[color:var(--admin-muted)] mb-2">
+                  {copy.adminPasswordTitle}
                 </p>
                 <p className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] leading-relaxed">
                   Set via environment variable{" "}
@@ -5869,7 +5868,7 @@ export function SettingsTab({
           {/* Preview toolbar */}
           <div className="flex items-center justify-between px-4 h-10 border-b border-[var(--admin-line)] bg-[var(--admin-paper)] flex-shrink-0">
             <span className="text-[length:var(--admin-text-note)] tracking-widest uppercase text-[var(--admin-muted)]">
-              Preview
+              {copy.previewTitle}
             </span>
             <div className="flex items-center gap-1">
               <button

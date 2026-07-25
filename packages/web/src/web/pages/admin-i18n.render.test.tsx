@@ -38,6 +38,7 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   const ja = ADMIN_DICTIONARY.ja.phase2b;
   const en = ADMIN_DICTIONARY.en.phase2b;
 
+  expect(ja.library.sort.label).toBe("並び替え");
   expect(ja.library.sort.options.manual).toBe("手動（保存されている順）");
   expect(ja.library.inspector.shotDate).toBe("撮影日");
   expect(ja.series.coverPhoto).toBe("表紙写真");
@@ -52,7 +53,17 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   expect(ja.profile.fields.nameEnLabel).toBe("名前（英語）");
   expect(ja.profile.fields.bioLabel).toBe("自己紹介");
   expect(ja.profile.fields.bioEnLabel).toBe("自己紹介（英語）");
+  expect(ja.pricing.titleLabel).toBe("タイトル");
+  expect(ja.pricing.priceLabel).toBe("料金");
+  expect(ja.pricing.descriptionLabel).toBe("説明文");
+  expect(ja.service.examples.ctaLabel).toBe("CTA");
+  expect(ja.service.pricing.stripePaymentLink).toBe("Stripe の決済リンク");
+  expect(ja.settingsDesign.themeColors.backgroundLabel).toBe("背景色");
+  expect(ja.settingsDesign.themeColors.textLabel).toBe("文字色");
+  expect(ja.settingsBasic.adminPasswordTitle).toBe("管理パスワード");
+  expect(ja.settingsBasic.previewTitle).toBe("プレビュー");
 
+  expect(en.library.sort.label).toBe("Sort");
   expect(en.library.sort.options.displaySize).toBe("Display size (S→L)");
   expect(en.library.import.film).toBe("Film");
   expect(en.library.import.digital).toBe("Digital");
@@ -70,6 +81,15 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   expect(en.profile.fields.nameEnLabel).toBe("Name (EN)");
   expect(en.profile.fields.bioLabel).toBe("Bio");
   expect(en.profile.fields.bioEnLabel).toBe("Bio (EN)");
+  expect(en.pricing.titleLabel).toBe("Title");
+  expect(en.pricing.priceLabel).toBe("Price");
+  expect(en.pricing.descriptionLabel).toBe("Description");
+  expect(en.service.examples.ctaLabel).toBe("CTA");
+  expect(en.service.pricing.stripePaymentLink).toBe("Stripe Payment Link");
+  expect(en.settingsDesign.themeColors.backgroundLabel).toBe("Background");
+  expect(en.settingsDesign.themeColors.textLabel).toBe("Text");
+  expect(en.settingsBasic.adminPasswordTitle).toBe("Admin Password");
+  expect(en.settingsBasic.previewTitle).toBe("Preview");
 });
 
 function CopyProbe() {

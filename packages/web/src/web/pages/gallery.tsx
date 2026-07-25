@@ -243,7 +243,7 @@ export default function GalleryPage() {
           {/* Filter — カテゴリ */}
           {categories.length > 0 && (
             <div
-              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-6 section-reveal overflow-x-auto md:overflow-x-visible -mx-6 px-6 md:mx-0 md:px-0 scrollbar-hide"
+              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-6 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
               style={{
                 transitionDelay: "0.1s",
                 WebkitOverflowScrolling: "touch",
@@ -269,7 +269,7 @@ export default function GalleryPage() {
           {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
           {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
             <div
-              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible -mx-6 px-6 md:mx-0 md:px-0 scrollbar-hide"
+              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
               style={{
                 transitionDelay: "0.15s",
                 WebkitOverflowScrolling: "touch",

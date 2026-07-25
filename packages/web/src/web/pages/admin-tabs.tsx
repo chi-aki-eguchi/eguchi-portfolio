@@ -714,7 +714,7 @@ export function HeroTab() {
                   style={{ objectPosition: adminPhotoObjectPosition(photo) }}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors">
-                  <span className="absolute top-1 left-1 text-[9px] text-white/70 bg-black/50 px-1.5 py-0.5 rounded">
+                  <span className="absolute top-1 left-1 text-[9px] text-white/90 bg-black/50 px-1.5 py-0.5 rounded">
                     {i + 1}
                   </span>
                   {/* Controls — always visible on mobile (no hover), hover-reveal on desktop */}
@@ -6164,14 +6164,12 @@ function PairingPicker({
                 {name}
               </span>
               <span
-                className="text-[length:var(--admin-text-note)] shrink-0 text-[color:var(--admin-ink)]"
+                className="text-[length:var(--admin-text-note)] shrink-0"
               >
                 {ja} × {en}
               </span>
             </div>
-            <div
-              className="mt-1.5 flex gap-3 items-baseline text-[color:var(--admin-ink)]"
-            >
+            <div className="mt-1.5 flex gap-3 items-baseline">
               {jaFamily && (
                 <span
                   style={{

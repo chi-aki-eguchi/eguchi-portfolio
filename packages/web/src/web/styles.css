@@ -640,14 +640,13 @@
     [class*="red-"]
   ) {
   border-color: var(--admin-line) !important;
-  background-color: var(--admin-paper-soft) !important;
+  background-color: transparent !important;
   color: var(--admin-ink) !important;
 }
 
 .admin-atelier button:not(.absolute):not([class*="bg-black"]):hover {
-  background-color: var(--admin-paper-deep) !important;
+  border-color: var(--admin-line-strong) !important;
   color: var(--admin-ink) !important;
-  box-shadow: var(--shadow-1) !important;
 }
 
 /* Settings and Portfolio Kit accordion rows use whitespace and rules instead
@@ -730,7 +729,7 @@
 .admin-atelier textarea,
 .admin-atelier select {
   border-color: var(--admin-line) !important;
-  background-color: rgba(var(--admin-paper-rgb), 0.72) !important;
+  background-color: transparent !important;
   color: var(--admin-ink) !important;
   border-radius: var(--admin-radius-sm) !important;
   box-shadow: none !important;

@@ -699,6 +699,15 @@
   color: var(--admin-paper) !important;
 }
 
+/* 開閉ボタンは aria-expanded で状態を示す。要素側のクラスは通常ボタンのリセットに
+   上書きされて効かないため、ここで指定する。アコーディオン行は塗らないので除外。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button[aria-expanded="true"]:not(.absolute):not(.admin-plain-section-trigger) {
+  background-color: var(--admin-ink) !important;
+  border-color: var(--admin-ink) !important;
+  color: var(--admin-paper) !important;
+}
+
 /* `aria-pressed` は状態表示にも使う。選択中の主ボタンと同じ黒塗りになると
    状態がボタンに見えるため、色だけ差し替える。寸法は共通のままにして
    タップ領域を保つ。 */

@@ -4291,11 +4291,8 @@ export function GalleryTab({
                 setSelected(new Set());
                 setInspectPhoto(null);
               }}
-              className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm transition-colors ${
-                showTrash
-                  ? "bg-amber-900/40 text-amber-400"
-                  : "text-[var(--admin-muted)]"
-              }`}
+              aria-pressed={showTrash}
+              className="flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors"
             >
               <Trash2 size={11} />
               Trash
@@ -4307,7 +4304,7 @@ export function GalleryTab({
               onClick={() => setShowShortcuts(true)}
               title={copy.toolbar.shortcutsTitle}
               aria-label={copy.toolbar.shortcutsAria}
-              className="admin-tap-sm flex items-center justify-center w-6 h-6 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] rounded-sm transition-colors"
+              className="admin-tap-sm flex items-center justify-center w-6 h-6 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] rounded-sm border border-[var(--admin-line)] transition-colors"
             >
               ?
             </button>

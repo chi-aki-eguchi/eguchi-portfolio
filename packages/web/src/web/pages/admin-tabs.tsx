@@ -714,7 +714,7 @@ export function HeroTab() {
                   style={{ objectPosition: adminPhotoObjectPosition(photo) }}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors">
-                  <span className="absolute top-1 left-1 text-[9px] text-white/90 bg-black/50 px-1.5 py-0.5 rounded">
+                  <span className="absolute top-1 left-1 text-[9px] text-white/90 bg-black/65 px-1.5 py-0.5 rounded">
                     {i + 1}
                   </span>
                   {/* Controls — always visible on mobile (no hover), hover-reveal on desktop */}

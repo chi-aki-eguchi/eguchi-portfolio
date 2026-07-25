@@ -2512,7 +2512,7 @@ function ServiceSection({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between py-3 px-1 text-[11px] tracking-widest uppercase text-[var(--admin-muted)] transition-colors cursor-pointer"
+        className="admin-plain-section-trigger w-full flex items-center justify-between py-3 px-0 text-[11px] tracking-widest text-[var(--admin-muted)] transition-colors cursor-pointer"
       >
         <span>{title}</span>
         <ChevronRight
@@ -5975,37 +5975,36 @@ function Section({
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex items-center justify-between gap-3 w-full min-h-[52px] px-4 text-left text-[15px] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)] transition-colors duration-[var(--dur-fast)]"
+        className="admin-plain-section-trigger flex items-center justify-between gap-3 w-full min-h-[56px] px-0 text-left text-[14px] text-[color:var(--admin-ink)] hover:text-[color:var(--admin-ink)] transition-colors duration-[var(--dur-fast)]"
       >
-        <span className="flex items-baseline gap-2 min-w-0">
-          <span className="shrink-0 whitespace-nowrap">{title}</span>
+        <span className="shrink-0 whitespace-nowrap">{title}</span>
+        <span className="ml-auto flex min-w-0 items-center gap-3">
           {!open && summary && (
             <span className="text-[11px] text-[color:var(--admin-muted)] font-normal truncate">
               {summary}
             </span>
           )}
+          <ChevronRight
+            size={12}
+            className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-[var(--dur-base)] ease-[var(--ease-inout)]"
+            style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+          />
         </span>
-        <ChevronRight
-          size={15}
-          className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-[var(--dur-base)] ease-[var(--ease-inout)]"
-          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
-        />
       </button>
       <div
-        className={`grid px-4 ${animated ? "transition-[grid-template-rows] duration-[var(--dur-base)] ease-[var(--ease-inout)]" : ""}`}
+        className={`grid px-0 ${animated ? "transition-[grid-template-rows] duration-[var(--dur-base)] ease-[var(--ease-inout)]" : ""}`}
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="pb-4 pt-1 flex flex-col gap-4">{children}</div>
+          <div className="pb-6 pt-1 flex flex-col gap-4">{children}</div>
         </div>
       </div>
     </div>
   );
 }
 
-// macOS-settings-style group card: an eyebrow label sits outside/above the
-// card, rows inside share one panel surface with a single 1px internal
-// divider between them (no separate borders + card double-boundary).
+// Settings group: whitespace and fine rules establish hierarchy without a
+// filled panel surface. Rows keep a single 1px divider between them.
 function SettingsGroup({
   title,
   children,
@@ -6014,17 +6013,11 @@ function SettingsGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-6">
-      <p className="text-[13px] text-[color:var(--admin-muted)] mb-2 px-1">
+    <div className="mb-12 border-t border-[var(--admin-line)]">
+      <p className="text-[11px] tracking-widest text-[color:var(--admin-muted)] mb-3">
         {title}
       </p>
-      <div
-        className="rounded-[var(--radius-m)] overflow-hidden [&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]"
-        style={{
-          background: "var(--admin-paper-soft)",
-          boxShadow: "var(--shadow-1)",
-        }}
-      >
+      <div className="[&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]">
         {children}
       </div>
     </div>

@@ -646,6 +646,17 @@
   box-shadow: var(--shadow-1) !important;
 }
 
+/* Settings and Portfolio Kit accordion rows use whitespace and rules instead
+   of the filled-button surface. Four scoped classes beat the generic button
+   reset above without removing its sizing or interaction safeguards. */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-plain-section-trigger:not(.absolute):not([class*="bg-black"]),
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-plain-section-trigger:not(.absolute):not([class*="bg-black"]):hover {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
 .admin-atelier
   button:not(.absolute):not([class*="bg-black"]):active:not(:disabled),
 .admin-atelier a[class*="px-"]:active {

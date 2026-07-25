@@ -314,7 +314,7 @@ scratch/に保存。
   修正してよい（autonomy-rules の完了の定義に従う）。
 - キューが空になったら docs/specs/refine-and-loop-spec.md の自走改善ループに戻る。
 
-## Q-11. Library: 写真詳細の出し方を画面幅3段にする [昼推奨] [Codexレビュー必須]
+## Q-11. Library: 写真詳細の出し方を画面幅3段にする [昼推奨] [Codexレビュー必須] ✅ 済 (2026-07-25 実装=Codex/設計・検証=Claude。3段実装＋暗幕を不透明にしていたグローバルCSSの取りこぼしを修正。fixme復帰済み。check 511 pass/smoke 40 passed。iPhone実機Safariのみ未確認。Handoff(64)参照)
 
 背景: モード分離（2026-07-25完了分）で、390px では写真詳細が
 `fixed inset-y-0 right-0 w-full max-w-xs` の右側全高オーバーレイとして出るため、

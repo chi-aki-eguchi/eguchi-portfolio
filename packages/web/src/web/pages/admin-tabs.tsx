@@ -669,7 +669,7 @@ export function HeroTab() {
       )}
       {/* Selected Hero Photos */}
       <div className="mb-8">
-        <h2 className="text-[11px] tracking-widest uppercase text-[var(--admin-muted)] mb-1">
+        <h2 className="text-[11px] tracking-widest text-[var(--admin-muted)] mb-1">
           {copy.slidesTitle}
         </h2>
         <p className="text-[10px] text-[var(--admin-muted)] mb-4">
@@ -753,7 +753,7 @@ export function HeroTab() {
 
       {/* Gallery: Pick photos */}
       <div>
-        <h2 className="text-[11px] tracking-widest uppercase text-[var(--admin-muted)] mb-1">
+        <h2 className="text-[11px] tracking-widest text-[var(--admin-muted)] mb-1">
           {copy.galleryTitle}
         </h2>
         <p className="text-[10px] text-[var(--admin-muted)] mb-4">
@@ -1003,7 +1003,7 @@ export function ProfileTab({
 
       {/* Profile Photo Upload */}
       <div className="mb-8">
-        <p className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mb-3">
+        <p className="text-[10px] text-[var(--admin-muted)] tracking-wider mb-3">
           {copy.photoTitle}
         </p>
         <div className="flex items-start gap-4">
@@ -1296,7 +1296,7 @@ export function CategoriesTab() {
       </div>
 
       <div className="border-t border-[var(--admin-line)] pt-5">
-        <p className="text-[11px] tracking-wider uppercase text-[var(--admin-muted)] mb-4">
+        <p className="text-[11px] tracking-wider text-[var(--admin-muted)] mb-4">
           {copy.newCategory}
         </p>
         <div className="flex flex-col gap-3">
@@ -1612,18 +1612,25 @@ export function SeriesTab() {
               key={s.id}
               className="bg-[color:var(--admin-paper-soft)] border border-[color:var(--admin-line)] rounded-sm overflow-hidden"
             >
-              {cover && (
-                <img
-                  src={adminPhotoSrc(cover, 600, 80)}
-                  alt={s.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-28 object-cover border-b border-[var(--admin-line)]"
-                  style={{ objectPosition: adminPhotoObjectPosition(cover) }}
-                />
-              )}
               <div className="flex items-center justify-between px-3 py-2.5 group">
                 <div className="flex items-center gap-1.5 min-w-0">
+                  {cover ? (
+                    <img
+                      src={adminPhotoSrc(cover, 600, 80)}
+                      alt={s.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-24 h-16 flex-shrink-0 rounded-sm object-cover"
+                      style={{
+                        objectPosition: adminPhotoObjectPosition(cover),
+                      }}
+                    />
+                  ) : (
+                    <div
+                      aria-hidden="true"
+                      className="w-24 h-16 flex-shrink-0 rounded-sm bg-[var(--admin-paper-deep)]"
+                    />
+                  )}
                   <div className="flex flex-col flex-shrink-0">
                     <button
                       onClick={() => move(s.id, -1)}
@@ -1673,7 +1680,7 @@ export function SeriesTab() {
                       })
                     }
                     aria-pressed={s.isPublished}
-                    className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${s.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"}`}
+                    className={`admin-state-chip text-[10px] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${s.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
                   >
                     {s.isPublished ? copy.published : copy.draft}
                   </button>
@@ -1842,7 +1849,7 @@ export function SeriesTab() {
                   </AdminField>
                   {/* 機能9: シリーズ固有のレイアウト・テーマ設定 */}
                   <div className="border-t border-[var(--admin-line)] pt-3 mt-1">
-                    <p className="text-[10px] tracking-wider uppercase text-[var(--admin-muted)] mb-2">
+                    <p className="text-[10px] tracking-wider text-[var(--admin-muted)] mb-2">
                       {copy.layoutTheme}
                     </p>
                     <AdminField
@@ -1947,7 +1954,7 @@ export function SeriesTab() {
       </div>
 
       <div className="border-t border-[var(--admin-line)] pt-5">
-        <p className="text-[11px] tracking-wider uppercase text-[var(--admin-muted)] mb-4">
+        <p className="text-[11px] tracking-wider text-[var(--admin-muted)] mb-4">
           {copy.newSeries}
         </p>
         <div className="flex flex-col gap-3">
@@ -2250,7 +2257,7 @@ export function PricingTab() {
                     patchPlan.mutate({ id: p.id, isPublished: !p.isPublished })
                   }
                   aria-pressed={p.isPublished}
-                  className={`text-[10px] px-2 py-1 rounded-sm transition-colors ${p.isPublished ? "bg-emerald-700/40 text-emerald-300/90" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)]"}`}
+                  className={`admin-state-chip text-[10px] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${p.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
                 >
                   {p.isPublished ? copy.published : copy.draft}
                 </button>
@@ -2279,7 +2286,7 @@ export function PricingTab() {
 
             {editId === p.id && (
               <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
-                <AdminField label="Title">
+                <AdminField label="Title" uppercase>
                   <input
                     aria-label={copy.titleAria}
                     value={draft.title}
@@ -2290,7 +2297,7 @@ export function PricingTab() {
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
-                <AdminField label="Price" hint={copy.priceHint}>
+                <AdminField label="Price" hint={copy.priceHint} uppercase>
                   <input
                     aria-label={copy.priceAria}
                     value={draft.price}
@@ -2301,7 +2308,11 @@ export function PricingTab() {
                     className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
-                <AdminField label="Description" hint={copy.descriptionHint}>
+                <AdminField
+                  label="Description"
+                  hint={copy.descriptionHint}
+                  uppercase
+                >
                   <textarea
                     aria-label={copy.descriptionAria}
                     rows={2}
@@ -2535,7 +2546,7 @@ function SvcInput({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+      <span className="text-[10px] text-[var(--admin-muted)] tracking-wider">
         {label}
       </span>
       <input
@@ -2562,7 +2573,7 @@ function SvcTextarea({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+      <span className="text-[10px] text-[var(--admin-muted)] tracking-wider">
         {label}
       </span>
       <textarea
@@ -5076,7 +5087,7 @@ export function SettingsTab({
               {/* Theme Colors */}
               <Section title={copyDesign.themeColors.title} defaultOpen={false}>
                 <div className="flex gap-4">
-                  <AdminField label="Background">
+                  <AdminField label="Background" uppercase>
                     <div className="flex items-center gap-2">
                       <input
                         aria-label={copyDesign.themeColors.backgroundSwatchAria}
@@ -5097,7 +5108,7 @@ export function SettingsTab({
                       />
                     </div>
                   </AdminField>
-                  <AdminField label="Text">
+                  <AdminField label="Text" uppercase>
                     <div className="flex items-center gap-2">
                       <input
                         aria-label={copyDesign.themeColors.textSwatchAria}
@@ -6160,13 +6171,13 @@ function PairingPicker({
                 {name}
               </span>
               <span
-                className={`text-[9px] shrink-0 ${active ? "text-white/70" : "text-[color:var(--admin-muted)]"}`}
+                className="text-[9px] shrink-0 text-[color:var(--admin-ink)]"
               >
                 {ja} × {en}
               </span>
             </div>
             <div
-              className={`mt-1.5 flex gap-3 items-baseline ${active ? "text-white/80" : "text-[color:var(--admin-muted)]"}`}
+              className="mt-1.5 flex gap-3 items-baseline text-[color:var(--admin-ink)]"
             >
               {jaFamily && (
                 <span
@@ -6307,7 +6318,7 @@ function FontPicker({
 
   return (
     <div>
-      <label className="block text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mb-1">
+      <label className="block text-[10px] text-[var(--admin-muted)] tracking-wider mb-1">
         {label}
       </label>
       <select
@@ -6578,15 +6589,19 @@ function Modal({
 function AdminField({
   label,
   hint,
+  uppercase = false,
   children,
 }: {
   label: string;
   hint?: string;
+  uppercase?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
+      <label
+        className={`block text-[10px] text-[color:var(--admin-muted)] tracking-wider mb-1 ${uppercase ? "uppercase" : ""}`}
+      >
         {label}
       </label>
       {hint && (

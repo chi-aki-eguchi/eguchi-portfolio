@@ -661,13 +661,34 @@
    ((0,3,1)) and its !important always wins, so selected/primary buttons
    (Series layout picker, Add/Save, aria-pressed toggles) never actually
    showed their highlighted state. */
+/* `aria-pressed` is also used by buttons that only report a state.
+   Giving those chips the same ink fill makes the state look like a selected action,
+   so `.admin-state-chip` opts out while selection toggles keep this rule. */
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button.admin-btn-primary:not(.absolute),
+  button.admin-btn-primary:not(.absolute):not(.admin-state-chip),
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button[aria-pressed="true"]:not(.absolute) {
+  button[aria-pressed="true"]:not(.absolute):not(.admin-state-chip) {
   background-color: var(--admin-ink) !important;
   border-color: var(--admin-ink) !important;
   color: var(--admin-paper) !important;
+}
+
+/* `aria-pressed` は状態表示にも使う。選択中の主ボタンと同じ黒塗りになると
+   状態がボタンに見えるため、色だけ差し替える。寸法は共通のままにして
+   タップ領域を保つ。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-state-chip {
+  background-color: var(--admin-paper-deep) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-state-chip[aria-pressed="true"] {
+  color: var(--admin-ink) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-state-chip[aria-pressed="false"] {
+  color: var(--admin-muted) !important;
 }
 
 /* [class*="text-red"] / [class*="bg-red"] match the raw class attribute

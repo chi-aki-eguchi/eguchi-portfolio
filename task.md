@@ -9397,3 +9397,100 @@ Chromium は初期スタイル適用と属性変更を1回のスタイル解決�
 - `scripts/smoke/admin-page-frame.spec.ts` は通常の `test`（`fixme` なし）
 - `bun run smoke` はオーナー指示どおり実行していない
 - commit / push はしていない
+
+## Handoff 2026-07-25 (67) — Claude Code: 管理画面刷新のゴール設定と P1〜P3
+
+### 目的
+
+オーナーからゴールを取り違えていると訂正を受け、**ゴールの中身を設計側で決めて設定し、
+そのまま実行する**ところまでを1セッションで行う。ゴールは管理画面の刷新。
+
+### 変更内容
+
+**ゴールの設定 (`bd30381` / `e79f6f4` / `ca8c340` / `d420616` ほか)**
+
+6軸は方向であって終わりが判定できないため、**到達点7項目**に落として決定。
+全9タブを 1440px / 390px で撮って現状を実測し、進め方を P1〜P4 の順に決めた。
+正本は `docs/specs/admin-renewal-goal.md`、入口は `CLAUDE.md` 冒頭。
+
+**P1 共通ページ枠 (`7106234`)**
+
+各タブが自前のラッパーを持ち、全部 `mx-auto` なのに幅だけ違っていたため、
+本文の左端が 265/280/318/430/620px とバラバラでタブ切替で最大355px横に飛んでいた。
+`PageShell` を新設（左寄せ・左端40px・幅は880/560の2種のみ）。9タブすべて h1 の左端が
+**288px で一致**。Portfolio Kit は 448→880px になり切れていた値が全部見えるようになった。
+`admin-page-frame.spec.ts` で到達点(1)を機械化。
+
+**P2 言葉と操作の統一 (`b11b980`)**
+
+「はじめに」に見出し追加（9タブ揃い、fixme解除）、Hero の重複説明を解消、
+直書きの英語ラベルを i18n へ移して日本語化、追加ボタンの形を統一。
+
+**P3 実測で確認できた4件 (`53a5ac2`)**
+
+Series の表紙写真を全幅の帯（P1後 800x112 の約7:1）から 96x64 サムネイルへ、
+公開/下書き chip の統一、Settings のフォント見本のコントラスト、
+日本語ラベルの大文字化解除。
+
+### 触ったファイル
+
+- `CLAUDE.md`、`docs/specs/admin-renewal-goal.md`（新規）
+- `packages/web/src/web/pages/admin-page-shell.tsx`（新規）
+- `packages/web/src/web/pages/admin.tsx`、`admin-tabs.tsx`、`admin-i18n.tsx`、
+  `admin-i18n.render.test.tsx`、`styles.css`
+- `packages/web/src/web/test/pages.render.test.tsx`
+- `scripts/smoke/admin-page-frame.spec.ts`（新規）
+
+### 検証したこと
+
+- `bun run check` → **511 pass / 0 fail**
+- `bun run smoke` → **42 passed / 0 failed**
+- 1440px / 390px で実測: 9タブの h1 左端、本文幅、chip の寸法と色、
+  サムネイル寸法、**全9タブのコントラスト比**
+
+### 検証していないこと
+
+- **実機 iPhone Safari**（Handoff 65 のチラつき修正、Q-11 の下側シート）
+- P4（可愛さと動き）は未着手
+- Pricing / Settings に直書き英語ラベルが残っている
+
+### push したか
+
+していない。commit は8本。
+
+### 本番で確認したか
+
+していない。Handoff 64 分までは反映確認済み（`x-build: 0144ef56`）。
+
+### 次の担当者が触ってよい場所
+
+- P4（可愛さと動き）。土台（P1〜P3）が揃ったので着手可
+- Pricing / Settings の直書き英語ラベル（Title/Price/Description/CTA/
+  Stripe Payment Link/Background/Text/Admin Password/Preview 他）
+- Q-12（選択モード中も検索を残す）
+
+### 次の担当者が触ってはいけない場所
+
+- `git push`（オーナーのみ）
+- **`styles.css` のグローバル上書きルール群。** 要素側の指定を4重特異度+`!important` で
+  上書きするものが複数ある（`button[aria-pressed="true"]`、
+  `[class*="fixed"][class*="bottom-"]`、通常ボタンの `min-height:40px` 等）。
+  **新しい部品の見た目が想定と違ったら、まず `getComputedStyle` で実測して上書き元を探す。**
+  逃げ道を増やすときは `.admin-state-chip` のように意味のあるクラスを作り、
+  `absolute` のような嘘の指定で回避しない
+- `PageShell` の寸法（40px / 880px / 560px）。オーナー承認済みの決定
+
+### このセッションで設計側が間違えたこと（同じ轍を踏まないため）
+
+**スクリーンショットを読み込み完了前に撮って、3回続けて偽の不具合を書きかけた。**
+
+1. Hero スライドとプロフィール写真の「灰色の空箱」→ 初回読み込みが遅いだけ（2回目は500ms以内）
+2. Pricing の「新しいプラン」→ オーナーのデータ（下書きの料金プラン）
+3. Series の行が「汎用リスト」→ 実際は表紙写真つきカード。写真496枚の読込前を撮っていた
+
+**画面写真から不具合を断定しない。** 読み込み完了を待ってから撮り、
+DOM を実測して裏を取る。
+
+**Codex が3回、判断を止めて報告してきた。すべて Codex が正しく、私の指示が誤っていた。**
+`…` の正体（読み込み中表示だった）、「はじめに」の見出しキー（専用文言が既にあった）、
+共通CSSから丸ごと除外するとタップ領域が縮む件。**止まって報告する動きは機能している。**

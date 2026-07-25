@@ -18,7 +18,7 @@ export function PageShell({
       data-admin-page-shell={width}
     >
       <div
-        className={`w-full px-4 py-6 sm:px-10 sm:py-8 ${WIDTH_CLASSES[width]}`}
+        className={`w-full px-4 py-8 sm:px-10 sm:py-12 ${WIDTH_CLASSES[width]}`}
       >
         {children}
       </div>

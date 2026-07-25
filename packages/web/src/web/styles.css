@@ -598,6 +598,14 @@
   color: var(--admin-ink);
 }
 
+.admin-atelier
+  .admin-content
+  :where(p, dd, figcaption, small, li:not(:has(button, [role="button"]))):not(
+    :where(button, button *, [role="button"], [role="button"] *)
+  ) {
+  line-height: 1.7;
+}
+
 .admin-atelier h1,
 .admin-atelier h2:not(.admin-sidebar__group-title),
 .admin-atelier h3 {

@@ -6591,12 +6591,12 @@ function AdminField({
   return (
     <div>
       <label
-        className={`block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] tracking-wider mb-1 ${uppercase ? "uppercase" : ""}`}
+        className={`block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] tracking-wider mb-2 ${uppercase ? "uppercase" : ""}`}
       >
         {label}
       </label>
       {hint && (
-        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-2 leading-relaxed">
           {hint}
         </p>
       )}

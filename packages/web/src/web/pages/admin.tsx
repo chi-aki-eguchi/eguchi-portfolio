@@ -665,7 +665,7 @@ function AdminPageContent({
       {demoMode && (
         <div
           ref={demoBannerRef}
-          className="fixed inset-x-0 top-0 z-[100] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-[#f1e8cf] px-4 py-2 text-[12px] font-medium tracking-[0.04em] text-[#594b2c] shadow-sm"
+          className="fixed inset-x-0 top-0 z-[100] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-[#f1e8cf] px-4 py-2 text-[length:var(--admin-text-body)] font-medium tracking-[0.04em] text-[#594b2c] shadow-sm"
           data-admin-demo-banner
         >
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-center">
@@ -820,16 +820,16 @@ function AdminPageContent({
       {/* Unsaved settings confirmation */}
       {unsavedConfirm && (
         <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
-          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
             {t.shell.unsavedTitle}
           </p>
-          <p className="text-[11px] text-[var(--admin-muted)] mb-5">
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
             {t.shell.unsavedBody}
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setUnsavedConfirm(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -840,7 +840,7 @@ function AdminPageContent({
                 else setTab(unsavedConfirm);
                 setUnsavedConfirm(null);
               }}
-              className="px-4 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors"
             >
               {t.shell.leaveWithoutSaving}
             </button>
@@ -1055,7 +1055,7 @@ export function SetupTab({
     return (
       <PageShell width="wide">
         <PageHeader title={t.setup.title} />
-        <p className="text-[12px] text-[color:var(--admin-muted)]">…</p>
+        <p className="text-[length:var(--admin-text-body)] text-[color:var(--admin-muted)]">…</p>
       </PageShell>
     );
   }
@@ -1065,20 +1065,20 @@ export function SetupTab({
       <PageShell width="wide">
         <PageHeader title={t.setup.title} />
         <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
-          <h2 className="text-[14px] text-amber-900">
+          <h2 className="text-[length:var(--admin-text-body)] text-amber-900">
             {t.setup.loadError.title}
           </h2>
-          <p className="text-[12px] leading-6 text-amber-800">
+          <p className="text-[length:var(--admin-text-body)] leading-6 text-amber-800">
             {t.setup.loadError.body}
           </p>
           <button
             type="button"
             onClick={retrySetup}
-            className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm"
+            className="px-3 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm"
           >
             {t.setup.loadError.retry}
           </button>
-          <p className="text-[11px] leading-5 text-amber-800">
+          <p className="text-[length:var(--admin-text-note)] leading-5 text-amber-800">
             {t.setup.loadError.contact}
           </p>
         </div>
@@ -1100,7 +1100,7 @@ export function SetupTab({
               <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
                 <Check size={13} />
               </div>
-              <p className="text-[12px] text-emerald-800 truncate">
+              <p className="text-[length:var(--admin-text-body)] text-emerald-800 truncate">
                 {settings.setupCompleted === "true"
                   ? t.setup.collapsedCompleted
                   : requiredDone
@@ -1113,13 +1113,13 @@ export function SetupTab({
                 setForceOpen(true);
                 setDismissed(false);
               }}
-              className="text-[11px] text-emerald-700 hover:text-emerald-900 transition-colors flex-shrink-0"
+              className="text-[length:var(--admin-text-note)] text-emerald-700 hover:text-emerald-900 transition-colors flex-shrink-0"
             >
               {t.setup.reopen}
             </button>
           </div>
           {!requiredDone && nextItem && (
-            <p className="text-[12px] leading-6 text-[color:var(--admin-muted)] px-1">
+            <p className="text-[length:var(--admin-text-body)] leading-6 text-[color:var(--admin-muted)] px-1">
               {t.setup.resumeSummary(doneCount, checklist.length, nextItem.title)}
             </p>
           )}
@@ -1138,7 +1138,7 @@ export function SetupTab({
           />
         )}
         {demoMode && (
-          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm px-4 py-3 text-[12px] leading-6 text-[color:var(--admin-muted)]">
+          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm px-4 py-3 text-[length:var(--admin-text-body)] leading-6 text-[color:var(--admin-muted)]">
             {t.setup.demoIntro}
           </div>
         )}
@@ -1148,7 +1148,7 @@ export function SetupTab({
           actions={
             <>
               <div
-                className={`w-fit rounded-sm border px-3 py-2 text-[12px] ${requiredDone ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-muted)]"}`}
+                className={`w-fit rounded-sm border px-3 py-2 text-[length:var(--admin-text-body)] ${requiredDone ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-muted)]"}`}
               >
                 {loading
                   ? t.setup.checking
@@ -1171,7 +1171,7 @@ export function SetupTab({
                       finishSetup.mutate();
                     }}
                     disabled={finishSetup.isPending}
-                    className="px-3 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-50 flex-shrink-0"
+                    className="px-3 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-50 flex-shrink-0"
                   >
                     {finishSetup.isPending
                       ? t.common.saving
@@ -1184,7 +1184,7 @@ export function SetupTab({
                       setDismissed(true);
                       setForceOpen(false);
                     }}
-                    className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
+                    className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
                   >
                     {t.setup.later}
                   </button>
@@ -1196,7 +1196,7 @@ export function SetupTab({
 
         {!requiredDone && nextItem && (
           <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm px-4 py-3">
-            <p className="text-[12px] leading-6 text-[color:var(--admin-ink)]">
+            <p className="text-[length:var(--admin-text-body)] leading-6 text-[color:var(--admin-ink)]">
               {t.setup.resumeSummary(doneCount, checklist.length, nextItem.title)}
             </p>
           </div>
@@ -1213,7 +1213,7 @@ export function SetupTab({
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-[13px] uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+          <h2 className="text-[length:var(--admin-text-body)] uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             {t.setup.recommendedTitle}
           </h2>
           <div className="grid gap-3 md:grid-cols-3">
@@ -1252,28 +1252,28 @@ function SetupChecklistRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-[13px] text-[color:var(--admin-ink)]">
+          <h3 className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)]">
             {item.title}
           </h3>
           {item.href ? (
             <button
               type="button"
               onClick={item.onOpen}
-              className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
+              className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
               {t.common.open}
             </button>
           ) : (
             <button
               onClick={() => item.tab && onOpenTab(item.tab)}
-              className="text-[11px] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
+              className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
               {t.common.open}
             </button>
           )}
         </div>
         <p
-          className={`${compact ? "text-[11px] leading-5" : "text-[12px] leading-6"} text-[color:var(--admin-muted)] mt-1`}
+          className={`${compact ? "text-[length:var(--admin-text-note)] leading-5" : "text-[length:var(--admin-text-body)] leading-6"} text-[color:var(--admin-muted)] mt-1`}
         >
           {item.body}
         </p>
@@ -4116,7 +4116,7 @@ export function GalleryTab({
                     type="button"
                     data-library-mode-action="normal"
                     aria-pressed="true"
-                    className="text-[11px] px-2 py-1 rounded-sm admin-btn-primary"
+                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm admin-btn-primary"
                   >
                     {copy.mode.normal}
                   </button>
@@ -4131,7 +4131,7 @@ export function GalleryTab({
                       displayed.length === 0
                     }
                     aria-label={copy.mode.startSelect}
-                    className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {copy.mode.select}
                   </button>
@@ -4146,21 +4146,21 @@ export function GalleryTab({
                       allPhotos.length === 0
                     }
                     aria-label={copy.mode.startArrange}
-                    className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {copy.mode.arrange}
                   </button>
                 </fieldset>
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                 {copy.sort.label}
               </span>
               <select
                 value={librarySort}
                 onChange={(e) => setLibrarySort(e.target.value)}
                 aria-label={copy.sort.ariaLabel}
-                className="admin-tap-sm bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                className="admin-tap-sm bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
               >
                 <option value="manual">{copy.sort.options.manual}</option>
                 <option value="createdAt-desc">
@@ -4206,7 +4206,7 @@ export function GalleryTab({
                         ),
                     })
                   }
-                  className="text-[10px] px-2 py-1 rounded-sm admin-btn-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm admin-btn-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   {copy.sort.saveAction}
                 </button>
@@ -4218,7 +4218,7 @@ export function GalleryTab({
               data-library-filters-toggle
               onClick={() => setShowLibraryFilters((v) => !v)}
               aria-expanded={showLibraryFilters}
-              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition-colors ${
+              className={`flex items-center gap-1.5 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border transition-colors ${
                 showLibraryFilters || anyFilterActive
                   ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)] border-[color:var(--admin-ink)]"
                   : "text-[color:var(--admin-muted)] border-[var(--admin-line)] hover:text-[color:var(--admin-ink)]"
@@ -4226,7 +4226,7 @@ export function GalleryTab({
             >
               <Search size={11} /> {copy.toolbar.filters}
               {activeFilterLabels.length > 0 && (
-                <span className="min-w-4 h-4 px-1 rounded-sm bg-[var(--admin-muted)] text-[var(--admin-paper)] text-[10px] leading-4 text-center">
+                <span className="min-w-4 h-4 px-1 rounded-sm bg-[var(--admin-muted)] text-[var(--admin-paper)] text-[length:var(--admin-text-note)] leading-4 text-center">
                   {activeFilterLabels.length}
                 </span>
               )}
@@ -4257,7 +4257,7 @@ export function GalleryTab({
                   aria-label={copy.toolbar.columns(columns)}
                   aria-pressed={mobileLibraryColumns === columns}
                   onClick={() => setMobileLibraryColumns(columns)}
-                  className={`min-w-9 px-2 py-1 rounded-sm border text-[11px] transition-colors ${
+                  className={`min-w-9 px-2 py-1 rounded-sm border text-[length:var(--admin-text-note)] transition-colors ${
                     mobileLibraryColumns === columns
                       ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
                       : "text-[var(--admin-muted)] border-[var(--admin-line)]"
@@ -4276,7 +4276,7 @@ export function GalleryTab({
               }}
               aria-pressed={bulkEditMode}
               title={copy.toolbar.tableMode}
-              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+              className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
                 bulkEditMode
                   ? ""
                   : "text-[var(--admin-muted)] border-[var(--admin-line)]"
@@ -4291,7 +4291,7 @@ export function GalleryTab({
                 setSelected(new Set());
                 setInspectPhoto(null);
               }}
-              className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-sm transition-colors ${
+              className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm transition-colors ${
                 showTrash
                   ? "bg-amber-900/40 text-amber-400"
                   : "text-[var(--admin-muted)]"
@@ -4307,7 +4307,7 @@ export function GalleryTab({
               onClick={() => setShowShortcuts(true)}
               title={copy.toolbar.shortcutsTitle}
               aria-label={copy.toolbar.shortcutsAria}
-              className="admin-tap-sm flex items-center justify-center w-6 h-6 text-[11px] text-[var(--admin-muted)] rounded-sm transition-colors"
+              className="admin-tap-sm flex items-center justify-center w-6 h-6 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] rounded-sm transition-colors"
             >
               ?
             </button>
@@ -4318,7 +4318,7 @@ export function GalleryTab({
               title={copy.import.mediumHint}
               className="flex items-center gap-1 m-0 p-0 border-0 min-w-0"
             >
-              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider whitespace-nowrap mr-0.5">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider whitespace-nowrap mr-0.5">
                 {copy.import.mediumLabel}
               </span>
               {[
@@ -4330,7 +4330,7 @@ export function GalleryTab({
                   type="button"
                   onClick={() => setUploadMedium(val)}
                   aria-pressed={uploadMedium === val}
-                  className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
+                  className={`text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
                     uploadMedium === val
                       ? "admin-btn-primary"
                       : "text-[var(--admin-muted)] border-[var(--admin-line)]"
@@ -4344,7 +4344,7 @@ export function GalleryTab({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-1.5 text-[11px] admin-btn-primary px-3 py-1 rounded-sm transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[length:var(--admin-text-note)] admin-btn-primary px-3 py-1 rounded-sm transition-colors disabled:opacity-50"
             >
               <Upload size={11} /> Import
             </button>
@@ -4364,8 +4364,8 @@ export function GalleryTab({
           {libraryMode === "normal" &&
             !showTrash &&
             activeFilterLabels.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-[var(--admin-ink)] min-w-0">
-              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] min-w-0">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                 {copy.filters.active}
               </span>
               <span className="truncate">
@@ -4374,7 +4374,7 @@ export function GalleryTab({
               <button
                 type="button"
                 onClick={clearLibraryFilters}
-                className="text-[11px] px-2 py-0.5 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors flex-shrink-0"
+                className="text-[length:var(--admin-text-note)] px-2 py-0.5 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors flex-shrink-0"
               >
                 {copy.filters.clear}
               </button>
@@ -4399,7 +4399,7 @@ export function GalleryTab({
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={copy.filters.searchPlaceholder}
                     aria-label={copy.filters.searchAria}
-                    className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] pl-6 pr-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none transition-colors w-52"
+                    className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] pl-6 pr-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none transition-colors w-52"
                   />
                   {searchQuery && (
                     <button
@@ -4415,7 +4415,7 @@ export function GalleryTab({
                 <select
                   value={filterCat}
                   onChange={(e) => setFilterCat(e.target.value)}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All ({allPhotos.length})</option>
                   {categories.map((c) => (
@@ -4435,7 +4435,7 @@ export function GalleryTab({
                   value={filterSeries}
                   onChange={(e) => setFilterSeries(e.target.value)}
                   aria-label={copy.filters.seriesAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All series</option>
                   {seriesList.map((s) => (
@@ -4454,7 +4454,7 @@ export function GalleryTab({
                   value={filterSize}
                   onChange={(e) => setFilterSize(e.target.value)}
                   aria-label={copy.filters.displaySizeAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All sizes</option>
                   {(["S", "M", "L"] as const).map((sz) => (
@@ -4473,7 +4473,7 @@ export function GalleryTab({
                   value={filterMedium}
                   onChange={(e) => setFilterMedium(e.target.value)}
                   aria-label={copy.filters.mediumAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">{copy.filters.mediumAll}</option>
                   <option value="digital">
@@ -4491,7 +4491,7 @@ export function GalleryTab({
                   value={filterOrientation}
                   onChange={(e) => setFilterOrientation(e.target.value)}
                   aria-label={copy.filters.orientationAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All orientations</option>
                   <option value="portrait">
@@ -4508,7 +4508,7 @@ export function GalleryTab({
                 <button
                   onClick={() => setFilterFeatured((v) => !v)}
                   aria-pressed={filterFeatured}
-                  className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
                     filterFeatured
                       ? "bg-amber-900/40 text-amber-300 border-amber-700/50"
                       : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
@@ -4521,7 +4521,7 @@ export function GalleryTab({
                   value={filterPublished}
                   onChange={(e) => setFilterPublished(e.target.value)}
                   aria-label={copy.filters.publicationAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">{copy.filters.publicationAll}</option>
                   <option value="published">
@@ -4535,7 +4535,7 @@ export function GalleryTab({
                 <button
                   onClick={() => setFilterMissingShotAt((v) => !v)}
                   aria-pressed={filterMissingShotAt}
-                  className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
                     filterMissingShotAt
                       ? ""
                       : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
@@ -4547,7 +4547,7 @@ export function GalleryTab({
                 <button
                   onClick={() => setFilterMissingCapture((v) => !v)}
                   aria-pressed={filterMissingCapture}
-                  className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-sm border transition-colors ${
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
                     filterMissingCapture
                       ? ""
                       : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
@@ -4560,7 +4560,7 @@ export function GalleryTab({
                   value={filterRecent}
                   onChange={(e) => setFilterRecent(e.target.value)}
                   aria-label={copy.filters.uploadedAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
                   <option value="all">All time</option>
                   <option value="7">{copy.filters.recentDays(7)}</option>
@@ -4571,7 +4571,7 @@ export function GalleryTab({
                   <button
                     type="button"
                     onClick={clearLibraryFilters}
-                    className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
+                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
                   >
                     {copy.filters.clearAll}
                   </button>
@@ -4588,7 +4588,7 @@ export function GalleryTab({
                   return (
                     <span
                       key={a.id}
-                      className={`group/al inline-flex items-center gap-1 text-[11px] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
+                      className={`group/al inline-flex items-center gap-1 text-[length:var(--admin-text-note)] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
                         activeAlbumId === a.id
                           ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
                           : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[var(--admin-paper-deep)]"
@@ -4605,14 +4605,14 @@ export function GalleryTab({
                         {shownLabels.map((label) => (
                           <span
                             key={label}
-                            className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[var(--admin-muted)]"
+                            className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
                             title={label}
                           >
                             {label}
                           </span>
                         ))}
                         {hiddenLabelCount > 0 && (
-                          <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[10px] text-[var(--admin-muted)]">
+                          <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                             +{hiddenLabelCount}
                           </span>
                         )}
@@ -4637,7 +4637,7 @@ export function GalleryTab({
                     setAlbumDraft({ ...EMPTY_ALBUM_DRAFT });
                     setAlbumModalOpen(true);
                   }}
-                  className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] px-2 py-1 rounded-sm border border-dashed border-[var(--admin-line)] transition-colors"
+                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] px-2 py-1 rounded-sm border border-dashed border-[var(--admin-line)] transition-colors"
                 >
                   <Plus size={11} /> {copy.albums.add}
                 </button>
@@ -4654,19 +4654,19 @@ export function GalleryTab({
             >
               <div className="flex items-center gap-2 border-r border-[var(--admin-line)] pr-2 sm:pr-3">
                 <span
-                  className="text-[11px] text-[var(--admin-ink)]"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)]"
                   aria-live="polite"
                 >
                   {copy.selection.selected(selected.size)}
                 </span>
-                <span className="hidden lg:inline text-[10px] text-[var(--admin-muted)]">
+                <span className="hidden lg:inline text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.mode.selectionHint}
                 </span>
                 <button
                   type="button"
                   data-library-mode-action="end-select"
                   onClick={() => requestLibraryMode("normal")}
-                  className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
                 >
                   {copy.mode.endSelection}
                 </button>
@@ -4678,14 +4678,14 @@ export function GalleryTab({
                 <button
                   onClick={() => batchOp.mutate({ operation: "publish" })}
                   disabled={batchOp.isPending}
-                  className="flex items-center gap-1 text-[11px] text-emerald-300/80 px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-emerald-300/80 px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Eye size={11} /> {copy.selection.publish}
                 </button>
                 <button
                   onClick={() => batchOp.mutate({ operation: "unpublish" })}
                   disabled={batchOp.isPending}
-                  className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <EyeOff size={11} /> {copy.selection.unpublish}
                 </button>
@@ -4694,7 +4694,7 @@ export function GalleryTab({
               <div className="relative" data-batch-cat>
                 <button
                   onClick={() => setBatchCatOpen((v) => !v)}
-                  className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
+                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
                 >
                   <Tag size={11} /> {copy.selection.setCategory}{" "}
                   <ChevronDown size={10} />
@@ -4711,7 +4711,7 @@ export function GalleryTab({
                           });
                           setBatchCatOpen(false);
                         }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-ink)] transition-colors flex items-center gap-2"
+                        className="w-full text-left px-3 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] transition-colors flex items-center gap-2"
                       >
                         <span
                           className="w-2 h-2 rounded-full flex-shrink-0"
@@ -4729,7 +4729,7 @@ export function GalleryTab({
                         });
                         setBatchCatOpen(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors flex items-center gap-2 border-t border-[var(--admin-line)]"
+                      className="w-full text-left px-3 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors flex items-center gap-2 border-t border-[var(--admin-line)]"
                     >
                       <span className="w-2 h-2 rounded-full flex-shrink-0 border border-[var(--admin-muted)]" />
                       {copy.selection.uncategorized}
@@ -4742,7 +4742,7 @@ export function GalleryTab({
               <div className="relative" data-batch-series>
                 <button
                   onClick={() => setBatchSeriesOpen((v) => !v)}
-                  className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
+                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
                 >
                   <Layers size={11} /> {copy.selection.setSeries}{" "}
                   <ChevronDown size={10} />
@@ -4750,7 +4750,7 @@ export function GalleryTab({
                 {batchSeriesOpen && (
                   <div className="absolute top-full left-0 mt-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm shadow-xl z-20 min-w-[160px] max-h-64 overflow-y-auto">
                     {seriesList.length === 0 && (
-                      <div className="px-3 py-1.5 text-[11px] text-[var(--admin-muted)]">
+                      <div className="px-3 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                         {copy.selection.noSeries}
                       </div>
                     )}
@@ -4764,7 +4764,7 @@ export function GalleryTab({
                           });
                           setBatchSeriesOpen(false);
                         }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-ink)] transition-colors truncate"
+                        className="w-full text-left px-3 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] transition-colors truncate"
                       >
                         {s.title}
                         {s.isPublished ? "" : copy.selection.draftSuffix}
@@ -4775,7 +4775,7 @@ export function GalleryTab({
                         batchOp.mutate({ operation: "series", value: "" });
                         setBatchSeriesOpen(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors border-t border-[var(--admin-line)]"
+                      className="w-full text-left px-3 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors border-t border-[var(--admin-line)]"
                     >
                       {copy.selection.unassign}
                     </button>
@@ -4785,7 +4785,7 @@ export function GalleryTab({
 
               {/* M2: Set display size */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[var(--admin-muted)]">
+                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.selection.size}
                 </span>
                 {(["S", "M", "L"] as const).map((sz) => (
@@ -4795,7 +4795,7 @@ export function GalleryTab({
                       batchOp.mutate({ operation: "size", value: sz })
                     }
                     disabled={batchOp.isPending}
-                    className="admin-tap-sm text-[11px] text-[var(--admin-ink)] w-5 h-5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                    className="admin-tap-sm text-[length:var(--admin-text-note)] text-[var(--admin-ink)] w-5 h-5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {sz}
                   </button>
@@ -4803,7 +4803,7 @@ export function GalleryTab({
               </div>
 
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[var(--admin-muted)]">
+                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.selection.rotate}
                 </span>
                 <button
@@ -4834,7 +4834,7 @@ export function GalleryTab({
                   disabled={batchOp.isPending}
                   title={copy.rotation.resetTitle}
                   aria-label={copy.rotation.resetAria}
-                  className="admin-tap-sm w-6 h-5 text-[10px] text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="admin-tap-sm w-6 h-5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   0°
                 </button>
@@ -4853,7 +4853,7 @@ export function GalleryTab({
               </div>
 
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
-                <span className="text-[10px] text-[var(--admin-muted)]">
+                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.selection.date}
                 </span>
                 <input
@@ -4861,7 +4861,7 @@ export function GalleryTab({
                   value={batchShotAtDate}
                   onChange={(e) => setBatchShotAtDate(e.target.value)}
                   aria-label={copy.selection.dateAria}
-                  className="bg-[var(--admin-paper)] text-[var(--admin-ink)] text-[11px] px-1.5 py-0.5 rounded-sm border border-[var(--admin-line)] outline-none"
+                  className="bg-[var(--admin-paper)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-1.5 py-0.5 rounded-sm border border-[var(--admin-line)] outline-none"
                 />
                 <button
                   type="button"
@@ -4887,7 +4887,7 @@ export function GalleryTab({
                     selectedMissingShotAtCount === 0
                   }
                   title={copy.selection.applyMissingDateHint}
-                  className="text-[11px] text-[var(--admin-ink)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {copy.selection.applyCount(selectedMissingShotAtCount)}
                 </button>
@@ -4911,7 +4911,7 @@ export function GalleryTab({
                     batchOp.isPending || selectedFilmShotAtSetCount === 0
                   }
                   title={copy.selection.clearFilmDateHint}
-                  className="text-[11px] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {copy.selection.clearFilmDate(selectedFilmShotAtSetCount)}
                 </button>
@@ -4921,14 +4921,14 @@ export function GalleryTab({
               <button
                 onClick={() => batchOp.mutate({ operation: "feature" })}
                 disabled={batchOp.isPending}
-                className="flex items-center gap-1 text-[11px] text-amber-300/80 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-amber-300/80 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Star size={11} /> {copy.selection.addHero}
               </button>
               <button
                 onClick={() => batchOp.mutate({ operation: "unfeature" })}
                 disabled={batchOp.isPending}
-                className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <StarOff size={11} /> {copy.selection.removeHero}
               </button>
@@ -4939,7 +4939,7 @@ export function GalleryTab({
                   setBatchEdit({ camera: "", lens: "", filmType: "" });
                   setBatchEditOpen(true);
                 }}
-                className="flex items-center gap-1 text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
+                className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors"
               >
                 <Pencil size={11} /> {copy.selection.bulkEdit}
               </button>
@@ -4947,7 +4947,7 @@ export function GalleryTab({
               <button
                 onClick={() => deletePhotos.mutate(Array.from(selected))}
                 disabled={bulkBusy}
-                className="flex items-center gap-1 text-[11px] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Trash2 size={11} /> {copy.selection.moveToTrash}
               </button>
@@ -4963,10 +4963,10 @@ export function GalleryTab({
               data-reorder-lock-cause={reorderLockCause ?? "none"}
               className="flex items-center gap-2 flex-wrap"
             >
-              <span className="text-[11px] text-[var(--admin-ink)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
                 {copy.mode.arrange}
               </span>
-              <span className="text-[10px] text-[var(--admin-muted)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 {reorderLocked
                   ? reorderLockCause === "sort"
                     ? copy.reorder.lockedBySort
@@ -4977,7 +4977,7 @@ export function GalleryTab({
                 <button
                   type="button"
                   onClick={unlockReorder}
-                  className="text-[10px] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
                 >
                   {copy.reorder.unlock}
                 </button>
@@ -4986,7 +4986,7 @@ export function GalleryTab({
                 type="button"
                 data-library-mode-action="finish-arrange"
                 onClick={() => requestLibraryMode("normal")}
-                className="text-[11px] px-2 py-1 rounded-sm admin-btn-primary"
+                className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm admin-btn-primary"
               >
                 {copy.mode.finishArrange}
               </button>
@@ -5001,14 +5001,14 @@ export function GalleryTab({
               aria-label={copy.conditions.aria}
               className="bg-[var(--admin-paper-soft)] border-b border-[var(--admin-line)] px-4 sm:px-10 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
             >
-              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider mr-1">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider mr-1">
                 {copy.conditions.label}
               </span>
-              <span className="text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
                 {displayed.length} / {allPhotos.length} photos
               </span>
               {librarySort !== "manual" && (
-                <span className="text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
+                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
                   {copy.sort.condition(
                     librarySort === "createdAt-desc"
                       ? copy.sort.options.uploadedNewestShort
@@ -5039,14 +5039,14 @@ export function GalleryTab({
               {activeFilterLabels.map((item) => (
                 <span
                   key={item.key}
-                  className="max-w-[220px] truncate text-[11px] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1"
+                  className="max-w-[220px] truncate text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1"
                   title={item.text}
                 >
                   {item.text}
                 </span>
               ))}
               {reorderLocked && (
-                <span className="text-[11px] text-amber-300/80 bg-amber-900/20 border border-amber-900/30 rounded-sm px-2 py-1">
+                <span className="text-[length:var(--admin-text-note)] text-amber-300/80 bg-amber-900/20 border border-amber-900/30 rounded-sm px-2 py-1">
                   {librarySort !== "manual"
                     ? copy.conditions.manualToDrag
                     : copy.conditions.clearToDrag}
@@ -5056,7 +5056,7 @@ export function GalleryTab({
                 <button
                   type="button"
                   onClick={clearLibraryFilters}
-                  className="text-[11px] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
                 >
                   {copy.conditions.clear}
                 </button>
@@ -5071,7 +5071,7 @@ export function GalleryTab({
               size={12}
               className="animate-spin text-[var(--admin-muted)]"
             />
-            <span className="text-[11px] text-[var(--admin-muted)]">
+            <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
               Importing {uploadProgress.done} / {uploadProgress.total}
             </span>
             <div className="flex-1 h-1 bg-[var(--admin-paper-soft)] rounded-full overflow-hidden">
@@ -5131,7 +5131,7 @@ export function GalleryTab({
               </div>
             ) : (
               <div className="p-3">
-                <div className="text-[10px] text-amber-500/70 bg-amber-900/20 border border-amber-900/30 rounded-sm px-3 py-1.5 mb-3 flex items-center justify-between">
+                <div className="text-[length:var(--admin-text-note)] text-amber-500/70 bg-amber-900/20 border border-amber-900/30 rounded-sm px-3 py-1.5 mb-3 flex items-center justify-between">
                   <span>
                     {copy.trash.retention(trashData?.retentionDays ?? 30)}
                   </span>
@@ -5145,7 +5145,7 @@ export function GalleryTab({
                       })
                     }
                     disabled={bulkBusy}
-                    className="text-red-400/70 hover:text-red-400 transition-colors text-[10px] disabled:opacity-40 disabled:pointer-events-none"
+                    className="text-red-400/70 hover:text-red-400 transition-colors text-[length:var(--admin-text-note)] disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {copy.trash.purgeAll}
                   </button>
@@ -5252,13 +5252,13 @@ export function GalleryTab({
               {anyFilterActive && allPhotos.length > 0 ? (
                 <>
                   <p className="text-sm">{copy.empty.noMatches}</p>
-                  <p className="text-[11px] text-[var(--admin-muted)]">
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                     {copy.empty.relaxFilters}
                   </p>
                   <button
                     type="button"
                     onClick={clearLibraryFilters}
-                    className="text-[11px] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
+                    className="text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
                   >
                     {copy.empty.clearFilters}
                   </button>
@@ -5266,7 +5266,7 @@ export function GalleryTab({
               ) : (
                 <>
                   <p className="text-sm">{copy.empty.noPhotos}</p>
-                  <p className="text-[11px] text-[var(--admin-muted)]">
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                     {copy.empty.importHint}
                   </p>
                 </>
@@ -5278,7 +5278,7 @@ export function GalleryTab({
                   原因の説明だけでなく、初心者が迷わないよう1クリックの復帰
                   ボタンを置く(先輩サポート 2026-07-11)。 */}
               {libraryMode === "arrange" && reorderLocked && (
-                <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-x-2 gap-y-1 flex-wrap">
+                <div className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-x-2 gap-y-1 flex-wrap">
                   <span className="text-[var(--admin-muted)]">⚠</span>
                   <span>
                     {reorderLockCause === "sort"
@@ -5288,7 +5288,7 @@ export function GalleryTab({
                   <button
                     type="button"
                     onClick={unlockReorder}
-                    className="text-[10px] px-2 py-0.5 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] hover:bg-[var(--admin-paper-deep)] transition-colors"
+                    className="text-[length:var(--admin-text-note)] px-2 py-0.5 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] hover:bg-[var(--admin-paper-deep)] transition-colors"
                   >
                     {copy.reorder.unlock}
                   </button>
@@ -5301,7 +5301,7 @@ export function GalleryTab({
               {libraryMode === "arrange" &&
                 !reorderLocked &&
                 onlySeriesFilter && (
-                  <div className="text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-deep)] border border-[var(--admin-line-strong)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
+                  <div className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-deep)] border border-[var(--admin-line-strong)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
                     <span>↕</span> {copy.reorder.seriesHint}
                   </div>
                 )}
@@ -5642,7 +5642,7 @@ export function GalleryTab({
       {/* M2: batch-operation result toast */}
       <Toast
         show={!!batchToast}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-emerald-800/70 border border-emerald-700/60 text-emerald-50 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-emerald-800/70 border border-emerald-700/60 text-emerald-50 text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
       >
         <svg
           aria-hidden="true"
@@ -5667,10 +5667,10 @@ export function GalleryTab({
       {/* O2: bulk metadata edit panel */}
       {batchEditOpen && (
         <Modal onClose={() => setBatchEditOpen(false)} widthClass="w-80">
-          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
             {copy.bulkMetadata.title}
           </p>
-          <p className="text-[11px] text-[var(--admin-muted)] mb-4">
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-4">
             {copy.bulkMetadata.description(selected.size)}
           </p>
           <div className="flex flex-col gap-3">
@@ -5682,7 +5682,7 @@ export function GalleryTab({
                   setBatchEdit((b) => ({ ...b, camera: e.target.value }))
                 }
                 placeholder={copy.bulkMetadata.unchanged}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
               />
             </AdminField>
             <AdminField label="Lens">
@@ -5693,7 +5693,7 @@ export function GalleryTab({
                   setBatchEdit((b) => ({ ...b, lens: e.target.value }))
                 }
                 placeholder={copy.bulkMetadata.unchanged}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
               />
             </AdminField>
             <AdminField label="Film / Digital">
@@ -5710,7 +5710,7 @@ export function GalleryTab({
                     onClick={() =>
                       setBatchEdit((b) => ({ ...b, filmType: val }))
                     }
-                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${batchEdit.filmType === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"}`}
+                    className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${batchEdit.filmType === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"}`}
                   >
                     {lbl}
                   </button>
@@ -5721,7 +5721,7 @@ export function GalleryTab({
           <div className="flex gap-2 justify-end mt-5">
             <button
               onClick={() => setBatchEditOpen(false)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -5731,7 +5731,7 @@ export function GalleryTab({
                 batchMetaEdit.isPending ||
                 (!batchEdit.camera && !batchEdit.lens && !batchEdit.filmType)
               }
-              className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
             >
               {batchMetaEdit.isPending ? (
                 <>
@@ -5751,10 +5751,10 @@ export function GalleryTab({
       {/* O6: create smart album — name + optional conditions (saved as a virtual folder) */}
       {albumModalOpen && (
         <Modal onClose={() => setAlbumModalOpen(false)} widthClass="w-80">
-          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
             {copy.albums.title}
           </p>
-          <p className="text-[11px] text-[var(--admin-muted)] mb-4">
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-4">
             {copy.albums.description}
           </p>
           <div className="flex flex-col gap-3">
@@ -5766,7 +5766,7 @@ export function GalleryTab({
                   setAlbumDraft((d) => ({ ...d, name: e.target.value }))
                 }
                 placeholder={copy.albums.namePlaceholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
               />
             </AdminField>
             <AdminField label={copy.albums.cameraContains}>
@@ -5778,7 +5778,7 @@ export function GalleryTab({
                   setAlbumDraft((d) => ({ ...d, camera: e.target.value }))
                 }
                 placeholder={copy.albums.unspecifiedPlaceholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
               />
               <datalist id="album-camera-presets">
                 {cameraPresets.map((p) => (
@@ -5800,7 +5800,7 @@ export function GalleryTab({
                     onClick={() =>
                       setAlbumDraft((d) => ({ ...d, filmType: val }))
                     }
-                    className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${albumDraft.filmType === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"}`}
+                    className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${albumDraft.filmType === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"}`}
                   >
                     {lbl}
                   </button>
@@ -5815,7 +5815,7 @@ export function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, medium: e.target.value }))
                   }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                 >
                   <option value="all">{copy.albums.unspecified}</option>
                   <option value="digital">{copy.filters.mediumDigital}</option>
@@ -5834,7 +5834,7 @@ export function GalleryTab({
                       }))
                     }
                     aria-pressed={albumDraft.missingShotAt}
-                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                    className={`flex-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.missingShotAt ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
                   >
                     {copy.albums.date}
                   </button>
@@ -5847,7 +5847,7 @@ export function GalleryTab({
                       }))
                     }
                     aria-pressed={albumDraft.missingCapture}
-                    className={`flex-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                    className={`flex-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.missingCapture ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
                   >
                     {copy.albums.capture}
                   </button>
@@ -5861,7 +5861,7 @@ export function GalleryTab({
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, category: e.target.value }))
                 }
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
               >
                 <option value="all">{copy.albums.unspecified}</option>
                 {categories.map((c) => (
@@ -5879,7 +5879,7 @@ export function GalleryTab({
                 onChange={(e) =>
                   setAlbumDraft((d) => ({ ...d, series: e.target.value }))
                 }
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
               >
                 <option value="all">{copy.albums.unspecified}</option>
                 {seriesList.map((s) => (
@@ -5898,7 +5898,7 @@ export function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, size: e.target.value }))
                   }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                 >
                   <option value="all">{copy.albums.unspecified}</option>
                   {(["S", "M", "L"] as const).map((sz) => (
@@ -5915,7 +5915,7 @@ export function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, published: e.target.value }))
                   }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                 >
                   <option value="all">{copy.albums.unspecified}</option>
                   <option value="published">
@@ -5935,7 +5935,7 @@ export function GalleryTab({
                   onChange={(e) =>
                     setAlbumDraft((d) => ({ ...d, recent: e.target.value }))
                   }
-                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                  className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-2 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                 >
                   <option value="all">{copy.albums.unspecified}</option>
                   <option value="7">{copy.filters.recentDays(7)}</option>
@@ -5948,7 +5948,7 @@ export function GalleryTab({
                     setAlbumDraft((d) => ({ ...d, featured: !d.featured }))
                   }
                   aria-pressed={albumDraft.featured}
-                  className={`w-full flex items-center justify-center gap-1 text-[11px] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                  className={`w-full flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
                 >
                   <Star size={11} />{" "}
                   {albumDraft.featured
@@ -5961,7 +5961,7 @@ export function GalleryTab({
           <div className="flex gap-2 justify-end mt-5">
             <button
               onClick={() => setAlbumModalOpen(false)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -5998,7 +5998,7 @@ export function GalleryTab({
                 });
               }}
               disabled={saveAlbums.isPending || !albumDraft.name.trim()}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
             >
               {saveAlbums.isPending ? (
                 <>
@@ -6019,7 +6019,7 @@ export function GalleryTab({
       <Toast
         show={!!actionError}
         role="alert"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-red-900/30 border border-red-900/50 text-red-200 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-red-900/30 border border-red-900/50 text-red-200 text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
       >
         <span className="truncate">{actionError}</span>
         <button
@@ -6034,7 +6034,7 @@ export function GalleryTab({
       {/* Undo toast (B3) */}
       <Toast
         show={!!undoToast}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
       >
         <span>{copy.trash.moved(undoToast?.count ?? 0)}</span>
         <button
@@ -6074,7 +6074,7 @@ export function GalleryTab({
       <Toast
         show={!!uploadNotice}
         role="alert"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] border border-amber-700/50 text-amber-200 text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] border border-amber-700/50 text-amber-200 text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
       >
         <span className="truncate">{uploadNotice}</span>
         {retryFiles.length > 0 && (
@@ -6107,13 +6107,13 @@ export function GalleryTab({
           NOT use this — trash is undoable (no confirm), purge has its own. */}
       {confirmDialog && (
         <Modal onClose={() => setConfirmDialog(null)}>
-          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-4">
             {confirmDialog.message}
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setConfirmDialog(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -6124,7 +6124,7 @@ export function GalleryTab({
                 setConfirmDialog(null);
                 act();
               }}
-              className="px-4 py-1.5 text-[11px] admin-btn-primary rounded-sm transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors"
             >
               {confirmDialog.confirmLabel}
             </button>
@@ -6138,7 +6138,7 @@ export function GalleryTab({
           so a stray Enter can never confirm the purge. */}
       {purgeConfirm && (
         <Modal onClose={() => setPurgeConfirm(null)}>
-          <p className="flex items-center gap-2 text-[13px] text-red-400 mb-2">
+          <p className="flex items-center gap-2 text-[length:var(--admin-text-body)] text-red-400 mb-2">
             <Trash2 size={14} className="flex-shrink-0" />
             {purgeConfirm.label}
           </p>
@@ -6162,7 +6162,7 @@ export function GalleryTab({
                   />
                 ))}
                 {targets.length > shown.length && (
-                  <span className="text-[11px] text-[var(--admin-muted)]">
+                  <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                     {copy.trash.more(targets.length - shown.length)}
                   </span>
                 )}
@@ -6173,7 +6173,7 @@ export function GalleryTab({
               countdown before the confirm button enables — a fat-finger
               click on "Purge All" for a big trash shouldn't be one click. */}
           {purgeNeedsExtraStep && (
-            <label className="flex items-start gap-2 mb-4 text-[12px] text-[var(--admin-ink)] cursor-pointer select-none">
+            <label className="flex items-start gap-2 mb-4 text-[length:var(--admin-text-body)] text-[var(--admin-ink)] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={purgeAckChecked}
@@ -6187,7 +6187,7 @@ export function GalleryTab({
             <button
               data-autofocus
               onClick={() => setPurgeConfirm(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -6198,7 +6198,7 @@ export function GalleryTab({
                 setPurgeConfirm(null);
               }}
               disabled={bulkBusy || !purgeConfirmReady}
-              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
             >
               {purgeNeedsExtraStep && purgeAckChecked && purgeCountdown > 0
                 ? copy.trash.purgeCountdown(purgeCountdown)
@@ -6211,7 +6211,7 @@ export function GalleryTab({
       {/* Bulk progress toast — live count + cancel (checked between items) */}
       <Toast
         show={!!bulkRun}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
       >
         {/* The count text is the accessible progress signal; the bar is decorative */}
         <span aria-live="polite" className="whitespace-nowrap">
@@ -6249,7 +6249,7 @@ export function GalleryTab({
       <Toast
         show={!!bulkResult}
         role="alert"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[12px] px-4 py-2.5 rounded-sm shadow-xl"
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
       >
         {bulkResult && (
           <div className="flex flex-col gap-1.5">
@@ -6286,7 +6286,7 @@ export function GalleryTab({
               </button>
             </div>
             {bulkResult.failed.length > 0 && (
-              <ul className="max-h-24 overflow-y-auto text-[11px] text-[var(--admin-muted)] list-disc pl-4">
+              <ul className="max-h-24 overflow-y-auto text-[length:var(--admin-text-note)] text-[var(--admin-muted)] list-disc pl-4">
                 {bulkResult.failed.map((f) => (
                   <li key={f.id} className="truncate">
                     {f.name}
@@ -6340,7 +6340,7 @@ export function GalleryTab({
           widthClass="w-[360px] max-w-full"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[12px] tracking-widest uppercase text-[var(--admin-muted)]">
+            <h3 className="text-[length:var(--admin-text-body)] tracking-widest uppercase text-[var(--admin-muted)]">
               {copy.preview.shortcutsTitle}
             </h3>
             <button
@@ -6351,7 +6351,7 @@ export function GalleryTab({
               <X size={15} />
             </button>
           </div>
-          <dl className="flex flex-col gap-2 text-[12px]">
+          <dl className="flex flex-col gap-2 text-[length:var(--admin-text-body)]">
             {(
               [
                 [copy.preview.shortcutClick, copy.preview.shortcutOpen],
@@ -6375,7 +6375,7 @@ export function GalleryTab({
               ] as const
             ).map(([k, desc]) => (
               <div key={k} className="flex items-center justify-between gap-4">
-                <dt className="text-[var(--admin-ink)] font-mono text-[11px] whitespace-nowrap">
+                <dt className="text-[var(--admin-ink)] font-mono text-[length:var(--admin-text-note)] whitespace-nowrap">
                   {k}
                 </dt>
                 <dd className="text-[var(--admin-muted)] text-right">{desc}</dd>
@@ -6408,7 +6408,7 @@ export function GalleryTab({
           >
             {/* Header with close (close needed on mobile drawer) */}
             <div className="flex items-center justify-between px-3 pt-2 xl:hidden">
-              <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                 {copy.inspector.editPhoto}
               </span>
               <button
@@ -6454,11 +6454,11 @@ export function GalleryTab({
               return (
                 <div className="mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+                    <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                       {copy.inspector.quick}
                     </span>
                     {quickDraftChanged && (
-                      <span className="rounded-sm border border-amber-900/40 bg-amber-900/20 px-1.5 py-0.5 text-[10px] text-amber-300/80">
+                      <span className="rounded-sm border border-amber-900/40 bg-amber-900/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-amber-300/80">
                         {copy.inspector.unsaved}
                       </span>
                     )}
@@ -6469,12 +6469,12 @@ export function GalleryTab({
                     className="mb-2 flex flex-wrap gap-1"
                   >
                     {heroIdx >= 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-sm border border-amber-700/40 bg-amber-900/30 px-1.5 py-0.5 text-[10px] text-amber-300">
+                      <span className="inline-flex items-center gap-1 rounded-sm border border-amber-700/40 bg-amber-900/30 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-amber-300">
                         <Star size={9} /> Hero {heroIdx + 1}
                       </span>
                     )}
                     <span
-                      className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[10px] ${
+                      className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[length:var(--admin-text-note)] ${
                         editForm.isPublished
                           ? "border-emerald-700/40 bg-emerald-900/20 text-emerald-300/85"
                           : "border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.1)] text-[color:var(--admin-danger)]"
@@ -6489,10 +6489,10 @@ export function GalleryTab({
                         ? copy.inspector.published
                         : copy.inspector.unpublished}
                     </span>
-                    <span className="rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
+                    <span className="rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
                       Size {editForm.displaySize}
                     </span>
-                    <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
                       <span
                         className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
                         style={{
@@ -6507,7 +6507,7 @@ export function GalleryTab({
                       </span>
                     </span>
                     {quickSeriesName && (
-                      <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[10px] text-[var(--admin-ink)]">
+                      <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
                         <Layers size={9} className="flex-shrink-0" />
                         <span className="truncate">{quickSeriesName}</span>
                       </span>
@@ -6565,7 +6565,7 @@ export function GalleryTab({
                               setEditForm((f) => ({ ...f, rotationDeg: deg }))
                             }
                             aria-pressed={editForm.rotationDeg === deg}
-                            className={`admin-tap-sm h-7 rounded-sm text-[10px] transition-colors ${
+                            className={`admin-tap-sm h-7 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${
                               editForm.rotationDeg === deg
                                 ? "admin-btn-primary font-medium"
                                 : "border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-muted)]"
@@ -6601,7 +6601,7 @@ export function GalleryTab({
                         setEditForm((f) => ({ ...f, category: e.target.value }))
                       }
                       aria-label={copy.inspector.quickCategory}
-                      className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
+                      className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none transition-colors"
                     >
                       <option value="">{copy.inspector.noCategory}</option>
                       {categories.map((c) => (
@@ -6623,7 +6623,7 @@ export function GalleryTab({
                         setEditForm((f) => ({ ...f, seriesId: e.target.value }))
                       }
                       aria-label={copy.inspector.quickSeries}
-                      className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[11px] text-[var(--admin-ink)] outline-none transition-colors"
+                      className="min-w-0 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-2 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none transition-colors"
                     >
                       <option value="">{copy.inspector.noSeries}</option>
                       {seriesList.map((s) => (
@@ -6641,7 +6641,7 @@ export function GalleryTab({
             {/* Metadata form */}
             <div className="px-3 pb-4 flex flex-col gap-3 flex-1">
               <div className="border-b border-[var(--admin-line)] pb-2 mb-1">
-                  <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+                  <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                   {copy.inspector.metadata}
                 </span>
               </div>
@@ -6731,7 +6731,7 @@ export function GalleryTab({
                     setEditForm((f) => ({ ...f, title: e.target.value }))
                   }
                   placeholder="Untitled"
-                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
                 />
               </InspectField>
 
@@ -6747,7 +6747,7 @@ export function GalleryTab({
                   }
                   placeholder="PENTAX 67"
                   list="meta-presets-camera"
-                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
                 />
                 <datalist id="meta-presets-camera">
                   {cameraPresets.map((p) => (
@@ -6768,7 +6768,7 @@ export function GalleryTab({
                   }
                   placeholder="SMC Takumar 105mm f/2.4"
                   list="meta-presets-lens"
-                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
                 />
                 <datalist id="meta-presets-lens">
                   {lensPresets.map((p) => (
@@ -6784,7 +6784,7 @@ export function GalleryTab({
                   disabled={!editForm.camera.trim() && !editForm.lens.trim()}
                   title={copy.inspector.copyCapture}
                   aria-label={copy.inspector.copyCapture}
-                  className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="inline-flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Copy size={10} /> Copy
                 </button>
@@ -6793,13 +6793,13 @@ export function GalleryTab({
                   onClick={pasteInspectCaptureInfo}
                   title={copy.inspector.pasteCapture}
                   aria-label={copy.inspector.pasteCapture}
-                  className="inline-flex items-center gap-1 text-[10px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors"
+                  className="inline-flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors"
                 >
                   <ClipboardPaste size={10} /> Paste
                 </button>
                 {captureClipStatus !== "idle" && (
                   <span
-                    className={`text-[10px] ${captureClipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
+                    className={`text-[length:var(--admin-text-note)] ${captureClipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
                   >
                     {copy.captureStatus[captureClipStatus]}
                   </span>
@@ -6823,7 +6823,7 @@ export function GalleryTab({
                       onClick={() =>
                         setEditForm((f) => ({ ...f, filmType: val }))
                       }
-                      className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                      className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                         editForm.filmType === val
                           ? "admin-btn-primary font-medium"
                           : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -6847,13 +6847,13 @@ export function GalleryTab({
                     onChange={(e) =>
                       setEditForm((f) => ({ ...f, shotAt: e.target.value }))
                     }
-                    className="flex-1 bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors [color-scheme:dark]"
+                    className="flex-1 bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors [color-scheme:dark]"
                   />
                   {editForm.shotAt && (
                     <button
                       onClick={() => setEditForm((f) => ({ ...f, shotAt: "" }))}
                       aria-label={copy.inspector.clearShotDate}
-                      className="text-[10px] text-[var(--admin-muted)] transition-colors px-1.5"
+                      className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors px-1.5"
                     >
                       {copy.inspector.clear}
                     </button>
@@ -6873,7 +6873,7 @@ export function GalleryTab({
                     setEditForm((f) => ({ ...f, description: e.target.value }))
                   }
                   placeholder="Photo description..."
-                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[12px] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors resize-y"
+                  className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors resize-y"
                 />
               </InspectField>
 
@@ -6915,7 +6915,7 @@ export function GalleryTab({
                       },
                     );
                   }}
-                  className={`flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5 rounded-sm transition-colors disabled:opacity-60 ${
+                  className={`flex-1 flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors disabled:opacity-60 ${
                     metaSaved
                       ? "bg-emerald-700/70 text-white"
                       : "admin-btn-primary"
@@ -6941,7 +6941,7 @@ export function GalleryTab({
                     setMetaError(false);
                     setEditForm(photoToEditForm(inspectPhoto));
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] py-1.5 rounded-sm transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] py-1.5 rounded-sm transition-colors"
                 >
                   <X size={11} /> {copy.inspector.reset}
                 </button>
@@ -6950,7 +6950,7 @@ export function GalleryTab({
               <button
                 onClick={() => duplicatePhoto.mutate(inspectPhoto.id)}
                 disabled={duplicatePhoto.isPending}
-                className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] py-1.5 rounded-sm transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] py-1.5 rounded-sm transition-colors disabled:opacity-50"
               >
                 {duplicatePhoto.isPending ? (
                   <Loader2 size={11} className="animate-spin" />
@@ -6960,7 +6960,7 @@ export function GalleryTab({
                 {copy.inspector.duplicate}
               </button>
               {metaError && (
-                <p role="alert" className="text-[11px] text-red-400/80 -mt-1">
+                <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 -mt-1">
                   {copy.inspector.saveFailed}
                 </p>
               )}
@@ -7004,13 +7004,13 @@ export function GalleryTab({
                 ];
                 return (
                   <div className="border-t border-[var(--admin-line)] pt-3 mt-1 flex flex-col gap-1">
-                    <span className="text-[9px] text-[var(--admin-muted)] uppercase tracking-wider mb-0.5">
+                    <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider mb-0.5">
                       {copy.inspector.usage}
                     </span>
                     {rows.map(([k, v]) => (
                       <div
                         key={k}
-                        className="flex justify-between gap-2 text-[10px]"
+                        className="flex justify-between gap-2 text-[length:var(--admin-text-note)]"
                       >
                         <span className="text-[var(--admin-muted)] flex-shrink-0">
                           {k}
@@ -7025,10 +7025,10 @@ export function GalleryTab({
               })()}
 
               <div className="border-t border-[var(--admin-line)] pt-3 mt-2">
-                <span className="text-[10px] text-[var(--admin-muted)] uppercase tracking-wider">
+                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                   {copy.inspector.fileInfo}
                 </span>
-                <p className="text-[11px] text-[var(--admin-muted)] mt-2 break-all">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-2 break-all">
                   {inspectPhoto.filename}
                 </p>
               </div>
@@ -7037,7 +7037,7 @@ export function GalleryTab({
                 <button
                   onClick={() => deletePhotos.mutate([inspectPhoto.id])}
                   disabled={bulkBusy}
-                  className="w-full flex items-center justify-center gap-1.5 text-[11px] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-full flex items-center justify-center gap-1.5 text-[length:var(--admin-text-note)] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Trash2 size={11} /> {copy.inspector.moveToTrash}
                 </button>
@@ -7066,7 +7066,7 @@ export function GalleryTab({
                   key={val}
                   onClick={() => setSitePreviewPage(val)}
                   aria-pressed={sitePreviewPage === val}
-                  className={`px-2 py-1 rounded-sm text-[10px] transition-colors ${
+                  className={`px-2 py-1 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${
                     sitePreviewPage === val
                       ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
                       : "text-[var(--admin-muted)]"
@@ -7082,7 +7082,7 @@ export function GalleryTab({
                 aria-pressed={sitePreviewDevice === "desktop"}
                 title={copy.sitePreview.desktopTitle}
                 aria-label={copy.sitePreview.desktopTitle}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${
                   sitePreviewDevice === "desktop"
                     ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
                     : "text-[var(--admin-muted)]"
@@ -7095,7 +7095,7 @@ export function GalleryTab({
                 aria-pressed={sitePreviewDevice === "mobile"}
                 title={copy.sitePreview.mobileTitle}
                 aria-label={copy.sitePreview.mobileTitle}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${
                   sitePreviewDevice === "mobile"
                     ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
                     : "text-[var(--admin-muted)]"
@@ -7107,7 +7107,7 @@ export function GalleryTab({
                 onClick={() =>
                   sitePreviewRef.current?.contentWindow?.location.reload()
                 }
-                className="ml-1 text-[10px] text-[var(--admin-muted)] transition-colors"
+                className="ml-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
               >
                 Reload
               </button>
@@ -7213,7 +7213,7 @@ function BulkEditTable({
       <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
         <EmptyContactSheetIllustration />
         <p className="text-sm">{copy.empty.noPhotos}</p>
-        <p className="text-[11px] text-[var(--admin-muted)]">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
           {copy.empty.tableHint}
         </p>
       </div>
@@ -7222,27 +7222,27 @@ function BulkEditTable({
 
   return (
     <div className="overflow-x-auto h-full">
-      <table className="w-full min-w-[860px] border-collapse text-[12px]">
+      <table className="w-full min-w-[860px] border-collapse text-[length:var(--admin-text-body)]">
         <thead className="sticky top-0 z-10 bg-[var(--admin-paper)] border-b border-[var(--admin-line)]">
           <tr>
             <th className="w-7" aria-label="Select" />
             <th className="w-12" aria-label="Thumbnail" />
-            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal">
+            <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal">
               {copy.inspector.title}
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-44">
+            <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-44">
               {copy.inspector.camera}
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-48">
+            <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-48">
               {copy.inspector.lens}
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-36">
+            <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-36">
               {copy.inspector.series}
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-20">
+            <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-20">
               Size
             </th>
-            <th className="text-left px-2 py-2 text-[10px] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-28">
+            <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-28">
               {copy.albums.medium}
             </th>
           </tr>
@@ -7405,7 +7405,7 @@ function BulkEditRow({
         ? "bg-red-900/10"
         : "";
   const inputCls =
-    "w-full bg-transparent text-[var(--admin-ink)] outline-none border-b border-transparent transition-colors py-0.5 text-[12px]";
+    "w-full bg-transparent text-[var(--admin-ink)] outline-none border-b border-transparent transition-colors py-0.5 text-[length:var(--admin-text-body)]";
   const cellCls = "px-2 py-1 align-middle";
 
   return (
@@ -7485,7 +7485,7 @@ function BulkEditRow({
         </div>
         {clipStatus !== "idle" && (
           <span
-            className={`text-[9px] ${clipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
+            className={`text-[length:var(--admin-text-note)] ${clipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
           >
             {copy.captureStatus[clipStatus]}
           </span>
@@ -7520,7 +7520,7 @@ function BulkEditRow({
           aria-label={copy.bulkTable.seriesAria}
           value={draft.seriesId}
           onChange={(e) => handleChange("seriesId", e.target.value)}
-          className="w-full bg-[var(--admin-paper)] text-[var(--admin-ink)] outline-none border border-transparent transition-colors py-0.5 rounded-sm text-[11px]"
+          className="w-full bg-[var(--admin-paper)] text-[var(--admin-ink)] outline-none border border-transparent transition-colors py-0.5 rounded-sm text-[length:var(--admin-text-note)]"
         >
           <option value="">—</option>
           {seriesList.map((s) => (
@@ -7539,7 +7539,7 @@ function BulkEditRow({
               key={sz}
               type="button"
               onClick={() => handleChange("displaySize", sz)}
-              className={`flex-1 text-[10px] py-0.5 rounded-sm transition-colors ${
+              className={`flex-1 text-[length:var(--admin-text-note)] py-0.5 rounded-sm transition-colors ${
                 draft.displaySize === sz
                   ? "admin-btn-primary font-medium"
                   : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)]"
@@ -7565,7 +7565,7 @@ function BulkEditRow({
               key={lbl}
               type="button"
               onClick={() => handleChange("filmType", val)}
-              className={`flex-1 text-[10px] py-0.5 rounded-sm transition-colors ${
+              className={`flex-1 text-[length:var(--admin-text-note)] py-0.5 rounded-sm transition-colors ${
                 draft.filmType === val
                   ? "admin-btn-primary font-medium"
                   : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)]"
@@ -7591,11 +7591,11 @@ function InspectField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
+      <label className="block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
           {hint}
         </p>
       )}
@@ -8113,7 +8113,7 @@ function SegmentedControl<T extends string>({
           type="button"
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
-          className={`admin-tap-sm admin-segmented__option relative z-[1] flex-1 rounded-[var(--radius-s)] px-1.5 py-1 text-[10px] transition-colors duration-[var(--dur-fast)] ${
+          className={`admin-tap-sm admin-segmented__option relative z-[1] flex-1 rounded-[var(--radius-s)] px-1.5 py-1 text-[length:var(--admin-text-note)] transition-colors duration-[var(--dur-fast)] ${
             value === opt.value ? "font-medium" : "text-[var(--admin-muted)]"
           }`}
         >
@@ -8135,11 +8135,11 @@ function AdminField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
+      <label className="block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
           {hint}
         </p>
       )}

@@ -287,8 +287,8 @@ function VisualChoiceCard({
       }`}
     >
       {preview}
-      <span className="block text-[11px] leading-tight mt-1">{name}</span>
-      <span className="block text-[9px] leading-tight opacity-70 font-normal mt-0.5">
+      <span className="block text-[length:var(--admin-text-note)] leading-tight mt-1">{name}</span>
+      <span className="block text-[length:var(--admin-text-note)] leading-tight opacity-70 font-normal mt-0.5">
         {desc}
       </span>
     </button>
@@ -640,7 +640,7 @@ export function HeroTab() {
       {heroError && (
         <div
           role="alert"
-          className="mb-4 flex items-center justify-between gap-3 text-[11px] text-red-300 bg-red-900/25 border border-red-900/40 rounded-sm px-3 py-2"
+          className="mb-4 flex items-center justify-between gap-3 text-[length:var(--admin-text-note)] text-red-300 bg-red-900/25 border border-red-900/40 rounded-sm px-3 py-2"
         >
           <span>{heroError}</span>
           <button
@@ -654,12 +654,12 @@ export function HeroTab() {
       )}
       {/* Dangling selections — photos that were trashed/purged after being picked */}
       {danglingHeroIds.length > 0 && (
-        <div className="mb-4 flex items-center justify-between gap-3 text-[11px] text-amber-200/90 bg-amber-900/20 border border-amber-900/40 rounded-sm px-3 py-2">
+        <div className="mb-4 flex items-center justify-between gap-3 text-[length:var(--admin-text-note)] text-amber-200/90 bg-amber-900/20 border border-amber-900/40 rounded-sm px-3 py-2">
           <span>{copy.danglingWarning(danglingHeroIds.length)}</span>
           <button
             onClick={() => cleanupDangling.mutate()}
             disabled={cleanupDangling.isPending}
-            className="flex-shrink-0 text-[10px] px-2.5 py-1 rounded-sm bg-amber-900/40 hover:bg-amber-900/60 transition-colors disabled:opacity-50"
+            className="flex-shrink-0 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm bg-amber-900/40 hover:bg-amber-900/60 transition-colors disabled:opacity-50"
           >
             {cleanupDangling.isPending
               ? copy.cleaningUp
@@ -669,10 +669,10 @@ export function HeroTab() {
       )}
       {/* Selected Hero Photos */}
       <div className="mb-8">
-        <h2 className="text-[11px] tracking-widest text-[var(--admin-muted)] mb-1">
+        <h2 className="text-[length:var(--admin-text-note)] tracking-widest text-[var(--admin-muted)] mb-1">
           {copy.slidesTitle}
         </h2>
-        <p className="text-[10px] text-[var(--admin-muted)] mb-4">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-4">
           {copy.slidesHint}
         </p>
         {heroPhotos.length === 0 ? (
@@ -681,10 +681,10 @@ export function HeroTab() {
               size={18}
               className="mx-auto text-[var(--admin-muted)] mb-2"
             />
-            <p className="text-[12px] text-[var(--admin-muted)]">
+            <p className="text-[length:var(--admin-text-body)] text-[var(--admin-muted)]">
               {copy.noneSelected}
             </p>
-            <p className="text-[10px] text-[var(--admin-muted)] mt-1">
+            <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-1">
               {copy.selectFromGalleryHint}
             </p>
           </div>
@@ -753,14 +753,14 @@ export function HeroTab() {
 
       {/* Gallery: Pick photos */}
       <div>
-        <h2 className="text-[11px] tracking-widest text-[var(--admin-muted)] mb-1">
+        <h2 className="text-[length:var(--admin-text-note)] tracking-widest text-[var(--admin-muted)] mb-1">
           {copy.galleryTitle}
         </h2>
-        <p className="text-[10px] text-[var(--admin-muted)] mb-4">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-4">
           {copy.galleryHint}
         </p>
         {allPhotos.length === 0 ? (
-          <p className="text-[12px] text-[var(--admin-muted)] text-center py-8">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-muted)] text-center py-8">
             {copy.noPhotosYet}
           </p>
         ) : (
@@ -1003,7 +1003,7 @@ export function ProfileTab({
 
       {/* Profile Photo Upload */}
       <div className="mb-8">
-        <p className="text-[10px] text-[var(--admin-muted)] tracking-wider mb-3">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider mb-3">
           {copy.photoTitle}
         </p>
         <div className="flex items-start gap-4">
@@ -1035,14 +1035,14 @@ export function ProfileTab({
                     size={12}
                     className="animate-spin text-[var(--admin-muted)]"
                   />
-                  <span className="text-[11px] text-[var(--admin-muted)]">
+                  <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                     Uploading...
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   <Upload size={12} className="text-[var(--admin-muted)]" />
-                  <span className="text-[11px] text-[var(--admin-muted)]">
+                  <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                     {copy.uploadPhoto}
                   </span>
                 </div>
@@ -1059,11 +1059,11 @@ export function ProfileTab({
                 if (f) handleProfilePhoto(f);
               }}
             />
-            <p className="text-[10px] text-[var(--admin-muted)]">
+            <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
               {copy.portraitRecommendation}
             </p>
             {photoError && (
-              <p className="text-[10px] text-red-400/80">{photoError}</p>
+              <p className="text-[length:var(--admin-text-note)] text-red-400/80">{photoError}</p>
             )}
           </div>
         </div>
@@ -1079,7 +1079,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors resize-y rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors resize-y rounded-sm"
               />
             ) : (
               <input
@@ -1088,7 +1088,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
               />
             )}
           </AdminField>
@@ -1225,12 +1225,12 @@ export function CategoriesTab() {
         title={t.navigation.tabs.categories}
         description={t.headers.categories}
       />
-      <p className="text-[11px] text-[var(--admin-muted)] mb-6">
+      <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-6">
         {copy.description}
       </p>
 
       {reorderError && (
-        <p role="alert" className="text-[11px] text-red-400/80 mb-3">
+        <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 mb-3">
           {reorderError}
         </p>
       )}
@@ -1275,10 +1275,10 @@ export function CategoriesTab() {
                   <ChevronDown size={13} />
                 </button>
               </div>
-              <span className="text-[12px] text-[color:var(--admin-ink)] truncate">
+              <span className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] truncate">
                 {cat.label}
               </span>
-              <span className="text-[11px] text-[color:var(--admin-muted)] font-mono truncate">
+              <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-mono truncate">
                 {cat.slug}
               </span>
             </div>
@@ -1296,7 +1296,7 @@ export function CategoriesTab() {
       </div>
 
       <div className="border-t border-[var(--admin-line)] pt-5">
-        <p className="text-[11px] tracking-wider text-[var(--admin-muted)] mb-4">
+        <p className="text-[length:var(--admin-text-note)] tracking-wider text-[var(--admin-muted)] mb-4">
           {copy.newCategory}
         </p>
         <div className="flex flex-col gap-3">
@@ -1309,7 +1309,7 @@ export function CategoriesTab() {
                 setCatError("");
               }}
               placeholder="e.g. Street"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
             />
           </AdminField>
           <AdminField label={copy.slug}>
@@ -1323,16 +1323,16 @@ export function CategoriesTab() {
                 setCatError("");
               }}
               placeholder="e.g. street"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
             />
           </AdminField>
           {catError && (
-            <p className="text-[11px] text-red-400/80">{catError}</p>
+            <p className="text-[length:var(--admin-text-note)] text-red-400/80">{catError}</p>
           )}
           <button
             onClick={handleAddCat}
             disabled={!newSlug || !newLabel || addCat.isPending}
-            className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 self-start px-4 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
           >
             <Plus size={12} /> {copy.add}
           </button>
@@ -1342,13 +1342,13 @@ export function CategoriesTab() {
       {/* Delete confirm modal */}
       {deleteCatConfirm && (
         <Modal onClose={() => setDeleteCatConfirm(null)}>
-          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-4">
             {copy.deleteConfirm(deleteCatConfirm.label)}
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteCatConfirm(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -1357,7 +1357,7 @@ export function CategoriesTab() {
                 deleteCat.mutate(deleteCatConfirm.id);
                 setDeleteCatConfirm(null);
               }}
-              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
               {t.common.deleteAction}
             </button>
@@ -1577,7 +1577,7 @@ export function SeriesTab() {
       />
 
       {rowError && (
-        <p role="alert" className="text-[11px] text-red-400/80 mb-3">
+        <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 mb-3">
           {rowError}
         </p>
       )}
@@ -1651,14 +1651,14 @@ export function SeriesTab() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] text-[color:var(--admin-ink)] truncate">
+                      <span className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] truncate">
                         {s.title}
                       </span>
-                      <span className="text-[11px] text-[color:var(--admin-muted)] font-mono truncate">
+                      <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-mono truncate">
                         {s.slug}
                       </span>
                     </div>
-                    <span className="text-[10px] text-[color:var(--admin-muted)]">
+                    <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)]">
                       {/* 写真クエリ解決前に「0 枚」と断定表示しない */}
                       {photosLoading
                         ? "…"
@@ -1680,7 +1680,7 @@ export function SeriesTab() {
                       })
                     }
                     aria-pressed={s.isPublished}
-                    className={`admin-state-chip text-[10px] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${s.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
+                    className={`admin-state-chip text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${s.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
                   >
                     {s.isPublished ? copy.published : copy.draft}
                   </button>
@@ -1720,7 +1720,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, title: e.target.value }))
                       }
                       placeholder="Still, life"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                   <AdminField label={copy.slug} hint={copy.slugHint}>
@@ -1736,7 +1736,7 @@ export function SeriesTab() {
                         }))
                       }
                       placeholder="still-life"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
                     />
                   </AdminField>
                   <AdminField label={copy.subtitle} hint={copy.subtitleHint}>
@@ -1747,7 +1747,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, subtitle: e.target.value }))
                       }
                       placeholder="2023–2024"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                   <AdminField
@@ -1762,7 +1762,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, statement: e.target.value }))
                       }
                       placeholder={copy.statementPlaceholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
                     />
                   </AdminField>
                   <AdminField
@@ -1784,7 +1784,7 @@ export function SeriesTab() {
                             onClick={() =>
                               setDraft((d) => ({ ...d, coverPhotoId: "" }))
                             }
-                            className={`text-[11px] px-2 py-1 rounded-sm border transition-colors self-start ${
+                            className={`text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors self-start ${
                               draft.coverPhotoId === ""
                                 ? "admin-btn-primary"
                                 : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
@@ -1828,7 +1828,7 @@ export function SeriesTab() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-[11px] text-[var(--admin-muted)]">
+                            <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                               {copy.noPhotos}
                             </p>
                           )}
@@ -1838,7 +1838,7 @@ export function SeriesTab() {
                                 (p) => String(p.id) === draft.coverPhotoId,
                               );
                               return sel ? (
-                                <p className="text-[10px] text-[var(--admin-muted)] truncate">
+                                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] truncate">
                                   {copy.selectedCover(sel.title || sel.filename)}
                                 </p>
                               ) : null;
@@ -1849,7 +1849,7 @@ export function SeriesTab() {
                   </AdminField>
                   {/* 機能9: シリーズ固有のレイアウト・テーマ設定 */}
                   <div className="border-t border-[var(--admin-line)] pt-3 mt-1">
-                    <p className="text-[10px] tracking-wider text-[var(--admin-muted)] mb-2">
+                    <p className="text-[length:var(--admin-text-note)] tracking-wider text-[var(--admin-muted)] mb-2">
                       {copy.layoutTheme}
                     </p>
                     <AdminField
@@ -1873,7 +1873,7 @@ export function SeriesTab() {
                             key={value}
                             type="button"
                             onClick={() => setThemeKey("layout", value)}
-                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === value ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
+                            className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === value ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                           >
                             {name}
                           </button>
@@ -1897,7 +1897,7 @@ export function SeriesTab() {
                             key={val}
                             type="button"
                             onClick={() => setThemeKey("photoOrder", val)}
-                            className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
+                            className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                           >
                             {lbl}
                           </button>
@@ -1915,7 +1915,7 @@ export function SeriesTab() {
                           setThemeKey("bgColor", e.target.value.trim())
                         }
                         placeholder={copy.backgroundPlaceholder}
-                        className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
+                        className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
                       />
                     </AdminField>
                   </div>
@@ -1926,7 +1926,7 @@ export function SeriesTab() {
                       disabled={
                         patchSeries.isPending || !draft.title || !draft.slug
                       }
-                      className="flex items-center gap-1.5 px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-4 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
                     >
                       {patchSeries.isPending ? (
                         <>
@@ -1941,7 +1941,7 @@ export function SeriesTab() {
                     </button>
                     <button
                       onClick={() => setEditId(null)}
-                      className="px-4 py-2 text-[11px] text-[var(--admin-muted)] transition-colors"
+                      className="px-4 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                     >
                       {copy.close}
                     </button>
@@ -1954,7 +1954,7 @@ export function SeriesTab() {
       </div>
 
       <div className="border-t border-[var(--admin-line)] pt-5">
-        <p className="text-[11px] tracking-wider text-[var(--admin-muted)] mb-4">
+        <p className="text-[length:var(--admin-text-note)] tracking-wider text-[var(--admin-muted)] mb-4">
           {copy.newSeries}
         </p>
         <div className="flex flex-col gap-3">
@@ -1970,7 +1970,7 @@ export function SeriesTab() {
                 }
               }}
               placeholder="Still, life"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
             />
           </AdminField>
           <AdminField label={copy.slug}>
@@ -1984,16 +1984,16 @@ export function SeriesTab() {
                 setAddError("");
               }}
               placeholder="still-life"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
+              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
             />
           </AdminField>
           {addError && (
-            <p className="text-[11px] text-red-400/80">{addError}</p>
+            <p className="text-[length:var(--admin-text-note)] text-red-400/80">{addError}</p>
           )}
           <button
             onClick={handleAdd}
             disabled={!newSlug || !newTitle || addSeries.isPending}
-            className="flex items-center gap-1.5 self-start px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 self-start px-4 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
           >
             <Plus size={12} /> {copy.add}
           </button>
@@ -2002,16 +2002,16 @@ export function SeriesTab() {
 
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
-          <p className="text-[13px] text-[var(--admin-ink)] mb-1">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
             {copy.deleteConfirm(deleteTarget.title)}
           </p>
-          <p className="text-[11px] text-[var(--admin-muted)] mb-5">
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
             {copy.deleteKeepsPhotos}
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -2021,7 +2021,7 @@ export function SeriesTab() {
                 if (editId === deleteTarget.id) setEditId(null);
                 setDeleteTarget(null);
               }}
-              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
               {t.common.deleteAction}
             </button>
@@ -2194,7 +2194,7 @@ export function PricingTab() {
       />
 
       {rowError && (
-        <p role="alert" className="text-[11px] text-red-400/80 mb-3">
+        <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 mb-3">
           {rowError}
         </p>
       )}
@@ -2240,11 +2240,11 @@ export function PricingTab() {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-[color:var(--admin-ink)] truncate">
+                    <span className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] truncate">
                       {p.title}
                     </span>
                     {p.price && (
-                      <span className="text-[11px] text-[color:var(--admin-muted)] truncate">
+                      <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] truncate">
                         {p.price}
                       </span>
                     )}
@@ -2257,7 +2257,7 @@ export function PricingTab() {
                     patchPlan.mutate({ id: p.id, isPublished: !p.isPublished })
                   }
                   aria-pressed={p.isPublished}
-                  className={`admin-state-chip text-[10px] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${p.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
+                  className={`admin-state-chip text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${p.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
                 >
                   {p.isPublished ? copy.published : copy.draft}
                 </button>
@@ -2294,7 +2294,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, title: e.target.value }))
                     }
                     placeholder={copy.titlePlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField label="Price" hint={copy.priceHint} uppercase>
@@ -2305,7 +2305,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, price: e.target.value }))
                     }
                     placeholder="¥15,000〜"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
@@ -2321,7 +2321,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, description: e.target.value }))
                     }
                     placeholder={copy.descriptionPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
                 <AdminField label={copy.featuresLabel} hint={copy.featuresHint}>
@@ -2333,7 +2333,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, features: e.target.value }))
                     }
                     placeholder={copy.featuresPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
                 <AdminField label={copy.noteLabel} hint={copy.noteHint}>
@@ -2344,14 +2344,14 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, note: e.target.value }))
                     }
                     placeholder={copy.notePlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <div className="flex gap-2">
                   <button
                     onClick={saveEdit}
                     disabled={patchPlan.isPending || !draft.title}
-                    className="flex items-center gap-1.5 px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-4 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
                   >
                     {patchPlan.isPending ? (
                       <>
@@ -2365,7 +2365,7 @@ export function PricingTab() {
                   </button>
                   <button
                     onClick={() => setEditId(null)}
-                    className="px-4 py-2 text-[11px] text-[var(--admin-muted)] transition-colors"
+                    className="px-4 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                   >
                     Close
                   </button>
@@ -2379,20 +2379,20 @@ export function PricingTab() {
       <button
         onClick={() => addPlan.mutate()}
         disabled={addPlan.isPending}
-        className="flex items-center gap-1.5 px-4 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+        className="flex items-center gap-1.5 px-4 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
       >
         <Plus size={12} /> {copy.add}
       </button>
 
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
-          <p className="text-[13px] text-[var(--admin-ink)] mb-4">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-4">
             {copy.deleteConfirm(deleteTarget.title)}
           </p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setDeleteTarget(null)}
-              className="px-4 py-1.5 text-[11px] text-[var(--admin-muted)] transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
             </button>
@@ -2402,7 +2402,7 @@ export function PricingTab() {
                 if (editId === deleteTarget.id) setEditId(null);
                 setDeleteTarget(null);
               }}
-              className="px-4 py-1.5 text-[11px] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
             >
               {t.common.deleteAction}
             </button>
@@ -2442,7 +2442,7 @@ function TopWorksPicker({
   };
   if (photos.length === 0)
     return (
-      <p className="text-[10px] text-[var(--admin-muted)]">
+      <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
         {t.phase2b.service.topWorksEmpty}
       </p>
     );
@@ -2512,7 +2512,7 @@ function ServiceSection({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="admin-plain-section-trigger w-full flex items-center justify-between py-3 px-0 text-[11px] tracking-widest text-[var(--admin-muted)] transition-colors cursor-pointer"
+        className="admin-plain-section-trigger w-full flex items-center justify-between py-3 px-0 text-[length:var(--admin-text-note)] tracking-widest text-[var(--admin-muted)] transition-colors cursor-pointer"
       >
         <span>{title}</span>
         <ChevronRight
@@ -2546,7 +2546,7 @@ function SvcInput({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] text-[var(--admin-muted)] tracking-wider">
+      <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
         {label}
       </span>
       <input
@@ -2554,7 +2554,7 @@ function SvcInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] outline-none"
+        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[length:var(--admin-text-body)] text-[var(--admin-ink)] outline-none"
       />
     </label>
   );
@@ -2573,14 +2573,14 @@ function SvcTextarea({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] text-[var(--admin-muted)] tracking-wider">
+      <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
         {label}
       </span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[12px] text-[var(--admin-ink)] outline-none resize-y leading-relaxed"
+        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[length:var(--admin-text-body)] text-[var(--admin-ink)] outline-none resize-y leading-relaxed"
       />
     </label>
   );
@@ -2764,7 +2764,7 @@ export function ServiceTab({
           value={draft.hero.body}
           onChange={(v) => setHero({ body: v })}
         />
-        <p className="text-[10px] tracking-[0.04em] text-[var(--admin-muted)] pt-2">
+        <p className="text-[length:var(--admin-text-note)] tracking-[0.04em] text-[var(--admin-muted)] pt-2">
           {t.phase2b.service.hero.factsHint}
         </p>
         {draft.hero.facts.map((fact, i) => (
@@ -2826,14 +2826,14 @@ export function ServiceTab({
           value={draft.examples.cta}
           onChange={(v) => setExamples({ cta: v })}
         />
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.examples.linksHint}</p>
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-2">{t.phase2b.service.examples.linksHint}</p>
         {draft.examples.links.map((link, i) => (
           <div
             key={i}
             className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
           >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 #{i + 1}
               </span>
               <SvcArrayControls
@@ -2890,7 +2890,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> {t.phase2b.service.examples.add}
         </button>
@@ -2909,7 +2909,7 @@ export function ServiceTab({
             className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
           >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 #{i + 1}
               </span>
               <SvcArrayControls
@@ -2990,7 +2990,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> {t.phase2b.service.painSolutions.add}
         </button>
@@ -2998,7 +2998,7 @@ export function ServiceTab({
 
       {/* ── Pricing ── */}
       <ServiceSection title={t.phase2b.service.pricing.sectionTitle}>
-        <p className="text-[11px] leading-6 text-[var(--admin-muted)]">
+        <p className="text-[length:var(--admin-text-note)] leading-6 text-[var(--admin-muted)]">
           {t.phase2b.service.pricing.intro}
         </p>
         <SvcInput
@@ -3012,11 +3012,11 @@ export function ServiceTab({
             className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
           >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 {t.phase2b.service.pricing.plan(i + 1)}
               </span>
               {plan.primary && (
-                <span className="text-[9px] bg-[rgba(var(--admin-ink-rgb),0.08)] text-[var(--admin-ink)] px-1.5 py-0.5 rounded">
+                <span className="text-[length:var(--admin-text-note)] bg-[rgba(var(--admin-ink-rgb),0.08)] text-[var(--admin-ink)] px-1.5 py-0.5 rounded">
                   RECOMMENDED
                 </span>
               )}
@@ -3098,7 +3098,7 @@ export function ServiceTab({
                 })
               }
             />
-            <label className="flex items-center gap-2 text-[11px] text-[var(--admin-muted)]">
+            <label className="flex items-center gap-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
               <input
                 type="checkbox"
                 checked={plan.primary}
@@ -3133,7 +3133,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> {t.phase2b.service.pricing.add}
         </button>
@@ -3174,14 +3174,14 @@ export function ServiceTab({
           value={draft.purchaseFlow.body}
           onChange={(v) => setPurchaseFlow({ body: v })}
         />
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.purchaseFlow.stepsHint}</p>
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-2">{t.phase2b.service.purchaseFlow.stepsHint}</p>
         {draft.purchaseFlow.steps.map((step, i) => (
           <div
             key={i}
             className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
           >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <SvcArrayControls
@@ -3229,7 +3229,7 @@ export function ServiceTab({
               steps: [...draft.purchaseFlow.steps, { title: "", body: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> {t.phase2b.service.purchaseFlow.add}
         </button>
@@ -3254,7 +3254,7 @@ export function ServiceTab({
             className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
           >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 Q{i + 1}
               </span>
               <SvcArrayControls
@@ -3296,7 +3296,7 @@ export function ServiceTab({
               items: [...draft.faq.items, { q: "", a: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> {t.phase2b.service.faq.add}
         </button>
@@ -3327,7 +3327,7 @@ export function ServiceTab({
             onChange={(v) => setFinalCta({ ctaOffline: v })}
           />
         </div>
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.finalCta.snsHint}</p>
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-2">{t.phase2b.service.finalCta.snsHint}</p>
         {draft.finalCta.snsLinks.map((link, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
@@ -3341,7 +3341,7 @@ export function ServiceTab({
                 })
               }
               placeholder="Label"
-              className="flex-1 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] outline-none"
+              className="flex-1 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
             />
             <input
               type="text"
@@ -3354,7 +3354,7 @@ export function ServiceTab({
                 })
               }
               placeholder="https://..."
-              className="flex-[2] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[11px] text-[var(--admin-ink)] outline-none"
+              className="flex-[2] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
             />
             <button
               type="button"
@@ -3376,7 +3376,7 @@ export function ServiceTab({
               snsLinks: [...draft.finalCta.snsLinks, { label: "", url: "" }],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> {t.phase2b.service.finalCta.add}
         </button>
@@ -3425,14 +3425,14 @@ export function ServiceTab({
           value={draft.adminShowcase.body}
           onChange={(v) => setAdminShowcase({ body: v })}
         />
-        <p className="text-[10px] text-[var(--admin-muted)] mt-2">{t.phase2b.service.adminShowcase.featuresHint}</p>
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-2">{t.phase2b.service.adminShowcase.featuresHint}</p>
         {draft.adminShowcase.features.map((feat, i) => (
           <div
             key={i}
             className="border border-[var(--admin-line)] rounded p-2.5 space-y-2"
           >
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)]">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 #{i + 1}
               </span>
               <SvcArrayControls
@@ -3485,7 +3485,7 @@ export function ServiceTab({
               ],
             })
           }
-          className="flex items-center gap-1 text-[11px] text-[var(--admin-muted)] transition-colors"
+          className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
         >
           <Plus size={11} /> {t.phase2b.service.adminShowcase.add}
         </button>
@@ -3759,7 +3759,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
@@ -3784,7 +3784,7 @@ export function SettingsTab({
                     aria-label={copy.portfolioKit.fieldLabel}
                     value={current["servicePageMode"] ?? ""}
                     onChange={(e) => set("servicePageMode", e.target.value)}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm appearance-none cursor-pointer"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm appearance-none cursor-pointer"
                   >
                     <option value="">{copy.portfolioKit.modeLabels.auto}</option>
                     <option value="on">{copy.portfolioKit.modeLabels.on}</option>
@@ -3815,7 +3815,7 @@ export function SettingsTab({
                       );
                 })()}
               >
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.hero.intro}
                 </p>
                 <AdminField label={copy.hero.modeLabel} hint={copy.hero.modeHint}>
@@ -3860,7 +3860,7 @@ export function SettingsTab({
                             value
                           }
                           onClick={() => set("heroMotionSpeed", value)}
-                          className={`text-[11px] py-2 rounded-sm border transition-colors ${
+                          className={`text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${
                             (current["heroMotionSpeed"] || "standard") ===
                             value
                               ? "admin-btn-primary font-medium"
@@ -3893,7 +3893,7 @@ export function SettingsTab({
                             value
                           }
                           onClick={() => set("heroRevealOrder", value)}
-                          className={`text-[11px] py-2 rounded-sm border transition-colors ${
+                          className={`text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${
                             (current["heroRevealOrder"] || "photo-first") ===
                             value
                               ? "admin-btn-primary font-medium"
@@ -3923,7 +3923,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("heroDisplayMode", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["heroDisplayMode"] || "normal") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -3979,7 +3979,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("heroTitlePosition", val)}
-                        className={`text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["heroTitlePosition"] || "center") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4006,7 +4006,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("heroScrollEffect", val)}
-                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["heroScrollEffect"] || "none") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4031,7 +4031,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("heroOverlay", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["heroOverlay"] || "on") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4055,7 +4055,7 @@ export function SettingsTab({
                       "heroScrollEffect",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -4076,7 +4076,7 @@ export function SettingsTab({
                   ],
                 )}
               >
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.nav.intro}
                 </p>
                 <AdminField label={copy.nav.positionLabel}>
@@ -4117,7 +4117,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("navHoverEffect", val)}
-                        className={`text-[10px] leading-tight py-1.5 rounded-sm transition-colors ${
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
                           (current["navHoverEffect"] || "fade") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4134,7 +4134,7 @@ export function SettingsTab({
                       set(k, ""),
                     );
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -4142,7 +4142,7 @@ export function SettingsTab({
 
               {/* CC: section spacing multipliers */}
               <Section title={copy.spacing.title} defaultOpen={false}>
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.spacing.intro}
                 </p>
                 <AdminField
@@ -4218,7 +4218,7 @@ export function SettingsTab({
                       "spacingFooterTop",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -4235,7 +4235,7 @@ export function SettingsTab({
                   ] ?? copy.bgTexture.names.none
                 }
               >
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.bgTexture.intro}
                 </p>
                 <AdminField
@@ -4262,7 +4262,7 @@ export function SettingsTab({
                       />
                     ))}
                   </div>
-                  <p className="text-[9px] text-[var(--admin-muted)] leading-relaxed mt-1.5">
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed mt-1.5">
                     {copy.bgTexture.previewNote}
                   </p>
                 </AdminField>
@@ -4288,7 +4288,7 @@ export function SettingsTab({
                       set(k, ""),
                     );
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -4305,7 +4305,7 @@ export function SettingsTab({
                   ] ?? copy.fade.names.fade
                 }
               >
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.fade.intro}
                 </p>
                 <AdminField
@@ -4337,7 +4337,7 @@ export function SettingsTab({
                 </AdminField>
                 <button
                   onClick={() => set("photoRevealEffect", "")}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -4345,7 +4345,7 @@ export function SettingsTab({
 
               {/* G/N: Gallery layout type + controlled-random tuning */}
               <Section title={copy.galleryLayout.title} defaultOpen={false}>
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.galleryLayout.introPrefix}{" "}
                   <span className="text-[color:var(--admin-ink)]">
                     {copy.galleryLayout.introTop}
@@ -4379,7 +4379,7 @@ export function SettingsTab({
                               key={key}
                               type="button"
                               onClick={() => setLayoutTarget(key)}
-                              className={`text-[11px] py-1.5 rounded-sm border transition-colors ${
+                              className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${
                                 layoutTarget === key
                                   ? "admin-btn-primary font-medium"
                                   : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
@@ -4423,7 +4423,7 @@ export function SettingsTab({
                   );
                 })()}
                 {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定） */}
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copy.galleryLayout.topWorksHeading}
                 </p>
                 <AdminField
@@ -4454,7 +4454,7 @@ export function SettingsTab({
                         key={val}
                         onClick={() => set("topWorksMode", val)}
                         title={desc}
-                        className={`text-[10px] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
+                        className={`text-[length:var(--admin-text-note)] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
                           (current["topWorksMode"] || "auto") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
@@ -4494,7 +4494,7 @@ export function SettingsTab({
                 </AdminField>
                 {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
                 W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copy.galleryLayout.gridHeading}
                 </p>
                 <AdminField
@@ -4545,7 +4545,7 @@ export function SettingsTab({
                     defaultVal="1"
                   />
                 </AdminField>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copy.galleryLayout.topGridHeading}
                 </p>
                 <AdminField
@@ -4596,7 +4596,7 @@ export function SettingsTab({
                     defaultVal={current["galleryGapScale"] || "1"}
                   />
                 </AdminField>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copy.galleryLayout.mosaicHeading}
                 </p>
                 <AdminField
@@ -4644,11 +4644,11 @@ export function SettingsTab({
                             String(Math.floor(Math.random() * 1_000_000) + 1),
                           )
                         }
-                        className="flex items-center gap-1.5 px-3 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors"
                       >
                         <Shuffle size={12} /> {copy.galleryLayout.shuffleButton}
                       </button>
-                      <span className="text-[10px] text-[var(--admin-muted)] tabular-nums">
+                      <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tabular-nums">
                         seed: {current["gallerySeed"] || "1"}
                       </span>
                     </div>
@@ -4668,7 +4668,7 @@ export function SettingsTab({
                       "gallerySeed",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -4691,7 +4691,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("seriesNavEnabled", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["seriesNavEnabled"] || "auto") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4705,7 +4705,7 @@ export function SettingsTab({
 
                 {/* P: series grid (Works series view) */}
                 <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
-                  <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed">
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                     {copy.seriesSection.gridIntroPrefix}{" "}
                     <span className="text-[color:var(--admin-ink)]">
                       Series
@@ -4736,7 +4736,7 @@ export function SettingsTab({
                         <button
                           key={val}
                           onClick={() => set("worksDefaultView", val)}
-                          className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                             (current["worksDefaultView"] || "photos") === val
                               ? "admin-btn-primary font-medium"
                               : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4787,7 +4787,7 @@ export function SettingsTab({
                         "seriesGridColumnsMobile",
                       ].forEach((k) => set(k, ""));
                     }}
-                    className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                    className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                   >
                     {copy.resetToDefault}
                   </button>
@@ -4795,7 +4795,7 @@ export function SettingsTab({
 
                 {/* 機能8: 並び順独立設定 */}
                 <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
-                  <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed">
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                     {copy.seriesSection.orderIntro}
                   </p>
                   <AdminField
@@ -4823,7 +4823,7 @@ export function SettingsTab({
                         <button
                           key={val}
                           onClick={() => set("gallerySortOrder", val)}
-                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
+                          className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                         >
                           {lbl}
                         </button>
@@ -4855,7 +4855,7 @@ export function SettingsTab({
                         <button
                           key={val}
                           onClick={() => set("seriesSortOrder", val)}
-                          className={`text-[10px] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
+                          className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
                         >
                           {lbl}
                         </button>
@@ -4868,7 +4868,7 @@ export function SettingsTab({
                         set(k, ""),
                       );
                     }}
-                    className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                    className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                   >
                     {copy.resetToDefault}
                   </button>
@@ -4879,7 +4879,7 @@ export function SettingsTab({
             <SettingsGroup title={copyIntegrations.groupTitle}>
               {/* J: note RSS integration */}
               <Section title={copyIntegrations.note.title} defaultOpen={false}>
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copyIntegrations.note.intro}
                 </p>
                 <AdminField
@@ -4896,7 +4896,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("noteEnabled", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["noteEnabled"] || "off") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4917,7 +4917,7 @@ export function SettingsTab({
                     value={current["noteUsername"] ?? ""}
                     onChange={(e) => set("noteUsername", e.target.value.trim())}
                     placeholder={copyIntegrations.note.usernamePlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm font-mono"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
                   />
                 </AdminField>
                 <AdminField
@@ -4940,7 +4940,7 @@ export function SettingsTab({
 
               {/* K: print sales (external store) */}
               <Section title={copyIntegrations.print.title} defaultOpen={false}>
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copyIntegrations.print.intro}
                 </p>
                 <AdminField
@@ -4957,7 +4957,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("printEnabled", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["printEnabled"] || "off") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -4980,7 +4980,7 @@ export function SettingsTab({
                       set("printStoreUrl", e.target.value.trim())
                     }
                     placeholder={copyIntegrations.print.storeUrlPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
@@ -4993,7 +4993,7 @@ export function SettingsTab({
                     value={current["printStoreLabel"] ?? ""}
                     onChange={(e) => set("printStoreLabel", e.target.value)}
                     placeholder={copyIntegrations.print.linkLabelPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
@@ -5006,14 +5006,14 @@ export function SettingsTab({
                     value={current["printDescription"] ?? ""}
                     onChange={(e) => set("printDescription", e.target.value)}
                     placeholder={copyIntegrations.print.descriptionPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
               </Section>
 
               {/* 撮影依頼 CTA — closing "work with me" band */}
               <Section title={copyIntegrations.cta.title} defaultOpen={false}>
-                <p className="text-[10px] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copyIntegrations.cta.intro}
                 </p>
                 <AdminField
@@ -5030,7 +5030,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("homeCtaEnabled", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["homeCtaEnabled"] || "off") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -5051,7 +5051,7 @@ export function SettingsTab({
                     value={current["homeCtaTitle"] ?? ""}
                     onChange={(e) => set("homeCtaTitle", e.target.value)}
                     placeholder={copyIntegrations.cta.headingPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
                 <AdminField
@@ -5064,7 +5064,7 @@ export function SettingsTab({
                     value={current["homeCtaText"] ?? ""}
                     onChange={(e) => set("homeCtaText", e.target.value)}
                     placeholder={copyIntegrations.cta.bodyPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm resize-y"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
                   />
                 </AdminField>
                 <AdminField
@@ -5077,7 +5077,7 @@ export function SettingsTab({
                     value={current["homeCtaButton"] ?? ""}
                     onChange={(e) => set("homeCtaButton", e.target.value)}
                     placeholder={copyIntegrations.cta.buttonPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                   />
                 </AdminField>
               </Section>
@@ -5104,7 +5104,7 @@ export function SettingsTab({
                         onChange={(e) => set("themeBg", e.target.value)}
                         placeholder={DEFAULT_THEME_BG}
                         data-admin-setting="themeBg-text"
-                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                       />
                     </div>
                   </AdminField>
@@ -5123,7 +5123,7 @@ export function SettingsTab({
                         value={current["themeText"] || ""}
                         onChange={(e) => set("themeText", e.target.value)}
                         placeholder="#1a1a1a"
-                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                        className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                       />
                     </div>
                   </AdminField>
@@ -5133,7 +5133,7 @@ export function SettingsTab({
                     set("themeBg", "");
                     set("themeText", "");
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -5180,7 +5180,7 @@ export function SettingsTab({
                     <div className="flex gap-1.5 flex-wrap">
                       <button
                         onClick={() => set(key, "")}
-                        className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
+                        className={`text-[length:var(--admin-text-note)] px-2.5 py-1.5 rounded-sm transition-colors ${
                           !(current[key] || "")
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -5192,7 +5192,7 @@ export function SettingsTab({
                         <button
                           key={w}
                           onClick={() => set(key, String(w))}
-                          className={`text-[11px] px-2.5 py-1.5 rounded-sm transition-colors ${
+                          className={`text-[length:var(--admin-text-note)] px-2.5 py-1.5 rounded-sm transition-colors ${
                             (current[key] || "") === String(w)
                               ? "admin-btn-primary font-medium"
                               : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -5241,7 +5241,7 @@ export function SettingsTab({
                     defaultVal="1"
                   />
                 </AdminField>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontSize.heroGroupLabel}
                 </p>
                 <TypoControl
@@ -5277,7 +5277,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="12"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontSize.navGroupLabel}
                 </p>
                 <TypoControl
@@ -5291,7 +5291,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="14"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontSize.sectionGroupLabel}
                 </p>
                 <TypoControl
@@ -5305,7 +5305,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="16"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontSize.pageHeadingGroupLabel}
                 </p>
                 <TypoControl
@@ -5319,7 +5319,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="30"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontSize.bodyGroupLabel}
                 </p>
                 <TypoControl
@@ -5333,7 +5333,7 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="16"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontSize.footerGroupLabel}
                 </p>
                 <TypoControl
@@ -5361,7 +5361,7 @@ export function SettingsTab({
                       "footerSize",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -5369,7 +5369,7 @@ export function SettingsTab({
 
               {/* Typography — 色 */}
               <Section title={copyDesign.fontColor.title} defaultOpen={false}>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
                   {copyDesign.fontColor.heroGroupLabel}
                 </p>
                 <ColorRow
@@ -5393,7 +5393,7 @@ export function SettingsTab({
                   set={set}
                   placeholder="rgba(255,255,255,0.75)"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontColor.accentGroupLabel}
                 </p>
                 <ColorRow
@@ -5404,7 +5404,7 @@ export function SettingsTab({
                   placeholder={copyDesign.fontColor.accentPlaceholder}
                   hint={copyDesign.fontColor.accentHint}
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontColor.linkGroupLabel}
                 </p>
                 <ColorRow
@@ -5429,7 +5429,7 @@ export function SettingsTab({
                       <button
                         key={val}
                         onClick={() => set("linkUnderline", val)}
-                        className={`flex-1 text-[11px] py-1.5 rounded-sm transition-colors ${
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
                           (current["linkUnderline"] || "off") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -5440,7 +5440,7 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontColor.opacityGroupLabel}
                 </p>
                 <TypoControl
@@ -5498,7 +5498,7 @@ export function SettingsTab({
                       "snsOpacity",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -5506,7 +5506,7 @@ export function SettingsTab({
 
               {/* Typography — 間隔（字間・行間） */}
               <Section title={copyDesign.fontTracking.title} defaultOpen={false}>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
                   {copyDesign.fontTracking.heroGroupLabel}
                 </p>
                 <TypoControl
@@ -5531,7 +5531,7 @@ export function SettingsTab({
                   unit="em"
                   defaultVal="0.08"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontTracking.navGroupLabel}
                 </p>
                 <TypoControl
@@ -5545,7 +5545,7 @@ export function SettingsTab({
                   unit="em"
                   defaultVal="0.04"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontTracking.sectionGroupLabel}
                 </p>
                 <TypoControl
@@ -5570,7 +5570,7 @@ export function SettingsTab({
                   unit=""
                   defaultVal="1.2"
                 />
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.fontTracking.bodyGroupLabel}
                 </p>
                 <TypoControl
@@ -5607,7 +5607,7 @@ export function SettingsTab({
                       "bodyLeading",
                     ].forEach((k) => set(k, ""));
                   }}
-                  className="text-[10px] text-[var(--admin-muted)] transition-colors"
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
@@ -5615,7 +5615,7 @@ export function SettingsTab({
 
               {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
               <Section title={copyDesign.siteCopy.title} defaultOpen={false}>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
                   {copyDesign.siteCopy.navGroupLabel}
                 </p>
                 {(
@@ -5650,11 +5650,11 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.siteCopy.snsGroupLabel}
                 </p>
                 {(
@@ -5685,11 +5685,11 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.siteCopy.sectionGroupLabel}
                 </p>
                 {(
@@ -5736,11 +5736,11 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copyDesign.siteCopy.formGroupLabel}
                 </p>
                 {(
@@ -5794,7 +5794,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
                     />
                   </AdminField>
                 ))}
@@ -5802,7 +5802,7 @@ export function SettingsTab({
 
               {/* 撮影情報プリセット — インスペクタの Camera / Lens 候補 */}
               <Section title={copyDesign.presets.title} defaultOpen={false}>
-                <p className="text-[9px] text-[var(--admin-muted)] -mb-1">
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-1">
                   {copyDesign.presets.intro}
                 </p>
 
@@ -5827,7 +5827,7 @@ export function SettingsTab({
                   busy={savePresets.isPending}
                 />
                 {presetError && (
-                  <p role="alert" className="text-[11px] text-red-400/80">
+                  <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80">
                     {copyDesign.presets.saveFailed}
                   </p>
                 )}
@@ -5836,12 +5836,12 @@ export function SettingsTab({
 
               {/* Admin */}
               <div className="pt-1 pb-4 px-1">
-                <p className="text-[11px] tracking-wider uppercase text-[color:var(--admin-muted)] mb-2">
+                <p className="text-[length:var(--admin-text-note)] tracking-wider uppercase text-[color:var(--admin-muted)] mb-2">
                   Admin Password
                 </p>
-                <p className="text-[11px] text-[color:var(--admin-muted)] leading-relaxed">
+                <p className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] leading-relaxed">
                   Set via environment variable{" "}
-                  <code className="text-[color:var(--admin-ink)] bg-[color:var(--admin-paper-deep)] px-1 py-0.5 rounded-sm font-mono text-[10px]">
+                  <code className="text-[color:var(--admin-ink)] bg-[color:var(--admin-paper-deep)] px-1 py-0.5 rounded-sm font-mono text-[length:var(--admin-text-note)]">
                     ADMIN_PASSWORD
                   </code>
                 </p>
@@ -5864,13 +5864,13 @@ export function SettingsTab({
         <div className="fixed inset-0 z-50 flex flex-col bg-[var(--admin-paper)] md:static md:z-auto md:flex-1 md:border-l md:border-[var(--admin-line)] min-w-0 overflow-hidden">
           {/* Preview toolbar */}
           <div className="flex items-center justify-between px-4 h-10 border-b border-[var(--admin-line)] bg-[var(--admin-paper)] flex-shrink-0">
-            <span className="text-[10px] tracking-widest uppercase text-[var(--admin-muted)]">
+            <span className="text-[length:var(--admin-text-note)] tracking-widest uppercase text-[var(--admin-muted)]">
               Preview
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPreviewDevice("desktop")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "desktop" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${previewDevice === "desktop" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
                 title={t.phase2b.library.sitePreview.desktopTitle}
                 aria-label={t.phase2b.library.sitePreview.desktopTitle}
               >
@@ -5878,7 +5878,7 @@ export function SettingsTab({
               </button>
               <button
                 onClick={() => setPreviewDevice("mobile")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] transition-colors ${previewDevice === "mobile" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${previewDevice === "mobile" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
                 title={t.phase2b.library.sitePreview.mobileTitle}
                 aria-label={t.phase2b.library.sitePreview.mobileTitle}
               >
@@ -5887,7 +5887,7 @@ export function SettingsTab({
               <button
                 onClick={() => setLiveSync(!liveSync)}
                 aria-pressed={liveSync}
-                className="ml-2 px-2 py-0.5 rounded-sm text-[10px] transition-colors"
+                className="ml-2 px-2 py-0.5 rounded-sm text-[length:var(--admin-text-note)] transition-colors"
                 title={
                   liveSync
                     ? copyDesign.preview.syncOnTitle
@@ -5900,7 +5900,7 @@ export function SettingsTab({
                 onClick={() =>
                   iframeRef.current?.contentWindow?.location.reload()
                 }
-                className="ml-1 text-[10px] text-[var(--admin-muted)] transition-colors"
+                className="ml-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
               >
                 Reload
               </button>
@@ -5975,12 +5975,12 @@ function Section({
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="admin-plain-section-trigger flex items-center justify-between gap-3 w-full min-h-[56px] px-0 text-left text-[14px] text-[color:var(--admin-ink)] hover:text-[color:var(--admin-ink)] transition-colors duration-[var(--dur-fast)]"
+        className="admin-plain-section-trigger flex items-center justify-between gap-3 w-full min-h-[56px] px-0 text-left text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] hover:text-[color:var(--admin-ink)] transition-colors duration-[var(--dur-fast)]"
       >
         <span className="shrink-0 whitespace-nowrap">{title}</span>
         <span className="ml-auto flex min-w-0 items-center gap-3">
           {!open && summary && (
-            <span className="text-[11px] text-[color:var(--admin-muted)] font-normal truncate">
+            <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-normal truncate">
               {summary}
             </span>
           )}
@@ -6014,7 +6014,7 @@ function SettingsGroup({
 }) {
   return (
     <div className="mb-12 border-t border-[var(--admin-line)]">
-      <p className="text-[11px] tracking-widest text-[color:var(--admin-muted)] mb-3">
+      <p className="text-[length:var(--admin-text-note)] tracking-widest text-[color:var(--admin-muted)] mb-3">
         {title}
       </p>
       <div className="[&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]">
@@ -6048,17 +6048,17 @@ function PresetEditor({
   const copy = t.phase2b.settingsDesign.presets;
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[10px] text-[var(--admin-muted)]">{label}</p>
+      <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {items.length === 0 && (
-          <span className="text-[10px] text-[var(--admin-muted)]">
+          <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
             {copy.empty}
           </span>
         )}
         {items.map((p) => (
           <span
             key={p}
-            className="inline-flex items-center gap-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[11px] pl-2 pr-1 py-1 rounded-sm"
+            className="inline-flex items-center gap-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] pl-2 pr-1 py-1 rounded-sm"
           >
             {p}
             <button
@@ -6085,12 +6085,12 @@ function PresetEditor({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
         />
         <button
           onClick={onAdd}
           disabled={busy || !value.trim()}
-          className="flex items-center gap-1 px-3 py-2 text-[11px] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
+          className="flex items-center gap-1 px-3 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
         >
           <Plus size={12} /> {copy.add}
         </button>
@@ -6160,11 +6160,11 @@ function PairingPicker({
             className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border border-[var(--admin-line)]"}`}
           >
             <div className="flex items-baseline justify-between gap-3">
-              <span className={`text-[11px] ${active ? "font-medium" : ""}`}>
+              <span className={`text-[length:var(--admin-text-note)] ${active ? "font-medium" : ""}`}>
                 {name}
               </span>
               <span
-                className="text-[9px] shrink-0 text-[color:var(--admin-ink)]"
+                className="text-[length:var(--admin-text-note)] shrink-0 text-[color:var(--admin-ink)]"
               >
                 {ja} × {en}
               </span>
@@ -6298,9 +6298,9 @@ function FontPicker({
   };
 
   const selectCls =
-    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm appearance-none cursor-pointer";
+    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm appearance-none cursor-pointer";
   const inputCls =
-    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm";
+    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm";
 
   // Correct fallback for preview
   const previewFamily = def
@@ -6311,7 +6311,7 @@ function FontPicker({
 
   return (
     <div>
-      <label className="block text-[10px] text-[var(--admin-muted)] tracking-wider mb-1">
+      <label className="block text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider mb-1">
         {label}
       </label>
       <select
@@ -6337,7 +6337,7 @@ function FontPicker({
       {/* Preview */}
       {previewFamily && (
         <p
-          className="mt-2 text-[13px] text-[var(--admin-ink)]"
+          className="mt-2 text-[length:var(--admin-text-body)] text-[var(--admin-ink)]"
           style={{ fontFamily: previewFamily }}
         >
           あいうえお ABCabc 123
@@ -6347,7 +6347,7 @@ function FontPicker({
       {isCustom && (
         <div className="mt-2 flex flex-col gap-2">
           {uploadError && (
-            <p role="alert" className="text-[11px] text-red-400/90">
+            <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/90">
               {uploadError}
             </p>
           )}
@@ -6365,7 +6365,7 @@ function FontPicker({
               <button
                 key={cat}
                 onClick={() => set(customCategoryKey, cat)}
-                className={`flex-1 text-[11px] py-1 rounded-sm transition-colors ${
+                className={`flex-1 text-[length:var(--admin-text-note)] py-1 rounded-sm transition-colors ${
                   (current[customCategoryKey] || "sans-serif") === cat
                     ? "admin-btn-primary"
                     : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
@@ -6377,10 +6377,10 @@ function FontPicker({
           </div>
           {current[customUrlKey] ? (
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[var(--admin-muted)] truncate flex-1">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] truncate flex-1">
                 {current[customUrlKey].split("/").pop()}
               </span>
-              <label className="text-[10px] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors">
+              <label className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors">
                 Replace
                 <input
                   aria-label={copy.fileAria}
@@ -6393,7 +6393,7 @@ function FontPicker({
             </div>
           ) : (
             <label
-              className={`inline-flex items-center gap-1.5 text-[11px] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+              className={`inline-flex items-center gap-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
             >
               <Upload size={12} />
               {uploading
@@ -6456,7 +6456,7 @@ function TypoControl({
 
   return (
     <div className="flex items-center gap-3 min-w-0">
-      <span className="text-[11px] text-[var(--admin-muted)] w-32 min-w-0 truncate">
+      <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] w-32 min-w-0 truncate">
         {label}
       </span>
       <input
@@ -6493,14 +6493,14 @@ function TypoControl({
               ? t.phase2b.settingsBasic.typoControl.unitTitle(unit)
               : undefined
         }
-        className="w-16 shrink-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm text-[11px] text-[var(--admin-ink)] text-right px-1.5 py-0.5 tabular-nums outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-16 shrink-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm text-[length:var(--admin-text-note)] text-[var(--admin-ink)] text-right px-1.5 py-0.5 tabular-nums outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {unit ? (
-        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">
+        <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] w-4 shrink-0">
           {unit}
         </span>
       ) : isOpacity ? (
-        <span className="text-[10px] text-[var(--admin-muted)] w-4 shrink-0">
+        <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] w-4 shrink-0">
           α
         </span>
       ) : (
@@ -6593,12 +6593,12 @@ function AdminField({
   return (
     <div>
       <label
-        className={`block text-[10px] text-[color:var(--admin-muted)] tracking-wider mb-1 ${uppercase ? "uppercase" : ""}`}
+        className={`block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] tracking-wider mb-1 ${uppercase ? "uppercase" : ""}`}
       >
         {label}
       </label>
       {hint && (
-        <p className="text-[10px] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
           {hint}
         </p>
       )}
@@ -6639,7 +6639,7 @@ function ColorRow({
           value={current[valueKey] || ""}
           onChange={(e) => set(valueKey, e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[12px] outline-none transition-colors rounded-sm"
+          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
         />
       </div>
     </AdminField>

@@ -26,7 +26,7 @@ export function PageHeader({
     <div className="flex items-start justify-between gap-4 mb-6">
       <div className="min-w-0">
         <h1
-          className="admin-page-header__title text-[28px] leading-tight m-0"
+          className="admin-page-header__title text-[length:var(--admin-text-page)] leading-tight m-0"
           style={{
             fontFamily: "var(--admin-font-title)",
             color: "var(--admin-ink)",
@@ -36,7 +36,7 @@ export function PageHeader({
           {title}
         </h1>
         {description && (
-          <p className="mt-1 text-[13px] leading-relaxed text-[color:var(--admin-muted)] max-w-2xl">
+          <p className="mt-1 text-[length:var(--admin-text-body)] leading-relaxed text-[color:var(--admin-muted)] max-w-2xl">
             {description}
           </p>
         )}
@@ -66,7 +66,7 @@ export function PageHeaderButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className={`flex items-center gap-1.5 px-3 py-2 text-[11px] tracking-wide rounded-[var(--radius-s)] transition-colors duration-[var(--dur-fast)] ${
+      className={`flex items-center gap-1.5 px-3 py-2 text-[length:var(--admin-text-note)] tracking-wide rounded-[var(--radius-s)] transition-colors duration-[var(--dur-fast)] ${
         active
           ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)]"
           : "bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)]"

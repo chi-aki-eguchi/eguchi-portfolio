@@ -138,6 +138,10 @@
   --admin-font-title: var(--font-en), "Cormorant Garamond", "Georgia", serif;
   --admin-font-ui:
     var(--font-ja), "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  --admin-text-note: 12px;
+  --admin-text-body: 14px;
+  --admin-text-section: 17px;
+  --admin-text-page: 34px;
 
   /* ─── Motion & material: inherited from the shared :root tokens above.
      Reference those — no hardcoded durations/curves/shadows/radii below this
@@ -280,7 +284,7 @@
 .admin-atelier .admin-sidebar__eyebrow {
   display: block;
   font-family: var(--admin-font-title);
-  font-size: 10px;
+  font-size: var(--admin-text-note);
   line-height: 1.2;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -291,7 +295,7 @@
   display: block;
   font-family: var(--admin-font-ui);
   font-weight: 400;
-  font-size: 13px;
+  font-size: var(--admin-text-body);
   line-height: 1.2;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -356,7 +360,7 @@
   padding: 8px 8px 8px 13px;
   border-radius: var(--admin-radius-sm);
   color: var(--admin-muted);
-  font-size: 12px;
+  font-size: var(--admin-text-body);
   font-weight: 400;
   line-height: 1.2;
   text-decoration: none;
@@ -455,7 +459,7 @@
 /* 色はグローバル button リセットが color:!important を持つため、
    button ではなく内側の span 側で active/inactive を描き分ける */
 .admin-atelier .admin-bottom-nav__label {
-  font-size: 13px;
+  font-size: var(--admin-text-body);
   letter-spacing: 0.04em;
   line-height: 1.2;
   color: var(--admin-muted);
@@ -469,7 +473,7 @@
 }
 
 .admin-atelier .admin-bottom-nav__sub {
-  font-size: 10px;
+  font-size: var(--admin-text-note);
   line-height: 1.2;
   min-height: 12px;
   color: var(--admin-muted);
@@ -528,7 +532,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 6px 8px 4px 12px;
-  font-size: 11px;
+  font-size: var(--admin-text-note);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--admin-muted);
@@ -542,7 +546,7 @@
   min-height: 48px;
   padding: 0 12px;
   border-radius: var(--admin-radius-sm);
-  font-size: 14px;
+  font-size: var(--admin-text-body);
   color: var(--admin-muted);
 }
 
@@ -919,7 +923,7 @@
   padding: 0 14px;
   border: 0;
   border-radius: var(--admin-radius-sm) !important;
-  font-size: 12px;
+  font-size: var(--admin-text-body);
 }
 
 .admin-atelier .admin-floating-save-bar__primary {
@@ -1088,7 +1092,7 @@
 .admin-atelier .admin-palette__input {
   margin: 10px 10px 6px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--admin-text-body);
 }
 .admin-atelier .admin-palette__list {
   list-style: none;
@@ -1102,12 +1106,12 @@
   gap: 10px;
   width: 100%;
   padding: 9px 10px;
-  font-size: 13px;
+  font-size: var(--admin-text-body);
   text-align: left;
 }
 .admin-atelier .admin-palette__group {
   margin-left: auto;
-  font-size: 10px;
+  font-size: var(--admin-text-note);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--admin-muted);
@@ -1115,7 +1119,7 @@
 .admin-atelier .admin-palette__empty {
   padding: 16px;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--admin-text-body);
   color: var(--admin-muted);
 }
 /* Same specificity workaround as SegmentedControl — options must stay
@@ -1296,7 +1300,7 @@
 }
 
 .admin-atelier .admin-content h1:not(.admin-page-header__title) {
-  font-size: clamp(28px, 3vw, 42px) !important;
+  font-size: var(--admin-text-page) !important;
   line-height: 1.05 !important;
 }
 

@@ -201,6 +201,8 @@ const ADMIN_PHASE_2B_JA = {
     },
     selection: {
       selected: (count: number) => `選択中 ${count}枚`,
+      selectedWithHidden: (count: number, hiddenCount: number) =>
+        `選択中 ${count}枚（うち${hiddenCount}枚は絞り込みの外）`,
       publish: "公開",
       unpublish: "非公開",
       setCategory: "Set Category",
@@ -1608,6 +1610,8 @@ const ADMIN_PHASE_2B_EN = {
     },
     selection: {
       selected: (count: number) => `${count} selected`,
+      selectedWithHidden: (count: number, hiddenCount: number) =>
+        `${count} selected (${hiddenCount} outside filters)`,
       publish: "Publish",
       unpublish: "Unpublish",
       setCategory: "Set Category",

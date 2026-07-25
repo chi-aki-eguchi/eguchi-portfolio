@@ -59,6 +59,23 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(page.locator("[data-library-batch-actions]")).toBeVisible();
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
 
+    // 選択を維持したまま検索でき、表示外になった選択枚数も分かる。
+    await expect(page.locator("[data-library-filters-toggle]")).toBeVisible();
+    await page.locator("[data-library-filters-toggle]").click();
+    const searchInput = page.locator("[data-library-search-input]");
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill("__library_mode_no_result__");
+    await expect(page.locator("[data-library-selection-toolbar]")).toContainText(
+      /選択中 1枚（うち1枚は絞り込みの外）|1 selected \(1 outside filters\)/,
+    );
+    await searchInput.fill("");
+    await expect(page.locator("[data-library-selection-toolbar]")).toContainText(
+      /選択中 1枚|1 selected/,
+    );
+    await expect(
+      page.locator("[data-library-selection-toolbar]"),
+    ).not.toContainText(/絞り込みの外|outside filters/);
+
     // Shift範囲選択は既存の高速操作として維持する。
     await photoAction(page, 1).click({ modifiers: ["Shift"] });
     await expect
@@ -104,6 +121,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
       0,
     );
+    await expect(page.locator("[data-library-filters-toggle]")).toHaveCount(0);
 
     await modeAction(page, "finish-arrange").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");

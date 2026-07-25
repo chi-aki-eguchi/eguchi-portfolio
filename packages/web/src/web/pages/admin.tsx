@@ -2688,6 +2688,14 @@ export function GalleryTab({
     () => sortPhotosForView(filtered),
     [filtered, sortPhotosForView],
   );
+  const selectedOutsideFilters = useMemo(() => {
+    const displayedIds = new Set(displayed.map((photo) => photo.id));
+    let count = 0;
+    selected.forEach((id) => {
+      if (!displayedIds.has(id)) count += 1;
+    });
+    return count;
+  }, [displayed, selected]);
   const measureLibraryGrid = useCallback(() => {
     const scrollEl = scrollRef.current;
     const gridEl = gridRef.current;
@@ -4356,9 +4364,29 @@ export function GalleryTab({
             />
               </>
             )}
+            {libraryMode === "select" && (
+              <button
+                type="button"
+                data-library-filters-toggle
+                onClick={() => setShowLibraryFilters((v) => !v)}
+                aria-expanded={showLibraryFilters}
+                className={`flex items-center gap-1.5 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border transition-colors ${
+                  showLibraryFilters || anyFilterActive
+                    ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)] border-[color:var(--admin-ink)]"
+                    : "text-[color:var(--admin-muted)] border-[var(--admin-line)] hover:text-[color:var(--admin-ink)]"
+                }`}
+              >
+                <Search size={11} /> {copy.toolbar.filters}
+                {activeFilterLabels.length > 0 && (
+                  <span className="min-w-4 h-4 px-1 rounded-sm bg-[var(--admin-muted)] text-[var(--admin-paper)] text-[length:var(--admin-text-note)] leading-4 text-center">
+                    {activeFilterLabels.length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
-          {libraryMode === "normal" &&
+          {libraryMode !== "arrange" &&
             !showTrash &&
             activeFilterLabels.length > 0 && (
             <div className="flex items-center gap-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] min-w-0">
@@ -4378,7 +4406,7 @@ export function GalleryTab({
             </div>
           )}
 
-          {libraryMode === "normal" &&
+          {libraryMode !== "arrange" &&
             !showTrash &&
             showLibraryFilters && (
             <div className="border-t border-[var(--admin-line)] pt-2 flex flex-col gap-2">
@@ -4654,7 +4682,12 @@ export function GalleryTab({
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)]"
                   aria-live="polite"
                 >
-                  {copy.selection.selected(selected.size)}
+                  {selectedOutsideFilters > 0
+                    ? copy.selection.selectedWithHidden(
+                        selected.size,
+                        selectedOutsideFilters,
+                      )
+                    : copy.selection.selected(selected.size)}
                 </span>
                 <span className="hidden lg:inline text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.mode.selectionHint}

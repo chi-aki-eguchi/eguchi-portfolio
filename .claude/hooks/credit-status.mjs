@@ -1,11 +1,19 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import {
+  accessSync,
+  chmodSync,
+  constants,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const CODEXBAR = "/opt/homebrew/bin/codexbar";
 const CACHE_MS = 5 * 60 * 1000;
 const STALE_MS = 30 * 60 * 1000;
 const STATE_DIR = join(homedir(), ".claude", "credit-status");
@@ -14,6 +22,50 @@ const SUMMARY_FILE = join(STATE_DIR, "status.txt");
 
 const level = { normal: 0, saving: 1, closing: 2, critical: 3 };
 const worse = (...values) => values.reduce((a, b) => level[b] > level[a] ? b : a, "normal");
+
+function isExecutable(path) {
+  if (!path) return false;
+  try {
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function findCodexBar({
+  env = process.env,
+  homeDir = homedir(),
+  systemApplications = "/Applications",
+} = {}) {
+  const pathCandidates = (env.PATH || "")
+    .split(":")
+    .filter(Boolean)
+    .flatMap((dir) => [join(dir, "codexbar"), join(dir, "CodexBarCLI")]);
+
+  const candidates = [
+    { path: env.CODEXBAR_CLI, source: "CODEXBAR_CLI" },
+    ...pathCandidates.map((path) => ({ path, source: "PATH" })),
+    { path: "/opt/homebrew/bin/codexbar", source: "Homebrew" },
+    { path: "/usr/local/bin/codexbar", source: "Homebrew" },
+    {
+      path: join(homeDir, "Applications", "CodexBar.app", "Contents", "Helpers", "CodexBarCLI"),
+      source: "user app",
+    },
+    {
+      path: join(systemApplications, "CodexBar.app", "Contents", "Helpers", "CodexBarCLI"),
+      source: "system app",
+    },
+  ];
+
+  const seen = new Set();
+  for (const candidate of candidates) {
+    if (!candidate.path || seen.has(candidate.path)) continue;
+    seen.add(candidate.path);
+    if (isExecutable(candidate.path)) return candidate;
+  }
+  return null;
+}
 
 function statusForRemaining(remaining) {
   if (remaining < 10) return "critical";
@@ -80,11 +132,11 @@ function readCache() {
   }
 }
 
-function fetchBoth() {
+function fetchBoth(cliPath) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const stdout = execFileSync(CODEXBAR, ["usage", "--provider", "both", "--format", "json"], {
+      const stdout = execFileSync(cliPath, ["usage", "--provider", "both", "--format", "json"], {
         encoding: "utf8",
         timeout: 45_000,
         stdio: ["ignore", "pipe", "pipe"],
@@ -101,8 +153,8 @@ function fetchBoth() {
 }
 
 function guidance(status) {
-  if (status === "critical") return "安全化→最低限テスト→commit→task.md→終了。新規作業禁止。";
-  if (status === "closing") return "新規工程を始めず、現在工程を最低限テスト・commit・引き継ぎまで閉じる。";
+  if (status === "critical") return "安全化→最低限テスト→commit→Current State→終了。新規作業禁止。";
+  if (status === "closing") return "新規工程を始めず、現在工程を最低限テスト・commit・Current Stateまで閉じる。";
   if (status === "saving") return "必須要件だけ。小さく完了し、重要テストだけ行う。";
   return "通常運転。重複テスト・不要な全読込は避ける。";
 }
@@ -121,7 +173,8 @@ function summary(state) {
   const c = state.claude;
   const x = state.codex;
   const coordination = coordinationGuidance(c, x);
-  return `[credit ${state.status}${state.cache === "fresh" ? " cache" : state.cache === "stale" ? " stale" : ""}] Claude 5h ${c?.sessionRemainingPercent ?? "?"}% / week ${c?.weeklyRemainingPercent ?? "?"}%; Codex week ${x?.weeklyRemainingPercent ?? "?"}%. ${guidance(state.status)}${coordination ? ` ${coordination}` : ""}${state.warning ? ` WARNING: ${state.warning}` : ""}`;
+  const cacheLabel = state.cache === "fresh" ? " cache" : state.cache === "stale" ? " stale" : "";
+  return `[credit ${state.status}${cacheLabel}] Claude 5h ${c?.sessionRemainingPercent ?? "?"}% / week ${c?.weeklyRemainingPercent ?? "?"}%; Codex week ${x?.weeklyRemainingPercent ?? "?"}%. ${guidance(state.status)}${coordination ? ` ${coordination}` : ""}${state.warning ? ` WARNING: ${state.warning}` : ""}`;
 }
 
 function atomicWrite(path, content) {
@@ -132,15 +185,22 @@ function atomicWrite(path, content) {
   renameSync(temp, path);
 }
 
-function run({ force = false } = {}) {
+export function run({ force = false } = {}) {
   const cached = readCache();
   if (!force && cached && cached.ageMs <= CACHE_MS && !cached.value.warning) {
     const state = { ...cached.value, cache: "fresh" };
     return { state, text: summary(state) };
   }
 
+  const cli = findCodexBar();
+  let lookupError = null;
   try {
-    const { claude, codex } = fetchBoth();
+    if (!cli) {
+      const error = new Error("CodexBar CLI not found");
+      error.code = "CODEXBAR_CLI_NOT_FOUND";
+      throw error;
+    }
+    const { claude, codex } = fetchBoth(cli.path);
     const state = {
       checkedAt: new Date().toISOString(),
       claude,
@@ -152,30 +212,47 @@ function run({ force = false } = {}) {
     atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
     atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
     return { state, text: summary(state) };
-  } catch {
-    const warning = "CodexBar取得失敗（1回再試行済み）";
-    if (cached && cached.ageMs <= STALE_MS && cached.value.claude && cached.value.codex) {
-      const state = {
-        ...cached.value,
-        lastAttemptAt: new Date().toISOString(),
-        status: worse(cached.value.status, "closing"),
-        cache: "stale",
-        warning,
-      };
-      atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
-      atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
-      return { state, text: summary(state) };
-    }
+  } catch (error) {
+    lookupError = error;
+  }
+
+  const notFound = lookupError?.code === "CODEXBAR_CLI_NOT_FOUND";
+  const warning = notFound
+    ? "CodexBar CLI未発見（PATH・Homebrew・CodexBar.appを確認）"
+    : "CodexBar取得失敗（1回再試行済み）";
+  const errorCode = notFound ? "codexbar_cli_not_found" : "codexbar_lookup_failed";
+
+  if (cached && cached.ageMs <= STALE_MS && cached.value.claude && cached.value.codex) {
     const state = {
-      checkedAt: new Date().toISOString(), claude: null, codex: null,
-      status: "closing", cache: "none", warning,
+      ...cached.value,
+      lastAttemptAt: new Date().toISOString(),
+      status: worse(cached.value.status, "closing"),
+      cache: "stale",
+      warning,
+      errorCode,
     };
     atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
     atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
     return { state, text: summary(state) };
   }
+
+  const state = {
+    checkedAt: new Date().toISOString(),
+    claude: null,
+    codex: null,
+    status: "closing",
+    cache: "none",
+    warning,
+    errorCode,
+  };
+  atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
+  atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
+  return { state, text: summary(state) };
 }
 
-const result = run({ force: process.argv.includes("--force") });
-if (process.argv.includes("--json")) process.stdout.write(`${JSON.stringify(result.state, null, 2)}\n`);
-else process.stdout.write(`${result.text}\n`);
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  const result = run({ force: process.argv.includes("--force") });
+  if (process.argv.includes("--json")) process.stdout.write(`${JSON.stringify(result.state, null, 2)}\n`);
+  else process.stdout.write(`${result.text}\n`);
+}

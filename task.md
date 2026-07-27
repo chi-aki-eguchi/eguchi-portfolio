@@ -1,5 +1,38 @@
 # Task Log
 
+<!-- CURRENT_STATE_START -->
+## Current State — 2026-07-27 11:39 JST
+
+- **Status:** AI引き継ぎ基盤の改善はローカルで完了。オーナー確認待ち
+- **Current owner:** オーナー（確認・push判断）。AI編集者はcommit後に不在
+- **Handoff readiness:** Ready
+- **現在の目的:** Claude停止後もClaude/Codexが同じ最新状態から再開でき、ChatGPTへ短く安全に共有できる状態を作る
+- **完了条件:** 共通指示短縮、Claudeからの読込、Current State、credit監視修復、
+  read-only Packet、鮮度警告、旧指示退役、秘密情報安全化、AI運用検証、1commit
+- **Branch:** `main`
+- **HEAD:** `SELF`（このCurrent Stateを最後に更新したcommit。鮮度checkはGit履歴で判定）
+- **Git:** このcommit後はclean
+- **Originとの差:** このcommit後は `origin/main` より40 commits ahead / 0 behind。push禁止
+- **現在変更中のファイル:** なし（このcommitはAI運用の16ファイルのみ）
+- **完了済み:** 共通指示とCurrent State整理、credit CLI探索/cache安全化、Packet、鮮度警告、
+  旧文書退役、ホーム設定の平文管理ログイン許可2件を値非表示で除去
+- **未完了:** 製品タスクなし。元の認証値が有効か不明なため、必要ならオーナー側でローテーション
+- **最新の検証結果:** AI運用test 14 pass / 0 fail、Node/JSON構文OK、Markdown fence/marker OK、
+  Packet読取専用OK、秘密値形の出力なし、AGENTS末尾までCodex入力確認、`git diff --check` OK
+- **未検証事項:** 実CodexBar CLIは発見成功したが、Claude/Codex両providerのusage取得は失敗。
+  本番・Railway・製品コードは今回対象外
+- **次の一手:** オーナーがこの1commitを確認し、必要なら管理ログイン値を安全な保管元でローテーション
+- **オーナー判断待ち:** 認証値のローテーション要否、AI運用commit確認、40 commitsのpush、
+  `styles.css`構造、iPhone Safari実機確認
+- **触ってはいけない箇所:** 製品コード、既存39 commits、本番DB/R2/Railway/環境変数、
+  `styles.css`、`scratch/codex-out-*.log`
+- **Codex session/log:** Desktop session `019fa143-de7a-7be1-9e9a-dcda6a4a9bd1`;
+  prior implementation log `scratch/codex-out-p16.log`（本文は共有しない）
+- **Local commit:** `SELF` — `chore(ai): streamline shared handoff workflow`
+- **Push:** 未実施・禁止（オーナーのみ）
+- **Railway / production:** 未変更・今回の確認対象外
+<!-- CURRENT_STATE_END -->
+
 <!--
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Handoff テンプレート（2026-07-06 設置。docs/specs/ai-collaboration-reform-fable5.md の必須項目）

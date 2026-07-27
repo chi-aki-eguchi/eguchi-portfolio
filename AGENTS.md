@@ -1,459 +1,109 @@
-# eguchi-portfolio-app
-
-写真家ポートフォリオサイト。Hono (API) + React 19 (SPA) + Drizzle/Turso (SQLite) + Bun + Tailwind CSS 4。Railway にデプロイ（GitHub auto-deploy。通常は git push で反映）。
-
-## AI共同作業メモ
-
-- 2026-06-11: Codex が保守メンバーとして参加。以後、Claude Code / Codex が同じ仕様書と `task.md` を見て作業する前提。
-- Claude Code / Codex は実装着手前に `task.md` の最新 Handoff を確認し、未完了・検証済み・触ったファイルを追記する。
-- settings は4箇所同期。新規 settings キー追加時は `packages/web/src/web/lib/settings-preview.ts` の台帳、API `/settings` の default、`provider.tsx` の DB 適用 `useEffect`、`provider.tsx` の `handlePreviewMessage` を揃える。
-- 2026-06-16: Runable → Railway 移行完了。デプロイ正本は `git push`。ZIP 作成・Runable publish は legacy 手順であり、通常作業では使わない。
-- Runable 関連ファイル（`docs/archive/RUNABLE_AI.md`, `docs/archive/deploy.sh`, `packages/web/website.config.json`）は過去運用の参照用。復旧・検証で必要になった場合のみ、現行 Railway 方針との整合を確認してから `bun run deploy:runable:legacy` として使う。
-- Codex は作業前に、存在すればローカル専用メモ `.codex/USER_CONTEXT.md` も読む。ここには秋さんの作業スタイル・好み・AI運用上の文脈を置く（`.codex/` は gitignore 済み、秘密情報は書かない）。
-- MacBook / Mac mini の2台運用では、GitHub をコード正本にする。リポジトリを iCloud / Dropbox 等で丸ごと同期しない。`.env` は各Macに置き、秘密情報は 1Password 等の安全な保管場所から転記する。人間向け手順は `docs/two-mac-workflow.md` を参照。
-- 高性能モデル（2026-07 現在は Claude Opus 5。旧記述の Fable5 はこれに読み替える）を使える時は、単発実装より先に `docs/specs/ai-collaboration-reform-fable5.md` を読み、全AIに残る作業ルール・検査表・Handoff品質の改善を優先する。
-
-### §0 invariants
-
-> 高リスク領域（settings / DB / 画像 / admin / デプロイ）に触るときは、
-> 実行手順版の検査表 `docs/checklists.md` を着手前・完了前になぞる。
-
-- DB クエリは必ず `withRetry(() => db....)` のリトライラッパーを使う。
-- settings は 4-place settings sync パターンを維持する。`settings-preview.ts` の台帳、API `/settings` の default、`provider.tsx` の DB 適用 `useEffect`、`provider.tsx` の `handlePreviewMessage` を揃える。
-- API / client のレスポンスは `assertOk()` で検証してから本文を読む。
-- `Content-Encoding` は手動設定しない。Railway / upstream proxy が自動処理する。
-- HTML レスポンスは `Cache-Control: no-store` にする。
-- スタックは Hono + React 19 + Drizzle/Turso + Bun + Tailwind CSS 4 を前提にする。
-- デプロイ構成は Railway（GitHub auto-deploy）、Cloudflare R2 + sharp、Turso。
-
-### リポジトリ境界（絶対禁止）
-
-- `eguchi-portfolio-app` と `ivys-house` リポジトリのコードを混ぜない。ファイルコピー、import、コード参照をすべて禁止する。
-
-### 役割分担（2026-07-25 恒久化: 設計=Claude Code / 実装=Codex）
-
-**設計する側と実装する側を分ける。** 2026-07-14 に期間限定の上書きとして始めた役割反転を、
-2026-07-25 のオーナー判断で恒久ルールに昇格させたもの（それ以前の「Driver=Claude Code が実装する」
-恒久ルールは廃止）。判断の根拠は Obsidian `40_開発ログ/2026-07-25.md`。
-
-各AIが内部で使うモデルは固定しない。作業内容・利用可能性・残りクレジットに応じてその都度選ぶ
-（選び方は下の「Codex のモデル選択」）。
-
-- **設計 = Claude Code**: 何を作るか決める。オーナーとの相談、現状調査、仕様・指示書の作成、
-  差分の read-only レビュー、`bun run check` / `bun run smoke` の実行、commit 整理、
-  `task.md` Handoff・決定ログ、オーナーへの報告。
-- **実装 = Codex**: 決まったものをコードにする。claude-driver が `codex exec`
-  （workspace-write sandbox）で起動し、指示書を渡して実装させる。commit は Codex が行う。
-- **検証は Claude Code が持つ**: Codex の sandbox は `network_access = false` のため
-  `bun run smoke`（Playwright）を回せない。「実装=Codex」は「検証まで Codex」を意味しない。
-- §0 invariants・完了の定義・**push はオーナーのみ**は従来どおり両AIに適用。
-- 迷ったときの参照順: 各タスクの指示書（docs/agents/task-queue.md）→ docs/agents/autonomy-rules.md → 本ファイル §0。
-- **省トークン運用(2026-07-15 オーナー指示)**: 依頼は一括指示・報告は短縮形式・レビューは
-  リスク階層別・ゲート二重実行禁止・commitはCodex。詳細は docs/agents/codex-workflow.md が正本。
-
-> **一時例外 (2026-07-25 のみ・オーナー直接指示)**: この日は Claude Opus 5 の試用と
-> Codex クレジット節約のため、実装も Claude Code が行う。Codex は補助に回す
-> （`repo-scout` での検索、commit 前の read-only 差分レビュー）。**この例外は
-> 2026-07-25 のセッション限りで、上の恒久ルールを書き換えるものではない。**
-> 翌日以降は実装=Codex に戻す。
-
-#### Codex へ渡す指示書の必須項目
-
-設計が曖昧なまま渡すと、Codex が実装の中で設計判断をしてしまい、この役割分担が壊れる
-（GPT-5.6 Sol は特にスコープを広げ、過剰に作り込む傾向がある）。実装依頼には必ず含める:
-
-1. 変更してよいファイル（列挙する。「この辺り」で済ませない）
-2. やらないこと（例: APIの形は変えない / データ構造は変えない / 既存テストの期待値を緩めない）
-3. 完了の判定方法（どのコマンドが通れば完了か）
-4. 迷ったら止めて報告する。勝手に設計判断をしない
-
-#### Codex のモデル選択
-
-設計済みの状態で渡すため判断が減る。**既定は `gpt-5.6-terra` の medium**。
-
-| モデル | 使う場面 |
-|---|---|
-| `gpt-5.6-luna` high | 手順を最後まで言葉で書ける単純作業（リネーム、テスト追加、文言修正） |
-| `gpt-5.6-terra` medium | 通常の実装（**既定**） |
-| `gpt-5.6-sol` medium | 触る範囲が広い / 壊すと影響が大きい（DB・画像・settings・deploy） |
-| `gpt-5.6-sol` xhigh | 原則使わない。medium で二度失敗した時だけ |
-
-失敗したときは同じモデルで投げ直さない。一段上げ、失敗した理由を添えて渡す。
-
-#### クレジット切れ時の復旧手順（短縮版）
-
-前担当がクレジット切れ等で途中終了した場合、次の担当は次の順で動く。
-
-1. `git status --short` と `git diff` で未コミット差分を確認し、**破棄しない**（他人の途中成果として保護する）。
-2. 差分と `task.md` 最新 Handoff を読み、ファイルごとに「続行（このまま仕上げる）」「保留（触らずオーナー判断待ち）」「戻す（要相談で理由付きの差し戻し）」に分類する。
-3. 分類結果を `task.md` の Handoff に短く追記してからオーナーへ報告する。commit は内容確定後のみ、push は行わない。
-
-### Claude Code / Codex agmsg 運用
-
-- agmsg team は `eguchi-portfolio`。Claude Code は `claude-driver`、Codex は `codex-reviewer`。
-  識別名は 2026-07-14 以前の役割名の名残であり、実際の役割は上記「役割分担」（設計=Claude / 実装=Codex）に従う。
-  混乱を避けるため識別名そのものは変更しない（変えると宛先ズレ事故の元になる）。
-- agmsg は「相談」の経路。実装依頼は agmsg ではなく `codex exec` で直接渡す。
-- **識別名は `claude-driver` の1つに固定する。** 即席の別名（`claude-library-driver` 等）を新規に作らない — 名前が増えると agmsg の宛先ズレ・同時多重編集事故の温床になる（2026-07-12 に実際に発生: 複数セッションが同一 working tree を同時編集し、停止指示とプロセス強制終了合戦になった）。
-- 作業開始時に `~/.agents/skills/agmsg/scripts/whoami.sh "$(pwd)" claude-code` で、自分が `claude-driver` として登録されているか、project がこのリポジトリのパスになっているかを確認する。ズレていたら編集作業をせず、状況を報告して停止する。
-- 実装セッションは常に1つだけ開く。同一 working tree を複数セッションで同時編集しない（1 task = 1 Driver。詳細は本ファイル下部「Agent Ownership」参照）。
-- Codex への相談は非ブロッキングとして扱う。返信を無期限に待たない。同一セッション内に返信が無ければ `docs/checklists.md` のセルフチェックで代替し、Handoff に「Codex未応答・検査表で代替」と明記してよい。
-- 権限プロンプトで進めなくなったタスクは、autonomy-rules.md の原則どおり「要相談」に回して次のタスクへ進む。セッション全体を承認待ちで止めない。
-- 主担当AIは次の場合だけ agmsg で相手に相談する:
-  - 設計判断が2択以上で迷う
-  - 同じバグ修正を2回試して解決しない
-  - DB / auth / deploy / settings / 画像処理など失敗時の影響が大きい箇所を触る
-  - commit / push 前に高リスク差分のレビューが必要
-- 相談は1セッション最大3回を目安にする。自動会議や雑談で両方のクレジットを消費しない。
-- 相談文には必ず `目的` / `制約` / `触ったファイル` / `検証` / `返答形式` を含める。相手には「実装なし、P0/P1中心、短く」と依頼する。
-- 相手AIからの返信は主担当AIが要約してユーザーへ伝える。ユーザーに agmsg の中継作業を戻さない。
-- delivery mode は Claude Code `monitor`、Codex `turn` を基本にする。消費を抑えたい時は一時的に `off` へ落とす。
-
-### 小さいモデルへの委譲基準（クレジット節約）
-
-- 調査・照合・定型チェック（grepでの影響範囲探索、ドキュメントとコードの食い違い確認、写真データ整合性など「判断ではなく確認」の作業）は `.claude/agents/` のサブエージェント（読み取り専用・軽量モデル）に投げてよい。実装・commit は投げない — 編集権限は Driver 本体のみ。サブエージェントの報告は証拠収集であり、最終判断は Driver または Codex レビューが行う。
-- 既存のサブエージェント: `exif-checker`（写真データ整合性、`model: haiku`）、`perf-auditor`（性能監査、`model: haiku`）、`security-reviewer`（セキュリティ監査、高リスク判断のため `model: inherit` でセッションの主モデルへ追従）。呼び出しの目安: 画像・キャッシュ周りを触った直後は `perf-auditor`、認証・admin周りを触った直後は `security-reviewer`、写真データを触った直後は `exif-checker`。月次の定期健診用途にも使ってよい。
-- サブエージェントには「ファイルを丸ごと読む」のではなく「grepで当たりをつけてから該当範囲だけ読む」よう指示し、返答は「パス:行番号＋1行要約（最大30件程度）」に絞ってもらう。長文レポートは Driver 本体のコンテキストを消費するため避ける。
-- Codex レビュー依頼も同じ考え方で: ①目的1行 ②触ったファイル一覧 ③§0該当の有無 ④見てほしい点1〜3個、に絞ったテンプレを使う。ファイル本文を貼らず、Codex 側で読ませる。
-- Codex 側の軽量調査役 `repo-scout`（`.codex/agents/repo-scout.toml`、read-only・低reasoning・小型モデル）は「検索・仕様差分の洗い出し・長いテスト結果の要約」の3用途だけに使う。push前レビューや§0該当の高リスク差分レビューには使わない（そちらは Codex 本体のレビューに任せる）。
-
-### 高性能モデル利用時の優先順位
-
-- まず `git status --short` と `task.md` 最新 Handoff を確認し、既存の未コミット作業を踏まない。
-- 高性能モデル（2026-07 現在は Claude Opus 5。旧記述の Fable5 はこれに読み替える）は、広範囲の現状診断、設計判断、検査表作成、引き継ぎ改善、P0/P1レビューに使う。
-- 実装者は原則1人に固定する（現行ルールでは Codex）。もう片方のAIは read-only reviewer として動かす。
-- 自動化や hooks を増やす前に、AGENTS.md / CLAUDE.md / task.md / wiki の役割を整理する。
-- push 済み、Railway 反映済み、本番確認済みは別物として報告する。
-
-## スタック
-
-| レイヤー       | 技術                                                                             |
-| -------------- | -------------------------------------------------------------------------------- |
-| ランタイム     | Bun                                                                              |
-| API            | Hono 4 (`.basePath('api')`)                                                      |
-| フロントエンド | React 19 + Wouter + TanStack Query + Tailwind CSS 4                              |
-| DB             | Drizzle ORM + Turso (libsql)                                                     |
-| ストレージ     | Cloudflare R2 (S3 互換)                                                          |
-| 画像処理       | sharp (アップロード時に 3200px/mozjpeg q92 最適化、配信時にオンザフライリサイズ) |
-| モノレポ       | Bun workspaces + Turborepo                                                       |
-| デプロイ       | Railway (GitHub auto-deploy / git push → 自動ビルド + `bun src/server.ts`)       |
-
-## プロジェクト構造
-
-```
-eguchi-portfolio-app/
-├── packages/
-│   └── web/                     # メインパッケージ（API + フロントエンド統合）
-│       ├── src/
-│       │   ├── api/
-│       │   │   ├── index.ts     # Hono ルート全体（AppType エクスポート）
-│       │   │   └── database/
-│       │   │       ├── index.ts # Turso クライアント + withRetry
-│       │   │       └── schema.ts# Drizzle スキーマ
-│       │   ├── server.ts        # Bun.serve エントリ（OGP インジェクション含む）
-│       │   └── web/
-│       │       ├── app.tsx      # Wouter ルーティング
-│       │       ├── pages/       # top, gallery, profile, contact, admin, admin-login
-│       │       ├── components/  # Layout, PageTransition, provider, ui/
-│       │       ├── hooks/
-│       │       └── lib/
-│       │           └── api.ts   # hono/client による型付き API クライアント
-│       ├── drizzle/             # マイグレーションファイル
-│       ├── vite.config.ts
-│       └── website.config.json  # Runable legacy 設定（通常デプロイでは不使用）
-├── ecosystem.config.cjs         # PM2 設定（現行 Railway 起動では通常不使用）
-├── task.md                      # 直近のタスクログ
-├── docs/
-│   ├── specs/                   # 現行仕様（1 spec = 1 file、更新は同名で上書き）
-│   │   ├── admin-enhancement-spec.md
-│   │   ├── design-spec.md
-│   │   ├── refine-and-loop-spec.md
-│   │   └── spec-layout-expansion.md
-│   └── archive/                 # 完了・退役・歴史資料
-└── scratch/                     # gitignored scratch workspace（READMEのみ追跡）
-```
-
-## DB スキーマ
-
-- `photos` — 写真（filename, url, title, meta, description, category, displaySize S/M/L, sortOrder）
-- `categories` — カテゴリ（slug, label, sortOrder）
-- `hero_photos` — トップページヒーロー写真（photoId, sortOrder）
-- `site_settings` — サイト全体設定（key-value）
-
-## 環境変数
-
-`.env` をプロジェクトルートに置く（gitignored）。
-
-```
-DATABASE_URL=         # Turso libsql URL（コードは process.env.DATABASE_URL を参照）
-DATABASE_AUTH_TOKEN=  # Turso 認証トークン
-S3_ENDPOINT=          # Cloudflare R2 エンドポイント
-S3_ACCESS_KEY_ID=
-S3_SECRET_ACCESS_KEY=
-S3_BUCKET=
-ADMIN_PASSWORD=       # 未設定だと管理ログイン無効（セッショントークンもこの値から導出）
-PORT=4200
-```
-
-> 変数名は `.env.template` が正。DB は `DATABASE_URL` / `DATABASE_AUTH_TOKEN`（旧称 TURSO_* ではない）。
-
-- API コード内では `process.env.VAR`
-- ブラウザ公開が必要な場合のみ `VITE_` プレフィックスを付けて `import.meta.env.VITE_VAR`
-- Drizzle CLI スクリプトは `bun --env-file=../../.env drizzle-kit ...`
-
-## 開発
-
-```sh
-# フロントエンド + Vite dev server（API は hono-dev-plugin でプロキシ）
-bun run dev
-
-# DB 操作（packages/web から実行 or プロジェクトルートの turbo スクリプト）
-bun run db:push        # スキーマ同期
-bun run db:generate    # マイグレーション生成
-bun run db:migrate     # マイグレーション実行
-bun run db:studio      # Drizzle Studio
-```
-
-## 本番デプロイ（Railway / GitHub auto-deploy）
-
-```sh
-cd packages/web && tsc -b && bun run build
-git status --short                      # 変更ファイルを確認
-git add <このタスクで変更したファイルを1つずつ列挙>   # git add -A は使わない
-git commit -m "..."
-git push              # ← オーナー操作。エージェントは実行しない（Railway が自動ビルド → bun src/server.ts で起動）
-```
-
-- Railway は `PORT` 環境変数（自動設定）を `process.env.PORT` 経由で受け取る（`server.ts` は `PORT ?? 3000`）
-- `src/server.ts` が `Bun.serve` で静的ファイル配信 + API プロキシ + OGP インジェクションを担う
-- 環境変数は Railway ダッシュボードで管理（`.env` は gitignored のままでよい）
-
-### 完了の定義（必須ルール）
-
-コード変更を伴うタスクは、リポジトリルートで **`bun run check`** と
-**`bun run smoke`**（admin に触れた場合）の両方を通過してから完了報告する。
-`push` は常にオーナーの手で行う — エージェントは実施しない。
-
-- **Handoff 確認** — `task.md` の最新 Handoff と `git status --short` を確認。
-- **`bun run check`** — `typecheck`(`tsc -b`。`tsc --noEmit` は0ファイル検査の罠) →
-  `lint`(oxlint) → `test`(`bun test`) → `build`(`vite build`) を順に実行し、
-  どれか失敗したら止まる。個別に確認したい場合は `bun run typecheck` /
-  `bun run lint` / `bun run test` / `bun run build` を単独実行してもよい。
-- **`bun run smoke`** — admin 画面(`/admin`)に触れる変更をした場合、
-  `scripts/smoke/` の Playwright スモークスイートも実行する
-  (詳細は「管理画面スモークテスト」節)。
-- **git push** — オーナーが実施。Railway が自動デプロイし、数分後に本番が更新される。
-- 報告では「local確認」「push」「Railway反映」「本番確認」を分けて書く。
-
-```sh
-bun run check
-bun run smoke   # admin に触れた場合
-```
-
-## ルーティング
-
-| パス                       | 説明                                                |
-| -------------------------- | --------------------------------------------------- |
-| `/`                        | トップ（ヒーロー写真 + 最新作品）                   |
-| `/gallery`                 | ギャラリー（カテゴリフィルタ + マソンリーグリッド） |
-| `/about` または `/profile` | プロフィール                                        |
-| `/contact`                 | コンタクト                                          |
-| `/admin/login`             | 管理ログイン                                        |
-| `/admin`                   | 管理画面（写真管理・設定）                          |
-| `/api/*`                   | Hono API                                            |
-| `/api/images/:key?w=&q=`   | R2 画像プロキシ（オンザフライリサイズ）             |
-
-## 管理画面
-
-詳細仕様: `docs/specs/admin-enhancement-spec.md`
-
-### 認証
-
-- セッション Cookie (`admin_session`) で認証。`ADMIN_PASSWORD` 環境変数と照合。
-
-### 既存タブ構成
-
-| タブ          | 内容                                             |
-| ------------- | ------------------------------------------------ |
-| GalleryTab    | 写真一覧・アップロード・メタ編集・削除・並べ替え |
-| HeroTab       | トップヒーロー写真の選択・並べ替え               |
-| ProfileTab    | プロフィール写真・テキスト設定                   |
-| CategoriesTab | カテゴリ管理・並べ替え                           |
-| SettingsTab   | タイポグラフィ・色・フォント等のサイト設定       |
-
-### 実装ルール（§0 必須）
-
-- DB クエリは必ず `withRetry(() => db....)` でラップ
-- データ更新後は `qc.invalidateQueries({ queryKey: [...] })` で再取得
-- API / client のレスポンスは `assertOk()` で検証してから本文を読む
-- HTML レスポンスは `Cache-Control: no-store`。`Content-Encoding` は手動設定せず Railway / upstream proxy に任せる
-- **DB schema は2ファイル同期必須**（配布版の Railway/PostgreSQL 対応）。カラム追加・変更時は
-  `schema.ts`（Turso/libSQL・本番）と `schema.postgres.ts`（PostgreSQL・配布版）の**両方**を
-  同じカラム名で更新し（型は方言ごと: `integer({mode:"boolean"})`↔`boolean()`、
-  `integer({mode:"timestamp"})`↔`timestamp()`）、`drizzle-kit generate` を両 config で再生成する。
-  クエリは `./database`（`DATABASE_PROVIDER` 切替境界）から `schema` を import すること
-  （`schema.ts` を直接 import しない）。PostgreSQL 側の更新漏れは配布版だけ壊し本番では気づけない。
-  詳細は `DISTRIBUTION.md`「Schema is maintained in two files」。
-- **新規 settingsキー追加時は以下4箇所を必ずセットで更新**:
-  1. `packages/web/src/web/lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS`
-  2. API `GET /settings`（`packages/web/src/api/index.ts`）の default 値
-  3. `provider.tsx` の DB適用 `useEffect`
-  4. `provider.tsx` の `handlePreviewMessage`
-- ライブプレビュー: 管理画面の iframe(`src="/"`) に `postMessage({ type: "preview-settings", settings })` を送信。受信は `provider.tsx` の `handlePreviewMessage`
-
-### 管理画面スモークテスト
-
-`scripts/smoke/` に Playwright スモークスイートがある（2026-07 のadmin全体デバッグ
-で新設）。admin(`/admin`)のCSS/レイアウト/状態機械に触れた変更をしたら、
-コミット前に実行する。
-
-```sh
-bun run smoke                          # 全スペック(desktop/mobile両方)
-bun run smoke -- admin-scroll          # ファイル名でフィルタして実行
-```
-
-- 専用ポート(4310)で Vite を自動起動・終了する。手動 `bun run dev` と衝突しない。
-- ログインは `.env` の `ADMIN_PASSWORD` を自動で使う（未設定だとエラーで停止）。
-- タブの内容量に依存するテストは、オーバーフローが無ければ自動でskipする
-  (データ依存の誤検知を避けるため。0件失敗でもskip件数は確認すること)。
-- 新しいバグを直したら、同じ流儀(`scripts/smoke/helpers.ts` の
-  `loginAsAdmin`/`gotoAdminTab` 等を再利用)で回帰テストを1件追加する。
-- **本番と同じTurso DBに直接つながっている(ステージングDB分離なし)。** 新しいテストで
-  Save/Delete/Add確定など実際にデータを書き込む操作をクリックしないこと。現状の全スペックは
-  ログイン以外に非GETリクエストを発生させない設計(2026-07-05実測検証済み、
-  `scratch/debug-2026-07/findings.md`「検証用DB分離」参照)。
-
-### 仕様書（参照先）
-
-| ファイル                               | 内容                                                                                                                                                                                                                               |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/specs/admin-enhancement-spec.md` | 管理画面の現行仕様。写真の向き（90度回転）・見せる中心・写真ごとの調整幅・管理画面UX改善。旧P1〜P4/v2仕様は `docs/archive/` に保存                                                                                                 |
-| `docs/specs/design-spec.md`            | デザイン（見た目・佇まい）の設計図。雑誌/写真集的な編集された佇まい・写真主役・余白主導。秋が S/M/L サイズ指定＋並べ替えでレイアウトを演出する仕組み（完全自由配置はしない、レスポンシブ自動対応）。色/タイポ/余白/動き/画質の原則 |
-| `docs/specs/refine-and-loop-spec.md`   | 自走改善ループ運用方針。歴史的な運用文脈を含むため、実行前に現行方針と照合する                                                                                                                                                     |
-| `docs/specs/spec-layout-expansion.md`  | レイアウト拡張仕様                                                                                                                                                                                                                 |
-
-### 強化計画（旧 `docs/archive/admin-enhancement-spec.md`）
-
-#### グループA: タイポグラフィ編集強化
-
-| ID  | 内容                                                                                                                                                                                                   |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A1  | 字間（letter-spacing）コントロール — 5つの CSS 変数（`--hero-name-tracking` 等）を追加、`styles.css` のハードコード `tracking-[...]` を変数参照に置換。**まずヒーロー/ナビ/セクション見出し3箇所のみ** |
-| A2  | 行間（line-height）コントロール — `--body-leading` / `--section-leading` 追加                                                                                                                          |
-| A3  | フォントウェイト選択 — `--hero-name-weight` / `--body-weight`。選択肢はフォント定義から動的導出（固定リスト禁止）                                                                                      |
-| A4  | モバイル縮小率 — `--mobile-scale`（0.6〜1.0、既定 0.78）を `@media (max-width: 768px)` で各サイズ変数に `calc` 適用。**優先度高（ヒーロー名はみ出し解消）**                                            |
-| A5  | フォントフォールバック修正（既知バグ） — `GOOGLE_FONTS_JA/EN` を `{ param, category: "serif"\|"sans-serif", weights: number[] }` 型に変更し、category に応じてフォールバックを切替                     |
-| A6  | フォントペアリングプリセット — ワンクリックで和英フォントを一括設定（Classic Mincho / Modern Serif / Quiet Sans / Editorial）                                                                          |
-| A7  | プレビュー体験改善 — 任意プレビュー文字入力・読込中スピナー・ウェイト別プレビュー                                                                                                                      |
-| A8  | カスタムフォントアップロードのバリデーション — 受理拡張子 `.woff2/.woff/.ttf/.otf`、2MB 上限、`alert()` 廃止→インラインエラー                                                                          |
-| A9  | TypoControl 数値直接入力 — スライダーと双方向同期                                                                                                                                                      |
-| A10 | Typography セクション再編 — Font Pairing / Hero / Navigation / Section Labels / Body / Footer / Mobile のグループ折りたたみ                                                                            |
-
-#### グループB: 管理快適化
-
-| ID  | 内容                                                                                                                                                                                                        |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1  | 写真メタ保存フィードバック — `updatePhoto` 成功時に 1.5秒 "Saved" 表示                                                                                                                                      |
-| B2  | 写真検索 — タイトル/meta/ファイル名でクライアント側フィルタ                                                                                                                                                 |
-| B3  | **論理削除 + Undo（最重要）** — `photos.deletedAt` カラム追加（マイグレーション必要）。`DELETE` を論理削除に変更、`POST /restore`・`DELETE /purge` を新規追加。管理画面にゴミ箱ビューと Undo トーストを追加 |
-| B4  | アップロード時 EXIF 自動補完 — `sharp().metadata()` から撮影日時を `meta` 初期値に設定（取得失敗時は空のまま）                                                                                              |
-| B5  | 並び替え保存フィードバック — reorder 成功時にハイライトまたはトースト                                                                                                                                       |
-| B6  | キーボードショートカット一覧 — `?` キーでモーダル表示                                                                                                                                                       |
-
-### 実装フェーズ
-
-| フェーズ | 項目                                                                           |
-| -------- | ------------------------------------------------------------------------------ |
-| **P1**   | A5（フォールバック修正）/ A1（字間）/ A2（行間）/ B3（論理削除）               |
-| **P2**   | A4（モバイル縮小）/ A7（プレビュー）/ B1（保存FB）/ B2（検索）                 |
-| **P3**   | A6（ペアリング）/ A3（ウェイト）/ A10（セクション再編）/ B4（EXIF）            |
-| **P4**   | A8（アップロード検証）/ A9（数値入力）/ B5（並び替えFB）/ B6（ショートカット） |
-
-### B3 実装時の注意
-
-```sh
-cd packages/web && bun run db:push  # deletedAt カラム追加
-```
-
-既存写真の `deletedAt` は null のまま（表示維持）。公開 `GET /photos` と管理一覧の通常取得に `isNull(photos.deletedAt)` を追加する。
-
-## CSS カスタムプロパティ（サイト設定 → ページ反映）
-
-`site_settings` テーブルに保存した値は `provider.tsx` が CSS 変数としてルート要素に注入する。
-
-主なキー: `--nav-opacity`, `--footer-opacity`, `--sns-opacity`, `--hero-name-size`, `--hero-name-color`, `--hero-name-en-size`, `--hero-name-en-color`, `--hero-sub-size`, `--hero-sub-color`, `--section-label-size`, `--section-label-opacity`, `--heading-size`
-
-## コーディング規約
-
-- コメントは WHY が非自明な場合のみ。WHAT は書かない
-- 型付き API クライアント（`lib/api.ts`）を使う。`fetch` を直接呼ばない
-- フロントエンドの DB 直接アクセス禁止。必ず `/api/*` 経由
-- lint: `oxlint`（`bun run lint`）
-- 型チェック: `bun run typecheck`
-
-## 注意事項
-
-- `ADMIN_PASSWORD` 未設定時はサーバ起動は続行するが管理ログインが無効になる（警告ログのみ）
-- R2 への画像は `3200px / mozjpeg q92 / 4:4:4` に最適化してから保存。元のサイズは保存しない
-- in-memory LRU キャッシュ（リサイズ済み 128MB + 元画像 48MB/60s TTL。正はコード `api/index.ts` の `RESIZE_CACHE_BYTES` / `ORIG_CACHE_BYTES`）でサムネイルをキャッシュ
-- 写真の複製（O1）は同じ R2 オブジェクトを共有する。purge は他に参照が無い場合のみ R2 から削除
-- OGP メタタグはサーバサイドで `index.html` に注入（60 秒 TTL キャッシュ）
-- テンプレート由来の `packages/mobile/`・`packages/desktop/` は 2026-06 に削除済み（パッケージは `web` のみ）
-- ギャラリーレイアウトは 12 種（mosaic / grid / scroll / stagger / editorial / collage / clean-grid / portrait-grid / landscape-grid / masonry / large-format / justified）。freeform / polaroid / timeline / fullbleed / compare は 2026-06 に削除。portrait-grid / landscape-grid は 2026-07-09、justified は 2026-07-12〜13 にオーナー承認の上で追加。未知の値は mosaic にフォールバック
-
-## Shared Knowledge Wiki
-
-`knowledge/wiki/` is an AI-maintained index/compression layer over this
-repo's existing docs and code — it is **NOT the source of truth**. Canonical
-sources (code, CLAUDE.md/AGENTS.md, task.md, other docs/specs) always win on
-conflict; see `knowledge/WIKI_SCHEMA.md` for the full rules.
-
-- At the start of a session, read `knowledge/wiki/index.md` plus whichever
-  page(s) are relevant to the task at hand — not the whole wiki.
-- After a task produces durable knowledge (an architecture decision, a
-  discovered gotcha, a resolved contradiction), update the wiki in a
-  **docs-only** commit prefixed `docs(wiki):`.
-- Never mix wiki edits with implementation changes in the same commit or the
-  same task.
-- If a wiki page conflicts with a canonical source, fix the wiki (or log it
-  in `knowledge/wiki/pages/open-issues.md`) — never "fix" the canonical
-  source to match the wiki.
-
-## Agent Ownership: 1 task = 1 Driver
-
-Exactly one agent is the **Driver** for a given task — the Driver may edit
-files, run commands, and commit. As of 2026-07-08 the roles are **fixed**:
-Claude Code is the Driver, Codex is the read-only Reviewer (see 「役割分担」
-above). Neither AI's underlying model is pinned — the model in use may change
-session to session. **Push is always done by the owner's hand — agents never
-push** (see 完了の定義). The Reviewer reads and comments, never edits.
-
-- Two agents must never edit the same files concurrently.
-- A Driver handoff requires an explicit handoff entry in `task.md`: current
-  state, what's done, what remains, and any gotchas the next Driver needs.
-- Scattered `*.handoff.md` files (e.g. sitting untracked at the repo root or
-  next to a component) are **deprecated** going forward — use the `task.md`
-  handoff entry instead.
-
-## File Hygiene
-
-- Root-level Markdown whitelist: `README.md`, `AGENTS.md`, `CLAUDE.md`, `DISTRIBUTION.md`, `task.md`.
-- Any other new root-level `.md` file is a rule violation.
-- Put active specs under `docs/specs/`, general docs under `docs/`, and temporary drafts under `scratch/`.
-- Specs live in `docs/specs/`, one file per spec, updated in place.
-- Version history lives in git; never encode it in filenames.
-- Spec filenames with `-v2`, `-v3`, `-final`, or `-draft` are banned.
-- Finished or retired docs move to `docs/archive/` via `git mv`.
-- Do not plainly delete historical docs unless the owner explicitly approves deletion.
-- Handoffs are `task.md` entries.
-- Standalone `*.handoff.md` files are banned.
-- Temporary prompts, drafts, and scratch scripts go in `scratch/`.
-- `scratch/` contents are gitignored except `scratch/README.md`.
-- Untracked files must be resolved within a few working sessions.
-- Resolve untracked files by committing, gitignoring, archiving, moving to `scratch/`, or deleting with approval.
-- Each task's Driver checks `git status` before finishing and reports any remaining unrelated dirty files.
-
-## オーナー向け報告・質問のルール
-
-- オーナー（秋）はプログラマーではない。最終報告やオーナー宛の質問はすべて平易な言葉で書き、専門用語が出てきたら一行で意味を説明する。
-- オーナーに何かを質問するときは、必ず2〜3個の選択肢とそれぞれの長所・短所、そしておすすめの選択肢を添える。
+# eguchi-portfolio-app — Shared AI Rules
+
+Claude Code と Codex が共通で読む、現在の最小ルール。履歴や詳細手順は参照先へ置き、
+このファイルには安全境界と引き継ぎ方法だけを残す。
+
+## 作業開始時の正本
+
+1. `task.md` 冒頭の `CURRENT_STATE_START` から `CURRENT_STATE_END` だけを読む。
+2. `git status --short --branch` で Current State と実物を照合する。
+3. タスクに必要な仕様書だけを読む。管理画面刷新の目的は
+   `docs/specs/admin-renewal-goal.md` が正本。
+4. Current State の鮮度は `node scripts/ai/check-handoff-freshness.mjs` で確認できる。
+
+`task.md` の過去 Handoff 全文や `knowledge/wiki/` 全体を毎回読み直さない。
+矛盾時は、コードと Git の実物 → Current State → 現行仕様書 → 履歴の順で優先する。
+
+## 現在の役割
+
+- **設計 = Claude Code**: オーナーとの要件整理、目的・完成条件・安全境界の確定、
+  Codex へ渡す実装依頼、実装後の独立検証、Current State 更新。
+- **実装 = Codex**: 合意済みの範囲を実装し、必要なローカル検証、Current State 更新、
+  指示された場合の commit まで行う。
+- モデル名や細かな実装方法は固定しない。目的・完成条件・変更可能範囲・禁止操作・
+  検証責任・停止条件を明確にする。
+- オーナーがこのチャットで直接指定した役割・範囲が、そのタスクだけ優先される。
+
+## 1タスクにつき編集者1人
+
+- 同じ worktree を Claude と Codex が同時編集しない。もう一方は read-only reviewer とする。
+- 編集を引き継ぐ前に、Current State の `Current owner` を更新し、前の編集者が停止したことを確認する。
+- dirty tree（未コミット変更）があれば他者の途中成果として保護し、reset・rebase・checkout・
+  上書き・破棄をしない。意図が不明なら編集を止めてオーナーへ報告する。
+- `scratch/codex-out-*.log` は resume 用のセッションIDを含み得る。削除せず、本文を
+  Handoff や外部資料へ転載しない。
+
+## 絶対に越えない境界
+
+- **push はオーナーだけ**。エージェントは明示依頼があっても `git push` しない。
+- 本番DB、Turso、R2、Railway、デプロイ、環境変数、外部公開設定は、
+  オーナーがその操作を直接依頼した場合だけ対象にする。
+- `.env`、APIキー、パスワード、Cookie、トークン、認証値を表示・記録・commitしない。
+- `eguchi-portfolio-app` と `ivys-house` のコードをコピー・import・混在させない。
+- 履歴文書は勝手に削除しない。未追跡ファイルも内容を確認せず一括追加しない。
+
+## 製品コードの不変条件
+
+高リスク領域の詳しい確認手順は `docs/checklists.md` を使う。特に次を守る。
+
+- DBクエリは `withRetry(() => db....)` で包む。
+- settings の新規キーは次の4箇所を同期する:
+  `settings-preview.ts` の台帳、API `/settings` の default、
+  `provider.tsx` のDB適用 `useEffect`、同ファイルの `handlePreviewMessage`。
+- 書き込みAPIの応答は `assertOk()` または同等の `res.ok` 検査後に読む。
+- `Content-Encoding` を手動設定しない。HTMLは `Cache-Control: no-store`。
+- DB schema変更は `schema.ts` と `schema.postgres.ts` を同期する。
+- データ更新後は該当queryを再取得して、画面を古い状態のままにしない。
+
+## 必須検証
+
+- 製品コード変更: リポジトリルートで `bun run check`。
+- admin変更: 上記に加えて `bun run smoke`。本番と同じDBにつながるため、
+  smokeで保存・削除・追加などの書き込み操作を増やさない。
+- AI運用・文書だけの変更: 対象script/test、JSON/Markdown構文、`git diff --check`、
+  製品コードが差分にないことを確認する。製品コードの全テストは不要。
+- 失敗した検証を隠さず、未実施と成功を分けて報告する。
+
+## Current State の更新責任
+
+- 編集者は、所有者・目的・Git状態・完了/未完了・検証・次の一手・禁止範囲が変わった時、
+  `task.md` 冒頭の Current State を30〜60行以内で更新する。
+- hook は Current State を自動編集しない。事実を確認した編集者が更新する。
+- `HEAD: SELF` は「Current State を最後に更新したcommit」を意味する。
+  鮮度チェックは `task.md` の最終更新commitと実際のHEADを比較する。
+- 過去 Handoff は削除・書換えせず、必要な節目だけ末尾へ追記する。
+
+## 最小Handoff
+
+Current State に次を残す。
+
+- Status / Current owner / Handoff readiness
+- 目的と完了条件
+- branch / HEAD / clean-or-dirty / originとの差 / 変更中ファイル
+- 完了済み / 未完了 / 検証済み / 未検証
+- 次の一手 / オーナー判断待ち / 触ってはいけない範囲
+- Codex session ID または明示されたlog path
+- local commit / push / Railway反映 / 本番確認を別々に記載
+
+## 止まって報告する条件
+
+- 目的・完成条件・変更可能ファイルのどれかが曖昧。
+- Current State と Git、仕様書、実装が矛盾する。
+- 別のAIが同じworktreeを編集中、またはdirty差分の意図が確認できない。
+- 認証情報、本番データ、公開、課金、削除、schema変更が必要だが直接許可がない。
+- 指定範囲を越えないと完了できない、または必須検証が安全に実行できない。
+
+## 報告
+
+- オーナー向けには結果から、非エンジニアにも分かる日本語で書く。
+- 「ローカルで確認済み」「commit済み」「push済み」「Railway反映済み」
+  「本番確認済み」を混同しない。
+- 外部共有には `node scripts/ai/chatgpt-handoff.mjs` の安全なPacketを使う。
+
+## 参照先
+
+- 現在地: `task.md` 冒頭 Current State
+- Claude/Codex連携: `docs/agents/codex-workflow.md`
+- クレジット監視: `docs/agents/credit-status.md`
+- 高リスク検査: `docs/checklists.md`
+- 配布版DB差分: `DISTRIBUTION.md`

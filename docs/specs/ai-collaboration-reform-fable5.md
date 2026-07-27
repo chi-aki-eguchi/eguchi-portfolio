@@ -1,5 +1,11 @@
 # AI Collaboration Reform / Fable5 Work Order
 
+> **ARCHIVED / SUPERSEDED — 2026-07-27**
+>
+> この文書はAI連携改革の履歴資料であり、現在の指示ではない。ファイル名は過去参照を
+> 壊さないため維持する。現行の正本は`AGENTS.md`、`CLAUDE.md`、`task.md`冒頭
+> Current State、`docs/agents/codex-workflow.md`、`docs/agents/handoff-workflow.md`。
+
 > **2026-07-25 追記**: 文中の「Fable5」は、現在の高性能モデルに読み替えてください。
 > 2026-07 時点では **Claude Opus 5** がこれにあたります。ファイル名は `task.md` 等から
 > 参照されているため変更していません。この仕様書の中身（高性能モデルは単発実装ではなく

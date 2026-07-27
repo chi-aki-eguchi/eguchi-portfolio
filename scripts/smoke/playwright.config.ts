@@ -27,6 +27,10 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
+    // アプリは /sw.js を登録する。Service Worker が居ると、そこから出る通信は
+    // page.route() を通らず本物のAPIへ抜けてしまう。APIを差し替えるテストが
+    // 黙って素通りするため、smokeでは Service Worker を止める。
+    serviceWorkers: "block",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },

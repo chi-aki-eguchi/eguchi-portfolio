@@ -1,48 +1,49 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-27 17:20 JST
+## Current State — 2026-07-27 19:05 JST
 
-- **Status:** 第1B段階 B-1（写真をシートと流れに分ける純関数）完了・commit済み
-- **Current owner:** Claude Code（Codexは停止済み。B-1差分をClaudeが検証しcommit）
+- **Status:** オーナー不在の自律作業（優先1〜5）完了。全てlocal commitまで
+- **Current owner:** Claude Code（Codexは2セッションとも終了）
 - **Handoff readiness:** Ready。作業ツリーclean
-- **現在の目的:** 撮影日時の間隔が12時間以内で続く写真を候補化し、5枚以上を
-  自動シート、4枚以下を流れとして返す純関数と人工データのテストを追加する
-- **完了条件:** 境界・欠損日時・安定IDを新規テストで検証 / `bun run check` 緑 /
-  B-1だけで1コミット / pushしない → **すべて達成**
-- **Branch:** `main`
-- **HEAD:** SELF
+- **Branch:** `main`（試作は `prototype/b2-uneven-rows`）
+- **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より44 commits ahead / 0 behind。**push禁止**
-- **完了済み:**
-  - `photo-band.ts`: 12時間以内で連続する候補を5枚以上=sheet、4枚以下=flowに分類
-  - 定数 `BAND_GAP_HOURS = 12` / `BAND_MIN_PHOTOS = 5` を1か所に集約
-  - 日付をまたぐ短い間隔、同時刻、入力順の違いを決定的に処理
-  - `shotAt`欠損/不正時は`createdAt`を使用（既存admin.tsxの並べ替えと同じ規約）。
-    両方無い写真は単独flowとして末尾へ置く
-  - 写真ID集合の決定的ハッシュ＋`auto-sheet:` / `auto-flow:` 接頭辞で安定ID生成
-  - 将来の手動sheetを同じ`PhotoBandItem`配列へ足せる公開型（`source: auto|manual`）
-  - 人工データだけの新規テスト11件。既存テストは未変更
+- **Originとの差:** `origin/main` より46 commits ahead / 0 behind。**push未実施・禁止**
+- **今回のcommit（main、4件）:**
+  - `dc9c216` Current State同期
+  - `c953978` 第1A監査で見つかった競合と誤表示の修正（実装=Codex / 検証=Claude）
+  - `757e4f0` `photo-band.ts` — 写真をシートと流れに分ける純関数（B-1）
+  - `e488678` smoke失敗時の証拠をディスクへ残す
+  - `b862f67` `docs/specs/library-band-decisions.md` — オーナー判断6件と実測値
+- **試作ブランチ `prototype/b2-uneven-rows`:**
+  - `a394de0` `virtual-sections.ts` — 高さが揃わない仮想スクロール（B-2）
+  - mainへは入れていない。画面・既存 `computeVirtualGridWindow` は無変更
 - **検証済み（Claudeが独立実行）:**
-  - `bun run check`: **525 pass / 0 fail**（従来514件から11件増加）
-  - typecheck / lint / build: 成功
-  - `git diff --stat`: 画面・DB・API・仮想スクロール・`styles.css`に差分なし
-  - 性能実測: 496枚で最悪2.52ms（全部1シート）/ 1.36ms（全部単発）
-  - 実測した間隔分布の形だけを再現した人工496枚で、シート収容率75%を再現
-    （本番の実測値と一致。本番の写真データはテストへ複製していない）
-- **既知の性質（不具合ではない):** 区切りは隣り合う2枚の間隔だけで決まるため、
-  11時間おきに撮り続けた30枚は約2週間でも1シートになる。コメントとテストで固定済み。
-  シート1つの上限期間を設けるかは未決定
-- **未検証:** `bun run smoke`（B-1は画面に触れないため対象外）/ 実データでの見た目
-- **次の一手:** B-2（仮想スクロールの高さ不均一対応をブランチで試作）
-- **オーナー判断待ち:** 第1Aの画面確認（2px線の強さ・文言・Escの体感）/ 44 commitsのpush /
-  `styles.css`の構造 / iPhone Safari実機 / 取り込み後の自動スクロール / シートの上限期間
-- **触らない範囲:** `admin.tsx`を含む画面 / DB schema / API / 仮想スクロール本線 /
-  `styles.css` / 手動ロール機能 / B-3の最終UI
+  - `bun run check`: main 525 pass / 0 fail、試作ブランチ 535 pass / 0 fail
+  - `bun run smoke`: 51 passed / 0 failed / 40 skipped（4.5分）
+  - B-1: 人工496枚でシート収容率75%を再現。496枚の計算は最悪2.52ms
+  - B-2: 4800通りの組み合わせで「詰め物＋描画＝全体の高さ」「見えている写真が
+    必ず描画される」「区画の重複なし」を確認。問い合わせ0.8〜2.5マイクロ秒
+  - smoke証拠: わざと失敗させ、まとめ・スクリーンショット・動画・トレースの
+    保存と、成功時の自動削除を確認
+- **重要な発見:**
+  - smokeの成功件数は実行ごとに変わる。写真の枚数など実行時の条件で飛ぶテストが
+    複数あるため（52→51）。「落ちた」と「走らなかった」を混同しない
+  - B-2は数値がNaN・負の時に例外を投げる。既存 `computeVirtualGridWindow` は
+    安全な既定値を返す。画面へつなぐ前に方針を決める必要がある（コードに明記）
+- **未検証:** 実画面での見た目（オーナーのみ）/ iPhone Safari実機 /
+  一度だけ落ちたsmokeの再現（3回の記録実行では再現せず）
+- **次の一手:** オーナーの画面確認と `docs/specs/library-band-decisions.md` の判断
+- **オーナー判断待ち:** 判断1〜6（同文書）/ 46 commitsのpush /
+  第1Aの2px線の強さ・文言・Escの体感 / `styles.css`の構造
+- **触っていない範囲:** `admin.tsx`を含む画面 / DB schema / API / 本線の仮想スクロール /
+  `styles.css` / 手動で束を作る機能 / B-3の最終UI
 - **禁止範囲:** push / deploy / Railway / 本番DB・R2 / 環境変数 /
   実写真アップロード / 本番データのテスト複製
-- **Codex session:** `019fa289-9f35-7061-8467-52e4b40cebf4`（log: `scratch/codex-out-b1.log`）
-- **Local commit:** B-1 commit済み。**Push: 未実施・禁止**
+- **Codex session:** B-1 `019fa289-9f35-7061-8467-52e4b40cebf4` /
+  B-2 `019fa2a1-67c9-7183-b213-ea2e50a454a8`（log: `scratch/codex-out-b1.log`, `-b2.log`）
+- **Local commit:** 済。**Push: 未実施・禁止**
 - **Railway / production:** 未変更・対象外
 <!-- CURRENT_STATE_END -->
 

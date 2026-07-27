@@ -86,6 +86,40 @@ import {
   clampImageQuality,
 } from "./security";
 
+// Keep list responses stable when new database columns are added. The property
+// order matches schema.ts so existing JSON key order stays unchanged.
+const PHOTO_LIST_COLUMNS = {
+  id: schema.photos.id,
+  filename: schema.photos.filename,
+  url: schema.photos.url,
+  title: schema.photos.title,
+  meta: schema.photos.meta,
+  camera: schema.photos.camera,
+  lens: schema.photos.lens,
+  focalLength: schema.photos.focalLength,
+  fNumber: schema.photos.fNumber,
+  exposureTime: schema.photos.exposureTime,
+  iso: schema.photos.iso,
+  filmType: schema.photos.filmType,
+  shotAt: schema.photos.shotAt,
+  description: schema.photos.description,
+  category: schema.photos.category,
+  displaySize: schema.photos.displaySize,
+  isPublished: schema.photos.isPublished,
+  seriesId: schema.photos.seriesId,
+  width: schema.photos.width,
+  height: schema.photos.height,
+  rotationDeg: schema.photos.rotationDeg,
+  focalX: schema.photos.focalX,
+  focalY: schema.photos.focalY,
+  fileHash: schema.photos.fileHash,
+  thumbKey: schema.photos.thumbKey,
+  mediumKey: schema.photos.mediumKey,
+  sortOrder: schema.photos.sortOrder,
+  deletedAt: schema.photos.deletedAt,
+  createdAt: schema.photos.createdAt,
+} as const;
+
 // ── In-memory image caches (byte-budgeted true-LRU) ─────
 // The gallery has 100+ photos × ~5 srcset widths (~600 variants). The old
 // 200-entry cap thrashed badly: most scrolls evicted entries that were about to
@@ -1328,7 +1362,11 @@ const app = new Hono()
             ? sql`${schema.photos.createdAt} DESC`
             : schema.photos.sortOrder;
     const photos = await withRetry(() => {
-      const q = db.select().from(schema.photos).where(where).orderBy(orderExpr);
+      const q = db
+        .select(PHOTO_LIST_COLUMNS)
+        .from(schema.photos)
+        .where(where)
+        .orderBy(orderExpr);
       return limit ? q.limit(limit) : q;
     });
     return c.json({ photos: photos.map(photoWithThumbs) }, 200);
@@ -1908,7 +1946,7 @@ const app = new Hono()
 
     const photos = await withRetry(() =>
       db
-        .select()
+        .select(PHOTO_LIST_COLUMNS)
         .from(schema.photos)
         .where(isNotNull(schema.photos.deletedAt))
         .orderBy(schema.photos.deletedAt),
@@ -2303,7 +2341,7 @@ const app = new Hono()
             : schema.photos.sortOrder;
     const photos = await withRetry(() =>
       db
-        .select()
+        .select(PHOTO_LIST_COLUMNS)
         .from(schema.photos)
         .where(
           sql`${eq(schema.photos.seriesId, s.id)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,

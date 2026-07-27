@@ -1,39 +1,33 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-27 13:22 JST
+## Current State — 2026-07-27 14:10 JST
 
-- **Status:** 第1AのEsc衝突修正・ローカル検証完了。commitだけsandbox制約で未実施
-- **Current owner:** Codex（実装完了）→ Claude Codeまたはオーナーがsmoke確認・1commit
-- **Handoff readiness:** Ready（差分と回帰テストは完成、ステージング・commitなし）
-- **現在の目的:** 第1A「アップロードした写真を見失わない」を完成させる。
-  詳細欄をEscで閉じても「今回追加」を残し、何も開いていない次のEscでだけ消す
-- **Branch / HEAD:** `main` / `5c7d5a8`
-- **Git:** dirty。第1Aの対象4ファイルだけ（別件の未追跡`survey/`は対象外・未変更）:
-  - `packages/web/src/web/pages/admin.tsx`
-  - `packages/web/src/web/pages/admin-i18n.tsx`（前回の第1A差分）
-  - `scripts/smoke/admin-import-landing.spec.ts`（新規）
-  - `task.md`
-- **Originとの差:** `origin/main` より40 commits ahead / 0 behind。**push禁止**
+- **Status:** オーナー不在（約6時間）の自律作業中。Claudeが作業責任者
+- **Current owner:** Claude Code（設計・検証・commit）。Codexは都度新規sessionで実装/調査
+- **Handoff readiness:** In progress
+- **現在の目的:** 第1Aの品質を客観的に高める / smoke間欠失敗の証拠を残せるようにする /
+  B-1を実装する / B-2を本線に入れず試作する / 帰宅後の判断材料を増やす
+- **Branch / HEAD:** `main` / `608d677`
+- **Git:** clean
+- **Originとの差:** `origin/main` より41 commits ahead / 0 behind。**push禁止**
 - **完了済み:**
-  - 成功した写真だけを選択し、「今回追加」の目印を選択とは別状態で保持
-  - 目印を消していたAdminPageContentの独立window keydownリスナーを削除
-  - GalleryTabのEsc連鎖を、表→プレビュー→モード→詳細欄→目印の順に統合
-  - 詳細欄が開いている時だけ`requestCloseInspector()`を呼び、未保存確認を維持
-  - 詳細欄を閉じる1回目のEscでは目印が残り、次のEscで消える回帰テストを追加
-  - 既存のタブ切替後も目印が残る検証と、Escで消える検証は維持
-  - smoke内のアップロード・一覧・登録APIは`page.route`で差し替え（実DB/R2書き込みなし）
-- **検証済み:** `bun run check` 成功 — 514 pass / 0 fail、typecheck・lint・build成功。
-  `git diff --check`成功。Claude Codeの修正前smokeは43 passed
-- **未検証:** 修正後の`bun run smoke`（Codexでは実行禁止）、実画面、実アップロード、
-  Railway、本番
-- **次の一手:** Claude Codeまたはオーナーが必要ならsmokeを確認し、上記4ファイルだけを
-  `fix(admin): sequence recently-added Escape handling` の1commitにする
-- **commit未実施理由:** `.git/index.lock` を作れないsandbox。
-  2026-07-27 13:22 JSTのcommit試行は失敗し、ステージング・履歴変更ともなし
-- **未着手（禁止）:** 第1B、仮想スクロール、DB/API/schema、既存3モード構造、
-  `styles.css`、本番DB/R2/Railway/環境変数
-- **Push:** 未実施・禁止（オーナーのみ）
+  - 第1A実装・独立検証・commit（`608d677`）。Esc衝突を実測で発見し修正、回帰テスト追加
+  - 検証: `bun run check` 514 pass / 0 fail、`bun run smoke` 44 passed / 0 failed
+- **未完了（この時間の作業）:**
+  1. 第1Aの独立監査（Codexにread-onlyでレビューさせ、明確なバグ・競合・テスト不足だけ修正）
+  2. smoke間欠失敗の証拠取り（失敗時にテスト名・trace・出力が必ず残る状態にする）
+  3. B-1（`photo-band.ts` の純関数＋人工データのテスト。画面/DB/API/仮想スクロールは変更しない）
+  4. B-2の試作（本線の見た目を変えない。独立branchに残す）
+  5. 次の判断材料づくり（比較案・計測・設計資料）
+- **未検証:** 実アップロード（禁止）、オーナーによる画面確認（2px線の強さ・文言・Escの体感）
+- **オーナー判断待ち:** 第1Aの画面確認、41 commitsのpush、`styles.css`構造、iPhone Safari実機
+- **触ってはいけない箇所:** push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード /
+  既存41 commitsのreset・rebase・squash / 手動ロール機能 / DB schema / APIの保存形式 /
+  `styles.css`全体整理 / B-3の最終UIを本線へ入れること /
+  見た目の主観判断（2px線の強さ・文言の好み・Escの体感）を確定すること
+- **Codex運用:** 作業ごとに新規session。古い別件sessionはresumeしない
+- **Local commit:** `608d677` まで。**Push: 未実施・禁止**
 - **Railway / production:** 未変更・対象外
 <!-- CURRENT_STATE_END -->
 

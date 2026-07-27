@@ -1,36 +1,40 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-27 11:39 JST
+## Current State — 2026-07-27 13:22 JST
 
-- **Status:** AI引き継ぎ基盤の改善はローカルで完了。オーナー確認待ち
-- **Current owner:** オーナー（確認・push判断）。AI編集者はcommit後に不在
-- **Handoff readiness:** Ready
-- **現在の目的:** Claude停止後もClaude/Codexが同じ最新状態から再開でき、ChatGPTへ短く安全に共有できる状態を作る
-- **完了条件:** 共通指示短縮、Claudeからの読込、Current State、credit監視修復、
-  read-only Packet、鮮度警告、旧指示退役、秘密情報安全化、AI運用検証、1commit
-- **Branch:** `main`
-- **HEAD:** `SELF`（このCurrent Stateを最後に更新したcommit。鮮度checkはGit履歴で判定）
-- **Git:** このcommit後はclean
-- **Originとの差:** このcommit後は `origin/main` より40 commits ahead / 0 behind。push禁止
-- **現在変更中のファイル:** なし（このcommitはAI運用の16ファイルのみ）
-- **完了済み:** 共通指示とCurrent State整理、credit CLI探索/cache安全化、Packet、鮮度警告、
-  旧文書退役、ホーム設定の平文管理ログイン許可2件を値非表示で除去
-- **未完了:** 製品タスクなし。元の認証値が有効か不明なため、必要ならオーナー側でローテーション
-- **最新の検証結果:** AI運用test 14 pass / 0 fail、Node/JSON構文OK、Markdown fence/marker OK、
-  Packet読取専用OK、秘密値形の出力なし、AGENTS末尾までCodex入力確認、`git diff --check` OK
-- **未検証事項:** 実CodexBar CLIは発見成功したが、Claude/Codex両providerのusage取得は失敗。
-  本番・Railway・製品コードは今回対象外
-- **次の一手:** オーナーがこの1commitを確認し、必要なら管理ログイン値を安全な保管元でローテーション
-- **オーナー判断待ち:** 認証値のローテーション要否、AI運用commit確認、40 commitsのpush、
-  `styles.css`構造、iPhone Safari実機確認
-- **触ってはいけない箇所:** 製品コード、既存39 commits、本番DB/R2/Railway/環境変数、
-  `styles.css`、`scratch/codex-out-*.log`
-- **Codex session/log:** Desktop session `019fa143-de7a-7be1-9e9a-dcda6a4a9bd1`;
-  prior implementation log `scratch/codex-out-p16.log`（本文は共有しない）
-- **Local commit:** `SELF` — `chore(ai): streamline shared handoff workflow`
+- **Status:** 第1AのEsc衝突修正・ローカル検証完了。commitだけsandbox制約で未実施
+- **Current owner:** Codex（実装完了）→ Claude Codeまたはオーナーがsmoke確認・1commit
+- **Handoff readiness:** Ready（差分と回帰テストは完成、ステージング・commitなし）
+- **現在の目的:** 第1A「アップロードした写真を見失わない」を完成させる。
+  詳細欄をEscで閉じても「今回追加」を残し、何も開いていない次のEscでだけ消す
+- **Branch / HEAD:** `main` / `5c7d5a8`
+- **Git:** dirty。第1Aの対象4ファイルだけ（別件の未追跡`survey/`は対象外・未変更）:
+  - `packages/web/src/web/pages/admin.tsx`
+  - `packages/web/src/web/pages/admin-i18n.tsx`（前回の第1A差分）
+  - `scripts/smoke/admin-import-landing.spec.ts`（新規）
+  - `task.md`
+- **Originとの差:** `origin/main` より40 commits ahead / 0 behind。**push禁止**
+- **完了済み:**
+  - 成功した写真だけを選択し、「今回追加」の目印を選択とは別状態で保持
+  - 目印を消していたAdminPageContentの独立window keydownリスナーを削除
+  - GalleryTabのEsc連鎖を、表→プレビュー→モード→詳細欄→目印の順に統合
+  - 詳細欄が開いている時だけ`requestCloseInspector()`を呼び、未保存確認を維持
+  - 詳細欄を閉じる1回目のEscでは目印が残り、次のEscで消える回帰テストを追加
+  - 既存のタブ切替後も目印が残る検証と、Escで消える検証は維持
+  - smoke内のアップロード・一覧・登録APIは`page.route`で差し替え（実DB/R2書き込みなし）
+- **検証済み:** `bun run check` 成功 — 514 pass / 0 fail、typecheck・lint・build成功。
+  `git diff --check`成功。Claude Codeの修正前smokeは43 passed
+- **未検証:** 修正後の`bun run smoke`（Codexでは実行禁止）、実画面、実アップロード、
+  Railway、本番
+- **次の一手:** Claude Codeまたはオーナーが必要ならsmokeを確認し、上記4ファイルだけを
+  `fix(admin): sequence recently-added Escape handling` の1commitにする
+- **commit未実施理由:** `.git/index.lock` を作れないsandbox。
+  2026-07-27 13:22 JSTのcommit試行は失敗し、ステージング・履歴変更ともなし
+- **未着手（禁止）:** 第1B、仮想スクロール、DB/API/schema、既存3モード構造、
+  `styles.css`、本番DB/R2/Railway/環境変数
 - **Push:** 未実施・禁止（オーナーのみ）
-- **Railway / production:** 未変更・今回の確認対象外
+- **Railway / production:** 未変更・対象外
 <!-- CURRENT_STATE_END -->
 
 <!--

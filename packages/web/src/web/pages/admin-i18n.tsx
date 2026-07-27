@@ -129,6 +129,8 @@ const ADMIN_PHASE_2B_JA = {
         names: string,
         hasMore: boolean,
       ) => `重複スキップ: ${count}枚 (${names}${hasMore ? " ほか" : ""})`,
+      resultSummary: (addedCount: number, failedCount: number) =>
+        `追加 ${addedCount}枚 / 失敗 ${failedCount}枚`,
     },
     filters: {
       active: "絞り込み中",
@@ -203,6 +205,8 @@ const ADMIN_PHASE_2B_JA = {
       selected: (count: number) => `選択中 ${count}枚`,
       selectedWithHidden: (count: number, hiddenCount: number) =>
         `選択中 ${count}枚（うち${hiddenCount}枚は絞り込みの外）`,
+      recentlyAddedSelected: (count: number) =>
+        `今回追加した${count}枚を選択中`,
       publish: "公開",
       unpublish: "非公開",
       setCategory: "Set Category",
@@ -1538,6 +1542,8 @@ const ADMIN_PHASE_2B_EN = {
         names: string,
         hasMore: boolean,
       ) => `Duplicates skipped: ${count} (${names}${hasMore ? " and more" : ""})`,
+      resultSummary: (addedCount: number, failedCount: number) =>
+        `${addedCount} added / ${failedCount} failed`,
     },
     filters: {
       active: "Active filters",
@@ -1612,6 +1618,8 @@ const ADMIN_PHASE_2B_EN = {
       selected: (count: number) => `${count} selected`,
       selectedWithHidden: (count: number, hiddenCount: number) =>
         `${count} selected (${hiddenCount} outside filters)`,
+      recentlyAddedSelected: (count: number) =>
+        `${count} from this import selected`,
       publish: "Publish",
       unpublish: "Unpublish",
       setCategory: "Set Category",

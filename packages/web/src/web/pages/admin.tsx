@@ -430,6 +430,11 @@ function AdminPageContent({
     if (shouldLandOnSetup(authenticated, shellSettings)) setTab("setup");
   }, [authenticated, shellSettings, setTab, demoMode]);
   const [galleryUploading, setGalleryUploading] = useState(false);
+  // 「今回追加」は選択とは別の一時状態。GalleryTab より上で持つことで、
+  // カテゴリ等の別タブへ移動して戻ってもページ再読込までは目印を残す。
+  const [recentlyAddedPhotoIds, setRecentlyAddedPhotoIds] = useState<
+    Set<number>
+  >(new Set());
   // Generic unsaved-draft flag reported by any tab with a draft form.
   const [hasUnsaved, setHasUnsaved] = useState(false);
   const [unsavedConfirm, setUnsavedConfirm] = useState<Tab | "logout" | null>(
@@ -774,6 +779,8 @@ function AdminPageContent({
                 onUnsavedChange={setHasUnsaved}
                 openTrashSignal={openTrashRequest}
                 onTrashSignalConsumed={() => setOpenTrashRequest(0)}
+                recentlyAddedPhotoIds={recentlyAddedPhotoIds}
+                onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
               />
             )}
             {contentTab !== "setup" && contentTab !== "gallery" && (
@@ -1738,6 +1745,8 @@ function measuredContentWidth(el: HTMLElement | null): number {
 // render テスト(admin-reorder-lock.render.test.tsx)から直接マウントするため
 // SetupTab と同様に export する。アプリ内の利用は AdminPage 経由のみ。
 type LibraryMode = "normal" | "select" | "arrange";
+const EMPTY_RECENTLY_ADDED_PHOTO_IDS: ReadonlySet<number> = new Set();
+const ignoreRecentlyAddedPhotoIdsChange = () => {};
 
 export function GalleryTab({
   demoSeed,
@@ -1745,6 +1754,8 @@ export function GalleryTab({
   onUnsavedChange,
   openTrashSignal,
   onTrashSignalConsumed,
+  recentlyAddedPhotoIds = EMPTY_RECENTLY_ADDED_PHOTO_IDS,
+  onRecentlyAddedPhotoIdsChange = ignoreRecentlyAddedPhotoIdsChange,
 }: {
   demoSeed?: string;
   onUploadingChange?: (v: boolean) => void;
@@ -1758,6 +1769,8 @@ export function GalleryTab({
   // mount of this tab (GalleryTab fully unmounts on tab switch, so its own
   // local state can't remember "already handled this one").
   onTrashSignalConsumed?: () => void;
+  recentlyAddedPhotoIds?: ReadonlySet<number>;
+  onRecentlyAddedPhotoIdsChange?: (ids: Set<number>) => void;
 }) {
   const qc = useQueryClient();
   const { language, t } = useAdminI18n();
@@ -2696,6 +2709,13 @@ export function GalleryTab({
     });
     return count;
   }, [displayed, selected]);
+  const recentlyAddedSelectedCount = useMemo(() => {
+    let count = 0;
+    selected.forEach((id) => {
+      if (recentlyAddedPhotoIds.has(id)) count += 1;
+    });
+    return count;
+  }, [recentlyAddedPhotoIds, selected]);
   const measureLibraryGrid = useCallback(() => {
     const scrollEl = scrollRef.current;
     const gridEl = gridRef.current;
@@ -3360,6 +3380,9 @@ export function GalleryTab({
 
   // Upload — server-side resize (no more presigned URLs)
   const handleFiles = async (files: File[]) => {
+    // 次の取り込みを始めた時点で、前回分の目印だけを解除する。
+    // 選択状態とは別なので、ここでは selected を変更しない。
+    onRecentlyAddedPhotoIdsChange(new Set());
     const imageFiles = files.filter(isUploadableImageFile);
     const skipped = files.length - imageFiles.length;
     const tooLargeNotice =
@@ -3394,6 +3417,7 @@ export function GalleryTab({
     setUploadProgress({ done: 0, total: uploadableFiles.length });
     const failed: { file: File; reason?: string }[] = [];
     const duplicates: string[] = [];
+    const addedPhotoIds: number[] = [];
     let storageMissing: string[] | null = null;
     let done = 0;
 
@@ -3482,8 +3506,23 @@ export function GalleryTab({
           },
         });
         assertOk(created);
-        const createdBody = (await created.json()) as { duplicate?: boolean };
-        if (createdBody.duplicate) duplicates.push(file.name);
+        const createdBody = (await created.json()) as {
+          duplicate?: boolean;
+          photo?: { id?: unknown };
+        };
+        if (createdBody.duplicate) {
+          duplicates.push(file.name);
+          return;
+        }
+        const createdId = createdBody.photo?.id;
+        if (
+          created.status !== 201 ||
+          typeof createdId !== "number" ||
+          !Number.isInteger(createdId)
+        ) {
+          throw new Error("no photo id returned");
+        }
+        addedPhotoIds.push(createdId);
       } catch (err) {
         failed.push({
           file,
@@ -3508,6 +3547,13 @@ export function GalleryTab({
         }),
       );
       qc.invalidateQueries({ queryKey: ["photos"] });
+      if (addedPhotoIds.length > 0) {
+        const addedIds = new Set(addedPhotoIds);
+        onRecentlyAddedPhotoIdsChange(addedIds);
+        // applyLibraryMode が選択を消すため、モード変更後のコールバックで
+        // 成功分だけを選択する。未保存詳細の確認も従来どおり通る。
+        requestLibraryMode("select", () => setSelected(new Set(addedIds)));
+      }
     } finally {
       setUploadingAndNotify(false);
       setUploadProgress(null);
@@ -3519,6 +3565,11 @@ export function GalleryTab({
       const failedNotice = storageMissing
         ? null
         : localizedUploadFailureNotice(failed);
+      if (addedPhotoIds.length > 0 && failed.length > 0) {
+        parts.push(
+          copy.import.resultSummary(addedPhotoIds.length, failed.length),
+        );
+      }
       if (failedNotice) parts.push(failedNotice);
       if (tooLargeNotice) parts.push(tooLargeNotice);
       if (duplicates.length)
@@ -3901,12 +3952,13 @@ export function GalleryTab({
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
         e.target instanceof HTMLSelectElement;
-      if (typing) return;
 
       // An open modal dialog owns the keyboard: without this, Esc would ALSO
       // clear the selection underneath, and Delete would trash the selection
       // from under a confirm dialog. <dialog> closes itself via `cancel`.
       if (document.querySelector("dialog[open]")) return;
+
+      if (typing) return;
 
       // ? — shortcuts help (Shift+/ on most layouts)
       if (e.key === "?") {
@@ -3929,9 +3981,15 @@ export function GalleryTab({
           requestLibraryMode("normal");
           return;
         }
-        // 未保存編集の無言破棄を防ぐ(×と同じ確認導線)
-        requestCloseInspector();
-        return;
+        if (inspectPhoto) {
+          // 未保存編集の無言破棄を防ぐ(×と同じ確認導線)
+          requestCloseInspector();
+          return;
+        }
+        if (recentlyAddedPhotoIds.size > 0) {
+          onRecentlyAddedPhotoIdsChange(new Set());
+          return;
+        }
       }
 
       if (showTrash) return; // grid nav only applies to the library view
@@ -4043,6 +4101,8 @@ export function GalleryTab({
     effectiveThumbSize,
     inspectPhoto,
     libraryMode,
+    recentlyAddedPhotoIds,
+    onRecentlyAddedPhotoIdsChange,
     // requestCloseInspector が最新の下書きを見て未保存判定できるように
     editForm,
   ]);
@@ -4689,6 +4749,16 @@ export function GalleryTab({
                       )
                     : copy.selection.selected(selected.size)}
                 </span>
+                {recentlyAddedSelectedCount > 0 && (
+                  <span
+                    data-library-recently-added-selection
+                    className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
+                  >
+                    {copy.selection.recentlyAddedSelected(
+                      recentlyAddedSelectedCount,
+                    )}
+                  </span>
+                )}
                 <span className="hidden lg:inline text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.mode.selectionHint}
                 </span>
@@ -5356,6 +5426,7 @@ export function GalleryTab({
                     const idx = virtualGrid.startIndex + localIdx;
                     const isSelected =
                       libraryMode === "select" && selected.has(photo.id);
+                    const isRecentlyAdded = recentlyAddedPhotoIds.has(photo.id);
                     const isInspect =
                       libraryMode === "normal" &&
                       inspectPhoto?.id === photo.id;
@@ -5396,6 +5467,9 @@ export function GalleryTab({
                       <div
                         key={photo.id}
                         id={`admin-photo-${photo.id}`}
+                        data-library-recently-added={
+                          isRecentlyAdded ? "true" : undefined
+                        }
                         draggable={
                           libraryMode === "arrange" && !reorderLocked
                         }
@@ -5417,6 +5491,13 @@ export function GalleryTab({
                               : ""
                         }`}
                       >
+                        {isRecentlyAdded && (
+                          <span
+                            data-library-recently-added-marker
+                            aria-hidden="true"
+                            className="absolute inset-y-0 left-0 z-[3] w-[2px] bg-[rgba(var(--admin-ink-rgb),0.2)] pointer-events-none"
+                          />
+                        )}
                         {/* Drop-position indicator: a bar on the edge where the dragged
                         photo will land (drop takes the target's slot — before the
                         target when dragging up/left, after it when dragging down/right). */}

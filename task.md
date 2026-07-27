@@ -1,52 +1,71 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-28 00:55 JST
+## Current State — 2026-07-28 06:00 JST
 
-- **Status:** 単位1・2完了。**オーナー就寝中の自律作業（約6時間）を実行中**
-- **Current owner:** Claude Code（Codexは終了）
+> **⚠️ 起きたら最初に `docs/specs/wake-up-checklist.md` を読んでください。**
+> **`bun run db:push` を当てるまで、いまのコードはローカルでも写真を取得できません。**
+
+- **Status:** オーナー就寝中の自律作業（約6時間）完了
+- **Current owner:** Claude Code（Codexは全セッション終了）
 - **Handoff readiness:** Ready。作業ツリーclean
-- **現在の目的:** 元画像を捨てる前に、後から取れない情報を抜き取って保存する土台を作る
-- **完了条件（単位1・2）:** 出どころを返す純関数 / 一覧の列を明示し応答を変えない /
-  各1コミット / pushしない → **すべて達成**
 - **Branch:** `main`（B-2試作は `prototype/b2-uneven-rows`）
 - **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より56 commits ahead / 0 behind（この行を含むcommit時点）。**push禁止**
-- **今回のcommit:**
+- **Originとの差:** `origin/main` より64 commits ahead / 0 behind（この行を含むcommit時点）。**push禁止**
+- **今回のcommit（14件）:**
   - `fcd1c01` 抽出すべきメタデータの調査
   - `8fde81c` 抽出の実装計画
   - `c2eddd9` 確定仕様（オーナー承認）
   - `d83c9ec` **単位1** 撮影日時の決定に出どころを持たせる
   - `25addc2` **単位2** 一覧が返す列を明示（応答は不変）
-  - この行を含むCurrent State更新commit
+  - `839ddf7` **単位3** schemaへ7列追加＋migration生成（本番未適用）
+  - `6086eb4` **単位4〜7** 抽出して保存する
+  - `d0b6bdf` 移行を当てないと動かないことを冒頭で警告
+  - `48ac5ea` 束を「撮影・取り込みイベント」にしてIDを安定させる
+  - `acf6f6d`（試作ブランチ）不正な数値で画面を白くしない
+  - `f70df8a` 画像リサイズが最長辺基準という記録は誤りだった
+  - `0073391` 公開サイトのsmokeを新設＋Service Workerの素通りを止める
+  - 起床後チェックリストとCurrent State更新
 - **検証済み（Claudeが独立実行）:**
-  - `bun run check`: **533 pass / 0 fail**（525→533、8件増）
-  - `bun run smoke`: **51 passed / 0 failed / 40 skipped**（4.8分）
-  - 列定義が `schema.photos` の29列と集合・順序ともに一致
-  - メモリDBで `db.select()` と `db.select(PHOTO_LIST_COLUMNS)` のJSONが完全一致。
-    キー順序と `createdAt` のDate型も維持
-  - 2352通りの異常入力で `legacy` / `manual` / 想定外の出どころが返らないこと、
-    既存関数の返す文字列が1件も変わらないことを確認
-  - 変更範囲は4ファイルのみ。schema / drizzle / 画面に差分なし
-- **未検証:** 実EXIFを持つ写真での抽出（オーナーが1枚上げて確認が必要）
+  - `bun run check`: **580 pass / 0 fail**（開始時525→580、55件増）
+  - 公開サイトsmoke: **41 passed / 0 failed**（新設）
+  - `bun run smoke`（既存）: 34 passed / **8 failed** / 49 skipped
+    → **8件すべて「本番DBに列が無い」ことが原因**。再現して確認済み
+  - メモリDBで移行SQLを適用し、7列が付き既存行がlegacyで埋まることを確認
+  - 出どころの正規化・形式の正規化を総当たりで検査（legacyを書き込まない）
+  - 詳細欄の保存で日時を触っていなくてもmanualにならないことを実SQLで確認
+  - 束のID安定性を1200通りの絞り込みで確認
+  - B-2の安全化を2240通りの不正入力＋2400通りの正常入力で確認
+- **今回見つけた重要なこと:**
+  1. **移行を当てるまでアプリが動かない**（Drizzleが全列を名指しするため）
+  2. **Service Workerがテストのモックを素通りさせていた**。APIを差し替える
+     テストが黙って無効化されていた。`serviceWorkers: "block"` で解決
+  3. **公開サイトのsmokeが1本も無かった**。41本を新設し全部成功
+  4. **「画像リサイズは最長辺基準」という過去の記録は誤り**。実測で幅基準と確認。
+     srcsetを使えない理由が1つ消えた
 - **既存の不具合（今回は直していない）:**
-  - `upload-date.ts`: `File.lastModified` が JSのDate上限(8.64e15ms)を超えると
-    `toShotAt` が RangeError。**単位1以前から存在**。該当写真1枚が登録失敗になる
-  - `evidence-reporter`: 全部成功した実行でも空フォルダが残ることがある。
-    Playwrightが `.last-run.json` を書くのと削除が競合するため
-- **次の一手:** 単位3〜7（schema・抽出・保存・手動変更・一覧列）→ admin監査 →
-  公開サイト調査 → テスト・設計資料
-- **自律作業の順序:** ①メタデータ抽出の残り単位 ②admin改善・デバッグ
-  ③公開サイトのデバッグと客観的改良 ④テスト不足・性能・設計資料
-- **オーナー判断待ち:** 上記2件の既存不具合を直すか /
-  56 commitsのpush / Finder型ビューの案（案B推奨）/ 束の判断1〜6
-- **触っていない範囲:** 製品画面 / schema / migration / Finder型ビュー / B-2 / B-3 /
-  元画像保存 / GPS / 画像解析 / キーワード / `camera` 列の既存の使われ方
-- **禁止範囲:** `db:push` / `db:migrate`（本番Tursoに当たる）/ push / deploy /
+  - `upload-date.ts`: `File.lastModified` がJSのDate上限を超えるとRangeError。
+    単位1以前から存在。該当写真1枚が登録失敗になる
+  - `evidence-reporter`: 全部成功した実行でも空フォルダが残ることがある
+  - `Picture.tsx` はどこからも使われていない
+- **未検証:** 実EXIFを持つ写真での抽出（オーナーが1枚上げて確認が必要）/
+  実機Safari / 画面の見た目
+- **次の一手:** オーナーが `bun run db:push` を当てる →
+  `bun run smoke` で失敗0件を確認 → 画面の判断
+- **オーナー判断待ち:** `library-band-decisions.md` の判断1〜6 /
+  Finder型ビューの案（案B推奨）/ 64 commitsのpush / 上記の既存不具合を直すか
+- **触っていない範囲:** 製品画面の見た目 / `styles.css` / 元画像保存 / GPS /
+  画像解析 / キーワード機能 / B-3の最終UI / 本線の仮想スクロール
+- **禁止範囲:** `db:push` / `db:migrate`（本番Turso）/ push / deploy /
   Railway / 本番DB・R2 / 環境変数 / 実写真アップロード
-- **Codex session:** 単位1・2 `019fa435-5457-7fd1-b813-5a086417f519`
-  （log: `scratch/codex-out-unit12.log`）
+- **Codex session:** 単位1・2 `019fa435-5457-7fd1-b813-5a086417f519` /
+  単位3 `019fa446-ef63-72c3-b218-7d9a0ced59df` /
+  単位4〜7 `019fa450-d00a-78f0-b3ee-59238444617b` /
+  修正 `019fa45a-b297-72f0-aa54-10c859a70bcf` /
+  束 `019fa46d-3ed7-75d2-a656-19db89bc5c74` /
+  B-2 `019fa473-cbed-7822-8361-ec3ea07931f9` /
+  公開smoke `019fa483-8cfd-71a2-9a17-407055d38485`
 - **Local commit:** 済。**Push: 未実施・禁止**
 - **Railway / production:** 未変更・対象外
 <!-- CURRENT_STATE_END -->

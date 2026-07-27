@@ -210,10 +210,41 @@ exifMake, exifModel                        ← いまは連結して camera に�
 
 ## 進めかた
 
-1. `schema.ts` と `schema.postgres.ts` を同期して編集
-2. `bun run db:generate` で migration SQL を**生成するだけ**
-3. 生成されたSQLが `ALTER TABLE photos ADD COLUMN ...` の並びだけであることを目視で確認
-4. **流すのはオーナーだけ**
+1. `schema.ts` と `schema.postgres.ts` を同期して編集 — **完了**
+2. `bun run db:generate` で migration SQL を生成 — **完了**
+   （`drizzle/0005_mysterious_madame_masque.sql`）
+3. 生成SQLが `ALTER TABLE photos ADD COLUMN` 7本だけであることを確認 — **完了**
+4. ローカルのメモリDBへ実際に適用し、7列が付き、古い形のINSERTでも
+   `shot_at_source='legacy'` が入ることを確認 — **完了**
+5. **本番へ流すのはオーナーだけ**
+
+## ⚠️ 適用前に必ず確認すること（調査で判明）
+
+**このリポジトリの migration の履歴は最初から欠けている。**
+
+- `drizzle/meta/_journal.json` は `0001_flawless_the_stranger` を含むが、
+  **そのSQLファイルは存在しない**。最初のcommitの時点で既に無い
+- そのため migration ファイルだけを順に流しても、`photos` は25列にしかならない。
+  実際の schema には36列ある（`camera` / `lens` / `film_type` / `shot_at` /
+  `display_size` / `is_published` / `series_id` / `width` / `height` /
+  `file_hash` / `deleted_at` の11列が migration に無い）
+- つまり、この機能は過去に `db:push` で本番へ適用されてきた
+
+### 何を実行すべきか
+
+**`bun run db:migrate` は使わないほうがよい。** 本番DBの `__drizzle_migrations`
+に 0000〜0004 が記録されていなければ、`0000`（CREATE TABLE）から流そうとして失敗する。
+記録されているかは本番を見ないと分からない。
+
+**推奨は `bun run db:push`。** 本番の実際のschemaと `schema.ts` を比べ、
+差分だけを流す。今回は列の追加7本だけなので、生成された `0005` と同じ
+`ALTER TABLE ... ADD COLUMN` になるはず。
+
+> **オーナーへ**: `db:push` は実行前に「これから流すSQL」を表示する。
+> **7本の `ADD COLUMN` 以外が出たら中止してください。**
+> 特に `DROP`・`CREATE TABLE`・データ移動が出た場合は流さないこと。
+
+`0005` のSQLファイルは、実際に流す内容の**照合用**として使う。
 
 > **重要**: `drizzle.config.ts` は `DATABASE_URL` を見ており、これは本番のTursoを指す。
 > `db:push` と `db:migrate` は**本番DBに直接当たる**。

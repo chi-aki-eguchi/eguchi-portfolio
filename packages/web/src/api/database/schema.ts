@@ -52,6 +52,29 @@ export const photos = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),
+    // 撮影日時の出どころ。取りうる値: exif_original / exif_digitized /
+    // file_modified / manual / none / legacy。
+    // `legacy` はこの仕組みより前に登録された行だけが持つDB既定値。
+    // アプリケーションコードからは絶対に書き込まず、新規処理が失敗しても
+    // legacyへ逃がさない（デジタルはnone、フィルムはfile_modified）。
+    shotAtSource: text("shot_at_source").notNull().default("legacy"),
+    // 元ファイルのEXIF DateTimeDigitized。存在しない・読み取れない場合はNULL。
+    shotAtDigitized: text("shot_at_digitized"),
+    // sourceWidth / sourceHeight はアップロードされた元ファイルの寸法。
+    // 既存のwidth / heightは保存した3200px JPEGの寸法であり、別の値。
+    // どちらもEXIFの向きを適用した後の表示上の縦横。元ファイル側は
+    // sharp metadata().autoOrientを使い、生のwidth / heightは使わない。
+    sourceWidth: integer("source_width"),
+    sourceHeight: integer("source_height"),
+    // 元ファイル形式を小文字の閉じた集合
+    // jpeg / png / webp / tiff / avif / heic / otherへ正規化した値。
+    // NULLは読み取り失敗、otherは読み取れた未知形式。AVIFはsharpが
+    // format="heif", compression="av1"と返すため、formatだけでHEICと区別しない。
+    sourceFormat: text("source_format"),
+    // 元ファイルのEXIF Make（メーカー名）。存在しない・読み取れない場合はNULL。
+    cameraMake: text("camera_make"),
+    // 元ファイルのEXIF Model（機種名）。存在しない・読み取れない場合はNULL。
+    cameraModel: text("camera_model"),
   },
   (t) => [
     // These queries currently full-scan the photos table, so they slow down linearly

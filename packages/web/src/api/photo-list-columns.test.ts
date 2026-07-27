@@ -15,6 +15,17 @@ const entries = Array.from(
 );
 const responseKeys = entries.map(([, responseKey]) => responseKey);
 const selectedColumnKeys = entries.map(([, , columnKey]) => columnKey);
+const schemaOnlyMetadataColumnKeys = [
+  "shotAtSource",
+  "shotAtDigitized",
+  "sourceWidth",
+  "sourceHeight",
+  "sourceFormat",
+  "cameraMake",
+  "cameraModel",
+];
+const sqliteColumnKeys = Object.keys(getTableColumns(sqlitePhotos));
+const postgresColumnKeys = Object.keys(getTableColumns(postgresPhotos));
 const photoWithThumbsSource = source.slice(
   source.indexOf("function photoWithThumbs"),
   source.indexOf("function keyToPublicUrl"),
@@ -60,8 +71,12 @@ describe("photo list columns", () => {
       expectedListResponseKeys,
     );
     expect(selectedColumnKeys).toEqual(responseKeys);
-    expect(responseKeys).toEqual(Object.keys(getTableColumns(sqlitePhotos)));
-    expect(responseKeys).toEqual(Object.keys(getTableColumns(postgresPhotos)));
+    expect(responseKeys).toHaveLength(29);
+    expect(responseKeys).toEqual(
+      sqliteColumnKeys.filter(
+        (key) => !schemaOnlyMetadataColumnKeys.includes(key),
+      ),
+    );
     expect(photoWithThumbsSource.indexOf("...p")).toBeLessThan(
       photoWithThumbsSource.indexOf("thumbUrl: p.thumbKey"),
     );
@@ -70,6 +85,17 @@ describe("photo list columns", () => {
     ).toBeLessThan(
       photoWithThumbsSource.indexOf("mediumUrl: p.mediumKey"),
     );
+  });
+
+  test("keeps the seven source metadata columns out of photo lists", () => {
+    for (const key of schemaOnlyMetadataColumnKeys) {
+      expect(sqliteColumnKeys).toContain(key);
+      expect(responseKeys).not.toContain(key);
+    }
+  });
+
+  test("keeps SQLite and Postgres photo columns in sync", () => {
+    expect(postgresColumnKeys).toEqual(sqliteColumnKeys);
   });
 
   test("uses the shared column definition in exactly the three photo list queries", () => {

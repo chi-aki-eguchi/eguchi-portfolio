@@ -46,6 +46,29 @@ export type PhotoBandItem<T extends PhotoBandPhoto> =
   | AutomaticPhotoBandItem<T>
   | ManualPhotoSheet<T>;
 
+type PhotoBandEventScope<T extends PhotoBandPhoto> = {
+  firstPhoto: T;
+  photoCount: number;
+  startAt: string | null;
+  endAt: string | null;
+};
+
+type VisiblePhotoBandScope<T extends PhotoBandPhoto> =
+  PhotoBandEventScope<T> & {
+    photos: readonly T[];
+  };
+
+export type VisiblePhotoBandEvent<T extends PhotoBandPhoto> = {
+  id: string;
+  kind: AutomaticPhotoBandItem<T>["kind"];
+  source: "auto";
+  // Range fields deliberately live under event and visible instead of using
+  // flat firstPhoto/startAt/endAt names. Callers must therefore choose whether
+  // they mean the complete capture/import event or its currently visible part.
+  event: PhotoBandEventScope<T>;
+  visible: VisiblePhotoBandScope<T>;
+};
+
 type TimedPhoto<T extends PhotoBandPhoto> = {
   photo: T;
   time: number;
@@ -74,24 +97,17 @@ function compareText(a: string, b: string): number {
   return 0;
 }
 
-function membershipHash(photos: readonly PhotoBandPhoto[]): string {
-  const membership = photos
-    .map(identityKey)
-    .sort(compareText)
-    .join("\u001f");
+function anchorHash(photo: PhotoBandPhoto): string {
   let hash = 0xcbf29ce484222325n;
-  for (const character of membership) {
+  for (const character of identityKey(photo)) {
     hash ^= BigInt(character.codePointAt(0) ?? 0);
     hash = BigInt.asUintN(64, hash * 0x100000001b3n);
   }
   return hash.toString(36);
 }
 
-function automaticId(
-  kind: AutomaticPhotoBandItem<PhotoBandPhoto>["kind"],
-  photos: readonly PhotoBandPhoto[],
-): string {
-  return `auto-${kind}:${photos.length}:${membershipHash(photos)}`;
+function automaticId(anchor: PhotoBandPhoto): string {
+  return `auto-event:${anchorHash(anchor)}`;
 }
 
 function timedItem<T extends PhotoBandPhoto>(
@@ -106,7 +122,7 @@ function timedItem<T extends PhotoBandPhoto>(
   const photos = entries.map(({ photo }) => photo);
   const kind = photos.length >= BAND_MIN_PHOTOS ? "sheet" : "flow";
   return {
-    id: automaticId(kind, photos),
+    id: automaticId(first.photo),
     kind,
     source: "auto",
     photos,
@@ -119,7 +135,7 @@ function timedItem<T extends PhotoBandPhoto>(
 
 function undatedFlow<T extends PhotoBandPhoto>(photo: T): PhotoFlow<T> {
   return {
-    id: automaticId("flow", [photo]),
+    id: automaticId(photo),
     kind: "flow",
     source: "auto",
     photos: [photo],
@@ -182,5 +198,47 @@ export function buildPhotoBands<T extends PhotoBandPhoto>(
   // Unknown dates cannot be placed on the timeline, so they follow all dated
   // items in deterministic ID order and remain separate from each other.
   result.push(...undated.map(undatedFlow));
+  return result;
+}
+
+/**
+ * Applies visibility after capture/import events have been built.
+ * The event array, its items, and their photo arrays are never changed.
+ */
+export function applyPhotoBandVisibility<T extends PhotoBandPhoto>(
+  events: readonly AutomaticPhotoBandItem<T>[],
+  isVisible: (photo: T) => boolean,
+): VisiblePhotoBandEvent<T>[] {
+  const result: VisiblePhotoBandEvent<T>[] = [];
+
+  for (const event of events) {
+    const photos = event.photos.filter(isVisible);
+    const firstPhoto = photos[0];
+    const lastPhoto = photos[photos.length - 1];
+    if (!firstPhoto || !lastPhoto) continue;
+
+    const firstTime = photoTime(firstPhoto);
+    const lastTime = photoTime(lastPhoto);
+    result.push({
+      id: event.id,
+      kind: event.kind,
+      source: event.source,
+      event: {
+        firstPhoto: event.firstPhoto,
+        photoCount: event.photoCount,
+        startAt: event.startAt,
+        endAt: event.endAt,
+      },
+      visible: {
+        photos,
+        firstPhoto,
+        photoCount: photos.length,
+        startAt:
+          firstTime === null ? null : new Date(firstTime).toISOString(),
+        endAt: lastTime === null ? null : new Date(lastTime).toISOString(),
+      },
+    });
+  }
+
   return result;
 }

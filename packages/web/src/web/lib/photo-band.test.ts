@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   BAND_GAP_HOURS,
   BAND_MIN_PHOTOS,
+  applyPhotoBandVisibility,
   buildPhotoBands,
 } from "./photo-band";
 
@@ -147,13 +148,43 @@ describe("buildPhotoBands", () => {
     ]);
   });
 
-  test("the same sheet membership always produces the same automatic ID", () => {
+  test("the same event anchor always produces the same automatic ID", () => {
     const photos = [photo(1, 0), photo(2, 1), photo(3, 2), photo(4, 3), photo(5, 4)];
     const firstId = buildPhotoBands(photos)[0]?.id;
     const secondId = buildPhotoBands([...photos].reverse())[0]?.id;
 
-    expect(firstId).toMatch(/^auto-sheet:/);
+    expect(firstId).toMatch(/^auto-event:/);
     expect(secondId).toBe(firstId);
+  });
+
+  test("adding a later photo keeps the anchor ID even when a flow becomes a sheet", () => {
+    const original = [
+      photo(1, 0),
+      photo(2, 1),
+      photo(3, 2),
+      photo(4, 3),
+    ];
+    const before = buildPhotoBands(original)[0];
+    const after = buildPhotoBands([...original, photo(5, 4)])[0];
+
+    expect(before?.kind).toBe("flow");
+    expect(after?.kind).toBe("sheet");
+    expect(after?.id).toBe(before?.id);
+  });
+
+  test("adding a photo older than the anchor changes the event ID", () => {
+    const original = [
+      photo(2, 0),
+      photo(3, 1),
+      photo(4, 2),
+      photo(5, 3),
+      photo(6, 4),
+    ];
+    const before = buildPhotoBands(original)[0];
+    const after = buildPhotoBands([photo(1, -1), ...original])[0];
+
+    expect(after?.firstPhoto.id).toBe(1);
+    expect(after?.id).not.toBe(before?.id);
   });
 
   test("a chain of gaps that each stay under the limit becomes one long sheet", () => {
@@ -178,5 +209,93 @@ describe("buildPhotoBands", () => {
     buildPhotoBands(photos);
 
     expect(photos.map(({ id }) => id)).toEqual(originalOrder);
+  });
+});
+
+describe("applyPhotoBandVisibility", () => {
+  test("filtering an event keeps its ID and original sheet kind", () => {
+    const event = buildPhotoBands([
+      photo(1, 0),
+      photo(2, 1),
+      photo(3, 2),
+      photo(4, 3),
+      photo(5, 4),
+      photo(6, 5),
+    ])[0];
+    if (!event) throw new Error("Expected an event");
+
+    const result = applyPhotoBandVisibility(
+      [event],
+      ({ id }) => id === 2 || id === 5,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id: event.id,
+      kind: "sheet",
+      event: {
+        firstPhoto: { id: 1 },
+        photoCount: 6,
+        startAt: at(0),
+        endAt: at(5),
+      },
+      visible: {
+        firstPhoto: { id: 2 },
+        photoCount: 2,
+        startAt: at(1),
+        endAt: at(4),
+      },
+    });
+    expect(result[0]?.visible.photos.map(({ id }) => id)).toEqual([2, 5]);
+  });
+
+  test("events with no visible photos are removed", () => {
+    const events = buildPhotoBands([
+      photo(1, 0),
+      photo(2, 20),
+    ]);
+
+    expect(applyPhotoBandVisibility(events, () => false)).toEqual([]);
+  });
+
+  test("applying the same filter twice returns the same deterministic result", () => {
+    const events = buildPhotoBands([
+      photo(3, 2),
+      photo(1, 0),
+      photo(2, 1),
+      photo(4, 20),
+    ]);
+    const isVisible = ({ id }: TestPhoto) => id % 2 === 1;
+
+    expect(applyPhotoBandVisibility(events, isVisible)).toEqual(
+      applyPhotoBandVisibility(events, isVisible),
+    );
+  });
+
+  test("filtering returns new arrays without changing the stage-one result", () => {
+    const events = buildPhotoBands([
+      photo(1, 0),
+      photo(2, 1),
+      photo(3, 2),
+      photo(4, 3),
+      photo(5, 4),
+    ]);
+    const before = events.map((event) => ({
+      ...event,
+      photos: [...event.photos],
+    }));
+
+    const filtered = applyPhotoBandVisibility(events, ({ id }) => id !== 3);
+
+    expect(events).toEqual(before);
+    expect(filtered).not.toBe(events);
+    expect(filtered[0]?.visible.photos).not.toBe(events[0]?.photos);
+  });
+
+  test("empty input and an all-hidden event both return empty arrays", () => {
+    expect(applyPhotoBandVisibility([], () => true)).toEqual([]);
+
+    const events = buildPhotoBands([photo(1, 0)]);
+    expect(applyPhotoBandVisibility(events, () => false)).toEqual([]);
   });
 });

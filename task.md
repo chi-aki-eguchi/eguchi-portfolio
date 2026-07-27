@@ -9,13 +9,16 @@
 - **Branch:** `main`（試作は `prototype/b2-uneven-rows`）
 - **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より46 commits ahead / 0 behind。**push未実施・禁止**
-- **今回のcommit（main、4件）:**
+- **Originとの差:** `origin/main` より49 commits ahead / 0 behind（この行を含むcommit時点）。**push未実施・禁止**
+- **今回のcommit（main、8件）:**
   - `dc9c216` Current State同期
   - `c953978` 第1A監査で見つかった競合と誤表示の修正（実装=Codex / 検証=Claude）
   - `757e4f0` `photo-band.ts` — 写真をシートと流れに分ける純関数（B-1）
   - `e488678` smoke失敗時の証拠をディスクへ残す
   - `b862f67` `docs/specs/library-band-decisions.md` — オーナー判断6件と実測値
+  - `29cdce4` Current State更新
+  - `74f1d28` `docs/specs/admin-library-states.md` — 状態遷移図とスマホの穴
+  - この行を含むCurrent State更新commit（`HEAD: SELF`）
 - **試作ブランチ `prototype/b2-uneven-rows`:**
   - `a394de0` `virtual-sections.ts` — 高さが揃わない仮想スクロール（B-2）
   - mainへは入れていない。画面・既存 `computeVirtualGridWindow` は無変更
@@ -34,8 +37,10 @@
     安全な既定値を返す。画面へつなぐ前に方針を決める必要がある（コードに明記）
 - **未検証:** 実画面での見た目（オーナーのみ）/ iPhone Safari実機 /
   一度だけ落ちたsmokeの再現（3回の記録実行では再現せず）
+- **文書の整理:** ルート直下のmdは白名簿どおり。`claude-code-night-run.md` は
+  gitignore済みの未追跡ファイル（2026-07-09の残骸、削除はオーナー判断待ち）
 - **次の一手:** オーナーの画面確認と `docs/specs/library-band-decisions.md` の判断
-- **オーナー判断待ち:** 判断1〜6（同文書）/ 46 commitsのpush /
+- **オーナー判断待ち:** 判断1〜6（同文書）/ 49 commitsのpush /
   第1Aの2px線の強さ・文言・Escの体感 / `styles.css`の構造
 - **触っていない範囲:** `admin.tsx`を含む画面 / DB schema / API / 本線の仮想スクロール /
   `styles.css` / 手動で束を作る機能 / B-3の最終UI

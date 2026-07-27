@@ -27,7 +27,7 @@ import { moveRelativeToViewNeighbor, moveToViewEdge } from "../lib/reorder";
 import { shouldLandOnSetup } from "../lib/setup-flow";
 import {
   shotAtForDateInputSave,
-  shotAtForUploadedPhoto,
+  shotAtWithSourceForUploadedPhoto,
 } from "../lib/upload-date";
 import {
   imageFileTooLarge,
@@ -3497,7 +3497,12 @@ export function GalleryTab({
           mediumKey,
           shotAt,
           exifDateDigitized,
+          sourceWidth,
+          sourceHeight,
+          sourceFormat,
           exifCamera,
+          exifMake,
+          exifModel,
           exifLens,
           exifFocalLength,
           exifFNumber,
@@ -3509,7 +3514,10 @@ export function GalleryTab({
         const filmTypeVal = isDigital ? "デジタル" : "フィルム";
         const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
         const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
-        const shotAtVal = shotAtForUploadedPhoto(
+        const {
+          shotAt: shotAtVal,
+          shotAtSource: shotAtSourceVal,
+        } = shotAtWithSourceForUploadedPhoto(
           shotAt,
           exifDateDigitized,
           file,
@@ -3525,11 +3533,18 @@ export function GalleryTab({
             thumbKey: (thumbKey as string) ?? "",
             mediumKey: (mediumKey as string) ?? "",
             shotAt: shotAtVal,
+            shotAtSource: shotAtSourceVal,
+            shotAtDigitized: (exifDateDigitized as string) ?? "",
+            sourceWidth: (sourceWidth as number) ?? null,
+            sourceHeight: (sourceHeight as number) ?? null,
+            sourceFormat: (sourceFormat as string) ?? null,
             title: "",
             meta: "",
             category: "",
             filmType: filmTypeVal,
             camera: cameraVal,
+            cameraMake: isDigital ? ((exifMake as string) ?? "") : "",
+            cameraModel: isDigital ? ((exifModel as string) ?? "") : "",
             lens: lensVal,
             focalLength: isDigital ? ((exifFocalLength as string) ?? "") : "",
             fNumber: isDigital ? ((exifFNumber as string) ?? "") : "",

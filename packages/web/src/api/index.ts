@@ -85,6 +85,13 @@ import {
   clampImageHeight,
   clampImageQuality,
 } from "./security";
+import {
+  normalizeShotAtSourceForInsert,
+  normalizeSourceFormatForInsert,
+  sourceMetadataFromSharpMetadata,
+  type SourceFormat,
+} from "./source-metadata";
+import { buildShotAtPatchUpdate } from "./photo-shot-at-update";
 
 // Keep list responses stable when new database columns are added. The property
 // order matches schema.ts so existing JSON key order stays unchanged.
@@ -118,6 +125,7 @@ const PHOTO_LIST_COLUMNS = {
   sortOrder: schema.photos.sortOrder,
   deletedAt: schema.photos.deletedAt,
   createdAt: schema.photos.createdAt,
+  shotAtSource: schema.photos.shotAtSource,
 } as const;
 
 // ── In-memory image caches (byte-budgeted true-LRU) ─────
@@ -1489,17 +1497,30 @@ const app = new Hono()
     // scan/export timestamp mislabeled as capture time. exifDateDigitized
     // (DateTimeDigitized) is the EXIF-spec-correct tag for "when this became
     // a digital file" — the client picks between the two based on medium
-    // (see shotAtForUploadedPhoto in lib/upload-date.ts).
+    // (see shotAtWithSourceForUploadedPhoto in lib/upload-date.ts).
     let shotAt: string | null = null;
     let exifDateDigitized: string | null = null;
+    let sourceWidth: number | null = null;
+    let sourceHeight: number | null = null;
+    let sourceFormat: SourceFormat = null;
     let exifCamera: string | null = null;
+    let exifMake: string | null = null;
+    let exifModel: string | null = null;
     let exifLens: string | null = null;
     let exifFocalLength: string | null = null;
     let exifFNumber: string | null = null;
     let exifExposureTime: string | null = null;
     let exifIso: string | null = null;
     try {
-      const { exif } = await sharp(inputBuf).metadata();
+      // One metadata read from the original bytes supplies EXIF, the original
+      // file format, and dimensions after applying EXIF orientation.
+      const originalMetadata = await sharp(inputBuf).metadata();
+      ({
+        sourceWidth,
+        sourceHeight,
+        sourceFormat,
+      } = sourceMetadataFromSharpMetadata(originalMetadata));
+      const { exif } = originalMetadata;
       if (exif) {
         const tags = exifReader(exif);
         const dt = tags?.Photo?.DateTimeOriginal ?? tags?.Image?.DateTime;
@@ -1508,8 +1529,16 @@ const app = new Hono()
         const dtDigitized = tags?.Photo?.DateTimeDigitized;
         if (dtDigitized instanceof Date && !Number.isNaN(dtDigitized.getTime()))
           exifDateDigitized = dtDigitized.toISOString().slice(0, 19);
-        const make = (tags?.Image?.Make as string | undefined)?.trim() ?? "";
-        const model = (tags?.Image?.Model as string | undefined)?.trim() ?? "";
+        const make =
+          typeof tags?.Image?.Make === "string"
+            ? tags.Image.Make.trim()
+            : "";
+        const model =
+          typeof tags?.Image?.Model === "string"
+            ? tags.Image.Model.trim()
+            : "";
+        exifMake = make || null;
+        exifModel = model || null;
         if (model)
           exifCamera =
             make && !model.startsWith(make) ? `${make} ${model}` : model;
@@ -1561,7 +1590,12 @@ const app = new Hono()
         mediumKey,
         shotAt,
         exifDateDigitized,
+        sourceWidth,
+        sourceHeight,
+        sourceFormat,
         exifCamera,
+        exifMake,
+        exifModel,
         exifLens,
         exifFocalLength,
         exifFNumber,
@@ -1724,6 +1758,25 @@ const app = new Hono()
               : null,
           shotAt:
             typeof body.shotAt === "string" && body.shotAt ? body.shotAt : null,
+          shotAtSource: normalizeShotAtSourceForInsert(body.shotAtSource),
+          shotAtDigitized:
+            typeof body.shotAtDigitized === "string" &&
+            body.shotAtDigitized
+              ? body.shotAtDigitized
+              : null,
+          sourceWidth:
+            typeof body.sourceWidth === "number" ? body.sourceWidth : null,
+          sourceHeight:
+            typeof body.sourceHeight === "number" ? body.sourceHeight : null,
+          sourceFormat: normalizeSourceFormatForInsert(body.sourceFormat),
+          cameraMake:
+            typeof body.cameraMake === "string" && body.cameraMake
+              ? body.cameraMake
+              : null,
+          cameraModel:
+            typeof body.cameraModel === "string" && body.cameraModel
+              ? body.cameraModel
+              : null,
           // Atomic next sort order — avoids duplicate values when concurrent
           // uploads insert in parallel (SQLite serializes writes).
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos)`,
@@ -1781,9 +1834,15 @@ const app = new Hono()
           ? body.filmType
           : null;
     // U2: 撮影日 — "" / null clears it back to unset.
-    if (body.shotAt !== undefined)
-      update.shotAt =
-        body.shotAt === "" || body.shotAt === null ? null : String(body.shotAt);
+    if (body.shotAt !== undefined) {
+      Object.assign(
+        update,
+        buildShotAtPatchUpdate(body.shotAt, {
+          shotAt: schema.photos.shotAt,
+          shotAtSource: schema.photos.shotAtSource,
+        }),
+      );
+    }
     if (body.description !== undefined) update.description = body.description;
     if (body.category !== undefined) update.category = body.category;
     if (body.displaySize !== undefined) update.displaySize = body.displaySize;
@@ -2046,7 +2105,7 @@ const app = new Hono()
         const updated = await withRetry(() =>
           db
             .update(schema.photos)
-            .set({ shotAt: date })
+            .set({ shotAt: date, shotAtSource: "manual" })
             .where(
               and(
                 inArray(schema.photos.id, cleanIds),
@@ -2065,7 +2124,7 @@ const app = new Hono()
         await withRetry(() =>
           db
             .update(schema.photos)
-            .set({ shotAt: null })
+            .set({ shotAt: null, shotAtSource: "none" })
             .where(inArray(schema.photos.id, cleanIds)),
         );
         break;

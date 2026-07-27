@@ -16,7 +16,6 @@ const entries = Array.from(
 const responseKeys = entries.map(([, responseKey]) => responseKey);
 const selectedColumnKeys = entries.map(([, , columnKey]) => columnKey);
 const schemaOnlyMetadataColumnKeys = [
-  "shotAtSource",
   "shotAtDigitized",
   "sourceWidth",
   "sourceHeight",
@@ -64,6 +63,7 @@ describe("photo list columns", () => {
       "sortOrder",
       "deletedAt",
       "createdAt",
+      "shotAtSource",
       "thumbUrl",
       "mediumUrl",
     ];
@@ -71,7 +71,7 @@ describe("photo list columns", () => {
       expectedListResponseKeys,
     );
     expect(selectedColumnKeys).toEqual(responseKeys);
-    expect(responseKeys).toHaveLength(29);
+    expect(responseKeys).toHaveLength(30);
     expect(responseKeys).toEqual(
       sqliteColumnKeys.filter(
         (key) => !schemaOnlyMetadataColumnKeys.includes(key),
@@ -87,7 +87,9 @@ describe("photo list columns", () => {
     );
   });
 
-  test("keeps the seven source metadata columns out of photo lists", () => {
+  test("adds only shotAtSource and keeps the other six source metadata columns out", () => {
+    expect(sqliteColumnKeys).toContain("shotAtSource");
+    expect(responseKeys).toContain("shotAtSource");
     for (const key of schemaOnlyMetadataColumnKeys) {
       expect(sqliteColumnKeys).toContain(key);
       expect(responseKeys).not.toContain(key);

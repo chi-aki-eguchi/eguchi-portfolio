@@ -1777,9 +1777,31 @@ export function GalleryTab({
   const copy = t.phase2b.library;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const setUploadingAndNotify = (v: boolean) => {
-    setUploading(v);
-    onUploadingChange?.(v);
+  const uploadingRef = useRef(false);
+  const onUploadingChangeRef = useRef(onUploadingChange);
+  onUploadingChangeRef.current = onUploadingChange;
+  const uploadGenerationRef = useRef(0);
+  const activeUploadProgressRef = useRef(
+    new Map<number, { done: number; total: number }>(),
+  );
+  const syncUploadProgress = () => {
+    const activeUploads = Array.from(
+      activeUploadProgressRef.current.values(),
+    );
+    const active = activeUploads.length > 0;
+    if (uploadingRef.current !== active) {
+      uploadingRef.current = active;
+      setUploading(active);
+      onUploadingChangeRef.current?.(active);
+    }
+    setUploadProgress(
+      active
+        ? {
+            done: activeUploads.reduce((sum, item) => sum + item.done, 0),
+            total: activeUploads.reduce((sum, item) => sum + item.total, 0),
+          }
+        : null,
+    );
   };
   const [uploadProgress, setUploadProgress] = useState<{
     done: number;
@@ -1853,6 +1875,12 @@ export function GalleryTab({
   const [editForm, setEditForm] = useState<PhotoEditForm>(
     EMPTY_PHOTO_EDIT_FORM,
   );
+  // 非同期の取り込み完了時にも、その瞬間に開いている詳細欄と下書きを見る。
+  // handleFiles が開始時の render を保持していても、この ref は常に最新になる。
+  const inspectPhotoRef = useRef(inspectPhoto);
+  const editFormRef = useRef(editForm);
+  inspectPhotoRef.current = inspectPhoto;
+  editFormRef.current = editForm;
   const [dragSrcId, setDragSrcId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [batchCatOpen, setBatchCatOpen] = useState(false);
@@ -3413,8 +3441,12 @@ export function GalleryTab({
     setUploadNotice(null);
     setRetryFiles([]);
     setStorageAlert(null);
-    setUploadingAndNotify(true);
-    setUploadProgress({ done: 0, total: uploadableFiles.length });
+    const uploadGeneration = ++uploadGenerationRef.current;
+    activeUploadProgressRef.current.set(uploadGeneration, {
+      done: 0,
+      total: uploadableFiles.length,
+    });
+    syncUploadProgress();
     const failed: { file: File; reason?: string }[] = [];
     const duplicates: string[] = [];
     const addedPhotoIds: number[] = [];
@@ -3530,7 +3562,11 @@ export function GalleryTab({
         });
       } finally {
         done += 1;
-        setUploadProgress({ done, total: uploadableFiles.length });
+        activeUploadProgressRef.current.set(uploadGeneration, {
+          done,
+          total: uploadableFiles.length,
+        });
+        syncUploadProgress();
       }
     };
 
@@ -3546,8 +3582,25 @@ export function GalleryTab({
           while ((next = queue.shift())) await uploadOne(next);
         }),
       );
-      qc.invalidateQueries({ queryKey: ["photos"] });
-      if (addedPhotoIds.length > 0) {
+      let photosRefreshed = false;
+      try {
+        await qc.invalidateQueries(
+          { queryKey: ["photos"] },
+          { cancelRefetch: false, throwOnError: true },
+        );
+        photosRefreshed = true;
+      } catch {
+        // 追加写真がまだ一覧に無い状態では選択へ着地させない。
+        // 「絞り込みの外」という誤情報を残さず、既存の汎用エラーで知らせる。
+        if (uploadGeneration === uploadGenerationRef.current) {
+          setActionError(copy.feedback.refreshFailed);
+        }
+      }
+      if (
+        photosRefreshed &&
+        uploadGeneration === uploadGenerationRef.current &&
+        addedPhotoIds.length > 0
+      ) {
         const addedIds = new Set(addedPhotoIds);
         onRecentlyAddedPhotoIdsChange(addedIds);
         // applyLibraryMode が選択を消すため、モード変更後のコールバックで
@@ -3555,8 +3608,8 @@ export function GalleryTab({
         requestLibraryMode("select", () => setSelected(new Set(addedIds)));
       }
     } finally {
-      setUploadingAndNotify(false);
-      setUploadProgress(null);
+      activeUploadProgressRef.current.delete(uploadGeneration);
+      syncUploadProgress();
       setRetryFiles(failed.map(({ file }) => file));
       setStorageAlert(storageMissing);
       const parts: string[] = [];
@@ -3621,10 +3674,11 @@ export function GalleryTab({
     afterChange?: () => void,
   ) => {
     const proceed = () => applyLibraryMode(nextMode, afterChange);
+    const currentInspectPhoto = inspectPhotoRef.current;
     if (
       nextMode !== "normal" &&
-      inspectPhoto &&
-      photoEditFormChanged(editForm, inspectPhoto)
+      currentInspectPhoto &&
+      photoEditFormChanged(editFormRef.current, currentInspectPhoto)
     ) {
       setConfirmDialog({
         message: copy.feedback.closeInspectorConfirm,
@@ -5520,9 +5574,15 @@ export function GalleryTab({
                           type="button"
                           data-library-photo-action
                           aria-label={
-                            photo.title ||
-                            photo.filename ||
-                            copy.inspector.photoFallback
+                            `${
+                              photo.title ||
+                              photo.filename ||
+                              copy.inspector.photoFallback
+                            }${
+                              isRecentlyAdded
+                                ? `, ${copy.selection.recentlyAdded}`
+                                : ""
+                            }`
                           }
                           onClick={(e) => handlePhotoClick(photo, idx, e)}
                           className={`absolute inset-0 z-[1] ${

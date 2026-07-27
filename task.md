@@ -1,33 +1,44 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-27 14:10 JST
+## Current State — 2026-07-27 16:26 JST
 
-- **Status:** オーナー不在（約6時間）の自律作業中。Claudeが作業責任者
-- **Current owner:** Claude Code（設計・検証・commit）。Codexは都度新規sessionで実装/調査
-- **Handoff readiness:** In progress
-- **現在の目的:** 第1Aの品質を客観的に高める / smoke間欠失敗の証拠を残せるようにする /
-  B-1を実装する / B-2を本線に入れず試作する / 帰宅後の判断材料を増やす
-- **Branch / HEAD:** `main` / `608d677`
-- **Git:** clean
-- **Originとの差:** `origin/main` より41 commits ahead / 0 behind。**push禁止**
+- **Status:** 第1A独立監査の明確なバグ4件は実装・ローカル検証完了。commitのみ環境権限で未完了
+- **Current owner:** Codex（今回の差分を保持中。別AIは同じworktreeを編集しない）
+- **Handoff readiness:** Commit blocked。差分と検証結果は引き継ぎ可能
+- **現在の目的:** F1〜F4だけを修正し、API差し替えのsmoke回帰テストを追加して1コミットにする
+- **完了条件:** 4件修正 / 対応テストあり / `bun run check` 緑 / 1コミット / pushしない
+- **Branch:** `main`
+- **HEAD:** `dc9c216`
+- **Git:** dirty（未ステージ4ファイル）
+- **Originとの差:** `origin/main` より42 commits ahead / 0 behind。**push禁止**
+- **変更中ファイル:**
+  - `packages/web/src/web/pages/admin.tsx`
+  - `packages/web/src/web/pages/admin-i18n.tsx`
+  - `scripts/smoke/admin-import-landing.spec.ts`
+  - `task.md`（このCurrent State更新のみ）
 - **完了済み:**
-  - 第1A実装・独立検証・commit（`608d677`）。Esc衝突を実測で発見し修正、回帰テスト追加
-  - 検証: `bun run check` 514 pass / 0 fail、`bun run smoke` 44 passed / 0 failed
-- **未完了（この時間の作業）:**
-  1. 第1Aの独立監査（Codexにread-onlyでレビューさせ、明確なバグ・競合・テスト不足だけ修正）
-  2. smoke間欠失敗の証拠取り（失敗時にテスト名・trace・出力が必ず残る状態にする）
-  3. B-1（`photo-band.ts` の純関数＋人工データのテスト。画面/DB/API/仮想スクロールは変更しない）
-  4. B-2の試作（本線の見た目を変えない。独立branchに残す）
-  5. 次の判断材料づくり（比較案・計測・設計資料）
-- **未検証:** 実アップロード（禁止）、オーナーによる画面確認（2px線の強さ・文言・Escの体感）
-- **オーナー判断待ち:** 第1Aの画面確認、41 commitsのpush、`styles.css`構造、iPhone Safari実機
-- **触ってはいけない箇所:** push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード /
-  既存41 commitsのreset・rebase・squash / 手動ロール機能 / DB schema / APIの保存形式 /
-  `styles.css`全体整理 / B-3の最終UIを本線へ入れること /
-  見た目の主観判断（2px線の強さ・文言の好み・Escの体感）を確定すること
-- **Codex運用:** 作業ごとに新規session。古い別件sessionはresumeしない
-- **Local commit:** `608d677` まで。**Push: 未実施・禁止**
+  - F1: 非同期完了時に最新の詳細写真・編集フォームを見るrefを追加
+  - F2: 取り込み世代と実行中進捗Mapを追加。最後に開始した世代だけが選択・目印を確定
+  - F3: 写真一覧の再取得成功を待って着地。失敗時は選択・目印を作らず汎用エラーを表示
+  - F4: 個々の写真ボタンの読み上げ名へ「今回追加」を追記。見た目は変更なし
+  - smokeテスト: F1/F2/F3/F4、再取得失敗、重複のみ、全件失敗、既存選択ありを追加
+- **検証済み:**
+  - `bun run check`: 514 pass / 0 fail、typecheck・lint・build成功
+  - 対象smokeファイル単体のTypeScript型確認: 成功
+  - `git diff --check`: 成功
+- **未検証:** `bun run smoke`（オーナー指示により実行禁止）/ 実アップロード（禁止）
+- **commit状況:** `git add` / `git commit` は `.git/index.lock: Operation not permitted` で失敗
+- **重要:** commitは1件も作成されておらず、ステージ済みファイルもない。差分は作業ツリーに残存
+- **次の一手:** `.git`へ書き込める環境で、このCurrent Stateを完了状態・`HEAD: SELF`へ直してから
+  上記4ファイルを明示指定し、1コミット作成する
+- **推奨commit名:** `fix(admin): 取り込み後の着地競合を修正`
+- **オーナー判断待ち:** commitを実行できる権限環境への切替
+- **触っていない範囲:** `⌘K`移動 / mobile Escリスナー / 自動スクロール / 第1B /
+  `styles.css` / DB schema / API / 仮想スクロール / 既存3モード構造
+- **禁止範囲:** push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード
+- **Codex session:** このCodexスレッド（session IDは環境から非公開）
+- **Local commit:** `dc9c216` のまま。**Push: 未実施・禁止**
 - **Railway / production:** 未変更・対象外
 <!-- CURRENT_STATE_END -->
 

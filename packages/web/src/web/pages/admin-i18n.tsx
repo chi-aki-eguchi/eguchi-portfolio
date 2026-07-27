@@ -205,6 +205,7 @@ const ADMIN_PHASE_2B_JA = {
       selected: (count: number) => `選択中 ${count}枚`,
       selectedWithHidden: (count: number, hiddenCount: number) =>
         `選択中 ${count}枚（うち${hiddenCount}枚は絞り込みの外）`,
+      recentlyAdded: "今回追加",
       recentlyAddedSelected: (count: number) =>
         `今回追加した${count}枚を選択中`,
       publish: "公開",
@@ -446,6 +447,8 @@ const ADMIN_PHASE_2B_JA = {
       albumSaveFailed: "スマートアルバムの保存に失敗しました。",
       orderSaved: "並び順を保存しました",
       reorderFailed: "並び替えの保存に失敗しました。",
+      refreshFailed:
+        "操作に失敗しました。通信状況を確認するか、再ログインしてください。",
       switchPhotoConfirm:
         "保存していない編集があります。保存せずに別の写真へ移動しますか？",
       switchPhotoAction: "保存せず移動",
@@ -1618,6 +1621,7 @@ const ADMIN_PHASE_2B_EN = {
       selected: (count: number) => `${count} selected`,
       selectedWithHidden: (count: number, hiddenCount: number) =>
         `${count} selected (${hiddenCount} outside filters)`,
+      recentlyAdded: "Added in this import",
       recentlyAddedSelected: (count: number) =>
         `${count} from this import selected`,
       publish: "Publish",
@@ -1861,6 +1865,8 @@ const ADMIN_PHASE_2B_EN = {
       albumSaveFailed: "Could not save the smart album.",
       orderSaved: "Sort order saved",
       reorderFailed: "Could not save the sort order.",
+      refreshFailed:
+        "The operation failed. Check your connection or sign in again.",
       switchPhotoConfirm:
         "This photo has unsaved edits. Move to another photo without saving?",
       switchPhotoAction: "Move without saving",

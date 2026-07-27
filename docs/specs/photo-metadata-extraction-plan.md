@@ -355,3 +355,142 @@ commit を分けておけば、`git revert` で各段階を個別に戻せる。
 - `docs/specs/photo-metadata-extraction.md` — 何が抜けているかの調査
 - `docs/specs/library-finder-investigation.md` — Finder型ビューの3案
 - `docs/specs/library-band-decisions.md` — 束機能の判断
+
+---
+
+# 12. 確定仕様（2026-07-28 オーナー承認）
+
+**実装はこの節に従う。この節と上の記述が食い違う場合は、この節を正とする。**
+
+## S1. `shotAtSource`
+
+### 値の決め方（新規アップロード）
+
+| 媒体 | EXIFの状態 | `shotAt` | `shotAtSource` |
+|---|---|---|---|
+| デジタル | `DateTimeOriginal` あり | その値 | `exif_original` |
+| デジタル | `Image.DateTime` のみあり | その値 | `exif_original` |
+| デジタル | どちらも無い / EXIFが読めない | 空 | **`none`** |
+| フィルム | `DateTimeDigitized` あり | その値 | `exif_digitized` |
+| フィルム | `DateTimeDigitized` 無し | ファイル更新日時 | `file_modified` |
+
+### 人が操作した場合
+
+| 操作 | `shotAt` | `shotAtSource` |
+|---|---|---|
+| 詳細欄で日時を設定・変更した | 入力値 | `manual` |
+| 一括で「日時が空の写真」へ設定した | 指定日 | `manual` |
+| 日時をクリアした | **null** | **`none`** |
+
+### 最重要の不変条件
+
+> **`'legacy'` はコードのどこからも書き込まない。**
+> DBの列の既定値としてのみ存在し、「この仕組みより前に登録された行」だけが持つ。
+
+新規アップロードの処理が失敗しても `legacy` へ逃がさない。
+EXIFが読めない・壊れている場合は `none`（デジタル）または `file_modified`（フィルム）。
+**この1点をテストで固定する。**
+
+### 残る不正確さ（実装者が勝手に決めない）
+
+フィルムで `DateTimeDigitized` が無く、かつファイル更新日時も使えない場合、
+現在のコードは**アップロード時刻**を入れる（`upload-date.ts:25-30`）。
+今回はこの挙動を変えず、`file_modified` として分類する。
+
+ブラウザは `File.lastModified` をほぼ必ず返すため、この枝は実際には通らない。
+コメントでその旨を残す。**挙動を変える判断はオーナーが行う。**
+
+## S2. `shotAtDigitized`
+
+**`DateTimeDigitized` が存在すれば、`shotAt` に採用されなかった場合も保存する。**
+
+デジタル写真では次の併存があり得る。これを正常な状態として扱う。
+
+```
+shotAt          = DateTimeOriginal  （撮影した時刻）
+shotAtDigitized = DateTimeDigitized （デジタル化した時刻）
+```
+
+存在しなければ NULL。
+
+## S3. `sourceWidth` / `sourceHeight`
+
+**EXIFの向きを適用した後の「表示上の縦横」を保存する。**
+sharp の `metadata().autoOrient.width / .height` を使う。
+生の `metadata().width / .height` は**使わない**。
+
+実測で確認した違い（横40×24に `orientation=6` を付けた画像）:
+
+| | 値 |
+|---|---|
+| `metadata().width × height`（生） | 40 × 24 |
+| `metadata().autoOrient`（向き適用後） | **24 × 40** |
+| 既存の `width` / `height`（保存版） | **24 × 40** |
+
+既存の `width`/`height` は `optimiseImage` が `.rotate()` を通すため
+**すでに向き適用後**。`sourceWidth`/`sourceHeight` も向き適用後に揃えることで、
+両者は「同じ向きで、大きさだけが違う」関係になる。
+
+**既存の `width`/`height` との違い**:
+
+| 列 | 何の寸法か |
+|---|---|
+| `width` / `height` | **保存した3200pxのJPEG**の寸法（向き適用後） |
+| `sourceWidth` / `sourceHeight` | **アップロードされた元ファイル**の寸法（向き適用後） |
+
+**この違いをコードコメントとテストの両方で固定する。**
+
+## S4. `sourceFormat`
+
+**ライブラリの戻り値をそのまま入れない。** 小文字の閉じた集合へ正規化する。
+
+| 保存する値 | 条件 |
+|---|---|
+| `jpeg` | sharp の `format` が `jpeg` |
+| `png` | 同 `png` |
+| `webp` | 同 `webp` |
+| `tiff` | 同 `tiff` |
+| `avif` | `format` が `heif` かつ `compression` が `av1` |
+| `heic` | `format` が `heif` かつ `compression` が `hevc` |
+| `other` | 上のどれにも当てはまらない（未知の形式・未知の圧縮） |
+| NULL | そもそも読み取れなかった |
+
+**`other` と NULL を分ける。** 「読んだが知らない形式だった」と
+「読めなかった」は別のこと。
+
+アップロードで受け付けている形式は
+jpeg / png / webp / heic / heif / tiff / avif（`src/api/security.ts:4-25`）。
+上の集合はこれを覆う。
+
+実測で確認済み: **AVIFは `format = "heif"`, `compression = "av1"` として報告される**。
+`format` だけを見ると AVIF と HEIC を取り違える。
+
+未知の値が来ても例外を投げず `other` に落とす。
+
+## S5. `GET /photos`
+
+1. **先に**、返す列を明示する形へ変える。**この時点で応答は今と同じ**
+   （キーの集合も順序も変えない）
+2. 7列のうち一覧へ載せてよいのは **`shotAtSource` だけ**
+3. 残り6列は保存するが、**使う画面が決まるまで通常の一覧では返さない**
+
+対象は写真を多数返す3か所:
+`GET /photos`（`index.ts:1331`）/ `GET /admin/photos/trash`（`:1911`）/
+`GET /series/:slug`（`:2306`）。
+
+## S6. 既存写真
+
+- 496枚すべて `shotAtSource = 'legacy'`
+- **`legacy` は「日時が信用できる」という意味ではない。「記録していなかった」という意味**
+- **将来の信頼性判定は `filmType` と `shotAtSource` の両方を見る**。
+  `filmType = "フィルム"` かつ `shotAtSource = 'legacy'` の写真は、
+  日時がスキャン時刻である可能性が高い（既存のフィルム279枚がこれに当たる）
+- **B-1（`photo-band.ts`）の挙動は今回変更しない**
+
+## S7. 単位1と2で変更しないもの
+
+製品画面 / Finder型ビュー / B-2 / B-3 / 元画像の保存 / GPS / 画像解析 /
+キーワード機能 / `camera` 列の既存の使われ方。
+
+DB migration は**生成とローカル検証まで**。本番Tursoへ適用しない。
+`db:push` / `db:migrate` / `git push` / deploy / 本番への書き込みは禁止。

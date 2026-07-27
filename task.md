@@ -1,53 +1,49 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-27 19:05 JST
+## Current State — 2026-07-28 00:55 JST
 
-- **Status:** オーナー不在の自律作業（優先1〜5）完了。全てlocal commitまで
-- **Current owner:** Claude Code（Codexは2セッションとも終了）
+- **Status:** メタデータ抽出の単位1・単位2が完了。**単位3以降は未着手（オーナー報告待ち）**
+- **Current owner:** Claude Code（Codexは終了）
 - **Handoff readiness:** Ready。作業ツリーclean
-- **Branch:** `main`（試作は `prototype/b2-uneven-rows`）
+- **現在の目的:** 元画像を捨てる前に、後から取れない情報を抜き取って保存する土台を作る
+- **完了条件（単位1・2）:** 出どころを返す純関数 / 一覧の列を明示し応答を変えない /
+  各1コミット / pushしない → **すべて達成**
+- **Branch:** `main`（B-2試作は `prototype/b2-uneven-rows`）
 - **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より49 commits ahead / 0 behind（この行を含むcommit時点）。**push未実施・禁止**
-- **今回のcommit（main、8件）:**
-  - `dc9c216` Current State同期
-  - `c953978` 第1A監査で見つかった競合と誤表示の修正（実装=Codex / 検証=Claude）
-  - `757e4f0` `photo-band.ts` — 写真をシートと流れに分ける純関数（B-1）
-  - `e488678` smoke失敗時の証拠をディスクへ残す
-  - `b862f67` `docs/specs/library-band-decisions.md` — オーナー判断6件と実測値
-  - `29cdce4` Current State更新
-  - `74f1d28` `docs/specs/admin-library-states.md` — 状態遷移図とスマホの穴
-  - この行を含むCurrent State更新commit（`HEAD: SELF`）
-- **試作ブランチ `prototype/b2-uneven-rows`:**
-  - `a394de0` `virtual-sections.ts` — 高さが揃わない仮想スクロール（B-2）
-  - mainへは入れていない。画面・既存 `computeVirtualGridWindow` は無変更
+- **Originとの差:** `origin/main` より56 commits ahead / 0 behind（この行を含むcommit時点）。**push禁止**
+- **今回のcommit:**
+  - `fcd1c01` 抽出すべきメタデータの調査
+  - `8fde81c` 抽出の実装計画
+  - `c2eddd9` 確定仕様（オーナー承認）
+  - `d83c9ec` **単位1** 撮影日時の決定に出どころを持たせる
+  - `25addc2` **単位2** 一覧が返す列を明示（応答は不変）
+  - この行を含むCurrent State更新commit
 - **検証済み（Claudeが独立実行）:**
-  - `bun run check`: main 525 pass / 0 fail、試作ブランチ 535 pass / 0 fail
-  - `bun run smoke`: 51 passed / 0 failed / 40 skipped（4.5分）
-  - B-1: 人工496枚でシート収容率75%を再現。496枚の計算は最悪2.52ms
-  - B-2: 4800通りの組み合わせで「詰め物＋描画＝全体の高さ」「見えている写真が
-    必ず描画される」「区画の重複なし」を確認。問い合わせ0.8〜2.5マイクロ秒
-  - smoke証拠: わざと失敗させ、まとめ・スクリーンショット・動画・トレースの
-    保存と、成功時の自動削除を確認
-- **重要な発見:**
-  - smokeの成功件数は実行ごとに変わる。写真の枚数など実行時の条件で飛ぶテストが
-    複数あるため（52→51）。「落ちた」と「走らなかった」を混同しない
-  - B-2は数値がNaN・負の時に例外を投げる。既存 `computeVirtualGridWindow` は
-    安全な既定値を返す。画面へつなぐ前に方針を決める必要がある（コードに明記）
-- **未検証:** 実画面での見た目（オーナーのみ）/ iPhone Safari実機 /
-  一度だけ落ちたsmokeの再現（3回の記録実行では再現せず）
-- **文書の整理:** ルート直下のmdは白名簿どおり。`claude-code-night-run.md` は
-  gitignore済みの未追跡ファイル（2026-07-09の残骸、削除はオーナー判断待ち）
-- **次の一手:** オーナーの画面確認と `docs/specs/library-band-decisions.md` の判断
-- **オーナー判断待ち:** 判断1〜6（同文書）/ 49 commitsのpush /
-  第1Aの2px線の強さ・文言・Escの体感 / `styles.css`の構造
-- **触っていない範囲:** `admin.tsx`を含む画面 / DB schema / API / 本線の仮想スクロール /
-  `styles.css` / 手動で束を作る機能 / B-3の最終UI
-- **禁止範囲:** push / deploy / Railway / 本番DB・R2 / 環境変数 /
-  実写真アップロード / 本番データのテスト複製
-- **Codex session:** B-1 `019fa289-9f35-7061-8467-52e4b40cebf4` /
-  B-2 `019fa2a1-67c9-7183-b213-ea2e50a454a8`（log: `scratch/codex-out-b1.log`, `-b2.log`）
+  - `bun run check`: **533 pass / 0 fail**（525→533、8件増）
+  - `bun run smoke`: **51 passed / 0 failed / 40 skipped**（4.8分）
+  - 列定義が `schema.photos` の29列と集合・順序ともに一致
+  - メモリDBで `db.select()` と `db.select(PHOTO_LIST_COLUMNS)` のJSONが完全一致。
+    キー順序と `createdAt` のDate型も維持
+  - 2352通りの異常入力で `legacy` / `manual` / 想定外の出どころが返らないこと、
+    既存関数の返す文字列が1件も変わらないことを確認
+  - 変更範囲は4ファイルのみ。schema / drizzle / 画面に差分なし
+- **未検証:** 実EXIFを持つ写真での抽出（オーナーが1枚上げて確認が必要）
+- **既存の不具合（今回は直していない）:**
+  - `upload-date.ts`: `File.lastModified` が JSのDate上限(8.64e15ms)を超えると
+    `toShotAt` が RangeError。**単位1以前から存在**。該当写真1枚が登録失敗になる
+  - `evidence-reporter`: 全部成功した実行でも空フォルダが残ることがある。
+    Playwrightが `.last-run.json` を書くのと削除が競合するため
+- **次の一手:** **オーナーの判断待ち。単位3以降へ自動で進まない**
+- **オーナー判断待ち:** 単位3〜7へ進むか / 上記2件の既存不具合を直すか /
+  56 commitsのpush / Finder型ビューの案（案B推奨）/ 束の判断1〜6
+- **触っていない範囲:** 製品画面 / schema / migration / Finder型ビュー / B-2 / B-3 /
+  元画像保存 / GPS / 画像解析 / キーワード / `camera` 列の既存の使われ方
+- **禁止範囲:** `db:push` / `db:migrate`（本番Tursoに当たる）/ push / deploy /
+  Railway / 本番DB・R2 / 環境変数 / 実写真アップロード
+- **Codex session:** 単位1・2 `019fa435-5457-7fd1-b813-5a086417f519`
+  （log: `scratch/codex-out-unit12.log`）
 - **Local commit:** 済。**Push: 未実施・禁止**
 - **Railway / production:** 未変更・対象外
 <!-- CURRENT_STATE_END -->

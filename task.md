@@ -1,44 +1,48 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-27 16:26 JST
+## Current State — 2026-07-27 17:20 JST
 
-- **Status:** 第1A独立監査の明確なバグ4件は実装・ローカル検証完了。commitのみ環境権限で未完了
-- **Current owner:** Codex（今回の差分を保持中。別AIは同じworktreeを編集しない）
-- **Handoff readiness:** Commit blocked。差分と検証結果は引き継ぎ可能
-- **現在の目的:** F1〜F4だけを修正し、API差し替えのsmoke回帰テストを追加して1コミットにする
-- **完了条件:** 4件修正 / 対応テストあり / `bun run check` 緑 / 1コミット / pushしない
+- **Status:** 第1B段階 B-1（写真をシートと流れに分ける純関数）完了・commit済み
+- **Current owner:** Claude Code（Codexは停止済み。B-1差分をClaudeが検証しcommit）
+- **Handoff readiness:** Ready。作業ツリーclean
+- **現在の目的:** 撮影日時の間隔が12時間以内で続く写真を候補化し、5枚以上を
+  自動シート、4枚以下を流れとして返す純関数と人工データのテストを追加する
+- **完了条件:** 境界・欠損日時・安定IDを新規テストで検証 / `bun run check` 緑 /
+  B-1だけで1コミット / pushしない → **すべて達成**
 - **Branch:** `main`
-- **HEAD:** `dc9c216`
-- **Git:** dirty（未ステージ4ファイル）
-- **Originとの差:** `origin/main` より42 commits ahead / 0 behind。**push禁止**
-- **変更中ファイル:**
-  - `packages/web/src/web/pages/admin.tsx`
-  - `packages/web/src/web/pages/admin-i18n.tsx`
-  - `scripts/smoke/admin-import-landing.spec.ts`
-  - `task.md`（このCurrent State更新のみ）
+- **HEAD:** SELF
+- **Git:** clean
+- **Originとの差:** `origin/main` より44 commits ahead / 0 behind。**push禁止**
 - **完了済み:**
-  - F1: 非同期完了時に最新の詳細写真・編集フォームを見るrefを追加
-  - F2: 取り込み世代と実行中進捗Mapを追加。最後に開始した世代だけが選択・目印を確定
-  - F3: 写真一覧の再取得成功を待って着地。失敗時は選択・目印を作らず汎用エラーを表示
-  - F4: 個々の写真ボタンの読み上げ名へ「今回追加」を追記。見た目は変更なし
-  - smokeテスト: F1/F2/F3/F4、再取得失敗、重複のみ、全件失敗、既存選択ありを追加
-- **検証済み:**
-  - `bun run check`: 514 pass / 0 fail、typecheck・lint・build成功
-  - 対象smokeファイル単体のTypeScript型確認: 成功
-  - `git diff --check`: 成功
-- **未検証:** `bun run smoke`（オーナー指示により実行禁止）/ 実アップロード（禁止）
-- **commit状況:** `git add` / `git commit` は `.git/index.lock: Operation not permitted` で失敗
-- **重要:** commitは1件も作成されておらず、ステージ済みファイルもない。差分は作業ツリーに残存
-- **次の一手:** `.git`へ書き込める環境で、このCurrent Stateを完了状態・`HEAD: SELF`へ直してから
-  上記4ファイルを明示指定し、1コミット作成する
-- **推奨commit名:** `fix(admin): 取り込み後の着地競合を修正`
-- **オーナー判断待ち:** commitを実行できる権限環境への切替
-- **触っていない範囲:** `⌘K`移動 / mobile Escリスナー / 自動スクロール / 第1B /
-  `styles.css` / DB schema / API / 仮想スクロール / 既存3モード構造
-- **禁止範囲:** push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード
-- **Codex session:** このCodexスレッド（session IDは環境から非公開）
-- **Local commit:** `dc9c216` のまま。**Push: 未実施・禁止**
+  - `photo-band.ts`: 12時間以内で連続する候補を5枚以上=sheet、4枚以下=flowに分類
+  - 定数 `BAND_GAP_HOURS = 12` / `BAND_MIN_PHOTOS = 5` を1か所に集約
+  - 日付をまたぐ短い間隔、同時刻、入力順の違いを決定的に処理
+  - `shotAt`欠損/不正時は`createdAt`を使用（既存admin.tsxの並べ替えと同じ規約）。
+    両方無い写真は単独flowとして末尾へ置く
+  - 写真ID集合の決定的ハッシュ＋`auto-sheet:` / `auto-flow:` 接頭辞で安定ID生成
+  - 将来の手動sheetを同じ`PhotoBandItem`配列へ足せる公開型（`source: auto|manual`）
+  - 人工データだけの新規テスト11件。既存テストは未変更
+- **検証済み（Claudeが独立実行）:**
+  - `bun run check`: **525 pass / 0 fail**（従来514件から11件増加）
+  - typecheck / lint / build: 成功
+  - `git diff --stat`: 画面・DB・API・仮想スクロール・`styles.css`に差分なし
+  - 性能実測: 496枚で最悪2.52ms（全部1シート）/ 1.36ms（全部単発）
+  - 実測した間隔分布の形だけを再現した人工496枚で、シート収容率75%を再現
+    （本番の実測値と一致。本番の写真データはテストへ複製していない）
+- **既知の性質（不具合ではない):** 区切りは隣り合う2枚の間隔だけで決まるため、
+  11時間おきに撮り続けた30枚は約2週間でも1シートになる。コメントとテストで固定済み。
+  シート1つの上限期間を設けるかは未決定
+- **未検証:** `bun run smoke`（B-1は画面に触れないため対象外）/ 実データでの見た目
+- **次の一手:** B-2（仮想スクロールの高さ不均一対応をブランチで試作）
+- **オーナー判断待ち:** 第1Aの画面確認（2px線の強さ・文言・Escの体感）/ 44 commitsのpush /
+  `styles.css`の構造 / iPhone Safari実機 / 取り込み後の自動スクロール / シートの上限期間
+- **触らない範囲:** `admin.tsx`を含む画面 / DB schema / API / 仮想スクロール本線 /
+  `styles.css` / 手動ロール機能 / B-3の最終UI
+- **禁止範囲:** push / deploy / Railway / 本番DB・R2 / 環境変数 /
+  実写真アップロード / 本番データのテスト複製
+- **Codex session:** `019fa289-9f35-7061-8467-52e4b40cebf4`（log: `scratch/codex-out-b1.log`）
+- **Local commit:** B-1 commit済み。**Push: 未実施・禁止**
 - **Railway / production:** 未変更・対象外
 <!-- CURRENT_STATE_END -->
 

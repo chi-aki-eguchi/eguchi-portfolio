@@ -314,7 +314,12 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
     await expect(
       page.locator("[data-library-recently-added-marker]"),
     ).toHaveCount(2);
-    await photoTile(page, 1).dragTo(photoTile(page, 2));
+    // ドラッグ元は写真全体ではなく取っ手。ID 1 を ID 3 に落とすと、
+    // 1 を一度抜いた [2, 3, 101, 102] の ID 3 の直前へ入るため、保存列は
+    // [2, 1, 3, 101, 102] になる。下方向でも「対象の直前」という新規則の確認。
+    await photoTile(page, 1)
+      .getByRole("button", { name: /ドラッグして並べ替え|Drag to reorder/ })
+      .dragTo(photoTile(page, 3));
     await expect.poll(() => harness.reorderRequests.length).toBe(1);
     expect(harness.reorderRequests[0]).toEqual([2, 1, 3, 101, 102]);
     await page

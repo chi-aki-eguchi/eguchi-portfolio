@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 // 【重要】この開発環境(bun run dev / bun run smoke)は本番と同じTursoデータベースに
 // 直接つながっている(ステージングDB分離なし)。スモークテストを追加する時は、
@@ -34,6 +34,47 @@ export function getAdminPassword(): string {
   }
   return m[1].trim();
 }
+
+// ── 書き込み事故の番人 ───────────────────────────────────────────────
+// 上のコメントは「ログイン以外の非GETは発生しない設計」と言っているだけで、
+// 実際に破られていないかを機械的に確かめる仕組みが無かった。ここで見張る。
+//
+// `loginAsAdmin` を通ったページで、ログイン以外の非GETがネットワークへ出たら
+// その要求を止めたうえで記録し、テスト自体を失敗させる。テストを止める前に
+// 握りつぶさないよう、afterEach で必ず突き合わせる。
+const forbiddenWrites: string[] = [];
+const LOGIN_PATH = "/api/admin/login";
+
+// **beforeEach で登録する理由**: Playwright は新しく登録した route を先に見る。
+// 各 spec が本文で登録するモック(`page.route`)より後に番人を入れると、番人が
+// モック済みの要求まで横取りして止めてしまう(実際に一度そうなった)。
+// beforeEach なら番人が最も古いハンドラになり、spec のモックが優先される。
+// つまり番人が見るのは「どのモックにも当たらず、本当にサーバーへ出る要求」だけ。
+test.beforeEach(async ({ page }) => {
+  forbiddenWrites.length = 0;
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const method = request.method();
+    if (method === "GET" || method === "HEAD") {
+      await route.fallback();
+      return;
+    }
+    if (new URL(request.url()).pathname === LOGIN_PATH) {
+      await route.fallback();
+      return;
+    }
+    forbiddenWrites.push(`${method} ${request.url()}`);
+    await route.abort();
+  });
+});
+
+test.afterEach(() => {
+  const seen = forbiddenWrites.splice(0, forbiddenWrites.length);
+  expect(
+    seen,
+    "本番と同じDBにつながっているため、ログイン以外の非GETは1件も許さない",
+  ).toEqual([]);
+});
 
 export async function loginAsAdmin(page: Page): Promise<void> {
   await page.goto("/admin/login");

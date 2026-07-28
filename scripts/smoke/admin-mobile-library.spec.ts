@@ -95,34 +95,45 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await expect(firstImage).toHaveAttribute("data-loaded", "true");
   await expect(firstImage).toHaveAttribute("data-broken", "true");
 
-  // 3列は写真を一覧する密度優先。並べるモードへ入っても40px角の
-  // 移動ボタンは写真を覆うため出さない。
+  // 通常モードの3列は写真を一覧する密度優先なので、移動ボタンを写真上へ
+  // 出さない。並べ替え開始時は2列へ切り替えるため、3列のまま覆うこともない。
+  await expect(tiles.nth(0).getByRole("button", { name: "前へ移動" })).toHaveCount(
+    0,
+  );
+  await expect(tiles.nth(0).getByRole("button", { name: "後へ移動" })).toHaveCount(
+    0,
+  );
   await page.locator('[data-library-mode-action="arrange"]').click();
   await expect(page.locator("[data-library-mode]")).toHaveAttribute(
     "data-library-mode",
     "arrange",
   );
+  await expect
+    .poll(
+      async () =>
+        tileGrid(page).evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        ),
+      { timeout: 10_000, message: `${width}pxで並べるモードは2列` },
+    )
+    .toBe(2);
   await expect(
     tiles.nth(0).getByRole("button", { name: "前へ移動" }),
-  ).toHaveCount(0);
+  ).toBeVisible();
   await expect(
     tiles.nth(0).getByRole("button", { name: "後へ移動" }),
-  ).toHaveCount(0);
-  await page.locator('[data-library-mode-action="finish-arrange"]').click();
-
-  // 2列へ戻して明示的に並べるモードへ入ると、既存のスマホ移動操作が使える。
-  await twoColumns.click();
-  await page.locator('[data-library-mode-action="arrange"]').click();
-  const unlock = page.getByRole("button", {
-    name: "並べ替えできる状態に戻す",
-  });
-  if ((await unlock.count()) > 0) await unlock.first().click();
-
-  const moveButton = tiles.nth(0).getByRole("button", { name: "後へ移動" });
-  await expect(moveButton).toBeVisible();
+  ).toBeVisible();
+  await expect(
+    tiles.nth(0).getByRole("button", { name: "先頭へ移動" }),
+  ).toBeVisible();
+  await expect(
+    tiles.nth(0).getByRole("button", { name: "末尾へ移動" }),
+  ).toBeVisible();
 
   // 回帰(Claude review P1): 並べ替えボタンを触っただけではスクロール扱いに
   // しない。touchstartでボタンが140ms消えると、タッチ操作が点滅して見える。
+  // 並べるモードは2列へ切り替わるので、その状態のボタンで確かめる。
+  const moveButton = tiles.nth(0).getByRole("button", { name: "後へ移動" });
   await moveButton.evaluate((button) => {
     const touch = new Touch({
       identifier: 1,
@@ -156,15 +167,8 @@ async function assertContactSheet(page: Page, width: number, height: number) {
     expect(b.x + b.width).toBeLessThanOrEqual(tileBox.x + tileBox.width + 1);
     expect(b.x).toBeGreaterThanOrEqual(tileBox.x - 1);
   }
-  // coarse では ⇤⇥(先頭/末尾)は40px×4個で167pxカードに収まらないため
-  // 非表示、前/次のみで並び替えは維持される
-  if (
-    (await tiles.nth(0).getByRole("button", { name: "前へ移動" }).count()) > 0
-  ) {
-    await expect(
-      tiles.nth(0).getByRole("button", { name: "先頭へ移動" }),
-    ).toHaveCount(0);
-  }
+  // 並べるモードは2列へ切り替わるため、coarseでも先頭/末尾を含む4操作が
+  // 欠けない。長距離の移動経路を密度優先の3列に押し込まない。
   await page.locator('[data-library-mode-action="finish-arrange"]').click();
 
   // タイルタップ → Inspector(モバイルはドロワー)が開く。編集していないので

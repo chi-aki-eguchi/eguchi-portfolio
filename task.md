@@ -1,65 +1,65 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-29 00:20 JST
+## Current State — 2026-07-29 05:10 JST
 
-- **Status:** 写真の並べ替えの安全化と操作改善を実装・独立検証・commit済み。
-  **オーナーの実画面確認待ち**
-- **Current owner:** Claude Code（Codexの実装は終了）
+- **Status:** push前の最終監査まで完了。**オーナーの最終承認待ち（pushは未実施）**
+- **Current owner:** Claude Code
 - **Handoff readiness:** Ready。main は clean
 - **Branch:** `main`（Finder試作は `prototype/finder-contact-sheet`、B-2は `prototype/b2-uneven-rows`）
 - **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より85 commits ahead / 0 behind。**push禁止（オーナーのみ）**
+- **Originとの差:** `origin/main` より86 commits ahead / 0 behind。**push禁止（オーナーのみ）**
 
-### 直近の作業（並べ替え）
+### 直近の作業（並べ替えの安全化 → 最終監査）
 
-Phase A（独立調査）→ Phase C（別セッションの反対レビュー）→ Phase D-1/D-2（実装）。
+Phase A（独立調査）→ Phase C（別セッションの反対レビュー）→ D-1/D-2（実装）→ 最終監査。
 共通記録は `docs/specs/library-reorder-safety.md`。反論はそのまま残し処置を付けてある。
 
 - `a73cddc` API に完全性検査と競合拒否（重複・未知ID・抜け・古いタブの上書き）
 - `5ae51bf` 手動順を受け取り順ではなく `sortOrder` から再構成（**根本対策**）
-- `c9e4985` ロックの明示 / 楽観更新と失敗時ロールバック / 保存中・保存済み・失敗の常設表示 /
+- `c9e4985` ロックの明示 / 楽観更新と失敗時ロールバック / 保存状態の常設表示 /
   直前1回のUndo / ドラッグの取っ手と挿入位置の統一 / 「何番目へ移動」/ スマホ2列 /
   壊れていた ⌘↑↓ 案内の削除
+- 本commit 書き込み事故の番人（smoke）＋異常系の単体テスト＋古い前提のsmoke 3本を更新
 
-**中心の事故経路**: `GET /photos` はサイト設定の並び順で返し、Library の「手動」は
-受け取り順をそのまま表示し、ロックは Library 内の選択値しか見ていなかった。
-設定が撮影日順なら1回のドラッグで保存済みの手動順が置き換わりうる状態だった。
+### 最終監査の結果（Claudeが独立実行）
 
-### 検証済み（Claudeが独立実行）
-
-- `bun run check`: **617 pass / 0 fail**（このセッション開始時 589）
-- admin smoke: **14 passed / 0 failed**（desktop と Pixel 7・390px の実ブラウザ）
-- 公開サイト smoke: 183 passed / 0 failed（並べ替えの変更前に実行）
-- 回帰テストは**壊れた状態で落ちること**を確認してから採用
-  （受け取り順の表示、Undo失敗時の巻き戻し、390pxの見出し、保存状態2件）
+- `bun run check`: **621 pass / 0 fail**（このセッション開始時 589）
+- 公開サイト smoke: **183 passed / 0 failed**
+- モック方式の admin smoke 4本: **14 passed / 0 failed**
+- ログイン方式の admin 主要回帰20本: **55 passed / 44 skipped / 0 failed**
+  （skipは各テストが1環境のみ対象のため。**非GETの検出は0件**）
+- `git diff --check` OK / handoff freshness OK
+- 秘密情報・scratch・ログ・スクリーンショットの追跡なし。`.env` は履歴にも無い
+- migration は7列追加の `0005` のみで本番の状態と一致。起動時は `db:push`（差分ゼロ）
+- 新規に必要な環境変数なし
 
 ### 未検証
 
-実機 iPhone / Safari。実ブラウザでのドラッグの見た目と操作感。
-本番DBの現在の `gallerySortOrder` の値。496枚の実データでの体感。
+実機 iPhone / Safari。実ブラウザでの指・マウスによるドラッグの掴みやすさ。
+本番DBの `gallerySortOrder` の現在値。本番データの `sortOrder` が健全かどうか。
 
 ### 次の一手
 
-**オーナーが実画面で確認する**（下記5項目）。その結果しだいで push の判断。
+**オーナーの最終承認 → `git push`**（Railway が自動でビルド・反映）。
+push後の確認先は下記5項目。
 
-### オーナーが確認する操作（5項目）
+### push後に確認する場所（5項目）
 
-1. Library →「並べる」。上部に「公開ギャラリーの手動順を変更中・1操作ごと自動保存」が出るか。
-   設定の並び順が手動以外なら、代わりに理由が出て並べ替えできないこと
-2. 取っ手をつかんで写真をドラッグ。**上下どちらでも「相手の直前」に入る**。
-   一番最後の写真へドラッグしても最後尾には入らない（末尾は「末尾へ移動」か位置指定）
-3. 1回動かしたあと「元に戻す」。戻った表示と保存結果が一致すること
-4. 「何番目へ移動」で 400番台など遠い位置へ1回で移動できること
-5. スマホ幅で「並べる」に入ると2列になり、先頭／末尾／位置指定がすべて出ること
+1. https://akieguchi.com/ — トップ・ギャラリー・シリーズ詳細が普通に出るか
+2. 管理画面 → Library →「並べる」— 案内文が出るか、または手動以外なら理由が出るか
+3. 取っ手をつかんでドラッグ — 上下どちらでも「相手の直前」に入る
+   （**最後の写真へドラッグしても最後尾には入らない**。末尾は「末尾へ移動」か位置指定）
+4. 1回動かして「元に戻す」— 表示と保存結果が一致するか
+5. スマホで「並べる」— 2列になり先頭／末尾／位置指定が出るか
 
 ### オーナー判断待ち
 
-- 85 commits の push
+- 86 commits の push（最終承認）
 - 「今回追加」区画の見た目（持ち越し）
-- Finder試作 A/B/C（B寄りで保留中。`docs/specs/library-finder-prototype.md`）
-- シリーズ個別の公開順設定まで見て警告を出すか（今回は未実装）
+- Finder試作 A/B/C（B寄りで保留。独立ビューは不採用。`docs/specs/library-finder-prototype.md`）
+- シリーズ個別の公開順設定まで見て警告を出すか（未実装）
 - Service の下書きがDB読込後に上書きされる件（未着手）
 
 ### 触っていない範囲
@@ -73,9 +73,8 @@ DB schema / 本番DB・R2 / `styles.css` / カテゴリ・シリーズ・料金�
 push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード /
 既存Libraryの置き換え / B-2の無条件マージ
 
-- **Codex session:** 並べ替え A `scratch/codex-out-reorder-a.log` / C `-reorder-c.log` /
-  D-1 `-reorder-d1.log` / D-2 `-reorder-d2.log`（先頭に session id）
-- **Local commit:** 済。**Push: 未実施・禁止**
+- **Codex session:** 並べ替え A/C/D-1/D-2 は `scratch/codex-out-reorder-*.log` の先頭に記録
+- **Local commit:** 済。**Push: 未実施・承認待ち**
 - **Railway / production:** コード未反映。本番への書き込みは一切していない
 <!-- CURRENT_STATE_END -->
 

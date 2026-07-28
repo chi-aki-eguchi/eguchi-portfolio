@@ -26,6 +26,50 @@ describe("reconstructManualPhotoOrder", () => {
     });
   });
 
+  // 異常系は「安全側に倒して並べ替えを始めさせない」が現在の仕様。
+  // ここで固定するのは今の挙動であって、仕様変更ではない。
+  test("rejects a missing sortOrder", () => {
+    expect(
+      reconstructManualPhotoOrder([
+        { id: 10, sortOrder: 0 },
+        { id: 20, sortOrder: undefined },
+      ]),
+    ).toEqual({ ok: false, reason: "missing-sort-order" });
+    expect(
+      reconstructManualPhotoOrder([
+        { id: 10, sortOrder: 0 },
+        { id: 20, sortOrder: null },
+      ]),
+    ).toEqual({ ok: false, reason: "missing-sort-order" });
+  });
+
+  test("rejects a duplicate sortOrder", () => {
+    expect(
+      reconstructManualPhotoOrder([
+        { id: 10, sortOrder: 3 },
+        { id: 20, sortOrder: 3 },
+      ]),
+    ).toEqual({ ok: false, reason: "duplicate-order" });
+  });
+
+  test("rejects a negative sortOrder", () => {
+    expect(
+      reconstructManualPhotoOrder([
+        { id: 10, sortOrder: 0 },
+        { id: 20, sortOrder: -1 },
+      ]),
+    ).toEqual({ ok: false, reason: "invalid-sort-order" });
+  });
+
+  test("rejects a fractional sortOrder", () => {
+    expect(
+      reconstructManualPhotoOrder([
+        { id: 10, sortOrder: 0 },
+        { id: 20, sortOrder: 1.5 },
+      ]),
+    ).toEqual({ ok: false, reason: "invalid-sort-order" });
+  });
+
   test("allows gaps left by deleted photos", () => {
     expect(
       reconstructManualPhotoOrder([

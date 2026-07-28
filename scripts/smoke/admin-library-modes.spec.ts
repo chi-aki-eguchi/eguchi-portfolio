@@ -5,6 +5,10 @@ const library = (page: Page) => page.locator("[data-library-mode]");
 const tiles = (page: Page) => page.locator(".admin-photo-tile");
 const photoAction = (page: Page, index: number) =>
   tiles(page).nth(index).locator("[data-library-photo-action]");
+const dragHandle = (page: Page, index: number) =>
+  tiles(page)
+    .nth(index)
+    .getByRole("button", { name: /ドラッグして並べ替え|Drag to reorder/ });
 const modeAction = (page: Page, action: string) =>
   page.locator(`[data-library-mode-action="${action}"]`);
 
@@ -23,6 +27,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       0,
     );
     await expect(page.locator("[data-library-arrange-toolbar]")).toHaveCount(0);
+    await expect(dragHandle(page, 0)).toHaveCount(0);
     await expect(
       tiles(page).first().locator(
         'button:not([data-library-photo-action])[aria-label*="90"]',
@@ -114,8 +119,10 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       0,
     );
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
-    await expect(photoAction(page, 0)).toHaveAttribute("class", /cursor-grab/);
-    await expect(tiles(page).first()).toHaveAttribute("draggable", "true");
+    // 写真全体ではなく取っ手だけがドラッグ元。通常モードには取っ手がなく、
+    // 並べるモードで初めて draggable な取っ手が現れる。
+    await expect(dragHandle(page, 0)).toHaveAttribute("draggable", "true");
+    await expect(photoAction(page, 0)).not.toHaveAttribute("draggable", "true");
     await photoAction(page, 0).click();
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
@@ -125,7 +132,8 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
 
     await modeAction(page, "finish-arrange").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
-    await expect(tiles(page).first()).toHaveAttribute("draggable", "false");
+    await expect(dragHandle(page, 0)).toHaveCount(0);
+    await expect(photoAction(page, 0)).not.toHaveAttribute("draggable", "true");
   });
 
   test("検索中は並べ替えをロックし、検索結果0件を区別する", async ({

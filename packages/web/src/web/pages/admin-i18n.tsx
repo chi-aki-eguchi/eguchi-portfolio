@@ -97,7 +97,7 @@ const ADMIN_PHASE_2B_JA = {
       startSelect: "選択モードを開始",
       startArrange: "並べるモードを開始",
       endSelection: "選択終了",
-      finishArrange: "完了",
+      finishArrange: "並べ替えを終了",
       selectionHint: "写真を押すと選択・解除できます",
       arrangeHint:
         "パソコンではドラッグ、スマホでは写真上の矢印で並べ替えます",
@@ -289,6 +289,14 @@ const ADMIN_PHASE_2B_JA = {
       tableHint: "Gallery表示に戻ると、Importから追加できます。",
     },
     reorder: {
+      activeLabel:
+        "公開ギャラリーの手動順を変更中・1操作ごと自動保存",
+      publicOrderLocked:
+        "現在の公開並びは手動順ではないため、ここでは並べ替えできません",
+      settingsLoading:
+        "公開ギャラリーの並び順を確認中のため、まだ並べ替えできません。",
+      settingsError:
+        "公開ギャラリーの並び順を取得できないため、並べ替えできません。再読み込みしてください。",
       lockedBySort:
         "並びが「手動」以外になっているため、いまは並び替えを保存できません。",
       lockedByFilter:
@@ -298,10 +306,30 @@ const ADMIN_PHASE_2B_JA = {
         "戻したあとは、パソコンでは写真をドラッグ、スマホでは写真の左下の矢印ボタンで並び替えられます。",
       seriesHint:
         "シリーズ内の並び替え — ここでの並びが公開シリーズページの表示順になります",
+      seriesPositionHint:
+        "位置番号は表示中シリーズ内の番号です。保存時は写真全体の順序へ反映します。",
+      saving: "保存中…一覧の確認が終わるまで操作できません",
+      saved: "保存済み",
+      conflict:
+        "別の画面で順序が変わったため保存できませんでした。最新の順序を取り直しました。",
+      undo: "直前の並べ替えを元に戻す",
+      undoSaving: "元に戻した順序を保存中…",
+      undoSaved: "元に戻した順序を保存しました",
+      undoFailed:
+        "元に戻した順序を保存できませんでした。Undo前の保存済み順へ戻しました。",
+      dragHandle: "ドラッグして並べ替え",
       moveFirst: "先頭へ移動",
       movePrevious: "前へ移動",
       moveNext: "後へ移動",
       moveLast: "末尾へ移動",
+      moveToPosition: "何番目へ移動",
+      positionTitle: "何番目へ移動",
+      positionDescription: (total: number) =>
+        `全${total}枚のうち、移動先の番号を入力してください。`,
+      seriesPositionDescription: (total: number) =>
+        `表示中シリーズ${total}枚のうち、移動先の番号を入力してください。`,
+      positionInput: "移動先の番号",
+      moveAction: "移動する",
     },
     badges: {
       noDate: "日付なし",
@@ -451,6 +479,8 @@ const ADMIN_PHASE_2B_JA = {
       albumSaveFailed: "スマートアルバムの保存に失敗しました。",
       orderSaved: "並び順を保存しました",
       reorderFailed: "並び替えの保存に失敗しました。",
+      reorderRefreshFailed:
+        "順序は保存されましたが、最新の一覧を確認できませんでした。再読み込みしてください。",
       invalidManualOrder:
         "保存済みの手動順を確認できないため、並べ替えを開始できません。再読み込みしてください。",
       refreshFailed:
@@ -1519,7 +1549,7 @@ const ADMIN_PHASE_2B_EN = {
       startSelect: "Start selection mode",
       startArrange: "Start arrange mode",
       endSelection: "End selection",
-      finishArrange: "Done",
+      finishArrange: "Finish arranging",
       selectionHint: "Tap a photo to select or deselect it",
       arrangeHint:
         "Drag on desktop, or use the arrow buttons on photos on mobile",
@@ -1712,6 +1742,14 @@ const ADMIN_PHASE_2B_EN = {
       tableHint: "Return to Gallery view to add photos with Import.",
     },
     reorder: {
+      activeLabel:
+        "Changing the public gallery's manual order · autosaves every move",
+      publicOrderLocked:
+        "The public order is not manual, so photos cannot be reordered here.",
+      settingsLoading:
+        "Checking the public gallery order. Reordering is unavailable until it loads.",
+      settingsError:
+        "The public gallery order could not be loaded, so reordering is unavailable. Reload the page.",
       lockedBySort:
         "The current sort is not Manual, so the saved order cannot be changed.",
       lockedByFilter:
@@ -1721,10 +1759,30 @@ const ADMIN_PHASE_2B_EN = {
         "After returning, drag photos on desktop or use the arrow buttons at the lower left of each photo on mobile.",
       seriesHint:
         "Reorder within this series — this order is used on the public series page",
+      seriesPositionHint:
+        "Position numbers refer to this visible series. Saving applies the change to the full photo order.",
+      saving: "Saving… controls stay locked until the refreshed list is ready",
+      saved: "Saved",
+      conflict:
+        "The order changed in another window, so this save was rejected. The latest order has been loaded.",
+      undo: "Undo the last reorder",
+      undoSaving: "Saving the restored order…",
+      undoSaved: "The restored order was saved",
+      undoFailed:
+        "Undo could not be saved. The last saved order before Undo has been restored.",
+      dragHandle: "Drag to reorder",
       moveFirst: "Move to first",
       movePrevious: "Move earlier",
       moveNext: "Move later",
       moveLast: "Move to last",
+      moveToPosition: "Move to position",
+      positionTitle: "Move to position",
+      positionDescription: (total: number) =>
+        `Enter a position among all ${total} photos.`,
+      seriesPositionDescription: (total: number) =>
+        `Enter a position among the ${total} photos in this visible series.`,
+      positionInput: "Destination position",
+      moveAction: "Move",
     },
     badges: {
       noDate: "No date",
@@ -1876,6 +1934,8 @@ const ADMIN_PHASE_2B_EN = {
       albumSaveFailed: "Could not save the smart album.",
       orderSaved: "Sort order saved",
       reorderFailed: "Could not save the sort order.",
+      reorderRefreshFailed:
+        "The order was saved, but the latest list could not be confirmed. Reload the page.",
       invalidManualOrder:
         "The saved manual order is invalid, so reordering is unavailable. Reload the page.",
       refreshFailed:

@@ -91,3 +91,69 @@ export function moveToViewEdge(
   ids.splice(pos === "start" ? aIdx : aIdx + 1, 0, id);
   return ids;
 }
+
+/**
+ * Move `id` to a one-based position in the visible list, while applying the
+ * change to the global order. In a single-series view, "10" therefore means
+ * the 10th photo in that series, without renumbering unrelated photos.
+ */
+export function moveToViewPosition(
+  allIds: number[],
+  viewIds: number[],
+  id: number,
+  oneBasedPosition: number,
+): number[] | null {
+  if (!Number.isInteger(oneBasedPosition)) return null;
+  const currentIndex = viewIds.indexOf(id);
+  if (
+    currentIndex < 0 ||
+    oneBasedPosition < 1 ||
+    oneBasedPosition > viewIds.length ||
+    currentIndex === oneBasedPosition - 1
+  ) {
+    return null;
+  }
+  const others = viewIds.filter((viewId) => viewId !== id);
+  const insertIndex = oneBasedPosition - 1;
+  const ids = [...allIds];
+  const sourceIndex = ids.indexOf(id);
+  if (sourceIndex < 0) return null;
+  ids.splice(sourceIndex, 1);
+  if (insertIndex >= others.length) {
+    const lastIndex = ids.indexOf(others[others.length - 1]);
+    if (lastIndex < 0) return null;
+    ids.splice(lastIndex + 1, 0, id);
+    return ids;
+  }
+  const anchorIndex = ids.indexOf(others[insertIndex]);
+  if (anchorIndex < 0) return null;
+  ids.splice(anchorIndex, 0, id);
+  return ids;
+}
+
+/**
+ * Dragging always inserts immediately BEFORE the tile being pointed at.
+ * Keeping one rule for every direction avoids the old up/down inconsistency.
+ */
+export function moveBeforeViewTarget(
+  allIds: number[],
+  viewIds: number[],
+  sourceId: number,
+  targetId: number,
+): number[] | null {
+  if (
+    sourceId === targetId ||
+    !viewIds.includes(sourceId) ||
+    !viewIds.includes(targetId)
+  ) {
+    return null;
+  }
+  const ids = [...allIds];
+  const sourceIndex = ids.indexOf(sourceId);
+  if (sourceIndex < 0) return null;
+  ids.splice(sourceIndex, 1);
+  const targetIndex = ids.indexOf(targetId);
+  if (targetIndex < 0) return null;
+  ids.splice(targetIndex, 0, sourceId);
+  return ids;
+}

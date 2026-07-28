@@ -3,7 +3,6 @@ import {
   adminPhotoSrc,
   computeVirtualGridWindow,
   effectiveLibraryThumbSize,
-  showLibraryJumpButtons,
 } from "../pages/admin";
 
 describe("admin library virtual grid", () => {
@@ -158,19 +157,5 @@ describe("effectiveLibraryThumbSize", () => {
     expect(effectiveLibraryThumbSize({ thumbSize: 220, gridWidth: 0 })).toBe(
       220,
     );
-  });
-});
-
-// タッチ端末では admin-tap-sm が40px角になり、⇤前次⇥の4ボタン+gap12pxで
-// 最低172px必要 — 2列時の167pxカードからはみ出すため出し分ける。
-describe("showLibraryJumpButtons", () => {
-  test("coarse pointer hides jumps on 2-column cards (167px < 172px needed)", () => {
-    expect(showLibraryJumpButtons(167, true)).toBe(false);
-    expect(showLibraryJumpButtons(180, true)).toBe(true);
-  });
-
-  test("fine pointer keeps the previous 120px floor (24px buttons fit)", () => {
-    expect(showLibraryJumpButtons(120, false)).toBe(true);
-    expect(showLibraryJumpButtons(119, false)).toBe(false);
   });
 });

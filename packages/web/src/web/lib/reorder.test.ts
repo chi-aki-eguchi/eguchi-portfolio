@@ -1,7 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import {
+  moveBeforeViewTarget,
   moveRelativeToViewNeighbor,
   moveToViewEdge,
+  moveToViewPosition,
   reconstructManualPhotoOrder,
 } from "./reorder";
 
@@ -85,5 +87,42 @@ describe("moveToViewEdge", () => {
 
   test("single visible photo is a no-op (null)", () => {
     expect(moveToViewEdge(all, [2], 2, "start")).toBeNull();
+  });
+});
+
+describe("moveToViewPosition", () => {
+  test("unfiltered: moves to an exact one-based position", () => {
+    expect(moveToViewPosition(all, all, 2, 4)).toEqual([1, 3, 4, 2, 5]);
+    expect(moveToViewPosition(all, all, 4, 2)).toEqual([1, 4, 2, 3, 5]);
+  });
+
+  test("series scope: position is within the visible series", () => {
+    const global = [1, 2, 3, 4, 5, 6, 7];
+    const series = [2, 4, 6];
+    expect(moveToViewPosition(global, series, 2, 3)).toEqual([
+      1, 3, 4, 5, 6, 2, 7,
+    ]);
+    expect(moveToViewPosition(global, series, 6, 1)).toEqual([
+      1, 6, 2, 3, 4, 5, 7,
+    ]);
+  });
+
+  test("rejects invalid, unchanged, and unknown positions", () => {
+    expect(moveToViewPosition(all, all, 2, 2)).toBeNull();
+    expect(moveToViewPosition(all, all, 2, 0)).toBeNull();
+    expect(moveToViewPosition(all, all, 2, 6)).toBeNull();
+    expect(moveToViewPosition(all, all, 99, 2)).toBeNull();
+  });
+});
+
+describe("moveBeforeViewTarget", () => {
+  test("always inserts before the target when moving down or up", () => {
+    expect(moveBeforeViewTarget(all, all, 2, 4)).toEqual([1, 3, 2, 4, 5]);
+    expect(moveBeforeViewTarget(all, all, 4, 2)).toEqual([1, 4, 2, 3, 5]);
+  });
+
+  test("keeps the same before-target rule in a series scope", () => {
+    expect(moveBeforeViewTarget(all, view, 2, 4)).toEqual([1, 3, 2, 4, 5]);
+    expect(moveBeforeViewTarget(all, view, 4, 2)).toEqual([1, 4, 2, 3, 5]);
   });
 });

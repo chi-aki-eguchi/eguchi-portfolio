@@ -23,7 +23,11 @@ import {
   rotateRotationDeg,
   srcFor,
 } from "../lib/picture";
-import { moveRelativeToViewNeighbor, moveToViewEdge } from "../lib/reorder";
+import {
+  moveRelativeToViewNeighbor,
+  moveToViewEdge,
+  reconstructManualPhotoOrder,
+} from "../lib/reorder";
 import { splitRecentlyAddedPhotos } from "../lib/recently-added-photos";
 import { shouldLandOnSetup } from "../lib/setup-flow";
 import {
@@ -2232,9 +2236,20 @@ export function GalleryTab({
 
   // Memoize so the reference is stable while react-query data is unchanged —
   // otherwise dependent useMemo/effects re-run every render.
-  const allPhotos = useMemo(
+  const receivedPhotos = useMemo(
     () => (photosData?.photos ?? []) as Photo[],
     [photosData],
+  );
+  const manualOrder = useMemo(
+    () => reconstructManualPhotoOrder(receivedPhotos),
+    [receivedPhotos],
+  );
+  // The API array can follow the public gallery setting. Library's base array
+  // instead follows the saved manual ranks so "manual" display and every
+  // reorder input refer to the same order.
+  const allPhotos = useMemo(
+    () => (manualOrder.ok ? manualOrder.photos : receivedPhotos),
+    [manualOrder, receivedPhotos],
   );
   const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
 
@@ -3492,18 +3507,48 @@ export function GalleryTab({
 
   // Reorder
   const reorder = useMutation({
-    mutationFn: async (ids: number[]) => {
-      const res = await adminApi.photos.reorder.$post({ json: { ids } });
-      assertOk(res);
+    mutationFn: async ({
+      ids,
+      expectedIds,
+    }: {
+      ids: number[];
+      expectedIds: number[];
+    }) => {
+      const res = await adminApi.photos.reorder.$post({
+        json: { ids, expectedIds },
+      });
+      if (!res.ok) {
+        if (res.status === 401) assertOk(res);
+        throw new Error(await responseErrorMessage(res));
+      }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setActionError("");
-      qc.invalidateQueries({ queryKey: ["photos"] });
+      await qc.invalidateQueries(
+        { queryKey: ["photos"] },
+        { cancelRefetch: false },
+      );
       setBatchToast(copy.feedback.orderSaved);
       setTimeout(() => setBatchToast(null), 1500);
     },
-    onError: onActionError(copy.feedback.reorderFailed),
+    onError: (error) =>
+      setActionError(
+        error instanceof Error && error.message
+          ? error.message
+          : copy.feedback.reorderFailed,
+      ),
   });
+
+  const savePhotoOrder = (
+    ids: number[],
+    options?: Parameters<typeof reorder.mutate>[1],
+  ) => {
+    if (!manualOrder.ok) {
+      setActionError(copy.feedback.invalidManualOrder);
+      return;
+    }
+    reorder.mutate({ ids, expectedIds: manualOrder.ids }, options);
+  };
 
   // 一括編集テーブルからの単行セーブ（部分更新）
   const bulkEditSave = async (id: number, data: BulkEditSaveData) => {
@@ -3819,6 +3864,10 @@ export function GalleryTab({
     nextMode: LibraryMode,
     afterChange?: () => void,
   ) => {
+    if (nextMode === "arrange" && !manualOrder.ok) {
+      setActionError(copy.feedback.invalidManualOrder);
+      return;
+    }
     const proceed = () => applyLibraryMode(nextMode, afterChange);
     const currentInspectPhoto = inspectPhotoRef.current;
     if (
@@ -3901,7 +3950,7 @@ export function GalleryTab({
       id,
       delta,
     );
-    if (ids) reorder.mutate(ids);
+    if (ids) savePhotoOrder(ids);
   };
 
   const movePhotoTo = (id: number, pos: "start" | "end") => {
@@ -3912,7 +3961,7 @@ export function GalleryTab({
       id,
       pos,
     );
-    if (ids) reorder.mutate(ids);
+    if (ids) savePhotoOrder(ids);
   };
 
   const rotateLibraryPhoto = (photo: Photo, delta: -90 | 90) => {
@@ -4048,7 +4097,7 @@ export function GalleryTab({
     if (fromIdx < 0 || toIdx < 0) return;
     ids.splice(fromIdx, 1);
     ids.splice(toIdx, 0, dragSrcId);
-    reorder.mutate(ids);
+    savePhotoOrder(ids);
     setDragSrcId(null);
     setDragOverId(null);
   };
@@ -4411,7 +4460,13 @@ export function GalleryTab({
                       uploading ||
                       showTrash ||
                       bulkEditMode ||
-                      allPhotos.length === 0
+                      allPhotos.length === 0 ||
+                      !manualOrder.ok
+                    }
+                    title={
+                      !manualOrder.ok
+                        ? copy.feedback.invalidManualOrder
+                        : undefined
                     }
                     aria-label={copy.mode.startArrange}
                     className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -4419,6 +4474,14 @@ export function GalleryTab({
                     {copy.mode.arrange}
                   </button>
                 </fieldset>
+            {!manualOrder.ok && (
+              <span
+                role="alert"
+                className="text-[length:var(--admin-text-note)] text-amber-300/80"
+              >
+                {copy.feedback.invalidManualOrder}
+              </span>
+            )}
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
               <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
@@ -4467,7 +4530,7 @@ export function GalleryTab({
                       message: copy.sort.saveConfirm,
                       confirmLabel: copy.sort.saveAction,
                       onConfirm: () =>
-                        reorder.mutate(
+                        savePhotoOrder(
                           sortPhotosForView(allPhotos).map((p) => p.id),
                           {
                             onSuccess: () => setLibrarySort("manual"),

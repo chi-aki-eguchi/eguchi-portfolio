@@ -4,6 +4,44 @@
 // drives both the library and the public series pages, so a "±1 in the series"
 // must splice the full list, not the subset.
 
+export type ManualOrderResult<T> =
+  | { ok: true; photos: T[]; ids: number[] }
+  | {
+      ok: false;
+      reason: "missing-sort-order" | "invalid-sort-order" | "duplicate-order";
+    };
+
+/**
+ * Reconstruct the saved manual order from sortOrder rather than trusting the
+ * API response array, which may be sorted by a public gallery setting.
+ *
+ * Gaps are valid (soft-deleted photos can leave them behind), but every active
+ * photo needs one unique, non-negative integer rank.
+ */
+export function reconstructManualPhotoOrder<
+  T extends { id: number; sortOrder?: number | null },
+>(photos: readonly T[]): ManualOrderResult<T> {
+  const seenOrders = new Set<number>();
+  for (const photo of photos) {
+    if (photo.sortOrder == null) {
+      return { ok: false, reason: "missing-sort-order" };
+    }
+    if (!Number.isInteger(photo.sortOrder) || photo.sortOrder < 0) {
+      return { ok: false, reason: "invalid-sort-order" };
+    }
+    if (seenOrders.has(photo.sortOrder)) {
+      return { ok: false, reason: "duplicate-order" };
+    }
+    seenOrders.add(photo.sortOrder);
+  }
+  const ordered = [...photos].sort(
+    (left, right) =>
+      (left.sortOrder as number) - (right.sortOrder as number) ||
+      left.id - right.id,
+  );
+  return { ok: true, photos: ordered, ids: ordered.map((photo) => photo.id) };
+}
+
 /**
  * Move `id` one step relative to its neighbour in the visible list.
  * delta -1 lands immediately BEFORE the previous visible item; +1 lands

@@ -1,10 +1,53 @@
 import { describe, test, expect } from "bun:test";
-import { moveRelativeToViewNeighbor, moveToViewEdge } from "./reorder";
+import {
+  moveRelativeToViewNeighbor,
+  moveToViewEdge,
+  reconstructManualPhotoOrder,
+} from "./reorder";
 
 // Library: a..d are other photos; s/c belong to the filtered series view.
 // all = [a(1), s(2), b(3), c(4), d(5)]   view = [s(2), c(4)]
 const all = [1, 2, 3, 4, 5];
 const view = [2, 4];
+
+describe("reconstructManualPhotoOrder", () => {
+  test("uses sortOrder even when the API array arrives in another order", () => {
+    const received = [
+      { id: 30, sortOrder: 12 },
+      { id: 10, sortOrder: 2 },
+      { id: 20, sortOrder: 7 },
+    ];
+    expect(reconstructManualPhotoOrder(received)).toEqual({
+      ok: true,
+      photos: [received[1], received[2], received[0]],
+      ids: [10, 20, 30],
+    });
+  });
+
+  test("allows gaps left by deleted photos", () => {
+    expect(
+      reconstructManualPhotoOrder([
+        { id: 10, sortOrder: 2 },
+        { id: 20, sortOrder: 8 },
+      ]),
+    ).toMatchObject({ ok: true, ids: [10, 20] });
+  });
+
+  test.each([
+    ["missing", [{ id: 10 }]],
+    [
+      "duplicate",
+      [
+        { id: 10, sortOrder: 1 },
+        { id: 20, sortOrder: 1 },
+      ],
+    ],
+    ["negative", [{ id: 10, sortOrder: -1 }]],
+    ["fraction", [{ id: 10, sortOrder: 1.5 }]],
+  ])("blocks reorder when sortOrder is %s", (_label, photos) => {
+    expect(reconstructManualPhotoOrder(photos).ok).toBe(false);
+  });
+});
 
 describe("moveRelativeToViewNeighbor", () => {
   test("unfiltered: behaves as a plain adjacent move", () => {

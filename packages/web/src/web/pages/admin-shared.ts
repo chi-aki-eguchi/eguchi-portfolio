@@ -231,6 +231,7 @@ export type Photo = {
   focalX?: number | null;
   focalY?: number | null;
   fileHash?: string | null;
+  sortOrder?: number | null;
   deletedAt?: number | null;
   createdAt?: string | number | null;
 };

@@ -451,6 +451,8 @@ const ADMIN_PHASE_2B_JA = {
       albumSaveFailed: "スマートアルバムの保存に失敗しました。",
       orderSaved: "並び順を保存しました",
       reorderFailed: "並び替えの保存に失敗しました。",
+      invalidManualOrder:
+        "保存済みの手動順を確認できないため、並べ替えを開始できません。再読み込みしてください。",
       refreshFailed:
         "操作に失敗しました。通信状況を確認するか、再ログインしてください。",
       switchPhotoConfirm:
@@ -1874,6 +1876,8 @@ const ADMIN_PHASE_2B_EN = {
       albumSaveFailed: "Could not save the smart album.",
       orderSaved: "Sort order saved",
       reorderFailed: "Could not save the sort order.",
+      invalidManualOrder:
+        "The saved manual order is invalid, so reordering is unavailable. Reload the page.",
       refreshFailed:
         "The operation failed. Check your connection or sign in again.",
       switchPhotoConfirm:

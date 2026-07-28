@@ -1,74 +1,71 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-28 17:20 JST
+## Current State — 2026-07-29 00:20 JST
 
-- **Status:** オーナー不在中の自律作業を完了。**製品コードの修正5件・テスト拡張3件を
-  commit 済み。オーナーの実画面確認待ち**
-- **Current owner:** Claude Code（Codexの実装はすべて終了）
+- **Status:** 写真の並べ替えの安全化と操作改善を実装・独立検証・commit済み。
+  **オーナーの実画面確認待ち**
+- **Current owner:** Claude Code（Codexの実装は終了）
 - **Handoff readiness:** Ready。main は clean
 - **Branch:** `main`（Finder試作は `prototype/finder-contact-sheet`、B-2は `prototype/b2-uneven-rows`）
 - **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より79 commits ahead / 0 behind。**push禁止（オーナーのみ）**
-- **本番DBの移行:** 適用済み（写真メタデータ用7列）。今回のセッションでDBは一切触っていない
+- **Originとの差:** `origin/main` より85 commits ahead / 0 behind。**push禁止（オーナーのみ）**
 
-### 今回入れた製品コードの修正（すべてローカルのみ）
+### 直近の作業（並べ替え）
 
-1. `67e8cd7` **設定APIの失敗応答を「取得成功」として使わない**（最も影響が大きい）。
-   起動時の先回り取得が応答の成否を確かめずに本文を読んでいたため、500の本文が
-   設定として使われ、**既定値が「現在の設定」に見えて保存で上書きしうる**状態だった
-2. `5c66c36` 設定を読み込めないとき、既定値を編集させず失敗表示と再試行を出す
-   （Profile / Service / Settings）
-3. `87b0e4b` 値を元に戻したら未保存表示が消える／保存失敗後に破棄したらエラー表示も消える
-4. `b15467f` キーボードでフォーカスした削除ボタン等が見える（hoverでしか出ていなかった）
-5. `78357f6` 390pxで管理画面の見出しが1文字ずつ縦に積まれる（実測 幅37px×高さ383px）
+Phase A（独立調査）→ Phase C（別セッションの反対レビュー）→ Phase D-1/D-2（実装）。
+共通記録は `docs/specs/library-reorder-safety.md`。反論はそのまま残し処置を付けてある。
 
-### 今回入れたテスト（本番DBへ触らない形）
+- `a73cddc` API に完全性検査と競合拒否（重複・未知ID・抜け・古いタブの上書き）
+- `5ae51bf` 手動順を受け取り順ではなく `sortOrder` から再構成（**根本対策**）
+- `c9e4985` ロックの明示 / 楽観更新と失敗時ロールバック / 保存中・保存済み・失敗の常設表示 /
+  直前1回のUndo / ドラッグの取っ手と挿入位置の統一 / 「何番目へ移動」/ スマホ2列 /
+  壊れていた ⌘↑↓ 案内の削除
 
-- `59bf064` 公開サイトsmokeに本物のタッチ端末（Pixel 7・390px）を追加。人工画像を64pxへ
-- `0f7e758` `/series/:slug`・`/profile`・`/portfolio-kit`・`/start` をsmokeへ追加（123→183件）
-- `2eab08b` 管理画面の保存状態をブラウザで固定。**ログインせずAPIを人工データで塞ぐ**方式を確立
-  （非GETが1件でも出たらテストが落ちる）
+**中心の事故経路**: `GET /photos` はサイト設定の並び順で返し、Library の「手動」は
+受け取り順をそのまま表示し、ロックは Library 内の選択値しか見ていなかった。
+設定が撮影日順なら1回のドラッグで保存済みの手動順が置き換わりうる状態だった。
 
 ### 検証済み（Claudeが独立実行）
 
-- `bun run check`: **597 pass / 0 fail**（開始時589）
-- 公開サイト smoke: **183 passed / 0 failed**（desktop / mobile / mobile-touch）
-- admin の追加smoke: **7 passed / 0 failed**
-- 回帰テストは**修正前に落ちること**を確認してから採用（保存状態2件・390px見出し）
+- `bun run check`: **617 pass / 0 fail**（このセッション開始時 589）
+- admin smoke: **14 passed / 0 failed**（desktop と Pixel 7・390px の実ブラウザ）
+- 公開サイト smoke: 183 passed / 0 failed（並べ替えの変更前に実行）
+- 回帰テストは**壊れた状態で落ちること**を確認してから採用
+  （受け取り順の表示、Undo失敗時の巻き戻し、390pxの見出し、保存状態2件）
 
 ### 未検証
 
-- 実機 iPhone / Safari。公開サイトの本番反映（push していないため当然未反映）
-- admin の既存smoke全体（本番DBにつながるため実行していない）
-- Finder試作の実写真での見え方
+実機 iPhone / Safari。実ブラウザでのドラッグの見た目と操作感。
+本番DBの現在の `gallerySortOrder` の値。496枚の実データでの体感。
 
 ### 次の一手
 
-- **オーナーが実画面で確認する**（下記「確認してほしい場所」）
-- Finder試作を続けるか決める（`docs/specs/library-finder-prototype.md` の A/B/C）
+**オーナーが実画面で確認する**（下記5項目）。その結果しだいで push の判断。
 
-### 確認してほしい場所（オーナー）
+### オーナーが確認する操作（5項目）
 
-1. 管理画面を **390px幅**で開き、「はじめに」の見出しが読めること
-2. Settings で値を変えて元に戻すと、下の保存バーが消えること
-3. キーボードの Tab で Categories の削除ボタンへ移動したとき、見えること
-4. Finder試作: `cd /Users/chiaki/eguchi-finder-proto && bun run dev` →
-   `/admin?finder-prototype=1` → Library の「Finder試作」
+1. Library →「並べる」。上部に「公開ギャラリーの手動順を変更中・1操作ごと自動保存」が出るか。
+   設定の並び順が手動以外なら、代わりに理由が出て並べ替えできないこと
+2. 取っ手をつかんで写真をドラッグ。**上下どちらでも「相手の直前」に入る**。
+   一番最後の写真へドラッグしても最後尾には入らない（末尾は「末尾へ移動」か位置指定）
+3. 1回動かしたあと「元に戻す」。戻った表示と保存結果が一致すること
+4. 「何番目へ移動」で 400番台など遠い位置へ1回で移動できること
+5. スマホ幅で「並べる」に入ると2列になり、先頭／末尾／位置指定がすべて出ること
 
 ### オーナー判断待ち
 
-- 79 commits の push
-- 「今回追加」区画の見た目（前回からの持ち越し）
-- Finder試作 A（続ける）/ B（表示切替として縮める）/ C（捨てる）
-- `library-band-decisions.md` の判断（**判断1は前提が古い**。一時区画は実装済み）
-- Service の下書きがDB読込後に上書きされる件（今回は触っていない）
+- 85 commits の push
+- 「今回追加」区画の見た目（持ち越し）
+- Finder試作 A/B/C（B寄りで保留中。`docs/specs/library-finder-prototype.md`）
+- シリーズ個別の公開順設定まで見て警告を出すか（今回は未実装）
+- Service の下書きがDB読込後に上書きされる件（未着手）
 
 ### 触っていない範囲
 
-`sort_order` / `shot_at` / 並び順設定 / DB / API / schema / `styles.css` /
-`computeVirtualGridWindow` / `photo-band.ts` / B-2 / 撮影情報プリセットの即時保存 /
+DB schema / 本番DB・R2 / `styles.css` / カテゴリ・シリーズ・料金・Hero の並べ替え /
+複数枚移動 / 編集セッション方式 / Undo・Redo履歴 / Finder試作のmain統合 /
 公開文章・写真・価格
 
 ### 禁止範囲
@@ -76,10 +73,10 @@
 push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード /
 既存Libraryの置き換え / B-2の無条件マージ
 
-- **Codex session:** Finder C `019fa70e` / Finder D `019fa766` / Settings A・D 他は
-  `scratch/codex-out-*.log` の先頭に記録
-- **Local commit:** 済（9件）。**Push: 未実施・禁止**
-- **Railway / production:** コード未反映。今回のセッションで本番へは一切書き込んでいない
+- **Codex session:** 並べ替え A `scratch/codex-out-reorder-a.log` / C `-reorder-c.log` /
+  D-1 `-reorder-d1.log` / D-2 `-reorder-d2.log`（先頭に session id）
+- **Local commit:** 済。**Push: 未実施・禁止**
+- **Railway / production:** コード未反映。本番への書き込みは一切していない
 <!-- CURRENT_STATE_END -->
 
 <!--

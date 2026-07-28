@@ -54,6 +54,42 @@ import {
 
 const DEFAULT_THEME_BG = "#f7f7f7";
 
+// Settings are the authoritative source for these tabs.  Do not render an
+// editable fallback when that source could not be read: Service in particular
+// parses an absent value as its defaults, which must never look like saved data.
+function SettingsLoadError({
+  title,
+  onRetry,
+}: {
+  title: string;
+  onRetry: () => void;
+}) {
+  const { t } = useAdminI18n();
+  return (
+    <PageShell width="wide">
+      <PageHeader title={title} />
+      <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
+        <h2 className="text-[length:var(--admin-text-body)] text-amber-900">
+          {t.setup.loadError.title}
+        </h2>
+        <p className="text-[length:var(--admin-text-body)] leading-6 text-amber-800">
+          {t.setup.loadError.body}
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="px-3 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm"
+        >
+          {t.setup.loadError.retry}
+        </button>
+        <p className="text-[length:var(--admin-text-note)] leading-5 text-amber-800">
+          {t.setup.loadError.contact}
+        </p>
+      </div>
+    </PageShell>
+  );
+}
+
 // Single source of truth for the 9 gallery layout choices, shared by the
 // Settings→ギャラリー配置 picker and the per-series layout override picker.
 // Category grouping + one-line desc per docs/specs request (2026-07-09):
@@ -830,10 +866,11 @@ export function ProfileTab({
   const copy = t.phase2b.profile;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
+  const initialLoadFailed = isError && data === undefined;
 
   // V: the unsaved draft survives tab switches / page moves.
   const [form, setForm] = usePersistentState<Record<string, string>>(
@@ -848,18 +885,18 @@ export function ProfileTab({
   // Report unsaved-draft state so tab switches can warn (data-loss guard)
   const hasUnsaved = hasUnsavedSettingsDraft(form, data);
   useEffect(() => {
-    onUnsavedChange?.(hasUnsaved);
-  }, [hasUnsaved, onUnsavedChange]);
+    onUnsavedChange?.(initialLoadFailed ? false : hasUnsaved);
+  }, [hasUnsaved, initialLoadFailed, onUnsavedChange]);
   useEffect(() => () => onUnsavedChange?.(false), [onUnsavedChange]);
   // Warn on browser close/reload with unsaved changes
   useEffect(() => {
-    if (!hasUnsaved) return;
+    if (initialLoadFailed || !hasUnsaved) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [hasUnsaved]);
+  }, [hasUnsaved, initialLoadFailed]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -933,6 +970,15 @@ export function ProfileTab({
         <Loader2 size={14} className="animate-spin" /> Loading...
       </div>
     );
+
+  if (initialLoadFailed) {
+    return (
+      <SettingsLoadError
+        title={t.navigation.tabs.profile}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   const fields = [
     {
@@ -2657,10 +2703,11 @@ export function ServiceTab({
 }) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
+  const initialLoadFailed = isError && data === undefined;
 
   const saved = parseServicePageConfig(data?.servicePageConfig);
   const [draft, setDraft] = usePersistentState<ServicePageConfig>(
@@ -2683,15 +2730,15 @@ export function ServiceTab({
   const hasChanges = JSON.stringify(draft) !== JSON.stringify(saved);
 
   useEffect(() => {
-    onUnsavedChange?.(hasChanges);
-  }, [hasChanges, onUnsavedChange]);
+    onUnsavedChange?.(initialLoadFailed ? false : hasChanges);
+  }, [hasChanges, initialLoadFailed, onUnsavedChange]);
 
   useEffect(() => {
-    if (!hasChanges) return;
+    if (initialLoadFailed || !hasChanges) return;
     const handler = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [hasChanges]);
+  }, [hasChanges, initialLoadFailed]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -2744,6 +2791,15 @@ export function ServiceTab({
         <Loader2 size={20} className="animate-spin text-[var(--admin-muted)]" />
       </div>
     );
+
+  if (initialLoadFailed) {
+    return (
+      <SettingsLoadError
+        title={t.navigation.tabs.service}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   return (
     <PageShell width="wide">
@@ -3521,10 +3577,11 @@ export function SettingsTab({
   const copy = t.phase2b.settingsBasic;
   const copyIntegrations = t.phase2b.settingsIntegrations;
   const copyDesign = t.phase2b.settingsDesign;
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
+  const initialLoadFailed = isError && data === undefined;
 
   // V: the unsaved draft and preview prefs survive tab switches / page moves.
   const [form, setForm] = usePersistentState<Record<string, string>>(
@@ -3677,16 +3734,16 @@ export function SettingsTab({
   // hooks than during the previous render") the moment isLoading flips.
   const hasUnsaved = hasUnsavedSettingsDraft(form, data);
   useEffect(() => {
-    onUnsavedChange?.(hasUnsaved);
-  }, [hasUnsaved, onUnsavedChange]);
+    onUnsavedChange?.(initialLoadFailed ? false : hasUnsaved);
+  }, [hasUnsaved, initialLoadFailed, onUnsavedChange]);
   useEffect(() => {
-    if (!hasUnsaved) return;
+    if (initialLoadFailed || !hasUnsaved) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [hasUnsaved]);
+  }, [hasUnsaved, initialLoadFailed]);
 
   if (isLoading)
     return (
@@ -3694,6 +3751,15 @@ export function SettingsTab({
         <Loader2 size={14} className="animate-spin" /> Loading...
       </div>
     );
+
+  if (initialLoadFailed) {
+    return (
+      <SettingsLoadError
+        title={t.navigation.tabs.settings}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   const fields = [
     { key: "siteName", ...copy.siteBasics.fields.siteName },

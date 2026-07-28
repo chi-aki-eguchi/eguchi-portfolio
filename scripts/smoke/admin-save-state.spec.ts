@@ -88,6 +88,57 @@ async function openAdminTab(page: Page, label: string) {
 }
 
 test.describe("admin — 保存状態の表示", () => {
+  test("Service は設定を読めない間、既定値の編集・保存を出さず、再試行で戻る", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCのService画面で検証する");
+
+    const mocks = await installAdminApiMocks(page);
+    let settingsAvailable = false;
+    // installAdminApiMocks の通常の settings 応答より後に登録し、この検査だけ
+    // GET /api/settings を失敗させる。他の API はすべて人工データのままにする。
+    await page.route("**/api/settings**", async (route) => {
+      if (!settingsAvailable) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "settings unavailable in smoke" }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(SETTINGS),
+      });
+    });
+
+    // 左メニューでの表示名は「Portfolio Kit」
+    await openAdminTab(page, "Portfolio Kit");
+
+    await expect(
+      page.getByRole("heading", { name: "読み込めませんでした" }),
+      "設定を読めない時は、既定値のService編集画面ではなく失敗画面を出す",
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.locator("input, textarea"),
+      "失敗中は編集欄を出さない",
+    ).toHaveCount(0);
+    await expect(
+      page.locator(".admin-floating-save-bar"),
+      "失敗中は保存操作を出さない",
+    ).toHaveCount(0);
+
+    settingsAvailable = true;
+    await page.getByRole("button", { name: "再試行" }).click();
+    await expect(
+      page.locator("input, textarea").first(),
+      "再試行に成功したら通常のService編集画面に戻る",
+    ).toBeVisible();
+
+    expect(mocks.nonGet, "本番へ書き込む要求が出ていない").toEqual([]);
+  });
+
   test("値を元に戻したら未保存表示が消える", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "PCの保存バーで検証する");
 

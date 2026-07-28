@@ -1,57 +1,85 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-28 12:45 JST
+## Current State — 2026-07-28 17:20 JST
 
-- **Status:** 「今回追加」の一時区画を実装・独立検証・commit済み。**オーナーの実画面確認待ち**
-- **Current owner:** Claude Code（Codexは終了）
-- **Handoff readiness:** Ready。作業ツリーclean
-- **Branch:** `main`（B-2試作は `prototype/b2-uneven-rows`）
+- **Status:** オーナー不在中の自律作業を完了。**製品コードの修正5件・テスト拡張3件を
+  commit 済み。オーナーの実画面確認待ち**
+- **Current owner:** Claude Code（Codexの実装はすべて終了）
+- **Handoff readiness:** Ready。main は clean
+- **Branch:** `main`（Finder試作は `prototype/finder-contact-sheet`、B-2は `prototype/b2-uneven-rows`）
 - **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より68 commits ahead / 0 behind（この行を含むcommit時点）。**push禁止**
-- **本番DBの移行:** **適用済み**（オーナーが `db:push` を実行。7列追加、528行すべて `legacy`）
-- **直近のcommit:**
-  - `2e5ca5f` 一時区画の設計
-  - `00358fa` **一時区画の実装**（純関数・画面・テスト）
-  - この行を含むCurrent State更新
-- **オーナー承認済みの仕様（実装と一致を確認済み）:**
-  1. 実際の並び順データを変更しない → `sort_order` / `shot_at` への書き込み追加なし
-  2. 今回追加分だけ一時的に先頭表示
-  3. 通常一覧との重複なし → 純関数を500通りで検査
-  4. 絞り込み外も一時区画には表示
-  5. 並べ替えモードでは隠す（ID集合は維持）
-  6. Grid / Table の現在表示は維持 → `setBulkEditMode` はボタン操作の1箇所のみ
-  7. 成功分だけ選択済みにする → 第1Aの選択モード着地を維持
-  8. 次の追加 / Escの最後の段 / 明示解除 で通常表示へ戻る
-- **検証済み（Claudeが独立実行）:**
-  - `bun run check`: **589 pass / 0 fail**
-  - smoke: `admin-recently-added-pinned`（desktop全件・mobile 390px）/
-    `admin-import-landing` / `admin-library-modes` すべて成功
-  - 純関数500通り: 重複0 / 取りこぼし0 / 順序ずれ0 / 入力を書き換えない /
-    **追加0枚なら同一参照（既存描画と完全に同じ）**
-  - スクロール補正を独自経路で実測: 区画なし12px → 区画あり311px、
-    同じスクロール位置で先頭が#61→#56へ自然にずれ、空白の帯なし
-  - 性能: 497枚＋今回追加50枚で描画枚数105枚（現状のベースライン55〜100と同水準）
-  - 並べ替えAPIへ渡るIDの並びが期待どおり（手で作った並びが壊れない）
-- **未確認（オーナーのみ）:** 見出しの文言 / 余白 / 区切り線 / 自動スクロールの体感
-- **AI運用（2026-07-28 反映）:** Codexは実装に加えて読み取り専用の調査・反対レビューも担う。
-  段数は固定せず発動条件で決める（`docs/agents/codex-workflow.md`）。
-  A/Cの反論は要約せず共通記録のまま実装Codexへ渡す。試用記録は
-  `docs/agents/codex-flow-trial.md`
-- **次の一手:** **オーナーが実画面で確認するまで、見た目の調整を追加しない**。
-  Finder型LibraryのPhase Cは**オーナー承認まで起動しない**
-- **オーナー判断待ち:** 上記の見た目 / 68 commitsのpush /
-  `library-band-decisions.md` の判断 / Finder型ビューの案（案B推奨） /
-  Finder型LibraryのPhase C起動可否
-- **触っていない範囲:** `sort_order` / `shot_at` / 並び順設定 / DB / API /
-  `computeVirtualGridWindow` の計算式 / `styles.css` / B-2 / B-3
-- **禁止範囲:** push / deploy / Railway / 本番DB・R2 / 環境変数 /
-  実写真アップロード / 見た目の追加調整
-- **Codex session:** 一時区画 `019fa65c-8673-75a3-8a1f-25bc666ab58e` /
-  修正 `019fa67c-b879-7ec2-9c97-6095330a5c66`
-- **Local commit:** 済。**Push: 未実施・禁止**
-- **Railway / production:** コードは未反映。DBの列追加のみ適用済み
+- **Originとの差:** `origin/main` より79 commits ahead / 0 behind。**push禁止（オーナーのみ）**
+- **本番DBの移行:** 適用済み（写真メタデータ用7列）。今回のセッションでDBは一切触っていない
+
+### 今回入れた製品コードの修正（すべてローカルのみ）
+
+1. `67e8cd7` **設定APIの失敗応答を「取得成功」として使わない**（最も影響が大きい）。
+   起動時の先回り取得が応答の成否を確かめずに本文を読んでいたため、500の本文が
+   設定として使われ、**既定値が「現在の設定」に見えて保存で上書きしうる**状態だった
+2. `5c66c36` 設定を読み込めないとき、既定値を編集させず失敗表示と再試行を出す
+   （Profile / Service / Settings）
+3. `87b0e4b` 値を元に戻したら未保存表示が消える／保存失敗後に破棄したらエラー表示も消える
+4. `b15467f` キーボードでフォーカスした削除ボタン等が見える（hoverでしか出ていなかった）
+5. `78357f6` 390pxで管理画面の見出しが1文字ずつ縦に積まれる（実測 幅37px×高さ383px）
+
+### 今回入れたテスト（本番DBへ触らない形）
+
+- `59bf064` 公開サイトsmokeに本物のタッチ端末（Pixel 7・390px）を追加。人工画像を64pxへ
+- `0f7e758` `/series/:slug`・`/profile`・`/portfolio-kit`・`/start` をsmokeへ追加（123→183件）
+- `2eab08b` 管理画面の保存状態をブラウザで固定。**ログインせずAPIを人工データで塞ぐ**方式を確立
+  （非GETが1件でも出たらテストが落ちる）
+
+### 検証済み（Claudeが独立実行）
+
+- `bun run check`: **597 pass / 0 fail**（開始時589）
+- 公開サイト smoke: **183 passed / 0 failed**（desktop / mobile / mobile-touch）
+- admin の追加smoke: **7 passed / 0 failed**
+- 回帰テストは**修正前に落ちること**を確認してから採用（保存状態2件・390px見出し）
+
+### 未検証
+
+- 実機 iPhone / Safari。公開サイトの本番反映（push していないため当然未反映）
+- admin の既存smoke全体（本番DBにつながるため実行していない）
+- Finder試作の実写真での見え方
+
+### 次の一手
+
+- **オーナーが実画面で確認する**（下記「確認してほしい場所」）
+- Finder試作を続けるか決める（`docs/specs/library-finder-prototype.md` の A/B/C）
+
+### 確認してほしい場所（オーナー）
+
+1. 管理画面を **390px幅**で開き、「はじめに」の見出しが読めること
+2. Settings で値を変えて元に戻すと、下の保存バーが消えること
+3. キーボードの Tab で Categories の削除ボタンへ移動したとき、見えること
+4. Finder試作: `cd /Users/chiaki/eguchi-finder-proto && bun run dev` →
+   `/admin?finder-prototype=1` → Library の「Finder試作」
+
+### オーナー判断待ち
+
+- 79 commits の push
+- 「今回追加」区画の見た目（前回からの持ち越し）
+- Finder試作 A（続ける）/ B（表示切替として縮める）/ C（捨てる）
+- `library-band-decisions.md` の判断（**判断1は前提が古い**。一時区画は実装済み）
+- Service の下書きがDB読込後に上書きされる件（今回は触っていない）
+
+### 触っていない範囲
+
+`sort_order` / `shot_at` / 並び順設定 / DB / API / schema / `styles.css` /
+`computeVirtualGridWindow` / `photo-band.ts` / B-2 / 撮影情報プリセットの即時保存 /
+公開文章・写真・価格
+
+### 禁止範囲
+
+push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード /
+既存Libraryの置き換え / B-2の無条件マージ
+
+- **Codex session:** Finder C `019fa70e` / Finder D `019fa766` / Settings A・D 他は
+  `scratch/codex-out-*.log` の先頭に記録
+- **Local commit:** 済（9件）。**Push: 未実施・禁止**
+- **Railway / production:** コード未反映。今回のセッションで本番へは一切書き込んでいない
 <!-- CURRENT_STATE_END -->
 
 <!--

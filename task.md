@@ -35,9 +35,15 @@
   - 性能: 497枚＋今回追加50枚で描画枚数105枚（現状のベースライン55〜100と同水準）
   - 並べ替えAPIへ渡るIDの並びが期待どおり（手で作った並びが壊れない）
 - **未確認（オーナーのみ）:** 見出しの文言 / 余白 / 区切り線 / 自動スクロールの体感
-- **次の一手:** **オーナーが実画面で確認するまで、見た目の調整を追加しない**
+- **AI運用（2026-07-28 反映）:** Codexは実装に加えて読み取り専用の調査・反対レビューも担う。
+  段数は固定せず発動条件で決める（`docs/agents/codex-workflow.md`）。
+  A/Cの反論は要約せず共通記録のまま実装Codexへ渡す。試用記録は
+  `docs/agents/codex-flow-trial.md`
+- **次の一手:** **オーナーが実画面で確認するまで、見た目の調整を追加しない**。
+  Finder型LibraryのPhase Cは**オーナー承認まで起動しない**
 - **オーナー判断待ち:** 上記の見た目 / 68 commitsのpush /
-  `library-band-decisions.md` の判断 / Finder型ビューの案（案B推奨）
+  `library-band-decisions.md` の判断 / Finder型ビューの案（案B推奨） /
+  Finder型LibraryのPhase C起動可否
 - **触っていない範囲:** `sort_order` / `shot_at` / 並び順設定 / DB / API /
   `computeVirtualGridWindow` の計算式 / `styles.css` / B-2 / B-3
 - **禁止範囲:** push / deploy / Railway / 本番DB・R2 / 環境変数 /

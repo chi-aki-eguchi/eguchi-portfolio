@@ -65,10 +65,17 @@ const PUBLIC_PAGES: PublicPage[] = [
 
 const VIEWPORT_WIDTHS = [320, 390, 768, 1440] as const;
 
-// This is an opaque 4x4 blue-gray PNG. A successful request paints a real image,
-// rather than hiding broken-image layout behind an aborted R2 request.
+// 64x64 の不透明な青灰色PNG（136バイト）。実際に描画される画像を返すことで、
+// 通信を中断して壊れた画像レイアウトを隠す、という誤魔化しを避ける。
+//
+// **4x4 では小さすぎる。** 公開側の <img> は `sizes="50vw"` と `srcset`（400w/800w…）を
+// 使う。ブラウザは表示に必要な幅から候補を選び、intrinsic な大きさを
+// 「画像の実寸 ÷ (候補の宣言幅 ÷ 実際の表示幅)」で決める。高精細なタッチ端末
+// （390px幅・DPR 2.625）だと 800w が選ばれ、4 ÷ 約4.1 が1未満になるため
+// `naturalWidth` が 0 になる。読み込みは成功しているのに「壊れた画像」と判定され、
+// 実測では /series がこれで落ちていた。64pxあればどの画面幅・DPRでも0にならない。
 const SOLID_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEElEQVR4nGMoqOuBIwbiOABk0hehHKJliQAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAT0lEQVR42u3PQQkAAAgEsEtsAxsY2gi+hcEKLNXzWgQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQELgtzg3Fa6mxyjAAAAABJRU5ErkJggg==",
   "base64",
 );
 

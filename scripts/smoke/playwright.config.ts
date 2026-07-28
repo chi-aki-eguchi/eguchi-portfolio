@@ -58,6 +58,19 @@ export default defineConfig({
       },
     },
     {
+      // `mobile` は画面幅を狭めた Desktop Chrome で、タッチ端末ではない。
+      // 公開側には (pointer: coarse) でしか効かない当たり判定拡張(.tap-target)と、
+      // (hover: hover) でしか出ない写真キャプションがある。狭いだけの環境で測ると、
+      // 実機では起きない状態を検査してしまう。ここだけ本物のタッチ profile で回す。
+      // 描画エンジンは Chromium のまま（Pixel 7）にして、変数をタッチ有無に絞る。
+      name: "mobile-touch",
+      testMatch: /public-site\.spec\.ts/,
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 390, height: 844 },
+      },
+    },
+    {
       name: "mobile-safari",
       testMatch: /admin-library-remount-fade\.spec\.ts/,
       use: {

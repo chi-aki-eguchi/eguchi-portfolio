@@ -294,6 +294,38 @@ describe("public pages render (populated API)", () => {
 });
 
 describe("public pages render (empty state: 写真0枚・設定空)", () => {
+  test("all public pages keep rendering when settings API returns 500 JSON", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const raw =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      const path = new URL(raw, "http://localhost/").pathname;
+      if (path === "/api/settings") {
+        return new Response(JSON.stringify({ error: "settings unavailable" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return originalFetch(input);
+    }) as typeof fetch;
+
+    try {
+      for (const [name, load] of pages) {
+        if (name === "admin-login") continue;
+        const Page = (await load()).default;
+        const { host, cleanup } = await mount(createElement(Page));
+        expect(host.innerHTML.length).toBeGreaterThan(0);
+        cleanup();
+      }
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("all pages survive an empty site", async () => {
     const prevPhotos = canned["/api/photos"];
     canned["/api/photos"] = { photos: [] };

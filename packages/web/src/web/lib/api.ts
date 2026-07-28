@@ -1,16 +1,31 @@
 import { hc } from "hono/client";
+import type { QueryClient } from "@tanstack/react-query";
 import type { AppType } from "../../api";
 
 const client = hc<AppType>("/");
 export const api = client.api;
 
-export function assertOk(res: Response): void {
+export function assertOk(res: Pick<Response, "ok" | "status">): void {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-export async function jsonOrThrow<T>(res: Response & { json(): Promise<T> }): Promise<T> {
+type JsonResponse<T> = Pick<Response, "ok" | "status"> & {
+  json(): Promise<T>;
+};
+
+export async function jsonOrThrow<T>(res: JsonResponse<T>): Promise<T> {
   assertOk(res);
   return res.json();
+}
+
+export function prefetchSettings(
+  queryClient: QueryClient,
+  request: () => Promise<JsonResponse<unknown>> = () => api.settings.$get(),
+): Promise<void> {
+  return queryClient.prefetchQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await request()),
+  });
 }
 
 // The admin subtree of AppType exceeds TypeScript's type-instantiation limits:

@@ -23,7 +23,7 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:justify-between sm:gap-4">
       <div className="min-w-0">
         <h1
           className="admin-page-header__title text-[length:var(--admin-text-page)] leading-tight m-0"

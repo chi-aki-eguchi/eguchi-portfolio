@@ -26,6 +26,31 @@ cd /Users/chiaki/eguchi-portfolio-app/packages/web && bun run db:push
 
 照合用のSQLは `packages/web/drizzle/0005_mysterious_madame_masque.sql` にあります。
 
+### 適用前の確認結果（2026-07-28、読み取りのみで実施）
+
+本番DBを読み取って照合した結果:
+
+- 本番 `photos` は **29列**。`schema.ts` との差は**今回の7列だけ**
+- 本番にあって `schema.ts` に無い列: **なし**
+- 型・NOT NULL のずれ: **なし**（＝列の作り直しや変更は提案されない）
+- 索引は3つとも一致
+- 行数: 全528（うち削除済み32、生きている496）
+- `__drizzle_migrations` の記録は**0件** →
+  **`db:migrate` は使えない**（`CREATE TABLE` から流そうとして失敗する）。`db:push` を使う
+
+本番と同じ形の表をローカルに作って7文を予行演習し、次を確認済み:
+
+- 7文すべて成功。列は29→36
+- 移行前からあった行は `shot_at_source='legacy'`、他6列はNULL
+- **古いコードのINSERT（7列を知らない）が移行後も成功**する
+- **古いコードのSELECT（29列を名指し）も移行後に成功**する
+
+実行時は `--verbose` を付けると、流すSQLが全部表示されます。
+
+```bash
+bunx drizzle-kit push --verbose
+```
+
 **この変更は列を足すだけで、いま公開中のサイトには影響しません。**
 古いコードはこれらの列を読まないためです。だからpushの前に当てて大丈夫です。
 

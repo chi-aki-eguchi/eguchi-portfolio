@@ -721,7 +721,7 @@ export function HeroTab() {
                     {i + 1}
                   </span>
                   {/* Controls — always visible on mobile (no hover), hover-reveal on desktop */}
-                  <div className="absolute inset-x-0 bottom-1 flex items-center justify-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-x-0 bottom-1 flex items-center justify-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                     <button
                       onClick={() => moveHero(photo.id, -1)}
                       disabled={i === 0}
@@ -1293,7 +1293,7 @@ export function CategoriesTab() {
                 setDeleteCatConfirm({ id: cat.id, label: cat.label })
               }
               aria-label={copy.deleteAria(cat.label)}
-              className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 ml-2"
+              className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 flex-shrink-0 ml-2"
             >
               <Trash2 size={13} />
             </button>
@@ -1708,7 +1708,7 @@ export function SeriesTab() {
                       setDeleteTarget({ id: s.id, title: s.title })
                     }
                     aria-label={copy.deleteAria(s.title)}
-                    className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -2283,7 +2283,7 @@ export function PricingTab() {
                 <button
                   onClick={() => setDeleteTarget({ id: p.id, title: p.title })}
                   aria-label={copy.deleteAria(p.title)}
-                  className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                  className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                 >
                   <Trash2 size={13} />
                 </button>

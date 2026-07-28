@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { db, withRetry, schema } from "./database";
 import { buildReorderUpdate } from "./reorder-sql";
+import { applyPhotoReorderIfCurrent } from "./photo-reorder-safety";
 import { writeSettingsAtomic } from "./database/settings-write";
 import { partitionAllowedSettings } from "./settings-allowlist";
 import {
@@ -717,13 +718,17 @@ function parseFocalPoint(value: unknown): number | null {
   return Math.min(100, Math.max(0, Math.round(n)));
 }
 
-async function executeRaw(query: SQL) {
-  const rawDb = db as typeof db & {
-    execute?: (query: SQL) => Promise<unknown>;
-    run?: (query: SQL) => Promise<unknown>;
-  };
-  if (typeof rawDb.execute === "function") return rawDb.execute(query);
-  if (typeof rawDb.run === "function") return rawDb.run(query);
+type RawExecutor = {
+  execute?: (query: SQL) => Promise<unknown>;
+  run?: (query: SQL) => Promise<unknown>;
+};
+
+async function executeRaw(
+  query: SQL,
+  executor: RawExecutor = db as unknown as RawExecutor,
+) {
+  if (typeof executor.execute === "function") return executor.execute(query);
+  if (typeof executor.run === "function") return executor.run(query);
   throw new Error("Database raw execution is not supported.");
 }
 
@@ -2015,10 +2020,45 @@ const app = new Hono()
 
   // ── Admin: Reorder photos ───────────────────────────────
   .post("/admin/photos/reorder", requireAdmin, async (c) => {
-    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
-    if (ids.length === 0) return c.json({ ok: true }, 200);
-    // 1回のSQL CASE WHEN で全件まとめて更新
-    await runReorder("photos", "id", ids);
+    const rawBody = (await c.req.json()) as {
+      ids?: unknown;
+      expectedIds?: unknown;
+    };
+    const body = {
+      ids: rawBody.ids,
+      expectedIds: rawBody.expectedIds,
+    };
+    const result = await runPhotoIntegrityMutation(() =>
+      withRetry(() =>
+        db.transaction(async (tx) => {
+          const currentRows = await tx
+            .select({
+              id: schema.photos.id,
+              sortOrder: schema.photos.sortOrder,
+            })
+            .from(schema.photos)
+            .where(isNull(schema.photos.deletedAt))
+            .orderBy(schema.photos.sortOrder, schema.photos.id);
+          // The current-order check and the single-statement rank update share
+          // this transaction and the photo-integrity queue. Upload, duplicate,
+          // trash, restore, purge, and another reorder cannot interleave here.
+          return applyPhotoReorderIfCurrent(
+            body,
+            currentRows,
+            async (ids) => {
+              await executeRaw(
+                buildReorderUpdate("photos", "id", ids),
+                tx as unknown as RawExecutor,
+              );
+            },
+          );
+        }),
+      ),
+    );
+    if (!result.ok) {
+      if (result.status === 409) return c.json(result, 409);
+      return c.json(result, 400);
+    }
     return c.json({ ok: true }, 200);
   })
 

@@ -24,6 +24,7 @@ import {
   srcFor,
 } from "../lib/picture";
 import { moveRelativeToViewNeighbor, moveToViewEdge } from "../lib/reorder";
+import { splitRecentlyAddedPhotos } from "../lib/recently-added-photos";
 import { shouldLandOnSetup } from "../lib/setup-flow";
 import {
   shotAtForDateInputSave,
@@ -1999,10 +2000,12 @@ export function GalleryTab({
   const [showShortcuts, setShowShortcuts] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const libraryContentStartRef = useRef<HTMLDivElement>(null);
   const [libraryGridMetrics, setLibraryGridMetrics] = useState({
     scrollTop: 0,
     viewportHeight: 0,
     gridWidth: 0,
+    gridOffsetTop: 0,
   });
   const libraryScrollRestoredRef = useRef(false);
   const libraryScrollSaveRafRef = useRef<number | null>(null);
@@ -2017,6 +2020,10 @@ export function GalleryTab({
   const libraryThumbnailPreloadsRef = useRef(
     new Map<string, HTMLImageElement>(),
   );
+  const pendingRecentlyAddedScrollRef = useRef<{
+    generation: number;
+    ids: Set<number>;
+  } | null>(null);
   const [bulkEditMode, setBulkEditMode] = usePersistentState(
     "admin:bulkEditMode",
     false,
@@ -2725,18 +2732,51 @@ export function GalleryTab({
     },
     [librarySort, seriesTitleFor],
   );
-  const displayed = useMemo(
+  const displayedBase = useMemo(
     () => sortPhotosForView(filtered),
     [filtered, sortPhotosForView],
   );
+  const allPhotosInViewOrder = useMemo(
+    () => sortPhotosForView(allPhotos),
+    [allPhotos, sortPhotosForView],
+  );
+  const recentlyAddedSectionEnabled =
+    !showTrash && libraryMode !== "arrange";
+  const { recentlyAddedPhotos, regularPhotos } = useMemo(
+    () =>
+      splitRecentlyAddedPhotos({
+        allPhotos: allPhotosInViewOrder,
+        displayedPhotos: displayedBase,
+        recentlyAddedPhotoIds,
+        enabled: recentlyAddedSectionEnabled,
+      }),
+    [
+      allPhotosInViewOrder,
+      displayedBase,
+      recentlyAddedPhotoIds,
+      recentlyAddedSectionEnabled,
+    ],
+  );
+  const displayed = useMemo(
+    () =>
+      recentlyAddedPhotos.length === 0
+        ? regularPhotos
+        : [...recentlyAddedPhotos, ...regularPhotos],
+    [recentlyAddedPhotos, regularPhotos],
+  );
+  const recentlyAddedOutsideFilters = useMemo(() => {
+    if (recentlyAddedPhotos.length === 0) return false;
+    const filteredIds = new Set(displayedBase.map((photo) => photo.id));
+    return recentlyAddedPhotos.some((photo) => !filteredIds.has(photo.id));
+  }, [displayedBase, recentlyAddedPhotos]);
   const selectedOutsideFilters = useMemo(() => {
-    const displayedIds = new Set(displayed.map((photo) => photo.id));
+    const displayedIds = new Set(displayedBase.map((photo) => photo.id));
     let count = 0;
     selected.forEach((id) => {
       if (!displayedIds.has(id)) count += 1;
     });
     return count;
-  }, [displayed, selected]);
+  }, [displayedBase, selected]);
   const recentlyAddedSelectedCount = useMemo(() => {
     let count = 0;
     selected.forEach((id) => {
@@ -2744,6 +2784,12 @@ export function GalleryTab({
     });
     return count;
   }, [recentlyAddedPhotoIds, selected]);
+  const currentLibraryGridOffsetTop = useCallback(() => {
+    const gridEl = gridRef.current;
+    const contentStartEl = libraryContentStartRef.current;
+    if (!gridEl || !contentStartEl) return 0;
+    return Math.max(0, gridEl.offsetTop - contentStartEl.offsetTop);
+  }, []);
   const measureLibraryGrid = useCallback(() => {
     const scrollEl = scrollRef.current;
     const gridEl = gridRef.current;
@@ -2751,15 +2797,17 @@ export function GalleryTab({
       scrollTop: scrollEl?.scrollTop ?? 0,
       viewportHeight: scrollEl?.clientHeight ?? 0,
       gridWidth: measuredContentWidth(gridEl),
+      gridOffsetTop: currentLibraryGridOffsetTop(),
     };
     setLibraryGridMetrics((prev) =>
       prev.scrollTop === next.scrollTop &&
       prev.viewportHeight === next.viewportHeight &&
-      prev.gridWidth === next.gridWidth
+      prev.gridWidth === next.gridWidth &&
+      prev.gridOffsetTop === next.gridOffsetTop
         ? prev
         : next,
     );
-  }, []);
+  }, [currentLibraryGridOffsetTop]);
   const scheduleLibraryGridMeasure = useCallback(() => {
     if (libraryGridMeasureRafRef.current !== null) return;
     libraryGridMeasureRafRef.current = requestAnimationFrame(() => {
@@ -2792,9 +2840,15 @@ export function GalleryTab({
   useEffect(() => {
     measureLibraryGrid();
   }, [
+    anyFilterActive,
     bulkEditMode,
     displayed.length,
+    filterSeries,
+    libraryMode,
+    librarySort,
     measureLibraryGrid,
+    recentlyAddedOutsideFilters,
+    recentlyAddedPhotos.length,
     showTrash,
     thumbSize,
   ]);
@@ -2826,34 +2880,41 @@ export function GalleryTab({
   const virtualGrid = useMemo(
     () =>
       computeVirtualGridWindow({
-        itemCount: displayed.length,
-        scrollTop: libraryGridMetrics.scrollTop,
+        itemCount: regularPhotos.length,
+        scrollTop: Math.max(
+          0,
+          libraryGridMetrics.scrollTop - libraryGridMetrics.gridOffsetTop,
+        ),
         viewportHeight: libraryGridMetrics.viewportHeight,
         gridWidth: libraryGridMetrics.gridWidth,
         minItemSize: effectiveThumbSize,
       }),
     [
-      displayed.length,
       effectiveThumbSize,
+      libraryGridMetrics.gridOffsetTop,
       libraryGridMetrics.gridWidth,
       libraryGridMetrics.scrollTop,
       libraryGridMetrics.viewportHeight,
+      regularPhotos.length,
     ],
   );
   const virtualGridRef = useRef(virtualGrid);
   useLayoutEffect(() => {
     virtualGridRef.current = virtualGrid;
   }, [virtualGrid]);
-  const visibleDisplayed = useMemo(
-    () => displayed.slice(virtualGrid.startIndex, virtualGrid.endIndex),
-    [displayed, virtualGrid.endIndex, virtualGrid.startIndex],
+  const visibleRegularPhotos = useMemo(
+    () => regularPhotos.slice(virtualGrid.startIndex, virtualGrid.endIndex),
+    [regularPhotos, virtualGrid.endIndex, virtualGrid.startIndex],
   );
   useEffect(() => {
     if (!virtualGrid.isVirtualized || typeof Image === "undefined") return;
     const preloadItems = virtualGrid.columns * LIBRARY_GRID_PRELOAD_ROWS;
     const start = Math.max(0, virtualGrid.startIndex - preloadItems);
-    const end = Math.min(displayed.length, virtualGrid.endIndex + preloadItems);
-    for (const photo of displayed.slice(start, end)) {
+    const end = Math.min(
+      regularPhotos.length,
+      virtualGrid.endIndex + preloadItems,
+    );
+    for (const photo of regularPhotos.slice(start, end)) {
       const url = adminPhotoSrc(photo, 400, 70);
       if (libraryThumbnailRequestsRef.current.has(url)) continue;
       libraryThumbnailRequestsRef.current.add(url);
@@ -2870,7 +2931,7 @@ export function GalleryTab({
       libraryThumbnailPreloadsRef.current.set(url, image);
       image.src = url;
     }
-  }, [displayed, virtualGrid]);
+  }, [regularPhotos, virtualGrid]);
   const markLibraryScrolling = useCallback((element: HTMLDivElement) => {
     element.dataset.scrolling = "true";
     if (libraryScrollIdleTimerRef.current !== null) {
@@ -2895,8 +2956,30 @@ export function GalleryTab({
       const el = scrollRef.current;
       const latestVirtualGrid = virtualGridRef.current;
       if (!el || index < 0 || latestVirtualGrid.rowHeight <= 0) return;
-      const row = Math.floor(index / Math.max(1, latestVirtualGrid.columns));
-      const rowTop = row * latestVirtualGrid.rowHeight;
+      if (index < recentlyAddedPhotos.length) {
+        const photo = displayed[index];
+        const tile = photo
+          ? document.getElementById(`admin-photo-${photo.id}`)
+          : null;
+        if (!tile) return;
+        const scrollRect = el.getBoundingClientRect();
+        const tileRect = tile.getBoundingClientRect();
+        const tileTop = el.scrollTop + tileRect.top - scrollRect.top;
+        const tileBottom = tileTop + tileRect.height;
+        if (tileTop < el.scrollTop) {
+          el.scrollTop = Math.max(0, tileTop);
+        } else if (tileBottom > el.scrollTop + el.clientHeight) {
+          el.scrollTop = Math.max(0, tileBottom - el.clientHeight);
+        }
+        measureLibraryGrid();
+        return;
+      }
+      const regularIndex = index - recentlyAddedPhotos.length;
+      const row = Math.floor(
+        regularIndex / Math.max(1, latestVirtualGrid.columns),
+      );
+      const rowTop =
+        currentLibraryGridOffsetTop() + row * latestVirtualGrid.rowHeight;
       const rowBottom = rowTop + latestVirtualGrid.rowHeight;
       if (rowTop < el.scrollTop) {
         el.scrollTop = rowTop;
@@ -2905,8 +2988,51 @@ export function GalleryTab({
       }
       measureLibraryGrid();
     },
-    [measureLibraryGrid],
+    [
+      currentLibraryGridOffsetTop,
+      displayed,
+      measureLibraryGrid,
+      recentlyAddedPhotos.length,
+    ],
   );
+  const dismissRecentlyAdded = useCallback(() => {
+    pendingRecentlyAddedScrollRef.current = null;
+    onRecentlyAddedPhotoIdsChange(new Set());
+  }, [onRecentlyAddedPhotoIdsChange]);
+  useLayoutEffect(() => {
+    const pending = pendingRecentlyAddedScrollRef.current;
+    if (
+      !pending ||
+      pending.generation !== uploadGenerationRef.current ||
+      !recentlyAddedSectionEnabled ||
+      !recentlyAddedPhotos.some((photo) => pending.ids.has(photo.id))
+    ) {
+      return;
+    }
+    const libraryScroll = scrollRef.current;
+    if (!libraryScroll) return;
+    const scrollTarget =
+      (bulkEditMode
+        ? libraryScroll.querySelector<HTMLElement>(
+            "[data-bulk-edit-table-scroll]",
+          )
+        : null) ?? libraryScroll;
+    pendingRecentlyAddedScrollRef.current = null;
+    if (typeof scrollTarget.scrollTo === "function") {
+      scrollTarget.scrollTo({
+        top: 0,
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      });
+    } else {
+      scrollTarget.scrollTop = 0;
+    }
+    scheduleLibraryGridMeasure();
+  }, [
+    bulkEditMode,
+    recentlyAddedPhotos,
+    recentlyAddedSectionEnabled,
+    scheduleLibraryGridMeasure,
+  ]);
   const missingShotAtCount = useMemo(
     () => allPhotos.filter((p) => !p.shotAt).length,
     [allPhotos],
@@ -3410,6 +3536,7 @@ export function GalleryTab({
   const handleFiles = async (files: File[]) => {
     // 次の取り込みを始めた時点で、前回分の目印だけを解除する。
     // 選択状態とは別なので、ここでは selected を変更しない。
+    pendingRecentlyAddedScrollRef.current = null;
     onRecentlyAddedPhotoIdsChange(new Set());
     const imageFiles = files.filter(isUploadableImageFile);
     const skipped = files.length - imageFiles.length;
@@ -3617,6 +3744,10 @@ export function GalleryTab({
         addedPhotoIds.length > 0
       ) {
         const addedIds = new Set(addedPhotoIds);
+        pendingRecentlyAddedScrollRef.current = {
+          generation: uploadGeneration,
+          ids: addedIds,
+        };
         onRecentlyAddedPhotoIdsChange(addedIds);
         // applyLibraryMode が選択を消すため、モード変更後のコールバックで
         // 成功分だけを選択する。未保存詳細の確認も従来どおり通る。
@@ -4056,7 +4187,7 @@ export function GalleryTab({
           return;
         }
         if (recentlyAddedPhotoIds.size > 0) {
-          onRecentlyAddedPhotoIdsChange(new Set());
+          dismissRecentlyAdded();
           return;
         }
       }
@@ -4171,7 +4302,7 @@ export function GalleryTab({
     inspectPhoto,
     libraryMode,
     recentlyAddedPhotoIds,
-    onRecentlyAddedPhotoIdsChange,
+    dismissRecentlyAdded,
     // requestCloseInspector が最新の下書きを見て未保存判定できるように
     editForm,
   ]);
@@ -4294,6 +4425,7 @@ export function GalleryTab({
                 {copy.sort.label}
               </span>
               <select
+                data-library-sort
                 value={librarySort}
                 onChange={(e) => setLibrarySort(e.target.value)}
                 aria-label={copy.sort.ariaLabel}
@@ -5290,6 +5422,11 @@ export function GalleryTab({
               </div>
             </div>
           )}
+          <div
+            ref={libraryContentStartRef}
+            aria-hidden="true"
+            className="h-0"
+          />
 
           {showTrash ? (
             /* ── Trash view ── */
@@ -5401,6 +5538,7 @@ export function GalleryTab({
           ) : bulkEditMode ? (
             <BulkEditTable
               photos={displayed}
+              recentlyAddedCount={recentlyAddedPhotos.length}
               seriesList={seriesList}
               cameraPresets={cameraPresets}
               lensPresets={lensPresets}
@@ -5475,24 +5613,12 @@ export function GalleryTab({
                   </div>
                 )}
               {/* Grid */}
-              <div
-                ref={gridRef}
-                data-library-grid-mode={libraryMode}
-                data-virtualized={virtualGrid.isVirtualized ? "true" : "false"}
-                data-rendered-count={virtualGrid.renderedCount}
-              >
-                {virtualGrid.topPadding > 0 && (
-                  <div style={{ height: virtualGrid.topPadding }} />
-                )}
-                <div
-                  className="grid"
-                  style={{
-                    gap: LIBRARY_GRID_GAP,
-                    gridTemplateColumns: `repeat(auto-fill, minmax(${effectiveThumbSize}px, 1fr))`,
-                  }}
-                >
-                  {visibleDisplayed.map((photo, localIdx) => {
-                    const idx = virtualGrid.startIndex + localIdx;
+              {(() => {
+                const renderLibraryPhotoTile = (
+                  photo: Photo,
+                  idx: number,
+                  insideRecentlyAddedSection: boolean,
+                ) => {
                     const isSelected =
                       libraryMode === "select" && selected.has(photo.id);
                     const isRecentlyAdded = recentlyAddedPhotoIds.has(photo.id);
@@ -5594,7 +5720,8 @@ export function GalleryTab({
                               photo.filename ||
                               copy.inspector.photoFallback
                             }${
-                              isRecentlyAdded
+                              isRecentlyAdded &&
+                              !insideRecentlyAddedSection
                                 ? `, ${copy.selection.recentlyAdded}`
                                 : ""
                             }`
@@ -5814,12 +5941,100 @@ export function GalleryTab({
                           )}
                       </div>
                     );
-                  })}
-                </div>
-                {virtualGrid.bottomPadding > 0 && (
-                  <div style={{ height: virtualGrid.bottomPadding }} />
-                )}
-              </div>
+                  };
+                return (
+                  <>
+                    {recentlyAddedPhotos.length > 0 && (
+                      <section
+                        aria-labelledby="library-recently-added-heading"
+                        data-library-recently-added-section
+                        data-library-recently-added-count={
+                          recentlyAddedPhotos.length
+                        }
+                        className="mb-2"
+                        style={{ padding: 10 }}
+                      >
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                          <h2
+                            id="library-recently-added-heading"
+                            data-library-recently-added-heading
+                            className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)]"
+                          >
+                            {copy.selection.recentlyAddedHeading(
+                              recentlyAddedPhotos.length,
+                            )}
+                          </h2>
+                          <button
+                            type="button"
+                            data-library-recently-added-dismiss
+                            onClick={dismissRecentlyAdded}
+                            className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
+                          >
+                            {copy.selection.endRecentlyAddedDisplay}
+                          </button>
+                        </div>
+                        {recentlyAddedOutsideFilters && (
+                          <p
+                            data-library-recently-added-filter-note
+                            className="mb-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
+                          >
+                            {copy.selection.recentlyAddedOutsideFilters}
+                          </p>
+                        )}
+                        <div
+                          data-library-recently-added-grid
+                          className="grid"
+                          style={{
+                            gap: LIBRARY_GRID_GAP,
+                            gridTemplateColumns: `repeat(auto-fill, minmax(${effectiveThumbSize}px, 1fr))`,
+                          }}
+                        >
+                          {recentlyAddedPhotos.map((photo, idx) =>
+                            renderLibraryPhotoTile(photo, idx, true),
+                          )}
+                        </div>
+                      </section>
+                    )}
+                    <div
+                      ref={gridRef}
+                      data-library-grid-mode={libraryMode}
+                      data-virtualized={
+                        virtualGrid.isVirtualized ? "true" : "false"
+                      }
+                      data-rendered-count={
+                        recentlyAddedPhotos.length + virtualGrid.renderedCount
+                      }
+                      data-library-grid-offset-top={
+                        libraryGridMetrics.gridOffsetTop
+                      }
+                    >
+                      {virtualGrid.topPadding > 0 && (
+                        <div style={{ height: virtualGrid.topPadding }} />
+                      )}
+                      <div
+                        className="grid"
+                        style={{
+                          gap: LIBRARY_GRID_GAP,
+                          gridTemplateColumns: `repeat(auto-fill, minmax(${effectiveThumbSize}px, 1fr))`,
+                        }}
+                      >
+                        {visibleRegularPhotos.map((photo, localIdx) =>
+                          renderLibraryPhotoTile(
+                            photo,
+                            recentlyAddedPhotos.length +
+                              virtualGrid.startIndex +
+                              localIdx,
+                            false,
+                          ),
+                        )}
+                      </div>
+                      {virtualGrid.bottomPadding > 0 && (
+                        <div style={{ height: virtualGrid.bottomPadding }} />
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
@@ -7393,12 +7608,14 @@ type RowSaveStatus = "idle" | "saving" | "saved" | "error";
 
 function BulkEditTable({
   photos,
+  recentlyAddedCount,
   seriesList,
   cameraPresets,
   lensPresets,
   onSave,
 }: {
-  photos: Photo[];
+  photos: readonly Photo[];
+  recentlyAddedCount: number;
   seriesList: AdminSeries[];
   cameraPresets: string[];
   lensPresets: string[];
@@ -7419,7 +7636,7 @@ function BulkEditTable({
   }
 
   return (
-    <div className="overflow-x-auto h-full">
+    <div data-bulk-edit-table-scroll className="overflow-x-auto h-full">
       <table className="w-full min-w-[860px] border-collapse text-[length:var(--admin-text-body)]">
         <thead className="sticky top-0 z-10 bg-[var(--admin-paper)] border-b border-[var(--admin-line)]">
           <tr>
@@ -7446,6 +7663,17 @@ function BulkEditTable({
           </tr>
         </thead>
         <tbody>
+          {recentlyAddedCount > 0 && (
+            <tr data-library-recently-added-table-heading>
+              <th
+                colSpan={8}
+                scope="rowgroup"
+                className="border-b border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-3 py-2 text-left text-[length:var(--admin-text-body)] font-normal text-[var(--admin-ink)]"
+              >
+                {copy.selection.recentlyAddedHeading(recentlyAddedCount)}
+              </th>
+            </tr>
+          )}
           {photos.map((photo) => (
             <BulkEditRow
               key={photo.id}
@@ -7608,6 +7836,7 @@ function BulkEditRow({
 
   return (
     <tr
+      data-bulk-edit-photo-id={photo.id}
       className={`border-b border-[var(--admin-line)] transition-colors ${rowBg} group`}
     >
       {/* Save status indicator */}

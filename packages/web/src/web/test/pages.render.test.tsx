@@ -1921,6 +1921,84 @@ describe("shared components", () => {
     }
   }, 10000);
 
+  test("AdminPage: 497 regular photos + 50 recently added photos renders 110 tiles", async () => {
+    const prevPhotos = canned["/api/photos"];
+    const widthDescriptor = Object.getOwnPropertyDescriptor(
+      dom.window.HTMLElement.prototype,
+      "clientWidth",
+    );
+    const heightDescriptor = Object.getOwnPropertyDescriptor(
+      dom.window.HTMLElement.prototype,
+      "clientHeight",
+    );
+    Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", {
+      configurable: true,
+      get() {
+        return 1200;
+      },
+    });
+    Object.defineProperty(dom.window.HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get() {
+        return 900;
+      },
+    });
+    const allPhotos = makeLargeAdminPhotos(547);
+    const recentlyAddedPhotoIds = new Set(
+      allPhotos.slice(497).map((photo) => photo.id),
+    );
+    canned["/api/photos"] = { photos: allPhotos };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const { GalleryTab } = await import("../pages/admin");
+      const { host, cleanup } = await mount(
+        createElement(GalleryTab, { recentlyAddedPhotoIds }),
+        (qc) => {
+          qc.setQueryData(["photos", "all"], { photos: allPhotos });
+        },
+      );
+      await flush(50);
+
+      const section = host.querySelector(
+        "[data-library-recently-added-section]",
+      );
+      const grid = host.querySelector("[data-library-grid-mode]");
+      expect(section).not.toBeNull();
+      expect(
+        section!.querySelectorAll(".admin-photo-tile").length,
+      ).toBe(50);
+      expect(grid?.getAttribute("data-virtualized")).toBe("true");
+      expect(grid?.getAttribute("data-rendered-count")).toBe("110");
+      expect(host.querySelectorAll(".admin-photo-tile").length).toBe(110);
+      cleanup();
+    } finally {
+      canned["/api/photos"] = prevPhotos;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+      if (widthDescriptor) {
+        Object.defineProperty(
+          dom.window.HTMLElement.prototype,
+          "clientWidth",
+          widthDescriptor,
+        );
+      } else {
+        delete (dom.window.HTMLElement.prototype as { clientWidth?: number })
+          .clientWidth;
+      }
+      if (heightDescriptor) {
+        Object.defineProperty(
+          dom.window.HTMLElement.prototype,
+          "clientHeight",
+          heightDescriptor,
+        );
+      } else {
+        delete (dom.window.HTMLElement.prototype as { clientHeight?: number })
+          .clientHeight;
+      }
+    }
+  }, 10000);
+
   test("AdminPage: inspector surfaces quick edit controls and usage", async () => {
     const prevAuth = canned["/api/admin/me"];
     const prevCategories = canned["/api/categories"];

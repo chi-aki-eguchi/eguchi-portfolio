@@ -119,8 +119,30 @@ async function fulfillSuccessfulUpload(route: Route, filename: string) {
 const photoTile = (page: Page, id: number) =>
   page.locator(`#admin-photo-${id}`);
 
+async function trackProgrammaticLibraryScroll(page: Page) {
+  await page.locator("[data-library-scroll]").evaluate((element) => {
+    const scrollElement = element as HTMLElement;
+    scrollElement.dataset.programmaticScrollCount = "0";
+    const originalScrollTo = scrollElement.scrollTo.bind(scrollElement);
+    scrollElement.scrollTo = ((options: ScrollToOptions) => {
+      scrollElement.dataset.programmaticScrollCount = String(
+        Number(scrollElement.dataset.programmaticScrollCount ?? "0") + 1,
+      );
+      originalScrollTo(options);
+    }) as typeof scrollElement.scrollTo;
+  });
+}
+
+async function programmaticLibraryScrollCount(page: Page) {
+  return Number(
+    (await page
+      .locator("[data-library-scroll]")
+      .getAttribute("data-programmatic-scroll-count")) ?? "0",
+  );
+}
+
 test.describe("admin — 取り込み後に今回追加した写真へ着地", () => {
-  test("成功だけを選択・表示し、失敗と重複を混ぜない", async ({
+  test("成功だけを選択・先頭区画へ表示し、失敗と重複を混ぜない", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -196,6 +218,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    await trackProgrammaticLibraryScroll(page);
 
     await page
       .getByLabel(/画像ファイルを選択|Choose image files/)
@@ -227,6 +250,10 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         },
       ]);
 
+    await expect(page.locator("[data-library-mode]")).toHaveAttribute(
+      "data-library-mode",
+      "select",
+    );
     const selectionToolbar = page.locator(
       "[data-library-selection-toolbar]",
     );
@@ -239,6 +266,22 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       /今回追加した3枚を選択中|3 from this import selected/,
     );
     await expect(page.locator("[data-library-batch-actions]")).toBeVisible();
+    const recentSection = page.locator(
+      "[data-library-recently-added-section]",
+    );
+    await expect(recentSection).toHaveAttribute(
+      "data-library-recently-added-count",
+      "3",
+    );
+    await expect(
+      recentSection.locator("[data-library-recently-added-heading]"),
+    ).toHaveText(/今回追加 3枚|Added in this import: 3/);
+    await expect(
+      recentSection.locator(".admin-photo-tile"),
+    ).toHaveCount(3);
+    await expect
+      .poll(() => programmaticLibraryScrollCount(page))
+      .toBeGreaterThan(0);
 
     await expect(
       page.locator("[data-library-recently-added-marker]"),
@@ -249,16 +292,26 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         "true",
       );
     }
-    await expect(
-      photoTile(page, 101).locator("[data-library-photo-action]"),
-    ).toHaveAttribute(
-      "aria-label",
-      /added-1\.jpg.*(?:今回追加|added in this import)/i,
-    );
+    await test.step("一時区画は見出しで今回追加を伝え、各写真では繰り返さない", async () => {
+      await expect(
+        recentSection.locator("[data-library-recently-added-heading]"),
+      ).toHaveText(/今回追加 3枚|Added in this import: 3/);
+      await expect(
+        photoTile(page, 101).locator("[data-library-photo-action]"),
+      ).toHaveAttribute("aria-label", "added-1.jpg");
+    });
     await expect(photoTile(page, 9)).not.toHaveAttribute(
       "data-library-recently-added",
       "true",
     );
+    for (const id of addedIdsByFilename.values()) {
+      await expect(photoTile(page, id)).toHaveCount(1);
+      await expect(
+        page.locator(
+          `[data-library-grid-mode] #admin-photo-${id}`,
+        ),
+      ).toHaveCount(0);
+    }
     await expect(page.getByText("failed.jpg", { exact: true })).toHaveCount(0);
     expect(createdFilenames.sort()).toEqual([
       "added-1.jpg",
@@ -283,6 +336,22 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       page.locator("[data-library-recently-added-marker]"),
     ).toHaveCount(3);
 
+    await test.step("一時区画を隠す並べ替えモードでは各写真が今回追加を伝える", async () => {
+      await page.locator('[data-library-mode-action="end-select"]').click();
+      await page.locator('[data-library-mode-action="arrange"]').click();
+      await expect(recentSection).toHaveCount(0);
+      await expect(
+        photoTile(page, 101).locator("[data-library-photo-action]"),
+      ).toHaveAttribute(
+        "aria-label",
+        /added-1\.jpg.*(?:今回追加|added in this import)/i,
+      );
+      await page
+        .locator('[data-library-mode-action="finish-arrange"]')
+        .click();
+      await expect(recentSection).toBeVisible();
+    });
+
     // Galleryを離れて戻っても、親状態にある目印は消えない。
     await page
       .locator(".admin-sidebar__tab")
@@ -293,7 +362,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       .locator(".admin-sidebar__tab")
       .filter({ hasText: "Library" })
       .click();
-    await expect(page.locator("[data-library-grid-mode]")).toBeVisible();
+    await expect(recentSection).toBeVisible();
     await expect(
       page.locator("[data-library-recently-added-marker]"),
     ).toHaveCount(3);
@@ -343,6 +412,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    await trackProgrammaticLibraryScroll(page);
     await page
       .getByLabel(/画像ファイルを選択|Choose image files/)
       .setInputFiles({
@@ -359,6 +429,9 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     finishUpload.resolve();
 
+    await expect(
+      page.locator("[data-library-recently-added-heading]"),
+    ).toHaveText(/今回追加 1枚|Added in this import: 1/);
     const confirm = page.getByRole("dialog").filter({
       hasText: /保存せずに閉じますか|Close it without saving/,
     });
@@ -433,8 +506,15 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       "true",
     );
     await expect(
+      page.locator("[data-library-recently-added-heading]"),
+    ).toHaveText(/今回追加 1枚|Added in this import: 1/);
+    await expect(
       page.locator("[data-library-selection-toolbar]"),
     ).toHaveAttribute("data-library-selected-count", "1");
+    await expect(page.locator("[data-library-mode]")).toHaveAttribute(
+      "data-library-mode",
+      "select",
+    );
     await expect(page.getByText(/Importing \d+ \/ \d+/)).toBeVisible();
 
     finishSlowUpload.resolve();
@@ -449,6 +529,9 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       "data-library-recently-added",
       "true",
     );
+    await expect(
+      page.locator("[data-library-recently-added-section] .admin-photo-tile"),
+    ).toHaveCount(1);
     const selectionToolbar = page.locator(
       "[data-library-selection-toolbar]",
     );
@@ -502,6 +585,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    await trackProgrammaticLibraryScroll(page);
     await page
       .getByLabel(/画像ファイルを選択|Choose image files/)
       .setInputFiles({
@@ -522,9 +606,16 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     await expect(
       page.locator("[data-library-recently-added-marker]"),
     ).toHaveCount(0);
+    expect(await programmaticLibraryScrollCount(page)).toBe(0);
 
     finishRefresh.resolve();
 
+    await expect(
+      page.locator("[data-library-recently-added-heading]"),
+    ).toHaveText(/今回追加 1枚|Added in this import: 1/);
+    await expect(
+      page.locator("[data-library-recently-added-filter-note]"),
+    ).toHaveCount(0);
     const selectionToolbar = page.locator(
       "[data-library-selection-toolbar]",
     );
@@ -535,10 +626,17 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     await expect(selectionToolbar).not.toContainText(
       /絞り込みの外|outside filters/,
     );
+    await expect(page.locator("[data-library-mode]")).toHaveAttribute(
+      "data-library-mode",
+      "select",
+    );
     await expect(photoTile(page, 301)).toHaveAttribute(
       "data-library-recently-added",
       "true",
     );
+    await expect
+      .poll(() => programmaticLibraryScrollCount(page))
+      .toBeGreaterThan(0);
   });
 
   test("F3: 一覧の再取得に失敗した場合は誤った選択と目印を出さない", async ({
@@ -584,6 +682,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    await trackProgrammaticLibraryScroll(page);
     await page
       .getByLabel(/画像ファイルを選択|Choose image files/)
       .setInputFiles({
@@ -606,6 +705,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     await expect(
       page.getByText(/絞り込みの外|outside filters/),
     ).toHaveCount(0);
+    expect(await programmaticLibraryScrollCount(page)).toBe(0);
   });
 
   test("重複だけの取り込みでは既存写真を今回追加として選ばない", async ({
@@ -645,6 +745,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    await trackProgrammaticLibraryScroll(page);
     await page
       .getByLabel(/画像ファイルを選択|Choose image files/)
       .setInputFiles({
@@ -665,6 +766,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     await expect(
       page.locator("[data-library-selection-toolbar]"),
     ).toHaveCount(0);
+    expect(await programmaticLibraryScrollCount(page)).toBe(0);
   });
 
   test("全件失敗では今回追加の選択と目印を作らない", async ({
@@ -704,6 +806,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    await trackProgrammaticLibraryScroll(page);
     await page
       .getByLabel(/画像ファイルを選択|Choose image files/)
       .setInputFiles({
@@ -722,6 +825,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     await expect(
       page.locator("[data-library-selection-toolbar]"),
     ).toHaveCount(0);
+    expect(await programmaticLibraryScrollCount(page)).toBe(0);
   });
 
   test("既存選択があっても取り込み成功後は今回追加した写真だけを選ぶ", async ({
@@ -792,6 +896,10 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     await expect(selectionToolbar).toContainText(
       /今回追加した1枚を選択中|1 from this import selected/,
     );
+    await expect(page.locator("[data-library-mode]")).toHaveAttribute(
+      "data-library-mode",
+      "select",
+    );
     await expect(photoTile(page, 401)).toHaveAttribute(
       "data-library-recently-added",
       "true",
@@ -800,6 +908,12 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       "data-library-recently-added",
       "true",
     );
+    await expect(
+      photoTile(page, 9).locator(".admin-select-mark"),
+    ).toHaveAttribute("data-state", "hidden");
+    await expect(
+      photoTile(page, 401).locator(".admin-select-mark"),
+    ).not.toHaveAttribute("data-state", "hidden");
   });
 
   test("詳細欄を閉じるEscでは目印を残し、次のEscで消す", async ({

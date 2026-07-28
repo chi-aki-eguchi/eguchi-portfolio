@@ -208,6 +208,10 @@ const ADMIN_PHASE_2B_JA = {
       recentlyAdded: "今回追加",
       recentlyAddedSelected: (count: number) =>
         `今回追加した${count}枚を選択中`,
+      recentlyAddedHeading: (count: number) => `今回追加 ${count}枚`,
+      recentlyAddedOutsideFilters:
+        "現在の絞り込みに関係なく表示しています",
+      endRecentlyAddedDisplay: "表示を終了",
       publish: "公開",
       unpublish: "非公開",
       setCategory: "Set Category",
@@ -1624,6 +1628,11 @@ const ADMIN_PHASE_2B_EN = {
       recentlyAdded: "Added in this import",
       recentlyAddedSelected: (count: number) =>
         `${count} from this import selected`,
+      recentlyAddedHeading: (count: number) =>
+        `Added in this import: ${count}`,
+      recentlyAddedOutsideFilters:
+        "Shown regardless of the current filters",
+      endRecentlyAddedDisplay: "Stop showing",
       publish: "Publish",
       unpublish: "Unpublish",
       setCategory: "Set Category",

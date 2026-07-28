@@ -44,8 +44,20 @@ const PUBLIC_PAGES: PublicPage[] = [
     readySelector: 'main a[href="/series/synthetic-series-one"]',
   },
   {
+    label: "Series detail",
+    path: "/series/synthetic-series-one",
+    hasH1: true,
+    readySelector: "main .photo-card",
+  },
+  {
     label: "English About",
     path: "/en/about",
+    hasH1: true,
+    readyText: /Journal/,
+  },
+  {
+    label: "Profile alias",
+    path: "/profile",
     hasH1: true,
     readyText: /Journal/,
   },
@@ -60,6 +72,26 @@ const PUBLIC_PAGES: PublicPage[] = [
     path: "/this-page-does-not-exist",
     hasH1: false,
     readyText: /Page not found|見つかりません|404/i,
+  },
+];
+
+// These pages are intentionally separate from PUBLIC_PAGES: the established
+// eight-page fixture remains servicePageMode: "off", while only this group
+// exercises the routes that are visible when the feature is enabled.
+const SERVICE_PAGES: PublicPage[] = [
+  {
+    label: "Portfolio Kit",
+    path: "/portfolio-kit",
+    hasH1: true,
+    // ヘッダーのナビにも "Portfolio Kit" があり、そちらは狭い画面で隠れる。
+    // 文字ではなく本文の見出しそのものを待つ。
+    readySelector: "main h1",
+  },
+  {
+    label: "Portfolio Kit start",
+    path: "/start",
+    hasH1: true,
+    readySelector: "main h1",
   },
 ];
 
@@ -154,6 +186,11 @@ const SYNTHETIC_SETTINGS = {
   footerCtaLabel: "Contact",
 };
 
+const SYNTHETIC_SERVICE_SETTINGS = {
+  ...SYNTHETIC_SETTINGS,
+  servicePageMode: "on",
+};
+
 const SYNTHETIC_SERIES = [
   {
     id: 9_200_001,
@@ -220,7 +257,10 @@ async function fulfillJson(route: Route, value: unknown) {
   });
 }
 
-async function installPublicApiMocks(page: Page): Promise<PublicApiMocks> {
+async function installPublicApiMocks(
+  page: Page,
+  settings = SYNTHETIC_SETTINGS,
+): Promise<PublicApiMocks> {
   const unexpectedRequests: string[] = [];
 
   // Register the guard first. Playwright checks newer routes first, so every
@@ -243,7 +283,7 @@ async function installPublicApiMocks(page: Page): Promise<PublicApiMocks> {
     });
   });
   await page.route("**/api/settings**", (route) =>
-    fulfillJson(route, SYNTHETIC_SETTINGS),
+    fulfillJson(route, settings),
   );
   await page.route("**/api/photos**", (route) =>
     fulfillJson(route, { photos: SYNTHETIC_PHOTOS }),
@@ -253,6 +293,14 @@ async function installPublicApiMocks(page: Page): Promise<PublicApiMocks> {
   );
   await page.route("**/api/series**", (route) =>
     fulfillJson(route, { series: SYNTHETIC_SERIES }),
+  );
+  await page.route("**/api/series/synthetic-series-one", (route) =>
+    fulfillJson(route, {
+      series: SYNTHETIC_SERIES[0],
+      photos: SYNTHETIC_PHOTOS.filter(
+        (photo) => photo.seriesId === SYNTHETIC_SERIES[0].id,
+      ),
+    }),
   );
   await page.route("**/api/categories**", (route) =>
     fulfillJson(route, { categories: SYNTHETIC_CATEGORIES }),
@@ -459,88 +507,98 @@ async function expectKeyboardReachabilityAndVisibleFocus(page: Page) {
 }
 
 test.describe("public-site — 公開ページ基本検査（APIは人工データ）", () => {
-  for (const publicPage of PUBLIC_PAGES) {
-    test(`${publicPage.label} ${publicPage.path} — console・見出し・画像alt・外部リンク・キーボード`, async ({
-      page,
-    }) => {
-      const runtimeProblems = collectPageRuntimeProblems(page);
-      const apiMocks = await installPublicApiMocks(page);
+  for (const { pages, settings } of [
+    { pages: PUBLIC_PAGES, settings: SYNTHETIC_SETTINGS },
+    { pages: SERVICE_PAGES, settings: SYNTHETIC_SERVICE_SETTINGS },
+  ]) {
+    for (const publicPage of pages) {
+      test(`${publicPage.label} ${publicPage.path} — console・見出し・画像alt・外部リンク・キーボード`, async ({
+        page,
+      }) => {
+        const runtimeProblems = collectPageRuntimeProblems(page);
+        const apiMocks = await installPublicApiMocks(page, settings);
 
-      await gotoPublicPage(page, publicPage);
+        await gotoPublicPage(page, publicPage);
 
-      if (publicPage.hasH1) {
-        await expect(page.locator("h1")).toHaveCount(1);
-      }
+        if (publicPage.hasH1) {
+          await expect(page.locator("h1")).toHaveCount(1);
+        }
 
-      const imagesMissingAlt = await page.locator("img:not([alt])").evaluateAll(
-        (images) =>
-          images.map((image) =>
-            image.outerHTML.replace(/\s+/g, " ").slice(0, 180),
-          ),
-      );
-      expect(imagesMissingAlt).toEqual([]);
-
-      await expectVisibleImagesLoaded(page);
-
-      const unsafeBlankLinks = await page
-        .locator('a[target="_blank"]')
-        .evaluateAll((links) =>
-          links
-            .map((link) => {
-              const rel = new Set(
-                (link.getAttribute("rel") ?? "")
-                  .toLowerCase()
-                  .split(/\s+/)
-                  .filter(Boolean),
-              );
-              return {
-                href: link.getAttribute("href") ?? "",
-                rel: link.getAttribute("rel") ?? "",
-                hasNoopener: rel.has("noopener"),
-                hasNoreferrer: rel.has("noreferrer"),
-              };
-            })
-            .filter((link) => !link.hasNoopener || !link.hasNoreferrer),
+        const imagesMissingAlt = await page.locator("img:not([alt])").evaluateAll(
+          (images) =>
+            images.map((image) =>
+              image.outerHTML.replace(/\s+/g, " ").slice(0, 180),
+            ),
         );
-      expect(unsafeBlankLinks).toEqual([]);
+        expect(imagesMissingAlt).toEqual([]);
 
-      await expectKeyboardReachabilityAndVisibleFocus(page);
+        await expectVisibleImagesLoaded(page);
 
-      if (!publicPage.hasH1) {
-        const bodyText = (await page.locator("body").innerText()).trim();
-        expect(bodyText).toMatch(/Page not found|見つかりません|404/i);
-        expect(bodyText.length, "404ページが真っ白に近い").toBeGreaterThan(20);
-      }
+        const unsafeBlankLinks = await page
+          .locator('a[target="_blank"]')
+          .evaluateAll((links) =>
+            links
+              .map((link) => {
+                const rel = new Set(
+                  (link.getAttribute("rel") ?? "")
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter(Boolean),
+                );
+                return {
+                  href: link.getAttribute("href") ?? "",
+                  rel: link.getAttribute("rel") ?? "",
+                  hasNoopener: rel.has("noopener"),
+                  hasNoreferrer: rel.has("noreferrer"),
+                };
+              })
+              .filter((link) => !link.hasNoopener || !link.hasNoreferrer),
+          );
+        expect(unsafeBlankLinks).toEqual([]);
 
-      expect(apiMocks.unexpectedRequests).toEqual([]);
-      expect(runtimeProblems).toEqual([]);
-    });
+        await expectKeyboardReachabilityAndVisibleFocus(page);
+
+        if (!publicPage.hasH1) {
+          const bodyText = (await page.locator("body").innerText()).trim();
+          expect(bodyText).toMatch(/Page not found|見つかりません|404/i);
+          expect(bodyText.length, "404ページが真っ白に近い").toBeGreaterThan(20);
+        }
+
+        expect(apiMocks.unexpectedRequests).toEqual([]);
+        expect(runtimeProblems).toEqual([]);
+      });
+    }
   }
 });
 
 test.describe("public-site — 横スクロール検査", () => {
-  for (const publicPage of PUBLIC_PAGES) {
-    for (const width of VIEWPORT_WIDTHS) {
-      test(`${publicPage.label} ${publicPage.path} — ${width}pxで横スクロールなし`, async ({
-        page,
-      }) => {
-        await page.setViewportSize({ width, height: 900 });
-        const runtimeProblems = collectPageRuntimeProblems(page);
-        const apiMocks = await installPublicApiMocks(page);
+  for (const { pages, settings } of [
+    { pages: PUBLIC_PAGES, settings: SYNTHETIC_SETTINGS },
+    { pages: SERVICE_PAGES, settings: SYNTHETIC_SERVICE_SETTINGS },
+  ]) {
+    for (const publicPage of pages) {
+      for (const width of VIEWPORT_WIDTHS) {
+        test(`${publicPage.label} ${publicPage.path} — ${width}pxで横スクロールなし`, async ({
+          page,
+        }) => {
+          await page.setViewportSize({ width, height: 900 });
+          const runtimeProblems = collectPageRuntimeProblems(page);
+          const apiMocks = await installPublicApiMocks(page, settings);
 
-        await gotoPublicPage(page, publicPage);
+          await gotoPublicPage(page, publicPage);
 
-        const metrics = await page.evaluate(() => ({
-          scrollWidth: document.documentElement.scrollWidth,
-          viewportWidth: window.innerWidth,
-        }));
-        expect(
-          metrics.scrollWidth,
-          `${publicPage.path} at ${width}px: scrollWidth=${metrics.scrollWidth}, viewportWidth=${metrics.viewportWidth}`,
-        ).toBeLessThanOrEqual(metrics.viewportWidth);
-        expect(apiMocks.unexpectedRequests).toEqual([]);
-        expect(runtimeProblems).toEqual([]);
-      });
+          const metrics = await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            viewportWidth: window.innerWidth,
+          }));
+          expect(
+            metrics.scrollWidth,
+            `${publicPage.path} at ${width}px: scrollWidth=${metrics.scrollWidth}, viewportWidth=${metrics.viewportWidth}`,
+          ).toBeLessThanOrEqual(metrics.viewportWidth);
+          expect(apiMocks.unexpectedRequests).toEqual([]);
+          expect(runtimeProblems).toEqual([]);
+        });
+      }
     }
   }
 });

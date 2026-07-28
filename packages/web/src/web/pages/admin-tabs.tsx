@@ -47,7 +47,10 @@ import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
 import { useAdminI18n } from "./admin-i18n";
 import type { GalleryLayoutType } from "../components/PhotoGallery";
-import { draftAfterSuccessfulSave } from "../lib/saved-draft";
+import {
+  draftAfterSuccessfulSave,
+  hasUnsavedSettingsDraft,
+} from "../lib/saved-draft";
 
 const DEFAULT_THEME_BG = "#f7f7f7";
 
@@ -843,7 +846,7 @@ export function ProfileTab({
   const current = { ...data, ...form } as Record<string, string>;
 
   // Report unsaved-draft state so tab switches can warn (data-loss guard)
-  const hasUnsaved = Object.keys(form).length > 0;
+  const hasUnsaved = hasUnsavedSettingsDraft(form, data);
   useEffect(() => {
     onUnsavedChange?.(hasUnsaved);
   }, [hasUnsaved, onUnsavedChange]);
@@ -1100,7 +1103,10 @@ export function ProfileTab({
         saved={saved}
         error={saveError}
         onSave={() => save.mutate()}
-        onDiscard={() => setForm({})}
+        onDiscard={() => {
+          setForm({});
+          setSaveError(false);
+        }}
       />
     </PageShell>
   );
@@ -2703,6 +2709,7 @@ export function ServiceTab({
 
   const reset = () => {
     setDraft(saved);
+    setSaveError(false);
   };
 
   const set = <K extends keyof ServicePageConfig>(
@@ -3668,7 +3675,7 @@ export function SettingsTab({
   // Warn on unsaved changes. These hooks must run before the isLoading early
   // return — a hook after a conditional return crashes React ("Rendered more
   // hooks than during the previous render") the moment isLoading flips.
-  const hasUnsaved = Object.keys(form).length > 0;
+  const hasUnsaved = hasUnsavedSettingsDraft(form, data);
   useEffect(() => {
     onUnsavedChange?.(hasUnsaved);
   }, [hasUnsaved, onUnsavedChange]);
@@ -5858,7 +5865,10 @@ export function SettingsTab({
           saved={saved}
           error={saveError}
           onSave={() => save.mutate()}
-          onDiscard={() => setForm({})}
+          onDiscard={() => {
+            setForm({});
+            setSaveError(false);
+          }}
         />
       </div>
 

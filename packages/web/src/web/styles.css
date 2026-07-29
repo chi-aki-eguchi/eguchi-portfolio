@@ -1033,6 +1033,272 @@
   transition: opacity var(--dur-fast) var(--ease-out);
 }
 
+.admin-atelier .admin-photo-tile--reorder-target {
+  outline: 2.5px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+.admin-atelier .admin-photo-tile--reorder-failed {
+  outline: 1.5px solid var(--admin-danger);
+  outline-offset: 3px;
+}
+
+.admin-atelier .admin-library-drag-handle {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-s);
+  color: white;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.admin-atelier .admin-library-drag-handle.is-target {
+  background: var(--admin-accent);
+}
+
+.admin-atelier .admin-library-reorder-target-pill,
+.admin-atelier .admin-library-reorder-rank {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  color: white;
+  background: var(--admin-accent);
+}
+
+.admin-atelier .admin-library-reorder-target-pill {
+  top: 6px;
+  right: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.admin-atelier .admin-library-reorder-rank {
+  right: 6px;
+  bottom: 6px;
+  min-width: 28px;
+  padding: 3px 5px;
+  border-radius: var(--radius-s);
+  font-size: var(--admin-text-note);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.admin-atelier .admin-library-mobile-reorder-header {
+  flex: 0 0 52px;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: var(--sai-top, 0px) 8px 0 14px;
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-paper);
+  font-size: var(--admin-text-body);
+}
+
+.admin-atelier .admin-library-mobile-reorder-header > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.admin-atelier .admin-library-mobile-reorder-header span {
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-atelier .admin-library-action-bar {
+  position: relative;
+  z-index: 8;
+  flex: 0 0 auto;
+  min-height: 68px;
+  border-top: 1px solid var(--admin-line-strong);
+  background: var(--admin-paper);
+  box-shadow: 0 -4px 16px rgba(var(--admin-ink-rgb), 0.05);
+  animation: admin-action-bar-enter 120ms var(--ease-out);
+}
+
+.admin-atelier .admin-library-reorder-bar {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.2fr) auto minmax(180px, auto)
+    minmax(190px, 1.2fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+}
+
+.admin-atelier .admin-library-reorder-bar__identity,
+.admin-atelier .admin-library-reorder-bar__moves,
+.admin-atelier .admin-library-reorder-bar__position,
+.admin-atelier .admin-library-reorder-bar__status,
+.admin-atelier .admin-library-action-bar__button {
+  display: flex;
+  align-items: center;
+}
+
+.admin-atelier .admin-library-reorder-bar__identity {
+  min-width: 0;
+  gap: 10px;
+}
+
+.admin-atelier .admin-library-reorder-bar__thumb {
+  width: 64px;
+  height: 44px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  background: var(--admin-paper-deep);
+}
+
+.admin-atelier .admin-library-reorder-bar__moves {
+  gap: 2px;
+}
+
+.admin-atelier .admin-library-reorder-bar__position {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-atelier .admin-library-reorder-bar__input {
+  width: 64px;
+  min-height: 36px;
+  border: 1px solid var(--admin-line-strong);
+  border-radius: var(--radius-s);
+  background: var(--admin-paper-soft);
+  padding: 6px 8px;
+  color: var(--admin-ink);
+  outline: none;
+}
+
+.admin-atelier .admin-library-reorder-bar__status {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+}
+
+.admin-atelier .admin-library-action-bar__icon,
+.admin-atelier .admin-library-action-bar__button {
+  min-height: 36px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--radius-s);
+  color: var(--admin-ink);
+  background: var(--admin-paper-soft);
+}
+
+.admin-atelier .admin-library-action-bar__icon {
+  display: inline-flex;
+  width: 36px;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-atelier .admin-library-action-bar__button {
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.admin-atelier .admin-library-action-bar :disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+@keyframes admin-action-bar-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-atelier .admin-library-mobile-reorder-header {
+    display: flex;
+  }
+
+  .admin-atelier .admin-library-drag-handle {
+    width: 28px;
+    height: 28px;
+  }
+
+  .admin-atelier .admin-library-reorder-bar {
+    min-height: 150px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "identity moves"
+      "position position"
+      "status choose";
+    gap: 6px 8px;
+    padding: 8px 12px calc(8px + var(--sai-bottom, 0px));
+  }
+
+  .admin-atelier .admin-library-reorder-bar__identity {
+    grid-area: identity;
+  }
+
+  .admin-atelier .admin-library-reorder-bar__moves {
+    grid-area: moves;
+  }
+
+  .admin-atelier .admin-library-reorder-bar__position {
+    grid-area: position;
+  }
+
+  .admin-atelier .admin-library-reorder-bar__status {
+    grid-area: status;
+  }
+
+  .admin-atelier .admin-library-reorder-bar__choose {
+    grid-area: choose;
+  }
+
+  .admin-atelier .admin-library-reorder-bar__thumb {
+    width: 44px;
+    height: 36px;
+  }
+
+  .admin-atelier .admin-library-action-bar__icon,
+  .admin-atelier .admin-library-action-bar__button,
+  .admin-atelier .admin-library-reorder-bar__input {
+    min-height: 44px;
+  }
+
+  .admin-atelier .admin-library-action-bar__icon {
+    width: 44px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .admin-atelier .admin-library-reorder-bar {
+    grid-template-columns:
+      minmax(120px, 1fr) auto minmax(145px, auto)
+      minmax(120px, 1fr) auto;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .admin-atelier .admin-library-reorder-bar__thumb {
+    width: 48px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-atelier .admin-library-action-bar {
+    animation: none;
+  }
+}
+
 .admin-atelier [data-library-scroll] {
   /* The Library owns its virtual top/bottom spacers. Browser scroll anchoring
      must not counter-adjust scrollTop while those spacers are replaced. */

@@ -117,24 +117,31 @@ async function assertContactSheet(page: Page, width: number, height: number) {
       { timeout: 10_000, message: `${width}pxで並べるモードは2列` },
     )
     .toBe(2);
+  await tiles.nth(0).locator("[data-library-photo-action]").click();
+  const reorderBar = page.locator("[data-library-reorder-bar]");
+  await expect(reorderBar).toBeVisible();
   await expect(
-    tiles.nth(0).getByRole("button", { name: "前へ移動" }),
+    reorderBar.getByRole("button", { name: "前へ移動" }),
   ).toBeVisible();
   await expect(
-    tiles.nth(0).getByRole("button", { name: "後へ移動" }),
+    reorderBar.getByRole("button", { name: "後へ移動" }),
   ).toBeVisible();
   await expect(
-    tiles.nth(0).getByRole("button", { name: "先頭へ移動" }),
+    reorderBar.getByRole("button", { name: "先頭へ移動" }),
   ).toBeVisible();
   await expect(
-    tiles.nth(0).getByRole("button", { name: "末尾へ移動" }),
+    reorderBar.getByRole("button", { name: "末尾へ移動" }),
   ).toBeVisible();
+  await expect(page.locator(".admin-bottom-nav")).toHaveCount(0);
 
-  // 回帰(Claude review P1): 並べ替えボタンを触っただけではスクロール扱いに
-  // しない。touchstartでボタンが140ms消えると、タッチ操作が点滅して見える。
-  // 並べるモードは2列へ切り替わるので、その状態のボタンで確かめる。
-  const moveButton = tiles.nth(0).getByRole("button", { name: "後へ移動" });
-  await moveButton.evaluate((button) => {
+  // 写真上はドラッグ取っ手1つだけ。触ってもスクロール中扱いにしない。
+  const dragButton = tiles
+    .nth(0)
+    .getByRole("button", { name: /ドラッグして並べ替え|Drag to reorder/ });
+  await expect(
+    tiles.nth(0).locator("button:not([data-library-photo-action])"),
+  ).toHaveCount(1);
+  await dragButton.evaluate((button) => {
     const touch = new Touch({
       identifier: 1,
       target: button,
@@ -155,21 +162,23 @@ async function assertContactSheet(page: Page, width: number, height: number) {
     "data-scrolling",
     "false",
   );
-  await expect(moveButton).toBeVisible();
+  await expect(dragButton).toBeVisible();
 
-  // カード上の移動ボタンがタイルからはみ出さない
-  // (hasTouch=pointer:coarse なので admin-tap-sm は40px角に拡大された状態)
+  // 取っ手と下部帯が390pxの外へはみ出さない。
   const tileBox = (await tiles.nth(0).boundingBox())!;
-  for (const label of ["前へ移動", "後へ移動"]) {
-    const btn = tiles.nth(0).getByRole("button", { name: label });
-    const b = await btn.boundingBox();
-    if (!b) continue;
-    expect(b.x + b.width).toBeLessThanOrEqual(tileBox.x + tileBox.width + 1);
-    expect(b.x).toBeGreaterThanOrEqual(tileBox.x - 1);
-  }
-  // 並べるモードは2列へ切り替わるため、coarseでも先頭/末尾を含む4操作が
-  // 欠けない。長距離の移動経路を密度優先の3列に押し込まない。
-  await page.locator('[data-library-mode-action="finish-arrange"]').click();
+  const dragBox = (await dragButton.boundingBox())!;
+  expect(dragBox.x).toBeGreaterThanOrEqual(tileBox.x - 1);
+  expect(dragBox.x + dragBox.width).toBeLessThanOrEqual(
+    tileBox.x + tileBox.width + 1,
+  );
+  const barBox = (await reorderBar.boundingBox())!;
+  expect(barBox.x).toBeGreaterThanOrEqual(0);
+  expect(barBox.x + barBox.width).toBeLessThanOrEqual(width);
+
+  await page
+    .locator('[data-library-mode-action="finish-arrange"]:visible')
+    .click();
+  await expect(page.locator(".admin-bottom-nav")).toBeVisible();
 
   // タイルタップ → Inspector(モバイルはドロワー)が開く。編集していないので
   // × は即閉じ(確認ダイアログなし・非書き込み)。

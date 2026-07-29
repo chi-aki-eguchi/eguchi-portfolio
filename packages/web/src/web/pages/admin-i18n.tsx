@@ -91,16 +91,15 @@ const ADMIN_PHASE_2B_JA = {
     },
     mode: {
       group: "Libraryの操作モード",
-      normal: "通常",
+      normal: "閲覧",
       select: "選択",
-      arrange: "並べる",
+      arrange: "並べ替え",
       startSelect: "選択モードを開始",
       startArrange: "並べるモードを開始",
       endSelection: "選択終了",
       finishArrange: "並べ替えを終了",
       selectionHint: "写真を押すと選択・解除できます",
-      arrangeHint:
-        "パソコンではドラッグ、スマホでは写真上の矢印で並べ替えます",
+      arrangeHint: "動かす写真を1枚選んでください",
     },
     import: {
       mediumAria: "取り込み媒体",
@@ -318,6 +317,21 @@ const ADMIN_PHASE_2B_JA = {
       undoFailed:
         "元に戻した順序を保存できませんでした。Undo前の保存済み順へ戻しました。",
       dragHandle: "ドラッグして並べ替え",
+      region: "写真の並べ替え操作",
+      targetPrompt: "動かす写真を1枚選んでください",
+      targetLabel: (position: number) =>
+        `${position}番の写真を動かしています`,
+      targetPill: "動かす写真",
+      positionLabel: (position: number, total: number) =>
+        `${position} / ${total} 番目`,
+      moveSummary: (from: number, to: number) =>
+        `${from}番目から${to}番目へ移動しました`,
+      chooseAgain: "選び直す",
+      invalidPosition: (total: number) =>
+        `1〜${total}の番号を入力してください`,
+      mobileTitle: "並べ替え",
+      cancelExitWait: "中止して残る",
+      waitingToExit: "保存後に終了します",
       moveFirst: "先頭へ移動",
       movePrevious: "前へ移動",
       moveNext: "後へ移動",
@@ -1543,16 +1557,15 @@ const ADMIN_PHASE_2B_EN = {
     },
     mode: {
       group: "Library interaction mode",
-      normal: "Normal",
+      normal: "Browse",
       select: "Select",
-      arrange: "Arrange",
+      arrange: "Reorder",
       startSelect: "Start selection mode",
       startArrange: "Start arrange mode",
       endSelection: "End selection",
       finishArrange: "Finish arranging",
       selectionHint: "Tap a photo to select or deselect it",
-      arrangeHint:
-        "Drag on desktop, or use the arrow buttons on photos on mobile",
+      arrangeHint: "Choose one photo to move",
     },
     import: {
       mediumAria: "Import medium",
@@ -1771,6 +1784,20 @@ const ADMIN_PHASE_2B_EN = {
       undoFailed:
         "Undo could not be saved. The last saved order before Undo has been restored.",
       dragHandle: "Drag to reorder",
+      region: "Photo reorder controls",
+      targetPrompt: "Choose one photo to move",
+      targetLabel: (position: number) => `Moving photo ${position}`,
+      targetPill: "Moving photo",
+      positionLabel: (position: number, total: number) =>
+        `${position} / ${total}`,
+      moveSummary: (from: number, to: number) =>
+        `Moved from position ${from} to ${to}`,
+      chooseAgain: "Choose another",
+      invalidPosition: (total: number) =>
+        `Enter a number from 1 to ${total}`,
+      mobileTitle: "Reorder",
+      cancelExitWait: "Cancel and stay",
+      waitingToExit: "Will exit after saving",
       moveFirst: "Move to first",
       movePrevious: "Move earlier",
       moveNext: "Move later",

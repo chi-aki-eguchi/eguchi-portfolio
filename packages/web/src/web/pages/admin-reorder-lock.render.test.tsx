@@ -180,9 +180,8 @@ test("並び替えロック中は復帰ボタンが出て、押すと手動順�
   );
   expect(restore).toBeDefined();
 
-  // タッチ端末向けの操作案内も表示される
-  expect(host.textContent).toContain("ドラッグ");
-  expect(host.textContent).toContain("矢印ボタン");
+  // ロック中も空の操作帯を置かず、解除理由だけを1箇所で示す。
+  expect(host.querySelector("[data-library-reorder-bar]")).toBeNull();
 
   // 押すと librarySort=manual に戻り、警告ごと消える
   await act(async () => {
@@ -284,6 +283,10 @@ test("保存成功後だけUndoを出し、Undoも保存して元の順へ戻す
       '[data-library-mode-action="arrange"]',
     )!,
   );
+  await click(
+    host.querySelector<HTMLButtonElement>("[data-library-photo-action]")!,
+  );
+  expect(host.querySelector("[data-library-reorder-bar]")).not.toBeNull();
   expect(
     host.querySelector("[data-library-reorder-undo]"),
   ).toBeNull();
@@ -343,6 +346,12 @@ test("保存失敗時は操作前の順序へ戻す", async () => {
     arrange.click();
   });
   await flush();
+  await act(async () => {
+    host
+      .querySelector<HTMLButtonElement>("[data-library-photo-action]")!
+      .click();
+  });
+  await flush();
   const move = host.querySelector<HTMLButtonElement>(
     'button[aria-label="後へ移動"]',
   )!;
@@ -354,6 +363,9 @@ test("保存失敗時は操作前の順序へ戻す", async () => {
 
   expect(currentPhotoOrder).toEqual([1, 2]);
   expect(host.querySelector("[data-library-reorder-status='error']")).not.toBeNull();
+  expect(
+    host.querySelector("[data-library-reorder-failed-target='true']"),
+  ).not.toBeNull();
   expect(host.querySelector("[data-library-reorder-undo]")).toBeNull();
 
   await act(async () => {
@@ -400,6 +412,9 @@ test("Undo保存失敗時はUndo前の保存済み順へ戻す", async () => {
     host.querySelector<HTMLButtonElement>(
       '[data-library-mode-action="arrange"]',
     )!,
+  );
+  await clickAndFlush(
+    host.querySelector<HTMLButtonElement>("[data-library-photo-action]")!,
   );
   await clickAndFlush(
     host.querySelector<HTMLButtonElement>(

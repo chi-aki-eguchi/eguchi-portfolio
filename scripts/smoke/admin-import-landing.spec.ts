@@ -347,7 +347,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         /added-1\.jpg.*(?:今回追加|added in this import)/i,
       );
       await page
-        .locator('[data-library-mode-action="finish-arrange"]')
+        .locator('[data-library-mode-action="finish-arrange"]:visible')
         .click();
       await expect(recentSection).toBeVisible();
     });

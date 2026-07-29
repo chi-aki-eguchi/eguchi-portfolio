@@ -164,6 +164,16 @@ async function enterArrange(page: Page) {
   ).toBeVisible();
 }
 
+async function chooseReorderTarget(page: Page, index = 0) {
+  const tile = page.locator(".admin-photo-tile").nth(index);
+  await tile.locator("[data-library-photo-action]").click();
+  await expect(page.locator("[data-library-reorder-bar]")).toHaveAttribute(
+    "data-library-reorder-target",
+    await tile.getAttribute("id").then((id) => id?.replace("admin-photo-", "") ?? ""),
+  );
+  return tile;
+}
+
 async function visiblePhotoTitles(page: Page) {
   return page
     .locator(".admin-photo-tile img[alt^='順序確認']")
@@ -207,6 +217,89 @@ async function openLibrary(page: Page) {
 }
 
 test.describe("admin — 並べ替えの土台の安全性", () => {
+  test("1440pxと1024pxで操作帯が写真を隠さず横にはみ出さない", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCの2幅で確認する");
+
+    for (const width of [1440, 1024]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.unrouteAll({ behavior: "wait" });
+      await installMocks(page);
+      await openLibrary(page);
+      await enterArrange(page);
+      await chooseReorderTarget(page);
+
+      const bar = page.locator("[data-library-reorder-bar]");
+      const scroll = page.locator("[data-library-scroll]");
+      const [barBox, scrollBox] = await Promise.all([
+        bar.boundingBox(),
+        scroll.boundingBox(),
+      ]);
+      expect(barBox).not.toBeNull();
+      expect(scrollBox).not.toBeNull();
+      expect(barBox!.x).toBeGreaterThanOrEqual(0);
+      expect(barBox!.x + barBox!.width).toBeLessThanOrEqual(width);
+      expect(scrollBox!.y + scrollBox!.height).toBeLessThanOrEqual(
+        barBox!.y + 1,
+      );
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(width);
+      await expect(
+        page
+          .locator(".admin-photo-tile")
+          .first()
+          .locator("button:not([data-library-photo-action])"),
+      ).toHaveCount(1);
+    }
+  });
+
+  test("ドラッグとキーボード操作が同じ保存経路を通り、対象へフォーカスが戻る", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCで操作経路を確認する");
+
+    const state = await installMocks(page);
+    await openLibrary(page);
+    await enterArrange(page);
+
+    const firstTile = page.locator(".admin-photo-tile").nth(0);
+    const thirdTile = page.locator(".admin-photo-tile").nth(2);
+    await firstTile
+      .locator("[data-library-drag-handle]")
+      .dragTo(thirdTile);
+    await expect(
+      page.locator('[data-library-reorder-status="saved"]'),
+    ).toBeVisible();
+    expect(state.captured?.ids.slice(0, 3)).toEqual([
+      PHOTOS[1].id,
+      PHOTOS[0].id,
+      PHOTOS[2].id,
+    ]);
+
+    const targetAction = page.locator(
+      `#admin-photo-${PHOTOS[0].id} [data-library-photo-action]`,
+    );
+    await expect(targetAction).toBeFocused();
+    await targetAction.press("ArrowRight");
+    await expect(
+      page.locator('[data-library-reorder-status="saved"]'),
+    ).toContainText("保存済み");
+    await expect(page.locator("[data-library-reorder-announcement]")).toContainText(
+      "2番目から3番目",
+    );
+    await expect(targetAction).toBeFocused();
+
+    await targetAction.press("Home");
+    await expect(
+      page.locator('[data-library-reorder-status="saved"]'),
+    ).toBeVisible();
+    expect(state.captured?.ids[0]).toBe(PHOTOS[0].id);
+    await expect(targetAction).toBeFocused();
+    expect(state.otherWrites).toEqual([]);
+  });
+
   test("APIが別の順で返しても、画面と保存はsortOrder順に従う", async ({
     page,
   }, testInfo) => {
@@ -232,19 +325,13 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
       `先頭が sortOrder 0 の写真（実際: ${shownTitles[0]}）。受け取り順に従っていると「順序確認 9」になる`,
     ).toBe("順序確認 0");
 
-    // 「並べる」へ入り、先頭の写真を1つ後ろへ動かす
-    await page
-      .locator("button:visible")
-      .filter({ hasText: /^\s*並べる\s*$/ })
-      .first()
-      .click();
+    await enterArrange(page);
+    await chooseReorderTarget(page);
 
-    // 「後へ移動」= 1つ後ろへ。ボタンはhoverで現れるので、まず写真へ寄せる。
-    const firstTile = page.locator(".admin-photo-tile").first();
-    await firstTile.hover();
+    // 写真上には取っ手だけを残し、移動操作は下部帯へ集約する。
     const moveNext = page
-      .locator('button[aria-label="後へ移動"]')
-      .first();
+      .locator("[data-library-reorder-bar]")
+      .getByRole("button", { name: "後へ移動" });
     await moveNext.waitFor({ timeout: 10_000 });
     await moveNext.click();
 
@@ -309,11 +396,13 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
     const state = await installMocks(page);
     await openLibrary(page);
     await enterArrange(page);
+    await chooseReorderTarget(page);
     state.nextDelayMs = 500;
 
-    const firstTile = page.locator(".admin-photo-tile").first();
-    await firstTile.hover();
-    await firstTile.getByRole("button", { name: "後へ移動" }).click();
+    await page
+      .locator("[data-library-reorder-bar]")
+      .getByRole("button", { name: "後へ移動" })
+      .click();
 
     await expect(
       page.locator('[data-library-reorder-status="saving"]'),
@@ -343,9 +432,9 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
     const state = await installMocks(page);
     await openLibrary(page);
     await enterArrange(page);
+    await chooseReorderTarget(page);
     state.nextStatus = 500;
     state.nextDelayMs = 100;
-    await page.locator(".admin-photo-tile").first().hover();
     await page.getByRole("button", { name: "後へ移動" }).first().click();
     await expect(
       page.locator('[data-library-reorder-status="error"]'),
@@ -354,6 +443,9 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
       "順序確認 0",
       "順序確認 1",
     ]);
+    await expect(
+      page.locator("[data-library-reorder-failed-target='true']"),
+    ).toHaveCount(1);
     await expect(page.locator("[data-library-reorder-undo]")).toHaveCount(0);
 
     await page.getByRole("button", { name: "後へ移動" }).first().click();
@@ -385,7 +477,7 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
     const state = await installMocks(page);
     await openLibrary(page);
     await enterArrange(page);
-    await page.locator(".admin-photo-tile").first().hover();
+    await chooseReorderTarget(page);
     await page.getByRole("button", { name: "後へ移動" }).first().click();
     await expect(page.locator("[data-library-reorder-undo]")).toBeVisible();
 
@@ -439,6 +531,7 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
     const state = await installMocks(page);
     await openLibrary(page);
     await enterArrange(page);
+    await chooseReorderTarget(page);
     const firstTile = page.locator(".admin-photo-tile").first();
     const secondTile = page.locator(".admin-photo-tile").nth(1);
     const thirdTile = page.locator(".admin-photo-tile").nth(2);
@@ -451,20 +544,28 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
     expect(secondBox?.y).toBe(firstBox?.y);
     expect(thirdBox?.y).toBeGreaterThan(firstBox?.y ?? 0);
 
-    for (const name of ["先頭へ移動", "末尾へ移動", "何番目へ移動"]) {
-      const control = firstTile.getByRole("button", { name });
+    const bar = page.locator("[data-library-reorder-bar]");
+    for (const name of ["先頭へ移動", "前へ移動", "後へ移動", "末尾へ移動"]) {
+      const control = bar.getByRole("button", { name });
       await expect(control).toBeVisible();
       const box = await control.boundingBox();
       expect((box?.x ?? 400) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
     }
 
-    await firstTile.getByRole("button", { name: "何番目へ移動" }).click();
     await page.locator("[data-library-position-input]").fill("10");
-    await page.getByRole("button", { name: "移動する" }).click();
+    await bar.getByRole("button", { name: "移動する" }).click();
     await expect(
       page.locator('[data-library-reorder-status="saved"]'),
     ).toBeVisible();
     expect(state.captured?.ids[9]).toBe(PHOTOS[0].id);
+    await expect(page.locator(".admin-bottom-nav")).toHaveCount(0);
+    await expect(
+      page.locator("[data-library-mobile-reorder-header]"),
+    ).toBeVisible();
+    await page
+      .locator('[data-library-mode-action="finish-arrange"]:visible')
+      .click();
+    await expect(page.locator(".admin-bottom-nav")).toBeVisible();
     expect(state.otherWrites).toEqual([]);
   });
 });

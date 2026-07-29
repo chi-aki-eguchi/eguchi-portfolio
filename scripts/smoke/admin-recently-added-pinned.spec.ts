@@ -323,7 +323,7 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
     await expect.poll(() => harness.reorderRequests.length).toBe(1);
     expect(harness.reorderRequests[0]).toEqual([2, 1, 3, 101, 102]);
     await page
-      .locator('[data-library-mode-action="finish-arrange"]')
+      .locator('[data-library-mode-action="finish-arrange"]:visible')
       .click();
     await expect(section).toBeVisible();
 

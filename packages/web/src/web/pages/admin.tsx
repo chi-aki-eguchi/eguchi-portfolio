@@ -1,3 +1,4 @@
+/* oxlint-disable jsx-a11y/prefer-tag-over-role -- Library uses the approved ARIA listbox/option pattern with custom photo tiles. */
 import {
   useState,
   useRef,
@@ -62,10 +63,6 @@ import {
   Grid,
   Columns,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Eye,
   EyeOff,
   Star,
@@ -101,6 +98,7 @@ import {
 } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
+import { AdminReorderBar } from "./admin-reorder-bar";
 import {
   AdminLanguageProvider,
   AdminLanguageToggle,
@@ -438,6 +436,7 @@ function AdminPageContent({
     if (shouldLandOnSetup(authenticated, shellSettings)) setTab("setup");
   }, [authenticated, shellSettings, setTab, demoMode]);
   const [galleryUploading, setGalleryUploading] = useState(false);
+  const [galleryReordering, setGalleryReordering] = useState(false);
   // 「今回追加」は選択とは別の一時状態。GalleryTab より上で持つことで、
   // カテゴリ等の別タブへ移動して戻ってもページ再読込までは目印を残す。
   const [recentlyAddedPhotoIds, setRecentlyAddedPhotoIds] = useState<
@@ -620,6 +619,7 @@ function AdminPageContent({
   // opening Trash) must only do so once the switch has actually gone through.
   const requestTab = (nextTab: Tab): boolean => {
     if (nextTab === "service" && !showService) return false;
+    if (galleryReordering && nextTab !== "gallery") return false;
     if (hasUnsaved && nextTab !== tab) {
       setUnsavedConfirm(nextTab);
       return false;
@@ -704,7 +704,10 @@ function AdminPageContent({
           <AdminLanguageToggle className="text-[#594b2c]" />
         </div>
       )}
-      <aside className="admin-sidebar admin-glass hidden lg:flex">
+      <aside
+        className="admin-sidebar admin-glass hidden lg:flex"
+        data-navigation-locked={galleryReordering || undefined}
+      >
         <div className="admin-sidebar__brand">
           <span className="admin-sidebar__eyebrow">{t.login.eyebrow}</span>
           <span className="admin-sidebar__title">{sidebarSiteName}</span>
@@ -731,7 +734,10 @@ function AdminPageContent({
                         if (el) tabButtonRefs.current[key] = el;
                       }}
                       type="button"
-                      disabled={galleryUploading && key !== "gallery"}
+                      disabled={
+                        (galleryUploading && key !== "gallery") ||
+                        (galleryReordering && key !== "gallery")
+                      }
                       onClick={() => requestTab(key)}
                       aria-current={active ? "page" : undefined}
                       className="admin-sidebar__tab"
@@ -762,12 +768,14 @@ function AdminPageContent({
       </aside>
 
       <div className="admin-main">
-        <AdminMobileTopBar
-          tab={tab}
-          tabMeta={adminTabs}
-          onLogout={requestLogout}
-          showLanguageToggle={!demoMode}
-        />
+        {!galleryReordering && (
+          <AdminMobileTopBar
+            tab={tab}
+            tabMeta={adminTabs}
+            onLogout={requestLogout}
+            showLanguageToggle={!demoMode}
+          />
+        )}
         {!demoMode && <AdminDesktopLanguageBar />}
 
         {/* Content */}
@@ -789,6 +797,7 @@ function AdminPageContent({
                 onTrashSignalConsumed={() => setOpenTrashRequest(0)}
                 recentlyAddedPhotoIds={recentlyAddedPhotoIds}
                 onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
+                onReorderWorkspaceChange={setGalleryReordering}
               />
             )}
             {contentTab !== "setup" && contentTab !== "gallery" && (
@@ -823,13 +832,15 @@ function AdminPageContent({
           </div>
         </div>
 
-        <AdminMobileTabBar
-          tab={tab}
-          tabMeta={adminTabs}
-          tabGroups={adminTabGroups}
-          galleryUploading={galleryUploading}
-          onSelectTab={requestTab}
-        />
+        {!galleryReordering && (
+          <AdminMobileTabBar
+            tab={tab}
+            tabMeta={adminTabs}
+            tabGroups={adminTabGroups}
+            galleryUploading={galleryUploading}
+            onSelectTab={requestTab}
+          />
+        )}
       </div>
 
       {/* Unsaved settings confirmation */}
@@ -1746,6 +1757,7 @@ export function GalleryTab({
   onTrashSignalConsumed,
   recentlyAddedPhotoIds = EMPTY_RECENTLY_ADDED_PHOTO_IDS,
   onRecentlyAddedPhotoIdsChange = ignoreRecentlyAddedPhotoIdsChange,
+  onReorderWorkspaceChange,
 }: {
   demoSeed?: string;
   onUploadingChange?: (v: boolean) => void;
@@ -1761,6 +1773,7 @@ export function GalleryTab({
   onTrashSignalConsumed?: () => void;
   recentlyAddedPhotoIds?: ReadonlySet<number>;
   onRecentlyAddedPhotoIdsChange?: (ids: Set<number>) => void;
+  onReorderWorkspaceChange?: (active: boolean) => void;
 }) {
   const qc = useQueryClient();
   const { language, t } = useAdminI18n();
@@ -1800,6 +1813,30 @@ export function GalleryTab({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [libraryMode, setLibraryMode] = useState<LibraryMode>("normal");
   const [lastClicked, setLastClicked] = useState<number | null>(null);
+  const [reorderTargetId, setReorderTargetId] = useState<number | null>(null);
+  const [reorderPositionValue, setReorderPositionValue] = useState("");
+  const [lastMove, setLastMove] = useState<{
+    id: number;
+    from: number;
+    to: number;
+  } | null>(null);
+  const [reorderFailedTargetId, setReorderFailedTargetId] = useState<
+    number | null
+  >(null);
+  const [pendingLibraryMode, setPendingLibraryMode] =
+    useState<LibraryMode | null>(null);
+  const [reorderExitTimedOut, setReorderExitTimedOut] = useState(false);
+  const onReorderWorkspaceChangeRef = useRef(onReorderWorkspaceChange);
+  onReorderWorkspaceChangeRef.current = onReorderWorkspaceChange;
+  useEffect(() => {
+    onReorderWorkspaceChangeRef.current?.(libraryMode === "arrange");
+  }, [libraryMode]);
+  useEffect(
+    () => () => {
+      onReorderWorkspaceChangeRef.current?.(false);
+    },
+    [],
+  );
   const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 220); // px
   const [mobileLibraryColumns, setMobileLibraryColumns] = usePersistentState<
     2 | 3
@@ -1873,10 +1910,6 @@ export function GalleryTab({
   editFormRef.current = editForm;
   const [dragSrcId, setDragSrcId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
-  const [positionMove, setPositionMove] = useState<{
-    id: number;
-    value: string;
-  } | null>(null);
   const [optimisticOrderIds, setOptimisticOrderIds] = useState<
     number[] | null
   >(null);
@@ -2791,6 +2824,17 @@ export function GalleryTab({
         : [...recentlyAddedPhotos, ...regularPhotos],
     [recentlyAddedPhotos, regularPhotos],
   );
+  useEffect(() => {
+    if (reorderTargetId === null) return;
+    const index = displayed.findIndex((photo) => photo.id === reorderTargetId);
+    if (index < 0) {
+      setReorderTargetId(null);
+      setReorderPositionValue("");
+      setLastMove(null);
+      return;
+    }
+    setReorderPositionValue(String(index + 1));
+  }, [displayed, reorderTargetId]);
   const recentlyAddedOutsideFilters = useMemo(() => {
     if (recentlyAddedPhotos.length === 0) return false;
     const filteredIds = new Set(displayedBase.map((photo) => photo.id));
@@ -3540,6 +3584,7 @@ export function GalleryTab({
     beforeIds: number[];
     afterIds: number[];
     operation: "save" | "undo";
+    move?: { id: number; from: number; to: number };
     afterConfirmed?: () => void;
   };
 
@@ -3579,8 +3624,12 @@ export function GalleryTab({
       }
     },
     onMutate: (variables) => {
+      setReorderFailedTargetId(null);
       setOptimisticOrderIds(variables.ids);
-      if (variables.operation === "save") setReorderUndo(null);
+      if (variables.operation === "save") {
+        setReorderUndo(null);
+        setLastMove(variables.move ?? null);
+      }
       setActionError("");
       setReorderFeedback({
         state: "saving",
@@ -3614,8 +3663,10 @@ export function GalleryTab({
             beforeIds: variables.beforeIds,
             afterIds: variables.afterIds,
           });
+          setReorderFailedTargetId(null);
         } else {
           setReorderUndo(null);
+          setLastMove(null);
         }
         setReorderFeedback({
           state: "saved",
@@ -3660,6 +3711,10 @@ export function GalleryTab({
       } else {
         setOptimisticOrderIds(variables.beforeIds);
       }
+      if (variables.operation === "save") setLastMove(null);
+      if (variables.operation === "save" && variables.move) {
+        setReorderFailedTargetId(variables.move.id);
+      }
       const message = conflict
         ? copy.reorder.conflict
         : variables.operation === "undo"
@@ -3684,6 +3739,7 @@ export function GalleryTab({
       expectedIds?: number[];
       beforeIds?: number[];
       afterConfirmed?: () => void;
+      move?: { id: number; from: number; to: number };
     },
   ) => {
     if (reorderBusyRef.current || reorder.isPending) return;
@@ -3710,6 +3766,7 @@ export function GalleryTab({
       beforeIds,
       afterIds: ids,
       operation,
+      move: options?.move,
       afterConfirmed: options?.afterConfirmed,
     });
   };
@@ -4020,13 +4077,25 @@ export function GalleryTab({
     nextMode: LibraryMode,
     afterChange?: () => void,
   ) => {
+    const keepSelection =
+      nextMode === "arrange" ||
+      (libraryMode === "arrange" && nextMode === "select");
     setLibraryMode(nextMode);
+    setPendingLibraryMode(null);
+    setReorderExitTimedOut(false);
     setBatchCatOpen(false);
     setBatchSeriesOpen(false);
     setDragSrcId(null);
     setDragOverId(null);
     setPreviewPhoto(null);
-    setSelected(new Set());
+    if (!keepSelection) setSelected(new Set());
+    if (nextMode !== "arrange") {
+      setReorderTargetId(null);
+      setReorderPositionValue("");
+      setLastMove(null);
+      setReorderFailedTargetId(null);
+      setReorderUndo(null);
+    }
     if (nextMode !== "normal") setInspectPhoto(null);
     afterChange?.();
   };
@@ -4037,6 +4106,15 @@ export function GalleryTab({
     nextMode: LibraryMode,
     afterChange?: () => void,
   ) => {
+    if (
+      libraryMode === "arrange" &&
+      nextMode !== "arrange" &&
+      reorderBusyRef.current
+    ) {
+      setPendingLibraryMode(nextMode);
+      setReorderExitTimedOut(false);
+      return;
+    }
     if (nextMode === "arrange") {
       if (!manualOrder.ok) {
         setActionError(copy.feedback.invalidManualOrder);
@@ -4071,6 +4149,24 @@ export function GalleryTab({
     proceed();
   };
 
+  useEffect(() => {
+    if (!pendingLibraryMode || reorderBusy) return;
+    if (reorderFeedback?.state === "error") {
+      setPendingLibraryMode(null);
+      setReorderExitTimedOut(false);
+      return;
+    }
+    applyLibraryMode(pendingLibraryMode);
+    // applyLibraryMode intentionally reads the current mode/selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingLibraryMode, reorderBusy, reorderFeedback?.state]);
+
+  useEffect(() => {
+    if (!pendingLibraryMode || !reorderBusy) return;
+    const timer = window.setTimeout(() => setReorderExitTimedOut(true), 2000);
+    return () => window.clearTimeout(timer);
+  }, [pendingLibraryMode, reorderBusy]);
+
   const selectRangeThrough = (photo: Photo, idx: number) => {
     const lastIdx =
       lastClicked === null
@@ -4090,10 +4186,24 @@ export function GalleryTab({
     });
   };
 
-  // 通常=詳細、選択=選択/解除、並べる=クリック操作なし。
+  // 閲覧=詳細、選択=選択/解除、並べ替え=対象を1枚だけ指定する。
   // Cmd/Ctrl・Shiftクリックは従来どおり選択モードへの近道として残す。
   const handlePhotoClick = (photo: Photo, idx: number, e: React.MouseEvent) => {
-    if (libraryMode === "arrange") return;
+    if (libraryMode === "arrange") {
+      if (reorderLocked || reorderBusyRef.current) return;
+      setReorderTargetId(photo.id);
+      setReorderPositionValue(String(idx + 1));
+      setLastClicked(photo.id);
+      setLastMove(null);
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLElement>(
+            `#admin-photo-${photo.id} [data-library-photo-action]`,
+          )
+          ?.focus();
+      });
+      return;
+    }
 
     if (libraryMode === "normal" && !(e.metaKey || e.ctrlKey || e.shiftKey)) {
       guardInspectorSwitch(photo, () => {
@@ -4141,7 +4251,23 @@ export function GalleryTab({
       id,
       delta,
     );
-    if (ids) savePhotoOrder(ids);
+    if (ids) {
+      const from = displayed.findIndex((photo) => photo.id === id) + 1;
+      const to = from + delta;
+      savePhotoOrder(ids, {
+        move: { id, from, to },
+        afterConfirmed: () => {
+          scrollLibraryIndexIntoView(to - 1);
+          requestAnimationFrame(() =>
+            document
+              .querySelector<HTMLElement>(
+                `#admin-photo-${id} [data-library-photo-action]`,
+              )
+              ?.focus(),
+          );
+        },
+      });
+    }
   };
 
   const movePhotoTo = (id: number, pos: "start" | "end") => {
@@ -4157,7 +4283,23 @@ export function GalleryTab({
       id,
       pos,
     );
-    if (ids) savePhotoOrder(ids);
+    if (ids) {
+      const from = displayed.findIndex((photo) => photo.id === id) + 1;
+      const to = pos === "start" ? 1 : displayed.length;
+      savePhotoOrder(ids, {
+        move: { id, from, to },
+        afterConfirmed: () => {
+          scrollLibraryIndexIntoView(to - 1);
+          requestAnimationFrame(() =>
+            document
+              .querySelector<HTMLElement>(
+                `#admin-photo-${id} [data-library-photo-action]`,
+              )
+              ?.focus(),
+          );
+        },
+      });
+    }
   };
 
   const movePhotoToNumber = (id: number, oneBasedPosition: number) => {
@@ -4173,7 +4315,22 @@ export function GalleryTab({
       id,
       oneBasedPosition,
     );
-    if (ids) savePhotoOrder(ids);
+    if (ids) {
+      const from = displayed.findIndex((photo) => photo.id === id) + 1;
+      savePhotoOrder(ids, {
+        move: { id, from, to: oneBasedPosition },
+        afterConfirmed: () => {
+          scrollLibraryIndexIntoView(oneBasedPosition - 1);
+          requestAnimationFrame(() =>
+            document
+              .querySelector<HTMLElement>(
+                `#admin-photo-${id} [data-library-photo-action]`,
+              )
+              ?.focus(),
+          );
+        },
+      });
+    }
   };
 
   const rotateLibraryPhoto = (photo: Photo, delta: -90 | 90) => {
@@ -4285,8 +4442,13 @@ export function GalleryTab({
       libraryMode === "arrange" &&
       !reorderLocked &&
       !reorderBusyRef.current
-    )
+    ) {
       setDragSrcId(id);
+      setReorderTargetId(id);
+      setLastClicked(id);
+      const index = displayed.findIndex((photo) => photo.id === id);
+      if (index >= 0) setReorderPositionValue(String(index + 1));
+    }
   };
   const handleDragOver = (e: React.DragEvent, id: number) => {
     if (
@@ -4323,7 +4485,27 @@ export function GalleryTab({
       dragSrcId,
       targetId,
     );
-    if (ids) savePhotoOrder(ids);
+    if (ids) {
+      const movedId = dragSrcId;
+      const from = displayed.findIndex((photo) => photo.id === movedId) + 1;
+      const viewIds = new Set(displayed.map((photo) => photo.id));
+      const to =
+        ids.filter((id) => viewIds.has(id)).findIndex((id) => id === movedId) +
+        1;
+      savePhotoOrder(ids, {
+        move: { id: movedId, from, to },
+        afterConfirmed: () => {
+          scrollLibraryIndexIntoView(to - 1);
+          requestAnimationFrame(() =>
+            document
+              .querySelector<HTMLElement>(
+                `#admin-photo-${movedId} [data-library-photo-action]`,
+              )
+              ?.focus(),
+          );
+        },
+      });
+    }
     setDragSrcId(null);
     setDragOverId(null);
   };
@@ -4452,6 +4634,13 @@ export function GalleryTab({
           setPreviewPhoto(null);
           return;
         }
+        if (libraryMode === "arrange" && reorderTargetId !== null) {
+          e.preventDefault();
+          setReorderTargetId(null);
+          setReorderPositionValue("");
+          setLastMove(null);
+          return;
+        }
         if (libraryMode !== "normal") {
           requestLibraryMode("normal");
           return;
@@ -4498,7 +4687,47 @@ export function GalleryTab({
         rotateActivePhotos("rotate_right");
         return;
       }
-      if (libraryMode === "arrange") return;
+      if (libraryMode === "arrange") {
+        if (
+          (e.key === "Enter" || e.key === " ") &&
+          lastClicked !== null &&
+          !reorderLocked &&
+          !reorderBusyRef.current
+        ) {
+          const index = displayed.findIndex(
+            (photo) => photo.id === lastClicked,
+          );
+          if (index >= 0) {
+            e.preventDefault();
+            setReorderTargetId(lastClicked);
+            setReorderPositionValue(String(index + 1));
+            setLastMove(null);
+          }
+          return;
+        }
+        if (reorderTargetId === null) return;
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          movePhoto(reorderTargetId, -1);
+          return;
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          movePhoto(reorderTargetId, 1);
+          return;
+        }
+        if (e.key === "Home") {
+          e.preventDefault();
+          movePhotoTo(reorderTargetId, "start");
+          return;
+        }
+        if (e.key === "End") {
+          e.preventDefault();
+          movePhotoTo(reorderTargetId, "end");
+          return;
+        }
+        return;
+      }
       // Arrow navigation
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -4560,6 +4789,9 @@ export function GalleryTab({
     effectiveThumbSize,
     inspectPhoto,
     libraryMode,
+    reorderTargetId,
+    reorderLocked,
+    reorderBusy,
     recentlyAddedPhotoIds,
     dismissRecentlyAdded,
     // requestCloseInspector が最新の下書きを見て未保存判定できるように
@@ -4588,12 +4820,73 @@ export function GalleryTab({
   categories.forEach((c, i) => {
     catColors[c.slug] = palette[i % palette.length];
   });
+  const reorderTarget =
+    reorderTargetId === null
+      ? null
+      : displayed.find((photo) => photo.id === reorderTargetId) ?? null;
+  const reorderTargetPosition =
+    reorderTargetId === null
+      ? 0
+      : displayed.findIndex((photo) => photo.id === reorderTargetId) + 1;
+  const parsedReorderPosition = Number(reorderPositionValue);
+  const reorderPositionInvalid =
+    !Number.isInteger(parsedReorderPosition) ||
+    parsedReorderPosition < 1 ||
+    parsedReorderPosition > displayed.length;
 
   return (
     <div className="flex h-full" data-library-mode={libraryMode}>
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="px-4 sm:px-10 pt-2 flex-shrink-0">
+        {libraryMode === "arrange" && (
+          <header
+            data-library-mobile-reorder-header
+            className="admin-library-mobile-reorder-header md:hidden"
+          >
+            <div className="min-w-0">
+              <strong>{copy.reorder.mobileTitle}</strong>
+              {pendingLibraryMode && (
+                <output>{copy.reorder.waitingToExit}</output>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {reorderUndo && !reorderBusy && (
+                <button
+                  type="button"
+                  onClick={undoPhotoOrder}
+                  className="admin-tap px-2 text-[length:var(--admin-text-note)]"
+                >
+                  {copy.reorder.undo}
+                </button>
+              )}
+              {reorderExitTimedOut && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingLibraryMode(null);
+                    setReorderExitTimedOut(false);
+                  }}
+                  className="admin-tap px-2 text-[length:var(--admin-text-note)]"
+                >
+                  {copy.reorder.cancelExitWait}
+                </button>
+              )}
+              <button
+                type="button"
+                data-library-mode-action="finish-arrange"
+                onClick={() => requestLibraryMode("normal")}
+                className="admin-tap px-2 text-[length:var(--admin-text-note)]"
+              >
+                {copy.mode.finishArrange}
+              </button>
+            </div>
+          </header>
+        )}
+        <div
+          className={`px-4 sm:px-10 pt-2 flex-shrink-0 ${
+            libraryMode === "arrange" ? "hidden md:block" : ""
+          }`}
+        >
           <PageHeader
             title="Library"
             description={
@@ -5275,6 +5568,21 @@ export function GalleryTab({
                 >
                   {copy.mode.endSelection}
                 </button>
+                <button
+                  type="button"
+                  data-library-mode-action="arrange"
+                  onClick={() => requestLibraryMode("arrange")}
+                  disabled={
+                    uploading ||
+                    allPhotos.length === 0 ||
+                    !manualOrder.ok ||
+                    reorderBusy ||
+                    publicReorderLockCause !== null
+                  }
+                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors disabled:opacity-40"
+                >
+                  {copy.mode.arrange}
+                </button>
               </div>
               {selected.size > 0 && (
                 <div data-library-batch-actions className="contents">
@@ -5584,7 +5892,9 @@ export function GalleryTab({
                         : reorderLockCause === "sort"
                           ? copy.reorder.lockedBySort
                           : copy.reorder.lockedByFilter
-                  : copy.mode.arrangeHint}
+                  : reorderTargetPosition > 0
+                    ? copy.reorder.targetLabel(reorderTargetPosition)
+                    : copy.reorder.targetPrompt}
               </span>
               {reorderLocked && publicReorderLockCause === null && (
                 <button
@@ -5595,11 +5905,22 @@ export function GalleryTab({
                   {copy.reorder.unlock}
                 </button>
               )}
+              {selected.size > 0 && (
+                <button
+                  type="button"
+                  data-library-mode-action="select"
+                  onClick={() => requestLibraryMode("select")}
+                  disabled={reorderBusy}
+                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] disabled:opacity-40"
+                >
+                  {copy.mode.select} ({selected.size})
+                </button>
+              )}
               <button
                 type="button"
                 data-library-mode-action="finish-arrange"
                 onClick={() => requestLibraryMode("normal")}
-                className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm admin-btn-primary"
+                className="hidden md:inline-flex text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm admin-btn-primary"
               >
                 {copy.mode.finishArrange}
               </button>
@@ -5610,42 +5931,32 @@ export function GalleryTab({
               )}
             </div>
           )}
-          {!showTrash && (reorderFeedback || reorderUndo) && (
-            <div
-              data-library-reorder-status={
-                reorderFeedback?.state ?? "undo-available"
-              }
-              role={reorderFeedback?.state === "error" ? "alert" : "status"}
-              className="flex items-center gap-2 flex-wrap text-[length:var(--admin-text-note)]"
-            >
-              {reorderFeedback && (
-                <span
-                  className={
-                    reorderFeedback.state === "error"
-                      ? "text-red-300/90"
-                      : reorderFeedback.state === "saved"
-                        ? "text-emerald-300/80"
-                        : "text-[var(--admin-muted)]"
-                  }
-                >
-                  {reorderFeedback.state === "saving" && (
-                    <Loader2 size={11} className="inline animate-spin mr-1" />
-                  )}
-                  {reorderFeedback.message}
-                </span>
-              )}
-              {reorderUndo && !reorderBusy && (
-                <button
-                  type="button"
-                  data-library-reorder-undo
-                  onClick={undoPhotoOrder}
-                  className="px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)]"
-                >
-                  {copy.reorder.undo}
-                </button>
-              )}
-            </div>
-          )}
+          {libraryMode !== "arrange" &&
+            !showTrash &&
+            (reorderFeedback || reorderUndo) && (
+              <div
+                data-library-reorder-status={
+                  reorderFeedback?.state ?? "undo-available"
+                }
+                role={reorderFeedback?.state === "error" ? "alert" : "status"}
+                className="flex items-center gap-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
+              >
+                {reorderFeedback?.state === "saving" && (
+                  <Loader2 size={11} className="animate-spin" />
+                )}
+                <span>{reorderFeedback?.message}</span>
+                {reorderUndo && !reorderBusy && (
+                  <button
+                    type="button"
+                    data-library-reorder-undo
+                    onClick={undoPhotoOrder}
+                    className="px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)]"
+                  >
+                    {copy.reorder.undo}
+                  </button>
+                )}
+              </div>
+            )}
         </div>
 
         {libraryMode === "normal" &&
@@ -5744,6 +6055,7 @@ export function GalleryTab({
           ref={scrollRef}
           data-library-scroll
           data-scrolling="false"
+          tabIndex={-1}
           className={`flex-1 overflow-y-auto p-3 relative ${dragOver ? "ring-2 ring-inset ring-[rgba(var(--admin-ink-rgb),0.2)]" : ""}`}
           onWheel={(e) => markLibraryScrolling(e.currentTarget)}
           onScroll={(e) => {
@@ -5934,45 +6246,6 @@ export function GalleryTab({
             </div>
           ) : (
             <>
-              {/* Reorder-lock warning (filters or a non-manual view sort).
-                  原因の説明だけでなく、初心者が迷わないよう1クリックの復帰
-                  ボタンを置く(先輩サポート 2026-07-11)。 */}
-              {libraryMode === "arrange" && reorderLocked && (
-                <div className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-x-2 gap-y-1 flex-wrap">
-                  <span className="text-[var(--admin-muted)]">⚠</span>
-                  <span>
-                    {publicReorderLockCause === "not-manual"
-                      ? copy.reorder.publicOrderLocked
-                      : publicReorderLockCause === "error"
-                        ? copy.reorder.settingsError
-                        : publicReorderLockCause === "loading"
-                          ? copy.reorder.settingsLoading
-                          : reorderLockCause === "sort"
-                            ? copy.reorder.lockedBySort
-                            : copy.reorder.lockedByFilter}
-                  </span>
-                  {publicReorderLockCause === null && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={unlockReorder}
-                        className="text-[length:var(--admin-text-note)] px-2 py-0.5 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] hover:bg-[var(--admin-paper-deep)] transition-colors"
-                      >
-                        {copy.reorder.unlock}
-                      </button>
-                      <span>{copy.reorder.hint}</span>
-                    </>
-                  )}
-                </div>
-              )}
-              {/* Series-scoped reorder: the order set here IS the public series page order */}
-              {libraryMode === "arrange" &&
-                !reorderLocked &&
-                onlySeriesFilter && (
-                  <div className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-deep)] border border-[var(--admin-line-strong)] rounded-sm px-3 py-1.5 mb-2 flex items-center gap-1.5">
-                    <span>↕</span> {copy.reorder.seriesHint}
-                  </div>
-                )}
               {/* Grid */}
               {(() => {
                 const renderLibraryPhotoTile = (
@@ -5986,6 +6259,12 @@ export function GalleryTab({
                     const isInspect =
                       libraryMode === "normal" &&
                       inspectPhoto?.id === photo.id;
+                    const isReorderTarget =
+                      libraryMode === "arrange" &&
+                      reorderTargetId === photo.id;
+                    const isFailedReorderTarget =
+                      libraryMode === "arrange" &&
+                      reorderFailedTargetId === photo.id;
                     const catColor = catColors[photo.category] ?? "#666";
                     const isUnpublished = photo.isPublished === false;
                     const thumbnailSrc = adminPhotoSrc(photo, 400, 70);
@@ -6026,6 +6305,21 @@ export function GalleryTab({
                         data-library-recently-added={
                           isRecentlyAdded ? "true" : undefined
                         }
+                        data-library-reorder-target={
+                          isReorderTarget ? "true" : undefined
+                        }
+                        data-library-reorder-failed-target={
+                          isFailedReorderTarget ? "true" : undefined
+                        }
+                        role="option"
+                        tabIndex={-1}
+                        aria-selected={
+                          libraryMode === "select"
+                            ? isSelected
+                            : libraryMode === "arrange"
+                              ? isReorderTarget
+                              : undefined
+                        }
                         onDragOver={(e) => handleDragOver(e, photo.id)}
                         onDrop={() => handleDrop(photo.id)}
                         onDragEnd={() => {
@@ -6038,9 +6332,15 @@ export function GalleryTab({
                         } ${
                           isSelected
                             ? "ring-2 ring-[#aaa] ring-offset-1 ring-offset-[var(--admin-paper)]"
-                            : isInspect
-                              ? "ring-1 ring-[var(--admin-muted)]"
-                              : ""
+                            : isReorderTarget
+                              ? "admin-photo-tile--reorder-target"
+                              : isInspect
+                                ? "ring-1 ring-[var(--admin-muted)]"
+                                : ""
+                        } ${
+                          isFailedReorderTarget
+                            ? "admin-photo-tile--reorder-failed"
+                            : ""
                         }`}
                       >
                         {isRecentlyAdded && (
@@ -6080,6 +6380,7 @@ export function GalleryTab({
                             }`
                           }
                           onClick={(e) => handlePhotoClick(photo, idx, e)}
+                          onFocus={() => setLastClicked(photo.id)}
                           className={`absolute inset-0 z-[1] ${
                             libraryMode === "arrange"
                               ? reorderLocked
@@ -6094,6 +6395,7 @@ export function GalleryTab({
                             <button
                               type="button"
                               draggable={!reorderBusy}
+                              data-library-drag-handle
                               onDragStart={(event) => {
                                 event.stopPropagation();
                                 handleDragStart(photo.id);
@@ -6106,11 +6408,29 @@ export function GalleryTab({
                               disabled={reorderBusy}
                               aria-label={copy.reorder.dragHandle}
                               title={copy.reorder.dragHandle}
-                              className="admin-tap-sm absolute top-1 right-1 z-[3] flex h-7 w-7 cursor-grab items-center justify-center rounded-sm border border-white/50 bg-black/65 text-white active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40"
+                              className={`admin-library-drag-handle absolute left-1.5 top-1.5 z-[3] flex cursor-grab items-center justify-center active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40 ${
+                                isReorderTarget ? "is-target" : ""
+                              }`}
                             >
                               <GripVertical size={16} />
                             </button>
                           )}
+                        {isReorderTarget && (
+                          <>
+                            <span
+                              data-library-reorder-target-pill
+                              className="admin-library-reorder-target-pill"
+                            >
+                              {copy.reorder.targetPill}
+                            </span>
+                            <span
+                              data-library-reorder-rank
+                              className="admin-library-reorder-rank"
+                            >
+                              {String(idx + 1).padStart(2, "0")}
+                            </span>
+                          </>
+                        )}
                         {/* eager固定: マウント範囲は仮想化が既に絞っている(可視+overscan)。
                         lazyだと高速スワイプ中のremountでキャッシュ済み画像すら白抜けし
                         (Chromeはスクロール中lazy読込を後回しにする)、静止後まで持続する
@@ -6245,84 +6565,6 @@ export function GalleryTab({
                             {photo.title || photo.filename}
                           </p>
                         </div>
-                        {/* Touch-friendly controls. Arrange mode forces two
-                        columns on coarse pointers; start/end are never hidden. */}
-                        {libraryMode === "arrange" &&
-                          effectiveThumbSize >=
-                            LIBRARY_MIN_EFFECTIVE_THUMB &&
-                          !reorderLocked &&
-                          !showTrash && (
-                            <div className="admin-photo-hover-only admin-photo-move-controls absolute bottom-1 left-1 right-1 z-[3] flex flex-wrap gap-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    movePhotoTo(photo.id, "start");
-                                  }}
-                                  disabled={idx === 0 || reorderBusy}
-                                  aria-label={copy.reorder.moveFirst}
-                                  title={copy.reorder.moveFirst}
-                                  className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                                >
-                                  <ChevronsLeft size={13} />
-                                </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  movePhoto(photo.id, -1);
-                                }}
-                                disabled={idx === 0 || reorderBusy}
-                                aria-label={copy.reorder.movePrevious}
-                                title={copy.reorder.movePrevious}
-                                className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                              >
-                                <ChevronLeft size={13} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  movePhoto(photo.id, 1);
-                                }}
-                                disabled={
-                                  idx === displayed.length - 1 || reorderBusy
-                                }
-                                aria-label={copy.reorder.moveNext}
-                                title={copy.reorder.moveNext}
-                                className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                              >
-                                <ChevronRight size={13} />
-                              </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    movePhotoTo(photo.id, "end");
-                                  }}
-                                  disabled={
-                                    idx === displayed.length - 1 || reorderBusy
-                                  }
-                                  aria-label={copy.reorder.moveLast}
-                                  title={copy.reorder.moveLast}
-                                  className="admin-tap-sm w-6 h-6 flex items-center justify-center bg-black/55 text-white/85 rounded-sm hover:bg-black/75 disabled:opacity-25 disabled:cursor-not-allowed"
-                                >
-                                  <ChevronsRight size={13} />
-                                </button>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setPositionMove({
-                                    id: photo.id,
-                                    value: String(idx + 1),
-                                  });
-                                }}
-                                disabled={reorderBusy}
-                                aria-label={copy.reorder.moveToPosition}
-                                title={copy.reorder.moveToPosition}
-                                className="admin-tap-sm mt-1 h-7 w-full rounded-sm bg-black/65 px-2 text-[10px] text-white/90 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {copy.reorder.moveToPosition}
-                              </button>
-                            </div>
-                          )}
                       </div>
                     );
                   };
@@ -6382,6 +6624,8 @@ export function GalleryTab({
                     <div
                       ref={gridRef}
                       data-library-grid-mode={libraryMode}
+                      role="listbox"
+                      aria-label="Library photos"
                       data-virtualized={
                         virtualGrid.isVirtualized ? "true" : "false"
                       }
@@ -6422,6 +6666,71 @@ export function GalleryTab({
             </>
           )}
         </div>
+        {libraryMode === "arrange" && reorderTarget && (
+          <AdminReorderBar
+            target={{
+              id: reorderTarget.id,
+              thumbnailSrc: adminPhotoSrc(reorderTarget, 240, 70),
+              title:
+                reorderTarget.title ||
+                reorderTarget.filename ||
+                copy.inspector.photoFallback,
+              position: reorderTargetPosition,
+              total: displayed.length,
+            }}
+            busy={reorderBusy}
+            feedback={
+              reorderFeedback
+                ? {
+                    state: reorderFeedback.state,
+                    message: reorderFeedback.message,
+                  }
+                : null
+            }
+            moveSummary={
+              lastMove && lastMove.id === reorderTarget.id
+                ? copy.reorder.moveSummary(lastMove.from, lastMove.to)
+                : null
+            }
+            undoAvailable={reorderUndo !== null}
+            positionValue={reorderPositionValue}
+            positionInvalid={reorderPositionInvalid}
+            labels={{
+              region: copy.reorder.region,
+              position: copy.reorder.positionLabel(
+                reorderTargetPosition,
+                displayed.length,
+              ),
+              moveFirst: copy.reorder.moveFirst,
+              movePrevious: copy.reorder.movePrevious,
+              moveNext: copy.reorder.moveNext,
+              moveLast: copy.reorder.moveLast,
+              positionInput: copy.reorder.positionInput,
+              moveAction: copy.reorder.moveAction,
+              undo: copy.reorder.undo,
+              chooseAgain: copy.reorder.chooseAgain,
+              invalidPosition: copy.reorder.invalidPosition(displayed.length),
+            }}
+            onMoveFirst={() => movePhotoTo(reorderTarget.id, "start")}
+            onMovePrevious={() => movePhoto(reorderTarget.id, -1)}
+            onMoveNext={() => movePhoto(reorderTarget.id, 1)}
+            onMoveLast={() => movePhotoTo(reorderTarget.id, "end")}
+            onPositionChange={setReorderPositionValue}
+            onMoveToPosition={() =>
+              movePhotoToNumber(reorderTarget.id, parsedReorderPosition)
+            }
+            onUndo={undoPhotoOrder}
+            onChooseAgain={() => {
+              setReorderTargetId(null);
+              setReorderPositionValue("");
+              setLastMove(null);
+              setReorderUndo(null);
+              requestAnimationFrame(() =>
+                scrollRef.current?.focus({ preventScroll: true }),
+              );
+            }}
+          />
+        )}
       </div>
 
       {/* M2: batch-operation result toast */}
@@ -6898,82 +7207,6 @@ export function GalleryTab({
           <X size={12} />
         </button>
       </Toast>
-
-      {positionMove && (
-        <Modal
-          onClose={() => setPositionMove(null)}
-          widthClass="w-[340px] max-w-full"
-        >
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              const position = Number(positionMove.value);
-              if (
-                !Number.isInteger(position) ||
-                position < 1 ||
-                position > displayed.length
-              )
-                return;
-              const id = positionMove.id;
-              setPositionMove(null);
-              movePhotoToNumber(id, position);
-            }}
-          >
-            <h3 className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
-              {copy.reorder.positionTitle}
-            </h3>
-            <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-4">
-              {onlySeriesFilter
-                ? copy.reorder.seriesPositionDescription(displayed.length)
-                : copy.reorder.positionDescription(displayed.length)}
-            </p>
-            <label className="flex items-center gap-2 mb-4">
-              <input
-                data-library-position-input
-                data-autofocus
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={displayed.length}
-                step={1}
-                value={positionMove.value}
-                onChange={(event) =>
-                  setPositionMove((current) =>
-                    current
-                      ? { ...current, value: event.target.value }
-                      : current,
-                  )
-                }
-                aria-label={copy.reorder.positionInput}
-                className="admin-tap-sm w-24 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-3 py-2 text-[var(--admin-ink)] outline-none"
-              />
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                / {displayed.length}
-              </span>
-            </label>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPositionMove(null)}
-                className="px-3 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
-              >
-                {t.common.cancel}
-              </button>
-              <button
-                type="submit"
-                disabled={
-                  !Number.isInteger(Number(positionMove.value)) ||
-                  Number(positionMove.value) < 1 ||
-                  Number(positionMove.value) > displayed.length
-                }
-                className="admin-tap-sm rounded-sm admin-btn-primary px-4 py-2 text-[length:var(--admin-text-note)] disabled:opacity-40"
-              >
-                {copy.reorder.moveAction}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
 
       {/* Non-destructive confirm dialog (sort-order save / batch shot date).
           Enter = primary (data-autofocus), Esc = cancel. Destructive flows do

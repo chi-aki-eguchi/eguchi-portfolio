@@ -10,7 +10,7 @@ const dragHandle = (page: Page, index: number) =>
     .nth(index)
     .getByRole("button", { name: /ドラッグして並べ替え|Drag to reorder/ });
 const modeAction = (page: Page, action: string) =>
-  page.locator(`[data-library-mode-action="${action}"]`);
+  page.locator(`[data-library-mode-action="${action}"]:visible`).first();
 
 test.describe("admin — Libraryの通常・選択・並べる分離", () => {
   test("通常は詳細、選択は選択だけ、並べるは並べ替えだけを行う", async ({
@@ -94,11 +94,29 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       .toBeGreaterThanOrEqual(2);
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
 
+    const selectedCount = await page
+      .locator("[data-library-selection-toolbar]")
+      .getAttribute("data-library-selected-count");
+    // 選択集合と並べ替え対象は別。選択→並べ替えでは対象なしで入り、
+    // 写真を対象にしても選択集合は隠して保持し、選択へ戻ると復元する。
+    await modeAction(page, "arrange").click();
+    await expect(library(page)).toHaveAttribute("data-library-mode", "arrange");
+    await expect(page.locator("[data-library-reorder-bar]")).toHaveCount(0);
+    await photoAction(page, 0).click();
+    await expect(page.locator("[data-library-reorder-bar]")).toBeVisible();
+    await expect(
+      tiles(page).nth(0).locator("[data-library-reorder-target-pill]"),
+    ).toBeVisible();
+    await modeAction(page, "select").click();
+    await expect(library(page)).toHaveAttribute("data-library-mode", "select");
+    await expect(page.locator("[data-library-selection-toolbar]")).toHaveAttribute(
+      "data-library-selected-count",
+      selectedCount ?? "0",
+    );
+
     await modeAction(page, "end-select").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
-    await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
-      0,
-    );
+    await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(0);
 
     // Ctrl/Cmdクリックも、詳細ではなく選択モードへの近道として維持する。
     // macOS では Control+クリックが右クリックとして扱われ onClick が発火しない。
@@ -112,7 +130,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
     await modeAction(page, "end-select").click();
 
-    // 並べるモードはタイルクリックで詳細も一括選択も開かない。
+    // 並べ替えモードはタイルクリックで対象だけを指定する。
     await modeAction(page, "arrange").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "arrange");
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
@@ -124,11 +142,17 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(dragHandle(page, 0)).toHaveAttribute("draggable", "true");
     await expect(photoAction(page, 0)).not.toHaveAttribute("draggable", "true");
     await photoAction(page, 0).click();
+    await expect(page.locator("[data-library-reorder-bar]")).toBeVisible();
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
       0,
     );
     await expect(page.locator("[data-library-filters-toggle]")).toHaveCount(0);
+    await expect(
+      tiles(page)
+        .first()
+        .locator("button:not([data-library-photo-action])"),
+    ).toHaveCount(1);
 
     await modeAction(page, "finish-arrange").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");

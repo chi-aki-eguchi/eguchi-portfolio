@@ -63,6 +63,35 @@ describe("adminThemeFromSettings contrast guarantees", () => {
 
       expect(inkVsPaper).toBeGreaterThanOrEqual(7);
       expect(mutedVsDeep).toBeGreaterThanOrEqual(4.5);
+      for (const semanticToken of [
+        "--admin-danger",
+        "--admin-warning",
+        "--admin-success",
+        "--admin-info",
+      ]) {
+        expect(
+          contrastRatio(themeColor(theme, semanticToken), paper),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
     });
   }
+
+  test("管理画面の初期accentは公開サイトのaccentと意味色から独立する", () => {
+    const theme = adminThemeFromSettings({
+      accentColor: "#d14b74",
+      linkHoverColor: "#e05f87",
+    });
+    const accent = themeColor(theme, "--admin-accent");
+    const semanticColors = [
+      "--admin-danger",
+      "--admin-warning",
+      "--admin-success",
+      "--admin-info",
+    ].map((token) => themeColor(theme, token));
+
+    expect(accent).toBe("#5b7fa0");
+    expect(themeColor(theme, "--admin-accent-fill")).toBe("#3f607e");
+    expect(themeColor(theme, "--admin-accent-line")).toBe("2.5px");
+    expect(new Set([accent, ...semanticColors]).size).toBe(5);
+  });
 });

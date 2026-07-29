@@ -835,10 +835,7 @@
     transform var(--dur-instant) var(--ease-out) !important;
 }
 
-.admin-atelier
-  button:not(.absolute):not([class*="bg-black"]):not([class*="text-red"]):not(
-    [class*="red-"]
-  ) {
+.admin-atelier button:not(.absolute):not([class*="bg-black"]) {
   border-color: var(--admin-line) !important;
   background-color: transparent !important;
   color: var(--admin-ink) !important;
@@ -918,23 +915,122 @@
   color: var(--admin-muted) !important;
 }
 
-/* [class*="text-red"] / [class*="bg-red"] match the raw class attribute
-   string, so a hover-only utility like `hover:text-red-400` (meant to turn
-   red only on :hover) also matches unconditionally — the colon always sits
-   directly before the utility name, so excluding that combination targets
-   exactly the variant-prefixed case without touching a bare `text-red-400`. */
-.admin-atelier
-  button[class*="red"]:not([class*=":text-red"]):not([class*=":bg-red"]),
-.admin-atelier button[class*="Delete"],
-.admin-atelier [class*="text-red"]:not([class*=":text-red"]) {
+/* Meaning colors are explicit. They never inherit the decorative accent.
+   Named classes replace the old substring selectors, which accidentally
+   recolored hover-only utilities and destructive buttons. */
+.admin-atelier .admin-text-danger {
   color: var(--admin-danger) !important;
 }
 
-.admin-atelier
-  button[class*="bg-red"]:not([class*=":text-red"]):not([class*=":bg-red"]),
-.admin-atelier [class*="bg-red"]:not([class*=":bg-red"]) {
-  background-color: rgba(var(--admin-accent-rgb), 0.12) !important;
-  border-color: rgba(var(--admin-accent-rgb), 0.35) !important;
+.admin-atelier .admin-text-warning {
+  color: var(--admin-warning) !important;
+}
+
+.admin-atelier .admin-text-success {
+  color: var(--admin-success) !important;
+}
+
+.admin-atelier .admin-text-info {
+  color: var(--admin-info) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-text-danger:not(.absolute) {
+  color: var(--admin-danger) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-text-warning:not(.absolute) {
+  color: var(--admin-warning) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-text-success:not(.absolute) {
+  color: var(--admin-success) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-text-info:not(.absolute) {
+  color: var(--admin-info) !important;
+}
+
+.admin-atelier .admin-status-danger,
+.admin-atelier .admin-status-warning,
+.admin-atelier .admin-status-success,
+.admin-atelier .admin-status-info {
+  border: 1px solid;
+  background: transparent !important;
+}
+
+.admin-atelier .admin-status-danger {
+  color: var(--admin-danger) !important;
+  border-color: rgba(var(--admin-danger-rgb), 0.42) !important;
+}
+
+.admin-atelier .admin-status-warning {
+  color: var(--admin-warning) !important;
+  border-color: rgba(var(--admin-warning-rgb), 0.42) !important;
+}
+
+.admin-atelier .admin-status-success {
+  color: var(--admin-success) !important;
+  border-color: rgba(var(--admin-success-rgb), 0.42) !important;
+}
+
+.admin-atelier .admin-status-info {
+  color: var(--admin-info) !important;
+  border-color: rgba(var(--admin-info-rgb), 0.42) !important;
+}
+
+.admin-atelier .admin-status-danger :where(h2, h3),
+.admin-atelier .admin-status-warning :where(h2, h3),
+.admin-atelier .admin-status-success :where(h2, h3),
+.admin-atelier .admin-status-info :where(h2, h3) {
+  color: inherit !important;
+}
+
+.admin-atelier .admin-icon-success {
+  background: var(--admin-success) !important;
+  color: var(--admin-paper) !important;
+}
+
+.admin-atelier .admin-accent-marker {
+  background: var(--admin-accent-fill) !important;
+  color: var(--admin-paper) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-btn-danger:not(.absolute) {
+  background: var(--admin-danger) !important;
+  border-color: var(--admin-danger) !important;
+  color: var(--admin-paper) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-btn-danger:not(.absolute):hover {
+  background: color-mix(in srgb, var(--admin-danger) 88%, var(--admin-ink)) !important;
+  border-color: color-mix(in srgb, var(--admin-danger) 88%, var(--admin-ink)) !important;
+  color: var(--admin-paper) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-btn-accent:not(.absolute) {
+  background: rgba(var(--admin-accent-rgb), 0.1) !important;
+  border-color: rgba(var(--admin-accent-rgb), 0.4) !important;
+  color: var(--admin-accent-fill) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-btn-success:not(.absolute) {
+  background: var(--admin-success) !important;
+  border-color: var(--admin-success) !important;
+  color: var(--admin-paper) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-danger-on-hover:not(.absolute):hover,
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.admin-danger-on-hover:not(.absolute):focus-visible {
   color: var(--admin-danger) !important;
 }
 
@@ -2193,20 +2289,6 @@
 .admin-atelier .admin-content [class*="border-dashed"] {
   border-color: var(--admin-line-strong) !important;
   background: rgba(var(--admin-paper-rgb), 0.46) !important;
-}
-
-.admin-atelier .admin-content [class*="bg-emerald"],
-.admin-atelier .admin-content [class*="bg-green"],
-.admin-atelier .admin-content [class*="bg-amber"] {
-  background-color: var(--admin-paper-deep) !important;
-  border-color: var(--admin-line-strong) !important;
-  color: var(--admin-ink) !important;
-}
-
-.admin-atelier .admin-content [class*="text-emerald"],
-.admin-atelier .admin-content [class*="text-green"],
-.admin-atelier .admin-content [class*="text-amber"] {
-  color: var(--admin-muted) !important;
 }
 
 .admin-atelier .admin-content [class*="grid-cols-5"] button,

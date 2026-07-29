@@ -240,11 +240,11 @@ function SettingsLoadError({
   return (
     <PageShell width="form">
       <PageHeader title={title} />
-      <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
-        <h2 className="text-[length:var(--admin-text-body)] text-amber-900">
+      <div className="admin-status-warning rounded-sm p-5 space-y-3">
+        <h2 className="text-[length:var(--admin-text-body)]">
           {t.setup.loadError.title}
         </h2>
-        <p className="text-[length:var(--admin-text-body)] leading-6 text-amber-800">
+        <p className="text-[length:var(--admin-text-body)] leading-6">
           {t.setup.loadError.body}
         </p>
         <button
@@ -254,7 +254,7 @@ function SettingsLoadError({
         >
           {t.setup.loadError.retry}
         </button>
-        <p className="text-[length:var(--admin-text-note)] leading-5 text-amber-800">
+        <p className="text-[length:var(--admin-text-note)] leading-5">
           {t.setup.loadError.contact}
         </p>
       </div>
@@ -851,13 +851,13 @@ export function HeroTab() {
       {heroError && (
         <div
           role="alert"
-          className="mb-4 flex items-center justify-between gap-3 text-[length:var(--admin-text-note)] text-red-300 bg-red-900/25 border border-red-900/40 rounded-sm px-3 py-2"
+          className="admin-status-danger mb-4 flex items-center justify-between gap-3 text-[length:var(--admin-text-note)] rounded-sm px-3 py-2"
         >
           <span>{heroError}</span>
           <button
             onClick={() => setHeroError("")}
             aria-label={t.common.close}
-            className="text-red-300/60 hover:text-red-200 transition-colors"
+            className="admin-text-danger opacity-60 hover:opacity-100 transition-opacity"
           >
             <X size={12} />
           </button>
@@ -865,12 +865,12 @@ export function HeroTab() {
       )}
       {/* Dangling selections — photos that were trashed/purged after being picked */}
       {danglingHeroIds.length > 0 && (
-        <div className="mb-4 flex items-center justify-between gap-3 text-[length:var(--admin-text-note)] text-amber-200/90 bg-amber-900/20 border border-amber-900/40 rounded-sm px-3 py-2">
+        <div className="admin-status-warning mb-4 flex items-center justify-between gap-3 text-[length:var(--admin-text-note)] rounded-sm px-3 py-2">
           <span>{copy.danglingWarning(danglingHeroIds.length)}</span>
           <button
             onClick={() => cleanupDangling.mutate()}
             disabled={cleanupDangling.isPending}
-            className="flex-shrink-0 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm bg-amber-900/40 hover:bg-amber-900/60 transition-colors disabled:opacity-50"
+            className="flex-shrink-0 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm underline underline-offset-2 disabled:opacity-50"
           >
             {cleanupDangling.isPending
               ? copy.cleaningUp
@@ -942,7 +942,7 @@ export function HeroTab() {
                       onClick={() => removeHero.mutate(photo.id)}
                       disabled={removeHero.isPending}
                       aria-label={copy.removeAria}
-                      className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-red-500/80 text-white rounded-sm hover:bg-red-500 disabled:opacity-40 disabled:pointer-events-none"
+                      className="admin-btn-danger admin-tap-sm w-7 h-7 flex items-center justify-center rounded-sm disabled:opacity-40 disabled:pointer-events-none"
                     >
                       <X size={13} />
                     </button>
@@ -997,7 +997,7 @@ export function HeroTab() {
                   )}
                   className={`relative rounded-sm overflow-hidden cursor-pointer group border-2 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
                     isHero
-                      ? "border-amber-400/70"
+                      ? "border-[color:var(--admin-accent)]"
                       : "border-transparent hover:border-white/20"
                   }`}
                 >
@@ -1011,7 +1011,7 @@ export function HeroTab() {
                     <div className="absolute top-1 right-1">
                       <Star
                         size={12}
-                        className="text-amber-400 fill-amber-400"
+                        className="text-[color:var(--admin-accent-fill)] fill-current"
                       />
                     </div>
                   )}
@@ -1284,7 +1284,7 @@ export function ProfileTab({
               {copy.portraitRecommendation}
             </p>
             {photoError && (
-              <p className="text-[length:var(--admin-text-note)] text-red-400/80">{photoError}</p>
+              <p className="admin-text-danger text-[length:var(--admin-text-note)]">{photoError}</p>
             )}
           </div>
         </div>
@@ -1454,7 +1454,7 @@ export function CategoriesTab() {
       </p>
 
       {reorderError && (
-        <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 mb-3">
+        <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)] mb-3">
           {reorderError}
         </p>
       )}
@@ -1511,7 +1511,7 @@ export function CategoriesTab() {
                 setDeleteCatConfirm({ id: cat.id, label: cat.label })
               }
               aria-label={copy.deleteAria(cat.label)}
-              className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 flex-shrink-0 ml-2"
+              className="admin-danger-on-hover admin-tap-sm text-[color:var(--admin-line-strong)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 flex-shrink-0 ml-2"
             >
               <Trash2 size={13} />
             </button>
@@ -1551,7 +1551,7 @@ export function CategoriesTab() {
             />
           </AdminField>
           {catError && (
-            <p className="text-[length:var(--admin-text-note)] text-red-400/80">{catError}</p>
+            <p className="admin-text-danger text-[length:var(--admin-text-note)]">{catError}</p>
           )}
           <button
             onClick={handleAddCat}
@@ -1581,7 +1581,7 @@ export function CategoriesTab() {
                 deleteCat.mutate(deleteCatConfirm.id);
                 setDeleteCatConfirm(null);
               }}
-              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+              className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors"
             >
               {t.common.deleteAction}
             </button>
@@ -1801,7 +1801,7 @@ export function SeriesTab() {
       />
 
       {rowError && (
-        <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 mb-3">
+        <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)] mb-3">
           {rowError}
         </p>
       )}
@@ -1926,7 +1926,7 @@ export function SeriesTab() {
                       setDeleteTarget({ id: s.id, title: s.title })
                     }
                     aria-label={copy.deleteAria(s.title)}
-                    className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                    className="admin-danger-on-hover admin-tap-sm text-[color:var(--admin-line-strong)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -2046,7 +2046,7 @@ export function SeriesTab() {
                                     loading="lazy"
                                   />
                                   {(p as Photo).seriesId === editId && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400/80" />
+                                    <div className="admin-accent-marker absolute bottom-0 left-0 right-0 h-0.5" />
                                   )}
                                 </button>
                               ))}
@@ -2212,7 +2212,7 @@ export function SeriesTab() {
             />
           </AdminField>
           {addError && (
-            <p className="text-[length:var(--admin-text-note)] text-red-400/80">{addError}</p>
+            <p className="admin-text-danger text-[length:var(--admin-text-note)]">{addError}</p>
           )}
           <button
             onClick={handleAdd}
@@ -2245,7 +2245,7 @@ export function SeriesTab() {
                 if (editId === deleteTarget.id) setEditId(null);
                 setDeleteTarget(null);
               }}
-              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+              className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors"
             >
               {t.common.deleteAction}
             </button>
@@ -2418,7 +2418,7 @@ export function PricingTab() {
       />
 
       {rowError && (
-        <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 mb-3">
+        <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)] mb-3">
           {rowError}
         </p>
       )}
@@ -2501,7 +2501,7 @@ export function PricingTab() {
                 <button
                   onClick={() => setDeleteTarget({ id: p.id, title: p.title })}
                   aria-label={copy.deleteAria(p.title)}
-                  className="admin-tap-sm text-[color:var(--admin-line-strong)] hover:text-red-500 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                  className="admin-danger-on-hover admin-tap-sm text-[color:var(--admin-line-strong)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -2625,7 +2625,7 @@ export function PricingTab() {
                 if (editId === deleteTarget.id) setEditId(null);
                 setDeleteTarget(null);
               }}
-              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors"
+              className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors"
             >
               {t.common.deleteAction}
             </button>
@@ -2681,7 +2681,7 @@ function TopWorksPicker({
             title={p.title || p.filename}
             aria-label={`${p.title || p.filename}${pos >= 0 ? t.phase2b.service.topWorksSelectedSuffix : ""}`}
             aria-pressed={pos >= 0}
-            className={`relative aspect-square overflow-hidden rounded-[2px] transition-opacity ${pos >= 0 ? "ring-2 ring-[#aaa]" : "opacity-55 hover:opacity-100"}`}
+            className={`relative aspect-square overflow-hidden rounded-[2px] transition-opacity ${pos >= 0 ? "ring-[length:var(--admin-accent-line)] ring-[color:var(--admin-accent)]" : "opacity-55 hover:opacity-100"}`}
           >
             <img
               src={adminPhotoSrc(p, 200, 60)}
@@ -2693,7 +2693,7 @@ function TopWorksPicker({
               style={{ objectPosition: adminPhotoObjectPosition(p) }}
             />
             {pos >= 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 bg-[#ddd] text-[#1e1e1e] text-[9px] font-medium rounded-sm flex items-center justify-center">
+              <span className="admin-accent-marker absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 text-[9px] font-medium rounded-sm flex items-center justify-center">
                 {pos + 1}
               </span>
             )}
@@ -2844,7 +2844,7 @@ function SvcArrayControls({
       <button
         type="button"
         onClick={() => onRemove(index)}
-        className="p-0.5 text-[var(--admin-muted)] hover:text-red-400"
+        className="admin-danger-on-hover p-0.5 text-[var(--admin-muted)]"
         title={t.phase2b.service.arrayControls.remove}
       >
         <X size={12} />
@@ -3597,7 +3597,7 @@ export function ServiceTab({
                   snsLinks: removeItem(draft.finalCta.snsLinks, i),
                 })
               }
-              className="p-0.5 text-[var(--admin-muted)] hover:text-red-400"
+              className="admin-danger-on-hover p-0.5 text-[var(--admin-muted)]"
             >
               <X size={12} />
             </button>
@@ -6226,7 +6226,7 @@ export function SettingsTab({
                   busy={savePresets.isPending}
                 />
                 {presetError && (
-                  <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80">
+                  <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)]">
                     {copyDesign.presets.saveFailed}
                   </p>
                 )}
@@ -6518,7 +6518,7 @@ function PresetEditor({
               onClick={() => onRemove(p)}
               disabled={busy}
               aria-label={copy.removeAria(p)}
-              className="text-[var(--admin-muted)] hover:text-red-400 transition-colors disabled:opacity-40"
+              className="admin-danger-on-hover text-[var(--admin-muted)] transition-colors disabled:opacity-40"
             >
               <X size={11} />
             </button>
@@ -6798,7 +6798,7 @@ function FontPicker({
       {isCustom && (
         <div className="mt-2 flex flex-col gap-2">
           {uploadError && (
-            <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/90">
+            <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)]">
               {uploadError}
             </p>
           )}

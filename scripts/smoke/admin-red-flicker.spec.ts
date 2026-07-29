@@ -1,11 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers";
 
-// 回帰テスト(工程2 fix #4): [class*="text-red"] / [class*="bg-red"] が
-// `hover:text-red-400` のようなバリアント接頭辞つきクラスにも部分一致し、
-// 本来ホバー時だけ赤くなるはずのアイコンが常時赤表示になっていたバグ。
-test.describe("admin — ホバー限定の赤クラスが常時赤くならない", () => {
-  test("Serviceの実例セクション削除アイコンはホバーするまで赤くない", async ({
+test.describe("admin — accentと意味色を混同しない", () => {
+  test("Serviceの削除は通常時ニュートラル、hover時だけdangerになる", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -27,11 +24,18 @@ test.describe("admin — ホバー限定の赤クラスが常時赤くならな�
     await expect(del).toBeVisible();
 
     const restColor = await del.evaluate((el) => getComputedStyle(el).color);
-    // admin-danger は rgb(163, 59, 46) 系统 — ホバーしていない状態でこれになっていたら未修正。
+    const danger = await del.evaluate((el) =>
+      getComputedStyle(el.closest(".admin-atelier")!).getPropertyValue(
+        "--admin-danger",
+      ),
+    );
     expect(restColor).not.toBe("rgb(163, 59, 46)");
+    await del.hover();
+    await expect(del).toHaveCSS("color", "rgb(163, 59, 46)");
+    expect(danger.trim()).toBe("#a33b2e");
   });
 
-  test("Library写真選択時のリングはニュートラルなグレーで、アクセント色(赤)に上書きされない", async ({
+  test("Library写真選択は淡い青accentを使い、4つの意味色とは独立する", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -42,9 +46,6 @@ test.describe("admin — ホバー限定の赤クラスが常時赤くならな�
     await page.getByRole("button", { name: "Library" }).click();
     await page.waitForTimeout(1500);
 
-    // モード分離(2026-07-23承認)後、通常モードのタイルクリックは詳細を開くだけで
-    // 選択しない。選択リング(ring-[#aaa])と詳細リング(ring-[--admin-muted])は
-    // 別物なので、このテストの主題である選択リングを測るには選択モードへ入る。
     await page.locator('[data-library-mode-action="select"]').click();
     const tile = page.locator(".admin-photo-tile").first();
     await tile.click();
@@ -53,8 +54,50 @@ test.describe("admin — ホバー限定の赤クラスが常時赤くならな�
     const boxShadow = await tile.evaluate(
       (el) => getComputedStyle(el).boxShadow,
     );
-    // #aaaaaa = rgb(170, 170, 170)。admin-accent(163, 59, 46)に上書きされていたら未修正。
-    expect(boxShadow).toContain("rgb(170, 170, 170)");
+    expect(boxShadow).toContain("rgb(91, 127, 160)");
     expect(boxShadow).not.toContain("rgb(163, 59, 46)");
+
+    const tokens = await page.locator(".admin-atelier").evaluate((el) => {
+      const style = getComputedStyle(el);
+      return [
+        "--admin-accent",
+        "--admin-danger",
+        "--admin-warning",
+        "--admin-success",
+        "--admin-info",
+      ].map((name) => style.getPropertyValue(name).trim());
+    });
+    expect(tokens[0]).toBe("#5b7fa0");
+    expect(new Set(tokens).size).toBe(5);
+  });
+
+  test("1440px・1024px・390pxで意味色整理後も横にはみ出さない", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop",
+      "1つのdesktopセッションで3幅を連続検証",
+    );
+    await loginAsAdmin(page);
+    await page.getByRole("button", { name: "Settings" }).click();
+    await expect(page.locator('[data-admin-form-layout="settings"]')).toBeVisible();
+
+    for (const width of [1440, 1024, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect
+        .poll(() =>
+          page.evaluate(() => ({
+            body: document.body.scrollWidth - document.body.clientWidth,
+            form:
+              document.querySelector<HTMLElement>(
+                '[data-admin-form-layout="settings"]',
+              )!.scrollWidth -
+              document.querySelector<HTMLElement>(
+                '[data-admin-form-layout="settings"]',
+              )!.clientWidth,
+          })),
+        )
+        .toEqual({ body: 0, form: 0 });
+    }
   });
 });

@@ -263,8 +263,12 @@ const ATELIER_FALLBACK = {
   paper: "#f7f7f7",
   ink: "#1a1a1a",
   muted: "#666666",
-  accent: "#1a1a1a",
+  accent: "#5b7fa0",
+  accentFill: "#3f607e",
   danger: "#a33b2e",
+  warning: "#8a5d18",
+  success: "#3f7454",
+  info: "#4f6f86",
 };
 
 function clampChannel(value: number): number {
@@ -357,15 +361,27 @@ export function adminThemeFromSettings(
   // e.g. the sidebar) rather than `base` — passing against the darkest paper
   // variant guarantees the same minimum against the lighter ones too.
   const muted = ensureContrast(mix(ink, base, 0.38), deep, 4.5);
-  const accent = ensureContrast(
-    parseHexColor(settings?.accentColor) ??
-      parseHexColor(settings?.linkHoverColor) ??
-      parseHexColor(ATELIER_FALLBACK.accent)!,
+  // Adminの差し色は公開サイトのaccentColorから独立させる。この刷新では
+  // API/DB schemaを変えないため、承認済みの初期色を管理画面内だけで使う。
+  const accent = parseHexColor(ATELIER_FALLBACK.accent)!;
+  const accentFill = parseHexColor(ATELIER_FALLBACK.accentFill)!;
+  const danger = ensureContrast(
+    parseHexColor(ATELIER_FALLBACK.danger)!,
     base,
     4.5,
   );
-  const danger = ensureContrast(
-    parseHexColor(ATELIER_FALLBACK.danger)!,
+  const warning = ensureContrast(
+    parseHexColor(ATELIER_FALLBACK.warning)!,
+    base,
+    4.5,
+  );
+  const success = ensureContrast(
+    parseHexColor(ATELIER_FALLBACK.success)!,
+    base,
+    4.5,
+  );
+  const info = ensureContrast(
+    parseHexColor(ATELIER_FALLBACK.info)!,
     base,
     4.5,
   );
@@ -383,7 +399,16 @@ export function adminThemeFromSettings(
     "--admin-line-strong": toHex(lineStrong),
     "--admin-accent": toHex(accent),
     "--admin-accent-rgb": rgbString(accent),
+    "--admin-accent-line": "2.5px",
+    "--admin-accent-fill": toHex(accentFill),
     "--admin-danger": toHex(danger),
+    "--admin-danger-rgb": rgbString(danger),
+    "--admin-warning": toHex(warning),
+    "--admin-warning-rgb": rgbString(warning),
+    "--admin-success": toHex(success),
+    "--admin-success-rgb": rgbString(success),
+    "--admin-info": toHex(info),
+    "--admin-info-rgb": rgbString(info),
   } as CSSProperties;
 }
 
@@ -1127,11 +1152,11 @@ export function SetupTab({
     return (
       <PageShell width="wide">
         <PageHeader title={t.setup.title} />
-        <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
-          <h2 className="text-[length:var(--admin-text-body)] text-amber-900">
+        <div className="admin-status-warning rounded-sm p-5 space-y-3">
+          <h2 className="text-[length:var(--admin-text-body)]">
             {t.setup.loadError.title}
           </h2>
-          <p className="text-[length:var(--admin-text-body)] leading-6 text-amber-800">
+          <p className="text-[length:var(--admin-text-body)] leading-6">
             {t.setup.loadError.body}
           </p>
           <button
@@ -1141,7 +1166,7 @@ export function SetupTab({
           >
             {t.setup.loadError.retry}
           </button>
-          <p className="text-[length:var(--admin-text-note)] leading-5 text-amber-800">
+          <p className="text-[length:var(--admin-text-note)] leading-5">
             {t.setup.loadError.contact}
           </p>
         </div>
@@ -1158,12 +1183,12 @@ export function SetupTab({
             health={setupHealth}
             copy={t.setup.storageHealth}
           />
-          <div className="flex items-center justify-between gap-3 border border-emerald-200 bg-emerald-50 rounded-sm px-4 py-3">
+          <div className="admin-status-success flex items-center justify-between gap-3 rounded-sm px-4 py-3">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
+              <div className="admin-icon-success w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
                 <Check size={13} />
               </div>
-              <p className="text-[length:var(--admin-text-body)] text-emerald-800 truncate">
+              <p className="text-[length:var(--admin-text-body)] truncate">
                 {settings.setupCompleted === "true"
                   ? t.setup.collapsedCompleted
                   : requiredDone
@@ -1176,7 +1201,7 @@ export function SetupTab({
                 setForceOpen(true);
                 setDismissed(false);
               }}
-              className="text-[length:var(--admin-text-note)] text-emerald-700 hover:text-emerald-900 transition-colors flex-shrink-0"
+              className="admin-text-success text-[length:var(--admin-text-note)] underline underline-offset-2 flex-shrink-0"
             >
               {t.setup.reopen}
             </button>
@@ -1211,7 +1236,7 @@ export function SetupTab({
           actions={
             <>
               <div
-                className={`w-fit rounded-sm border px-3 py-2 text-[length:var(--admin-text-body)] ${requiredDone ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-muted)]"}`}
+                className={`w-fit rounded-sm border px-3 py-2 text-[length:var(--admin-text-body)] ${requiredDone ? "admin-status-success" : "border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-muted)]"}`}
               >
                 {loading
                   ? t.setup.checking
@@ -1309,7 +1334,7 @@ function SetupChecklistRow({
   return (
     <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-4 flex gap-3">
       <div
-        className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.done ? "bg-emerald-600 text-white" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)]"}`}
+        className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.done ? "admin-icon-success" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)]"}`}
       >
         {item.done ? <Check size={13} /> : <AlertTriangle size={12} />}
       </div>
@@ -5115,7 +5140,7 @@ export function GalleryTab({
             {!manualOrder.ok && (
               <span
                 role="alert"
-                className="text-[length:var(--admin-text-note)] text-amber-300/80"
+                className="admin-text-warning text-[length:var(--admin-text-note)]"
               >
                 {copy.feedback.invalidManualOrder}
               </span>
@@ -5124,7 +5149,7 @@ export function GalleryTab({
               <span
                 role={publicReorderLockCause === "loading" ? "status" : "alert"}
                 data-library-public-order-lock={publicReorderLockCause}
-                className="text-[length:var(--admin-text-note)] text-amber-300/80"
+                className="admin-text-warning text-[length:var(--admin-text-note)]"
               >
                 {publicReorderLockCause === "not-manual"
                   ? copy.reorder.publicOrderLocked
@@ -5399,7 +5424,7 @@ export function GalleryTab({
                   aria-pressed={filterFeatured}
                   className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
                     filterFeatured
-                      ? "bg-amber-900/40 text-amber-300 border-amber-700/50"
+                      ? "admin-btn-accent"
                       : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
                   }`}
                 >
@@ -5514,7 +5539,7 @@ export function GalleryTab({
                           saveAlbums.mutate(next);
                         }}
                         aria-label={copy.albums.deleteAria(a.name)}
-                        className="opacity-50 group-hover/al:opacity-100 text-[var(--admin-muted)] hover:text-red-400 transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
+                        className="admin-danger-on-hover opacity-50 group-hover/al:opacity-100 text-[var(--admin-muted)] transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
                       >
                         <X size={11} />
                       </button>
@@ -5574,7 +5599,7 @@ export function GalleryTab({
                 <button
                   onClick={() => batchOp.mutate({ operation: "publish" })}
                   disabled={batchOp.isPending}
-                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-emerald-300/80 px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="admin-text-success flex items-center gap-1 text-[length:var(--admin-text-note)] px-1.5 py-0.5 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Eye size={11} /> {copy.selection.publish}
                 </button>
@@ -5817,7 +5842,7 @@ export function GalleryTab({
               <button
                 onClick={() => batchOp.mutate({ operation: "feature" })}
                 disabled={batchOp.isPending}
-                className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-amber-300/80 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="admin-btn-accent flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Star size={11} /> {copy.selection.addHero}
               </button>
@@ -5843,7 +5868,7 @@ export function GalleryTab({
               <button
                 onClick={() => deletePhotos.mutate(Array.from(selected))}
                 disabled={bulkBusy}
-                className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-red-400/70 bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm hover:bg-red-900/30 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="admin-text-danger flex items-center gap-1 text-[length:var(--admin-text-note)] bg-[var(--admin-paper-soft)] px-2.5 py-1 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Trash2 size={11} /> {copy.selection.moveToTrash}
               </button>
@@ -5996,7 +6021,7 @@ export function GalleryTab({
               </div>
             ) : (
               <div className="p-3">
-                <div className="text-[length:var(--admin-text-note)] text-amber-500/70 bg-amber-900/20 border border-amber-900/30 rounded-sm px-3 py-1.5 mb-3 flex items-center justify-between">
+                <div className="admin-status-warning text-[length:var(--admin-text-note)] rounded-sm px-3 py-1.5 mb-3 flex items-center justify-between">
                   <span>
                     {copy.trash.retention(trashData?.retentionDays ?? 30)}
                   </span>
@@ -6010,7 +6035,7 @@ export function GalleryTab({
                       })
                     }
                     disabled={bulkBusy}
-                    className="text-red-400/70 hover:text-red-400 transition-colors text-[length:var(--admin-text-note)] disabled:opacity-40 disabled:pointer-events-none"
+                    className="admin-text-danger transition-opacity text-[length:var(--admin-text-note)] disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {copy.trash.purgeAll}
                   </button>
@@ -6052,7 +6077,7 @@ export function GalleryTab({
                         />
                         {daysLeft !== null && (
                           <span
-                            className={`absolute top-1 left-1 z-[2] text-[9px] px-1.5 py-0.5 rounded-sm bg-black/65 ${daysLeft <= 5 ? "text-red-300/90" : "text-amber-300/80"}`}
+                            className={`absolute top-1 left-1 z-[2] text-[9px] px-1.5 py-0.5 rounded-sm bg-black/65 ${daysLeft <= 5 ? "admin-text-danger" : "admin-text-warning"}`}
                           >
                             {copy.trash.daysLeft(daysLeft)}
                           </span>
@@ -6074,7 +6099,7 @@ export function GalleryTab({
                               })
                             }
                             disabled={bulkBusy}
-                            className="text-[10px] bg-red-900/60 text-red-300 px-2 py-1 rounded-sm hover:bg-red-900/80 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
+                            className="admin-btn-danger text-[10px] px-2 py-1 rounded-sm transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
                           >
                             <Trash2 size={10} /> {copy.trash.purge}
                           </button>
@@ -6159,7 +6184,8 @@ export function GalleryTab({
                     const isFailedReorderTarget =
                       libraryMode === "arrange" &&
                       reorderFailedTargetId === photo.id;
-                    const catColor = catColors[photo.category] ?? "#666";
+                    const catColor =
+                      catColors[photo.category] ?? "var(--admin-muted)";
                     const isUnpublished = photo.isPublished === false;
                     const thumbnailSrc = adminPhotoSrc(photo, 400, 70);
                     const thumbnailWasLoaded =
@@ -6225,7 +6251,7 @@ export function GalleryTab({
                           dragSrcId === photo.id ? "opacity-35" : ""
                         } ${
                           isSelected
-                            ? "ring-2 ring-[#aaa] ring-offset-1 ring-offset-[var(--admin-paper)]"
+                            ? "ring-[length:var(--admin-accent-line)] ring-[color:var(--admin-accent)] ring-offset-1 ring-offset-[var(--admin-paper)]"
                             : isReorderTarget
                               ? "admin-photo-tile--reorder-target"
                               : isInspect
@@ -6253,7 +6279,7 @@ export function GalleryTab({
                             <div
                               aria-hidden="true"
                               data-library-drop-position="before"
-                              className="absolute -left-1.5 top-0 bottom-0 z-[4] w-3 bg-[var(--admin-paper)] border-x-2 border-[var(--admin-ink)] shadow-[0_0_10px_rgba(255,255,255,0.75)] pointer-events-none"
+                              className="absolute -left-1.5 top-0 bottom-0 z-[4] w-3 bg-[var(--admin-paper)] border-x-[length:var(--admin-accent-line)] border-[color:var(--admin-accent)] pointer-events-none"
                             />
                           )}
                         {/* Full-card click target — a real <button> so select/open is keyboard
@@ -6402,7 +6428,7 @@ export function GalleryTab({
                               className="absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
                             >
                               {heroIndex >= 0 && (
-                                <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-900/70 px-1.5 py-0.5 text-[9px] leading-none text-amber-200/90">
+                                <span className="inline-flex items-center gap-0.5 rounded-sm bg-[color:var(--admin-accent-fill)] px-1.5 py-0.5 text-[9px] leading-none text-white">
                                   <Star size={8} /> Hero {heroIndex + 1}
                                 </span>
                               )}
@@ -6630,7 +6656,7 @@ export function GalleryTab({
       {/* M2: batch-operation result toast */}
       <Toast
         show={!!batchToast}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-emerald-800/70 border border-emerald-700/60 text-emerald-50 text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
+        className="admin-status-success fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[color:var(--admin-paper)] text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm"
       >
         <svg
           aria-hidden="true"
@@ -6947,7 +6973,7 @@ export function GalleryTab({
                       setAlbumDraft((d) => ({ ...d, featured: !d.featured }))
                     }
                     aria-pressed={albumDraft.featured}
-                    className={`w-full flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
+                    className={`w-full flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${albumDraft.featured ? "admin-btn-accent" : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"}`}
                   >
                     <Star size={11} />{" "}
                     {albumDraft.featured
@@ -7019,13 +7045,13 @@ export function GalleryTab({
       <Toast
         show={!!actionError}
         role="alert"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-red-900/30 border border-red-900/50 text-red-200 text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
+        className="admin-status-danger fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-[color:var(--admin-paper)] text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm"
       >
         <span className="truncate">{actionError}</span>
         <button
           onClick={() => setActionError("")}
           aria-label={t.common.close}
-          className="text-red-200/60 hover:text-red-100 transition-colors flex-shrink-0"
+          className="admin-text-danger opacity-60 hover:opacity-100 transition-opacity flex-shrink-0"
         >
           <X size={12} />
         </button>
@@ -7074,7 +7100,7 @@ export function GalleryTab({
       <Toast
         show={!!uploadNotice}
         role="alert"
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] border border-amber-700/50 text-amber-200 text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm shadow-xl"
+        className="admin-status-warning fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 max-w-[90vw] bg-[color:var(--admin-paper)] text-[length:var(--admin-text-body)] px-4 py-2.5 rounded-sm"
       >
         <span className="truncate">{uploadNotice}</span>
         {retryFiles.length > 0 && (
@@ -7085,7 +7111,7 @@ export function GalleryTab({
               setUploadNotice(null);
               handleFiles(files);
             }}
-            className="flex-shrink-0 flex items-center gap-1 text-amber-100 underline underline-offset-2 hover:text-white transition-colors"
+            className="admin-text-warning flex-shrink-0 flex items-center gap-1 underline underline-offset-2"
           >
             <Upload size={11} /> {copy.import.retryFailed}
           </button>
@@ -7096,7 +7122,7 @@ export function GalleryTab({
             setRetryFiles([]);
           }}
           aria-label={t.common.close}
-          className="text-amber-200/60 hover:text-amber-100 transition-colors ml-1 flex-shrink-0"
+          className="admin-text-warning opacity-60 hover:opacity-100 transition-opacity ml-1 flex-shrink-0"
         >
           <X size={12} />
         </button>
@@ -7138,7 +7164,7 @@ export function GalleryTab({
           so a stray Enter can never confirm the purge. */}
       {purgeConfirm && (
         <Modal onClose={() => setPurgeConfirm(null)}>
-          <p className="flex items-center gap-2 text-[length:var(--admin-text-body)] text-red-400 mb-2">
+          <p className="admin-text-danger flex items-center gap-2 text-[length:var(--admin-text-body)] mb-2">
             <Trash2 size={14} className="flex-shrink-0" />
             {purgeConfirm.label}
           </p>
@@ -7155,7 +7181,7 @@ export function GalleryTab({
                     key={p.id}
                     src={adminPhotoSrc(p, 200, 60)}
                     alt={p.title || p.filename}
-                    className="w-10 h-10 object-cover rounded-sm border border-red-900/40"
+                    className="w-10 h-10 object-cover rounded-sm border border-[rgba(var(--admin-danger-rgb),0.4)]"
                     style={{ objectPosition: adminPhotoObjectPosition(p) }}
                     loading="lazy"
                     draggable={false}
@@ -7198,7 +7224,7 @@ export function GalleryTab({
                 setPurgeConfirm(null);
               }}
               disabled={bulkBusy || !purgeConfirmReady}
-              className="px-4 py-1.5 text-[length:var(--admin-text-note)] bg-red-600/70 text-white rounded-sm hover:bg-red-600/90 transition-colors disabled:opacity-40"
+              className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors disabled:opacity-40"
             >
               {purgeNeedsExtraStep && purgeAckChecked && purgeCountdown > 0
                 ? copy.trash.purgeCountdown(purgeCountdown)
@@ -7457,7 +7483,7 @@ export function GalleryTab({
                       {copy.inspector.quick}
                     </span>
                     {quickDraftChanged && (
-                      <span className="rounded-sm border border-amber-900/40 bg-amber-900/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-amber-300/80">
+                      <span className="rounded-sm border border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.08)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[color:var(--admin-accent-fill)]">
                         {copy.inspector.unsaved}
                       </span>
                     )}
@@ -7468,15 +7494,15 @@ export function GalleryTab({
                     className="mb-2 flex flex-wrap gap-1"
                   >
                     {heroIdx >= 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-sm border border-amber-700/40 bg-amber-900/30 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-amber-300">
+                      <span className="inline-flex items-center gap-1 rounded-sm border border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.08)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[color:var(--admin-accent-fill)]">
                         <Star size={9} /> Hero {heroIdx + 1}
                       </span>
                     )}
                     <span
                       className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[length:var(--admin-text-note)] ${
                         editForm.isPublished
-                          ? "border-emerald-700/40 bg-emerald-900/20 text-emerald-300/85"
-                          : "border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.1)] text-[color:var(--admin-danger)]"
+                          ? "border-[rgba(var(--admin-success-rgb),0.4)] bg-[rgba(var(--admin-success-rgb),0.08)] text-[color:var(--admin-success)]"
+                          : "border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-muted)]"
                       }`}
                     >
                       {editForm.isPublished ? (
@@ -7496,9 +7522,12 @@ export function GalleryTab({
                         className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
                         style={{
                           background: quickCategory
-                            ? (catColors[quickCategory.slug] ?? "#888")
+                            ? (catColors[quickCategory.slug] ??
+                              "var(--admin-muted)")
                             : "transparent",
-                          border: quickCategory ? "none" : "1px solid #666",
+                          border: quickCategory
+                            ? "none"
+                            : "1px solid var(--admin-muted)",
                         }}
                       />
                       <span className="truncate">
@@ -7798,7 +7827,7 @@ export function GalleryTab({
                 </button>
                 {captureClipStatus !== "idle" && (
                   <span
-                    className={`text-[length:var(--admin-text-note)] ${captureClipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
+                    className={`text-[length:var(--admin-text-note)] ${captureClipStatus === "error" ? "admin-text-warning" : "admin-text-success"}`}
                   >
                     {copy.captureStatus[captureClipStatus]}
                   </span>
@@ -7916,7 +7945,7 @@ export function GalleryTab({
                   }}
                   className={`flex-1 flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors disabled:opacity-60 ${
                     metaSaved
-                      ? "bg-emerald-700/70 text-white"
+                      ? "admin-btn-success"
                       : "admin-btn-primary"
                   }`}
                 >
@@ -7959,7 +7988,7 @@ export function GalleryTab({
                 {copy.inspector.duplicate}
               </button>
               {metaError && (
-                <p role="alert" className="text-[length:var(--admin-text-note)] text-red-400/80 -mt-1">
+                <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)] -mt-1">
                   {copy.inspector.saveFailed}
                 </p>
               )}
@@ -8036,7 +8065,7 @@ export function GalleryTab({
                 <button
                   onClick={() => deletePhotos.mutate([inspectPhoto.id])}
                   disabled={bulkBusy}
-                  className="w-full flex items-center justify-center gap-1.5 text-[length:var(--admin-text-note)] text-red-400/60 bg-[var(--admin-paper-soft)] py-2 rounded-sm hover:bg-red-900/20 hover:text-red-400 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  className="admin-text-danger w-full flex items-center justify-center gap-1.5 text-[length:var(--admin-text-note)] bg-[var(--admin-paper-soft)] py-2 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Trash2 size={11} /> {copy.inspector.moveToTrash}
                 </button>
@@ -8412,9 +8441,9 @@ function BulkEditRow({
 
   const rowBg =
     status === "saved"
-      ? "bg-emerald-900/10"
+      ? "bg-[rgba(var(--admin-success-rgb),0.08)]"
       : status === "error"
-        ? "bg-red-900/10"
+        ? "bg-[rgba(var(--admin-danger-rgb),0.08)]"
         : "";
   const inputCls =
     "w-full bg-transparent text-[var(--admin-ink)] outline-none border-b border-transparent transition-colors py-0.5 text-[length:var(--admin-text-body)]";
@@ -8434,11 +8463,11 @@ function BulkEditRow({
           />
         )}
         {status === "saved" && (
-          <Check size={11} className="text-emerald-400 mx-auto" />
+          <Check size={11} className="admin-text-success mx-auto" />
         )}
         {status === "error" && (
           <span title={errorMsg} className="cursor-help block">
-            <AlertTriangle size={11} className="text-amber-400 mx-auto" />
+            <AlertTriangle size={11} className="admin-text-warning mx-auto" />
           </span>
         )}
       </td>
@@ -8498,7 +8527,7 @@ function BulkEditRow({
         </div>
         {clipStatus !== "idle" && (
           <span
-            className={`text-[length:var(--admin-text-note)] ${clipStatus === "error" ? "text-amber-400/80" : "text-emerald-400/80"}`}
+            className={`text-[length:var(--admin-text-note)] ${clipStatus === "error" ? "admin-text-warning" : "admin-text-success"}`}
           >
             {copy.captureStatus[clipStatus]}
           </span>

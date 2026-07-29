@@ -1,45 +1,45 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-29 18:17 JST
+## Current State — 2026-07-29 18:35 JST
 
-- **Status:** Admin刷新を正式仕様に沿って段階実装中。**Phase 3は実装・検証完了、commit直前**
+- **Status:** Admin刷新を正式仕様に沿って段階実装中。**Phase 4は実装・検証完了、commit直前**
 - **Current owner:** Codex（同じworktreeを編集しないこと）
 - **Handoff readiness:** Not ready（Phaseごとの検証とcommitを継続中）
 - **Branch:** `main`（Finder試作は `prototype/finder-contact-sheet`、B-2は `prototype/b2-uneven-rows`）
-- **HEAD:** `SELF`（Phase 3 Form layout）
-- **Git:** clean（このCurrent Stateを含むPhase 3差分を論理commit）
-- **Originとの差:** 仕様書・Phase 1〜3の4 commitsぶん ahead。**push禁止（オーナーのみ）**
+- **HEAD:** `SELF`（Phase 4 semantic color tokens）
+- **Git:** clean（このCurrent Stateを含むPhase 4差分を論理commit）
+- **Originとの差:** 仕様書・Phase 1〜4の5 commitsぶん ahead。**push禁止（オーナーのみ）**
 
 ### 今回やっていること
 
 正式仕様 `admin-layout-implementation.md` / `library-reorder-safety.md` に従い、
-Phase 1〜2の安全なWorkspaceを維持したまま、Form系画面とSettings情報設計を分離した。
+Phase 1〜3の配置と安全性を維持したまま、Adminの装飾色と意味色を分離した。
 
-- Settingsを19節の左目次＋読みやすい720px本文へ分離
-- 1024pxは184px目次＋640px本文、390pxは上部固定1行＋全節シート
-- 節ごとの変更有無をアクセント点と一覧で表示し、保存・破棄と対応
-- 保存失敗した節をdanger点で示し、最初の失敗欄を開いてfocus・`aria-invalid`を付与
-- 保存成功時刻を目次下の保存欄へ残し、スマホは既存の下部保存帯を維持
-- Profile / Pricing / Serviceは目次なしのForm幅へ統一
-- Hero / Seriesなど混合画面のWorkspace振り分けはPhase 5で完了予定
-- Settings取得失敗時の「既定値を現在値として編集させない」構造と文言を維持
-- 既存テストは同名の目次と本文を区別し、新しい構造をより強く固定
+- Admin専用の初期accentを`#5b7fa0`（淡いくすみ青）へ固定
+- 公開サイトのaccentColor / linkHoverColorをAdminの色へ流用しない
+- danger / warning / success / infoを個別token＋透過用RGBへ分離
+- accentの線幅2.5pxと濃色fillを追加し、写真選択・挿入位置・順位へ配線
+- 旧red / amber / emeraldの用途を危険・注意・成功・装飾へ再分類
+- `bg-red`等を文字列で拾う応急処置CSSと、緑・琥珀の一括上書きを撤去
+- `ring-[#aaa]`、`bg-[#ddd]`、白い発光shadow、カテゴリfallback直書きを撤去
+- 削除操作は通常時ニュートラル、hover/focus時だけdangerに統一
+- API / DB schemaと公開サイトの見た目・accent設定は変更していない
 
 ### 検証
 
-- 対象 unit/render: 9 pass / 0 fail、全admin render: 83 pass / 0 fail
-- Form browser: 1440 / 1024 / 390pxを含む4 pass / 0 fail / 4 skip
-- `bun run check`: 627 test / 0 fail、typecheck・lint・build成功
-- 管理画面smoke全154件: 78 pass / 0 fail / 76端末別skip
+- 対象token test: 6 pass / 0 fail
+- 色・幅browser: 1440 / 1024 / 390pxの3 pass / 0 fail / 3端末別skip
+- `bun run check`: 630 test / 0 fail、typecheck・lint・build成功
+- 管理画面smoke全156件: 79 pass / 0 fail / 77端末別skip
 - Library保存安全性、Grid / Table、今回追加、390px専用Workspaceも同じ通し試験でpass
 - `git diff --check`: OK
 - handoff freshness: 更新前はOK。このcommit後に再確認する
 
 ### 次の一手
 
-Phase 3を論理commit。その後 Phase 4へ進み、Admin専用accentと
-danger / warning / success / infoを完全分離し、旧意味色と応急処置CSSを整理する。
+Phase 4を論理commit。その後 Phase 5へ進み、HeroをWorkspaceへ、
+Categories / Seriesを一覧Workspace＋編集Formの混合へ振り分け、PageShellをForm専用にする。
 
 ### オーナー判断待ち
 
@@ -55,7 +55,7 @@ danger / warning / success / infoを完全分離し、旧意味色と応急処�
 Finder・コンタクトシート／B-2。push・deploy・destructive Gitは禁止。
 
 - **Codex session:** `019faca4-6f70-7821-9fcd-cb8794f89301`
-- **Local commit:** 仕様書 `d8f1b04` ＋ Phase 1 `5061da1` ＋ Phase 2 `f696bb1` ＋ Phase 3 `SELF`。**Push: 未実施**
+- **Local commit:** 仕様書 `d8f1b04` ＋ Phase 1 `5061da1` ＋ Phase 2 `f696bb1` ＋ Phase 3 `a244e69` ＋ Phase 4 `SELF`。**Push: 未実施**
 - **Railway / production:** コード未反映。本番への書き込みなし
 <!-- CURRENT_STATE_END -->
 

@@ -22,6 +22,7 @@ export type ReorderBarFeedback = {
 } | null;
 
 export function AdminReorderBar({
+  scope = "library",
   target,
   busy,
   feedback,
@@ -38,7 +39,9 @@ export function AdminReorderBar({
   onMoveToPosition,
   onUndo,
   onChooseAgain,
+  destructiveAction,
 }: {
+  scope?: "library" | "hero";
   target: ReorderBarTarget;
   busy: boolean;
   feedback: ReorderBarFeedback;
@@ -67,15 +70,22 @@ export function AdminReorderBar({
   onMoveToPosition: () => void;
   onUndo: () => void;
   onChooseAgain: () => void;
+  destructiveAction?: {
+    label: string;
+    onAction: () => void;
+    disabled?: boolean;
+  };
 }) {
   const atFirst = target.position <= 1;
   const atLast = target.position >= target.total;
+  const positionInputId = `${scope}-reorder-position`;
 
   return (
     <section
       aria-label={labels.region}
       data-library-reorder-bar
       data-library-reorder-target={target.id}
+      data-admin-reorder-scope={scope}
       className="admin-library-action-bar admin-library-reorder-bar"
     >
       <div className="admin-library-reorder-bar__identity">
@@ -151,11 +161,11 @@ export function AdminReorderBar({
           if (!positionInvalid && !busy) onMoveToPosition();
         }}
       >
-        <label className="sr-only" htmlFor="library-reorder-position">
+        <label className="sr-only" htmlFor={positionInputId}>
           {labels.positionInput}
         </label>
         <input
-          id="library-reorder-position"
+          id={positionInputId}
           data-library-position-input
           type="number"
           inputMode="numeric"
@@ -218,15 +228,28 @@ export function AdminReorderBar({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onChooseAgain}
-        disabled={busy}
-        className="admin-library-action-bar__button admin-library-reorder-bar__choose"
-      >
-        <X size={13} />
-        {labels.chooseAgain}
-      </button>
+      <div className="admin-library-reorder-bar__choose">
+        <button
+          type="button"
+          onClick={onChooseAgain}
+          disabled={busy}
+          className="admin-library-action-bar__button"
+        >
+          <X size={13} />
+          {labels.chooseAgain}
+        </button>
+        {destructiveAction && (
+          <button
+            type="button"
+            onClick={destructiveAction.onAction}
+            disabled={busy || destructiveAction.disabled}
+            aria-label={destructiveAction.label}
+            className="admin-text-danger admin-library-action-bar__button"
+          >
+            {destructiveAction.label}
+          </button>
+        )}
+      </div>
     </section>
   );
 }

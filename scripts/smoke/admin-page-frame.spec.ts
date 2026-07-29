@@ -14,8 +14,8 @@ test.describe("admin — FormとWorkspaceの見出し位置", () => {
 
     await loginAsAdmin(page);
 
-    const standardTitleXs: number[] = [];
-    let libraryTitleX: number | null = null;
+    const formTitleXs: number[] = [];
+    const workspaceTitleXs: number[] = [];
     let settingsTitleX: number | null = null;
     for (const tab of ADMIN_TABS) {
       await gotoAdminTab(page, tab);
@@ -25,22 +25,26 @@ test.describe("admin — FormとWorkspaceの見出し位置", () => {
       await expect(title, `${tab} に共通見出しが必要`).toHaveCount(1);
       const box = await title.boundingBox();
       expect(box, `${tab} の見出し位置を取得できること`).not.toBeNull();
-      if (tab === "gallery") libraryTitleX = box!.x;
-      else if (tab === "settings") settingsTitleX = box!.x;
-      else standardTitleXs.push(box!.x);
+      if (tab === "settings") settingsTitleX = box!.x;
+      else if (["gallery", "hero", "series"].includes(tab))
+        workspaceTitleXs.push(box!.x);
+      else formTitleXs.push(box!.x);
     }
 
     expect(
-      Math.max(...standardTitleXs) - Math.min(...standardTitleXs),
+      Math.max(...formTitleXs) - Math.min(...formTitleXs),
     ).toBeLessThanOrEqual(2);
-    expect(libraryTitleX).not.toBeNull();
+    expect(
+      Math.max(...workspaceTitleXs) - Math.min(...workspaceTitleXs),
+    ).toBeLessThanOrEqual(2);
     expect(settingsTitleX).not.toBeNull();
-    const standardTitleX = Math.min(...standardTitleXs);
-    // Libraryは共通枠より右へ押し込まず、作業面側の32px基準へ寄せる。
-    expect(standardTitleX - libraryTitleX!).toBeGreaterThanOrEqual(0);
-    expect(standardTitleX - libraryTitleX!).toBeLessThanOrEqual(4);
+    const formTitleX = Math.min(...formTitleXs);
+    const workspaceTitleX = Math.min(...workspaceTitleXs);
+    // Workspaceは共通Formより右へ押し込まず、全幅作業面の32px基準へ寄せる。
+    expect(formTitleX - workspaceTitleX).toBeGreaterThanOrEqual(0);
+    expect(formTitleX - workspaceTitleX).toBeLessThanOrEqual(8);
     // Settingsだけは左目次208px＋間隔40pxの後ろに本文を置く。
-    expect(settingsTitleX! - standardTitleX).toBeGreaterThanOrEqual(246);
-    expect(settingsTitleX! - standardTitleX).toBeLessThanOrEqual(250);
+    expect(settingsTitleX! - formTitleX).toBeGreaterThanOrEqual(246);
+    expect(settingsTitleX! - formTitleX).toBeLessThanOrEqual(250);
   });
 });

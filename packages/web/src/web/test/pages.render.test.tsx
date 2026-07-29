@@ -2378,6 +2378,14 @@ describe("shared components", () => {
 
       expect(host.textContent).toContain("トップページの写真");
       expect(host.textContent).not.toContain("削除済み");
+      const heroSlide = host.querySelector("[data-hero-slide]");
+      expect(heroSlide).not.toBeNull();
+      expect(heroSlide!.querySelectorAll("button")).toHaveLength(1);
+      expect(
+        host.querySelector('button[aria-label="ヒーローから削除"]'),
+      ).toBeNull();
+      (heroSlide!.querySelector("button") as HTMLButtonElement).click();
+      await flush(30);
       expect(
         host.querySelector('button[aria-label="ヒーローから削除"]'),
       ).not.toBeNull();

@@ -1141,7 +1141,7 @@ export function SetupTab({
   // 読込中は「未完了」マークだらけのチェックリストを一瞬見せない
   if (loading) {
     return (
-      <PageShell width="wide">
+      <PageShell>
         <PageHeader title={t.setup.title} />
         <p className="text-[length:var(--admin-text-body)] text-[color:var(--admin-muted)]">…</p>
       </PageShell>
@@ -1150,7 +1150,7 @@ export function SetupTab({
 
   if (loadFailed) {
     return (
-      <PageShell width="wide">
+      <PageShell>
         <PageHeader title={t.setup.title} />
         <div className="admin-status-warning rounded-sm p-5 space-y-3">
           <h2 className="text-[length:var(--admin-text-body)]">
@@ -1176,7 +1176,7 @@ export function SetupTab({
 
   if (collapsed) {
     return (
-      <PageShell width="wide">
+      <PageShell>
         <PageHeader title={t.setup.title} />
         <div className="space-y-3">
           <StorageHealthLine
@@ -1217,7 +1217,7 @@ export function SetupTab({
   }
 
   return (
-    <PageShell width="wide">
+    <PageShell>
       <div className="space-y-8">
         {!demoMode && (
           <StorageHealthLine
@@ -1808,6 +1808,15 @@ function measuredContentWidth(el: HTMLElement | null): number {
 // render テスト(admin-reorder-lock.render.test.tsx)から直接マウントするため
 // SetupTab と同様に export する。アプリ内の利用は AdminPage 経由のみ。
 type LibraryMode = "normal" | "select" | "arrange";
+type PhotoReorderOperation = {
+  ids: number[];
+  expectedIds: number[];
+  beforeIds: number[];
+  afterIds: number[];
+  operation: "save" | "undo";
+  move?: { id: number; from: number; to: number };
+  afterConfirmed?: () => void;
+};
 const EMPTY_RECENTLY_ADDED_PHOTO_IDS: ReadonlySet<number> = new Set();
 const ignoreRecentlyAddedPhotoIdsChange = () => {};
 
@@ -1982,6 +1991,8 @@ export function GalleryTab({
     operation: "save" | "undo";
     message: string;
   } | null>(null);
+  const [reorderFailedOperation, setReorderFailedOperation] =
+    useState<PhotoReorderOperation | null>(null);
   const [reorderUndo, setReorderUndo] = useState<{
     beforeIds: number[];
     afterIds: number[];
@@ -3640,16 +3651,6 @@ export function GalleryTab({
     onError: onActionError(copy.feedback.albumSaveFailed),
   });
 
-  type PhotoReorderOperation = {
-    ids: number[];
-    expectedIds: number[];
-    beforeIds: number[];
-    afterIds: number[];
-    operation: "save" | "undo";
-    move?: { id: number; from: number; to: number };
-    afterConfirmed?: () => void;
-  };
-
   const setReorderBusyState = (busy: boolean) => {
     reorderBusyRef.current = busy;
     setReorderBusy(busy);
@@ -3669,24 +3670,68 @@ export function GalleryTab({
     );
   };
 
+  const completeConfirmedPhotoOrder = (variables: PhotoReorderOperation) => {
+    setOptimisticOrderIds(null);
+    setActionError("");
+    setReorderFailedOperation(null);
+    if (variables.operation === "save") {
+      setReorderUndo({
+        beforeIds: variables.beforeIds,
+        afterIds: variables.afterIds,
+      });
+      setReorderFailedTargetId(null);
+    } else {
+      setReorderUndo(null);
+      setLastMove(null);
+    }
+    setReorderFeedback({
+      state: "saved",
+      operation: variables.operation,
+      message:
+        variables.operation === "undo"
+          ? copy.reorder.undoSaved
+          : copy.reorder.saved,
+    });
+    variables.afterConfirmed?.();
+    setReorderBusyState(false);
+  };
+
   // Reorder: the operation remains busy until the refreshed list confirms the
   // saved order. The local order is changed first (optimistic update).
   const reorder = useMutation({
     mutationFn: async ({ ids, expectedIds }: PhotoReorderOperation) => {
-      const res = await adminApi.photos.reorder.$post({
-        json: { ids, expectedIds },
-      });
-      if (!res.ok) {
-        if (res.status === 401) assertOk(res);
-        const error = new Error(await responseErrorMessage(res)) as Error & {
-          status?: number;
-        };
-        error.status = res.status;
-        throw error;
+      let lastNetworkError: unknown;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        let res: Response;
+        try {
+          res = await adminApi.photos.reorder.$post({
+            json: { ids, expectedIds },
+          });
+        } catch (error) {
+          lastNetworkError = error;
+          if (attempt < 3) {
+            await new Promise((resolve) =>
+              window.setTimeout(resolve, attempt * 80),
+            );
+            continue;
+          }
+          throw error;
+        }
+        if (!res.ok) {
+          if (res.status === 401) assertOk(res);
+          const error = new Error(await responseErrorMessage(res)) as Error & {
+            status?: number;
+          };
+          error.status = res.status;
+          throw error;
+        }
+        return;
       }
+      throw lastNetworkError;
     },
     onMutate: (variables) => {
       setReorderFailedTargetId(null);
+      setReorderFailedOperation(null);
       setOptimisticOrderIds(variables.ids);
       if (variables.operation === "save") {
         setReorderUndo(null);
@@ -3720,26 +3765,7 @@ export function GalleryTab({
           setReorderBusyState(false);
           return;
         }
-        if (variables.operation === "save") {
-          setReorderUndo({
-            beforeIds: variables.beforeIds,
-            afterIds: variables.afterIds,
-          });
-          setReorderFailedTargetId(null);
-        } else {
-          setReorderUndo(null);
-          setLastMove(null);
-        }
-        setReorderFeedback({
-          state: "saved",
-          operation: variables.operation,
-          message:
-            variables.operation === "undo"
-              ? copy.reorder.undoSaved
-              : copy.reorder.saved,
-        });
-        variables.afterConfirmed?.();
-        setReorderBusyState(false);
+        completeConfirmedPhotoOrder(variables);
       } catch {
         // The API save succeeded, so rolling the screen back would falsely show
         // an unsaved order. Keep the optimistic order and the lock until reload.
@@ -3763,6 +3789,23 @@ export function GalleryTab({
             { queryKey: ["photos", "all"], type: "active" },
             { throwOnError: true },
           );
+          const latest = qc.getQueryData<{ photos?: Photo[] }>([
+            "photos",
+            "all",
+          ]);
+          const latestManual = reconstructManualPhotoOrder(
+            latest?.photos ?? [],
+          );
+          if (
+            latestManual.ok &&
+            latestManual.ids.length === variables.afterIds.length &&
+            latestManual.ids.every(
+              (id, index) => id === variables.afterIds[index],
+            )
+          ) {
+            completeConfirmedPhotoOrder(variables);
+            return;
+          }
           setOptimisticOrderIds(null);
         } catch {
           // The last confirmed local order is safer than leaving the rejected
@@ -3772,6 +3815,7 @@ export function GalleryTab({
         setReorderUndo(null);
       } else {
         setOptimisticOrderIds(variables.beforeIds);
+        setReorderFailedOperation(variables);
       }
       if (variables.operation === "save") setLastMove(null);
       if (variables.operation === "save" && variables.move) {
@@ -3839,6 +3883,17 @@ export function GalleryTab({
       operation: "undo",
       expectedIds: reorderUndo.afterIds,
       beforeIds: reorderUndo.afterIds,
+    });
+  };
+
+  const retryFailedPhotoOrder = () => {
+    if (!reorderFailedOperation || reorderBusyRef.current) return;
+    savePhotoOrder(reorderFailedOperation.afterIds, {
+      operation: reorderFailedOperation.operation,
+      expectedIds: reorderFailedOperation.expectedIds,
+      beforeIds: reorderFailedOperation.beforeIds,
+      move: reorderFailedOperation.move,
+      afterConfirmed: reorderFailedOperation.afterConfirmed,
     });
   };
 
@@ -4162,6 +4217,16 @@ export function GalleryTab({
     afterChange?.();
   };
 
+  const discardFailedReorderAndExit = () => {
+    if (!pendingLibraryMode || !reorderFailedOperation) return;
+    const nextMode = pendingLibraryMode;
+    setOptimisticOrderIds(reorderFailedOperation.beforeIds);
+    setReorderFailedOperation(null);
+    setReorderFeedback(null);
+    setActionError("");
+    applyLibraryMode(nextMode);
+  };
+
   // モード切替でも詳細欄の未保存保護を通す。写真切替と同じ確認部品を使い、
   // 確認前には選択・詳細・ドラッグ状態を一切変えない。
   const requestLibraryMode = (
@@ -4172,6 +4237,16 @@ export function GalleryTab({
       libraryMode === "arrange" &&
       nextMode !== "arrange" &&
       reorderBusyRef.current
+    ) {
+      setPendingLibraryMode(nextMode);
+      setReorderExitTimedOut(false);
+      return;
+    }
+    if (
+      libraryMode === "arrange" &&
+      nextMode !== "arrange" &&
+      reorderFeedback?.state === "error" &&
+      reorderFailedOperation
     ) {
       setPendingLibraryMode(nextMode);
       setReorderExitTimedOut(false);
@@ -4214,14 +4289,21 @@ export function GalleryTab({
   useEffect(() => {
     if (!pendingLibraryMode || reorderBusy) return;
     if (reorderFeedback?.state === "error") {
-      setPendingLibraryMode(null);
-      setReorderExitTimedOut(false);
+      if (!reorderFailedOperation) {
+        setPendingLibraryMode(null);
+        setReorderExitTimedOut(false);
+      }
       return;
     }
     applyLibraryMode(pendingLibraryMode);
     // applyLibraryMode intentionally reads the current mode/selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingLibraryMode, reorderBusy, reorderFeedback?.state]);
+  }, [
+    pendingLibraryMode,
+    reorderBusy,
+    reorderFailedOperation,
+    reorderFeedback?.state,
+  ]);
 
   useEffect(() => {
     if (!pendingLibraryMode || !reorderBusy) return;
@@ -4911,9 +4993,6 @@ export function GalleryTab({
           >
             <div className="min-w-0">
               <strong>{copy.reorder.mobileTitle}</strong>
-              {pendingLibraryMode && (
-                <output>{copy.reorder.waitingToExit}</output>
-              )}
             </div>
             <div className="flex items-center gap-1">
               {reorderUndo && !reorderBusy && (
@@ -4923,18 +5002,6 @@ export function GalleryTab({
                   className="admin-tap px-2 text-[length:var(--admin-text-note)]"
                 >
                   {copy.reorder.undo}
-                </button>
-              )}
-              {reorderExitTimedOut && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPendingLibraryMode(null);
-                    setReorderExitTimedOut(false);
-                  }}
-                  className="admin-tap px-2 text-[length:var(--admin-text-note)]"
-                >
-                  {copy.reorder.cancelExitWait}
                 </button>
               )}
               <button
@@ -4948,6 +5015,63 @@ export function GalleryTab({
             </div>
           </header>
         )}
+        {libraryMode === "arrange" &&
+          pendingLibraryMode &&
+          (reorderBusy || reorderFailedOperation) && (
+            <section
+              data-library-reorder-exit-guard
+              data-library-reorder-exit-state={
+                reorderBusy
+                  ? reorderExitTimedOut
+                    ? "waiting-choice"
+                    : "saving"
+                  : "failed"
+              }
+              role={reorderBusy ? "status" : "alert"}
+              aria-live="polite"
+              className={`admin-library-reorder-exit-guard ${
+                reorderBusy ? "" : "is-error"
+              }`}
+            >
+              <span>
+                {reorderBusy
+                  ? copy.reorder.exitSaving
+                  : copy.reorder.failedExit(1)}
+              </span>
+              {reorderBusy && reorderExitTimedOut && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setReorderExitTimedOut(false)}
+                  >
+                    {copy.reorder.continueWaiting}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingLibraryMode(null);
+                      setReorderExitTimedOut(false);
+                    }}
+                  >
+                    {copy.reorder.cancelExitWait}
+                  </button>
+                </div>
+              )}
+              {!reorderBusy && reorderFailedOperation && (
+                <div>
+                  <button type="button" onClick={retryFailedPhotoOrder}>
+                    {copy.reorder.retryFailedSave}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={discardFailedReorderAndExit}
+                  >
+                    {copy.reorder.discardFailedAndExit}
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
         <div
           className={`admin-workspace__header px-4 sm:px-10 pt-2 flex-shrink-0 ${
             libraryMode === "arrange" ? "hidden md:block" : ""
@@ -6231,6 +6355,9 @@ export function GalleryTab({
                         data-library-reorder-failed-target={
                           isFailedReorderTarget ? "true" : undefined
                         }
+                        data-library-reorder-origin={
+                          dragSrcId === photo.id ? "true" : undefined
+                        }
                         role="option"
                         tabIndex={-1}
                         aria-selected={
@@ -6248,7 +6375,9 @@ export function GalleryTab({
                           setDragOverId(null);
                         }}
                         className={`admin-photo-tile relative group ${
-                          dragSrcId === photo.id ? "opacity-35" : ""
+                          dragSrcId === photo.id
+                            ? "admin-photo-tile--drag-origin"
+                            : ""
                         } ${
                           isSelected
                             ? "ring-[length:var(--admin-accent-line)] ring-[color:var(--admin-accent)] ring-offset-1 ring-offset-[var(--admin-paper)]"

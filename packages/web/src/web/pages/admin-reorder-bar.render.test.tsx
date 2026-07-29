@@ -94,3 +94,42 @@ test("端の対象は進めない側だけを無効にする", () => {
   expect(html).not.toMatch(/disabled="" aria-label="後へ移動"/);
   expect(html).not.toMatch(/disabled="" aria-label="末尾へ移動"/);
 });
+
+test("Heroでも同じ下部帯を再利用し、対象解除と削除を分離する", () => {
+  const html = renderToStaticMarkup(
+    <AdminReorderBar
+      scope="hero"
+      target={{
+        id: 7,
+        thumbnailSrc: "/hero.jpg",
+        title: "Hero対象",
+        position: 3,
+        total: 5,
+      }}
+      busy={false}
+      feedback={{ state: "saving", message: "保存中" }}
+      moveSummary={null}
+      undoAvailable={false}
+      positionValue="3"
+      positionInvalid={false}
+      labels={labels}
+      onMoveFirst={noop}
+      onMovePrevious={noop}
+      onMoveNext={noop}
+      onMoveLast={noop}
+      onPositionChange={noop}
+      onMoveToPosition={noop}
+      onUndo={noop}
+      onChooseAgain={noop}
+      destructiveAction={{
+        label: "ヒーローから削除",
+        onAction: noop,
+      }}
+    />,
+  );
+
+  expect(html).toContain('data-admin-reorder-scope="hero"');
+  expect(html).toContain('id="hero-reorder-position"');
+  expect(html).toContain("選び直す");
+  expect(html).toContain("ヒーローから削除");
+});

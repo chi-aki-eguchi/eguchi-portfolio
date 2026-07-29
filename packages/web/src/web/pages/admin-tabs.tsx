@@ -19,7 +19,6 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  ChevronLeft,
   ChevronRight,
   Eye,
   EyeOff,
@@ -28,6 +27,7 @@ import {
   Star,
   Shuffle,
   Pencil,
+  GripVertical,
 } from "lucide-react";
 import {
   adminPhotoObjectPosition,
@@ -45,6 +45,11 @@ import {
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
+import { AdminWorkspace } from "./admin-workspace";
+import {
+  AdminReorderBar,
+  type ReorderBarFeedback,
+} from "./admin-reorder-bar";
 import {
   AdminSettingsFormLayout,
   type AdminSettingsSectionItem,
@@ -238,7 +243,7 @@ function SettingsLoadError({
 }) {
   const { t } = useAdminI18n();
   return (
-    <PageShell width="form">
+    <PageShell>
       <PageHeader title={title} />
       <div className="admin-status-warning rounded-sm p-5 space-y-3">
         <h2 className="text-[length:var(--admin-text-body)]">
@@ -713,9 +718,20 @@ export function HeroTab() {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
   const copy = t.phase2b.hero;
+  const reorderCopy = t.phase2b.library.reorder;
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [heroError, setHeroError] = useState("");
+  const [reorderTargetId, setReorderTargetId] = useState<number | null>(null);
+  const [positionValue, setPositionValue] = useState("");
+  const [reorderFeedback, setReorderFeedback] =
+    useState<ReorderBarFeedback>(null);
+  const [lastMove, setLastMove] = useState<{
+    before: number[];
+    after: number[];
+    from: number;
+    to: number;
+  } | null>(null);
 
   // All gallery photos
   const { data: photosData, isLoading: photosLoading } = useQuery({
@@ -781,18 +797,70 @@ export function HeroTab() {
   });
 
   const reorderHero = useMutation({
-    mutationFn: async (photoIds: number[]) => {
+    mutationFn: async ({
+      photoIds,
+    }: {
+      photoIds: number[];
+      move: {
+        before: number[];
+        after: number[];
+        from: number;
+        to: number;
+      } | null;
+      undo: boolean;
+    }) => {
       const res = await adminApi["hero-photos"].reorder.$post({
         json: { photoIds },
       });
       assertOk(res);
     },
-    onSuccess: () => {
-      setHeroError("");
-      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+    onMutate: async ({ photoIds }) => {
+      await qc.cancelQueries({ queryKey: ["admin-hero-photos"] });
+      const previous = qc.getQueryData<{ heroPhotos: HeroPhotoRow[] }>([
+        "admin-hero-photos",
+      ]);
+      qc.setQueryData<{ heroPhotos: HeroPhotoRow[] }>(
+        ["admin-hero-photos"],
+        (current) => {
+          if (!current) return current;
+          const byPhotoId = new Map(
+            current.heroPhotos.map((row) => [row.photoId, row]),
+          );
+          return {
+            heroPhotos: photoIds
+              .map((photoId, index) => {
+                const row = byPhotoId.get(photoId);
+                return row ? { ...row, sortOrder: index } : null;
+              })
+              .filter((row): row is HeroPhotoRow => row !== null),
+          };
+        },
+      );
+      setReorderFeedback({
+        state: "saving",
+        message: reorderCopy.saving,
+      });
+      return { previous };
     },
-    onError: onHeroError,
+    onSuccess: async (_data, variables) => {
+      setHeroError("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-hero-photos"] }),
+        qc.invalidateQueries({ queryKey: ["hero-photos"] }),
+      ]);
+      setLastMove(variables.undo ? null : variables.move);
+      setReorderFeedback({
+        state: "saved",
+        message: variables.undo ? reorderCopy.undoSaved : reorderCopy.saved,
+      });
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        qc.setQueryData(["admin-hero-photos"], context.previous);
+      }
+      setHeroError(copy.error);
+      setReorderFeedback({ state: "error", message: copy.error });
+    },
   });
 
   const cleanupDangling = useMutation({
@@ -811,29 +879,70 @@ export function HeroTab() {
     onError: onHeroError,
   });
 
+  const submitHeroOrder = (
+    before: number[],
+    after: number[],
+    from: number,
+    to: number,
+  ) => {
+    if (reorderHero.isPending || from === to) return;
+    reorderHero.mutate({
+      photoIds: after,
+      move: { before, after, from: from + 1, to: to + 1 },
+      undo: false,
+    });
+  };
+
+  const moveHeroTo = (id: number, toIndex: number) => {
+    const before = heroPhotos.map((photo) => photo.id);
+    const from = before.indexOf(id);
+    const boundedTo = Math.max(0, Math.min(before.length - 1, toIndex));
+    if (from < 0 || from === boundedTo) return;
+    const after = [...before];
+    after.splice(from, 1);
+    after.splice(boundedTo, 0, id);
+    setReorderTargetId(id);
+    setPositionValue(String(boundedTo + 1));
+    submitHeroOrder(before, after, from, boundedTo);
+  };
+
   const handleDrop = (targetId: number) => {
-    if (dragId == null || dragId === targetId) return;
-    const ids = heroPhotos.map((p) => p.id);
-    const fromIdx = ids.indexOf(dragId);
-    const toIdx = ids.indexOf(targetId);
-    if (fromIdx < 0 || toIdx < 0) return;
-    ids.splice(fromIdx, 1);
-    ids.splice(toIdx, 0, dragId);
-    reorderHero.mutate(ids);
+    if (
+      dragId == null ||
+      dragId === targetId ||
+      reorderHero.isPending
+    )
+      return;
+    const toIndex = heroPhotos.findIndex((photo) => photo.id === targetId);
+    moveHeroTo(dragId, toIndex);
     setDragId(null);
     setDragOverId(null);
   };
 
-  // Move a hero slide by ±1 (touch-friendly alternative to drag)
   const moveHero = (id: number, delta: number) => {
-    const ids = heroPhotos.map((p) => p.id);
-    const idx = ids.indexOf(id);
-    const to = idx + delta;
-    if (idx < 0 || to < 0 || to >= ids.length) return;
-    ids.splice(idx, 1);
-    ids.splice(to, 0, id);
-    reorderHero.mutate(ids);
+    const index = heroPhotos.findIndex((photo) => photo.id === id);
+    moveHeroTo(id, index + delta);
   };
+
+  const reorderTarget = heroPhotos.find(
+    (photo) => photo.id === reorderTargetId,
+  );
+  const reorderTargetIndex = reorderTarget
+    ? heroPhotos.findIndex((photo) => photo.id === reorderTarget.id)
+    : -1;
+  const parsedPosition = Number(positionValue);
+  const positionInvalid =
+    !Number.isInteger(parsedPosition) ||
+    parsedPosition < 1 ||
+    parsedPosition > heroPhotos.length;
+
+  useEffect(() => {
+    if (reorderTargetId !== null && !reorderTarget) {
+      setReorderTargetId(null);
+      setPositionValue("");
+      setLastMove(null);
+    }
+  }, [reorderTarget, reorderTargetId]);
 
   if (photosLoading || heroLoading) {
     return (
@@ -844,7 +953,91 @@ export function HeroTab() {
   }
 
   return (
-    <PageShell width="wide">
+    <AdminWorkspace
+      name="hero"
+      actionBar={
+        reorderTarget ? (
+          <AdminReorderBar
+            scope="hero"
+            target={{
+              id: reorderTarget.id,
+              thumbnailSrc: adminPhotoSrc(reorderTarget, 160, 70),
+              title:
+                reorderTarget.title ||
+                reorderTarget.filename ||
+                t.phase2b.library.inspector.photoFallback,
+              position: reorderTargetIndex + 1,
+              total: heroPhotos.length,
+            }}
+            busy={reorderHero.isPending}
+            feedback={reorderFeedback}
+            moveSummary={
+              lastMove
+                ? reorderCopy.moveSummary(lastMove.from, lastMove.to)
+                : null
+            }
+            undoAvailable={lastMove !== null}
+            positionValue={positionValue}
+            positionInvalid={positionInvalid}
+            labels={{
+              region: reorderCopy.region,
+              position: reorderCopy.positionLabel(
+                reorderTargetIndex + 1,
+                heroPhotos.length,
+              ),
+              moveFirst: reorderCopy.moveFirst,
+              movePrevious: reorderCopy.movePrevious,
+              moveNext: reorderCopy.moveNext,
+              moveLast: reorderCopy.moveLast,
+              positionInput: reorderCopy.positionInput,
+              moveAction: reorderCopy.moveAction,
+              undo: reorderCopy.undo,
+              chooseAgain: reorderCopy.chooseAgain,
+              invalidPosition: reorderCopy.invalidPosition(heroPhotos.length),
+            }}
+            onMoveFirst={() => moveHeroTo(reorderTarget.id, 0)}
+            onMovePrevious={() => moveHero(reorderTarget.id, -1)}
+            onMoveNext={() => moveHero(reorderTarget.id, 1)}
+            onMoveLast={() =>
+              moveHeroTo(reorderTarget.id, heroPhotos.length - 1)
+            }
+            onPositionChange={setPositionValue}
+            onMoveToPosition={() =>
+              moveHeroTo(reorderTarget.id, parsedPosition - 1)
+            }
+            onUndo={() => {
+              if (!lastMove || reorderHero.isPending) return;
+              const restoredIndex = lastMove.before.indexOf(reorderTarget.id);
+              setPositionValue(String(restoredIndex + 1));
+              reorderHero.mutate({
+                photoIds: lastMove.before,
+                move: null,
+                undo: true,
+              });
+            }}
+            onChooseAgain={() => {
+              setReorderTargetId(null);
+              setPositionValue("");
+              setLastMove(null);
+              setReorderFeedback(null);
+            }}
+            destructiveAction={{
+              label: copy.removeAria,
+              disabled: removeHero.isPending,
+              onAction: () =>
+                removeHero.mutate(reorderTarget.id, {
+                  onSuccess: () => {
+                    setReorderTargetId(null);
+                    setPositionValue("");
+                    setLastMove(null);
+                    setReorderFeedback(null);
+                  },
+                }),
+            }}
+          />
+        ) : undefined
+      }
+    >
       <PageHeader
         title={t.navigation.tabs.hero}
       />
@@ -900,63 +1093,69 @@ export function HeroTab() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
             {heroPhotos.map((photo, i) => (
-              <div
+              <article
                 key={photo.id}
-                draggable
-                onDragStart={() => setDragId(photo.id)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOverId(photo.id);
-                }}
-                onDragLeave={() => setDragOverId(null)}
-                onDrop={() => handleDrop(photo.id)}
-                className={`group relative rounded-sm overflow-hidden cursor-grab active:cursor-grabbing border-2 transition-colors ${
-                  dragOverId === photo.id
-                    ? "border-white/40"
-                    : "border-transparent"
-                }`}
+                data-hero-slide={photo.id}
+                data-hero-reorder-target={
+                  reorderTargetId === photo.id ? "true" : "false"
+                }
+                className="min-w-0"
               >
-                <img
-                  src={adminPhotoSrc(photo, 400, 75)}
-                  alt={photo.title}
-                  className="w-full aspect-[4/3] object-cover"
-                  style={{ objectPosition: adminPhotoObjectPosition(photo) }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors">
-                  <span className="absolute top-1 left-1 text-[9px] text-white/90 bg-black/65 px-1.5 py-0.5 rounded">
+                <button
+                  type="button"
+                  draggable={!reorderHero.isPending}
+                  onDragStart={() => setDragId(photo.id)}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setDragOverId(null);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragOverId(photo.id);
+                  }}
+                  onDragLeave={() => setDragOverId(null)}
+                  onDrop={() => handleDrop(photo.id)}
+                  onClick={() => {
+                    setReorderTargetId(photo.id);
+                    setPositionValue(String(i + 1));
+                    setReorderFeedback(null);
+                  }}
+                  aria-pressed={reorderTargetId === photo.id}
+                  aria-label={reorderCopy.targetLabel(i + 1)}
+                  className={`group relative block w-full overflow-hidden rounded-sm border-[length:var(--admin-accent-line)] transition-colors ${
+                    reorderTargetId === photo.id
+                      ? "border-[color:var(--admin-accent)]"
+                      : dragOverId === photo.id
+                        ? "border-[color:var(--admin-accent)]"
+                        : "border-transparent"
+                  }`}
+                >
+                  <img
+                    src={adminPhotoSrc(photo, 600, 78)}
+                    alt={photo.title}
+                    className="w-full aspect-[4/3] object-cover"
+                    style={{ objectPosition: adminPhotoObjectPosition(photo) }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-2 left-2 inline-flex h-8 w-8 items-center justify-center rounded-sm bg-black/65 text-white"
+                  >
+                    <GripVertical size={15} />
+                  </span>
+                </button>
+                <div className="mt-1 flex min-h-5 items-center justify-between gap-2 text-[length:var(--admin-text-note)]">
+                  <span className="text-[var(--admin-muted)]">
                     {i + 1}
                   </span>
-                  {/* Controls — always visible on mobile (no hover), hover-reveal on desktop */}
-                  <div className="absolute inset-x-0 bottom-1 flex items-center justify-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => moveHero(photo.id, -1)}
-                      disabled={i === 0}
-                      aria-label={copy.movePrevious}
-                      className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
-                    >
-                      <ChevronLeft size={14} />
-                    </button>
-                    <button
-                      onClick={() => removeHero.mutate(photo.id)}
-                      disabled={removeHero.isPending}
-                      aria-label={copy.removeAria}
-                      className="admin-btn-danger admin-tap-sm w-7 h-7 flex items-center justify-center rounded-sm disabled:opacity-40 disabled:pointer-events-none"
-                    >
-                      <X size={13} />
-                    </button>
-                    <button
-                      onClick={() => moveHero(photo.id, 1)}
-                      disabled={i === heroPhotos.length - 1}
-                      aria-label={copy.moveNext}
-                      className="admin-tap-sm w-7 h-7 flex items-center justify-center bg-black/60 text-white/90 rounded-sm hover:bg-black/80 disabled:opacity-25 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
-                  </div>
+                  {reorderTargetId === photo.id && (
+                    <span className="text-[color:var(--admin-accent-fill)]">
+                      {reorderCopy.targetPill}
+                    </span>
+                  )}
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
@@ -1021,7 +1220,7 @@ export function HeroTab() {
           </div>
         )}
       </div>
-    </PageShell>
+    </AdminWorkspace>
   );
 }
 
@@ -1216,7 +1415,7 @@ export function ProfileTab({
   ];
 
   return (
-    <PageShell width="form">
+    <PageShell>
       <PageHeader
         title={t.navigation.tabs.profile}
         description={t.headers.profile}
@@ -1444,7 +1643,7 @@ export function CategoriesTab() {
   };
 
   return (
-    <PageShell width="form">
+    <PageShell>
       <PageHeader
         title={t.navigation.tabs.categories}
         description={t.headers.categories}
@@ -1794,7 +1993,7 @@ export function SeriesTab() {
   };
 
   return (
-    <PageShell width="wide">
+    <AdminWorkspace name="series">
       <PageHeader
         title={t.navigation.tabs.series}
         description={t.headers.series}
@@ -1935,7 +2134,10 @@ export function SeriesTab() {
 
               {/* Inline editor */}
               {editId === s.id && (
-                <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
+                <div
+                  className="admin-mixed-form-panel border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3"
+                  data-admin-mixed-form="series-edit"
+                >
                   <AdminField label={copy.title}>
                     <input
                       aria-label={copy.titleAria}
@@ -2177,7 +2379,10 @@ export function SeriesTab() {
         })}
       </div>
 
-      <div className="border-t border-[var(--admin-line)] pt-5">
+      <div
+        className="admin-mixed-form-panel border-t border-[var(--admin-line)] pt-5"
+        data-admin-mixed-form="series-new"
+      >
         <p className="text-[length:var(--admin-text-note)] tracking-wider text-[var(--admin-muted)] mb-4">
           {copy.newSeries}
         </p>
@@ -2252,7 +2457,7 @@ export function SeriesTab() {
           </div>
         </Modal>
       )}
-    </PageShell>
+    </AdminWorkspace>
   );
 }
 
@@ -2411,7 +2616,7 @@ export function PricingTab() {
   };
 
   return (
-    <PageShell width="form">
+    <PageShell>
       <PageHeader
         title={t.navigation.tabs.pricing}
         description={t.headers.pricing}
@@ -2974,7 +3179,7 @@ export function ServiceTab({
   }
 
   return (
-    <PageShell width="form">
+    <PageShell>
       <PageHeader
         title={t.navigation.tabs.service}
         description={t.headers.service}

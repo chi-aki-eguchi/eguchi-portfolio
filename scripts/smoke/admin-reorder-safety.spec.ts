@@ -64,6 +64,7 @@ async function installMocks(
     currentIds: number[];
     nextStatus: number;
     nextDelayMs: number;
+    networkFailuresRemaining: number;
   } = {
     captured: null,
     captures: [],
@@ -71,6 +72,7 @@ async function installMocks(
     currentIds: PHOTOS.map((photo) => photo.id),
     nextStatus: 200,
     nextDelayMs: 0,
+    networkFailuresRemaining: 0,
   };
   const json = (value: unknown) => (route: Route) =>
     route.fulfill({
@@ -98,6 +100,11 @@ async function installMocks(
     };
     state.captured = { ids: body.ids, expectedIds: body.expectedIds };
     state.captures.push(state.captured);
+    if (state.networkFailuresRemaining > 0) {
+      state.networkFailuresRemaining -= 1;
+      await route.abort("failed");
+      return;
+    }
     const delayMs = state.nextDelayMs;
     const status = state.nextStatus;
     state.nextDelayMs = 0;
@@ -272,9 +279,20 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
 
     const firstTile = page.locator(".admin-photo-tile").nth(0);
     const thirdTile = page.locator(".admin-photo-tile").nth(2);
-    await firstTile
-      .locator("[data-library-drag-handle]")
-      .dragTo(thirdTile);
+    const dragHandle = firstTile.locator("[data-library-drag-handle]");
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    await dragHandle.dispatchEvent("dragstart", { dataTransfer });
+    await expect(firstTile).toHaveAttribute(
+      "data-library-reorder-origin",
+      "true",
+    );
+    expect(
+      await firstTile.evaluate((element) =>
+        getComputedStyle(element, "::after").borderStyle,
+      ),
+    ).toContain("dashed");
+    await dragHandle.dispatchEvent("dragend", { dataTransfer });
+    await dragHandle.dragTo(thirdTile);
     await expect(
       page.locator('[data-library-reorder-status="saved"]'),
     ).toBeVisible();
@@ -427,6 +445,113 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
       page.locator('[data-library-reorder-status="saved"]'),
     ).toContainText("保存済み");
     await expect(page.locator("[data-library-reorder-undo]")).toBeVisible();
+    expect(state.otherWrites).toEqual([]);
+  });
+
+  test("通信断は3回まで自動再試行し、復帰後に1回の移動として確定する", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCで状態を確認する");
+
+    const state = await installMocks(page);
+    await openLibrary(page);
+    await enterArrange(page);
+    await chooseReorderTarget(page);
+    state.networkFailuresRemaining = 2;
+
+    await page.getByRole("button", { name: "後へ移動" }).first().click();
+    await expect(
+      page.locator('[data-library-reorder-status="saved"]'),
+    ).toBeVisible();
+    expect(state.captures).toHaveLength(3);
+    expect((await visiblePhotoTitles(page)).slice(0, 2)).toEqual([
+      "順序確認 1",
+      "順序確認 0",
+    ]);
+    expect(state.otherWrites).toEqual([]);
+  });
+
+  test("保存中の終了は2秒後に待機か中止を選べる", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCで状態を確認する");
+    test.setTimeout(30_000);
+
+    const state = await installMocks(page);
+    await openLibrary(page);
+    await enterArrange(page);
+    await chooseReorderTarget(page);
+    state.nextDelayMs = 2_500;
+
+    await page.getByRole("button", { name: "後へ移動" }).first().click();
+    await page
+      .locator('[data-library-mode-action="normal"]:visible')
+      .first()
+      .click();
+    const guard = page.locator("[data-library-reorder-exit-guard]");
+    await expect(guard).toHaveAttribute(
+      "data-library-reorder-exit-state",
+      "saving",
+    );
+    await expect(guard).toHaveAttribute(
+      "data-library-reorder-exit-state",
+      "waiting-choice",
+      { timeout: 3_000 },
+    );
+    await guard.getByRole("button", { name: "中止して残る" }).click();
+    await expect(guard).toHaveCount(0);
+    await expect(
+      page.locator('[data-library-reorder-status="saved"]'),
+    ).toBeVisible();
+    await expect(page.locator("[data-library-arrange-toolbar]")).toBeVisible();
+    expect(state.otherWrites).toEqual([]);
+  });
+
+  test("保存失敗後の終了は再保存かロールバック終了を選べる", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCで状態を確認する");
+
+    const state = await installMocks(page);
+    await openLibrary(page);
+    await enterArrange(page);
+    await chooseReorderTarget(page);
+    state.nextStatus = 500;
+    await page.getByRole("button", { name: "後へ移動" }).first().click();
+    await expect(
+      page.locator('[data-library-reorder-status="error"]'),
+    ).toBeVisible();
+
+    await page
+      .locator('[data-library-mode-action="normal"]:visible')
+      .first()
+      .click();
+    const guard = page.locator("[data-library-reorder-exit-guard]");
+    await expect(guard).toContainText("保存できていない移動が1件あります");
+    await guard.getByRole("button", { name: "もう一度保存" }).click();
+    await expect(page.locator("[data-library-arrange-toolbar]")).toHaveCount(0);
+    expect((await visiblePhotoTitles(page)).slice(0, 2)).toEqual([
+      "順序確認 1",
+      "順序確認 0",
+    ]);
+
+    await enterArrange(page);
+    await chooseReorderTarget(page);
+    state.nextStatus = 500;
+    await page.getByRole("button", { name: "後へ移動" }).first().click();
+    await page
+      .locator('[data-library-mode-action="normal"]:visible')
+      .first()
+      .click();
+    await expect(guard).toBeVisible();
+    await guard
+      .getByRole("button", { name: "変更を取り消して終了" })
+      .click();
+    await expect(page.locator("[data-library-arrange-toolbar]")).toHaveCount(0);
+    expect((await visiblePhotoTitles(page)).slice(0, 2)).toEqual([
+      "順序確認 1",
+      "順序確認 0",
+    ]);
     expect(state.otherWrites).toEqual([]);
   });
 

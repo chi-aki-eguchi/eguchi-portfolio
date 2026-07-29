@@ -14,6 +14,45 @@ type SwipeSample = {
   hiddenMoveControls: number;
 };
 
+async function installScrollableLibraryHarness(page: Page) {
+  const photos = Array.from({ length: 240 }, (_, index) => {
+    const id = index + 1;
+    return {
+      id,
+      filename: `swipe-${String(id).padStart(3, "0")}.jpg`,
+      url: "/og-image.jpg",
+      thumbUrl: null,
+      mediumUrl: null,
+      title: `Swipe photo ${id}`,
+      meta: "",
+      description: "",
+      category: "",
+      camera: null,
+      lens: null,
+      filmType: "デジタル",
+      width: 1200,
+      height: 800,
+      sortOrder: id,
+      displaySize: "M",
+      seriesId: null,
+      isPublished: true,
+      rotationDeg: 0,
+      focalX: 50,
+      focalY: 50,
+      createdAt: "2026-07-29T00:00:00.000Z",
+      shotAt: null,
+    };
+  });
+
+  await page.route("**/api/photos?**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ photos }),
+    }),
+  );
+}
+
 async function sampleLibrary(page: Page): Promise<SwipeSample> {
   return page.evaluate(() => {
     const scrollElement = document.querySelector<HTMLElement>(
@@ -105,6 +144,7 @@ test.describe("admin — Library高速スワイプの表示安定性", () => {
         "タッチ端末相当のmobileプロジェクトのみで検証",
       );
 
+      await installScrollableLibraryHarness(page);
       await loginAsAdmin(page);
       await gotoAdminTab(page, "gallery");
 
@@ -228,6 +268,7 @@ test.describe("admin — Library高速スワイプの表示安定性", () => {
       "トラックパッド相当のdesktopプロジェクトのみで検証",
     );
 
+    await installScrollableLibraryHarness(page);
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
     await waitForMountedThumbnails(page);

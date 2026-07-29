@@ -1897,6 +1897,7 @@ export function GalleryTab({
   const [pendingLibraryMode, setPendingLibraryMode] =
     useState<LibraryMode | null>(null);
   const [reorderExitTimedOut, setReorderExitTimedOut] = useState(false);
+  const [reorderNeedsReload, setReorderNeedsReload] = useState(false);
   const onReorderWorkspaceChangeRef = useRef(onReorderWorkspaceChange);
   onReorderWorkspaceChangeRef.current = onReorderWorkspaceChange;
   useEffect(() => {
@@ -3671,6 +3672,7 @@ export function GalleryTab({
   };
 
   const completeConfirmedPhotoOrder = (variables: PhotoReorderOperation) => {
+    setReorderNeedsReload(false);
     setOptimisticOrderIds(null);
     setActionError("");
     setReorderFailedOperation(null);
@@ -3730,6 +3732,7 @@ export function GalleryTab({
       throw lastNetworkError;
     },
     onMutate: (variables) => {
+      setReorderNeedsReload(false);
       setReorderFailedTargetId(null);
       setReorderFailedOperation(null);
       setOptimisticOrderIds(variables.ids);
@@ -3770,6 +3773,7 @@ export function GalleryTab({
         // The API save succeeded, so rolling the screen back would falsely show
         // an unsaved order. Keep the optimistic order and the lock until reload.
         const message = copy.feedback.reorderRefreshFailed;
+        setReorderNeedsReload(true);
         setActionError(message);
         setReorderFeedback({
           state: "error",
@@ -3779,6 +3783,7 @@ export function GalleryTab({
       }
     },
     onError: async (error, variables) => {
+      setReorderNeedsReload(false);
       const conflict =
         error instanceof Error &&
         "status" in error &&
@@ -4306,10 +4311,10 @@ export function GalleryTab({
   ]);
 
   useEffect(() => {
-    if (!pendingLibraryMode || !reorderBusy) return;
+    if (!pendingLibraryMode || !reorderBusy || reorderNeedsReload) return;
     const timer = window.setTimeout(() => setReorderExitTimedOut(true), 2000);
     return () => window.clearTimeout(timer);
-  }, [pendingLibraryMode, reorderBusy]);
+  }, [pendingLibraryMode, reorderBusy, reorderNeedsReload]);
 
   const selectRangeThrough = (photo: Photo, idx: number) => {
     const lastIdx =
@@ -5021,24 +5026,47 @@ export function GalleryTab({
             <section
               data-library-reorder-exit-guard
               data-library-reorder-exit-state={
-                reorderBusy
+                reorderNeedsReload
+                  ? "reload-required"
+                  : reorderBusy
                   ? reorderExitTimedOut
                     ? "waiting-choice"
                     : "saving"
                   : "failed"
               }
-              role={reorderBusy ? "status" : "alert"}
+              role={reorderBusy && !reorderNeedsReload ? "status" : "alert"}
               aria-live="polite"
               className={`admin-library-reorder-exit-guard ${
-                reorderBusy ? "" : "is-error"
+                reorderBusy && !reorderNeedsReload ? "" : "is-error"
               }`}
             >
               <span>
-                {reorderBusy
+                {reorderNeedsReload
+                  ? copy.feedback.reorderRefreshFailed
+                  : reorderBusy
                   ? copy.reorder.exitSaving
                   : copy.reorder.failedExit(1)}
               </span>
-              {reorderBusy && reorderExitTimedOut && (
+              {reorderNeedsReload && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingLibraryMode(null);
+                      setReorderExitTimedOut(false);
+                    }}
+                  >
+                    {copy.reorder.stayAfterRefreshFailure}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                  >
+                    {copy.reorder.reloadAfterRefreshFailure}
+                  </button>
+                </div>
+              )}
+              {!reorderNeedsReload && reorderBusy && reorderExitTimedOut && (
                 <div>
                   <button
                     type="button"
@@ -5057,7 +5085,9 @@ export function GalleryTab({
                   </button>
                 </div>
               )}
-              {!reorderBusy && reorderFailedOperation && (
+              {!reorderNeedsReload &&
+                !reorderBusy &&
+                reorderFailedOperation && (
                 <div>
                   <button type="button" onClick={retryFailedPhotoOrder}>
                     {copy.reorder.retryFailedSave}

@@ -1,64 +1,61 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-29 21:02 JST
+## Current State — 2026-07-30 00:55 JST
 
-- **Status:** Admin刷新 Phase 1〜5を正式仕様に沿って実装・ローカル検証・論理commit完了
-- **Current owner:** 未指定（Codexは編集完了・停止。Claude Codeはread-only独立検証可能）
+- **Status:** Claude独立監査後のpush前限定修正3件を実装・全ローカル検証・commit完了
+- **Current owner:** 未指定（Codexは編集完了・停止）
 - **Handoff readiness:** Ready
 - **Branch:** `main`
-- **HEAD:** `SELF`（Phase 5 remaining Admin layouts）
-- **Git:** clean（Phase 5 commit後の想定をこのcommitに含める）
-- **Originとの差:** 仕様書＋Phase 1〜5の6 commitsぶん ahead。**pushは未実施**
+- **HEAD:** `SELF`（Admin audit follow-up）
+- **Git:** clean（このCurrent Stateを含むcommit後）
+- **Originとの差:** Admin正式仕様＋Phase 1〜5＋監査修正の7 commitsぶん ahead。**push未実施**
 
 ### 完了したこと
 
-- Phase 1: Libraryの選択と並べ替え対象を分離。写真上はドラッグハンドルだけにし、
-  対象がある時だけ前後・先頭末尾・番号・Undo・保存状態を下部帯へ表示
-- Phase 1安全補完: 保存中退出の2秒待機、通信断3回再試行、保存失敗後の
-  再保存／ロールバック終了、失敗写真枠、ドラッグ元の破線枠を実装
-- Phase 2: Libraryを最大幅なしのWorkspaceへ移し、4層ツールバー、
-  1024pxの64pxナビ、1440pxの右400px詳細欄、共通下部帯を実装
-- Phase 3: PageShellをForm専用化。Settings 19節の目次・節単位の変更／失敗・
-  PC保存欄・390px上部1行＋節一覧を実装。Profile / Pricing / Serviceは短いForm
-- Phase 4: accentを淡いくすみ青へ固定し、danger / warning / success / infoを分離。
-  旧red / amber / emerald / `#ddd`と応急処置CSSを意味に沿って整理
-- Phase 5: HeroをLibrary共通下部帯のWorkspaceへ、Seriesを一覧Workspace＋
-  720px編集Formへ移行。Categoriesは正式基準で短いFormのまま維持
-- Workspace共通部品はLibrary既存CSSと名前を分け、Libraryの左右配置・仮想表示を維持
-- `docs/agents/codex-flow-trial.md`へ今回の試用結果を追記
+- Settings節台帳の「ギャラリー配置」へ`gallerySeed`を追加。
+  Settings内で即時保存するcamera / lens presetキーも「プリセット」節へ明示所属
+- API許可台帳の全設定キーを「Settingsの1節」または「別Admin画面の管理値」へ分類し、
+  Settingsキーの未所属と節への重複所属を失敗させるunit testを追加
+- `gallerySeed`変更時の未保存件数、節、PC目次、390px上部点／節一覧、
+  値復元と保存後の印消去をbrowser testで固定
+- `AdminStorageNotice.tsx`のamber直書きを既存`admin-status-warning`へ置換。
+  warningは公開accent設定から独立することをtestで固定
+- 旧意味色直書き検査を`admin.tsx` / `admin-tabs.tsx`だけでなく、
+  `pages/admin*.tsx`と`components/Admin*.tsx`の製品sourceへ拡張。test fixtureと公開画面は対象外
+- 並べ替え保存後の再取得だけ失敗した状態を明示し、
+  終了時は「この画面に残る／再読み込みする」を表示。「このまま待つ」は表示しない
+- 保存処理、通信断再試行、競合拒否、ロールバック、Undoの経路は変更なし
 
 ### 検証済み
 
-- `bun run check`: 633 pass / 0 fail、typecheck・lint・build成功
-- 対象render/unit: 10 pass / 0 fail
-- Library安全browser: 12 pass / 0 fail / 24端末別skip
-- 最終Admin smoke: 84 pass / 0 fail / 85端末別skip
-- 最終`bun run smoke`: 267 pass / 0 fail / 85端末別skip
-- 1440px / 1024px / 390px、mobile touch、mobile Safariを実ブラウザで確認
-- 全対象の横スクロールなし、非GETは明示モック以外へ出ていない
+- 対象unit / render: 26 pass / 0 fail
+- 対象Playwright: 19 pass / 0 fail / 32端末役割別skip
+- `bun run check`: 636 pass / 0 fail、typecheck・lint・build成功
+- `bun run smoke`: 270 pass / 0 fail / 89端末役割別skip
+- Chromium実画面: Settings 1440px / 390px、Library再取得失敗時の終了ガード
+- 横スクロール検査、非GETのモック外送信拒否、既存並べ替え安全試験をすべて通過
 - `git diff --check`: OK。handoff freshnessはcommit後に再確認する
 
 ### failed / skipped / 未実行
 
-- 最終前の通し試験で新旧WorkspaceのCSS名衝突と外部画像取得不調を検出。
-  CSS名を分離し高速スクロールを人工写真240枚へ強化後、全試験を0 failで再実行
-- skipはdesktop / mobile / mobile-touchの役割違いのみ。必須ブラウザ検証の未実行なし
+- 製品・test failureなし。初回Playwright起動だけsandboxのport権限で失敗し、
+  許可済みローカル実行へ切り替えて同じ対象試験と全smokeを0 failで完走
+- skipはdesktop / mobile / mobile-touch / mobile-safariの役割違いのみ
+- 本番・実DB・実R2・実機iPhoneは未実行（今回の禁止範囲）
 
-### 未決事項・次の一手
+### 次の一手・オーナー確認
 
-- `adminAccentColor`の保存キー追加はAPI設定契約変更になるため、今回の禁止範囲に従い未実装。
-  初期accent `#5b7fa0`はAdmin専用固定値として公開サイトから分離済み
-- シリーズ個別の公開順まで警告するか、「今回追加」の二重表示、コンタクトシート、
-  Undoを複数手へ増やすかは正式仕様の未決事項として持ち越し
-- Claude Codeへ並べ替え競合・Settings失敗節・Hero失敗復帰・3幅の独立検証を依頼する
+- オーナーがSettingsの「配置をシャッフル」をPC / 390pxで各1回試用
+- 保存後再取得失敗の人工状態は自動試験済み。必要なら文言だけ実画面で最終確認
+- 問題なければオーナーのみが7 commitsをpushする
 
 ### 禁止範囲と反映状況
 
-- 公開サイトのデザイン／API・DB schema／本番DB・R2／`.env`／Railwayは変更なし
-- Finder・コンタクトシート・複数枚並べ替え・編集セッションは未実装
+- Admin追加刷新、listbox、Workspace統一、Form幅、アクセント保存キーは変更なし
+- 公開サイト／API・DB schema／本番DB・R2／`.env`／Railwayは変更なし
 - **Codex session:** `019faca4-6f70-7821-9fcd-cb8794f89301`
-- **Local commits:** `d8f1b04` / `5061da1` / `f696bb1` / `a244e69` / `c20b069` / `SELF`
+- **Local commits:** `d8f1b04` / `5061da1` / `f696bb1` / `a244e69` / `c20b069` / `de4d228` / `SELF`
 - **Push / deploy / Railway / production:** すべて未実施。本番書き込みなし
 <!-- CURRENT_STATE_END -->
 

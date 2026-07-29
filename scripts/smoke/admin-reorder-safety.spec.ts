@@ -65,6 +65,7 @@ async function installMocks(
     nextStatus: number;
     nextDelayMs: number;
     networkFailuresRemaining: number;
+    failPhotoRefresh: boolean;
   } = {
     captured: null,
     captures: [],
@@ -73,6 +74,7 @@ async function installMocks(
     nextStatus: 200,
     nextDelayMs: 0,
     networkFailuresRemaining: 0,
+    failPhotoRefresh: false,
   };
   const json = (value: unknown) => (route: Route) =>
     route.fulfill({
@@ -144,14 +146,18 @@ async function installMocks(
   });
   await page.route("**/api/photos**", (route) =>
     route.fulfill({
-      status: 200,
+      status: state.failPhotoRefresh ? 500 : 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        photos: RECEIVED_ORDER.map((photo) => ({
-          ...photo,
-          sortOrder: state.currentIds.indexOf(photo.id),
-        })),
-      }),
+      body: JSON.stringify(
+        state.failPhotoRefresh
+          ? { error: "mock photo refresh failure" }
+          : {
+              photos: RECEIVED_ORDER.map((photo) => ({
+                ...photo,
+                sortOrder: state.currentIds.indexOf(photo.id),
+              })),
+            },
+      ),
     }),
   );
   await page.route("**/api/categories**", json({ categories: [] }));
@@ -504,6 +510,53 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
       page.locator('[data-library-reorder-status="saved"]'),
     ).toBeVisible();
     await expect(page.locator("[data-library-arrange-toolbar]")).toBeVisible();
+    expect(state.otherWrites).toEqual([]);
+  });
+
+  test("保存後の再取得失敗では待機を勧めず、画面に残るか再読み込みを選べる", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCで状態を確認する");
+
+    const state = await installMocks(page);
+    await openLibrary(page);
+    await enterArrange(page);
+    await chooseReorderTarget(page);
+    state.failPhotoRefresh = true;
+
+    await page.getByRole("button", { name: "後へ移動" }).first().click();
+    await expect(
+      page.locator('[data-library-reorder-status="error"]'),
+    ).toContainText("最新の一覧を確認できませんでした");
+
+    await page
+      .locator('[data-library-mode-action="normal"]:visible')
+      .first()
+      .click();
+    const guard = page.locator("[data-library-reorder-exit-guard]");
+    await expect(guard).toHaveAttribute(
+      "data-library-reorder-exit-state",
+      "reload-required",
+    );
+    await expect(guard).toContainText(
+      "順序は保存されましたが、最新の一覧を確認できませんでした",
+    );
+    await expect(
+      guard.getByRole("button", { name: "この画面に残る" }),
+    ).toBeVisible();
+    await expect(
+      guard.getByRole("button", { name: "再読み込みする" }),
+    ).toBeVisible();
+    await expect(
+      guard.getByRole("button", { name: "このまま待つ" }),
+    ).toHaveCount(0);
+
+    await guard.getByRole("button", { name: "この画面に残る" }).click();
+    await expect(guard).toHaveCount(0);
+    await expect(page.locator("[data-library-arrange-toolbar]")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "後へ移動" }).first(),
+    ).toBeDisabled();
     expect(state.otherWrites).toEqual([]);
   });
 

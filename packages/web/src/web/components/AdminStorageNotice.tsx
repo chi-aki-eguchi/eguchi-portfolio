@@ -25,11 +25,11 @@ export function StorageHealthLine({
     );
   }
   return (
-    <div className="border border-amber-300 bg-amber-50 rounded-sm px-4 py-3 space-y-1">
-      <p className="text-[12px] text-amber-900">
+    <div className="admin-status-warning rounded-sm px-4 py-3 space-y-1">
+      <p className="text-[12px]">
         {copy.missingSummary}
       </p>
-      <p className="text-[11px] leading-5 text-amber-800">
+      <p className="text-[11px] leading-5">
         {copy.missingAction}
       </p>
     </div>
@@ -66,7 +66,7 @@ export function StorageAlertBanner({
   return (
     <div
       role="alert"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[min(560px,90vw)] bg-[var(--admin-paper-soft)] border border-amber-700/60 rounded-sm shadow-xl px-5 py-4 space-y-2"
+      className="admin-status-warning fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[min(560px,90vw)] rounded-sm shadow-xl px-5 py-4 space-y-2"
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-[13px] text-[var(--admin-ink)]">{title}</p>
@@ -79,7 +79,7 @@ export function StorageAlertBanner({
         </button>
       </div>
       {missing.length > 0 && (
-        <p className="text-[12px] leading-5 text-amber-800">
+        <p className="text-[12px] leading-5">
           {copy?.missing ?? "写真の追加に必要な準備が完了していません。"}
         </p>
       )}

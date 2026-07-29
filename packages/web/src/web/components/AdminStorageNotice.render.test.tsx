@@ -101,7 +101,7 @@ test("StorageHealthLine — 英語辞書で接続状態と対処を表示する"
   expect(text).not.toContain("S3_BUCKET");
 });
 
-test("StorageAlertBanner — 専用日本語文面+明背景で読める色の不足変数名", () => {
+test("StorageAlertBanner — 専用日本語文面とAdmin warningトークンを使う", () => {
   const { text, html } = renderToText(
     createElement(StorageAlertBanner, {
       missing: ["S3_BUCKET"],
@@ -114,9 +114,8 @@ test("StorageAlertBanner — 専用日本語文面+明背景で読める色の�
   expect(text).toContain("写真の追加に必要な準備");
   expect(text).toContain("設定担当者へご連絡");
   expect(text).not.toContain("S3_BUCKET");
-  // P1-3: 明るいadmin背景で読めない text-amber-300 を使わない
-  expect(html).not.toContain("text-amber-300");
-  expect(html).toContain("text-amber-800");
+  expect(html).toContain("admin-status-warning");
+  expect(html).not.toContain("amber");
 });
 
 test("StorageAlertBanner — 再試行できない時はボタンを出さない", () => {

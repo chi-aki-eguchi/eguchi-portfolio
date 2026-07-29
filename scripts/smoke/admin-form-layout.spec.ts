@@ -6,6 +6,7 @@ const SETTINGS = {
   siteNameEn: "Form layout fixture",
   siteDescription: "人工データだけで確認する設定画面",
   gallerySortOrder: "manual",
+  gallerySeed: "1",
   servicePageMode: "off",
 };
 
@@ -13,6 +14,7 @@ async function installMocks(page: Page) {
   const writes: string[] = [];
   const unknownWrites: string[] = [];
   let failSettingsSave = false;
+  const currentSettings = { ...SETTINGS };
 
   const json = (value: unknown) => (route: Route) =>
     route.fulfill({
@@ -47,9 +49,17 @@ async function installMocks(page: Page) {
   await page.route("**/api/hero-photos**", json({ heroPhotos: [] }));
   await page.route("**/api/pricing**", json({ plans: [] }));
   await page.route("**/api/admin/pricing**", json({ plans: [] }));
-  await page.route("**/api/settings**", json(SETTINGS));
+  await page.route("**/api/settings**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(currentSettings),
+    }),
+  );
   await page.route("**/api/admin/settings**", async (route) => {
     writes.push(`${route.request().method()} ${route.request().url()}`);
+    const submitted = route.request().postDataJSON() as Record<string, string>;
+    if (!failSettingsSave) Object.assign(currentSettings, submitted);
     await route.fulfill({
       status: failSettingsSave ? 500 : 200,
       contentType: "application/json",
@@ -183,6 +193,69 @@ test.describe("admin — Form layout", () => {
     }
   });
 
+  test("gallerySeedはギャラリー配置の変更として数え、値復元と保存後に印を消す", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCの目次で確認する");
+
+    const mocks = await installMocks(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openTab(page, "settings");
+
+    const section = page.locator(
+      '[data-settings-section="gallery-layout"]',
+    );
+    await section.locator(".admin-plain-section-trigger").click();
+    const shuffle = section.getByRole("button", {
+      name: "配置をシャッフル",
+    });
+    const tocMarker = page
+      .locator('[data-settings-section-link="gallery-layout"]')
+      .locator("[data-settings-section-changed]");
+    const savePanel = page.locator("[data-settings-save-panel]");
+
+    await page.evaluate(() => {
+      Math.random = () => 0.5;
+    });
+    await shuffle.click();
+    await expect(section).toHaveAttribute(
+      "data-settings-section-changed",
+      "true",
+    );
+    await expect(tocMarker).toHaveCount(1);
+    await expect(savePanel).toContainText("未保存の変更 1件");
+    await expect(savePanel).toContainText("ギャラリー配置");
+
+    await page.evaluate(() => {
+      Math.random = () => 0;
+    });
+    await shuffle.click();
+    await expect(section).toHaveAttribute(
+      "data-settings-section-changed",
+      "false",
+    );
+    await expect(tocMarker).toHaveCount(0);
+    await expect(savePanel).toContainText("未保存の変更はありません");
+
+    await page.evaluate(() => {
+      Math.random = () => 0.5;
+    });
+    await shuffle.click();
+    await savePanel.getByRole("button", { name: "保存" }).click();
+    await expect
+      .poll(() => mocks.writes.length, {
+        message: "gallerySeedの保存要求がモックへ届く",
+      })
+      .toBe(1);
+    await expect(section).toHaveAttribute(
+      "data-settings-section-changed",
+      "false",
+    );
+    await expect(tocMarker).toHaveCount(0);
+    await expect(savePanel).toContainText(/に保存/);
+    expect(mocks.unknownWrites).toEqual([]);
+  });
+
   test("390pxは上部1行と全節シートを持ち、下部保存帯を維持する", async ({
     page,
   }, testInfo) => {
@@ -220,6 +293,41 @@ test.describe("admin — Form layout", () => {
         document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
+    expect(mocks.writes).toEqual([]);
+    expect(mocks.unknownWrites).toEqual([]);
+  });
+
+  test("390pxの節一覧にもgallerySeedの変更印を出す", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "390pxで確認する");
+
+    const mocks = await installMocks(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openTab(page, "settings");
+
+    const section = page.locator(
+      '[data-settings-section="gallery-layout"]',
+    );
+    await section.locator(".admin-plain-section-trigger").click();
+    await page.evaluate(() => {
+      Math.random = () => 0.5;
+    });
+    await section
+      .getByRole("button", { name: "配置をシャッフル" })
+      .click();
+
+    const current = page.locator(".admin-settings-mobile-current");
+    await expect(
+      current.locator(".admin-form-toc__dot--changed"),
+    ).toHaveCount(1);
+    await current.getByRole("button", { name: /切り替え/ }).click();
+    const sheet = page.locator("[data-settings-mobile-section-list]");
+    const galleryRow = sheet
+      .locator("button")
+      .filter({ hasText: "ギャラリー配置" });
+    await expect(galleryRow).toContainText("変更あり");
+
     expect(mocks.writes).toEqual([]);
     expect(mocks.unknownWrites).toEqual([]);
   });

@@ -63,7 +63,7 @@ import {
 
 const DEFAULT_THEME_BG = "#f7f7f7";
 
-const SETTINGS_SECTION_KEYS = {
+export const SETTINGS_SECTION_KEYS = {
   "site-basics": [
     "siteName",
     "siteNameEn",
@@ -121,6 +121,7 @@ const SETTINGS_SECTION_KEYS = {
     "topWorksGapScale",
     "galleryEmptyRate",
     "gallerySizeVariation",
+    "gallerySeed",
   ],
   series: [
     "seriesNavEnabled",
@@ -209,7 +210,7 @@ const SETTINGS_SECTION_KEYS = {
     "contactSendAnother",
     "contactErrorMessage",
   ],
-  presets: [],
+  presets: ["metaPresetsCamera", "metaPresetsLens"],
 } as const;
 
 type SettingsSectionId = keyof typeof SETTINGS_SECTION_KEYS;

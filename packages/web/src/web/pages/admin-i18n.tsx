@@ -335,6 +335,8 @@ const ADMIN_PHASE_2B_JA = {
       waitingToExit: "保存後に終了します",
       exitSaving: "保存しています…完了後に並べ替えを終了します",
       continueWaiting: "このまま待つ",
+      stayAfterRefreshFailure: "この画面に残る",
+      reloadAfterRefreshFailure: "再読み込みする",
       failedExit: (count: number) =>
         `保存できていない移動が${count}件あります`,
       retryFailedSave: "もう一度保存",
@@ -1808,6 +1810,8 @@ const ADMIN_PHASE_2B_EN = {
       waitingToExit: "Will exit after saving",
       exitSaving: "Saving… Reorder mode will close when this finishes",
       continueWaiting: "Keep waiting",
+      stayAfterRefreshFailure: "Stay on this screen",
+      reloadAfterRefreshFailure: "Reload",
       failedExit: (count: number) =>
         `${count} move${count === 1 ? "" : "s"} could not be saved`,
       retryFailedSave: "Save again",

@@ -94,4 +94,22 @@ describe("adminThemeFromSettings contrast guarantees", () => {
     expect(themeColor(theme, "--admin-accent-line")).toBe("2.5px");
     expect(new Set([accent, ...semanticColors]).size).toBe(5);
   });
+
+  test("公開サイトのaccent設定を変えてもAdmin warningは変わらない", () => {
+    const roseAccent = adminThemeFromSettings({
+      accentColor: "#d14b74",
+      linkHoverColor: "#e05f87",
+    });
+    const blueAccent = adminThemeFromSettings({
+      accentColor: "#2457d6",
+      linkHoverColor: "#183b91",
+    });
+
+    expect(themeColor(roseAccent, "--admin-warning")).toBe(
+      themeColor(blueAccent, "--admin-warning"),
+    );
+    expect(themeColor(roseAccent, "--admin-warning")).not.toBe(
+      themeColor(roseAccent, "--admin-accent"),
+    );
+  });
 });

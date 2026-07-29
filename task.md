@@ -1,46 +1,46 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-29 16:40 JST
+## Current State — 2026-07-29 17:32 JST
 
-- **Status:** Admin刷新を正式仕様に沿って段階実装中。**Phase 1は実装・検証・commit完了**
+- **Status:** Admin刷新を正式仕様に沿って段階実装中。**Phase 2は実装・検証完了、commit直前**
 - **Current owner:** Codex（同じworktreeを編集しないこと）
 - **Handoff readiness:** Not ready（Phaseごとの検証とcommitを継続中）
 - **Branch:** `main`（Finder試作は `prototype/finder-contact-sheet`、B-2は `prototype/b2-uneven-rows`）
-- **HEAD:** `SELF`（Phase 1並べ替えUI再配置）
-- **Git:** clean
-- **Originとの差:** 前回の86 commits は**オーナーが push 済み**で、この commit の直前は
-  `origin/main` と同一だった。仕様書とPhase 1の2 commitsぶん ahead。**push禁止（オーナーのみ）**
+- **HEAD:** `SELF`（Phase 2 Workspace layout）
+- **Git:** clean（このCurrent Stateを含むPhase 2差分を論理commit）
+- **Originとの差:** 仕様書・Phase 1・Phase 2の3 commitsぶん ahead。**push禁止（オーナーのみ）**
 
 ### 今回やっていること
 
 正式仕様 `admin-layout-implementation.md` / `library-reorder-safety.md` に従い、
-Libraryの並べ替え対象を通常選択から分離し、操作を写真上から下部帯へ移設した。
+Phase 1の安全な下部操作帯を維持したまま、LibraryをForm枠からWorkspaceへ分離した。
 
-- `reorderTargetId` を `selectedIds` 相当の既存選択状態から独立
-- 写真上の移動ボタンと番号モーダルを撤去し、ドラッグ取っ手だけを維持
-- 対象写真の外枠・順位・「動かす写真」を追加
-- 前後・先頭末尾・番号指定・Undo・保存状態を下部帯へ集約
-- スマホ並べ替え中は通常の上部/下部ナビを隠す専用ワークスペース
-- 既存の楽観更新、保存中停止、再取得確認、競合拒否、ロールバック、Undo保存経路を再利用
-- 保存失敗時は元の順へ戻し、失敗した対象だけを danger の細枠で示す
-- ドラッグ・キーボード・下部帯の全経路で対象へフォーカスを戻す
+- Libraryを最大幅制限から外し、写真面の左右余白を32 / 20 / 12pxへ最適化
+- 1440pxは248px、1024pxは64pxのサイドバー。手動折り畳み状態は端末内へ保存
+- 縮小ナビを写真／見せ方／サイトの3群へ整理し、キーボード操作と並べ替え中ロックを追加
+- Browse / Select / Reorderを唯一のモード切替として常設
+- 検索・絞り込みを主要操作、並び順・列数・Table・Trashを「表示」メニューへ分離
+- Importとサイト確認を画面から出る操作として見出し側へ分離
+- 右詳細欄は1440pxで400px固定、1024pxで重ね表示、狭い画面ではシート表示
+- 390pxでもモード・検索・絞り込み・表示を欠かさず横スクロールなし
+- 旧テストは検索常設・表示メニュー・Workspace/Form分離を強く守る内容へ更新
 
 ### 検証
 
-- 対象 unit/render: 34 pass / 0 fail
-- Phase 1 browser: 25 pass / 0 fail / 12 条件付きskip
-- 1440 / 1024 / 390px: 操作帯・横スクロール・写真との非重複を確認
-- `bun run check`: 623 testを含め 0 fail、build成功
-- `bun run smoke`: 全323件で255 pass / 1 fail / 67 skip。失敗は変更外の
-  Hero preview待ちで、同一テスト単独再実行は1 pass / 0 fail
+- 対象 unit/render: 9 pass / 0 fail
+- Workspace browser: 1440 / 1024 / 390pxの3件すべてpass、横スクロールなし
+- `bun run check`: 625 test / 0 fail、typecheck・lint・build成功
+- `bun run smoke`: 全329件で252 pass / 3旧前提fail / 74 skip。旧前提修正後の
+  該当5件は0 fail。管理画面全146件は74 pass / 1初期表示timeout / 71 skipで、
+  timeoutした保存連打拒否は単独再実行2.4秒で1 pass / 0 fail
 - `git diff --check`: OK
-- handoff freshness: Current State未commit警告のみ（このcommitで解消）
+- handoff freshness: 更新前はOK。このcommit後に再確認する
 
 ### 次の一手
 
-Phase 1を論理commit。その後 Phase 2 Workspaceへ進み、Libraryを最大幅制限から外し、
-1024pxのサイドバー縮小と「右は見る／下はする」の責務を完成させる。
+Phase 2を論理commit。その後 Phase 3 Form layoutへ進み、Settingsの節目次、
+変更済み節・保存失敗節・保存バーの対応と、スマホの節一覧シートを実装する。
 
 ### オーナー判断待ち
 
@@ -56,7 +56,7 @@ Phase 1を論理commit。その後 Phase 2 Workspaceへ進み、Libraryを最大
 Finder・コンタクトシート／B-2。push・deploy・destructive Gitは禁止。
 
 - **Codex session:** `019faca4-6f70-7821-9fcd-cb8794f89301`
-- **Local commit:** 仕様書 `d8f1b04` ＋ Phase 1 `SELF`。**Push: 未実施**
+- **Local commit:** 仕様書 `d8f1b04` ＋ Phase 1 `5061da1` ＋ Phase 2 `SELF`。**Push: 未実施**
 - **Railway / production:** コード未反映。本番への書き込みなし
 <!-- CURRENT_STATE_END -->
 

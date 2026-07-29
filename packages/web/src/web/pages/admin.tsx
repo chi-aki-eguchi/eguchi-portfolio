@@ -63,6 +63,7 @@ import {
   Grid,
   Columns,
   ChevronDown,
+  ChevronLeft,
   Eye,
   EyeOff,
   Star,
@@ -99,6 +100,7 @@ import {
 import { PageShell } from "./admin-page-shell";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 import { AdminReorderBar } from "./admin-reorder-bar";
+import { AdminCompactSidebar } from "./admin-compact-sidebar";
 import {
   AdminLanguageProvider,
   AdminLanguageToggle,
@@ -437,6 +439,11 @@ function AdminPageContent({
   }, [authenticated, shellSettings, setTab, demoMode]);
   const [galleryUploading, setGalleryUploading] = useState(false);
   const [galleryReordering, setGalleryReordering] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState(
+    "admin:sidebarCollapsed",
+    false,
+    "local",
+  );
   // 「今回追加」は選択とは別の一時状態。GalleryTab より上で持つことで、
   // カテゴリ等の別タブへ移動して戻ってもページ再読込までは目印を残す。
   const [recentlyAddedPhotoIds, setRecentlyAddedPhotoIds] = useState<
@@ -707,12 +714,27 @@ function AdminPageContent({
       <aside
         className="admin-sidebar admin-glass hidden lg:flex"
         data-navigation-locked={galleryReordering || undefined}
+        data-collapsed={sidebarCollapsed || undefined}
       >
-        <div className="admin-sidebar__brand">
-          <span className="admin-sidebar__eyebrow">{t.login.eyebrow}</span>
-          <span className="admin-sidebar__title">{sidebarSiteName}</span>
+        <div className="admin-sidebar__brand admin-sidebar__full">
+          <div>
+            <span className="admin-sidebar__eyebrow">{t.login.eyebrow}</span>
+            <span className="admin-sidebar__title">{sidebarSiteName}</span>
+          </div>
+          <button
+            type="button"
+            data-sidebar-collapse
+            onClick={() => setSidebarCollapsed(true)}
+            aria-label={t.navigation.collapseSidebar}
+            className="admin-sidebar__collapse"
+          >
+            <ChevronLeft size={16} />
+          </button>
         </div>
-        <nav className="admin-sidebar__nav" aria-label={t.navigation.label}>
+        <nav
+          className="admin-sidebar__nav admin-sidebar__full"
+          aria-label={t.navigation.label}
+        >
           {indicatorTop != null && (
             <div
               aria-hidden="true"
@@ -752,7 +774,7 @@ function AdminPageContent({
             </section>
           ))}
         </nav>
-        <div className="admin-sidebar__footer">
+        <div className="admin-sidebar__footer admin-sidebar__full">
           <a
             href="/"
             target="_blank"
@@ -765,6 +787,21 @@ function AdminPageContent({
             <LogOut size={13} /> {t.navigation.logoutButton}
           </button>
         </div>
+        <AdminCompactSidebar
+          groups={adminTabGroups}
+          tabMeta={adminTabs}
+          activeTab={tab}
+          navigationLocked={galleryReordering}
+          onRequestTab={requestTab}
+          onExpand={() => setSidebarCollapsed(false)}
+          onLogout={requestLogout}
+          labels={{
+            navigation: t.navigation.label,
+            expand: t.navigation.expandSidebar,
+            openSite: t.navigation.openSite,
+            logout: t.navigation.logout,
+          }}
+        />
       </aside>
 
       <div className="admin-main">
@@ -4835,7 +4872,11 @@ export function GalleryTab({
     parsedReorderPosition > displayed.length;
 
   return (
-    <div className="flex h-full" data-library-mode={libraryMode}>
+    <div
+      className="admin-workspace flex h-full"
+      data-admin-workspace="library"
+      data-library-mode={libraryMode}
+    >
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {libraryMode === "arrange" && (
@@ -4883,7 +4924,7 @@ export function GalleryTab({
           </header>
         )}
         <div
-          className={`px-4 sm:px-10 pt-2 flex-shrink-0 ${
+          className={`admin-workspace__header px-4 sm:px-10 pt-2 flex-shrink-0 ${
             libraryMode === "arrange" ? "hidden md:block" : ""
           }`}
         >
@@ -4907,69 +4948,111 @@ export function GalleryTab({
               )
             }
             actions={
-              <PageHeaderButton
-                active={showSitePreview}
-                onClick={() => setShowSitePreview(!showSitePreview)}
-                ariaLabel={
-                  showSitePreview
-                    ? t.headers.closeViewSite
-                    : t.headers.viewSite
-                }
+              <div
+                className="admin-library-header-actions"
+                data-library-exit-actions
               >
-                {showSitePreview ? <EyeOff size={13} /> : <Eye size={13} />}
-                {t.headers.viewSite}
-              </PageHeaderButton>
+                <fieldset
+                  aria-label={copy.import.mediumAria}
+                  title={copy.import.mediumHint}
+                  className="admin-library-import-medium"
+                >
+                  <span>{copy.import.mediumLabel}</span>
+                  {[
+                    ["digital", copy.import.digital] as const,
+                    ["film", copy.import.film] as const,
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setUploadMedium(value)}
+                      aria-pressed={uploadMedium === value}
+                      className={
+                        uploadMedium === value ? "admin-btn-primary" : ""
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </fieldset>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="admin-library-import-button admin-btn-primary"
+                >
+                  <Upload size={13} /> Import
+                </button>
+                <input
+                  aria-label={copy.import.chooseImages}
+                  ref={fileInputRef}
+                  type="file"
+                  accept={UPLOAD_IMAGE_ACCEPT}
+                  multiple
+                  className="hidden"
+                  onChange={(event) =>
+                    handleFiles(Array.from(event.target.files ?? []))
+                  }
+                />
+                <PageHeaderButton
+                  active={showSitePreview}
+                  onClick={() => setShowSitePreview(!showSitePreview)}
+                  ariaLabel={
+                    showSitePreview
+                      ? t.headers.closeViewSite
+                      : t.headers.viewSite
+                  }
+                >
+                  {showSitePreview ? <EyeOff size={13} /> : <Eye size={13} />}
+                  {t.headers.viewSite}
+                </PageHeaderButton>
+              </div>
             }
           />
         </div>
-        {/* Toolbar — quiet Library controls */}
-        <div className="bg-[var(--admin-paper)] border-b border-[var(--admin-line)] px-4 sm:px-10 py-1.5 flex flex-col gap-2 flex-shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {libraryMode === "normal" && (
-              <>
-                <fieldset
-                  aria-label={copy.mode.group}
-                  data-library-mode-switcher
-                  className="m-0 flex items-center gap-1 border-0 border-r border-[var(--admin-line)] p-0 pr-2 sm:pr-3"
-                >
-                  <button
-                    type="button"
-                    data-library-mode-action="normal"
-                    aria-pressed="true"
-                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm admin-btn-primary"
-                  >
-                    {copy.mode.normal}
-                  </button>
-                  <button
-                    type="button"
-                    data-library-mode-action="select"
-                    onClick={() => requestLibraryMode("select")}
-                    disabled={
-                      uploading ||
-                      showTrash ||
-                      bulkEditMode ||
-                      displayed.length === 0
-                    }
-                    aria-label={copy.mode.startSelect}
-                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {copy.mode.select}
-                  </button>
-                  <button
-                    type="button"
-                    data-library-mode-action="arrange"
-                    onClick={() => requestLibraryMode("arrange")}
-                    disabled={
-                      uploading ||
-                      showTrash ||
-                      bulkEditMode ||
-                      allPhotos.length === 0 ||
-                      !manualOrder.ok ||
-                      reorderBusy ||
-                      publicReorderLockCause !== null
-                    }
-                    title={
-                      !manualOrder.ok
+        {/* Workspace bar: one mode switcher on the left, find/view tools on the right. */}
+        <div className="admin-library-workbar">
+          <div className="admin-library-workbar__row">
+            <fieldset
+              aria-label={copy.mode.group}
+              data-library-mode-switcher
+              className={`admin-library-mode-switcher ${
+                libraryMode === "arrange" ? "max-md:hidden" : ""
+              }`}
+            >
+              {(
+                [
+                  ["normal", copy.mode.normal],
+                  ["select", copy.mode.select],
+                  ["arrange", copy.mode.arrange],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  data-library-mode-action={mode}
+                  aria-pressed={libraryMode === mode}
+                  onClick={() => requestLibraryMode(mode)}
+                  disabled={
+                    mode === "select"
+                      ? uploading ||
+                        showTrash ||
+                        bulkEditMode ||
+                        displayed.length === 0
+                      : mode === "arrange"
+                        ? uploading ||
+                          showTrash ||
+                          bulkEditMode ||
+                          allPhotos.length === 0 ||
+                          !manualOrder.ok ||
+                          reorderBusy ||
+                          publicReorderLockCause !== null
+                        : false
+                  }
+                  title={
+                    mode !== "arrange"
+                      ? undefined
+                      : !manualOrder.ok
                         ? copy.feedback.invalidManualOrder
                         : publicReorderLockCause === "not-manual"
                           ? copy.reorder.publicOrderLocked
@@ -4978,13 +5061,57 @@ export function GalleryTab({
                             : publicReorderLockCause === "loading"
                               ? copy.reorder.settingsLoading
                               : undefined
-                    }
-                    aria-label={copy.mode.startArrange}
-                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {copy.mode.arrange}
-                  </button>
-                </fieldset>
+                  }
+                  className={
+                    libraryMode === mode ? "admin-btn-primary" : undefined
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </fieldset>
+            {libraryMode !== "arrange" && (
+              <div className="admin-library-find-tools">
+                <div className="admin-library-search">
+                  <Search size={12} aria-hidden="true" />
+                  <input
+                    type="search"
+                    data-library-search-input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={copy.filters.searchPlaceholder}
+                    aria-label={copy.filters.searchAria}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      aria-label={copy.filters.clearSearch}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  data-library-filters-toggle
+                  onClick={() => setShowLibraryFilters((value) => !value)}
+                  aria-expanded={showLibraryFilters}
+                  className={
+                    showLibraryFilters || anyFilterActive
+                      ? "is-active"
+                      : undefined
+                  }
+                >
+                  <Search size={12} /> {copy.toolbar.filters}
+                  {activeFilterLabels.length > 0 && (
+                    <span>{activeFilterLabels.length}</span>
+                  )}
+                </button>
+              </div>
+            )}
+            {libraryMode === "normal" && (
+              <>
             {!manualOrder.ok && (
               <span
                 role="alert"
@@ -5006,6 +5133,13 @@ export function GalleryTab({
                     : copy.reorder.settingsLoading}
               </span>
             )}
+            <details className="admin-library-view-menu">
+              <summary>
+                <Grid size={12} />
+                {copy.toolbar.view}
+                <ChevronDown size={11} />
+              </summary>
+              <div className="admin-library-view-menu__panel">
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
               <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
@@ -5078,25 +5212,6 @@ export function GalleryTab({
                 </button>
               )}
             </div>
-
-            <button
-              type="button"
-              data-library-filters-toggle
-              onClick={() => setShowLibraryFilters((v) => !v)}
-              aria-expanded={showLibraryFilters}
-              className={`flex items-center gap-1.5 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border transition-colors ${
-                showLibraryFilters || anyFilterActive
-                  ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)] border-[color:var(--admin-ink)]"
-                  : "text-[color:var(--admin-muted)] border-[var(--admin-line)] hover:text-[color:var(--admin-ink)]"
-              }`}
-            >
-              <Search size={11} /> {copy.toolbar.filters}
-              {activeFilterLabels.length > 0 && (
-                <span className="min-w-4 h-4 px-1 rounded-sm bg-[var(--admin-muted)] text-[var(--admin-paper)] text-[length:var(--admin-text-note)] leading-4 text-center">
-                  {activeFilterLabels.length}
-                </span>
-              )}
-            </button>
 
             <div className="hidden md:flex items-center gap-2">
               <Grid size={12} className="text-[var(--admin-muted)]" />
@@ -5174,127 +5289,18 @@ export function GalleryTab({
             >
               ?
             </button>
+              </div>
+            </details>
 
-            {/* Importの設定であって絞り込みではない — 明札を付けてフィルタとの誤読を防ぐ */}
-            <fieldset
-              aria-label={copy.import.mediumAria}
-              title={copy.import.mediumHint}
-              className="flex items-center gap-1 m-0 p-0 border-0 min-w-0"
-            >
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider whitespace-nowrap mr-0.5">
-                {copy.import.mediumLabel}
-              </span>
-              {[
-                ["digital", copy.import.digital] as const,
-                ["film", copy.import.film] as const,
-              ].map(([val, lbl]) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setUploadMedium(val)}
-                  aria-pressed={uploadMedium === val}
-                  className={`text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
-                    uploadMedium === val
-                      ? "admin-btn-primary"
-                      : "text-[var(--admin-muted)] border-[var(--admin-line)]"
-                  }`}
-                >
-                  {lbl}
-                </button>
-              ))}
-            </fieldset>
-
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="flex items-center gap-1.5 text-[length:var(--admin-text-note)] admin-btn-primary px-3 py-1 rounded-sm transition-colors disabled:opacity-50"
-            >
-              <Upload size={11} /> Import
-            </button>
-            <input
-              aria-label={copy.import.chooseImages}
-              ref={fileInputRef}
-              type="file"
-              accept={UPLOAD_IMAGE_ACCEPT}
-              multiple
-              className="hidden"
-              onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
-            />
               </>
             )}
-            {libraryMode === "select" && (
-              <button
-                type="button"
-                data-library-filters-toggle
-                onClick={() => setShowLibraryFilters((v) => !v)}
-                aria-expanded={showLibraryFilters}
-                className={`flex items-center gap-1.5 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border transition-colors ${
-                  showLibraryFilters || anyFilterActive
-                    ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)] border-[color:var(--admin-ink)]"
-                    : "text-[color:var(--admin-muted)] border-[var(--admin-line)] hover:text-[color:var(--admin-ink)]"
-                }`}
-              >
-                <Search size={11} /> {copy.toolbar.filters}
-                {activeFilterLabels.length > 0 && (
-                  <span className="min-w-4 h-4 px-1 rounded-sm bg-[var(--admin-muted)] text-[var(--admin-paper)] text-[length:var(--admin-text-note)] leading-4 text-center">
-                    {activeFilterLabels.length}
-                  </span>
-                )}
-              </button>
-            )}
           </div>
-
-          {libraryMode !== "arrange" &&
-            !showTrash &&
-            activeFilterLabels.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] min-w-0">
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
-                {copy.filters.active}
-              </span>
-              <span className="truncate">
-                {activeFilterLabels.map((item) => item.text).join(" / ")}
-              </span>
-              <button
-                type="button"
-                onClick={clearLibraryFilters}
-                className="text-[length:var(--admin-text-note)] px-2 py-0.5 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors flex-shrink-0"
-              >
-                {copy.filters.clear}
-              </button>
-            </div>
-          )}
 
           {libraryMode !== "arrange" &&
             !showTrash &&
             showLibraryFilters && (
             <div className="border-t border-[var(--admin-line)] pt-2 flex flex-col gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                {/* B2: free-text search */}
-                <div className="relative">
-                  <Search
-                    size={11}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--admin-muted)] pointer-events-none"
-                  />
-                  <input
-                    type="search"
-                    data-library-search-input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={copy.filters.searchPlaceholder}
-                    aria-label={copy.filters.searchAria}
-                    className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] pl-6 pr-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none transition-colors w-52"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      aria-label={copy.filters.clearSearch}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--admin-muted)] hover:text-[var(--admin-ink)] transition-colors"
-                    >
-                      <X size={11} />
-                    </button>
-                  )}
-                </div>
-
                 <select
                   value={filterCat}
                   onChange={(e) => setFilterCat(e.target.value)}
@@ -5560,29 +5566,6 @@ export function GalleryTab({
                 <span className="hidden lg:inline text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.mode.selectionHint}
                 </span>
-                <button
-                  type="button"
-                  data-library-mode-action="end-select"
-                  onClick={() => requestLibraryMode("normal")}
-                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
-                >
-                  {copy.mode.endSelection}
-                </button>
-                <button
-                  type="button"
-                  data-library-mode-action="arrange"
-                  onClick={() => requestLibraryMode("arrange")}
-                  disabled={
-                    uploading ||
-                    allPhotos.length === 0 ||
-                    !manualOrder.ok ||
-                    reorderBusy ||
-                    publicReorderLockCause !== null
-                  }
-                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors disabled:opacity-40"
-                >
-                  {copy.mode.arrange}
-                </button>
               </div>
               {selected.size > 0 && (
                 <div data-library-batch-actions className="contents">
@@ -5905,25 +5888,6 @@ export function GalleryTab({
                   {copy.reorder.unlock}
                 </button>
               )}
-              {selected.size > 0 && (
-                <button
-                  type="button"
-                  data-library-mode-action="select"
-                  onClick={() => requestLibraryMode("select")}
-                  disabled={reorderBusy}
-                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] disabled:opacity-40"
-                >
-                  {copy.mode.select} ({selected.size})
-                </button>
-              )}
-              <button
-                type="button"
-                data-library-mode-action="finish-arrange"
-                onClick={() => requestLibraryMode("normal")}
-                className="hidden md:inline-flex text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm admin-btn-primary"
-              >
-                {copy.mode.finishArrange}
-              </button>
               {onlySeriesFilter && (
                 <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.reorder.seriesPositionHint}
@@ -5958,76 +5922,6 @@ export function GalleryTab({
               </div>
             )}
         </div>
-
-        {libraryMode === "normal" &&
-          !showTrash &&
-          (activeFilterLabels.length > 0 || librarySort !== "manual") && (
-            <div
-              aria-label={copy.conditions.aria}
-              className="bg-[var(--admin-paper-soft)] border-b border-[var(--admin-line)] px-4 sm:px-10 py-2 flex items-center gap-1.5 flex-wrap flex-shrink-0"
-            >
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider mr-1">
-                {copy.conditions.label}
-              </span>
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
-                {displayed.length} / {allPhotos.length} photos
-              </span>
-              {librarySort !== "manual" && (
-                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1">
-                  {copy.sort.condition(
-                    librarySort === "createdAt-desc"
-                      ? copy.sort.options.uploadedNewestShort
-                      : librarySort === "createdAt-asc"
-                        ? copy.sort.options.uploadedOldestShort
-                        : librarySort === "shotAt-desc"
-                          ? copy.sort.options.dateNewestShort
-                          : librarySort === "shotAt-asc"
-                            ? copy.sort.options.dateOldestShort
-                            : librarySort === "series"
-                              ? copy.sort.options.series
-                              : librarySort === "size"
-                                ? copy.sort.options.displaySizeShort
-                                : librarySort === "filmType"
-                                  ? copy.sort.options.medium
-                                  : librarySort === "camera"
-                                    ? copy.sort.options.camera
-                                    : librarySort === "category"
-                                      ? copy.sort.options.category
-                                      : librarySort === "title"
-                                        ? copy.sort.options.title
-                                        : librarySort === "published"
-                                          ? copy.sort.options.publication
-                                          : librarySort,
-                  )}
-                </span>
-              )}
-              {activeFilterLabels.map((item) => (
-                <span
-                  key={item.key}
-                  className="max-w-[220px] truncate text-[length:var(--admin-text-note)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1"
-                  title={item.text}
-                >
-                  {item.text}
-                </span>
-              ))}
-              {reorderLocked && (
-                <span className="text-[length:var(--admin-text-note)] text-amber-300/80 bg-amber-900/20 border border-amber-900/30 rounded-sm px-2 py-1">
-                  {librarySort !== "manual"
-                    ? copy.conditions.manualToDrag
-                    : copy.conditions.clearToDrag}
-                </span>
-              )}
-              {anyFilterActive && (
-                <button
-                  type="button"
-                  onClick={clearLibraryFilters}
-                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
-                >
-                  {copy.conditions.clear}
-                </button>
-              )}
-            </div>
-          )}
 
         {/* Upload progress bar */}
         {uploading && uploadProgress && (
@@ -7509,7 +7403,7 @@ export function GalleryTab({
           />
           <div
             data-library-inspector
-            className="fixed inset-x-0 bottom-0 z-40 w-full max-h-[60vh] shadow-2xl rounded-t-lg border-t border-[var(--admin-line)] sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-w-xs sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l xl:static xl:z-auto xl:w-64 xl:max-w-none xl:shadow-none bg-[var(--admin-paper)] flex flex-col flex-shrink-0 overflow-y-auto"
+        className="admin-library-inspector fixed inset-x-0 bottom-0 z-40 w-full max-h-[60vh] shadow-2xl rounded-t-lg border-t border-[var(--admin-line)] sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-w-xs sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l xl:static xl:z-auto xl:w-64 xl:max-w-none xl:shadow-none bg-[var(--admin-paper)] flex flex-col flex-shrink-0 overflow-y-auto"
           >
             {/* Header with close (close needed on mobile drawer) */}
             <div className="flex items-center justify-between px-3 pt-2 xl:hidden">

@@ -274,7 +274,7 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
       .toBeGreaterThan(0);
 
     // 全体添字は pinned → regular。境界を左右キーで往復する。
-    await page.locator('[data-library-mode-action="end-select"]').click();
+    await page.locator('[data-library-mode-action="normal"]').click();
     await page.locator('[data-library-mode-action="select"]').click();
     await photoTile(page, 102)
       .locator("[data-library-photo-action]")
@@ -298,9 +298,10 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
     await expect(
       page.locator("[data-library-selection-toolbar]"),
     ).toHaveAttribute("data-library-selected-count", "3");
-    await page.locator('[data-library-mode-action="end-select"]').click();
+    await page.locator('[data-library-mode-action="normal"]').click();
 
     // 表示用ソートを変えても区画は先頭に残る。
+    await page.locator(".admin-library-view-menu > summary").click();
     await page.locator("[data-library-sort]").selectOption("title");
     await expect(section).toBeVisible();
     expect(
@@ -323,11 +324,12 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
     await expect.poll(() => harness.reorderRequests.length).toBe(1);
     expect(harness.reorderRequests[0]).toEqual([2, 1, 3, 101, 102]);
     await page
-      .locator('[data-library-mode-action="finish-arrange"]:visible')
+      .locator('[data-library-mode-action="normal"]:visible')
       .click();
     await expect(section).toBeVisible();
 
     // Tableは表示モードを保ち、8列をまたぐ見出しと先頭行を出す。
+    await page.locator(".admin-library-view-menu > summary").click();
     const tableButton = page.getByRole("button", { name: "Table" });
     await tableButton.click();
     await expect(tableButton).toHaveAttribute("aria-pressed", "true");
@@ -371,9 +373,11 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
       )
       .toBeGreaterThan(0);
 
-    await page.locator('[data-library-mode-action="end-select"]').click();
-    await expect(tableButton).toHaveAttribute("aria-pressed", "true");
-    await tableButton.click();
+    await page.locator('[data-library-mode-action="normal"]').click();
+    await page.locator(".admin-library-view-menu > summary").click();
+    const reopenedTableButton = page.getByRole("button", { name: "Table" });
+    await expect(reopenedTableButton).toHaveAttribute("aria-pressed", "true");
+    await reopenedTableButton.click();
     await expect(section).toHaveAttribute(
       "data-library-recently-added-count",
       "1",

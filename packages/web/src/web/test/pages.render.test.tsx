@@ -990,7 +990,15 @@ describe("shared components", () => {
       expect(host.textContent).toContain("デジタル");
       expect(host.textContent).toContain("フィルム");
       expect(host.textContent).toContain("絞り込み");
-      expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
+      // Workspace仕様: 検索は主要操作として常時表示し、詳細条件だけを展開する。
+      expect(
+        host.querySelector('input[aria-label="写真を検索"]'),
+      ).not.toBeNull();
+      expect(
+        host
+          .querySelector("[data-library-filters-toggle]")
+          ?.getAttribute("aria-expanded"),
+      ).toBe("false");
       expect(host.textContent).toContain("3 / 3 photos");
       // 未入力バッジは通常表示ではタイルに載せない（写真が主役）
       expect(host.querySelector('[aria-label^="未入力:"]')).toBeNull();
@@ -998,8 +1006,10 @@ describe("shared components", () => {
       buttonWithText(host, "絞り込み").click();
       await flush(30);
       expect(
-        host.querySelector('input[aria-label="写真を検索"]'),
-      ).not.toBeNull();
+        host
+          .querySelector("[data-library-filters-toggle]")
+          ?.getAttribute("aria-expanded"),
+      ).toBe("true");
       expect(host.textContent).toContain("撮影日なし");
       expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("公開のみ");
@@ -1440,7 +1450,14 @@ describe("shared components", () => {
         createElement(Admin),
         seedAdminPhotos,
       );
-      expect(host.querySelector('input[aria-label="写真を検索"]')).toBeNull();
+      expect(
+        host.querySelector('input[aria-label="写真を検索"]'),
+      ).not.toBeNull();
+      expect(
+        host
+          .querySelector("[data-library-filters-toggle]")
+          ?.getAttribute("aria-expanded"),
+      ).toBe("false");
       expect(host.textContent).not.toContain("選択中 1枚");
 
       // モード分離(2026-07-23承認)後: 通常モードのタイルクリックは詳細を開くだけで、
@@ -2139,8 +2156,6 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
-      buttonWithText(host, "絞り込み").click();
-      await flush(30);
       const input = host.querySelector(
         'input[aria-label="写真を検索"]',
       ) as HTMLInputElement | null;
@@ -2153,13 +2168,18 @@ describe("shared components", () => {
         )?.set;
         setter?.call(input, value);
         input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-        await flush(50);
+        // 件数表示は旧値を220msだけ残す入れ替え演出があるため、
+        // 新しい現在値だけになってから判定する。
+        await flush(260);
       };
       await setSearch("Street Work");
       expect(host.textContent).toContain("1 / 3 photos");
-      expect(host.textContent).toContain("表示条件");
-      expect(host.textContent).toContain("検索: Street Work");
-      expect(host.textContent).toContain("条件を解除");
+      expect(input.value).toBe("Street Work");
+      expect(
+        host
+          .querySelector("[data-library-filters-toggle]")
+          ?.classList.contains("is-active"),
+      ).toBe(true);
       await setSearch("Indigo Days");
       expect(host.textContent).toContain("1 / 3 photos");
       await setSearch("No such classification");

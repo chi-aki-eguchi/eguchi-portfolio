@@ -73,6 +73,7 @@ test.describe("admin — JP/EN shared shell", () => {
 
     await gotoAdminTab(page, "gallery");
     await expect(page.getByRole("button", { name: "Filters" })).toBeVisible();
+    await page.locator(".admin-library-view-menu > summary").click();
     await expect(page.getByLabel("Sort Library view")).toBeVisible();
     const importMedium = page.getByLabel("Import medium");
     await expect(importMedium).toContainText("Import as");

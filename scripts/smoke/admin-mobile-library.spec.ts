@@ -34,6 +34,10 @@ async function assertContactSheet(page: Page, width: number, height: number) {
 
   const twoColumns = page.getByRole("button", { name: "2列表示" });
   const threeColumns = page.getByRole("button", { name: "3列表示" });
+  const viewMenu = page.locator(".admin-library-view-menu");
+  if ((await viewMenu.getAttribute("open")) === null) {
+    await viewMenu.locator(":scope > summary").click();
+  }
   await twoColumns.click();
   await expect(twoColumns).toHaveAttribute("aria-pressed", "true");
 
@@ -57,6 +61,7 @@ async function assertContactSheet(page: Page, width: number, height: number) {
       { timeout: 10_000, message: `${width}pxで3列表示へ切替` },
     )
     .toBe(3);
+  await viewMenu.locator(":scope > summary").click();
 
   // 1行目の先頭2タイルが同じ高さに横並びしている(=密な複数列表示)
   const box1 = await tiles.nth(0).boundingBox();
@@ -221,6 +226,7 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
     );
     expect(inline).toContain("minmax(220px");
     // サムネイルサイズsliderもPCでは引き続き操作できる
+    await page.locator(".admin-library-view-menu > summary").click();
     await expect(page.getByLabel("サムネイルサイズ")).toBeVisible();
   });
 });

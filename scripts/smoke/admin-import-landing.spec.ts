@@ -337,7 +337,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     ).toHaveCount(3);
 
     await test.step("一時区画を隠す並べ替えモードでは各写真が今回追加を伝える", async () => {
-      await page.locator('[data-library-mode-action="end-select"]').click();
+      await page.locator('[data-library-mode-action="normal"]').click();
       await page.locator('[data-library-mode-action="arrange"]').click();
       await expect(recentSection).toHaveCount(0);
       await expect(
@@ -347,7 +347,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         /added-1\.jpg.*(?:今回追加|added in this import)/i,
       );
       await page
-        .locator('[data-library-mode-action="finish-arrange"]:visible')
+        .locator('[data-library-mode-action="normal"]:visible')
         .click();
       await expect(recentSection).toBeVisible();
     });

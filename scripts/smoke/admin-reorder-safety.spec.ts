@@ -197,6 +197,14 @@ async function openLibrary(page: Page) {
     .filter({ hasText: /^\s*Library\s*$/ });
   if ((await sidebar.count()) > 0) {
     await sidebar.first().click();
+  } else if (
+    (await page
+      .locator('[data-compact-sidebar-group="photos"]:visible')
+      .count()) > 0
+  ) {
+    await page
+      .locator('[data-compact-sidebar-group="photos"]:visible')
+      .click();
   } else {
     await page
       .locator(".admin-bottom-nav__btn")
@@ -208,11 +216,9 @@ async function openLibrary(page: Page) {
       .filter({ hasText: "Library" });
     if ((await sheetRow.count()) > 0) await sheetRow.first().click();
   }
-  // Library に着いたことを、写真ツールバーの存在で確かめてから先へ進む
+  // Library に着いたことを、全幅Workspaceの存在で確かめてから先へ進む。
   await page
-    .locator("button:visible")
-    .filter({ hasText: /^\s*Table\s*$/ })
-    .first()
+    .locator('[data-admin-workspace="library"]')
     .waitFor({ timeout: 15_000 });
 }
 
@@ -499,6 +505,7 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
 
     const state = await installMocks(page);
     await openLibrary(page);
+    await page.locator(".admin-library-view-menu > summary").click();
     await page.locator("[data-library-sort]").selectOption("createdAt-desc");
     await page.getByRole("button", { name: "この並びを保存" }).click();
     await page

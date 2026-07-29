@@ -114,7 +114,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       selectedCount ?? "0",
     );
 
-    await modeAction(page, "end-select").click();
+    await modeAction(page, "normal").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(0);
 
@@ -128,7 +128,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       "1",
     );
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
-    await modeAction(page, "end-select").click();
+    await modeAction(page, "normal").click();
 
     // 並べ替えモードはタイルクリックで対象だけを指定する。
     await modeAction(page, "arrange").click();
@@ -154,7 +154,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
         .locator("button:not([data-library-photo-action])"),
     ).toHaveCount(1);
 
-    await modeAction(page, "finish-arrange").click();
+    await modeAction(page, "normal").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
     await expect(dragHandle(page, 0)).toHaveCount(0);
     await expect(photoAction(page, 0)).not.toHaveAttribute("draggable", "true");

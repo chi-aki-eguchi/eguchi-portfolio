@@ -81,6 +81,7 @@ const ADMIN_PHASE_2B_JA = {
     },
     toolbar: {
       filters: "絞り込み",
+      view: "表示",
       thumbnailSize: "サムネイルサイズ",
       photoColumns: "写真の表示列数",
       columns: (count: number) => `${count}列表示`,
@@ -1547,6 +1548,7 @@ const ADMIN_PHASE_2B_EN = {
     },
     toolbar: {
       filters: "Filters",
+      view: "View",
       thumbnailSize: "Thumbnail size",
       photoColumns: "Photo columns",
       columns: (count: number) => `Show ${count} columns`,
@@ -2998,6 +3000,8 @@ export type AdminMessages = {
     logout: string;
     siteButton: string;
     logoutButton: string;
+    collapseSidebar: string;
+    expandSidebar: string;
     groupTabs: (group: string) => string;
     closeSheet: string;
     palettePlaceholder: string;
@@ -3136,6 +3140,8 @@ export const ADMIN_DICTIONARY = {
       logout: "ログアウト",
       siteButton: "Site",
       logoutButton: "Logout",
+      collapseSidebar: "サイドバーを畳む",
+      expandSidebar: "サイドバーを開く",
       groupTabs: (group) => `${group}のタブ`,
       closeSheet: "シートを閉じる",
       palettePlaceholder:
@@ -3321,6 +3327,8 @@ export const ADMIN_DICTIONARY = {
       logout: "Log out",
       siteButton: "Site",
       logoutButton: "Log out",
+      collapseSidebar: "Collapse sidebar",
+      expandSidebar: "Expand sidebar",
       groupTabs: (group) => `${group} tabs`,
       closeSheet: "Close tab menu",
       palettePlaceholder:

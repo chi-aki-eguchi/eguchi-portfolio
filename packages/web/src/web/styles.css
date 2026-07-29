@@ -3336,3 +3336,410 @@ dialog.lightbox-exit .lb-content {
     transform: none !important;
   }
 }
+
+/* ── Form layout: Settings section navigation + readable body ─────────── */
+.admin-atelier .admin-settings-form-layout {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+.admin-atelier .admin-settings-form-layout__inner {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 720px);
+  gap: 40px;
+  width: 100%;
+  max-width: 1032px;
+  padding: 32px 32px 96px;
+}
+.admin-atelier .admin-settings-form-layout__body {
+  min-width: 0;
+  width: 100%;
+  max-width: 720px;
+}
+.admin-atelier .admin-form-toc {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  min-width: 0;
+}
+.admin-atelier .admin-form-toc__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-atelier .admin-form-toc__nav > button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px 7px 12px;
+  border-left: 3px solid transparent;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+  line-height: 1.35;
+  text-align: left;
+  transition:
+    color var(--dur-fast),
+    background-color var(--dur-fast),
+    border-color var(--dur-fast);
+}
+.admin-atelier .admin-form-toc__nav > button:hover {
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-form-toc__nav > button.is-active,
+.admin-atelier .admin-form-toc__nav > button[aria-current="location"] {
+  border-left-color: var(--admin-accent);
+  background: rgba(var(--admin-accent-rgb), 0.08);
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-form-toc__nav > button:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 1px;
+}
+.admin-atelier .admin-form-toc__label {
+  min-width: 0;
+  flex: 1;
+}
+.admin-atelier .admin-form-toc__markers,
+.admin-atelier .admin-settings-section__markers {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.admin-atelier .admin-settings-section__markers {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.admin-atelier .admin-form-toc__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.admin-atelier .admin-form-toc__dot--changed {
+  background: var(--admin-accent);
+}
+.admin-atelier .admin-form-toc__dot--failed {
+  background: var(--admin-danger);
+}
+.admin-atelier .admin-form-save-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 20px;
+  padding: 14px 0 0 12px;
+  border-top: 1px solid var(--admin-line);
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+  line-height: 1.45;
+}
+.admin-atelier .admin-form-save-panel strong {
+  color: var(--admin-ink);
+  font-weight: 500;
+}
+.admin-atelier .admin-form-save-panel__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-atelier .admin-form-save-panel__status.is-error,
+.admin-atelier .admin-form-save-panel__error-link {
+  color: var(--admin-danger);
+}
+.admin-atelier .admin-form-save-panel__status.is-saved {
+  color: var(--admin-success, #4f715e);
+}
+.admin-atelier .admin-form-save-panel__error-link {
+  align-self: flex-start;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.admin-atelier .admin-form-save-panel__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 3px;
+}
+.admin-atelier .admin-form-save-panel__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  border: 1px solid var(--admin-line);
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-form-save-panel__actions button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+.admin-atelier .admin-form-save-panel__actions .admin-form-save-panel__primary {
+  border-color: var(--admin-accent);
+  background: var(--admin-accent);
+  color: var(--admin-paper);
+}
+.admin-atelier
+  .admin-settings-section[data-settings-section-error="true"]
+  [data-settings-save-error-field] {
+  border-color: var(--admin-danger) !important;
+  box-shadow: 0 0 0 1px var(--admin-danger);
+}
+.admin-atelier
+  .admin-settings-section[data-settings-section-error="true"]
+  > .admin-plain-section-trigger {
+  color: var(--admin-danger);
+}
+.admin-atelier .admin-settings-mobile-current,
+.admin-atelier .admin-settings-section-sheet,
+.admin-atelier .admin-settings-mobile-save {
+  display: none;
+}
+
+/* A live preview consumes the right 320px. Put the section list above the
+   Form instead of squeezing it beside the fields. */
+@media (min-width: 1024px) {
+  .admin-atelier .admin-settings-panel--preview {
+    width: calc(100% - 320px);
+    min-width: 640px;
+    flex: 0 0 auto;
+  }
+  .admin-atelier
+    .admin-settings-panel--preview
+    .admin-settings-form-layout__inner {
+    display: block;
+    max-width: 800px;
+  }
+  .admin-atelier .admin-settings-panel--preview .admin-form-toc {
+    position: static;
+    margin-bottom: 24px;
+  }
+  .admin-atelier
+    .admin-settings-panel--preview
+    .admin-form-toc__nav {
+    flex-flow: row nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .admin-atelier
+    .admin-settings-panel--preview
+    .admin-form-toc__nav
+    > button {
+    width: auto;
+    min-width: max-content;
+    border-left: 0;
+    border-bottom: 3px solid transparent;
+  }
+  .admin-atelier
+    .admin-settings-panel--preview
+    .admin-form-toc__nav
+    > button.is-active {
+    border-bottom-color: var(--admin-accent);
+  }
+  .admin-atelier .admin-settings-panel--preview .admin-form-save-panel {
+    margin-top: 8px;
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .admin-atelier .admin-settings-form-layout__inner {
+    grid-template-columns: 184px minmax(0, 640px);
+    gap: 32px;
+    max-width: 904px;
+    padding: 24px 24px 96px;
+  }
+  .admin-atelier .admin-settings-form-layout__body {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .admin-atelier .admin-settings-form-layout__inner {
+    display: block;
+    max-width: none;
+    padding: 24px 24px 96px;
+  }
+  .admin-atelier .admin-settings-form-layout__body {
+    max-width: none;
+  }
+  .admin-atelier .admin-form-toc {
+    position: static;
+    margin-bottom: 24px;
+  }
+  .admin-atelier .admin-form-toc__nav {
+    flex-flow: row nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .admin-atelier .admin-form-toc__nav > button {
+    width: auto;
+    min-width: max-content;
+    border-left: 0;
+    border-bottom: 3px solid transparent;
+  }
+  .admin-atelier .admin-form-toc__nav > button.is-active {
+    border-bottom-color: var(--admin-accent);
+  }
+  .admin-atelier .admin-form-save-panel {
+    margin-top: 8px;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-atelier .admin-settings-form-layout__inner {
+    display: block;
+    max-width: none;
+    padding: 0 12px 132px;
+  }
+  .admin-atelier .admin-settings-form-layout__body {
+    max-width: none;
+  }
+  .admin-atelier .admin-form-toc {
+    display: none;
+  }
+  .admin-atelier .admin-settings-mobile-current {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--admin-line);
+    background: color-mix(in srgb, var(--admin-paper) 94%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .admin-atelier .admin-settings-mobile-current__label {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: baseline;
+    gap: 7px;
+  }
+  .admin-atelier .admin-settings-mobile-current__label > span {
+    color: var(--admin-muted);
+    font-size: 10px;
+  }
+  .admin-atelier .admin-settings-mobile-current__label > strong {
+    overflow: hidden;
+    color: var(--admin-ink);
+    font-size: var(--admin-text-note);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-atelier .admin-settings-mobile-current__alerts {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .admin-atelier .admin-settings-mobile-current > button {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    gap: 3px;
+    color: var(--admin-ink);
+    font-size: var(--admin-text-note);
+  }
+  .admin-atelier .admin-settings-section-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    flex-direction: column;
+    background: var(--admin-paper);
+    color: var(--admin-ink);
+  }
+  .admin-atelier .admin-settings-section-sheet__header {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--admin-line);
+  }
+  .admin-atelier .admin-settings-section-sheet__header strong {
+    font-size: var(--admin-text-body);
+    font-weight: 500;
+  }
+  .admin-atelier .admin-settings-section-sheet__header button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+  }
+  .admin-atelier .admin-settings-section-sheet__list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px 28px;
+  }
+  .admin-atelier .admin-settings-section-sheet__list > button {
+    display: flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 4px 8px 12px;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid var(--admin-line);
+    text-align: left;
+  }
+  .admin-atelier
+    .admin-settings-section-sheet__list
+    > button[aria-current="location"] {
+    border-left-color: var(--admin-accent);
+    background: rgba(var(--admin-accent-rgb), 0.08);
+  }
+  .admin-atelier .admin-settings-section-sheet__list strong,
+  .admin-atelier .admin-settings-section-sheet__list small {
+    display: block;
+  }
+  .admin-atelier .admin-settings-section-sheet__list strong {
+    color: var(--admin-ink);
+    font-size: var(--admin-text-body);
+    font-weight: 500;
+  }
+  .admin-atelier .admin-settings-section-sheet__list small {
+    display: block;
+    max-width: 230px;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: var(--admin-text-note);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-atelier .admin-settings-section-sheet__state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .admin-atelier .admin-settings-section-sheet__state em {
+    color: var(--admin-accent);
+    font-size: 10px;
+    font-style: normal;
+    white-space: nowrap;
+  }
+  .admin-atelier .admin-settings-section-sheet__state em.is-error {
+    color: var(--admin-danger);
+  }
+  .admin-atelier .admin-settings-mobile-save {
+    display: block;
+  }
+}

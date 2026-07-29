@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { ADMIN_TABS, gotoAdminTab, loginAsAdmin } from "./helpers";
 
 test.describe("admin — FormとWorkspaceの見出し位置", () => {
-  test("Form画面を揃え、Libraryだけ写真領域を8px広げる", async ({
+  test("通常画面を揃え、Library全幅とSettings目次を別配置にする", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -14,24 +14,33 @@ test.describe("admin — FormとWorkspaceの見出し位置", () => {
 
     await loginAsAdmin(page);
 
-    const formTitleXs: number[] = [];
+    const standardTitleXs: number[] = [];
     let libraryTitleX: number | null = null;
+    let settingsTitleX: number | null = null;
     for (const tab of ADMIN_TABS) {
       await gotoAdminTab(page, tab);
+      // 画面切替の横移動が完全に終わってから、静止位置だけを比べる。
+      await page.waitForTimeout(300);
       const title = page.locator("h1.admin-page-header__title");
       await expect(title, `${tab} に共通見出しが必要`).toHaveCount(1);
       const box = await title.boundingBox();
       expect(box, `${tab} の見出し位置を取得できること`).not.toBeNull();
       if (tab === "gallery") libraryTitleX = box!.x;
-      else formTitleXs.push(box!.x);
+      else if (tab === "settings") settingsTitleX = box!.x;
+      else standardTitleXs.push(box!.x);
     }
 
-    expect(Math.max(...formTitleXs) - Math.min(...formTitleXs)).toBeLessThanOrEqual(
-      2,
-    );
+    expect(
+      Math.max(...standardTitleXs) - Math.min(...standardTitleXs),
+    ).toBeLessThanOrEqual(2);
     expect(libraryTitleX).not.toBeNull();
-    const formTitleX = Math.min(...formTitleXs);
-    expect(formTitleX - libraryTitleX!).toBeGreaterThanOrEqual(6);
-    expect(formTitleX - libraryTitleX!).toBeLessThanOrEqual(10);
+    expect(settingsTitleX).not.toBeNull();
+    const standardTitleX = Math.min(...standardTitleXs);
+    // Libraryは共通枠より右へ押し込まず、作業面側の32px基準へ寄せる。
+    expect(standardTitleX - libraryTitleX!).toBeGreaterThanOrEqual(0);
+    expect(standardTitleX - libraryTitleX!).toBeLessThanOrEqual(4);
+    // Settingsだけは左目次208px＋間隔40pxの後ろに本文を置く。
+    expect(settingsTitleX! - standardTitleX).toBeGreaterThanOrEqual(246);
+    expect(settingsTitleX! - standardTitleX).toBeLessThanOrEqual(250);
   });
 });

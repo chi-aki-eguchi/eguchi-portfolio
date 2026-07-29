@@ -96,7 +96,11 @@ test.describe("admin — JP/EN shared shell", () => {
 
     await gotoAdminTab(page, "settings");
     // 2c-3で設定タブ「基本・見た目」もEN化されたため、境界マーカーをEN表記に更新。
-    await expect(page.getByText("Site Basics", { exact: true })).toBeVisible();
+    await expect(
+      page.locator(
+        '[data-settings-section="site-basics"] .admin-plain-section-trigger',
+      ),
+    ).toContainText("Site Basics");
     expect(writes).toEqual([]);
   });
 });

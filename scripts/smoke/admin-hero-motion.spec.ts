@@ -33,7 +33,9 @@ const HERO_MODES = [
 async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("button", { name: /Hero（ファーストビュー）/ }).click();
+  await page
+    .locator('[data-settings-section="hero"] .admin-plain-section-trigger')
+    .click();
   await page.getByRole("button", { name: "Live Preview" }).click();
   const iframe = page.locator('iframe[title="Site Preview"]');
   await expect(iframe).toBeVisible();

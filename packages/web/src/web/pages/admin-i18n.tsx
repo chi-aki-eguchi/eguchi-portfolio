@@ -3088,6 +3088,25 @@ export type AdminMessages = {
     saved: string;
     unsaved: string;
   };
+  formLayout: {
+    navigationLabel: string;
+    currentSection: string;
+    switchSection: string;
+    closeSectionList: string;
+    changed: string;
+    failed: string;
+    noChanges: string;
+    unsavedCount: (count: number) => string;
+    changedSections: (labels: string) => string;
+    saving: string;
+    save: string;
+    discard: string;
+    saveFailed: string;
+    goToFailed: string;
+    savedAt: (time: string) => string;
+    summaryUnset: string;
+    summaryItems: (count: number) => string;
+  };
 };
 
 export const ADMIN_DICTIONARY = {
@@ -3278,6 +3297,25 @@ export const ADMIN_DICTIONARY = {
       saved: "保存しました",
       unsaved: "保存していない変更があります",
     },
+    formLayout: {
+      navigationLabel: "設定の節一覧",
+      currentSection: "現在地",
+      switchSection: "切り替え",
+      closeSectionList: "節一覧を閉じる",
+      changed: "変更あり",
+      failed: "保存できず",
+      noChanges: "未保存の変更はありません",
+      unsavedCount: (count) => `未保存の変更 ${count}件`,
+      changedSections: (labels) => `変更した節: ${labels}`,
+      saving: "保存中...",
+      save: "保存",
+      discard: "破棄",
+      saveFailed: "保存に失敗しました",
+      goToFailed: "原因の節へ移動",
+      savedAt: (time) => `${time} に保存`,
+      summaryUnset: "未設定",
+      summaryItems: (count) => `${count}項目を設定`,
+    },
   },
   en: {
     languageToggleLabel: "Display language",
@@ -3465,6 +3503,25 @@ export const ADMIN_DICTIONARY = {
       failed: "Could not save",
       saved: "Saved",
       unsaved: "You have unsaved changes",
+    },
+    formLayout: {
+      navigationLabel: "Settings sections",
+      currentSection: "Current",
+      switchSection: "Switch",
+      closeSectionList: "Close section list",
+      changed: "Changed",
+      failed: "Could not save",
+      noChanges: "No unsaved changes",
+      unsavedCount: (count) => `${count} unsaved change${count === 1 ? "" : "s"}`,
+      changedSections: (labels) => `Changed sections: ${labels}`,
+      saving: "Saving...",
+      save: "Save",
+      discard: "Discard",
+      saveFailed: "Could not save",
+      goToFailed: "Go to the affected section",
+      savedAt: (time) => `Saved at ${time}`,
+      summaryUnset: "Not set",
+      summaryItems: (count) => `${count} item${count === 1 ? "" : "s"} set`,
     },
   },
 } as const satisfies Record<AdminLanguage, AdminMessages>;

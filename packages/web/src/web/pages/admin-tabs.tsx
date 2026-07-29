@@ -45,6 +45,10 @@ import {
 } from "./admin-shared";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
+import {
+  AdminSettingsFormLayout,
+  type AdminSettingsSectionItem,
+} from "./admin-settings-form-layout";
 import { useAdminI18n } from "./admin-i18n";
 import type { GalleryLayoutType } from "../components/PhotoGallery";
 import {
@@ -53,6 +57,174 @@ import {
 } from "../lib/saved-draft";
 
 const DEFAULT_THEME_BG = "#f7f7f7";
+
+const SETTINGS_SECTION_KEYS = {
+  "site-basics": [
+    "siteName",
+    "siteNameEn",
+    "heroSubtitle",
+    "siteDescription",
+    "footerText",
+    "contactIntro",
+    "contactIntroEn",
+    "contactNote",
+    "contactNoteEn",
+    "contactFlow",
+    "contactFlowEn",
+    "contactEnglishNote",
+    "contactMessagePlaceholder",
+    "contactEmail",
+    "formspreeUrl",
+    "siteUrl",
+    "googleSiteVerification",
+    "footerCtaLabel",
+    "templateCreditLabel",
+    "templateCreditUrl",
+  ],
+  "portfolio-kit": ["servicePageMode"],
+  hero: [
+    "heroMode",
+    "heroMotionSpeed",
+    "heroRevealOrder",
+    "heroHeight",
+    "heroOverlay",
+    "heroDisplayMode",
+    "heroTitlePosition",
+    "heroScrollEffect",
+  ],
+  navigation: ["navPosition", "navHoverEffect"],
+  spacing: [
+    "spacingHeroBottom",
+    "spacingSectionGap",
+    "spacingPageTop",
+    "spacingFooterTop",
+  ],
+  texture: ["bgTexture", "bgTextureOpacity"],
+  reveal: ["photoRevealEffect"],
+  "gallery-layout": [
+    "galleryLayout",
+    "seriesLayout",
+    "topWorksLayout",
+    "topWorksMode",
+    "topWorksIds",
+    "homeGalleryCount",
+    "galleryColumns",
+    "gallerySizeScale",
+    "galleryGapScale",
+    "topWorksColumns",
+    "topWorksSizeScale",
+    "topWorksGapScale",
+    "galleryEmptyRate",
+    "gallerySizeVariation",
+  ],
+  series: [
+    "seriesNavEnabled",
+    "worksDefaultView",
+    "seriesGridColumns",
+    "seriesGridColumnsMobile",
+    "gallerySortOrder",
+    "seriesSortOrder",
+  ],
+  note: ["noteEnabled", "noteUsername", "noteShowCount"],
+  print: [
+    "printEnabled",
+    "printStoreUrl",
+    "printStoreLabel",
+    "printDescription",
+  ],
+  cta: ["homeCtaEnabled", "homeCtaTitle", "homeCtaText", "homeCtaButton"],
+  theme: ["themeBg", "themeText"],
+  fonts: [
+    "fontJa",
+    "customFontJaName",
+    "customFontJaUrl",
+    "customFontJaCategory",
+    "fontEn",
+    "customFontEnName",
+    "customFontEnUrl",
+    "customFontEnCategory",
+    "heroNameWeight",
+    "bodyWeight",
+  ],
+  "font-size": [
+    "globalFontScale",
+    "heroNameSize",
+    "heroNameEnSize",
+    "heroSubSize",
+    "navSize",
+    "sectionLabelSize",
+    "headingSize",
+    "bodySize",
+    "footerSize",
+  ],
+  "font-color": [
+    "heroNameColor",
+    "heroNameEnColor",
+    "heroSubColor",
+    "accentColor",
+    "linkHoverColor",
+    "linkUnderline",
+    "navOpacity",
+    "sectionLabelOpacity",
+    "footerOpacity",
+    "snsOpacity",
+  ],
+  "font-spacing": [
+    "heroNameTracking",
+    "heroNameEnTracking",
+    "navTracking",
+    "sectionLabelTracking",
+    "sectionLeading",
+    "bodyTracking",
+    "bodyLeading",
+  ],
+  "site-copy": [
+    "navLabelTop",
+    "navLabelGallery",
+    "navLabelAbout",
+    "navLabelContact",
+    "snsLabelInstagram",
+    "snsLabelTwitter",
+    "snsLabelNote",
+    "worksLabel",
+    "viewAllLabel",
+    "viewAllCtaLabel",
+    "galleryLabel",
+    "filterAllLabel",
+    "profileLabel",
+    "contactLabel",
+    "contactFormName",
+    "contactFormEmail",
+    "contactFormSubject",
+    "contactSubjectOptions",
+    "contactFormMessage",
+    "contactSendButton",
+    "contactSendingButton",
+    "contactSentMessage",
+    "contactSendAnother",
+    "contactErrorMessage",
+  ],
+  presets: [],
+} as const;
+
+type SettingsSectionId = keyof typeof SETTINGS_SECTION_KEYS;
+
+function dirtySettingsKeys(
+  draft: Readonly<Record<string, string>>,
+  saved: Readonly<Record<string, string>> | undefined,
+) {
+  return Object.entries(draft)
+    .filter(([key, value]) => value !== (saved?.[key] ?? ""))
+    .map(([key]) => key);
+}
+
+function settingsSectionIdsForKeys(keys: readonly string[]) {
+  const keySet = new Set(keys);
+  return (Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]).filter(
+    (sectionId) =>
+      SETTINGS_SECTION_KEYS[sectionId].some((key) => keySet.has(key)),
+  );
+}
 
 // Settings are the authoritative source for these tabs.  Do not render an
 // editable fallback when that source could not be read: Service in particular
@@ -66,7 +238,7 @@ function SettingsLoadError({
 }) {
   const { t } = useAdminI18n();
   return (
-    <PageShell width="wide">
+    <PageShell width="form">
       <PageHeader title={title} />
       <div className="border border-amber-200 bg-amber-50 rounded-sm p-5 space-y-3">
         <h2 className="text-[length:var(--admin-text-body)] text-amber-900">
@@ -2239,7 +2411,7 @@ export function PricingTab() {
   };
 
   return (
-    <PageShell width="wide">
+    <PageShell width="form">
       <PageHeader
         title={t.navigation.tabs.pricing}
         description={t.headers.pricing}
@@ -2802,7 +2974,7 @@ export function ServiceTab({
   }
 
   return (
-    <PageShell width="wide">
+    <PageShell width="form">
       <PageHeader
         title={t.navigation.tabs.service}
         description={t.headers.service}
@@ -3590,6 +3762,10 @@ export function SettingsTab({
   );
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [failedSectionIds, setFailedSectionIds] = useState<
+    SettingsSectionId[]
+  >([]);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [showPreview, setShowPreview] = usePersistentState(
     "admin:showPreview",
     false,
@@ -3671,16 +3847,28 @@ export function SettingsTab({
     },
     onSuccess: (submitted) => {
       setSaveError(false);
+      setFailedSectionIds([]);
       qc.setQueryData(
         ["settings"],
         (old: Record<string, string> | undefined) => ({ ...old, ...submitted }),
       );
       setForm((current) => draftAfterSuccessfulSave(submitted, current));
       setSaved(true);
+      setLastSavedAt(
+        new Intl.DateTimeFormat(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date()),
+      );
       setTimeout(() => setSaved(false), 2000);
       qc.invalidateQueries({ queryKey: ["settings"] });
     },
-    onError: () => setSaveError(true),
+    onError: () => {
+      setSaveError(true);
+      setFailedSectionIds(
+        settingsSectionIdsForKeys(dirtySettingsKeys(form, data)),
+      );
+    },
   });
 
   const set = (key: string, val: string) =>
@@ -3796,15 +3984,89 @@ export function SettingsTab({
     { key: "templateCreditUrl", ...copy.siteBasics.fields.templateCreditUrl },
   ];
 
+  const sectionTitles: Record<SettingsSectionId, string> = {
+    "site-basics": copy.siteBasics.title,
+    "portfolio-kit": copy.portfolioKit.title,
+    hero: copy.hero.title,
+    navigation: copy.nav.title,
+    spacing: copy.spacing.title,
+    texture: copy.bgTexture.title,
+    reveal: copy.fade.title,
+    "gallery-layout": copy.galleryLayout.title,
+    series: copy.seriesSection.title,
+    note: copyIntegrations.note.title,
+    print: copyIntegrations.print.title,
+    cta: copyIntegrations.cta.title,
+    theme: copyDesign.themeColors.title,
+    fonts: copyDesign.fonts.title,
+    "font-size": copyDesign.fontSize.title,
+    "font-color": copyDesign.fontColor.title,
+    "font-spacing": copyDesign.fontTracking.title,
+    "site-copy": copyDesign.siteCopy.title,
+    presets: copyDesign.presets.title,
+  };
+  const dirtyKeys = dirtySettingsKeys(form, data);
+  const changedSectionIds = settingsSectionIdsForKeys(dirtyKeys);
+  const summarizeSection = (sectionId: SettingsSectionId) => {
+    if (sectionId === "presets") {
+      return t.formLayout.summaryItems(
+        cameraPresets.length + lensPresets.length,
+      );
+    }
+    const values = SETTINGS_SECTION_KEYS[sectionId]
+      .map((key) => current[key]?.trim())
+      .filter(
+        (value): value is string =>
+          Boolean(value) && !value!.startsWith("[") && !value!.startsWith("{"),
+      );
+    if (values.length === 0) return t.formLayout.summaryUnset;
+    const firstValue =
+      values[0].length > 34 ? `${values[0].slice(0, 34)}…` : values[0];
+    return values.length === 1
+      ? firstValue
+      : `${firstValue} · ${t.formLayout.summaryItems(values.length)}`;
+  };
+  const settingsSections: AdminSettingsSectionItem[] = (
+    Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]
+  ).map((id) => ({
+    id,
+    label: sectionTitles[id],
+    summary: summarizeSection(id),
+    changed: changedSectionIds.includes(id),
+    failed: failedSectionIds.includes(id) || (id === "presets" && presetError),
+  }));
+  const sectionProps = (sectionId: SettingsSectionId) => ({
+    sectionId,
+    changed: changedSectionIds.includes(sectionId),
+    failed:
+      failedSectionIds.includes(sectionId) ||
+      (sectionId === "presets" && presetError),
+    focusOnError: failedSectionIds[0] === sectionId,
+    summary: summarizeSection(sectionId),
+  });
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* Settings panel */}
       <div
-        className={`flex flex-col overflow-hidden transition-[width,max-width] duration-300 ${showPreview ? "w-full md:w-[420px] md:flex-shrink-0" : "flex-1"}`}
+        className={`flex flex-col overflow-hidden transition-[width,max-width] duration-300 ${
+          showPreview ? "admin-settings-panel--preview w-full" : "flex-1"
+        }`}
       >
-        {/* Scrollable content */}
-        <div className="flex-1 min-h-0">
-          <PageShell width="wide">
+        <AdminSettingsFormLayout
+          sections={settingsSections}
+          changedCount={dirtyKeys.length}
+          pending={save.isPending}
+          saveError={saveError}
+          lastSavedAt={lastSavedAt}
+          onSave={() => save.mutate()}
+          onDiscard={() => {
+            setForm({});
+            setSaveError(false);
+            setFailedSectionIds([]);
+          }}
+          copy={t.formLayout}
+        >
             <PageHeader
               title={t.navigation.tabs.settings}
               description={saveError ? t.headers.settingsSaveFailed : undefined}
@@ -3822,7 +4084,11 @@ export function SettingsTab({
             <div className="flex flex-col">
               {/* General */}
               <SettingsGroup title={copy.groupTitle}>
-              <Section title={copy.siteBasics.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("site-basics")}
+                title={copy.siteBasics.title}
+                defaultOpen={false}
+              >
                 {fields.map((f) => (
                   <AdminField key={f.key} label={f.label} hint={f.hint}>
                     <input
@@ -3838,6 +4104,7 @@ export function SettingsTab({
               </Section>
 
               <Section
+                {...sectionProps("portfolio-kit")}
                 title={copy.portfolioKit.title}
                 defaultOpen={false}
                 summary={
@@ -3867,6 +4134,7 @@ export function SettingsTab({
 
               {/* E1: Hero display mode */}
               <Section
+                {...sectionProps("hero")}
                 title={copy.hero.title}
                 defaultOpen={false}
                 summary={(() => {
@@ -4135,6 +4403,7 @@ export function SettingsTab({
 
               {/* BB: nav position + hover effect */}
               <Section
+                {...sectionProps("navigation")}
                 title={copy.nav.title}
                 defaultOpen={false}
                 summary={copy.nav.summary(
@@ -4213,7 +4482,11 @@ export function SettingsTab({
               </Section>
 
               {/* CC: section spacing multipliers */}
-              <Section title={copy.spacing.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("spacing")}
+                title={copy.spacing.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.spacing.intro}
                 </p>
@@ -4298,6 +4571,7 @@ export function SettingsTab({
 
               {/* DD: paper/grain background texture */}
               <Section
+                {...sectionProps("texture")}
                 title={copy.bgTexture.title}
                 defaultOpen={false}
                 summary={
@@ -4368,6 +4642,7 @@ export function SettingsTab({
 
               {/* 写真のフェードイン方式（photoRevealEffect） */}
               <Section
+                {...sectionProps("reveal")}
                 title={copy.fade.title}
                 defaultOpen={false}
                 summary={
@@ -4416,7 +4691,11 @@ export function SettingsTab({
               </Section>
 
               {/* G/N: Gallery layout type + controlled-random tuning */}
-              <Section title={copy.galleryLayout.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("gallery-layout")}
+                title={copy.galleryLayout.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.galleryLayout.introPrefix}{" "}
                   <span className="text-[color:var(--admin-ink)]">
@@ -4747,7 +5026,11 @@ export function SettingsTab({
               </Section>
 
               {/* I: Series navigation toggle */}
-              <Section title={copy.seriesSection.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("series")}
+                title={copy.seriesSection.title}
+                defaultOpen={false}
+              >
                 <AdminField
                   label={copy.seriesSection.navLabel}
                   hint={copy.seriesSection.navHint}
@@ -4950,7 +5233,11 @@ export function SettingsTab({
 
             <SettingsGroup title={copyIntegrations.groupTitle}>
               {/* J: note RSS integration */}
-              <Section title={copyIntegrations.note.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("note")}
+                title={copyIntegrations.note.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copyIntegrations.note.intro}
                 </p>
@@ -5011,7 +5298,11 @@ export function SettingsTab({
               </Section>
 
               {/* K: print sales (external store) */}
-              <Section title={copyIntegrations.print.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("print")}
+                title={copyIntegrations.print.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copyIntegrations.print.intro}
                 </p>
@@ -5084,7 +5375,11 @@ export function SettingsTab({
               </Section>
 
               {/* 撮影依頼 CTA — closing "work with me" band */}
-              <Section title={copyIntegrations.cta.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("cta")}
+                title={copyIntegrations.cta.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copyIntegrations.cta.intro}
                 </p>
@@ -5157,7 +5452,11 @@ export function SettingsTab({
 
             <SettingsGroup title={copyDesign.groupTitle}>
               {/* Theme Colors */}
-              <Section title={copyDesign.themeColors.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("theme")}
+                title={copyDesign.themeColors.title}
+                defaultOpen={false}
+              >
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <div className="flex-1 min-w-0">
                     <AdminField label={copyDesign.themeColors.backgroundLabel}>
@@ -5216,7 +5515,11 @@ export function SettingsTab({
               </Section>
 
               {/* Fonts */}
-              <Section title={copyDesign.fonts.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("fonts")}
+                title={copyDesign.fonts.title}
+                defaultOpen={false}
+              >
                 {/* A6: one-click 和英 pairing presets — sets the existing fontJa/fontEn
                 keys, so live preview and Save work exactly like manual picks. */}
                 <AdminField
@@ -5300,7 +5603,11 @@ export function SettingsTab({
               </Section>
 
               {/* Typography — 大きさ (D4: 軸別2階層。まず調整軸→対象) */}
-              <Section title={copyDesign.fontSize.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("font-size")}
+                title={copyDesign.fontSize.title}
+                defaultOpen={false}
+              >
                 <AdminField
                   label={copyDesign.fontSize.globalScaleLabel}
                   hint={copyDesign.fontSize.globalScaleHint}
@@ -5444,7 +5751,11 @@ export function SettingsTab({
               </Section>
 
               {/* Typography — 色 */}
-              <Section title={copyDesign.fontColor.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("font-color")}
+                title={copyDesign.fontColor.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
                   {copyDesign.fontColor.heroGroupLabel}
                 </p>
@@ -5581,7 +5892,11 @@ export function SettingsTab({
               </Section>
 
               {/* Typography — 間隔（字間・行間） */}
-              <Section title={copyDesign.fontTracking.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("font-spacing")}
+                title={copyDesign.fontTracking.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
                   {copyDesign.fontTracking.heroGroupLabel}
                 </p>
@@ -5690,7 +6005,11 @@ export function SettingsTab({
               </Section>
 
               {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
-              <Section title={copyDesign.siteCopy.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("site-copy")}
+                title={copyDesign.siteCopy.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
                   {copyDesign.siteCopy.navGroupLabel}
                 </p>
@@ -5877,7 +6196,11 @@ export function SettingsTab({
               </Section>
 
               {/* 撮影情報プリセット — インスペクタの Camera / Lens 候補 */}
-              <Section title={copyDesign.presets.title} defaultOpen={false}>
+              <Section
+                {...sectionProps("presets")}
+                title={copyDesign.presets.title}
+                defaultOpen={false}
+              >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-1">
                   {copyDesign.presets.intro}
                 </p>
@@ -5923,24 +6246,26 @@ export function SettingsTab({
                 </p>
               </div>
             </div>
-          </PageShell>
+        </AdminSettingsFormLayout>
+        <div className="admin-settings-mobile-save">
+          <FloatingSaveBar
+            show={hasUnsaved}
+            pending={save.isPending}
+            saved={saved}
+            error={saveError}
+            onSave={() => save.mutate()}
+            onDiscard={() => {
+              setForm({});
+              setSaveError(false);
+              setFailedSectionIds([]);
+            }}
+          />
         </div>
-        <FloatingSaveBar
-          show={hasUnsaved}
-          pending={save.isPending}
-          saved={saved}
-          error={saveError}
-          onSave={() => save.mutate()}
-          onDiscard={() => {
-            setForm({});
-            setSaveError(false);
-          }}
-        />
       </div>
 
       {/* Live Preview Panel — mobile: full-screen overlay; desktop: side panel */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--admin-paper)] md:static md:z-auto md:flex-1 md:border-l md:border-[var(--admin-line)] min-w-0 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--admin-paper)] lg:static lg:z-auto lg:flex-1 lg:border-l lg:border-[var(--admin-line)] min-w-0 overflow-hidden">
           {/* Preview toolbar */}
           <div className="flex items-center justify-between px-4 h-10 border-b border-[var(--admin-line)] bg-[var(--admin-paper)] flex-shrink-0">
             <span className="text-[length:var(--admin-text-note)] tracking-widest uppercase text-[var(--admin-muted)]">
@@ -5986,7 +6311,7 @@ export function SettingsTab({
               {/* Close — needed to dismiss the mobile full-screen overlay */}
               <button
                 onClick={() => setShowPreview(false)}
-                className="md:hidden ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] transition-colors"
+                className="lg:hidden ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] transition-colors"
                 title="Close preview"
                 aria-label="Close preview"
               >
@@ -6030,33 +6355,82 @@ export function SettingsTab({
 // Transition is disabled for the first frame so a defaultOpen row never plays
 // an unwanted "opening" animation on initial mount.
 function Section({
+  sectionId,
   title,
   summary,
   defaultOpen = false,
+  changed = false,
+  failed = false,
+  focusOnError = false,
   children,
 }: {
+  sectionId?: string;
   title: string;
   // Short "current selection" hint shown next to the title even while
   // collapsed, so the owner doesn't have to open every section to see what's
   // already set (Settings可視化 Phase 1, 2026-07-09).
   summary?: string;
   defaultOpen?: boolean;
+  changed?: boolean;
+  failed?: boolean;
+  focusOnError?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [animated, setAnimated] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const id = requestAnimationFrame(() => setAnimated(true));
     return () => cancelAnimationFrame(id);
   }, []);
+  useEffect(() => {
+    if (failed) setOpen(true);
+  }, [failed]);
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || !focusOnError) return;
+    let errorField: HTMLElement | null = null;
+    const id = window.setTimeout(() => {
+      errorField = section.querySelector<HTMLElement>(
+        "input:not([type='hidden']), select, textarea",
+      );
+      if (!errorField) return;
+      errorField.setAttribute("aria-invalid", "true");
+      errorField.setAttribute("data-settings-save-error-field", "");
+      errorField.focus({ preventScroll: true });
+      section.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 180);
+    return () => {
+      window.clearTimeout(id);
+      errorField?.removeAttribute("aria-invalid");
+      errorField?.removeAttribute("data-settings-save-error-field");
+    };
+  }, [focusOnError]);
   return (
-    <div>
+    <div
+      ref={sectionRef}
+      id={sectionId ? `settings-section-${sectionId}` : undefined}
+      data-settings-section={sectionId}
+      data-settings-section-changed={changed ? "true" : "false"}
+      data-settings-section-error={failed ? "true" : "false"}
+      className="admin-settings-section scroll-mt-24"
+    >
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         className="admin-plain-section-trigger flex items-center justify-between gap-3 w-full min-h-[56px] px-0 text-left text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] hover:text-[color:var(--admin-ink)] transition-colors duration-[var(--dur-fast)]"
       >
-        <span className="shrink-0 whitespace-nowrap">{title}</span>
+        <span className="shrink-0 whitespace-nowrap">
+          {title}
+          <span className="admin-settings-section__markers" aria-hidden="true">
+            {changed && (
+              <span className="admin-form-toc__dot admin-form-toc__dot--changed" />
+            )}
+            {failed && (
+              <span className="admin-form-toc__dot admin-form-toc__dot--failed" />
+            )}
+          </span>
+        </span>
         <span className="ml-auto flex min-w-0 items-center gap-3">
           {!open && summary && (
             <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-normal truncate">

@@ -1,81 +1,65 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-29 05:10 JST
+## Current State — 2026-07-29 16:10 JST
 
-- **Status:** push前の最終監査まで完了。**オーナーの最終承認待ち（pushは未実施）**
-- **Current owner:** Claude Code
-- **Handoff readiness:** Ready。main は clean
+- **Status:** Admin刷新のレイアウト仕様を repo へ起票。**実装は未着手**
+- **Current owner:** Claude Code（この commit 後は Codex へ引き継ぎ可）
+- **Handoff readiness:** Ready
 - **Branch:** `main`（Finder試作は `prototype/finder-contact-sheet`、B-2は `prototype/b2-uneven-rows`）
 - **HEAD:** `SELF`
 - **Git:** clean
-- **Originとの差:** `origin/main` より86 commits ahead / 0 behind。**push禁止（オーナーのみ）**
+- **Originとの差:** 前回の86 commits は**オーナーが push 済み**で、この commit の直前は
+  `origin/main` と同一だった。この docs commit のぶんだけ 1 ahead。**push禁止（オーナーのみ）**
 
-### 直近の作業（並べ替えの安全化 → 最終監査）
+### 今回やったこと
 
-Phase A（独立調査）→ Phase C（別セッションの反対レビュー）→ D-1/D-2（実装）→ 最終監査。
-共通記録は `docs/specs/library-reorder-safety.md`。反論はそのまま残し処置を付けてある。
+Claude Design 納品の4文書（`Admin実装仕様` / `Adminレイアウト原則見本` /
+`Admin並べ替え改訂見本` / `Admin差分再監査レポート`）を、Codex が読める確定仕様へ変換した。
 
-- `a73cddc` API に完全性検査と競合拒否（重複・未知ID・抜け・古いタブの上書き）
-- `5ae51bf` 手動順を受け取り順ではなく `sortOrder` から再構成（**根本対策**）
-- `c9e4985` ロックの明示 / 楽観更新と失敗時ロールバック / 保存状態の常設表示 /
-  直前1回のUndo / ドラッグの取っ手と挿入位置の統一 / 「何番目へ移動」/ スマホ2列 /
-  壊れていた ⌘↑↓ 案内の削除
-- 本commit 書き込み事故の番人（smoke）＋異常系の単体テスト＋古い前提のsmoke 3本を更新
+- **新規: `docs/specs/admin-layout-implementation.md`**（Codex へ渡す正本）
+  Workspace/Form の原則、適用画面一覧と判定基準、共通Shellの責務、Libraryの状態遷移、
+  並べ替え下部帯、PC/1024/768/390px、スマホ専用ワークスペース、Settings目次と保存状態、
+  アクセントと意味色の分離、段階的実装順序01〜07、壊してはいけない既存挙動、未決事項、不採用案。
+- **オーナー確定の修正を反映**: Claude Design 版の「絞り込みが有効なときは並べ替えに入れない」は
+  **不採用**。現行の承認済み挙動（検索中・複合絞り込み・手動以外・公開順が手動以外・
+  ゴミ箱等・対応を確定できない状態でロック／**シリーズ単独絞り込みは例外として並べ替え可能**、
+  シリーズ内順位として扱い保存は既存の全体順差し込み規則）を維持する（§4-1）。
+- `docs/specs/library-reorder-safety.md` に §8 を追記し、両文書の優先関係と上記修正を明示。
+  順序データ安全性の正本はこれまでどおり `library-reorder-safety.md`。
+- 納品HTMLの原本は `scratch/admin-design-delivery/`（gitignored、削除しない）。
 
-### 最終監査の結果（Claudeが独立実行）
+### 検証
 
-- `bun run check`: **621 pass / 0 fail**（このセッション開始時 589）
-- 公開サイト smoke: **183 passed / 0 failed**
-- モック方式の admin smoke 4本: **14 passed / 0 failed**
-- ログイン方式の admin 主要回帰20本: **55 passed / 44 skipped / 0 failed**
-  （skipは各テストが1環境のみ対象のため。**非GETの検出は0件**）
-- `git diff --check` OK / handoff freshness OK
-- 秘密情報・scratch・ログ・スクリーンショットの追跡なし。`.env` は履歴にも無い
-- migration は7列追加の `0005` のみで本番の状態と一致。起動時は `db:push`（差分ゼロ）
-- 新規に必要な環境変数なし
-
-### 未検証
-
-実機 iPhone / Safari。実ブラウザでの指・マウスによるドラッグの掴みやすさ。
-本番DBの `gallerySortOrder` の現在値。本番データの `sortOrder` が健全かどうか。
+文書のみの変更。`git diff --check` OK / Markdown 構文 OK /
+**差分に製品コードなし**（`docs/specs/` 2ファイルのみ）。製品コードのテストは対象外のため未実行。
 
 ### 次の一手
 
-**オーナーの最終承認 → `git push`**（Railway が自動でビルド・反映）。
-push後の確認先は下記5項目。
-
-### push後に確認する場所（5項目）
-
-1. https://akieguchi.com/ — トップ・ギャラリー・シリーズ詳細が普通に出るか
-2. 管理画面 → Library →「並べる」— 案内文が出るか、または手動以外なら理由が出るか
-3. 取っ手をつかんでドラッグ — 上下どちらでも「相手の直前」に入る
-   （**最後の写真へドラッグしても最後尾には入らない**。末尾は「末尾へ移動」か位置指定）
-4. 1回動かして「元に戻す」— 表示と保存結果が一致するか
-5. スマホで「並べる」— 2列になり先頭／末尾／位置指定が出るか
+**Codex へ D-1（実装順序 02）を起票する。** 範囲は
+「並べ替え操作を写真の外へ／`reorderTargetId` 導入／写真上の4方向・番号・常時順位帯を撤去／
+つまみだけ残す／対象のみ外枠・順位・印／下部横長帯（前・後・先頭・末尾・番号指定・Undo・
+移動結果）／キーボードと aria-live／スマホは下部ナビを隠す専用ワークスペース／
+`selectedIds` と `reorderTargetId` の分離／既存の保存・競合拒否・ロールバックを再利用し二重実装しない」。
+D-1 の前に**高リスク移設のため短い Phase C（別セッション・読み取り専用の反対レビュー）**を行う方針
+（オーナー指示 2026-07-29）。D-2 以降はオーナー承認後。
 
 ### オーナー判断待ち
 
-- 86 commits の push（最終承認）
-- 「今回追加」区画の見た目（持ち越し）
-- Finder試作 A/B/C（B寄りで保留。独立ビューは不採用。`docs/specs/library-finder-prototype.md`）
+- 「今回追加」区画の二重表示の解消（持ち越し）
+- Finder試作 A/B/C（B寄りで保留。独立ビューは不採用）
+- コンタクトシート（実装順序02〜04の完了後に実画面で判断）
 - シリーズ個別の公開順設定まで見て警告を出すか（未実装）
 - Service の下書きがDB読込後に上書きされる件（未着手）
 
-### 触っていない範囲
+### 触っていない範囲・禁止範囲
 
-DB schema / 本番DB・R2 / `styles.css` / カテゴリ・シリーズ・料金・Hero の並べ替え /
-複数枚移動 / 編集セッション方式 / Undo・Redo履歴 / Finder試作のmain統合 /
-公開文章・写真・価格
+製品コード全般（今回は1行も変更していない）／DB schema／本番DB・R2／`styles.css`／
+push・deploy・Railway・環境変数／実写真アップロード／B-2の無条件マージ。
 
-### 禁止範囲
-
-push / deploy / Railway / 本番DB・R2 / 環境変数 / 実写真アップロード /
-既存Libraryの置き換え / B-2の無条件マージ
-
-- **Codex session:** 並べ替え A/C/D-1/D-2 は `scratch/codex-out-reorder-*.log` の先頭に記録
-- **Local commit:** 済。**Push: 未実施・承認待ち**
-- **Railway / production:** コード未反映。本番への書き込みは一切していない
+- **Codex session:** 今回なし（Claude 単独の文書作業）
+- **Local commit:** 済（docs のみ）。**Push: 未実施**
+- **Railway / production:** コード未反映。本番への書き込みなし
 <!-- CURRENT_STATE_END -->
 
 <!--

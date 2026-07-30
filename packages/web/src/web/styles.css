@@ -3682,8 +3682,20 @@ dialog.lightbox-exit .lb-content {
 }
 .admin-atelier
   .admin-settings-section[data-settings-section-error="true"]
-  > .admin-plain-section-trigger {
+  > .admin-plain-section-trigger,
+.admin-atelier
+  .admin-settings-section[data-settings-section-error="true"]
+  > .admin-settings-section__heading {
   color: var(--admin-danger);
+}
+/* 単節表示の見出し。折りたたみの扉ではないので、押せる見た目にはしない。 */
+.admin-atelier .admin-settings-section__heading {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.admin-atelier .admin-settings-section__heading:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 3px;
 }
 .admin-atelier .admin-settings-mobile-current,
 .admin-atelier .admin-settings-section-sheet,

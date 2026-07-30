@@ -412,6 +412,7 @@ const ADMIN_PHASE_2B_JA = {
     },
     inspector: {
       editPhoto: "Edit Photo",
+      close: "写真の詳細を閉じる",
       quick: "よく使う",
       unsaved: "未保存",
       usageAria: "写真の使用状況",
@@ -1887,6 +1888,7 @@ const ADMIN_PHASE_2B_EN = {
     },
     inspector: {
       editPhoto: "Edit Photo",
+      close: "Close photo details",
       quick: "Quick edits",
       unsaved: "Unsaved",
       usageAria: "Photo usage",

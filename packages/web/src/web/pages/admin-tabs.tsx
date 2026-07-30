@@ -52,6 +52,7 @@ import {
 } from "./admin-reorder-bar";
 import {
   AdminSettingsFormLayout,
+  useAdminSettingsActiveSection,
   type AdminSettingsSectionItem,
 } from "./admin-settings-form-layout";
 import { useAdminI18n } from "./admin-i18n";
@@ -214,6 +215,33 @@ export const SETTINGS_SECTION_KEYS = {
 } as const;
 
 type SettingsSectionId = keyof typeof SETTINGS_SECTION_KEYS;
+
+// 本文へ出す節が属するグループの台帳。単節表示では、現在の節を含まない
+// グループの見出しを描かないためにこれを使う。19節をちょうど1回ずつ含むことを
+// `admin-settings-section-keys.test.ts` が固定する。
+export const SETTINGS_SECTION_GROUPS = {
+  general: [
+    "site-basics",
+    "portfolio-kit",
+    "hero",
+    "navigation",
+    "spacing",
+    "texture",
+    "reveal",
+    "gallery-layout",
+    "series",
+  ],
+  integrations: ["note", "print", "cta"],
+  design: [
+    "theme",
+    "fonts",
+    "font-size",
+    "font-color",
+    "font-spacing",
+    "site-copy",
+    "presets",
+  ],
+} as const satisfies Record<string, readonly SettingsSectionId[]>;
 
 function dirtySettingsKeys(
   draft: Readonly<Record<string, string>>,
@@ -4265,6 +4293,7 @@ export function SettingsTab({
           pending={save.isPending}
           saveError={saveError}
           lastSavedAt={lastSavedAt}
+          focusSectionId={failedSectionIds[0] ?? null}
           onSave={() => save.mutate()}
           onDiscard={() => {
             setForm({});
@@ -4289,7 +4318,10 @@ export function SettingsTab({
             />
             <div className="flex flex-col">
               {/* General */}
-              <SettingsGroup title={copy.groupTitle}>
+              <SettingsGroup
+                title={copy.groupTitle}
+                sectionIds={SETTINGS_SECTION_GROUPS.general}
+              >
               <Section
                 {...sectionProps("site-basics")}
                 title={copy.siteBasics.title}
@@ -5437,7 +5469,10 @@ export function SettingsTab({
               </Section>
             </SettingsGroup>
 
-            <SettingsGroup title={copyIntegrations.groupTitle}>
+            <SettingsGroup
+              title={copyIntegrations.groupTitle}
+              sectionIds={SETTINGS_SECTION_GROUPS.integrations}
+            >
               {/* J: note RSS integration */}
               <Section
                 {...sectionProps("note")}
@@ -5656,7 +5691,10 @@ export function SettingsTab({
               </Section>
             </SettingsGroup>
 
-            <SettingsGroup title={copyDesign.groupTitle}>
+            <SettingsGroup
+              title={copyDesign.groupTitle}
+              sectionIds={SETTINGS_SECTION_GROUPS.design}
+            >
               {/* Theme Colors */}
               <Section
                 {...sectionProps("theme")}
@@ -6575,6 +6613,7 @@ function Section({
   // Short "current selection" hint shown next to the title even while
   // collapsed, so the owner doesn't have to open every section to see what's
   // already set (Settings可視化 Phase 1, 2026-07-09).
+  // 単節表示（目次で1節ずつ出す画面）では折りたたみ自体がないため使わない。
   summary?: string;
   defaultOpen?: boolean;
   changed?: boolean;
@@ -6582,6 +6621,10 @@ function Section({
   focusOnError?: boolean;
   children: React.ReactNode;
 }) {
+  const activeSectionId = useAdminSettingsActiveSection();
+  // 目次で1節ずつ出す画面では、選ばれた節だけを実際の入力欄として描く。
+  // 折りたたみ行を19本並べると、左の目次と同じ一覧が本文にも重なるため。
+  const singleView = activeSectionId !== null && sectionId !== undefined;
   const [open, setOpen] = useState(defaultOpen);
   const [animated, setAnimated] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -6612,6 +6655,20 @@ function Section({
       errorField?.removeAttribute("data-settings-save-error-field");
     };
   }, [focusOnError]);
+
+  if (singleView && sectionId !== activeSectionId) return null;
+
+  const markers = (
+    <span className="admin-settings-section__markers" aria-hidden="true">
+      {changed && (
+        <span className="admin-form-toc__dot admin-form-toc__dot--changed" />
+      )}
+      {failed && (
+        <span className="admin-form-toc__dot admin-form-toc__dot--failed" />
+      )}
+    </span>
+  );
+
   return (
     <div
       ref={sectionRef}
@@ -6621,38 +6678,45 @@ function Section({
       data-settings-section-error={failed ? "true" : "false"}
       className="admin-settings-section scroll-mt-24"
     >
-      <button
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        className="admin-plain-section-trigger flex items-center justify-between gap-3 w-full min-h-[56px] px-0 text-left text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] hover:text-[color:var(--admin-ink)] transition-colors duration-[var(--dur-fast)]"
-      >
-        <span className="shrink-0 whitespace-nowrap">
-          {title}
-          <span className="admin-settings-section__markers" aria-hidden="true">
-            {changed && (
-              <span className="admin-form-toc__dot admin-form-toc__dot--changed" />
-            )}
-            {failed && (
-              <span className="admin-form-toc__dot admin-form-toc__dot--failed" />
-            )}
+      {singleView ? (
+        // 単節表示では開閉する扉を置かない。目次が唯一の切替器になる。
+        <h2
+          data-settings-section-heading
+          tabIndex={-1}
+          className="admin-settings-section__heading flex items-center gap-3 min-h-[44px] text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)]"
+        >
+          <span className="shrink-0 whitespace-nowrap">
+            {title}
+            {markers}
           </span>
-        </span>
-        <span className="ml-auto flex min-w-0 items-center gap-3">
-          {!open && summary && (
-            <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-normal truncate">
-              {summary}
-            </span>
-          )}
-          <ChevronRight
-            size={12}
-            className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-[var(--dur-base)] ease-[var(--ease-inout)]"
-            style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
-          />
-        </span>
-      </button>
+        </h2>
+      ) : (
+        <button
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="admin-plain-section-trigger flex items-center justify-between gap-3 w-full min-h-[56px] px-0 text-left text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] hover:text-[color:var(--admin-ink)] transition-colors duration-[var(--dur-fast)]"
+        >
+          <span className="shrink-0 whitespace-nowrap">
+            {title}
+            {markers}
+          </span>
+          <span className="ml-auto flex min-w-0 items-center gap-3">
+            {!open && summary && (
+              <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-normal truncate">
+                {summary}
+              </span>
+            )}
+            <ChevronRight
+              size={12}
+              className="text-[color:var(--admin-muted)] flex-shrink-0 transition-transform duration-[var(--dur-base)] ease-[var(--ease-inout)]"
+              style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+            />
+          </span>
+        </button>
+      )}
       <div
         className={`grid px-0 ${animated ? "transition-[grid-template-rows] duration-[var(--dur-base)] ease-[var(--ease-inout)]" : ""}`}
-        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+        style={{ gridTemplateRows: singleView || open ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">
           <div className="pb-6 pt-1 flex flex-col gap-4">{children}</div>
@@ -6664,13 +6728,24 @@ function Section({
 
 // Settings group: whitespace and fine rules establish hierarchy without a
 // filled panel surface. Rows keep a single 1px divider between them.
+// 単節表示では、現在の節を含まないグループは見出しだけが残るため描かない。
 function SettingsGroup({
   title,
+  sectionIds,
   children,
 }: {
   title: string;
+  sectionIds?: readonly SettingsSectionId[];
   children: React.ReactNode;
 }) {
+  const activeSectionId = useAdminSettingsActiveSection();
+  if (
+    activeSectionId !== null &&
+    sectionIds &&
+    !sectionIds.includes(activeSectionId as SettingsSectionId)
+  ) {
+    return null;
+  }
   return (
     <div className="mb-12 border-t border-[var(--admin-line)]">
       <p className="text-[length:var(--admin-text-note)] tracking-widest text-[color:var(--admin-muted)] mb-3">

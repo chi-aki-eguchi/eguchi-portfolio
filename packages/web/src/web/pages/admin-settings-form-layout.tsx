@@ -1,5 +1,21 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Check, ChevronDown, Loader2, X } from "lucide-react";
+
+// 目次で選んだ1節だけを本文へ出すための現在地。目次（左）と本文（右）に
+// 同じ節名の一覧が二重に並ぶのをやめ、本文には実際の入力欄だけを置く
+// （オーナー確定 2026-07-30）。null = 単節表示ではない画面。
+const AdminSettingsActiveSectionContext = createContext<string | null>(null);
+
+export function useAdminSettingsActiveSection(): string | null {
+  return useContext(AdminSettingsActiveSectionContext);
+}
 
 export type AdminSettingsSectionItem = {
   id: string;
@@ -62,6 +78,7 @@ export function AdminSettingsFormLayout({
   pending,
   saveError,
   lastSavedAt,
+  focusSectionId = null,
   onSave,
   onDiscard,
   copy,
@@ -72,6 +89,8 @@ export function AdminSettingsFormLayout({
   pending: boolean;
   saveError: boolean;
   lastSavedAt: string | null;
+  // 保存に失敗した節など、本文へ強制的に出したい節。目次の選択より優先する。
+  focusSectionId?: string | null;
   onSave: () => void;
   onDiscard: () => void;
   copy: AdminSettingsFormCopy;
@@ -79,6 +98,7 @@ export function AdminSettingsFormLayout({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeId, setActiveId] = useState(sections[0]?.id ?? "");
+  const [navSeq, setNavSeq] = useState(0);
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const changedSections = sections.filter((section) => section.changed);
   const failedSection = sections.find((section) => section.failed);
@@ -90,31 +110,28 @@ export function AdminSettingsFormLayout({
     setActiveId(sections[0]?.id ?? "");
   }, [activeId, sections]);
 
+  // 保存失敗など、利用者の操作ではない理由で本文を切り替える経路。
+  // 目次の現在地もその節へ移し、印と本文が食い違わないようにする。
   useEffect(() => {
-    const root = scrollRef.current;
-    if (!root) return;
-    const updateActiveSection = () => {
-      const threshold = root.getBoundingClientRect().top + 92;
-      let nextId = sections[0]?.id ?? "";
-      for (const section of sections) {
-        const element = document.getElementById(`settings-section-${section.id}`);
-        if (!element) continue;
-        if (element.getBoundingClientRect().top <= threshold) {
-          nextId = section.id;
-        } else {
-          break;
-        }
-      }
-      setActiveId((current) => (current === nextId ? current : nextId));
-    };
-    updateActiveSection();
-    root.addEventListener("scroll", updateActiveSection, { passive: true });
-    window.addEventListener("resize", updateActiveSection);
-    return () => {
-      root.removeEventListener("scroll", updateActiveSection);
-      window.removeEventListener("resize", updateActiveSection);
-    };
-  }, [sections]);
+    if (!focusSectionId) return;
+    if (!sections.some((section) => section.id === focusSectionId)) return;
+    setActiveId((current) =>
+      current === focusSectionId ? current : focusSectionId,
+    );
+  }, [focusSectionId, sections]);
+
+  // 目次で節を選んだら本文を先頭へ戻し、見出しへフォーカスを移す。
+  // 同じ節を再度押した時も動くよう、activeIdではなく操作回数で発火させる。
+  useEffect(() => {
+    if (navSeq === 0) return;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    document
+      .querySelector<HTMLElement>(
+        `#settings-section-${activeId} [data-settings-section-heading]`,
+      )
+      ?.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navSeq]);
 
   useEffect(() => {
     if (!mobileListOpen) return;
@@ -131,16 +148,9 @@ export function AdminSettingsFormLayout({
   }, [mobileListOpen]);
 
   const navigateTo = (id: string) => {
-    const section = document.getElementById(`settings-section-${id}`);
-    if (!section) return;
     setActiveId(id);
     setMobileListOpen(false);
-    section.scrollIntoView({ block: "start", behavior: "smooth" });
-    window.setTimeout(() => {
-      section
-        .querySelector<HTMLButtonElement>(".admin-plain-section-trigger")
-        ?.focus({ preventScroll: true });
-    }, 180);
+    setNavSeq((seq) => seq + 1);
   };
 
   const navigation = (
@@ -262,7 +272,11 @@ export function AdminSettingsFormLayout({
           </output>
         </aside>
 
-        <main className="admin-settings-form-layout__body">{children}</main>
+        <main className="admin-settings-form-layout__body">
+          <AdminSettingsActiveSectionContext.Provider value={activeId || null}>
+            {children}
+          </AdminSettingsActiveSectionContext.Provider>
+        </main>
       </div>
 
       {mobileListOpen && (
@@ -288,6 +302,7 @@ export function AdminSettingsFormLayout({
               <button
                 key={section.id}
                 type="button"
+                data-settings-sheet-link={section.id}
                 aria-current={section.id === activeId ? "location" : undefined}
                 onClick={() => navigateTo(section.id)}
               >

@@ -33,9 +33,9 @@ const HERO_MODES = [
 async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Settings" }).click();
-  await page
-    .locator('[data-settings-section="hero"] .admin-plain-section-trigger')
-    .click();
+  // 設定の本文は目次で選んだ1節だけを出す。折りたたみ行は廃止した。
+  await page.locator('[data-settings-section-link="hero"]').click();
+  await expect(page.locator('[data-settings-section="hero"]')).toBeVisible();
   await page.getByRole("button", { name: "Live Preview" }).click();
   const iframe = page.locator('iframe[title="Site Preview"]');
   await expect(iframe).toBeVisible();

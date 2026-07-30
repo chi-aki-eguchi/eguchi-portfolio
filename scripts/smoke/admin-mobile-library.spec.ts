@@ -189,7 +189,7 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   // × は即閉じ(確認ダイアログなし・非書き込み)。
   await tiles.nth(0).locator("[data-library-photo-action]").click();
   await expect(page.getByText("Edit Photo")).toBeVisible({ timeout: 5_000 });
-  await page.getByRole("button", { name: "Close" }).click();
+  await page.locator("[data-library-inspector-close]").click();
   await expect(page.getByText("Edit Photo")).toBeHidden();
 }
 

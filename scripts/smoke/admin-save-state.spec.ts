@@ -145,12 +145,9 @@ test.describe("admin — 保存状態の表示", () => {
     const mocks = await installAdminApiMocks(page);
     await openAdminTab(page, "Settings");
 
-    // 設定の各節は既定で閉じている。最初の節を開く。
-    const firstSection = page
-      .locator("button.admin-plain-section-trigger")
-      .first();
-    await expect(firstSection, "設定に折りたたみ節がある").toBeVisible();
-    await firstSection.click();
+    // 設定の本文は目次で選んだ1節だけを出す。既定は先頭の節。
+    const firstSection = page.locator("[data-settings-section]").first();
+    await expect(firstSection, "設定の先頭節が本文に出ている").toBeVisible();
 
     const input = page.locator("input[type='text']").first();
     await expect(input, "設定の入力欄が見つかる").toBeVisible();

@@ -150,6 +150,60 @@ test.describe("admin — Workspace layout", () => {
     expect((scrollBox?.x ?? 0) + (scrollBox?.width ?? 0)).toBeLessThanOrEqual(
       (inspectorBox?.x ?? 0) + 1,
     );
+
+    // PCでも×で閉じられる。閉じた分だけグリッドが広がる（本番で閉じ手段が
+    // なかった問題の回帰、オーナー確認 2026-07-30）。
+    const closeButton = inspector.locator("[data-library-inspector-close]");
+    await expect(closeButton).toBeVisible();
+    await expect(closeButton).toHaveAttribute(
+      "aria-label",
+      /写真の詳細を閉じる|Close photo details/,
+    );
+    await closeButton.click();
+    await expect(inspector).toHaveCount(0);
+    const widenedBox = await page
+      .locator("[data-library-scroll]")
+      .boundingBox();
+    expect(widenedBox?.width ?? 0).toBeGreaterThan(
+      (scrollBox?.width ?? 0) + 380,
+    );
+
+    // Escでも同じ経路で閉じる。入力欄にいる間のEscは編集を捨てない。
+    await firstPhoto.click();
+    await expect(inspector).toBeVisible();
+    const titleInput = inspector
+      .locator('input[aria-label="タイトル"], input[aria-label="Title"]')
+      .first();
+    await titleInput.click();
+    await titleInput.fill("Esc guard fixture");
+    await titleInput.press("Escape");
+    await expect(inspector, "入力中のEscでは詳細を閉じない").toBeVisible();
+    await expect(titleInput, "入力中のEscで編集内容を捨てない").toHaveValue(
+      "Esc guard fixture",
+    );
+    // 未保存のまま閉じる時は確認を出す（無言破棄をしない）。
+    await page.evaluate(() =>
+      (document.activeElement as HTMLElement | null)?.blur(),
+    );
+    await page.keyboard.press("Escape");
+    const confirm = page.locator("dialog[open]");
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole("button", { name: /キャンセル|Cancel/ }).click();
+    await expect(inspector, "キャンセルなら詳細は開いたまま").toBeVisible();
+    await expect(titleInput, "キャンセルで編集内容を捨てない").toHaveValue(
+      "Esc guard fixture",
+    );
+
+    // 明示的に破棄して閉じたら、詳細欄は消えて一覧だけに戻る。
+    // 確認ダイアログは閉じるアニメーション(160ms)の後にunmountされる。
+    // 消えきる前に次の確認を開くと前の後始末に消されるため、消えるまで待つ。
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
+    await closeButton.click();
+    await page
+      .locator("dialog[open]")
+      .getByRole("button", { name: /保存せず閉じる|Close without saving/ })
+      .click();
+    await expect(inspector).toHaveCount(0);
   });
 
   test("390pxでもモード・検索・絞り込み・表示が横にはみ出さない", async ({

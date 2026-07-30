@@ -1,61 +1,70 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-30 00:55 JST
+## Current State — 2026-07-30 12:00 JST
 
-- **Status:** Claude独立監査後のpush前限定修正3件を実装・全ローカル検証・commit完了
-- **Current owner:** 未指定（Codexは編集完了・停止）
-- **Handoff readiness:** Ready
+- **Status:** 本番確認で見つかった2件（Library詳細欄が閉じられない／Settingsの目次と
+  本文の二重メニュー）を実装・全ローカル検証・commitまで完了。**pushは未実施**
+- **Current owner:** Claude Code（編集完了・停止中）
+- **Handoff readiness:** Ready（commit可否だけオーナー判断待ち）
 - **Branch:** `main`
-- **HEAD:** `SELF`（Admin audit follow-up）
+- **HEAD:** `SELF`（Library詳細欄の閉じる操作とSettings目次の単節化）
 - **Git:** clean（このCurrent Stateを含むcommit後）
-- **Originとの差:** Admin正式仕様＋Phase 1〜5＋監査修正の7 commitsぶん ahead。**push未実施**
+- **Originとの差:** 今回の1 commitぶん ahead。**push未実施**（前回の7 commitsはpush済み）
 
 ### 完了したこと
 
-- Settings節台帳の「ギャラリー配置」へ`gallerySeed`を追加。
-  Settings内で即時保存するcamera / lens presetキーも「プリセット」節へ明示所属
-- API許可台帳の全設定キーを「Settingsの1節」または「別Admin画面の管理値」へ分類し、
-  Settingsキーの未所属と節への重複所属を失敗させるunit testを追加
-- `gallerySeed`変更時の未保存件数、節、PC目次、390px上部点／節一覧、
-  値復元と保存後の印消去をbrowser testで固定
-- `AdminStorageNotice.tsx`のamber直書きを既存`admin-status-warning`へ置換。
-  warningは公開accent設定から独立することをtestで固定
-- 旧意味色直書き検査を`admin.tsx` / `admin-tabs.tsx`だけでなく、
-  `pages/admin*.tsx`と`components/Admin*.tsx`の製品sourceへ拡張。test fixtureと公開画面は対象外
-- 並べ替え保存後の再取得だけ失敗した状態を明示し、
-  終了時は「この画面に残る／再読み込みする」を表示。「このまま待つ」は表示しない
-- 保存処理、通信断再試行、競合拒否、ロールバック、Undoの経路は変更なし
+- **Library詳細欄（inspector）を必ず閉じられるようにした。** ×ボタンは
+  `xl:hidden`（1280px以上で消える）をやめて全幅で常設。`aria-label` は
+  i18n（`inspector.close`）から出し、44px の当たり判定にした。閉じると
+  `inspectPhoto` が外れて写真の印も消え、空いた400pxは作業面へ戻る
+- 暗幕（scrim）の境界を Tailwind の xl=1280px から CSS と同じ 1200px へ揃えた。
+  1200〜1279px で「詳細欄は並んでいるのにグリッドが暗い」状態を解消
+- Esc は既存の `requestCloseInspector` を通り、未保存なら確認、
+  入力欄・select にフォーカスがある間は閉じない（既存の `typing` ガード）
+- **Settings の本文から中間一覧（節名＋「n項目を設定」の19行）を廃止。**
+  左の19節目次はそのまま残し、本文は選んだ1節の入力欄だけを描く。
+  本文の折りたたみ扉をやめ、見出しは `h2`＋切替時フォーカス
+- 変更あり／保存できずの印は目次側（PCの左列・スマホ上部1行・節一覧シート）に維持。
+  現在地は `aria-current="location"`＋縦線＋背景8%。保存失敗節は
+  `focusSectionId` で目次操作なしに本文へ出す
+- スクロール連動の現在地追従は廃止（本文に1節しかないため誤検出になる）
+- グループ見出しは現在の節を含むものだけ描く。台帳 `SETTINGS_SECTION_GROUPS` を新設し、
+  19節をちょうど1回ずつ含むことを unit test で固定
+- `docs/specs/admin-layout-implementation.md` を更新: §2 に詳細欄の閉じる要件、
+  §8-1 に「本文は1節だけ」の確定と不採用案を追記（旧「閉じた節の要約を19節へ広げる」を置換）
 
 ### 検証済み
 
-- 対象unit / render: 26 pass / 0 fail
-- 対象Playwright: 19 pass / 0 fail / 32端末役割別skip
-- `bun run check`: 636 pass / 0 fail、typecheck・lint・build成功
-- `bun run smoke`: 270 pass / 0 fail / 89端末役割別skip
-- Chromium実画面: Settings 1440px / 390px、Library再取得失敗時の終了ガード
-- 横スクロール検査、非GETのモック外送信拒否、既存並べ替え安全試験をすべて通過
-- `git diff --check`: OK。handoff freshnessはcommit後に再確認する
+- `bun run check`: typecheck・lint・**639 pass / 0 fail**・build すべて成功
+- `bun run smoke`: **272 pass / 0 fail / 91 端末役割別skip**（9分弱）
+- 追加テスト: 単節表示の render test（新規）、グループ台帳 unit test、
+  19節すべてへ到達＋常に1節だけ＋各節で横スクロールなし（1440px）、
+  390pxで目次が本文を押し下げない、PCの×で閉じてグリッドが380px以上広がる、
+  入力中Escで閉じない・編集を捨てない、未保存Escの確認とキャンセル復帰
+- `git diff --check`: OK
 
 ### failed / skipped / 未実行
 
-- 製品・test failureなし。初回Playwright起動だけsandboxのport権限で失敗し、
-  許可済みローカル実行へ切り替えて同じ対象試験と全smokeを0 failで完走
-- skipはdesktop / mobile / mobile-touch / mobile-safariの役割違いのみ
-- 本番・実DB・実R2・実機iPhoneは未実行（今回の禁止範囲）
+- 失敗なし。既存smokeのうち Settings の節を開いていた6本
+  （form-layout / hero-motion / i18n / live-preview / save-state / debug-sweep）は
+  目次・節一覧シート経由へ更新した
+- **push・Railway・本番確認は未実施。** 本番DB・R2・`.env` は無変更
+- 実機iPhoneでの確認は未実施（ローカル390pxのみ）
 
 ### 次の一手・オーナー確認
 
-- オーナーがSettingsの「配置をシャッフル」をPC / 390pxで各1回試用
-- 保存後再取得失敗の人工状態は自動試験済み。必要なら文言だけ実画面で最終確認
-- 問題なければオーナーのみが7 commitsをpushする
+- オーナーが 1440px と 390px で Settings の節送りと Library の×を試用
+- 問題なければオーナーが1 commitをpushする（エージェントはpushしない）
+- 参考（今回は直さず）: 確認ダイアログを閉じて160ms以内に別の確認を開くと、
+  前のダイアログの後始末が新しい方を閉じる。人手の操作では起きない速さ
 
 ### 禁止範囲と反映状況
 
-- Admin追加刷新、listbox、Workspace統一、Form幅、アクセント保存キーは変更なし
-- 公開サイト／API・DB schema／本番DB・R2／`.env`／Railwayは変更なし
-- **Codex session:** `019faca4-6f70-7821-9fcd-cb8794f89301`
-- **Local commits:** `d8f1b04` / `5061da1` / `f696bb1` / `a244e69` / `c20b069` / `de4d228` / `SELF`
+- 並べ替えの保存経路・競合拒否・ロールバック・`lib/reorder.ts` は無変更
+- 公開サイト、API、DB schema、settings キー台帳（新規キーなし）は無変更
+- **Codex session:** 今回は未使用（Claudeが設計・実装・検証を担当）
+- **Local commits:** `SELF`（fix(admin): close library inspector and simplify settings navigation）
 - **Push / deploy / Railway / production:** すべて未実施。本番書き込みなし
 <!-- CURRENT_STATE_END -->
 

@@ -7579,7 +7579,11 @@ export function GalleryTab({
               (X/保存/破棄の明示操作のみ — Codexレビュー 2026-07-11)。 */}
           <div
             aria-hidden="true"
-            className="fixed top-56 inset-x-0 bottom-0 z-30 bg-black/30 xl:hidden"
+            data-library-inspector-scrim
+            // 1200px以上で詳細欄は静的な列になる（styles.css）。暗幕の境界を
+            // Tailwindのxl=1280pxに任せると、1200〜1279pxで並んでいる
+            // グリッドまで暗くなるため、CSS側と同じ1200pxで揃える。
+            className="fixed top-56 inset-x-0 bottom-0 z-30 bg-black/30 min-[1200px]:hidden"
             onClick={() => {
               if (!photoEditFormChanged(editForm, inspectPhoto)) {
                 setInspectPhoto(null);
@@ -7590,15 +7594,19 @@ export function GalleryTab({
             data-library-inspector
         className="admin-library-inspector fixed inset-x-0 bottom-0 z-40 w-full max-h-[60vh] shadow-2xl rounded-t-lg border-t border-[var(--admin-line)] sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-w-xs sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l xl:static xl:z-auto xl:w-64 xl:max-w-none xl:shadow-none bg-[var(--admin-paper)] flex flex-col flex-shrink-0 overflow-y-auto"
           >
-            {/* Header with close (close needed on mobile drawer) */}
-            <div className="flex items-center justify-between px-3 pt-2 xl:hidden">
+            {/* Header with close. 幅に関係なく必ず出す — PC(1200px以上)では
+                詳細欄が静的な列になるため、閉じる手段がないと一覧へ戻れない
+                (オーナー確認 2026-07-30)。Escも同じ requestCloseInspector を通る。 */}
+            <div className="flex items-center justify-between px-3 pt-2">
               <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                 {copy.inspector.editPhoto}
               </span>
               <button
                 onClick={requestCloseInspector}
-                aria-label="Close"
-                className="admin-tap text-[var(--admin-muted)] transition-colors p-1 -mr-1 flex items-center justify-center"
+                data-library-inspector-close
+                aria-label={copy.inspector.close}
+                title={copy.inspector.close}
+                className="admin-tap text-[var(--admin-muted)] transition-colors -mr-1 flex h-11 w-11 items-center justify-center"
               >
                 <X size={16} />
               </button>

@@ -1545,6 +1545,13 @@ describe("shared components", () => {
 
       buttonWithText(host, "Settings").click();
       await waitForText(host, "Live Preview");
+      // 設定の本文は目次で選んだ1節だけを出す（2026-07-30）。
+      (
+        host.querySelector(
+          '[data-settings-section-link="portfolio-kit"]',
+        ) as HTMLButtonElement
+      ).click();
+      await flush(40);
       const serviceModeSelect = host.querySelector(
         'select[aria-label="Portfolio Kitの表示"]',
       ) as HTMLSelectElement | null;
@@ -1696,7 +1703,7 @@ describe("shared components", () => {
       );
       const inspectorClose = () =>
         host.querySelector(
-          'button[aria-label="Close"]',
+          "button[data-library-inspector-close]",
         ) as HTMLButtonElement | null;
 
       // 未編集: × は直ちに閉じる(確認なし)

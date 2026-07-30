@@ -112,13 +112,14 @@ test.describe("admin — Form layout", () => {
     await expect(toc).toBeVisible();
     await expect(links).toHaveCount(19);
 
+    // 本文は現在地の1節だけ。左の目次と同じ節名の一覧を本文へ二重に置かない。
     const basics = page.locator('[data-settings-section="site-basics"]');
-    const basicsTrigger = basics.locator(".admin-plain-section-trigger");
-    await basicsTrigger.click();
+    await expect(basics).toBeVisible();
+    await expect(page.locator("[data-settings-section]")).toHaveCount(1);
+    await expect(page.locator(".admin-plain-section-trigger")).toHaveCount(0);
     const input = basics.locator("input[type='text']").first();
     const original = await input.inputValue();
     await input.fill(`${original} changed`);
-    await basicsTrigger.click();
 
     await expect(basics).toHaveAttribute(
       "data-settings-section-changed",
@@ -141,7 +142,6 @@ test.describe("admin — Form layout", () => {
       "保存に失敗しました",
     );
     await expect(basics).toHaveAttribute("data-settings-section-error", "true");
-    await expect(basicsTrigger).toHaveAttribute("aria-expanded", "true");
     await expect(input).toHaveAttribute("aria-invalid", "true");
     await expect(input).toBeFocused();
 
@@ -202,10 +202,11 @@ test.describe("admin — Form layout", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openTab(page, "settings");
 
+    await page.locator('[data-settings-section-link="gallery-layout"]').click();
     const section = page.locator(
       '[data-settings-section="gallery-layout"]',
     );
-    await section.locator(".admin-plain-section-trigger").click();
+    await expect(section).toBeVisible();
     const shuffle = section.getByRole("button", {
       name: "配置をシャッフル",
     });
@@ -270,7 +271,7 @@ test.describe("admin — Form layout", () => {
     await expect(page.locator(".admin-form-toc")).toBeHidden();
 
     const basics = page.locator('[data-settings-section="site-basics"]');
-    await basics.locator(".admin-plain-section-trigger").click();
+    await expect(basics).toBeVisible();
     const input = basics.locator("input[type='text']").first();
     await input.fill("スマホで変更");
     await expect(page.locator(".admin-floating-save-bar")).toBeVisible();
@@ -284,8 +285,11 @@ test.describe("admin — Form layout", () => {
     await sheet.getByRole("button", { name: /Hero/ }).click();
     await expect(sheet).toHaveCount(0);
     await expect(
-      page.locator('[data-settings-section="hero"] .admin-plain-section-trigger'),
+      page.locator('[data-settings-section="hero"] [data-settings-section-heading]'),
     ).toBeFocused();
+    // 節を選ぶと本文がその節へ入れ替わり、上部1行の現在地も追随する。
+    await expect(page.locator("[data-settings-section]")).toHaveCount(1);
+    await expect(current).toContainText("Hero");
 
     const overflow = await page.evaluate(
       () =>
@@ -306,10 +310,19 @@ test.describe("admin — Form layout", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openTab(page, "settings");
 
+    await page
+      .locator(".admin-settings-mobile-current")
+      .getByRole("button", { name: /切り替え/ })
+      .click();
+    await page
+      .locator("[data-settings-mobile-section-list]")
+      .locator("button")
+      .filter({ hasText: "ギャラリー配置" })
+      .click();
     const section = page.locator(
       '[data-settings-section="gallery-layout"]',
     );
-    await section.locator(".admin-plain-section-trigger").click();
+    await expect(section).toBeVisible();
     await page.evaluate(() => {
       Math.random = () => 0.5;
     });
@@ -330,6 +343,92 @@ test.describe("admin — Form layout", () => {
 
     expect(mocks.writes).toEqual([]);
     expect(mocks.unknownWrites).toEqual([]);
+  });
+
+  test("19節すべてへ目次から到達し、本文には常に1節だけ出す", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "PCの目次で全節を辿る");
+
+    const mocks = await installMocks(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openTab(page, "settings");
+
+    const links = page.locator("[data-settings-section-link]");
+    await expect(links).toHaveCount(19);
+    const sectionIds = await links.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-settings-section-link")),
+    );
+
+    for (const sectionId of sectionIds) {
+      await page.locator(`[data-settings-section-link="${sectionId}"]`).click();
+      const sections = page.locator("[data-settings-section]");
+      await expect(
+        sections,
+        `${sectionId} を選んだら本文はその節だけになる`,
+      ).toHaveCount(1);
+      await expect(sections).toHaveAttribute(
+        "data-settings-section",
+        sectionId!,
+      );
+      await expect(
+        page.locator(`[data-settings-section-link="${sectionId}"]`),
+      ).toHaveAttribute("aria-current", "location");
+      const overflow = await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      );
+      expect(overflow, `${sectionId} で横にはみ出さない`).toBeLessThanOrEqual(1);
+    }
+
+    expect(mocks.writes).toEqual([]);
+    expect(mocks.unknownWrites).toEqual([]);
+  });
+
+  test("390pxでは目次が本文を押し下げず、最初の入力欄が1画面に入る", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "390pxで確認する");
+
+    await installMocks(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openTab(page, "settings");
+
+    const current = page.locator(".admin-settings-mobile-current");
+    await expect(current).toBeVisible();
+    const currentBox = await current.boundingBox();
+    expect(currentBox?.height ?? 999, "上部の節表示は1行に収める").toBeLessThanOrEqual(
+      56,
+    );
+
+    // 節名の一覧を本文の上へ積まない。上部1行とシートだけが節の切替器。
+    await expect(page.locator(".admin-form-toc")).toBeHidden();
+    await expect(page.locator("[data-settings-section]")).toHaveCount(1);
+
+    const heading = page
+      .locator("[data-settings-section] [data-settings-section-heading]")
+      .first();
+    await expect(heading).toBeVisible();
+
+    // 目次が本文を押し下げていないことを結果で測る: スクロールせずに
+    // 最初の入力欄まで届く。
+    const firstField = page
+      .locator("[data-settings-section] input, [data-settings-section] select")
+      .first();
+    await expect(firstField).toBeVisible();
+    const fieldBox = await firstField.boundingBox();
+    expect(
+      (fieldBox?.y ?? 9999) + (fieldBox?.height ?? 0),
+      "最初の入力欄が1画面目に収まる",
+    ).toBeLessThanOrEqual(844);
+
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
   });
 
   test("Profile・Pricing・Serviceは目次なしのForm本文幅を使う", async ({

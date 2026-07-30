@@ -13,6 +13,29 @@ function firstFamily(fontList: string): string {
   return fontList.split(",")[0]?.trim().replace(/['"]/g, "") ?? "";
 }
 
+// Settingsの本文は目次で選んだ1節だけを出す（2026-07-30）。PCは左の目次、
+// スマホは上部1行の「切り替え」→節一覧シートから目的の節を出す。
+async function openSettingsSection(
+  page: Parameters<typeof loginAsAdmin>[0],
+  sectionId: string,
+) {
+  const tocLink = page.locator(
+    `.admin-form-toc [data-settings-section-link="${sectionId}"]`,
+  );
+  if (await tocLink.isVisible()) {
+    await tocLink.click();
+  } else {
+    await page
+      .locator(".admin-settings-mobile-current")
+      .getByRole("button", { name: /切り替え|Switch/ })
+      .click();
+    await page.locator(`[data-settings-sheet-link="${sectionId}"]`).click();
+  }
+  await expect(
+    page.locator(`[data-settings-section="${sectionId}"]`),
+  ).toBeVisible();
+}
+
 function isLocalRequest(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -86,6 +109,7 @@ test.describe("admin — 全体デバッグスイープ", () => {
       }
 
       if (tab === "settings") {
+        await openSettingsSection(page, "theme");
         const themeBg = await page
           .locator('[data-admin-setting="themeBg-color"]')
           .evaluate((el) => (el as HTMLInputElement).value);

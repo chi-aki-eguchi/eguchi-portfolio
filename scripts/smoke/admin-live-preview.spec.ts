@@ -18,11 +18,7 @@ test.describe("admin — ライブプレビューがタブ復帰後も編集内�
     await page.waitForTimeout(400);
     await page.getByRole("button", { name: "Live Preview" }).click();
     await page.waitForTimeout(300);
-    await page
-      .locator(
-        '[data-settings-section="theme"] .admin-plain-section-trigger',
-      )
-      .click();
+    await page.locator('[data-settings-section-link="theme"]').click();
     await page.waitForTimeout(200);
 
     await page.getByLabel("背景色（HEX）").fill("#000005");

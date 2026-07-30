@@ -98,7 +98,7 @@ test.describe("admin — JP/EN shared shell", () => {
     // 2c-3で設定タブ「基本・見た目」もEN化されたため、境界マーカーをEN表記に更新。
     await expect(
       page.locator(
-        '[data-settings-section="site-basics"] .admin-plain-section-trigger',
+        '[data-settings-section="site-basics"] [data-settings-section-heading]',
       ),
     ).toContainText("Site Basics");
     expect(writes).toEqual([]);

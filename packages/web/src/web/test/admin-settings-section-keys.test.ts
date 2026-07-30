@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { SETTINGS_PREVIEW_KEYS } from "../../shared/settings-keys";
-import { SETTINGS_SECTION_KEYS } from "../pages/admin-tabs";
+import {
+  SETTINGS_SECTION_GROUPS,
+  SETTINGS_SECTION_KEYS,
+} from "../pages/admin-tabs";
 
 // site_settings の許可台帳には、Settingsタブ以外が直接管理する値と
 // 旧バージョン互換の値も含まれる。ここへ明示したもの以外は、
@@ -69,5 +72,17 @@ describe("Settings section key registry", () => {
     expect(
       [...owners.entries()].filter(([, sectionIds]) => sectionIds.length > 1),
     ).toEqual([]);
+  });
+
+  // 単節表示では、現在の節を含まないグループの見出しを描かない。台帳から
+  // 漏れた節はグループ見出しごと消えて到達できなくなるため、ここで固定する。
+  test("グループ台帳は19節をちょうど1回ずつ含む", () => {
+    const grouped: string[] = Object.values(SETTINGS_SECTION_GROUPS).flat();
+    expect(new Set(grouped).size, "同じ節を2つのグループへ入れていない").toBe(
+      grouped.length,
+    );
+    expect([...grouped].sort()).toEqual(
+      Object.keys(SETTINGS_SECTION_KEYS).sort(),
+    );
   });
 });

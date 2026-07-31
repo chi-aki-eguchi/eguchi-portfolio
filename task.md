@@ -1,7 +1,71 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-31 10:00 JST
+## Current State — 2026-07-31 16:00 JST
+
+- **Status:** **Phase 1A 完了・commit 済み。push 未実施（オーナーの手で行う）**
+- **Current owner:** Claude Code（停止中）
+- **Branch:** `main` / **HEAD:** `SELF`（Phase 1A commit）/ **origin/main:** `c783d4d`
+- **origin/main より 1 commit ahead。push していない**
+- **Git:** clean
+
+### commit に含めたファイル
+
+変更: `admin-tabs.tsx` / `admin-settings-form-layout.tsx` / `admin-shared.ts` /
+`admin-i18n.tsx` / `styles.css` / `admin.tsx` / `admin-compact-sidebar.tsx`
+新規: `admin-settings-preview-pane.tsx` / `admin-settings-preview-width.test.ts` /
+`scripts/smoke/admin-settings-preview.spec.ts`
+
+`admin.tsx` と `admin-compact-sidebar.tsx` は §10 の一覧外だが、§6-1 の
+「左ナビとSettingsで公開サイトURLを共通化」に必要なため含めた。
+
+### 実装したこと（§2〜§7）
+
+節ナビ横帯化の撤去（P4）/ 開閉ボタンを目次内へ移設（P6）/ プレビュー幅可変
+（比率保存・範囲外補正・ドラッグ・キーボード・ダブルクリック・明示リセット）/
+上部操作 sticky・nowrap・グループ折返し（P5）/ スマホ枠375px等倍（P3）/
+「大きく表示」= Workspace展開（overlayなし・iframe維持・Escape・フォーカス復帰）/
+別窓は保存済み公開サイトのみ（`buildPublicSiteHref` 共通化）/
+1024px未満は編集↔プレビュー切替 / フォーム列の container query。
+
+### 検証（すべてローカル）
+
+- `bun run check` 成功（typecheck / lint / unit 全件 / build）
+- `bun run smoke` **281 passed / 0 failed**（2回目の実行）。
+  1回目は `admin-workspace-layout.spec.ts` の確認ダイアログが1件落ちたが、
+  単体実行と2回目の全実行では成功。Settings とは無関係の既知の不安定箇所。
+- 新規 unit 11件 / 新規 browser 9件（1440・375・7幅スイープ・実ドラッグ含む）
+- `git diff --check` 成功
+
+### Codex 独立監査（read-only）への対応
+
+採用して修正済み: 768〜1023px で節切替ボタンが無反応（この幅では非表示に）/
+iframe内フォーカス時に Escape が効かない（同一オリジン文書へも待ち受け、
+再読み込み後は付け直す）/ 明示リセットボタン未実装 / ドラッグ待ち受けの後始末 /
+ドラッグ中の右端再計測 / テストの弱い検査（7幅・実ドラッグ・節ID・同期実操作を追加）。
+
+**オーナー確定 2026-07-31**: 「⋯」収納は**不採用**。意味のまとまり単位の
+折り返しを正式採用した。グループは4つ（PC幅/スマホ幅・同期/再読み込み・
+大きく表示/別窓・幅を戻す）で、各グループは常に `nowrap`。入らないときは
+グループ全体が次の行へ移る。どの操作も隠さない。仕様書 §4-1 を改訂し、
+旧「⋯収納」案は不採用理由5点とともに判断履歴へ残した。
+
+不採用: 壊れた localStorage を実ブラウザ経路で読ませるテスト（純関数側で網羅済み）。
+
+### 次の一手
+
+1. **オーナーが push**（エージェントは行わない）→ Railway 反映 → 本番で目視確認
+2. **Phase 1B へ続けて着手しない。**オーナーの確認を待つ
+3. 左ナビ Phase 0 は独立 Phase のまま未着手
+
+### 禁止範囲（今回も一切触れていない）
+
+- `lib/reorder.ts` / 保存経路 / API / DB schema / settings台帳 / `provider.tsx` の4箇所同期 / 公開サイト
+- **push / deploy / 本番DB / R2 / env 変更は一切していない**
+
+---
+
+## 前回 Current State — 2026-07-31 10:00 JST（設計確定時点）
 
 - **Status:** Phase 1A/1B の設計にオーナー判断5点を反映済み。
   **Phase 1A の製品コード実装は未着手**（クレジット残量のため次セッションへ）

@@ -3537,7 +3537,8 @@ dialog.lightbox-exit .lb-content {
 }
 .admin-atelier .admin-settings-form-layout__inner {
   display: grid;
-  grid-template-columns: 208px minmax(0, 720px);
+  /* 目次幅は container query で詰める(§2-1 手順3)。横帯へは変えない。 */
+  grid-template-columns: var(--settings-toc-w, 208px) minmax(0, 720px);
   gap: 40px;
   width: 100%;
   max-width: 1032px;
@@ -3703,55 +3704,13 @@ dialog.lightbox-exit .lb-content {
   display: none;
 }
 
-/* A live preview consumes the right 320px. Put the section list above the
-   Form instead of squeezing it beside the fields. */
-@media (min-width: 1024px) {
-  .admin-atelier .admin-settings-panel--preview {
-    width: calc(100% - 320px);
-    min-width: 640px;
-    flex: 0 0 auto;
-  }
-  .admin-atelier
-    .admin-settings-panel--preview
-    .admin-settings-form-layout__inner {
-    display: block;
-    max-width: 800px;
-  }
-  .admin-atelier .admin-settings-panel--preview .admin-form-toc {
-    position: static;
-    margin-bottom: 24px;
-  }
-  .admin-atelier
-    .admin-settings-panel--preview
-    .admin-form-toc__nav {
-    flex-flow: row nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  .admin-atelier
-    .admin-settings-panel--preview
-    .admin-form-toc__nav
-    > button {
-    width: auto;
-    min-width: max-content;
-    border-left: 0;
-    border-bottom: 3px solid transparent;
-  }
-  .admin-atelier
-    .admin-settings-panel--preview
-    .admin-form-toc__nav
-    > button.is-active {
-    border-bottom-color: var(--admin-accent);
-  }
-  .admin-atelier .admin-settings-panel--preview .admin-form-save-panel {
-    margin-top: 8px;
-    padding-left: 0;
-  }
-}
+/* プレビューを開いても目次は縦のまま。以前ここにあった「横帯へ変える」規則は
+   19節のうち見えない節を作っていたため撤去した(P4 / 仕様 N1)。
+   幅が足りないときは目次を詰め、プレビューを縮め、最後に切り替え表示へ移る。 */
 
 @media (min-width: 1024px) and (max-width: 1199px) {
   .admin-atelier .admin-settings-form-layout__inner {
-    grid-template-columns: 184px minmax(0, 640px);
+    --settings-toc-w: 184px;
     gap: 32px;
     max-width: 904px;
     padding: 24px 24px 96px;
@@ -3942,5 +3901,353 @@ dialog.lightbox-exit .lb-content {
   }
   .admin-atelier .admin-settings-mobile-save {
     display: block;
+  }
+}
+
+/* ── Settings workspace: フォーム列とプレビュー列 ─────────────────────
+   プレビューは全画面 overlay を作らない。Settings の Workspace の中に留まる
+   ので、左ナビ・言語切替・グローバルナビはそのまま残る(仕様 §5-1)。 */
+.admin-atelier .admin-settings-workspace {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.admin-atelier .admin-settings-workspace__form {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+.admin-atelier .admin-settings-workspace__resizer {
+  display: none;
+}
+.admin-atelier .admin-settings-preview {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--admin-paper);
+}
+/* 上部操作は sticky。本文をどれだけスクロールしても PC幅/スマホ幅へ戻れる。 */
+.admin-atelier .admin-settings-preview__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  min-height: 44px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-paper);
+}
+/* 意味のまとまりごとに折り返す(§4-1、オーナー確定 2026-07-31)。
+   ボタンが1個ずつ無秩序に折り返されないよう、グループの中は常に nowrap にし、
+   入らないときはグループ全体が次の行へ移る。「⋯」への収納は不採用。
+   4グループ: PC幅/スマホ幅・同期/再読み込み・大きく表示/別窓・幅を戻す。 */
+.admin-atelier .admin-settings-preview__group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+/* 短いラベルを途中改行させない。親へ一括ではなくボタン単位で当てる。 */
+.admin-atelier .admin-settings-preview__toolbar button,
+.admin-atelier .admin-settings-preview__toolbar a {
+  display: inline-flex;
+  min-width: 4em;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+  line-height: 1.3;
+  white-space: nowrap;
+  word-break: keep-all;
+  transition: color var(--dur-fast);
+}
+.admin-atelier .admin-settings-preview__toolbar button:hover,
+.admin-atelier .admin-settings-preview__toolbar a:hover {
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-settings-preview__toolbar button[aria-pressed="true"] {
+  box-shadow: inset 0 -2px 0 var(--admin-accent);
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-settings-preview__toolbar button:focus-visible,
+.admin-atelier .admin-settings-preview__toolbar a:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+.admin-atelier .admin-settings-preview__unsaved {
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--admin-line);
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+}
+.admin-atelier .admin-settings-preview__stage {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: auto;
+  padding: 12px;
+}
+.admin-atelier .admin-settings-preview__frame {
+  width: 100%;
+  height: 100%;
+  margin-inline: auto;
+  background: #fff;
+  overflow: hidden;
+}
+/* スマホ枠は等倍で出す。横に潰すと「スマホ幅の確認」が成立しない(P3)。
+   入りきらない分はこの列の中だけでスクロールする。 */
+.admin-atelier .admin-settings-preview__frame[data-device="mobile"] {
+  /* 枠線の内側が 375px になるよう content-box で測る。border-box のままだと
+     枠のぶん中身が 359px になり、スマホ幅の確認が成立しない。 */
+  box-sizing: content-box;
+  width: 375px;
+  height: 667px;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  border: 8px solid #333;
+  border-radius: 20px;
+}
+.admin-atelier .admin-settings-preview__frame > iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* 開閉ボタンは sticky な目次の中、保存パネルの上に置く(P6)。 */
+.admin-atelier .admin-form-toc__preview-toggle {
+  display: flex;
+  margin-top: 12px;
+  padding-left: 12px;
+}
+
+@media (min-width: 1024px) {
+  /* フォーム列を container にして、Settings の中だけで再配置する(§2)。
+     mobile の全画面シートは 1024px 未満だけなので、包含の副作用は起きない。 */
+  .admin-atelier .admin-settings-workspace__form {
+    container: settingsForm / inline-size;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-preview {
+    width: var(--settings-preview-w, 480px);
+    flex: 0 0 auto;
+    border-left: 1px solid var(--admin-line);
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-workspace__resizer {
+    position: relative;
+    display: block;
+    width: 8px;
+    height: auto;
+    flex: 0 0 8px;
+    margin: 0;
+    border: 0;
+    background: var(--admin-line);
+    cursor: col-resize;
+    touch-action: none;
+  }
+  /* 掴む帯は 8px、当たり判定は左右へ 4px ずつ広げて 16px にする(§3-2)。 */
+  .admin-atelier .admin-settings-workspace__resizer::after {
+    position: absolute;
+    inset: 0 -4px;
+    content: "";
+  }
+  .admin-atelier .admin-settings-workspace__resizer:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+  }
+  /* 「大きく表示」= Workspace 展開。フォーム列を畳むだけなので iframe は
+     同じツリーに残り、未保存の入力も読み込み済みのページも消えない(§5-1)。 */
+  .admin-atelier
+    .admin-settings-workspace[data-preview-expanded="true"]
+    .admin-settings-workspace__form,
+  .admin-atelier
+    .admin-settings-workspace[data-preview-expanded="true"]
+    .admin-settings-workspace__resizer {
+    display: none;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview-expanded="true"]
+    .admin-settings-preview {
+    width: auto;
+    flex: 1 1 auto;
+    border-left: 0;
+  }
+}
+
+/* 1024px 未満では横に並べない。上部 sticky の切り替えで往復する(§7)。
+   フォームはアンマウントせず表示だけ切り替えるので未保存の入力は残る。 */
+@media (max-width: 1023px) {
+  .admin-atelier .admin-settings-workspace {
+    flex-direction: column;
+  }
+  .admin-atelier .admin-settings-workspace[data-preview="true"] {
+    --settings-preview-w: auto;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview-view="edit"]
+    .admin-settings-preview {
+    display: none;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview-view="preview"]
+    .admin-settings-form-layout,
+  .admin-atelier
+    .admin-settings-workspace[data-preview-view="preview"]
+    .admin-settings-workspace__form {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview-view="preview"]
+    .admin-settings-form-layout__inner {
+    display: none;
+  }
+  /* プレビュー中は保存バーを出さない。未保存は上部の点と展開時の件数で示す。 */
+  .admin-atelier:has(.admin-settings-workspace[data-preview-view="preview"])
+    .admin-floating-save-bar {
+    display: none;
+  }
+  /* 切り替えを載せるため、プレビュー中は 768〜1023px でもこの帯を出す。 */
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-mobile-current {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--admin-line);
+    background: color-mix(in srgb, var(--admin-paper) 94%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-mobile-current__label {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: baseline;
+    gap: 7px;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-mobile-current__label
+    > span {
+    color: var(--admin-muted);
+    font-size: 10px;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-mobile-current__label
+    > strong {
+    overflow: hidden;
+    color: var(--admin-ink);
+    font-size: var(--admin-text-note);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-mobile-current
+    > button {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    gap: 3px;
+    color: var(--admin-ink);
+    font-size: var(--admin-text-note);
+  }
+  /* 「大きく表示」は既に全面なので狭い幅では出さない(§7)。 */
+  .admin-atelier
+    .admin-settings-preview__toolbar
+    .admin-settings-preview__expand {
+    display: none;
+  }
+}
+
+/* 768〜1023px の全節シートは 767px 以下にしか表示規則がない。押しても何も
+   起きないボタンを出さないため、この幅では節の切替ボタンを隠す。編集表示へ
+   戻れば、縦の目次がそのまま節の切替器になる。 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .admin-atelier
+    .admin-settings-workspace[data-preview="true"]
+    .admin-settings-mobile-current
+    > button {
+    display: none;
+  }
+}
+
+/* 編集/プレビューの切り替え。1操作で往復でき、×ボタンを別に置かない(§7)。 */
+.admin-atelier .admin-settings-mobile-current__view-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+.admin-atelier .admin-settings-mobile-current__view-switch > button {
+  min-width: 4em;
+  min-height: 36px;
+  padding: 0 8px;
+  border-bottom: 2px solid transparent;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+  white-space: nowrap;
+  word-break: keep-all;
+}
+.admin-atelier
+  .admin-settings-mobile-current__view-switch
+  > button[aria-pressed="true"] {
+  border-bottom-color: var(--admin-accent);
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-settings-mobile-current__preview-open {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  color: var(--admin-muted);
+}
+.admin-atelier .admin-settings-mobile-current__view-switch > button:focus-visible,
+.admin-atelier .admin-settings-mobile-current__preview-open:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+/* 目次を詰める。フォーム列そのものの幅で決めるので、左ナビの開閉や
+   プレビュー幅の変更にそのまま追従する(§2-1 手順1・3)。 */
+@container settingsForm (max-width: 900px) {
+  .admin-atelier .admin-settings-form-layout__inner {
+    --settings-toc-w: 148px;
+    gap: 24px;
+    max-width: none;
+    padding: 24px 20px 96px;
+  }
+}
+@container settingsForm (max-width: 640px) {
+  .admin-atelier .admin-settings-form-layout__inner {
+    --settings-toc-w: 132px;
+    gap: 16px;
+    padding: 20px 16px 96px;
+  }
+  .admin-atelier .admin-form-toc__nav > button {
+    padding: 7px 6px 7px 10px;
   }
 }

@@ -29,6 +29,7 @@ export function AdminCompactSidebar({
   onRequestTab,
   onExpand,
   onLogout,
+  siteHref = "/",
   labels,
 }: {
   groups: readonly AdminTabGroup[];
@@ -38,6 +39,9 @@ export function AdminCompactSidebar({
   onRequestTab: (tab: Tab) => boolean;
   onExpand: () => void;
   onLogout: () => void;
+  // 公開サイトのURLは buildPublicSiteHref() が正本。デモ用クエリの組み立てを
+  // 画面ごとに書き写さない(仕様 §6-1)。
+  siteHref?: string;
   labels: {
     navigation: string;
     expand: string;
@@ -203,7 +207,7 @@ export function AdminCompactSidebar({
 
       <div className="admin-sidebar-compact__footer">
         <a
-          href="/"
+          href={siteHref}
           target="_blank"
           rel="noopener"
           aria-label={labels.openSite}

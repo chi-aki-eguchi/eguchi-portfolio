@@ -82,6 +82,8 @@ export function AdminSettingsFormLayout({
   onSave,
   onDiscard,
   copy,
+  previewToggle = null,
+  mobilePreviewControl = null,
   children,
 }: {
   sections: AdminSettingsSectionItem[];
@@ -94,6 +96,11 @@ export function AdminSettingsFormLayout({
   onSave: () => void;
   onDiscard: () => void;
   copy: AdminSettingsFormCopy;
+  // プレビュー開閉。目次の下・保存パネルの上に置き、本文をどこまでスクロール
+  // しても sticky な目次の中に残るようにする(仕様 P6 の解消)。
+  previewToggle?: ReactNode;
+  // 上部 sticky 帯に入れる、狭い幅用の編集/プレビュー切り替え。
+  mobilePreviewControl?: ReactNode;
   children: ReactNode;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -204,11 +211,15 @@ export function AdminSettingsFormLayout({
           {copy.switchSection}
           <ChevronDown size={13} />
         </button>
+        {mobilePreviewControl}
       </div>
 
       <div className="admin-settings-form-layout__inner">
         <aside className="admin-form-toc">
           {navigation}
+          {previewToggle && (
+            <div className="admin-form-toc__preview-toggle">{previewToggle}</div>
+          )}
           <output
             className="admin-form-save-panel"
             data-settings-save-panel

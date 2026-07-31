@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { objectPositionFromFocal, srcFor } from "../lib/picture";
 import { adminApi } from "../lib/api";
+import { ADMIN_DEMO_PREVIEW_PARAM } from "../lib/admin-demo-data";
 import { getStoredAdminMessages } from "./admin-i18n";
 
 export type Tab =
@@ -119,6 +120,82 @@ export function usePersistentState<T>(
     }
   }, [key, storageKind, val]);
   return [val, setVal] as const;
+}
+
+// ── 公開サイトを別窓で開くURL ──────────────────────────────────────────
+// 左ナビ「サイトを見る」と Settings プレビューの「別窓」で同じものを使う。
+// デモモードのクエリ組み立てを画面ごとに書き写さない(2026-07-31 オーナー確定)。
+// Library の「サイトで確認」は同じ画面内のプレビュー開閉なので対象外。
+export function buildPublicSiteHref(demoSeed?: string | null): string {
+  if (!demoSeed) return "/";
+  return `/?${ADMIN_DEMO_PREVIEW_PARAM}=${encodeURIComponent(demoSeed)}`;
+}
+
+// ── Settings プレビュー列の幅 ──────────────────────────────────────────
+// px ではなく Workspace に対する比率で保存する。px で保存すると別の画面幅で
+// 開いたときに最小・最大を外れるため(仕様 §3-3)。
+export const SETTINGS_PREVIEW_WIDTH_KEY = "admin:settingsPreviewWidth";
+// これを下回るとプレビュー上部の操作が複数行に折り返す(実測 P5)。
+export const SETTINGS_PREVIEW_MIN_WIDTH = 320;
+// フォーム列がこれを下回ると入力欄が読めなくなる。プレビューより優先する。
+export const SETTINGS_FORM_MIN_WIDTH = 400;
+// リサイズ用の掴み帯。フォーム側の残り幅を計算するときに差し引く。
+export const SETTINGS_PREVIEW_HANDLE_WIDTH = 8;
+
+// 既定幅。viewport ではなく実測した Workspace 幅から決める。左ナビの開閉で
+// Workspace は変わるので、viewport 固定値を当てると幅が合わない(§13 A2)。
+export function defaultSettingsPreviewWidth(workspaceWidth: number): number {
+  if (workspaceWidth >= 1300) return 520;
+  if (workspaceWidth >= 1100) return 480;
+  if (workspaceWidth >= 1000) return 440;
+  return 360;
+}
+
+// 最大幅は「55%」だけで決めない。フォームが潰れないことを常に優先する。
+export function settingsPreviewWidthBounds(workspaceWidth: number): {
+  min: number;
+  max: number;
+} {
+  const usable = Number.isFinite(workspaceWidth) ? workspaceWidth : 0;
+  const max = Math.max(
+    1,
+    Math.round(
+      Math.min(
+        usable * 0.55,
+        usable - SETTINGS_FORM_MIN_WIDTH - SETTINGS_PREVIEW_HANDLE_WIDTH,
+      ),
+    ),
+  );
+  return { min: Math.min(SETTINGS_PREVIEW_MIN_WIDTH, max), max };
+}
+
+export function clampSettingsPreviewWidth(
+  width: number,
+  workspaceWidth: number,
+): number {
+  const { min, max } = settingsPreviewWidthBounds(workspaceWidth);
+  if (!Number.isFinite(width)) return Math.round(min);
+  return Math.round(Math.min(Math.max(width, min), max));
+}
+
+// 保存値が壊れていても編集不能にしない。範囲外・NaN・null は既定幅へ倒す。
+export function settingsPreviewWidthFromRatio(
+  ratio: number | null | undefined,
+  workspaceWidth: number,
+): number {
+  const usable =
+    typeof ratio === "number" && Number.isFinite(ratio) && ratio > 0
+      ? ratio * workspaceWidth
+      : defaultSettingsPreviewWidth(workspaceWidth);
+  return clampSettingsPreviewWidth(usable, workspaceWidth);
+}
+
+export function settingsPreviewRatioFromWidth(
+  width: number,
+  workspaceWidth: number,
+): number | null {
+  if (!Number.isFinite(width) || !(workspaceWidth > 0)) return null;
+  return clampSettingsPreviewWidth(width, workspaceWidth) / workspaceWidth;
 }
 
 let redirectingToLogin = false;

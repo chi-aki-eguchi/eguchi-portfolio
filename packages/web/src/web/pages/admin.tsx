@@ -86,6 +86,7 @@ import {
 } from "lucide-react";
 import {
   adminTabGroupsForService,
+  buildPublicSiteHref,
   isAdminTab,
   postAdminSettings,
   reorderLockReason,
@@ -435,6 +436,8 @@ function AdminPageContent({
 }) {
   const { isLoading, authenticated } = useAdminGuard(demoMode);
   const { language, t } = useAdminI18n();
+  // 左ナビ「サイトを見る」と Settings プレビューの「別窓」で同じURLを使う。
+  const publicSiteHref = buildPublicSiteHref(demoSeed);
   const adminRootRef = useRef<HTMLDivElement>(null);
   const demoBannerRef = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
@@ -801,7 +804,7 @@ function AdminPageContent({
         </nav>
         <div className="admin-sidebar__footer admin-sidebar__full">
           <a
-            href="/"
+            href={publicSiteHref}
             target="_blank"
             rel="noopener"
             className="admin-sidebar__link"
@@ -820,6 +823,7 @@ function AdminPageContent({
           onRequestTab={requestTab}
           onExpand={() => setSidebarCollapsed(false)}
           onLogout={requestLogout}
+          siteHref={publicSiteHref}
           labels={{
             navigation: t.navigation.label,
             expand: t.navigation.expandSidebar,

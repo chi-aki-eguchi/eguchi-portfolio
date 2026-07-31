@@ -22,8 +22,6 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Monitor,
-  Smartphone,
   Star,
   Shuffle,
   Pencil,
@@ -40,9 +38,15 @@ import {
   parsePresetList,
   postAdminSettings,
   usePersistentState,
+  buildPublicSiteHref,
+  settingsPreviewRatioFromWidth,
+  settingsPreviewWidthBounds,
+  settingsPreviewWidthFromRatio,
+  SETTINGS_PREVIEW_WIDTH_KEY,
   type HeroPhotoRow,
   type Photo,
 } from "./admin-shared";
+import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
 import { AdminWorkspace } from "./admin-workspace";
@@ -4008,6 +4012,23 @@ export function SettingsTab({
     "desktop" | "mobile"
   >("admin:previewDevice", "desktop");
   const [liveSync, setLiveSync] = usePersistentState("admin:liveSync", true);
+  // プレビュー列の幅。px ではなく Workspace に対する比率で保存する(§3-3)。
+  const [previewRatio, setPreviewRatio] = usePersistentState<number | null>(
+    SETTINGS_PREVIEW_WIDTH_KEY,
+    null,
+    "local",
+  );
+  // 展開は保存しない。開き直したら通常幅へ戻る(§5-1)。
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  // 幅が足りないときの編集/プレビュー切り替え。フォームはアンマウントしないので
+  // 未保存の入力はどちらの表示でも残る(§7)。
+  const [narrowView, setNarrowView] = useState<"edit" | "preview">("edit");
+  const [previewDragging, setPreviewDragging] = useState(false);
+  const [workspaceWidth, setWorkspaceWidth] = useState(0);
+  // 読み込み中は早期 return するため、ref ではなく state のコールバック ref で
+  // 実際に DOM へ載った時点を捉える。
+  const [workspaceEl, setWorkspaceEl] = useState<HTMLDivElement | null>(null);
+  const expandButtonRef = useRef<HTMLButtonElement>(null);
   const [layoutTarget, setLayoutTarget] = usePersistentState<
     "galleryLayout" | "seriesLayout" | "topWorksLayout"
   >("admin:layoutTarget", "galleryLayout");
@@ -4123,7 +4144,11 @@ export function SettingsTab({
   }, [previewPayload, showPreview, liveSync]);
 
   // Also send on iframe load
+  // 読み込みのたびに数える。プレビュー内の文書へ付けた待ち受け(Escape)は
+  // 再読み込みで捨てられるため、この値を手がかりに付け直す。
+  const [previewLoadSeq, setPreviewLoadSeq] = useState(0);
   const handleIframeLoad = useCallback(() => {
+    setPreviewLoadSeq((seq) => seq + 1);
     if (!iframeRef.current?.contentWindow) return;
     iframeRef.current.contentWindow.postMessage(
       { type: "preview-settings", settings: previewPayload },
@@ -4150,6 +4175,120 @@ export function SettingsTab({
     window.addEventListener("message", onReady);
     return () => window.removeEventListener("message", onReady);
   }, []);
+
+  // ── プレビュー列の幅 ──────────────────────────────────────────────
+  // Workspace の実測幅から px を決める。左ナビの開閉で Workspace は変わるので
+  // viewport 固定値は当てない(§13 A2)。
+  useEffect(() => {
+    if (!workspaceEl) return;
+    setWorkspaceWidth(workspaceEl.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (typeof width === "number") setWorkspaceWidth(width);
+    });
+    observer.observe(workspaceEl);
+    return () => observer.disconnect();
+  }, [workspaceEl]);
+
+  const previewWidth = settingsPreviewWidthFromRatio(
+    previewRatio,
+    workspaceWidth,
+  );
+  const previewBounds = settingsPreviewWidthBounds(workspaceWidth);
+  const applyPreviewWidth = useCallback(
+    (nextWidth: number) => {
+      if (!(workspaceWidth > 0)) return;
+      setPreviewRatio(settingsPreviewRatioFromWidth(nextWidth, workspaceWidth));
+    },
+    [setPreviewRatio, workspaceWidth],
+  );
+
+  // ドラッグ中に画面を離れても window の待ち受けを残さない。
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+  useEffect(() => () => dragCleanupRef.current?.(), []);
+
+  const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || !workspaceEl) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setPreviewDragging(true);
+    // 右端は毎回測る。ドラッグ中に左ナビを開閉されても位置がずれない。
+    const onMove = (moveEvent: PointerEvent) =>
+      applyPreviewWidth(
+        workspaceEl.getBoundingClientRect().right - moveEvent.clientX,
+      );
+    const onEnd = () => {
+      setPreviewDragging(false);
+      dragCleanupRef.current = null;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
+    };
+    dragCleanupRef.current = onEnd;
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onEnd);
+    window.addEventListener("pointercancel", onEnd);
+  };
+
+  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 64 : 16;
+    // 帯を左へ動かす = プレビューが広がる。
+    if (event.key === "ArrowLeft") applyPreviewWidth(previewWidth + step);
+    else if (event.key === "ArrowRight") applyPreviewWidth(previewWidth - step);
+    else if (event.key === "Home") applyPreviewWidth(previewBounds.min);
+    else if (event.key === "End") applyPreviewWidth(previewBounds.max);
+    else return;
+    event.preventDefault();
+  };
+
+  const reloadPreview = useCallback(() => {
+    iframeRef.current?.contentWindow?.location.reload();
+  }, []);
+
+  // 展開を解除したら「大きく表示」ボタンへフォーカスを返す(§5-1)。
+  const wasExpandedRef = useRef(false);
+  useEffect(() => {
+    if (wasExpandedRef.current && !previewExpanded)
+      expandButtonRef.current?.focus();
+    wasExpandedRef.current = previewExpanded;
+  }, [previewExpanded]);
+
+  useEffect(() => {
+    if (!previewExpanded) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setPreviewExpanded(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    // iframe の中へフォーカスがあると、キーは親文書へ伝わらない。プレビューは
+    // 同一オリジンなので、その文書にも同じ待ち受けを付けて Escape を通す。
+    let innerDoc: Document | null = null;
+    try {
+      innerDoc = iframeRef.current?.contentDocument ?? null;
+      innerDoc?.addEventListener("keydown", onKeyDown);
+    } catch {
+      innerDoc = null;
+    }
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      try {
+        innerDoc?.removeEventListener("keydown", onKeyDown);
+      } catch {
+        /* 文書が破棄済み */
+      }
+    };
+  }, [previewExpanded, previewLoadSeq]);
+
+  // 展開中に保存が失敗したら展開を解除し、該当節を本文へ出す(§5-1)。
+  useEffect(() => {
+    if (saveError) setPreviewExpanded(false);
+  }, [saveError]);
+
+  useEffect(() => {
+    if (showPreview) return;
+    setPreviewExpanded(false);
+    setNarrowView("edit");
+  }, [showPreview]);
 
   // Warn on unsaved changes. These hooks must run before the isLoading early
   // return — a hook after a conditional return crashes React ("Rendered more
@@ -4279,14 +4418,73 @@ export function SettingsTab({
     summary: summarizeSection(sectionId),
   });
 
-  return (
-    <div className="flex h-full overflow-hidden">
-      {/* Settings panel */}
-      <div
-        className={`flex flex-col overflow-hidden transition-[width,max-width] duration-300 ${
-          showPreview ? "admin-settings-panel--preview w-full" : "flex-1"
-        }`}
+  const previewCopy = copyDesign.preview;
+  const publicSiteHref = buildPublicSiteHref(demoSeed);
+  const openPreview = (next: boolean) => {
+    setShowPreview(next);
+    if (next) setNarrowView("preview");
+  };
+  // 開閉ボタンは sticky な目次の下に置く。本文をどこまでスクロールしても
+  // 戻れるようにするため(P6)。読み上げ名は既存のまま変えない。
+  const previewToggleButton = (
+    <PageHeaderButton
+      active={showPreview}
+      onClick={() => openPreview(!showPreview)}
+      ariaLabel={showPreview ? "Hide Preview" : "Live Preview"}
+    >
+      {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
+      {showPreview ? "Hide Preview" : "Live Preview"}
+    </PageHeaderButton>
+  );
+  const mobilePreviewControl = showPreview ? (
+    <span
+      className="admin-settings-mobile-current__view-switch"
+      title={previewCopy.viewSwitchLabel}
+    >
+      <button
+        type="button"
+        aria-pressed={narrowView === "edit"}
+        onClick={() => setNarrowView("edit")}
       >
+        {previewCopy.viewEdit}
+      </button>
+      <button
+        type="button"
+        aria-pressed={narrowView === "preview"}
+        onClick={() => setNarrowView("preview")}
+      >
+        {previewCopy.viewPreview}
+      </button>
+    </span>
+  ) : (
+    <button
+      type="button"
+      className="admin-settings-mobile-current__preview-open"
+      aria-label="Live Preview"
+      onClick={() => openPreview(true)}
+    >
+      <Eye size={13} />
+    </button>
+  );
+
+  return (
+    <div
+      ref={setWorkspaceEl}
+      className="admin-settings-workspace"
+      data-settings-workspace
+      data-preview={showPreview ? "true" : "false"}
+      data-preview-expanded={showPreview && previewExpanded ? "true" : "false"}
+      data-preview-view={showPreview ? narrowView : "edit"}
+      style={
+        showPreview
+          ? ({
+              "--settings-preview-w": `${previewWidth}px`,
+            } as React.CSSProperties)
+          : undefined
+      }
+    >
+      {/* Settings panel */}
+      <div className="admin-settings-workspace__form">
         <AdminSettingsFormLayout
           sections={settingsSections}
           changedCount={dirtyKeys.length}
@@ -4301,20 +4499,12 @@ export function SettingsTab({
             setFailedSectionIds([]);
           }}
           copy={t.formLayout}
+          previewToggle={previewToggleButton}
+          mobilePreviewControl={mobilePreviewControl}
         >
             <PageHeader
               title={t.navigation.tabs.settings}
               description={saveError ? t.headers.settingsSaveFailed : undefined}
-              actions={
-                <PageHeaderButton
-                  active={showPreview}
-                  onClick={() => setShowPreview(!showPreview)}
-                  ariaLabel={showPreview ? "Hide Preview" : "Live Preview"}
-                >
-                  {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
-                  {showPreview ? "Hide Preview" : "Live Preview"}
-                </PageHeaderButton>
-              }
             />
             <div className="flex flex-col">
               {/* General */}
@@ -6507,86 +6697,66 @@ export function SettingsTab({
         </div>
       </div>
 
-      {/* Live Preview Panel — mobile: full-screen overlay; desktop: side panel */}
+      {/* プレビュー列。全画面 overlay を作らず、Settings の Workspace の中に
+          留まる。左ナビ・言語切替・グローバルナビはそのまま残る(§5-1)。 */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--admin-paper)] lg:static lg:z-auto lg:flex-1 lg:border-l lg:border-[var(--admin-line)] min-w-0 overflow-hidden">
-          {/* Preview toolbar */}
-          <div className="flex items-center justify-between px-4 h-10 border-b border-[var(--admin-line)] bg-[var(--admin-paper)] flex-shrink-0">
-            <span className="text-[length:var(--admin-text-note)] tracking-widest uppercase text-[var(--admin-muted)]">
-              {copy.previewTitle}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPreviewDevice("desktop")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${previewDevice === "desktop" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
-                title={t.phase2b.library.sitePreview.desktopTitle}
-                aria-label={t.phase2b.library.sitePreview.desktopTitle}
-              >
-                <Monitor size={13} /> {t.phase2b.library.sitePreview.desktop}
-              </button>
-              <button
-                onClick={() => setPreviewDevice("mobile")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[length:var(--admin-text-note)] transition-colors ${previewDevice === "mobile" ? "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]" : "text-[var(--admin-muted)]"}`}
-                title={t.phase2b.library.sitePreview.mobileTitle}
-                aria-label={t.phase2b.library.sitePreview.mobileTitle}
-              >
-                <Smartphone size={13} /> {t.phase2b.library.sitePreview.mobile}
-              </button>
-              <button
-                onClick={() => setLiveSync(!liveSync)}
-                aria-pressed={liveSync}
-                className="ml-2 px-2 py-0.5 rounded-sm text-[length:var(--admin-text-note)] transition-colors"
-                title={
-                  liveSync
-                    ? copyDesign.preview.syncOnTitle
-                    : copyDesign.preview.syncOffTitle
-                }
-              >
-                {liveSync ? "Sync ON" : "Sync OFF"}
-              </button>
-              <button
-                onClick={() =>
-                  iframeRef.current?.contentWindow?.location.reload()
-                }
-                className="ml-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-              >
-                Reload
-              </button>
-              {/* Close — needed to dismiss the mobile full-screen overlay */}
-              <button
-                onClick={() => setShowPreview(false)}
-                className="lg:hidden ml-1 p-1.5 rounded-sm text-[var(--admin-muted)] transition-colors"
-                title="Close preview"
-                aria-label="Close preview"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-          {/* iframe container */}
-          <div className="flex-1 flex items-start justify-center overflow-auto p-4">
-            <div
-              className={`bg-white rounded-sm overflow-hidden shadow-lg transition-[width,height] duration-[var(--dur-slow)] ease-[var(--ease-inout)] ${
-                previewDevice === "mobile"
-                  ? "w-[375px] h-[667px]"
-                  : "w-full h-full"
-              }`}
-              style={
-                previewDevice === "mobile"
-                  ? { border: "8px solid #333", borderRadius: "20px" }
-                  : {}
-              }
-            >
-              <iframe
-                ref={iframeRef}
-                src={demoSeed ? `/?admin-demo-preview=${encodeURIComponent(demoSeed)}` : "/"}
-                onLoad={handleIframeLoad}
-                className="w-full h-full border-0"
-                title="Site Preview"
-              />
-            </div>
-          </div>
-        </div>
+        <>
+          {/* ARIA の window splitter。フォーカスでき、値を持つ分割線なので
+              hr へは置き換えられない(§3-2)。 */}
+          {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
+          <div role="separator"
+            aria-orientation="vertical"
+            aria-label={previewCopy.resizeLabel}
+            aria-valuenow={previewWidth}
+            aria-valuemin={previewBounds.min}
+            aria-valuemax={previewBounds.max}
+            tabIndex={0}
+            className="admin-settings-workspace__resizer"
+            data-settings-preview-resizer
+            title={previewCopy.resetWidthTitle}
+            onPointerDown={handleResizePointerDown}
+            onDoubleClick={() => setPreviewRatio(null)}
+            onKeyDown={handleResizeKeyDown}
+          />
+          <AdminSettingsPreviewPane
+            ref={iframeRef}
+            device={previewDevice}
+            onDeviceChange={setPreviewDevice}
+            liveSync={liveSync}
+            onLiveSyncChange={setLiveSync}
+            src={publicSiteHref}
+            publicHref={publicSiteHref}
+            onIframeLoad={handleIframeLoad}
+            onReload={reloadPreview}
+            expanded={previewExpanded}
+            onToggleExpanded={() => setPreviewExpanded((value) => !value)}
+            expandButtonRef={expandButtonRef}
+            canResetWidth={previewRatio !== null}
+            onResetWidth={() => setPreviewRatio(null)}
+            unsavedCount={dirtyKeys.length}
+            dragging={previewDragging}
+            copy={{
+              title: copy.previewTitle,
+              desktop: t.phase2b.library.sitePreview.desktop,
+              desktopTitle: t.phase2b.library.sitePreview.desktopTitle,
+              mobile: t.phase2b.library.sitePreview.mobile,
+              mobileTitle: t.phase2b.library.sitePreview.mobileTitle,
+              syncOn: previewCopy.syncOn,
+              syncOff: previewCopy.syncOff,
+              syncOnTitle: previewCopy.syncOnTitle,
+              syncOffTitle: previewCopy.syncOffTitle,
+              reload: previewCopy.reload,
+              expand: previewCopy.expand,
+              collapse: previewCopy.collapse,
+              expandTitle: previewCopy.expandTitle,
+              openInNewTab: previewCopy.openInNewTab,
+              openInNewTabTitle: previewCopy.openInNewTabTitle,
+              resetWidth: previewCopy.resetWidth,
+              resetWidthTitle: previewCopy.resetWidthTitle,
+              unsavedWhileExpanded: previewCopy.unsavedWhileExpanded,
+            }}
+          />
+        </>
       )}
     </div>
   );

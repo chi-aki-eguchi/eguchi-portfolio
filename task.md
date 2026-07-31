@@ -1,99 +1,72 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-31 06:00 JST
+## Current State — 2026-07-31 10:00 JST
 
-- **Status:** 確認ダイアログ競合の**修正をcommit済み**。
-  **Phase 0（左ナビ）は2方式とも不採用。未解決のまま持ち越し**
+- **Status:** Phase 1A/1B の設計にオーナー判断5点を反映済み。
+  **Phase 1A の製品コード実装は未着手**（クレジット残量のため次セッションへ）
 - **Current owner:** Claude Code（停止中）
-- **Branch:** `main` / **HEAD:** `SELF` / **Originとの差:** **3 commits ahead**（push未実施）
-- **Git:** clean（この文書commit後）。Phase 0 のファイル群は
-  `scratch/phase0-hold/` へ退避（下記「復元手順」）
+- **Branch:** `main` / **HEAD:** `SELF`（この文書commit）
+- **リモート実測（2026-07-31 `git fetch` 済み）:**
+  この文書commit前の時点で **origin/main = `c1cdba7` = ローカルHEAD、ahead=0 / behind=0**。
+  前回報告の「3 commits ahead」はオーナーのpush前の状態で、現在は解消。
+  3 commits（`217b314` / `ec8a577` / `c1cdba7`）はすべて origin/main に含まれる。
+  **この文書commit後は origin/main より 1 commit ahead。push未実施**
+- **Git:** clean（この文書commit後）
 
-### commit の順序（origin/main `9cc181a` から3本）
+### この commit に含む3ファイル（製品コードなし）
 
-1. `217b314` fix(admin): close library inspector and simplify settings navigation（前タスク）
-2. `ec8a577` **fix(admin): prevent stale modal cleanup from closing new dialogs**
-   — `admin.tsx` / `pages.render.test.tsx` の2ファイルのみ。Phase 0 のCSSは含まない
-3. `SELF` docs(admin): 再設計の確定判断とPhase 0の未解決状況
+- `docs/specs/admin-phase1-settings-preview.md`（新規）— Phase 1A/1B の実装仕様
+- `docs/specs/admin-redesign-plan.md`（変更）— §12-1 の実装順を Settings 先行へ改訂、
+  左ナビ自動畳みの記述を撤回、Phase 0 の状態を「未実装」へ訂正
+- `task.md`（変更）— Current State
 
-### 完了: 確認ダイアログ競合（製品側の実不具合）
+### オーナー確定（2026-07-31）— 仕様書 §13 に記録済み
 
-**原因（実測で確定）**: `Modal` の退場アニメーション用
-`setTimeout(() => onCloseRef.current(), 160)` が unmount 後も取り消されず、
-発火時に「その時点で開いている別のダイアログ」を閉じていた。
-`setConfirmDialog` の呼び出し履歴（スタック付き）で確認:
+- **A1 「大きく表示」= 案1（Workspace全体へ展開）。** 全画面overlayも新しい最上位
+  スタッキングコンテキストも作らない。左ナビ・言語切替・グローバルナビは維持。
+  iframeをアンマウントせずEscapeと明示ボタンで戻る。戻り先へフォーカスを返す
+- **A2 標準幅 1440で480px。** 固定値を全幅へ当てず実測で調整。最小320 /
+  最大 `min(55%, workspace−400)` / 保存は比率 / 範囲外は補正 / リセットあり。
+  **スマホ幅375pxは横に縮めない**（確保できない幅では大きく表示か切替表示へ）
+- **A3 左ナビは自動で畳まない（私の推奨を却下）。** 幅不足は5段階で対応:
+  ①container再配置 ②プレビュー縮小 ③節ナビをコンパクト ④大きく表示へ誘導
+  ⑤編集/プレビュー切替へ移行
+- **A4 Settings を新トークンの先行検証画面にする。** `admin-redesign-plan.md`
+  §12-1 を改訂済み（旧順序は判断履歴として保存）
+- **A5 Phase 1A と 1B は別commit。** 1A=`feat(admin): improve settings preview workspace`
+  / 1B=`style(admin): establish settings interface tokens`。
+  **1Bで全ボタン一律リセットを削除しない**
+- **別窓は共通化**: 左ナビ「サイトを見る」と Settings「別窓」で
+  `buildPublicSiteHref(demoSeed)` を共有する。Library の「サイトで確認」は
+  インラインプレビューの開閉なので別物（共通化しない）
 
-```
-SET@1267  Escape → 確認1が開く
-NULL@1414 キャンセルonClick → 確認1が閉じる
-SET@1473  ×クリック → 確認2が開く
-NULL@1521 ← Modal 内部の onCloseRef.current()（確認1の残存タイマー）が確認2を閉じた
-```
+### 次の一手 — Phase 1A の実装（未着手）
 
-利用者から見ると「×を押すと確認が一瞬光って消え、詳細欄が開いたまま何も起きない」。
+仕様書 `admin-phase1-settings-preview.md` の §2〜§7 が実装対象。
+変更ファイルは §10、テスト計画は §12。
 
-**修正（`admin.tsx`）**:
-1. `Modal` が unmount 時に保留タイマーを `clearTimeout` する
-2. `confirmDialog` に世代番号 `id`。`closeConfirmDialog(id)` は現在表示中の id と
-   一致するときだけ state を消す
-3. `<Modal key={confirmDialog.id}>`
-4. 背景クリック・Escape・キャンセル・実行の4経路すべてが `closeConfirmDialog(id)` を通る
-   （**一本化したのは state を消す操作だけ**。即時終了と160ms退場の2経路は残る）
+**手順**: 実装 → 対象unit/render → 対象browser test → `bun run check`
+→ `bun run smoke` → `git diff --check` → **差分を固定したままCodex独立監査**
+→ **報告（commitしない）** → オーナー確認後にcommit。
+**Phase 1B へ続けて着手しない。**
 
-**テスト（`pages.render.test.tsx` に4件・実物のadmin.tsxを描画）**:
-キャンセル直後の再オープン / Escape・背景クリック直後の再オープン / 実行後の再オープン /
-連続開閉 / フォーカスのopener復帰 / 別用途Modal（一括編集）。
-**両方の防御を外すと失敗することを確認済み**（対照実験）。
+### 実測データ（設計の根拠・再実行可能）
 
-**検証**: `--repeat-each=10` で `admin-workspace-layout.spec.ts:95` が
-**10/10成功**（修正前 2/10）。`bun run check` 成功。
+- `scratch/measure/settings-widths-2026-07-31.log` — 7幅×ON/OFF の生ログ
+- `scratch/measure/zz-settings-measure.spec.ts` — 計測spec（読み取り専用）
+  `scripts/smoke/` へ戻せば再実行できる
 
-### 未解決: Phase 0（左ナビのポップオーバーが押せない）
+### 未解決: 左ナビ Phase 0（独立Phase・独立commit）
 
-原因は確定済み。`.admin-sidebar` が `.admin-glass` の backdrop-filter /
-transform: translateZ(0) / will-change でスタッキングコンテキストになり、
-内側のポップオーバー(z-60)が外へ出られない。
-
-**試した2方式と、それぞれ不採用の理由**:
-
-| 方式 | 結果 | 不採用の理由 |
-|---|---|---|
-| A: `.admin-sidebar` に `z-index: 45` ＋ `isolation: isolate` | 左ナビ11/11成功、smoke 282/0 | **Codex監査で反論。** 実測すると `.admin-library-workbar`(z20) は `.admin-screen`（transform で層を作る）の内側にあり、**サイドバーと数値を直接比較できない**。45という値の根拠が成立しない |
-| B: glass の副作用を打ち消し、ぼかしを `::before` へ逃がす | 左ナビ11/11成功。しかし `admin-workspace-layout` が同条件で **10/10→8/10 に悪化**。smoke 2 failed | `translateZ(0)`/`will-change` を外して GPU レイヤー昇格を失い、描画が不安定になったと推測（未確認） |
-
-**次に試すべき方式（未着手）**: オーナー提案の第一候補
-**「ポップオーバーだけを sidebar のスタッキングコンテキスト外へ portal する」**。
-glass の性能特性を保ったまま、閉じ込めだけを回避できる。
-`admin-compact-sidebar.tsx` の JSX 変更になる。
-
-**注意**: 私が一度「z-index案が全画面表示を覆う回帰を確認した」と報告したのは
-**測定の誤り**だった。`.admin-screen` の transform により配下の `position: fixed` は
-ビューポートではなくその箱に閉じ込められるため、注入したオーバーレイは元々
-サイドバー領域へ届いていなかった。方式Aの本当の問題は「根拠が示せないこと」であって、
-実害が確認されたわけではない。
-
-### Phase 0 ファイルの復元手順
-
-`scratch/phase0-hold/`（gitignore対象）に4ファイル。
-
-- `styles.css` — **方式Bの全文**。portal 方式を採るなら作り直す。
-  当たり判定の是正（52px/44px の節）だけは方式に依存しないので流用できる
-- `admin-sidebar-layer.test.ts` — CSS不変条件のunit test。**方式Bを前提**なので要書き換え
-- `admin-collapsed-nav.spec.ts` — 左ナビのbrowser test 11件。**方式に依存しない。そのまま使える**
-- `playwright.config.ts` — mobile project の testIgnore に新specを追加。そのまま使える
-
-`scripts/smoke/` と `packages/web/src/web/pages/` へ戻せば実行できる。
-
-### Codex 独立監査
-
-`scratch/codex-out-phase0-audit2.log`（read-only、方式Aの時点）。
-**修正1は条件付きcommit可**、**修正2（方式A）は現状のままではcommit非推奨**。
-主な指摘は上表に反映済み。**方式を変えたので、確定後に再監査が必要。**
+原因は確定済み。方式A（z-index:45）は値の根拠を示せず、方式B（疑似要素へ逃がす）は
+`admin-workspace-layout` が 10/10→8/10 に悪化して、どちらも不採用。
+**次はポップオーバーだけを portal する案。Settings Phase 1 の差分へ混ぜない。**
+退避: `scratch/phase0-hold/`（browser test と playwright.config は方式非依存で流用可）。
 
 ### 禁止範囲
 
-- `lib/reorder.ts`・保存経路・競合拒否・ロールバックは無変更
+- `lib/reorder.ts`・保存経路・競合拒否・ロールバック・settings台帳・公開サイトは無変更
 - **push / deploy / 本番DB / R2 / env 変更は一切していない**
 <!-- CURRENT_STATE_END -->
 

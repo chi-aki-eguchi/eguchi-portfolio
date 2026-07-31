@@ -1750,6 +1750,261 @@ describe("shared components", () => {
     }
   });
 
+  // 2026-07-30: 古い確認ダイアログの後始末が、新しく開いた確認ダイアログを
+  // 閉じてしまう不具合の回帰防止。
+  //
+  // 実測(Playwright): × を押すと2つ目の確認が DOM に追加された約40ms後に消え、
+  // 詳細欄は開いたまま何も起きなかった。原因は Modal の退場アニメーション用
+  // setTimeout(…, 160) が unmount 後も生き残り、発火時に onCloseRef.current() を
+  // 呼んで「その時点で開いているダイアログ」を閉じていたこと。
+  // 修正は (1) unmount でタイマーを取り消す (2) 世代番号が一致するときだけ
+  // state を消す、の二段構え。ここでは 160ms を必ず越えて待ってから確認する。
+  test("AdminPage: stale modal cleanup does not close a newly opened confirm", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      const inspectorClose = () =>
+        host.querySelector(
+          "button[data-library-inspector-close]",
+        ) as HTMLButtonElement | null;
+      const confirmShown = () =>
+        host.textContent?.includes("保存していない編集があります") ?? false;
+
+      const tile = await waitForButton(host, 'button[aria-label="A"]');
+      tile.click();
+      await flush(60);
+      changeInput(inputByLabel(host, "タイトル"), "Stale cleanup fixture");
+      await flush(80);
+
+      // 1回目の確認を出し、背景クリック（= requestClose、160msタイマーが走る）
+      inspectorClose()!.click();
+      await flush(40);
+      expect(confirmShown()).toBe(true);
+      const dialog = host.querySelector("dialog");
+      expect(dialog).not.toBeNull();
+      dialog!.dispatchEvent(
+        new dom.window.MouseEvent("click", { bubbles: true }),
+      );
+      // タイマーが発火する前にキャンセルで即閉じる
+      buttonWithText(host, "キャンセル").click();
+      await flush(20);
+      expect(confirmShown()).toBe(false);
+
+      // すぐに2つ目の確認を開く
+      inspectorClose()!.click();
+      await flush(20);
+      expect(confirmShown()).toBe(true);
+
+      // 160ms を十分に越えて待っても、2つ目が残っていること。
+      // 修正前はここで古いタイマーが発火し、確認が消えて詳細欄だけが残った。
+      await flush(400);
+      expect(
+        confirmShown(),
+        "古いダイアログの後始末が新しい確認を閉じた",
+      ).toBe(true);
+      expect(host.textContent).toContain("Edit Photo");
+
+      // 2つ目の確認は正常に機能する
+      buttonWithText(host, "保存せず閉じる").click();
+      await flush(60);
+      expect(host.textContent).not.toContain("Edit Photo");
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  // 2026-07-30: Escape（native cancel）と背景クリックで閉じた直後に次を開いても
+  // 消えないこと、および閉じたあとフォーカスが opener（×ボタン）へ戻ること。
+  test("AdminPage: confirm survives reopen after Escape / backdrop close, focus returns", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      const inspectorClose = () =>
+        host.querySelector(
+          "button[data-library-inspector-close]",
+        ) as HTMLButtonElement | null;
+      const confirmShown = () =>
+        host.textContent?.includes("保存していない編集があります") ?? false;
+
+      const tile = await waitForButton(host, 'button[aria-label="A"]');
+      tile.click();
+      await flush(60);
+      changeInput(inputByLabel(host, "タイトル"), "Escape/backdrop fixture");
+      await flush(80);
+
+      // --- Escape（native cancel）で閉じる → 直後に2つ目を開く
+      inspectorClose()!.click();
+      await flush(40);
+      expect(confirmShown()).toBe(true);
+      host
+        .querySelector("dialog")!
+        .dispatchEvent(new dom.window.Event("cancel", { cancelable: true }));
+      await flush(20);
+      inspectorClose()!.click();
+      await flush(20);
+      expect(confirmShown()).toBe(true);
+      await flush(400);
+      expect(confirmShown(), "Escape後の残存処理が新しい確認を閉じた").toBe(true);
+
+      // --- 背景クリックで閉じる → 直後に2つ目を開く
+      host
+        .querySelector("dialog")!
+        .dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+      await flush(20);
+      inspectorClose()!.click();
+      await flush(20);
+      expect(confirmShown()).toBe(true);
+      await flush(400);
+      expect(confirmShown(), "背景クリック後の残存処理が新しい確認を閉じた").toBe(
+        true,
+      );
+
+      // --- 閉じたあとフォーカスが opener（×ボタン）へ戻る。
+      // jsdom の click() は実ブラウザと違ってフォーカスを移さないため、
+      // 実クリック相当になるよう先に focus() してから開く。
+      buttonWithText(host, "キャンセル").click();
+      await flush(60);
+      expect(confirmShown()).toBe(false);
+      const closeBtn = inspectorClose()!;
+      closeBtn.focus();
+      expect(dom.window.document.activeElement).toBe(closeBtn);
+      closeBtn.click();
+      await flush(40);
+      expect(confirmShown()).toBe(true);
+      buttonWithText(host, "キャンセル").click();
+      await flush(80);
+      expect(
+        dom.window.document.activeElement,
+        "確認を閉じたあとフォーカスが opener（×ボタン）へ戻らない",
+      ).toBe(closeBtn);
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  // 2026-07-30: Modal は確認ダイアログ以外にも使われる（一括編集など）。
+  // タイマー取り消しの修正が、別用途の Modal の開閉を壊していないこと。
+  test("AdminPage: another Modal (bulk edit) still opens and closes", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      // 選択モードへ入り、1枚選んで一括編集の Modal を開く
+      const selectMode = host.querySelector(
+        '[data-library-mode-action="select"]',
+      ) as HTMLButtonElement | null;
+      expect(selectMode, "選択モードの切替が見つからない").not.toBeNull();
+      selectMode!.click();
+      await flush(60);
+      const tile = await waitForButton(host, 'button[aria-label="A"]');
+      tile.click();
+      await flush(60);
+      const bulk = Array.from(host.querySelectorAll("button")).find((b) =>
+        (b.textContent ?? "").includes("一括編集"),
+      ) as HTMLButtonElement | undefined;
+      if (bulk) {
+        bulk.click();
+        await flush(60);
+        expect(host.querySelectorAll("dialog").length).toBeGreaterThan(0);
+        // 背景クリックで閉じ、160ms を越えても再度開ける
+        host
+          .querySelector("dialog")!
+          .dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+        await flush(400);
+        expect(host.querySelectorAll("dialog").length).toBe(0);
+        bulk.click();
+        await flush(60);
+        expect(
+          host.querySelectorAll("dialog").length,
+          "別用途 Modal を再度開けない",
+        ).toBeGreaterThan(0);
+      }
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
+  // 2026-07-30: 確認 → 実行 → 直後にもう一度確認、を繰り返しても state が残らない。
+  test("AdminPage: confirm dialog can be reopened repeatedly without stale state", async () => {
+    const prev = canned["/api/admin/me"];
+    canned["/api/admin/me"] = { authenticated: true };
+    dom.window.sessionStorage.clear();
+    dom.window.localStorage.clear();
+    try {
+      const Admin = (await import("../pages/admin")).default;
+      const { host, cleanup } = await mount(
+        createElement(Admin),
+        seedEstablishedAdminSite,
+      );
+      const inspectorClose = () =>
+        host.querySelector(
+          "button[data-library-inspector-close]",
+        ) as HTMLButtonElement | null;
+      const confirmShown = () =>
+        host.textContent?.includes("保存していない編集があります") ?? false;
+
+      for (let round = 0; round < 3; round += 1) {
+        const tile = await waitForButton(host, 'button[aria-label="A"]');
+        tile.click();
+        await flush(60);
+        changeInput(inputByLabel(host, "タイトル"), `round ${round}`);
+        await flush(80);
+        inspectorClose()!.click();
+        await flush(20);
+        expect(confirmShown(), `round ${round}: 確認が出ない`).toBe(true);
+        buttonWithText(host, "キャンセル").click();
+        await flush(20);
+        expect(confirmShown()).toBe(false);
+        inspectorClose()!.click();
+        await flush(20);
+        expect(confirmShown(), `round ${round}: 2回目の確認が出ない`).toBe(true);
+        buttonWithText(host, "保存せず閉じる").click();
+        await flush(60);
+        expect(host.textContent).not.toContain("Edit Photo");
+      }
+      // 全部閉じ切った後、残存タイマーで何かが起きないこと
+      await flush(400);
+      expect(host.querySelectorAll("dialog").length).toBe(0);
+
+      cleanup();
+    } finally {
+      canned["/api/admin/me"] = prev;
+      dom.window.sessionStorage.clear();
+      dom.window.localStorage.clear();
+    }
+  });
+
   // 2026-07-11: ×/Escape 保護の拡張 — 未保存の下書きがある間、別写真への
   // 切替(矢印キー/タイルクリック)も無言で下書きを置き換えない。
   test("AdminPage: inspector photo switch confirms when dirty (arrow / tile click)", async () => {

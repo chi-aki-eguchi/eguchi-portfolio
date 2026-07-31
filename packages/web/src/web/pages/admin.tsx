@@ -2010,11 +2010,29 @@ export function GalleryTab({
   });
   // Non-destructive confirmations (replaces window.confirm) — Enter activates
   // the primary button via data-autofocus; Esc cancels (native dialog).
+  // 確認ダイアログには世代番号を持たせる。閉じる側は「自分が閉じようとしている
+  // ダイアログが、今表示中のものと同一か」を確かめてから state を消す。
+  // 無条件に null を書くと、古い経路の後始末が新しいダイアログを閉じてしまう。
   const [confirmDialog, setConfirmDialog] = useState<{
+    id: number;
     message: string;
     confirmLabel: string;
     onConfirm: () => void;
   } | null>(null);
+  const confirmDialogSeq = useRef(0);
+  const openConfirmDialog = (next: {
+    message: string;
+    confirmLabel: string;
+    onConfirm: () => void;
+  }) => {
+    confirmDialogSeq.current += 1;
+    setConfirmDialog({ ...next, id: confirmDialogSeq.current });
+  };
+  // id が一致するときだけ閉じる。一致しなければ「既に別のダイアログへ
+  // 入れ替わっている」ので何もしない。
+  const closeConfirmDialog = (id: number) => {
+    setConfirmDialog((current) => (current && current.id === id ? null : current));
+  };
   const [showTrash, setShowTrash] = useState(false);
   // Ref so a fresh onTrashSignalConsumed identity on every AdminPage render
   // doesn't need to be (and shouldn't be) a dependency below.
@@ -4281,7 +4299,7 @@ export function GalleryTab({
       currentInspectPhoto &&
       photoEditFormChanged(editFormRef.current, currentInspectPhoto)
     ) {
-      setConfirmDialog({
+      openConfirmDialog({
         message: copy.feedback.closeInspectorConfirm,
         confirmLabel: copy.feedback.closeInspectorAction,
         onConfirm: proceed,
@@ -4682,7 +4700,7 @@ export function GalleryTab({
       inspectPhoto.id !== target.id &&
       photoEditFormChanged(editForm, inspectPhoto)
     ) {
-      setConfirmDialog({
+      openConfirmDialog({
         message: copy.feedback.switchPhotoConfirm,
         confirmLabel: copy.feedback.switchPhotoAction,
         onConfirm: proceed,
@@ -4697,7 +4715,7 @@ export function GalleryTab({
   // confirmDialog(キャンセル=編集を続ける)で明示確認してから破棄する。
   const requestCloseInspector = () => {
     if (inspectPhoto && photoEditFormChanged(editForm, inspectPhoto)) {
-      setConfirmDialog({
+      openConfirmDialog({
         message: copy.feedback.closeInspectorConfirm,
         confirmLabel: copy.feedback.closeInspectorAction,
         onConfirm: () => setInspectPhoto(null),
@@ -5373,7 +5391,7 @@ export function GalleryTab({
                             : copy.sort.saveHint
                   }
                   onClick={() =>
-                    setConfirmDialog({
+                    openConfirmDialog({
                       message: copy.sort.saveConfirm,
                       confirmLabel: copy.sort.saveAction,
                       onConfirm: () =>
@@ -5943,7 +5961,7 @@ export function GalleryTab({
                   onClick={() => {
                     if (!batchShotAtDate || selectedMissingShotAtCount === 0)
                       return;
-                    setConfirmDialog({
+                    openConfirmDialog({
                       message: copy.selection.dateConfirm(
                         selectedMissingShotAtCount,
                         batchShotAtDate,
@@ -5973,7 +5991,7 @@ export function GalleryTab({
                   type="button"
                   onClick={() => {
                     if (selectedFilmShotAtSetCount === 0) return;
-                    setConfirmDialog({
+                    openConfirmDialog({
                       message: copy.selection.clearFilmDateConfirm(
                         selectedFilmShotAtSetCount,
                       ),
@@ -7291,13 +7309,20 @@ export function GalleryTab({
           Enter = primary (data-autofocus), Esc = cancel. Destructive flows do
           NOT use this — trash is undoable (no confirm), purge has its own. */}
       {confirmDialog && (
-        <Modal onClose={() => setConfirmDialog(null)}>
+        // key に世代番号を渡し、ダイアログが入れ替わったら Modal を作り直す。
+        // 閉じる経路は2つある（キャンセル/実行＝即時、背景クリック/Escape＝
+        // 160msの退場後）。**一本化したのは state を消す操作だけ**で、
+        // すべて closeConfirmDialog(id) を通し、自分の世代のときだけ消す。
+        <Modal
+          key={confirmDialog.id}
+          onClose={() => closeConfirmDialog(confirmDialog.id)}
+        >
           <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-4">
             {confirmDialog.message}
           </p>
           <div className="flex gap-2 justify-end">
             <button
-              onClick={() => setConfirmDialog(null)}
+              onClick={() => closeConfirmDialog(confirmDialog.id)}
               className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
             >
               {t.common.cancel}
@@ -7306,7 +7331,7 @@ export function GalleryTab({
               data-autofocus
               onClick={() => {
                 const act = confirmDialog.onConfirm;
-                setConfirmDialog(null);
+                closeConfirmDialog(confirmDialog.id);
                 act();
               }}
               className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors"
@@ -9060,10 +9085,22 @@ function Modal({
   // is out of scope for this pass.
   const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
   const closingRef = useRef(false);
+  // 退場アニメーション後に onClose を呼ぶタイマー。**unmount で必ず取り消す。**
+  // 取り消さないと、閉じ終わったダイアログのタイマーが後から発火し、
+  // その時点で開いている「別の（新しい）ダイアログ」を閉じてしまう
+  // (2026-07-30: ×を押すと確認が約40msで消える不具合の原因)。
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const id = requestAnimationFrame(() => setPhase("show"));
     return () => cancelAnimationFrame(id);
   }, []);
+  useEffect(
+    () => () => {
+      if (exitTimerRef.current !== null) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    },
+    [],
+  );
   const requestClose = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
@@ -9072,7 +9109,10 @@ function Modal({
       return;
     }
     setPhase("exit");
-    setTimeout(() => onCloseRef.current(), 160);
+    exitTimerRef.current = setTimeout(() => {
+      exitTimerRef.current = null;
+      onCloseRef.current();
+    }, 160);
   }, []);
   // Wire Escape (native `cancel`) and backdrop click via the DOM rather than JSX
   // props: <dialog> is a non-interactive element, so JSX mouse/key handlers on it

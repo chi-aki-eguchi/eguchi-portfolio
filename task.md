@@ -1,71 +1,100 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-30 12:00 JST
+## Current State — 2026-07-31 06:00 JST
 
-- **Status:** 本番確認で見つかった2件（Library詳細欄が閉じられない／Settingsの目次と
-  本文の二重メニュー）を実装・全ローカル検証・commitまで完了。**pushは未実施**
-- **Current owner:** Claude Code（編集完了・停止中）
-- **Handoff readiness:** Ready（commit可否だけオーナー判断待ち）
-- **Branch:** `main`
-- **HEAD:** `SELF`（Library詳細欄の閉じる操作とSettings目次の単節化）
-- **Git:** clean（このCurrent Stateを含むcommit後）
-- **Originとの差:** 今回の1 commitぶん ahead。**push未実施**（前回の7 commitsはpush済み）
+- **Status:** 確認ダイアログ競合の**修正をcommit済み**。
+  **Phase 0（左ナビ）は2方式とも不採用。未解決のまま持ち越し**
+- **Current owner:** Claude Code（停止中）
+- **Branch:** `main` / **HEAD:** `SELF` / **Originとの差:** **3 commits ahead**（push未実施）
+- **Git:** clean（この文書commit後）。Phase 0 のファイル群は
+  `scratch/phase0-hold/` へ退避（下記「復元手順」）
 
-### 完了したこと
+### commit の順序（origin/main `9cc181a` から3本）
 
-- **Library詳細欄（inspector）を必ず閉じられるようにした。** ×ボタンは
-  `xl:hidden`（1280px以上で消える）をやめて全幅で常設。`aria-label` は
-  i18n（`inspector.close`）から出し、44px の当たり判定にした。閉じると
-  `inspectPhoto` が外れて写真の印も消え、空いた400pxは作業面へ戻る
-- 暗幕（scrim）の境界を Tailwind の xl=1280px から CSS と同じ 1200px へ揃えた。
-  1200〜1279px で「詳細欄は並んでいるのにグリッドが暗い」状態を解消
-- Esc は既存の `requestCloseInspector` を通り、未保存なら確認、
-  入力欄・select にフォーカスがある間は閉じない（既存の `typing` ガード）
-- **Settings の本文から中間一覧（節名＋「n項目を設定」の19行）を廃止。**
-  左の19節目次はそのまま残し、本文は選んだ1節の入力欄だけを描く。
-  本文の折りたたみ扉をやめ、見出しは `h2`＋切替時フォーカス
-- 変更あり／保存できずの印は目次側（PCの左列・スマホ上部1行・節一覧シート）に維持。
-  現在地は `aria-current="location"`＋縦線＋背景8%。保存失敗節は
-  `focusSectionId` で目次操作なしに本文へ出す
-- スクロール連動の現在地追従は廃止（本文に1節しかないため誤検出になる）
-- グループ見出しは現在の節を含むものだけ描く。台帳 `SETTINGS_SECTION_GROUPS` を新設し、
-  19節をちょうど1回ずつ含むことを unit test で固定
-- `docs/specs/admin-layout-implementation.md` を更新: §2 に詳細欄の閉じる要件、
-  §8-1 に「本文は1節だけ」の確定と不採用案を追記（旧「閉じた節の要約を19節へ広げる」を置換）
+1. `217b314` fix(admin): close library inspector and simplify settings navigation（前タスク）
+2. `ec8a577` **fix(admin): prevent stale modal cleanup from closing new dialogs**
+   — `admin.tsx` / `pages.render.test.tsx` の2ファイルのみ。Phase 0 のCSSは含まない
+3. `SELF` docs(admin): 再設計の確定判断とPhase 0の未解決状況
 
-### 検証済み
+### 完了: 確認ダイアログ競合（製品側の実不具合）
 
-- `bun run check`: typecheck・lint・**639 pass / 0 fail**・build すべて成功
-- `bun run smoke`: **272 pass / 0 fail / 91 端末役割別skip**（9分弱）
-- 追加テスト: 単節表示の render test（新規）、グループ台帳 unit test、
-  19節すべてへ到達＋常に1節だけ＋各節で横スクロールなし（1440px）、
-  390pxで目次が本文を押し下げない、PCの×で閉じてグリッドが380px以上広がる、
-  入力中Escで閉じない・編集を捨てない、未保存Escの確認とキャンセル復帰
-- `git diff --check`: OK
+**原因（実測で確定）**: `Modal` の退場アニメーション用
+`setTimeout(() => onCloseRef.current(), 160)` が unmount 後も取り消されず、
+発火時に「その時点で開いている別のダイアログ」を閉じていた。
+`setConfirmDialog` の呼び出し履歴（スタック付き）で確認:
 
-### failed / skipped / 未実行
+```
+SET@1267  Escape → 確認1が開く
+NULL@1414 キャンセルonClick → 確認1が閉じる
+SET@1473  ×クリック → 確認2が開く
+NULL@1521 ← Modal 内部の onCloseRef.current()（確認1の残存タイマー）が確認2を閉じた
+```
 
-- 失敗なし。既存smokeのうち Settings の節を開いていた6本
-  （form-layout / hero-motion / i18n / live-preview / save-state / debug-sweep）は
-  目次・節一覧シート経由へ更新した
-- **push・Railway・本番確認は未実施。** 本番DB・R2・`.env` は無変更
-- 実機iPhoneでの確認は未実施（ローカル390pxのみ）
+利用者から見ると「×を押すと確認が一瞬光って消え、詳細欄が開いたまま何も起きない」。
 
-### 次の一手・オーナー確認
+**修正（`admin.tsx`）**:
+1. `Modal` が unmount 時に保留タイマーを `clearTimeout` する
+2. `confirmDialog` に世代番号 `id`。`closeConfirmDialog(id)` は現在表示中の id と
+   一致するときだけ state を消す
+3. `<Modal key={confirmDialog.id}>`
+4. 背景クリック・Escape・キャンセル・実行の4経路すべてが `closeConfirmDialog(id)` を通る
+   （**一本化したのは state を消す操作だけ**。即時終了と160ms退場の2経路は残る）
 
-- オーナーが 1440px と 390px で Settings の節送りと Library の×を試用
-- 問題なければオーナーが1 commitをpushする（エージェントはpushしない）
-- 参考（今回は直さず）: 確認ダイアログを閉じて160ms以内に別の確認を開くと、
-  前のダイアログの後始末が新しい方を閉じる。人手の操作では起きない速さ
+**テスト（`pages.render.test.tsx` に4件・実物のadmin.tsxを描画）**:
+キャンセル直後の再オープン / Escape・背景クリック直後の再オープン / 実行後の再オープン /
+連続開閉 / フォーカスのopener復帰 / 別用途Modal（一括編集）。
+**両方の防御を外すと失敗することを確認済み**（対照実験）。
 
-### 禁止範囲と反映状況
+**検証**: `--repeat-each=10` で `admin-workspace-layout.spec.ts:95` が
+**10/10成功**（修正前 2/10）。`bun run check` 成功。
 
-- 並べ替えの保存経路・競合拒否・ロールバック・`lib/reorder.ts` は無変更
-- 公開サイト、API、DB schema、settings キー台帳（新規キーなし）は無変更
-- **Codex session:** 今回は未使用（Claudeが設計・実装・検証を担当）
-- **Local commits:** `SELF`（fix(admin): close library inspector and simplify settings navigation）
-- **Push / deploy / Railway / production:** すべて未実施。本番書き込みなし
+### 未解決: Phase 0（左ナビのポップオーバーが押せない）
+
+原因は確定済み。`.admin-sidebar` が `.admin-glass` の backdrop-filter /
+transform: translateZ(0) / will-change でスタッキングコンテキストになり、
+内側のポップオーバー(z-60)が外へ出られない。
+
+**試した2方式と、それぞれ不採用の理由**:
+
+| 方式 | 結果 | 不採用の理由 |
+|---|---|---|
+| A: `.admin-sidebar` に `z-index: 45` ＋ `isolation: isolate` | 左ナビ11/11成功、smoke 282/0 | **Codex監査で反論。** 実測すると `.admin-library-workbar`(z20) は `.admin-screen`（transform で層を作る）の内側にあり、**サイドバーと数値を直接比較できない**。45という値の根拠が成立しない |
+| B: glass の副作用を打ち消し、ぼかしを `::before` へ逃がす | 左ナビ11/11成功。しかし `admin-workspace-layout` が同条件で **10/10→8/10 に悪化**。smoke 2 failed | `translateZ(0)`/`will-change` を外して GPU レイヤー昇格を失い、描画が不安定になったと推測（未確認） |
+
+**次に試すべき方式（未着手）**: オーナー提案の第一候補
+**「ポップオーバーだけを sidebar のスタッキングコンテキスト外へ portal する」**。
+glass の性能特性を保ったまま、閉じ込めだけを回避できる。
+`admin-compact-sidebar.tsx` の JSX 変更になる。
+
+**注意**: 私が一度「z-index案が全画面表示を覆う回帰を確認した」と報告したのは
+**測定の誤り**だった。`.admin-screen` の transform により配下の `position: fixed` は
+ビューポートではなくその箱に閉じ込められるため、注入したオーバーレイは元々
+サイドバー領域へ届いていなかった。方式Aの本当の問題は「根拠が示せないこと」であって、
+実害が確認されたわけではない。
+
+### Phase 0 ファイルの復元手順
+
+`scratch/phase0-hold/`（gitignore対象）に4ファイル。
+
+- `styles.css` — **方式Bの全文**。portal 方式を採るなら作り直す。
+  当たり判定の是正（52px/44px の節）だけは方式に依存しないので流用できる
+- `admin-sidebar-layer.test.ts` — CSS不変条件のunit test。**方式Bを前提**なので要書き換え
+- `admin-collapsed-nav.spec.ts` — 左ナビのbrowser test 11件。**方式に依存しない。そのまま使える**
+- `playwright.config.ts` — mobile project の testIgnore に新specを追加。そのまま使える
+
+`scripts/smoke/` と `packages/web/src/web/pages/` へ戻せば実行できる。
+
+### Codex 独立監査
+
+`scratch/codex-out-phase0-audit2.log`（read-only、方式Aの時点）。
+**修正1は条件付きcommit可**、**修正2（方式A）は現状のままではcommit非推奨**。
+主な指摘は上表に反映済み。**方式を変えたので、確定後に再監査が必要。**
+
+### 禁止範囲
+
+- `lib/reorder.ts`・保存経路・競合拒否・ロールバックは無変更
+- **push / deploy / 本番DB / R2 / env 変更は一切していない**
 <!-- CURRENT_STATE_END -->
 
 <!--

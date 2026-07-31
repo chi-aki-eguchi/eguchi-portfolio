@@ -1,7 +1,109 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-31 16:00 JST
+## Current State — 2026-07-31 21:00 JST
+
+- **Status:** **Admin 全体刷新の実装完了。未コミット（オーナー確認待ち）**
+- **Current owner:** Claude Code（停止中）
+- **Branch:** `main` / **HEAD:** `SELF`（この文書のcommit）/ **origin/main:** `39f8d71`
+- **origin/main より 2 commits ahead / behind 0。push 未実施（オーナーが行う）**
+- **Git:** clean。ただし `scripts/smoke/scratch/` が未追跡のまま残る（調査用・commit対象外）
+
+### 目的と完了条件
+
+オーナー指示「機能を保ったまま、分かりやすい / 写真が主役 / 静かで洗練 /
+AI生成SaaSテンプレートに見えない / PC・中間幅・スマホで自然な Admin」。
+対象は Shell とナビ、Library、Settings、Hero、Series、Categories、その他 Form。
+正本は `docs/specs/admin-renewal-goal.md`（今回の内容を追記済み）。
+
+### commit（2本・オーナー承認済み。push は未実施）
+
+- `de1feab` `feat(admin): redesign admin workspace` — 製品コードとテスト 21ファイル
+- `SELF`（HEAD）`docs(admin): record admin redesign` — 仕様書と task.md 2ファイル
+
+### 変更ファイル
+
+変更: `admin.tsx` / `admin-tabs.tsx` / `admin-i18n.tsx` / `styles.css` /
+`admin-page-header.tsx` / `admin-page-shell.tsx` / `admin-mobile-nav.tsx` /
+`admin-settings-form-layout.tsx` / `pages.render.test.tsx` /
+`admin-workspace.render.test.tsx` / smoke 7本 / `playwright.config.ts` /
+`docs/specs/admin-renewal-goal.md`
+新規: `packages/web/src/web/pages/admin-ui.tsx` /
+`scripts/smoke/admin-shell-widths.spec.ts` / `scripts/smoke/admin-touch-targets.spec.ts`
+未追跡: `scripts/smoke/scratch/`（調査用。gitignore 対象・commit しない）
+
+### やったこと（要点）
+
+1. **共通の視覚言語を1つ作った** — `admin-ui.tsx` + `.ax-*` CSS。
+   面で区切らない / 入力欄は下罫線 / 黒塗りは1画面1操作 / ページ幅は用途3種。
+2. **角丸を admin 内だけ 8-12-18px → 2-3-5px** に縮小。
+3. **`aria-pressed` / `aria-expanded` の黒塗りを廃止**し、薄い面＋インク下線へ。
+4. **シェルのブレークポイントを 1024 → 768** に変更。中間幅がスマホ扱いだったのを解消。
+5. **Settings の見出しを目次の上へ**。9タブすべてで見出しの左端が一致。
+   中間幅で目次を横スクロール帯にする規則を撤去。
+6. **Library の取り込み一式を見出しから作業バー右端へ**。写真グリッドの左端を見出しに合わせた。
+7. **分類の色ラベルを低彩度へ**。未分類の写真には点を出さない。
+8. **左ナビ折りたたみ時の操作不能を解消**（`z-index: 80`。根拠は仕様書に記載）。
+9. 日本語化（Settings ラベル / `Live Preview` / `Save` / フォント設定 / 環境変数の説明）。
+
+### 検証（すべてローカル。push・deploy・本番確認はしていない）
+
+- `bun run check` **成功**（typecheck / lint / unit 654 pass 0 fail / build）
+- `bun run smoke` **286 passed / 0 failed**（106 skipped は project 振り分け）。
+  監査で見つかった不具合の修正後に実行し直した結果
+- `git diff --check` 成功
+- 4幅（1440 / 1180 / 900 / 375）で全9タブのスクリーンショットを取得（`scratch/shots-final/`）
+
+### Codex 独立監査（read-only・4区分のまま保存）
+
+全文: `scratch/codex-out-admin-renewal-audit.log`。要約に置き換えていない。
+
+**1. 確認済み事実 → 対応**
+
+| 指摘 | 判断 |
+| --- | --- |
+| 重大: 取り込みが選択モードで消える | **採用・修正済み**。`libraryMode !== "arrange"` へ変更し回帰テスト追加 |
+| 重要: タッチ端末の当たり判定が 30px | **採用・修正済み**。`pointer: coarse` で 44px。`admin-touch-targets.spec.ts` を mobile-touch で追加 |
+| 重要: `select` が下罫線になっていない | **採用・修正済み**。`select.ax-input` を規則へ追加。`background` 一括指定が矢印を消していたのも修正 |
+| 重要: フォーカス枠が 1.42:1 | **採用・修正済み**。不透明のアクセント色（3.8:1）へ |
+| 中: `<ul>` 直下の `<p>` | **採用・修正済み**。`EmptyNote` を `<li>` に |
+| 中: 英語ラベルが残る / 黒塗りが複数 | **採用・修正済み**。Pricing・フォント設定・環境変数説明を日本語化。Series 編集のピッカーを `aria-pressed` へ |
+| CSS 部分一致の新規衝突なし | 確認として受け入れ |
+| 並べ替え・プレビュー・不変条件に後退なし | 確認として受け入れ |
+| テストが弱い（6件） | **採用・修正済み**。境界幅 767/768/1024 追加、黒塗り検査に透明度、Form幅に下限と用途、見出し位置に絶対位置、左ナビは実クリック遷移 |
+
+**2. 推測 → 対応**
+
+- 「768〜1199px で左ナビのメニューが Library 作業バーの下へ潜る」→ **正しかった。**
+  実クリックのテストを書いたら再現し、`z-index: 80` で解消（1440 の折りたたみでも同じ原因）。
+- 「`select` の見た目はブラウザ差が出る」→ **未確認**。Chromium でしか見ていない。
+
+**3. 未解決の反論 → 対応**
+
+- 「選択中に取り込みを隠すのは意図か」→ **意図ではない。事故。修正済み。**
+- 「テストが通っているから問題ない、は成立しない」→ **同意。** 監査後にテストを足して再実行した。
+- 「左ナビの実操作可否は未決着」→ **解消。** 正式テストへクリック遷移を入れた。
+- 「監査対象の差分が固定されていなかった」→ **事実。** 監査中に仕様書を編集した。
+  修正後に `check` と `smoke` を通し直し、この Current State で差分を固定する。
+
+**4. 推奨 → 対応**: 1〜8 のうち 2〜8 は実施済み。1（commit しない）に従い未コミットのまま。
+
+### 次の一手
+
+1. **オーナーが push** → Railway 反映 → 本番で目視確認
+2. 本番での最優先確認: Library の取り込み（閲覧中・選択中の両方）／左ナビ折りたたみ→各タブへ移動／Settings のプレビュー開閉と保存／Series の並べ替えと公開トグル
+3. 未確認のまま残るもの: 本番/Railway での表示、Safari・Firefox での `select` と下罫線入力の見え方
+4. `scripts/smoke/scratch/` の扱い（削除するか、gitignore へ追加するか）をオーナーが決める
+
+### 触ってはいけない範囲（今回も一切触れていない）
+
+- `lib/reorder.ts` / 保存経路 / API / DB schema / settings 台帳 /
+  `provider.tsx` の4箇所同期 / 公開サイト
+- **push / deploy / 本番DB / R2 / env 変更は一切していない**
+
+---
+
+## 前回 Current State — 2026-07-31 16:00 JST（Phase 1A 完了時点）
 
 - **Status:** **Phase 1A 完了・commit 済み。push 未実施（オーナーの手で行う）**
 - **Current owner:** Claude Code（停止中）

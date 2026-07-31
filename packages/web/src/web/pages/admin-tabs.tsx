@@ -49,6 +49,18 @@ import {
 import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
+import {
+  AddBlock,
+  Button as AxButton,
+  EmptyNote,
+  Field as AxField,
+  Page,
+  PageTitle,
+  Row,
+  RowList,
+  StatusDot,
+  TextInput,
+} from "./admin-ui";
 import { AdminWorkspace } from "./admin-workspace";
 import {
   AdminReorderBar,
@@ -1489,7 +1501,7 @@ export function ProfileTab({
                     className="animate-spin text-[var(--admin-muted)]"
                   />
                   <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                    Uploading...
+                    {t.common.uploading}
                   </span>
                 </div>
               ) : (
@@ -1532,7 +1544,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors resize-y rounded-sm"
+                className="ax-input ax-input--area"
               />
             ) : (
               <input
@@ -1541,7 +1553,7 @@ export function ProfileTab({
                 value={current[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                className="ax-input"
               />
             )}
           </AdminField>
@@ -1676,14 +1688,12 @@ export function CategoriesTab() {
   };
 
   return (
-    <PageShell>
-      <PageHeader
+    <Page width="list">
+      {/* 説明は1つだけ。以前は見出し直下とその下に、ほぼ同じ内容が2つ並んでいた */}
+      <PageTitle
         title={t.navigation.tabs.categories}
-        description={t.headers.categories}
+        description={copy.description}
       />
-      <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-6">
-        {copy.description}
-      </p>
 
       {reorderError && (
         <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)] mb-3">
@@ -1691,109 +1701,102 @@ export function CategoriesTab() {
         </p>
       )}
 
-      <div className="flex flex-col gap-1 mb-8">
-        {catsLoading && (
-          <div className="flex items-center justify-center h-32">
-            <Loader2
-              size={20}
-              className="animate-spin text-[var(--admin-muted)]"
-            />
-          </div>
-        )}
-        {categories.length === 0 && !catsLoading && (
-          <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
-            {copy.empty}
-          </p>
-        )}
-        {categories.map((cat, i) => (
-          <div
-            key={cat.id}
-            className="flex items-center justify-between bg-[color:var(--admin-paper-soft)] border border-[color:var(--admin-line)] px-3 py-2.5 rounded-sm group"
-          >
-            <div className="flex items-center gap-1.5 min-w-0">
-              <div className="flex flex-col flex-shrink-0">
-                <button
-                  onClick={() => moveCat(cat.id, -1)}
-                  disabled={i === 0 || reorderCats.isPending}
-                  aria-label={copy.moveUp}
-                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
-                >
-                  <ChevronUp size={13} />
-                </button>
-                <button
-                  onClick={() => moveCat(cat.id, 1)}
-                  disabled={
-                    i === categories.length - 1 || reorderCats.isPending
-                  }
-                  aria-label={copy.moveDown}
-                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
-                >
-                  <ChevronDown size={13} />
-                </button>
-              </div>
-              <span className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] truncate">
-                {cat.label}
-              </span>
-              <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-mono truncate">
-                {cat.slug}
-              </span>
-            </div>
-            <button
-              onClick={() =>
-                setDeleteCatConfirm({ id: cat.id, label: cat.label })
-              }
-              aria-label={copy.deleteAria(cat.label)}
-              className="admin-danger-on-hover admin-tap-sm text-[color:var(--admin-line-strong)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 flex-shrink-0 ml-2"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-[var(--admin-line)] pt-5">
-        <p className="text-[length:var(--admin-text-note)] tracking-wider text-[var(--admin-muted)] mb-4">
-          {copy.newCategory}
-        </p>
-        <div className="flex flex-col gap-3">
-          <AdminField label={copy.label}>
-            <input
-              aria-label={copy.labelAria}
-              value={newLabel}
-              onChange={(e) => {
-                setNewLabel(e.target.value);
-                setCatError("");
-              }}
-              placeholder="e.g. Street"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-            />
-          </AdminField>
-          <AdminField label={copy.slug}>
-            <input
-              aria-label={copy.slugAria}
-              value={newSlug}
-              onChange={(e) => {
-                setNewSlug(
-                  e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
-                );
-                setCatError("");
-              }}
-              placeholder="e.g. street"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
-            />
-          </AdminField>
-          {catError && (
-            <p className="admin-text-danger text-[length:var(--admin-text-note)]">{catError}</p>
-          )}
-          <button
-            onClick={handleAddCat}
-            disabled={!newSlug || !newLabel || addCat.isPending}
-            className="flex items-center gap-1.5 self-start px-4 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
-          >
-            <Plus size={12} /> {copy.add}
-          </button>
+      {catsLoading ? (
+        <div className="flex items-center h-24">
+          <Loader2
+            size={18}
+            className="animate-spin text-[var(--admin-muted)]"
+          />
         </div>
-      </div>
+      ) : (
+        <RowList>
+          {categories.length === 0 && <EmptyNote>{copy.empty}</EmptyNote>}
+          {categories.map((cat, i) => (
+            <Row
+              key={cat.id}
+              lead={
+                <>
+                  <button
+                    onClick={() => moveCat(cat.id, -1)}
+                    disabled={i === 0 || reorderCats.isPending}
+                    aria-label={copy.moveUp}
+                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                  >
+                    <ChevronUp size={14} />
+                  </button>
+                  <button
+                    onClick={() => moveCat(cat.id, 1)}
+                    disabled={
+                      i === categories.length - 1 || reorderCats.isPending
+                    }
+                    aria-label={copy.moveDown}
+                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                </>
+              }
+              title={cat.label}
+              meta={cat.slug}
+              actions={
+                <AxButton
+                  tone="danger"
+                  size="small"
+                  data-ax-reveal=""
+                  onClick={() =>
+                    setDeleteCatConfirm({ id: cat.id, label: cat.label })
+                  }
+                  aria-label={copy.deleteAria(cat.label)}
+                >
+                  <Trash2 size={14} />
+                </AxButton>
+              }
+            />
+          ))}
+        </RowList>
+      )}
+
+      <AddBlock title={copy.newCategory}>
+        <AxField label={copy.label} htmlFor="ax-cat-label">
+          <TextInput
+            id="ax-cat-label"
+            aria-label={copy.labelAria}
+            value={newLabel}
+            onChange={(e) => {
+              setNewLabel(e.target.value);
+              setCatError("");
+            }}
+            placeholder="Street"
+          />
+        </AxField>
+        <AxField label={copy.slug} htmlFor="ax-cat-slug">
+          <TextInput
+            id="ax-cat-slug"
+            mono
+            aria-label={copy.slugAria}
+            value={newSlug}
+            onChange={(e) => {
+              setNewSlug(
+                e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+              );
+              setCatError("");
+            }}
+            placeholder="street"
+          />
+        </AxField>
+        {catError && (
+          <p className="admin-text-danger text-[length:var(--admin-text-note)]">{catError}</p>
+        )}
+        <AxButton
+          tone="primary"
+          className="self-start"
+          onClick={handleAddCat}
+          disabled={!newSlug || !newLabel || addCat.isPending}
+          icon={<Plus size={13} />}
+        >
+          {copy.add}
+        </AxButton>
+      </AddBlock>
 
       {/* Delete confirm modal */}
       {deleteCatConfirm && (
@@ -1820,7 +1823,7 @@ export function CategoriesTab() {
           </div>
         </Modal>
       )}
-    </PageShell>
+    </Page>
   );
 }
 
@@ -2026,8 +2029,8 @@ export function SeriesTab() {
   };
 
   return (
-    <AdminWorkspace name="series">
-      <PageHeader
+    <Page width="list">
+      <PageTitle
         title={t.navigation.tabs.series}
         description={t.headers.series}
       />
@@ -2038,20 +2041,17 @@ export function SeriesTab() {
         </p>
       )}
 
-      <div className="flex flex-col gap-2 mb-8">
-        {isLoading && (
-          <div className="flex items-center justify-center h-32">
-            <Loader2
-              size={20}
-              className="animate-spin text-[var(--admin-muted)]"
-            />
-          </div>
-        )}
-        {series.length === 0 && !isLoading && (
-          <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
-            {copy.empty}
-          </p>
-        )}
+      {isLoading && (
+        <div className="flex items-center h-24">
+          <Loader2
+            size={18}
+            className="animate-spin text-[var(--admin-muted)]"
+          />
+        </div>
+      )}
+      {!isLoading && (
+      <ul className="ax-rows">
+        {series.length === 0 && <EmptyNote>{copy.empty}</EmptyNote>}
         {series.map((s, i) => {
           const count = photos.filter(
             (p) => (p as Photo).seriesId === s.id,
@@ -2064,70 +2064,62 @@ export function SeriesTab() {
               : undefined) ??
             photos.find((p) => (p as Photo).seriesId === s.id);
           return (
-            <div
-              key={s.id}
-              className="bg-[color:var(--admin-paper-soft)] border border-[color:var(--admin-line)] rounded-sm overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-3 py-2.5 group">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {cover ? (
+            <li key={s.id} className="ax-row-group">
+              <div className="ax-row ax-row--in-group">
+                <div className="ax-row__lead">
+                  <button
+                    onClick={() => move(s.id, -1)}
+                    disabled={i === 0 || reorder.isPending}
+                    aria-label={copy.moveUp}
+                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                  >
+                    <ChevronUp size={14} />
+                  </button>
+                  <button
+                    onClick={() => move(s.id, 1)}
+                    disabled={i === series.length - 1 || reorder.isPending}
+                    aria-label={copy.moveDown}
+                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                </div>
+                {/* 表紙が無いときは灰色の四角を置かない(意味のない箱を見せない)。
+                    ただし場所は空けておく。詰めるとタイトルの左端が行ごとにずれる。 */}
+                <div
+                  className={`ax-row__media ax-row__media--series${
+                    cover ? "" : " ax-row__media--empty"
+                  }`}
+                  aria-hidden={cover ? undefined : "true"}
+                >
+                  {cover && (
                     <img
                       src={adminPhotoSrc(cover, 600, 80)}
-                      alt={s.title}
+                      alt=""
                       loading="lazy"
                       decoding="async"
-                      className="w-24 h-16 flex-shrink-0 rounded-sm object-cover"
                       style={{
                         objectPosition: adminPhotoObjectPosition(cover),
                       }}
                     />
-                  ) : (
-                    <div
-                      aria-hidden="true"
-                      className="w-24 h-16 flex-shrink-0 rounded-sm bg-[var(--admin-paper-deep)]"
-                    />
                   )}
-                  <div className="flex flex-col flex-shrink-0">
-                    <button
-                      onClick={() => move(s.id, -1)}
-                      disabled={i === 0 || reorder.isPending}
-                      aria-label={copy.moveUp}
-                      className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
-                    >
-                      <ChevronUp size={13} />
-                    </button>
-                    <button
-                      onClick={() => move(s.id, 1)}
-                      disabled={i === series.length - 1 || reorder.isPending}
-                      aria-label={copy.moveDown}
-                      className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
-                    >
-                      <ChevronDown size={13} />
-                    </button>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] truncate">
-                        {s.title}
-                      </span>
-                      <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] font-mono truncate">
-                        {s.slug}
-                      </span>
-                    </div>
-                    <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)]">
-                      {/* 写真クエリ解決前に「0 枚」と断定表示しない */}
-                      {photosLoading
-                        ? "…"
-                        : copy.cardSummary(
-                            count,
-                            s.coverPhotoId
-                              ? photoLabel(s.coverPhotoId)
-                              : "",
-                          )}
-                    </span>
-                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                <div className="ax-row__body">
+                  <div className="ax-row__line">
+                    <span className="ax-row__title">{s.title}</span>
+                    <span className="ax-row__meta">{s.slug}</span>
+                  </div>
+                  {/* 写真クエリ解決前に「0 枚」と断定表示しない */}
+                  {!photosLoading && (
+                    <p className="ax-row__note">
+                      {copy.cardSummary(
+                        count,
+                        s.coverPhotoId ? photoLabel(s.coverPhotoId) : "",
+                      )}
+                    </p>
+                  )}
+                </div>
+                <div className="ax-row__actions">
                   <button
                     onClick={() =>
                       patchSeries.mutate({
@@ -2136,39 +2128,45 @@ export function SeriesTab() {
                       })
                     }
                     aria-pressed={s.isPublished}
-                    className={`admin-state-chip text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${s.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
+                    className="admin-state-chip ax-status-toggle"
                   >
-                    {s.isPublished ? copy.published : copy.draft}
+                    <StatusDot on={s.isPublished}>
+                      {s.isPublished ? copy.published : copy.draft}
+                    </StatusDot>
                   </button>
-                  <button
+                  <AxButton
+                    tone="ghost"
+                    size="small"
                     onClick={() =>
                       editId === s.id ? setEditId(null) : openEdit(s)
                     }
                     aria-label={copy.edit}
-                    className="admin-tap-sm text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
+                    aria-expanded={editId === s.id}
                   >
                     {editId === s.id ? (
-                      <ChevronUp size={14} />
+                      <ChevronUp size={15} />
                     ) : (
-                      <Pencil size={13} />
+                      <Pencil size={14} />
                     )}
-                  </button>
-                  <button
+                  </AxButton>
+                  <AxButton
+                    tone="danger"
+                    size="small"
+                    data-ax-reveal=""
                     onClick={() =>
                       setDeleteTarget({ id: s.id, title: s.title })
                     }
                     aria-label={copy.deleteAria(s.title)}
-                    className="admin-danger-on-hover admin-tap-sm text-[color:var(--admin-line-strong)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                   >
-                    <Trash2 size={13} />
-                  </button>
+                    <Trash2 size={14} />
+                  </AxButton>
                 </div>
               </div>
 
               {/* Inline editor */}
               {editId === s.id && (
                 <div
-                  className="admin-mixed-form-panel border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3"
+                  className="admin-mixed-form-panel ax-editor"
                   data-admin-mixed-form="series-edit"
                 >
                   <AdminField label={copy.title}>
@@ -2179,7 +2177,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, title: e.target.value }))
                       }
                       placeholder="Still, life"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                      className="ax-input"
                     />
                   </AdminField>
                   <AdminField label={copy.slug} hint={copy.slugHint}>
@@ -2195,7 +2193,7 @@ export function SeriesTab() {
                         }))
                       }
                       placeholder="still-life"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
+                      className="ax-input ax-input--mono"
                     />
                   </AdminField>
                   <AdminField label={copy.subtitle} hint={copy.subtitleHint}>
@@ -2206,7 +2204,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, subtitle: e.target.value }))
                       }
                       placeholder="2023–2024"
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                      className="ax-input"
                     />
                   </AdminField>
                   <AdminField
@@ -2221,7 +2219,7 @@ export function SeriesTab() {
                         setDraft((d) => ({ ...d, statement: e.target.value }))
                       }
                       placeholder={copy.statementPlaceholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
+                      className="ax-input ax-input--area"
                     />
                   </AdminField>
                   <AdminField
@@ -2243,11 +2241,8 @@ export function SeriesTab() {
                             onClick={() =>
                               setDraft((d) => ({ ...d, coverPhotoId: "" }))
                             }
-                            className={`text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors self-start ${
-                              draft.coverPhotoId === ""
-                                ? "admin-btn-primary"
-                                : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                            }`}
+                            aria-pressed={draft.coverPhotoId === ""}
+                            className="ax-btn ax-btn--quiet ax-btn--small self-start"
                           >
                             {copy.automaticCover}
                           </button>
@@ -2332,7 +2327,8 @@ export function SeriesTab() {
                             key={value}
                             type="button"
                             onClick={() => setThemeKey("layout", value)}
-                            className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(parsedTheme.layout ?? "") === value ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
+                            aria-pressed={(parsedTheme.layout ?? "") === value}
+                            className="ax-btn ax-btn--quiet ax-btn--small"
                           >
                             {name}
                           </button>
@@ -2356,7 +2352,10 @@ export function SeriesTab() {
                             key={val}
                             type="button"
                             onClick={() => setThemeKey("photoOrder", val)}
-                            className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(parsedTheme.photoOrder ?? "inherit") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
+                            aria-pressed={
+                              (parsedTheme.photoOrder ?? "inherit") === val
+                            }
+                            className="ax-btn ax-btn--quiet ax-btn--small"
                           >
                             {lbl}
                           </button>
@@ -2374,7 +2373,7 @@ export function SeriesTab() {
                           setThemeKey("bgColor", e.target.value.trim())
                         }
                         placeholder={copy.backgroundPlaceholder}
-                        className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
+                        className="ax-input ax-input--mono"
                       />
                     </AdminField>
                   </div>
@@ -2407,60 +2406,53 @@ export function SeriesTab() {
                   </div>
                 </div>
               )}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
+      )}
 
-      <div
-        className="admin-mixed-form-panel border-t border-[var(--admin-line)] pt-5"
-        data-admin-mixed-form="series-new"
-      >
-        <p className="text-[length:var(--admin-text-note)] tracking-wider text-[var(--admin-muted)] mb-4">
-          {copy.newSeries}
-        </p>
-        <div className="flex flex-col gap-3">
-          <AdminField label={copy.title}>
-            <input
-              aria-label={copy.newTitleAria}
-              value={newTitle}
-              onChange={(e) => {
-                setNewTitle(e.target.value);
-                setAddError("");
-                if (!newSlug) {
-                  /* leave slug to user */
-                }
-              }}
-              placeholder="Still, life"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
-            />
-          </AdminField>
-          <AdminField label={copy.slug}>
-            <input
-              aria-label={copy.newSlugAria}
-              value={newSlug}
-              onChange={(e) => {
-                setNewSlug(
-                  e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
-                );
-                setAddError("");
-              }}
-              placeholder="still-life"
-              className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
-            />
-          </AdminField>
-          {addError && (
-            <p className="admin-text-danger text-[length:var(--admin-text-note)]">{addError}</p>
-          )}
-          <button
-            onClick={handleAdd}
-            disabled={!newSlug || !newTitle || addSeries.isPending}
-            className="flex items-center gap-1.5 self-start px-4 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"
-          >
-            <Plus size={12} /> {copy.add}
-          </button>
-        </div>
-      </div>
+      <AddBlock title={copy.newSeries}>
+        <AxField label={copy.title} htmlFor="ax-series-title">
+          <TextInput
+            id="ax-series-title"
+            aria-label={copy.newTitleAria}
+            value={newTitle}
+            onChange={(e) => {
+              setNewTitle(e.target.value);
+              setAddError("");
+            }}
+            placeholder="Still, life"
+          />
+        </AxField>
+        <AxField label={copy.slug} htmlFor="ax-series-slug">
+          <TextInput
+            id="ax-series-slug"
+            mono
+            aria-label={copy.newSlugAria}
+            value={newSlug}
+            onChange={(e) => {
+              setNewSlug(
+                e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+              );
+              setAddError("");
+            }}
+            placeholder="still-life"
+          />
+        </AxField>
+        {addError && (
+          <p className="admin-text-danger text-[length:var(--admin-text-note)]">{addError}</p>
+        )}
+        <AxButton
+          tone="primary"
+          className="self-start"
+          onClick={handleAdd}
+          disabled={!newSlug || !newTitle || addSeries.isPending}
+          icon={<Plus size={13} />}
+        >
+          {copy.add}
+        </AxButton>
+      </AddBlock>
 
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
@@ -2490,7 +2482,7 @@ export function SeriesTab() {
           </div>
         </Modal>
       )}
-    </AdminWorkspace>
+    </Page>
   );
 }
 
@@ -2649,8 +2641,8 @@ export function PricingTab() {
   };
 
   return (
-    <PageShell>
-      <PageHeader
+    <Page width="list">
+      <PageTitle
         title={t.navigation.tabs.pricing}
         description={t.headers.pricing}
       />
@@ -2661,93 +2653,87 @@ export function PricingTab() {
         </p>
       )}
 
-      <div className="flex flex-col gap-2 mb-8">
-        {isLoading && (
-          <div className="flex items-center justify-center h-32">
-            <Loader2
-              size={20}
-              className="animate-spin text-[var(--admin-muted)]"
-            />
-          </div>
-        )}
-        {plans.length === 0 && !isLoading && (
-          <p className="text-sm text-[var(--admin-muted)] py-4 text-center">
-            {copy.empty}
-          </p>
-        )}
+      {isLoading && (
+        <div className="flex items-center h-24">
+          <Loader2
+            size={18}
+            className="animate-spin text-[var(--admin-muted)]"
+          />
+        </div>
+      )}
+      {!isLoading && (
+      <ul className="ax-rows">
+        {plans.length === 0 && <EmptyNote>{copy.empty}</EmptyNote>}
         {plans.map((p, i) => (
-          <div
-            key={p.id}
-            className="bg-[color:var(--admin-paper-soft)] border border-[color:var(--admin-line)] rounded-sm"
-          >
-            <div className="flex items-center justify-between px-3 py-2.5 group">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="flex flex-col flex-shrink-0">
-                  <button
-                    onClick={() => move(p.id, -1)}
-                    disabled={i === 0 || reorder.isPending}
-                    aria-label={copy.moveUp}
-                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
-                  >
-                    <ChevronUp size={13} />
-                  </button>
-                  <button
-                    onClick={() => move(p.id, 1)}
-                    disabled={i === plans.length - 1 || reorder.isPending}
-                    aria-label={copy.moveDown}
-                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-30 transition-colors leading-none"
-                  >
-                    <ChevronDown size={13} />
-                  </button>
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)] truncate">
-                      {p.title}
-                    </span>
-                    {p.price && (
-                      <span className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] truncate">
-                        {p.price}
-                      </span>
-                    )}
-                  </div>
+          <li key={p.id} className="ax-row-group">
+            <div className="ax-row ax-row--in-group">
+              <div className="ax-row__lead">
+                <button
+                  onClick={() => move(p.id, -1)}
+                  disabled={i === 0 || reorder.isPending}
+                  aria-label={copy.moveUp}
+                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                >
+                  <ChevronUp size={14} />
+                </button>
+                <button
+                  onClick={() => move(p.id, 1)}
+                  disabled={i === plans.length - 1 || reorder.isPending}
+                  aria-label={copy.moveDown}
+                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+              <div className="ax-row__body">
+                <div className="ax-row__line">
+                  <span className="ax-row__title">{p.title}</span>
+                  {p.price && (
+                    <span className="ax-row__meta">{p.price}</span>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              <div className="ax-row__actions">
                 <button
                   onClick={() =>
                     patchPlan.mutate({ id: p.id, isPublished: !p.isPublished })
                   }
                   aria-pressed={p.isPublished}
-                  className={`admin-state-chip text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm transition-colors bg-[color:var(--admin-paper-deep)] ${p.isPublished ? "text-[color:var(--admin-ink)]" : "text-[color:var(--admin-muted)]"}`}
+                  className="admin-state-chip ax-status-toggle"
                 >
-                  {p.isPublished ? copy.published : copy.draft}
+                  <StatusDot on={p.isPublished}>
+                    {p.isPublished ? copy.published : copy.draft}
+                  </StatusDot>
                 </button>
-                <button
+                <AxButton
+                  tone="ghost"
+                  size="small"
                   onClick={() =>
                     editId === p.id ? setEditId(null) : openEdit(p)
                   }
                   aria-label={copy.edit}
-                  className="admin-tap-sm text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors"
+                  aria-expanded={editId === p.id}
                 >
                   {editId === p.id ? (
-                    <ChevronUp size={14} />
+                    <ChevronUp size={15} />
                   ) : (
-                    <Pencil size={13} />
+                    <Pencil size={14} />
                   )}
-                </button>
-                <button
+                </AxButton>
+                <AxButton
+                  tone="danger"
+                  size="small"
+                  data-ax-reveal=""
                   onClick={() => setDeleteTarget({ id: p.id, title: p.title })}
                   aria-label={copy.deleteAria(p.title)}
-                  className="admin-danger-on-hover admin-tap-sm text-[color:var(--admin-line-strong)] transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                 >
-                  <Trash2 size={13} />
-                </button>
+                  <Trash2 size={14} />
+                </AxButton>
               </div>
             </div>
 
             {editId === p.id && (
-              <div className="border-t border-[var(--admin-line)] px-3 py-3 flex flex-col gap-3">
+              <div className="ax-editor">
                 <AdminField label={copy.titleLabel}>
                   <input
                     aria-label={copy.titleAria}
@@ -2756,7 +2742,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, title: e.target.value }))
                     }
                     placeholder={copy.titlePlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                    className="ax-input"
                   />
                 </AdminField>
                 <AdminField label={copy.priceLabel} hint={copy.priceHint}>
@@ -2767,7 +2753,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, price: e.target.value }))
                     }
                     placeholder="¥15,000〜"
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                    className="ax-input"
                   />
                 </AdminField>
                 <AdminField
@@ -2782,7 +2768,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, description: e.target.value }))
                     }
                     placeholder={copy.descriptionPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
+                    className="ax-input ax-input--area"
                   />
                 </AdminField>
                 <AdminField label={copy.featuresLabel} hint={copy.featuresHint}>
@@ -2794,7 +2780,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, features: e.target.value }))
                     }
                     placeholder={copy.featuresPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
+                    className="ax-input ax-input--area"
                   />
                 </AdminField>
                 <AdminField label={copy.noteLabel} hint={copy.noteHint}>
@@ -2805,7 +2791,7 @@ export function PricingTab() {
                       setDraft((d) => ({ ...d, note: e.target.value }))
                     }
                     placeholder={copy.notePlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                    className="ax-input"
                   />
                 </AdminField>
                 <div className="flex gap-2">
@@ -2816,11 +2802,12 @@ export function PricingTab() {
                   >
                     {patchPlan.isPending ? (
                       <>
-                        <Loader2 size={11} className="animate-spin" /> Saving...
+                        <Loader2 size={11} className="animate-spin" />{" "}
+                        {t.common.saving}
                       </>
                     ) : (
                       <>
-                        <Check size={11} /> Save
+                        <Check size={11} /> {t.common.save}
                       </>
                     )}
                   </button>
@@ -2828,15 +2815,17 @@ export function PricingTab() {
                     onClick={() => setEditId(null)}
                     className="px-4 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                   >
-                    Close
+                    {t.common.close}
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
+      )}
 
+      <div className="mt-10">
       <button
         onClick={() => addPlan.mutate()}
         disabled={addPlan.isPending}
@@ -2844,6 +2833,7 @@ export function PricingTab() {
       >
         <Plus size={12} /> {copy.add}
       </button>
+      </div>
 
       {deleteTarget && (
         <Modal onClose={() => setDeleteTarget(null)}>
@@ -2870,7 +2860,7 @@ export function PricingTab() {
           </div>
         </Modal>
       )}
-    </PageShell>
+    </Page>
   );
 }
 
@@ -3007,15 +2997,13 @@ function SvcInput({
 }) {
   return (
     <label className="block">
-      <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
-        {label}
-      </span>
+      <span className="ax-field__label">{label}</span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[length:var(--admin-text-body)] text-[var(--admin-ink)] outline-none"
+        className="ax-input"
       />
     </label>
   );
@@ -3034,14 +3022,12 @@ function SvcTextarea({
 }) {
   return (
     <label className="block">
-      <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
-        {label}
-      </span>
+      <span className="ax-field__label">{label}</span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className="mt-1 w-full bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2.5 py-1.5 text-[length:var(--admin-text-body)] text-[var(--admin-ink)] outline-none resize-y leading-relaxed"
+        className="ax-input ax-input--area"
       />
     </label>
   );
@@ -4430,10 +4416,12 @@ export function SettingsTab({
     <PageHeaderButton
       active={showPreview}
       onClick={() => openPreview(!showPreview)}
-      ariaLabel={showPreview ? "Hide Preview" : "Live Preview"}
+      ariaLabel={
+        showPreview ? previewCopy.closePreview : previewCopy.openPreview
+      }
     >
       {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
-      {showPreview ? "Hide Preview" : "Live Preview"}
+      {showPreview ? previewCopy.closePreview : previewCopy.openPreview}
     </PageHeaderButton>
   );
   const mobilePreviewControl = showPreview ? (
@@ -4460,7 +4448,7 @@ export function SettingsTab({
     <button
       type="button"
       className="admin-settings-mobile-current__preview-open"
-      aria-label="Live Preview"
+      aria-label={previewCopy.openPreview}
       onClick={() => openPreview(true)}
     >
       <Eye size={13} />
@@ -4501,11 +4489,13 @@ export function SettingsTab({
           copy={t.formLayout}
           previewToggle={previewToggleButton}
           mobilePreviewControl={mobilePreviewControl}
-        >
+          header={
             <PageHeader
               title={t.navigation.tabs.settings}
               description={saveError ? t.headers.settingsSaveFailed : undefined}
             />
+          }
+        >
             <div className="flex flex-col">
               {/* General */}
               <SettingsGroup
@@ -4525,7 +4515,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                      className="ax-input"
                     />
                   </AdminField>
                 ))}
@@ -4551,7 +4541,7 @@ export function SettingsTab({
                     aria-label={copy.portfolioKit.fieldLabel}
                     value={current["servicePageMode"] ?? ""}
                     onChange={(e) => set("servicePageMode", e.target.value)}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm appearance-none cursor-pointer"
+                    className="ax-input ax-select"
                   >
                     <option value="">{copy.portfolioKit.modeLabels.auto}</option>
                     <option value="on">{copy.portfolioKit.modeLabels.on}</option>
@@ -5707,7 +5697,7 @@ export function SettingsTab({
                     value={current["noteUsername"] ?? ""}
                     onChange={(e) => set("noteUsername", e.target.value.trim())}
                     placeholder={copyIntegrations.note.usernamePlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm font-mono"
+                    className="ax-input ax-input--mono"
                   />
                 </AdminField>
                 <AdminField
@@ -5774,7 +5764,7 @@ export function SettingsTab({
                       set("printStoreUrl", e.target.value.trim())
                     }
                     placeholder={copyIntegrations.print.storeUrlPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                    className="ax-input"
                   />
                 </AdminField>
                 <AdminField
@@ -5787,7 +5777,7 @@ export function SettingsTab({
                     value={current["printStoreLabel"] ?? ""}
                     onChange={(e) => set("printStoreLabel", e.target.value)}
                     placeholder={copyIntegrations.print.linkLabelPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                    className="ax-input"
                   />
                 </AdminField>
                 <AdminField
@@ -5800,7 +5790,7 @@ export function SettingsTab({
                     value={current["printDescription"] ?? ""}
                     onChange={(e) => set("printDescription", e.target.value)}
                     placeholder={copyIntegrations.print.descriptionPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
+                    className="ax-input ax-input--area"
                   />
                 </AdminField>
               </Section>
@@ -5849,7 +5839,7 @@ export function SettingsTab({
                     value={current["homeCtaTitle"] ?? ""}
                     onChange={(e) => set("homeCtaTitle", e.target.value)}
                     placeholder={copyIntegrations.cta.headingPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                    className="ax-input"
                   />
                 </AdminField>
                 <AdminField
@@ -5862,7 +5852,7 @@ export function SettingsTab({
                     value={current["homeCtaText"] ?? ""}
                     onChange={(e) => set("homeCtaText", e.target.value)}
                     placeholder={copyIntegrations.cta.bodyPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm resize-y"
+                    className="ax-input ax-input--area"
                   />
                 </AdminField>
                 <AdminField
@@ -5875,7 +5865,7 @@ export function SettingsTab({
                     value={current["homeCtaButton"] ?? ""}
                     onChange={(e) => set("homeCtaButton", e.target.value)}
                     placeholder={copyIntegrations.cta.buttonPlaceholder}
-                    className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                    className="ax-input"
                   />
                 </AdminField>
               </Section>
@@ -5910,7 +5900,7 @@ export function SettingsTab({
                           onChange={(e) => set("themeBg", e.target.value)}
                           placeholder={DEFAULT_THEME_BG}
                           data-admin-setting="themeBg-text"
-                          className="flex-1 min-w-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                          className="ax-input flex-1 min-w-0"
                         />
                       </div>
                     </AdminField>
@@ -5931,7 +5921,7 @@ export function SettingsTab({
                           value={current["themeText"] || ""}
                           onChange={(e) => set("themeText", e.target.value)}
                           placeholder="#1a1a1a"
-                          className="flex-1 min-w-0 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                          className="ax-input flex-1 min-w-0"
                         />
                       </div>
                     </AdminField>
@@ -6479,7 +6469,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                      className="ax-input"
                     />
                   </AdminField>
                 ))}
@@ -6514,7 +6504,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                      className="ax-input"
                     />
                   </AdminField>
                 ))}
@@ -6565,7 +6555,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                      className="ax-input"
                     />
                   </AdminField>
                 ))}
@@ -6623,7 +6613,7 @@ export function SettingsTab({
                       value={current[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
                       placeholder={f.placeholder}
-                      className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                      className="ax-input"
                     />
                   </AdminField>
                 ))}
@@ -6673,7 +6663,7 @@ export function SettingsTab({
                   {copy.adminPasswordTitle}
                 </p>
                 <p className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] leading-relaxed">
-                  Set via environment variable{" "}
+                  {copy.adminPasswordHint}{" "}
                   <code className="text-[color:var(--admin-ink)] bg-[color:var(--admin-paper-deep)] px-1 py-0.5 rounded-sm font-mono text-[length:var(--admin-text-note)]">
                     ADMIN_PASSWORD
                   </code>
@@ -6889,7 +6879,7 @@ function Section({
         style={{ gridTemplateRows: singleView || open ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="pb-6 pt-1 flex flex-col gap-4">{children}</div>
+          <div className="pb-10 pt-2 flex flex-col gap-6">{children}</div>
         </div>
       </div>
     </div>
@@ -6917,8 +6907,8 @@ function SettingsGroup({
     return null;
   }
   return (
-    <div className="mb-12 border-t border-[var(--admin-line)]">
-      <p className="text-[length:var(--admin-text-note)] tracking-widest text-[color:var(--admin-muted)] mb-3">
+    <div className="mb-12 border-t border-[var(--admin-line)] pt-3">
+      <p className="text-[length:var(--admin-text-note)] tracking-widest text-[color:var(--admin-muted)] mb-1">
         {title}
       </p>
       <div className="[&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]">
@@ -6989,7 +6979,7 @@ function PresetEditor({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+          className="ax-input flex-1"
         />
         <button
           onClick={onAdd}
@@ -7200,9 +7190,9 @@ function FontPicker({
   };
 
   const selectCls =
-    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm appearance-none cursor-pointer";
+    "ax-input ax-select";
   const inputCls =
-    "w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm";
+    "ax-input";
 
   // Correct fallback for preview
   const previewFamily = def
@@ -7227,13 +7217,13 @@ function FontPicker({
         }}
         className={selectCls}
       >
-        <option value="">Default</option>
+        <option value="">{copy.fontDefault}</option>
         {presets.map((p) => (
           <option key={p} value={p}>
             {p}
           </option>
         ))}
-        <option value="custom">Custom (upload)</option>
+        <option value="custom">{copy.fontCustom}</option>
       </select>
 
       {/* Preview */}
@@ -7298,9 +7288,7 @@ function FontPicker({
               className={`inline-flex items-center gap-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}
             >
               <Upload size={12} />
-              {uploading
-                ? "Uploading..."
-                : "Upload font file (.woff2, .woff, .ttf, .otf)"}
+              {uploading ? copy.fontUploading : copy.fontUploadHint}
               <input
                 aria-label={copy.fileAria}
                 type="file"
@@ -7481,29 +7469,22 @@ function Modal({
   );
 }
 
+// 共通の入力項目。見た目は admin-ui.tsx の Field と同じ ax-field に寄せてある
+// (画面ごとに違うラベル体裁が残らないよう、実体は1つの CSS に集約する)。
+// `uppercase` は全大文字の英語ラベルを作る指定だったので受け取らない。
 function AdminField({
   label,
   hint,
-  uppercase = false,
   children,
 }: {
   label: string;
   hint?: string;
-  uppercase?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label
-        className={`block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] tracking-wider mb-2 ${uppercase ? "uppercase" : ""}`}
-      >
-        {label}
-      </label>
-      {hint && (
-        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-2 leading-relaxed">
-          {hint}
-        </p>
-      )}
+    <div className="ax-field">
+      <label className="ax-field__label">{label}</label>
+      {hint && <p className="ax-field__hint">{hint}</p>}
       {children}
     </div>
   );
@@ -7541,7 +7522,7 @@ function ColorRow({
           value={current[valueKey] || ""}
           onChange={(e) => set(valueKey, e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+          className="ax-input flex-1"
         />
       </div>
     </AdminField>

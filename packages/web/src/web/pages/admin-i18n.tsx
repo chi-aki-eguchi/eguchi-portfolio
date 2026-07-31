@@ -105,8 +105,9 @@ const ADMIN_PHASE_2B_JA = {
     import: {
       mediumAria: "取り込み媒体",
       mediumHint:
-        "Importする写真に付く媒体ラベルです（絞り込みではありません）",
+        "取り込む写真に付く媒体ラベルです（絞り込みではありません）",
       mediumLabel: "取り込み",
+      action: "取り込む",
       digital: "デジタル",
       film: "フィルム",
       chooseImages: "画像ファイルを選択",
@@ -447,10 +448,10 @@ const ADMIN_PHASE_2B_JA = {
       description: "説明",
       descriptionHint: "Lightbox の写真説明（任意）",
       descriptionAria: "説明",
-      saving: "Saving...",
-      saved: "Saved",
-      save: "Save",
-      reset: "Reset",
+      saving: "保存中…",
+      saved: "保存しました",
+      save: "保存",
+      reset: "元に戻す",
       duplicate: "この写真を複製",
       saveFailed: "保存に失敗しました。もう一度お試しください。",
       hero: "ヒーロー",
@@ -653,9 +654,9 @@ const ADMIN_PHASE_2B_JA = {
     background: "背景色",
     backgroundHint: "空欄=グローバル設定。#fff / #000 / #1a1a1a など",
     backgroundPlaceholder: "（グローバル設定を使用）",
-    saving: "Saving...",
-    save: "Save",
-    close: "Close",
+    saving: "保存中…",
+    save: "保存",
+    close: "閉じる",
     newSeries: "新しいシリーズ",
     newTitleAria: "新しいシリーズのタイトル",
     newSlugAria: "新しいシリーズのスラッグ",
@@ -811,6 +812,7 @@ const ADMIN_PHASE_2B_JA = {
     groupTitle: "基本・見た目",
     resetToDefault: "初期設定に戻す",
     adminPasswordTitle: "管理パスワード",
+    adminPasswordHint: "環境変数で設定します:",
     previewTitle: "プレビュー",
     units: {
       columns: "列",
@@ -825,39 +827,39 @@ const ADMIN_PHASE_2B_JA = {
       title: "サイト基本情報",
       fields: {
         siteName: {
-          label: "Site Name (Logo)",
+          label: "サイト名（ロゴ・日本語）",
           placeholder: "Photographer Name",
-          hint: "全ページ左上のロゴ（日本語）",
+          hint: "",
         },
         siteNameEn: {
-          label: "Site Name (EN)",
+          label: "サイト名（英語表記）",
           placeholder: "Photographer Name",
-          hint: "ロゴ下・OGP等の英語表記",
+          hint: "ロゴ下・OGPなどに使う",
         },
         heroSubtitle: {
-          label: "Hero Subtitle",
+          label: "トップの肩書き",
           placeholder: "Photography",
-          hint: "トップの作家名の下に表示",
+          hint: "作家名の下に小さく出る一言",
         },
         siteDescription: {
-          label: "Site Description (SEO)",
+          label: "サイトの説明文",
           placeholder: "Photography portfolio.",
-          hint: "検索結果・OGP・SNSシェア時の説明文（meta description）。空欄なら左の文を自動使用",
+          hint: "検索結果・SNSシェア時に出る。空欄ならサイト名から自動生成",
         },
         footerText: {
-          label: "Footer Text",
+          label: "フッターの文",
           placeholder: "空欄 = © 今年 サイト名（自動）",
-          hint: "全ページ下部のフッター。空欄なら「© 現在の年 サイト名」を自動表示",
+          hint: "空欄なら「© 年 サイト名」を自動表示",
         },
         contactIntro: {
-          label: "Contact Page Intro",
+          label: "お問い合わせの案内文",
           placeholder: "Feel free to...",
-          hint: "お問い合わせページ上部の案内文",
+          hint: "",
         },
         contactIntroEn: {
-          label: "Contact Page Intro (英語)",
+          label: "お問い合わせの案内文（英語）",
           placeholder: "Feel free to...",
-          hint: "/en/contact 用の英語版案内文。空欄なら日本語文を表示",
+          hint: "空欄なら日本語文を表示",
         },
         contactNote: {
           label: "Contact 添え書き",
@@ -892,14 +894,14 @@ const ADMIN_PHASE_2B_JA = {
           hint: "メッセージ欄にうすく表示される記入例。空欄で非表示",
         },
         contactEmail: {
-          label: "Contact Email",
+          label: "連絡先メールアドレス",
           placeholder: "you@example.com",
-          hint: "Displayed on the contact page for direct email",
+          hint: "お問い合わせページに直接の宛先として表示",
         },
         formspreeUrl: {
-          label: "Formspree URL",
+          label: "Formspree の URL",
           placeholder: "https://formspree.io/f/...",
-          hint: "Get your form URL from formspree.io to enable the contact form",
+          hint: "formspree.io で取得した URL を入れるとフォームが動く",
         },
         siteUrl: {
           label: "サイトURL（公開ドメイン）",
@@ -1320,6 +1322,10 @@ const ADMIN_PHASE_2B_JA = {
       networkError: "アップロードに失敗しました（ネットワークエラー）",
       nameAria: "フォント名",
       fileAria: "フォントファイルを選択",
+      fontDefault: "既定のまま",
+      fontCustom: "自分のフォントを使う（アップロード）",
+      fontUploading: "アップロード中…",
+      fontUploadHint: "フォントファイルを選ぶ（.woff2 / .woff / .ttf / .otf）",
     },
     fontSize: {
       title: "文字の大きさ",
@@ -1510,6 +1516,8 @@ const ADMIN_PHASE_2B_JA = {
       viewEdit: "編集",
       viewPreview: "プレビュー",
       viewSwitchLabel: "編集とプレビューの切り替え",
+      openPreview: "プレビューを開く",
+      closePreview: "プレビューを閉じる",
     },
     colorPickerAria: (label: string) => `${label} カラーピッカー`,
   },
@@ -1598,6 +1606,7 @@ const ADMIN_PHASE_2B_EN = {
       mediumHint:
         "This medium label is applied to imported photos. It is not a filter.",
       mediumLabel: "Import as",
+      action: "Import",
       digital: "Digital",
       film: "Film",
       chooseImages: "Choose image files",
@@ -2299,6 +2308,7 @@ const ADMIN_PHASE_2B_EN = {
     groupTitle: "Basics & Appearance",
     resetToDefault: "Reset to default",
     adminPasswordTitle: "Admin Password",
+    adminPasswordHint: "Set via environment variable",
     previewTitle: "Preview",
     units: {
       columns: "cols",
@@ -2814,6 +2824,10 @@ const ADMIN_PHASE_2B_EN = {
       networkError: "Upload failed (network error).",
       nameAria: "Font name",
       fileAria: "Choose a font file",
+      fontDefault: "Default",
+      fontCustom: "Custom (upload)",
+      fontUploading: "Uploading...",
+      fontUploadHint: "Upload font file (.woff2, .woff, .ttf, .otf)",
     },
     fontSize: {
       title: "Typography",
@@ -3006,6 +3020,8 @@ const ADMIN_PHASE_2B_EN = {
       viewEdit: "Edit",
       viewPreview: "Preview",
       viewSwitchLabel: "Switch between editing and preview",
+      openPreview: "Live preview",
+      closePreview: "Hide preview",
     },
     colorPickerAria: (label: string) => `${label} colour picker`,
   },
@@ -3018,6 +3034,7 @@ export type AdminMessages = {
     close: string;
     save: string;
     saving: string;
+    uploading: string;
     cancel: string;
     discard: string;
     add: string;
@@ -3165,6 +3182,7 @@ export const ADMIN_DICTIONARY = {
       close: "閉じる",
       save: "保存",
       saving: "保存中...",
+      uploading: "アップロード中…",
       cancel: "キャンセル",
       discard: "破棄",
       add: "追加",
@@ -3372,6 +3390,7 @@ export const ADMIN_DICTIONARY = {
       close: "Close",
       save: "Save",
       saving: "Saving...",
+      uploading: "Uploading...",
       cancel: "Cancel",
       discard: "Discard",
       add: "Add",

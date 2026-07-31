@@ -94,7 +94,7 @@ async function openSettings(page: Page) {
 }
 
 async function openPreview(page: Page) {
-  await page.getByRole("button", { name: "Live Preview" }).click();
+  await page.getByRole("button", { name: "プレビューを開く" }).click();
   await expect(page.locator("[data-settings-preview]")).toBeVisible();
 }
 
@@ -156,7 +156,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     await page.waitForTimeout(200);
 
     // P6: 開閉ボタンは sticky な目次の中にあるので画面内に残る。
-    const toggle = page.getByRole("button", { name: "Hide Preview" });
+    const toggle = page.getByRole("button", { name: "プレビューを閉じる" });
     await expect(toggle).toBeInViewport();
 
     const toolbar = page.locator(".admin-settings-preview__toolbar");
@@ -504,7 +504,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     await input.fill("スマホでも残る文字");
 
     // 上部 sticky の中から1操作でプレビューへ移る。下部固定バーは増やさない。
-    await page.getByRole("button", { name: "Live Preview" }).click();
+    await page.getByRole("button", { name: "プレビューを開く" }).click();
     await expect(page.locator("[data-settings-preview]")).toBeVisible();
     await expect(page.locator(".admin-settings-form-layout__inner")).toBeHidden();
     await expect(page.locator(".admin-floating-save-bar")).toBeHidden();

@@ -208,21 +208,23 @@ test.describe("admin — 残画面のWorkspace / Form振り分け", () => {
     expect(state.unknownWrites).toEqual([]);
   });
 
-  test("Seriesは一覧Workspace＋720px編集Form、Categoriesは短いFormを使う", async ({
+  // 2026-07-31 の刷新で Series と Categories は同じ一覧ページ枠(list)を使う。
+  // 以前は Series だけ Workspace + 右寄せの編集フォームで、同じ画面の中でも
+  // 一覧と入力の左端がそろっていなかった。
+  test("SeriesとCategoriesは同じ一覧ページ枠を使い、編集Formがはみ出さない", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "3幅をdesktopで連続検証");
     const state = await installMocks(page);
 
     await openTab(page, "categories");
-    await expect(page.locator('[data-admin-page-shell="form"]')).toBeVisible();
+    await expect(page.locator('[data-admin-page-shell="list"]')).toBeVisible();
     await expect(page.locator('[data-admin-workspace="categories"]')).toHaveCount(
       0,
     );
 
     await openTab(page, "series");
-    const workspace = page.locator('[data-admin-workspace="series"]');
-    await expect(workspace).toBeVisible();
+    await expect(page.locator('[data-admin-page-shell="list"]')).toBeVisible();
     await page.getByRole("button", { name: "編集" }).click();
     const editor = page.locator('[data-admin-mixed-form="series-edit"]');
     await expect(editor).toBeVisible();
@@ -234,6 +236,10 @@ test.describe("admin — 残画面のWorkspace / Form振り分け", () => {
         overflow: document.body.scrollWidth - document.body.clientWidth,
       }));
       expect(geometry.width).toBeLessThanOrEqual(722);
+      // 上限だけでは、潰れて読めない幅でも成功してしまう。
+      expect(geometry.width, `${width}px で編集フォームが細すぎる`).toBeGreaterThan(
+        Math.min(260, width - 80),
+      );
       expect(geometry.overflow).toBe(0);
     }
     expect(state.unknownWrites).toEqual([]);

@@ -571,7 +571,7 @@ function AdminPageContent({
     const el = tabButtonRefs.current[tab];
     if (el) setIndicatorTop(el.offsetTop);
   }, [tab]);
-  // The sidebar is `hidden lg:flex` — its buttons have no layout box (and
+  // The sidebar is `hidden md:flex` — its buttons have no layout box (and
   // offsetTop 0) below the lg breakpoint. Resizing back past it doesn't
   // change `tab`, so the effect above never re-fires and the indicator stays
   // wherever it last measured (usually the top). Re-measure on resize too.
@@ -740,7 +740,7 @@ function AdminPageContent({
         </div>
       )}
       <aside
-        className="admin-sidebar admin-glass hidden lg:flex"
+        className="admin-sidebar admin-glass hidden md:flex"
         data-navigation-locked={galleryReordering || undefined}
         data-collapsed={sidebarCollapsed || undefined}
       >
@@ -1147,7 +1147,14 @@ export function SetupTab({
     return (
       <PageShell>
         <PageHeader title={t.setup.title} />
-        <p className="text-[length:var(--admin-text-body)] text-[color:var(--admin-muted)]">…</p>
+        {/* 「…」だけを置くと、何かの本文が抜けたように見える。
+            他タブと同じ静かな読み込み表示にそろえる。 */}
+        <div className="flex items-center h-24">
+          <Loader2
+            size={18}
+            className="animate-spin text-[var(--admin-muted)]"
+          />
+        </div>
       </PageShell>
     );
   }
@@ -4976,17 +4983,21 @@ export function GalleryTab({
     return () => clearTimeout(t);
   }, [undoToast]);
 
-  // Color label per category
+  // Color label per category.
+  // 彩度の高い原色(旧: #4a90d9 / #d9534f / #5cb85c …)は、写真の上に載ると
+  // 写真より先に目に入り、汎用の管理ツールの顔になっていた。
+  // design-spec §3「写真以外で色を主張しない」に合わせ、明度をそろえた
+  // 低彩度の色に置き換える。区別はつくが、写真の邪魔をしない。
   const catColors: Record<string, string> = {};
   const palette = [
-    "#4a90d9",
-    "#d9534f",
-    "#5cb85c",
-    "#f0ad4e",
-    "#9b59b6",
-    "#e67e22",
-    "#1abc9c",
-    "#e74c3c",
+    "#6f8391",
+    "#9a7b6b",
+    "#78876c",
+    "#a08a5b",
+    "#8a7f96",
+    "#a1746b",
+    "#6f8a86",
+    "#8a7d70",
   ];
   categories.forEach((c, i) => {
     catColors[c.slug] = palette[i % palette.length];
@@ -5125,7 +5136,7 @@ export function GalleryTab({
             </section>
           )}
         <div
-          className={`admin-workspace__header px-4 sm:px-10 pt-2 flex-shrink-0 ${
+          className={`admin-workspace__header flex-shrink-0 ${
             libraryMode === "arrange" ? "hidden md:block" : ""
           }`}
         >
@@ -5149,65 +5160,16 @@ export function GalleryTab({
               )
             }
             actions={
-              <div
-                className="admin-library-header-actions"
-                data-library-exit-actions
+              <PageHeaderButton
+                active={showSitePreview}
+                onClick={() => setShowSitePreview(!showSitePreview)}
+                ariaLabel={
+                  showSitePreview ? t.headers.closeViewSite : t.headers.viewSite
+                }
               >
-                <fieldset
-                  aria-label={copy.import.mediumAria}
-                  title={copy.import.mediumHint}
-                  className="admin-library-import-medium"
-                >
-                  <span>{copy.import.mediumLabel}</span>
-                  {[
-                    ["digital", copy.import.digital] as const,
-                    ["film", copy.import.film] as const,
-                  ].map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setUploadMedium(value)}
-                      aria-pressed={uploadMedium === value}
-                      className={
-                        uploadMedium === value ? "admin-btn-primary" : ""
-                      }
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </fieldset>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="admin-library-import-button admin-btn-primary"
-                >
-                  <Upload size={13} /> Import
-                </button>
-                <input
-                  aria-label={copy.import.chooseImages}
-                  ref={fileInputRef}
-                  type="file"
-                  accept={UPLOAD_IMAGE_ACCEPT}
-                  multiple
-                  className="hidden"
-                  onChange={(event) =>
-                    handleFiles(Array.from(event.target.files ?? []))
-                  }
-                />
-                <PageHeaderButton
-                  active={showSitePreview}
-                  onClick={() => setShowSitePreview(!showSitePreview)}
-                  ariaLabel={
-                    showSitePreview
-                      ? t.headers.closeViewSite
-                      : t.headers.viewSite
-                  }
-                >
-                  {showSitePreview ? <EyeOff size={13} /> : <Eye size={13} />}
-                  {t.headers.viewSite}
-                </PageHeaderButton>
-              </div>
+                {showSitePreview ? <EyeOff size={13} /> : <Eye size={13} />}
+                {t.headers.viewSite}
+              </PageHeaderButton>
             }
           />
         </div>
@@ -5262,9 +5224,6 @@ export function GalleryTab({
                             : publicReorderLockCause === "loading"
                               ? copy.reorder.settingsLoading
                               : undefined
-                  }
-                  className={
-                    libraryMode === mode ? "admin-btn-primary" : undefined
                   }
                 >
                   {label}
@@ -5494,6 +5453,58 @@ export function GalleryTab({
             </details>
 
               </>
+            )}
+            {/* 取り込みは「一番強い操作」なので、探す/見る操作とは細い罫で分けて
+                作業バーの右端に置く。以前はページ見出しの中にあり、見出しの行が
+                操作で埋まって「写真より UI が目立つ」原因になっていた。
+                **閲覧中だけでなく選択中も出す。** 移設時に「通常モードのみ」の
+                かたまりへ入れてしまい、選択モードで取り込めなくなっていた
+                (Codex独立監査 2026-07-31 指摘)。並べ替え中だけは出さない。 */}
+            {libraryMode !== "arrange" && (
+            <div
+              className="admin-library-import-group"
+              data-library-exit-actions
+            >
+              <fieldset
+                aria-label={copy.import.mediumAria}
+                title={copy.import.mediumHint}
+                className="admin-library-import-medium"
+              >
+                <span>{copy.import.mediumLabel}</span>
+                {[
+                  ["digital", copy.import.digital] as const,
+                  ["film", copy.import.film] as const,
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setUploadMedium(value)}
+                    aria-pressed={uploadMedium === value}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </fieldset>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="admin-library-import-button admin-btn-primary"
+              >
+                <Upload size={13} /> {copy.import.action}
+              </button>
+              <input
+                aria-label={copy.import.chooseImages}
+                ref={fileInputRef}
+                type="file"
+                accept={UPLOAD_IMAGE_ACCEPT}
+                multiple
+                className="hidden"
+                onChange={(event) =>
+                  handleFiles(Array.from(event.target.files ?? []))
+                }
+              />
+            </div>
             )}
           </div>
 
@@ -6575,12 +6586,16 @@ export function GalleryTab({
                             <EyeOff size={9} /> {copy.badges.unpublished}
                           </div>
                         )}
-                        {/* Category color label — top-left dot */}
-                        <div
-                          className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full shadow-sm"
-                          style={{ background: catColor }}
-                          title={photo.category}
-                        />
+                        {/* Category color label — top-left dot.
+                            分類が無い写真にも点が出ていたため、写真496枚のうち
+                            意味のない点が常に画面を埋めていた。分類がある写真だけに出す。 */}
+                        {photo.category && !isUncategorized(photo) && (
+                          <div
+                            className="admin-photo-cat-dot"
+                            style={{ background: catColor }}
+                            title={photo.category}
+                          />
+                        )}
                         {effectiveThumbSize >= 120 &&
                           metadataBadges.length > 0 && (
                             <div
@@ -6877,7 +6892,7 @@ export function GalleryTab({
                   setBatchEdit((b) => ({ ...b, camera: e.target.value }))
                 }
                 placeholder={copy.bulkMetadata.unchanged}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                className="ax-input"
               />
             </AdminField>
             <AdminField label="Lens">
@@ -6888,7 +6903,7 @@ export function GalleryTab({
                   setBatchEdit((b) => ({ ...b, lens: e.target.value }))
                 }
                 placeholder={copy.bulkMetadata.unchanged}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                className="ax-input"
               />
             </AdminField>
             <AdminField label="Film / Digital">
@@ -6961,7 +6976,7 @@ export function GalleryTab({
                   setAlbumDraft((d) => ({ ...d, name: e.target.value }))
                 }
                 placeholder={copy.albums.namePlaceholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                className="ax-input"
               />
             </AdminField>
             <AdminField label={copy.albums.cameraContains}>
@@ -6973,7 +6988,7 @@ export function GalleryTab({
                   setAlbumDraft((d) => ({ ...d, camera: e.target.value }))
                 }
                 placeholder={copy.albums.unspecifiedPlaceholder}
-                className="w-full bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] text-[var(--admin-ink)] px-3 py-2 text-[length:var(--admin-text-body)] outline-none transition-colors rounded-sm"
+                className="ax-input"
               />
               <datalist id="album-camera-presets">
                 {cameraPresets.map((p) => (
@@ -8828,15 +8843,9 @@ function InspectField({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
-        {label}
-      </label>
-      {hint && (
-        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
-          {hint}
-        </p>
-      )}
+    <div className="ax-field">
+      <label className="ax-field__label">{label}</label>
+      {hint && <p className="ax-field__hint">{hint}</p>}
       {children}
     </div>
   );
@@ -9387,15 +9396,9 @@ function AdminField({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="block text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] uppercase tracking-wider mb-1">
-        {label}
-      </label>
-      {hint && (
-        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5 leading-relaxed">
-          {hint}
-        </p>
-      )}
+    <div className="ax-field">
+      <label className="ax-field__label">{label}</label>
+      {hint && <p className="ax-field__hint">{hint}</p>}
       {children}
     </div>
   );

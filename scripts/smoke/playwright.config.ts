@@ -43,7 +43,9 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
-      testIgnore: /admin-library-remount-fade\.spec\.ts/,
+      // scratch/ は調査用の使い捨てスペック置き場(gitignore対象)。
+      // 本番と同じDBにつながるため、full smoke に紛れ込ませない。
+      testIgnore: [/admin-library-remount-fade\.spec\.ts/, /scratch\//],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -51,7 +53,7 @@ export default defineConfig({
     },
     {
       name: "mobile",
-      testIgnore: /admin-library-remount-fade\.spec\.ts/,
+      testIgnore: [/admin-library-remount-fade\.spec\.ts/, /scratch\//],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 375, height: 812 },
@@ -64,7 +66,7 @@ export default defineConfig({
       // 実機では起きない状態を検査してしまう。ここだけ本物のタッチ profile で回す。
       // 描画エンジンは Chromium のまま（Pixel 7）にして、変数をタッチ有無に絞る。
       name: "mobile-touch",
-      testMatch: /(public-site|admin-reorder-safety)\.spec\.ts/,
+      testMatch: /(public-site|admin-reorder-safety|admin-touch-targets)\.spec\.ts/,
       use: {
         ...devices["Pixel 7"],
         viewport: { width: 390, height: 844 },

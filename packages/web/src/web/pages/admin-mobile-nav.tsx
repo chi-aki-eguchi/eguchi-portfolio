@@ -31,7 +31,7 @@ export function AdminMobileTopBar({
   const { t } = useAdminI18n();
   const meta = tabMeta[tab];
   return (
-    <header className="admin-mobile-topbar lg:hidden">
+    <header className="admin-mobile-topbar md:hidden">
       <div className="flex items-center gap-2 min-w-0 text-[color:var(--admin-ink)]">
         {meta.icon}
         <span className="text-[13px] tracking-wide truncate">{meta.label}</span>
@@ -107,7 +107,7 @@ export function AdminMobileTabBar({
     <>
       {openGroup && (
         <div
-          className="admin-sheet lg:hidden"
+          className="admin-sheet md:hidden"
           aria-label={t.navigation.groupTabs(groupLabel(openGroup))}
         >
           {/* `absolute` はグローバル button リセット(:not(.absolute))の除外用 */}
@@ -147,7 +147,7 @@ export function AdminMobileTabBar({
         </div>
       )}
       <nav
-        className="admin-bottom-nav lg:hidden"
+        className="admin-bottom-nav md:hidden"
         aria-label={t.navigation.label}
       >
         {tabGroups.map((group) => {

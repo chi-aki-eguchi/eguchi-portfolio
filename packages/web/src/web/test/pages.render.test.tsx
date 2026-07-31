@@ -982,7 +982,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("見せ方");
       expect(host.textContent).toContain("サイト");
       expect(host.textContent).toContain("Library");
-      expect(host.textContent).toContain("Import");
+      expect(host.textContent).toContain("取り込む");
       // Digital/Film は Import 設定 — 絞り込みと誤読されない明札付きグループ
       expect(
         host.querySelector('fieldset[aria-label="取り込み媒体"]'),
@@ -1324,7 +1324,10 @@ describe("shared components", () => {
     }
   });
 
-  test("SeriesTab: series cards show … (not 0 枚) while photos are loading", async () => {
+  // 写真クエリが解決するまで「0 枚」と断定しないことが要点。
+  // 2026-07-31 の刷新で、読み込み中は行の説明文そのものを出さないようにした
+  // (意味のない "…" を置かない — admin-renewal-goal.md 到達点(7))。
+  test("SeriesTab: 写真の読み込み中に 0 枚と断定しない", async () => {
     const prevSeries = canned["/api/admin/series"];
     canned["/api/admin/series"] = {
       series: [
@@ -1356,7 +1359,6 @@ describe("shared components", () => {
       const { SeriesTab } = await import("../pages/admin-tabs");
       const { host, cleanup } = await mount(createElement(SeriesTab));
       await waitForText(host, "Still life");
-      expect(host.textContent).toContain("…");
       expect(host.textContent).not.toContain("0 枚");
       expect(host.textContent).not.toContain("#9999");
       cleanup();
@@ -1544,7 +1546,7 @@ describe("shared components", () => {
       await waitForText(host, "/portfolio-kit 販売ページの料金です");
 
       buttonWithText(host, "Settings").click();
-      await waitForText(host, "Live Preview");
+      await waitForText(host, "プレビューを開く");
       // 設定の本文は目次で選んだ1節だけを出す（2026-07-30）。
       (
         host.querySelector(
@@ -1667,8 +1669,8 @@ describe("shared components", () => {
 
       changeInput(inputByLabel(host, "タイトル"), "Saved photo title");
       await flush(80);
-      buttonWithText(host, "Save").click();
-      await waitForText(host, "Saved");
+      buttonWithText(host, "保存").click();
+      await waitForText(host, "保存しました");
 
       navGroup(host, "見せ方").click();
       await flush(30);
@@ -2102,7 +2104,7 @@ describe("shared components", () => {
       // 2026-07-20仕様変更: 名前は最短の必須導線から「あとで整える」へ
       // 移したが、Settingsへの移動ボタンは引き続き機能する。
       setupOpenButton(host, "サイトの名前と説明").click();
-      await waitForText(host, "Live Preview");
+      await waitForText(host, "プレビューを開く");
 
       buttonWithText(host, "写真").click();
       await waitForText(host, "Library");
@@ -2473,7 +2475,7 @@ describe("shared components", () => {
       );
       await flush(30);
       expect(host.textContent).toContain("Library");
-      expect(host.textContent).toContain("Import");
+      expect(host.textContent).toContain("取り込む");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;

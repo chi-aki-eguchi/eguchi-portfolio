@@ -82,9 +82,13 @@ test.describe("admin — Workspace layout", () => {
     await expect(page.getByRole("button", { name: "Table" })).toBeHidden();
     await viewMenu.click();
     await expect(page.getByRole("button", { name: "Table" })).toBeVisible();
-    await expect(page.locator("[data-library-exit-actions]")).toContainText(
-      /Import/,
-    );
+    // 取り込み一式は見出しではなく作業バーの右端にある(2026-07-31 刷新)。
+    const importGroup = page.locator("[data-library-exit-actions]");
+    await expect(importGroup).toBeVisible();
+    await expect(importGroup.locator("fieldset")).toBeVisible();
+    await expect(
+      importGroup.locator(".admin-library-import-button"),
+    ).toBeVisible();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,

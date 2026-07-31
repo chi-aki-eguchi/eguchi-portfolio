@@ -1,18 +1,17 @@
 import type { ReactNode } from "react";
 import { AdminLanguageToggle } from "./admin-i18n";
+import { PageTitle } from "./admin-ui";
 
 export function AdminDesktopLanguageBar() {
   return (
-    <div className="hidden min-h-11 flex-shrink-0 items-center justify-end border-b border-[color:var(--admin-line)] px-5 lg:flex">
+    <div className="admin-lang-bar">
       <AdminLanguageToggle className="text-[var(--admin-muted)]" />
     </div>
   );
 }
 
-// Common header for all 9 admin screens: title + optional one-line description
-// on the left, screen-specific actions on the right. Sits directly on the page
-// background — no band/banner. Title font-size is fixed (not `h1`) so it can't
-// be re-clamped by the legacy `.admin-content h1` shim rule elsewhere.
+// 全画面共通の見出し。実体は admin-ui.tsx の PageTitle。
+// 「タイトル / 説明1つ / 右の操作」という並びを画面ごとに作り直さないための入口。
 export function PageHeader({
   title,
   description,
@@ -23,33 +22,11 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:justify-between sm:gap-4">
-      <div className="min-w-0">
-        <h1
-          className="admin-page-header__title text-[length:var(--admin-text-page)] leading-tight m-0"
-          style={{
-            fontFamily: "var(--admin-font-title)",
-            color: "var(--admin-ink)",
-            letterSpacing: "0.02em",
-          }}
-        >
-          {title}
-        </h1>
-        {description && (
-          <p className="mt-1 text-[length:var(--admin-text-body)] leading-relaxed text-[color:var(--admin-muted)] max-w-2xl">
-            {description}
-          </p>
-        )}
-      </div>
-      {actions && (
-        <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>
-      )}
-    </div>
+    <PageTitle title={title} description={description} actions={actions} />
   );
 }
 
-// Secondary action button used in PageHeader's actions slot (e.g. "Live
-// Preview"): panel surface, no border, radius 8, one step darker on hover.
+// 見出し右の副操作。黒塗りは使わず、押されている間だけ静かに沈める。
 export function PageHeaderButton({
   active,
   onClick,
@@ -66,11 +43,8 @@ export function PageHeaderButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className={`flex items-center gap-1.5 px-3 py-2 text-[length:var(--admin-text-note)] tracking-wide rounded-[var(--radius-s)] transition-colors duration-[var(--dur-fast)] ${
-        active
-          ? "bg-[color:var(--admin-ink)] text-[color:var(--admin-paper)]"
-          : "bg-[color:var(--admin-paper-soft)] text-[color:var(--admin-ink)] hover:bg-[color:var(--admin-paper-deep)]"
-      }`}
+      aria-pressed={active}
+      className="ax-btn ax-btn--quiet ax-btn--small"
     >
       {children}
     </button>

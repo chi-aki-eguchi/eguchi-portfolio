@@ -3,15 +3,22 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { PageShell } from "./admin-page-shell";
 import { AdminWorkspace } from "./admin-workspace";
 
-test("PageShellはForm専用でwide分岐を持たない", () => {
-  const html = renderToStaticMarkup(
+// ページ枠の幅は「用途」で3種類だけ(form / list / wide)。
+// 画面名ごとに寸法を足していくと、また画面ごとに規則が割れるため増やさない。
+test("PageShellは既定でForm幅、用途を渡すとその幅になる", () => {
+  const form = renderToStaticMarkup(
     <PageShell>
       <p>Form本文</p>
     </PageShell>,
   );
+  expect(form).toContain('data-admin-page-shell="form"');
 
-  expect(html).toContain('data-admin-page-shell="form"');
-  expect(html).not.toContain('data-admin-page-shell="wide"');
+  const list = renderToStaticMarkup(
+    <PageShell width="list">
+      <p>一覧</p>
+    </PageShell>,
+  );
+  expect(list).toContain('data-admin-page-shell="list"');
 });
 
 test("Workspaceは全幅のスクロール面と下部操作帯を別の器に置く", () => {

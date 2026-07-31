@@ -84,6 +84,7 @@ export function AdminSettingsFormLayout({
   copy,
   previewToggle = null,
   mobilePreviewControl = null,
+  header = null,
   children,
 }: {
   sections: AdminSettingsSectionItem[];
@@ -101,6 +102,10 @@ export function AdminSettingsFormLayout({
   previewToggle?: ReactNode;
   // 上部 sticky 帯に入れる、狭い幅用の編集/プレビュー切り替え。
   mobilePreviewControl?: ReactNode;
+  // ページ見出し。目次の右ではなく、目次と本文の両方の上に置く。
+  // 以前は本文の中にあったため、Settings だけ見出しが他タブより 248px 右にずれ、
+  // タブを切り替えると見出しが横に飛んでいた。
+  header?: ReactNode;
   children: ReactNode;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -215,6 +220,9 @@ export function AdminSettingsFormLayout({
       </div>
 
       <div className="admin-settings-form-layout__inner">
+        {header && (
+          <div className="admin-settings-form-layout__header">{header}</div>
+        )}
         <aside className="admin-form-toc">
           {navigation}
           {previewToggle && (

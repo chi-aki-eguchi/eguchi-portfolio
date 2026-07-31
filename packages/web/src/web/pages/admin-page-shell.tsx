@@ -1,20 +1,14 @@
 import type { ReactNode } from "react";
+import { Page, type PageWidth } from "./admin-ui";
 
+// 入力が主役の画面の枠。実体は admin-ui.tsx の Page。
+// 呼び出し側が多いので名前は残し、寸法の決定は1箇所(Page)へ寄せている。
 export function PageShell({
+  width = "form",
   children,
 }: {
+  width?: PageWidth;
   children: ReactNode;
 }) {
-  return (
-    <div
-      className="h-full overflow-y-auto"
-      data-admin-page-shell="form"
-    >
-      <div
-        className="w-full px-4 py-8 md:max-w-none md:px-6 md:py-10 lg:max-w-[688px] xl:max-w-[800px] xl:px-10 xl:py-12"
-      >
-        {children}
-      </div>
-    </div>
-  );
+  return <Page width={width}>{children}</Page>;
 }

@@ -169,7 +169,7 @@ test.describe("admin — Form layout", () => {
 
     await installMocks(page);
     for (const [width, expectedToc, maxBody] of [
-      [1440, 208, 722],
+      [1440, 196, 642],
       [1024, 184, 642],
     ] as const) {
       await page.setViewportSize({ width, height: 900 });
@@ -438,14 +438,23 @@ test.describe("admin — Form layout", () => {
 
     await installMocks(page);
     await page.setViewportSize({ width: 1440, height: 900 });
+    // Pricing は一覧が主役なので list 幅、Profile / Service は入力なので form 幅。
+    // どちらも「目次を持たない共通ページ枠」であることが要点。
     for (const tab of ["profile", "pricing", "service"]) {
       await openTab(page, tab);
       await expect(page.locator(".admin-form-toc")).toHaveCount(0);
-      const shell = page.locator('[data-admin-page-shell="form"] > div');
-      await expect(shell).toHaveCount(1);
-      expect((await shell.boundingBox())?.width ?? 9999).toBeLessThanOrEqual(
-        801,
+      const kind = await page
+        .locator("[data-admin-page-shell]")
+        .getAttribute("data-admin-page-shell");
+      expect(["form", "list"], `${tab} は共通ページ枠の用途幅を使う`).toContain(
+        kind,
       );
+      const shell = page.locator("[data-admin-page-shell] > div");
+      await expect(shell).toHaveCount(1);
+      const shellWidth = (await shell.boundingBox())?.width ?? 9999;
+      expect(shellWidth).toBeLessThanOrEqual(900);
+      // 上限だけだと、極端に細くても成功してしまう。
+      expect(shellWidth, `${tab} の本文が細すぎる`).toBeGreaterThanOrEqual(560);
     }
   });
 });

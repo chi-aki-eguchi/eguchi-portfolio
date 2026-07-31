@@ -168,12 +168,18 @@
     rgba(var(--admin-accent-rgb), 0.04)
   );
 
-  /* Legacy aliases — kept so existing call sites don't need a mass rename;
-     new code should reference the tokens above directly. */
-  --admin-radius-xs: var(--radius-s);
-  --admin-radius-sm: var(--radius-s);
-  --admin-radius-md: var(--radius-m);
-  --admin-radius-lg: var(--radius-l);
+  /* Radius is re-scoped for admin, NOT inherited from :root (8/12/18).
+     公開サイトのカードは丸くてよいが、管理画面はほぼ全要素がボタンか入力欄で、
+     同じ丸みが全部に付くと「汎用UIキット」の顔になる(goal 軸5)。
+     ここをほぼ直角に落とすことが、画面ごとの個別対応より効く。
+     写真とプレビュー枠は元から角丸なし。 */
+  --radius-s: 2px;
+  --radius-m: 3px;
+  --radius-l: 5px;
+  --admin-radius-xs: 0px;
+  --admin-radius-sm: 2px;
+  --admin-radius-md: 3px;
+  --admin-radius-lg: 5px;
   --admin-shadow-tight: var(--shadow-1);
   --admin-shadow-soft: var(--shadow-2);
   --admin-shadow-lg: var(--shadow-3);
@@ -265,6 +271,13 @@
   padding: 28px 18px 18px;
   min-height: 0;
   position: relative;
+  /* 折りたたみレールのポップオーバーは、このサイドバーが作る重なり文脈の中に
+     閉じ込められる(`.admin-glass` の transform が文脈を作るため)。
+     本文側の positioned な子は根の文脈に居り、最大が Library の表示メニュー(70)。
+     したがってサイドバーは 70 より上、スマホの節一覧シート(90)より下に置く。
+     この値の根拠がこれ。左ナビを畳むとポップオーバーが Library の作業バーの
+     下へ潜って押せなくなっていた(オーナー指摘「折りたたみ時の操作不能」)。 */
+  z-index: 80;
   /* Thickness at the right edge as a light "highlight" catching the glass's
      top face, plus a soft shadow beyond it — not a plain border line. */
   box-shadow:
@@ -543,7 +556,11 @@
   color: var(--admin-muted);
 }
 
-@media (min-width: 1024px) and (max-width: 1199px) {
+/* 中間幅(タブレット〜小さいノート)は、スマホ用の上下バーではなくアイコンレールを使う。
+   以前は 1024px 未満が丸ごとスマホ扱いで、900px の横長画面に下部タブバーが出て
+   「幅はあるのに操作がスマホのまま」という崩れ方をしていた(オーナー指摘
+   「中間幅でレイアウトが崩れる」)。レールは 768px から。 */
+@media (min-width: 768px) and (max-width: 1199px) {
   .admin-atelier .admin-sidebar {
     width: 64px;
     flex-basis: 64px;
@@ -757,7 +774,7 @@
   color: var(--admin-ink) !important;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .admin-atelier .admin-mobile-topbar,
   .admin-atelier .admin-bottom-nav,
   .admin-atelier .admin-sheet {
@@ -881,22 +898,38 @@
 /* `aria-pressed` is also used by buttons that only report a state.
    Giving those chips the same ink fill makes the state look like a selected action,
    so `.admin-state-chip` opts out while selection toggles keep this rule. */
+/* 黒塗りは「その画面で一番強い1操作」(保存・追加)だけに残す。
+   2026-07-31 以前は選択トグル(閲覧/選択/並べ替え・デジタル/フィルム)と開閉ボタンも
+   同じ黒塗りだったため、画面に黒い塊がいくつも並び、どれが実行操作でどれが
+   ただの状態表示なのか区別できなかった(goal 軸2・軸4「黒塗りが多い」)。
+   選択状態は「インクの下線 + インクの文字 + ごく薄い面」で示す。 */
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button.admin-btn-primary:not(.absolute):not(.admin-state-chip),
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button[aria-pressed="true"]:not(.absolute):not(.admin-state-chip) {
+  button.admin-btn-primary:not(.absolute):not(.admin-state-chip) {
   background-color: var(--admin-ink) !important;
   border-color: var(--admin-ink) !important;
   color: var(--admin-paper) !important;
 }
 
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button[aria-pressed="true"]:not(.absolute):not(.admin-state-chip):not(
+    .admin-btn-primary
+  ) {
+  background-color: rgba(var(--admin-ink-rgb), 0.05) !important;
+  border-color: transparent !important;
+  color: var(--admin-ink) !important;
+  font-weight: 500;
+  box-shadow: inset 0 -1.5px 0 var(--admin-ink) !important;
+}
+
 /* 開閉ボタンは aria-expanded で状態を示す。要素側のクラスは通常ボタンのリセットに
    上書きされて効かないため、ここで指定する。アコーディオン行は塗らないので除外。 */
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button[aria-expanded="true"]:not(.absolute):not(.admin-plain-section-trigger) {
-  background-color: var(--admin-ink) !important;
-  border-color: var(--admin-ink) !important;
-  color: var(--admin-paper) !important;
+  button[aria-expanded="true"]:not(.absolute):not(.admin-plain-section-trigger):not(
+    [aria-pressed]
+  ) {
+  background-color: rgba(var(--admin-ink-rgb), 0.05) !important;
+  border-color: transparent !important;
+  color: var(--admin-ink) !important;
 }
 
 /* `aria-pressed` は状態表示にも使う。選択中の主ボタンと同じ黒塗りになると
@@ -1454,8 +1487,10 @@
   max-width: none;
 }
 
+/* Library / Hero など全幅作業面の見出し。ページ枠(.ax-page)と同じ左右余白を使い、
+   9タブすべてで見出しの左端を一致させる。 */
 .admin-atelier .admin-workspace__header {
-  padding-inline: 32px;
+  padding: clamp(28px, 3.4vw, 52px) var(--ax-inset) 0;
 }
 
 .admin-atelier .admin-library-header-actions {
@@ -1465,11 +1500,21 @@
   gap: 8px;
 }
 
+/* 取り込み一式。作業バーの右端で、探す/見る操作とは細い縦罫で分ける。 */
+.admin-atelier .admin-library-import-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 1px solid var(--admin-line);
+}
+
 .admin-atelier .admin-library-import-medium {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1478,7 +1523,7 @@
 }
 
 .admin-atelier .admin-library-import-medium > span {
-  margin-right: 2px;
+  margin-right: 4px;
   white-space: nowrap;
 }
 
@@ -1495,12 +1540,6 @@
   font-size: var(--admin-text-note);
 }
 
-.admin-atelier
-  .admin-library-import-medium
-  button[aria-pressed="true"] {
-  color: var(--admin-paper);
-}
-
 .admin-atelier .admin-library-import-button {
   color: var(--admin-paper);
 }
@@ -1509,7 +1548,7 @@
   position: relative;
   z-index: 20;
   flex: 0 0 auto;
-  padding: 7px 32px;
+  padding: 8px var(--ax-inset);
   border-bottom: 1px solid var(--admin-line);
   background: var(--admin-paper);
 }
@@ -1527,7 +1566,7 @@
   align-items: center;
   gap: 2px;
   margin: 0;
-  padding: 0 12px 0 0;
+  padding: 0 14px 0 0;
   border: 0;
   border-right: 1px solid var(--admin-line);
 }
@@ -1668,19 +1707,13 @@
     padding-inline: 20px;
   }
 
-  .admin-atelier .admin-workspace__header {
-    padding-inline: 20px;
-  }
-
-  .admin-atelier .admin-library-workbar {
-    padding-inline: 20px;
-  }
-
   .admin-atelier .admin-library-import-medium > span {
     display: none;
   }
 }
 
+/* スマホ。1行に詰め込むと、検索欄・絞り込み・取り込みが重なって押せなくなる。
+   「モード」「探す」「取り込む」の3グループで折り返す。どれも隠さない。 */
 @media (max-width: 767px) {
   .admin-atelier .admin-library-reorder-exit-guard {
     align-items: flex-start;
@@ -1689,10 +1722,6 @@
 
   .admin-atelier .admin-library-reorder-exit-guard button {
     min-height: 44px;
-  }
-
-  .admin-atelier .admin-workspace__header {
-    padding-inline: 12px;
   }
 
   .admin-atelier .admin-library-header-actions {
@@ -1706,21 +1735,30 @@
   }
 
   .admin-atelier .admin-library-workbar__row {
-    gap: 6px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .admin-atelier .admin-library-mode-switcher {
-    padding-right: 6px;
+    padding-right: 10px;
   }
 
   .admin-atelier .admin-library-mode-switcher button {
-    min-height: 30px;
-    padding-inline: 7px;
-    font-size: 10px;
+    min-height: 32px;
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .admin-atelier .admin-library-find-tools {
+    flex: 1 1 auto;
+    margin-left: 0;
+    justify-content: flex-end;
   }
 
   .admin-atelier .admin-library-search {
-    width: min(35vw, 138px);
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .admin-atelier .admin-library-find-tools > button {
@@ -1739,6 +1777,30 @@
 
   .admin-atelier .admin-library-view-menu > summary svg:last-child {
     display: none;
+  }
+
+  /* 取り込みは行を分ける。左端はモード切替とそろえる。 */
+  .admin-atelier .admin-library-import-group {
+    width: 100%;
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--admin-line);
+    padding-top: 8px;
+  }
+
+  .admin-atelier .admin-library-import-group .admin-library-import-button {
+    margin-left: auto;
+  }
+}
+
+/* 中間幅では取り込みだけ先に折り返させ、検索欄を潰さない。 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .admin-atelier .admin-library-workbar__row {
+    flex-wrap: wrap;
+  }
+
+  .admin-atelier .admin-library-import-group {
+    margin-left: auto;
   }
 }
 
@@ -1790,23 +1852,24 @@
   min-height: 0;
   flex: 1 1 auto;
   overflow: auto;
-  padding: 32px;
+  padding: clamp(28px, 3.4vw, 52px) var(--ax-inset) 96px;
 }
 
+/* 見出しを別に持つ作業面(Library等)では、上の余白は見出し側が受け持つ */
+.admin-atelier .admin-workspace__header + .admin-screen-workspace__scroll,
+.admin-atelier .admin-library-workbar + .admin-screen-workspace__scroll {
+  padding-top: 20px;
+}
+
+/* 入力フォームは一覧と同じ左端に置く。以前は margin-left:auto で右へ寄っていて、
+   同じ画面の中で一覧と入力の左端が 400px ずれていた(Series で顕著)。 */
 .admin-atelier .admin-mixed-form-panel {
-  width: min(720px, 100%);
-  margin-left: auto;
-}
-
-@media (max-width: 1199px) {
-  .admin-atelier .admin-screen-workspace__scroll {
-    padding: 24px 20px;
-  }
+  width: min(560px, 100%);
 }
 
 @media (max-width: 767px) {
   .admin-atelier .admin-screen-workspace__scroll {
-    padding: 20px 12px calc(28px + var(--sai-bottom, 0px));
+    padding-bottom: calc(28px + var(--sai-bottom, 0px));
   }
 
   .admin-atelier:has([data-admin-reorder-scope="hero"]) .admin-bottom-nav {
@@ -2286,10 +2349,13 @@
     );
 }
 
-.admin-atelier .admin-content [class*="px-5"],
-.admin-atelier .admin-content [class*="px-6"],
-.admin-atelier .admin-content [class*="p-5"],
-.admin-atelier .admin-content [class*="p-6"] {
+/* `*=` は部分一致なので `gap-6` のようなクラスまで巻き込み、身に覚えのない
+   左右余白が入る事故が起きていた(Settings のフォーム列が 20px ずれた)。
+   クラス名は空白区切りの語なので `~=` の完全一致で拾う。 */
+.admin-atelier .admin-content [class~="px-5"],
+.admin-atelier .admin-content [class~="px-6"],
+.admin-atelier .admin-content [class~="p-5"],
+.admin-atelier .admin-content [class~="p-6"] {
   padding-left: clamp(18px, 2.5vw, 34px) !important;
   padding-right: clamp(18px, 2.5vw, 34px) !important;
 }
@@ -3538,16 +3604,27 @@ dialog.lightbox-exit .lb-content {
 .admin-atelier .admin-settings-form-layout__inner {
   display: grid;
   /* 目次幅は container query で詰める(§2-1 手順3)。横帯へは変えない。 */
-  grid-template-columns: var(--settings-toc-w, 208px) minmax(0, 720px);
-  gap: 40px;
+  grid-template-columns: var(--settings-toc-w, 196px) minmax(0, 640px);
+  gap: 0 44px;
   width: 100%;
-  max-width: 1032px;
-  padding: 32px 32px 96px;
+  max-width: 1000px;
+  padding: clamp(28px, 3.4vw, 52px) var(--ax-inset) 96px;
+}
+
+/* 見出しは目次と本文の両方の上。他タブと同じ左端に立つ。 */
+.admin-atelier .admin-settings-form-layout__header {
+  grid-column: 1 / -1;
+}
+
+/* 目次と保存パネルは、見出しの下から始まる */
+.admin-atelier .admin-settings-form-layout__inner > .admin-form-toc,
+.admin-atelier .admin-settings-form-layout__inner > .admin-settings-form-layout__body {
+  grid-row: 2;
 }
 .admin-atelier .admin-settings-form-layout__body {
   min-width: 0;
   width: 100%;
-  max-width: 720px;
+  max-width: 640px;
 }
 .admin-atelier .admin-form-toc {
   position: sticky;
@@ -3560,32 +3637,43 @@ dialog.lightbox-exit .lb-content {
   flex-direction: column;
   gap: 2px;
 }
+/* 目次。19項目が「塗られた丸角の箱」で並ぶと、それだけで画面が箱だらけになる。
+   1本の細い縦罫に寄せ、現在地だけインクの線と文字で示す。 */
+.admin-atelier .admin-form-toc__nav {
+  border-left: 1px solid var(--admin-line);
+}
 .admin-atelier .admin-form-toc__nav > button {
   position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 34px;
-  padding: 7px 9px 7px 12px;
-  border-left: 3px solid transparent;
+  min-height: 32px;
+  padding: 6px 8px 6px 14px;
+  margin-left: -1px;
+  border: 0;
+  border-left: 1px solid transparent;
   color: var(--admin-muted);
   font-size: var(--admin-text-note);
-  line-height: 1.35;
+  line-height: 1.4;
   text-align: left;
   transition:
     color var(--dur-fast),
-    background-color var(--dur-fast),
     border-color var(--dur-fast);
 }
 .admin-atelier .admin-form-toc__nav > button:hover {
   color: var(--admin-ink);
 }
-.admin-atelier .admin-form-toc__nav > button.is-active,
-.admin-atelier .admin-form-toc__nav > button[aria-current="location"] {
-  border-left-color: var(--admin-accent);
-  background: rgba(var(--admin-accent-rgb), 0.08);
-  color: var(--admin-ink);
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-form-toc__nav
+  > button.is-active,
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-form-toc__nav
+  > button[aria-current="location"] {
+  border-left-color: var(--admin-ink) !important;
+  background: transparent !important;
+  color: var(--admin-ink) !important;
+  font-weight: 500;
 }
 .admin-atelier .admin-form-toc__nav > button:focus-visible {
   outline: 2px solid var(--admin-accent);
@@ -3623,8 +3711,8 @@ dialog.lightbox-exit .lb-content {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  margin-top: 20px;
-  padding: 14px 0 0 12px;
+  margin-top: 24px;
+  padding: 16px 0 0 14px;
   border-top: 1px solid var(--admin-line);
   color: var(--admin-muted);
   font-size: var(--admin-text-note);
@@ -3670,10 +3758,12 @@ dialog.lightbox-exit .lb-content {
   cursor: wait;
   opacity: 0.5;
 }
-.admin-atelier .admin-form-save-panel__actions .admin-form-save-panel__primary {
-  border-color: var(--admin-accent);
-  background: var(--admin-accent);
-  color: var(--admin-paper);
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-form-save-panel__actions
+  .admin-form-save-panel__primary {
+  border-color: var(--admin-ink) !important;
+  background: var(--admin-ink) !important;
+  color: var(--admin-paper) !important;
 }
 .admin-atelier
   .admin-settings-section[data-settings-section-error="true"]
@@ -3720,36 +3810,22 @@ dialog.lightbox-exit .lb-content {
   }
 }
 
+/* 中間幅。以前はここで目次を「横スクロールする帯」に変えていたが、
+   19節が右へはみ出して最後まで見えず、押せない節ができていた
+   (オーナー指摘「中間幅でレイアウトが崩れる」)。
+   幅が足りないのは目次ではなく本文側なので、目次は縦のまま細くする。 */
 @media (min-width: 768px) and (max-width: 1023px) {
   .admin-atelier .admin-settings-form-layout__inner {
-    display: block;
+    --settings-toc-w: 152px;
+    grid-template-columns: var(--settings-toc-w) minmax(0, 1fr);
+    gap: 0 28px;
     max-width: none;
-    padding: 24px 24px 96px;
   }
   .admin-atelier .admin-settings-form-layout__body {
-    max-width: none;
-  }
-  .admin-atelier .admin-form-toc {
-    position: static;
-    margin-bottom: 24px;
-  }
-  .admin-atelier .admin-form-toc__nav {
-    flex-flow: row nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
+    max-width: 560px;
   }
   .admin-atelier .admin-form-toc__nav > button {
-    width: auto;
-    min-width: max-content;
-    border-left: 0;
-    border-bottom: 3px solid transparent;
-  }
-  .admin-atelier .admin-form-toc__nav > button.is-active {
-    border-bottom-color: var(--admin-accent);
-  }
-  .admin-atelier .admin-form-save-panel {
-    margin-top: 8px;
-    padding-left: 0;
+    padding-left: 12px;
   }
 }
 
@@ -4250,4 +4326,583 @@ dialog.lightbox-exit .lb-content {
   .admin-atelier .admin-form-toc__nav > button {
     padding: 7px 6px 7px 10px;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ax-* : 管理画面の共通部品(admin-ui.tsx)の見た目。2026-07-31 刷新。
+
+   ここより上の古いルール群は、要素の class 文字列を当てにした広い上書き
+   (`button:not(.absolute)`、`[class*="rounded"]` 等)でできている。
+   新しい部品はそれに勝てるよう、既存と同じ「クラス重ね + !important」の
+   作法に合わせる。作法を変えると、部品ごとに勝ったり負けたりして
+   「画面ごとに見た目が違う」状態が戻る。
+   ══════════════════════════════════════════════════════════════════════ */
+
+.admin-atelier {
+  /* 縦のリズム。ここだけで全画面の余白が決まる */
+  --ax-gap-page: 40px; /* 節と節 */
+  --ax-gap-block: 20px; /* 節の中の要素 */
+  --ax-inset: clamp(20px, 3.2vw, 44px); /* 本文の左右余白 */
+}
+
+.admin-atelier .ax-page {
+  width: 100%;
+  padding: clamp(28px, 3.4vw, 52px) var(--ax-inset) 96px;
+}
+
+/* ── ページ見出し ── */
+.admin-atelier .ax-page-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: var(--ax-gap-page);
+}
+
+.admin-atelier .ax-page-title__text {
+  margin: 0;
+  font-family: var(--admin-font-title);
+  font-size: var(--admin-text-page);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: var(--admin-ink);
+}
+
+.admin-atelier .ax-page-title__note {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  font-size: var(--admin-text-body);
+  line-height: 1.75;
+  color: var(--admin-muted);
+}
+
+.admin-atelier .ax-page-title__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── 節見出し ── */
+.admin-atelier .ax-section-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: var(--ax-gap-page) 0 var(--ax-gap-block);
+}
+
+.admin-atelier .ax-section-title:first-child {
+  margin-top: 0;
+}
+
+.admin-atelier .ax-section-title--rule {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-atelier .admin-content h2.ax-section-title__text {
+  margin: 0;
+  font-family: var(--admin-font-ui) !important;
+  font-size: var(--admin-text-body) !important;
+  font-weight: 500;
+  line-height: 1.4 !important;
+  letter-spacing: 0.08em;
+  color: var(--admin-ink);
+}
+
+.admin-atelier .ax-section-title__hint {
+  margin: 6px 0 0;
+  max-width: 62ch;
+  font-size: var(--admin-text-note);
+  line-height: 1.7;
+  color: var(--admin-muted);
+}
+
+.admin-atelier .ax-section-title__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── 一覧 ──
+   塗らない・囲まない。行間の細い罫だけで分ける。 */
+.admin-atelier .ax-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-atelier .ax-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--admin-line);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-atelier .ax-row:hover {
+  background: rgba(var(--admin-ink-rgb), 0.02);
+}
+
+.admin-atelier .ax-row__lead {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  color: var(--admin-muted);
+}
+
+/* 表紙写真。実体のある「もの」なので、ここだけは面を持ってよい。
+   刷新前は写真が無くても灰色の四角が出ていたので、media 自体を出さない。 */
+.admin-atelier .ax-row__media {
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: 68px;
+  height: 48px;
+  background: rgba(var(--admin-ink-rgb), 0.04);
+}
+
+.admin-atelier .ax-row__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-atelier .ax-row__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-atelier .ax-row__line {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.admin-atelier .ax-row__title {
+  overflow: hidden;
+  font-size: var(--admin-text-body);
+  color: var(--admin-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-atelier .ax-row__meta {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--admin-text-note);
+  color: rgba(var(--admin-muted-rgb), 0.85);
+  letter-spacing: 0.02em;
+}
+
+.admin-atelier .ax-row__note {
+  overflow: hidden;
+  margin: 3px 0 0;
+  font-size: var(--admin-text-note);
+  line-height: 1.6;
+  color: var(--admin-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-atelier .ax-row__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 破壊的な操作だけ、普段は薄く置いて近づくと現れる。
+   触れる端末では常に見えるようにする(隠れていると押せない)。 */
+@media (hover: hover) and (pointer: fine) {
+  .admin-atelier .ax-row__actions [data-ax-reveal] {
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+
+  .admin-atelier .ax-row:hover .ax-row__actions [data-ax-reveal],
+  .admin-atelier .ax-row:focus-within .ax-row__actions [data-ax-reveal] {
+    opacity: 1;
+  }
+}
+
+/* ── 入力 ──
+   箱をやめて下罫線にする。枠の数が画面から目に見えて減る。 */
+.admin-atelier .ax-field {
+  min-width: 0;
+}
+
+.admin-atelier label.ax-field__label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--admin-text-note);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--admin-muted);
+}
+
+.admin-atelier .ax-field__hint {
+  margin: 0 0 4px;
+  max-width: 60ch;
+  font-size: var(--admin-text-note);
+  line-height: 1.6;
+  color: rgba(var(--admin-muted-rgb), 0.85);
+}
+
+.admin-atelier .ax-field-grid {
+  display: grid;
+  gap: var(--ax-gap-block) 28px;
+  grid-template-columns: 1fr;
+  container-type: inline-size;
+}
+
+@supports (container-type: inline-size) {
+  @container (min-width: 560px) {
+    .admin-atelier .ax-field-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
+.admin-atelier .ax-field--span {
+  grid-column: 1 / -1;
+}
+
+.admin-atelier input.ax-input,
+.admin-atelier textarea.ax-input,
+.admin-atelier select.ax-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 2px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--admin-line) !important;
+  border-radius: 0 !important;
+  /* `background` の一括指定にすると、下の .ax-select が置く三角の
+     background-image まで消える。色だけを指定する。 */
+  background-color: transparent !important;
+  color: var(--admin-ink) !important;
+  font-size: var(--admin-text-body);
+  line-height: 1.6;
+  outline-offset: 3px;
+}
+
+.admin-atelier input.ax-input:hover,
+.admin-atelier textarea.ax-input:hover,
+.admin-atelier select.ax-input:hover {
+  border-bottom-color: var(--admin-line-strong) !important;
+}
+
+.admin-atelier input.ax-input:focus,
+.admin-atelier textarea.ax-input:focus,
+.admin-atelier select.ax-input:focus {
+  border-bottom-color: var(--admin-accent) !important;
+  box-shadow: inset 0 -1px 0 var(--admin-accent) !important;
+}
+
+.admin-atelier .ax-input--mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.02em;
+}
+
+.admin-atelier .ax-input--area {
+  min-height: 96px;
+  resize: vertical;
+}
+
+/* ── ボタン ──
+   4重クラス + !important は、上のグローバル button リセットに勝つための作法。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid transparent !important;
+  border-radius: var(--admin-radius-sm) !important;
+  font-size: var(--admin-text-note);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--small {
+  min-height: 30px;
+  padding: 4px 9px;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--quiet {
+  border-color: var(--admin-line) !important;
+  background: transparent !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.ax-btn--quiet:hover:not(:disabled) {
+  border-color: var(--admin-line-strong) !important;
+  background: rgba(var(--admin-ink-rgb), 0.03) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--ghost {
+  padding-inline: 8px;
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--admin-muted) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.ax-btn--ghost:hover:not(:disabled) {
+  background: rgba(var(--admin-ink-rgb), 0.04) !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--danger {
+  padding-inline: 8px;
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--admin-line-strong) !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.ax-btn--primary {
+  padding-inline: 18px;
+}
+
+/* ── 追加フォーム ──
+   一覧と同じ左端。見出しは「新しい◯◯」の一言だけ。 */
+.admin-atelier .ax-add {
+  margin-top: var(--ax-gap-page);
+  padding-top: 22px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-atelier .admin-content h2.ax-add__title {
+  margin: 0 0 var(--ax-gap-block);
+  font-family: var(--admin-font-ui) !important;
+  font-size: var(--admin-text-body) !important;
+  font-weight: 500;
+  line-height: 1.4 !important;
+  letter-spacing: 0.08em;
+  color: var(--admin-ink);
+}
+
+.admin-atelier .ax-add__body {
+  display: flex;
+  max-width: 520px;
+  flex-direction: column;
+  gap: var(--ax-gap-block);
+}
+
+/* ── 状態(公開/下書き) ──
+   ボタンに見せない。点と文字だけ。 */
+.admin-atelier .ax-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--admin-text-note);
+  letter-spacing: 0.06em;
+  color: var(--admin-muted);
+  white-space: nowrap;
+}
+
+.admin-atelier .ax-status__dot {
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--admin-line-strong);
+  border-radius: 999px;
+  background: transparent;
+}
+
+.admin-atelier .ax-status[data-on] {
+  color: var(--admin-ink);
+}
+
+.admin-atelier .ax-status[data-on] .ax-status__dot {
+  border-color: var(--admin-ink);
+  background: var(--admin-ink);
+}
+
+/* ── 空状態 ── */
+.admin-atelier .ax-empty {
+  margin: 0;
+  padding: 26px 2px;
+  border-bottom: 1px solid var(--admin-line);
+  font-size: var(--admin-text-note);
+  color: var(--admin-muted);
+}
+
+/* ── 行の中に編集フォームを開く一覧(Series / Pricing) ──
+   行そのものは他の一覧と同じ。開いた編集面だけ、紙を一段落とす。 */
+.admin-atelier .ax-row-group {
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-atelier .ax-row.ax-row--in-group {
+  border-bottom: 0;
+}
+
+.admin-atelier .ax-row__media--series {
+  width: 84px;
+  height: 56px;
+}
+
+/* 表紙が無い行。場所だけ確保して、面は持たせない。 */
+.admin-atelier .ax-row__media--empty {
+  background: transparent;
+}
+
+.admin-atelier .ax-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ax-gap-block);
+  padding: 4px 0 28px 0;
+  container-type: inline-size;
+}
+
+/* 状態トグル(公開/下書き)。ボタンだが、面も枠も持たせない。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.ax-status-toggle {
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid transparent !important;
+  border-radius: var(--admin-radius-sm) !important;
+  background: transparent !important;
+}
+
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  button.ax-status-toggle:hover {
+  background: rgba(var(--admin-ink-rgb), 0.04) !important;
+}
+
+/* select は下罫線 + 自前の三角。ネイティブの枠と矢印を消す */
+.admin-atelier select.ax-select {
+  appearance: none;
+  padding-right: 22px;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--admin-muted) 50%
+    ),
+    linear-gradient(135deg, var(--admin-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 11px) calc(50% + 1px),
+    calc(100% - 6px) calc(50% + 1px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* 言語切替の細い帯。画面の主役ではないので、罫線だけで区切る。
+   スマホでは上部バー側に同じ切替があるので出さない。 */
+.admin-atelier .admin-lang-bar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .admin-atelier .admin-lang-bar {
+    display: flex;
+    min-height: 40px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-end;
+    padding-inline: 16px;
+    border-bottom: 1px solid var(--admin-line);
+  }
+}
+
+/* 一覧の最後の罫と、追加フォームの上の罫が二重に見えないようにする */
+.admin-atelier .ax-rows + .ax-add,
+.admin-atelier .ax-empty + .ax-add {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* 言語切替は「状態表示」であって実行操作ではないので、選択中の下線を付けない */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-language-toggle
+  button[aria-pressed="true"] {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 写真グリッドの左端を、ページ見出しと同じ位置に揃える。
+   刷新前はグリッドが 12px、見出しが 40px で、10〜30px ずれて見えていた。 */
+.admin-atelier [data-library-scroll] {
+  padding: 16px var(--ax-inset) 40px;
+}
+
+@media (max-width: 767px) {
+  .admin-atelier [data-library-scroll] {
+    padding: 12px 12px 32px;
+  }
+}
+
+/* 分類の色ラベル。写真の上に載るので、点は小さく・紙色の細い縁だけ持たせる。 */
+.admin-atelier .admin-photo-cat-dot {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+}
+
+
+/* タッチ端末では、ax-* の小さいボタンも指で押せる大きさにする。
+   見た目(padding・文字サイズ)は変えず、当たり判定だけ広げる。
+   2026-07-31 の刷新で 30px の小ボタンを増やしたが、既存の当たり判定拡張は
+   `.admin-tap*` 付きの要素にしか効いていなかった(Codex独立監査 指摘)。 */
+@media (pointer: coarse) {
+  .admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn,
+  .admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--small,
+  .admin-atelier.admin-atelier.admin-atelier.admin-atelier
+    button.ax-status-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* キーボードのフォーカス枠。30%の透明色では紙色に対して 1.42:1 しかなく、
+   どこにいるのか分からなかった。不透明のアクセント色にして 3.8:1 にする
+   (Codex独立監査 2026-07-31 指摘)。基準の 3:1 を満たす。 */
+.admin-atelier.admin-atelier button:focus-visible,
+.admin-atelier.admin-atelier a:focus-visible,
+.admin-atelier.admin-atelier input:focus-visible,
+.admin-atelier.admin-atelier textarea:focus-visible,
+.admin-atelier.admin-atelier select:focus-visible,
+.admin-atelier.admin-atelier [tabindex]:focus-visible {
+  outline: 2px solid var(--admin-accent) !important;
+  outline-offset: 2px;
+}
+
+
+/* 設定の目次はホバーでも塗らない。19項目が順に灰色に光ると落ち着かない。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-form-toc__nav
+  > button:hover {
+  background-color: transparent !important;
+  border-left-color: var(--admin-line-strong) !important;
+  color: var(--admin-ink) !important;
+}
+
+/* 現在地はホバーしてもインクの線のまま(上のホバー規則に負けないよう重ねる) */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-form-toc__nav
+  > button.is-active:hover,
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-form-toc__nav
+  > button[aria-current="location"]:hover {
+  border-left-color: var(--admin-ink) !important;
 }

@@ -33,7 +33,7 @@ in 1 hour, read docs/delayed-execution-sop.md and then do the following:
 ### 注意
 
 - Claude Code セッションが開いている間だけ有効。ターミナルを閉じると予約は消える。
-- `git push` まで自動化したい場合は permission mode を事前に確認。通常は「変更と検証まで自動、push は人間確認」が安全。
+- `git push` は自動化しない。理由・オーナー承認の有無にかかわらずエージェントは実行せず、変更と検証までを自動化する。push はオーナー本人が手動で行う。
 
 ## 方法2: Cowork scheduled task（定期実行・リマインダー）
 
@@ -74,5 +74,5 @@ Cowork で `/schedule` または自然言語で予約：
 - [ ] 2分後テストで発火を確認した
 - [ ] タスク内容を MD ファイルまたはプロンプトに明文化した
 - [ ] permission mode を確認した（通常は `acceptEdits`）
-- [ ] push は手動確認にするか自動にするか決めた
+- [ ] push はオーナー本人が手動で行う。エージェントによる自動・手動実行を選択肢にしていない
 - [ ] 不要になった予約（`at` ジョブ等）を削除した

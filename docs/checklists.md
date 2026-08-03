@@ -42,7 +42,8 @@
 - [ ] クエリは `./database` 経由の `schema` import を使っている（`schema.ts` 直接 import 禁止）
 - [ ] 新しいクエリは `withRetry(() => db....)` でラップした
 - [ ] `withRetry` 本体（libsql.ts）の再試行条件を弱めたり広げたりしていない（変更するなら Codex レビュー必須 — 2026-07 監査 P1-1 参照）
-- [ ] 適用は `cd packages/web && bun run db:push`（本番と同じ DB に効くことを理解した上で）
+- [ ] `db:push` / `db:migrate` はオーナーの直接依頼がある場合だけ実行する。直接依頼がない場合は実行せず、必要性・対象DB・想定される影響だけを報告する
+- [ ] 直接依頼を受けた場合の適用は `cd packages/web && bun run db:push`（本番と同じ DB に効くことを理解した上で）
 
 ## 3. 画像パイプライン（R2 / sharp / 配信）
 
@@ -70,14 +71,16 @@
 **完了前**
 
 - [ ] 書き込み API 呼び出しは本文を読む前に検証している。合格条件の正本は
-      `AGENTS.md`「製品コードの不変条件」（admin 配下は 401 リダイレクトを含む
-      `admin-shared.ts` 側、settings 保存は `postAdminSettings()` 経由）
+      `AGENTS.md`「製品コードの不変条件」（admin 配下の新規・変更箇所は 401
+      リダイレクトを含む `admin-shared.ts` 側、settings 保存は `postAdminSettings()` 経由）
+- [ ] 新しい書き込み処理には、応答検証に加えて `onError` または try/catch による
+      利用者へ見えるエラー表示がある（正本: `AGENTS.md`「製品コードの不変条件」）
 - [ ] データ更新後は `qc.invalidateQueries({ queryKey: [...] })` している（§0）
 - [ ] `fetch` 直接呼びを追加していない（`lib/api.ts` の型付きクライアント経由）
 - [ ] `bun run check` 成功
 - [ ] `bun run smoke` 成功（admin 必須ゲート。**本番と同じ DB に接続** — 新しいテストで Save/Delete/Add 確定など書き込み操作をクリックしない。0 fail でも skip 件数を確認）
 - [ ] 新しいバグを直した場合、`scripts/smoke/` に回帰テストを1件追加した（`helpers.ts` の `loginAsAdmin`/`gotoAdminTab` を再利用）
-- [ ] 既存テストの期待値を変えた場合、それが仕様変更への正当な追随であることを決定ログに書いた（実測合わせの緑化は禁止 — autonomy-rules §3）
+- [ ] 既存テストの期待値を変えた場合、それが仕様変更への正当な追随であることを決定ログに書いた（実測合わせの緑化は禁止。現役の正本は `AGENTS.md`「製品コードの不変条件」）
 - [ ] グローバルなキーボードショートカットを追加した場合、`dialog[open]` ガード（admin.tsx のグリッド keydown 参照）を通している
 
 ## 5. Railway デプロイ + 本番確認

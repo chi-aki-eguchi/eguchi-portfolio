@@ -9,8 +9,8 @@
 - DBクエリは `withRetry(() => db....)` でラップ
 - データ更新後は `qc.invalidateQueries`
 - 新規settingsキーは4箇所同期（`lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS` 台帳 / API `GET /settings` の default / `provider.tsx` DB適用useEffect / `provider.tsx` handlePreviewMessage。CLAUDE.md §0 と同期。旧「3箇所（admin previewPayload…）」は廃止済み）
-- スキーマ変更は `cd packages/web && bun run db:push`
-- 全書き込みres.ok/assertOkチェック・失敗時エラー表示
+- スキーマ変更は `db:push` / `db:migrate` の必要性をオーナーへ報告し、オーナーの直接依頼がある場合だけ実行する。直接依頼がない限り実行しない
+- 新しい書き込み処理は、応答検証（`assertOk` / `jsonOrThrow`）と利用者へ見えるエラー表示の両方を付ける
 - ロード中は空状態を出さない
 - **実装完了ごとに `bun run check`（tsc -b → lint → test → build）で確認する。`git push` はしない — 常にオーナーの手で行う**（2026-07-05 改定。旧: 実装のたびに自動 push。CLAUDE.md/AGENTS.md「完了の定義」と同期）
 

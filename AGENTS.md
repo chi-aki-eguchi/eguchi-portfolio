@@ -57,13 +57,17 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
   `settings-preview.ts` の台帳、API `/settings` の default、
   `provider.tsx` のDB適用 `useEffect`、同ファイルの `handlePreviewMessage`。
 - 書き込みAPIの応答は、**本文を読む前に必ず検証する**。使い分けは実装に合わせる。
-  - admin 配下: `admin-shared.ts` の `assertOk` / `jsonOrThrow`。
+  - admin 配下の新規・変更箇所: `admin-shared.ts` の `assertOk` / `jsonOrThrow`。
     401 をログイン画面へのリダイレクトとして扱うため、ここを素の `res.ok` に
-    置き換えるとセッション切れが無言で失敗する。
+    置き換えるとセッション切れが無言で失敗する。`admin.tsx` は共通版を import せず
+    独自定義を使う既存重複が残る、未解消の技術的負債である。統一済みとして扱わない。
   - それ以外: `lib/api.ts` の `assertOk` / `jsonOrThrow`。
   - **settings の保存は必ず `postAdminSettings()` を経由する。**
     API は許可リスト外のキーを無視して `ignoredKeys` で返すため、`assertOk` だけ見ると
     「保存成功」の表示のまま一部が保存されない。
+- 新しい書き込み処理には、応答検証（`assertOk` / `jsonOrThrow`）に**加えて**、失敗が
+  利用者の画面に見える経路（`onError` または try/catch でのエラー表示）を必ず付ける。
+  応答検証は例外を投げるだけで、画面に出る保証がない。
 - `Content-Encoding` を手動設定しない。HTMLは `Cache-Control: no-store`。
 - DB schema変更は `schema.ts` と `schema.postgres.ts` を同期する。
 - データ更新後は該当queryを再取得して、画面を古い状態のままにしない。

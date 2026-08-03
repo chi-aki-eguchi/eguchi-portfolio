@@ -3,54 +3,53 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-03 JST
 
-- **Status:** Codex のレーン運用が確定。文書整理に着手。commit 済み・push 未実施
-- **Current owner:** Claude Code（作業中）
-- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 4 commits ahead
+- **Status:** Codex レーン運用が確定。文書整理の第1・2段まで完了。commit 済み・push 未実施
+- **Current owner:** Claude Code（停止中）
+- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 8 commits ahead
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
+- クレジット `critical` により、ここで工程を閉じた。第3段は未着手。
 
 ### 目的と完了条件
 
-1. **（完了）Codex のレーン運用を決める。** 安い Luna へ定型作業を逃がし、
-   上位モデルの枠を難所へ回す。
-2. **（着手）文書整理。** docs/ が 83ファイル / 17,111行、task.md が 10,031行 まで増え、
-   AI が作業前に読む量が過大。オーナー判断は「全部やる」（2026-08-03）。
-   完了条件は、起動時に読む量が実際に小さくなっていること。
+1. **（完了）Codex のレーン運用を決める** — 安い Luna へ定型作業を逃がす。
+2. **（第1・2段完了）文書整理** — AI が作業前に読む量が過大だった。
+   オーナー判断は「全部やる」。完了条件は読む量が実際に小さくなること。
 
 ### 決まったこと（Codex レーン）
 
-- **レーン指定は `codex exec` のフラグ2つ。** 実機確認済み。
-  `-m gpt-5.6-luna` / `-m gpt-5.6-terra` に `-c model_reasoning_effort="max"`。
-  読み取り調査は `-s read-only`。詳細は `docs/agents/codex-workflow.md`。
-- Desktop app のエージェント選択は効かず既定の Sol / low で動いた。`codex exec` にも
-  `--agent` は無い。TOML は各レーンの担当範囲・禁止操作・停止条件の**定義文書**として
-  維持し、依頼文の下敷きに使う（instructions は自動では渡らない）。
-- `sol-advisor` プラグインは導入しない。Codex の Full access も有効にしない。
-- Luna へ回すのは仕様が確定した機械的作業だけ。settings の4箇所同期 / `withRetry` /
-  `assertOk` / DB schema / 認証は対象外。
+**レーン指定は `codex exec` のフラグ2つ**（`-m gpt-5.6-luna` / `-m gpt-5.6-terra` に
+`-c model_reasoning_effort="max"`、読み取りは `-s read-only`）。実機確認済み。
+Desktop app のエージェント選択は効かないため TOML は定義文書として維持し、依頼文の
+下敷きに使う。判断が要る作業は Luna に投げない。詳細は `docs/agents/codex-workflow.md`。
 
-### 検証済み / 未検証
+**Luna 実測2件（読み取り棚卸し / 12ファイル移動＋参照52箇所置換）ともに合格。**
+件数を自己検証し、範囲外の判断もせず、本文も書き換えなかった。消費は Codex 週枠で各約1%。
 
-- 成功: install script と `--check`、TOML 構文2本（`bun`）、
-  `bun test scripts/ai/handoff-tools.test.mjs` 3 pass、`git diff --check`
+### 文書整理の実績（2026-08-03）
+
+| 対象 | 前 | 後 |
+|---|---:|---:|
+| 起動時に読む Current State | 359行 | 60行未満 |
+| docs/（archive 除く） | 83ファイル / 17,111行 | 52ファイル / 10,174行 |
+
+- 第1段: Current State を圧縮。過去3件はマーカー外へ移動（task.md 内に保持）
+- 第2段: 被リンク0の specs 3件と `agent-logs` 12件を `docs/archive/` へ `git mv`。
+  **削除ゼロ。**参照52箇所はパス文字列のみ置換（Luna 実施・Claude 検証済み）
+- 見送り: `admin-enhancement-spec` の `-v2` 改名。3件は別内容で重複ではなく、
+  12箇所から参照されるため費用対効果が低い
 - `bun run check` / `bun run smoke` は**未実施**。AI運用・文書だけの変更のため
-  （`AGENTS.md` の必須検証の区分に従う）
-- **Luna 実測（1件目・読み取り棚卸し）:** 合格。83件を取り違えず集計し、件数を自己検証し、
-  途中で入った別commitに気づいて再集計した。価値判断もせず事実だけ出した。
-  消費は Codex 週枠の約1%。**定型・読み取り作業は Luna で問題ない。**
-  出力は `scratch/luna-docs-inventory.md`（gitignore）。
 
 ### 次の一手
 
-1. **文書整理・第1段（この commit）** — Current State を 359行から圧縮し、
-   過去分をマーカーの外へ出した。削除はしていない。
-2. **文書整理・第2段** — Luna に docs/ の棚卸し表を作らせ、archive 対象を決める。
-   出力は `scratch/luna-docs-inventory.md`。判断はオーナーと Claude が行う。
-3. **文書整理・第3段** — 起動時に読む順そのものを再設計する
+1. **文書整理・第3段（未着手）** — 起動時に読む順そのものを再設計する
    （`AGENTS.md` / `CLAUDE.md` / `task.md` の役割分担）。設計判断が多い。
-4. **クレジット判定の作り直し**（オーナー承認済み・2026-08-03）。残量に加えて
-   **リセットまでの時間**と**このペースで持つか**を見る。「情報が取れない」を
-   `closing` と区別する（`unknown`）。実例は `docs/agents/credit-status.md` へ。
-5. push するか判断する（**push はオーナーだけ**）。
+   併せて「今後の決定ログは Obsidian 側へ一本化」をルール化するか決める。
+2. **クレジット判定の作り直し**（オーナー承認済み）。残量に加えて**リセットまでの時間**と
+   **このペースで持つか**を見る。「情報が取れない」を `closing` と区別する（`unknown`）。
+   欠陥と実測値は `docs/agents/credit-status.md`。**実装前に反対レビューを通すこと。**
+3. **オーナー保留**: 古いログを「必要部分だけ書き写して削除」する案。Claude の見解は
+   「git 履歴が既にアーカイブなので、移動で十分。消すなら移動後の状態を見てから」。
+4. push するか判断する（**push はオーナーだけ**）。
 
 ### 触ってはいけない範囲
 
@@ -60,8 +59,9 @@
 
 ### 記録
 
-- Codex session: Luna 棚卸し = `scratch/codex-out-luna-inventory.log` 先頭に session ID
-- local commit: あり（`64ac597` / `a7c94ae` / `e2921c8`）
+- Codex session: `scratch/codex-out-luna-inventory.log` と
+  `scratch/codex-out-luna-agentlogs.log` の先頭に session ID
+- local commit: 8本（`64ac597`〜`9a0c5a0`）
 - push: 無し / Railway 反映: 無し / 本番確認: 無し
 <!-- CURRENT_STATE_END -->
 

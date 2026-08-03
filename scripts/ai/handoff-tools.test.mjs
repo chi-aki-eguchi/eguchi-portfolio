@@ -18,17 +18,46 @@ test("extracts only the Current State block", () => {
 
 test("reads HEAD whether it starts a bullet or shares a line", () => {
   // 行頭にある書き方
-  assert.equal(extractHeadField("- **HEAD:** `SELF`"), "SELF");
+  assert.deepEqual(extractHeadField("- **HEAD:** `SELF`"), { ok: true, value: "SELF" });
   // 1行にまとめた書き方（2026-08-03 まで読めずに警告を出し続けていた形）
-  assert.equal(
+  assert.deepEqual(
     extractHeadField("- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc`"),
-    "SELF",
+    { ok: true, value: "SELF" },
   );
   // ハッシュ指定
-  assert.equal(extractHeadField("- **Branch:** `main` / **HEAD:** `c2f7117`"), "c2f7117");
-  // 欄が無い場合は null
-  assert.equal(extractHeadField("- **Status:** Ready"), null);
-  assert.equal(extractHeadField(null), null);
+  assert.deepEqual(extractHeadField("- **Branch:** `main` / **HEAD:** `c2f7117`"), {
+    ok: true,
+    value: "c2f7117",
+  });
+});
+
+test("refuses ambiguous or malformed HEAD fields instead of guessing", () => {
+  // 実物と同じ形（ブロック自身の見出しで始まる）でも読める
+  const realShape = [
+    "## Current State — 2026-08-04 JST",
+    "",
+    "- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc`",
+    "",
+    "### 次の一手",
+    "",
+    "- **HEAD:** `deadbeef` はここでは拾わない",
+  ].join("\n");
+  assert.deepEqual(extractHeadField(realShape), { ok: true, value: "SELF" });
+
+  // メタ情報部分に2つあれば、黙って最初を採らずエラーにする
+  const duplicated = "- **HEAD:** `SELF`\n- **HEAD:** `c2f7117`";
+  assert.equal(extractHeadField(duplicated).ok, false);
+  assert.match(extractHeadField(duplicated).reason, /2個/);
+
+  // SELF でもハッシュでもない値は受け付けない
+  assert.equal(extractHeadField("- **HEAD:** `たぶんmain`").ok, false);
+
+  // 箇条書き以外の行にあっても拾わない
+  assert.equal(extractHeadField("説明文の中の **HEAD:** `SELF` は対象外").ok, false);
+
+  // 欄が無い / 入力が不正
+  assert.equal(extractHeadField("- **Status:** Ready").ok, false);
+  assert.equal(extractHeadField(null).ok, false);
 });
 
 test("redacts secret-shaped values but keeps normal status text", () => {

@@ -23,9 +23,30 @@ export function extractCurrentState(markdown) {
 // HEAD欄は行頭にあるとは限らない。`- **Branch:** \`main\` / **HEAD:** \`SELF\` / ...`
 // のように1行へまとめて書かれることが多く、行頭アンカーで探すと読めずに
 // 「HEAD欄を読めません」を出し続ける（2026-08-03 に実際に発生）。
-// 書式ではなくフィールド名で探す。
+// 一方で全文検索にすると、本文中のコード例や引用を誤って拾う。
+// そこで「最初の小見出しより前のメタ情報部分」だけを対象にし、
+// 曖昧なら黙って最初の値を採らずエラーにする。
 export function extractHeadField(currentState) {
-  return currentState?.match(/\*\*HEAD:\*\*\s*`([^`]+)`/)?.[1] || null;
+  if (typeof currentState !== "string") return { ok: false, reason: "Current Stateが空です" };
+
+  // ブロック自身の見出し（`## Current State — ...`）を落としてから、
+  // 次の見出しより前だけをメタ情報として見る。以降は本文なので拾わない。
+  const body = currentState.replace(/^#{1,6}\s[^\n]*\n?/, "");
+  const meta = body.split(/^#{1,6}\s/m)[0] ?? "";
+  const bullets = meta.split("\n").filter((line) => line.trimStart().startsWith("- "));
+  const matches = bullets.flatMap((line) => [...line.matchAll(/\*\*HEAD:\*\*[ \t]*`([^`\n]+)`/g)])
+    .map((m) => m[1]);
+
+  if (matches.length === 0) return { ok: false, reason: "Current StateのHEAD欄を読めません" };
+  if (matches.length > 1) {
+    return { ok: false, reason: `Current StateにHEAD欄が${matches.length}個あります` };
+  }
+
+  const value = matches[0];
+  if (value !== "SELF" && !/^[0-9a-f]{7,40}$/i.test(value)) {
+    return { ok: false, reason: `HEAD欄の値が SELF でもcommitハッシュでもありません: ${value}` };
+  }
+  return { ok: true, value };
 }
 
 export function checkFreshness() {
@@ -36,11 +57,12 @@ export function checkFreshness() {
 
   const actualHead = git(["rev-parse", "HEAD"]);
   const taskDirty = Boolean(git(["status", "--porcelain=v1", "--", "task.md"]));
-  const headField = extractHeadField(currentState);
+  const head = extractHeadField(currentState);
 
-  if (!headField) {
-    return { ok: false, reason: "Current StateのHEAD欄を読めません", actualHead };
+  if (!head.ok) {
+    return { ok: false, reason: head.reason, actualHead };
   }
+  const headField = head.value;
 
   if (taskDirty) {
     return {
@@ -64,7 +86,8 @@ export function checkFreshness() {
     };
   }
 
-  return { ok: true, reason: "Current Stateは現在のHEADと一致しています", actualHead, recordedHead };
+  // 検査しているのはHEAD欄だけ。Current State の中身が実物と合っているかは見ていない。
+  return { ok: true, reason: "Current StateのHEAD欄は現在のHEADと一致しています", actualHead, recordedHead };
 }
 
 function printResult(result, { json = false } = {}) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -62,8 +62,26 @@ printf '%s\\n' '${JSON.stringify(payload)}'
 `;
 }
 
+// 作った一時ディレクトリは終了時にまとめて消す。放置すると tmpdir が
+// テスト実行のたびに増え続ける（2026-08-03 の Phase E レビュー指摘）。
+const tempDirs = [];
+function makeTempDir(prefix) {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  tempDirs.push(dir);
+  return dir;
+}
+process.on("exit", () => {
+  for (const dir of tempDirs) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // 後始末の失敗でテスト結果を変えない
+    }
+  }
+});
+
 function fixture(options = {}) {
-  const home = mkdtempSync(join(tmpdir(), "credit-status-test-"));
+  const home = makeTempDir("credit-status-test-");
   const bin = join(home, "bin");
   mkdirSync(bin);
   const fakeBin = join(bin, "codexbar");
@@ -228,7 +246,7 @@ test("discovers codexbar from PATH", () => {
 });
 
 test("discovers CodexBar.app bundled CLI", () => {
-  const home = mkdtempSync(join(tmpdir(), "credit-status-app-test-"));
+  const home = makeTempDir("credit-status-app-test-");
   const cli = join(home, "Applications", "CodexBar.app", "Contents", "Helpers", "CodexBarCLI");
   mkdirSync(join(cli, ".."), { recursive: true });
   writeFileSync(cli, "#!/bin/sh\nexit 0\n");

@@ -40,6 +40,9 @@
    - **P1: 製品コードの `assertOk` 3重定義。** `admin.tsx` が共通版を import せず
      独自定義を使う。別commit・`bun run check`・`bun run smoke` 付きで直す。
    - P1: 毎プロンプトのクレジット文を、変化時だけに減らす。
+   - P1: hook テストの外部依存を減らす（Git・HOME・`task.md` を注入可能にする）。
+     一時ディレクトリの後始末だけは実施済み。判断は
+     `docs/agents/tooling-fix-review.md` の採否表。
    - P2: `docs/specs/README.md` の索引化 / Handoff archive の月別分割 /
      admin spec の `-v2` 改名と内部タイトルの整合。
 2. **（完了）クレジット判定の作り直し** — Phase C 反対レビュー → Terra 実装 →

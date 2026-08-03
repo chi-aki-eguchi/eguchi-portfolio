@@ -8,6 +8,7 @@
 - Finished or retired docs move to `docs/archive/` via `git mv`.
 - Do not plainly delete historical docs unless the owner explicitly approves deletion.
 - `task.md` holds only the Current State block; nothing else belongs there.
+- Never write re-measurable line counts or file counts into live docs as present-tense fact — they go stale. Exceptions: dated/commit-stamped audit results, archived history, and agreed limits (e.g. Current State's 30–60 lines).
 - Past handoffs and past Current States live in `docs/archive/task-handoffs.md`; append there, never back into `task.md`.
 - Standalone `*.handoff.md` files are banned.
 - Temporary prompts, drafts, and scratch scripts go in `scratch/`.

@@ -16,8 +16,8 @@ schema.
 `knowledge/wiki/` is an **index / compression layer** over this repository's
 existing documentation and code. It exists so an AI agent starting a session
 can read a handful of short pages and get oriented quickly, instead of
-re-reading CLAUDE.md, AGENTS.md, task.md (thousands of lines), every spec file,
-and the source tree from scratch every time.
+re-reading CLAUDE.md, AGENTS.md, the current `task.md` Current State,
+historical Handoffs, every spec file, and the source tree from scratch every time.
 
 ## NOT the source of truth
 
@@ -25,7 +25,7 @@ The wiki summarizes; it does not replace. **Canonical sources always win:**
 
 1. Actual source code
 2. CLAUDE.md / AGENTS.md (behavior rules)
-3. task.md (implementation work log)
+3. `task.md` (Current State); historical Handoffs: `docs/archive/task-handoffs.md`
 4. Other existing docs/specs (DISTRIBUTION.md, docs/*.md, spec files, etc.)
 5. `knowledge/wiki/*` — summary only, may be stale or wrong
 

@@ -6,7 +6,7 @@
 > Codex の会話用モックアップにしか存在せず、リポジトリからは辿れなかった。
 >
 > 実装は 2026-07-23 17:39〜17:49 に着手して中断している。
-> 現在地は `task.md` の **Handoff 2026-07-25 (62)** を見ること。
+> 現在地は `docs/archive/task-handoffs.md` の **Handoff 2026-07-25 (62)** を見ること。
 
 ## 1. なぜやるか（目的）
 
@@ -165,7 +165,7 @@ Q-11 の完了条件に「この fixme を通常の test へ戻す」を含め�
 
 ## 8. 関連
 
-- `task.md` Handoff 2026-07-25 (62) — 実装の現在地
+- `docs/archive/task-handoffs.md` Handoff 2026-07-25 (62) — 実装の現在地
 - `AGENTS.md`「役割分担」 — 設計=Claude Code / 実装=Codex
 - `docs/specs/admin-enhancement-spec.md` — 管理画面の既存仕様
 - 主な対象: `packages/web/src/web/pages/admin.tsx`、`admin-shared.ts`、`admin-i18n.tsx`

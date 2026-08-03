@@ -66,12 +66,14 @@ sources:
 - DB schema (high level): `photos`, `categories`, `hero_photos`,
   `site_settings` (key-value), plus `series` and `pricing_plans` — see
   database.md for the full dual-schema story. (AGENTS.md:88-93)
-- `task.md` is the actively maintained, append-only work-log/handoff file
-  (~3820 lines as of this read). Recent entries (2026-06-29 through
+- `task.md` contains the actively maintained Current State block; historical
+  work logs and Handoffs are kept in `docs/archive/task-handoffs.md`. Recent
+  entries (2026-06-29 through
   2026-07-01) are authored by "Codex" per the dual-agent (Claude Code +
   Codex) workflow documented in CLAUDE.md/AGENTS.md, and cover SNS
   card/content-type fixes, `/service` pricing CTA fixes, and admin
-  Library/Inspector improvements. (task.md tail, ~lines 3633-3821)
+  Library/Inspector improvements. (historical Handoffs in
+  `docs/archive/task-handoffs.md`)
 - docs/ folder audience split per README.md: `docs/setup-guide.md`
   (engineer setup), `docs/post-deploy-guide.md` (non-engineer Railway-button
   deploy), `docs/photographer-guide.md`, `docs/admin-guide.md`,

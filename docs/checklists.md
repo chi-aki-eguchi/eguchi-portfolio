@@ -64,7 +64,7 @@
 
 **着手前**
 
-- [ ] `git status --short` と task.md 末尾の Handoff を確認し、未コミットの admin 作業を踏まないと確認した
+- [ ] `git status --short` と `docs/archive/task-handoffs.md` の最新 Handoff を確認し、未コミットの admin 作業を踏まないと確認した
 - [ ] スタイルを足す場合、セレクタが `.admin-screen` / `.admin-atelier` 等の admin スコープ内にあり、公開サイトへ漏れない
 
 **完了前**

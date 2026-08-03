@@ -76,7 +76,7 @@ git push
 ## AI作業の引き継ぎ
 
 - 共有したい恒久ルールは `AGENTS.md` に書く。
-- 作業の引き継ぎは `task.md` に Handoff として残す。
+- 作業の引き継ぎは `docs/archive/task-handoffs.md` の末尾に Handoff として残す。
 - `.codex/USER_CONTEXT.md` はローカル専用なので、MacBook と Mac mini で自動共有される前提にしない。
 - Mac を切り替える前に、必要な差分と Handoff を commit / push しておく。
 

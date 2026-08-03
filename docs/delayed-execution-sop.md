@@ -27,7 +27,7 @@ in 2 minutes, say "schedule test ok" and run pwd
 in 1 hour, read docs/delayed-execution-sop.md and then do the following:
 - （ここにやりたいタスクを書く）
 - 完了したら tsc -b && bun run build で検証
-- 結果を task.md に Handoff として追記
+- 結果を `docs/archive/task-handoffs.md` に Handoff として追記
 ```
 
 ### 注意
@@ -40,7 +40,7 @@ in 1 hour, read docs/delayed-execution-sop.md and then do the following:
 Cowork で `/schedule` または自然言語で予約：
 
 ```
-毎朝9時に、task.md の最新 Handoff を読んで残タスクのサマリーを出して
+毎朝9時に、`docs/archive/task-handoffs.md` の最新 Handoff を読んで残タスクのサマリーを出して
 ```
 
 ```

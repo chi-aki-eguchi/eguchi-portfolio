@@ -13,9 +13,10 @@ sources: []
 
 This log tracks changes **to the wiki itself** (new pages, re-ingests,
 corrections, contradictions found/resolved). It is **not** the project's
-implementation work log — that is `../../task.md`. Do not record
-feature/bugfix work here; record it in `task.md` instead, and only link to
-it from here if a wiki update was triggered by it.
+implementation work log — historical work logs and Handoffs are in
+`../../docs/archive/task-handoffs.md`. Do not record
+feature/bugfix work here; append its Handoff to `../../docs/archive/task-handoffs.md`
+instead, and only link to it from here if a wiki update was triggered by it.
 
 ## Entries
 

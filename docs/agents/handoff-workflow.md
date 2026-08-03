@@ -5,7 +5,7 @@
 - 共通の現在地: `task.md` 冒頭のCurrent State
 - 共通の安全規則: `AGENTS.md`
 - Claude固有の設計・検証責任: `CLAUDE.md`
-- 長い過去ログ: `task.md` のCurrent Stateより下。必要な時だけ参照
+- 長い過去ログ: `docs/archive/task-handoffs.md`。必要な時だけ参照
 - ChatGPT共有: 読み取り専用Packet
 
 hookはCurrent Stateを自動更新しない。編集者がGitの実物を確認して更新する。

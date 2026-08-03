@@ -20,7 +20,7 @@ sources:
   used for durable maps, checklists, and handoff quality rather than just
   writing lots of code. Source: `docs/specs/ai-collaboration-reform-fable5.md:1-5`.
 - The Fable5 prompt requires the agent to first check `git status --short`
-  and the latest `task.md` Handoff before changing anything. Source:
+  and the latest Handoff in `docs/archive/task-handoffs.md` before changing anything. Source:
   `docs/specs/ai-collaboration-reform-fable5.md:33`.
 - The same work order defines five phases: current-state diagnosis, reform
   options, actual durable improvements, dirty-tree review, and verification.

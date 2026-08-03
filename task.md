@@ -3,125 +3,64 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-03 JST
 
-- **Status:** **Codex のモデルレーン（Luna / Terra）をローカル `main` へ反映し、
-  `~/.codex/agents` へ導入済み。commit 済み・push 未実施**
-- **Current owner:** Claude Code（停止中）
-- **Branch:** `main` / **HEAD:** `SELF`
-- **origin/main（`a3946fc`）より 1 commit ahead / behind 0。push 未実施**
-- **Git:** clean（未追跡ファイル無し）。`scripts/smoke/scratch/` はローカルにも残っていない。
-- この変更はリモート実行環境（Claude Code on the web、ブランチ
-  `claude/luna-max-setup-o9g8lp`）で作られ、デスクトップのローカル `main` へ
-  ファイル配置で反映した。リモートの 2 commits は取り込まず、内容だけを 1 commit にまとめた。
-  前回の Current State に残っていたリモート側の branch / ahead 表記は、この記載で訂正した。
+- **Status:** Codex のレーン運用が確定。文書整理に着手。commit 済み・push 未実施
+- **Current owner:** Claude Code（作業中）
+- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 3 commits ahead
+- **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
 
 ### 目的と完了条件
 
-2026-07-30 の GPT-5.6 Luna 値下げ（最大80%・Codex の使用量カウントにも反映）を受け、
-Codex に安い定型レーンを足し、上位モデルの枠を実装の難所へ回す。完了条件は、
-エージェント定義が git 管理下にあり、ローカルへ安全に導入でき、どの作業をどのレーンへ
-出すかが文書で決まっていること。
+1. **（完了）Codex のレーン運用を決める。** 安い Luna へ定型作業を逃がし、
+   上位モデルの枠を難所へ回す。
+2. **（着手）文書整理。** docs/ が 83ファイル / 17,111行、task.md が 10,031行 まで増え、
+   AI が作業前に読む量が過大。オーナー判断は「全部やる」（2026-08-03）。
+   完了条件は、起動時に読む量が実際に小さくなっていること。
 
-### 今回の変更（製品コードは1行も触っていない）
+### 決まったこと（Codex レーン）
 
-- 新規 `docs/agents/codex-agents/eguchi-luna-routine.toml`（Luna / max。
-  定型作業と一次スキャンのみ。判断が要る依頼は実装せず停止させる）
-- 新規 `docs/agents/codex-agents/eguchi-terra-impl.toml`（Terra / max。主実装レーン）
-- 新規 `scripts/ai/install-codex-agents.sh`（`~/.codex/agents` へ同期。
-  既存が違う内容なら上書きせず失敗する。`--check` あり）
-- `docs/agents/codex-workflow.md` に「モデルの使い分け」節を追記
-
-### 決めたこと
-
-- **`sol-advisor` プラグインは導入しない。** 構成はうちの Phase 分担とほぼ同じで、
-  得られるのはモデル割り当てだけ。第三者プラグインがインストール時と実行時に
-  シェルスクリプトを走らせる分だけリスクが増える。
-- **ChatGPT / Codex の Full access は有効にしない。** 承認なしに任意のファイル編集と
-  コマンド実行ができるモードで、`AGENTS.md` の安全境界と両立しない。
-  max effort の有効化とは無関係の設定。
+- **レーン指定は `codex exec` のフラグ2つ。** 実機確認済み。
+  `-m gpt-5.6-luna` / `-m gpt-5.6-terra` に `-c model_reasoning_effort="max"`。
+  読み取り調査は `-s read-only`。詳細は `docs/agents/codex-workflow.md`。
+- Desktop app のエージェント選択は効かず既定の Sol / low で動いた。`codex exec` にも
+  `--agent` は無い。TOML は各レーンの担当範囲・禁止操作・停止条件の**定義文書**として
+  維持し、依頼文の下敷きに使う（instructions は自動では渡らない）。
+- `sol-advisor` プラグインは導入しない。Codex の Full access も有効にしない。
 - Luna へ回すのは仕様が確定した機械的作業だけ。settings の4箇所同期 / `withRetry` /
-  `assertOk` / DB schema / 認証は Luna の対象外。
+  `assertOk` / DB schema / 認証は対象外。
 
-### 検証（すべてローカル）
+### 検証済み / 未検証
 
-- リモート環境で実施済み: TOML 構文（`python3 tomllib`）、install script の
-  空ディレクトリ導入・冪等・不一致時に上書きせず失敗、`git diff --check`
-- デスクトップで再実施（2026-08-03）:
-  - TOML 構文を `bun` の TOML 読み込みで2ファイルとも成功（ローカルの python3 は
-    3.9 系で `tomllib` が無いため、リポジトリの実行環境である bun を使った）。
-    `name` / `model` / `model_reasoning_effort` / `developer_instructions` を確認
-  - `sh scripts/ai/install-codex-agents.sh` → `~/.codex/agents` へ2本を新規導入、成功
-  - `sh scripts/ai/install-codex-agents.sh --check` → 2本とも正本と一致、成功
-  - `bun test scripts/ai/handoff-tools.test.mjs` → 3 pass / 0 fail
-  - `git diff --check` 成功。`packages/` の製品コードが差分に無いことを確認
+- 成功: install script と `--check`、TOML 構文2本（`bun`）、
+  `bun test scripts/ai/handoff-tools.test.mjs` 3 pass、`git diff --check`
 - `bun run check` / `bun run smoke` は**未実施**。AI運用・文書だけの変更のため
   （`AGENTS.md` の必須検証の区分に従う）
-
-### 検証済み: Codex がエージェント定義を読むこと（2026-08-03）
-
-`~/.codex/agents/` にわざと壊した TOML を1本置いて `codex exec` を実行すると、
-Codex CLI 0.146.0 が次の警告を出した。
-
-> `Ignoring malformed agent role definition: failed to parse agent role file at
-> /Users/chiaki/.codex/agents/zz-probe-invalid.toml`
-
-つまり **Codex はこのディレクトリを「agent role 定義」として実際に読んでいる。**
-同時に置いてある `eguchi-luna-routine.toml` / `eguchi-terra-impl.toml` は警告が出ず、
-構文・キー名ともに受理されている。TOML schema の裏取りができていなかった点は解消。
-検査用の壊れたファイルは削除済み。
-
-### 解決: レーンの指定はフラグ2つでよい（2026-08-03）
-
-Desktop app で試したところ、エージェントは選択できず、既定の `gpt-5.6-sol` / effort `low`
-で動いた（セッション記録で確認。Luna の instructions もセッションに入っていない）。
-`codex exec` にも `--agent` 相当のオプションは無い。
-
-ただし **Claude が Codex を呼ぶ経路は `codex exec` であり、そこではモデルと effort を
-フラグで直接指定できる。** 実機確認済み。
-
-```sh
-codex exec -s workspace-write -m gpt-5.6-luna  -c model_reasoning_effort="max" "..."
-codex exec -s workspace-write -m gpt-5.6-terra -c model_reasoning_effort="max" "..."
-```
-
-セッション記録に `"model":"gpt-5.6-luna"` / `"effort":"max"` が指定どおり残ることを確認した。
-**当初の目的（安いレーンへ定型作業を逃がす）はこの方法で達成できる。**
-TOML は各レーンの担当範囲・禁止操作・停止条件の定義文書として維持し、依頼文の下敷きに使う
-（`codex exec` 経由では instructions が自動で渡らないため、毎回プロンプトへ書く。
-これは `AGENTS.md` が元々求めている内容と同じ）。
-
-### 未検証
-
-- Luna レーンの実作業での品質と消費。まだ定型タスクを流していない。
+- 未検証: Luna の実作業での品質と消費（棚卸しタスクを1件実行中）
 
 ### 次の一手
 
-1. 定型タスクを1〜2件 Luna に流して、品質と消費を見る
-   （`-m gpt-5.6-luna -c model_reasoning_effort="max"`）
-3. この commit と、既に push 済みの admin 刷新分をどう扱うか判断する（push はオーナー）
-4. **クレジット hook の修正**（別件・依頼文を用意済み）。
-   `credit-status.mjs` は CodexBar CLI が無いと残量不明でも `closing` を固定で返す
-   （243行目、および 229 / 114 行目）。status に「不明」を表す値が無いのが問題の本体。
-   **ただし 2026-08-03 のデスクトップでは、この不具合は発動していない。**
-   `~/.claude/credit-status/status.json` は `cache: "live"` / `warning: null` /
-   Codex 側 `dataConfidence: "exact"` で、実データを取得できている。今の `closing` は
-   Claude の週残量 22%（<50 で `saving`）に、5h セッションが
-   `willLastToSessionReset: false` で1段上がった結果であり、**正しい判定**。
-   修正の価値は変わらないが、優先度は「今すぐ困っている」ではない。
-   依頼文（Phase A → C → D、D はオーナー承認後）と引き継ぎメモは、オーナーへ
-   ファイルで直接渡した。`scratch/` は gitignore かつリモート環境は使い捨てのため
-   リポジトリには残らない。
-5. デスクトップへの引き継ぎは完了（2026-08-03）。ローカルには Codex CLI があるため、
-   4 の Codex 相談はここで実行できる。
+1. **文書整理・第1段（この commit）** — Current State を 359行から圧縮し、
+   過去分をマーカーの外へ出した。削除はしていない。
+2. **文書整理・第2段** — Luna に docs/ の棚卸し表を作らせ、archive 対象を決める。
+   出力は `scratch/luna-docs-inventory.md`。判断はオーナーと Claude が行う。
+3. **文書整理・第3段** — 起動時に読む順そのものを再設計する
+   （`AGENTS.md` / `CLAUDE.md` / `task.md` の役割分担）。設計判断が多い。
+4. **クレジット判定の作り直し**（オーナー承認済み・2026-08-03）。残量に加えて
+   **リセットまでの時間**と**このペースで持つか**を見る。「情報が取れない」を
+   `closing` と区別する（`unknown`）。実例は `docs/agents/credit-status.md` へ。
+5. push するか判断する（**push はオーナーだけ**）。
 
 ### 触ってはいけない範囲
 
-- push / deploy / 本番DB / R2 / env 変更（今回も一切していない）
-- 製品コード（今回の差分に無し）
+- push / deploy / 本番DB / Turso / R2 / Railway / env 変更
+- 製品コード（`packages/`）— 今回の一連の差分に無し
+- 履歴文書の削除。整理は `git mv` と要約までとし、消さない。
 
 ### 記録
 
-- Codex session: 今回は Codex を起動していない
-- local commit: あり / push: 無し / Railway 反映: 無し / 本番確認: 無し
+- Codex session: Luna 棚卸し = `scratch/codex-out-luna-inventory.log` 先頭に session ID
+- local commit: あり（`64ac597` / `a7c94ae` / `e2921c8`）
+- push: 無し / Railway 反映: 無し / 本番確認: 無し
+<!-- CURRENT_STATE_END -->
 
 ---
 
@@ -358,7 +297,6 @@ iframe内フォーカス時に Escape が効かない（同一オリジン文書
 
 - `lib/reorder.ts`・保存経路・競合拒否・ロールバック・settings台帳・公開サイトは無変更
 - **push / deploy / 本番DB / R2 / env 変更は一切していない**
-<!-- CURRENT_STATE_END -->
 
 <!--
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

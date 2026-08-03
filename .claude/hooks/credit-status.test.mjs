@@ -8,11 +8,57 @@ import { findCodexBar } from "./credit-status.mjs";
 
 const script = new URL("./credit-status.mjs", import.meta.url).pathname;
 
-function fakeCli({ claudeUsed = 40, claudeWeekly = 30, codexWeekly = 25, confidence = "exact", pace = true, fail = false } = {}) {
+function futureIso(milliseconds) {
+  return new Date(Date.now() + milliseconds).toISOString();
+}
+
+function fakeCli({
+  claudeUsed = 40,
+  claudeWeekly = 30,
+  codexWeekly = 25,
+  confidence = "exact",
+  sessionPace = true,
+  claudeWeeklyPace = true,
+  codexWeeklyPace = true,
+  sessionReset = futureIso(4 * 60 * 60 * 1000),
+  claudeWeeklyReset = futureIso(4 * 24 * 60 * 60 * 1000),
+  codexWeeklyReset = futureIso(4 * 24 * 60 * 60 * 1000),
+  claudeError = false,
+  codexError = false,
+  fail = false,
+} = {}) {
+  const payload = [
+    claudeError
+      ? { provider: "claude", error: { message: "unavailable" } }
+      : {
+          provider: "claude",
+          usage: {
+            primary: { usedPercent: claudeUsed, resetsAt: sessionReset },
+            secondary: { usedPercent: claudeWeekly, resetsAt: claudeWeeklyReset },
+          },
+          pace: {
+            primary: { willLastToReset: sessionPace, etaSeconds: 10 },
+            secondary: { willLastToReset: claudeWeeklyPace, etaSeconds: 20 },
+          },
+          token: "must-not-be-saved",
+        },
+    codexError
+      ? { provider: "codex", error: { message: "unavailable" } }
+      : {
+          provider: "codex",
+          credits: { remaining: 0 },
+          usage: {
+            secondary: { usedPercent: codexWeekly, resetsAt: codexWeeklyReset },
+            dataConfidence: confidence,
+          },
+          pace: { secondary: { willLastToReset: codexWeeklyPace, etaSeconds: 30 } },
+          authorization: "must-not-be-saved",
+        },
+  ];
   return `#!/bin/sh
 echo x >> "$HOME/calls"
 ${fail ? "exit 1" : ""}
-echo '[{"provider":"claude","usage":{"primary":{"usedPercent":${claudeUsed},"resetsAt":"a"},"secondary":{"usedPercent":${claudeWeekly},"resetsAt":"b"}},"pace":{"primary":{"willLastToReset":${pace},"etaSeconds":10},"secondary":{"willLastToReset":true}}},{"provider":"codex","credits":{"remaining":0},"usage":{"secondary":{"usedPercent":${codexWeekly},"resetsAt":"c"},"dataConfidence":"${confidence}"},"pace":{"secondary":{"willLastToReset":true}}}]'
+printf '%s\\n' '${JSON.stringify(payload)}'
 `;
 }
 
@@ -25,55 +71,160 @@ function fixture(options = {}) {
   return { home, bin, fakeBin };
 }
 
-function runFixture(f, { explicit = true, path = "" } = {}) {
+function runFixture(f, { explicit = true, path = "", force = false, json = true } = {}) {
   const env = { ...process.env, HOME: f.home, PATH: path };
   if (explicit) env.CODEXBAR_CLI = f.fakeBin;
   else delete env.CODEXBAR_CLI;
-  return spawnSync(process.execPath, [script, "--json"], { env, encoding: "utf8" });
+  return spawnSync(process.execPath, [script, ...(force ? ["--force"] : []), ...(json ? ["--json"] : [])], { env, encoding: "utf8" });
 }
 
 function run(options = {}) {
   return runFixture(fixture(options));
 }
 
-test("calculates remaining percentages and ignores credits.remaining", () => {
-  const result = run({ claudeUsed: 40, claudeWeekly: 30, codexWeekly: 25 });
+function stateFrom(result) {
   assert.equal(result.status, 0, result.stderr);
-  const state = JSON.parse(result.stdout);
+  return JSON.parse(result.stdout);
+}
+
+function hasAction(state, type) {
+  return state.actions.some((action) => action.type === type);
+}
+
+test("records the three axes separately from safe provider values", () => {
+  const state = stateFrom(run({ claudeUsed: 40, claudeWeekly: 30, codexWeekly: 25 }));
+  assert.equal(state.schemaVersion, 2);
+  assert.equal(state.status, undefined);
   assert.equal(state.claude.sessionRemainingPercent, 60);
   assert.equal(state.claude.weeklyRemainingPercent, 70);
   assert.equal(state.codex.weeklyRemainingPercent, 75);
-  assert.equal(state.status, "normal");
+  assert.deepEqual(state.acquisition, { claude: "current", codex: "current" });
+  assert.deepEqual(state.weekly, { claude: "sufficient", codex: "sufficient" });
+  assert.deepEqual(state.workContinuity, { claude: "holds" });
+  assert.deepEqual(state.actions, []);
 });
 
-test("pace risk elevates the state by one level", () => {
-  const state = JSON.parse(run({ claudeUsed: 40, pace: false }).stdout);
-  assert.equal(state.claude.status, "saving");
+test("uses the weekly forecast rather than remaining percent alone", () => {
+  const state = stateFrom(run({ claudeWeekly: 95, codexWeekly: 95, claudeWeeklyPace: true, codexWeeklyPace: true }));
+  assert.deepEqual(state.weekly, { claude: "sufficient", codex: "sufficient" });
+  assert.equal(hasAction(state, "narrow_scope"), false);
 });
 
-test("non-exact Codex confidence is conservative", () => {
-  const state = JSON.parse(run({ confidence: "estimated" }).stdout);
-  assert.equal(state.codex.status, "closing");
-  assert.equal(state.status, "closing");
+test("only a measured weekly shortfall suggests a smaller scope", () => {
+  const state = stateFrom(run({ claudeWeeklyPace: false }));
+  assert.equal(state.weekly.claude, "low");
+  assert.equal(hasAction(state, "narrow_scope"), true);
 });
 
-test("under ten percent is critical", () => {
-  const state = JSON.parse(run({ claudeUsed: 95 }).stdout);
-  assert.equal(state.status, "critical");
+test("a five-hour risk suggests a resumable boundary without shrinking scope", () => {
+  const state = stateFrom(run({ sessionPace: false }));
+  assert.equal(state.workContinuity.claude, "at_risk");
+  assert.equal(hasAction(state, "create_resume_point"), true);
+  assert.equal(hasAction(state, "narrow_scope"), false);
 });
 
-test("reuses a successful result for five minutes", () => {
+test("an unknown weekly value remains visible and never becomes normal guidance", () => {
+  const result = run({ confidence: "estimated" });
+  const state = stateFrom(result);
+  assert.equal(state.weekly.codex, "unknown");
+  assert.match(result.stdout, /"codex": "unknown"/);
+  assert.doesNotMatch(result.stdout, /通常運転/);
+  assert.equal(state.status, undefined);
+});
+
+test("reuses a successful result for five minutes as recent data", () => {
   const f = fixture();
-  assert.equal(runFixture(f).status, 0);
-  assert.equal(runFixture(f).status, 0);
+  stateFrom(runFixture(f));
+  const second = stateFrom(runFixture(f));
+  assert.equal(second.cache, "fresh");
+  assert.deepEqual(second.acquisition, { claude: "recent", codex: "recent" });
   assert.equal(readFileSync(join(f.home, "calls"), "utf8").trim().split("\n").length, 1);
+});
+
+test("keeps Codex current when Claude alone cannot be parsed", () => {
+  const state = stateFrom(run({ claudeError: true }));
+  assert.equal(state.acquisition.claude, "unknown");
+  assert.equal(state.acquisition.codex, "current");
+  assert.equal(state.codex.weeklyRemainingPercent, 75);
+  assert.equal(state.weekly.codex, "sufficient");
+  assert.equal(state.errorCode, "partial_provider_data");
+  assert.equal(hasAction(state, "create_resume_point"), true);
+});
+
+test("treats an invalid reset timestamp as unknown instead of using it", () => {
+  const state = stateFrom(run({ sessionReset: "2026-08-03T12:00:00" }));
+  assert.equal(state.workContinuity.claude, "unknown");
+  assert.equal(state.resetStatus.claude.session.status, "unknown");
+  assert.equal(hasAction(state, "create_resume_point"), true);
+});
+
+test("treats a reset implausibly far from the local clock as unknown", () => {
+  const state = stateFrom(run({ sessionReset: futureIso(7 * 60 * 60 * 1000) }));
+  assert.equal(state.workContinuity.claude, "unknown");
+  assert.equal(state.resetStatus.claude.session.status, "unknown");
+});
+
+test("does not use a recent cache after its session reset has passed", () => {
+  const f = fixture();
+  stateFrom(runFixture(f));
+  const statePath = join(f.home, ".claude", "credit-status", "status.json");
+  const cached = JSON.parse(readFileSync(statePath, "utf8"));
+  const recent = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  cached.checkedAt = recent;
+  cached.claude.checkedAt = recent;
+  cached.codex.checkedAt = recent;
+  cached.claude.sessionResetsAt = new Date(Date.now() - 60 * 1000).toISOString();
+  writeFileSync(statePath, JSON.stringify(cached));
+  const state = stateFrom(runFixture(f));
+  assert.deepEqual(state.acquisition, { claude: "recent", codex: "recent" });
+  assert.equal(state.workContinuity.claude, "unknown");
+  assert.equal(state.resetStatus.claude.session.status, "unknown");
+  assert.equal(hasAction(state, "create_resume_point"), true);
+});
+
+test("reads a legacy state file without using its old single status", () => {
+  const f = fixture();
+  const statusDir = join(f.home, ".claude", "credit-status");
+  const statePath = join(statusDir, "status.json");
+  const checkedAt = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  mkdirSync(statusDir, { recursive: true });
+  writeFileSync(statePath, JSON.stringify({
+    checkedAt,
+    status: "closing",
+    cache: "fresh",
+    warning: null,
+    claude: {
+      sessionRemainingPercent: 60,
+      weeklyRemainingPercent: 70,
+      sessionResetsAt: futureIso(4 * 60 * 60 * 1000),
+      weeklyResetsAt: futureIso(4 * 24 * 60 * 60 * 1000),
+      willLastToSessionReset: true,
+      sessionEtaSeconds: 10,
+      willLastToWeeklyReset: true,
+      weeklyEtaSeconds: 20,
+      status: "closing",
+    },
+    codex: {
+      weeklyRemainingPercent: 75,
+      weeklyResetsAt: futureIso(4 * 24 * 60 * 60 * 1000),
+      dataConfidence: "exact",
+      willLastToWeeklyReset: true,
+      weeklyEtaSeconds: 30,
+      status: "closing",
+    },
+  }));
+  const state = stateFrom(runFixture(f));
+  assert.equal(state.schemaVersion, 2);
+  assert.equal(state.status, undefined);
+  assert.deepEqual(state.acquisition, { claude: "recent", codex: "recent" });
+  assert.deepEqual(state.weekly, { claude: "sufficient", codex: "sufficient" });
 });
 
 test("discovers codexbar from PATH", () => {
   const f = fixture();
   const result = runFixture(f, { explicit: false, path: f.bin });
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).cache, "live");
+  const state = stateFrom(result);
+  assert.equal(state.cache, "live");
 });
 
 test("discovers CodexBar.app bundled CLI", () => {
@@ -87,49 +238,80 @@ test("discovers CodexBar.app bundled CLI", () => {
   assert.equal(found?.source, "user app");
 });
 
-test("reports a clear error when no CLI exists", () => {
+test("returns exit code zero and a resumable-boundary warning when no CLI exists", () => {
   const f = fixture();
   const result = runFixture(f, { explicit: false, path: "" });
-  const state = JSON.parse(result.stdout);
-  assert.equal(state.status, "closing");
+  const state = stateFrom(result);
+  assert.deepEqual(state.acquisition, { claude: "unknown", codex: "unknown" });
+  assert.deepEqual(state.weekly, { claude: "unknown", codex: "unknown" });
+  assert.equal(state.workContinuity.claude, "unknown");
   assert.equal(state.cache, "none");
   assert.equal(state.errorCode, "codexbar_cli_not_found");
-  assert.match(state.warning, /CLI未発見/);
+  assert.equal(hasAction(state, "create_resume_point"), true);
 });
 
-test("fails safely after one retry when lookup fails", () => {
+test("returns exit code zero after one retry when lookup fails", () => {
   const f = fixture({ fail: true });
-  const state = JSON.parse(runFixture(f).stdout);
-  assert.equal(state.status, "closing");
+  const state = stateFrom(runFixture(f));
   assert.equal(state.errorCode, "codexbar_lookup_failed");
-  assert.match(state.warning, /CodexBar取得失敗/);
+  assert.equal(hasAction(state, "create_resume_point"), true);
   assert.equal(readFileSync(join(f.home, "calls"), "utf8").trim().split("\n").length, 2);
 });
 
-test("uses a successful cache up to thirty minutes old as stale, never live", () => {
+test("keeps stale cache values but treats every judgment axis as unknown", () => {
   const f = fixture();
-  assert.equal(runFixture(f).status, 0);
+  stateFrom(runFixture(f));
   const statePath = join(f.home, ".claude", "credit-status", "status.json");
   const cached = JSON.parse(readFileSync(statePath, "utf8"));
-  cached.checkedAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const old = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  cached.checkedAt = old;
+  cached.claude.checkedAt = old;
+  cached.codex.checkedAt = old;
   writeFileSync(statePath, JSON.stringify(cached));
-  writeFileSync(f.fakeBin, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
-  const state = JSON.parse(runFixture(f).stdout);
+  writeFileSync(f.fakeBin, fakeCli({ fail: true }), { mode: 0o755 });
+  const state = stateFrom(runFixture(f));
   assert.equal(state.cache, "stale");
-  assert.equal(state.status, "closing");
-  assert.match(state.warning, /CodexBar取得失敗/);
+  assert.deepEqual(state.acquisition, { claude: "old", codex: "old" });
+  assert.deepEqual(state.weekly, { claude: "unknown", codex: "unknown" });
+  assert.equal(state.workContinuity.claude, "unknown");
+  assert.equal(state.claude.weeklyRemainingPercent, 70);
+  assert.equal(state.codex.weeklyRemainingPercent, 75);
+  assert.equal(hasAction(state, "narrow_scope"), false);
+  assert.equal(hasAction(state, "create_resume_point"), true);
 });
 
-test("does not expose provider values from a cache older than thirty minutes", () => {
+test("does not reuse a future cache timestamp when the clock moves backwards", () => {
   const f = fixture();
-  assert.equal(runFixture(f).status, 0);
+  stateFrom(runFixture(f));
   const statePath = join(f.home, ".claude", "credit-status", "status.json");
   const cached = JSON.parse(readFileSync(statePath, "utf8"));
-  cached.checkedAt = new Date(Date.now() - 31 * 60 * 1000).toISOString();
+  const future = new Date(Date.now() + 60 * 1000).toISOString();
+  cached.checkedAt = future;
+  cached.claude.checkedAt = future;
+  cached.codex.checkedAt = future;
   writeFileSync(statePath, JSON.stringify(cached));
-  writeFileSync(f.fakeBin, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
-  const state = JSON.parse(runFixture(f).stdout);
+  writeFileSync(f.fakeBin, fakeCli({ fail: true }), { mode: 0o755 });
+  const state = stateFrom(runFixture(f));
   assert.equal(state.cache, "none");
-  assert.equal(state.claude, null);
-  assert.equal(state.codex, null);
+  assert.deepEqual(state.acquisition, { claude: "unknown", codex: "unknown" });
+  assert.equal(readFileSync(join(f.home, "calls"), "utf8").trim().split("\n").length, 3);
+});
+
+test("summary is warning-centered and leaves commit conditional", () => {
+  const f = fixture({ claudeWeeklyPace: false, sessionPace: false });
+  const result = runFixture(f, { explicit: true, json: false });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /作業範囲を小さくすると安全です/);
+  assert.match(result.stdout, /再開可能な区切りを作ると安全です/);
+  assert.match(result.stdout, /commitは依頼で許可され、変更が一貫している場合に限ります/);
+  assert.doesNotMatch(result.stdout, /新規作業禁止|新規工程を始めず|最低限テスト|必須要件だけ|通常運転/);
+});
+
+test("does not persist unrelated CLI fields that could contain credentials", () => {
+  const f = fixture();
+  stateFrom(runFixture(f));
+  const statePath = join(f.home, ".claude", "credit-status", "status.json");
+  const stored = readFileSync(statePath, "utf8");
+  assert.doesNotMatch(stored, /must-not-be-saved/);
+  assert.doesNotMatch(stored, /credits/);
 });

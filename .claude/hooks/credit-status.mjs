@@ -16,12 +16,13 @@ import { fileURLToPath } from "node:url";
 
 const CACHE_MS = 5 * 60 * 1000;
 const STALE_MS = 30 * 60 * 1000;
+const SESSION_RESET_MAX_MS = 6 * 60 * 60 * 1000;
+const WEEKLY_RESET_MAX_MS = 8 * 24 * 60 * 60 * 1000;
 const STATE_DIR = join(homedir(), ".claude", "credit-status");
 const STATE_FILE = join(STATE_DIR, "status.json");
 const SUMMARY_FILE = join(STATE_DIR, "status.txt");
 
-const level = { normal: 0, saving: 1, closing: 2, critical: 3 };
-const worse = (...values) => values.reduce((a, b) => level[b] > level[a] ? b : a, "normal");
+const zonedTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:?\d{2})$/i;
 
 function isExecutable(path) {
   if (!path) return false;
@@ -67,72 +68,81 @@ export function findCodexBar({
   return null;
 }
 
-function statusForRemaining(remaining) {
-  if (remaining < 10) return "critical";
-  if (remaining < 20) return "closing";
-  if (remaining < 50) return "saving";
-  return "normal";
-}
-
-function elevate(status) {
-  return ["saving", "closing", "critical", "critical"][level[status]];
-}
-
 function remaining(used) {
-  return typeof used === "number" ? Math.max(0, Math.min(100, 100 - used)) : null;
+  if (typeof used !== "number" || !Number.isFinite(used)) return null;
+  return Math.max(0, Math.min(100, 100 - used));
 }
 
-function parseProvider(provider, stdout) {
-  const parsed = JSON.parse(stdout);
-  const item = Array.isArray(parsed) ? parsed.find((entry) => entry.provider === provider) : parsed;
-  if (!item || item.error || !item.usage) throw new Error(item?.error?.message || `${provider} usage missing`);
+function safeBoolean(value) {
+  return typeof value === "boolean" ? value : null;
+}
+
+function safeNumber(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function safePercent(value) {
+  const number = safeNumber(value);
+  return number !== null && number <= 100 ? number : null;
+}
+
+function parseZonedTimestamp(value) {
+  if (typeof value !== "string" || !zonedTimestamp.test(value)) return null;
+  const milliseconds = Date.parse(value);
+  return Number.isFinite(milliseconds) ? milliseconds : null;
+}
+
+function safeResetAt(value) {
+  return parseZonedTimestamp(value) === null ? null : value;
+}
+
+function timestampAge(value, nowMs) {
+  const timestampMs = parseZonedTimestamp(value);
+  if (timestampMs === null) return null;
+  const ageMs = nowMs - timestampMs;
+  return Number.isFinite(ageMs) && ageMs >= 0 ? ageMs : null;
+}
+
+function parseProvider(provider, parsed) {
+  const item = Array.isArray(parsed) ? parsed.find((entry) => entry?.provider === provider) : parsed;
+  if (!item || item.error || !item.usage) throw new Error("usage missing");
 
   if (provider === "claude") {
     const sessionRemainingPercent = remaining(item.usage.primary?.usedPercent);
     const weeklyRemainingPercent = remaining(item.usage.secondary?.usedPercent);
-    if (sessionRemainingPercent === null || weeklyRemainingPercent === null) throw new Error("Claude usage windows missing");
-    let status = worse(statusForRemaining(sessionRemainingPercent), statusForRemaining(weeklyRemainingPercent));
-    if (item.pace?.primary?.willLastToReset === false || item.pace?.secondary?.willLastToReset === false) status = elevate(status);
+    if (sessionRemainingPercent === null || weeklyRemainingPercent === null) throw new Error("usage windows missing");
     return {
       sessionRemainingPercent,
       weeklyRemainingPercent,
-      sessionResetsAt: item.usage.primary?.resetsAt || null,
-      weeklyResetsAt: item.usage.secondary?.resetsAt || null,
-      willLastToSessionReset: item.pace?.primary?.willLastToReset ?? null,
-      sessionEtaSeconds: item.pace?.primary?.etaSeconds ?? null,
-      willLastToWeeklyReset: item.pace?.secondary?.willLastToReset ?? null,
-      weeklyEtaSeconds: item.pace?.secondary?.etaSeconds ?? null,
-      status,
+      sessionResetsAt: safeResetAt(item.usage.primary?.resetsAt),
+      weeklyResetsAt: safeResetAt(item.usage.secondary?.resetsAt),
+      willLastToSessionReset: safeBoolean(item.pace?.primary?.willLastToReset),
+      sessionEtaSeconds: safeNumber(item.pace?.primary?.etaSeconds),
+      willLastToWeeklyReset: safeBoolean(item.pace?.secondary?.willLastToReset),
+      weeklyEtaSeconds: safeNumber(item.pace?.secondary?.etaSeconds),
     };
   }
 
   const weeklyRemainingPercent = remaining(item.usage.secondary?.usedPercent);
-  if (weeklyRemainingPercent === null) throw new Error("Codex weekly usage missing");
-  const dataConfidence = item.usage.dataConfidence || "unknown";
-  let status = statusForRemaining(weeklyRemainingPercent);
-  if (item.pace?.secondary?.willLastToReset === false) status = elevate(status);
-  if (dataConfidence !== "exact") status = worse(status, "closing");
+  if (weeklyRemainingPercent === null) throw new Error("weekly usage missing");
   return {
     weeklyRemainingPercent,
-    weeklyResetsAt: item.usage.secondary?.resetsAt || null,
-    dataConfidence,
-    willLastToWeeklyReset: item.pace?.secondary?.willLastToReset ?? null,
-    weeklyEtaSeconds: item.pace?.secondary?.etaSeconds ?? null,
-    status,
+    weeklyResetsAt: safeResetAt(item.usage.secondary?.resetsAt),
+    dataConfidence: item.usage.dataConfidence === "exact" ? "exact" : "unknown",
+    willLastToWeeklyReset: safeBoolean(item.pace?.secondary?.willLastToReset),
+    weeklyEtaSeconds: safeNumber(item.pace?.secondary?.etaSeconds),
   };
 }
 
-function readCache() {
+function parseProviderSafely(provider, parsed) {
   try {
-    const value = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const ageMs = Date.now() - Date.parse(value.checkedAt);
-    return Number.isFinite(ageMs) ? { value, ageMs } : null;
+    return { data: parseProvider(provider, parsed), errorCode: null };
   } catch {
-    return null;
+    return { data: null, errorCode: `${provider}_usage_unavailable` };
   }
 }
 
-function fetchBoth(cliPath) {
+function fetchProviders(cliPath) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -141,9 +151,10 @@ function fetchBoth(cliPath) {
         timeout: 45_000,
         stdio: ["ignore", "pipe", "pipe"],
       });
+      const parsed = JSON.parse(stdout);
       return {
-        claude: parseProvider("claude", stdout),
-        codex: parseProvider("codex", stdout),
+        claude: parseProviderSafely("claude", parsed),
+        codex: parseProviderSafely("codex", parsed),
       };
     } catch (error) {
       lastError = error;
@@ -152,29 +163,272 @@ function fetchBoth(cliPath) {
   throw new Error(lastError?.message || "usage lookup failed");
 }
 
-function guidance(status) {
-  if (status === "critical") return "安全化→最低限テスト→commit→Current State→終了。新規作業禁止。";
-  if (status === "closing") return "新規工程を始めず、現在工程を最低限テスト・commit・Current Stateまで閉じる。";
-  if (status === "saving") return "必須要件だけ。小さく完了し、重要テストだけ行う。";
-  return "通常運転。重複テスト・不要な全読込は避ける。";
+function readCache() {
+  try {
+    const value = JSON.parse(readFileSync(STATE_FILE, "utf8"));
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
-function coordinationGuidance(claude, codex) {
-  if (!claude || !codex) return "残量不明。大規模な新規作業を始めない。";
-  const claudeLow = level[claude.status] >= level.closing;
-  const codexLow = level[codex.status] >= level.closing;
-  if (claudeLow && codexLow) return "両方少ない。新規作業禁止。安全化と引き継ぎを優先。";
-  if (claudeLow) return "Claudeは詳細分析を増やさず、仕様確定済み作業だけCodexへ。確認は重要箇所のみ。";
-  if (codexLow) return "Codexへ新規実装を委任しない。Claudeは仕様整理・次回指示・引き継ぎまで。";
-  return "";
+function cacheRecord(state, provider) {
+  const value = state?.[provider];
+  if (!value || typeof value !== "object") return null;
+  const checkedAt = typeof value.checkedAt === "string"
+    ? value.checkedAt
+    : typeof state.checkedAt === "string"
+      ? state.checkedAt
+      : null;
+
+  if (provider === "claude") {
+    const sessionRemainingPercent = safePercent(value.sessionRemainingPercent);
+    const weeklyRemainingPercent = safePercent(value.weeklyRemainingPercent);
+    if (sessionRemainingPercent === null || weeklyRemainingPercent === null || !checkedAt) return null;
+    return {
+      checkedAt,
+      data: {
+        sessionRemainingPercent,
+        weeklyRemainingPercent,
+        sessionResetsAt: safeResetAt(value.sessionResetsAt),
+        weeklyResetsAt: safeResetAt(value.weeklyResetsAt),
+        willLastToSessionReset: safeBoolean(value.willLastToSessionReset),
+        sessionEtaSeconds: safeNumber(value.sessionEtaSeconds),
+        willLastToWeeklyReset: safeBoolean(value.willLastToWeeklyReset),
+        weeklyEtaSeconds: safeNumber(value.weeklyEtaSeconds),
+      },
+    };
+  }
+
+  const weeklyRemainingPercent = safePercent(value.weeklyRemainingPercent);
+  if (weeklyRemainingPercent === null || !checkedAt) return null;
+  return {
+    checkedAt,
+    data: {
+      weeklyRemainingPercent,
+      weeklyResetsAt: safeResetAt(value.weeklyResetsAt),
+      dataConfidence: value.dataConfidence === "exact" ? "exact" : "unknown",
+      willLastToWeeklyReset: safeBoolean(value.willLastToWeeklyReset),
+      weeklyEtaSeconds: safeNumber(value.weeklyEtaSeconds),
+    },
+  };
+}
+
+function cachedProvider(state, provider, nowMs) {
+  const record = cacheRecord(state, provider);
+  if (!record) return { data: null, checkedAt: null, acquisition: "unknown" };
+  const ageMs = timestampAge(record.checkedAt, nowMs);
+  if (ageMs === null || ageMs > STALE_MS) return { data: null, checkedAt: null, acquisition: "unknown" };
+  return {
+    ...record,
+    acquisition: ageMs <= CACHE_MS ? "recent" : "old",
+  };
+}
+
+function resetAssessment({ resetsAt, checkedAt, acquisition, nowMs, maxDistanceMs }) {
+  const resetAtMs = parseZonedTimestamp(resetsAt);
+  const checkedAtMs = parseZonedTimestamp(checkedAt);
+  const ageMs = timestampAge(checkedAt, nowMs);
+  const isFreshResult = (acquisition === "current" || acquisition === "recent")
+    && ageMs !== null
+    && ageMs <= CACHE_MS;
+  const crossedDuringCache = acquisition === "recent"
+    && resetAtMs !== null
+    && checkedAtMs !== null
+    && checkedAtMs < resetAtMs
+    && resetAtMs <= nowMs;
+  const distanceFromLocalClockMs = resetAtMs === null ? null : resetAtMs - nowMs;
+
+  if (
+    resetAtMs === null
+    || checkedAtMs === null
+    || !isFreshResult
+    || crossedDuringCache
+    || distanceFromLocalClockMs === null
+    || distanceFromLocalClockMs <= 0
+    || distanceFromLocalClockMs > maxDistanceMs
+  ) {
+    return { status: "unknown", resetsAt: null, secondsUntilReset: null };
+  }
+
+  return {
+    status: "usable",
+    resetsAt,
+    secondsUntilReset: Math.floor(distanceFromLocalClockMs / 1000),
+  };
+}
+
+function weeklyAssessment({ provider, data, checkedAt, acquisition, nowMs }) {
+  if (!data) return { status: "unknown", reset: { status: "unknown", resetsAt: null, secondsUntilReset: null } };
+  const reset = resetAssessment({
+    resetsAt: data.weeklyResetsAt,
+    checkedAt,
+    acquisition,
+    nowMs,
+    maxDistanceMs: WEEKLY_RESET_MAX_MS,
+  });
+  const reliable = provider !== "codex" || data.dataConfidence === "exact";
+  const status = reliable && reset.status === "usable" && typeof data.willLastToWeeklyReset === "boolean"
+    ? data.willLastToWeeklyReset ? "sufficient" : "low"
+    : "unknown";
+  return { status, reset };
+}
+
+function continuityAssessment({ data, checkedAt, acquisition, nowMs }) {
+  if (!data) return { status: "unknown", reset: { status: "unknown", resetsAt: null, secondsUntilReset: null } };
+  const reset = resetAssessment({
+    resetsAt: data.sessionResetsAt,
+    checkedAt,
+    acquisition,
+    nowMs,
+    maxDistanceMs: SESSION_RESET_MAX_MS,
+  });
+  const status = reset.status === "usable" && typeof data.willLastToSessionReset === "boolean"
+    ? data.willLastToSessionReset ? "holds" : "at_risk"
+    : "unknown";
+  return { status, reset };
+}
+
+function cacheLabel(claude, codex) {
+  const acquisitions = [claude.acquisition, codex.acquisition];
+  if (acquisitions.every((value) => value === "current")) return "live";
+  if (acquisitions.every((value) => value === "recent")) return "fresh";
+  if (acquisitions.every((value) => value === "old")) return "stale";
+  if (acquisitions.every((value) => value === "unknown")) return "none";
+  return "mixed";
+}
+
+function actionPlan({ acquisition, weekly, workContinuity, retrievalFailed }) {
+  const lowProviders = ["claude", "codex"].filter((provider) => weekly[provider] === "low");
+  const resumeReasons = [];
+  if (workContinuity.claude === "at_risk") resumeReasons.push("five_hour_at_risk");
+  if (workContinuity.claude === "unknown") resumeReasons.push("five_hour_unknown");
+  for (const provider of ["claude", "codex"]) {
+    if (acquisition[provider] === "old" || acquisition[provider] === "unknown") {
+      resumeReasons.push(`${provider}_acquisition_${acquisition[provider]}`);
+    }
+  }
+  if (retrievalFailed) resumeReasons.push("retrieval_failed");
+
+  const actions = [];
+  if (lowProviders.length > 0) actions.push({ type: "narrow_scope", providers: lowProviders });
+  if (resumeReasons.length > 0) actions.push({ type: "create_resume_point", reasons: [...new Set(resumeReasons)] });
+  return actions;
+}
+
+function warningList({ claude, codex, acquisition, weekly, workContinuity, lookupWarning }) {
+  const warnings = [];
+  if (lookupWarning) warnings.push(lookupWarning);
+  for (const [provider, label] of [["claude", "Claude"], ["codex", "Codex"]]) {
+    const record = provider === "claude" ? claude : codex;
+    if (record?.errorCode && !lookupWarning) warnings.push(`${label}の利用状況を解析できませんでした`);
+    if (acquisition[provider] === "old") warnings.push(`${label}の値は5分を超える過去値です`);
+    if (acquisition[provider] === "unknown") warnings.push(`${label}の取得値は不明です`);
+    if (acquisition[provider] !== "unknown" && weekly[provider] === "unknown") {
+      warnings.push(`${label}週枠の見通しは不明です`);
+    }
+  }
+  if (acquisition.claude !== "unknown" && workContinuity.claude === "unknown") {
+    warnings.push("Claude 5時間枠の継続性は不明です");
+  }
+  return [...new Set(warnings)];
+}
+
+function oldestSharedCheckedAt(claude, codex) {
+  if (!claude.data || !codex.data) return null;
+  const claudeMs = parseZonedTimestamp(claude.checkedAt);
+  const codexMs = parseZonedTimestamp(codex.checkedAt);
+  if (claudeMs === null || codexMs === null) return null;
+  return claudeMs <= codexMs ? claude.checkedAt : codex.checkedAt;
+}
+
+function buildState({ claude, codex, nowMs, lookupErrorCode = null, lookupWarning = null }) {
+  const acquisition = {
+    claude: claude.acquisition,
+    codex: codex.acquisition,
+  };
+  const claudeWeekly = weeklyAssessment({
+    provider: "claude",
+    data: claude.data,
+    checkedAt: claude.checkedAt,
+    acquisition: claude.acquisition,
+    nowMs,
+  });
+  const codexWeekly = weeklyAssessment({
+    provider: "codex",
+    data: codex.data,
+    checkedAt: codex.checkedAt,
+    acquisition: codex.acquisition,
+    nowMs,
+  });
+  const claudeContinuity = continuityAssessment({
+    data: claude.data,
+    checkedAt: claude.checkedAt,
+    acquisition: claude.acquisition,
+    nowMs,
+  });
+  const weekly = { claude: claudeWeekly.status, codex: codexWeekly.status };
+  const workContinuity = { claude: claudeContinuity.status };
+  const retrievalFailed = Boolean(lookupErrorCode || claude.errorCode || codex.errorCode);
+  const actions = actionPlan({ acquisition, weekly, workContinuity, retrievalFailed });
+  const warnings = warningList({
+    claude,
+    codex,
+    acquisition,
+    weekly,
+    workContinuity,
+    lookupWarning,
+  });
+  const errorCode = lookupErrorCode || (claude.errorCode || codex.errorCode ? "partial_provider_data" : null);
+  const lastAttemptAt = new Date(nowMs).toISOString();
+
+  return {
+    schemaVersion: 2,
+    checkedAt: oldestSharedCheckedAt(claude, codex),
+    lastAttemptAt,
+    claude: claude.data ? { ...claude.data, checkedAt: claude.checkedAt, errorCode: claude.errorCode || null } : null,
+    codex: codex.data ? { ...codex.data, checkedAt: codex.checkedAt, errorCode: codex.errorCode || null } : null,
+    acquisition,
+    weekly,
+    workContinuity,
+    resetStatus: {
+      claude: { session: claudeContinuity.reset, weekly: claudeWeekly.reset },
+      codex: { weekly: codexWeekly.reset },
+    },
+    actions,
+    cache: cacheLabel(claude, codex),
+    warning: warnings.length > 0 ? warnings.join(" / ") : null,
+    errorCode,
+  };
+}
+
+function acquisitionLabel(value) {
+  return { current: "現在値", recent: "5分以内の過去値", old: "古い値", unknown: "不明" }[value] || "不明";
+}
+
+function weeklyLabel(value) {
+  return { sufficient: "十分", low: "少ない", unknown: "不明" }[value] || "不明";
+}
+
+function continuityLabel(value) {
+  return { holds: "持つ", at_risk: "途中で尽きそう", unknown: "不明" }[value] || "不明";
+}
+
+function actionGuidance(actions) {
+  const messages = [];
+  if (actions.some((action) => action.type === "narrow_scope")) {
+    messages.push("週枠に余裕が少ない実測値です。今回の作業範囲を小さくすると安全です。");
+  }
+  if (actions.some((action) => action.type === "create_resume_point")) {
+    messages.push("5時間枠または取得状態に不確実さがあります。長い工程の前に、現在地と未検証事項を残して再開可能な区切りを作ると安全です。commitは依頼で許可され、変更が一貫している場合に限ります。");
+  }
+  return messages.join(" ");
 }
 
 function summary(state) {
-  const c = state.claude;
-  const x = state.codex;
-  const coordination = coordinationGuidance(c, x);
-  const cacheLabel = state.cache === "fresh" ? " cache" : state.cache === "stale" ? " stale" : "";
-  return `[credit ${state.status}${cacheLabel}] Claude 5h ${c?.sessionRemainingPercent ?? "?"}% / week ${c?.weeklyRemainingPercent ?? "?"}%; Codex week ${x?.weeklyRemainingPercent ?? "?"}%. ${guidance(state.status)}${coordination ? ` ${coordination}` : ""}${state.warning ? ` WARNING: ${state.warning}` : ""}`;
+  const axes = `取得: Claude=${acquisitionLabel(state.acquisition?.claude)} / Codex=${acquisitionLabel(state.acquisition?.codex)}; 週枠: Claude=${weeklyLabel(state.weekly?.claude)} / Codex=${weeklyLabel(state.weekly?.codex)}; 作業継続性: Claude 5h=${continuityLabel(state.workContinuity?.claude)}.`;
+  const guidance = actionGuidance(state.actions || []);
+  return `[credit] ${axes}${guidance ? ` ${guidance}` : ""}${state.warning ? ` 警告: ${state.warning}` : ""}`;
 }
 
 function atomicWrite(path, content) {
@@ -185,74 +439,86 @@ function atomicWrite(path, content) {
   renameSync(temp, path);
 }
 
-export function run({ force = false } = {}) {
-  const cached = readCache();
-  if (!force && cached && cached.ageMs <= CACHE_MS && !cached.value.warning) {
-    const state = { ...cached.value, cache: "fresh" };
+function persist(state) {
+  try {
+    atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
+    atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
     return { state, text: summary(state) };
+  } catch {
+    const warning = state.warning ? `${state.warning} / 状態ファイルを保存できませんでした` : "状態ファイルを保存できませんでした";
+    const unsaved = { ...state, warning, errorCode: state.errorCode || "credit_status_write_failed" };
+    return { state: unsaved, text: summary(unsaved) };
+  }
+}
+
+function freshCacheState(cached, nowMs) {
+  if (!cached || cached.warning || cached.errorCode) return null;
+  const claude = cachedProvider(cached, "claude", nowMs);
+  const codex = cachedProvider(cached, "codex", nowMs);
+  if (claude.acquisition !== "recent" || codex.acquisition !== "recent") return null;
+  return buildState({ claude, codex, nowMs });
+}
+
+function fallbackEntry(cached, provider, nowMs, errorCode = null) {
+  return { ...cachedProvider(cached, provider, nowMs), errorCode };
+}
+
+export function run({ force = false } = {}) {
+  const nowMs = Date.now();
+  const cached = readCache();
+  if (!force) {
+    const fresh = freshCacheState(cached, nowMs);
+    if (fresh) return { state: fresh, text: summary(fresh) };
   }
 
   const cli = findCodexBar();
-  let lookupError = null;
-  try {
-    if (!cli) {
-      const error = new Error("CodexBar CLI not found");
-      error.code = "CODEXBAR_CLI_NOT_FOUND";
-      throw error;
+  let providers = null;
+  let lookupErrorCode = null;
+  let lookupWarning = null;
+  if (!cli) {
+    lookupErrorCode = "codexbar_cli_not_found";
+    lookupWarning = "CodexBar CLIが見つかりません";
+  } else {
+    try {
+      providers = fetchProviders(cli.path);
+    } catch {
+      lookupErrorCode = "codexbar_lookup_failed";
+      lookupWarning = "CodexBarの取得に失敗しました（1回再試行済み）";
     }
-    const { claude, codex } = fetchBoth(cli.path);
-    const state = {
-      checkedAt: new Date().toISOString(),
-      claude,
-      codex,
-      status: worse(claude.status, codex.status),
-      cache: "live",
-      warning: null,
-    };
-    atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
-    atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
-    return { state, text: summary(state) };
-  } catch (error) {
-    lookupError = error;
   }
 
-  const notFound = lookupError?.code === "CODEXBAR_CLI_NOT_FOUND";
-  const warning = notFound
-    ? "CodexBar CLI未発見（PATH・Homebrew・CodexBar.appを確認）"
-    : "CodexBar取得失敗（1回再試行済み）";
-  const errorCode = notFound ? "codexbar_cli_not_found" : "codexbar_lookup_failed";
+  const checkedAt = new Date(nowMs).toISOString();
+  const claude = providers?.claude?.data
+    ? { data: providers.claude.data, checkedAt, acquisition: "current", errorCode: null }
+    : fallbackEntry(cached, "claude", nowMs, providers?.claude?.errorCode || lookupErrorCode);
+  const codex = providers?.codex?.data
+    ? { data: providers.codex.data, checkedAt, acquisition: "current", errorCode: null }
+    : fallbackEntry(cached, "codex", nowMs, providers?.codex?.errorCode || lookupErrorCode);
+  const state = buildState({ claude, codex, nowMs, lookupErrorCode, lookupWarning });
+  return persist(state);
+}
 
-  if (cached && cached.ageMs <= STALE_MS && cached.value.claude && cached.value.codex) {
-    const state = {
-      ...cached.value,
-      lastAttemptAt: new Date().toISOString(),
-      status: worse(cached.value.status, "closing"),
-      cache: "stale",
-      warning,
-      errorCode,
-    };
-    atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
-    atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
-    return { state, text: summary(state) };
-  }
-
-  const state = {
-    checkedAt: new Date().toISOString(),
-    claude: null,
-    codex: null,
-    status: "closing",
-    cache: "none",
-    warning,
-    errorCode,
-  };
-  atomicWrite(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
-  atomicWrite(SUMMARY_FILE, `${summary(state)}\n`);
-  return { state, text: summary(state) };
+function internalFailureState() {
+  const nowMs = Date.now();
+  const unknown = { data: null, checkedAt: null, acquisition: "unknown", errorCode: "credit_status_hook_failed" };
+  return buildState({
+    claude: unknown,
+    codex: { ...unknown },
+    nowMs,
+    lookupErrorCode: "credit_status_hook_failed",
+    lookupWarning: "クレジット状態を安全に確認できませんでした",
+  });
 }
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-  const result = run({ force: process.argv.includes("--force") });
+  let result;
+  try {
+    result = run({ force: process.argv.includes("--force") });
+  } catch {
+    const state = internalFailureState();
+    result = { state, text: summary(state) };
+  }
   if (process.argv.includes("--json")) process.stdout.write(`${JSON.stringify(result.state, null, 2)}\n`);
   else process.stdout.write(`${result.text}\n`);
 }

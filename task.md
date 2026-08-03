@@ -19,7 +19,7 @@
 
 **ここには書かない。** Codex レーンの使い方は `docs/agents/codex-workflow.md`、
 文書整理の経緯と残課題は `docs/agents/doc-cleanup-survey.md`、クレジット判定は
-`docs/agents/credit-status.md` と `credit-status-review.md` が正本。
+`docs/agents/credit-status.md` と `docs/agents/credit-status-review.md` が正本。
 
 **この節を経過報告で太らせないこと。**Current State は「今どこにいて次に何をするか」
 だけを書く場所で、30〜60行に保つ。終わったことは正本側へ移す。
@@ -28,12 +28,20 @@
 
 ### 次の一手
 
-1. **残課題は `docs/agents/doc-cleanup-survey.md`（Sol 独立調査）の推奨表が正本。**
-   優先順は P0 古い導線の修正（着手済み）→ P1 `.claude/rules` の整理と
-   `assertOk` 合格条件の統一 → P1 毎プロンプトのクレジット文の削減 →
-   P1 ARCHIVED 文書の移動（**未完了事項の抽出が先**）→ P2 索引化・月別分割・改名。
-   **`docs/agents/task-queue.md` を archive へ動かさない。**未完了の作業
-   （孤児R2オブジェクトのP2×4、セットアップ完了の穴、CSS構造問題）が入っている。
+1. **残課題の正本は2つ。** `docs/agents/doc-cleanup-survey.md`（Phase A）と
+   `scratch/sol-final-review.md`（Phase E・push直前レビュー。**scratch は消えるので
+   必要なら移すこと**）。P0 は解消済み。残るのは:
+   - **P1: `task-queue.md` の未完了事項の救出。** T-9追加3件 / T-10残件（孤児R2
+     オブジェクトP2×4）/ CSS構造 / `srcset`前提 / `/admin/demo` を1件ずつ再判定し、
+     現役backlogへ戻す。**判定できないものは削除せず「要再確認」にする。**
+     これが済むまで `task-queue.md` を archive へ動かさない。
+   - **P1: hook の3軸分離は未完成。** Claude の週枠と5時間枠はまだ一括解析で、
+     片方だけ取得できない場合の独立性は無い。「3軸分離完了」と書かない。
+   - **P1: 製品コードの `assertOk` 3重定義。** `admin.tsx` が共通版を import せず
+     独自定義を使う。別commit・`bun run check`・`bun run smoke` 付きで直す。
+   - P1: 毎プロンプトのクレジット文を、変化時だけに減らす。
+   - P2: `docs/specs/README.md` の索引化 / Handoff archive の月別分割 /
+     admin spec の `-v2` 改名と内部タイトルの整合。
 2. **（完了）クレジット判定の作り直し** — Phase C 反対レビュー → Terra 実装 →
    Claude 独立検証。単一の深刻度をやめ3軸（取得状態 / 週枠 / 作業継続性）へ分離し、
    行動は「範囲を縮める」「再開可能な区切りを作る」の2つ、命令形は廃止。

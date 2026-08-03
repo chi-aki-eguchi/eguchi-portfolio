@@ -27,14 +27,10 @@ developer_instructions = """
 
 ## 製品コードの不変条件
 
-- DBクエリは `withRetry(() => db....)` で包む。
-- 書き込みAPIの応答は `assertOk()` または同等の `res.ok` 検査後に読む。
-- HTTP の圧縮ヘッダを手動設定しない。HTML は `Cache-Control: no-store`。
-- `schema.ts` と `schema.postgres.ts` を同期する。
-- データ更新後は該当 query を再取得する。
+**`AGENTS.md` の「製品コードの不変条件」を読むこと。この文書には転記しない。**
+高リスク領域の詳しい確認手順は `docs/checklists.md`。必要な範囲だけ読む。
 
-不変条件の正本は `AGENTS.md`、高リスク領域の確認手順は `docs/checklists.md`。
-必要な範囲だけ読むこと。
+理由: 同じ規則を複数箇所へ書くと、変更時にずれて、古い方を信じた事故が起きる。
 
 ## 禁止操作
 

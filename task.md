@@ -69,19 +69,34 @@ Codex CLI 0.146.0 が次の警告を出した。
 構文・キー名ともに受理されている。TOML schema の裏取りができていなかった点は解消。
 検査用の壊れたファイルは削除済み。
 
+### 解決: レーンの指定はフラグ2つでよい（2026-08-03）
+
+Desktop app で試したところ、エージェントは選択できず、既定の `gpt-5.6-sol` / effort `low`
+で動いた（セッション記録で確認。Luna の instructions もセッションに入っていない）。
+`codex exec` にも `--agent` 相当のオプションは無い。
+
+ただし **Claude が Codex を呼ぶ経路は `codex exec` であり、そこではモデルと effort を
+フラグで直接指定できる。** 実機確認済み。
+
+```sh
+codex exec -s workspace-write -m gpt-5.6-luna  -c model_reasoning_effort="max" "..."
+codex exec -s workspace-write -m gpt-5.6-terra -c model_reasoning_effort="max" "..."
+```
+
+セッション記録に `"model":"gpt-5.6-luna"` / `"effort":"max"` が指定どおり残ることを確認した。
+**当初の目的（安いレーンへ定型作業を逃がす）はこの方法で達成できる。**
+TOML は各レーンの担当範囲・禁止操作・停止条件の定義文書として維持し、依頼文の下敷きに使う
+（`codex exec` 経由では instructions が自動で渡らないため、毎回プロンプトへ書く。
+これは `AGENTS.md` が元々求めている内容と同じ）。
+
 ### 未検証
 
-- **エージェントを名前で選んで実行する方法。** `codex exec` に `--agent` 相当の
-  オプションは無い（0.146.0-alpha の `--help` で確認）。バイナリには `agent_path` /
-  `agent_nickname` / `agent_role` / `SubAgentSource::ThreadSpawn` があるため、
-  選択は対話 TUI / Desktop app 側の機能と思われる。実際に選べるかは未確認。
+- Luna レーンの実作業での品質と消費。まだ定型タスクを流していない。
 
 ### 次の一手
 
-1. 対話の Codex（TUI か Desktop app）で新しいタスクを開始し、
-   `eguchi_luna_routine` / `eguchi_terra_impl` を選べるか確認する
-   （定義が読まれること自体は上記のとおり確認済み）
-2. 定型タスクを1〜2件 Luna に流して、品質と消費を見る
+1. 定型タスクを1〜2件 Luna に流して、品質と消費を見る
+   （`-m gpt-5.6-luna -c model_reasoning_effort="max"`）
 3. この commit と、既に push 済みの admin 刷新分をどう扱うか判断する（push はオーナー）
 4. **クレジット hook の修正**（別件・依頼文を用意済み）。
    `credit-status.mjs` は CodexBar CLI が無いと残量不明でも `closing` を固定で返す

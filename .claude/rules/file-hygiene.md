@@ -7,7 +7,9 @@
 - Spec filenames with `-v2`, `-v3`, `-final`, or `-draft` are banned.
 - Finished or retired docs move to `docs/archive/` via `git mv`.
 - Do not plainly delete historical docs unless the owner explicitly approves deletion.
-- Handoffs are `task.md` entries; standalone `*.handoff.md` files are banned.
+- `task.md` holds only the Current State block; keep it around 76 lines.
+- Past handoffs and past Current States live in `docs/archive/task-handoffs.md`; append there, never back into `task.md`.
+- Standalone `*.handoff.md` files are banned.
 - Temporary prompts, drafts, and scratch scripts go in `scratch/`.
 - `scratch/` contents are gitignored except `scratch/README.md`.
 - Untracked files must be resolved within a few working sessions.

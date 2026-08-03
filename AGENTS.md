@@ -11,7 +11,9 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
    `docs/specs/admin-renewal-goal.md` が正本。
 4. Current State の鮮度は `node scripts/ai/check-handoff-freshness.mjs` で確認できる。
 
-`task.md` の過去 Handoff 全文や `knowledge/wiki/` 全体を毎回読み直さない。
+`task.md` は Current State だけを置くファイルで、**76行前後に保つ**。過去 Handoff と
+過去 Current State は `docs/archive/task-handoffs.md` にあり、**通常は読まない**。
+特定の経緯を追うときだけ検索する。`knowledge/wiki/` 全体も毎回読み直さない。
 矛盾時は、コードと Git の実物 → Current State → 現行仕様書 → 履歴の順で優先する。
 
 ## 現在の役割
@@ -75,7 +77,8 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
 - hook は Current State を自動編集しない。事実を確認した編集者が更新する。
 - `HEAD: SELF` は「Current State を最後に更新したcommit」を意味する。
   鮮度チェックは `task.md` の最終更新commitと実際のHEADを比較する。
-- 過去 Handoff は削除・書換えせず、必要な節目だけ末尾へ追記する。
+- 過去 Handoff は削除・書換えしない。必要な節目は
+  `docs/archive/task-handoffs.md` の末尾へ追記する（`task.md` へ戻さない）。
 
 ## 最小Handoff
 

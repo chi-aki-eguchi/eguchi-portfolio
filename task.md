@@ -1,7 +1,97 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-07-31 21:00 JST
+## Current State — 2026-08-03 JST
+
+- **Status:** **Codex のモデルレーン（Luna / Terra）をローカル `main` へ反映し、
+  `~/.codex/agents` へ導入済み。commit 済み・push 未実施**
+- **Current owner:** Claude Code（停止中）
+- **Branch:** `main` / **HEAD:** `SELF`
+- **origin/main（`a3946fc`）より 1 commit ahead / behind 0。push 未実施**
+- **Git:** clean（未追跡ファイル無し）。`scripts/smoke/scratch/` はローカルにも残っていない。
+- この変更はリモート実行環境（Claude Code on the web、ブランチ
+  `claude/luna-max-setup-o9g8lp`）で作られ、デスクトップのローカル `main` へ
+  ファイル配置で反映した。リモートの 2 commits は取り込まず、内容だけを 1 commit にまとめた。
+  前回の Current State に残っていたリモート側の branch / ahead 表記は、この記載で訂正した。
+
+### 目的と完了条件
+
+2026-07-30 の GPT-5.6 Luna 値下げ（最大80%・Codex の使用量カウントにも反映）を受け、
+Codex に安い定型レーンを足し、上位モデルの枠を実装の難所へ回す。完了条件は、
+エージェント定義が git 管理下にあり、ローカルへ安全に導入でき、どの作業をどのレーンへ
+出すかが文書で決まっていること。
+
+### 今回の変更（製品コードは1行も触っていない）
+
+- 新規 `docs/agents/codex-agents/eguchi-luna-routine.toml`（Luna / max。
+  定型作業と一次スキャンのみ。判断が要る依頼は実装せず停止させる）
+- 新規 `docs/agents/codex-agents/eguchi-terra-impl.toml`（Terra / max。主実装レーン）
+- 新規 `scripts/ai/install-codex-agents.sh`（`~/.codex/agents` へ同期。
+  既存が違う内容なら上書きせず失敗する。`--check` あり）
+- `docs/agents/codex-workflow.md` に「モデルの使い分け」節を追記
+
+### 決めたこと
+
+- **`sol-advisor` プラグインは導入しない。** 構成はうちの Phase 分担とほぼ同じで、
+  得られるのはモデル割り当てだけ。第三者プラグインがインストール時と実行時に
+  シェルスクリプトを走らせる分だけリスクが増える。
+- **ChatGPT / Codex の Full access は有効にしない。** 承認なしに任意のファイル編集と
+  コマンド実行ができるモードで、`AGENTS.md` の安全境界と両立しない。
+  max effort の有効化とは無関係の設定。
+- Luna へ回すのは仕様が確定した機械的作業だけ。settings の4箇所同期 / `withRetry` /
+  `assertOk` / DB schema / 認証は Luna の対象外。
+
+### 検証（すべてローカル）
+
+- リモート環境で実施済み: TOML 構文（`python3 tomllib`）、install script の
+  空ディレクトリ導入・冪等・不一致時に上書きせず失敗、`git diff --check`
+- デスクトップで再実施（2026-08-03）:
+  - TOML 構文を `bun` の TOML 読み込みで2ファイルとも成功（ローカルの python3 は
+    3.9 系で `tomllib` が無いため、リポジトリの実行環境である bun を使った）。
+    `name` / `model` / `model_reasoning_effort` / `developer_instructions` を確認
+  - `sh scripts/ai/install-codex-agents.sh` → `~/.codex/agents` へ2本を新規導入、成功
+  - `sh scripts/ai/install-codex-agents.sh --check` → 2本とも正本と一致、成功
+  - `bun test scripts/ai/handoff-tools.test.mjs` → 3 pass / 0 fail
+  - `git diff --check` 成功。`packages/` の製品コードが差分に無いことを確認
+- `bun run check` / `bun run smoke` は**未実施**。AI運用・文書だけの変更のため
+  （`AGENTS.md` の必須検証の区分に従う）
+
+### 未検証
+
+- **実際の Codex CLI がこのエージェントを読み込み、名前で呼べるか。**
+  ローカルには Codex CLI 0.146.0 と `~/.codex/agents` の2本が揃ったが、
+  エージェントはタスク作成時に発見されるため、新しい Codex タスクを開始しないと確認できない。
+- カスタムエージェントの TOML schema は sol-advisor の実テンプレートに合わせた。
+  公式ドキュメントは 403 で直接取得できておらず、キー名の裏取りは間接的。
+
+### 次の一手
+
+1. 新しい Codex タスクを開始し、`eguchi_luna_routine` / `eguchi_terra_impl` を
+   名前で呼べるか確認する（導入自体は完了済み）
+2. 定型タスクを1〜2件 Luna に流して、品質と消費を見る
+3. この commit と、既に push 済みの admin 刷新分をどう扱うか判断する（push はオーナー）
+4. **クレジット hook の修正**（別件・依頼文を用意済み）。
+   `credit-status.mjs` は CodexBar CLI が無いと残量不明でも `closing` を固定で返す
+   （243行目、および 229 / 114 行目）。status に「不明」を表す値が無いのが問題の本体。
+   依頼文（Phase A → C → D、D はオーナー承認後）と引き継ぎメモは、オーナーへ
+   ファイルで直接渡した。`scratch/` は gitignore かつリモート環境は使い捨てのため
+   リポジトリには残らない。
+5. デスクトップへの引き継ぎは完了（2026-08-03）。ローカルには Codex CLI があるため、
+   4 の Codex 相談はここで実行できる。
+
+### 触ってはいけない範囲
+
+- push / deploy / 本番DB / R2 / env 変更（今回も一切していない）
+- 製品コード（今回の差分に無し）
+
+### 記録
+
+- Codex session: 今回は Codex を起動していない
+- local commit: あり / push: 無し / Railway 反映: 無し / 本番確認: 無し
+
+---
+
+## 前回 Current State — 2026-07-31 21:00 JST（Admin 全体刷新）
 
 - **Status:** **Admin 全体刷新の実装完了。未コミット（オーナー確認待ち）**
 - **Current owner:** Claude Code（停止中）

@@ -56,7 +56,14 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
 - settings の新規キーは次の4箇所を同期する:
   `settings-preview.ts` の台帳、API `/settings` の default、
   `provider.tsx` のDB適用 `useEffect`、同ファイルの `handlePreviewMessage`。
-- 書き込みAPIの応答は `assertOk()` または同等の `res.ok` 検査後に読む。
+- 書き込みAPIの応答は、**本文を読む前に必ず検証する**。使い分けは実装に合わせる。
+  - admin 配下: `admin-shared.ts` の `assertOk` / `jsonOrThrow`。
+    401 をログイン画面へのリダイレクトとして扱うため、ここを素の `res.ok` に
+    置き換えるとセッション切れが無言で失敗する。
+  - それ以外: `lib/api.ts` の `assertOk` / `jsonOrThrow`。
+  - **settings の保存は必ず `postAdminSettings()` を経由する。**
+    API は許可リスト外のキーを無視して `ignoredKeys` で返すため、`assertOk` だけ見ると
+    「保存成功」の表示のまま一部が保存されない。
 - `Content-Encoding` を手動設定しない。HTMLは `Cache-Control: no-store`。
 - DB schema変更は `schema.ts` と `schema.postgres.ts` を同期する。
 - データ更新後は該当queryを再取得して、画面を古い状態のままにしない。

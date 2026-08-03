@@ -69,7 +69,9 @@
 
 **完了前**
 
-- [ ] 書き込み API 呼び出しはすべて `assertOk()` / `jsonOrThrow()` で検証している（§0）
+- [ ] 書き込み API 呼び出しは本文を読む前に検証している。合格条件の正本は
+      `AGENTS.md`「製品コードの不変条件」（admin 配下は 401 リダイレクトを含む
+      `admin-shared.ts` 側、settings 保存は `postAdminSettings()` 経由）
 - [ ] データ更新後は `qc.invalidateQueries({ queryKey: [...] })` している（§0）
 - [ ] `fetch` 直接呼びを追加していない（`lib/api.ts` の型付きクライアント経由）
 - [ ] `bun run check` 成功

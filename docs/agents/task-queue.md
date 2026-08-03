@@ -19,7 +19,7 @@
 共通の前提（全指示書に適用。個別記載は省略している）:
 
 > あなたはこのタスクの唯一の Driver です。冒頭で Driver 宣言をすること。
-> docs/agents/autonomy-rules.md・CLAUDE.md §0 Invariants・docs/checklists.md に従う。
+> docs/archive/autonomy-rules.md・CLAUDE.md §0 Invariants・docs/checklists.md に従う。
 > git push しない / 本番 DB・R2・Railway への書き込み禁止 / .env を読まない /
 > 未pushコミットの rebase 禁止 / 同じ失敗3回でそのタスクを中断し「要相談」へ。
 > コード変更時は `bun run check`、admin に触れたら `bun run smoke` を通してから完了報告。

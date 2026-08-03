@@ -3,8 +3,8 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-03 JST
 
-- **Status:** Codex レーン確定 / 文書整理 第1・2段 完了 / **クレジット判定の作り直し完了**。
-  commit 済み・push 未実施
+- **Status:** Codex レーン確定 / 文書整理 第1〜3段 完了 / クレジット判定の作り直し完了 /
+  **Sol の独立調査で残課題を洗い出し済み**。commit 済み・push 未実施
 - **Current owner:** Claude Code（停止中）
 - **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 14 commits ahead
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
@@ -15,39 +15,25 @@
 2. **（第1・2段完了）文書整理** — AI が作業前に読む量が過大だった。
    オーナー判断は「全部やる」。完了条件は読む量が実際に小さくなること。
 
-### 決まったこと（Codex レーン）
+### 経緯と実績
 
-**レーン指定は `codex exec` のフラグ2つ**（`-m gpt-5.6-luna` / `-m gpt-5.6-terra` に
-`-c model_reasoning_effort="max"`、読み取りは `-s read-only`）。実機確認済み。
-Desktop app のエージェント選択は効かないため TOML は定義文書として維持し、依頼文の
-下敷きに使う。判断が要る作業は Luna に投げない。詳細は `docs/agents/codex-workflow.md`。
+**ここには書かない。** Codex レーンの使い方は `docs/agents/codex-workflow.md`、
+文書整理の経緯と残課題は `docs/agents/doc-cleanup-survey.md`、クレジット判定は
+`docs/agents/credit-status.md` と `credit-status-review.md` が正本。
 
-**Luna 実測2件（読み取り棚卸し / 12ファイル移動＋参照52箇所置換）ともに合格。**
-件数を自己検証し、範囲外の判断もせず、本文も書き換えなかった。消費は Codex 週枠で各約1%。
+**この節を経過報告で太らせないこと。**Current State は「今どこにいて次に何をするか」
+だけを書く場所で、30〜60行に保つ。終わったことは正本側へ移す。
 
-### 文書整理の実績（2026-08-03）
-
-| 対象 | 前 | 後 |
-|---|---:|---:|
-| `task.md` 全体 | 9,974行 | **76行** |
-| 起動時に読む Current State | 359行 | 66行 |
-| docs/（archive 除く） | 83ファイル / 17,111行 | 52ファイル / 10,174行 |
-
-- 第1段: Current State を圧縮。第2段: 被リンク0の specs 3件と `agent-logs` 12件を
-  `docs/archive/` へ `git mv`（参照52箇所はパス置換のみ。Luna 実施・Claude 検証済み）
-- **第3段: 過去 Handoff 133本と過去 Current State 3件を
-  `docs/archive/task-handoffs.md` へ分離。`task.md` は Current State 専用にした。**
-- **削除ゼロ。**移し先を git 内にしたのは、クラウド実行環境から Obsidian が
-  読めないため（今回実証済み）。リポジトリの履歴は vault へ出さない。
-- 見送り: `admin-enhancement-spec` の `-v2` 改名。3件は別内容で重複ではなく、
-  12箇所から参照されるため費用対効果が低い
-- `bun run check` / `bun run smoke` は**未実施**。AI運用・文書だけの変更のため
+`bun run check` / `bun run smoke` は**未実施**。AI運用・文書だけの変更のため。
 
 ### 次の一手
 
-1. **残る重複の解消（未着手）** — `withRetry` 等の規則が `.claude/` 配下4箇所に
-   転記されたまま。サブエージェントやスキルは `AGENTS.md` を自動で読まない可能性が
-   あるため、消す前に確認が要る。
+1. **残課題は `docs/agents/doc-cleanup-survey.md`（Sol 独立調査）の推奨表が正本。**
+   優先順は P0 古い導線の修正（着手済み）→ P1 `.claude/rules` の整理と
+   `assertOk` 合格条件の統一 → P1 毎プロンプトのクレジット文の削減 →
+   P1 ARCHIVED 文書の移動（**未完了事項の抽出が先**）→ P2 索引化・月別分割・改名。
+   **`docs/agents/task-queue.md` を archive へ動かさない。**未完了の作業
+   （孤児R2オブジェクトのP2×4、セットアップ完了の穴、CSS構造問題）が入っている。
 2. **（完了）クレジット判定の作り直し** — Phase C 反対レビュー → Terra 実装 →
    Claude 独立検証。単一の深刻度をやめ3軸（取得状態 / 週枠 / 作業継続性）へ分離し、
    行動は「範囲を縮める」「再開可能な区切りを作る」の2つ、命令形は廃止。

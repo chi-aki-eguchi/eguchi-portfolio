@@ -5,7 +5,7 @@
 
 - **Status:** Codex のレーン運用が確定。文書整理に着手。commit 済み・push 未実施
 - **Current owner:** Claude Code（作業中）
-- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 3 commits ahead
+- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 4 commits ahead
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
 
 ### 目的と完了条件
@@ -34,7 +34,10 @@
   `bun test scripts/ai/handoff-tools.test.mjs` 3 pass、`git diff --check`
 - `bun run check` / `bun run smoke` は**未実施**。AI運用・文書だけの変更のため
   （`AGENTS.md` の必須検証の区分に従う）
-- 未検証: Luna の実作業での品質と消費（棚卸しタスクを1件実行中）
+- **Luna 実測（1件目・読み取り棚卸し）:** 合格。83件を取り違えず集計し、件数を自己検証し、
+  途中で入った別commitに気づいて再集計した。価値判断もせず事実だけ出した。
+  消費は Codex 週枠の約1%。**定型・読み取り作業は Luna で問題ない。**
+  出力は `scratch/luna-docs-inventory.md`（gitignore）。
 
 ### 次の一手
 

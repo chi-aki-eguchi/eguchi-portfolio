@@ -833,7 +833,7 @@
   letter-spacing: 0.1em;
 }
 
-.admin-atelier button:not(.absolute):not([class*="bg-black"]),
+.admin-atelier button:not(.absolute):not([class*="bg-black"]):where(:not([class*="ax-btn"])),
 .admin-atelier a[class*="px-"],
 .admin-atelier label[class*="border"] {
   font-family: var(--admin-font-ui);
@@ -854,7 +854,7 @@
     transform var(--dur-instant) var(--ease-out) !important;
 }
 
-.admin-atelier button:not(.absolute):not([class*="bg-black"]) {
+.admin-atelier button:not(.absolute):not([class*="bg-black"]):where(:not([class*="ax-btn"])) {
   border-color: var(--admin-line) !important;
   background-color: transparent !important;
   color: var(--admin-ink) !important;
@@ -863,7 +863,7 @@
 /* 通常状態のリセット (0,5,1) に勝つため .admin-atelier を重ねる。
    上の同種の回避と同じ理由。 */
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button:not(.absolute):not([class*="bg-black"]):hover {
+  button:not(.absolute):not([class*="bg-black"]):where(:not([class*="ax-btn"])):hover {
   background-color: rgba(var(--admin-ink-rgb), 0.035) !important;
   border-color: var(--admin-line-strong) !important;
   color: var(--admin-ink) !important;
@@ -873,20 +873,20 @@
    of the filled-button surface. Four scoped classes beat the generic button
    reset above without removing its sizing or interaction safeguards. */
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button.admin-plain-section-trigger:not(.absolute):not([class*="bg-black"]),
+  button.admin-plain-section-trigger:not(.absolute):not([class*="bg-black"]):where(:not([class*="ax-btn"])),
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button.admin-plain-section-trigger:not(.absolute):not([class*="bg-black"]):hover {
+  button.admin-plain-section-trigger:not(.absolute):not([class*="bg-black"]):where(:not([class*="ax-btn"])):hover {
   background-color: transparent !important;
   box-shadow: none !important;
 }
 
 .admin-atelier
-  button:not(.absolute):not([class*="bg-black"]):active:not(:disabled),
+  button:not(.absolute):not([class*="bg-black"]):where(:not([class*="ax-btn"])):active:not(:disabled),
 .admin-atelier a[class*="px-"]:active {
   transform: scale(0.97) !important;
 }
 
-.admin-atelier button:not(.absolute):not([class*="bg-black"]):disabled {
+.admin-atelier button:not(.absolute):not([class*="bg-black"]):where(:not([class*="ax-btn"])):disabled {
   opacity: 0.45;
 }
 
@@ -4619,60 +4619,59 @@ dialog.lightbox-exit .lb-content {
 }
 
 /* ── ボタン ──
-   4重クラス + !important は、上のグローバル button リセットに勝つための作法。 */
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn {
+   上のグローバル button リセットは :not([class*="ax-btn"]) で ax-btn 系を除外して
+   いるので、ここは重ねがけも !important も要らない。新規ボタンは admin-ui.tsx の
+   AxButton を使い、.ax-btn 側だけで完結させること。 */
+.admin-atelier button.ax-btn {
   display: inline-flex;
   min-height: 36px;
   align-items: center;
   justify-content: center;
   gap: 6px;
   padding: 7px 14px;
-  border: 1px solid transparent !important;
-  border-radius: var(--admin-radius-sm) !important;
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius-sm);
   font-size: var(--admin-text-note);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--small {
+.admin-atelier button.ax-btn--small {
   min-height: 30px;
   padding: 4px 9px;
 }
 
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--quiet {
-  border-color: var(--admin-line) !important;
-  background: transparent !important;
-  color: var(--admin-ink) !important;
+.admin-atelier button.ax-btn--quiet {
+  border-color: var(--admin-line);
+  background: transparent;
+  color: var(--admin-ink);
 }
 
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button.ax-btn--quiet:hover:not(:disabled) {
-  border-color: var(--admin-line-strong) !important;
-  background: rgba(var(--admin-ink-rgb), 0.03) !important;
+.admin-atelier button.ax-btn--quiet:hover:not(:disabled) {
+  border-color: var(--admin-line-strong);
+  background: rgba(var(--admin-ink-rgb), 0.03);
 }
 
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--ghost {
+.admin-atelier button.ax-btn--ghost {
   padding-inline: 8px;
-  border-color: transparent !important;
-  background: transparent !important;
-  color: var(--admin-muted) !important;
+  border-color: transparent;
+  background: transparent;
+  color: var(--admin-muted);
 }
 
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button.ax-btn--ghost:hover:not(:disabled) {
-  background: rgba(var(--admin-ink-rgb), 0.04) !important;
-  color: var(--admin-ink) !important;
+.admin-atelier button.ax-btn--ghost:hover:not(:disabled) {
+  background: rgba(var(--admin-ink-rgb), 0.04);
+  color: var(--admin-ink);
 }
 
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--danger {
+.admin-atelier button.ax-btn--danger {
   padding-inline: 8px;
-  border-color: transparent !important;
-  background: transparent !important;
-  color: var(--admin-line-strong) !important;
+  border-color: transparent;
+  background: transparent;
+  color: var(--admin-line-strong);
 }
 
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier
-  button.ax-btn--primary {
+.admin-atelier button.ax-btn--primary {
   padding-inline: 18px;
 }
 
@@ -4865,8 +4864,8 @@ dialog.lightbox-exit .lb-content {
    2026-07-31 の刷新で 30px の小ボタンを増やしたが、既存の当たり判定拡張は
    `.admin-tap*` 付きの要素にしか効いていなかった(Codex独立監査 指摘)。 */
 @media (pointer: coarse) {
-  .admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn,
-  .admin-atelier.admin-atelier.admin-atelier.admin-atelier button.ax-btn--small,
+  .admin-atelier button.ax-btn,
+  .admin-atelier button.ax-btn--small,
   .admin-atelier.admin-atelier.admin-atelier.admin-atelier
     button.ax-status-toggle {
     min-width: 44px;

@@ -14,12 +14,20 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
 `task.md` は Current State だけを置くファイル。過去 Handoff と過去 Current State は
 `docs/archive/task-handoffs.md` にあり、**通常は読まない**。特定の経緯を追うときだけ
 検索する。`knowledge/wiki/` 全体も毎回読み直さない。
+矛盾時は、コードと Git の実物 → Current State → 現行仕様書 → 履歴の順で優先する。
 
 **現役文書へ、測り直せる行数・ファイル数を「現在の事実」として書かない。**すぐ古くなり、
 読む側が誤った前提で判断する（2026-08-03 に2回発生）。必要なら測り直す。
 例外は、日付や commit を添えた監査結果、履歴文書、規則として決めた上限値
 （Current State の30〜60行など）。
-矛盾時は、コードと Git の実物 → Current State → 現行仕様書 → 履歴の順で優先する。
+
+**記録された不具合に着手する前に、実物を測り直す。** 記録の行番号・数値・症状を
+そのまま信じない。**もう直っていたら、直さずに記録のほうを消す。**
+過去に「存在しない不具合」を記録した実例が3件あり、いずれも着手すれば実在しない
+問題を直す作業になっていた。測り方の落とし穴と実例は `docs/agents/measuring.md`。
+
+**不具合を直したら、その場で `docs/agents/backlog.md` から項目を消す。**
+記録を残したまま直すと、次に読む者が「まだある問題」として扱う。
 
 ## 現在の役割
 
@@ -129,5 +137,6 @@ Current State に次を残す。
 - Claude/Codex連携: `docs/agents/codex-workflow.md`
 - クレジット監視: `docs/agents/credit-status.md`
 - 未完了の作業: `docs/agents/backlog.md`（完了したらこの文書から消す）
+- 測り方と、存在しない不具合を作らないための手順: `docs/agents/measuring.md`
 - 高リスク検査: `docs/checklists.md`
 - 配布版DB差分: `DISTRIBUTION.md`

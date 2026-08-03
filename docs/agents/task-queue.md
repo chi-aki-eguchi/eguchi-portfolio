@@ -23,7 +23,7 @@
 > git push しない / 本番 DB・R2・Railway への書き込み禁止 / .env を読まない /
 > 未pushコミットの rebase 禁止 / 同じ失敗3回でそのタスクを中断し「要相談」へ。
 > コード変更時は `bun run check`、admin に触れたら `bun run smoke` を通してから完了報告。
-> 決定ログは docs/agent-logs/YYYY-MM-DD.md、Handoff は task.md 末尾に追記。
+> 決定ログは docs/archive/agent-logs/YYYY-MM-DD.md、Handoff は task.md 末尾に追記。
 
 ---
 
@@ -214,7 +214,7 @@ ogp.ts の imgBase フォールバック鎖と og-service.jpg の扱いも棚卸
 背景: 販売一本化後、購入者は公開済みサイトを受け取り、管理画面「はじめに」が
 唯一の頼りになる（実例: オーナー父は旧セルフ設置では全滅、「はじめに」からは
 使えた）。Codex調査(2026-07-20・read-only)で P0×2 を含む8件の改善点を特定。
-詳細表は docs/agent-logs/2026-07-20.md 末尾。
+詳細表は docs/archive/agent-logs/2026-07-20.md 末尾。
 
 やること（Codex提案の要約）:
 - P0: 5項目未完了でも「セットアップ完了」を押せてしまう穴を塞ぐ(admin.tsx:1090)
@@ -274,7 +274,7 @@ ogp.ts の imgBase フォールバック鎖と og-service.jpg の扱いも棚卸
   「保存後に旧R2削除」がプロセスをまたいで競合し得る(api/index.ts:332)
 - P2×4: thumb/medium片方だけ失敗時の孤児R2オブジェクト・purge時のR2削除
   エラー無視・カメラレンズ候補の連続操作競合・ヒーロー並び替えの古い順序
-  上書き・起動時ALTER TABLEがwithRetry対象外(詳細はdocs/agent-logs/2026-07-21.md)
+  上書き・起動時ALTER TABLEがwithRetry対象外(詳細はdocs/archive/agent-logs/2026-07-21.md)
 
 検証: bun run check + bun run smoke。P0/P1の削除系は実際に「復元→即purge」
 「通常写真IDへの直接purge」等の再現手順をテストで固定化すること。

@@ -5198,7 +5198,7 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 ### 変更内容
 
 `main` に3コミット(f9af998 / fda2cd4 / 8aae854)。詳細な判断記録は
-`docs/agent-logs/2026-07-07.md`、監査レポートとBefore/Afterスクショは
+`docs/archive/agent-logs/2026-07-07.md`、監査レポートとBefore/Afterスクショは
 `scratch/design-unify-2026-07/`。
 
 1. [f9af998] :root に共通デザイントークン層(motion/radius/shadow/placeholder/
@@ -5217,7 +5217,7 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 - packages/web/src/web/styles.css
 - packages/web/src/web/pages/{admin.tsx, admin-tabs.tsx, admin-login.tsx, top.tsx, gallery.tsx}
 - packages/web/src/web/components/{Layout.tsx, BackToTop.tsx, PageTransition.tsx, SeriesGrid.tsx}
-- docs/agent-logs/2026-07-07.md(新規)、task.md
+- docs/archive/agent-logs/2026-07-07.md(新規)、task.md
 
 ### 触らなかったもの(意図的)
 
@@ -5247,7 +5247,7 @@ Fable5 のような高性能モデルを、単発のコード修正ではなく�
 
 ### 次の担当者が触ってよい場所
 
-- docs/agent-logs/2026-07-07.md の「要相談/次回候補」(救済セレクタ層の撤去、
+- docs/archive/agent-logs/2026-07-07.md の「要相談/次回候補」(救済セレクタ層の撤去、
   公開側アクセント色のコントラスト保証、未救済生値のトークン化)
 - 上記3コミットのレビュー
 
@@ -5429,7 +5429,7 @@ Lightboxシリーズリンク=実施 / /service=現状維持+需要計測。
 ## Handoff 2026-07-08 — Claude Code (Fable5): オーナー報告の不具合3件+管理画面密度改善案
 
 出典: オーナーからの本番スクショ付き報告。決定ログ詳細は
-`docs/agent-logs/2026-07-08.md`(セッション4)参照。
+`docs/archive/agent-logs/2026-07-08.md`(セッション4)参照。
 
 ### 完了した修正(3件、それぞれ別コミット・すべて未push)
 
@@ -5515,7 +5515,7 @@ push はオーナーの手で。
 ## Handoff 2026-07-08 — Claude Code (Fable5): 承認済み2件を実装(削除UX案A+管理画面密度案D)
 
 前回セッションで提案した2件について秋さんの承認が得られたため実装。
-決定ログ詳細は `docs/agent-logs/2026-07-08.md`(セッション5)参照。
+決定ログ詳細は `docs/archive/agent-logs/2026-07-08.md`(セッション5)参照。
 
 ### 完了した実装(2件、それぞれ別コミット・すべて未push)
 
@@ -5602,7 +5602,7 @@ Claude Code のセッション5実装(削除UX案A+管理画面密度案D)をpus
 ## Handoff 2026-07-08 — Claude Code (Fable5): 最終セッション(総点検+引き継ぎパッケージ)
 
 **次の Driver は Sonnet。** 着手前にこの Handoff と `docs/agents/task-queue.md` を読むこと。
-決定ログ詳細は `docs/agent-logs/2026-07-08.md`(セッション6)、
+決定ログ詳細は `docs/archive/agent-logs/2026-07-08.md`(セッション6)、
 オーナー向けサマリは `scratch/fable-final-2026-07/report.md`。
 
 ### 完了したこと(すべて未push・コミット済み)
@@ -6150,7 +6150,7 @@ DBスキーマ・setupCompleted設計・/service/start は触っていない。
 - `packages/web/src/web/lib/upload-file.ts`
 - `packages/web/src/web/lib/upload-file.test.ts`
 - `packages/web/src/web/pages/admin.tsx`
-- `task.md` / `docs/agent-logs/2026-07-10.md`
+- `task.md` / `docs/archive/agent-logs/2026-07-10.md`
 
 ### 検証したこと(local確認)
 
@@ -6271,7 +6271,7 @@ R2/画像アップロード・DB schema・service/start・Railwayテンプレー
 - `packages/web/src/web/pages/admin.tsx`
 - `packages/web/src/web/pages/admin-setup-flow.render.test.tsx`(新規)
 - `packages/web/src/web/test/pages.render.test.tsx`
-- `task.md` / `docs/agent-logs/2026-07-10.md`
+- `task.md` / `docs/archive/agent-logs/2026-07-10.md`
 
 ### 検証したこと(local確認)
 
@@ -6431,7 +6431,7 @@ reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失�
    pure関数 `reorderLockReason` 切り出し+判定/renderテストを追加。
 3. **コミット(docs)** — `post-deploy-guide.md` ②③を実測に合わせ最小更新
    (Configure/Save Config手順、Deploy disabledは正常、Bucket empty正常)。
-   本Handoff+決定ログ `docs/agent-logs/2026-07-11.md`。
+   本Handoff+決定ログ `docs/archive/agent-logs/2026-07-11.md`。
 
 ### 検証したこと(local確認)
 
@@ -6617,7 +6617,7 @@ reorderLockedのUXだったが、オーナーが実症状(矢印操作でも失�
 - packages/web/src/web/pages/admin.tsx
 - packages/web/src/web/test/admin-virtual-grid.test.ts
 - scripts/smoke/admin-mobile-library.spec.ts (新規)
-- task.md / docs/agent-logs/2026-07-11.md
+- task.md / docs/archive/agent-logs/2026-07-11.md
 
 ### 検証したこと(local確認)
 
@@ -6672,7 +6672,7 @@ admin Libraryを高速スワイプした際、写真タイルが強くチラつ�
 
 - packages/web/src/web/pages/admin.tsx(img 1箇所+WHYコメント)
 - packages/web/src/web/test/pages.render.test.tsx(回帰テスト追加)
-- docs/agent-logs/2026-07-12.md(決定ログ)
+- docs/archive/agent-logs/2026-07-12.md(決定ログ)
 - scratch/flicker-repro.mjs, scratch/flicker-repro-public.mjs(調査用・gitignored)
 
 ### 検証したこと
@@ -6735,7 +6735,7 @@ Stage2のみ、このClaudeアプリ内で単独実装(新規ターミナル・a
 - packages/web/src/web/pages/admin-tabs.tsx(レイアウト選択肢+縮小見本、前Driver実装)
 - CLAUDE.md(11→12種、前Driver実装)
 - docs/specs/design-spec.md(2-5節を追記)
-- docs/agent-logs/2026-07-13.md(決定ログ、バグ発見の実測根拠含む)
+- docs/archive/agent-logs/2026-07-13.md(決定ログ、バグ発見の実測根拠含む)
 - task.md(本Handoff)
 
 ### 検証したこと
@@ -6808,7 +6808,7 @@ commit 106f837のjustified実装に対するCodexのpush前レビューで発見
 - AGENTS.md / packages/web/CLAUDE.md / .claude/rules/react-components.md /
   .claude/skills/gallery-feature/SKILL.md / packages/web/src/web/lib/service-config.ts
   (11→12種の記載同期)
-- docs/agent-logs/2026-07-13.md(追記)
+- docs/archive/agent-logs/2026-07-13.md(追記)
 
 ### 検証したこと
 
@@ -6865,7 +6865,7 @@ commit 106f837のjustified実装に対するCodexのpush前レビューで発見
 - `.claude/agents/perf-auditor.md`・`security-reviewer.md`の旧世代モデルID
   (`claude-sonnet-4-6`)を`claude-sonnet-5`へ更新。`exif-checker.md`の古い行番号参照を修正。
 
-詳細な調査手法・発見事項は決定ログ参照: `docs/agent-logs/2026-07-13.md`
+詳細な調査手法・発見事項は決定ログ参照: `docs/archive/agent-logs/2026-07-13.md`
 「タスク: Claude Code / Codex 連携の不調・権限問題の診断と改善」節。
 
 ### 触ったファイル
@@ -6876,7 +6876,7 @@ commit 106f837のjustified実装に対するCodexのpush前レビューで発見
 - `.claude/agents/exif-checker.md`(古い行番号参照の修正)
 - `~/.agents/skills/agmsg/teams/eguchi-portfolio/config.json`(リポジトリ外・
   スクリプト経由で修正。直接編集はしていない)
-- `docs/agent-logs/2026-07-13.md`(決定ログ追記)
+- `docs/archive/agent-logs/2026-07-13.md`(決定ログ追記)
 - `task.md`(本Handoff)
 
 コード変更は無し(ドキュメント・設定ファイルのみ)。
@@ -6921,7 +6921,7 @@ commit 106f837のjustified実装に対するCodexのpush前レビューで発見
 
 オーナー方針「Claude Code / Codex ともメインモデルを恒久固定しない」を反映し、上記(3)の
 Fable差分をレビュー・完成させた。役割分担(Driver=Claude Code編集/Reviewer=Codex読み取り専用)
-は維持。詳細は決定ログ参照: `docs/agent-logs/2026-07-13.md`「タスク: モデル非固定化・
+は維持。詳細は決定ログ参照: `docs/archive/agent-logs/2026-07-13.md`「タスク: モデル非固定化・
 権限の絞り込み」節。
 
 ### 変更内容(要約)
@@ -6952,7 +6952,7 @@ Fable差分をレビュー・完成させた。役割分担(Driver=Claude Code�
 - `.claude/agents/exif-checker.md` / `perf-auditor.md` / `security-reviewer.md`
 - `~/.codex/config.toml`(ホーム個人設定) / `.codex/agents/repo-scout.toml`(新規) / `.codex/USER_CONTEXT.md`
 - `.claude/skills/deploy/SKILL.md` / `.claude/skills/gallery-feature/SKILL.md`
-- `docs/agent-logs/2026-07-13.md`(訂正+追記) / `task.md`(本Handoff)
+- `docs/archive/agent-logs/2026-07-13.md`(訂正+追記) / `task.md`(本Handoff)
 
 コード変更は無し(`packages/web/`等アプリ本体は未変更)。
 
@@ -7015,12 +7015,12 @@ Handoffと番号が重複していたため (5) に修正した。）
 4. `.claude/skills/deploy/SKILL.md`: `git add -A`禁止→`git status --short`確認後に触ったファイル
    だけ明示stage。`git revert HEAD`は自動実行不可、候補提示のみでオーナー承認後に限定。
 5. `/Users/chiaki/.claude/settings.json`(グローバル・リポジトリ外): タスク固有grep許可2件を削除。
-6. `docs/agent-logs/2026-07-13.md`: CLAUDE.md誤記(実際は無変更)を訂正、agmsg識別名2件削除が
+6. `docs/archive/agent-logs/2026-07-13.md`: CLAUDE.md誤記(実際は無変更)を訂正、agmsg識別名2件削除が
    Codex公式スクリプト経由(ファイル直接編集ではない)である旨を明記。
 
 すべて`model`の固定・追加はしていない(オーナー方針「メインモデルを恒久固定しない」に従う)。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: Codexレビュー反映」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: Codexレビュー反映」節。
 
 ### 触ったファイル
 
@@ -7029,7 +7029,7 @@ Handoffと番号が重複していたため (5) に修正した。）
 - `.claude/settings.json`
 - `.claude/skills/deploy/SKILL.md`
 - `/Users/chiaki/.claude/settings.json`(リポジトリ外・グローバル)
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7090,7 +7090,7 @@ repo-scout.tomlの現状・AGENTS.mdのgit add -A残存・task.mdのHandoff番�
    削除。`.claude/settings.json`のdenyへ`git add -A`・語境界付き`git push *`系3パターン・
    `drizzle-kit push/migrate`・`railway up/deploy`を追加。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: Codexレビュー第2弾」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: Codexレビュー第2弾」節。
 
 ### 触ったファイル
 
@@ -7100,7 +7100,7 @@ repo-scout.tomlの現状・AGENTS.mdのgit add -A残存・task.mdのHandoff番�
 - `.codex/agents/repo-scout.toml`
 - `/Users/chiaki/.claude/settings.json`(リポジトリ外・グローバル)
 - `.claude/settings.json`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 
 ### 検証したこと
 
@@ -7148,13 +7148,13 @@ repo-scout.tomlの現状・AGENTS.mdのgit add -A残存・task.mdのHandoff番�
   同期。旧「Failed query単独で再試行」テストを新behavior検証へ置換、新規2件
   (cause=ECONNRESETは再試行/cause=制約違反は再試行しない)を追加。9 pass/0 fail。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-1」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-1」節。
 
 ### 触ったファイル
 
 - `packages/web/src/api/database/libsql.ts`
 - `packages/web/src/api/database/withRetry.test.ts`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7204,7 +7204,7 @@ docs/checklists.md確認)を再実施し、この1点だけを訂正する。
 ### 触ったファイル
 
 - `docs/agents/task-queue.md`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7247,17 +7247,17 @@ docs/checklists.md確認)を再実施し、この1点だけを訂正する。
   追加していない(既存ヘルパーへ委譲)。
 - 検査結果: 496枚の写真の`url` / `thumbKey` / `mediumKey`を走査し、
   `#` `?` `%` `&`を含む行は**該当ゼロ**。修復不要のため案の提示・停止は発生せず。
-- 結果を`docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-2」節へ恒久記録した後、
+- 結果を`docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-2」節へ恒久記録した後、
   `scratch/audit-keycheck/`(このタスクで新規作成した3ファイルのみ)を削除。
   `scratch/`配下の他の既存ファイルには触れていない。
 - `docs/agents/task-queue.md`のQ-2見出しに`✅ 済 (2026-07-13)`を追記。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-2」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-2」節。
 
 ### 触ったファイル
 
 - `docs/agents/task-queue.md`(Q-2完了マーカー)
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 - (一時作成し削除済み: `scratch/audit-keycheck/playwright.config.ts` /
   `audit.spec.ts` / `result.json` — commit対象外)
@@ -7324,7 +7324,7 @@ docs/checklists.md確認)を再実施し、この1点だけを訂正する。
   ことを確認する静的検証で足りると判断(詳細: 決定ログ参照)。
 - `docs/agents/task-queue.md`のQ-3見出しに`✅ 済 (2026-07-13)`を追記。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-3」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-3」節。
 
 ### 触ったファイル
 
@@ -7332,7 +7332,7 @@ docs/checklists.md確認)を再実施し、この1点だけを訂正する。
 - `packages/web/src/api/database/settings-write.test.ts`(新規)
 - `packages/web/src/api/index.ts`
 - `docs/agents/task-queue.md`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7365,7 +7365,7 @@ working tree cleanを確認済み。SQLiteロールバックテスト4件を再�
 実サーバなしで`drizzle-orm/node-postgres`+`schema.postgres.ts`+`writeSettingsAtomic()`を
 実際に動かし、成功時BEGIN→2 UPSERT→COMMIT・失敗注入時BEGIN→UPSERT2回→ROLLBACKを
 確認、`withRetry`がトランザクション全体を包むため再試行でも部分反映が残らないことも
-確認済み。詳細: `docs/agent-logs/2026-07-13.md`「追記: codex-reviewerのread-onlyレビュー
+確認済み。詳細: `docs/archive/agent-logs/2026-07-13.md`「追記: codex-reviewerのread-onlyレビュー
 結果」節。**push判断はオーナー待ち。**
 
 ### 次の担当者が触ってよい場所
@@ -7401,11 +7401,11 @@ codex-reviewer経由で「オーナーが言った」という伝聞の継続指
 - 削除設計案A(保存時に旧キー削除)/B(未参照オブジェクト棚卸し管理エンドポイント追加)を
   メリデメ付きで決定ログに記載。**実装せず停止**(Q-4本来の完了条件どおり)。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-4」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-4」節。
 
 ### 触ったファイル
 
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7453,7 +7453,7 @@ codex-reviewer経由で「オーナーが言った」という伝聞の継続指
   レスポンスに含める。413チェックは許可リスト内キーのみに適用するよう順序変更。
 - 事前grepで、台帳に無いのに保存されている実キーはゼロ件と確認(台帳追加なし)。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-5」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-5」節。
 
 ### 触ったファイル
 
@@ -7463,7 +7463,7 @@ codex-reviewer経由で「オーナーが言った」という伝聞の継続指
 - `packages/web/src/api/settings-allowlist.test.ts`(新規)
 - `packages/web/src/api/index.ts`
 - `docs/agents/task-queue.md`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7509,13 +7509,13 @@ GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVary�
   devサーバ実機(port 3000, GETのみ)でfmt未指定/指定両パターンの200・304の
   ヘッダを確認済み。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-6」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-6」節。
 
 ### 触ったファイル
 
 - `packages/web/src/api/index.ts`
 - `docs/agents/task-queue.md`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7567,7 +7567,7 @@ GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVary�
   (意図した挙動)。`sectionLabelSize`未設定サイトではfallback 0.75rem=12pxで
   変化なし。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-7」節
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-7」節
 (28箇所の役割判定を全件記載)。
 
 ### 触ったファイル
@@ -7575,7 +7575,7 @@ GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVary�
 - `packages/web/src/web/pages/series-detail.tsx`
 - `packages/web/src/web/pages/service-start.tsx`
 - `docs/agents/task-queue.md`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7621,13 +7621,13 @@ GetObjectCommandにタイムアウトが無い)/ P2-6(304レスポンスにVary�
 - `docs/agents/task-queue.md`: Q-8〜Q-10の本文を、移設先へのポインタ1段落に縮小
   (見出し番号は履歴として残す)。
 
-詳細: `docs/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-8〜Q-10」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「タスク: task-queue.md Q-8〜Q-10」節。
 
 ### 触ったファイル
 
 - `docs/agents/pending-owner-decisions.md`(新規)
 - `docs/agents/task-queue.md`
-- `docs/agent-logs/2026-07-13.md`
+- `docs/archive/agent-logs/2026-07-13.md`
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7679,7 +7679,7 @@ Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1�
   将来案Aを実装する際は旧キーが`profile/`/`hero/`prefixで始まる場合のみ削除する
   必須ガードを決定ログに追記(実装自体はまだしない)。
 
-詳細: `docs/agent-logs/2026-07-13.md`「追記: Q-4〜Q-10統合レビュー結果と対応」節。
+詳細: `docs/archive/agent-logs/2026-07-13.md`「追記: Q-4〜Q-10統合レビュー結果と対応」節。
 
 ### 触ったファイル
 
@@ -7687,7 +7687,7 @@ Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1�
 - `packages/web/src/web/pages/admin-shared.test.ts`(新規)
 - `packages/web/src/web/pages/admin.tsx`
 - `packages/web/src/web/pages/admin-tabs.tsx`
-- `docs/agent-logs/2026-07-13.md`(Q-4節の訂正+本追記)
+- `docs/archive/agent-logs/2026-07-13.md`(Q-4節の訂正+本追記)
 - `task.md`(本Handoff)
 
 ### 検証したこと
@@ -7737,7 +7737,7 @@ Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1�
 - 高速スワイプの白抜け・変形・影・逆方向ジャンプを測るsmokeを新設し、
   既存モバイルLibrary smokeへ列数切替の回帰確認を追加。
 
-詳細: `docs/agent-logs/2026-07-14.md`。
+詳細: `docs/archive/agent-logs/2026-07-14.md`。
 
 ### 触ったファイル
 
@@ -7746,7 +7746,7 @@ Q-4〜Q-10の統合read-onlyレビュー(codex-reviewer)結果、P0なし・P1�
 - `packages/web/src/web/test/admin-virtual-grid.test.ts`
 - `scripts/smoke/admin-mobile-library.spec.ts`
 - `scripts/smoke/admin-library-swipe.spec.ts`（新規）
-- `docs/agent-logs/2026-07-14.md`（新規）
+- `docs/archive/agent-logs/2026-07-14.md`（新規）
 - `task.md`（本Handoff）
 
 ### 検証したこと
@@ -7869,7 +7869,7 @@ Claude=Reviewer]」で始まるメッセージ)を参照。
 - TOP内のdelayを0.1秒刻みに統一。既存easing、hover速度、カルーセル自動切替は維持。
 - **新しいTOPレイアウトの種類は追加していない**。今回は既存5種類の動き調整だけ。
 
-詳細: `docs/agent-logs/2026-07-14.md`「TOPページの動きを上品に調整できる設定」。
+詳細: `docs/archive/agent-logs/2026-07-14.md`「TOPページの動きを上品に調整できる設定」。
 
 ### 触ったファイル
 
@@ -7883,7 +7883,7 @@ Claude=Reviewer]」で始まるメッセージ)を参照。
 - `packages/web/src/web/pages/top.tsx`
 - `packages/web/src/web/styles.css`
 - `scripts/smoke/admin-hero-motion.spec.ts`（新規）
-- `docs/agent-logs/2026-07-14.md`
+- `docs/archive/agent-logs/2026-07-14.md`
 - `task.md`（本Handoff）
 
 ### 検証したこと
@@ -7950,7 +7950,7 @@ Claude=Reviewer]」で始まるメッセージ)を参照。
 - `packages/web/src/api/index.ts`
 - `packages/web/src/server.ts`
 - `docs/agents/task-queue.md` / `docs/agents/pending-owner-decisions.md`
-- `docs/agent-logs/2026-07-14.md` / `task.md`（本Handoff）
+- `docs/archive/agent-logs/2026-07-14.md` / `task.md`（本Handoff）
 
 ### 検証したこと
 
@@ -8276,7 +8276,7 @@ P1修正: 旧パス`/favicon.ico`（48px ICO）と`/favicon.svg`（64px SVG）�
 - `packages/web/src/api/ogp.ts`
 - `packages/web/src/api/ogp.test.ts`
 - `packages/web/src/server.ts`
-- `docs/agent-logs/2026-07-15.md`
+- `docs/archive/agent-logs/2026-07-15.md`
 - `task.md`（本Handoff）
 
 ### 検証したこと
@@ -9144,7 +9144,7 @@ Handoff (26) の`FONTCONFIG_FILE`方式ではmacOSがシステムフォントへ
   Stripe側3点(旧¥10,000リンクのアーカイブ・完了画面新文面・Railwayテンプレート
   非掲載確認)とSNS告知は(53)から変更なし。
 - 重要な制約: push未実施(オーナー)。本番書き込みなし。DBスキーマ変更なし。
-  決定ログ: docs/agent-logs/2026-07-20.md(FormData素fetchの規約例外注記は要オーナー判断)。
+  決定ログ: docs/archive/agent-logs/2026-07-20.md(FormData素fetchの規約例外注記は要オーナー判断)。
 
 ## Handoff 2026-07-20 (55) — /start を決済後ランディング化（?thanks=1 お礼表示）
 

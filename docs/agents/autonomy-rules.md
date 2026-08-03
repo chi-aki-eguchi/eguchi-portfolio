@@ -79,7 +79,7 @@
 
 ## 6. 決定ログ
 
-場所: `docs/agent-logs/YYYY-MM-DD.md`（なければ作成）
+場所: `docs/archive/agent-logs/YYYY-MM-DD.md`（なければ作成）
 
 各タスクごとに追記する内容:
 

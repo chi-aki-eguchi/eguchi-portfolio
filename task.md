@@ -56,23 +56,42 @@ Codex に安い定型レーンを足し、上位モデルの枠を実装の難�
 - `bun run check` / `bun run smoke` は**未実施**。AI運用・文書だけの変更のため
   （`AGENTS.md` の必須検証の区分に従う）
 
+### 検証済み: Codex がエージェント定義を読むこと（2026-08-03）
+
+`~/.codex/agents/` にわざと壊した TOML を1本置いて `codex exec` を実行すると、
+Codex CLI 0.146.0 が次の警告を出した。
+
+> `Ignoring malformed agent role definition: failed to parse agent role file at
+> /Users/chiaki/.codex/agents/zz-probe-invalid.toml`
+
+つまり **Codex はこのディレクトリを「agent role 定義」として実際に読んでいる。**
+同時に置いてある `eguchi-luna-routine.toml` / `eguchi-terra-impl.toml` は警告が出ず、
+構文・キー名ともに受理されている。TOML schema の裏取りができていなかった点は解消。
+検査用の壊れたファイルは削除済み。
+
 ### 未検証
 
-- **実際の Codex CLI がこのエージェントを読み込み、名前で呼べるか。**
-  ローカルには Codex CLI 0.146.0 と `~/.codex/agents` の2本が揃ったが、
-  エージェントはタスク作成時に発見されるため、新しい Codex タスクを開始しないと確認できない。
-- カスタムエージェントの TOML schema は sol-advisor の実テンプレートに合わせた。
-  公式ドキュメントは 403 で直接取得できておらず、キー名の裏取りは間接的。
+- **エージェントを名前で選んで実行する方法。** `codex exec` に `--agent` 相当の
+  オプションは無い（0.146.0-alpha の `--help` で確認）。バイナリには `agent_path` /
+  `agent_nickname` / `agent_role` / `SubAgentSource::ThreadSpawn` があるため、
+  選択は対話 TUI / Desktop app 側の機能と思われる。実際に選べるかは未確認。
 
 ### 次の一手
 
-1. 新しい Codex タスクを開始し、`eguchi_luna_routine` / `eguchi_terra_impl` を
-   名前で呼べるか確認する（導入自体は完了済み）
+1. 対話の Codex（TUI か Desktop app）で新しいタスクを開始し、
+   `eguchi_luna_routine` / `eguchi_terra_impl` を選べるか確認する
+   （定義が読まれること自体は上記のとおり確認済み）
 2. 定型タスクを1〜2件 Luna に流して、品質と消費を見る
 3. この commit と、既に push 済みの admin 刷新分をどう扱うか判断する（push はオーナー）
 4. **クレジット hook の修正**（別件・依頼文を用意済み）。
    `credit-status.mjs` は CodexBar CLI が無いと残量不明でも `closing` を固定で返す
    （243行目、および 229 / 114 行目）。status に「不明」を表す値が無いのが問題の本体。
+   **ただし 2026-08-03 のデスクトップでは、この不具合は発動していない。**
+   `~/.claude/credit-status/status.json` は `cache: "live"` / `warning: null` /
+   Codex 側 `dataConfidence: "exact"` で、実データを取得できている。今の `closing` は
+   Claude の週残量 22%（<50 で `saving`）に、5h セッションが
+   `willLastToSessionReset: false` で1段上がった結果であり、**正しい判定**。
+   修正の価値は変わらないが、優先度は「今すぐ困っている」ではない。
    依頼文（Phase A → C → D、D はオーナー承認後）と引き継ぎメモは、オーナーへ
    ファイルで直接渡した。`scratch/` は gitignore かつリモート環境は使い捨てのため
    リポジトリには残らない。

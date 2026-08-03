@@ -3,11 +3,11 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-03 JST
 
-- **Status:** Codex レーン運用が確定。文書整理の第1・2段まで完了。commit 済み・push 未実施
+- **Status:** Codex レーン確定 / 文書整理 第1・2段 完了 / **クレジット判定の作り直し完了**。
+  commit 済み・push 未実施
 - **Current owner:** Claude Code（停止中）
-- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 8 commits ahead
+- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc` より 12 commits ahead
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
-- クレジット `critical` により、ここで工程を閉じた。第3段は未着手。
 
 ### 目的と完了条件
 
@@ -44,12 +44,14 @@ Desktop app のエージェント選択は効かないため TOML は定義文�
 1. **文書整理・第3段（未着手）** — 起動時に読む順そのものを再設計する
    （`AGENTS.md` / `CLAUDE.md` / `task.md` の役割分担）。設計判断が多い。
    併せて「今後の決定ログは Obsidian 側へ一本化」をルール化するか決める。
-2. **クレジット判定の作り直し**（オーナー承認済み）。残量に加えて**リセットまでの時間**と
-   **このペースで持つか**を見る。「情報が取れない」を `closing` と区別する（`unknown`）。
-   欠陥と実測値は `docs/agents/credit-status.md`。**実装前に反対レビューを通すこと。**
+2. **（完了）クレジット判定の作り直し** — Phase C 反対レビュー → Terra 実装 →
+   Claude 独立検証。単一の深刻度をやめ3軸（取得状態 / 週枠 / 作業継続性）へ分離し、
+   行動は「範囲を縮める」「再開可能な区切りを作る」の2つ、命令形は廃止。
+   現存バグ（時計が戻ると古い cache を fresh 扱い）も修正。**反論の全文と採否は
+   `docs/agents/credit-status-review.md`。要約で上書きしない。**
 3. **オーナー保留**: 古いログを「必要部分だけ書き写して削除」する案。Claude の見解は
    「git 履歴が既にアーカイブなので、移動で十分。消すなら移動後の状態を見てから」。
-4. push するか判断する（**push はオーナーだけ**）。
+4. push するか判断する（**push はオーナーだけ**）。12 commits 未 push。
 
 ### 触ってはいけない範囲
 

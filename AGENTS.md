@@ -11,9 +11,12 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
    `docs/specs/admin-renewal-goal.md` が正本。
 4. Current State の鮮度は `node scripts/ai/check-handoff-freshness.mjs` で確認できる。
 
-`task.md` は Current State だけを置くファイルで、**76行前後に保つ**。過去 Handoff と
-過去 Current State は `docs/archive/task-handoffs.md` にあり、**通常は読まない**。
-特定の経緯を追うときだけ検索する。`knowledge/wiki/` 全体も毎回読み直さない。
+`task.md` は Current State だけを置くファイル。過去 Handoff と過去 Current State は
+`docs/archive/task-handoffs.md` にあり、**通常は読まない**。特定の経緯を追うときだけ
+検索する。`knowledge/wiki/` 全体も毎回読み直さない。
+
+**文書へ行数・ファイル数を書き込まない。**すぐ古くなり、読む側が誤った前提で判断する。
+必要なら測り直す（Current State の上限だけは例外で、下記「更新責任」に残す）。
 矛盾時は、コードと Git の実物 → Current State → 現行仕様書 → 履歴の順で優先する。
 
 ## 現在の役割

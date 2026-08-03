@@ -20,6 +20,14 @@ export function extractCurrentState(markdown) {
   return match?.[1]?.trim() || null;
 }
 
+// HEAD欄は行頭にあるとは限らない。`- **Branch:** \`main\` / **HEAD:** \`SELF\` / ...`
+// のように1行へまとめて書かれることが多く、行頭アンカーで探すと読めずに
+// 「HEAD欄を読めません」を出し続ける（2026-08-03 に実際に発生）。
+// 書式ではなくフィールド名で探す。
+export function extractHeadField(currentState) {
+  return currentState?.match(/\*\*HEAD:\*\*\s*`([^`]+)`/)?.[1] || null;
+}
+
 export function checkFreshness() {
   const currentState = extractCurrentState(readFileSync(taskPath, "utf8"));
   if (!currentState) {
@@ -28,7 +36,7 @@ export function checkFreshness() {
 
   const actualHead = git(["rev-parse", "HEAD"]);
   const taskDirty = Boolean(git(["status", "--porcelain=v1", "--", "task.md"]));
-  const headField = currentState.match(/^- \*\*HEAD:\*\*\s*`([^`]+)`/m)?.[1] || null;
+  const headField = extractHeadField(currentState);
 
   if (!headField) {
     return { ok: false, reason: "Current StateのHEAD欄を読めません", actualHead };

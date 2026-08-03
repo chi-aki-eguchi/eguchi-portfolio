@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { extractCurrentState } from "./check-handoff-freshness.mjs";
+import { extractCurrentState, extractHeadField } from "./check-handoff-freshness.mjs";
 import { buildPacket, redactSecrets } from "./chatgpt-handoff.mjs";
 
 test("extracts only the Current State block", () => {
@@ -14,6 +14,21 @@ test("extracts only the Current State block", () => {
   ].join("\n");
   assert.match(extractCurrentState(markdown), /Status/);
   assert.doesNotMatch(extractCurrentState(markdown), /old history/);
+});
+
+test("reads HEAD whether it starts a bullet or shares a line", () => {
+  // 行頭にある書き方
+  assert.equal(extractHeadField("- **HEAD:** `SELF`"), "SELF");
+  // 1行にまとめた書き方（2026-08-03 まで読めずに警告を出し続けていた形）
+  assert.equal(
+    extractHeadField("- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `a3946fc`"),
+    "SELF",
+  );
+  // ハッシュ指定
+  assert.equal(extractHeadField("- **Branch:** `main` / **HEAD:** `c2f7117`"), "c2f7117");
+  // 欄が無い場合は null
+  assert.equal(extractHeadField("- **Status:** Ready"), null);
+  assert.equal(extractHeadField(null), null);
 });
 
 test("redacts secret-shaped values but keeps normal status text", () => {

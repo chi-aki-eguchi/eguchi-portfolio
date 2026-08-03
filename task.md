@@ -3,8 +3,8 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-04 JST
 
-- **Status:** AI運用の文書整理・クレジット判定の作り直し・backlog の実測が完了。
-  製品コードは未着手。commit 済み・push 未実施
+- **Status:** AI運用の整備が完了し、**製品コードへ着手（B-1 の第1歩）**。
+  commit 済み・push 未実施
 - **Current owner:** Claude Code（停止中）
 - **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `d183fe8` より 2 commits ahead
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
@@ -29,10 +29,10 @@ AI が作業前に読む量を減らし、規則の食い違いと埋もれた�
 
 ### 次の一手
 
-1. **B-1（グローバルCSSの特異度）が最優先。** `!important` が実宣言216件
-   （2026-07-26 の記録は145）、`.admin-atelier` の4回以上の重複が44箇所（記録14）。
-   **直っておらず悪化している。**影響が管理画面全体に及ぶため、
-   案(a)(b) をオーナーへ出して**止まる**こと。
+1. **B-1 は「境界を作って段階移行」で着手済み**（オーナー選択・2026-08-04）。
+   `!important` 216→199、4回以上の重複 44→34。**一括移行はしない。**
+   新規ボタンは `admin-ui.tsx` の `AxButton` を使い、既存はその画面を触るついでに移す。
+   詳細と踏んだ罠は `docs/agents/backlog.md` の B-1 と `docs/agents/measuring.md`。
 2. 製品コードへ着手するなら B-3 / B-4（写真データの整合性）。
    **着手前にオーナーへ優先順位を確認する**（削除ロジックに触れるため）。
 3. AI運用側の残り: hook の3軸分離は未完成 /
@@ -43,8 +43,9 @@ AI が作業前に読む量を減らし、規則の食い違いと埋もれた�
 ### 検証の状態
 
 - `bun run check` **成功**（`test:tools` 24件を含む。2026-08-04）
-- `bun run smoke` は**未実施**。製品コードを変更していないため
+- `bun run smoke` **成功**（286 passed / 0 failed。2026-08-04）
 - `node scripts/ai/check-handoff-freshness.mjs` は `[handoff OK]`
+- **本番確認は未実施。** push していないため
 
 ### 触ってはいけない範囲
 

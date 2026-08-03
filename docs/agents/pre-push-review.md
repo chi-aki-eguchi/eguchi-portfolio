@@ -26,7 +26,7 @@
 - ただし、コード表記されたパスには切れがあります。
   - [task.md:22](task.md:22) の `credit-status-review.md` はルートからは存在しません。正しくは `docs/agents/credit-status-review.md` です。
   - [night-20260707.md:45](docs/reports/night-20260707.md:45) は、移動前の `docs/agents/autonomy-rules.md` を現在も指しています。
-- [owner-guide.md:9](docs/owner-guide.md:9) と [owner-guide.md:66](docs/owner-guide.md:66) は `task-queue.md` を現役の開始点・残タスク一覧として案内します。一方、[task-queue.md:3](docs/agents/task-queue.md:3) は自身を `ARCHIVED / SUPERSEDED` と宣言しています。
+- [owner-guide.md:9](docs/owner-guide.md:9) と [owner-guide.md:66](docs/owner-guide.md:66) は `task-queue.md` を現役の開始点・残タスク一覧として案内します。一方、[task-queue.md:3](docs/archive/task-queue.md:3) は自身を `ARCHIVED / SUPERSEDED` と宣言しています。
 
 ### 規則の矛盾
 
@@ -86,12 +86,12 @@
 ### Current State と残作業
 
 - 依頼背景は18 commitsですが、[task.md:9](task.md:9)、[同:44](task.md:44)、[同:56](task.md:56) は14 commitsのままです。
-- [task-queue.md:3](docs/agents/task-queue.md:3) を履歴扱いにした一方、未完了事項が残っています。
-  - セットアップ完了判定の追加問題: [同:228](docs/agents/task-queue.md:228)
-  - 削除・R2・競合関連: [同:273](docs/agents/task-queue.md:273)
-  - CSS構造問題: [同:485](docs/agents/task-queue.md:485)
-  - `srcset`の前提問題: [同:505](docs/agents/task-queue.md:505)
-  - `/admin/demo`: [同:520](docs/agents/task-queue.md:520)
+- [task-queue.md:3](docs/archive/task-queue.md:3) を履歴扱いにした一方、未完了事項が残っています。
+  - セットアップ完了判定の追加問題: [同:228](docs/archive/task-queue.md:228)
+  - 削除・R2・競合関連: [同:273](docs/archive/task-queue.md:273)
+  - CSS構造問題: [同:485](docs/archive/task-queue.md:485)
+  - `srcset`の前提問題: [同:505](docs/archive/task-queue.md:505)
+  - `/admin/demo`: [同:520](docs/archive/task-queue.md:520)
 - `docs/specs/README.md` は4行だけで、索引になっていません。[README.md:1](docs/specs/README.md:1)
 - Handoff archiveは9,913行で、6月・7月の記録と過去Current Stateが1ファイルに混在しています。[task-handoffs.md:1](docs/archive/task-handoffs.md:1)
 - 現役admin仕様書はファイル名からバージョンを外したのに、タイトルは `v3 Draft` のままです。[admin-enhancement-spec.md:1](docs/specs/admin-enhancement-spec.md:1)
@@ -171,9 +171,9 @@ git diff --check
 ### P0-3 `task-queue.md` の未完了事項を救出する
 
 - **目的:** ARCHIVED文書に埋もれた残作業を、現役の実行可能なbacklogへ戻す。
-- **対象ファイル:** `docs/agents/task-queue.md`、`docs/agents/pending-owner-decisions.md`、`docs/owner-guide.md`、`docs/specs/admin-renewal-goal.md`、`docs/specs/library-redesign-spec.md`、`task.md`
+- **対象ファイル:** `docs/archive/task-queue.md`、`docs/agents/pending-owner-decisions.md`、`docs/owner-guide.md`、`docs/specs/admin-renewal-goal.md`、`docs/specs/library-redesign-spec.md`、`task.md`
 - **完成条件:**
-  - 旧queue原文を履歴として保存し、現役の`docs/agents/task-queue.md`には未完了事項だけを置く。
+  - 旧queue原文を履歴として保存し、現役の`docs/archive/task-queue.md`には未完了事項だけを置く。
   - 少なくともT-9追加3件、T-10残件、CSS構造、`srcset`前提、`/admin/demo`を1件ずつ再判定する。
   - Q-12のように後段で完了確認できる項目は再登録しない。
   - 状態不明の項目は削除せず「要再確認」とする。
@@ -182,8 +182,8 @@ git diff --check
 - **検証方法:**
 
 ```sh
-grep -nE '^## |^- \[[ x~]\]' docs/agents/task-queue.md
-grep -RInF 'docs/agents/task-queue.md' --include='*.md' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=archive .
+grep -nE '^## |^- \[[ x~]\]' docs/archive/task-queue.md
+grep -RInF 'docs/archive/task-queue.md' --include='*.md' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=archive .
 git diff --check
 ```
 

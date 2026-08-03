@@ -31,10 +31,10 @@
 1. **残課題の正本は2つ。** `docs/agents/doc-cleanup-survey.md`（Phase A）と
    `scratch/sol-final-review.md`（Phase E・push直前レビュー。**scratch は消えるので
    必要なら移すこと**）。P0 は解消済み。残るのは:
-   - **P1: `task-queue.md` の未完了事項の救出。** T-9追加3件 / T-10残件（孤児R2
-     オブジェクトP2×4）/ CSS構造 / `srcset`前提 / `/admin/demo` を1件ずつ再判定し、
-     現役backlogへ戻す。**判定できないものは削除せず「要再確認」にする。**
-     これが済むまで `task-queue.md` を archive へ動かさない。
+   - **（完了）`task-queue.md` の未完了事項の救出。** 14件を
+     `docs/agents/backlog.md` へ抽出し、旧ファイルは `docs/archive/` へ。
+     **未完了の作業は今後この backlog が正本。** 2026-07-31 の admin 刷新後に
+     未検証のものは「要再確認」として残し、着手前に実測させる。
    - **P1: hook の3軸分離は未完成。** Claude の週枠と5時間枠はまだ一括解析で、
      片方だけ取得できない場合の独立性は無い。「3軸分離完了」と書かない。
    - **P1: 製品コードの `assertOk` 3重定義。** `admin.tsx` が共通版を import せず

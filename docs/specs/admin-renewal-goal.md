@@ -375,5 +375,5 @@ Pricing では `+ プランを追加`（日本語・黒の塗り）。
 - `docs/specs/library-redesign-spec.md` — Library 部分の下位仕様
 - `docs/specs/admin-enhancement-spec.md` — 管理画面の既存仕様（機能面）
 - `docs/specs/design-spec.md` — 公開ページのデザイン設計図（考え方は共通）
-- `docs/agents/task-queue.md` — 個別タスク
+- `docs/archive/task-queue.md` — 個別タスク
 - `docs/specs/growth-monetization-plan.md` — **事業計画。ゴールではない**（売り方の話）

@@ -128,5 +128,6 @@ Current State に次を残す。
 - 現在地: `task.md` 冒頭 Current State
 - Claude/Codex連携: `docs/agents/codex-workflow.md`
 - クレジット監視: `docs/agents/credit-status.md`
+- 未完了の作業: `docs/agents/backlog.md`（完了したらこの文書から消す）
 - 高リスク検査: `docs/checklists.md`
 - 配布版DB差分: `DISTRIBUTION.md`

@@ -446,8 +446,11 @@ function AdminPageContent({
     queryFn: async () =>
       jsonOrThrow<Record<string, string>>(await api.settings.$get()),
   });
+  // デモは本番の管理画面と別のキーに保存する。同じキーだと、購入検討者が
+  // デモで開いたタブがオーナーの本番管理画面の開始タブを書き換えてしまう
+  // (同一オリジンなので localStorage を共有する)。
   const [tab, setTab] = usePersistentState<Tab>(
-    "admin:tab",
+    demoMode ? "admin:tab:demo" : "admin:tab",
     "gallery",
     "local",
   );

@@ -79,7 +79,10 @@
 - [ ] `fetch` 直接呼びを追加していない（`lib/api.ts` の型付きクライアント経由）
 - [ ] `bun run check` 成功
 - [ ] `bun run smoke` 成功（admin 必須ゲート。**本番と同じ DB に接続** — 新しいテストで Save/Delete/Add 確定など書き込み操作をクリックしない。0 fail でも skip 件数を確認）
-- [ ] 新しいバグを直した場合、`scripts/smoke/` に回帰テストを1件追加した（`helpers.ts` の `loginAsAdmin`/`gotoAdminTab` を再利用）
+- [ ] 新しいバグを直した場合、回帰テストを1件追加した（`scripts/smoke/` なら `helpers.ts` の `loginAsAdmin`/`gotoAdminTab` を再利用）
+- [ ] **その回帰テストが、修正を外すと実際に落ちることを確認した。**修正ありでもなしでも
+      通るテストは何も検証していない（2026-08-04 に実際に書きかけた。詳細は
+      `docs/agents/measuring.md`）
 - [ ] 既存テストの期待値を変えた場合、それが仕様変更への正当な追随であることを決定ログに書いた（実測合わせの緑化は禁止。現役の正本は `AGENTS.md`「製品コードの不変条件」）
 - [ ] グローバルなキーボードショートカットを追加した場合、`dialog[open]` ガード（admin.tsx のグリッド keydown 参照）を通している
 

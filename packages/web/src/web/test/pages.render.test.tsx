@@ -905,6 +905,29 @@ describe("shared components", () => {
     }
   });
 
+  test("Admin demo keeps its open tab out of the real admin's storage key", async () => {
+    // デモと本番は同一オリジンなので localStorage を共有する。同じキーだと、
+    // 購入検討者がデモで開いたタブがオーナーの本番管理画面の開始タブを
+    // 書き換えてしまう (2026-08-04 に Codex の read-only レビューで発見)。
+    dom.reconfigure({ url: "https://akieguchi.com/admin/demo" });
+    dom.window.localStorage.clear();
+    dom.window.localStorage.setItem("admin:tab", JSON.stringify("settings"));
+    try {
+      const Demo = (await import("../pages/admin-demo")).default;
+      const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
+      await waitForText(host, "これは体験版です");
+      // デモは専用キーへ保存する。本番用キーは読みも書きもしない。
+      expect(dom.window.localStorage.getItem("admin:tab:demo")).not.toBeNull();
+      expect(dom.window.localStorage.getItem("admin:tab")).toBe(
+        JSON.stringify("settings"),
+      );
+      cleanup();
+    } finally {
+      dom.reconfigure({ url: "http://localhost/" });
+      dom.window.localStorage.clear();
+    }
+  });
+
   test("Admin demo renders its banner, guide, purchase route, and save notice in EN", async () => {
     dom.reconfigure({ url: "https://akieguchi.com/admin/demo" });
     dom.window.localStorage.clear();

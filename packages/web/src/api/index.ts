@@ -2333,7 +2333,7 @@ const app = new Hono()
             })
             .from(schema.photos)
             .where(
-              sql`${inArray(schema.photos.id, coverIds)} AND ${isNull(schema.photos.deletedAt)}`,
+              sql`${inArray(schema.photos.id, coverIds)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
             ),
         )
       : [];

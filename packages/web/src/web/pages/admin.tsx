@@ -3665,16 +3665,12 @@ export function GalleryTab({
       fields: Record<"camera" | "lens" | "filmType", string>,
     ) => {
       const ids = Array.from(selected);
-      const entries = (Object.entries(fields) as [string, string][]).filter(
-        ([, v]) => v !== "",
-      );
-      for (const [operation, value] of entries) {
-        const res = await adminApi.photos.batch.$post({
-          json: { ids, operation, value },
-        });
-        assertOk(res);
-      }
-      return entries.length;
+      if (!Object.values(fields).some((value) => value !== "")) return 0;
+      const res = await adminApi.photos.batch.$post({
+        json: { ids, operation: "metadata", value: fields },
+      });
+      assertOk(res);
+      return 1;
     },
     onSuccess: (changed) => {
       setActionError("");

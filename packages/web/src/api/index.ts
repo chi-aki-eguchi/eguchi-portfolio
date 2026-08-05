@@ -4,6 +4,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { db, withRetry, schema } from "./database";
 import { buildReorderUpdate } from "./reorder-sql";
 import { applyPhotoReorderIfCurrent } from "./photo-reorder-safety";
+import { buildBatchPhotoMetadataPatch } from "./batch-photo-metadata";
 import { writeSettingsAtomic } from "./database/settings-write";
 import { partitionAllowedSettings } from "./settings-allowlist";
 import {
@@ -2076,7 +2077,7 @@ const app = new Hono()
     const { ids, operation, value } = (await c.req.json()) as {
       ids: number[];
       operation: string;
-      value?: string;
+      value?: unknown;
     };
     const cleanIds = cleanIntIds(ids);
     if (cleanIds.length === 0) return c.json({ error: "No valid ids" }, 400);
@@ -2098,7 +2099,9 @@ const app = new Hono()
             .where(inArray(schema.photos.id, cleanIds)),
         );
         break;
-      case "category":
+      case "category": {
+        if (value !== undefined && typeof value !== "string")
+          return c.json({ error: "Invalid category" }, 400);
         await withRetry(() =>
           db
             .update(schema.photos)
@@ -2106,7 +2109,22 @@ const app = new Hono()
             .where(inArray(schema.photos.id, cleanIds)),
         );
         break;
-      // O2: batch metadata edit — only the fields the caller sends are touched.
+      }
+      // O2: all metadata fields from one dialog save together. One UPDATE is
+      // atomic, so an outage cannot leave camera saved while lens/film failed.
+      case "metadata": {
+        const metadata = buildBatchPhotoMetadataPatch(value);
+        if (!metadata)
+          return c.json({ error: "No valid metadata changes" }, 400);
+        await withRetry(() =>
+          db
+            .update(schema.photos)
+            .set(metadata)
+            .where(inArray(schema.photos.id, cleanIds)),
+        );
+        break;
+      }
+      // Backward-compatible single-field operations for older clients.
       case "camera":
         await withRetry(() =>
           db

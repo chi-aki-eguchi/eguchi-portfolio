@@ -6,7 +6,7 @@
 - **Status:** 公開サイトの全体デバッグを実施。**「設定しても反映されない」の主因を修正**。
   commit 済み・push 未実施
 - **Current owner:** Claude Code（停止中）
-- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `03d22c3` より 2 commits ahead
+- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `03d22c3` より 3 commits ahead
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
 
 ### 目的と完了条件

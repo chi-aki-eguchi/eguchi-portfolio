@@ -65,6 +65,45 @@ button:not(.absolute):where(:not([class*="ax-btn"]))
 
 この種の事故は宣言を読んでも見つからない。**必ず smoke を通すこと。**
 
+### dev サーバの HTML は本番と違う（meta / OGP は必ず本番経路で測る）
+
+`bun run dev` の Vite プラグインは **`/api` しか処理しない**。HTML は Vite が
+`index.html` をそのまま返すので、`server.ts` の `injectOgp` を通らない。
+つまりローカルでは title / description / OGP が**常にテンプレートの初期値のまま**に
+見える。これを「meta が反映されないバグ」と読むと偽の課題になる（2026-08-05 に
+実際に踏んだ）。
+
+正しい測り方は `injectOgp` を直接呼ぶこと。
+
+```sh
+bun run -e 'import {injectOgp} from "./src/api/ogp"; /* settings と index.html を渡して出力を見る */'
+```
+
+### ブラウザの computed style は「書いた値」とは限らない
+
+`line-clamp-2` を当てた要素の `display` を Chrome は **`flow-root`** と報告する
+（`-webkit-box` と書いてあっても）。「Tailwind のクラスが効いていない」と読むと
+偽の課題になる。**効いているかは見た目・寸法で確かめる**（`scrollHeight` と実高さ、
+スクリーンショット）。computed style の値だけで結論を出さない。
+
+同様に `Range.getClientRects()` は clamp / ellipsis の**前**の座標を返すので、
+「文字が枠から出ている」検出器はそのままだと誤検知する。`-webkit-line-clamp` と
+`text-overflow: ellipsis` の要素は除外してから測る。
+
+### 設定が本当に画面へ届くかは、DB を書かずに総当たりできる
+
+`page.route()` で `/api/settings` の応答を差し替えれば、キーを1つずつ変えて
+描画差分を見られる。**本番DBに一切書かずに**「このスライダーは効くのか」を
+全キー分たしかめられる（2026-08-05 に155キーで実施）。
+
+注意点が2つある。
+
+- **トップとギャラリーは読み込みごとに絵が変わる**（ランダム選択・遅延読み込み）。
+  同じ設定で2回撮って「勝手に動いた部分」をマスクしてから比べないと、
+  全キーが「効いている」に見える。
+- 逆にマスクが効きすぎると、写真グリッドを動かすキーが全部「効かない」に見える。
+  レイアウト系は**列数・タイル幅・文書高さ**など安定した幾何で測り直す。
+
 ### 定番の測り方
 
 `scratch/` に使い捨てスクリプトを書く（gitignore 済み）。

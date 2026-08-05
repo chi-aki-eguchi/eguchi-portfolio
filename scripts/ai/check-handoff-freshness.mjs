@@ -49,6 +49,32 @@ export function extractHeadField(currentState) {
   return { ok: true, value };
 }
 
+// HEAD欄が合っていても、Current State が「その瞬間しか正しくない値」を
+// 書いていると、次に読む者が矛盾を見つけて止まる。2026-08-05 に Codex が
+// 3回連続で調査を中断した原因がこれで、内訳は ahead 件数（直すcommit自体が
+// 件数を変える自己矛盾）と push 状況（オーナーが push した瞬間に古くなる）。
+// 値を書かせず、測り方を書かせる。
+const STALE_CLAIM_PATTERNS = [
+  {
+    re: /(\d+)\s*commits?\s*ahead/i,
+    why: "ahead件数は書いた次のcommitで古くなる（この行を直すcommit自体が件数を変える）",
+  },
+  {
+    re: /push\s*(未実施|していない)|未push/,
+    why: "push状況はオーナーが push した瞬間に古くなる",
+  },
+];
+
+export function findStaleClaims(currentState) {
+  if (typeof currentState !== "string") return [];
+  return STALE_CLAIM_PATTERNS.flatMap(({ re, why }) => {
+    const line = currentState
+      .split("\n")
+      .find((l) => re.test(l) && !l.includes("書かない") && !l.includes("測る"));
+    return line ? [{ line: line.trim().slice(0, 90), why }] : [];
+  });
+}
+
 export function checkFreshness() {
   const currentState = extractCurrentState(readFileSync(taskPath, "utf8"));
   if (!currentState) {
@@ -86,7 +112,21 @@ export function checkFreshness() {
     };
   }
 
-  // 検査しているのはHEAD欄だけ。Current State の中身が実物と合っているかは見ていない。
+  const stale = findStaleClaims(currentState);
+  if (stale.length > 0) {
+    return {
+      ok: false,
+      reason:
+        "Current Stateに、すぐ古くなる値が書かれています: " +
+        stale.map((s) => `「${s.line}」(${s.why})`).join(" / ") +
+        " — 値ではなく測り方を書いてください",
+      actualHead,
+      recordedHead,
+    };
+  }
+
+  // 検査しているのはHEAD欄と、すぐ古くなる値の有無だけ。Current State の
+  // 内容そのものが実物と合っているかまでは見ていない。
   return { ok: true, reason: "Current StateのHEAD欄は現在のHEADと一致しています", actualHead, recordedHead };
 }
 

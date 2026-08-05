@@ -5,6 +5,10 @@ const dom = new JSDOM(
   "<!doctype html><html><body></body></html>",
   { url: "http://localhost/", pretendToBeVisual: true },
 );
+Object.defineProperty(dom.window, "matchMedia", {
+  configurable: true,
+  value: () => ({ matches: false }),
+});
 Object.assign(globalThis, {
   window: dom.window,
   document: dom.window.document,
@@ -19,11 +23,15 @@ Object.assign(globalThis, {
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
 let failSettingsRefetch = false;
+let servicePageConfigFromServer: string | undefined;
 globalThis.fetch = (async (input: RequestInfo | URL) => {
   const url = typeof input === "string" ? input : input.toString();
   if (url.includes("/api/settings")) {
     if (failSettingsRefetch) return new Response("unavailable", { status: 503 });
-    return new Response(JSON.stringify({}), {
+    const settings = servicePageConfigFromServer
+      ? { servicePageConfig: servicePageConfigFromServer }
+      : {};
+    return new Response(JSON.stringify(settings), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -39,6 +47,7 @@ const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 const { AdminLanguageProvider } = await import("./admin-i18n");
 const { ServiceTab } = await import("./admin-tabs");
+const { DEFAULT_SERVICE_CONFIG } = await import("../lib/service-config");
 
 const flush = async () => {
   await act(async () => {
@@ -135,4 +144,48 @@ test("ServiceTab — 成功済み設定の再取得失敗では編集画面も�
   await act(async () => root.unmount());
   container.remove();
   qc.clear();
+});
+
+test("ServiceTab — DB設定の初回読込で未保存のsession下書きを上書きしない", async () => {
+  dom.window.sessionStorage.clear();
+  failSettingsRefetch = false;
+  const saved = structuredClone(DEFAULT_SERVICE_CONFIG);
+  saved.hero.title = "DBに保存済みの見出し";
+  servicePageConfigFromServer = JSON.stringify(saved);
+  const draft = structuredClone(DEFAULT_SERVICE_CONFIG);
+  draft.hero.title = "まだ保存していない見出し";
+  dom.window.sessionStorage.setItem("admin:serviceDraft", JSON.stringify(draft));
+
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  const container = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(
+          AdminLanguageProvider,
+          null,
+          createElement(ServiceTab),
+        ),
+      ),
+    );
+  });
+  for (let i = 0; i < 5; i++) await flush();
+
+  expect(
+    Array.from(container.querySelectorAll("textarea")).some(
+      (textarea) => textarea.value === "まだ保存していない見出し",
+    ),
+  ).toBe(true);
+
+  await act(async () => root.unmount());
+  container.remove();
+  qc.clear();
+  servicePageConfigFromServer = undefined;
 });

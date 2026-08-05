@@ -103,15 +103,16 @@ export function usePersistentState<T>(
   initial: T,
   storageKind: PersistentStorageKind = "session",
 ) {
-  const [val, setVal] = useState<T>(() => {
+  const [initialState] = useState(() => {
     const primary = readStoredState<T>(key, getStorage(storageKind));
-    if (primary !== undefined) return primary;
+    if (primary !== undefined) return [primary, true] as const;
     if (storageKind === "local") {
       const legacy = readStoredState<T>(key, getStorage("session"));
-      if (legacy !== undefined) return legacy;
+      if (legacy !== undefined) return [legacy, true] as const;
     }
-    return initial;
+    return [initial, false] as const;
   });
+  const [val, setVal] = useState<T>(initialState[0]);
   useEffect(() => {
     try {
       getStorage(storageKind)?.setItem(key, JSON.stringify(val));
@@ -119,7 +120,7 @@ export function usePersistentState<T>(
       /* quota/private mode: state stays in-memory */
     }
   }, [key, storageKind, val]);
-  return [val, setVal] as const;
+  return [val, setVal, initialState[1]] as const;
 }
 
 // ── 公開サイトを別窓で開くURL ──────────────────────────────────────────

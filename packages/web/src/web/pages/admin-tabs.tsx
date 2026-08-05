@@ -3106,7 +3106,7 @@ export function ServiceTab({
   const initialLoadFailed = isError && data === undefined;
 
   const saved = parseServicePageConfig(data?.servicePageConfig);
-  const [draft, setDraft] = usePersistentState<ServicePageConfig>(
+  const [draft, setDraft, restoredDraft] = usePersistentState<ServicePageConfig>(
     "admin:serviceDraft",
     saved,
   );
@@ -3119,9 +3119,11 @@ export function ServiceTab({
     if (data && !loadedRef.current) {
       loadedRef.current = true;
       const fromDb = parseServicePageConfig(data.servicePageConfig);
-      setDraft(fromDb);
+      // A session draft is the operator's newest unsaved work. Loading the
+      // older DB value must not erase it merely because this tab mounted.
+      if (!restoredDraft) setDraft(fromDb);
     }
-  }, [data, setDraft]);
+  }, [data, restoredDraft, setDraft]);
 
   const hasChanges = JSON.stringify(draft) !== JSON.stringify(saved);
 

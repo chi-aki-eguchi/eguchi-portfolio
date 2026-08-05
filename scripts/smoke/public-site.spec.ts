@@ -700,3 +700,61 @@ test.describe("公開サイト — 設定がCSSカスケードに勝てている
     });
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-08-05: /gallery で写真が「灰色のまま出ない」件の再発防止。
+//
+// useScrollFadeIn は effect 実行時点の `.fade-in-item` しか
+// IntersectionObserver に渡していなかった。遅れて追加されたタイル
+// (PhotoGallery が ResizeObserver で幅を得てから組み直す・無限スクロールの
+// 追加分)は誰にも監視されず、opacity 0 のまま永久に残っていた。実測で
+// 連続スクロール1往復後に 268/348 枚が出ないところまで再現した。
+//
+// smoke の合成写真は18枚しかなく無限スクロールが起きないので、ページ全体では
+// なく「後から挿入されたタイルが必ず現れる」という仕組みそのものを見る。
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — 遅れて現れる写真タイル", () => {
+  test("/gallery — effect の後に挿入されたタイルも必ず表示される", async ({
+    page,
+  }) => {
+    const apiMocks = await installPublicApiMocks(page);
+    await page.goto("/gallery");
+    await page.waitForSelector("main .photo-card");
+
+    const result = await page.evaluate(async () => {
+      const container = document.querySelector("main .photo-card")?.parentElement;
+      if (!container) return { error: "no gallery container" };
+      const make = (id: string) => {
+        const el = document.createElement("div");
+        el.id = id;
+        el.className = "photo-card fade-in-item";
+        el.style.height = "200px";
+        return el;
+      };
+      // (1) 画面内に後から挿入 → IntersectionObserver 経由で出るはず
+      const inView = make("probe-in-view");
+      container.appendChild(inView);
+      // (2) スクロール位置より上に挿入 → 交差イベントは二度と来ないので、
+      //     即座に見せる経路が要る
+      window.scrollTo(0, 0);
+      const above = make("probe-above");
+      above.style.position = "absolute";
+      above.style.top = "-4000px";
+      container.appendChild(above);
+
+      await new Promise((r) => setTimeout(r, 1500));
+      return {
+        inView: inView.classList.contains("visible"),
+        above: above.classList.contains("visible"),
+      };
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.inView, "後から挿入されたタイルが監視されていない").toBe(true);
+    expect(
+      result.above,
+      "スクロール位置より上に挿入されたタイルが永久に出ない",
+    ).toBe(true);
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+  });
+});

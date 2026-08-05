@@ -1,5 +1,8 @@
 import { useEffect, useRef, type DependencyList } from "react";
 
+const HIDDEN_SELECTOR =
+  ".fade-in-item:not(.visible), .section-reveal:not(.visible), .page-entrance:not(.visible)";
+
 /**
  * Scroll-based fade-in using Intersection Observer.
  * Watches `.fade-in-item`, `.section-reveal`, and `.page-entrance` children.
@@ -51,19 +54,47 @@ export function useScrollFadeIn(deps: DependencyList = []) {
       // element scrolls into view, so it's already animating (not popping) on entry.
       { threshold: 0, rootMargin: "0px 0px 120px 0px" },
     );
+    // An IntersectionObserver only reports a *change*. An element that is
+    // already scrolled past when it is handed over never intersects again, so
+    // it would stay at opacity 0 forever — reachable by scrolling back up and
+    // finding a hole in the grid. That happens whenever a lazy batch lands
+    // above the current scroll position: fast flings, Cmd+End, or returning to
+    // a restored scroll position. Reveal those immediately instead.
+    const observeOrReveal = (el: Element) => {
+      const target = el as HTMLElement;
+      if (target.getBoundingClientRect().bottom < 0) {
+        target.style.setProperty("--stagger-delay", "0s");
+        reveal(target);
+        return;
+      }
+      observer.observe(target);
+    };
+
     // Skip already-visible items so deps changes don't re-process the whole grid.
-    const items = container.querySelectorAll(
-      ".fade-in-item:not(.visible), .section-reveal:not(.visible), .page-entrance:not(.visible)",
-    );
-    items.forEach((el) => observer.observe(el));
+    const items = container.querySelectorAll(HIDDEN_SELECTOR);
+    items.forEach(observeOrReveal);
+
+    // Tiles can be committed *after* this effect ran without `deps` changing —
+    // PhotoGallery re-renders its grid once its ResizeObserver reports the
+    // container width, and the layout branches key off that. Those nodes were
+    // never handed to the IntersectionObserver, so they sat at opacity 0
+    // permanently: scrolling to them did nothing, because nothing was watching
+    // them. Measured on /gallery — 7 to 29 of 60 photos never appeared, and
+    // stayed invisible through a second scroll pass and a resize.
+    const mutations = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          if (node.matches(HIDDEN_SELECTOR)) observeOrReveal(node);
+          node.querySelectorAll(HIDDEN_SELECTOR).forEach(observeOrReveal);
+        }
+      }
+    });
+    mutations.observe(container, { childList: true, subtree: true });
     const safetyTimer = window.setTimeout(() => {
       const viewportH =
         window.innerHeight || document.documentElement.clientHeight || 0;
-      container
-        .querySelectorAll(
-          ".fade-in-item:not(.visible), .section-reveal:not(.visible), .page-entrance:not(.visible)",
-        )
-        .forEach((el) => {
+      container.querySelectorAll(HIDDEN_SELECTOR).forEach((el) => {
           const target = el as HTMLElement;
           const rect = target.getBoundingClientRect();
           if (rect.top <= viewportH + 240 && rect.bottom >= -120) {
@@ -73,10 +104,11 @@ export function useScrollFadeIn(deps: DependencyList = []) {
             target.style.setProperty("--stagger-delay", "0s");
             reveal(target);
           }
-        });
+      });
     }, 900);
     return () => {
       observer.disconnect();
+      mutations.disconnect();
       window.clearTimeout(safetyTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

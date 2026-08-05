@@ -434,6 +434,11 @@ type HomeLayoutProps = {
   worksSentinelRef: React.RefObject<HTMLDivElement | null>;
   fadeRef: React.Ref<HTMLDivElement>;
   settings: Record<string, string | undefined> | undefined;
+  // The hero scroll effect writes transforms onto fxRef and measures heroBoxRef.
+  // Every layout passes them through so 「スクロール効果」 is not silently inert
+  // on whichever hero the owner happens to have chosen.
+  heroFxRef: React.Ref<HTMLDivElement>;
+  heroBoxRef: React.Ref<HTMLElement>;
 };
 
 function heroMotionKey(
@@ -596,6 +601,8 @@ function HomeQuietGrid({
   worksSentinelRef,
   fadeRef,
   settings,
+  heroFxRef,
+  heroBoxRef,
 }: HomeLayoutProps) {
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
@@ -605,12 +612,13 @@ function HomeQuietGrid({
       {/* Hero: full-width photo with name overlay at bottom-left */}
       <section
         key={heroMotionKey(settings)}
+        ref={heroBoxRef}
         className="hero-motion-stage relative w-full overflow-hidden"
         style={{ height: heroHeightValue("min(280px, 50vh)") }}
       >
         {heroPhoto ? (
           <>
-            <div className="hero-photo-reveal absolute inset-0">
+            <div ref={heroFxRef} className="hero-fx-layer hero-photo-reveal absolute inset-0">
               <HeroPicture
                 url={heroPhoto.url}
                 mediumUrl={heroPhoto.mediumUrl}
@@ -695,6 +703,8 @@ function HomeEditorial({
   worksSentinelRef,
   fadeRef,
   settings,
+  heroFxRef,
+  heroBoxRef,
 }: HomeLayoutProps) {
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const statement = settings?.profileStatement ?? "";
@@ -705,11 +715,13 @@ function HomeEditorial({
       {/* Split hero: photo left, text right */}
       <section
         key={heroMotionKey(settings)}
+        ref={heroBoxRef}
         className="hero-motion-stage flex flex-col md:flex-row"
         style={{ minHeight: heroHeightValue("min(340px, 50vh)") }}
       >
         <div
-          className="hero-photo-reveal md:flex-[0_0_55%] relative overflow-hidden bg-[var(--photo-placeholder)]"
+          ref={heroFxRef}
+          className="hero-fx-layer hero-photo-reveal md:flex-[0_0_55%] relative overflow-hidden bg-[var(--photo-placeholder)]"
           style={{ minHeight: 200 }}
         >
           {heroPhoto && (
@@ -803,6 +815,8 @@ function HomeImmersive({
   worksSentinelRef,
   fadeRef,
   settings,
+  heroFxRef,
+  heroBoxRef,
 }: HomeLayoutProps) {
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
@@ -826,6 +840,7 @@ function HomeImmersive({
           height — see .hero-fullscreen in styles.css for the same fix. */}
       <section
         key={heroMotionKey(settings)}
+        ref={heroBoxRef}
         className="hero-motion-stage relative w-full overflow-hidden"
         style={{
           height: heroHeightValue(
@@ -833,7 +848,7 @@ function HomeImmersive({
           ),
         }}
       >
-        <div className="hero-photo-reveal absolute inset-0">
+        <div ref={heroFxRef} className="hero-fx-layer hero-photo-reveal absolute inset-0">
           {heroPhoto ? (
             <HeroPicture
               url={heroPhoto.url}
@@ -1102,7 +1117,10 @@ export default function TopPage() {
       el.style.transform = "";
       el.style.opacity = "";
     };
-  }, [heroScrollEffect, isSingle, heroFullscreen]);
+    // heroPhotos.length matters: the fx layer does not exist until the hero
+    // photos arrive, and without it this effect bailed on a null ref and never
+    // re-ran. That left スクロール効果 dead in carousel mode — the default.
+  }, [heroScrollEffect, isSingle, heroFullscreen, heroPhotos.length]);
 
   const homeLayoutProps: HomeLayoutProps = {
     heroPhotos,
@@ -1110,6 +1128,8 @@ export default function TopPage() {
     worksPoolLen: worksPool.length,
     worksSentinelRef,
     fadeRef,
+    heroFxRef,
+    heroBoxRef,
     settings,
   };
 

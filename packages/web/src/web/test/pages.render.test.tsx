@@ -3384,6 +3384,25 @@ describe("settings reach every layout (dead-control regression)", () => {
     });
   }
 
+  // heroScrollEffect writes transforms onto .hero-fx-layer. Three Hero layouts
+  // had no such layer at all, and carousel only grew one after its photos
+  // arrived — by which point the effect had already bailed on a null ref.
+  for (const heroMode of HERO_MODES) {
+    test(`heroMode=${heroMode} renders the hero fx layer heroScrollEffect needs`, async () => {
+      const previousSettings = canned["/api/settings"];
+      canned["/api/settings"] = { heroMode, heroScrollEffect: "parallax" };
+      try {
+        const TopPage = (await import("../pages/top")).default;
+        const { host, cleanup } = await mount(createElement(TopPage));
+        await flush(80);
+        expect(host.querySelector(".hero-fx-layer")).not.toBeNull();
+        cleanup();
+      } finally {
+        canned["/api/settings"] = previousSettings;
+      }
+    });
+  }
+
   test("sectionLabelOpacity drives every section label, not only Series", async () => {
     const pages: [string, () => Promise<{ default: unknown }>][] = [
       ["top", () => import("../pages/top")],

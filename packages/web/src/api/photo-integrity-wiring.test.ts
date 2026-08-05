@@ -37,4 +37,15 @@ describe("photo integrity route wiring", () => {
       route.indexOf("tx.delete(schema.categories)"),
     );
   });
+
+  test("series detachment and deletion stay in one transaction", () => {
+    const route = source.slice(
+      source.indexOf('.delete("/admin/series/:id"'),
+      source.indexOf('.post("/admin/series/reorder"'),
+    );
+    expect(route).toContain("db.transaction");
+    expect(route.indexOf("tx.update(schema.photos)")).toBeLessThan(
+      route.indexOf("tx.delete(schema.series)"),
+    );
+  });
 });

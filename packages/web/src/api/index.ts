@@ -2522,15 +2522,17 @@ const app = new Hono()
 
   .delete("/admin/series/:id", requireAdmin, async (c) => {
     const id = Number(c.req.param("id"));
+    // Detaching photos and deleting their series are one data-integrity change.
+    // If either write fails, the transaction leaves both tables untouched rather
+    // than creating photos that point at a series which no longer exists.
     await withRetry(() =>
-      db.delete(schema.series).where(eq(schema.series.id, id)),
-    );
-    // Detach photos from the now-deleted series so they don't point at a ghost.
-    await withRetry(() =>
-      db
-        .update(schema.photos)
-        .set({ seriesId: null })
-        .where(eq(schema.photos.seriesId, id)),
+      db.transaction(async (tx) => {
+        await tx
+          .update(schema.photos)
+          .set({ seriesId: null })
+          .where(eq(schema.photos.seriesId, id));
+        await tx.delete(schema.series).where(eq(schema.series.id, id));
+      }),
     );
     return c.json({ ok: true }, 200);
   })

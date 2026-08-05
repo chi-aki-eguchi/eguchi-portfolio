@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
+import { safeHref } from "../lib/utils";
 import { resolveServiceContactEmail } from "../../shared/service-visibility";
 import {
   parseServicePageConfig,
@@ -598,11 +599,14 @@ function SitePagePreview({
   item: ExampleLinkItem;
   photo: ServicePhoto | undefined;
 }) {
-  return (
-    <Link
-      to={item.href}
-      className="group grid grid-cols-[5.5rem_1fr] sm:grid-cols-[7rem_1fr] gap-4 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4"
-    >
+  // `to` pushes history, so only an in-site path belongs there. Anything else
+  // is treated as an external link and goes through the same guard as the rest
+  // of the site — previously any settings string landed in the router.
+  const inSite = item.href.startsWith("/") && !item.href.startsWith("//");
+  const linkClass =
+    "group grid grid-cols-[5.5rem_1fr] sm:grid-cols-[7rem_1fr] gap-4 border-t first:border-t-0 border-[rgba(var(--foreground-rgb),0.08)] py-4";
+  const inner = (
+    <>
       <span className="block aspect-[4/3] overflow-hidden bg-[rgba(var(--foreground-rgb),0.035)]">
         {photo ? (
           <PhotoTile photo={photo} size="small" />
@@ -631,7 +635,22 @@ function SitePagePreview({
           {item.body}
         </span>
       </span>
+    </>
+  );
+
+  return inSite ? (
+    <Link to={item.href} className={linkClass}>
+      {inner}
     </Link>
+  ) : (
+    <a
+      href={safeHref(item.href)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={linkClass}
+    >
+      {inner}
+    </a>
   );
 }
 
@@ -1076,7 +1095,9 @@ function FinalCTA({
               {config.snsLinks.map((link) => (
                 <a
                   key={link.label}
-                  href={link.url}
+                  // Settings-supplied URL. Every other page routes these through
+                  // safeHref; this one rendered them raw.
+                  href={safeHref(link.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] transition-colors duration-300 py-1.5"

@@ -213,7 +213,42 @@ function ensureGoogleFont(id: string, fontParam: string) {
   document.head.appendChild(link);
 }
 
-function ensureCustomFont(id: string, fontName: string, fontUrl: string) {
+// The name and URL come from admin free-text and are concatenated into a CSS
+// string below. A quote or a brace in either one closes the @font-face rule and
+// starts an attacker-chosen one, so neither is trusted verbatim.
+// Font families are letters, digits, spaces and hyphens in practice.
+export function safeFontFamily(name: string): string {
+  return name.replace(/[^\p{L}\p{N} _-]/gu, "").trim().slice(0, 64);
+}
+// Only same-origin paths and http(s) URLs, and never anything that could end
+// the url('…') token.
+export function safeFontUrl(url: string): string | null {
+  const trimmed = url.trim();
+  // Quotes, parens and backslashes can end the url('…') token; control
+  // characters can too. Checked without a control-character class so the
+  // linter's no-control-regex rule stays satisfiable.
+  if (!trimmed) return null;
+  if (/['"()\\]/.test(trimmed)) return null;
+  // eslint-disable-next-line no-control-regex
+  if ([...trimmed].some((c) => c.codePointAt(0)! < 0x20)) return null;
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? trimmed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function ensureCustomFont(id: string, rawName: string, rawUrl: string) {
+  const fontName = safeFontFamily(rawName);
+  const fontUrl = safeFontUrl(rawUrl);
+  if (!fontName || !fontUrl) {
+    removeElement(id);
+    return false;
+  }
   const styleId = `${id}-style`;
   const ext = fontUrl.split(".").pop()?.toLowerCase() ?? "woff2";
   const formatMap: Record<string, string> = {
@@ -227,12 +262,13 @@ function ensureCustomFont(id: string, fontName: string, fontUrl: string) {
   const existing = document.getElementById(styleId);
   if (existing) {
     if (existing.textContent !== css) existing.textContent = css;
-    return;
+    return true;
   }
   const style = document.createElement("style");
   style.id = styleId;
   style.textContent = css;
   document.head.appendChild(style);
+  return true;
 }
 
 function removeElement(id: string) {
@@ -510,13 +546,19 @@ export function Provider({ children }: ProviderProps) {
       data?.customFontJaUrl
     ) {
       removeElement("gfont-ja");
-      ensureCustomFont("cfont-ja", data.customFontJaName, data.customFontJaUrl);
+      const okJa = ensureCustomFont(
+        "cfont-ja",
+        data.customFontJaName,
+        data.customFontJaUrl,
+      );
       const cat = (data?.customFontJaCategory ?? "sans-serif") as
         "serif" | "sans-serif";
-      root.style.setProperty(
-        "--font-ja",
-        `'${data.customFontJaName}', ${fontFallback(cat)}`,
-      );
+      if (okJa)
+        root.style.setProperty(
+          "--font-ja",
+          `'${safeFontFamily(data.customFontJaName)}', ${fontFallback(cat)}`,
+        );
+      else root.style.removeProperty("--font-ja");
     } else if (fontJa && GOOGLE_FONTS_JA[fontJa]) {
       removeElement("cfont-ja");
       ensureGoogleFont("gfont-ja", GOOGLE_FONTS_JA[fontJa].param);
@@ -537,13 +579,19 @@ export function Provider({ children }: ProviderProps) {
       data?.customFontEnUrl
     ) {
       removeElement("gfont-en");
-      ensureCustomFont("cfont-en", data.customFontEnName, data.customFontEnUrl);
+      const okEn = ensureCustomFont(
+        "cfont-en",
+        data.customFontEnName,
+        data.customFontEnUrl,
+      );
       const cat = (data?.customFontEnCategory ?? "sans-serif") as
         "serif" | "sans-serif";
-      root.style.setProperty(
-        "--font-en",
-        `'${data.customFontEnName}', ${fontFallback(cat)}`,
-      );
+      if (okEn)
+        root.style.setProperty(
+          "--font-en",
+          `'${safeFontFamily(data.customFontEnName)}', ${fontFallback(cat)}`,
+        );
+      else root.style.removeProperty("--font-en");
     } else if (fontEn && GOOGLE_FONTS_EN[fontEn]) {
       removeElement("cfont-en");
       ensureGoogleFont("gfont-en", GOOGLE_FONTS_EN[fontEn].param);
@@ -754,13 +802,19 @@ export function Provider({ children }: ProviderProps) {
         const fontJa = s.fontJa;
         if (fontJa === "custom" && s.customFontJaName && s.customFontJaUrl) {
           removeElement("gfont-ja");
-          ensureCustomFont("cfont-ja", s.customFontJaName, s.customFontJaUrl);
+          const okJa = ensureCustomFont(
+            "cfont-ja",
+            s.customFontJaName,
+            s.customFontJaUrl,
+          );
           const cat = (s.customFontJaCategory || "sans-serif") as
             "serif" | "sans-serif";
-          root.style.setProperty(
-            "--font-ja",
-            `'${s.customFontJaName}', ${fontFallback(cat)}`,
-          );
+          if (okJa)
+            root.style.setProperty(
+              "--font-ja",
+              `'${safeFontFamily(s.customFontJaName)}', ${fontFallback(cat)}`,
+            );
+          else root.style.removeProperty("--font-ja");
         } else if (fontJa && GOOGLE_FONTS_JA[fontJa]) {
           removeElement("cfont-ja");
           ensureGoogleFont("gfont-ja", GOOGLE_FONTS_JA[fontJa].param);
@@ -780,13 +834,19 @@ export function Provider({ children }: ProviderProps) {
         const fontEn = s.fontEn;
         if (fontEn === "custom" && s.customFontEnName && s.customFontEnUrl) {
           removeElement("gfont-en");
-          ensureCustomFont("cfont-en", s.customFontEnName, s.customFontEnUrl);
+          const okEn = ensureCustomFont(
+            "cfont-en",
+            s.customFontEnName,
+            s.customFontEnUrl,
+          );
           const cat = (s.customFontEnCategory || "sans-serif") as
             "serif" | "sans-serif";
-          root.style.setProperty(
-            "--font-en",
-            `'${s.customFontEnName}', ${fontFallback(cat)}`,
-          );
+          if (okEn)
+            root.style.setProperty(
+              "--font-en",
+              `'${safeFontFamily(s.customFontEnName)}', ${fontFallback(cat)}`,
+            );
+          else root.style.removeProperty("--font-en");
         } else if (fontEn && GOOGLE_FONTS_EN[fontEn]) {
           removeElement("cfont-en");
           ensureGoogleFont("gfont-en", GOOGLE_FONTS_EN[fontEn].param);

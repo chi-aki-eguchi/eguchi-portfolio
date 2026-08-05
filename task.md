@@ -1,64 +1,73 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-04 JST
+## Current State — 2026-08-05 JST
 
-- **Status:** AI運用の整備が完了し、**製品コードへ着手（B-1 の第1歩）**。
+- **Status:** 公開サイトの全体デバッグを実施。**「設定しても反映されない」の主因を修正**。
   commit 済み・push 未実施
 - **Current owner:** Claude Code（停止中）
-- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `d183fe8` より 2 commits ahead
+- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `03d22c3` より 2 commits ahead
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
 
 ### 目的と完了条件
 
-AI が作業前に読む量を減らし、規則の食い違いと埋もれた残作業を無くす。
-完了条件は、次に来る AI が **backlog と Current State だけ見れば動ける**こと。
+オーナー報告「settings で実際には反映されない項目が多い / 文字が枠の外に出る」。
+完了条件は、**admin のどのスライダーも、選んだレイアウトに関係なく効く**こと。
 
-### 経緯と実績はここに書かない
+### 今回直したこと（実測で確認済み）
 
-正本は次のとおり。**この節を経過報告で太らせない。**
+原因は一つ。**後から足したレイアウトが、寸法・色・列数・余白を自前の定数で
+書いていた**ため、admin を動かしても何も起きなかった。
 
-| 主題 | 正本 |
-|---|---|
-| 未完了の作業 | `docs/agents/backlog.md` |
-| backlog 判定の根拠 | `docs/agents/backlog-verification.md` |
-| 文書整理の調査 | `docs/agents/doc-cleanup-survey.md` / `pre-push-review.md` |
-| クレジット判定 | `docs/agents/credit-status.md` / `credit-status-review.md` |
-| ツール修正の検証 | `docs/agents/tooling-fix-review.md` |
-| Codex レーンの使い方 | `docs/agents/codex-workflow.md` |
+- Hero の quiet-grid / editorial / immersive → 共通 `HeroNameBlock` に集約。
+  名前・EN名・カタカナ・サブタイトルの大きさ/太さ/字間/色と `heroHeight` が効く。
+  写真の上に載る tone だけ色指定を無視して白のまま（可読性。既定ヒーローと同じ規則）。
+- `worksLabel` / `viewAllLabel` → `WorksHeader` に集約し、全ヒーローモードで出る。
+- ギャラリーの masonry / clean-grid / large-format → 列数・余白が効く。
+  **各レイアウトの従来値を「未設定時の既定」にしたので、見た目は触るまで変わらない。**
+- `sectionLabelOpacity` → `--section-label-color` を新設し全ページのラベルに適用
+  （従来は Series ページ1箇所だけ読んでいた）。
+- admin の説明文「下の調整は『モザイク』に効きます」は事実と違ったので修正。
+
+**オーナーの現在値では見た目が変わる**（heroMode=editorial / galleryLayout=masonry）:
+ヒーローが100vh・名前が太さ700・サブタイトル表示・Works が5列・View all が出る。
+
+### 調べたが**バグではなかった**もの
+
+- 各ページの meta description → dev サーバは OGP 注入をしないだけ。`injectOgp` は正しい
+- `line-clamp-2` が効いていないように見える → Chrome が `display` を `flow-root` と
+  報告するだけで、実際は効いている
+- 閉じた状態のモバイルメニュー → `inert` 済み
+- 文字のはみ出し → 公開5ページ×3画面幅で0件。admin も実害なし（2px の丸め誤差のみ）
 
 ### 次の一手
 
-0. **B-12 は解決済み**（デモのタブ保存キーを分離。backlog から削除済み）。
-1. **B-1 は「境界を作って段階移行」で着手済み**（オーナー選択・2026-08-04）。
-   `!important` 216→199、4回以上の重複 44→34。**一括移行はしない。**
-   新規ボタンは `admin-ui.tsx` の `AxButton` を使い、既存はその画面を触るついでに移す。
-   詳細と踏んだ罠は `docs/agents/backlog.md` の B-1 と `docs/agents/measuring.md`。
-2. 製品コードへ着手するなら B-3 / B-4（写真データの整合性）。
-   **着手前にオーナーへ優先順位を確認する**（削除ロジックに触れるため）。
-3. AI運用側の残り: hook の3軸分離は未完成 /
-   製品コードの `assertOk` 3重定義 / 毎プロンプトのクレジット文の削減 /
-   hook テストの外部依存。詳細は backlog と各レビュー記録。
-4. push するか判断する（**push はオーナーだけ**）。
+1. **オーナーが実際の見た目を確認する。**太さ700・100vh が意図と違えば admin で戻せる
+   （もう本当に効くので）。
+2. push するか判断する（**push はオーナーだけ**）。
+3. 残りは `docs/agents/backlog.md`。今回 B-15（`.env` の二重定義）と
+   B-16（smoke の flaky）を追加した。
+4. B-1（グローバルCSSの上書き）は継続中。一括移行はしない。
 
 ### 検証の状態
 
-- `bun run check` **成功**（`test:tools` 24件を含む。2026-08-04）
-- `bun run smoke` **成功**（286 passed / 0 failed。2026-08-04・2回実行）
-- **回帰テストは「修正を外すと落ちる」ことまで確認する**（`docs/agents/measuring.md`）
-- `node scripts/ai/check-handoff-freshness.mjs` は `[handoff OK]`
+- `bun run check` **成功**（674 pass / 0 fail。回帰テスト19件を追加）
+- 追加した回帰テストは**修正を戻すと4件落ちる**ことを確認済み
+- `bun run smoke` **285 passed / 1 failed**。落ちたのは
+  `admin-workspace-layout.spec.ts:99`。**単体で流すと通る = flaky**（B-16）
+- 設定155キーを `/api/settings` 差し替えで総当たり検証（DBへは一切書いていない）
 - **本番確認は未実施。** push していないため
 
 ### 触ってはいけない範囲
 
-- push / deploy / 本番DB / Turso / R2 / Railway / env 変更
+- push / deploy / 本番DB / Turso / R2 / Railway / env 変更（`.env` は読むだけ）
 - `docs/archive/` と `docs/reports/` の**本文**（移動は可、書き換えは不可）
 - 履歴文書の削除
 
 ### 記録
 
-- Codex session ID は `scratch/codex-out-*.log` の先頭
-- local commit: あり / push: 一部済み（`d183fe8` まで） /
+- 調査スクリプトは `scratch/debug-sweep/`（gitignore 対象・消してよい）
+- local commit: あり / push: 未実施（origin/main は `03d22c3`） /
   Railway 反映: 未確認 / 本番確認: 未実施
 <!-- CURRENT_STATE_END -->
 

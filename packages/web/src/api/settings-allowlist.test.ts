@@ -1,5 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { partitionAllowedSettings } from "./settings-allowlist";
+import {
+  isSettingsPayload,
+  partitionAllowedSettings,
+} from "./settings-allowlist";
+
+describe("isSettingsPayload", () => {
+  test("accepts JSON objects but rejects null and arrays", () => {
+    expect(isSettingsPayload({ siteName: "Akiko Eguchi" })).toBe(true);
+    expect(isSettingsPayload(null)).toBe(false);
+    expect(isSettingsPayload([])).toBe(false);
+    expect(isSettingsPayload("settings")).toBe(false);
+  });
+});
 
 describe("partitionAllowedSettings", () => {
   const allowedKeys = new Set(["siteName", "profileBio"]);
@@ -25,12 +37,13 @@ describe("partitionAllowedSettings", () => {
     expect(ignoredKeys).toEqual(["totallyUnknownKey"]);
   });
 
-  test("non-string values are silently skipped (pre-existing behavior), not counted as ignored", () => {
-    const { allowed, ignoredKeys } = partitionAllowedSettings(
+  test("non-string values for allowed keys are reported instead of silently skipped", () => {
+    const { allowed, ignoredKeys, invalidKeys } = partitionAllowedSettings(
       { siteName: 123 as unknown as string },
       allowedKeys,
     );
     expect(allowed).toEqual([]);
     expect(ignoredKeys).toEqual([]);
+    expect(invalidKeys).toEqual(["siteName"]);
   });
 });

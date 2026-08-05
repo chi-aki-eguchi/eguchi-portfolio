@@ -6,7 +6,10 @@ import { buildReorderUpdate } from "./reorder-sql";
 import { applyPhotoReorderIfCurrent } from "./photo-reorder-safety";
 import { buildBatchPhotoMetadataPatch } from "./batch-photo-metadata";
 import { writeSettingsAtomic } from "./database/settings-write";
-import { partitionAllowedSettings } from "./settings-allowlist";
+import {
+  isSettingsPayload,
+  partitionAllowedSettings,
+} from "./settings-allowlist";
 import {
   SETTINGS_IMAGE_CLEANUP_KEYS,
   createSettingsImageCleanupRunner,
@@ -1390,6 +1393,8 @@ const app = new Hono()
   // ── Admin: Settings update ──────────────────────────────
   .post("/admin/settings", requireAdmin, async (c) => {
     const body = await c.req.json();
+    if (!isSettingsPayload(body))
+      return c.json({ error: "Invalid settings payload" }, 400);
     // Defensive bounds: settings are admin-only, but an unbounded key/value write
     // could bloat the DB (a stray multi-MB paste, a buggy client). Validate the
     // whole payload before writing anything so an oversized value can't leave a
@@ -1399,10 +1404,15 @@ const app = new Hono()
     // 許可リスト外のキーは無視する(Q-5 / audit-2026-07.md P2-3)。400にはしない —
     // 既存クライアントが将来のキーを送ってきても壊れないようにするため。無視した
     // キー名はレスポンスで可視化し、正当キーが黙って保存されない事故に気づけるようにする。
-    const { allowed, ignoredKeys } = partitionAllowedSettings(
+    const { allowed, ignoredKeys, invalidKeys } = partitionAllowedSettings(
       body,
       ALLOWED_SETTINGS_KEYS,
     );
+    if (invalidKeys.length > 0)
+      return c.json(
+        { error: "Invalid settings values", invalidKeys },
+        400,
+      );
     const entries: Array<[string, string]> = [];
     for (const [key, value] of allowed) {
       if (key.length > MAX_KEY_LEN || value.length > MAX_VALUE_LEN) {

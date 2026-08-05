@@ -3568,7 +3568,8 @@ export function GalleryTab({
     }
   };
 
-  // Batch category — limited concurrency rather than serial
+  // Batch category uses one SQL UPDATE, so a failed request cannot leave only
+  // part of the selected photos in the new category.
   const batchCategory = useMutation({
     mutationFn: async ({
       ids,
@@ -3577,20 +3578,10 @@ export function GalleryTab({
       ids: number[];
       category: string;
     }) => {
-      const queue = [...ids];
-      const CONCURRENCY = Math.min(4, queue.length);
-      await Promise.all(
-        Array.from({ length: CONCURRENCY }, async () => {
-          let id: number | undefined;
-          while ((id = queue.shift()) !== undefined) {
-            const res = await adminApi.photos[":id"].$patch({
-              param: { id: String(id) },
-              json: { category },
-            });
-            assertOk(res);
-          }
-        }),
-      );
+      const res = await adminApi.photos.batch.$post({
+        json: { ids, operation: "category", value: category },
+      });
+      assertOk(res);
     },
     onSuccess: () => {
       setActionError("");

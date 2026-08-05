@@ -3124,6 +3124,7 @@ export type AdminMessages = {
     resumeSummary: (done: number, total: number, next: string) => string;
     nextAction: (next: string) => string;
     finish: string;
+    finishFailed: string;
     later: string;
     recommendedTitle: string;
     checklist: {
@@ -3298,6 +3299,8 @@ export const ADMIN_DICTIONARY = {
         `${done} / ${total} まで進んでいます。次は「${next}」です。`,
       nextAction: (next) => `次へ：${next}`,
       finish: "セットアップ完了 → ライブラリへ",
+      finishFailed:
+        "完了を保存できませんでした。通信状況を確かめて、もう一度お試しください。",
       later: "あとで",
       recommendedTitle: "あとでゆっくり整える",
       checklist: {
@@ -3506,6 +3509,8 @@ export const ADMIN_DICTIONARY = {
         `You have completed ${done} of ${total}. Next: ${next}.`,
       nextAction: (next) => `Next: ${next}`,
       finish: "Finish setup → Library",
+      finishFailed:
+        "Could not save completion. Check your connection and try again.",
       later: "Later",
       recommendedTitle: "Take your time with these later",
       checklist: {

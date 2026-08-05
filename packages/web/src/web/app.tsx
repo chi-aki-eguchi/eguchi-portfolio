@@ -270,12 +270,12 @@ function App() {
                   >
                     404
                   </p>
-                  <p className="font-en text-sm tracking-[0.18em] uppercase text-[rgba(var(--foreground-rgb),0.35)] -mt-4 md:-mt-6">
+                  <p className="font-en text-sm tracking-[0.18em] uppercase text-[color:var(--text-quiet)] -mt-4 md:-mt-6">
                     Page not found
                   </p>
                   <div className="w-8 h-px bg-[rgba(var(--foreground-rgb),0.12)] mt-8 mb-8" />
                   <p
-                    className="text-[rgba(var(--foreground-rgb),0.40)]"
+                    className="text-[color:var(--text-quiet)]"
                     style={{
                       fontSize: "var(--body-size, 0.85rem)",
                       lineHeight: 1.9,
@@ -285,7 +285,7 @@ function App() {
                   </p>
                   <Link
                     to="/"
-                    className="inline-block mt-10 font-en text-[11px] tracking-[0.12em] uppercase text-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
+                    className="inline-block mt-10 font-en text-[11px] tracking-[0.12em] uppercase text-[color:var(--text-quiet)] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] nav-link-luxury transition-colors duration-300"
                   >
                     Back to top
                   </Link>

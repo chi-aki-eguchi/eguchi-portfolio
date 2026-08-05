@@ -2899,12 +2899,20 @@ header > nav {
       color var(--dur-hover) var(--ease-quart),
       padding-left var(--dur-hover) var(--ease-quart);
   }
+  /* These three win over .nav-link-public on specificity alone, so a literal
+     alpha here silently overrode admin の「ナビの濃さ」(navOpacity) for every
+     site using the left sidebar — the slider moved and the nav never changed.
+     Substitute the variable and keep 0.4 as the sidebar's own unset default so
+     an untouched site looks the same. */
   .nav-pos-left > header > nav ul a:not([aria-current="page"]) {
-    color: rgba(var(--foreground-rgb), 0.4) !important;
+    color: rgba(var(--foreground-rgb), var(--nav-opacity, 0.4)) !important;
     padding-left: 18px;
   }
   .nav-pos-left > header > nav ul a:not([aria-current="page"]):hover {
-    color: rgba(var(--foreground-rgb), 0.6) !important;
+    color: var(
+      --accent-color,
+      rgba(var(--foreground-rgb), 0.6)
+    ) !important;
   }
   .nav-pos-left > header > nav ul a[aria-current="page"] {
     color: var(--foreground) !important;

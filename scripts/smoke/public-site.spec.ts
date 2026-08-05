@@ -651,3 +651,52 @@ test.describe("public-site — Galleryライトボックス", () => {
     expect(runtimeProblems).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-08-05: 「設定しても反映されない」の再発防止（CSS カスケード編）。
+//
+// `.nav-pos-left > header > nav ul a:not([aria-current])` が literal な alpha を
+// `!important` で当てていたため、admin の「ナビの濃さ」(navOpacity) は左サイド
+// バーのサイトで**どの値にしても効かなかった**。jsdom では実 CSS のカスケード
+// を再現できないので、ここ（実ブラウザ）で見張る。
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — 設定がCSSカスケードに勝てているか", () => {
+  for (const navPosition of ["left", "top"] as const) {
+    test(`navPosition=${navPosition} で navOpacity がナビの色に届く`, async ({
+      page,
+    }) => {
+      const navColor = () =>
+        page.evaluate(() => {
+          const link = Array.from(document.querySelectorAll("nav a")).find(
+            (el) =>
+              /Gallery/.test(el.textContent ?? "") &&
+              el.getAttribute("aria-current") !== "page",
+          );
+          return link ? getComputedStyle(link).color : null;
+        });
+      // 色には transition が乗っているので、落ち着くまで待ってから読む。
+      // 待たずに読むと遷移途中の値(0.4→0.15 の途中など)を掴む。
+      const readNavColor = async (navOpacity: string, expected: RegExp) => {
+        await installPublicApiMocks(page, {
+          ...SYNTHETIC_SETTINGS,
+          navPosition,
+          navOpacity,
+        });
+        await page.goto("/");
+        await page.waitForSelector("nav a");
+        await expect
+          .poll(navColor, {
+            message: `navOpacity=${navOpacity} がナビの色に届いていない`,
+          })
+          .toMatch(expected);
+        return navColor();
+      };
+
+      // 薄い/濃いで実際に別の色になること。同じなら設定が届いていない。
+      const faint = await readNavColor("0.15", /0\.15\)$/);
+      // alpha 1 は rgb() 表記に畳まれる
+      const solid = await readNavColor("1", /^rgb\(/);
+      expect(faint, "navOpacity が色に反映されていない").not.toBe(solid);
+    });
+  }
+});

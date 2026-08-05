@@ -1046,11 +1046,18 @@ export function SetupTab({
   // これが true になるまで、初回ログイン時は毎回「はじめに」へ誘導される
   // (AdminPage 側のリダイレクト判定)。dismissed(ローカルのみ)とは別物 —
   // 閉じるだけでは完了扱いにしない。
+  // postAdminSettings throws on any failure (including ignoredKeys). Without an
+  // onError the throw is swallowed by the query client and the button simply
+  // stops spinning — the buyer presses 完了 on their very first session and
+  // nothing at all happens. Surface it (§0: 応答検証だけでは画面に出ない).
+  const [finishError, setFinishError] = useState("");
   const finishSetup = useMutation({
     mutationFn: async () => {
       await postAdminSettings({ setupCompleted: "true" });
     },
+    onError: () => setFinishError(t.setup.finishFailed),
     onSuccess: () => {
+      setFinishError("");
       qc.setQueryData(
         ["settings"],
         (old: Record<string, string> | undefined) => ({
@@ -1270,6 +1277,7 @@ export function SetupTab({
                         }
                         return;
                       }
+                      setFinishError("");
                       finishSetup.mutate();
                     }}
                     disabled={finishSetup.isPending}
@@ -1295,6 +1303,15 @@ export function SetupTab({
             </>
           }
         />
+
+        {finishError && (
+          <p
+            role="alert"
+            className="text-[length:var(--admin-text-note)] text-[color:var(--admin-danger)]"
+          >
+            {finishError}
+          </p>
+        )}
 
         {!requiredDone && nextItem && (
           <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm px-4 py-3">

@@ -7,7 +7,7 @@
   合計20件を修正。**settings 155キーは全て「効く」ことを確認済み**。
   commit 済み・push 未実施
 - **Current owner:** Claude Code（停止中）
-- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `03d22c3` より 14 commits ahead
+- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `03d22c3`（未push。件数はここに書かない — この行を直すcommit自体が件数を変えるため、`git rev-list --count origin/main..HEAD` で測る）
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
 
 ### 直したこと（すべて A/B で「戻すと壊れる」ところまで確認済み）

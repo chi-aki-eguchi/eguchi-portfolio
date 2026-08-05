@@ -14,6 +14,7 @@ import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
+import { ContentStatus } from "../components/ContentStatus";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../lib/photo-alt";
@@ -439,6 +440,10 @@ type HomeLayoutProps = {
   // on whichever hero the owner happens to have chosen.
   heroFxRef: React.Ref<HTMLDivElement>;
   heroBoxRef: React.Ref<HTMLElement>;
+  /** Rendered in place of the Works section when there is nothing to show yet.
+   *  Empty means "genuinely no photos"; loading and failure say so instead of
+   *  leaving the visitor looking at a site that appears to have no work. */
+  worksStatus: React.ReactNode;
 };
 
 function heroMotionKey(
@@ -603,6 +608,7 @@ function HomeQuietGrid({
   settings,
   heroFxRef,
   heroBoxRef,
+  worksStatus,
 }: HomeLayoutProps) {
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
@@ -655,6 +661,7 @@ function HomeQuietGrid({
       </section>
 
       {/* Works: 3-column square grid */}
+      {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
           className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
@@ -705,6 +712,7 @@ function HomeEditorial({
   settings,
   heroFxRef,
   heroBoxRef,
+  worksStatus,
 }: HomeLayoutProps) {
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const statement = settings?.profileStatement ?? "";
@@ -770,6 +778,7 @@ function HomeEditorial({
       </section>
 
       {/* Works: alternating large/small rhythm grid */}
+      {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
           className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
@@ -817,6 +826,7 @@ function HomeImmersive({
   settings,
   heroFxRef,
   heroBoxRef,
+  worksStatus,
 }: HomeLayoutProps) {
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
@@ -898,6 +908,7 @@ function HomeImmersive({
       </section>
 
       {/* Large-format works with captions */}
+      {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
           className="max-w-4xl mx-auto px-6 md:px-12 pt-6 pb-20"
@@ -950,7 +961,13 @@ export default function TopPage() {
     60,
     Math.max(homeGalleryCount + WORKS_STEP * 4, 36),
   );
-  const { data: photosData } = useQuery({
+  const {
+    data: photosData,
+    isLoading: photosLoading,
+    isError: photosFailed,
+    error: photosErrorObj,
+    refetch: refetchPhotos,
+  } = useQuery({
     queryKey:
       topWorksMode === "random"
         ? ["photos", "top-random", topRandomLimit]
@@ -1122,6 +1139,19 @@ export default function TopPage() {
     // re-ran. That left スクロール効果 dead in carousel mode — the default.
   }, [heroScrollEffect, isSingle, heroFullscreen, heroPhotos.length]);
 
+  // Loading and failure used to render nothing at all, so a visitor on a slow
+  // or broken connection saw a portfolio with no work in it. Say which it is.
+  const worksStatus =
+    featured.length > 0 ? null : photosLoading ? (
+      <ContentStatus state="loading" />
+    ) : photosFailed ? (
+      <ContentStatus
+        state="error"
+        error={photosErrorObj}
+        onRetry={() => void refetchPhotos()}
+      />
+    ) : null;
+
   const homeLayoutProps: HomeLayoutProps = {
     heroPhotos,
     featured,
@@ -1130,6 +1160,7 @@ export default function TopPage() {
     fadeRef,
     heroFxRef,
     heroBoxRef,
+    worksStatus,
     settings,
   };
 
@@ -1305,6 +1336,7 @@ export default function TopPage() {
       )}
 
       {/* Photo Grid */}
+      {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
           className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(2rem*var(--spacing-hero-bottom,1))] md:pt-[calc(3rem*var(--spacing-hero-bottom,1))] pb-[calc(5rem*var(--spacing-section-gap,1))] md:pb-[calc(8rem*var(--spacing-section-gap,1))]"

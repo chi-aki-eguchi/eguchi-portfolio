@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
+import { ContentStatus } from "../components/ContentStatus";
 import { PhotoGallery } from "../components/PhotoGallery";
 import { SeriesGrid } from "../components/SeriesGrid";
 import { InquiryCta } from "../components/InquiryCta";
@@ -35,6 +36,7 @@ export default function GalleryPage() {
     data: photosData,
     isLoading: photosLoading,
     isError: photosError,
+    error: photosErrorObj,
     refetch: refetchPhotos,
   } = useQuery({
     queryKey: ["photos"],
@@ -309,18 +311,15 @@ export default function GalleryPage() {
               </div>
             ) : photosError ? (
               // A failed fetch is not an empty gallery — say so, and offer a
-              // retry instead of quietly showing "No photos" (fail-quiet trap).
-              <div className="py-24 text-center">
-                <p className="text-xs tracking-[0.04em] text-[color:var(--text-quiet)] mb-5">
-                  写真を読み込めませんでした
-                </p>
-                <button
-                  onClick={() => void refetchPhotos()}
-                  className="tap-target font-en text-xs tracking-[0.08em] pt-1.5 pb-1.5 border-b-[1.5px] border-[rgba(var(--foreground-rgb),0.3)] text-[color:var(--text-quiet)] hover:text-[var(--foreground)] hover:border-[var(--foreground)] transition-colors duration-300"
-                >
-                  Retry
-                </button>
-              </div>
+              // reload instead of quietly showing "No photos" (fail-quiet trap).
+              // Naming the cause only after a failed reload is the shared rule;
+              // see ContentStatus.
+              <ContentStatus
+                state="error"
+                error={photosErrorObj}
+                onRetry={() => void refetchPhotos()}
+                className="py-24"
+              />
             ) : (
               <div className="py-24 text-center">
                 <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">

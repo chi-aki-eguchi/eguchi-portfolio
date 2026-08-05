@@ -10,23 +10,48 @@ import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 
 export default function GalleryPage() {
-  const [activeFilter, setActiveFilter] = useState("all");
-  // P1: Photos / Series toggle. `null` = follow the admin default; a click pins
-  // the user's choice. Series tab only appears when published series exist.
-  const [pinnedView, setPinnedView] = useState<"photos" | "series" | null>(
-    null,
-  );
-  // 機能8: フィルム/デジタルフィルター（URLクエリパラメータで状態管理）
+  // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
+  // parameter names, and a default never writes a parameter at all — an
+  // unfiltered gallery stays plain `/gallery`. Before this only the medium was
+  // in the URL, so a chosen category could not be shared and vanished on
+  // reload. `medium=` kept its name; it was already public.
   const [location, setLocation] = useLocation();
   const search = useSearch();
+  const params = useMemo(() => new URLSearchParams(search), [search]);
+
   const activeMedium = useMemo(() => {
-    const params = new URLSearchParams(search);
     const v = params.get("medium");
     return v === "film" || v === "digital" ? v : "all";
-  }, [search]);
-  const setActiveMedium = (v: "all" | "film" | "digital") => {
-    setLocation(v === "all" ? location : `${location}?medium=${v}`);
+  }, [params]);
+  const activeFilter = params.get("c") || "all";
+  const pinnedView = useMemo(() => {
+    const v = params.get("v");
+    return v === "photos" || v === "series" ? v : null;
+  }, [params]);
+
+  // Write the whole filter set at once so two of them can never disagree, and
+  // drop anything sitting at its default rather than spelling it out.
+  const applyFilters = (next: {
+    c?: string;
+    medium?: "all" | "film" | "digital";
+    v?: "photos" | "series" | null;
+  }) => {
+    const merged = new URLSearchParams(params);
+    const put = (key: string, value: string | null | undefined, dflt: string) => {
+      if (value === undefined) return;
+      if (!value || value === dflt) merged.delete(key);
+      else merged.set(key, value);
+    };
+    put("c", next.c, "all");
+    put("medium", next.medium, "all");
+    put("v", next.v ?? undefined, "");
+    const qs = merged.toString();
+    setLocation(qs ? `${location}?${qs}` : location);
   };
+  const setActiveFilter = (v: string) => applyFilters({ c: v });
+  const setActiveMedium = (v: "all" | "film" | "digital") =>
+    applyFilters({ medium: v });
+  const setPinnedView = (v: "photos" | "series" | null) => applyFilters({ v });
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -105,8 +130,13 @@ export default function GalleryPage() {
       categories.length > 0 &&
       !categories.some((c) => c.slug === activeFilter)
     ) {
-      setActiveFilter("all");
+      // Drop the parameter rather than writing c=all — a default never appears
+      // in the URL (B-19).
+      applyFilters({ c: "all" });
     }
+    // applyFilters closes over `location`/`params`, which change on every URL
+    // edit; depending on it would re-run this guard on each navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter, categories]);
 
   const filterItems = [

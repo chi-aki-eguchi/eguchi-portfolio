@@ -4,10 +4,10 @@
 ## Current State — 2026-08-05 JST
 
 - **Status:** デバッグ3巡目まで完了（設定 → 静的解析 → 操作 → **スマホadmin**）。
-  合計20件を修正。**settings 155キーは全て「効く」ことを確認済み**。
-  commit 済み・push 未実施
+  合計24件を修正。**settings 155キーは全て「効く」ことを確認済み**。
+  **2026-08-05 オーナーが push 済み。**Railway反映と本番確認は未確認
 - **Current owner:** Claude Code（停止中）
-- **Branch:** `main` / **HEAD:** `SELF` / **origin/main:** `03d22c3`（未push。件数はここに書かない — この行を直すcommit自体が件数を変えるため、`git rev-list --count origin/main..HEAD` で測る）
+- **Branch:** `main` / **HEAD:** `SELF` / **push状況はここに書かない** — 変わるたびに古くなるので `git status --short --branch` と `git rev-list --count origin/main..HEAD` で測る
 - **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
 
 ### 直したこと（すべて A/B で「戻すと壊れる」ところまで確認済み）
@@ -55,7 +55,6 @@
    R2削除・書き込みAPIに触れるものは**着手前に許可が要る**。
 1. **オーナーが見た目と操作を確認する。**ヒーローが1画面・ナビが濃い・Works が5列。
    好みでなければ admin で戻せる（もう効く）。
-2. push するか判断する（**push はオーナーだけ**）。
 3. 残りは `docs/agents/backlog.md`。今回 B-15〜B-22 を追加した。
    **B-19 / B-21 / B-22 は決定 → 対応完了**（2026-08-05）。B-21 は「対応しない」で決着。
    Codex 推奨のうち 1（派生画像）と 7（Serviceリンク・フォント）も実装済み。
@@ -74,7 +73,7 @@
   実測で裏取り済み（派生画像のR2孤立 / Service リンクの `safeHref` 漏れ）
 - 追加した回帰テストは**修正を戻すと落ちる**ことを1件ずつ確認済み
 - 設定155キーを `/api/settings` 差し替えで総当たり検証（**DBへは一切書いていない**）
-- **本番確認は未実施。** push していないため
+- **本番確認は未実施。** push 済みだが Railway 反映と本番での確認をしていないため
 
 ### 触ってはいけない範囲
 
@@ -86,8 +85,9 @@
 
 - 調査スクリプトは `scratch/debug-sweep/`（gitignore 対象・消してよい）
   `interaction2.mjs` が操作系の総当たり、`full-sweep.mjs` が全ルート走査
-- local commit: あり / push: 未実施（origin/main は `03d22c3`） /
-  Railway 反映: 未確認 / 本番確認: 未実施
+- local commit / push / Railway反映 / 本番確認は別物として扱う。
+  **2026-08-05: オーナーが push 済み**（それ以前の全 commit が origin/main に入った）。
+  Railway 反映と本番確認は**未確認**。
 <!-- CURRENT_STATE_END -->
 
 ---

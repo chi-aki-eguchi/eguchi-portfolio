@@ -28,12 +28,31 @@ export function unsharedPhotoStorageKeys(
   ].filter((key): key is string => !!key);
 }
 
+/** Keys this upload just created, for the compensating delete when the
+ *  registration that follows it fails.
+ *
+ *  The old filter kept only keys under `photos/`, which is where the master
+ *  lives — but the thumbnail and medium versions are written to `thumbs/` and
+ *  `medium/` (see thumbKeyFrom / mediumKeyFrom in api/index.ts). So a failed or
+ *  duplicate registration deleted the master and orphaned both derived images
+ *  in storage, invisibly, on every occurrence.
+ *
+ *  That filter was also a safety guard: the body is client-supplied, so it must
+ *  not be able to name somebody else's object. Rather than widen it to three
+ *  prefixes, derive the only two keys this master can legitimately have and
+ *  accept nothing else. That is strictly tighter than the original while
+ *  covering all three objects. */
 export function uploadedPhotoStorageKeys(body: Record<string, unknown>): string[] {
+  const url =
+    typeof body.url === "string" ? body.url.replace("/api/images/", "") : "";
+  if (!url.startsWith("photos/")) return [];
+  const stem = url.replace(/^photos\//, "").replace(/\.[^.]+$/, "");
+  const permitted = new Set([url, `thumbs/${stem}.webp`, `medium/${stem}.webp`]);
   const keys = [
-    typeof body.url === "string" ? body.url.replace("/api/images/", "") : null,
+    url,
     typeof body.thumbKey === "string" ? body.thumbKey : null,
     typeof body.mediumKey === "string" ? body.mediumKey : null,
-  ].filter((key): key is string => !!key && key.startsWith("photos/"));
+  ].filter((key): key is string => !!key && permitted.has(key));
   return [...new Set(keys)];
 }
 

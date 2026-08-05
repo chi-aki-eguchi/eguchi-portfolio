@@ -758,3 +758,94 @@ test.describe("公開サイト — 遅れて現れる写真タイル", () => {
     expect(apiMocks.unexpectedRequests).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-08-05: ブラウザの「戻る」で URL だけ変わって中身が変わらない件。
+//
+// PageTransition の遷移エフェクトは `children` を依存配列に入れていたため、
+// フェード中にルーターが次のページを渡すと cleanup がタイマーを消し、再実行時は
+// `location === prevLocation.current` で早期 return して**組み直さなかった**。
+// `transitioning` が true のまま残るのでフォールバックも効かない。
+// 実測: /gallery → About → 戻る で、アドレスバーは /gallery、画面は About の
+// まま、写真は0枚。戻るを使う人には「ギャラリーが真っ白」に見える。
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — 戻る/進むで中身が追従するか", () => {
+  test("戻るとURLだけでなく画面もそのページになる", async ({ page }) => {
+    const apiMocks = await installPublicApiMocks(page);
+    await page.goto("/gallery");
+    await page.waitForSelector("main .photo-card");
+
+    // On phone widths the nav links live in the collapsed menu.
+    const burger = page.locator('button[aria-controls="mobile-menu"]');
+    if (await burger.isVisible()) await burger.click();
+    await page.getByRole("link", { name: "About", exact: true }).first().click();
+    await expect(page).toHaveURL(/\/about$/);
+    await expect(page.locator("main")).toContainText(/PROFILE|About/i);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/gallery$/);
+    // The real defect: the address bar said /gallery while About stayed on screen.
+    await expect(
+      page.locator("main .photo-card").first(),
+      "戻った先が /gallery なのに写真が1枚も出ていない",
+    ).toBeVisible({ timeout: 10_000 });
+
+    await page.goForward();
+    await expect(page).toHaveURL(/\/about$/);
+    await expect(
+      page.locator("main"),
+      "進むでURLは/aboutなのに中身がGalleryのまま",
+    ).toContainText(/PROFILE|About/i);
+
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-08-05: 操作まわりの取りこぼし2件。
+// - モバイルメニューに Escape が無かった。開いたら、ハンバーガーを押し直すか
+//   行き先を選ぶまで閉じられない（他の閉じられる面はすべて Escape で閉じる）。
+// - 「上へ戻る」は左サイドバー/下ナビの真下に置かれ、header が z-50 に対して
+//   z-40 なので、見えているのにクリックできなかった。
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — 閉じる・戻るの操作", () => {
+  test("モバイルメニューは Escape で閉じる", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "desktop", "ハンバーガーは狭い画面だけ");
+    await installPublicApiMocks(page);
+    await page.goto("/");
+    const burger = page.locator('button[aria-controls="mobile-menu"]');
+    await burger.click();
+    await expect(burger).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Escape");
+    await expect(burger).toHaveAttribute("aria-expanded", "false");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            Math.round(
+              document.getElementById("mobile-menu")?.getBoundingClientRect()
+                .height ?? -1,
+            ),
+        ),
+      )
+      .toBe(0);
+  });
+
+  for (const navPosition of ["left", "top", "bottom"] as const) {
+    test(`navPosition=${navPosition} で「上へ戻る」を実際に押せる`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== "desktop", "サイドバー/下ナビは広い画面のみ");
+      await installPublicApiMocks(page, { ...SYNTHETIC_SETTINGS, navPosition });
+      await page.goto("/gallery");
+      await page.waitForSelector("main .photo-card");
+      await page.evaluate(() => window.scrollTo(0, 3000));
+      const btn = page.locator(".back-to-top");
+      await expect(btn).toBeVisible();
+      // The defect was that it rendered and nothing could reach it: the nav sat
+      // on top. A plain click() fails on an intercepted control.
+      await btn.click({ timeout: 5000 });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(80);
+    });
+  }
+});

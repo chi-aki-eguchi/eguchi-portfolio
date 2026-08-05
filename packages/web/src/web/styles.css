@@ -2887,6 +2887,17 @@ header > nav {
     padding-top: 0;
   }
 
+  /* Both of these nav positions own the bottom-left corner where the floating
+     control sits, and the header is z-50 against its z-40 — the button rendered
+     and nothing could click it (measured with elementFromPoint at its centre).
+     Move it clear rather than fighting the stacking order. */
+  .nav-pos-left .back-to-top {
+    --back-to-top-left: calc(11rem + 1.5rem);
+  }
+  .nav-pos-bottom .back-to-top {
+    --back-to-top-bottom: calc(var(--header-h) + 1.5rem);
+  }
+
   .nav-pos-bottom > header {
     top: auto;
     bottom: 0;

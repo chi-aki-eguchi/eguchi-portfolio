@@ -97,6 +97,7 @@ function LanguageSwitchLinks({
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [location] = useLocation();
   const footerRef = useFooterReveal();
@@ -176,6 +177,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMobileOpen(false);
   }, [location]);
+
+  // Escape closes the open menu, and focus goes back to the button that opened
+  // it. Without this the only way out was the burger or picking a destination —
+  // every other dismissible surface on the site (the photo viewer, the admin
+  // dialogs) closes on Escape, so it reads as stuck.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMobileOpen(false);
+      menuButtonRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   const navTextStyle = { fontSize: "var(--nav-size, 13px)" };
 
@@ -362,6 +378,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               right-edge where the old 32px button had it. */}
             <button
               className="w-11 h-11 -mr-1.5 flex flex-col items-center justify-center gap-[5px] text-[var(--foreground)]"
+              ref={menuButtonRef}
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Menu"
               aria-expanded={mobileOpen}

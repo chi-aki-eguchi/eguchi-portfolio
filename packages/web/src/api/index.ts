@@ -5,6 +5,7 @@ import { db, withRetry, schema } from "./database";
 import { buildReorderUpdate } from "./reorder-sql";
 import { applyPhotoReorderIfCurrent } from "./photo-reorder-safety";
 import { buildBatchPhotoMetadataPatch } from "./batch-photo-metadata";
+import { uploadAllOrCleanup } from "./thumbnail-upload-integrity";
 import { writeSettingsAtomic } from "./database/settings-write";
 import {
   isSettingsPayload,
@@ -658,10 +659,13 @@ async function generateAndUploadThumbnails(
     generateWebP(optimisedBuf, THUMB_WIDTH, THUMB_QUALITY),
     generateWebP(optimisedBuf, MEDIUM_WIDTH, MEDIUM_QUALITY),
   ]);
-  await Promise.all([
-    uploadToStorage(tKey, thumbBuf, "image/webp"),
-    uploadToStorage(mKey, mediumBuf, "image/webp"),
-  ]);
+  await uploadAllOrCleanup(
+    [
+      uploadToStorage(tKey, thumbBuf, "image/webp").then(() => tKey),
+      uploadToStorage(mKey, mediumBuf, "image/webp").then(() => mKey),
+    ],
+    deleteStorageKeys,
+  );
   return { thumbKey: tKey, mediumKey: mKey };
 }
 

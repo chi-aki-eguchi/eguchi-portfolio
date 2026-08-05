@@ -6,6 +6,7 @@ import { buildReorderUpdate } from "./reorder-sql";
 import { applyPhotoReorderIfCurrent } from "./photo-reorder-safety";
 import { buildBatchPhotoMetadataPatch } from "./batch-photo-metadata";
 import { uploadAllOrCleanup } from "./thumbnail-upload-integrity";
+import { uniqueUploadStorageKey } from "./upload-key";
 import { writeSettingsAtomic } from "./database/settings-write";
 import {
   isSettingsPayload,
@@ -1585,7 +1586,10 @@ const app = new Hono()
       /* EXIFなし・壊れたEXIF → null のまま（手入力可） */
     }
 
-    const key = `photos/${Date.now()}-${sanitizeUploadBaseName(file.name)}.jpg`;
+    const key = uniqueUploadStorageKey(
+      "photos",
+      `${sanitizeUploadBaseName(file.name)}.jpg`,
+    );
     await uploadToStorage(key, optimised, "image/jpeg");
 
     let thumbKey: string | null = null;
@@ -1646,7 +1650,10 @@ const app = new Hono()
       UPLOAD_QUALITY,
     );
 
-    const key = `hero/${Date.now()}-${sanitizeUploadBaseName(file.name)}.jpg`;
+    const key = uniqueUploadStorageKey(
+      "hero",
+      `${sanitizeUploadBaseName(file.name)}.jpg`,
+    );
     await uploadToStorage(key, optimised, "image/jpeg");
 
     const proxyUrl = keyToProxyUrl(key);
@@ -1672,7 +1679,10 @@ const app = new Hono()
       UPLOAD_QUALITY,
     );
 
-    const key = `profile/${Date.now()}-${sanitizeUploadBaseName(file.name)}.jpg`;
+    const key = uniqueUploadStorageKey(
+      "profile",
+      `${sanitizeUploadBaseName(file.name)}.jpg`,
+    );
     await uploadToStorage(key, optimised, "image/jpeg");
 
     const proxyUrl = keyToProxyUrl(key);
@@ -1706,7 +1716,7 @@ const app = new Hono()
     const buf = Buffer.from(arrayBuf);
     // Sanitise the original name before it becomes part of the storage key.
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const key = `fonts/${Date.now()}-${safeName}`;
+    const key = uniqueUploadStorageKey("fonts", safeName);
     await uploadToStorage(key, buf, mimeMap[ext] ?? "application/octet-stream");
 
     const proxyUrl = keyToProxyUrl(key);

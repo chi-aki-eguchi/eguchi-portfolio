@@ -3,7 +3,10 @@ import { cors } from "hono/cors";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { db, withRetry, schema } from "./database";
 import { buildReorderUpdate } from "./reorder-sql";
-import { applyPhotoReorderIfCurrent } from "./photo-reorder-safety";
+import {
+  applyExactReorderIfCurrent,
+  applyPhotoReorderIfCurrent,
+} from "./photo-reorder-safety";
 import { buildBatchPhotoMetadataPatch } from "./batch-photo-metadata";
 import { uploadAllOrCleanup } from "./thumbnail-upload-integrity";
 import { uniqueUploadStorageKey } from "./upload-key";
@@ -449,6 +452,9 @@ const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 // 参照する duplicate / register / purge が同一プロセス内で割り込まないための
 // 補助で、DB側のtransactionと組み合わせて使う。
 const runPhotoIntegrityMutation = createSerialQueue();
+// Keep non-photo ordered lists from interleaving the read/compare/write cycle
+// inside this process, just as photo order already does.
+const runOrderedListMutation = createSerialQueue();
 
 type PurgeResult =
   | { status: "not-found" | "not-trashed" | "restored" }
@@ -740,24 +746,6 @@ async function executeRaw(
   if (typeof executor.execute === "function") return executor.execute(query);
   if (typeof executor.run === "function") return executor.run(query);
   throw new Error("Database raw execution is not supported.");
-}
-
-// 並び替え共通ランナー。失敗時は Railway Logs から原因を特定できるよう、
-// テーブル名と DB エラーコード/メッセージのみ記録する(ids や値は残さない)。
-async function runReorder(
-  table: string,
-  idColumn: string,
-  ids: readonly number[],
-) {
-  try {
-    await withRetry(() => executeRaw(buildReorderUpdate(table, idColumn, ids)));
-  } catch (err) {
-    const e = err as { code?: unknown; message?: unknown };
-    console.error(
-      `[reorder] ${table} update failed: code=${String(e?.code ?? "")} message=${String(e?.message ?? "")}`,
-    );
-    throw err;
-  }
 }
 
 function passwordMatches(input: unknown): boolean {
@@ -2350,9 +2338,30 @@ const app = new Hono()
 
   // ── Admin: Reorder categories (controls gallery filter order) ──
   .post("/admin/categories/reorder", requireAdmin, async (c) => {
-    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
-    if (ids.length === 0) return c.json({ ok: true }, 200);
-    await runReorder("categories", "id", ids);
+    const body = (await c.req.json()) as {
+      ids: unknown;
+      expectedIds: unknown;
+    };
+    const result = await runOrderedListMutation(() =>
+      withRetry(() =>
+        db.transaction(async (tx) => {
+          const currentRows = await tx
+            .select({
+              id: schema.categories.id,
+              sortOrder: schema.categories.sortOrder,
+            })
+            .from(schema.categories)
+            .orderBy(schema.categories.sortOrder, schema.categories.id);
+          return applyExactReorderIfCurrent(body, currentRows, async (ids) => {
+            await executeRaw(
+              buildReorderUpdate("categories", "id", ids),
+              tx as unknown as RawExecutor,
+            );
+          });
+        }),
+      ),
+    );
+    if (!result.ok) return c.json(result, result.status);
     return c.json({ ok: true }, 200);
   })
 
@@ -2581,9 +2590,30 @@ const app = new Hono()
   })
 
   .post("/admin/series/reorder", requireAdmin, async (c) => {
-    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
-    if (ids.length === 0) return c.json({ ok: true }, 200);
-    await runReorder("series", "id", ids);
+    const body = (await c.req.json()) as {
+      ids: unknown;
+      expectedIds: unknown;
+    };
+    const result = await runOrderedListMutation(() =>
+      withRetry(() =>
+        db.transaction(async (tx) => {
+          const currentRows = await tx
+            .select({
+              id: schema.series.id,
+              sortOrder: schema.series.sortOrder,
+            })
+            .from(schema.series)
+            .orderBy(schema.series.sortOrder, schema.series.id);
+          return applyExactReorderIfCurrent(body, currentRows, async (ids) => {
+            await executeRaw(
+              buildReorderUpdate("series", "id", ids),
+              tx as unknown as RawExecutor,
+            );
+          });
+        }),
+      ),
+    );
+    if (!result.ok) return c.json(result, result.status);
     return c.json({ ok: true }, 200);
   })
 
@@ -2672,9 +2702,30 @@ const app = new Hono()
   })
 
   .post("/admin/pricing/reorder", requireAdmin, async (c) => {
-    const ids = cleanIntIds(((await c.req.json()) as { ids?: unknown }).ids);
-    if (ids.length === 0) return c.json({ ok: true }, 200);
-    await runReorder("pricing_plans", "id", ids);
+    const body = (await c.req.json()) as {
+      ids: unknown;
+      expectedIds: unknown;
+    };
+    const result = await runOrderedListMutation(() =>
+      withRetry(() =>
+        db.transaction(async (tx) => {
+          const currentRows = await tx
+            .select({
+              id: schema.pricingPlans.id,
+              sortOrder: schema.pricingPlans.sortOrder,
+            })
+            .from(schema.pricingPlans)
+            .orderBy(schema.pricingPlans.sortOrder, schema.pricingPlans.id);
+          return applyExactReorderIfCurrent(body, currentRows, async (ids) => {
+            await executeRaw(
+              buildReorderUpdate("pricing_plans", "id", ids),
+              tx as unknown as RawExecutor,
+            );
+          });
+        }),
+      ),
+    );
+    if (!result.ok) return c.json(result, result.status);
     return c.json({ ok: true }, 200);
   })
 
@@ -2785,12 +2836,34 @@ const app = new Hono()
   })
 
   .post("/admin/hero-photos/reorder", requireAdmin, async (c) => {
-    const photoIds = cleanIntIds(
-      ((await c.req.json()) as { photoIds?: unknown }).photoIds,
+    const rawBody = (await c.req.json()) as {
+      photoIds: unknown;
+      expectedIds: unknown;
+    };
+    const body = {
+      ids: rawBody.photoIds,
+      expectedIds: rawBody.expectedIds,
+    };
+    const result = await runOrderedListMutation(() =>
+      withRetry(() =>
+        db.transaction(async (tx) => {
+          const currentRows = await tx
+            .select({
+              id: schema.heroPhotos.photoId,
+              sortOrder: schema.heroPhotos.sortOrder,
+            })
+            .from(schema.heroPhotos)
+            .orderBy(schema.heroPhotos.sortOrder, schema.heroPhotos.photoId);
+          return applyExactReorderIfCurrent(body, currentRows, async (ids) => {
+            await executeRaw(
+              buildReorderUpdate("hero_photos", "photo_id", ids),
+              tx as unknown as RawExecutor,
+            );
+          });
+        }),
+      ),
     );
-    if (photoIds.length === 0) return c.json({ ok: true }, 200);
-    // 1回のSQL CASE WHEN で全件まとめて更新
-    await runReorder("hero_photos", "photo_id", photoIds);
+    if (!result.ok) return c.json(result, result.status);
     return c.json({ ok: true }, 200);
   })
 

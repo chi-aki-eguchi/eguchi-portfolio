@@ -145,3 +145,12 @@ export async function applyPhotoReorderIfCurrent(
   if (validation.ids.length > 0) await apply(validation.ids);
   return validation;
 }
+
+// Categories, series, pricing, and hero selections have the same stale-tab
+// risk as photos. Keep their route code explicit while sharing the exact-order
+// check that the photo reorder endpoint already relies on.
+export type OrderedListRow = PhotoOrderRow;
+export type ExactReorderRequest = PhotoReorderRequest;
+export type ExactReorderValidation = PhotoReorderValidation;
+export const validateExactReorder = validatePhotoReorder;
+export const applyExactReorderIfCurrent = applyPhotoReorderIfCurrent;

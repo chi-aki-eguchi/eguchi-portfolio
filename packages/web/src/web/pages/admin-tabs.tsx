@@ -844,8 +844,10 @@ export function HeroTab() {
   const reorderHero = useMutation({
     mutationFn: async ({
       photoIds,
+      expectedIds,
     }: {
       photoIds: number[];
+      expectedIds: number[];
       move: {
         before: number[];
         after: number[];
@@ -855,7 +857,7 @@ export function HeroTab() {
       undo: boolean;
     }) => {
       const res = await adminApi["hero-photos"].reorder.$post({
-        json: { photoIds },
+        json: { photoIds, expectedIds },
       });
       assertOk(res);
     },
@@ -933,6 +935,7 @@ export function HeroTab() {
     if (reorderHero.isPending || from === to) return;
     reorderHero.mutate({
       photoIds: after,
+      expectedIds: before,
       move: { before, after, from: from + 1, to: to + 1 },
       undo: false,
     });
@@ -1056,6 +1059,7 @@ export function HeroTab() {
               setPositionValue(String(restoredIndex + 1));
               reorderHero.mutate({
                 photoIds: lastMove.before,
+                expectedIds: lastMove.after,
                 move: null,
                 undo: true,
               });
@@ -1652,8 +1656,16 @@ export function CategoriesTab() {
   // Reorder controls the gallery filter order. Optimistically reorder the cache so
   // the move feels instant, then persist.
   const reorderCats = useMutation({
-    mutationFn: async (ids: number[]) => {
-      const res = await adminApi.categories.reorder.$post({ json: { ids } });
+    mutationFn: async ({
+      ids,
+      expectedIds,
+    }: {
+      ids: number[];
+      expectedIds: number[];
+    }) => {
+      const res = await adminApi.categories.reorder.$post({
+        json: { ids, expectedIds },
+      });
       assertOk(res);
     },
     onSuccess: () => {
@@ -1670,6 +1682,7 @@ export function CategoriesTab() {
 
   const moveCat = (id: number, delta: number) => {
     const ids = categories.map((c) => c.id);
+    const expectedIds = [...ids];
     const idx = ids.indexOf(id);
     const to = idx + delta;
     if (idx < 0 || to < 0 || to >= ids.length) return;
@@ -1684,7 +1697,7 @@ export function CategoriesTab() {
         categories: ids.map((i) => byId.get(i)!).filter(Boolean),
       };
     });
-    reorderCats.mutate(ids);
+    reorderCats.mutate({ ids, expectedIds });
   };
 
   return (
@@ -1954,8 +1967,16 @@ export function SeriesTab() {
   });
 
   const reorder = useMutation({
-    mutationFn: async (ids: number[]) => {
-      const res = await adminApi.series.reorder.$post({ json: { ids } });
+    mutationFn: async ({
+      ids,
+      expectedIds,
+    }: {
+      ids: number[];
+      expectedIds: number[];
+    }) => {
+      const res = await adminApi.series.reorder.$post({
+        json: { ids, expectedIds },
+      });
       assertOk(res);
     },
     onSuccess: () => {
@@ -1970,6 +1991,7 @@ export function SeriesTab() {
   });
   const move = (id: number, delta: number) => {
     const ids = series.map((s) => s.id);
+    const expectedIds = [...ids];
     const idx = ids.indexOf(id);
     const to = idx + delta;
     if (idx < 0 || to < 0 || to >= ids.length) return;
@@ -1980,7 +2002,7 @@ export function SeriesTab() {
       const byId = new Map((old.series as SeriesRow[]).map((s) => [s.id, s]));
       return { ...old, series: ids.map((i) => byId.get(i)!).filter(Boolean) };
     });
-    reorder.mutate(ids);
+    reorder.mutate({ ids, expectedIds });
   };
 
   const openEdit = (s: SeriesRow) => {
@@ -2593,8 +2615,16 @@ export function PricingTab() {
   });
 
   const reorder = useMutation({
-    mutationFn: async (ids: number[]) => {
-      const res = await adminApi.pricing.reorder.$post({ json: { ids } });
+    mutationFn: async ({
+      ids,
+      expectedIds,
+    }: {
+      ids: number[];
+      expectedIds: number[];
+    }) => {
+      const res = await adminApi.pricing.reorder.$post({
+        json: { ids, expectedIds },
+      });
       assertOk(res);
     },
     onSuccess: () => {
@@ -2608,6 +2638,7 @@ export function PricingTab() {
   });
   const move = (id: number, delta: number) => {
     const ids = plans.map((p) => p.id);
+    const expectedIds = [...ids];
     const idx = ids.indexOf(id);
     const to = idx + delta;
     if (idx < 0 || to < 0 || to >= ids.length) return;
@@ -2618,7 +2649,7 @@ export function PricingTab() {
       const byId = new Map((old.plans as PlanRow[]).map((p) => [p.id, p]));
       return { ...old, plans: ids.map((i) => byId.get(i)!).filter(Boolean) };
     });
-    reorder.mutate(ids);
+    reorder.mutate({ ids, expectedIds });
   };
 
   const openEdit = (p: PlanRow) => {

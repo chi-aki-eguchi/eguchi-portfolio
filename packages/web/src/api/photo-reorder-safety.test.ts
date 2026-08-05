@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+  applyExactReorderIfCurrent,
   applyPhotoReorderIfCurrent,
+  type OrderedListRow,
   validatePhotoReorder,
 } from "./photo-reorder-safety";
 
@@ -89,5 +91,23 @@ describe("validatePhotoReorder", () => {
     );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.code).toBe("ORDER_CONFLICT");
+  });
+
+  test("the shared guard also rejects a stale non-photo list", async () => {
+    const changedAtSaveTime: OrderedListRow[] = [
+      { id: 1, sortOrder: 1 },
+      { id: 2, sortOrder: 0 },
+    ];
+    let writes = 0;
+    const result = await applyExactReorderIfCurrent(
+      { ids: [2, 1], expectedIds: [1, 2] },
+      changedAtSaveTime,
+      async () => {
+        writes += 1;
+      },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(writes).toBe(0);
   });
 });

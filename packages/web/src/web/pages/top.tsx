@@ -572,7 +572,7 @@ function WorksHeader({
       </h2>
       <Link
         to="/gallery"
-        className="font-en transition-colors duration-300 hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))]"
+        className="tap-target font-en transition-colors duration-300 hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))]"
         style={{
           fontSize: "var(--section-label-size, var(--text-caption))",
           letterSpacing: "var(--section-label-tracking, 0.06em)",

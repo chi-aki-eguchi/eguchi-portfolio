@@ -2616,7 +2616,15 @@
   .tap-target {
     position: relative;
   }
-  .tap-target::after {
+  /* ::before, not ::after. Every element wearing this class also wears
+     .nav-link-luxury, whose ::after draws the hover underline — an element has
+     only one ::after, so the two rules merged and the underline (declared
+     later, same specificity) won left/right/bottom plus height:1px. The
+     expander survived as a 1px sliver: measured hit area on the Gallery filter
+     chips was 16px, not the 32-43px this rule intends, and ±10px horizontally
+     missed entirely. Nothing using .tap-target sits in the header, so it cannot
+     collide with `.nav-fx-dot header .nav-link-luxury::before` either. */
+  .tap-target::before {
     content: "";
     position: absolute;
     left: -8px;

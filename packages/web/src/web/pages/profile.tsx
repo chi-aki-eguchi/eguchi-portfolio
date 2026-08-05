@@ -198,7 +198,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileInstagram)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelInstagram ?? "Instagram"}
                 </a>
@@ -208,7 +208,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileTwitter)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelTwitter ?? "X"}
                 </a>
@@ -218,7 +218,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileNote)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {data?.snsLabelNote ?? "note"}
                 </a>

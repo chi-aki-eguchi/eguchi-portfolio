@@ -270,9 +270,11 @@ function App() {
                   >
                     404
                   </p>
-                  <p className="font-en text-sm tracking-[0.18em] uppercase text-[color:var(--text-quiet)] -mt-4 md:-mt-6">
+                  {/* Every other route has exactly one h1; this page had none,
+                      so assistive tech and crawlers saw an untitled document. */}
+                  <h1 className="font-en text-sm tracking-[0.18em] uppercase text-[color:var(--text-quiet)] -mt-4 md:-mt-6">
                     Page not found
-                  </p>
+                  </h1>
                   <div className="w-8 h-px bg-[rgba(var(--foreground-rgb),0.12)] mt-8 mb-8" />
                   <p
                     className="text-[color:var(--text-quiet)]"

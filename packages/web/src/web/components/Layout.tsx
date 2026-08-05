@@ -455,7 +455,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileInstagram)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  className="tap-target font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
                   style={
                     {
                       "--link-rest": "var(--sns-opacity, 0.25)",
@@ -470,7 +470,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileTwitter)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  className="tap-target font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
                   style={
                     {
                       "--link-rest": "var(--sns-opacity, 0.25)",
@@ -485,7 +485,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={safeHref(data.profileNote)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
+                  className="tap-target font-en text-[length:var(--text-small)] tracking-[0.06em] nav-link-luxury footer-link-public py-2"
                   style={
                     {
                       "--link-rest": "var(--sns-opacity, 0.25)",
@@ -529,7 +529,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={templateCreditUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-en tracking-[0.05em] nav-link-luxury footer-link-public"
+                  className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public"
                   style={
                     {
                       fontSize:

@@ -297,7 +297,7 @@ export default function ContactPage({
                     href={safeHref(data.profileInstagram)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
+                    className="tap-target font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
                   >
                     {data?.snsLabelInstagram ?? "Instagram"}
                   </a>
@@ -307,7 +307,7 @@ export default function ContactPage({
                     href={safeHref(data.profileTwitter)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
+                    className="tap-target font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
                   >
                     {data?.snsLabelTwitter ?? "X"}
                   </a>

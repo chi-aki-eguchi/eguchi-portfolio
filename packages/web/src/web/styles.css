@@ -2635,6 +2635,15 @@
   /* AA(4.5:1)を満たす最小値0.60に余裕を持たせた値。階層は大きさと余白で作る
      （design-spec §0-3）ので、これより薄くしない。 */
   --text-quiet: rgba(var(--foreground-rgb), 0.62);
+  /* Section labels (WORKS / Gallery / Profile / Contact …). Split out from
+     --text-quiet so admin の「セクションラベルの濃さ」(sectionLabelOpacity)
+     actually reaches them: it used to be read on the Series page alone, so the
+     slider moved one label and left every other page untouched. The default
+     matches --text-quiet, so an unset site is unchanged. */
+  --section-label-color: rgba(
+    var(--foreground-rgb),
+    var(--section-label-opacity, 0.62)
+  );
   /* Fixed header height (Layout.tsx nav, h-14). Single source of truth for
      anything that needs to subtract the header's footprint from a
      viewport-relative size (main's padding-top, fullscreen hero height). */

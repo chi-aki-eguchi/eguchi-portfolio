@@ -203,7 +203,7 @@ export default function GalleryPage() {
         className="font-en uppercase text-center mb-10 md:mb-24 section-reveal"
         style={{
           fontSize: "var(--section-label-size, 0.75rem)",
-          color: "var(--text-quiet)",
+          color: "var(--section-label-color)",
           letterSpacing: "var(--section-label-tracking, 0.10em)",
           lineHeight: "var(--section-leading, 1.2)",
         }}

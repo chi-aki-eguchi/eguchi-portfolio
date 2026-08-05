@@ -66,7 +66,7 @@ export default function ProfilePage({
         className="font-en uppercase mb-12 text-center page-entrance"
         style={{
           fontSize: "var(--section-label-size, 0.75rem)",
-          color: "var(--text-quiet)",
+          color: "var(--section-label-color)",
           letterSpacing: "var(--section-label-tracking, 0.10em)",
           lineHeight: "var(--section-leading, 1.2)",
         }}

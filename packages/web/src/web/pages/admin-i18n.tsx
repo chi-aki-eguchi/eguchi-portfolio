@@ -1117,7 +1117,7 @@ const ADMIN_PHASE_2B_JA = {
       introPrefix: "ページごとに写真の並べ方を選べます。プレビューで",
       introTop: "トップ",
       introSuffix:
-        "ページを開くと即反映。下の調整は「モザイク」に効きます。",
+        "ページを開くと即反映。列数・大きさ・間隔はどの配置にも効きます。",
       targetLabel: "対象ページ",
       categoryLabels: {
         aligned: "整列グリッド",
@@ -1179,7 +1179,7 @@ const ADMIN_PHASE_2B_JA = {
       topPhotoSizeHint: "トップ下部の作品の大きさ。ギャラリーとは独立です",
       topGapLabel: "間隔（トップ）",
       topGapHint: "トップ下部の作品の余白倍率。ギャラリーとは独立です",
-      mosaicHeading: "モザイクの調整",
+      mosaicHeading: "モザイク／コラージュだけの調整",
       emptyRateLabel: "抜け（空セル）の頻度",
       emptyRateControlLabel: "抜け頻度",
       emptyRateHint:
@@ -2614,7 +2614,7 @@ const ADMIN_PHASE_2B_EN = {
       introPrefix: "Choose how photos are arranged, per page. Changes apply as soon as you open the",
       introTop: "Top",
       introSuffix:
-        "preview page. The controls below apply to Mosaic.",
+        "preview page. Columns, size and spacing apply to every layout.",
       targetLabel: "Target Page",
       categoryLabels: {
         aligned: "Aligned Grids",
@@ -2679,7 +2679,7 @@ const ADMIN_PHASE_2B_EN = {
       topGapLabel: "Spacing (Top)",
       topGapHint:
         "The spacing multiplier for the works at the bottom of the home page. Independent of Gallery.",
-      mosaicHeading: "Mosaic Adjustments",
+      mosaicHeading: "Mosaic / Collage Only",
       emptyRateLabel: "Gap (Empty Cell) Frequency",
       emptyRateControlLabel: "Gap Frequency",
       emptyRateHint:

@@ -406,14 +406,21 @@ export function PhotoGallery({
     0.5,
     2,
   );
-  const maxColumns = clamp(
-    Math.round(pick("topWorksColumns", "galleryColumns", 3)),
-    1,
-    8,
-  );
   // Larger sizeScale → wider minimum tile → fewer columns → bigger photos.
   const minTile = (isMobile ? 150 : 210) * sizeScale;
-  const columns = clamp(Math.floor(containerW / minTile) || 1, 1, maxColumns);
+  // Each layout passes the column count it used to hardcode as its fallback, so
+  // an untouched site keeps the exact look it had while the admin's 列数 slider
+  // now reaches every layout — previously masonry / clean-grid / large-format
+  // ignored it entirely and the control did nothing on those layouts.
+  const columnsFor = (layoutDefaultMax: number) => {
+    const maxColumns = clamp(
+      Math.round(pick("topWorksColumns", "galleryColumns", layoutDefaultMax)),
+      1,
+      8,
+    );
+    return clamp(Math.floor(containerW / minTile) || 1, 1, maxColumns);
+  };
+  const columns = columnsFor(3);
   const seed = Math.round(num(settings?.gallerySeed, 1));
   const mode: GalleryLayoutType = KNOWN_LAYOUTS.includes(
     layoutType as GalleryLayoutType,
@@ -621,14 +628,15 @@ export function PhotoGallery({
     // 1/1 too — otherwise it inherits the source photo's own aspect ratio and
     // squareCoverStyle's objectFit:cover just crops the image inside a
     // non-square box instead of producing a square tile.
-    const cols = isMobile ? 2 : 4;
+    const cols = columnsFor(4);
+    const tightGap = Math.round(2 * gapScale);
     body = (
       <div
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gap: 2,
-          padding: 2,
+          gap: tightGap,
+          padding: tightGap,
           alignItems: "start",
         }}
       >
@@ -636,7 +644,7 @@ export function PhotoGallery({
           tile(photo, idx, {
             width: "100%",
             justifySelf: "stretch",
-            sizes: isMobile ? "50vw" : "25vw",
+            sizes: `${Math.round(100 / cols)}vw`,
             cardClassName: quietCardClass,
             imgStyle: squareCoverStyle,
             showHoverCaption: false,
@@ -681,14 +689,15 @@ export function PhotoGallery({
       </div>
     );
   } else if (mode === "masonry") {
-    const cols = isMobile ? 2 : 3;
+    const cols = columnsFor(3);
+    const masonryGap = Math.round(8 * gapScale);
     const columns: { photo: (typeof photos)[number]; idx: number }[][] =
       Array.from({ length: cols }, () => []);
     for (let i = 0; i < photos.length; i++) {
       columns[i % cols].push({ photo: photos[i], idx: i });
     }
     body = (
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: masonryGap }}>
         {columns.map((col, colIdx) => (
           <div
             key={colIdx}
@@ -696,7 +705,7 @@ export function PhotoGallery({
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              gap: 8,
+              gap: masonryGap,
               minWidth: 0,
             }}
           >
@@ -704,7 +713,7 @@ export function PhotoGallery({
               tile(photo, idx, {
                 width: "100%",
                 justifySelf: "stretch",
-                sizes: isMobile ? "50vw" : "33vw",
+                sizes: `${Math.round(100 / cols)}vw`,
                 cardClassName: quietCardClass,
                 staggerIdx: idx,
               }),
@@ -761,13 +770,14 @@ export function PhotoGallery({
     );
   } else if (mode === "large-format") {
     // Layout expansion Phase 1: exhibition-like large images with quiet metadata.
+    const cols = columnsFor(2);
     body = (
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
-          columnGap: 20,
-          rowGap: isMobile ? 34 : 46,
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+          columnGap: Math.round(20 * gapScale),
+          rowGap: Math.round((isMobile ? 34 : 46) * gapScale),
           alignItems: "start",
         }}
       >
@@ -780,7 +790,7 @@ export function PhotoGallery({
               {tile(photo, idx, {
                 width: "100%",
                 justifySelf: "stretch",
-                sizes: isMobile ? "100vw" : "50vw",
+                sizes: `${Math.round(100 / cols)}vw`,
                 cardClassName: quietCardClass,
                 showHoverCaption: false,
                 preferMediumGrid: true,

@@ -3274,3 +3274,141 @@ describe("i18n Phase 3 slice 2+3: EN profile/contact copy + English welcome note
     }
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-08-05: 「設定したのに反映されない」の再発防止。
+//
+// Hero の3レイアウト(quiet-grid / editorial / immersive)と、ギャラリーの
+// masonry / clean-grid / large-format は、寸法・色・列数・余白を自前の定数で
+// 書いていたため、admin のスライダーを動かしても何も起きなかった。
+// ここは「どの配置を選んでいても設定が届く」ことだけを見る。
+// 修正を戻すと(定数に戻すと)必ず落ちる。
+// ─────────────────────────────────────────────────────────────────────────────
+describe("settings reach every layout (dead-control regression)", () => {
+  const HERO_MODES = [
+    "carousel",
+    "single",
+    "quiet-grid",
+    "editorial",
+    "immersive",
+  ];
+
+  for (const heroMode of HERO_MODES) {
+    test(`heroMode=${heroMode} renders worksLabel / viewAllLabel / heroSubtitle`, async () => {
+      const previousSettings = canned["/api/settings"];
+      canned["/api/settings"] = {
+        heroMode,
+        worksLabel: "WORKS_PROBE",
+        viewAllLabel: "VIEWALL_PROBE",
+        heroSubtitle: "SUBTITLE_PROBE",
+      };
+      try {
+        const TopPage = (await import("../pages/top")).default;
+        const { host, cleanup } = await mount(createElement(TopPage));
+        await flush(60);
+        const text = host.textContent ?? "";
+        expect(text).toContain("WORKS_PROBE");
+        expect(text).toContain("VIEWALL_PROBE");
+        expect(text).toContain("SUBTITLE_PROBE");
+        cleanup();
+      } finally {
+        canned["/api/settings"] = previousSettings;
+      }
+    });
+  }
+
+  for (const heroMode of HERO_MODES) {
+    test(`heroMode=${heroMode} sizes the hero name from --hero-name-size, not a constant`, async () => {
+      const previousSettings = canned["/api/settings"];
+      canned["/api/settings"] = { heroMode, siteName: "NAME_PROBE" };
+      try {
+        const TopPage = (await import("../pages/top")).default;
+        const { host, cleanup } = await mount(createElement(TopPage));
+        await flush(60);
+        const heading = Array.from(host.querySelectorAll("h1")).find((el) =>
+          el.textContent?.includes("NAME_PROBE"),
+        );
+        expect(heading).toBeDefined();
+        const style = (heading as HTMLElement).getAttribute("style") ?? "";
+        expect(style).toContain("--hero-name-size");
+        expect(style).toContain("--hero-name-weight");
+        expect(style).toContain("--hero-name-tracking");
+        cleanup();
+      } finally {
+        canned["/api/settings"] = previousSettings;
+      }
+    });
+  }
+
+  // 列数は「最大」であって固定値ではない(実際の列数は幅で下がる)。jsdom は幅0
+  // なので列数そのものは見ず、「設定を変えると DOM が変わる」ことを見る。
+  const COLUMN_LAYOUTS = [
+    "mosaic",
+    "grid",
+    "masonry",
+    "clean-grid",
+    "large-format",
+    "collage",
+    "portrait-grid",
+    "landscape-grid",
+  ];
+
+  for (const galleryLayout of COLUMN_LAYOUTS) {
+    test(`galleryLayout=${galleryLayout} applies galleryGapScale instead of a hardcoded gap`, async () => {
+      const { PhotoGallery } = await import("../components/PhotoGallery");
+      const previousSettings = canned["/api/settings"];
+      const gapsSeen = new Set<string>();
+      try {
+        for (const galleryGapScale of ["1", "4"]) {
+          canned["/api/settings"] = { galleryGapScale, galleryColumns: "4" };
+          const { host, cleanup } = await mount(
+            createElement(PhotoGallery, {
+              photos: samplePhotos as never,
+              layoutType: galleryLayout,
+            }),
+          );
+          await flush(60);
+          // Collect every gap-ish inline value in the subtree.
+          const gaps = Array.from(host.querySelectorAll("[style]"))
+            .map((el) => (el as HTMLElement).getAttribute("style") ?? "")
+            .filter((s) => /gap/i.test(s))
+            .join("|");
+          gapsSeen.add(gaps);
+          cleanup();
+        }
+      } finally {
+        canned["/api/settings"] = previousSettings;
+      }
+      // Two different gap scales must produce two different renderings.
+      expect(gapsSeen.size).toBe(2);
+    });
+  }
+
+  test("sectionLabelOpacity drives every section label, not only Series", async () => {
+    const pages: [string, () => Promise<{ default: unknown }>][] = [
+      ["top", () => import("../pages/top")],
+      ["gallery", () => import("../pages/gallery")],
+      ["profile", () => import("../pages/profile")],
+      ["contact", () => import("../pages/contact")],
+      ["series", () => import("../pages/series")],
+    ];
+    for (const [name, load] of pages) {
+      const Page = (await load()).default;
+      const { host, cleanup } = await mount(createElement(Page as never));
+      await flush(40);
+      const labels = Array.from(host.querySelectorAll("[style]")).filter((el) =>
+        ((el as HTMLElement).getAttribute("style") ?? "").includes(
+          "--section-label-size",
+        ),
+      );
+      expect(labels.length).toBeGreaterThan(0);
+      for (const label of labels) {
+        const style = (label as HTMLElement).getAttribute("style") ?? "";
+        expect(
+          `${name}: ${style}`,
+        ).toContain("--section-label-color");
+      }
+      cleanup();
+    }
+  });
+});

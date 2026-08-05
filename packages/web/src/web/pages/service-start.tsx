@@ -13,7 +13,7 @@ const bodyStyle = {
 
 const labelStyle = {
   fontSize: "var(--section-label-size, 0.75rem)",
-  color: "var(--text-quiet)",
+  color: "var(--section-label-color)",
   letterSpacing: "var(--section-label-tracking, 0.10em)",
   lineHeight: "var(--section-leading, 1.2)",
 } as const;

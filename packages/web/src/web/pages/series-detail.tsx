@@ -106,8 +106,11 @@ export default function SeriesDetailPage() {
         </h1>
         {series.subtitle && (
           <p
-            className="mt-3 font-en text-xs tracking-[0.10em] uppercase text-[color:var(--text-quiet)]"
-            style={{ fontSize: "var(--section-label-size, 0.75rem)" }}
+            className="mt-3 font-en text-xs tracking-[0.10em] uppercase"
+            style={{
+              fontSize: "var(--section-label-size, 0.75rem)",
+              color: "var(--section-label-color)",
+            }}
           >
             {series.subtitle}
           </p>

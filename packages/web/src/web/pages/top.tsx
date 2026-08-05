@@ -442,6 +442,149 @@ function heroMotionKey(
   return `${settings?.heroMotionSpeed || "standard"}:${settings?.heroRevealOrder || "photo-first"}`;
 }
 
+/** Hero height for the alternative Home layouts.
+ *
+ * `--hero-height` is the admin slider in raw vh. The fixed header sits above the
+ * hero (main has padding-top: var(--header-h)), so a literal 100vh hangs exactly
+ * one header below the fold. Cap at the visible area — the same correction
+ * `.hero-fullscreen` makes in styles.css — so "100" reads as "one screenful".
+ * `fallback` is the height that layout used before the slider reached it, so an
+ * unset site is unchanged. */
+function heroHeightValue(fallback: string): string {
+  return `min(var(--hero-height, ${fallback}), calc(100svh - var(--header-h) - var(--sai-top)))`;
+}
+
+/** The hero name block, shared by every Hero mode.
+ *
+ * The three alternative layouts below (quiet-grid / editorial / immersive) used
+ * to hardcode their own font sizes, weights, colours and tracking, so the whole
+ * 「ヒーロー」/「文字の色」settings group silently did nothing whenever one of
+ * them was selected. They all render this instead now.
+ *
+ * `tone` decides how far the settings reach. Over a photo the colour pickers are
+ * deliberately ignored and white + a shadow is used, because an arbitrary
+ * foreground colour over an arbitrary photo is not readable — this is the same
+ * rule the default (carousel / single) hero already followed. Size, weight and
+ * tracking apply in both tones. Each `var()` fallback is the value that tone
+ * rendered before, so an unset site looks unchanged.
+ */
+function HeroNameBlock({
+  settings,
+  tone,
+  nameSizeFallback,
+  nameTrackingFallback = "0.04em",
+  enSizeFallback = "var(--text-note)",
+  enTrackingFallback = "0.08em",
+  showKata = true,
+}: {
+  settings: Record<string, string | undefined> | undefined;
+  tone: "over-photo" | "on-paper";
+  nameSizeFallback: string;
+  nameTrackingFallback?: string;
+  enSizeFallback?: string;
+  enTrackingFallback?: string;
+  showKata?: boolean;
+}) {
+  const overPhoto = tone === "over-photo";
+  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const nameKata = settings?.profileNameKata ?? "";
+  const subtitle = settings?.heroSubtitle ?? CLIENT_SITE_FALLBACKS.heroSubtitle;
+
+  const shadow = (blur: number) =>
+    overPhoto ? `0 1px ${blur}px rgba(0,0,0,0.4)` : undefined;
+
+  return (
+    <>
+      <h1
+        className="font-serif leading-tight break-words hero-text-reveal hero-text-reveal-1"
+        style={{
+          fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
+          fontWeight: "var(--hero-name-weight, 300)" as never,
+          color: overPhoto ? "#fff" : "var(--hero-name-color, var(--foreground))",
+          letterSpacing: `var(--hero-name-tracking, ${nameTrackingFallback})`,
+          textShadow: shadow(8),
+        }}
+      >
+        {siteNameJa}
+      </h1>
+      {showKata && nameKata && (
+        <p
+          className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 hero-text-reveal hero-text-reveal-2"
+          style={{
+            color: overPhoto ? "rgba(255,255,255,0.70)" : "var(--text-quiet)",
+            textShadow: shadow(12),
+          }}
+        >
+          {nameKata}
+        </p>
+      )}
+      <p
+        className="font-en uppercase mt-1 hero-text-reveal hero-text-reveal-2"
+        style={{
+          fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
+          color: overPhoto
+            ? "rgba(255,255,255,0.82)"
+            : "var(--hero-name-en-color, var(--text-quiet))",
+          letterSpacing: `var(--hero-name-en-tracking, ${enTrackingFallback})`,
+          textShadow: shadow(14),
+        }}
+      >
+        {siteNameEn}
+      </p>
+      {subtitle && (
+        <p
+          className="font-en tracking-[0.10em] mt-1 hero-text-reveal hero-text-reveal-3"
+          style={{
+            fontSize: "var(--hero-sub-size, 0.75rem)",
+            color: overPhoto
+              ? "rgba(255,255,255,0.62)"
+              : "var(--hero-sub-color, var(--text-quiet))",
+            textShadow: shadow(12),
+          }}
+        >
+          {subtitle}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** The Works section header (label + "View all" link), shared by the
+ * alternative Home layouts. `worksLabel` / `viewAllLabel` used to be missing
+ * from editorial and immersive, so those two admin fields did nothing there. */
+function WorksHeader({
+  settings,
+}: {
+  settings: Record<string, string | undefined> | undefined;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3.5">
+      <h2
+        className="font-en uppercase"
+        style={{
+          fontSize: "var(--section-label-size, var(--text-caption))",
+          letterSpacing: "var(--section-label-tracking, 0.16em)",
+          color: "var(--section-label-color)",
+        }}
+      >
+        {settings?.worksLabel ?? "Works"}
+      </h2>
+      <Link
+        to="/gallery"
+        className="font-en transition-colors duration-300 hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))]"
+        style={{
+          fontSize: "var(--section-label-size, var(--text-caption))",
+          letterSpacing: "var(--section-label-tracking, 0.06em)",
+          color: "var(--section-label-color)",
+        }}
+      >
+        {settings?.viewAllLabel ?? "View all →"}
+      </Link>
+    </div>
+  );
+}
+
 /** Phase 2 — Home A: quiet hero photo + clean 3-column square grid.
  * Works grid honours topWorksLayout (falls back to clean-grid, its original
  * look) — previously hardcoded, which silently ignored the admin's ギャラリー
@@ -454,8 +597,6 @@ function HomeQuietGrid({
   fadeRef,
   settings,
 }: HomeLayoutProps) {
-  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
-  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
 
@@ -465,7 +606,7 @@ function HomeQuietGrid({
       <section
         key={heroMotionKey(settings)}
         className="hero-motion-stage relative w-full overflow-hidden"
-        style={{ height: "min(280px, 50vh)" }}
+        style={{ height: heroHeightValue("min(280px, 50vh)") }}
       >
         {heroPhoto ? (
           <>
@@ -489,29 +630,15 @@ function HomeQuietGrid({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </div>
-            <div className="absolute bottom-6 left-7">
-              <h1
-                className="font-serif leading-tight hero-text-reveal hero-text-reveal-1"
-                style={{
-                  fontSize: 32,
-                  fontWeight: 300,
-                  color: "#fff",
-                  letterSpacing: "0.02em",
-                  textShadow: "0 1px 8px rgba(0,0,0,0.3)",
-                }}
-              >
-                {siteNameJa}
-              </h1>
-              <p
-                className="font-en uppercase mt-0.5 hero-text-reveal hero-text-reveal-2"
-                style={{
-                  fontSize: "var(--text-note)",
-                  letterSpacing: "0.14em",
-                  color: "rgba(255,255,255,0.8)",
-                }}
-              >
-                {siteNameEn || "Photography"}
-              </p>
+            <div className="absolute bottom-6 left-7 right-7">
+              <HeroNameBlock
+                settings={settings}
+                tone="over-photo"
+                nameSizeFallback="32px"
+                nameTrackingFallback="0.02em"
+                enTrackingFallback="0.14em"
+                showKata={false}
+              />
             </div>
           </>
         ) : (
@@ -525,28 +652,7 @@ function HomeQuietGrid({
           className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
           ref={fadeRef}
         >
-          <div className="flex items-center justify-between mb-3.5">
-            <h2
-              className="font-en uppercase"
-              style={{
-                fontSize: "var(--text-caption)",
-                letterSpacing: "0.16em",
-                color: "var(--text-quiet)",
-              }}
-            >
-              {settings?.worksLabel ?? "Works"}
-            </h2>
-            <Link
-              to="/gallery"
-              className="font-en transition-colors duration-300 hover:text-[color:var(--text-quiet)]"
-              style={{
-                fontSize: "var(--text-caption)",
-                color: "var(--text-quiet)",
-              }}
-            >
-              {settings?.viewAllLabel ?? "View all →"}
-            </Link>
-          </div>
+          <WorksHeader settings={settings} />
 
           <PhotoGallery
             photos={featured}
@@ -590,8 +696,6 @@ function HomeEditorial({
   fadeRef,
   settings,
 }: HomeLayoutProps) {
-  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
-  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const statement = settings?.profileStatement ?? "";
   const heroPhoto = heroPhotos[0];
@@ -602,7 +706,7 @@ function HomeEditorial({
       <section
         key={heroMotionKey(settings)}
         className="hero-motion-stage flex flex-col md:flex-row"
-        style={{ minHeight: "min(340px, 50vh)" }}
+        style={{ minHeight: heroHeightValue("min(340px, 50vh)") }}
       >
         <div
           className="hero-photo-reveal md:flex-[0_0_55%] relative overflow-hidden bg-[var(--photo-placeholder)]"
@@ -629,34 +733,22 @@ function HomeEditorial({
           )}
         </div>
         <div className="flex-1 flex flex-col justify-center px-8 md:px-10 py-8 md:py-0">
-          <h1
-            className="font-serif leading-[1.1] mb-1.5 hero-text-reveal hero-text-reveal-1"
-            style={{
-              fontSize: "clamp(28px, 4vw, 36px)",
-              fontWeight: 300,
-              color: "var(--foreground)",
-            }}
-          >
-            {siteNameJa}
-          </h1>
-          <p
-            className="font-en mb-5 hero-text-reveal hero-text-reveal-2"
-            style={{
-              fontSize: "var(--text-small)",
-              color: "var(--text-quiet)",
-              letterSpacing: "0.06em",
-            }}
-          >
-            {siteNameEn}
-          </p>
+          <HeroNameBlock
+            settings={settings}
+            tone="on-paper"
+            nameSizeFallback="clamp(28px, 4vw, 36px)"
+            nameTrackingFallback="0.01em"
+            enSizeFallback="var(--text-small)"
+            enTrackingFallback="0.06em"
+          />
           {statement && (
             <p
-              className="font-ja hero-text-reveal hero-text-reveal-3"
+              className="font-ja mt-5 hero-text-reveal hero-text-reveal-3"
               style={{
                 fontSize: "var(--text-note)",
                 color: "var(--text-quiet)",
-                lineHeight: 1.8,
-                maxWidth: 240,
+                lineHeight: "var(--body-leading, 1.8)",
+                maxWidth: 260,
               }}
             >
               {statement}
@@ -671,18 +763,7 @@ function HomeEditorial({
           className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
           ref={fadeRef}
         >
-          <div className="mb-3.5">
-            <h2
-              className="font-en uppercase"
-              style={{
-                fontSize: "var(--text-caption)",
-                letterSpacing: "0.16em",
-                color: "var(--text-quiet)",
-              }}
-            >
-              {settings?.worksLabel ?? "Works"}
-            </h2>
-          </div>
+          <WorksHeader settings={settings} />
 
           <PhotoGallery
             photos={featured}
@@ -723,8 +804,6 @@ function HomeImmersive({
   fadeRef,
   settings,
 }: HomeLayoutProps) {
-  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
-  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const photographerName = settings?.siteName || settings?.siteNameEn;
   const heroPhoto = heroPhotos[0];
 
@@ -748,7 +827,11 @@ function HomeImmersive({
       <section
         key={heroMotionKey(settings)}
         className="hero-motion-stage relative w-full overflow-hidden"
-        style={{ height: "calc(100dvh - var(--header-h) - var(--sai-top))" }}
+        style={{
+          height: heroHeightValue(
+            "calc(100dvh - var(--header-h) - var(--sai-top))",
+          ),
+        }}
       >
         <div className="hero-photo-reveal absolute inset-0">
           {heroPhoto ? (
@@ -775,30 +858,15 @@ function HomeImmersive({
           <div className="absolute inset-0 bg-black/20" />
         </div>
         {/* Centered name */}
-        <div className="absolute inset-0 flex items-center justify-center text-center">
+        <div className="absolute inset-0 flex items-center justify-center text-center px-6">
           <div>
-            <h1
-              className="font-serif hero-text-reveal hero-text-reveal-1"
-              style={{
-                fontSize: "clamp(32px, 5vw, 40px)",
-                fontWeight: 300,
-                color: "#fff",
-                letterSpacing: "0.06em",
-                textShadow: "0 2px 16px rgba(0,0,0,0.4)",
-              }}
-            >
-              {siteNameJa}
-            </h1>
-            <p
-              className="font-en uppercase mt-1.5 hero-text-reveal hero-text-reveal-2"
-              style={{
-                fontSize: "var(--text-note)",
-                letterSpacing: "0.2em",
-                color: "rgba(255,255,255,0.7)",
-              }}
-            >
-              {siteNameEn || "Photography"}
-            </p>
+            <HeroNameBlock
+              settings={settings}
+              tone="over-photo"
+              nameSizeFallback="clamp(32px, 5vw, 40px)"
+              nameTrackingFallback="0.06em"
+              enTrackingFallback="0.2em"
+            />
           </div>
         </div>
         {/* Scroll hint */}
@@ -820,6 +888,8 @@ function HomeImmersive({
           className="max-w-4xl mx-auto px-6 md:px-12 pt-6 pb-20"
           ref={fadeRef}
         >
+          <WorksHeader settings={settings} />
+
           <PhotoGallery
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "large-format"}
@@ -1225,7 +1295,7 @@ export default function TopPage() {
               className="font-en uppercase section-reveal"
               style={{
                 fontSize: "var(--section-label-size, 0.75rem)",
-                color: "var(--text-quiet)",
+                color: "var(--section-label-color)",
                 letterSpacing: "var(--section-label-tracking, 0.12em)",
                 lineHeight: "var(--section-leading, 1.2)",
               }}
@@ -1239,7 +1309,7 @@ export default function TopPage() {
                 transitionDelay: "0.1s",
                 fontSize: "var(--section-label-size, 0.6875rem)",
                 letterSpacing: "var(--section-label-tracking, 0.06em)",
-                color: "var(--text-quiet)",
+                color: "var(--section-label-color)",
               }}
             >
               {settings?.viewAllLabel ?? "View all →"}

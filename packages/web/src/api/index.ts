@@ -1893,9 +1893,14 @@ const app = new Hono()
         body.seriesId === null || body.seriesId === ""
           ? null
           : Number(body.seriesId);
-    await withRetry(() =>
-      db.update(schema.photos).set(update).where(eq(schema.photos.id, id)),
+    const [row] = await withRetry(() =>
+      db
+        .update(schema.photos)
+        .set(update)
+        .where(and(eq(schema.photos.id, id), isNull(schema.photos.deletedAt)))
+        .returning({ id: schema.photos.id }),
     );
+    if (!row) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 
@@ -2566,9 +2571,14 @@ const app = new Hono()
     // 機能9: themeConfig (JSON string | null)
     if (body.themeConfig !== undefined)
       update.themeConfig = body.themeConfig === "" ? null : body.themeConfig;
-    await withRetry(() =>
-      db.update(schema.series).set(update).where(eq(schema.series.id, id)),
+    const [row] = await withRetry(() =>
+      db
+        .update(schema.series)
+        .set(update)
+        .where(eq(schema.series.id, id))
+        .returning({ id: schema.series.id }),
     );
+    if (!row) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 
@@ -2684,12 +2694,14 @@ const app = new Hono()
         return c.json({ error: "Invalid isPublished" }, 400);
       update.isPublished = isPublished;
     }
-    await withRetry(() =>
+    const [row] = await withRetry(() =>
       db
         .update(schema.pricingPlans)
         .set(update)
-        .where(eq(schema.pricingPlans.id, id)),
+        .where(eq(schema.pricingPlans.id, id))
+        .returning({ id: schema.pricingPlans.id }),
     );
+    if (!row) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 

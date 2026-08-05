@@ -11,7 +11,12 @@ export default function ContactPage({
 }: {
   language?: "ja" | "en";
 }) {
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError: settingsFailed,
+    refetch: refetchSettings,
+  } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
@@ -319,7 +324,34 @@ export default function ContactPage({
               !intro &&
               !data?.contactEmail &&
               !data?.profileInstagram &&
-              !data?.profileTwitter && (
+              !data?.profileTwitter &&
+              // A failed settings load used to land here too, so a server
+              // hiccup told the visitor "準備中です。" — that this photographer
+              // is not taking enquiries — and offered no way to get in touch.
+              // Say what actually happened, and let them retry.
+              (settingsFailed ? (
+                <div className="space-y-3">
+                  <p
+                    role="alert"
+                    className="text-[color:var(--text-quiet)]"
+                    style={{
+                      fontSize: "var(--body-size, 0.875rem)",
+                      lineHeight: "var(--body-leading, 2)",
+                    }}
+                  >
+                    {language === "en"
+                      ? "Could not load the contact details just now."
+                      : "連絡先を読み込めませんでした。"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void refetchSettings()}
+                    className="tap-target font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] nav-link-luxury transition-colors duration-300 py-1.5"
+                  >
+                    {language === "en" ? "Try again" : "再試行"}
+                  </button>
+                </div>
+              ) : (
                 <p
                   className="text-[color:var(--text-quiet)] italic"
                   style={{
@@ -329,7 +361,7 @@ export default function ContactPage({
                 >
                   {language === "en" ? "Coming soon." : "準備中です。"}
                 </p>
-              )}
+              ))}
           </div>
         ) : status === "success" ? (
           <div className="text-center py-12 page-entrance page-entrance-delay-1">

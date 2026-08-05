@@ -2267,22 +2267,23 @@ const app = new Hono()
         break;
       }
       case "feature": {
-        // Append any not-already-featured photo to hero_photos (atomic sort order).
-        const existing = await withRetry(() =>
-          db
-            .select({ photoId: schema.heroPhotos.photoId })
-            .from(schema.heroPhotos)
-            .where(inArray(schema.heroPhotos.photoId, cleanIds)),
+        // All additions must succeed together. Otherwise a retry after an error
+        // could leave only part of the selected photos featured.
+        await withRetry(() =>
+          db.transaction(async (tx) => {
+            const existing = await tx
+              .select({ photoId: schema.heroPhotos.photoId })
+              .from(schema.heroPhotos)
+              .where(inArray(schema.heroPhotos.photoId, cleanIds));
+            const have = new Set(existing.map((r) => r.photoId));
+            for (const id of cleanIds.filter((id) => !have.has(id))) {
+              await tx.insert(schema.heroPhotos).values({
+                photoId: id,
+                sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM hero_photos)`,
+              });
+            }
+          }),
         );
-        const have = new Set(existing.map((r) => r.photoId));
-        for (const id of cleanIds.filter((id) => !have.has(id))) {
-          await withRetry(() =>
-            db.insert(schema.heroPhotos).values({
-              photoId: id,
-              sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM hero_photos)`,
-            }),
-          );
-        }
         break;
       }
       case "unfeature":

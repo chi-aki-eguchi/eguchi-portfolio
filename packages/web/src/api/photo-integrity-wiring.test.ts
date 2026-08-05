@@ -48,4 +48,15 @@ describe("photo integrity route wiring", () => {
       route.indexOf("tx.delete(schema.series)"),
     );
   });
+
+  test("batch hero additions rollback together", () => {
+    const route = source.slice(
+      source.indexOf('case "feature": {'),
+      source.indexOf('case "unfeature":'),
+    );
+    expect(route).toContain("db.transaction");
+    expect(route).toMatch(/await tx\s*\.select/);
+    expect(route).toContain("tx.insert(schema.heroPhotos)");
+    expect(route).not.toContain("db.insert(schema.heroPhotos)");
+  });
 });

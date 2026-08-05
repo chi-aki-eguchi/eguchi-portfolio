@@ -85,6 +85,7 @@ import {
   clampImageWidth,
   clampImageHeight,
   clampImageQuality,
+  parseStrictBoolean,
 } from "./security";
 import {
   normalizeShotAtSourceForInsert,
@@ -1867,7 +1868,12 @@ const app = new Hono()
       if (focalY === null) return c.json({ error: "Invalid focalY" }, 400);
       update.focalY = focalY;
     }
-    if (body.isPublished !== undefined) update.isPublished = !!body.isPublished;
+    if (body.isPublished !== undefined) {
+      const isPublished = parseStrictBoolean(body.isPublished);
+      if (isPublished === null)
+        return c.json({ error: "Invalid isPublished" }, 400);
+      update.isPublished = isPublished;
+    }
     // I1: series assignment — "" / null clears membership.
     if (body.seriesId !== undefined)
       update.seriesId =
@@ -2461,6 +2467,12 @@ const app = new Hono()
 
   .post("/admin/series", requireAdmin, async (c) => {
     const body = await c.req.json();
+    const isPublished =
+      body.isPublished === undefined
+        ? true
+        : parseStrictBoolean(body.isPublished);
+    if (isPublished === null)
+      return c.json({ error: "Invalid isPublished" }, 400);
     const [row] = await withRetry(() =>
       db
         .insert(schema.series)
@@ -2471,8 +2483,7 @@ const app = new Hono()
           statement: body.statement ?? "",
           coverPhotoId:
             typeof body.coverPhotoId === "number" ? body.coverPhotoId : null,
-          isPublished:
-            body.isPublished === undefined ? true : !!body.isPublished,
+          isPublished,
           // Atomic next sort order — avoids duplicates on concurrent inserts.
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM series)`,
         })
@@ -2494,7 +2505,12 @@ const app = new Hono()
         body.coverPhotoId === null || body.coverPhotoId === ""
           ? null
           : Number(body.coverPhotoId);
-    if (body.isPublished !== undefined) update.isPublished = !!body.isPublished;
+    if (body.isPublished !== undefined) {
+      const isPublished = parseStrictBoolean(body.isPublished);
+      if (isPublished === null)
+        return c.json({ error: "Invalid isPublished" }, 400);
+      update.isPublished = isPublished;
+    }
     // 機能9: themeConfig (JSON string | null)
     if (body.themeConfig !== undefined)
       update.themeConfig = body.themeConfig === "" ? null : body.themeConfig;
@@ -2551,6 +2567,12 @@ const app = new Hono()
 
   .post("/admin/pricing", requireAdmin, async (c) => {
     const body = await c.req.json();
+    const isPublished =
+      body.isPublished === undefined
+        ? true
+        : parseStrictBoolean(body.isPublished);
+    if (isPublished === null)
+      return c.json({ error: "Invalid isPublished" }, 400);
     const [row] = await withRetry(() =>
       db
         .insert(schema.pricingPlans)
@@ -2560,8 +2582,7 @@ const app = new Hono()
           description: body.description ?? "",
           features: body.features ?? "",
           note: body.note ?? "",
-          isPublished:
-            body.isPublished === undefined ? true : !!body.isPublished,
+          isPublished,
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM pricing_plans)`,
         })
         .returning(),
@@ -2582,7 +2603,12 @@ const app = new Hono()
     ] as const) {
       if (body[k] !== undefined) update[k] = body[k];
     }
-    if (body.isPublished !== undefined) update.isPublished = !!body.isPublished;
+    if (body.isPublished !== undefined) {
+      const isPublished = parseStrictBoolean(body.isPublished);
+      if (isPublished === null)
+        return c.json({ error: "Invalid isPublished" }, 400);
+      update.isPublished = isPublished;
+    }
     await withRetry(() =>
       db
         .update(schema.pricingPlans)

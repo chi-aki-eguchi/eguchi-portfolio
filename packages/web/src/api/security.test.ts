@@ -14,6 +14,7 @@ import {
   clampImageQuality,
   isAllowedUploadImageFile,
   sanitizeUploadBaseName,
+  parseStrictBoolean,
 } from "./security";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "../shared/upload-limits";
 
@@ -181,6 +182,17 @@ describe("passwordMatches (constant-time comparison)", () => {
     const jp = "パスワード";
     expect(passwordMatches(jp, jp)).toBe(true);
     expect(passwordMatches(jp, "パスワート")).toBe(false);
+  });
+});
+
+describe("parseStrictBoolean", () => {
+  test("keeps real JSON booleans and rejects truthy lookalikes", () => {
+    expect(parseStrictBoolean(true)).toBe(true);
+    expect(parseStrictBoolean(false)).toBe(false);
+    expect(parseStrictBoolean("false")).toBeNull();
+    expect(parseStrictBoolean("true")).toBeNull();
+    expect(parseStrictBoolean(0)).toBeNull();
+    expect(parseStrictBoolean(null)).toBeNull();
   });
 });
 

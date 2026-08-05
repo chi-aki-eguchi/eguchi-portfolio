@@ -91,6 +91,12 @@ export function passwordMatches(
   return timingSafeEqual(a, b);
 }
 
+// Public/private flags must be actual JSON booleans. JavaScript's truthiness
+// would turn a string such as "false" into true and accidentally publish data.
+export function parseStrictBoolean(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
 export function isHttpsRequest(
   xForwardedProto: string | undefined,
   requestUrl: string,

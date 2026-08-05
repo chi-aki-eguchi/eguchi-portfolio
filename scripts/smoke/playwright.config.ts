@@ -66,7 +66,8 @@ export default defineConfig({
       // 実機では起きない状態を検査してしまう。ここだけ本物のタッチ profile で回す。
       // 描画エンジンは Chromium のまま（Pixel 7）にして、変数をタッチ有無に絞る。
       name: "mobile-touch",
-      testMatch: /(public-site|admin-reorder-safety|admin-touch-targets)\.spec\.ts/,
+      testMatch:
+        /(public-site|admin-reorder-safety|admin-touch-targets|admin-mobile-input-zoom)\.spec\.ts/,
       use: {
         ...devices["Pixel 7"],
         viewport: { width: 390, height: 844 },

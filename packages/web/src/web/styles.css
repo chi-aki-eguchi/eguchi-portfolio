@@ -219,6 +219,7 @@
   box-shadow: none;
 }
 
+
 .admin-language-toggle button[data-active="true"] {
   font-weight: 500;
   opacity: 1;
@@ -226,6 +227,16 @@
 
 .admin-language-toggle button:hover {
   opacity: 0.8;
+}
+
+/* The compact 9px badges on Library tiles (S/M/L, film, hero) sit right at the
+   edge of legibility on a phone. Nudge them up on touch screens only — the
+   desktop grid density is unchanged. */
+@media (pointer: coarse) {
+  .admin-atelier .admin-photo-grid .text-\[9px\],
+  .admin-atelier [data-virtualized] .text-\[9px\] {
+    font-size: 11px;
+  }
 }
 
 /* Keep the compact language switch outside the admin's 40px button reset. */
@@ -236,6 +247,17 @@
   background: transparent !important;
   color: inherit !important;
   box-shadow: none !important;
+}
+
+/* …but on a touch screen 24px is under the floor, and this is the one control
+   on every admin tab. The reset above uses !important, so the touch sizing has
+   to match it or it simply loses. */
+@media (pointer: coarse) {
+  .admin-atelier.admin-atelier .admin-language-toggle button:not(.absolute) {
+    min-height: 32px !important;
+    min-width: 32px !important;
+    padding: 0 6px !important;
+  }
 }
 
 /* ─── Glass surface (structural layers only — sidebar / save bar / modal /
@@ -1090,6 +1112,19 @@
     outline-color var(--dur-fast) var(--ease-out) !important;
 }
 
+/* iOS Safari zooms the whole page when a field smaller than 16px takes focus,
+   and does not zoom back out. Every admin field was 12-14px, so on a phone each
+   tap into a field left the owner pinching the layout back into place — worst
+   in Settings (20 fields) and 撮影依頼 (100). Only touch pointers need this;
+   the desktop density is unchanged. */
+@media (pointer: coarse) {
+  .admin-atelier input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+  .admin-atelier textarea,
+  .admin-atelier select {
+    font-size: max(16px, var(--admin-text-body)) !important;
+  }
+}
+
 .admin-atelier button:focus-visible,
 .admin-atelier a:focus-visible {
   outline-color: rgba(var(--admin-accent-rgb), 0.3) !important;
@@ -1689,6 +1724,11 @@
   top: calc(100% + 7px);
   right: 0;
   display: flex;
+  /* Wrap, or the row silently overflows its own panel. On a 390px phone the
+     sort select alone is 246px, and the column buttons and 表示 toggle were
+     pushed 41px past the right screen edge — unreachable. No effect on desktop,
+     where the contents fit the 440px panel on one line. */
+  flex-wrap: wrap;
   width: min(440px, calc(100vw - 32px));
   align-items: center;
   gap: 9px;
@@ -3899,7 +3939,7 @@ dialog.lightbox-exit .lb-content {
   }
   .admin-atelier .admin-settings-mobile-current__label > span {
     color: var(--admin-muted);
-    font-size: 10px;
+    font-size: 11px;
   }
   .admin-atelier .admin-settings-mobile-current__label > strong {
     overflow: hidden;
@@ -4263,7 +4303,7 @@ dialog.lightbox-exit .lb-content {
     .admin-settings-mobile-current__label
     > span {
     color: var(--admin-muted);
-    font-size: 10px;
+    font-size: 11px;
   }
   .admin-atelier
     .admin-settings-workspace[data-preview="true"]

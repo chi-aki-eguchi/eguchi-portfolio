@@ -4426,6 +4426,10 @@ export function SettingsTab({
     summary: summarizeSection(id),
     changed: changedSectionIds.includes(id),
     failed: failedSectionIds.includes(id) || (id === "presets" && presetError),
+    advanced: [
+      "spacing", "texture", "reveal", "fonts", "font-size", "font-color",
+      "font-spacing", "site-copy", "presets",
+    ].includes(id),
   }));
   const sectionProps = (sectionId: SettingsSectionId) => ({
     sectionId,

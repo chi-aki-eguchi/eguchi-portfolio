@@ -36,6 +36,8 @@ const copy: AdminSettingsFormCopy = {
   saveFailed: "保存に失敗しました",
   goToFailed: "原因の節へ移動",
   savedAt: (time) => `${time} に保存`,
+  basicSettings: "ふだんの設定",
+  advancedSettings: "詳しい設定",
 };
 
 const sections = [

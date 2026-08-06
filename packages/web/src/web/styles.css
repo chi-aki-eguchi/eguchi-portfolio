@@ -4153,6 +4153,38 @@ dialog.lightbox-exit .lb-content {
   outline: 2px solid var(--admin-accent);
   outline-offset: 1px;
 }
+.admin-atelier .admin-form-toc__group-label,
+.admin-atelier .admin-form-toc__advanced > summary {
+  padding: 8px 8px 5px 14px;
+  color: var(--admin-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.admin-atelier .admin-form-toc__advanced > summary {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  cursor: pointer;
+}
+.admin-atelier .admin-form-toc__advanced > button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px 6px 20px;
+  margin-left: -1px;
+  border-left: 1px solid transparent;
+  color: var(--admin-muted);
+  font-size: var(--admin-text-note);
+  text-align: left;
+}
+.admin-atelier.admin-atelier .admin-form-toc__advanced > button.is-active,
+.admin-atelier.admin-atelier .admin-form-toc__advanced > button[aria-current="location"] {
+  border-left-color: var(--admin-ink) !important;
+  color: var(--admin-ink) !important;
+}
 .admin-atelier .admin-form-toc__label {
   min-width: 0;
   flex: 1;

@@ -23,6 +23,7 @@ export type AdminSettingsSectionItem = {
   summary: string;
   changed: boolean;
   failed: boolean;
+  advanced?: boolean;
 };
 
 export type AdminSettingsFormCopy = {
@@ -41,6 +42,8 @@ export type AdminSettingsFormCopy = {
   saveFailed: string;
   goToFailed: string;
   savedAt: (time: string) => string;
+  basicSettings: string;
+  advancedSettings: string;
 };
 
 function SectionMarkers({
@@ -165,21 +168,34 @@ export function AdminSettingsFormLayout({
     setNavSeq((seq) => seq + 1);
   };
 
+  const basicSections = sections.filter((section) => !section.advanced);
+  const advancedSections = sections.filter((section) => section.advanced);
+  const sectionButtons = (items: AdminSettingsSectionItem[]) => items.map((section) => (
+    <button
+      key={section.id}
+      type="button"
+      data-settings-section-link={section.id}
+      aria-current={section.id === activeId ? "location" : undefined}
+      className={section.id === activeId ? "is-active" : undefined}
+      onClick={() => navigateTo(section.id)}
+    >
+      <span className="admin-form-toc__label">{section.label}</span>
+      <SectionMarkers item={section} copy={copy} />
+    </button>
+  ));
   const navigation = (
     <nav aria-label={copy.navigationLabel} className="admin-form-toc__nav">
-      {sections.map((section) => (
-        <button
-          key={section.id}
-          type="button"
-          data-settings-section-link={section.id}
-          aria-current={section.id === activeId ? "location" : undefined}
-          className={section.id === activeId ? "is-active" : undefined}
-          onClick={() => navigateTo(section.id)}
+      <span className="admin-form-toc__group-label">{copy.basicSettings}</span>
+      {sectionButtons(basicSections)}
+      {advancedSections.length > 0 && (
+        <details
+          className="admin-form-toc__advanced"
+          open={advancedSections.some((section) => section.id === activeId) || undefined}
         >
-          <span className="admin-form-toc__label">{section.label}</span>
-          <SectionMarkers item={section} copy={copy} />
-        </button>
-      ))}
+          <summary>{copy.advancedSettings}</summary>
+          {sectionButtons(advancedSections)}
+        </details>
+      )}
     </nav>
   );
 

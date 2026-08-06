@@ -833,7 +833,7 @@ const ADMIN_PHASE_2B_JA = {
     groupTitle: "基本・見た目",
     resetToDefault: "初期設定に戻す",
     adminPasswordTitle: "管理パスワード",
-    adminPasswordHint: "環境変数で設定します:",
+    adminPasswordHint: "ログイン用パスワードはサーバー側で管理します。設定名:",
     previewTitle: "プレビュー",
     units: {
       columns: "列",
@@ -920,14 +920,14 @@ const ADMIN_PHASE_2B_JA = {
           hint: "お問い合わせページに直接の宛先として表示",
         },
         formspreeUrl: {
-          label: "Formspree の URL",
+          label: "お問い合わせフォームの送信先",
           placeholder: "https://formspree.io/f/...",
-          hint: "formspree.io で取得した URL を入れるとフォームが動く",
+          hint: "お問い合わせを受け取る外部サービスのURLです（Formspree URL）",
         },
         siteUrl: {
-          label: "サイトURL（公開ドメイン）",
+          label: "公開サイトの基準URL",
           placeholder: "https://example.com",
-          hint: "sitemap・canonical・OGP・JSON-LD の基準URL。空欄ならサーバー側の SITE_URL を使います",
+          hint: "検索結果や共有カードへ正しい住所を伝えます（SITE_URL / canonical / sitemap / JSON-LD）。空欄ならサーバー設定を使います",
         },
         googleSiteVerification: {
           label: "Google サイト確認コード",
@@ -3217,6 +3217,8 @@ export type AdminMessages = {
     savedAt: (time: string) => string;
     summaryUnset: string;
     summaryItems: (count: number) => string;
+    basicSettings: string;
+    advancedSettings: string;
   };
 };
 
@@ -3430,6 +3432,8 @@ export const ADMIN_DICTIONARY = {
       savedAt: (time) => `${time} に保存`,
       summaryUnset: "未設定",
       summaryItems: (count) => `${count}項目を設定`,
+      basicSettings: "ふだんの設定",
+      advancedSettings: "詳しい設定",
     },
   },
   en: {
@@ -3641,6 +3645,8 @@ export const ADMIN_DICTIONARY = {
       savedAt: (time) => `Saved at ${time}`,
       summaryUnset: "Not set",
       summaryItems: (count) => `${count} item${count === 1 ? "" : "s"} set`,
+      basicSettings: "Everyday settings",
+      advancedSettings: "Advanced settings",
     },
   },
 } as const satisfies Record<AdminLanguage, AdminMessages>;

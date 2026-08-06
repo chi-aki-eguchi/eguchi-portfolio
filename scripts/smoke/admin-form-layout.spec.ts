@@ -359,6 +359,10 @@ test.describe("admin — Form layout", () => {
     const sectionIds = await links.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("data-settings-section-link")),
     );
+    const advanced = page.locator(".admin-form-toc__advanced");
+    if ((await advanced.getAttribute("open")) === null) {
+      await advanced.locator(":scope > summary").click();
+    }
 
     for (const sectionId of sectionIds) {
       await page.locator(`[data-settings-section-link="${sectionId}"]`).click();

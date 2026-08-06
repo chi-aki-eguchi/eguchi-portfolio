@@ -5,7 +5,7 @@
 
 - **Status:** admin スマホ改善の**段階1・依頼1〜4と段階2・依頼5〜8を完了**。
   段階3へ進行中
-- **Current owner:** Codex（依頼9へ継続中）/ **Handoff readiness:** not ready
+- **Current owner:** Codex（依頼10へ継続中）/ **Handoff readiness:** not ready
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** 実装はlocal commit済み。
   未追跡は `scripts/smoke/scratch/` のみ
 
@@ -37,10 +37,12 @@
     移し、絞り込みは写真を押し下げない固定シートと件数footerへ変更
 11. 依頼8: 作業バー/絞り込み/写真編集/選択操作の全可視操作を実機相当で測り、
     幅と高さが40px以上になる規則と回帰テストを追加
+12. 依頼9: Settings目次を「ふだんの設定/詳しい設定」の2階建てに整理。
+    19節と単節表示は維持し、専門語は日本語説明の後ろに残した
 
 ### 次の一手
 
-- 次は設計書の**段階3・依頼9**「Settingsの語彙と2階建て化」
+- 次は設計書の**段階3・依頼10**「空表示と読み込み中の佇まい」
 - `scripts/smoke/scratch/` はClaudeの調査用未追跡ファイル。内容を保護し、
   オーナー判断なしに追加・削除しない
 

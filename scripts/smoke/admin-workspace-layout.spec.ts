@@ -79,9 +79,9 @@ test.describe("admin — Workspace layout", () => {
     await expect(page.locator("[data-library-filters-toggle]")).toBeVisible();
     const viewMenu = page.locator(".admin-library-view-menu > summary");
     await expect(viewMenu).toBeVisible();
-    await expect(page.getByRole("button", { name: "Table" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "表形式" })).toBeHidden();
     await viewMenu.click();
-    await expect(page.getByRole("button", { name: "Table" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "表形式" })).toBeVisible();
     // 取り込み一式は見出しではなく作業バーの右端にある(2026-07-31 刷新)。
     const importGroup = page.locator("[data-library-exit-actions]");
     await expect(importGroup).toBeVisible();
@@ -227,7 +227,7 @@ test.describe("admin — Workspace layout", () => {
     expect((workbarBox?.x ?? 0) + (workbarBox?.width ?? 0)).toBeLessThanOrEqual(
       390,
     );
-    await expect(page.locator("[data-library-mode-switcher]")).toBeVisible();
+    await expect(page.locator("[data-library-mobile-select]")).toBeVisible();
     await expect(page.locator("[data-library-search-input]")).toBeVisible();
     await expect(page.locator("[data-library-filters-toggle]")).toBeVisible();
     const viewMenu = page.locator(".admin-library-view-menu > summary");

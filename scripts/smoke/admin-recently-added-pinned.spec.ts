@@ -330,7 +330,7 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
 
     // Tableは表示モードを保ち、8列をまたぐ見出しと先頭行を出す。
     await page.locator(".admin-library-view-menu > summary").click();
-    const tableButton = page.getByRole("button", { name: "Table" });
+    const tableButton = page.getByRole("button", { name: "表形式" });
     await tableButton.click();
     await expect(tableButton).toHaveAttribute("aria-pressed", "true");
     await expect(
@@ -375,7 +375,7 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
 
     await page.locator('[data-library-mode-action="normal"]').click();
     await page.locator(".admin-library-view-menu > summary").click();
-    const reopenedTableButton = page.getByRole("button", { name: "Table" });
+    const reopenedTableButton = page.getByRole("button", { name: "表形式" });
     await expect(reopenedTableButton).toHaveAttribute("aria-pressed", "true");
     await reopenedTableButton.click();
     await expect(section).toHaveAttribute(

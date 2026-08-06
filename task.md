@@ -3,8 +3,8 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** admin スマホ改善の**依頼1〜10をすべて実装完了**。最終全体検証中
-- **Current owner:** Codex（最終検証中）/ **Handoff readiness:** not ready
+- **Status:** admin スマホ改善の**依頼1〜10をすべて実装・検証完了**
+- **Current owner:** オーナー / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** 実装はlocal commit済み。
   未追跡は `scripts/smoke/scratch/` のみ
 
@@ -43,14 +43,14 @@
 
 ### 次の一手
 
-- `bun run check` と full `bun run smoke` を実行し、Current Stateを完了状態へ更新
+- オーナー判断でpushし、必要ならRailway反映後に本番を確認する
 - `scripts/smoke/scratch/` はClaudeの調査用未追跡ファイル。内容を保護し、
   オーナー判断なしに追加・削除しない
 
 ### 検証の状態
 
 - `bun run check` **成功**
-- `bun run smoke` **成功**（306 passed / 115 skipped / 0 failed）
+- `bun run smoke` **成功**（306 passed / 128 skipped / 0 failed）
 - 専用テストは修正前にコントラスト比1で失敗し、修正後はdesktop/mobileで成功
 - 写真編集は375/390px、保存のclean/dirty/error/retryを実ブラウザで確認
 - local commit済み / push・Railway反映・本番確認は未実施

@@ -8043,7 +8043,7 @@ export function GalleryTab({
                     <label className="admin-inspector-mobile-title col-span-2 md:hidden">
                       <span>{copy.inspector.title}</span>
                       <input
-                        aria-label={copy.inspector.titleAria}
+                        aria-label={`${copy.inspector.titleAria} (${copy.inspector.sections.basic})`}
                         value={editForm.title}
                         onChange={(event) =>
                           setEditForm((form) => ({
@@ -8051,7 +8051,6 @@ export function GalleryTab({
                             title: event.target.value,
                           }))
                         }
-                        placeholder={copy.inspector.titlePlaceholder}
                       />
                     </label>
 

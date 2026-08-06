@@ -1938,6 +1938,17 @@
     display: none;
   }
 
+  .admin-atelier .admin-library-view-menu__panel {
+    position: fixed;
+    z-index: 47;
+    top: 184px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
   /* 取り込みは媒体を保ったまま1行へ収める。 */
   .admin-atelier .admin-library-import-group {
     width: auto;
@@ -2042,6 +2053,12 @@
   color: var(--admin-ink);
   background: var(--admin-paper);
   font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .admin-atelier .admin-inspector-mobile-title {
+    display: none !important;
+  }
 }
 
 .admin-atelier .admin-inspector-mobile-save {
@@ -4158,7 +4175,7 @@ dialog.lightbox-exit .lb-content {
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
   .admin-form-toc__nav
   > button[aria-current="location"] {
-  border-left-color: var(--admin-ink) !important;
+  border-left-color: var(--admin-accent) !important;
   background: transparent !important;
   color: var(--admin-ink) !important;
   font-weight: 500;
@@ -4196,7 +4213,7 @@ dialog.lightbox-exit .lb-content {
 }
 .admin-atelier.admin-atelier .admin-form-toc__advanced > button.is-active,
 .admin-atelier.admin-atelier .admin-form-toc__advanced > button[aria-current="location"] {
-  border-left-color: var(--admin-ink) !important;
+  border-left-color: var(--admin-accent) !important;
   color: var(--admin-ink) !important;
 }
 .admin-atelier .admin-form-toc__label {

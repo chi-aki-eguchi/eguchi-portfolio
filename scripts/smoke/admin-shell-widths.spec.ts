@@ -46,10 +46,14 @@ test.describe("admin — 幅ごとの土台", () => {
       await page.waitForTimeout(300);
       const nav = page.locator(".admin-form-toc__nav");
       await expect(nav, `${width}px で目次が必要`).toBeVisible();
+      const advanced = nav.locator(".admin-form-toc__advanced");
+      if ((await advanced.getAttribute("open")) === null) {
+        await advanced.locator(":scope > summary").click();
+      }
 
       // 縦積み = ボタンの左端が全部そろっている。横帯になると左端がばらける。
       const lefts = await nav
-        .locator("> button")
+        .locator("button[data-settings-section-link]")
         .evaluateAll((buttons) =>
           buttons.map((button) => Math.round(button.getBoundingClientRect().x)),
         );
@@ -61,7 +65,7 @@ test.describe("admin — 幅ごとの土台", () => {
 
       // 右へはみ出して押せない節が無いこと。
       const overflowing = await nav
-        .locator("> button")
+        .locator("button[data-settings-section-link]")
         .evaluateAll(
           (buttons, limit) =>
             buttons.filter(

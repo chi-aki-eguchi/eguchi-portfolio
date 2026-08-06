@@ -168,8 +168,11 @@ async function installMocks(
 }
 
 async function enterArrange(page: Page) {
+  if (!(await page.locator('button[data-library-mode-action="arrange"]:visible').count())) {
+    await page.locator(".admin-library-view-menu > summary").click();
+  }
   await page
-    .locator('button[data-library-mode-action="arrange"]:visible')
+    .locator('button[data-library-mode-action="arrange"]:visible, [data-library-mobile-arrange]:visible')
     .first()
     .click();
   await expect(
@@ -695,7 +698,7 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
     ).toBeVisible();
     expect((await visiblePhotoTitles(page))[0]).toBe("順序確認 9");
 
-    await page.getByRole("button", { name: "Table" }).click();
+    await page.getByRole("button", { name: "表形式" }).click();
     await expect(
       page.locator("tbody tr[data-bulk-edit-photo-id]").first(),
     ).toHaveAttribute(

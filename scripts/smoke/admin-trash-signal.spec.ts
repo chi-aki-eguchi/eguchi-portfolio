@@ -17,7 +17,7 @@ test.describe("admin — ⌘KのTrashが後続のLibrary表示に持ち越され
 
     await page.keyboard.press("Meta+k");
     await page.waitForTimeout(300);
-    await page.getByPlaceholder(/移動先/).fill("Trash");
+    await page.getByPlaceholder(/移動先/).fill("ゴミ箱");
     await page.waitForTimeout(200);
     await page.keyboard.press("Enter");
     await page.waitForTimeout(800);

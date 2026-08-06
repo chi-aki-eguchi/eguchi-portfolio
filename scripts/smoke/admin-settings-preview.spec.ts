@@ -126,6 +126,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     await expect(page.locator("[data-settings-section-link]")).toHaveCount(19);
 
     // 最後の節まで実際に選べ、本文がその節へ入れ替わる。
+    await page.locator(".admin-form-toc__advanced > summary").click();
     const last = page.locator("[data-settings-section-link]").last();
     const lastId = await last.getAttribute("data-settings-section-link");
     await last.click();

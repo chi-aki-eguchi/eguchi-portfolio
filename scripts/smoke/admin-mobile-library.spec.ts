@@ -108,7 +108,8 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await expect(tiles.nth(0).getByRole("button", { name: "後へ移動" })).toHaveCount(
     0,
   );
-  await page.locator('[data-library-mode-action="arrange"]').click();
+  await page.locator(".admin-library-view-menu > summary").click();
+  await page.locator("[data-library-mobile-arrange]").click();
   await expect(page.locator("[data-library-mode]")).toHaveAttribute(
     "data-library-mode",
     "arrange",
@@ -224,6 +225,31 @@ async function assertContactSheet(page: Page, width: number, height: number) {
 }
 
 test.describe("admin — スマホLibraryコンタクトシート", () => {
+  test.beforeEach(async ({ page }) => {
+    const photos = Array.from({ length: 12 }, (_, index) => ({
+      id: 88000 + index,
+      url: `/api/images/mobile-smoke-${index}.jpg`,
+      thumbUrl: `/api/images/mobile-smoke-${index}.jpg`,
+      filename: `mobile-smoke-${index}.jpg`,
+      title: `Mobile smoke ${index + 1}`,
+      published: true,
+      sortOrder: index,
+      displaySize: "M",
+      rotation: 0,
+      focalX: 0.5,
+      focalY: 0.5,
+      width: 1200,
+      height: 800,
+    }));
+    await page.route("**/api/photos?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ photos }),
+      });
+    });
+  });
+
   test.describe("タッチ端末相当(pointer:coarse)", () => {
     // 実機同様に (pointer: coarse) を成立させ、40px化したタップ領域で
     // はみ出し検証する
@@ -281,7 +307,7 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       test.skip(testInfo.project.name !== "mobile", "mobileのみ");
       await loginAsAdmin(page);
       await gotoAdminTab(page, "gallery");
-      await page.locator('[data-library-mode-action="select"]').click();
+      await page.locator("[data-library-mobile-select]").click();
       await page.locator(".admin-photo-tile").first().locator("[data-library-photo-action]").click();
 
       const toolbar = page.locator("[data-library-selection-toolbar]");

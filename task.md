@@ -3,72 +3,63 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** Codex の「大きいバグ」ラウンドが完了し **12件を修正して commit 済み**。
-  Claude が独立検証を実施（5件抜き取りで全て「戻すと落ちる」を確認）。
-- **Current owner: Claude Code**（Codex のラウンドは完了。次の編集者は未定）
-- **Branch:** `main` / **HEAD:** `SELF`
-- **Git:** clean（未追跡は `scratch/` のみ・gitignore 対象）
-- push 状況・ahead 件数はここに書かない（すぐ古くなる）。
-  `git status --short --branch` で測る
+- **Status:** デバッグ継続中。Claude が5巡（24件）→ Codex が「大きいバグ」12件を修正。
+  **未pushの commit がある。**件数は `git rev-list --count origin/main..HEAD` で測る
+- **Current owner:** 未定（次の担当者が自分を書き込んでから編集を始める）
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean（未追跡は `scratch/` のみ）
 
-### Codex の「大きいバグ」ラウンド — 完了（2026-08-06）
+### 次の担当者への引き継ぎ（デバッグ継続）
 
-Codex（Terra / max, workspace-write）が **12件を修正して commit 済み**。
-**ただし最後に通信エラーで落ち、報告 `scratch/codex-bigbug-report.md` と
-Current State の更新は行われていない。**このブロックは Claude が代わりに書いた。
+**やることは3つ。上から順でよい。**
 
-直った12件（コミット順）:
-非公開カバー写真が公開シリーズ一覧に出る / Service下書きが読込で消える /
-`"false"` が true として保存される / シリーズ削除と写真の切り離しが非原子的 /
-一括メタデータ編集が途中まで保存される / 保存できない設定値を黙って捨てる /
-サムネイル片方だけ残る / Hero一括選択が非原子的 / **同時アップロードで
-保存キーが衝突しうる** / 古い並べ替えを受け付ける / 一括カテゴリ編集が
-非原子的 / 存在しないレコードへの保存を受け付ける
+1. **Codex の12件のうち未検証7件を追試する。**検証は「製品コードだけを1件ぶん
+   戻して `bun test ./src` が落ちること」。**確認済み5件**: `45f4ad5` `2553903`
+   `c7e2655` `1a83251` `5f8be81`。**未確認7件**: `c477384` `2051e48` `087f591`
+   `a3d7017` `8343911` `f77bf49` `d7daf99`
+2. **`packages/web/src/api/series-public-visibility.test.ts` を差し替える。**
+   いまはソース文字列に `"schema.photos.isPublished, true"` が含まれるかを
+   見ているだけで、実際の絞り込み結果を検査していない。リファクタで壊れ、
+   コメントに書いても通る。**この1件だけロジックの単体テストが無い。**
+3. Codex 推奨の残り（`docs/agents/codex-debug-2026-08-05.md` の表）:
+   **2（API入口の共通入力検証）/ 6（画像キャッシュの版・上限・破棄）/
+   8（Lightbox の srcSet 再試行と 1スワイプ=1移動）**。
+   推奨5（回転時の focal point）は**オーナー判断待ち** — 90度変換するか
+   中央リセットするか。
 
-### Claude の独立検証（2026-08-06）
+### 直近で直したもの
+
+Codex 12件（`7c49d09..321c6b7^`）。重いのは**非公開カバー写真が公開シリーズ一覧に
+出ていた**件、**同時アップロードで保存キーが衝突しうる**件、**一括操作4種が
+途中まで保存される**件。Claude 24件を含む経緯は `docs/agents/codex-debug-2026-08-05.md`。
+
+### 調査に使える道具（`scratch/debug-sweep/`・gitignore対象）
+
+`full-sweep.mjs`（全ルート×3画面幅×light/dark）/ `interaction2.mjs`（操作系）/
+`admin-mobile.mjs`・`admin-interaction.mjs` / `failure-states.mjs`（API故障・空）/
+`rapid.mjs`（連打）/ `settings-final.mjs`（設定の到達性）/ `code-audit.mjs`（不変条件）。
+**すべて read-only 設計**（非GETを止めるガード入り）。本番DBに書かない。
+
+### 測るときの落とし穴
+
+**正本は `docs/agents/measuring.md`。着手前に読む。**
+特に、Current State へ「すぐ古くなる値」（ahead件数・push状況）を書かないこと。
+`check-handoff-freshness.mjs` が弾く。2026-08-05 に Codex を4回止めた原因。
+
+### 検証の状態
 
 - `bun run check` **成功**（exit 0）
-- 12件のうち **5件を抜き取り、製品コードだけを戻して再実行**。
-  すべて落ちた（10 / 8 / 9 / 4 / 3 件）。テストは実際に効いている
-- テストは2方式: ロジックを切り出した単体テスト7件と、呼び出し側の結線を
-  見る `*-wiring` テスト8件。**`series-public-visibility.test.ts` だけは
-  wiring のみでロジックの単体テストが無い**（ソース文字列への一致検査）
-- **残り7件は未検証。**本番DB・R2に触れずに再現できる範囲で追試が要る
-
-### 完了済み（2026-08-05、push 済み）
-
-設定が効かない系4件 / 表示されない・触れない系3件 / 操作系5件 /
-スマホadmin 5件 / 壊れた時の表示1件 / Codex推奨1（派生画像のR2孤立）と
-7（Serviceリンク・カスタムフォント）。詳細は git log と
-`docs/agents/codex-debug-2026-08-05.md`。
-
-### 未検証・未着手
-
-- **Railway 反映と本番での確認は未実施**（push はしたが本番を見ていない）
-- Codex 推奨 2・3・4・6・8・9 は未着手
-- Codex 推奨 5（回転時の focal point）は**オーナー判断待ち**
-
-### 次の一手
-
-1. **オーナーが push するか判断する**（push はオーナーだけ）
-2. 未検証の7件を追試する。本番DB・R2に触れずに再現できるものから
-3. `series-public-visibility.test.ts` を、ソース文字列一致ではなく
-   実際の絞り込み結果を見るテストへ差し替える
-4. Codex 推奨5（回転時の focal point）は**オーナー判断待ち**のまま
+- `bun run smoke` は 2026-08-05 の Claude 分までは成功（303 passed）。
+  **Codex の12件を入れたあとは未実行**。本番DBにつながるので実行判断は慎重に
+- **Railway 反映と本番での確認は未実施**
 
 ### 触ってはいけない範囲
 
-- `git push` / 本番DB / Turso / R2 / Railway / 環境変数 / 公開設定
-- `bun run smoke` の実行（本番と同じDBにつながる）
-- `.env`・APIキー・トークンの表示と記録
-- `docs/archive/` の本文
-- Lightbox は「既存の修正済みロジックを壊さない」対象
-- 写真の並べ替えは `photo-reorder-safety.ts` の競合検知を壊さない
-
-### 検証
-
-- 製品コード変更後は `bun run check`（リポジトリルート）
-- 回帰テストは**修正を戻すと落ちる**ことまで確認する
+- `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 / 公開設定 /
+  `.env` の表示・記録 / `docs/archive/` の本文
+- Lightbox は「壊さない」対象（触るなら `docs/checklists.md`）。写真の並べ替えは
+  `photo-reorder-safety.ts` の競合検知を壊さない
+- 同じ worktree を2人で同時に編集しない（2026-08-05 に違反して Codex を止めた）
+- 週枠が両者とも少ない。**範囲を縮めず1区切りを小さくして都度 commit**
 <!-- CURRENT_STATE_END -->
 
 ---

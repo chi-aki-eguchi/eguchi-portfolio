@@ -3,10 +3,10 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** Codex 12件の追試を完了し、素通りしていたテストを実DB検査へ差し替え、
-  Codex推奨のうち 2・5・6・8 を実装した。origin との差は
+- **Status:** Codex 12件の追試と、採用した推奨1〜9を完了。推奨4・9は
+  既存commitで完了済みと再確認し、推奨3を追加実装した。origin との差は
   `git rev-list --count origin/main..HEAD` で測る（push はオーナーだけ）
-- **Current owner:** Codex（推奨3・4・9を上から順に実装中）
+- **Current owner:** 未定（Codexの編集は終了）/ **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean（未追跡は `scratch/` のみ）
 
 ### 今回やったこと（詳細は `docs/agents/codex-debug-2026-08-05.md` 末尾）
@@ -23,20 +23,19 @@
    **どちらも実在した**
 6. **推奨6**（画像キャッシュ）— `images-v2` / 300件上限 / 206を保存しない。
    `sw.js` に初めてテストを付けた
+7. **推奨3**（壊れた画像）— 申告形式が画像でも内容を読めない場合は422へ。
+   修正を外すとテストが落ちることまで確認した
+8. **推奨4・9** — `1a83251` / `c477384` ですでに完了済みと実物で再確認。
+   並べ替え10件、Service下書き3件のテストが成功
 
-### 次の一手（上から順）
+### 次の一手
 
-1. **推奨3: 壊れた画像を 400/415/422 へ。**派生2件も補償削除付きに
-2. **推奨4: 並べ替え4種を写真と同じ競合拒否へ。**新設計を足さず
-   `photo-reorder-safety.ts` を共通化する（Codex反論4の代案）
-3. **推奨9: Service下書きを sessionStorage 優先へ**（`c477384` で一部対応済み。
-   残りがあるか測り直す）
+- オーナーによるpush待ち。Railway反映・本番確認は別工程
 
 ### 検証の状態
 
-- `bun run check` **成功**（exit 0）/ `bun test ./src` 761 pass 0 fail
-- `bun run smoke` **成功**（2026-08-06 / exit 0 / 304 passed・115 skipped・0 fail）。
-  本番と同じDBにつながるため、書き込み操作を増やさないこと
+- `bun run check` **成功**（exit 0）/ `bun test ./src` 765 pass 0 fail
+- `bun run smoke` **成功**（exit 0 / 304 passed・115 skipped・0 fail）
 - **Railway 反映と本番での確認は未実施**
 
 ### 測るときの落とし穴

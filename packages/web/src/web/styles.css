@@ -1376,7 +1376,11 @@
   background-color: transparent !important;
   border-color: transparent !important;
 }
-.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+/* The generic aria-pressed rule also carries three :not() classes, so the
+   option needs two more scoped classes than the transparent-background rule
+   above. Keep this override local to SegmentedControl instead of strengthening
+   or weakening the shared button reset. */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier.admin-atelier
   .admin-segmented__option[aria-pressed="true"] {
   color: var(--admin-paper) !important;
 }

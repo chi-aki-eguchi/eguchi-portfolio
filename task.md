@@ -3,55 +3,55 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** Codex 12件の追試と、採用した推奨1〜9を完了。推奨4・9は
-  既存commitで完了済みと再確認し、推奨3を追加実装した。origin との差は
-  `git rev-list --count origin/main..HEAD` で測る（push はオーナーだけ）
-- **Current owner:** 未定（Codexの編集は終了）/ **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean（未追跡は `scratch/` のみ）
+- **Status:** admin スマホ改善の段階1・依頼1を完了。写真編集の「公開/非公開」
+  「S/M/L」で、選択中ラベルが読めない P0 を修正した
+- **Current owner:** 未定（Codexの依頼1は終了）/ **Handoff readiness:** ready
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** 実装はlocal commit済み。
+  未追跡は `scripts/smoke/scratch/` のみ
 
-### 今回やったこと（詳細は `docs/agents/codex-debug-2026-08-05.md` 末尾）
+### 目的と完了条件
 
-1. **Codex 12件の追試を完了。**5件は実装を戻すとテストが落ちた。2件は
-   ソースを文字列で見るだけで、保存を空にしても素通りしていた
-2. **素通りしていたテストを実DB検査へ差し替え**（非公開カバー写真 /
-   一括メタデータ保存）。サムネの後始末はR2削除のため配線テストのまま、
-   no-op を弾くまで厳しくした
-3. **推奨5**（回転時の焦点）— オーナー決定「一緒に回す」を実装
-4. **推奨2**（API入口の入力検証）— 非オブジェクト本文を400へ。ID配列は
-   `parseIdList()`（上限5000）
-5. **推奨8**（Lightbox）— 1スワイプ=2移動と、`srcSet` 再試行の空振り。
-   **どちらも実在した**
-6. **推奨6**（画像キャッシュ）— `images-v2` / 300件上限 / 206を保存しない。
-   `sw.js` に初めてテストを付けた
-7. **推奨3**（壊れた画像）— 申告形式が画像でも内容を読めない場合は422へ。
-   修正を外すとテストが落ちることまで確認した
-8. **推奨4・9** — `1a83251` / `c477384` ですでに完了済みと実物で再確認。
-   並べ替え10件、Service下書き3件のテストが成功
+写真家がプログラミング知識なしでスマホから迷わず管理できる `/admin` にする。
+設計正本は `docs/specs/admin-mobile-usability-plan.md`。段階1の4件を1件ずつ実装し、
+既存機能を減らさず、デスクトップとスマホの両方を検証する。
+
+### 完了したこと
+
+1. 調査・設計を `docs/specs/admin-mobile-usability-plan.md` に確定
+2. 依頼1: SegmentedControl専用の選択文字色が、共通の `aria-pressed` 規則に
+   負けていた。共通規則は変えず、専用規則だけを必要な強さにした
+3. 修正前の実測は文字 `rgb(26,26,26)` / 指示子 `rgb(26,26,26)`、
+   コントラスト比1:1。修正を外すと落ちる実ブラウザテストを追加
+4. 明・暗テーマ、desktop、390px mobileで選択ラベルと指示子の比を数値検査
 
 ### 次の一手
 
-- オーナーによるpush待ち。Railway反映・本番確認は別工程
+- 次は設計書の**段階1・依頼2**「保存不能な状態では並べ替えを始めさせない」
+- `scripts/smoke/scratch/` はClaudeの調査用未追跡ファイル。内容を保護し、
+  オーナー判断なしに追加・削除しない
 
 ### 検証の状態
 
-- `bun run check` **成功**（exit 0）/ `bun test ./src` 765 pass 0 fail
-- `bun run smoke` **成功**（exit 0 / 304 passed・115 skipped・0 fail）
-- **Railway 反映と本番での確認は未実施**
+- `bun run check` **成功**
+- `bun run smoke` **成功**（306 passed / 115 skipped / 0 failed）
+- 専用テストは修正前にコントラスト比1で失敗し、修正後はdesktop/mobileで成功
+- local commit済み / push・Railway反映・本番確認は未実施
 
 ### 測るときの落とし穴
 
 **正本は `docs/agents/measuring.md`。着手前に読む。**
-**ソースを文字列で見るテストは実装を守らない。**`.set(patch)` を `.set({})` に
-しても通る。同じ形は `readFileSync(import.meta.dir` で探せる。
-**jsdom で Lightbox のジェスチャを試すなら、mount後 120ms 待つ。**
-30ms ではイベント登録が間に合わず、無反応を「不具合なし」と読み違える。
+**見た目が想定と違ったら `getComputedStyle` で実測して上書き元を探す。**
+今回の P0 は、CSSに正しい指定が書いてあるのに勝てていないという形だった。
+シートのアニメーション中に撮ると、状態を誤読する（3秒待って撮り直して確定させた）。
 Current State へ「すぐ古くなる値」（ahead件数・push状況）を書かないこと。
 
 ### 触ってはいけない範囲
 
 - `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 /
   公開設定 / `.env` の表示・記録 / `docs/archive/` の本文
-- 写真の並べ替えは `photo-reorder-safety.ts` の競合検知を壊さない
+- 写真の並べ替えは `photo-reorder-safety.ts` の競合検知と
+  `onlySeriesFilter` の条件を壊さない（入口を締めても出口を緩めない）
+- 既存の `data-library-*` 目印を消さない（実ブラウザテストが読んでいる）
 - 同じ worktree を2人で同時に編集しない
 - 週枠が両者とも少ない。**範囲を縮めず1区切りを小さくして都度 commit**
 <!-- CURRENT_STATE_END -->

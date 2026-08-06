@@ -4,6 +4,46 @@ import { gotoAdminTab, loginAsAdmin } from "./helpers";
 // Language selection is browser-only state. This test changes localStorage and
 // signs in, but never clicks Save/Delete/Add or any other data-writing action.
 test.describe("admin — JP/EN shared shell", () => {
+  test("JPのLibraryと写真編集に英語の操作語を残さない", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop",
+      "日本語の語彙はdesktopで1回確認すれば十分",
+    );
+    await loginAsAdmin(page);
+    await page.evaluate(() => localStorage.setItem("admin:language", "ja"));
+    await page.reload();
+
+    const sidebar = page.locator(".admin-sidebar");
+    await expect(sidebar.getByRole("link", { name: "サイト" })).toBeVisible();
+    await expect(sidebar.getByRole("button", { name: "ログアウト" })).toBeVisible();
+    await expect(page.getByText(/\d+ \/ \d+ 枚/)).toBeVisible();
+
+    await page.getByRole("button", { name: "絞り込み" }).click();
+    await expect(page.getByRole("option", { name: /すべて（/ })).toBeAttached();
+    await expect(page.getByRole("option", { name: "すべてのシリーズ" })).toBeAttached();
+    await expect(page.getByRole("option", { name: "すべてのサイズ" })).toBeAttached();
+    await expect(page.getByRole("option", { name: "すべての向き" })).toBeAttached();
+    await expect(page.getByRole("option", { name: "すべての期間" })).toBeAttached();
+
+    await page.locator(".admin-library-view-menu > summary").click();
+    await expect(page.getByRole("button", { name: "表形式" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /ゴミ箱/ })).toBeVisible();
+
+    await page.locator("[data-library-photo-action]").first().click();
+    const inspector = page.locator("[data-library-inspector]");
+    await expect(inspector.getByText("写真を編集", { exact: true })).toBeVisible();
+    await expect(inspector.getByPlaceholder("タイトル未設定")).toBeVisible();
+    await expect(inspector.getByPlaceholder("写真の説明…")).toBeVisible();
+    await expect(inspector.getByRole("button", { name: "コピー" })).toBeVisible();
+    await expect(inspector.getByRole("button", { name: "貼り付け" })).toBeVisible();
+    await expect(inspector.getByLabel("撮影日", { exact: true })).toHaveAttribute(
+      "lang",
+      "ja-JP",
+    );
+  });
+
   test("EN survives reload and is shared by login and the admin shell", async ({
     page,
   }, testInfo) => {

@@ -2725,7 +2725,7 @@ export function GalleryTab({
     if (query)
       labels.push({ key: "search", text: copy.filters.searchCondition(query) });
     if (activeAlbum)
-      labels.push({ key: "album", text: `Album: ${activeAlbum.name}` });
+      labels.push({ key: "album", text: activeAlbum.name });
     if (filterCat !== "all")
       labels.push({
         key: "category",
@@ -2743,7 +2743,10 @@ export function GalleryTab({
             : copy.filters.seriesCondition(seriesTitleFor(filterSeries)),
       });
     if (filterSize !== "all")
-      labels.push({ key: "size", text: `Size: ${filterSize}` });
+      labels.push({
+        key: "size",
+        text: copy.filters.sizeCondition(filterSize),
+      });
     if (filterMedium !== "all")
       labels.push({
         key: "medium",
@@ -5257,11 +5260,13 @@ export function GalleryTab({
             description={
               // 読込中に "0 / 0 photos" と断定表示しない — 写真家には消失に見える
               isLoading ? (
-                <span aria-label={t.headers.libraryLoading}>… photos</span>
+                <span aria-label={t.headers.libraryLoading}>
+                  … {t.headers.libraryPhotos}
+                </span>
               ) : (
                 <>
                   <CountSwap value={displayed.length} /> /{" "}
-                  <CountSwap value={allPhotos.length} /> photos
+                  <CountSwap value={allPhotos.length} /> {t.headers.libraryPhotos}
                   {libraryMode === "select" && selected.size > 0 && (
                     <>
                       {t.headers.dotSeparator}
@@ -5557,7 +5562,7 @@ export function GalleryTab({
                   : "text-[var(--admin-muted)] border-[var(--admin-line)]"
               }`}
             >
-              <LayoutList size={11} /> Table
+              <LayoutList size={11} /> {copy.toolbar.table}
             </button>
 
             <button
@@ -5570,7 +5575,7 @@ export function GalleryTab({
               className="flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors"
             >
               <Trash2 size={11} />
-              Trash
+              {copy.toolbar.trash}
               {(trashData?.photos?.length ?? 0) > 0 &&
                 ` (${trashData!.photos.length})`}
             </button>
@@ -5652,7 +5657,9 @@ export function GalleryTab({
                   onChange={(e) => setFilterCat(e.target.value)}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
-                  <option value="all">All ({allPhotos.length})</option>
+                  <option value="all">
+                    {copy.filters.categoryAll(allPhotos.length)}
+                  </option>
                   {categories.map((c) => (
                     <option key={c.slug} value={c.slug}>
                       {c.label} (
@@ -5672,7 +5679,7 @@ export function GalleryTab({
                   aria-label={copy.filters.seriesAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
-                  <option value="all">All series</option>
+                  <option value="all">{copy.filters.seriesAll}</option>
                   {seriesList.map((s) => (
                     <option key={s.id} value={String(s.id)}>
                       {s.title} (
@@ -5691,7 +5698,7 @@ export function GalleryTab({
                   aria-label={copy.filters.displaySizeAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
-                  <option value="all">All sizes</option>
+                  <option value="all">{copy.filters.sizeAll}</option>
                   {(["S", "M", "L"] as const).map((sz) => (
                     <option key={sz} value={sz}>
                       {sz} (
@@ -5728,7 +5735,7 @@ export function GalleryTab({
                   aria-label={copy.filters.orientationAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
-                  <option value="all">All orientations</option>
+                  <option value="all">{copy.filters.orientationAll}</option>
                   <option value="portrait">
                     {copy.filters.portrait} ({orientationCounts.portrait})
                   </option>
@@ -5797,7 +5804,7 @@ export function GalleryTab({
                   aria-label={copy.filters.uploadedAria}
                   className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
                 >
-                  <option value="all">All time</option>
+                  <option value="all">{copy.filters.timeAll}</option>
                   <option value="7">{copy.filters.recentDays(7)}</option>
                   <option value="30">{copy.filters.recentDays(30)}</option>
                 </select>
@@ -6888,7 +6895,7 @@ export function GalleryTab({
                       ref={gridRef}
                       data-library-grid-mode={libraryMode}
                       role="listbox"
-                      aria-label="Library photos"
+                      aria-label={`Library ${t.headers.libraryPhotos}`}
                       data-virtualized={
                         virtualGrid.isVirtualized ? "true" : "false"
                       }
@@ -8118,7 +8125,7 @@ export function GalleryTab({
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, title: e.target.value }))
                   }
-                  placeholder="Untitled"
+                  placeholder={copy.inspector.titlePlaceholder}
                   className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors"
                 />
               </InspectField>
@@ -8174,7 +8181,7 @@ export function GalleryTab({
                   aria-label={copy.inspector.copyCapture}
                   className="inline-flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  <Copy size={10} /> Copy
+                  <Copy size={10} /> {copy.inspector.copy}
                 </button>
                 <button
                   type="button"
@@ -8183,7 +8190,7 @@ export function GalleryTab({
                   aria-label={copy.inspector.pasteCapture}
                   className="inline-flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] border border-[var(--admin-line)] rounded-sm px-2 py-1 transition-colors"
                 >
-                  <ClipboardPaste size={10} /> Paste
+                  <ClipboardPaste size={10} /> {copy.inspector.paste}
                 </button>
                 {captureClipStatus !== "idle" && (
                   <span
@@ -8231,6 +8238,7 @@ export function GalleryTab({
                   <input
                     aria-label={copy.inspector.shotDateAria}
                     type="date"
+                    lang={language === "ja" ? "ja-JP" : "en"}
                     value={editForm.shotAt}
                     onChange={(e) =>
                       setEditForm((f) => ({ ...f, shotAt: e.target.value }))
@@ -8260,7 +8268,7 @@ export function GalleryTab({
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, description: e.target.value }))
                   }
-                  placeholder="Photo description..."
+                  placeholder={copy.inspector.descriptionPlaceholder}
                   className="w-full bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-body)] px-2 py-1.5 rounded-sm border border-[var(--admin-line)] outline-none transition-colors resize-y"
                 />
               </InspectField>

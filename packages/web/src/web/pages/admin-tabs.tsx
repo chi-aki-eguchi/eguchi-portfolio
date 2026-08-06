@@ -3508,7 +3508,7 @@ export function ServiceTab({
               </span>
               {plan.primary && (
                 <span className="text-[length:var(--admin-text-note)] bg-[rgba(var(--admin-ink-rgb),0.08)] text-[var(--admin-ink)] px-1.5 py-0.5 rounded">
-                  RECOMMENDED
+                  {t.phase2b.service.pricing.recommended}
                 </span>
               )}
               <SvcArrayControls
@@ -7306,7 +7306,7 @@ function FontPicker({
                 {current[customUrlKey].split("/").pop()}
               </span>
               <label className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] hover:text-[var(--admin-ink)] cursor-pointer transition-colors">
-                Replace
+                {copy.replace}
                 <input
                   aria-label={copy.fileAria}
                   type="file"

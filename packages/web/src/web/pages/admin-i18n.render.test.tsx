@@ -92,6 +92,43 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   expect(en.settingsBasic.previewTitle).toBe("Preview");
 });
 
+test("日本語辞書の表示文は固有名詞と入力例を除いて日本語を含む", () => {
+  const englishOnly: string[] = [];
+  const allowedExact = new Set([
+    "login.eyebrow",
+    "headers.dotSeparator",
+    "phase2b.profile.fields.instagramLabel",
+    "phase2b.profile.fields.xUrlLabel",
+    "phase2b.profile.fields.noteUrlLabel",
+    "phase2b.service.examples.ctaLabel",
+    "phase2b.settingsBasic.portfolioKit.title",
+    "phase2b.settingsDesign.siteCopy.fields.snsLabelInstagram.label",
+    "phase2b.settingsDesign.siteCopy.fields.snsLabelTwitter.label",
+    "phase2b.settingsDesign.siteCopy.fields.snsLabelNote.label",
+  ]);
+  const walk = (value: unknown, path: string) => {
+    if (typeof value === "string") {
+      if (
+        value &&
+        !/[ぁ-んァ-ヶ一-龠々]/.test(value) &&
+        !path.startsWith("navigation.tabs.") &&
+        !/(placeholder|Placeholder)$/.test(path) &&
+        !allowedExact.has(path)
+      ) {
+        englishOnly.push(`${path}: ${value}`);
+      }
+      return;
+    }
+    if (value && typeof value === "object") {
+      for (const [key, nested] of Object.entries(value)) {
+        walk(nested, path ? `${path}.${key}` : key);
+      }
+    }
+  };
+  walk(ADMIN_DICTIONARY.ja, "");
+  expect(englishOnly).toEqual([]);
+});
+
 function CopyProbe() {
   const { language, t } = useAdminI18n();
   return createElement(

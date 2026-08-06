@@ -9,6 +9,7 @@ import {
 } from "./photo-reorder-safety";
 import { buildBatchPhotoMetadataPatch } from "./batch-photo-metadata";
 import { uploadAllOrCleanup } from "./thumbnail-upload-integrity";
+import { buildPublicCoverPhotoFilter } from "./series-cover-visibility";
 import { uniqueUploadStorageKey } from "./upload-key";
 import { writeSettingsAtomic } from "./database/settings-write";
 import {
@@ -2395,9 +2396,7 @@ const app = new Hono()
               focalY: schema.photos.focalY,
             })
             .from(schema.photos)
-            .where(
-              sql`${inArray(schema.photos.id, coverIds)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
-            ),
+            .where(buildPublicCoverPhotoFilter(schema.photos, coverIds)),
         )
       : [];
     const coverMap = new Map(covers.map((p) => [p.id, p]));

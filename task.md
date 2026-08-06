@@ -3,62 +3,60 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** デバッグ継続中。Claude が5巡（24件）→ Codex が「大きいバグ」12件を修正。
-  **未pushの commit がある。**件数は `git rev-list --count origin/main..HEAD` で測る
+- **Status:** テストの信頼性を立て直す作業。Codex 12件の追試が完了し、
+  素通りしていた3件を実DB検査へ差し替えた。origin との差は
+  `git rev-list --count origin/main..HEAD` で測る（push はオーナーだけ）
 - **Current owner:** 未定（次の担当者が自分を書き込んでから編集を始める）
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean（未追跡は `scratch/` のみ）
 
-### 次の担当者への引き継ぎ（デバッグ継続）
+### 今回やったこと（詳細は `docs/agents/codex-debug-2026-08-05.md` 末尾）
 
-**やることは3つ。上から順でよい。**
+1. **Codex 12件の追試を完了。**5件は実装を戻すとテストが落ちる。2件
+   （`2051e48` `a3d7017`）は `index.ts` をテキストとして読むだけで、
+   保存を空にしても後始末を無効化しても素通りしていた
+2. **素通りしていた3件を実DB検査へ差し替えた。**
+   `series-public-visibility.test.ts`（非公開カバー写真）/
+   一括メタデータ保存（`applyBatchPhotoMetadata` へ切り出し）/
+   サムネの後始末（R2削除のため配線テストのまま、no-op を弾くまで厳しく）
+3. **推奨5（回転時の焦点）を実装。**オーナーが「一緒に回す」を選択
 
-1. **Codex の12件のうち未検証7件を追試する。**検証は「製品コードだけを1件ぶん
-   戻して `bun test ./src` が落ちること」。**確認済み5件**: `45f4ad5` `2553903`
-   `c7e2655` `1a83251` `5f8be81`。**未確認7件**: `c477384` `2051e48` `087f591`
-   `a3d7017` `8343911` `f77bf49` `d7daf99`
-2. **`packages/web/src/api/series-public-visibility.test.ts` を差し替える。**
-   いまはソース文字列に `"schema.photos.isPublished, true"` が含まれるかを
-   見ているだけで、実際の絞り込み結果を検査していない。リファクタで壊れ、
-   コメントに書いても通る。**この1件だけロジックの単体テストが無い。**
-3. Codex 推奨の残り（`docs/agents/codex-debug-2026-08-05.md` の表）:
-   **2（API入口の共通入力検証）/ 6（画像キャッシュの版・上限・破棄）/
-   8（Lightbox の srcSet 再試行と 1スワイプ=1移動）**。
-   推奨5（回転時の focal point）は**オーナー判断待ち** — 90度変換するか
-   中央リセットするか。
+### 次の一手（上から順）
 
-### 直近で直したもの
+1. **推奨2: API入口の共通入力検証**（null・型違い・巨大ID配列を400へ）。
+   書き込みAPIの挙動が変わるので既存テストの期待値も要確認
+2. **推奨8: Lightbox の `srcSet` 再試行と 1スワイプ=1移動。**
+   Lightbox は「壊さない」対象。着手前に `docs/checklists.md`
+3. **推奨6: 画像キャッシュの版・上限・破棄**（Service Worker）。配信に関わる
+4. 推奨4（並べ替え4種を写真と同じ競合拒否へ）と推奨3・9 も未着手
 
-Codex 12件（`7c49d09..321c6b7^`）。重いのは**非公開カバー写真が公開シリーズ一覧に
-出ていた**件、**同時アップロードで保存キーが衝突しうる**件、**一括操作4種が
-途中まで保存される**件。Claude 24件を含む経緯は `docs/agents/codex-debug-2026-08-05.md`。
+### 検証の状態
 
-### 調査に使える道具（`scratch/debug-sweep/`・gitignore対象）
-
-`full-sweep.mjs`（全ルート×3画面幅×light/dark）/ `interaction2.mjs`（操作系）/
-`admin-mobile.mjs`・`admin-interaction.mjs` / `failure-states.mjs`（API故障・空）/
-`rapid.mjs`（連打）/ `settings-final.mjs`（設定の到達性）/ `code-audit.mjs`（不変条件）。
-**すべて read-only 設計**（非GETを止めるガード入り）。本番DBに書かない。
+- `bun run check` **成功**（exit 0）/ `bun test ./src` 730 pass 0 fail
+- `bun run smoke` は **Codex 12件と今回の変更を入れたあと未実行**。
+  本番DBにつながるので実行判断は慎重に
+- **Railway 反映と本番での確認は未実施**
 
 ### 測るときの落とし穴
 
 **正本は `docs/agents/measuring.md`。着手前に読む。**
-特に、Current State へ「すぐ古くなる値」（ahead件数・push状況）を書かないこと。
-`check-handoff-freshness.mjs` が弾く。2026-08-05 に Codex を4回止めた原因。
+新しく分かったこと: **ソースを文字列で見るテストは実装を守らない。**
+`.set(patch)` を `.set({})` にしても通る。同じ形が他にも無いか、
+`readFileSync(import.meta.dir` を探すと見つかる。
+Current State へ「すぐ古くなる値」（ahead件数・push状況）を書かないこと。
 
-### 検証の状態
+### 調査に使える道具（`scratch/debug-sweep/`・gitignore対象）
 
-- `bun run check` **成功**（exit 0）
-- `bun run smoke` は 2026-08-05 の Claude 分までは成功（303 passed）。
-  **Codex の12件を入れたあとは未実行**。本番DBにつながるので実行判断は慎重に
-- **Railway 反映と本番での確認は未実施**
+`full-sweep.mjs` / `interaction2.mjs` / `admin-mobile.mjs` /
+`admin-interaction.mjs` / `failure-states.mjs` / `rapid.mjs` /
+`settings-final.mjs` / `code-audit.mjs`。**すべて read-only 設計。**
 
 ### 触ってはいけない範囲
 
-- `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 / 公開設定 /
-  `.env` の表示・記録 / `docs/archive/` の本文
-- Lightbox は「壊さない」対象（触るなら `docs/checklists.md`）。写真の並べ替えは
-  `photo-reorder-safety.ts` の競合検知を壊さない
-- 同じ worktree を2人で同時に編集しない（2026-08-05 に違反して Codex を止めた）
+- `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 /
+  公開設定 / `.env` の表示・記録 / `docs/archive/` の本文
+- Lightbox は「壊さない」対象。写真の並べ替えは `photo-reorder-safety.ts` の
+  競合検知を壊さない
+- 同じ worktree を2人で同時に編集しない
 - 週枠が両者とも少ない。**範囲を縮めず1区切りを小さくして都度 commit**
 <!-- CURRENT_STATE_END -->
 

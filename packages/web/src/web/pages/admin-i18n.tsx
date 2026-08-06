@@ -303,6 +303,7 @@ const ADMIN_PHASE_2B_JA = {
       lockedByFilter:
         "検索・絞り込み中のため、いまは並び替えを保存できません（シリーズ単独の絞り込みなら可）。",
       unlock: "並び替えできる状態に戻す",
+      unlockAndArrange: "解除して並べ替える",
       hint:
         "戻したあとは、パソコンでは写真をドラッグ、スマホでは写真の左下の矢印ボタンで並び替えられます。",
       seriesHint:
@@ -1803,6 +1804,7 @@ const ADMIN_PHASE_2B_EN = {
       lockedByFilter:
         "The saved order cannot be changed while searching or filtering. A single Series filter is allowed.",
       unlock: "Return to manual reordering",
+      unlockAndArrange: "Clear conditions and reorder",
       hint:
         "After returning, drag photos on desktop or use the arrow buttons at the lower left of each photo on mobile.",
       seriesHint:

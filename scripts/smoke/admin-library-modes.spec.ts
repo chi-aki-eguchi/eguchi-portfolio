@@ -177,18 +177,22 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       .fill("__library_mode_no_result__");
     await expect(page.locator('[data-library-empty="search"]')).toBeVisible();
 
-    await modeAction(page, "arrange").click();
-    await expect(page.locator("[data-library-arrange-toolbar]")).toHaveAttribute(
-      "data-reorder-locked",
-      "true",
-    );
-    await expect(page.locator("[data-library-arrange-toolbar]")).toHaveAttribute(
-      "data-reorder-lock-cause",
-      "filters",
-    );
+    const arrange = modeAction(page, "arrange");
+    await expect(arrange).toBeDisabled();
+    await expect(arrange).toHaveAttribute("title", /検索|絞り込み/);
+    await expect(
+      page.locator('[data-library-reorder-entry-lock="filters"]'),
+    ).toBeVisible();
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
       0,
+    );
+
+    await page.getByRole("button", { name: "解除して並べ替える" }).click();
+    await expect(library(page)).toHaveAttribute("data-library-mode", "arrange");
+    await expect(page.locator("[data-library-arrange-toolbar]")).toHaveAttribute(
+      "data-reorder-locked",
+      "false",
     );
   });
 

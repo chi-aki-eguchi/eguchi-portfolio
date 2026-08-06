@@ -129,7 +129,7 @@ const flush = async () => {
   });
 };
 
-test("並び替えロック中は復帰ボタンが出て、押すと手動順に戻り警告が消える", async () => {
+test("手動表示以外では入口を無効化し、1回で解除して並び替えへ入る", async () => {
   gallerySortOrder = "manual";
   currentPhotoOrder = samplePhotos.map((photo) => photo.id);
   // ブラウザ別 sessionStorage に非manualソートが残っている状態を再現
@@ -160,30 +160,24 @@ test("並び替えロック中は復帰ボタンが出て、押すと手動順�
   await flush();
   await flush();
 
-  // 明示的に「並べる」へ入った時だけ、ロック理由と復帰操作を前面に出す。
   const arrange = host.querySelector<HTMLButtonElement>(
     '[data-library-mode-action="arrange"]',
   );
   expect(arrange).not.toBeNull();
-  await act(async () => {
-    arrange!.dispatchEvent(
-      new dom.window.MouseEvent("click", { bubbles: true }),
-    );
-  });
-  await flush();
+  expect(arrange!.disabled).toBe(true);
+  expect(arrange!.title).toContain("手動");
+  expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("normal");
 
-  // ロック警告と復帰ボタン(文言固定)
   expect(host.textContent).toContain("いまは並び替えを保存できません");
   const buttons = Array.from(host.querySelectorAll("button"));
   const restore = buttons.find((b) =>
-    (b.textContent ?? "").includes("並び替えできる状態に戻す"),
+    (b.textContent ?? "").includes("解除して並べ替える"),
   );
   expect(restore).toBeDefined();
 
-  // ロック中も空の操作帯を置かず、解除理由だけを1箇所で示す。
+  // 入口で止めるため、並べ替え中の操作帯にはまだ入らない。
   expect(host.querySelector("[data-library-reorder-bar]")).toBeNull();
 
-  // 押すと librarySort=manual に戻り、警告ごと消える
   await act(async () => {
     restore!.dispatchEvent(
       new dom.window.MouseEvent("click", { bubbles: true }),
@@ -194,6 +188,7 @@ test("並び替えロック中は復帰ボタンが出て、押すと手動順�
   expect(window.sessionStorage.getItem("admin:librarySort")).toBe(
     JSON.stringify("manual"),
   );
+  expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("arrange");
   expect(host.textContent).not.toContain("いまは並び替えを保存できません");
 
   await act(async () => {

@@ -4350,6 +4350,27 @@ export function GalleryTab({
     proceed();
   };
 
+  const unlockAndArrange = () => {
+    const proceed = () => {
+      clearLibraryFilters();
+      setLibrarySort("manual");
+      applyLibraryMode("arrange");
+    };
+    const currentInspectPhoto = inspectPhotoRef.current;
+    if (
+      currentInspectPhoto &&
+      photoEditFormChanged(editFormRef.current, currentInspectPhoto)
+    ) {
+      openConfirmDialog({
+        message: copy.feedback.closeInspectorConfirm,
+        confirmLabel: copy.feedback.closeInspectorAction,
+        onConfirm: proceed,
+      });
+      return;
+    }
+    proceed();
+  };
+
   useEffect(() => {
     if (!pendingLibraryMode || reorderBusy) return;
     if (reorderFeedback?.state === "error") {
@@ -5240,7 +5261,8 @@ export function GalleryTab({
                           allPhotos.length === 0 ||
                           !manualOrder.ok ||
                           reorderBusy ||
-                          publicReorderLockCause !== null
+                          publicReorderLockCause !== null ||
+                          reorderLockCause !== null
                         : false
                   }
                   title={
@@ -5254,6 +5276,10 @@ export function GalleryTab({
                             ? copy.reorder.settingsError
                             : publicReorderLockCause === "loading"
                               ? copy.reorder.settingsLoading
+                              : reorderLockCause === "sort"
+                                ? copy.reorder.lockedBySort
+                                : reorderLockCause === "filters"
+                                  ? copy.reorder.lockedByFilter
                               : undefined
                   }
                 >
@@ -5324,6 +5350,23 @@ export function GalleryTab({
                     : copy.reorder.settingsLoading}
               </span>
             )}
+            {manualOrder.ok &&
+              publicReorderLockCause === null &&
+              reorderLockCause !== null && (
+                <span
+                  data-library-reorder-entry-lock={reorderLockCause}
+                  className="admin-library-reorder-entry-lock text-[length:var(--admin-text-note)]"
+                >
+                  <span>
+                    {reorderLockCause === "sort"
+                      ? copy.reorder.lockedBySort
+                      : copy.reorder.lockedByFilter}
+                  </span>
+                  <button type="button" onClick={unlockAndArrange}>
+                    {copy.reorder.unlockAndArrange}
+                  </button>
+                </span>
+              )}
             <details className="admin-library-view-menu">
               <summary>
                 <Grid size={12} />

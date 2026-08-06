@@ -1635,6 +1635,27 @@
   margin-left: auto;
 }
 
+.admin-atelier .admin-library-reorder-entry-lock {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-warning);
+}
+
+.admin-atelier .admin-library-reorder-entry-lock > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-atelier .admin-library-reorder-entry-lock > button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid var(--admin-line-strong);
+}
+
 .admin-atelier .admin-library-search {
   position: relative;
   display: flex;

@@ -1700,6 +1700,20 @@
 }
 
 @media (max-width: 767px) {
+  .admin-atelier .admin-library-workbar button,
+  .admin-atelier .admin-library-workbar summary,
+  .admin-atelier .admin-library-filter-sheet button,
+  .admin-atelier .admin-library-filter-sheet select,
+  .admin-atelier [data-library-inspector] button,
+  .admin-atelier [data-library-inspector] input,
+  .admin-atelier [data-library-inspector] select,
+  .admin-atelier [data-library-inspector] textarea,
+  .admin-atelier [data-library-selection-toolbar] button,
+  .admin-atelier [data-library-selection-toolbar] summary {
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+
   .admin-atelier .admin-library-active-conditions {
     padding-inline: 12px;
   }
@@ -1845,16 +1859,27 @@
   }
 
   .admin-atelier .admin-library-workbar {
-    padding-inline: 12px;
+    min-height: 52px;
+    padding: 8px 12px;
   }
 
   .admin-atelier .admin-library-workbar__row {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
   }
 
   .admin-atelier .admin-library-mode-switcher {
-    padding-right: 10px;
+    display: none;
+  }
+
+  .admin-atelier .admin-library-mobile-select {
+    min-height: 40px;
+    flex: 0 0 auto;
+    padding-inline: 12px;
+    border: 1px solid var(--admin-line);
+    border-radius: 3px;
+    color: var(--admin-ink);
+    background: var(--admin-paper-soft);
   }
 
   .admin-atelier .admin-library-mode-switcher button {
@@ -1872,7 +1897,13 @@
   .admin-atelier .admin-library-search {
     width: auto;
     min-width: 0;
+    min-height: 40px;
     flex: 1 1 auto;
+  }
+
+  .admin-atelier .admin-library-search input {
+    height: 40px;
+    min-height: 40px !important;
   }
 
   .admin-atelier .admin-library-find-tools > button {
@@ -1893,17 +1924,62 @@
     display: none;
   }
 
-  /* 取り込みは行を分ける。左端はモード切替とそろえる。 */
+  /* 取り込みは媒体を保ったまま1行へ収める。 */
   .admin-atelier .admin-library-import-group {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
     padding-left: 0;
     border-left: 0;
-    border-top: 1px solid var(--admin-line);
-    padding-top: 8px;
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .admin-atelier .admin-library-import-medium {
+    display: none;
   }
 
   .admin-atelier .admin-library-import-group .admin-library-import-button {
-    margin-left: auto;
+    min-height: 40px;
+    margin-left: 0;
+    padding-inline: 10px;
+  }
+
+  .admin-atelier .admin-library-filter-sheet {
+    position: fixed;
+    z-index: 45;
+    right: 8px;
+    bottom: calc(66px + env(safe-area-inset-bottom));
+    left: 8px;
+    max-height: min(68vh, 560px);
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 10px;
+    background: var(--admin-paper);
+    box-shadow: 0 -8px 28px rgba(var(--admin-ink-rgb), 0.14);
+  }
+
+  .admin-atelier .admin-library-filter-sheet select,
+  .admin-atelier .admin-library-filter-sheet button {
+    min-height: 40px;
+  }
+
+  .admin-atelier .admin-library-filter-sheet__footer {
+    position: sticky;
+    bottom: -12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px -12px -12px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--admin-line);
+    background: var(--admin-paper);
+    color: var(--admin-muted);
+    font-size: var(--admin-text-note);
+  }
+
+  .admin-atelier .admin-library-filter-sheet__footer button {
+    color: var(--admin-ink);
   }
 }
 

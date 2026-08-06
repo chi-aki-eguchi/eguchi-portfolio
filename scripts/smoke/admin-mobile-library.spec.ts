@@ -295,6 +295,28 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       await expect(toolbar.getByRole("button", { name: "ゴミ箱へ" })).toBeVisible();
       await expect(page.getByRole("button", { name: "取り込む", exact: true })).toBeVisible();
     });
+
+    test("作業バーは100px以下で、絞り込みを開いても写真を押し下げない", async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== "mobile", "mobileのみ");
+      await loginAsAdmin(page);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoAdminTab(page, "gallery");
+      const workbar = page.locator(".admin-library-workbar");
+      const grid = page.locator("[data-library-scroll]");
+      const before = (await grid.boundingBox())!;
+      expect((await workbar.boundingBox())!.height).toBeLessThanOrEqual(100);
+
+      await page.locator("[data-library-filters-toggle]").click();
+      await expect(page.locator("[data-library-filter-sheet]")).toBeVisible();
+      const after = (await grid.boundingBox())!;
+      expect(after.y).toBeCloseTo(before.y, 0);
+      await expect(page.locator(".admin-library-filter-sheet__footer")).toContainText(/枚/);
+      await expect(page.locator("[data-library-mobile-select]")).toBeVisible();
+      await page.locator(".admin-library-view-menu > summary").click();
+      await expect(page.locator("[data-library-mobile-arrange]")).toBeVisible();
+    });
   });
 
   test("デスクトップではthumbSize(既定220px)がそのままminmaxに入る", async ({

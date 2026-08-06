@@ -5329,6 +5329,17 @@ export function GalleryTab({
         {/* Workspace bar: one mode switcher on the left, find/view tools on the right. */}
         <div className="admin-library-workbar">
           <div className="admin-library-workbar__row">
+            {libraryMode === "normal" && (
+              <button
+                type="button"
+                data-library-mobile-select
+                onClick={() => requestLibraryMode("select")}
+                disabled={uploading || showTrash || bulkEditMode || displayed.length === 0}
+                className="admin-library-mobile-select md:hidden"
+              >
+                {copy.mode.select}
+              </button>
+            )}
             <fieldset
               aria-label={copy.mode.group}
               data-library-mode-switcher
@@ -5624,6 +5635,19 @@ export function GalleryTab({
             >
               ?
             </button>
+            <button
+              type="button"
+              data-library-mobile-arrange
+              onClick={() => requestLibraryMode("arrange")}
+              disabled={
+                uploading || showTrash || bulkEditMode || allPhotos.length === 0 ||
+                !manualOrder.ok || reorderBusy || publicReorderLockCause !== null ||
+                reorderLockCause !== null
+              }
+              className="md:hidden flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] disabled:opacity-40"
+            >
+              <GripVertical size={11} /> {copy.mode.arrange}
+            </button>
               </div>
             </details>
 
@@ -5686,7 +5710,7 @@ export function GalleryTab({
           {libraryMode !== "arrange" &&
             !showTrash &&
             showLibraryFilters && (
-            <div className="border-t border-[var(--admin-line)] pt-2 flex flex-col gap-2">
+            <div data-library-filter-sheet className="admin-library-filter-sheet border-t border-[var(--admin-line)] pt-2 flex flex-col gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <select
                   value={filterCat}
@@ -5911,6 +5935,12 @@ export function GalleryTab({
                   <Plus size={11} /> {copy.albums.add}
                 </button>
               </div>
+              <footer className="admin-library-filter-sheet__footer">
+                <button type="button" onClick={clearLibraryFilters} disabled={!anyFilterActive}>
+                  {copy.filters.clearAll}
+                </button>
+                <span>{displayed.length} {t.headers.libraryPhotos}</span>
+              </footer>
             </div>
           )}
 

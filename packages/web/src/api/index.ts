@@ -17,6 +17,7 @@ import {
   buildFocalRotationByDelta,
   buildFocalRotationToAngle,
 } from "./focal-rotation";
+import { idListError, isJsonObject, parseIdList } from "./request-input";
 import { uniqueUploadStorageKey } from "./upload-key";
 import { writeSettingsAtomic } from "./database/settings-write";
 import {
@@ -730,12 +731,6 @@ function keyToProxyUrl(
 // reorder 系の ids は `as { ids: number[] }` キャストだけでは実行時検証に
 // ならない(配列以外で TypeError → 500)。batch エンドポイントと同じ基準で
 // 整数のみに絞る。
-function cleanIntIds(value: unknown): number[] {
-  return Array.isArray(value)
-    ? value.filter((n): n is number => Number.isInteger(n))
-    : [];
-}
-
 function parseFocalPoint(value: unknown): number | null {
   const n = typeof value === "string" ? Number(value) : value;
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
@@ -822,6 +817,28 @@ const app = new Hono()
     c.header("X-Content-Type-Options", "nosniff");
     if (!c.req.path.startsWith("/api/images/"))
       c.header("Cache-Control", "no-store");
+  })
+  // 書き込みの入口で本文の「形」だけを検査する。`null`・配列・数値が届くと
+  // 各ルートの分解代入が TypeError になり、呼び出し側の誤りなのに 500 で
+  // 返っていた。ここで 400 に落とす。Hono は解析結果を使い回すので、
+  // 各ルートの `c.req.json()` が二重に読むことはない。
+  // アップロード(multipart)など JSON 以外の本文には触れない。content-type を
+  // 名乗らない本文もここでは読まない — 読むとアップロード経路の
+  // `parseBody()` を壊しかねないため、意図的に対象外にしている。
+  // (`lib/api.ts` の型付きクライアントは常に application/json を付ける)
+  .use(async (c, next) => {
+    if (c.req.method === "GET" || c.req.method === "HEAD") return next();
+    if (!(c.req.header("content-type") ?? "").includes("application/json"))
+      return next();
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "Invalid request body" }, 400);
+    }
+    if (!isJsonObject(body))
+      return c.json({ error: "リクエスト本文の形式が正しくありません。" }, 400);
+    return next();
   })
 
   // ── Health ──────────────────────────────────────────────
@@ -2110,7 +2127,9 @@ const app = new Hono()
       operation: string;
       value?: unknown;
     };
-    const cleanIds = cleanIntIds(ids);
+    const parsed = parseIdList(ids);
+    if (!parsed.ok) return c.json({ error: idListError(parsed.reason) }, 400);
+    const cleanIds = parsed.ids;
     if (cleanIds.length === 0) return c.json({ error: "No valid ids" }, 400);
 
     switch (operation) {
@@ -2847,9 +2866,9 @@ const app = new Hono()
   // still exist in the photos table — no existence check, no 404.
   .post("/admin/hero-photos/cleanup", requireAdmin, async (c) => {
     const { photoIds } = (await c.req.json()) as { photoIds: number[] };
-    const cleanIds = Array.isArray(photoIds)
-      ? photoIds.filter((n): n is number => Number.isInteger(n) && n > 0)
-      : [];
+    const parsed = parseIdList(photoIds, { positiveOnly: true });
+    if (!parsed.ok) return c.json({ error: idListError(parsed.reason) }, 400);
+    const cleanIds = parsed.ids;
     if (cleanIds.length > 0) {
       await withRetry(() =>
         db

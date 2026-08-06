@@ -211,6 +211,7 @@ const ADMIN_PHASE_2B_JA = {
       create: "作成",
     },
     selection: {
+      more: "その他",
       selected: (count: number) => `選択中 ${count}枚`,
       selectedWithHidden: (count: number, hiddenCount: number) =>
         `選択中 ${count}枚（うち${hiddenCount}枚は絞り込みの外）`,
@@ -1731,6 +1732,7 @@ const ADMIN_PHASE_2B_EN = {
       create: "Create",
     },
     selection: {
+      more: "More",
       selected: (count: number) => `${count} selected`,
       selectedWithHidden: (count: number, hiddenCount: number) =>
         `${count} selected (${hiddenCount} outside filters)`,

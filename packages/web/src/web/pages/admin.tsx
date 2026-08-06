@@ -5309,12 +5309,6 @@ export function GalleryTab({
                 <>
                   <CountSwap value={displayed.length} /> /{" "}
                   <CountSwap value={allPhotos.length} /> {t.headers.libraryPhotos}
-                  {libraryMode === "select" && selected.size > 0 && (
-                    <>
-                      {t.headers.dotSeparator}
-                      <CountSwap value={selected.size} /> {t.headers.librarySelected}
-                    </>
-                  )}
                 </>
               )
             }
@@ -5925,7 +5919,7 @@ export function GalleryTab({
             <div
               data-library-selection-toolbar
               data-library-selected-count={selected.size}
-              className="flex items-center gap-2 flex-wrap"
+              className="admin-library-selection-toolbar flex items-center gap-2 flex-wrap"
             >
               <div className="flex items-center gap-2 border-r border-[var(--admin-line)] pr-2 sm:pr-3">
                 <span
@@ -5939,6 +5933,13 @@ export function GalleryTab({
                       )
                     : copy.selection.selected(selected.size)}
                 </span>
+                <button
+                  type="button"
+                  className="admin-selection-cancel"
+                  onClick={() => requestLibraryMode("normal")}
+                >
+                  {copy.mode.endSelection}
+                </button>
                 {recentlyAddedSelectedCount > 0 && (
                   <span
                     data-library-recently-added-selection
@@ -5954,7 +5955,7 @@ export function GalleryTab({
                 </span>
               </div>
               {selected.size > 0 && (
-                <div data-library-batch-actions className="contents">
+                <div data-library-batch-actions className="admin-selection-actions">
               {/* M2: Publish / Unpublish */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-0.5">
                 <button
@@ -6065,6 +6066,9 @@ export function GalleryTab({
                 )}
               </div>
 
+              <details className="admin-selection-more">
+                <summary>{copy.selection.more}</summary>
+                <div className="admin-selection-more__panel">
               {/* M2: Set display size */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
                 <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
@@ -6233,6 +6237,8 @@ export function GalleryTab({
               >
                 <Trash2 size={11} /> {copy.selection.moveToTrash}
               </button>
+                </div>
+              </details>
                 </div>
               )}
             </div>

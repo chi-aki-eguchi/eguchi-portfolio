@@ -274,6 +274,27 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       await saveBar.getByRole("button", { name: "元に戻す" }).click();
       await page.locator("[data-library-inspector-close]").click();
     });
+
+    test("選択操作は下部に固定し、残りの操作もその他から届く", async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== "mobile", "mobileのみ");
+      await loginAsAdmin(page);
+      await gotoAdminTab(page, "gallery");
+      await page.locator('[data-library-mode-action="select"]').click();
+      await page.locator(".admin-photo-tile").first().locator("[data-library-photo-action]").click();
+
+      const toolbar = page.locator("[data-library-selection-toolbar]");
+      await expect(toolbar).toBeVisible();
+      const box = (await toolbar.boundingBox())!;
+      expect(box.y + box.height).toBeLessThanOrEqual(812 - 55);
+      await expect(toolbar.getByText("選択中 1枚", { exact: true })).toHaveCount(1);
+      await expect(toolbar.getByRole("button", { name: "選択終了" })).toBeVisible();
+      await toolbar.locator(".admin-selection-more > summary").click();
+      await expect(toolbar.getByRole("button", { name: "一括編集" })).toBeVisible();
+      await expect(toolbar.getByRole("button", { name: "ゴミ箱へ" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "取り込む", exact: true })).toBeVisible();
+    });
   });
 
   test("デスクトップではthumbSize(既定220px)がそのままminmaxに入る", async ({

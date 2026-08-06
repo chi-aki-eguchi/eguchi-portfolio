@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
 // 2026-07-11 スマホLibraryコンタクトシート化の回帰テスト。
@@ -188,9 +188,39 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   // タイルタップ → Inspector(モバイルはドロワー)が開く。編集していないので
   // × は即閉じ(確認ダイアログなし・非書き込み)。
   await tiles.nth(0).locator("[data-library-photo-action]").click();
-  await expect(page.getByText("Edit Photo")).toBeVisible({ timeout: 5_000 });
+  const inspector = page.locator("[data-library-inspector]");
+  await expect(inspector.getByText("写真を編集")).toBeVisible({ timeout: 5_000 });
+  await expect(inspector).toHaveAttribute("data-inspector-mobile-section", "basic");
+  await expect(inspector.locator("[data-inspector-save-bar]")).toBeVisible();
+  await expect(inspector.locator("[data-inspector-save-bar]")).toHaveAttribute(
+    "data-inspector-save-state",
+    "clean",
+  );
+  const mobileTitle = inspector.locator(".admin-inspector-mobile-title input");
+  await expect(mobileTitle).toBeVisible();
+  await mobileTitle.fill(`${await mobileTitle.inputValue()}確認`);
+  await expect(inspector.locator("[data-inspector-save-bar]")).toHaveAttribute(
+    "data-inspector-save-state",
+    "dirty",
+  );
+
+  await inspector.getByRole("button", { name: "分類", exact: true }).click();
+  await expect(inspector.locator("[data-inspector-classification-control]").first()).toBeVisible();
+  await inspector.getByRole("button", { name: "詳細", exact: true }).click();
+  await expect(inspector.locator(".admin-inspector-metadata")).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "この写真を複製" })).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "写真をゴミ箱へ" })).toBeVisible();
+
+  await inspector
+    .locator("[data-inspector-save-bar]")
+    .getByRole("button", { name: "元に戻す" })
+    .click();
+  await expect(inspector.locator("[data-inspector-save-bar]")).toHaveAttribute(
+    "data-inspector-save-state",
+    "clean",
+  );
   await page.locator("[data-library-inspector-close]").click();
-  await expect(page.getByText("Edit Photo")).toBeHidden();
+  await expect(page.getByText("写真を編集")).toBeHidden();
 }
 
 test.describe("admin — スマホLibraryコンタクトシート", () => {
@@ -209,6 +239,40 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       await loginAsAdmin(page);
       await assertContactSheet(page, 375, 667);
       await assertContactSheet(page, 390, 844);
+    });
+
+    test("写真保存の失敗を下部バーに表示し、その場で再試行できる", async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== "mobile",
+        "モバイル専用の検証のため mobile プロジェクトのみで実行",
+      );
+      await loginAsAdmin(page);
+      await gotoAdminTab(page, "gallery");
+      await page.locator(".admin-photo-tile").first().locator("[data-library-photo-action]").click();
+
+      const inspector = page.locator("[data-library-inspector]");
+      const saveBar = inspector.locator("[data-inspector-save-bar]");
+      const title = inspector.locator(".admin-inspector-mobile-title input");
+      await title.fill(`${await title.inputValue()}失敗確認`);
+      await page.route("**/api/admin/photos/*", async (route: Route) => {
+        if (route.request().method() !== "PATCH") {
+          await route.continue();
+          return;
+        }
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "test-only failure" }),
+        });
+      });
+
+      await saveBar.getByRole("button", { name: "保存", exact: true }).click();
+      await expect(saveBar).toHaveAttribute("data-inspector-save-state", "error");
+      await expect(saveBar.getByRole("button", { name: "やり直す" })).toBeVisible();
+      await saveBar.getByRole("button", { name: "元に戻す" }).click();
+      await page.locator("[data-library-inspector-close]").click();
     });
   });
 

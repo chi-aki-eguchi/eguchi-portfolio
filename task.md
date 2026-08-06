@@ -3,9 +3,9 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** admin スマホ改善の**段階1・依頼1〜4を完了**。明確な不具合4件を
-  独立commitで修正し、段階2のスマホ操作改善へ進行中
-- **Current owner:** Codex（依頼5へ継続中）/ **Handoff readiness:** not ready
+- **Status:** admin スマホ改善の**段階1・依頼1〜4と段階2・依頼5を完了**。
+  段階2のスマホ操作改善へ進行中
+- **Current owner:** Codex（依頼6へ継続中）/ **Handoff readiness:** not ready
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** 実装はlocal commit済み。
   未追跡は `scripts/smoke/scratch/` のみ
 
@@ -29,10 +29,12 @@
    「すべて解除」を追加。検索と絞り込みのアイコンを分離
 7. 依頼4: JPの英語操作語を辞書へ移し、主要画面とEN切替を実ブラウザ確認。
    写真編集は専用alert、一括操作は共通toastで保存失敗が画面に出ると確認
+8. 依頼5: スマホの写真編集を「基本/分類/詳細」に分割し、保存状態と操作を
+   画面下へ固定。通信失敗時の表示と再試行も偽の500応答で確認
 
 ### 次の一手
 
-- 次は設計書の**段階2・依頼5**「写真編集を基本/分類/詳細に分け、保存を固定」
+- 次は設計書の**段階2・依頼6**「選択中の操作を画面下に固定」
 - `scripts/smoke/scratch/` はClaudeの調査用未追跡ファイル。内容を保護し、
   オーナー判断なしに追加・削除しない
 
@@ -41,6 +43,7 @@
 - `bun run check` **成功**
 - `bun run smoke` **成功**（306 passed / 115 skipped / 0 failed）
 - 専用テストは修正前にコントラスト比1で失敗し、修正後はdesktop/mobileで成功
+- 写真編集は375/390px、保存のclean/dirty/error/retryを実ブラウザで確認
 - local commit済み / push・Railway反映・本番確認は未実施
 
 ### 測るときの落とし穴

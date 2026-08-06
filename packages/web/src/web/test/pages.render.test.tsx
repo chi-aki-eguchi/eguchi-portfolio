@@ -1022,7 +1022,7 @@ describe("shared components", () => {
           .querySelector("[data-library-filters-toggle]")
           ?.getAttribute("aria-expanded"),
       ).toBe("false");
-      expect(host.textContent).toContain("3 / 3 photos");
+      expect(host.textContent).toContain("3 / 3 枚");
       // 未入力バッジは通常表示ではタイルに載せない（写真が主役）
       expect(host.querySelector('[aria-label^="未入力:"]')).toBeNull();
 
@@ -1037,7 +1037,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("公開のみ");
       expect(host.textContent).toContain("縦写真");
-      expect(host.textContent).toContain("媒体: All");
+      expect(host.textContent).toContain("すべての媒体");
 
       // 機材なし絞り込みを有効にした時だけ、該当タイルにバッジが出る
       buttonWithText(host, "機材なし (").click();
@@ -1303,8 +1303,8 @@ describe("shared components", () => {
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin));
-      expect(host.textContent).toContain("… photos");
-      expect(host.textContent).not.toContain("0 / 0 photos");
+      expect(host.textContent).toContain("… 枚");
+      expect(host.textContent).not.toContain("0 / 0 枚");
       cleanup();
     } finally {
       globalThis.fetch = origFetch;
@@ -1735,10 +1735,10 @@ describe("shared components", () => {
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
       await flush(60);
-      expect(host.textContent).toContain("Edit Photo");
+      expect(host.textContent).toContain("写真を編集");
       inspectorClose()!.click();
       await flush(60);
-      expect(host.textContent).not.toContain("Edit Photo");
+      expect(host.textContent).not.toContain("写真を編集");
       expect(host.textContent).not.toContain("保存せずに閉じますか");
 
       // 未保存の編集あり: × で確認が出て、キャンセルなら編集を続けられる
@@ -1751,11 +1751,11 @@ describe("shared components", () => {
       expect(host.textContent).toContain(
         "保存していない編集があります。保存せずに閉じますか？",
       );
-      expect(host.textContent).toContain("Edit Photo");
+      expect(host.textContent).toContain("写真を編集");
       buttonWithText(host, "キャンセル").click();
       await flush(60);
       expect(host.textContent).not.toContain("保存せずに閉じますか");
-      expect(host.textContent).toContain("Edit Photo");
+      expect(host.textContent).toContain("写真を編集");
       expect((inputByLabel(host, "タイトル") as HTMLInputElement).value).toBe(
         "Dirty close title",
       );
@@ -1765,7 +1765,7 @@ describe("shared components", () => {
       await flush(60);
       buttonWithText(host, "保存せず閉じる").click();
       await flush(60);
-      expect(host.textContent).not.toContain("Edit Photo");
+      expect(host.textContent).not.toContain("写真を編集");
 
       cleanup();
     } finally {
@@ -1834,12 +1834,12 @@ describe("shared components", () => {
         confirmShown(),
         "古いダイアログの後始末が新しい確認を閉じた",
       ).toBe(true);
-      expect(host.textContent).toContain("Edit Photo");
+      expect(host.textContent).toContain("写真を編集");
 
       // 2つ目の確認は正常に機能する
       buttonWithText(host, "保存せず閉じる").click();
       await flush(60);
-      expect(host.textContent).not.toContain("Edit Photo");
+      expect(host.textContent).not.toContain("写真を編集");
 
       cleanup();
     } finally {
@@ -2016,7 +2016,7 @@ describe("shared components", () => {
         expect(confirmShown(), `round ${round}: 2回目の確認が出ない`).toBe(true);
         buttonWithText(host, "保存せず閉じる").click();
         await flush(60);
-        expect(host.textContent).not.toContain("Edit Photo");
+        expect(host.textContent).not.toContain("写真を編集");
       }
       // 全部閉じ切った後、残存タイマーで何かが起きないこと
       await flush(400);
@@ -2387,7 +2387,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Hero 1");
       expect(host.textContent).toContain("Portraits");
       expect(host.textContent).toContain("Indigo Days");
-      expect(host.textContent).toContain("Size L");
+      expect(host.textContent).toContain("サイズ L");
       expect(
         host.querySelector('[aria-label="写真の使用状況"]'),
       ).not.toBeNull();
@@ -2460,7 +2460,7 @@ describe("shared components", () => {
         await flush(260);
       };
       await setSearch("Street Work");
-      expect(host.textContent).toContain("1 / 3 photos");
+      expect(host.textContent).toContain("1 / 3 枚");
       expect(input.value).toBe("Street Work");
       expect(
         host
@@ -2468,9 +2468,9 @@ describe("shared components", () => {
           ?.classList.contains("is-active"),
       ).toBe(true);
       await setSearch("Indigo Days");
-      expect(host.textContent).toContain("1 / 3 photos");
+      expect(host.textContent).toContain("1 / 3 枚");
       await setSearch("No such classification");
-      expect(host.textContent).toContain("0 / 3 photos");
+      expect(host.textContent).toContain("0 / 3 枚");
       expect(host.textContent).toContain("条件に合う写真が見つかりません。");
       expect(host.textContent).toContain("絞り込みを解除");
       cleanup();
@@ -2632,7 +2632,7 @@ describe("shared components", () => {
       buttonWithText(host, "絞り込み").click();
       await flush(30);
       expect(host.textContent).toContain("Needs review");
-      expect(host.textContent).toContain("Film");
+      expect(host.textContent).toContain("フィルム");
       expect(host.textContent).toContain("撮影日なし");
       expect(host.textContent).toContain("機材なし");
       expect(host.textContent).toContain("+1");

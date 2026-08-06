@@ -2154,6 +2154,9 @@ export function GalleryTab({
   const [showLibraryFilters, setShowLibraryFilters] = useState(false);
   const [metaSaved, setMetaSaved] = useState(false);
   const [metaError, setMetaError] = useState(false);
+  const [inspectorMobileSection, setInspectorMobileSection] = useState<
+    "basic" | "classification" | "details"
+  >("basic");
   const [captureClipStatus, setCaptureClipStatus] =
     useState<CaptureClipboardStatus>("idle");
   const captureClipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -4315,6 +4318,7 @@ export function GalleryTab({
   useEffect(() => {
     setMetaSaved(false);
     setMetaError(false);
+    setInspectorMobileSection("basic");
   }, [inspectPhoto?.id]);
 
   const applyLibraryMode = (
@@ -4849,6 +4853,44 @@ export function GalleryTab({
       return;
     }
     setInspectPhoto(null);
+  };
+
+  const saveInspectorChanges = () => {
+    if (!inspectPhoto) return;
+    setMetaSaved(false);
+    setMetaError(false);
+    const shotAtToSave = shotAtForDateInputSave(
+      inspectPhoto.shotAt,
+      editForm.shotAt,
+    );
+    updatePhoto.mutate(
+      {
+        id: inspectPhoto.id,
+        ...editForm,
+        shotAt: shotAtToSave,
+      },
+      {
+        onSuccess: () => {
+          setInspectPhoto({
+            ...inspectPhoto,
+            ...editForm,
+            shotAt: shotAtToSave ?? null,
+            seriesId:
+              editForm.seriesId === "" ? null : Number(editForm.seriesId),
+          });
+          rememberPresets(editForm.camera, editForm.lens);
+          setMetaSaved(true);
+          setTimeout(() => setMetaSaved(false), 1500);
+        },
+        onError: () => setMetaError(true),
+      },
+    );
+  };
+
+  const discardInspectorChanges = () => {
+    if (!inspectPhoto) return;
+    setMetaError(false);
+    setEditForm(photoToEditForm(inspectPhoto));
   };
 
   // C3: move the keyboard cursor (lastClicked) by an offset within `displayed`.
@@ -7790,7 +7832,8 @@ export function GalleryTab({
           />
           <div
             data-library-inspector
-        className="admin-library-inspector fixed inset-x-0 bottom-0 z-40 w-full max-h-[60vh] shadow-2xl rounded-t-lg border-t border-[var(--admin-line)] sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-w-xs sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l xl:static xl:z-auto xl:w-64 xl:max-w-none xl:shadow-none bg-[var(--admin-paper)] flex flex-col flex-shrink-0 overflow-y-auto"
+            data-inspector-mobile-section={inspectorMobileSection}
+        className="admin-library-inspector relative fixed inset-x-0 bottom-0 z-40 w-full max-h-[60vh] shadow-2xl rounded-t-lg border-t border-[var(--admin-line)] sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-w-xs sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l xl:static xl:z-auto xl:w-64 xl:max-w-none xl:shadow-none bg-[var(--admin-paper)] flex flex-col flex-shrink-0 overflow-y-auto"
           >
             {/* Header with close. 幅に関係なく必ず出す — PC(1200px以上)では
                 詳細欄が静的な列になるため、閉じる手段がないと一覧へ戻れない
@@ -7809,8 +7852,25 @@ export function GalleryTab({
                 <X size={16} />
               </button>
             </div>
+            <nav
+              aria-label={copy.inspector.editPhoto}
+              className="admin-inspector-mobile-sections md:hidden"
+            >
+              {(
+                ["basic", "classification", "details"] as const
+              ).map((section) => (
+                <button
+                  key={section}
+                  type="button"
+                  aria-pressed={inspectorMobileSection === section}
+                  onClick={() => setInspectorMobileSection(section)}
+                >
+                  {copy.inspector.sections[section]}
+                </button>
+              ))}
+            </nav>
             {/* Preview */}
-            <div className="p-3">
+            <div className="admin-inspector-preview p-3">
               <img
                 src={srcFor(
                   inspectPhoto.url,
@@ -7842,7 +7902,7 @@ export function GalleryTab({
               );
 
               return (
-                <div className="mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
+                <div className="admin-inspector-quick mx-3 mb-3 rounded-sm border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] p-2.5">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                       {copy.inspector.quick}
@@ -7856,7 +7916,7 @@ export function GalleryTab({
 
                   <div
                     aria-label={copy.inspector.usageAria}
-                    className="mb-2 flex flex-wrap gap-1"
+                    className="admin-inspector-quick-status mb-2 flex flex-wrap gap-1"
                   >
                     {heroIdx >= 0 && (
                       <span className="inline-flex items-center gap-1 rounded-sm border border-[rgba(var(--admin-accent-rgb),0.35)] bg-[rgba(var(--admin-accent-rgb),0.08)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[color:var(--admin-accent-fill)]">
@@ -7880,7 +7940,7 @@ export function GalleryTab({
                         : copy.inspector.unpublished}
                     </span>
                     <span className="rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
-                      Size {editForm.displaySize}
+                      {copy.inspector.displaySize} {editForm.displaySize}
                     </span>
                     <span className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
                       <span
@@ -7908,6 +7968,7 @@ export function GalleryTab({
                   </div>
 
                   <div className="grid grid-cols-2 gap-1.5">
+                    <div className="admin-inspector-basic-control">
                     <SegmentedControl
                       value={editForm.isPublished ? "true" : "false"}
                       onChange={(v) =>
@@ -7921,7 +7982,9 @@ export function GalleryTab({
                         { value: "false", label: copy.inspector.unpublished },
                       ]}
                     />
+                    </div>
 
+                    <div className="admin-inspector-basic-control">
                     <SegmentedControl
                       value={editForm.displaySize}
                       onChange={(v) =>
@@ -7933,8 +7996,24 @@ export function GalleryTab({
                         { value: "L", label: "L" },
                       ]}
                     />
+                    </div>
 
-                    <div className="col-span-2 grid grid-cols-[auto_1fr_auto] gap-1">
+                    <label className="admin-inspector-mobile-title col-span-2 md:hidden">
+                      <span>{copy.inspector.title}</span>
+                      <input
+                        aria-label={copy.inspector.titleAria}
+                        value={editForm.title}
+                        onChange={(event) =>
+                          setEditForm((form) => ({
+                            ...form,
+                            title: event.target.value,
+                          }))
+                        }
+                        placeholder={copy.inspector.titlePlaceholder}
+                      />
+                    </label>
+
+                    <div className="admin-inspector-detail-control col-span-2 grid grid-cols-[auto_1fr_auto] gap-1">
                       <button
                         type="button"
                         onClick={() =>
@@ -7987,6 +8066,7 @@ export function GalleryTab({
                     </div>
 
                     <select
+                      data-inspector-classification-control
                       value={
                         categories.some((c) => c.slug === editForm.category)
                           ? editForm.category
@@ -8007,6 +8087,7 @@ export function GalleryTab({
                     </select>
 
                     <select
+                      data-inspector-classification-control
                       value={
                         seriesList.some(
                           (s) => s.id === Number(editForm.seriesId),
@@ -8034,7 +8115,7 @@ export function GalleryTab({
             })()}
 
             {/* Metadata form */}
-            <div className="px-3 pb-4 flex flex-col gap-3 flex-1">
+            <div className="admin-inspector-metadata px-3 pb-24 md:pb-4 flex flex-col gap-3 flex-1">
               <div className="border-b border-[var(--admin-line)] pb-2 mb-1">
                   <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
                   {copy.inspector.metadata}
@@ -8273,44 +8354,10 @@ export function GalleryTab({
                 />
               </InspectField>
 
-              <div className="flex gap-2 mt-1">
+              <div className="admin-inspector-desktop-actions flex gap-2 mt-1">
                 <button
                   disabled={updatePhoto.isPending}
-                  onClick={() => {
-                    setMetaSaved(false);
-                    setMetaError(false);
-                    // 撮影日は date 入力（日付まで）。未変更ならEXIF由来の時刻部分を保持する。
-                    const shotAtToSave = shotAtForDateInputSave(
-                      inspectPhoto.shotAt,
-                      editForm.shotAt,
-                    );
-                    updatePhoto.mutate(
-                      {
-                        id: inspectPhoto.id,
-                        ...editForm,
-                        shotAt: shotAtToSave,
-                      },
-                      {
-                        // Update the local inspect view only once the server confirms
-                        onSuccess: () => {
-                          // editForm.seriesId is a string ("" = none); store it back as number|null
-                          setInspectPhoto({
-                            ...inspectPhoto,
-                            ...editForm,
-                            shotAt: shotAtToSave ?? null,
-                            seriesId:
-                              editForm.seriesId === ""
-                                ? null
-                                : Number(editForm.seriesId),
-                          });
-                          rememberPresets(editForm.camera, editForm.lens);
-                          setMetaSaved(true);
-                          setTimeout(() => setMetaSaved(false), 1500);
-                        },
-                        onError: () => setMetaError(true),
-                      },
-                    );
-                  }}
+                  onClick={saveInspectorChanges}
                   className={`flex-1 flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors disabled:opacity-60 ${
                     metaSaved
                       ? "admin-btn-success"
@@ -8333,10 +8380,7 @@ export function GalleryTab({
                   )}
                 </button>
                 <button
-                  onClick={() => {
-                    setMetaError(false);
-                    setEditForm(photoToEditForm(inspectPhoto));
-                  }}
+                  onClick={discardInspectorChanges}
                   className="flex-1 flex items-center justify-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] py-1.5 rounded-sm transition-colors"
                 >
                   <X size={11} /> {copy.inspector.reset}
@@ -8436,6 +8480,49 @@ export function GalleryTab({
                   className="admin-text-danger w-full flex items-center justify-center gap-1.5 text-[length:var(--admin-text-note)] bg-[var(--admin-paper-soft)] py-2 rounded-sm transition-colors disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <Trash2 size={11} /> {copy.inspector.moveToTrash}
+                </button>
+              </div>
+            </div>
+            <div
+              data-inspector-save-bar
+              data-inspector-save-state={
+                updatePhoto.isPending
+                  ? "saving"
+                  : metaError
+                    ? "error"
+                    : metaSaved
+                      ? "saved"
+                      : photoEditFormChanged(editForm, inspectPhoto)
+                        ? "dirty"
+                        : "clean"
+              }
+              className="admin-inspector-mobile-save md:hidden"
+            >
+              <span role={metaError ? "alert" : "status"} aria-live="polite">
+                {updatePhoto.isPending
+                  ? copy.inspector.saving
+                  : metaError
+                    ? copy.inspector.saveFailed
+                    : metaSaved
+                      ? copy.inspector.saved
+                      : photoEditFormChanged(editForm, inspectPhoto)
+                        ? copy.inspector.unsaved
+                        : copy.inspector.saved}
+              </span>
+              <div>
+                <button type="button" onClick={discardInspectorChanges}>
+                  {copy.inspector.reset}
+                </button>
+                <button
+                  type="button"
+                  onClick={saveInspectorChanges}
+                  disabled={
+                    updatePhoto.isPending ||
+                    (!metaError && !photoEditFormChanged(editForm, inspectPhoto))
+                  }
+                  className="admin-btn-primary"
+                >
+                  {metaError ? copy.inspector.retry : copy.inspector.save}
                 </button>
               </div>
             </div>

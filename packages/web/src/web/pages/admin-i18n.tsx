@@ -291,6 +291,9 @@ const ADMIN_PHASE_2B_JA = {
         `完全削除（あと${seconds}秒）`,
     },
     empty: {
+      loading: "写真を読み込んでいます…",
+      loadFailed: "写真を読み込めませんでした。",
+      retry: "再読み込み",
       noMatches: "条件に合う写真が見つかりません。",
       relaxFilters: "絞り込みや検索語を少しゆるめてみてください。",
       clearFilters: "絞り込みを解除",
@@ -1813,6 +1816,9 @@ const ADMIN_PHASE_2B_EN = {
         `Permanently delete (${seconds}s)`,
     },
     empty: {
+      loading: "Loading photos…",
+      loadFailed: "Could not load photos.",
+      retry: "Retry",
       noMatches: "No photos match these conditions.",
       relaxFilters: "Try broader filters or a shorter search term.",
       clearFilters: "Clear filters",

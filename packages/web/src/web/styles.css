@@ -1699,6 +1699,20 @@
   padding-inline: 7px;
 }
 
+.admin-atelier .admin-library-search-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--admin-line);
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-atelier .admin-library-search-empty button {
+  min-height: 40px;
+  padding-inline: 10px;
+}
+
 @media (max-width: 767px) {
   .admin-atelier .admin-library-workbar button,
   .admin-atelier .admin-library-workbar summary,

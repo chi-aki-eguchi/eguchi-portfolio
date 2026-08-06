@@ -3,9 +3,8 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** admin スマホ改善の**段階1・依頼1〜4と段階2・依頼5〜8を完了**。
-  段階3へ進行中
-- **Current owner:** Codex（依頼10へ継続中）/ **Handoff readiness:** not ready
+- **Status:** admin スマホ改善の**依頼1〜10をすべて実装完了**。最終全体検証中
+- **Current owner:** Codex（最終検証中）/ **Handoff readiness:** not ready
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** 実装はlocal commit済み。
   未追跡は `scripts/smoke/scratch/` のみ
 
@@ -39,10 +38,12 @@
     幅と高さが40px以上になる規則と回帰テストを追加
 12. 依頼9: Settings目次を「ふだんの設定/詳しい設定」の2階建てに整理。
     19節と単節表示は維持し、専門語は日本語説明の後ろに残した
+13. 依頼10: 検索0件は挿絵と重複説明をなくして1行化。写真0件の案内は維持し、
+    読み込み中と取得失敗も静かな1行と再読み込みで区別
 
 ### 次の一手
 
-- 次は設計書の**段階3・依頼10**「空表示と読み込み中の佇まい」
+- `bun run check` と full `bun run smoke` を実行し、Current Stateを完了状態へ更新
 - `scripts/smoke/scratch/` はClaudeの調査用未追跡ファイル。内容を保護し、
   オーナー判断なしに追加・削除しない
 

@@ -2271,6 +2271,8 @@ export function GalleryTab({
   const {
     data: photosData,
     isLoading,
+    isError: photosLoadError,
+    refetch: refetchPhotos,
     dataUpdatedAt: photosUpdatedAt,
   } = useQuery({
     queryKey: ["photos", "all"],
@@ -6534,9 +6536,16 @@ export function GalleryTab({
                 </div>
               </div>
             )
+          ) : photosLoadError ? (
+            <div data-library-load-error role="alert" className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
+              <span>{copy.empty.loadFailed}</span>
+              <button type="button" onClick={() => void refetchPhotos()} className="underline underline-offset-4">
+                {copy.empty.retry}
+              </button>
+            </div>
           ) : isLoading ? (
-            <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
-              <Loader2 size={14} className="animate-spin" /> Loading...
+            <div data-library-loading role="status" className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
+              <Loader2 size={14} className="animate-spin" /> {copy.empty.loading}
             </div>
           ) : bulkEditMode ? (
             <BulkEditTable
@@ -6555,16 +6564,13 @@ export function GalleryTab({
               className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]"
             >
               {anyFilterActive && allPhotos.length > 0 ? (
-                <EmptySearchIllustration />
+                null
               ) : (
                 <EmptyContactSheetIllustration />
               )}
               {anyFilterActive && allPhotos.length > 0 ? (
-                <>
+                <div className="admin-library-search-empty">
                   <p className="text-sm">{copy.empty.noMatches}</p>
-                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                    {copy.empty.relaxFilters}
-                  </p>
                   <button
                     type="button"
                     onClick={clearLibraryFilters}
@@ -6572,7 +6578,7 @@ export function GalleryTab({
                   >
                     {copy.empty.clearFilters}
                   </button>
-                </>
+                </div>
               ) : (
                 <>
                   <p className="text-sm">{copy.empty.noPhotos}</p>
@@ -9534,40 +9540,6 @@ function EmptyContactSheetIllustration() {
           />
         )),
       )}
-    </svg>
-  );
-}
-
-function EmptySearchIllustration() {
-  return (
-    <svg
-      viewBox="0 0 64 64"
-      width={56}
-      height={56}
-      fill="none"
-      aria-hidden="true"
-      className="text-[var(--admin-muted)]"
-    >
-      <rect
-        x="8"
-        y="10"
-        width="30"
-        height="30"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        opacity={0.5}
-      />
-      <circle cx="40" cy="40" r="12" stroke="currentColor" strokeWidth="1.5" />
-      <line
-        x1="48.5"
-        y1="48.5"
-        x2="57"
-        y2="57"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
     </svg>
   );
 }

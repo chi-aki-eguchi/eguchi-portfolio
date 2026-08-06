@@ -167,6 +167,27 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       testInfo.project.name !== "desktop",
       "表示条件とロック理由はdesktopで1回確認すれば十分",
     );
+    await page.route("**/api/photos?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          photos: [{
+            id: 99001,
+            url: "/api/images/smoke.jpg",
+            thumbUrl: "/api/images/smoke-thumb.jpg",
+            filename: "smoke.jpg",
+            title: "Smoke fixture",
+            published: true,
+            sortOrder: 1,
+            displaySize: "M",
+            rotation: 0,
+            focalX: 0.5,
+            focalY: 0.5,
+          }],
+        }),
+      });
+    });
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
     test.skip((await tiles(page).count()) === 0, "検索対象の写真が必要");
@@ -176,6 +197,8 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       .locator("[data-library-search-input]")
       .fill("__library_mode_no_result__");
     await expect(page.locator('[data-library-empty="search"]')).toBeVisible();
+    await expect(page.locator('[data-library-empty="search"] svg')).toHaveCount(0);
+    await expect(page.locator('[data-library-empty="search"] p')).toHaveCount(1);
     await expect(page.locator("[data-library-filter-count]")).toHaveCount(0);
     await expect(
       page.locator('[data-library-active-condition="search"]'),
@@ -189,7 +212,10 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(page.locator("[data-library-active-condition]")).toHaveCount(
       2,
     );
-    await page.getByRole("button", { name: "すべて解除" }).click();
+    await page
+      .locator("[data-library-active-conditions]")
+      .getByRole("button", { name: "すべて解除" })
+      .click();
     await expect(page.locator("[data-library-active-conditions]")).toHaveCount(
       0,
     );
@@ -241,6 +267,20 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(modeAction(page, "select")).toBeDisabled();
     await expect(modeAction(page, "arrange")).toBeDisabled();
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
+  });
+
+  test("写真APIの失敗を静かな1行で示し、再読み込みできる", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "API差し替えはdesktopで1回確認");
+    await page.route("**/api/photos?**", async (route) => {
+      await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+    });
+    await loginAsAdmin(page);
+    await gotoAdminTab(page, "gallery");
+    const error = page.locator("[data-library-load-error]");
+    await expect(error).toBeVisible();
+    await expect(error).toContainText("写真を読み込めませんでした");
+    await expect(error.getByRole("button", { name: "再読み込み" })).toBeVisible();
+    await expect(error.locator("p, svg")).toHaveCount(0);
   });
 
   // 390px では詳細を下側シートで出すため、開いたままでも通常/選択/並べるを切り替えられる。

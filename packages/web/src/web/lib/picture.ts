@@ -11,6 +11,8 @@ export {
   orientedDimensions,
   rotateFocalPoint,
   rotateRotationDeg,
+  withRetryParam,
+  withRetrySrcSet,
 } from "../../shared/image-url";
 
 type SrcSetEntry = { w: number; q: number };

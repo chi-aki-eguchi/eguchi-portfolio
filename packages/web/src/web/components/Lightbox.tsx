@@ -7,7 +7,12 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "wouter";
-import { photoSrcFor, photoSrcSetFor } from "../lib/picture";
+import {
+  photoSrcFor,
+  photoSrcSetFor,
+  withRetryParam,
+  withRetrySrcSet,
+} from "../lib/picture";
 import { photoAltText } from "../lib/photo-alt";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
@@ -128,8 +133,6 @@ export function Lightbox({
     setImgError(false);
     setRetryToken((t) => t + 1);
   }, []);
-  const withRetryParam = (url: string, token: number) =>
-    token > 0 ? `${url}${url.includes("?") ? "&" : "?"}retry=${token}` : url;
   useEffect(() => {
     return () => {
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -1170,12 +1173,18 @@ export function Lightbox({
                   >
                     <source
                       type="image/avif"
-                      srcSet={photoSrcSetFor(photo, "lightbox", "avif")}
+                      srcSet={withRetrySrcSet(
+                        photoSrcSetFor(photo, "lightbox", "avif"),
+                        retryToken,
+                      )}
                       sizes={FIT_SIZES}
                     />
                     <source
                       type="image/webp"
-                      srcSet={photoSrcSetFor(photo, "lightbox", "webp")}
+                      srcSet={withRetrySrcSet(
+                        photoSrcSetFor(photo, "lightbox", "webp"),
+                        retryToken,
+                      )}
                       sizes={FIT_SIZES}
                     />
                     <img
@@ -1184,7 +1193,7 @@ export function Lightbox({
                         photoSrcFor(photo, 1200, 85),
                         retryToken,
                       )}
-                      srcSet={fitSrcSet(photo)}
+                      srcSet={withRetrySrcSet(fitSrcSet(photo), retryToken)}
                       sizes={FIT_SIZES}
                       alt={alt}
                       onLoad={() => {

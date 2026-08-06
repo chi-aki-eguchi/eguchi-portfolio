@@ -22,6 +22,40 @@ export function normalizeFocalPoint(value: unknown): number {
 }
 
 /**
+ * 読み込みに失敗した画像を、キャッシュを避けて取り直すための印を付ける。
+ */
+export function withRetryParam(url: string, token: number): string {
+  return token > 0
+    ? `${url}${url.includes("?") ? "&" : "?"}retry=${token}`
+    : url;
+}
+
+/**
+ * `srcSet` の候補すべてに再試行の印を付ける。
+ *
+ * `src` にだけ付けても、`srcSet` があるブラウザはそちらから選ぶので、
+ * 失敗したのと同じURLを取りに行き、再試行が空振りしていた。
+ *
+ * 候補の区切りはカンマ。URL自体にカンマが入るとこの分割は破綻するが、
+ * ここへ渡すのは `imageUrlWithParams()` が組み立てたURLだけで、
+ * カンマは入らない。
+ */
+export function withRetrySrcSet(srcSet: string, token: number): string {
+  if (token <= 0 || !srcSet) return srcSet;
+  return srcSet
+    .split(",")
+    .map((candidate) => {
+      const trimmed = candidate.trim();
+      if (!trimmed) return trimmed;
+      const cut = trimmed.lastIndexOf(" ");
+      if (cut === -1) return withRetryParam(trimmed, token);
+      return `${withRetryParam(trimmed.slice(0, cut), token)}${trimmed.slice(cut)}`;
+    })
+    .filter(Boolean)
+    .join(", ");
+}
+
+/**
  * 写真を回したとき、焦点も一緒に回す（2026-08-06 オーナー決定）。
  *
  * 焦点は「回転後の画像」に対する割合なので、回転させたまま据え置くと、

@@ -74,6 +74,7 @@ import {
   Receipt,
   FolderOpen,
   Search,
+  SlidersHorizontal,
   LayoutList,
   AlertTriangle,
   Copy,
@@ -2834,6 +2835,65 @@ export function GalleryTab({
     setFilterSize,
     setSearchQuery,
   ]);
+  const clearLibraryFilter = useCallback(
+    (key: string) => {
+      switch (key) {
+        case "search":
+          setSearchQuery("");
+          break;
+        case "album":
+          setActiveAlbumId(null);
+          break;
+        case "category":
+          setFilterCat("all");
+          break;
+        case "series":
+          setFilterSeries("all");
+          break;
+        case "size":
+          setFilterSize("all");
+          break;
+        case "medium":
+          setFilterMedium("all");
+          break;
+        case "orientation":
+          setFilterOrientation("all");
+          break;
+        case "featured":
+          setFilterFeatured(false);
+          break;
+        case "published":
+          setFilterPublished("all");
+          break;
+        case "missingShotAt":
+          setFilterMissingShotAt(false);
+          break;
+        case "missingCapture":
+          setFilterMissingCapture(false);
+          break;
+        case "recent":
+          setFilterRecent("all");
+          break;
+      }
+    },
+    [
+      setActiveAlbumId,
+      setFilterCat,
+      setFilterFeatured,
+      setFilterMedium,
+      setFilterMissingCapture,
+      setFilterMissingShotAt,
+      setFilterOrientation,
+      setFilterPublished,
+      setFilterRecent,
+      setFilterSeries,
+      setFilterSize,
+      setSearchQuery,
+    ],
+  );
+  const filterBadgeCount = activeFilterLabels.filter(
+    (condition) => condition.key !== "search",
+  ).length;
 
   // reorderLocked からの1クリック復帰。表示条件とソートのローカル状態を
   // 初期値に戻すだけで、写真データ・sortOrder には一切触れない。
@@ -5320,9 +5380,9 @@ export function GalleryTab({
                       : undefined
                   }
                 >
-                  <Search size={12} /> {copy.toolbar.filters}
-                  {activeFilterLabels.length > 0 && (
-                    <span>{activeFilterLabels.length}</span>
+                  <SlidersHorizontal size={12} /> {copy.toolbar.filters}
+                  {filterBadgeCount > 0 && (
+                    <span data-library-filter-count>{filterBadgeCount}</span>
                   )}
                 </button>
               </div>
@@ -5742,15 +5802,6 @@ export function GalleryTab({
                   <option value="30">{copy.filters.recentDays(30)}</option>
                 </select>
 
-                {anyFilterActive && (
-                  <button
-                    type="button"
-                    onClick={clearLibraryFilters}
-                    className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] bg-[var(--admin-paper-soft)] transition-colors"
-                  >
-                    {copy.filters.clearAll}
-                  </button>
-                )}
               </div>
 
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -6208,6 +6259,28 @@ export function GalleryTab({
               </div>
             )}
         </div>
+
+        {activeFilterLabels.length > 0 && (
+          <div data-library-active-conditions className="admin-library-active-conditions">
+            <div>
+              {activeFilterLabels.map((condition) => (
+                <span key={condition.key} data-library-active-condition={condition.key}>
+                  {condition.text}
+                  <button
+                    type="button"
+                    onClick={() => clearLibraryFilter(condition.key)}
+                    aria-label={`${condition.text} ${copy.filters.clear}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <button type="button" onClick={clearLibraryFilters}>
+              {copy.filters.clearAll}
+            </button>
+          </div>
+        )}
 
         {/* Upload progress bar */}
         {uploading && uploadProgress && (

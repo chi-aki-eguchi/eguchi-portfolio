@@ -3,9 +3,9 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-06 JST
 
-- **Status:** admin スマホ改善の段階1・依頼1〜2を完了。選択中ラベルの
-  読みやすさと、保存不能時の並べ替え入口を修正した
-- **Current owner:** Codex（依頼3へ継続中）/ **Handoff readiness:** not ready
+- **Status:** admin スマホ改善の段階1・依頼1〜3を完了。選択中ラベル、
+  並べ替え入口、絞り込み条件の表示と解除を修正した
+- **Current owner:** Codex（依頼4へ継続中）/ **Handoff readiness:** not ready
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** 実装はlocal commit済み。
   未追跡は `scripts/smoke/scratch/` のみ
 
@@ -25,10 +25,12 @@
 4. 明・暗テーマ、desktop、390px mobileで選択ラベルと指示子の比を数値検査
 5. 依頼2: 検索・複合絞り込み・手動以外の表示順では「並べ替え」をdisabledにし、
    理由と「解除して並べ替える」を入口に表示。シリーズ単独絞り込みは維持
+6. 依頼3: 検索は絞り込み件数から除外。全条件を専用行に表示し、個別×と
+   「すべて解除」を追加。検索と絞り込みのアイコンを分離
 
 ### 次の一手
 
-- 次は設計書の**段階1・依頼3**「絞り込み件数・条件表示・一括解除」
+- 次は設計書の**段階1・依頼4**「日本語表示の英語残りを統一」
 - `scripts/smoke/scratch/` はClaudeの調査用未追跡ファイル。内容を保護し、
   オーナー判断なしに追加・削除しない
 

@@ -1656,6 +1656,55 @@
   border: 1px solid var(--admin-line-strong);
 }
 
+.admin-atelier .admin-library-active-conditions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px var(--ax-inset);
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-paper-soft);
+}
+
+.admin-atelier .admin-library-active-conditions > div {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.admin-atelier .admin-library-active-conditions > div > span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 32px;
+  align-items: center;
+  gap: 4px;
+  padding-left: 9px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-ink);
+  background: var(--admin-paper);
+  font-size: var(--admin-text-note);
+}
+
+.admin-atelier .admin-library-active-conditions button {
+  min-height: 32px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.admin-atelier .admin-library-active-conditions span > button {
+  min-width: 32px;
+  padding-inline: 7px;
+}
+
+@media (max-width: 767px) {
+  .admin-atelier .admin-library-active-conditions {
+    padding-inline: 12px;
+  }
+}
+
 .admin-atelier .admin-library-search {
   position: relative;
   display: flex;

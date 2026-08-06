@@ -176,6 +176,30 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       .locator("[data-library-search-input]")
       .fill("__library_mode_no_result__");
     await expect(page.locator('[data-library-empty="search"]')).toBeVisible();
+    await expect(page.locator("[data-library-filter-count]")).toHaveCount(0);
+    await expect(
+      page.locator('[data-library-active-condition="search"]'),
+    ).toBeVisible();
+
+    const publicationFilter = page.getByRole("combobox", {
+      name: "公開状態で絞り込み",
+    });
+    await publicationFilter.selectOption("unpublished");
+    await expect(page.locator("[data-library-filter-count]")).toHaveText("1");
+    await expect(page.locator("[data-library-active-condition]")).toHaveCount(
+      2,
+    );
+    await page.getByRole("button", { name: "すべて解除" }).click();
+    await expect(page.locator("[data-library-active-conditions]")).toHaveCount(
+      0,
+    );
+    await expect(page.locator("[data-library-search-input]")).toHaveValue("");
+    await expect(publicationFilter).toHaveValue("all");
+
+    await page
+      .locator("[data-library-search-input]")
+      .fill("__library_mode_no_result__");
+    await expect(page.locator('[data-library-empty="search"]')).toBeVisible();
 
     const arrange = modeAction(page, "arrange");
     await expect(arrange).toBeDisabled();

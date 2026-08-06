@@ -12,6 +12,11 @@ import {
   buildBatchPhotoMetadataPatch,
 } from "./batch-photo-metadata";
 import { uploadAllOrCleanup } from "./thumbnail-upload-integrity";
+import {
+  optimiseUploadedImage,
+  UnreadableImageError,
+  UNREADABLE_IMAGE_MESSAGE,
+} from "./uploaded-image-processing";
 import { buildPublicCoverPhotoFilter } from "./series-cover-visibility";
 import {
   buildFocalRotationByDelta,
@@ -591,24 +596,6 @@ async function fetchNotePosts(
   }
 }
 
-// Resize a raw image buffer → optimised JPEG, returns Buffer
-async function optimiseImage(
-  input: Buffer | Uint8Array,
-  maxPx: number,
-  quality: number,
-): Promise<Buffer> {
-  return sharp(Buffer.from(input))
-    .rotate()
-    .resize({
-      width: maxPx,
-      height: maxPx,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .jpeg({ quality, mozjpeg: true, chromaSubsampling: "4:4:4" })
-    .toBuffer();
-}
-
 const THUMB_WIDTH = 640;
 const THUMB_QUALITY = 82;
 const MEDIUM_WIDTH = 1920;
@@ -795,6 +782,9 @@ const app = new Hono()
         },
         503,
       );
+    }
+    if (err instanceof UnreadableImageError) {
+      return c.json({ error: UNREADABLE_IMAGE_MESSAGE }, 422);
     }
     console.error("[api] unhandled error:", err.message);
     return c.json({ error: "Internal server error" }, 500);
@@ -1497,7 +1487,7 @@ const app = new Hono()
     const arrayBuf = await file.arrayBuffer();
     const inputBuf = Buffer.from(arrayBuf);
 
-    const optimised = await optimiseImage(
+    const optimised = await optimiseUploadedImage(
       inputBuf,
       UPLOAD_MAX_PX,
       UPLOAD_QUALITY,
@@ -1657,7 +1647,7 @@ const app = new Hono()
     const arrayBuf = await file.arrayBuffer();
     const inputBuf = Buffer.from(arrayBuf);
 
-    const optimised = await optimiseImage(
+    const optimised = await optimiseUploadedImage(
       inputBuf,
       UPLOAD_MAX_PX,
       UPLOAD_QUALITY,
@@ -1686,7 +1676,7 @@ const app = new Hono()
     const arrayBuf = await file.arrayBuffer();
     const inputBuf = Buffer.from(arrayBuf);
 
-    const optimised = await optimiseImage(
+    const optimised = await optimiseUploadedImage(
       inputBuf,
       UPLOAD_MAX_PX,
       UPLOAD_QUALITY,

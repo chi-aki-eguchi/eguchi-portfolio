@@ -6,7 +6,7 @@
 - **Status:** Codex 12件の追試を完了し、素通りしていたテストを実DB検査へ差し替え、
   Codex推奨のうち 2・5・6・8 を実装した。origin との差は
   `git rev-list --count origin/main..HEAD` で測る（push はオーナーだけ）
-- **Current owner:** 未定（次の担当者が自分を書き込んでから編集を始める）
+- **Current owner:** Codex（推奨3・4・9を上から順に実装中）
 - **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean（未追跡は `scratch/` のみ）
 
 ### 今回やったこと（詳細は `docs/agents/codex-debug-2026-08-05.md` 末尾）

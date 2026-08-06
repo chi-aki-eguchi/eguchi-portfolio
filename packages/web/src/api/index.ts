@@ -7,7 +7,10 @@ import {
   applyExactReorderIfCurrent,
   applyPhotoReorderIfCurrent,
 } from "./photo-reorder-safety";
-import { buildBatchPhotoMetadataPatch } from "./batch-photo-metadata";
+import {
+  applyBatchPhotoMetadata,
+  buildBatchPhotoMetadataPatch,
+} from "./batch-photo-metadata";
 import { uploadAllOrCleanup } from "./thumbnail-upload-integrity";
 import { buildPublicCoverPhotoFilter } from "./series-cover-visibility";
 import { uniqueUploadStorageKey } from "./upload-key";
@@ -2135,10 +2138,7 @@ const app = new Hono()
         if (!metadata)
           return c.json({ error: "No valid metadata changes" }, 400);
         await withRetry(() =>
-          db
-            .update(schema.photos)
-            .set(metadata)
-            .where(inArray(schema.photos.id, cleanIds)),
+          applyBatchPhotoMetadata(db, schema.photos, cleanIds, metadata),
         );
         break;
       }

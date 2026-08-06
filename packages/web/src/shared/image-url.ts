@@ -21,6 +21,31 @@ export function normalizeFocalPoint(value: unknown): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+/**
+ * 写真を回したとき、焦点も一緒に回す（2026-08-06 オーナー決定）。
+ *
+ * 焦点は「回転後の画像」に対する割合なので、回転させたまま据え置くと、
+ * 一度合わせた被写体が枠から外れる。時計回り90度なら、元の左上は右上へ動く。
+ */
+export function rotateFocalPoint(
+  focalX: unknown,
+  focalY: unknown,
+  delta: number,
+): { focalX: number; focalY: number } {
+  const x = normalizeFocalPoint(focalX);
+  const y = normalizeFocalPoint(focalY);
+  switch (rotateRotationDeg(0, delta)) {
+    case 90:
+      return { focalX: 100 - y, focalY: x };
+    case 180:
+      return { focalX: 100 - x, focalY: 100 - y };
+    case 270:
+      return { focalX: y, focalY: 100 - x };
+    default:
+      return { focalX: x, focalY: y };
+  }
+}
+
 export function objectPositionFromFocal(
   focalX: unknown,
   focalY: unknown,

@@ -21,6 +21,7 @@ import {
   normalizeRotationDeg,
   objectPositionFromFocal,
   orientedDimensions,
+  rotateFocalPoint,
   rotateRotationDeg,
   srcFor,
 } from "../lib/picture";
@@ -3494,25 +3495,37 @@ export function GalleryTab({
     mutationFn: async ({
       id,
       rotationDeg,
+      delta,
     }: {
       id: number;
       rotationDeg: number;
+      delta: -90 | 90;
     }) => {
       const res = await adminApi.photos[":id"].$patch({
         param: { id: String(id) },
         json: { rotationDeg },
       });
       assertOk(res);
-      return { id, rotationDeg };
+      return { id, rotationDeg, delta };
     },
-    onSuccess: ({ id, rotationDeg }) => {
+    onSuccess: ({ id, rotationDeg, delta }) => {
       setActionError("");
       qc.invalidateQueries({ queryKey: ["photos"] });
       qc.invalidateQueries({ queryKey: ["series"] });
       qc.invalidateQueries({ queryKey: ["hero-photos"] });
       qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      setInspectPhoto((p) => (p?.id === id ? { ...p, rotationDeg } : p));
-      setEditForm((f) => (inspectPhoto?.id === id ? { ...f, rotationDeg } : f));
+      // APIが焦点も一緒に回すので、再取得までのあいだ表示がずれないよう
+      // 手元の状態にも同じ変換をかける。
+      setInspectPhoto((p) =>
+        p?.id === id
+          ? { ...p, rotationDeg, ...rotateFocalPoint(p.focalX, p.focalY, delta) }
+          : p,
+      );
+      setEditForm((f) =>
+        inspectPhoto?.id === id
+          ? { ...f, rotationDeg, ...rotateFocalPoint(f.focalX, f.focalY, delta) }
+          : f,
+      );
       setBatchToast(copy.feedback.rotationChanged(rotationDeg));
       setTimeout(() => setBatchToast(null), 1500);
     },
@@ -3618,12 +3631,22 @@ export function GalleryTab({
           vars.operation === "rotate_left" ||
           vars.operation === "rotate_right"
         ) {
-          const rotationDeg = rotatedBy(
-            inspectPhoto.rotationDeg,
-            vars.operation === "rotate_left" ? -90 : 90,
+          const delta = vars.operation === "rotate_left" ? -90 : 90;
+          const rotationDeg = rotatedBy(inspectPhoto.rotationDeg, delta);
+          setInspectPhoto((p) =>
+            p
+              ? {
+                  ...p,
+                  rotationDeg,
+                  ...rotateFocalPoint(p.focalX, p.focalY, delta),
+                }
+              : p,
           );
-          setInspectPhoto((p) => (p ? { ...p, rotationDeg } : p));
-          setEditForm((f) => ({ ...f, rotationDeg }));
+          setEditForm((f) => ({
+            ...f,
+            rotationDeg,
+            ...rotateFocalPoint(f.focalX, f.focalY, delta),
+          }));
         }
         if (vars.operation === "reset_rotation") {
           setInspectPhoto((p) => (p ? { ...p, rotationDeg: 0 } : p));
@@ -4522,6 +4545,7 @@ export function GalleryTab({
     quickRotatePhoto.mutate({
       id: photo.id,
       rotationDeg: rotatedBy(photo.rotationDeg, delta),
+      delta,
     });
   };
 
@@ -7794,6 +7818,7 @@ export function GalleryTab({
                           setEditForm((f) => ({
                             ...f,
                             rotationDeg: rotatedBy(f.rotationDeg, -90),
+                            ...rotateFocalPoint(f.focalX, f.focalY, -90),
                           }))
                         }
                         aria-label={copy.rotation.leftAria}
@@ -7827,6 +7852,7 @@ export function GalleryTab({
                           setEditForm((f) => ({
                             ...f,
                             rotationDeg: rotatedBy(f.rotationDeg, 90),
+                            ...rotateFocalPoint(f.focalX, f.focalY, 90),
                           }))
                         }
                         aria-label={copy.rotation.rightAria}

@@ -9,6 +9,7 @@ export {
   objectPositionFromFocal,
   orientedAspectRatio,
   orientedDimensions,
+  rotateFocalPoint,
   rotateRotationDeg,
 } from "../../shared/image-url";
 

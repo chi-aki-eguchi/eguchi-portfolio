@@ -13,6 +13,10 @@ import {
 } from "./batch-photo-metadata";
 import { uploadAllOrCleanup } from "./thumbnail-upload-integrity";
 import { buildPublicCoverPhotoFilter } from "./series-cover-visibility";
+import {
+  buildFocalRotationByDelta,
+  buildFocalRotationToAngle,
+} from "./focal-rotation";
 import { uniqueUploadStorageKey } from "./upload-key";
 import { writeSettingsAtomic } from "./database/settings-write";
 import {
@@ -1874,6 +1878,12 @@ const app = new Hono()
       if (rotationDeg === null)
         return c.json({ error: "Invalid rotationDeg" }, 400);
       update.rotationDeg = rotationDeg;
+      // 焦点も一緒に回す。呼び出し側が焦点そのものを送ってきたときは、
+      // このあとの代入がこれを上書きする（明示指定を優先する）。
+      Object.assign(
+        update,
+        buildFocalRotationToAngle(schema.photos, rotationDeg),
+      );
     }
     if (body.focalX !== undefined) {
       const focalX = parseFocalPoint(body.focalX);
@@ -2221,12 +2231,15 @@ const app = new Hono()
         );
         break;
       }
+      // 回転と焦点は同じ UPDATE で動かす。別々に書くと、途中で失敗したとき
+      // 「写真は回ったのに焦点は元のまま」という中途半端な状態が残る。
       case "rotate_left":
         await withRetry(() =>
           db
             .update(schema.photos)
             .set({
               rotationDeg: sql`(${schema.photos.rotationDeg} + 270) % 360`,
+              ...buildFocalRotationByDelta(schema.photos, 270),
             })
             .where(inArray(schema.photos.id, cleanIds)),
         );
@@ -2237,6 +2250,7 @@ const app = new Hono()
             .update(schema.photos)
             .set({
               rotationDeg: sql`(${schema.photos.rotationDeg} + 90) % 360`,
+              ...buildFocalRotationByDelta(schema.photos, 90),
             })
             .where(inArray(schema.photos.id, cleanIds)),
         );

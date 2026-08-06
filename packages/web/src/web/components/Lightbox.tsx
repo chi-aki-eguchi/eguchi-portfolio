@@ -484,9 +484,15 @@ export function Lightbox({
         Math.abs(dx) > Math.abs(dy) * 1.2 &&
         (Math.abs(dx) > 50 || (Math.abs(dx) > 20 && dt < 250))
       ) {
+        // 指を離すとブラウザが click も作る。それが左右28%の送り戻し領域に
+        // 当たると、1回のスワイプで2回動く(左スワイプなら次へ→前へで、
+        // その場に戻る)。等倍のスワイプは onPointerUp の抑止に掛からないので
+        // ここで抑止する。次の pointerdown が抑止を解除する。
+        suppressClickRef.current = true;
         if (dx < 0) onNext();
         else onPrev();
       } else if (dy > 90 && dy > Math.abs(dx) * 1.5) {
+        suppressClickRef.current = true;
         // Swipe down to dismiss — the expected mobile photo-viewer gesture. Safe
         // because the fitted (non-zoomed) view never scrolls vertically itself.
         doClose();

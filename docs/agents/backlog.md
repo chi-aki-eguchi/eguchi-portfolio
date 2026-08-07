@@ -144,6 +144,33 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
 
 アクティブ/非アクティブが下線のみの差。テキスト濃度差も加える案。
 
+## smoke の失敗（2026-08-07 実測）
+
+### S-1. admin Library の smoke が落ちる 🟠 実測済み
+
+`bun run smoke` 全体で **18 failed / 286 passed / 130 skipped**（2026-08-07）。
+直前の記録は 0 failed だったので、その間に発生している。
+
+**今日の作業（`0f9cb8c` / `a923995`）が原因ではない。** 作業差分を stash した
+状態でも、同じ desktop 2件が同じ形で落ちることを確認済み。落ちる assertion は
+`admin.tsx` の `[data-virtualized]`（admin の Library グリッド）で、今日触った
+`PhotoGallery.tsx` / `SeriesGrid.tsx` / `admin-tabs.tsx` はこの要素を描画しない。
+
+再現する2件（desktop）:
+
+- `admin-debug-sweep.spec.ts:217` 「Libraryの仮想グリッドとサイトプレビューが
+  安定した寸法・紙色を使う」— `[data-virtualized]` が見つからない
+- `admin-i18n.spec.ts:7` 「JPのLibraryと写真編集に英語の操作語を残さない」
+
+**flaky と分けて扱うこと。** `admin-debug-sweep.spec.ts:54` は全体実行では落ちるが、
+単体では2回とも通る。原因はテスト側の競合で、`openSettingsSection()` が
+`isVisible()`（待たない判定）でPC用の目次を見て、描画前だとスマホ用の分岐へ落ち、
+存在しないボタンを30秒待って死ぬ。mobile の40秒タイムアウト多発も同じ疑い。
+
+着手する人へ: **まず実物を測り直す。** 本番DBの内容に依存している可能性がある
+（smoke は本番と同じDBにつながる）。`openSettingsSection()` の `isVisible()` を
+待つ形に直すのは、原因調査と分けて先に入れてよい。
+
 ## 公開サイト・その他
 
 ### B-11. 画像の srcset 化は前提が2つ崩れている 🟡 確認済み（revert 済み）

@@ -107,6 +107,44 @@ const KNOWN_LAYOUTS: GalleryLayoutType[] = [
   "justified",
 ];
 
+/**
+ * How wide the grid must be for the requested column count to actually happen,
+ * or 0 to stay at the page width.
+ *
+ * The count is `floor(width / minTile)` capped by the admin's 最大列数, so it
+ * could never exceed what the page's fixed 1024px shell had room for: at the
+ * default photo size only 4 tiles fit, and asking for 5–8 changed nothing —
+ * the slider read as broken (measured 2026-08-07 on the live gallery: 8
+ * requested, 928px shell, 4 rendered). So the frame grows to fit the request
+ * instead of the request being silently clipped to the frame.
+ *
+ * Never narrows: a site that never set the key, or one whose request already
+ * fits, keeps the exact page width it always had.
+ */
+export function galleryFrameWidth({
+  requestedColumns,
+  minTile,
+  natural,
+  available,
+  isMobile,
+}: {
+  requestedColumns: number;
+  minTile: number;
+  /** Width the page shell gives the grid. */
+  natural: number;
+  /** Widest the grid can grow while staying inside the viewport. */
+  available: number;
+  isMobile: boolean;
+}): number {
+  // Phones are already full-bleed; widening there would only add sideways scroll.
+  if (isMobile || natural <= 0 || !Number.isFinite(requestedColumns)) return 0;
+  const columns = clamp(Math.round(requestedColumns), 1, 8);
+  // +1px so floor(width / minTile) can't land one short on a rounding edge.
+  const needed = Math.round(columns * minTile) + 1;
+  const width = Math.min(needed, available);
+  return width > natural ? Math.round(width) : 0;
+}
+
 const LqipImage = memo(function LqipImage({
   url,
   thumbUrl,
@@ -368,6 +406,9 @@ export function PhotoGallery({
   // W: columns derive from the container width — the admin sets a *maximum*,
   // and the count steps down automatically so tiles never get narrower than a
   // minimum width (phones land on 1–2, tablets ~3, wide desktops up to the max).
+  // The frame the count is measured against grows to fit the requested columns
+  // (see frameW below), so the maximum is reachable instead of being silently
+  // capped by the page shell.
   // X: top (Works) and gallery read independent keys; the top falls back to the
   // gallery's values so existing sites look unchanged until 秋 splits them.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -383,6 +424,45 @@ export function PhotoGallery({
     });
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+  // What the surrounding page gives us: the width it hands the grid, and how
+  // much room there is to grow beyond it. Both read from the *parent*, because
+  // the frame below sets a width on our own element and deciding from our own
+  // width would feed back into itself. Measured directly rather than through
+  // ResizeObserver: the frame must be decided on the first layout pass, and an
+  // observer's initial callback is not guaranteed to have arrived by then.
+  const [room, setRoom] = useState({ natural: 0, available: 0 });
+  useLayoutEffect(() => {
+    const parent = containerRef.current?.parentElement;
+    if (!parent) return;
+    const measure = () => {
+      const cs = window.getComputedStyle(parent);
+      const padL = parseFloat(cs.paddingLeft) || 0;
+      const natural =
+        parent.clientWidth - padL - (parseFloat(cs.paddingRight) || 0);
+      if (natural <= 0) return;
+      // Grow symmetrically about the parent's centre, so the shorter side is
+      // the limit. The page can be off-centre in the viewport (the site's
+      // fixed sidebar pushes it right), which is why this cannot be a plain
+      // 100vw calc — that would overflow past the right edge.
+      const centre = parent.getBoundingClientRect().left + padL + natural / 2;
+      const viewport = document.documentElement.clientWidth; // excludes scrollbar
+      const available = 2 * Math.min(centre, viewport - centre) - 32;
+      setRoom({ natural, available });
+    };
+    measure();
+    // Re-measure on viewport changes, and on anything that resizes the shell
+    // without one (sidebar collapse, zoom, a late web font).
+    window.addEventListener("resize", measure);
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => measure())
+        : null;
+    ro?.observe(parent);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro?.disconnect();
+    };
   }, []);
 
   const isTop = variant === "top";
@@ -421,6 +501,28 @@ export function PhotoGallery({
     return clamp(Math.floor(containerW / minTile) || 1, 1, maxColumns);
   };
   const columns = columnsFor(3);
+  const requestedColumns = pick("topWorksColumns", "galleryColumns", NaN);
+  const frameW = galleryFrameWidth({
+    requestedColumns,
+    minTile,
+    isMobile,
+    ...room,
+  });
+  const frameStyle = frameW
+    ? ({
+        // Wider than the parent, still centred on it: the negative margin is
+        // what lets the grid step outside the page shell.
+        width: `${frameW}px`,
+        marginInline: `calc((100% - ${frameW}px) / 2)`,
+      } as React.CSSProperties)
+    : undefined;
+  // Applying the frame changes our own width, and the column count is derived
+  // from that width — so read it back once the new frame has been laid out.
+  // Without this the grid would widen but keep the old, narrower column count.
+  useLayoutEffect(() => {
+    const w = containerRef.current?.getBoundingClientRect().width;
+    if (w) setContainerW(w);
+  }, [frameW]);
   const seed = Math.round(num(settings?.gallerySeed, 1));
   const mode: GalleryLayoutType = KNOWN_LAYOUTS.includes(
     layoutType as GalleryLayoutType,
@@ -1097,7 +1199,11 @@ export function PhotoGallery({
 
   return (
     <>
-      <div ref={containerRef} className="filter-grid-animated">
+      <div
+        ref={containerRef}
+        className="filter-grid-animated"
+        style={frameStyle}
+      >
         {body}
       </div>
       {lightboxIndex !== null && photos[lightboxIndex] && (

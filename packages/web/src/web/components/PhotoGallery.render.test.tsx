@@ -468,3 +468,131 @@ test("a failed image marks its card as photo-broken (quiet placeholder)", async 
   });
   host.remove();
 });
+
+// --- 列数が届かない問題 (2026-08-07 owner report) ---------------------------
+// Measured on the live gallery that day: galleryColumns=8, gallerySizeScale=
+// 0.95, page shell 928px wide, 4 columns rendered. The count is floor(width /
+// minTile), so 5–8 were unreachable and the slider looked broken. The grid now
+// widens its own frame to fit the request. These tests fail if that stops
+// happening, or if it starts happening to sites that never touched the key
+// (which would silently rewiden every existing gallery).
+
+const { galleryFrameWidth } = await import("./PhotoGallery");
+
+// 8 columns at the owner's photo size: 8 × (210 × 0.95) = 1596, +1px guard.
+const OWNER = { requestedColumns: 8, minTile: 210 * 0.95, isMobile: false };
+
+test("the frame grows to fit the requested columns when the shell is too narrow", () => {
+  expect(
+    galleryFrameWidth({ ...OWNER, natural: 928, available: 1836 }),
+  ).toBe(1597);
+});
+
+test("the frame never exceeds the room the page actually has", () => {
+  // The site's fixed sidebar pushes the content off-centre, so the room is not
+  // the viewport width. Overflowing it would add a horizontal scrollbar.
+  expect(galleryFrameWidth({ ...OWNER, natural: 896, available: 1152 })).toBe(
+    1152,
+  );
+});
+
+test("a request that already fits leaves the page width alone", () => {
+  // 3 × 210 = 630px, well inside the shell — nothing to widen.
+  expect(
+    galleryFrameWidth({
+      requestedColumns: 3,
+      minTile: 210,
+      isMobile: false,
+      natural: 928,
+      available: 1836,
+    }),
+  ).toBe(0);
+});
+
+test("an unset column key leaves the page width alone", () => {
+  expect(
+    galleryFrameWidth({ ...OWNER, requestedColumns: NaN, natural: 928, available: 1836 }),
+  ).toBe(0);
+});
+
+test("phones are never widened", () => {
+  // Already full-bleed there; a wider frame would only add sideways scroll.
+  expect(
+    galleryFrameWidth({ ...OWNER, isMobile: true, natural: 360, available: 360 }),
+  ).toBe(0);
+});
+
+test("a shell wider than the room is left as-is rather than narrowed", () => {
+  expect(
+    galleryFrameWidth({ ...OWNER, natural: 1400, available: 1000 }),
+  ).toBe(0);
+});
+
+test("the widened frame reaches the DOM and stays centred on the page shell", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  qc.setQueryData(["settings"], {
+    galleryColumns: "8",
+    gallerySizeScale: "0.95",
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  // jsdom does no layout, so hand the component the geometry it measures:
+  // a 928px shell centred at x=950 inside an 1884px viewport.
+  Object.defineProperty(host, "clientWidth", { value: 928, configurable: true });
+  host.getBoundingClientRect = () =>
+    ({ left: 486, right: 1414, width: 928 }) as DOMRect;
+  Object.defineProperty(dom.window.document.documentElement, "clientWidth", {
+    value: 1884,
+    configurable: true,
+  });
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(PhotoGallery, { photos, layoutType: "clean-grid" }),
+      ),
+    );
+  });
+  const grid = host.querySelector<HTMLElement>(".filter-grid-animated");
+  expect(grid).not.toBeNull();
+  expect(grid!.style.width).toBe("1597px");
+  // Half the overhang pulled off each side — jsdom reserialises the calc(),
+  // so assert the parts rather than the exact spelling.
+  expect(grid!.style.marginInline).toContain("100% - 1597px");
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});
+
+test("a site that never set the column key renders no frame at all", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  qc.setQueryData(["settings"], { galleryLayout: "clean-grid" });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  Object.defineProperty(host, "clientWidth", { value: 928, configurable: true });
+  host.getBoundingClientRect = () =>
+    ({ left: 486, right: 1414, width: 928 }) as DOMRect;
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(PhotoGallery, { photos, layoutType: "clean-grid" }),
+      ),
+    );
+  });
+  const grid = host.querySelector<HTMLElement>(".filter-grid-animated");
+  expect(grid!.getAttribute("style")).toBeNull();
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});

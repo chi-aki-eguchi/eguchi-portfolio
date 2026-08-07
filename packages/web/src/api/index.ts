@@ -1295,19 +1295,21 @@ const app = new Hono()
         // ── homeGalleryCount: トップ Works 欄の初期表示枚数 ──
         homeGalleryCount: settings.homeGalleryCount ?? "12",
         // ── G: gallery controlled-random layout (JS-driven; see lib/gallery-layout) ──
-        galleryGapScale: settings.galleryGapScale ?? "1", // 0.5–2.0
-        galleryEmptyRate: settings.galleryEmptyRate ?? "0.1", // 0–0.3
-        gallerySizeVariation: settings.gallerySizeVariation ?? "0.5", // 0–1.0
-        galleryColumns: settings.galleryColumns ?? "3", // W: max columns (1–8); actual count steps down with width
-        gallerySizeScale: settings.gallerySizeScale ?? "1", // X: tile size multiplier (0.5–2)
+        // Allowed ranges live in shared/setting-ranges.ts — do not restate them
+        // here; the copies drifted from the real clamps once already.
+        galleryGapScale: settings.galleryGapScale ?? "1",
+        galleryEmptyRate: settings.galleryEmptyRate ?? "0.1",
+        gallerySizeVariation: settings.gallerySizeVariation ?? "0.5",
+        galleryColumns: settings.galleryColumns ?? "3", // W: a *maximum*; the rendered count steps down with width
+        gallerySizeScale: settings.gallerySizeScale ?? "1", // X: tile size multiplier
         // X: top (Works) overrides — empty string = inherit the gallery values
         topWorksColumns: settings.topWorksColumns ?? "",
         topWorksSizeScale: settings.topWorksSizeScale ?? "",
         topWorksGapScale: settings.topWorksGapScale ?? "",
         gallerySeed: settings.gallerySeed ?? "1", // integer
         // ── P: series grid (Works series view) — JS-driven, like the gallery grid ──
-        seriesGridColumns: settings.seriesGridColumns ?? "3", // 2–4 (PC)
-        seriesGridColumnsMobile: settings.seriesGridColumnsMobile ?? "2", // 1–2 (mobile)
+        seriesGridColumns: settings.seriesGridColumns ?? "3", // PC
+        seriesGridColumnsMobile: settings.seriesGridColumnsMobile ?? "2", // mobile
         worksDefaultView: settings.worksDefaultView ?? "photos", // "photos" | "series"
         // ── N: per-page grid layout type (JS-driven) — mosaic|grid|scroll(|…) ──
         galleryLayout: settings.galleryLayout ?? "mosaic",

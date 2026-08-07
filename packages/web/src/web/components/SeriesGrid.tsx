@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
-import { num, clamp } from "../lib/utils";
+import { num } from "../lib/utils";
+import {
+  clampSetting,
+  clampSettingRounded,
+} from "../../shared/setting-ranges";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 
@@ -37,11 +41,23 @@ export function SeriesGrid() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // Bounds come from SETTING_RANGES so they cannot drift from what the admin
+  // offers: the 列数 control reached 8 while this clamped at 6, so the last two
+  // steps did nothing (2026-08-07).
   const columns = isMobile
-    ? clamp(Math.round(num(settings?.seriesGridColumnsMobile, 2)), 1, 3)
-    : clamp(Math.round(num(settings?.seriesGridColumns, 3)), 1, 6);
+    ? clampSettingRounded(
+        "seriesGridColumnsMobile",
+        num(settings?.seriesGridColumnsMobile, 2),
+      )
+    : clampSettingRounded(
+        "seriesGridColumns",
+        num(settings?.seriesGridColumns, 3),
+      );
   // P3: reuse the gallery gap scale so spacing feels of-a-piece with the photo grid.
-  const gapScale = clamp(num(settings?.galleryGapScale, 1), 0.2, 3);
+  const gapScale = clampSetting(
+    "galleryGapScale",
+    num(settings?.galleryGapScale, 1),
+  );
   const gap = (isMobile ? 18 : 32) * gapScale;
 
   // Tiles are `.page-entrance` (opacity:0 until observed). Own the observer here

@@ -73,6 +73,7 @@ import {
 } from "./admin-settings-form-layout";
 import { useAdminI18n } from "./admin-i18n";
 import type { GalleryLayoutType } from "../components/PhotoGallery";
+import { SETTING_RANGES } from "../../shared/setting-ranges";
 import {
   draftAfterSuccessfulSave,
   hasUnsavedSettingsDraft,
@@ -5316,9 +5317,9 @@ export function SettingsTab({
                     valueKey="galleryColumns"
                     current={current}
                     set={set}
-                    min={1}
-                    max={8}
-                    step={1}
+                    min={SETTING_RANGES.galleryColumns.min}
+                    max={SETTING_RANGES.galleryColumns.max}
+                    step={SETTING_RANGES.galleryColumns.step}
                     unit={copy.units.columns}
                     defaultVal="3"
                   />
@@ -5332,9 +5333,9 @@ export function SettingsTab({
                     valueKey="gallerySizeScale"
                     current={current}
                     set={set}
-                    min={0.5}
-                    max={3.0}
-                    step={0.05}
+                    min={SETTING_RANGES.gallerySizeScale.min}
+                    max={SETTING_RANGES.gallerySizeScale.max}
+                    step={SETTING_RANGES.gallerySizeScale.step}
                     unit="×"
                     defaultVal="1"
                   />
@@ -5348,9 +5349,9 @@ export function SettingsTab({
                     valueKey="galleryGapScale"
                     current={current}
                     set={set}
-                    min={0.2}
-                    max={5.0}
-                    step={0.05}
+                    min={SETTING_RANGES.galleryGapScale.min}
+                    max={SETTING_RANGES.galleryGapScale.max}
+                    step={SETTING_RANGES.galleryGapScale.step}
                     unit="×"
                     defaultVal="1"
                   />
@@ -5367,9 +5368,9 @@ export function SettingsTab({
                     valueKey="topWorksColumns"
                     current={current}
                     set={set}
-                    min={1}
-                    max={8}
-                    step={1}
+                    min={SETTING_RANGES.topWorksColumns.min}
+                    max={SETTING_RANGES.topWorksColumns.max}
+                    step={SETTING_RANGES.topWorksColumns.step}
                     unit={copy.units.columns}
                     defaultVal={current["galleryColumns"] || "3"}
                   />
@@ -5383,9 +5384,9 @@ export function SettingsTab({
                     valueKey="topWorksSizeScale"
                     current={current}
                     set={set}
-                    min={0.5}
-                    max={3.0}
-                    step={0.05}
+                    min={SETTING_RANGES.topWorksSizeScale.min}
+                    max={SETTING_RANGES.topWorksSizeScale.max}
+                    step={SETTING_RANGES.topWorksSizeScale.step}
                     unit="×"
                     defaultVal={current["gallerySizeScale"] || "1"}
                   />
@@ -5399,9 +5400,9 @@ export function SettingsTab({
                     valueKey="topWorksGapScale"
                     current={current}
                     set={set}
-                    min={0.2}
-                    max={5.0}
-                    step={0.05}
+                    min={SETTING_RANGES.topWorksGapScale.min}
+                    max={SETTING_RANGES.topWorksGapScale.max}
+                    step={SETTING_RANGES.topWorksGapScale.step}
                     unit="×"
                     defaultVal={current["galleryGapScale"] || "1"}
                   />
@@ -5418,9 +5419,9 @@ export function SettingsTab({
                     valueKey="galleryEmptyRate"
                     current={current}
                     set={set}
-                    min={0}
-                    max={0.4}
-                    step={0.01}
+                    min={SETTING_RANGES.galleryEmptyRate.min}
+                    max={SETTING_RANGES.galleryEmptyRate.max}
+                    step={SETTING_RANGES.galleryEmptyRate.step}
                     unit=""
                     defaultVal="0.1"
                   />
@@ -5434,9 +5435,9 @@ export function SettingsTab({
                     valueKey="gallerySizeVariation"
                     current={current}
                     set={set}
-                    min={0}
-                    max={1.0}
-                    step={0.05}
+                    min={SETTING_RANGES.gallerySizeVariation.min}
+                    max={SETTING_RANGES.gallerySizeVariation.max}
+                    step={SETTING_RANGES.gallerySizeVariation.step}
                     unit=""
                     defaultVal="0.5"
                   />
@@ -5570,9 +5571,9 @@ export function SettingsTab({
                       valueKey="seriesGridColumns"
                       current={current}
                       set={set}
-                      min={1}
-                      max={8}
-                      step={1}
+                      min={SETTING_RANGES.seriesGridColumns.min}
+                      max={SETTING_RANGES.seriesGridColumns.max}
+                      step={SETTING_RANGES.seriesGridColumns.step}
                       unit={copy.units.columns}
                       defaultVal="3"
                     />
@@ -5586,9 +5587,9 @@ export function SettingsTab({
                       valueKey="seriesGridColumnsMobile"
                       current={current}
                       set={set}
-                      min={1}
-                      max={3}
-                      step={1}
+                      min={SETTING_RANGES.seriesGridColumnsMobile.min}
+                      max={SETTING_RANGES.seriesGridColumnsMobile.max}
+                      step={SETTING_RANGES.seriesGridColumnsMobile.step}
                       unit={copy.units.columns}
                       defaultVal="2"
                     />

@@ -12,6 +12,10 @@ import { api, jsonOrThrow } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
 import { computeJustifiedRows } from "../lib/justified-layout";
 import { num, clamp } from "../lib/utils";
+import {
+  clampSetting,
+  clampSettingRounded,
+} from "../../shared/setting-ranges";
 import { Lightbox, FIT_SIZES } from "./Lightbox";
 import {
   objectPositionFromFocal,
@@ -138,7 +142,8 @@ export function galleryFrameWidth({
 }): number {
   // Phones are already full-bleed; widening there would only add sideways scroll.
   if (isMobile || natural <= 0 || !Number.isFinite(requestedColumns)) return 0;
-  const columns = clamp(Math.round(requestedColumns), 1, 8);
+  // Both column keys share one range, so either name gives the same bounds.
+  const columns = clampSettingRounded("galleryColumns", requestedColumns);
   // +1px so floor(width / minTile) can't land one short on a rounding edge.
   const needed = Math.round(columns * minTile) + 1;
   const width = Math.min(needed, available);
@@ -474,17 +479,23 @@ export function PhotoGallery({
       : num(s?.[galleryKey], fallback);
   };
 
-  const gapScale = clamp(
+  // Bounds come from SETTING_RANGES so they cannot drift from what the admin
+  // offers — a slider whose top third does nothing reads as a broken control.
+  const gapScale = clampSetting(
+    isTop ? "topWorksGapScale" : "galleryGapScale",
     pick("topWorksGapScale", "galleryGapScale", 1),
-    0.2,
-    3,
   );
-  const emptyRate = clamp(num(settings?.galleryEmptyRate, 0.1), 0, 0.4);
-  const sizeVariation = clamp(num(settings?.gallerySizeVariation, 0.5), 0, 1);
-  const sizeScale = clamp(
+  const emptyRate = clampSetting(
+    "galleryEmptyRate",
+    num(settings?.galleryEmptyRate, 0.1),
+  );
+  const sizeVariation = clampSetting(
+    "gallerySizeVariation",
+    num(settings?.gallerySizeVariation, 0.5),
+  );
+  const sizeScale = clampSetting(
+    isTop ? "topWorksSizeScale" : "gallerySizeScale",
     pick("topWorksSizeScale", "gallerySizeScale", 1),
-    0.5,
-    2,
   );
   // Larger sizeScale → wider minimum tile → fewer columns → bigger photos.
   const minTile = (isMobile ? 150 : 210) * sizeScale;
@@ -493,10 +504,9 @@ export function PhotoGallery({
   // now reaches every layout — previously masonry / clean-grid / large-format
   // ignored it entirely and the control did nothing on those layouts.
   const columnsFor = (layoutDefaultMax: number) => {
-    const maxColumns = clamp(
-      Math.round(pick("topWorksColumns", "galleryColumns", layoutDefaultMax)),
-      1,
-      8,
+    const maxColumns = clampSettingRounded(
+      isTop ? "topWorksColumns" : "galleryColumns",
+      pick("topWorksColumns", "galleryColumns", layoutDefaultMax),
     );
     return clamp(Math.floor(containerW / minTile) || 1, 1, maxColumns);
   };

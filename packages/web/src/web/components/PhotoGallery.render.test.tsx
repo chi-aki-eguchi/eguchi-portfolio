@@ -596,3 +596,31 @@ test("a site that never set the column key renders no frame at all", async () =>
   });
   host.remove();
 });
+
+test("a gap above the old clamp actually reaches the grid", async () => {
+  // 余白倍率 offered up to 5.0 while this clamped at 3.0, so everything past 3
+  // was discarded in silence. clean-grid's gap is round(2 × gapScale): 8 at the
+  // requested 4.0, but 6 if the old ceiling is ever put back.
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  qc.setQueryData(["settings"], { galleryGapScale: "4" });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(PhotoGallery, { photos, layoutType: "clean-grid" }),
+      ),
+    );
+  });
+  const grid = host.querySelector<HTMLElement>(".filter-grid-animated > div");
+  expect(grid!.style.gap).toBe("8px");
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});

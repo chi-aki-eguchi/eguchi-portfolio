@@ -156,16 +156,19 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
 `admin.tsx` の `[data-virtualized]`（admin の Library グリッド）で、今日触った
 `PhotoGallery.tsx` / `SeriesGrid.tsx` / `admin-tabs.tsx` はこの要素を描画しない。
 
-再現する2件（desktop）:
+再現する2件（desktop / mobile 両方。行番号は 2026-08-07 時点）:
 
-- `admin-debug-sweep.spec.ts:217` 「Libraryの仮想グリッドとサイトプレビューが
+- `admin-debug-sweep.spec.ts` 「Libraryの仮想グリッドとサイトプレビューが
   安定した寸法・紙色を使う」— `[data-virtualized]` が見つからない
-- `admin-i18n.spec.ts:7` 「JPのLibraryと写真編集に英語の操作語を残さない」
+- `admin-i18n.spec.ts` 「JPのLibraryと写真編集に英語の操作語を残さない」
 
-**flaky と分けて扱うこと。** `admin-debug-sweep.spec.ts:54` は全体実行では落ちるが、
-単体では2回とも通る。原因はテスト側の競合で、`openSettingsSection()` が
-`isVisible()`（待たない判定）でPC用の目次を見て、描画前だとスマホ用の分岐へ落ち、
-存在しないボタンを30秒待って死ぬ。mobile の40秒タイムアウト多発も同じ疑い。
+どちらも admin の **Library** に関するもの。全体の失敗数は flaky 修正後に
+測り直していない（週枠の都合。全体実行は25分）。
+
+**flaky の原因は特定し、2026-08-07 に修正済み（`4c38ec1`）。** `openSettingsSection()`
+が `isVisible()`（待たない判定）でPC用の目次を見ており、描画前だとスマホ用の分岐へ
+落ちて、存在しないボタンを30秒待って死んでいた。少し待ってから分岐する形に直した。
+実測: mobile の sweep は 40秒タイムアウト → **17.6秒で通過**。**残る失敗は下の2件。**
 
 着手する人へ: **まず実物を測り直す。** 本番DBの内容に依存している可能性がある
 （smoke は本番と同じDBにつながる）。`openSettingsSection()` の `isVisible()` を

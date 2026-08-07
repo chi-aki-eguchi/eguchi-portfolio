@@ -95,3 +95,25 @@ describe("tileWidth", () => {
     expect(tileWidth("XL", 1)).toBe(tileWidth("M", 1));
   });
 });
+
+describe("抜け頻度の上限（2026-08-07）", () => {
+  const gapsAt = (emptyRate: number) => {
+    const ids = Array.from({ length: 60 }, (_, i) => i + 1);
+    return buildGalleryLayout(60, ids, {
+      columns: 3,
+      emptyRate,
+      seed: 7,
+      isMobile: false,
+    }).filter((cell) => cell.type === "gap").length;
+  };
+
+  test("a rate above the old 0.3 ceiling produces more gaps, not the same", () => {
+    // This module clamped to 0.3 while the admin offered 0.4, so 0.31–0.4 all
+    // rendered identically to 0.3 and the top of the slider looked broken.
+    expect(gapsAt(0.4)).toBeGreaterThan(gapsAt(0.3));
+  });
+
+  test("the declared maximum is still a real ceiling", () => {
+    expect(gapsAt(99)).toBe(gapsAt(0.4));
+  });
+});

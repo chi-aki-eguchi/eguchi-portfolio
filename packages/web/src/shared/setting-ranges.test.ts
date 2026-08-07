@@ -71,6 +71,17 @@ test("the admin's sliders take their bounds from the table, not from literals", 
   expect([...seen].sort()).toEqual([...KEYS].sort());
 });
 
+test("no second, tighter ceiling downstream of the settings read", () => {
+  // buildGalleryLayout re-clamped its emptyRate argument to 0.3 while the admin
+  // and the caller both allowed 0.4, so the top of 抜け頻度 died one call deeper
+  // than anyone was looking. A range check at the read site cannot see this —
+  // the value arrives as `opts.emptyRate`, with the key name nowhere in sight.
+  const src = read("../web/lib/gallery-layout.ts");
+  const numericClamp = /clamp\(\s*opts\.emptyRate\s*,\s*[\d.]+\s*,\s*[\d.]+\s*\)/;
+  expect(numericClamp.test(src)).toBe(false);
+  expect(src).toContain('clampSetting("galleryEmptyRate"');
+});
+
 test("the consumers clamp through the table instead of their own numbers", () => {
   for (const path of [
     "../web/components/PhotoGallery.tsx",

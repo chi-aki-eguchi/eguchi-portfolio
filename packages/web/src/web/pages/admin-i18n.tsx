@@ -1203,7 +1203,9 @@ const ADMIN_PHASE_2B_JA = {
       topPhotoSizeHint: "トップ下部の作品の大きさ。ギャラリーとは独立です",
       topGapLabel: "間隔（トップ）",
       topGapHint: "トップ下部の作品の余白倍率。ギャラリーとは独立です",
-      mosaicHeading: "モザイク／コラージュだけの調整",
+      // 「コラージュ」と書いていたが、collage は抜け頻度もサイズの緩急も
+      // 読んでいない。選んでも動かないつまみを、動くと書かない（2026-08-07）。
+      mosaicHeading: "モザイクだけの調整",
       emptyRateLabel: "抜け（空セル）の頻度",
       emptyRateControlLabel: "抜け頻度",
       emptyRateHint:
@@ -2735,7 +2737,7 @@ const ADMIN_PHASE_2B_EN = {
       topGapLabel: "Spacing (Top)",
       topGapHint:
         "The spacing multiplier for the works at the bottom of the home page. Independent of Gallery.",
-      mosaicHeading: "Mosaic / Collage Only",
+      mosaicHeading: "Mosaic Only",
       emptyRateLabel: "Gap (Empty Cell) Frequency",
       emptyRateControlLabel: "Gap Frequency",
       emptyRateHint:

@@ -6,6 +6,7 @@
  * grid breathes ("抜け感") without ever feeling broken. Read order (row-first,
  * sortOrder) is preserved — gaps only push photos forward, never reorder them.
  */
+import { clampSetting } from "../../shared/setting-ranges";
 
 export type GalleryCell =
   | { type: "photo"; photoIndex: number }
@@ -48,8 +49,13 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 export function buildGalleryLayout(count: number, ids: number[], opts: GalleryLayoutOpts): GalleryCell[] {
   if (count <= 0) return [];
   const cols = Math.max(1, Math.floor(opts.columns));
+  // A second, tighter ceiling here used to silently undo the caller's: the
+  // admin offered 抜け感 up to 0.4 and this cut it back to 0.3, so the top of
+  // that slider did nothing (2026-08-07). Bounds come from SETTING_RANGES now.
   // G1.5: narrow screens go sparse fast, so dial empties down on mobile.
-  const emptyRate = clamp(opts.emptyRate, 0, 0.3) * (opts.isMobile ? 0.4 : 1);
+  const emptyRate =
+    clampSetting("galleryEmptyRate", opts.emptyRate) *
+    (opts.isMobile ? 0.4 : 1);
 
   // Seed combines the explicit seed (shuffle) with a hash of the id sequence so
   // the same composition is stable across reloads (G1.1) but a new photo set or

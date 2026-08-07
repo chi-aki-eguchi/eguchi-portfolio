@@ -9,10 +9,6 @@ const OLD_DARK_COLORS = [
   "rgb(56, 56, 56)",
 ] as const;
 
-function firstFamily(fontList: string): string {
-  return fontList.split(",")[0]?.trim().replace(/['"]/g, "") ?? "";
-}
-
 // Settingsの本文は目次で選んだ1節だけを出す（2026-07-30）。PCは左の目次、
 // スマホは上部1行の「切り替え」→節一覧シートから目的の節を出す。
 async function openSettingsSection(
@@ -22,7 +18,14 @@ async function openSettingsSection(
   const tocLink = page.locator(
     `.admin-form-toc [data-settings-section-link="${sectionId}"]`,
   );
-  if (await tocLink.isVisible()) {
+  // `isVisible()` は待たない。PC幅でも目次が描画される前に呼ぶと false が返り、
+  // スマホ用の分岐へ落ちて、存在しないボタンを30秒待って死ぬ。実際にこの形で
+  // 3回落ちた（2026-08-07）。少しだけ待ってから分岐する。
+  const hasToc = await tocLink
+    .waitFor({ state: "visible", timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (hasToc) {
     await tocLink.click();
   } else {
     await page
@@ -85,27 +88,32 @@ test.describe("admin — 全体デバッグスイープ", () => {
         const style = getComputedStyle(el);
         return {
           siteBackground: root.getPropertyValue("--background").trim(),
-          siteTitleFont: root.getPropertyValue("--font-en").trim(),
-          siteUiFont: root.getPropertyValue("--font-ja").trim(),
           adminPaper: style.getPropertyValue("--admin-paper").trim(),
           sidebarFont: getComputedStyle(
             document.querySelector(".admin-sidebar__tab span") ?? el,
           ).fontFamily,
         };
       });
-      expect(adminShell.adminPaper.toLowerCase()).toBe(
-        adminShell.siteBackground.toLowerCase(),
+      // 道具は公開サイトの見た目から独立している。色は 2026-08-07（`03f3c53`）、
+      // 書体は同日オーナー判断で切り離した。ここは以前「admin は公開サイトに
+      // 追従する」ことを検査していたが、それは撤回された契約なので、逆向きに
+      // 「追従していない」ことを検査する。単体テストは
+      // `admin-theme-independence.test.ts`（宣言の検査）。ここは実ブラウザで
+      // 解決後の値を見る。
+      // 明暗それぞれの admin 自身の紙。公開サイトの色ではない。
+      expect(["#f7f7f7", "#121212"]).toContain(
+        adminShell.adminPaper.toLowerCase(),
       );
-      expect(adminShell.sidebarFont).toContain(
-        firstFamily(adminShell.siteUiFont),
-      );
+      // 「公開サイトの書体でないこと」を否定形で書かない。オーナーが偶然
+      // 同じ書体を選ぶと誤検知する。admin 自身の書体が出ていることを直接見る。
+      expect(adminShell.sidebarFont).toContain("Hiragino Sans");
 
       const title = page.locator(".admin-page-header__title").first();
       if ((await title.count()) > 0) {
         const titleFont = await title.evaluate(
           (el) => getComputedStyle(el).fontFamily,
         );
-        expect(titleFont).toContain(firstFamily(adminShell.siteTitleFont));
+        expect(titleFont).toContain("Cormorant Garamond");
       }
 
       if (tab === "settings") {

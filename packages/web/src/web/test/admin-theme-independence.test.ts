@@ -71,3 +71,40 @@ describe("管理画面の色は公開サイトから独立している", () => {
     }
   });
 });
+
+/**
+ * 書体も同じ理由で切り離した（2026-08-07・オーナーから判断を委任）。
+ *
+ * `--admin-font-title: var(--font-en), ...` / `--admin-font-ui: var(--font-ja), ...`
+ * と書かれており、公開サイトの書体設定が管理画面へそのまま流れ込んでいた。
+ * 実測（2026-08-07）: 公開サイトへ `Dela Gothic One` / `Bungee Shade` を当てると
+ * 管理画面の見出しと本文がまるごとその書体になる。
+ *
+ * 「見出しだけ借りる」案を採らなかった理由: title は sidebar のタイトルだけでなく
+ * `h2` / `h3` と uppercase ラベル全部に当たる。走査の骨格そのものなので、
+ * そこへ装飾書体が入る限り読みにくさは残る。
+ */
+describe("管理画面の書体は公開サイトから独立している", () => {
+  test(".admin-atelier は公開サイトの書体トークンを継がない", () => {
+    const block = ruleBlock(".admin-atelier");
+    const fonts = block
+      .split("\n")
+      .filter((line) => line.includes("--admin-font-"))
+      .join("\n");
+    expect(fonts).not.toContain("var(--font-en");
+    expect(fonts).not.toContain("var(--font-ja");
+  });
+
+  test("admin 自身の書体が宣言されている（未指定にして継承へ落ちていない）", () => {
+    const block = ruleBlock(".admin-atelier");
+    expect(block).toContain('--admin-font-title: "Cormorant Garamond"');
+    expect(block).toContain('--admin-font-ui: "Hiragino Sans"');
+  });
+
+  test("ログイン画面は意図どおり公開サイトの書体に追従したまま", () => {
+    // `.admin-login` は「公開サイトと道具の間の扉」として、色も書体も
+    // 意図的に公開サイトへ追従する。admin 本体と同じ扱いにしない。
+    expect(ruleBlock(".admin-login")).toContain("var(--background)");
+    expect(ruleBlock(".admin-login__title")).toContain("var(--font-en)");
+  });
+});

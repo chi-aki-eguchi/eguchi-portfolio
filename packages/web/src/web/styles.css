@@ -145,9 +145,15 @@
   --admin-accent-fill: #3f607e;
   --admin-danger: #a33b2e;
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
-  --admin-font-title: var(--font-en), "Cormorant Garamond", "Georgia", serif;
-  --admin-font-ui:
-    var(--font-ja), "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  /* 色と同じ理由で、公開サイトの書体からも切り離す（2026-08-07）。
+     `var(--font-en)` / `var(--font-ja)` を継いでいたため、オーナーが装飾的な
+     書体を選ぶと管理画面の見出しと本文がまるごとその書体になっていた。
+     title は h2/h3 と uppercase ラベル全部に当たる＝走査の骨格そのもので、
+     見出しだけ借りる案では読みにくさが残る。道具は静かであること
+     （`admin-renewal-goal.md` 軸2「使用感」/ 軸5「AI感の削減」）。
+     公開サイト側の書体設定は一切減らない。ここが追従しなくなるだけ。 */
+  --admin-font-title: "Cormorant Garamond", "Georgia", serif;
+  --admin-font-ui: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
   --admin-text-note: 12px;
   --admin-text-body: 14px;
   --admin-text-section: 17px;

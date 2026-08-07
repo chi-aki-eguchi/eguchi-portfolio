@@ -3,55 +3,52 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-07 JST
 
-- **Status:** デザイン自由度の調査完了。**B-21（暗い表示で文字が読めない）を修正・検証済み**
+- **Status:** デザイン自由度の拡大に着手。**着手順1（adminの色を切り離す）まで完了**
 - **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** B-21 は local commit 済み。
-  push は未実施。未追跡で残るのは `scripts/smoke/scratch/`（Claude の調査用）
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** local commit 済み。push は未実施。
+  未追跡で残るのは `scripts/smoke/scratch/`（以前からある調査用）
 
 ### 目的と完了条件
 
 公開サイトと admin の「デザインを変えられる自由度」を上げる。
-オーナーの言葉: 配置・レイアウトの種類・方向性を、公開サイトでも admin でも変えたい。
-**方向性の意味は「全部（テイスト / スクロール方向 / ページ別 / 写真の見せ方）」と回答済み。**
+設計の正本は `docs/specs/design-freedom-plan.md`。着手順は
+1) adminの色を切り離す 2) 写真の見せ方の振り幅 3) テイストのプリセット
+4) ページごとの方向 5) 横スクロール・縦組み。
 
 ### 完了したこと
 
-1. 参照サイト `good-web-design.com/webdesign/photograph` を調査。**解説記事ではなく
-   257件の実例リンク集**。作例には色面型（強い色＋階段状の写真）があり、今の設定では到達不能
-2. 現状の棚卸し（実測）: 設定キーは `shared/settings-keys.ts` の台帳、Settings は19節。
-   ヒーロー5種 / ナビ位置3種 / 写真の並べ方12種 / 余白4軸 / 文字・色は既に可変
-3. 到達できない3点: (a) 完成形へ一発で行く手段が無い (b) ページ構成と色の役割が固定
-   (c) admin は公開サイトの色に従属（`.admin-atelier` が `--background` を継承）
-4. **B-21 を修正。** 明/暗それぞれに当てる色を選び直す `lib/theme-colors.ts` を新設し、
-   DB適用とライブプレビューの両方を同じ適用口へ集約。`themeBgDark` / `themeTextDark` を
-   4箇所同期（台帳 / API default / provider の DB適用 / handlePreviewMessage）＋admin UI
+1. 参照サイト `good-web-design.com/webdesign/photograph` を調査（解説記事ではなく
+   257件の実例リンク集）。現状の棚卸しと到達できない点を `design-freedom-plan.md` に確定
+2. **暗い表示で文字が読めない問題を修正**（`9a85073`）。明/暗で当てる色を選び直し、
+   `themeBgDark` / `themeTextDark` を追加。適用処理は `lib/theme-colors.ts` へ集約
+3. **`design-spec.md` §9「色数を増やす」の禁止をオーナー判断で撤回**（2026-08-07）。
+   撤回したのは「選べる見た目の振り幅」であって既定値ではない。**管理画面は対象外**
+4. **着手順1: `.admin-atelier` の紙とインクを公開サイトの色から切り離した。**
+   結合していたのは冒頭4行だけ。明暗の追従は残している（機能を減らしていない）
 
 ### 検証の状態
 
-- `bun run check` **成功**
-- `bun run smoke` **成功**（306 passed / 128 skipped / 0 failed）。1回目は1件失敗し
-  （`admin-live-preview.spec.ts` の `getByLabel` が新しい入力と2件一致）、
-  テストを緩めず `exact: true` へ直した
-- 単体テスト `theme-colors.test.ts` 7件成功。**修正を外すと3件落ちる**ことを確認済み
-- 実ブラウザ実測（localhost:5173 / postMessage 経路）:
-  暗い表示で `themeBg` だけ渡しても背景 `#121212` / 文字 `#e8e8e8` を維持。
-  暗い色を渡せば `#101012` / `#ededed` が当たり、theme-color とテクスチャ合成も追従
-- local commit **未実施** / push・Railway反映・本番確認は未実施
+- `bun run check` **成功** / `bun run smoke` **成功**（306 passed / 128 skipped / 0 failed）
+- `theme-colors.test.ts` 7件・`admin-theme-independence.test.ts` 4件。
+  **どちらも修正を戻すと落ちる**ことを確認済み（3件 / 2件）
+- 実ブラウザ実測: 公開サイトを `#101010` にしても admin の紙は `#f7f7f7` のまま。
+  暗い表示では `#121212` になる。旧宣言を再現すると `#101010` に変わることも確認
+- local commit 済み / push・Railway反映・本番確認は**未実施**
 
 ### 次の一手
 
-- 自由度拡大の設計は `docs/specs/design-freedom-plan.md` に確定。
-  着手順は 1) admin を公開サイトの色から切り離す 2) 写真の見せ方の振り幅
-  3) テイストのプリセット 4) ページごとの方向 5) 横スクロール・縦組み
-- **1 と 2 は他に依存しないので、判断待ちの間でも進められる**
-- **オーナー判断待ち:** `design-spec.md` §9「色数を増やさない」を更新するか。
-  色面型をプリセットに入れるかどうかで、プリセットの振り幅が変わる
+- **オーナー判断待ち: admin のフォントも公開サイトに追従している。**
+  実測で装飾書体を選ぶと admin の本文と見出しがまるごと変わる。ただし意図的な
+  設計の可能性があるため触っていない。案(a)切り離す /(b)見出しだけ借りる /(c)現状維持
+- 着手順2（写真の見せ方の振り幅）は判断待ちに関係なく進められる
 
 ### 触ってはいけない範囲
 
 - `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 /
   公開設定 / `.env` の表示・記録 / `docs/archive/` の既存本文
 - smoke は本番と同じDBにつながる。**保存・削除・追加の書き込み操作を増やさない**
+- `admin-login.tsx` の `.admin-login` は「公開サイトと道具の間の扉」として
+  意図的に公開サイトの色へ追従している。admin本体と同じ扱いにしない
 - 既存の `data-admin-setting` / `data-library-*` 目印を消さない
 - 同じ worktree を2人で同時に編集しない
 <!-- CURRENT_STATE_END -->

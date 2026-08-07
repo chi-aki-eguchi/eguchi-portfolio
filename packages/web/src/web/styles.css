@@ -107,12 +107,20 @@
   --admin-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E");
 }
 
-/* Admin atelier design tokens: scoped to /admin only via .admin-atelier. */
+/* Admin atelier design tokens: scoped to /admin only via .admin-atelier.
+
+   紙とインクは公開サイトの色から独立している。/admin は Provider の中にあるので
+   `--background` / `--foreground` はここにも届くが、**継いではいけない**。
+   継ぐと、オーナーが公開サイトを黒や強い色にしたとたん管理画面まで同じ色になり、
+   作品を見るための器と、作品を並べる道具の区別がなくなる
+   (`admin-renewal-goal.md` 軸5「AI感の削減」/ 軸4「高級感」)。
+   2026-08-07 に色数の上限を撤回したことで、公開サイト側の振れ幅はさらに大きくなる。
+   明暗の追従だけは残す(下の [data-theme="dark"] 上書き)。 */
 .admin-atelier {
-  --admin-paper: var(--background, #f7f7f7);
-  --admin-paper-rgb: var(--background-rgb, 247, 247, 247);
-  --admin-ink: var(--foreground, #1a1a1a);
-  --admin-ink-rgb: var(--foreground-rgb, 26, 26, 26);
+  --admin-paper: #f7f7f7;
+  --admin-paper-rgb: 247, 247, 247;
+  --admin-ink: #1a1a1a;
+  --admin-ink-rgb: 26, 26, 26;
   --admin-paper-soft: color-mix(
     in srgb,
     var(--admin-paper) 97.5%,
@@ -198,6 +206,17 @@
   color: var(--admin-ink);
   font-family: var(--admin-font-ui);
   letter-spacing: 0;
+}
+
+/* 明暗の追従だけは残す。ここは公開サイトの `[data-theme="dark"]` と同じ既定値を
+   admin 用に**別途宣言している**。`var(--background)` を継がないので、オーナーが
+   公開サイトへ何色を選んでも管理画面はこの2組のどちらかになる。
+   `color-scheme` は従来どおり light のまま（今回は色の切り離しだけを行う）。 */
+[data-theme="dark"] .admin-atelier {
+  --admin-paper: #121212;
+  --admin-paper-rgb: 18, 18, 18;
+  --admin-ink: #e8e8e8;
+  --admin-ink-rgb: 232, 232, 232;
 }
 
 .admin-atelier * {

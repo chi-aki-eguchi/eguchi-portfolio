@@ -23,6 +23,8 @@ export const SETTINGS_PREVIEW_KEYS = [
   "profileNote",
   "themeBg",
   "themeText",
+  "themeBgDark",
+  "themeTextDark",
   "fontJa",
   "fontEn",
   "customFontJaName",

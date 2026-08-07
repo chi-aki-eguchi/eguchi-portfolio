@@ -1140,6 +1140,10 @@ const app = new Hono()
         profileNote: settings.profileNote ?? "",
         themeBg: settings.themeBg ?? "",
         themeText: settings.themeText ?? "",
+        // B-21: 暗い表示用の色。空なら styles.css の [data-theme="dark"] 既定へ戻す。
+        // 明るい表示用の色を暗い表示へ流用すると読めなくなるため、別のキーで持つ。
+        themeBgDark: settings.themeBgDark ?? "",
+        themeTextDark: settings.themeTextDark ?? "",
         navOpacity: settings.navOpacity ?? "",
         navSize: settings.navSize ?? "",
         bodySize: settings.bodySize ?? "",

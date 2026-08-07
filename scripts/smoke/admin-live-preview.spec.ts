@@ -21,7 +21,9 @@ test.describe("admin — ライブプレビューがタブ復帰後も編集内�
     await page.locator('[data-settings-section-link="theme"]').click();
     await page.waitForTimeout(200);
 
-    await page.getByLabel("背景色（HEX）").fill("#000005");
+    // exact: 「暗い表示のときの背景色（HEX）」など、この名前を含む別の入力が
+    // 増えても、明るい表示用の入力だけを掴み続けるため。
+    await page.getByLabel("背景色（HEX）", { exact: true }).fill("#000005");
     await page.waitForTimeout(600);
 
     const iframe = page.locator('iframe[title="Site Preview"]');

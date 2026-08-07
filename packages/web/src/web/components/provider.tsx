@@ -5,6 +5,11 @@ import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
 import { ensureAccentContrast } from "../lib/color-contrast";
 import { heroMotionCssVars } from "../lib/hero-motion";
 import {
+  applyThemeColors,
+  themeColorsFor,
+  type ThemeColorSettings,
+} from "../lib/theme-colors";
+import {
   resolveServiceNavVisibility,
   resolveServiceVisibility,
 } from "../../shared/service-visibility";
@@ -276,20 +281,6 @@ function removeElement(id: string) {
   document.getElementById(`${id}-style`)?.remove();
 }
 
-// DD: the grain blends with `multiply`, which is near-invisible over a dark
-// background (dark × noise ≈ dark) — the texture would silently vanish on dark
-// themes. Flip to `screen` (which lightens) when the chosen bg is dark.
-// undefined = no/invalid themeBg → CSS default (multiply, matches light default bg).
-function textureBlendFor(bgHex: string | undefined): string | undefined {
-  const hex = (bgHex || "").replace("#", "");
-  if (hex.length < 6) return undefined;
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return undefined;
-  return 0.299 * r + 0.587 * g + 0.114 * b < 128 ? "screen" : "multiply";
-}
-
 interface ProviderProps {
   children: React.ReactNode;
 }
@@ -326,50 +317,37 @@ export function Provider({ children }: ProviderProps) {
     });
   }, [data?.servicePageMode, data?.siteUrl, data]);
 
-  // Theme colors
+  // Theme colors — B-21: 明/暗それぞれに当てる色を選び直す。
+  const resolvedTheme = darkMode.resolved;
+  // postMessage ハンドラは登録時のクロージャで動くので、resolvedTheme を直接
+  // 読むと古い値を掴む。ref 経由で常に現在のテーマを見る。
+  const resolvedThemeRef = useRef(resolvedTheme);
+  resolvedThemeRef.current = resolvedTheme;
+  // プレビュー面では DB 適用が止まるため、直近に受け取った色をここで保持し、
+  // プレビュー内で明暗を切り替えたときに当て直す。
+  const previewThemeColorsRef = useRef<ThemeColorSettings>({});
+  useEffect(() => {
+    if (!isPreviewRef.current) return;
+    const { bg, text } = themeColorsFor(
+      resolvedTheme,
+      previewThemeColorsRef.current,
+    );
+    applyThemeColors(bg, text, resolvedTheme);
+  }, [resolvedTheme]);
+  const themeBg = data?.themeBg;
+  const themeText = data?.themeText;
+  const themeBgDark = data?.themeBgDark;
+  const themeTextDark = data?.themeTextDark;
   useEffect(() => {
     if (isPreviewRef.current) return;
-    const root = document.documentElement;
-    if (data?.themeBg) {
-      root.style.setProperty("--background", data.themeBg);
-      document.body.style.backgroundColor = data.themeBg;
-    } else {
-      root.style.removeProperty("--background");
-      document.body.style.removeProperty("background-color");
-    }
-    if (data?.themeText) {
-      root.style.setProperty("--foreground", data.themeText);
-      document.body.style.color = data.themeText;
-      const hex = data.themeText.replace("#", "");
-      const r = parseInt(hex.slice(0, 2), 16);
-      const g = parseInt(hex.slice(2, 4), 16);
-      const b = parseInt(hex.slice(4, 6), 16);
-      if (!isNaN(r))
-        root.style.setProperty("--foreground-rgb", `${r},${g},${b}`);
-    } else {
-      root.style.removeProperty("--foreground");
-      root.style.removeProperty("--foreground-rgb");
-      document.body.style.removeProperty("color");
-    }
-    if (data?.themeBg) {
-      const hex = (data.themeBg || "").replace("#", "");
-      const r = parseInt(hex.slice(0, 2), 16);
-      const g = parseInt(hex.slice(2, 4), 16);
-      const b = parseInt(hex.slice(4, 6), 16);
-      if (!isNaN(r))
-        root.style.setProperty("--background-rgb", `${r},${g},${b}`);
-    } else {
-      root.style.removeProperty("--background-rgb");
-    }
-    const blend = textureBlendFor(data?.themeBg);
-    if (blend) root.style.setProperty("--bg-texture-blend", blend);
-    else root.style.removeProperty("--bg-texture-blend");
-    // Keep the mobile browser chrome (theme-color) in sync with the chosen
-    // background so a dark theme doesn't show a light status bar.
-    const themeMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeMeta)
-      themeMeta.setAttribute("content", data?.themeBg || "#f7f7f7");
-  }, [data?.themeBg, data?.themeText]);
+    const { bg, text } = themeColorsFor(resolvedTheme, {
+      themeBg,
+      themeText,
+      themeBgDark,
+      themeTextDark,
+    });
+    applyThemeColors(bg, text, resolvedTheme);
+  }, [themeBg, themeText, themeBgDark, themeTextDark, resolvedTheme]);
 
   // ライト/ダーク切替(data-theme)で実効背景が変わるので、アクセントの
   // AA 補正をかけ直すために typography effect を再実行させるカウンタ。
@@ -682,41 +660,28 @@ export function Provider({ children }: ProviderProps) {
         `calc(${v}px * var(--global-font-scale, 1))`;
       const em = (v: string) => `${v}em`;
 
-      // Colors
-      if (s.themeBg !== undefined) {
-        if (s.themeBg) {
-          root.style.setProperty("--background", s.themeBg);
-          document.body.style.backgroundColor = s.themeBg;
-          const hex = s.themeBg.replace("#", "");
-          const r = parseInt(hex.slice(0, 2), 16),
-            g = parseInt(hex.slice(2, 4), 16),
-            b = parseInt(hex.slice(4, 6), 16);
-          if (!isNaN(r))
-            root.style.setProperty("--background-rgb", `${r},${g},${b}`);
-        } else {
-          root.style.removeProperty("--background");
-          root.style.removeProperty("--background-rgb");
-          document.body.style.removeProperty("background-color");
-        }
-        const blend = textureBlendFor(s.themeBg);
-        if (blend) root.style.setProperty("--bg-texture-blend", blend);
-        else root.style.removeProperty("--bg-texture-blend");
-      }
-      if (s.themeText !== undefined) {
-        if (s.themeText) {
-          root.style.setProperty("--foreground", s.themeText);
-          document.body.style.color = s.themeText;
-          const hex = s.themeText.replace("#", "");
-          const r = parseInt(hex.slice(0, 2), 16),
-            g = parseInt(hex.slice(2, 4), 16),
-            b = parseInt(hex.slice(4, 6), 16);
-          if (!isNaN(r))
-            root.style.setProperty("--foreground-rgb", `${r},${g},${b}`);
-        } else {
-          root.style.removeProperty("--foreground");
-          root.style.removeProperty("--foreground-rgb");
-          document.body.style.removeProperty("color");
-        }
+      // Colors — B-21: DB適用側と同じ規則で、テーマごとに当てる色を選ぶ。
+      // プレビュー内で明暗を切り替えたときにも当て直せるよう、直近の指定を憶える。
+      if (
+        s.themeBg !== undefined ||
+        s.themeText !== undefined ||
+        s.themeBgDark !== undefined ||
+        s.themeTextDark !== undefined
+      ) {
+        previewThemeColorsRef.current = {
+          themeBg: s.themeBg ?? previewThemeColorsRef.current.themeBg,
+          themeText: s.themeText ?? previewThemeColorsRef.current.themeText,
+          themeBgDark:
+            s.themeBgDark ?? previewThemeColorsRef.current.themeBgDark,
+          themeTextDark:
+            s.themeTextDark ?? previewThemeColorsRef.current.themeTextDark,
+        };
+        const resolved = resolvedThemeRef.current;
+        const { bg, text } = themeColorsFor(
+          resolved,
+          previewThemeColorsRef.current,
+        );
+        applyThemeColors(bg, text, resolved);
       }
 
       // D4: global type scale + link styling

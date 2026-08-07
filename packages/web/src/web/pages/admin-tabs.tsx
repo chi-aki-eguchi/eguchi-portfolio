@@ -79,6 +79,10 @@ import {
 } from "../lib/saved-draft";
 
 const DEFAULT_THEME_BG = "#f7f7f7";
+// styles.css の [data-theme="dark"] 既定と同じ値。未設定時のスウォッチと
+// placeholder に出す「そのままなら何色になるか」を、実際の既定と一致させる。
+const DEFAULT_THEME_BG_DARK = "#121212";
+const DEFAULT_THEME_TEXT_DARK = "#e8e8e8";
 
 export const SETTINGS_SECTION_KEYS = {
   "site-basics": [
@@ -156,7 +160,7 @@ export const SETTINGS_SECTION_KEYS = {
     "printDescription",
   ],
   cta: ["homeCtaEnabled", "homeCtaTitle", "homeCtaText", "homeCtaButton"],
-  theme: ["themeBg", "themeText"],
+  theme: ["themeBg", "themeText", "themeBgDark", "themeTextDark"],
   fonts: [
     "fontJa",
     "customFontJaName",
@@ -5964,10 +5968,81 @@ export function SettingsTab({
                     </AdminField>
                   </div>
                 </div>
+                {/* B-21: 暗い表示用の色。空のままなら既定の暗い配色に戻るので、
+                    明るい色をそのまま暗い表示へ流用して読めなくなることはない。 */}
+                <AdminField
+                  label={copyDesign.themeColors.darkLabel}
+                  hint={copyDesign.themeColors.darkHint}
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row">
+                    <div className="flex-1 min-w-0">
+                      <AdminField
+                        label={copyDesign.themeColors.backgroundLabel}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <input
+                            aria-label={
+                              copyDesign.themeColors.darkBackgroundSwatchAria
+                            }
+                            type="color"
+                            value={current["themeBgDark"] || DEFAULT_THEME_BG_DARK}
+                            onChange={(e) => set("themeBgDark", e.target.value)}
+                            data-admin-setting="themeBgDark-color"
+                            className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+                          />
+                          <input
+                            aria-label={
+                              copyDesign.themeColors.darkBackgroundHexAria
+                            }
+                            type="text"
+                            value={current["themeBgDark"] || ""}
+                            onChange={(e) => set("themeBgDark", e.target.value)}
+                            placeholder={DEFAULT_THEME_BG_DARK}
+                            data-admin-setting="themeBgDark-text"
+                            className="ax-input flex-1 min-w-0"
+                          />
+                        </div>
+                      </AdminField>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <AdminField label={copyDesign.themeColors.textLabel}>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <input
+                            aria-label={
+                              copyDesign.themeColors.darkTextSwatchAria
+                            }
+                            type="color"
+                            value={
+                              current["themeTextDark"] || DEFAULT_THEME_TEXT_DARK
+                            }
+                            onChange={(e) =>
+                              set("themeTextDark", e.target.value)
+                            }
+                            data-admin-setting="themeTextDark-color"
+                            className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+                          />
+                          <input
+                            aria-label={copyDesign.themeColors.darkTextHexAria}
+                            type="text"
+                            value={current["themeTextDark"] || ""}
+                            onChange={(e) =>
+                              set("themeTextDark", e.target.value)
+                            }
+                            placeholder={DEFAULT_THEME_TEXT_DARK}
+                            data-admin-setting="themeTextDark-text"
+                            className="ax-input flex-1 min-w-0"
+                          />
+                        </div>
+                      </AdminField>
+                    </div>
+                  </div>
+                </AdminField>
                 <button
                   onClick={() => {
                     set("themeBg", "");
                     set("themeText", "");
+                    set("themeBgDark", "");
+                    set("themeTextDark", "");
                   }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >

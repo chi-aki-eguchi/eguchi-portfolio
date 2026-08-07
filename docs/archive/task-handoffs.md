@@ -9911,3 +9911,21 @@ Handoff (68) 以降と、自走全体の総括。
 3. **「便利にする」変更は同時に「危なくなる」ことがある**（Q-12 の一括操作）
 4. **既にある良い仕組みが守られていない**パターンが多い（`ensureContrast`、`--ease-expo`）。
    新しく足すより、見つけて固める方が効率的だった
+
+---
+
+## Current State アーカイブ — 2026-08-06 JST（admin スマホ改善 依頼1〜10 完了時点）
+
+2026-08-07 に Current State をデザイン自由度の作業へ差し替えたため、直前の内容をここへ退避。
+
+- **Status:** admin スマホ改善の依頼1〜10をすべて実装・検証完了
+- **Current owner:** オーナー / **Handoff readiness:** ready
+- **Branch:** `main` / **Git:** 実装はlocal commit済み。未追跡は `scripts/smoke/scratch/` のみ
+- **目的:** 写真家がプログラミング知識なしでスマホから迷わず管理できる `/admin`。
+  設計正本は `docs/specs/admin-mobile-usability-plan.md`
+- **完了:** 依頼1 SegmentedControl の選択文字色 / 依頼2 並べ替えdisabledと理由表示 /
+  依頼3 絞り込み条件行と一括解除 / 依頼4 操作語の日本語化 / 依頼5 スマホ写真編集の3分割 /
+  依頼6 選択操作の下部固定 / 依頼7 作業バー100px以下 / 依頼8 タップ領域40px規則と回帰テスト /
+  依頼9 Settings目次の2階建て / 依頼10 空状態の1行化
+- **検証:** `bun run check` 成功 / `bun run smoke` 成功（306 passed / 128 skipped / 0 failed）
+- **未実施:** push / Railway反映 / 本番確認

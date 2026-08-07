@@ -1324,6 +1324,13 @@ const ADMIN_PHASE_2B_JA = {
       textLabel: "文字色",
       textSwatchAria: "文字色",
       textHexAria: "文字色（HEX）",
+      darkLabel: "暗い表示のときの色",
+      darkHint:
+        "スマホやパソコンが暗い設定の人には、この色で表示されます。空のままなら黒に近い既定の配色になります",
+      darkBackgroundSwatchAria: "暗い表示のときの背景色",
+      darkBackgroundHexAria: "暗い表示のときの背景色（HEX）",
+      darkTextSwatchAria: "暗い表示のときの文字色",
+      darkTextHexAria: "暗い表示のときの文字色（HEX）",
     },
     fonts: {
       title: "フォント",
@@ -2850,6 +2857,13 @@ const ADMIN_PHASE_2B_EN = {
       textLabel: "Text",
       textSwatchAria: "Text colour",
       textHexAria: "Text colour (hex)",
+      darkLabel: "Colours for dark display",
+      darkHint:
+        "Shown to visitors whose device is set to dark. Leave empty to use the default near-black palette.",
+      darkBackgroundSwatchAria: "Dark background colour",
+      darkBackgroundHexAria: "Dark background colour (hex)",
+      darkTextSwatchAria: "Dark text colour",
+      darkTextHexAria: "Dark text colour (hex)",
     },
     fonts: {
       title: "Fonts",

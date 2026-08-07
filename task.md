@@ -1,77 +1,59 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-06 JST
+## Current State — 2026-08-07 JST
 
-- **Status:** admin スマホ改善の**依頼1〜10をすべて実装・検証完了**
-- **Current owner:** オーナー / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** 実装はlocal commit済み。
-  未追跡は `scripts/smoke/scratch/` のみ
+- **Status:** デザイン自由度の調査完了。**B-21（暗い表示で文字が読めない）を修正・検証済み**
+- **Current owner:** Claude Code / **Handoff readiness:** ready
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** B-21 は local commit 済み。
+  push は未実施。未追跡で残るのは `scripts/smoke/scratch/`（Claude の調査用）
 
 ### 目的と完了条件
 
-写真家がプログラミング知識なしでスマホから迷わず管理できる `/admin` にする。
-設計正本は `docs/specs/admin-mobile-usability-plan.md`。段階1の4件を1件ずつ実装し、
-既存機能を減らさず、デスクトップとスマホの両方を検証する。
+公開サイトと admin の「デザインを変えられる自由度」を上げる。
+オーナーの言葉: 配置・レイアウトの種類・方向性を、公開サイトでも admin でも変えたい。
+**方向性の意味は「全部（テイスト / スクロール方向 / ページ別 / 写真の見せ方）」と回答済み。**
 
 ### 完了したこと
 
-1. 調査・設計を `docs/specs/admin-mobile-usability-plan.md` に確定
-2. 依頼1: SegmentedControl専用の選択文字色が、共通の `aria-pressed` 規則に
-   負けていた。共通規則は変えず、専用規則だけを必要な強さにした
-3. 修正前の実測は文字 `rgb(26,26,26)` / 指示子 `rgb(26,26,26)`、
-   コントラスト比1:1。修正を外すと落ちる実ブラウザテストを追加
-4. 明・暗テーマ、desktop、390px mobileで選択ラベルと指示子の比を数値検査
-5. 依頼2: 検索・複合絞り込み・手動以外の表示順では「並べ替え」をdisabledにし、
-   理由と「解除して並べ替える」を入口に表示。シリーズ単独絞り込みは維持
-6. 依頼3: 検索は絞り込み件数から除外。全条件を専用行に表示し、個別×と
-   「すべて解除」を追加。検索と絞り込みのアイコンを分離
-7. 依頼4: JPの英語操作語を辞書へ移し、主要画面とEN切替を実ブラウザ確認。
-   写真編集は専用alert、一括操作は共通toastで保存失敗が画面に出ると確認
-8. 依頼5: スマホの写真編集を「基本/分類/詳細」に分割し、保存状態と操作を
-   画面下へ固定。通信失敗時の表示と再試行も偽の500応答で確認
-9. 依頼6: スマホの選択操作を下部固定。公開/非公開/カテゴリ/シリーズを表に出し、
-   残りは「その他」に収納。選択数の重複をなくし、終了と取り込みも維持
-10. 依頼7: スマホ作業バーを100px以下へ圧縮。選択入口を表へ、並べ替えを表示内へ
-    移し、絞り込みは写真を押し下げない固定シートと件数footerへ変更
-11. 依頼8: 作業バー/絞り込み/写真編集/選択操作の全可視操作を実機相当で測り、
-    幅と高さが40px以上になる規則と回帰テストを追加
-12. 依頼9: Settings目次を「ふだんの設定/詳しい設定」の2階建てに整理。
-    19節と単節表示は維持し、専門語は日本語説明の後ろに残した
-13. 依頼10: 検索0件は挿絵と重複説明をなくして1行化。写真0件の案内は維持し、
-    読み込み中と取得失敗も静かな1行と再読み込みで区別
-
-### 次の一手
-
-- オーナー判断でpushし、必要ならRailway反映後に本番を確認する
-- `scripts/smoke/scratch/` はClaudeの調査用未追跡ファイル。内容を保護し、
-  オーナー判断なしに追加・削除しない
+1. 参照サイト `good-web-design.com/webdesign/photograph` を調査。**解説記事ではなく
+   257件の実例リンク集**。作例には色面型（強い色＋階段状の写真）があり、今の設定では到達不能
+2. 現状の棚卸し（実測）: 設定キーは `shared/settings-keys.ts` の台帳、Settings は19節。
+   ヒーロー5種 / ナビ位置3種 / 写真の並べ方12種 / 余白4軸 / 文字・色は既に可変
+3. 到達できない3点: (a) 完成形へ一発で行く手段が無い (b) ページ構成と色の役割が固定
+   (c) admin は公開サイトの色に従属（`.admin-atelier` が `--background` を継承）
+4. **B-21 を修正。** 明/暗それぞれに当てる色を選び直す `lib/theme-colors.ts` を新設し、
+   DB適用とライブプレビューの両方を同じ適用口へ集約。`themeBgDark` / `themeTextDark` を
+   4箇所同期（台帳 / API default / provider の DB適用 / handlePreviewMessage）＋admin UI
 
 ### 検証の状態
 
 - `bun run check` **成功**
-- `bun run smoke` **成功**（306 passed / 128 skipped / 0 failed）
-- 専用テストは修正前にコントラスト比1で失敗し、修正後はdesktop/mobileで成功
-- 写真編集は375/390px、保存のclean/dirty/error/retryを実ブラウザで確認
-- local commit済み / push・Railway反映・本番確認は未実施
+- `bun run smoke` **成功**（306 passed / 128 skipped / 0 failed）。1回目は1件失敗し
+  （`admin-live-preview.spec.ts` の `getByLabel` が新しい入力と2件一致）、
+  テストを緩めず `exact: true` へ直した
+- 単体テスト `theme-colors.test.ts` 7件成功。**修正を外すと3件落ちる**ことを確認済み
+- 実ブラウザ実測（localhost:5173 / postMessage 経路）:
+  暗い表示で `themeBg` だけ渡しても背景 `#121212` / 文字 `#e8e8e8` を維持。
+  暗い色を渡せば `#101012` / `#ededed` が当たり、theme-color とテクスチャ合成も追従
+- local commit **未実施** / push・Railway反映・本番確認は未実施
 
-### 測るときの落とし穴
+### 次の一手
 
-**正本は `docs/agents/measuring.md`。着手前に読む。**
-**見た目が想定と違ったら `getComputedStyle` で実測して上書き元を探す。**
-今回の P0 は、CSSに正しい指定が書いてあるのに勝てていないという形だった。
-シートのアニメーション中に撮ると、状態を誤読する（3秒待って撮り直して確定させた）。
-Current State へ「すぐ古くなる値」（ahead件数・push状況）を書かないこと。
+- 自由度拡大の設計は `docs/specs/design-freedom-plan.md` に確定。
+  着手順は 1) admin を公開サイトの色から切り離す 2) 写真の見せ方の振り幅
+  3) テイストのプリセット 4) ページごとの方向 5) 横スクロール・縦組み
+- **1 と 2 は他に依存しないので、判断待ちの間でも進められる**
+- **オーナー判断待ち:** `design-spec.md` §9「色数を増やさない」を更新するか。
+  色面型をプリセットに入れるかどうかで、プリセットの振り幅が変わる
 
 ### 触ってはいけない範囲
 
 - `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 /
-  公開設定 / `.env` の表示・記録 / `docs/archive/` の本文
-- 写真の並べ替えは `photo-reorder-safety.ts` の競合検知と
-  `onlySeriesFilter` の条件を壊さない（入口を締めても出口を緩めない）
-- 既存の `data-library-*` 目印を消さない（実ブラウザテストが読んでいる）
+  公開設定 / `.env` の表示・記録 / `docs/archive/` の既存本文
+- smoke は本番と同じDBにつながる。**保存・削除・追加の書き込み操作を増やさない**
+- 既存の `data-admin-setting` / `data-library-*` 目印を消さない
 - 同じ worktree を2人で同時に編集しない
-- 週枠が両者とも少ない。**範囲を縮めず1区切りを小さくして都度 commit**
 <!-- CURRENT_STATE_END -->
 
 ---

@@ -37,7 +37,16 @@ export default function PageTransition({
     const onPop = () => {
       // popstate fires before wouter reports the new location, so just flag
       // that the next change is a Back/Forward and read the target then.
-      poppedTo.current = window.location.pathname + window.location.search;
+      //
+      // 同じページ内で完結する popstate は無視する。写真ビューアは開くときに
+      // 自前の履歴を1つ積み、閉じるときに history.back() で戻す（Lightbox.tsx）。
+      // その pop は URL を変えないので wouter の location も変わらず、下の
+      // location 変更 effect は走らない = この印が消費されないまま残る。
+      // 残ったまま次にページを移ると、移動先で「戻るボタンで来た」と誤認して
+      // 前のページのスクロール位置を復元しにいく（最大20回・1.2秒間）。
+      const next = window.location.pathname + window.location.search;
+      if (window.location.pathname === prevLocation.current) return;
+      poppedTo.current = next;
     };
     window.addEventListener("popstate", onPop);
     return () => {

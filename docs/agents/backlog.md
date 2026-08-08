@@ -144,9 +144,48 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
 
 アクティブ/非アクティブが下線のみの差。テキスト濃度差も加える案。
 
-## smoke の失敗（2026-08-07 実測）
+## smoke の失敗
 
-### S-1. admin Library の smoke が落ちる 🟠 実測済み
+### S-2. `admin-workspace-layout` が全体実行のときだけ落ちる 🟠 実測済み（2026-08-08）
+
+`bun run smoke` 全体（10分・432件）で **305 passed / 1 failed**。落ちるのは
+`admin-workspace-layout.spec.ts:99`「広い画面では畳み状態を保存し、詳細欄を
+400pxで右に並べる」の1件だけ。
+
+**このファイルだけ単独で走らせると通る**（4.8秒）。全体実行では30秒
+タイムアウトになる。負荷が高いときだけ出る。
+
+落ちる場所は、未保存のまま閉じたときの確認ダイアログで「キャンセル」を押す行。
+Playwright のログ:
+
+```
+locator resolved to <button …>キャンセル</button>
+attempting click action
+  2 × waiting for element to be visible, enabled and stable
+    - element is not stable
+element was detached from the DOM, retrying
+```
+
+つまり**開くアニメーションの最中にボタンを掴み、安定を待っているうちに
+要素がDOMから外れている**。
+
+**直そうとして失敗した（2026-08-08）。** `getAnimations({subtree:true})` の
+完了を待ってから押す helper を入れたところ、待っている間にダイアログが閉じて
+しまい、**単独実行でも落ちるようになった**ので戻した。同じ手は取らないこと。
+
+着手する人へ: 待つ対象はアニメーションではなく「ダイアログが開ききった状態」。
+確認ダイアログ側に開ききったことが分かる印（`data-*` 属性など）を出して、
+それを待つほうが筋がよさそう。**製品コード側を触ることになるので、
+オーナーの承認を得てから。**
+
+### S-1. admin Library の smoke が落ちる 🟢 2026-08-08 実行では再現せず
+
+**2026-08-08 の全体実行で、下の2件はどちらも通過した。**
+`admin-i18n.spec.ts`「JPのLibraryと写真編集に英語の操作語を残さない」は
+✓ 3.9秒、`admin-debug-sweep.spec.ts` も通過。`4c38ec1` の flaky 修正で
+解消した可能性が高い。**次に全体を通したときも 0 なら、この項目を消す。**
+
+以下は 2026-08-07 時点の記録（参考）。
 
 `bun run smoke` 全体で **18 failed / 286 passed / 130 skipped**（2026-08-07）。
 直前の記録は 0 failed だったので、その間に発生している。

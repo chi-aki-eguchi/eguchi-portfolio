@@ -14,6 +14,7 @@ import {
   withRetrySrcSet,
 } from "../lib/picture";
 import { photoAltText } from "../lib/photo-alt";
+import { historyBridge } from "../lib/scroll-memory";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
 // srcset without pulling the full 3200px master stored in R2.
@@ -674,7 +675,13 @@ export function Lightbox({
       // clears this timer before it can navigate.
       historyCleanupTimerRef.current = window.setTimeout(() => {
         historyCleanupTimerRef.current = null;
-        if (window.history.state?.lightbox) window.history.back();
+        if (window.history.state?.lightbox) {
+          // これは利用者が戻るボタンを押したのではなく、ビューアが自分で
+          // 積んだ履歴を自分で片付けているだけ。ページ遷移の復元処理に
+          // 「戻ってきた」と受け取られないよう、先に印を付ける。
+          historyBridge.markSelfPop();
+          window.history.back();
+        }
         historyPushedRef.current = false;
         // After the body scroll lock above is released (cleanup order isn't
         // guaranteed, hence the rAF), put the viewer back where they were.

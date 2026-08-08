@@ -19,7 +19,7 @@ const dom = setupDom();
 const { createElement } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { navigate } = await import("wouter/use-browser-location");
-const { scrollMemory } = await import("../lib/scroll-memory");
+const { scrollMemory, historyBridge } = await import("../lib/scroll-memory");
 const PageTransition = (await import("../components/PageTransition")).default;
 
 const w = dom.window;
@@ -65,7 +65,7 @@ afterEach(() => {
 });
 
 describe("PageTransition と写真ビューアの履歴", () => {
-  test("同じページ内で完結する popstate は「戻るボタン」として記録しない", async () => {
+  test("ビューアが自分で戻した popstate は「戻るボタン」として記録しない", async () => {
     w.history.replaceState(null, "", "/gallery");
     scrollMemory.remember("/gallery", DEEP);
     const scroll = recordScrollTo();
@@ -73,8 +73,10 @@ describe("PageTransition と写真ビューアの履歴", () => {
     try {
       unmount = await mount();
 
-      // ビューアが自分で積んだ履歴を、自分で戻す（URLは変わらない）。
+      // ビューアが自分で積んだ履歴を、自分で戻す（Lightbox.tsx と同じ順序で、
+      // history.back() の直前に印を付ける）。
       w.history.pushState({ lightbox: true }, "");
+      historyBridge.markSelfPop();
       w.history.replaceState(null, "", "/gallery");
       w.dispatchEvent(new w.PopStateEvent("popstate", { state: null }));
       await flush(20);

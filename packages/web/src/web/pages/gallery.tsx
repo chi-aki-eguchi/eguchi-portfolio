@@ -7,6 +7,7 @@ import { ContentStatus } from "../components/ContentStatus";
 import { PhotoGallery } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
+import { scrollMemory } from "../lib/scroll-memory";
 
 export default function GalleryPage() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
@@ -138,7 +139,17 @@ export default function GalleryPage() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const GALLERY_INITIAL = isMobile ? 12 : 24;
   const GALLERY_STEP = 12;
-  const [extraCount, setExtraCount] = useState(0);
+  // 戻ってきたときは、出ていった時点まで描き直してから位置を復元する（B-18）。
+  // スクロール位置だけ覚えても、戻った先は最初のひと束しか描いていないので
+  // 届かない（実測: 2400px を頼んで 692px までしか戻れない）。
+  // `peekBatches` は戻ってきた場合だけ値を返す。前へ進んで入り直したときは
+  // 0 なので、普段どおり先頭のひと束から始まる。
+  const [extraCount, setExtraCount] = useState(() =>
+    scrollMemory.peekBatches(location),
+  );
+  useEffect(() => {
+    scrollMemory.rememberBatches(location, extraCount);
+  }, [location, extraCount]);
   const renderCount = GALLERY_INITIAL + extraCount;
   const rendered = useMemo(
     () => filtered.slice(0, renderCount),
@@ -168,7 +179,18 @@ export default function GalleryPage() {
     });
   }, [GALLERY_INITIAL, fadeRef, filtered.length, isMobile]);
 
+  // 絞り込みを変えたら追加読み込みは最初からやり直す。ただし**マウント時は
+  // 走らせない** — 戻ってきたときに復元した読み込み済みの束を、その場で0へ
+  // 潰してしまい B-18 の修正が効かなくなる。
+  const prevFilterKey = useRef<string | null>(null);
   useEffect(() => {
+    const key = `${activeFilter}/${activeMedium}`;
+    if (prevFilterKey.current === null) {
+      prevFilterKey.current = key;
+      return;
+    }
+    if (prevFilterKey.current === key) return;
+    prevFilterKey.current = key;
     setExtraCount(0);
     if (loadMoreRetryRef.current !== null) {
       window.clearTimeout(loadMoreRetryRef.current);

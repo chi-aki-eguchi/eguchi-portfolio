@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { scrollMemory } from "../lib/scroll-memory";
+import { historyBridge, scrollMemory } from "../lib/scroll-memory";
 
 function prefersReducedMotion(): boolean {
   return (
@@ -38,15 +38,15 @@ export default function PageTransition({
       // popstate fires before wouter reports the new location, so just flag
       // that the next change is a Back/Forward and read the target then.
       //
-      // 同じページ内で完結する popstate は無視する。写真ビューアは開くときに
-      // 自前の履歴を1つ積み、閉じるときに history.back() で戻す（Lightbox.tsx）。
-      // その pop は URL を変えないので wouter の location も変わらず、下の
-      // location 変更 effect は走らない = この印が消費されないまま残る。
-      // 残ったまま次にページを移ると、移動先で「戻るボタンで来た」と誤認して
-      // 前のページのスクロール位置を復元しにいく（最大20回・1.2秒間）。
-      const next = window.location.pathname + window.location.search;
-      if (window.location.pathname === prevLocation.current) return;
-      poppedTo.current = next;
+      // 写真ビューアが自分で戻した pop は無視する。URL は変わらないので
+      // location 変更 effect が走らず、この印が消費されないまま残る。残った
+      // 印は次の本物のページ移動で誤って使われ、移動先で前のページの位置を
+      // 復元しにいく（最大20回・1.2秒間の scrollTo）。
+      //
+      // パスの比較で見分けようとして失敗した経緯は `historyBridge` の説明に
+      // 書いてある。実ブラウザでは本物の戻るも「同じパスへの pop」に見える。
+      if (historyBridge.consumeSelfPop()) return;
+      poppedTo.current = window.location.pathname + window.location.search;
     };
     window.addEventListener("popstate", onPop);
     return () => {
@@ -84,9 +84,14 @@ export default function PageTransition({
         el.style.transition = "none";
       }
 
-      setDisplay(newChildren);
       const popped = poppedTo.current;
       poppedTo.current = null;
+      // 印は setDisplay より先に付ける。戻り先のページはこの直後にマウントし、
+      // 「どこまで読み込んでいたか」を自分で受け取りにくるため（B-18）。
+      if (popped) scrollMemory.markRestoring(popped);
+      else scrollMemory.clearRestoring();
+
+      setDisplay(newChildren);
       if (popped) restoreScroll(popped);
       else window.scrollTo(0, 0);
 
@@ -125,6 +130,8 @@ export default function PageTransition({
     const settleScroll = () => {
       const popped = poppedTo.current;
       poppedTo.current = null;
+      if (popped) scrollMemory.markRestoring(popped);
+      else scrollMemory.clearRestoring();
       if (popped) restoreScroll(popped);
       else window.scrollTo(0, 0);
     };

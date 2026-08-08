@@ -841,6 +841,8 @@ const ADMIN_PHASE_2B_JA = {
     units: {
       columns: "列",
       photos: "枚",
+      px: "px",
+      pxPerSec: "px/秒",
     },
     typoControl: {
       numericInputAriaLabel: (label: string) => `${label}（数値入力）`,
@@ -1238,6 +1240,30 @@ const ADMIN_PHASE_2B_JA = {
       columnsMobileLabel: "シリーズ列数（スマホ）",
       columnsMobileHint: "スマホ表示時の列数",
       columnsMobileControlLabel: "スマホ 列数",
+      streamIntro:
+        "TOP ページで、シリーズの表紙写真とキャプションを横へゆっくり流す帯。触れている間は止まり、押すとそのシリーズへ入ります。OS で「視差効果を減らす」を選んでいる人には流さず、自分で横へ送れる帯として出ます。",
+      streamPlaceLabel: "TOP に流す",
+      streamPlaceHint: "Works（写真の並び）の前と後、どちらに置くか",
+      streamPlaceOptions: {
+        off: "出さない",
+        before: "Works の前",
+        after: "Works の後",
+      },
+      streamLabelLabel: "帯の見出し",
+      streamLabelHint: "空欄なら Series",
+      streamCaptionLabel: "帯にタイトルを出す",
+      streamCaptionHint: "写真だけにするか、下にシリーズ名を添えるか",
+      streamCaptionOptions: {
+        on: "出す",
+        off: "写真だけ",
+      },
+      streamSpeedLabel: "流れる速さ",
+      streamSpeedHint:
+        "1秒に何px流れるか。シリーズを増やしても体感の速さは変わりません",
+      streamSpeedControlLabel: "速さ",
+      streamHeightLabel: "帯の写真の高さ",
+      streamHeightHint: "大きいほど1枚が大きく、同時に見える数は減ります",
+      streamHeightControlLabel: "高さ",
       orderIntro:
         "写真の並び順。「手動順」は Library でドラッグした順番。シリーズごとに上書きしたい場合は Series タブの各シリーズ編集から設定できます。",
       gallerySortLabel: "ギャラリーの並び順",
@@ -2363,6 +2389,8 @@ const ADMIN_PHASE_2B_EN = {
     units: {
       columns: "cols",
       photos: "photos",
+      px: "px",
+      pxPerSec: "px/s",
     },
     typoControl: {
       numericInputAriaLabel: (label: string) => `${label} (numeric input)`,
@@ -2762,6 +2790,30 @@ const ADMIN_PHASE_2B_EN = {
       columnsMobileLabel: "Series Columns (Mobile)",
       columnsMobileHint: "The column count on mobile.",
       columnsMobileControlLabel: "Mobile Columns",
+      streamIntro:
+        "A band on the home page where series covers and captions drift sideways. It pauses while you touch or hover it, and opens the series when clicked. Visitors who ask their OS to reduce motion get a band they can scroll themselves instead.",
+      streamPlaceLabel: "Show on Home",
+      streamPlaceHint: "Before or after the Works photo grid.",
+      streamPlaceOptions: {
+        off: "Hide",
+        before: "Before Works",
+        after: "After Works",
+      },
+      streamLabelLabel: "Band Heading",
+      streamLabelHint: "Defaults to Series when left empty.",
+      streamCaptionLabel: "Show Titles",
+      streamCaptionHint: "Photos only, or the series name underneath.",
+      streamCaptionOptions: {
+        on: "Show",
+        off: "Photos only",
+      },
+      streamSpeedLabel: "Drift Speed",
+      streamSpeedHint:
+        "Pixels per second. Adding more series does not change how fast it feels.",
+      streamSpeedControlLabel: "Speed",
+      streamHeightLabel: "Band Photo Height",
+      streamHeightHint: "Taller means larger tiles and fewer visible at once.",
+      streamHeightControlLabel: "Height",
       orderIntro:
         "The photo sort order. “Manual” follows the order you dragged in Library. To override it per series, use each series' edit screen in the Series tab.",
       gallerySortLabel: "Gallery Sort Order",

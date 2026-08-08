@@ -147,6 +147,11 @@ export const SETTINGS_SECTION_KEYS = {
   ],
   series: [
     "seriesNavEnabled",
+    "topSeriesStream",
+    "topSeriesStreamLabel",
+    "topSeriesStreamCaption",
+    "topSeriesStreamSpeed",
+    "topSeriesStreamHeight",
     "seriesGridColumns",
     "seriesGridColumnsMobile",
     "gallerySortOrder",
@@ -5563,6 +5568,130 @@ export function SettingsTab({
                       ["seriesGridColumns", "seriesGridColumnsMobile"].forEach(
                         (k) => set(k, ""),
                       );
+                    }}
+                    className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                  >
+                    {copy.resetToDefault}
+                  </button>
+                </div>
+
+                {/* TOP のシリーズ帯（横に流れる） */}
+                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.seriesSection.streamIntro}
+                  </p>
+                  <AdminField
+                    label={copy.seriesSection.streamPlaceLabel}
+                    hint={copy.seriesSection.streamPlaceHint}
+                  >
+                    <div className="flex gap-1">
+                      {(
+                        [
+                          ["off", copy.seriesSection.streamPlaceOptions.off],
+                          [
+                            "before-works",
+                            copy.seriesSection.streamPlaceOptions.before,
+                          ],
+                          [
+                            "after-works",
+                            copy.seriesSection.streamPlaceOptions.after,
+                          ],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("topSeriesStream", val)}
+                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                            (current["topSeriesStream"] || "after-works") === val
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                  <AdminField
+                    label={copy.seriesSection.streamLabelLabel}
+                    hint={copy.seriesSection.streamLabelHint}
+                  >
+                    <input
+                      type="text"
+                      value={current["topSeriesStreamLabel"] ?? ""}
+                      onChange={(e) =>
+                        set("topSeriesStreamLabel", e.target.value)
+                      }
+                      placeholder="Series"
+                      className="admin-input w-full"
+                    />
+                  </AdminField>
+                  <AdminField
+                    label={copy.seriesSection.streamCaptionLabel}
+                    hint={copy.seriesSection.streamCaptionHint}
+                  >
+                    <div className="flex gap-1">
+                      {(
+                        [
+                          ["on", copy.seriesSection.streamCaptionOptions.on],
+                          ["off", copy.seriesSection.streamCaptionOptions.off],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("topSeriesStreamCaption", val)}
+                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                            (current["topSeriesStreamCaption"] || "on") === val
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                  <AdminField
+                    label={copy.seriesSection.streamSpeedLabel}
+                    hint={copy.seriesSection.streamSpeedHint}
+                  >
+                    <TypoControl
+                      label={copy.seriesSection.streamSpeedControlLabel}
+                      valueKey="topSeriesStreamSpeed"
+                      current={current}
+                      set={set}
+                      min={SETTING_RANGES.topSeriesStreamSpeed.min}
+                      max={SETTING_RANGES.topSeriesStreamSpeed.max}
+                      step={SETTING_RANGES.topSeriesStreamSpeed.step}
+                      unit={copy.units.pxPerSec}
+                      defaultVal="34"
+                    />
+                  </AdminField>
+                  <AdminField
+                    label={copy.seriesSection.streamHeightLabel}
+                    hint={copy.seriesSection.streamHeightHint}
+                  >
+                    <TypoControl
+                      label={copy.seriesSection.streamHeightControlLabel}
+                      valueKey="topSeriesStreamHeight"
+                      current={current}
+                      set={set}
+                      min={SETTING_RANGES.topSeriesStreamHeight.min}
+                      max={SETTING_RANGES.topSeriesStreamHeight.max}
+                      step={SETTING_RANGES.topSeriesStreamHeight.step}
+                      unit={copy.units.px}
+                      defaultVal="260"
+                    />
+                  </AdminField>
+                  <button
+                    onClick={() => {
+                      [
+                        "topSeriesStream",
+                        "topSeriesStreamLabel",
+                        "topSeriesStreamCaption",
+                        "topSeriesStreamSpeed",
+                        "topSeriesStreamHeight",
+                      ].forEach((k) => set(k, ""));
                     }}
                     className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                   >

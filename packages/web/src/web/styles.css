@@ -5468,3 +5468,67 @@ dialog.lightbox-exit .lb-content {
   > button[aria-current="location"]:hover {
   border-left-color: var(--admin-ink) !important;
 }
+
+/* ─── TOP のシリーズ帯（横に流れる） ───
+   同じ並びを2つ繋げた帯を -50% まで動かすと、ちょうど2つ目の先頭が元の
+   位置に来るので継ぎ目なく繰り返せる。秒数は本数と速さから JS が入れる。
+   触れている間・キーボードで中にいる間は止める。読んでいる途中で流れて
+   いってしまうのを防ぐため。 */
+.series-stream {
+  overflow: hidden;
+  /* 端で切れる帯にする。左右がすっと消えるほうが、
+     画面の外まで続いているように見える。 */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 6%,
+    #000 94%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 6%,
+    #000 94%,
+    transparent 100%
+  );
+}
+.series-stream-track {
+  display: flex;
+  width: max-content;
+  animation: series-stream-scroll linear infinite;
+  /* will-change: transform は付けない。走っている transform アニメーションは
+     ブラウザが自分で層に上げるので効果が無い一方、帯は画面3枚ぶんの幅がある
+     ため、常時その大きさの層を確保させるとスマホのGPUメモリを無駄に使う。 */
+}
+.series-stream:hover .series-stream-track,
+.series-stream:focus-within .series-stream-track {
+  animation-play-state: paused;
+}
+@keyframes series-stream-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+/* 動きを減らす設定の人には流さない。消すのではなく、自分で横へ送れる帯にする。 */
+.series-stream-static {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.series-stream-static::-webkit-scrollbar {
+  display: none;
+}
+.series-stream-static .series-stream-track {
+  animation: none;
+  padding-left: 6vw;
+  padding-right: 6vw;
+}
+@media (prefers-reduced-motion: reduce) {
+  .series-stream-track {
+    animation: none;
+  }
+}

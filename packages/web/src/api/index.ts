@@ -1310,6 +1310,12 @@ const app = new Hono()
         // ── P: series grid (Works series view) — JS-driven, like the gallery grid ──
         seriesGridColumns: settings.seriesGridColumns ?? "3", // PC
         seriesGridColumnsMobile: settings.seriesGridColumnsMobile ?? "2", // mobile
+        // ── TOP のシリーズ帯（横に流れる） ──
+        topSeriesStream: settings.topSeriesStream ?? "after-works", // "off" | "before-works" | "after-works"
+        topSeriesStreamLabel: settings.topSeriesStreamLabel ?? "Series",
+        topSeriesStreamCaption: settings.topSeriesStreamCaption ?? "on", // "on" | "off"
+        topSeriesStreamSpeed: settings.topSeriesStreamSpeed ?? "34", // px/秒
+        topSeriesStreamHeight: settings.topSeriesStreamHeight ?? "260", // px
         // ── N: per-page grid layout type (JS-driven) — mosaic|grid|scroll(|…) ──
         galleryLayout: settings.galleryLayout ?? "mosaic",
         seriesLayout: settings.seriesLayout ?? "mosaic",

@@ -15,6 +15,12 @@ import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
 import { ContentStatus } from "../components/ContentStatus";
+import { SeriesStream } from "../components/SeriesStream";
+import { num } from "../lib/utils";
+import {
+  clampSetting,
+  clampSettingRounded,
+} from "../../shared/setting-ranges";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../lib/photo-alt";
@@ -446,6 +452,36 @@ type HomeLayoutProps = {
   worksStatus: React.ReactNode;
 };
 
+/**
+ * TOP のシリーズ帯を、置き場所の設定に合わせて出す。Hero の種類は5つあり、
+ * どれを選んでいても同じように出したいので、ここで1つにまとめて各レイアウト
+ * から Works の前後2箇所に置く。`off` のときは何も出さない。
+ */
+function TopSeriesStream({
+  settings,
+  at,
+}: {
+  settings: Record<string, string | undefined> | undefined;
+  at: "before-works" | "after-works";
+}) {
+  const placement = settings?.topSeriesStream ?? "after-works";
+  if (placement !== at) return null;
+  return (
+    <SeriesStream
+      label={settings?.topSeriesStreamLabel || "Series"}
+      showCaption={(settings?.topSeriesStreamCaption ?? "on") !== "off"}
+      speedPxPerSec={clampSetting(
+        "topSeriesStreamSpeed",
+        num(settings?.topSeriesStreamSpeed, 34),
+      )}
+      tileHeight={clampSettingRounded(
+        "topSeriesStreamHeight",
+        num(settings?.topSeriesStreamHeight, 260),
+      )}
+    />
+  );
+}
+
 function heroMotionKey(
   settings: Record<string, string | undefined> | undefined,
 ): string {
@@ -660,6 +696,8 @@ function HomeQuietGrid({
         )}
       </section>
 
+      <TopSeriesStream settings={settings} at="before-works" />
+
       {/* Works: 3-column square grid */}
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
@@ -693,6 +731,8 @@ function HomeQuietGrid({
           </div>
         </section>
       )}
+
+      <TopSeriesStream settings={settings} at="after-works" />
 
       <InquiryCta />
     </div>
@@ -777,6 +817,8 @@ function HomeEditorial({
         </div>
       </section>
 
+      <TopSeriesStream settings={settings} at="before-works" />
+
       {/* Works: alternating large/small rhythm grid */}
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
@@ -810,6 +852,8 @@ function HomeEditorial({
           </div>
         </section>
       )}
+
+      <TopSeriesStream settings={settings} at="after-works" />
 
       <InquiryCta />
     </div>
@@ -907,6 +951,8 @@ function HomeImmersive({
         </div>
       </section>
 
+      <TopSeriesStream settings={settings} at="before-works" />
+
       {/* Large-format works with captions */}
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
@@ -940,6 +986,8 @@ function HomeImmersive({
           </div>
         </section>
       )}
+
+      <TopSeriesStream settings={settings} at="after-works" />
 
       <InquiryCta />
     </div>
@@ -1335,6 +1383,8 @@ export default function TopPage() {
         </section>
       )}
 
+      <TopSeriesStream settings={settings} at="before-works" />
+
       {/* Photo Grid */}
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
@@ -1399,6 +1449,8 @@ export default function TopPage() {
       )}
 
       {/* Closing 撮影依頼 CTA — the homepage's conversion moment (off by default) */}
+      <TopSeriesStream settings={settings} at="after-works" />
+
       <InquiryCta />
     </div>
   );

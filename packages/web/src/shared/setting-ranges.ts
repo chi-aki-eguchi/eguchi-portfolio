@@ -40,6 +40,10 @@ export const SETTING_RANGES = {
   // Series grid. Fixed counts, not width-derived.
   seriesGridColumns: { min: 1, max: 8, step: 1, fallback: 3 },
   seriesGridColumnsMobile: { min: 1, max: 3, step: 1, fallback: 2 },
+  // TOP のシリーズ帯（横に流れる）。速さは px/秒 で持つ。1周の秒数にすると
+  // シリーズの本数で体感速度が変わってしまい、増やしたとたん速くなる。
+  topSeriesStreamSpeed: { min: 8, max: 120, step: 2, fallback: 34 },
+  topSeriesStreamHeight: { min: 140, max: 460, step: 10, fallback: 260 },
 } as const satisfies Record<string, SettingRange>;
 
 export type RangedSettingKey = keyof typeof SETTING_RANGES;

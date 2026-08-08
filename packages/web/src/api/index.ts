@@ -1406,7 +1406,30 @@ const app = new Hono()
         .orderBy(orderExpr);
       return limit ? q.limit(limit) : q;
     });
-    return c.json({ photos: photos.map(photoWithThumbs) }, 200);
+    const withThumbs = photos.map(photoWithThumbs);
+    // 公開サイトには管理用の列を送らない。実測（2026-08-08・写真497枚）で
+    // この応答は 400KB / 2.6秒 あり、公開サイトはどのページでも最初にこれを
+    // 待つ。内訳の上位が fileHash 38.8KB・mediumKey 25.3KB・thumbKey 24.8KB で、
+    // どれも公開側は読んでいない（URLは photoWithThumbs が上で作り終えている）。
+    // isPublished と deletedAt はこの分岐では常に true / null の定数。
+    // 管理画面は `?all=1` で来るので、そちらは今までどおり全部返す。
+    if (includeUnpublished) return c.json({ photos: withThumbs }, 200);
+    return c.json(
+      {
+        photos: withThumbs.map(
+          ({
+            fileHash: _fileHash,
+            thumbKey: _thumbKey,
+            mediumKey: _mediumKey,
+            isPublished: _isPublished,
+            deletedAt: _deletedAt,
+            shotAtSource: _shotAtSource,
+            ...pub
+          }) => pub,
+        ),
+      },
+      200,
+    );
   })
 
   // ── Admin: Settings update ──────────────────────────────

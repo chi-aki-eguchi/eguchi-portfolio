@@ -103,4 +103,64 @@ describe("photo list columns", () => {
   test("uses the shared column definition in exactly the three photo list queries", () => {
     expect(source.match(/\.select\(PHOTO_LIST_COLUMNS\)/g)).toHaveLength(3);
   });
+
+  // 公開サイトはどのページでも最初に GET /photos を待つ。実測（2026-08-08・
+  // 写真497枚）で 409,687 bytes あり、上位は fileHash 38.8KB・mediumKey 25.3KB・
+  // thumbKey 24.8KB と、どれも公開側が読まない管理用の列だった。落として
+  // 295,923 bytes（-27.8%）。落としすぎると写真が出なくなるので、公開側が
+  // 実際に描画に使う列が残っていることを併せて縛る。
+  describe("公開応答から管理用の列だけを落とす", () => {
+    const publicBranch = source.slice(
+      source.indexOf("if (includeUnpublished) return c.json({ photos: withThumbs }"),
+      source.indexOf("// ── Admin: Settings update ──"),
+    );
+    const stripped = Array.from(
+      publicBranch.matchAll(/^\s+(\w+): _\w+,$/gm),
+      ([, key]) => key,
+    );
+
+    test("落とすのは管理専用の6列だけ", () => {
+      expect(stripped.sort()).toEqual(
+        [
+          "deletedAt",
+          "fileHash",
+          "isPublished",
+          "mediumKey",
+          "shotAtSource",
+          "thumbKey",
+        ].sort(),
+      );
+    });
+
+    test("公開サイトが描画に使う列は落とさない", () => {
+      // url と thumbUrl/mediumUrl は写真そのもの、width/height はレイアウトの
+      // 場所取り（無いと読み込みのたびに画面がガタつく）、rotationDeg と
+      // focalX/Y は向きと寄せ、filename は管理画面の写真ピッカーが
+      // 同じ公開応答から読む。
+      for (const key of [
+        "id",
+        "url",
+        "thumbUrl",
+        "mediumUrl",
+        "width",
+        "height",
+        "rotationDeg",
+        "focalX",
+        "focalY",
+        "title",
+        "filename",
+        "category",
+        "seriesId",
+        "sortOrder",
+      ]) {
+        expect(stripped).not.toContain(key);
+      }
+    });
+
+    test("管理画面（?all=1）へは今までどおり全部返す", () => {
+      expect(source).toContain(
+        "if (includeUnpublished) return c.json({ photos: withThumbs }",
+      );
+    });
+  });
 });

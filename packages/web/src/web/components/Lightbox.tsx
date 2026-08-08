@@ -47,6 +47,15 @@ export type LightboxPhoto = {
   seriesId?: number | null;
 };
 
+// ── 写真ビューアの色 ──
+// オーナー決定（2026-08-08）: ビューアは「白い壁」。サイトが暗色テーマでも
+// ここだけは常に白で、色を持つのは写真だけにする。だからUI（カウンタ・
+// ボタン・キャプション）は白ではなく、壁に対する黒インクで置く。
+// 公開サイトのテーマ変数（--foreground 等）はあえて参照しない。暗色テーマの
+// ときにインクまで白へ反転し、白い壁の上で読めなくなるため。
+const WALL = "#fff";
+const ink = (alpha: number) => `rgba(0,0,0,${alpha})`;
+
 const preloaded = new Set<string>();
 function preloadPhoto(photo: LightboxPhoto | undefined) {
   if (!photo) return;
@@ -608,11 +617,30 @@ export function Lightbox({
     return () => wrapper.remove();
   }, [index, photos]);
 
-  // Lock body scroll
+  // Lock body scroll.
+  //
+  // overflow:hidden だけだとスクロールバーが消え、その幅ぶん背景のページが
+  // 横に広がる。閉じるアニメーションの途中で背景は透けて見え始めるので、
+  // 最後に元の幅へ戻る瞬間がページ全体の横跳ね（「カクッ」）として見える。
+  // 実測: gallery で本文の幅が 1276px → 1280px（macOS の overlay スクロール
+  // バーなら0px、Windows のクラシックなものだと15〜17px動く）。
+  // 消える幅と同じだけ padding で埋めて、本文の幅を変えない。
+  // 覆えるのは body の中身まで。position:fixed のヘッダーと BackToTop は
+  // viewport 基準なので、この差分ぶんは依然わずかに動く。
   useEffect(() => {
-    document.body.style.overflow = "hidden";
+    const body = document.body;
+    const prevOverflow = body.style.overflow;
+    const prevPaddingRight = body.style.paddingRight;
+    // スクロールバーは広くても20px程度。それを超える値は幅がまだ確定して
+    // いないときの異常値なので、埋め物として採用しない（レイアウトが大きく
+    // ずれるほうが元の横跳ねより悪い）。
+    const raw = window.innerWidth - document.documentElement.clientWidth;
+    const gap = Number.isFinite(raw) && raw > 0 && raw <= 32 ? raw : 0;
+    body.style.overflow = "hidden";
+    if (gap > 0) body.style.paddingRight = `${gap}px`;
     return () => {
-      document.body.style.overflow = "";
+      body.style.overflow = prevOverflow;
+      body.style.paddingRight = prevPaddingRight;
     };
   }, []);
 
@@ -774,7 +802,7 @@ export function Lightbox({
         padding: 0,
         border: "none",
         zIndex: 99999,
-        background: "#000",
+        background: WALL,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -798,7 +826,7 @@ export function Lightbox({
           fontFamily: "var(--font-en)",
           fontSize: "var(--text-meta)",
           letterSpacing: "0.12em",
-          color: "rgba(255,255,255,0.45)",
+          color: ink(0.4),
           zIndex: 10,
         }}
       >
@@ -877,7 +905,9 @@ export function Lightbox({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(0,0,0,0.35)",
+            // 白い壁の上では四隅はたいてい白。写真が隅まで届いたときだけ
+            // 効けばいいので、暗いスクリムではなく白いスクリムを敷く。
+            background: "rgba(255,255,255,0.55)",
             borderRadius: "50%",
             border: "none",
             cursor: "pointer",
@@ -1000,7 +1030,7 @@ export function Lightbox({
                 style={{
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-meta)",
-                  color: "rgba(255,255,255,0.4)",
+                  color: ink(0.4),
                 }}
               >
                 画像を読み込めませんでした
@@ -1011,8 +1041,8 @@ export function Lightbox({
                 style={{
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-meta)",
-                  color: "rgba(255,255,255,0.75)",
-                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: ink(0.68),
+                  border: `1px solid ${ink(0.24)}`,
                   borderRadius: 4,
                   padding: "6px 16px",
                   background: "none",
@@ -1272,7 +1302,8 @@ export function Lightbox({
               maxWidth: "90vw",
               textAlign: "center",
               zIndex: 10,
-              textShadow: "0 1px 10px rgba(0,0,0,0.6)",
+              // 写真が下端まで届いたときだけ効く逃げ。白い壁なので白いにじみ。
+              textShadow: "0 1px 10px rgba(255,255,255,0.75)",
             }}
           >
             {photo.title && (
@@ -1280,7 +1311,7 @@ export function Lightbox({
                 style={{
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-meta)",
-                  color: "rgba(255,255,255,0.6)",
+                  color: ink(0.55),
                   letterSpacing: "0.04em",
                 }}
               >
@@ -1298,7 +1329,7 @@ export function Lightbox({
                   marginTop: photo.title ? 4 : 0,
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-meta)",
-                  color: "rgba(255,255,255,0.45)",
+                  color: ink(0.42),
                   letterSpacing: "0.06em",
                   textDecoration: "none",
                 }}
@@ -1379,7 +1410,8 @@ export function Lightbox({
                 position: "absolute",
                 bottom: "calc(52px + var(--sai-bottom))",
                 left: "calc(16px + var(--sai-left))",
-                background: "rgba(0,0,0,0.75)",
+                background: "rgba(255,255,255,0.82)",
+                border: `1px solid ${ink(0.08)}`,
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
                 borderRadius: 8,
@@ -1407,7 +1439,7 @@ export function Lightbox({
                     <tr key={label}>
                       <td
                         style={{
-                          color: "rgba(255,255,255,0.4)",
+                          color: ink(0.38),
                           paddingRight: 14,
                           paddingTop: 3,
                           paddingBottom: 3,
@@ -1419,7 +1451,7 @@ export function Lightbox({
                       </td>
                       <td
                         style={{
-                          color: "rgba(255,255,255,0.75)",
+                          color: ink(0.7),
                           paddingTop: 3,
                           paddingBottom: 3,
                         }}

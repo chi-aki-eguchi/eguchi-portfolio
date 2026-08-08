@@ -566,7 +566,30 @@ export function PhotoGallery({
     preloadNearbyLightboxPhotos(photos, idx);
     setLightboxIndex(idx);
   };
-  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+  // 閉じたあとフォーカスをタイルへ戻す（backlog B-20 / 2026-08-05 実測）。
+  // ネイティブ <dialog> は showModal 前の要素へ戻す仕様だが、実測では body に
+  // 落ちていた。閉じている間にグリッドが描き直され、元のボタン要素が別物に
+  // 入れ替わっているため。id で引き直して当て直す。
+  //
+  // 戻す先は「開いたタイル」ではなく「最後に見ていた写真のタイル」。矢印で
+  // 送ったあとに閉じたとき、いま見ていた写真の場所から続けられる。
+  // preventScroll を付けるのは、ビューアが閉じ際にスクロール位置を戻して
+  // いるため。付けないとフォーカスがそれを引っぱって別の場所へ飛ぶ。
+  const restoreFocusIdRef = useRef<number | null>(null);
+  const closeLightbox = useCallback(() => {
+    restoreFocusIdRef.current = openPhotoIdRef.current;
+    setLightboxIndex(null);
+  }, []);
+  useEffect(() => {
+    if (lightboxIndex !== null) return;
+    const id = restoreFocusIdRef.current;
+    if (id === null) return;
+    restoreFocusIdRef.current = null;
+    const tile = document.querySelector<HTMLButtonElement>(
+      `[data-photo-tile="${id}"]`,
+    );
+    tile?.focus({ preventScroll: true });
+  }, [lightboxIndex]);
   const prev = useCallback(() => {
     setLightboxIndex((i) => {
       if (i === null) return null;
@@ -645,6 +668,8 @@ export function PhotoGallery({
         key={photo.id}
         type="button"
         aria-label={alt}
+        // 閉じたあとフォーカスを戻すときの目印（B-20）。key と違い DOM に残る。
+        data-photo-tile={photo.id}
         style={{
           justifySelf: opts.justifySelf,
           width: opts.width,

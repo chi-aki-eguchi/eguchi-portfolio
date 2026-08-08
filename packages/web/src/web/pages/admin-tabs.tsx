@@ -147,7 +147,6 @@ export const SETTINGS_SECTION_KEYS = {
   ],
   series: [
     "seriesNavEnabled",
-    "worksDefaultView",
     "seriesGridColumns",
     "seriesGridColumnsMobile",
     "gallerySortOrder",
@@ -5525,43 +5524,8 @@ export function SettingsTab({
                     <span className="text-[color:var(--admin-ink)]">
                       Series
                     </span>{" "}
-                    {copy.seriesSection.gridIntroMid}{" "}
-                    <span className="text-[color:var(--admin-ink)]">
-                      Gallery
-                    </span>{" "}
                     {copy.seriesSection.gridIntroSuffix}
                   </p>
-                  <AdminField
-                    label={copy.seriesSection.defaultViewLabel}
-                    hint={copy.seriesSection.defaultViewHint}
-                  >
-                    <div className="flex gap-1">
-                      {(
-                        [
-                          [
-                            "photos",
-                            copy.seriesSection.defaultViewOptions.photos,
-                          ],
-                          [
-                            "series",
-                            copy.seriesSection.defaultViewOptions.series,
-                          ],
-                        ] as const
-                      ).map(([val, lbl]) => (
-                        <button
-                          key={val}
-                          onClick={() => set("worksDefaultView", val)}
-                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                            (current["worksDefaultView"] || "photos") === val
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                          }`}
-                        >
-                          {lbl}
-                        </button>
-                      ))}
-                    </div>
-                  </AdminField>
                   <AdminField
                     label={copy.seriesSection.columnsPcLabel}
                     hint={copy.seriesSection.columnsPcHint}
@@ -5596,11 +5560,9 @@ export function SettingsTab({
                   </AdminField>
                   <button
                     onClick={() => {
-                      [
-                        "worksDefaultView",
-                        "seriesGridColumns",
-                        "seriesGridColumnsMobile",
-                      ].forEach((k) => set(k, ""));
+                      ["seriesGridColumns", "seriesGridColumnsMobile"].forEach(
+                        (k) => set(k, ""),
+                      );
                     }}
                     className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                   >

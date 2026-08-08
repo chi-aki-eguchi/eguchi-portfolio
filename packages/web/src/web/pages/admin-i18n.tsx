@@ -1229,17 +1229,9 @@ const ADMIN_PHASE_2B_JA = {
         on: "表示",
         off: "非表示",
       },
-      gridIntroPrefix: "シリーズ一覧（表紙写真のグリッド）の見せ方。プレビューで",
-      gridIntroMid: "ページ、または",
+      gridIntroPrefix: "シリーズ一覧（表紙写真のグリッド）の見せ方。プレビューの",
       gridIntroSuffix:
-        "ページ上部の Photos / Series 切り替えで反映されます。タイルは表紙写真のみ（文字なし）。表紙未設定のシリーズは先頭写真が自動で使われます。",
-      defaultViewLabel: "Gallery で最初に見せるもの",
-      defaultViewHint:
-        "Gallery ページを開いたとき、写真一覧（Photos）とシリーズ一覧（Series）のどちらを先に表示するか",
-      defaultViewOptions: {
-        photos: "写真一覧",
-        series: "シリーズ",
-      },
+        "ページに反映されます。タイルは表紙写真のみ（文字なし）。表紙未設定のシリーズは先頭写真が自動で使われます。",
       columnsPcLabel: "シリーズ列数（PC）",
       columnsPcHint: "タイルを大きく見せたいなら少なめ（2〜3列推奨）",
       columnsPcControlLabel: "PC 列数",
@@ -2762,16 +2754,8 @@ const ADMIN_PHASE_2B_EN = {
         off: "Hide",
       },
       gridIntroPrefix: "The look of the Series list (a grid of cover photos). Reflected in the",
-      gridIntroMid: "preview page, or the",
       gridIntroSuffix:
-        "Photos / Series switch at the top of the page. Tiles show only the cover photo (no text). A series without a cover automatically uses its first photo.",
-      defaultViewLabel: "Shown First in Gallery",
-      defaultViewHint:
-        "Which the Gallery page shows first when opened: the photo list (Photos) or the series list (Series).",
-      defaultViewOptions: {
-        photos: "Photos",
-        series: "Series",
-      },
+        "preview page. Tiles show only the cover photo (no text). A series without a cover automatically uses its first photo.",
       columnsPcLabel: "Series Columns (PC)",
       columnsPcHint: "Use fewer columns to show larger tiles (2–3 recommended).",
       columnsPcControlLabel: "PC Columns",

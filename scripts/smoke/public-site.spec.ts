@@ -163,7 +163,6 @@ const SYNTHETIC_SETTINGS = {
   galleryGapScale: "1",
   galleryEmptyRate: "0",
   gallerySizeVariation: "0",
-  worksDefaultView: "photos",
   seriesNavEnabled: "on",
   profileLabel: "About",
   profileName: "Synthetic Photographer",

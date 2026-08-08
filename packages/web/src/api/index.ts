@@ -1310,7 +1310,6 @@ const app = new Hono()
         // ── P: series grid (Works series view) — JS-driven, like the gallery grid ──
         seriesGridColumns: settings.seriesGridColumns ?? "3", // PC
         seriesGridColumnsMobile: settings.seriesGridColumnsMobile ?? "2", // mobile
-        worksDefaultView: settings.worksDefaultView ?? "photos", // "photos" | "series"
         // ── N: per-page grid layout type (JS-driven) — mosaic|grid|scroll(|…) ──
         galleryLayout: settings.galleryLayout ?? "mosaic",
         seriesLayout: settings.seriesLayout ?? "mosaic",

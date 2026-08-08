@@ -139,7 +139,6 @@ export const SETTINGS_PREVIEW_KEYS = [
   "topWorksIds",
   "seriesGridColumns",
   "seriesGridColumnsMobile",
-  "worksDefaultView",
   "smartAlbums",
   "seriesNavEnabled",
   "gallerySortOrder",

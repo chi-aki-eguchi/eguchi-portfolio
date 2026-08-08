@@ -5,7 +5,6 @@ import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { ContentStatus } from "../components/ContentStatus";
 import { PhotoGallery } from "../components/PhotoGallery";
-import { SeriesGrid } from "../components/SeriesGrid";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 
@@ -24,17 +23,12 @@ export default function GalleryPage() {
     return v === "film" || v === "digital" ? v : "all";
   }, [params]);
   const activeFilter = params.get("c") || "all";
-  const pinnedView = useMemo(() => {
-    const v = params.get("v");
-    return v === "photos" || v === "series" ? v : null;
-  }, [params]);
 
   // Write the whole filter set at once so two of them can never disagree, and
   // drop anything sitting at its default rather than spelling it out.
   const applyFilters = (next: {
     c?: string;
     medium?: "all" | "film" | "digital";
-    v?: "photos" | "series" | null;
   }) => {
     const merged = new URLSearchParams(params);
     const put = (key: string, value: string | null | undefined, dflt: string) => {
@@ -44,14 +38,12 @@ export default function GalleryPage() {
     };
     put("c", next.c, "all");
     put("medium", next.medium, "all");
-    put("v", next.v ?? undefined, "");
     const qs = merged.toString();
     setLocation(qs ? `${location}?${qs}` : location);
   };
   const setActiveFilter = (v: string) => applyFilters({ c: v });
   const setActiveMedium = (v: "all" | "film" | "digital") =>
     applyFilters({ medium: v });
-  const setPinnedView = (v: "photos" | "series" | null) => applyFilters({ v });
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -79,11 +71,10 @@ export default function GalleryPage() {
     staleTime: 5 * 60_000,
   });
 
-  const hasSeries = (seriesData?.series.length ?? 0) > 0;
-  const defaultView =
-    settings?.worksDefaultView === "series" ? "series" : "photos";
-  const view = hasSeries ? (pinnedView ?? defaultView) : "photos";
-
+  // シリーズの入口はナビの Series（`seriesNavEnabled` で on/off/auto）に一本化
+  // した（2026-08-08 オーナー判断）。同じ SeriesGrid をここにも Photos/Series
+  // タブとして出していたので、同じものへの入口が2つあった。`seriesData` は
+  // ビューアのキャプションからシリーズ名・リンクを引くために残す。
   // Memoise so references are stable across renders — otherwise dependent
   // useMemo/useEffect (and useScrollFadeIn) re-run every render.
   const allPhotos = useMemo(
@@ -154,7 +145,7 @@ export default function GalleryPage() {
     [filtered, renderCount],
   );
   const gallerySentinelRef = useRef<HTMLDivElement>(null);
-  const fadeRef = useScrollFadeIn([rendered, view, settings?.galleryLayout]);
+  const fadeRef = useScrollFadeIn([rendered, settings?.galleryLayout]);
   const loadMoreRetryRef = useRef<number | null>(null);
   const requestMorePhotos = useCallback(() => {
     const pendingImages = Array.from(
@@ -200,12 +191,12 @@ export default function GalleryPage() {
     return () => io.disconnect();
   }, [renderCount, filtered.length, requestMorePhotos]);
 
-  // Switching the filter (or Photos/Series view) while scrolled deep can shrink
-  // the page and strand the viewer at the footer of a now-short grid. Scroll
-  // back to the top of the section so the new selection starts in view.
+  // Switching the filter while scrolled deep can shrink the page and strand the
+  // viewer at the footer of a now-short grid. Scroll back to the top of the
+  // section so the new selection starts in view.
   const prevViewKey = useRef<string | null>(null);
   useEffect(() => {
-    const key = `${activeFilter}/${view}`;
+    const key = activeFilter;
     if (prevViewKey.current === null) {
       prevViewKey.current = key;
       return;
@@ -224,7 +215,7 @@ export default function GalleryPage() {
         behavior: reduce ? "auto" : "smooth",
       }); // 70px ≈ fixed header + breathing room
     }
-  }, [activeFilter, view, fadeRef]);
+  }, [activeFilter, fadeRef]);
 
   return (
     <section
@@ -243,142 +234,111 @@ export default function GalleryPage() {
         {settings?.galleryLabel ?? "Gallery"}
       </h1>
 
-      {/* P1: Photos / Series view toggle — only when there are series to show */}
-      {hasSeries && (
-        <div className="flex justify-center gap-x-8 mb-12 md:mb-14 section-reveal">
-          {(
-            [
-              ["photos", "Photos"],
-              ["series", "Series"],
-            ] as const
-          ).map(([val, label]) => (
+      {/* Filter — カテゴリ */}
+      {categories.length > 0 && (
+        <div
+          className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-6 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
+          style={{
+            transitionDelay: "0.1s",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {filterItems.map((cat) => (
             <button
-              key={val}
-              onClick={() => setPinnedView(val)}
-              aria-pressed={view === val}
-              className={`tap-target font-en text-xs tracking-[0.08em] pt-1.5 pb-1.5 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
-                view === val
+              key={cat.slug}
+              onClick={() => setActiveFilter(cat.slug)}
+              aria-pressed={activeFilter === cat.slug}
+              className={`tap-target font-en text-xs tracking-[0.04em] pt-1.5 pb-1.5 transition-all duration-300 nav-link-luxury border-b-[1.5px] whitespace-nowrap shrink-0 ${
+                activeFilter === cat.slug
                   ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
                   : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
               }`}
             >
-              {label}
+              {cat.label}
             </button>
           ))}
         </div>
       )}
 
-      {view === "series" ? (
-        <SeriesGrid />
+      {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
+      {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
+        <div
+          className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
+          style={{
+            transitionDelay: "0.15s",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {(
+            [
+              ["all", settings?.filterAllLabel ?? "All"],
+              ["film", "Film"],
+              ["digital", "Digital"],
+            ] as const
+          ).map(([val, lbl]) => (
+            <button
+              key={val}
+              onClick={() => setActiveMedium(val)}
+              aria-pressed={activeMedium === val}
+              className={`tap-target font-en text-xs tracking-[0.04em] pt-1.5 pb-1.5 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
+                activeMedium === val
+                  ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
+                  : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Grid */}
+      {filtered.length === 0 ? (
+        // Don't flash "No photos" while the first fetch is still in flight.
+        photosLoading ? (
+          <div className="gallery-skeleton" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} />
+            ))}
+          </div>
+        ) : photosError ? (
+          // A failed fetch is not an empty gallery — say so, and offer a
+          // reload instead of quietly showing "No photos" (fail-quiet trap).
+          // Naming the cause only after a failed reload is the shared rule;
+          // see ContentStatus.
+          <ContentStatus
+            state="error"
+            error={photosErrorObj}
+            onRetry={() => void refetchPhotos()}
+            className="py-24"
+          />
+        ) : (
+          <div className="py-24 text-center">
+            <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
+              No photos
+            </p>
+          </div>
+        )
       ) : (
         <>
-          {/* Filter — カテゴリ */}
-          {categories.length > 0 && (
+          <PhotoGallery
+            photos={rendered}
+            layoutType={settings?.galleryLayout}
+            onRequestMore={
+              rendered.length < filtered.length
+                ? requestMorePhotos
+                : undefined
+            }
+            seriesNameById={seriesNameById}
+            seriesSlugById={seriesSlugById}
+            categoryLabelBySlug={categoryLabelBySlug}
+          />
+          {rendered.length < filtered.length && (
             <div
-              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-6 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
-              style={{
-                transitionDelay: "0.1s",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              {filterItems.map((cat) => (
-                <button
-                  key={cat.slug}
-                  onClick={() => setActiveFilter(cat.slug)}
-                  aria-pressed={activeFilter === cat.slug}
-                  className={`tap-target font-en text-xs tracking-[0.04em] pt-1.5 pb-1.5 transition-all duration-300 nav-link-luxury border-b-[1.5px] whitespace-nowrap shrink-0 ${
-                    activeFilter === cat.slug
-                      ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
-                      : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
-          {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
-            <div
-              className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
-              style={{
-                transitionDelay: "0.15s",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              {(
-                [
-                  ["all", settings?.filterAllLabel ?? "All"],
-                  ["film", "Film"],
-                  ["digital", "Digital"],
-                ] as const
-              ).map(([val, lbl]) => (
-                <button
-                  key={val}
-                  onClick={() => setActiveMedium(val)}
-                  aria-pressed={activeMedium === val}
-                  className={`tap-target font-en text-xs tracking-[0.04em] pt-1.5 pb-1.5 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
-                    activeMedium === val
-                      ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
-                      : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
-                  }`}
-                >
-                  {lbl}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Grid */}
-          {filtered.length === 0 ? (
-            // Don't flash "No photos" while the first fetch is still in flight.
-            photosLoading ? (
-              <div className="gallery-skeleton" aria-hidden="true">
-                {Array.from({ length: 6 }, (_, i) => (
-                  <div key={i} />
-                ))}
-              </div>
-            ) : photosError ? (
-              // A failed fetch is not an empty gallery — say so, and offer a
-              // reload instead of quietly showing "No photos" (fail-quiet trap).
-              // Naming the cause only after a failed reload is the shared rule;
-              // see ContentStatus.
-              <ContentStatus
-                state="error"
-                error={photosErrorObj}
-                onRetry={() => void refetchPhotos()}
-                className="py-24"
-              />
-            ) : (
-              <div className="py-24 text-center">
-                <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
-                  No photos
-                </p>
-              </div>
-            )
-          ) : (
-            <>
-              <PhotoGallery
-                photos={rendered}
-                layoutType={settings?.galleryLayout}
-                onRequestMore={
-                  rendered.length < filtered.length
-                    ? requestMorePhotos
-                    : undefined
-                }
-                seriesNameById={seriesNameById}
-                seriesSlugById={seriesSlugById}
-                categoryLabelBySlug={categoryLabelBySlug}
-              />
-              {rendered.length < filtered.length && (
-                <div
-                  ref={gallerySentinelRef}
-                  aria-hidden="true"
-                  style={{ height: 1 }}
-                />
-              )}
-            </>
+              ref={gallerySentinelRef}
+              aria-hidden="true"
+              style={{ height: 1 }}
+            />
           )}
         </>
       )}

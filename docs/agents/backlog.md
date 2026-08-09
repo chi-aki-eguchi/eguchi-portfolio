@@ -169,6 +169,10 @@ element was detached from the DOM, retrying
 つまり**開くアニメーションの最中にボタンを掴み、安定を待っているうちに
 要素がDOMから外れている**。
 
+**2026-08-09 の全体実行では再現しなかった（306 passed / 0 failed）。**
+負荷や順序で出たり出なかったりする。消さずに残すのは、出たときに同じ調査を
+繰り返さないため。
+
 **直そうとして失敗した（2026-08-08）。** `getAnimations({subtree:true})` の
 完了を待ってから押す helper を入れたところ、待っている間にダイアログが閉じて
 しまい、**単独実行でも落ちるようになった**ので戻した。同じ手は取らないこと。
@@ -177,41 +181,6 @@ element was detached from the DOM, retrying
 確認ダイアログ側に開ききったことが分かる印（`data-*` 属性など）を出して、
 それを待つほうが筋がよさそう。**製品コード側を触ることになるので、
 オーナーの承認を得てから。**
-
-### S-1. admin Library の smoke が落ちる 🟢 2026-08-08 実行では再現せず
-
-**2026-08-08 の全体実行で、下の2件はどちらも通過した。**
-`admin-i18n.spec.ts`「JPのLibraryと写真編集に英語の操作語を残さない」は
-✓ 3.9秒、`admin-debug-sweep.spec.ts` も通過。`4c38ec1` の flaky 修正で
-解消した可能性が高い。**次に全体を通したときも 0 なら、この項目を消す。**
-
-以下は 2026-08-07 時点の記録（参考）。
-
-`bun run smoke` 全体で **18 failed / 286 passed / 130 skipped**（2026-08-07）。
-直前の記録は 0 failed だったので、その間に発生している。
-
-**今日の作業（`0f9cb8c` / `a923995`）が原因ではない。** 作業差分を stash した
-状態でも、同じ desktop 2件が同じ形で落ちることを確認済み。落ちる assertion は
-`admin.tsx` の `[data-virtualized]`（admin の Library グリッド）で、今日触った
-`PhotoGallery.tsx` / `SeriesGrid.tsx` / `admin-tabs.tsx` はこの要素を描画しない。
-
-再現する2件（desktop / mobile 両方。行番号は 2026-08-07 時点）:
-
-- `admin-debug-sweep.spec.ts` 「Libraryの仮想グリッドとサイトプレビューが
-  安定した寸法・紙色を使う」— `[data-virtualized]` が見つからない
-- `admin-i18n.spec.ts` 「JPのLibraryと写真編集に英語の操作語を残さない」
-
-どちらも admin の **Library** に関するもの。全体の失敗数は flaky 修正後に
-測り直していない（週枠の都合。全体実行は25分）。
-
-**flaky の原因は特定し、2026-08-07 に修正済み（`4c38ec1`）。** `openSettingsSection()`
-が `isVisible()`（待たない判定）でPC用の目次を見ており、描画前だとスマホ用の分岐へ
-落ちて、存在しないボタンを30秒待って死んでいた。少し待ってから分岐する形に直した。
-実測: mobile の sweep は 40秒タイムアウト → **17.6秒で通過**。**残る失敗は下の2件。**
-
-着手する人へ: **まず実物を測り直す。** 本番DBの内容に依存している可能性がある
-（smoke は本番と同じDBにつながる）。`openSettingsSection()` の `isVisible()` を
-待つ形に直すのは、原因調査と分けて先に入れてよい。
 
 ## 公開サイト・その他
 

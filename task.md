@@ -5,7 +5,7 @@
 
 - **Status:** 08-08 の依頼4件と、08-09 の依頼4件をすべて実装・commit 済み。**push 待ち**
 - **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** `8d058ea` まで local commit 済み。
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** `5ff1edd` まで local commit 済み。
   push は未実施。未追跡は `scripts/smoke/scratch/`（以前からある調査用）
 
 ### 2026-08-09 の依頼（`8d058ea`）
@@ -51,14 +51,13 @@
 - 実ブラウザ実測: 白い壁、TOPの帯（管理画面の5設定すべてが効くことを確認）、
   戻ると **240枚・2134px とも復元**（2回とも）、動きを減らす設定での静止帯
 - 安定性の棚卸しで**測って問題が無かった範囲**は `backlog.md`「公開サイト・その他」に記載
-- **smoke 実行済み**（10分・2回）。1回目 304 passed / **2 failed** — 前回
-  **撤回した契約**（admin の書体が公開サイトに追従）を検査し続けていたもので、
-  判断を守る形へ書き換えた。2回目 **305 passed / 1 failed**
-- 残る1件は `admin-workspace-layout.spec.ts:99` の **flaky**。単独では4.8秒で
-  通り、全体実行のときだけ30秒タイムアウトする。今回の変更が原因ではない
-  （公開サイト側しか触っていない）。直そうとして悪化させたので戻した →
-  `backlog.md` の **S-2** に手順ごと記録
-- S-1（admin Library の2件）は今回の実行では**再現しなかった**
+- **smoke 最終実行は 306 passed / 0 failed**（9.3分・`5ff1edd` 時点）。
+  今セッションで初めて全部緑になった
+- 途中経過: 1回目 304/2 failed（**撤回した契約**を検査し続けていた admin の
+  書体2件 → 判断を守る形へ書き換え）、2回目 305/1（`admin-workspace-layout`
+  の flaky → `backlog.md` **S-2**）、3回目 305/1（`admin-hero-motion`。
+  単独では通るが、触った箇所なので memo の危うさを潰した `5ff1edd`）
+- S-1（admin Library の2件）は2回とも再現せず → backlog から削除
 - local commit 済み / push・Railway反映・本番確認は**未実施**
 
 ### 次の一手
@@ -66,9 +65,8 @@
 - **オーナーが push する。** 反映後に確認したいのは、ビューアが白いこと、
   TOPにシリーズの帯が出ること、Gallery から Photos/Series タブが消えていること
 - 本番での `/photos` 応答時間の実測。ローカルの2.6秒はDB往復が支配的で本番とは別物
-- S-2（`admin-workspace-layout` の flaky）。製品コード側に「開ききった印」を
-  出す案があるが、製品コードを触るのでオーナー承認が要る
-- S-1 は今回再現せず。次に全体を通したとき 0 failed なら backlog から消す
+- S-2（`admin-workspace-layout` の flaky）。2026-08-09 の実行では再現しなかった
+  が、出たときの調査を繰り返さないため backlog に残してある
 
 ### 触ってはいけない範囲
 

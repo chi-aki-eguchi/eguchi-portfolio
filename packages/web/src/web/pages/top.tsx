@@ -1055,12 +1055,17 @@ export default function TopPage() {
   );
   // Don't fall back to gallery photos while hero-photos is still loading —
   // that would briefly flash unrelated photos in the hero before the real ones arrive.
-  const heroBase =
-    heroPhotosPicked.length > 0
-      ? heroPhotosPicked
-      : heroLoading
-        ? []
-        : allPhotos.slice(0, 5);
+  const heroBase = useMemo(
+    () =>
+      heroPhotosPicked.length > 0
+        ? heroPhotosPicked
+        : heroLoading
+          ? []
+          : allPhotos.slice(0, 5),
+    // heroPhotosPicked は heroData から作る派生値なので、素の heroData で見る。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [heroData, heroLoading, allPhotos],
+  );
   // HERO のランダム（2026-08-09 オーナー依頼「両方選べるように」）。
   //  - off（既定）: 選んだHERO写真を、選んだ順で出す。今までどおり
   //  - shuffle: 選んだHERO写真はそのまま、順番だけ訪問ごとに変える
@@ -1068,24 +1073,26 @@ export default function TopPage() {
   // 種は訪問ごとに1回だけ決める。写真が追加で読み込まれるたびに引き直すと、
   // 見ている最中にヒーローの写真が入れ替わってしまう。
   const heroRandom = settings?.heroRandom ?? "off";
-  const heroBaseLength = heroBase.length;
-  const heroBaseFirstUrl = heroBase[0]?.url;
   const pickedCount = heroPhotosPicked.length;
+  // 全体から選ぶときだけ、公開写真すべてを1回並べ替えて持っておく。
+  // 497枚の並べ替えを毎レンダーやる必要はない。
+  const heroPoolShuffled = useMemo(
+    () =>
+      heroRandom === "any" ? shuffleWithSeed(allPhotos, visitShuffleSeed()) : null,
+    [heroRandom, allPhotos],
+  );
   const heroPhotos = useMemo(() => {
-    const seed = visitShuffleSeed();
-    if (heroRandom === "any") {
-      if (allPhotos.length === 0) return heroBase;
-      const want = Math.max(1, heroPhotosPicked.length || 5);
-      return shuffleWithSeed(allPhotos, seed).slice(0, want);
+    if (heroRandom === "any" && heroPoolShuffled && heroPoolShuffled.length > 0) {
+      return heroPoolShuffled.slice(0, Math.max(1, pickedCount || 5));
     }
     if (heroRandom === "shuffle" && heroBase.length > 1) {
-      return shuffleWithSeed(heroBase, seed);
+      return shuffleWithSeed(heroBase, visitShuffleSeed());
     }
     return heroBase;
-    // heroBase は毎レンダー新しい配列になるので、中身が変わったときだけ
-    // 引き直せるよう長さと先頭URLで見る。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [heroRandom, allPhotos, heroBaseLength, heroBaseFirstUrl, pickedCount]);
+    // heroBase を代理値（長さ・先頭URL）で見張ると、中身だけ入れ替わったときに
+    // 古い配列を返し続ける。種は固定なので、実体を依存にして毎回引き直しても
+    // 結果は同じ。並べ替えるのは多くて5枚なので費用も無い。
+  }, [heroRandom, heroPoolShuffled, heroBase, pickedCount]);
   // Top Works pool honours topWorksMode:
   //  - auto (default): the whole library in Aki's order (design-spec 2-2 — the
   //    manual sortOrder × size composition flows into the top page as-is)

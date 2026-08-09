@@ -37,23 +37,45 @@ export function SeriesStream({
 
   // 埋めるべき幅は帯そのものの幅。window.innerWidth ではなく実物を測る
   // （描画前は 0 を返す環境があり、その値で並びの繰り返し数を決めると
-  // 帯の右側が空いたまま流れる）。ResizeObserver はマウント直後にも1回
-  // 実寸で発火するので、初期値と画面回転の両方をこれ1つで賄える。
+  // 帯の右側が空いたまま流れる）。
+  //
+  // **測定は帯が描かれてから始める。** シリーズ一覧は API から後で届くので、
+  // それまでこの component は何も描かない（`series.length === 0` で return）。
+  // 依存を `[]` にしていたため、マウント時点では ref が空で、あとから帯が
+  // 現れても二度と測られなかった。幅 0 のまま固着し、動きを減らす設定でも
+  // ないのに静止モードへ落ちる。2026-08-09 に本番（akieguchi.com）で発生:
+  // 帯の実寸は 1276px なのに `series-stream-static` が付いたままだった。
+  // 一覧がキャッシュに乗っている画面では帯が初回から在るので再現しない。
+  //
+  // あわせて ResizeObserver 1本にも任せない。初回の通知が 0 で届き、その後
+  // 寸法が**変わらない**経路では二度と呼ばれない。直接測る＋監視＋少し後に
+  // もう一度、の3経路にする。
   const bandRef = useRef<HTMLDivElement>(null);
   const [bandW, setBandW] = useState(0);
   const [reduced, setReduced] = useState(false);
+  const seriesCount = series.length;
   useEffect(() => {
     const el = bandRef.current;
-    if (el && typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(([entry]) => {
-        const w = entry?.contentRect.width ?? 0;
-        if (w > 0) setBandW(w);
-      });
-      ro.observe(el);
-      return () => ro.disconnect();
-    }
-    setBandW(typeof window === "undefined" ? 0 : window.innerWidth);
-  }, []);
+    if (!el) return;
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) setBandW((prev) => (Math.abs(prev - w) < 1 ? prev : w));
+    };
+    measure();
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(measure)
+        : null;
+    ro?.observe(el);
+    window.addEventListener("resize", measure);
+    // 初回が 0 で、そのあと「変化」が来ない経路のための保険。
+    const retry = window.setTimeout(measure, 300);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", measure);
+      window.clearTimeout(retry);
+    };
+  }, [seriesCount]);
   useEffect(() => {
     const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     const sync = () => setReduced(!!mq?.matches);

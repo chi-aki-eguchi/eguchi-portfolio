@@ -16,6 +16,10 @@ import {
   clampSetting,
   clampSettingRounded,
 } from "../../shared/setting-ranges";
+import {
+  GALLERY_MIN_TILE_DESKTOP,
+  GALLERY_MIN_TILE_MOBILE,
+} from "../../shared/gallery-metrics";
 import { Lightbox, FIT_SIZES } from "./Lightbox";
 import {
   objectPositionFromFocal,
@@ -498,7 +502,10 @@ export function PhotoGallery({
     pick("topWorksSizeScale", "gallerySizeScale", 1),
   );
   // Larger sizeScale → wider minimum tile → fewer columns → bigger photos.
-  const minTile = (isMobile ? 150 : 210) * sizeScale;
+  // 数値は `shared/gallery-metrics.ts` から取る。管理画面が「なぜ列数が
+  // 伸びないか」を説明するのに同じ値を読むため、ここに書き戻さない。
+  const minTile =
+    (isMobile ? GALLERY_MIN_TILE_MOBILE : GALLERY_MIN_TILE_DESKTOP) * sizeScale;
   // Each layout passes the column count it used to hardcode as its fallback, so
   // an untouched site keeps the exact look it had while the admin's 列数 slider
   // now reaches every layout — previously masonry / clean-grid / large-format

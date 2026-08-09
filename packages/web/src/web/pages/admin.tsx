@@ -104,6 +104,7 @@ import { PageShell } from "./admin-page-shell";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 import { AdminReorderBar } from "./admin-reorder-bar";
 import { AdminCompactSidebar } from "./admin-compact-sidebar";
+import { shuffleWithSeed, visitShuffleSeed } from "../lib/shuffle";
 import {
   AdminLanguageProvider,
   AdminLanguageToggle,
@@ -2558,6 +2559,7 @@ export function GalleryTab({
         "category",
         "title",
         "published",
+        "random",
       ].includes(librarySort)
     ) {
       setLibrarySort("manual");
@@ -2915,6 +2917,10 @@ export function GalleryTab({
   const sortPhotosForView = useCallback(
     (list: Photo[]): Photo[] => {
       if (librarySort === "manual") return list;
+      // ランダムはこのタブで共有する種を使う。描き直すたびに引き直すと、
+      // 選択やスクロールの最中に写真が動いて作業にならない。
+      if (librarySort === "random")
+        return shuffleWithSeed(list, visitShuffleSeed());
       const arr = [...list];
       const time = (v: string | number | null | undefined) =>
         v ? new Date(v).getTime() : 0;
@@ -5522,6 +5528,7 @@ export function GalleryTab({
                 <option value="published">
                   {copy.sort.options.publication}
                 </option>
+                <option value="random">{copy.sort.options.random}</option>
               </select>
               {librarySort !== "manual" && (
                 <button

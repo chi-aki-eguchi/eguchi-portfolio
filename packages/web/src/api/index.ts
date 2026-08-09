@@ -1310,6 +1310,10 @@ const app = new Hono()
         // ── P: series grid (Works series view) — JS-driven, like the gallery grid ──
         seriesGridColumns: settings.seriesGridColumns ?? "3", // PC
         seriesGridColumnsMobile: settings.seriesGridColumnsMobile ?? "2", // mobile
+        // HERO のランダム: "off" | "shuffle"（選んだ写真の順だけ） | "any"（公開写真全体から）
+        heroRandom: settings.heroRandom ?? "off",
+        // ギャラリーにシリーズ所属の写真を出すか: "off"（出す・従来） | "on"（出さない）
+        galleryExcludeSeries: settings.galleryExcludeSeries ?? "off",
         // ── TOP のシリーズ帯（横に流れる） ──
         topSeriesStream: settings.topSeriesStream ?? "after-works", // "off" | "before-works" | "after-works"
         topSeriesStreamLabel: settings.topSeriesStreamLabel ?? "Series",

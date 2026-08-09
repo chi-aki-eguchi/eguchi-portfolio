@@ -17,6 +17,7 @@ import { InquiryCta } from "../components/InquiryCta";
 import { ContentStatus } from "../components/ContentStatus";
 import { SeriesStream } from "../components/SeriesStream";
 import { num } from "../lib/utils";
+import { shuffleWithSeed, visitShuffleSeed } from "../lib/shuffle";
 import {
   clampSetting,
   clampSettingRounded,
@@ -1054,12 +1055,37 @@ export default function TopPage() {
   );
   // Don't fall back to gallery photos while hero-photos is still loading —
   // that would briefly flash unrelated photos in the hero before the real ones arrive.
-  const heroPhotos =
+  const heroBase =
     heroPhotosPicked.length > 0
       ? heroPhotosPicked
       : heroLoading
         ? []
         : allPhotos.slice(0, 5);
+  // HERO のランダム（2026-08-09 オーナー依頼「両方選べるように」）。
+  //  - off（既定）: 選んだHERO写真を、選んだ順で出す。今までどおり
+  //  - shuffle: 選んだHERO写真はそのまま、順番だけ訪問ごとに変える
+  //  - any: HERO の登録と関係なく、公開中の写真全体から訪問ごとに選ぶ
+  // 種は訪問ごとに1回だけ決める。写真が追加で読み込まれるたびに引き直すと、
+  // 見ている最中にヒーローの写真が入れ替わってしまう。
+  const heroRandom = settings?.heroRandom ?? "off";
+  const heroBaseLength = heroBase.length;
+  const heroBaseFirstUrl = heroBase[0]?.url;
+  const pickedCount = heroPhotosPicked.length;
+  const heroPhotos = useMemo(() => {
+    const seed = visitShuffleSeed();
+    if (heroRandom === "any") {
+      if (allPhotos.length === 0) return heroBase;
+      const want = Math.max(1, heroPhotosPicked.length || 5);
+      return shuffleWithSeed(allPhotos, seed).slice(0, want);
+    }
+    if (heroRandom === "shuffle" && heroBase.length > 1) {
+      return shuffleWithSeed(heroBase, seed);
+    }
+    return heroBase;
+    // heroBase は毎レンダー新しい配列になるので、中身が変わったときだけ
+    // 引き直せるよう長さと先頭URLで見る。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroRandom, allPhotos, heroBaseLength, heroBaseFirstUrl, pickedCount]);
   // Top Works pool honours topWorksMode:
   //  - auto (default): the whole library in Aki's order (design-spec 2-2 — the
   //    manual sortOrder × size composition flows into the top page as-is)

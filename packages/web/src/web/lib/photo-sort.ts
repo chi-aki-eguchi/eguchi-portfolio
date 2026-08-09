@@ -1,4 +1,11 @@
-export type PhotoSortOrder = "manual" | "date_desc" | "date_asc" | "upload_desc";
+import { shuffleWithSeed, visitShuffleSeed } from "./shuffle";
+
+export type PhotoSortOrder =
+  | "manual"
+  | "date_desc"
+  | "date_asc"
+  | "upload_desc"
+  | "random";
 
 type SortablePhoto = {
   sortOrder?: number | null;
@@ -24,6 +31,10 @@ export function sortPhotosBySetting<T extends SortablePhoto>(
   photos: readonly T[],
   order: string | undefined | null,
 ): T[] {
+  // ランダムはこのタブで共有する種を使う。ページを移って戻っても同じ並びに
+  // 戻り、再読み込みで新しい並びになる。毎回引き直すと、戻ったときに
+  // 復元したスクロール位置へ別の写真が来てしまう。
+  if (order === "random") return shuffleWithSeed(photos, visitShuffleSeed());
   const mode: PhotoSortOrder =
     order === "date_desc" || order === "date_asc" || order === "upload_desc"
       ? order

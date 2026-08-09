@@ -73,7 +73,13 @@ import {
 } from "./admin-settings-form-layout";
 import { useAdminI18n } from "./admin-i18n";
 import type { GalleryLayoutType } from "../components/PhotoGallery";
-import { SETTING_RANGES } from "../../shared/setting-ranges";
+import {
+  SETTING_RANGES,
+  clampSetting,
+  clampSettingRounded,
+} from "../../shared/setting-ranges";
+import { columnsThatFit } from "../../shared/gallery-metrics";
+import { num } from "../lib/utils";
 import {
   draftAfterSuccessfulSave,
   hasUnsavedSettingsDraft,
@@ -111,6 +117,7 @@ export const SETTINGS_SECTION_KEYS = {
   "portfolio-kit": ["servicePageMode"],
   hero: [
     "heroMode",
+    "heroRandom",
     "heroMotionSpeed",
     "heroRevealOrder",
     "heroHeight",
@@ -147,6 +154,7 @@ export const SETTINGS_SECTION_KEYS = {
   ],
   series: [
     "seriesNavEnabled",
+    "galleryExcludeSeries",
     "topSeriesStream",
     "topSeriesStreamLabel",
     "topSeriesStreamCaption",
@@ -4645,6 +4653,34 @@ export function SettingsTab({
                   </div>
                 </AdminField>
                 <AdminField
+                  label={copy.hero.randomLabel}
+                  hint={copy.hero.randomHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["off", copy.hero.randomOptions.off],
+                        ["shuffle", copy.hero.randomOptions.shuffle],
+                        ["any", copy.hero.randomOptions.any],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        aria-pressed={(current["heroRandom"] || "off") === val}
+                        onClick={() => set("heroRandom", val)}
+                        className={`text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${
+                          (current["heroRandom"] || "off") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
                   label={copy.hero.speedLabel}
                   hint={copy.hero.speedHint}
                 >
@@ -5327,6 +5363,37 @@ export function SettingsTab({
                     unit={copy.units.columns}
                     defaultVal="3"
                   />
+                  {/* 「回しても何も起きない」に見える最大の原因を、その場で
+                      言う。プレビュー枠は最大でも約780pxしかないので、
+                      floor(780 ÷ 210) = 3列 で頭打ちになる。オーナーはこれを
+                      「マソンリーは3列固定」と受け取っていた（2026-08-09）。 */}
+                  {(() => {
+                    const maxColumns = clampSettingRounded(
+                      "galleryColumns",
+                      num(current["galleryColumns"], 3),
+                    );
+                    const sizeScale = clampSetting(
+                      "gallerySizeScale",
+                      num(current["gallerySizeScale"], 1),
+                    );
+                    // プレビューの器から左右の余白ぶんを引いた、写真が使える幅。
+                    const usable = previewWidth - 32;
+                    const fits = columnsThatFit({
+                      width: usable,
+                      sizeScale,
+                      maxColumns,
+                      isMobile: false,
+                    });
+                    if (!(previewWidth > 0) || fits >= maxColumns) return null;
+                    return (
+                      <p className="mt-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                        {copy.galleryLayout.columnsCappedByPreview(
+                          Math.round(previewWidth),
+                          fits,
+                        )}
+                      </p>
+                    );
+                  })()}
                 </AdminField>
                 <AdminField
                   label={copy.galleryLayout.photoSizeLabel}
@@ -5575,6 +5642,35 @@ export function SettingsTab({
                   </button>
                 </div>
 
+                {/* ギャラリーにシリーズの写真を出すか */}
+                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                  <AdminField
+                    label={copy.seriesSection.excludeLabel}
+                    hint={copy.seriesSection.excludeHint}
+                  >
+                    <div className="flex gap-1">
+                      {(
+                        [
+                          ["off", copy.seriesSection.excludeOptions.show],
+                          ["on", copy.seriesSection.excludeOptions.hide],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("galleryExcludeSeries", val)}
+                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                            (current["galleryExcludeSeries"] || "off") === val
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                </div>
+
                 {/* TOP のシリーズ帯（横に流れる） */}
                 <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
                   <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
@@ -5724,6 +5820,7 @@ export function SettingsTab({
                             "upload_desc",
                             copy.seriesSection.sortOptions.upload_desc,
                           ],
+                          ["random", copy.seriesSection.sortOptions.random],
                         ] as const
                       ).map(([val, lbl]) => (
                         <button

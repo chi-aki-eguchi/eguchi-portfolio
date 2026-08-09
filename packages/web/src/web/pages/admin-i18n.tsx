@@ -70,6 +70,7 @@ const ADMIN_PHASE_2B_JA = {
         category: "カテゴリ",
         title: "タイトル",
         publication: "公開状態",
+        random: "ランダム",
       },
       clearFiltersFirst: "フィルターを解除してから保存できます",
       saveHint:
@@ -991,6 +992,14 @@ const ADMIN_PHASE_2B_JA = {
         editorial: "大小をつけた写真集風",
         immersive: "画面いっぱいに写真を見せる",
       },
+      randomLabel: "HEROをランダムに",
+      randomHint:
+        "「選んだ順」はいま登録してあるHERO写真をその順で出します。「順番だけ」は同じ写真のまま並びを毎回変え、「全体から」は公開中の写真すべてから毎回選びます（HEROに選んでいない写真も出ます）。並びは訪問ごとに変わり、見ている最中は変わりません",
+      randomOptions: {
+        off: "選んだ順",
+        shuffle: "順番だけ",
+        any: "全体から",
+      },
       speedLabel: "登場する速さ",
       speedHint: "トップページを開いたときに、写真と文字が静かに現れる速さです",
       speedAriaLabel: (label: string) => `登場する速さ: ${label}`,
@@ -1154,7 +1163,10 @@ const ADMIN_PHASE_2B_JA = {
         "clean-grid": "Instagram風・すべて正方形",
         "portrait-grid": "縦長4:5・人物写真向け",
         "landscape-grid": "横長3:2・風景写真向け",
-        masonry: "3列・縦横比を保って敷き詰め",
+        // 「3列」と書いていたが嘘だった（2026-08-09 オーナー報告・実測で確認）。
+        // マソンリーも他の配置と同じく最大列数に従う。設定プレビューの枠が
+        // 狭くて3列までしか入らないため、固定に見えていた。
+        masonry: "縦横比を保って敷き詰め・列数は最大列数に従う",
         justified: "縦横比を保ち行ごとに敷き詰め・S/M/Lで大小",
         mosaic: "S/M/L混在・抜け感のある並び",
         scroll: "1枚ずつ大きく＋情報を添えて表示",
@@ -1190,7 +1202,9 @@ const ADMIN_PHASE_2B_JA = {
       gridHeading: "ギャラリーの列数・大きさ・余白",
       maxColumnsLabel: "最大列数",
       maxColumnsHint:
-        "広い画面で最大何列まで並べるか。実際の列数は画面幅に応じて自動で減ります（スマホは1〜2列）",
+        "広い画面で最大何列まで並べるか。実際の列数は「表示できる幅 ÷ 写真1枚の最小幅」で決まり、足りなければ自動で減ります（スマホは1〜2列）。配置の種類は関係なく、マソンリーも同じ",
+      columnsCappedByPreview: (previewWidth: number, fits: number) =>
+        `このプレビューは幅 ${previewWidth}px なので、ここでは最大 ${fits} 列までしか出ません。公開サイトの実際の幅ではもっと並びます。ここで列を増やしたいときは「写真の大きさ」を下げてください`,
       photoSizeLabel: "写真の大きさ",
       photoSizeControlLabel: "大きさ",
       photoSizeHint: "大きくすると1枚が広くなり、その分列数が自動で減ります",
@@ -1240,6 +1254,13 @@ const ADMIN_PHASE_2B_JA = {
       columnsMobileLabel: "シリーズ列数（スマホ）",
       columnsMobileHint: "スマホ表示時の列数",
       columnsMobileControlLabel: "スマホ 列数",
+      excludeLabel: "シリーズの写真をギャラリーに出すか",
+      excludeHint:
+        "「出さない」にすると、どれかのシリーズに入れた写真は Gallery ページに並ばなくなります。シリーズはシリーズのページで見せ、Gallery にはどこにも属さない写真だけを並べたいときに使います",
+      excludeOptions: {
+        show: "出す",
+        hide: "出さない",
+      },
       streamIntro:
         "TOP ページで、シリーズの表紙写真とキャプションを横へゆっくり流す帯。触れている間は止まり、押すとそのシリーズへ入ります。OS で「視差効果を減らす」を選んでいる人には流さず、自分で横へ送れる帯として出ます。",
       streamPlaceLabel: "TOP に流す",
@@ -1276,6 +1297,7 @@ const ADMIN_PHASE_2B_JA = {
         date_desc: "撮影日↓新しい順",
         date_asc: "撮影日↑古い順",
         upload_desc: "アップロード↓新しい順",
+        random: "ランダム",
       },
     },
   },
@@ -1622,6 +1644,7 @@ const ADMIN_PHASE_2B_EN = {
         category: "Category",
         title: "Title",
         publication: "Publication status",
+        random: "Random",
       },
       clearFiltersFirst: "Clear the filters before saving this order",
       saveHint: "Write the current view order to the public-site sort order",
@@ -2539,6 +2562,14 @@ const ADMIN_PHASE_2B_EN = {
         editorial: "A photobook-style mix of large and small",
         immersive: "A single photo fills the screen",
       },
+      randomLabel: "Randomise Hero",
+      randomHint:
+        "“As picked” keeps the hero photos in their saved order. “Order only” keeps the same photos but reshuffles them, and “From all” picks from every published photo (including ones you did not choose for the hero). The order changes per visit and stays put while browsing.",
+      randomOptions: {
+        off: "As picked",
+        shuffle: "Order only",
+        any: "From all",
+      },
       speedLabel: "Reveal Speed",
       speedHint:
         "How quickly the photo and text quietly appear when the home page loads.",
@@ -2703,7 +2734,7 @@ const ADMIN_PHASE_2B_EN = {
         "clean-grid": "Instagram-style — every photo cropped to a square",
         "portrait-grid": "Portrait 4:5 crop, suited to people and portraits",
         "landscape-grid": "Landscape 3:2 crop, suited to scenery and landscapes",
-        masonry: "Three columns, packed tightly while keeping aspect ratio",
+        masonry: "Packed tightly while keeping aspect ratio; follows Max Columns",
         justified: "Packed row by row at true aspect ratio; S/M/L sets the size",
         mosaic: "A mix of S/M/L sizes with open, airy gaps",
         scroll: "One large photo at a time, with its details alongside",
@@ -2739,7 +2770,9 @@ const ADMIN_PHASE_2B_EN = {
       gridHeading: "Gallery Columns, Size & Spacing",
       maxColumnsLabel: "Max Columns",
       maxColumnsHint:
-        "The maximum number of columns on a wide screen. The actual count automatically decreases with screen width (1–2 columns on mobile).",
+        "The maximum number of columns on a wide screen. The actual count is “available width ÷ minimum photo width”, dropping automatically when there is not enough room (1–2 on mobile). This applies to every layout, masonry included.",
+      columnsCappedByPreview: (previewWidth: number, fits: number) =>
+        `This preview is ${previewWidth}px wide, so it can only show ${fits} columns here. The live site has more room. To see more columns in this preview, lower “Photo Size”.`,
       photoSizeLabel: "Photo Size",
       photoSizeControlLabel: "Size",
       photoSizeHint: "Larger values widen each photo, which automatically reduces the column count.",
@@ -2790,6 +2823,13 @@ const ADMIN_PHASE_2B_EN = {
       columnsMobileLabel: "Series Columns (Mobile)",
       columnsMobileHint: "The column count on mobile.",
       columnsMobileControlLabel: "Mobile Columns",
+      excludeLabel: "Series Photos in Gallery",
+      excludeHint:
+        "Choosing “Hide” keeps any photo that belongs to a series off the Gallery page. Use it when series should only be seen on their own pages and the Gallery should hold the standalone work.",
+      excludeOptions: {
+        show: "Show",
+        hide: "Hide",
+      },
       streamIntro:
         "A band on the home page where series covers and captions drift sideways. It pauses while you touch or hover it, and opens the series when clicked. Visitors who ask their OS to reduce motion get a band they can scroll themselves instead.",
       streamPlaceLabel: "Show on Home",
@@ -2826,6 +2866,7 @@ const ADMIN_PHASE_2B_EN = {
         date_desc: "Date taken ↓ newest first",
         date_asc: "Date taken ↑ oldest first",
         upload_desc: "Upload date ↓ newest first",
+        random: "Random",
       },
     },
   },

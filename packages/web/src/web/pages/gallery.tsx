@@ -111,8 +111,15 @@ export default function GalleryPage() {
         (p) => (p as Record<string, unknown>).filmType === target,
       );
     }
+    // シリーズに入れた写真をギャラリーから外す（2026-08-09 オーナー依頼）。
+    // シリーズはシリーズのページで見せるものなので、ギャラリーには
+    // どこにも属さない単発の写真だけを並べたい、という選択。既定は従来どおり
+    // 「出す」。シリーズの写真もギャラリーに出るのが今までの見え方のため。
+    if ((settings?.galleryExcludeSeries ?? "off") === "on") {
+      list = list.filter((p) => p.seriesId == null);
+    }
     return list;
-  }, [allPhotos, activeFilter, activeMedium]);
+  }, [allPhotos, activeFilter, activeMedium, settings?.galleryExcludeSeries]);
 
   // If the active category no longer exists (e.g. it was deleted/renamed), fall
   // back to "All" instead of stranding the user on an empty, unhighlighted filter.

@@ -139,6 +139,8 @@ export const SETTINGS_PREVIEW_KEYS = [
   "topWorksIds",
   "seriesGridColumns",
   "seriesGridColumnsMobile",
+  "heroRandom",
+  "galleryExcludeSeries",
   "topSeriesStream",
   "topSeriesStreamLabel",
   "topSeriesStreamCaption",

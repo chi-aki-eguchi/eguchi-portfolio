@@ -50,6 +50,13 @@ deploys/
 scratch/*
 !scratch/README.md
 
+# 調査用の使い捨てスペック置き場。`scripts/smoke/playwright.config.ts` は
+# ここを testIgnore し、コメントで「gitignore対象」と書いているが、実際には
+# 追加されておらず未追跡のまま残り続けていた（2026-08-06 から）。
+# 消すのはオーナー承認が要るうえ、`docs/specs/admin-mobile-usability-plan.md`
+# がここのファイルを参照しているため、記述どおり無視する形で揃える。
+scripts/smoke/scratch/
+
 # ルート直下のデバッグ用スクリーンショット（大容量）
 /*.png
 

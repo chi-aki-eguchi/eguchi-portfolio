@@ -5,8 +5,8 @@
 
 - **Status:** 08-08 の依頼4件と、08-09 の依頼4件をすべて実装・commit 済み。**push 待ち**
 - **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** `5ff1edd` まで local commit 済み。
-  push は未実施。未追跡は `scripts/smoke/scratch/`（以前からある調査用）
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean。push は未実施。
+  未追跡だった `scripts/smoke/scratch/` は gitignore へ入れて解消（ファイルは残る）
 
 ### 2026-08-09 の依頼（`8d058ea`）
 
@@ -58,6 +58,17 @@
   の flaky → `backlog.md` **S-2**）、3回目 305/1（`admin-hero-motion`。
   単独では通るが、触った箇所なので memo の危うさを潰した `5ff1edd`）
 - S-1（admin Library の2件）は2回とも再現せず → backlog から削除
+- **08-09 分の独立検証（2026-08-09・`0b66ba8` 時点で実測）:**
+  - `bun run check` を回し直して **837 pass / 0 fail・exit 0** を自分で確認
+  - ランダム並びと B-18 は両立する。497枚まで読み込む → About → 戻る →
+    **497枚・並びは先頭も300番目も同一**。種がタブ内で固定されている
+  - シリーズ除外は厳密。公開497枚のうちシリーズ所属72枚 → on で **425枚
+    （＝497−72）**、off に戻すと497枚
+  - HERO「全体から」は登録外の写真を出し、`off` で元へ戻る
+  - 最小タイル幅は公開（`PhotoGallery.tsx`）と管理（`admin-tabs.tsx`）が
+    どちらも `shared/gallery-metrics.ts` を import しており、数値は一本化されている
+  - **未確認:** HERO「順番だけ」。登録HERO写真が1枚しかなく、1枚では順番が
+    変わらないのが正しい挙動のため観測できない。増やすには本番DBへの書き込みが要る
 - local commit 済み / push・Railway反映・本番確認は**未実施**
 
 ### 次の一手
@@ -67,6 +78,7 @@
 - 本番での `/photos` 応答時間の実測。ローカルの2.6秒はDB往復が支配的で本番とは別物
 - S-2（`admin-workspace-layout` の flaky）。2026-08-09 の実行では再現しなかった
   が、出たときの調査を繰り返さないため backlog に残してある
+- HERO「順番だけ」は、オーナーが HERO 写真を2枚以上登録したときに一度見る
 
 ### 触ってはいけない範囲
 

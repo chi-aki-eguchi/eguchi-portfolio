@@ -159,7 +159,12 @@ export const SETTINGS_SECTION_KEYS = {
   mood: [],
   // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
   // 変わらない部分をここでまとめて扱う。
-  "page-layout": ["profileLayout", "contactLayout", "seriesCardStyle"],
+  "page-layout": [
+    "profileLayout",
+    "contactLayout",
+    "seriesCardStyle",
+    "footerLayout",
+  ],
   series: [
     "seriesNavEnabled",
     "galleryExcludeSeries",
@@ -5738,6 +5743,32 @@ export function SettingsTab({
                     {copy.pageLayout.seriesNote}
                   </p>
                 )}
+                <AdminField
+                  label={copy.pageLayout.footerLabel}
+                  hint={copy.pageLayout.footerHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["center", copy.pageLayout.footerOptions.center],
+                        ["left", copy.pageLayout.footerOptions.left],
+                        ["split", copy.pageLayout.footerOptions.split],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("footerLayout", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["footerLayout"] || "center") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
                 <button
                   onClick={() => {
                     ["profileLayout", "contactLayout"].forEach((k) => set(k, ""));

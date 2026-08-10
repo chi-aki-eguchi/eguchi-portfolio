@@ -42,6 +42,7 @@ const ALLOWED: Record<string, readonly string[]> = {
   profileLayout: ["side", "stack", "quiet"],
   contactLayout: ["center", "left", "split"],
   seriesCardStyle: ["caption", "overlay", "wide"],
+  footerLayout: ["center", "left", "split"],
 };
 const LAYOUT_KEYS = ["galleryLayout", "seriesLayout", "topWorksLayout"];
 

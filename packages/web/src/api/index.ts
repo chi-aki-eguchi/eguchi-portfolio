@@ -1266,6 +1266,8 @@ const app = new Hono()
         // シリーズ一覧の札。caption（表紙の下に題名・既定）| overlay（題名を
         // 表紙へ重ねる）| wide（3:2 の横長）
         seriesCardStyle: settings.seriesCardStyle ?? "caption",
+        // フッターの並べ方。center（中央・既定）| left（左寄せ）| split（SNSを左・著作表示を右）
+        footerLayout: settings.footerLayout ?? "center",
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
         bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
         bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06

@@ -1146,6 +1146,13 @@ const ADMIN_PHASE_2B_JA = {
       },
       seriesNote:
         "重ねるときは、文字が沈まないように表紙の下側へ暗い幕を敷きます。それでも明るい表紙では読みにくくなることがあるので、迷うときは「表紙の下に題名」が安全です。表紙を登録していないシリーズは、空の四角ではなく題名を出します。",
+      footerLabel: "フッターの並べ方",
+      footerHint: "全ページの終わりに出る、SNSと著作表示の並び",
+      footerOptions: {
+        center: "中央に積む（既定）",
+        left: "左に寄せる",
+        split: "SNSを左・著作表示を右",
+      },
     },
     spacing: {
       title: "余白・スペーシング",
@@ -2779,6 +2786,13 @@ const ADMIN_PHASE_2B_EN = {
       },
       seriesNote:
         "Overlaid titles get a dark scrim along the bottom of the cover so they stay readable, but a bright cover can still swallow them — “title below the cover” is the safer choice. A series with no cover shows its title instead of an empty box.",
+      footerLabel: "Footer arrangement",
+      footerHint: "How the social links and the copyright sit at the end of every page",
+      footerOptions: {
+        center: "Stacked, centred (default)",
+        left: "Stacked, left aligned",
+        split: "Social left, copyright right",
+      },
     },
     spacing: {
       title: "Spacing",

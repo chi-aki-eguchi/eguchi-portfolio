@@ -230,6 +230,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     : "solid";
   const seeThrough = headerBackground !== "solid";
 
+  // フッターの並べ方。全ページの終わりに必ず出るのに、これまで「中央に積む」の
+  // 1種類しか無く、買った人全員が同じ終わり方になっていた。
+  //   center — 中央に積む（既定。従来どおり）
+  //   left   — 左に寄せて積む
+  //   split  — SNSを左、著作表示を右（PCのみ横並び。スマホは縦に積む）
+  const footerLayout = ["center", "left", "split"].includes(
+    data?.footerLayout ?? "",
+  )
+    ? data!.footerLayout!
+    : "center";
+
   // No background on this wrapper — body paints var(--background); an opaque
   // layer here would cover the DD grain texture (body::before at z-index:-1).
   return (
@@ -488,9 +499,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <footer
         className="pt-[calc(3rem*var(--spacing-footer-top,1))] footer-reveal"
         ref={footerRef}
+        data-footer-layout={footerLayout}
         style={{ paddingBottom: "calc(2rem + var(--sai-bottom))" }}
       >
-        <div className="max-w-5xl mx-auto px-6 md:px-12 flex flex-col items-center gap-4">
+        <div
+          className={`max-w-5xl mx-auto px-6 md:px-12 flex gap-4 ${
+            footerLayout === "split"
+              ? "flex-col items-start md:flex-row md:items-center md:justify-between"
+              : footerLayout === "left"
+                ? "flex-col items-start"
+                : "flex-col items-center"
+          }`}
+        >
           {/* SNS Links */}
           {(data?.profileInstagram ||
             data?.profileTwitter ||
@@ -558,9 +578,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {data.footerCtaLabel}
             </Link>
           )}
-          <div className="flex flex-col items-center gap-2">
+          <div
+            className={`flex flex-col gap-2 ${
+              footerLayout === "center"
+                ? "items-center"
+                : footerLayout === "split"
+                  ? "items-start md:items-end"
+                  : "items-start"
+            }`}
+          >
             <p
-              className="font-en text-center"
+              className={footerLayout === "center" ? "font-en text-center" : "font-en"}
               style={{
                 fontSize: "var(--footer-size, 11px)",
                 letterSpacing: "0.04em",
@@ -588,7 +616,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </a>
               ) : (
                 <span
-                  className="font-en tracking-[0.05em] text-center"
+                  className={`font-en tracking-[0.05em] ${footerLayout === "center" ? "text-center" : ""}`}
                   style={{
                     fontSize:
                       "max(8px, calc(var(--footer-size, 11px) - 2px))",

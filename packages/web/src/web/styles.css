@@ -5532,3 +5532,62 @@ dialog.lightbox-exit .lb-content {
     animation: none;
   }
 }
+
+/* ─── ページ最上部のヘッダーの地（headerBackground: solid | fade | none） ───
+   オーナー依頼（2026-08-09）「上の帯の白を無くす。文字だけ・薄いフェードも
+   選べるように」。
+
+   地を透かすだけでは足りない。**裏が本文の余白なら、同じ色の帯が残るだけ**で
+   何も変わらない。実測（本番 2026-08-09）でも全画面HEROは header の下ではなく
+   56px 下から始まっていた。そこで透かすときは、全画面HEROを header の下まで
+   伸ばして写真そのものを地にする。
+
+   `:has()` で「全画面HEROを含む main」だけに効かせる。ギャラリーや About の
+   本文まで header の下へ潜らせると、見出しが帯に隠れる。 */
+.site-main {
+  padding-top: calc(var(--header-h) + var(--sai-top));
+}
+.header-see-through .site-main:has(.hero-fullscreen) {
+  padding-top: var(--sai-top);
+}
+.header-see-through .site-main:has(.hero-fullscreen) .hero-single,
+.header-see-through .site-main:has(.hero-fullscreen) .hero-carousel-contain {
+  height: calc(100svh - var(--sai-top));
+  min-height: calc(100svh - var(--sai-top));
+}
+
+/* 文字だけ（none）。地は置かない。 */
+.site-header-see-through {
+  background-color: transparent;
+}
+/* 薄いフェード（fade）。上だけ薄く残し、下端へ向けて消す。
+   写真の明暗に関わらず文字の後ろに最低限の落ち着きを作る。 */
+[data-header-bg="fade"].site-header-see-through {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(var(--background-rgb), 0.55) 0%,
+    rgba(var(--background-rgb), 0.28) 55%,
+    rgba(var(--background-rgb), 0) 100%
+  );
+}
+
+/* 透かしている間の文字の読みやすさ。
+   文字色はテーマの `--foreground` のままにして、**背景色の暈し**を回す。
+   明るいテーマなら暗い文字に白い暈しが付いて暗い写真の上で読め、暗いテーマ
+   なら明るい文字に暗い暈しが付いて明るい写真の上で読める。写真の明暗を
+   決め打ちせずに両方へ効かせるための書き方。 */
+.site-header-see-through .font-en,
+.site-header-see-through button,
+.site-header-see-through a {
+  /* 広く薄い暈しより、狭く濃い層を重ねたほうが縁取りとして効く。実測
+     （明るいテーマ＋暗い写真）で、4px/14px の2層では暗い文字が沈んでいた。 */
+  text-shadow:
+    0 0 2px rgba(var(--background-rgb), 0.95),
+    0 0 5px rgba(var(--background-rgb), 0.9),
+    0 0 11px rgba(var(--background-rgb), 0.75);
+}
+/* 暈しは文字にだけ。下線やドットなどの装飾へ回すとにじんで見える。 */
+.site-header-see-through .nav-link-luxury::after,
+.site-header-see-through .nav-link-luxury::before {
+  text-shadow: none;
+}

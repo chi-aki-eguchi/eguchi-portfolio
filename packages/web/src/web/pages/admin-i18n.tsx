@@ -1078,6 +1078,16 @@ const ADMIN_PHASE_2B_JA = {
         dot: "点がともる",
         blur: "にじみ→くっきり",
       },
+      headerBgLabel: "ページ最上部の帯",
+      headerBgHint:
+        "いちばん上にいるときの、メニューの後ろの地。下へスクロールすると、どれを選んでもぼかした帯に戻ります（本文の上でリンクが読めなくなるため）",
+      headerBgOptions: {
+        solid: "帯を出す（既定）",
+        fade: "薄いフェード",
+        none: "文字だけ",
+      },
+      headerBgNote:
+        "帯が消えて写真が上まで伸びるのは、TOPのHERO表示を「全画面」にしているときだけです。全画面でない場合、帯の裏は本文の余白なので見た目はほとんど変わりません。文字のまわりには暈しが入りますが、「文字だけ」は写真の明暗に左右されます。明るい配色のまま暗い写真を使うと、メニューが沈んで読みにくくなります（実測で確認）。迷うときは「薄いフェード」が安全です。",
       hoverShortNames: {
         fade: "フェード",
         underline: "下線",
@@ -2649,6 +2659,16 @@ const ADMIN_PHASE_2B_EN = {
         dot: "Dot lights up",
         blur: "Blur to sharp",
       },
+      headerBgLabel: "Header Bar at the Top",
+      headerBgHint:
+        "What sits behind the menu while you are at the very top. Once you scroll, every option returns to the blurred bar, so links stay readable over the content.",
+      headerBgOptions: {
+        solid: "Show the bar (default)",
+        fade: "Soft fade",
+        none: "Text only",
+      },
+      headerBgNote:
+        "The bar disappears and the photo reaches the top only when the home hero is set to fullscreen. Otherwise there is only page margin behind the bar, so little changes. The text gets a soft halo, but Text only still depends on the photo: a light colour scheme over a dark photo leaves the menu hard to read. Soft fade is the safer choice.",
       hoverShortNames: {
         fade: "Fade",
         underline: "Underline",

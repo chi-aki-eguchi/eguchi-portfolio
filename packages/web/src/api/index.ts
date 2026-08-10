@@ -1255,6 +1255,8 @@ const app = new Hono()
         // BB: nav position / hover effect (defaults = current look)
         navPosition: settings.navPosition ?? "top", // top | left | bottom
         navHoverEffect: settings.navHoverEffect ?? "fade", // fade | underline | dot | blur
+        // ページ最上部でのヘッダーの地。solid | fade | none
+        headerBackground: settings.headerBackground ?? "solid",
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
         bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
         bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06

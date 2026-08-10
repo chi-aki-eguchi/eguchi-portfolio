@@ -126,7 +126,7 @@ export const SETTINGS_SECTION_KEYS = {
     "heroTitlePosition",
     "heroScrollEffect",
   ],
-  navigation: ["navPosition", "navHoverEffect"],
+  navigation: ["navPosition", "navHoverEffect", "headerBackground"],
   spacing: [
     "spacingHeroBottom",
     "spacingSectionGap",
@@ -4969,11 +4969,44 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
+                <AdminField
+                  label={copy.nav.headerBgLabel}
+                  hint={copy.nav.headerBgHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["solid", copy.nav.headerBgOptions.solid],
+                        ["fade", copy.nav.headerBgOptions.fade],
+                        ["none", copy.nav.headerBgOptions.none],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("headerBackground", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["headerBackground"] || "solid") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["headerBackground"] || "solid") !== "solid" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.nav.headerBgNote}
+                  </p>
+                )}
                 <button
                   onClick={() => {
-                    ["navPosition", "navHoverEffect"].forEach((k) =>
-                      set(k, ""),
-                    );
+                    [
+                      "navPosition",
+                      "navHoverEffect",
+                      "headerBackground",
+                    ].forEach((k) => set(k, ""));
                   }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >

@@ -107,6 +107,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "photoRevealEffect",
   "navPosition",
   "navHoverEffect",
+  "headerBackground",
   "heroMode",
   "heroMotionSpeed",
   "heroRevealOrder",

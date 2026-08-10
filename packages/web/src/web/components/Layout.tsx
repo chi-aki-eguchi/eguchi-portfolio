@@ -208,11 +208,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? data!.navHoverEffect
     : "fade";
 
+  // ページ最上部でのヘッダーの地（2026-08-09 オーナー依頼「上の帯の白を無くす
+  // ／文字だけ・薄いフェードも選べるように」）。
+  //  - solid（既定）: 今までどおり地を塗る
+  //  - fade: 上から下へ薄れる幕。文字の後ろにわずかに残す
+  //  - none: 地を置かない。文字だけが写真の上に乗る
+  //
+  // **スクロール後は3つとも今までどおり、ぼかした帯へ戻す。** 帯が消えるのは
+  // 最上部だけ。写真の上を外れて本文が流れてくると、地が無いままではリンクが
+  // 読めなくなる。
+  //
+  // 地を透かしても、その裏が本文の余白なら同じ色の帯が残るだけで意味がない。
+  // 実測（本番 2026-08-09）でも HERO は header の下ではなく **56px 下から**
+  // 始まっていた。だから透かすときは、全画面HEROを header の下まで伸ばす
+  // （CSS 側 `.header-see-through`）。全画面HEROでない構成では裏が本文の余白
+  // なので、見た目はほぼ変わらない。管理画面の説明にもそう書いてある。
+  const headerBackground = ["solid", "fade", "none"].includes(
+    data?.headerBackground ?? "",
+  )
+    ? data!.headerBackground!
+    : "solid";
+  const seeThrough = headerBackground !== "solid";
+
   // No background on this wrapper — body paints var(--background); an opaque
   // layer here would cover the DD grain texture (body::before at z-index:-1).
   return (
     <div
-      className={`min-h-screen text-[var(--foreground)] nav-pos-${navPosition} nav-fx-${navHoverEffect}`}
+      className={`min-h-screen text-[var(--foreground)] nav-pos-${navPosition} nav-fx-${navHoverEffect}${
+        seeThrough ? " header-see-through" : ""
+      }`}
     >
       {/* Skip link — visible only on keyboard focus, lets SR/keyboard users jump past the nav */}
       <a
@@ -222,10 +246,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {isEnglishPage ? "Skip to content" : "本文へスキップ"}
       </a>
       <header
+        data-header-bg={headerBackground}
         className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[var(--ease-quart)] ${
           scrolled
             ? "bg-[rgba(var(--background-rgb),0.82)] backdrop-blur-[14px] shadow-[0_1px_0_rgba(var(--foreground-rgb),0.04)]"
-            : "bg-[var(--background)]"
+            : seeThrough
+              ? "site-header-see-through"
+              : "bg-[var(--background)]"
         }`}
         style={{
           WebkitBackdropFilter: scrolled ? "blur(14px)" : "none",
@@ -450,8 +477,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="outline-none"
-        style={{ paddingTop: "calc(var(--header-h) + var(--sai-top))" }}
+        // 上余白は CSS（`.site-main`）で持つ。インラインで書くと、ヘッダーを
+        // 透かしたとき「全画面HEROだけ header の下まで伸ばす」上書きが効かない
+        // （インラインは常に勝つ）。
+        className="outline-none site-main"
       >
         {children}
       </main>

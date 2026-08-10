@@ -4,9 +4,9 @@
 ## Current State — 2026-08-11 JST
 
 - **Status:** オーナー就寝中の自走。**公開サイトと admin の見直し／選べる範囲の拡張／
-  違和感の修正**。commit 13本が push 待ち
+  違和感の修正**。commit 20本が push 待ち
 - **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean・未追跡なし / **origin より 13 先**
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean・未追跡なし / **origin より 20 先**
 - **注意:** 02:33 に別セッションが同じ worktree へ commit（`dc8ca5d`・task.md のみ）
 
 ### 選べる範囲を広げた
@@ -30,16 +30,16 @@
 - **スマホで Settings だけ見出しが 8px 左へ飛んでいた**（smoke が desktop 限定で
   見落とされていた。スマホ幅の検査を追加）
 - 入力エラーと空状態の文言が英語直書き。エラー色も暗いテーマで 2.87:1 だった
+- **APIが落ちたときに「まだシリーズがありません」と出していた**（fail-quiet trap）。
+  シリーズ詳細も500と404を一緒に「見つかりません」と扱っていた
 
 ### 検証の状態
 
-- `bun run check` **成功**（886 pass / 0 fail・exit 0）
-- `bun run smoke` は同じ日に2回流して**毎回1件だけ、別々の spec が30秒で落ちた**。
-  **どちらも単独では4.0秒・8.2秒で通る**ので今回の変更が原因ではない
-  （経緯は `backlog.md` S-2）
+- `bun run check` **成功**（888 pass / 0 fail・exit 0）
+- `bun run smoke` **成功**（308 passed / 0 failed）。途中2回は毎回1件だけ別の spec が
+  30秒で落ちたが、**単独では4.0秒・8.2秒で通り**、最終実行では0件（`backlog.md` S-2）
 - 新設定6つは実ブラウザで全選択肢を実測（日英・スマホ・PC・横あふれ）
-- 押せる範囲・コントラスト・焦点・動きの抑制・長い名前・ビューアの操作は
-  **測って問題なし**（`backlog.md` に記録）
+- 押せる範囲・コントラスト・焦点・動きの抑制・長い名前・ビューア操作・Kit販売ページは**測って問題なし**（`backlog.md`）
 
 ### 次の一手
 

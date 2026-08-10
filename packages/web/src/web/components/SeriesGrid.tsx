@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { ContentStatus } from "./ContentStatus";
 import { api, jsonOrThrow } from "../lib/api";
 import { num } from "../lib/utils";
 import {
@@ -23,7 +24,13 @@ export function SeriesGrid() {
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["series"],
     queryFn: async () => jsonOrThrow(await api.series.$get()),
   });
@@ -85,9 +92,21 @@ export function SeriesGrid() {
     : `(max-width: 1024px) ${Math.round(100 / columns)}vw, ${Math.round(1024 / columns)}px`;
 
   if (series.length === 0) {
-    return isLoading ? (
-      <div className="py-24" aria-hidden="true" />
-    ) : (
+    if (isLoading) return <div className="py-24" aria-hidden="true" />;
+    // **取得に失敗したことを「シリーズが無い」と言わない。** 落ちたときに
+    // 「まだシリーズがありません」と出すと、訪問者にはこの写真家に作品が
+    // 無いようにしか見えない（実測: /api/series を500にすると実際にそう出た）。
+    // Gallery 側は既に同じ罠を避けている（fail-quiet trap）。同じ部品を使う。
+    if (isError)
+      return (
+        <ContentStatus
+          state="error"
+          error={error}
+          onRetry={() => void refetch()}
+          className="py-24"
+        />
+      );
+    return (
       <div className="py-24 text-center">
         <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">まだシリーズがありません</p>
       </div>

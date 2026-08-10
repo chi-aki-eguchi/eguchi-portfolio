@@ -4,9 +4,9 @@
 ## Current State — 2026-08-11 JST
 
 - **Status:** オーナー就寝中の自走。**公開サイトと admin の見直し／選べる範囲の拡張／
-  違和感の修正**。commit 20本が push 待ち
+  違和感の修正**。commit 23本が push 待ち
 - **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean・未追跡なし / **origin より 20 先**
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean・未追跡なし / **origin より 23 先**
 - **注意:** 02:33 に別セッションが同じ worktree へ commit（`dc8ca5d`・task.md のみ）
 
 ### 選べる範囲を広げた
@@ -45,13 +45,13 @@
 
 - **オーナーが push する。** 反映後、新しい2節（作風／ページの構成）を本番で見る
 - **作風プリセットの名前と中身はオーナー未確認。** 好みに合うか要判断
+- B-18（選択帯の重複9箇所）は着手を見送った。やるかどうかはオーナー判断
 
 ### 触ってはいけない範囲
 
 - `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 / `.env`
 - smoke は本番と同じDBにつながる。**書き込み操作を増やさない**
-- 範囲を `setting-ranges.ts` 以外へ、最小タイル幅を `gallery-metrics.ts` の外へ
-  数値で書き戻さない
+- 範囲は `setting-ranges.ts`、最小タイル幅は `gallery-metrics.ts` の外へ書き戻さない
 - **節を足したら `scripts/smoke/helpers.ts` の `SETTINGS_SECTION_COUNT` も直す**
 - **custom property の暗側上書きは `:root` より後に置く**（同特異度で後勝ち）
 - **作風プリセットに色・書体・本人の文章を入れない**

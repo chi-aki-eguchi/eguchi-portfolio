@@ -68,13 +68,41 @@ export default function ContactPage({
   const entranceRef = usePageEntrance([data, status]);
   const pricingRef = usePageEntrance([pricingData]);
 
+  // 入力エラーの文言。ここだけ英語直書きで、日本語のサイトでも "Required" と
+  // 出ていた（他の文言はすべて settings か言語ルートで切り替わる）。
+  // 何が足りないかを名指しするほうが、直す手が早い。
+  const messages =
+    language === "en"
+      ? {
+          name: "Please enter your name.",
+          email: "Please enter your email address.",
+          emailFormat: "Please check the format of your email address.",
+          message: "Please enter your message.",
+        }
+      : {
+          name: "お名前を入力してください。",
+          email: "メールアドレスを入力してください。",
+          emailFormat: "メールアドレスの形式をご確認ください。",
+          message: "本文を入力してください。",
+        };
+  // 設定が空のときの控えの文。ラベル（Name / Email）は英語のままでよい
+  // ——サイト全体が英語の見出しで揃えてある——が、訪問者へ向けた「文」は
+  // ページの言語に合わせる。
+  const fallbackSent =
+    language === "en" ? "Message sent." : "送信しました。";
+  const fallbackSendError =
+    language === "en"
+      ? "Failed to send. Please try again."
+      : "送信できませんでした。もう一度お試しください。";
+
   const validate = (fd: FormData) => {
     const e: Record<string, string> = {};
-    if (!fd.get("name")) e.name = "Required";
+    if (!fd.get("name")) e.name = messages.name;
     const email = String(fd.get("email") ?? "");
-    if (!email) e.email = "Required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Invalid";
-    if (!fd.get("message")) e.message = "Required";
+    if (!email) e.email = messages.email;
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      e.email = messages.emailFormat;
+    if (!fd.get("message")) e.message = messages.message;
     return e;
   };
 
@@ -405,7 +433,7 @@ export default function ContactPage({
               aria-live="polite"
               className="text-sm text-[color:var(--text-quiet)]"
             >
-              {data?.contactSentMessage ?? "Message sent."}
+              {data?.contactSentMessage ?? fallbackSent}
             </p>
             <button
               onClick={() => setStatus("idle")}
@@ -527,9 +555,8 @@ export default function ContactPage({
             </Field>
 
             {status === "error" && (
-              <p role="alert" className="text-xs text-red-600">
-                {data?.contactErrorMessage ??
-                  "Failed to send. Please try again."}
+              <p role="alert" className="text-xs text-[color:var(--form-error)]">
+                {data?.contactErrorMessage ?? fallbackSendError}
               </p>
             )}
 
@@ -582,7 +609,7 @@ function Field({
         <p
           id={`${htmlFor}-error`}
           role="alert"
-          className="text-xs text-red-600"
+          className="text-xs text-[color:var(--form-error)]"
         >
           {error}
         </p>

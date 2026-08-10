@@ -3137,6 +3137,13 @@
   /* AA(4.5:1)を満たす最小値0.60に余裕を持たせた値。階層は大きさと余白で作る
      （design-spec §0-3）ので、これより薄くしない。 */
   --text-quiet: rgba(var(--foreground-rgb), 0.62);
+  /* 入力エラーの色。公開側にはエラー色のトークンが無く、お問い合わせフォーム
+     だけ生の Tailwind `text-red-600`(#dc2626) を使っていた。暗いテーマでは
+     地に対して 4.5:1 に届かない。明暗それぞれで AA を満たす値に分ける。
+     暗側の上書きは**この :root より後**に置くこと。custom property は
+     [data-theme] も :root も特異度が同じで、後に書いたほうが勝つ。
+     先に書いたら明色のまま暗い地に乗り、実測 2.87:1 だった。 */
+  --form-error: #b3261e; /* 明: #f7f7f7 地に 6.10:1 */
   /* Section labels (WORKS / Gallery / Profile / Contact …). Split out from
      --text-quiet so admin の「セクションラベルの濃さ」(sectionLabelOpacity)
      actually reaches them: it used to be read on the Series page alone, so the
@@ -3150,6 +3157,11 @@
      anything that needs to subtract the header's footprint from a
      viewport-relative size (main's padding-top, fullscreen hero height). */
   --header-h: 3.5rem;
+}
+
+/* 上の :root より後に置く（同じ特異度なので後勝ち）。 */
+[data-theme="dark"] {
+  --form-error: #f2b8b5; /* 暗: #121212 地に 10.97:1 */
 }
 
 html {

@@ -114,6 +114,27 @@ describe("Contact の構成", () => {
     }
   });
 
+  // 新しく足した2枚の div が条件分岐をまたいでいないかを見る。
+  // またいでいると、フォーム未設定のときの連絡先が枠の外へ出たり消えたりする。
+  test("フォーム未設定でも、構成を変えて連絡先が消えない", async () => {
+    for (const layout of ["center", "left", "split"]) {
+      const m = await mountContact({
+        contactIntro: "メールでご連絡ください。",
+        contactEmail: "hello@example.test",
+        contactLayout: layout,
+      });
+      try {
+        expect(m.host.querySelector("form")).toBeNull();
+        const mail = m.host.querySelector('a[href^="mailto:"]');
+        expect(mail, `${layout} でメール連絡先が要る`).not.toBeNull();
+        // 連絡先が構成の枠の中にあること（枠の外に飛び出していない）
+        expect(m.frame()?.contains(mail!)).toBe(true);
+      } finally {
+        m.cleanup();
+      }
+    }
+  });
+
   test("フォームは構成を変えても消えない", async () => {
     for (const layout of ["center", "left", "split"]) {
       const m = await mountContact({ ...WITH_LEAD, contactLayout: layout });

@@ -43,6 +43,7 @@ const ALLOWED: Record<string, readonly string[]> = {
   contactLayout: ["center", "left", "split"],
   seriesCardStyle: ["caption", "overlay", "wide"],
   footerLayout: ["center", "left", "split"],
+  pageTitleStyle: ["label", "left", "display", "hidden"],
 };
 const LAYOUT_KEYS = ["galleryLayout", "seriesLayout", "topWorksLayout"];
 

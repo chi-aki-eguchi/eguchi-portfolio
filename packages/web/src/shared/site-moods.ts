@@ -24,6 +24,7 @@
 //   contactLayout     center | left | split
 //   seriesCardStyle   caption | overlay | wide
 //   footerLayout      center | left | split
+//   pageTitleStyle    label | left | display | hidden
 
 export const SITE_MOOD_IDS = [
   "quiet",
@@ -54,6 +55,7 @@ export const SITE_MOODS: Record<SiteMoodId, Readonly<Record<string, string>>> =
       contactLayout: "center",
       seriesCardStyle: "caption",
       footerLayout: "center",
+      pageTitleStyle: "label",
     },
     // 雑誌の誌面。左に寄せ、下線で拾い、紙の地を薄く敷く。
     editorial: {
@@ -73,6 +75,7 @@ export const SITE_MOODS: Record<SiteMoodId, Readonly<Record<string, string>>> =
       contactLayout: "split",
       seriesCardStyle: "wide",
       footerLayout: "left",
+      pageTitleStyle: "display",
     },
     // 白い展示壁。等間隔に並べ、覆いを外し、余計な地を敷かない。
     gallery: {
@@ -92,6 +95,7 @@ export const SITE_MOODS: Record<SiteMoodId, Readonly<Record<string, string>>> =
       contactLayout: "left",
       seriesCardStyle: "caption",
       footerLayout: "center",
+      pageTitleStyle: "left",
     },
     // 暗室。写真を画面いっぱいに置き、帯を消し、粒子を乗せる。
     darkroom: {
@@ -111,6 +115,7 @@ export const SITE_MOODS: Record<SiteMoodId, Readonly<Record<string, string>>> =
       contactLayout: "left",
       seriesCardStyle: "overlay",
       footerLayout: "split",
+      pageTitleStyle: "hidden",
     },
   };
 

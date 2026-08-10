@@ -4396,7 +4396,11 @@ dialog.lightbox-exit .lb-content {
   .admin-atelier .admin-settings-form-layout__inner {
     display: block;
     max-width: none;
-    padding: 0 12px 132px;
+    /* 左右は他タブ（.ax-page）と同じ --ax-inset を使う。ここだけ 12px の
+       べた書きだったため、スマホで Settings へ切り替えると見出しが 8px 左へ
+       飛んでいた（実測 390px: 他タブ20px / Settings12px）。到達点(1)
+       「タブを切り替えても内容が横に飛ばない」は、机の上の幅だけの話ではない。 */
+    padding: 0 var(--ax-inset) 132px;
   }
   .admin-atelier .admin-settings-form-layout__body {
     max-width: none;
@@ -4412,7 +4416,8 @@ dialog.lightbox-exit .lb-content {
     align-items: center;
     gap: 8px;
     min-height: 44px;
-    padding: 0 12px;
+    /* 上の __inner と同じ左端に立たせる（別々に書くとまたずれる）。 */
+    padding: 0 var(--ax-inset);
     border-bottom: 1px solid var(--admin-line);
     background: color-mix(in srgb, var(--admin-paper) 94%, transparent);
     backdrop-filter: blur(10px);

@@ -40,4 +40,39 @@ test.describe("admin — 全画面の見出し位置", () => {
     expect(leftEdge).toBeGreaterThan(sidebar!.x + sidebar!.width);
     expect(leftEdge).toBeLessThan(1440 * 0.5);
   });
+
+  // desktop だけ見ていたので、スマホ幅のずれを長らく見落としていた。
+  // 実測(2026-08-11 / 390px): 8タブが 20px、**Settings だけ 12px**。
+  // Settings の枠が --ax-inset ではなく 12px のべた書きだったため、スマホで
+  // Settings へ切り替えると見出しが 8px 左へ飛んでいた。到達点(1)
+  // 「タブを切り替えても内容が横に飛ばない」は机の上の幅だけの話ではない。
+  test("スマホ幅でも9タブすべてが同じ左端に見出しを置く", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "mobile",
+      "スマホ幅の見出し位置は mobile で検証",
+    );
+
+    await loginAsAdmin(page);
+
+    const titleXs: { tab: string; x: number }[] = [];
+    for (const tab of ADMIN_TABS) {
+      await gotoAdminTab(page, tab);
+      await page.waitForTimeout(300);
+      const title = page.locator("h1.admin-page-header__title");
+      await expect(title, `${tab} に共通見出しが必要`).toHaveCount(1);
+      const box = await title.boundingBox();
+      expect(box, `${tab} の見出し位置を取得できること`).not.toBeNull();
+      titleXs.push({ tab, x: box!.x });
+    }
+
+    const xs = titleXs.map((entry) => entry.x);
+    expect(
+      Math.max(...xs) - Math.min(...xs),
+      `スマホで見出しの左端がタブごとにずれている: ${JSON.stringify(titleXs)}`,
+    ).toBeLessThanOrEqual(2);
+    // 全部そろって画面外・端に貼り付いていないことも見る。
+    expect(Math.min(...xs)).toBeGreaterThan(8);
+  });
 });

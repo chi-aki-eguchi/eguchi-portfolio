@@ -100,7 +100,8 @@ export type GalleryLayoutType =
   | "masonry"
   | "large-format"
   | "justified";
-const KNOWN_LAYOUTS: GalleryLayoutType[] = [
+// 作風プリセットの検査からも参照する（12種の正本をここ1つに保つ）。
+export const KNOWN_LAYOUTS: GalleryLayoutType[] = [
   "mosaic",
   "grid",
   "scroll",

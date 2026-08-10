@@ -10,6 +10,14 @@ import { expect, test, type Page } from "@playwright/test";
 // teardownを書くこと。現状の全スペックはログイン(セッションCookie発行のみ)以外
 // 非GETリクエストを一切発生させない設計(findings.md「検証用DB分離」参照)。
 
+// Settings の節の数。正本は admin-tabs.tsx の `SETTINGS_SECTION_KEYS` で、
+// ここはその写し。**節を足したらここも直す。**
+// 以前は 19 という数字が3つの spec に散らばっていて、節を1つ足しただけで
+// 4件が同時に落ちた（原因は同じ1箇所なのに、直す場所が4つあった）。
+// 写しがずれていないことは packages/web の
+// `admin-settings-section-keys.test.ts` が `bun run check` の速さで見張る。
+export const SETTINGS_SECTION_COUNT = 21;
+
 // 9タブ全て(setup=はじめに含む)。追加/削除時はここを更新する。
 export const ADMIN_TABS = [
   "setup",

@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { SETTINGS_SECTION_COUNT } from "./helpers";
 
 // Settings のプレビュー Workspace（Phase 1A）。実測で確定した P1〜P6 の回帰を
 // 止めるための検査。仕様は docs/specs/admin-phase1-settings-preview.md §12-1。
@@ -106,7 +107,7 @@ const documentOverflow = (page: Page) =>
   );
 
 test.describe("admin — Settings プレビュー Workspace", () => {
-  test("プレビューを開いても目次は縦のまま19節へ到達でき、横に溢れない", async ({
+  test("プレビューを開いても目次は縦のまま全節へ到達でき、横に溢れない", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
@@ -123,7 +124,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     }));
     expect(shape.direction).toBe("column");
     expect(shape.hidden).toBeLessThanOrEqual(1);
-    await expect(page.locator("[data-settings-section-link]")).toHaveCount(19);
+    await expect(page.locator("[data-settings-section-link]")).toHaveCount(SETTINGS_SECTION_COUNT);
 
     // 最後の節まで実際に選べ、本文がその節へ入れ替わる。
     await page.locator(".admin-form-toc__advanced > summary").click();

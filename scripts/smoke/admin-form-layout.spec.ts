@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { SETTINGS_SECTION_COUNT } from "./helpers";
 
 const SETTINGS = {
   setupCompleted: "true",
@@ -96,7 +97,7 @@ async function openTab(page: Page, tab: string) {
 }
 
 test.describe("admin — Form layout", () => {
-  test("Settingsは19節の目次・変更節・失敗節・保存時刻を対応させる", async ({
+  test("Settingsは全節の目次・変更節・失敗節・保存時刻を対応させる", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "PCのForm目次で確認する");
@@ -110,7 +111,7 @@ test.describe("admin — Form layout", () => {
     const links = toc.locator("[data-settings-section-link]");
     await expect(layout).toBeVisible();
     await expect(toc).toBeVisible();
-    await expect(links).toHaveCount(19);
+    await expect(links).toHaveCount(SETTINGS_SECTION_COUNT);
 
     // 本文は現在地の1節だけ。左の目次と同じ節名の一覧を本文へ二重に置かない。
     const basics = page.locator('[data-settings-section="site-basics"]');
@@ -280,7 +281,7 @@ test.describe("admin — Form layout", () => {
     const sheet = page.locator("[data-settings-mobile-section-list]");
     await expect(sheet).toBeVisible();
     await expect(sheet.locator(".admin-settings-section-sheet__list > button"))
-      .toHaveCount(19);
+      .toHaveCount(SETTINGS_SECTION_COUNT);
     await expect(sheet).toContainText("変更あり");
     await sheet.getByRole("button", { name: /Hero/ }).click();
     await expect(sheet).toHaveCount(0);
@@ -345,7 +346,7 @@ test.describe("admin — Form layout", () => {
     expect(mocks.unknownWrites).toEqual([]);
   });
 
-  test("19節すべてへ目次から到達し、本文には常に1節だけ出す", async ({
+  test("全節へ目次から到達し、本文には常に1節だけ出す", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "PCの目次で全節を辿る");
@@ -355,7 +356,7 @@ test.describe("admin — Form layout", () => {
     await openTab(page, "settings");
 
     const links = page.locator("[data-settings-section-link]");
-    await expect(links).toHaveCount(19);
+    await expect(links).toHaveCount(SETTINGS_SECTION_COUNT);
     const sectionIds = await links.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("data-settings-section-link")),
     );

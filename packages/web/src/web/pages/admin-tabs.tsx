@@ -79,6 +79,7 @@ import {
   clampSettingRounded,
 } from "../../shared/setting-ranges";
 import { columnsThatFit } from "../../shared/gallery-metrics";
+import { SITE_MOODS, SITE_MOOD_IDS } from "../../shared/site-moods";
 import { num } from "../lib/utils";
 import {
   draftAfterSuccessfulSave,
@@ -152,6 +153,10 @@ export const SETTINGS_SECTION_KEYS = {
     "gallerySizeVariation",
     "gallerySeed",
   ],
+  // 作風プリセットは自分のキーを持たない（他の節のキーをまとめて入れ替える
+  // だけ）。台帳では空にしておく。所属キーの検査は
+  // admin-settings-section-keys.test.ts が見ている。
+  mood: [],
   // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
   // 変わらない部分をここでまとめて扱う。
   "page-layout": ["profileLayout", "contactLayout"],
@@ -257,6 +262,7 @@ type SettingsSectionId = keyof typeof SETTINGS_SECTION_KEYS;
 // `admin-settings-section-keys.test.ts` が固定する。
 export const SETTINGS_SECTION_GROUPS = {
   general: [
+    "mood",
     "site-basics",
     "portfolio-kit",
     "hero",
@@ -4398,6 +4404,7 @@ export function SettingsTab({
   ];
 
   const sectionTitles: Record<SettingsSectionId, string> = {
+    mood: copy.mood.title,
     "site-basics": copy.siteBasics.title,
     "portfolio-kit": copy.portfolioKit.title,
     hero: copy.hero.title,
@@ -4422,6 +4429,9 @@ export function SettingsTab({
   const dirtyKeys = dirtySettingsKeys(form, data);
   const changedSectionIds = settingsSectionIdsForKeys(dirtyKeys);
   const summarizeSection = (sectionId: SettingsSectionId) => {
+    // 作風は自分のキーを持たないので、値の要約ではなく役割を出す。
+    // 空のまま既定の要約に任せると「未設定」と出て、設定し忘れに見える。
+    if (sectionId === "mood") return copy.mood.summary;
     if (sectionId === "presets") {
       return t.formLayout.summaryItems(
         cameraPresets.length + lensPresets.length,
@@ -4561,6 +4571,40 @@ export function SettingsTab({
                 title={copy.groupTitle}
                 sectionIds={SETTINGS_SECTION_GROUPS.general}
               >
+              {/* 作風。既存の設定をまとめて入れ替える入口。ここで保存はせず、
+                  下書きへ入れるだけなので、プレビューで見てから保存/破棄できる */}
+              <Section
+                {...sectionProps("mood")}
+                title={copy.mood.title}
+                defaultOpen={false}
+              >
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                  {copy.mood.intro}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {SITE_MOOD_IDS.map((id) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        for (const [k, v] of Object.entries(SITE_MOODS[id]))
+                          set(k, v);
+                      }}
+                      className="text-left px-3 py-2 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] hover:border-[var(--admin-ink)] transition-colors"
+                    >
+                      <span className="block text-[length:var(--admin-text-note)] text-[var(--admin-ink)] font-medium">
+                        {copy.mood.names[id]}
+                      </span>
+                      <span className="block text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-snug mt-0.5">
+                        {copy.mood.descriptions[id]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.mood.note}
+                </p>
+              </Section>
+
               <Section
                 {...sectionProps("site-basics")}
                 title={copy.siteBasics.title}

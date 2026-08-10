@@ -76,6 +76,17 @@ describe("Settings section key registry", () => {
 
   // 単節表示では、現在の節を含まないグループの見出しを描かない。台帳から
   // 漏れた節はグループ見出しごと消えて到達できなくなるため、ここで固定する。
+  // smoke 側（scripts/smoke/helpers.ts の SETTINGS_SECTION_COUNT）は目次の
+  // リンク数をこの数で検査する。写しがずれると full smoke（10分）で4件まとめて
+  // 落ちるので、ここで先に、速く気づけるようにする。
+  // **節を足したら、この数と helpers.ts の両方を直す。**
+  test("節の数は smoke の写し(SETTINGS_SECTION_COUNT)と一致する", () => {
+    expect(
+      Object.keys(SETTINGS_SECTION_KEYS).length,
+      "節を増減したら scripts/smoke/helpers.ts の SETTINGS_SECTION_COUNT も直す",
+    ).toBe(21);
+  });
+
   test("グループ台帳は全節をちょうど1回ずつ含む", () => {
     const grouped: string[] = Object.values(SETTINGS_SECTION_GROUPS).flat();
     expect(new Set(grouped).size, "同じ節を2つのグループへ入れていない").toBe(

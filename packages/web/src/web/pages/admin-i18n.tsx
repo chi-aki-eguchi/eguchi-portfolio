@@ -1095,6 +1095,26 @@ const ADMIN_PHASE_2B_JA = {
         blur: "にじみ",
       },
     },
+    mood: {
+      title: "作風を選ぶ",
+      summary: "まとめて着せ替える",
+      intro:
+        "写真の並べ方・トップの見せ方・メニューの反応・地の質感・About と Contact の構成を、まとめて入れ替えます。ひとつずつ探さなくても、雰囲気の違う出発点から始められます。",
+      names: {
+        quiet: "しずか",
+        editorial: "雑誌",
+        gallery: "展示",
+        darkroom: "暗室",
+      },
+      descriptions: {
+        quiet: "既定に近い、静かな標準。迷ったらここから",
+        editorial: "左に寄せた誌面。紙の地を薄く敷く",
+        gallery: "白い展示壁。等間隔に並べ、覆いを外す",
+        darkroom: "写真を画面いっぱいに。帯を消し、粒子を乗せる",
+      },
+      note:
+        "押すと下の各設定が書き換わりますが、まだ保存はされません。プレビューで確かめてから保存してください。気に入らなければ「変更を破棄」で元に戻せます。色と書体は変えないので、選び直した配色はそのまま残ります。",
+    },
     pageLayout: {
       title: "ページの構成",
       intro:
@@ -2698,6 +2718,26 @@ const ADMIN_PHASE_2B_EN = {
         dot: "Dot",
         blur: "Blur",
       },
+    },
+    mood: {
+      title: "Choose a Mood",
+      summary: "Change several settings at once",
+      intro:
+        "Swaps the photo arrangement, the home hero, the menu behaviour, the background texture, and the About and Contact composition in one go — so you can start from a distinct look instead of hunting for each setting.",
+      names: {
+        quiet: "Quiet",
+        editorial: "Editorial",
+        gallery: "Gallery",
+        darkroom: "Darkroom",
+      },
+      descriptions: {
+        quiet: "Close to the default. Start here if unsure",
+        editorial: "Left-aligned spread on a faint paper ground",
+        gallery: "A white wall: even spacing, no overlay",
+        darkroom: "Photos edge to edge, no bar, with grain",
+      },
+      note:
+        "Pressing one rewrites the settings below but does not save yet. Check it in the preview first — “Discard changes” puts everything back. Colours and typefaces are left alone, so your palette survives.",
     },
     pageLayout: {
       title: "Page Composition",

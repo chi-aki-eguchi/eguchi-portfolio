@@ -95,6 +95,7 @@ export default function ContactPage({
     language === "en"
       ? "Failed to send. Please try again."
       : "送信できませんでした。もう一度お試しください。";
+  const fallbackSubjectNone = language === "en" ? "Not specified" : "指定なし";
 
   const validate = (fd: FormData) => {
     const e: Record<string, string> = {};
@@ -514,7 +515,10 @@ export default function ContactPage({
                   backgroundSize: "12px",
                 }}
               >
-                <option value="">—</option>
+                {/* 「—」だけでは、選ばなくてよいのか選び忘れなのか分からない。
+                    件名は必須ではないので、そのことが分かる語を置く
+                    （到達点(7)「意味のない仮の表示をしない」）。 */}
+                <option value="">{fallbackSubjectNone}</option>
                 {(
                   data?.contactSubjectOptions ??
                   "Shooting,Press / Media,Collaboration,Other"

@@ -1257,6 +1257,9 @@ const app = new Hono()
         navHoverEffect: settings.navHoverEffect ?? "fade", // fade | underline | dot | blur
         // ページ最上部でのヘッダーの地。solid | fade | none
         headerBackground: settings.headerBackground ?? "solid",
+        // About の構成。side（写真左・既定）| stack（写真を上に大きく）|
+        // quiet（写真なし・文章主体）。写真が未設定のときは quiet で描く
+        profileLayout: settings.profileLayout ?? "side",
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
         bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
         bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06

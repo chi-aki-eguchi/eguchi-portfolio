@@ -1095,6 +1095,20 @@ const ADMIN_PHASE_2B_JA = {
         blur: "にじみ",
       },
     },
+    pageLayout: {
+      title: "ページの構成",
+      intro:
+        "色や文字の大きさではなく、写真と文章の置き方そのものを変えます。同じ設定でも構成が違えば、サイトの印象は大きく変わります。",
+      aboutLabel: "About（プロフィール）の構成",
+      aboutHint: "顔写真と自己紹介の並べ方",
+      aboutOptions: {
+        side: "写真を左（既定）",
+        stack: "写真を上に大きく",
+        quiet: "写真なし・文章だけ",
+      },
+      aboutNote:
+        "プロフィール写真を登録していないときは、どれを選んでも「写真なし」で表示します（空の四角を置かないため）。",
+    },
     spacing: {
       title: "余白・スペーシング",
       intro:
@@ -2675,6 +2689,20 @@ const ADMIN_PHASE_2B_EN = {
         dot: "Dot",
         blur: "Blur",
       },
+    },
+    pageLayout: {
+      title: "Page Composition",
+      intro:
+        "This changes how the photo and the words are arranged, not their colour or size. The same settings can read very differently once the composition changes.",
+      aboutLabel: "About page composition",
+      aboutHint: "How the portrait and the introduction sit together",
+      aboutOptions: {
+        side: "Photo on the left (default)",
+        stack: "Large photo on top",
+        quiet: "No photo — words only",
+      },
+      aboutNote:
+        "While no profile photo is set, every option renders as “words only”, so an empty box never takes up the space.",
     },
     spacing: {
       title: "Spacing",

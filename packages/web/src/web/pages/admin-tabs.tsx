@@ -152,6 +152,9 @@ export const SETTINGS_SECTION_KEYS = {
     "gallerySizeVariation",
     "gallerySeed",
   ],
+  // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
+  // 変わらない部分をここでまとめて扱う。
+  "page-layout": ["profileLayout"],
   series: [
     "seriesNavEnabled",
     "galleryExcludeSeries",
@@ -262,6 +265,7 @@ export const SETTINGS_SECTION_GROUPS = {
     "texture",
     "reveal",
     "gallery-layout",
+    "page-layout",
     "series",
   ],
   integrations: ["note", "print", "cta"],
@@ -4402,6 +4406,7 @@ export function SettingsTab({
     texture: copy.bgTexture.title,
     reveal: copy.fade.title,
     "gallery-layout": copy.galleryLayout.title,
+    "page-layout": copy.pageLayout.title,
     series: copy.seriesSection.title,
     note: copyIntegrations.note.title,
     print: copyIntegrations.print.title,
@@ -5583,6 +5588,52 @@ export function SettingsTab({
                       "gallerySeed",
                     ].forEach((k) => set(k, ""));
                   }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* ページの骨格。写真と文章の関係そのものを選ぶ */}
+              <Section
+                {...sectionProps("page-layout")}
+                title={copy.pageLayout.title}
+                defaultOpen={false}
+              >
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                  {copy.pageLayout.intro}
+                </p>
+                <AdminField
+                  label={copy.pageLayout.aboutLabel}
+                  hint={copy.pageLayout.aboutHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["side", copy.pageLayout.aboutOptions.side],
+                        ["stack", copy.pageLayout.aboutOptions.stack],
+                        ["quiet", copy.pageLayout.aboutOptions.quiet],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("profileLayout", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["profileLayout"] || "side") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.aboutNote}
+                </p>
+                <button
+                  onClick={() => set("profileLayout", "")}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}

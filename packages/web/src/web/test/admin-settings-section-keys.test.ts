@@ -76,7 +76,7 @@ describe("Settings section key registry", () => {
 
   // 単節表示では、現在の節を含まないグループの見出しを描かない。台帳から
   // 漏れた節はグループ見出しごと消えて到達できなくなるため、ここで固定する。
-  test("グループ台帳は19節をちょうど1回ずつ含む", () => {
+  test("グループ台帳は全節をちょうど1回ずつ含む", () => {
     const grouped: string[] = Object.values(SETTINGS_SECTION_GROUPS).flat();
     expect(new Set(grouped).size, "同じ節を2つのグループへ入れていない").toBe(
       grouped.length,

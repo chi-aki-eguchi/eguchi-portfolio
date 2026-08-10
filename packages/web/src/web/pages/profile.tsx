@@ -50,6 +50,41 @@ export default function ProfilePage({
 
   const hasSns =
     data?.profileInstagram || data?.profileTwitter || data?.profileNote;
+
+  // About の構成。買った人のサイトが全部同じ形にならないよう、写真と文章の
+  // 関係そのものを選べるようにする（色や大きさだけでは骨格が変わらない）。
+  //   side  — 写真左・本文右（既定。従来どおり）
+  //   stack — 写真を本文幅いっぱいに置き、その下に名前と文章
+  //   quiet — 写真を出さず、名前と文章だけ
+  // 写真が無い（未設定・読み込み失敗）ときは、どれを選んでいても quiet で描く。
+  // 従来は空の灰色の四角を場所取りしていたが、それは「作りかけに見える」
+  // （admin-renewal-goal 到達点(6)）だけで、誰の役にも立っていなかった。
+  const hasPhoto = !!data?.profilePhotoUrl && !photoBroken;
+  const requestedLayout = ["side", "stack", "quiet"].includes(
+    data?.profileLayout ?? "",
+  )
+    ? data!.profileLayout!
+    : "side";
+  const layout = hasPhoto ? requestedLayout : "quiet";
+
+  const photoImg = data?.profilePhotoUrl ? (
+    <img
+      src={`${data.profilePhotoUrl}?w=900&q=90`}
+      srcSet={`${data.profilePhotoUrl}?w=600&q=90 600w, ${data.profilePhotoUrl}?w=900&q=90 900w, ${data.profilePhotoUrl}?w=1200&q=90 1200w`}
+      sizes={
+        layout === "stack" ? "(min-width: 768px) 768px, 90vw" : "(min-width: 768px) 300px, 90vw"
+      }
+      alt={nameJa}
+      decoding="async"
+      fetchPriority="high"
+      onError={() => setPhotoBroken(true)}
+      className={
+        layout === "stack"
+          ? "w-full aspect-[3/2] object-cover"
+          : "w-full aspect-[3/4] object-cover rounded-lg shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
+      }
+    />
+  ) : null;
   // Re-run entrance observer when settings OR note data arrive so all
   // conditionally-rendered sections (Statement, Equipment, Journal) fade in
   // instead of staying invisible. noteData is fetched after settings, so
@@ -74,30 +109,33 @@ export default function ProfilePage({
         {data?.profileLabel ?? "Profile"}
       </h1>
 
-      <div className="grid md:grid-cols-[300px_1fr] gap-14 items-start">
-        {/* Photo */}
-        <div className="page-entrance">
-          {data?.profilePhotoUrl && !photoBroken ? (
-            <img
-              src={`${data.profilePhotoUrl}?w=900&q=90`}
-              srcSet={`${data.profilePhotoUrl}?w=600&q=90 600w, ${data.profilePhotoUrl}?w=900&q=90 900w, ${data.profilePhotoUrl}?w=1200&q=90 1200w`}
-              sizes="(min-width: 768px) 300px, 90vw"
-              alt={nameJa}
-              decoding="async"
-              fetchPriority="high"
-              onError={() => setPhotoBroken(true)}
-              className="w-full aspect-[3/4] object-cover rounded-lg shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
-            />
-          ) : (
-            <div className="w-full aspect-[3/4] bg-[rgba(var(--foreground-rgb),0.05)] rounded-lg" />
-          )}
-        </div>
+      <div
+        className={
+          layout === "side"
+            ? "grid md:grid-cols-[300px_1fr] gap-14 items-start"
+            : "block"
+        }
+        data-profile-layout={layout}
+      >
+        {/* Photo — quiet では出さない */}
+        {layout !== "quiet" && (
+          <div className={layout === "stack" ? "page-entrance mb-10" : "page-entrance"}>
+            {photoImg}
+          </div>
+        )}
 
         {/* Bio */}
         <div className="pt-1 flex flex-col">
           <h2
             className="font-bold tracking-[0.03em] text-[var(--foreground)] page-entrance page-entrance-delay-1"
-            style={{ fontSize: "var(--heading-size, 1.25rem)" }}
+            style={{
+              // quiet は写真が無いぶん、名前を大きくして紙面の芯にする。
+              // 同じ大きさのままだと「写真が抜け落ちた side」に見える。
+              fontSize:
+                layout === "quiet"
+                  ? "calc(var(--heading-size, 1.25rem) * 1.6)"
+                  : "var(--heading-size, 1.25rem)",
+            }}
           >
             {nameJa}
           </h2>
@@ -265,13 +303,16 @@ export default function ProfilePage({
                     {formatNoteDate(post.date)}
                   </p>
                 )}
-                {/* Title */}
+                {/* Title — 2行ぶんの高さを確保する。題名が1行の札と2行の札が
+                    混ざると、その下の抜粋の開始位置が札ごとに上下してしまい、
+                    横に並べたときに揃って見えない（実測で19pxずれていた）。 */}
                 <p
-                  className="text-[rgba(var(--foreground-rgb),0.68)] group-hover:text-[rgba(var(--foreground-rgb),0.88)] transition-colors duration-300 mb-2"
+                  className="line-clamp-2 text-[rgba(var(--foreground-rgb),0.68)] group-hover:text-[rgba(var(--foreground-rgb),0.88)] transition-colors duration-300 mb-2"
                   style={{
                     fontSize: "var(--body-size, 0.875rem)",
                     lineHeight: "1.6",
                     letterSpacing: "0.01em",
+                    minHeight: "3.2em",
                   }}
                 >
                   {post.title}

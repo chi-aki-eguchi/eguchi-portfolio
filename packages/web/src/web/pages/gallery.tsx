@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { PageTitle } from "../components/PageTitle";
 import { useLocation, useSearch } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
@@ -251,17 +252,9 @@ export default function GalleryPage() {
       className="max-w-5xl mx-auto px-4 sm:px-6 md:px-12 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-12 md:pb-32"
       ref={fadeRef}
     >
-      <h1
-        className="font-en uppercase text-center mb-10 md:mb-24 section-reveal"
-        style={{
-          fontSize: "var(--section-label-size, 0.75rem)",
-          color: "var(--section-label-color)",
-          letterSpacing: "var(--section-label-tracking, 0.10em)",
-          lineHeight: "var(--section-leading, 1.2)",
-        }}
-      >
+      <PageTitle className="mb-10 md:mb-24" revealClass="section-reveal">
         {settings?.galleryLabel ?? "Gallery"}
-      </h1>
+      </PageTitle>
 
       {/* Filter — カテゴリ */}
       {categories.length > 0 && (

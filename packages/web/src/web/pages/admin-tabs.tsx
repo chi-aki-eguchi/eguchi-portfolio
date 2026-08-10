@@ -164,6 +164,7 @@ export const SETTINGS_SECTION_KEYS = {
     "contactLayout",
     "seriesCardStyle",
     "footerLayout",
+    "pageTitleStyle",
   ],
   series: [
     "seriesNavEnabled",
@@ -5741,6 +5742,38 @@ export function SettingsTab({
                 {(current["seriesCardStyle"] || "caption") === "overlay" && (
                   <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                     {copy.pageLayout.seriesNote}
+                  </p>
+                )}
+                <AdminField
+                  label={copy.pageLayout.titleLabel}
+                  hint={copy.pageLayout.titleHint}
+                >
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(
+                      [
+                        ["label", copy.pageLayout.titleOptions.label],
+                        ["left", copy.pageLayout.titleOptions.left],
+                        ["display", copy.pageLayout.titleOptions.display],
+                        ["hidden", copy.pageLayout.titleOptions.hidden],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("pageTitleStyle", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["pageTitleStyle"] || "label") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["pageTitleStyle"] || "label") === "hidden" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.titleNote}
                   </p>
                 )}
                 <AdminField

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { usePageEntrance } from "../hooks/usePageEntrance";
@@ -97,17 +98,7 @@ export default function ProfilePage({
       className="max-w-3xl mx-auto px-5 md:px-10 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[60vh]"
       ref={entranceRef}
     >
-      <h1
-        className="font-en uppercase mb-12 text-center page-entrance"
-        style={{
-          fontSize: "var(--section-label-size, 0.75rem)",
-          color: "var(--section-label-color)",
-          letterSpacing: "var(--section-label-tracking, 0.10em)",
-          lineHeight: "var(--section-leading, 1.2)",
-        }}
-      >
-        {data?.profileLabel ?? "Profile"}
-      </h1>
+      <PageTitle className="mb-12">{data?.profileLabel ?? "Profile"}</PageTitle>
 
       <div
         className={

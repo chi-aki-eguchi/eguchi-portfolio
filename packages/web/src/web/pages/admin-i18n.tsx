@@ -1146,6 +1146,16 @@ const ADMIN_PHASE_2B_JA = {
       },
       seriesNote:
         "重ねるときは、文字が沈まないように表紙の下側へ暗い幕を敷きます。それでも明るい表紙では読みにくくなることがあるので、迷うときは「表紙の下に題名」が安全です。表紙を登録していないシリーズは、空の四角ではなく題名を出します。",
+      titleLabel: "各ページの見出しの型",
+      titleHint: "Gallery / Series / About / Contact の冒頭に出る見出し",
+      titleOptions: {
+        label: "小さな大文字・中央（既定）",
+        left: "小さな大文字・左寄せ",
+        display: "大きな見出し・左",
+        hidden: "出さない",
+      },
+      titleNote:
+        "「出さない」でも、読み上げのための見出しは目に見えない形で残ります。ページは本文から始まります。",
       footerLabel: "フッターの並べ方",
       footerHint: "全ページの終わりに出る、SNSと著作表示の並び",
       footerOptions: {
@@ -2786,6 +2796,16 @@ const ADMIN_PHASE_2B_EN = {
       },
       seriesNote:
         "Overlaid titles get a dark scrim along the bottom of the cover so they stay readable, but a bright cover can still swallow them — “title below the cover” is the safer choice. A series with no cover shows its title instead of an empty box.",
+      titleLabel: "Page heading treatment",
+      titleHint: "The heading that opens Gallery, Series, About and Contact",
+      titleOptions: {
+        label: "Small caps, centred (default)",
+        left: "Small caps, left",
+        display: "Large heading, left",
+        hidden: "Don’t show it",
+      },
+      titleNote:
+        "Even when hidden, the heading stays in place for screen readers — the page simply opens with its content.",
       footerLabel: "Footer arrangement",
       footerHint: "How the social links and the copyright sit at the end of every page",
       footerOptions: {

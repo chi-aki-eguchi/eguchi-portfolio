@@ -112,6 +112,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "contactLayout",
   "seriesCardStyle",
   "footerLayout",
+  "pageTitleStyle",
   "heroMode",
   "heroMotionSpeed",
   "heroRevealOrder",

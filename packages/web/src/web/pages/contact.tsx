@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { safeHref } from "../lib/utils";
@@ -264,17 +265,14 @@ export default function ContactPage({
         ref={entranceRef}
         data-contact-layout={layout}
       >
-        <h1
-          className={`font-en uppercase ${leadAlign} mb-12 page-entrance`}
-          style={{
-            fontSize: "var(--section-label-size, 0.75rem)",
-            color: "var(--section-label-color)",
-            letterSpacing: "var(--section-label-tracking, 0.10em)",
-            lineHeight: "var(--section-leading, 1.2)",
-          }}
+        {/* Contact だけは自分の構成（center/left/split）に見出しを合わせる。
+            全体の見出しの型より、そのページの並びのほうが優先される。 */}
+        <PageTitle
+          className="mb-12"
+          align={layout === "center" ? "center" : "left"}
         >
           {data?.contactLabel ?? "Contact"}
-        </h1>
+        </PageTitle>
 
         {/* split では説明とフォームを横に並べる。スマホは常に縦積み。 */}
         <div

@@ -237,6 +237,15 @@ element was detached from the DOM, retrying
   逃げてはいない。** `role="dialog"` が無いのも、`<dialog>` の暗黙のロールで足りる
 - Escape で閉じると、開いた元のタイルへ焦点が戻る（B-20 の印が効いている）
 
+**Settings のプレビューは、中のリンクで他のページへ移れる。** 枠は `/` で始まるが
+固定ではない。**未保存の変更は移動しても保たれる**（`preview-ready` の握手で
+新しいページへ再送されるため）。実測: フッターを「左右」、見出しを「大きな見出し」に
+した状態で、プレビュー内の About を押す → 移動先でも footer=split・見出し
+40px/left のままだった。
+
+→ **「TOP しかプレビューできない」は誤り。** ページ別の切替UIを足す必要はない。
+About / Contact / Series 向けの設定も、プレビュー内を移動すれば確かめられる。
+
 **測り方の教訓:** `.tap-target` は `@media (pointer: coarse)` の中にある。
 Playwright に `hasTouch: true` を付けずに測ると当たり判定が広がらず、
 **「壊れている」と誤診する**（実際に一度誤診した）。

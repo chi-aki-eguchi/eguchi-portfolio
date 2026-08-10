@@ -113,6 +113,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "seriesCardStyle",
   "footerLayout",
   "pageTitleStyle",
+  "homeStatement",
   "heroMode",
   "heroMotionSpeed",
   "heroRevealOrder",

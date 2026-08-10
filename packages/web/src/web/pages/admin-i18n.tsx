@@ -1146,6 +1146,15 @@ const ADMIN_PHASE_2B_JA = {
       },
       seriesNote:
         "重ねるときは、文字が沈まないように表紙の下側へ暗い幕を敷きます。それでも明るい表紙では読みにくくなることがあるので、迷うときは「表紙の下に題名」が安全です。表紙を登録していないシリーズは、空の四角ではなく題名を出します。",
+      statementLabel: "TOPに作家の言葉を置く",
+      statementHint: "Profile の「作家ステートメント」をトップページにも出します",
+      statementOptions: {
+        off: "出さない（既定）",
+        before: "作品の前",
+        after: "作品の後",
+      },
+      statementNote:
+        "文章は Profile の「作家ステートメント」をそのまま使います（同じ文を2箇所に書かせると必ず片方が古くなるため）。まだ書いていない場合は何も出ません。",
       titleLabel: "各ページの見出しの型",
       titleHint: "Gallery / Series / About / Contact の冒頭に出る見出し",
       titleOptions: {
@@ -2796,6 +2805,15 @@ const ADMIN_PHASE_2B_EN = {
       },
       seriesNote:
         "Overlaid titles get a dark scrim along the bottom of the cover so they stay readable, but a bright cover can still swallow them — “title below the cover” is the safer choice. A series with no cover shows its title instead of an empty box.",
+      statementLabel: "Your words on the home page",
+      statementHint: "Shows the artist statement from Profile on the home page too",
+      statementOptions: {
+        off: "Don’t show (default)",
+        before: "Before the work",
+        after: "After the work",
+      },
+      statementNote:
+        "The text comes straight from the artist statement in Profile — writing it twice would leave one copy stale. Nothing appears until you have written one.",
       titleLabel: "Page heading treatment",
       titleHint: "The heading that opens Gallery, Series, About and Contact",
       titleOptions: {

@@ -491,6 +491,53 @@ function TopSeriesStream({
   );
 }
 
+/**
+ * TOP に作家自身の言葉を置く。写真しか無いトップページはどれも似るので、
+ * 「その人が何を撮っているか」を本人の文で出せるようにする。
+ *
+ * **文章は新しく入力させない。** Profile の作家ステートメント
+ * （`profileStatement`）をそのまま使う。同じ文を2箇所へ書かせると必ず片方が
+ * 古くなる。だから設定は「どこに出すか」だけ。書いていなければ何も出ない。
+ *
+ * 見出しは付けない。ラベルを足すほど読む量が増えて逆に読まれないので、
+ * 言葉だけを大きめの行送りで置く（design-spec「足すより、間を作る」）。
+ */
+function TopStatement({
+  settings,
+  at,
+}: {
+  settings: Record<string, string | undefined> | undefined;
+  at: "before-works" | "after-works";
+}) {
+  const placement = settings?.homeStatement ?? "off";
+  if (placement !== at) return null;
+  // TOP に英語ルートは無い（/en は about と contact だけ）ので出し分けは要らない。
+  const text = settings?.profileStatement ?? "";
+  if (!text.trim()) return null;
+  return (
+    <section className="max-w-2xl mx-auto px-6 md:px-12 pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(5rem*var(--spacing-section-gap,1))]">
+      <div className="space-y-4 section-reveal">
+        {text
+          .split(/\n{2,}/)
+          .filter(Boolean)
+          .map((para, i) => (
+            <p
+              key={i}
+              className="text-[color:var(--text-quiet)] text-pretty"
+              style={{
+                fontSize: "var(--body-size, 0.9375rem)",
+                lineHeight: "var(--body-leading, 2.1)",
+                letterSpacing: "var(--body-tracking, 0.02em)",
+              }}
+            >
+              {para.replace(/\n/g, " ")}
+            </p>
+          ))}
+      </div>
+    </section>
+  );
+}
+
 function heroMotionKey(
   settings: Record<string, string | undefined> | undefined,
 ): string {
@@ -706,6 +753,7 @@ function HomeQuietGrid({
       </section>
 
       <TopSeriesStream settings={settings} at="before-works" />
+      <TopStatement settings={settings} at="before-works" />
 
       {/* Works: 3-column square grid */}
       {featured.length === 0 && worksStatus}
@@ -742,6 +790,7 @@ function HomeQuietGrid({
       )}
 
       <TopSeriesStream settings={settings} at="after-works" />
+      <TopStatement settings={settings} at="after-works" />
 
       <InquiryCta />
     </div>
@@ -827,6 +876,7 @@ function HomeEditorial({
       </section>
 
       <TopSeriesStream settings={settings} at="before-works" />
+      <TopStatement settings={settings} at="before-works" />
 
       {/* Works: alternating large/small rhythm grid */}
       {featured.length === 0 && worksStatus}
@@ -863,6 +913,7 @@ function HomeEditorial({
       )}
 
       <TopSeriesStream settings={settings} at="after-works" />
+      <TopStatement settings={settings} at="after-works" />
 
       <InquiryCta />
     </div>
@@ -961,6 +1012,7 @@ function HomeImmersive({
       </section>
 
       <TopSeriesStream settings={settings} at="before-works" />
+      <TopStatement settings={settings} at="before-works" />
 
       {/* Large-format works with captions */}
       {featured.length === 0 && worksStatus}
@@ -997,6 +1049,7 @@ function HomeImmersive({
       )}
 
       <TopSeriesStream settings={settings} at="after-works" />
+      <TopStatement settings={settings} at="after-works" />
 
       <InquiryCta />
     </div>
@@ -1426,6 +1479,7 @@ export default function TopPage() {
       )}
 
       <TopSeriesStream settings={settings} at="before-works" />
+      <TopStatement settings={settings} at="before-works" />
 
       {/* Photo Grid */}
       {featured.length === 0 && worksStatus}
@@ -1492,6 +1546,7 @@ export default function TopPage() {
 
       {/* Closing 撮影依頼 CTA — the homepage's conversion moment (off by default) */}
       <TopSeriesStream settings={settings} at="after-works" />
+      <TopStatement settings={settings} at="after-works" />
 
       <InquiryCta />
     </div>

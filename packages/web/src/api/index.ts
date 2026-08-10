@@ -1270,6 +1270,8 @@ const app = new Hono()
         footerLayout: settings.footerLayout ?? "center",
         // 各ページの見出しの型。label（小さな大文字・中央・既定）| left | display | hidden
         pageTitleStyle: settings.pageTitleStyle ?? "label",
+        // TOP に作家ステートメントを出す位置。off（既定）| before-works | after-works
+        homeStatement: settings.homeStatement ?? "off",
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
         bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
         bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06

@@ -165,6 +165,7 @@ export const SETTINGS_SECTION_KEYS = {
     "seriesCardStyle",
     "footerLayout",
     "pageTitleStyle",
+    "homeStatement",
   ],
   series: [
     "seriesNavEnabled",
@@ -5742,6 +5743,37 @@ export function SettingsTab({
                 {(current["seriesCardStyle"] || "caption") === "overlay" && (
                   <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                     {copy.pageLayout.seriesNote}
+                  </p>
+                )}
+                <AdminField
+                  label={copy.pageLayout.statementLabel}
+                  hint={copy.pageLayout.statementHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["off", copy.pageLayout.statementOptions.off],
+                        ["before-works", copy.pageLayout.statementOptions.before],
+                        ["after-works", copy.pageLayout.statementOptions.after],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("homeStatement", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["homeStatement"] || "off") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["homeStatement"] || "off") !== "off" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.statementNote}
                   </p>
                 )}
                 <AdminField

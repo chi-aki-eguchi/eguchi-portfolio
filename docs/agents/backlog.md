@@ -300,6 +300,24 @@ Esc ガードの確認ダイアログで「キャンセル」を押す行（spec
 ダイアログの出現待ちとクリックの間に競合がありそう。再現待ちで、実害は
 「full smoke がたまに赤くなる」こと。
 
+### B-18. Settings の「3つから1つ選ぶ」帯が9箇所に複製されている 🟠 実測済み（2026-08-11）
+
+`admin-tabs.tsx` に、まったく同じ形の選択帯が**9箇所**ある（列数と設定キーだけ違う）。
+`heroScrollEffect` / `navPosition` / `navHoverEffect` / `headerBackground` と、
+2026-08-11 に足した6件（`profileLayout` / `contactLayout` / `seriesCardStyle` /
+`footerLayout` / `pageTitleStyle` / `homeStatement`）。
+
+`admin-ui.tsx` へ `ChoiceRow` として括り出せば、次に設定を足すときが安くなる。
+
+**2026-08-11 に一度着手して、やめた。** 見た目も挙動も変わらない差し替えなのに、
+動いている管理画面の操作9箇所を書き換えることになる。オーナー不在で、利用者から
+見た改善がゼロのまま回帰の危険だけ増える取引だと判断した。
+
+**着手するなら注意:** 括り出した部品に `aria-pressed` を足したくなるが、
+グローバルCSSに `aria-pressed="true"` を4重特異度+`!important` で黒く塗るルールが
+ある（B-1）。見た目が別経路で決まってしまうので、**見た目を変えない差し替えと
+読み上げ対応を同じ commit に混ぜない。**
+
 ### B-14. Library に同じ視覚言語を通す 🔴 要再確認
 
 写真タイルの影・面。2026-07-31 の admin 刷新に含まれていた可能性がある。

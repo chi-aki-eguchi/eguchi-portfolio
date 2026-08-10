@@ -110,6 +110,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "headerBackground",
   "profileLayout",
   "contactLayout",
+  "seriesCardStyle",
   "heroMode",
   "heroMotionSpeed",
   "heroRevealOrder",

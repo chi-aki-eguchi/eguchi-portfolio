@@ -1263,6 +1263,9 @@ const app = new Hono()
         // Contact の構成。center（中央・細い1列・既定）| left（左寄せ）|
         // split（説明を左・フォームを右。説明が空なら left へ倒す）
         contactLayout: settings.contactLayout ?? "center",
+        // シリーズ一覧の札。caption（表紙の下に題名・既定）| overlay（題名を
+        // 表紙へ重ねる）| wide（3:2 の横長）
+        seriesCardStyle: settings.seriesCardStyle ?? "caption",
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
         bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
         bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06

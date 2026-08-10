@@ -159,7 +159,7 @@ export const SETTINGS_SECTION_KEYS = {
   mood: [],
   // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
   // 変わらない部分をここでまとめて扱う。
-  "page-layout": ["profileLayout", "contactLayout"],
+  "page-layout": ["profileLayout", "contactLayout", "seriesCardStyle"],
   series: [
     "seriesNavEnabled",
     "galleryExcludeSeries",
@@ -5705,6 +5705,37 @@ export function SettingsTab({
                 {(current["contactLayout"] || "center") === "split" && (
                   <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                     {copy.pageLayout.contactNote}
+                  </p>
+                )}
+                <AdminField
+                  label={copy.pageLayout.seriesLabel}
+                  hint={copy.pageLayout.seriesHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["caption", copy.pageLayout.seriesOptions.caption],
+                        ["overlay", copy.pageLayout.seriesOptions.overlay],
+                        ["wide", copy.pageLayout.seriesOptions.wide],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("seriesCardStyle", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["seriesCardStyle"] || "caption") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["seriesCardStyle"] || "caption") === "overlay" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.seriesNote}
                   </p>
                 )}
                 <button

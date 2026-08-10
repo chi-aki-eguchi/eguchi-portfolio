@@ -41,6 +41,7 @@ const ALLOWED: Record<string, readonly string[]> = {
   photoRevealEffect: ["fade", "none", "rise", "scale"],
   profileLayout: ["side", "stack", "quiet"],
   contactLayout: ["center", "left", "split"],
+  seriesCardStyle: ["caption", "overlay", "wide"],
 };
 const LAYOUT_KEYS = ["galleryLayout", "seriesLayout", "topWorksLayout"];
 

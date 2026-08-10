@@ -1137,6 +1137,15 @@ const ADMIN_PHASE_2B_JA = {
       },
       contactNote:
         "2列になるのはPCの幅があるときだけで、スマホでは説明の下にフォームが続きます。説明文（英語での歓迎・導入文・ひとこと・依頼の流れ）をどれも書いていない場合は、左が空くのを避けて「左寄せ」で表示します。",
+      seriesLabel: "Series（シリーズ一覧）の札",
+      seriesHint: "作品群の入口に並ぶ、表紙と題名の組み方",
+      seriesOptions: {
+        caption: "表紙の下に題名（既定）",
+        overlay: "題名を表紙に重ねる",
+        wide: "3:2 の横長",
+      },
+      seriesNote:
+        "重ねるときは、文字が沈まないように表紙の下側へ暗い幕を敷きます。それでも明るい表紙では読みにくくなることがあるので、迷うときは「表紙の下に題名」が安全です。表紙を登録していないシリーズは、空の四角ではなく題名を出します。",
     },
     spacing: {
       title: "余白・スペーシング",
@@ -2761,6 +2770,15 @@ const ADMIN_PHASE_2B_EN = {
       },
       contactNote:
         "The two columns appear only on wider screens; on a phone the form simply follows the text. If none of the introduction fields are filled in, it falls back to “left aligned” so the left column is never empty.",
+      seriesLabel: "Series index cards",
+      seriesHint: "How each cover and title sit together",
+      seriesOptions: {
+        caption: "Title below the cover (default)",
+        overlay: "Title over the cover",
+        wide: "Wide 3:2 stills",
+      },
+      seriesNote:
+        "Overlaid titles get a dark scrim along the bottom of the cover so they stay readable, but a bright cover can still swallow them — “title below the cover” is the safer choice. A series with no cover shows its title instead of an empty box.",
     },
     spacing: {
       title: "Spacing",

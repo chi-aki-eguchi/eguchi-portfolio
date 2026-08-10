@@ -117,10 +117,13 @@ function HeroCarousel({
   photos,
   fxRef,
   photographerName,
+  loading = false,
 }: {
   photos: HomeHeroPhoto[];
   fxRef?: React.Ref<HTMLDivElement>;
   photographerName?: string;
+  /** まだ読み込み中か。読み込み中と「本当に0枚」を分けるために要る。 */
+  loading?: boolean;
 }) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
@@ -240,12 +243,17 @@ function HeroCarousel({
     return () => window.removeEventListener("keydown", handler);
   }, [goNext, goPrev]);
 
+  // 読み込み中は場所を取っておく（あとから写真が入って本文が飛ぶのを防ぐ）。
+  // **読み込みが終わって0枚だったら、何も置かない。** 以前はここも同じ
+  // 60vh の灰色の板を出していたので、買った直後のまだ写真が無いサイトでは、
+  // トップページが 1440×540 の空の灰色の四角だけになっていた（実測）。
+  // 意味のない箱を見せないこと（admin-renewal-goal 到達点(6)）。
   if (photos.length === 0)
-    return (
+    return loading ? (
       <div className="w-full" style={{ height: "60vh" }}>
         <div className="w-full h-full bg-[var(--photo-placeholder)] rounded-lg" />
       </div>
-    );
+    ) : null;
 
   return (
     // The autoplay-pause handlers below sit on the carousel container on purpose so
@@ -1362,6 +1370,7 @@ export default function TopPage() {
             photos={heroPhotos}
             fxRef={heroFxRef}
             photographerName={photographerName}
+            loading={heroLoading || photosLoading}
           />
 
           {/* Name block below carousel. AA2: in carousel mode the title sits

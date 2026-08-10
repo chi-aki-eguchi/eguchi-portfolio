@@ -762,7 +762,7 @@ describe("shared components", () => {
   test("SeriesGrid renders its empty state", async () => {
     const { SeriesGrid } = await import("../components/SeriesGrid");
     const { host, cleanup } = await mount(createElement(SeriesGrid));
-    expect(host.textContent).toContain("No series yet");
+    expect(host.textContent).toContain("まだシリーズがありません");
     cleanup();
   });
 

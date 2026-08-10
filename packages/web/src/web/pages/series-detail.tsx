@@ -128,7 +128,7 @@ export default function SeriesDetailPage() {
       <div ref={fadeRef}>
         {photos.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">No photos in this series</p>
+            <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">このシリーズにはまだ写真がありません</p>
           </div>
         ) : (
           <PhotoGallery

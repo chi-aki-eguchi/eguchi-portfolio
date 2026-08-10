@@ -89,7 +89,7 @@ export function SeriesGrid() {
       <div className="py-24" aria-hidden="true" />
     ) : (
       <div className="py-24 text-center">
-        <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">No series yet</p>
+        <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">まだシリーズがありません</p>
       </div>
     );
   }

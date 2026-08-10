@@ -343,8 +343,10 @@ export default function GalleryPage() {
           />
         ) : (
           <div className="py-24 text-center">
-            <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
-              No photos
+            {/* 見出し（GALLERY）は英語で揃えてあるが、読み手へ向けた「文」は
+                日本語にする。/gallery に英語ルートは無いので出し分けは要らない。 */}
+            <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
+              まだ写真がありません
             </p>
           </div>
         )

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ContentStatus } from "../components/ContentStatus";
 import { Link, useParams } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
@@ -12,7 +13,7 @@ export default function SeriesDetailPage() {
   const params = useParams();
   const slug = params.slug ?? "";
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["series", slug],
     // The ":slug" subtree of the typed client collapses under TS instantiation
     // limits (see lib/api.ts) — the response shape is annotated manually instead.
@@ -58,8 +59,32 @@ export default function SeriesDetailPage() {
     return <section className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-32 min-h-[60vh]" aria-hidden="true" />;
   }
 
-  // Unpublished / unknown slug, or a fetch error → gentle not-found, never a blank screen.
-  if (isError || !data) {
+  // 取得そのものに失敗したときは「見つかりません」と言わない。この query は
+  // **404 を null で返し、それ以外の失敗だけ投げる**ので、両者は区別できる。
+  // 一緒くたにすると、サーバーが一度つまずいただけで「このシリーズは無い」と
+  // 伝えてしまう（オーナーの方針: エラーなら再読み込みを出す）。
+  if (isError) {
+    return (
+      <section className="max-w-3xl mx-auto px-6 py-32 md:py-48 min-h-[50vh]">
+        <ContentStatus
+          state="error"
+          error={error}
+          onRetry={() => void refetch()}
+        />
+        <div className="text-center">
+          <Link
+            to="/series"
+            className="inline-block mt-8 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300"
+          >
+            ← Series
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  // 非公開・存在しない slug（404）→ 静かな not-found。真っ白にはしない。
+  if (!data) {
     return (
       <section className="max-w-3xl mx-auto px-6 py-32 md:py-48 text-center min-h-[50vh]">
         <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">

@@ -45,6 +45,24 @@ export default function ContactPage({
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Contact の構成。既定（center）は 448px の細い1列で、説明文も中央揃え。
+  // 中央揃えの日本語は2行以上になると行末が揃わず、読みづらい。左寄せと
+  // 2列も選べるようにして、写真家ごとに「依頼の受け方」の印象を変えられる
+  // ようにする。
+  //   center — 中央・細い1列（既定。従来どおり）
+  //   left   — 左寄せ1列・やや広い
+  //   split  — 説明を左、フォームを右（PCのみ2列。スマホは縦に積む）
+  const contactLayout = ["center", "left", "split"].includes(
+    data?.contactLayout ?? "",
+  )
+    ? data!.contactLayout!
+    : "center";
+  // 説明が何も無いのに2列にすると、左が空いた歪な画面になる。
+  const hasLead = !!(data?.contactEnglishNote || intro || note || flow);
+  const layout =
+    contactLayout === "split" && !hasLead ? "left" : contactLayout;
+  const leadAlign = layout === "center" ? "text-center" : "text-left";
   // Re-run entrance observer when settings load or the form state switches, so
   // newly-rendered sections (form / success view) fade in rather than stay hidden.
   const entranceRef = usePageEntrance([data, status]);
@@ -208,11 +226,18 @@ export default function ContactPage({
       )}
 
       <section
-        className="max-w-md mx-auto px-6 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[calc(100dvh-180px)]"
+        className={`${
+          layout === "center"
+            ? "max-w-md"
+            : layout === "left"
+              ? "max-w-xl"
+              : "max-w-3xl"
+        } mx-auto px-6 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[calc(100dvh-180px)]`}
         ref={entranceRef}
+        data-contact-layout={layout}
       >
         <h1
-          className="font-en uppercase text-center mb-12 page-entrance"
+          className={`font-en uppercase ${leadAlign} mb-12 page-entrance`}
           style={{
             fontSize: "var(--section-label-size, 0.75rem)",
             color: "var(--section-label-color)",
@@ -223,12 +248,21 @@ export default function ContactPage({
           {data?.contactLabel ?? "Contact"}
         </h1>
 
+        {/* split では説明とフォームを横に並べる。スマホは常に縦積み。 */}
+        <div
+          className={
+            layout === "split"
+              ? "md:grid md:grid-cols-2 md:gap-12 md:items-start"
+              : ""
+          }
+        >
+        <div>
         {/* i18n Phase 3: "English inquiries welcome" note — always visible near the
             heading regardless of the JP/EN toggle, so an English-only visitor on the
             default JP page still sees they can reach out. Hidden when set to "". */}
         {status !== "success" && data?.contactEnglishNote && (
           <p
-            className="text-center font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] -mt-6 mb-8 page-entrance page-entrance-delay-1"
+            className={`${leadAlign} font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] -mt-6 mb-8 page-entrance page-entrance-delay-1`}
           >
             {data.contactEnglishNote}
           </p>
@@ -240,7 +274,7 @@ export default function ContactPage({
             so the thank-you moment stays quiet). */}
         {formspreeUrl && status !== "success" && intro && (
           <p
-            className="text-center text-[color:var(--text-quiet)] -mt-4 mb-5 page-entrance page-entrance-delay-1"
+            className={`${leadAlign} text-[color:var(--text-quiet)] -mt-4 mb-5 page-entrance page-entrance-delay-1`}
             style={{
               fontSize: "var(--body-size, 0.875rem)",
               lineHeight: "var(--body-leading, 2)",
@@ -254,7 +288,7 @@ export default function ContactPage({
             依頼の流れ。どちらも設定で空にすれば消える。 */}
         {formspreeUrl && status !== "success" && note && (
           <p
-            className="text-center text-[color:var(--text-quiet)] mb-8 page-entrance page-entrance-delay-1"
+            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 page-entrance page-entrance-delay-1`}
             style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
           >
             {note}
@@ -273,6 +307,8 @@ export default function ContactPage({
             </p>
           </div>
         )}
+        </div>
+        <div>
         {!formspreeUrl ? (
           <div className="py-4 space-y-6 page-entrance page-entrance-delay-1">
             {intro && (
@@ -509,6 +545,8 @@ export default function ContactPage({
             </button>
           </form>
         )}
+        </div>
+        </div>
       </section>
     </>
   );

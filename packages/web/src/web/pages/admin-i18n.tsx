@@ -1108,6 +1108,15 @@ const ADMIN_PHASE_2B_JA = {
       },
       aboutNote:
         "プロフィール写真を登録していないときは、どれを選んでも「写真なし」で表示します（空の四角を置かないため）。",
+      contactLabel: "Contact（お問い合わせ）の構成",
+      contactHint: "説明文とフォームの並べ方",
+      contactOptions: {
+        center: "中央・細め（既定）",
+        left: "左寄せ",
+        split: "説明を左・フォームを右",
+      },
+      contactNote:
+        "2列になるのはPCの幅があるときだけで、スマホでは説明の下にフォームが続きます。説明文（英語での歓迎・導入文・ひとこと・依頼の流れ）をどれも書いていない場合は、左が空くのを避けて「左寄せ」で表示します。",
     },
     spacing: {
       title: "余白・スペーシング",
@@ -2703,6 +2712,15 @@ const ADMIN_PHASE_2B_EN = {
       },
       aboutNote:
         "While no profile photo is set, every option renders as “words only”, so an empty box never takes up the space.",
+      contactLabel: "Contact page composition",
+      contactHint: "How the introduction and the form sit together",
+      contactOptions: {
+        center: "Centred, narrow (default)",
+        left: "Left aligned",
+        split: "Words left, form right",
+      },
+      contactNote:
+        "The two columns appear only on wider screens; on a phone the form simply follows the text. If none of the introduction fields are filled in, it falls back to “left aligned” so the left column is never empty.",
     },
     spacing: {
       title: "Spacing",

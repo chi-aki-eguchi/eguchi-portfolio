@@ -154,7 +154,7 @@ export const SETTINGS_SECTION_KEYS = {
   ],
   // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
   // 変わらない部分をここでまとめて扱う。
-  "page-layout": ["profileLayout"],
+  "page-layout": ["profileLayout", "contactLayout"],
   series: [
     "seriesNavEnabled",
     "galleryExcludeSeries",
@@ -5632,8 +5632,41 @@ export function SettingsTab({
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.aboutNote}
                 </p>
+                <AdminField
+                  label={copy.pageLayout.contactLabel}
+                  hint={copy.pageLayout.contactHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["center", copy.pageLayout.contactOptions.center],
+                        ["left", copy.pageLayout.contactOptions.left],
+                        ["split", copy.pageLayout.contactOptions.split],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("contactLayout", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["contactLayout"] || "center") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["contactLayout"] || "center") === "split" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.contactNote}
+                  </p>
+                )}
                 <button
-                  onClick={() => set("profileLayout", "")}
+                  onClick={() => {
+                    ["profileLayout", "contactLayout"].forEach((k) => set(k, ""));
+                  }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}

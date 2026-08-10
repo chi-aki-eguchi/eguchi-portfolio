@@ -1260,6 +1260,9 @@ const app = new Hono()
         // About の構成。side（写真左・既定）| stack（写真を上に大きく）|
         // quiet（写真なし・文章主体）。写真が未設定のときは quiet で描く
         profileLayout: settings.profileLayout ?? "side",
+        // Contact の構成。center（中央・細い1列・既定）| left（左寄せ）|
+        // split（説明を左・フォームを右。説明が空なら left へ倒す）
+        contactLayout: settings.contactLayout ?? "center",
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
         bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
         bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06

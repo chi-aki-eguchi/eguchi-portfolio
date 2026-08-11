@@ -30,14 +30,14 @@ export function InquiryCta() {
         style={{ width: 1, height: 48, background: `rgba(var(--foreground-rgb), 0.18)` }}
       />
       <h2
-        className="font-ja section-reveal"
+        className="font-ja section-reveal break-words"
         style={{ fontSize: "clamp(1.6rem, 4.5vw, 2.4rem)", letterSpacing: "0.08em", lineHeight: 1.45, color: `rgba(var(--foreground-rgb), 0.82)` }}
       >
         {title}
       </h2>
       {text && (
         <p
-          className="section-reveal mt-5 md:mt-6 mx-auto max-w-md"
+          className="section-reveal mt-5 md:mt-6 mx-auto max-w-md break-words"
           style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "0.02em", color: "var(--text-quiet)", transitionDelay: "0.05s" }}
         >
           {text}
@@ -46,8 +46,12 @@ export function InquiryCta() {
       <div className="section-reveal mt-9 md:mt-11" style={{ transitionDelay: "0.1s" }}>
         <Link
           to="/contact"
-          className="font-en inline-block uppercase nav-link-luxury transition-colors duration-300"
-          style={{ fontSize: "0.8125rem", letterSpacing: "0.14em", paddingBottom: 6, color: "var(--text-quiet)", borderBottom: `1px solid rgba(var(--foreground-rgb), 0.25)` }}
+          className="font-en inline-block uppercase nav-link-luxury transition-colors duration-300 break-words"
+          /* この帯は Top / Gallery / Series / About / Contact のすべてに出る。
+             ボタンの文言が折り返せないと、5ページ全部が横に伸びる
+             （実測 320px の画面で 1147px）。max-w-full が無いと inline-block は
+             内容の幅のままなので、折り返す先が無い。 */
+          style={{ fontSize: "0.8125rem", letterSpacing: "0.14em", paddingBottom: 6, color: "var(--text-quiet)", borderBottom: `1px solid rgba(var(--foreground-rgb), 0.25)`, maxWidth: "100%" }}
           onMouseEnter={(e) => { e.currentTarget.style.color = `var(--accent-color, rgba(var(--foreground-rgb), 0.9))`; e.currentTarget.style.borderColor = `var(--accent-color, rgba(var(--foreground-rgb), 0.6))`; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-quiet)"; e.currentTarget.style.borderColor = `rgba(var(--foreground-rgb), 0.25)`; }}
         >

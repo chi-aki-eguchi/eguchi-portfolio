@@ -63,7 +63,9 @@ export function PageTitle({
 
   return (
     <h1
-      className={`font-en uppercase ${centered ? "text-center" : ""} ${revealClass} ${className}`}
+      /* 見出しは設定で自由に書ける。折り返せない語だと箱の幅は変わらないまま
+         文字だけ外へ出る（実測 320px: 中身385px / 枠272px）。 */
+      className={`font-en uppercase break-words ${centered ? "text-center" : ""} ${revealClass} ${className}`}
       style={{
         fontSize: "var(--section-label-size, 0.75rem)",
         color: "var(--section-label-color)",

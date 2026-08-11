@@ -523,7 +523,7 @@ function TopStatement({
           .map((para, i) => (
             <p
               key={i}
-              className="text-[color:var(--text-quiet)] text-pretty"
+              className="text-[color:var(--text-quiet)] text-pretty break-words"
               style={{
                 fontSize: "var(--body-size, 0.9375rem)",
                 lineHeight: "var(--body-leading, 2.1)",
@@ -612,7 +612,7 @@ function HeroNameBlock({
       </h1>
       {showKata && nameKata && (
         <p
-          className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 hero-text-reveal hero-text-reveal-2"
+          className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 break-words hero-text-reveal hero-text-reveal-2"
           style={{
             color: overPhoto ? "rgba(255,255,255,0.70)" : "var(--text-quiet)",
             textShadow: shadow(12),
@@ -636,7 +636,7 @@ function HeroNameBlock({
       </p>
       {subtitle && (
         <p
-          className="font-en tracking-[0.10em] mt-1 hero-text-reveal hero-text-reveal-3"
+          className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
           style={{
             fontSize: "var(--hero-sub-size, 0.75rem)",
             color: overPhoto
@@ -781,7 +781,7 @@ function HomeQuietGrid({
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>
@@ -904,7 +904,7 @@ function HomeEditorial({
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>
@@ -1040,7 +1040,7 @@ function HomeImmersive({
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>
@@ -1376,7 +1376,7 @@ export default function TopPage() {
             </h1>
             {nameKata && (
               <p
-                className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 hero-text-reveal hero-text-reveal-2"
+                className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 break-words hero-text-reveal hero-text-reveal-2"
                 style={{
                   color: "rgba(255,255,255,0.70)",
                   textShadow: "0 1px 12px rgba(0,0,0,0.4)",
@@ -1386,7 +1386,7 @@ export default function TopPage() {
               </p>
             )}
             <p
-              className="font-en mt-1 hero-text-reveal hero-text-reveal-2"
+              className="font-en mt-1 break-words hero-text-reveal hero-text-reveal-2"
               style={{
                 fontSize: "var(--hero-name-en-size, 0.9375rem)",
                 color: "rgba(255,255,255,0.82)",
@@ -1397,7 +1397,7 @@ export default function TopPage() {
               {siteNameEn}
             </p>
             <p
-              className="font-en tracking-[0.10em] mt-1 hero-text-reveal hero-text-reveal-3"
+              className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
               style={{
                 fontSize: "var(--hero-sub-size, 0.75rem)",
                 color: "rgba(255,255,255,0.62)",
@@ -1449,12 +1449,12 @@ export default function TopPage() {
               {siteNameJa}
             </h1>
             {nameKata && (
-              <p className="text-[length:var(--text-note)] tracking-[0.18em] text-[color:var(--text-quiet)] mt-1.5 hero-text-reveal hero-text-reveal-2">
+              <p className="text-[length:var(--text-note)] tracking-[0.18em] text-[color:var(--text-quiet)] mt-1.5 break-words hero-text-reveal hero-text-reveal-2">
                 {nameKata}
               </p>
             )}
             <p
-              className="font-en mt-1 hero-text-reveal hero-text-reveal-2"
+              className="font-en mt-1 break-words hero-text-reveal hero-text-reveal-2"
               style={{
                 fontSize: "var(--hero-name-en-size, 0.875rem)",
                 color:
@@ -1465,7 +1465,7 @@ export default function TopPage() {
               {siteNameEn}
             </p>
             <p
-              className="font-en tracking-[0.10em] mt-1 hero-text-reveal hero-text-reveal-3"
+              className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
               style={{
                 fontSize: "var(--hero-sub-size, 0.75rem)",
                 color:
@@ -1490,7 +1490,7 @@ export default function TopPage() {
         >
           <div className="flex items-center justify-between mb-10 md:mb-14">
             <h2
-              className="font-en uppercase section-reveal"
+              className="font-en uppercase section-reveal break-words min-w-0"
               style={{
                 fontSize: "var(--section-label-size, 0.75rem)",
                 color: "var(--section-label-color)",
@@ -1502,7 +1502,7 @@ export default function TopPage() {
             </h2>
             <Link
               to="/gallery"
-              className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5"
+              className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5 break-words shrink-0 max-w-[45%]"
               style={{
                 transitionDelay: "0.1s",
                 fontSize: "var(--section-label-size, 0.6875rem)",
@@ -1536,7 +1536,7 @@ export default function TopPage() {
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>

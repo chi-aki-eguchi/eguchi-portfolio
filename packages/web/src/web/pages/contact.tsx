@@ -291,7 +291,7 @@ export default function ContactPage({
             default JP page still sees they can reach out. Hidden when set to "". */}
         {status !== "success" && data?.contactEnglishNote && (
           <p
-            className={`${leadAlign} font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] -mt-6 mb-8 page-entrance page-entrance-delay-1`}
+            className={`${leadAlign} font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] -mt-6 mb-8 break-words page-entrance page-entrance-delay-1`}
           >
             {data.contactEnglishNote}
           </p>
@@ -303,7 +303,7 @@ export default function ContactPage({
             so the thank-you moment stays quiet). */}
         {formspreeUrl && status !== "success" && intro && (
           <p
-            className={`${leadAlign} text-[color:var(--text-quiet)] -mt-4 mb-5 page-entrance page-entrance-delay-1`}
+            className={`${leadAlign} text-[color:var(--text-quiet)] -mt-4 mb-5 break-words page-entrance page-entrance-delay-1`}
             style={{
               fontSize: "var(--body-size, 0.875rem)",
               lineHeight: "var(--body-leading, 2)",
@@ -317,7 +317,7 @@ export default function ContactPage({
             依頼の流れ。どちらも設定で空にすれば消える。 */}
         {formspreeUrl && status !== "success" && note && (
           <p
-            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 page-entrance page-entrance-delay-1`}
+            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words page-entrance page-entrance-delay-1`}
             style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
           >
             {note}
@@ -329,7 +329,7 @@ export default function ContactPage({
               Flow
             </p>
             <p
-              className="text-[color:var(--text-quiet)]"
+              className="text-[color:var(--text-quiet)] break-words"
               style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
             >
               {flow}
@@ -342,7 +342,7 @@ export default function ContactPage({
           <div className="py-4 space-y-6 page-entrance page-entrance-delay-1">
             {intro && (
               <p
-                className="text-[color:var(--text-quiet)]"
+                className="text-[color:var(--text-quiet)] break-words"
                 style={{
                   fontSize: "var(--body-size, 0.875rem)",
                   lineHeight: "var(--body-leading, 2)",
@@ -398,7 +398,7 @@ export default function ContactPage({
                 <div className="space-y-3">
                   <p
                     role="alert"
-                    className="text-[color:var(--text-quiet)]"
+                    className="text-[color:var(--text-quiet)] break-words"
                     style={{
                       fontSize: "var(--body-size, 0.875rem)",
                       lineHeight: "var(--body-leading, 2)",

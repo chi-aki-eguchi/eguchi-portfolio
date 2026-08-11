@@ -503,7 +503,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: "calc(2rem + var(--sai-bottom))" }}
       >
         <div
-          className={`max-w-5xl mx-auto px-6 md:px-12 flex gap-4 ${
+          className={`max-w-5xl mx-auto px-6 md:px-12 flex gap-4 min-w-0 ${
             footerLayout === "split"
               ? "flex-col items-start md:flex-row md:items-center md:justify-between"
               : footerLayout === "left"
@@ -567,7 +567,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {data?.footerCtaLabel && (
             <Link
               to="/contact"
-              className="font-en tracking-[0.06em] nav-link-luxury footer-link-public"
+              className="font-en tracking-[0.06em] nav-link-luxury footer-link-public break-words max-w-full"
               style={
                 {
                   fontSize: "var(--footer-size, 11px)",
@@ -579,7 +579,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           )}
           <div
-            className={`flex flex-col gap-2 ${
+            className={`flex flex-col gap-2 min-w-0 max-w-full ${
               footerLayout === "center"
                 ? "items-center"
                 : footerLayout === "split"
@@ -588,7 +588,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             }`}
           >
             <p
-              className={footerLayout === "center" ? "font-en text-center" : "font-en"}
+              className={`break-words max-w-full ${footerLayout === "center" ? "font-en text-center" : "font-en"}`}
               style={{
                 fontSize: "var(--footer-size, 11px)",
                 letterSpacing: "0.04em",
@@ -603,7 +603,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   href={templateCreditUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public"
+                  className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public break-words max-w-full"
                   style={
                     {
                       fontSize:
@@ -616,7 +616,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </a>
               ) : (
                 <span
-                  className={`font-en tracking-[0.05em] ${footerLayout === "center" ? "text-center" : ""}`}
+                  className={`font-en tracking-[0.05em] break-words max-w-full ${footerLayout === "center" ? "text-center" : ""}`}
                   style={{
                     fontSize:
                       "max(8px, calc(var(--footer-size, 11px) - 2px))",

@@ -350,7 +350,7 @@ export default function ProfilePage({
           </h3>
           {data?.printDescription && (
             <p
-              className="text-[color:var(--text-quiet)] mb-5 whitespace-pre-line"
+              className="text-[color:var(--text-quiet)] mb-5 whitespace-pre-line break-words"
               style={{
                 fontSize: "var(--body-size, 0.875rem)",
                 lineHeight: "var(--body-leading, 2)",
@@ -364,7 +364,7 @@ export default function ProfilePage({
             href={safeHref(data?.printStoreUrl ?? "")}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block font-en text-sm tracking-[0.03em] border border-[rgba(var(--foreground-rgb),0.18)] text-[rgba(var(--foreground-rgb),0.65)] px-6 py-2.5 rounded-md hover:border-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.85)] transition-colors duration-300"
+            className="inline-block max-w-full break-words font-en text-sm tracking-[0.03em] border border-[rgba(var(--foreground-rgb),0.18)] text-[rgba(var(--foreground-rgb),0.65)] px-6 py-2.5 rounded-md hover:border-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.85)] transition-colors duration-300"
           >
             {data?.printStoreLabel || "プリントを購入する"}
           </a>

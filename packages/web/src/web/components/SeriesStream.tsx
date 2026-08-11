@@ -162,9 +162,11 @@ export function SeriesStream({
 
   return (
     <section className="pb-[calc(4rem*var(--spacing-section-gap,1))] md:pb-[calc(6rem*var(--spacing-section-gap,1))]">
-      <div className="max-w-5xl mx-auto px-6 md:px-12 flex items-center justify-between mb-8 md:mb-10">
+      <div className="max-w-5xl mx-auto px-6 md:px-12 flex items-center justify-between gap-4 mb-8 md:mb-10">
         <h2
-          className="font-en uppercase section-reveal"
+          /* 帯の見出しは設定で自由に書ける。折り返せない語だと、右の
+             「View all」ごと画面外へ押し出す（実測 320px で 504px）。 */
+          className="font-en uppercase section-reveal break-words min-w-0"
           style={{
             fontSize: "var(--section-label-size, 0.75rem)",
             color: "var(--section-label-color)",
@@ -176,7 +178,7 @@ export function SeriesStream({
         </h2>
         <Link
           to="/series"
-          className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5"
+          className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5 shrink-0"
           style={{
             transitionDelay: "0.1s",
             fontSize: "var(--section-label-size, 0.6875rem)",

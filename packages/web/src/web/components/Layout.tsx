@@ -193,6 +193,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
 
+  // メニューを開いている間は後ろを止める。実測（2026-08-11）では、開いたまま
+  // 指を動かすとページだけが流れ、メニューが宙に浮いたまま残っていた。
+  // 写真ビューアは既に同じやり方で後ろを止めており（`overflow:hidden`）、
+  // 開いている面がひとつだけ動く状態を作らないのが、このサイトの約束。
+  // **元の値へ戻す。** 空文字を入れると、他の場所が設定した値まで消える。
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [mobileOpen]);
+
   const navTextStyle = { fontSize: "var(--nav-size, 13px)" };
 
   // BB: nav position / hover effect — values sanitised so an odd DB value can

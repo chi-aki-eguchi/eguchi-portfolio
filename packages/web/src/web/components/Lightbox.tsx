@@ -1473,6 +1473,12 @@ export function Lightbox({
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-small)",
                   letterSpacing: "0.03em",
+                  // 撮影情報は写真ごとに長さが違う。折り返せない値（ファイル名
+                  // 由来の題名など）が来ると、表が枠を押し広げて画面外へ出る。
+                  // 実測（320px の画面）: 表が395px、枠が433pxになり、値の
+                  // 右側が読めなくなっていた。width:100% + fixed で枠に収める。
+                  width: "100%",
+                  tableLayout: "fixed",
                 }}
               >
                 <tbody>
@@ -1495,6 +1501,7 @@ export function Lightbox({
                           color: ink(0.7),
                           paddingTop: 3,
                           paddingBottom: 3,
+                          overflowWrap: "anywhere",
                         }}
                       >
                         {value}

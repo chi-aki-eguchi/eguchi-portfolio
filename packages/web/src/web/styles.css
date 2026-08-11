@@ -3144,6 +3144,25 @@
   --page-inset: 24px;
 }
 
+/* ページ上端の余白。実測（2026-08-11）では PC で Gallery 8rem / Series 8rem /
+   About 5rem / Contact 6rem とページごとに違い、移動すると見出しの高さが変わって
+   いた。左右を揃えたので、縦も1本にする（オーナー判断 2026-08-11「一旦行って
+   みよう」）。倍率設定 --spacing-page-top は今までどおり効く。
+
+   **ページの最初の節にだけ付ける。** 2つ目以降に付けると、節と節の間が
+   「ページ上端ぶん」空いてしまう（Contact は料金と本文で2節ある）。 */
+.site-page-top {
+  padding-top: calc(var(--page-top) * var(--spacing-page-top, 1));
+}
+:root {
+  --page-top: 3.5rem;
+}
+@media (min-width: 768px) {
+  :root {
+    --page-top: 7rem;
+  }
+}
+
 /* 絞り込みの帯は横スクロールする。画面の端まで届かせたいので、ページの
    左右余白ぶんだけ外へ出してから、同じ量を内側の余白として戻す。
    （以前は -mx-4 px-4 と決め打ちで、ページ余白を変えたときにずれた） */

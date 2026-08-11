@@ -12,7 +12,7 @@ export default function SeriesListPage() {
   const entranceRef = usePageEntrance([data]);
 
   return (
-    <section className="max-w-5xl mx-auto site-page pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-16 md:pb-32 min-h-[60vh]" ref={entranceRef}>
+    <section className="max-w-5xl mx-auto site-page site-page-top pb-16 md:pb-32 min-h-[60vh]" ref={entranceRef}>
       <PageTitle className="mb-16 md:mb-24">Series</PageTitle>
 
       <SeriesGrid />

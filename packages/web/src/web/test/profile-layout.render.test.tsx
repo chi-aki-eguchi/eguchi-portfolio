@@ -113,6 +113,36 @@ describe("About の構成", () => {
     }
   });
 
+  // 折り返せない長い語（URL を名前欄に貼った等）で列そのものが広がる。
+  // 実測（2026-08-11・320px の画面）: 名前が50文字の連続英字だと About が
+  // **1650px** まで伸びていた。本文の段落でも同じことが起きる。
+  // jsdom では幅を測れないので、折り返しの指定が付いていることで縛る。
+  test("名前と本文に折り返しの指定がある（長い語で横に伸びない）", async () => {
+    const m = await mountProfile({
+      profilePhotoUrl: PHOTO,
+      profileName: "A".repeat(50),
+      profileBio: "B".repeat(50),
+      profileStatement: "C".repeat(50),
+    });
+    try {
+      const name = m.host.querySelector("h2");
+      expect(name?.className, "名前").toContain("break-words");
+      // 名前を包む列。grid の子は min-width:auto なので、これが無いと
+      // break-words だけでは列が広がる
+      expect(name?.parentElement?.className, "名前を包む列").toContain("min-w-0");
+      const paras = [...m.host.querySelectorAll("p")].filter((p) =>
+        /^(B|C)+$/.test((p.textContent ?? "").trim()),
+      );
+      expect(paras.length, "本文とステートメントが出ている").toBeGreaterThan(0);
+      for (const p of paras)
+        expect(p.className, `本文: ${p.textContent?.slice(0, 6)}`).toContain(
+          "break-words",
+        );
+    } finally {
+      m.cleanup();
+    }
+  });
+
   test("知らない値は既定へ倒す（DBに変な値が入っても壊さない）", async () => {
     const m = await mountProfile({
       profilePhotoUrl: PHOTO,

@@ -116,9 +116,14 @@ export default function ProfilePage({
         )}
 
         {/* Bio */}
-        <div className="pt-1 flex flex-col">
+        {/* min-w-0: grid の子は既定で min-width:auto なので、中身が折り返せない
+            とき列そのものが広がる。下の break-words と両方要る。 */}
+        <div className="pt-1 flex flex-col min-w-0">
           <h2
-            className="font-bold tracking-[0.03em] text-[var(--foreground)] page-entrance page-entrance-delay-1"
+            /* break-words が無いと、折り返せない長い名前（URL を貼った等）で
+               About が横に伸びる。実測 320px の画面で 1650px まで広がっていた。
+               TOP の作家名には元から付いている。 */
+            className="font-bold tracking-[0.03em] text-[var(--foreground)] break-words page-entrance page-entrance-delay-1"
             style={{
               // quiet は写真が無いぶん、名前を大きくして紙面の芯にする。
               // 同じ大きさのままだと「写真が抜け落ちた side」に見える。
@@ -130,7 +135,7 @@ export default function ProfilePage({
           >
             {nameJa}
           </h2>
-          <p className="font-en text-sm tracking-[0.04em] text-[color:var(--text-quiet)] mt-1 page-entrance page-entrance-delay-1">
+          <p className="font-en text-sm tracking-[0.04em] text-[color:var(--text-quiet)] mt-1 break-words page-entrance page-entrance-delay-1">
             {nameEn}
           </p>
 
@@ -142,7 +147,7 @@ export default function ProfilePage({
                 .map((line, i) => (
                   <p
                     key={i}
-                    className="text-[color:var(--text-quiet)]"
+                    className="text-[color:var(--text-quiet)] break-words"
                     style={{
                       fontSize: "var(--body-size, 0.875rem)",
                       lineHeight: "var(--body-leading, 2)",
@@ -156,7 +161,7 @@ export default function ProfilePage({
           ) : (
             <div className="mt-8 page-entrance page-entrance-delay-2">
               <p
-                className="text-[color:var(--text-quiet)] italic"
+                className="text-[color:var(--text-quiet)] italic break-words"
                 style={{
                   fontSize: "var(--body-size, 0.875rem)",
                   lineHeight: "var(--body-leading, 2)",
@@ -181,7 +186,7 @@ export default function ProfilePage({
                   .map((para, i) => (
                     <p
                       key={i}
-                      className="text-[color:var(--text-quiet)] text-pretty"
+                      className="text-[color:var(--text-quiet)] text-pretty break-words"
                       style={{
                         fontSize: "var(--body-size, 0.875rem)",
                         lineHeight: "var(--body-leading, 2)",
@@ -205,7 +210,7 @@ export default function ProfilePage({
                 {gear.map((item, i) => (
                   <li
                     key={i}
-                    className="font-en text-[color:var(--text-quiet)]"
+                    className="font-en text-[color:var(--text-quiet)] break-words"
                     style={{
                       fontSize: "var(--body-size, 0.8125rem)",
                       letterSpacing: "0.02em",

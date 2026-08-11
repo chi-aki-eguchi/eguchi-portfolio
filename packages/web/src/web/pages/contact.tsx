@@ -177,7 +177,7 @@ export default function ContactPage({
               return (
                 <div
                   key={p.id}
-                  className={`page-entrance page-entrance-delay-${Math.min(i + 1, 2)} border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg p-6 md:p-8 flex flex-col`}
+                  className={`page-entrance page-entrance-delay-${Math.min(i + 1, 2)} border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg p-6 md:p-8 flex flex-col min-w-0`}
                 >
                   <h3
                     className="font-ja font-medium break-words"
@@ -192,7 +192,7 @@ export default function ContactPage({
                   </h3>
                   {p.price && (
                     <p
-                      className="mt-2 font-en tracking-[0.02em] text-[rgba(var(--foreground-rgb),0.62)]"
+                      className="mt-2 font-en tracking-[0.02em] break-words text-[rgba(var(--foreground-rgb),0.62)]"
                       style={{ fontSize: "var(--body-size, 0.95rem)" }}
                     >
                       {p.price}
@@ -200,7 +200,7 @@ export default function ContactPage({
                   )}
                   {p.description && (
                     <p
-                      className="mt-4 text-[color:var(--text-quiet)]"
+                      className="mt-4 break-words text-[color:var(--text-quiet)]"
                       style={{
                         fontSize: "var(--body-size, 0.875rem)",
                         lineHeight: "var(--body-leading, 1.9)",
@@ -215,7 +215,7 @@ export default function ContactPage({
                       {features.map((f, j) => (
                         <li
                           key={j}
-                          className="flex gap-2 text-[color:var(--text-quiet)]"
+                          className="flex gap-2 min-w-0 text-[color:var(--text-quiet)]"
                           style={{
                             fontSize: "var(--body-size, 0.85rem)",
                             lineHeight: "1.6",
@@ -227,14 +227,16 @@ export default function ContactPage({
                           >
                             —
                           </span>
-                          <span>{f}</span>
+                          {/* flex の子は内容より狭くならない。長い機能名で
+                              料金カードごと横に伸びるのを防ぐ */}
+                          <span className="min-w-0 break-words">{f}</span>
                         </li>
                       ))}
                     </ul>
                   )}
                   {p.note && (
                     <p
-                      className="mt-5 pt-4 border-t border-[rgba(var(--foreground-rgb),0.06)] text-[color:var(--text-quiet)]"
+                      className="mt-5 pt-4 border-t border-[rgba(var(--foreground-rgb),0.06)] break-words text-[color:var(--text-quiet)]"
                       style={{ fontSize: "0.78rem", lineHeight: "1.7" }}
                     >
                       {p.note}

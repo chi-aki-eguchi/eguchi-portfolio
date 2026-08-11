@@ -931,7 +931,7 @@ export function PhotoGallery({
           const year = photoYear(photo);
           const sub = [medium, year].filter(Boolean).join(" — ");
           return (
-            <figure key={photo.id} style={{ margin: 0 }}>
+            <figure key={photo.id} style={{ margin: 0, minWidth: 0 }}>
               {tile(photo, idx, {
                 width: "100%",
                 justifySelf: "stretch",
@@ -951,6 +951,9 @@ export function PhotoGallery({
                         letterSpacing: "0.04em",
                         lineHeight: 1.45,
                         color: "var(--foreground)",
+                        // 題名はファイル名由来のことが多く、空白の無い長い
+                        // 文字列が来る。折り返さないと列ごと横へ広がる。
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {photo.title}
@@ -965,6 +968,7 @@ export function PhotoGallery({
                         letterSpacing: "0.06em",
                         lineHeight: 1.45,
                         color: "var(--text-quiet)",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {sub}

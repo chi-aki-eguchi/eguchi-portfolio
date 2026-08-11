@@ -127,7 +127,7 @@ export function SeriesGrid() {
         <Link
           key={s.id}
           to={`/series/${s.slug}`}
-          className="group block page-entrance"
+          className="group block min-w-0 page-entrance"
         >
           <div
             className={`relative overflow-hidden bg-[rgba(var(--foreground-rgb),0.03)] ${ratio}`}
@@ -158,7 +158,10 @@ export function SeriesGrid() {
               /* 表紙未設定。以前は空の四角を置いていたが、それは場所を取るだけで
                  何も伝えない。題名を出せば、少なくとも何の組か分かる。 */
               <div className="flex h-full w-full items-center justify-center px-4">
-                <span className="font-ja text-[0.8rem] tracking-[0.05em] leading-snug text-center text-[color:var(--text-quiet)]">
+                {/* w-full が要る。中央寄せの flex の子は幅が内容で決まるので、
+                    break-words だけでは折り返す幅が無く、札からはみ出して
+                    切れる（実測 124px の札に 534px の文字）。 */}
+                <span className="w-full font-ja text-[0.8rem] tracking-[0.05em] leading-snug text-center break-words text-[color:var(--text-quiet)]">
                   {s.title}
                 </span>
               </div>
@@ -167,11 +170,11 @@ export function SeriesGrid() {
                 下辺に暗い幕を敷いてから載せる（幕なしだと明るい写真で沈む）。 */}
             {cardStyle === "overlay" && s.coverUrl && (
               <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[rgba(0,0,0,0.62)] via-[rgba(0,0,0,0.28)] to-transparent pt-10">
-                <p className="font-ja text-[0.8rem] tracking-[0.05em] leading-snug text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+                <p className="font-ja text-[0.8rem] tracking-[0.05em] leading-snug break-words text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
                   {s.title}
                 </p>
                 {s.subtitle && (
-                  <p className="mt-0.5 font-en text-[0.65rem] tracking-[0.10em] uppercase text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+                  <p className="mt-0.5 font-en text-[0.65rem] tracking-[0.10em] uppercase break-words text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
                     {s.subtitle}
                   </p>
                 )}
@@ -181,11 +184,11 @@ export function SeriesGrid() {
           {/* overlay で表紙があるときは、上に載せたので下には出さない（二重になる） */}
           {!(cardStyle === "overlay" && s.coverUrl) && (
             <>
-              <p className="mt-3 font-ja text-[0.8rem] tracking-[0.05em] leading-snug text-[rgba(var(--foreground-rgb),0.72)]">
+              <p className="mt-3 font-ja text-[0.8rem] tracking-[0.05em] leading-snug break-words text-[rgba(var(--foreground-rgb),0.72)]">
                 {s.title}
               </p>
               {s.subtitle && (
-                <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] uppercase text-[color:var(--text-quiet)]">
+                <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] uppercase break-words text-[color:var(--text-quiet)]">
                   {s.subtitle}
                 </p>
               )}

@@ -114,6 +114,36 @@ describe("シリーズ一覧の札", () => {
     }
   });
 
+  // 折り返せない長いシリーズ名で一覧が横に伸びる。実測（2026-08-11・320px）:
+  // /series が 706px、/series/:slug が 1654px まで広がっていた。
+  // jsdom では幅を測れないので、折り返しの指定で縛る。
+  test("題名に折り返しの指定がある（長い語で横に伸びない）", async () => {
+    const LONG = { ...WITH_COVER, title: "A".repeat(50) };
+    const m = await mountGrid("caption", [LONG]);
+    try {
+      const title = [...m.host.querySelectorAll("p")].find((p) =>
+        (p.textContent ?? "").startsWith("AAAA"),
+      );
+      expect(title?.className, "題名").toContain("break-words");
+      // タイル自体も grid の子なので、縮める指定が要る
+      expect(m.host.querySelector("a")?.className, "タイル").toContain("min-w-0");
+    } finally {
+      m.cleanup();
+    }
+  });
+
+  test("表紙が無い札の題名は、札の幅で折り返す", async () => {
+    const m = await mountGrid("caption", [{ ...NO_COVER, title: "B".repeat(50) }]);
+    try {
+      const span = m.host.querySelector("span");
+      // 中央寄せの flex の子は幅が内容で決まるので w-full が要る
+      expect(span?.className).toContain("w-full");
+      expect(span?.className).toContain("break-words");
+    } finally {
+      m.cleanup();
+    }
+  });
+
   test("知らない値は既定へ倒す（DBに変な値が入っても壊さない）", async () => {
     const m = await mountGrid("ドーン");
     try {

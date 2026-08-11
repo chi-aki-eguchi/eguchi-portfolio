@@ -124,14 +124,14 @@ export default function SeriesDetailPage() {
       {/* Statement header — quiet, editorial */}
       <header className="max-w-2xl mx-auto text-center mb-16 md:mb-24 page-entrance">
         <h1
-          className="font-ja"
+          className="font-ja break-words"
           style={{ fontSize: "var(--heading-size, 1.6rem)", color: `rgba(var(--foreground-rgb),0.82)`, letterSpacing: "0.03em", lineHeight: "var(--section-leading, 1.3)" }}
         >
           {series.title}
         </h1>
         {series.subtitle && (
           <p
-            className="mt-3 font-en text-xs tracking-[0.10em] uppercase"
+            className="mt-3 font-en text-xs tracking-[0.10em] uppercase break-words"
             style={{
               fontSize: "var(--section-label-size, 0.75rem)",
               color: "var(--section-label-color)",
@@ -142,7 +142,7 @@ export default function SeriesDetailPage() {
         )}
         {series.statement && (
           <p
-            className="mt-8 font-ja whitespace-pre-line text-left md:text-center"
+            className="mt-8 font-ja whitespace-pre-line break-words text-left md:text-center"
             style={{ fontSize: "var(--body-size, 0.95rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "var(--body-tracking, 0.02em)", color: `rgba(var(--foreground-rgb),0.62)` }}
           >
             {series.statement}
@@ -169,17 +169,20 @@ export default function SeriesDetailPage() {
       <div className={`mt-20 md:mt-28 flex items-baseline ${nextSeries ? "justify-between" : "justify-center"}`}>
         <Link
           to="/series"
-          className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
+          className="shrink-0 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
         >
           ← Series
         </Link>
         {nextSeries && (
           <Link
             to={`/series/${nextSeries.slug}`}
-            className="text-right font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
+            /* min-w-0: flex の子は内容より狭くならないので、これが無いと
+               折り返せない長いシリーズ名で行ごと画面外へ出る（実測 320px で
+               530px）。break-words だけでは足りない。 */
+            className="min-w-0 text-right font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
           >
             <span className="block text-[0.6rem] uppercase tracking-[0.14em] text-[color:var(--text-quiet)] mb-1">Next</span>
-            <span className="font-ja">{nextSeries.title}</span> →
+            <span className="font-ja break-words">{nextSeries.title}</span> →
           </Link>
         )}
       </div>

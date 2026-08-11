@@ -3143,6 +3143,24 @@
 :root {
   --page-inset: 24px;
 }
+
+/* 絞り込みの帯は横スクロールする。画面の端まで届かせたいので、ページの
+   左右余白ぶんだけ外へ出してから、同じ量を内側の余白として戻す。
+   （以前は -mx-4 px-4 と決め打ちで、ページ余白を変えたときにずれた） */
+.gallery-filter-row {
+  margin-left: calc(var(--page-inset) * -1);
+  margin-right: calc(var(--page-inset) * -1);
+  padding-left: var(--page-inset);
+  padding-right: var(--page-inset);
+}
+@media (min-width: 768px) {
+  .gallery-filter-row {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
 @media (min-width: 768px) {
   :root {
     --page-inset: 48px;

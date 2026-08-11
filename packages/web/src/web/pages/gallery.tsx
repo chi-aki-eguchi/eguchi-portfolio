@@ -259,7 +259,7 @@ export default function GalleryPage() {
       {/* Filter — カテゴリ */}
       {categories.length > 0 && (
         <div
-          className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-6 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
+          className="gallery-filter-row flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-4 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
           style={{
             transitionDelay: "0.1s",
             WebkitOverflowScrolling: "touch",
@@ -285,7 +285,7 @@ export default function GalleryPage() {
       {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
       {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
         <div
-          className="flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 scrollbar-hide"
+          className="gallery-filter-row gallery-filter-row--sub flex md:flex-wrap md:justify-center gap-x-5 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
           style={{
             transitionDelay: "0.15s",
             WebkitOverflowScrolling: "touch",
@@ -302,7 +302,7 @@ export default function GalleryPage() {
               key={val}
               onClick={() => setActiveMedium(val)}
               aria-pressed={activeMedium === val}
-              className={`tap-target font-en text-xs tracking-[0.04em] pt-1.5 pb-1.5 transition-all duration-300 nav-link-luxury border-b-[1.5px] ${
+              className={`tap-target font-en text-[0.6875rem] tracking-[0.06em] pt-1 pb-1 transition-all duration-300 nav-link-luxury border-b ${
                 activeMedium === val
                   ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
                   : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"

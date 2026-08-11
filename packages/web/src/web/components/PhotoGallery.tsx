@@ -1036,7 +1036,16 @@ export function PhotoGallery({
                 preferMediumGrid: true,
               })}
               {(photo.title || info) && (
-                <figcaption style={{ marginTop: 14, textAlign: "center" }}>
+                <figcaption
+                  style={{
+                    marginTop: 14,
+                    textAlign: "center",
+                    // 中央寄せ flex の子なので、幅を持たせないと折り返す先が
+                    // 無く、題名（ファイル名由来）がそのまま横へ伸びる。
+                    width: "100%",
+                    overflowWrap: "anywhere",
+                  }}
+                >
                   {photo.title && (
                     <p
                       className="font-en"

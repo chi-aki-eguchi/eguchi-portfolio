@@ -249,7 +249,7 @@ export default function GalleryPage() {
 
   return (
     <section
-      className="max-w-5xl mx-auto px-4 sm:px-6 md:px-12 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-12 md:pb-32"
+      className="max-w-5xl mx-auto site-page pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(8rem*var(--spacing-page-top,1))] pb-12 md:pb-32"
       ref={fadeRef}
     >
       <PageTitle className="mb-10 md:mb-24" revealClass="section-reveal">

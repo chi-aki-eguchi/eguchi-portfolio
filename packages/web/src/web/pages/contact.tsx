@@ -152,7 +152,7 @@ export default function ContactPage({
       {/* H1: Pricing — quiet cards, only when published plans exist */}
       {plans.length > 0 && (
         <section
-          className="max-w-3xl mx-auto px-6 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6rem*var(--spacing-page-top,1))] pb-4"
+          className="max-w-3xl mx-auto site-page pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6rem*var(--spacing-page-top,1))] pb-4"
           ref={pricingRef}
         >
           <h2
@@ -264,7 +264,7 @@ export default function ContactPage({
             : layout === "left"
               ? "max-w-xl"
               : "max-w-3xl"
-        } mx-auto px-6 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[calc(100dvh-180px)]`}
+        } mx-auto site-page pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[calc(100dvh-180px)]`}
         ref={entranceRef}
         data-contact-layout={layout}
       >

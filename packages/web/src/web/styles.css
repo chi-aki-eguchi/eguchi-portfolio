@@ -3128,6 +3128,27 @@
   }
 }
 
+/* ─── 公開ページの共通枠 ───────────────────────────
+   2026-08-11 実測: Gallery / Series / About / Contact の左右余白が
+   スマホで **16 / 24 / 20 / 24px** とページごとに違い、移動するたびに本文が
+   横へずれていた（PCでも 48 / 48 / 40 / 24px）。管理画面は 2026-07-31 に
+   「見出しの左端は9タブ共通」で直したが、公開側は同じ直しを受けていなかった。
+
+   **最大幅はページごとに違ってよい**（Gallery は広く、Contact は細い列）。
+   揃えるのは "紙の縁からの距離" だけ。 */
+.site-page {
+  padding-left: var(--page-inset);
+  padding-right: var(--page-inset);
+}
+:root {
+  --page-inset: 24px;
+}
+@media (min-width: 768px) {
+  :root {
+    --page-inset: 48px;
+  }
+}
+
 /* ─── Safe area for iPhone notch / Dynamic Island / in-app browsers ─── */
 :root {
   --sai-top: env(safe-area-inset-top, 0px);

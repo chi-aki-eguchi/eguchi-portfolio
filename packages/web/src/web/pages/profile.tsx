@@ -95,7 +95,7 @@ export default function ProfilePage({
 
   return (
     <section
-      className="max-w-3xl mx-auto px-5 md:px-10 pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[60vh]"
+      className="max-w-3xl mx-auto site-page pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))] pb-12 md:pb-20 min-h-[60vh]"
       ref={entranceRef}
     >
       <PageTitle className="mb-12">{data?.profileLabel ?? "Profile"}</PageTitle>

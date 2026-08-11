@@ -142,7 +142,7 @@ export default function SeriesDetailPage() {
         )}
         {series.statement && (
           <p
-            className="mt-8 font-ja whitespace-pre-line break-words text-left md:text-center"
+            className="mt-8 font-ja whitespace-pre-line break-words ja-prose text-left md:text-center"
             style={{ fontSize: "var(--body-size, 0.95rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "var(--body-tracking, 0.02em)", color: `rgba(var(--foreground-rgb),0.62)` }}
           >
             {series.statement}

@@ -147,7 +147,7 @@ export default function ProfilePage({
                 .map((line, i) => (
                   <p
                     key={i}
-                    className="text-[color:var(--text-quiet)] break-words"
+                    className="text-[color:var(--text-quiet)] break-words ja-prose"
                     style={{
                       fontSize: "var(--body-size, 0.875rem)",
                       lineHeight: "var(--body-leading, 2)",
@@ -186,7 +186,7 @@ export default function ProfilePage({
                   .map((para, i) => (
                     <p
                       key={i}
-                      className="text-[color:var(--text-quiet)] text-pretty break-words"
+                      className="text-[color:var(--text-quiet)] text-pretty break-words ja-prose"
                       style={{
                         fontSize: "var(--body-size, 0.875rem)",
                         lineHeight: "var(--body-leading, 2)",
@@ -350,7 +350,7 @@ export default function ProfilePage({
           </h3>
           {data?.printDescription && (
             <p
-              className="text-[color:var(--text-quiet)] mb-5 whitespace-pre-line break-words"
+              className="text-[color:var(--text-quiet)] mb-5 whitespace-pre-line break-words ja-prose"
               style={{
                 fontSize: "var(--body-size, 0.875rem)",
                 lineHeight: "var(--body-leading, 2)",

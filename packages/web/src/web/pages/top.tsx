@@ -523,7 +523,7 @@ function TopStatement({
           .map((para, i) => (
             <p
               key={i}
-              className="text-[color:var(--text-quiet)] text-pretty break-words"
+              className="text-[color:var(--text-quiet)] text-pretty break-words ja-prose"
               style={{
                 fontSize: "var(--body-size, 0.9375rem)",
                 lineHeight: "var(--body-leading, 2.1)",

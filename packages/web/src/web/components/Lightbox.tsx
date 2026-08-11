@@ -13,6 +13,8 @@ import {
   withRetryParam,
   withRetrySrcSet,
 } from "../lib/picture";
+import { useQuery } from "@tanstack/react-query";
+import { api, jsonOrThrow } from "../lib/api";
 import { photoAltText } from "../lib/photo-alt";
 import { historyBridge } from "../lib/scroll-memory";
 
@@ -49,13 +51,32 @@ export type LightboxPhoto = {
 };
 
 // ── 写真ビューアの色 ──
-// オーナー決定（2026-08-08）: ビューアは「白い壁」。サイトが暗色テーマでも
-// ここだけは常に白で、色を持つのは写真だけにする。だからUI（カウンタ・
-// ボタン・キャプション）は白ではなく、壁に対する黒インクで置く。
-// 公開サイトのテーマ変数（--foreground 等）はあえて参照しない。暗色テーマの
-// ときにインクまで白へ反転し、白い壁の上で読めなくなるため。
-const WALL = "#fff";
-const ink = (alpha: number) => `rgba(0,0,0,${alpha})`;
+// オーナー決定（2026-08-08）: ビューアは「白い壁」。色を持つのは写真だけ。
+// **公開サイトのテーマ変数（--foreground 等）は今も参照しない。** 暗色テーマの
+// ときにインクだけ白へ反転し、白い壁の上で読めなくなるため。
+//
+// オーナー承認（2026-08-11）で、壁そのものを選べるようにした。**壁とインクは
+// 必ず対で切り替える**ので、上の「片方だけ反転して読めない」は起きない。
+// テーマ追従ではなく、明示的に選んだ組み合わせだけを使う。
+//   wall   白い展示壁（既定。従来どおり）
+//   cinema 暗室。黒地に白インク
+//   paper  生成りの紙。写真集に近い温度
+// veil は「壁と同じ色の薄い幕」。ボタンの下敷きや文字の暈しに使うので、
+// 壁が黒いときは黒でなければ意味がない（白のままだと白い箱が浮く）。
+export type ViewerPalette = {
+  wall: string;
+  /** rgb 3値。rgba() の中へ差し込む */
+  ink: string;
+  veil: string;
+};
+export const VIEWER_PALETTES: Record<string, ViewerPalette> = {
+  wall: { wall: "#fff", ink: "0,0,0", veil: "255,255,255" },
+  cinema: { wall: "#0b0b0b", ink: "255,255,255", veil: "0,0,0" },
+  paper: { wall: "#f4f1ea", ink: "38,32,26", veil: "244,241,234" },
+};
+export function viewerPalette(style: string | undefined): ViewerPalette {
+  return VIEWER_PALETTES[style ?? ""] ?? VIEWER_PALETTES.wall;
+}
 
 const preloaded = new Set<string>();
 function preloadPhoto(photo: LightboxPhoto | undefined) {
@@ -114,6 +135,15 @@ export function Lightbox({
   seriesSlugById?: Record<number, string>;
   categoryLabelBySlug?: Record<string, string>;
 }) {
+  // ビューアの壁。設定が読めていない間は既定の白い壁で描く（点滅しない）。
+  const { data: viewerSettings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => jsonOrThrow(await api.settings.$get()),
+  });
+  const palette = viewerPalette(viewerSettings?.viewerStyle);
+  const ink = (alpha: number) => `rgba(${palette.ink},${alpha})`;
+  const veil = (alpha: number) => `rgba(${palette.veil},${alpha})`;
+
   const [imgError, setImgError] = useState(false);
   // Full-size image load can fail transiently (R2/network blip — see api/index.ts
   // getOriginal retry). Auto-retry a couple of times with a fresh URL (cache-bust
@@ -790,6 +820,7 @@ export function Lightbox({
       className={closing ? "lightbox-exit" : "lightbox-enter"}
       aria-modal="true"
       aria-label="写真ビューア"
+      data-viewer-style={viewerSettings?.viewerStyle ?? "wall"}
       // Staged Escape (standard viewer behaviour): first Esc steps back out of
       // the zoom, the next one closes — closing instantly from a zoomed detail
       // view loses the spot the viewer was studying.
@@ -799,6 +830,9 @@ export function Lightbox({
         else doClose();
       }}
       style={{
+        // .lb-btn の色は styles.css 側にある。壁と一緒に切り替わるよう、
+        // インクの rgb をここから渡す（CSS で黒を決め打ちしない）。
+        ["--lb-ink" as string]: palette.ink,
         position: "fixed",
         inset: 0,
         width: "100%",
@@ -809,7 +843,7 @@ export function Lightbox({
         padding: 0,
         border: "none",
         zIndex: 99999,
-        background: WALL,
+        background: palette.wall,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -914,7 +948,7 @@ export function Lightbox({
             justifyContent: "center",
             // 白い壁の上では四隅はたいてい白。写真が隅まで届いたときだけ
             // 効けばいいので、暗いスクリムではなく白いスクリムを敷く。
-            background: "rgba(255,255,255,0.55)",
+            background: veil(0.55),
             borderRadius: "50%",
             border: "none",
             cursor: "pointer",
@@ -1310,7 +1344,7 @@ export function Lightbox({
               textAlign: "center",
               zIndex: 10,
               // 写真が下端まで届いたときだけ効く逃げ。白い壁なので白いにじみ。
-              textShadow: "0 1px 10px rgba(255,255,255,0.75)",
+              textShadow: `0 1px 10px ${veil(0.75)}`,
             }}
           >
             {photo.title && (
@@ -1417,7 +1451,7 @@ export function Lightbox({
                 position: "absolute",
                 bottom: "calc(52px + var(--sai-bottom))",
                 left: "calc(16px + var(--sai-left))",
-                background: "rgba(255,255,255,0.82)",
+                background: veil(0.82),
                 border: `1px solid ${ink(0.08)}`,
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",

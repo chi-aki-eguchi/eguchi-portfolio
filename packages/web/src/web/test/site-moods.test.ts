@@ -44,6 +44,7 @@ const ALLOWED: Record<string, readonly string[]> = {
   seriesCardStyle: ["caption", "overlay", "wide"],
   footerLayout: ["center", "left", "split"],
   pageTitleStyle: ["label", "left", "display", "hidden"],
+  viewerStyle: ["wall", "cinema", "paper"],
 };
 const LAYOUT_KEYS = ["galleryLayout", "seriesLayout", "topWorksLayout"];
 

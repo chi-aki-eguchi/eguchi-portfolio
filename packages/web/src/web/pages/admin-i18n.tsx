@@ -1146,6 +1146,15 @@ const ADMIN_PHASE_2B_JA = {
       },
       seriesNote:
         "重ねるときは、文字が沈まないように表紙の下側へ暗い幕を敷きます。それでも明るい表紙では読みにくくなることがあるので、迷うときは「表紙の下に題名」が安全です。表紙を登録していないシリーズは、空の四角ではなく題名を出します。",
+      viewerLabel: "写真ビューアの壁",
+      viewerHint: "写真を大きく開いたときの地の色",
+      viewerOptions: {
+        wall: "白い展示壁（既定）",
+        cinema: "暗室（黒地）",
+        paper: "生成りの紙",
+      },
+      viewerNote:
+        "壁と文字の色は必ず対で替わるので、どれを選んでも操作は読めます。サイト全体のテーマ（明／暗）とは切り離してあり、ビューアだけこの設定に従います。",
       statementLabel: "TOPに作家の言葉を置く",
       statementHint: "Profile の「作家ステートメント」をトップページにも出します",
       statementOptions: {
@@ -2805,6 +2814,15 @@ const ADMIN_PHASE_2B_EN = {
       },
       seriesNote:
         "Overlaid titles get a dark scrim along the bottom of the cover so they stay readable, but a bright cover can still swallow them — “title below the cover” is the safer choice. A series with no cover shows its title instead of an empty box.",
+      viewerLabel: "Photo viewer backdrop",
+      viewerHint: "The ground behind a photo opened large",
+      viewerOptions: {
+        wall: "White gallery wall (default)",
+        cinema: "Darkroom (black)",
+        paper: "Natural paper",
+      },
+      viewerNote:
+        "The backdrop and the text colour always change together, so the controls stay readable whichever you pick. This is independent of the site’s light/dark theme — only the viewer follows it.",
       statementLabel: "Your words on the home page",
       statementHint: "Shows the artist statement from Profile on the home page too",
       statementOptions: {

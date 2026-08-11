@@ -4036,19 +4036,22 @@ img {
 
 /* ─── Lightbox chrome buttons ───
    Rest/hover colors via CSS (not JS mouseenter) so keyboard focus gets the
-   same feedback. Rest opacity comes from --lb-rest per button. ビューアは
-   サイトのテーマに関わらず常に「白い壁」なので、UIは常に黒インクで置く
-   （2026-08-08 オーナー決定）。テーマ変数は参照しない。 */
+   same feedback. Rest opacity comes from --lb-rest per button.
+   **インクの色は Lightbox.tsx が --lb-ink で渡す**（2026-08-11、壁を選べるように
+   した際）。壁とインクは必ず対で替わるので、暗い壁に黒インクは起きない。
+   既定は 0,0,0（白い壁）。**公開サイトのテーマ変数は今も参照しない** —
+   参照すると暗色テーマでインクだけ反転し、白い壁の上で読めなくなる
+   （2026-08-08 オーナー決定の要点はここ）。 */
 .lb-btn {
-  color: rgba(0, 0, 0, var(--lb-rest, 0.45));
+  color: rgba(var(--lb-ink, 0, 0, 0), var(--lb-rest, 0.45));
   transition: color var(--dur-fast) var(--ease-out);
 }
 .lb-btn:hover,
 .lb-btn:focus-visible {
-  color: rgba(0, 0, 0, 0.85);
+  color: rgba(var(--lb-ink, 0, 0, 0), 0.85);
 }
 .lb-btn:focus-visible {
-  outline: 2px solid rgba(0, 0, 0, 0.45);
+  outline: 2px solid rgba(var(--lb-ink, 0, 0, 0), 0.45);
   outline-offset: 2px;
 }
 

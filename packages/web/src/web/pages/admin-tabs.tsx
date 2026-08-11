@@ -166,6 +166,7 @@ export const SETTINGS_SECTION_KEYS = {
     "footerLayout",
     "pageTitleStyle",
     "homeStatement",
+    "viewerStyle",
   ],
   series: [
     "seriesNavEnabled",
@@ -5745,6 +5746,35 @@ export function SettingsTab({
                     {copy.pageLayout.seriesNote}
                   </p>
                 )}
+                <AdminField
+                  label={copy.pageLayout.viewerLabel}
+                  hint={copy.pageLayout.viewerHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["wall", copy.pageLayout.viewerOptions.wall],
+                        ["cinema", copy.pageLayout.viewerOptions.cinema],
+                        ["paper", copy.pageLayout.viewerOptions.paper],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("viewerStyle", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["viewerStyle"] || "wall") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.viewerNote}
+                </p>
                 <AdminField
                   label={copy.pageLayout.statementLabel}
                   hint={copy.pageLayout.statementHint}

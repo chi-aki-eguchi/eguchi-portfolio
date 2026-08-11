@@ -114,6 +114,7 @@ export const SETTINGS_PREVIEW_KEYS = [
   "footerLayout",
   "pageTitleStyle",
   "homeStatement",
+  "viewerStyle",
   "heroMode",
   "heroMotionSpeed",
   "heroRevealOrder",

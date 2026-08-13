@@ -1,50 +1,52 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-12 JST
+## Current State — 2026-08-14 JST
 
-- **Status:** Admin問い合わせ設定の検証を実装完了（オーナー確認・commit判断待ち）
-- **Current owner:** Codex / Sol / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `d6dd5b8` / **Git:** dirty（共有の既存差分を保護） /
-  **originとの差:** なし（実測）
+- **Status:** 2026-08-12 夜の改善サイクル一式を commit 済み。次の1件は未着手・オーナー判断待ち。
+- **Current owner:** Sol（Claude Code） / **Handoff readiness:** ready
+- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean（実測） /
+  **originとの差:** ahead 1（push は未実施）
 
 ### 目的と完成状態
 
-- 壊れたメールアドレスやフォーム送信先を、保存・セットアップ完了・公開のどこでも使わない。
-- 空欄は連絡手段を非表示にする有効な設定とし、前後空白は保存・利用前に除去する。
-- 互換フォームサービスを許可するためFormspreeドメインには固定せず、HTTPS URL構文だけを共通基準にする。
+公開サイトとAdminの機能を1個ずつ実測して品質を上げる。**このゴールには終わりがないため、
+1サイクル＝1件で必ず停止し、次へ進むかはオーナーが決める。**無人での連続稼働はしない。
 
-### 今回完了した変更
+### commit 済みの内容（`f4ce343`）
 
-- `shared/contact-settings.ts` を追加。一般的なメール形式、資格情報・fragmentなしのHTTPS URL、trim、公開用safe値を一元化。
-- Settingsはメール=`email`、送信先=`url`。無効な変更は保存APIを呼ばず、日英inline文・`aria-invalid`・説明連結・対象入力focusを出す。
-- desktopの保存パネルと390pxの下部保存バーを同じ検証経路へ統一。空欄保存と、旧不正値があっても無関係な設定だけを保存する互換性を維持。
-- `/api/admin/settings` はUI迂回の不正な連絡先キーをDB書込み前に400 / `invalidKeys`で拒否し、値をtrimして保存する。allowlist・atomic write・retryは維持。
-- 「はじめに」は実際に使えるメールまたはHTTPS送信先だけを「連絡先」完了とする。
-- 公開ContactとService側は旧DBの不正値をform POST・mailtoへ渡さず、メール/SNS fallbackを維持。Lunaの重複送信lock・focus・retry・honeypot・日英は保持。
-- B-14は現物で解消済みのため製品を変えずbacklogから削除した。
-
-### B-14再測定の範囲
-
-- ローカル人工API・書込み遮断、1440px/light/通常ロード済みで写真タイルは265×265px、透明、影なし、角丸なし、overflowなしを実測。
-- 768px / 390px / dark / 選択 / 詳細 / 空 / 読込み途中はB-14判断のためには未測定。全面マトリクス確認済みとは扱わない。
+- 公開Contact: 送信開始の瞬間にロックして二重送信を防ぐ。成功後は成功文へ、再入力時は名前欄へfocus。
+- Admin問い合わせ設定: `shared/contact-settings.ts` を新設し、Admin画面・保存API・「はじめに」・
+  公開Contactが同じ判定を共有。不正なメール/送信先は保存前に日英inline文で示し、API側でも400で拒否。
+  390pxの下部保存バーもdesktopと同じ検証経路。空欄保存と旧不正値の互換は維持。
+- 公開Gallery: 絞り込みの太さ逆転を修正（選択500 / 未選択400）。高精細画面で粗くなる横長写真だけ高画質版へ。
+- Admin「はじめに」: 現在の公開写真とHero状態から完了を再判定。公開ページは表示確認後に完了。
+- 言語切替: 公開側は当たり判定32px角へ拡大。Admin側は薄すぎる文字を明暗両方で可読に。
+- Admin Series説明をスマホ2行以内へ短縮。実在しないB-13・B-14をbacklogから削除。
 
 ### 検証済み
 
-- shared/API wiring/Contact render/Setup render focused: 35 pass / 0 fail。
-- 人工API + POST遮断browser: 1440px JA/light と390px EN/darkで、無効値POST 0、valid trim payload、空欄削除、focus/ARIA、横あふれなし、透明・shadowなしのinline文を確認。
-- 旧不正値＋無関係Settings保存、公開Contactの不正form/mailto非表示とSNS fallbackをbrowserで確認。
-- 負の確認: 390px下部Saveを旧直呼びへ一時的に戻すとinline検証が失敗し、`saveSettings`復元後に通過。
-- `bun run check` 成功（typecheck / lint / test / tools / build）。`bun run smoke` は473 test entriesで最終`status=passed`、failedTestsなし。
+- `bun run check` 成功（typecheck / lint / test / tools / build）。
+- `bun run smoke` 328 passed / 0 failed / 145 skipped（16.7分、2026-08-14 に完走）。
+  8/12 夜の実行はモデル容量エラーで中断していたため、この回が正本。
+- `git diff --check` 成功。
 
-### 変更範囲 / 次の一手 / 境界
+### 未確認 / 境界
 
-- 今回: contact shared helper・API wiring・Settings/Setup/公開Contact/Service・render/browser回帰、`docs/agents/backlog.md`、`task.md`。
-- 共有dirtyには既存のLibrary・公開JP/EN・Luna Contact差分も同居。巻戻し・上書きしない。
-- オーナーが共有差分を確認し、必要ならcommitする。Codexはcommit / push / deployしない。
-- 本番DB / Turso / R2 / Railway / 環境変数 / 外部Formspree は未操作。本番は未反映。
-- local commit: なし / push: なし / Railway反映: なし / 本番確認: 未commit変更のため未反映。
-- Codex session: `/root/terra_admin_library_audit`
+- 本番DB / Turso / R2 / Railway / 環境変数 / 外部Formspree は未操作。**本番は未反映。**
+- local commit: `f4ce343` / push: なし / Railway反映: なし / 本番確認: 未実施。
+- push はオーナーのみ。エージェントは行わない。
+
+### 次の一手
+
+- オーナーが `f4ce343` を確認し、push するか判断する。
+- その後、公開側とAdmin側から次の1件を選び直す。**古いbacklogの記述を信じず現物を測り直す。**
+
+### 運用上の反省（2026-08-13 夜〜14 朝）
+
+終わりのないゴールを無人で約6時間走らせ、Claude の週枠を使い切った。主因は実装ではなく、
+長時間走行に伴う会話履歴の肥大と、10分かかる検査の完了待ちポーリング、Codex 2体の並行稼働。
+以後は「1件で停止 / 夜間無人稼働なし / 全体検査は最後に1回 / Codexは1タスク1人」を守る。
 <!-- CURRENT_STATE_END -->
 
 ---

@@ -1,64 +1,50 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-11 JST
+## Current State — 2026-08-12 JST
 
-- **Status:** オーナー就寝中の自走。**公開サイトと admin の見直し／選べる範囲の拡張／
-  違和感の修正**。commit 40本が push 待ち
-- **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean・未追跡なし / **origin より 40 先**
+- **Status:** Admin問い合わせ設定の検証を実装完了（オーナー確認・commit判断待ち）
+- **Current owner:** Codex / Sol / **Handoff readiness:** ready
+- **Branch:** `main` / **HEAD:** `d6dd5b8` / **Git:** dirty（共有の既存差分を保護） /
+  **originとの差:** なし（実測）
 
-### 選べる範囲を広げた
+### 目的と完成状態
 
-**骨格そのものを選べるようにした。**新キー7つ（既定は従来どおりで既存サイトは不変）:
+- 壊れたメールアドレスやフォーム送信先を、保存・セットアップ完了・公開のどこでも使わない。
+- 空欄は連絡手段を非表示にする有効な設定とし、前後空白は保存・利用前に除去する。
+- 互換フォームサービスを許可するためFormspreeドメインには固定せず、HTTPS URL構文だけを共通基準にする。
 
-`profileLayout`（About 3種）/ `contactLayout`（3種）/ `seriesCardStyle`（3種）/
-`footerLayout`（3種）/ `pageTitleStyle`（4種）/ `homeStatement`（TOPに作家の言葉。
-文章は Profile を再利用）/ `viewerStyle`（ビューアの壁3種・オーナー承認済み）
-**作風プリセット**（しずか／雑誌／展示／暗室）も追加。既存設定を16個まとめて
-入れ替えるが、押しても保存せず**下書きに入るだけ**なので、見てから決められる。
+### 今回完了した変更
 
-### 使用感・見た目（オーナー指示で着手）
-- **公開4ページの余白がばらばら**で、移動のたび本文がずれていた。左右
-  16/24/20/24px → `.site-page` で24/48px、上端 8/8/5/6rem → `.site-page-top` で統一
-- Gallery の絞り込み2本が同じ見た目。フィルム/デジタルを一段小さくした
-- **スマホのメニューを開いている間、後ろが流れていた**。ビューアと同じく止める
-- 日本語の本文が語の途中で切れていた。`.ja-prose` を本文だけに当てた
+- `shared/contact-settings.ts` を追加。一般的なメール形式、資格情報・fragmentなしのHTTPS URL、trim、公開用safe値を一元化。
+- Settingsはメール=`email`、送信先=`url`。無効な変更は保存APIを呼ばず、日英inline文・`aria-invalid`・説明連結・対象入力focusを出す。
+- desktopの保存パネルと390pxの下部保存バーを同じ検証経路へ統一。空欄保存と、旧不正値があっても無関係な設定だけを保存する互換性を維持。
+- `/api/admin/settings` はUI迂回の不正な連絡先キーをDB書込み前に400 / `invalidKeys`で拒否し、値をtrimして保存する。allowlist・atomic write・retryは維持。
+- 「はじめに」は実際に使えるメールまたはHTTPS送信先だけを「連絡先」完了とする。
+- 公開ContactとService側は旧DBの不正値をform POST・mailtoへ渡さず、メール/SNS fallbackを維持。Lunaの重複送信lock・focus・retry・honeypot・日英は保持。
+- B-14は現物で解消済みのため製品を変えずbacklogから削除した。
 
-### 直した「違和感」
-- 何も登録していないサイトのトップが **1440×540 の空の灰色の板**だけだった。
-  About の写真未登録・シリーズの表紙未設定でも空の四角を置いていた
-- **スマホで Settings だけ見出しが 8px 左へ飛んでいた**（smoke が desktop 限定）
-- 入力エラー・空状態が英語直書き。エラー色も暗いテーマで 2.87:1 だった
-- **取得失敗を「まだシリーズがありません」と言っていた**（fail-quiet trap）。
-  シリーズ詳細も500と404を一緒に扱っていた
-- **他人のデータで崩れる箇所を10箇所以上直した。** 折り返せない長い語で
-  About 1650px / シリーズ詳細 1654px / 撮影依頼の帯 1147px へ伸びていた（320px実測）
+### B-14再測定の範囲
 
-### 検証の状態
+- ローカル人工API・書込み遮断、1440px/light/通常ロード済みで写真タイルは265×265px、透明、影なし、角丸なし、overflowなしを実測。
+- 768px / 390px / dark / 選択 / 詳細 / 空 / 読込み途中はB-14判断のためには未測定。全面マトリクス確認済みとは扱わない。
 
-- `bun run check` 898 pass / 0 fail・`bun run smoke` 307 passed / 0 failed（直近5回とも）
-- 新設定7つは実ブラウザで全選択肢を実測（日英・スマホ・PC・横あふれ）
-- 押せる範囲・コントラスト・焦点・動きの抑制・ビューア操作・Kit販売ページ・
-  管理画面は**測って問題なし**（`backlog.md`）
+### 検証済み
 
-### 次の一手
+- shared/API wiring/Contact render/Setup render focused: 35 pass / 0 fail。
+- 人工API + POST遮断browser: 1440px JA/light と390px EN/darkで、無効値POST 0、valid trim payload、空欄削除、focus/ARIA、横あふれなし、透明・shadowなしのinline文を確認。
+- 旧不正値＋無関係Settings保存、公開Contactの不正form/mailto非表示とSNS fallbackをbrowserで確認。
+- 負の確認: 390px下部Saveを旧直呼びへ一時的に戻すとinline検証が失敗し、`saveSettings`復元後に通過。
+- `bun run check` 成功（typecheck / lint / test / tools / build）。`bun run smoke` は473 test entriesで最終`status=passed`、failedTestsなし。
 
-- **オーナーが push する。** 反映後、新しい2節（作風／ページの構成）を本番で見る
-- **作風プリセットの名前と中身はオーナー未確認。** 好みに合うか要判断
-- B-18（選択帯の重複9箇所）は着手を見送った。やるかどうかはオーナー判断
+### 変更範囲 / 次の一手 / 境界
 
-### 触ってはいけない範囲
-- `git push`（オーナーだけ）/ 本番DB / Turso / R2 / Railway / 環境変数 / `.env`
-- smoke は本番と同じDBにつながる。**書き込み操作を増やさない**
-- 範囲は `setting-ranges.ts`、最小タイル幅は `gallery-metrics.ts` の外へ書き戻さない
-- **節を足したら `scripts/smoke/helpers.ts` の `SETTINGS_SECTION_COUNT` も直す**
-- **custom property の暗側上書きは `:root` より後に置く**（同特異度で後勝ち）
-- **作風プリセットに色・書体・本人の文章を入れない**
-- **`.tap-target` を測るときは Playwright に `hasTouch` を付ける**（付けないと誤診）
-- ビューアは素の `<dialog>`。Tab で一瞬 BODY になるのは折り返しで不具合ではない
-- **popstate を「同じパスか」で見分けない。** `historyBridge` の印で判定する
-- **後から現れる要素を測る effect の依存を `[]` にしない**（帯の実例・`05b75f7`）
+- 今回: contact shared helper・API wiring・Settings/Setup/公開Contact/Service・render/browser回帰、`docs/agents/backlog.md`、`task.md`。
+- 共有dirtyには既存のLibrary・公開JP/EN・Luna Contact差分も同居。巻戻し・上書きしない。
+- オーナーが共有差分を確認し、必要ならcommitする。Codexはcommit / push / deployしない。
+- 本番DB / Turso / R2 / Railway / 環境変数 / 外部Formspree は未操作。本番は未反映。
+- local commit: なし / push: なし / Railway反映: なし / 本番確認: 未commit変更のため未反映。
+- Codex session: `/root/terra_admin_library_audit`
 <!-- CURRENT_STATE_END -->
 
 ---

@@ -70,7 +70,7 @@ const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } =
   await import("@tanstack/react-query");
 const { SetupTab } = await import("./admin");
-const { ADMIN_LANGUAGE_STORAGE_KEY, AdminLanguageProvider } =
+const { ADMIN_LANGUAGE_STORAGE_KEY, AdminLanguageProvider, AdminLanguageToggle } =
   await import("./admin-i18n");
 
 const flush = async () => {
@@ -98,7 +98,12 @@ async function renderSetup(language: "ja" | "en", width: number) {
         createElement(
           AdminLanguageProvider,
           null,
-          createElement(SetupTab, { onOpenTab: () => undefined }),
+          createElement(
+            "div",
+            null,
+            createElement(AdminLanguageToggle),
+            createElement(SetupTab, { onOpenTab: () => undefined }),
+          ),
         ),
       ),
     );
@@ -280,11 +285,11 @@ test("SetupTab — 日英・desktop/mobileで取得失敗を未完了扱いに�
   failingPath = "";
 });
 
-test("SetupTab — setupCompletedは別端末でも3項目の完了状態を復元する", async () => {
+test("SetupTab — setupCompletedは別端末でも、現在公開中のHeroがあれば完了状態を復元する", async () => {
   failingPath = "";
   mockSettings = { setupCompleted: "true" };
-  mockPhotos = [];
-  mockHeroPhotos = [];
+  mockPhotos = [{ id: 1, deletedAt: null, isPublished: true }];
+  mockHeroPhotos = [{ id: 1, photoId: 1 }];
   for (const language of ["ja", "en"] as const) {
     for (const width of [1280, 390]) {
       const { container, root } = await renderSetup(language, width);
@@ -297,35 +302,189 @@ test("SetupTab — setupCompletedは別端末でも3項目の完了状態を復�
     }
   }
   mockSettings = {};
+  mockPhotos = [];
+  mockHeroPhotos = [];
 });
 
-test("SetupTab — 非公開のトップ写真と開けなかったトップページは完了にしない", async () => {
+test("SetupTab — setupCompleted後に公開Heroがなくなれば、現在の公開状態を示す", async () => {
+  failingPath = "";
+  mockSettings = { setupCompleted: "true" };
+
+  for (const scenario of [
+    {
+      photo: { id: 7, deletedAt: null, isPublished: false },
+      progress: "1 / 3 完了",
+      next: "トップ写真を選ぶ",
+    },
+    {
+      photo: { id: 7, deletedAt: "2026-08-12T00:00:00.000Z", isPublished: true },
+      progress: "0 / 3 完了",
+      next: "写真を1枚追加する",
+    },
+  ]) {
+    mockPhotos = [scenario.photo];
+    mockHeroPhotos = [{ id: 1, photoId: 7 }];
+    const { container, root } = await renderSetup("ja", 1280);
+    expect(container.textContent).not.toContain("セットアップ完了ずみです");
+    expect(container.textContent).toContain(scenario.progress);
+    expect(container.textContent).toContain(`次へ：${scenario.next}`);
+    await act(async () => root.unmount());
+    container.remove();
+  }
+
+  mockSettings = {};
+  mockPhotos = [];
+  mockHeroPhotos = [];
+});
+
+test("SetupTab — トップページを開くだけでは完了にせず、表示確認で完了にする", async () => {
+  failingPath = "";
+  requests.length = 0;
+  mockSettings = {};
+  mockPhotos = [{ id: 7, deletedAt: null, isPublished: true }];
+  mockHeroPhotos = [{ id: 1, photoId: 7 }];
+  const originalOpen = dom.window.open;
+  try {
+    for (const scenario of [
+      {
+        language: "ja" as const,
+        title: "トップページで確認する",
+        nextAction: "次へ：トップページで確認する",
+        confirmation: "写真が表示された",
+        incomplete: "2 / 3 完了",
+        complete: "3 / 3 完了",
+      },
+      {
+        language: "en" as const,
+        title: "Check the home page",
+        nextAction: "Next: Check the home page",
+        confirmation: "I can see the photo",
+        incomplete: "2 / 3 complete",
+        complete: "3 / 3 complete",
+      },
+    ]) {
+      const openedWindow = { opener: dom.window } as unknown as Window;
+      dom.window.open = (() => openedWindow) as typeof dom.window.open;
+      const { container, root } = await renderSetup(scenario.language, 390);
+      expect(container.textContent).toContain(scenario.incomplete);
+
+      const openButton = Array.from(container.querySelectorAll("button")).find(
+        (button) => button.textContent === scenario.nextAction && button.closest("header"),
+      );
+      expect(openButton).toBeDefined();
+      await act(async () => openButton!.click());
+      await flush();
+
+      expect(openedWindow.opener).toBeNull();
+      expect(
+        JSON.parse(
+          dom.window.localStorage.getItem("admin:setup-home-page-confirmed") ??
+            "false",
+        ),
+      ).toBe(false);
+      expect(requests.filter((request) => request.method === "POST")).toEqual([]);
+
+      const rowConfirmButton = Array.from(container.querySelectorAll("button")).find(
+        (button) => button.textContent === scenario.confirmation && !button.closest("header"),
+      );
+      expect(rowConfirmButton).toBeDefined();
+      const confirmButton = Array.from(container.querySelectorAll("button")).find(
+        (button) => button.textContent === scenario.confirmation && button.closest("header"),
+      );
+      expect(confirmButton).toBeDefined();
+      await act(async () => confirmButton!.click());
+      await flush();
+
+      expect(
+        JSON.parse(
+          dom.window.localStorage.getItem("admin:setup-home-page-confirmed") ??
+            "false",
+        ),
+      ).toBe(true);
+      expect(container.textContent).toContain(scenario.complete);
+      expect(
+        Array.from(container.querySelectorAll("button")).some(
+          (button) => button.textContent === scenario.confirmation,
+        ),
+      ).toBe(false);
+
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  } finally {
+    dom.window.open = originalOpen;
+    mockPhotos = [];
+    mockHeroPhotos = [];
+  }
+});
+
+test("SetupTab — ポップアップを開けない時は日英で案内し、表示確認を出さない", async () => {
   failingPath = "";
   mockSettings = {};
-  mockPhotos = [{ id: 7, deletedAt: null, isPublished: false }];
+  mockPhotos = [{ id: 7, deletedAt: null, isPublished: true }];
   mockHeroPhotos = [{ id: 1, photoId: 7 }];
   const originalOpen = dom.window.open;
   dom.window.open = (() => null) as typeof dom.window.open;
-  const { container, root } = await renderSetup("ja", 1280);
-  expect(container.textContent).toContain("1 / 3 完了");
+  try {
+    for (const scenario of [
+      {
+        language: "ja" as const,
+        title: "トップページで確認する",
+        open: "開く",
+        notice:
+          "トップページを新しいタブで開けませんでした。ブラウザでポップアップを許可して、もう一度「開く」を押してください。",
+        confirmation: "写真が表示された",
+      },
+      {
+        language: "en" as const,
+        title: "Check the home page",
+        open: "Open",
+        notice:
+          "The home page could not open in a new tab. Allow pop-ups in your browser, then select “Open” again.",
+        confirmation: "I can see the photo",
+      },
+    ]) {
+      const { container, root } = await renderSetup(scenario.language, 390);
+      const openButton = Array.from(container.querySelectorAll("button")).find(
+        (button) => button.textContent === scenario.open && button.closest("div")?.textContent?.includes(scenario.title),
+      );
+      expect(openButton).toBeDefined();
+      await act(async () => openButton!.click());
+      await flush();
 
-  const openButton = Array.from(container.querySelectorAll("button")).find(
-    (button) => button.textContent === "開く" && button.closest("div")?.textContent?.includes("トップページで確認する"),
-  );
-  expect(openButton).toBeDefined();
-  await act(async () => openButton!.click());
-  expect(
-    JSON.parse(
-      dom.window.localStorage.getItem("admin:setup-home-page-confirmed") ??
-        "false",
-    ),
-  ).toBe(false);
+      expect(container.textContent).toContain(scenario.notice);
+      expect(
+        Array.from(container.querySelectorAll("button")).some(
+          (button) => button.textContent === scenario.confirmation,
+        ),
+      ).toBe(false);
+      expect(
+        JSON.parse(
+          dom.window.localStorage.getItem("admin:setup-home-page-confirmed") ??
+            "false",
+        ),
+      ).toBe(false);
 
-  await act(async () => root.unmount());
-  container.remove();
-  dom.window.open = originalOpen;
-  mockPhotos = [];
-  mockHeroPhotos = [];
+      if (scenario.language === "ja") {
+        const englishButton = container.querySelector(
+          '[data-admin-language-toggle] button:nth-of-type(2)',
+        ) as HTMLButtonElement | null;
+        expect(englishButton).not.toBeNull();
+        await act(async () => englishButton!.click());
+        await flush();
+        expect(container.textContent).toContain(
+          "The home page could not open in a new tab. Allow pop-ups in your browser, then select “Open” again.",
+        );
+      }
+
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  } finally {
+    dom.window.open = originalOpen;
+    mockPhotos = [];
+    mockHeroPhotos = [];
+  }
 });
 
 test("SetupTab — 初回画面から設定担当者向けの技術説明を隔離する", async () => {
@@ -339,4 +498,75 @@ test("SetupTab — 初回画面から設定担当者向けの技術説明を隔�
   expect(container.textContent).not.toContain("OGP");
   await act(async () => root.unmount());
   container.remove();
+});
+
+test("SetupTab — 連絡先は実際に使えるメールかHTTPS送信先だけを完了にする", async () => {
+  failingPath = "";
+  mockPhotos = [];
+  mockHeroPhotos = [];
+  try {
+    for (const scenario of [
+      {
+        language: "ja" as const,
+        width: 1440,
+        title: "連絡先",
+        settings: { contactEmail: "not-an-email" } as Record<string, string>,
+        done: false,
+      },
+      {
+        language: "en" as const,
+        width: 390,
+        title: "Contact",
+        settings: {
+          formspreeUrl: "http://compatible.example.test/contact",
+        } as Record<string, string>,
+        done: false,
+      },
+      {
+        language: "ja" as const,
+        width: 390,
+        title: "連絡先",
+        settings: {
+          contactEmail: "  hello@example.test  ",
+        } as Record<string, string>,
+        done: true,
+      },
+      {
+        language: "en" as const,
+        width: 1440,
+        title: "Contact",
+        settings: {
+          formspreeUrl: " https://compatible.example.test/contact ",
+        } as Record<string, string>,
+        done: true,
+      },
+    ]) {
+      requests.length = 0;
+      mockSettings = scenario.settings;
+      const { container, root } = await renderSetup(
+        scenario.language,
+        scenario.width,
+      );
+      try {
+        const title = Array.from(container.querySelectorAll("h3")).find(
+          (heading) => heading.textContent === scenario.title,
+        );
+        const row = title?.closest("div.border");
+        expect(row, `${scenario.language}の連絡先行が表示される`).not.toBeNull();
+        expect(row?.querySelector(".admin-icon-success") !== null).toBe(
+          scenario.done,
+        );
+        expect(requests.filter((request) => request.method !== "GET")).toEqual(
+          [],
+        );
+      } finally {
+        await act(async () => root.unmount());
+        container.remove();
+      }
+    }
+  } finally {
+    mockSettings = {};
+    mockPhotos = [];
+    mockHeroPhotos = [];
+  }
 });

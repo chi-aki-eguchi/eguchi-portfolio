@@ -1,9 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { safeHref } from "../lib/utils";
+import {
+  usableContactEmail,
+  usableContactEndpoint,
+} from "../../shared/contact-settings";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -28,7 +32,10 @@ export default function ContactPage({
   });
   const plans = pricingData?.plans ?? [];
 
-  const formspreeUrl = data?.formspreeUrl ?? "";
+  // 旧DBに残った不正な設定値をそのままフォームの送信先やmailtoへ渡さない。
+  // 有効値だけを使うので、管理画面を通らない古いデータでも壊れた連絡先を公開しない。
+  const formspreeUrl = usableContactEndpoint(data?.formspreeUrl);
+  const contactEmail = usableContactEmail(data?.contactEmail);
   // i18n Phase 3: EN page falls back to the JP copy per field when no EN text is
   // set yet, so /en/contact never goes blank while the owner is still translating.
   const intro =
@@ -46,6 +53,31 @@ export default function ContactPage({
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement>(null);
+  // React state is applied after the current event finishes. A second submit
+  // in that same event could therefore pass the disabled-button check before
+  // the first `setStatus("sending")` was rendered. This ref is the synchronous
+  // lock for the actual network request; it is released in `finally` so a
+  // failed request can still be retried.
+  const submittingRef = useRef(false);
+  const successMessageRef = useRef<HTMLParagraphElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const focusNameOnIdleRef = useRef(false);
+
+  // Move screen-reader and keyboard focus to the newly-rendered success notice,
+  // without adding it to the normal Tab order or changing the user's scroll
+  // position. The live region remains the announcement mechanism.
+  useEffect(() => {
+    if (status !== "success") return;
+    successMessageRef.current?.focus({ preventScroll: true });
+  }, [status]);
+
+  // "Send another" replaces the success view with a fresh form. Focus the
+  // first field only for that explicit action; initial page load stays passive.
+  useEffect(() => {
+    if (status !== "idle" || !focusNameOnIdleRef.current) return;
+    focusNameOnIdleRef.current = false;
+    nameInputRef.current?.focus({ preventScroll: true });
+  }, [status]);
 
   // Contact の構成。既定（center）は 448px の細い1列で、説明文も中央揃え。
   // 中央揃えの日本語は2行以上になると行末が揃わず、読みづらい。左寄せと
@@ -110,6 +142,7 @@ export default function ContactPage({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!formspreeUrl) return;
 
     const fd = new FormData(e.currentTarget);
@@ -132,6 +165,7 @@ export default function ContactPage({
       return;
     }
     setErrors({});
+    submittingRef.current = true;
     setStatus("sending");
 
     try {
@@ -144,6 +178,8 @@ export default function ContactPage({
       if (res.ok) formRef.current?.reset();
     } catch {
       setStatus("error");
+    } finally {
+      submittingRef.current = false;
     }
   };
 
@@ -352,12 +388,12 @@ export default function ContactPage({
                 {intro}
               </p>
             )}
-            {data?.contactEmail && (
+            {contactEmail && (
               <a
-                href={`mailto:${data.contactEmail}`}
+                href={`mailto:${contactEmail}`}
                 className="inline-block font-en text-sm tracking-[0.03em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300 py-1"
               >
-                {data.contactEmail}
+                {contactEmail}
               </a>
             )}
             {(data?.profileInstagram || data?.profileTwitter) && (
@@ -387,7 +423,7 @@ export default function ContactPage({
             {/* Nothing configured yet — avoid a blank page (but not while still loading) */}
             {!isLoading &&
               !intro &&
-              !data?.contactEmail &&
+              !contactEmail &&
               !data?.profileInstagram &&
               !data?.profileTwitter &&
               // A failed settings load used to land here too, so a server
@@ -431,13 +467,18 @@ export default function ContactPage({
         ) : status === "success" ? (
           <div className="text-center py-12 page-entrance page-entrance-delay-1">
             <p
+              ref={successMessageRef}
+              tabIndex={-1}
               aria-live="polite"
               className="text-sm text-[color:var(--text-quiet)]"
             >
               {data?.contactSentMessage ?? fallbackSent}
             </p>
             <button
-              onClick={() => setStatus("idle")}
+              onClick={() => {
+                focusNameOnIdleRef.current = true;
+                setStatus("idle");
+              }}
               className="mt-6 font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] transition-colors duration-300"
             >
               {data?.contactSendAnother ?? "Send another"}
@@ -466,6 +507,7 @@ export default function ContactPage({
               error={errors.name}
             >
               <input
+                ref={nameInputRef}
                 id="contact-name"
                 type="text"
                 name="name"

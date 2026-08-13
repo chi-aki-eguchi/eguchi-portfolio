@@ -273,7 +273,7 @@ export default function GalleryPage() {
               className={`tap-target font-en text-xs tracking-[0.04em] pt-1.5 pb-1.5 transition-all duration-300 nav-link-luxury border-b-[1.5px] whitespace-nowrap shrink-0 ${
                 activeFilter === cat.slug
                   ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
-                  : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
+                  : "text-[color:var(--text-quiet)] font-normal border-transparent hover:text-[color:var(--text-quiet)]"
               }`}
             >
               {cat.label}
@@ -305,7 +305,7 @@ export default function GalleryPage() {
               className={`tap-target font-en text-[0.6875rem] tracking-[0.06em] pt-1 pb-1 transition-all duration-300 nav-link-luxury border-b ${
                 activeMedium === val
                   ? "text-[var(--foreground)] font-medium border-[var(--foreground)]"
-                  : "text-[color:var(--text-quiet)] border-transparent hover:text-[color:var(--text-quiet)]"
+                  : "text-[color:var(--text-quiet)] font-normal border-transparent hover:text-[color:var(--text-quiet)]"
               }`}
             >
               {lbl}

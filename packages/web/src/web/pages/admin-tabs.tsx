@@ -80,6 +80,13 @@ import {
 } from "../../shared/setting-ranges";
 import { columnsThatFit } from "../../shared/gallery-metrics";
 import { SITE_MOODS, SITE_MOOD_IDS } from "../../shared/site-moods";
+import {
+  isContactSettingKey,
+  isValidContactEmailSetting,
+  isValidContactEndpointSetting,
+  normalizeContactSettingsPayload,
+  type ContactSettingKey,
+} from "../../shared/contact-settings";
 import { num } from "../lib/utils";
 import {
   draftAfterSuccessfulSave,
@@ -4054,6 +4061,11 @@ export function SettingsTab({
   );
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [contactValidationErrors, setContactValidationErrors] = useState<
+    Partial<Record<ContactSettingKey, string>>
+  >({});
+  const [contactValidationFocusKey, setContactValidationFocusKey] =
+    useState<ContactSettingKey | null>(null);
   const [failedSectionIds, setFailedSectionIds] = useState<
     SettingsSectionId[]
   >([]);
@@ -4090,7 +4102,83 @@ export function SettingsTab({
   const [newLensPreset, setNewLensPreset] = useState("");
   const [presetError, setPresetError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const contactInputRefs = useRef<
+    Partial<Record<ContactSettingKey, HTMLInputElement | null>>
+  >({});
   const current = { ...data, ...form } as Record<string, string>;
+
+  const contactValidationMessage = (
+    key: ContactSettingKey,
+    value: string,
+  ): string | undefined => {
+    if (key === "contactEmail")
+      return isValidContactEmailSetting(value)
+        ? undefined
+        : copy.contactValidation.email;
+    return isValidContactEndpointSetting(value)
+      ? undefined
+      : copy.contactValidation.endpoint;
+  };
+
+  // 既にDBにある古い不正値は、別のSettingsを保存するだけでは止めない。
+  // この操作で変更しようとしている連絡先キーだけを検査する。
+  const invalidDirtyContactValues = () => {
+    const errors: Partial<Record<ContactSettingKey, string>> = {};
+    for (const key of ["contactEmail", "formspreeUrl"] as const) {
+      if (!Object.prototype.hasOwnProperty.call(form, key)) continue;
+      if (form[key] === (data?.[key] ?? "")) continue;
+      const message = contactValidationMessage(key, form[key]);
+      if (message) errors[key] = message;
+    }
+    return errors;
+  };
+
+  const updateContactValidationAfterChange = (
+    key: ContactSettingKey,
+    value: string,
+  ) => {
+    setContactValidationErrors((previous) => {
+      if (!previous[key]) return previous;
+      const message = contactValidationMessage(key, value);
+      if (message) return { ...previous, [key]: message };
+      const { [key]: _cleared, ...rest } = previous;
+      return rest;
+    });
+  };
+
+  const validateContactField = (key: ContactSettingKey, value: string) => {
+    setContactValidationErrors((previous) => {
+      const message = contactValidationMessage(key, value);
+      if (message) return { ...previous, [key]: message };
+      if (!previous[key]) return previous;
+      const { [key]: _cleared, ...rest } = previous;
+      return rest;
+    });
+  };
+
+  // 単節表示では節の切替後にだけ対象inputがDOMへ載る。固定時間を待つ代わりに、
+  // ref が実在するフレームでだけフォーカスする（最大4フレームで安全に諦める）。
+  // Sectionの汎用「先頭入力欄」フォーカスとは併用しない。
+  useEffect(() => {
+    if (!contactValidationFocusKey) return;
+    const target = contactValidationFocusKey;
+    let frame = 0;
+    let attempts = 0;
+    const focusWhenMounted = () => {
+      const input = contactInputRefs.current[target];
+      if (input?.isConnected) {
+        input.focus({ preventScroll: true });
+        input.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        setContactValidationFocusKey(null);
+        return;
+      }
+      attempts += 1;
+      if (attempts < 4) frame = requestAnimationFrame(focusWhenMounted);
+      else setContactValidationFocusKey(null);
+    };
+    frame = requestAnimationFrame(focusWhenMounted);
+    return () => cancelAnimationFrame(frame);
+  }, [contactValidationFocusKey]);
 
   // ── Capture-info preset manager (camera / lens) ──
   // Effective list = saved (authoritative) or built-in defaults. Edits persist the
@@ -4150,18 +4238,24 @@ export function SettingsTab({
 
   const save = useMutation({
     mutationFn: async () => {
-      const submitted = { ...form };
+      const submitted = normalizeContactSettingsPayload(form);
       await postAdminSettings(submitted);
       return submitted;
     },
     onSuccess: (submitted) => {
       setSaveError(false);
+      setContactValidationErrors({});
       setFailedSectionIds([]);
       qc.setQueryData(
         ["settings"],
         (old: Record<string, string> | undefined) => ({ ...old, ...submitted }),
       );
-      setForm((current) => draftAfterSuccessfulSave(submitted, current));
+      setForm((current) =>
+        draftAfterSuccessfulSave(
+          submitted,
+          normalizeContactSettingsPayload(current),
+        ),
+      );
       setSaved(true);
       setLastSavedAt(
         new Intl.DateTimeFormat(undefined, {
@@ -4182,6 +4276,23 @@ export function SettingsTab({
 
   const set = (key: string, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
+
+  const saveSettings = () => {
+    const contactErrors = invalidDirtyContactValues();
+    const firstInvalid = (["contactEmail", "formspreeUrl"] as const).find(
+      (key) => Boolean(contactErrors[key]),
+    );
+    if (firstInvalid) {
+      // 前回の通信失敗が残っている場合でも、今回の問題は入力値だと分かるようにする。
+      setSaveError(false);
+      setFailedSectionIds([]);
+      setContactValidationErrors(contactErrors);
+      setContactValidationFocusKey(firstInvalid);
+      return;
+    }
+    setContactValidationErrors({});
+    save.mutate();
+  };
 
   // Send preview settings to iframe whenever current changes.
   const previewPayload = useMemo(
@@ -4465,7 +4576,10 @@ export function SettingsTab({
     label: sectionTitles[id],
     summary: summarizeSection(id),
     changed: changedSectionIds.includes(id),
-    failed: failedSectionIds.includes(id) || (id === "presets" && presetError),
+    failed:
+      failedSectionIds.includes(id) ||
+      (id === "site-basics" && Object.keys(contactValidationErrors).length > 0) ||
+      (id === "presets" && presetError),
     advanced: [
       "spacing", "texture", "reveal", "fonts", "font-size", "font-color",
       "font-spacing", "site-copy", "presets",
@@ -4476,8 +4590,11 @@ export function SettingsTab({
     changed: changedSectionIds.includes(sectionId),
     failed:
       failedSectionIds.includes(sectionId) ||
+      (sectionId === "site-basics" &&
+        Object.keys(contactValidationErrors).length > 0) ||
       (sectionId === "presets" && presetError),
-    focusOnError: failedSectionIds[0] === sectionId,
+    focusOnError:
+      failedSectionIds[0] === sectionId,
     summary: summarizeSection(sectionId),
   });
 
@@ -4556,11 +4673,16 @@ export function SettingsTab({
           pending={save.isPending}
           saveError={saveError}
           lastSavedAt={lastSavedAt}
-          focusSectionId={failedSectionIds[0] ?? null}
-          onSave={() => save.mutate()}
+          focusSectionId={
+            failedSectionIds[0] ??
+            (contactValidationFocusKey !== null ? "site-basics" : null)
+          }
+          onSave={saveSettings}
           onDiscard={() => {
             setForm({});
             setSaveError(false);
+            setContactValidationErrors({});
+            setContactValidationFocusKey(null);
             setFailedSectionIds([]);
           }}
           copy={t.formLayout}
@@ -4618,18 +4740,72 @@ export function SettingsTab({
                 title={copy.siteBasics.title}
                 defaultOpen={false}
               >
-                {fields.map((f) => (
-                  <AdminField key={f.key} label={f.label} hint={f.hint}>
-                    <input
-                      type="text"
-                      aria-label={f.label}
-                      value={current[f.key] ?? ""}
-                      onChange={(e) => set(f.key, e.target.value)}
-                      placeholder={f.placeholder}
-                      className="ax-input"
-                    />
-                  </AdminField>
-                ))}
+                {fields.map((f) => {
+                  const contactKey = isContactSettingKey(f.key) ? f.key : null;
+                  const validationError = contactKey
+                    ? contactValidationErrors[contactKey]
+                    : undefined;
+                  const errorId = contactKey
+                    ? `settings-${contactKey}-error`
+                    : undefined;
+                  return (
+                    <AdminField key={f.key} label={f.label} hint={f.hint}>
+                      <input
+                        type={
+                          contactKey === "contactEmail"
+                            ? "email"
+                            : contactKey === "formspreeUrl"
+                              ? "url"
+                              : "text"
+                        }
+                        inputMode={
+                          contactKey === "contactEmail"
+                            ? "email"
+                            : contactKey === "formspreeUrl"
+                              ? "url"
+                              : undefined
+                        }
+                        autoComplete={
+                          contactKey === "contactEmail" ? "email" : undefined
+                        }
+                        data-contact-setting={contactKey ?? undefined}
+                        ref={(input) => {
+                          if (contactKey) contactInputRefs.current[contactKey] = input;
+                        }}
+                        aria-label={f.label}
+                        aria-invalid={validationError ? true : undefined}
+                        aria-describedby={validationError ? errorId : undefined}
+                        value={current[f.key] ?? ""}
+                        onChange={(e) => {
+                          set(f.key, e.target.value);
+                          if (contactKey) {
+                            updateContactValidationAfterChange(
+                              contactKey,
+                              e.target.value,
+                            );
+                          }
+                        }}
+                        onBlur={(e) => {
+                          if (contactKey) {
+                            validateContactField(contactKey, e.target.value);
+                          }
+                        }}
+                        placeholder={f.placeholder}
+                        className="ax-input"
+                      />
+                      {validationError ? (
+                        <p
+                          id={errorId}
+                          aria-live="polite"
+                          aria-atomic="true"
+                          className="admin-text-danger text-[length:var(--admin-text-note)] mt-1"
+                        >
+                          {validationError}
+                        </p>
+                      ) : null}
+                    </AdminField>
+                  );
+                })}
               </Section>
 
               <Section
@@ -7296,10 +7472,12 @@ export function SettingsTab({
             pending={save.isPending}
             saved={saved}
             error={saveError}
-            onSave={() => save.mutate()}
+            onSave={saveSettings}
             onDiscard={() => {
               setForm({});
               setSaveError(false);
+              setContactValidationErrors({});
+              setContactValidationFocusKey(null);
               setFailedSectionIds([]);
             }}
           />

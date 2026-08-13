@@ -850,6 +850,11 @@ const ADMIN_PHASE_2B_JA = {
       opacityTitle: (percent: number) => `0〜1（現在 ${percent}%）`,
       unitTitle: (unit: string) => `単位: ${unit}`,
     },
+    contactValidation: {
+      email: "メールアドレスの形式を確認してください。空欄にすると表示しません。",
+      endpoint:
+        "送信先は https:// で始まる有効なURLにしてください。空欄にするとフォームを表示しません。",
+    },
     siteBasics: {
       title: "サイト基本情報",
       fields: {
@@ -928,7 +933,7 @@ const ADMIN_PHASE_2B_JA = {
         formspreeUrl: {
           label: "お問い合わせフォームの送信先",
           placeholder: "https://formspree.io/f/...",
-          hint: "お問い合わせを受け取る外部サービスのURLです（Formspree URL）",
+          hint: "Formspreeなど、フォーム送信サービスのHTTPS URLです。空欄ならフォームを表示しません",
         },
         siteUrl: {
           label: "公開サイトの基準URL",
@@ -2517,6 +2522,11 @@ const ADMIN_PHASE_2B_EN = {
       opacityTitle: (percent: number) => `0 to 1 (currently ${percent}%)`,
       unitTitle: (unit: string) => `Unit: ${unit}`,
     },
+    contactValidation: {
+      email: "Enter a valid email address, or leave this blank to hide it.",
+      endpoint:
+        "Enter a valid https:// URL, or leave this blank to hide the form.",
+    },
     siteBasics: {
       title: "Site Basics",
       fields: {
@@ -2593,9 +2603,9 @@ const ADMIN_PHASE_2B_EN = {
           hint: "Displayed on the contact page for direct email",
         },
         formspreeUrl: {
-          label: "Formspree URL",
+          label: "Contact Form URL",
           placeholder: "https://formspree.io/f/...",
-          hint: "Get your form URL from formspree.io to enable the contact form",
+          hint: "Use an https URL from Formspree or a compatible form service. Leave blank to hide the form.",
         },
         siteUrl: {
           label: "Site URL (Public Domain)",
@@ -3463,6 +3473,8 @@ export type AdminMessages = {
     nextAction: (next: string) => string;
     finish: string;
     finishFailed: string;
+    homePageConfirmAction: string;
+    homePageOpenFailed: string;
     later: string;
     recommendedTitle: string;
     checklist: {
@@ -3586,8 +3598,7 @@ export const ADMIN_DICTIONARY = {
       hero: "トップページのカルーセルに表示する写真を選びます。",
       profile: "About ページに表示する自己紹介とプロフィール写真です。",
       categories: "Gallery の絞り込みに使うカテゴリを管理します。",
-      series:
-        '作品群（"Still, life" のようなまとまり）。↑↓で並び替え。公開トグルで下書き/公開。写真の割り当てはLibraryのインスペクタ「Series」から。',
+      series: "作品をシリーズにまとめます。写真の割り当てはLibraryで行います。",
       pricing:
         "Contactページに表示される料金です。↑↓で並び替え。販売ページの料金はPortfolio Kit画面で編集します。",
       service:
@@ -3642,6 +3653,9 @@ export const ADMIN_DICTIONARY = {
       finish: "セットアップ完了 → ライブラリへ",
       finishFailed:
         "完了を保存できませんでした。通信状況を確かめて、もう一度お試しください。",
+      homePageConfirmAction: "写真が表示された",
+      homePageOpenFailed:
+        "トップページを新しいタブで開けませんでした。ブラウザでポップアップを許可して、もう一度「開く」を押してください。",
       later: "あとで",
       recommendedTitle: "あとでゆっくり整える",
       checklist: {
@@ -3798,8 +3812,7 @@ export const ADMIN_DICTIONARY = {
       hero: "Choose the photos shown in the home-page carousel.",
       profile: "Your biography and profile photo shown on the About page.",
       categories: "Manage the categories used to filter Gallery.",
-      series:
-        "Manage groups of work, such as “Still, life.” Set the sort order with ↑↓, switch between draft and published, and assign photos from Series in the Library inspector.",
+      series: "Group work into series. Assign photos from Library.",
       pricing:
         "Manage pricing shown on the Contact page. Set the sort order with ↑↓. Edit sales-page pricing in Portfolio Kit.",
       service:
@@ -3855,6 +3868,9 @@ export const ADMIN_DICTIONARY = {
       finish: "Finish setup → Library",
       finishFailed:
         "Could not save completion. Check your connection and try again.",
+      homePageConfirmAction: "I can see the photo",
+      homePageOpenFailed:
+        "The home page could not open in a new tab. Allow pop-ups in your browser, then select “Open” again.",
       later: "Later",
       recommendedTitle: "Take your time with these later",
       checklist: {

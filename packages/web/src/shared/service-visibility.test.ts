@@ -16,6 +16,16 @@ describe("resolveServiceContactEmail", () => {
     ).toBe("hello@example.com");
   });
 
+  test("does not turn a malformed configured value into a mailto destination", () => {
+    expect(
+      resolveServiceContactEmail(
+        "not-an-email",
+        "https://portfolio.example",
+        "portfolio.example",
+      ),
+    ).toBe("");
+  });
+
   test("keeps the owner fallback only on akieguchi.com", () => {
     expect(resolveServiceContactEmail("", "https://akieguchi.com", "")).toBe(
       "akieguchi33@gmail.com",

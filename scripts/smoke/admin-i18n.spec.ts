@@ -130,7 +130,7 @@ test.describe("admin — JP/EN shared shell", () => {
     await gotoAdminTab(page, "series");
     await expect(page.getByText("New Series", { exact: true })).toBeVisible();
     await expect(
-      page.getByText("Manage groups of work", { exact: false }),
+      page.getByText("Group work into series", { exact: false }),
     ).toBeVisible();
     await expect(page.getByLabel("New series title")).toBeVisible();
 

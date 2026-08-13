@@ -58,12 +58,17 @@ function LanguageSwitchLinks({
   } as React.CSSProperties;
   return (
     <span
-      className="font-en inline-flex items-center gap-1.5"
+      className="language-switch font-en inline-flex items-center gap-1.5"
       style={{ fontSize: "0.7rem" }}
     >
       {isEnglishPage ? (
-        <Link to={jaHref} className="nav-link-luxury nav-link-public" style={linkStyle}>
+        <Link
+          to={jaHref}
+          className="language-switch-link nav-link-luxury nav-link-public"
+          style={linkStyle}
+        >
           JP
+          <span aria-hidden="true" className="language-switch-hit-area" />
         </Link>
       ) : (
         <span
@@ -87,8 +92,13 @@ function LanguageSwitchLinks({
           EN
         </span>
       ) : (
-        <Link to={enHref} className="nav-link-luxury nav-link-public" style={linkStyle}>
+        <Link
+          to={enHref}
+          className="language-switch-link nav-link-luxury nav-link-public"
+          style={linkStyle}
+        >
           EN
+          <span aria-hidden="true" className="language-switch-hit-area" />
         </Link>
       )}
     </span>

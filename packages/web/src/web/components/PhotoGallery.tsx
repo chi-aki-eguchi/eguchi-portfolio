@@ -155,10 +155,55 @@ export function galleryFrameWidth({
   return width > natural ? Math.round(width) : 0;
 }
 
+const DENSITY_RATIO_EPSILON = 0.01;
+
+/**
+ * A generated thumbnail is normally the final grid image. Square crops can
+ * make a panorama's short edge too small on a high-density screen, though.
+ * Use the browser's actual decoded dimensions and rendered box rather than
+ * the original photo metadata: rotation, crop, and a future thumbnail shape
+ * can otherwise make the calculation lie.
+ */
+export function shouldUpgradeGeneratedThumb({
+  naturalWidth,
+  naturalHeight,
+  clientWidth,
+  clientHeight,
+  devicePixelRatio,
+}: {
+  naturalWidth: number;
+  naturalHeight: number;
+  clientWidth: number;
+  clientHeight: number;
+  devicePixelRatio: number | undefined;
+}): boolean {
+  const dimensions = [
+    naturalWidth,
+    naturalHeight,
+    clientWidth,
+    clientHeight,
+  ];
+  if (
+    dimensions.some((dimension) => !Number.isFinite(dimension) || dimension <= 0)
+  ) {
+    return false;
+  }
+
+  const effectiveRatio = Math.min(
+    naturalWidth / clientWidth,
+    naturalHeight / clientHeight,
+  );
+  const target = Math.min(devicePixelRatio || 1, 2.5);
+  // clientWidth/clientHeight are whole CSS pixels. Do not turn a sub-pixel
+  // rounding difference at the threshold into an otherwise needless request.
+  return effectiveRatio + DENSITY_RATIO_EPSILON < target;
+}
+
 const LqipImage = memo(function LqipImage({
   url,
   thumbUrl,
   upgradeUrl,
+  qualityUpgradeUrl,
   alt,
   sizes,
   isNearViewport,
@@ -171,6 +216,7 @@ const LqipImage = memo(function LqipImage({
   url: string;
   thumbUrl?: string | null;
   upgradeUrl?: string | null;
+  qualityUpgradeUrl?: string | null;
   alt: string;
   sizes: string;
   isNearViewport: boolean;
@@ -183,36 +229,62 @@ const LqipImage = memo(function LqipImage({
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const swappedRef = useRef(false);
-  const hasThumbUpgrade = Boolean(
+  const upgradeInFlightRef = useRef(false);
+  const hasAlwaysThumbUpgrade = Boolean(
     thumbUrl && upgradeUrl && upgradeUrl !== thumbUrl,
   );
 
   useLayoutEffect(() => {
     setLoaded(false);
     swappedRef.current = false;
-  }, [url, thumbUrl, upgradeUrl]);
+    upgradeInFlightRef.current = false;
+  }, [url, thumbUrl, upgradeUrl, qualityUpgradeUrl]);
 
   const swapToGridImage = useCallback(
-    (el: HTMLImageElement, keepCurrentSharp = false) => {
-      if (swappedRef.current) {
+    (
+      el: HTMLImageElement,
+      {
+        src,
+        srcset,
+        keepCurrentSharp = false,
+      }: {
+        src?: string;
+        srcset?: string;
+        keepCurrentSharp?: boolean;
+      } = {},
+    ) => {
+      if (swappedRef.current || upgradeInFlightRef.current) {
         setLoaded(true);
         return;
       }
-      const realSrc = el.dataset.src;
+      const realSrc = src ?? el.dataset.src;
       if (!realSrc) {
         swappedRef.current = true;
         setLoaded(true);
         return;
       }
-      const realSrcset = el.dataset.srcset;
+      const realSrcset = srcset ?? el.dataset.srcset;
       if (keepCurrentSharp) setLoaded(true);
+      // Only a generated thumbnail has a sharp, visible fallback. Keep the
+      // old no-thumbnail LQIP/proxy path untouched, including its error path.
+      if (keepCurrentSharp) upgradeInFlightRef.current = true;
       const full = new Image();
       full.onload = () => {
+        if (keepCurrentSharp) upgradeInFlightRef.current = false;
         swappedRef.current = true;
         el.srcset = realSrcset || "";
         el.src = realSrc;
         setLoaded(true);
       };
+      // A generated thumbnail that already loaded is a valid final fallback.
+      // Never turn a failed optional medium request into a broken photo card.
+      if (keepCurrentSharp) {
+        full.onerror = () => {
+          upgradeInFlightRef.current = false;
+          swappedRef.current = true;
+          setLoaded(true);
+        };
+      }
       full.src = realSrc;
       if (realSrcset) full.srcset = realSrcset;
       full.sizes = sizes;
@@ -222,14 +294,36 @@ const LqipImage = memo(function LqipImage({
 
   const handleLoadedImage = useCallback(
     (el: HTMLImageElement) => {
-      if (thumbUrl && !hasThumbUpgrade) {
+      if (thumbUrl) {
+        if (hasAlwaysThumbUpgrade) {
+          swapToGridImage(el, { keepCurrentSharp: true });
+          return;
+        }
+        if (
+          qualityUpgradeUrl &&
+          qualityUpgradeUrl !== thumbUrl &&
+          shouldUpgradeGeneratedThumb({
+            naturalWidth: el.naturalWidth,
+            naturalHeight: el.naturalHeight,
+            clientWidth: el.clientWidth,
+            clientHeight: el.clientHeight,
+            devicePixelRatio:
+              typeof window === "undefined" ? 1 : window.devicePixelRatio,
+          })
+        ) {
+          swapToGridImage(el, {
+            src: qualityUpgradeUrl,
+            keepCurrentSharp: true,
+          });
+          return;
+        }
         swappedRef.current = true;
         setLoaded(true);
         return;
       }
-      swapToGridImage(el, hasThumbUpgrade);
+      swapToGridImage(el);
     },
-    [hasThumbUpgrade, swapToGridImage, thumbUrl],
+    [hasAlwaysThumbUpgrade, qualityUpgradeUrl, swapToGridImage, thumbUrl],
   );
 
   const onLoad = useCallback(
@@ -242,17 +336,17 @@ const LqipImage = memo(function LqipImage({
     const el = imgRef.current;
     if (!el || !el.complete || el.naturalWidth <= 0) return;
     if (!thumbUrl && !isNearViewport) return;
-    if (thumbUrl && hasThumbUpgrade && !isNearViewport) {
+    if (thumbUrl && hasAlwaysThumbUpgrade && !isNearViewport) {
       setLoaded(true);
       return;
     }
     handleLoadedImage(el);
-  }, [handleLoadedImage, hasThumbUpgrade, isNearViewport, thumbUrl]);
+  }, [handleLoadedImage, hasAlwaysThumbUpgrade, isNearViewport, thumbUrl]);
 
-  // Use the pre-generated WebP as the instant first paint, then silently upgrade
-  // only for layouts that genuinely render photos large. Normal gallery grids
-  // keep the generated thumbnail as final output to avoid flooding the image
-  // proxy with on-the-fly variants during long scrolls.
+  // Use the pre-generated WebP as the instant first paint. Large layouts keep
+  // their intentional always-upgrade. Normal grids only use the existing static
+  // medium file when their decoded thumbnail is materially under-dense; they
+  // never request a proxy/srcset variant after the thumbnail loads.
   if (thumbUrl) {
     const hasUpgrade = Boolean(upgradeUrl && upgradeUrl !== thumbUrl);
     return (
@@ -726,6 +820,7 @@ export function PhotoGallery({
               url={photo.url}
               thumbUrl={photo.thumbUrl}
               upgradeUrl={opts.preferMediumGrid ? photo.mediumUrl : undefined}
+              qualityUpgradeUrl={photo.mediumUrl}
               alt={alt}
               sizes={opts.sizes}
               isNearViewport={isNearViewport}

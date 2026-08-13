@@ -270,8 +270,16 @@
   padding: 0 2px !important;
   border: 0 !important;
   background: transparent !important;
-  color: inherit !important;
+  /* This is still a selectable control, not disabled or decorative text.
+     Keep its quiet state above AA instead of compositing it with paper. */
+  color: var(--admin-muted) !important;
+  opacity: 1;
   box-shadow: none !important;
+}
+
+.admin-atelier.admin-atelier .admin-language-toggle button[data-active="true"]:not(.absolute),
+.admin-atelier.admin-atelier .admin-language-toggle button:not(.absolute):hover {
+  color: var(--admin-ink) !important;
 }
 
 /* …but on a touch screen 24px is under the floor, and this is the one control
@@ -4018,6 +4026,18 @@ a:hover {
 }
 .nav-link-luxury:hover::after {
   transform: scaleX(1);
+}
+
+/* Public JP/EN links stay visually compact, but their real touch surface is
+   32px square. This is a child element rather than a pseudo-element: nav-fx-dot
+   already owns .nav-link-luxury::before, and the underline owns ::after. */
+.language-switch-hit-area {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%);
 }
 
 /* ─── Footer reveal ─── */

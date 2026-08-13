@@ -95,6 +95,7 @@ import {
   type Tab,
 } from "./admin-shared";
 import { resolveServiceVisibility } from "../../shared/service-visibility";
+import { hasUsableContactChannel } from "../../shared/contact-settings";
 import {
   AdminDesktopLanguageBar,
   PageHeader,
@@ -104,6 +105,7 @@ import { PageShell } from "./admin-page-shell";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 import { AdminReorderBar } from "./admin-reorder-bar";
 import { AdminCompactSidebar } from "./admin-compact-sidebar";
+import { Button as AxButton } from "./admin-ui";
 import { shuffleWithSeed, visitShuffleSeed } from "../lib/shuffle";
 import {
   AdminLanguageProvider,
@@ -969,6 +971,11 @@ type ChecklistItem = {
   tab?: Tab;
   href?: string;
   onOpen?: () => boolean;
+  confirmation?: {
+    label: string;
+    onConfirm: () => void;
+  };
+  notice?: string;
 };
 
 // exportはrenderテスト用(表示だけでPOSTしない/完了ボタンでのみ保存する検証)
@@ -1036,13 +1043,24 @@ export function SetupTab({
       false,
       "local",
     );
+  const [homePageOpened, setHomePageOpened] = useState(false);
+  const [homePageOpenFailed, setHomePageOpenFailed] = useState(false);
   const setupRestored = settings.setupCompleted === "true";
   const openHomePage = () => {
     const opened = window.open("/", "_blank");
-    if (opened === null) return false;
+    if (opened === null) {
+      setHomePageOpened(false);
+      setHomePageOpenFailed(true);
+      return false;
+    }
     opened.opener = null;
-    setHomePageConfirmed(true);
+    setHomePageOpenFailed(false);
+    setHomePageOpened(true);
     return true;
+  };
+  const confirmHomePage = () => {
+    setHomePageConfirmed(true);
+    setHomePageOpened(false);
   };
 
   // setupCompleted は settings に保存する(=デバイス・ブラウザをまたいで有効)。
@@ -1081,20 +1099,32 @@ export function SetupTab({
   const checklist: ChecklistItem[] = [
     {
       ...t.setup.checklist.firstPhoto,
-      done: setupRestored || activePhotos.length > 0,
+      done: activePhotos.length > 0,
       tab: "gallery",
     },
     {
       ...t.setup.checklist.hero,
-      done: setupRestored || hasPublishedHero,
+      done: hasPublishedHero,
       tab: "hero",
     },
     {
       ...t.setup.checklist.liveSite,
       done:
-        setupRestored || (hasPublishedHero && (demoMode || homePageConfirmed)),
+        hasPublishedHero && (demoMode || homePageConfirmed || setupRestored),
       href: "/",
       onOpen: openHomePage,
+      confirmation:
+        !demoMode &&
+        hasPublishedHero &&
+        homePageOpened &&
+        !homePageConfirmed &&
+        !setupRestored
+          ? {
+              label: t.setup.homePageConfirmAction,
+              onConfirm: confirmHomePage,
+            }
+          : undefined,
+      notice: homePageOpenFailed ? t.setup.homePageOpenFailed : undefined,
     },
   ];
 
@@ -1111,7 +1141,7 @@ export function SetupTab({
     },
     {
       ...t.setup.recommended.contact,
-      done: isFilled(settings.contactEmail) || isFilled(settings.formspreeUrl),
+      done: hasUsableContactChannel(settings.contactEmail, settings.formspreeUrl),
       tab: "settings",
     },
     {
@@ -1152,6 +1182,7 @@ export function SetupTab({
   const collapsed =
     !demoMode &&
     !loading &&
+    requiredDone &&
     (settings.setupCompleted === "true" || dismissed) &&
     !forceOpen;
 
@@ -1271,11 +1302,13 @@ export function SetupTab({
                   <button
                     onClick={() => {
                       if (!requiredDone) {
-                        if (nextItem?.tab) onOpenTab(nextItem.tab);
+                        if (nextItem?.confirmation) {
+                          nextItem.confirmation.onConfirm();
+                        } else if (nextItem?.tab) onOpenTab(nextItem.tab);
                         else if (nextItem?.href) {
-                          // 項目行の「開く」と同じ完了フラグを立てる。ここを
-                          // 忘れると、メインボタンだけ使う購入者が永遠に
-                          // 「トップページを確認」を完了できない
+                          // 見出しの「次へ」からもトップページを開けるようにする。
+                          // 開いた後は nextItem.confirmation の分岐で、同じ窓を
+                          // 繰り返し開かず、表示確認へ進む。
                           nextItem.onOpen?.();
                         }
                         return;
@@ -1290,7 +1323,8 @@ export function SetupTab({
                       ? t.common.saving
                       : requiredDone
                         ? t.setup.finish
-                        : t.setup.nextAction(nextItem?.title ?? "")}
+                        : nextItem?.confirmation?.label ??
+                          t.setup.nextAction(nextItem?.title ?? "")}
                   </button>
                   <button
                     onClick={() => {
@@ -1399,6 +1433,24 @@ function SetupChecklistRow({
         >
           {item.body}
         </p>
+        {item.notice && (
+          <p
+            role="alert"
+            className="mt-3 text-[length:var(--admin-text-note)] leading-5 text-[color:var(--admin-danger)]"
+          >
+            {item.notice}
+          </p>
+        )}
+        {item.confirmation && (
+          <AxButton
+            onClick={item.confirmation.onConfirm}
+            tone="quiet"
+            size="small"
+            className="mt-3 max-w-full"
+          >
+            {item.confirmation.label}
+          </AxButton>
+        )}
       </div>
     </div>
   );

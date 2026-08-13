@@ -1,3 +1,5 @@
+import { usableContactEmail } from "./contact-settings";
+
 const SERVICE_HOST = "akieguchi.com";
 const SERVICE_OWNER_EMAIL = "akieguchi33@gmail.com";
 
@@ -29,7 +31,7 @@ export function resolveServiceContactEmail(
   siteUrl: string | undefined,
   windowHost: string | undefined,
 ): string {
-  const configuredEmail = contactEmail?.trim();
+  const configuredEmail = usableContactEmail(contactEmail);
   if (configuredEmail) return configuredEmail;
   return isServiceOwnerSite(siteUrl, windowHost) ? SERVICE_OWNER_EMAIL : "";
 }

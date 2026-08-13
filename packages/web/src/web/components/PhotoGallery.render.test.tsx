@@ -52,7 +52,8 @@ const { createElement, act } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } =
   await import("@tanstack/react-query");
-const { PhotoGallery } = await import("./PhotoGallery");
+const { PhotoGallery, shouldUpgradeGeneratedThumb } =
+  await import("./PhotoGallery");
 
 const photos = [
   {
@@ -80,6 +81,40 @@ const photos = [
     height: 2133,
   },
 ];
+
+function installImagePreloadStub(outcome: "load" | "error") {
+  const requestedSources: string[] = [];
+  const originalImage = globalThis.Image;
+
+  class PreloadImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    sizes = "";
+    srcset = "";
+    private value = "";
+
+    set src(value: string) {
+      this.value = value;
+      requestedSources.push(value);
+      queueMicrotask(() => {
+        if (outcome === "load") this.onload?.();
+        else this.onerror?.();
+      });
+    }
+
+    get src() {
+      return this.value;
+    }
+  }
+
+  Object.assign(globalThis, {
+    Image: PreloadImage as unknown as typeof Image,
+  });
+  return {
+    requestedSources,
+    restore: () => Object.assign(globalThis, { Image: originalImage }),
+  };
+}
 
 test("PhotoGallery renders tiles without crashing (every layout)", async () => {
   const qc = new QueryClient({
@@ -290,7 +325,7 @@ test("tile images apply focal point as object-position", async () => {
   host.remove();
 });
 
-test("generated thumbnails do not auto-upgrade normal gallery grids", async () => {
+test("normal grids do not expose medium candidates before a density check", async () => {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, enabled: false } },
   });
@@ -326,6 +361,138 @@ test("generated thumbnails do not auto-upgrade normal gallery grids", async () =
     root.unmount();
   });
   host.remove();
+});
+
+test("generated thumbnail density only upgrades materially under-dense DPR3 square crops", () => {
+  const squareBox = { clientWidth: 164.5, clientHeight: 164.5 };
+
+  expect(
+    shouldUpgradeGeneratedThumb({
+      naturalWidth: 640,
+      naturalHeight: 272,
+      devicePixelRatio: 3,
+      ...squareBox,
+    }),
+  ).toBe(true);
+  expect(
+    shouldUpgradeGeneratedThumb({
+      naturalWidth: 640,
+      naturalHeight: 450,
+      devicePixelRatio: 3,
+      ...squareBox,
+    }),
+  ).toBe(false);
+  expect(
+    shouldUpgradeGeneratedThumb({
+      naturalWidth: 640,
+      naturalHeight: 910,
+      devicePixelRatio: 3,
+      ...squareBox,
+    }),
+  ).toBe(false);
+  expect(
+    shouldUpgradeGeneratedThumb({
+      naturalWidth: 640,
+      naturalHeight: 272,
+      devicePixelRatio: 1,
+      ...squareBox,
+    }),
+  ).toBe(false);
+  expect(
+    shouldUpgradeGeneratedThumb({
+      naturalWidth: 0,
+      naturalHeight: 272,
+      devicePixelRatio: 3,
+      ...squareBox,
+    }),
+  ).toBe(false);
+  expect(
+    shouldUpgradeGeneratedThumb({
+      naturalWidth: Number.NaN,
+      naturalHeight: 272,
+      devicePixelRatio: 3,
+      ...squareBox,
+    }),
+  ).toBe(false);
+});
+
+test("a lazy normal grid upgrades an under-dense thumbnail when it later loads", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  const preloader = installImagePreloadStub("load");
+  const devicePixelRatioDescriptor = Object.getOwnPropertyDescriptor(
+    dom.window,
+    "devicePixelRatio",
+  );
+  Object.defineProperty(dom.window, "devicePixelRatio", {
+    configurable: true,
+    value: 3,
+  });
+
+  try {
+    await act(async () => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: qc },
+          createElement(PhotoGallery, {
+            photos: Array.from({ length: 9 }, (_, index) => ({
+              id: 16 + index,
+              url: `/api/images/photos/pano-${index}.jpg`,
+              thumbUrl: `/api/images/thumbs/pano-${index}.webp`,
+              mediumUrl: `/api/images/medium/pano-${index}.webp`,
+              title: `Pano ${index}`,
+            })),
+            layoutType: "clean-grid",
+          }),
+        ),
+      );
+    });
+    const img = host.querySelectorAll<HTMLImageElement>(".photo-card img")[8] as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.getAttribute("loading")).toBe("lazy");
+    expect(img.getAttribute("data-src")).toBeNull();
+    expect(img.getAttribute("data-srcset")).toBeNull();
+    Object.defineProperties(img, {
+      naturalWidth: { configurable: true, value: 640 },
+      naturalHeight: { configurable: true, value: 272 },
+      clientWidth: { configurable: true, value: 165 },
+      clientHeight: { configurable: true, value: 165 },
+    });
+
+    await act(async () => {
+      img.dispatchEvent(new dom.window.Event("load", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(preloader.requestedSources).toEqual([
+      "/api/images/medium/pano-8.webp",
+    ]);
+    expect(img.getAttribute("src")).toBe("/api/images/medium/pano-8.webp");
+    expect(img.closest(".photo-card")?.classList.contains("photo-broken")).toBe(
+      false,
+    );
+  } finally {
+    await act(async () => {
+      root.unmount();
+    });
+    preloader.restore();
+    if (devicePixelRatioDescriptor) {
+      Object.defineProperty(
+        dom.window,
+        "devicePixelRatio",
+        devicePixelRatioDescriptor,
+      );
+    } else {
+      delete (dom.window as unknown as Record<string, unknown>)
+        .devicePixelRatio;
+    }
+    host.remove();
+  }
 });
 
 test("cached generated thumbnails are marked loaded even if the load event was missed", async () => {
@@ -391,6 +558,227 @@ test("cached generated thumbnails are marked loaded even if the load event was m
     } else {
       delete (imageProto as unknown as Record<string, unknown>).naturalWidth;
     }
+    host.remove();
+  }
+});
+
+test("cached normal panoramas run the same density check after a missed load event", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  const preloader = installImagePreloadStub("load");
+  const imageProto = dom.window.HTMLImageElement.prototype;
+  const devicePixelRatioDescriptor = Object.getOwnPropertyDescriptor(
+    dom.window,
+    "devicePixelRatio",
+  );
+  const descriptors = new Map(
+    ["complete", "naturalWidth", "naturalHeight", "clientWidth", "clientHeight"].map(
+      (name) => [name, Object.getOwnPropertyDescriptor(imageProto, name)],
+    ),
+  );
+
+  Object.defineProperties(imageProto, {
+    complete: { configurable: true, get: () => true },
+    naturalWidth: { configurable: true, get: () => 640 },
+    naturalHeight: { configurable: true, get: () => 272 },
+    clientWidth: { configurable: true, get: () => 165 },
+    clientHeight: { configurable: true, get: () => 165 },
+  });
+  Object.defineProperty(dom.window, "devicePixelRatio", {
+    configurable: true,
+    value: 3,
+  });
+
+  try {
+    await act(async () => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: qc },
+          createElement(PhotoGallery, {
+            photos: [
+              {
+                id: 17,
+                url: "/api/images/photos/cached-pano.jpg",
+                thumbUrl: "/api/images/thumbs/cached-pano.webp",
+                mediumUrl: "/api/images/medium/cached-pano.webp",
+                title: "Cached pano",
+              },
+            ],
+            layoutType: "clean-grid",
+          }),
+        ),
+      );
+      await Promise.resolve();
+    });
+    const img = host.querySelector(".photo-card img") as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(preloader.requestedSources).toEqual([
+      "/api/images/medium/cached-pano.webp",
+    ]);
+    expect(img.getAttribute("src")).toBe(
+      "/api/images/medium/cached-pano.webp",
+    );
+    expect(img.classList.contains("lqip-loaded")).toBe(true);
+  } finally {
+    await act(async () => {
+      root.unmount();
+    });
+    preloader.restore();
+    for (const [name, descriptor] of descriptors) {
+      if (descriptor) {
+        Object.defineProperty(imageProto, name, descriptor);
+      } else {
+        delete (imageProto as unknown as Record<string, unknown>)[name];
+      }
+    }
+    if (devicePixelRatioDescriptor) {
+      Object.defineProperty(
+        dom.window,
+        "devicePixelRatio",
+        devicePixelRatioDescriptor,
+      );
+    } else {
+      delete (dom.window as unknown as Record<string, unknown>)
+        .devicePixelRatio;
+    }
+    host.remove();
+  }
+});
+
+test("a failed optional medium upgrade leaves the normal thumbnail intact", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  const preloader = installImagePreloadStub("error");
+  const devicePixelRatioDescriptor = Object.getOwnPropertyDescriptor(
+    dom.window,
+    "devicePixelRatio",
+  );
+  Object.defineProperty(dom.window, "devicePixelRatio", {
+    configurable: true,
+    value: 3,
+  });
+
+  try {
+    await act(async () => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: qc },
+          createElement(PhotoGallery, {
+            photos: [
+              {
+                id: 18,
+                url: "/api/images/photos/missing-medium-pano.jpg",
+                thumbUrl: "/api/images/thumbs/missing-medium-pano.webp",
+                mediumUrl: "/api/images/medium/missing-medium-pano.webp",
+                title: "Fallback",
+              },
+            ],
+            layoutType: "clean-grid",
+          }),
+        ),
+      );
+    });
+    const img = host.querySelector(".photo-card img") as HTMLImageElement;
+    expect(img).not.toBeNull();
+    Object.defineProperties(img, {
+      naturalWidth: { configurable: true, value: 640 },
+      naturalHeight: { configurable: true, value: 272 },
+      clientWidth: { configurable: true, value: 165 },
+      clientHeight: { configurable: true, value: 165 },
+    });
+
+    await act(async () => {
+      img.dispatchEvent(new dom.window.Event("load", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(preloader.requestedSources).toEqual([
+      "/api/images/medium/missing-medium-pano.webp",
+    ]);
+    expect(img.getAttribute("src")).toBe(
+      "/api/images/thumbs/missing-medium-pano.webp",
+    );
+    expect(img.closest(".photo-card")?.classList.contains("photo-broken")).toBe(
+      false,
+    );
+    expect(img.classList.contains("lqip-loaded")).toBe(true);
+  } finally {
+    await act(async () => {
+      root.unmount();
+    });
+    preloader.restore();
+    if (devicePixelRatioDescriptor) {
+      Object.defineProperty(
+        dom.window,
+        "devicePixelRatio",
+        devicePixelRatioDescriptor,
+      );
+    } else {
+      delete (dom.window as unknown as Record<string, unknown>)
+        .devicePixelRatio;
+    }
+    host.remove();
+  }
+});
+
+test("a failed no-thumbnail proxy upgrade keeps the existing LQIP error behavior", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  const preloader = installImagePreloadStub("error");
+
+  try {
+    await act(async () => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: qc },
+          createElement(PhotoGallery, {
+            photos: Array.from({ length: 9 }, (_, index) => ({
+              id: 30 + index,
+              url: `/api/images/photos/no-thumb-${index}.jpg`,
+              title: `No thumbnail ${index}`,
+            })),
+            layoutType: "clean-grid",
+          }),
+        ),
+      );
+    });
+    const img = host.querySelectorAll<HTMLImageElement>(".photo-card img")[8] as HTMLImageElement;
+    expect(img).not.toBeNull();
+    expect(img.getAttribute("loading")).toBe("lazy");
+    const upgradeSource = img.getAttribute("data-src");
+    expect(upgradeSource).not.toBeNull();
+    if (!upgradeSource) throw new Error("lazy no-thumbnail image lost data-src");
+
+    await act(async () => {
+      img.dispatchEvent(new dom.window.Event("load", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(preloader.requestedSources).toEqual([upgradeSource]);
+    expect(img.classList.contains("lqip-loading")).toBe(true);
+    expect(img.closest(".photo-card")?.classList.contains("photo-broken")).toBe(
+      false,
+    );
+  } finally {
+    await act(async () => {
+      root.unmount();
+    });
+    preloader.restore();
     host.remove();
   }
 });

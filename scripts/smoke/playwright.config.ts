@@ -67,7 +67,7 @@ export default defineConfig({
       // 描画エンジンは Chromium のまま（Pixel 7）にして、変数をタッチ有無に絞る。
       name: "mobile-touch",
       testMatch:
-        /(public-site|admin-reorder-safety|admin-touch-targets|admin-mobile-input-zoom)\.spec\.ts/,
+        /(public-site|admin-reorder-safety|admin-touch-targets|admin-mobile-input-zoom|admin-page-header-geometry)\.spec\.ts/,
       use: {
         ...devices["Pixel 7"],
         viewport: { width: 390, height: 844 },

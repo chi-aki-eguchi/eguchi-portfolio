@@ -146,4 +146,44 @@ describe("Contact の構成", () => {
       }
     }
   });
+
+  test("旧DBの不正なendpointやメールを公開のform・mailtoへ渡さない", async () => {
+    const m = await mountContact({
+      contactIntro: "SNSからもご連絡いただけます。",
+      formspreeUrl: "http://not-secure.example.test/contact",
+      contactEmail: "not-an-email",
+      profileInstagram: "https://example.test/instagram",
+    });
+    try {
+      expect(m.host.querySelector("form")).toBeNull();
+      expect(m.host.querySelector('a[href^="mailto:"]')).toBeNull();
+      // 利用できるSNSは、壊れた連絡先を表示しない場合も残す。
+      expect(m.host.querySelector('a[href="https://example.test/instagram"]')).not.toBeNull();
+    } finally {
+      m.cleanup();
+    }
+  });
+
+  test("trimした有効なメール・HTTPS endpointは従来どおり使える", async () => {
+    const email = await mountContact({
+      contactEmail: " hello@example.test ",
+      formspreeUrl: "not-a-url",
+    });
+    try {
+      expect(email.host.querySelector("form")).toBeNull();
+      expect(email.host.querySelector('a[href="mailto:hello@example.test"]'))
+        .not.toBeNull();
+    } finally {
+      email.cleanup();
+    }
+
+    const form = await mountContact({
+      formspreeUrl: " https://compatible.example.test/contact ",
+    });
+    try {
+      expect(form.host.querySelector("form")).not.toBeNull();
+    } finally {
+      form.cleanup();
+    }
+  });
 });

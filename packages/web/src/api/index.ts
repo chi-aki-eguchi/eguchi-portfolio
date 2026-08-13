@@ -71,6 +71,10 @@ import {
   parseRotationDeg,
 } from "../shared/image-url";
 import { imageTooLargeMessage } from "../shared/upload-limits";
+import {
+  invalidContactSettingKeys,
+  normalizeContactSettingValue,
+} from "../shared/contact-settings";
 import { SETTINGS_PREVIEW_KEYS } from "../shared/settings-keys";
 import {
   StorageConfigError,
@@ -1473,17 +1477,25 @@ const app = new Hono()
       body,
       ALLOWED_SETTINGS_KEYS,
     );
-    if (invalidKeys.length > 0)
+    const contactInvalidKeys = invalidContactSettingKeys(
+      Object.fromEntries(allowed),
+    );
+    const allInvalidKeys = [...invalidKeys, ...contactInvalidKeys];
+    if (allInvalidKeys.length > 0)
       return c.json(
-        { error: "Invalid settings values", invalidKeys },
+        { error: "Invalid settings values", invalidKeys: allInvalidKeys },
         400,
       );
     const entries: Array<[string, string]> = [];
     for (const [key, value] of allowed) {
-      if (key.length > MAX_KEY_LEN || value.length > MAX_VALUE_LEN) {
+      const normalizedValue =
+        key === "contactEmail" || key === "formspreeUrl"
+          ? normalizeContactSettingValue(value)
+          : value;
+      if (key.length > MAX_KEY_LEN || normalizedValue.length > MAX_VALUE_LEN) {
         return c.json({ error: "設定値が大きすぎます。" }, 413);
       }
-      entries.push([key, value]);
+      entries.push([key, normalizedValue]);
     }
     // profile/hero画像キーは自分専用のアップロードprefixのURLしか受け付けない
     // (Q-4 / codex-reviewer P1再指摘: 削除済みの旧URLを別キーへ書き戻す

@@ -1394,8 +1394,14 @@ export function Lightbox({
         if (photo.iso) exifItems.push(["ISO", photo.iso]);
         if (photo.shotAt) {
           const d = new Date(photo.shotAt);
+          const dateLabel =
+            photo.filmType === "フィルム"
+              ? "スキャン"
+              : photo.filmType === "デジタル"
+                ? "撮影"
+                : "Date";
           if (!Number.isNaN(d.getTime()))
-            exifItems.push(["Date", d.toLocaleDateString("ja-JP")]);
+            exifItems.push([dateLabel, d.toLocaleDateString("ja-JP")]);
         }
         if (exifItems.length === 0) return null;
         return (

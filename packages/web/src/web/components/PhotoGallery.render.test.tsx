@@ -155,6 +155,58 @@ test("PhotoGallery renders tiles without crashing (every layout)", async () => {
   }
 });
 
+test("large-format hides a film scan year without leaving a separator", async () => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(PhotoGallery, {
+          photos: [
+            {
+              id: 101,
+              url: "/api/images/photos/film.jpg",
+              title: "",
+              filmType: "フィルム",
+              shotAt: "2026-01-01T00:00:00Z",
+            },
+            {
+              id: 102,
+              url: "/api/images/photos/digital.jpg",
+              title: "",
+              filmType: "デジタル",
+              shotAt: "2026-01-01T00:00:00Z",
+            },
+            {
+              id: 103,
+              url: "/api/images/photos/unknown.jpg",
+              title: "",
+              filmType: "",
+              shotAt: "2026-01-01T00:00:00Z",
+            },
+          ],
+          layoutType: "large-format",
+        }),
+      ),
+    );
+  });
+  const captions = Array.from(host.querySelectorAll("figcaption")).map(
+    (caption) => caption.textContent,
+  );
+  expect(captions).toEqual(["Film", "Digital — 2026", "2026"]);
+  expect(host.textContent).not.toContain("Film —");
+  await act(async () => {
+    root.unmount();
+  });
+  host.remove();
+});
+
 test("clean-grid forces the outer tile box to a 1:1 square regardless of source photo ratio", async () => {
   // Regression: imgStyle forced the <img> to 1:1, but the shared tile()
   // helper still set the outer .photo-card box's aspectRatio from the

@@ -1023,7 +1023,7 @@ export function PhotoGallery({
       >
         {photos.map((photo, idx) => {
           const medium = displayMedium(photo);
-          const year = photoYear(photo);
+          const year = photo.filmType === "フィルム" ? "" : photoYear(photo);
           const sub = [medium, year].filter(Boolean).join(" — ");
           return (
             <figure key={photo.id} style={{ margin: 0, minWidth: 0 }}>

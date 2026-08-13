@@ -3,9 +3,18 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-14 JST
 
-- **Status:** 配布版Postgresの写真API 500 をローカル修正済み。Claude Codeのread-only検証待ち。
-- **Current owner:** Codex（実装完了） / **Handoff readiness:** ready
+- **Status:** 配布版Postgresの写真API 500 は **push・Railway反映・実測まで完了。復旧確認済み。**
+- **Current owner:** Sol（Claude Code） / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF` / **Git・originとの差:** `git status --short --branch` で測る
+
+### 本番実測（2026-08-14、push後）
+
+- テンプレート環境（PostgreSQL）: `/api/health` 200 / `/api/photos` **200・写真2枚**。
+  build `c2e8f4ce`。**500は解消。**
+- 本番 akieguchi.com（Turso）: `/api/health` 200 / `/api/photos` 200・**写真497枚**。
+  同じ build へ更新されたが影響なし。
+- 両環境とも RSS 136MB。**497枚を配信している本番でこの値**であり、写真枚数による
+  メモリ破綻の兆候は現時点で無い（この数値は再測定できる。将来の事実として扱わない）。
 
 ### 完了した変更
 

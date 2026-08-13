@@ -121,6 +121,7 @@ import {
   type SourceFormat,
 } from "./source-metadata";
 import { buildShotAtPatchUpdate } from "./photo-shot-at-update";
+import { errorDetailsForLog } from "./error-log";
 
 // Keep list responses stable when new database columns are added. The property
 // order matches schema.ts so existing JSON key order stays unchanged.
@@ -790,7 +791,7 @@ const app = new Hono()
     if (err instanceof UnreadableImageError) {
       return c.json({ error: UNREADABLE_IMAGE_MESSAGE }, 422);
     }
-    console.error("[api] unhandled error:", err.message);
+    console.error("[api] unhandled error:", errorDetailsForLog(err));
     return c.json({ error: "Internal server error" }, 500);
   })
   .use(

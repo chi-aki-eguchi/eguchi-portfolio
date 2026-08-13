@@ -3,50 +3,39 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-14 JST
 
-- **Status:** 2026-08-12 夜の改善サイクル一式を commit 済み。次の1件は未着手・オーナー判断待ち。
-- **Current owner:** Sol（Claude Code） / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / **Git:** clean（実測） /
-  **originとの差:** ahead 1（push は未実施）
+- **Status:** 配布版Postgresの写真API 500 をローカル修正済み。Claude Codeのread-only検証待ち。
+- **Current owner:** Codex（実装完了） / **Handoff readiness:** ready
+- **Branch:** `main` / **HEAD:** `SELF` / **Git・originとの差:** `git status --short --branch` で測る
 
-### 目的と完成状態
+### 完了した変更
 
-公開サイトとAdminの機能を1個ずつ実測して品質を上げる。**このゴールには終わりがないため、
-1サイクル＝1件で必ず停止し、次へ進むかはオーナーが決める。**無人での連続稼働はしない。
-
-### commit 済みの内容（`f4ce343`）
-
-- 公開Contact: 送信開始の瞬間にロックして二重送信を防ぐ。成功後は成功文へ、再入力時は名前欄へfocus。
-- Admin問い合わせ設定: `shared/contact-settings.ts` を新設し、Admin画面・保存API・「はじめに」・
-  公開Contactが同じ判定を共有。不正なメール/送信先は保存前に日英inline文で示し、API側でも400で拒否。
-  390pxの下部保存バーもdesktopと同じ検証経路。空欄保存と旧不正値の互換は維持。
-- 公開Gallery: 絞り込みの太さ逆転を修正（選択500 / 未選択400）。高精細画面で粗くなる横長写真だけ高画質版へ。
-- Admin「はじめに」: 現在の公開写真とHero状態から完了を再判定。公開ページは表示確認後に完了。
-- 言語切替: 公開側は当たり判定32px角へ拡大。Admin側は薄すぎる文字を明暗両方で可読に。
-- Admin Series説明をスマホ2行以内へ短縮。実在しないB-13・B-14をbacklogから削除。
+- 新規Postgres migration 0002_add_photo_source_metadata を追加。photos の不足7列を
+  ADD COLUMN で追加し、既存行の shot_at_source はDB既定値 legacy になる。
+- schema.postgres.ts、最新Drizzle snapshot、journalに載る全SQL migrationの列集合を
+  比べるPostgres schema契約チェックを追加し、bun run check の先頭で必ず実行する。
+- APIのunhandled errorはDrizzle/pgのcauseとDB error codeを残しつつ、接続URLと
+  password・token等の値を伏せてログへ出す。
+- SQLite schema、withRetry、起動時migrationの6回リトライと失敗時exit(1)は変更していない。
 
 ### 検証済み
 
-- `bun run check` 成功（typecheck / lint / test / tools / build）。
-- `bun run smoke` 328 passed / 0 failed / 145 skipped（16.7分、2026-08-14 に完走）。
-  8/12 夜の実行はモデル容量エラーで中断していたため、この回が正本。
-- `git diff --check` 成功。
+- schemaに一時的な未migration列を足すと契約チェックが失敗し、削除後に成功することを実測。
+- bun run check 成功（Postgres契約チェック、typecheck、lint、test、tools、build）。
+- DATABASE_PROVIDER=postgres bunx turbo build --force 成功（外部DBへは未接続）。
+- git diff --check 成功。
 
-### 未確認 / 境界
+### 未検証 / 境界
 
-- 本番DB / Turso / R2 / Railway / 環境変数 / 外部Formspree は未操作。**本番は未反映。**
-- local commit: `f4ce343` / push: なし / Railway反映: なし / 本番確認: 未実施。
-- push はオーナーのみ。エージェントは行わない。
+- Railway、PostgreSQL実DB、Turso、R2、環境変数、デプロイは未操作。
+- 実際の起動時migrationと既存Postgresデータ上の GET /api/photos 成功は未検証。
+- local commit: `git log -1 --oneline` で測る / push: オーナーのみ /
+  Railway反映・本番確認: 未実施。
 
-### 次の一手
+### 次の一手 / 禁止範囲
 
-- オーナーが `f4ce343` を確認し、push するか判断する。
-- その後、公開側とAdmin側から次の1件を選び直す。**古いbacklogの記述を信じず現物を測り直す。**
-
-### 運用上の反省（2026-08-13 夜〜14 朝）
-
-終わりのないゴールを無人で約6時間走らせ、Claude の週枠を使い切った。主因は実装ではなく、
-長時間走行に伴う会話履歴の肥大と、10分かかる検査の完了待ちポーリング、Codex 2体の並行稼働。
-以後は「1件で停止 / 夜間無人稼働なし / 全体検査は最後に1回 / Codexは1タスク1人」を守る。
+- Claude Codeが差分と検証結果をread-onlyで確認後、オーナーがpush可否を判断する。
+- pushはオーナーのみ。Railway・本番DB・環境変数・デプロイは触らない。
+- Codex session: 現在のrootセッション（別resume logなし）。
 <!-- CURRENT_STATE_END -->
 
 ---

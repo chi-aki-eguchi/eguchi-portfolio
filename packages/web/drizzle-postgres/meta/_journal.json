@@ -15,6 +15,13 @@
       "when": 1782390896755,
       "tag": "0001_woozy_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786646594499,
+      "tag": "0002_add_photo_source_metadata",
+      "breakpoints": true
     }
   ]
 }

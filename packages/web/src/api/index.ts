@@ -43,6 +43,7 @@ import {
   purgeDbThenStorage,
 } from "./photo-integrity";
 import { bumpSettingsVersion } from "./settings-version";
+import { contactDefaultsFor } from "../shared/contact-defaults";
 import {
   eq,
   sql,
@@ -1119,6 +1120,10 @@ const app = new Hono()
     const rows = await withRetry(() => db.select().from(schema.siteSettings));
     const settings: Record<string, string> = {};
     for (const r of rows) settings[r.key] = r.value;
+    // 設定が空のときに出る Contact の文は、持ち主のサイトと、買った人のサイトで
+    // 分ける。約束の数字（返信日数・納品期間）を、自分で決めていない人の名前で
+    // 出さないため。akieguchi.com の表示は変わらない。
+    const contactDefaults = contactDefaultsFor(settings.siteUrl);
     return c.json(
       {
         siteName: settings.siteName ?? displayNameFrom(settings),
@@ -1201,13 +1206,9 @@ const app = new Hono()
         contactIntroEn: settings.contactIntroEn ?? "",
         // 2026-07-08 動線改善(トーンA・オーナー承認済み): 依頼の心理的ハードルを
         // 下げる添え書き・流れの説明。空文字を保存すれば非表示にできる。
-        contactNote:
-          settings.contactNote ??
-          "「まだ決まっていないけれど相談したい」という段階でも歓迎です。通常2〜3日以内にお返事しています。",
+        contactNote: settings.contactNote ?? contactDefaults.contactNote,
         contactNoteEn: settings.contactNoteEn ?? "",
-        contactFlow:
-          settings.contactFlow ??
-          "ご相談 → 日程と場所のすり合わせ → 撮影 → 1〜2週間でデータ納品、という流れです。",
+        contactFlow: settings.contactFlow ?? contactDefaults.contactFlow,
         contactFlowEn: settings.contactFlowEn ?? "",
         // i18n Phase 3: always-visible "English welcome" note on /contact and /en/contact,
         // shown regardless of language toggle. Empty = hidden.
@@ -1234,19 +1235,17 @@ const app = new Hono()
         profileLabel: settings.profileLabel ?? "Profile",
         contactLabel: settings.contactLabel ?? "Contact",
         contactSentMessage:
-          settings.contactSentMessage ??
-          "お送りいただきありがとうございます。2〜3日以内にお返事します。",
+          settings.contactSentMessage ?? contactDefaults.contactSentMessage,
         contactSendAnother: settings.contactSendAnother ?? "Send another",
         contactFormName: settings.contactFormName ?? "Name",
         contactFormEmail: settings.contactFormEmail ?? "Email",
         contactFormSubject: settings.contactFormSubject ?? "Subject",
-        // 「テンプレートについて」はテンプレート需要の計測用(2026-07-08 承認)
         contactSubjectOptions:
-          settings.contactSubjectOptions ??
-          "Shooting,Press / Media,Collaboration,テンプレートについて,Other",
+          settings.contactSubjectOptions ?? contactDefaults.contactSubjectOptions,
         contactFormMessage: settings.contactFormMessage ?? "Message",
-        contactErrorMessage:
-          settings.contactErrorMessage ?? "Failed to send. Please try again.",
+        // 既定は空にする。1つの値を日英で使い回すので、どちらかの言語で必ず
+        // 間違うことになる。空なら、画面側が表示中の言語に合う文を出す。
+        contactErrorMessage: settings.contactErrorMessage ?? "",
         contactSendButton: settings.contactSendButton ?? "Send",
         contactSendingButton: settings.contactSendingButton ?? "Sending...",
         // ── E1: hero display mode ──

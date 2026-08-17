@@ -44,7 +44,8 @@ const { QueryClient, QueryClientProvider } = await import(
   "@tanstack/react-query"
 );
 const { AdminLanguageProvider } = await import("./admin-i18n");
-const { HeroTab, SeriesTab, CategoriesTab } = await import("./admin-tabs");
+const { HeroTab, SeriesTab, CategoriesTab, ProfileTab, SettingsTab } =
+  await import("./admin-tabs");
 
 const flush = async () => {
   await act(async () => {
@@ -87,6 +88,8 @@ for (const [name, Tab] of [
   ["Hero", HeroTab],
   ["Series", SeriesTab],
   ["Categories", CategoriesTab],
+  ["Profile", ProfileTab],
+  ["Settings", SettingsTab],
 ] as const) {
   test(`${name} — 読み込み中でも見出しが出ている`, async () => {
     const { container, cleanup } = await renderTab(Tab as () => unknown);

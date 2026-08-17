@@ -1442,11 +1442,19 @@ export function ProfileTab({
   const set = (key: string, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
 
+  // 読み込み中でも見出しは出したままにする（Hero と同じ理由。
+  // `admin-tab-loading-header.render.test.tsx` が9タブ分を見張る）。
   if (isLoading)
     return (
-      <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
-        <Loader2 size={14} className="animate-spin" /> {t.common.loading}
-      </div>
+      <PageShell>
+        <PageHeader
+          title={t.navigation.tabs.profile}
+          description={t.headers.profile}
+        />
+        <div className="flex items-center gap-2 h-24 text-[var(--admin-muted)] text-[length:var(--admin-text-note)]">
+          <Loader2 size={14} className="animate-spin" /> {t.common.loading}
+        </div>
+      </PageShell>
     );
 
   if (initialLoadFailed) {
@@ -4652,10 +4660,20 @@ export function SettingsTab({
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasUnsaved, initialLoadFailed]);
 
+  // 読み込み中でも見出しは出したままにする（Hero / Profile と同じ理由）。
+  // Settings は目次つきの専用レイアウトなので、その枠のクラスをそのまま使い、
+  // 見出しの左端が読み込み後と揃うようにする。
   if (isLoading)
     return (
-      <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
-        <Loader2 size={14} className="animate-spin" /> {t.common.loading}
+      <div className="admin-settings-form-layout">
+        <div className="admin-settings-form-layout__inner">
+          <div className="admin-settings-form-layout__header">
+            <PageHeader title={t.navigation.tabs.settings} />
+          </div>
+          <div className="flex items-center gap-2 h-24 text-[var(--admin-muted)] text-[length:var(--admin-text-note)]">
+            <Loader2 size={14} className="animate-spin" /> {t.common.loading}
+          </div>
+        </div>
       </div>
     );
 

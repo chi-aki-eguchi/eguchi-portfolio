@@ -116,6 +116,9 @@ const ADMIN_PHASE_2B_JA = {
       chooseImages: "画像ファイルを選択",
       dropHere: "ここにドロップして読み込み",
       retryFailed: "失敗分を再アップロード",
+      // 取り込み中の進捗。ここだけ英語の直書きが残っていた。
+      progress: (done: number, total: number) =>
+        `取り込み中 ${done} / ${total}`,
       failedReason: "アップロードに失敗しました",
       tooLargeReason: (limit: string) =>
         `画像が大きすぎます（上限: ${limit}）。`,
@@ -1801,6 +1804,7 @@ const ADMIN_PHASE_2B_EN = {
       chooseImages: "Choose image files",
       dropHere: "Drop images here to import",
       retryFailed: "Retry failed uploads",
+      progress: (done: number, total: number) => `Importing ${done} / ${total}`,
       failedReason: "Upload failed",
       tooLargeReason: (limit: string) =>
         `The image is too large (limit: ${limit}).`,

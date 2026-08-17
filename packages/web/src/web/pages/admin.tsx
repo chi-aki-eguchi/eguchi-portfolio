@@ -5773,9 +5773,16 @@ export function GalleryTab({
                 accept={UPLOAD_IMAGE_ACCEPT}
                 multiple
                 className="hidden"
-                onChange={(event) =>
-                  handleFiles(Array.from(event.target.files ?? []))
-                }
+                onChange={(event) => {
+                  const picked = Array.from(event.target.files ?? []);
+                  // **選び終えたら欄を空へ戻す。** ファイル選択欄は中身が前回と
+                  // 同じだと変更として扱われないので、戻さないと「同じ写真を
+                  // もう一度選ぶ」が無反応になる（進捗もエラーも出ないので、
+                  // 押した側からは壊れて見える）。取り込みに失敗して選び直す
+                  // ときに必ず踏む。ドラッグ＆ドロップ側にはこの制約が無い。
+                  event.target.value = "";
+                  handleFiles(picked);
+                }}
               />
             </div>
             )}
@@ -6449,7 +6456,10 @@ export function GalleryTab({
               className="animate-spin text-[var(--admin-muted)]"
             />
             <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-              Importing {uploadProgress.done} / {uploadProgress.total}
+              {copy.import.progress(
+                uploadProgress.done,
+                uploadProgress.total,
+              )}
             </span>
             <div className="flex-1 h-1 bg-[var(--admin-paper-soft)] rounded-full overflow-hidden">
               <div

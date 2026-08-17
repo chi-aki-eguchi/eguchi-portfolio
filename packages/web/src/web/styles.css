@@ -505,6 +505,19 @@
   background: rgba(var(--admin-accent-rgb), 0.08);
 }
 
+/* 今どこに居るかを、薄い面だけでなく細い罫でも示す。
+   一覧の行に触れたときに出る罫と同じ語彙なので、画面が変わっても
+   「印の付き方」が1つに見える（軸4「高級感」＝色数ではなく規則の少なさ）。 */
+.admin-atelier .admin-sidebar__tab[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 3px;
+  width: 2px;
+  background: var(--admin-accent);
+}
+
 .admin-atelier .admin-sidebar__footer {
   display: flex;
   flex-direction: column;
@@ -1798,23 +1811,36 @@
   }
 }
 
+/* 検索欄。2026-08-17: 四角い箱をやめ、他の入力欄と同じ下罫線にした。
+   admin の入力は全部「箱ではなく下罫線」で統一してあるのに、ここだけ
+   枠＋塗り＋角丸で、作業バーの中で一番強い四角になっていた
+   （`admin-renewal-goal.md`「入力欄は箱ではなく下罫線。枠の数を減らすことが
+   静かさに一番効く」）。虫めがねと説明文は残すので、入力欄だと分かる。 */
 .admin-atelier .admin-library-search {
   position: relative;
   display: flex;
-  width: clamp(170px, 20vw, 280px);
+  /* 説明文（検索（タイトル・分類・機材・ファイル名））が右端で切れていた。
+     作業バーは並べ替えチップと絞り込みの間が空いているので、そこを使う。 */
+  width: clamp(170px, 24vw, 344px);
   min-height: 32px;
   align-items: center;
   gap: 6px;
-  padding: 0 28px 0 9px;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--admin-radius-sm);
+  padding: 0 28px 0 2px;
+  border: 0;
+  border-bottom: 1px solid var(--admin-line);
+  border-radius: 0;
   color: var(--admin-muted);
-  background: var(--admin-paper-soft);
+  background: transparent;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-atelier .admin-library-search:hover {
+  border-bottom-color: var(--admin-line-strong);
 }
 
 .admin-atelier .admin-library-search:focus-within {
-  border-color: var(--admin-accent);
-  box-shadow: 0 0 0 2px rgba(var(--admin-accent-rgb), 0.18);
+  border-bottom-color: var(--admin-accent);
+  box-shadow: inset 0 -1px 0 var(--admin-accent);
 }
 
 .admin-atelier .admin-library-search input {
@@ -5149,6 +5175,7 @@ dialog.lightbox-exit .lb-content {
 }
 
 .admin-atelier .ax-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -5160,6 +5187,36 @@ dialog.lightbox-exit .lb-content {
 
 .admin-atelier .ax-row:hover {
   background: rgba(var(--admin-ink-rgb), 0.02);
+}
+
+/* 触れた行に、細い罫がすっと伸びる。
+   ホバーの合図が「2%の薄い面」だけだと、反応があることは分かっても、
+   どの行に居るかの手応えが弱い。雑誌の見出し罫と同じ語彙（細い縦罫）を
+   1本だけ足す。装飾を増やすのではなく、既にある語彙を使う
+   （`admin-renewal-goal.md` 軸6「可愛さは小さな瞬間に入れる」/ 軸4「高級感」）。
+   高さではなく scaleY で伸ばすので、行の高さが変わっても速さは同じ。 */
+.admin-atelier .ax-row::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: -10px;
+  width: 2px;
+  background: var(--admin-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.admin-atelier .ax-row:hover::before,
+.admin-atelier .ax-row:focus-within::before {
+  transform: scaleY(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-atelier .ax-row::before {
+    transition: none;
+  }
 }
 
 .admin-atelier .ax-row__lead {
@@ -5472,11 +5529,18 @@ dialog.lightbox-exit .lb-content {
 }
 
 /* ── 空状態 ── */
+/* 何もない一覧の佇まい。
+   「まだありません」は失敗ではないので、警告の見た目にしない。とはいえ
+   小さな灰色の一行だけだと作りかけに見える（軸3「完成度」）。余白を広く取り、
+   見出しと同じ書体で静かに置く。中央寄せの大きなイラスト＋2行の説明＋ボタンの
+   型は取らない（軸5 が名指しで避けている「どの道具にもある空状態」の形）。 */
 .admin-atelier .ax-empty {
   margin: 0;
-  padding: 26px 2px;
+  padding: 38px 2px 42px;
   border-bottom: 1px solid var(--admin-line);
-  font-size: var(--admin-text-note);
+  font-family: var(--admin-font-title);
+  font-size: 15px;
+  letter-spacing: 0.04em;
   color: var(--admin-muted);
 }
 

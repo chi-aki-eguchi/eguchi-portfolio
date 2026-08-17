@@ -8,7 +8,7 @@ import { ContentStatus } from "../components/ContentStatus";
 import { PhotoGallery } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
-import { scrollMemory } from "../lib/scroll-memory";
+import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 
 export default function GalleryPage() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
@@ -19,6 +19,9 @@ export default function GalleryPage() {
   const [location, setLocation] = useLocation();
   const search = useSearch();
   const params = useMemo(() => new URLSearchParams(search), [search]);
+  // 覚える鍵は PageTransition と同じ形にする。ここだけ location（パスのみ）を
+  // 使っていたため、絞り込み中は「どこまで読み込んでいたか」も復元できなかった。
+  const routeKey = routeKeyOf(location, search);
 
   const activeMedium = useMemo(() => {
     const v = params.get("medium");
@@ -153,11 +156,11 @@ export default function GalleryPage() {
   // `peekBatches` は戻ってきた場合だけ値を返す。前へ進んで入り直したときは
   // 0 なので、普段どおり先頭のひと束から始まる。
   const [extraCount, setExtraCount] = useState(() =>
-    scrollMemory.peekBatches(location),
+    scrollMemory.peekBatches(routeKey),
   );
   useEffect(() => {
-    scrollMemory.rememberBatches(location, extraCount);
-  }, [location, extraCount]);
+    scrollMemory.rememberBatches(routeKey, extraCount);
+  }, [routeKey, extraCount]);
   const renderCount = GALLERY_INITIAL + extraCount;
   const rendered = useMemo(
     () => filtered.slice(0, renderCount),

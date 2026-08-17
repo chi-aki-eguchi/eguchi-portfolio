@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "wouter";
-import { historyBridge, scrollMemory } from "../lib/scroll-memory";
+import { useLocation, useSearch } from "wouter";
+import { historyBridge, routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 
 function prefersReducedMotion(): boolean {
   return (
@@ -16,9 +16,15 @@ export default function PageTransition({
   children: React.ReactNode;
 }) {
   const [location] = useLocation();
+  const search = useSearch();
+  // 覚える鍵は「?以降」まで含める（routeKeyOf の説明を参照）。ただし
+  // **ページを差し替えるかどうかはパスだけで決める。** 絞り込みを変えるたびに
+  // 250msのフェードが入ると、同じ画面の中の操作が遅く感じられる。
+  const routeKey = routeKeyOf(location, search);
   const [display, setDisplay] = useState(children);
   const [opacity, setOpacity] = useState(1);
-  const prevLocation = useRef(location);
+  const prevLocation = useRef(routeKey);
+  const prevPath = useRef(location);
   const transitioning = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +52,10 @@ export default function PageTransition({
       // パスの比較で見分けようとして失敗した経緯は `historyBridge` の説明に
       // 書いてある。実ブラウザでは本物の戻るも「同じパスへの pop」に見える。
       if (historyBridge.consumeSelfPop()) return;
-      poppedTo.current = window.location.pathname + window.location.search;
+      poppedTo.current = routeKeyOf(
+        window.location.pathname,
+        window.location.search,
+      );
     };
     window.addEventListener("popstate", onPop);
     return () => {
@@ -124,8 +133,16 @@ export default function PageTransition({
   latestChildren.current = children;
 
   useEffect(() => {
-    if (location === prevLocation.current) return;
-    prevLocation.current = location;
+    if (location === prevPath.current) {
+      // 絞り込みが変わっただけ。ページは差し替わらないので、これから覚える
+      // 位置の宛先だけ新しい鍵へ移す（フェードもスクロールもしない）。
+      // 絞り込みが変わっただけ。ページは差し替わらないので、これから覚える
+      // 位置の宛先だけ新しい鍵へ移す（フェードもスクロールもしない）。
+      prevLocation.current = routeKey;
+      return;
+    }
+    prevPath.current = location;
+    prevLocation.current = routeKey;
 
     const settleScroll = () => {
       const popped = poppedTo.current;
@@ -153,7 +170,7 @@ export default function PageTransition({
     }, 250);
 
     return () => clearTimeout(t);
-  }, [location, swapAndFadeIn, restoreScroll]);
+  }, [location, routeKey, swapAndFadeIn, restoreScroll]);
 
   useEffect(() => {
     if (!transitioning.current) setDisplay(children);

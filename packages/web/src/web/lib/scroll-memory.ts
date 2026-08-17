@@ -45,6 +45,28 @@ export const historyBridge = {
   },
 };
 
+/**
+ * 記憶の鍵。**「?以降」まで含める。**
+ *
+ * wouter の `useLocation` はパスしか返さない（`use-browser-location.js` の
+ * `usePathname` は `location.pathname` そのもの）。一方、戻ってきたことを知る
+ * popstate 側は `window.location` を読むので「?以降」を持っている。両方を
+ * そのまま鍵に使っていたため、**絞り込み中のギャラリーだけ鍵が食い違って
+ * いた**。`/gallery` で覚えて `/gallery?c=portrait` で探すので一件も見つからず、
+ * スクロール位置(get)も読み込んでいた束の数(peekBatches)も両方0が返り、
+ * 数百枚見たあと About を一度開くだけで先頭からやり直しになっていた。
+ *
+ * 絞り込みごとに別の位置を覚えるのは仕様として正しい。`/gallery` と
+ * `/gallery?c=portrait` は、見えているものが違う別の画面である。
+ *
+ * **鍵を作る場所はここ1箇所にする。** 呼び出し側でそれぞれ組み立てると、
+ * 今回と同じ食い違いが黙って戻ってくる。
+ */
+export function routeKeyOf(pathname: string, search: string): string {
+  if (!search) return pathname;
+  return pathname + (search.startsWith("?") ? search : `?${search}`);
+}
+
 export const scrollMemory = {
   remember(path: string, y: number) {
     positions.set(path, y);

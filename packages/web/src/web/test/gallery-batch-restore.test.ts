@@ -123,7 +123,23 @@ describe("呼び出し側の配線", () => {
 
   test("ギャラリーは束を覚え、マウント時に受け取る", () => {
     const s = src("../pages/gallery.tsx");
-    expect(s).toContain("scrollMemory.peekBatches(location)");
-    expect(s).toContain("scrollMemory.rememberBatches(location, extraCount)");
+    // 鍵は routeKeyOf（パス + 「?以降」）で作る。以前はここだけ location
+    // （パスのみ）を渡しており、絞り込み中は PageTransition 側の鍵と
+    // 食い違って復元が丸ごと不発だった。
+    expect(s).toContain("scrollMemory.peekBatches(routeKey)");
+    expect(s).toContain("scrollMemory.rememberBatches(routeKey, extraCount)");
+    expect(s).toContain("routeKeyOf(location, search)");
+  });
+
+  test("記憶の鍵を作る場所は1箇所だけ", () => {
+    // 呼び出し側でそれぞれ組み立てると、今回と同じ食い違いが黙って戻る。
+    const pt = src("../components/PageTransition.tsx");
+    const gl = src("../pages/gallery.tsx");
+    for (const s of [pt, gl]) {
+      expect(s).toContain("routeKeyOf");
+      // 手組みの連結を残さない。
+      expect(s).not.toContain("window.location.pathname + window.location.search");
+      expect(s).not.toContain("location + search");
+    }
   });
 });

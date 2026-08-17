@@ -1,6 +1,11 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
+// 取り込み中の進捗。日本語表示では「取り込み中 3 / 120」になる。以前は英語が
+// 直書きされていたので `Importing` だけを見ていたが、辞書へ移したので両方を
+// 受ける（この spec の他の行も既に日英を並べて書いている）。
+const IMPORT_PROGRESS = /取り込み中 \d+ \/ \d+|Importing \d+ \/ \d+/;
+
 type MockPhoto = {
   id: number;
   filename: string;
@@ -515,12 +520,12 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       "data-library-mode",
       "select",
     );
-    await expect(page.getByText(/Importing \d+ \/ \d+/)).toBeVisible();
+    await expect(page.getByText(IMPORT_PROGRESS)).toBeVisible();
 
     finishSlowUpload.resolve();
 
     await expect(photoTile(page, 201)).toBeVisible();
-    await expect(page.getByText(/Importing \d+ \/ \d+/)).toHaveCount(0);
+    await expect(page.getByText(IMPORT_PROGRESS)).toHaveCount(0);
     await expect(photoTile(page, 202)).toHaveAttribute(
       "data-library-recently-added",
       "true",

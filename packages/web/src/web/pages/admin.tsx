@@ -6505,20 +6505,37 @@ export function GalleryTab({
                   <span>
                     {copy.trash.retention(trashData?.retentionDays ?? 30)}
                   </span>
-                  <button
-                    onClick={() =>
-                      setPurgeConfirm({
-                        ids: trashData!.photos.map((p) => p.id),
-                        label: copy.trash.purgeAllConfirm(
-                          trashData!.photos.length,
-                        ),
-                      })
-                    }
-                    disabled={bulkBusy}
-                    className="admin-text-danger transition-opacity text-[length:var(--admin-text-note)] disabled:opacity-40 disabled:pointer-events-none"
-                  >
-                    {copy.trash.purgeAll}
-                  </button>
+                  {/* まとめる入口を「戻す」側にも置く。以前はここが
+                      「すべて完全削除」だけで、復元は1枚ずつ、しかもPC幅では
+                      マウスを乗せないとボタンが見えなかった。復元は
+                      取り返しがつくので確認は挟まない（壊す側だけが確認を持つ）。 */}
+                  <span className="flex items-center gap-4 shrink-0">
+                    <button
+                      onClick={() =>
+                        restorePhotos.mutate(
+                          trashData!.photos.map((p) => p.id),
+                        )
+                      }
+                      disabled={bulkBusy}
+                      className="transition-opacity text-[length:var(--admin-text-note)] disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                      {copy.trash.restoreAll}
+                    </button>
+                    <button
+                      onClick={() =>
+                        setPurgeConfirm({
+                          ids: trashData!.photos.map((p) => p.id),
+                          label: copy.trash.purgeAllConfirm(
+                            trashData!.photos.length,
+                          ),
+                        })
+                      }
+                      disabled={bulkBusy}
+                      className="admin-text-danger transition-opacity text-[length:var(--admin-text-note)] disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                      {copy.trash.purgeAll}
+                    </button>
+                  </span>
                 </div>
                 <div
                   className="grid"

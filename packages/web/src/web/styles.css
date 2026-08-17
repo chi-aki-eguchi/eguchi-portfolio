@@ -5293,6 +5293,31 @@ dialog.lightbox-exit .lb-content {
   gap: 2px;
 }
 
+/* 狭い幅では、操作を次の行へ送って名前に幅を返す。
+   2026-08-17 実測(390px / Series): 並べ替え・表紙・状態・鉛筆・削除が同じ行に
+   並ぶため、名前に約106pxしか残らず「Still,life…」「Ishigaki I…」と早々に
+   切れていた。スラッグのすぐ隣に状態が来るので、1つの文字列にも見えていた。
+   操作を下の行の右端へ送ると、名前に約230pxが戻る。
+   **この規則は `.ax-row__actions` の後に置くこと。**同じ強さなので、前に置くと
+   上の `flex: 0 0 auto` に負けて何も起きない（最初にそう書いて実際に起きた）。 */
+@media (max-width: 560px) {
+  .admin-atelier .ax-row {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  /* 名前に必要な幅(140px)を先に確保する。入りきらない行だけが折り返すので、
+     カテゴリのような短い行は1行のままで、シリーズのような表紙つきの行だけが
+     2行になる。全部を2行にすると、短い一覧が無駄に縦へ伸びる。 */
+  .admin-atelier .ax-row__body {
+    flex: 1 1 140px;
+  }
+
+  .admin-atelier .ax-row__actions {
+    margin-left: auto;
+  }
+}
+
 /* 破壊的な操作だけ、普段は薄く置いて近づくと現れる。
    触れる端末では常に見えるようにする(隠れていると押せない)。 */
 @media (hover: hover) and (pointer: fine) {

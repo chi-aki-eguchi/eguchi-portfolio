@@ -1587,9 +1587,13 @@ export function ProfileTab({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+      {/* 短い項目（名前・振り仮名・各リンク）は2列に組む。1行ずつ縦に積むと、
+          値が20文字に満たない欄が本文幅いっぱいを使って画面が縦に伸びる。
+          長い本文（自己紹介・ステートメント等）は span で全幅のまま。
+          狭い幅では ax-field-grid が自動で1列へ戻る。 */}
+      <div className="ax-field-grid">
         {fields.map((f) => (
-          <AdminField key={f.key} label={f.label}>
+          <AdminField key={f.key} label={f.label} span={f.multiline}>
             {f.multiline ? (
               <textarea
                 rows={5}
@@ -8441,13 +8445,16 @@ function AdminField({
   label,
   hint,
   children,
+  span,
 }: {
   label: string;
   hint?: string;
   children: React.ReactNode;
+  /** 2列に組んでいるとき、この項目だけ全幅にする（長い本文用） */
+  span?: boolean;
 }) {
   return (
-    <div className="ax-field">
+    <div className={`ax-field${span ? " ax-field--span" : ""}`}>
       <label className="ax-field__label">{label}</label>
       {hint && <p className="ax-field__hint">{hint}</p>}
       {children}

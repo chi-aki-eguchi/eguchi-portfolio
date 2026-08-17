@@ -41,6 +41,41 @@ test.describe("admin — 全画面の見出し位置", () => {
     expect(leftEdge).toBeLessThan(1440 * 0.5);
   });
 
+  // 中間幅。1440px と 390px の両方を見張っていたのに、その間が抜けていた。
+  // 実測(2026-08-17 / 1024px): 8タブが 97px、**Settings だけ 88px**。
+  // 1024〜1199px 用の規則が左右 24px のべた書きで、他タブの --ax-inset
+  // (この幅で 32.8px) と食い違っていた。**同じ不具合が、幅を変えるたびに
+  // 別の場所で再発している**（390px は 2026-08-11 に同じ形で直した）。
+  test("中間幅でも9タブすべてが同じ左端に見出しを置く", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop",
+      "中間幅は desktop の viewport を変えて検証",
+    );
+
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await loginAsAdmin(page);
+
+    const titleXs: { tab: string; x: number }[] = [];
+    for (const tab of ADMIN_TABS) {
+      await gotoAdminTab(page, tab);
+      await page.waitForTimeout(300);
+      const title = page.locator("h1.admin-page-header__title");
+      await expect(title, `${tab} に共通見出しが必要`).toHaveCount(1);
+      const box = await title.boundingBox();
+      expect(box, `${tab} の見出し位置を取得できること`).not.toBeNull();
+      titleXs.push({ tab, x: box!.x });
+    }
+
+    const xs = titleXs.map((entry) => entry.x);
+    expect(
+      Math.max(...xs) - Math.min(...xs),
+      `1024px で見出しの左端がタブごとにずれている: ${JSON.stringify(titleXs)}`,
+    ).toBeLessThanOrEqual(2);
+    expect(Math.min(...xs)).toBeGreaterThan(8);
+  });
+
   // desktop だけ見ていたので、スマホ幅のずれを長らく見落としていた。
   // 実測(2026-08-11 / 390px): 8タブが 20px、**Settings だけ 12px**。
   // Settings の枠が --ax-inset ではなく 12px のべた書きだったため、スマホで

@@ -4505,7 +4505,11 @@ dialog.lightbox-exit .lb-content {
     --settings-toc-w: 184px;
     gap: 32px;
     max-width: 904px;
-    padding: 24px 24px 96px;
+    /* 左右は他タブ（.ax-page）と同じ --ax-inset。ここが 24px のべた書きだった
+       ため、1024px で Settings へ切り替えると見出しが 9px 左へ飛んでいた
+       （2026-08-17 実測: 他タブ 97px / Settings 88px）。767px以下では同じ
+       不具合を同じ方法で直してある。上下だけ詰める。 */
+    padding: 24px var(--ax-inset) 96px;
   }
   .admin-atelier .admin-settings-form-layout__body {
     max-width: 640px;
@@ -5274,19 +5278,18 @@ dialog.lightbox-exit .lb-content {
   color: var(--admin-muted);
 }
 
+/* 短い項目を横に並べる枠。
+   2026-08-17: 自分の幅で列数が決まる形へ直した。以前は
+   `container-type: inline-size` を自分に付けたうえで `@container (min-width: 560px)`
+   で自分の列数を変えようとしていた。**コンテナクエリは自分自身には効かない**
+   （問い合わせ先は祖先のコンテナ）ので、祖先にコンテナがある Settings 以外では
+   常に1列のままだった。実測でも form 幅の本文は552pxで、560pxの条件にも届いて
+   いなかった。auto-fit なら祖先に何も要らず、狭い幅では自動で1列へ戻る。
+   1列あたり最低240px（名前・URLに足りる幅）。 */
 .admin-atelier .ax-field-grid {
   display: grid;
   gap: var(--ax-gap-block) 28px;
-  grid-template-columns: 1fr;
-  container-type: inline-size;
-}
-
-@supports (container-type: inline-size) {
-  @container (min-width: 560px) {
-    .admin-atelier .ax-field-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
 }
 
 .admin-atelier .ax-field--span {

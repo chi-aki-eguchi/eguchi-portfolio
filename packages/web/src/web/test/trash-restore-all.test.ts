@@ -101,3 +101,47 @@ describe("ゴミ箱の一括復元", () => {
     expect(confirmAt).toBeGreaterThan(restoreAt);
   });
 });
+
+describe("一覧の3状態", () => {
+  const SCREENS = [
+    { file: "../pages/admin.tsx", name: "ゴミ箱" },
+    { file: "../pages/admin-tabs.tsx", name: "シリーズ / カテゴリ / 料金" },
+  ];
+
+  test.each(SCREENS)(
+    "$name は 読み込み中 / 読み込めなかった / 0件 を分けている",
+    ({ file }) => {
+      const s = src(file);
+      // 失敗を「まだありません」と出さないための3つ目の枝。
+      expect(s).toContain("ListLoadFailed");
+      expect(s).toContain("ListLoading");
+      expect(s).toContain("t.common.loadFailed");
+      expect(s).toContain("t.common.retry");
+    },
+  );
+
+  test("読み込めなかったときは、必ず再読み込みの手段を添える", () => {
+    // 出口の無いエラー表示にしない。
+    for (const { file } of SCREENS) {
+      const s = src(file);
+      const uses = [...s.matchAll(/<ListLoadFailed[\s\S]{0,400}?\/>/g)];
+      expect(uses.length, `${file} に ListLoadFailed が無い`).toBeGreaterThan(0);
+      for (const u of uses) expect(u[0]).toContain("onRetry=");
+    }
+  });
+
+  test("ゴミ箱は、読み込み終わるまで「空です」と断言しない", () => {
+    const s = src("../pages/admin.tsx");
+    // trashLoading の判定が、0件判定より先に来ていること。
+    const loadingAt = s.indexOf("trashLoading ?");
+    const emptyAt = s.indexOf("(trashData?.photos ?? []).length === 0");
+    expect(loadingAt).toBeGreaterThan(-1);
+    expect(loadingAt).toBeLessThan(emptyAt);
+  });
+
+  test("管理画面に英語の Loading... を残さない", () => {
+    for (const { file } of SCREENS) {
+      expect(src(file)).not.toContain("Loading...");
+    }
+  });
+});

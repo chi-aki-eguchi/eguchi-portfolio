@@ -64,6 +64,8 @@ import {
   RowList,
   StatusDot,
   TextInput,
+  ListLoading,
+  ListLoadFailed,
 } from "./admin-ui";
 import { AdminWorkspace } from "./admin-workspace";
 import {
@@ -1041,7 +1043,7 @@ export function HeroTab() {
   if (photosLoading || heroLoading) {
     return (
       <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
-        <Loader2 size={14} className="animate-spin" /> Loading...
+        <Loader2 size={14} className="animate-spin" /> {t.common.loading}
       </div>
     );
   }
@@ -1433,7 +1435,7 @@ export function ProfileTab({
   if (isLoading)
     return (
       <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
-        <Loader2 size={14} className="animate-spin" /> Loading...
+        <Loader2 size={14} className="animate-spin" /> {t.common.loading}
       </div>
     );
 
@@ -1641,7 +1643,12 @@ export function CategoriesTab() {
     slug: string;
   } | null>(null);
 
-  const { data, isLoading: catsLoading } = useQuery({
+  const {
+    data,
+    isLoading: catsLoading,
+    isError: catsFailed,
+    refetch: refetchCats,
+  } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => jsonOrThrow(await api.categories.$get()),
   });
@@ -1774,12 +1781,13 @@ export function CategoriesTab() {
       )}
 
       {catsLoading ? (
-        <div className="flex items-center h-24">
-          <Loader2
-            size={18}
-            className="animate-spin text-[var(--admin-muted)]"
-          />
-        </div>
+        <ListLoading label={t.common.loading} />
+      ) : catsFailed ? (
+        <ListLoadFailed
+          message={t.common.loadFailed}
+          retryLabel={t.common.retry}
+          onRetry={() => void refetchCats()}
+        />
       ) : (
         <RowList>
           {categories.length === 0 && <EmptyNote>{copy.empty}</EmptyNote>}
@@ -1955,7 +1963,12 @@ export function SeriesTab() {
     title: string;
   } | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError: listFailed,
+    refetch: refetchList,
+  } = useQuery({
     queryKey: ["admin-series"],
     queryFn: async (): Promise<{ series: SeriesRow[] }> =>
       jsonOrThrow(await adminApi.series.$get()),
@@ -2133,15 +2146,15 @@ export function SeriesTab() {
         </p>
       )}
 
-      {isLoading && (
-        <div className="flex items-center h-24">
-          <Loader2
-            size={18}
-            className="animate-spin text-[var(--admin-muted)]"
-          />
-        </div>
+      {isLoading && <ListLoading label={t.common.loading} />}
+      {!isLoading && listFailed && (
+        <ListLoadFailed
+          message={t.common.loadFailed}
+          retryLabel={t.common.retry}
+          onRetry={() => void refetchList()}
+        />
       )}
-      {!isLoading && (
+      {!isLoading && !listFailed && (
       <ul className="ax-rows">
         {series.length === 0 && <EmptyNote>{copy.empty}</EmptyNote>}
         {series.map((s, i) => {
@@ -2617,7 +2630,12 @@ export function PricingTab() {
     title: string;
   } | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError: listFailed,
+    refetch: refetchList,
+  } = useQuery({
     queryKey: ["admin-pricing"],
     queryFn: async (): Promise<{ plans: PlanRow[] }> =>
       jsonOrThrow(await adminApi.pricing.$get()),
@@ -2754,15 +2772,15 @@ export function PricingTab() {
         </p>
       )}
 
-      {isLoading && (
-        <div className="flex items-center h-24">
-          <Loader2
-            size={18}
-            className="animate-spin text-[var(--admin-muted)]"
-          />
-        </div>
+      {isLoading && <ListLoading label={t.common.loading} />}
+      {!isLoading && listFailed && (
+        <ListLoadFailed
+          message={t.common.loadFailed}
+          retryLabel={t.common.retry}
+          onRetry={() => void refetchList()}
+        />
       )}
-      {!isLoading && (
+      {!isLoading && !listFailed && (
       <ul className="ax-rows">
         {plans.length === 0 && <EmptyNote>{copy.empty}</EmptyNote>}
         {plans.map((p, i) => (
@@ -4502,7 +4520,7 @@ export function SettingsTab({
   if (isLoading)
     return (
       <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
-        <Loader2 size={14} className="animate-spin" /> Loading...
+        <Loader2 size={14} className="animate-spin" /> {t.common.loading}
       </div>
     );
 

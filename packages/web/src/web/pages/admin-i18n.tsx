@@ -3405,6 +3405,9 @@ export type AdminMessages = {
     delete: string;
     deleteAction: string;
     sessionExpired: string;
+    loading: string;
+    loadFailed: string;
+    retry: string;
     unsupportedSettings: (keys: string) => string;
   };
   login: {
@@ -3555,6 +3558,11 @@ export const ADMIN_DICTIONARY = {
       uploading: "アップロード中…",
       cancel: "キャンセル",
       discard: "破棄",
+      // 一覧の3状態（読み込み中 / 読み込めなかった / 本当に0件）で使う共通語。
+      // これが無かった画面は、失敗を「まだありません」と表示していた。
+      loading: "読み込んでいます…",
+      loadFailed: "読み込めませんでした。",
+      retry: "再読み込み",
       add: "追加",
       delete: "削除",
       deleteAction: "削除する",
@@ -3770,6 +3778,9 @@ export const ADMIN_DICTIONARY = {
       uploading: "Uploading...",
       cancel: "Cancel",
       discard: "Discard",
+      loading: "Loading…",
+      loadFailed: "Could not load.",
+      retry: "Reload",
       add: "Add",
       delete: "Delete",
       deleteAction: "Delete",

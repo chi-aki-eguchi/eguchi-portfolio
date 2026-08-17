@@ -105,7 +105,11 @@ import { PageShell } from "./admin-page-shell";
 import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 import { AdminReorderBar } from "./admin-reorder-bar";
 import { AdminCompactSidebar } from "./admin-compact-sidebar";
-import { Button as AxButton } from "./admin-ui";
+import {
+  Button as AxButton,
+  ListLoading,
+  ListLoadFailed,
+} from "./admin-ui";
 import { shuffleWithSeed, visitShuffleSeed } from "../lib/shuffle";
 import {
   AdminLanguageProvider,
@@ -2442,7 +2446,12 @@ export function GalleryTab({
     }
   }, [settingsData, activeAlbumId, smartAlbums, setActiveAlbumId]);
 
-  const { data: trashData } = useQuery({
+  const {
+    data: trashData,
+    isLoading: trashLoading,
+    isError: trashFailed,
+    refetch: refetchTrash,
+  } = useQuery({
     queryKey: ["photos-trash"],
     queryFn: async () => {
       const res = await adminApi.photos.trash.$get();
@@ -6494,7 +6503,22 @@ export function GalleryTab({
 
           {showTrash ? (
             /* ── Trash view ── */
-            (trashData?.photos ?? []).length === 0 ? (
+            /* 3状態を分ける。以前はここが「0件かどうか」だけを見ていたので、
+               読み込み中も通信が失敗したときも「ゴミ箱は空です」と断言して
+               いた。正常なときでも開くたびに一瞬そう出る唯一の画面だった。 */
+            trashLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <ListLoading label={t.common.loading} />
+              </div>
+            ) : trashFailed ? (
+              <div className="p-3">
+                <ListLoadFailed
+                  message={t.common.loadFailed}
+                  retryLabel={t.common.retry}
+                  onRetry={() => void refetchTrash()}
+                />
+              </div>
+            ) : (trashData?.photos ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--admin-muted)]">
                 <EmptyTrashIllustration />
                 <p className="text-sm">{copy.trash.empty}</p>

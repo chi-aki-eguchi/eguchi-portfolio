@@ -262,3 +262,50 @@ export function EmptyNote({ children }: { children: ReactNode }) {
   // 読み上げられない(Codex独立監査 2026-07-31 指摘)。
   return <li className="ax-empty">{children}</li>;
 }
+
+/* ── 一覧の状態 ────────────────────────────────────
+   一覧は3つの状態を持つ。**読み込み中 / 読み込めなかった / 本当に0件。**
+   これを2つ（読み込み中 / それ以外）で書くと、通信が失敗したときに
+   「まだありません」と表示することになる。実際、ゴミ箱・シリーズ・
+   カテゴリ・料金の4画面がそうなっていた。オーナーには「シリーズが全部
+   消えた」「ゴミ箱の写真はもう無い」と見える。
+
+   正しい形は既に9箇所で動いていたので、それを1つの部品にして揃える。
+   `EmptyNote` は「本当に0件」のときだけ使う。 */
+export function ListLoading({ label }: { label: string }) {
+  return (
+    <div className="flex items-center h-24 gap-2 text-[var(--admin-muted)] text-[length:var(--admin-text-note)]">
+      <span
+        aria-hidden="true"
+        className="inline-block w-3.5 h-3.5 rounded-full border border-current border-t-transparent animate-spin"
+      />
+      <output>{label}</output>
+    </div>
+  );
+}
+
+export function ListLoadFailed({
+  message,
+  retryLabel,
+  onRetry,
+}: {
+  message: string;
+  retryLabel: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="admin-status-warning rounded-sm px-3 py-2.5 flex items-center justify-between gap-4 text-[length:var(--admin-text-note)]"
+    >
+      <span>{message}</span>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="shrink-0 underline underline-offset-4 transition-opacity hover:opacity-70"
+      >
+        {retryLabel}
+      </button>
+    </div>
+  );
+}

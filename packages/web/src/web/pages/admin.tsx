@@ -269,9 +269,14 @@ function useAdminGuard(demoMode = false) {
 ══════════════════════════════════════════════════ */
 type Rgb = { r: number; g: number; b: number };
 
+/* 管理画面の紙とインク。**ここが実際に画面へ出る値**で、`styles.css` の
+   `.admin-atelier` にある同名の宣言は、この style が付く前の一瞬と、
+   JSが動かない場合の控え。両方を同じ値に保つこと（`admin-theme-independence`
+   の「CSSとJSの紙が一致している」テストが見張る）。
+   2026-08-17: 完全な無彩色（#f7f7f7 / #1a1a1a）から、温かい紙と墨へ寄せた。 */
 const ATELIER_FALLBACK = {
-  paper: "#f7f7f7",
-  ink: "#1a1a1a",
+  paper: "#f7f5f1",
+  ink: "#1b1917",
   muted: "#666666",
   accent: "#5b7fa0",
   accentFill: "#3f607e",

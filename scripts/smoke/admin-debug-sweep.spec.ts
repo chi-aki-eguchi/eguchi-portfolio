@@ -101,7 +101,11 @@ test.describe("admin — 全体デバッグスイープ", () => {
       // `admin-theme-independence.test.ts`（宣言の検査）。ここは実ブラウザで
       // 解決後の値を見る。
       // 明暗それぞれの admin 自身の紙。公開サイトの色ではない。
-      expect(["#f7f7f7", "#121212"]).toContain(
+      // 正本は `admin.tsx` の `ATELIER_FALLBACK`（実際に出るのはこちら）で、
+      // `styles.css` の `.admin-atelier` は控え。2箇所が一致していることは
+      // `admin-theme-independence.test.ts` が見張る。
+      // 2026-08-17: 無彩色 #f7f7f7 から温かい紙 #f7f5f1 へ変更。
+      expect(["#f7f5f1", "#121212"]).toContain(
         adminShell.adminPaper.toLowerCase(),
       );
       // 「公開サイトの書体でないこと」を否定形で書かない。オーナーが偶然

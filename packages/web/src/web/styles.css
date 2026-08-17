@@ -116,11 +116,19 @@
    (`admin-renewal-goal.md` 軸5「AI感の削減」/ 軸4「高級感」)。
    2026-08-07 に色数の上限を撤回したことで、公開サイト側の振れ幅はさらに大きくなる。
    明暗の追従だけは残す(下の [data-theme="dark"] 上書き)。 */
+/* 2026-08-17 オーナー指示「デザインを少し変えたい」で、紙とインクに温度を入れた。
+   変更前は R=G=B の完全な無彩色（#f7f7f7 / #1a1a1a）だった。無彩色のグレーは
+   どの道具にも付いてくる既定値で、写真（特にフィルムのスキャン）の隣に置くと
+   青寄りに浮く。バライタ紙と墨のほうへ数段だけ寄せる。
+   明度はほぼ据え置き（本文のコントラスト比 16.1:1・変更前と同等）なので、
+   読みやすさは減らさず、印象だけが変わる。
+   暗いほうは公開サイトの [data-theme="dark"] と同じ黒のままにする
+   （`admin-theme-independence.test.ts`「暗くしたのに admin だけ別の黒」）。 */
 .admin-atelier {
-  --admin-paper: #f7f7f7;
-  --admin-paper-rgb: 247, 247, 247;
-  --admin-ink: #1a1a1a;
-  --admin-ink-rgb: 26, 26, 26;
+  --admin-paper: #f7f5f1;
+  --admin-paper-rgb: 247, 245, 241;
+  --admin-ink: #1b1917;
+  --admin-ink-rgb: 27, 25, 23;
   --admin-paper-soft: color-mix(
     in srgb,
     var(--admin-paper) 97.5%,
@@ -132,7 +140,8 @@
     var(--admin-ink)
   );
   --admin-muted: color-mix(in srgb, var(--admin-ink) 62%, var(--admin-paper));
-  --admin-muted-rgb: 102, 102, 102;
+  /* 上の color-mix を実際に計算した値。color-mix を読めない環境向けの控え。 */
+  --admin-muted-rgb: 111, 109, 106;
   --admin-line: color-mix(in srgb, var(--admin-paper) 89%, var(--admin-ink));
   --admin-line-strong: color-mix(
     in srgb,
@@ -152,7 +161,15 @@
      見出しだけ借りる案では読みにくさが残る。道具は静かであること
      （`admin-renewal-goal.md` 軸2「使用感」/ 軸5「AI感の削減」）。
      公開サイト側の書体設定は一切減らない。ここが追従しなくなるだけ。 */
-  --admin-font-title: "Cormorant Garamond", "Georgia", serif;
+  /* 2026-08-17: 和文の明朝を名指しした。従来は末尾の `serif` 任せで、macOS では
+     ヒラギノ明朝、Windows では環境ごとの別書体になっていた。管理画面は
+     Portfolio Kit として売る商品の中身なので、購入者の環境で見出しの書体が
+     変わるのは「完成度」の穴（軸3）。Shippori Mincho は公開サイト用に
+     index.html で既に読み込んでいる書体で、追加の通信は発生しない。
+     欧文は従来どおり Cormorant → Georgia が先に当たるので変わらない。 */
+  --admin-font-title:
+    "Cormorant Garamond", "Georgia", "Shippori Mincho", "Hiragino Mincho ProN",
+    "Yu Mincho", serif;
   --admin-font-ui: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
   --admin-text-note: 12px;
   --admin-text-body: 14px;
@@ -211,6 +228,16 @@
   background-image: var(--admin-paper-grain);
   color: var(--admin-ink);
   font-family: var(--admin-font-ui);
+  /* 2026-08-17: 文字の太さも公開サイトから切り離した。
+     色（2026-08-07）と書体（同）は切り離してあったが、太さだけ残っていた。
+     公開サイトの `body` は `font-weight: var(--body-weight, 400)` で、
+     オーナーの設定がそのまま管理画面へ流れ込む。実測（localhost:5173 /
+     getComputedStyle）: 現在の設定 `--body-weight: 700` のとき、
+     admin の補足文・入力値・一覧の行がすべて 700 で出ていた。
+     太さを明示していない箇所が全部太る＝「線が細い」の逆で、軸4「高級感」に
+     真っ向から反する。ここで 400 を宣言し、強調は各部品が明示した 500 だけにする。
+     公開サイト側の太さ設定は一切減らない。ここが追従しなくなるだけ。 */
+  font-weight: 400;
   letter-spacing: 0;
 }
 
@@ -5167,6 +5194,9 @@ dialog.lightbox-exit .lb-content {
 .admin-atelier .ax-row__title {
   overflow: hidden;
   font-size: var(--admin-text-body);
+  /* 一覧の行で「名前」だけが少し強い。太さを継がなくなった分をここで明示する
+     （継いでいた頃は公開サイトの設定しだいで 300〜700 に振れていた）。 */
+  font-weight: 500;
   color: var(--admin-ink);
   text-overflow: ellipsis;
   white-space: nowrap;

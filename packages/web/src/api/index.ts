@@ -45,6 +45,10 @@ import {
 import { bumpSettingsVersion } from "./settings-version";
 import { contactDefaultsFor } from "../shared/contact-defaults";
 import {
+  isValidSiteUrlSetting,
+  normalizeSiteUrlSetting,
+} from "../shared/site-url-setting";
+import {
   eq,
   sql,
   isNull,
@@ -1480,7 +1484,19 @@ const app = new Hono()
     const contactInvalidKeys = invalidContactSettingKeys(
       Object.fromEntries(allowed),
     );
-    const allInvalidKeys = [...invalidKeys, ...contactInvalidKeys];
+    // 公開サイトの基準URL。この1つから canonical・OGP・サイトマップ・言語
+    // alternate が組み立てられるので、壊れた値を保存させない（画面は普通に
+    // 見えるため、気づくのは検索結果やSNSの見え方が崩れてからになる）。
+    const siteUrlInvalid =
+      Object.prototype.hasOwnProperty.call(Object.fromEntries(allowed), "siteUrl") &&
+      !isValidSiteUrlSetting(Object.fromEntries(allowed).siteUrl)
+        ? ["siteUrl"]
+        : [];
+    const allInvalidKeys = [
+      ...invalidKeys,
+      ...contactInvalidKeys,
+      ...siteUrlInvalid,
+    ];
     if (allInvalidKeys.length > 0)
       return c.json(
         { error: "Invalid settings values", invalidKeys: allInvalidKeys },
@@ -1491,7 +1507,9 @@ const app = new Hono()
       const normalizedValue =
         key === "contactEmail" || key === "formspreeUrl"
           ? normalizeContactSettingValue(value)
-          : value;
+          : key === "siteUrl"
+            ? normalizeSiteUrlSetting(value)
+            : value;
       if (key.length > MAX_KEY_LEN || normalizedValue.length > MAX_VALUE_LEN) {
         return c.json({ error: "設定値が大きすぎます。" }, 413);
       }

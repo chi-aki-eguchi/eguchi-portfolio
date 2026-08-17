@@ -24,7 +24,7 @@ import {
 } from "../../shared/setting-ranges";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
-import { photoAltText } from "../lib/photo-alt";
+import { photoAltText } from "../../shared/photo-alt";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 
 const PortfolioKitExperience = lazy(

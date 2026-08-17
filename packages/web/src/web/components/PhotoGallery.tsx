@@ -30,7 +30,7 @@ import {
   srcFor,
   srcSetFor,
 } from "../lib/picture";
-import { photoAltText } from "../lib/photo-alt";
+import { photoAltText } from "../../shared/photo-alt";
 
 const _preloaded = new Set<string>();
 function preloadForLightbox(

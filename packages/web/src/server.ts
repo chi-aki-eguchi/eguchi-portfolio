@@ -22,6 +22,7 @@ import { settingsVersion } from "./api/settings-version";
 import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 import { hasPublicEnglishContent } from "./shared/public-english";
+import { buildSitemapXml } from "./api/sitemap-xml";
 import { resolveServiceVisibility } from "./shared/service-visibility";
 import {
   DYNAMIC_FAVICON_PATHS,
@@ -331,10 +332,17 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
   // work, not just the section index. Failure → static paths only (never throw).
   let seriesPaths: string[] = [];
   let seriesIdBySlugPath = new Map<string, number>();
+  type SitemapSeries = { title: string; coverPhotoId: number | null };
+  let seriesById = new Map<number, SitemapSeries>();
   try {
     const rows = await withRetry(() =>
       db
-        .select({ id: schema.series.id, slug: schema.series.slug })
+        .select({
+          id: schema.series.id,
+          slug: schema.series.slug,
+          title: schema.series.title,
+          coverPhotoId: schema.series.coverPhotoId,
+        })
         .from(schema.series)
         .where(eq(schema.series.isPublished, true))
         .orderBy(schema.series.sortOrder),
@@ -343,22 +351,42 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     seriesIdBySlugPath = new Map(
       rows.map((r) => [`/series/${encodeURIComponent(r.slug)}`, r.id]),
     );
+    seriesById = new Map(
+      rows.map((r) => [
+        r.id,
+        { title: r.title, coverPhotoId: r.coverPhotoId },
+      ]),
+    );
   } catch (e) {
     console.error("[sitemap] series fetch failed:", e);
   }
 
   // Image sitemap entries — Google Image Search is a real discovery channel for
-  // a photographer. Every published photo is attached to /gallery; each series
-  // page additionally lists its own photos. Failure → page entries only.
-  type SitemapPhoto = { url: string; title: string; seriesId: number | null };
+  // a photographer, but only for images that carry words. Every published photo
+  // used to be attached to /gallery; measured 2026-08-14 that was 569 entries
+  // with **zero** titles (photos.title is empty), which cannot rank and scatters
+  // single frames out of the sequence they were edited into. Owner decision
+  // (2026-08-14): promote a small curated set instead — each series cover and
+  // the profile portrait — and always give them text.
+  // Note this reduces promotion, not exposure: Google may still index images it
+  // finds by crawling /gallery. Failure → page entries only.
+  type SitemapPhoto = {
+    id: number;
+    url: string;
+    title: string;
+    seriesId: number | null;
+    createdAt: Date | null;
+  };
   let livePhotos: SitemapPhoto[] = [];
   try {
     livePhotos = await withRetry(() =>
       db
         .select({
+          id: schema.photos.id,
           url: schema.photos.url,
           title: schema.photos.title,
           seriesId: schema.photos.seriesId,
+          createdAt: schema.photos.createdAt,
         })
         .from(schema.photos)
         .where(
@@ -372,27 +400,16 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
   } catch (e) {
     console.error("[sitemap] photos fetch failed:", e);
   }
-  const imageTag = (p: SitemapPhoto) =>
-    `<image:image><image:loc>${siteUrl}${escapeHtml(p.url)}</image:loc>${p.title ? `<image:title>${escapeHtml(p.title)}</image:title><image:caption>${escapeHtml(p.title)}</image:caption>` : ""}</image:image>`;
-  const imagesFor = (path: string): string => {
-    if (path === "/gallery") return livePhotos.map(imageTag).join("");
-    const sid = seriesIdBySlugPath.get(path);
-    if (sid != null)
-      return livePhotos
-        .filter((p) => p.seriesId === sid)
-        .map(imageTag)
-        .join("");
-    return "";
-  };
-
-  const lastmod = new Date().toISOString().slice(0, 10);
-  const urls = [...paths, ...seriesPaths]
-    .map(
-      (p) =>
-        `  <url><loc>${siteUrl}${p}</loc><lastmod>${lastmod}</lastmod><changefreq>${p === "/" || p === "/gallery" ? "weekly" : "monthly"}</changefreq><priority>${p === "/" ? "1.0" : "0.7"}</priority>${imagesFor(p)}</url>`,
-    )
-    .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>\n`;
+  return buildSitemapXml({
+    siteUrl,
+    paths,
+    seriesPaths,
+    seriesIdBySlugPath,
+    seriesById,
+    photos: livePhotos,
+    profilePhotoUrl: settings.profilePhotoUrl,
+    photographerName: settings.profileName || settings.siteName || "",
+  });
 }
 
 function buildRobots(siteUrl: string): string {

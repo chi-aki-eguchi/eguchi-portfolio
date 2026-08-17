@@ -15,7 +15,7 @@ import {
 } from "../lib/picture";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
-import { photoAltText } from "../lib/photo-alt";
+import { photoAltText } from "../../shared/photo-alt";
 import { historyBridge } from "../lib/scroll-memory";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
@@ -1394,11 +1394,14 @@ export function Lightbox({
         if (photo.iso) exifItems.push(["ISO", photo.iso]);
         if (photo.shotAt) {
           const d = new Date(photo.shotAt);
+          // 同じ日付でも出どころが違う。フィルムの shotAt はデュープした時刻で、
+          // 撮影した日ではない。ラベルは Camera / Lens / ISO と同じ英語の
+          // 短い語で揃える（この一覧だけ日本語が混ざらないようにする）。
           const dateLabel =
             photo.filmType === "フィルム"
-              ? "スキャン"
+              ? "Scanned"
               : photo.filmType === "デジタル"
-                ? "撮影"
+                ? "Taken"
                 : "Date";
           if (!Number.isNaN(d.getTime()))
             exifItems.push([dateLabel, d.toLocaleDateString("ja-JP")]);

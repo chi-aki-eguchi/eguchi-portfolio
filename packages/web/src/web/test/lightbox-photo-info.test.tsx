@@ -52,8 +52,8 @@ async function mountPhotoInfo(filmType: string | null) {
 
 describe("Lightbox 撮影情報の日付ラベル", () => {
   test.each([
-    ["フィルム", "スキャン"],
-    ["デジタル", "撮影"],
+    ["フィルム", "Scanned"],
+    ["デジタル", "Taken"],
     ["", "Date"],
   ] as const)("filmType=%s uses %s", async (filmType, label) => {
     const { cleanup } = await mountPhotoInfo(filmType);

@@ -3,11 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
+import { usePageLanguage } from "../hooks/usePageLanguage";
 import { safeHref } from "../lib/utils";
 import {
   usableContactEmail,
   usableContactEndpoint,
 } from "../../shared/contact-settings";
+import { buildFailoverMailto } from "../../shared/contact-failover";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -16,6 +18,7 @@ export default function ContactPage({
 }: {
   language?: "ja" | "en";
 }) {
+  usePageLanguage(language);
   const {
     data,
     isLoading,
@@ -52,6 +55,10 @@ export default function ContactPage({
       : data?.contactFlow;
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // 失敗したときだけ組み立てる mailto。書いた本文をそのまま持っていける形に
+  // する（もう一度打ち直させない）。フォームは非制御なので、送信時の
+  // FormData から作って持っておく。
+  const [failoverMailto, setFailoverMailto] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   // React state is applied after the current event finishes. A second submit
   // in that same event could therefore pass the disabled-button check before
@@ -128,6 +135,14 @@ export default function ContactPage({
       ? "Failed to send. Please try again."
       : "送信できませんでした。もう一度お試しください。";
   const fallbackSubjectNone = language === "en" ? "Not specified" : "指定なし";
+  // 送信が失敗したときだけ出す逃げ道。フォームがある間、メールアドレスは
+  // このページのどこにも出ていない（表示するのは「フォーム未設定のとき」の枝
+  // だけ）ので、繰り返しても直らない失敗——送信先サービスの停止や上限超過——に
+  // 当たった人は、連絡する手段を失ったまま去ることになる。
+  const fallbackMailtoLead =
+    language === "en"
+      ? "Still not going through? Email works too:"
+      : "うまく送れないときは、メールでも受け付けています。";
 
   const validate = (fd: FormData) => {
     const e: Record<string, string> = {};
@@ -168,16 +183,26 @@ export default function ContactPage({
     submittingRef.current = true;
     setStatus("sending");
 
+    const failed = () => {
+      setFailoverMailto(buildFailoverMailto(contactEmail, fd));
+      setStatus("error");
+    };
+
     try {
       const res = await fetch(formspreeUrl, {
         method: "POST",
         headers: { Accept: "application/json" },
         body: fd,
       });
-      setStatus(res.ok ? "success" : "error");
-      if (res.ok) formRef.current?.reset();
+      if (res.ok) {
+        setFailoverMailto("");
+        setStatus("success");
+        formRef.current?.reset();
+      } else {
+        failed();
+      }
     } catch {
-      setStatus("error");
+      failed();
     } finally {
       submittingRef.current = false;
     }
@@ -601,9 +626,34 @@ export default function ContactPage({
             </Field>
 
             {status === "error" && (
-              <p role="alert" className="text-xs text-[color:var(--form-error)]">
-                {data?.contactErrorMessage ?? fallbackSendError}
-              </p>
+              <div role="alert" className="space-y-2">
+                {/* 逃げ道の一文も同じ alert の中に置く。読み上げソフトには
+                    「送れなかった」だけでなく「代わりにこれがある」まで
+                    届いてほしい。文言の回帰は data-contact-error を指して
+                    測るので、付け足しでテストが緩まない。 */}
+                <p
+                  data-contact-error
+                  className="text-xs text-[color:var(--form-error)]"
+                >
+                  {data?.contactErrorMessage ?? fallbackSendError}
+                </p>
+                {/* メールを設定していないサイトでは何も足さない（購入者の
+                    まっさらな状態で、押せない案内を出さないため）。 */}
+                {failoverMailto && (
+                  <p
+                    className="text-xs text-[color:var(--text-quiet)]"
+                    style={{ lineHeight: 1.9 }}
+                  >
+                    {fallbackMailtoLead}{" "}
+                    <a
+                      href={failoverMailto}
+                      className="font-en tracking-[0.03em] underline underline-offset-4 decoration-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300"
+                    >
+                      {contactEmail}
+                    </a>
+                  </p>
+                )}
+              </div>
             )}
 
             <button

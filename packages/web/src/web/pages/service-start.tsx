@@ -1,9 +1,9 @@
 import { ArrowUpRight, CheckCircle2, KeyRound, Mail } from "lucide-react";
-import { useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { resolveServiceContactEmail } from "../../shared/service-visibility";
 import { api, jsonOrThrow } from "../lib/api";
+import { usePageLanguage } from "../hooks/usePageLanguage";
 
 const bodyStyle = {
   fontSize: "var(--body-size, 0.9rem)",
@@ -479,12 +479,7 @@ export default function ServiceStartPage({
   const search = checkoutArrivalSearch();
   const arrivedFromCheckout = isCheckoutArrival(search);
 
-  useEffect(() => {
-    document.documentElement.lang = language;
-    return () => {
-      document.documentElement.lang = "ja";
-    };
-  }, [language]);
+  usePageLanguage(language);
 
   return (
     <section

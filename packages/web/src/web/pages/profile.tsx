@@ -4,6 +4,7 @@ import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { usePageEntrance } from "../hooks/usePageEntrance";
+import { usePageLanguage } from "../hooks/usePageLanguage";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
 
@@ -12,6 +13,7 @@ export default function ProfilePage({
 }: {
   language?: "ja" | "en";
 }) {
+  usePageLanguage(language);
   const [photoBroken, setPhotoBroken] = useState(false);
   const { data: settings } = useQuery({
     queryKey: ["settings"],

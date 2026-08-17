@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { usePageEntrance } from "../hooks/usePageEntrance";
+import { usePageLanguage } from "../hooks/usePageLanguage";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { safeHref } from "../lib/utils";
@@ -1220,12 +1221,7 @@ export default function ServicePage({
   const live = anyPlanLive(config);
   const ref = usePageEntrance([photos.length, language]);
 
-  useEffect(() => {
-    document.documentElement.lang = language;
-    return () => {
-      document.documentElement.lang = "ja";
-    };
-  }, [language]);
+  usePageLanguage(language);
 
   return (
     <section

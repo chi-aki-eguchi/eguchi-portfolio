@@ -1553,7 +1553,10 @@ test.describe("公開サイト — Contact送信の重複防止とフォーカ�
         });
         await expect.poll(() => posts).toBe(2);
         await expect(page.locator('[role="alert"]')).toBeVisible();
-        await expect(page.locator('[role="alert"]')).toHaveText(
+        // 失敗の一文そのものを指して測る。alert の中には、繰り返しても直らない
+        // 失敗のための逃げ道（設定済みメールへの mailto）も入るため、alert 全体
+        // の文字列で比べると、その付け足しだけで落ちてしまう。
+        await expect(page.locator("[data-contact-error]")).toHaveText(
           language === "ja"
             ? "送信できませんでした。もう一度お試しください。"
             : "Failed to send. Please try again.",

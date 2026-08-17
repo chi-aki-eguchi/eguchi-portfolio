@@ -113,3 +113,31 @@ describe("adminThemeFromSettings contrast guarantees", () => {
     );
   });
 });
+
+/**
+ * 小さい文字を α で薄くしない。
+ *
+ * `--admin-muted` は紙に対して 4.73:1 で、12px の文字に必要な 4.5:1 を
+ * ぎりぎり満たしている。そこへ `rgba(var(--admin-muted-rgb), 0.85)` のように
+ * 透明度を掛けると、紙に重なった実効色は 3.57:1 まで落ちる（2026-08-17 実測）。
+ * 実際に補足文（`.ax-field__hint`）と一覧のメタ（`.ax-row__meta`）が
+ * この状態だった。薄さで階層を作らず、太さと大きさで作る。
+ */
+describe("管理画面の小さい文字はαで薄めない", () => {
+  test("muted に透明度を掛けた色を文字色に使っていない", async () => {
+    const styles = await Bun.file(
+      new URL("../styles.css", import.meta.url),
+    ).text();
+    const offenders: string[] = [];
+    for (const rule of styles.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const [, selector, body] = rule;
+      // プレースホルダだけは薄いままにする。ここを濃くすると「空欄」が
+      // 「入力済み」に見え、どの設定を自分で書いたのか分からなくなる。
+      if (selector.includes("::placeholder")) continue;
+      if (/color:\s*rgba\(var\(--admin-muted-rgb\)/.test(body)) {
+        offenders.push(selector.trim().split("\n").pop() ?? selector);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

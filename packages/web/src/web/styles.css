@@ -5205,7 +5205,8 @@ dialog.lightbox-exit .lb-content {
 .admin-atelier .ax-row__meta {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: var(--admin-text-note);
-  color: rgba(var(--admin-muted-rgb), 0.85);
+  /* 同上。12px の文字を α で薄くすると 3.57:1 まで落ちる。 */
+  color: var(--admin-muted);
   letter-spacing: 0.02em;
 }
 
@@ -5250,7 +5251,9 @@ dialog.lightbox-exit .lb-content {
   display: block;
   margin-bottom: 2px;
   font-size: var(--admin-text-note);
-  font-weight: 400;
+  /* 項目名は「探す」ための文字なので、補足文より少しだけ強い。
+     公開サイトの太さを継いでいた頃は、補足文(700)のほうが太かった。 */
+  font-weight: 500;
   letter-spacing: 0.06em;
   color: var(--admin-muted);
 }
@@ -5260,7 +5263,10 @@ dialog.lightbox-exit .lb-content {
   max-width: 60ch;
   font-size: var(--admin-text-note);
   line-height: 1.6;
-  color: rgba(var(--admin-muted-rgb), 0.85);
+  /* 2026-08-17: α0.85 をやめた。紙に重ねた実効色は 3.57:1 で、12px の文字に
+     必要な 4.5:1 に届いていない（`--admin-muted` 自体は 4.73:1 でぎりぎり足りる）。
+     ラベルとの区別は、薄さではなく太さ（ラベル側の 500）で付ける。 */
+  color: var(--admin-muted);
 }
 
 .admin-atelier .ax-field-grid {
@@ -5339,6 +5345,29 @@ dialog.lightbox-exit .lb-content {
   font-size: var(--admin-text-note);
   letter-spacing: 0.04em;
   white-space: nowrap;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* 押した場所で反応が返る（`admin-renewal-goal.md` 軸2「使用感」）。
+   刷新前のボタンには押し込みがあるのに、刷新後の共通ボタン(.ax-btn)は
+   グローバル側の `:active` から `:where(:not([class*="ax-btn"]))` で
+   除外されていて、押しても何も返らなかった。
+   動きは小さく速く保つ（軸4「高級感」/ オーナーの「アニメーション多めは避ける」）。 */
+.admin-atelier button.ax-btn:active:not(:disabled) {
+  transform: scale(0.985);
+  /* 押した瞬間は待たせない。戻りだけ上の 160ms で滑らかにする。
+     両方に時間をかけると、押し込みが指より遅れて「重い道具」に感じる。 */
+  transition-duration: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-atelier button.ax-btn {
+    transition: none;
+  }
+
+  .admin-atelier button.ax-btn:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .admin-atelier button.ax-btn--small {

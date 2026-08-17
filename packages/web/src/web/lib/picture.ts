@@ -1,8 +1,8 @@
-import {
-  imageUrlWithParams,
-  type ImageFormat,
-  type RotationDeg,
-} from "../../shared/image-url";
+// 画像URLの組み立ては `shared/` にある。**`server.ts` が同じものを使うため。**
+// 以前はここが正本で、HTMLへ先読みタグを入れる `server.ts` は同じ幅と画質を
+// 手で書き写していた（`server.ts` は `web/` を import しない境界にあるため）。
+// 写した幅は合っていたが形式(avif)と作り置きサムネを写せておらず、先読みした
+// 8枚は1枚も使われていなかった。このファイルは呼び出し側を壊さないための窓口。
 export {
   imageUrlWithParams,
   normalizeRotationDeg,
@@ -15,78 +15,12 @@ export {
   withRetrySrcSet,
 } from "../../shared/image-url";
 
-type SrcSetEntry = { w: number; q: number };
-
-const GRID_WIDTHS: SrcSetEntry[] = [
-  { w: 400, q: 82 },
-  { w: 800, q: 84 },
-  { w: 1200, q: 84 },
-  { w: 1600, q: 86 },
-];
-
-const HERO_WIDTHS: SrcSetEntry[] = [
-  { w: 640, q: 88 },
-  { w: 1024, q: 88 },
-  { w: 1536, q: 88 },
-  { w: 2400, q: 88 },
-];
-
-const LIGHTBOX_WIDTHS: SrcSetEntry[] = [
-  { w: 800, q: 82 },
-  { w: 1200, q: 85 },
-  { w: 1600, q: 85 },
-  { w: 1920, q: 85 },
-];
-
-export type ImagePreset = "grid" | "hero" | "lightbox";
-
-function widthsFor(preset: ImagePreset): SrcSetEntry[] {
-  switch (preset) {
-    case "hero": return HERO_WIDTHS;
-    case "lightbox": return LIGHTBOX_WIDTHS;
-    default: return GRID_WIDTHS;
-  }
-}
-
-type PhotoImage = { url: string; rotationDeg?: RotationDeg | number | null };
-
-export function srcSetFor(
-  url: string,
-  preset: ImagePreset,
-  fmt?: ImageFormat,
-  rotationDeg?: unknown,
-): string {
-  return widthsFor(preset)
-    .map(
-      ({ w, q }) =>
-        `${imageUrlWithParams(url, { w, q, fmt, rotationDeg })} ${w}w`,
-    )
-    .join(", ");
-}
-
-export function srcFor(
-  url: string,
-  w: number,
-  q: number,
-  fmt?: ImageFormat,
-  rotationDeg?: unknown,
-): string {
-  return imageUrlWithParams(url, { w, q, fmt, rotationDeg });
-}
-
-export function photoSrcSetFor(
-  photo: PhotoImage,
-  preset: ImagePreset,
-  fmt?: ImageFormat,
-): string {
-  return srcSetFor(photo.url, preset, fmt, photo.rotationDeg);
-}
-
-export function photoSrcFor(
-  photo: PhotoImage,
-  w: number,
-  q: number,
-  fmt?: ImageFormat,
-): string {
-  return srcFor(photo.url, w, q, fmt, photo.rotationDeg);
-}
+export {
+  GRID_SIZES,
+  photoSrcFor,
+  photoSrcSetFor,
+  smallestFor,
+  srcFor,
+  srcSetFor,
+  type ImagePreset,
+} from "../../shared/image-presets";

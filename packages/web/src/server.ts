@@ -1,12 +1,11 @@
 import { resolve as pathResolve } from "node:path";
-import app, { getOriginal } from "./api";
+import app, { getOriginal, photoWithThumbs } from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
 import { eq, and, isNull, inArray, sql } from "drizzle-orm";
 import {
   injectOgp,
   siteUrlFrom,
-  escapeHtml,
   BUILD_ID,
   ogCardTitleFrom,
 } from "./api/ogp";
@@ -23,6 +22,7 @@ import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 import { hasPublicEnglishContent } from "./shared/public-english";
 import { buildSitemapXml } from "./api/sitemap-xml";
+import { buildGalleryPreloadTags } from "./api/gallery-preload";
 import { resolveServiceVisibility } from "./shared/service-visibility";
 import {
   DYNAMIC_FAVICON_PATHS,
@@ -232,6 +232,9 @@ async function getGalleryPreloadImages(): Promise<ImageRef[]> {
         .select({
           url: schema.photos.url,
           rotationDeg: schema.photos.rotationDeg,
+          // 一覧が実際に最初に描くのは作り置きのサムネである。これを
+          // 持たずに先読みすると、別のURLを8枚ぶん取りに行って全部捨てる。
+          thumbKey: schema.photos.thumbKey,
         })
         .from(schema.photos)
         .where(
@@ -243,10 +246,17 @@ async function getGalleryPreloadImages(): Promise<ImageRef[]> {
         .orderBy(orderExpr)
         .limit(GALLERY_PRELOAD_COUNT),
     );
-    galleryPreloadCache = rows.map((r) => ({
-      url: r.url,
-      rotationDeg: r.rotationDeg ?? 0,
-    }));
+    galleryPreloadCache = rows.map((r) => {
+      const { thumbUrl } = photoWithThumbs({
+        thumbKey: r.thumbKey,
+        rotationDeg: r.rotationDeg,
+      });
+      return {
+        url: r.url,
+        rotationDeg: r.rotationDeg ?? 0,
+        preloadUrl: thumbUrl ?? undefined,
+      };
+    });
     galleryPreloadCacheTime = now;
   } catch (e) {
     console.error("[preload] gallery photos fetch failed:", e);
@@ -680,32 +690,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     ) {
       const preloadImages = await getGalleryPreloadImages();
       if (preloadImages.length > 0) {
-        const gridSizes =
-          "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
-        const preloadTags = preloadImages
-          .map((img) => {
-            const href = escapeHtml(
-              imageUrlWithParams(img.url, {
-                w: 600,
-                q: 84,
-                rotationDeg: img.rotationDeg,
-              }),
-            );
-            const srcset = escapeHtml(
-              [400, 800, 1200, 1600]
-                .map(
-                  (w, i) =>
-                    `${imageUrlWithParams(img.url, {
-                      w,
-                      q: [82, 84, 84, 86][i],
-                      rotationDeg: img.rotationDeg,
-                    })} ${w}w`,
-                )
-                .join(", "),
-            );
-            return `<link rel="preload" as="image" href="${href}" imagesrcset="${srcset}" imagesizes="${escapeHtml(gridSizes)}">`;
-          })
-          .join("\n  ");
+        const preloadTags = buildGalleryPreloadTags(preloadImages);
         injected = injected.replace(
           "</head>",
           () => `  ${preloadTags}\n  </head>`,

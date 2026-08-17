@@ -618,7 +618,7 @@ async function generateWebP(
     .toBuffer();
 }
 
-function photoWithThumbs<
+export function photoWithThumbs<
   T extends {
     thumbKey?: string | null;
     mediumKey?: string | null;

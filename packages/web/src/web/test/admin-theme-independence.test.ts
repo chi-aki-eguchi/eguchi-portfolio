@@ -1,18 +1,17 @@
 /**
- * 管理画面の紙とインクは、公開サイトの色から独立していること。
+ * 管理画面の色は公開サイトと同期し、書体は同期しない。
  *
- * /admin は `Provider` の中にあるので、オーナーが選んだ `--background` /
- * `--foreground` は `:root` のインラインstyleとして `.admin-atelier` にも届く。
- * かつて `--admin-paper: var(--background, #f7f7f7)` と書かれており、公開サイトを
- * 黒や強い色にすると管理画面まで同じ色になっていた。
+ * **2026-08-17 オーナー判断で「色も独立させる」を撤回した。**
+ * 「独立させない。admin で変えられる公開サイトの色と同期させよう」。
+ * よって色の正本は `admin.tsx` の `adminThemeFromSettings`（`admin-theme-contrast`
+ * が中身を見張る）で、このファイルが見張るのは次の3点だけになる。
  *
- * 実測（2026-08-07 / localhost:5173 / 同じ宣言を再現して getComputedStyle）:
- *   `--background: #101010` のとき、旧宣言では `--admin-paper` が #101010 になり、
- *   新宣言では #f7f7f7 のままだった。
- *
- * 2026-08-07 に色数の上限を撤回した（`design-spec.md` §9）ので、公開サイト側の
- * 振れ幅はさらに大きくなる。ここを継ぎ直すと、作品を見るための器と、作品を並べる
- * 道具の区別がなくなる（`admin-renewal-goal.md` 軸4「高級感」/ 軸5「AI感の削減」）。
+ * 1. `styles.css` 側は「JSが当たる前の一瞬」に使う控えであり、admin.tsx の
+ *    既定値と一致していること（ずれると、読み込み直後だけ別の色が出る）
+ * 2. 控えの側で公開サイトのトークンを `var()` で継いでいないこと。継ぐと、
+ *    JSが動く前の一瞬だけ別経路の色が出て、しかも明暗の解決を通らない
+ * 3. **書体の独立は撤回されていない**（2026-08-07 決定のまま）。オーナーが
+ *    公開サイトへ装飾書体を選んでも、道具の文字は静かなままにする
  */
 import { describe, expect, test } from "bun:test";
 
@@ -33,16 +32,19 @@ function ruleBlock(selector: string): string {
   return styles.slice(bodyStart, end).replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-describe("管理画面の色は公開サイトから独立している", () => {
+describe("CSS側は admin.tsx の控えとして正しい", () => {
   test(".admin-atelier は公開サイトの色トークンを継がない", () => {
+    // 色の同期は admin.tsx が明暗を解決したうえで行う。CSS で `var(--background)`
+    // を継ぐと、JSが当たる前の一瞬だけその経路が生き、暗いテーマ用の文字色と
+    // 明るい背景が混ざる（2026-08-07 に実測した組み合わせで約1.08:1）。
     const block = ruleBlock(".admin-atelier");
     expect(block).not.toContain("var(--background");
     expect(block).not.toContain("var(--foreground");
   });
 
-  test("紙とインクは admin 自身の値として宣言されている", () => {
+  test("紙とインクは直値で宣言されている", () => {
     // 2026-08-17 に無彩色（#f7f7f7 / #1a1a1a）から温かい紙と墨へ変更した。
-    // ここが見張るのは「値そのもの」ではなく「admin 自身の直値で宣言されていること」。
+    // ここが見張るのは「値そのもの」ではなく「直値で宣言されていること」。
     const block = ruleBlock(".admin-atelier");
     expect(block).toContain("--admin-paper: #f7f5f1;");
     expect(block).toContain("--admin-ink: #1b1917;");
@@ -66,25 +68,38 @@ describe("管理画面の色は公開サイトから独立している", () => {
     }
   });
 
-  test("CSSとJSの紙とインクが一致している", async () => {
-    // 紙とインクの定義は2箇所ある。実際に出るのは admin.tsx の
-    // `ATELIER_FALLBACK`（`adminThemeFromSettings` がインラインstyleとして
-    // 要素へ付けるので、CSSのどの宣言よりも強い）。styles.css 側はその控え。
+  test("CSSとJSの既定色が明暗ともに一致している", async () => {
+    // 紙とインクの既定は2箇所にある。実際に出るのは admin.tsx の
+    // `ATELIER_PAPER`（`adminThemeFromSettings` がインラインstyleとして要素へ
+    // 付けるので、CSSのどの宣言よりも強い）。styles.css 側はその控え。
     // 2026-08-17: CSS だけ変えて「変わらない」と悩んだ実例があるため、
     // ずれたらここで落とす。
     const admin = await Bun.file(
       new URL("../pages/admin.tsx", import.meta.url),
     ).text();
-    const fallback = /const ATELIER_FALLBACK = \{([\s\S]*?)\}/.exec(admin)?.[1];
-    expect(fallback, "ATELIER_FALLBACK が見つからない").toBeTruthy();
-    const value = (key: string) =>
-      new RegExp(`${key}: "(#[0-9a-f]{6})"`).exec(fallback!)?.[1];
-    const block = ruleBlock(".admin-atelier");
-    expect(block).toContain(`--admin-paper: ${value("paper")};`);
-    expect(block).toContain(`--admin-ink: ${value("ink")};`);
+    const source = /const ATELIER_PAPER = \{([\s\S]*?)\n\} as const;/.exec(
+      admin,
+    )?.[1];
+    expect(source, "ATELIER_PAPER が見つからない").toBeTruthy();
+    const pair = (theme: "light" | "dark") => {
+      const line = new RegExp(`${theme}: \\{([^}]*)\\}`).exec(source!)?.[1] ?? "";
+      return {
+        paper: /paper: "(#[0-9a-f]{6})"/.exec(line)?.[1],
+        ink: /ink: "(#[0-9a-f]{6})"/.exec(line)?.[1],
+      };
+    };
+    const light = pair("light");
+    const lightBlock = ruleBlock(".admin-atelier");
+    expect(lightBlock).toContain(`--admin-paper: ${light.paper};`);
+    expect(lightBlock).toContain(`--admin-ink: ${light.ink};`);
+
+    const dark = pair("dark");
+    const darkBlock = ruleBlock('[data-theme="dark"] .admin-atelier');
+    expect(darkBlock).toContain(`--admin-paper: ${dark.paper};`);
+    expect(darkBlock).toContain(`--admin-ink: ${dark.ink};`);
   });
 
-  test("明暗の追従は残っている（機能を減らしていない）", () => {
+  test("暗いほうの既定は公開サイトと同じ黒", () => {
     const dark = ruleBlock('[data-theme="dark"] .admin-atelier');
     expect(dark).toContain("--admin-paper: #121212;");
     expect(dark).toContain("--admin-ink: #e8e8e8;");

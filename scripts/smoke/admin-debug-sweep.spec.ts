@@ -94,17 +94,12 @@ test.describe("admin — 全体デバッグスイープ", () => {
           ).fontFamily,
         };
       });
-      // 道具は公開サイトの見た目から独立している。色は 2026-08-07（`03f3c53`）、
-      // 書体は同日オーナー判断で切り離した。ここは以前「admin は公開サイトに
-      // 追従する」ことを検査していたが、それは撤回された契約なので、逆向きに
-      // 「追従していない」ことを検査する。単体テストは
-      // `admin-theme-independence.test.ts`（宣言の検査）。ここは実ブラウザで
-      // 解決後の値を見る。
-      // 明暗それぞれの admin 自身の紙。公開サイトの色ではない。
-      // 正本は `admin.tsx` の `ATELIER_FALLBACK`（実際に出るのはこちら）で、
-      // `styles.css` の `.admin-atelier` は控え。2箇所が一致していることは
-      // `admin-theme-independence.test.ts` が見張る。
-      // 2026-08-17: 無彩色 #f7f7f7 から温かい紙 #f7f5f1 へ変更。
+      // **色は公開サイトと同期する**（2026-08-17 オーナー判断。同日以前の
+      // 「独立させる」方針は撤回された）。同期の中身は単体テスト
+      // `admin-theme-contrast.test.ts` が見張る。ここが見るのは、実ブラウザで
+      // 解決した結果が「オーナーが色を選んでいないときの既定」になっていること。
+      // 本番の設定は themeBg / themeText とも空なので、明暗それぞれの既定が出る。
+      // 正本は `admin.tsx` の `ATELIER_PAPER` で、`styles.css` 側は控え。
       expect(["#f7f5f1", "#121212"]).toContain(
         adminShell.adminPaper.toLowerCase(),
       );

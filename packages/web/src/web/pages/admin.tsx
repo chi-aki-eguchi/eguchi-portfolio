@@ -32,6 +32,9 @@ import {
   moveToViewPosition,
   reconstructManualPhotoOrder,
 } from "../lib/reorder";
+import { useDarkModeContext } from "../components/provider";
+import { ensureAccentContrast } from "../lib/color-contrast";
+import { themeColorsFor } from "../lib/theme-colors";
 import { splitRecentlyAddedPhotos } from "../lib/recently-added-photos";
 import { shouldLandOnSetup } from "../lib/setup-flow";
 import {
@@ -269,14 +272,20 @@ function useAdminGuard(demoMode = false) {
 ══════════════════════════════════════════════════ */
 type Rgb = { r: number; g: number; b: number };
 
-/* 管理画面の紙とインク。**ここが実際に画面へ出る値**で、`styles.css` の
-   `.admin-atelier` にある同名の宣言は、この style が付く前の一瞬と、
-   JSが動かない場合の控え。両方を同じ値に保つこと（`admin-theme-independence`
-   の「CSSとJSの紙が一致している」テストが見張る）。
-   2026-08-17: 完全な無彩色（#f7f7f7 / #1a1a1a）から、温かい紙と墨へ寄せた。 */
+/* オーナーが公開サイトの色を選んでいないときに使う、管理画面自身の紙とインク。
+   **ここが実際に画面へ出る値**で、`styles.css` の `.admin-atelier` にある同名の
+   宣言は、この style が付く前の一瞬と、JSが動かない場合の控え。両方を同じ値に
+   保つこと（`admin-theme-independence` の「CSSとJSの紙が一致している」テスト）。
+   明るい方は 2026-08-17 に無彩色（#f7f7f7 / #1a1a1a）から温かい紙と墨へ寄せた。
+   暗い方は公開サイトの `[data-theme="dark"]` 既定と同じ黒にする（暗くしたときに
+   admin だけ別の黒にならないように）。 */
+const ATELIER_PAPER = {
+  light: { paper: "#f7f5f1", ink: "#1b1917" },
+  dark: { paper: "#121212", ink: "#e8e8e8" },
+} as const;
+
 const ATELIER_FALLBACK = {
-  paper: "#f7f5f1",
-  ink: "#1b1917",
+  ...ATELIER_PAPER,
   muted: "#666666",
   accent: "#5b7fa0",
   accentFill: "#3f607e",
@@ -358,13 +367,32 @@ function ensureContrast(foreground: Rgb, background: Rgb, min: number): Rgb {
   return target;
 }
 
+/**
+ * 管理画面の色を、オーナーが admin で選んだ公開サイトの色から作る。
+ *
+ * **2026-08-17 オーナー判断で「独立させる」を撤回した。** 2026-08-07 には
+ * 「作品を見る器と、作品を並べる道具の区別が消える」として切り離す方針を
+ * 立てていたが、オーナーの答えは「独立させない。admin で変えられる公開サイトの
+ * 色と同期させる」。よってここが正本で、`styles.css` 側の宣言は JS が動く前の
+ * 一瞬に使う控えになる。書体の独立（同日決定）はそのまま残す。色だけの話。
+ *
+ * 明暗は公開サイトと**同じ解決規則**を使う（`themeColorsFor`）。公開サイトは
+ * 明るい用と暗い用を別々に持つ（`themeBg` / `themeBgDark`）ので、admin だけ
+ * 片方を流用すると「明るい紙に暗いテーマの文字色」のような組み合わせが起きる。
+ *
+ * 読めなくなる組み合わせは選ばせない。文字は紙に対して 7:1、補助文字と
+ * 意味を持つ色（危険・注意・成功・情報）は 4.5:1 を必ず満たすところまで
+ * 自動で寄せる。オーナーの色を無視するのではなく、**足りない分だけ寄せる。**
+ */
 export function adminThemeFromSettings(
   settings?: Record<string, string>,
+  resolvedTheme: "light" | "dark" = "light",
 ): CSSProperties {
-  const base =
-    parseHexColor(settings?.themeBg) ?? parseHexColor(ATELIER_FALLBACK.paper)!;
+  const chosen = themeColorsFor(resolvedTheme, settings ?? {});
+  const fallback = ATELIER_FALLBACK[resolvedTheme];
+  const base = parseHexColor(chosen.bg) ?? parseHexColor(fallback.paper)!;
   const ink = ensureContrast(
-    parseHexColor(settings?.themeText) ?? parseHexColor(ATELIER_FALLBACK.ink)!,
+    parseHexColor(chosen.text) ?? parseHexColor(fallback.ink)!,
     base,
     7,
   );
@@ -376,10 +404,18 @@ export function adminThemeFromSettings(
   // e.g. the sidebar) rather than `base` — passing against the darkest paper
   // variant guarantees the same minimum against the lighter ones too.
   const muted = ensureContrast(mix(ink, base, 0.38), deep, 4.5);
-  // Adminの差し色は公開サイトのaccentColorから独立させる。この刷新では
-  // API/DB schemaを変えないため、承認済みの初期色を管理画面内だけで使う。
-  const accent = parseHexColor(ATELIER_FALLBACK.accent)!;
-  const accentFill = parseHexColor(ATELIER_FALLBACK.accentFill)!;
+  // 差し色もオーナーが選んだサイトの色に合わせる（2026-08-17 判断）。
+  // ただし紙の上で読めるところまでは寄せる。未設定なら admin 既定の青のまま。
+  // `accentFill`（塗りつぶしの面。上には紙色の文字が乗る）は、差し色を
+  // インク側へ少し倒して作る。既定色のときは従来の値をそのまま使い、
+  // 何も設定していないオーナーの画面が今日と同じに見えるようにする。
+  const chosenAccent = settings?.accentColor?.trim();
+  const accent = chosenAccent
+    ? parseHexColor(ensureAccentContrast(chosenAccent, toHex(base)))!
+    : parseHexColor(ATELIER_FALLBACK.accent)!;
+  const accentFill = chosenAccent
+    ? ensureContrast(mix(accent, ink, 0.2), base, 4.5)
+    : parseHexColor(ATELIER_FALLBACK.accentFill)!;
   const danger = ensureContrast(
     parseHexColor(ATELIER_FALLBACK.danger)!,
     base,
@@ -424,6 +460,9 @@ export function adminThemeFromSettings(
     "--admin-success-rgb": rgbString(success),
     "--admin-info": toHex(info),
     "--admin-info-rgb": rgbString(info),
+    // 紙が暗いときは、OSが描く部品（スクロールバー・日付ピッカー・selectの
+    // 開いた一覧）も暗くする。ここを固定にすると、暗い画面の中でそこだけ白く光る。
+    colorScheme: resolvedTheme,
   } as CSSProperties;
 }
 
@@ -557,9 +596,12 @@ function AdminPageContent({
     onSuccess: () => navigate("/admin/login"),
     onError: () => navigate("/admin/login"),
   });
+  // 明暗は公開サイトと同じ解決結果を使う。Provider の外（テストなど）では
+  // context が null になるので、その場合は明るい方を使う。
+  const resolvedTheme = useDarkModeContext()?.resolved ?? "light";
   const adminThemeVars = useMemo(
-    () => adminThemeFromSettings(shellSettings),
-    [shellSettings],
+    () => adminThemeFromSettings(shellSettings, resolvedTheme),
+    [shellSettings, resolvedTheme],
   );
 
   useLayoutEffect(() => {

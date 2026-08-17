@@ -76,7 +76,11 @@ describe("adminThemeFromSettings contrast guarantees", () => {
     });
   }
 
-  test("管理画面の初期accentは公開サイトのaccentと意味色から独立する", () => {
+  test("差し色は公開サイトに追従するが、意味を持つ色とは別のまま", () => {
+    // 2026-08-17 にオーナー判断で「差し色も同期する」へ変えた。
+    // 変更前はここが `expect(accent).toBe("#5b7fa0")`（追従しない契約）だった。
+    // 意味を持つ4色（危険・注意・成功・情報）は同期しない。差し色と同じ色に
+    // なると「消す」と「保存する」が同じ色で並ぶ。
     const theme = adminThemeFromSettings({
       accentColor: "#d14b74",
       linkHoverColor: "#e05f87",
@@ -89,8 +93,8 @@ describe("adminThemeFromSettings contrast guarantees", () => {
       "--admin-info",
     ].map((token) => themeColor(theme, token));
 
-    expect(accent).toBe("#5b7fa0");
-    expect(themeColor(theme, "--admin-accent-fill")).toBe("#3f607e");
+    expect(accent).not.toBe("#5b7fa0");
+    expect(contrastRatio(accent, themeColor(theme, "--admin-paper"))).toBeGreaterThanOrEqual(4.5);
     expect(themeColor(theme, "--admin-accent-line")).toBe("2.5px");
     expect(new Set([accent, ...semanticColors]).size).toBe(5);
   });
@@ -139,5 +143,73 @@ describe("管理画面の小さい文字はαで薄めない", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * 管理画面の色は、オーナーが admin で選んだ公開サイトの色と同期する。
+ *
+ * 2026-08-17 オーナー判断:「独立させない。admin で変えられる公開サイトの色と
+ * 同期させよう」。2026-08-07 の「独立させる」方針はこれで撤回された。
+ * ただし**読めなくなる組み合わせは選ばせない**（上の contrast guarantees）。
+ */
+describe("管理画面の色は公開サイトの設定と同期する", () => {
+  test("背景色と文字色に追従する", () => {
+    const theme = adminThemeFromSettings({
+      themeBg: "#0e1420",
+      themeText: "#e6ecf5",
+    });
+    expect(themeColor(theme, "--admin-paper")).toBe("#0e1420");
+    // 文字色は 7:1 を満たしていればそのまま使う。
+    expect(themeColor(theme, "--admin-ink")).toBe("#e6ecf5");
+  });
+
+  test("明るいテーマの色を暗いテーマへ流用しない", () => {
+    // 公開サイトは明暗で別々の設定を持つ（themeBg / themeBgDark）。
+    // ここを取り違えると「明るい紙に暗いテーマの文字色」が起きる。
+    const settings = {
+      themeBg: "#f5f0eb",
+      themeText: "#1a1a1a",
+      themeBgDark: "#101418",
+      themeTextDark: "#e8e8e8",
+    };
+    expect(
+      themeColor(adminThemeFromSettings(settings, "light"), "--admin-paper"),
+    ).toBe("#f5f0eb");
+    expect(
+      themeColor(adminThemeFromSettings(settings, "dark"), "--admin-paper"),
+    ).toBe("#101418");
+  });
+
+  test("暗い用の色が未設定なら admin 既定の黒へ戻す（明るい用を流用しない）", () => {
+    const theme = adminThemeFromSettings(
+      { themeBg: "#f5f0eb", themeText: "#1a1a1a" },
+      "dark",
+    );
+    expect(themeColor(theme, "--admin-paper")).toBe("#121212");
+    expect(themeColor(theme, "--admin-ink")).toBe("#e8e8e8");
+  });
+
+  test("差し色にも追従し、紙の上で読めるところまでは寄せる", () => {
+    const rose = adminThemeFromSettings({ accentColor: "#d14b74" });
+    expect(themeColor(rose, "--admin-accent")).not.toBe(
+      themeColor(adminThemeFromSettings(), "--admin-accent"),
+    );
+    // 紙に対して薄すぎる差し色は、必要な分だけ濃くしてから使う。
+    const pale = adminThemeFromSettings({
+      themeBg: "#ffffff",
+      accentColor: "#ffe680",
+    });
+    expect(
+      contrastRatio(themeColor(pale, "--admin-accent"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("色を何も選んでいなければ、今までの admin の色のまま", () => {
+    const theme = adminThemeFromSettings();
+    expect(themeColor(theme, "--admin-paper")).toBe("#f7f5f1");
+    expect(themeColor(theme, "--admin-ink")).toBe("#1b1917");
+    expect(themeColor(theme, "--admin-accent")).toBe("#5b7fa0");
+    expect(themeColor(theme, "--admin-accent-fill")).toBe("#3f607e");
   });
 });

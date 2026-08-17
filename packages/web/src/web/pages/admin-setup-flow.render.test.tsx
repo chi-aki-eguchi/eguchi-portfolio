@@ -294,7 +294,7 @@ test("SetupTab — setupCompletedは別端末でも、現在公開中のHeroが�
     for (const width of [1280, 390]) {
       const { container, root } = await renderSetup(language, width);
       expect(container.textContent).toContain(
-        language === "ja" ? "セットアップ完了ずみです" : "Setup is complete",
+        language === "ja" ? "セットアップは完了しています" : "Setup is complete",
       );
       expect(container.textContent).not.toContain("2 / 3");
       await act(async () => root.unmount());
@@ -325,7 +325,7 @@ test("SetupTab — setupCompleted後に公開Heroがなくなれば、現在の�
     mockPhotos = [scenario.photo];
     mockHeroPhotos = [{ id: 1, photoId: 7 }];
     const { container, root } = await renderSetup("ja", 1280);
-    expect(container.textContent).not.toContain("セットアップ完了ずみです");
+    expect(container.textContent).not.toContain("セットアップは完了しています");
     expect(container.textContent).toContain(scenario.progress);
     expect(container.textContent).toContain(`次へ：${scenario.next}`);
     await act(async () => root.unmount());

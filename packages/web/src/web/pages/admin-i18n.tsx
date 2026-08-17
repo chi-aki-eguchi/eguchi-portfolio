@@ -3662,7 +3662,7 @@ export const ADMIN_DICTIONARY = {
         "体験モード: 画面内だけに反映しました。実際には保存されません。",
     },
     setup: {
-      collapsedCompleted: "セットアップ完了ずみです。",
+      collapsedCompleted: "セットアップは完了しています。",
       collapsedReady: "公開に必要な項目はそろっています。",
       collapsedDismissed: "「はじめに」を閉じています。",
       reopen: "もう一度見る",

@@ -1293,11 +1293,18 @@ export function SetupTab({
             health={setupHealth}
             copy={t.setup.storageHealth}
           />
-          <div className="admin-status-success flex items-center justify-between gap-3 rounded-sm px-4 py-3">
+          {/* 「終わっている」ことを、警告と同じ枠で言わない。
+              admin-status-* は色付きの枠で目を引く部品で、本当に手を打つべき
+              こと（失敗・注意）のために取ってある。ここは何も起きていない状態
+              なので、他の画面と同じ「細い罫と余白」で静かに置く
+              （`admin-renewal-goal.md`「面で区切らない。カードは"もの"にだけ」）。 */}
+          <div className="flex items-center justify-between gap-3 border-b border-[var(--admin-line)] pb-3">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="admin-icon-success w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
-                <Check size={13} />
-              </div>
+              <Check
+                size={14}
+                className="admin-text-success flex-shrink-0"
+                aria-hidden
+              />
               <p className="text-[length:var(--admin-text-body)] truncate">
                 {settings.setupCompleted === "true"
                   ? t.setup.collapsedCompleted
@@ -1307,11 +1314,12 @@ export function SetupTab({
               </p>
             </div>
             <button
+              type="button"
               onClick={() => {
                 setForceOpen(true);
                 setDismissed(false);
               }}
-              className="admin-text-success text-[length:var(--admin-text-note)] underline underline-offset-2 flex-shrink-0"
+              className="ax-btn ax-btn--quiet ax-btn--small flex-shrink-0"
             >
               {t.setup.reopen}
             </button>

@@ -594,6 +594,27 @@ export function primaryStripeUrl(config: ServicePageConfig): string | null {
   return first?.stripeUrl ?? null;
 }
 
+/**
+ * 決済直後のお礼に出す「何を買ったか」。
+ *
+ * 決済から戻ってくるURLはプランを区別しないので、**買った本人が誰かは分かるが、
+ * どのプランかはURLからは分からない。** 支払える状態にあるプラン（Stripeの
+ * リンクが本物のもの）のうち、販売ページで主役として出しているものを採る。
+ * 販売ページのボタンが指すプランと同じ選び方なので、単一プランの現状では
+ * 必ず一致する。
+ *
+ * **一致させられないときは null を返す。** 呼び出し側は金額の行ごと出さない。
+ * 金額を直書きしていたため、値上げ・値下げをすると販売ページは新しい金額、
+ * 支払った直後の画面だけ古い金額、という食い違いが起きていた。
+ * 間違った金額を出すより、出さないほうがよい。
+ */
+export function purchasedPlanFrom(
+  config: ServicePageConfig,
+): PlanItem | null {
+  const live = config.pricing.plans.filter((p) => isStripeLive(p.stripeUrl));
+  return live.find((p) => p.primary) ?? live[0] ?? null;
+}
+
 export function startingStripeUrl(config: ServicePageConfig): string | null {
   const livePlans = config.pricing.plans.filter((p) =>
     isStripeLive(p.stripeUrl),
@@ -619,4 +640,75 @@ export function mailtoFallback(
     ? `ポートフォリオサイトのお申し込み（${planName}）`
     : "ポートフォリオサイトについて相談";
   return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}`;
+}
+
+/* ── 英語ページのプラン表記 ───────────────────────────
+   販売ページと、決済直後のお礼画面の**両方**が使う。以前は販売ページの中に
+   閉じていて、お礼画面はプラン名と金額を直書きしていた。そのため
+   「Assisted Publishing — ¥30,000」（お礼画面）と「Assisted setup」（販売ページ）
+   のように、同じ商品の呼び名すら食い違っていた。出どころを1つにする。 */
+export const ENGLISH_PLAN_COPY = [
+  {
+    yen: 30_000,
+    namePattern: /おまかせ|assisted|concierge/i,
+    name: "Assisted setup",
+    sub: "I prepare everything and hand over a site that is already published. You only add photographs.",
+    points: [
+      "Hosting and admin panel set up for you",
+      "Custom domain purchase support and connection (registered in your name; fee separate)",
+      "Name, profile, and contact details prepared before handover",
+      "After handover, you only add photographs from the admin panel",
+      "Guidance on using the site and admin panel — currently unlimited",
+    ],
+    cta: "Choose assisted setup",
+  },
+] as const;
+
+export function yenAmountFromPrice(price: string): number | null {
+  const match = price.match(/[¥￥]\s*([0-9][0-9,]*)/);
+  if (!match) return null;
+  const yen = Number(match[1].replace(/,/g, ""));
+  return Number.isFinite(yen) ? yen : null;
+}
+
+export function priceWithUsdEstimate(price: string): string {
+  const yen = yenAmountFromPrice(price);
+  if (yen === null) return price;
+  const usd = Math.round(yen / 154 / 5) * 5;
+  return `${price} (approx. $${usd} USD)`;
+}
+
+export function englishPlanSources(source: ServicePageConfig): (PlanItem | undefined)[] {
+  const remaining = [...source.pricing.plans];
+  return ENGLISH_PLAN_COPY.map((copy) => {
+    const matches = [
+      (plan: PlanItem) => yenAmountFromPrice(plan.price) === copy.yen,
+      (plan: PlanItem) => copy.namePattern.test(plan.name),
+    ];
+    let index = -1;
+    for (const matchesPlan of matches) {
+      index = remaining.findIndex(matchesPlan);
+      if (index >= 0) break;
+    }
+    return index >= 0 ? remaining.splice(index, 1)[0] : undefined;
+  });
+}
+
+
+/** 英語ページに出すプラン1件。日本語側の設定から金額とStripeリンクを引く。 */
+export function englishPlanFor(config: ServicePageConfig): PlanItem | null {
+  const sources = englishPlanSources(config);
+  for (const [i, copy] of ENGLISH_PLAN_COPY.entries()) {
+    const plan = sources[i];
+    if (!plan) continue;
+    const { yen: _yen, namePattern: _namePattern, ...text } = copy;
+    return {
+      ...text,
+      points: [...text.points],
+      price: priceWithUsdEstimate(plan.price),
+      stripeUrl: plan.stripeUrl,
+      primary: plan.primary,
+    };
+  }
+  return null;
 }

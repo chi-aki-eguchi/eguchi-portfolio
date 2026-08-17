@@ -423,6 +423,7 @@ export function PhotoGallery({
   layoutType,
   variant = "gallery",
   onRequestMore,
+  totalCount,
   seriesName,
   seriesNameById,
   seriesSlugById,
@@ -432,6 +433,8 @@ export function PhotoGallery({
   layoutType?: string;
   variant?: "top" | "gallery";
   onRequestMore?: () => void;
+  /** 絞り込みに当てはまる本当の枚数。未指定なら描画済みの枚数を使う。 */
+  totalCount?: number;
   // Used when every photo in this grid belongs to one known series (e.g. a
   // series detail page). `seriesNameById` covers the mixed case (e.g. the
   // general gallery grid, where photos may belong to different series).
@@ -1368,6 +1371,7 @@ export function PhotoGallery({
           onPrev={prev}
           onNext={next}
           onRequestMore={onRequestMore}
+          totalCount={totalCount}
           photographerName={photographerName}
           seriesName={seriesName}
           seriesNameById={seriesNameById}

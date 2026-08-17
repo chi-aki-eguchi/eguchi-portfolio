@@ -115,6 +115,7 @@ export function Lightbox({
   onPrev,
   onNext,
   onRequestMore,
+  totalCount,
   photographerName,
   seriesName,
   seriesNameById,
@@ -127,6 +128,15 @@ export function Lightbox({
   onPrev: () => void;
   onNext: () => void;
   onRequestMore?: () => void;
+  /**
+   * 絞り込みに当てはまる本当の枚数。
+   *
+   * 以前は分母に「いま描き終えている枚数」を使っていた。ギャラリーは最初に
+   * パソコンで24枚・スマホで12枚しか描かないので、**497枚あるサイトでも
+   * 1枚目を開くと「1 / 24」**と出て、スクロールで読み足すたびに 36、48 と
+   * 増えていた。見ている最中に総数が動くと、どこまで見たかの手がかりにならない。
+   */
+  totalCount?: number;
   photographerName?: string;
   seriesName?: string;
   seriesNameById?: Record<number, string>;
@@ -871,7 +881,7 @@ export function Lightbox({
           zIndex: 10,
         }}
       >
-        {index + 1} / {photos.length}
+        {index + 1} / {Math.max(totalCount ?? 0, photos.length)}
         {/* Title for SR context; visually the caption block below shows it */}
         <span className="sr-only">
           {photos[index]?.title ? ` ${photos[index].title}` : ""}

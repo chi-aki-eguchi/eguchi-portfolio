@@ -680,7 +680,13 @@ describe("shared components", () => {
         );
         const text = host.textContent ?? "";
         expect(text).toContain("Thank you for your purchase.");
-        expect(text).toContain("Assisted Publishing — ¥30,000");
+        // プラン名と金額は**販売ページと同じ設定・同じ英語表記**から出す。
+        // 直書きだった頃はここが "Assisted Publishing — ¥30,000" で、販売ページの
+        // "Assisted setup" と同じ商品の呼び名すら食い違っていた。値段を変えても
+        // 支払直後の画面だけ古い金額が残った。名前と金額を別々に見て、
+        // 直書きの1文字列に戻れないようにする。
+        expect(text).toContain("Assisted setup");
+        expect(text).toMatch(/¥30,000/);
         cleanup();
       }
       dom.reconfigure({ url: "http://localhost/start" });

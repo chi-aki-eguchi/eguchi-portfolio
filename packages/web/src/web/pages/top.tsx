@@ -461,6 +461,11 @@ type HomeLayoutProps = {
    *  読み込みが終わって0枚なら、意味のない箱を置かない。カルーセルだけが
    *  この区別を持っており、他の3種は0枚でも板・柱・濃緑を出し続けていた。 */
   heroLoading: boolean;
+  /** ビューアのキャプションから作品群へ入れるようにするための対応表。
+   *  ギャラリーは渡しているのにトップだけ渡しておらず、同じ写真をトップで
+   *  開くとシリーズ名が出ず、そこから先へ進めなかった。 */
+  seriesNameById: Record<number, string>;
+  seriesSlugById: Record<number, string>;
   featured: GalleryPhoto[];
   worksPoolLen: number;
   worksSentinelRef: React.RefObject<HTMLDivElement | null>;
@@ -710,6 +715,8 @@ function WorksHeader({
 function HomeQuietGrid({
   heroPhotos,
   heroLoading,
+  seriesNameById,
+  seriesSlugById,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -799,6 +806,9 @@ function HomeQuietGrid({
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "clean-grid"}
             variant="top"
+            totalCount={worksPoolLen}
+            seriesNameById={seriesNameById}
+            seriesSlugById={seriesSlugById}
           />
 
           {featured.length < worksPoolLen && (
@@ -835,6 +845,8 @@ function HomeQuietGrid({
 function HomeEditorial({
   heroPhotos,
   heroLoading,
+  seriesNameById,
+  seriesSlugById,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -929,6 +941,9 @@ function HomeEditorial({
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "editorial"}
             variant="top"
+            totalCount={worksPoolLen}
+            seriesNameById={seriesNameById}
+            seriesSlugById={seriesSlugById}
           />
 
           {featured.length < worksPoolLen && (
@@ -962,6 +977,8 @@ function HomeEditorial({
 function HomeImmersive({
   heroPhotos,
   heroLoading,
+  seriesNameById,
+  seriesSlugById,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -1074,6 +1091,9 @@ function HomeImmersive({
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "large-format"}
             variant="top"
+            totalCount={worksPoolLen}
+            seriesNameById={seriesNameById}
+            seriesSlugById={seriesSlugById}
           />
 
           {featured.length < worksPoolLen && (
@@ -1341,9 +1361,27 @@ export default function TopPage() {
       />
     ) : null;
 
+  // ナビと SeriesStream が同じ鍵で既に引いているので、新しい通信は増えない。
+  const { data: seriesData } = useQuery({
+    queryKey: ["series"],
+    queryFn: async () => jsonOrThrow(await api.series.$get()),
+  });
+  const seriesNameById = useMemo(
+    () =>
+      Object.fromEntries((seriesData?.series ?? []).map((s) => [s.id, s.title])),
+    [seriesData],
+  );
+  const seriesSlugById = useMemo(
+    () =>
+      Object.fromEntries((seriesData?.series ?? []).map((s) => [s.id, s.slug])),
+    [seriesData],
+  );
+
   const homeLayoutProps: HomeLayoutProps = {
     heroPhotos,
     heroLoading: heroLoading || photosLoading,
+    seriesNameById,
+    seriesSlugById,
     featured,
     worksPoolLen: worksPool.length,
     worksSentinelRef,
@@ -1567,6 +1605,9 @@ export default function TopPage() {
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "stagger"}
             variant="top"
+            totalCount={worksPool.length}
+            seriesNameById={seriesNameById}
+            seriesSlugById={seriesSlugById}
           />
 
           {/* Infinite-feed sentinel — fires ~900px before it scrolls into view. */}

@@ -9,6 +9,10 @@ import { safeHref } from "../lib/utils";
 import { resolveServiceContactEmail } from "../../shared/service-visibility";
 import {
   parseServicePageConfig,
+  ENGLISH_PLAN_COPY,
+  englishPlanSources,
+  priceWithUsdEstimate,
+  yenAmountFromPrice,
   isStripeLive,
   anyPlanLive,
   primaryStripeUrl,
@@ -34,53 +38,6 @@ const bodyStyle = {
 } as const;
 
 type ServiceLanguage = "ja" | "en";
-
-const ENGLISH_PLAN_COPY = [
-  {
-    yen: 30_000,
-    namePattern: /おまかせ|assisted|concierge/i,
-    name: "Assisted setup",
-    sub: "I prepare everything and hand over a site that is already published. You only add photographs.",
-    points: [
-      "Hosting and admin panel set up for you",
-      "Custom domain purchase support and connection (registered in your name; fee separate)",
-      "Name, profile, and contact details prepared before handover",
-      "After handover, you only add photographs from the admin panel",
-      "Guidance on using the site and admin panel — currently unlimited",
-    ],
-    cta: "Choose assisted setup",
-  },
-] as const;
-
-function yenAmountFromPrice(price: string): number | null {
-  const match = price.match(/[¥￥]\s*([0-9][0-9,]*)/);
-  if (!match) return null;
-  const yen = Number(match[1].replace(/,/g, ""));
-  return Number.isFinite(yen) ? yen : null;
-}
-
-function priceWithUsdEstimate(price: string): string {
-  const yen = yenAmountFromPrice(price);
-  if (yen === null) return price;
-  const usd = Math.round(yen / 154 / 5) * 5;
-  return `${price} (approx. $${usd} USD)`;
-}
-
-function englishPlanSources(source: ServicePageConfig): (PlanItem | undefined)[] {
-  const remaining = [...source.pricing.plans];
-  return ENGLISH_PLAN_COPY.map((copy) => {
-    const matches = [
-      (plan: PlanItem) => yenAmountFromPrice(plan.price) === copy.yen,
-      (plan: PlanItem) => copy.namePattern.test(plan.name),
-    ];
-    let index = -1;
-    for (const matchesPlan of matches) {
-      index = remaining.findIndex(matchesPlan);
-      if (index >= 0) break;
-    }
-    return index >= 0 ? remaining.splice(index, 1)[0] : undefined;
-  });
-}
 
 function englishServiceConfigFrom(
   source: ServicePageConfig,

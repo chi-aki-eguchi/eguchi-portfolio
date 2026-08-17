@@ -356,6 +356,7 @@ export default function GalleryPage() {
                 ? requestMorePhotos
                 : undefined
             }
+            totalCount={filtered.length}
             seriesNameById={seriesNameById}
             seriesSlugById={seriesSlugById}
             categoryLabelBySlug={categoryLabelBySlug}

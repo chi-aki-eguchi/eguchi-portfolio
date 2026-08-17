@@ -2,6 +2,12 @@ import { ArrowUpRight, CheckCircle2, KeyRound, Mail } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { resolveServiceContactEmail } from "../../shared/service-visibility";
+import {
+  englishPlanFor,
+  parseServicePageConfig,
+  purchasedPlanFrom,
+  type PlanItem,
+} from "../lib/service-config";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageLanguage } from "../hooks/usePageLanguage";
 
@@ -105,18 +111,37 @@ function materialsMailtoHref(contactEmail: string, en: boolean): string {
 
 // 「情報が少ない」というオーナー指摘への対応(2026-07-20): 支払い完了の一文だけでなく、
 // 何を・いくらで買ったかが本人にもすぐ確認できる「領収書」に近い情報量を持たせる。
-// プラン名・金額は単一プラン(公開おまかせ ¥30,000)前提の固定値 — 複数プランに
-// 戻す場合はservice-config.tsのDEFAULT_SERVICE_CONFIGと合わせて見直すこと。
-function PurchaseThanksBanner({ language }: { language: ServiceStartLanguage }) {
+//
+// **プラン名と金額は設定から出す。** 以前はここに直書きしていたので、販売ページ
+// （管理画面から編集できる）で値段を変えると、**支払った直後の画面だけ古い金額**を
+// 出していた。買ったばかりの人が最初に見る数字なので、食い違わせない。
+// 設定が読めないときは金額の行ごと出さない（間違った金額を出すよりよい）。
+function PurchaseThanksBanner({
+  language,
+  plan,
+}: {
+  language: ServiceStartLanguage;
+  plan: PlanItem | null;
+}) {
   const en = language === "en";
+  const planRow = plan
+    ? [
+        {
+          label: en ? "Plan" : "ご購入プラン",
+          value: en
+            ? `${plan.name} — ${plan.price}`
+            : `${plan.name}（${plan.price}）`,
+        },
+      ]
+    : [];
   const summaryRows = en
     ? [
-        { label: "Plan", value: "Assisted Publishing — ¥30,000" },
+        ...planRow,
         { label: "Payment", value: "Completed (via Stripe)" },
         { label: "Receipt", value: "Sent to your checkout email address" },
       ]
     : [
-        { label: "ご購入プラン", value: "公開おまかせ（¥30,000）" },
+        ...planRow,
         { label: "お支払い", value: "Stripeにて完了" },
         { label: "領収書", value: "購入時のメールアドレスへ送付" },
       ];
@@ -470,6 +495,14 @@ export default function ServiceStartPage({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
+  // 販売ページと同じ出どころからプランを引く（直書きしない）。英語ページでは
+  // 販売ページと同じ英語表記を使う。直書きしていた頃は、お礼画面が
+  // 「Assisted Publishing」、販売ページが「Assisted setup」で、同じ商品の
+  // 呼び名すら食い違っていた。
+  const serviceConfig = parseServicePageConfig(settingsData?.servicePageConfig);
+  const purchasedPlan = language === "en"
+    ? englishPlanFor(serviceConfig)
+    : purchasedPlanFrom(serviceConfig);
   const contactEmail = resolveServiceContactEmail(
     settingsData?.contactEmail,
     settingsData?.siteUrl,
@@ -487,7 +520,9 @@ export default function ServiceStartPage({
       className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
     >
       <LanguageSwitch language={language} search={search} />
-      {arrivedFromCheckout && <PurchaseThanksBanner language={language} />}
+      {arrivedFromCheckout && (
+        <PurchaseThanksBanner language={language} plan={purchasedPlan} />
+      )}
       <header className="grid gap-10 md:grid-cols-[1.02fr_0.98fr] md:items-center">
         <div>
           <p className="font-en uppercase mb-7" style={labelStyle}>

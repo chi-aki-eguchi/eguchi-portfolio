@@ -1,46 +1,65 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-14 JST
+## Current State — 2026-08-17 JST
 
-- **Status:** 公開面の日付表示 B案を実装・ローカル検証済み。
-- **Current owner:** Codex（実装完了） / Claude Code は read-only の独立検証担当
-  / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF` / Git・originとの差は `git status --short --branch` で再測定する。
+- **Status:** サイト・adminの改善14件を調査で洗い出し、オーナー指示「全部Claudeでやる」
+  を受けて**14件すべて実装・commit済み**。pushはしていない。
+- **Current owner:** Claude Code（設計・実装・検証すべて） / **Handoff readiness:** ready
+- **Branch:** `main` / **HEAD:** 下記の最新commit（originより13commit先行） / **dirty: task.md のみ**
 
 ### 目的と完了条件
 
-フィルムの `shotAt`（デュープ時刻）は保存・更新・並べ替えを変えず、公開面だけで
-出どころを誤解させない。Lightbox はフィルムを「スキャン」、デジタルを「撮影」とし、
-`large-format` はフィルムの年を出さない。→ 達成。
+公開サイトとadminの改善余地を実コードから探し、直しきる。9観点の調査＋反対検証で
+14件に絞った。**新規の大きな機能ではなく「既にある仕組みが一部の画面だけ
+繋がっていない」型が大半だった。**`site-and-data-direction.md` §2「作らないもの」と
+§9 実装順11段には手を出していない（今回の14件はそれと重複しない別口）。
 
-### 完了した変更
+### commit済み（push未）
 
-- `Lightbox.tsx`: `filmType` が `フィルム` / `デジタル` のときだけ日付ラベルを
-  `スキャン` / `撮影` に変更。空・不明は既存の `Date` のまま。
-- `PhotoGallery.tsx`: `large-format` だけで、フィルムの `shotAt` 年を除外。
-  `Film — ` のような区切りだけは残らない。
-- API、schema、settings、`shotAt` の保存・更新・並べ替え、12レイアウトの種類は未変更。
-- 回帰テストを追加し、Lightbox のフィルム・デジタル・未設定と、large-format の
-  フィルム・デジタル・未設定の表示を固定した。
+| commit | 内容 |
+| --- | --- |
+| `cc096b1` | 画像サイトマップを表紙とプロフィール写真へ絞る（積み残し） |
+| `34e9263` | 公開サイトとデータモデルの方向をspecへ集約（積み残し） |
+| `b3f2e6a` | 絞り込み中のギャラリーでも戻った位置を復元する |
+| `c7060a2` | 読み込み中の矢印キーでトップの写真が消えるのを止める |
+| `5f55f46` | ゴミ箱に「すべて戻す」 |
+| `38205ae` | 言語の印を切替に追従＋送信失敗時のメール導線 |
+| `bbd955c` | 先読み8枚を実際に表示するURLに合わせる |
+| `8248083` | admin の英語直書き除去＋分類削除の警告 |
+| `31c781f` | 読み込み失敗を「まだありません」と出すのをやめる（4画面） |
+| `4d4f44a` | Series / Pricing の書きかけを守る |
+| `ab323c5` | 写真0枚のHERO 5種すべてで箱を出さない |
+| `f22cc60` | Contact 既定文から購入者の約束を外す（akieguchi.com は不変） |
+| `23af2de` | 配布版の更新手順を現在の main に合わせる |
 
-### 検証済み
+### 検証
 
-- focused: `PhotoGallery.render`、日付ラベル、Lightbox focus return / gestures が成功。
-- `bun run check` 成功（Postgres schema契約、typecheck、lint、923 tests、tools、build）。
-- `git diff --check` 成功。
+- `bun run check` を各commit前に実施。最終 **991 tests / 0 fail**。
+- **回帰テストは毎回「修正前に落ちること」を確認してから採用した。**
+- `bun run smoke` **330 passed / 0 failed / 143 skipped**（本番と同じDBに接続。
+  書き込み操作は増やしていない）。1回目は3件落ちたが、2件は自分の変更で
+  （Contact の alert に逃げ道の一文が増えたため、アサーション対象を
+  `data-contact-error` へ変えて意図を保ったまま修正）、1件は backlog S-2 / B-16 の
+  既知の不安定テスト。**最終実行では0件。**
+- 本番・Railway反映・実機での確認は**いずれも未実施**。
 
-### 未検証 / 境界
+### 途中で分かったこと（次に効く）
 
-- `bun run smoke` は未実行（admin変更なしのため、依頼どおり実行しない）。
-- local commit: `HEAD: SELF`（このCurrent Stateを含む）/ push・Railway反映・本番確認は未実施。
-  Turso、R2、環境変数、デプロイは未操作。
-- 未追跡 `docs/specs/site-and-data-direction.md` はオーナーの正本であり、このcommitに含めない。
+- 新テストが共有 `canned` を空へ戻し、無関係な26件を落とした。**スナップショット
+  復元へ直した**（`empty-site.render.test.tsx` の同じ罠も直した）。
+- 到達点(3)「UIの言葉は日本語で統一」は**達成と記録されていたが未達だった。**
+  直したうえで、英語直書きが残らないことをテストで固定した（記録に頼らない）。
+- admin辞書の**日英キー一致テスト**を新設。片方だけの追加は以後落ちる。
 
-### 次の一手 / 禁止範囲
+### 次の一手 / オーナー判断待ち
 
-- Claude Code が差分と指定の表示条件をread-onlyで独立確認し、オーナーがpush可否を判断する。
-- pushはオーナーのみ。Codex session: current root session（resume logなし）。
+- **push はオーナーのみ。** 13commit を push するかの判断。
+- push 後、Search Console でサイトマップを再送信する（`cc096b1` の効果確認）。
+- 配布先の更新は `docs/template-release-notes.md` の 2026-08-17 の版に従う。
+  **この版はDBに列を7本足すので、更新前のDBバックアップが必須。**
+- 触ってはいけない: `shotAt` の保存方法、公開API応答形、Lightboxの既存ロジック、
+  §2「作らないもの」、§9 の11段。
 <!-- CURRENT_STATE_END -->
 
 ---

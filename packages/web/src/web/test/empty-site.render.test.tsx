@@ -11,7 +11,7 @@
  *  2. **読み込み中は場所を取る**（あとから写真が来て本文が飛ぶのを防ぐ）。
  *     この2つを混ぜると、どちらかを直したときにもう一方が壊れる
  */
-import { test, expect, describe, afterEach } from "bun:test";
+import { test, expect, describe, afterEach, beforeEach } from "bun:test";
 import { setupDom, canned, flush } from "./jsdom-setup";
 
 const dom = setupDom();
@@ -48,10 +48,18 @@ async function mountTop() {
   };
 }
 
+// `canned` は全テストファイルで共有される1つのオブジェクト。既定値へ戻すのでは
+// なく、触る前の姿へ戻す。空にして返す afterEach は、あとから走るテストを
+// 実行順まかせで落とす（2026-08-17 に26件で実測）。
+let cannedSnapshot: Record<string, unknown> = {};
+
+beforeEach(() => {
+  cannedSnapshot = { ...canned };
+});
+
 afterEach(() => {
-  canned["/api/photos"] = { photos: [] };
-  canned["/api/hero-photos"] = { heroPhotos: [] };
-  canned["/api/settings"] = {};
+  for (const key of Object.keys(canned)) delete canned[key];
+  Object.assign(canned, cannedSnapshot);
 });
 
 describe("何も登録していないサイト", () => {
@@ -86,4 +94,60 @@ describe("何も登録していないサイト", () => {
       m.cleanup();
     }
   });
+});
+
+/** 5種類すべてを同じ基準で測る。既定のカルーセルだけ見ていたので、
+ *  静謐グリッド・エディトリアル・没入型の3種が長く見落とされていた。 */
+const HERO_MODES: string[] = [
+  "carousel",
+  "single",
+  "quiet-grid",
+  "editorial",
+  "immersive",
+];
+
+/** 意味のない箱を見分ける。テーマに従う場所取り色と、決め打ちの色の両方。 */
+const BOX_MARKERS = [PLACEHOLDER, "#2a3a3a", "bg-[#"];
+
+describe("HERO の見せ方5種すべてで、0枚のときに箱を置かない", () => {
+  test.each(HERO_MODES)("heroMode=%s", async (heroMode) => {
+    canned["/api/photos"] = { photos: [] };
+    canned["/api/hero-photos"] = { heroPhotos: [] };
+    canned["/api/settings"] = { heroMode };
+    const m = await mountTop();
+    try {
+      await flush(250);
+      const html = m.host.innerHTML;
+      for (const marker of BOX_MARKERS) {
+        expect(
+          html.includes(marker),
+          `heroMode=${heroMode} に ${marker} の箱が残っている`,
+        ).toBe(false);
+      }
+      // 真っ白にはしない。誰のサイトかは分かる。
+      expect(
+        (m.host.textContent ?? "").trim().length,
+        `heroMode=${heroMode} で名前が出ていない`,
+      ).toBeGreaterThan(0);
+    } finally {
+      m.cleanup();
+    }
+  });
+
+  test.each(HERO_MODES)(
+    "heroMode=%s は読み込み中だけ場所を取る",
+    async (heroMode) => {
+      canned["/api/settings"] = { heroMode };
+      const m = await mountTop();
+      try {
+        await flush(0);
+        expect(
+          m.host.innerHTML.includes(PLACEHOLDER),
+          `heroMode=${heroMode} が読み込み中に場所を取っていない`,
+        ).toBe(true);
+      } finally {
+        m.cleanup();
+      }
+    },
+  );
 });

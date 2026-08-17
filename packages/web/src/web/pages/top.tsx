@@ -456,6 +456,11 @@ function HeroSingle({
 
 type HomeLayoutProps = {
   heroPhotos: HomeHeroPhoto[];
+  /** まだ読み込み中か。**「読み込み中」と「本当に0枚」を分けるために要る。**
+   *  読み込み中は場所を取っておく（あとから写真が来て本文が飛ぶのを防ぐ）が、
+   *  読み込みが終わって0枚なら、意味のない箱を置かない。カルーセルだけが
+   *  この区別を持っており、他の3種は0枚でも板・柱・濃緑を出し続けていた。 */
+  heroLoading: boolean;
   featured: GalleryPhoto[];
   worksPoolLen: number;
   worksSentinelRef: React.RefObject<HTMLDivElement | null>;
@@ -704,6 +709,7 @@ function WorksHeader({
  * 配置→Top picker whenever this Hero mode was selected (2026-07-09). */
 function HomeQuietGrid({
   heroPhotos,
+  heroLoading,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -758,8 +764,22 @@ function HomeQuietGrid({
               />
             </div>
           </>
-        ) : (
+        ) : heroLoading ? (
           <div className="hero-photo-reveal w-full h-full bg-[var(--photo-placeholder)]" />
+        ) : (
+          // 読み込みが終わって0枚。灰色の板を置かない代わりに、**名前は出す。**
+          // 以前は名前が写真の枝の中にしか無かったので、買った直後の
+          // まだ写真が無いサイトは、板だけで誰のサイトか分からなかった。
+          <div className="absolute inset-0 flex items-end px-7 pb-6">
+            <HeroNameBlock
+              settings={settings}
+              tone="on-paper"
+              nameSizeFallback="32px"
+              nameTrackingFallback="0.02em"
+              enTrackingFallback="0.14em"
+              showKata={false}
+            />
+          </div>
         )}
       </section>
 
@@ -814,6 +834,7 @@ function HomeQuietGrid({
  * 配置→Top picker whenever this Hero mode was selected (2026-07-09). */
 function HomeEditorial({
   heroPhotos,
+  heroLoading,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -838,8 +859,14 @@ function HomeEditorial({
       >
         <div
           ref={heroFxRef}
-          className="hero-fx-layer hero-photo-reveal md:flex-[0_0_55%] relative overflow-hidden bg-[var(--photo-placeholder)]"
-          style={{ minHeight: 200 }}
+          // 0枚のときは柱そのものを畳む。塗りも高さも持たせない
+          // （読み込み中だけは場所を取り、あとから写真が来ても本文が飛ばない）。
+          className={`hero-fx-layer hero-photo-reveal relative overflow-hidden ${
+            heroPhoto || heroLoading
+              ? "md:flex-[0_0_55%] bg-[var(--photo-placeholder)]"
+              : "hidden"
+          }`}
+          style={heroPhoto || heroLoading ? { minHeight: 200 } : undefined}
         >
           {heroPhoto && (
             <HeroPicture
@@ -934,6 +961,7 @@ function HomeEditorial({
 /** Phase 2 — Home C: fullscreen hero with centered name + large-format works. */
 function HomeImmersive({
   heroPhotos,
+  heroLoading,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -992,17 +1020,25 @@ function HomeImmersive({
                   "hidden";
               }}
             />
-          ) : (
-            <div className="w-full h-full bg-[#2a3a3a]" />
+          ) : heroLoading ? (
+            // 読み込み中だけ場所を取る。テーマに従う色を使う（濃緑の決め打ちは
+            // 設定を無視するうえ、写真のあるサイトでも開くたび全画面で出ていた）。
+            <div className="w-full h-full bg-[var(--photo-placeholder)]" />
+          ) : null}
+          {/* 暗幕は写真の上でだけ意味を持つ。0枚のときに敷くと、
+              紙色の上に灰色を重ねるだけになる。 */}
+          {(heroPhoto || heroLoading) && (
+            <div className="absolute inset-0 bg-black/20" />
           )}
-          <div className="absolute inset-0 bg-black/20" />
         </div>
         {/* Centered name */}
         <div className="absolute inset-0 flex items-center justify-center text-center px-6">
           <div>
             <HeroNameBlock
               settings={settings}
-              tone="over-photo"
+              // **箱を消すだけでは名前が読めなくなる。** over-photo は白文字＋
+              // 影で、写真か暗幕が下にあることが前提。0枚のときは紙の上の色へ。
+              tone={heroPhoto || heroLoading ? "over-photo" : "on-paper"}
               nameSizeFallback="clamp(32px, 5vw, 40px)"
               nameTrackingFallback="0.06em"
               enTrackingFallback="0.2em"
@@ -1307,6 +1343,7 @@ export default function TopPage() {
 
   const homeLayoutProps: HomeLayoutProps = {
     heroPhotos,
+    heroLoading: heroLoading || photosLoading,
     featured,
     worksPoolLen: worksPool.length,
     worksSentinelRef,

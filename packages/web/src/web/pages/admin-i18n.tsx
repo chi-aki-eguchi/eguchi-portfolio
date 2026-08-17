@@ -3612,8 +3612,11 @@ export const ADMIN_DICTIONARY = {
       expandSidebar: "サイドバーを開く",
       groupTabs: (group) => `${group}のタブ`,
       closeSheet: "シートを閉じる",
+      // 例に挙げるのは画面の名前そのもの。ここだけ「Trash」と英語で書いていたが、
+      // 一覧に並ぶ項目は「ゴミ箱」なので、探しても一致しない。到達点(3)
+      // 「英語はタブ名などの固有名詞だけ」にも反する（2026-08-17 実測）。
       palettePlaceholder:
-        "移動先を検索…（Library / Hero / Settings / Trash など）",
+        "移動先を検索…（Library / Hero / Settings / ゴミ箱 など）",
       paletteLabel: "クイック移動",
       paletteDestinationsLabel: "移動先",
       paletteEmpty: "見つかりません",

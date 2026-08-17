@@ -4445,6 +4445,11 @@ dialog.lightbox-exit .lb-content {
   color: var(--admin-muted);
   font-size: var(--admin-text-note);
   line-height: 1.45;
+  /* 最後の1文字だけが次の行へ落ちるのを避ける。プレビューを開くと目次の列が
+     細くなり、「未保存の変更はありませ / ん」と1文字だけ残っていた
+     （2026-08-17 実測 / 1440px・プレビュー表示）。対応していないブラウザでは
+     単に無視されるので、崩れる方向のリスクは無い。 */
+  text-wrap: pretty;
 }
 .admin-atelier .admin-form-save-panel strong {
   color: var(--admin-ink);

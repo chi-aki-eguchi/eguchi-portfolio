@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
+import { useRowDraftGuard } from "../hooks/useRowDraftGuard";
 import {
   countPhotosInCategory,
   type CategorizedPhoto,
@@ -1941,7 +1942,23 @@ type SeriesDraft = {
   themeConfig: string;
 };
 
-export function SeriesTab() {
+/** 行の値から下書きの形を作る。openEdit と完全に同じ並びにすること。 */
+function seriesDraftOf(s: SeriesRow): SeriesDraft {
+  return {
+    slug: s.slug,
+    title: s.title,
+    subtitle: s.subtitle,
+    statement: s.statement,
+    coverPhotoId: s.coverPhotoId ? String(s.coverPhotoId) : "",
+    themeConfig: s.themeConfig ?? "",
+  };
+}
+
+export function SeriesTab({
+  onUnsavedChange,
+}: {
+  onUnsavedChange?: (v: boolean) => void;
+} = {}) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
   const copy = t.phase2b.series;
@@ -1958,6 +1975,14 @@ export function SeriesTab() {
     themeConfig: "",
   });
   const [rowError, setRowError] = useState("");
+  // 開いた時点の値。下書きと見比べて「書きかけかどうか」を決める。
+  const [openedDraft, setOpenedDraft] = useState<SeriesDraft | null>(null);
+  const guardRow = useRowDraftGuard({
+    editing: editId !== null,
+    draft,
+    original: openedDraft,
+    onUnsavedChange,
+  });
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
     title: string;
@@ -2088,9 +2113,16 @@ export function SeriesTab() {
     reorder.mutate({ ids, expectedIds });
   };
 
+  const closeEdit = () => {
+    setEditId(null);
+    setOpenedDraft(null);
+    setRowError("");
+  };
+
   const openEdit = (s: SeriesRow) => {
     setEditId(s.id);
     setRowError("");
+    setOpenedDraft(seriesDraftOf(s));
     setDraft({
       slug: s.slug,
       title: s.title,
@@ -2129,7 +2161,7 @@ export function SeriesTab() {
           draft.coverPhotoId === "" ? null : Number(draft.coverPhotoId),
         themeConfig: draft.themeConfig === "" ? null : draft.themeConfig,
       },
-      { onSuccess: () => setEditId(null) },
+      { onSuccess: () => closeEdit() },
     );
   };
 
@@ -2243,7 +2275,9 @@ export function SeriesTab() {
                     tone="ghost"
                     size="small"
                     onClick={() =>
-                      editId === s.id ? setEditId(null) : openEdit(s)
+                      guardRow.guard(() =>
+                        editId === s.id ? closeEdit() : openEdit(s),
+                      )
                     }
                     aria-label={copy.edit}
                     aria-expanded={editId === s.id}
@@ -2503,7 +2537,7 @@ export function SeriesTab() {
                       )}
                     </button>
                     <button
-                      onClick={() => setEditId(null)}
+                      onClick={() => guardRow.guard(closeEdit)}
                       className="px-4 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                     >
                       {copy.close}
@@ -2577,7 +2611,7 @@ export function SeriesTab() {
             <button
               onClick={() => {
                 deleteSeries.mutate(deleteTarget.id);
-                if (editId === deleteTarget.id) setEditId(null);
+                if (editId === deleteTarget.id) closeEdit();
                 setDeleteTarget(null);
               }}
               className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors"
@@ -2587,6 +2621,34 @@ export function SeriesTab() {
           </div>
         </Modal>
       )}
+      {/* 書きかけを捨てる前に一度だけ尋ねる。タブ切替とログアウトの確認は
+          親が持っているので（onUnsavedChange で通知）、ここは同じタブの中で
+          行を離れるときだけを受け持つ。 */}
+      {guardRow.confirming && (
+        <Modal onClose={guardRow.cancelDiscard}>
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
+            {t.shell.unsavedTitle}
+          </p>
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
+            {t.shell.unsavedRowBody}
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={guardRow.cancelDiscard}
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              onClick={guardRow.confirmDiscard}
+              className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors"
+            >
+              {t.common.discard}
+            </button>
+          </div>
+        </Modal>
+      )}
+
     </Page>
   );
 }
@@ -2612,7 +2674,22 @@ type PlanDraft = {
   note: string;
 };
 
-export function PricingTab() {
+/** 行の値から下書きの形を作る。openEdit と完全に同じ並びにすること。 */
+function planDraftOf(p: PlanRow): PlanDraft {
+  return {
+    title: p.title,
+    price: p.price,
+    description: p.description,
+    features: p.features,
+    note: p.note,
+  };
+}
+
+export function PricingTab({
+  onUnsavedChange,
+}: {
+  onUnsavedChange?: (v: boolean) => void;
+} = {}) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
   const copy = t.phase2b.pricing;
@@ -2625,6 +2702,14 @@ export function PricingTab() {
     note: "",
   });
   const [rowError, setRowError] = useState("");
+  // 開いた時点の値。下書きと見比べて「書きかけかどうか」を決める。
+  const [openedDraft, setOpenedDraft] = useState<PlanDraft | null>(null);
+  const guardRow = useRowDraftGuard({
+    editing: editId !== null,
+    draft,
+    original: openedDraft,
+    onUnsavedChange,
+  });
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
     title: string;
@@ -2740,9 +2825,16 @@ export function PricingTab() {
     reorder.mutate({ ids, expectedIds });
   };
 
+  const closeEdit = () => {
+    setEditId(null);
+    setOpenedDraft(null);
+    setRowError("");
+  };
+
   const openEdit = (p: PlanRow) => {
     setEditId(p.id);
     setRowError("");
+    setOpenedDraft(planDraftOf(p));
     setDraft({
       title: p.title,
       price: p.price,
@@ -2755,7 +2847,7 @@ export function PricingTab() {
     if (editId === null) return;
     patchPlan.mutate(
       { id: editId, ...draft },
-      { onSuccess: () => setEditId(null) },
+      { onSuccess: () => closeEdit() },
     );
   };
 
@@ -2828,7 +2920,9 @@ export function PricingTab() {
                   tone="ghost"
                   size="small"
                   onClick={() =>
-                    editId === p.id ? setEditId(null) : openEdit(p)
+                    guardRow.guard(() =>
+                      editId === p.id ? closeEdit() : openEdit(p),
+                    )
                   }
                   aria-label={copy.edit}
                   aria-expanded={editId === p.id}
@@ -2931,7 +3025,7 @@ export function PricingTab() {
                     )}
                   </button>
                   <button
-                    onClick={() => setEditId(null)}
+                    onClick={() => guardRow.guard(closeEdit)}
                     className="px-4 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                   >
                     {t.common.close}
@@ -2969,7 +3063,7 @@ export function PricingTab() {
             <button
               onClick={() => {
                 deletePlan.mutate(deleteTarget.id);
-                if (editId === deleteTarget.id) setEditId(null);
+                if (editId === deleteTarget.id) closeEdit();
                 setDeleteTarget(null);
               }}
               className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors"
@@ -2979,6 +3073,34 @@ export function PricingTab() {
           </div>
         </Modal>
       )}
+      {/* 書きかけを捨てる前に一度だけ尋ねる。タブ切替とログアウトの確認は
+          親が持っているので（onUnsavedChange で通知）、ここは同じタブの中で
+          行を離れるときだけを受け持つ。 */}
+      {guardRow.confirming && (
+        <Modal onClose={guardRow.cancelDiscard}>
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
+            {t.shell.unsavedTitle}
+          </p>
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
+            {t.shell.unsavedRowBody}
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={guardRow.cancelDiscard}
+              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              onClick={guardRow.confirmDiscard}
+              className="admin-btn-danger px-4 py-1.5 text-[length:var(--admin-text-note)] rounded-sm transition-colors"
+            >
+              {t.common.discard}
+            </button>
+          </div>
+        </Modal>
+      )}
+
     </Page>
   );
 }

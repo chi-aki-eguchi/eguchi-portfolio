@@ -894,8 +894,12 @@ function AdminPageContent({
                   <LazyProfileTab onUnsavedChange={setHasUnsaved} />
                 )}
                 {contentTab === "categories" && <LazyCategoriesTab />}
-                {contentTab === "series" && <LazySeriesTab />}
-                {contentTab === "pricing" && <LazyPricingTab />}
+                {contentTab === "series" && (
+                  <LazySeriesTab onUnsavedChange={setHasUnsaved} />
+                )}
+                {contentTab === "pricing" && (
+                  <LazyPricingTab onUnsavedChange={setHasUnsaved} />
+                )}
                 {contentTab === "service" && showService && (
                   <LazyServiceTab onUnsavedChange={setHasUnsaved} />
                 )}

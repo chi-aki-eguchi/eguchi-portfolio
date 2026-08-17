@@ -3445,6 +3445,7 @@ export type AdminMessages = {
   shell: {
     unsavedTitle: string;
     unsavedBody: string;
+    unsavedRowBody: string;
     leaveWithoutSaving: string;
   };
   headers: {
@@ -3617,6 +3618,9 @@ export const ADMIN_DICTIONARY = {
     shell: {
       unsavedTitle: "未保存の変更があります",
       unsavedBody: "保存していない内容があります。このまま移動しますか？",
+      // 同じタブの中で、編集中の行を離れるとき（別の行を開く / 閉じる）。
+      unsavedRowBody:
+        "書きかけの内容があります。保存せずに閉じると元に戻せません。",
       leaveWithoutSaving: "保存せず移動",
     },
     headers: {
@@ -3834,6 +3838,8 @@ export const ADMIN_DICTIONARY = {
     shell: {
       unsavedTitle: "You have unsaved changes",
       unsavedBody: "Your changes have not been saved. Leave this screen?",
+      unsavedRowBody:
+        "This entry has unsaved text. Closing without saving cannot be undone.",
       leaveWithoutSaving: "Leave without saving",
     },
     headers: {

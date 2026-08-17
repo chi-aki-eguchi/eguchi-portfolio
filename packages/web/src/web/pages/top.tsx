@@ -167,17 +167,28 @@ function HeroCarousel({
     };
   }, [photos.length, resetTimer, paused, prefersReducedMotion]);
 
+  // **送り戻しは必ずここを通す。** 写真が0枚のあいだに呼ばれると
+  // `(c + 1) % 0` が NaN になり、`current` を正常値へ戻す処理はどこにも無い
+  // ので、その訪問中は再読み込みするまで大きな写真が出なくなる。以前は
+  // クリック・矢印ボタン・点の3経路にだけ「2枚以上のとき」の守りがあり、
+  // **キーボードだけ素通し**だったので、読み込み中に矢印キーを押すと
+  // トップが空白になった。呼び出し口ごとに守りを書くとまた抜けるため、
+  // 数を数える場所をこの2つに集約する。
+  const canAdvance = photos.length > 1;
+
   const goNext = useCallback(() => {
+    if (!canAdvance) return;
     setDirection("right");
     setCurrent((c) => (c + 1) % photos.length);
     resetTimer();
-  }, [photos.length, resetTimer]);
+  }, [canAdvance, photos.length, resetTimer]);
 
   const goPrev = useCallback(() => {
+    if (!canAdvance) return;
     setDirection("left");
     setCurrent((c) => (c - 1 + photos.length) % photos.length);
     resetTimer();
-  }, [photos.length, resetTimer]);
+  }, [canAdvance, photos.length, resetTimer]);
 
   const goTo = (idx: number) => {
     setDirection(idx > current ? "right" : "left");

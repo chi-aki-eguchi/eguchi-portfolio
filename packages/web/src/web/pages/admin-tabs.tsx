@@ -1041,11 +1041,20 @@ export function HeroTab() {
     }
   }, [reorderTarget, reorderTargetId]);
 
+  // 読み込み中でも見出しは出したままにする。以前はここで中央のスピナーだけを
+  // 返しており、Hero へ切り替えた一瞬だけ「見出しの無い画面」になっていた
+  // （2026-08-17 実測: 768〜1920px のどの幅でも、切替直後は
+  // `.admin-page-header__title` が取れない。他8タブは取れる）。
+  // 到達点(1)「タブを切り替えても内容が横に飛ばない」は、読み込み中も含む。
+  // 他タブ（Series / Categories / Pricing）と同じで、見出しの下に読み込み表示を置く。
   if (photosLoading || heroLoading) {
     return (
-      <div className="flex items-center justify-center h-full gap-2 text-[var(--admin-muted)] text-sm">
-        <Loader2 size={14} className="animate-spin" /> {t.common.loading}
-      </div>
+      <AdminWorkspace name="hero">
+        <PageHeader title={t.navigation.tabs.hero} />
+        <div className="flex items-center gap-2 h-24 text-[var(--admin-muted)] text-[length:var(--admin-text-note)]">
+          <Loader2 size={14} className="animate-spin" /> {t.common.loading}
+        </div>
+      </AdminWorkspace>
     );
   }
 

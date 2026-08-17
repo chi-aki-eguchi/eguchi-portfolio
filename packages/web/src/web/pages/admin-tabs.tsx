@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
+import {
+  countPhotosInCategory,
+  type CategorizedPhoto,
+} from "../../shared/category-usage";
 import { makeSettingsPreviewPayload } from "../lib/settings-preview";
 import { uploadErrorMessageFromResponse } from "../lib/upload-file";
 import {
@@ -1634,6 +1638,7 @@ export function CategoriesTab() {
   const [deleteCatConfirm, setDeleteCatConfirm] = useState<{
     id: number;
     label: string;
+    slug: string;
   } | null>(null);
 
   const { data, isLoading: catsLoading } = useQuery({
@@ -1641,6 +1646,18 @@ export function CategoriesTab() {
     queryFn: async () => jsonOrThrow(await api.categories.$get()),
   });
   const categories = data?.categories ?? [];
+
+  // 巻き込まれる枚数は、画面が既に持っている一覧から数える（新しい通信をしない）。
+  // 両方が揃っていないときは null になり、文言も枚数を出さない形へ切り替わる。
+  const affectedCount = deleteCatConfirm
+    ? countPhotosInCategory(
+        deleteCatConfirm.slug,
+        qc.getQueryData<{ photos: CategorizedPhoto[] }>(["photos", "all"])
+          ?.photos,
+        qc.getQueryData<{ photos: CategorizedPhoto[] }>(["photos-trash"])
+          ?.photos,
+      )
+    : null;
 
   // "all" and "__uncat__" are sentinels used by the gallery/admin filters, so a
   // category can't claim them. A duplicate slug would also hit the DB unique
@@ -1799,7 +1816,11 @@ export function CategoriesTab() {
                   size="small"
                   data-ax-reveal=""
                   onClick={() =>
-                    setDeleteCatConfirm({ id: cat.id, label: cat.label })
+                    setDeleteCatConfirm({
+                      id: cat.id,
+                      label: cat.label,
+                      slug: cat.slug,
+                    })
                   }
                   aria-label={copy.deleteAria(cat.label)}
                 >
@@ -1856,8 +1877,15 @@ export function CategoriesTab() {
       {/* Delete confirm modal */}
       {deleteCatConfirm && (
         <Modal onClose={() => setDeleteCatConfirm(null)}>
-          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-4">
+          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
             {copy.deleteConfirm(deleteCatConfirm.label)}
+          </p>
+          {/* 写真は消えないが、付いていた分類は戻せない。Series の
+              「写真は残ります」と同じ位置に、起きることを1行で置く。 */}
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
+            {affectedCount === null
+              ? copy.deleteUncategorizes
+              : copy.deleteUncategorizesCount(affectedCount)}
           </p>
           <div className="flex gap-2 justify-end">
             <button

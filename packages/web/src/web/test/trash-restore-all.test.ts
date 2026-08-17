@@ -74,6 +74,20 @@ describe("ゴミ箱の一括復元", () => {
     );
   });
 
+  test("管理画面の目に見える文字と読み上げ用の名前に、英語の直書きを残さない", () => {
+    // 到達点(3)「UIの言葉は日本語で統一。英語はタブ名などの固有名詞だけ」。
+    // 直書きが1つでも残ると、英語表示に切り替えても日本語表示のままになる
+    // （逆も同じ）。辞書に語は揃っていて、繋ぎ忘れていただけだった。
+    const s = src("../pages/admin.tsx");
+    const literals = [
+      ...s.matchAll(/(?:aria-)?label="([^"]*)"/g),
+    ].map((m) => m[1]);
+    const asciiOnly = literals.filter(
+      (v) => v.length > 0 && !/[ぁ-んァ-ヶ一-龠]/.test(v),
+    );
+    expect(asciiOnly, "英語が直書きされた label / aria-label").toEqual([]);
+  });
+
   test("復元には確認を挟まない（取り返しがつくため）", () => {
     const s = src("../pages/admin.tsx");
     const bar = s.slice(

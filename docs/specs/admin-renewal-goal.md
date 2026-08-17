@@ -131,7 +131,7 @@ Categories / Profile / Pricing / Portfolio Kit / Settings）が対象。
 | --- | --- |
 | (1) タブを切り替えても横に飛ばない | **達成**。9タブの h1 左端が2px以内で一致（`admin-page-frame.spec.ts` が固定） |
 | (2) 説明文は1画面に最大1つ | **達成**。Categories の二重説明、Settings の「ラベルで分かることを hint に書く」を解消 |
-| (3) UIの言葉は日本語で統一 | **達成**。Settings の英語ラベル、`Live Preview` → `プレビューを開く`、Pricing/インスペクタの `Save` / `Saving...`、フォント設定の `Default` / `Custom (upload)` / `Uploading...`、`Set via environment variable` |
+| (3) UIの言葉は日本語で統一 | **達成**。Settings の英語ラベル、`Live Preview` → `プレビューを開く`、Pricing/インスペクタの `Save` / `Saving...`、フォント設定の `Default` / `Custom (upload)` / `Uploading...`、`Set via environment variable`。**2026-08-17 追記:** この時点では未達だった。表形式の `Size`、一括編集の `Camera` / `Lens` / `Film / Digital`、読み上げ用の `Select` / `Thumbnail` / `Close` / `Close preview` が直書きで残っていた（辞書には語が揃っており、繋ぎ忘れ）。**繋ぎ直したうえで、`label` / `aria-label` に英語の直書きが残っていないことをテストで固定した**（`trash-restore-all.test.ts`）。以後は記録ではなくテストが現在地を示す |
 | (4) 同じ操作は同じ見た目 | **達成**。行・追加ボタン・公開トグル・入力欄が全画面で同一部品 |
 | (5) 本文が画面の3割の画面が無い | 達成（維持） |
 | (6) 意味のない灰色の箱を見せない | **一部**。Series の空の表紙枠を廃止。初回読み込みの遅さ自体は未対応（画像配信の話） |

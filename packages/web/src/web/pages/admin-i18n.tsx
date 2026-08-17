@@ -442,6 +442,9 @@ const ADMIN_PHASE_2B_JA = {
       published: "公開",
       unpublished: "非公開",
       displaySize: "サイズ",
+      // 表形式の見出し行。目には見えないが、読み上げソフトには列名として届く。
+      selectColumn: "選択",
+      thumbnailColumn: "サムネイル",
       uncategorized: "未分類",
       quickCategory: "クイックカテゴリ",
       noCategory: "カテゴリなし",
@@ -615,6 +618,10 @@ const ADMIN_PHASE_2B_JA = {
     slugAria: "スラッグ",
     add: "カテゴリを追加",
     deleteConfirm: (label: string) => `「${label}」を削除しますか？`,
+    deleteUncategorizes:
+      "この分類が付いた写真は「未分類」になります。写真は消えませんが、分類は元に戻せません。",
+    deleteUncategorizesCount: (count: number) =>
+      `写真${count}枚が「未分類」になります。写真は消えませんが、分類は元に戻せません。`,
     errors: {
       addFailed:
         "追加に失敗しました。スラッグが重複していないか確認してください。",
@@ -2118,6 +2125,8 @@ const ADMIN_PHASE_2B_EN = {
       published: "Published",
       unpublished: "Unpublished",
       displaySize: "Size",
+      selectColumn: "Select",
+      thumbnailColumn: "Thumbnail",
       uncategorized: "Uncategorized",
       quickCategory: "Quick category",
       noCategory: "No category",
@@ -2293,6 +2302,10 @@ const ADMIN_PHASE_2B_EN = {
     slugAria: "Category slug",
     add: "Add",
     deleteConfirm: (label: string) => `Delete “${label}”?`,
+    deleteUncategorizes:
+      "Photos in this category become uncategorized. The photos stay, but the category cannot be restored.",
+    deleteUncategorizesCount: (count: number) =>
+      `${count} photo${count === 1 ? "" : "s"} become uncategorized. The photos stay, but the category cannot be restored.`,
     errors: {
       addFailed: "Could not add the category. Check whether the slug is unique.",
       reservedSlug: (slug: string) => `“${slug}” is reserved and cannot be used.`,

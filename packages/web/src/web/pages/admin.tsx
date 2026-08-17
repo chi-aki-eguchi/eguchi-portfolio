@@ -7198,9 +7198,9 @@ export function GalleryTab({
             {copy.bulkMetadata.description(selected.size)}
           </p>
           <div className="flex flex-col gap-3">
-            <AdminField label="Camera">
+            <AdminField label={copy.inspector.camera}>
               <input
-                aria-label="Camera"
+                aria-label={copy.inspector.cameraAria}
                 value={batchEdit.camera}
                 onChange={(e) =>
                   setBatchEdit((b) => ({ ...b, camera: e.target.value }))
@@ -7209,9 +7209,9 @@ export function GalleryTab({
                 className="ax-input"
               />
             </AdminField>
-            <AdminField label="Lens">
+            <AdminField label={copy.inspector.lens}>
               <input
-                aria-label="Lens"
+                aria-label={copy.inspector.lensAria}
                 value={batchEdit.lens}
                 onChange={(e) =>
                   setBatchEdit((b) => ({ ...b, lens: e.target.value }))
@@ -7220,7 +7220,7 @@ export function GalleryTab({
                 className="ax-input"
               />
             </AdminField>
-            <AdminField label="Film / Digital">
+            <AdminField label={copy.inspector.filmDigital}>
               <div className="flex gap-1">
                 {(
                   [
@@ -7868,7 +7868,7 @@ export function GalleryTab({
               e.stopPropagation();
               setPreviewPhoto(null);
             }}
-            aria-label="Close preview"
+            aria-label={copy.preview.closeAria}
             className="absolute top-4 right-4 text-white/70 hover:text-white p-1"
           >
             <X size={20} />
@@ -7888,7 +7888,7 @@ export function GalleryTab({
             </h3>
             <button
               onClick={() => setShowShortcuts(false)}
-              aria-label="Close"
+              aria-label={t.common.close}
               className="text-[var(--admin-muted)]"
             >
               <X size={15} />
@@ -8827,8 +8827,8 @@ function BulkEditTable({
       <table className="w-full min-w-[860px] border-collapse text-[length:var(--admin-text-body)]">
         <thead className="sticky top-0 z-10 bg-[var(--admin-paper)] border-b border-[var(--admin-line)]">
           <tr>
-            <th className="w-7" aria-label="Select" />
-            <th className="w-12" aria-label="Thumbnail" />
+            <th className="w-7" aria-label={copy.inspector.selectColumn} />
+            <th className="w-12" aria-label={copy.inspector.thumbnailColumn} />
             <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal">
               {copy.inspector.title}
             </th>
@@ -8842,7 +8842,7 @@ function BulkEditTable({
               {copy.inspector.series}
             </th>
             <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-20">
-              Size
+              {copy.inspector.displaySize}
             </th>
             <th className="text-left px-2 py-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider font-normal w-28">
               {copy.albums.medium}

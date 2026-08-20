@@ -20,6 +20,21 @@ instead, and only link to it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-08-20 — Freshness check added; stale pages now raise their own hand
+
+`bun run check` now ends with `scripts/ai/check-wiki-freshness.mjs`, which
+lists every page whose `last_verified` is more than 45 days old. **Warning
+only — it never fails the check**, and it writes nothing.
+
+First run: **10 of 13 pages are past 45 days**, most sitting at 2026-07-02
+while still declaring `status: current`. Those dates were left exactly as they
+were. Bumping them would have hidden the very problem this check exists to
+surface — the same failure that let `pages/image-pipeline.md` describe an
+already-fixed bug as current for 48 days.
+
+Clearing a warning requires re-reading the page against its Sources, then
+moving `last_verified` and logging it here. The date alone is not enough.
+
 ### 2026-08-20 — Reading-layer audit: two pages left the wiki, one page corrected
 
 Acting on `docs/specs/reading-layer-audit-2026-08.md`.

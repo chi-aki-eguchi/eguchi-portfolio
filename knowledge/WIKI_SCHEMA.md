@@ -127,6 +127,22 @@ Before committing a wiki change, manually check:
 - [ ] `last_verified` updated if content changed
 - [ ] `knowledge/wiki/log.md` has a corresponding entry
 
+## Freshness check (automated)
+
+`bun run check` ends with `node scripts/ai/check-wiki-freshness.mjs`, which
+lists every page whose `last_verified` is more than **45 days** old. It is a
+**warning only and never fails the check** — a stalled build is worse than a
+stale page. It writes nothing.
+
+A page with no `last_verified` is reported separately, and the script suggests
+**the date of the commit that last changed that file — never today's date**.
+Stamping today onto a page nobody re-read is how a wrong claim survives as
+"verified"; that is exactly what happened to `pages/image-pipeline.md`, which
+described an already-fixed bug as current for 48 days.
+
+Clearing a warning means re-reading the page against its Sources first, then
+moving `last_verified` and logging it. Bumping the date alone is not allowed.
+
 ## Stale handling
 
 Do not silently delete or rewrite history. When a page's content is found to

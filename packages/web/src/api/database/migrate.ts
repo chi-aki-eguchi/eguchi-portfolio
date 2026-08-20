@@ -13,7 +13,7 @@
 // 呼び出し側 (server.ts) は process.exit(1) する想定で、デプロイは loud に失敗し、
 // Railway は前バージョンを維持する（壊れた新版がトラフィックを受けない）。
 import { resolve } from "node:path";
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 
 const MIGRATION_RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 12_000, 16_000];
 
@@ -65,33 +65,81 @@ function selectedDatabaseUrlForLog(): string | undefined {
   return process.env.DATABASE_PUBLIC_URL?.trim() || process.env.DATABASE_URL;
 }
 
-async function ensureTursoColumns(): Promise<void> {
-  const { db } = await import("./libsql");
-  const columns: [string, string, string][] = [
-    ["photos", "focal_length", "text"],
-    ["photos", "f_number", "text"],
-    ["photos", "exposure_time", "text"],
-    ["photos", "iso", "text"],
-    ["photos", "thumb_key", "text"],
-    ["photos", "medium_key", "text"],
-    ["photos", "rotation_deg", "integer NOT NULL DEFAULT 0"],
-    ["photos", "focal_x", "integer NOT NULL DEFAULT 50"],
-    ["photos", "focal_y", "integer NOT NULL DEFAULT 50"],
-  ];
+/** [table, column, SQL type] — ALTER TABLE ADD COLUMN にそのまま渡す形。 */
+export type SafetyNetColumn = readonly [string, string, string];
+
+/** `run` だけを要求する最小の形。テストは in-memory の libsql を渡す。 */
+export type ColumnRunner = { run: (query: SQL) => Promise<unknown> };
+
+/**
+ * Turso 側の起動時セーフティネットが面倒を見る列。
+ *
+ * **schema.ts の photos と、初期テーブル作成後に足された列を一致させること。**
+ * ここが schema より少ないと、古い DB を新しいコードで起動したときに
+ * `db.select()` が存在しない列を名指しして写真取得が 500 になる。
+ * 2026-08-20 まで下半分（`0005` の7列）が抜けており、その状態だった。
+ *
+ * 型と既定値は各 migration の SQL と一字一句そろえる。ずれると、この経路で
+ * 作られた列と `db:push` で作られた列が違う形になる。
+ * 上9列 = `0003_material_apocalypse` + `0004_flowery_bloodstorm`
+ * 下7列 = `0005_mysterious_madame_masque`
+ */
+export const TURSO_SAFETY_NET_COLUMNS: readonly SafetyNetColumn[] = [
+  ["photos", "focal_length", "text"],
+  ["photos", "f_number", "text"],
+  ["photos", "exposure_time", "text"],
+  ["photos", "iso", "text"],
+  ["photos", "thumb_key", "text"],
+  ["photos", "medium_key", "text"],
+  ["photos", "rotation_deg", "integer NOT NULL DEFAULT 0"],
+  ["photos", "focal_x", "integer NOT NULL DEFAULT 50"],
+  ["photos", "focal_y", "integer NOT NULL DEFAULT 50"],
+  ["photos", "shot_at_source", "text NOT NULL DEFAULT 'legacy'"],
+  ["photos", "shot_at_digitized", "text"],
+  ["photos", "source_width", "integer"],
+  ["photos", "source_height", "integer"],
+  ["photos", "source_format", "text"],
+  ["photos", "camera_make", "text"],
+  ["photos", "camera_model", "text"],
+];
+
+/**
+ * 欠けている列だけを足す。**既にある列には触らない。**
+ *
+ * 判定は「SELECT できるか」だけで行い、できなければ ADD COLUMN する。
+ * ALTER が失敗しても警告して次へ進む — 1列の失敗で起動全体を止めない。
+ * 戻り値はテストと運用ログのためにあり、呼び出し側の分岐には使わない。
+ */
+export async function ensureColumnsExist(
+  db: ColumnRunner,
+  columns: readonly SafetyNetColumn[] = TURSO_SAFETY_NET_COLUMNS,
+): Promise<{ added: string[]; present: string[]; failed: string[] }> {
+  const added: string[] = [];
+  const present: string[] = [];
+  const failed: string[] = [];
   for (const [table, col, type] of columns) {
     try {
       await db.run(sql`SELECT ${sql.raw(col)} FROM ${sql.raw(table)} LIMIT 0`);
+      present.push(`${table}.${col}`);
     } catch {
       try {
         await db.run(
           sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN ${sql.raw(col)} ${sql.raw(type)}`,
         );
         console.log(`[migrate] added missing column ${table}.${col}`);
+        added.push(`${table}.${col}`);
       } catch (e) {
         console.warn(`[migrate] failed to add ${table}.${col}:`, e);
+        failed.push(`${table}.${col}`);
       }
     }
   }
+  return { added, present, failed };
+}
+
+async function ensureTursoColumns(): Promise<void> {
+  const { db } = await import("./libsql");
+  await ensureColumnsExist(db);
 }
 
 export async function runStartupMigrations(): Promise<void> {

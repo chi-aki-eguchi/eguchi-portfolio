@@ -19,14 +19,15 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 
 ## Open gaps found by re-verification
 
-18. **`ensureTursoColumns()` covers 9 of 16 added columns** (found
-    2026-08-20). Migration `0005_mysterious_madame_masque` added 7
-    source-metadata columns to `photos`; the Turso startup safety net in
-    `migrate.ts:68-95` was never extended past the original 9. akieguchi.com
-    production is unaffected (measured read-only this date: 36 columns, all
-    present), but a fresh Turso deployment would boot missing the 7 and
-    photo fetches would 500. Owner decision — see database.md's Open
-    Questions.
+18. **Resolved 2026-08-20 (same day)**: the Turso startup safety net now
+    covers all 16 added columns. The list moved to an exported
+    `TURSO_SAFETY_NET_COLUMNS` in `migrate.ts` and a contract test asserts it
+    matches, name-for-name and default-for-default, what migrations `0003`,
+    `0004` and `0005` actually declare — so the next migration that forgets to
+    update it fails `bun run check`. Existing columns were left untouched
+    (same order, same types, same probe-then-ALTER strategy); a second run
+    issues no `ALTER TABLE` at all. Verified against throwaway in-memory
+    SQLite only; no production DB was contacted.
 19. **Invariant 11 ("comments explain WHY") is written down nowhere**
     (found 2026-08-20). It used to live in `CLAUDE.md`/`AGENTS.md`; both have
     since been rewritten and it did not survive. Invariant 12 lost its direct

@@ -62,19 +62,21 @@ ADD COLUMN`s any that are missing, on every boot. On the **Postgres path**
   it runs real drizzle migrations with up to 7 retries / increasing backoff,
   and rethrows (→ process exit) on final failure so Railway keeps the prior
   deploy. (packages/web/src/api/database/migrate.ts:68-95, 96-100)
-- **Gap found 2026-08-20 — the Turso startup safety net has not kept up.**
-  `ensureTursoColumns()` still checks the same **9** columns it did in July
-  (`focal_length, f_number, exposure_time, iso, thumb_key, medium_key,
-  rotation_deg, focal_x, focal_y`). Migration `0005_mysterious_madame_masque`
-  added **7 more** (`shot_at_source, shot_at_digitized, source_width,
-  source_height, source_format, camera_make, camera_model`) and those are
-  **not** in the list. akieguchi.com production is fine — its `photos` table
-  was measured read-only on 2026-08-20 and has all 36 columns — but a **fresh
-  Turso deployment would boot without the 7**, and because drizzle's
-  `db.select()` names every column, photo fetches would 500 rather than
-  degrade. See `docs/specs/photo-metadata-extraction-plan.md`.
-  (`migrate.ts:68-95`; verified with
-  `node scripts/ai/check-prod-photo-columns.mjs`)
+- **The Turso startup safety net covers 16 columns** — everything migrations
+  `0003`, `0004` and `0005` added to `photos`. The list is exported as
+  `TURSO_SAFETY_NET_COLUMNS`; `ensureColumnsExist()` probes each with a
+  `SELECT ... LIMIT 0` and only `ALTER TABLE ADD COLUMN`s the ones that fail,
+  so a DB that already has them issues no writes. A failed `ALTER` is logged
+  and skipped rather than aborting boot.
+  **Gap found and closed 2026-08-20:** it had been stuck at the original **9**
+  since July, missing the 7 source-metadata columns from `0005`. akieguchi.com
+  production was never affected (measured read-only that date: 36 columns),
+  but a Turso DB predating `0005` would have booted without them, and because
+  drizzle's `db.select()` names every column, photo fetches would 500 rather
+  than degrade. `migrate.test.ts` now pins the list against the migration SQL
+  itself, so the next forgotten column fails `bun run check`.
+  (`migrate.ts` `TURSO_SAFETY_NET_COLUMNS` / `ensureColumnsExist`;
+  `migrate.test.ts`; `scripts/ai/check-prod-photo-columns.mjs`)
   **Resolved 2026-07-07**: DISTRIBUTION.md (§Automatic migrations),
   README.md, migrate.ts's top-of-file comment, and server.ts's call-site
   comment all now describe `ensureTursoColumns()` accurately — see
@@ -160,10 +162,11 @@ ADD COLUMN`s any that are missing, on every boot. On the **Postgres path**
   production, or is `db:push` the only real mechanism for the Turso side? If
   `db:migrate` were run today, the missing `0001` file plus untracked
   columns/tables would likely cause it to diverge from the live schema.
-- **Should `ensureTursoColumns()` be extended to the 7 columns from `0005`?**
-  Leaving it as-is means the startup safety net silently covers less than the
-  schema does, and only a fresh Turso deploy would notice. Extending it is a
-  small, additive change, but it touches the boot path — owner decision.
+- **Note (2026-08-20):** the safety net covers what `0003`–`0005` added, but
+  **not** the two columns from the missing `0001` (`display_size`,
+  `deleted_at`). A DB old enough to lack those predates every migration on
+  disk, so `db:push` is the only realistic route for it anyway — but if that
+  assumption is ever wrong, those two are the remaining hole.
 - Should `packages/web/drizzle/` be regenerated/squashed to accurately
   reflect `schema.ts` (mirroring how `drizzle-postgres/0000_worried_sentry.sql`
   was generated fresh), or is db:push considered the real mechanism and the

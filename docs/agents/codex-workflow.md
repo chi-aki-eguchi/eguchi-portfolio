@@ -162,9 +162,12 @@ max effort の有効化は Configuration 側の設定であり、Full access と
 
 ## クレジット低下時
 
-クレジット状態は`docs/agents/credit-status.md`に従う。closing以下では新しい工程を始めず、
-Git状態、変更ファイル、検証、未完了、次の一手、禁止範囲、session/logを
-Current Stateへ残す。hookは`task.md`を自動編集しない。
+クレジット状態は`docs/agents/credit-status.md`に従う。**週枠が`low`、または作業継続性が
+`at_risk` / `unknown`のとき**は新しい工程を始めず、Git状態、変更ファイル、検証、未完了、
+次の一手、禁止範囲、session/logをCurrent Stateへ残す。hookは`task.md`を自動編集しない。
+
+（旧「closing以下では」を 2026-08-20 に差し替えた。`closing`は2026-08-03に廃止された
+旧判定の段階名で、現在の`credit-status.md`には定義が無い。）
 
 ## 短い報告
 

@@ -1,54 +1,57 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-20 JST（3回目）
+## Current State — 2026-08-20 JST（4回目）
 
-- **Status:** wiki の再検証2ページと、夜間ラン記述の洗い出し。**commit 済み・push なし。**
+- **Status:** 起動時セーフティネットの修正、規則#11の書き戻し、片付け2件。
+  **commit 済み・push なし。**
 - **Current owner:** Claude Code / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF` / originとの差は
   `git status --short --branch` で測り直す
 
 ### 目的と完了条件
 
-鮮度警告に出た wiki を実装と突き合わせて直す。夜間ラン前提の記述を洗う。
-正本は `docs/specs/reading-layer-audit-2026-08.md`（監査 + 実行記録3回分）。
+`open-issues` #18/#19 を閉じ、夜間ランの残骸を畳む。
+正本は `docs/specs/reading-layer-audit-2026-08.md`。
 
 ### 完了（commit 済み・push なし）
 
-1. `wiki/pages/invariants.md` を訂正。**11行が誤っていた**（CLAUDE.md /
-   AGENTS.md / task.md への行番号引用が全滅、#3と#13が別のルールファイルを
-   指していた、存在しない「14番目のStop hook」）
-2. `wiki/pages/database.md` を訂正。**4件が古く1件は当初から誤り**
-   （withRetry の再試行条件に "Failed query" を挙げていたが逆）
-3. 両ページの `last_verified` を今日へ。**日付だけ進めた箇所は無い**
-4. 新しい gap を `open-issues.md` #18〜20 に記録
-5. 夜間ラン記述の洗い出し。**対象4箇所には1件しか残っていない**（下記）
+1. **`ensureTursoColumns()` を9列→16列へ**（`f7825df`）。0005 の7列が
+   安全網から漏れており、その列を持たない Turso DB で写真取得が500になる状態だった。
+   既存9列は並び・型・既定値をそのまま。**テスト9件**（すべて :memory: SQLite）
+2. 契約テストが、列表と migration の SQL の一致を見張る。
+   **次に列を足す人が表を更新し忘れると `bun run check` が落ちる**
+3. 規則#11「コメントには WHY を書く」を `.claude/rules/comments.md` へ
+   書き戻した（`ee5fa5b`）。paths は `**/*.ts` `**/*.tsx` で**A層は増やしていない**
+4. `docs/reports/night-20260707.md` → `docs/archive/` へ `git mv`（削除していない）
+5. `codex-workflow.md` の `closing`（定義が消えた旧用語）を現行3軸の語へ差し替え
 
 ### 検証
 
-- `bun run check` = **1019 tests / 0 fail**、`test:tools` **37 pass / 0 fail**、
-  終了コード0。鮮度警告 10件 → **8件**
-- `bun run smoke` は未実施（製品コードに差分なし）
+- `bun run check` = **1028 tests / 0 fail**、`test:tools` 37 pass / 0 fail
+- テストが素通りしないことを実測: 1列外すと8件、既定値を誤ると2件が落ちる
+- `bun run smoke` は未実施（admin UI に差分なし）
+- **本番DBには接続していない。**すべて使い捨ての :memory: SQLite
 - 本番・Railway反映・実機は**いずれも未実施**
 
-### オーナー判断待ち（夜間ラン関連。触っていない）
+### 分かったこと（次に効く）
 
-- **N-1** `codex-workflow.md:165` の `closing` は旧判定の段階名で、現在の
-  `credit-status.md` に定義が無い。文自体は有人でも要るので**語の差し替え案**
-- **N-2** `docs/reports/night-20260707.md`（60行）は朝に読む前提の夜間レポート。
-  archive 行き候補。ただし ws / js-yaml とR2リークの**当初記録**でもある
-- **N-3** ローカルブランチ `improve/night-20260707` が残っている（origin には無い）
+- **配布版はこの不具合を踏まない。**`DATABASE_PROVIDER=postgres` で別経路を通り、
+  PostgreSQL 側は `0002_add_photo_source_metadata.sql` で対応済み。影響は Turso のみ
+- 安全網は `0003`〜`0005` の16列が対象。**欠番 `0001` の2列は対象外**（それを欠く
+  DB は全 migration より古く `db:push` しか道が無いため、実害は考えにくい）
 
-### オーナー判断待ち（その他）
+### オーナー判断待ち
 
 - **`docs/archive/task-handoffs.md:1355` に管理パスワードの平文**
-- `ensureTursoColumns()` が9列しか見ていない（schema は16列。open-issues #18）
+- ローカルブランチ `improve/night-20260707`（origin に無い。8コミットの
+  取り込み状況が未確認のため消していない）
 - `hono` / `sharp` の更新（調査済み・未実行）
 - backlog **B-19** / **B-15**
 
 ### 次の一手
 
-- 鮮度警告の残り8件。`deployment.md` と `project-overview.md` が次に効く
+- wiki の鮮度警告 残り8件。`deployment.md` と `project-overview.md` が次に効く
 - **中身を見ずに `last_verified` だけ進めない**
 
 ### 触ってはいけない範囲

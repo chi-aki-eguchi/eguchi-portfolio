@@ -12,6 +12,7 @@ sources:
   - .claude/rules/react-components.md
   - .claude/hooks/protect-invariants.sh
   - .claude/rules/api-client.md
+  - .claude/rules/comments.md
   - .claude/settings.json
   - packages/web/src/api/database/libsql.ts
   - .gitignore
@@ -49,7 +50,7 @@ down. See open-issues.md for drift found between documents.
 | 8 | Never commit `.env` | **enforced-in-hook** (as a superset — blocks *editing* `.env` at all): `.claude/hooks/protect-invariants.sh:16-19` blocks any Edit/Write whose path matches `/\.env($\|\.)/`. Ignored via `.gitignore:26`. `AGENTS.md`「絶対に越えない境界」forbids showing, recording or committing `.env` values. | Keeps `DATABASE_URL`, S3 keys and `ADMIN_PASSWORD` out of git history; env vars live in the Railway dashboard. |
 | 9 | No scratch `test-*.mjs` committed | **enforced-in-gitignore**: `.gitignore:75-76` (`/test-*.mjs`, `/packages/web/test-*.mjs`). **Corrected 2026-08-20:** the prose rule that used to live in CLAUDE.md is gone, and the cited `.gitignore:59-66` range was wrong. Re-measured this date: **no such file exists on disk and none was ever committed.** | These were scratch Playwright scripts, several with hardcoded admin-password strings. One such password string does survive in `docs/archive/task-handoffs.md` — see open-issues.md. |
 | 10 | Never run `bun run deploy` | **structurally enforced**: `package.json` defines no `deploy` script (only `deploy:runable:legacy`), so the command cannot run. Documented at `.claude/skills/deploy/SKILL.md:52`. Additionally `.claude/settings.json:26` denies `Bash(bun run deploy*)`. | It used to trigger the legacy Runable ZIP publish, superseded by Railway git-push deploy on 2026-06-16 — see deployment.md. |
-| 11 | Comments explain WHY, not WHAT | **not-found (changed 2026-08-20)**: no longer stated in `CLAUDE.md`, `AGENTS.md`, any `.claude/rules/*.md`, or the hook. It survives only as de-facto practice in the codebase. | Previously cited to CLAUDE.md/AGENTS.md line numbers that no longer exist. Whether to restore it is an owner decision — see Open Questions. |
+| 11 | Comments explain WHY, not WHAT | **enforced-in-rule-file**: `.claude/rules/comments.md` (path-scoped to `**/*.ts`, `**/*.tsx`). **Restored 2026-08-20** after being found written down nowhere — it had been lost when `CLAUDE.md`/`AGENTS.md` were rewritten. Put in a path-scoped rule file rather than back into the always-loaded set, so it costs nothing until code is actually being edited. | A WHAT comment restates the line below it and goes stale the moment the line changes; a WHY comment carries the reason the next reader cannot recover from the code. |
 | 12 | Frontend never touches the DB directly | **enforced-in-rule-file (indirectly)**: `.claude/rules/api-client.md:5` requires the typed client and forbids raw `fetch` from the frontend, which closes the same path. **Corrected 2026-08-20:** the direct statement that used to be in CLAUDE.md/AGENTS.md is gone. | All DB access must go through `/api/*`. |
 | 13 | Frontend uses the `lib/api.ts` typed client | **enforced-in-rule-file**: `.claude/rules/api-client.md:5` (path-scoped to `packages/web/src/web/**`). **Corrected 2026-08-20:** previously cited to `api-validation.md:11`, which is actually the `POST /admin/settings` allowlist rule — wrong file. | Keeps request/response types in sync with the Hono `AppType`; a raw `fetch` bypasses that. Note `AppType` inference is already at TypeScript's instantiation limit for the admin subtree (`lib/api.ts:31-39`). |
 
@@ -77,11 +78,10 @@ that re-states invariants 1, 2, 3, 4 and 5 and reminds the model to run
 
 ## Open Questions
 
-- **Invariants 11 and 12 lost their written home.** Both used to be stated in
-  `CLAUDE.md`/`AGENTS.md`; neither is any more. #12 is still closed in
-  practice by `api-client.md`'s no-raw-`fetch` rule, but #11 (comments explain
-  WHY) is now written down nowhere. Should it be restored to a rule file, or
-  dropped from the list of 13?
+- **Resolved 2026-08-20**: invariant #11 was restored to
+  `.claude/rules/comments.md`. #12 keeps no direct statement of its own but
+  stays closed by `api-client.md`'s no-raw-`fetch` rule — leaving it implicit
+  is a deliberate choice, not an oversight.
 - Is invariant #7 still meant as a general prohibition now that
   `.claude/settings.json` denies `git add -A` mechanically and `.gitignore`
   covers the `test-*.mjs` case? The deny entry makes the prose redundant.
@@ -103,6 +103,7 @@ that re-states invariants 1, 2, 3, 4 and 5 and reminds the model to run
 - CLAUDE.md (§0 Invariants section)
 - AGENTS.md (§0 section, admin implementation-rules section)
 - .claude/rules/api-client.md
+- .claude/rules/comments.md
 - .claude/rules/api-validation.md
 - .claude/rules/db-migrations.md
 - .claude/rules/no-manual-encoding.md

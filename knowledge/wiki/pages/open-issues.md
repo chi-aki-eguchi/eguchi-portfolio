@@ -28,11 +28,12 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
     (same order, same types, same probe-then-ALTER strategy); a second run
     issues no `ALTER TABLE` at all. Verified against throwaway in-memory
     SQLite only; no production DB was contacted.
-19. **Invariant 11 ("comments explain WHY") is written down nowhere**
-    (found 2026-08-20). It used to live in `CLAUDE.md`/`AGENTS.md`; both have
-    since been rewritten and it did not survive. Invariant 12 lost its direct
-    statement too but is still closed by `.claude/rules/api-client.md:5`.
-    See invariants.md.
+19. **Resolved 2026-08-20 (same day)**: invariant 11 ("comments explain WHY")
+    was restored as `.claude/rules/comments.md`, path-scoped to `**/*.ts` and
+    `**/*.tsx` so it loads when code is being edited and costs nothing
+    otherwise. It was deliberately not put back into the always-loaded set.
+    Invariant 12 still has no direct statement and stays closed by
+    `.claude/rules/api-client.md:5`. See invariants.md.
 20. **A plaintext admin password is committed** in
     `docs/archive/task-handoffs.md` (found 2026-08-20). It was quoted while
     describing scratch scripts that held it. The scripts are gone and were

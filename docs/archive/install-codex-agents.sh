@@ -1,4 +1,7 @@
 #!/bin/sh
+# ARCHIVED — 2026-08-20。もう使わない。
+# 後継: 後継なし（レーン定義TOMLごと廃止）
+# 移した理由: codex exec 用のエージェント定義TOMLを .codex/ へ導入するスクリプト。CLI連携の廃止で不要になった
 # eguchi-portfolio の Codex カスタムエージェントを、ローカルの Codex 設定へ導入する。
 #
 # テンプレートの正本は docs/agents/codex-agents/*.toml（git 管理下）。

@@ -26,19 +26,17 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
 
 ## 現在の役割
 
-**設計 = Claude Code / 実装 = Codex。**Codex は読み取り専用の独立調査と反対レビューも
-担う。担当範囲、発動条件、依頼に入れる項目は `docs/agents/codex-workflow.md` が正本。
+**設計・実装・検証はすべて Claude Code。**本番DB・課金・公開設定・認証に触る前だけ、
+オーナーが Codex アプリへ貼って反対意見をもらう（`docs/checklists.md`）。
 
 - オーナーがこのチャットで直接指定した役割・範囲が、そのタスクだけ優先される。
 
 ## 1タスクにつき編集者1人
 
-- 同じ worktree を Claude と Codex が同時編集しない。もう一方は read-only reviewer とする。
-- 編集を引き継ぐ前に、Current State の `Current owner` を更新し、前の編集者が停止したことを確認する。
 - dirty tree（未コミット変更）があれば他者の途中成果として保護し、reset・rebase・checkout・
   上書き・破棄をしない。意図が不明なら編集を止めてオーナーへ報告する。
-- `scratch/codex-out-*.log` は resume 用のセッションIDを含み得る。削除せず、本文を
-  Handoff や外部資料へ転載しない。
+- 別のセッションが同じ worktree を編集中なら、もう一方は read-only とする。
+  引き継ぐ前に Current State の `Current owner` を更新し、前の編集者の停止を確認する。
 
 ## 絶対に越えない境界
 

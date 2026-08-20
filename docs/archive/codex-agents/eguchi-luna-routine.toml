@@ -1,3 +1,7 @@
+# ARCHIVED — 2026-08-20。もう使わない。
+# 後継: なし（codex exec のレーン定義。CLI連携ごと廃止）
+# Codexアプリ自体は今も使っている。廃止したのはCLI経由の連携だけ。
+
 name = "eguchi_luna_routine"
 description = "eguchi-portfolio の定型レーン。仕様が確定した機械的作業と読み取り調査だけを担当する。"
 model = "gpt-5.6-luna"

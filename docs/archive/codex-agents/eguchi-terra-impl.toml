@@ -1,3 +1,7 @@
+# ARCHIVED — 2026-08-20。もう使わない。
+# 後継: なし（codex exec のレーン定義。CLI連携ごと廃止）
+# Codexアプリ自体は今も使っている。廃止したのはCLI経由の連携だけ。
+
 name = "eguchi_terra_impl"
 description = "eguchi-portfolio の主実装レーン。文脈が重い実装と影響範囲の広い変更を担当する。"
 model = "gpt-5.6-terra"

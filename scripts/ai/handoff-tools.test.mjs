@@ -78,7 +78,13 @@ test("builds one complete Japanese packet without reading log bodies", () => {
   assert.match(packet, /## 確認できた事実/);
   assert.match(packet, /## 推測/);
   assert.match(packet, /## 不明点/);
-  assert.match(packet, /Codexログ本文は読みません/);
+  // 外部ツールのログ本文を読まないこと（session ID等が混ざる経路を塞ぐ）。
+  // 2026-08-20: codex exec 連携の廃止に伴い「Codexログ」→「外部ツールのログ」。
+  assert.match(packet, /外部ツールのログ本文は読みません/);
+  // push規則が古いまま配られないこと。2026-08-20 に条件付き解禁したのに
+  // Packet が「pushは行わない」と言い続けていた実例がある。
+  assert.match(packet, /pushは AGENTS\.md の3条件/);
+  assert.doesNotMatch(packet, /push、deploy、本番DB/);
   assert.match(packet, /=== CHATGPT HANDOFF PACKET END ===$/);
 });
 

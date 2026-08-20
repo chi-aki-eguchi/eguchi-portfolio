@@ -9,7 +9,7 @@
 |---|---|
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
 | 管理画面刷新の目的（6軸） | `docs/specs/admin-renewal-goal.md` |
-| Claude / Codex の連携、Phase、モデルのレーン | `docs/agents/codex-workflow.md` |
+| 本番に触る前の反対意見（Codexアプリ） | `docs/checklists.md`「本番に触る前の反対意見」 |
 | 引き継ぎ、Current State の書き方、オーナーへの報告 | `docs/agents/handoff-workflow.md` |
 | クレジット残量の判定と行動 | `docs/agents/credit-status.md` |
 | 未完了の作業 | `docs/agents/backlog.md`（完了したらこの文書から消す） |

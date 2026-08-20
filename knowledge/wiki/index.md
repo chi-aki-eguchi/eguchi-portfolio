@@ -46,7 +46,7 @@ be read selectively, not in full, each session.
   Runable ZIP path, env/config topology (names only, no secret values).
 AI collaboration rules are **not** in this wiki. The canonical sources are
 `AGENTS.md`, `CLAUDE.md`, `task.md`'s Current State, and
-`docs/agents/codex-workflow.md`. The old wiki page carried retired "Fable5"
+`docs/checklists.md`. The old wiki page carried retired "Fable5"
 naming and was moved to `docs/archive/ai-collaboration.md` on 2026-08-20.
 ## Tracking
 

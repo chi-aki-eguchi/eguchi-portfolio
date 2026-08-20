@@ -1,7 +1,7 @@
 ---
 title: Open Issues (contradictions, stale docs, unknowns)
 status: current
-last_verified: 2026-07-06
+last_verified: 2026-08-20
 sources:
   - (see per-item citations below; each restates a finding also cited on its own topic page)
 ---
@@ -16,6 +16,27 @@ being silently rediscovered each session. See `wiki/log.md` for the
 maintenance-log entry that created this page. When an item here is resolved,
 update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 "Stale handling").
+
+## Open gaps found by re-verification
+
+18. **`ensureTursoColumns()` covers 9 of 16 added columns** (found
+    2026-08-20). Migration `0005_mysterious_madame_masque` added 7
+    source-metadata columns to `photos`; the Turso startup safety net in
+    `migrate.ts:68-95` was never extended past the original 9. akieguchi.com
+    production is unaffected (measured read-only this date: 36 columns, all
+    present), but a fresh Turso deployment would boot missing the 7 and
+    photo fetches would 500. Owner decision — see database.md's Open
+    Questions.
+19. **Invariant 11 ("comments explain WHY") is written down nowhere**
+    (found 2026-08-20). It used to live in `CLAUDE.md`/`AGENTS.md`; both have
+    since been rewritten and it did not survive. Invariant 12 lost its direct
+    statement too but is still closed by `.claude/rules/api-client.md:5`.
+    See invariants.md.
+20. **A plaintext admin password is committed** in
+    `docs/archive/task-handoffs.md` (found 2026-08-20). It was quoted while
+    describing scratch scripts that held it. The scripts are gone and were
+    never committed; the string is not. Owner decision: rotate the Railway
+    `ADMIN_PASSWORD`, or redact the line.
 
 ## Contradictions between canonical docs
 

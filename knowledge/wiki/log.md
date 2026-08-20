@@ -20,6 +20,38 @@ instead, and only link to it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-08-20 — Re-verified invariants.md and database.md (first two cleared)
+
+The freshness check flagged 10 pages. These two were taken first because a
+wrong claim in them is the most expensive. **Both needed real corrections —
+neither was a date bump.**
+
+`pages/invariants.md`: **11 rows were wrong.** Every line citation into
+`CLAUDE.md` / `AGENTS.md` / `task.md` was dead (those files were rewritten and
+are now roughly a third of their old size). Two rows named the wrong rule file
+entirely — #3 `assertOk` and #13 typed-client both pointed at
+`api-validation.md` when the rule lives in `api-client.md`. The "14th
+structural check" (a Stop hook asking the model to confirm `bun typecheck`)
+**does not exist** and was removed; what exists is the post-compaction
+reminder. #7 was upgraded from "mentioned only" to enforced —
+`.claude/settings.json` denies `git add -A`. #11 and #12 lost their written
+home when CLAUDE.md/AGENTS.md were trimmed, and that is now recorded as an
+open gap rather than quietly dropped. Citations into frequently-edited docs
+were switched to **section names instead of line numbers**.
+
+`pages/database.md`: four facts had gone stale and one was wrong from the
+start. The wrong one: this page listed `"Failed query"` as a `withRetry`
+trigger, when drizzle-orm 0.45+ wraps *every* failure in that string — which
+is exactly why `libsql.ts` walks `err.cause` instead. Matching on it would
+retry genuine constraint violations. Stale: `drizzle/` now also has `0005`,
+`drizzle-postgres/` now also has `0002`, and the `task.md` line citations died
+when that file was reduced to the Current State block.
+
+**New gap found and logged** (open-issues #18): `ensureTursoColumns()` still
+checks 9 columns while the schema has 16. Production is fine — measured
+read-only this date at 36 columns — but a fresh Turso deploy would boot
+missing 7 and 500 on photo fetches.
+
 ### 2026-08-20 — Freshness check added; stale pages now raise their own hand
 
 `bun run check` now ends with `scripts/ai/check-wiki-freshness.mjs`, which

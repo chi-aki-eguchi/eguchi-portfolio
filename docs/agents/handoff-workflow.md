@@ -63,8 +63,11 @@ scriptはファイル更新、commit、push、network通信を行わない。
 - Codex session ID または明示されたlog path
 - local commit / push / Railway反映 / 本番確認を別々に記載
 
-30〜60行以内に収める。長くなったら、経緯は
+**上限60行。下限は無い。**長くなったら、経緯は
 `docs/archive/task-handoffs.md` の末尾へ追記して Current State からは外す。
+短くて足りる回は短いままでよい（2026-08-20 に下限30行を廃止した。有人運用では
+`Status` / `Current owner` / `Handoff readiness` の情報価値が低く、下限が
+水増しの動機になっていたため）。
 
 ## オーナーへの報告
 

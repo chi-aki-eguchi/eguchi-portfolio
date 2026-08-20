@@ -64,16 +64,6 @@
         ]
       }
     ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "BACKUP_DIR=\"$CLAUDE_PROJECT_DIR/.claude/chat-backups\"; mkdir -p \"$BACKUP_DIR\"; echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Pre-compaction backup\" >> \"$BACKUP_DIR/compaction-log.txt\"; echo \"Session: $CLAUDE_SESSION_ID\" >> \"$BACKUP_DIR/compaction-log.txt\""
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "matcher": "",

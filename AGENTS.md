@@ -89,7 +89,8 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
 ## Current State・Handoff・報告
 
 - 編集者は、所有者・目的・Git状態・完了/未完了・検証・次の一手・禁止範囲が変わった時、
-  `task.md` 冒頭の Current State を30〜60行以内で更新する。
+  `task.md` 冒頭の Current State を更新する。**上限60行**。下限は無い——
+  書くことが少ない回に水増ししない。
 - hook は Current State を自動編集しない。事実を確認した編集者が更新する。
 - 過去 Handoff は削除・書換えしない。
 - **「ローカルで確認済み」「commit済み」「push済み」「Railway反映済み」

@@ -20,9 +20,6 @@
     ],
     "deny": [
       "Bash(git add -A)",
-      "Bash(git push *)",
-      "Bash(git -C * push *)",
-      "Bash(/usr/bin/git push *)",
       "Bash(bun run db:push*)",
       "Bash(bun run db:migrate*)",
       "Bash(bun run deploy*)",

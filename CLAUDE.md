@@ -20,7 +20,8 @@
 - Codex実装後は、報告だけでなく重要な差分とリスクを独立して確認する。
 - 製品コード変更では `bun run check`、admin変更では `bun run smoke` の最終確認を担う。
 - 作業の節目と終了前に `task.md` 冒頭 Current State を更新する。
-- push は行わない。local / commit / push / Railway / production を分けて報告する。
+- push は `AGENTS.md`「絶対に越えない境界」の3条件を満たすときだけ。
+  local / commit / push / Railway / production は必ず分けて報告する。
 
 ## Codex へ渡す最小情報
 

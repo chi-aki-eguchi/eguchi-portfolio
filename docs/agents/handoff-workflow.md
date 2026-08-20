@@ -110,7 +110,7 @@ Claude/Codex停止前:
 1. Gitのclean/dirtyと変更ファイルを確認
 2. 実施済み/未実施の検証を分ける
 3. Current Stateへowner、残り、次の一手、禁止範囲、session/logを記録
-4. push・deployせず停止
+4. 条件を満たさないなら push・deploy せず停止（条件は `AGENTS.md`）
 
 復帰したAI:
 

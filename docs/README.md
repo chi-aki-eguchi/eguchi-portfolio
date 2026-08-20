@@ -29,6 +29,7 @@
 
 ## オーナー向けの案内
 
+- **壊れたときの戻し方: `docs/rollback-guide.md`（コピペで実行できる形）**
 - 全体の入口: `docs/owner-guide.md`
 - 管理画面の使い方: `docs/admin-guide.md`
 - デプロイ後の手順: `docs/post-deploy-guide.md`（英語版 `-en`）

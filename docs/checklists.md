@@ -91,10 +91,10 @@
 
 **着手前**
 
-- [ ] push = 本番デプロイだと理解している（GitHub auto-deploy）。**push は常にオーナーの手で行う — エージェントは実施しない**
+- [ ] push = 本番デプロイだと理解している（GitHub auto-deploy）。**push は `AGENTS.md` の3条件を満たすときだけ**（check 成功 / 製品コードなら smoke も / 本番DB・秘密情報・課金・公開設定に関わらない）
 - [ ] 環境変数の追加・変更は Railway ダッシュボードで行う（`.env` は gitignored、エージェントは読まない・編集しない）
 
-**push 前（オーナーへの依頼前）**
+**push 前**
 
 - [ ] `bun run check` 成功（admin に触れたなら `bun run smoke` も）
 - [ ] `git status --short` がクリーン（未コミット・未追跡ファイルが残っていない、または Handoff に明記した）

@@ -2,6 +2,7 @@
 
 > Current. 2026-07-27更新。旧「期間限定の役割反転」「Sonnet/Fable時代」
 > 「許可後はAIがpush可能」という記述は廃止した。
+> **2026-08-20: pushはオーナー判断で条件付き解禁**（`AGENTS.md`が正本）。
 
 ## 目的
 
@@ -15,7 +16,8 @@
 3. Codexが合意済み範囲だけを実装し、関連するローカル検証と自己確認を行う。
 4. CodexがCurrent Stateへ変更、検証、未検証、次の一手、commit/push/production状態を残す。
 5. Claudeが前の編集者の停止を確認後、read-onlyで重要差分と高リスク項目を独立検証する。
-6. commitが依頼範囲ならCodexが1タスク1commitにまとめる。pushはオーナーだけが行う。
+6. commitが依頼範囲ならCodexが1タスク1commitにまとめる。**pushはClaudeが行う**
+   （`AGENTS.md`の3条件を満たすときだけ。Codexは引き続きpushしない）。
 
 モデル名、関数名、全判断手順は固定しない。安全境界と完了の判定を固定する。
 

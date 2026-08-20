@@ -16,31 +16,19 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
 検索する。`knowledge/wiki/` 全体も毎回読み直さない。
 矛盾時は、コードと Git の実物 → Current State → 現行仕様書 → 履歴の順で優先する。
 
-**現役文書へ、測り直せる行数・ファイル数を「現在の事実」として書かない。**すぐ古くなり、
-読む側が誤った前提で判断する（2026-08-03 に2回発生）。必要なら測り直す。
-例外は、日付や commit を添えた監査結果、履歴文書、規則として決めた上限値
-（Current State の30〜60行など）。
+測り直せる行数・ファイル数を現役文書へ「現在の事実」として書かない
+（規則と例外は `.claude/rules/file-hygiene.md`。これも常時読まれる）。
 
 **記録された不具合に着手する前に、実物を測り直す。** 記録の行番号・数値・症状を
-そのまま信じない。**もう直っていたら、直さずに記録のほうを消す。**
-過去に「存在しない不具合」を記録した実例が3件あり、いずれも着手すれば実在しない
-問題を直す作業になっていた。測り方の落とし穴と実例は `docs/agents/measuring.md`。
-
-**不具合を直したら、その場で `docs/agents/backlog.md` から項目を消す。**
-記録を残したまま直すと、次に読む者が「まだある問題」として扱う。
+そのまま信じない。**もう直っていたら、直さずに記録のほうを消す**（実例3件と
+測り方の落とし穴は `docs/agents/measuring.md`）。直したら、その場で
+`docs/agents/backlog.md` からも項目を消す。
 
 ## 現在の役割
 
-- **設計 = Claude Code**: オーナーとの要件整理、目的・完成条件・安全境界の確定、
-  Codex へ渡す実装依頼、実装後の独立検証、Current State 更新。
-- **実装 = Codex**: 合意済みの範囲を実装し、必要なローカル検証、Current State 更新、
-  指示された場合の commit まで行う。
-- **Codex は実装だけでなく、読み取り専用の独立調査と反対レビューも担う。**
-  いつ使うかは `docs/agents/codex-workflow.md` の発動条件に従う。
-- モデル名や細かな実装方法は固定しない。目的・完成条件・変更可能範囲・禁止操作・
-  検証責任・停止条件を明確にする。
-- 実装依頼には、**今回の変更が触れうる承認済み挙動**を必ず含める（項目の一覧は
-  `docs/agents/codex-workflow.md`「Codexへの依頼」）。
+**設計 = Claude Code / 実装 = Codex。**Codex は読み取り専用の独立調査と反対レビューも
+担う。担当範囲、発動条件、依頼に入れる項目は `docs/agents/codex-workflow.md` が正本。
+
 - オーナーがこのチャットで直接指定した役割・範囲が、そのタスクだけ優先される。
 
 ## 1タスクにつき編集者1人
@@ -94,27 +82,17 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
   製品コードが差分にないことを確認する。製品コードの全テストは不要。
 - 失敗した検証を隠さず、未実施と成功を分けて報告する。
 
-## Current State の更新責任
+## Current State・Handoff・報告
 
 - 編集者は、所有者・目的・Git状態・完了/未完了・検証・次の一手・禁止範囲が変わった時、
   `task.md` 冒頭の Current State を30〜60行以内で更新する。
 - hook は Current State を自動編集しない。事実を確認した編集者が更新する。
-- `HEAD: SELF` は「Current State を最後に更新したcommit」を意味する。
-  鮮度チェックは `task.md` の最終更新commitと実際のHEADを比較する。
-- 過去 Handoff は削除・書換えしない。必要な節目は
-  `docs/archive/task-handoffs.md` の末尾へ追記する（`task.md` へ戻さない）。
+- 過去 Handoff は削除・書換えしない。
+- **「ローカルで確認済み」「commit済み」「push済み」「Railway反映済み」
+  「本番確認済み」を混同しない。どれをやっていないかを必ず書く。**
 
-## 最小Handoff
-
-Current State に次を残す。
-
-- Status / Current owner / Handoff readiness
-- 目的と完了条件
-- branch / HEAD / clean-or-dirty / originとの差 / 変更中ファイル
-- 完了済み / 未完了 / 検証済み / 未検証
-- 次の一手 / オーナー判断待ち / 触ってはいけない範囲
-- Codex session ID または明示されたlog path
-- local commit / push / Railway反映 / 本番確認を別々に記載
+Current State に残す項目、`HEAD: SELF` の意味、追記先、オーナー向けの書き方は
+`docs/agents/handoff-workflow.md` が正本。
 
 ## 止まって報告する条件
 
@@ -124,25 +102,9 @@ Current State に次を残す。
 - 認証情報、本番データ、公開、課金、削除、schema変更が必要だが直接許可がない。
 - 指定範囲を越えないと完了できない、または必須検証が安全に実行できない。
 
-## 報告
-
-- オーナー向けには結果から、非エンジニアにも分かる日本語で書く。
-- 「ローカルで確認済み」「commit済み」「push済み」「Railway反映済み」
-  「本番確認済み」を混同しない。
-- 外部共有には `node scripts/ai/chatgpt-handoff.mjs` の安全なPacketを使う。
-
-## 読まない場所
+## 文書の置き場所
 
 `docs/archive/` は履歴専用。**通常は読まない。**特定の経緯を追うときだけ検索する。
 `docs/agents/` と `docs/specs/` にあるものは、現に有効な指示として読んでよい。
 役目を終えた文書は本文に断り書きを足すのではなく、`git mv` で `docs/archive/` へ移す。
-
-## 参照先
-
-- 現在地: `task.md` 冒頭 Current State
-- Claude/Codex連携: `docs/agents/codex-workflow.md`
-- クレジット監視: `docs/agents/credit-status.md`
-- 未完了の作業: `docs/agents/backlog.md`（完了したらこの文書から消す）
-- 測り方と、存在しない不具合を作らないための手順: `docs/agents/measuring.md`
-- 高リスク検査: `docs/checklists.md`
-- 配布版DB差分: `DISTRIBUTION.md`
+文書の索引は `docs/README.md`。

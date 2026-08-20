@@ -76,6 +76,33 @@ codex exec resume <session-id> -c approval_policy='"never"' "<現在のGit状態
 `--last`は別ディレクトリのsessionを選ぶ危険があるため、保存済みIDがある場合はIDを使う。
 CLI構文が変わった可能性があれば、実行前に`codex exec resume --help`で確認する。
 
+## Current State に残す項目（最小Handoff）
+
+`AGENTS.md` から 2026-08-20 に移設。Current State には次を残す。
+
+- Status / Current owner / Handoff readiness
+- 目的と完了条件
+- branch / HEAD / clean-or-dirty / originとの差 / 変更中ファイル
+- 完了済み / 未完了 / 検証済み / 未検証
+- 次の一手 / オーナー判断待ち / 触ってはいけない範囲
+- Codex session ID または明示されたlog path
+- local commit / push / Railway反映 / 本番確認を別々に記載
+
+30〜60行以内に収める。長くなったら、経緯は
+`docs/archive/task-handoffs.md` の末尾へ追記して Current State からは外す。
+
+## オーナーへの報告
+
+`AGENTS.md` から 2026-08-20 に移設。
+
+- オーナー向けには結果から、非エンジニアにも分かる日本語で書く。
+- 「ローカルで確認済み」「commit済み」「push済み」「Railway反映済み」
+  「本番確認済み」を混同しない。**どれをやっていないかを必ず明示する。**
+- 外部共有には `node scripts/ai/chatgpt-handoff.mjs` の安全なPacketを使う。
+
+Codex から Claude への機械的な報告項目は `docs/agents/codex-workflow.md`
+「短い報告」が正本。こちらはオーナー向けの書き方を定める。
+
 ## 停止・復帰
 
 Claude/Codex停止前:

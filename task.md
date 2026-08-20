@@ -1,56 +1,54 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-20 JST
+## Current State — 2026-08-20 JST（2回目）
 
-- **Status:** エージェントが読む文書の棚卸しと整理。**commit 済み。push は未実施。**
-- **Current owner:** Claude Code（設計・実装・検証すべて） / **Handoff readiness:** ready
+- **Status:** 常時読む分（A層）の削減と、wiki の鮮度チェック追加。**commit 済み・push なし。**
+- **Current owner:** Claude Code / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF` / originとの差は
   `git status --short --branch` で測り直す
 
 ### 目的と完了条件
 
-起動時に読まれる文書を最小化し、役目を終えた文書を `docs/archive/` へ畳む。
-棚卸しの正本は `docs/specs/reading-layer-audit-2026-08.md`（監査本文 + 実行記録）。
+起動時に必ず読まれる分を減らし、古い文書が自分から警告を出すようにする。
+正本は `docs/specs/reading-layer-audit-2026-08.md`（監査 + 実行記録2回分）。
 管理画面のゴールは従来どおり `docs/specs/admin-renewal-goal.md`。
 
 ### 完了（commit 済み・push なし）
 
-1. C判定13件を `git mv` で `docs/archive/` へ。各冒頭に ARCHIVED / 後継 / 理由の3行
-   （`docs/specs/admin-enhancement-spec.md` は同名衝突のため `-v3` を付けた）
-2. 移動前に現役側の参照を振り替え（design-spec / admin-renewal-goal /
-   library-redesign-spec / checklists / wiki index・admin-settings・open-issues）
-3. `AGENTS.md` に「読まない場所」節を追加（`docs/archive/` は通常読まない）
-4. Codex試用は判定を後追いで作らず**運用終了**とし、`codex-workflow.md` の
-   発動条件を恒久化と明記
-5. `wiki/pages/image-pipeline.md` の**誤り**（purge で thumb/medium が消えない）を
-   実装に合わせて訂正。死んだ引用 `task.md:2677` も撤去
-6. `photo-metadata-extraction-plan.md` の「7列が無いと動かない」警告を撤去（下記）
-7. `backlog.md` B-4 から解決済み1件を削除、`open-issues.md` #16 を解決済みへ
-8. `codex-workflow.md` のレーン例に `< /dev/null` を追加（無言ハング防止）
-9. `handoff-workflow.md` の「既存39 commits」を測り直す形の規則へ
+1. **A層 288行 → 241行**。`AGENTS.md` 148→110、`CLAUDE.md` 64→55
+2. 削除前に19項目をB側と照合。**実在しなかった4項目は先に移設**
+   （最小Handoff・オーナー報告 → `handoff-workflow.md` /
+   参照先 → `docs/README.md`（新規）/ memory優先規則 → `CLAUDE.md` 前文）
+3. 削った箇所には、どこを見るかの参照を1行ずつ残した
+4. **削っていないもの:** §0不変条件24行、安全境界9行（push禁止・本番DB・秘密情報）、
+   「オーナーの直接指定が優先」の1行
+5. `scripts/ai/check-wiki-freshness.mjs` を追加し `bun run check` の最後へ。
+   45日超のページを警告。**終了コードは常に0で check を失敗させない**
+6. 鮮度チェックのテスト10件を `test:tools` へ追加
 
 ### 検証
 
-- `bun run check` = **1019 tests / 0 fail**、`test:tools` 27 pass / 0 fail、
-  lint・typecheck・postgres-schema contract すべて通過
-- `bun run smoke` は**未実施**。admin 製品コードに差分が無いため（文書 + 新規script のみ）
+- `bun run check` = **1019 tests / 0 fail**、`test:tools` **37 pass / 0 fail**、
+  lint・typecheck・postgres-schema すべて通過、**終了コード0**
+- `bun run smoke` は未実施（admin 製品コードに差分なし。文書・script・package.json のみ）
 - 本番・Railway反映・実機は**いずれも未実施**
 
-### 本番DBの確認結果（読み取りのみ）
+### 次の一手
 
-`node scripts/ai/check-prod-photo-columns.mjs` を新設し実行。本番 Turso の
-`photos` は **36列**で、メタデータ7列は**すべて存在**（移行適用済み）。
-**本番DBへの変更は行っていない。**
+- **wiki 13ページ中10ページが45日超の警告に出ている。**日付は動かしていない。
+  中身をソースと突き合わせて確認してから `last_verified` を動かすこと。
+  **見ずに日付だけ進めない**（それをやると今回直した種類の誤りをまた埋める）
+- 優先度が高いのは `pages/invariants.md` と `pages/database.md`
+  （不変条件とDBの記述は誤ると影響が大きい）
 
-### 次の一手 / オーナー判断待ち
+### オーナー判断待ち
 
 - **`docs/archive/task-handoffs.md:1355` に管理パスワードの平文が commit されている。**
-  現用なら Railway の `ADMIN_PASSWORD` を変更するのが最短
-- `hono` / `sharp` の更新は**調査のみで未実行**（依頼どおり）。7件中実際に効くのは
-  hono の CORS ReDoS 1件だけと実測。詳細は監査文書
-- backlog **B-19**（Libraryの「取り込み」の語）／**B-15**（`.env` 2ファイルの
-  `ADMIN_PASSWORD` 食い違い）はオーナー判断待ち
+  現用なら Railway の `ADMIN_PASSWORD` 変更が最短
+- `hono` / `sharp` の更新（調査済み・未実行）。hono は7件中1件のみ該当、
+  sharp は `package.json` の書き換えが必要で画質の目視比較が要る
+- backlog **B-19**（Libraryの「取り込み」の語）／**B-15**（`.env` 2ファイルの食い違い）
 
 ### 触ってはいけない範囲
 

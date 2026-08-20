@@ -1,6 +1,6 @@
 ---
 title: AI Collaboration & Fable5 Reform
-status: current
+status: archived
 last_verified: 2026-07-05
 sources:
   - AGENTS.md
@@ -8,6 +8,10 @@ sources:
   - docs/specs/ai-collaboration-reform-fable5.md
   - task.md
 ---
+
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: `AGENTS.md` / `CLAUDE.md` / `docs/agents/codex-workflow.md`
+> 移した理由: 廃止済みの「Fable5」時代の呼称と役割分担を現在形で説明していた
 
 > ⚠️ This wiki is an index/summary layer, NOT the source of truth. If this
 > page conflicts with the source documents listed under Sources, the sources

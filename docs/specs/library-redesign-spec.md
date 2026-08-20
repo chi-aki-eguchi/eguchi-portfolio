@@ -167,7 +167,7 @@ Q-11 の完了条件に「この fixme を通常の test へ戻す」を含め�
 
 - `docs/archive/task-handoffs.md` Handoff 2026-07-25 (62) — 実装の現在地
 - `AGENTS.md`「役割分担」 — 設計=Claude Code / 実装=Codex
-- `docs/specs/admin-enhancement-spec.md` — 管理画面の既存仕様
+- `docs/archive/admin-enhancement-spec-v3.md` — 旧「強化仕様書 v3 Draft」（履歴。未確定のまま終了）
 - 主な対象: `packages/web/src/web/pages/admin.tsx`、`admin-shared.ts`、`admin-i18n.tsx`
 - 関連テスト: `scripts/smoke/admin-library-modes.spec.ts`（新規）、
   `scripts/smoke/admin-mobile-library.spec.ts`、`scripts/smoke/admin-library-swipe.spec.ts`

@@ -1,6 +1,8 @@
 # eguchi-portfolio デザイン仕様書
 
-> Claude Code 向け。機能仕様（docs/specs/admin-enhancement-spec.md）と対で使う「見た目・佇まいの設計図」。
+> Claude Code 向け。管理画面の機能面の正本（`docs/specs/admin-renewal-goal.md`）と対で使う
+> 「見た目・佇まいの設計図」。旧「管理画面 強化仕様書 v3 Draft」は確定しないまま
+> `docs/archive/admin-enhancement-spec-v3.md` へ退避した（履歴）。
 > 目的: 秋が自分でレイアウトを演出できる写真集／雑誌的なサイトにする。AIが解釈で作らず、ここに書いた原則に従う。
 
 ---

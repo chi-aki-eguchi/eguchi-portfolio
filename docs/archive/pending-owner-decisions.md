@@ -1,5 +1,9 @@
 # オーナー判断待ちアイデアノート
 
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: `task.md` 冒頭 Current State / `docs/agents/backlog.md`
+> 移した理由: 本文が2026-07-27時点で ARCHIVED / SUPERSEDED を自称していたのに現役ディレクトリに残っていた
+
 > **ARCHIVED / SUPERSEDED — 2026-07-27**
 >
 > これは過去の判断待ち履歴。現在のオーナー判断待ちは`task.md`冒頭Current Stateを正本とする。

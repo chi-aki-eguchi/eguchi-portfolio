@@ -1,5 +1,9 @@
 # AI Collaboration Reform / Fable5 Work Order
 
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: `AGENTS.md` / `CLAUDE.md` / `docs/agents/codex-workflow.md`
+> 移した理由: 本文が2026-07-27時点で ARCHIVED / SUPERSEDED を自称していたのに `docs/specs/` に残っていた
+
 > **ARCHIVED / SUPERSEDED — 2026-07-27**
 >
 > この文書はAI連携改革の履歴資料であり、現在の指示ではない。ファイル名は過去参照を

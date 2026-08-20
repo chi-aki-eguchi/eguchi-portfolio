@@ -1,7 +1,7 @@
 ---
 title: Image Pipeline (R2, thumbnails, EXIF)
 status: current
-last_verified: 2026-07-03
+last_verified: 2026-08-20
 sources:
   - packages/web/src/api/index.ts
   - packages/web/src/api/security.ts
@@ -15,6 +15,8 @@ sources:
   - packages/web/src/web/lib/picture.ts
   - .claude/rules/r2-upload.md
   - .claude/agents/exif-checker.md
+  - packages/web/src/api/photo-integrity.ts
+  - packages/web/src/api/thumbnail-upload-integrity.ts
 ---
 
 > ⚠️ This wiki is an index/summary layer, NOT the source of truth. If this
@@ -106,15 +108,29 @@ sources:
   Duplicating a photo via the admin UI copies the row (including
   `url`/`thumbKey`/`mediumKey`/`fileHash`) **without** re-uploading — so
   duplicates share R2 objects. (packages/web/src/api/index.ts:1083-1098,1400-1439)
-- **Orphan risk on purge**: purge/trash-retention only checks/deletes the
-  photo's `url` (original) R2 object if no other row references it — **it
-  never deletes the `thumbKey`/`mediumKey` WebP objects**, even on final
-  purge. (packages/web/src/api/index.ts:1466-1553)
+- **Purge deletes all three objects** (corrected 2026-08-20; the earlier
+  claim on this page that thumb/medium were never deleted was written
+  2026-07-03 and became wrong when `d0d2412` landed on 2026-07-21).
+  `unsharedPhotoStorageKeys` returns the master key plus `thumbKey` and
+  `mediumKey` when no surviving row shares the same `url`; `purgeDbThenStorage`
+  then runs storage cleanup after the DB transaction commits.
+  (photo-integrity.ts:19-28, 72-78; index.ts:521, 2109)
+- **Residual leak, small**: `deleteStorageKeys` swallows R2 delete failures
+  (`console.error` only) so that a failed delete can never roll back a
+  committed DB delete. Its comment says "the orphan audit can remove it
+  later", but **no orphan audit exists in this repo** — grepping `orphan`
+  finds only that comment. Objects left behind by a failed delete are
+  currently never reclaimed. (index.ts:527-537)
+- **Partial-derivative upload is compensated**: if only one of thumb/medium
+  uploads succeeds, `uploadAllOrCleanup` deletes what was written. Its
+  wiring test was hardened on 2026-08-06 so that passing a no-op cleanup
+  fails the test. (thumbnail-upload-integrity.ts:1; index.ts:675)
 - A manual, **UI-less** backfill endpoint `POST /admin/generate-thumbnails`
   exists to retroactively generate thumb/medium WebP for older photos
-  (batch limit 50); not wired into any admin UI button, referenced only in
-  task.md as something to run manually. (packages/web/src/api/index.ts:2264-2356;
-  task.md:2677)
+  (batch limit 50); not wired into any admin UI button — run manually.
+  (packages/web/src/api/index.ts:2992)
+  The old citation to `task.md:2677` was dropped on 2026-08-20: `task.md`
+  now holds only the Current State block and has no such line.
 - Hero and profile photo uploads run the same `optimiseImage` but **do not**
   extract EXIF or generate thumb/medium derivatives.
   (packages/web/src/api/index.ts:1183-1233)
@@ -147,9 +163,11 @@ sources:
   upload time and is the *primary* serving path, with on-the-fly
   JPEG/WebP/AVIF resize as the fallback for un-backfilled photos? (Tracked
   in open-issues.md.)
-- Is the orphaned-thumb/medium-on-purge behavior an accepted trade-off, or
-  an unnoticed gap? No code path was found that ever calls
-  `DeleteObjectCommand` on `thumbKey`/`mediumKey`.
+- **Answered 2026-08-20**: it was an unnoticed gap, and it was fixed in
+  `d0d2412` (2026-07-21) — before this question was ever re-read. Purge now
+  calls `DeleteObjectCommand` on `thumbKey`/`mediumKey`. What remains open is
+  narrower: should the swallowed R2 delete failure get a real orphan-audit
+  path, or is "leave it in R2" the accepted end state?
 - Is `POST /admin/generate-thumbnails` intentionally ops-only, or is wiring
   it into the admin UI a planned-but-not-done task?
 
@@ -163,4 +181,5 @@ sources:
 - packages/web/src/shared/image-url.ts, packages/web/src/web/lib/picture.ts
 - .claude/rules/r2-upload.md
 - .claude/agents/exif-checker.md
-- task.md:2677
+- packages/web/src/api/photo-integrity.ts
+- packages/web/src/api/thumbnail-upload-integrity.ts

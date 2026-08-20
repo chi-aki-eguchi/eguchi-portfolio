@@ -94,5 +94,6 @@ Claude/Codex停止前:
 ## 元へ戻す
 
 - Git管理ファイルは、このAI運用改善commitだけを`git revert <commit>`すれば戻せる。
-- `git reset`や既存39 commitsの履歴変更は使わない。
+- `git reset`や、push済み・未push を問わない既存commitの履歴書き換えは使わない。
+  （commit数は `git status --short --branch` で測り直す。ここには書かない）
 - ホーム設定の秘密値は復元しない。必要な認証は環境変数など安全な外部入力を使う。

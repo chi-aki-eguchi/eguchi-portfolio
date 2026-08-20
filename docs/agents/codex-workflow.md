@@ -52,7 +52,9 @@ A・Cの出力は次の4区分で書かせる。
   ただしDB・本番・公開に影響する差分では、実装後の差分レビューを優先する。
 - 代案は、成立する選択肢が複数あるときだけ2〜3案を求める。案の数を目的にしない。
 
-この発動条件は 2026-07-28 から試用中。記録先は `docs/agents/codex-flow-trial.md`。
+この発動条件は 2026-08-20 に**恒久化**した。試用（2026-07-28 開始、期限 2026-08-11）は
+期限切れのまま判定が書かれず終了したため、判定を後追いで作らず「運用終了」として
+扱う。試用中の記録は `docs/archive/codex-flow-trial.md`（履歴。読まなくてよい）。
 
 ## モデルの使い分け
 
@@ -72,10 +74,12 @@ Claude が Codex を呼ぶ経路は `codex exec` であり、**レーンの指�
 
 ```sh
 # 定型レーン
-codex exec -s workspace-write -m gpt-5.6-luna  -c model_reasoning_effort="max" "..."
+codex exec -s workspace-write -m gpt-5.6-luna  -c model_reasoning_effort="max" "..." < /dev/null
 # 主実装レーン
-codex exec -s workspace-write -m gpt-5.6-terra -c model_reasoning_effort="max" "..."
+codex exec -s workspace-write -m gpt-5.6-terra -c model_reasoning_effort="max" "..." < /dev/null
 ```
+
+**`< /dev/null` を省くと `codex exec` は stdin 待ちで無言ハングする。**必ず付ける。
 
 2026-08-03 に実機確認済み。セッション記録に `model` と `effort` が指定どおり残る。
 読み取りだけの調査・反対レビューでは `-s read-only` にする。

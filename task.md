@@ -1,59 +1,62 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-18 JST
+## Current State — 2026-08-20 JST
 
-- **Status:** admin のデザイン刷新（オーナー就寝中の明示依頼で夜間作業）。
-  **今夜10件の実装＋記録を commit 済み。push はしていない。作業ツリーはクリーン。**
+- **Status:** エージェントが読む文書の棚卸しと整理。**commit 済み。push は未実施。**
 - **Current owner:** Claude Code（設計・実装・検証すべて） / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF` / originとの差は
   `git status --short --branch` で測り直す
 
 ### 目的と完了条件
 
-「adminをもっとよくする / デザインとレイアウトをもっとよくする / もっとおしゃれで
-可愛くしたい」。正本は `docs/specs/admin-renewal-goal.md`。**可愛さは装飾を足さず
-小さな瞬間に置く**（丸み・パステル・キャラクター・絵文字は取らない）。
-作業キューと「やらないと決めたこと」は `scratch/admin-charm-queue.md`。
+起動時に読まれる文書を最小化し、役目を終えた文書を `docs/archive/` へ畳む。
+棚卸しの正本は `docs/specs/reading-layer-audit-2026-08.md`（監査本文 + 実行記録）。
+管理画面のゴールは従来どおり `docs/specs/admin-renewal-goal.md`。
 
 ### 完了（commit 済み・push なし）
 
-1. 紙とインクに温度／見出しの和文を明朝で確定／**文字の太さの漏れを止めた**
-2. 項目名と補足文の階層／12pxの文字のコントラスト(3.57→4.73:1)／ボタンの押し込み
-3. **色を公開サイトと同期**（オーナー判断で「独立」を撤回）＋暗いモードの解決
-4. 中間幅(1024px)の見出しずれ／**効いていなかった2列レイアウト**
-5. 「はじめに」の完了表示を警告枠から静かな一行へ
-6. 行のホバー罫／サイドバーの現在地の罫／空の一覧の佇まい／検索欄を下罫線へ
-7. **スマホ幅(390px)の一覧で切り詰められていた名前に幅を返した**
-8. **読み込み中に見出しが消える3画面（Hero / Profile / Settings）を直した**
-9. プレビュー表示で保存状態の文が1文字だけ行末に落ちるのを直した
-10. ⌘K の案内文が「Trash」、項目名が「ゴミ箱」で食い違っていたのを直した
-
-### 次に効く発見（着手前に読むこと）
-
-- **色の実体は `admin.tsx` の `adminThemeFromSettings` / `ATELIER_PAPER`**
-  （インライン style なのでCSSより強い）。**CSSだけ変えても画面は変わらない**
-- **CSSは順序で負ける。**同じ強さの規則を前に置くと効かない（今回2回踏んだ）
-- **スモークは「遅れて出る要素」を捕まえられない**（`toHaveCount` が待つため）。
-  読み込み中の一瞬は `admin-tab-loading-header.render.test.tsx` が見張る
-- **「半端に見える」が全部不具合ではない。**複数行入力の下端の覗きは実測すると
-  ちょうど3行で、スクロールの合図だった（直しかけて取り消した）
+1. C判定13件を `git mv` で `docs/archive/` へ。各冒頭に ARCHIVED / 後継 / 理由の3行
+   （`docs/specs/admin-enhancement-spec.md` は同名衝突のため `-v3` を付けた）
+2. 移動前に現役側の参照を振り替え（design-spec / admin-renewal-goal /
+   library-redesign-spec / checklists / wiki index・admin-settings・open-issues）
+3. `AGENTS.md` に「読まない場所」節を追加（`docs/archive/` は通常読まない）
+4. Codex試用は判定を後追いで作らず**運用終了**とし、`codex-workflow.md` の
+   発動条件を恒久化と明記
+5. `wiki/pages/image-pipeline.md` の**誤り**（purge で thumb/medium が消えない）を
+   実装に合わせて訂正。死んだ引用 `task.md:2677` も撤去
+6. `photo-metadata-extraction-plan.md` の「7列が無いと動かない」警告を撤去（下記）
+7. `backlog.md` B-4 から解決済み1件を削除、`open-issues.md` #16 を解決済みへ
+8. `codex-workflow.md` のレーン例に `< /dev/null` を追加（無言ハング防止）
+9. `handoff-workflow.md` の「既存39 commits」を測り直す形の規則へ
 
 ### 検証
 
-- `bun run check` を各commit前に実施。最終 **1019 tests / 0 fail**
-- `bun run smoke` を6回。すべて **330〜331 passed / 0 failed**
-- 実画面: 1440 / 1024 / 390px、768〜1920pxの6段階、暗いモード、英語表示、
-  公開サイト色3種、Settingsプレビュー表示を撮って目視
+- `bun run check` = **1019 tests / 0 fail**、`test:tools` 27 pass / 0 fail、
+  lint・typecheck・postgres-schema contract すべて通過
+- `bun run smoke` は**未実施**。admin 製品コードに差分が無いため（文書 + 新規script のみ）
 - 本番・Railway反映・実機は**いずれも未実施**
 
-### 次の一手 / 触ってはいけない範囲
+### 本番DBの確認結果（読み取りのみ）
 
-- backlog **B-19**（Libraryの「取り込み」の語）はオーナー判断待ち
-- 未調査: ゴミ箱の画面（⌘K に項目はあるが、開き方を特定できていない）。`scratch/admin-charm-queue.md` に残りの候補
-- **push はオーナーのみ。** originとの差は `git status --short --branch` で測る
-- 触ってはいけない: `shotAt` の保存方法、公開API応答形、Lightbox の既存ロジック、
-  `site-and-data-direction.md` §2「作らないもの」と §9 の11段
+`node scripts/ai/check-prod-photo-columns.mjs` を新設し実行。本番 Turso の
+`photos` は **36列**で、メタデータ7列は**すべて存在**（移行適用済み）。
+**本番DBへの変更は行っていない。**
+
+### 次の一手 / オーナー判断待ち
+
+- **`docs/archive/task-handoffs.md:1355` に管理パスワードの平文が commit されている。**
+  現用なら Railway の `ADMIN_PASSWORD` を変更するのが最短
+- `hono` / `sharp` の更新は**調査のみで未実行**（依頼どおり）。7件中実際に効くのは
+  hono の CORS ReDoS 1件だけと実測。詳細は監査文書
+- backlog **B-19**（Libraryの「取り込み」の語）／**B-15**（`.env` 2ファイルの
+  `ADMIN_PASSWORD` 食い違い）はオーナー判断待ち
+
+### 触ってはいけない範囲
+
+- **push はオーナーのみ。**本番DB・Turso・R2・Railway・環境変数
+- `shotAt` の保存方法、公開API応答形、Lightbox の既存ロジック
+- `site-and-data-direction.md` §2「作らないもの」と §9 の11段
 <!-- CURRENT_STATE_END -->
 
 ---

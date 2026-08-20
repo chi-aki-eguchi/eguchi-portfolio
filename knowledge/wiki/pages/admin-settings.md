@@ -10,7 +10,7 @@ sources:
   - packages/web/src/web/components/provider.tsx
   - packages/web/src/web/pages/admin.tsx
   - docs/admin-guide.md
-  - docs/specs/admin-enhancement-spec.md
+  - docs/archive/admin-enhancement-spec-v3.md
   - docs/archive/admin-enhancement-spec.md
   - docs/archive/admin-enhancement-spec-v2.md
 ---
@@ -59,18 +59,18 @@ sources:
 - **Spec history**: `docs/archive/admin-enhancement-spec.md` (v1) and
   `docs/archive/admin-enhancement-spec-v2.md` ("確定版"/confirmed) both state the rule as
   **3 places** (no separate ledger file — it lived ad hoc in `admin.tsx` at
-  that time). By `docs/specs/admin-enhancement-spec.md`, the ledger already
+  that time). By `docs/archive/admin-enhancement-spec-v3.md`, the ledger already
   existed and the rule is correctly stated as 4 places.
   (docs/archive/admin-enhancement-spec.md:15-19;
   docs/archive/admin-enhancement-spec-v2.md:1,13;
-  docs/specs/admin-enhancement-spec.md:16)
-- `docs/specs/admin-enhancement-spec.md` is about an **unrelated** feature
+  docs/archive/admin-enhancement-spec-v3.md:16)
+- `docs/archive/admin-enhancement-spec-v3.md` is about an **unrelated** feature
   (photo rotation/orientation). It was promoted from the former v3 draft
   during the 2026-07-02 file cleanup after the review had already happened
   and was recorded in the same file (dated 2026-06-25). The reviewed feature
   (`rotationDeg`) is **already present** in `schema.ts` and referenced
   across 8+ source files.
-  (docs/specs/admin-enhancement-spec.md:1,5,458,462-494;
+  (docs/archive/admin-enhancement-spec-v3.md:1,5,458,462-494;
   packages/web/src/api/database/schema.ts:42)
 - `docs/admin-guide.md` documents the live-preview UX at a user level:
   settings changes preview live in an iframe before saving; lists the tab
@@ -87,14 +87,15 @@ sources:
 ## Open Questions
 
 - Has the `rotationDeg` image-proxy cache-key gap
-  (`docs/specs/admin-enhancement-spec.md:475-477`, P0) actually been closed?
+  (`docs/archive/admin-enhancement-spec-v3.md:475-477`, P0) actually been closed?
   Out of scope for this settings/preview-focused read.
 - Is there any automated test that would catch a `provider.tsx`
   DB-apply-`useEffect`- or `handlePreviewMessage`-omission for a new
   settings key (the two sync points `settings-preview.test.ts` does not
   cover), or is that purely code-review-enforced today?
-- The former root admin v3 draft has been renamed to
-  `docs/specs/admin-enhancement-spec.md`; v1/v2 remain in `docs/archive/`.
+- 2026-08-20: the v3 draft was never confirmed and was moved to
+  `docs/archive/admin-enhancement-spec-v3.md`; v1/v2 were already there.
+  The canonical admin spec is now `docs/specs/admin-renewal-goal.md`.
 - The former AGENTS.md "3-place vs 4-place" contradiction was reconciled on
   2026-07-02; this page describes the current, correct (4-place) mechanics.
 
@@ -106,5 +107,5 @@ sources:
 - packages/web/src/web/components/provider.tsx
 - packages/web/src/web/pages/admin.tsx (SettingsTab, ~lines 8201-8341)
 - docs/admin-guide.md
-- docs/specs/admin-enhancement-spec.md
+- docs/archive/admin-enhancement-spec-v3.md
 - docs/archive/admin-enhancement-spec.md, docs/archive/admin-enhancement-spec-v2.md

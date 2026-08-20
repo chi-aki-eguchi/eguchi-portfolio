@@ -21,7 +21,7 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 
 1. **Resolved 2026-07-06**: Settings-sync place count. AGENTS.md was later
    edited to say "4-place" with the correct list in both its §0 and admin
-   sections (verified this date). The last stale copy — `docs/specs/
+   sections (verified this date). The last stale copy — `docs/archive/
 refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
    was corrected to the canonical 4-place list on 2026-07-06. All canonical
    docs now agree. See invariants.md, admin-settings.md.
@@ -39,13 +39,13 @@ refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
 4. **Resolved 2026-07-02 by owner-approved retirement**:
    `NIGHT-RUN-LOG.md`, `claude-code-night-run.md`, and
    `.claude/skills/night-run/` were removed. The former BUILD_ID
-   contradiction is now historical only; see night-run.md.
+   contradiction is now historical only; see `docs/archive/night-run.md`.
 5. **Resolved 2026-07-02 by owner-approved retirement**:
    `docs/archive/claude-code-setup-guide.md`'s embedded fixed 3:15am/3:10am
    `caffeinate` + `sleep` draft example was removed. Precise wording:
    `docs/delayed-execution-sop.md` blacklists the unreliable
    delayed-execution class (`at`/`cron`, background `sleep N && claude`,
-   launchd), not the exact full draft phrase. See night-run.md.
+   launchd), not the exact full draft phrase. See `docs/archive/night-run.md`.
 6. **Invariant #7 ("never `git add .`")** appears only inside CLAUDE.md's
    `test-*.mjs` bullet — AGENTS.md never states it, and AGENTS.md's own
    deploy steps use `git add -A`. See invariants.md.
@@ -89,10 +89,11 @@ refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
     currently running, with a timestamp (2026-06-15) ~2.5 weeks stale as of
     this audit. Possibly an orphaned lock file. Contents were not modified
     (read-only per this audit's rules).
-16. **`.claude/settings.local.json`**: contains a one-off Bash permission
-    allow-entry for `grep ... pages/admin.tsx` — that relative path doesn't
-    exist from repo root (the real file is
-    `packages/web/src/web/pages/admin.tsx`), so the entry can never match.
+16. **Resolved 2026-08-20**: the one-off `grep ... pages/admin.tsx`
+    allow-entry in `.claude/settings.local.json` is gone. Re-measured this
+    date: the file now holds only `additionalDirectories` (3 agmsg paths)
+    and the agmsg SessionStart/SessionEnd hooks. No stale allow-entry, no
+    credential value.
 17. **Resolved 2026-07-02**: Codex's 2026-06-18 audit (`task.md` lines
     686, 696) recommended adding "legacy/historical" headers to
     the legacy content spec, Runable notes, and `proposals/09-modernization.md`.
@@ -294,7 +295,7 @@ verified correct across 7 indexable pages.
 
 Each item above restates a finding fully cited (with exact file:line
 references) on its corresponding topic page — see invariants.md,
-database.md, image-pipeline.md, distribution.md, night-run.md, and the
+database.md, image-pipeline.md, distribution.md, `docs/archive/night-run.md`, and the
 relevant task handoff for the full root-inventory / .claude-audit /
 docs-freshness tables. Items 27-44 are sourced from this task's own
 10-dimension code audit (file:line citations inline above). Items 45-48 are

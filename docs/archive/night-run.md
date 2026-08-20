@@ -1,11 +1,15 @@
 ---
 title: Night-Run Setup
-status: stale
+status: archived
 last_verified: 2026-07-02
 sources:
   - knowledge/wiki/log.md
   - docs/delayed-execution-sop.md
 ---
+
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: 後継なし（夜間自走ランは2026-07-02に廃止）
+> 移した理由: wiki 内で status: stale を自称していた退役ページ。wiki から外した
 
 > ⚠️ This wiki is an index/summary layer, NOT the source of truth. If this
 > page conflicts with the source documents listed under Sources, the sources

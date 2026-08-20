@@ -131,6 +131,12 @@ Current State に次を残す。
   「本番確認済み」を混同しない。
 - 外部共有には `node scripts/ai/chatgpt-handoff.mjs` の安全なPacketを使う。
 
+## 読まない場所
+
+`docs/archive/` は履歴専用。**通常は読まない。**特定の経緯を追うときだけ検索する。
+`docs/agents/` と `docs/specs/` にあるものは、現に有効な指示として読んでよい。
+役目を終えた文書は本文に断り書きを足すのではなく、`git mv` で `docs/archive/` へ移す。
+
 ## 参照先
 
 - 現在地: `task.md` 冒頭 Current State

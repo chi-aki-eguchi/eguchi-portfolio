@@ -1,5 +1,9 @@
 # 鮮度チェックとゲート修正の反対レビュー（Phase E）
 
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: `docs/agents/measuring.md` / `scripts/ai/check-handoff-freshness.mjs`
+> 移した理由: 採否表は結論済みで、現役文書からの参照が0件だった
+
 > 2026-08-03。実施 = Codex Sol / high、読み取り専用。
 > **「3. 未解決の反論」は原文のまま。要約に置き換えない。**
 > 以下は Claude の採否。理由は1行ずつ。

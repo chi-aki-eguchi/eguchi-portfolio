@@ -1,5 +1,9 @@
 # Codex Phase A 独立デバッグ調査 — 2026-08-05
 
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: 後継なし（指摘は実装済み）
+> 移した理由: 指摘した3件は 2026-08-06 に実装・テスト強化まで完了している
+
 Claude Code が4巡したあと、届いていない領域を Codex（Sol / high, read-only）に
 独立調査させた記録。**原文は `scratch/codex-debug-findings.md`。**
 

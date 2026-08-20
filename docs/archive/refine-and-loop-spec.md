@@ -1,5 +1,9 @@
 # 修正・最適化・継続ループ 仕様書
 
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: 後継なし（自走ループ運用そのものが廃止）
+> 移した理由: 夜間自走ランは2026-07-02に廃止済みで、本文が正本と称する CLAUDE.md「自走改善ループ運用方針」は現在存在しない
+
 > Claude Code向け。既存仕様書群（CLAUDE.md / docs/specs/admin-enhancement-spec.md / docs/specs/design-spec.md / docs/archive/feature-expansion-spec.md / docs/archive/photo-management-spec.md / docs/archive/works-series-grid-spec.md）の続編。§0既存パターン厳守。
 
 ---

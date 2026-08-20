@@ -1,5 +1,9 @@
 # backlog 判定の検証記録
 
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: `docs/agents/backlog.md`（判定は反映済み）
+> 移した理由: 本文が「backlog.md へ反映済み」と明言しており、役目を終えていた
+
 > 2026-08-04。Claude が実測して下した判定を、Codex Sol / high が読み取り専用で検証した。
 > **Codex は5件中2件で不同意を出し、いずれも Codex が正しかった。**
 > 結果は `docs/agents/backlog.md` へ反映済み。

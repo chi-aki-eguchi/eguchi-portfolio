@@ -1,7 +1,7 @@
 ---
 title: Wiki Maintenance Log
 status: current
-last_verified: 2026-07-05
+last_verified: 2026-08-20
 sources: []
 ---
 
@@ -19,6 +19,33 @@ feature/bugfix work here; append its Handoff to `../../docs/archive/task-handoff
 instead, and only link to it from here if a wiki update was triggered by it.
 
 ## Entries
+
+### 2026-08-20 — Reading-layer audit: two pages left the wiki, one page corrected
+
+Acting on `docs/specs/reading-layer-audit-2026-08.md`.
+
+- **Moved out of the wiki** (now history, not wiki pages):
+  `pages/night-run.md` → `docs/archive/night-run.md` (it had marked itself
+  `stale` since 2026-07-02), and `pages/ai-collaboration.md` →
+  `docs/archive/ai-collaboration.md` (it described the retired "Fable5" era
+  in the present tense; the canonical sources are `AGENTS.md`, `CLAUDE.md`,
+  and `docs/agents/codex-workflow.md`). `index.md` no longer links either.
+- **Corrected `pages/image-pipeline.md`.** Its "purge never deletes
+  thumbKey/mediumKey" fact was written 2026-07-03 and was made wrong by
+  `d0d2412` on 2026-07-21; it had stayed `status: current` ever since.
+  Purge now deletes all three objects. The matching Open Question was
+  answered, the dead `task.md:2677` citation was dropped, and a genuinely
+  remaining item (swallowed R2 delete failures with no orphan-audit path)
+  was written down in its place. `last_verified` moved to 2026-08-20.
+- **Resolved `pages/open-issues.md` item 16** — the stale
+  `.claude/settings.local.json` allow-entry is gone (re-measured this date).
+- **Repointed `pages/admin-settings.md`** at
+  `docs/archive/admin-enhancement-spec-v3.md`; the v3 draft was never
+  confirmed and left `docs/specs/` this date.
+
+Older entries below were not rewritten: this is a log of what happened, not
+an index, so the `pages/…` paths they mention are correct for their own date
+and may since have moved.
 
 ### 2026-07-07 — Resolve open-issues item 2 (Turso startup-migration no-op claim)
 

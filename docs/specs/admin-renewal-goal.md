@@ -406,7 +406,8 @@ CSSの `[data-theme="dark"]` に勝つため、暗くしても管理画面の紙
 
 - `CLAUDE.md`「現在のゴール」 — セッション開始時に必ず読まれる入口
 - `docs/specs/library-redesign-spec.md` — Library 部分の下位仕様
-- `docs/specs/admin-enhancement-spec.md` — 管理画面の既存仕様（機能面）
+- `docs/archive/admin-enhancement-spec-v3.md` — 旧「強化仕様書 v3 Draft」。**確定しないまま
+  終わった履歴**であり、現在の指示ではない（2026-08-20 退避）
 - `docs/specs/design-spec.md` — 公開ページのデザイン設計図（考え方は共通）
 - `docs/archive/task-queue.md` — 個別タスク
 - `docs/specs/growth-monetization-plan.md` — **事業計画。ゴールではない**（売り方の話）

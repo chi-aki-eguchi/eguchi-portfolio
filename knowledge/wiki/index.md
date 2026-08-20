@@ -44,9 +44,10 @@ be read selectively, not in full, each session.
   DISTRIBUTION.md freshness.
 - [Deployment](pages/deployment.md) — Railway git-push deploy, the legacy
   Runable ZIP path, env/config topology (names only, no secret values).
-- [AI Collaboration & Fable5 Reform](pages/ai-collaboration.md) — Claude
-  Code / Codex role split, high-performance model usage, durable handoff
-  rules, and where to start Fable5 reform work.
+AI collaboration rules are **not** in this wiki. The canonical sources are
+`AGENTS.md`, `CLAUDE.md`, `task.md`'s Current State, and
+`docs/agents/codex-workflow.md`. The old wiki page carried retired "Fable5"
+naming and was moved to `docs/archive/ai-collaboration.md` on 2026-08-20.
 ## Tracking
 
 - [Open Issues](pages/open-issues.md) — contradictions between canonical
@@ -66,5 +67,6 @@ be read selectively, not in full, each session.
 
 ## Retired
 
-- [Night-Run Setup](pages/night-run.md) — retired on 2026-07-02 by owner
-  decision; kept only as a historical pointer.
+Night-run setup was retired on 2026-07-02 by owner decision. Its wiki page
+was moved to `docs/archive/night-run.md` on 2026-08-20 and is no longer part
+of this wiki.

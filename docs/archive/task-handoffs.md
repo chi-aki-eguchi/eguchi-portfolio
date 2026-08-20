@@ -10018,3 +10018,69 @@ Claude による独立検証（`0b66ba8` 時点で実測）:
 **測定時の注意:** この検証ペインは背景タブ扱いでトランジションが進まないため、
 `background-color` の computed 値が古いまま止まる。`header.style.transition='none'`
 にしてから測ること。これで測らないと「地が透けていない」と誤診する。
+
+---
+
+## Handoff 2026-08-20 — Claude Code: 読む文書の棚卸しと archive 整理
+
+### 背景
+
+`docs/specs/reading-layer-audit-2026-08.md`（同日の棚卸し）で、起動時に常時読まれる
+文書が279行あること、役目を終えた文書が現役ディレクトリに13件残っていること、
+現役の wiki が**すでに直っている不具合を現在形で説明している**ことが分かった。
+オーナー指示により、その仕分けを実行した。
+
+### 変更内容
+
+- **C判定13件を `docs/archive/` へ `git mv`。**各ファイルの冒頭へ
+  「ARCHIVED / 後継 / 移した理由」の3行を付けた。`docs/specs/admin-enhancement-spec.md`
+  だけは移動先に同名の v1 があったため `admin-enhancement-spec-v3.md` とした
+  （archive 既存の `-v2` に付け方を合わせた）。
+- **移動前に現役側の参照を振り替えた**（`design-spec.md` / `admin-renewal-goal.md` /
+  `library-redesign-spec.md` / `docs/checklists.md` / `wiki/index.md` /
+  `wiki/pages/admin-settings.md` / `wiki/pages/open-issues.md`）。
+  `wiki/log.md` の過去エントリは**書き換えず**、2026-08-20 の新規エントリを先頭へ追記した。
+- `AGENTS.md` に「読まない場所」節を追加。**場所で決まる規則**にして、本文の
+  自己申告（ARCHIVED を名乗りながら現役ディレクトリに残る）に頼らない形にした。
+- Codex 試用（期限 2026-08-11 / 中高リスク5タスク）は**判定が空のまま期限切れ**だった。
+  判定を後追いで作らず「運用終了」として archive へ移し、`codex-workflow.md` の
+  発動条件は恒久化と書き換えた。
+
+### 直した食い違い
+
+| 対象 | 何が誤りだったか |
+|---|---|
+| `wiki/pages/image-pipeline.md` | 「purge しても thumb/medium は消えない」を `status: current` で断言。実際は `d0d2412`（2026-07-21）で解決済み。`last_verified` は 2026-07-03 のまま更新されていなかった |
+| 同上 | `task.md:2677` を引用していたが `task.md` は Current State だけの短いファイルで、その行は存在しない |
+| `photo-metadata-extraction-plan.md` | 「7列が無いとアプリが動かない」の警告。実測で本番は36列（適用済み）。同ファイル内で「製品コードは1行も変えていない」とも矛盾していた |
+| `codex-workflow.md` | レーン例の `codex exec` に `< /dev/null` が無く、貼ると無言ハングする形だった |
+| `handoff-workflow.md` | 「既存39 commits」— 測り直せる数値を現在の事実として書いていた |
+| `backlog.md` B-4 | 解決済みの「thumb/medium 片方失敗の孤児」が未完了として残っていた |
+| `wiki/pages/open-issues.md` #16 | `.claude/settings.local.json` の古い allow-entry を未解決として載せていたが、実測では存在しない |
+
+### 本番DB（読み取りのみ）
+
+`scripts/ai/check-prod-photo-columns.mjs` を新設。`PRAGMA table_info(photos)` の1本だけを
+実行する読み取り専用スクリプト。結果は **36列 / メタデータ7列すべて存在**で、
+`docs/archive/wake-up-checklist.md` の予行演習「29→36」と一致した。
+**本番DBへの変更は行っていない。**
+
+### 検証
+
+- `bun run check` = 1019 tests / 0 fail、`test:tools` 27 pass / 0 fail、
+  lint・typecheck・postgres-schema contract すべて通過
+- `bun run smoke` は未実施（admin 製品コードに差分が無いため）
+- 本番 / Railway 反映 / 実機は未実施
+
+### 次の担当者が触ってはいけない場所
+
+- push（オーナーのみ）、本番DB・Turso・R2・Railway 環境変数
+- `docs/archive/` 内の既存文書の本文（今回付けた3行ヘッダ以外は書き換えていない）
+- `wiki/log.md` の 2026-08-20 より前のエントリ（過去の記録として保存する）
+
+### オーナー判断待ち
+
+1. `docs/archive/task-handoffs.md:1355` に管理パスワードの平文が commit されている。
+   現用なら Railway の `ADMIN_PASSWORD` を変えるのが最短
+2. `hono` / `sharp` の更新（調査のみ実施、未実行）
+3. `.env` 2ファイルの `ADMIN_PASSWORD` 食い違い（backlog B-15）

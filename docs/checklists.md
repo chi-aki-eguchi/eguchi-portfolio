@@ -1,6 +1,7 @@
 # 高リスク領域チェックリスト
 
-> 2026-07-06 作成（Fable5 改革 / docs/specs/ai-collaboration-reform-fable5.md の成果物）。
+> 2026-07-06 作成（AI連携改革の成果物。当時の作業指示書は
+> `docs/archive/ai-collaboration-reform-fable5.md` に退避済み・履歴）。
 > 失敗時の影響が大きい5領域について、作業前・作業後に機械的になぞれる検査表。
 > ルールの正本は CLAUDE.md / AGENTS.md §0。ここは「実行手順に落とした版」であり、矛盾したら正本が勝つ。
 

@@ -1,5 +1,9 @@
 # クレジット判定の作り直し — 反対レビュー記録（Phase C）
 
+> **ARCHIVED — 2026-08-20。もう読まない。**
+> 後継: `docs/agents/credit-status.md`（規則の正本。この記録の指摘は反映済み）
+> 移した理由: 反対レビューの記録。結論は規則側へ取り込み済み
+
 > 2026-08-03。実施 = Codex Sol / high、読み取り専用。
 > 対象 = `.claude/hooks/credit-status.mjs` と `docs/agents/credit-status.md` の作り直し方針3点。
 >

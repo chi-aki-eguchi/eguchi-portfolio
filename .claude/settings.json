@@ -75,6 +75,10 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai/check-handoff-freshness.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai/vault-context.mjs\""
           }
         ]
       },

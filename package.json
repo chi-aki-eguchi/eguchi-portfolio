@@ -18,7 +18,7 @@
     "lint:fix": "oxlint . --fix --deny-warnings --no-error-on-unmatched-pattern",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
-    "test:tools": "node --test .claude/hooks/credit-status.test.mjs scripts/ai/handoff-tools.test.mjs scripts/ai/check-wiki-freshness.test.mjs",
+    "test:tools": "node --test .claude/hooks/credit-status.test.mjs scripts/ai/handoff-tools.test.mjs scripts/ai/check-wiki-freshness.test.mjs scripts/ai/vault-context.test.mjs",
     "check:postgres-schema": "bun packages/web/scripts/check-postgres-schema.ts",
     "check:wiki-freshness": "node scripts/ai/check-wiki-freshness.mjs",
     "check": "bun run check:postgres-schema && bun run typecheck && bun run lint && bun run test && bun run test:tools && bun run build && bun run check:wiki-freshness",

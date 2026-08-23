@@ -8,6 +8,7 @@ import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
+import { SeriesCover } from "../components/SeriesCover";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -42,6 +43,19 @@ export default function SeriesDetailPage() {
     queryFn: async () => jsonOrThrow(await api.series.$get()),
   });
   const seriesList = seriesListData?.series ?? [];
+  // The detail endpoint does not return the cover, but the list one does and
+  // this page already fetches it for the next-series link. No new request.
+  const coverSource = seriesList.find(
+    (s: { slug: string }) => s.slug === slug,
+  ) as
+    | {
+        coverUrl?: string | null;
+        coverRotationDeg?: number | null;
+        coverFocalX?: number | null;
+        coverFocalY?: number | null;
+      }
+    | undefined;
+  const hasCover = Boolean(coverSource?.coverUrl);
   const curIdx = seriesList.findIndex((s) => s.slug === slug);
   const nextSeries = seriesList.length > 1 && curIdx >= 0
     ? seriesList[(curIdx + 1) % seriesList.length]
@@ -121,34 +135,46 @@ export default function SeriesDetailPage() {
       ref={entranceRef}
       style={seriesBgColor ? { backgroundColor: seriesBgColor } : undefined}
     >
-      {/* Statement header — quiet, editorial */}
-      <header className="max-w-2xl mx-auto text-center mb-16 md:mb-24 page-entrance">
-        <h1
-          className="font-ja break-words"
-          style={{ fontSize: "var(--heading-size, 1.6rem)", color: `rgba(var(--foreground-rgb),0.82)`, letterSpacing: "0.03em", lineHeight: "var(--section-leading, 1.3)" }}
+      {/* 表紙があれば、そこで開く。無ければ従来どおり紙の上の題名。 */}
+      <SeriesCover
+        series={coverSource}
+        title={series.title}
+        subtitle={series.subtitle || undefined}
+      />
+
+      {!hasCover && (
+        <header className="max-w-2xl mx-auto text-center mb-16 md:mb-24 page-entrance">
+          <h1
+            className="font-ja break-words"
+            style={{ fontSize: "var(--heading-size, 1.6rem)", color: `rgba(var(--foreground-rgb),0.82)`, letterSpacing: "0.03em", lineHeight: "var(--section-leading, 1.3)" }}
+          >
+            {series.title}
+          </h1>
+          {series.subtitle && (
+            <p
+              className="mt-3 font-en text-xs tracking-[0.10em] uppercase break-words"
+              style={{
+                fontSize: "var(--section-label-size, 0.75rem)",
+                color: "var(--section-label-color)",
+              }}
+            >
+              {series.subtitle}
+            </p>
+          )}
+        </header>
+      )}
+
+      {/* 作家の言葉は表紙と写真のあいだの「間」。狭い版面でゆっくり読ませる。 */}
+      {series.statement && (
+        <p
+          className={`max-w-2xl mx-auto font-ja whitespace-pre-line break-words ja-prose page-entrance ${
+            hasCover ? "mb-16 md:mb-24 text-left" : "-mt-8 mb-16 md:mb-24 text-left md:text-center"
+          }`}
+          style={{ fontSize: "var(--body-size, 0.95rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "var(--body-tracking, 0.02em)", color: `rgba(var(--foreground-rgb),0.62)` }}
         >
-          {series.title}
-        </h1>
-        {series.subtitle && (
-          <p
-            className="mt-3 font-en text-xs tracking-[0.10em] uppercase break-words"
-            style={{
-              fontSize: "var(--section-label-size, 0.75rem)",
-              color: "var(--section-label-color)",
-            }}
-          >
-            {series.subtitle}
-          </p>
-        )}
-        {series.statement && (
-          <p
-            className="mt-8 font-ja whitespace-pre-line break-words ja-prose text-left md:text-center"
-            style={{ fontSize: "var(--body-size, 0.95rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "var(--body-tracking, 0.02em)", color: `rgba(var(--foreground-rgb),0.62)` }}
-          >
-            {series.statement}
-          </p>
-        )}
-      </header>
+          {series.statement}
+        </p>
+      )}
 
       <div ref={fadeRef}>
         {photos.length === 0 ? (

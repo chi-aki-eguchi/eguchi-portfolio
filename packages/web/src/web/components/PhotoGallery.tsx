@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { buildGalleryLayout, tileWidth } from "../lib/gallery-layout";
 import { computeJustifiedRows } from "../lib/justified-layout";
+import { useBreakoutRoom } from "../hooks/useBreakoutRoom";
 import { num, clamp } from "../lib/utils";
 import {
   clampSetting,
@@ -560,44 +561,10 @@ export function PhotoGallery({
     return () => ro.disconnect();
   }, []);
   // What the surrounding page gives us: the width it hands the grid, and how
-  // much room there is to grow beyond it. Both read from the *parent*, because
-  // the frame below sets a width on our own element and deciding from our own
-  // width would feed back into itself. Measured directly rather than through
-  // ResizeObserver: the frame must be decided on the first layout pass, and an
-  // observer's initial callback is not guaranteed to have arrived by then.
-  const [room, setRoom] = useState({ natural: 0, available: 0 });
-  useLayoutEffect(() => {
-    const parent = containerRef.current?.parentElement;
-    if (!parent) return;
-    const measure = () => {
-      const cs = window.getComputedStyle(parent);
-      const padL = parseFloat(cs.paddingLeft) || 0;
-      const natural =
-        parent.clientWidth - padL - (parseFloat(cs.paddingRight) || 0);
-      if (natural <= 0) return;
-      // Grow symmetrically about the parent's centre, so the shorter side is
-      // the limit. The page can be off-centre in the viewport (the site's
-      // fixed sidebar pushes it right), which is why this cannot be a plain
-      // 100vw calc — that would overflow past the right edge.
-      const centre = parent.getBoundingClientRect().left + padL + natural / 2;
-      const viewport = document.documentElement.clientWidth; // excludes scrollbar
-      const available = 2 * Math.min(centre, viewport - centre) - 32;
-      setRoom({ natural, available });
-    };
-    measure();
-    // Re-measure on viewport changes, and on anything that resizes the shell
-    // without one (sidebar collapse, zoom, a late web font).
-    window.addEventListener("resize", measure);
-    const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => measure())
-        : null;
-    ro?.observe(parent);
-    return () => {
-      window.removeEventListener("resize", measure);
-      ro?.disconnect();
-    };
-  }, []);
+  // much room there is to grow beyond it. Shared with the series cover, which
+  // breaks out the same way — see hooks/useBreakoutRoom.ts for why this cannot
+  // be a plain 100vw calc.
+  const room = useBreakoutRoom(containerRef);
 
   const isTop = variant === "top";
   const pick = (topKey: string, galleryKey: string, fallback: number) => {

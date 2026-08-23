@@ -3371,6 +3371,92 @@ body {
   display: none;
 }
 
+/* ─── Series cover: the opening spread ───────────────────────
+   Series 詳細は「紙の上の文字のタイトル」から始まり、そのまま写真が延々と
+   続いていた（`ishigakiisland` は118枚・25,000px）。開きも間も無い。一方で
+   オーナーが選んだ表紙は一覧でしか使われていなかった。
+
+   ここで開く。高さはビューポート比だが 100vh にはしない —— 全画面にすると
+   「もう一つのトップページ」に見えるうえ、下に何かある合図が消える。
+   下端を少し覗かせて、めくらせる。 */
+.series-cover {
+  margin-bottom: calc(3.5rem * var(--spacing-section-gap, 1));
+}
+.series-cover__frame {
+  position: relative;
+  overflow: hidden;
+  /* 横長すぎる画面でも縦に間延びしない。短辺基準の高さと画面比の小さい方。 */
+  height: min(68vh, 62vw);
+  min-height: 260px;
+  background: var(--photo-placeholder);
+}
+.series-cover__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* 幕。写真の下端だけを沈めて題名を読ませる。全面に敷くと写真が濁る。
+
+   濃さは目分量ではなく最悪ケースから決めた。黒い幕を alpha a で重ねると、
+   下の写真がどれだけ明るくても輝度は (1-a) までしか上がらない。白文字との
+   コントラストを保証したいので:
+
+   | 文字            | 必要比 | 要る alpha | ここでの値 |
+   |-----------------|-------:|-----------:|-----------:|
+   | 題名（24px以上・大きい文字扱い） | 3:1   | 0.68 | 0.74 |
+   | 添え書き（11px）              | 4.5:1 | 0.82 | 0.88 |
+
+   添え書きのほうが下に来るので、最後の18%だけをさらに沈めている。
+   **真っ白な空の表紙でも下回らない。** 実測は
+   `scratch/` の使い捨てスクリプトで、文字を消して同じ矩形を撮り、
+   いちばん明るいピクセルから出す（アンチエイリアスの縁を地と誤認しないため）。 */
+.series-cover__scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 62%;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.2) 42%,
+    rgba(0, 0, 0, 0.74) 82%,
+    rgba(0, 0, 0, 0.88) 100%
+  );
+  pointer-events: none;
+}
+.series-cover__caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: clamp(1.25rem, 3.2vw, 2.75rem);
+  /* 中央寄せにしない。写真の上で完全に中央へ置くと、どのテンプレートでも
+     見た憶えのある型になる（AI感削減の軸）。 */
+  text-align: left;
+}
+.series-cover__title {
+  color: #fff;
+  font-size: clamp(1.5rem, 3.4vw, 2.75rem);
+  line-height: 1.24;
+  letter-spacing: 0.04em;
+  /* 明るい空が入る写真でも輪郭が残るように。幕だけに頼らない。 */
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.42);
+  overflow-wrap: anywhere;
+}
+.series-cover__subtitle {
+  margin-top: 0.55rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--text-small);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.42);
+  overflow-wrap: anywhere;
+}
+/* スマホは 62vw の縛りが効きすぎて縦に伸びるので、比率で決め直す。 */
+@media (max-width: 640px) {
+  .series-cover__frame {
+    height: min(56vh, 118vw);
+  }
+}
+
 /* ─── Photo Card ─── */
 .photo-card {
   break-inside: avoid;

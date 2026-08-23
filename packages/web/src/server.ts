@@ -17,6 +17,10 @@ import {
   isSeriesDetailPath,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
+import {
+  compressResponse,
+  createCompressedAssetCache,
+} from "./api/http-compression";
 import { settingsVersion } from "./api/settings-version";
 import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
@@ -486,6 +490,8 @@ function withSecurityHeaders(res: Response, request: Request): Response {
   });
 }
 
+const compressedAssets = createCompressedAssetCache();
+
 const server = Bun.serve({
   port,
   maxRequestBodySize: IMAGE_UPLOAD_REQUEST_MAX_BYTES,
@@ -499,7 +505,18 @@ const server = Bun.serve({
         return app.fetch(request);
       }
 
-      return withSecurityHeaders(await serveNonApi(request, url), request);
+      // Compress before the security headers so `Vary` and `Content-Encoding`
+      // are copied along with the rest. Measured 2026-08-23: nothing in front
+      // of this origin compresses anything, so first load shipped 687KB of
+      // plain text. See api/http-compression.ts.
+      return withSecurityHeaders(
+        await compressResponse(
+          await serveNonApi(request, url),
+          request,
+          compressedAssets,
+        ),
+        request,
+      );
     } catch (err) {
       console.error("[server] request handler crash:", err);
       return new Response("Internal Server Error", { status: 500 });

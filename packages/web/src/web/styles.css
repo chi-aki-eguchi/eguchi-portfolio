@@ -5217,14 +5217,28 @@ dialog.lightbox-exit .lb-content {
 
 .admin-atelier {
   /* 縦のリズム。ここだけで全画面の余白が決まる */
-  --ax-gap-page: 40px; /* 節と節 */
-  --ax-gap-block: 20px; /* 節の中の要素 */
+  /* 縦のリズム。40/20 は「節と節」「節の中」の対比としては効いていたが、
+     見出しから最初の操作まで実測 90〜115px あり、1440px でも本文が下へ
+     押し出されていた（2026-08-24 実測）。対比は保ったまま一段詰める。
+     **等間隔にはしない** —— 節の切れ目のほうが広い、が読みやすさの本体。 */
+  --ax-gap-page: 30px; /* 節と節 */
+  --ax-gap-block: 18px; /* 節の中の要素 */
   --ax-inset: clamp(20px, 3.2vw, 44px); /* 本文の左右余白 */
 }
 
 .admin-atelier .ax-page {
   width: 100%;
-  padding: clamp(28px, 3.4vw, 52px) var(--ax-inset) 96px;
+  padding: clamp(28px, 3.4vw, 52px) var(--ax-inset) var(--ax-page-foot, 40px);
+}
+
+/* 下の余白は**保存バーの逃げ**であって飾りではない。バーは
+   `position: sticky; bottom: 18px` で高さ約60px、出ている間は最後の行に
+   かぶる。だが実測（2026-08-24 / 1440px・全タブ）では、未保存の変更が
+   無いとき**バーは DOM に存在しない**。それでも96px空けていたので、
+   普段はページの末尾に96pxの死んだ帯がぶら下がっていた。
+   **逃げが要るのは、逃げる相手が居るときだけ。** */
+.admin-atelier:has(.admin-floating-save-bar) .ax-page {
+  --ax-page-foot: 96px;
 }
 
 /* ── ページ見出し ── */

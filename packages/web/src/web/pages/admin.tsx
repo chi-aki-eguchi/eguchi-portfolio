@@ -1907,7 +1907,60 @@ export function computeVirtualGridWindow({
 // 2列未満に落ちる実効幅では、移動ボタン最大4個(≈108px)+バッジが
 // タイルからはみ出すため、これ未満へは縮めず従来の1列表示を維持する。
 export const LIBRARY_MIN_EFFECTIVE_THUMB = 120;
-export const LIBRARY_MIN_DENSE_THUMB = 96;
+// オーナーが列数を選んだときの下限。**96px では 390px の画面で3列までしか
+// 行かなかった**（2026-08-24 実測。「小さくなってもいいから5〜6列」という
+// 要望に届かない）。48px なら 390px で6列（1枚53px）まで届く。
+// この大きさでも: バッジは 120px 未満で自動的に消える／タイル自体が
+// タップ領域なので 44px を下回らない／並べ替え中は2列に固定される。
+export const LIBRARY_MIN_DENSE_THUMB = 48;
+
+/** オーナーが選べる列数。触る画面ほど「もっと詰めたい」が起きる。 */
+export const LIBRARY_COLUMN_CHOICES = [2, 3, 4, 5, 6] as const;
+export type LibraryColumnChoice = (typeof LIBRARY_COLUMN_CHOICES)[number];
+
+/**
+ * Library が実際に何列で並んでいるか。**CSS・矢印キーの移動・仮想スクロールが
+ * 全部これを見る。** どれかが別々に数えると、↑↓ の移動先が画面とずれる。
+ *
+ * 列数を選んでいるときは `auto-fill` に任せない。`auto-fill` は器の実幅から
+ * 数え直すため、タイル幅の丸めが 0.3px 太いだけで黙って1列減る（実測で
+ * 2列が1列になった）。**選んだ数はそのまま `repeat(N, …)` で敷く。**
+ */
+export function libraryColumnCount({
+  gridWidth,
+  thumbSize,
+  preferredColumns,
+  gap = LIBRARY_GRID_GAP,
+}: {
+  gridWidth: number;
+  thumbSize: number;
+  preferredColumns?: number;
+  gap?: number;
+}): number {
+  if (preferredColumns && preferredColumns > 0) {
+    if (gridWidth <= 0) return preferredColumns;
+    // 詰めすぎて写真が判別できなくなる手前で止める。
+    const fits = Math.floor((gridWidth + gap) / (LIBRARY_MIN_DENSE_THUMB + gap));
+    return Math.max(1, Math.min(preferredColumns, Math.max(1, fits)));
+  }
+  if (gridWidth <= 0) return 1;
+  return Math.max(1, Math.floor((gridWidth + gap) / (thumbSize + gap)));
+}
+
+/** 上の列数をそのまま CSS へ。選んだ数は固定、そうでなければ従来どおり。 */
+export function libraryGridTemplate({
+  columns,
+  thumbSize,
+  explicit,
+}: {
+  columns: number;
+  thumbSize: number;
+  explicit: boolean;
+}): string {
+  return explicit
+    ? `repeat(${columns}, minmax(0, 1fr))`
+    : `repeat(auto-fill, minmax(${thumbSize}px, 1fr))`;
+}
 
 // スマホの Library は thumbSize(初期220・sliderは hidden md:flex で変更不能)
 // のまま minmax に入ると 375/390px 幅で1列になり、写真が1枚ずつしか見えない。
@@ -1924,7 +1977,7 @@ export function effectiveLibraryThumbSize({
 }: {
   thumbSize: number;
   gridWidth: number;
-  preferredColumns?: 2 | 3;
+  preferredColumns?: number;
   gap?: number;
 }): number {
   // 未計測(マウント直後・jsdom)は従来どおり
@@ -1946,6 +1999,13 @@ export function effectiveLibraryThumbSize({
 
 function measuredContentWidth(el: HTMLElement | null): number {
   if (!el) return 0;
+  // **`clientWidth` は四捨五入する。** 実測（2026-08-24 / 820px タッチ）では
+  // 実幅 683.53px を 684 と報告し、そこから出した2列ぶんのタイルが 0.24px
+  // 太くなって auto-fill が1列へ落ちた。**その事故はいま
+  // `libraryGridTemplate` の固定トラックで塞いである**（列数を選んだら
+  // `repeat(N, …)` を敷き、CSS に数え直させない）。
+  // ここで `getBoundingClientRect()` を優先しないのは、jsdom で他のテストが
+  // 仕込んだ rect のモックを拾うため。測る対象は clientWidth のままにする。
   const width = el.clientWidth;
   if (typeof window === "undefined") return width;
   const style = window.getComputedStyle(el);
@@ -2059,9 +2119,8 @@ export function GalleryTab({
     [],
   );
   const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 220); // px
-  const [mobileLibraryColumns, setMobileLibraryColumns] = usePersistentState<
-    2 | 3
-  >("admin:mobileLibraryColumns", 2);
+  const [mobileLibraryColumns, setMobileLibraryColumns] =
+    usePersistentState<LibraryColumnChoice>("admin:mobileLibraryColumns", 2);
   const [filterCat, setFilterCat] = usePersistentState(
     "admin:filterCat",
     "all",
@@ -2661,7 +2720,11 @@ export function GalleryTab({
       ? Math.min(300, Math.max(80, Math.round(numericThumbSize)))
       : 180;
     if (thumbSize !== normalizedThumbSize) setThumbSize(normalizedThumbSize);
-    if (mobileLibraryColumns !== 2 && mobileLibraryColumns !== 3)
+    if (
+      !(LIBRARY_COLUMN_CHOICES as readonly number[]).includes(
+        mobileLibraryColumns,
+      )
+    )
       setMobileLibraryColumns(2);
     if (uploadMedium !== "digital" && uploadMedium !== "film")
       setUploadMedium("digital");
@@ -3252,25 +3315,36 @@ export function GalleryTab({
   );
   // スマホは2列/3列をオーナーが選べる。Library の grid CSS・仮想化・
   // キーボード列数はこの実効幅で統一する(Trash/Table・PC sliderは従来どおり)。
+  // 並べ替え中は2列に固定する（タイル上の移動ボタンが小さいタイルに収まらない）。
+  const preferredColumns = coarsePointer
+    ? libraryMode === "arrange"
+      ? 2
+      : mobileLibraryColumns
+    : undefined;
   const effectiveThumbSize = useMemo(
     () =>
       effectiveLibraryThumbSize({
         thumbSize,
         gridWidth: libraryGridMetrics.gridWidth,
-        preferredColumns: coarsePointer
-          ? libraryMode === "arrange"
-            ? 2
-            : mobileLibraryColumns
-          : undefined,
+        preferredColumns,
       }),
-    [
-      coarsePointer,
-      libraryGridMetrics.gridWidth,
-      libraryMode,
-      mobileLibraryColumns,
-      thumbSize,
-    ],
+    [libraryGridMetrics.gridWidth, preferredColumns, thumbSize],
   );
+  // CSS・矢印キー・仮想スクロールが共有する唯一の列数。
+  const libraryColumns = useMemo(
+    () =>
+      libraryColumnCount({
+        gridWidth: libraryGridMetrics.gridWidth,
+        thumbSize: effectiveThumbSize,
+        preferredColumns,
+      }),
+    [effectiveThumbSize, libraryGridMetrics.gridWidth, preferredColumns],
+  );
+  const libraryTracks = libraryGridTemplate({
+    columns: libraryColumns,
+    thumbSize: effectiveThumbSize,
+    explicit: preferredColumns !== undefined,
+  });
   const virtualGrid = useMemo(
     () =>
       computeVirtualGridWindow({
@@ -5055,15 +5129,17 @@ export function GalleryTab({
   // Number of grid columns, derived from the rendered grid width / thumb size.
   // auto-fill minmax と同じ式(gap 込み)で数え、実効幅を使う — ここが CSS と
   // ずれると ↑↓ の移動先が実際の列数と食い違う。
-  const gridCols = () => {
-    const w = gridRef.current?.clientWidth ?? 0;
-    return Math.max(
-      1,
-      Math.floor(
-        (w + LIBRARY_GRID_GAP) / (effectiveThumbSize + LIBRARY_GRID_GAP),
-      ),
-    );
-  };
+  // 画面と同じ数を返す。式は CSS と共有（`libraryColumnCount`）しつつ、幅だけは
+  // その場で測る —— state 経由にすると resize 直後の1回だけ古い列数で動き、
+  // ↑↓ が前の幅の行へ飛ぶ（render テストが検出した）。
+  // 列数を選んでいるときは幅に依存しないので、CSS と完全に一致する。
+  const gridCols = () =>
+    libraryColumnCount({
+      gridWidth:
+        measuredContentWidth(gridRef.current) || libraryGridMetrics.gridWidth,
+      thumbSize: effectiveThumbSize,
+      preferredColumns,
+    });
 
   // Keyboard
   useEffect(() => {
@@ -5688,41 +5764,50 @@ export function GalleryTab({
               )}
             </div>
 
-            <div className="hidden md:flex items-center gap-2">
-              <Grid size={12} className="text-[var(--admin-muted)]" />
-              <input
-                aria-label={copy.toolbar.thumbnailSize}
-                type="range"
-                min={80}
-                max={300}
-                value={thumbSize}
-                onChange={(e) => setThumbSize(Number(e.target.value))}
-                className="w-24 accent-[var(--admin-muted)] h-1"
-              />
-              <Columns size={12} className="text-[var(--admin-muted)]" />
-            </div>
+            {/* **出し分けは幅ではなくポインタ種別で決める。** 列数の指定が効くのは
+                タッチ端末（`preferredColumns`）で、幅とは無関係。以前は
+                ボタンが `md:hidden`、スライダーが `hidden md:flex` だったため、
+                768px 以上のタブレットでは**効かないスライダーだけが見えて、
+                効くボタンは隠れていた**（実測 2026-08-24 / 820px で1列固定）。 */}
+            {!coarsePointer && (
+              <div className="hidden md:flex items-center gap-2">
+                <Grid size={12} className="text-[var(--admin-muted)]" />
+                <input
+                  aria-label={copy.toolbar.thumbnailSize}
+                  type="range"
+                  min={80}
+                  max={300}
+                  value={thumbSize}
+                  onChange={(e) => setThumbSize(Number(e.target.value))}
+                  className="w-24 accent-[var(--admin-muted)] h-1"
+                />
+                <Columns size={12} className="text-[var(--admin-muted)]" />
+              </div>
+            )}
 
-            <div
-              className="flex md:hidden items-center gap-1"
-              aria-label={copy.toolbar.photoColumns}
-            >
-              {([2, 3] as const).map((columns) => (
-                <button
-                  key={columns}
-                  type="button"
-                  aria-label={copy.toolbar.columns(columns)}
-                  aria-pressed={mobileLibraryColumns === columns}
-                  onClick={() => setMobileLibraryColumns(columns)}
-                  className={`min-w-9 admin-tap-sm px-2 py-1 rounded-sm border text-[length:var(--admin-text-note)] transition-colors ${
-                    mobileLibraryColumns === columns
-                      ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
-                      : "text-[var(--admin-muted)] border-[var(--admin-line)]"
-                  }`}
-                >
-                  {copy.toolbar.columnsText(columns)}
-                </button>
-              ))}
-            </div>
+            {coarsePointer && (
+              <div
+                className="flex items-center gap-1"
+                aria-label={copy.toolbar.photoColumns}
+              >
+                {LIBRARY_COLUMN_CHOICES.map((columns) => (
+                  <button
+                    key={columns}
+                    type="button"
+                    aria-label={copy.toolbar.columns(columns)}
+                    aria-pressed={mobileLibraryColumns === columns}
+                    onClick={() => setMobileLibraryColumns(columns)}
+                    className={`min-w-8 admin-tap-sm px-1.5 py-1 rounded-sm border text-[length:var(--admin-text-note)] transition-colors ${
+                      mobileLibraryColumns === columns
+                        ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
+                        : "text-[var(--admin-muted)] border-[var(--admin-line)]"
+                    }`}
+                  >
+                    {columns}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <button
               onClick={() => {
@@ -7135,7 +7220,7 @@ export function GalleryTab({
                           className="grid"
                           style={{
                             gap: LIBRARY_GRID_GAP,
-                            gridTemplateColumns: `repeat(auto-fill, minmax(${effectiveThumbSize}px, 1fr))`,
+                            gridTemplateColumns: libraryTracks,
                           }}
                         >
                           {recentlyAddedPhotos.map((photo, idx) =>
@@ -7166,7 +7251,7 @@ export function GalleryTab({
                         className="grid"
                         style={{
                           gap: LIBRARY_GRID_GAP,
-                          gridTemplateColumns: `repeat(auto-fill, minmax(${effectiveThumbSize}px, 1fr))`,
+                          gridTemplateColumns: libraryTracks,
                         }}
                       >
                         {visibleRegularPhotos.map((photo, localIdx) =>

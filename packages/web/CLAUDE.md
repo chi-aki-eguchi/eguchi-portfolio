@@ -50,7 +50,7 @@ bun run db:migrate    # マイグレーション実行
 - DB クエリは必ず `withRetry(() => db....)` でラップする
 - 新しいルートを追加したら `AppType` エクスポートに含める
 - エラーレスポンスは `{ error: string }` 形式で統一
-- `Content-Encoding` を手動設定しない（§0 invariant）
+- `Content-Encoding` を付けるのは `api/http-compression.ts` だけ（§0 invariant）
 - スキーマ変更時は `schema.ts` と `schema.postgres.ts` の両方を更新する
 
 ## フロントエンド規約（src/web/）
@@ -67,5 +67,5 @@ bun run db:migrate    # マイグレーション実行
 1. `withRetry` — 全 DB クエリをラップ
 2. `assertOk` — 全書き込みレスポンスをチェック
 3. settings 4箇所同期 — 新規キー追加時
-4. `Content-Encoding` 手動設定なし
+4. `Content-Encoding` は `api/http-compression.ts` 以外で付けていない
 5. `tsc -b` + `bun run build` 通過

@@ -243,6 +243,30 @@ Playwright に `hasTouch: true` を付けずに測ると当たり判定が広が
 popstate を投げるので、この順序が再現しない。
 **履歴・遷移まわりは jsdom のテストだけで通ったと判断しない。**
 
+### B-21. 経路ごとのJSチャンクが先読みされていない 🟠 実測済み（2026-08-23）
+
+`dist/index.html` が `modulepreload` を出すのは `react-vendor` / `vendor` /
+`query-vendor` と CSS だけ。**経路のチャンク（`top` `gallery` など）と、その
+連れ（`photo-sort` `useScrollFadeIn` `image-presets` ほか）は入っていない。**
+
+`app.tsx` が `lazy(() => import("./pages/top"))` で読むため、これらは
+`index.js` が動いて React が lazy 境界に当たるまで**発見されない**。実ブラウザで
+`/` を開くと、資産の取得がはっきり2波に分かれる（2波目は9ファイル）。
+初回表示と強制再読込のたびに、往復が1回ぶん余計に乗る。
+
+**直すなら:** サーバは既に `/gallery` と `/` へ写真の先読みタグを
+`</head>` の直前へ差し込んでいる（`api/gallery-preload.ts`）。同じ場所へ
+経路ぶんの `<link rel="modulepreload">` を足せばよい。
+
+**ただし今は道具が無い。** どの経路がどのチャンクを要るかは Vite の
+build manifest が要るが、`vite.config.ts` に `build.manifest` の指定が無く、
+`dist/.vite/manifest.json` も**出ていない**（2026-08-23 に確認）。
+manifest を出す設定 + サーバ側の経路→チャンク対応が要るので、
+文言や1ファイルの修正では済まない。
+
+**先読みは一字一句合わないと空振りする。** `gallery-preload.ts` の冒頭に、
+以前それで8枚ぶんを無駄打ちした経緯がある。同じ轍を踏まないこと。
+
 ### B-15. `.env` の `ADMIN_PASSWORD` が2ファイルで食い違う 🟠 実測済み（2026-08-05）
 
 リポジトリ直下の `.env` と `packages/web/.env` に**別々の値**が入っている。

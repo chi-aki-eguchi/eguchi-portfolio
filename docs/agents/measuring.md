@@ -104,6 +104,33 @@ bun run -e 'import {injectOgp} from "./src/api/ogp"; /* settings と index.html 
 - 逆にマスクが効きすぎると、写真グリッドを動かすキーが全部「効かない」に見える。
   レイアウト系は**列数・タイル幅・文書高さ**など安定した幾何で測り直す。
 
+### 本番サーバの挙動は、使い捨ての SQLite を作れば本番DB無しで測れる
+
+`bun run dev` も `bun run smoke` も **vite dev サーバ**を使う。`src/server.ts`
+（応答ヘッダ・OGP注入・静的配信・圧縮）は**どちらも通らない**。
+smoke が緑でも、server.ts の変更は何も証明されていない。
+
+かといって server.ts を素で起動すると本番 Turso につながる。**その必要は無い。**
+`DATABASE_URL` に `file:` を渡せば libSQL はローカルのファイルを使う。
+
+```bash
+# 1) 使い捨てDBへスキーマを流す（packages/web/drizzle/*.sql を順に execute）
+# 2) 起動する
+cd packages/web && env -u DATABASE_AUTH_TOKEN \
+  DATABASE_URL="file:/tmp/probe.db" PORT=4399 SITE_URL=http://localhost:4399 \
+  ADMIN_PASSWORD=<使い捨ての値> bun src/server.ts
+```
+
+**注意:**
+
+- 起動時の `ensureTursoColumns()` は**全部の欠落列を埋めてはくれない**。
+  `no such column: camera` のように落ちるので、足りない列は
+  `alter table ... add column` で自分で足す。
+- これで**管理画面のログインまで通せる**。`POST /api/admin/login` で Cookie を
+  取り、`GET /api/admin/me` が `{"authenticated":true}` を返すところまで、
+  本番DBに一切触れずに確認できる（2026-08-23 に実施）。
+- 終わったらプロセスを落とし、DBファイルを消す。
+
 ### 定番の測り方
 
 `scratch/` に使い捨てスクリプトを書く（gitignore 済み）。

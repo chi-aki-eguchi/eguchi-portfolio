@@ -879,12 +879,12 @@ const ADMIN_PHASE_2B_JA = {
         siteNameEn: {
           label: "サイト名（英語表記）",
           placeholder: "Photographer Name",
-          hint: "ロゴ下・OGPなどに使う",
+          hint: "",
         },
         heroSubtitle: {
           label: "トップの肩書き",
           placeholder: "Photography",
-          hint: "作家名の下に小さく出る一言",
+          hint: "",
         },
         siteDescription: {
           label: "サイトの説明文",
@@ -894,7 +894,7 @@ const ADMIN_PHASE_2B_JA = {
         footerText: {
           label: "フッターの文",
           placeholder: "空欄 = © 今年 サイト名（自動）",
-          hint: "空欄なら「© 年 サイト名」を自動表示",
+          hint: "",
         },
         contactIntro: {
           label: "お問い合わせの案内文",
@@ -903,45 +903,44 @@ const ADMIN_PHASE_2B_JA = {
         },
         contactIntroEn: {
           label: "お問い合わせの案内文（英語）",
-          placeholder: "Feel free to...",
-          hint: "空欄なら日本語文を表示",
+          placeholder: "空欄なら日本語文を表示",
+          hint: "",
         },
         contactNote: {
           label: "Contact 添え書き",
           placeholder:
             "「まだ決まっていないけれど相談したい」という段階でも歓迎です。",
-          hint: "案内文の下の一言(相談歓迎・返信目安など)。空欄で非表示",
+          hint: "",
         },
         contactNoteEn: {
           label: "Contact 添え書き (英語)",
-          placeholder:
-            "e.g. “Even if it's not decided yet, feel free to reach out.”",
-          hint: "添え書きの英語版。空欄なら日本語文を表示",
+          placeholder: "空欄なら日本語文を表示",
+          hint: "",
         },
         contactFlow: {
           label: "依頼の流れ",
           placeholder: "ご相談 → すり合わせ → 撮影 → 納品",
-          hint: "フォーム上の「Flow」枠に表示。空欄で非表示",
+          hint: "",
         },
         contactFlowEn: {
           label: "依頼の流れ (英語)",
-          placeholder: "Consultation → Planning → Shoot → Delivery",
-          hint: "「Flow」枠の英語版。空欄なら日本語文を表示",
+          placeholder: "空欄なら日本語文を表示",
+          hint: "",
         },
         contactEnglishNote: {
           label: "英語対応の一言",
           placeholder: "English inquiries welcome.",
-          hint: "Contactページの見出し付近に、JP/EN どちらでも常時表示。空欄で非表示",
+          hint: "JP/EN どちらでも常時表示",
         },
         contactMessagePlaceholder: {
           label: "Message 入力例",
           placeholder: "例: 希望する撮影の内容 / 希望日・場所",
-          hint: "メッセージ欄にうすく表示される記入例。空欄で非表示",
+          hint: "",
         },
         contactEmail: {
           label: "連絡先メールアドレス",
           placeholder: "you@example.com",
-          hint: "お問い合わせページに直接の宛先として表示",
+          hint: "",
         },
         formspreeUrl: {
           label: "お問い合わせフォームの送信先",
@@ -2559,12 +2558,12 @@ const ADMIN_PHASE_2B_EN = {
         siteNameEn: {
           label: "Site Name (EN)",
           placeholder: "Photographer Name",
-          hint: "English wording used below the logo, in OGP, and elsewhere.",
+          hint: "",
         },
         heroSubtitle: {
           label: "Hero Subtitle",
           placeholder: "Photography",
-          hint: "Shown below the photographer's name on the home page.",
+          hint: "",
         },
         siteDescription: {
           label: "Site Description (SEO)",
@@ -2574,54 +2573,53 @@ const ADMIN_PHASE_2B_EN = {
         footerText: {
           label: "Footer Text",
           placeholder: "Leave blank for “© this year Site Name” (automatic)",
-          hint: "Shown in the footer on every page. Automatically shows “© current year Site Name” when left blank.",
+          hint: "",
         },
         contactIntro: {
           label: "Contact Page Intro",
           placeholder: "Feel free to...",
-          hint: "Intro text shown at the top of the Contact page.",
+          hint: "",
         },
         contactIntroEn: {
           label: "Contact Page Intro (English)",
-          placeholder: "Feel free to...",
-          hint: "English intro text for /en/contact. Falls back to the Japanese text when left blank.",
+          placeholder: "Falls back to the Japanese text when left blank",
+          hint: "",
         },
         contactNote: {
           label: "Contact Note",
           placeholder:
             "e.g. “Even if it's not decided yet, feel free to reach out.”",
-          hint: "A short note below the intro text (e.g. welcoming enquiries, reply-time estimate). Hidden when left blank.",
+          hint: "",
         },
         contactNoteEn: {
           label: "Contact Note (English)",
-          placeholder:
-            "e.g. “Even if it's not decided yet, feel free to reach out.”",
-          hint: "English version of the note. Falls back to the Japanese text when left blank.",
+          placeholder: "Falls back to the Japanese text when left blank",
+          hint: "",
         },
         contactFlow: {
           label: "Booking Flow",
           placeholder: "Consultation → Planning → Shoot → Delivery",
-          hint: "Shown in the “Flow” box on the form. Hidden when left blank.",
+          hint: "",
         },
         contactFlowEn: {
           label: "Booking Flow (English)",
-          placeholder: "Consultation → Planning → Shoot → Delivery",
-          hint: "English version of the “Flow” box. Falls back to the Japanese text when left blank.",
+          placeholder: "Falls back to the Japanese text when left blank",
+          hint: "",
         },
         contactEnglishNote: {
           label: "English Welcome Note",
           placeholder: "English inquiries welcome.",
-          hint: "Always shown near the heading on the Contact page, in both JP and EN. Hidden when left blank.",
+          hint: "Always shown, in both JP and EN",
         },
         contactMessagePlaceholder: {
           label: "Message Example",
           placeholder: "e.g. The kind of shoot you want / preferred date & location",
-          hint: "Faint example text shown in the message field. Hidden when left blank.",
+          hint: "",
         },
         contactEmail: {
           label: "Contact Email",
           placeholder: "you@example.com",
-          hint: "Displayed on the contact page for direct email",
+          hint: "",
         },
         formspreeUrl: {
           label: "Contact Form URL",

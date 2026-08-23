@@ -147,7 +147,8 @@ function withVary(headers: Headers): Headers {
  * up compressed.
  *
  * Returns the original response untouched whenever compression does not apply,
- * so callers can use it as a transparent wrapper.
+ * so callers can use it as a transparent wrapper — including for Hono's `/api`
+ * responses, which must never be re-wrapped when they carry `Set-Cookie`.
  */
 export async function compressResponse(
   response: Response,
@@ -162,6 +163,12 @@ export async function compressResponse(
   if (response.status !== 200 || !response.body) return response;
   // Already encoded upstream — re-encoding is the 2026-06-13 incident.
   if (response.headers.has("Content-Encoding")) return response;
+  // Rebuilding a Response rebuilds its Headers, and multi-value `Set-Cookie`
+  // is the one field that does not reliably survive that. Hono's login and
+  // logout routes are the only ones that set it (both POST, so the method
+  // guard above already covers them today) — this keeps the guarantee local
+  // instead of depending on that staying true.
+  if (response.headers.has("Set-Cookie")) return response;
   if (!isCompressibleType(response.headers.get("Content-Type")))
     return response;
 

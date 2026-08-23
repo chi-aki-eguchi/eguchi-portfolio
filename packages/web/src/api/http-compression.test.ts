@@ -130,6 +130,39 @@ describe("compressResponse", () => {
     expect(res.headers.get("Content-Encoding")).toBe("gzip");
   });
 
+  test("never re-wraps a response carrying Set-Cookie", async () => {
+    const withCookie = new Response(CSS, {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Set-Cookie": "session=abc; HttpOnly; Path=/",
+      },
+    });
+    const res = await compressResponse(withCookie, get("br"));
+    expect(res).toBe(withCookie);
+    expect(res.headers.get("Set-Cookie")).toBe("session=abc; HttpOnly; Path=/");
+    expect(res.headers.get("Content-Encoding")).toBeNull();
+  });
+
+  test("compresses API json and leaves its no-store cache headers alone", async () => {
+    const json = JSON.stringify(
+      Array.from({ length: 200 }, (_, i) => ({ id: i, title: "photo" })),
+    );
+    const api = new Response(json, {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
+    const res = await compressResponse(
+      api,
+      get("gzip, br", "https://example.com/api/photos"),
+    );
+    expect(res.headers.get("Content-Encoding")).toBe("br");
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    const body = new Uint8Array(await res.arrayBuffer());
+    expect(new TextDecoder().decode(brotliDecompressSync(body))).toBe(json);
+  });
+
   test("skips images, fonts and other already-compressed bodies", async () => {
     const jpeg = new Response(new Uint8Array(4096), {
       headers: { "Content-Type": "image/jpeg" },

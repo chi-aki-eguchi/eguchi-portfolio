@@ -1,48 +1,59 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-20 JST（7回目）
+## Current State — 2026-08-23 JST（8回目）
 
-- **Status:** Codex の CLI 連携を廃止し規則1行へ。ルール仕分けを適用。
-  **commit・push 済み。**
+- **Status:** 公開サイトの応答が**一切圧縮されていなかった**のを実測で見つけ、
+  origin 側で brotli/gzip 圧縮するようにした。**commit 済み・push 未実施。**
 - **Current owner:** Claude Code / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF`
 
-### 完了
+### 完了（`3895c8d`）
 
-1. **Codex の CLI 連携を廃止**（`18cd5d8`）。`codex-workflow.md`(180行)・
-   レーン定義TOML2件・導入scriptを archive へ。残した規則は
-   `docs/checklists.md` の1行だけ（本番DB・課金・公開設定・認証に触る前に
-   Codex アプリへ貼って反対意見をもらう。**オーナーが手で貼る。自動化しない**）
-   - **Codex アプリ自体は今も使用中**（主に Ivy's House 側）。やめたのはCLI連携だけ
-2. **ルール仕分けを適用**。廃止1件（`PreCompact` hook を settings から削除）、
-   緩和6件。維持21件は未変更。要オーナー判断6件は**実行せず説明を用意**
-3. Current State の**下限30行を廃止**（上限60行のみ）。水増しの動機を消した
-4. `file-hygiene.md` から `AGENTS.md` と重複する2項目を削除
+1. `packages/web/src/api/http-compression.ts` を新設し、`server.ts` の
+   非API応答すべてを通した。`Content-Encoding` を付けるのはこの1箇所だけ
+2. `AGENTS.md` と `docs/checklists.md` の該当規則を、実測に合わせて書き直した
 
-### 途中で見つけて直したもの
+### なぜ直したか（実測）
 
-- `chatgpt-handoff.mjs` が次のAIへ「push は行わない」と**古い規則を配っていた**。
-  現行の3条件へ更新し、テストで固定（旧文言を含まないことも検査）
+本番 build `6606ff3f` へ `Accept-Encoding: gzip, br` 付きで GET すると、
+`content-encoding` も `vary` も無い**平文**が返っていた。初回表示に要る5資産で
+合計 687,662 バイト。「Railway プロキシが圧縮する」という文書の前提が誤り。
+
+| 資産 | 変更前 | brotli | gzip |
+|---|---:|---:|---:|
+| index.css | 183,672 | 26,873 | 29,975 |
+| react-vendor.js | 365,865 | 97,929 | 110,810 |
+| HTML(`/`) | 約 6,187 | 1,563 | — |
+
+初回表示 687,662 → 約 163,500 バイト（約 76% 減）。
 
 ### 検証
 
-- `bun run check` = **1028 tests / 0 fail**、`test:tools` 37 pass / 0 fail
-- smoke は不要と判定（`packages/` 配下に差分なし）
-- `18cd5d8` は push 済み。**本番反映は未確認**（次のcommitとまとめて測る）
+- `bun run check` = **1048 pass / 0 fail**（新規テスト20件を含む）
+- 本番ビルドを Bun サーバで配信して curl と実ブラウザで確認。
+  brotli/gzip とも**復号がソースとバイト一致**。PNG は非圧縮のまま。
+  `identity` 要求には平文＋`Vary` を返す。HTML の `no-store` は不変
+- **本番未確認**（push していないため。反映後に上の curl をもう一度回す）
+- `bun run smoke` = **330 passed / 0 failed**（145 skipped）。ただし smoke は
+  vite dev サーバ相手で `server.ts` を通らない。**回帰が無いことの確認であって、
+  圧縮が効いていることの証明ではない**
 
-### オーナー判断待ち（残り2件）
+### オーナー判断待ち
 
-- **`docs/archive/task-handoffs.md` の管理パスワード平文。**
-  推奨は Railway で `ADMIN_PASSWORD` を変えること（数分・低リスク）
-- `.claude/settings.json` の `kill -9` 禁止。実害ゼロだが理由も記録に無い。
-  見立ては「そのまま残す」
-- （他: `hono`/`sharp` の更新、backlog B-19・B-15）
+- **この commit を push してよいか。** `AGENTS.md` の不変条件
+  「`Content-Encoding` を手動設定しない」を書き換える変更のため、
+  check が通っていても独断で push しない
+- 既存の2件（archive の管理パスワード平文 / `kill -9` 禁止）は変化なし
 
 ### 次の一手
 
-- wiki の鮮度警告 残り8件（`deployment.md` `project-overview.md` が次に効く）
-- Obsidian 互換の調査結果は同セッションで報告（実行はしない）
+- push 可否の回答待ち。可なら push → 本番で `curl -sI` を再測定
+- **残作業:** `/api/*` は未圧縮のまま（`/api/photos` が 21,847 バイト）。
+  Hono の Set-Cookie 素通しを壊さない形（Set-Cookie が無い GET だけ圧縮）で
+  足せるが、**ローカルでは本番DB無しに admin ログインを通せず検証できない**
+  ため今回は入れていない
+- wiki の鮮度警告 残り8件
 
 ### 触ってはいけない範囲
 

@@ -499,10 +499,14 @@ const server = Bun.serve({
     try {
       const url = new URL(request.url);
 
-      // API is handled by Hono (its own CORS + cookies); don't re-wrap its responses,
-      // so multi-value headers like Set-Cookie pass through untouched.
+      // API is handled by Hono (its own CORS + cookies). Don't add the security
+      // headers here — but do compress, because API JSON is `no-store` and so
+      // is re-fetched on every visit, unlike the hashed assets. compressResponse
+      // returns Hono's own response object untouched for anything carrying
+      // Set-Cookie, for the image proxy's binary bodies, and for 304/499, so
+      // multi-value headers still pass through as before.
       if (url.pathname.startsWith("/api")) {
-        return app.fetch(request);
+        return compressResponse(await app.fetch(request), request);
       }
 
       // Compress before the security headers so `Vary` and `Content-Encoding`

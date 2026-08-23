@@ -3371,6 +3371,37 @@ body {
   display: none;
 }
 
+/* ─── Series colophon: 作品群の奥付 ─────────────────────────
+   本の奥付と同じ位置に、同じ調子で。中央寄せの細い罫を挟んで、字を落とす。
+   見出しと値の表にしない —— 表にすると設定画面の見た目になる。 */
+.series-colophon {
+  margin-top: calc(4.5rem * var(--spacing-section-gap, 1));
+  padding-top: 2.25rem;
+  text-align: center;
+  /* 罫は幅いっぱいに引かない。短い一本が「ここで区切る」の合図になる。 */
+  border-top: 1px solid rgba(var(--foreground-rgb), 0.1);
+  max-width: 34rem;
+  margin-inline: auto;
+}
+.series-colophon__head {
+  font-size: var(--text-meta);
+  letter-spacing: 0.14em;
+  color: rgba(var(--foreground-rgb), 0.55);
+}
+.series-colophon__line {
+  margin-top: 0.5rem;
+  font-size: var(--text-small);
+  letter-spacing: 0.1em;
+  line-height: 1.85;
+  color: rgba(var(--foreground-rgb), 0.4);
+}
+/* 機材名は1つの塊。折り返してよいのは名前と名前のあいだだけで、
+   名前の途中では折らない（素で置くと「FE / 50mm F1.2 GM」になる）。 */
+.series-colophon__item {
+  white-space: nowrap;
+  display: inline-block;
+}
+
 /* ─── Series cover: the opening spread ───────────────────────
    Series 詳細は「紙の上の文字のタイトル」から始まり、そのまま写真が延々と
    続いていた（`ishigakiisland` は118枚・25,000px）。開きも間も無い。一方で

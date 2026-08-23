@@ -9,6 +9,7 @@ import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { SeriesCover } from "../components/SeriesCover";
+import { SeriesColophon } from "../components/SeriesColophon";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -189,6 +190,8 @@ export default function SeriesDetailPage() {
           />
         )}
       </div>
+
+      <SeriesColophon photos={photos} />
 
       <InquiryCta />
 

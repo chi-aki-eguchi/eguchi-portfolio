@@ -945,12 +945,12 @@ const ADMIN_PHASE_2B_JA = {
         formspreeUrl: {
           label: "お問い合わせフォームの送信先",
           placeholder: "https://formspree.io/f/...",
-          hint: "Formspreeなど、フォーム送信サービスのHTTPS URLです。空欄ならフォームを表示しません",
+          hint: "空欄ならフォームを表示しない",
         },
         siteUrl: {
           label: "公開サイトの基準URL",
           placeholder: "https://example.com",
-          hint: "検索結果や共有カードへ正しい住所を伝えます（SITE_URL / canonical / sitemap / JSON-LD）。空欄ならサーバー設定を使います",
+          hint: "空欄ならサーバー設定を使う",
         },
         googleSiteVerification: {
           label: "Google サイト確認コード",
@@ -960,17 +960,17 @@ const ADMIN_PHASE_2B_JA = {
         footerCtaLabel: {
           label: "フッター導線テキスト（任意）",
           placeholder: "例: 撮影のご相談はこちら",
-          hint: "入力するとフッターに Contact への控えめなリンクを表示。空欄なら非表示",
+          hint: "",
         },
         templateCreditLabel: {
           label: "テンプレート購入クレジット",
           placeholder: "Site template by Aki Eguchi",
-          hint: "フッター最下部に小さく表示する文言。空欄なら非表示",
+          hint: "",
         },
         templateCreditUrl: {
           label: "テンプレート購入クレジット URL",
           placeholder: "https://akieguchi.com/portfolio-kit",
-          hint: "http:// または https:// のURLだけリンクになります。空欄・無効なURLは文字だけ表示",
+          hint: "無効なURLは文字だけ表示",
         },
       },
     },
@@ -1577,72 +1577,72 @@ const ADMIN_PHASE_2B_JA = {
       fields: {
         navLabelTop: {
           label: "ロゴ (TOP)",
-          hint: "全ページ左上のロゴ／TOPリンク",
+          hint: "",
           placeholder: "TOP",
         },
         navLabelGallery: {
           label: "Gallery リンク",
-          hint: "ヘッダーナビの Gallery リンク",
+          hint: "",
           placeholder: "Gallery",
         },
         navLabelAbout: {
           label: "About リンク",
-          hint: "ヘッダーナビの About リンク",
+          hint: "",
           placeholder: "About",
         },
         navLabelContact: {
           label: "Contact リンク",
-          hint: "ヘッダーナビの Contact リンク",
+          hint: "",
           placeholder: "Contact",
         },
         snsLabelInstagram: {
           label: "Instagram",
-          hint: "フッター等のSNSリンク表示名",
+          hint: "",
           placeholder: "Instagram",
         },
         snsLabelTwitter: {
           label: "X / Twitter",
-          hint: "フッター等のSNSリンク表示名",
+          hint: "",
           placeholder: "X",
         },
         snsLabelNote: {
           label: "note",
-          hint: "フッター等のSNSリンク表示名",
+          hint: "",
           placeholder: "note",
         },
         worksLabel: {
           label: "Works 見出し",
-          hint: "トップの最新作品セクションの見出し",
+          hint: "",
           placeholder: "Works",
         },
         viewAllLabel: {
           label: "View all リンク",
-          hint: "トップの作品セクション見出し横の小リンク文言",
+          hint: "見出しの横",
           placeholder: "View all →",
         },
         viewAllCtaLabel: {
           label: "View all ボタン",
-          hint: "トップの作品一覧の下に出る大きめボタンの文言",
+          hint: "一覧の下",
           placeholder: "すべての作品を見る",
         },
         galleryLabel: {
           label: "Gallery 見出し",
-          hint: "ギャラリーページ上部の見出し",
+          hint: "",
           placeholder: "Gallery",
         },
         filterAllLabel: {
           label: "フィルター All",
-          hint: "ギャラリー上部のフィルタ最左ボタン",
+          hint: "",
           placeholder: "All",
         },
         profileLabel: {
           label: "Profile 見出し",
-          hint: "プロフィールページ上部の見出し",
+          hint: "",
           placeholder: "Profile",
         },
         contactLabel: {
           label: "Contact 見出し",
-          hint: "お問い合わせページ上部の見出し",
+          hint: "",
           placeholder: "Contact",
         },
         contactFormName: { label: "Name ラベル", placeholder: "Name" },
@@ -2553,7 +2553,7 @@ const ADMIN_PHASE_2B_EN = {
         siteName: {
           label: "Site Name (Logo)",
           placeholder: "Photographer Name",
-          hint: "The logo shown at the top-left of every page (Japanese).",
+          hint: "",
         },
         siteNameEn: {
           label: "Site Name (EN)",
@@ -2624,12 +2624,12 @@ const ADMIN_PHASE_2B_EN = {
         formspreeUrl: {
           label: "Contact Form URL",
           placeholder: "https://formspree.io/f/...",
-          hint: "Use an https URL from Formspree or a compatible form service. Leave blank to hide the form.",
+          hint: "Leave blank to hide the form",
         },
         siteUrl: {
           label: "Site URL (Public Domain)",
           placeholder: "https://example.com",
-          hint: "The base URL used for the sitemap, canonical tag, OGP, and JSON-LD. Uses the server's SITE_URL when left blank.",
+          hint: "Uses the server's SITE_URL when left blank",
         },
         googleSiteVerification: {
           label: "Google Site Verification Code",
@@ -2639,17 +2639,17 @@ const ADMIN_PHASE_2B_EN = {
         footerCtaLabel: {
           label: "Footer CTA Text (Optional)",
           placeholder: "e.g. Enquire about a shoot",
-          hint: "When set, shows a subtle link to Contact in the footer. Hidden when left blank.",
+          hint: "",
         },
         templateCreditLabel: {
           label: "Template Purchase Credit",
           placeholder: "Site template by Aki Eguchi",
-          hint: "Small text shown at the very bottom of the footer. Hidden when left blank.",
+          hint: "",
         },
         templateCreditUrl: {
           label: "Template Purchase Credit URL",
           placeholder: "https://akieguchi.com/portfolio-kit",
-          hint: "Only a URL starting with http:// or https:// becomes a link. Blank or invalid URLs show as plain text.",
+          hint: "An invalid URL shows as plain text",
         },
       },
     },
@@ -3258,72 +3258,72 @@ const ADMIN_PHASE_2B_EN = {
       fields: {
         navLabelTop: {
           label: "Logo (TOP)",
-          hint: "The logo / TOP link at the top-left of every page",
+          hint: "",
           placeholder: "TOP",
         },
         navLabelGallery: {
           label: "Gallery Link",
-          hint: "The Gallery link in the header navigation",
+          hint: "",
           placeholder: "Gallery",
         },
         navLabelAbout: {
           label: "About Link",
-          hint: "The About link in the header navigation",
+          hint: "",
           placeholder: "About",
         },
         navLabelContact: {
           label: "Contact Link",
-          hint: "The Contact link in the header navigation",
+          hint: "",
           placeholder: "Contact",
         },
         snsLabelInstagram: {
           label: "Instagram",
-          hint: "The display name for this link in the footer and elsewhere",
+          hint: "",
           placeholder: "Instagram",
         },
         snsLabelTwitter: {
           label: "X / Twitter",
-          hint: "The display name for this link in the footer and elsewhere",
+          hint: "",
           placeholder: "X",
         },
         snsLabelNote: {
           label: "note",
-          hint: "The display name for this link in the footer and elsewhere",
+          hint: "",
           placeholder: "note",
         },
         worksLabel: {
           label: "Works Heading",
-          hint: "The heading for the recent-works section on the home page",
+          hint: "",
           placeholder: "Works",
         },
         viewAllLabel: {
           label: "View All Link",
-          hint: "The small link text beside the works-section heading on the home page",
+          hint: "Beside the heading",
           placeholder: "View all →",
         },
         viewAllCtaLabel: {
           label: "View All Button",
-          hint: "The larger button text below the works list on the home page",
+          hint: "Below the list",
           placeholder: "すべての作品を見る",
         },
         galleryLabel: {
           label: "Gallery Heading",
-          hint: "The heading at the top of the Gallery page",
+          hint: "",
           placeholder: "Gallery",
         },
         filterAllLabel: {
           label: "Filter: All",
-          hint: "The leftmost filter button at the top of the Gallery",
+          hint: "",
           placeholder: "All",
         },
         profileLabel: {
           label: "Profile Heading",
-          hint: "The heading at the top of the Profile page",
+          hint: "",
           placeholder: "Profile",
         },
         contactLabel: {
           label: "Contact Heading",
-          hint: "The heading at the top of the Contact page",
+          hint: "",
           placeholder: "Contact",
         },
         contactFormName: { label: "Name Label", placeholder: "Name" },

@@ -9,6 +9,7 @@ import {
   clampSettingRounded,
 } from "../../shared/setting-ranges";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
+import { formatPeriodRange } from "../lib/series-colophon";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 
 /**
@@ -19,6 +20,23 @@ import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
  * photos are shown large. Hover stays quiet per design-spec: a slight zoom
  * + brightness lift.
  */
+/**
+ * 札に添える「規模と時期」。どちらも分からなければ何も出さない——
+ * 空の行は、事実ではなく作りかけに見える。
+ */
+function seriesScale(s: {
+  photoCount?: number | null;
+  shotAtFirst?: string | null;
+  shotAtLast?: string | null;
+}): string | null {
+  const parts: string[] = [];
+  if (typeof s.photoCount === "number" && s.photoCount > 0)
+    parts.push(`${s.photoCount}点`);
+  const period = formatPeriodRange(s.shotAtFirst, s.shotAtLast);
+  if (period) parts.push(period);
+  return parts.length ? parts.join(" ／ ") : null;
+}
+
 export function SeriesGrid() {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -203,6 +221,13 @@ export function SeriesGrid() {
               {s.subtitle && (
                 <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] uppercase break-words text-[color:var(--text-quiet)]">
                   {s.subtitle}
+                </p>
+              )}
+              {seriesScale(s) && (
+                /* 押す前に規模と時期が分かる。5点の組と59点の組が、
+                   一覧では見分けられなかった。 */
+                <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] text-[color:var(--text-quiet)]">
+                  {seriesScale(s)}
                 </p>
               )}
             </>

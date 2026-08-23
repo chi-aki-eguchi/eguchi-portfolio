@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   colophonHasSubstance,
+  formatPeriodRange,
   seriesColophon,
   tidyLensName,
   type ColophonPhoto,
@@ -141,5 +142,28 @@ describe("tidyLensName", () => {
       { lens: "24-70mm F2.8 DG DN" },
     ])!;
     expect(c.lenses).toEqual(["24-70mm F2.8 DG DN"]);
+  });
+});
+
+describe("formatPeriodRange", () => {
+  // 一覧の札は写真を持たず、APIの min/max しか持たない。
+  test("min/max から同じ見出しを組める", () => {
+    expect(formatPeriodRange("2024-08-19T13:47:04", "2025-08-02T09:00:00")).toBe(
+      "2024年8月–2025年8月",
+    );
+    expect(formatPeriodRange("2024-12-01T00:00:00", "2025-01-09T00:00:00")).toBe(
+      "2024年12月–2025年1月",
+    );
+    expect(formatPeriodRange("2024-08-01T00:00:00", "2024-08-31T00:00:00")).toBe(
+      "2024年8月",
+    );
+  });
+
+  test("片方しか無くても組む。両方無ければ出さない", () => {
+    expect(formatPeriodRange("2024-08-19T00:00:00", null)).toBe("2024年8月");
+    expect(formatPeriodRange(null, "2024-08-19T00:00:00")).toBe("2024年8月");
+    expect(formatPeriodRange(null, null)).toBeNull();
+    expect(formatPeriodRange(undefined, undefined)).toBeNull();
+    expect(formatPeriodRange("", "")).toBeNull();
   });
 });

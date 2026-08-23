@@ -58,6 +58,20 @@ function yearMonth(value: string | null | undefined): string | null {
   return m ? `${m[1]}-${m[2]}` : null;
 }
 
+/**
+ * 期間の見出し。`min(shotAt)` と `max(shotAt)` から直接組める形も出しておく
+ * ——一覧の札は写真そのものを持たず、APIの集計値しか持たないため。
+ */
+export function formatPeriodRange(
+  first: string | null | undefined,
+  last: string | null | undefined,
+): string | null {
+  const months = [yearMonth(first), yearMonth(last)].filter(
+    (m): m is string => m !== null,
+  );
+  return formatPeriod(months);
+}
+
 function formatPeriod(months: string[]): string | null {
   if (months.length === 0) return null;
   const sorted = [...months].sort();

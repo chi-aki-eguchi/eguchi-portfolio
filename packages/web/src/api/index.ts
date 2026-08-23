@@ -2550,17 +2550,50 @@ const app = new Hono()
         if (p.seriesId != null && !firstBySeries.has(p.seriesId))
           firstBySeries.set(p.seriesId, p);
     }
+    // 一覧の札に「規模と時期」を出すための集計。押す前に、その作品群が
+    // 5点なのか59点なのかが分かる。1クエリで全シリーズぶんまとめて取る。
+    // shotAt は ISO 文字列なので min/max の辞書順が時系列順と一致する。
+    const stats = rows.length
+      ? await withRetry(() =>
+          db
+            .select({
+              seriesId: schema.photos.seriesId,
+              photoCount: sql<number>`count(*)`,
+              shotAtFirst: sql<string | null>`min(${schema.photos.shotAt})`,
+              shotAtLast: sql<string | null>`max(${schema.photos.shotAt})`,
+            })
+            .from(schema.photos)
+            .where(
+              sql`${inArray(
+                schema.photos.seriesId,
+                rows.map((s) => s.id),
+              )} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
+            )
+            .groupBy(schema.photos.seriesId),
+        )
+      : [];
+    // PostgreSQL の count(*) は bigint で、ドライバは文字列で返す。
+    const statMap = new Map(
+      stats
+        .filter((r) => r.seriesId != null)
+        .map((r) => [r.seriesId as number, r]),
+    );
+
     const list = rows.map((s) => {
       const cover =
         (s.coverPhotoId ? coverMap.get(s.coverPhotoId) : undefined) ??
         firstBySeries.get(s.id) ??
         null;
+      const stat = statMap.get(s.id);
       return {
         ...s,
         coverUrl: cover?.url ?? null,
         coverRotationDeg: cover?.rotationDeg ?? 0,
         coverFocalX: cover?.focalX ?? 50,
         coverFocalY: cover?.focalY ?? 50,
+        photoCount: Number(stat?.photoCount ?? 0),
+        shotAtFirst: stat?.shotAtFirst ?? null,
+        shotAtLast: stat?.shotAtLast ?? null,
       };
     });
     return c.json({ series: list }, 200);

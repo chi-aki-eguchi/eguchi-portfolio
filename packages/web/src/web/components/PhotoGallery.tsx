@@ -136,6 +136,7 @@ export function galleryFrameWidth({
   natural,
   available,
   isMobile,
+  itemCount,
 }: {
   requestedColumns: number;
   minTile: number;
@@ -144,11 +145,16 @@ export function galleryFrameWidth({
   /** Widest the grid can grow while staying inside the viewport. */
   available: number;
   isMobile: boolean;
+  /** How many photos there actually are to fill those columns. */
+  itemCount: number;
 }): number {
   // Phones are already full-bleed; widening there would only add sideways scroll.
   if (isMobile || natural <= 0 || !Number.isFinite(requestedColumns)) return 0;
   // Both column keys share one range, so either name gives the same bounds.
-  const columns = clampSettingRounded("galleryColumns", requestedColumns);
+  const columns = galleryColumnCap(
+    clampSettingRounded("galleryColumns", requestedColumns),
+    itemCount,
+  );
   // +1px so floor(width / minTile) can't land one short on a rounding edge.
   const needed = Math.round(columns * minTile) + 1;
   const width = Math.min(needed, available);
@@ -156,6 +162,27 @@ export function galleryFrameWidth({
 }
 
 const DENSITY_RATIO_EPSILON = 0.01;
+
+/**
+ * Columns never outnumber the photos that go in them.
+ *
+ * Measured 2026-08-23 at 1440px on the Series list: two items in a fixed
+ * 3-track grid stopped two thirds of the way across and left the right third
+ * empty. The photo grid has the same shape — `repeat(8, 1fr)` holding three
+ * photos is five empty cells — it just never shows on a gallery with hundreds
+ * of photos. A Portfolio Kit site starts near-empty and a filter can return
+ * two, and `site-and-data-direction.md` §0 asks what small counts look like.
+ * The answer must not be "a corner of tiny tiles".
+ *
+ * An empty set still reports one track: a zero-track grid is invalid CSS, and
+ * the empty state renders instead of the grid anyway.
+ */
+export function galleryColumnCap(
+  maxColumns: number,
+  itemCount: number,
+): number {
+  return Math.max(1, Math.min(maxColumns, Math.max(itemCount, 1)));
+}
 
 /**
  * A generated thumbnail is normally the final grid image. Square crops can
@@ -613,7 +640,8 @@ export function PhotoGallery({
       isTop ? "topWorksColumns" : "galleryColumns",
       pick("topWorksColumns", "galleryColumns", layoutDefaultMax),
     );
-    return clamp(Math.floor(containerW / minTile) || 1, 1, maxColumns);
+    const fitted = galleryColumnCap(maxColumns, photos.length);
+    return clamp(Math.floor(containerW / minTile) || 1, 1, fitted);
   };
   const columns = columnsFor(3);
   const requestedColumns = pick("topWorksColumns", "galleryColumns", NaN);
@@ -621,6 +649,7 @@ export function PhotoGallery({
     requestedColumns,
     minTile,
     isMobile,
+    itemCount: photos.length,
     ...room,
   });
   const frameStyle = frameW

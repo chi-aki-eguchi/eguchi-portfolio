@@ -64,7 +64,7 @@ export function SeriesGrid() {
   // Bounds come from SETTING_RANGES so they cannot drift from what the admin
   // offers: the 列数 control reached 8 while this clamped at 6, so the last two
   // steps did nothing (2026-08-07).
-  const columns = isMobile
+  const configuredColumns = isMobile
     ? clampSettingRounded(
         "seriesGridColumnsMobile",
         num(settings?.seriesGridColumnsMobile, 2),
@@ -73,6 +73,16 @@ export function SeriesGrid() {
         "seriesGridColumns",
         num(settings?.seriesGridColumns, 3),
       );
+  // Never open more columns than there are series. Measured 2026-08-23 at
+  // 1440px: two series in a fixed 3-column grid stopped two thirds of the way
+  // across and left the right third empty — the shape 到達点 #5 of
+  // `admin-renewal-goal.md` exists to forbid. Fitting the track count to the
+  // item count makes the same two covers fill the width instead.
+  const columns = Math.max(1, Math.min(configuredColumns, series.length || 1));
+  // …but one series stretched over the full 1024px shell becomes a 1280px-tall
+  // slab. Hold a lone cover to roughly the width it would have had beside a
+  // neighbour, centred, so it reads as deliberate rather than blown up.
+  const soloWidth = !isMobile && columns === 1 && configuredColumns > 1;
   // P3: reuse the gallery gap scale so spacing feels of-a-piece with the photo grid.
   const gapScale = clampSetting(
     "galleryGapScale",
@@ -121,6 +131,9 @@ export function SeriesGrid() {
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         gap: `${gap}px`,
         alignItems: "start",
+        ...(soloWidth
+          ? { maxWidth: "min(100%, 460px)", marginInline: "auto" }
+          : null),
       }}
     >
       {series.map((s) => (

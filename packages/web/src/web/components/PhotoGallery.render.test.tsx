@@ -920,7 +920,13 @@ test("a failed image marks its card as photo-broken (quiet placeholder)", async 
 const { galleryFrameWidth } = await import("./PhotoGallery");
 
 // 8 columns at the owner's photo size: 8 × (210 × 0.95) = 1596, +1px guard.
-const OWNER = { requestedColumns: 8, minTile: 210 * 0.95, isMobile: false };
+const OWNER = {
+  requestedColumns: 8,
+  minTile: 210 * 0.95,
+  isMobile: false,
+  // The owner's gallery has hundreds of photos, so the count never caps it.
+  itemCount: 497,
+};
 
 test("the frame grows to fit the requested columns when the shell is too narrow", () => {
   expect(
@@ -943,6 +949,7 @@ test("a request that already fits leaves the page width alone", () => {
       requestedColumns: 3,
       minTile: 210,
       isMobile: false,
+      itemCount: 497,
       natural: 928,
       available: 1836,
     }),
@@ -988,12 +995,19 @@ test("the widened frame reaches the DOM and stays centred on the page shell", as
     configurable: true,
   });
   const root = createRoot(host);
+  // Eight columns need eight photos to fill them — the shared fixture has
+  // three, and the frame is capped by the count (galleryColumnCap). This test
+  // is about the widening, so give it enough photos to ask for the full eight.
+  const eight = Array.from({ length: 8 }, (_, i) => ({
+    ...photos[i % photos.length]!,
+    id: 100 + i,
+  }));
   await act(async () => {
     root.render(
       createElement(
         QueryClientProvider,
         { client: qc },
-        createElement(PhotoGallery, { photos, layoutType: "clean-grid" }),
+        createElement(PhotoGallery, { photos: eight, layoutType: "clean-grid" }),
       ),
     );
   });
@@ -1063,4 +1077,36 @@ test("a gap above the old clamp actually reaches the grid", async () => {
     root.unmount();
   });
   host.remove();
+});
+
+// --- 列は中身の数を超えない (2026-08-23) ------------------------------------
+// Series 一覧を 1440px で実測したとき、2件しかないのに3列を敷いて右3分の1が
+// 空いていた。写真グリッドも作りは同じで、写真が数百枚ある秋さんのサイトでは
+// 出ないだけ。Portfolio Kit は空に近い状態から始まる。
+
+const { galleryColumnCap } = await import("./PhotoGallery");
+
+test("列数は写真の枚数で頭打ちになる", () => {
+  expect(galleryColumnCap(8, 3)).toBe(3);
+  expect(galleryColumnCap(3, 2)).toBe(2);
+});
+
+test("写真が足りていれば設定どおりの列数のまま", () => {
+  expect(galleryColumnCap(8, 497)).toBe(8);
+  expect(galleryColumnCap(3, 3)).toBe(3);
+});
+
+test("0枚でも1トラックは返す（0トラックのgridは不正）", () => {
+  expect(galleryColumnCap(8, 0)).toBe(1);
+});
+
+test("枠は、写真が入らない列のぶんまで広がらない", () => {
+  // 8列ぶん(1597px)に広げてよいのは写真が8枚以上あるときだけ。3枚なら
+  // 3列ぶん(600px)で足り、928pxの既定の枠のほうが広いので広げない。
+  expect(
+    galleryFrameWidth({ ...OWNER, itemCount: 3, natural: 928, available: 1836 }),
+  ).toBe(0);
+  expect(
+    galleryFrameWidth({ ...OWNER, itemCount: 8, natural: 928, available: 1836 }),
+  ).toBe(1597);
 });

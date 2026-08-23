@@ -1,50 +1,45 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-23 JST（8回目）
+## Current State — 2026-08-23 JST（9回目）
 
-- **Status:** `/assets/*` が**誰にも圧縮されていなかった**のを実測で見つけ、
-  origin 側で brotli/gzip を付けた。**push 済み・本番反映確認済み**（`488d9070`）。
+- **Status:** 見た目・高級感の実測と修正。**commit 済み・push 未実施（3件）。**
+  午前の圧縮3件は push 済み・本番反映確認済み。
 - **Current owner:** Claude Code / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF`
 
-### 完了
+### 未 push の3件（ゲートは全部通っている）
 
-1. `3895c8d` — `api/http-compression.ts` を新設し `server.ts` の非API応答を通した
-2. `4ce02db` — `/api` も通した。`Set-Cookie` を持つ応答には触れない
-3. `488d907` / 訂正commit — 規則と記録を実測に合わせた
+1. `e219eab` **列が中身の数を超えていた。** Series 一覧がシリーズ2件に
+   `repeat(3,1fr)` を固定で敷き、右3分の1が空いていた（到達点 #5 違反）。
+   件数に合わせて列を減らす。表紙 313px → **443px**。写真グリッドも同じ欠陥
+2. `106ef8b` **行頭に長音符が落ちていた。** Settings の目次が
+   「ホバ / ー」と割れていた。`line-break: strict`。違反 1 → **0件**
+3. `931e4ca` **Settings の説明文が多すぎた。** 画面に見える説明行 **6 → 1**
 
-### 本番の実測（`488d9070` 反映後）
+### 3 に使った規則（オーナー確認待ち）
 
-| 資産 | 変更前 | 変更後 |
-|---|---:|---:|
-| `/assets/` の初回5本（CSS+JS） | **687,662** | **161,722**（br・76%減） |
-| HTML `/` | 2,375（edgeのgzip） | 2,059（br） |
-| `/api/photos` | 21,847（edgeのgzip） | 17,448（br） |
+- 「空欄で非表示」は書かない（当たり前で意外ではない）
+- 「空欄なら別のものが出る」だけ残し、置き場所は placeholder
+- 位置の説明は書かない（ラベルとライブプレビューで分かる）
 
-**訂正:** 当初「HTMLもAPIも非圧縮」と報告したが誤り。Railway の edge は
-HTML と `/api` を gzip で圧縮していた。**していなかったのは `/assets/*` だけ**
-（immutable でedgeにキャッシュされる分）。誤読の原因と正しい測り方は
-`docs/agents/measuring.md`「圧縮を測るときは」に記録した。
-効果の大半は `/assets/*` の 525,940 バイト。API 側は br と gzip の差だけ。
+**辞書全体の hint はまだ64個。** この規則でよければ残りの節へ広げる。
+文言はオーナーの声なので、1節だけ見せて反応を待っている状態。
 
 ### 検証
 
-- `bun run check` = **1050 pass / 0 fail** / `bun run smoke` = **331 passed / 0 failed**
-- 本番の `/` と `/gallery` を実ブラウザで確認。表示は変わらず console エラー0。
-  二重圧縮は起きていない
-- smoke は vite dev サーバ相手で **`server.ts` を通らない**。回帰確認であって
-  圧縮の証明ではない（本番DB無しで server.ts を起動する手順は `measuring.md`）
+- `bun run check` = **1060 pass / 0 fail** / `bun run smoke` = **330 passed / 0 failed**
+- 禁則は実ブラウザで Range を使って測る（`docs/agents/measuring.md`）
+- 横あふれを公開5ページ×3幅・admin 3タブ×3幅で確認（0件）
+- **本番未確認**（push していない）
 
-### 次の一手
+### 分かっているが未着手
 
-- backlog B-21（経路チャンクが `modulepreload` されない）。Vite の
-  build manifest を出す設定から要る
-- wiki の鮮度警告 残り8件
-
-### オーナー判断待ち
-
-- 既存2件のみ（archive の管理パスワード平文 / `kill -9` 禁止）
+- **Settings のライブプレビューが 1280/1440/1680/1920px のどの幅でも
+  横に出ない。** 「プレビューを開く」を押さないと出ず、右側が空いたまま
+- backlog B-21（経路チャンクが `modulepreload` されない）
+- 公開サイトの `galleryLayout` は `clean-grid`・列数8（上限）で、仕様書の
+  「不揃い・余白主導」と逆。**これはオーナーの設定なので触っていない**
 
 ### 触ってはいけない範囲
 

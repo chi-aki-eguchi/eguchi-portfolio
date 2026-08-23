@@ -131,6 +131,29 @@ cd packages/web && env -u DATABASE_AUTH_TOKEN \
   本番DBに一切触れずに確認できる（2026-08-23 に実施）。
 - 終わったらプロセスを落とし、DBファイルを消す。
 
+### 圧縮を測るときは `--compressed` も `-sI` も使わない
+
+2026-08-23 に**この2つで両方とも誤読した**。
+
+- `curl --compressed` の `size_download` は**回線に乗ったバイト数**であって、
+  展開後の大きさではない。圧縮されていても素の本文でも同じ欄に出るので、
+  数字だけ見ても**圧縮の有無が分からない**。
+- `curl -sI`（HEAD）は本体を返さないので、プロキシもサーバも圧縮しない。
+  **HEAD に `content-encoding` が無いことは、GET が非圧縮である証拠にならない。**
+
+正しくは GET を2回投げて突き合わせる。
+
+```bash
+curl -s -o /dev/null -w '%{size_download}\n' -H 'Accept-Encoding: identity' "$URL"
+curl -s -o /dev/null -D - -H 'Accept-Encoding: br, gzip' "$URL" | grep -i content-encoding
+```
+
+**`Accept-Encoding: deflate` だけを送る切り分けは効かない。** gzip しか喋らない
+プロキシも素の本文を返すので、「プロキシは圧縮していない」の証明にならない。
+プロキシがやっているかを見たいなら、**origin が確実に素通しする応答**（この
+リポジトリなら 404 の SPA ページ。`compressResponse` が status≠200 を触らない）
+へ `Accept-Encoding: gzip` を投げて、それでも `content-encoding` が付くかを見る。
+
 ### 定番の測り方
 
 `scratch/` に使い捨てスクリプトを書く（gitignore 済み）。

@@ -75,9 +75,10 @@ Claude Code と Codex が共通で読む、現在の最小ルール。履歴や�
   応答検証は例外を投げるだけで、画面に出る保証がない。
 - `Content-Encoding` を付けるのは `api/http-compression.ts` **だけ**。他の場所で手で付けない。
   禁止の理由は「本文を圧縮せずにヘッダだけ付ける」「既に付いている応答へ重ねる」で、
-  これが 2026-06-13 の二重圧縮事故。**「Railway プロキシが圧縮するから不要」は誤り**
-  （2026-08-23 に本番へ実測。測り方: `curl -sI -H 'Accept-Encoding: br, gzip' <URL>` に
-  `content-encoding` が出るか）。HTMLは `Cache-Control: no-store`。
+  これが 2026-06-13 の二重圧縮事故。Railway プロキシは HTML と `/api` は gzip で
+  圧縮するが、**`/assets/*` は圧縮しない**（immutable でedgeにキャッシュされる分。
+  2026-08-23 実測）。だから origin 側でも圧縮する。測り方は
+  `docs/agents/measuring.md`。HTMLは `Cache-Control: no-store`。
 - DB schema変更は `schema.ts` と `schema.postgres.ts` を同期する。
 - データ更新後は該当queryを再取得して、画面を古い状態のままにしない。
 

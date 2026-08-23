@@ -3,56 +3,48 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-23 JST（8回目）
 
-- **Status:** 公開サイトの応答が**一切圧縮されていなかった**のを実測で見つけ、
-  静的・HTML・API すべて origin 側で圧縮するようにした。
-  **commit 済み・push 未実施（オーナー判断待ち）。**
+- **Status:** `/assets/*` が**誰にも圧縮されていなかった**のを実測で見つけ、
+  origin 側で brotli/gzip を付けた。**push 済み・本番反映確認済み**（`488d9070`）。
 - **Current owner:** Claude Code / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF`
 
 ### 完了
 
-1. `3895c8d` — `api/http-compression.ts` を新設し、`server.ts` の非API応答を通した
-2. `4ce02db` — `/api` の JSON も通した。`Set-Cookie` を持つ応答には触れない
-3. `AGENTS.md` と `docs/checklists.md` の該当規則を実測に合わせて書き直した
-4. backlog へ B-21（経路チャンクが先読みされていない）、`measuring.md` へ
-   「本番DB無しで `server.ts` を起動して測る手順」を追記
+1. `3895c8d` — `api/http-compression.ts` を新設し `server.ts` の非API応答を通した
+2. `4ce02db` — `/api` も通した。`Set-Cookie` を持つ応答には触れない
+3. `488d907` / 訂正commit — 規則と記録を実測に合わせた
 
-### なぜ直したか（実測）
+### 本番の実測（`488d9070` 反映後）
 
-本番 build `6606ff3f` へ `Accept-Encoding: gzip, br` 付きで GET すると、
-`content-encoding` も `vary` も無い**平文**が返っていた。「Railway プロキシが
-圧縮する」という文書の前提が誤り。測り方は `curl -sI -H 'Accept-Encoding: br, gzip'`。
+| 資産 | 変更前 | 変更後 |
+|---|---:|---:|
+| `/assets/` の初回5本（CSS+JS） | **687,662** | **161,722**（br・76%減） |
+| HTML `/` | 2,375（edgeのgzip） | 2,059（br） |
+| `/api/photos` | 21,847（edgeのgzip） | 17,448（br） |
 
-| 応答 | 変更前 | brotli | gzip |
-|---|---:|---:|---:|
-| index.css | 183,672 | 26,873 | 29,975 |
-| react-vendor.js | 365,865 | 97,929 | 110,810 |
-| `/api/photos`（200件の疑似データ） | 118,748 | 2,976 | 5,667 |
-
-初回表示の静的5資産で 687,662 → 約 163,500 バイト。**API は `no-store` なので
-毎回の表示ごとに効く**（本番の `/api/photos` は 21,847 バイト）。
+**訂正:** 当初「HTMLもAPIも非圧縮」と報告したが誤り。Railway の edge は
+HTML と `/api` を gzip で圧縮していた。**していなかったのは `/assets/*` だけ**
+（immutable でedgeにキャッシュされる分）。誤読の原因と正しい測り方は
+`docs/agents/measuring.md`「圧縮を測るときは」に記録した。
+効果の大半は `/assets/*` の 525,940 バイト。API 側は br と gzip の差だけ。
 
 ### 検証
 
-- `bun run check` = **1050 pass / 0 fail**（新規テスト22件）
-- `bun run smoke` = **331 passed / 0 failed**。ただし smoke は vite dev サーバ
-  相手で **`server.ts` を通らない**。回帰が無い確認であって圧縮の証明ではない
-- 使い捨てのローカル SQLite を作り本番ビルドを Bun サーバで配信して実測。
-  brotli/gzip とも復号が**バイト一致**、ログイン→`/api/admin/me` も通る。
-  **本番DBには触れていない**（手順は `docs/agents/measuring.md`）
-- **本番未確認**（push していないため）
-
-### オーナー判断待ち
-
-- **この2つの commit を push してよいか。** 必須ゲートは3条件とも満たすが、
-  `AGENTS.md` の不変条件を書き換える変更なので独断で push しない
-- 既存2件（archive の管理パスワード平文 / `kill -9` 禁止）は変化なし
+- `bun run check` = **1050 pass / 0 fail** / `bun run smoke` = **331 passed / 0 failed**
+- 本番の `/` と `/gallery` を実ブラウザで確認。表示は変わらず console エラー0。
+  二重圧縮は起きていない
+- smoke は vite dev サーバ相手で **`server.ts` を通らない**。回帰確認であって
+  圧縮の証明ではない（本番DB無しで server.ts を起動する手順は `measuring.md`）
 
 ### 次の一手
 
-- push 可否の回答待ち。可なら push → 本番で `curl -sI` を再測定
-- backlog B-21（Vite の build manifest を出す設定から要る）
+- backlog B-21（経路チャンクが `modulepreload` されない）。Vite の
+  build manifest を出す設定から要る
 - wiki の鮮度警告 残り8件
+
+### オーナー判断待ち
+
+- 既存2件のみ（archive の管理パスワード平文 / `kill -9` 禁止）
 
 ### 触ってはいけない範囲
 

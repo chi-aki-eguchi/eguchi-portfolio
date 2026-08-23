@@ -41,6 +41,9 @@
   --text-note: calc(10px * var(--global-font-scale, 1));
   --text-small: calc(11px * var(--global-font-scale, 1));
   --text-meta: calc(12px * var(--global-font-scale, 1));
+  /* フッターのテンプレート表記。`footerSize` から2px下げた値で、下限は
+     ここで決める（以前は要素側に 8px と直書きされていた）。 */
+  --footer-credit-size: max(9px, calc(var(--footer-size, 11px) - 2px));
 
   /* ─── Shared design tokens (public + admin) ───
      One vocabulary, two tempos: the operational scale (instant→slow) drives
@@ -3249,6 +3252,23 @@
 @media (min-width: 768px) {
   :root {
     --page-inset: 48px;
+  }
+}
+
+/* ─── スマホの小さい文字の下限 ─────────────────────────
+   9〜11px の「ささやき」は PC では意図した効果だが、**同じ絶対値がそのまま
+   390px の画面にも出る。** 実測（2026-08-24 / 390px・公開5ページ）では、
+   画面に出ている最小の文字が全ページ 9px で、しかもそれがリンクだった。
+
+   **オーナーの設定（`bodySize` などのサイズ指定）は上書きしない。**
+   ここでやるのは下から支えることだけで、設定で大きくしたぶんはそのまま
+   通る（`max()` なので、大きい側が勝つ）。 */
+@media (max-width: 640px) {
+  :root {
+    --text-caption: max(10.5px, calc(9px * var(--global-font-scale, 1)));
+    --text-note: max(11px, calc(10px * var(--global-font-scale, 1)));
+    --text-small: max(11.5px, calc(11px * var(--global-font-scale, 1)));
+    --footer-credit-size: max(11px, calc(var(--footer-size, 11px) - 2px));
   }
 }
 

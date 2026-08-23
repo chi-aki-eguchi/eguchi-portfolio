@@ -205,7 +205,7 @@ export function SeriesGrid() {
                   {s.title}
                 </p>
                 {s.subtitle && (
-                  <p className="mt-0.5 font-en text-[0.65rem] tracking-[0.10em] uppercase break-words text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+                  <p className="mt-0.5 font-en text-[length:var(--text-small)] tracking-[0.10em] uppercase break-words text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
                     {s.subtitle}
                   </p>
                 )}
@@ -219,14 +219,14 @@ export function SeriesGrid() {
                 {s.title}
               </p>
               {s.subtitle && (
-                <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] uppercase break-words text-[color:var(--text-quiet)]">
+                <p className="mt-1 font-en text-[length:var(--text-small)] tracking-[0.10em] uppercase break-words text-[color:var(--text-quiet)]">
                   {s.subtitle}
                 </p>
               )}
               {seriesScale(s) && (
                 /* 押す前に規模と時期が分かる。5点の組と59点の組が、
                    一覧では見分けられなかった。 */
-                <p className="mt-1 font-en text-[0.65rem] tracking-[0.10em] text-[color:var(--text-quiet)]">
+                <p className="mt-1 font-en text-[length:var(--text-small)] tracking-[0.10em] text-[color:var(--text-quiet)]">
                   {seriesScale(s)}
                 </p>
               )}

@@ -630,8 +630,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public break-words max-w-full"
                   style={
                     {
-                      fontSize:
-                        "max(8px, calc(var(--footer-size, 11px) - 2px))",
+                      // 下限は styles.css の `--footer-credit-size` が持つ
+                      // （スマホでは 11px まで引き上げる）。
+                      fontSize: "var(--footer-credit-size)",
                       "--link-rest": "var(--footer-opacity, 0.13)",
                     } as React.CSSProperties
                   }
@@ -642,8 +643,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span
                   className={`font-en tracking-[0.05em] break-words max-w-full ${footerLayout === "center" ? "text-center" : ""}`}
                   style={{
-                    fontSize:
-                      "max(8px, calc(var(--footer-size, 11px) - 2px))",
+                    fontSize: "var(--footer-credit-size)",
                     color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.13))`,
                   }}
                 >

@@ -19,6 +19,10 @@ export default defineConfig(({ mode }) => {
 			},
 		},
 		build: {
+			// 経路ごとのチャンクを先読みするために要る。`server.ts` が読み、
+			// そのページで実際に要るチャンクだけ modulepreload に足す。
+			// 出力先は dist/.vite/manifest.json。
+			manifest: true,
 			rollupOptions: {
 				output: {
 					// Content-hashed names PLUS a per-build BUILD_TAG suffix (deploy.sh sets

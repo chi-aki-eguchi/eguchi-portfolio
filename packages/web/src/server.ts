@@ -27,6 +27,10 @@ import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 import { hasPublicEnglishContent } from "./shared/public-english";
 import { buildSitemapXml } from "./api/sitemap-xml";
 import { buildGalleryPreloadTags } from "./api/gallery-preload";
+import {
+  buildRoutePreloadTags,
+  type ViteManifest,
+} from "./api/route-preload";
 import { resolveServiceVisibility } from "./shared/service-visibility";
 import {
   DYNAMIC_FAVICON_PATHS,
@@ -490,6 +494,20 @@ function withSecurityHeaders(res: Response, request: Request): Response {
   });
 }
 
+// ビルド時の manifest。**起動時に一度だけ読む。** 中身はビルドで固定なので
+// 再読込は要らず、無くても（dev / manifest 未生成）先読みが出ないだけで
+// ページは普通に動く。
+const viteManifest: ViteManifest | null = await (async () => {
+  try {
+    const file = Bun.file(`${distDir}/.vite/manifest.json`);
+    if (!(await file.exists())) return null;
+    return (await file.json()) as ViteManifest;
+  } catch (e) {
+    console.error("[preload] manifest read failed:", e);
+    return null;
+  }
+})();
+
 const compressedAssets = createCompressedAssetCache();
 
 const server = Bun.serve({
@@ -705,6 +723,14 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       heroImg.rotationDeg,
       heroImg.preloadUrl,
     );
+    // その経路のチャンクを先読みさせる。lazy import なので、これが無いと
+    // `index.js` が動くまで発見されない（実測で2波・往復1回ぶんの遅れ）。
+    const routePreload = buildRoutePreloadTags(viteManifest, routePathname);
+    if (routePreload)
+      injected = injected.replace(
+        "</head>",
+        () => `  ${routePreload}\n  </head>`,
+      );
     if (
       routePathname === "/gallery" ||
       (routePathname === "/" && (settings.topWorksMode ?? "auto") !== "random")

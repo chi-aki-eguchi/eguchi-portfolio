@@ -67,7 +67,7 @@ export function PageTitle({
          文字だけ外へ出る（実測 320px: 中身385px / 枠272px）。 */
       className={`font-en uppercase break-words ${centered ? "text-center" : ""} ${revealClass} ${className}`}
       style={{
-        fontSize: "var(--section-label-size, 0.75rem)",
+        fontSize: "var(--section-label-size-eff, 0.75rem)",
         color: "var(--section-label-color)",
         letterSpacing: "var(--section-label-tracking, 0.10em)",
         lineHeight: "var(--section-leading, 1.2)",

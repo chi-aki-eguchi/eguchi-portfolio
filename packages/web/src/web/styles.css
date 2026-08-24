@@ -44,6 +44,11 @@
   /* フッターのテンプレート表記。`footerSize` から2px下げた値で、下限は
      ここで決める（以前は要素側に 8px と直書きされていた）。 */
   --footer-credit-size: max(9px, calc(var(--footer-size, 11px) - 2px));
+  /* 見出しラベルの実効サイズ。**設定（`--section-label-size`）を入力にして、
+     下限だけここで足す。** provider は設定値を `:root` へインラインで書くので、
+     CSS 側から直接は上書きできない（インラインが勝つ）。出力を別の変数に
+     すれば、設定を尊重したまま下から支えられる。 */
+  --section-label-size-eff: var(--section-label-size, 0.75rem);
 
   /* ─── Shared design tokens (public + admin) ───
      One vocabulary, two tempos: the operational scale (instant→slow) drives
@@ -3269,6 +3274,11 @@
     --text-note: max(11px, calc(10px * var(--global-font-scale, 1)));
     --text-small: max(11.5px, calc(11px * var(--global-font-scale, 1)));
     --footer-credit-size: max(11px, calc(var(--footer-size, 11px) - 2px));
+    /* **ページ見出しが本文より小さい**状態を止める。実測（390px）では
+       `<h1>` の GALLERY / SERIES / PROFILE / CONTACT が 11px で、本文 12px を
+       下回っていた。階層が逆転している。大文字＋字間0.10em の欧文なので
+       13px でようやく本文と釣り合う。設定で大きくしてあればそのまま通る。 */
+    --section-label-size-eff: max(13px, var(--section-label-size, 0.75rem));
   }
 }
 

@@ -168,7 +168,7 @@ export function SeriesStream({
              「View all」ごと画面外へ押し出す（実測 320px で 504px）。 */
           className="font-en uppercase section-reveal break-words min-w-0"
           style={{
-            fontSize: "var(--section-label-size, 0.75rem)",
+            fontSize: "var(--section-label-size-eff, 0.75rem)",
             color: "var(--section-label-color)",
             letterSpacing: "var(--section-label-tracking, 0.12em)",
             lineHeight: "var(--section-leading, 1.2)",
@@ -181,7 +181,7 @@ export function SeriesStream({
           className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5 shrink-0"
           style={{
             transitionDelay: "0.1s",
-            fontSize: "var(--section-label-size, 0.6875rem)",
+            fontSize: "var(--section-label-size-eff, 0.6875rem)",
             letterSpacing: "var(--section-label-tracking, 0.06em)",
             color: "var(--section-label-color)",
           }}

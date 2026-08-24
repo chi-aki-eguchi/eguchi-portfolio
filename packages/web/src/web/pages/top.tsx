@@ -686,7 +686,7 @@ function WorksHeader({
       <h2
         className="font-en uppercase"
         style={{
-          fontSize: "var(--section-label-size, var(--text-caption))",
+          fontSize: "var(--section-label-size-eff, var(--text-caption))",
           letterSpacing: "var(--section-label-tracking, 0.16em)",
           color: "var(--section-label-color)",
         }}
@@ -697,7 +697,7 @@ function WorksHeader({
         to="/gallery"
         className="tap-target font-en transition-colors duration-300 hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))]"
         style={{
-          fontSize: "var(--section-label-size, var(--text-caption))",
+          fontSize: "var(--section-label-size-eff, var(--text-caption))",
           letterSpacing: "var(--section-label-tracking, 0.06em)",
           color: "var(--section-label-color)",
         }}
@@ -1578,7 +1578,7 @@ export default function TopPage() {
             <h2
               className="font-en uppercase section-reveal break-words min-w-0"
               style={{
-                fontSize: "var(--section-label-size, 0.75rem)",
+                fontSize: "var(--section-label-size-eff, 0.75rem)",
                 color: "var(--section-label-color)",
                 letterSpacing: "var(--section-label-tracking, 0.12em)",
                 lineHeight: "var(--section-leading, 1.2)",
@@ -1591,7 +1591,7 @@ export default function TopPage() {
               className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5 break-words shrink-0 max-w-[45%]"
               style={{
                 transitionDelay: "0.1s",
-                fontSize: "var(--section-label-size, 0.6875rem)",
+                fontSize: "var(--section-label-size-eff, 0.6875rem)",
                 letterSpacing: "var(--section-label-tracking, 0.06em)",
                 color: "var(--section-label-color)",
               }}

@@ -155,7 +155,7 @@ export default function SeriesDetailPage() {
             <p
               className="mt-3 font-en text-xs tracking-[0.10em] uppercase break-words"
               style={{
-                fontSize: "var(--section-label-size, 0.75rem)",
+                fontSize: "var(--section-label-size-eff, 0.75rem)",
                 color: "var(--section-label-color)",
               }}
             >

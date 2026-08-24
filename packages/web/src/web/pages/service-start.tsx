@@ -18,7 +18,7 @@ const bodyStyle = {
 } as const;
 
 const labelStyle = {
-  fontSize: "var(--section-label-size, 0.75rem)",
+  fontSize: "var(--section-label-size-eff, 0.75rem)",
   color: "var(--section-label-color)",
   letterSpacing: "var(--section-label-tracking, 0.10em)",
   lineHeight: "var(--section-leading, 1.2)",

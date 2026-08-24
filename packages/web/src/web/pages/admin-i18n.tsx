@@ -828,6 +828,8 @@ const ADMIN_PHASE_2B_JA = {
       ctaOffline: "CTA（オフライン時）",
       snsHint: "SNSリンク",
       add: "SNS追加",
+      snsLabelAria: "SNSリンクの表示名",
+      snsUrlAria: "SNSリンクのURL",
     },
     stickyCta: {
       leftText: "左側テキスト",
@@ -2507,6 +2509,8 @@ const ADMIN_PHASE_2B_EN = {
       ctaOffline: "CTA (offline)",
       snsHint: "Social links",
       add: "Add Social Link",
+      snsLabelAria: "Social link label",
+      snsUrlAria: "Social link URL",
     },
     stickyCta: {
       leftText: "Left-side text",

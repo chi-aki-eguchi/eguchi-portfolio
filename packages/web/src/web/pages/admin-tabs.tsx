@@ -3313,7 +3313,8 @@ function SvcArrayControls({
         type="button"
         disabled={index === 0}
         onClick={() => onMove(index, index - 1)}
-        className="p-0.5 text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
+        className="ax-nudge text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
+        aria-label={t.phase2b.service.arrayControls.up}
         title={t.phase2b.service.arrayControls.up}
       >
         <ChevronUp size={12} />
@@ -3322,7 +3323,8 @@ function SvcArrayControls({
         type="button"
         disabled={index === total - 1}
         onClick={() => onMove(index, index + 1)}
-        className="p-0.5 text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
+        className="ax-nudge text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
+        aria-label={t.phase2b.service.arrayControls.down}
         title={t.phase2b.service.arrayControls.down}
       >
         <ChevronDown size={12} />
@@ -3330,7 +3332,8 @@ function SvcArrayControls({
       <button
         type="button"
         onClick={() => onRemove(index)}
-        className="admin-danger-on-hover p-0.5 text-[var(--admin-muted)]"
+        className="admin-danger-on-hover ax-nudge text-[var(--admin-muted)]"
+        aria-label={t.phase2b.service.arrayControls.remove}
         title={t.phase2b.service.arrayControls.remove}
       >
         <X size={12} />
@@ -4063,6 +4066,7 @@ export function ServiceTab({
                 })
               }
               placeholder="Label"
+              aria-label={t.phase2b.service.finalCta.snsLabelAria}
               className="flex-1 min-w-0 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
             />
             <input
@@ -4076,6 +4080,7 @@ export function ServiceTab({
                 })
               }
               placeholder="https://..."
+              aria-label={t.phase2b.service.finalCta.snsUrlAria}
               className="flex-[2] min-w-0 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded px-2 py-1 text-[length:var(--admin-text-note)] text-[var(--admin-ink)] outline-none"
             />
             <button
@@ -4085,7 +4090,9 @@ export function ServiceTab({
                   snsLinks: removeItem(draft.finalCta.snsLinks, i),
                 })
               }
-              className="admin-danger-on-hover p-0.5 text-[var(--admin-muted)]"
+              aria-label={t.phase2b.service.arrayControls.remove}
+              title={t.phase2b.service.arrayControls.remove}
+              className="admin-danger-on-hover ax-nudge text-[var(--admin-muted)]"
             >
               <X size={12} />
             </button>

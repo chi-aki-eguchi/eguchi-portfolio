@@ -916,6 +916,50 @@
   gap: 2px;
 }
 
+/* 言語切替の JP / EN。実測（2026-08-24）で 19×24 と 21×24 しかなく、
+   横幅が 24px を下回っていた。全9タブの右上に常駐する操作なので、
+   数pxでも押し損ねが積み上がる。**見た目は変えず、幅だけ確保する。** */
+.admin-atelier .admin-language-toggle > button {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* サムネイルの大きさを決めるつまみ。**掴む所が高さ4pxしか無かった。**
+   `<input type=range>` は要素の高さがそのまま当たり判定になる。
+   溝は4pxのまま、要素だけ20pxへ上げる（見た目は変わらない）。 */
+.admin-atelier input[type="range"].ax-slider {
+  height: 20px;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.admin-atelier input[type="range"].ax-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(var(--admin-ink-rgb), 0.16);
+}
+.admin-atelier input[type="range"].ax-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(var(--admin-ink-rgb), 0.16);
+}
+.admin-atelier input[type="range"].ax-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--admin-muted);
+}
+.admin-atelier input[type="range"].ax-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--admin-muted);
+}
+
 .admin-atelier.admin-atelier.admin-atelier .ax-nudge {
   display: inline-flex;
   align-items: center;

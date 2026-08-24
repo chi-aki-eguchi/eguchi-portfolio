@@ -5779,7 +5779,7 @@ export function GalleryTab({
                   max={300}
                   value={thumbSize}
                   onChange={(e) => setThumbSize(Number(e.target.value))}
-                  className="w-24 accent-[var(--admin-muted)] h-1"
+                  className="ax-slider w-24 accent-[var(--admin-muted)]"
                 />
                 <Columns size={12} className="text-[var(--admin-muted)]" />
               </div>

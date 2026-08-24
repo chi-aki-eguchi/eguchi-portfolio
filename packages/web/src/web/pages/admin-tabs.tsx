@@ -1822,7 +1822,7 @@ export function CategoriesTab() {
                     onClick={() => moveCat(cat.id, -1)}
                     disabled={i === 0 || reorderCats.isPending}
                     aria-label={copy.moveUp}
-                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                    className="admin-tap-sm admin-compact ax-nudge text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
                   >
                     <ChevronUp size={14} />
                   </button>
@@ -1832,7 +1832,7 @@ export function CategoriesTab() {
                       i === categories.length - 1 || reorderCats.isPending
                     }
                     aria-label={copy.moveDown}
-                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                    className="admin-tap-sm admin-compact ax-nudge text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
                   >
                     <ChevronDown size={14} />
                   </button>
@@ -2229,7 +2229,7 @@ export function SeriesTab({
                     onClick={() => move(s.id, -1)}
                     disabled={i === 0 || reorder.isPending}
                     aria-label={copy.moveUp}
-                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                    className="admin-tap-sm admin-compact ax-nudge text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
                   >
                     <ChevronUp size={14} />
                   </button>
@@ -2237,7 +2237,7 @@ export function SeriesTab({
                     onClick={() => move(s.id, 1)}
                     disabled={i === series.length - 1 || reorder.isPending}
                     aria-label={copy.moveDown}
-                    className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                    className="admin-tap-sm admin-compact ax-nudge text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
                   >
                     <ChevronDown size={14} />
                   </button>
@@ -2904,7 +2904,7 @@ export function PricingTab({
                   onClick={() => move(p.id, -1)}
                   disabled={i === 0 || reorder.isPending}
                   aria-label={copy.moveUp}
-                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                  className="admin-tap-sm admin-compact ax-nudge text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
                 >
                   <ChevronUp size={14} />
                 </button>
@@ -2912,7 +2912,7 @@ export function PricingTab({
                   onClick={() => move(p.id, 1)}
                   disabled={i === plans.length - 1 || reorder.isPending}
                   aria-label={copy.moveDown}
-                  className="admin-tap-sm admin-compact text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
+                  className="admin-tap-sm admin-compact ax-nudge text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] disabled:opacity-25 transition-colors leading-none"
                 >
                   <ChevronDown size={14} />
                 </button>

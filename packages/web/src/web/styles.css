@@ -898,6 +898,33 @@
   min-height: 0;
 }
 
+/* 並べ替えの上下ボタン。**マウスでも狙える大きさにする。**
+   実測（2026-08-24 / 1440px）では 14×14px しかなく、しかも上下が隙間ゼロで
+   密着していた。Series / Categories / Pricing の3タブに同じ形で出る。
+
+   `admin-tap-sm` の拡張は `pointer: coarse` の中にしか無いので、マウスでは
+   14pxのまま。**疑似要素で当たり判定だけ広げる手は使えない** —— 上下が
+   密着しているので、広げた領域が隣のボタンと重なって誤爆する。実体を大きくする。
+
+   行（`.ax-row`）は60pxあり、24+24=48px は収まる（実測で確認）。
+   矢印そのものは14pxのまま。静かさは変えない。 */
+/* 上下ボタンは**横に並べる**。縦のままだと 24+24=48px が行の内側（約35px）に
+   入らず、行が 60 → 73px へ伸びた（実測）。「余白を減らしたい」の逆になる。
+   横なら 48×24 で収まり、行の高さは変わらない。 */
+.admin-atelier .ax-row__lead:has(.ax-nudge) {
+  flex-direction: row;
+  gap: 2px;
+}
+
+.admin-atelier.admin-atelier.admin-atelier .ax-nudge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+}
+
 /* タッチ端末のみ、見た目を変えずに当たり判定を44px相当へ広げる。
    アイコンサイズや余白のデザインはそのまま(quiet を保つ)。 */
 @media (pointer: coarse) {

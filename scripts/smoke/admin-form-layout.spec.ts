@@ -86,6 +86,11 @@ async function openTab(page: Page, tab: string) {
     localStorage.setItem("admin:tab", JSON.stringify(nextTab));
     localStorage.removeItem("admin:settingsDraft");
     sessionStorage.clear();
+    // この spec が測るのは「プレビューを開いていない時」の寸法。
+    // 2026-08-27 に既定が「開く」へ変わったので、ここで確定させる。
+    // usePersistentState の既定の保存先は **sessionStorage**（localStorage
+    // ではない）。上の clear() より後に置かないと消える。
+    sessionStorage.setItem("admin:showPreview", JSON.stringify(false));
   }, tab);
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 20_000 });
@@ -175,13 +180,6 @@ test.describe("admin — Form layout", () => {
     ] as const) {
       await page.setViewportSize({ width, height: 900 });
       await openTab(page, "settings");
-      // ここが測るのは「プレビューを開いていない時」の寸法。2026-08-27 に
-      // プレビューが既定で開くようになったので、明示的に閉じてから測る。
-      // 開いている時の寸法は admin-settings-preview.spec.ts が見ている。
-      const closePreview = page.getByRole("button", {
-        name: "プレビューを閉じる",
-      });
-      if ((await closePreview.count()) > 0) await closePreview.click();
       const measurements = await page
         .locator('[data-admin-form-layout="settings"]')
         .evaluate((root) => {

@@ -100,7 +100,17 @@ async function openSettings(page: Page) {
 async function openPreview(page: Page) {
   const open = page.getByRole("button", { name: "プレビューを開く" });
   if ((await open.count()) > 0) await open.click();
-  await expect(page.locator("[data-settings-preview]")).toBeVisible();
+  const preview = page.locator("[data-settings-preview]");
+  // 狭い幅は「編集↔プレビュー」の切り替え。既定で開いていても見ているのは
+  // 編集側なので、切り替えを押して初めてプレビューが出る。
+  if (!(await preview.isVisible())) {
+    const toPreview = page.getByRole("button", {
+      name: "プレビュー",
+      exact: true,
+    });
+    if ((await toPreview.count()) > 0) await toPreview.click();
+  }
+  await expect(preview).toBeVisible();
 }
 
 const documentOverflow = (page: Page) =>

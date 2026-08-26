@@ -1925,6 +1925,10 @@
 .admin-atelier .admin-library-search input {
   width: 100%;
   min-width: 0;
+  /* 枠は32pxあるのに、掴める `<input>` 自体は高さ17pxしか無かった
+     （PC 1440px 実測 2026-08-24）。枠いっぱいへ伸ばす。背景も枠線も
+     持たないので見た目は変わらない。スマホ側は既に40px。 */
+  align-self: stretch;
   border: 0;
   outline: 0;
   color: var(--admin-ink);

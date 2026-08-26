@@ -5786,14 +5786,42 @@ dialog.lightbox-exit .lb-content {
   border-top: 1px solid var(--admin-line);
 }
 
-.admin-atelier .admin-content h2.ax-add__title {
-  margin: 0 0 var(--ax-gap-block);
+.admin-atelier .ax-add__title {
+  /* 閉じている時は「+ 新しい○○」に見える1行。開くと見出しになる。 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+.admin-atelier .ax-add__title::-webkit-details-marker {
+  display: none;
+}
+.admin-atelier .ax-add__title::before {
+  content: "+";
+  font-size: 15px;
+  line-height: 1;
+  color: var(--admin-muted);
+}
+.admin-atelier .ax-add[open] > .ax-add__title::before {
+  content: "\2212"; /* 開いている時は − */
+}
+.admin-atelier .ax-add__title:hover {
+  color: var(--admin-ink);
+}
+
+.admin-atelier .admin-content .ax-add__title {
+  margin: 0;
   font-family: var(--admin-font-ui) !important;
   font-size: var(--admin-text-body) !important;
   font-weight: 500;
   line-height: 1.4 !important;
   letter-spacing: 0.08em;
   color: var(--admin-ink);
+}
+
+.admin-atelier .ax-add[open] > .ax-add__title {
+  margin-bottom: var(--ax-gap-block);
 }
 
 .admin-atelier .ax-add__body {
@@ -5858,9 +5886,11 @@ dialog.lightbox-exit .lb-content {
   border-bottom: 0;
 }
 
+/* シリーズ一覧の表紙。写真家の道具なのに、行の中で写真が一番小さかった
+   （84×56）。何のシリーズかは題名より表紙で分かる。3:2 のまま大きくする。 */
 .admin-atelier .ax-row__media--series {
-  width: 84px;
-  height: 56px;
+  width: 132px;
+  height: 88px;
 }
 
 /* 表紙が無い行。場所だけ確保して、面は持たせない。 */

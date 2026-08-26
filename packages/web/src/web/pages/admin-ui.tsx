@@ -229,11 +229,14 @@ export function AddBlock({
   title: ReactNode;
   children: ReactNode;
 }) {
+  // 空の追加フォームを常に開いたまま置かない。シリーズもカテゴリも
+  // 毎回作るものではないのに、画面の下に空欄が居座っていた。
+  // 押したときだけ開く。`<details>` なのでキーボードでも開ける。
   return (
-    <section className="ax-add">
-      <h2 className="ax-add__title">{title}</h2>
+    <details className="ax-add">
+      <summary className="ax-add__title">{title}</summary>
       <div className="ax-add__body">{children}</div>
-    </section>
+    </details>
   );
 }
 

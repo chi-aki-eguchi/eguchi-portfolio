@@ -4695,20 +4695,32 @@ export function SettingsTab({
     );
   }
 
-  const fields = [
+  // 短い項目（サイト名・肩書き・ラベル）は2列に組む。1行ずつ縦に積むと、
+  // 20文字に満たない欄が本文幅いっぱいを使って画面が縦に伸びる。
+  // 長い本文とURLは wide で全幅のまま。狭い幅では自動で1列へ戻る。
+  const fields: {
+    key: string;
+    label: string;
+    placeholder: string;
+    hint: string;
+    wide?: boolean;
+  }[] = [
     { key: "siteName", ...copy.siteBasics.fields.siteName },
     { key: "siteNameEn", ...copy.siteBasics.fields.siteNameEn },
     { key: "heroSubtitle", ...copy.siteBasics.fields.heroSubtitle },
-    { key: "siteDescription", ...copy.siteBasics.fields.siteDescription },
+    // 短い項目を続けて置く。間に全幅の項目が挟まると、2列に組んだとき
+    // 隣が空いた穴になる。名前・肩書き・フッターは同じ「サイトの表札」。
     { key: "footerText", ...copy.siteBasics.fields.footerText },
-    { key: "contactIntro", ...copy.siteBasics.fields.contactIntro },
-    { key: "contactIntroEn", ...copy.siteBasics.fields.contactIntroEn },
-    { key: "contactNote", ...copy.siteBasics.fields.contactNote },
-    { key: "contactNoteEn", ...copy.siteBasics.fields.contactNoteEn },
-    { key: "contactFlow", ...copy.siteBasics.fields.contactFlow },
-    { key: "contactFlowEn", ...copy.siteBasics.fields.contactFlowEn },
+    { key: "siteDescription", wide: true, ...copy.siteBasics.fields.siteDescription },
+    { key: "contactIntro", wide: true, ...copy.siteBasics.fields.contactIntro },
+    { key: "contactIntroEn", wide: true, ...copy.siteBasics.fields.contactIntroEn },
+    { key: "contactNote", wide: true, ...copy.siteBasics.fields.contactNote },
+    { key: "contactNoteEn", wide: true, ...copy.siteBasics.fields.contactNoteEn },
+    { key: "contactFlow", wide: true, ...copy.siteBasics.fields.contactFlow },
+    { key: "contactFlowEn", wide: true, ...copy.siteBasics.fields.contactFlowEn },
     {
       key: "contactEnglishNote",
+      wide: true,
       ...copy.siteBasics.fields.contactEnglishNote,
     },
     {
@@ -4716,10 +4728,11 @@ export function SettingsTab({
       ...copy.siteBasics.fields.contactMessagePlaceholder,
     },
     { key: "contactEmail", ...copy.siteBasics.fields.contactEmail },
-    { key: "formspreeUrl", ...copy.siteBasics.fields.formspreeUrl },
-    { key: "siteUrl", ...copy.siteBasics.fields.siteUrl },
+    { key: "formspreeUrl", wide: true, ...copy.siteBasics.fields.formspreeUrl },
+    { key: "siteUrl", wide: true, ...copy.siteBasics.fields.siteUrl },
     {
       key: "googleSiteVerification",
+      wide: true,
       ...copy.siteBasics.fields.googleSiteVerification,
     },
     { key: "footerCtaLabel", ...copy.siteBasics.fields.footerCtaLabel },
@@ -4727,7 +4740,7 @@ export function SettingsTab({
       key: "templateCreditLabel",
       ...copy.siteBasics.fields.templateCreditLabel,
     },
-    { key: "templateCreditUrl", ...copy.siteBasics.fields.templateCreditUrl },
+    { key: "templateCreditUrl", wide: true, ...copy.siteBasics.fields.templateCreditUrl },
   ];
 
   const sectionTitles: Record<SettingsSectionId, string> = {
@@ -4948,6 +4961,7 @@ export function SettingsTab({
                 title={copy.siteBasics.title}
                 defaultOpen={false}
               >
+                <div className="ax-field-grid">
                 {fields.map((f) => {
                   const contactKey = isContactSettingKey(f.key) ? f.key : null;
                   const validationError = contactKey
@@ -4957,7 +4971,7 @@ export function SettingsTab({
                     ? `settings-${contactKey}-error`
                     : undefined;
                   return (
-                    <AdminField key={f.key} label={f.label} hint={f.hint}>
+                    <AdminField key={f.key} label={f.label} hint={f.hint} span={f.wide}>
                       <input
                         type={
                           contactKey === "contactEmail"
@@ -5014,6 +5028,7 @@ export function SettingsTab({
                     </AdminField>
                   );
                 })}
+                </div>
               </Section>
 
               <Section

@@ -5647,7 +5647,10 @@ dialog.lightbox-exit .lb-content {
 .admin-atelier .ax-field-grid {
   display: grid;
   gap: var(--ax-gap-block) 28px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  /* 2026-08-27: 240px だと 2列に必要な幅が 508px。Settings はプレビューを
+     常時開くようにしたため本文列が約490pxで、あと少しのところで1列に落ちていた。
+     210px（必要幅448px）まで下げる。日本語のラベルはこの幅でも折り返さない。 */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
 }
 
 .admin-atelier .ax-field--span {

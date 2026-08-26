@@ -124,14 +124,16 @@ test.describe("admin — JP/EN shared shell", () => {
     await expect(
       page.getByText("Used as Gallery filters", { exact: false }),
     ).toBeVisible();
-    await expect(page.getByText("New Category", { exact: true })).toBeVisible();
+    // 2026-08-27: 追加フォームは既定で畳まれている。見出しは常に見えるが、
+    // 中の入力欄は開かないと見えない。利用者と同じ順に開いてから見る。
+    await page.getByText("New Category", { exact: true }).click();
     await expect(page.getByLabel("Category name")).toBeVisible();
 
     await gotoAdminTab(page, "series");
-    await expect(page.getByText("New Series", { exact: true })).toBeVisible();
     await expect(
       page.getByText("Group work into series", { exact: false }),
     ).toBeVisible();
+    await page.getByText("New Series", { exact: true }).click();
     await expect(page.getByLabel("New series title")).toBeVisible();
 
     await gotoAdminTab(page, "settings");

@@ -36,7 +36,9 @@ async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
   // 設定の本文は目次で選んだ1節だけを出す。折りたたみ行は廃止した。
   await page.locator('[data-settings-section-link="hero"]').click();
   await expect(page.locator('[data-settings-section="hero"]')).toBeVisible();
-  await page.getByRole("button", { name: "プレビューを開く" }).click();
+  // プレビューは既定で開く。閉じている時だけ押す。
+  const previewOpenButton = page.getByRole("button", { name: "プレビューを開く" });
+  if ((await previewOpenButton.count()) > 0) await previewOpenButton.click();
   const iframe = page.locator('iframe[title="Site Preview"]');
   await expect(iframe).toBeVisible();
   await expect(iframe.contentFrame().locator(".top-page")).toHaveCount(1);

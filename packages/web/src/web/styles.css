@@ -5313,14 +5313,21 @@ dialog.lightbox-exit .lb-content {
     --settings-toc-w: 148px;
     gap: 24px;
     max-width: none;
-    padding: 24px 20px 96px;
+    /* 左右は他タブと同じ `--ax-inset`。ここが 20px のべた書きだったため、
+       プレビューを既定で開いた 2026-08-27 に本文列が 900px を切って
+       この規則が発火し、Settings の見出しだけ 24px 左へ飛んだ
+       （実測: 他8タブ 292px / Settings 268px。admin-page-frame が検出）。
+       1024〜1199px の media query 側で 2026-08-17 に直したのと同じ不具合が、
+       container query 側に残っていた。--ax-inset は vw 基準なので、
+       スマホ幅では他タブと同じように自然に 20px まで縮む。 */
+    padding: 24px var(--ax-inset) 96px;
   }
 }
 @container settingsForm (max-width: 640px) {
   .admin-atelier .admin-settings-form-layout__inner {
     --settings-toc-w: 132px;
     gap: 16px;
-    padding: 20px 16px 96px;
+    padding: 20px var(--ax-inset) 96px;
   }
   .admin-atelier .admin-form-toc__nav > button {
     padding: 7px 6px 7px 10px;

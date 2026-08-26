@@ -175,6 +175,13 @@ test.describe("admin — Form layout", () => {
     ] as const) {
       await page.setViewportSize({ width, height: 900 });
       await openTab(page, "settings");
+      // ここが測るのは「プレビューを開いていない時」の寸法。2026-08-27 に
+      // プレビューが既定で開くようになったので、明示的に閉じてから測る。
+      // 開いている時の寸法は admin-settings-preview.spec.ts が見ている。
+      const closePreview = page.getByRole("button", {
+        name: "プレビューを閉じる",
+      });
+      if ((await closePreview.count()) > 0) await closePreview.click();
       const measurements = await page
         .locator('[data-admin-form-layout="settings"]')
         .evaluate((root) => {
@@ -237,7 +244,9 @@ test.describe("admin — Form layout", () => {
       "false",
     );
     await expect(tocMarker).toHaveCount(0);
-    await expect(savePanel).toContainText("未保存の変更はありません");
+    // 2026-08-27: 「未保存の変更はありません」は出さないことにした。
+    // 何も無いことをわざわざ言わない。空になることで同じ状態を示す。
+    await expect(savePanel).toHaveText("");
 
     await page.evaluate(() => {
       Math.random = () => 0.5;

@@ -16,7 +16,9 @@ test.describe("admin — ライブプレビューがタブ復帰後も編集内�
 
     await page.getByRole("button", { name: "Settings" }).click();
     await page.waitForTimeout(400);
-    await page.getByRole("button", { name: "プレビューを開く" }).click();
+    // プレビューは既定で開く。閉じている時だけ押す。
+  const previewOpenButton = page.getByRole("button", { name: "プレビューを開く" });
+  if ((await previewOpenButton.count()) > 0) await previewOpenButton.click();
     await page.waitForTimeout(300);
     await page.locator('[data-settings-section-link="theme"]').click();
     await page.waitForTimeout(200);

@@ -94,8 +94,12 @@ async function openSettings(page: Page) {
   );
 }
 
+// 2026-08-27: プレビューは既定で開くようになった。ここが欲しいのは
+// 「開いた状態」であって「開くボタンを押すこと」ではないので、
+// 既に開いていれば何もしない。既定値を変えても壊れない形にする。
 async function openPreview(page: Page) {
-  await page.getByRole("button", { name: "プレビューを開く" }).click();
+  const open = page.getByRole("button", { name: "プレビューを開く" });
+  if ((await open.count()) > 0) await open.click();
   await expect(page.locator("[data-settings-preview]")).toBeVisible();
 }
 
@@ -506,7 +510,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     await input.fill("スマホでも残る文字");
 
     // 上部 sticky の中から1操作でプレビューへ移る。下部固定バーは増やさない。
-    await page.getByRole("button", { name: "プレビューを開く" }).click();
+    await openPreview(page);
     await expect(page.locator("[data-settings-preview]")).toBeVisible();
     await expect(page.locator(".admin-settings-form-layout__inner")).toBeHidden();
     await expect(page.locator(".admin-floating-save-bar")).toBeHidden();

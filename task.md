@@ -1,51 +1,53 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-08-26 JST（15回目）
+## Current State — 2026-08-27 JST
 
-- **Status:** 散らかりの片付け + B-19 + B-22の一部 + specs索引。**push 済み。**
-- **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `SELF`
+- **Status:** admin 刷新を枝で進行中。**`main` は無傷。push していない。**
+- **Branch:** `redesign/admin-2026-08`（`main` から5 commit）
+- **Current owner:** Claude Code
 
-### やったこと
+### 枝でやったこと
 
 | commit | 内容 |
 |---|---|
-| （commit無し） | `scratch/` 2887MB → **47MB**。ログ213本・証跡フォルダを削除。`.md` 106本と `layout-mock` は残した |
-| （commit無し） | 中身ゼロの枝2本を削除。`~/eguchi-finder-proto` の worktree を外した（枝の1commitは残存） |
-| `bed944b` | Library の媒体の前置き「取り込み」→「媒体」（B-19。オーナー判断） |
-| `494b9b7` | Library の検索欄を枠いっぱい32pxへ（B-22。実測17pxだった） |
-| `e5b75ba` | `docs/specs/README.md` に21本の索引（層と優先順） |
+| `81b49a9` | 左ナビのアイコンを外し明朝へ / accent 青灰→暖色 / Settings プレビュー既定ON |
+| `c852d0b` | Settings の短い項目を2列に組む |
+| `e574fbd` | 空の追加フォームを畳む（Series・Categories）/ シリーズ表紙 84→132px |
+| `90860a6` | **Settings の見出しだけ24px左へ飛ぶ回帰を修正** |
+| `002e5cb` | 既定値の変更で崩れた smoke の前提を直す |
 
-### 実測でわかったこと
-
-- **先読み（B-21）は本番で効いている。**`/`=12件 `/about`=9件 `/contact`=7件の
-  modulepreload。経路ごとに違う＝`route-preload.ts` が意図どおり。
-  HTML・`/assets/*` とも `content-encoding: gzip`、assets は `immutable`。
-  **これで「本番未確認」が消えた。**
-- **B-22 のサムネイルつまみ（4px）は記録が古く、既に直っていた**
-  （`.ax-slider { height: 20px }`）。backlog から消した。
-- `docs/specs` の admin 5本は重複ではなく階層だった。索引が無いだけ。
-
-### 検証
+### 検証（すべて枝の上）
 
 - `bun run check` = **1111 pass / 0 fail（EXIT=0）**
-- `bun run smoke` = **330 passed（EXIT=0）**
-- 本番実測は上記のとおり（curl・読み取りのみ）
+- `bun run smoke` = **330 passed / 0 failed（EXIT=0）**。単独実行
+- **本番未確認。push していないので当然。**
 
-### 次にやること
+### 踏んだ罠（次に同じことをしないため）
 
-- **B-22 の残り: Portfolio Kit タブの名前無しボタン2件・ラベル無し入力2件。**
-  静的に読んでも場所が特定できない。backlog の「測り方」を先に走らせる
-- **オーナーの実地確認が2件**: Stripe 決済導線（B-2）／
-  取り込み目印（第1A, `608d677`）の線の強さ・文言・Escの体感
-- **B-15**: `.env` の `ADMIN_PASSWORD` がリポジトリ直下と `packages/web/` で
-  食い違う。**オーナーが片方を消すだけ。**エージェントは `.env` を触らない
+- **`bun run smoke > log; echo "EXIT=$?"` は `echo` の終了コードを拾う。**
+  これで17件の失敗を「通った」と誤読した。`echo "EXIT=$?" >> log` にする
+- **`usePersistentState` の既定の保存先は sessionStorage。**localStorage ではない。
+  `sessionStorage.clear()` より後に置かないと消える
+- **狭い幅では「開いている」と「見えている」が別。**`showPreview` が true でも
+  narrowView が edit ならプレビューは出ない
+- **スクショを1.2秒で撮ると読み込み前の姿が写る。**3.5秒待つ。
+  直っているものを壊れたと誤認しかけた
+- **`@container` の余白べた書き。**media query 側は 2026-08-17 に直っていたが
+  container query 側に同じ罠が残っていた。`--ax-inset` を使う
 
-### 触ってはいけない範囲
+### 未コミット（意図的）
 
-- 本番DB・Turso・R2・Railway・環境変数・`.env`
-- `shotAt` の保存方法、公開API応答形、Lightbox の既存ロジック
+`AGENTS.md` `CLAUDE.md` `docs/README.md` `docs/agents/backlog.md` の削減と、
+`handoff-workflow.md` `credit-status.md` の archive 移動。**commit が自動モードの
+判定に阻まれている**（エージェントが自分の制約を外す経路が塞がれている）。
+オーナーの手で `git add -u && git commit` が要る。
+
+### 次
+
+Library / Hero / Pricing / Profile / はじめに / Portfolio Kit は未着手。
+Settings も直したのは「サイト基本情報」の1節だけ（全21節）。
+<!-- CURRENT_STATE_END -->
 <!-- CURRENT_STATE_END -->
 
 ---

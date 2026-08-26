@@ -107,9 +107,8 @@ const ADMIN_PHASE_2B_JA = {
     },
     import: {
       mediumAria: "取り込み媒体",
-      mediumHint:
-        "取り込む写真に付く媒体ラベルです（絞り込みではありません）",
-      mediumLabel: "取り込み",
+      mediumHint: "取り込む写真に付く媒体です",
+      mediumLabel: "媒体",
       action: "取り込む",
       digital: "デジタル",
       film: "フィルム",

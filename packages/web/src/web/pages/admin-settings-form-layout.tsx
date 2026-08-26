@@ -279,9 +279,7 @@ export function AdminSettingsFormLayout({
                 <Check size={13} />
                 {copy.savedAt(lastSavedAt)}
               </span>
-            ) : (
-              <span>{copy.noChanges}</span>
-            )}
+            ) : null}
 
             {changedCount > 0 && (
               <span className="admin-form-save-panel__actions">

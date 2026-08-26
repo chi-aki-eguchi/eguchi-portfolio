@@ -987,7 +987,7 @@ const ADMIN_PHASE_2B_JA = {
       },
     },
     hero: {
-      title: "Hero（ファーストビュー）",
+      title: "Hero",
       intro:
         "トップページ最上部の写真表示です。ここで選んだ見せ方が、サイトに来た人が最初に見る1画面の印象を決めます。",
       summaryFullscreen: (modeName: string) => `${modeName}・フルスクリーン`,
@@ -1072,7 +1072,7 @@ const ADMIN_PHASE_2B_JA = {
       },
     },
     nav: {
-      title: "ナビゲーション（位置・ホバー）",
+      title: "ナビゲーション",
       summary: (positionName: string, hoverName: string) =>
         `${positionName}・${hoverName}`,
       intro:

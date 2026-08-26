@@ -1575,7 +1575,7 @@ describe("shared components", () => {
       await waitForText(host, "/portfolio-kit 販売ページの料金です");
 
       buttonWithText(host, "Settings").click();
-      await waitForText(host, "プレビューを開く");
+      await waitForText(host, "ふだんの設定");
       // 設定の本文は目次で選んだ1節だけを出す（2026-07-30）。
       (
         host.querySelector(
@@ -2133,7 +2133,7 @@ describe("shared components", () => {
       // 2026-07-20仕様変更: 名前は最短の必須導線から「あとで整える」へ
       // 移したが、Settingsへの移動ボタンは引き続き機能する。
       setupOpenButton(host, "サイトの名前と説明").click();
-      await waitForText(host, "プレビューを開く");
+      await waitForText(host, "ふだんの設定");
 
       buttonWithText(host, "写真").click();
       await waitForText(host, "Library");

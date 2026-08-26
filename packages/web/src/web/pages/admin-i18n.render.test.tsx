@@ -102,6 +102,9 @@ test("日本語辞書の表示文は固有名詞と入力例を除いて日本�
     "phase2b.profile.fields.noteUrlLabel",
     "phase2b.service.examples.ctaLabel",
     "phase2b.settingsBasic.portfolioKit.title",
+    // 左ナビの navigation.tabs.hero も "Hero"。設定側の見出しだけ
+    // 日本語を必須にする理由が無いので、同じ固有名詞として扱う。
+    "phase2b.settingsBasic.hero.title",
     // 単位記号。日本語のUIでも px と書く（px/秒 のほうは日本語を含むので対象外）。
     "phase2b.settingsBasic.units.px",
     "phase2b.settingsDesign.siteCopy.fields.snsLabelInstagram.label",

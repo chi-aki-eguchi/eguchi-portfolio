@@ -161,10 +161,10 @@
     var(--admin-paper) 82%,
     var(--admin-ink)
   );
-  --admin-accent: #5b7fa0;
-  --admin-accent-rgb: 91, 127, 160;
+  --admin-accent: #a07f5b;
+  --admin-accent-rgb: 160, 127, 91;
   --admin-accent-line: 2.5px;
-  --admin-accent-fill: #3f607e;
+  --admin-accent-fill: #7e603f;
   --admin-danger: #a33b2e;
   --admin-photo-overlay: rgba(0, 0, 0, 0.62);
   /* 色と同じ理由で、公開サイトの書体からも切り離す（2026-08-07）。
@@ -499,6 +499,23 @@
   transition:
     color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out);
+}
+
+/* ── 試作（2026-08-27）: 左ナビの「AI感」を抜く ────────────────────
+   広げている時のアイコンを外し、文字だけにする。畳んだ時は
+   AdminCompactSidebar が別に描くので、アイコンはそちらに残る
+   （アイコンはラベルを支えるもので、飾りではない）。
+   あわせてラベルを見出しと同じ明朝にし、画面が1つの意思に見えるようにする。 */
+.admin-atelier .admin-sidebar__full .admin-sidebar__tab > svg,
+.admin-atelier .admin-sidebar__full .admin-sidebar__link > svg {
+  display: none;
+}
+
+.admin-atelier .admin-sidebar__full .admin-sidebar__tab,
+.admin-atelier .admin-sidebar__full .admin-sidebar__link {
+  font-family: var(--admin-font-title);
+  font-size: 16px;
+  letter-spacing: 0.02em;
 }
 
 .admin-atelier .admin-sidebar__tab:hover,

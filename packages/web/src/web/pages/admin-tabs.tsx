@@ -4266,9 +4266,11 @@ export function SettingsTab({
     SettingsSectionId[]
   >([]);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  // 設定は「結果を見ながら変えるもの」。既定で閉じていると、変えるたびに
+  // 開き直すか、公開サイトを別タブで見に行くことになっていた。既定で開く。
   const [showPreview, setShowPreview] = usePersistentState(
     "admin:showPreview",
-    false,
+    true,
   );
   const [previewDevice, setPreviewDevice] = usePersistentState<
     "desktop" | "mobile"

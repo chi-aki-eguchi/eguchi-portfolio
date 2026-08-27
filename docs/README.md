@@ -9,14 +9,14 @@
 |---|---|
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
 | 管理画面刷新の目的（6軸） | `docs/specs/admin-renewal-goal.md` |
-| 本番に触る前の反対意見（Codexアプリ） | `docs/checklists.md`「本番に触る前の反対意見」 |
-| 引き継ぎ、Current State の書き方、オーナーへの報告 | `docs/agents/handoff-workflow.md` |
-| クレジット残量の判定と行動 | `docs/agents/credit-status.md` |
+| 仕様書21本の索引（層と優先順） | `docs/specs/README.md` |
 | 未完了の作業 | `docs/agents/backlog.md`（完了したらこの文書から消す） |
 | 測り方・存在しない不具合を作らない手順 | `docs/agents/measuring.md` |
 | 高リスク領域の検査手順 | `docs/checklists.md` |
 | 配布版（Portfolio Kit）のDB差分・運用 | `DISTRIBUTION.md` |
-| 読む文書の棚卸し（2026-08 監査） | `docs/specs/reading-layer-audit-2026-08.md` |
+
+> 引き継ぎの手順書とクレジット判定の文書は、2026-08-27 に儀式が多すぎるとして
+> `docs/archive/` へ移した（`handoff-workflow.md` / `credit-status.md`）。
 
 ## ディレクトリの役割
 

@@ -5656,8 +5656,11 @@ dialog.lightbox-exit .lb-content {
   gap: var(--ax-gap-block) 28px;
   /* 2026-08-27: 240px だと 2列に必要な幅が 508px。Settings はプレビューを
      常時開くようにしたため本文列が約490pxで、あと少しのところで1列に落ちていた。
-     210px（必要幅448px）まで下げる。日本語のラベルはこの幅でも折り返さない。 */
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+     196px（必要幅420px）まで下げる。日本語のラベルはこの幅でも折り返さない。
+     2026-08-27 追記: 一度 210px にしたが、見出しのズレを直して余白を 44px へ
+     戻した結果、本文列が 444px になり 2列に入らなくなった（自分で入れた
+     2列組みを自分で消していた）。余裕を 24px 取る。 */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 196px), 1fr));
 }
 
 .admin-atelier .ax-field--span {

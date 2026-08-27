@@ -3,8 +3,9 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-08-27 JST
 
-- **Status:** admin 刷新を枝で進行中。**`main` は無傷。push していない。**
-- **Branch:** `redesign/admin-2026-08`（`main` から9 commit）
+- **Status:** admin 刷新と公開サイトの手直しを枝で進行中。作業は全部この枝の上。
+  push 状況の測り方: `git rev-list --left-right --count origin/main...HEAD`
+- **Branch:** `redesign/admin-2026-08` / **HEAD:** `SELF`
 - **Current owner:** Claude Code
 
 ### 枝でやったこと
@@ -19,14 +20,21 @@
 | `c0d49fc` | 上の修正で消えていた2列組みを戻す |
 | `1b774a6` | **案3: Library を左ナビの主役にする** |
 | `52bf671` | **案2: 左ナビと同名だった Settings の節に、何を決めるかを付ける** |
+| `6e9128f` | **公開サイト**: 触れると震えるボタン / 水増ししたシリーズ帯 / 明滅する骨組み / 角丸の写真 / 絞り込み2段の間 / PC の最小文字 |
 
 ### 検証（すべて枝の上）
 
 - `bun run check` = **1112 pass / 0 fail（EXIT=0）**
 - `bun run smoke` = **330 passed / 0 failed（EXIT=0）**。単独実行・最終形
-- **本番未確認。push していないので当然。**
+- **本番（akieguchi.com）では未確認。**確認できるのは push 後だけ。
 
 ### 次にやること
+
+**公開サイト側**: ヒーローのスクロール効果は Settings の「Hero の見せ方 →
+スクロール効果」にあり、いまは `none`。`sink` / `parallax` にすると写真が
+スクロールに遅れて沈む。**オーナーの判断待ち**（コードは既にある）。
+TOP の WORKS が8列・約105px角なのも設定（`topWorksColumns` / サイズ）で、
+コード側の不具合ではない。
 
 **案1: プレビューを Settings 以外のタブへも広げる。**オーナー承認済み・未着手。
 `AdminSettingsPreviewPane` は独立した部品だが、周辺の状態（幅の記憶・
@@ -50,6 +58,12 @@ Series / Pricing は別テーブルなので、保存後に再読み込みする
   2026-08-17 に直っていたが container query 側に残っていた
 - **余白を直したら2列組みが4px差で消えた。**片方を直すと片方が崩れる幅なので、
   しきい値には余裕を取る
+- **同じ作業ディレクトリで2つのセッションが同時に動くと混ざる。**
+  2026-08-27、別セッションの `git add -A` が、こちらの作業中の `styles.css`
+  を `1b774a6`（admin の案3）へ巻き込んだ。commit の中身と題が合っていない。
+  また、両方が smoke を回して 4310 を奪い合い、262件が
+  `ERR_CONNECTION_REFUSED` で落ちた（コードの問題ではない）。
+  **パス指定で `git add` する。smoke は片方ずつ回す。**
 
 ### 未コミット（意図的）
 

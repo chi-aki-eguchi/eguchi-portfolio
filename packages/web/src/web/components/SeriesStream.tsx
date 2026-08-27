@@ -87,16 +87,24 @@ export function SeriesStream({
   // 帯のタイルは 4:5 の縦位置。高さから幅が決まる。
   const tileW = Math.round(tileHeight * 0.8);
 
+  // **帯を埋められない本数を流さない。** 流すには同じ並びを繰り返すしかなく、
+  // 繰り返した並びは1画面の中に同じ表紙を何枚も同時に出す。実測
+  // （2026-08-27 / 1440px・シリーズ2本）では、同じ2枚が1画面に3回ずつ並んで
+  // いた。見えているのは「作品がたくさんある」ではなく水増しで、TOP の中で
+  // いちばん安く見えていた。1並びが帯より狭いときは、流さず中央に置く。
+  const oneRun = series.length * (tileW + GAP);
+  const fillsBand = bandW > 0 && oneRun - GAP >= bandW;
+  const streaming = !reduced && fillsBand && speedPxPerSec > 0;
+
   // 1並びが帯より狭いと、-50% まで動かしたとき右側に隙間ができる。帯の
   // 1.5倍を超えるまで並びを繰り返してから、それを2つ繋げる（= 帯の3倍）。
-  // 帯の幅がまだ測れていない間は流さないので、ここは 1 のままでよい。
+  // 流さないときは繰り返さない（繰り返しは流すためだけのもの）。
   const repeats = useMemo(() => {
-    const oneRun = series.length * (tileW + GAP);
-    if (oneRun <= 0 || bandW <= 0) return 1;
+    if (!streaming || oneRun <= 0) return 1;
     return Math.max(1, Math.ceil((bandW * 1.5) / oneRun));
-  }, [series.length, tileW, bandW]);
+  }, [streaming, oneRun, bandW]);
 
-  const runWidth = series.length * repeats * (tileW + GAP);
+  const runWidth = oneRun * repeats;
   // 速さは px/秒。本数が増えても体感の速さが変わらないよう、距離から秒数を出す。
   const durationSec = speedPxPerSec > 0 ? runWidth / speedPxPerSec : 0;
 
@@ -105,7 +113,14 @@ export function SeriesStream({
   const run = Array.from({ length: repeats }, () => series).flat();
   // 幅を測れるまでは流さない。測れていない状態で流すと、並びが足りず
   // 帯の右側が空いたまま動く。測れた次の描画から動き出す。
-  const animate = !reduced && bandW > 0 && durationSec > 0;
+  const animate = streaming && bandW > 0 && durationSec > 0;
+  // 埋められない本数なら中央へ。それ以外で流さないときだけ、自分で横へ
+  // 送れる帯にする（動きを減らす設定の人）。
+  const bandMode = bandW > 0 && !fillsBand
+    ? "series-stream-fits"
+    : animate
+      ? ""
+      : "series-stream-static";
 
   const tile = (
     s: (typeof series)[number],
@@ -193,7 +208,7 @@ export function SeriesStream({
       {/* 全幅の帯。動きを減らす設定のときだけ、自分で横スクロールできる形にする。 */}
       <div
         ref={bandRef}
-        className={`series-stream ${animate ? "" : "series-stream-static"}`}
+        className={`series-stream ${bandMode}`}
         aria-label={label}
       >
         <div

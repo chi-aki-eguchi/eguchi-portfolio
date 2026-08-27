@@ -9,6 +9,13 @@
  * 結果、動きを減らす設定でもない人に静止した帯が出る。2026-08-09 に本番
  * （akieguchi.com）で実際に発生。帯の実寸は 1276px あるのに
  * `series-stream-static` が付いたままで、シリーズ2枚が並ぶだけだった。
+ *
+ * あわせて「本数が足りないときは流さない」も見張る（2026-08-27）。流すには
+ * 同じ並びを繰り返すしかなく、繰り返すと1画面に同じ表紙が何枚も同時に出る。
+ * 測れているのに静止する（＝上の事故）と、測れていて本数が足りないから
+ * 流さない（＝正しい）は別物なので、クラスで区別する:
+ *   - `series-stream-static` … 幅が測れていない／動きを減らす設定
+ *   - `series-stream-fits`   … 測れていて、1並びが帯を埋められない
  */
 import { test, expect, describe, afterEach } from "bun:test";
 import { setupDom, canned, flush } from "./jsdom-setup";
@@ -28,6 +35,15 @@ const SERIES = [
   { id: 1, slug: "a", title: "シリーズA", subtitle: "one", coverUrl: "/api/images/a.jpg" },
   { id: 2, slug: "b", title: "シリーズB", subtitle: "two", coverUrl: "/api/images/b.jpg" },
 ];
+
+/** 帯（1276px）を1並びで越える本数。tileHeight 260 → 1枚 208+28=236px。 */
+const MANY_SERIES = Array.from({ length: 8 }, (_, i) => ({
+  id: i + 1,
+  slug: `s${i}`,
+  title: `シリーズ${i}`,
+  subtitle: `no.${i}`,
+  coverUrl: `/api/images/s${i}.jpg`,
+}));
 
 /**
  * 実ブラウザの壊れ方を再現する: 要素は最初から実寸を持っているのに、
@@ -111,7 +127,7 @@ afterEach(() => {
 
 describe("シリーズ帯の幅の測り直し", () => {
   test("ResizeObserver が一度も鳴かなくても、静止モードに固着しない", async () => {
-    canned["/api/series"] = { series: SERIES };
+    canned["/api/series"] = { series: MANY_SERIES };
     const restoreRo = silentResizeObserver();
     const restoreRect = withBandWidth(1276);
     let cleanup: (() => void) | undefined;
@@ -128,7 +144,7 @@ describe("シリーズ帯の幅の測り直し", () => {
       expect(track).not.toBeNull();
       // 流すときは同じ並びを2つ繋げる。継ぎ目を作らないため、帯より広いこと。
       const items = band!.querySelectorAll(".series-stream-item");
-      expect(items.length).toBeGreaterThan(SERIES.length * 2);
+      expect(items.length).toBeGreaterThan(MANY_SERIES.length);
       // 読み上げとTabからは2枚目の写しを外す
       const hidden = [...items].filter(
         (i) => i.getAttribute("aria-hidden") === "true",
@@ -136,6 +152,35 @@ describe("シリーズ帯の幅の測り直し", () => {
       expect(hidden.length).toBe(items.length / 2);
       // 秒数は JS が入れる（幅が測れて初めて決まる）
       expect(track!.style.animationDuration).toMatch(/^[\d.]+s$/);
+    } finally {
+      cleanup?.();
+      restoreRect();
+      restoreRo();
+    }
+  });
+
+  test("本数が帯を埋められないときは流さず、同じ表紙を並べ直さない", async () => {
+    canned["/api/series"] = { series: SERIES };
+    const restoreRo = silentResizeObserver();
+    const restoreRect = withBandWidth(1276);
+    let cleanup: (() => void) | undefined;
+    try {
+      const mounted = await mountStream();
+      cleanup = mounted.cleanup;
+      await flush(500);
+      const band = mounted.host.querySelector(".series-stream");
+      expect(band).not.toBeNull();
+      // 幅は測れている。だから「測れていない」印は付かない。
+      expect(band!.classList.contains("series-stream-static")).toBe(false);
+      expect(band!.classList.contains("series-stream-fits")).toBe(true);
+      // 1枚も水増ししない
+      const items = band!.querySelectorAll(".series-stream-item");
+      expect(items.length).toBe(SERIES.length);
+      expect(
+        [...items].filter((i) => i.getAttribute("aria-hidden") === "true").length,
+      ).toBe(0);
+      const track = band!.querySelector<HTMLElement>(".series-stream-track");
+      expect(track!.style.animationDuration).toBe("");
     } finally {
       cleanup?.();
       restoreRect();

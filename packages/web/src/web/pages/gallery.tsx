@@ -262,7 +262,10 @@ export default function GalleryPage() {
       {/* Filter — カテゴリ */}
       {categories.length > 0 && (
         <div
-          className="gallery-filter-row flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-4 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
+          /* 下の段（Film / Digital）とは別の絞り込みなのに、間が 16px しか
+             なく、しかもどちらの先頭も「All」で始まる。1つの並びが折り返して
+             いるようにしか見えなかったので、2つに読める間隔を空ける。 */
+          className="gallery-filter-row flex md:flex-wrap md:justify-center gap-x-6 gap-y-2 mb-7 md:mb-8 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
           style={{
             transitionDelay: "0.1s",
             WebkitOverflowScrolling: "touch",
@@ -322,7 +325,9 @@ export default function GalleryPage() {
         // Don't flash "No photos" while the first fetch is still in flight.
         photosLoading ? (
           <div className="gallery-skeleton" aria-hidden="true">
-            {Array.from({ length: 6 }, (_, i) => (
+            {/* 1画面ぶんの高さを取れる枚数。少ないと、本物が入った瞬間に
+                下の帯（撮影のご依頼）とフッターが押し下げられる。 */}
+            {Array.from({ length: 12 }, (_, i) => (
               <div key={i} />
             ))}
           </div>

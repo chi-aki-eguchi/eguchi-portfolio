@@ -84,7 +84,10 @@ export default function ProfilePage({
       className={
         layout === "stack"
           ? "w-full aspect-[3/2] object-cover"
-          : "w-full aspect-[3/4] object-cover rounded-lg shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
+          : // 写真は角を丸めない（トークンの「the frame principle」）。ここだけ
+            // rounded-lg が付いていて、同じ画面の JOURNAL のサムネイルや
+            // ギャラリーの写真と角の形が違っていた。影も写真用の共通トークンへ。
+            "w-full aspect-[3/4] object-cover shadow-[var(--shadow-photo)]"
       }
     />
   ) : null;
@@ -366,7 +369,7 @@ export default function ProfilePage({
             href={safeHref(data?.printStoreUrl ?? "")}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block max-w-full break-words font-en text-sm tracking-[0.03em] border border-[rgba(var(--foreground-rgb),0.18)] text-[rgba(var(--foreground-rgb),0.65)] px-6 py-2.5 rounded-md hover:border-[rgba(var(--foreground-rgb),0.35)] hover:text-[rgba(var(--foreground-rgb),0.85)] transition-colors duration-300"
+            className="works-cta font-en"
           >
             {data?.printStoreLabel || "プリントを購入する"}
           </a>

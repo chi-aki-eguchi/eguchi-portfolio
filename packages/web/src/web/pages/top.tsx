@@ -822,7 +822,7 @@ function HomeQuietGrid({
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="works-cta font-ja"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>
@@ -957,7 +957,7 @@ function HomeEditorial({
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="works-cta font-ja"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>
@@ -1107,7 +1107,7 @@ function HomeImmersive({
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="works-cta font-ja"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>
@@ -1625,7 +1625,7 @@ export default function TopPage() {
           <div className="mt-16 md:mt-24 text-center section-reveal">
             <Link
               to="/gallery"
-              className="inline-block max-w-full break-words font-ja border border-[rgba(var(--foreground-rgb),0.22)] px-12 py-4 text-[0.8rem] tracking-[0.12em] text-[color:var(--text-quiet)] transition-all duration-500 hover:border-[var(--accent-color,rgba(var(--foreground-rgb),0.5))] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] hover:tracking-[0.16em]"
+              className="works-cta font-ja"
             >
               {settings?.viewAllCtaLabel || "すべての作品を見る"}
             </Link>

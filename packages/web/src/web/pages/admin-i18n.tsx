@@ -976,7 +976,7 @@ const ADMIN_PHASE_2B_JA = {
       },
     },
     portfolioKit: {
-      title: "Portfolio Kit",
+      title: "Portfolio Kit の公開",
       fieldLabel: "Portfolio Kitの表示",
       fieldHint:
         "自動はakieguchi.comで直リンクとクレジットだけ有効、ナビは非表示です。「表示」はページとナビを有効化、「非表示」はページも無効化します",
@@ -987,7 +987,7 @@ const ADMIN_PHASE_2B_JA = {
       },
     },
     hero: {
-      title: "Hero",
+      title: "Hero の見せ方",
       intro:
         "トップページ最上部の写真表示です。ここで選んだ見せ方が、サイトに来た人が最初に見る1画面の印象を決めます。",
       summaryFullscreen: (modeName: string) => `${modeName}・フルスクリーン`,
@@ -1351,7 +1351,7 @@ const ADMIN_PHASE_2B_JA = {
       shuffleButton: "配置をシャッフル",
     },
     seriesSection: {
-      title: "シリーズ",
+      title: "シリーズの見せ方",
       navLabel: "ナビに「Series」を表示",
       navHint:
         "「自動」は公開シリーズが1つでもあればリンクを表示します（既定）。「表示」は常に表示、「非表示」は常に隠します。シリーズの作成・写真割り当ては上部の Series タブ・Library のインスペクタから",
@@ -2657,7 +2657,7 @@ const ADMIN_PHASE_2B_EN = {
       },
     },
     portfolioKit: {
-      title: "Portfolio Kit",
+      title: "Portfolio Kit visibility",
       fieldLabel: "Show Portfolio Kit",
       fieldHint:
         "Auto enables only the direct link and credit on akieguchi.com, with the nav item hidden. “Shown” enables both the page and the nav item; “Hidden” disables the page too.",
@@ -2668,7 +2668,7 @@ const ADMIN_PHASE_2B_EN = {
       },
     },
     hero: {
-      title: "Hero (First View)",
+      title: "Hero appearance",
       intro:
         "The photo display at the very top of the home page. The style you choose here sets the first impression for anyone who visits the site.",
       summaryFullscreen: (modeName: string) => `${modeName} · Fullscreen`,
@@ -3031,7 +3031,7 @@ const ADMIN_PHASE_2B_EN = {
       shuffleButton: "Shuffle Arrangement",
     },
     seriesSection: {
-      title: "Series",
+      title: "Series appearance",
       navLabel: "Show “Series” in Nav",
       navHint:
         "“Auto” shows the link whenever at least one series is published (default). “Show” always displays it; “Hide” always hides it. Create series and assign photos from the Series tab above or the Library inspector.",

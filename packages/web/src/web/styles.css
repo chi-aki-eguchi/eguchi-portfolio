@@ -37,13 +37,19 @@
   /* Caption / small-text scale — the whisper sizes photos are annotated with.
      Wired to --global-font-scale like every other size token (raw 9-12px
      literals previously ignored the admin's global type-scale setting). */
-  --text-caption: calc(9px * var(--global-font-scale, 1));
-  --text-note: calc(10px * var(--global-font-scale, 1));
+  /* 下限は `max()` で下から支えるだけ。オーナーが `--global-font-scale` で
+     大きくしたぶんはそのまま通る。**スマホには 2026-08-24 に下限を入れたが、
+     PC には無かった。** 実測（2026-08-27 / 1440px・公開5ページ）では、画面に
+     出ている最小の文字が 9px（フッターの「Site template by」）と 10px
+     （JOURNAL / Flow などの見出し）で、どちらも大文字＋字間 0.14em。
+     字間を空けた欧文の大文字は、同じ px 数の和文よりさらに読みにくい。 */
+  --text-caption: max(10px, calc(9px * var(--global-font-scale, 1)));
+  --text-note: max(11px, calc(10px * var(--global-font-scale, 1)));
   --text-small: calc(11px * var(--global-font-scale, 1));
   --text-meta: calc(12px * var(--global-font-scale, 1));
   /* フッターのテンプレート表記。`footerSize` から2px下げた値で、下限は
      ここで決める（以前は要素側に 8px と直書きされていた）。 */
-  --footer-credit-size: max(9px, calc(var(--footer-size, 11px) - 2px));
+  --footer-credit-size: max(10px, calc(var(--footer-size, 11px) - 2px));
   /* 見出しラベルの実効サイズ。**設定（`--section-label-size`）を入力にして、
      下限だけここで足す。** provider は設定値を `:root` へインラインで書くので、
      CSS 側から直接は上書きできない（インラインが勝つ）。出力を別の変数に
@@ -469,6 +475,29 @@
 
 .admin-atelier .admin-sidebar__group + .admin-sidebar__group {
   margin-top: 24px;
+}
+
+/* Library だけは主役として大きく出す。毎日開くのはここで、他の8つは
+   月に数回。9個が同じ重さで並ぶのは、実際の使われ方と合っていない。
+   グループ見出し（「写真」）は Library 1つのためだけに在ったので、
+   読み上げには残して目からは外した（上の JSX の sr-only）。 */
+.admin-atelier .admin-sidebar__group--lead + .admin-sidebar__group {
+  margin-top: 30px;
+}
+.admin-atelier .admin-sidebar__group--lead .admin-sidebar__tab {
+  min-height: 44px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 21px;
+  letter-spacing: 0.01em;
+  color: var(--admin-ink);
+}
+/* 主役の行に付く印は、行の高さに合わせて伸ばす。他の行の 20px のままだと
+   短い棒が真ん中に浮いて見える。 */
+.admin-atelier .admin-sidebar__group--lead .admin-sidebar__tab[data-active="true"]::before {
+  top: 10px;
+  bottom: 10px;
+  height: auto;
 }
 
 .admin-atelier .admin-sidebar__group-title {
@@ -4288,37 +4317,38 @@ a:hover {
   color: rgba(var(--foreground-rgb), 0.55);
 }
 
-/* ─── Gallery loading skeleton — quiet placeholder tiles that reuse the
-   photo-placeholder tone; the pulse collapses to a static block under
-   reduced-motion via the blanket rule below. ─── */
+/* ─── 写真が届くまでの「間」───
+   以前は 3列 × 2段の大きな四角が 1.8秒周期で明滅していた。二つ問題がある。
+
+   1. **これから出るものと形が似ていない。** 実物のギャラリーは最小 210px の
+      タイルが並ぶので、1024px の中なら4〜5列。3列の大きな四角を見せてから
+      別物に差し替えると、待っていた間ずっと嘘を見せていたことになる
+      （実測 2026-08-27: 骨組みが消えて本物が入る瞬間に版面が組み変わる）。
+   2. **点滅そのものが安く見える。** 待っている間、画面の中で光っているのは
+      これだけだった。
+
+   いまは動かさない。並ぶものと同じ密度で場所だけ取り、静かに待つ。
+   0.45秒遅れて現れるので、速く届いたときは何も出ない（出た直後に消える
+   ちらつきを作らない）。タイル数は1画面ぶんの高さを確保する数。 ─── */
 .gallery-skeleton {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 5px;
+  opacity: 0;
+  animation: gallery-hold-in var(--dur-reveal) var(--ease-expo) 0.45s forwards;
 }
 @media (min-width: 768px) {
   .gallery-skeleton {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   }
 }
 .gallery-skeleton > div {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   background: var(--photo-placeholder);
-  animation: gallery-skeleton-pulse 1.8s var(--ease-inout) infinite;
 }
-.gallery-skeleton > div:nth-child(2n) {
-  animation-delay: 0.3s;
-}
-.gallery-skeleton > div:nth-child(3n) {
-  animation-delay: 0.6s;
-}
-@keyframes gallery-skeleton-pulse {
-  0%,
-  100% {
+@keyframes gallery-hold-in {
+  to {
     opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
   }
 }
 
@@ -4341,6 +4371,33 @@ a:hover {
 }
 .nav-link-luxury:hover::after {
   transform: scaleX(1);
+}
+
+/* ─── Works → Gallery の誘導ボタン ───
+   以前は hover で字間を 0.12em → 0.16em へ伸ばしていた。字間を変えると文字は
+   組み直されるので、触れるたびに中の文字が横へ流れ、ボタン自体の幅も伸びる。
+   触れただけで物が動くのは安く見える。**位置は 1px も動かさず、線と地の
+   濃さだけで応える。** */
+.works-cta {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  padding: 1rem 3rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--text-quiet);
+  border: 1px solid rgba(var(--foreground-rgb), 0.22);
+  background-color: rgba(var(--foreground-rgb), 0);
+  transition:
+    color var(--dur-lift) var(--ease-quart),
+    border-color var(--dur-lift) var(--ease-quart),
+    background-color var(--dur-lift) var(--ease-quart);
+}
+.works-cta:hover,
+.works-cta:focus-visible {
+  color: var(--accent-color, rgba(var(--foreground-rgb), 0.85));
+  border-color: var(--accent-color, rgba(var(--foreground-rgb), 0.5));
+  background-color: rgba(var(--foreground-rgb), 0.035);
 }
 
 /* Public JP/EN links stay visually compact, but their real touch surface is
@@ -6113,6 +6170,25 @@ dialog.lightbox-exit .lb-content {
   animation: none;
   padding-left: 6vw;
   padding-right: 6vw;
+}
+
+/* 帯を埋められないほど本数が少ないとき。流さず、中央に静かに置く。
+   （流すには同じ並びを繰り返すしかなく、1画面に同じ表紙が何枚も出る） */
+.series-stream-fits {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.series-stream-fits::-webkit-scrollbar {
+  display: none;
+}
+.series-stream-fits .series-stream-track {
+  animation: none;
+  /* width: max-content のままなので、帯より狭いときだけ中央に寄る。
+     広いときは寄らず、そのまま横へ送れる。 */
+  margin-inline: auto;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 @media (prefers-reduced-motion: reduce) {
   .series-stream-track {

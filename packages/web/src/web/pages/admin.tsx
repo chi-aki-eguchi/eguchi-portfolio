@@ -830,8 +830,24 @@ function AdminPageContent({
             />
           )}
           {adminTabGroups.map((group) => (
-            <section key={group.key} className="admin-sidebar__group">
-              <h2 className="admin-sidebar__group-title">{group.label}</h2>
+            <section
+              key={group.key}
+              className={`admin-sidebar__group${
+                group.key === "photos" ? " admin-sidebar__group--lead" : ""
+              }`}
+            >
+              {/* 「写真」グループには Library しか入っていない。1項目のための
+                  見出しは置かず、Library そのものを主役として大きく出す。
+                  毎日開くのはここだけで、他の8つは月に数回。9個が同じ重さで
+                  並んでいるのは、道具の実際の使われ方と合っていない。
+                  読み上げ用の名前は `aria-label` で残す。 */}
+              {group.key === "photos" ? (
+                <h2 className="admin-sidebar__group-title sr-only">
+                  {group.label}
+                </h2>
+              ) : (
+                <h2 className="admin-sidebar__group-title">{group.label}</h2>
+              )}
               <div className="admin-sidebar__tabs">
                 {group.tabs.map((key) => {
                   const item = adminTabs[key];

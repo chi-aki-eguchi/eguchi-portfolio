@@ -100,9 +100,19 @@ test("公開サイト — 移動先の先読み › ナビに触れた時点で�
   await page.waitForTimeout(1500);
   asked.length = 0;
 
-  const gallery = page.locator('header a[href="/gallery"]').first();
-  if ((await gallery.count()) === 0) test.skip(true, "この幅ではヘッダーにGalleryが出ない");
-  await gallery.hover();
+  // 狭い画面では横並びのナビは**DOMには在るが display:none**。数だけ見ると
+  // 見落とすので、見えているかで分ける。狭いときはハンバーガーを開いてから
+  // その中のリンクに触れる（触る端末で実際に通る道はこちら）。
+  let link = page.locator('header ul a[href="/gallery"]').first();
+  if (!(await link.isVisible().catch(() => false))) {
+    const burger = page.locator('button[aria-controls="mobile-menu"]');
+    if ((await burger.count()) === 0) test.skip(true, "この幅にはナビが無い");
+    await burger.click();
+    link = page.locator('#mobile-menu a[href="/gallery"]').first();
+    await link.waitFor({ state: "visible" });
+    asked.length = 0;
+  }
+  await link.hover();
   await page.waitForTimeout(1200);
 
   // **押していない。**それでも写真の取得が始まっていること。

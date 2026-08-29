@@ -2187,6 +2187,13 @@ export function GalleryTab({
     "admin:filterMissingCapture",
     false,
   );
+  // 題名の無い写真だけを見る。2026-08-29 の実測で、公開している497枚すべてに
+  // 題名が無かった。題名はライトボックスの札に出る唯一の名前なので、
+  // 「まだ名前が付いていない写真」を数え、そこへ入れるようにする。
+  const [filterMissingTitle, setFilterMissingTitle] = usePersistentState(
+    "admin:filterMissingTitle",
+    false,
+  );
   const [activeAlbumId, setActiveAlbumId] = usePersistentState<string | null>(
     "admin:activeAlbumId",
     null,
@@ -2847,6 +2854,7 @@ export function GalleryTab({
         return false;
       if (filterMissingShotAt && p.shotAt) return false;
       if (filterMissingCapture && (p.camera || p.lens)) return false;
+      if (filterMissingTitle && (p.title ?? "").trim()) return false;
       if (recentCutoff) {
         const t = p.createdAt ? new Date(p.createdAt).getTime() : 0;
         if (!t || t < recentCutoff) return false;
@@ -2903,6 +2911,7 @@ export function GalleryTab({
     filterPublished,
     filterMissingShotAt,
     filterMissingCapture,
+    filterMissingTitle,
     filterRecent,
     isUncategorized,
     featuredIds,
@@ -2923,6 +2932,7 @@ export function GalleryTab({
     filterPublished !== "all" ||
     filterMissingShotAt ||
     filterMissingCapture ||
+    filterMissingTitle ||
     filterRecent !== "all" ||
     activeAlbumId !== null;
   const activeFilterLabels = useMemo(() => {
@@ -2994,6 +3004,8 @@ export function GalleryTab({
       labels.push({ key: "missingShotAt", text: copy.filters.missingDate });
     if (filterMissingCapture)
       labels.push({ key: "missingCapture", text: copy.filters.missingCapture });
+    if (filterMissingTitle)
+      labels.push({ key: "missingTitle", text: copy.filters.missingTitle });
     if (filterRecent !== "all")
       labels.push({
         key: "recent",
@@ -3009,6 +3021,7 @@ export function GalleryTab({
     filterMedium,
     filterMissingCapture,
     filterMissingShotAt,
+    filterMissingTitle,
     filterOrientation,
     filterPublished,
     filterRecent,
@@ -3539,6 +3552,18 @@ export function GalleryTab({
     () => allPhotos.filter((p) => !p.camera && !p.lens).length,
     [allPhotos],
   );
+  const missingTitleCount = useMemo(
+    () => allPhotos.filter((p) => !(p.title ?? "").trim()).length,
+    [allPhotos],
+  );
+  const uncategorizedCount = useMemo(
+    () => allPhotos.filter(isUncategorized).length,
+    [allPhotos, isUncategorized],
+  );
+  const noSeriesCount = useMemo(
+    () => allPhotos.filter((p) => p.seriesId == null).length,
+    [allPhotos],
+  );
   const unpublishedCount = useMemo(
     () => allPhotos.filter((p) => p.isPublished === false).length,
     [allPhotos],
@@ -3579,6 +3604,7 @@ export function GalleryTab({
     filterPublished === "all" &&
     !filterMissingShotAt &&
     !filterMissingCapture &&
+    !filterMissingTitle &&
     filterRecent === "all" &&
     activeAlbumId === null;
   const reorderLockCause = reorderLockReason(
@@ -5944,6 +5970,59 @@ export function GalleryTab({
             )}
           </div>
 
+          {/* **まだ埋まっていないものを、探さなくても見えるようにする。**
+              件数は前から絞り込みの中にあったが、選択肢を開かないと見えない。
+              2026-08-29 の実測では、公開している497枚のうち題名が付いている
+              写真が0枚、分類なしが403枚、どのシリーズにも入っていないのが
+              425枚だった。**見えないものは埋まらない。**
+
+              四角い札を並べると設定画面の見た目になる（`admin-renewal-goal.md`
+              の「AI感の削減」が避けろと言っている汎用UI）。文として置き、
+              押せるところだけ罫線で示す。全部埋まっていれば何も出さない
+              （褒めない。用が無いときは黙っている）。 */}
+          {libraryMode !== "arrange" &&
+            !showTrash &&
+            (missingTitleCount > 0 ||
+              uncategorizedCount > 0 ||
+              noSeriesCount > 0) && (
+              <p className="admin-library-empty-note">
+                <span>{copy.filters.emptyLead}</span>
+                {missingTitleCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterMissingTitle(true);
+                      setShowLibraryFilters(true);
+                    }}
+                  >
+                    {copy.filters.emptyTitle(missingTitleCount)}
+                  </button>
+                )}
+                {uncategorizedCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterCat("__uncat__");
+                      setShowLibraryFilters(true);
+                    }}
+                  >
+                    {copy.filters.emptyCategory(uncategorizedCount)}
+                  </button>
+                )}
+                {noSeriesCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterSeries("__none__");
+                      setShowLibraryFilters(true);
+                    }}
+                  >
+                    {copy.filters.emptySeries(noSeriesCount)}
+                  </button>
+                )}
+              </p>
+            )}
+
           {libraryMode !== "arrange" &&
             !showTrash &&
             showLibraryFilters && (
@@ -6093,6 +6172,18 @@ export function GalleryTab({
                   }`}
                 >
                   {copy.filters.missingCapture} ({missingCaptureCount})
+                </button>
+
+                <button
+                  onClick={() => setFilterMissingTitle((v) => !v)}
+                  aria-pressed={filterMissingTitle}
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
+                    filterMissingTitle
+                      ? ""
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                  }`}
+                >
+                  {copy.filters.missingTitle} ({missingTitleCount})
                 </button>
 
                 <select

@@ -4412,6 +4412,41 @@ a:hover {
   transform: translate(-50%, -50%);
 }
 
+/* 行の説明のうしろに添える「まだ空です」。細い罫で区切るだけにする。
+   色を変えて警告に見せない——責めるためではなく、気づくためのもの。 */
+.admin-atelier .ax-row__note-empty {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px solid var(--admin-line);
+}
+
+/* ─── Library の「まだ埋まっていない」一行 ───
+   件数は前から絞り込みの選択肢の中にあったが、開かないと見えなかった。
+   探さなくても見えるところへ、文として置く。四角い札を並べると設定画面の
+   見た目になるので、押せるところだけ罫線で示す。 */
+.admin-atelier .admin-library-empty-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 8px 0 2px;
+  font-size: var(--admin-text-note);
+  color: var(--admin-muted);
+}
+.admin-atelier .admin-library-empty-note > button {
+  color: var(--admin-ink);
+  border-bottom: 1px solid var(--admin-line-strong);
+  padding-bottom: 1px;
+  transition:
+    color var(--dur-hover) var(--ease-quart),
+    border-color var(--dur-hover) var(--ease-quart);
+}
+.admin-atelier .admin-library-empty-note > button:hover,
+.admin-atelier .admin-library-empty-note > button:focus-visible {
+  color: var(--admin-accent);
+  border-bottom-color: var(--admin-accent);
+}
+
 /* ─── シリーズの作家の言葉 ───
    **サイトの中で唯一「人が書いた文」なのに、本文と同じ大きさで、しかも本文
    より薄く（前景の 62%）組まれていた。**写真の点数やカメラの型番のほうが

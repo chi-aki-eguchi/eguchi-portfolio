@@ -2274,6 +2274,15 @@ export function SeriesTab({
                         count,
                         s.coverPhotoId ? photoLabel(s.coverPhotoId) : "",
                       )}
+                      {/* シリーズの statement は、公開サイトで**唯一の
+                          「人が書いた文」**になる場所。空のまま気づかれない
+                          のがいちばん惜しい（2026-08-29 の実測では2本とも
+                          空だった）。責めずに、事実として1行に添える。 */}
+                      {!(s.statement ?? "").trim() && (
+                        <span className="ax-row__note-empty">
+                          {copy.statementEmpty}
+                        </span>
+                      )}
                     </p>
                   )}
                 </div>

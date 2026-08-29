@@ -49,6 +49,56 @@ export function tidyLensName(name: string): string {
 }
 
 /**
+ * EXIF が「機材が分からない」ことを表すために書く値。**これを機材名として
+ * 並べると、公開ページに `----` や `0.0 mm f/0.0` が出る**（2026-08-29、
+ * 全497点の奥付を出して実際に出た）。空欄と同じ扱いにする。
+ *
+ * 判定は「意味のある文字が一つも無い」に寄せる。実在するレンズ名を消す
+ * ほうが害が大きいので、数字・記号・空白だけのものと、焦点距離や絞りが
+ * ゼロのものに限る。
+ */
+export function isMeaningfulGear(value: string | null | undefined): boolean {
+  const t = (value ?? "").trim();
+  if (!t) return false;
+  if (!/[A-Za-z\u3040-\u30ff\u4e00-\u9fff]/.test(t)) return false; // 記号と数字だけ
+  if (/^0+(\.0+)?\s*mm(\s*f\/?0+(\.0+)?)?$/i.test(t)) return false; // 0.0 mm f/0.0
+  if (/^(unknown|n\/a|none|----+)$/i.test(t)) return false;
+  return true;
+}
+
+/**
+ * 数値の欄（焦点距離・絞り・シャッター・ISO）の「値なし」。EXIF が 0 を書く
+ * ことがあり、そのまま出すと `Aperture f/0.0` のような行が出る。
+ * 桁がすべて 0 のものだけを落とす（`1/125` や `50mm` は残る）。
+ */
+export function isMeaningfulNumber(value: string | null | undefined): boolean {
+  const digits = (value ?? "").replace(/\D/g, "");
+  return digits.length > 0 && /[1-9]/.test(digits);
+}
+
+/**
+ * カメラ名から、繰り返されたメーカー名を落とす。
+ *
+ * EXIF の Make と Model を繋いだ値が入っているため、Model 側にもメーカー名を
+ * 書く機種では二重になる。実測（2026-08-29）で
+ * `NIKON CORPORATION NIKON Z f` / `NIKON CORPORATION NIKON Z6_3` が
+ * そのまま公開ページに出ていた。Sony は Model が `ILCE-1` で始まるため
+ * 二重にならず、これまで気づけなかった。
+ *
+ * **消すのは、先頭の語がもう一度現れたときの、その手前まで**に限る。
+ * 知らないメーカーの正しい名前を勝手に削らないため。
+ */
+export function tidyCameraName(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length < 3) return name.trim();
+  const head = words[0]!.toLowerCase();
+  for (let i = 1; i < words.length - 1; i++) {
+    if (words[i]!.toLowerCase() === head) return words.slice(i).join(" ");
+  }
+  return name.trim();
+}
+
+/**
  * `shotAt` から年月だけを正規表現で取る。**`new Date()` を通さない。**
  * 保存値は `2024-08-19T13:47:04` のようにタイムゾーンを持たないため、
  * Date にすると環境のタイムゾーンで解釈され、月末の1枚が隣の月へ動く。
@@ -99,9 +149,15 @@ export function seriesColophon(photos: ColophonPhoto[]): Colophon | null {
   const months = photos
     .map((p) => yearMonth(p.shotAt))
     .filter((m): m is string => m !== null);
-  const cameras = distinct(photos.map((p) => p.camera));
+  const cameras = distinct(
+    photos.map((p) =>
+      isMeaningfulGear(p.camera) ? tidyCameraName(p.camera!) : null,
+    ),
+  );
   const allLenses = distinct(
-    photos.map((p) => (p.lens ? tidyLensName(p.lens) : p.lens)),
+    photos.map((p) =>
+      isMeaningfulGear(p.lens) ? tidyLensName(p.lens!) : null,
+    ),
   );
   const mediums = distinct(photos.map((p) => p.filmType));
 

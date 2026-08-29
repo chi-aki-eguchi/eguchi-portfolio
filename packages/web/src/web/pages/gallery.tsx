@@ -7,6 +7,7 @@ import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { ContentStatus } from "../components/ContentStatus";
 import { PhotoGallery } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
+import { SeriesColophon } from "../components/SeriesColophon";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 
@@ -373,6 +374,13 @@ export default function GalleryPage() {
               style={{ height: 1 }}
             />
           )}
+          {/* 奥付。シリーズ詳細には前からあるのに、いちばん大きな作品群である
+              ここには無かった。「何点を、いつ、何で撮ったのか」を言わないまま
+              壁だけが続く。絞り込み中はその絞り込んだぶんの事実を出す（画面に
+              出ているものと、書いてあることを食い違わせない）。
+              計算は `rendered`（描画済み）ではなく `filtered`（絞り込み後の
+              全部）から出す。読み込みが進むたびに点数が増えるのは事実に反する。 */}
+          <SeriesColophon photos={filtered} />
         </>
       )}
 

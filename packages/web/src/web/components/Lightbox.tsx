@@ -17,6 +17,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { photoAltText } from "../../shared/photo-alt";
 import { historyBridge } from "../lib/scroll-memory";
+import {
+  isMeaningfulGear,
+  isMeaningfulNumber,
+  tidyCameraName,
+  tidyLensName,
+} from "../lib/series-colophon";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
 // srcset without pulling the full 3200px master stored in R2.
@@ -1452,13 +1458,20 @@ export function Lightbox({
       {/* EXIF info button — only shown when there's data to display */}
       {(() => {
         const exifItems: [string, string][] = [];
-        if (photo.camera) exifItems.push(["Camera", photo.camera]);
-        if (photo.lens) exifItems.push(["Lens", photo.lens]);
-        if (photo.focalLength)
-          exifItems.push(["Focal Length", photo.focalLength]);
-        if (photo.fNumber) exifItems.push(["Aperture", photo.fNumber]);
-        if (photo.exposureTime) exifItems.push(["Shutter", photo.exposureTime]);
-        if (photo.iso) exifItems.push(["ISO", photo.iso]);
+        // 「値なし」を表す EXIF の書き方（`----` / `0.0 mm f/0.0` / 全桁 0）は
+        // 出さない。奥付と同じ判定を使う——同じ写真の同じ欄について、
+        // ビューアと奥付で言うことが食い違わないように。
+        if (isMeaningfulGear(photo.camera))
+          exifItems.push(["Camera", tidyCameraName(photo.camera!)]);
+        if (isMeaningfulGear(photo.lens))
+          exifItems.push(["Lens", tidyLensName(photo.lens!)]);
+        if (isMeaningfulNumber(photo.focalLength))
+          exifItems.push(["Focal Length", photo.focalLength!]);
+        if (isMeaningfulNumber(photo.fNumber))
+          exifItems.push(["Aperture", photo.fNumber!]);
+        if (isMeaningfulNumber(photo.exposureTime))
+          exifItems.push(["Shutter", photo.exposureTime!]);
+        if (isMeaningfulNumber(photo.iso)) exifItems.push(["ISO", photo.iso!]);
         if (photo.shotAt) {
           const d = new Date(photo.shotAt);
           // 同じ日付でも出どころが違う。フィルムの shotAt はデュープした時刻で、

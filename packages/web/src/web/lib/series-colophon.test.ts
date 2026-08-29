@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   colophonHasSubstance,
   formatPeriodRange,
+  isMeaningfulGear,
+  isMeaningfulNumber,
   seriesColophon,
+  tidyCameraName,
   tidyLensName,
   type ColophonPhoto,
 } from "./series-colophon";
@@ -165,5 +168,59 @@ describe("formatPeriodRange", () => {
     expect(formatPeriodRange(null, null)).toBeNull();
     expect(formatPeriodRange(undefined, undefined)).toBeNull();
     expect(formatPeriodRange("", "")).toBeNull();
+  });
+});
+
+/**
+ * 2026-08-29、全497点で奥付を出したところ、公開ページに
+ * `----`・`0.0 mm f/0.0`・`NIKON CORPORATION NIKON Z f` が並んだ。
+ * どれも EXIF がそのまま持っている値で、作品の事実ではない。
+ */
+describe("EXIF の汚れ", () => {
+  test("機材が分からないことを表す値は、機材名として並べない", () => {
+    for (const junk of ["----", "-----", "0.0 mm f/0.0", "0 mm", "", "   ", "Unknown", "n/a", "0.0mm F0.0"]) {
+      expect(isMeaningfulGear(junk)).toBe(false);
+    }
+    for (const real of ["FE 50mm F1.2 GM", "SONY ILCE-1", "24-70mm F2.8 DG DN", "Ai Nikkor 50mm f/1.4S"]) {
+      expect(isMeaningfulGear(real)).toBe(true);
+    }
+    expect(isMeaningfulGear(null)).toBe(false);
+    expect(isMeaningfulGear(undefined)).toBe(false);
+  });
+
+  test("桁がすべて 0 の数値は出さない。ふつうの値は残す", () => {
+    for (const junk of ["0", "0.0", "f/0.0", "0.0 mm", "ISO 0", "", "mm"]) {
+      expect(isMeaningfulNumber(junk)).toBe(false);
+    }
+    for (const real of ["1/125", "50 mm", "f/1.2", "ISO 400", "1.3"]) {
+      expect(isMeaningfulNumber(real)).toBe(true);
+    }
+  });
+
+  test("繰り返されたメーカー名だけを落とす", () => {
+    expect(tidyCameraName("NIKON CORPORATION NIKON Z f")).toBe("NIKON Z f");
+    expect(tidyCameraName("NIKON CORPORATION NIKON Z6_3")).toBe("NIKON Z6_3");
+    expect(tidyCameraName("Canon Canon EOS R5")).toBe("Canon EOS R5");
+    // 繰り返しが無ければ触らない
+    expect(tidyCameraName("SONY ILCE-1")).toBe("SONY ILCE-1");
+    expect(tidyCameraName("FUJIFILM X-T5")).toBe("FUJIFILM X-T5");
+    // 知らない書き方を削らない（最後の語が同じでも、名前が消えては困る）
+    expect(tidyCameraName("RICOH IMAGING COMPANY LTD PENTAX K-3")).toBe(
+      "RICOH IMAGING COMPANY LTD PENTAX K-3",
+    );
+  });
+
+  test("奥付は汚れた値を並べない", () => {
+    const c = seriesColophon([
+      p({ camera: "NIKON CORPORATION NIKON Z f", lens: "----", shotAt: "2025-03-01T00:00:00" }),
+      p({ camera: "NIKON CORPORATION NIKON Z f", lens: "0.0 mm f/0.0", shotAt: "2025-03-02T00:00:00" }),
+      p({ camera: "NIKON CORPORATION NIKON Z f", lens: "Ai Nikkor 50mm f/1.4S", shotAt: "2025-03-03T00:00:00" }),
+    ])!;
+    expect(c.cameras).toEqual(["NIKON Z f"]);
+    expect(c.lenses).toEqual(["Ai Nikkor 50mm f/1.4S"]);
+  });
+
+  test("レンズ名の整理はこれまでどおり効く", () => {
+    expect(tidyLensName("24-70mm F2.8 DG DN | Art 019")).toBe("24-70mm F2.8 DG DN");
   });
 });

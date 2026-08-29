@@ -15,7 +15,7 @@ export default function ProfilePage({
 }) {
   usePageLanguage(language);
   const [photoBroken, setPhotoBroken] = useState(false);
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
@@ -97,6 +97,21 @@ export default function ProfilePage({
   // without it the Journal section mounts after the observer last ran and
   // stays at opacity:0.
   const entranceRef = usePageEntrance([data, noteData]);
+
+  // **設定が届くまで本文を描かない。**このページの中身（写真・文・見出しの
+  // 大きさ・余白）は、全部その設定から来る。先に描くと、届いた瞬間に版面を
+  // 組み直すことになる。実測（2026-08-30）では二段組が y=231→137 へ 94px
+  // 跳ね、締めの帯ごと下へ流れていた（CLS 0.116）。
+  // 1画面ぶん場所だけ取って待つ（`.site-page-hold`）。フックはすべてこの上に
+  // あるので、ここで返しても呼び出し順は変わらない。
+  if (settingsLoading) {
+    return (
+      <section
+        className="max-w-3xl mx-auto site-page site-page-top site-page-hold"
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <section

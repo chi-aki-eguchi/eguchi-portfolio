@@ -71,7 +71,9 @@ export default function SeriesDetailPage() {
 
   // While loading, render a quiet placeholder rather than a "not found" flash.
   if (isLoading) {
-    return <section className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-32 min-h-[60vh]" aria-hidden="true" />;
+    // 1画面ぶん場所を取る。60vh だと 900px の画面でフッターが y=596 に
+    // 描かれ、中身が届いた瞬間に画面外へ飛ぶ（実測 CLS 0.142）。
+    return <section className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-32 site-page-hold" aria-hidden="true" />;
   }
 
   // 取得そのものに失敗したときは「見つかりません」と言わない。この query は

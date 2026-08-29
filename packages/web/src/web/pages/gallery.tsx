@@ -168,7 +168,24 @@ export default function GalleryPage() {
     [filtered, renderCount],
   );
   const gallerySentinelRef = useRef<HTMLDivElement>(null);
+  // **これから足す写真のぶんの場所を、先に取っておく。**
+  // 写真は下へ足されるので、足すたびに「奥付」と「撮影のご依頼」が下へ飛ぶ。
+  // 実測（2026-08-30 / 全497点）ではスクロール中のズレが、ゆっくり読む人で
+  // 0.751、一気に下まで送る人で 1.671 だった（基準は 0.1）。**ゆっくり見て
+  // いる人ほど、その帯が画面に居る時間が長いので被害が大きい。**
+  //
+  // 取る高さは「残り枚数 × 1枚あたりの高さ」。1枚あたりは、いま描けている
+  // ぶんの実寸から出す（列数も配置も設定で変わるので、決め打ちにしない）。
+  // 上限は1画面ぶん。残りが多いあいだは1画面ぶんで頭打ちになり、帯は常に
+  // 画面の外に居る（外で押されても視界の中では何も動かない）。残りが少なく
+  // なると、縮む量が増える量とちょうど釣り合い、正味の移動が消える。
+  const gridBoxRef = useRef<HTMLDivElement>(null);
+  const [perPhotoPx, setPerPhotoPx] = useState(0);
   const fadeRef = useScrollFadeIn([rendered, settings?.galleryLayout]);
+  useEffect(() => {
+    const h = gridBoxRef.current?.getBoundingClientRect().height ?? 0;
+    if (h > 0 && rendered.length > 0) setPerPhotoPx(h / rendered.length);
+  }, [rendered.length]);
   const loadMoreRetryRef = useRef<number | null>(null);
   const requestMorePhotos = useCallback(() => {
     const pendingImages = Array.from(
@@ -354,6 +371,7 @@ export default function GalleryPage() {
         )
       ) : (
         <>
+          <div ref={gridBoxRef}>
           <PhotoGallery
             photos={rendered}
             layoutType={settings?.galleryLayout}
@@ -367,11 +385,21 @@ export default function GalleryPage() {
             seriesSlugById={seriesSlugById}
             categoryLabelBySlug={categoryLabelBySlug}
           />
+          </div>
           {rendered.length < filtered.length && (
             <div
               ref={gallerySentinelRef}
               aria-hidden="true"
               style={{ height: 1 }}
+            />
+          )}
+          {rendered.length < filtered.length && perPhotoPx > 0 && (
+            <div
+              aria-hidden="true"
+              style={{
+                height: perPhotoPx * (filtered.length - rendered.length),
+                maxHeight: "200svh",
+              }}
             />
           )}
           {/* 奥付。シリーズ詳細には前からあるのに、いちばん大きな作品群である
@@ -380,11 +408,18 @@ export default function GalleryPage() {
               出ているものと、書いてあることを食い違わせない）。
               計算は `rendered`（描画済み）ではなく `filtered`（絞り込み後の
               全部）から出す。読み込みが進むたびに点数が増えるのは事実に反する。 */}
-          <SeriesColophon photos={filtered} />
+          {/* **終わりの帯は、本当に終わったときだけ出す。**
+              まだ写真が続くあいだに出しておくと、写真が足されるたびに下へ
+              飛ぶ（実測 2026-08-30: ゆっくり読む人でズレ 0.75）。読んでいる
+              最中に動くのがいちばん落ち着かない。ここは一覧の終端なので、
+              終端に着いたときに現れるのが本来の姿でもある。 */}
+          {rendered.length >= filtered.length && (
+            <SeriesColophon photos={filtered} />
+          )}
         </>
       )}
 
-      <InquiryCta />
+      {rendered.length >= filtered.length && <InquiryCta />}
     </section>
   );
 }

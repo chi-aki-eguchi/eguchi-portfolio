@@ -4446,6 +4446,16 @@ a:hover {
   color: var(--admin-accent);
   border-bottom-color: var(--admin-accent);
 }
+/* **スマホでは出さない。** 390px では4行に折り返して 94px を占め、作業バーを
+   152px まで押し上げた（上限は100px。写真を押し下げないための約束で、
+   `admin-mobile-library.spec.ts` が見張っている）。この一行は「これから
+   どこを埋めるか」を考えるためのもので、考える作業は広い画面でやる。
+   スマホでも件数そのものは、これまでどおり絞り込みの選択肢の中に出る。 */
+@media (max-width: 640px) {
+  .admin-atelier .admin-library-empty-note {
+    display: none;
+  }
+}
 
 /* ─── シリーズの作家の言葉 ───
    **サイトの中で唯一「人が書いた文」なのに、本文と同じ大きさで、しかも本文

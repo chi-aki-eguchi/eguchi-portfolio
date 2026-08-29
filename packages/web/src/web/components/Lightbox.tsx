@@ -193,6 +193,30 @@ export function Lightbox({
     "thumb",
   );
   const [exifOpen, setExifOpen] = useState(false); // EXIF info panel
+  // 貼り札（題名・説明・シリーズ名）の実測の高さ。写真はこのぶんだけ短く
+  // 収める。**以前は写真の上に重ねていた**ので、暗い写真の上に暗い文字が
+  // 乗って読めなかった（2026-08-29 実測。説明文を出すようにして表面化した）。
+  // 文字色は壁の色から作られるが、重ねる先は写真で、写真の明暗は分からない。
+  // 壁に掛けたプリントの下に札が付く形にすれば、明暗に関係なく読める。
+  // 高さは文の長さで変わるので、決め打ちにせず測る。
+  const captionRef = useRef<HTMLDivElement>(null);
+  const [captionH, setCaptionH] = useState(0);
+  useEffect(() => {
+    const el = captionRef.current;
+    if (!el) {
+      setCaptionH(0);
+      return;
+    }
+    const measure = () => setCaptionH(el.getBoundingClientRect().height);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+    // 写真が変われば札の中身も変わる。写真の配列そのものは無限スクロールで
+    // 増えるので、増えたときも測り直す（開いたままの写真の札は変わらないが、
+    // 測り直しは軽い）。
+  }, [index, photos]);
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
   // Photo-swap crossfade: 'out'=instant hide, 'in'=transition to visible, null=idle
@@ -1061,6 +1085,10 @@ export function Lightbox({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            // 札のぶんだけ写真を短く収める。札が無い写真は 0 なので、
+            // これまでどおり画面いっぱいに出る。
+            paddingBottom: captionH ? captionH + 28 : 0,
+            boxSizing: "border-box",
             opacity: swapPhase === "out" ? 0 : 1,
             transition:
               swapPhase === "in"
@@ -1178,7 +1206,14 @@ export function Lightbox({
                     style={{
                       display: "block",
                       width: FIT_W,
-                      height: FIT_H,
+                      // **この1枚が舞台の大きさを決めている。**ほかの層は
+                      // この箱の中に absolute で重なるだけ。だから札のぶんを
+                      // 引くのはここ。親に padding を足しても、高さが
+                      // `94dvh` と画面から直に決まっているので効かない
+                      // （2026-08-29: 実測で写真が箱を20px はみ出していた）。
+                      height: captionH
+                        ? `calc(${FIT_H} - ${captionH + 28}px)`
+                        : FIT_H,
                       objectFit: "contain",
                     }}
                   />
@@ -1341,9 +1376,10 @@ export function Lightbox({
                 name: seriesNameById?.[photo.seriesId] ?? "Series",
               }
             : null;
-        if (!photo.title && !captionSeries) return null;
+        if (!photo.title && !photo.description && !captionSeries) return null;
         return (
           <div
+            ref={captionRef}
             style={{
               ...chromeVis,
               position: "absolute",
@@ -1369,6 +1405,27 @@ export function Lightbox({
                 {photo.title}
               </p>
             )}
+            {/* 写真ごとの一文。**管理画面には前からある欄なのに、公開サイトの
+                どこにも出ていなかった**（2026-08-29 に判明）。書いても消える欄
+                だったので、書く意味が無かった。題名より読みやすく組む——
+                題名は名札、こちらは本文だから。 */}
+            {photo.description && (
+              <p
+                style={{
+                  marginTop: photo.title ? 6 : 0,
+                  marginInline: "auto",
+                  maxWidth: "min(52ch, 90vw)",
+                  fontFamily: "var(--font-ja)",
+                  fontSize: "max(13px, var(--text-meta))",
+                  lineHeight: 1.8,
+                  letterSpacing: "0.02em",
+                  color: ink(0.7),
+                  whiteSpace: "pre-line",
+                }}
+              >
+                {photo.description}
+              </p>
+            )}
             {captionSeries && (
               <Link
                 to={`/series/${captionSeries.slug}`}
@@ -1377,7 +1434,7 @@ export function Lightbox({
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   display: "inline-block",
-                  marginTop: photo.title ? 4 : 0,
+                  marginTop: photo.title || photo.description ? 8 : 0,
                   fontFamily: "var(--font-en)",
                   fontSize: "var(--text-meta)",
                   color: ink(0.42),

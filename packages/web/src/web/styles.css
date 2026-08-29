@@ -4412,6 +4412,20 @@ a:hover {
   transform: translate(-50%, -50%);
 }
 
+/* ─── シリーズの作家の言葉 ───
+   **サイトの中で唯一「人が書いた文」なのに、本文と同じ大きさで、しかも本文
+   より薄く（前景の 62%）組まれていた。**写真の点数やカメラの型番のほうが
+   はっきり出ている状態で、いちばん弱いのが本人の言葉だった（2026-08-29 実測）。
+
+   本文より一段大きい「導入文」として組み直す。オーナーの `bodySize` 設定は
+   入力として尊重し（`calc` の中に入れる）、下限だけこちらで持つ。 */
+.series-statement {
+  font-size: max(1rem, calc(var(--body-size, 0.875rem) * 1.3));
+  line-height: 2;
+  letter-spacing: 0.03em;
+  color: rgba(var(--foreground-rgb), 0.78);
+}
+
 /* ─── Footer reveal ─── */
 .footer-reveal {
   opacity: 0;

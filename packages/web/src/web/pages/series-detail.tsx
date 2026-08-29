@@ -165,13 +165,14 @@ export default function SeriesDetailPage() {
         </header>
       )}
 
-      {/* 作家の言葉は表紙と写真のあいだの「間」。狭い版面でゆっくり読ませる。 */}
+      {/* 作家の言葉は表紙と写真のあいだの「間」。狭い版面でゆっくり読ませる。
+          大きさ・濃さ・行間は `.series-statement`（styles.css）に置いた。
+          ここは唯一の「人が書いた文」なので、本文ではなく導入文として組む。 */}
       {series.statement && (
         <p
-          className={`max-w-2xl mx-auto font-ja whitespace-pre-line break-words ja-prose page-entrance ${
-            hasCover ? "mb-16 md:mb-24 text-left" : "-mt-8 mb-16 md:mb-24 text-left md:text-center"
+          className={`series-statement max-w-2xl mx-auto font-ja whitespace-pre-line break-words ja-prose page-entrance ${
+            hasCover ? "mb-20 md:mb-32 text-left" : "-mt-8 mb-20 md:mb-32 text-left md:text-center"
           }`}
-          style={{ fontSize: "var(--body-size, 0.95rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "var(--body-tracking, 0.02em)", color: `rgba(var(--foreground-rgb),0.62)` }}
         >
           {series.statement}
         </p>

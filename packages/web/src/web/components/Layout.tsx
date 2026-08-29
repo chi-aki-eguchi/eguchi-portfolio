@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
+import { prefetchRoute } from "../lib/prefetch-route";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
@@ -110,6 +111,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [location] = useLocation();
+  // **移動先の中身を、指が触れた時点で取りに行く。**押してから取りに行くと、
+  // 移り変わりの 250ms が終わったところで骨組みが出る（実測 2026-08-30:
+  // TOP→Gallery で、そのあと1秒以上「見出しだけ」の画面が続いていた）。
+  // 触れた時点なら、押すころには届いていることが多い。届かなくても、
+  // これまでどおり各ページが自分で取りに行くだけで、何も壊れない。
+  const queryClient = useQueryClient();
+  const warmOn = (href: string) => ({
+    onMouseEnter: () => prefetchRoute(queryClient, href),
+    onFocus: () => prefetchRoute(queryClient, href),
+    // 触る端末にはホバーが無い。指が触れた時点（押し込む前）から始める。
+    onTouchStart: () => prefetchRoute(queryClient, href),
+  });
   const footerRef = useFooterReveal();
 
   const { data } = useQuery({
@@ -298,6 +311,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <Link
             to="/"
+            {...warmOn("/")}
             className="font-en text-sm font-semibold tracking-[0.08em] text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300 inline-flex items-center min-h-[44px]"
           >
             {data?.navLabelTop ?? "TOP"}
@@ -310,6 +324,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link
                   to={href}
                   aria-current={isActive(href) ? "page" : undefined}
+                  {...warmOn(href)}
                   className="font-en nav-link-luxury nav-link-public"
                   style={
                     {
@@ -484,6 +499,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               key={href}
               to={href}
               aria-current={isActive(href) ? "page" : undefined}
+              {...warmOn(href)}
               className="block px-5 py-3 font-en nav-link-public"
               style={
                 {

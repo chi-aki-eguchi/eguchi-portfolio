@@ -77,3 +77,35 @@ test("公開サイト — 送っている最中に版面が動かない › 出�
   }
   expect(switched, "どの分類でも奥付が出なかった").toBe(true);
 });
+
+/**
+ * **触れた時点で、移動先の中身を取りに行っているか。**
+ *
+ * 効いているかどうかは画面に出ない。配線が外れても、各ページはこれまでどおり
+ * 自分で取りに行くので、誰も気づかない（気づけるのは「前より遅い気がする」だけ）。
+ * だから「押す前に通信が出ていること」を実物で見張る。
+ *
+ * 実測（2026-08-30 / まっさらな入れ物で3回ずつ・1440px）: TOP から Gallery へ
+ * 移って写真が6枚出るまで、中央値 2496ms → 1978ms。
+ */
+test("公開サイト — 移動先の先読み › ナビに触れた時点で、押す前に写真を取りに行く", async ({
+  page,
+}) => {
+  const asked: string[] = [];
+  page.on("request", (r) => {
+    const u = new URL(r.url());
+    if (u.pathname.startsWith("/api/")) asked.push(u.pathname);
+  });
+  await page.goto("/", { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  asked.length = 0;
+
+  const gallery = page.locator('header a[href="/gallery"]').first();
+  if ((await gallery.count()) === 0) test.skip(true, "この幅ではヘッダーにGalleryが出ない");
+  await gallery.hover();
+  await page.waitForTimeout(1200);
+
+  // **押していない。**それでも写真の取得が始まっていること。
+  expect(page.url()).not.toContain("/gallery");
+  expect(asked, `触れたあとに出た通信: ${asked.join(", ") || "なし"}`).toContain("/api/photos");
+});

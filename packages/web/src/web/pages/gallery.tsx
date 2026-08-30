@@ -149,8 +149,13 @@ export default function GalleryPage() {
   ];
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-  const GALLERY_INITIAL = isMobile ? 12 : 24;
-  const GALLERY_STEP = 12;
+  // **最初に何枚並べるか。**少なく始めると、送っている途中で何度も足すことに
+  // なり、そのたびに下にあるものが押し下げられる（実測 2026-08-30: ゆっくり
+  // 読む人でズレ 0.751）。かといって全部（497枚）並べると、写真が出るまでが
+  // 570ms 遅くなる。数画面ぶんを最初に置いて、あとは大きめに足す。
+  const GALLERY_INITIAL = isMobile ? 36 : 120;
+  // ひと束の枚数。1回の追加で稼げる高さが増えると、送る速さに追いつきやすい。
+  const GALLERY_STEP = isMobile ? 24 : 60;
   // 戻ってきたときは、出ていった時点まで描き直してから位置を復元する（B-18）。
   // スクロール位置だけ覚えても、戻った先は最初のひと束しか描いていないので
   // 届かない（実測: 2400px を頼んで 692px までしか戻れない）。
@@ -168,37 +173,25 @@ export default function GalleryPage() {
     [filtered, renderCount],
   );
   const gallerySentinelRef = useRef<HTMLDivElement>(null);
-  // **これから足す写真のぶんの場所を、先に取っておく。**
-  // 写真は下へ足されるので、足すたびに「奥付」と「撮影のご依頼」が下へ飛ぶ。
-  // 実測（2026-08-30 / 全497点）ではスクロール中のズレが、ゆっくり読む人で
-  // 0.751、一気に下まで送る人で 1.671 だった（基準は 0.1）。**ゆっくり見て
-  // いる人ほど、その帯が画面に居る時間が長いので被害が大きい。**
-  //
-  // 取る高さは「残り枚数 × 1枚あたりの高さ」。1枚あたりは、いま描けている
-  // ぶんの実寸から出す（列数も配置も設定で変わるので、決め打ちにしない）。
-  // 上限は1画面ぶん。残りが多いあいだは1画面ぶんで頭打ちになり、帯は常に
-  // 画面の外に居る（外で押されても視界の中では何も動かない）。残りが少なく
-  // なると、縮む量が増える量とちょうど釣り合い、正味の移動が消える。
   const gridBoxRef = useRef<HTMLDivElement>(null);
-  const [perPhotoPx, setPerPhotoPx] = useState(0);
   const fadeRef = useScrollFadeIn([rendered, settings?.galleryLayout]);
-  useEffect(() => {
-    const h = gridBoxRef.current?.getBoundingClientRect().height ?? 0;
-    if (h > 0 && rendered.length > 0) setPerPhotoPx(h / rendered.length);
-  }, [rendered.length]);
   const loadMoreRetryRef = useRef<number | null>(null);
   const requestMorePhotos = useCallback(() => {
     const pendingImages = Array.from(
       fadeRef.current?.querySelectorAll<HTMLImageElement>(".photo-card img") ??
         [],
     ).filter((img) => !img.complete).length;
-    const maxPending = isMobile ? 8 : 12;
+    // **送るのが速い人に追いつく。**待ちを厳しくしすぎると追加が繰り返し
+    // 先送りされ、先に取っておいた場所（空）へ入り込んで真っ白な画面を見る
+    // （実測 2026-08-30: 3600px の地点で画面内の写真が0枚だった）。
+    // 同時に読み込む枚数を増やし、待ち直す間隔も詰める。
+    const maxPending = isMobile ? 16 : 28;
     if (pendingImages > maxPending) {
       if (loadMoreRetryRef.current === null) {
         loadMoreRetryRef.current = window.setTimeout(() => {
           loadMoreRetryRef.current = null;
           requestMorePhotos();
-        }, 450);
+        }, 220);
       }
       return;
     }
@@ -206,7 +199,7 @@ export default function GalleryPage() {
       const current = GALLERY_INITIAL + c;
       return current >= filtered.length ? c : c + GALLERY_STEP;
     });
-  }, [GALLERY_INITIAL, fadeRef, filtered.length, isMobile]);
+  }, [GALLERY_INITIAL, GALLERY_STEP, fadeRef, filtered.length, isMobile]);
 
   // 絞り込みを変えたら追加読み込みは最初からやり直す。ただし**マウント時は
   // 走らせない** — 戻ってきたときに復元した読み込み済みの束を、その場で0へ
@@ -393,21 +386,6 @@ export default function GalleryPage() {
               style={{ height: 1 }}
             />
           )}
-          {rendered.length < filtered.length && perPhotoPx > 0 && (
-            <div
-              aria-hidden="true"
-              style={{
-                height: perPhotoPx * (filtered.length - rendered.length),
-                maxHeight: "200svh",
-              }}
-            />
-          )}
-          {/* 奥付。シリーズ詳細には前からあるのに、いちばん大きな作品群である
-              ここには無かった。「何点を、いつ、何で撮ったのか」を言わないまま
-              壁だけが続く。絞り込み中はその絞り込んだぶんの事実を出す（画面に
-              出ているものと、書いてあることを食い違わせない）。
-              計算は `rendered`（描画済み）ではなく `filtered`（絞り込み後の
-              全部）から出す。読み込みが進むたびに点数が増えるのは事実に反する。 */}
           {/* **終わりの帯は、本当に終わったときだけ出す。**
               まだ写真が続くあいだに出しておくと、写真が足されるたびに下へ
               飛ぶ（実測 2026-08-30: ゆっくり読む人でズレ 0.75）。読んでいる

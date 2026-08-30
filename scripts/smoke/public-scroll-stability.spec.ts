@@ -57,6 +57,39 @@ for (const [step, label] of [[40, "ゆっくり読む速さ"], [220, "一気に�
   });
 }
 
+/**
+ * **飛ぶのを止める代わりに、穴を開けていないか。**
+ *
+ * 版面のズレを消すために「これから足す写真のぶんの場所」を先に取っている。
+ * その場所を空のままにすると、送るのが速い人はそこへ入り込んで**真っ白な画面**
+ * を見る（実測 2026-08-30: 直した直後の実装で、3600px の地点に写真が0枚の
+ * 画面があった）。**飛ばない代わりに何も無い、は直したことにならない。**
+ * 場所取りの中は、読み込み中と同じ静かな枠で埋める。
+ */
+test("公開サイト — 送っている最中に版面が動かない › 送っている間、画面が空にならない", async ({
+  page,
+}) => {
+  await page.goto("/gallery", { waitUntil: "networkidle" });
+  await page.waitForTimeout(2000);
+  let worst = { y: 0, n: Number.POSITIVE_INFINITY };
+  for (let i = 0; i < 24; i++) {
+    await page.evaluate(() => window.scrollBy(0, 600));
+    await page.waitForTimeout(260);
+    const r = await page.evaluate(() => {
+      const seen = (sel: string) =>
+        Array.from(document.querySelectorAll(sel)).filter((e) => {
+          const b = e.getBoundingClientRect();
+          return b.bottom > 0 && b.top < innerHeight && b.width > 20 && b.height > 20;
+        }).length;
+      // 写真そのものと、これから写真が入る枠。どちらも「何かある」に数える。
+      return { n: seen("main img") + seen(".gallery-skeleton > div"), y: Math.round(window.scrollY) };
+    });
+    if (r.n < worst.n) worst = r;
+    if (r.n === 0) break;
+  }
+  expect(worst.n, `${worst.y}px の地点で画面に何も無かった`).toBeGreaterThan(0);
+});
+
 test("公開サイト — 送っている最中に版面が動かない › 出しきったら奥付と締めの帯が出る", async ({
   page,
 }) => {

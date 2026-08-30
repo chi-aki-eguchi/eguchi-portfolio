@@ -70,18 +70,24 @@
   --dur-hover: 300ms; /* color/opacity hover feedback */
   --dur-caption: 350ms; /* tile captions, filter grid */
   --dur-lift: 400ms; /* photo-card hover lift */
-  --dur-reveal: 600ms; /* section/page/footer entrances, LQIP fade */
-  --dur-hero: 700ms; /* hero text + slide crossfade */
-  --dur-drift: 750ms; /* scroll fade-in, collage drift */
-  --dur-breathe: 900ms; /* photo hover-out relax */
+  /* 2026-08-30 オーナー依頼「モーションにもっと余裕を持たせて。表示される
+     スピードとか。もっと高級感」。**現れる側だけを伸ばす。**触ったときの
+     反応（hover / caption / lift）は速いままにする——押して待たされるのは
+     余裕ではなく鈍さなので。上の operational scale は据え置き。 */
+  --dur-reveal: 780ms; /* section/page/footer entrances, LQIP fade */
+  --dur-hero: 900ms; /* hero text + slide crossfade */
+  --dur-drift: 1000ms; /* scroll fade-in, collage drift */
+  --dur-breathe: 1100ms; /* photo hover-out relax */
 
   /* TOP entrance choreography. Provider overrides only the non-default
      choices; these stylesheet values are the standard/photo-first fallback. */
-  --top-motion-duration: 600ms;
+  --top-motion-duration: 780ms;
   --hero-photo-delay: 0s;
-  --hero-text-delay-1: 0.2s;
-  --hero-text-delay-2: 0.3s;
-  --hero-text-delay-3: 0.4s;
+  /* 名前・読み・肩書きが順に現れる間隔。詰まっていると3行が一度に立ち上がって
+     見えるので、1行ずつ読める間隔まで空ける。 */
+  --hero-text-delay-1: 0.28s;
+  --hero-text-delay-2: 0.46s;
+  --hero-text-delay-3: 0.64s;
 
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);

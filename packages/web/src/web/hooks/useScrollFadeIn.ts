@@ -42,9 +42,12 @@ export function useScrollFadeIn(deps: DependencyList = []) {
             // full cap uniformly — batch-relative delays keep the cascade
             // without the lag. Non-tile reveals (single sections) get 0s, same
             // as before.
+            // 段差。2026-08-30 に 0.05s刻み・上限0.3s から広げた
+            // （オーナー依頼「もっと余裕を持たせて」）。一度に立ち上がると
+            // 「表示された」に見え、順に来ると「現れた」に見える。
             el.style.setProperty(
               "--stagger-delay",
-              `${Math.min(i * 0.05, 0.3)}s`,
+              `${Math.min(i * 0.075, 0.45)}s`,
             );
             reveal(el);
           }),
@@ -52,7 +55,10 @@ export function useScrollFadeIn(deps: DependencyList = []) {
       },
       // threshold 0 + positive bottom margin: start the fade ~120px before the
       // element scrolls into view, so it's already animating (not popping) on entry.
-      { threshold: 0, rootMargin: "0px 0px 120px 0px" },
+      // 動きが長くなったぶん、始まりも早くする。画面に入ってから動き出すと、
+      // 見えている場所で1秒かけて濃くなることになる。入る前に動き始めて、
+      // 目に入るころには落ち着いている状態にする。
+      { threshold: 0, rootMargin: "0px 0px 220px 0px" },
     );
     // An IntersectionObserver only reports a *change*. An element that is
     // already scrolled past when it is handed over never intersects again, so

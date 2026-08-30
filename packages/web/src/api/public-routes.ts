@@ -2,6 +2,10 @@ const SPA_STATIC_PATHS = new Set([
   "/",
   "/gallery",
   "/series",
+  // Work の棚（2026-08-31）。**ここに無いと HTTP 404 を返す。**画面は SPA が
+  // 描くので開いても気づけず、本番で実際にそうなっていた（開発サーバは何でも
+  // 200 を返すため、手元でも気づけない）。
+  "/work",
   "/about",
   "/profile",
   "/contact",
@@ -52,7 +56,9 @@ export function canonicalSpaRedirectUrl(
 }
 
 export function isSeriesDetailPath(pathname: string): boolean {
-  return /^\/series\/[^/]+$/.test(normalizeSpaPathname(pathname));
+  // 棚が2つ（`series` / `work`）。1本ぶんのURLは棚で変わるが、**扱いは同じ**
+  // ——実在すれば 200、無ければ 404。
+  return /^\/(series|work)\/[^/]+$/.test(normalizeSpaPathname(pathname));
 }
 
 export function isKnownSpaPath(pathname: string): boolean {

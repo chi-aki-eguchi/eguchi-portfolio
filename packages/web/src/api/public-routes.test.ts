@@ -81,3 +81,61 @@ describe("public SPA route status", () => {
     expect(htmlStatusForSpaPath("/unknown-test-path")).toBe(404);
   });
 });
+
+/**
+ * **公開ページの経路が、いくつもの一覧に散っている。**
+ *
+ * `/work` を足したとき、`app.tsx` には入れたのに次の2つを忘れた:
+ *   - `api/public-routes.ts` の `SPA_STATIC_PATHS` … これが**HTTPの status**
+ *   - `api/ogp.ts` の `KNOWN_ROUTES` … これが**題名と robots**
+ *
+ * 結果、本番で `/work` は**画面が出るのに HTTP 404**、共有カードは
+ * 「Not Found」、検索エンジンには `noindex` になっていた（2026-08-31 実測）。
+ * **開発サーバは何でも 200 を返すので、手元で開いても気づけない。**
+ *
+ * 先読み表には同じ趣旨の見張りが既にあって、そちらは正しく落ちた。
+ * ここでも同じ形で見張る——**一覧が3つあるなら、3つとも突き合わせる。**
+ */
+import { readFileSync } from "node:fs";
+
+describe("app.tsx と各一覧の突き合わせ", () => {
+  const read = (rel: string) =>
+    readFileSync(new URL(rel, import.meta.url), "utf8");
+  const app = read("../web/app.tsx");
+
+  /** 別名や販売導線を除いた「素の公開ページ」。動的な :slug も除く。 */
+  const publicPaths = [...app.matchAll(/<Route path="([^"]+)">/g)]
+    .map((m) => m[1]!)
+    .filter(
+      (p) =>
+        !p.startsWith("/admin") &&
+        !p.includes(":") &&
+        !p.startsWith("/service") &&
+        !p.startsWith("/start") &&
+        !p.startsWith("/portfolio-kit"),
+    );
+
+  test("**公開ページを app.tsx へ足したら、SPA の経路一覧にも足す**（忘れると HTTP 404）", () => {
+    const missing = publicPaths.filter((p) => htmlStatusForSpaPath(p) !== 200);
+    expect(missing).toEqual([]);
+  });
+
+  test("**同じく OGP の既知経路にも足す**（忘れると題名が Not Found・noindex）", () => {
+    const ogp = read("./ogp.ts");
+    // KNOWN_ROUTES の中身だけを見る（他の場所の経路文字列と混ざらないように）
+    const block = ogp.slice(
+      ogp.indexOf("const KNOWN_ROUTES = ["),
+      ogp.indexOf("]", ogp.indexOf("const KNOWN_ROUTES = [")),
+    );
+    const missing = publicPaths.filter((p) => !block.includes(`"${p}"`));
+    expect(missing).toEqual([]);
+  });
+
+  test("棚の1本ぶんは、シリーズも Work も同じ扱い", () => {
+    expect(isSeriesDetailPath("/series/x")).toBe(true);
+    expect(isSeriesDetailPath("/work/x")).toBe(true);
+    expect(htmlStatusForSpaPath("/work/x", { seriesFound: true })).toBe(200);
+    expect(htmlStatusForSpaPath("/work/x", { seriesFound: false })).toBe(404);
+    expect(isSeriesDetailPath("/work")).toBe(false);
+  });
+});

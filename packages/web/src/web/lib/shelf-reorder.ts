@@ -9,11 +9,13 @@
  * だから「見えている棚の中で入れ替え、その結果を**元の位置へ書き戻す**」。
  * もう片方の棚の行は、全体の中の位置を1つも動かさない。
  */
+import { normalizeShelfKind, type ShelfKind } from "../../shared/shelf";
+
 export type ShelfRow = { id: number; kind?: string | null };
 
 /** 空・未知の値は既定の棚（`series`）として読む。列を足す前の行のため。 */
-export function shelfOf(row: ShelfRow): "series" | "work" {
-  return row.kind === "work" ? "work" : "series";
+export function shelfOf(row: ShelfRow): ShelfKind {
+  return normalizeShelfKind(row.kind);
 }
 
 /** 動かせないとき（端・見つからない）は `null`。呼び出し側は何もしない。 */
@@ -21,7 +23,7 @@ export function reorderWithinShelf(
   rows: ShelfRow[],
   id: number,
   delta: number,
-  shelf: "series" | "work",
+  shelf: ShelfKind,
 ): number[] | null {
   const full = rows.map((r) => r.id);
   const slots = rows

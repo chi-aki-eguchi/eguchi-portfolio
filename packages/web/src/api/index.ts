@@ -18,6 +18,7 @@ import {
   UNREADABLE_IMAGE_MESSAGE,
 } from "./uploaded-image-processing";
 import { buildPublicCoverPhotoFilter } from "./series-cover-visibility";
+import { isShelfKind, normalizeShelfKind } from "../shared/shelf";
 import {
   buildFocalRotationByDelta,
   buildFocalRotationToAngle,
@@ -2492,7 +2493,7 @@ const app = new Hono()
     // 棚（2026-08-30）。`?kind=work` のときだけ Work の棚を返す。指定なし・
     // 知らない値はこれまでどおりシリーズ——**既存の呼び出し側は何も変えなくて
     // よい**（TOPの帯・ギャラリー・詳細の前後移動が全部この経路を使っている）。
-    const kind = c.req.query("kind") === "work" ? "work" : "series";
+    const kind = normalizeShelfKind(c.req.query("kind"));
     const rows = await withRetry(() =>
       db
         .select()
@@ -2696,7 +2697,7 @@ const app = new Hono()
           // 棚（2026-08-30）。知らない値は既定のシリーズへ倒す——**送られて
           // きた文字列をそのまま入れない。** 一度でも変な値が入ると、その1本は
           // どちらの一覧にも出ず、管理画面からも探せなくなる。
-          kind: body.kind === "work" ? "work" : "series",
+          kind: normalizeShelfKind(body.kind),
           // Atomic next sort order — avoids duplicates on concurrent inserts.
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM series)`,
         })
@@ -2730,7 +2731,7 @@ const app = new Hono()
     // 棚を移す。ここでも知らない値は受け付けない（400 で断る）——黙って
     // シリーズへ倒すと、Work へ移したつもりの1本が戻っていて混乱する。
     if (body.kind !== undefined) {
-      if (body.kind !== "series" && body.kind !== "work")
+      if (!isShelfKind(body.kind))
         return c.json({ error: "Invalid kind" }, 400);
       update.kind = body.kind;
     }

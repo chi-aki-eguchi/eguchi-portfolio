@@ -2693,6 +2693,10 @@ const app = new Hono()
           coverPhotoId:
             typeof body.coverPhotoId === "number" ? body.coverPhotoId : null,
           isPublished,
+          // 棚（2026-08-30）。知らない値は既定のシリーズへ倒す——**送られて
+          // きた文字列をそのまま入れない。** 一度でも変な値が入ると、その1本は
+          // どちらの一覧にも出ず、管理画面からも探せなくなる。
+          kind: body.kind === "work" ? "work" : "series",
           // Atomic next sort order — avoids duplicates on concurrent inserts.
           sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM series)`,
         })
@@ -2723,6 +2727,13 @@ const app = new Hono()
     // 機能9: themeConfig (JSON string | null)
     if (body.themeConfig !== undefined)
       update.themeConfig = body.themeConfig === "" ? null : body.themeConfig;
+    // 棚を移す。ここでも知らない値は受け付けない（400 で断る）——黙って
+    // シリーズへ倒すと、Work へ移したつもりの1本が戻っていて混乱する。
+    if (body.kind !== undefined) {
+      if (body.kind !== "series" && body.kind !== "work")
+        return c.json({ error: "Invalid kind" }, 400);
+      update.kind = body.kind;
+    }
     const [row] = await withRetry(() =>
       db
         .update(schema.series)

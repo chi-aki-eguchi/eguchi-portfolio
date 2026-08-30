@@ -648,6 +648,9 @@ const ADMIN_PHASE_2B_JA = {
     cardSummary: (count: number, cover: string) =>
       `${count} 枚${cover ? ` ・ 表紙: ${cover}` : ""}`,
     statementEmpty: "作家の言葉がまだ無い",
+    shelfAria: "棚を切り替える",
+    shelfSeries: "シリーズ",
+    shelfWork: "Work",
     published: "公開",
     draft: "下書き",
     edit: "編集",
@@ -2337,6 +2340,9 @@ const ADMIN_PHASE_2B_EN = {
     cardSummary: (count: number, cover: string) =>
       `${count} photo${count === 1 ? "" : "s"}${cover ? ` · Cover: ${cover}` : ""}`,
     statementEmpty: "No statement yet",
+    shelfAria: "Switch shelf",
+    shelfSeries: "Series",
+    shelfWork: "Work",
     published: "Published",
     draft: "Draft",
     edit: "Edit",

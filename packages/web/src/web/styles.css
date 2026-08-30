@@ -4443,6 +4443,36 @@ a:hover {
   border-left: 1px solid var(--admin-line);
 }
 
+/* ─── 棚の切替（シリーズ / Work）───
+   タブに見せない。**タブは左のナビが持っている語**なので、本文の中にもう一段
+   タブがあると「いまどこに居るか」が二重になる。細い罫の上の、選ばれている方
+   だけが濃い、静かな2語にする。 */
+.admin-atelier .admin-shelf-switch {
+  display: flex;
+  gap: 18px;
+  align-items: baseline;
+  margin: 0 0 18px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--admin-line);
+}
+.admin-atelier .admin-shelf-switch > button {
+  font-size: var(--admin-text-note);
+  color: var(--admin-muted);
+  padding-bottom: 6px;
+  margin-bottom: -9px;
+  border-bottom: 1.5px solid transparent;
+  transition:
+    color var(--dur-hover) var(--ease-quart),
+    border-color var(--dur-hover) var(--ease-quart);
+}
+.admin-atelier .admin-shelf-switch > button:hover {
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-shelf-switch > button[aria-pressed="true"] {
+  color: var(--admin-ink);
+  border-bottom-color: var(--admin-ink);
+}
+
 /* ─── Library の「まだ埋まっていない」一行 ───
    件数は前から絞り込みの選択肢の中にあったが、開かないと見えなかった。
    探さなくても見えるところへ、文として置く。四角い札を並べると設定画面の

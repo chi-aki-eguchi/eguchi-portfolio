@@ -95,6 +95,7 @@ import {
   type ContactSettingKey,
 } from "../../shared/contact-settings";
 import { num } from "../lib/utils";
+import { reorderWithinShelf, shelfOf } from "../lib/shelf-reorder";
 import {
   draftAfterSuccessfulSave,
   hasUnsavedSettingsDraft,
@@ -1957,6 +1958,7 @@ type SeriesRow = {
   sortOrder: number;
   isPublished: boolean;
   themeConfig?: string | null;
+  kind?: string | null;
 };
 type SeriesDraft = {
   slug: string;
@@ -1987,6 +1989,10 @@ export function SeriesTab({
   const qc = useQueryClient();
   const { t } = useAdminI18n();
   const copy = t.phase2b.series;
+  // いまどの棚を見ているか（2026-08-30）。**一覧・追加・並べ替えの全部が
+  // この棚の中だけで動く。** 棚をまたいで並べ替えると、もう片方の棚の
+  // 並び順まで書き換わる。
+  const [shelf, setShelf] = useState<"series" | "work">("series");
   const [newTitle, setNewTitle] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [addError, setAddError] = useState("");
@@ -2023,7 +2029,10 @@ export function SeriesTab({
     queryFn: async (): Promise<{ series: SeriesRow[] }> =>
       jsonOrThrow(await adminApi.series.$get()),
   });
-  const series = (data?.series ?? []) as SeriesRow[];
+  const allSeries = (data?.series ?? []) as SeriesRow[];
+  // 既存の行は `kind` が空のこともある（列を足す前に作られたもの）。
+  // 空はシリーズとして扱う——既定値と同じ読み方にする。
+  const series = allSeries.filter((s) => shelfOf(s) === shelf);
 
   const { data: photosData, isLoading: photosLoading } = useQuery({
     queryKey: ["photos", "all"],
@@ -2041,7 +2050,7 @@ export function SeriesTab({
   const addSeries = useMutation({
     mutationFn: async () => {
       const res = await adminApi.series.$post({
-        json: { slug: newSlug, title: newTitle },
+        json: { slug: newSlug, title: newTitle, kind: shelf },
       });
       assertOk(res);
     },
@@ -2122,14 +2131,16 @@ export function SeriesTab({
       qc.invalidateQueries({ queryKey: ["admin-series"] });
     },
   });
+  // 並べ替え。**サーバは全件を1つの並びとして受け取る**（`expectedIds` が
+  // 現在の全件と一致しないと拒否される）。棚で絞った id だけを送ると、
+  // もう片方の棚の行が並びから消える＝並び順が壊れる。
+  //
+  // なので「見えている棚の中で入れ替えて、その結果を**元の位置へ書き戻す**」。
+  // もう片方の棚の行は、全体の中の位置を1つも動かさない。
   const move = (id: number, delta: number) => {
-    const ids = series.map((s) => s.id);
-    const expectedIds = [...ids];
-    const idx = ids.indexOf(id);
-    const to = idx + delta;
-    if (idx < 0 || to < 0 || to >= ids.length) return;
-    ids.splice(idx, 1);
-    ids.splice(to, 0, id);
+    const expectedIds = allSeries.map((s) => s.id);
+    const ids = reorderWithinShelf(allSeries, id, delta, shelf);
+    if (!ids) return;
     qc.setQueryData(["admin-series"], (old: typeof data) => {
       if (!old?.series) return old;
       const byId = new Map((old.series as SeriesRow[]).map((s) => [s.id, s]));
@@ -2196,6 +2207,29 @@ export function SeriesTab({
         title={t.navigation.tabs.series}
         description={t.headers.series}
       />
+
+      {/* 棚の切替（2026-08-30）。**常に出す。**「1本も入っていないうちは
+          隠す」を試したが、それだと最初の1本を作りに行けない（切替が出ない
+          →Work の棚へ入れない→ずっと0本のまま）。隠す条件は罠になる。 */}
+      {
+        <fieldset className="admin-shelf-switch" aria-label={copy.shelfAria}>
+          {([["series", copy.shelfSeries], ["work", copy.shelfWork]] as const).map(
+            ([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  setShelf(value);
+                  closeEdit();
+                }}
+                aria-pressed={shelf === value}
+              >
+                {label}
+              </button>
+            ),
+          )}
+        </fieldset>
+      }
 
       {rowError && (
         <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)] mb-3">

@@ -107,6 +107,9 @@ test("日本語辞書の表示文は固有名詞と入力例を除いて日本�
     "phase2b.settingsDesign.siteCopy.fields.snsLabelInstagram.label",
     "phase2b.settingsDesign.siteCopy.fields.snsLabelTwitter.label",
     "phase2b.settingsDesign.siteCopy.fields.snsLabelNote.label",
+    // 棚の名前。日本語のUIでも「Work」と書く——公開サイトのナビに出るのも
+    // この語で、訳すと管理画面と公開サイトで別の名前になる。
+    "phase2b.series.shelfWork",
   ]);
   const walk = (value: unknown, path: string) => {
     if (typeof value === "string") {

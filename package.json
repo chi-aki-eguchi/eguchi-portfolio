@@ -21,13 +21,14 @@
     "test:tools": "node --test .claude/hooks/credit-status.test.mjs scripts/ai/handoff-tools.test.mjs scripts/ai/check-wiki-freshness.test.mjs scripts/ai/vault-context.test.mjs",
     "check:postgres-schema": "bun packages/web/scripts/check-postgres-schema.ts",
     "check:wiki-freshness": "node scripts/ai/check-wiki-freshness.mjs",
-    "check": "bun run check:postgres-schema && bun run typecheck && bun run lint && bun run test && bun run test:tools && bun run build && bun run check:wiki-freshness",
+    "check": "bun run check:postgres-schema && bun run check:migrations && bun run typecheck && bun run lint && bun run test && bun run test:tools && bun run build && bun run check:wiki-freshness",
     "smoke": "playwright test --config scripts/smoke/playwright.config.ts",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
     "db:push": "turbo db:push",
     "db:studio": "turbo db:studio",
-    "kill:port": "lsof -t -i :${PORT:-4200} | xargs kill -9"
+    "kill:port": "lsof -t -i :${PORT:-4200} | xargs kill -9",
+    "check:migrations": "bun packages/web/scripts/check-migrations.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

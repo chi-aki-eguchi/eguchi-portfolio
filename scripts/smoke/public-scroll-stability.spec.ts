@@ -22,6 +22,13 @@ import { test, expect } from "@playwright/test";
  */
 const LIMIT = 0.1;
 
+// **閾値は下げない。1回だけやり直す。**
+// この測定は、全体を通しで回して機械が混んでいるときだけ 0.1 をわずかに
+// 超えることがある（2026-08-30 実測: 単独では5回中5回通り、通し実行で
+// 0.1576）。中身の問題ではなく測る側の揺れなので、**上限を緩める**のでは
+// なく**もう一度測る**。2回続けて超えるなら、それは本物。
+test.describe.configure({ retries: 1 });
+
 const OBSERVE = () => {
   const w = window as any;
   w.__cls = 0;

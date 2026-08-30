@@ -40,10 +40,25 @@ bun run build         # tsc -b && vite build
 bun test ./src
 
 # DB（packages/web から実行）
-bun run db:push       # スキーマ同期（開発）
-bun run db:generate   # マイグレーション生成
-bun run db:migrate    # マイグレーション実行
+bun run db:push       # スキーマ同期。**本番の Turso はこれで作られてきた**
+bun run db:generate   # マイグレーションファイル生成（当てはしない）
+bun run db:migrate    # 台帳を順に当てる。**この構成では使えない**（下記）
 ```
+
+**本番DBの変え方は `db:push`。`db:migrate` ではない。**
+
+`drizzle-kit migrate` は台帳（`drizzle/meta/_journal.json`）の全件を最初から
+順に当てる。本番の Turso は `db:push` で育ってきたので `__drizzle_migrations`
+に履歴が無く、`0000`（CREATE TABLE）から当てにいって必ず落ちる
+（2026-08-30 に実際に落ちた）。列を1本足すような変更は:
+
+1. `schema.ts` と `schema.postgres.ts` の両方を直す
+2. `bun run db:generate` でファイルを残す（履歴として要る）
+3. `bun run db:push` を**オーナーの手で**実行し、**出る差分を目で読んでから**
+   当てる。DROP や「データが失われる」警告が出たら中止する
+
+エージェントは `db:push` / `db:migrate` を実行できない（`.claude/settings.json`
+の deny）。これは意図的な見張りなので、迂回しない。
 
 ## API 規約（src/api/）
 

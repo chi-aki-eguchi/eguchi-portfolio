@@ -344,6 +344,8 @@ async function fulfillJson(route: Route, value: unknown) {
 async function installPublicApiMocks(
   page: Page,
   settings = SYNTHETIC_SETTINGS,
+  /** Work の棚の中身。既定は空——この作品集はシリーズだけを持っている。 */
+  workShelf: (typeof SYNTHETIC_SERIES)[number][] = [],
 ): Promise<PublicApiMocks> {
   const unexpectedRequests: string[] = [];
 
@@ -375,8 +377,16 @@ async function installPublicApiMocks(
   await page.route("**/api/hero-photos**", (route) =>
     fulfillJson(route, { heroPhotos: SYNTHETIC_PHOTOS.slice(0, 3) }),
   );
+  // 棚（2026-08-30）。`?kind=work` は**別の棚**なので、同じ中身を返さない。
+  // 返してしまうと「Work が2本ある」状態になり、ナビの項目が1つ増える
+  // ——390px では、それだけで JP/EN の当たり面が 0 に潰れた（実測）。
   await page.route("**/api/series**", (route) =>
-    fulfillJson(route, { series: SYNTHETIC_SERIES }),
+    fulfillJson(
+      route,
+      new URL(route.request().url()).searchParams.get("kind") === "work"
+        ? { series: workShelf }
+        : { series: SYNTHETIC_SERIES },
+    ),
   );
   await page.route("**/api/series/synthetic-series-one", (route) =>
     fulfillJson(route, {
@@ -840,6 +850,53 @@ test.describe("public-site — JP/EN切替の実タップ領域", () => {
       deviceScaleFactor: 3,
       isMobile: true,
       hasTouch: true,
+    });
+
+    /**
+     * **Work の棚に1本入れたら、ナビが1つ増える。**
+     *
+     * 2026-08-30 に Work を足したとき、モックが `?kind=work` にも同じ中身を
+     * 返していたせいで「Work が2本ある」状態になり、390px で JP/EN の当たり面が
+     * **0 に潰れた**。モックの誤りだったが、**実際に Work を入れれば同じ幅に
+     * なる。** 誤りを直して終わりにせず、本当に入れた状態でも壊れないことを
+     * ここで確かめる。
+     */
+    test("Work をナビに足しても、JP/EN の当たり面と横幅は保たれる", async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== "mobile-touch",
+        "実端末相当のpointer: coarseだけで当たり面を測る",
+      );
+      const runtimeProblems = collectPageRuntimeProblems(page);
+      const apiMocks = await installPublicApiMocks(page, SYNTHETIC_SETTINGS, [
+        { ...SYNTHETIC_SERIES[0], id: 9001, slug: "commissions", title: "Commissions" },
+      ]);
+
+      await page.goto("/about", { waitUntil: "domcontentloaded" });
+      await expect(page.locator(".language-switch:visible")).toBeVisible();
+      // Work がナビに出ていること（この前提が崩れたらテストの意味が無い）。
+      // ヘッダーは横並びとハンバーガーの**両方**にリンクを持つので数は1では
+      // ない。「1つ以上ある」で見る。
+      expect(
+        await page.locator('header a[href="/work"]').count(),
+      ).toBeGreaterThan(0);
+      await openMobileLanguageSwitch(page);
+
+      const hitArea = await measureLanguageSwitchHitArea(page, "/en/about");
+      expect(hitArea.horizontalContinuousHit).toBeGreaterThanOrEqual(32);
+      expect(hitArea.verticalContinuousHit).toBeGreaterThanOrEqual(32);
+      expect(hitArea.full32pxSquare).toBe(true);
+
+      expect(
+        await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+        })),
+      ).toEqual({ scrollWidth: 390, viewportWidth: 390 });
+
+      expect(apiMocks.unexpectedRequests).toEqual([]);
+      expect(runtimeProblems).toEqual([]);
     });
 
     test("About/Contactの両方向は明暗とも32px以上で、中央タップが相手言語へ進む", async ({

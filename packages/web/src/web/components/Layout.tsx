@@ -503,13 +503,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div
           id="mobile-menu"
           inert={!mobileOpen}
-          className={`md:hidden overflow-hidden transition-all duration-350 ease-[var(--ease-quart)] ${
+          className={`md:hidden transition-all duration-350 ease-[var(--ease-quart)] ${
             mobileOpen
-              ? // i18n Phase 3 スライス1: About/Contact ページで JP|EN 行が1段追加され
-                // うるため、既存 max-h-52 では最大構成(Gallery/Series/About/Contact/
-                // Portfolio Kit)時に切れる余地があった。実測余裕を見て max-h-64 に。
-                "max-h-64 border-t border-[rgba(var(--foreground-rgb),0.05)]"
-              : "max-h-0"
+              ? // **固定の高さにしない。**以前は max-h-52 → max-h-64 と、項目が
+                // 増えるたびに数字を足していた（About/Contact の JP|EN 行が
+                // 増えたときの対処）。2026-08-30 に Work の棚を足したら、また
+                // 下がはみ出して **JP/EN の切替が丸ごと切り落とされた**
+                // （390px・当たり面が 0）。数字を足す直し方は、次に項目が
+                // 増えたときまた壊れる。画面いっぱいまで開いてよいことにし、
+                // 足りなければ中で送る。**切り落とさない**のが約束で、
+                // 高さはその結果。
+                "max-h-[calc(100svh-var(--header-h)-var(--sai-top))] overflow-y-auto overflow-x-hidden border-t border-[rgba(var(--foreground-rgb),0.05)]"
+              : "max-h-0 overflow-hidden"
           } bg-[var(--background)]`}
         >
           {navItems.map(({ href, label }) => (

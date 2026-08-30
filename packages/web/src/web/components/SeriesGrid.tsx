@@ -37,7 +37,14 @@ function seriesScale(s: {
   return parts.length ? parts.join(" ／ ") : null;
 }
 
-export function SeriesGrid() {
+/**
+ * 棚（2026-08-30）。`series` = 作品群 / `work` = もう一組の棚。
+ * **部品は増やさない。**同じ札・同じ列数・同じホバーのまま、どの棚を出すかと
+ * 押した先だけを変える。
+ */
+export type ShelfKind = "series" | "work";
+
+export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -49,8 +56,15 @@ export function SeriesGrid() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["series"],
-    queryFn: async () => jsonOrThrow(await api.series.$get()),
+    // 鍵は棚ごとに分ける。`["series", x]` は詳細ページが slug で使っているので、
+    // そちらと混ざらない名前にする。
+    queryKey: kind === "work" ? ["works"] : ["series"],
+    queryFn: async () =>
+      jsonOrThrow(
+        await api.series.$get(
+          kind === "work" ? { query: { kind: "work" } } : {},
+        ),
+      ),
   });
   const series = data?.series ?? [];
 
@@ -157,7 +171,7 @@ export function SeriesGrid() {
       {series.map((s) => (
         <Link
           key={s.id}
-          to={`/series/${s.slug}`}
+          to={`/${kind === "work" ? "work" : "series"}/${s.slug}`}
           className="group block min-w-0 page-entrance"
         >
           <div

@@ -59,10 +59,18 @@ describe("移動先の先読み", () => {
     }
   });
 
+  test("Work の棚も、一覧と1本ぶんを温める", () => {
+    expect(keysFor("/work")).toEqual(['["works"]']);
+    const k = keysFor("/work/kyoto");
+    expect(k).toContain('["works"]');
+    expect(k).toContain('["series","kyoto"]');
+  });
+
   test("知らない経路では何もしない（無駄な通信を出さない）", () => {
     expect(keysFor("/contact")).toEqual([]);
     expect(keysFor("/this-page-does-not-exist")).toEqual([]);
     expect(keysFor("/series/")).toEqual([]);
+    expect(keysFor("/work/")).toEqual([]);
   });
 
   test("めったに変わらない分類は長めに新鮮扱いにする（着いた直後の再取得で写真がちらつかない）", () => {

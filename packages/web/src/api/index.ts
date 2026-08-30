@@ -1226,6 +1226,7 @@ const app = new Hono()
         // ── Labels / Text ──
         navLabelTop: settings.navLabelTop ?? "TOP",
         navLabelGallery: settings.navLabelGallery ?? "Gallery",
+        navLabelWork: settings.navLabelWork ?? "Work",
         navLabelAbout: settings.navLabelAbout ?? "About",
         navLabelContact: settings.navLabelContact ?? "Contact",
         snsLabelInstagram: settings.snsLabelInstagram ?? "Instagram",
@@ -1361,6 +1362,9 @@ const app = new Hono()
         // "on" = always show; "off" = always hide. Default avoids the trap where
         // created/published series stay invisible because nav was never enabled.
         seriesNavEnabled: settings.seriesNavEnabled ?? "auto", // "auto" | "on" | "off"
+        // Work の棚をナビに出すか。シリーズと同じ3択で、既定は auto
+        // （1本でも公開されていれば出る）。棚が空のうちは出ない。
+        workNavEnabled: settings.workNavEnabled ?? "auto", // "auto" | "on" | "off"
         // ── 機能8: 並び順独立設定 ──
         gallerySortOrder: settings.gallerySortOrder ?? "manual", // "manual" | "date_desc" | "date_asc" | "upload_desc"
         seriesSortOrder: settings.seriesSortOrder ?? "manual", // "manual" | "date_desc" | "date_asc" | "upload_desc"
@@ -2485,11 +2489,17 @@ const app = new Hono()
   // Published series only, in sortOrder. Resolves each cover photo's URL so the
   // list page can render thumbnails without an extra round-trip.
   .get("/series", async (c) => {
+    // 棚（2026-08-30）。`?kind=work` のときだけ Work の棚を返す。指定なし・
+    // 知らない値はこれまでどおりシリーズ——**既存の呼び出し側は何も変えなくて
+    // よい**（TOPの帯・ギャラリー・詳細の前後移動が全部この経路を使っている）。
+    const kind = c.req.query("kind") === "work" ? "work" : "series";
     const rows = await withRetry(() =>
       db
         .select()
         .from(schema.series)
-        .where(eq(schema.series.isPublished, true))
+        .where(
+          sql`${eq(schema.series.isPublished, true)} AND ${eq(schema.series.kind, kind)}`,
+        )
         .orderBy(schema.series.sortOrder),
     );
     const coverIds = rows

@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { prefetchRoute } from "../lib/prefetch-route";
+import { shelfNeedsCount, shouldShowShelf } from "../lib/shelf-nav";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
@@ -134,15 +135,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // link iff at least one published series exists — so created series surface on
   // their own instead of staying invisible behind an opt-in toggle. Only "auto"
   // needs the series list, so the query is gated to avoid a fetch otherwise.
+  // 棚をナビに出すかの規則は `lib/shelf-nav.ts` に1つだけ置く。
+  // シリーズと Work で同じ判断なので、2か所に書くと片方だけ直して食い違う。
   const seriesNav = data?.seriesNavEnabled ?? "auto";
-  const seriesAuto = seriesNav !== "on" && seriesNav !== "off";
   const { data: seriesData } = useQuery({
     queryKey: ["series"],
     queryFn: async () => jsonOrThrow(await api.series.$get()),
-    enabled: seriesAuto,
+    enabled: shelfNeedsCount(seriesNav),
   });
-  const showSeries =
-    seriesNav === "on" || (seriesAuto && (seriesData?.series.length ?? 0) > 0);
+  const showSeries = shouldShowShelf(
+    seriesNav,
+    seriesData?.series.length ?? 0,
+  );
+
+  // Work の棚（2026-08-30）。既定は auto なので、**1本も入れていない人の
+  // 画面は今までと変わらない。**
+  const workNav = data?.workNavEnabled ?? "auto";
+  const { data: workData } = useQuery({
+    queryKey: ["works"],
+    queryFn: async () =>
+      jsonOrThrow(await api.series.$get({ query: { kind: "work" } })),
+    enabled: shelfNeedsCount(workNav),
+  });
+  const showWork = shouldShowShelf(workNav, workData?.series.length ?? 0);
 
   const dm = useDarkModeContext();
   const { showServiceInNav } = useServiceVisibility();
@@ -163,6 +178,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
+    ...(showWork
+      ? [{ href: "/work", label: data?.navLabelWork || "Work" }]
+      : []),
     {
       href: isEnglishPage ? "/en/about" : "/about",
       label: data?.navLabelAbout ?? "About",

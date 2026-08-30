@@ -20,7 +20,7 @@ export default function SeriesDetailPage() {
     // The ":slug" subtree of the typed client collapses under TS instantiation
     // limits (see lib/api.ts) — the response shape is annotated manually instead.
     queryFn: async (): Promise<{
-      series: { id: number; slug: string; title: string; subtitle: string; statement: string; themeConfig?: string | null };
+      series: { id: number; slug: string; title: string; subtitle: string; statement: string; themeConfig?: string | null; kind?: string | null };
       photos: GalleryPhoto[];
     } | null> => {
       const res = await (api.series as Record<string, any>)[":slug"].$get({ param: { slug } });
@@ -39,9 +39,20 @@ export default function SeriesDetailPage() {
 
   // Next-series navigation (wrap-around) — keeps an engaged viewer moving from
   // one body of work to the next instead of dead-ending at the foot of a page.
+  // 棚（2026-08-30）。詳細の応答に `kind` が入っているので、それに従って
+  // 「戻る先」と「次」を同じ棚の中で回す。**棚をまたいで次へ飛ばさない。**
+  const shelf = data?.series.kind === "work" ? "work" : "series";
   const { data: seriesListData } = useQuery({
-    queryKey: ["series"],
-    queryFn: async () => jsonOrThrow(await api.series.$get()),
+    queryKey: shelf === "work" ? ["works"] : ["series"],
+    queryFn: async () =>
+      jsonOrThrow(
+        await api.series.$get(
+          shelf === "work" ? { query: { kind: "work" } } : {},
+        ),
+      ),
+    // 棚が分かるまで（詳細が届くまで）は取りに行かない。先に取ると
+    // シリーズ側を取ってしまい、Work の詳細で「次」が別の棚を指す。
+    enabled: data != null,
   });
   const seriesList = seriesListData?.series ?? [];
   // The detail endpoint does not return the cover, but the list one does and
@@ -200,14 +211,14 @@ export default function SeriesDetailPage() {
 
       <div className={`mt-20 md:mt-28 flex items-baseline ${nextSeries ? "justify-between" : "justify-center"}`}>
         <Link
-          to="/series"
+          to={shelf === "work" ? "/work" : "/series"}
           className="shrink-0 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
         >
-          ← Series
+          ← {shelf === "work" ? (settings?.navLabelWork || "Work") : "Series"}
         </Link>
         {nextSeries && (
           <Link
-            to={`/series/${nextSeries.slug}`}
+            to={`/${shelf}/${nextSeries.slug}`}
             /* min-w-0: flex の子は内容より狭くならないので、これが無いと
                折り返せない長いシリーズ名で行ごと画面外へ出る（実測 320px で
                530px）。break-words だけでは足りない。 */

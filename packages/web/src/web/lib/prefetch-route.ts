@@ -36,6 +36,8 @@ export function prefetchRoute(qc: QueryClient, path: string): void {
 
   const photos = () => warm(["photos"], () => api.photos.$get());
   const series = () => warm(["series"], () => api.series.$get());
+  const works = () =>
+    warm(["works"], () => api.series.$get({ query: { kind: "work" } }));
 
   if (path === "/") {
     warm(["hero-photos"], () => api["hero-photos"].$get());
@@ -51,6 +53,19 @@ export function prefetchRoute(qc: QueryClient, path: string): void {
   }
   if (path === "/series") {
     series();
+    return;
+  }
+  if (path === "/work") {
+    works();
+    return;
+  }
+  if (path.startsWith("/work/")) {
+    const slug = path.slice("/work/".length);
+    if (!slug) return;
+    works();
+    warm(["series", slug], () =>
+      fetch(`/api/series/${encodeURIComponent(slug)}`),
+    );
     return;
   }
   if (path.startsWith("/series/")) {

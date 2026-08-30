@@ -86,8 +86,12 @@ export function setupDom(): JSDOM {
   // Canned-API fetch: resolves relative /api/* URLs against the jsdom origin.
   globalThis.fetch = (async (input: string | URL | Request) => {
     const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    const path = new URL(raw, "http://localhost/").pathname;
-    const hit = canned[path];
+    const u = new URL(raw, "http://localhost/");
+    // クエリ付きの鍵があればそちらを先に見る（`/api/series?kind=work` のように
+    // 同じ経路で中身が変わるものを、テストから出し分けられるようにするため）。
+    // 鍵が無ければこれまでどおり経路だけで引く。
+    const path = u.pathname;
+    const hit = canned[path + u.search] ?? canned[path];
     return new Response(JSON.stringify(hit ?? {}), {
       status: hit === undefined ? 404 : 200,
       headers: { "content-type": "application/json" },

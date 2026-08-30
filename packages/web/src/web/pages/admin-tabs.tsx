@@ -184,6 +184,10 @@ export const SETTINGS_SECTION_KEYS = {
   ],
   series: [
     "seriesNavEnabled",
+    // Work の棚（2026-08-30）。シリーズと同じ節に置く——同じ仕組みの
+    // 2つ目の棚なので、離れた場所にあると設定を探せない。
+    "workNavEnabled",
+    "navLabelWork",
     "galleryExcludeSeries",
     "topSeriesStream",
     "topSeriesStreamLabel",

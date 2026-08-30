@@ -113,6 +113,28 @@ function App() {
               </PageTransition>
             </Layout>
           </Route>
+          {/* Work の棚（2026-08-30）。シリーズと同じ部品に棚だけ渡す。
+              詳細は `/series/:slug` と同じ部品で、戻り先だけ棚に合わせる。 */}
+          <Route path="/work/:slug">
+            <Layout>
+              <PageTransition>
+                <Suspense fallback={<PageFallback />}>
+                  <SeriesDetailPage />
+                </Suspense>
+              </PageTransition>
+            </Layout>
+          </Route>
+          <Route path="/work">
+            <Layout>
+              <PageTransition>
+                <TitledRoute title="Work">
+                  <Suspense fallback={<PageFallback />}>
+                    <SeriesListPage kind="work" />
+                  </Suspense>
+                </TitledRoute>
+              </PageTransition>
+            </Layout>
+          </Route>
           <Route path="/about">
             <Layout>
               <PageTransition>

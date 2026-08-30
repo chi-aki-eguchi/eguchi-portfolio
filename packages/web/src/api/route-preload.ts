@@ -32,6 +32,8 @@ export const ROUTE_MODULES: Record<string, string> = {
   "/": "src/web/pages/top.tsx",
   "/gallery": "src/web/pages/gallery.tsx",
   "/series": "src/web/pages/series.tsx",
+  // Work の棚（2026-08-30）。シリーズと同じ部品なので、読む先も同じ。
+  "/work": "src/web/pages/series.tsx",
   "/about": "src/web/pages/profile.tsx",
   "/profile": "src/web/pages/profile.tsx",
   "/en/about": "src/web/pages/profile.tsx",
@@ -42,6 +44,7 @@ export const ROUTE_MODULES: Record<string, string> = {
 /** `/series/:slug` のように可変部分を持つ経路。 */
 const DYNAMIC_ROUTES: [RegExp, string][] = [
   [/^\/series\/[^/]+$/, "src/web/pages/series-detail.tsx"],
+  [/^\/work\/[^/]+$/, "src/web/pages/series-detail.tsx"],
 ];
 
 /**

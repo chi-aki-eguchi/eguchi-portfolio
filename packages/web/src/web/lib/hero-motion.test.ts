@@ -12,22 +12,25 @@ describe("hero motion CSS settings", () => {
     });
   });
 
-  test("maps all speed choices without changing easing", () => {
+  // 2026-08-30、オーナー依頼「モーションもっと余裕を持たせて」でスタイルシート
+  // 側の既定を 600ms → 780ms へ広げた。**「標準」は値を持たずその既定が出る**
+  // ので、ゆっくり／すばやくも一緒に引き直さないと3段階が潰れる。
+  test("3段階は、広げた既定（780ms）を挟んで離れている", () => {
     expect(heroMotionCssVars("slow", "photo-first")["--top-motion-duration"]).toBe(
-      "850ms",
+      "1050ms",
     );
     expect(
       heroMotionCssVars("quick", "photo-first")["--top-motion-duration"],
-    ).toBe("400ms");
+    ).toBe("520ms");
   });
 
-  test("maps text-first to a 0.1 second rhythm", () => {
+  test("文字からの順番も、広げた間隔に合わせる", () => {
     expect(heroMotionCssVars("standard", "text-first")).toEqual({
       "--top-motion-duration": undefined,
-      "--hero-photo-delay": "0.3s",
+      "--hero-photo-delay": "0.44s",
       "--hero-text-delay-1": "0s",
-      "--hero-text-delay-2": "0.1s",
-      "--hero-text-delay-3": "0.2s",
+      "--hero-text-delay-2": "0.18s",
+      "--hero-text-delay-3": "0.36s",
     });
   });
 

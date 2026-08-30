@@ -1,0 +1,1 @@
+ALTER TABLE `series` ADD `kind` text DEFAULT 'series' NOT NULL;

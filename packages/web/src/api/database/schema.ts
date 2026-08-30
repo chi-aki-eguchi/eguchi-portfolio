@@ -110,6 +110,12 @@ export const series = sqliteTable("series", {
     .default(true),
   // 機能10: シリーズ固有のレイアウト・テーマ設定（JSON文字列。null = グローバル設定に従う）
   themeConfig: text("theme_config"),
+  // 棚。`"series"` = 作品群 / `"work"` = もう一組の棚（2026-08-30 オーナー依頼
+  // 「work はシリーズみたいな感じで自分で他に入れれる仕組み」）。
+  // **別テーブルを作らず、同じ仕組みに棚の区別だけを足す。** 分けると API・
+  // 管理画面・公開ページ・写真の所属列まで二重になる。既定が `"series"` なので、
+  // いま入っているものは全部そのままシリーズの棚に残る。
+  kind: text("kind").notNull().default("series"),
 });
 
 // 料金プランテーブル — H1（撮影依頼の料金表）

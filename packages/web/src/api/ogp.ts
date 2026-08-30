@@ -64,6 +64,9 @@ export function siteUrlFrom(
 const PAGE_TITLES: Record<string, string> = {
   "/gallery": "Gallery",
   "/series": "Series",
+  // Work の棚（2026-08-31）。**ここに足さないと `/work` が Not Found 扱いになり、
+  // 画面は出るのに HTTP 404 を返す**（実測。共有カードも「Not Found」になる）。
+  "/work": "Work",
   "/about": "About",
   "/profile": "About",
   "/contact": "Contact",
@@ -83,6 +86,9 @@ const META_DESCRIPTION_KEYS: Record<string, string> = {
   "/": "metaDescriptionHome",
   "/gallery": "metaDescriptionGallery",
   "/series": "metaDescriptionSeries",
+  // Work は専用キーを増やさず、シリーズ側の説明に相乗りする（同じ「作品群を
+  // 束ねたページ」なので、説明の中身も同じでよい）。
+  "/work": "metaDescriptionSeries",
   "/about": "metaDescriptionAbout",
   "/profile": "metaDescriptionAbout",
   "/contact": "metaDescriptionContact",
@@ -106,6 +112,7 @@ function genericPageDescription(
     case "/gallery":
       return `${name}の作品を一覧できるギャラリーページ。`;
     case "/series":
+    case "/work":
       return `${name}の作品をシリーズ単位で紹介するページ。`;
     case "/about":
     case "/profile":
@@ -270,6 +277,7 @@ export function injectOgp(
     "/",
     "/gallery",
     "/series",
+    "/work",
     "/about",
     "/profile",
     "/contact",
@@ -288,7 +296,8 @@ export function injectOgp(
   // the SPA's not-found view — without this they'd look like normal share cards.
   const isKnown =
     KNOWN_ROUTES.includes(pathname) ||
-    (pathname.startsWith("/series/") && !!override?.title);
+    ((pathname.startsWith("/series/") || pathname.startsWith("/work/")) &&
+      !!override?.title);
   const serviceUnavailable = isServicePath && !isServiceSite;
   const missingPublicPage = !isKnown || serviceUnavailable;
   // A per-page override (e.g. a specific series) wins over the static route title.

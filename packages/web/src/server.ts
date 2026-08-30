@@ -360,15 +360,21 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
           slug: schema.series.slug,
           title: schema.series.title,
           coverPhotoId: schema.series.coverPhotoId,
+          kind: schema.series.kind,
         })
         .from(schema.series)
         .where(eq(schema.series.isPublished, true))
         .orderBy(schema.series.sortOrder),
     );
-    seriesPaths = rows.map((r) => `/series/${encodeURIComponent(r.slug)}`);
-    seriesIdBySlugPath = new Map(
-      rows.map((r) => [`/series/${encodeURIComponent(r.slug)}`, r.id]),
-    );
+    // 棚（2026-08-31）。1本ぶんのURLは棚で変わる（`/series/x` と `/work/x`）。
+    // **ここを棚で分けないと、Work の1本が `/series/x` として sitemap に載り、
+    // 開いた先は 404 になる。**
+    const pathOf = (r: { slug: string; kind?: string | null }) =>
+      `/${r.kind === "work" ? "work" : "series"}/${encodeURIComponent(r.slug)}`;
+    seriesPaths = rows.map(pathOf);
+    seriesIdBySlugPath = new Map(rows.map((r) => [pathOf(r), r.id]));
+    // 棚の入口は、その棚に中身があるときだけ載せる。空の棚を検索結果に出さない。
+    if (rows.some((r) => r.kind === "work")) seriesPaths.unshift("/work");
     seriesById = new Map(
       rows.map((r) => [
         r.id,

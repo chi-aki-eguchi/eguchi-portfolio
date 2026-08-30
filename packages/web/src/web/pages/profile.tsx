@@ -115,7 +115,14 @@ export default function ProfilePage({
 
   return (
     <section
-      className="max-w-3xl mx-auto site-page site-page-top pb-12 md:pb-20 min-h-[60vh]"
+      /* note の記事一覧は設定より後に届く。届いた瞬間に JOURNAL の段が生まれ、
+         **その時点で画面に出ている締めの帯を押しのける**（実測 2026-08-31:
+         帯が y=537 から画面外へ飛び、ズレ 0.063）。基準内ではあるが、読んで
+         いる最中に動くことに変わりはない。届くまで1画面ぶん場所を取り、
+         帯を最初から画面の外に置く（`.site-page-hold`）。 */
+      className={`max-w-3xl mx-auto site-page site-page-top pb-12 md:pb-20 min-h-[60vh] ${
+        noteOn && noteData === undefined ? "site-page-hold" : ""
+      }`}
       ref={entranceRef}
     >
       <PageTitle className="mb-12">{data?.profileLabel ?? "Profile"}</PageTitle>
@@ -391,7 +398,13 @@ export default function ProfilePage({
         </div>
       )}
 
-      <InquiryCta />
+      {/* **締めの帯は、上の中身が出そろってから出す。**
+          この帯はこの節の中にあるので、節に高さを持たせても押し下がらない
+          （`min-height` は中の要素を動かさない。2026-08-31 にそこで一度
+          外した）。note の記事が後から届くと JOURNAL の段が生まれ、**画面に
+          出ている帯を押しのける**（実測: 帯が y=537 から画面外へ）。
+          出そろってから出せば、動くものが無い。 */}
+      {(!noteOn || noteData !== undefined) && <InquiryCta />}
     </section>
   );
 }

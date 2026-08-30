@@ -121,6 +121,28 @@ describe("injectOgp robots policy", () => {
     expect(unknown).toContain("お探しのページは見つかりませんでした。");
   });
 
+  /**
+   * **公開ページを app.tsx に足したら、ここにも足す。**
+   *
+   * 2026-08-31、Work の棚（`/work`）を足したのにこの一覧へ入れ忘れ、**画面は
+   * 出るのに本番が HTTP 404 を返していた**（共有カードも「Not Found」）。
+   * 開発サーバは何でも 200 を返すので、実際に開いても気づけない。
+   */
+  test("Work の棚は、ちゃんとある page として扱う", () => {
+    const work = injectOgp(page, {}, "/work");
+    expect(work).not.toContain("Not Found");
+    expect(robotsOf(work)).toBe("index, follow");
+    expect(work).toContain("<title>Work | ");
+
+    // 1本ぶんは、実在が確かめられたとき（override.title があるとき）だけ。
+    // でたらめな slug が普通の共有カードに見えてはいけない。
+    const known = injectOgp(page, {}, "/work/kyoto", "", { title: "京都" });
+    expect(known).not.toContain("Not Found");
+    const unknown = injectOgp(page, {}, "/work/でたらめ");
+    expect(unknown).toContain("Not Found");
+    expect(robotsOf(unknown)).toBe("noindex, nofollow");
+  });
+
   // 2026-07-10: 正常表示される admin ページが Not Found title になる不整合の
   // 回帰ガード。noindex のまま title だけ実ページ名になること。
   test("admin pages keep noindex but get their real titles (not Not Found)", () => {

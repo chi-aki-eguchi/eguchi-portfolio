@@ -109,7 +109,7 @@ export default function PageTransition({
         if (el) {
           el.style.visibility = "visible";
           el.style.transition =
-            "opacity var(--dur-reveal) var(--ease-expo), transform var(--dur-reveal) var(--ease-expo)";
+            "opacity var(--dur-reveal) var(--ease-reveal), transform var(--dur-reveal) var(--ease-reveal)";
           el.style.opacity = "1";
           el.style.transform = "translateY(0)";
         }

@@ -42,12 +42,14 @@ export function useScrollFadeIn(deps: DependencyList = []) {
             // full cap uniformly — batch-relative delays keep the cascade
             // without the lag. Non-tile reveals (single sections) get 0s, same
             // as before.
-            // 段差。2026-08-30 に 0.05s刻み・上限0.3s から広げた
-            // （オーナー依頼「もっと余裕を持たせて」）。一度に立ち上がると
-            // 「表示された」に見え、順に来ると「現れた」に見える。
+            // 段差。0.05s/0.3s → 0.075s/0.45s（8/30）→ 0.1s/0.55s（8/31）。
+            // 一度に立ち上がると「表示された」に見え、順に来ると「現れた」に
+            // 見える。**上限はほとんど動かしていない**（0.45→0.55s）。刻みだけ
+            // 広げれば最初の数枚の連なりは読めるようになり、1枚目から最後の
+            // 1枚までの待ち時間は 100ms しか増えない。
             el.style.setProperty(
               "--stagger-delay",
-              `${Math.min(i * 0.075, 0.45)}s`,
+              `${Math.min(i * 0.1, 0.55)}s`,
             );
             reveal(el);
           }),

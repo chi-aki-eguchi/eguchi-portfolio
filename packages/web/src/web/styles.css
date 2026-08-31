@@ -74,10 +74,16 @@
      スピードとか。もっと高級感」。**現れる側だけを伸ばす。**触ったときの
      反応（hover / caption / lift）は速いままにする——押して待たされるのは
      余裕ではなく鈍さなので。上の operational scale は据え置き。 */
-  --dur-reveal: 780ms; /* section/page/footer entrances, LQIP fade */
+  --dur-reveal: 780ms; /* section/page/footer entrances */
   --dur-hero: 900ms; /* hero text + slide crossfade */
   --dur-drift: 1000ms; /* scroll fade-in, collage drift */
-  --dur-breathe: 1100ms; /* photo hover-out relax */
+  /* 写真が現れる時間。2026-08-31、ここだけ他の「現れる」より長く取った。
+     写真そのものが出る瞬間がこのサイトの主役で、いちばん短かったから
+     （実測: ぼけが晴れきるのに見えていたのは 264ms しかなかった）。
+     ぼけが晴れてから原寸へ落ち着く——順に起きる方が、一度に終わるより
+     「置かれた」に見えるので、breathe を develop より後ろに置く。 */
+  --dur-develop: 1200ms; /* LQIP のぼけが晴れる */
+  --dur-breathe: 1400ms; /* 晴れたあと原寸へ落ち着く */
 
   /* TOP entrance choreography. Provider overrides only the non-default
      choices; these stylesheet values are the standard/photo-first fallback. */
@@ -93,7 +99,26 @@
   --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
   --ease-inout: cubic-bezier(0.65, 0.05, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
-  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1); /* editorial reveals */
+  /* 現れるもの全部のカーブ。2026-08-31 に `--ease-expo`
+     `cubic-bezier(0.16, 1, 0.3, 1)` から差し替えた。
+
+     **長さを伸ばしても速く見えていたのは、カーブが前のめりだったから。**
+     ease-out-expo は変化の 50% を最初の 10%、90% を 33% で使い切る。
+     8/30 に 750→1000ms へ広げたが、目に見えていた時間は 333ms にしか
+     ならず、増えた 250ms はまるごと 97%→100% の見えない尾に入っていた。
+
+         宣言 1000ms の写真1枚      50%到達  90%到達
+           旧 (0.16, 1, 0.3, 1)      109ms    333ms
+           新 (0.3, .12, .22, 1)     298ms    615ms
+
+     どちらも実測（`scripts/smoke/public-motion-tempo.spec.ts` が同じ形で
+     測り、前のめりなカーブへ戻すと落ちる）。
+
+     **長さは1msも足していない。**時間を、目のある所へ配り直しただけ。
+     y1 を 0 にせず 0.12 残しているのは、頭で完全に止めないため——
+     フェードは画面に入る手前で始まるので、最初が真っ平らだと
+     「遅れて始まった」に見える。 */
+  --ease-reveal: cubic-bezier(0.3, 0.12, 0.22, 1);
   --ease-quart: cubic-bezier(0.25, 1, 0.5, 1); /* hovers, nav, header */
   --ease-exit: cubic-bezier(0.4, 0, 1, 1); /* quick dismissals */
 
@@ -3780,12 +3805,14 @@ body {
   height: auto;
   display: block;
   background-color: var(--photo-placeholder);
-  /* LQIP blur-up: blurred placeholder fades out when real img loads.
-     transform uses --dur-breathe so the load-in scale relaxes slowly. */
+  /* 写真が現れる（LQIP のぼけが晴れる）。ぼけが晴れきってから、少し遅れて
+     原寸へ落ち着く。**印画紙に像が出てくる速さ**を狙っていて、他の「現れる」
+     より長い。カーブも hover 用の quart ではなく、現れる側の reveal を使う
+     （quart は前のめりで、拡大が 497ms で終わってしまっていた）。 */
   transition:
-    filter var(--dur-reveal) var(--ease-expo),
-    opacity var(--dur-reveal) var(--ease-expo),
-    transform var(--dur-breathe) var(--ease-quart);
+    filter var(--dur-develop) var(--ease-reveal),
+    opacity var(--dur-develop) var(--ease-reveal),
+    transform var(--dur-breathe) var(--ease-reveal);
 }
 .photo-card img.lqip-loading {
   /* blur and brightness share the same filter list so they interpolate smoothly */
@@ -4131,7 +4158,7 @@ body[data-texture="mist"]::before {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity var(--dur-hero) var(--ease-expo);
+  transition: opacity var(--dur-hero) var(--ease-reveal);
   backface-visibility: hidden;
   will-change: opacity;
 }
@@ -4225,14 +4252,14 @@ body[data-texture="mist"]::before {
 }
 .hero-photo-reveal {
   opacity: 0;
-  animation: hero-photo-in var(--top-motion-duration) var(--ease-expo)
+  animation: hero-photo-in var(--top-motion-duration) var(--ease-reveal)
     var(--hero-photo-delay) both;
   backface-visibility: hidden;
 }
 .hero-text-reveal {
   opacity: 0;
   transform: translate3d(0, 12px, 0);
-  animation: hero-text-in var(--top-motion-duration) var(--ease-expo) forwards;
+  animation: hero-text-in var(--top-motion-duration) var(--ease-reveal) forwards;
   backface-visibility: hidden;
 }
 .hero-text-reveal-1 {
@@ -4266,8 +4293,8 @@ body[data-texture="mist"]::before {
 .fade-in-item {
   opacity: 0;
   transition:
-    opacity var(--dur-drift) var(--ease-expo),
-    transform var(--dur-drift) var(--ease-expo);
+    opacity var(--dur-drift) var(--ease-reveal),
+    transform var(--dur-drift) var(--ease-reveal);
   transition-delay: var(--stagger-delay, 0s);
   will-change: opacity, transform;
   backface-visibility: hidden;
@@ -4298,8 +4325,8 @@ body[data-reveal="none"] .fade-in-item {
   opacity: 0;
   transform: translate3d(0, 10px, 0);
   transition:
-    opacity var(--dur-reveal) var(--ease-expo),
-    transform var(--dur-reveal) var(--ease-expo);
+    opacity var(--dur-reveal) var(--ease-reveal),
+    transform var(--dur-reveal) var(--ease-reveal);
   will-change: opacity, transform;
   backface-visibility: hidden;
 }
@@ -4358,7 +4385,7 @@ a:hover {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 5px;
   opacity: 0;
-  animation: gallery-hold-in var(--dur-reveal) var(--ease-expo) 0.45s forwards;
+  animation: gallery-hold-in var(--dur-reveal) var(--ease-reveal) 0.45s forwards;
 }
 @media (min-width: 768px) {
   .gallery-skeleton {
@@ -4529,8 +4556,8 @@ a:hover {
   opacity: 0;
   transform: translate3d(0, 8px, 0);
   transition:
-    opacity var(--dur-reveal) var(--ease-expo) 0.05s,
-    transform var(--dur-reveal) var(--ease-expo) 0.05s;
+    opacity var(--dur-reveal) var(--ease-reveal) 0.05s,
+    transform var(--dur-reveal) var(--ease-reveal) 0.05s;
   backface-visibility: hidden;
 }
 .footer-reveal.visible {
@@ -4543,8 +4570,8 @@ a:hover {
   opacity: 0;
   transform: translate3d(0, 14px, 0);
   transition:
-    opacity var(--dur-reveal) var(--ease-expo),
-    transform var(--dur-reveal) var(--ease-expo);
+    opacity var(--dur-reveal) var(--ease-reveal),
+    transform var(--dur-reveal) var(--ease-reveal);
   will-change: opacity, transform;
   backface-visibility: hidden;
 }
@@ -4585,7 +4612,7 @@ img {
   }
   ::view-transition-new(root) {
     animation-duration: 0.55s;
-    animation-timing-function: var(--ease-expo);
+    animation-timing-function: var(--ease-reveal);
     animation-name: vt-fade-in;
   }
   @keyframes vt-fade-out {
@@ -4633,10 +4660,10 @@ img {
 
 /* ─── Lightbox entrance/exit ─── */
 dialog.lightbox-enter {
-  animation: lb-in 0.5s var(--ease-expo) both;
+  animation: lb-in 0.5s var(--ease-reveal) both;
 }
 dialog.lightbox-enter .lb-content {
-  animation: lb-content-in 0.5s var(--ease-expo) 0.08s both;
+  animation: lb-content-in 0.5s var(--ease-reveal) 0.08s both;
 }
 dialog.lightbox-exit {
   /* backdrop fades 0.12s after content starts closing */
@@ -4686,8 +4713,8 @@ dialog.lightbox-exit .lb-content {
 /* ─── Filter switch layout animation ─── */
 .filter-grid-animated > * {
   transition:
-    opacity var(--dur-caption) var(--ease-expo),
-    transform var(--dur-caption) var(--ease-expo);
+    opacity var(--dur-caption) var(--ease-quart),
+    transform var(--dur-caption) var(--ease-quart);
 }
 
 @media (prefers-reduced-motion: reduce) {

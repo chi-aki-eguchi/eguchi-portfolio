@@ -83,10 +83,24 @@ test("公開サイト — 送っている最中に版面が動かない › 送�
     await page.evaluate(() => window.scrollBy(0, 600));
     await page.waitForTimeout(260);
     const r = await page.evaluate(() => {
+      // **場所を取っているだけの写真は数えない。**タイルは現れる途中は
+      // opacity 0 から始まる。並んでいるかどうかだけを数えると、「全部
+      // 揃っているが全部まだ透明」＝人の目には真っ白、を通してしまう。
+      // 2026-08-31 に現れ方を長くしたので、ここを実際の濃さで見るよう変えた。
+      const litEnough = (e: Element) => {
+        let o = 1;
+        for (let n: Element | null = e; n; n = n.parentElement) {
+          o *= parseFloat(getComputedStyle(n).opacity || "1");
+          if (n === document.body) break;
+        }
+        return o > 0.15;
+      };
       const seen = (sel: string) =>
         Array.from(document.querySelectorAll(sel)).filter((e) => {
           const b = e.getBoundingClientRect();
-          return b.bottom > 0 && b.top < innerHeight && b.width > 20 && b.height > 20;
+          if (!(b.bottom > 0 && b.top < innerHeight && b.width > 20 && b.height > 20))
+            return false;
+          return litEnough(e);
         }).length;
       // 写真そのものと、これから写真が入る枠。どちらも「何かある」に数える。
       return { n: seen("main img") + seen(".gallery-skeleton > div"), y: Math.round(window.scrollY) };

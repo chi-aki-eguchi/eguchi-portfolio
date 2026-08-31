@@ -191,3 +191,58 @@ test("公開サイト — 現れ方の体感 › 写真が現れる（ぼけが�
   ).toBeGreaterThan(blurGone as number);
   expect(scaleSettled).toBeLessThanOrEqual(1600);
 });
+
+/**
+ * **動きを減らす設定でも、濃淡は残る。**
+ *
+ * 2026-08-31 まで `*` へ一括で 0.01ms を掛けており、この設定の人には現れ方が
+ * 一つも届いていなかった（オーナー自身がその状態で、6往復ぶんの直しが
+ * 見えていなかった）。消すのは移動、残すのは濃淡。
+ *
+ * **ヒーローは animation で濃くなるので、止めると opacity:0 で固まって消える。**
+ * 「動きを消す」を素朴にやると写真が出なくなる。そこも見張る。
+ */
+test.describe("動きを減らす設定", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("公開サイト — 現れ方の体感 › 移動は消え、濃淡は残る", async ({ page }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+
+    const { declared, samples } = await sampleReveal(page, "fade-in-item");
+    const most = crossing(samples, 0.9);
+    expect(most, "濃淡まで消えている（この設定の人に現れ方が届かない）").not.toBeNull();
+    expect(
+      most,
+      `90%到達 ${most}ms（宣言 ${Math.round(declared)}ms）。濃淡は残す約束`,
+    ).toBeGreaterThan(300);
+
+    const moved = await page.evaluate(() => {
+      const el = document.createElement("div");
+      el.className = "fade-in-item";
+      el.style.cssText = "position:fixed;top:0;left:0;width:40px;height:40px";
+      document.body.appendChild(el);
+      const t = getComputedStyle(el).transform;
+      el.remove();
+      return t;
+    });
+    expect(moved, `移動が残っている: ${moved}`).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+  });
+
+  test("公開サイト — 現れ方の体感 › ヒーローが消えない", async ({ page }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+    await page.waitForTimeout(2600);
+    const r = await page.evaluate(() => {
+      const box = document.querySelector(".hero-photo-reveal") as HTMLElement | null;
+      const img = document.querySelector(".hero-photo-reveal img") as HTMLElement | null;
+      return {
+        opacity: box ? parseFloat(getComputedStyle(box).opacity) : null,
+        imgTransform: img ? getComputedStyle(img).transform : null,
+      };
+    });
+    if (r.opacity === null) test.skip(true, "ヒーローが無いサイト構成");
+    expect(r.opacity, "ヒーローが透明のまま固まっている").toBeGreaterThan(0.98);
+    expect(r.imgTransform, `写真が動いている: ${r.imgTransform}`).toMatch(
+      /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/,
+    );
+  });
+});

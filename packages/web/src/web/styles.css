@@ -4782,6 +4782,16 @@ dialog.lightbox-exit .lb-content {
     transform var(--dur-caption) var(--ease-quart);
 }
 
+/* ─── 動きを減らす設定（2026-08-31 に「全部消す」から「移動だけ消す」へ）───
+
+   **消すのは移動。濃淡は残す。**この設定が避けたいのは、視界の中で物が動く
+   こと（移動・拡大・傾き・視差）で、静かな濃淡の変化ではない。それまでは
+   `*` へ一括で 0.01ms を掛け、**フェードまで含めて全部消していた。**その結果、
+   この設定を入れている人には、どれだけ現れ方を作り込んでも真っ平らな
+   「即表示」しか届かなかった（2026-08-31、オーナー自身がその状態だった）。
+
+   一括の打ち消しは残す——ここで名前を挙げていない動きを取りこぼさないため。
+   その上で、**濃淡だけの動き**を名指しで戻す。 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -4791,20 +4801,51 @@ dialog.lightbox-exit .lb-content {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* 動くものは全部止める。`data-reveal` の方向（寄る・下りる・起き上がる）も
+     ここで無効になる——それらは移動そのものなので、残さない。 */
   .fade-in-item,
   .section-reveal,
   .page-entrance,
   .footer-reveal,
   .hero-photo-reveal,
   .hero-photo-reveal img,
-  .hero-text-reveal {
-    opacity: 1 !important;
+  .hero-text-reveal,
+  .photo-card img {
     transform: none !important;
     filter: none !important;
   }
   .photo-card img.lqip-loading {
     filter: none !important;
     transform: none !important;
+  }
+
+  /* ここから、濃淡だけを戻す。 */
+  .fade-in-item,
+  .section-reveal,
+  .page-entrance,
+  .footer-reveal {
+    transition-property: opacity !important;
+    transition-duration: var(--dur-reveal) !important;
+    transition-timing-function: var(--ease-reveal) !important;
+  }
+  .fade-in-item {
+    transition-duration: var(--dur-drift) !important;
+  }
+  /* ヒーローは transition ではなく animation で濃くなる。`hero-photo-in` は
+     `to { opacity: 1 }` だけ＝移動を含まないので、そのまま走らせてよい。
+     文字も同じ keyframes を借りる（`hero-text-in` は translate を含むため）。
+     **止めたままにすると opacity:0 で固まって消える**ので、必ず戻す。 */
+  .hero-photo-reveal {
+    animation-duration: var(--top-motion-duration) !important;
+  }
+  .hero-text-reveal {
+    animation-name: hero-photo-in !important;
+    animation-duration: var(--top-motion-duration) !important;
+  }
+  /* 中の写真の寄り引きは移動なので止める（親の濃淡だけが残る）。 */
+  .hero-photo-reveal img {
+    animation: none !important;
   }
 }
 

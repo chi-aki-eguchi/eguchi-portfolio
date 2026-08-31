@@ -135,7 +135,13 @@ test.describe("admin — TOPの動き設定", () => {
     }
   });
 
-  test("OSの動きを減らす設定では写真も文字も即表示する", async ({
+  // **2026-08-31 に方針を変えた（オーナー承認）。**それまでここは「即表示」を
+  // 求めていた——動きを減らす設定では duration を 0 にする、という書き方。
+  // だがこの設定が避けたいのは**視界の中で物が動くこと**（移動・拡大・傾き・
+  // 視差）で、静かな濃淡の変化ではない。全部消すと、この設定を入れている人には
+  // 現れ方が一つも届かない（オーナー自身がその状態で、6往復ぶんの直しが
+  // 見えていなかった）。**消すのは移動、残すのは濃淡。**
+  test("OSの動きを減らす設定では、移動は消えるが濃淡は残る", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktopの設定パネルで検証");
@@ -144,11 +150,30 @@ test.describe("admin — TOPの動き設定", () => {
     const photo = iframe.contentFrame().locator(".hero-photo-reveal").first();
     const text = iframe.contentFrame().locator(".hero-text-reveal").first();
 
+    // **最後には必ず出ること。**ヒーローは animation で濃くなるので、素朴に
+    // 「動きを消す」と opacity:0 のまま固まって写真が出なくなる。
     await expect(photo).toHaveCSS("opacity", "1");
     await expect(text).toHaveCSS("opacity", "1");
-    const durationSeconds = await photo.evaluate((el) =>
-      Number.parseFloat(getComputedStyle(el).animationDuration),
+
+    // 濃淡は残す。潰れていたらここで落ちる。
+    for (const [label, target] of [
+      ["写真", photo],
+      ["文字", text],
+    ] as const) {
+      const seconds = await target.evaluate((el) =>
+        Number.parseFloat(getComputedStyle(el).animationDuration),
+      );
+      expect(seconds, `${label}の濃淡が潰れている（${seconds}s）`).toBeGreaterThan(0.3);
+    }
+
+    // 移動は消す。寄り引きは中の <img> に掛かっている。
+    const moved = await iframe
+      .contentFrame()
+      .locator(".hero-photo-reveal img")
+      .first()
+      .evaluate((el) => getComputedStyle(el).transform);
+    expect(moved, `写真が動いている: ${moved}`).toMatch(
+      /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/,
     );
-    expect(durationSeconds).toBeLessThanOrEqual(0.001);
   });
 });

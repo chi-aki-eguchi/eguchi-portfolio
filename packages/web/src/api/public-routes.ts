@@ -74,3 +74,21 @@ export function htmlStatusForSpaPath(
   if (isSeriesDetailPath(normalized)) return options.seriesFound ? 200 : 404;
   return SPA_STATIC_PATHS.has(normalized) ? 200 : 404;
 }
+
+/**
+ * `/series/:slug` / `/work/:slug` を「棚」と「slug」に割る。詳細ページでなければ null。
+ *
+ * server.ts はここを `/series/` だけで見ていたので、**Work 棚に置いた1本は
+ * `/work/:slug` が HTTP 404・noindex・タイトル "Not Found" で返る状態だった**。
+ * 画面そのものは正しく描画されるので、ブラウザで見ている限り気づけない。
+ * 判定を1か所に集めて、棚が増えても取りこぼさないようにする。
+ */
+export function seriesDetailRoute(
+  pathname: string,
+): { shelf: "series" | "work"; slug: string } | null {
+  const match = normalizeSpaPathname(pathname).match(
+    /^\/(series|work)\/([^/]+)$/,
+  );
+  if (!match) return null;
+  return { shelf: match[1] as "series" | "work", slug: match[2] };
+}

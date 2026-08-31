@@ -15,6 +15,7 @@ import {
   canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
   isSeriesDetailPath,
+  seriesDetailRoute,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
 import {
@@ -280,6 +281,8 @@ type SeriesOg = {
   desc: string;
   image: string;
   imageRotationDeg: number;
+  /** 棚。"work" の1本は `/work/:slug`、それ以外は `/series/:slug` にしか無い。 */
+  shelf: "series" | "work";
 };
 const seriesOgCache = new Map<string, { data: SeriesOg | null; ts: number }>();
 async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
@@ -321,6 +324,7 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
         desc: (s.statement || s.subtitle || "").slice(0, 200),
         image,
         imageRotationDeg,
+        shelf: s.kind === "work" ? "work" : "series",
       };
     }
   } catch (e) {
@@ -706,10 +710,16 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         }
       | undefined;
     let seriesFound = false;
-    const seriesMatch = routePathname.match(/^\/series\/([^/]+)$/);
-    if (seriesMatch) {
-      const og = await getSeriesOg(decodeURIComponent(seriesMatch[1]));
-      if (og) {
+    // 棚（2026-09-01）。ここが `/series/` しか見ていなかったので、**Work 棚に
+    // 1本でも置いた瞬間、その `/work/:slug` は HTTP 404・noindex・タイトル
+    // "Not Found" で返る**。画面そのものは正しく描画されるのでブラウザでは
+    // 気づけず、sitemap には載るので、検索側にだけ「登録した先が404」に見える。
+    // 棚が食い違うURL（work の1本を `/series/x` で開く）は SPA 側が 404 を出す
+    // ので、ここでも実在しない扱いのままにする。
+    const detail = seriesDetailRoute(routePathname);
+    if (detail) {
+      const og = await getSeriesOg(decodeURIComponent(detail.slug));
+      if (og && og.shelf === detail.shelf) {
         seriesFound = true;
         override = {
           title: og.title,

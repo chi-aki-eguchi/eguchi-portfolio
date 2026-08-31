@@ -139,3 +139,39 @@ describe("app.tsx と各一覧の突き合わせ", () => {
     expect(isSeriesDetailPath("/work")).toBe(false);
   });
 });
+
+describe("seriesDetailRoute", () => {
+  const { seriesDetailRoute } =
+    require("./public-routes") as typeof import("./public-routes");
+
+  test("棚と slug に割れる", () => {
+    expect(seriesDetailRoute("/series/indigo")).toEqual({
+      shelf: "series",
+      slug: "indigo",
+    });
+    expect(seriesDetailRoute("/work/kyoto")).toEqual({
+      shelf: "work",
+      slug: "kyoto",
+    });
+  });
+
+  test("末尾スラッシュを付けても同じに割れる", () => {
+    expect(seriesDetailRoute("/work/kyoto/")).toEqual({
+      shelf: "work",
+      slug: "kyoto",
+    });
+  });
+
+  test("詳細ページでない道は null", () => {
+    expect(seriesDetailRoute("/work")).toBeNull();
+    expect(seriesDetailRoute("/series")).toBeNull();
+    expect(seriesDetailRoute("/gallery")).toBeNull();
+    expect(seriesDetailRoute("/work/kyoto/extra")).toBeNull();
+  });
+
+  test("slug は復号前のまま返す（呼び出し側が decodeURIComponent する）", () => {
+    expect(seriesDetailRoute("/series/%E4%BA%AC%E9%83%BD")?.slug).toBe(
+      "%E4%BA%AC%E9%83%BD",
+    );
+  });
+});

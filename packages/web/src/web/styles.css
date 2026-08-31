@@ -1376,29 +1376,10 @@
   outline-color: rgba(var(--admin-accent-rgb), 0.3) !important;
 }
 
-/* Error state (available for future per-field validation — no current call
-   site sets this yet). ±3px shake, twice, over 240ms; skipped entirely under
-   reduced-motion via the blanket rule further down. */
-.admin-atelier .field-error {
-  border-color: var(--admin-danger) !important;
-  outline-color: rgba(var(--admin-accent-rgb), 0.3) !important;
-  animation: admin-atelier-shake 240ms var(--ease-inout);
-}
-@keyframes admin-atelier-shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-3px);
-  }
-  50% {
-    transform: translateX(3px);
-  }
-  75% {
-    transform: translateX(-3px);
-  }
-}
+/* 2026-08-31: `.field-error`（±3px を2往復する震え）と `admin-atelier-shake`
+   を消した。**呼び出し元が1つも無い死んだコード**で、しかも震えは道具として
+   いちばん安く見える仕草（軸4 高級感 / 軸5 AI感の削減の逆）。入力の誤りは
+   色と文言で伝える。要るときは震えではない形で作り直す。 */
 
 .admin-atelier table {
   background: var(--admin-paper);
@@ -1587,7 +1568,7 @@
 .admin-atelier
   .admin-select-mark[data-state="draw"]
   .admin-select-mark__circle {
-  animation: admin-select-draw 0.28s var(--ease-out) forwards;
+  animation: admin-select-draw var(--dur-slow) var(--ease-out) forwards;
 }
 @keyframes admin-select-draw {
   from {
@@ -2605,7 +2586,7 @@
   border-top: 1px solid var(--admin-line-strong);
   background: var(--admin-paper);
   box-shadow: 0 -4px 16px rgba(var(--admin-ink-rgb), 0.05);
-  animation: admin-action-bar-enter 120ms var(--ease-out);
+  animation: admin-action-bar-enter var(--dur-base) var(--ease-out);
 }
 
 .admin-atelier .admin-library-reorder-bar {
@@ -2853,7 +2834,7 @@
   stroke-dashoffset: 1;
 }
 .admin-atelier .admin-toast[data-phase="show"] .admin-toast__check {
-  animation: admin-select-draw 0.2s var(--ease-out) forwards;
+  animation: admin-select-draw var(--dur-slow) var(--ease-out) forwards;
 }
 
 /* ⌘K quick palette (工程5) — reuses the generic `dialog` glass/scale
@@ -2985,34 +2966,44 @@
   opacity: 1;
   transform: translateY(0);
 }
+/* 2026-08-31: 6px / 220ms は**動いたことが分からない量**だった（目に見えて
+   いたのは 150ms）。出ていく側は速いまま（待たされないため）、入ってくる側
+   だけ 10px / 320ms へ。`--dur-slow` は既存の operational scale の一番上で、
+   新しい目盛りは足していない——道具は公開サイトの尺で動かさない。 */
 .admin-atelier .admin-screen[data-phase="enter"] {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(10px);
 }
 .admin-atelier .admin-screen[data-phase="show"] {
   opacity: 1;
   transform: translateY(0);
   transition:
-    opacity var(--dur-base) var(--ease-out),
-    transform var(--dur-base) var(--ease-out);
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
 }
 .admin-atelier .admin-screen[data-phase="exit"] {
   opacity: 0;
   transition: opacity var(--dur-fast) var(--ease-in);
 }
 
-/* First-display stagger (header → card groups), 20ms apart, first 6 blocks
-   only — everything after appears together. Opted out for Library
-   (data-stagger unset there): it's a toolbar + virtualized grid, not a
-   handful of stackable sections, and staggering would fight the
-   virtualizer — it still gets the single screen-level fade above. */
+/* First-display stagger (header → card groups), first 6 blocks only —
+   everything after appears together. Opted out for Library (data-stagger
+   unset there): it's a toolbar + virtualized grid, not a handful of stackable
+   sections, and staggering would fight the virtualizer — it still gets the
+   single screen-level fade above.
+
+   2026-08-31: 20ms 刻みだった。**60Hz で 1.2 フレーム。**順に来ているのに
+   一度に立ち上がって見えるので、段差の意図が出ていなかった（公開サイトは
+   100ms 刻み）。45ms へ広げた。上限は 100→225ms だが、最後の1つが出そろう
+   のは 545ms で、その前に上から順に読める。 */
 .admin-atelier .admin-screen[data-stagger="true"][data-phase="show"] > * > * {
   animation: admin-stagger-in var(--dur-base) var(--ease-out) both;
 }
 @keyframes admin-stagger-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    /* 画面全体の立ち上がりと同じ距離にする（6px では動きが読めない）。 */
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -3023,31 +3014,31 @@
   .admin-screen[data-stagger="true"][data-phase="show"]
   > *
   > *:nth-child(2) {
-  animation-delay: 20ms;
+  animation-delay: 45ms;
 }
 .admin-atelier
   .admin-screen[data-stagger="true"][data-phase="show"]
   > *
   > *:nth-child(3) {
-  animation-delay: 40ms;
+  animation-delay: 90ms;
 }
 .admin-atelier
   .admin-screen[data-stagger="true"][data-phase="show"]
   > *
   > *:nth-child(4) {
-  animation-delay: 60ms;
+  animation-delay: 135ms;
 }
 .admin-atelier
   .admin-screen[data-stagger="true"][data-phase="show"]
   > *
   > *:nth-child(5) {
-  animation-delay: 80ms;
+  animation-delay: 180ms;
 }
 .admin-atelier
   .admin-screen[data-stagger="true"][data-phase="show"]
   > *
   > *:nth-child(n + 6) {
-  animation-delay: 100ms;
+  animation-delay: 225ms;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1169,8 +1169,17 @@ export function Lightbox({
                   cursor: isZoomed ? "grab" : "pointer",
                 }}
               >
-                {/* LQIP blur — instant placeholder when grid thumb isn't cached yet */}
-                {photo.lqipSrc && loadStage === "thumb" && (
+                {/* LQIP blur — instant placeholder when grid thumb isn't cached yet。
+                  **出るのは即座、消えるのはゆっくり。**以前は
+                  `loadStage === "thumb"` でマウント自体を切っていたので、
+                  ぼけた仮画像から本画像へ「パッ」と入れ替わっていた
+                  （このサイトで写真をいちばんじっくり見る場所なのに）。
+                  消える側だけ時間をかけて、印画紙に像が出るように晴らす。
+                  **付けたままにしてあるのは、消える瞬間にDOMから外すと
+                  transition が走らないから。**写真を切り替えたときは
+                  0ms で戻す（そこで薄れさせると、新しい写真の上へ
+                  ぼけが後から乗ってくる）。 */}
+                {photo.lqipSrc && (
                   <img
                     src={photo.lqipSrc}
                     alt=""
@@ -1184,6 +1193,11 @@ export function Lightbox({
                       objectFit: "contain",
                       filter: "blur(20px)",
                       transform: "scale(1.1)",
+                      opacity: loadStage === "thumb" ? 1 : 0,
+                      transition:
+                        loadStage === "thumb"
+                          ? "opacity 0ms"
+                          : "opacity var(--dur-develop) var(--ease-reveal)",
                     }}
                   />
                 )}
@@ -1258,6 +1272,13 @@ export function Lightbox({
                         height: "100%",
                         objectFit: "contain",
                         opacity: loadStage !== "thumb" ? 1 : 0,
+                        // 画質が上がる差し替え。**濃くなる側だけ時間をかけ、
+                        // 写真を切り替えたときは 0ms で戻す**（薄れさせると
+                        // 前の写真が次の写真の上に残る）。
+                        transition:
+                          loadStage !== "thumb"
+                            ? "opacity var(--dur-reveal) var(--ease-reveal)"
+                            : "opacity 0ms",
                       }}
                     />
                   </picture>
@@ -1281,6 +1302,11 @@ export function Lightbox({
                       height: "100%",
                       objectFit: "contain",
                       opacity: loadStage === "full" ? 1 : 0,
+                      // 上と同じ扱い。濃くなる側だけ時間をかける。
+                      transition:
+                        loadStage === "full"
+                          ? "opacity var(--dur-reveal) var(--ease-reveal)"
+                          : "opacity 0ms",
                     }}
                     draggable={false}
                   />
@@ -1328,6 +1354,11 @@ export function Lightbox({
                         height: "100%",
                         objectFit: "contain",
                         opacity: loadStage === "full" ? 1 : 0,
+                        // 上と同じ扱い。濃くなる側だけ時間をかける。
+                        transition:
+                          loadStage === "full"
+                            ? "opacity var(--dur-reveal) var(--ease-reveal)"
+                            : "opacity 0ms",
                       }}
                       draggable={false}
                     />

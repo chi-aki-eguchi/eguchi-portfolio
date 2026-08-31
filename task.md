@@ -30,11 +30,9 @@
 
 ### 検証
 
-- `bun run check` = **1146 pass / 0 fail（EXIT=0）**
-- `bun run smoke` = **351 passed / 0 failed（EXIT=0）**
+- `bun run check` = **1146 pass / 0 fail** ／ `bun run smoke` = **350 passed / 0 failed**
 - `public-motion-tempo.spec.ts` が尺を見張る（**前のめりなカーブへ戻すと落ちる
-  ことを、一度戻して確認済み**）
-- **オーナーの目での確認待ち。**「まだ速い / 遅い」はここでしか決まらない
+  ことを、一度戻して確認済み**）。**オーナーの目での確認待ち**
 
 ### 触った反応（`afe642e` で撤回した判断）
 

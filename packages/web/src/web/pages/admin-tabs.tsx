@@ -811,6 +811,42 @@ const FADE_OPTIONS: {
       { l: 8, t: 8, w: 84, h: 84, opacity: 0.9 },
     ],
   },
+  {
+    value: "drift-left",
+    name: "右から寄る",
+    desc: "少し右から流れてくる",
+    rects: [
+      { l: 40, t: 20, w: 55, h: 60, opacity: 0.3 },
+      { l: 12, t: 20, w: 55, h: 60, opacity: 0.9 },
+    ],
+  },
+  {
+    value: "drift-right",
+    name: "左から寄る",
+    desc: "少し左から流れてくる",
+    rects: [
+      { l: 5, t: 20, w: 55, h: 60, opacity: 0.3 },
+      { l: 33, t: 20, w: 55, h: 60, opacity: 0.9 },
+    ],
+  },
+  {
+    value: "drop",
+    name: "下りてくる",
+    desc: "少し上から下りてくる",
+    rects: [
+      { l: 20, t: 5, w: 60, h: 45, opacity: 0.3 },
+      { l: 20, t: 32, w: 60, h: 55, opacity: 0.9 },
+    ],
+  },
+  {
+    value: "tilt",
+    name: "起き上がる",
+    desc: "わずかに傾いた状態から起きる",
+    rects: [
+      { l: 16, t: 18, w: 66, h: 62, opacity: 0.3, rotate: -8 },
+      { l: 14, t: 14, w: 72, h: 72, opacity: 0.9 },
+    ],
+  },
 ];
 
 export function HeroTab() {

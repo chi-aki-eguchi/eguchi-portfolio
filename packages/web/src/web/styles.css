@@ -4275,29 +4275,28 @@ body[data-texture="mist"]::before {
 
    `contain`（写真を切らずに全部見せる）だけは対象外。1.045倍から始めると
    その間だけ端が切れ、「切らない」という約束を破ることになる。 */
+/* **ぼけを動かすのはやめた（2026-08-31）。**全画面の `filter: blur()` は毎コマ
+   描き直しになり、実測でコマの間隔が倍になった:
+
+       ぼけ有り  ぼけの最中 76コマ 中央値16.9ms 32ms超13コマ 最悪39ms
+       ぼけ無し  全部      433コマ 中央値 8.4ms 32ms超 0コマ 最悪24ms
+
+   グリッドの写真（`.photo-card img`）のぼけは残す——1枚が小さいので同じ処理でも
+   桁が違う。**同じ効果でも、面積が変われば値段が変わる。**
+
+   代わりに寄り引きを強めた（1.045→1.06倍）。transform と opacity だけなら
+   合成だけで済むので、何コマ動かしても落ちない。柔らかさが要るなら、ぼけた
+   複製を1枚重ねて opacity で入れ替える形（ぼけは1回だけ描く）が次の手。 */
 .hero-photo-reveal img:not(.hero-slide-contain) {
-  animation:
-    hero-photo-settle var(--dur-breathe) var(--ease-reveal)
-      var(--hero-photo-delay) both,
-    /* 現像。長さは `--top-motion-duration`＝オーナーが選んだ「速さ」に従う。
-       舞台の透けから、こちらへ主役を移した。 */
-      hero-photo-develop var(--top-motion-duration) var(--ease-reveal)
-      var(--hero-photo-delay) both;
+  animation: hero-photo-settle var(--dur-breathe) var(--ease-reveal)
+    var(--hero-photo-delay) both;
 }
 @keyframes hero-photo-settle {
   from {
-    transform: scale(1.045);
+    transform: scale(1.06);
   }
   to {
     transform: scale(1);
-  }
-}
-@keyframes hero-photo-develop {
-  from {
-    filter: blur(14px);
-  }
-  to {
-    filter: blur(0px);
   }
 }
 
@@ -4331,6 +4330,22 @@ body[data-reveal="rise"] .fade-in-item {
 }
 body[data-reveal="scale"] .fade-in-item {
   transform: scale(0.97);
+}
+/* 2026-08-31 オーナー依頼「読み込みの流れ・方向を選べるように」。
+   **transform と opacity だけで作る。**同じ現れ方を `filter` で作ると全画面の
+   ヒーローで実測13コマ落ちた。写真は一度に何十枚も現れるので、合成だけで
+   済む道具から出ない。 */
+body[data-reveal="drift-left"] .fade-in-item {
+  transform: translate3d(28px, 0, 0);
+}
+body[data-reveal="drift-right"] .fade-in-item {
+  transform: translate3d(-28px, 0, 0);
+}
+body[data-reveal="drop"] .fade-in-item {
+  transform: translate3d(0, -14px, 0);
+}
+body[data-reveal="tilt"] .fade-in-item {
+  transform: rotate(-1.2deg) scale(0.985);
 }
 .fade-in-item.visible {
   opacity: 1;

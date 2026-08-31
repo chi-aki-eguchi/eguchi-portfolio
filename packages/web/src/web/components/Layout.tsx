@@ -175,6 +175,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? EN_TO_JA_PATH[location]
     : JA_TO_EN_PATH[location];
 
+  // ページを開いた瞬間の順番（2026-08-31）。
+  //
+  // **開いてから半秒、画面に出ているのはナビだけで、しかも二度書き換わって
+  // いた。**実測（本番・1440px）:
+  //
+  //     184ms  ナビが一瞬で出る（「TOP」・明朝・薄い）
+  //     ~500ms 「AKI EGUCHI」へ書き換わり、書体も太さも変わる
+  //     553ms  ようやく写真がフェード開始
+  //     ~1000ms ナビに「Series」が増える
+  //
+  // どれも「設定がまだ届いていないので既定値で描いた」結果で、写真家のサイト
+  // を開いた人が最初に見るのが**自分を組み立て直しているナビ**になっていた。
+  //
+  // **器が整うまで器を出さない。**中身（写真）が主役なので、写真が現れてから
+  // 器が後ろで静かに整う順にする。待つのは名前・書体・棚が確定するまでで、
+  // 写真の到着は1msも遅らせていない。
+  const chromeReady =
+    Boolean(data) &&
+    (!shelfNeedsCount(seriesNav) || seriesData !== undefined) &&
+    (!shelfNeedsCount(workNav) || workData !== undefined);
+  const [chromeRevealed, setChromeRevealed] = useState(false);
+  useEffect(() => {
+    if (chromeReady) {
+      setChromeRevealed(true);
+      return;
+    }
+    // 設定が落ちてきても、ナビが永久に消えたままにはしない。
+    const t = window.setTimeout(() => setChromeRevealed(true), 2000);
+    return () => window.clearTimeout(t);
+  }, [chromeReady]);
+
   const navItems = [
     { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
@@ -325,7 +356,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           paddingTop: "var(--sai-top)",
         }}
       >
-        <nav className="max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between">
+        <nav
+          className="site-chrome-reveal max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between"
+          data-ready={chromeRevealed ? "true" : undefined}
+        >
           {/* Logo */}
           <Link
             to="/"

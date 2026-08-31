@@ -4520,6 +4520,33 @@ a:hover {
   transform: translate3d(0, 0, 0);
 }
 
+/* ─── 器（ナビ）の到着 ───
+   写真より先に出て、しかも二度書き換わっていたものを、写真の後ろへ回す。
+   理由と実測は `Layout.tsx` の `chromeReady` の所に書いた。
+
+   **背景ではなく中身だけを出す。**帯そのものは紙と同じ色なので、透けても
+   何も起きない。ヘッダー側の `transition-property` を上書きしないよう、
+   `<nav>` に掛ける（ヘッダーはスクロール時の背景の変化を持っている）。
+
+   遅らせは 0.45s。写真が現れ始めてから器が追いつく間隔で、写真が落ち着く
+   ころに読める濃さになる。 */
+.site-chrome-reveal {
+  opacity: 0;
+  /* 見えていないものを押せてしまわないように。キーボードでも拾わない。 */
+  pointer-events: none;
+}
+.site-chrome-reveal[data-ready="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity var(--dur-reveal) var(--ease-reveal) 0.45s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-chrome-reveal {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* ─── Page entrance (profile/contact) ─── */
 .page-entrance {
   opacity: 0;

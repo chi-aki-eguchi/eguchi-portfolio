@@ -4224,9 +4224,20 @@ body[data-texture="mist"]::before {
 .top-page {
   --dur-reveal: var(--top-motion-duration);
 }
+/* ─── ヒーローの出方（2026-08-31 に組み替え）───
+   **写真を半透明で見せない。**それまでは紙の上で opacity を 0→1 していたので、
+   途中は「色あせた印刷」に見えていた（実測: 1016ms の時点で幽霊のような
+   薄い写真が画面いっぱいに出ていた）。しかも直前まで画面は空なので、
+   繋がる前の状態が無く「急に出た」と読める。
+
+   グリッドの写真は**ぼけたまま不透明**で現れ、そこからくっきりする。
+   ヒーローだけがその仲間に入っていなかった。
+
+   舞台（この箱）は短く出し、**長さは中の写真の現像へ移す。**
+   透ける時間を短くして、ぼけが晴れる時間を長く取る。 */
 .hero-photo-reveal {
   opacity: 0;
-  animation: hero-photo-in var(--top-motion-duration) var(--ease-reveal)
+  animation: hero-photo-in var(--dur-slow) var(--ease-reveal)
     var(--hero-photo-delay) both;
   backface-visibility: hidden;
 }
@@ -4265,8 +4276,13 @@ body[data-texture="mist"]::before {
    `contain`（写真を切らずに全部見せる）だけは対象外。1.045倍から始めると
    その間だけ端が切れ、「切らない」という約束を破ることになる。 */
 .hero-photo-reveal img:not(.hero-slide-contain) {
-  animation: hero-photo-settle var(--dur-breathe) var(--ease-reveal)
-    var(--hero-photo-delay) both;
+  animation:
+    hero-photo-settle var(--dur-breathe) var(--ease-reveal)
+      var(--hero-photo-delay) both,
+    /* 現像。長さは `--top-motion-duration`＝オーナーが選んだ「速さ」に従う。
+       舞台の透けから、こちらへ主役を移した。 */
+      hero-photo-develop var(--top-motion-duration) var(--ease-reveal)
+      var(--hero-photo-delay) both;
 }
 @keyframes hero-photo-settle {
   from {
@@ -4274,6 +4290,14 @@ body[data-texture="mist"]::before {
   }
   to {
     transform: scale(1);
+  }
+}
+@keyframes hero-photo-develop {
+  from {
+    filter: blur(14px);
+  }
+  to {
+    filter: blur(0px);
   }
 }
 
@@ -4761,6 +4785,7 @@ dialog.lightbox-exit .lb-content {
   .hero-text-reveal {
     opacity: 1 !important;
     transform: none !important;
+    filter: none !important;
   }
   .photo-card img.lqip-loading {
     filter: none !important;

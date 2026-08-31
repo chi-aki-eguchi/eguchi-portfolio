@@ -6,7 +6,6 @@
 - **Status:** 公開サイト＋ライトボックス＋admin の動きを直した。**push 済み。**
 - **Current owner:** Claude Code / **Handoff readiness:** ready
 - **Branch:** `main` / **HEAD:** `SELF`
-- push 状況の測り方: `git rev-list --left-right --count origin/main...HEAD`
 
 ### やったこと
 

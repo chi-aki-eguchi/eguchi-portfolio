@@ -142,9 +142,12 @@ export function ogCardTitleFrom(settings: Record<string, string>): string {
   );
 }
 
+// 検索の言葉を先頭に置く。「Aki Eguchi Portfolio Kit」は、この製品を既に知って
+// いる人しか打たない語で、検索から新しく来る人には一語も当たらない。写真家が
+// 実際に打つのは「写真家 ポートフォリオサイト 制作」なので、商品名はその後ろ。
 const SERVICE_OG = {
-  title: "Aki Eguchi Portfolio Kit",
-  desc: "いま見ているサイトが、そのまま見本。設定は全部おまかせで、公開した状態で納品。¥30,000（買い切り）。",
+  title: "写真家のポートフォリオサイト制作 | Aki Eguchi Portfolio Kit",
+  desc: "写真家・フォトグラファーのためのポートフォリオサイトを、設定ごと引き受けて公開した状態で納品。買い切り¥30,000・月額なし。独自ドメイン接続と管理画面つき。いま見ているこのサイトが、そのまま見本です。",
   image: "/og-service.jpg",
 };
 
@@ -155,8 +158,8 @@ const SERVICE_START_OG = {
 };
 
 const SERVICE_OG_EN = {
-  title: "Aki Eguchi Portfolio Kit — For Photographers",
-  desc: "A quiet, finished portfolio website for photographers. Setup fully handled, delivered published — ¥30,000 one-time, charged in JPY.",
+  title: "Portfolio Website for Photographers | Aki Eguchi Portfolio Kit",
+  desc: "A quiet, finished portfolio website for photographers. Setup fully handled, custom domain connected, delivered published — ¥30,000 one-time, no subscription. The site you are looking at is the sample.",
   image: "/og-service.jpg",
 };
 
@@ -562,6 +565,63 @@ function personDescriptionFrom(
   return firstParagraph || fallback;
 }
 
+// サービスLPの構造化データに使う値だけを servicePageConfig から取り出す。
+// 画面側の parseServicePageConfig は web/lib にあり、API層から web/ を import
+// すると層が混ざるので、ここでは必要な2つ(値段・FAQ)だけを自前で読む。
+// 壊れたJSON・未設定は既定値へ落とし、決して throw しない（<head> の組み立て
+// 途中で例外が出ると、そのページ全体が返らなくなる）。
+const SERVICE_DEFAULT_PRICE_JPY = 30000;
+
+function serviceConfigObject(
+  settings: Record<string, string>,
+): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(settings.servicePageConfig || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+/** "¥30,000" / "30,000円" → 30000。読めなければ既定の買い切り価格。 */
+function servicePriceJpy(settings: Record<string, string>): number {
+  const pricing = serviceConfigObject(settings).pricing;
+  const plans =
+    pricing && typeof pricing === "object"
+      ? (pricing as { plans?: unknown }).plans
+      : undefined;
+  if (!Array.isArray(plans)) return SERVICE_DEFAULT_PRICE_JPY;
+  const rows = plans.filter(
+    (p): p is { price: string; primary?: boolean } =>
+      !!p && typeof p === "object" && typeof (p as { price?: unknown }).price === "string",
+  );
+  const chosen = rows.find((p) => p.primary) ?? rows[0];
+  const match = chosen?.price.match(/[¥￥]\s*([0-9][0-9,]*)|([0-9][0-9,]*)\s*円/);
+  const digits = match?.[1] ?? match?.[2];
+  const value = digits ? Number(digits.replace(/,/g, "")) : NaN;
+  return Number.isFinite(value) && value > 0 ? value : SERVICE_DEFAULT_PRICE_JPY;
+}
+
+function serviceFaqItems(
+  settings: Record<string, string>,
+): { q: string; a: string }[] {
+  const faq = serviceConfigObject(settings).faq;
+  const items =
+    faq && typeof faq === "object" ? (faq as { items?: unknown }).items : undefined;
+  if (!Array.isArray(items)) return [];
+  return items.filter(
+    (i): i is { q: string; a: string } =>
+      !!i &&
+      typeof i === "object" &&
+      typeof (i as { q?: unknown }).q === "string" &&
+      typeof (i as { a?: unknown }).a === "string" &&
+      !!(i as { q: string }).q &&
+      !!(i as { a: string }).a,
+  );
+}
+
 // F: JSON-LD — WebSite (the domain itself) + Person (the photographer) +
 // ImageGallery (the site), plus a per-series ImageGallery on /series/:slug so
 // each body of work is its own recognised collection in search / social.
@@ -618,7 +678,60 @@ function buildJsonLd(
       author: { "@type": "Person", name },
     },
   ];
-  if (pathname.startsWith("/series/") && series?.title) {
+  // 販売ページ。値段と申込先を、文章ではなく機械が読める形で宣言する。
+  // ここが無いと、検索側は「¥30,000」が値段だと分からない（本文の数字は
+  // ただの文字列）。呼ばれるのは indexable なときだけで、非公開ホストや
+  // servicePageMode off のときは serviceUnavailable → 呼ばれない。
+  if (SERVICE_LP_PATHS.has(pathname)) {
+    const isEnglishLp = pathname === "/portfolio-kit/en";
+    const lpUrl = `${siteUrl}${pathname}`;
+    graph.push({
+      "@type": "Product",
+      name: "Aki Eguchi Portfolio Kit",
+      description: isEnglishLp ? SERVICE_OG_EN.desc : SERVICE_OG.desc,
+      category: isEnglishLp
+        ? "Portfolio website for photographers"
+        : "写真家向けポートフォリオサイト制作",
+      // 屋号入りの平打ち画像は akieguchi.com だけのもの、という既存の線を
+      // ここでも守る（og:image と同じ判断）。配布先では画像を名乗らない。
+      ...(isServiceSiteUrl(siteUrl)
+        ? { image: `${siteUrl}${SERVICE_OG.image}` }
+        : {}),
+      url: lpUrl,
+      brand: { "@type": "Brand", name: "Aki Eguchi Portfolio Kit" },
+      offers: {
+        "@type": "Offer",
+        price: String(servicePriceJpy(settings)),
+        priceCurrency: "JPY",
+        availability: "https://schema.org/InStock",
+        url: lpUrl,
+        seller: { "@type": "Person", name },
+      },
+    });
+    // FAQ は日本語でしか書かれていない（英語化されるのは料金プランの文だけ）。
+    // 英語URLに日本語のFAQを付けると、そのページの言語宣言と食い違うので出さない。
+    const faq = isEnglishLp ? [] : serviceFaqItems(settings);
+    if (faq.length) {
+      graph.push({
+        "@type": "FAQPage",
+        mainEntity: faq.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: { "@type": "Answer", text: item.a },
+        })),
+      });
+    }
+  }
+  // 作品ページ。`/series/:slug` と `/work/:slug` は同じ「1本の作品群」で、
+  // sitemap にも両方載せている。ここが `/series/` だけを見ていたので、
+  // **Work 棚に置いた1本には構造化データが一つも付かない**状態だった。
+  // 棚が変わっただけで検索側の扱いが変わる理由は無い。
+  const workSection = pathname.startsWith("/work/")
+    ? { label: "Work", path: "/work" }
+    : pathname.startsWith("/series/")
+      ? { label: "Series", path: "/series" }
+      : null;
+  if (workSection && series?.title) {
     graph.push({
       "@type": "ImageGallery",
       name: series.title,
@@ -649,8 +762,8 @@ function buildJsonLd(
         {
           "@type": "ListItem",
           position: 2,
-          name: "Series",
-          item: `${siteUrl}/series`,
+          name: workSection.label,
+          item: `${siteUrl}${workSection.path}`,
         },
         {
           "@type": "ListItem",

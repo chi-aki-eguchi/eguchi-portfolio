@@ -668,8 +668,10 @@ describe("injectOgp /portfolio-kit route", () => {
       },
       "/portfolio-kit",
     );
-    expect(out).toContain("<title>Aki Eguchi Portfolio Kit</title>");
-    expect(out).toContain("いま見ているサイトが、そのまま見本");
+    expect(out).toContain(
+      "<title>写真家のポートフォリオサイト制作 | Aki Eguchi Portfolio Kit</title>",
+    );
+    expect(out).toContain("いま見ているこのサイトが、そのまま見本です");
   });
 
   test("/portfolio-kit is indexable on akieguchi.com", () => {
@@ -744,13 +746,16 @@ describe("injectOgp /portfolio-kit route", () => {
     expect(out).not.toContain("Aki Eguchi Portfolio Kit");
   });
 
-  test("/portfolio-kit title uses the product name", () => {
+  test("/portfolio-kit title leads with the words a photographer would search, then the product name", () => {
     const out = injectOgp(
       page,
       { siteName: "Aki Eguchi", siteUrl: "https://akieguchi.com" },
       "/portfolio-kit",
     );
-    expect(out).toContain("<title>Aki Eguchi Portfolio Kit</title>");
+    // 商品名だけの題は、その商品を既に知っている人にしか当たらない。
+    expect(out).toContain(
+      "<title>写真家のポートフォリオサイト制作 | Aki Eguchi Portfolio Kit</title>",
+    );
   });
 
   test("English Portfolio Kit uses English OGP, locale, canonical, and reciprocal hreflang", () => {
@@ -760,7 +765,7 @@ describe("injectOgp /portfolio-kit route", () => {
       "/portfolio-kit/en",
     );
     expect(out).toContain(
-      "<title>Aki Eguchi Portfolio Kit — For Photographers</title>",
+      "<title>Portfolio Website for Photographers | Aki Eguchi Portfolio Kit</title>",
     );
     expect(out).toContain("A quiet, finished portfolio website for photographers");
     expect(out).toContain(
@@ -770,7 +775,7 @@ describe("injectOgp /portfolio-kit route", () => {
       'property="og:url" content="https://akieguchi.com/portfolio-kit/en"',
     );
     expect(out).toContain(
-      'name="twitter:title" content="Aki Eguchi Portfolio Kit — For Photographers"',
+      'name="twitter:title" content="Portfolio Website for Photographers | Aki Eguchi Portfolio Kit"',
     );
     expect(out).toContain('<html lang="en">');
     expect(out).toContain('property="og:locale" content="en_US"');
@@ -1133,5 +1138,176 @@ describe("injectOgp /en/about and /en/contact (i18n Phase 3 slice 1)", () => {
     expect(descOf(injectOgp(page, settings, "/en/contact"))).toBe(
       "contact desc unique",
     );
+  });
+});
+
+describe("injectOgp 販売ページの構造化データ", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html lang="ja"><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    </head><body></body></html>`;
+
+  const graphOf = (html: string): Record<string, any>[] => {
+    const m = html.match(
+      /<script type="application\/ld\+json">(.*?)<\/script>/s,
+    );
+    if (!m) return [];
+    return JSON.parse(m[1].replace(/\\u003c/g, "<"))["@graph"];
+  };
+  const nodeOf = (html: string, type: string) =>
+    graphOf(html).find((n) => n["@type"] === type);
+
+  test("値段が Offer として出る（本文の数字は、検索側には値段だと分からない）", () => {
+    const product = nodeOf(
+      injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/portfolio-kit"),
+      "Product",
+    );
+    expect(product?.offers).toMatchObject({
+      "@type": "Offer",
+      price: "30000",
+      priceCurrency: "JPY",
+      availability: "https://schema.org/InStock",
+      url: "https://akieguchi.com/portfolio-kit",
+    });
+  });
+
+  test("値段は管理画面の設定から読む（既定値を焼き付けない）", () => {
+    const product = nodeOf(
+      injectOgp(
+        page,
+        {
+          siteUrl: "https://akieguchi.com",
+          servicePageConfig: JSON.stringify({
+            pricing: {
+              plans: [
+                { name: "自分で立てる", price: "¥10,000" },
+                { name: "公開おまかせ", price: "48,000円", primary: true },
+              ],
+            },
+          }),
+        },
+        "/portfolio-kit",
+      ),
+      "Product",
+    );
+    expect(product?.offers?.price).toBe("48000");
+  });
+
+  test("壊れた servicePageConfig でもページは組み上がり、既定の値段に落ちる", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com", servicePageConfig: "{ not json" },
+      "/portfolio-kit",
+    );
+    expect(nodeOf(out, "Product")?.offers?.price).toBe("30000");
+  });
+
+  test("FAQ は設定にある問答から作る", () => {
+    const faq = nodeOf(
+      injectOgp(
+        page,
+        {
+          siteUrl: "https://akieguchi.com",
+          servicePageConfig: JSON.stringify({
+            faq: {
+              items: [
+                { q: "自分のドメインを使えますか？", a: "はい。接続まで行います。" },
+                { q: "月額はありますか？", a: "ありません。" },
+              ],
+            },
+          }),
+        },
+        "/portfolio-kit",
+      ),
+      "FAQPage",
+    );
+    expect(faq?.mainEntity).toHaveLength(2);
+    expect(faq?.mainEntity[0]).toMatchObject({
+      "@type": "Question",
+      name: "自分のドメインを使えますか？",
+      acceptedAnswer: { "@type": "Answer", text: "はい。接続まで行います。" },
+    });
+  });
+
+  test("英語URLに日本語のFAQは付けない（ページの言語宣言と食い違う）", () => {
+    const out = injectOgp(
+      page,
+      {
+        siteUrl: "https://akieguchi.com",
+        servicePageConfig: JSON.stringify({
+          faq: { items: [{ q: "月額は？", a: "ありません。" }] },
+        }),
+      },
+      "/portfolio-kit/en",
+    );
+    expect(nodeOf(out, "FAQPage")).toBeUndefined();
+    // 値段は言語に関係なく同じものなので、英語側にも出す。
+    expect(nodeOf(out, "Product")?.offers?.price).toBe("30000");
+  });
+
+  test("配布先のホストでは、屋号入りの画像を Product に名乗らせない", () => {
+    const out = injectOgp(
+      page,
+      { siteUrl: "https://other-site.com", servicePageMode: "on" },
+      "/portfolio-kit",
+    );
+    const product = nodeOf(out, "Product");
+    expect(product).toBeDefined();
+    expect(product?.image).toBeUndefined();
+    expect(product?.offers?.price).toBe("30000");
+  });
+
+  test("販売ページでないところに Product を出さない", () => {
+    expect(
+      nodeOf(injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/"), "Product"),
+    ).toBeUndefined();
+    expect(
+      nodeOf(
+        injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/gallery"),
+        "Product",
+      ),
+    ).toBeUndefined();
+  });
+
+  test("Work 棚の作品ページにも、Series と同じ構造化データが付く", () => {
+    const out = injectOgp(
+      page,
+      { siteName: "江口秋", siteNameEn: "Aki Eguchi", siteUrl: "https://akieguchi.com" },
+      "/work/kyoto",
+      "",
+      { title: "京都" },
+    );
+    expect(nodeOf(out, "ImageGallery")).toBeDefined();
+    const gallery = graphOf(out).filter((n) => n["@type"] === "ImageGallery");
+    expect(gallery.some((n) => n.name === "京都")).toBe(true);
+    // 道しるべの2段目は、その1本が実際に置かれている棚を指す。
+    expect(nodeOf(out, "BreadcrumbList")?.itemListElement[1]).toMatchObject({
+      name: "Work",
+      item: "https://akieguchi.com/work",
+    });
+  });
+
+  test("Series 棚の道しるべは Series のまま", () => {
+    const out = injectOgp(
+      page,
+      { siteNameEn: "Aki Eguchi", siteUrl: "https://akieguchi.com" },
+      "/series/indigo",
+      "",
+      { title: "indigo blue" },
+    );
+    expect(nodeOf(out, "BreadcrumbList")?.itemListElement[1]).toMatchObject({
+      name: "Series",
+      item: "https://akieguchi.com/series",
+    });
   });
 });

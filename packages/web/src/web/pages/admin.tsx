@@ -924,7 +924,6 @@ function AdminPageContent({
           <div
             className="admin-screen"
             data-phase={screenPhase}
-            data-stagger={contentTab === "gallery" ? undefined : "true"}
           >
             {contentTab === "setup" && (
               <SetupTab onOpenTab={requestTab} demoMode={demoMode} />

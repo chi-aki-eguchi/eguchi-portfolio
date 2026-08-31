@@ -2986,60 +2986,24 @@
   transition: opacity var(--dur-fast) var(--ease-in);
 }
 
-/* First-display stagger (header → card groups), first 6 blocks only —
-   everything after appears together. Opted out for Library (data-stagger
-   unset there): it's a toolbar + virtualized grid, not a handful of stackable
-   sections, and staggering would fight the virtualizer — it still gets the
-   single screen-level fade above.
+/* 2026-08-31: 「見出し → カードの群れが順に現れる」段差を**丸ごと外した。**
 
-   2026-08-31: 20ms 刻みだった。**60Hz で 1.2 フレーム。**順に来ているのに
-   一度に立ち上がって見えるので、段差の意図が出ていなかった（公開サイトは
-   100ms 刻み）。45ms へ広げた。上限は 100→225ms だが、最後の1つが出そろう
-   のは 545ms で、その前に上から順に読める。 */
-.admin-atelier .admin-screen[data-stagger="true"][data-phase="show"] > * > * {
-  animation: admin-stagger-in var(--dur-base) var(--ease-out) both;
-}
-@keyframes admin-stagger-in {
-  from {
-    opacity: 0;
-    /* 画面全体の立ち上がりと同じ距離にする（6px では動きが読めない）。 */
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.admin-atelier
-  .admin-screen[data-stagger="true"][data-phase="show"]
-  > *
-  > *:nth-child(2) {
-  animation-delay: 45ms;
-}
-.admin-atelier
-  .admin-screen[data-stagger="true"][data-phase="show"]
-  > *
-  > *:nth-child(3) {
-  animation-delay: 90ms;
-}
-.admin-atelier
-  .admin-screen[data-stagger="true"][data-phase="show"]
-  > *
-  > *:nth-child(4) {
-  animation-delay: 135ms;
-}
-.admin-atelier
-  .admin-screen[data-stagger="true"][data-phase="show"]
-  > *
-  > *:nth-child(5) {
-  animation-delay: 180ms;
-}
-.admin-atelier
-  .admin-screen[data-stagger="true"][data-phase="show"]
-  > *
-  > *:nth-child(n + 6) {
-  animation-delay: 225ms;
-}
+   実物に当ててみたら、当たり先が中身ではなく骨組みだった。セレクタは
+   `.admin-screen > * > *`（孫）で、そこに居るのは:
+
+       settings  3件 — 入力欄の枠 / **掴んで動かす仕切り線** / プレビュー枠
+       series    1件 — **1件では段差は起きない**（遅れる相手が居ない）
+       gallery   0件（もともと対象外）
+
+   仕切り線とプレビュー枠が順に湧いてくるのは「中身が順に届く」ではなく
+   **画面が自分で組み上がっていく**動きで、道具としては安く見える。しかも
+   Series では何も起きていなかった。20ms 刻み（60Hz で1.2フレーム）のときは
+   小さすぎて見えていなかっただけで、広げれば直るものではなかった。
+
+   画面そのものの立ち上がり（上の `data-phase` の transition）は残る。
+   **一枚として静かに現れる方が、骨組みが順番に建つより上等。**
+   中身のカードに段差を付けたくなったら、`.admin-screen` の孫ではなく
+   各タブの中身の列に対して足すこと。 */
 
 @media (prefers-reduced-motion: reduce) {
   .admin-atelier .admin-floating-save-bar {

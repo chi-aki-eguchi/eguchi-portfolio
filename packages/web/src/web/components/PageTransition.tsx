@@ -10,6 +10,19 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+/**
+ * ページから出ていく時間。**2026-08-31 に 250ms → 420ms、カーブを `--ease-exit`
+ * から `--ease-reveal` へ。**
+ *
+ * `--ease-exit`（ease-in系）は最後に一気に落ちるので、前のページが「断ち切られて」
+ * 次が始まっていた。移り変わりが1つの動きではなく、切り替えに見える。配りの良い
+ * カーブでゆっくり引くと、出ていく動きと入ってくる動きが1本に繋がる。
+ *
+ * **入れ替える時刻（setTimeout）と必ず同じ値を使う。**ずれると、消えきる前に
+ * 中身が入れ替わるか、消えたあとに何も無い間が空く。
+ */
+const PAGE_EXIT_MS = 420;
+
 export default function PageTransition({
   children,
 }: {
@@ -167,7 +180,7 @@ export default function PageTransition({
 
     const t = setTimeout(() => {
       swapAndFadeIn(latestChildren.current);
-    }, 250);
+    }, PAGE_EXIT_MS);
 
     return () => clearTimeout(t);
   }, [location, routeKey, swapAndFadeIn, restoreScroll]);
@@ -183,7 +196,7 @@ export default function PageTransition({
         opacity,
         transition: prefersReducedMotion()
           ? "none"
-          : "opacity 250ms var(--ease-exit)",
+          : `opacity ${PAGE_EXIT_MS}ms var(--ease-reveal)`,
       }}
     >
       {display}

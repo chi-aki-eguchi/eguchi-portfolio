@@ -67,13 +67,32 @@
   --dur-fast: 160ms;
   --dur-base: 220ms;
   --dur-slow: 320ms;
-  --dur-hover: 300ms; /* color/opacity hover feedback */
-  --dur-caption: 350ms; /* tile captions, filter grid */
-  --dur-lift: 400ms; /* photo-card hover lift */
-  /* 2026-08-30 オーナー依頼「モーションにもっと余裕を持たせて。表示される
-     スピードとか。もっと高級感」。**現れる側だけを伸ばす。**触ったときの
-     反応（hover / caption / lift）は速いままにする——押して待たされるのは
-     余裕ではなく鈍さなので。上の operational scale は据え置き。 */
+  /* 触ったときの反応。**2026-08-31 に「速いままにする」という判断を撤回した。**
+
+     8/30 から5回、現れる側だけを伸ばして触った側は据え置いていた。理由は
+     「押して待たされるのは余裕ではなく鈍さ」。**その理屈が当てはまるのは、
+     待たされる動きだけだった。**写真の上にカーソルを置いたときの影も、札も、
+     誰も待たせていない。何も塞いでいないのに速い動きは、機敏ではなく安い。
+
+     しかも `--ease-quart` は変化の 90% を duration の 44% で使い切る。現れる
+     側で直したのと同じ前のめりのカーブが、触った側にはそのまま残っていた。
+
+         写真の影  400ms → 750ms   目に見えるのは 176ms → 約460ms
+         札        350ms → 620ms                   154ms → 約380ms
+
+     **伸ばすのは写真に触ったときだけ。**最初は共有の目盛り（下の3つ）を直接
+     伸ばしたが、**これは admin とナビの装飾も使っている。**ナビの下線が伸びた
+     ぶん間に合わず smoke が落ちた（scaleX 0.947 < 0.95）。道具と器は機敏な
+     ままでよいので、写真用の目盛りを別に立てた。上の「一つの語彙・二つの拍」
+     の通り。
+
+     **写真に関わる動きは `--ease-reveal` へ寄せた。**器（ナビの文字色など）は
+     `--ease-quart` のまま——そこは小さな文字の色が変わるだけで、機敏でよい。 */
+  --dur-hover: 300ms; /* color/opacity hover feedback（器・道具。据え置き） */
+  --dur-caption: 350ms; /* nav decorations, filter grid（据え置き） */
+  --dur-lift: 400ms; /* nav blur-in など（据え置き） */
+  --dur-photo-hover: 750ms; /* 写真に触れたときの影 */
+  --dur-photo-caption: 620ms; /* 写真に出る札 */
   --dur-reveal: 1100ms; /* section/page/footer entrances */
   --dur-hero: 1300ms; /* hero text + slide crossfade */
   --dur-drift: 1450ms; /* scroll fade-in, collage drift */
@@ -3651,7 +3670,7 @@ body {
   box-shadow: var(--shadow-photo);
   /* Hover feedback is shadow-only (2026-07-08 決定): no lift/scale/brightness,
      so the photo's rendering never changes under the cursor. */
-  transition: box-shadow var(--dur-lift) var(--ease-quart);
+  transition: box-shadow var(--dur-photo-hover) var(--ease-reveal);
   backface-visibility: hidden;
 }
 .photo-card:hover {
@@ -3697,8 +3716,8 @@ body {
     opacity: 0;
     transform: translateY(4px);
     transition:
-      opacity var(--dur-caption) var(--ease-quart),
-      transform var(--dur-caption) var(--ease-quart);
+      opacity var(--dur-photo-caption) var(--ease-reveal),
+      transform var(--dur-photo-caption) var(--ease-reveal);
     pointer-events: none;
     overflow: hidden;
     white-space: nowrap;
@@ -3727,8 +3746,8 @@ body {
   transform: translateX(var(--collage-shift, 0px))
     rotate(var(--collage-tilt, 0deg));
   transition:
-    transform var(--dur-drift) var(--ease-quart),
-    box-shadow var(--dur-drift) var(--ease-quart);
+    transform var(--dur-drift) var(--ease-reveal),
+    box-shadow var(--dur-drift) var(--ease-reveal);
   will-change: transform;
 }
 .collage-card:hover {
@@ -4667,10 +4686,10 @@ img {
 
 /* ─── Lightbox entrance/exit ─── */
 dialog.lightbox-enter {
-  animation: lb-in 0.5s var(--ease-reveal) both;
+  animation: lb-in 0.85s var(--ease-reveal) both;
 }
 dialog.lightbox-enter .lb-content {
-  animation: lb-content-in 0.5s var(--ease-reveal) 0.08s both;
+  animation: lb-content-in 0.85s var(--ease-reveal) 0.12s both;
 }
 dialog.lightbox-exit {
   /* backdrop fades 0.12s after content starts closing */

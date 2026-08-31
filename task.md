@@ -57,8 +57,7 @@
 
 ### 触ってはいけない範囲
 
-- 本番DB・Turso・R2・Railway・環境変数・`.env`
-- `shotAt` の保存方法、公開API応答形
+- 本番DB・Turso・R2・Railway・環境変数・`.env` / `shotAt` の保存方法 / 公開API応答形
 - Lightbox は 2026-08-31 にオーナー承認で触れた。**次も承認が要る**
 - 動きの正本は `docs/specs/design-spec.md` §6。**duration ではなく
   「目に見えている時間」で決める**（測り方も同節）

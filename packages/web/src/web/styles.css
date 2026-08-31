@@ -4237,9 +4237,24 @@ body[data-texture="mist"]::before {
    透ける時間を短くして、ぼけが晴れる時間を長く取る。 */
 .hero-photo-reveal {
   opacity: 0;
-  animation: hero-photo-in var(--dur-slow) var(--ease-reveal)
+  animation: hero-photo-in var(--top-motion-duration) var(--ease-reveal)
     var(--hero-photo-delay) both;
   backface-visibility: hidden;
+}
+
+/* **写真が現れてくる下地を暗くする（2026-09-01）。**
+   濃淡だけで長く現すと、明るい紙の上では途中が「色あせた印刷」に見える。
+   暗い下地から現れれば、同じ opacity でも**暗がりから像が起きてくる**ように
+   読める。幕は写真の親（動かない側）に置く——`.hero-photo-reveal` 自身に
+   置くと幕も一緒に薄くなり、意味が無い。
+
+   `:has(.hero-photo-reveal.absolute)` は、**写真が枠いっぱいに敷かれている
+   ヒーローだけ**を選ぶ。横並び（写真＋文章）のヒーローでは写真は `relative`
+   なので当たらない——そこを暗くすると文章の裏まで黒くなる。
+   **子ではなく子孫で見る**（実物は `.hero-motion-stage > .hero-single >` の
+   下に居て、直系ではなかった。2026-09-01 に実測して直した）。 */
+.hero-motion-stage:has(.hero-photo-reveal.absolute) {
+  background: #0b0b0b;
 }
 .hero-text-reveal {
   opacity: 0;
@@ -4275,30 +4290,22 @@ body[data-texture="mist"]::before {
 
    `contain`（写真を切らずに全部見せる）だけは対象外。1.045倍から始めると
    その間だけ端が切れ、「切らない」という約束を破ることになる。 */
-/* **ぼけを動かすのはやめた（2026-08-31）。**全画面の `filter: blur()` は毎コマ
-   描き直しになり、実測でコマの間隔が倍になった:
+/* **全画面のヒーローには、毎コマの変形を掛けない（2026-09-01 実測）。**
 
-       ぼけ有り  ぼけの最中 76コマ 中央値16.9ms 32ms超13コマ 最悪39ms
-       ぼけ無し  全部      433コマ 中央値 8.4ms 32ms超 0コマ 最悪24ms
+   8/31 にぼけを外し、代わりに寄り引き（scale 1.06→1）を入れた。Retina
+   （DPR2・1512x982）で測り直したら、それも同じくらい高かった:
 
-   グリッドの写真（`.photo-card img`）のぼけは残す——1枚が小さいので同じ処理でも
-   桁が違う。**同じ効果でも、面積が変われば値段が変わる。**
+       いま（拡大 2秒）     立上り中 171コマ 中央13.9ms 32ms超2
+       濃淡だけ長く(1.5秒)  立上り中 253コマ 中央 8.9ms 32ms超1
+       何もしない（下限）    立上り中 232コマ 中央 8.5ms 32ms超0
 
-   代わりに寄り引きを強めた（1.045→1.06倍）。transform と opacity だけなら
-   合成だけで済むので、何コマ動かしても落ちない。柔らかさが要るなら、ぼけた
-   複製を1枚重ねて opacity で入れ替える形（ぼけは1回だけ描く）が次の手。 */
-.hero-photo-reveal img:not(.hero-slide-contain) {
-  animation: hero-photo-settle var(--dur-breathe) var(--ease-reveal)
-    var(--hero-photo-delay) both;
-}
-@keyframes hero-photo-settle {
-  from {
-    transform: scale(1.06);
-  }
-  to {
-    transform: scale(1);
-  }
-}
+   `will-change: transform` も、平行移動への差し替えも効かなかった（どちらも
+   14.0ms）。**変形の種類ではなく、全画面の層を毎コマ合成すること自体が高い。**
+   画素数が4倍になる Retina で初めて見える。**DPR1 だけで測ると気づけない。**
+
+   濃淡（opacity）は合成1回で済むので、長くしても値段が変わらない。だから
+   ヒーローの長さは濃淡が持ち、変形は持たない。小さなタイル（`.photo-card`）の
+   ぼけと寄り引きは残す——面積が違えば値段が違う。 */
 
 @keyframes hero-text-in {
   to {

@@ -375,3 +375,26 @@ TOP→Gallery を押して測った:
 間に寄せる。**`/gallery` は最初に PC で120枚置いている**（`cae9578`。飛びと穴を
 無くすため）ので、そこが効いている可能性がある。**減らすと穴が開く**ので、
 `public-scroll-stability.spec.ts` の見張りとセットで測ること。
+
+
+### B-25. 検索から来る人の入口は、まだ本文が空のHTML 🟡 未着手（2026-09-01）
+
+公開サイトは SPA で、サーバが返す HTML の `<body>` は `<div id="root">` だけ。
+文章・写真・シリーズ名は全部 JS が動いたあとに現れる。`<head>` 側（title /
+description / canonical / JSON-LD / sitemap）は揃っているので、**いま足りて
+いないのは本文のほう**。
+
+Google は JS を実行するので致命的ではないが、実行は後回しの列に並ぶ。他の
+検索・SNS・AI のクローラは実行しないものが多い。「シリーズの statement」も
+「プロフィール文」も、それらには一語も見えていない。
+
+**これは動きや設定では直らない。**直すなら、少なくとも各ページの見出しと
+本文の1〜2段落を、サーバが返す HTML に入れる（`injectOgp` と同じ場所で
+`</div>` の中へ差し込む形にすれば、React の hydration より前に文字がある）。
+
+**測り方**: `<body>` の中身の大きさを見る。`<head>` は既に埋まっているので、
+head ごと数えると足りているように見えてしまう。
+
+    curl -s https://akieguchi.com/series/indigoblue | sed -n '/<body/,/<\/body>/p' | wc -c
+
+2026-09-01 の実測で 481 バイト（noscript の一文と `<div id="root">` だけ）。

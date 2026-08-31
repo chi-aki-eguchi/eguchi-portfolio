@@ -1,24 +1,24 @@
 import { expect, test } from "@playwright/test";
 import { loginAsAdmin } from "./helpers";
 
-// 2026-08-30、オーナー依頼「モーションもっと余裕を持たせて」で全体を広げた。
 // 「標準」と「写真から」は値を持たず**スタイルシートの既定**が出るので、
 // 既定を変えるとここも一緒に動く。3段階が潰れないよう、ゆっくり/すばやくも
 // 引き直してある（`lib/hero-motion.ts`）。
+// 8/30「もっと余裕を」で 600→780ms、8/31「全体的にまだ速い」で 780→1100ms。
 const SPEEDS = [
-  { label: "ゆっくり", duration: "1050ms" },
-  { label: "標準", duration: "780ms" },
-  { label: "すばやく", duration: "520ms" },
+  { label: "ゆっくり", duration: "1500ms" },
+  { label: "標準", duration: "1100ms" },
+  { label: "すばやく", duration: "720ms" },
 ] as const;
 
 const ORDERS = [
   {
     label: "文字から",
-    values: ["0.44s", "0s", "0.18s", "0.36s"],
+    values: ["0.62s", "0s", "0.25s", "0.5s"],
   },
   {
     label: "写真から",
-    values: ["0s", "0.28s", "0.46s", "0.64s"],
+    values: ["0s", "0.39s", "0.64s", "0.9s"],
   },
   {
     label: "同時に",

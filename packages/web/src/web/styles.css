@@ -74,26 +74,26 @@
      スピードとか。もっと高級感」。**現れる側だけを伸ばす。**触ったときの
      反応（hover / caption / lift）は速いままにする——押して待たされるのは
      余裕ではなく鈍さなので。上の operational scale は据え置き。 */
-  --dur-reveal: 780ms; /* section/page/footer entrances */
-  --dur-hero: 900ms; /* hero text + slide crossfade */
-  --dur-drift: 1000ms; /* scroll fade-in, collage drift */
+  --dur-reveal: 1100ms; /* section/page/footer entrances */
+  --dur-hero: 1300ms; /* hero text + slide crossfade */
+  --dur-drift: 1450ms; /* scroll fade-in, collage drift */
   /* 写真が現れる時間。2026-08-31、ここだけ他の「現れる」より長く取った。
      写真そのものが出る瞬間がこのサイトの主役で、いちばん短かったから
      （実測: ぼけが晴れきるのに見えていたのは 264ms しかなかった）。
      ぼけが晴れてから原寸へ落ち着く——順に起きる方が、一度に終わるより
      「置かれた」に見えるので、breathe を develop より後ろに置く。 */
-  --dur-develop: 1200ms; /* LQIP のぼけが晴れる */
-  --dur-breathe: 1400ms; /* 晴れたあと原寸へ落ち着く */
+  --dur-develop: 1700ms; /* LQIP のぼけが晴れる */
+  --dur-breathe: 2000ms; /* 晴れたあと原寸へ落ち着く */
 
   /* TOP entrance choreography. Provider overrides only the non-default
      choices; these stylesheet values are the standard/photo-first fallback. */
-  --top-motion-duration: 780ms;
+  --top-motion-duration: 1100ms;
   --hero-photo-delay: 0s;
   /* 名前・読み・肩書きが順に現れる間隔。詰まっていると3行が一度に立ち上がって
      見えるので、1行ずつ読める間隔まで空ける。 */
-  --hero-text-delay-1: 0.28s;
-  --hero-text-delay-2: 0.46s;
-  --hero-text-delay-3: 0.64s;
+  --hero-text-delay-1: 0.39s;
+  --hero-text-delay-2: 0.64s;
+  --hero-text-delay-3: 0.9s;
 
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
@@ -4233,6 +4233,31 @@ body[data-texture="mist"]::before {
   }
 }
 
+/* ─── ヒーロー写真の寄り引き（2026-08-31）───
+   **サイト中でここだけ動きが無かった。**グリッドの写真はぼけが晴れて原寸へ
+   落ち着くのに、いちばん大きいヒーローは `opacity 0→1` だけ——最初から原寸・
+   最初からくっきりで、明るくなるだけだった。長さをいくら伸ばしても
+   「ゆっくり出た」にしかならず、「現れた」にはならない。
+
+   わずかに寄った状態から原寸へ引く。**動かすのは中の `<img>`。**
+   `.hero-photo-reveal` は `heroScrollEffect` が transform を書き込む層と
+   同じことがあり、そこへ足すと送ったときの動きと喧嘩する。
+
+   `contain`（写真を切らずに全部見せる）だけは対象外。1.045倍から始めると
+   その間だけ端が切れ、「切らない」という約束を破ることになる。 */
+.hero-photo-reveal img:not(.hero-slide-contain) {
+  animation: hero-photo-settle var(--dur-breathe) var(--ease-reveal)
+    var(--hero-photo-delay) both;
+}
+@keyframes hero-photo-settle {
+  from {
+    transform: scale(1.045);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
 @keyframes hero-text-in {
   to {
     opacity: 1;
@@ -4538,7 +4563,7 @@ a:hover {
 .site-chrome-reveal[data-ready="true"] {
   opacity: 1;
   pointer-events: auto;
-  transition: opacity var(--dur-reveal) var(--ease-reveal) 0.45s;
+  transition: opacity var(--dur-reveal) var(--ease-reveal) 0.6s;
 }
 @media (prefers-reduced-motion: reduce) {
   .site-chrome-reveal {
@@ -4713,6 +4738,7 @@ dialog.lightbox-exit .lb-content {
   .page-entrance,
   .footer-reveal,
   .hero-photo-reveal,
+  .hero-photo-reveal img,
   .hero-text-reveal {
     opacity: 1 !important;
     transform: none !important;

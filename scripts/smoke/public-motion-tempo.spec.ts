@@ -13,6 +13,9 @@ import { test, expect } from "@playwright/test";
  *       旧 (0.16, 1, 0.3, 1)      109ms    333ms
  *       新 (0.3, .12, .22, 1)     298ms    615ms
  *
+ * その上で 8/31 に宣言そのものも上げた（1000→1450ms）。**カーブが直った後
+ * だから効く**——旧カーブのままなら 483ms にしかならなかった。
+ *
  * だからここでは duration を検査しない。**実際に走らせて computed style を
  * rAF で拾い、目に見えている時間を測る。**カーブを前のめりなものへ戻すと、
  * duration が同じままでもここが落ちる。
@@ -71,12 +74,15 @@ async function sampleReveal(
 }
 
 // 目に見えている時間の許容帯（ms）。中央値は 2026-08-31 の実測。
+// **2026-08-31 に尺を上げた**（オーナー「全体的にまだ速い」）。カーブを直した
+// あとなので、伸ばした分の約6割が目に見える時間になる——前のカーブでは3割しか
+// 増えず、伸ばしても効かなかった。
 const REVEALS: { name: string; className: string; min: number; max: number }[] =
   [
-    { name: "写真1枚のフェードイン", className: "fade-in-item", min: 450, max: 900 },
-    { name: "節の見出し", className: "section-reveal", min: 330, max: 750 },
-    { name: "ページ入り", className: "page-entrance", min: 330, max: 750 },
-    { name: "締めの帯", className: "footer-reveal", min: 350, max: 800 },
+    { name: "写真1枚のフェードイン", className: "fade-in-item", min: 680, max: 1150 },
+    { name: "節の見出し", className: "section-reveal", min: 500, max: 900 },
+    { name: "ページ入り", className: "page-entrance", min: 500, max: 900 },
+    { name: "締めの帯", className: "footer-reveal", min: 540, max: 950 },
   ];
 
 for (const r of REVEALS) {
@@ -175,13 +181,13 @@ test("公開サイト — 現れ方の体感 › 写真が現れる（ぼけが�
   expect(scaleSettled, "原寸へ落ち着かなかった").not.toBeNull();
 
   // 写真が出る瞬間はこのサイトの主役なので、他の「現れる」より長く取る。
-  expect(blurGone, `ぼけが 90% 晴れるまで ${blurGone}ms`).toBeGreaterThanOrEqual(550);
-  expect(blurGone).toBeLessThanOrEqual(1050);
+  expect(blurGone, `ぼけが 90% 晴れるまで ${blurGone}ms`).toBeGreaterThanOrEqual(800);
+  expect(blurGone).toBeLessThanOrEqual(1350);
 
   // ぼけが晴れてから落ち着く。**逆順になっていないこと**が設計の要。
   expect(
     scaleSettled,
     `原寸へ 90% 戻るまで ${scaleSettled}ms。ぼけ(${blurGone}ms)より後であること`,
   ).toBeGreaterThan(blurGone as number);
-  expect(scaleSettled).toBeLessThanOrEqual(1250);
+  expect(scaleSettled).toBeLessThanOrEqual(1600);
 });

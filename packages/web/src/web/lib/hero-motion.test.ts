@@ -12,25 +12,25 @@ describe("hero motion CSS settings", () => {
     });
   });
 
-  // 2026-08-30、オーナー依頼「モーションもっと余裕を持たせて」でスタイルシート
-  // 側の既定を 600ms → 780ms へ広げた。**「標準」は値を持たずその既定が出る**
-  // ので、ゆっくり／すばやくも一緒に引き直さないと3段階が潰れる。
-  test("3段階は、広げた既定（780ms）を挟んで離れている", () => {
+  // **「標準」は値を持たずスタイルシートの既定が出る**ので、既定を動かしたら
+  // ゆっくり／すばやくも一緒に引き直さないと3段階が潰れる。
+  // 既定 600 →(8/30) 780 →(8/31) 1100ms。
+  test("3段階は、広げた既定（1100ms）を挟んで離れている", () => {
     expect(heroMotionCssVars("slow", "photo-first")["--top-motion-duration"]).toBe(
-      "1050ms",
+      "1500ms",
     );
     expect(
       heroMotionCssVars("quick", "photo-first")["--top-motion-duration"],
-    ).toBe("520ms");
+    ).toBe("720ms");
   });
 
   test("文字からの順番も、広げた間隔に合わせる", () => {
     expect(heroMotionCssVars("standard", "text-first")).toEqual({
       "--top-motion-duration": undefined,
-      "--hero-photo-delay": "0.44s",
+      "--hero-photo-delay": "0.62s",
       "--hero-text-delay-1": "0s",
-      "--hero-text-delay-2": "0.18s",
-      "--hero-text-delay-3": "0.36s",
+      "--hero-text-delay-2": "0.25s",
+      "--hero-text-delay-3": "0.5s",
     });
   });
 

@@ -669,9 +669,9 @@ describe("injectOgp /portfolio-kit route", () => {
       "/portfolio-kit",
     );
     expect(out).toContain(
-      "<title>写真家のポートフォリオサイト制作 | Aki Eguchi Portfolio Kit</title>",
+      "<title>写真を置く場所をつくる | 写真家のポートフォリオサイト</title>",
     );
-    expect(out).toContain("いま見ているこのサイトが、そのまま見本です");
+    expect(out).toContain("SNSに流した写真を、長く置いておける場所へ");
   });
 
   test("/portfolio-kit is indexable on akieguchi.com", () => {
@@ -746,16 +746,18 @@ describe("injectOgp /portfolio-kit route", () => {
     expect(out).not.toContain("Aki Eguchi Portfolio Kit");
   });
 
-  test("/portfolio-kit title leads with the words a photographer would search, then the product name", () => {
+  test("/portfolio-kit の題は作品を主語にし、検索の語と商品名も落とさない", () => {
     const out = injectOgp(
       page,
       { siteName: "Aki Eguchi", siteUrl: "https://akieguchi.com" },
       "/portfolio-kit",
     );
-    // 商品名だけの題は、その商品を既に知っている人にしか当たらない。
+    // 商品名だけの題は、その商品を既に知っている人にしか当たらない。だから
+    // 検索の語（写真家 / ポートフォリオサイト）は題に残し、商品名は説明で名乗る。
     expect(out).toContain(
-      "<title>写真家のポートフォリオサイト制作 | Aki Eguchi Portfolio Kit</title>",
+      "<title>写真を置く場所をつくる | 写真家のポートフォリオサイト</title>",
     );
+    expect(out).toContain("Aki Eguchi Portfolio Kit");
   });
 
   test("English Portfolio Kit uses English OGP, locale, canonical, and reciprocal hreflang", () => {
@@ -765,9 +767,9 @@ describe("injectOgp /portfolio-kit route", () => {
       "/portfolio-kit/en",
     );
     expect(out).toContain(
-      "<title>Portfolio Website for Photographers | Aki Eguchi Portfolio Kit</title>",
+      "<title>A Place to Keep Your Photographs | Portfolio Websites for Photographers</title>",
     );
-    expect(out).toContain("A quiet, finished portfolio website for photographers");
+    expect(out).toContain("A lasting place for work that otherwise disappears");
     expect(out).toContain(
       'rel="canonical" href="https://akieguchi.com/portfolio-kit/en"',
     );
@@ -775,7 +777,7 @@ describe("injectOgp /portfolio-kit route", () => {
       'property="og:url" content="https://akieguchi.com/portfolio-kit/en"',
     );
     expect(out).toContain(
-      'name="twitter:title" content="Portfolio Website for Photographers | Aki Eguchi Portfolio Kit"',
+      'name="twitter:title" content="A Place to Keep Your Photographs | Portfolio Websites for Photographers"',
     );
     expect(out).toContain('<html lang="en">');
     expect(out).toContain('property="og:locale" content="en_US"');

@@ -939,7 +939,9 @@ const ADMIN_PHASE_2B_JA = {
         },
         contactAreas: {
           label: "撮影を受ける地域",
-          placeholder: "東京・福岡・台北を中心に。その他の地域もご相談ください。",
+          // 「例:」を付ける。**完成した文のままだと、入力済みに見えて誰も
+          // 入力しない**（2026-09-01、オーナーが実際にそう読んだ）。
+          placeholder: "例: 東京・福岡・台北を中心に。その他の地域もご相談ください。",
           hint: "地名は、撮影を頼みたい人が実際に打つ言葉。空だと検索から見つからない",
         },
         contactAreasEn: {
@@ -2647,7 +2649,7 @@ const ADMIN_PHASE_2B_EN = {
         },
         contactAreas: {
           label: "Areas Covered",
-          placeholder: "Mainly Tokyo, Fukuoka and Taipei — elsewhere on request.",
+          placeholder: "e.g. Mainly Tokyo, Fukuoka and Taipei — elsewhere on request.",
           hint: "Place names are what someone hiring you actually types",
         },
         contactAreasEn: {

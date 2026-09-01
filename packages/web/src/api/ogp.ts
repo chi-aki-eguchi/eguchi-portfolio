@@ -13,6 +13,7 @@ import {
 } from "../shared/site-title";
 import { resolveServiceVisibility } from "../shared/service-visibility";
 import { hasPublicEnglishContent } from "../shared/public-english";
+import { resolveContactText } from "../shared/contact-defaults";
 import {
   DEFAULT_SERVICE_FAQ,
   DEFAULT_SERVICE_PLANS,
@@ -166,12 +167,24 @@ export function publicPageFallbackText(
   // 探している言葉そのもの**なのに、これまで HTML に一文字も出ていなかった。
   if (pathname === "/contact" || pathname === "/en/contact") {
     const isEn = pathname === "/en/contact";
-    const paragraphs = [
-      isEn ? settings.contactIntroEn : settings.contactIntro,
-      isEn ? settings.contactAreasEn || settings.contactAreas : settings.contactAreas,
-      isEn ? settings.contactFlowEn : settings.contactFlow,
-      isEn ? settings.contactNoteEn : settings.contactNote,
-    ]
+    // Service ノードと同じ扱い。日本語は既定値まで解決し、英語は英語の設定
+    // だけを使う（無ければ段落を作らない）。
+    const resolved = resolveContactText(settings, siteUrlFrom(settings));
+    const paragraphs = (
+      isEn
+        ? [
+            settings.contactIntroEn,
+            settings.contactAreasEn,
+            settings.contactFlowEn,
+            settings.contactNoteEn,
+          ]
+        : [
+            resolved.intro,
+            settings.contactAreas,
+            resolved.flow,
+            resolved.note,
+          ]
+    )
       .map((t) => (t || "").trim())
       .filter(Boolean);
     return {
@@ -195,15 +208,21 @@ export function publicPageFallbackText(
   const page = PAGE_TITLES[pathname];
   const heading = page ? `${page} — ${name}` : name;
   // プロフィールは、このサイトで唯一まとまった量の文章があるページ。
-  // ここを渡さないと、非JSのクローラにとっては名前しか無いページになる。
-  const paragraphs =
-    pathname === "/about" || pathname === "/profile"
-      ? (settings.profileBio || "")
-          .trim()
-          .split(/\n\s*\n/)
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : [];
+  // 英語URLには英語の経歴を出す。**ここを見落として `/en/about` だけ本文が
+  // 空だった**（他のページには本文を出しておきながら）。
+  const bioKey =
+    pathname === "/en/about"
+      ? "profileBioEn"
+      : pathname === "/about" || pathname === "/profile"
+        ? "profileBio"
+        : "";
+  const paragraphs = bioKey
+    ? (settings[bioKey] || "")
+        .trim()
+        .split(/\n\s*\n/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
   return { heading, description, paragraphs };
 }
 
@@ -809,11 +828,22 @@ function buildJsonLd(
   // 文面は設定にあるオーナー自身の言葉をそのまま使う。こちらで書かない。
   if (pathname === "/contact" || pathname === "/en/contact") {
     const isEn = pathname === "/en/contact";
-    const intro = (isEn ? settings.contactIntroEn : settings.contactIntro)?.trim();
-    const flow = (isEn ? settings.contactFlowEn : settings.contactFlow)?.trim();
+    // 日本語ページは**既定値まで解決する。**DB に行が無いキーは `settings` に
+    // 載ってこないので、生の settings だけを見ると、画面には出ている文が
+    // ここでは空になる（2026-09-01 に本番で実際にそうなった）。
+    //
+    // 英語ページは英語の設定だけを使い、**無ければ項目ごと出さない。**
+    // 画面は日本語文へ退避するが（never goes blank）、`inLanguage: "en"` と
+    // 名乗ったノードに日本語を入れると、言語の宣言と中身が食い違う。
+    // 出さないことは食い違いにならない。
+    const resolved = resolveContactText(settings, siteUrl);
+    const intro = isEn
+      ? (settings.contactIntroEn ?? "").trim()
+      : resolved.intro;
+    const flow = isEn ? (settings.contactFlowEn ?? "").trim() : resolved.flow;
+    // 英語ページは英語の設定だけ。intro / flow と同じ規則を地域にも通す。
     const areas = contactAreaNames(
-      (isEn ? settings.contactAreasEn : settings.contactAreas) ||
-        settings.contactAreas,
+      isEn ? settings.contactAreasEn : settings.contactAreas,
     );
     const contactUrl = `${siteUrl}${pathname}`;
     graph.push({

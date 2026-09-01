@@ -100,6 +100,29 @@ describe("publicPageFallbackText", () => {
     expect(text.paragraphs).toEqual(["写真家。京都在住。", "個展を3回。"]);
   });
 
+  test("英語URLには英語の経歴を出す（ここだけ本文が空になっていた）", () => {
+    const text = publicPageFallbackText(
+      {
+        ...settings,
+        profileBio: "写真家。京都在住。",
+        profileBioEn: "Photographer based in Tokyo.\n\nStudying at Nihon University.",
+      },
+      "/en/about",
+    );
+    expect(text.paragraphs).toEqual([
+      "Photographer based in Tokyo.",
+      "Studying at Nihon University.",
+    ]);
+    expect(text.paragraphs.join("")).not.toContain("写真家");
+  });
+
+  test("英語の経歴が無ければ、日本語で埋めない", () => {
+    expect(
+      publicPageFallbackText({ ...settings, profileBio: "写真家。" }, "/en/about")
+        .paragraphs,
+    ).toEqual([]);
+  });
+
   test("/profile は /about と同じ文を返す（同じページなので）", () => {
     const bio = { ...settings, profileBio: "写真家。" };
     expect(publicPageFallbackText(bio, "/profile").paragraphs).toEqual(
@@ -177,9 +200,17 @@ describe("撮影依頼と販売の言葉が HTML に出ているか", () => {
     expect(text.paragraphs.join("")).not.toContain("撮影依頼");
   });
 
-  test("設定が空でも段落を作らない（空の <p> を並べない）", () => {
+  test("DBに行が無くても、画面に出ている既定の文を本文にも出す", () => {
+    // /api/settings で測ると既定値が見えるが、サーバ側は生の DB 行しか
+    // 見ない。この食い違いを 2026-09-01 に本番で踏んだ。
+    const p = publicPageFallbackText({ siteName: "江口秋" }, "/contact").paragraphs;
+    expect(p.length).toBeGreaterThan(0);
+    expect(p.join(" ")).toContain("撮影依頼");
+  });
+
+  test("英語ページは、英語の設定が無ければ段落を作らない", () => {
     expect(
-      publicPageFallbackText({ siteName: "江口秋" }, "/contact").paragraphs,
+      publicPageFallbackText({ siteName: "江口秋" }, "/en/contact").paragraphs,
     ).toEqual([]);
   });
 

@@ -44,7 +44,10 @@ import {
   purgeDbThenStorage,
 } from "./photo-integrity";
 import { bumpSettingsVersion } from "./settings-version";
-import { contactDefaultsFor } from "../shared/contact-defaults";
+import {
+  contactDefaultsFor,
+  CONTACT_INTRO_DEFAULT,
+} from "../shared/contact-defaults";
 import {
   isValidSiteUrlSetting,
   normalizeSiteUrlSetting,
@@ -1204,9 +1207,7 @@ const app = new Hono()
         // Empty default — Layout then renders "© <current year> <siteName>" with an
         // auto-updating year. A hardcoded default here would pin the year forever.
         footerText: settings.footerText ?? "",
-        contactIntro:
-          settings.contactIntro ??
-          "撮影依頼・取材・コラボレーションなど、お気軽にご連絡ください。",
+        contactIntro: settings.contactIntro ?? CONTACT_INTRO_DEFAULT,
         // i18n Phase 3: English counterpart for /en/contact. Empty = falls back to contactIntro.
         contactIntroEn: settings.contactIntroEn ?? "",
         // 2026-07-08 動線改善(トーンA・オーナー承認済み): 依頼の心理的ハードルを

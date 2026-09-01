@@ -1387,9 +1387,21 @@ describe("injectOgp 撮影依頼の構造化データ", () => {
     expect(nodeOf(out, "ContactPage")?.inLanguage).toBe("en");
   });
 
-  test("設定の文が空でも Service は出す（撮影を受ける事実は文面と別）", () => {
+  test("DBに行が無くても、画面に出ている既定の文を Service にも出す", () => {
+    // 2026-09-01 に本番で踏んだ食い違い。contactIntro / contactFlow は DB に
+    // 行が無く、既定値は API 層だけが持っていた。だから /api/settings には
+    // 文が出るのに、同じサイトの構造化データは空だった。
     const svc = nodeOf(
       injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/contact"),
+      "Service",
+    );
+    expect(svc?.description).toContain("撮影依頼");
+    expect(svc?.termsOfService).toContain("ご相談");
+  });
+
+  test("英語ページは、英語の設定が無ければ文を出さない（日本語を混ぜない）", () => {
+    const svc = nodeOf(
+      injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/en/contact"),
       "Service",
     );
     expect(svc).toBeDefined();

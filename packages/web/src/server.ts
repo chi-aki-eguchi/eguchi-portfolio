@@ -12,6 +12,7 @@ import {
 } from "./api/ogp";
 import { generateOgCardPng } from "./api/og-card";
 import {
+  canonicalHostRedirect,
   canonicalPortfolioKitPath,
   canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
@@ -595,6 +596,14 @@ const server = Bun.serve({
 
 async function serveNonApi(request: Request, url: URL): Promise<Response> {
   const publicOrigin = publicOriginFromRequest(request);
+  // 入口を1つに寄せる。**www と apex の両方が 200 を返し、それぞれが自分を
+  // canonical と名乗る**状態だと、中身が同じ2つのサイトとして評価が割れる
+  // （2026-09-01 実測）。canonical タグより 301 のほうが強く、www が巡回
+  // されること自体を止められる。基準URLが未設定なら何もしない。
+  const canonicalOrigin =
+    (await getSettings()).siteUrl || process.env.SITE_URL || "";
+  const hostRedirect = canonicalHostRedirect(request.url, canonicalOrigin);
+  if (hostRedirect) return Response.redirect(hostRedirect, 301);
   const routePathname = canonicalPortfolioKitPath(url.pathname);
   if (routePathname !== url.pathname && !url.pathname.includes(".")) {
     return Response.redirect(

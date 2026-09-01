@@ -92,3 +92,41 @@ export function seriesDetailRoute(
   if (!match) return null;
   return { shelf: match[1] as "series" | "work", slug: match[2] };
 }
+
+/**
+ * www とアポックス（www 無し）のどちらか一方へ寄せるためのリダイレクト先。
+ * 寄せる必要が無ければ null。
+ *
+ * **なぜ要るか。**基準URL（`settings.siteUrl` / `SITE_URL`）が空のとき、
+ * `siteUrlFrom` はリクエストのホストをそのまま基準にする。その結果
+ * `www.akieguchi.com` は canonical も og:url も sitemap も JSON-LD も
+ * **自分自身（www）を指す完全な別サイト**として応答していた（2026-09-01 実測）。
+ * apex 側も自分を指すので、互いを指さない2つのサイトが並ぶ。検索側から見て
+ * 中身が同じ2サイトで、評価がそこで割れる。
+ *
+ * **安全弁: 「www が付いているかどうかだけが違う、同じホスト」しか飛ばさない。**
+ * 基準URLに無関係な値や打ち間違いが入っていても、存在しないホストへ飛ばして
+ * サイトを開けなくすることが無い。基準URLが空のときは何もしない（空のときに
+ * リクエスト元へ飛ばすと自分自身へのループになる）。
+ */
+export function canonicalHostRedirect(
+  requestUrl: string,
+  canonicalOrigin: string | undefined,
+): string | null {
+  if (!canonicalOrigin) return null;
+  let target: URL;
+  let current: URL;
+  try {
+    target = new URL(canonicalOrigin);
+    current = new URL(requestUrl);
+  } catch {
+    return null;
+  }
+  if (!target.host || target.host === current.host) return null;
+  const strip = (h: string) => h.replace(/^www\./i, "");
+  // 同じ登録ドメインで、www の有無だけが違うときに限る。
+  if (strip(target.host) !== strip(current.host)) return null;
+  current.protocol = target.protocol;
+  current.host = target.host;
+  return current.toString();
+}

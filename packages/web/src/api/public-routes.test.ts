@@ -175,3 +175,61 @@ describe("seriesDetailRoute", () => {
     );
   });
 });
+
+describe("canonicalHostRedirect", () => {
+  const { canonicalHostRedirect } =
+    require("./public-routes") as typeof import("./public-routes");
+
+  test("www は基準URL（apex）へ寄せる。パスとクエリは保つ", () => {
+    expect(
+      canonicalHostRedirect(
+        "https://www.akieguchi.com/series/indigoblue?x=1",
+        "https://akieguchi.com",
+      ),
+    ).toBe("https://akieguchi.com/series/indigoblue?x=1");
+  });
+
+  test("基準URLが www なら、apex を www へ寄せる（向きは設定に従う）", () => {
+    expect(
+      canonicalHostRedirect("https://akieguchi.com/about", "https://www.akieguchi.com"),
+    ).toBe("https://www.akieguchi.com/about");
+  });
+
+  test("既に基準のホストなら何もしない", () => {
+    expect(
+      canonicalHostRedirect("https://akieguchi.com/about", "https://akieguchi.com"),
+    ).toBeNull();
+  });
+
+  test("基準URLが空なら何もしない（自分自身へのループを作らない）", () => {
+    expect(canonicalHostRedirect("https://www.akieguchi.com/", "")).toBeNull();
+    expect(canonicalHostRedirect("https://www.akieguchi.com/", undefined)).toBeNull();
+  });
+
+  test("**安全弁**: www の有無以外が違うホストへは飛ばさない", () => {
+    // 打ち間違いや、別サイトの値が基準URLに入っていても、
+    // 存在しないホストへ飛ばしてサイトを開けなくしない。
+    expect(
+      canonicalHostRedirect("https://akieguchi.com/", "https://example.com"),
+    ).toBeNull();
+    expect(
+      canonicalHostRedirect("https://akieguchi.com/", "https://akieguchi.co"),
+    ).toBeNull();
+    expect(
+      canonicalHostRedirect("https://akieguchi.com/", "https://www.other.com"),
+    ).toBeNull();
+  });
+
+  test("壊れた基準URLでも例外にしない", () => {
+    expect(canonicalHostRedirect("https://www.akieguchi.com/", "not a url")).toBeNull();
+  });
+
+  test("Railway の内部ホストなど、関係ないホストは素通しする", () => {
+    expect(
+      canonicalHostRedirect(
+        "http://localhost:3000/healthz",
+        "https://akieguchi.com",
+      ),
+    ).toBeNull();
+  });
+});

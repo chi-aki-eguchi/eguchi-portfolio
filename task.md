@@ -6,7 +6,7 @@
 - **Status:** 販売ページの構造化データと題、Work 棚の 404、非JSクローラ向けの
   本文とリンク。**push 済み・本番反映済み。**
 - **Current owner:** Claude Code / **Handoff readiness:** ready
-- **Branch:** `main` / **HEAD:** `22ace9e`
+- **Branch:** `main` / **HEAD:** `61f3148`
 
 ### やったこと
 
@@ -17,13 +17,16 @@
 | `69e466f` | B-25 を backlog へ |
 | `3778857` | 題と説明を**作品を主語にした文**へ（オーナー判断）|
 | `22ace9e` | **JSを実行しないクローラに本文とリンクを渡す**（リンクが0本だった）|
+| `61f3148` | **画面にはFAQが出ているのに構造化データには無かった**（既定値を shared へ）|
 
 ### 検証
 
-- `bun run check` = **1174 pass / 0 fail**（exit 0）
-- `bun run smoke` = **353 passed / 0 failed**（2 flaky・147 skipped・14.8分）
-  flaky は `public-scroll-stability` の2件。**今回の変更の前から同じ所が
-  たまに落ちる**（今朝の基準線でも同じ1件が落ちて再試行で通った）。
+- `bun run check` = **1175 pass / 0 fail**（exit 0）
+- `bun run smoke` = **355 passed / 0 failed / 0 flaky**（147 skipped・14.0分）
+
+途中の1回だけ `admin-debug-sweep :224`(mobile) が落ちたが、**再現しなかった**
+（単体でも全体でも通る）。バンドルのチャンク構成も差が無く、増えたのは
+`service` チャンクの10バイトだけで admin 側は同一。環境側のゆらぎと判断した。
 
 **smoke は OGP/noscript の差し込みを一度も通っていない。**smoke の webServer は
 `bunx vite`（dev server）で、HTML は Vite が返す。`server.ts` の差し込みは

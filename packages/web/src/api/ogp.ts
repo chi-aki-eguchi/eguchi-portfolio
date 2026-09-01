@@ -9,6 +9,10 @@ import { imageUrlWithParams } from "../shared/image-url";
 import { composeBaseTitle, composeHomeTitle } from "../shared/site-title";
 import { resolveServiceVisibility } from "../shared/service-visibility";
 import { hasPublicEnglishContent } from "../shared/public-english";
+import {
+  DEFAULT_SERVICE_FAQ,
+  DEFAULT_SERVICE_PRICE_JPY,
+} from "../shared/service-defaults";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
@@ -618,8 +622,6 @@ function personDescriptionFrom(
 // すると層が混ざるので、ここでは必要な2つ(値段・FAQ)だけを自前で読む。
 // 壊れたJSON・未設定は既定値へ落とし、決して throw しない（<head> の組み立て
 // 途中で例外が出ると、そのページ全体が返らなくなる）。
-const SERVICE_DEFAULT_PRICE_JPY = 30000;
-
 function serviceConfigObject(
   settings: Record<string, string>,
 ): Record<string, unknown> {
@@ -640,7 +642,7 @@ function servicePriceJpy(settings: Record<string, string>): number {
     pricing && typeof pricing === "object"
       ? (pricing as { plans?: unknown }).plans
       : undefined;
-  if (!Array.isArray(plans)) return SERVICE_DEFAULT_PRICE_JPY;
+  if (!Array.isArray(plans)) return DEFAULT_SERVICE_PRICE_JPY;
   const rows = plans.filter(
     (p): p is { price: string; primary?: boolean } =>
       !!p && typeof p === "object" && typeof (p as { price?: unknown }).price === "string",
@@ -649,17 +651,20 @@ function servicePriceJpy(settings: Record<string, string>): number {
   const match = chosen?.price.match(/[¥￥]\s*([0-9][0-9,]*)|([0-9][0-9,]*)\s*円/);
   const digits = match?.[1] ?? match?.[2];
   const value = digits ? Number(digits.replace(/,/g, "")) : NaN;
-  return Number.isFinite(value) && value > 0 ? value : SERVICE_DEFAULT_PRICE_JPY;
+  return Number.isFinite(value) && value > 0 ? value : DEFAULT_SERVICE_PRICE_JPY;
 }
 
+// 未保存なら既定のFAQを使う。**画面は `servicePageConfig` が空でも既定の
+// FAQ を出す**ので、ここで空を返すと「画面には出ているのに構造化データには
+// 無い」食い違いになる（2026-09-01、本番で実際にそうなっていた）。
 function serviceFaqItems(
   settings: Record<string, string>,
 ): { q: string; a: string }[] {
   const faq = serviceConfigObject(settings).faq;
   const items =
     faq && typeof faq === "object" ? (faq as { items?: unknown }).items : undefined;
-  if (!Array.isArray(items)) return [];
-  return items.filter(
+  if (!Array.isArray(items)) return [...DEFAULT_SERVICE_FAQ];
+  const parsed = items.filter(
     (i): i is { q: string; a: string } =>
       !!i &&
       typeof i === "object" &&
@@ -668,6 +673,7 @@ function serviceFaqItems(
       !!(i as { q: string }).q &&
       !!(i as { a: string }).a,
   );
+  return parsed.length ? parsed : [...DEFAULT_SERVICE_FAQ];
 }
 
 // F: JSON-LD — WebSite (the domain itself) + Person (the photographer) +

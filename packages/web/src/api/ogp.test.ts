@@ -1241,6 +1241,17 @@ describe("injectOgp 販売ページの構造化データ", () => {
     });
   });
 
+  test("設定が未保存でも、画面に出ている既定のFAQを構造化データにも出す", () => {
+    // 本番で `servicePageConfig` が空のとき、画面は既定のFAQを出しているのに
+    // <head> の FAQPage だけ空になっていた（2026-09-01 実測）。
+    const faq = nodeOf(
+      injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/portfolio-kit"),
+      "FAQPage",
+    );
+    expect(faq?.mainEntity.length).toBeGreaterThan(0);
+    expect(JSON.stringify(faq)).toContain("自分のドメインを使えますか？");
+  });
+
   test("英語URLに日本語のFAQは付けない（ページの言語宣言と食い違う）", () => {
     const out = injectOgp(
       page,

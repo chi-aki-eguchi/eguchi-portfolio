@@ -1213,6 +1213,10 @@ const app = new Hono()
         // 下げる添え書き・流れの説明。空文字を保存すれば非表示にできる。
         contactNote: settings.contactNote ?? contactDefaults.contactNote,
         contactNoteEn: settings.contactNoteEn ?? "",
+        // 撮影を受ける地域。**既定は空**——contact-defaults.ts と同じ理由で、
+        // 持ち主の活動範囲を、Kit を買った人のサイトに出してはいけない。
+        contactAreas: settings.contactAreas ?? "",
+        contactAreasEn: settings.contactAreasEn ?? "",
         contactFlow: settings.contactFlow ?? contactDefaults.contactFlow,
         contactFlowEn: settings.contactFlowEn ?? "",
         // i18n Phase 3: always-visible "English welcome" note on /contact and /en/contact,

@@ -9,6 +9,7 @@ export const PUBLIC_EN_CONTENT_KEYS = [
   "contactIntroEn",
   "contactNoteEn",
   "contactFlowEn",
+  "contactAreasEn",
 ] as const;
 
 export function hasPublicEnglishContent(

@@ -120,6 +120,8 @@ export const SETTINGS_SECTION_KEYS = {
     "contactNoteEn",
     "contactFlow",
     "contactFlowEn",
+    "contactAreas",
+    "contactAreasEn",
     "contactEnglishNote",
     "contactMessagePlaceholder",
     "contactEmail",
@@ -4801,6 +4803,8 @@ export function SettingsTab({
     { key: "contactNoteEn", wide: true, ...copy.siteBasics.fields.contactNoteEn },
     { key: "contactFlow", wide: true, ...copy.siteBasics.fields.contactFlow },
     { key: "contactFlowEn", wide: true, ...copy.siteBasics.fields.contactFlowEn },
+    { key: "contactAreas", wide: true, ...copy.siteBasics.fields.contactAreas },
+    { key: "contactAreasEn", wide: true, ...copy.siteBasics.fields.contactAreasEn },
     {
       key: "contactEnglishNote",
       wide: true,

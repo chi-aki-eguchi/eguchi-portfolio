@@ -937,6 +937,16 @@ const ADMIN_PHASE_2B_JA = {
           placeholder: "空欄なら日本語文を表示",
           hint: "",
         },
+        contactAreas: {
+          label: "撮影を受ける地域",
+          placeholder: "東京・福岡・台北を中心に。その他の地域もご相談ください。",
+          hint: "地名は、撮影を頼みたい人が実際に打つ言葉。空だと検索から見つからない",
+        },
+        contactAreasEn: {
+          label: "撮影を受ける地域 (英語)",
+          placeholder: "空欄なら日本語文を表示",
+          hint: "",
+        },
         contactEnglishNote: {
           label: "英語対応の一言",
           placeholder: "English inquiries welcome.",
@@ -2632,6 +2642,16 @@ const ADMIN_PHASE_2B_EN = {
         },
         contactFlowEn: {
           label: "Booking Flow (English)",
+          placeholder: "Falls back to the Japanese text when left blank",
+          hint: "",
+        },
+        contactAreas: {
+          label: "Areas Covered",
+          placeholder: "Mainly Tokyo, Fukuoka and Taipei — elsewhere on request.",
+          hint: "Place names are what someone hiring you actually types",
+        },
+        contactAreasEn: {
+          label: "Areas Covered (English)",
           placeholder: "Falls back to the Japanese text when left blank",
           hint: "",
         },

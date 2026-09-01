@@ -69,6 +69,8 @@ export const SETTINGS_PREVIEW_KEYS = [
   "contactNoteEn",
   "contactFlow",
   "contactFlowEn",
+  "contactAreas",
+  "contactAreasEn",
   "contactEnglishNote",
   "contactMessagePlaceholder",
   "contactEmail",

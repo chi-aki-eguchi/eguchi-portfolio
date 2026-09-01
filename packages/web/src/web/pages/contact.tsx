@@ -53,6 +53,12 @@ export default function ContactPage({
     language === "en"
       ? data?.contactFlowEn || data?.contactFlow
       : data?.contactFlow;
+  // 撮影を受ける地域。頼む側がいちばん先に知りたいことで、かつ検索で
+  // 実際に打たれる言葉（地名）でもある。空なら節ごと出さない。
+  const areas =
+    language === "en"
+      ? data?.contactAreasEn || data?.contactAreas
+      : data?.contactAreas;
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   // 失敗したときだけ組み立てる mailto。書いた本文をそのまま持っていける形に
@@ -99,7 +105,7 @@ export default function ContactPage({
     ? data!.contactLayout!
     : "center";
   // 説明が何も無いのに2列にすると、左が空いた歪な画面になる。
-  const hasLead = !!(data?.contactEnglishNote || intro || note || flow);
+  const hasLead = !!(data?.contactEnglishNote || intro || note || flow || areas);
   const layout =
     contactLayout === "split" && !hasLead ? "left" : contactLayout;
   const leadAlign = layout === "center" ? "text-center" : "text-left";
@@ -382,6 +388,14 @@ export default function ContactPage({
             style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
           >
             {note}
+          </p>
+        )}
+        {areas && (
+          <p
+            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words ja-prose page-entrance page-entrance-delay-1`}
+            style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
+          >
+            {areas}
           </p>
         )}
         {formspreeUrl && status !== "success" && flow && (

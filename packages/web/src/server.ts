@@ -439,6 +439,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     title: string;
     seriesId: number | null;
     createdAt: Date | null;
+    shotAt: string | null;
   };
   let livePhotos: SitemapPhoto[] = [];
   try {
@@ -450,6 +451,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
           title: schema.photos.title,
           seriesId: schema.photos.seriesId,
           createdAt: schema.photos.createdAt,
+          shotAt: schema.photos.shotAt,
         })
         .from(schema.photos)
         .where(

@@ -9,6 +9,9 @@ export type SitemapPhoto = {
   title: string;
   seriesId: number | null;
   createdAt: Date | null;
+  /** 撮影日。題の無い写真の説明文を、撮った時期で見分けられるようにする。 */
+  shotAt?: string | Date | null;
+  sortOrder?: number | null;
 };
 
 export type SitemapSeries = { title: string; coverPhotoId: number | null };
@@ -50,12 +53,23 @@ export function buildSitemapXml(input: SitemapInput): string {
         : ""
     }</image:image>`;
 
-  // 公開する画像は「シリーズの表紙」と「プロフィール写真」だけに絞る。
-  // 2026-08-14 の実測では /gallery に全公開写真569件を付けていて、そのうち
-  // タイトル付きは0件だった。言葉の無い画像は順位が付かず、並びから1枚だけ
-  // 剥がして配ることになる。少数を言葉付きで出すほうが安全でも効果でも上、
-  // というオーナー判断。**サイトマップから外すのは「推さない」であって
-  // 「遮断」ではない**（巡回で見つかる経路は残る）。
+  // 2026-08-14 のオーナー判断: /gallery に全公開写真569件をぶら下げていたのを
+  // やめ、「シリーズの表紙」と「プロフィール写真」だけに絞った。理由は2つで、
+  // (1) 題の無い画像は順位が付かない (2) 並びから1枚だけ剥がして配ることになる。
+  //
+  // 2026-09-01、(1) の前提が変わった。`photoAltText` が撮影時期を入れるように
+  // なり、題の無い写真にも1枚ごとに違う説明文が付く。(2) のほうは、**その
+  // シリーズの写真を、そのシリーズのページに付ける**ことで解いた——1枚だけ
+  // 剥がして配るのではなく、束ねているページの中身として出す。
+  // `/gallery` に全件をぶら下げるのは、いまも やらない。
+  //
+  // **サイトマップから外すのは「推さない」であって「遮断」ではない**
+  // （巡回で見つかる経路は残る）。
+  //
+  // 1つのURLに付けられる画像は1000枚まで（Google の上限）。ここは十分下で
+  // 止めておく——シリーズが巨大化したとき、サイトマップ1本が肥大するのを
+  // 避けるため。
+  const MAX_IMAGES_PER_SERIES = 200;
   const imagesFor = (path: string): string => {
     // 名前で検索した人に返したいのは本人の写真。JSON-LD は既に Person の
     // image として宣言しているのに、サイトマップだけ持っていなかった。
@@ -70,15 +84,24 @@ export function buildSitemapXml(input: SitemapInput): string {
       series?.coverPhotoId != null
         ? photoById.get(series.coverPhotoId)
         : undefined;
-    const pick = cover ?? photos.find((p) => p.seriesId === sid);
-    if (!pick) return "";
-    // photoAltText は title があればそれを、無ければシリーズ名と撮影者から
-    // 文を作る。だから今日から無題ではなくなり、後でタイトルを入れれば
-    // そのまま良くなる。
-    return imageTag(
-      pick.url,
-      photoAltText(pick, { photographerName, seriesName: series?.title }),
-    );
+    // 表紙を先頭に、そのシリーズの写真をページの中身として並べる。
+    // 表紙が未設定・削除済みなら先頭の写真がそのまま先頭になる。
+    const members = photos.filter((p) => p.seriesId === sid);
+    const ordered = cover
+      ? [cover, ...members.filter((p) => p.id !== cover.id)]
+      : members;
+    if (ordered.length === 0) return "";
+    // photoAltText は title があればそれを、無ければシリーズ名・撮影者・
+    // 撮影時期から文を作る。後でタイトルを入れれば、そのまま良くなる。
+    return ordered
+      .slice(0, MAX_IMAGES_PER_SERIES)
+      .map((p) =>
+        imageTag(
+          p.url,
+          photoAltText(p, { photographerName, seriesName: series?.title }),
+        ),
+      )
+      .join("");
   };
 
   // lastmod は以前、全URLに毎回「今日」を入れていた。常に今日である日付は

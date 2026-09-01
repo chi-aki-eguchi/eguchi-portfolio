@@ -34,15 +34,33 @@ const imageLocs = (xml: string) =>
   [...xml.matchAll(/<image:loc>([^<]+)<\/image:loc>/g)].map((m) => m[1]);
 
 describe("buildSitemapXml", () => {
-  test("公開する画像はシリーズ表紙とプロフィール写真だけに絞る", () => {
+  test("シリーズの写真は、そのシリーズのページの中身として出す（表紙が先頭）", () => {
     const xml = buildSitemapXml(base());
     expect(imageLocs(xml)).toEqual([
       "https://example.com/api/images/profile/me.jpg",
       "https://example.com/api/images/photos/cover.jpg",
+      "https://example.com/api/images/photos/second.jpg",
     ]);
-    // /gallery に全公開写真をぶら下げていた以前の形へ戻っていないこと。
+  });
+
+  test("どのシリーズにも属さない写真は推さない（/gallery に全件をぶら下げない）", () => {
+    // 2026-08-14 のオーナー判断。全公開写真を /gallery に付けていた形へは戻さない。
+    const xml = buildSitemapXml(base());
     expect(xml).not.toContain("/api/images/photos/loose.jpg");
-    expect(xml).not.toContain("/api/images/photos/second.jpg");
+    const galleryLine = xml
+      .split("\n")
+      .find((l) => l.includes("<loc>https://example.com/gallery</loc>"))!;
+    expect(galleryLine).not.toContain("<image:image>");
+  });
+
+  test("1つのシリーズに付ける画像の数には上限がある", () => {
+    const input = base();
+    const many = Array.from({ length: 250 }, (_, i) =>
+      photo({ id: 100 + i, url: `/api/images/photos/p${i}.jpg`, seriesId: 7 }),
+    );
+    const xml = buildSitemapXml({ ...input, photos: [...input.photos, ...many] });
+    const seriesImages = imageLocs(xml).filter((u) => !u.includes("/profile/"));
+    expect(seriesImages.length).toBe(200);
   });
 
   test("画像には必ず言葉が付く（無題のまま出さない）", () => {
@@ -83,6 +101,7 @@ describe("buildSitemapXml", () => {
     const xml = buildSitemapXml({ ...input, profilePhotoUrl: undefined });
     expect(imageLocs(xml)).toEqual([
       "https://example.com/api/images/photos/cover.jpg",
+      "https://example.com/api/images/photos/second.jpg",
     ]);
   });
 

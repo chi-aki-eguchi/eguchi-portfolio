@@ -128,6 +128,53 @@ function genericPageDescription(
   }
 }
 
+/**
+ * <noscript> の中に置く、そのページ自身の言葉。JS を実行しないクローラには
+ * これが本文になる（`spa-fallback.ts` の頭のコメントに経緯）。
+ *
+ * 説明文は `injectOgp` の `desc` と**同じ順序で**決める。片方だけ直すと、
+ * 検索結果に出る文と本文が食い違うので、規則はこの関数に寄せる。
+ */
+export function publicPageFallbackText(
+  settings: Record<string, string>,
+  pathname: string,
+  override?: { title?: string; desc?: string },
+): { heading: string; description: string; paragraphs: string[] } {
+  const name = displayNameFrom(settings);
+  if (SERVICE_LP_PATHS.has(pathname)) {
+    const og = pathname === "/portfolio-kit/en" ? SERVICE_OG_EN : SERVICE_OG;
+    // 題は「見出し | 説明的な語」で組んである。見出しに要るのは前半だけ。
+    return {
+      heading: og.title.split(" | ")[0] ?? og.title,
+      description: og.desc,
+      paragraphs: [],
+    };
+  }
+  if (override?.title) {
+    return {
+      heading: override.title,
+      description: override.desc || seriesFallbackDescription(override.title, name),
+      paragraphs: [],
+    };
+  }
+  const description =
+    settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
+    genericPageDescription(pathname, name, settings);
+  const page = PAGE_TITLES[pathname];
+  const heading = page ? `${page} — ${name}` : name;
+  // プロフィールは、このサイトで唯一まとまった量の文章があるページ。
+  // ここを渡さないと、非JSのクローラにとっては名前しか無いページになる。
+  const paragraphs =
+    pathname === "/about" || pathname === "/profile"
+      ? (settings.profileBio || "")
+          .trim()
+          .split(/\n\s*\n/)
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : [];
+  return { heading, description, paragraphs };
+}
+
 export function isServiceSiteUrl(siteUrl: string): boolean {
   return resolveServiceVisibility("", siteUrl, "");
 }

@@ -8,6 +8,7 @@ import {
   siteUrlFrom,
   BUILD_ID,
   ogCardTitleFrom,
+  publicPageFallbackText,
 } from "./api/ogp";
 import { generateOgCardPng } from "./api/og-card";
 import {
@@ -27,6 +28,7 @@ import { imageUrlWithParams } from "./shared/image-url";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 import { hasPublicEnglishContent } from "./shared/public-english";
 import { buildSitemapXml } from "./api/sitemap-xml";
+import { injectNoscriptFallback } from "./api/spa-fallback";
 import { buildGalleryPreloadTags } from "./api/gallery-preload";
 import {
   buildRoutePreloadTags,
@@ -271,6 +273,39 @@ async function getGalleryPreloadImages(): Promise<ImageRef[]> {
     console.error("[preload] gallery photos fetch failed:", e);
   }
   return galleryPreloadCache;
+}
+
+// 非JSのクローラに渡すリンクの束。<noscript> にこれが無いと、そういう
+// クローラから見たサイトはリンクが0本になり、sitemap を読まない限りシリーズの
+// ページへ辿り着けない。60秒キャッシュ。失敗時は空（リンク無しで本文だけ出す）。
+type NavSeries = { path: string; title: string };
+let navSeriesCache: NavSeries[] | null = null;
+let navSeriesCacheTime = 0;
+async function getNavSeries(): Promise<NavSeries[]> {
+  const now = Date.now();
+  if (navSeriesCache !== null && now - navSeriesCacheTime < SETTINGS_TTL)
+    return navSeriesCache;
+  try {
+    const rows = await withRetry(() =>
+      db
+        .select({
+          slug: schema.series.slug,
+          title: schema.series.title,
+          kind: schema.series.kind,
+        })
+        .from(schema.series)
+        .where(eq(schema.series.isPublished, true))
+        .orderBy(schema.series.sortOrder),
+    );
+    navSeriesCache = rows.map((r) => ({
+      path: `/${r.kind === "work" ? "work" : "series"}/${encodeURIComponent(r.slug)}`,
+      title: r.title,
+    }));
+    navSeriesCacheTime = now;
+  } catch (e) {
+    console.error("[fallback] series nav fetch failed:", e);
+  }
+  return navSeriesCache ?? [];
 }
 
 // Per-series OGP so a shared /series/:slug link shows that series' own title,
@@ -763,6 +798,33 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     const htmlStatus = htmlStatusForSpaPath(routePathname, {
       seriesFound: isSeriesDetailPath(routePathname) ? seriesFound : undefined,
     });
+    // 実在するページにだけ本文を入れる。404 の <noscript> に本文と
+    // リンクを並べると、無いページを「中身のあるページ」として配ることになる。
+    if (htmlStatus === 200) {
+      const text = publicPageFallbackText(settings, routePathname, override);
+      const isIndexPage =
+        routePathname === "/" ||
+        routePathname === "/series" ||
+        routePathname === "/work";
+      const siteLabel = settings.siteName || settings.siteNameEn || "Home";
+      const navSeries = await getNavSeries();
+      const hasWorkShelf = navSeries.some((n) => n.path.startsWith("/work/"));
+      const sectionLinks = [
+        { href: "/", label: siteLabel },
+        { href: "/gallery", label: "Gallery" },
+        { href: "/series", label: "Series" },
+        ...(hasWorkShelf ? [{ href: "/work", label: "Work" }] : []),
+        { href: "/about", label: "About" },
+        { href: "/contact", label: "Contact" },
+      ].filter((l) => l.href !== routePathname);
+      injected = injectNoscriptFallback(injected, {
+        ...text,
+        // シリーズの一覧を全ページに繰り返さない。束ねているページにだけ置く。
+        links: isIndexPage ? [...sectionLinks, ...navSeries.map((n) => ({ href: n.path, label: n.title }))] : sectionLinks,
+        noticeJa: "このサイトの閲覧には JavaScript が必要です。",
+        noticeEn: "Please enable JavaScript to view this portfolio.",
+      });
+    }
     return new Response(injected, {
       status: htmlStatus,
       headers: {

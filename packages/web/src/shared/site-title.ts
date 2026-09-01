@@ -43,3 +43,26 @@ export function composePageTitle(
   if (!page) return composeHomeTitle(parts);
   return `${page} | ${composeBaseTitle(parts)}`;
 }
+
+/**
+ * 各ページの題（`<title>` の先頭に来る語）。**サーバ（api/ogp.ts）と画面
+ * （web/app.tsx の TitledRoute）の両方がここを読む。**別々に文字列を書くと
+ * 静かにズレて、GA が同じURLを2つの題で記録する（過去に実際に起きた）。
+ *
+ * ここは `<title>` だけで、画面に出る見出しではない（見出しは settings の
+ * `contactLabel` などが持つ）。だから検索で使われる語を入れても見た目は変わらない。
+ */
+export const PAGE_TITLE = {
+  gallery: "Gallery",
+  series: "Series",
+  work: "Work",
+  about: "About",
+  /**
+   * 「Contact」だけでは、撮影を頼みたくて探している人の言葉に一語も当たらない
+   * （2026-09-01 実測: 題は "Contact | 江口秋 | Aki Eguchi | Photography" で、
+   * 撮影依頼という語はどこにも無かった。説明文には入っていた）。
+   */
+  contact: "撮影依頼・お問い合わせ",
+  /** 英語URLは英語のまま。日本語の語を英語ページの題に混ぜない。 */
+  contactEn: "Contact",
+} as const;

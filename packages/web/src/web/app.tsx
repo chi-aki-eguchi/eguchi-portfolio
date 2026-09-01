@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { Provider, useServiceVisibility } from "./components/provider";
 import PageTransition from "./components/PageTransition";
 import { usePageTitle } from "./hooks/usePageTitle";
+import { PAGE_TITLE } from "../shared/site-title";
 import Layout from "./components/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
@@ -85,7 +86,7 @@ function App() {
           <Route path="/gallery">
             <Layout>
               <PageTransition>
-                <TitledRoute title="Gallery">
+                <TitledRoute title={PAGE_TITLE.gallery}>
                   <Suspense fallback={<PageFallback />}>
                     <GalleryPage />
                   </Suspense>
@@ -105,7 +106,7 @@ function App() {
           <Route path="/series">
             <Layout>
               <PageTransition>
-                <TitledRoute title="Series">
+                <TitledRoute title={PAGE_TITLE.series}>
                   <Suspense fallback={<PageFallback />}>
                     <SeriesListPage />
                   </Suspense>
@@ -127,7 +128,7 @@ function App() {
           <Route path="/work">
             <Layout>
               <PageTransition>
-                <TitledRoute title="Work">
+                <TitledRoute title={PAGE_TITLE.work}>
                   <Suspense fallback={<PageFallback />}>
                     <SeriesListPage kind="work" />
                   </Suspense>
@@ -138,7 +139,7 @@ function App() {
           <Route path="/about">
             <Layout>
               <PageTransition>
-                <TitledRoute title="About">
+                <TitledRoute title={PAGE_TITLE.about}>
                   <Suspense fallback={<PageFallback />}>
                     <ProfilePage />
                   </Suspense>
@@ -149,7 +150,7 @@ function App() {
           <Route path="/profile">
             <Layout>
               <PageTransition>
-                <TitledRoute title="About">
+                <TitledRoute title={PAGE_TITLE.about}>
                   <Suspense fallback={<PageFallback />}>
                     <ProfilePage />
                   </Suspense>
@@ -160,7 +161,7 @@ function App() {
           <Route path="/contact">
             <Layout>
               <PageTransition>
-                <TitledRoute title="Contact">
+                <TitledRoute title={PAGE_TITLE.contact}>
                   <Suspense fallback={<PageFallback />}>
                     <ContactPage />
                   </Suspense>
@@ -171,7 +172,7 @@ function App() {
           <Route path="/en/about">
             <Layout>
               <PageTransition>
-                <TitledRoute title="About">
+                <TitledRoute title={PAGE_TITLE.about}>
                   <Suspense fallback={<PageFallback />}>
                     <ProfilePage language="en" />
                   </Suspense>
@@ -182,7 +183,7 @@ function App() {
           <Route path="/en/contact">
             <Layout>
               <PageTransition>
-                <TitledRoute title="Contact">
+                <TitledRoute title={PAGE_TITLE.contactEn}>
                   <Suspense fallback={<PageFallback />}>
                     <ContactPage language="en" />
                   </Suspense>

@@ -146,3 +146,78 @@ describe("publicPageFallbackText", () => {
     expect(publicPageFallbackText(settings, "/").heading).toBe("江口秋");
   });
 });
+
+describe("撮影依頼と販売の言葉が HTML に出ているか", () => {
+  const settings = {
+    siteName: "江口秋",
+    siteNameEn: "Aki Eguchi",
+    siteUrl: "https://akieguchi.com",
+    contactIntro: "撮影依頼・取材・コラボレーションなど、お気軽にご連絡ください。",
+    contactFlow: "ご相談 → 日程と場所のすり合わせ → 撮影 → データ納品、という流れです。",
+    contactNote: "「まだ決まっていないけれど相談したい」という段階でも歓迎です。",
+    contactIntroEn: "For shoot requests, interviews, or collaborations.",
+    contactFlowEn: "Consultation, scheduling, the shoot, then delivery.",
+  };
+
+  test("/contact に、依頼の入口・流れ・但し書きが出る", () => {
+    const text = publicPageFallbackText(settings, "/contact");
+    expect(text.paragraphs).toEqual([
+      settings.contactIntro,
+      settings.contactFlow,
+      settings.contactNote,
+    ]);
+  });
+
+  test("/en/contact は英語の設定を使い、日本語を混ぜない", () => {
+    const text = publicPageFallbackText(settings, "/en/contact");
+    expect(text.paragraphs).toEqual([
+      settings.contactIntroEn,
+      settings.contactFlowEn,
+    ]);
+    expect(text.paragraphs.join("")).not.toContain("撮影依頼");
+  });
+
+  test("設定が空でも段落を作らない（空の <p> を並べない）", () => {
+    expect(
+      publicPageFallbackText({ siteName: "江口秋" }, "/contact").paragraphs,
+    ).toEqual([]);
+  });
+
+  test("販売ページには、プランに含まれるものが出る", () => {
+    const text = publicPageFallbackText(
+      {
+        ...settings,
+        servicePageConfig: JSON.stringify({
+          pricing: {
+            plans: [
+              {
+                name: "公開おまかせ",
+                sub: "設定はすべてこちらで行います。",
+                points: ["独自ドメインの取得を一緒に行う", "初期設定して納品"],
+              },
+            ],
+          },
+        }),
+      },
+      "/portfolio-kit",
+    );
+    expect(text.paragraphs).toEqual([
+      "公開おまかせ：設定はすべてこちらで行います。",
+      "独自ドメインの取得を一緒に行う",
+      "初期設定して納品",
+    ]);
+  });
+
+  test("販売ページの設定が未保存・壊れていても、画面と同じ既定のプランを出す", () => {
+    // FAQ・値段と同じ扱い。**画面は既定値を描いているのにサーバだけ空**という
+    // 食い違いを作らない（2026-09-01、FAQ で実際にそうなっていた）。
+    for (const cfg of ["{ not json", ""]) {
+      const p = publicPageFallbackText(
+        { ...settings, servicePageConfig: cfg },
+        "/portfolio-kit",
+      ).paragraphs;
+      expect(p.length).toBeGreaterThan(0);
+      expect(p.join(" ")).toContain("独自ドメイン");
+    }
+  });
+});

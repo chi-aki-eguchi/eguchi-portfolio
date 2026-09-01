@@ -1324,3 +1324,175 @@ describe("injectOgp 販売ページの構造化データ", () => {
     });
   });
 });
+
+describe("injectOgp 撮影依頼の構造化データ", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html lang="ja"><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    </head><body></body></html>`;
+  const graphOf = (html: string): Record<string, any>[] => {
+    const m = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
+    return m ? JSON.parse(m[1].replace(/\\u003c/g, "<"))["@graph"] : [];
+  };
+  const nodeOf = (html: string, type: string) =>
+    graphOf(html).find((n) => n["@type"] === type);
+
+  const settings = {
+    siteName: "江口秋",
+    siteNameEn: "Aki Eguchi",
+    siteUrl: "https://akieguchi.com",
+    contactIntro: "撮影依頼・取材・コラボレーションなど、お気軽にご連絡ください。",
+    contactFlow: "ご相談 → 日程と場所のすり合わせ → 撮影 → データ納品。",
+  };
+
+  test("撮影を受けるという signal を出す（jobTitle だけでは足りない）", () => {
+    const out = injectOgp(page, settings, "/contact");
+    const svc = nodeOf(out, "Service");
+    expect(svc).toMatchObject({
+      "@type": "Service",
+      name: "撮影依頼",
+      serviceType: "写真撮影",
+      provider: { "@type": "Person", name: "江口秋" },
+      description: settings.contactIntro,
+      termsOfService: settings.contactFlow,
+    });
+    expect(svc?.availableChannel?.serviceUrl).toBe(
+      "https://akieguchi.com/contact",
+    );
+  });
+
+  test("ContactPage も出す", () => {
+    expect(nodeOf(injectOgp(page, settings, "/contact"), "ContactPage")).toMatchObject({
+      url: "https://akieguchi.com/contact",
+      inLanguage: "ja",
+    });
+  });
+
+  test("英語URLは英語で名乗り、日本語を混ぜない", () => {
+    const out = injectOgp(page, { ...settings, contactIntroEn: "Shoot requests welcome." }, "/en/contact");
+    const svc = nodeOf(out, "Service");
+    expect(svc?.name).toBe("Photography");
+    expect(svc?.description).toBe("Shoot requests welcome.");
+    expect(JSON.stringify(svc)).not.toContain("撮影");
+    expect(nodeOf(out, "ContactPage")?.inLanguage).toBe("en");
+  });
+
+  test("設定の文が空でも Service は出す（撮影を受ける事実は文面と別）", () => {
+    const svc = nodeOf(
+      injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/contact"),
+      "Service",
+    );
+    expect(svc).toBeDefined();
+    expect(svc?.description).toBeUndefined();
+    expect(svc?.termsOfService).toBeUndefined();
+  });
+
+  test("連絡先ページ以外に Service を出さない", () => {
+    for (const p of ["/", "/gallery", "/about", "/portfolio-kit"]) {
+      expect(nodeOf(injectOgp(page, settings, p), "Service")).toBeUndefined();
+    }
+  });
+
+  test("/contact の題が、撮影を頼みたい人の言葉から始まる", () => {
+    const out = injectOgp(page, settings, "/contact");
+    expect(out).toContain("<title>撮影依頼・お問い合わせ | 江口秋 | Aki Eguchi");
+    // 英語URLの題には日本語を出さない。
+    expect(injectOgp(page, settings, "/en/contact")).toContain(
+      "<title>Contact | 江口秋 | Aki Eguchi",
+    );
+  });
+});
+
+describe("contactAreaNames", () => {
+  const { contactAreaNames } =
+    require("./ogp") as typeof import("./ogp");
+
+  test("中黒・読点・スラッシュで区切った地名を拾う", () => {
+    expect(contactAreaNames("東京・福岡・台北")).toEqual([
+      "東京",
+      "福岡",
+      "台北",
+    ]);
+    expect(contactAreaNames("東京、福岡、台北")).toEqual([
+      "東京",
+      "福岡",
+      "台北",
+    ]);
+  });
+
+  test("句点から後ろの但し書きは地名にしない", () => {
+    // 「東京・福岡・台北を中心に。その他はご相談ください。」という名前の
+    // 場所は存在しない。文を丸ごと1つの Place にしないための守り。
+    expect(
+      contactAreaNames("東京・福岡・台北を中心に。その他の地域もご相談ください。"),
+    ).toEqual(["東京", "福岡", "台北"]);
+  });
+
+  test("「を中心に」「周辺」などの飾りを落とす", () => {
+    expect(contactAreaNames("東京周辺・福岡など")).toEqual(["東京", "福岡"]);
+  });
+
+  test("空・未設定なら何も返さない", () => {
+    expect(contactAreaNames("")).toEqual([]);
+    expect(contactAreaNames(undefined)).toEqual([]);
+    expect(contactAreaNames("。")).toEqual([]);
+  });
+
+  test("長すぎる断片は地名として扱わない", () => {
+    expect(
+      contactAreaNames("お気軽にご連絡いただければどこへでも伺いますのでご相談ください"),
+    ).toEqual([]);
+  });
+});
+
+describe("injectOgp 撮影を受ける地域", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html lang="ja"><head><title>t</title>
+    <meta name="description" content="d" /><meta name="author" content="a" />
+    <meta name="robots" content="index, follow" /><link rel="canonical" href="x" />
+    <meta property="og:locale" content="ja_JP" /><meta property="og:url" content="x" />
+    <meta property="og:title" content="x" /><meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" /><meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" /></head><body></body></html>`;
+  const svcOf = (html: string) => {
+    const m = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
+    return JSON.parse(m![1].replace(/\\u003c/g, "<"))["@graph"].find(
+      (n: any) => n["@type"] === "Service",
+    );
+  };
+
+  test("地域が Place として出る", () => {
+    const svc = svcOf(
+      injectOgp(
+        page,
+        {
+          siteUrl: "https://akieguchi.com",
+          contactAreas: "東京・福岡・台北を中心に。その他の地域もご相談ください。",
+        },
+        "/contact",
+      ),
+    );
+    expect(svc.areaServed).toEqual([
+      { "@type": "Place", name: "東京" },
+      { "@type": "Place", name: "福岡" },
+      { "@type": "Place", name: "台北" },
+    ]);
+  });
+
+  test("設定が空なら areaServed を作らない（無い地域を名乗らない）", () => {
+    expect(
+      svcOf(injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/contact"))
+        .areaServed,
+    ).toBeUndefined();
+  });
+});

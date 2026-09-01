@@ -8,6 +8,16 @@
 
 export type ServiceFaqItem = { q: string; a: string };
 
+export type ServicePlan = {
+  name: string;
+  price: string;
+  sub: string;
+  points: string[];
+  stripeUrl: string;
+  cta: string;
+  primary: boolean;
+};
+
 export const DEFAULT_SERVICE_PRICE_JPY = 30000;
 
 export const DEFAULT_SERVICE_FAQ: readonly ServiceFaqItem[] = [
@@ -34,5 +44,28 @@ export const DEFAULT_SERVICE_FAQ: readonly ServiceFaqItem[] = [
       {
         q: "やめたいときはどうなりますか？",
         a: "公開場所の契約を止めれば、月々の実費も止められます。プロジェクトを削除すると写真や設定も消えるため、必要な写真や文章は先に手元へ保存してください。",
+      },
+    ];
+
+/**
+ * 既定のプラン。FAQ と同じ理由でここに置く——**`servicePageConfig` が未保存の
+ * 本番では、画面はこの既定値を描いているのに、サーバ側の読み手は空を返す。**
+ * 値段（Offer）にも、販売ページ本文の HTML にも、同じ内容が要る。
+ */
+export const DEFAULT_SERVICE_PLANS: readonly ServicePlan[] = [
+      {
+        name: "公開おまかせ",
+        price: "¥30,000",
+        sub: "設定はすべてこちらで行い、公開した状態でお渡しします。あなたがするのは、写真を入れることだけ。",
+        points: [
+          "公開場所・管理画面の設置をすべて代行",
+          "独自ドメインの取得を一緒に行い、接続まで対応（あなた名義・実費別）",
+          "名前・プロフィール・連絡先を初期設定して納品",
+          "納品後は管理画面から写真を入れるだけ",
+          "操作方法の相談つき（当面は期間・回数の制限なし）",
+        ],
+        stripeUrl: "https://buy.stripe.com/aFa14n0BIcNB0rScvegrS01",
+        cta: "公開おまかせを申し込む",
+        primary: true,
       },
     ];

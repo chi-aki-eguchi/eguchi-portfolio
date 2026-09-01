@@ -6,11 +6,16 @@ import {
   siteDescriptionFrom,
 } from "./site-defaults";
 import { imageUrlWithParams } from "../shared/image-url";
-import { composeBaseTitle, composeHomeTitle } from "../shared/site-title";
+import {
+  composeBaseTitle,
+  composeHomeTitle,
+  PAGE_TITLE,
+} from "../shared/site-title";
 import { resolveServiceVisibility } from "../shared/service-visibility";
 import { hasPublicEnglishContent } from "../shared/public-english";
 import {
   DEFAULT_SERVICE_FAQ,
+  DEFAULT_SERVICE_PLANS,
   DEFAULT_SERVICE_PRICE_JPY,
 } from "../shared/service-defaults";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
@@ -66,17 +71,17 @@ export function siteUrlFrom(
 }
 // Per-route titles so each page is distinct for search/social, not all "home".
 const PAGE_TITLES: Record<string, string> = {
-  "/gallery": "Gallery",
-  "/series": "Series",
+  "/gallery": PAGE_TITLE.gallery,
+  "/series": PAGE_TITLE.series,
   // Work の棚（2026-08-31）。**ここに足さないと `/work` が Not Found 扱いになり、
   // 画面は出るのに HTTP 404 を返す**（実測。共有カードも「Not Found」になる）。
-  "/work": "Work",
-  "/about": "About",
-  "/profile": "About",
-  "/contact": "Contact",
+  "/work": PAGE_TITLE.work,
+  "/about": PAGE_TITLE.about,
+  "/profile": PAGE_TITLE.about,
+  "/contact": PAGE_TITLE.contact,
   // i18n Phase 3 スライス1: /en/about・/en/contact の英語URL
-  "/en/about": "About",
-  "/en/contact": "Contact",
+  "/en/about": PAGE_TITLE.about,
+  "/en/contact": PAGE_TITLE.contactEn,
   // admin は正常表示されるページなので Not Found title にしない。検索除外は
   // 下の startsWith("/admin") noindex 条件が isKnown と無関係に維持する。
   "/admin": "Admin",
@@ -151,7 +156,30 @@ export function publicPageFallbackText(
     return {
       heading: og.title.split(" | ")[0] ?? og.title,
       description: og.desc,
-      paragraphs: [],
+      // 売っているものの中身を、説明文1行で終わらせない。プランに何が
+      // 含まれるかは、買う前に探している人がいちばん読みたい所。
+      paragraphs:
+        pathname === "/portfolio-kit" ? servicePlanParagraphs(settings) : [],
+    };
+  }
+  // 撮影依頼のページ。設定にある依頼の流れと但し書きは、**頼もうとしている人が
+  // 探している言葉そのもの**なのに、これまで HTML に一文字も出ていなかった。
+  if (pathname === "/contact" || pathname === "/en/contact") {
+    const isEn = pathname === "/en/contact";
+    const paragraphs = [
+      isEn ? settings.contactIntroEn : settings.contactIntro,
+      isEn ? settings.contactAreasEn || settings.contactAreas : settings.contactAreas,
+      isEn ? settings.contactFlowEn : settings.contactFlow,
+      isEn ? settings.contactNoteEn : settings.contactNote,
+    ]
+      .map((t) => (t || "").trim())
+      .filter(Boolean);
+    return {
+      heading: `${PAGE_TITLES[pathname] ?? "Contact"} — ${name}`,
+      description:
+        settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
+        genericPageDescription(pathname, name, settings),
+      paragraphs,
     };
   }
   if (override?.title) {
@@ -617,6 +645,23 @@ function personDescriptionFrom(
   return firstParagraph || fallback;
 }
 
+/**
+ * 「東京・福岡・台北を中心に。その他はご相談ください。」のような一文から、
+ * 地名だけを拾う。区切りは「・、,」と読点。
+ *
+ * 文そのものは `description` 側に出るので、ここは `areaServed` に入れる
+ * 地名の粒だけを取る。**文を丸ごと1つの Place にしない**——「東京・福岡・台北を
+ * 中心に。その他はご相談ください。」という名前の場所は存在しない。
+ * 句点から後ろ（「その他はご相談ください」等の但し書き）は落とす。
+ */
+export function contactAreaNames(raw: string | undefined): string[] {
+  const head = (raw || "").split(/[。.\n]/)[0] ?? "";
+  return head
+    .split(/[・、,／/]/)
+    .map((t) => t.replace(/を中心に|周辺|など|ほか|中心/g, "").trim())
+    .filter((t) => t.length > 0 && t.length <= 20);
+}
+
 // サービスLPの構造化データに使う値だけを servicePageConfig から取り出す。
 // 画面側の parseServicePageConfig は web/lib にあり、API層から web/ を import
 // すると層が混ざるので、ここでは必要な2つ(値段・FAQ)だけを自前で読む。
@@ -657,6 +702,31 @@ function servicePriceJpy(settings: Record<string, string>): number {
 // 未保存なら既定のFAQを使う。**画面は `servicePageConfig` が空でも既定の
 // FAQ を出す**ので、ここで空を返すと「画面には出ているのに構造化データには
 // 無い」食い違いになる（2026-09-01、本番で実際にそうなっていた）。
+// プランの名前と、そこに含まれるものを段落にする。未保存なら既定のプランを
+// 使う——FAQ と同じ理由で、**画面は既定値を描いているのにサーバだけ空**という
+// 食い違いを作らないため。
+function servicePlanParagraphs(settings: Record<string, string>): string[] {
+  const pricing = serviceConfigObject(settings).pricing;
+  const configured =
+    pricing && typeof pricing === "object"
+      ? (pricing as { plans?: unknown }).plans
+      : undefined;
+  const plans: unknown[] = Array.isArray(configured)
+    ? configured
+    : [...DEFAULT_SERVICE_PLANS];
+  return plans.flatMap((p) => {
+    if (!p || typeof p !== "object") return [];
+    const plan = p as { name?: unknown; sub?: unknown; points?: unknown };
+    const name = typeof plan.name === "string" ? plan.name.trim() : "";
+    const sub = typeof plan.sub === "string" ? plan.sub.trim() : "";
+    const points = Array.isArray(plan.points)
+      ? plan.points.filter((x): x is string => typeof x === "string" && !!x.trim())
+      : [];
+    const line = [name, sub].filter(Boolean).join("：");
+    return [line, ...points].filter(Boolean);
+  });
+}
+
 function serviceFaqItems(
   settings: Record<string, string>,
 ): { q: string; a: string }[] {
@@ -732,6 +802,48 @@ function buildJsonLd(
       author: { "@type": "Person", name },
     },
   ];
+  // 撮影依頼のページ。**ここが無いと、この人が撮影を受けるという signal が
+  // 検索側に一つも無い**（2026-09-01 実測: /contact の構造化データは
+  // WebSite / Person / ImageGallery だけで、Person の jobTitle が「写真家」と
+  // 言っているのみ。「写真家である」と「撮影を受ける」は別のこと）。
+  // 文面は設定にあるオーナー自身の言葉をそのまま使う。こちらで書かない。
+  if (pathname === "/contact" || pathname === "/en/contact") {
+    const isEn = pathname === "/en/contact";
+    const intro = (isEn ? settings.contactIntroEn : settings.contactIntro)?.trim();
+    const flow = (isEn ? settings.contactFlowEn : settings.contactFlow)?.trim();
+    const areas = contactAreaNames(
+      (isEn ? settings.contactAreasEn : settings.contactAreas) ||
+        settings.contactAreas,
+    );
+    const contactUrl = `${siteUrl}${pathname}`;
+    graph.push({
+      "@type": "ContactPage",
+      url: contactUrl,
+      name: isEn ? "Contact" : "撮影依頼・お問い合わせ",
+      ...(intro ? { description: intro } : {}),
+      inLanguage: isEn ? "en" : "ja",
+    });
+    graph.push({
+      "@type": "Service",
+      name: isEn ? "Photography" : "撮影依頼",
+      serviceType: isEn ? "Photography" : "写真撮影",
+      provider: { "@type": "Person", name, ...(image ? { image } : {}) },
+      ...(intro ? { description: intro } : {}),
+      // 依頼の流れも設定の文をそのまま渡す。段取りが読めることは、
+      // 頼む側にとっても検索側にとっても中身のある情報。
+      ...(flow ? { termsOfService: flow } : {}),
+      // 撮影を受ける地域。「撮影を受ける」だけでなく「どこで」まで言えると、
+      // 地名で探している人に届く。空なら出さない（作らない）。
+      ...(areas.length
+        ? { areaServed: areas.map((a) => ({ "@type": "Place", name: a })) }
+        : {}),
+      availableChannel: {
+        "@type": "ServiceChannel",
+        name: isEn ? "Contact form" : "問い合わせフォーム",
+        serviceUrl: contactUrl,
+      },
+    });
+  }
   // 販売ページ。値段と申込先を、文章ではなく機械が読める形で宣言する。
   // ここが無いと、検索側は「¥30,000」が値段だと分からない（本文の数字は
   // ただの文字列）。呼ばれるのは indexable なときだけで、非公開ホストや

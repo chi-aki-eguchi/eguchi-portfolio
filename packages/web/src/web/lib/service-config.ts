@@ -1,4 +1,7 @@
-import { DEFAULT_SERVICE_FAQ } from "../../shared/service-defaults";
+import {
+  DEFAULT_SERVICE_FAQ,
+  DEFAULT_SERVICE_PLANS,
+} from "../../shared/service-defaults";
 
 export type PainSolutionItem = {
   concern: string;
@@ -177,23 +180,7 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
       "いまはオンライン決済を準備中です。当面は上のボタン（メールが開きます）か、下の連絡先からお申し込みください。",
     disclaimer:
       "別途かかる実費: 公開場所が月500〜1,000円程度、独自ドメインが年1,500〜2,000円程度（あなた名義で取得します）。デザイン変更・個別カスタムは別途お見積もりです。",
-    plans: [
-      {
-        name: "公開おまかせ",
-        price: "¥30,000",
-        sub: "設定はすべてこちらで行い、公開した状態でお渡しします。あなたがするのは、写真を入れることだけ。",
-        points: [
-          "公開場所・管理画面の設置をすべて代行",
-          "独自ドメインの取得を一緒に行い、接続まで対応（あなた名義・実費別）",
-          "名前・プロフィール・連絡先を初期設定して納品",
-          "納品後は管理画面から写真を入れるだけ",
-          "操作方法の相談つき（当面は期間・回数の制限なし）",
-        ],
-        stripeUrl: "https://buy.stripe.com/aFa14n0BIcNB0rScvegrS01",
-        cta: "公開おまかせを申し込む",
-        primary: true,
-      },
-    ],
+    plans: [...DEFAULT_SERVICE_PLANS],
   },
 
   purchaseFlow: {

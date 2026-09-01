@@ -139,6 +139,36 @@ function genericPageDescription(
 }
 
 /**
+ * そのページの説明文。**英語URLに日本語の説明文を出さない。**
+ *
+ * `<html lang="en">` と中身の言語が食い違うと、対になっている日本語ページの
+ * 重複として扱われやすく、英語ページが出なくなる（2026-09-01 実測: /en/about は
+ * lang="en" を名乗りながら `metaDescriptionAbout` の日本語文を出していた）。
+ * 英語専用の説明キーはまだ無いので、英語の定型文へ落とす。手で書いた英文を
+ * 入れたくなったら、ここに `metaDescriptionAboutEn` 等を足す。
+ */
+function pageDescriptionFor(
+  settings: Record<string, string>,
+  pathname: string,
+  name: string,
+): string {
+  if (ENGLISH_PUBLIC_PATHS.has(pathname)) {
+    // 英語の設定キーは増やさない（i18n Phase 3 の判断のまま）。代わりに、
+    // **既に入力されている英語の本文**から説明文を作る。定型文より中身があり、
+    // 日本語を英語ページに出すことにもならない。無ければ英語の定型文へ。
+    const fromEnglishBody =
+      pathname === "/en/about"
+        ? firstParagraphOf(settings.profileBioEn)
+        : (settings.contactIntroEn || "").trim();
+    return fromEnglishBody || genericPageDescription(pathname, name, settings);
+  }
+  return (
+    settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
+    genericPageDescription(pathname, name, settings)
+  );
+}
+
+/**
  * <noscript> の中に置く、そのページ自身の言葉。JS を実行しないクローラには
  * これが本文になる（`spa-fallback.ts` の頭のコメントに経緯）。
  *
@@ -188,10 +218,11 @@ export function publicPageFallbackText(
       .map((t) => (t || "").trim())
       .filter(Boolean);
     return {
-      heading: `${PAGE_TITLES[pathname] ?? "Contact"} — ${name}`,
-      description:
-        settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
-        genericPageDescription(pathname, name, settings),
+      // 英語ページの見出しに日本語の表記名を出さない（説明文と同じ規則）。
+      heading: `${PAGE_TITLES[pathname] ?? "Contact"} — ${
+        isEn ? displayNameEnFrom(settings) : name
+      }`,
+      description: pageDescriptionFor(settings, pathname, name),
       paragraphs,
     };
   }
@@ -202,11 +233,13 @@ export function publicPageFallbackText(
       paragraphs: [],
     };
   }
-  const description =
-    settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
-    genericPageDescription(pathname, name, settings);
+  const description = pageDescriptionFor(settings, pathname, name);
   const page = PAGE_TITLES[pathname];
-  const heading = page ? `${page} — ${name}` : name;
+  // 英語ページの見出しに日本語の表記名を出さない（説明文と同じ理由）。
+  const headingName = ENGLISH_PUBLIC_PATHS.has(pathname)
+    ? displayNameEnFrom(settings)
+    : name;
+  const heading = page ? `${page} — ${headingName}` : headingName;
   // プロフィールは、このサイトで唯一まとまった量の文章があるページ。
   // 英語URLには英語の経歴を出す。**ここを見落として `/en/about` だけ本文が
   // 空だった**（他のページには本文を出しておきながら）。
@@ -427,8 +460,7 @@ export function injectOgp(
         ? override.desc
         : override?.title
           ? seriesFallbackDescription(override.title, name)
-          : settings[META_DESCRIPTION_KEYS[pathname] ?? ""] ||
-            genericPageDescription(pathname, name, settings);
+          : pageDescriptionFor(settings, pathname, name);
   // Owner-branded flat files remain exclusive to akieguchi.com; distributed sites
   // without a photo use their settings-derived card instead.
   const imgBase = isService
@@ -648,6 +680,11 @@ export function injectOgp(
 // search results distinguish one series from another.
 function seriesFallbackDescription(title: string, name: string): string {
   return `写真シリーズ「${title}」の作品ページ。${name}が撮影。`;
+}
+
+/** 段落の1つ目だけ。説明文に使うので、複数言語のブロックを連ねない。 */
+function firstParagraphOf(text: string | undefined): string {
+  return (text || "").trim().split(/\n\s*\n/)[0]?.trim() ?? "";
 }
 
 // profileBio repeats the same self-intro across JA/EN/中文 paragraph blocks —

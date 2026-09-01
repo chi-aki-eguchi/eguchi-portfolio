@@ -1123,7 +1123,7 @@ describe("injectOgp /en/about and /en/contact (i18n Phase 3 slice 1)", () => {
     expect(contact).not.toContain("連絡先");
   });
 
-  test("/en/about and /en/contact ride on the existing metaDescriptionAbout/metaDescriptionContact settings (no new keys)", () => {
+  test("日本語ページは metaDescription* の設定をそのまま使う（専用キーを増やさない方針は維持）", () => {
     const settings = {
       metaDescriptionAbout: "about desc unique",
       metaDescriptionContact: "contact desc unique",
@@ -1131,15 +1131,42 @@ describe("injectOgp /en/about and /en/contact (i18n Phase 3 slice 1)", () => {
     expect(descOf(injectOgp(page, settings, "/about"))).toBe(
       "about desc unique",
     );
-    expect(descOf(injectOgp(page, settings, "/en/about"))).toBe(
-      "about desc unique",
-    );
     expect(descOf(injectOgp(page, settings, "/contact"))).toBe(
       "contact desc unique",
     );
-    expect(descOf(injectOgp(page, settings, "/en/contact"))).toBe(
-      "contact desc unique",
+  });
+
+  test("英語URLに日本語の説明文を出さない（2026-09-01 に方針を一部変更）", () => {
+    // 以前はここも metaDescriptionAbout/Contact に相乗りしていた。だが本番の
+    // /en/about は `<html lang="en">` を名乗りながら日本語の説明文を出していて、
+    // 対になっている日本語ページの重複として扱われやすい。
+    // **英語の設定キーは増やさない**方針は維持し、代わりに既に入力されている
+    // 英語の本文から作る。
+    const settings = {
+      metaDescriptionAbout: "日本語の説明",
+      metaDescriptionContact: "日本語の説明",
+      profileBioEn: "Born in 2007, raised in Taiwan.\n\n二段落目は使わない",
+      contactIntroEn: "For shoot requests and collaborations.",
+      siteNameEn: "Aki Eguchi",
+    };
+    expect(descOf(injectOgp(page, settings, "/en/about"))).toBe(
+      "Born in 2007, raised in Taiwan.",
     );
+    expect(descOf(injectOgp(page, settings, "/en/contact"))).toBe(
+      "For shoot requests and collaborations.",
+    );
+  });
+
+  test("英語の本文が無ければ英語の定型文へ。日本語へは落ちない", () => {
+    const settings = {
+      metaDescriptionAbout: "日本語の説明",
+      siteNameEn: "Aki Eguchi",
+      profileBioEn: "",
+    };
+    const d = descOf(injectOgp(page, settings, "/en/about"));
+    // 属性なのでアポストロフィは実体参照になる（escapeHtml の正しい動き）。
+    expect(d).toBe("Aki Eguchi&#39;s profile page.");
+    expect(d).not.toContain("日本語");
   });
 });
 

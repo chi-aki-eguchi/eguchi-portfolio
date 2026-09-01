@@ -191,6 +191,21 @@ describe("撮影依頼と販売の言葉が HTML に出ているか", () => {
     ]);
   });
 
+  test("英語ページの見出しに日本語の表記名を出さない", () => {
+    expect(
+      publicPageFallbackText(
+        { siteName: "江口秋", siteNameEn: "Aki Eguchi" },
+        "/en/contact",
+      ).heading,
+    ).toBe("Contact — Aki Eguchi");
+    expect(
+      publicPageFallbackText(
+        { siteName: "江口秋", siteNameEn: "Aki Eguchi" },
+        "/en/about",
+      ).heading,
+    ).toBe("About — Aki Eguchi");
+  });
+
   test("/en/contact は英語の設定を使い、日本語を混ぜない", () => {
     const text = publicPageFallbackText(settings, "/en/contact");
     expect(text.paragraphs).toEqual([

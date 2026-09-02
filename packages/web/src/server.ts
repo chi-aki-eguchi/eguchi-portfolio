@@ -314,7 +314,10 @@ async function getNavSeries(): Promise<NavSeries[]> {
 // null = unknown/unpublished slug (caller falls back to the generic card).
 type SeriesOg = {
   title: string;
+  /** 検索結果に出る一文。200字で切る。 */
   desc: string;
+  /** 作家の言葉の全文。**切らない**（本文は最初のHTMLに全部入れる）。 */
+  body: string;
   image: string;
   imageRotationDeg: number;
   /** 棚。"work" の1本は `/work/:slug`、それ以外は `/series/:slug` にしか無い。 */
@@ -358,6 +361,7 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
       data = {
         title: s.title,
         desc: (s.statement || s.subtitle || "").slice(0, 200),
+        body: s.statement || "",
         image,
         imageRotationDeg,
         shelf: s.kind === "work" ? "work" : "series",
@@ -751,6 +755,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       | {
           title?: string;
           desc?: string;
+          body?: string;
           image?: string;
           imageRotationDeg?: number | null;
         }
@@ -770,6 +775,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         override = {
           title: og.title,
           desc: og.desc,
+          body: og.body,
           image: og.image || undefined,
           imageRotationDeg: og.imageRotationDeg,
         };

@@ -139,6 +139,61 @@ describe("publicPageFallbackText", () => {
     expect(text.description).toBe("2024年の京都。");
   });
 
+  // 2026-09-02 実測の欠陥。`desc` は検索結果に出る一文なので server.ts で
+  // 200字に切ってある。**本文まで同じ200字を使っていたため、シリーズページに
+  // 書いた文章は、最初に返す HTML に先頭200字しか入らなかった。**
+  // シリーズページは「人が書いた文」が載る数少ない場所なので、書いたぶんが
+  // 届かないと、書く作業そのものが空振りする。
+  test("シリーズの本文は、200字で切らずに全文が段落として出る", () => {
+    const long = "あ".repeat(400) + "\n\n" + "い".repeat(400);
+    const text = publicPageFallbackText(settings, "/series/indigo", {
+      title: "indigo blue",
+      desc: long.slice(0, 200),
+      body: long,
+    });
+    // description は「1段落目」で、paragraphs とは別に積まれる。全文を
+    // paragraphs へ入れると、200字版と全文が二重に出る（実際に一度そうなった）。
+    expect(text.description).toBe("あ".repeat(400));
+    expect(text.paragraphs).toEqual(["い".repeat(400)]);
+  });
+
+  test("シリーズの本文が、差し込んだ HTML に二重に出ない", () => {
+    const text = publicPageFallbackText(settings, "/series/indigo", {
+      title: "indigo blue",
+      desc: "はじめの段落。".slice(0, 200),
+      body: "はじめの段落。\n\nつぎの段落。",
+    });
+    const html = buildNoscriptFallback({
+      ...text,
+      noticeJa: "JS が必要です。",
+      noticeEn: "JavaScript required.",
+    });
+    expect(html.split("はじめの段落。").length - 1).toBe(1);
+    expect(html.split("つぎの段落。").length - 1).toBe(1);
+  });
+
+  test("シリーズの本文は空行で段落に割れる（プロフィール文と同じ規則）", () => {
+    const text = publicPageFallbackText(settings, "/series/indigo", {
+      title: "indigo blue",
+      body: "一段落目。\n\n\n  二段落目。  \n\n",
+    });
+    expect(text.description).toBe("一段落目。");
+    expect(text.paragraphs).toEqual(["二段落目。"]);
+  });
+
+  test("本文が無いシリーズは段落を作らない（空の <p> を並べない）", () => {
+    expect(
+      publicPageFallbackText(settings, "/series/indigo", { title: "x" })
+        .paragraphs,
+    ).toEqual([]);
+    expect(
+      publicPageFallbackText(settings, "/series/indigo", {
+        title: "x",
+        body: "   \n\n  ",
+      }).paragraphs,
+    ).toEqual([]);
+  });
+
   test("statement が空のシリーズでも、題を名乗る文になる", () => {
     const text = publicPageFallbackText(settings, "/series/indigo", {
       title: "indigo blue",

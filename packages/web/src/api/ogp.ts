@@ -178,7 +178,7 @@ function pageDescriptionFor(
 export function publicPageFallbackText(
   settings: Record<string, string>,
   pathname: string,
-  override?: { title?: string; desc?: string },
+  override?: { title?: string; desc?: string; body?: string },
 ): { heading: string; description: string; paragraphs: string[] } {
   const name = displayNameFrom(settings);
   if (SERVICE_LP_PATHS.has(pathname)) {
@@ -227,6 +227,28 @@ export function publicPageFallbackText(
     };
   }
   if (override?.title) {
+    // 作家の言葉（statement）の**全文**をここへ流す。
+    //
+    // `override.desc` は検索結果に出る一文なので `server.ts` で 200 字に
+    // 切ってある。**本文まで同じ 200 字を使っていたため、シリーズページに
+    // 書いた文章は、最初に返す HTML に先頭 200 字しか入らなかった**
+    // （2026-09-02 実測。残りは JavaScript を実行した後にしか存在しない）。
+    // シリーズページは「人が書いた文」が載る数少ない場所なので、書いたぶんが
+    // 検索側に届かないと、書く作業そのものが空振りする。
+    //
+    // **`description` は「1段落目」であって、`paragraphs` とは別に積まれる**
+    // （`spa-fallback.ts` の `buildNoscriptFallback` が `[description,
+    // ...paragraphs]` として並べる）。ここへ 200 字版と全文の両方を渡すと、
+    // 同じ文が二重に出る（実際に一度そうなった）。先頭の段落を
+    // `description` に充て、残りを `paragraphs` にする。
+    const body = splitParagraphs(override.body);
+    if (body.length) {
+      return {
+        heading: override.title,
+        description: body[0],
+        paragraphs: body.slice(1),
+      };
+    }
     return {
       heading: override.title,
       description: override.desc || seriesFallbackDescription(override.title, name),
@@ -249,14 +271,20 @@ export function publicPageFallbackText(
       : pathname === "/about" || pathname === "/profile"
         ? "profileBio"
         : "";
-  const paragraphs = bioKey
-    ? (settings[bioKey] || "")
-        .trim()
-        .split(/\n\s*\n/)
-        .map((t) => t.trim())
-        .filter(Boolean)
-    : [];
+  const paragraphs = bioKey ? splitParagraphs(settings[bioKey]) : [];
   return { heading, description, paragraphs };
+}
+
+/**
+ * 空行で段落に割る。settings の本文欄（profileBio / series.statement）は
+ * どれもこの形で書かれていて、画面側も `whitespace-pre-line` で同じに読む。
+ */
+function splitParagraphs(text: string | undefined | null): string[] {
+  return (text || "")
+    .trim()
+    .split(/\n\s*\n/)
+    .map((t) => t.trim())
+    .filter(Boolean);
 }
 
 export function isServiceSiteUrl(siteUrl: string): boolean {

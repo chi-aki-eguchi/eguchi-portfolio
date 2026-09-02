@@ -1068,7 +1068,7 @@ const ADMIN_PHASE_2B_JA = {
         "ビューポート高に対する割合。スマホは自動で上限調整。フルスクリーン時は無効",
       titlePositionLabel: "名前の表示位置",
       titlePositionHint:
-        "1枚絵/フルスクリーンでは写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます",
+        "フルスクリーンではカルーセルも1枚絵も写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます",
       titlePositionOptions: {
         center: "中央（既定）",
         "bottom-left": "左下",
@@ -1086,7 +1086,8 @@ const ADMIN_PHASE_2B_JA = {
         parallax: "パララックス",
       },
       overlayLabel: "オーバーレイ",
-      overlayHint: "1枚絵モードで名前を読みやすくする暗いグラデーション",
+      overlayHint:
+        "1枚絵とフルスクリーンのカルーセルで、写真上の名前を読みやすくする暗いグラデーション",
       overlayOptions: {
         on: "あり",
         off: "なし",
@@ -2777,7 +2778,7 @@ const ADMIN_PHASE_2B_EN = {
         "A percentage of the viewport height. The upper limit adjusts automatically on mobile. Not used in Fullscreen mode.",
       titlePositionLabel: "Name Position",
       titlePositionHint:
-        "In Single Photo or Fullscreen this positions the name over the photo; in Carousel (Normal) it aligns the name below the photo.",
+        "In Fullscreen, this positions the name over both Carousel and Single Photo; in Carousel (Normal), it aligns the name below the photo.",
       titlePositionOptions: {
         center: "Center (default)",
         "bottom-left": "Bottom left",
@@ -2795,7 +2796,8 @@ const ADMIN_PHASE_2B_EN = {
         parallax: "Parallax",
       },
       overlayLabel: "Overlay",
-      overlayHint: "A dark gradient that keeps the name readable in Single Photo mode.",
+      overlayHint:
+        "A dark gradient that keeps the over-photo name readable in Single Photo and Fullscreen Carousel.",
       overlayOptions: {
         on: "On",
         off: "Off",

@@ -90,6 +90,10 @@ describe("何も登録していないサイト", () => {
         m.host.innerHTML.includes(PLACEHOLDER),
         "読み込み中に場所を取っていない",
       ).toBe(true);
+      expect(
+        m.host.querySelector(".hero-carousel-contain"),
+        "読み込み中だけ別の60vh箱になり、写真到着時に高さが跳ねる",
+      ).not.toBeNull();
     } finally {
       m.cleanup();
     }

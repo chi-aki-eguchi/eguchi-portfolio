@@ -281,6 +281,38 @@ function removeElement(id: string) {
   document.getElementById(`${id}-style`)?.remove();
 }
 
+type HeroTextColorSettings = {
+  heroNameColor?: string;
+  heroNameEnColor?: string;
+  heroSubColor?: string;
+};
+
+/** Keep saved HERO colours readable when the visitor changes theme.
+ *
+ * The admin stores one colour per name part, not separate light/dark values.
+ * Reusing a dark light-theme colour verbatim on #121212 made the owner's name
+ * effectively disappear. Preserve the chosen colour whenever it already meets
+ * AA, and only move it toward the current theme's ink/paper when necessary.
+ */
+function applyReadableHeroTextColors(
+  settings: HeroTextColorSettings,
+  background: string,
+) {
+  const root = document.documentElement;
+  const pairs = [
+    ["--hero-name-color", settings.heroNameColor],
+    ["--hero-name-en-color", settings.heroNameEnColor],
+    ["--hero-sub-color", settings.heroSubColor],
+  ] as const;
+  for (const [cssVar, raw] of pairs) {
+    if (raw) {
+      root.style.setProperty(cssVar, ensureAccentContrast(raw, background));
+    } else {
+      root.style.removeProperty(cssVar);
+    }
+  }
+}
+
 interface ProviderProps {
   children: React.ReactNode;
 }
@@ -326,6 +358,15 @@ export function Provider({ children }: ProviderProps) {
   // プレビュー面では DB 適用が止まるため、直近に受け取った色をここで保持し、
   // プレビュー内で明暗を切り替えたときに当て直す。
   const previewThemeColorsRef = useRef<ThemeColorSettings>({});
+  const previewHeroTextColorsRef = useRef<HeroTextColorSettings>({});
+  useEffect(() => {
+    if (isPreviewRef.current) return;
+    previewHeroTextColorsRef.current = {
+      heroNameColor: data?.heroNameColor,
+      heroNameEnColor: data?.heroNameEnColor,
+      heroSubColor: data?.heroSubColor,
+    };
+  }, [data?.heroNameColor, data?.heroNameEnColor, data?.heroSubColor]);
   useEffect(() => {
     if (!isPreviewRef.current) return;
     const { bg, text } = themeColorsFor(
@@ -333,6 +374,10 @@ export function Provider({ children }: ProviderProps) {
       previewThemeColorsRef.current,
     );
     applyThemeColors(bg, text, resolvedTheme);
+    applyReadableHeroTextColors(
+      previewHeroTextColorsRef.current,
+      getComputedStyle(document.body).backgroundColor,
+    );
   }, [resolvedTheme]);
   const themeBg = data?.themeBg;
   const themeText = data?.themeText;
@@ -429,10 +474,15 @@ export function Provider({ children }: ProviderProps) {
     set("--sns-opacity", data?.snsOpacity);
     set("--hero-name-size", sizePx(data?.heroNameSize));
     set("--hero-name-en-size", sizePx(data?.heroNameEnSize));
-    set("--hero-name-color", data?.heroNameColor);
-    set("--hero-name-en-color", data?.heroNameEnColor);
     set("--hero-sub-size", sizePx(data?.heroSubSize));
-    set("--hero-sub-color", data?.heroSubColor);
+    applyReadableHeroTextColors(
+      {
+        heroNameColor: data?.heroNameColor,
+        heroNameEnColor: data?.heroNameEnColor,
+        heroSubColor: data?.heroSubColor,
+      },
+      effectiveBg,
+    );
     // A3: font weights
     set("--hero-name-weight", data?.heroNameWeight);
     set("--body-weight", data?.bodyWeight);
@@ -496,6 +546,8 @@ export function Provider({ children }: ProviderProps) {
     data?.linkUnderline,
     data?.accentColor,
     data?.themeBg,
+    data?.themeBgDark,
+    resolvedTheme,
     themeVersion,
     data?.spacingHeroBottom,
     data?.spacingSectionGap,
@@ -684,6 +736,22 @@ export function Provider({ children }: ProviderProps) {
         applyThemeColors(bg, text, resolved);
       }
 
+      if (
+        s.heroNameColor !== undefined ||
+        s.heroNameEnColor !== undefined ||
+        s.heroSubColor !== undefined
+      ) {
+        previewHeroTextColorsRef.current = {
+          heroNameColor:
+            s.heroNameColor ?? previewHeroTextColorsRef.current.heroNameColor,
+          heroNameEnColor:
+            s.heroNameEnColor ??
+            previewHeroTextColorsRef.current.heroNameEnColor,
+          heroSubColor:
+            s.heroSubColor ?? previewHeroTextColorsRef.current.heroSubColor,
+        };
+      }
+
       // D4: global type scale + link styling
       applyVar("--global-font-scale", s.globalFontScale);
       // 2-4: DB適用側と同じ AA 保証をプレビューにもかける(実効背景基準)
@@ -738,10 +806,11 @@ export function Provider({ children }: ProviderProps) {
       applyVar("--sns-opacity", s.snsOpacity);
       applyVar("--hero-name-size", s.heroNameSize, sizePx);
       applyVar("--hero-name-en-size", s.heroNameEnSize, sizePx);
-      applyVar("--hero-name-color", s.heroNameColor);
-      applyVar("--hero-name-en-color", s.heroNameEnColor);
       applyVar("--hero-sub-size", s.heroSubSize, sizePx);
-      applyVar("--hero-sub-color", s.heroSubColor);
+      applyReadableHeroTextColors(
+        previewHeroTextColorsRef.current,
+        getComputedStyle(document.body).backgroundColor,
+      );
       // A3: font weights
       applyVar("--hero-name-weight", s.heroNameWeight);
       applyVar("--body-weight", s.bodyWeight);

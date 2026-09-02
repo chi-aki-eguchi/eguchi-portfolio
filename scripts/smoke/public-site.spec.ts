@@ -838,6 +838,219 @@ test.describe("public-site — 公開ページ基本検査（APIは人工デー�
   }
 });
 
+// Screenshot regression, 2026-09-02: the dark reveal backdrop was attached to
+// the whole carousel stage. On a light site that turned only the name area
+// black, while the saved #404040 name remained dark. Fullscreen carousel also
+// placed its name below the viewport despite the admin saying it was overlaid,
+// and its object-fit rule targeted the wrapper instead of the actual <img>.
+const HERO_NAME_CASES = [
+  {
+    label: "carousel normal",
+    heroMode: "carousel",
+    heroDisplayMode: "normal",
+    tone: "on-paper",
+  },
+  {
+    label: "carousel fullscreen",
+    heroMode: "carousel",
+    heroDisplayMode: "fullscreen",
+    tone: "over-photo",
+  },
+  {
+    label: "single",
+    heroMode: "single",
+    heroDisplayMode: "normal",
+    tone: "over-photo",
+  },
+  {
+    label: "quiet grid",
+    heroMode: "quiet-grid",
+    heroDisplayMode: "normal",
+    tone: "over-photo",
+  },
+  {
+    label: "editorial",
+    heroMode: "editorial",
+    heroDisplayMode: "normal",
+    tone: "on-paper",
+  },
+  {
+    label: "immersive",
+    heroMode: "immersive",
+    heroDisplayMode: "normal",
+    tone: "over-photo",
+  },
+] as const;
+
+async function measureHeroName(page: Page) {
+  return page
+    .locator('main h1[data-hero-name-part="primary"]')
+    .evaluate((name) => {
+      const rect = name.getBoundingClientRect();
+      const stage = name.closest<HTMLElement>(".hero-motion-stage");
+      const stageRect = stage?.getBoundingClientRect();
+      const carouselViewport = name.closest<HTMLElement>(
+        ".hero-carousel-viewport",
+      );
+      const photoBox =
+        carouselViewport ??
+        name.closest<HTMLElement>(".hero-single") ??
+        (name.getAttribute("data-hero-name-tone") === "over-photo"
+          ? stage
+          : null);
+      const photoRect = photoBox?.getBoundingClientRect();
+      const carouselPhoto = document.querySelector<HTMLElement>(
+        ".hero-carousel-contain",
+      );
+      const singlePhoto = document.querySelector<HTMLElement>(".hero-single");
+      const carouselImage = document.querySelector<HTMLElement>(
+        ".hero-slide.active img",
+      );
+
+      const rgb = (value: string) => {
+        const values = value.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+        return values?.length === 3 ? values : null;
+      };
+      const luminance = (values: number[]) => {
+        const channels = values.map((value) => {
+          const n = value / 255;
+          return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+        });
+        return (
+          0.2126 * channels[0] +
+          0.7152 * channels[1] +
+          0.0722 * channels[2]
+        );
+      };
+      const contrast = (foreground: string, background: string) => {
+        const fg = rgb(foreground);
+        const bg = rgb(background);
+        if (!fg || !bg) return 0;
+        const [light, dark] = [luminance(fg), luminance(bg)].sort(
+          (a, b) => b - a,
+        );
+        return (light + 0.05) / (dark + 0.05);
+      };
+      const bodyBackground = getComputedStyle(document.body).backgroundColor;
+      const paperParts = ["primary", "english", "subtitle"].map((part) => {
+        const element = document.querySelector<HTMLElement>(
+          `[data-hero-name-part="${part}"]`,
+        );
+        return {
+          part,
+          ratio: element
+            ? contrast(getComputedStyle(element).color, bodyBackground)
+            : 0,
+        };
+      });
+      const within =
+        !!stageRect &&
+        rect.left >= stageRect.left - 1 &&
+        rect.right <= stageRect.right + 1 &&
+        rect.top >= stageRect.top - 1 &&
+        rect.bottom <= stageRect.bottom + 1;
+      const overlapsPhoto =
+        !!photoRect &&
+        rect.right > photoRect.left &&
+        rect.left < photoRect.right &&
+        rect.bottom > photoRect.top &&
+        rect.top < photoRect.bottom;
+
+      return {
+        tone: name.getAttribute("data-hero-name-tone"),
+        withinStage: within,
+        overlapsPhoto,
+        insideCarouselViewport: Boolean(carouselViewport),
+        stageBackground: stage ? getComputedStyle(stage).backgroundColor : "",
+        photoBackground: carouselPhoto
+          ? getComputedStyle(carouselPhoto).backgroundColor
+          : singlePhoto
+            ? getComputedStyle(singlePhoto).backgroundColor
+            : "",
+        carouselObjectFit: carouselImage
+          ? getComputedStyle(carouselImage).objectFit
+          : "",
+        bodyBackground,
+        paperParts,
+        scrollWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+      };
+    });
+}
+
+test.describe("public-site — HERO名の位置・下地・明暗", () => {
+  test("全5種類をPC/スマホとライト/ダークで測る", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop" &&
+        testInfo.project.name !== "mobile-touch",
+      "PC幅と実タッチ端末相当で測る",
+    );
+    const runtimeProblems = collectPageRuntimeProblems(page);
+
+    for (const scenario of HERO_NAME_CASES) {
+      await page.unrouteAll({ behavior: "wait" });
+      const apiMocks = await installPublicApiMocks(page, {
+        ...SYNTHETIC_SETTINGS,
+        heroMode: scenario.heroMode,
+        heroDisplayMode: scenario.heroDisplayMode,
+        heroTitlePosition: "top-right",
+        profileNameKata: "シンセティック",
+        heroNameColor: "#404040",
+        heroNameEnColor: "#404040",
+        heroSubColor: "#404040",
+      });
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      await expect(
+        page.locator('main h1[data-hero-name-part="primary"]'),
+      ).toBeVisible();
+
+      for (const theme of LANGUAGE_SWITCH_THEMES) {
+        await setPublicTheme(page, theme);
+        await expect
+          .poll(async () => {
+            const measured = await measureHeroName(page);
+            return measured.tone === "on-paper"
+              ? Math.min(...measured.paperParts.map((part) => part.ratio))
+              : 4.5;
+          })
+          .toBeGreaterThanOrEqual(4.5);
+
+        const measured = await measureHeroName(page);
+        expect(measured.tone, scenario.label).toBe(scenario.tone);
+        expect(measured.withinStage, scenario.label).toBe(true);
+        expect(measured.scrollWidth, scenario.label).toBe(
+          measured.viewportWidth,
+        );
+
+        if (scenario.tone === "over-photo") {
+          expect(measured.overlapsPhoto, scenario.label).toBe(true);
+        }
+        if (scenario.label === "carousel normal") {
+          expect(measured.insideCarouselViewport).toBe(false);
+          expect(measured.stageBackground).toBe("rgba(0, 0, 0, 0)");
+          expect(measured.photoBackground).toBe("rgb(11, 11, 11)");
+          expect(measured.carouselObjectFit).toBe("contain");
+        }
+        if (scenario.label === "carousel fullscreen") {
+          expect(measured.insideCarouselViewport).toBe(true);
+          expect(measured.photoBackground).toBe("rgb(11, 11, 11)");
+          expect(measured.carouselObjectFit).toBe("cover");
+        }
+        if (scenario.label === "single") {
+          expect(measured.stageBackground).toBe("rgba(0, 0, 0, 0)");
+          expect(measured.photoBackground).toBe("rgb(11, 11, 11)");
+        }
+      }
+
+      expect(apiMocks.unexpectedRequests, scenario.label).toEqual([]);
+    }
+
+    expect(runtimeProblems).toEqual([]);
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 2026-08-12: 公開About/ContactのJP|ENは、文字だけではなく実際に押せる面を
 // 測る。DOMの文字矩形は小さいままでよいが、タッチ端末ではその中央を含む32px

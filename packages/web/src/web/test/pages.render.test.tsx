@@ -2865,6 +2865,91 @@ describe("shared components", () => {
     cleanup();
   });
 
+  test("Provider keeps saved HERO name colours readable on the active background", async () => {
+    const { Provider } = await import("../components/provider");
+    const { ensureAccentContrast } = await import("../lib/color-contrast");
+    const previousSettings = canned["/api/settings"];
+    const rootStyle = dom.window.document.documentElement.style;
+    const bodyStyle = dom.window.document.body.style;
+    try {
+      // Saved/live path: the owner chose #404040 on a light page, then a visitor
+      // opened the dark theme. Applying the raw saved colour made the name vanish.
+      canned["/api/settings"] = {
+        themeBg: "#121212",
+        heroNameColor: "#404040",
+        heroNameEnColor: "#404040",
+        heroSubColor: "#404040",
+      };
+      const live = await mount(
+        createElement(Provider, null, createElement("p", null, "child")),
+      );
+      await flush(20);
+      const expectedDark = ensureAccentContrast(
+        "#404040",
+        "rgb(18, 18, 18)",
+      );
+      expect(rootStyle.getPropertyValue("--hero-name-color")).toBe(
+        expectedDark,
+      );
+      expect(rootStyle.getPropertyValue("--hero-name-en-color")).toBe(
+        expectedDark,
+      );
+      expect(rootStyle.getPropertyValue("--hero-sub-color")).toBe(expectedDark);
+      expect(expectedDark).not.toBe("#404040");
+      live.cleanup();
+
+      // Preview path uses the same correction, and returns to the exact selected
+      // colour when the background is light enough.
+      canned["/api/settings"] = {};
+      const preview = await mount(
+        createElement(Provider, null, createElement("p", null, "child")),
+      );
+      dom.window.dispatchEvent(
+        new dom.window.MessageEvent("message", {
+          origin: dom.window.location.origin,
+          data: {
+            type: "preview-settings",
+            settings: {
+              themeBg: "#121212",
+              heroNameColor: "#404040",
+              heroNameEnColor: "#404040",
+              heroSubColor: "#404040",
+            },
+          },
+        }),
+      );
+      await flush(10);
+      expect(rootStyle.getPropertyValue("--hero-name-color")).toBe(
+        expectedDark,
+      );
+
+      dom.window.dispatchEvent(
+        new dom.window.MessageEvent("message", {
+          origin: dom.window.location.origin,
+          data: {
+            type: "preview-settings",
+            settings: { themeBg: "#f7f7f7" },
+          },
+        }),
+      );
+      await flush(10);
+      expect(rootStyle.getPropertyValue("--hero-name-color")).toBe("#404040");
+      preview.cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      for (const property of [
+        "--background",
+        "--background-rgb",
+        "--hero-name-color",
+        "--hero-name-en-color",
+        "--hero-sub-color",
+      ]) {
+        rootStyle.removeProperty(property);
+      }
+      bodyStyle.removeProperty("background-color");
+    }
+  });
+
   test("Layout keeps Portfolio Kit out of nav unless mode is explicitly on", async () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
@@ -3322,6 +3407,64 @@ describe("settings reach every layout (dead-control regression)", () => {
       }
     });
   }
+
+  test("carousel keeps the name on paper in Normal and over the photo in Fullscreen", async () => {
+    const previousSettings = canned["/api/settings"];
+    const previousHeroPhotos = canned["/api/hero-photos"];
+    canned["/api/hero-photos"] = { heroPhotos: samplePhotos.slice(0, 2) };
+    try {
+      const TopPage = (await import("../pages/top")).default;
+
+      canned["/api/settings"] = {
+        heroMode: "carousel",
+        heroDisplayMode: "normal",
+        heroTitlePosition: "top-right",
+        siteName: "NAME_POSITION_PROBE",
+      };
+      const normal = await mount(createElement(TopPage));
+      await flush(80);
+      const normalName = normal.host.querySelector(
+        'h1[data-hero-name-part="primary"]',
+      );
+      expect(normalName?.getAttribute("data-hero-name-tone")).toBe("on-paper");
+      expect(normalName?.closest(".hero-carousel-viewport")).toBeNull();
+      expect(normal.host.querySelector(".hero-carousel-overlay")).toBeNull();
+      normal.cleanup();
+
+      canned["/api/settings"] = {
+        heroMode: "carousel",
+        heroDisplayMode: "fullscreen",
+        heroTitlePosition: "top-right",
+        siteName: "NAME_POSITION_PROBE",
+      };
+      const fullscreen = await mount(createElement(TopPage));
+      await flush(80);
+      const fullscreenName = fullscreen.host.querySelector(
+        'h1[data-hero-name-part="primary"]',
+      );
+      expect(fullscreenName?.getAttribute("data-hero-name-tone")).toBe(
+        "over-photo",
+      );
+      expect(
+        fullscreenName?.closest(".hero-carousel-viewport"),
+      ).not.toBeNull();
+      expect(
+        fullscreen.host.querySelector(
+          ".hero-carousel-caption.pos-top-right",
+        ),
+      ).not.toBeNull();
+      expect(
+        fullscreen.host.querySelector(
+          ".hero-carousel-overlay.overlay-top",
+        ),
+      ).not.toBeNull();
+      expect(fullscreen.host.querySelectorAll("h1")).toHaveLength(1);
+      fullscreen.cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      canned["/api/hero-photos"] = previousHeroPhotos;
+    }
+  });
 
   for (const heroMode of HERO_MODES) {
     test(`heroMode=${heroMode} sizes the hero name from --hero-name-size, not a constant`, async () => {

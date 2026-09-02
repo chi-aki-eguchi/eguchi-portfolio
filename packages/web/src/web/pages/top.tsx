@@ -112,18 +112,122 @@ type HomeHeroPhoto = {
   focalY?: number | null;
 };
 
+function heroCaptionPosition(titlePosition: string) {
+  const posClass = [
+    "bottom-left",
+    "bottom-right",
+    "top-left",
+    "top-right",
+  ].includes(titlePosition)
+    ? `pos-${titlePosition}`
+    : "";
+  return {
+    posClass,
+    overlayTop: titlePosition.startsWith("top-") ? "overlay-top" : "",
+  };
+}
+
+/** The original carousel / single-photo name treatment.
+ *
+ * Keeping it in one component matters because fullscreen carousel names live
+ * over the photograph while normal carousel names live on the page. The two
+ * branches used to duplicate this markup and had already drifted apart.
+ */
+function ClassicHeroNameBlock({
+  settings,
+  tone,
+  nameSizeFallback,
+  enSizeFallback,
+}: {
+  settings: Record<string, string | undefined> | undefined;
+  tone: "over-photo" | "on-paper";
+  nameSizeFallback: string;
+  enSizeFallback: string;
+}) {
+  const overPhoto = tone === "over-photo";
+  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
+  const nameKata = settings?.profileNameKata ?? "";
+  const subtitle = settings?.heroSubtitle ?? CLIENT_SITE_FALLBACKS.heroSubtitle;
+
+  return (
+    <>
+      <h1
+        data-hero-name-tone={tone}
+        data-hero-name-part="primary"
+        className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
+        style={{
+          fontWeight: "var(--hero-name-weight, 700)" as never,
+          fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
+          color: overPhoto ? "#fff" : "var(--hero-name-color, var(--foreground))",
+          letterSpacing: "var(--hero-name-tracking, 0.04em)",
+          textShadow: overPhoto ? "0 1px 18px rgba(0,0,0,0.45)" : undefined,
+        }}
+      >
+        {siteNameJa}
+      </h1>
+      {nameKata && (
+        <p
+          data-hero-name-part="kata"
+          className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 break-words hero-text-reveal hero-text-reveal-2"
+          style={{
+            color: overPhoto ? "rgba(255,255,255,0.70)" : "var(--text-quiet)",
+            textShadow: overPhoto ? "0 1px 12px rgba(0,0,0,0.4)" : undefined,
+          }}
+        >
+          {nameKata}
+        </p>
+      )}
+      <p
+        data-hero-name-part="english"
+        className="font-en mt-1 break-words hero-text-reveal hero-text-reveal-2"
+        style={{
+          fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
+          color: overPhoto
+            ? "rgba(255,255,255,0.82)"
+            : "var(--hero-name-en-color, var(--text-quiet))",
+          letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
+          textShadow: overPhoto ? "0 1px 14px rgba(0,0,0,0.4)" : undefined,
+        }}
+      >
+        {siteNameEn}
+      </p>
+      {subtitle && (
+        <p
+          data-hero-name-part="subtitle"
+          className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
+          style={{
+            fontSize: "var(--hero-sub-size, 0.75rem)",
+            color: overPhoto
+              ? "rgba(255,255,255,0.62)"
+              : "var(--hero-sub-color, var(--text-quiet))",
+            textShadow: overPhoto ? "0 1px 12px rgba(0,0,0,0.4)" : undefined,
+          }}
+        >
+          {subtitle}
+        </p>
+      )}
+    </>
+  );
+}
+
 /** Hero carousel with auto-play, swipe, and arrow navigation */
 function HeroCarousel({
   photos,
   fxRef,
   photographerName,
   loading = false,
+  children,
+  titlePosition = "center",
 }: {
   photos: HomeHeroPhoto[];
   fxRef?: React.Ref<HTMLDivElement>;
   photographerName?: string;
   /** まだ読み込み中か。読み込み中と「本当に0枚」を分けるために要る。 */
   loading?: boolean;
+  /** Fullscreen only: the name is overlaid inside the photograph. */
+  children?: React.ReactNode;
+  titlePosition?: string;
 }) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
@@ -254,17 +358,39 @@ function HeroCarousel({
     return () => window.removeEventListener("keydown", handler);
   }, [goNext, goPrev]);
 
+  const { posClass, overlayTop } = heroCaptionPosition(titlePosition);
+  const caption = children ? (
+    <>
+      <div
+        className={`hero-single-overlay hero-carousel-overlay ${overlayTop}`}
+      />
+      <div className={`hero-single-caption hero-carousel-caption ${posClass}`}>
+        {children}
+      </div>
+    </>
+  ) : null;
+
   // 読み込み中は場所を取っておく（あとから写真が入って本文が飛ぶのを防ぐ）。
   // **読み込みが終わって0枚だったら、何も置かない。** 以前はここも同じ
   // 60vh の灰色の板を出していたので、買った直後のまだ写真が無いサイトでは、
   // トップページが 1440×540 の空の灰色の四角だけになっていた（実測）。
   // 意味のない箱を見せないこと（admin-renewal-goal 到達点(6)）。
-  if (photos.length === 0)
-    return loading ? (
-      <div className="w-full" style={{ height: "60vh" }}>
-        <div className="w-full h-full bg-[var(--photo-placeholder)] rounded-lg" />
-      </div>
-    ) : null;
+  if (photos.length === 0) {
+    if (!loading) return null;
+    return (
+      <section className="hero-carousel" aria-label="作品スライド">
+        <div className="hero-carousel-viewport">
+          <div className="hero-carousel-inner hero-carousel-contain">
+            <div
+              ref={fxRef}
+              className="hero-fx-layer absolute inset-0 bg-[var(--photo-placeholder)]"
+            />
+          </div>
+          {caption}
+        </div>
+      </section>
+    );
+  }
 
   return (
     // The autoplay-pause handlers below sit on the carousel container on purpose so
@@ -283,8 +409,9 @@ function HeroCarousel({
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
     >
-      <div
-        className="hero-carousel-inner hero-carousel-contain"
+      <div className="hero-carousel-viewport">
+        <div
+          className="hero-carousel-inner hero-carousel-contain"
         // Z1: swipe + click/keyboard advance — only interactive when there is
         // somewhere to advance to (single-photo heroes stay a plain image).
         {...(photos.length > 1
@@ -305,82 +432,85 @@ function HeroCarousel({
               style: { cursor: "pointer" },
             }
           : {})}
-      >
-        {/* AA3: scroll-effect layer — transform/opacity only, clipped by the box */}
-        <div ref={fxRef} className="hero-fx-layer absolute inset-0">
-          <div className="hero-photo-reveal absolute inset-0">
-            {/* Main photo layer — contain, no crop */}
-            {photos.map((p, i) => (
-              <div
-                key={i}
-                className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`}
-                style={{ zIndex: i === current ? 1 : 0 }}
-              >
-                <HeroPicture
-                  url={p.url}
-                  mediumUrl={p.mediumUrl}
-                  rotationDeg={p.rotationDeg}
-                  focalX={p.focalX}
-                  focalY={p.focalY}
-                  alt={photoAltText(p, { photographerName })}
-                  sizes="(min-width: 1200px) 1152px, 100vw"
-                  className="w-full h-full object-contain"
-                  decoding={i === 0 ? "sync" : "async"}
-                  fetchPriority={i === 0 ? "high" : "low"}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.visibility =
-                      "hidden";
-                  }}
-                  draggable={false}
-                />
-              </div>
-            ))}
+        >
+          {/* AA3: scroll-effect layer — transform/opacity only, clipped by the box */}
+          <div ref={fxRef} className="hero-fx-layer absolute inset-0">
+            <div className="hero-photo-reveal absolute inset-0">
+              {/* Main photo layer — contain, no crop */}
+              {photos.map((p, i) => (
+                <div
+                  key={i}
+                  className={`hero-slide hero-slide-contain ${i === current ? `active slide-${direction}` : ""}`}
+                  style={{ zIndex: i === current ? 1 : 0 }}
+                >
+                  <HeroPicture
+                    url={p.url}
+                    mediumUrl={p.mediumUrl}
+                    rotationDeg={p.rotationDeg}
+                    focalX={p.focalX}
+                    focalY={p.focalY}
+                    alt={photoAltText(p, { photographerName })}
+                    sizes="(min-width: 1200px) 1152px, 100vw"
+                    className="w-full h-full object-contain"
+                    decoding={i === 0 ? "sync" : "async"}
+                    fetchPriority={i === 0 ? "high" : "low"}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.visibility =
+                        "hidden";
+                    }}
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+        {caption}
 
-      {/* Arrow buttons (PC) — outside overflow:hidden container */}
-      {photos.length > 1 && (
-        <>
-          <button
-            className={`carousel-arrow carousel-arrow-left ${paused ? "visible" : ""}`}
-            onClick={goPrev}
-            aria-label="前のスライド"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {/* Arrow buttons (PC) — outside the clipped photo container, but inside
+            the viewport so their vertical centre does not drift toward the dots. */}
+        {photos.length > 1 && (
+          <>
+            <button
+              className={`carousel-arrow carousel-arrow-left ${paused ? "visible" : ""}`}
+              onClick={goPrev}
+              aria-label="前のスライド"
             >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <button
-            className={`carousel-arrow carousel-arrow-right ${paused ? "visible" : ""}`}
-            onClick={goNext}
-            aria-label="次のスライド"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              className={`carousel-arrow carousel-arrow-right ${paused ? "visible" : ""}`}
+              onClick={goNext}
+              aria-label="次のスライド"
             >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </button>
-        </>
-      )}
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Dot indicators + progress bar. gap-0: each dot already carries 8px of
           transparent tap-padding, so visible spacing stays quiet. */}
@@ -417,15 +547,7 @@ function HeroSingle({
   fxRef?: React.Ref<HTMLDivElement>;
   photographerName?: string;
 }) {
-  const posClass = [
-    "bottom-left",
-    "bottom-right",
-    "top-left",
-    "top-right",
-  ].includes(titlePosition)
-    ? `pos-${titlePosition}`
-    : "";
-  const overlayTop = titlePosition.startsWith("top-") ? "overlay-top" : "";
+  const { posClass, overlayTop } = heroCaptionPosition(titlePosition);
   return (
     <div className="hero-single">
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
@@ -620,6 +742,8 @@ function HeroNameBlock({
   return (
     <>
       <h1
+        data-hero-name-tone={tone}
+        data-hero-name-part="primary"
         className="font-serif leading-tight break-words hero-text-reveal hero-text-reveal-1"
         style={{
           fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
@@ -633,6 +757,7 @@ function HeroNameBlock({
       </h1>
       {showKata && nameKata && (
         <p
+          data-hero-name-part="kata"
           className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 break-words hero-text-reveal hero-text-reveal-2"
           style={{
             color: overPhoto ? "rgba(255,255,255,0.70)" : "var(--text-quiet)",
@@ -643,6 +768,7 @@ function HeroNameBlock({
         </p>
       )}
       <p
+        data-hero-name-part="english"
         className="font-en uppercase mt-1 hero-text-reveal hero-text-reveal-2"
         style={{
           fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
@@ -657,6 +783,7 @@ function HeroNameBlock({
       </p>
       {subtitle && (
         <p
+          data-hero-name-part="subtitle"
           className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
           style={{
             fontSize: "var(--hero-sub-size, 0.75rem)",
@@ -1286,12 +1413,8 @@ export default function TopPage() {
     io.observe(el);
     return () => io.disconnect();
   }, [worksCount, worksPool.length]);
-  const siteNameJa = settings?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
-  const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const photographerName = settings?.siteName || settings?.siteNameEn;
-  const subtitle = settings?.heroSubtitle ?? CLIENT_SITE_FALLBACKS.heroSubtitle;
   const fadeRef = useScrollFadeIn([featured, settings?.topWorksLayout]);
-  const nameKata = settings?.profileNameKata ?? "";
   const heroMode = settings?.heroMode ?? "carousel";
 
   const isSingle = heroMode === "single" && heroPhotos.length > 0;
@@ -1448,50 +1571,12 @@ export default function TopPage() {
             fxRef={heroFxRef}
             photographerName={photographerName}
           >
-            <h1
-              className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
-              style={{
-                fontSize: "var(--hero-name-size, 1.75rem)",
-                fontWeight: "var(--hero-name-weight, 700)" as never,
-                color: "#fff",
-                letterSpacing: "var(--hero-name-tracking, 0.04em)",
-                textShadow: "0 1px 18px rgba(0,0,0,0.45)",
-              }}
-            >
-              {siteNameJa}
-            </h1>
-            {nameKata && (
-              <p
-                className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 break-words hero-text-reveal hero-text-reveal-2"
-                style={{
-                  color: "rgba(255,255,255,0.70)",
-                  textShadow: "0 1px 12px rgba(0,0,0,0.4)",
-                }}
-              >
-                {nameKata}
-              </p>
-            )}
-            <p
-              className="font-en mt-1 break-words hero-text-reveal hero-text-reveal-2"
-              style={{
-                fontSize: "var(--hero-name-en-size, 0.9375rem)",
-                color: "rgba(255,255,255,0.82)",
-                letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
-                textShadow: "0 1px 14px rgba(0,0,0,0.4)",
-              }}
-            >
-              {siteNameEn}
-            </p>
-            <p
-              className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
-              style={{
-                fontSize: "var(--hero-sub-size, 0.75rem)",
-                color: "rgba(255,255,255,0.62)",
-                textShadow: "0 1px 12px rgba(0,0,0,0.4)",
-              }}
-            >
-              {subtitle}
-            </p>
+            <ClassicHeroNameBlock
+              settings={settings}
+              tone="over-photo"
+              nameSizeFallback="1.75rem"
+              enSizeFallback="0.9375rem"
+            />
           </HeroSingle>
         </section>
       ) : (
@@ -1510,57 +1595,40 @@ export default function TopPage() {
             fxRef={heroFxRef}
             photographerName={photographerName}
             loading={heroLoading || photosLoading}
-          />
-
-          {/* Name block below carousel. AA2: in carousel mode the title sits
-              under the photos, so the position setting maps to text alignment. */}
-          <div
-            className={`mt-12 md:mt-16 mb-10 ${heroFullscreen ? "px-6" : ""} ${
-              heroTitlePosition.endsWith("-left")
-                ? "text-left"
-                : heroTitlePosition.endsWith("-right")
-                  ? "text-right"
-                  : "text-center"
-            }`}
+            titlePosition={heroTitlePosition}
           >
-            <h1
-              className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
-              style={{
-                fontWeight: "var(--hero-name-weight, 700)" as never,
-                fontSize: "var(--hero-name-size, 1.5rem)",
-                color: "var(--hero-name-color, var(--foreground))",
-                letterSpacing: "var(--hero-name-tracking, 0.04em)",
-              }}
+            {heroFullscreen &&
+            (heroPhotos.length > 0 || heroLoading || photosLoading) ? (
+              <ClassicHeroNameBlock
+                settings={settings}
+                tone="over-photo"
+                nameSizeFallback="1.75rem"
+                enSizeFallback="0.9375rem"
+              />
+            ) : null}
+          </HeroCarousel>
+
+          {/* Normal carousel: the name intentionally sits on the page below the
+              photo. Fullscreen: it belongs inside the photo viewport above. */}
+          {(!heroFullscreen ||
+            (!heroLoading && !photosLoading && heroPhotos.length === 0)) && (
+            <div
+              className={`mt-12 md:mt-16 mb-10 ${
+                heroTitlePosition.endsWith("-left")
+                  ? "text-left"
+                  : heroTitlePosition.endsWith("-right")
+                    ? "text-right"
+                    : "text-center"
+              }`}
             >
-              {siteNameJa}
-            </h1>
-            {nameKata && (
-              <p className="text-[length:var(--text-note)] tracking-[0.18em] text-[color:var(--text-quiet)] mt-1.5 break-words hero-text-reveal hero-text-reveal-2">
-                {nameKata}
-              </p>
-            )}
-            <p
-              className="font-en mt-1 break-words hero-text-reveal hero-text-reveal-2"
-              style={{
-                fontSize: "var(--hero-name-en-size, 0.875rem)",
-                color:
-                  "var(--hero-name-en-color, var(--text-quiet))",
-                letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
-              }}
-            >
-              {siteNameEn}
-            </p>
-            <p
-              className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
-              style={{
-                fontSize: "var(--hero-sub-size, 0.75rem)",
-                color:
-                  "var(--hero-sub-color, var(--text-quiet))",
-              }}
-            >
-              {subtitle}
-            </p>
-          </div>
+              <ClassicHeroNameBlock
+                settings={settings}
+                tone="on-paper"
+                nameSizeFallback="1.5rem"
+                enSizeFallback="0.875rem"
+              />
+            </div>
+          )}
         </section>
       )}
 

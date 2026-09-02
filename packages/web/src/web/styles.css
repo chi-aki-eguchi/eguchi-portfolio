@@ -3996,6 +3996,10 @@ body[data-texture="mist"]::before {
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
+.hero-carousel-viewport {
+  position: relative;
+  width: 100%;
+}
 .hero-carousel-inner {
   border-radius: 0;
   overflow: hidden;
@@ -4012,7 +4016,9 @@ body[data-texture="mist"]::before {
   height: var(--hero-height, 70vh);
   max-height: 820px;
   min-height: 320px;
-  background: var(--background);
+  /* The photo fades in from ink, not from the page colour. Keep this backdrop
+     on the photo box itself so it cannot spill into the name block below. */
+  background: #0b0b0b;
 }
 @media (max-width: 768px) {
   .hero-carousel-contain {
@@ -4030,7 +4036,7 @@ body[data-texture="mist"]::before {
   max-height: 920px;
   min-height: 360px;
   overflow: hidden;
-  background: var(--background);
+  background: #0b0b0b;
 }
 @media (max-width: 768px) {
   .hero-single {
@@ -4079,9 +4085,18 @@ body[data-texture="mist"]::before {
   max-height: none;
   min-height: calc(100svh - var(--header-h) - var(--sai-top));
 }
-/* In fullscreen the carousel should cover, not letterbox. */
-.hero-fullscreen .hero-slide-contain {
+/* In fullscreen the carousel should cover, not letterbox. The object-fit class
+   lives on the nested <img>, not on .hero-slide-contain itself. */
+.hero-fullscreen .hero-slide-contain img {
   object-fit: cover;
+}
+
+.hero-carousel-overlay {
+  z-index: 2;
+}
+.hero-carousel-caption {
+  z-index: 3;
+  pointer-events: none;
 }
 
 /* ─── AA2: hero caption positions (single / fullscreen). Default stays the
@@ -4174,7 +4189,7 @@ body[data-texture="mist"]::before {
 /* Arrow buttons (PC) — positioned relative to .hero-carousel */
 .carousel-arrow {
   position: absolute;
-  top: calc(50% - 20px); /* offset for dots area below */
+  top: 50%;
   transform: translateY(-50%);
   z-index: 10;
   width: 38px;
@@ -4251,9 +4266,12 @@ body[data-texture="mist"]::before {
    `:has(.hero-photo-reveal.absolute)` は、**写真が枠いっぱいに敷かれている
    ヒーローだけ**を選ぶ。横並び（写真＋文章）のヒーローでは写真は `relative`
    なので当たらない——そこを暗くすると文章の裏まで黒くなる。
-   **子ではなく子孫で見る**（実物は `.hero-motion-stage > .hero-single >` の
-   下に居て、直系ではなかった。2026-09-01 に実測して直した）。 */
-.hero-motion-stage:has(.hero-photo-reveal.absolute) {
+
+   ただし1枚絵とカルーセルは、写真専用の `.hero-single` /
+   `.hero-carousel-contain` 自身が上で #0b0b0b を持つ。外側の stage まで暗くすると
+   上余白や写真下の名前欄へ黒が漏れるため、この2つだけ除外する（2026-09-02
+   実測: ライト表示の通常カルーセルで名前欄だけ #0b0b0b になっていた）。 */
+.hero-motion-stage:has(.hero-photo-reveal.absolute):not(:has(> .hero-single)):not(:has(> .hero-carousel)) {
   background: #0b0b0b;
 }
 .hero-text-reveal {

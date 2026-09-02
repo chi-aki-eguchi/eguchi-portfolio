@@ -1,7 +1,33 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-09-02 JST（検索の流入強化・第1回 完了）
+## Current State — 2026-09-02 JST（HEROの名前位置を修正・本番確認済み）
+
+- **Status:** 完了。2026-09-02 に `4d53d30` を `main` へ push し、
+  本番 `/api/health` の `build: 4d53d309` と実画面を確認した。
+- **Current owner:** Codex / **Handoff readiness:** ready
+- 通常カルーセルの暗い写真下地が、写真下の名前欄まで黒く塗っていた。
+  暗い下地を写真枠だけへ移し、名前はサイトの紙面上へ戻した。
+- フルスクリーンのカルーセルは、名前を写真内へ移し、位置設定と暗い
+  グラデーションを1枚絵と同じように反映する。画像も `cover` で表示する。
+- 明暗テーマで同じ保存色を使って名前が沈む場合だけ、AAを満たす色へ補正する。
+  読み込み中の高さと写真到着後の高さ、矢印と写真中央の位置も揃えた。
+- 2026-09-02 の確認: `bun run check` exit 0、`bun run smoke` exit 0。
+  HERO 5種をPC・タッチ端末、ライト・ダーク、通常・全画面の24状態で実測。
+  本番デモでも通常は名前が写真外、全画面は写真内になることを確認した。
+- 本番DB・Turso・R2・Railway設定・環境変数は変更していない。
+
+### 残件
+
+- 今回のHERO修正に残作業なし。
+- 既知の `public-scroll-stability` は全体smoke内で1回再試行になったが、
+  同一実行内で合格。従来どおり別タスク扱い。
+<!-- CURRENT_STATE_END -->
+
+<details>
+<summary>直前の状態（検索の流入強化・第1回）</summary>
+
+## Previous State — 2026-09-02 JST（検索の流入強化・第1回 完了）
 
 - **Status:** コード側は一巡して**全部 push 済み・本番反映済み**。
   **オーナー側の3操作も完了**（基準URL / 撮影を受ける地域 / Search Console）。
@@ -87,7 +113,7 @@
 - Lightbox は 2026-08-31 にオーナー承認で触れた。**次も承認が要る**
 - 動きの正本は `docs/specs/design-spec.md` §6。**duration ではなく
   「目に見えている時間」で決める**。**全画面に `filter` を animate しない**
-<!-- CURRENT_STATE_END -->
+</details>
 
 ---
 

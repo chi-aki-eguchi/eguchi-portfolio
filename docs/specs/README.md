@@ -43,6 +43,7 @@
 | `spec-layout-expansion.md` | レイアウト拡張 |
 | `i18n-en-spec.md` | 日英切り替え |
 | `site-and-data-direction.md` | 公開サイトとデータモデルの方向（オーナー確定分） |
+| `inbound-traffic-plan.md` | **検索・外部からの流入を増やす計画。**次に何をするかの正本 |
 
 ## 事業計画（製品ゴールではない）
 

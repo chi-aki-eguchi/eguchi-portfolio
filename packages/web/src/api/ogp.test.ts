@@ -142,6 +142,13 @@ describe("injectOgp robots policy", () => {
     expect(edited).toContain('"@type":"ImageObject"');
   });
 
+  test("consultation has its own real title and stays out of search", () => {
+    const html = injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/portfolio-kit/consult");
+    expect(html).toContain("ポートフォリオ制作の無料相談");
+    expect(html).not.toContain("Not Found");
+    expect(html).toContain("相談送信だけでは購入になりません");
+    expect(robotsOf(html)).toBe("noindex, nofollow");
+  });
   test("admin and unknown paths are noindex", () => {
     expect(robotsOf(injectOgp(page, {}, "/admin"))).toBe("noindex, nofollow");
     expect(robotsOf(injectOgp(page, {}, "/admin/login"))).toBe(
@@ -1361,12 +1368,13 @@ describe("injectOgp 販売ページの構造化データ", () => {
     expect(nodeOf(out, "Product")?.offers?.price).toBe("30000");
   });
 
-  test("FAQ は設定にある問答から作る", () => {
+  test("配布先のFAQ は設定にある問答から作る", () => {
     const faq = nodeOf(
       injectOgp(
         page,
         {
-          siteUrl: "https://akieguchi.com",
+          siteUrl: "https://customer.example",
+          servicePageMode: "on",
           servicePageConfig: JSON.stringify({
             faq: {
               items: [
@@ -1396,7 +1404,8 @@ describe("injectOgp 販売ページの構造化データ", () => {
       "FAQPage",
     );
     expect(faq?.mainEntity.length).toBeGreaterThan(0);
-    expect(JSON.stringify(faq)).toContain("自分のドメインを使えますか？");
+    expect(JSON.stringify(faq)).toContain("相談を送ると、購入になりますか？");
+    expect(JSON.stringify(faq)).toContain("30,000円の追加購入は不要");
   });
 
   test("英語URLに日本語のFAQは付けない（ページの言語宣言と食い違う）", () => {

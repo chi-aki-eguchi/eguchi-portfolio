@@ -8,14 +8,15 @@ describe("Studio integration belongs only to Aki's site", () => {
       expect(renderToStaticMarkup(<StudioBridge siteUrl={siteUrl} />)).toBe("");
     }
   });
-  test("owner sales page explains the inclusive price and free check", () => {
+  test("owner page renders compact pricing footer in Japanese", () => {
     const html = renderToStaticMarkup(<StudioBridge siteUrl="https://akieguchi.com" />);
-    expect(html).toContain("69,800円");
-    expect(html).toContain("3万円が別途加算されることはありません");
-    expect(html).toContain("/tools/readiness?");
+    expect(html).toContain('data-studio-bridge="footer"');
+    expect(html).toContain("ポートフォリオ制作・料金を見る →");
+    expect(html).toContain('href="/portfolio-kit#pricing"');
+    expect(html).not.toContain("PORTFOLIO STUDIO / BY AKI EGUCHI");
   });
-  test("English customers are told the destination is Japanese", () => {
-    expect(renderToStaticMarkup(<StudioBridge siteUrl="https://akieguchi.com" language="en" compact />)).toContain("(Japanese)");
+  test("English footer uses same-origin pricing link label", () => {
+    expect(renderToStaticMarkup(<StudioBridge siteUrl="https://akieguchi.com" language="en" compact />)).toContain("Portfolio websites &amp; pricing →");
   });
   test("links carry no visitor identifier", () => {
     const url = new URL(studioHref("/tools/readiness", "footer"));

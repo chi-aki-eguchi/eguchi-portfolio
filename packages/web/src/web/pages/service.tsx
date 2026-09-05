@@ -7,7 +7,8 @@ import { usePageLanguage } from "../hooks/usePageLanguage";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { safeHref } from "../lib/utils";
-import { StudioBridge, studioHref } from "../components/StudioBridge";
+import { PortfolioServicePricing } from "../components/PortfolioServicePricing";
+import { OWNER_SERVICE_FAQ, OWNER_SERVICE_FAQ_EN } from "../../shared/portfolio-service-copy";
 import { isServiceOwnerSite, resolveServiceContactEmail } from "../../shared/service-visibility";
 import {
   parseServicePageConfig,
@@ -1216,6 +1217,7 @@ export default function ServicePage({
     typeof window === "undefined" ? undefined : window.location.hostname,
   );
   const live = anyPlanLive(config);
+  const owner = isServiceOwnerSite(settingsData?.siteUrl, undefined);
   const ref = usePageEntrance([photos.length, language]);
 
   usePageLanguage(language);
@@ -1230,7 +1232,7 @@ export default function ServicePage({
       {/* ── Hero ── */}
       <header className="max-w-3xl mx-auto text-center">
         <p className={`${labelCls} mb-8 page-entrance`} style={labelStyle}>
-          {config.hero.label}
+          {owner ? "AKI EGUCHI / PORTFOLIO WEBSITES" : config.hero.label}
         </p>
         <h1
           className="font-ja page-entrance"
@@ -1289,9 +1291,9 @@ export default function ServicePage({
             ? "No sign-up needed. Changes in the demo are not saved to the live site."
             : "登録不要。デモで試した変更は、公開サイトには保存されません。"}
         </p>
-        {isServiceOwnerSite(settingsData?.siteUrl, undefined) && (
+        {owner && (
           <p className="mt-5 text-sm leading-7">
-            <a href={studioHref("/", "service-hero")} className="underline underline-offset-4 py-2">
+            <a href="#pricing" className="underline underline-offset-4 py-2">
               {language === "en" ? "Photo selection + Japanese profile editing: ¥69,800 total →" : "写真選び・文章整理から頼みたい方へ：総額69,800円 →"}
             </a>
           </p>
@@ -1310,14 +1312,13 @@ export default function ServicePage({
       {/* ── Fit + value ── */}
       <AudienceAndFeatures config={config.painSolutions} language={language} />
 
-      <StudioBridge siteUrl={settingsData?.siteUrl} language={language} />
-
       {/* ── Pricing ── */}
       <section
         id="pricing"
         className="mt-12 md:mt-16 page-entrance scroll-mt-24"
       >
         <SectionLabel>{config.pricing.label}</SectionLabel>
+        {owner ? <PortfolioServicePricing en={language === "en"} /> : <>
         <div
           className={`grid grid-cols-1 gap-6 md:gap-8 items-start ${
             config.pricing.plans.length > 1
@@ -1356,33 +1357,34 @@ export default function ServicePage({
               : "購入後の流れを先に見る"}
           </Link>
         </p>
+        </>}
       </section>
 
-      <StickyCtaBar
+      {!owner && <StickyCtaBar
         config={config.stickyCta}
         stripeHref={startingStripeUrl(config)}
         contactEmail={contactEmail}
         language={language}
-      />
+      />}
 
       {/* ── Purchase details (collapsible) ── */}
-      <PurchaseDetails config={config.purchaseFlow} />
+      {owner ? <section className="mt-12 text-base leading-8"><h2 className="text-center text-2xl">{language === "en" ? "From consultation to launch" : "相談から公開まで"}</h2><ol className="mt-6 grid sm:grid-cols-3 gap-6 list-decimal pl-5"><li><h3 className="font-medium">{language === "en" ? "Tell us what you need" : "ご希望を確認"}</h3><p>{language === "en" ? "Send a free consultation. We reply within two business days." : "無料相談で、用途・素材・希望日程を確認。原則2営業日以内に返信します。"}</p></li><li><h3 className="font-medium">{language === "en" ? "Agree on the scope" : "見積もり・合意"}</h3><p>{language === "en" ? "Review the scope, total, schedule and terms before choosing to pay." : "制作範囲・総額・実費・納期・取引条件を確認し、ご希望の場合のみお支払い。"}</p></li><li><h3 className="font-medium">{language === "en" ? "Review and publish" : "制作・確認・公開"}</h3><p>{language === "en" ? "Review your site, then receive its public URL and admin access." : "写真・文章と公開前の画面を確認。公開URLと、ご自身で更新する管理画面をお渡しします。"}</p></li></ol></section> : <PurchaseDetails config={config.purchaseFlow} />}
 
       {/* ── FAQ (accordion) ── */}
       <section className="mt-10 md:mt-14 page-entrance">
         <SectionLabel>{config.faq.label}</SectionLabel>
         <div className="max-w-2xl mx-auto">
-          <Accordion items={config.faq.items} />
+          <Accordion items={owner ? (language === "ja" ? OWNER_SERVICE_FAQ : OWNER_SERVICE_FAQ_EN) : config.faq.items} />
         </div>
       </section>
 
       {/* ── Final CTA ── */}
-      <FinalCTA
+      {owner ? <section className="mt-14 border-t pt-10 text-center text-base leading-8"><h2 className="text-2xl">{language === "en" ? "Start with your photographs." : "まだ整理できていなくても、大丈夫。"}</h2><p className="mt-4">{language === "en" ? "Tell us what you want to publish. Consultation is free, with no obligation to buy." : "つくりたいものと、いま困っていることから聞かせてください。"}</p><a href="/portfolio-kit/consult" className="inline-block mt-6 rounded-md px-8 py-4 bg-[var(--foreground)] text-[var(--background)]">{language === "en" ? "Free consultation (Japanese)" : "無料で制作を相談する"}</a></section> : <FinalCTA
         config={config.finalCta}
         stripeHref={primaryStripeUrl(config)}
         contactEmail={contactEmail}
         language={language}
-      />
+      />}
     </section>
   );
 }

@@ -10,6 +10,7 @@ describe("isServiceVisibilityGatedPath", () => {
   test("keeps owner sales, buyer-start, and disclosure routes private when disabled", () => {
     for (const path of [
       "/portfolio-kit",
+      "/portfolio-kit/consult",
       "/portfolio-kit/en",
       "/portfolio-kit/start",
       "/start",

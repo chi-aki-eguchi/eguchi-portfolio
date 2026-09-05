@@ -712,7 +712,7 @@ const CSP_REPORT_ONLY = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: https:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+  "connect-src 'self' https://formspree.io https://photo-work-pricing.chi-aki-18.chatgpt.site https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self' https://formspree.io https://buy.stripe.com",

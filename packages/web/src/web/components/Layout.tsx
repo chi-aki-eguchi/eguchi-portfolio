@@ -253,7 +253,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               footerPolicyLanguage === "en"
                 ? "/portfolio-kit/en"
                 : "/portfolio-kit",
-            label: "Portfolio Kit",
+            label: isServiceOwnerSite(data?.siteUrl, undefined) ? (isEnglishChrome ? "Portfolio Websites" : "ポートフォリオ制作") : "Portfolio Kit",
           },
         ]
       : []),

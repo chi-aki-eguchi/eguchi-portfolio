@@ -17,6 +17,7 @@ import {
   PAGE_TITLE,
 } from "../shared/site-title";
 import { resolveServiceVisibility } from "../shared/service-visibility";
+import { OWNER_SERVICE_FAQ } from "../shared/portfolio-service-copy";
 import { hasPublicEnglishContent } from "../shared/public-english";
 import { resolveContactText } from "../shared/contact-defaults";
 import {
@@ -82,6 +83,7 @@ export function siteUrlFrom(
 }
 // Per-route titles so each page is distinct for search/social, not all "home".
 const PAGE_TITLES: Record<string, string> = {
+  "/portfolio-kit/consult": "ポートフォリオ制作の無料相談",
   "/gallery": PAGE_TITLE.gallery,
   "/series": PAGE_TITLE.series,
   // Work の棚（2026-08-31）。**ここに足さないと `/work` が Not Found 扱いになり、
@@ -166,6 +168,7 @@ function pageDescriptionFor(
   pathname: string,
   name: string,
 ): string {
+  if (pathname === "/portfolio-kit/consult") return "江口秋のポートフォリオ制作へ無料相談。公開設定30,000円、写真・文章編集付き69,800円。相談送信だけでは購入になりません。";
   const policy = policyRoute(pathname);
   if (policy) return policyDocument(policy.kind, policy.language).description;
   if (ENGLISH_PUBLIC_PATHS.has(pathname)) {
@@ -525,6 +528,7 @@ export function injectOgp(
     "/terms",
     "/terms/en",
     "/portfolio-kit",
+    "/portfolio-kit/consult",
     "/portfolio-kit/en",
     "/portfolio-kit/start",
     "/start",
@@ -564,7 +568,7 @@ export function injectOgp(
   const desc = missingPublicPage
     ? "お探しのページは見つかりませんでした。"
     : isService
-      ? serviceOg.desc
+      ? serviceOg.desc + (isServiceHost && !isBuyerStartPath ? (isEnglishServicePath ? " Photo selection and Japanese text editing with publishing: ¥69,800 total. Free consultation before payment." : " 写真の選定・日本語文章の整理も含む編集付き公開は総額69,800円。無料相談で内容を確認してからお支払い。") : "")
       : override?.desc
         ? override.desc
         : override?.title
@@ -619,7 +623,7 @@ export function injectOgp(
     pathname.startsWith("/admin") ||
     !isKnown ||
     serviceUnavailable ||
-    isBuyerStartPath ||
+    isBuyerStartPath || pathname === "/portfolio-kit/consult" ||
     realPageNoindex
   ) {
     out = setAttr(
@@ -1087,7 +1091,7 @@ function buildJsonLd(
     });
     // FAQ は日本語でしか書かれていない（英語化されるのは料金プランの文だけ）。
     // 英語URLに日本語のFAQを付けると、そのページの言語宣言と食い違うので出さない。
-    const faq = isEnglishLp ? [] : serviceFaqItems(settings);
+    const faq = isEnglishLp ? [] : isServiceSiteUrl(siteUrl) ? OWNER_SERVICE_FAQ : serviceFaqItems(settings);
     if (faq.length) {
       graph.push({
         "@type": "FAQPage",

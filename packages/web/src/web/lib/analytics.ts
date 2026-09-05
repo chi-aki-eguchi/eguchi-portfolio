@@ -118,6 +118,9 @@ export function analyticsEventForLink(
   if (to === "/contact" || to === "/en/contact") {
     return { name: "contact_cta_click", params };
   }
+  if (target.origin === origin && to === "/portfolio-kit/consult") {
+    return { name: "portfolio_consult_click", params };
+  }
   if (target.origin !== origin) {
     return { name: "outbound_click", params };
   }

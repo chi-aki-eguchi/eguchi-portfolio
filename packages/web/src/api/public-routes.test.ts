@@ -27,6 +27,7 @@ describe("public SPA route status", () => {
       "/en/about",
       "/en/contact",
       "/portfolio-kit",
+      "/portfolio-kit/consult",
       "/portfolio-kit/en",
       "/portfolio-kit/start",
       "/start",

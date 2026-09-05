@@ -22,6 +22,7 @@ const ProfilePage = lazy(() => import("./pages/profile"));
 const ContactPage = lazy(() => import("./pages/contact"));
 const PolicyPage = lazy(() => import("./pages/policy"));
 const ServicePage = lazy(() => import("./pages/service"));
+const ServiceConsultPage = lazy(() => import("./pages/service-consult"));
 const ServiceStartPage = lazy(() => import("./pages/service-start"));
 const AdminLoginPage = lazy(() => import("./pages/admin-login"));
 const AdminPage = lazy(() => import("./pages/admin"));
@@ -272,6 +273,9 @@ function App() {
           </Route>
           <Route path="/service">
             <LegacyPortfolioKitRedirect to="/portfolio-kit" />
+          </Route>
+          <Route path="/portfolio-kit/consult">
+            <ServiceVisibilityGate><Layout><PageTransition><TitledRoute title="ポートフォリオ制作の無料相談"><Suspense fallback={<PageFallback />}><ServiceConsultPage /></Suspense></TitledRoute></PageTransition></Layout></ServiceVisibilityGate>
           </Route>
           <Route path="/portfolio-kit/start/en">
             <LegacyPortfolioKitRedirect to="/start/en" />

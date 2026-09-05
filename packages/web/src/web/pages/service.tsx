@@ -6,6 +6,7 @@ import { usePageLanguage } from "../hooks/usePageLanguage";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { safeHref } from "../lib/utils";
+import { StudioBridge } from "../components/StudioBridge";
 import { resolveServiceContactEmail } from "../../shared/service-visibility";
 import {
   parseServicePageConfig,
@@ -1254,6 +1255,8 @@ export default function ServicePage({
 
       {/* ── Fit + value ── */}
       <AudienceAndFeatures config={config.painSolutions} language={language} />
+
+      <StudioBridge siteUrl={settingsData?.siteUrl} language={language} />
 
       {/* ── Pricing ── */}
       <section

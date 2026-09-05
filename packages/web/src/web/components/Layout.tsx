@@ -7,6 +7,7 @@ import { shelfNeedsCount, shouldShowShelf } from "../lib/shelf-nav";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
+import { StudioBridge } from "./StudioBridge";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
 
@@ -160,7 +161,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const showWork = shouldShowShelf(workNav, workData?.series.length ?? 0);
 
   const dm = useDarkModeContext();
-  const { showServiceInNav } = useServiceVisibility();
+  const { showService, showServiceInNav } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const templateCreditUrl = httpHrefOrNull(data?.templateCreditUrl ?? "");
 
@@ -592,6 +593,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         {children}
       </main>
+
+      {showService && !location.includes("portfolio-kit") && (
+        <StudioBridge siteUrl={data?.siteUrl} language={location.startsWith("/en/") ? "en" : "ja"} compact />
+      )}
 
       <footer
         className="pt-[calc(3rem*var(--spacing-footer-top,1))] footer-reveal"

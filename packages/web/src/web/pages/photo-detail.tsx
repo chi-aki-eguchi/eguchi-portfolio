@@ -42,7 +42,6 @@ type PhotoDetailResponse = {
 export default function PhotoDetailPage() {
   const params = useParams();
   const id = params.id ?? "";
-  const entranceRef = usePageEntrance();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["photo", id],
@@ -58,6 +57,7 @@ export default function PhotoDetailPage() {
     },
     enabled: !!id,
   });
+  const entranceRef = usePageEntrance([data?.photo.id]);
 
   const { data: settings, isError: settingsError } = useQuery<
     Record<string, string>

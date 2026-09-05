@@ -22,20 +22,60 @@ import { test, expect } from "@playwright/test";
  */
 const LIMIT = 0.1;
 
-// **閾値は下げない。1回だけやり直す。**
-// この測定は、全体を通しで回して機械が混んでいるときだけ 0.1 をわずかに
-// 超えることがある（2026-08-30 実測: 単独では5回中5回通り、通し実行で
-// 0.1576）。中身の問題ではなく測る側の揺れなので、**上限を緩める**のでは
-// なく**もう一度測る**。2回続けて超えるなら、それは本物。
+// **これは測る側の揺れではない。製品の不具合が出たり出なかったりしている。**
+//
+// 2026-09-02 に確かめた。落ちたときの値は毎回そっくり同じ桁まで一致する
+// （desktop 0.1400 が4回、mobile 0.15763546798029557 が10回）。混んだ機械の
+// ノイズなら、同じ小数が何度も出ることはない。**出るか出ないかの二択**で、
+// 出たときの大きさは決まっている。
+//
+// 動いていたのは**サイト共通の奥付（`Layout.tsx` の `<footer>`）**で、
+// ギャラリーの帯ではない。送るのが写真の追加より速いと、いま並べ終えた
+// ところまで読み手が届いてしまい、その下の奥付が画面に入る。そこへ次の束が
+// 差し込まれ、奥付が高さ1つぶん（desktop 126px / mobile 128px）押し下げられて
+// 画面から出ていく。それだけで 0.14〜0.16。
+//
+// 2026-08-30 の直し方は上の 2（終わりの帯は出しきってから）だけを入れた。
+// **共通の奥付はそのどちらにも入っていない。**上の 1（場所を先に取る）が
+// 無いままなので、追加が間に合わなかったときに素通しで出る。
+//
+// 手元で必ず出す方法（`docs/agents/backlog.md` B-26）: 写真の応答を 400ms
+// 遅らせて /gallery を同じ速さで送る。3回中3回、同じ値で落ちる。
+//
+// **retries は残してある。**外すと push の門（`bun run smoke`）が半分の確率で
+// 閉じる。ただしここが「flaky」と出たら、それは機械が混んでいたのではなく
+// **不具合が出た回**。閾値は緩めない。
 test.describe.configure({ retries: 1 });
 
+// 合計値だけ残すと、落ちても「0.14 だった」としか分からない。**何が動いたか**
+// を一緒に控える。数字しか残っていなかったせいで、この検査は一度
+// 別の要素のせいにされている（backlog B-23 の 2026-09-02 訂正）。
 const OBSERVE = () => {
   const w = window as any;
   w.__cls = 0;
   w.__on = false;
+  w.__moved = [];
+  const nameOf = (n: any): string => {
+    if (!n || n.nodeType !== 1) return String(n);
+    const el = n as Element;
+    const cls = (el.getAttribute("class") || "")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(".");
+    return `${el.tagName.toLowerCase()}${cls ? "." + cls : ""}`;
+  };
   new PerformanceObserver((l) => {
     for (const e of l.getEntries() as any[]) {
-      if (!e.hadRecentInput && w.__on) w.__cls += e.value;
+      if (e.hadRecentInput || !w.__on) continue;
+      w.__cls += e.value;
+      for (const s of (e.sources || []).slice(0, 2)) {
+        w.__moved.push(
+          `${nameOf(s.node)} ${Math.round(s.previousRect.y)}→${Math.round(
+            s.currentRect.y,
+          )}px (${e.value.toFixed(4)})`,
+        );
+      }
     }
   }).observe({ type: "layout-shift", buffered: true });
 };
@@ -59,8 +99,16 @@ for (const [step, label] of [[40, "ゆっくり読む速さ"], [220, "一気に�
       }
     }, step);
     await page.waitForTimeout(1500);
-    const cls = await page.evaluate(() => (window as any).__cls as number);
-    expect(cls, `送っている最中のズレ ${cls.toFixed(4)}（上限 ${LIMIT}）`).toBeLessThan(LIMIT);
+    const { cls, moved } = await page.evaluate(() => ({
+      cls: (window as any).__cls as number,
+      moved: (window as any).__moved as string[],
+    }));
+    expect(
+      cls,
+      `送っている最中のズレ ${cls.toFixed(4)}（上限 ${LIMIT}）\n動いたもの: ${
+        moved.join(" / ") || "記録なし"
+      }`,
+    ).toBeLessThan(LIMIT);
   });
 }
 

@@ -10,6 +10,7 @@ import { BackToTop } from "./BackToTop";
 import { StudioBridge } from "./StudioBridge";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
+import { isServiceOwnerSite } from "../../shared/service-visibility";
 
 // i18n Phase 3 スライス1: /about・/contact の英語ペア。/profile は /about の
 // エイリアスなので EN→JA 側は常に /about を正とする（ogp.ts の canonPath 扱いに合わせる）。
@@ -221,7 +222,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: isEnglishPage ? "/en/contact" : "/contact",
       label: data?.navLabelContact ?? "Contact",
     },
-    ...(showServiceInNav
+    ...(showServiceInNav || (showService && isServiceOwnerSite(data?.siteUrl, undefined))
       ? [{ href: "/portfolio-kit", label: "Portfolio Kit" }]
       : []),
   ];

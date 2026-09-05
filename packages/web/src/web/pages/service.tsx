@@ -6,8 +6,8 @@ import { usePageLanguage } from "../hooks/usePageLanguage";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { safeHref } from "../lib/utils";
-import { StudioBridge } from "../components/StudioBridge";
-import { resolveServiceContactEmail } from "../../shared/service-visibility";
+import { StudioBridge, studioHref } from "../components/StudioBridge";
+import { isServiceOwnerSite, resolveServiceContactEmail } from "../../shared/service-visibility";
 import {
   parseServicePageConfig,
   ENGLISH_PLAN_COPY,
@@ -1245,6 +1245,13 @@ export default function ServicePage({
             {config.hero.ctaPricing}
           </ServiceButton>
         </div>
+        {isServiceOwnerSite(settingsData?.siteUrl, undefined) && (
+          <p className="mt-5 text-sm leading-7">
+            <a href={studioHref("/", "service-hero")} className="underline underline-offset-4 py-2">
+              {language === "en" ? "Photo selection + Japanese profile editing: ¥69,800 total →" : "写真選び・文章整理から頼みたい方へ：総額69,800円 →"}
+            </a>
+          </p>
+        )}
       </header>
 
       {/* ── Hero site preview ── */}

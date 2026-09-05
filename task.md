@@ -1,6 +1,19 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
+## Current State — 2026-09-05 JST（Portfolio Kitの管理画面訴求）
+
+- 写真の入れ替え、見せ方、プロフィールを自分で変更できることを日英販売ページの主役にした。
+- 管理画面紹介を冒頭へ移し、実際のデモ画面3種の切替・拡大とデモ導線を追加。
+- 原作業台の未コミット変更を保持し、origin/main基点の `codex/admin-sales` で分離した。
+- 2026-09-05の最終確認: `bun run check` exit 0（1225 tests・tools 56件）、影響する公開smoke 20件成功。
+- 日英・390px/1440pxの実ブラウザーで画像切替・画像読込・キーボード・横幅を確認。仕様と検証資料は `docs/specs/admin-led-sales-page.md`。
+- 実装・検証完了。本番の配備状態は `/api/health` のbuildと販売ページを照合する。
+- 本人確認: 普段の事業拠点は日本。台湾は時々渡航し撮影依頼へ対応できる地域。
+
+<details>
+<summary>直前のHERO修正の記録</summary>
+
 ## Current State — 2026-09-02 JST（HEROの名前位置を修正・本番確認済み）
 
 - **Status:** 完了。2026-09-02 に `4d53d30` を `main` へ push し、
@@ -22,6 +35,7 @@
 - 今回のHERO修正に残作業なし。
 - 既知の `public-scroll-stability` は全体smoke内で1回再試行になったが、
   同一実行内で合格。従来どおり別タスク扱い。
+</details>
 <!-- CURRENT_STATE_END -->
 
 <details>

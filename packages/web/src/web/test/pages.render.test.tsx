@@ -2950,7 +2950,7 @@ describe("shared components", () => {
     }
   });
 
-  test("Layout keeps Portfolio Kit out of nav unless mode is explicitly on", async () => {
+  test("Layout exposes the owner sales entrance, while respecting off and customer defaults", async () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
     const prevSettings = canned["/api/settings"];
@@ -2978,8 +2978,19 @@ describe("shared components", () => {
       );
       expect(
         ownerDefault.host.querySelectorAll('a[href="/portfolio-kit"]').length,
-      ).toBe(0);
+      ).toBeGreaterThan(0);
       ownerDefault.cleanup();
+
+      for (const settings of [
+        { siteUrl: "https://akieguchi.com", servicePageMode: "off" },
+        { siteUrl: "https://portfolio.example", servicePageMode: "auto" },
+      ]) {
+        canned["/api/settings"] = settings;
+        const disabled = await mount(createElement(Provider, null, createElement(Layout, null, createElement("p", null, "child"))));
+        expect(disabled.host.querySelector('a[href="/portfolio-kit"]')).toBeNull();
+        expect(disabled.host.querySelector('[data-studio-bridge]')).toBeNull();
+        disabled.cleanup();
+      }
 
       canned["/api/settings"] = {
         siteUrl: "https://portfolio.example",

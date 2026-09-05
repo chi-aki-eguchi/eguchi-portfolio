@@ -42,13 +42,13 @@ sources:
   flags this mismatch explicitly. Using `deploy.sh` in the current flow
   risks a verification failure or a mismatched mental model.
   (docs/archive/deploy.sh:1-153; task.md:631-632,672,675)
-- `ecosystem.config.cjs` is **PM2/Runable-era infrastructure**: runs
-  `bun run db:push` before start (non-blocking on failure), skips a
-  boot-time `vite build` if `packages/web/dist` is already shipped, logs a
-  `BUILD_ID`-vs-dist-asset diagnostic (pure logging). The root `start`
-  script (`pm2 start ecosystem.config.cjs`) is **explicitly NOT the Railway
-  start command** per README.md. (ecosystem.config.cjs:4-81; README.md's
-  maintainer note)
+- 2026-09-05 local update: `ecosystem.config.cjs` only declares the PM2
+  process. Reading it no longer runs `db:push`, builds assets, or reads old
+  BUILD_ID diagnostics. The root `start` calls `scripts/start-pm2.mjs`, which
+  validates the built HTML and its assets before `pm2 startOrRestart`.
+  `src/server.ts` still applies startup migrations. This PM2 command remains
+  separate from Railway's start command in README.md. Other historical
+  observations on this page have not been reverified in this update.
 - `docs/post-deploy-guide.md` is the **non-engineer, photographer-facing**
   Railway "Deploy" button walkthrough: create account → set
   `ADMIN_PASSWORD` → wait for services (web/Postgres/Storage) → web

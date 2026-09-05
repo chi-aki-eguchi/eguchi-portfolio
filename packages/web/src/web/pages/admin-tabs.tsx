@@ -4906,6 +4906,21 @@ export function SettingsTab({
     summary: summarizeSection(sectionId),
   });
 
+  // Carousel / Single Photo share the original configurable hero frame.
+  // The three composed layouts own their screen usage and name placement, so
+  // showing those controls there creates a dead setting: the button changes,
+  // but the preview does not. Keep stored values intact for when the owner
+  // switches back; only hide controls that cannot affect the selected layout.
+  const selectedHeroMode = current["heroMode"] || "carousel";
+  const usesConfigurableHeroFrame =
+    selectedHeroMode === "carousel" || selectedHeroMode === "single";
+  const configurableHeroIsFullscreen =
+    usesConfigurableHeroFrame &&
+    (current["heroDisplayMode"] || "normal") === "fullscreen";
+  const heroOverlayIsEffective =
+    selectedHeroMode === "single" ||
+    (selectedHeroMode === "carousel" && configurableHeroIsFullscreen);
+
   const previewCopy = copyDesign.preview;
   const publicSiteHref = buildPublicSiteHref(demoSeed);
   const openPreview = (next: boolean) => {
@@ -5153,20 +5168,22 @@ export function SettingsTab({
                 title={copy.hero.title}
                 defaultOpen={false}
                 summary={(() => {
-                  const modeValue = current["heroMode"] || "carousel";
                   const modeName =
                     copy.hero.modeNames[
-                      modeValue as keyof typeof copy.hero.modeNames
+                      selectedHeroMode as keyof typeof copy.hero.modeNames
                     ] ?? copy.hero.modeNames.carousel;
-                  const isFullscreen =
-                    (current["heroDisplayMode"] || "normal") === "fullscreen";
-                  // heroHeight has no effect in fullscreen mode — showing it
-                  // there would imply a setting that isn't actually applied.
-                  return isFullscreen
+                  if (!usesConfigurableHeroFrame) {
+                    return copy.hero.summaryComposed(
+                      modeName,
+                      current["heroHeight"],
+                    );
+                  }
+                  return configurableHeroIsFullscreen
                     ? copy.hero.summaryFullscreen(modeName)
                     : copy.hero.summaryNormal(
                         modeName,
-                        current["heroHeight"] || "70",
+                        current["heroHeight"] ||
+                          (selectedHeroMode === "single" ? "78" : "70"),
                       );
                 })()}
               >
@@ -5195,6 +5212,11 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
+                {!usesConfigurableHeroFrame && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed border-l border-[var(--admin-line)] pl-3">
+                    {copy.hero.composedLayoutHint}
+                  </p>
+                )}
                 <AdminField
                   label={copy.hero.randomLabel}
                   hint={copy.hero.randomHint}
@@ -5289,90 +5311,128 @@ export function SettingsTab({
                     })}
                   </div>
                 </AdminField>
-                <AdminField
-                  label={copy.hero.displayModeLabel}
-                  hint={copy.hero.displayModeHint}
-                >
-                  <div className="flex gap-1">
-                    {(
-                      [
-                        ["normal", copy.hero.displayModeOptions.normal],
+                {usesConfigurableHeroFrame && (
+                  <AdminField
+                    label={copy.hero.displayModeLabel}
+                    hint={copy.hero.displayModeHint}
+                  >
+                    <div className="flex gap-1">
+                      {(
                         [
-                          "fullscreen",
-                          copy.hero.displayModeOptions.fullscreen,
-                        ],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("heroDisplayMode", val)}
-                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                          (current["heroDisplayMode"] || "normal") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                <AdminField
-                  label={copy.hero.heightLabel}
-                  hint={copy.hero.heightHint}
-                >
-                  <TypoControl
+                          ["normal", copy.hero.displayModeOptions.normal],
+                          [
+                            "fullscreen",
+                            copy.hero.displayModeOptions.fullscreen,
+                          ],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("heroDisplayMode", val)}
+                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                            (current["heroDisplayMode"] || "normal") === val
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                )}
+                {!configurableHeroIsFullscreen && (
+                  <AdminField
                     label={copy.hero.heightLabel}
-                    valueKey="heroHeight"
-                    current={current}
-                    set={set}
-                    min={35}
-                    max={100}
-                    step={1}
-                    unit="vh"
-                    defaultVal="70"
-                  />
-                </AdminField>
-                <AdminField
-                  label={copy.hero.titlePositionLabel}
-                  hint={copy.hero.titlePositionHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["center", copy.hero.titlePositionOptions.center],
+                    hint={
+                      usesConfigurableHeroFrame
+                        ? copy.hero.heightHint
+                        : copy.hero.heightComposedHint
+                    }
+                  >
+                    {!usesConfigurableHeroFrame && !current["heroHeight"] ? (
+                      <div className="flex items-center justify-between gap-3 text-[length:var(--admin-text-note)]">
+                        <span className="text-[var(--admin-muted)]">
+                          {copy.hero.heightLayoutDefault}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => set("heroHeight", "70")}
+                          className="shrink-0 px-3 py-1.5 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] text-[var(--admin-ink)]"
+                        >
+                          {copy.hero.heightCustomize}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <TypoControl
+                          label={copy.hero.heightLabel}
+                          valueKey="heroHeight"
+                          current={current}
+                          set={set}
+                          min={35}
+                          max={100}
+                          step={1}
+                          unit="vh"
+                          defaultVal={
+                            selectedHeroMode === "single" ? "78" : "70"
+                          }
+                        />
+                        {!usesConfigurableHeroFrame && (
+                          <button
+                            type="button"
+                            onClick={() => set("heroHeight", "")}
+                            className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
+                          >
+                            {copy.hero.heightResetLayout}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </AdminField>
+                )}
+                {usesConfigurableHeroFrame && (
+                  <AdminField
+                    label={copy.hero.titlePositionLabel}
+                    hint={copy.hero.titlePositionHint}
+                  >
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(
                         [
-                          "bottom-left",
-                          copy.hero.titlePositionOptions["bottom-left"],
-                        ],
-                        [
-                          "bottom-right",
-                          copy.hero.titlePositionOptions["bottom-right"],
-                        ],
-                        [
-                          "top-left",
-                          copy.hero.titlePositionOptions["top-left"],
-                        ],
-                        [
-                          "top-right",
-                          copy.hero.titlePositionOptions["top-right"],
-                        ],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("heroTitlePosition", val)}
-                        className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                          (current["heroTitlePosition"] || "center") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
+                          ["center", copy.hero.titlePositionOptions.center],
+                          [
+                            "bottom-left",
+                            copy.hero.titlePositionOptions["bottom-left"],
+                          ],
+                          [
+                            "bottom-right",
+                            copy.hero.titlePositionOptions["bottom-right"],
+                          ],
+                          [
+                            "top-left",
+                            copy.hero.titlePositionOptions["top-left"],
+                          ],
+                          [
+                            "top-right",
+                            copy.hero.titlePositionOptions["top-right"],
+                          ],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("heroTitlePosition", val)}
+                          className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                            (current["heroTitlePosition"] || "center") === val
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                )}
                 <AdminField
                   label={copy.hero.scrollEffectLabel}
                   hint={copy.hero.scrollEffectHint}
@@ -5400,31 +5460,33 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
-                <AdminField
-                  label={copy.hero.overlayLabel}
-                  hint={copy.hero.overlayHint}
-                >
-                  <div className="flex gap-1">
-                    {(
-                      [
-                        ["on", copy.hero.overlayOptions.on],
-                        ["off", copy.hero.overlayOptions.off],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("heroOverlay", val)}
-                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                          (current["heroOverlay"] || "on") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
+                {heroOverlayIsEffective && (
+                  <AdminField
+                    label={copy.hero.overlayLabel}
+                    hint={copy.hero.overlayHint}
+                  >
+                    <div className="flex gap-1">
+                      {(
+                        [
+                          ["on", copy.hero.overlayOptions.on],
+                          ["off", copy.hero.overlayOptions.off],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button
+                          key={val}
+                          onClick={() => set("heroOverlay", val)}
+                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                            (current["heroOverlay"] || "on") === val
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                )}
                 <button
                   onClick={() => {
                     [
@@ -7239,7 +7301,7 @@ export function SettingsTab({
                   valueKey="bodySize"
                   current={current}
                   set={set}
-                  min={10}
+                  min={14}
                   max={36}
                   step={1}
                   unit="px"
@@ -8437,11 +8499,8 @@ function TypoControl({
   const { t } = useAdminI18n();
   const raw = current[valueKey] ?? "";
   const parsed = parseFloat(raw);
-  const value = isNaN(parsed)
-    ? isOpacity
-      ? 0.3
-      : parseFloat(defaultVal ?? String(min))
-    : parsed;
+  const fallback = isOpacity ? 0.3 : parseFloat(defaultVal ?? String(min));
+  const value = Math.min(max, Math.max(min, isNaN(parsed) ? fallback : parsed));
   // A9: direct numeric entry, two-way with the slider. While the field is
   // focused the user's keystrokes win (intermediate states like "0." parse as
   // NaN and just don't commit); blur returns to the canonical value.

@@ -9,6 +9,12 @@ const SPA_STATIC_PATHS = new Set([
   "/about",
   "/profile",
   "/contact",
+  "/privacy",
+  "/privacy/en",
+  "/terms",
+  "/terms/en",
+  "/legal",
+  "/legal/en",
   // /en/* は英語文未入力でも直接アクセスでJPフォールバック表示するため常に200
   "/en/about",
   "/en/contact",
@@ -24,7 +30,8 @@ const SPA_STATIC_PATHS = new Set([
   "/admin/demo",
 ]);
 
-const LEGACY_PORTFOLIO_KIT_PATHS: Record<string, string> = {
+const CANONICAL_PATH_ALIASES: Record<string, string> = {
+  "/profile": "/about",
   "/service": "/portfolio-kit",
   "/service/en": "/portfolio-kit/en",
   "/service/start": "/portfolio-kit/start",
@@ -39,7 +46,16 @@ export function normalizeSpaPathname(pathname: string): string {
 
 export function canonicalPortfolioKitPath(pathname: string): string {
   const normalized = normalizeSpaPathname(pathname);
-  return LEGACY_PORTFOLIO_KIT_PATHS[normalized] ?? normalized;
+  return CANONICAL_PATH_ALIASES[normalized] ?? normalized;
+}
+
+/** Empty Work shelves are not useful landing pages. Keep the route temporary:
+ * it starts working automatically as soon as the first published Work exists. */
+export function shouldRedirectEmptyWorkShelf(
+  pathname: string,
+  hasPublishedWork: boolean | null,
+): boolean {
+  return normalizeSpaPathname(pathname) === "/work" && hasPublishedWork === false;
 }
 
 export function canonicalSpaRedirectUrl(
@@ -61,17 +77,46 @@ export function isSeriesDetailPath(pathname: string): boolean {
   return /^\/(series|work)\/[^/]+$/.test(normalizeSpaPathname(pathname));
 }
 
+/**
+ * `/photo/:id` を写真のidに割る。写真ページでなければ null。
+ *
+ * **なぜ増やしたか。**画像検索や共有から、一覧ではなく該当する1枚へ直接
+ * 着地できるようにするため。検索対象にする条件は別の安全弁で管理する。
+ */
+export function photoDetailId(pathname: string): number | null {
+  // Reject alternate spellings such as `/photo/01`: accepting them would make
+  // the same database row indexable at multiple self-canonical URLs.
+  const match = normalizeSpaPathname(pathname).match(
+    /^\/photo\/([1-9]\d{0,8})$/,
+  );
+  if (!match) return null;
+  const id = Number.parseInt(match[1], 10);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+export function isPhotoDetailPath(pathname: string): boolean {
+  return photoDetailId(pathname) !== null;
+}
+
 export function isKnownSpaPath(pathname: string): boolean {
   const normalized = normalizeSpaPathname(pathname);
-  return SPA_STATIC_PATHS.has(normalized) || isSeriesDetailPath(normalized);
+  return (
+    SPA_STATIC_PATHS.has(normalized) ||
+    isSeriesDetailPath(normalized) ||
+    isPhotoDetailPath(normalized)
+  );
 }
 
 export function htmlStatusForSpaPath(
   pathname: string,
-  options: { seriesFound?: boolean } = {},
+  options: { seriesFound?: boolean; photoFound?: boolean } = {},
 ): number {
   const normalized = normalizeSpaPathname(pathname);
   if (isSeriesDetailPath(normalized)) return options.seriesFound ? 200 : 404;
+  // 存在しない写真のidを 200 で返さない。**シリーズで一度やった失敗**
+  // （棚を足したときに `/work/:slug` が 404 で返っていた件）の裏返しで、
+  // こちらは「無いものを有ると言う」側の事故になる。
+  if (isPhotoDetailPath(normalized)) return options.photoFound ? 200 : 404;
   return SPA_STATIC_PATHS.has(normalized) ? 200 : 404;
 }
 

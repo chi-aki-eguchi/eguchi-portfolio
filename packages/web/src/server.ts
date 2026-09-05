@@ -10,6 +10,7 @@ import {
   ogCardTitleFrom,
   publicPageFallbackText,
 } from "./api/ogp";
+import { displayNameFrom } from "./api/site-defaults";
 import { generateOgCardPng } from "./api/og-card";
 import {
   canonicalHostRedirect,
@@ -17,7 +18,9 @@ import {
   canonicalSpaRedirectUrl,
   htmlStatusForSpaPath,
   isSeriesDetailPath,
+  photoDetailId,
   seriesDetailRoute,
+  shouldRedirectEmptyWorkShelf,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
 import {
@@ -26,16 +29,31 @@ import {
 } from "./api/http-compression";
 import { settingsVersion } from "./api/settings-version";
 import { imageUrlWithParams } from "./shared/image-url";
+import {
+  heroGeneratedSrcSet,
+  heroPreloadAllowed,
+} from "./shared/hero-responsive";
 import { IMAGE_UPLOAD_REQUEST_MAX_BYTES } from "./shared/upload-limits";
 import { hasPublicEnglishContent } from "./shared/public-english";
 import { buildSitemapXml } from "./api/sitemap-xml";
+import {
+  indexablePhotoIds,
+  photoPageDescription,
+  photoPageParagraphs,
+  photoPageTitle,
+} from "./shared/photo-page-text";
 import { injectNoscriptFallback } from "./api/spa-fallback";
 import { buildGalleryPreloadTags } from "./api/gallery-preload";
 import {
   buildRoutePreloadTags,
   type ViteManifest,
 } from "./api/route-preload";
-import { resolveServiceVisibility } from "./shared/service-visibility";
+import {
+  isServiceVisibilityGatedPath,
+  resolveServiceVisibility,
+} from "./shared/service-visibility";
+import { INDEXABLE_POLICY_PATHS } from "./shared/policy-content";
+import { publicContentVersion } from "./shared/public-content-version";
 import {
   DYNAMIC_FAVICON_PATHS,
   generateFaviconAsset,
@@ -148,22 +166,39 @@ async function getSettings(): Promise<Record<string, string>> {
 // The OGP/social share image: prefer the first (non-deleted) hero photo — the
 // actual front-of-site image — since the legacy `heroPhotoUrl` setting is no longer
 // written. Cached 60s; "" means "no hero, fall back to profile/default".
-type ImageRef = { url: string; rotationDeg: number; preloadUrl?: string };
+type ImageRef = {
+  url: string;
+  rotationDeg: number;
+  preloadUrl?: string;
+  preloadSrcSet?: string;
+};
 let heroOgCache: ImageRef | null = null;
 let heroOgCacheTime = 0;
 function socialSourceForPhoto(p: {
   url: string;
+  thumbKey?: string | null;
   mediumKey?: string | null;
+  width?: number | null;
+  height?: number | null;
   rotationDeg?: number | null;
 }): ImageRef {
   const rotationDeg = p.rotationDeg ?? 0;
   const mediumUrl = p.mediumKey ? `/api/images/${p.mediumKey}` : "";
+  const generated = photoWithThumbs(p);
   return {
     url: mediumUrl || p.url,
     rotationDeg,
-    preloadUrl: mediumUrl
-      ? imageUrlWithParams(mediumUrl, { rotationDeg })
-      : undefined,
+    preloadUrl:
+      generated.mediumUrl ??
+      (mediumUrl ? imageUrlWithParams(mediumUrl, { rotationDeg }) : undefined),
+    preloadSrcSet: heroGeneratedSrcSet({
+      url: p.url,
+      thumbUrl: generated.thumbUrl,
+      mediumUrl: generated.mediumUrl,
+      width: p.width,
+      height: p.height,
+      rotationDeg,
+    }),
   };
 }
 async function getHeroOgImage(): Promise<ImageRef> {
@@ -189,6 +224,7 @@ async function getHeroOgImage(): Promise<ImageRef> {
                 heroRows.map((hr) => hr.photoId),
               ),
               isNull(schema.photos.deletedAt),
+              eq(schema.photos.isPublished, true),
             ),
           ),
       );
@@ -309,6 +345,33 @@ async function getNavSeries(): Promise<NavSeries[]> {
   return navSeriesCache ?? [];
 }
 
+let publishedWorkCache: { value: boolean; ts: number } | null = null;
+async function getPublishedWorkAvailability(): Promise<boolean | null> {
+  const now = Date.now();
+  if (publishedWorkCache && now - publishedWorkCache.ts < SETTINGS_TTL)
+    return publishedWorkCache.value;
+  try {
+    const [row] = await withRetry(() =>
+      db
+        .select({ id: schema.series.id })
+        .from(schema.series)
+        .where(
+          and(
+            eq(schema.series.isPublished, true),
+            eq(schema.series.kind, "work"),
+          ),
+        )
+        .limit(1),
+    );
+    const value = Boolean(row);
+    publishedWorkCache = { value, ts: now };
+    return value;
+  } catch (e) {
+    console.error("[work] availability fetch failed:", e);
+    return null;
+  }
+}
+
 // Per-series OGP so a shared /series/:slug link shows that series' own title,
 // statement and cover image — not the generic site card. Cached per slug (60s);
 // null = unknown/unpublished slug (caller falls back to the generic card).
@@ -374,6 +437,134 @@ async function getSeriesOg(slug: string): Promise<SeriesOg | null> {
   return data;
 }
 
+// 写真1枚ぶんの OGP / 本文。公開写真それぞれに共有用のページを用意する。
+// 名前を知らない人が最初に着くのは、たいてい画像のほう。
+type PhotoOg = {
+  title: string;
+  desc: string;
+  body: string[];
+  image: string;
+  imageRotationDeg: number;
+  /** 人が固有の題と説明を付けた、検索入口として十分な代表作か。 */
+  indexable: boolean;
+};
+const photoOgCache = new Map<number, { data: PhotoOg | null; ts: number }>();
+
+let indexablePhotoIdCache: Set<number> | null = null;
+let indexablePhotoIdCacheTime = 0;
+async function getIndexablePhotoIds(): Promise<Set<number>> {
+  const now = Date.now();
+  if (
+    indexablePhotoIdCache !== null &&
+    now - indexablePhotoIdCacheTime < SETTINGS_TTL
+  ) {
+    return indexablePhotoIdCache;
+  }
+  try {
+    const rows = await withRetry(() =>
+      db
+        .select({
+          id: schema.photos.id,
+          title: schema.photos.title,
+          description: schema.photos.description,
+        })
+        .from(schema.photos)
+        .where(
+          and(
+            isNull(schema.photos.deletedAt),
+            eq(schema.photos.isPublished, true),
+          ),
+        ),
+    );
+    indexablePhotoIdCache = indexablePhotoIds(rows);
+    indexablePhotoIdCacheTime = now;
+  } catch (e) {
+    // Failure is deliberately closed: a database problem must never make thin
+    // photo pages indexable by accident.
+    console.error("[SEO] photo indexability fetch failed:", e);
+    indexablePhotoIdCache = new Set();
+    indexablePhotoIdCacheTime = now;
+  }
+  return indexablePhotoIdCache;
+}
+
+async function getPhotoOg(id: number): Promise<PhotoOg | null> {
+  const now = Date.now();
+  const cached = photoOgCache.get(id);
+  if (cached && now - cached.ts < SETTINGS_TTL) return cached.data;
+  let data: PhotoOg | null = null;
+  try {
+    const [p] = await withRetry(() =>
+      db
+        .select()
+        .from(schema.photos)
+        .where(
+          and(
+            eq(schema.photos.id, id),
+            isNull(schema.photos.deletedAt),
+            eq(schema.photos.isPublished, true),
+          ),
+        )
+        .limit(1),
+    );
+    if (p) {
+      const searchablePhotoIds = await getIndexablePhotoIds();
+      let seriesName: string | undefined;
+      if (p.seriesId != null) {
+        const [srow] = await withRetry(() =>
+          db
+            .select({ title: schema.series.title })
+            .from(schema.series)
+            .where(
+              and(
+                eq(schema.series.id, p.seriesId as number),
+                eq(schema.series.isPublished, true),
+              ),
+            )
+            .limit(1),
+        );
+        seriesName = srow?.title;
+      }
+      const settings = await getSettings();
+      const ctx = {
+        photographerName: displayNameFrom(settings),
+        seriesName,
+      };
+      const social = socialSourceForPhoto(p);
+      data = {
+        title: photoPageTitle(p, ctx),
+        desc: photoPageDescription(p, ctx),
+        body: photoPageParagraphs(p, ctx),
+        image: social.url,
+        imageRotationDeg: social.rotationDeg,
+        indexable: searchablePhotoIds.has(p.id),
+      };
+    }
+  } catch (e) {
+    console.error("[OGP] photo fetch failed:", e); /* fall back to generic */
+  }
+  photoOgCache.set(id, { data, ts: now });
+  return data;
+}
+
+let observedPublicContentVersion = publicContentVersion();
+function syncPublicContentCaches(): void {
+  const version = publicContentVersion();
+  if (version === observedPublicContentVersion) return;
+  observedPublicContentVersion = version;
+  heroOgCache = null;
+  heroOgCacheTime = 0;
+  galleryPreloadCache = [];
+  galleryPreloadCacheTime = 0;
+  navSeriesCache = null;
+  navSeriesCacheTime = 0;
+  publishedWorkCache = null;
+  seriesOgCache.clear();
+  photoOgCache.clear();
+  indexablePhotoIdCache = null;
+  indexablePhotoIdCacheTime = 0;
+}
+
 async function buildSitemap(fallbackOrigin: string): Promise<string> {
   const settings = await getSettings();
   const siteUrl = siteUrlFrom(settings, fallbackOrigin);
@@ -383,6 +574,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     "/series",
     "/about",
     "/contact",
+    ...INDEXABLE_POLICY_PATHS,
     // i18n Phase 3: 英語文が入力済みのサイトのみ /en/* を sitemap に載せる
     // （配布テンプレート既定では日本語のままの英語URLを検索対象にしない）
     ...(hasPublicEnglishContent(settings) ? ["/en/about", "/en/contact"] : []),
@@ -442,6 +634,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     id: number;
     url: string;
     title: string;
+    description: string | null;
     seriesId: number | null;
     createdAt: Date | null;
     shotAt: string | null;
@@ -454,6 +647,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
           id: schema.photos.id,
           url: schema.photos.url,
           title: schema.photos.title,
+          description: schema.photos.description,
           seriesId: schema.photos.seriesId,
           createdAt: schema.photos.createdAt,
           shotAt: schema.photos.shotAt,
@@ -474,6 +668,9 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     siteUrl,
     paths,
     seriesPaths,
+    // 全写真に共有用URLはあるが、sitemap-xml側の安全弁が、人の題と説明を
+    // 持つ重複のない代表作だけを検索入口として残す。
+    photoPaths: livePhotos.map((p) => `/photo/${p.id}`),
     seriesIdBySlugPath,
     seriesById,
     photos: livePhotos,
@@ -599,6 +796,7 @@ const server = Bun.serve({
 });
 
 async function serveNonApi(request: Request, url: URL): Promise<Response> {
+  syncPublicContentCaches();
   const publicOrigin = publicOriginFromRequest(request);
   // 入口を1つに寄せる。**www と apex の両方が 200 を返し、それぞれが自分を
   // canonical と名乗る**状態だと、中身が同じ2つのサイトとして評価が割れる
@@ -613,6 +811,18 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     return Response.redirect(
       canonicalSpaRedirectUrl(request.url, publicOrigin, routePathname),
       308,
+    );
+  }
+  if (
+    routePathname === "/work" &&
+    shouldRedirectEmptyWorkShelf(
+      routePathname,
+      await getPublishedWorkAvailability(),
+    )
+  ) {
+    return Response.redirect(
+      canonicalSpaRedirectUrl(request.url, publicOrigin, "/series"),
+      302,
     );
   }
   // F: SEO endpoints
@@ -750,14 +960,23 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     const html = await index.text();
     const settings = await getSettings();
     const heroImg = await getHeroOgImage();
+    const serviceUnavailable =
+      isServiceVisibilityGatedPath(routePathname) &&
+      !resolveServiceVisibility(
+        settings.servicePageMode,
+        siteUrlFrom(settings, publicOrigin),
+        "",
+      );
     // Per-series OGP for /series/:slug so shared links carry that series' card.
     let override:
       | {
           title?: string;
           desc?: string;
           body?: string;
+          bodyParagraphs?: string[];
           image?: string;
           imageRotationDeg?: number | null;
+          indexable?: boolean;
         }
       | undefined;
     let seriesFound = false;
@@ -767,6 +986,24 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     // 気づけず、sitemap には載るので、検索側にだけ「登録した先が404」に見える。
     // 棚が食い違うURL（work の1本を `/series/x` で開く）は SPA 側が 404 を出す
     // ので、ここでも実在しない扱いのままにする。
+    // 写真1枚ぶんのページ。存在しない id は 404 のままにする（無いものを
+    // 200 で返さない）。
+    let photoFound = false;
+    const photoId = photoDetailId(routePathname);
+    if (photoId != null) {
+      const og = await getPhotoOg(photoId);
+      if (og) {
+        photoFound = true;
+        override = {
+          title: og.title,
+          desc: og.desc,
+          bodyParagraphs: og.body,
+          image: og.image || undefined,
+          imageRotationDeg: og.imageRotationDeg,
+          indexable: og.indexable,
+        };
+      }
+    }
     const detail = seriesDetailRoute(routePathname);
     if (detail) {
       const og = await getSeriesOg(decodeURIComponent(detail.slug));
@@ -789,11 +1026,19 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       override,
       publicOrigin,
       heroImg.rotationDeg,
-      heroImg.preloadUrl,
+      heroPreloadAllowed(settings.heroRandom)
+        ? heroImg.preloadUrl
+        : undefined,
+      heroPreloadAllowed(settings.heroRandom)
+        ? heroImg.preloadSrcSet
+        : undefined,
+      heroPreloadAllowed(settings.heroRandom),
     );
     // その経路のチャンクを先読みさせる。lazy import なので、これが無いと
     // `index.js` が動くまで発見されない（実測で2波・往復1回ぶんの遅れ）。
-    const routePreload = buildRoutePreloadTags(viteManifest, routePathname);
+    const routePreload = serviceUnavailable
+      ? ""
+      : buildRoutePreloadTags(viteManifest, routePathname);
     if (routePreload)
       injected = injected.replace(
         "</head>",
@@ -812,13 +1057,23 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         );
       }
     }
-    const htmlStatus = htmlStatusForSpaPath(routePathname, {
-      seriesFound: isSeriesDetailPath(routePathname) ? seriesFound : undefined,
-    });
+    const htmlStatus = serviceUnavailable
+      ? 404
+      : htmlStatusForSpaPath(routePathname, {
+          seriesFound: isSeriesDetailPath(routePathname)
+            ? seriesFound
+            : undefined,
+          photoFound: photoId != null ? photoFound : undefined,
+        });
     // 実在するページにだけ本文を入れる。404 の <noscript> に本文と
     // リンクを並べると、無いページを「中身のあるページ」として配ることになる。
     if (htmlStatus === 200) {
-      const text = publicPageFallbackText(settings, routePathname, override);
+      const text = publicPageFallbackText(
+        settings,
+        routePathname,
+        override,
+        publicOrigin,
+      );
       const isIndexPage =
         routePathname === "/" ||
         routePathname === "/series" ||
@@ -826,18 +1081,37 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       const siteLabel = settings.siteName || settings.siteNameEn || "Home";
       const navSeries = await getNavSeries();
       const hasWorkShelf = navSeries.some((n) => n.path.startsWith("/work/"));
+      const fallbackIsEnglish =
+        routePathname.startsWith("/en/") || routePathname.endsWith("/en");
       const sectionLinks = [
-        { href: "/", label: siteLabel },
+        { href: "/", label: fallbackIsEnglish ? "Home" : siteLabel },
         { href: "/gallery", label: "Gallery" },
         { href: "/series", label: "Series" },
         ...(hasWorkShelf ? [{ href: "/work", label: "Work" }] : []),
-        { href: "/about", label: "About" },
-        { href: "/contact", label: "Contact" },
+        {
+          href: fallbackIsEnglish ? "/en/about" : "/about",
+          label: "About",
+        },
+        {
+          href: fallbackIsEnglish ? "/en/contact" : "/contact",
+          label: "Contact",
+        },
       ].filter((l) => l.href !== routePathname);
+      const shelfLinks =
+        routePathname === "/work"
+          ? navSeries.filter((n) => n.path.startsWith("/work/"))
+          : routePathname === "/series"
+            ? navSeries.filter((n) => n.path.startsWith("/series/"))
+            : navSeries;
       injected = injectNoscriptFallback(injected, {
         ...text,
         // シリーズの一覧を全ページに繰り返さない。束ねているページにだけ置く。
-        links: isIndexPage ? [...sectionLinks, ...navSeries.map((n) => ({ href: n.path, label: n.title }))] : sectionLinks,
+        links: isIndexPage
+          ? [
+              ...sectionLinks,
+              ...shelfLinks.map((n) => ({ href: n.path, label: n.title })),
+            ]
+          : sectionLinks,
         noticeJa: "このサイトの閲覧には JavaScript が必要です。",
         noticeEn: "Please enable JavaScript to view this portfolio.",
       });

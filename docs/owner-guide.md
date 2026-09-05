@@ -73,5 +73,5 @@ push 後、数分待ってから:
 - 高リスク作業の検査表: `docs/checklists.md`
 - 未完了の作業一覧: `docs/agents/backlog.md`（**現役はこれ**）
 - 過去のタスク指示書と完了記録: `docs/archive/task-queue.md`（履歴）
-- 直近の総点検結果（何が健全で何が課題か）: `docs/specs/audit-2026-07.md`
+- 2026-07時点の総点検記録: `docs/archive/audits/audit-2026-07.md`。現在の課題は `task.md` と `docs/agents/backlog.md` を確認する
 - 旧自走運用のルール（履歴。現在は適用しない）: `docs/archive/autonomy-rules.md`

@@ -65,4 +65,10 @@ export const PAGE_TITLE = {
   contact: "撮影依頼・お問い合わせ",
   /** 英語URLは英語のまま。日本語の語を英語ページの題に混ぜない。 */
   contactEn: "Contact",
+  privacy: "プライバシーポリシー",
+  privacyEn: "Privacy Policy",
+  terms: "利用条件",
+  termsEn: "Terms of Use",
+  legal: "販売条件・特定商取引法に基づく表記",
+  legalEn: "Online Sales Disclosure",
 } as const;

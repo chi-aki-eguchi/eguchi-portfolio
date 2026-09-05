@@ -135,6 +135,72 @@ test.describe("admin — TOPの動き設定", () => {
     }
   });
 
+  test("選んだレイアウトで効かない設定を見せない", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktopの設定パネルで検証");
+    await openMotionSettings(page);
+    const hero = page.locator('[data-settings-section="hero"]');
+    await hero.getByRole("button", { name: /^カルーセル/ }).click();
+    await hero
+      .getByRole("button", {
+        name: "通常（高さ設定に従う）",
+        exact: true,
+      })
+      .click();
+
+    // 通常カルーセル: 高さと文字寄せは効く。暗幕は写真上に名前を置かない
+    // この状態では効かないので出さない。
+    await expect(
+      hero.getByRole("button", { name: "フルスクリーン", exact: true }),
+    ).toBeVisible();
+    await expect(hero.getByRole("slider", { name: "高さ" })).toBeVisible();
+    await expect(
+      hero.getByRole("button", { name: "右上", exact: true }),
+    ).toBeVisible();
+    await expect(
+      hero.getByRole("button", { name: "あり", exact: true }),
+    ).toHaveCount(0);
+
+    // フルスクリーンでは高さが無効。以前は説明に「無効」と書きながら
+    // スライダーを出し続けていた。
+    await hero
+      .getByRole("button", { name: "フルスクリーン", exact: true })
+      .click();
+    await expect(hero.getByRole("slider", { name: "高さ" })).toHaveCount(0);
+    await expect(
+      hero.getByRole("button", { name: "あり", exact: true }),
+    ).toBeVisible();
+
+    // 新レイアウト3種は画面の使い方・名前位置を自身で決める。この2項目を
+    // 操作してもプレビューが一切変わらないため、値は保持したまま隠す。
+    await hero.getByRole("button", { name: /^静謐グリッド/ }).click();
+    await expect(
+      hero.getByRole("button", { name: "フルスクリーン", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      hero.getByRole("button", { name: "右上", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      hero.getByText(
+        "このレイアウトは、画面の使い方と名前の位置が専用の配置に固定されます。高さだけ必要に応じて調整できます。",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    const resetHeight = hero.getByRole("button", {
+      name: "レイアウト本来の高さに戻す",
+      exact: true,
+    });
+    if ((await resetHeight.count()) > 0) await resetHeight.click();
+    await expect(hero.getByRole("slider", { name: "高さ" })).toHaveCount(0);
+    await hero
+      .getByRole("button", { name: "高さを指定", exact: true })
+      .click();
+    await expect(hero.getByRole("slider", { name: "高さ" })).toBeVisible();
+    await resetHeight.click();
+    await expect(hero.getByRole("slider", { name: "高さ" })).toHaveCount(0);
+  });
+
   // **2026-08-31 に方針を変えた（オーナー承認）。**それまでここは「即表示」を
   // 求めていた——動きを減らす設定では duration を 0 にする、という書き方。
   // だがこの設定が避けたいのは**視界の中で物が動くこと**（移動・拡大・傾き・

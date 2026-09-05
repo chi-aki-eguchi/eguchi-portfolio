@@ -431,6 +431,13 @@ describe("shared components", () => {
       ).not.toBeNull();
       const startPreview = host.querySelector('a[href="/start"]');
       expect(startPreview?.textContent).toContain("購入後の流れを先に見る");
+      expect(host.textContent).toContain("販売者情報・税・キャンセル・返金条件");
+      expect(
+        Array.from(host.querySelectorAll('a[href="/contact"]')).some((link) =>
+          link.textContent?.includes("購入前の条件を確認する"),
+        ),
+      ).toBe(true);
+      expect(host.querySelector('a[href^="https://buy.stripe.com"]')).toBeNull();
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -469,6 +476,13 @@ describe("shared components", () => {
       expect(startPreview?.textContent).toContain(
         "Preview what happens after purchase",
       );
+      expect(text).toContain("pending seller, tax, cancellation, and refund terms");
+      expect(
+        Array.from(host.querySelectorAll('a[href="/en/contact"]')).some((link) =>
+          link.textContent?.includes("Confirm terms before purchase"),
+        ),
+      ).toBe(true);
+      expect(host.querySelector('a[href^="https://buy.stripe.com"]')).toBeNull();
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -513,8 +527,9 @@ describe("shared components", () => {
       expect(cards[0]?.textContent).toContain("Assisted setup");
       expect(cards[0]?.textContent).toContain("¥30,000");
       expect(cards[0]?.querySelector("a")?.getAttribute("href")).toBe(
-        "https://buy.stripe.com/assisted-plan",
+        "/en/contact",
       );
+      expect(cards[0]?.textContent).toContain("Confirm terms before purchase");
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -3128,12 +3143,14 @@ describe("shared components", () => {
 });
 
 describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
-  test("English ContactPage shows English copy instead of the Japanese placeholder", async () => {
+  test("English ContactPage shows useful English guidance instead of the Japanese placeholder", async () => {
     const ContactPage = (await import("../pages/contact")).default;
     const { host, cleanup } = await mount(
       createElement(ContactPage, { language: "en" }),
     );
-    expect(host.textContent).toContain("Coming soon.");
+    expect(host.textContent).toContain(
+      "For assignments, interviews, or collaborations, feel free to get in touch.",
+    );
     expect(host.textContent).not.toContain("準備中です。");
     cleanup();
   });
@@ -3275,6 +3292,99 @@ describe("i18n Phase 3 slice 1: /en/about, /en/contact", () => {
     }
   });
 
+  test("English Layout keeps its shared accessibility controls and footer CTA in English", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    dom.reconfigure({ url: "http://localhost/en/contact" });
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = {
+      contactIntroEn: "Feel free to reach out.",
+      footerCtaLabel: "お問い合わせ",
+      footerText: "© 2026 Example",
+      servicePageMode: "on",
+    };
+    try {
+      const { host, cleanup } = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      try {
+        await waitForText(host, "© 2026 Example");
+        const skipLink = host.querySelector('a[href="#main-content"]');
+        expect(skipLink?.textContent?.trim()).toBe("Skip to content");
+        expect(
+          host.querySelector("main#main-content")?.getAttribute("tabindex"),
+        ).toBe("-1");
+
+        const themeButtons = Array.from(
+          host.querySelectorAll<HTMLButtonElement>("button[aria-label]"),
+        ).filter((button) =>
+          /(?:dark|light) mode|モード/.test(
+            button.getAttribute("aria-label") ?? "",
+          ),
+        );
+        expect(themeButtons).toHaveLength(2);
+        for (const button of themeButtons) {
+          expect(button.getAttribute("aria-label")).toMatch(
+            /^Switch to (?:dark|light) mode$/,
+          );
+        }
+
+        const footer = host.querySelector("footer");
+        expect(
+          footer?.querySelector('a[href="/en/contact"]')?.textContent?.trim(),
+        ).toBe("Contact");
+        expect(footer?.querySelector('a[href="/contact"]')).toBeNull();
+        expect(
+          host.querySelector('header a[href="/portfolio-kit/en"]')
+            ?.textContent,
+        ).toContain("Portfolio Kit");
+        expect(
+          host.querySelector('header a[href="/portfolio-kit"]'),
+        ).toBeNull();
+        expect(
+          host.querySelector(".back-to-top")?.getAttribute("aria-label"),
+        ).toBe("Back to top");
+      } finally {
+        cleanup();
+      }
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
+  test("English Portfolio Kit keeps shared About and Contact navigation in English", async () => {
+    const { Provider } = await import("../components/provider");
+    const Layout = (await import("../components/Layout")).default;
+    const previousSettings = canned["/api/settings"];
+    canned["/api/settings"] = { servicePageMode: "on" };
+    dom.reconfigure({ url: "http://localhost/portfolio-kit/en" });
+    try {
+      const { host, cleanup } = await mount(
+        createElement(
+          Provider,
+          null,
+          createElement(Layout, null, createElement("p", null, "child")),
+        ),
+      );
+      expect(host.querySelector('header a[href="/en/about"]')).not.toBeNull();
+      expect(host.querySelector('header a[href="/en/contact"]')).not.toBeNull();
+      expect(host.querySelector('header a[href="/about"]')).toBeNull();
+      expect(host.querySelector('header a[href="/contact"]')).toBeNull();
+      expect(
+        host.querySelector('header a[href="/portfolio-kit/en"]'),
+      ).not.toBeNull();
+      cleanup();
+    } finally {
+      canned["/api/settings"] = previousSettings;
+      dom.reconfigure({ url: "http://localhost/" });
+    }
+  });
+
   test("Layout marks About/Contact active on their /en/* counterpart", async () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
@@ -3316,15 +3426,20 @@ describe("i18n Phase 3 slice 2+3: EN profile/contact copy + English welcome note
     }
   });
 
-  test("English ProfilePage falls back to the Japanese bio when profileBioEn is unset", async () => {
+  test("English ProfilePage does not fall back to the Japanese bio when profileBioEn is unset", async () => {
     const previousSettings = canned["/api/settings"];
-    canned["/api/settings"] = { profileBio: "日本語の自己紹介です。" };
+    canned["/api/settings"] = {
+      profileBio: "日本語の自己紹介です。",
+      heroSubtitle: "写真家",
+    };
     try {
       const ProfilePage = (await import("../pages/profile")).default;
       const { host, cleanup } = await mount(
         createElement(ProfilePage, { language: "en" }),
       );
-      expect(host.textContent).toContain("日本語の自己紹介です。");
+      expect(host.textContent).toContain("Photographer");
+      expect(host.textContent).not.toContain("日本語の自己紹介です。");
+      expect(host.textContent).not.toContain("写真家");
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;

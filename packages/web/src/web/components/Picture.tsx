@@ -1,7 +1,12 @@
 import { srcSetFor, srcFor, type ImagePreset } from "../lib/picture";
+import { heroGeneratedSrcSet } from "../../shared/hero-responsive";
 
 type PictureProps = {
   url: string;
+  thumbUrl?: string | null;
+  mediumUrl?: string | null;
+  width?: number | null;
+  height?: number | null;
   rotationDeg?: number | null;
   alt: string;
   preset: ImagePreset;
@@ -19,25 +24,45 @@ type PictureProps = {
 };
 
 export function Picture({
-  url, rotationDeg, alt, preset, sizes, fallbackW, fallbackQ,
+  url, thumbUrl, mediumUrl, width, height, rotationDeg, alt, preset, sizes, fallbackW, fallbackQ,
   className, style, loading, fetchPriority, onLoad, onError, draggable, imgRef,
 }: PictureProps) {
+  const generatedSrcSet = heroGeneratedSrcSet({
+    url,
+    thumbUrl,
+    mediumUrl,
+    width,
+    height,
+    rotationDeg,
+  });
   return (
     <picture>
-      <source
-        type="image/avif"
-        srcSet={srcSetFor(url, preset, "avif", rotationDeg)}
-        sizes={sizes}
-      />
-      <source
-        type="image/webp"
-        srcSet={srcSetFor(url, preset, "webp", rotationDeg)}
-        sizes={sizes}
-      />
+      {!mediumUrl && !generatedSrcSet && (
+        <>
+          <source
+            type="image/avif"
+            srcSet={srcSetFor(url, preset, "avif", rotationDeg)}
+            sizes={sizes}
+          />
+          <source
+            type="image/webp"
+            srcSet={srcSetFor(url, preset, "webp", rotationDeg)}
+            sizes={sizes}
+          />
+        </>
+      )}
       <img
         ref={imgRef}
-        src={srcFor(url, fallbackW, fallbackQ, undefined, rotationDeg)}
-        srcSet={srcSetFor(url, preset, undefined, rotationDeg)}
+        src={
+          mediumUrl ??
+          srcFor(url, fallbackW, fallbackQ, undefined, rotationDeg)
+        }
+        srcSet={
+          generatedSrcSet ||
+          (mediumUrl
+            ? undefined
+            : srcSetFor(url, preset, undefined, rotationDeg))
+        }
         sizes={sizes}
         alt={alt}
         className={className}

@@ -6,6 +6,11 @@ import {
   siteDescriptionFrom,
 } from "./site-defaults";
 import { imageUrlWithParams } from "../shared/image-url";
+import { heroImageSizes } from "../shared/hero-responsive";
+import {
+  analyticsPagePath,
+  isAnalyticsDynamicPath,
+} from "../shared/analytics-path";
 import {
   composeBaseTitle,
   composeHomeTitle,
@@ -19,6 +24,12 @@ import {
   DEFAULT_SERVICE_PLANS,
   DEFAULT_SERVICE_PRICE_JPY,
 } from "../shared/service-defaults";
+import {
+  policyDocument,
+  policyPath,
+  policyRoute,
+  SALES_DISCLOSURE_PENDING,
+} from "../shared/policy-content";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
 // Pure HTML-escaping helpers for server-side OGP / meta-tag injection. Extracted
@@ -83,6 +94,12 @@ const PAGE_TITLES: Record<string, string> = {
   // i18n Phase 3 スライス1: /en/about・/en/contact の英語URL
   "/en/about": PAGE_TITLE.about,
   "/en/contact": PAGE_TITLE.contactEn,
+  "/privacy": PAGE_TITLE.privacy,
+  "/privacy/en": PAGE_TITLE.privacyEn,
+  "/terms": PAGE_TITLE.terms,
+  "/terms/en": PAGE_TITLE.termsEn,
+  "/legal": PAGE_TITLE.legal,
+  "/legal/en": PAGE_TITLE.legalEn,
   // admin は正常表示されるページなので Not Found title にしない。検索除外は
   // 下の startsWith("/admin") noindex 条件が isKnown と無関係に維持する。
   "/admin": "Admin",
@@ -152,6 +169,8 @@ function pageDescriptionFor(
   pathname: string,
   name: string,
 ): string {
+  const policy = policyRoute(pathname);
+  if (policy) return policyDocument(policy.kind, policy.language).description;
   if (ENGLISH_PUBLIC_PATHS.has(pathname)) {
     // 英語の設定キーは増やさない（i18n Phase 3 の判断のまま）。代わりに、
     // **既に入力されている英語の本文**から説明文を作る。定型文より中身があり、
@@ -178,7 +197,14 @@ function pageDescriptionFor(
 export function publicPageFallbackText(
   settings: Record<string, string>,
   pathname: string,
-  override?: { title?: string; desc?: string; body?: string },
+  override?: {
+    title?: string;
+    desc?: string;
+    body?: string;
+    /** 段落を呼び出し側が組み立て済みのとき（写真ページ）。 */
+    bodyParagraphs?: string[];
+  },
+  fallbackOrigin = "",
 ): { heading: string; description: string; paragraphs: string[] } {
   const name = displayNameFrom(settings);
   if (SERVICE_LP_PATHS.has(pathname)) {
@@ -191,6 +217,31 @@ export function publicPageFallbackText(
       // 含まれるかは、買う前に探している人がいちばん読みたい所。
       paragraphs:
         pathname === "/portfolio-kit" ? servicePlanParagraphs(settings) : [],
+    };
+  }
+  const policy = policyRoute(pathname);
+  if (policy) {
+    const doc = policyDocument(policy.kind, policy.language);
+    const includeService = resolveServiceVisibility(
+      settings.servicePageMode,
+      siteUrlFrom(settings, fallbackOrigin),
+      "",
+    );
+    const paragraphs = [
+      doc.lead,
+      ...doc.sections
+        .filter((section) => !section.serviceOnly || includeService)
+        .flatMap((section) => [
+          section.heading,
+          ...(section.paragraphs ?? []),
+          ...(section.bullets ?? []),
+          ...(section.rows?.map((row) => `${row.label}: ${row.value}`) ?? []),
+        ]),
+    ];
+    return {
+      heading: doc.title,
+      description: doc.description,
+      paragraphs,
     };
   }
   // 撮影依頼のページ。設定にある依頼の流れと但し書きは、**頼もうとしている人が
@@ -227,6 +278,16 @@ export function publicPageFallbackText(
     };
   }
   if (override?.title) {
+    // 写真1枚ぶんのページ。段落は `photo-page-text.ts` が事実だけで組んである
+    // ので、ここでは触らずそのまま渡す。
+    if (override.bodyParagraphs?.length) {
+      return {
+        heading: override.title,
+        description:
+          override.desc || seriesFallbackDescription(override.title, name),
+        paragraphs: override.bodyParagraphs.filter((t) => t.trim()),
+      };
+    }
     // 作家の言葉（statement）の**全文**をここへ流す。
     //
     // `override.desc` は検索結果に出る一文なので `server.ts` で 200 字に
@@ -355,11 +416,24 @@ function serviceLanguageAlternates(
 
 // i18n Phase 3 スライス1: /about・/contact の JA/EN 相互参照。/profile は
 // /about のエイリアスなので ja 側は常に /about を正とする(canonPath と同じ扱い)。
-const ENGLISH_PUBLIC_PATHS = new Set(["/en/about", "/en/contact"]);
+const ENGLISH_PUBLIC_PATHS = new Set([
+  "/en/about",
+  "/en/contact",
+  "/privacy/en",
+  "/terms/en",
+  "/legal/en",
+]);
 
 function publicPageLanguageAlternates(
   pathname: string,
 ): { ja: string; en: string } | null {
+  const policy = policyRoute(pathname);
+  if (policy) {
+    return {
+      ja: policyPath(policy.kind, "ja"),
+      en: policyPath(policy.kind, "en"),
+    };
+  }
   if (pathname === "/about" || pathname === "/profile" || pathname === "/en/about") {
     return { ja: "/about", en: "/en/about" };
   }
@@ -395,10 +469,14 @@ export function injectOgp(
     desc?: string;
     image?: string;
     imageRotationDeg?: number | null;
+    /** False keeps a real, shareable page out of search without treating it as 404. */
+    indexable?: boolean;
   },
   fallbackOrigin = "",
   heroRotationDeg?: number | null,
   heroPreloadUrl?: string,
+  heroPreloadSrcSet?: string,
+  heroPreloadEnabled = true,
 ): string {
   const siteName = displayNameEnFrom(settings);
   const subtitle = settings.heroSubtitle || "Photography";
@@ -425,6 +503,12 @@ export function injectOgp(
   );
   const isServiceHost = isServiceSiteUrl(siteUrl);
   const isServicePath = SERVICE_PATHS.has(pathname);
+  const isServiceLegalPath = pathname === "/legal" || pathname === "/legal/en";
+  // 販売者情報・税区分・キャンセル条件に Pending が残る暫定版は、購入前に
+  // リンクから読める必要はある一方、検索入口としてはまだ推さない。
+  // 本人確認済みの表示へ差し替えた時点で、このガードを外して indexable にする。
+  const isPendingSalesDisclosure =
+    isServiceLegalPath && SALES_DISCLOSURE_PENDING;
   const isBuyerStartPath = SERVICE_START_PATHS.has(pathname);
   const isEnglishServicePath = ENGLISH_SERVICE_PATHS.has(pathname);
   const isService = isServicePath && isServiceSite;
@@ -446,6 +530,12 @@ export function injectOgp(
     "/contact",
     "/en/about",
     "/en/contact",
+    "/privacy",
+    "/privacy/en",
+    "/terms",
+    "/terms/en",
+    "/legal",
+    "/legal/en",
     "/portfolio-kit",
     "/portfolio-kit/en",
     "/portfolio-kit/start",
@@ -457,11 +547,14 @@ export function injectOgp(
   // /series/:slug is indexable only when the slug resolved to a real published
   // series (override.title set by the caller). Unknown/unpublished slugs render
   // the SPA's not-found view — without this they'd look like normal share cards.
+  const isPhotoDetail = /^\/photo\/\d+$/.test(pathname);
   const isKnown =
     KNOWN_ROUTES.includes(pathname) ||
     ((pathname.startsWith("/series/") || pathname.startsWith("/work/")) &&
-      !!override?.title);
-  const serviceUnavailable = isServicePath && !isServiceSite;
+      !!override?.title) ||
+    (isPhotoDetail && !!override?.title);
+  const serviceUnavailable =
+    (isServicePath || isServiceLegalPath) && !isServiceSite;
   const missingPublicPage = !isKnown || serviceUnavailable;
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = missingPublicPage
@@ -532,26 +625,43 @@ export function injectOgp(
   out = setAttr(out, /(<meta\s+name="author"\s+content=")[^"]*(")/, siteName);
   // Keep the admin app and unknown (404 fallback) paths out of search indexes so
   // junk URLs aren't indexed with the homepage's title (defence in depth with robots.txt).
+  const explicitNoindex = override?.indexable === false;
+  const realPageNoindex = explicitNoindex || isPendingSalesDisclosure;
   if (
     pathname.startsWith("/admin") ||
     !isKnown ||
     serviceUnavailable ||
-    isBuyerStartPath
+    isBuyerStartPath ||
+    realPageNoindex
   ) {
     out = setAttr(
       out,
       /(<meta\s+name="robots"\s+content=")[^"]*(")/,
-      "noindex, nofollow",
+      realPageNoindex && isKnown && !serviceUnavailable
+        ? "noindex, follow"
+        : "noindex, nofollow",
     );
   }
-  // Negation of the noindex condition above — pages we actually advertise. Used to
-  // skip JSON-LD + GA4 on /admin and soft-404s (no analytics pollution from the
-  // admin app; no structured data on pages marked noindex).
+  // Negation of the noindex condition above — pages we actually advertise.
+  // Structured data stays limited to this set.
   const indexable =
     !pathname.startsWith("/admin") &&
     isKnown &&
     !serviceUnavailable &&
-    !isBuyerStartPath;
+    !isBuyerStartPath &&
+    !realPageNoindex;
+  // Analytics may cover real purchase/support steps that intentionally use
+  // noindex. Admin, unavailable service routes, and genuine 404s stay excluded.
+  const analyticsEnabled =
+    !pathname.startsWith("/admin") && isKnown && !serviceUnavailable;
+  // A detail lookup can fail transiently while the browser's API retry later
+  // succeeds. Bootstrap GA (without a hit) for syntactically valid detail URLs
+  // so the client can recover that initial page view after the real record is
+  // confirmed. Genuine 404s never dispatch the ready event and remain uncounted.
+  const analyticsBootstrapEnabled =
+    !pathname.startsWith("/admin") &&
+    !serviceUnavailable &&
+    (isKnown || isAnalyticsDynamicPath(pathname));
   // Canonical + og:url — per route, not always the homepage
   out = setAttr(out, /(<link\s+rel="canonical"\s+href=")[^"]*(")/, canonical);
   out = setAttr(
@@ -644,11 +754,15 @@ export function injectOgp(
     : "";
   // 英語文が一つも入力されていないサイト(配布テンプレート既定)では hreflang を
   // 出さない — 内容が日本語のままの /en/* を「英語版」と主張しないため。
-  const alternates = isService
-    ? serviceLanguageAlternates(pathname)
-    : hasPublicEnglishContent(settings)
+  const alternates = serviceUnavailable
+    ? null
+    : policyRoute(pathname)
       ? publicPageLanguageAlternates(pathname)
-      : null;
+      : isService
+        ? serviceLanguageAlternates(pathname)
+        : hasPublicEnglishContent(settings)
+          ? publicPageLanguageAlternates(pathname)
+          : null;
   if (alternates) {
     headInjection += `\n  <link rel="alternate" hreflang="ja" href="${escapeHtml(`${siteUrl}${alternates.ja}`)}">`;
     headInjection += `\n  <link rel="alternate" hreflang="en" href="${escapeHtml(`${siteUrl}${alternates.en}`)}">`;
@@ -663,14 +777,16 @@ export function injectOgp(
   // /api/hero-photos round-trip — too late for the largest paint. Inject a preload
   // (imagesrcset/imagesizes matched to <HeroCarousel>/<HeroSingle> exactly) so the
   // browser starts the hero download straight from the HTML, parallel to the JS.
-  if (pathname === "/" && heroImg) {
+  if (pathname === "/" && heroImg && heroPreloadEnabled) {
     // Must match HERO_WIDTHS in lib/picture.ts exactly — a mismatched URL
     // makes the preload useless and the hero downloads twice.
-    const heroSizes =
-      settings.heroMode === "single"
-        ? "100vw"
-        : "(min-width: 1200px) 1152px, 100vw";
-    if (heroPreloadUrl) {
+    const heroSizes = heroImageSizes(
+      settings.heroMode,
+      settings.heroDisplayMode,
+    );
+    if (heroPreloadUrl && heroPreloadSrcSet) {
+      headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroPreloadUrl)}" imagesrcset="${escapeHtml(heroPreloadSrcSet)}" imagesizes="${escapeHtml(heroSizes)}">`;
+    } else if (heroPreloadUrl) {
       headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroPreloadUrl)}">`;
     } else {
       const heroHref = imageUrlWithParams(heroImg, {
@@ -687,15 +803,28 @@ export function injectOgp(
       headInjection += `\n  <link rel="preload" as="image" fetchpriority="high" href="${escapeHtml(heroHref)}" imagesrcset="${escapeHtml(heroSrcset)}" imagesizes="${escapeHtml(heroSizes)}">`;
     }
   }
-  // GA4 — only on indexable public pages (don't track the admin app or soft-404s).
+  // GA4 — real public pages only (don't track the admin app or soft-404s).
   // インライン <script> の JS 文字列リテラルに埋め込むため、escapeHtml では
   // 防げない値(改行・バックスラッシュ等)を形式チェックで締め出す。
   // 実在の GA4 ID は G-XXXXXXXXXX 形式のみ。
   const rawGaId = gaMeasurementIdForSite(siteUrl);
   const gaMeasurementId = /^G-[A-Z0-9]+$/.test(rawGaId) ? rawGaId : "";
-  if (indexable && gaMeasurementId) {
+  if (analyticsBootstrapEnabled && gaMeasurementId) {
     const safeGaId = escapeHtml(gaMeasurementId);
-    headInjection += `\n  <script async src="https://www.googletagmanager.com/gtag/js?id=${safeGaId}"></script>\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${safeGaId}');</script>`;
+    const analyticsPath = analyticsPagePath(canonPath);
+    const inlineJson = (value: string) =>
+      JSON.stringify(value)
+        .replace(/</g, "\\u003c")
+        .replace(/\u2028/g, "\\u2028")
+        .replace(/\u2029/g, "\\u2029");
+    const safePath = inlineJson(analyticsPath);
+    const safeLocation = inlineJson(`${siteUrl}${analyticsPath}`);
+    const initialPageView = analyticsEnabled
+      ? `window.__portfolioInitialPageViewSent=true;gtag('event','page_view',{page_path:${safePath},page_location:${safeLocation},page_title:document.title});`
+      : "window.__portfolioInitialPageViewSent=false;";
+    // Disable GA's implicit hit: it would include the raw query string and a
+    // concrete `/photo/123` id. Send one explicit, sanitized page view instead.
+    headInjection += `\n  <script async src="https://www.googletagmanager.com/gtag/js?id=${safeGaId}"></script>\n  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${safeGaId}',{send_page_view:false});${initialPageView}</script>`;
   }
   // Use a function replacement so `$` in the injected markup isn't treated as a special pattern.
   out = out.replace("</head>", () => `${headInjection}\n  </head>`);
@@ -966,7 +1095,6 @@ function buildJsonLd(
         priceCurrency: "JPY",
         availability: "https://schema.org/InStock",
         url: lpUrl,
-        seller: { "@type": "Person", name },
       },
     });
     // FAQ は日本語でしか書かれていない（英語化されるのは料金プランの文だけ）。
@@ -1033,6 +1161,27 @@ function buildJsonLd(
           item: `${siteUrl}${pathname}`,
         },
       ],
+    });
+  }
+  // Selected photo landing pages get an ImageObject only after the server has
+  // passed the same editorial indexability gate used by robots and sitemap.
+  // Unedited share pages never reach buildJsonLd because they are noindex.
+  if (/^\/photo\/\d+$/.test(pathname) && series?.title && series.image) {
+    graph.push({
+      "@type": "ImageObject",
+      name: series.title,
+      ...(series.desc ? { caption: series.desc, description: series.desc } : {}),
+      contentUrl: absoluteUrl(
+        siteUrl,
+        imageUrlWithParams(series.image, {
+          w: 1600,
+          q: 88,
+          rotationDeg: series.imageRotationDeg,
+        }),
+      ),
+      url: `${siteUrl}${pathname}`,
+      creator: { "@type": "Person", name },
+      isPartOf: { "@type": "ImageGallery", url: `${siteUrl}/gallery` },
     });
   }
   const json = JSON.stringify({

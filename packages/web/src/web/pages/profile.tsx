@@ -8,12 +8,46 @@ import { usePageLanguage } from "../hooks/usePageLanguage";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
 
+const CJK_TEXT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+// EN settings are owner-entered text. A pasted bilingual draft used to expose
+// its Japanese/Traditional-Chinese paragraphs on /en/about. Keep complete
+// Latin-script lines and omit untranslated lines instead of switching the page
+// language mid-way through the biography.
+function englishOnly(value: string | null | undefined): string {
+  return (value ?? "")
+    .split(/\n{2,}/)
+    .map((paragraph) =>
+      paragraph
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line && !CJK_TEXT.test(line))
+        .join("\n"),
+    )
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function englishInline(
+  value: string | null | undefined,
+  fallback: string,
+): string {
+  return englishOnly(value).replace(/\s*\n+\s*/g, " ").trim() || fallback;
+}
+
+const readableBodyStyle = {
+  fontSize: "max(0.875rem, var(--body-size, 0.875rem))",
+  lineHeight: "max(1.75, var(--body-leading, 2))",
+  letterSpacing: "var(--body-tracking, 0.01em)",
+} as const;
+
 export default function ProfilePage({
   language = "ja",
 }: {
   language?: "ja" | "en";
 }) {
   usePageLanguage(language);
+  const english = language === "en";
   const [photoBroken, setPhotoBroken] = useState(false);
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
@@ -22,7 +56,10 @@ export default function ProfilePage({
   const data = settings;
 
   // J1: latest note posts (server-fetched + cached). Empty on failure/disabled.
-  const noteOn = data?.noteEnabled === "on";
+  // note.com entries currently have no translated feed. Showing their Japanese
+  // titles and excerpts on the English profile recreates the same language leak
+  // even when the biography itself is translated.
+  const noteOn = !english && data?.noteEnabled === "on";
   const { data: noteData } = useQuery({
     queryKey: ["note-posts"],
     queryFn: async () => jsonOrThrow(await api["note-posts"].$get()),
@@ -34,22 +71,30 @@ export default function ProfilePage({
   // K1: print store link (external). Shown only when enabled + URL present.
   const printOn = data?.printEnabled === "on" && !!data?.printStoreUrl;
 
-  // i18n Phase 3: English page falls back to the JP copy when no EN text is set,
-  // so /en/about never goes blank while the owner is still translating.
-  const bio =
-    language === "en"
-      ? data?.profileBioEn || data?.profileBio || ""
-      : (data?.profileBio ?? "");
-  const statement =
-    language === "en"
-      ? data?.profileStatementEn || data?.profileStatement || ""
-      : (data?.profileStatement ?? "");
+  const bio = english
+    ? englishOnly(data?.profileBioEn)
+    : (data?.profileBio ?? "");
+  const statement = english
+    ? englishOnly(data?.profileStatementEn)
+    : (data?.profileStatement ?? "");
   const gear = (data?.profileGear ?? "")
     .split("\n")
     .map((l) => l.trim())
-    .filter(Boolean);
+    .filter((line) => line && (!english || !CJK_TEXT.test(line)));
   const nameJa = data?.profileName ?? CLIENT_SITE_FALLBACKS.profileName;
   const nameEn = data?.profileNameEn ?? CLIENT_SITE_FALLBACKS.profileNameEn;
+  const displayName = english
+    ? englishInline(nameEn, CLIENT_SITE_FALLBACKS.profileNameEn)
+    : nameJa;
+  const pageLabel = english
+    ? englishInline(data?.profileLabel, "About")
+    : data?.profileLabel ?? "Profile";
+  const printDescription = english
+    ? englishOnly(data?.printDescription)
+    : data?.printDescription ?? "";
+  const printLabel = english
+    ? englishInline(data?.printStoreLabel, "View prints")
+    : data?.printStoreLabel || "プリントを購入する";
 
   const hasSns =
     data?.profileInstagram || data?.profileTwitter || data?.profileNote;
@@ -77,7 +122,7 @@ export default function ProfilePage({
       sizes={
         layout === "stack" ? "(min-width: 768px) 768px, 90vw" : "(min-width: 768px) 300px, 90vw"
       }
-      alt={nameJa}
+      alt={displayName}
       decoding="async"
       fetchPriority="high"
       onError={() => setPhotoBroken(true)}
@@ -115,6 +160,7 @@ export default function ProfilePage({
 
   return (
     <section
+      lang={language}
       /* note の記事一覧は設定より後に届く。届いた瞬間に JOURNAL の段が生まれ、
          **その時点で画面に出ている締めの帯を押しのける**（実測 2026-08-31:
          帯が y=537 から画面外へ飛び、ズレ 0.063）。基準内ではあるが、読んで
@@ -125,7 +171,7 @@ export default function ProfilePage({
       }`}
       ref={entranceRef}
     >
-      <PageTitle className="mb-12">{data?.profileLabel ?? "Profile"}</PageTitle>
+      <PageTitle className="mb-12">{pageLabel}</PageTitle>
 
       <div
         className={
@@ -160,11 +206,13 @@ export default function ProfilePage({
                   : "var(--heading-size, 1.25rem)",
             }}
           >
-            {nameJa}
+            {displayName}
           </h2>
-          <p className="font-en text-sm tracking-[0.04em] text-[color:var(--text-quiet)] mt-1 break-words page-entrance page-entrance-delay-1">
-            {nameEn}
-          </p>
+          {!english && (
+            <p className="font-en text-sm tracking-[0.04em] text-[color:var(--text-quiet)] mt-1 break-words page-entrance page-entrance-delay-1">
+              {nameEn}
+            </p>
+          )}
 
           {bio ? (
             <div className="mt-8 space-y-3 page-entrance page-entrance-delay-2">
@@ -174,12 +222,8 @@ export default function ProfilePage({
                 .map((line, i) => (
                   <p
                     key={i}
-                    className="text-[color:var(--text-quiet)] break-words ja-prose"
-                    style={{
-                      fontSize: "var(--body-size, 0.875rem)",
-                      lineHeight: "var(--body-leading, 2)",
-                      letterSpacing: "var(--body-tracking, 0.01em)",
-                    }}
+                    className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
+                    style={readableBodyStyle}
                   >
                     {line}
                   </p>
@@ -189,13 +233,11 @@ export default function ProfilePage({
             <div className="mt-8 page-entrance page-entrance-delay-2">
               <p
                 className="text-[color:var(--text-quiet)] italic break-words"
-                style={{
-                  fontSize: "var(--body-size, 0.875rem)",
-                  lineHeight: "var(--body-leading, 2)",
-                  letterSpacing: "var(--body-tracking, 0.01em)",
-                }}
+                style={readableBodyStyle}
               >
-                {settings?.heroSubtitle || "Photographer"}
+                {english
+                  ? englishInline(settings?.heroSubtitle, "Photographer")
+                  : settings?.heroSubtitle || "Photographer"}
               </p>
             </div>
           )}
@@ -213,12 +255,8 @@ export default function ProfilePage({
                   .map((para, i) => (
                     <p
                       key={i}
-                      className="text-[color:var(--text-quiet)] text-pretty break-words ja-prose"
-                      style={{
-                        fontSize: "var(--body-size, 0.875rem)",
-                        lineHeight: "var(--body-leading, 2)",
-                        letterSpacing: "var(--body-tracking, 0.01em)",
-                      }}
+                      className={`text-[color:var(--text-quiet)] text-pretty break-words ${english ? "font-en" : "ja-prose"}`}
+                      style={readableBodyStyle}
                     >
                       {para.replace(/\n/g, " ")}
                     </p>
@@ -261,7 +299,7 @@ export default function ProfilePage({
                   rel="noopener noreferrer"
                   className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
-                  {data?.snsLabelInstagram ?? "Instagram"}
+                  {english ? "Instagram" : data?.snsLabelInstagram ?? "Instagram"}
                 </a>
               )}
               {data?.profileTwitter && (
@@ -271,7 +309,7 @@ export default function ProfilePage({
                   rel="noopener noreferrer"
                   className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
-                  {data?.snsLabelTwitter ?? "X"}
+                  {english ? "X" : data?.snsLabelTwitter ?? "X"}
                 </a>
               )}
               {data?.profileNote && (
@@ -281,7 +319,7 @@ export default function ProfilePage({
                   rel="noopener noreferrer"
                   className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
-                  {data?.snsLabelNote ?? "note"}
+                  {english ? "note" : data?.snsLabelNote ?? "note"}
                 </a>
               )}
             </div>
@@ -375,25 +413,22 @@ export default function ProfilePage({
           <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-4">
             Prints
           </h3>
-          {data?.printDescription && (
+          {printDescription && (
             <p
-              className="text-[color:var(--text-quiet)] mb-5 whitespace-pre-line break-words ja-prose"
-              style={{
-                fontSize: "var(--body-size, 0.875rem)",
-                lineHeight: "var(--body-leading, 2)",
-                letterSpacing: "var(--body-tracking, 0.01em)",
-              }}
+              className={`text-[color:var(--text-quiet)] mb-5 whitespace-pre-line break-words ${english ? "font-en" : "ja-prose"}`}
+              style={readableBodyStyle}
             >
-              {data.printDescription}
+              {printDescription}
             </p>
           )}
           <a
             href={safeHref(data?.printStoreUrl ?? "")}
             target="_blank"
             rel="noopener noreferrer"
+            data-analytics-event="print_store_click"
             className="works-cta font-en"
           >
-            {data?.printStoreLabel || "プリントを購入する"}
+            {printLabel}
           </a>
         </div>
       )}
@@ -404,7 +439,7 @@ export default function ProfilePage({
           外した）。note の記事が後から届くと JOURNAL の段が生まれ、**画面に
           出ている帯を押しのける**（実測: 帯が y=537 から画面外へ）。
           出そろってから出せば、動くものが無い。 */}
-      {(!noteOn || noteData !== undefined) && <InquiryCta />}
+      {(!noteOn || noteData !== undefined) && <InquiryCta language={language} />}
     </section>
   );
 }

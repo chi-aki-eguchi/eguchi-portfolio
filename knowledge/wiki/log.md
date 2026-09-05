@@ -69,7 +69,7 @@ moving `last_verified` and logging it here. The date alone is not enough.
 
 ### 2026-08-20 — Reading-layer audit: two pages left the wiki, one page corrected
 
-Acting on `docs/specs/reading-layer-audit-2026-08.md`.
+Acting on `docs/archive/audits/reading-layer-audit-2026-08.md`.
 
 - **Moved out of the wiki** (now history, not wiki pages):
   `pages/night-run.md` → `docs/archive/night-run.md` (it had marked itself

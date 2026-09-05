@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "cd packages/web && bunx vite",
-    "start": "pm2 delete web-app 2>/dev/null || true; pm2 start ecosystem.config.cjs --update-env",
+    "start": "node scripts/start-pm2.mjs",
     "deploy:runable:legacy": "bash docs/archive/deploy.sh",
     "build": "turbo build",
     "build:web": "cd packages/web && bunx vite build",
@@ -18,7 +18,7 @@
     "lint:fix": "oxlint . --fix --deny-warnings --no-error-on-unmatched-pattern",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
-    "test:tools": "node --test .claude/hooks/credit-status.test.mjs scripts/ai/handoff-tools.test.mjs scripts/ai/check-wiki-freshness.test.mjs scripts/ai/vault-context.test.mjs",
+    "test:tools": "node --test .claude/hooks/credit-status.test.mjs scripts/ai/handoff-tools.test.mjs scripts/ai/check-wiki-freshness.test.mjs scripts/ai/vault-context.test.mjs scripts/start-pm2.test.mjs",
     "check:postgres-schema": "bun packages/web/scripts/check-postgres-schema.ts",
     "check:wiki-freshness": "node scripts/ai/check-wiki-freshness.mjs",
     "check": "bun run check:postgres-schema && bun run check:migrations && bun run typecheck && bun run lint && bun run test && bun run test:tools && bun run build && bun run check:wiki-freshness",

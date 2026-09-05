@@ -1014,6 +1014,10 @@ const ADMIN_PHASE_2B_JA = {
       summaryFullscreen: (modeName: string) => `${modeName}・フルスクリーン`,
       summaryNormal: (modeName: string, height: string) =>
         `${modeName}・通常・高さ${height}%`,
+      summaryComposed: (modeName: string, height?: string) =>
+        height
+          ? `${modeName}・高さ${height}%`
+          : `${modeName}・レイアウト既定`,
       modeLabel: "表示モード",
       modeHint:
         "カルーセル/1枚絵=従来 / 静謐グリッド・エディトリアル・没入型=新レイアウト。切替は保存後に反映",
@@ -1031,6 +1035,8 @@ const ADMIN_PHASE_2B_JA = {
         editorial: "大小をつけた写真集風",
         immersive: "画面いっぱいに写真を見せる",
       },
+      composedLayoutHint:
+        "このレイアウトは、画面の使い方と名前の位置が専用の配置に固定されます。高さだけ必要に応じて調整できます。",
       randomLabel: "HEROをランダムに",
       randomHint:
         "「選んだ順」はいま登録してあるHERO写真をその順で出します。「順番だけ」は同じ写真のまま並びを毎回変え、「全体から」は公開中の写真すべてから毎回選びます（HEROに選んでいない写真も出ます）。並びは訪問ごとに変わり、見ている最中は変わりません",
@@ -1066,6 +1072,11 @@ const ADMIN_PHASE_2B_JA = {
       heightLabel: "高さ",
       heightHint:
         "ビューポート高に対する割合。スマホは自動で上限調整。フルスクリーン時は無効",
+      heightComposedHint:
+        "未指定なら、そのレイアウト本来の高さ。必要なときだけ画面高に対する割合を指定できます。",
+      heightLayoutDefault: "現在は、このレイアウト本来の高さです",
+      heightCustomize: "高さを指定",
+      heightResetLayout: "レイアウト本来の高さに戻す",
       titlePositionLabel: "名前の表示位置",
       titlePositionHint:
         "フルスクリーンではカルーセルも1枚絵も写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます",
@@ -2723,6 +2734,10 @@ const ADMIN_PHASE_2B_EN = {
       summaryFullscreen: (modeName: string) => `${modeName} · Fullscreen`,
       summaryNormal: (modeName: string, height: string) =>
         `${modeName} · Normal · Height ${height}%`,
+      summaryComposed: (modeName: string, height?: string) =>
+        height
+          ? `${modeName} · Height ${height}%`
+          : `${modeName} · Layout default`,
       modeLabel: "Display Mode",
       modeHint:
         "Carousel and Single Photo are the original layouts; Quiet Grid, Editorial, and Immersive are newer ones. Switching takes effect after you save.",
@@ -2740,6 +2755,8 @@ const ADMIN_PHASE_2B_EN = {
         editorial: "A photobook-style mix of large and small",
         immersive: "A single photo fills the screen",
       },
+      composedLayoutHint:
+        "This layout has its own fixed screen usage and name placement. Adjust only the height when needed.",
       randomLabel: "Randomise Hero",
       randomHint:
         "“As picked” keeps the hero photos in their saved order. “Order only” keeps the same photos but reshuffles them, and “From all” picks from every published photo (including ones you did not choose for the hero). The order changes per visit and stays put while browsing.",
@@ -2776,6 +2793,11 @@ const ADMIN_PHASE_2B_EN = {
       heightLabel: "Height",
       heightHint:
         "A percentage of the viewport height. The upper limit adjusts automatically on mobile. Not used in Fullscreen mode.",
+      heightComposedHint:
+        "Uses the layout's original height until you set one. When needed, specify a percentage of the viewport height.",
+      heightLayoutDefault: "Using this layout's original height",
+      heightCustomize: "Set a height",
+      heightResetLayout: "Return to the layout's original height",
       titlePositionLabel: "Name Position",
       titlePositionHint:
         "In Fullscreen, this positions the name over both Carousel and Single Photo; in Carousel (Normal), it aligns the name below the photo.",

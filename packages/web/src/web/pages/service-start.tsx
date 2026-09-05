@@ -12,8 +12,8 @@ import { api, jsonOrThrow } from "../lib/api";
 import { usePageLanguage } from "../hooks/usePageLanguage";
 
 const bodyStyle = {
-  fontSize: "var(--body-size, 0.9rem)",
-  lineHeight: "var(--body-leading, 1.95)",
+  fontSize: "max(0.875rem, var(--body-size, 0.9rem))",
+  lineHeight: "max(1.75, var(--body-leading, 1.95))",
   letterSpacing: "var(--body-tracking, 0.01em)",
 } as const;
 

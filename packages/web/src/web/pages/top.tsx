@@ -22,18 +22,26 @@ import {
   clampSetting,
   clampSettingRounded,
 } from "../../shared/setting-ranges";
-import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
+import {
+  objectPositionFromFocal,
+  srcFor,
+  srcSetFor,
+} from "../lib/picture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../../shared/photo-alt";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
+import { heroGeneratedSrcSet } from "../../shared/hero-responsive";
 
 const PortfolioKitExperience = lazy(
   () => import("../components/PortfolioKitExperience"),
 );
 
-function HeroPicture({
+export function HeroPicture({
   url,
+  thumbUrl,
   mediumUrl,
+  width,
+  height,
   rotationDeg,
   focalX,
   focalY,
@@ -48,7 +56,10 @@ function HeroPicture({
   draggable,
 }: {
   url: string;
+  thumbUrl?: string | null;
   mediumUrl?: string | null;
+  width?: number | null;
+  height?: number | null;
   rotationDeg?: number | null;
   focalX?: number | null;
   focalY?: number | null;
@@ -67,10 +78,18 @@ function HeroPicture({
     objectPosition:
       style?.objectPosition ?? objectPositionFromFocal(focalX, focalY),
   };
+  const generatedSrcSet = heroGeneratedSrcSet({
+    url,
+    thumbUrl,
+    mediumUrl,
+    width,
+    height,
+    rotationDeg,
+  });
   const finalSrc = mediumUrl ?? srcFor(url, 1536, 88, undefined, rotationDeg);
   return (
     <picture>
-      {!mediumUrl && (
+      {!mediumUrl && !generatedSrcSet && (
         <>
           <source
             type="image/avif"
@@ -87,7 +106,10 @@ function HeroPicture({
       <img
         src={finalSrc}
         srcSet={
-          mediumUrl ? undefined : srcSetFor(url, "hero", undefined, rotationDeg)
+          generatedSrcSet ||
+          (mediumUrl
+            ? undefined
+            : srcSetFor(url, "hero", undefined, rotationDeg))
         }
         sizes={sizes}
         alt={alt}
@@ -106,7 +128,10 @@ function HeroPicture({
 type HomeHeroPhoto = {
   url: string;
   title: string;
+  thumbUrl?: string | null;
   mediumUrl?: string | null;
+  width?: number | null;
+  height?: number | null;
   rotationDeg?: number | null;
   focalX?: number | null;
   focalY?: number | null;
@@ -217,6 +242,7 @@ function HeroCarousel({
   fxRef,
   photographerName,
   loading = false,
+  fullscreen = false,
   children,
   titlePosition = "center",
 }: {
@@ -225,6 +251,8 @@ function HeroCarousel({
   photographerName?: string;
   /** まだ読み込み中か。読み込み中と「本当に0枚」を分けるために要る。 */
   loading?: boolean;
+  /** Fullscreen uses the entire viewport rather than the normal 1152px stage. */
+  fullscreen?: boolean;
   /** Fullscreen only: the name is overlaid inside the photograph. */
   children?: React.ReactNode;
   titlePosition?: string;
@@ -445,12 +473,19 @@ function HeroCarousel({
                 >
                   <HeroPicture
                     url={p.url}
+                    thumbUrl={p.thumbUrl}
                     mediumUrl={p.mediumUrl}
+                    width={p.width}
+                    height={p.height}
                     rotationDeg={p.rotationDeg}
                     focalX={p.focalX}
                     focalY={p.focalY}
                     alt={photoAltText(p, { photographerName })}
-                    sizes="(min-width: 1200px) 1152px, 100vw"
+                    sizes={
+                      fullscreen
+                        ? "100vw"
+                        : "(min-width: 1200px) 1152px, 100vw"
+                    }
                     className="w-full h-full object-contain"
                     decoding={i === 0 ? "sync" : "async"}
                     fetchPriority={i === 0 ? "high" : "low"}
@@ -554,7 +589,10 @@ function HeroSingle({
         <div className="hero-photo-reveal absolute inset-0">
           <HeroPicture
             url={photo.url}
+            thumbUrl={photo.thumbUrl}
             mediumUrl={photo.mediumUrl}
+            width={photo.width}
+            height={photo.height}
             rotationDeg={photo.rotationDeg}
             focalX={photo.focalX}
             focalY={photo.focalY}
@@ -870,7 +908,10 @@ function HomeQuietGrid({
             <div ref={heroFxRef} className="hero-fx-layer hero-photo-reveal absolute inset-0">
               <HeroPicture
                 url={heroPhoto.url}
+                thumbUrl={heroPhoto.thumbUrl}
                 mediumUrl={heroPhoto.mediumUrl}
+                width={heroPhoto.width}
+                height={heroPhoto.height}
                 rotationDeg={heroPhoto.rotationDeg}
                 focalX={heroPhoto.focalX}
                 focalY={heroPhoto.focalY}
@@ -1010,7 +1051,10 @@ function HomeEditorial({
           {heroPhoto && (
             <HeroPicture
               url={heroPhoto.url}
+              thumbUrl={heroPhoto.thumbUrl}
               mediumUrl={heroPhoto.mediumUrl}
+              width={heroPhoto.width}
+              height={heroPhoto.height}
               rotationDeg={heroPhoto.rotationDeg}
               focalX={heroPhoto.focalX}
               focalY={heroPhoto.focalY}
@@ -1149,7 +1193,10 @@ function HomeImmersive({
           {heroPhoto ? (
             <HeroPicture
               url={heroPhoto.url}
+              thumbUrl={heroPhoto.thumbUrl}
               mediumUrl={heroPhoto.mediumUrl}
+              width={heroPhoto.width}
+              height={heroPhoto.height}
               rotationDeg={heroPhoto.rotationDeg}
               focalX={heroPhoto.focalX}
               focalY={heroPhoto.focalY}
@@ -1595,6 +1642,7 @@ export default function TopPage() {
             fxRef={heroFxRef}
             photographerName={photographerName}
             loading={heroLoading || photosLoading}
+            fullscreen={heroFullscreen}
             titlePosition={heroTitlePosition}
           >
             {heroFullscreen &&

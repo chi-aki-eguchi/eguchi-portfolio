@@ -1,17 +1,7 @@
 ---
 paths:
-  - "**/*.ts"
-  - "**/*.tsx"
+  - "packages/web/src/api/**"
+  - "packages/web/src/server.ts"
 ---
-`Content-Encoding` を付けるのは `packages/web/src/api/http-compression.ts` **だけ**。
-他の場所で手を出さない。
-
-禁止の理由は「本文を圧縮せずにヘッダだけ付ける」「既に付いている応答へ重ねる」で、
-これが 2026-06-13 の二重圧縮事故。
-
-**「Railway プロキシが圧縮するから origin は不要」は誤り**（2026-08-23 実測で訂正）。
-プロキシは HTML と `/api` を gzip で圧縮するが、`/assets/*` は圧縮しない
-（immutable で edge にキャッシュされる分）。だから origin 側でも圧縮している。
-測り方は `docs/agents/measuring.md`。
-
-同様に、HTML レスポンスには必ず `Cache-Control: no-store` を設定する（OGP インジェクションの前提）。`server.ts` の既存パターンを踏襲する。
+圧縮処理は `api/http-compression.ts` で本文とヘッダーを一緒に扱う。ヘッダーだけの追加や二重圧縮を避ける。
+ヘッダーの読み取り・テスト・圧縮モジュールの修正は可能。詳細な確認方法は `docs/checklists.md` の画像節。

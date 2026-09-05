@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
  * z-50 against this z-40 — the button rendered but nothing could click it. The
  * `.back-to-top` class exists so styles.css can move it clear per nav position.
  */
-export function BackToTop() {
+export function BackToTop({ language = "ja" }: { language?: "ja" | "en" }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function BackToTop() {
     <button
       type="button"
       onClick={handleClick}
-      aria-label="ページ上部へ戻る"
+      aria-label={language === "en" ? "Back to top" : "ページ上部へ戻る"}
       aria-hidden={!show}
       tabIndex={show ? 0 : -1}
       className={`back-to-top fixed z-40 w-10 h-10 flex items-center justify-center rounded-full border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--background-rgb),0.7)] backdrop-blur-md text-[color:var(--text-quiet)] transition-[opacity,transform,color,border-color] duration-300 ease-[var(--ease-quart)] hover:text-[rgba(var(--foreground-rgb),0.85)] hover:border-[rgba(var(--foreground-rgb),0.28)] ${

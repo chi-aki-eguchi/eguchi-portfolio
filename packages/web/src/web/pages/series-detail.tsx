@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ContentStatus } from "../components/ContentStatus";
 import { Link, useParams } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
@@ -10,6 +11,7 @@ import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { SeriesCover } from "../components/SeriesCover";
 import { SeriesColophon } from "../components/SeriesColophon";
+import { signalAnalyticsPageReady } from "../lib/analytics";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -32,7 +34,7 @@ export default function SeriesDetailPage() {
   });
 
   // N: series pages get their own layout setting.
-  const { data: settings } = useQuery({
+  const { data: settings, isError: settingsError } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
@@ -74,6 +76,18 @@ export default function SeriesDetailPage() {
     : null;
 
   usePageTitle(data?.series.title);
+  useEffect(() => {
+    if (!data || (!settings && !settingsError)) return;
+    const resolvedShelf = data.series.kind === "work" ? "work" : "series";
+    const timer = window.setTimeout(
+      () =>
+        signalAnalyticsPageReady(
+          `/${resolvedShelf}/${encodeURIComponent(data.series.slug)}`,
+        ),
+      0,
+    );
+    return () => window.clearTimeout(timer);
+  }, [data, settings, settingsError]);
 
   const entranceRef = usePageEntrance([data]);
   // PhotoGallery tiles use fade-in-item (opacity:0 until visible). usePageEntrance

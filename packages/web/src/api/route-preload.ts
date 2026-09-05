@@ -39,12 +39,21 @@ export const ROUTE_MODULES: Record<string, string> = {
   "/en/about": "src/web/pages/profile.tsx",
   "/contact": "src/web/pages/contact.tsx",
   "/en/contact": "src/web/pages/contact.tsx",
+  "/privacy": "src/web/pages/policy.tsx",
+  "/privacy/en": "src/web/pages/policy.tsx",
+  "/terms": "src/web/pages/policy.tsx",
+  "/terms/en": "src/web/pages/policy.tsx",
+  "/legal": "src/web/pages/policy.tsx",
+  "/legal/en": "src/web/pages/policy.tsx",
 };
 
 /** `/series/:slug` のように可変部分を持つ経路。 */
 const DYNAMIC_ROUTES: [RegExp, string][] = [
   [/^\/series\/[^/]+$/, "src/web/pages/series-detail.tsx"],
   [/^\/work\/[^/]+$/, "src/web/pages/series-detail.tsx"],
+  // 併走中に追加された写真詳細も、app.tsx の lazy import と同じチャンクへ。
+  // 実在判定と数値idの検証はサーバ側が担い、ここは先読み先だけを決める。
+  [/^\/photo\/[^/]+$/, "src/web/pages/photo-detail.tsx"],
 ];
 
 /**

@@ -6,14 +6,21 @@ import { usePageTitle } from "./hooks/usePageTitle";
 import { PAGE_TITLE } from "../shared/site-title";
 import Layout from "./components/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import type {
+  PolicyKind,
+  PolicyLanguage,
+} from "../shared/policy-content";
+import { PublicAnalytics } from "./components/PublicAnalytics";
 
 // Lazy-load all pages — only the shell is eagerly loaded
 const TopPage = lazy(() => import("./pages/top"));
 const GalleryPage = lazy(() => import("./pages/gallery"));
 const SeriesListPage = lazy(() => import("./pages/series"));
 const SeriesDetailPage = lazy(() => import("./pages/series-detail"));
+const PhotoDetailPage = lazy(() => import("./pages/photo-detail"));
 const ProfilePage = lazy(() => import("./pages/profile"));
 const ContactPage = lazy(() => import("./pages/contact"));
+const PolicyPage = lazy(() => import("./pages/policy"));
 const ServicePage = lazy(() => import("./pages/service"));
 const ServiceStartPage = lazy(() => import("./pages/service-start"));
 const AdminLoginPage = lazy(() => import("./pages/admin-login"));
@@ -55,9 +62,39 @@ function LegacyPortfolioKitRedirect({ to }: { to: string }) {
   return <PageFallback />;
 }
 
+function PublicPolicyRoute({
+  kind,
+  language,
+  title,
+  requiresService = false,
+}: {
+  kind: PolicyKind;
+  language: PolicyLanguage;
+  title: string;
+  requiresService?: boolean;
+}) {
+  const page = (
+    <Layout>
+      <PageTransition>
+        <TitledRoute title={title}>
+          <Suspense fallback={<PageFallback />}>
+            <PolicyPage kind={kind} language={language} />
+          </Suspense>
+        </TitledRoute>
+      </PageTransition>
+    </Layout>
+  );
+  return requiresService ? (
+    <ServiceVisibilityGate>{page}</ServiceVisibilityGate>
+  ) : (
+    page
+  );
+}
+
 function App() {
   return (
     <Provider>
+      <PublicAnalytics />
       <ErrorBoundary>
         <Switch>
           {/* Admin — no layout */}
@@ -91,6 +128,17 @@ function App() {
                     <GalleryPage />
                   </Suspense>
                 </TitledRoute>
+              </PageTransition>
+            </Layout>
+          </Route>
+          {/* 写真1枚ぶんの着地ページ。ここが無いと `/photo/:id` はサーバで
+              実在確認できても、クライアント側に何も描かれない。 */}
+          <Route path="/photo/:id">
+            <Layout>
+              <PageTransition>
+                <Suspense fallback={<PageFallback />}>
+                  <PhotoDetailPage />
+                </Suspense>
               </PageTransition>
             </Layout>
           </Route>
@@ -190,6 +238,50 @@ function App() {
                 </TitledRoute>
               </PageTransition>
             </Layout>
+          </Route>
+          <Route path="/privacy/en">
+            <PublicPolicyRoute
+              kind="privacy"
+              language="en"
+              title={PAGE_TITLE.privacyEn}
+            />
+          </Route>
+          <Route path="/privacy">
+            <PublicPolicyRoute
+              kind="privacy"
+              language="ja"
+              title={PAGE_TITLE.privacy}
+            />
+          </Route>
+          <Route path="/terms/en">
+            <PublicPolicyRoute
+              kind="terms"
+              language="en"
+              title={PAGE_TITLE.termsEn}
+            />
+          </Route>
+          <Route path="/terms">
+            <PublicPolicyRoute
+              kind="terms"
+              language="ja"
+              title={PAGE_TITLE.terms}
+            />
+          </Route>
+          <Route path="/legal/en">
+            <PublicPolicyRoute
+              kind="legal"
+              language="en"
+              title={PAGE_TITLE.legalEn}
+              requiresService
+            />
+          </Route>
+          <Route path="/legal">
+            <PublicPolicyRoute
+              kind="legal"
+              language="ja"
+              title={PAGE_TITLE.legal}
+              requiresService
+            />
           </Route>
           <Route path="/service/start/en">
             <LegacyPortfolioKitRedirect to="/start/en" />

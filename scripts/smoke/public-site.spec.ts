@@ -53,7 +53,8 @@ const PUBLIC_PAGES: PublicPage[] = [
     label: "English About",
     path: "/en/about",
     hasH1: true,
-    readyText: /Journal/,
+    // The English profile intentionally hides untranslated Japanese journal entries.
+    readyText: /This English profile copy/,
   },
   {
     label: "Profile alias",
@@ -1784,7 +1785,9 @@ test.describe("公開サイト — Contact送信の重複防止とフォーカ�
 
         releaseFirstPost();
         await expect(page.locator('p[aria-live="polite"]')).toHaveText(
-          language === "ja" ? "送信しました。" : "Message sent.",
+          language === "ja"
+            ? "送信しました。"
+            : "Thank you. Your message has been sent.",
         );
         await expect.poll(() => posts).toBe(1);
         await expect
@@ -1841,7 +1844,9 @@ test.describe("公開サイト — Contact送信の重複防止とフォーカ�
         });
         await expect.poll(() => posts).toBe(3);
         await expect(page.locator('p[aria-live="polite"]')).toHaveText(
-          language === "ja" ? "送信しました。" : "Message sent.",
+          language === "ja"
+            ? "送信しました。"
+            : "Thank you. Your message has been sent.",
         );
         await expect
           .poll(() =>

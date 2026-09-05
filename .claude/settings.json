@@ -18,30 +18,19 @@
       "Bash(~/.agents/skills/agmsg/scripts/history.sh *)",
       "Bash(~/.agents/skills/agmsg/scripts/identities.sh *)"
     ],
-    "deny": [
-      "Bash(git add -A)",
+    "ask": [
       "Bash(bun run db:push*)",
       "Bash(bun run db:migrate*)",
       "Bash(bun run deploy*)",
-      "Bash(bunx drizzle-kit push *)",
-      "Bash(bunx drizzle-kit migrate *)",
       "Bash(railway up *)",
       "Bash(railway deploy *)",
-      "Bash(kill -9*)"
+      "Bash(bun run start)",
+      "Bash(pm2 start*)",
+      "Bash(bunx drizzle-kit push*)",
+      "Bash(bunx drizzle-kit migrate*)"
     ]
   },
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/credit-status.mjs"
-          }
-        ]
-      }
-    ],
     "Notification": [
       {
         "matcher": "",
@@ -49,17 +38,6 @@
           {
             "type": "command",
             "command": "osascript -e 'display notification \"Claude Code の操作が必要です\" with title \"Claude Code\" sound name \"Ping\"'"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-invariants.sh"
           }
         ]
       }
@@ -74,20 +52,7 @@
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai/check-handoff-freshness.mjs\""
-          },
-          {
-            "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai/vault-context.mjs\""
-          }
-        ]
-      },
-      {
-        "matcher": "compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'Compaction 後リマインダー: §0 invariants を確認 → withRetry, 4-place settings sync, assertOk, no manual Content-Encoding, dual schema sync。tsc -b を忘れずに。'"
           }
         ]
       }

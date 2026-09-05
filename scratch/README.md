@@ -1,7 +1,7 @@
 # Scratch Workspace
 
 Uncommitted workspace for prompts, drafts, and scratch scripts.
-Contents are gitignored except this README.
+Contents are gitignored except this README. Keep active evidence accessible; historical mockups and captures may be compressed under `archive/` after verifying their contents.
 
 ## smoke の失敗記録
 

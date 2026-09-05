@@ -6,6 +6,9 @@ import {
   isKnownSpaPath,
   isSeriesDetailPath,
   normalizeSpaPathname,
+  photoDetailId,
+  isPhotoDetailPath,
+  shouldRedirectEmptyWorkShelf,
 } from "./public-routes";
 
 describe("public SPA route status", () => {
@@ -17,6 +20,12 @@ describe("public SPA route status", () => {
       "/about",
       "/profile",
       "/contact",
+      "/privacy",
+      "/privacy/en",
+      "/terms",
+      "/terms/en",
+      "/legal",
+      "/legal/en",
       "/en/about",
       "/en/contact",
       "/portfolio-kit",
@@ -48,6 +57,17 @@ describe("public SPA route status", () => {
     expect(canonicalPortfolioKitPath("/portfolio-kit")).toBe(
       "/portfolio-kit",
     );
+    expect(canonicalPortfolioKitPath("/profile")).toBe("/about");
+  });
+
+  test("redirects only a confirmed-empty Work shelf", () => {
+    expect(shouldRedirectEmptyWorkShelf("/work", false)).toBe(true);
+    expect(shouldRedirectEmptyWorkShelf("/work/", false)).toBe(true);
+    expect(shouldRedirectEmptyWorkShelf("/work", true)).toBe(false);
+    // Unknown means the availability query failed; do not hide real work during
+    // a transient DB problem.
+    expect(shouldRedirectEmptyWorkShelf("/work", null)).toBe(false);
+    expect(shouldRedirectEmptyWorkShelf("/series", false)).toBe(false);
   });
 
   test("series detail routes depend on whether the slug resolves", () => {
@@ -231,5 +251,39 @@ describe("canonicalHostRedirect", () => {
         "https://akieguchi.com",
       ),
     ).toBeNull();
+  });
+});
+
+// 写真1枚ぶんの着地ページ。存在判定とURL形式をここで固定する。
+describe("photoDetailId", () => {
+  test("/photo/:id を id に割る", () => {
+    expect(photoDetailId("/photo/1607")).toBe(1607);
+    expect(photoDetailId("/photo/1607/")).toBe(1607);
+    expect(isPhotoDetailPath("/photo/1")).toBe(true);
+  });
+
+  test("写真ページでないものは null", () => {
+    for (const p of ["/photo", "/photos/1", "/photo/abc", "/gallery", "/photo/1/2"]) {
+      expect(photoDetailId(p)).toBeNull();
+    }
+  });
+
+  // 数字に見える文字列を無制限に受けると、存在しない巨大な id で
+  // DBを引きにいくページが無限に増える。
+  test("0 と、桁が異常な id は受けない", () => {
+    expect(photoDetailId("/photo/0")).toBeNull();
+    expect(photoDetailId("/photo/01")).toBeNull();
+    expect(photoDetailId("/photo/0000000000000")).toBeNull();
+    expect(photoDetailId("/photo/-1")).toBeNull();
+  });
+
+  test("実在しない写真は 404 のまま（無いものを 200 で返さない）", () => {
+    expect(htmlStatusForSpaPath("/photo/1607", { photoFound: true })).toBe(200);
+    expect(htmlStatusForSpaPath("/photo/1607", { photoFound: false })).toBe(404);
+    expect(htmlStatusForSpaPath("/photo/1607")).toBe(404);
+  });
+
+  test("既知パスとして数え、SPA の 404 に落とさない", () => {
+    expect(isKnownSpaPath("/photo/1607")).toBe(true);
   });
 });

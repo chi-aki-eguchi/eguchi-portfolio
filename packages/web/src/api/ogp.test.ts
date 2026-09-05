@@ -105,6 +105,43 @@ describe("injectOgp robots policy", () => {
     );
   });
 
+  test("photo routes are shareable but noindex until their editorial copy is ready", () => {
+    const thin = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/photo/42",
+      "",
+      {
+      title: "2026年6月に撮影した写真",
+      desc: "フィルム。",
+      image: "/api/images/photos/a.jpg",
+      indexable: false,
+      },
+    );
+    expect(thin).not.toContain("Not Found");
+    expect(robotsOf(thin)).toBe("noindex, follow");
+    expect(thin).not.toContain('"@type":"ImageObject"');
+    expect(thin).toContain("send_page_view:false");
+    expect(thin).toContain("window.__portfolioInitialPageViewSent=true");
+    expect(thin).toContain('page_path:"/photo/:id"');
+    expect(thin).not.toContain('page_path:"/photo/42"');
+
+    const edited = injectOgp(
+      page,
+      { siteUrl: "https://example.com", siteName: "江口秋" },
+      "/photo/43",
+      "",
+      {
+        title: "藍の窓",
+        desc: "藍染めの布が風を受け、午後の光の中でゆっくり揺れている一枚です。",
+        image: "/api/images/photos/b.jpg",
+        indexable: true,
+      },
+    );
+    expect(robotsOf(edited)).toBe("index, follow");
+    expect(edited).toContain('"@type":"ImageObject"');
+  });
+
   test("admin and unknown paths are noindex", () => {
     expect(robotsOf(injectOgp(page, {}, "/admin"))).toBe("noindex, nofollow");
     expect(robotsOf(injectOgp(page, {}, "/admin/login"))).toBe(
@@ -112,6 +149,7 @@ describe("injectOgp robots policy", () => {
     );
     const unknown = injectOgp(page, {}, "/no-such-page");
     expect(robotsOf(unknown)).toBe("noindex, nofollow");
+    expect(unknown).not.toContain("googletagmanager.com");
     expect(unknown).toContain(
       "<title>Not Found | Photographer Name | Photography</title>",
     );
@@ -119,6 +157,28 @@ describe("injectOgp robots policy", () => {
       'og:title" content="Not Found | Photographer Name | Photography"',
     );
     expect(unknown).toContain("お探しのページは見つかりませんでした。");
+  });
+
+  test("a transiently unresolved detail route bootstraps GA without counting a soft-404", () => {
+    const unresolved = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/series/temporarily-unavailable",
+    );
+    expect(robotsOf(unresolved)).toBe("noindex, nofollow");
+    expect(unresolved).toContain("googletagmanager.com");
+    expect(unresolved).toContain("send_page_view:false");
+    expect(unresolved).toContain(
+      "window.__portfolioInitialPageViewSent=false",
+    );
+    expect(unresolved).not.toContain("gtag('event','page_view'");
+
+    const malformed = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/series/too/many/segments",
+    );
+    expect(malformed).not.toContain("googletagmanager.com");
   });
 
   /**
@@ -208,6 +268,63 @@ describe("injectOgp robots policy", () => {
     expect(out).toContain(
       "<title>Gallery | 江口 秋 | Aki Eguchi | Photography</title>",
     );
+  });
+});
+
+describe("injectOgp hero preload", () => {
+  const { injectOgp } = require("./ogp") as typeof import("./ogp");
+  const page = `<html><head><title>t</title>
+    <meta name="description" content="d" />
+    <meta name="author" content="a" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="x" />
+    <meta property="og:url" content="x" />
+    <meta property="og:title" content="x" />
+    <meta property="og:description" content="x" />
+    <meta property="og:site_name" content="x" />
+    <meta name="twitter:title" content="x" />
+    <meta name="twitter:description" content="x" />
+    </head><body></body></html>`;
+
+  test("uses the same generated candidates and layout hint as the rendered hero", () => {
+    const srcSet = [
+      "/api/images/thumbs/a.webp 640w",
+      "/api/images/medium/a.webp 1920w",
+      "/api/images/photos/a.jpg 3200w",
+    ].join(", ");
+    const out = injectOgp(
+      page,
+      { heroMode: "editorial" },
+      "/",
+      "/api/images/medium/a.webp",
+      undefined,
+      "",
+      0,
+      "/api/images/medium/a.webp",
+      srcSet,
+    );
+
+    expect(out).toContain(
+      `href="/api/images/medium/a.webp" imagesrcset="${srcSet}" imagesizes="(min-width: 768px) 55vw, 100vw"`,
+    );
+    expect(out.match(/rel="preload" as="image"/g)).toHaveLength(1);
+  });
+
+  test("does not fall back to a guessed proxy preload when random HERO suppresses it", () => {
+    const out = injectOgp(
+      page,
+      { heroMode: "carousel", heroRandom: "shuffle" },
+      "/",
+      "/api/images/photos/a.jpg",
+      undefined,
+      "",
+      0,
+      undefined,
+      undefined,
+      false,
+    );
+
+    expect(out).not.toContain('rel="preload" as="image"');
   });
 });
 
@@ -1208,6 +1325,9 @@ describe("injectOgp 販売ページの構造化データ", () => {
       availability: "https://schema.org/InStock",
       url: "https://akieguchi.com/portfolio-kit",
     });
+    // 公開名と法的な販売者名が同じとは未確認。構造化データだけで販売者を
+    // 断定せず、法定表示の確認済み情報を唯一の正本にする。
+    expect(product?.offers?.seller).toBeUndefined();
   });
 
   test("値段は管理画面の設定から読む（既定値を焼き付けない）", () => {

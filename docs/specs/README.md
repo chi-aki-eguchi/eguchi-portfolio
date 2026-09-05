@@ -1,6 +1,6 @@
 # 現役の仕様書 — 索引
 
-1仕様1ファイル。その場で更新する。`-v2` `-v3` `-final` `-draft` の名前は禁止。
+原則は1仕様1ファイルで更新する。比較用の案や版が必要な場合は、違いが分かる名前で残してよい。
 
 **この索引は「どれが何層目か」だけを書く。** 各文書の進捗は
 `task.md` 冒頭 Current State と `docs/agents/backlog.md` が正本。
@@ -45,16 +45,16 @@
 | `site-and-data-direction.md` | 公開サイトとデータモデルの方向（オーナー確定分） |
 | `inbound-traffic-plan.md` | **検索・外部からの流入を増やす計画。**次に何をするかの正本 |
 
-## 事業計画（製品ゴールではない）
+## 事業計画
 
-- `growth-monetization-plan.md` — **現在の製品ゴールではない**（`CLAUDE.md` に明記）。
-  admin 刷新の判断材料にしない。
+- `growth-monetization-plan.md` — 収益化や販売導線を扱うときの資料。現在の依頼に関係する場合に読む。
+- [portfolio-kit-sales-policy-draft.md](portfolio-kit-sales-policy-draft.md) — 販売者情報・総額価格・キャンセル・サポート・個人情報運用の相談案。
 
 ## 一時点の監査記録（普段は読まない）
 
 必要になったときだけ引く。ここに書かれた数値は測り直す。
 
-- `audit-2026-07.md` — 敵対的総点検（2026-07-08）
-- `reading-layer-audit-2026-08.md` — 読む文書の棚卸し（2026-08-20）
-- `rule-review-2026-08.md` — 運用ルール再検討と Codex 連携案（2026-08-20）
+- [audit-2026-07.md](../archive/audits/audit-2026-07.md) — 敵対的総点検（2026-07-08）
+- [reading-layer-audit-2026-08.md](../archive/audits/reading-layer-audit-2026-08.md) — 読む文書の棚卸し（2026-08-20）
+- [rule-review-2026-08.md](../archive/audits/rule-review-2026-08.md) — 運用ルール再検討と Codex 連携案（2026-08-20）
 - `seo-audit-2026-09.md` — 検索・外部流入の監査（2026-09-02）。流入強化フェーズ0の記録

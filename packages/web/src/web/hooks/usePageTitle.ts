@@ -12,7 +12,7 @@ import { composePageTitle } from "../../shared/site-title";
  * Pass nothing → home title ("Name JA | Name EN Subtitle").
  */
 export function usePageTitle(page?: string) {
-  const { data: settings } = useQuery({
+  const { data: settings, isError } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
@@ -22,11 +22,11 @@ export function usePageTitle(page?: string) {
     // rather than briefly overwriting it with an incomplete value. That
     // flash used to make GA record different titles for the same URL
     // depending on hydration timing.
-    if (!settings) return;
+    if (!settings && !isError) return;
     document.title = composePageTitle(page, {
-      nameJa: settings.siteName || CLIENT_SITE_FALLBACKS.siteName,
-      nameEn: settings.siteNameEn || CLIENT_SITE_FALLBACKS.siteNameEn,
-      subtitle: settings.heroSubtitle || CLIENT_SITE_FALLBACKS.heroSubtitle,
+      nameJa: settings?.siteName || CLIENT_SITE_FALLBACKS.siteName,
+      nameEn: settings?.siteNameEn || CLIENT_SITE_FALLBACKS.siteNameEn,
+      subtitle: settings?.heroSubtitle || CLIENT_SITE_FALLBACKS.heroSubtitle,
     });
-  }, [page, settings]);
+  }, [isError, page, settings]);
 }

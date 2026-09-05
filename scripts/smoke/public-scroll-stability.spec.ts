@@ -103,7 +103,17 @@ test("公開サイト — 送っている最中に版面が動かない › 送�
           return litEnough(e);
         }).length;
       // 写真そのものと、これから写真が入る枠。どちらも「何かある」に数える。
-      return { n: seen("main img") + seen(".gallery-skeleton > div"), y: Math.round(window.scrollY) };
+      // すべての写真を出し切った後は、奥付や問い合わせ導線が見えていれば
+      // それも完成した版面であって「真っ白」ではない。全体実行が速いと24回の
+      // 途中で終端へ届くため、写真だけを数えると実画面に文字があるのに誤検知する。
+      return {
+        n:
+          seen("main img") +
+          seen(".gallery-skeleton > div") +
+          seen(".series-colophon") +
+          seen('main a[href="/contact"]'),
+        y: Math.round(window.scrollY),
+      };
     });
     if (r.n < worst.n) worst = r;
     if (r.n === 0) break;

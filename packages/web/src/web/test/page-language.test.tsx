@@ -100,6 +100,7 @@ describe("配線", () => {
       "../pages/contact.tsx",
       "../pages/service.tsx",
       "../pages/service-start.tsx",
+      "../pages/policy.tsx",
     ]) {
       const s = src(page);
       expect(s, `${page} が usePageLanguage を使っていない`).toContain(

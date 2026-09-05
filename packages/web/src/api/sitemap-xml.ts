@@ -2,11 +2,13 @@
 // ここは「取れたデータ → XML」に閉じる（Hono・DB・S3 を持ち込まずにテストできる）。
 import { escapeHtml } from "./ogp";
 import { photoAltText } from "../shared/photo-alt";
+import { indexablePhotoIds } from "../shared/photo-page-text";
 
 export type SitemapPhoto = {
   id: number;
   url: string;
   title: string;
+  description?: string | null;
   seriesId: number | null;
   createdAt: Date | null;
   /** 撮影日。題の無い写真の説明文を、撮った時期で見分けられるようにする。 */
@@ -22,6 +24,11 @@ export type SitemapInput = {
   paths: readonly string[];
   /** 公開シリーズの詳細パス */
   seriesPaths: readonly string[];
+  /**
+   * 写真1枚ぶんの詳細パス（`/photo/:id`）。渡されたパスのうち、人が固有の
+   * 題と説明を付け、公開集合内でも重複しない写真だけを実際に載せる。
+   */
+  photoPaths?: readonly string[];
   seriesIdBySlugPath: ReadonlyMap<string, number>;
   seriesById: ReadonlyMap<number, SitemapSeries>;
   photos: readonly SitemapPhoto[];
@@ -37,6 +44,7 @@ export function buildSitemapXml(input: SitemapInput): string {
     siteUrl,
     paths,
     seriesPaths,
+    photoPaths = [],
     seriesIdBySlugPath,
     seriesById,
     photos,
@@ -45,6 +53,7 @@ export function buildSitemapXml(input: SitemapInput): string {
   } = input;
 
   const photoById = new Map(photos.map((p) => [p.id, p]));
+  const indexableIds = indexablePhotoIds(photos);
 
   const imageTag = (url: string, title: string) =>
     `<image:image><image:loc>${siteUrl}${escapeHtml(url)}</image:loc>${
@@ -76,7 +85,27 @@ export function buildSitemapXml(input: SitemapInput): string {
   // 説明しておらず、検索向けに一意な文字列を作るのは説明ではなく細工になる。
   // 説明文が繰り返すのは、題と撮影地が空という同じ問題が出ているだけ。
   const MAX_IMAGES_PER_SERIES = 200;
+  // `/photo/123` → 123。サイトマップ側で写真を引き直すために使う。
+  const photoIdOf = (path: string): number | null => {
+    const m = path.match(/^\/photo\/(\d+)$/);
+    return m ? Number.parseInt(m[1], 10) : null;
+  };
+
   const imagesFor = (path: string): string => {
+    // 写真1枚ぶんのページは、その1枚だけを載せる。
+    const pid = photoIdOf(path);
+    if (pid != null) {
+      const p = photoById.get(pid);
+      if (!p) return "";
+      return imageTag(
+        p.url,
+        photoAltText(p, {
+          photographerName,
+          seriesName:
+            p.seriesId != null ? seriesById.get(p.seriesId)?.title : undefined,
+        }),
+      );
+    }
     // 名前で検索した人に返したいのは本人の写真。JSON-LD は既に Person の
     // image として宣言しているのに、サイトマップだけ持っていなかった。
     if (path === "/about" || path === "/en/about") {
@@ -125,6 +154,8 @@ export function buildSitemapXml(input: SitemapInput): string {
       latestBySeries.set(p.seriesId, p.createdAt);
   }
   const lastmodFor = (path: string): string => {
+    const pid = photoIdOf(path);
+    if (pid != null) return isoDay(photoById.get(pid)?.createdAt ?? null);
     if (path === "/" || path === "/gallery" || path === "/series")
       return isoDay(latestOverall);
     const sid = seriesIdBySlugPath.get(path);
@@ -132,15 +163,25 @@ export function buildSitemapXml(input: SitemapInput): string {
     return "";
   };
 
-  const urls = [...paths, ...seriesPaths]
+  // 呼び出し側が誤って全件を渡しても、薄い自動生成ページを sitemap へ出さない。
+  // `/photo/:id` 自体は共有用に残るが、検索入口になるのは編集済みの代表作だけ。
+  const safePhotoPaths = photoPaths.filter((path) => {
+    const id = photoIdOf(path);
+    return id != null && indexableIds.has(id);
+  });
+
+  const urls = [...paths, ...seriesPaths, ...safePhotoPaths]
     .map((p) => {
       const lastmod = lastmodFor(p);
-      const changefreq = p === "/" || p === "/gallery" ? "weekly" : "monthly";
+      const isPhoto = photoIdOf(p) != null;
+      const changefreq =
+        p === "/" || p === "/gallery" ? "weekly" : isPhoto ? "yearly" : "monthly";
+      // 写真1枚は、束ねているページより下に置く。**推す順番は
+      // トップ → 棚 → 1枚**で、1枚が棚を押しのけないようにする。
+      const priority = p === "/" ? "1.0" : isPhoto ? "0.4" : "0.7";
       return `  <url><loc>${siteUrl}${p}</loc>${
         lastmod ? `<lastmod>${lastmod}</lastmod>` : ""
-      }<changefreq>${changefreq}</changefreq><priority>${
-        p === "/" ? "1.0" : "0.7"
-      }</priority>${imagesFor(p)}</url>`;
+      }<changefreq>${changefreq}</changefreq><priority>${priority}</priority>${imagesFor(p)}</url>`;
     })
     .join("\n");
 

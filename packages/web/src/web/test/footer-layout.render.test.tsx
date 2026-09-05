@@ -103,6 +103,19 @@ describe("フッターの並べ方", () => {
     }
   });
 
+  test("全ページ共通のPrivacy・利用条件への導線がある", async () => {
+    const m = await mountLayout();
+    try {
+      const footer = m.footer();
+      expect(footer?.querySelector('a[href="/privacy"]')).not.toBeNull();
+      expect(footer?.querySelector('a[href="/terms"]')).not.toBeNull();
+      // Portfolio Kit を出していない配布先へ、販売者向けページは露出しない。
+      expect(footer?.querySelector('a[href="/legal"]')).toBeNull();
+    } finally {
+      m.cleanup();
+    }
+  });
+
   test("知らない値は既定へ倒す（DBに変な値が入っても壊さない）", async () => {
     const m = await mountLayout("ドーン");
     try {

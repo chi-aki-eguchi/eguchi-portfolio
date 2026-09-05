@@ -69,6 +69,9 @@ export default function PortfolioKitExperience({
     fontJa: initialSettings.fontJa || "Shippori Mincho",
     fontEn: initialSettings.fontEn || "Cormorant Garamond",
   });
+  const english =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("lang") === "en";
 
   useEffect(() => {
     sendPreview(preview);
@@ -86,16 +89,21 @@ export default function PortfolioKitExperience({
 
   return (
     <aside
-      aria-label="Portfolio Kit 体験モード"
+      lang={english ? "en" : "ja"}
+      aria-label={
+        english ? "Portfolio Kit experience" : "Portfolio Kit 体験モード"
+      }
       className="fixed bottom-3 right-3 z-[80] w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border border-[rgba(var(--foreground-rgb),0.12)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] p-3 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md sm:bottom-5 sm:right-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-ja text-[0.78rem] text-[rgba(var(--foreground-rgb),0.78)]">
-            見た目を体験する
+            {english ? "Try the design controls" : "見た目を体験する"}
           </p>
           <p className="mt-1 text-[0.65rem] leading-5 text-[color:var(--text-quiet)]">
-            これは体験です。実際のサイトは変わりません。
+            {english
+              ? "This is a preview. Your live site will not change."
+              : "これは体験です。実際のサイトは変わりません。"}
           </p>
         </div>
         <button
@@ -104,53 +112,106 @@ export default function PortfolioKitExperience({
           onClick={() => setCollapsed((value) => !value)}
           className="min-h-9 shrink-0 rounded border border-[rgba(var(--foreground-rgb),0.12)] px-2.5 text-[0.68rem] text-[color:var(--text-quiet)]"
         >
-          {collapsed ? "開く" : "閉じる"}
+          {english
+            ? collapsed
+              ? "Open"
+              : "Close"
+            : collapsed
+              ? "開く"
+              : "閉じる"}
         </button>
       </div>
 
       {!collapsed && (
         <div className="mt-3 grid grid-cols-2 gap-2.5">
           <ExperienceSelect
-            label="写真の並べ方"
+            label={english ? "Photo layout" : "写真の並べ方"}
             value={preview.topWorksLayout}
-            options={[
-              { value: "large-format", label: "大きく静かに" },
-              { value: "masonry", label: "高さを活かす" },
-              { value: "clean-grid", label: "端正に揃える" },
-            ]}
+            options={
+              english
+                ? [
+                    { value: "large-format", label: "Large and quiet" },
+                    { value: "masonry", label: "Editorial masonry" },
+                    { value: "clean-grid", label: "Clean grid" },
+                  ]
+                : [
+                    { value: "large-format", label: "大きく静かに" },
+                    { value: "masonry", label: "高さを活かす" },
+                    { value: "clean-grid", label: "端正に揃える" },
+                  ]
+            }
             onChange={(value) => update({ topWorksLayout: value })}
           />
           <ExperienceSelect
-            label="余白の広さ"
+            label={english ? "Section spacing" : "余白の広さ"}
             value={preview.spacingSectionGap}
-            options={[
-              { value: "0.8", label: "すっきり" },
-              { value: "1", label: "標準" },
-              { value: "1.25", label: "ゆったり" },
-            ]}
+            options={
+              english
+                ? [
+                    { value: "0.8", label: "Compact" },
+                    { value: "1", label: "Balanced" },
+                    { value: "1.25", label: "Airy" },
+                  ]
+                : [
+                    { value: "0.8", label: "すっきり" },
+                    { value: "1", label: "標準" },
+                    { value: "1.25", label: "ゆったり" },
+                  ]
+            }
             onChange={(value) => update({ spacingSectionGap: value })}
           />
           <ExperienceSelect
-            label="背景の質感"
+            label={english ? "Background texture" : "背景の質感"}
             value={preview.bgTexture}
-            options={[
-              { value: "none", label: "なし" },
-              { value: "grain-fine", label: "フィルム粒子" },
-              { value: "grain-coarse", label: "粗い紙" },
-            ]}
+            options={
+              english
+                ? [
+                    { value: "none", label: "None" },
+                    { value: "grain-fine", label: "Fine grain" },
+                    { value: "grain-coarse", label: "Coarse paper" },
+                  ]
+                : [
+                    { value: "none", label: "なし" },
+                    { value: "grain-fine", label: "フィルム粒子" },
+                    { value: "grain-coarse", label: "粗い紙" },
+                  ]
+            }
             onChange={(value) => update({ bgTexture: value })}
           />
           <ExperienceSelect
-            label="文字の雰囲気"
+            label={english ? "Typography" : "文字の雰囲気"}
             value={`${preview.fontJa}|${preview.fontEn}`}
-            options={[
-              {
-                value: "Shippori Mincho|Cormorant Garamond",
-                label: "クラシック",
-              },
-              { value: "Noto Serif JP|Playfair Display", label: "モダン" },
-              { value: "Noto Sans JP|Inter", label: "静かなゴシック" },
-            ]}
+            options={
+              english
+                ? [
+                    {
+                      value: "Shippori Mincho|Cormorant Garamond",
+                      label: "Classic",
+                    },
+                    {
+                      value: "Noto Serif JP|Playfair Display",
+                      label: "Modern",
+                    },
+                    {
+                      value: "Noto Sans JP|Inter",
+                      label: "Quiet sans serif",
+                    },
+                  ]
+                : [
+                    {
+                      value: "Shippori Mincho|Cormorant Garamond",
+                      label: "クラシック",
+                    },
+                    {
+                      value: "Noto Serif JP|Playfair Display",
+                      label: "モダン",
+                    },
+                    {
+                      value: "Noto Sans JP|Inter",
+                      label: "静かなゴシック",
+                    },
+                  ]
+            }
             onChange={(value) => {
               const [fontJa, fontEn] = value.split("|");
               update({ fontJa, fontEn });
@@ -160,10 +221,10 @@ export default function PortfolioKitExperience({
       )}
 
       <a
-        href="/portfolio-kit"
+        href={english ? "/portfolio-kit/en" : "/portfolio-kit"}
         className="mt-3 inline-flex min-h-9 items-center text-[0.7rem] tracking-[0.04em] text-[color:var(--text-quiet)] underline underline-offset-4"
       >
-        販売ページへ戻る
+        {english ? "Back to Portfolio Kit" : "販売ページへ戻る"}
       </a>
     </aside>
   );

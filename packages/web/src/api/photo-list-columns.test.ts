@@ -100,8 +100,9 @@ describe("photo list columns", () => {
     expect(postgresColumnKeys).toEqual(sqliteColumnKeys);
   });
 
-  test("uses the shared column definition in exactly the three photo list queries", () => {
-    expect(source.match(/\.select\(PHOTO_LIST_COLUMNS\)/g)).toHaveLength(3);
+  // `/photos/:id` を含む写真取得は同じ公開列定義を使う。
+  test("uses the shared column definition in exactly the four photo list queries", () => {
+    expect(source.match(/\.select\(PHOTO_LIST_COLUMNS\)/g)).toHaveLength(4);
   });
 
   // 公開サイトはどのページでも最初に GET /photos を待つ。実測（2026-08-08・
@@ -110,9 +111,11 @@ describe("photo list columns", () => {
   // 295,923 bytes（-27.8%）。落としすぎると写真が出なくなるので、公開側が
   // 実際に描画に使う列が残っていることを併せて縛る。
   describe("公開応答から管理用の列だけを落とす", () => {
+    // 剥がす場所は `toPublicPhoto` 1か所だけ。2か所に増えると、片方に列を
+    // 足し忘れて管理用の列が公開側へ漏れる。
     const publicBranch = source.slice(
-      source.indexOf("if (includeUnpublished) return c.json({ photos: withThumbs }"),
-      source.indexOf("// ── Admin: Settings update ──"),
+      source.indexOf("export function toPublicPhoto"),
+      source.indexOf("export function photoWithThumbs"),
     );
     const stripped = Array.from(
       publicBranch.matchAll(/^\s+(\w+): _\w+,$/gm),

@@ -1,116 +1,34 @@
-# 高リスク領域チェックリスト
+# 分野別の確認
 
-> 2026-07-06 作成（AI連携改革の成果物。当時の作業指示書は
-> `docs/archive/ai-collaboration-reform-fable5.md` に退避済み・履歴）。
-> 失敗時の影響が大きい5領域について、作業前・作業後に機械的になぞれる検査表。
-> ルールの正本は CLAUDE.md / AGENTS.md §0。ここは「実行手順に落とした版」であり、矛盾したら正本が勝つ。
+作業に関係する節だけを使う。検証コマンドとpush可否は [AGENTS.md](../AGENTS.md)「検証とpush」が正本。別AIへの相談は、判断に役立つ場合に行う。
 
-## 本番に触る前の反対意見
+## Settings・Admin
 
-**本番DB・課金・公開設定・認証に触る変更を入れる前は、Codex アプリに貼って
-反対意見をもらってから進める。**（オーナーが手で貼る。自動化はしない）
+- キー台帳、API default、DB適用、ライブプレビューの4箇所を揃え、空値への戻し方も確認する。
+- settings保存は `postAdminSettings()`。401、`ignoredKeys`、通信失敗が成功表示にならないことを確認する。
+- 更新後の再取得・公開側キャッシュ、未保存表示、ダイアログ中のキーボード操作を変更に応じて見る。
+- スタイルはadminのスコープに収め、影響する画面幅で公開側へ漏れないか確かめる。
+- バグ修正のテストは修正前の症状を検出できるものを選ぶ。文言・配置だけの変更に機械的なテスト追加を課さない。
+- ブラウザーテストの書き込みはモックまたは隔離DBで扱う。skipは確認済みの件数に含めない。
 
-2026-08-20 に `codex exec`（CLI）経由の連携を廃止し、規則はこの1行だけにした。
-廃止した配管は `docs/archive/codex-workflow.md`。
+## DB
 
-## 使い方
+- Turso用 `schema.ts` と配布版 `schema.postgres.ts`、生成するmigrationを対応させる。
+- `photos` の列追加は `api/database/migrate.ts` の `TURSO_SAFETY_NET_COLUMNS` にも反映する。
+- 既存のTurso本番は `db:push` で作られており、Drizzleのmigration台帳がない。`db:migrate` をそのまま流すと初期CREATE TABLEから再実行して失敗する。
+- 本番への適用は対象DB・実際の差分・既存データへの影響を先に明らかにする。依頼・承認済みなら担当AIが進められる。未承認のDROP、列削除、データ損失は適用前に確認する。
+- Tursoの手動同期は対象を確認してから `cd packages/web && bun run db:push`。PostgreSQLは配布版の起動時migrationと [DISTRIBUTION.md](../DISTRIBUTION.md) を確認する。
+- `ecosystem.config.cjs` は読み取りだけで確認できる。`bun run start` はビルドの配信ファイルを確認してPM2を起動・再起動する。設定評価時の `db:push` はないが、サーバーの起動時migrationは接続先DBに適用される。ローカル開発はルートの `bun run dev`。
 
-- 該当領域に触る前に、その節の「着手前」を確認する。
-- 完了報告の前に「完了前」を上から順に実行する。チェックできない項目が残るなら、Handoff の「検証していないこと」に書く。
+## 画像・配信
 
----
+- 実際のAPI payloadからDOMの `currentSrc` / `complete` / `naturalWidth`、通信、`/api/health` の順に確認する。HTTP 200だけを画像表示の証拠にしない。
+- master、thumb、medium、Lightbox、OGPのうち変更した経路を実画像で見る。
+- 保存キーの特殊文字と共有オブジェクトの参照を保持する。リサイズパラメータを増やしたらキャッシュキーも確認する。
+- `api/http-compression.ts` で本文と `Content-Encoding` が一致し、既に圧縮された応答へ重ねていないことを確かめる。HTMLの `no-store` も保持する。
+- より詳しい測定例が必要なら [agents/measuring.md](agents/measuring.md) の該当節を読む。
 
-## 1. Settings（サイト設定キー）
+## 公開確認
 
-**着手前**
-
-- [ ] 追加・変更するキーが既存キーと重複していないか `lib/settings-preview.ts` で確認した
-- [ ] ライブプレビュー（admin の iframe）と DB 適用の両経路に効く変更だと理解している
-
-**完了前（4箇所同期 — §0）**
-
-- [ ] `packages/web/src/web/lib/settings-preview.ts` の `SETTINGS_PREVIEW_KEYS` 台帳に追加した
-- [ ] API `GET /settings`（`packages/web/src/api/index.ts`）の default 値に追加した
-- [ ] `provider.tsx` の DB 適用 `useEffect` に追加した
-- [ ] `provider.tsx` の `handlePreviewMessage` に追加した
-- [ ] 空値（""）のとき DB 適用とプレビューが同じ見た目に戻ることを確認した（プレビュー独自 default を作らない）
-- [ ] `bun run check` 成功、admin に触れたので `bun run smoke` も成功
-
-## 2. DB スキーマ
-
-**着手前**
-
-- [ ] 変更は追加のみか？ 既存カラムの削除・rename・型変更は Turso リモートに対して行わない（§0 / db-migrations ルール）
-- [ ] 既存マイグレーション `.sql` を編集・削除しない（append-only）
-
-**完了前（2ファイル同期 — §0）**
-
-- [ ] `schema.ts`（Turso/libSQL・本番）を更新した
-- [ ] `schema.postgres.ts`（PostgreSQL・配布版）を**同じカラム名**で更新した（型は方言ごと: `integer({mode:"boolean"})`↔`boolean()`、`integer({mode:"timestamp"})`↔`timestamp()`）
-- [ ] `drizzle-kit generate` を両 config で再生成した（`cd packages/web` してから。DISTRIBUTION.md 参照）
-- [ ] クエリは `./database` 経由の `schema` import を使っている（`schema.ts` 直接 import 禁止）
-- [ ] 新しいクエリは `withRetry(() => db....)` でラップした
-- [ ] `withRetry` 本体（libsql.ts）の再試行条件を弱めたり広げたりしていない（変更するなら Codex レビュー必須 — 2026-07 監査 P1-1 参照）
-- [ ] `db:push` / `db:migrate` はオーナーの直接依頼がある場合だけ実行する。直接依頼がない場合は実行せず、必要性・対象DB・想定される影響だけを報告する
-- [ ] 直接依頼を受けた場合の適用は `cd packages/web && bun run db:push`（本番と同じ DB に効くことを理解した上で）
-
-## 3. 画像パイプライン（R2 / sharp / 配信）
-
-**着手前**
-
-- [ ] 保存形式の正: master は 3200px / mozjpeg q92 / 4:4:4 JPEG。配信用 WebP 派生は thumb 640px / medium 1920px（`thumbKey` / `mediumKey`）
-- [ ] キャッシュの正はコード: `api/index.ts` の `RESIZE_CACHE_BYTES`（現在 128MB）/ `ORIG_CACHE_BYTES`（現在 48MB, 60s TTL）。ドキュメントの数値を鵜呑みにしない
-
-**完了前**
-
-- [ ] アップロードの保存キーに `file.name` を直接使っていない（必ず `sanitizeUploadBaseName()` 経由。`#` `?` `%` 入りファイル名で画像が永遠に404になる — 2026-07 監査 P0-1）
-- [ ] `Content-Encoding` を手で付けていない（§0。付けるのは `api/http-compression.ts` だけ。
-      本文を圧縮せずにヘッダだけ付ける／既に付いた応答へ重ねると二重圧縮 — 2026-06-13 事故）
-- [ ] R2 のキー・秘密情報をコードにハードコードしていない（`process.env.S3_*`）
-- [ ] 複製写真は R2 オブジェクト共有 — purge の挙動（他参照なしのときのみ削除）を壊していない
-- [ ] リサイズ経路を変えた場合、キャッシュキーに新パラメータを含めた
-- [ ] 既存写真（実データ）でサムネイル・Lightbox・OGP の表示を確認した
-
-## 4. Admin UI（管理画面）
-
-**着手前**
-
-- [ ] `git status --short` と `docs/archive/task-handoffs.md` の最新 Handoff を確認し、未コミットの admin 作業を踏まないと確認した
-- [ ] スタイルを足す場合、セレクタが `.admin-screen` / `.admin-atelier` 等の admin スコープ内にあり、公開サイトへ漏れない
-
-**完了前**
-
-- [ ] 書き込み API 呼び出しは本文を読む前に検証している。合格条件の正本は
-      `AGENTS.md`「製品コードの不変条件」（admin 配下の新規・変更箇所は 401
-      リダイレクトを含む `admin-shared.ts` 側、settings 保存は `postAdminSettings()` 経由）
-- [ ] 新しい書き込み処理には、応答検証に加えて `onError` または try/catch による
-      利用者へ見えるエラー表示がある（正本: `AGENTS.md`「製品コードの不変条件」）
-- [ ] データ更新後は `qc.invalidateQueries({ queryKey: [...] })` している（§0）
-- [ ] `fetch` 直接呼びを追加していない（`lib/api.ts` の型付きクライアント経由）
-- [ ] `bun run check` 成功
-- [ ] `bun run smoke` 成功（admin 必須ゲート。**本番と同じ DB に接続** — 新しいテストで Save/Delete/Add 確定など書き込み操作をクリックしない。0 fail でも skip 件数を確認）
-- [ ] 新しいバグを直した場合、回帰テストを1件追加した（`scripts/smoke/` なら `helpers.ts` の `loginAsAdmin`/`gotoAdminTab` を再利用）
-- [ ] **その回帰テストが、修正を外すと実際に落ちることを確認した。**修正ありでもなしでも
-      通るテストは何も検証していない（2026-08-04 に実際に書きかけた。詳細は
-      `docs/agents/measuring.md`）
-- [ ] 既存テストの期待値を変えた場合、それが仕様変更への正当な追随であることを決定ログに書いた（実測合わせの緑化は禁止。現役の正本は `AGENTS.md`「製品コードの不変条件」）
-- [ ] グローバルなキーボードショートカットを追加した場合、`dialog[open]` ガード（admin.tsx のグリッド keydown 参照）を通している
-
-## 5. Railway デプロイ + 本番確認
-
-**着手前**
-
-- [ ] push = 本番デプロイだと理解している（GitHub auto-deploy）。**push は `AGENTS.md` の3条件を満たすときだけ**（check 成功 / 製品コードなら smoke も / 本番DB・秘密情報・課金・公開設定に関わらない）
-- [ ] 環境変数の追加・変更は Railway ダッシュボードで行う（`.env` は gitignored、エージェントは読まない・編集しない）
-
-**push 前**
-
-- [ ] `bun run check` 成功（admin に触れたなら `bun run smoke` も）
-- [ ] `git status --short` がクリーン（未コミット・未追跡ファイルが残っていない、または Handoff に明記した）
-- [ ] `git log origin/main..main --oneline` で push される commit 一覧を確認し、Handoff・報告に含めた
-
-**push 後（本番確認 — 「push した」と「本番で確認した」は別物）**
-
-- [ ] 数分待って `curl -sI https://akieguchi.com/ | grep -i x-build` の commit hash が push したものと一致する
-- [ ] トップ / ギャラリー / 管理ログイン画面を実際に開いて表示を確認した
-- [ ] 報告では「local 確認」「push」「Railway 反映」「本番確認」を分けて書いた
+pushの条件と承認はルート `AGENTS.md` に従う。送るcommit一覧と実行した検証を確認し、デプロイ後は `/api/health` のbuild、対象画面、必要な画像を確認する。
+戻し方は [rollback-guide.md](rollback-guide.md)。検証済みのローカル変更と、本番で確認できた内容を分けて報告する。

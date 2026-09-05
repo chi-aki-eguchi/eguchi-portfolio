@@ -7,6 +7,7 @@ import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { safeHref } from "../lib/utils";
 import { resolveServiceContactEmail } from "../../shared/service-visibility";
+import { SALES_DISCLOSURE_PENDING } from "../../shared/policy-content";
 import {
   parseServicePageConfig,
   ENGLISH_PLAN_COPY,
@@ -32,12 +33,33 @@ const labelStyle = {
   lineHeight: "var(--section-leading, 1.2)",
 } as const;
 const bodyStyle = {
-  fontSize: "var(--body-size, 0.9rem)",
-  lineHeight: "var(--body-leading, 1.95)",
+  // Product explanations carry buying decisions, so keep them readable even
+  // when the portfolio's art-direction settings use a 12px body size.
+  fontSize: "max(0.875rem, var(--body-size, 0.9rem))",
+  lineHeight: "max(1.75, var(--body-leading, 1.95))",
   letterSpacing: "var(--body-tracking, 0.01em)",
 } as const;
 
+const CJK_TEXT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+function englishSocialLabel(label: string, url: string): string {
+  if (label.trim() && !CJK_TEXT.test(label)) return label;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "Social";
+  }
+}
+
 type ServiceLanguage = "ja" | "en";
+
+const purchaseContactPath = (language: ServiceLanguage) =>
+  language === "en" ? "/en/contact" : "/contact";
+
+const prePurchaseLabel = (language: ServiceLanguage) =>
+  language === "en"
+    ? "Confirm terms before purchase"
+    : "購入前の条件を確認する";
 
 function englishServiceConfigFrom(
   source: ServicePageConfig,
@@ -103,12 +125,12 @@ function englishServiceConfigFrom(
         {
           title: "About",
           body: "See how a portrait, biography, and artist information are presented.",
-          href: "/about",
+          href: "/en/about",
         },
         {
           title: "Contact",
           body: "See a simple path to inquiries and social links.",
-          href: "/contact",
+          href: "/en/contact",
         },
       ],
     },
@@ -214,7 +236,10 @@ function englishServiceConfigFrom(
       body: "Tell me what you want the site to hold, and I will explain the most suitable way to begin.",
       ctaOnline: "Choose assisted setup",
       ctaOffline: "Ask by email",
-      snsLinks: source.finalCta.snsLinks,
+      snsLinks: source.finalCta.snsLinks.map((link) => ({
+        ...link,
+        label: englishSocialLabel(link.label, link.url),
+      })),
     },
     stickyCta: {
       text: `${priceWithUsdEstimate(startingPrice)} — publishing handled for you`,
@@ -830,13 +855,19 @@ function PlanCard({
   contactEmail: string;
   language: ServiceLanguage;
 }) {
-  const live = isStripeLive(plan.stripeUrl);
-  const finalHref = live
+  const live = !SALES_DISCLOSURE_PENDING && isStripeLive(plan.stripeUrl);
+  const finalHref = SALES_DISCLOSURE_PENDING
+    ? purchaseContactPath(language)
+    : live
     ? plan.stripeUrl
     : contactEmail
       ? serviceMailtoFallback(contactEmail, language, plan.name)
-      : "/contact";
-  const cLabel = live
+      : language === "en"
+        ? "/en/contact"
+        : "/contact";
+  const cLabel = SALES_DISCLOSURE_PENDING
+    ? prePurchaseLabel(language)
+    : live
     ? plan.cta
     : contactEmail
       ? language === "en"
@@ -996,7 +1027,16 @@ function AdminShowcase({
           {language === "en" ? "Try the current admin demo" : "管理画面を触ってみる"}
         </ServiceButton>
         <div className="mt-3">
-          <a className="text-[0.76rem] leading-7 text-[color:var(--text-quiet)] underline underline-offset-4" href="/?portfolio-kit-experience=1">{config.demoCta}</a>
+          <a
+            className="text-[0.76rem] leading-7 text-[color:var(--text-quiet)] underline underline-offset-4"
+            href={
+              language === "en"
+                ? "/?portfolio-kit-experience=1&lang=en"
+                : "/?portfolio-kit-experience=1"
+            }
+          >
+            {config.demoCta}
+          </a>
         </div>
       </div>
     </section>
@@ -1015,12 +1055,15 @@ function FinalCTA({
   contactEmail: string;
   language: ServiceLanguage;
 }) {
-  const live = !!stripeHref;
-  const href =
-    stripeHref ??
+  const live = !SALES_DISCLOSURE_PENDING && !!stripeHref;
+  const href = SALES_DISCLOSURE_PENDING
+    ? purchaseContactPath(language)
+    : stripeHref ??
     (contactEmail
       ? serviceMailtoFallback(contactEmail, language)
-      : "/contact");
+      : language === "en"
+        ? "/en/contact"
+        : "/contact");
   return (
     <section className="mt-14 md:mt-20 page-entrance text-center">
       <div className="max-w-2xl mx-auto border-t border-[rgba(var(--foreground-rgb),0.08)] pt-10 md:pt-14">
@@ -1046,7 +1089,11 @@ function FinalCTA({
             {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             className="inline-flex min-h-11 items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-8 py-2.5 rounded-md hover:opacity-85 transition-opacity duration-300"
           >
-            {live ? config.ctaOnline : config.ctaOffline}
+            {SALES_DISCLOSURE_PENDING
+              ? prePurchaseLabel(language)
+              : live
+                ? config.ctaOnline
+                : config.ctaOffline}
           </a>
           {config.snsLinks.length > 0 && (
             <nav className="flex items-center gap-5" aria-label="SNS">
@@ -1084,7 +1131,7 @@ function StickyCtaBar({
   language: ServiceLanguage;
 }) {
   const [visible, setVisible] = useState(false);
-  const live = !!stripeHref;
+  const live = !SALES_DISCLOSURE_PENDING && !!stripeHref;
 
   useEffect(() => {
     let frame = 0;
@@ -1105,11 +1152,14 @@ function StickyCtaBar({
     };
   }, []);
 
-  const href =
-    stripeHref ??
+  const href = SALES_DISCLOSURE_PENDING
+    ? purchaseContactPath(language)
+    : stripeHref ??
     (contactEmail
       ? serviceMailtoFallback(contactEmail, language)
-      : "/contact");
+      : language === "en"
+        ? "/en/contact"
+        : "/contact");
 
   return (
     <div
@@ -1141,7 +1191,11 @@ function StickyCtaBar({
                 : {})}
               className="inline-flex items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-5 py-2 rounded-md hover:opacity-85 transition-opacity duration-300"
             >
-              {live ? config.ctaOnline : config.ctaOffline}
+              {SALES_DISCLOSURE_PENDING
+                ? prePurchaseLabel(language)
+                : live
+                  ? config.ctaOnline
+                  : config.ctaOffline}
             </a>
           </div>
         </div>
@@ -1175,7 +1229,7 @@ export default function ServicePage({
     settingsData?.siteUrl,
     typeof window === "undefined" ? undefined : window.location.hostname,
   );
-  const live = anyPlanLive(config);
+  const live = !SALES_DISCLOSURE_PENDING && anyPlanLive(config);
   const ref = usePageEntrance([photos.length, language]);
 
   usePageLanguage(language);
@@ -1281,7 +1335,13 @@ export default function ServicePage({
           className="text-center mt-7 text-[color:var(--text-quiet)]"
           style={{ fontSize: "0.82rem", lineHeight: 1.8 }}
         >
-          {live ? config.pricing.noteOnline : config.pricing.noteOffline}
+          {SALES_DISCLOSURE_PENDING
+            ? language === "en"
+              ? "Please confirm the pending seller, tax, cancellation, and refund terms through Contact before payment."
+              : "販売者情報・税・キャンセル・返金条件を、決済前にContactでご確認ください。"
+            : live
+              ? config.pricing.noteOnline
+              : config.pricing.noteOffline}
         </p>
         <p
           className="text-center mt-2 text-[color:var(--text-quiet)]"
@@ -1289,6 +1349,26 @@ export default function ServicePage({
         >
           {config.pricing.disclaimer}
         </p>
+        <nav
+          data-purchase-policy-links
+          aria-label={language === "en" ? "Purchase policies" : "販売条件"}
+          className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-en text-[0.76rem] leading-7 text-[color:var(--text-quiet)]"
+        >
+          <Link
+            to={language === "en" ? "/legal/en" : "/legal"}
+            className="underline underline-offset-4 transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.70)]"
+          >
+            {language === "en"
+              ? "Legal notice"
+              : "特定商取引法に基づく表記"}
+          </Link>
+          <Link
+            to={language === "en" ? "/terms/en" : "/terms"}
+            className="underline underline-offset-4 transition-colors duration-300 hover:text-[rgba(var(--foreground-rgb),0.70)]"
+          >
+            {language === "en" ? "Terms of service" : "利用条件"}
+          </Link>
+        </nav>
         <p className="mt-4 text-center">
           <Link
             to={language === "en" ? "/start/en" : "/start"}

@@ -10,8 +10,108 @@ import {
   usableContactEndpoint,
 } from "../../shared/contact-settings";
 import { buildFailoverMailto } from "../../shared/contact-failover";
+import { sendAnalyticsEvent } from "../lib/analytics";
 
 type Status = "idle" | "sending" | "success" | "error";
+type ContactAnalyticsEvent =
+  | "contact_submit_start"
+  | "contact_submit_success";
+
+const CJK_TEXT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+function trackContactEvent(
+  name: ContactAnalyticsEvent,
+  language: "ja" | "en",
+) {
+  try {
+    sendAnalyticsEvent(name, { language });
+  } catch {
+    // A blocked or broken analytics script must never block an inquiry.
+  }
+}
+
+function englishOnly(value: string | null | undefined): string {
+  return (value ?? "")
+    .split(/\n{2,}/)
+    .map((paragraph) =>
+      paragraph
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line && !CJK_TEXT.test(line))
+        .join("\n"),
+    )
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function englishInline(
+  value: string | null | undefined,
+  fallback: string,
+): string {
+  return englishOnly(value).replace(/\s*\n+\s*/g, " ").trim() || fallback;
+}
+
+const KNOWN_ENGLISH_AREAS = [
+  { names: ["東京"], english: "Tokyo" },
+  { names: ["福岡"], english: "Fukuoka" },
+  { names: ["台北", "臺北"], english: "Taipei" },
+] as const;
+
+function englishAreasFrom(value: string | null | undefined): string {
+  const authoredEnglish = englishOnly(value);
+  if (authoredEnglish) return authoredEnglish;
+
+  const source = value ?? "";
+  return KNOWN_ENGLISH_AREAS.map(({ names, english }) => ({
+    english,
+    index: Math.min(
+      ...names
+        .map((name) => source.indexOf(name))
+        .filter((index) => index >= 0),
+    ),
+  }))
+    .filter(({ index }) => Number.isFinite(index))
+    .sort((a, b) => a.index - b.index)
+    .map(({ english }) => english)
+    .join(" / ");
+}
+
+const EN_SUBJECT_TRANSLATIONS: Record<string, string> = {
+  "撮影": "Shooting",
+  "撮影依頼": "Shooting",
+  "取材": "Press / Media",
+  "コラボレーション": "Collaboration",
+  "テンプレートについて": "Portfolio Kit",
+  "その他": "Other",
+};
+
+function subjectOptionsFor(
+  value: string | null | undefined,
+  language: "ja" | "en",
+): string[] {
+  const raw = (
+    value ?? "Shooting,Press / Media,Collaboration,Other"
+  )
+    .split(",")
+    .map((option) => option.trim())
+    .filter(Boolean);
+  if (language === "ja") return raw;
+
+  const english = raw
+    .map((option) => EN_SUBJECT_TRANSLATIONS[option] ?? option)
+    .filter((option) => !CJK_TEXT.test(option));
+  const options =
+    english.length > 0
+      ? english
+      : ["Shooting", "Press / Media", "Collaboration", "Other"];
+  return [...new Set(options)];
+}
+
+const readableBodyStyle = {
+  fontSize: "max(0.875rem, var(--body-size, 0.875rem))",
+  lineHeight: "max(1.75, var(--body-leading, 2))",
+  letterSpacing: "var(--body-tracking, 0.01em)",
+} as const;
 
 export default function ContactPage({
   language = "ja",
@@ -19,6 +119,7 @@ export default function ContactPage({
   language?: "ja" | "en";
 }) {
   usePageLanguage(language);
+  const english = language === "en";
   const {
     data,
     isLoading,
@@ -34,31 +135,72 @@ export default function ContactPage({
     queryFn: async () => jsonOrThrow(await api.pricing.$get()),
   });
   const plans = pricingData?.plans ?? [];
+  // Pricing does not have separate EN fields yet. Do not put a Japanese plan
+  // card into the English route; an English-authored plan still renders.
+  const visiblePlans = english
+    ? plans.filter((plan) =>
+        [plan.title, plan.description, plan.features, plan.note].every(
+          (text) => !CJK_TEXT.test(text ?? ""),
+        ),
+      )
+    : plans;
 
   // 旧DBに残った不正な設定値をそのままフォームの送信先やmailtoへ渡さない。
   // 有効値だけを使うので、管理画面を通らない古いデータでも壊れた連絡先を公開しない。
   const formspreeUrl = usableContactEndpoint(data?.formspreeUrl);
   const contactEmail = usableContactEmail(data?.contactEmail);
-  // i18n Phase 3: EN page falls back to the JP copy per field when no EN text is
-  // set yet, so /en/contact never goes blank while the owner is still translating.
-  const intro =
-    language === "en"
-      ? data?.contactIntroEn || data?.contactIntro
-      : data?.contactIntro;
-  const note =
-    language === "en"
-      ? data?.contactNoteEn || data?.contactNote
-      : data?.contactNote;
-  const flow =
-    language === "en"
-      ? data?.contactFlowEn || data?.contactFlow
-      : data?.contactFlow;
+  // An untranslated field used to fall straight back to Japanese. That kept
+  // the page non-empty, but produced a mixed-language enquiry form. Use neutral
+  // English guidance instead. Location names are translated only when their
+  // Japanese source is actually configured below.
+  const intro = english
+    ? data
+      ? englishOnly(data.contactIntroEn) ||
+        "For assignments, interviews, or collaborations, feel free to get in touch."
+      : ""
+    : data?.contactIntro;
+  const note = english
+    ? data
+      ? englishOnly(data.contactNoteEn) ||
+        "You are welcome to write even if the details are still taking shape."
+      : ""
+    : data?.contactNote;
+  const flow = english
+    ? englishOnly(data?.contactFlowEn)
+    : data?.contactFlow;
   // 撮影を受ける地域。頼む側がいちばん先に知りたいことで、かつ検索で
   // 実際に打たれる言葉（地名）でもある。空なら節ごと出さない。
-  const areas =
-    language === "en"
-      ? data?.contactAreasEn || data?.contactAreas
-      : data?.contactAreas;
+  const areas = english
+    ? englishOnly(data?.contactAreasEn) || englishAreasFrom(data?.contactAreas)
+    : data?.contactAreas;
+  const englishWelcome = english
+    ? englishOnly(data?.contactEnglishNote)
+    : data?.contactEnglishNote;
+  const pageLabel = english
+    ? englishInline(data?.contactLabel, "Contact")
+    : data?.contactLabel ?? "Contact";
+  const formName = english
+    ? englishInline(data?.contactFormName, "Name")
+    : data?.contactFormName ?? "Name";
+  const formEmail = english
+    ? englishInline(data?.contactFormEmail, "Email")
+    : data?.contactFormEmail ?? "Email";
+  const formSubject = english
+    ? englishInline(data?.contactFormSubject, "Subject")
+    : data?.contactFormSubject ?? "Subject";
+  const formMessage = english
+    ? englishInline(data?.contactFormMessage, "Message")
+    : data?.contactFormMessage ?? "Message";
+  const messagePlaceholder = english
+    ? englishInline(
+        data?.contactMessagePlaceholder,
+        "Tell me about the project, preferred date and location, and any visual references.",
+      )
+    : data?.contactMessagePlaceholder || undefined;
+  const subjectOptions = subjectOptionsFor(
+    data?.contactSubjectOptions,
+    language,
+  );
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   // 失敗したときだけ組み立てる mailto。書いた本文をそのまま持っていける形に
@@ -105,7 +247,7 @@ export default function ContactPage({
     ? data!.contactLayout!
     : "center";
   // 説明が何も無いのに2列にすると、左が空いた歪な画面になる。
-  const hasLead = !!(data?.contactEnglishNote || intro || note || flow || areas);
+  const hasLead = !!(englishWelcome || intro || note || flow || areas);
   const layout =
     contactLayout === "split" && !hasLead ? "left" : contactLayout;
   const leadAlign = layout === "center" ? "text-center" : "text-left";
@@ -149,6 +291,24 @@ export default function ContactPage({
     language === "en"
       ? "Still not going through? Email works too:"
       : "うまく送れないときは、メールでも受け付けています。";
+  const sentMessage = english
+    ? englishInline(
+      data?.contactSentMessage,
+        "Thank you. Your message has been sent.",
+      )
+    : data?.contactSentMessage ?? fallbackSent;
+  const sendAnother = english
+    ? englishInline(data?.contactSendAnother, "Send another")
+    : data?.contactSendAnother ?? "Send another";
+  const sendError = english
+    ? englishInline(data?.contactErrorMessage, fallbackSendError)
+    : data?.contactErrorMessage ?? fallbackSendError;
+  const sendButton = english
+    ? englishInline(data?.contactSendButton, "Send")
+    : data?.contactSendButton ?? "Send";
+  const sendingButton = english
+    ? englishInline(data?.contactSendingButton, "Sending...")
+    : data?.contactSendingButton ?? "Sending...";
 
   const validate = (fd: FormData) => {
     const e: Record<string, string> = {};
@@ -188,6 +348,7 @@ export default function ContactPage({
     setErrors({});
     submittingRef.current = true;
     setStatus("sending");
+    trackContactEvent("contact_submit_start", language);
 
     const failed = () => {
       setFailoverMailto(buildFailoverMailto(contactEmail, fd));
@@ -204,6 +365,7 @@ export default function ContactPage({
         setFailoverMailto("");
         setStatus("success");
         formRef.current?.reset();
+        trackContactEvent("contact_submit_success", language);
       } else {
         failed();
       }
@@ -217,8 +379,9 @@ export default function ContactPage({
   return (
     <>
       {/* H1: Pricing — quiet cards, only when published plans exist */}
-      {plans.length > 0 && (
+      {visiblePlans.length > 0 && (
         <section
+          lang={language}
           className="max-w-3xl mx-auto site-page site-page-top pb-4"
           ref={pricingRef}
         >
@@ -234,9 +397,9 @@ export default function ContactPage({
             Pricing
           </h2>
           <div
-            className={`grid grid-cols-1 gap-6 md:gap-8 ${plans.length === 1 ? "max-w-sm mx-auto" : "sm:grid-cols-2"}`}
+            className={`grid grid-cols-1 gap-6 md:gap-8 ${visiblePlans.length === 1 ? "max-w-sm mx-auto" : "sm:grid-cols-2"}`}
           >
-            {plans.map((p, i) => {
+            {visiblePlans.map((p, i) => {
               const features = (p.features ?? "")
                 .split("\n")
                 .map((l) => l.trim())
@@ -325,13 +488,14 @@ export default function ContactPage({
       )}
 
       <section
+        lang={language}
         className={`${
           layout === "center"
             ? "max-w-md"
             : layout === "left"
               ? "max-w-xl"
               : "max-w-3xl"
-        } mx-auto site-page ${plans.length > 0 ? "pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))]" : "site-page-top"} pb-12 md:pb-20 min-h-[calc(100dvh-180px)]`}
+        } mx-auto site-page ${visiblePlans.length > 0 ? "pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))]" : "site-page-top"} pb-12 md:pb-20 min-h-[calc(100dvh-180px)]`}
         ref={entranceRef}
         data-contact-layout={layout}
       >
@@ -341,7 +505,7 @@ export default function ContactPage({
           className="mb-12"
           align={layout === "center" ? "center" : "left"}
         >
-          {data?.contactLabel ?? "Contact"}
+          {pageLabel}
         </PageTitle>
 
         {/* split では説明とフォームを横に並べる。スマホは常に縦積み。 */}
@@ -356,11 +520,11 @@ export default function ContactPage({
         {/* i18n Phase 3: "English inquiries welcome" note — always visible near the
             heading regardless of the JP/EN toggle, so an English-only visitor on the
             default JP page still sees they can reach out. Hidden when set to "". */}
-        {status !== "success" && data?.contactEnglishNote && (
+        {status !== "success" && englishWelcome && (
           <p
             className={`${leadAlign} font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] -mt-6 mb-8 break-words page-entrance page-entrance-delay-1`}
           >
-            {data.contactEnglishNote}
+            {englishWelcome}
           </p>
         )}
 
@@ -370,12 +534,8 @@ export default function ContactPage({
             so the thank-you moment stays quiet). */}
         {formspreeUrl && status !== "success" && intro && (
           <p
-            className={`${leadAlign} text-[color:var(--text-quiet)] -mt-4 mb-5 break-words ja-prose page-entrance page-entrance-delay-1`}
-            style={{
-              fontSize: "var(--body-size, 0.875rem)",
-              lineHeight: "var(--body-leading, 2)",
-              letterSpacing: "var(--body-tracking, 0.01em)",
-            }}
+            className={`${leadAlign} text-[color:var(--text-quiet)] -mt-4 mb-5 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
+            style={readableBodyStyle}
           >
             {intro}
           </p>
@@ -384,16 +544,16 @@ export default function ContactPage({
             依頼の流れ。どちらも設定で空にすれば消える。 */}
         {formspreeUrl && status !== "success" && note && (
           <p
-            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words ja-prose page-entrance page-entrance-delay-1`}
-            style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
+            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
+            style={readableBodyStyle}
           >
             {note}
           </p>
         )}
         {areas && (
           <p
-            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words ja-prose page-entrance page-entrance-delay-1`}
-            style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
+            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
+            style={readableBodyStyle}
           >
             {areas}
           </p>
@@ -404,8 +564,8 @@ export default function ContactPage({
               Flow
             </p>
             <p
-              className="text-[color:var(--text-quiet)] break-words ja-prose"
-              style={{ fontSize: "0.8rem", lineHeight: 1.9 }}
+              className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
+              style={readableBodyStyle}
             >
               {flow}
             </p>
@@ -417,12 +577,8 @@ export default function ContactPage({
           <div className="py-4 space-y-6 page-entrance page-entrance-delay-1">
             {intro && (
               <p
-                className="text-[color:var(--text-quiet)] break-words ja-prose"
-                style={{
-                  fontSize: "var(--body-size, 0.875rem)",
-                  lineHeight: "var(--body-leading, 2)",
-                  letterSpacing: "var(--body-tracking, 0.01em)",
-                }}
+                className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
+                style={readableBodyStyle}
               >
                 {intro}
               </p>
@@ -444,7 +600,9 @@ export default function ContactPage({
                     rel="noopener noreferrer"
                     className="tap-target font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
                   >
-                    {data?.snsLabelInstagram ?? "Instagram"}
+                    {english
+                      ? "Instagram"
+                      : data?.snsLabelInstagram ?? "Instagram"}
                   </a>
                 )}
                 {data?.profileTwitter && (
@@ -454,7 +612,7 @@ export default function ContactPage({
                     rel="noopener noreferrer"
                     className="tap-target font-en text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] nav-link-luxury transition-colors duration-300 py-1.5"
                   >
-                    {data?.snsLabelTwitter ?? "X"}
+                    {english ? "X" : data?.snsLabelTwitter ?? "X"}
                   </a>
                 )}
               </div>
@@ -473,11 +631,8 @@ export default function ContactPage({
                 <div className="space-y-3">
                   <p
                     role="alert"
-                    className="text-[color:var(--text-quiet)] break-words ja-prose"
-                    style={{
-                      fontSize: "var(--body-size, 0.875rem)",
-                      lineHeight: "var(--body-leading, 2)",
-                    }}
+                    className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
+                    style={readableBodyStyle}
                   >
                     {language === "en"
                       ? "Could not load the contact details just now."
@@ -494,10 +649,7 @@ export default function ContactPage({
               ) : (
                 <p
                   className="text-[color:var(--text-quiet)] italic"
-                  style={{
-                    fontSize: "var(--body-size, 0.875rem)",
-                    lineHeight: "var(--body-leading, 2)",
-                  }}
+                  style={readableBodyStyle}
                 >
                   {language === "en" ? "Coming soon." : "準備中です。"}
                 </p>
@@ -511,7 +663,7 @@ export default function ContactPage({
               aria-live="polite"
               className="text-sm text-[color:var(--text-quiet)]"
             >
-              {data?.contactSentMessage ?? fallbackSent}
+              {sentMessage}
             </p>
             <button
               onClick={() => {
@@ -520,7 +672,7 @@ export default function ContactPage({
               }}
               className="mt-6 font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] transition-colors duration-300"
             >
-              {data?.contactSendAnother ?? "Send another"}
+              {sendAnother}
             </button>
           </div>
         ) : (
@@ -541,7 +693,7 @@ export default function ContactPage({
               className="absolute left-[-9999px] w-px h-px opacity-0 pointer-events-none"
             />
             <Field
-              label={data?.contactFormName ?? "Name"}
+              label={formName}
               htmlFor="contact-name"
               error={errors.name}
             >
@@ -562,7 +714,7 @@ export default function ContactPage({
             </Field>
 
             <Field
-              label={data?.contactFormEmail ?? "Email"}
+              label={formEmail}
               htmlFor="contact-email"
               error={errors.email}
             >
@@ -583,7 +735,7 @@ export default function ContactPage({
             </Field>
 
             <Field
-              label={data?.contactFormSubject ?? "Subject"}
+              label={formSubject}
               htmlFor="contact-subject"
             >
               <select
@@ -602,14 +754,7 @@ export default function ContactPage({
                     件名は必須ではないので、そのことが分かる語を置く
                     （到達点(7)「意味のない仮の表示をしない」）。 */}
                 <option value="">{fallbackSubjectNone}</option>
-                {(
-                  data?.contactSubjectOptions ??
-                  "Shooting,Press / Media,Collaboration,Other"
-                )
-                  .split(",")
-                  .map((opt) => opt.trim())
-                  .filter(Boolean)
-                  .map((opt) => (
+                {subjectOptions.map((opt) => (
                     // Use the human-readable label as the value so notifications are
                     // legible and non-ASCII (e.g. Japanese) options don't collide.
                     <option key={opt} value={opt}>
@@ -620,7 +765,7 @@ export default function ContactPage({
             </Field>
 
             <Field
-              label={data?.contactFormMessage ?? "Message"}
+              label={formMessage}
               htmlFor="contact-message"
               error={errors.message}
             >
@@ -628,7 +773,7 @@ export default function ContactPage({
                 id="contact-message"
                 name="message"
                 rows={5}
-                placeholder={data?.contactMessagePlaceholder || undefined}
+                placeholder={messagePlaceholder}
                 aria-required="true"
                 aria-invalid={!!errors.message || undefined}
                 aria-describedby={
@@ -649,7 +794,7 @@ export default function ContactPage({
                   data-contact-error
                   className="text-xs text-[color:var(--form-error)]"
                 >
-                  {data?.contactErrorMessage ?? fallbackSendError}
+                  {sendError}
                 </p>
                 {/* メールを設定していないサイトでは何も足さない（購入者の
                     まっさらな状態で、押せない案内を出さないため）。 */}
@@ -670,6 +815,35 @@ export default function ContactPage({
               </div>
             )}
 
+            <p
+              className="text-xs text-[color:var(--text-quiet)]"
+              style={{ lineHeight: 1.8 }}
+            >
+              {english ? (
+                <>
+                  Please review the{" "}
+                  <a
+                    href="/privacy/en"
+                    className="underline underline-offset-4 decoration-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300"
+                  >
+                    Privacy Policy
+                  </a>{" "}
+                  before sending.
+                </>
+              ) : (
+                <>
+                  送信前に
+                  <a
+                    href="/privacy"
+                    className="underline underline-offset-4 decoration-[rgba(var(--foreground-rgb),0.25)] hover:text-[rgba(var(--foreground-rgb),0.70)] transition-colors duration-300"
+                  >
+                    プライバシーポリシー
+                  </a>
+                  をご確認ください。
+                </>
+              )}
+            </p>
+
             <button
               type="submit"
               disabled={status === "sending"}
@@ -677,8 +851,8 @@ export default function ContactPage({
               className="self-start font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-6 py-2 rounded-md hover:opacity-85 transition-opacity duration-300 disabled:opacity-30 mt-1"
             >
               {status === "sending"
-                ? (data?.contactSendingButton ?? "Sending...")
-                : (data?.contactSendButton ?? "Send")}
+                ? sendingButton
+                : sendButton}
             </button>
           </form>
         )}

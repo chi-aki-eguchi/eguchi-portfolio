@@ -5,6 +5,7 @@ const photo = (over: Partial<SitemapPhoto> = {}): SitemapPhoto => ({
   id: 1,
   url: "/api/images/photos/a.jpg",
   title: "",
+  description: "",
   seriesId: null,
   createdAt: new Date("2026-06-01T00:00:00Z"),
   ...over,
@@ -142,5 +143,43 @@ describe("buildSitemapXml", () => {
     expect(
       imageLocs(xml).filter((u) => u.endsWith("/profile/me.jpg")),
     ).toHaveLength(2);
+  });
+
+  test("写真詳細は、人が固有の題と説明を付けた代表作だけを載せる", () => {
+    const input = base();
+    const edited = photo({
+      id: 90,
+      url: "/api/images/photos/edited.jpg",
+      title: "藍の窓",
+      description:
+        "藍染めの布が風を受け、窓から入る午後の光の中でゆっくり揺れている一枚です。",
+    });
+    const thin = photo({ id: 91, url: "/api/images/photos/thin.jpg" });
+    const xml = buildSitemapXml({
+      ...input,
+      photos: [...input.photos, edited, thin],
+      photoPaths: ["/photo/90", "/photo/91", "/photo/999"],
+    });
+    expect(xml).toContain("<loc>https://example.com/photo/90</loc>");
+    expect(xml).not.toContain("/photo/91");
+    expect(xml).not.toContain("/photo/999");
+  });
+
+  test("同じ題または説明を使い回した写真詳細は sitemap へ載せない", () => {
+    const description =
+      "夕方の海辺で、波の反射と歩く人の影がひとつに重なった瞬間を記録した写真です。";
+    const photos = [
+      photo({ id: 90, title: "海辺", description }),
+      photo({ id: 91, title: "海辺", description: `${description}別カット。` }),
+      photo({ id: 92, title: "夕方の海", description }),
+    ];
+    const xml = buildSitemapXml({
+      ...base(),
+      photos,
+      photoPaths: photos.map((p) => `/photo/${p.id}`),
+    });
+    expect(xml).not.toContain("/photo/90");
+    expect(xml).not.toContain("/photo/91");
+    expect(xml).not.toContain("/photo/92");
   });
 });

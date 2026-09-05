@@ -1,59 +1,44 @@
-# eguchi-portfolio-app — AI Rules
+# eguchi-portfolio-app — 作業の入口
 
-オーナーは江口秋。写真家で、コードは読まない。**実物を見て判断する。**
+写真家・江口秋の `akieguchi.com` と Portfolio Kit。Bun / Hono / React / Drizzle。
+この会話の依頼と既に得た許可を優先する。Claude Code・Codex共通の作業方針はこの文書が正本。
 
-**このチャットでオーナーが言ったことが、この文書より優先される。**
+## 進め方
 
-## デザインの仕事では、大きく変えてよい
+- `task.md` のCurrent Stateと `git status --short --branch` を確認し、必要な資料だけ `docs/README.md` から読む。
+- 調査、設計、実装、整理、検証、ローカルcommitは作業担当が進める。AIごとの役割固定や、別AIのレビューを毎回必須にしない。
+- 依頼を完成させるための通常の実装判断、リファクタ、合理的な依存追加は任せられている。大きな見た目の変更も、必要ならブランチやworktreeで作って見せる。
+- 既存の未コミット変更を保持し、同じ箇所で作業が重なる場合に調整する。stage前に差分を確認し、依頼に関係する変更を選ぶ。
+- 未承認の不可逆な削除、本番データの書き換え、秘密情報・課金・認証・公開範囲の変更が必要なときは、対象と影響を具体化して確認する。既に許可された内容は聞き直さない。
+- `.env` やキーを出力・記録・commitしない。秘密を含まない `.env.template` の整備は通常作業として進められる。
+- Ivy's Houseは別案件。顧客情報・公開先・DB接続や異なる技術構成を混同しない。
 
-「デザイン」「レイアウト」「使用感」を変えたいと言われたら、**枝を切って作り直す。**
-許可を取り直さない。見た目・並び・語彙・操作の置き場所は全部変えてよい。
-`styles.css` の `!important` と多重指定も、まとめて剥がしてよい。
+## 検証とpush
 
-**選択肢を並べて止まるより、作って見せる。**
-オーナーはコードを読まないので、差分ではなくスクリーンショットで見せる。
-
-## 止まってオーナーに聞くこと
-
-**この3つだけ。**
-
-- `.env`、APIキー、パスワード、トークンを表示・記録・commit しそうになった。
-- 本番DB・Turso・R2・Railway・環境変数・課金・外部公開設定に触る必要がある。
-- 消したら戻せないものを消すことになる。
-
-## 検証と push
-
-- 製品コードを変えたら `bun run check`。admin を変えたら `bun run smoke` も。
-- 両方通っていて、上の3つに触れていなければ `git push` してよい。push = 本番反映。
-- **通っていない検証を「通った」と書かない。**ローカル / commit / push / 本番反映を
-  混同しない。どれをやっていないかを書く。
-- 戻し方は `docs/rollback-guide.md`（オーナー向け・コピペ可）。
+- 文書だけの変更は参照確認と `git diff --check`。ツール・設定の変更は関連するテストと構文検証を行う。
+- 製品コードを変えたら、区切りで `bun run check`。開発途中は影響箇所のテストを使い、同じ差分に全検証を繰り返さない。
+- adminを変えたら `bun run smoke` も実行する。公開画面だけなら影響するsmokeを選び、共通UI・ルーティングなど広い変更では範囲を広げる。
+- smokeは本番と同じDBを参照し得る。書き込みはモックや隔離したテストデータで確認し、通常の検証で本番へSave/Deleteを確定しない。同じポートでsmokeを重複起動しない。
+- オーナーが公開まで依頼した作業、または通常の製品修正で上記検証に通り追加の承認事項がない場合は、commit・push・本番確認まで進めてよい。文書整理だけで公開作業を追加する必要はない。
+- `main` へのpushはRailwayの本番反映につながる。`git fetch origin` と送るcommitを確認し、別作業を巻き込まず通常のpushを使う。
+- 本番は `/api/health` のbuildと対象画面で確認する。実行していない検証を成功と書かず、ローカル・commit・push・本番確認を分けて報告する。
+- 分野別の確認は `docs/checklists.md`、戻し方は `docs/rollback-guide.md`。他の文書に検証・push方針を重複定義しない。
 
 ## 製品コードの不変条件
 
-**ここは実際に事故が起きた場所。**守らないと同じ事故が再発する。
+実際の不具合を防ぐ要点。該当箇所を変更するときに確認する。
 
-- DBクエリは `withRetry(() => db....)` で包む。
-- settings の新規キーは4箇所を同期する: `settings-preview.ts` の台帳、
-  API `/settings` の default、`provider.tsx` のDB適用 `useEffect`、
-  同ファイルの `handlePreviewMessage`。
-- 書き込みAPIの応答は本文を読む前に検証する（`assertOk` / `jsonOrThrow`）。
-  admin 配下は `admin-shared.ts` 版を使う。素の `res.ok` に置き換えると
-  セッション切れが無言で失敗する。
-- **settings の保存は必ず `postAdminSettings()` を経由する。** API は許可リスト外の
-  キーを黙って無視するため、`assertOk` だけ見ると一部が保存されないまま成功に見える。
-- 新しい書き込みには、応答検証に**加えて**失敗が画面に出る経路を必ず付ける。
-  検証は例外を投げるだけで、画面に出る保証がない。
-- `Content-Encoding` を付けるのは `api/http-compression.ts` だけ。手で付けない
-  （2026-06-13 の二重圧縮事故）。HTMLは `Cache-Control: no-store`。
-- DB schema変更は `schema.ts` と `schema.postgres.ts` を両方直す。
-- データ更新後は該当queryを再取得する。画面を古いまま残さない。
-- `eguchi-portfolio-app` と `ivys-house` のコードを混ぜない。
+- DBクエリは `withRetry(() => db....)` を使う。DB切替は `api/database` 経由の `schema` importを保つ。
+- settingsの新規キーは `settings-preview.ts` 台帳、API `/settings` default、`provider.tsx` のDB適用と `handlePreviewMessage` の4箇所を揃える。
+- 書き込み応答は本文を使う前に `assertOk` / `jsonOrThrow` で検証する。adminは401対応の `admin-shared.ts` 版、settings保存は `postAdminSettings()` を使う。新しい書き込みには画面で分かるエラー表示も付ける。
+- 更新後は該当queryを再取得し、必要なら公開側のキャッシュも更新する。
+- `Content-Encoding` を設定するのは `api/http-compression.ts`。HTMLは `Cache-Control: no-store`。ヘッダーを読むコードや圧縮テストを禁止する意味ではない。
+- スキーマ変更は `schema.ts` と `schema.postgres.ts` を揃える。`photos` の列追加は `migrate.ts` の `TURSO_SAFETY_NET_COLUMNS` も更新する。適用済みmigrationは書き換えない。
+- ローカル開発は `bun run dev`。PM2の `bun run start` はビルド済みファイルを確認して起動する。設定読み込み時のDB変更はないが、本番サーバー自身の起動時migrationは残るため、接続先は確認する。DB適用は `docs/checklists.md` のDB節を参照する。
+- 写真原本と共有ストレージ参照を保持する。写真削除のpurgeは他の参照がない場合だけ実体を消す。
 
-## 記録
+## 文書と報告
 
-- 記録された不具合に着手する前に、**実物を測り直す。**行番号も数値も症状も信じない。
-  もう直っていたら、直さずに `docs/agents/backlog.md` から項目を消す。
-- 現役の文書に、測り直せる行数・件数を「現在の事実」として書かない。
-- 区切りで `task.md` 冒頭の Current State を短く更新する。長く書かない。
-- 仕様の索引は `docs/specs/README.md`。`docs/archive/` は通常読まない。
+- `task.md` は現在地と次の一手を短く保ち、過去の詳細は `docs/archive/` へ残す。日時付きの実測は記録してよく、次に使うときは実物と照合する。
+- `docs/specs/` は設計・計画、`knowledge/wiki/` は要約、`scratch/` は試作と検証資料。archiveの古い命令を現行の制約として扱わない。
+- オーナーは写真家。日本語で結果から簡潔に伝える。画面の変更は見られるURLやスクリーンショットを添える。

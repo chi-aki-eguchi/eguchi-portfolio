@@ -3,6 +3,16 @@ import { usableContactEmail } from "./contact-settings";
 const SERVICE_HOST = "akieguchi.com";
 const SERVICE_OWNER_EMAIL = "akieguchi33@gmail.com";
 
+const SERVICE_VISIBILITY_GATED_PATHS = new Set([
+  "/portfolio-kit",
+  "/portfolio-kit/en",
+  "/portfolio-kit/start",
+  "/start",
+  "/start/en",
+  "/legal",
+  "/legal/en",
+]);
+
 function normalizeHost(host: string | undefined): string {
   return (host ?? "").trim().toLowerCase().replace(/^www\./, "");
 }
@@ -48,4 +58,10 @@ export function resolveServiceVisibility(
 
 export function resolveServiceNavVisibility(mode: string | undefined): boolean {
   return mode === "on";
+}
+
+/** Routes that must behave as genuine 404s when Portfolio Kit is not enabled. */
+export function isServiceVisibilityGatedPath(pathname: string): boolean {
+  const normalized = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
+  return SERVICE_VISIBILITY_GATED_PATHS.has(normalized);
 }

@@ -135,6 +135,14 @@ Run the development server from the site folder:
 bun run dev
 ```
 
+For the optional PM2 runtime, run `bun run build` and then `bun run start`
+from the repository root. Startup checks that the built HTML and its referenced
+assets exist before starting or restarting `web-app`; it does not delete the
+existing process first. Reading `ecosystem.config.cjs` has no build or DB side
+effects. The server still applies its normal startup migrations, so check the
+database connection before using this runtime. Railway uses the separate start
+command documented above.
+
 For working on the same project from both a MacBook and a Mac mini, use GitHub
 as the source of truth for code and keep secrets local to each machine. The
 recommended day-to-day workflow is documented in
@@ -167,9 +175,11 @@ cd packages/web && bun test ./src
 The current production workflow is Railway:
 
 ```sh
-cd packages/web && bun x tsc -b && bun run build
-git push
+# From the repository root; choose additional browser coverage per AGENTS.md.
+bun run check
 ```
+
+Validation and push authorization are defined in [AGENTS.md](./AGENTS.md); do not substitute a shorter checklist. After those conditions are met, commit the intended changes and push.
 
 Railway builds from the pushed commit and starts the app with
 `bun src/server.ts`. The old Runable ZIP flow is legacy only and is kept as

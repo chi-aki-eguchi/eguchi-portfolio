@@ -415,6 +415,11 @@ export function Provider({ children }: ProviderProps) {
     // D4: configured px sizes are multiplied by the global scale at use-time.
     const sizePx = (v: string | undefined) =>
       v ? `calc(${v}px * var(--global-font-scale, 1))` : undefined;
+    // Body copy carries the inquiry flow, prices and policy text. Preserve the
+    // owner's scale above this point, but never let an old saved value shrink
+    // functional reading text below 14px.
+    const bodySizePx = (v: string | undefined) =>
+      v ? `max(14px, ${sizePx(v)})` : undefined;
 
     // D4: global type scale + link styling
     set("--global-font-scale", data?.globalFontScale || undefined);
@@ -465,7 +470,7 @@ export function Provider({ children }: ProviderProps) {
 
     set("--nav-opacity", data?.navOpacity);
     set("--nav-size", sizePx(data?.navSize));
-    set("--body-size", sizePx(data?.bodySize));
+    set("--body-size", bodySizePx(data?.bodySize));
     set("--heading-size", sizePx(data?.headingSize));
     set("--section-label-size", sizePx(data?.sectionLabelSize));
     set("--section-label-opacity", data?.sectionLabelOpacity);
@@ -710,6 +715,7 @@ export function Provider({ children }: ProviderProps) {
       };
       const sizePx = (v: string) =>
         `calc(${v}px * var(--global-font-scale, 1))`;
+      const bodySizePx = (v: string) => `max(14px, ${sizePx(v)})`;
       const em = (v: string) => `${v}em`;
 
       // Colors — B-21: DB適用側と同じ規則で、テーマごとに当てる色を選ぶ。
@@ -797,7 +803,7 @@ export function Provider({ children }: ProviderProps) {
       // Typography — px sizes multiplied by the global scale at use-time
       applyVar("--nav-opacity", s.navOpacity);
       applyVar("--nav-size", s.navSize, sizePx);
-      applyVar("--body-size", s.bodySize, sizePx);
+      applyVar("--body-size", s.bodySize, bodySizePx);
       applyVar("--heading-size", s.headingSize, sizePx);
       applyVar("--section-label-size", s.sectionLabelSize, sizePx);
       applyVar("--section-label-opacity", s.sectionLabelOpacity);

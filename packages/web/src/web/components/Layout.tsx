@@ -16,11 +16,32 @@ const JA_TO_EN_PATH: Record<string, string> = {
   "/about": "/en/about",
   "/profile": "/en/about",
   "/contact": "/en/contact",
+  "/privacy": "/privacy/en",
+  "/terms": "/terms/en",
+  "/legal": "/legal/en",
 };
 const EN_TO_JA_PATH: Record<string, string> = {
   "/en/about": "/about",
   "/en/contact": "/contact",
+  "/privacy/en": "/privacy",
+  "/terms/en": "/terms",
+  "/legal/en": "/legal",
 };
+const ALWAYS_BILINGUAL_POLICY_PATHS = new Set([
+  "/privacy",
+  "/privacy/en",
+  "/terms",
+  "/terms/en",
+  "/legal",
+  "/legal/en",
+]);
+
+// 方針本文は policy.tsx の遅延チャンクに置いたままにする。ここから本文の
+// module を読むと、全ページの共通Layoutへ日英全文が混ざってしまう。
+const footerPolicyPath = (
+  kind: "privacy" | "terms" | "legal",
+  language: "ja" | "en",
+) => `/${kind}${language === "en" ? "/en" : ""}`;
 
 function useFooterReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -160,20 +181,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const showWork = shouldShowShelf(workNav, workData?.series.length ?? 0);
 
   const dm = useDarkModeContext();
-  const { showServiceInNav } = useServiceVisibility();
+  const { showService, showServiceInNav } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
   const templateCreditUrl = httpHrefOrNull(data?.templateCreditUrl ?? "");
 
   // i18n Phase 3 スライス1: /en/about・/en/contact 表示中は About/Contact の
-  // リンク先を英語パスへ。Gallery・Series・Portfolio Kit は対象外（JPのまま）。
+  // リンク先を英語パスへ。
   const isEnglishPage = location in EN_TO_JA_PATH;
+  // Portfolio Kit は `/en/*` ではなく末尾 `/en`。共通ナビとFooterも、その
+  // ページを読んでいる人を日本語ページへ戻さない。
+  const isEnglishChrome =
+    isEnglishPage || location === "/portfolio-kit/en" || location === "/start/en";
   // 英語文が一つも入力されていないサイト(配布テンプレート既定)では JP|EN を
   // 出さない。ENページ表示中だけは例外 — 直接URLで来た人がJPへ戻れるように。
   const showLanguageSwitch =
-    isEnglishPage || hasPublicEnglishContent(data ?? {});
+    isEnglishPage ||
+    ALWAYS_BILINGUAL_POLICY_PATHS.has(location) ||
+    hasPublicEnglishContent(data ?? {});
   const languagePairHref = isEnglishPage
     ? EN_TO_JA_PATH[location]
     : JA_TO_EN_PATH[location];
+  const footerPolicyLanguage = isEnglishChrome ? "en" : "ja";
 
   // ページを開いた瞬間の順番（2026-08-31）。
   //
@@ -213,15 +241,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ? [{ href: "/work", label: data?.navLabelWork || "Work" }]
       : []),
     {
-      href: isEnglishPage ? "/en/about" : "/about",
+      href: isEnglishChrome ? "/en/about" : "/about",
       label: data?.navLabelAbout ?? "About",
     },
     {
-      href: isEnglishPage ? "/en/contact" : "/contact",
+      href: isEnglishChrome ? "/en/contact" : "/contact",
       label: data?.navLabelContact ?? "Contact",
     },
     ...(showServiceInNav
-      ? [{ href: "/portfolio-kit", label: "Portfolio Kit" }]
+      ? [
+          {
+            href:
+              footerPolicyLanguage === "en"
+                ? "/portfolio-kit/en"
+                : "/portfolio-kit",
+            label: "Portfolio Kit",
+          },
+        ]
       : []),
   ];
 
@@ -340,7 +376,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-[var(--background)] focus:text-[var(--foreground)] focus:px-4 focus:py-2 focus:rounded focus:shadow focus:font-en focus:text-sm focus:border focus:border-[rgba(var(--foreground-rgb),0.2)]"
       >
-        {isEnglishPage ? "Skip to content" : "本文へスキップ"}
+        {footerPolicyLanguage === "en" ? "Skip to content" : "本文へスキップ"}
       </a>
       <header
         data-header-bg={headerBackground}
@@ -395,9 +431,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <button
                   onClick={dm.toggle}
                   aria-label={
-                    dm.resolved === "dark"
-                      ? "ライトモードに切り替え"
-                      : "ダークモードに切り替え"
+                    footerPolicyLanguage === "en"
+                      ? dm.resolved === "dark"
+                        ? "Switch to light mode"
+                        : "Switch to dark mode"
+                      : dm.resolved === "dark"
+                        ? "ライトモードに切り替え"
+                        : "ダークモードに切り替え"
                   }
                   className="w-9 h-9 flex items-center justify-center rounded-full transition-colors duration-300 hover:bg-[rgba(var(--foreground-rgb),0.06)]"
                   style={{
@@ -459,9 +499,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <button
                 onClick={dm.toggle}
                 aria-label={
-                  dm.resolved === "dark"
-                    ? "ライトモードに切り替え"
-                    : "ダークモードに切り替え"
+                  footerPolicyLanguage === "en"
+                    ? dm.resolved === "dark"
+                      ? "Switch to light mode"
+                      : "Switch to dark mode"
+                    : dm.resolved === "dark"
+                      ? "ライトモードに切り替え"
+                      : "ダークモードに切り替え"
                 }
                 className="w-10 h-10 flex items-center justify-center text-[var(--foreground)]"
                 style={{ opacity: 0.45 }}
@@ -625,7 +669,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     } as React.CSSProperties
                   }
                 >
-                  {data?.snsLabelInstagram ?? "Instagram"}
+                  {footerPolicyLanguage === "en"
+                    ? "Instagram"
+                    : data?.snsLabelInstagram ?? "Instagram"}
                 </a>
               )}
               {data?.profileTwitter && (
@@ -640,7 +686,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     } as React.CSSProperties
                   }
                 >
-                  {data?.snsLabelTwitter ?? "X"}
+                  {footerPolicyLanguage === "en"
+                    ? "X"
+                    : data?.snsLabelTwitter ?? "X"}
                 </a>
               )}
               {data?.profileNote && (
@@ -655,7 +703,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     } as React.CSSProperties
                   }
                 >
-                  {data?.snsLabelNote ?? "note"}
+                  {footerPolicyLanguage === "en"
+                    ? "note"
+                    : data?.snsLabelNote ?? "note"}
                 </a>
               )}
             </nav>
@@ -663,7 +713,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* E6: optional, low-key lead-in to Contact (hidden when empty) */}
           {data?.footerCtaLabel && (
             <Link
-              to="/contact"
+              to={footerPolicyLanguage === "en" ? "/en/contact" : "/contact"}
               className="font-en tracking-[0.06em] nav-link-luxury footer-link-public break-words max-w-full"
               style={
                 {
@@ -672,7 +722,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 } as React.CSSProperties
               }
             >
-              {data.footerCtaLabel}
+              {footerPolicyLanguage === "en" ? "Contact" : data.footerCtaLabel}
             </Link>
           )}
           <div
@@ -684,6 +734,59 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   : "items-start"
             }`}
           >
+            <nav
+              aria-label={
+                footerPolicyLanguage === "en"
+                  ? "Policies and sales terms"
+                  : "方針・販売条件"
+              }
+              className={`flex flex-wrap gap-x-4 gap-y-1 ${
+                footerLayout === "center"
+                  ? "justify-center"
+                  : footerLayout === "split"
+                    ? "md:justify-end"
+                    : ""
+              }`}
+            >
+              <Link
+                to={footerPolicyPath("privacy", footerPolicyLanguage)}
+                className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public py-1.5"
+                style={
+                  {
+                    fontSize: "var(--footer-credit-size)",
+                    "--link-rest": "var(--footer-opacity, 0.22)",
+                  } as React.CSSProperties
+                }
+              >
+                Privacy
+              </Link>
+              <Link
+                to={footerPolicyPath("terms", footerPolicyLanguage)}
+                className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public py-1.5"
+                style={
+                  {
+                    fontSize: "var(--footer-credit-size)",
+                    "--link-rest": "var(--footer-opacity, 0.22)",
+                  } as React.CSSProperties
+                }
+              >
+                {footerPolicyLanguage === "en" ? "Terms" : "利用条件"}
+              </Link>
+              {showService && (
+                <Link
+                  to={footerPolicyPath("legal", footerPolicyLanguage)}
+                  className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public py-1.5"
+                  style={
+                    {
+                      fontSize: "var(--footer-credit-size)",
+                      "--link-rest": "var(--footer-opacity, 0.22)",
+                    } as React.CSSProperties
+                  }
+                >
+                  {footerPolicyLanguage === "en" ? "Online sales" : "販売条件"}
+                </Link>
+              )}
+            </nav>
             <p
               className={`break-words max-w-full ${footerLayout === "center" ? "font-en text-center" : "font-en"}`}
               style={{
@@ -727,7 +830,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
 
-      <BackToTop />
+      <BackToTop language={footerPolicyLanguage} />
     </div>
   );
 }

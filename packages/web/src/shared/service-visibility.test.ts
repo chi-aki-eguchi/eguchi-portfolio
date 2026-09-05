@@ -1,9 +1,28 @@
 import { describe, expect, test } from "bun:test";
 import {
+  isServiceVisibilityGatedPath,
   resolveServiceContactEmail,
   resolveServiceNavVisibility,
   resolveServiceVisibility,
 } from "./service-visibility";
+
+describe("isServiceVisibilityGatedPath", () => {
+  test("keeps owner sales, buyer-start, and disclosure routes private when disabled", () => {
+    for (const path of [
+      "/portfolio-kit",
+      "/portfolio-kit/en",
+      "/portfolio-kit/start",
+      "/start",
+      "/start/en",
+      "/legal",
+      "/legal/en/",
+    ]) {
+      expect(isServiceVisibilityGatedPath(path)).toBe(true);
+    }
+    expect(isServiceVisibilityGatedPath("/privacy")).toBe(false);
+    expect(isServiceVisibilityGatedPath("/terms/en")).toBe(false);
+  });
+});
 
 describe("resolveServiceContactEmail", () => {
   test("uses configured contact details on distributed sites", () => {

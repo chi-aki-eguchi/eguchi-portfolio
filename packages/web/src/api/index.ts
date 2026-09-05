@@ -18,7 +18,9 @@ import {
   UNREADABLE_IMAGE_MESSAGE,
 } from "./uploaded-image-processing";
 import { buildPublicCoverPhotoFilter } from "./series-cover-visibility";
+import { photoDetailId } from "./public-routes";
 import { isShelfKind, normalizeShelfKind } from "../shared/shelf";
+import { indexablePhotoNeighbours } from "../shared/photo-page-text";
 import {
   buildFocalRotationByDelta,
   buildFocalRotationToAngle,
@@ -44,6 +46,7 @@ import {
   purgeDbThenStorage,
 } from "./photo-integrity";
 import { bumpSettingsVersion } from "./settings-version";
+import { bumpPublicContentVersion } from "../shared/public-content-version";
 import {
   contactDefaultsFor,
   CONTACT_INTRO_DEFAULT,
@@ -627,6 +630,34 @@ async function generateWebP(
     .toBuffer();
 }
 
+/**
+ * 公開応答から管理専用の6列を落とす。**剥がす場所はここ1か所だけにする。**
+ *
+ * 2か所に増やすと、片方に列を足し忘れて `fileHash` などが公開側へ漏れる。
+ * `photo-list-columns.test.ts` がこの関数を名指しで見張っている。
+ */
+export function toPublicPhoto<
+  T extends {
+    fileHash?: unknown;
+    thumbKey?: unknown;
+    mediumKey?: unknown;
+    isPublished?: unknown;
+    deletedAt?: unknown;
+    shotAtSource?: unknown;
+  },
+>(row: T) {
+  const {
+    fileHash: _fileHash,
+    thumbKey: _thumbKey,
+    mediumKey: _mediumKey,
+    isPublished: _isPublished,
+    deletedAt: _deletedAt,
+    shotAtSource: _shotAtSource,
+    ...pub
+  } = row;
+  return pub;
+}
+
 export function photoWithThumbs<
   T extends {
     thumbKey?: string | null;
@@ -843,6 +874,21 @@ const app = new Hono()
     if (!isJsonObject(body))
       return c.json({ error: "リクエスト本文の形式が正しくありません。" }, 400);
     return next();
+  })
+  // Any successful admin mutation can change public HTML, OGP, navigation or
+  // image selection. Advance one shared generation after the response succeeds;
+  // server.ts clears only its in-memory public caches on the next page request.
+  .use(async (c, next) => {
+    await next();
+    const mutates = !["GET", "HEAD", "OPTIONS"].includes(c.req.method);
+    if (
+      mutates &&
+      c.req.path.startsWith("/api/admin/") &&
+      c.res.status >= 200 &&
+      c.res.status < 300
+    ) {
+      bumpPublicContentVersion();
+    }
   })
 
   // ── Health ──────────────────────────────────────────────
@@ -1455,20 +1501,71 @@ const app = new Hono()
     // isPublished と deletedAt はこの分岐では常に true / null の定数。
     // 管理画面は `?all=1` で来るので、そちらは今までどおり全部返す。
     if (includeUnpublished) return c.json({ photos: withThumbs }, 200);
+    return c.json({ photos: withThumbs.map(toPublicPhoto) }, 200);
+  })
+
+  // 写真1枚ぶんの公開データ。
+  //
+  // 画像検索や共有から該当する1枚へ直接着地できるよう、`/photo/:id` 用の
+  // 公開データだけを返す。
+  //
+  // `prev` / `next` を返すのは**クローラの通り道**を作るため。これがあると、
+  // 前後へ辿れる一方、1枚のページのために一覧（`/photos`）全体は読ませない。
+  .get("/photos/:id", async (c) => {
+    const id = photoDetailId(`/photo/${c.req.param("id")}`);
+    if (id == null) return c.json({ error: "Not found" }, 404);
+    const visible = and(
+      isNull(schema.photos.deletedAt),
+      eq(schema.photos.isPublished, true),
+    );
+    const [row] = await withRetry(() =>
+      db
+        .select(PHOTO_LIST_COLUMNS)
+        .from(schema.photos)
+        .where(and(eq(schema.photos.id, id), visible))
+        .limit(1),
+    );
+    if (!row) return c.json({ error: "Not found" }, 404);
+
+    // 前後リンクも sitemap / robots と同じ「編集済み代表作」だけに限る。
+    // noindex の共有ページ同士を連鎖させると、代表作1枚から全公開写真を巡回
+    // できてしまい、薄いページを検索エンジンへ大量に案内することになる。
+    const ordered = await withRetry(() =>
+      db
+        .select({
+          id: schema.photos.id,
+          title: schema.photos.title,
+          description: schema.photos.description,
+        })
+        .from(schema.photos)
+        .where(visible)
+        .orderBy(schema.photos.sortOrder, schema.photos.id),
+    );
+    const { prev, next } = indexablePhotoNeighbours(ordered, row.id);
+
+    let series: { title: string; slug: string; kind: string } | null = null;
+    if (row.seriesId != null) {
+      const [s] = await withRetry(() =>
+        db
+          .select({
+            title: schema.series.title,
+            slug: schema.series.slug,
+            kind: schema.series.kind,
+          })
+          .from(schema.series)
+          .where(
+            and(
+              eq(schema.series.id, row.seriesId as number),
+              eq(schema.series.isPublished, true),
+            ),
+          )
+          .limit(1),
+      );
+      if (s) series = { ...s, kind: s.kind === "work" ? "work" : "series" };
+    }
+
     return c.json(
-      {
-        photos: withThumbs.map(
-          ({
-            fileHash: _fileHash,
-            thumbKey: _thumbKey,
-            mediumKey: _mediumKey,
-            isPublished: _isPublished,
-            deletedAt: _deletedAt,
-            shotAtSource: _shotAtSource,
-            ...pub
-          }) => pub,
-        ),
-      },
+      { photo: toPublicPhoto(photoWithThumbs(row)), series, prev, next },
       200,
     );
   })

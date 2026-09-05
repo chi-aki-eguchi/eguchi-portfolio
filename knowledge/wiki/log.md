@@ -227,3 +227,12 @@ covers `knowledge/` itself.
 **No implementation code was read for the purpose of changing it** — this
 was a docs-only task. No files outside `knowledge/`, plus the two permitted
 append-only edits above, were modified.
+
+
+## 2026-09-05 — Astra向けの指示監査
+
+削除済みフック・旧push禁止・固定役割を有効とする記述が `pages/invariants.md` に残っていたため、まず陳腐化を `pages/open-issues.md` に記録し、同じ作業で現行ファイルへの短い索引へ更新した。根拠はルート `AGENTS.md`、`.claude/settings.json`、対象別rules、`docs/checklists.md` の実読。過去の表はGit履歴に残る。
+
+`pages/open-issues.md` は指示関連の項目だけ訂正した。製品不具合候補は未再検証のため `needs-review` とし、全体の `last_verified` を新しく見せかけていない。一般的なコメント作法の専用ruleは意図して除いたもので、復元すべき欠落ではない。
+
+記録者: Codex

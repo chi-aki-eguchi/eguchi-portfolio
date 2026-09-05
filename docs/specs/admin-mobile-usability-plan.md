@@ -454,23 +454,12 @@ Settings の1節ずつ表示、下部3グループのナビ）はそのまま残
 
 ---
 
-## 5. Codex へ渡す実装依頼
+## 5. 実装の完成条件
 
-**全体の前提（毎回プロンプトへ入れる）**
+目的は `admin-renewal-goal.md` の6軸。必要な依頼の節だけを使い、手順や構成は担当AIが判断する。検証・push・承認範囲は [AGENTS.md](../../AGENTS.md) に従う。
 
-- 目的とゴール: `docs/specs/admin-renewal-goal.md` の6軸。今回の下位仕様はこの文書。
-- 変更してはいけない範囲: `git push` / 本番DB / Turso / R2 / Railway / 環境変数 /
-  公開設定 / `.env` の表示・記録 / `docs/archive/` の本文 /
-  `photo-reorder-safety.ts` の競合検知 / `onlySeriesFilter` の条件 /
-  既存の `data-library-*` 目印
-- 今回の変更が触れうる承認済み挙動: シリーズ単独絞り込みでの並べ替え可否 /
-  選択モード中の取り込み可否 / 未保存時の画面移動ガード / 401 のログイン画面送り /
-  タブ切替時の見出し左端の一致（`admin-page-frame.spec.ts`）
-- 必須検証: `bun run check`（製品コード変更）＋ `bun run smoke`（admin 変更）。
-  **smoke に保存・削除・追加の書き込みを増やさない**（本番と同じDBにつながる）。
-- 止まって報告する条件: グローバルCSSの勝ち負けが `getComputedStyle` で説明できない /
-  既存テストが理由不明で落ちる / 機能が1つでも消える
-- 手順・関数名・構成は指定しない。ゴールと境界だけを渡す。
+- 並べ替えの競合検知・`onlySeriesFilter`、既存の `data-library-*` 目印、未保存ガード・401対応・タブ見出しの整列を保つ。
+- 失敗やCSSの競合が出たら原因を調べる。保存操作の検証はモックまたは隔離DBで行う。
 
 ---
 

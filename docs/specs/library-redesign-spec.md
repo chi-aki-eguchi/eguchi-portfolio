@@ -143,9 +143,7 @@ Q-11 の完了条件に「この fixme を通常の test へ戻す」を含め�
 
 ## 6. 検証
 
-- `bun run check`（typecheck → lint → test → build）
-- `bun run smoke`（admin に触れるため必須。**Claude Code 側でのみ実行可能** —
-  Codex の sandbox は `network_access = false` で Playwright を回せない）
+- 検証範囲は [AGENTS.md](../../AGENTS.md)「検証とpush」に従う。実行できるAIは現在の環境で判断する。
 - 実ブラウザで 1440px / 1024px / 390px を確認
 - iPhone 実機 Safari での確認（2026-07-23 時点から継続する未確認事項）
 

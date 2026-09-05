@@ -539,10 +539,9 @@ jpeg / png / webp / heic / heif / tiff / avif（`src/api/security.ts:4-25`）。
   日時がスキャン時刻である可能性が高い（既存のフィルム279枚がこれに当たる）
 - **B-1（`photo-band.ts`）の挙動は今回変更しない**
 
-## S7. 単位1と2で変更しないもの
+## S7. 当時の単位1と2の作業範囲
 
 製品画面 / Finder型ビュー / B-2 / B-3 / 元画像の保存 / GPS / 画像解析 /
 キーワード機能 / `camera` 列の既存の使われ方。
 
-DB migration は**生成とローカル検証まで**。本番Tursoへ適用しない。
-`db:push` / `db:migrate` / `git push` / deploy / 本番への書き込みは禁止。
+当時の依頼はmigration生成とローカル検証まで。本番適用・pushはその依頼に含まなかった。新しい依頼の実装・検証・公開は [AGENTS.md](../../AGENTS.md) と現在の許可に従う。

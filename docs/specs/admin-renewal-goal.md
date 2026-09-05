@@ -404,7 +404,7 @@ CSSの `[data-theme="dark"]` に勝つため、暗くしても管理画面の紙
 
 ## 関連
 
-- `CLAUDE.md`「現在のゴール」 — セッション開始時に必ず読まれる入口
+- `task.md` のCurrent State — 現在地。AIの作業方針は `AGENTS.md`
 - `docs/specs/library-redesign-spec.md` — Library 部分の下位仕様
 - `docs/archive/admin-enhancement-spec-v3.md` — 旧「強化仕様書 v3 Draft」。**確定しないまま
   終わった履歴**であり、現在の指示ではない（2026-08-20 退避）

@@ -1,6 +1,6 @@
 ---
 title: Open Issues (contradictions, stale docs, unknowns)
-status: current
+status: needs-review
 last_verified: 2026-08-20
 sources:
   - (see per-item citations below; each restates a finding also cited on its own topic page)
@@ -19,6 +19,8 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
 
 ## Open gaps found by re-verification
 
+**2026-09-05の指示監査:** AIの役割・検証・push・権限に関する旧記述は、現行の [AGENTS.md](../../../AGENTS.md) と [指示の索引](invariants.md) を参照する。下記の製品不具合候補は今回再検証していないため、過去の観測として扱う。
+
 18. **Resolved 2026-08-20 (same day)**: the Turso startup safety net now
     covers all 16 added columns. The list moved to an exported
     `TURSO_SAFETY_NET_COLUMNS` in `migrate.ts` and a contract test asserts it
@@ -34,6 +36,7 @@ update its status/note rather than deleting the row (see WIKI_SCHEMA.md's
     otherwise. It was deliberately not put back into the always-loaded set.
     Invariant 12 still has no direct statement and stays closed by
     `.claude/rules/api-client.md:5`. See invariants.md.
+    **Superseded 2026-09-05:** the generic comments rule file was retired during the instruction audit. It is not a missing safeguard to restore.
 20. **A plaintext admin password is committed** in
     `docs/archive/task-handoffs.md` (found 2026-08-20). It was quoted while
     describing scratch scripts that held it. The scripts are gone and were
@@ -69,15 +72,8 @@ refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
    `docs/delayed-execution-sop.md` blacklists the unreliable
    delayed-execution class (`at`/`cron`, background `sleep N && claude`,
    launchd), not the exact full draft phrase. See `docs/archive/night-run.md`.
-6. **Invariant #7 ("never `git add .`")** appears only inside CLAUDE.md's
-   `test-*.mjs` bullet — AGENTS.md never states it, and AGENTS.md's own
-   deploy steps use `git add -A`. See invariants.md.
-7. **Invariant #10 ("never `bun run deploy`")** is absent from CLAUDE.md,
-   AGENTS.md, every `.claude/rules/*.md` file, and the hook — it exists
-   only in `.claude/skills/deploy/SKILL.md:55`. That same skill file also
-   says `bun run deploy` is "legacy-but-present," when in fact
-   `package.json` no longer defines a plain `deploy` script at all (only
-   `deploy:runable:legacy`) — so the skill file itself is out of date.
+6. **Superseded 2026-09-05:** staging policy is in AGENTS.md: inspect and select the intended changes while preserving concurrent work. The old blanket prohibition is not current.
+7. **Resolved 2026-09-05:** the deploy skill points to AGENTS.md and describes Railway publication. The legacy Runable command is identified as historical; there is no separate push prohibition in that skill.
 
 ## Stale / incorrect documentation found
 

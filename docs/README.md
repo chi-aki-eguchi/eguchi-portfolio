@@ -11,11 +11,8 @@
 | 仕様書の索引（用途と優先順） | `docs/specs/README.md` |
 | 未完了の作業 | `docs/agents/backlog.md`（完了したらこの文書から消す） |
 | 測り方・存在しない不具合を作らない手順 | `docs/agents/measuring.md` |
-| 高リスク領域の検査手順 | `docs/checklists.md` |
+| 分野別の確認ポイント | `docs/checklists.md` |
 | 配布版（Portfolio Kit）のDB差分・運用 | `DISTRIBUTION.md` |
-
-> 引き継ぎの手順書とクレジット判定の文書は、2026-08-27 に儀式が多すぎるとして
-> `docs/archive/` へ移した（`handoff-workflow.md` / `credit-status.md`）。
 
 ## ディレクトリの役割
 

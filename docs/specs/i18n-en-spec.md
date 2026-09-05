@@ -73,7 +73,7 @@ hreflang/OGP が正しく出て、`bun run check` + render テスト成功。配
     はじめにチェックリスト・デモ管理画面のバナーとガイド
   - **2b**: 写真管理（アップロード・一括編集・ライブラリ）・シリーズ・カテゴリ管理
   - **2c**: 設定タブ（140以上の設定ラベルと説明文）— 最大の山。タブ単位で分割実装
-- 各段階で render テスト + `bun run smoke`（admin に触れるため必須）
+- 各段階の表示と言語切替を確認する。検証範囲は [AGENTS.md](../../AGENTS.md) に従う。
 - 完了後、英語 LP の "Japanese-first admin" 注意書きを
   "Admin panel available in English and Japanese" に差し替える
 

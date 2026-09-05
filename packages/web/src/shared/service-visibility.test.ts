@@ -14,8 +14,6 @@ describe("isServiceVisibilityGatedPath", () => {
       "/portfolio-kit/start",
       "/start",
       "/start/en",
-      "/legal",
-      "/legal/en/",
     ]) {
       expect(isServiceVisibilityGatedPath(path)).toBe(true);
     }

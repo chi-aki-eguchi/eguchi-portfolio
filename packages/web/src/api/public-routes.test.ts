@@ -24,8 +24,6 @@ describe("public SPA route status", () => {
       "/privacy/en",
       "/terms",
       "/terms/en",
-      "/legal",
-      "/legal/en",
       "/en/about",
       "/en/contact",
       "/portfolio-kit",

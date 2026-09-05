@@ -69,6 +69,4 @@ export const PAGE_TITLE = {
   privacyEn: "Privacy Policy",
   terms: "利用条件",
   termsEn: "Terms of Use",
-  legal: "販売条件・特定商取引法に基づく表記",
-  legalEn: "Online Sales Disclosure",
 } as const;

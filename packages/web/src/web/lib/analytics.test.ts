@@ -16,7 +16,7 @@ describe("public analytics", () => {
     expect(isTrackablePublicPath("/gallery")).toBe(true);
     expect(isTrackablePublicPath("/portfolio-kit/en")).toBe(true);
     expect(isTrackablePublicPath("/start/en")).toBe(true);
-    expect(isTrackablePublicPath("/legal")).toBe(true);
+    expect(isTrackablePublicPath("/legal")).toBe(false);
     expect(isTrackablePublicPath("/photo/1607?share=private")).toBe(true);
     expect(isTrackablePublicPath("/admin")).toBe(false);
     expect(isTrackablePublicPath("/admin/demo")).toBe(false);

@@ -66,12 +66,10 @@ function PublicPolicyRoute({
   kind,
   language,
   title,
-  requiresService = false,
 }: {
   kind: PolicyKind;
   language: PolicyLanguage;
   title: string;
-  requiresService?: boolean;
 }) {
   const page = (
     <Layout>
@@ -84,11 +82,7 @@ function PublicPolicyRoute({
       </PageTransition>
     </Layout>
   );
-  return requiresService ? (
-    <ServiceVisibilityGate>{page}</ServiceVisibilityGate>
-  ) : (
-    page
-  );
+  return page;
 }
 
 function App() {
@@ -265,22 +259,6 @@ function App() {
               kind="terms"
               language="ja"
               title={PAGE_TITLE.terms}
-            />
-          </Route>
-          <Route path="/legal/en">
-            <PublicPolicyRoute
-              kind="legal"
-              language="en"
-              title={PAGE_TITLE.legalEn}
-              requiresService
-            />
-          </Route>
-          <Route path="/legal">
-            <PublicPolicyRoute
-              kind="legal"
-              language="ja"
-              title={PAGE_TITLE.legal}
-              requiresService
             />
           </Route>
           <Route path="/service/start/en">

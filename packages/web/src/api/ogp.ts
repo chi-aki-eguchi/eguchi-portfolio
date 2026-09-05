@@ -28,7 +28,6 @@ import {
   policyDocument,
   policyPath,
   policyRoute,
-  SALES_DISCLOSURE_PENDING,
 } from "../shared/policy-content";
 export const DEFAULT_SITE_URL = SITE_URL_DEFAULT;
 
@@ -98,8 +97,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/privacy/en": PAGE_TITLE.privacyEn,
   "/terms": PAGE_TITLE.terms,
   "/terms/en": PAGE_TITLE.termsEn,
-  "/legal": PAGE_TITLE.legal,
-  "/legal/en": PAGE_TITLE.legalEn,
   // admin は正常表示されるページなので Not Found title にしない。検索除外は
   // 下の startsWith("/admin") noindex 条件が isKnown と無関係に維持する。
   "/admin": "Admin",
@@ -421,7 +418,6 @@ const ENGLISH_PUBLIC_PATHS = new Set([
   "/en/contact",
   "/privacy/en",
   "/terms/en",
-  "/legal/en",
 ]);
 
 function publicPageLanguageAlternates(
@@ -503,12 +499,6 @@ export function injectOgp(
   );
   const isServiceHost = isServiceSiteUrl(siteUrl);
   const isServicePath = SERVICE_PATHS.has(pathname);
-  const isServiceLegalPath = pathname === "/legal" || pathname === "/legal/en";
-  // 販売者情報・税区分・キャンセル条件に Pending が残る暫定版は、購入前に
-  // リンクから読める必要はある一方、検索入口としてはまだ推さない。
-  // 本人確認済みの表示へ差し替えた時点で、このガードを外して indexable にする。
-  const isPendingSalesDisclosure =
-    isServiceLegalPath && SALES_DISCLOSURE_PENDING;
   const isBuyerStartPath = SERVICE_START_PATHS.has(pathname);
   const isEnglishServicePath = ENGLISH_SERVICE_PATHS.has(pathname);
   const isService = isServicePath && isServiceSite;
@@ -534,8 +524,6 @@ export function injectOgp(
     "/privacy/en",
     "/terms",
     "/terms/en",
-    "/legal",
-    "/legal/en",
     "/portfolio-kit",
     "/portfolio-kit/en",
     "/portfolio-kit/start",
@@ -554,7 +542,7 @@ export function injectOgp(
       !!override?.title) ||
     (isPhotoDetail && !!override?.title);
   const serviceUnavailable =
-    (isServicePath || isServiceLegalPath) && !isServiceSite;
+    isServicePath && !isServiceSite;
   const missingPublicPage = !isKnown || serviceUnavailable;
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = missingPublicPage
@@ -626,7 +614,7 @@ export function injectOgp(
   // Keep the admin app and unknown (404 fallback) paths out of search indexes so
   // junk URLs aren't indexed with the homepage's title (defence in depth with robots.txt).
   const explicitNoindex = override?.indexable === false;
-  const realPageNoindex = explicitNoindex || isPendingSalesDisclosure;
+  const realPageNoindex = explicitNoindex;
   if (
     pathname.startsWith("/admin") ||
     !isKnown ||

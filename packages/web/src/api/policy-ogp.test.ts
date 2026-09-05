@@ -34,29 +34,14 @@ describe("policy route metadata", () => {
     );
   });
 
-  test("pending sales disclosure stays readable but out of search on the owner site", () => {
-    const owner = injectOgp(
-      HTML,
-      { siteUrl: "https://akieguchi.com", siteNameEn: "Aki Eguchi" },
-      "/legal",
-    );
-    expect(owner).toContain("販売条件・特定商取引法に基づく表記");
-    expect(owner).toContain('name="robots" content="noindex, follow"');
-    expect(owner).not.toContain('type="application/ld+json"');
-
-    const distributed = injectOgp(
-      HTML,
-      {
-        siteUrl: "https://portfolio.example",
-        siteNameEn: "Photographer",
-        profileBioEn: "English content is configured.",
-      },
-      "/legal",
-    );
-    expect(distributed).toContain("<title>Not Found");
-    expect(distributed).toContain('name="robots" content="noindex, nofollow"');
-    expect(distributed).not.toContain('hreflang="ja"');
-    expect(distributed).not.toContain('hreflang="en"');
+  test("unpublished sales disclosure is a missing page for every host", () => {
+    for (const siteUrl of ["https://akieguchi.com", "https://portfolio.example"]) {
+      const out = injectOgp(HTML, { siteUrl, siteNameEn: "Photographer" }, "/legal");
+      expect(out).toContain("<title>Not Found");
+      expect(out).toContain('name="robots" content="noindex, nofollow"');
+      expect(out).not.toContain('hreflang="ja"');
+      expect(out).not.toContain('hreflang="en"');
+    }
   });
 
   test("distributed fallback does not inherit owner-only sales copy when siteUrl is empty", () => {
@@ -70,16 +55,10 @@ describe("policy route metadata", () => {
     expect(text.paragraphs.join(" ")).not.toContain("Portfolio Kit");
   });
 
-  test("non-JavaScript fallback contains the buyer warning and confirmed timing", () => {
-    const text = publicPageFallbackText(
-      { siteUrl: "https://akieguchi.com" },
-      "/legal",
-    );
-    expect(text.heading).toBe("特定商取引法に基づく表記・販売条件");
-    expect(text.paragraphs.join(" ")).toContain(
-      "回答を受けるまでは決済へ進まないでください",
-    );
-    expect(text.paragraphs.join(" ")).toContain("決済後24時間以内");
-    expect(text.paragraphs.join(" ")).toContain("素材が揃ってから3日以内");
+  test("non-JavaScript privacy fallback describes the real contact form", () => {
+    const text = publicPageFallbackText({ siteUrl: "https://akieguchi.com" }, "/privacy");
+    expect(text.heading).toBe("プライバシーポリシー");
+    expect(text.paragraphs.join(" ")).toContain("メールアドレス");
+    expect(text.paragraphs.join(" ")).not.toContain("Portfolio Kit");
   });
 });

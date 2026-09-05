@@ -13,8 +13,6 @@ const SPA_STATIC_PATHS = new Set([
   "/privacy/en",
   "/terms",
   "/terms/en",
-  "/legal",
-  "/legal/en",
   // /en/* は英語文未入力でも直接アクセスでJPフォールバック表示するため常に200
   "/en/about",
   "/en/contact",

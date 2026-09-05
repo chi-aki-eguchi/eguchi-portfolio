@@ -63,7 +63,6 @@ const LANGUAGE_PAIRS = new Set([
   "/contact|/en/contact",
   "/privacy|/privacy/en",
   "/terms|/terms/en",
-  "/legal|/legal/en",
   "/portfolio-kit|/portfolio-kit/en",
 ]);
 

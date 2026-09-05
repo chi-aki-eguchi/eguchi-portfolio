@@ -10,7 +10,7 @@ const PolicyPage = (await import("./policy")).default;
 
 const mounted: Array<() => void> = [];
 
-async function mount(kind: "privacy" | "terms" | "legal", language: "ja" | "en") {
+async function mount(kind: "privacy" | "terms", language: "ja" | "en") {
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host);
@@ -37,18 +37,13 @@ afterEach(() => {
 });
 
 describe("PolicyPage", () => {
-  test("JP sales page shows confirmed terms and visibly marks missing owner input", async () => {
-    const host = await mount("legal", "ja");
-    expect(host.querySelector("h1")?.textContent).toBe(
-      "特定商取引法に基づく表記・販売条件",
-    );
-    expect(host.textContent).toContain("¥30,000");
-    expect(host.textContent).toContain("決済後24時間以内");
-    expect(host.textContent).toContain("素材が揃ってから3日以内");
-    expect(host.textContent?.match(/要確認/g)?.length).toBe(5);
-    expect(host.querySelector('a[href="/contact"]')?.textContent).toContain(
-      "購入前の条件を確認する",
-    );
+  test("JP site terms do not expose the unaccepted sales proposal", async () => {
+    const host = await mount("terms", "ja");
+    expect(host.querySelector("h1")?.textContent).toBe("利用条件");
+    expect(host.textContent).not.toContain("Portfolio Kit");
+    expect(host.textContent).not.toContain("要確認");
+    expect(host.querySelector('a[href="/legal"]')).toBeNull();
+    expect(host.querySelector('a[href="/contact"]')).not.toBeNull();
   });
 
   test("English privacy page renders English copy and links external policies safely", async () => {

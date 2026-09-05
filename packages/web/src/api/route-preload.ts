@@ -43,8 +43,6 @@ export const ROUTE_MODULES: Record<string, string> = {
   "/privacy/en": "src/web/pages/policy.tsx",
   "/terms": "src/web/pages/policy.tsx",
   "/terms/en": "src/web/pages/policy.tsx",
-  "/legal": "src/web/pages/policy.tsx",
-  "/legal/en": "src/web/pages/policy.tsx",
 };
 
 /** `/series/:slug` のように可変部分を持つ経路。 */

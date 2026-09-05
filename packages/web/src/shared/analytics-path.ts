@@ -11,8 +11,6 @@ const TRACKABLE_STATIC_PATHS = new Set([
   "/privacy/en",
   "/terms",
   "/terms/en",
-  "/legal",
-  "/legal/en",
   "/portfolio-kit",
   "/portfolio-kit/en",
   "/portfolio-kit/start",

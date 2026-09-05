@@ -371,8 +371,7 @@ describe("public English routes keep one language", () => {
       expect(page.host.querySelector('a[href="/en/contact"]')).not.toBeNull();
       expect(page.host.querySelector('a[href="/about"]')).toBeNull();
       expect(page.host.querySelector('a[href="/contact"]')).toBeNull();
-      expect(page.host.querySelector('a[href="/legal/en"]')).not.toBeNull();
-      expect(page.host.querySelector('a[href="/terms/en"]')).not.toBeNull();
+      expect(page.host.querySelector('a[href="/legal/en"]')).toBeNull();
       const experienceLink = Array.from(page.host.querySelectorAll("a")).find(
         (link) => link.getAttribute("href")?.includes("portfolio-kit-experience"),
       );
@@ -385,7 +384,7 @@ describe("public English routes keep one language", () => {
     }
   });
 
-  test("Japanese Portfolio Kit keeps Japanese internal and policy routes", async () => {
+  test("Japanese Portfolio Kit keeps Japanese internal routes", async () => {
     canned["/api/settings"] = {
       siteUrl: "https://portfolio.example",
       contactEmail: "",
@@ -410,8 +409,7 @@ describe("public English routes keep one language", () => {
     try {
       expect(page.host.querySelector('a[href="/about"]')).not.toBeNull();
       expect(page.host.querySelector('a[href="/contact"]')).not.toBeNull();
-      expect(page.host.querySelector('a[href="/legal"]')).not.toBeNull();
-      expect(page.host.querySelector('a[href="/terms"]')).not.toBeNull();
+      expect(page.host.querySelector('a[href="/legal"]')).toBeNull();
       expect(page.host.querySelector('a[href="/legal/en"]')).toBeNull();
       expect(page.host.querySelector('a[href="/terms/en"]')).toBeNull();
       const experienceLink = Array.from(page.host.querySelectorAll("a")).find(

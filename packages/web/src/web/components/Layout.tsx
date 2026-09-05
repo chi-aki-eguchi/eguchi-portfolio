@@ -20,28 +20,24 @@ const JA_TO_EN_PATH: Record<string, string> = {
   "/contact": "/en/contact",
   "/privacy": "/privacy/en",
   "/terms": "/terms/en",
-  "/legal": "/legal/en",
 };
 const EN_TO_JA_PATH: Record<string, string> = {
   "/en/about": "/about",
   "/en/contact": "/contact",
   "/privacy/en": "/privacy",
   "/terms/en": "/terms",
-  "/legal/en": "/legal",
 };
 const ALWAYS_BILINGUAL_POLICY_PATHS = new Set([
   "/privacy",
   "/privacy/en",
   "/terms",
   "/terms/en",
-  "/legal",
-  "/legal/en",
 ]);
 
 // 方針本文は policy.tsx の遅延チャンクに置いたままにする。ここから本文の
 // module を読むと、全ページの共通Layoutへ日英全文が混ざってしまう。
 const footerPolicyPath = (
-  kind: "privacy" | "terms" | "legal",
+  kind: "privacy" | "terms",
   language: "ja" | "en",
 ) => `/${kind}${language === "en" ? "/en" : ""}`;
 
@@ -743,8 +739,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <nav
               aria-label={
                 footerPolicyLanguage === "en"
-                  ? "Policies and sales terms"
-                  : "方針・販売条件"
+                  ? "Site policies"
+                  : "サイトの方針・利用条件"
               }
               className={`flex flex-wrap gap-x-4 gap-y-1 ${
                 footerLayout === "center"
@@ -778,20 +774,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 {footerPolicyLanguage === "en" ? "Terms" : "利用条件"}
               </Link>
-              {showService && (
-                <Link
-                  to={footerPolicyPath("legal", footerPolicyLanguage)}
-                  className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public py-1.5"
-                  style={
-                    {
-                      fontSize: "var(--footer-credit-size)",
-                      "--link-rest": "var(--footer-opacity, 0.22)",
-                    } as React.CSSProperties
-                  }
-                >
-                  {footerPolicyLanguage === "en" ? "Online sales" : "販売条件"}
-                </Link>
-              )}
             </nav>
             <p
               className={`break-words max-w-full ${footerLayout === "center" ? "font-en text-center" : "font-en"}`}

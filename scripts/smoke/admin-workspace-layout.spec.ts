@@ -192,6 +192,10 @@ test.describe("admin — Workspace layout", () => {
     await page.keyboard.press("Escape");
     const confirm = page.locator("dialog[open]");
     await expect(confirm).toBeVisible();
+    // The same Escape must not open a confirmation and then dismiss it through
+    // the browser's native cancel action (the modal exits after 160ms).
+    await page.waitForTimeout(250);
+    await expect(confirm).toBeVisible();
     await confirm.getByRole("button", { name: /キャンセル|Cancel/ }).click();
     await expect(inspector, "キャンセルなら詳細は開いたまま").toBeVisible();
     await expect(titleInput, "キャンセルで編集内容を捨てない").toHaveValue(

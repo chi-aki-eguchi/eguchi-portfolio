@@ -5222,11 +5222,14 @@ export function GalleryTab({
           return;
         }
         if (libraryMode !== "normal") {
+          e.preventDefault();
           requestLibraryMode("normal");
           return;
         }
         if (inspectPhoto) {
           // 未保存編集の無言破棄を防ぐ(×と同じ確認導線)
+          // このEscapeの既定動作で、今開いた確認まで即座にcancelさせない。
+          e.preventDefault();
           requestCloseInspector();
           return;
         }

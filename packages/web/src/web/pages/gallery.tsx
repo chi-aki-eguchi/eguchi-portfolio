@@ -265,6 +265,7 @@ export default function GalleryPage() {
     <section
       className="max-w-5xl mx-auto site-page site-page-top pb-12 md:pb-32"
       ref={fadeRef}
+      data-gallery-pending={photosLoading || rendered.length < filtered.length}
     >
       <PageTitle className="mb-10 md:mb-24" revealClass="section-reveal">
         {settings?.galleryLabel ?? "Gallery"}

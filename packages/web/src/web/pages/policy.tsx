@@ -7,9 +7,8 @@ import {
 } from "../../shared/policy-content";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageLanguage } from "../hooks/usePageLanguage";
-import { useServiceVisibility } from "../components/provider";
 
-const POLICY_KINDS: readonly PolicyKind[] = ["privacy", "terms", "legal"];
+const POLICY_KINDS: readonly PolicyKind[] = ["privacy", "terms"];
 const policyBodyStyle = {
   // Conditions that affect a purchase must remain readable even when the
   // portfolio's art-direction settings use a smaller body size or leading.
@@ -25,13 +24,9 @@ export default function PolicyPage({
   language?: PolicyLanguage;
 }) {
   usePageLanguage(language);
-  const { isResolved, showService } = useServiceVisibility();
-  const includeService = kind === "legal" || (isResolved && showService);
   const doc = policyDocument(kind, language);
-  const sections = doc.sections.filter(
-    (section) => !section.serviceOnly || includeService,
-  );
-  const entranceRef = usePageEntrance([kind, language, includeService]);
+  const sections = doc.sections;
+  const entranceRef = usePageEntrance([kind, language]);
   const contactPath = language === "en" ? "/en/contact" : "/contact";
   const languageFont = language === "en" ? "font-en" : "font-ja";
   const proseClass = language === "en" ? "font-en" : "font-ja ja-prose";
@@ -40,12 +35,10 @@ export default function PolicyPage({
     ja: {
       privacy: "Privacy",
       terms: "利用条件",
-      legal: "販売条件・特商法表示",
     },
     en: {
       privacy: "Privacy",
       terms: "Terms",
-      legal: "Online sales",
     },
   };
 
@@ -91,9 +84,7 @@ export default function PolicyPage({
         aria-label={language === "en" ? "Policy pages" : "方針・条件ページ"}
         className="mt-10 pt-6 border-t border-[rgba(var(--foreground-rgb),0.08)] flex flex-wrap gap-x-6 gap-y-2 page-entrance page-entrance-delay-1"
       >
-        {POLICY_KINDS.filter(
-          (item) => item !== "legal" || includeService,
-        ).map((item) => (
+        {POLICY_KINDS.map((item) => (
           <Link
             key={item}
             to={policyPath(item, language)}

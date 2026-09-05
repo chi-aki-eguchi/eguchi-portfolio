@@ -4615,6 +4615,14 @@ a:hover {
 }
 
 /* ─── Footer reveal ─── */
+/* A paginated gallery has not reached its footer until the final batch is in.
+   Keep both shared end blocks out of the page while more photographs follow;
+   otherwise fast scrolling exposes them and the next batch pushes them away. */
+.site-main:has([data-gallery-pending="true"]) ~ [data-studio-bridge="footer"],
+.site-main:has([data-gallery-pending="true"]) ~ footer {
+  display: none;
+}
+
 .footer-reveal {
   opacity: 0;
   transform: translate3d(0, 8px, 0);

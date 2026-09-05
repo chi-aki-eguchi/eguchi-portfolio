@@ -9,8 +9,6 @@ const SERVICE_VISIBILITY_GATED_PATHS = new Set([
   "/portfolio-kit/start",
   "/start",
   "/start/en",
-  "/legal",
-  "/legal/en",
 ]);
 
 function normalizeHost(host: string | undefined): string {

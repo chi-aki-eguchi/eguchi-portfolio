@@ -431,13 +431,8 @@ describe("shared components", () => {
       ).not.toBeNull();
       const startPreview = host.querySelector('a[href="/start"]');
       expect(startPreview?.textContent).toContain("購入後の流れを先に見る");
-      expect(host.textContent).toContain("販売者情報・税・キャンセル・返金条件");
-      expect(
-        Array.from(host.querySelectorAll('a[href="/contact"]')).some((link) =>
-          link.textContent?.includes("購入前の条件を確認する"),
-        ),
-      ).toBe(true);
-      expect(host.querySelector('a[href^="https://buy.stripe.com"]')).toBeNull();
+      expect(host.textContent).not.toContain("販売者情報・税・キャンセル・返金条件");
+      expect(host.querySelector('a[href="/legal"]')).toBeNull();
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -476,13 +471,8 @@ describe("shared components", () => {
       expect(startPreview?.textContent).toContain(
         "Preview what happens after purchase",
       );
-      expect(text).toContain("pending seller, tax, cancellation, and refund terms");
-      expect(
-        Array.from(host.querySelectorAll('a[href="/en/contact"]')).some((link) =>
-          link.textContent?.includes("Confirm terms before purchase"),
-        ),
-      ).toBe(true);
-      expect(host.querySelector('a[href^="https://buy.stripe.com"]')).toBeNull();
+      expect(text).not.toContain("pending seller, tax, cancellation, and refund terms");
+      expect(host.querySelector('a[href="/legal/en"]')).toBeNull();
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -527,9 +517,9 @@ describe("shared components", () => {
       expect(cards[0]?.textContent).toContain("Assisted setup");
       expect(cards[0]?.textContent).toContain("¥30,000");
       expect(cards[0]?.querySelector("a")?.getAttribute("href")).toBe(
-        "/en/contact",
+        "https://buy.stripe.com/assisted-plan",
       );
-      expect(cards[0]?.textContent).toContain("Confirm terms before purchase");
+      expect(cards[0]?.textContent).not.toContain("Confirm terms before purchase");
       cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;

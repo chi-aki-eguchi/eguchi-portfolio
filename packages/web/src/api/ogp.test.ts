@@ -788,7 +788,7 @@ describe("injectOgp /portfolio-kit route", () => {
     expect(out).toContain(
       "<title>写真を置く場所をつくる | 写真家のポートフォリオサイト</title>",
     );
-    expect(out).toContain("SNSに流した写真を、長く置いておける場所へ");
+    expect(out).toContain("写真の入れ替えも、文章も、レイアウトも自分で");
   });
 
   test("/portfolio-kit is indexable on akieguchi.com", () => {
@@ -886,7 +886,7 @@ describe("injectOgp /portfolio-kit route", () => {
     expect(out).toContain(
       "<title>A Place to Keep Your Photographs | Portfolio Websites for Photographers</title>",
     );
-    expect(out).toContain("A lasting place for work that otherwise disappears");
+    expect(out).toContain("Update photographs, text, and layouts yourself");
     expect(out).toContain(
       'rel="canonical" href="https://akieguchi.com/portfolio-kit/en"',
     );

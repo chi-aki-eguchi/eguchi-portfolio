@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { AdminControlPreview } from "../components/AdminControlPreview";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageLanguage } from "../hooks/usePageLanguage";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { safeHref } from "../lib/utils";
-import { resolveServiceContactEmail } from "../../shared/service-visibility";
+import { StudioBridge, studioHref } from "../components/StudioBridge";
+import { isServiceOwnerSite, resolveServiceContactEmail } from "../../shared/service-visibility";
 import { SALES_DISCLOSURE_PENDING } from "../../shared/policy-content";
 import {
   parseServicePageConfig,
@@ -92,8 +94,8 @@ function englishServiceConfigFrom(
     enabled: source.enabled,
     hero: {
       label: "Portfolio Kit",
-      title: "A quiet portfolio,\nready for your photographs.",
-      body: "Aki Eguchi Portfolio Kit is a finished portfolio site made for photographers.\nI set everything up and hand it over already published, under your own name and domain.",
+      title: "Your photographs. Your choices.\nYour site to keep updating.",
+      body: "Add new photographs. Refine their order. Rewrite your profile.\nA clear, fully featured admin panel puts everyday updates in your hands, without writing code.\nI handle the initial setup and launch. You take it from there.",
       facts: [
         {
           title: "Price",
@@ -104,8 +106,8 @@ function englishServiceConfigFrom(
           body: "Domain, hosting, and setup — all handled for you",
         },
         {
-          title: "Launch",
-          body: "Delivered within three days of receiving your materials",
+          title: "Your control",
+          body: "Update photographs, text, and layout yourself",
         },
       ],
       ctaPricing: "View pricing and the process",
@@ -154,12 +156,12 @@ function englishServiceConfigFrom(
             "Share one site that moves quietly from the photographs to the person and a clear way to get in touch.",
         },
         {
-          concern: "You want control over the edit",
+          concern: "You want to update without asking someone else",
           concernBody:
-            "The order, size, and spacing of photographs are part of how the work is read.",
-          solution: "Update it from the admin panel",
+            "New photographs and a changing practice deserve a site you can update when you are ready.",
+          solution: "Everyday updates, on your own schedule",
           solutionBody:
-            "Add photographs, change their order, and edit your profile and contact details in the browser.",
+            "Add or hide photographs, arrange them, and change typography, colours, your profile, and contact details using the controls in your browser.",
         },
       ],
     },
@@ -192,7 +194,7 @@ function englishServiceConfigFrom(
         },
         {
           title: "Handover",
-          body: "You receive the public site URL, admin URL, and password. From there, you only add photographs. Guidance on everyday use stays available — currently unlimited.",
+          body: "You receive the public site URL, admin URL, and password. Add or replace photographs, edit your profile, and adjust layouts and colours yourself. Guidance on everyday use stays available — currently unlimited.",
         },
       ],
       footnote:
@@ -215,7 +217,7 @@ function englishServiceConfigFrom(
         },
         {
           q: "Can I change photographs and text later?",
-          a: "Yes. You can update photographs, order, profile text, and contact details from the admin panel. Larger design changes and individual customisation are quoted separately.",
+          a: "Yes. Add, replace, hide, and reorder photographs; change your opening images, series, profile, and contact details. Choose layouts and adjust type, colours, and spacing without writing code. New features and designs beyond the available settings are quoted separately.",
         },
         {
           q: "What does one purchase allow?",
@@ -232,8 +234,8 @@ function englishServiceConfigFrom(
       ],
     },
     finalCta: {
-      title: "Begin with the photographs.",
-      body: "Tell me what you want the site to hold, and I will explain the most suitable way to begin.",
+      title: "New photographs.\nA site you can keep making your own.",
+      body: "I handle the launch. You handle everyday updates. Start by exploring the admin panel for yourself.",
       ctaOnline: "Choose assisted setup",
       ctaOffline: "Ask by email",
       snsLinks: source.finalCta.snsLinks.map((link) => ({
@@ -249,16 +251,16 @@ function englishServiceConfigFrom(
     },
     adminShowcase: {
       label: "Admin panel",
-      title: "Twelve layouts and more than 140 settings, in one place.",
-      body: "Without editing code, you can add photographs and shape their sequence, spacing, typography, profile, and contact path at your own pace.",
+      title: "Simple everyday controls.\nRoom for the details you care about.",
+      body: "Choose photographs by looking at them, then edit the settings you need. Update the work and shape the feel of your site in the browser, without commissioning everyday changes or editing code.",
       features: [
         {
-          title: "Photographs",
-          body: "Upload, reorder, categorise, and adjust the focal point of each image.",
+          title: "Replace photographs",
+          body: "Upload new photographs together, choose what to publish or hide, and adjust order and focal points yourself.",
         },
         {
           title: "Layout and space",
-          body: "Choose from twelve layouts, then tune order, scale, and white space to suit the work.",
+          body: "Choose a grid or varied image sizes, then tune scale, gaps, and page spacing to suit the work.",
         },
         {
           title: "Type and colour",
@@ -273,8 +275,8 @@ function englishServiceConfigFrom(
           body: "Group work into series or categories, with a cover image and statement.",
         },
         {
-          title: "Sharing and search",
-          body: "Prepare the image and description shown on social platforms and in search results.",
+          title: "Opening and inquiries",
+          body: "Manage opening photographs, photography plans and prices, site descriptions, and social sharing images.",
         },
       ],
       demoCta: "See the visual preview",
@@ -759,7 +761,7 @@ function PurchaseDetails({
   return (
     <section
       id="after-purchase"
-      className="mt-10 md:mt-14 page-entrance scroll-mt-24"
+      className="mt-12 md:mt-16 page-entrance scroll-mt-24"
     >
       <SectionLabel>{config.label}</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
@@ -963,7 +965,7 @@ function AdminShowcase({
       <SectionLabel>{config.label}</SectionLabel>
       <div className="max-w-3xl mx-auto text-center">
         <h2
-          className="font-ja text-[rgba(var(--foreground-rgb),0.82)]"
+          className="font-ja whitespace-pre-line text-[rgba(var(--foreground-rgb),0.82)]"
           style={{
             fontSize: "clamp(1.18rem, 2vw, 1.55rem)",
             letterSpacing: "0.03em",
@@ -979,6 +981,7 @@ function AdminShowcase({
           {config.body}
         </p>
       </div>
+      <AdminControlPreview language={language} />
       <div
         data-admin-feature-list
         className="mt-8 max-w-3xl mx-auto border-y border-[rgba(var(--foreground-rgb),0.08)]"
@@ -1007,6 +1010,11 @@ function AdminShowcase({
           </div>
         ))}
       </div>
+      <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-[color:var(--text-quiet)]">
+        {language === "en"
+          ? "Photographs, text, and the available design settings are yours to change. New features or designs beyond those controls are quoted separately."
+          : "写真・文章・用意されたデザイン設定は、ご自身で変更できます。新しい機能の追加や、設定項目にない個別デザインは別途ご相談ください。"}
+      </p>
       {language === "en" && (
         <div
           role="note"
@@ -1068,7 +1076,7 @@ function FinalCTA({
     <section className="mt-14 md:mt-20 page-entrance text-center">
       <div className="max-w-2xl mx-auto border-t border-[rgba(var(--foreground-rgb),0.08)] pt-10 md:pt-14">
         <p
-          className="font-ja text-[rgba(var(--foreground-rgb),0.78)]"
+          className="font-ja whitespace-pre-line text-[rgba(var(--foreground-rgb),0.78)]"
           style={{
             fontSize: "clamp(1.18rem, 2vw, 1.55rem)",
             letterSpacing: "0.03em",
@@ -1084,6 +1092,9 @@ function FinalCTA({
           {config.body}
         </p>
         <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <ServiceButton href="/admin/demo" variant="outline">
+            {language === "en" ? "Try the admin panel" : "管理画面を触ってみる"}
+          </ServiceButton>
           <a
             href={href}
             {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
@@ -1256,7 +1267,7 @@ export default function ServicePage({
           }}
         >
           {config.hero.title.split("\n").map((line, i) => (
-            <span key={i} className="block">
+            <span key={i} className="block text-balance">
               {line}
             </span>
           ))}
@@ -1298,7 +1309,22 @@ export default function ServicePage({
             {config.hero.ctaPricing}
           </ServiceButton>
         </div>
+        <p className="mt-3 text-xs leading-6 text-[color:var(--text-quiet)]">
+          {language === "en"
+            ? "No sign-up needed. Changes in the demo are not saved to the live site."
+            : "登録不要。デモで試した変更は、公開サイトには保存されません。"}
+        </p>
+        {isServiceOwnerSite(settingsData?.siteUrl, undefined) && (
+          <p className="mt-5 text-sm leading-7">
+            <a href={studioHref("/", "service-hero")} className="underline underline-offset-4 py-2">
+              {language === "en" ? "Photo selection + Japanese profile editing: ¥69,800 total →" : "写真選び・文章整理から頼みたい方へ：総額69,800円 →"}
+            </a>
+          </p>
+        )}
       </header>
+
+      {/* Everyday control is the product's main benefit: show it before pricing. */}
+      <AdminShowcase config={config.adminShowcase} language={language} />
 
       {/* ── Hero site preview ── */}
       <HeroSitePreview photos={photos} />
@@ -1308,6 +1334,8 @@ export default function ServicePage({
 
       {/* ── Fit + value ── */}
       <AudienceAndFeatures config={config.painSolutions} language={language} />
+
+      <StudioBridge siteUrl={settingsData?.siteUrl} language={language} />
 
       {/* ── Pricing ── */}
       <section
@@ -1390,9 +1418,6 @@ export default function ServicePage({
 
       {/* ── Purchase details (collapsible) ── */}
       <PurchaseDetails config={config.purchaseFlow} />
-
-      {/* ── Admin showcase ── */}
-      <AdminShowcase config={config.adminShowcase} language={language} />
 
       {/* ── FAQ (accordion) ── */}
       <section className="mt-10 md:mt-14 page-entrance">

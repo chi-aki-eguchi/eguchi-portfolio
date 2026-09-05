@@ -368,7 +368,7 @@ export function ogCardTitleFrom(settings: Record<string, string>): string {
 // 打たない語なので、題の頭には置かず説明の末尾で名乗る。
 const SERVICE_OG = {
   title: "写真を置く場所をつくる | 写真家のポートフォリオサイト",
-  desc: "SNSに流した写真を、長く置いておける場所へ。余白と並びが整ったポートフォリオサイトを、設定ごと公開した状態でお渡しします。買い切り¥30,000（Aki Eguchi Portfolio Kit）。",
+  desc: "写真の入れ替えも、文章も、レイアウトも自分で。わかりやすく機能のそろった管理画面で、コードを書かずに更新できる写真家のポートフォリオサイト。初期設定・公開込み、買い切り¥30,000（Aki Eguchi Portfolio Kit）。",
   image: "/og-service.jpg",
 };
 
@@ -380,7 +380,7 @@ const SERVICE_START_OG = {
 
 const SERVICE_OG_EN = {
   title: "A Place to Keep Your Photographs | Portfolio Websites for Photographers",
-  desc: "A lasting place for work that otherwise disappears down a feed. A portfolio website with the spacing and sequencing already resolved, set up for you and delivered published — ¥30,000 one-time (Aki Eguchi Portfolio Kit).",
+  desc: "Update photographs, text, and layouts yourself in a clear, fully featured admin panel. A portfolio website for photographers, without coding for everyday updates. Setup and launch included — ¥30,000 one-time (Aki Eguchi Portfolio Kit).",
   image: "/og-service.jpg",
 };
 

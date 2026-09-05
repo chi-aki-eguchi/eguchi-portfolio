@@ -101,8 +101,8 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
 
   hero: {
     label: "Portfolio Kit",
-    title: "いま見ているこのサイトが、\nそのまま見本です。",
-    body: "Aki Eguchi Portfolio Kit は、写真家のための完成済みポートフォリオサイト。\n設定はすべてこちらで行い、あなたの名前とドメインで公開した状態でお渡しします。",
+    title: "写真も、見せ方も。\n公開したあとも、自分の手で。",
+    body: "写真を入れ替える。並びを整える。プロフィールを書き直す。\n写真家のための、わかりやすく機能のそろった管理画面で、コードを書かずに更新できます。\n最初の設定と公開はこちらで。そこから先は、あなたの作品に合わせて育てていけます。",
     facts: [
       { title: "Price", body: "¥30,000（買い切り・月額なし）" },
       {
@@ -110,8 +110,8 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
         body: "ドメイン取得から公開設定まで、全部おまかせ",
       },
       {
-        title: "Launch",
-        body: "素材が揃ってから3日以内に納品",
+        title: "Your control",
+        body: "写真・文章・レイアウトを、自分で更新",
       },
     ],
     ctaPricing: "料金と流れを見る",
@@ -162,12 +162,12 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
           "作品一覧、プロフィール、問い合わせ導線をひとつのサイトとして見せられます。",
       },
       {
-        concern: "写真の並びまで整えたい",
+        concern: "更新のたびに、誰かへ頼みたくない",
         concernBody:
-          "写真の順番、余白、大きさまで、自分の見せ方に合わせて整えられます。",
-        solution: "管理画面から更新",
+          "新作ができたとき、プロフィールが変わったとき。その場で自分で直せるサイトがほしい。",
+        solution: "日々の更新は、自分のペースで",
         solutionBody:
-          "写真、並び順、プロフィール、連絡先をブラウザから更新できます。",
+          "写真の追加・公開切替から、並び順、文字や色、プロフィール、連絡先まで。管理画面に用意された項目を選んで変えられます。",
       },
     ],
   },
@@ -202,7 +202,7 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
       },
       {
         title: "納品",
-        body: "サイトURL・管理画面URL・パスワードをお渡しします。あとは管理画面から写真を入れるだけ。操作方法の相談は納品後もいつでもどうぞ（当面は期間・回数の制限なし）。",
+        body: "サイトURL・管理画面URL・パスワードをお渡しします。写真の追加や入れ替え、プロフィール、レイアウトや色も、管理画面から自分で更新できます。操作方法の相談は納品後もいつでもどうぞ（当面は期間・回数の制限なし）。",
       },
     ],
     footnote:
@@ -215,8 +215,8 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
   },
 
   finalCta: {
-    title: "まずは写真を見せてください。",
-    body: "どんなサイトになるか、具体的にご案内します。",
+    title: "新しい写真ができたら、\n自分でサイトも新しくする。",
+    body: "最初の公開はおまかせ。そのあとの更新は、あなたの手で。まずは管理画面の使い心地を確かめてください。",
     ctaOnline: "公開おまかせを申し込む",
     ctaOffline: "メールで相談する",
     snsLinks: [
@@ -234,16 +234,16 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
 
   adminShowcase: {
     label: "Admin panel",
-    title: "並べ方12種類・140以上の設定を、管理画面から。",
-    body: "コードは触らず、写真の追加から作品の見せ方、プロフィールや連絡先まで、自分の感覚で少しずつ整えられます。",
+    title: "よく使う操作は、わかりやすく。\nこだわりたい設定まで、ひとつの管理画面に。",
+    body: "写真を見ながら選び、変えたい項目を編集する。作品の入れ替えも、サイトの雰囲気づくりも、ブラウザから。公開後の日々の更新に、制作の依頼やコードの編集はいりません。",
     features: [
       {
-        title: "写真の管理",
-        body: "写真の追加、並べ替え、カテゴリ分け、焦点位置の調整まで行えます。",
+        title: "写真の入れ替え",
+        body: "新しい写真をまとめて追加。載せる写真の公開・非公開、並び順や見せたい位置も、自分で整えられます。",
       },
       {
         title: "並べ方と余白",
-        body: "12種類のレイアウトから選び、順番、大きさ、余白を作品に合わせて整えられます。",
+        body: "グリッドや大小をつけた配置などから選び、写真の大きさ、間隔、ページの余白まで調整できます。",
       },
       {
         title: "文字と色",
@@ -258,8 +258,8 @@ export const DEFAULT_SERVICE_CONFIG: ServicePageConfig = {
         body: "作品をシリーズやカテゴリに整理し、カバー写真や説明文を設定できます。",
       },
       {
-        title: "共有と検索",
-        body: "SNSで見せる画像、サイトの説明、検索サービス向けの情報を整えられます。",
+        title: "トップと仕事の案内",
+        body: "トップを飾る写真、撮影プランや料金、サイトの説明やSNS共有用の画像も管理できます。",
       },
     ],
     demoCta: "実際に触って確かめる",
@@ -616,12 +616,13 @@ export const ENGLISH_PLAN_COPY = [
     yen: 30_000,
     namePattern: /おまかせ|assisted|concierge/i,
     name: "Assisted setup",
-    sub: "I prepare everything and hand over a site that is already published. You only add photographs.",
+    sub: "I handle the initial setup and launch, then hand over the admin panel so you can update photographs, text, and design yourself.",
     points: [
       "Hosting and admin panel set up for you",
       "Custom domain purchase support and connection (registered in your name; fee separate)",
       "Name, profile, and contact details prepared before handover",
-      "After handover, you only add photographs from the admin panel",
+      "Add, replace, publish, hide, and reorder photographs yourself",
+      "Adjust layouts, type, colours, and spacing in the admin panel",
       "Guidance on using the site and admin panel — currently unlimited",
     ],
     cta: "Choose assisted setup",

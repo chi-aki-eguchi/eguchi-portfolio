@@ -407,7 +407,7 @@ describe("shared components", () => {
     try {
       const PortfolioKitPage = (await import("../pages/service")).default;
       const { host, cleanup } = await mount(createElement(PortfolioKitPage));
-      expect(host.textContent).toContain("いま見ているこのサイトが");
+      expect(host.textContent).toContain("公開したあとも、自分の手で。");
       expect(host.textContent).toContain("¥30,000（買い切り・月額なし）");
       expect(host.textContent).toContain(
         "ドメイン取得から公開設定まで、全部おまかせ",
@@ -416,7 +416,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("24時間以内に素材のお願い");
       expect(host.textContent).toContain("維持費や月額料金はいくらですか？");
       expect(host.textContent).toContain("やめたいときはどうなりますか？");
-      expect(host.textContent).toContain("並べ方12種類・140以上の設定");
+      expect(host.textContent).toContain("こだわりたい設定まで、ひとつの管理画面に。");
       const adminPanels = host.querySelectorAll("#admin-panel");
       expect(adminPanels).toHaveLength(1);
       expect(
@@ -622,7 +622,7 @@ describe("shared components", () => {
       for (const [url, expected] of [
         [
           "https://portfolio.example/portfolio-kit/en",
-          "ready for your photographs.",
+          "Your site to keep updating.",
         ],
         [
           "https://portfolio.example/start/en",
@@ -2965,7 +2965,7 @@ describe("shared components", () => {
     }
   });
 
-  test("Layout keeps Portfolio Kit out of nav unless mode is explicitly on", async () => {
+  test("Layout exposes the owner sales entrance, while respecting off and customer defaults", async () => {
     const { Provider } = await import("../components/provider");
     const Layout = (await import("../components/Layout")).default;
     const prevSettings = canned["/api/settings"];
@@ -2993,8 +2993,19 @@ describe("shared components", () => {
       );
       expect(
         ownerDefault.host.querySelectorAll('a[href="/portfolio-kit"]').length,
-      ).toBe(0);
+      ).toBeGreaterThan(0);
       ownerDefault.cleanup();
+
+      for (const settings of [
+        { siteUrl: "https://akieguchi.com", servicePageMode: "off" },
+        { siteUrl: "https://portfolio.example", servicePageMode: "auto" },
+      ]) {
+        canned["/api/settings"] = settings;
+        const disabled = await mount(createElement(Provider, null, createElement(Layout, null, createElement("p", null, "child"))));
+        expect(disabled.host.querySelector('a[href="/portfolio-kit"]')).toBeNull();
+        expect(disabled.host.querySelector('[data-studio-bridge]')).toBeNull();
+        disabled.cleanup();
+      }
 
       canned["/api/settings"] = {
         siteUrl: "https://portfolio.example",

@@ -5,6 +5,7 @@ const SERVICE_OWNER_EMAIL = "akieguchi33@gmail.com";
 
 const SERVICE_VISIBILITY_GATED_PATHS = new Set([
   "/portfolio-kit",
+  "/portfolio-kit/guide",
   "/portfolio-kit/consult",
   "/portfolio-kit/en",
   "/portfolio-kit/start",

@@ -61,6 +61,7 @@ const DYNAMIC_ROUTES: [RegExp, string][] = [
  */
 const SERVICE_ROUTES: Record<string, string> = {
   "/portfolio-kit": "src/web/pages/service.tsx",
+  "/portfolio-kit/guide": "src/web/pages/portfolio-guide.tsx",
   "/portfolio-kit/en": "src/web/pages/service.tsx",
   "/portfolio-kit/start": "src/web/pages/service-start.tsx",
   "/portfolio-kit/start/en": "src/web/pages/service-start.tsx",

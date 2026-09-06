@@ -81,6 +81,12 @@ const PUBLIC_PAGES: PublicPage[] = [
 // exercises the routes that are visible when the feature is enabled.
 const SERVICE_PAGES: PublicPage[] = [
   {
+    label: "Portfolio guide",
+    path: "/portfolio-kit/guide",
+    hasH1: true,
+    readySelector: "main article h1",
+  },
+  {
     label: "Portfolio Kit",
     path: "/portfolio-kit",
     hasH1: true,
@@ -773,6 +779,25 @@ async function expectLanguageSwitchKeyboardFocus(page: Page, destination: string
   expect(focusState.outlineStyle).toBe("solid");
   expect(Number.parseFloat(focusState.outlineWidth)).toBeGreaterThan(0);
 }
+
+test("Portfolio Kit — 実演動画は任意再生で、説明と相談へ進める", async ({ page }) => {
+  const apiMocks = await installPublicApiMocks(page, SYNTHETIC_SERVICE_SETTINGS);
+  await page.goto("/portfolio-kit");
+  const video = page.locator("#admin-video video");
+  await expect(video).toHaveAttribute("preload", "none");
+  await expect(video).not.toHaveAttribute("autoplay", "");
+  await video.scrollIntoViewIfNeeded();
+  await video.evaluate(async (element: HTMLVideoElement) => { await element.play(); });
+  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeGreaterThan(0);
+  expect(await video.evaluate((element: HTMLVideoElement) => element.videoWidth)).toBe(1440);
+  await video.evaluate((element: HTMLVideoElement) => element.pause());
+  await page.locator("#admin-video-transcript summary").click();
+  await expect(page.locator("#admin-video-transcript")).toContainText("体験版での保存");
+  await page.locator('a[href="/portfolio-kit/guide"]').first().click();
+  await expect(page.locator("h1")).toHaveText("写真家のポートフォリオサイトの作り方");
+  await expect(page.locator('a[href="/portfolio-kit/consult"]').first()).toBeVisible();
+  expect(apiMocks.unexpectedRequests).toEqual([]);
+});
 
 test.describe("public-site — 公開ページ基本検査（APIは人工データ）", () => {
   for (const { pages, settings } of [

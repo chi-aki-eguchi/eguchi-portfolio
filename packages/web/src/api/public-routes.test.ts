@@ -28,6 +28,7 @@ describe("public SPA route status", () => {
       "/en/contact",
       "/portfolio-kit",
       "/portfolio-kit/consult",
+      "/portfolio-kit/guide",
       "/portfolio-kit/en",
       "/portfolio-kit/start",
       "/start",
@@ -79,6 +80,8 @@ describe("public SPA route status", () => {
     expect(normalizeSpaPathname("/gallery/")).toBe("/gallery");
     expect(isKnownSpaPath("/gallery/")).toBe(true);
     expect(htmlStatusForSpaPath("/gallery/")).toBe(200);
+    expect(isKnownSpaPath("/portfolio-kit/guide/")).toBe(true);
+    expect(htmlStatusForSpaPath("/portfolio-kit/guide/")).toBe(200);
     expect(isSeriesDetailPath("/series/ishigakiisland/")).toBe(true);
     expect(
       htmlStatusForSpaPath("/series/ishigakiisland/", { seriesFound: true }),

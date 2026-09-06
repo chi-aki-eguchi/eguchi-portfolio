@@ -687,6 +687,9 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    // 再取得の失敗を検証するため、最初の一覧取得の成功を先に確定する。
+    // 見出しだけで進めると、取り込み後の500が初回取得に当たる競合になる。
+    await expect(photoTile(page, 9)).toBeVisible();
     await trackProgrammaticLibraryScroll(page);
     await page
       .getByLabel(/画像ファイルを選択|Choose image files/)

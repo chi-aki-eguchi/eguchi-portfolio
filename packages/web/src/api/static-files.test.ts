@@ -2,6 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { contentTypeForStaticPath } from "./static-files";
 
 describe("contentTypeForStaticPath", () => {
+  test("serves the admin demonstration video and its caption track", () => {
+    expect(contentTypeForStaticPath("/portfolio-kit/admin-demo-ja.webm")).toBe("video/webm");
+    expect(contentTypeForStaticPath("/portfolio-kit/admin-demo-ja.vtt")).toBe("text/vtt; charset=utf-8");
+  });
   test("returns explicit content types for social card image assets", () => {
     expect(contentTypeForStaticPath("/og-image.jpg")).toBe("image/jpeg");
     expect(contentTypeForStaticPath("/og-service.JPG")).toBe("image/jpeg");

@@ -83,19 +83,19 @@ describe("取り込みの入口", () => {
   });
 });
 
-describe("決済直後のお礼", () => {
+describe("決済先から戻った購入案内", () => {
   const start = src("../pages/service-start.tsx");
 
   test("プラン名と金額を直書きしない", () => {
-    // 販売ページは設定値を使うので、直書きだと値段を変えたとき支払直後の
-    // 画面だけ古い金額が出る。
+    // このページは決済照合を行わないため、支払い金額を断定しない。
     expect(start).not.toContain("¥30,000");
-    expect(start).toContain("purchasedPlanFrom(");
+    expect(start).not.toContain("purchasedPlanFrom(");
   });
 
-  test("プランが分からないときは金額の行ごと出さない", () => {
-    // 間違った金額を出すより、出さないほうがよい。
-    expect(start).toContain("const planRow = plan");
-    expect(start).toContain(": [];");
+  test("URLだけで購入済みのプラン行を組み立てない", () => {
+    // thanks や plan は閲覧者が書き換えられる。受け取り案内は表示しても、
+    // 未検証の購入プラン・支払い済み金額をその値から復元してはいけない。
+    expect(start).not.toContain("const planRow = plan");
+    expect(start).not.toContain("params.get(\"plan\")");
   });
 });

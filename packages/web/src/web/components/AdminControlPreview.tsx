@@ -21,6 +21,29 @@ export function AdminControlPreview({ language }: { language: "ja" | "en" }) {
   const src = `/portfolio-kit/admin-${current.id}-${language}.jpg`;
 
   return (
+    <>
+      {language === "ja" && (
+        <figure id="admin-video" className="mt-8 scroll-mt-24 overflow-hidden rounded-lg border border-[rgba(var(--foreground-rgb),0.14)]">
+          <figcaption className="px-5 py-6 sm:px-8">
+            <h3 className="font-ja text-lg leading-8">29秒で見る、公開したあとの更新。</h3>
+            <p className="mt-2 text-sm leading-7 text-[color:var(--text-quiet)]">実際の体験版を操作した、字幕付き・音声なしの動画です。見せ方の選択とプロフィールの編集・保存をご覧ください。</p>
+          </figcaption>
+          <video controls playsInline preload="none" width={1440} height={1000} poster="/portfolio-kit/admin-demo-video-poster.jpg" aria-label="Portfolio Kit 管理画面の操作実演" aria-describedby="admin-video-transcript" className="block h-auto w-full bg-[#f7f5f0]">
+            <source src="/portfolio-kit/admin-demo-ja.webm" type="video/webm" />
+            <track kind="captions" src="/portfolio-kit/admin-demo-ja.vtt" srcLang="ja" label="日本語" />
+            動画を再生できない場合は、下の写真と操作説明をご覧ください。
+          </video>
+          <details id="admin-video-transcript" className="px-5 py-4 text-sm leading-7 text-[color:var(--text-quiet)] sm:px-8">
+            <summary className="cursor-pointer">動画の操作内容を文章で読む</summary>
+            <ol className="mt-3 list-decimal space-y-2 pl-5">
+              <li>Library で写真を一覧。公開する作品を見ながら管理する画面です。</li>
+              <li>Settings の「ギャラリー配置」を開き、「正方形グリッド」「写真比率グリッド」を選んで保存します。</li>
+              <li>Profile の「自己紹介」に文章を入力して保存します。</li>
+            </ol>
+            <p className="mt-3">体験版での保存は、その体験内だけのものです。実際の公開サイトや写真は変わりません。独自機能の追加・個別開発は別途ご相談ください。</p>
+          </details>
+        </figure>
+      )}
     <div className="mt-8 overflow-hidden rounded-lg border border-[rgba(var(--foreground-rgb),0.14)]">
       <fieldset
         aria-label={language === "en" ? "Explore the admin screens" : "管理画面の紹介を切り替える"}
@@ -58,5 +81,6 @@ export function AdminControlPreview({ language }: { language: "ja" | "en" }) {
           : "デモの実画面です。画像を押すと拡大できます。下の「管理画面を触ってみる」から、実際の操作も試せます。"}
       </p>
     </div>
+    </>
   );
 }

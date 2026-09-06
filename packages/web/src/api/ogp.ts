@@ -16,10 +16,17 @@ import {
   composeHomeTitle,
   PAGE_TITLE,
 } from "../shared/site-title";
-import { resolveServiceVisibility } from "../shared/service-visibility";
+import {
+  isServiceVisibilityGatedPath,
+  resolveServiceVisibility,
+} from "../shared/service-visibility";
 import { OWNER_SERVICE_FAQ } from "../shared/portfolio-service-copy";
 import { hasPublicEnglishContent } from "../shared/public-english";
 import { resolveContactText } from "../shared/contact-defaults";
+import {
+  PORTFOLIO_DISCOVERY_GUIDE,
+  portfolioGuideParagraphs,
+} from "../shared/portfolio-guide";
 import {
   DEFAULT_SERVICE_FAQ,
   DEFAULT_SERVICE_PLANS,
@@ -84,6 +91,7 @@ export function siteUrlFrom(
 // Per-route titles so each page is distinct for search/social, not all "home".
 const PAGE_TITLES: Record<string, string> = {
   "/portfolio-kit/consult": "ポートフォリオ制作の無料相談",
+  "/portfolio-kit/guide": PORTFOLIO_DISCOVERY_GUIDE.title,
   "/gallery": PAGE_TITLE.gallery,
   "/series": PAGE_TITLE.series,
   // Work の棚（2026-08-31）。**ここに足さないと `/work` が Not Found 扱いになり、
@@ -169,6 +177,7 @@ function pageDescriptionFor(
   name: string,
 ): string {
   if (pathname === "/portfolio-kit/consult") return "江口秋のポートフォリオ制作へ無料相談。公開設定30,000円、写真・文章編集付き69,800円。相談送信だけでは購入になりません。";
+  if (pathname === "/portfolio-kit/guide") return PORTFOLIO_DISCOVERY_GUIDE.description;
   const policy = policyRoute(pathname);
   if (policy) return policyDocument(policy.kind, policy.language).description;
   if (ENGLISH_PUBLIC_PATHS.has(pathname)) {
@@ -217,6 +226,13 @@ export function publicPageFallbackText(
       // 含まれるかは、買う前に探している人がいちばん読みたい所。
       paragraphs:
         pathname === "/portfolio-kit" ? servicePlanParagraphs(settings) : [],
+    };
+  }
+  if (pathname === "/portfolio-kit/guide") {
+    return {
+      heading: PORTFOLIO_DISCOVERY_GUIDE.title,
+      description: PORTFOLIO_DISCOVERY_GUIDE.description,
+      paragraphs: portfolioGuideParagraphs(PORTFOLIO_DISCOVERY_GUIDE),
     };
   }
   const policy = policyRoute(pathname);
@@ -505,6 +521,7 @@ export function injectOgp(
   const isBuyerStartPath = SERVICE_START_PATHS.has(pathname);
   const isEnglishServicePath = ENGLISH_SERVICE_PATHS.has(pathname);
   const isService = isServicePath && isServiceSite;
+  const serviceUnavailable = isServiceVisibilityGatedPath(pathname) && !isServiceSite;
   const serviceOg = isBuyerStartPath
     ? isEnglishServicePath
       ? SERVICE_START_OG_EN
@@ -529,6 +546,7 @@ export function injectOgp(
     "/terms/en",
     "/portfolio-kit",
     "/portfolio-kit/consult",
+    "/portfolio-kit/guide",
     "/portfolio-kit/en",
     "/portfolio-kit/start",
     "/start",
@@ -545,8 +563,6 @@ export function injectOgp(
     ((pathname.startsWith("/series/") || pathname.startsWith("/work/")) &&
       !!override?.title) ||
     (isPhotoDetail && !!override?.title);
-  const serviceUnavailable =
-    isServicePath && !isServiceSite;
   const missingPublicPage = !isKnown || serviceUnavailable;
   // A per-page override (e.g. a specific series) wins over the static route title.
   const title = missingPublicPage

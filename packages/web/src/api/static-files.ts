@@ -12,6 +12,8 @@ const STATIC_CONTENT_TYPES: Record<string, string> = {
   ".png": "image/png",
   ".svg": "image/svg+xml; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
+  ".vtt": "text/vtt; charset=utf-8",
+  ".webm": "video/webm",
   ".webmanifest": "application/manifest+json; charset=utf-8",
   ".webp": "image/webp",
   ".woff": "font/woff",

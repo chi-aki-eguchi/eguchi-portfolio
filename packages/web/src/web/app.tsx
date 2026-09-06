@@ -22,6 +22,7 @@ const ProfilePage = lazy(() => import("./pages/profile"));
 const ContactPage = lazy(() => import("./pages/contact"));
 const PolicyPage = lazy(() => import("./pages/policy"));
 const ServicePage = lazy(() => import("./pages/service"));
+const PortfolioGuidePage = lazy(() => import("./pages/portfolio-guide"));
 const ServiceConsultPage = lazy(() => import("./pages/service-consult"));
 const ServiceStartPage = lazy(() => import("./pages/service-start"));
 const AdminLoginPage = lazy(() => import("./pages/admin-login"));
@@ -313,6 +314,19 @@ function App() {
                   <TitledRoute title="Portfolio Kit Start">
                     <Suspense fallback={<PageFallback />}>
                       <ServiceStartPage />
+                    </Suspense>
+                  </TitledRoute>
+                </PageTransition>
+              </Layout>
+            </ServiceVisibilityGate>
+          </Route>
+          <Route path="/portfolio-kit/guide">
+            <ServiceVisibilityGate>
+              <Layout>
+                <PageTransition>
+                  <TitledRoute title="写真家のポートフォリオサイトの作り方">
+                    <Suspense fallback={<PageFallback />}>
+                      <PortfolioGuidePage />
                     </Suspense>
                   </TitledRoute>
                 </PageTransition>

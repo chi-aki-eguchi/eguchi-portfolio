@@ -18,6 +18,7 @@ const SPA_STATIC_PATHS = new Set([
   "/en/contact",
   "/portfolio-kit",
   "/portfolio-kit/consult",
+  "/portfolio-kit/guide",
   "/portfolio-kit/en",
   "/portfolio-kit/start",
   "/start",

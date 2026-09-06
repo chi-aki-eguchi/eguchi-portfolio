@@ -52,6 +52,7 @@ import {
   isServiceVisibilityGatedPath,
   resolveServiceVisibility,
 } from "./shared/service-visibility";
+import { PORTFOLIO_DISCOVERY_GUIDE } from "./shared/portfolio-guide";
 import { INDEXABLE_POLICY_PATHS } from "./shared/policy-content";
 import { publicContentVersion } from "./shared/public-content-version";
 import {
@@ -579,7 +580,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     // （配布テンプレート既定では日本語のままの英語URLを検索対象にしない）
     ...(hasPublicEnglishContent(settings) ? ["/en/about", "/en/contact"] : []),
     ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
-      ? ["/portfolio-kit", "/portfolio-kit/en"]
+      ? ["/portfolio-kit", "/portfolio-kit/en", "/portfolio-kit/guide"]
       : []),
   ];
   // Include each published series detail page so crawlers discover the actual
@@ -1103,15 +1104,26 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
           : routePathname === "/series"
             ? navSeries.filter((n) => n.path.startsWith("/series/"))
             : navSeries;
+      const fallbackLinks = routePathname === "/portfolio-kit/guide"
+        ? [
+            ...sectionLinks,
+            ...PORTFOLIO_DISCOVERY_GUIDE.links.map((link) => ({
+              href: link.href,
+              label: link.label,
+            })),
+          ]
+        : routePathname === "/portfolio-kit"
+          ? [...sectionLinks, { href: "/portfolio-kit/guide", label: PORTFOLIO_DISCOVERY_GUIDE.title }]
+        : sectionLinks;
       injected = injectNoscriptFallback(injected, {
         ...text,
         // シリーズの一覧を全ページに繰り返さない。束ねているページにだけ置く。
         links: isIndexPage
           ? [
-              ...sectionLinks,
+              ...fallbackLinks,
               ...shelfLinks.map((n) => ({ href: n.path, label: n.title })),
             ]
-          : sectionLinks,
+          : fallbackLinks,
         noticeJa: "このサイトの閲覧には JavaScript が必要です。",
         noticeEn: "Please enable JavaScript to view this portfolio.",
       });

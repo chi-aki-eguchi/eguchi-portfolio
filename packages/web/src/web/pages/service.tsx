@@ -1370,6 +1370,35 @@ export default function ServicePage({
       {/* ── Purchase details (collapsible) ── */}
       {owner ? <section className="mt-12 text-base leading-8"><h2 className="text-center text-2xl">{language === "en" ? "From consultation to launch" : "相談から公開まで"}</h2><ol className="mt-6 grid sm:grid-cols-3 gap-6 list-decimal pl-5"><li><h3 className="font-medium">{language === "en" ? "Tell us what you need" : "ご希望を確認"}</h3><p>{language === "en" ? "Send a free consultation. We reply within two business days." : "無料相談で、用途・素材・希望日程を確認。原則2営業日以内に返信します。"}</p></li><li><h3 className="font-medium">{language === "en" ? "Agree on the scope" : "見積もり・合意"}</h3><p>{language === "en" ? "Review the scope, total, schedule and terms before choosing to pay." : "制作範囲・総額・実費・納期・取引条件を確認し、ご希望の場合のみお支払い。"}</p></li><li><h3 className="font-medium">{language === "en" ? "Review and publish" : "制作・確認・公開"}</h3><p>{language === "en" ? "Review your site, then receive its public URL and admin access." : "写真・文章と公開前の画面を確認。公開URLと、ご自身で更新する管理画面をお渡しします。"}</p></li></ol></section> : <PurchaseDetails config={config.purchaseFlow} />}
 
+      <section className="mt-10 md:mt-12 page-entrance border-t border-[rgba(var(--foreground-rgb),0.08)] pt-10">
+        <SectionLabel>{language === "en" ? "A practical guide" : "初めてサイトをつくる方へ"}</SectionLabel>
+        <p className="mx-auto max-w-2xl text-[color:var(--text-quiet)] leading-7">
+          {language === "en"
+            ? "Our Japanese guide covers photo selection, essential pages, costs, and everyday updates. It is useful whether you build a site yourself or ask for help."
+            : "写真をどう選ぶか、何を載せるか、費用と更新はどう考えるか。自分で作る場合にも使えるガイドをまとめました。"}
+        </p>
+        <div className="mt-5 flex flex-col sm:flex-row sm:flex-wrap justify-center gap-3">
+          <a
+            href="/portfolio-kit/guide"
+            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.14)] px-5 py-2.5 text-sm hover:bg-[rgba(var(--foreground-rgb),0.03)] transition-colors duration-300"
+          >
+            {language === "en" ? "Read the guide (Japanese)" : "ポートフォリオサイトの作り方を読む"}
+          </a>
+          <a
+            href="#pricing"
+            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.14)] px-5 py-2.5 text-sm hover:bg-[rgba(var(--foreground-rgb),0.03)] transition-colors duration-300"
+          >
+            {language === "en" ? "View pricing / flow" : "価格と流れを見る"}
+          </a>
+          <a
+            href="/portfolio-kit/consult"
+            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-md bg-[var(--foreground)] text-[var(--background)] px-5 py-2.5 text-sm hover:opacity-90 transition-opacity duration-300"
+          >
+            {language === "en" ? "Free consultation" : "無料相談へ"}
+          </a>
+        </div>
+      </section>
+
       {/* ── FAQ (accordion) ── */}
       <section className="mt-10 md:mt-14 page-entrance">
         <SectionLabel>{config.faq.label}</SectionLabel>

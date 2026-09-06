@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
-import { escapeHtml, setAttr } from "./ogp";
+import { escapeHtml, publicPageFallbackText, setAttr } from "./ogp";
+import { PORTFOLIO_DISCOVERY_GUIDE } from "../shared/portfolio-guide";
 
 describe("escapeHtml", () => {
   test("escapes all five HTML-significant characters", () => {
@@ -148,6 +149,49 @@ describe("injectOgp robots policy", () => {
     expect(html).not.toContain("Not Found");
     expect(html).toContain("相談送信だけでは購入になりません");
     expect(robotsOf(html)).toBe("noindex, nofollow");
+  });
+  test("guide page has unique title and is indexable when service is public", () => {
+    const html = injectOgp(
+      page,
+      { siteUrl: "https://akieguchi.com" },
+      "/portfolio-kit/guide",
+    );
+    expect(html).toContain("<title>写真家のポートフォリオサイトの作り方 | ");
+    expect(html).toContain(
+      'og:title" content="写真家のポートフォリオサイトの作り方 | ',
+    );
+    expect(html).toContain(PORTFOLIO_DISCOVERY_GUIDE.description);
+    expect(html).toContain('rel="canonical" href="https://akieguchi.com/portfolio-kit/guide"');
+    expect(html).not.toContain('rel="alternate"');
+    expect(robotsOf(html)).toBe("index, follow");
+    expect(html).not.toContain("Not Found");
+  });
+  test("guide page fallback text comes from shared portfolio guide payload", () => {
+    const fallback = publicPageFallbackText(
+      {},
+      "/portfolio-kit/guide",
+      undefined,
+      "https://akieguchi.com",
+    );
+    expect(fallback.heading).toBe(PORTFOLIO_DISCOVERY_GUIDE.title);
+    expect(fallback.description).toBe(PORTFOLIO_DISCOVERY_GUIDE.description);
+    for (const section of PORTFOLIO_DISCOVERY_GUIDE.sections) {
+      expect(fallback.paragraphs).toContain(section.title);
+      for (const paragraph of section.body) {
+        expect(fallback.paragraphs).toContain(paragraph);
+      }
+    }
+  });
+  test("guide page is noindex when service visibility is off", () => {
+    const html = injectOgp(
+      page,
+      { servicePageMode: "off", siteUrl: "https://akieguchi.com" },
+      "/portfolio-kit/guide",
+    );
+    expect(html).toContain('rel="canonical" href="https://akieguchi.com/portfolio-kit/guide"');
+    expect(robotsOf(html)).toBe("noindex, nofollow");
+    expect(html).toContain("Not Found |");
+    expect(html).not.toContain("rel=\"alternate\"");
   });
   test("admin and unknown paths are noindex", () => {
     expect(robotsOf(injectOgp(page, {}, "/admin"))).toBe("noindex, nofollow");

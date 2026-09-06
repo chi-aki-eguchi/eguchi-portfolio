@@ -44,6 +44,9 @@ describe("routeModuleFor", () => {
     expect(routeModuleFor("/")).toBe("src/web/pages/top.tsx");
     expect(routeModuleFor("/gallery")).toBe("src/web/pages/gallery.tsx");
     expect(routeModuleFor("/about")).toBe("src/web/pages/profile.tsx");
+    expect(routeModuleFor("/portfolio-kit/guide")).toBe(
+      "src/web/pages/portfolio-guide.tsx",
+    );
   });
 
   test("シリーズ詳細のような可変の経路も引ける", () => {

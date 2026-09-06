@@ -564,13 +564,15 @@ describe("shared components", () => {
     dom.reconfigure({ url: "http://localhost/" });
   });
 
-  test("ServiceStartPage promises the assisted delivery without any deploy path", async () => {
+  test("ServiceStartPage follows the agreed delivery schedule without any deploy path", async () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(createElement(ServiceStartPage));
     const text = host.textContent ?? "";
     expect(text).toContain("Aki Eguchi Portfolio Kit");
-    expect(text).toContain("決済後24時間以内に素材のお願い");
-    expect(text).toContain("素材が揃ってから3日以内");
+    expect(text).toContain("通常2営業日以内");
+    expect(text).toContain("合意した見積内容");
+    expect(text).toContain("既存のご購入条件や合意内容");
+    expect(text).not.toContain("素材が揃ってから3日以内");
     expect(text).toContain("当面は期間・回数の制限なく受け付けます");
     expect(text).not.toContain("公開後7日間");
     expect(text).not.toContain("設置リンク");
@@ -585,8 +587,9 @@ describe("shared components", () => {
       createElement(ServiceStartPage, { language: "en" }),
     );
     const text = host.textContent ?? "";
-    expect(text).toContain("Within 24 hours of payment");
-    expect(text).toContain("within three days");
+    expect(text).toContain("within 2 business days");
+    expect(text).toContain("agreed quote and schedule");
+    expect(text).not.toContain("within three days");
     expect(text).toContain("Send your materials");
     expect(text).toContain("Handover");
     expect(text).toContain(
@@ -616,7 +619,7 @@ describe("shared components", () => {
         ],
         [
           "https://portfolio.example/start/en",
-          "After purchase, you send materials and wait.",
+          "After purchase, next steps",
         ],
       ] as const) {
         dom.reconfigure({ url });
@@ -653,24 +656,21 @@ describe("shared components", () => {
     }
   });
 
-  // 2026-07-20: Stripe Payment Linkは完了画面を出さず /start?thanks=1 へ
-  // リダイレクトする(オーナー設定)。決済帰りの着地だけ購入お礼を表示し、
-  // 素の /start(LPからの下見)には出さない
-  test("ServiceStartPage thanks the buyer only when arriving from checkout", async () => {
+  // Query flags are visitor-controlled and cannot prove payment, plan, amount or receipt delivery.
+  test("ServiceStartPage shows neutral payment guidance for unverified checkout flags", async () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     try {
       dom.reconfigure({ url: "http://localhost/start?thanks=1" });
       {
         const { host, cleanup } = await mount(createElement(ServiceStartPage));
         const text = host.textContent ?? "";
-        expect(text).toContain("ご購入、誠にありがとうございます");
-        expect(text).toContain("すぐに何かをしなくても大丈夫です");
-        // 2026-07-20: 「情報が少ない」というオーナー指摘を受け、
-        // プラン・支払い方法・領収書送付先を明記した領収書調の要約を追加
-        expect(text).toContain("公開おまかせ（¥30,000）");
-        expect(text).toContain("Stripeにて完了");
-        expect(text).toContain("購入時のメールアドレスへ送付");
-        // 言語切替でお礼が消えないよう、クエリはJP|ENリンクにも引き継ぐ
+        expect(text).toContain("次は、素材と日程を確認します");
+        expect(text).toContain("このページだけでは入金状況は確認できません");
+        expect(text).not.toContain("ご購入プラン");
+        expect(text).not.toContain("¥30,000");
+        expect(text).not.toContain("Stripeにて完了");
+        expect(text).not.toContain("購入時のメールアドレスへ送付");
+        // Language switching preserves navigation context, not a verified payment state.
         expect(
           host.querySelector('a[href="/start/en?thanks=1"]'),
         ).not.toBeNull();
@@ -684,21 +684,19 @@ describe("shared components", () => {
           createElement(ServiceStartPage, { language: "en" }),
         );
         const text = host.textContent ?? "";
-        expect(text).toContain("Thank you for your purchase.");
-        // プラン名と金額は**販売ページと同じ設定・同じ英語表記**から出す。
-        // 直書きだった頃はここが "Assisted Publishing — ¥30,000" で、販売ページの
-        // "Assisted setup" と同じ商品の呼び名すら食い違っていた。値段を変えても
-        // 支払直後の画面だけ古い金額が残った。名前と金額を別々に見て、
-        // 直書きの1文字列に戻れないようにする。
-        expect(text).toContain("Assisted setup");
-        expect(text).toMatch(/¥30,000/);
+        expect(text).toContain("This page cannot confirm payment by itself");
+        expect(text).not.toContain("Thank you for your purchase.");
+        expect(text).not.toContain("Completed (via Stripe)");
+        expect(text).not.toContain("Sent to your checkout email address");
+        expect(text).not.toMatch(/¥30,000/);
+        expect(text).not.toContain("cs_test_123");
         cleanup();
       }
       dom.reconfigure({ url: "http://localhost/start" });
       {
         const { host, cleanup } = await mount(createElement(ServiceStartPage));
         expect(host.textContent ?? "").not.toContain(
-          "ご購入、誠にありがとうございます",
+          "次は、素材と日程を確認します",
         );
         cleanup();
       }

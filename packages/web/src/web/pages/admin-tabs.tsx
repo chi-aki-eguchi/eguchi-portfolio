@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import { useRowDraftGuard } from "../hooks/useRowDraftGuard";
@@ -69,6 +69,7 @@ import {
   ListLoadFailed,
 } from "./admin-ui";
 import { AdminWorkspace } from "./admin-workspace";
+import { AdminHeroPicker } from "./admin-hero-picker";
 import {
   AdminReorderBar,
   type ReorderBarFeedback,
@@ -871,7 +872,7 @@ export function HeroTab() {
   } | null>(null);
 
   // All gallery photos
-  const { data: photosData, isLoading: photosLoading } = useQuery({
+  const { data: photosData, isLoading: photosLoading, isError: photosFailed, refetch: retryPhotos } = useQuery({
     queryKey: ["photos", "all"],
     queryFn: async () =>
       jsonOrThrow(await api.photos.$get({ query: { all: "1" } })),
@@ -879,7 +880,7 @@ export function HeroTab() {
   const allPhotos = photosData?.photos ?? [];
 
   // Selected hero photos (photoId list)
-  const { data: heroData, isLoading: heroLoading } = useQuery({
+  const { data: heroData, isLoading: heroLoading, isError: heroFailed, refetch: retryHero } = useQuery({
     queryKey: ["admin-hero-photos"],
     queryFn: async (): Promise<{ heroPhotos: HeroPhotoRow[] }> =>
       jsonOrThrow(await adminApi["hero-photos"].$get()),
@@ -893,11 +894,30 @@ export function HeroTab() {
       return photo ? { ...photo, heroSort: h.sortOrder } : null;
     })
     .filter(Boolean) as ((typeof allPhotos)[number] & { heroSort: number })[];
+  const sequenceRef = useRef<HTMLDivElement>(null);
+  const sequencePositions = useRef(new Map<number, number>());
+  const sequenceOrder = heroPhotos.map(photo => photo.id).join(",");
+  useLayoutEffect(() => {
+    const strip = sequenceRef.current;
+    if (!strip) return;
+    const positions = new Map<number, number>();
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    strip.querySelectorAll<HTMLElement>("[data-hero-slide]").forEach(element => {
+      const id = Number(element.dataset.heroSlide);
+      const left = element.offsetLeft;
+      const previous = sequencePositions.current.get(id);
+      if (!reduce && previous !== undefined && previous !== left && typeof element.animate === "function") {
+        element.animate([{ transform: `translateX(${previous - left}px)` }, { transform: "translateX(0)" }], { duration: 200, easing: "cubic-bezier(.2,.8,.2,1)" });
+      }
+      positions.set(id, left);
+    });
+    sequencePositions.current = positions;
+  }, [sequenceOrder]);
   // Hero rows whose photo was trashed/purged. Surfacing them matters twice over:
   // the selection silently stops driving the public hero (fallback kicks in with
   // no explanation here), and restoring such a photo from the trash would make
   // it pop back into the hero unexpectedly.
-  const danglingHeroIds = photosLoading
+  const danglingHeroIds = photosLoading || photosFailed || heroFailed
     ? []
     : (heroData?.heroPhotos ?? [])
         .filter((h) => !allPhotos.some((p) => p.id === h.photoId))
@@ -910,10 +930,12 @@ export function HeroTab() {
       const res = await adminApi["hero-photos"].$post({ json: { photoId } });
       assertOk(res);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setHeroError("");
-      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-hero-photos"] }),
+        qc.invalidateQueries({ queryKey: ["hero-photos"] }),
+      ]);
     },
     onError: onHeroError,
   });
@@ -925,10 +947,12 @@ export function HeroTab() {
       });
       assertOk(res);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setHeroError("");
-      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-hero-photos"] }),
+        qc.invalidateQueries({ queryKey: ["hero-photos"] }),
+      ]);
     },
     onError: onHeroError,
   });
@@ -1010,13 +1034,17 @@ export function HeroTab() {
       });
       assertOk(res);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setHeroError("");
-      qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
-      qc.invalidateQueries({ queryKey: ["hero-photos"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-hero-photos"] }),
+        qc.invalidateQueries({ queryKey: ["hero-photos"] }),
+      ]);
     },
     onError: onHeroError,
   });
+
+  const heroBusy = addHero.isPending || removeHero.isPending || reorderHero.isPending || cleanupDangling.isPending;
 
   const submitHeroOrder = (
     before: number[],
@@ -1024,7 +1052,7 @@ export function HeroTab() {
     from: number,
     to: number,
   ) => {
-    if (reorderHero.isPending || from === to) return;
+    if (heroBusy || from === to) return;
     reorderHero.mutate({
       photoIds: after,
       expectedIds: before,
@@ -1101,6 +1129,12 @@ export function HeroTab() {
     );
   }
 
+  if (photosFailed || heroFailed) {
+    return <AdminWorkspace name="hero"><PageHeader title={t.navigation.tabs.hero} />
+      <ListLoadFailed message={copy.error} retryLabel={t.common.retry} onRetry={() => { void retryPhotos(); void retryHero(); }} />
+    </AdminWorkspace>;
+  }
+
   return (
     <AdminWorkspace
       name="hero"
@@ -1118,7 +1152,7 @@ export function HeroTab() {
               position: reorderTargetIndex + 1,
               total: heroPhotos.length,
             }}
-            busy={reorderHero.isPending}
+            busy={heroBusy}
             feedback={reorderFeedback}
             moveSummary={
               lastMove
@@ -1173,7 +1207,7 @@ export function HeroTab() {
             }}
             destructiveAction={{
               label: copy.removeAria,
-              disabled: removeHero.isPending,
+              disabled: heroBusy,
               onAction: () =>
                 removeHero.mutate(reorderTarget.id, {
                   onSuccess: () => {
@@ -1212,7 +1246,7 @@ export function HeroTab() {
           <span>{copy.danglingWarning(danglingHeroIds.length)}</span>
           <button
             onClick={() => cleanupDangling.mutate()}
-            disabled={cleanupDangling.isPending}
+            disabled={heroBusy}
             className="flex-shrink-0 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm underline underline-offset-2 disabled:opacity-50"
           >
             {cleanupDangling.isPending
@@ -1221,29 +1255,13 @@ export function HeroTab() {
           </button>
         </div>
       )}
-      {/* Selected Hero Photos */}
-      <div className="mb-8">
-        <h2 className="text-[length:var(--admin-text-note)] tracking-widest text-[var(--admin-muted)] mb-1">
-          {copy.slidesTitle}
-        </h2>
-        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-4">
-          {copy.slidesHint}
-        </p>
+      {/* The sequence stays visible while the candidate contact sheet scrolls. */}
+      <div className="hero-selected">
+        <div className="hero-selected-heading"><h2>{copy.slidesTitle} · {heroPhotos.length}</h2><span>{copy.sequenceHint}</span></div>
         {heroPhotos.length === 0 ? (
-          <div className="border border-dashed border-[var(--admin-line)] rounded-sm p-8 text-center">
-            <Star
-              size={18}
-              className="mx-auto text-[var(--admin-muted)] mb-2"
-            />
-            <p className="text-[length:var(--admin-text-body)] text-[var(--admin-muted)]">
-              {copy.noneSelected}
-            </p>
-            <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mt-1">
-              {copy.selectFromGalleryHint}
-            </p>
-          </div>
+          <div className="hero-selected-empty"><Star size={16} /><span>{copy.noneSelected}<br />{copy.selectFromGalleryHint}</span></div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div ref={sequenceRef} className="hero-selected-strip">
             {heroPhotos.map((photo, i) => (
               <article
                 key={photo.id}
@@ -1255,7 +1273,8 @@ export function HeroTab() {
               >
                 <button
                   type="button"
-                  draggable={!reorderHero.isPending}
+                  disabled={heroBusy}
+                  draggable={!heroBusy}
                   onDragStart={() => setDragId(photo.id)}
                   onDragEnd={() => {
                     setDragId(null);
@@ -1311,65 +1330,9 @@ export function HeroTab() {
         )}
       </div>
 
-      {/* Gallery: Pick photos */}
-      <div>
-        <h2 className="text-[length:var(--admin-text-note)] tracking-widest text-[var(--admin-muted)] mb-1">
-          {copy.galleryTitle}
-        </h2>
-        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-4">
-          {copy.galleryHint}
-        </p>
-        {allPhotos.length === 0 ? (
-          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-muted)] text-center py-8">
-            {copy.noPhotosYet}
-          </p>
-        ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
-            {allPhotos.map((photo) => {
-              const isHero = heroPhotoIds.has(photo.id);
-              return (
-                <button
-                  key={photo.id}
-                  type="button"
-                  onClick={() =>
-                    isHero
-                      ? removeHero.mutate(photo.id)
-                      : addHero.mutate(photo.id)
-                  }
-                  disabled={addHero.isPending || removeHero.isPending}
-                  aria-pressed={isHero}
-                  aria-label={copy.toggleAria(
-                    photo.title ||
-                      photo.filename ||
-                      t.phase2b.library.inspector.photoFallback,
-                    isHero,
-                  )}
-                  className={`relative rounded-sm overflow-hidden cursor-pointer group border-2 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
-                    isHero
-                      ? "border-[color:var(--admin-accent)]"
-                      : "border-transparent hover:border-white/20"
-                  }`}
-                >
-                  <img
-                    src={adminPhotoSrc(photo, 200, 60)}
-                    alt={photo.title}
-                    className={`w-full aspect-square object-cover transition-opacity ${isHero ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}
-                    style={{ objectPosition: adminPhotoObjectPosition(photo) }}
-                  />
-                  {isHero && (
-                    <div className="absolute top-1 right-1">
-                      <Star
-                        size={12}
-                        className="text-[color:var(--admin-accent-fill)] fill-current"
-                      />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <AdminHeroPicker photos={allPhotos} selectedIds={heroPhotoIds}
+        busy={heroBusy}
+        onToggle={photo => heroPhotoIds.has(photo.id) ? removeHero.mutate(photo.id) : addHero.mutate(photo.id)} />
     </AdminWorkspace>
   );
 }

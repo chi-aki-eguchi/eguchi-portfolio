@@ -570,6 +570,17 @@ const ADMIN_PHASE_2B_JA = {
     },
   },
   hero: {
+    search: "写真名・ファイル名・機材で探す",
+    sortLabel: "候補の並び順",
+    sortOptions: { newest: "追加が新しい順", oldest: "追加が古い順", shot: "撮影日が新しい順", name: "名前順", manual: "Libraryの保存順" },
+    filters: "絞り込み", category: "カテゴリー", orientation: "写真の向き", all: "すべて",
+    orientations: { landscape: "横位置", portrait: "縦位置", square: "正方形" },
+    selectedOnly: "選択済みだけ", reset: "条件を解除", density: "一覧の密度",
+    densities: { compact: "小さく", standard: "標準", large: "大きく" },
+    results: (count: number) => `${count}枚`,
+    preview: (name: string) => `${name} を拡大して確認`,
+    noMatches: "条件に合う写真がありません",
+    sequenceHint: "左から表示順・押して順番を変更",
     error:
       "操作に失敗しました。通信状況を確認するか、再ログインしてください。",
     slidesTitle: "トップページの写真",
@@ -585,7 +596,7 @@ const ADMIN_PHASE_2B_JA = {
     moveNext: "後へ移動",
     removeAria: "ヒーローから削除",
     galleryTitle: "ギャラリー",
-    galleryHint: "クリックでヒーローに追加 / 解除",
+    galleryHint: "写真を押して追加・解除。目のボタンで拡大。変更はすぐサイトに反映されます。",
     noPhotosYet: "まだ写真がありません。Libraryから追加できます。",
     toggleAria: (name: string, isHero: boolean) =>
       `${name} をヒーローから${isHero ? "外す" : "追加"}`,
@@ -2312,6 +2323,17 @@ const ADMIN_PHASE_2B_EN = {
     },
   },
   hero: {
+    search: "Find by title, filename or camera",
+    sortLabel: "Candidate order",
+    sortOptions: { newest: "Recently added", oldest: "Oldest added", shot: "Recent capture date", name: "Name", manual: "Saved Library order" },
+    filters: "Filters", category: "Category", orientation: "Orientation", all: "All",
+    orientations: { landscape: "Landscape", portrait: "Portrait", square: "Square" },
+    selectedOnly: "Selected only", reset: "Clear filters", density: "Thumbnail density",
+    densities: { compact: "Small", standard: "Standard", large: "Large" },
+    results: (count: number) => `${count} photos`,
+    preview: (name: string) => `Preview ${name}`,
+    noMatches: "No photos match these filters",
+    sequenceHint: "Shown from left to right · Select to reorder",
     error: "The operation failed. Check your connection or sign in again.",
     slidesTitle: "Hero Slides",
     danglingWarning: (count: number) =>
@@ -2326,7 +2348,7 @@ const ADMIN_PHASE_2B_EN = {
     moveNext: "Move later",
     removeAria: "Remove from Hero",
     galleryTitle: "Gallery",
-    galleryHint: "Click to add to or remove from Hero",
+    galleryHint: "Select to add or remove. Use the eye to preview. Changes apply to your site immediately.",
     noPhotosYet: "No photos yet. Add photos from Library.",
     toggleAria: (name: string, isHero: boolean) =>
       isHero ? `Remove ${name} from Hero` : `Add ${name} to Hero`,

@@ -15,6 +15,7 @@ const tileGrid = (page: Page) =>
 async function assertContactSheet(page: Page, width: number, height: number) {
   await page.setViewportSize({ width, height });
   await gotoAdminTab(page, "gallery");
+  await page.getByRole("combobox", { name: "写真の並べ方" }).selectOption("grid");
   const tiles = page.locator(".admin-photo-tile");
   const count = await tiles.count();
   expect(count, "Libraryに写真が2枚以上ある前提").toBeGreaterThanOrEqual(2);
@@ -348,7 +349,7 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
     });
   });
 
-  test("デスクトップではthumbSize(既定220px)がそのままminmaxに入る", async ({
+  test("固定列の自動表示では既存のサムネイルサイズを保つ", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -357,6 +358,7 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
     );
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
+    await page.getByRole("combobox", { name: "写真の並べ方" }).selectOption("grid");
     const inline = await tileGrid(page).evaluate(
       (el) => (el as HTMLElement).style.gridTemplateColumns,
     );

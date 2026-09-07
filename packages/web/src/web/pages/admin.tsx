@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import { LibraryPhotoPreview } from "../components/LibraryPhotoPreview";
 import { LibraryFilterPanel } from "../components/LibraryFilterPanel";
 import "../components/library-workspace.css";
+import { contactSheetRows, contactSheetWindow, contactSheetNeighbor, CONTACT_SHEET_GAP } from "../lib/library-contact-sheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import {
@@ -2008,8 +2009,9 @@ export function effectiveLibraryThumbSize({
   // 未計測(マウント直後・jsdom)は従来どおり
   if (gridWidth <= 0) return thumbSize;
   if (preferredColumns) {
+    const fittedColumns = libraryColumnCount({ gridWidth, thumbSize, preferredColumns, gap });
     const preferredSize = Math.floor(
-      (gridWidth - gap * (preferredColumns - 1)) / preferredColumns,
+      (gridWidth - gap * (fittedColumns - 1)) / fittedColumns,
     );
     if (preferredSize >= LIBRARY_MIN_DENSE_THUMB) return preferredSize;
   }
@@ -2145,6 +2147,10 @@ export function GalleryTab({
     },
     [],
   );
+  const pendingDensityAnchorRef = useRef<number | null>(null);
+  const [libraryLayout, setLibraryLayout] = usePersistentState<"contact" | "grid">("admin:libraryLayout", "contact");
+  const [contactHeight, setContactHeight] = usePersistentState("admin:contactHeight", typeof window !== "undefined" && window.innerWidth < 768 ? 80 : 110);
+  const [desktopColumns, setDesktopColumns] = usePersistentState("admin:desktopColumns", 0);
   const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 220); // px
   const [mobileLibraryColumns, setMobileLibraryColumns] =
     usePersistentState<LibraryColumnChoice>("admin:mobileLibraryColumns", 2);
@@ -3377,11 +3383,12 @@ export function GalleryTab({
   // スマホは2列/3列をオーナーが選べる。Library の grid CSS・仮想化・
   // キーボード列数はこの実効幅で統一する(Trash/Table・PC sliderは従来どおり)。
   // 並べ替え中は2列に固定する（タイル上の移動ボタンが小さいタイルに収まらない）。
+  const useContactSheet = libraryLayout !== "grid" && libraryMode !== "arrange";
   const preferredColumns = coarsePointer
     ? libraryMode === "arrange"
       ? 2
       : mobileLibraryColumns
-    : undefined;
+    : libraryMode === "arrange" || !Number(desktopColumns) ? undefined : Math.max(2, Math.min(12, Number(desktopColumns)));
   const effectiveThumbSize = useMemo(
     () =>
       effectiveLibraryThumbSize({
@@ -3406,7 +3413,10 @@ export function GalleryTab({
     thumbSize: effectiveThumbSize,
     explicit: preferredColumns !== undefined,
   });
-  const virtualGrid = useMemo(
+  const contactRows = useMemo(() => contactSheetRows(regularPhotos, libraryGridMetrics.gridWidth, Math.max(60, Math.min(260, Number(contactHeight) || 110))), [regularPhotos, libraryGridMetrics.gridWidth, contactHeight]);
+  const recentContactRows = useMemo(() => contactSheetRows(recentlyAddedPhotos, libraryGridMetrics.gridWidth - 20, Math.max(60, Math.min(260, Number(contactHeight) || 110))), [recentlyAddedPhotos, libraryGridMetrics.gridWidth, contactHeight]);
+  const contactWindow = useMemo(() => contactSheetWindow(contactRows, Math.max(0, libraryGridMetrics.scrollTop - libraryGridMetrics.gridOffsetTop), libraryGridMetrics.viewportHeight), [contactRows, libraryGridMetrics]);
+  const squareVirtualGrid = useMemo(
     () =>
       computeVirtualGridWindow({
         itemCount: regularPhotos.length,
@@ -3427,6 +3437,7 @@ export function GalleryTab({
       regularPhotos.length,
     ],
   );
+  const virtualGrid = useContactSheet ? contactWindow : squareVirtualGrid;
   const virtualGridRef = useRef(virtualGrid);
   useLayoutEffect(() => {
     virtualGridRef.current = virtualGrid;
@@ -3507,9 +3518,9 @@ export function GalleryTab({
       const row = Math.floor(
         regularIndex / Math.max(1, latestVirtualGrid.columns),
       );
-      const rowTop =
-        currentLibraryGridOffsetTop() + row * latestVirtualGrid.rowHeight;
-      const rowBottom = rowTop + latestVirtualGrid.rowHeight;
+      const contactRow = useContactSheet ? contactRows.find((r) => r.items.some((item) => item.index === regularIndex)) : undefined;
+      const rowTop = currentLibraryGridOffsetTop() + (contactRow?.top ?? row * latestVirtualGrid.rowHeight);
+      const rowBottom = rowTop + (contactRow?.height ?? latestVirtualGrid.rowHeight);
       if (rowTop < el.scrollTop) {
         el.scrollTop = rowTop;
       } else if (rowBottom > el.scrollTop + el.clientHeight) {
@@ -3519,11 +3530,32 @@ export function GalleryTab({
     },
     [
       currentLibraryGridOffsetTop,
+      contactRows,
+      useContactSheet,
       displayed,
       measureLibraryGrid,
       recentlyAddedPhotos.length,
     ],
   );
+  const rememberDensityAnchor = () => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const top = scroll.getBoundingClientRect().top;
+    const tile = [...scroll.querySelectorAll<HTMLElement>(".admin-photo-tile")].find((tile) => tile.getBoundingClientRect().bottom > top + 1);
+    const id = Number(tile?.id.replace("admin-photo-", ""));
+    pendingDensityAnchorRef.current = displayed.findIndex((photo) => photo.id === id);
+  };
+  useLayoutEffect(() => {
+    const index = pendingDensityAnchorRef.current;
+    const scroll = scrollRef.current;
+    if (index === null || index < 0 || !scroll) return;
+    pendingDensityAnchorRef.current = null;
+    const regularIndex = index - recentlyAddedPhotos.length;
+    if (regularIndex < 0) { scroll.scrollTop = 0; return; }
+    const row = useContactSheet ? contactRows.find((row) => row.items.some((item) => item.index === regularIndex)) : undefined;
+    scroll.scrollTop = currentLibraryGridOffsetTop() + (row?.top ?? Math.floor(regularIndex / virtualGrid.columns) * virtualGrid.rowHeight);
+    measureLibraryGrid();
+  }, [contactHeight, libraryLayout, desktopColumns, mobileLibraryColumns, contactRows, currentLibraryGridOffsetTop, measureLibraryGrid, recentlyAddedPhotos.length, useContactSheet, virtualGrid.columns, virtualGrid.rowHeight]);
   const dismissRecentlyAdded = useCallback(() => {
     pendingRecentlyAddedScrollRef.current = null;
     onRecentlyAddedPhotoIdsChange(new Set());
@@ -5089,9 +5121,12 @@ export function GalleryTab({
   useEffect(() => {
     if (!inspectorOpen) return;
     document.querySelector<HTMLButtonElement>("[data-library-inspector-close]")?.focus({ preventScroll: true });
+    const openerId = inspectorOpenerRef.current?.closest(".admin-photo-tile")?.id;
     return () => {
       requestAnimationFrame(() => {
-        if (inspectorOpenerRef.current?.isConnected) inspectorOpenerRef.current.focus({ preventScroll: true });
+        // Virtual rows may remount while the editor is open (notably Safari).
+        const opener = openerId ? document.getElementById(openerId)?.querySelector<HTMLElement>("[data-library-photo-action]") : inspectorOpenerRef.current;
+        opener?.focus({ preventScroll: true });
       });
     };
   }, [inspectorOpen]);
@@ -5207,12 +5242,26 @@ export function GalleryTab({
       setPreviewPhoto((prev) => (prev ? photo : prev)); // keep quick-preview in sync if open
       if (libraryMode === "normal" && inspectPhoto) openInspectorFor(photo);
       scrollLibraryIndexIntoView(nextIdx);
-      requestAnimationFrame(() =>
-        document
-          .getElementById(`admin-photo-${photo.id}`)
-          ?.scrollIntoView?.({ block: "nearest" }),
-      );
+      requestAnimationFrame(() => {
+        const tile = document.getElementById(`admin-photo-${photo.id}`);
+        tile?.scrollIntoView?.({ block: "nearest" });
+        if (!inspectPhoto) tile?.querySelector<HTMLElement>("[data-library-photo-action]")?.focus({ preventScroll: true });
+      });
     });
+  };
+
+  const navByRow = (direction: -1 | 1) => {
+    if (!useContactSheet) { navByOffset(direction * gridCols()); return; }
+    const index = displayed.findIndex((p) => p.id === lastClicked);
+    if (index < 0) { navByOffset(0); return; }
+    const recentCount = recentlyAddedPhotos.length;
+    const inRecent = index < recentCount;
+    const rows = inRecent ? recentContactRows : contactRows;
+    const localIndex = inRecent ? index : index - recentCount;
+    const next = contactSheetNeighbor(rows, localIndex, direction);
+    if (next === localIndex && direction === 1 && inRecent && regularPhotos.length) navByOffset(recentCount - index);
+    else if (next === localIndex && direction === -1 && !inRecent && recentCount) navByOffset(recentCount - 1 - index);
+    else navByOffset(next - localIndex);
   };
 
   // Number of grid columns, derived from the rendered grid width / thumb size.
@@ -5375,12 +5424,12 @@ export function GalleryTab({
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        navByOffset(-gridCols());
+        navByRow(-1);
         return;
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        navByOffset(gridCols());
+        navByRow(1);
         return;
       }
       // Enter — open inspector for the cursor photo
@@ -5725,7 +5774,7 @@ export function GalleryTab({
         </LibraryFilterPanel>
       )}
       {/* Main area */}
-      <div className="admin-library-main flex-1 flex flex-col min-w-0" inert={!!inspectPhoto}>
+      <div className="admin-library-main flex-1 flex flex-col min-w-0" data-library-layout={useContactSheet ? "contact" : "grid"} inert={!!inspectPhoto}>
         {libraryMode === "arrange" && (
           <header
             data-library-mobile-reorder-header
@@ -6139,7 +6188,7 @@ export function GalleryTab({
                   min={80}
                   max={300}
                   value={thumbSize}
-                  onChange={(e) => setThumbSize(Number(e.target.value))}
+                  onChange={(e) => { setThumbSize(Number(e.target.value)); setLibraryLayout("grid"); setDesktopColumns(0); }}
                   className="ax-slider w-24 accent-[var(--admin-muted)]"
                 />
                 <Columns size={12} className="text-[var(--admin-muted)]" />
@@ -6157,7 +6206,7 @@ export function GalleryTab({
                     type="button"
                     aria-label={copy.toolbar.columns(columns)}
                     aria-pressed={mobileLibraryColumns === columns}
-                    onClick={() => setMobileLibraryColumns(columns)}
+                    onClick={() => { setMobileLibraryColumns(columns); setLibraryLayout("grid"); }}
                     className={`min-w-8 admin-tap-sm px-1.5 py-1 rounded-sm border text-[length:var(--admin-text-note)] transition-colors ${
                       mobileLibraryColumns === columns
                         ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
@@ -6776,6 +6825,26 @@ export function GalleryTab({
         )}
 
         {/* Drop zone overlay */}
+        {!showTrash && !bulkEditMode && libraryMode !== "arrange" && (
+          <div className="admin-library-density" data-library-density>
+            <select aria-label={language === "ja" ? "写真の並べ方" : "Photo layout"} value={useContactSheet ? "contact" : "grid"} onChange={(e) => { rememberDensityAnchor(); setLibraryLayout(e.target.value as "contact" | "grid"); }}>
+              <option value="contact">{language === "ja" ? "行にそろえる" : "Justified rows"}</option>
+              <option value="grid">{language === "ja" ? "列をそろえる" : "Fixed columns"}</option>
+            </select>
+            {useContactSheet ? <label>
+              <span>{language === "ja" ? "小" : "Small"}</span>
+              <input type="range" aria-label={language === "ja" ? "一覧の写真サイズ" : "Contact sheet photo size"} min={60} max={260} step={10} value={contactHeight} onChange={(e) => { rememberDensityAnchor(); setContactHeight(Number(e.target.value)); }} />
+              <span>{language === "ja" ? "大" : "Large"}</span>
+            </label> : <label>
+              <span>{language === "ja" ? "列数" : "Columns"}</span>
+              <select aria-label={language === "ja" ? "一覧の列数" : "Contact sheet columns"} value={coarsePointer ? mobileLibraryColumns : desktopColumns} onChange={(e) => { rememberDensityAnchor(); const n = Number(e.target.value); if (coarsePointer) setMobileLibraryColumns(n as LibraryColumnChoice); else setDesktopColumns(n); }}>
+                {!coarsePointer && <option value={0}>{language === "ja" ? "自動" : "Auto"}</option>}
+                {(coarsePointer ? LIBRARY_COLUMN_CHOICES : [2,3,4,5,6,8,10,12]).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>}
+            <span className="admin-library-density-count">{displayed.length} {t.headers.libraryPhotos}</span>
+          </div>
+        )}
         <div
           ref={scrollRef}
           data-library-scroll
@@ -7209,7 +7278,7 @@ export function GalleryTab({
                           }}
                           src={thumbnailSrc}
                           alt={photo.title}
-                          className={`admin-library-thumbnail w-full aspect-square object-cover bg-[var(--admin-paper-deep)] ${isUnpublished ? "grayscale" : ""}`}
+                          className={`admin-library-thumbnail w-full aspect-square object-cover bg-[var(--admin-paper-deep)] ${isUnpublished && !useContactSheet ? "grayscale" : ""}`}
                           data-loaded={thumbnailWasLoaded ? "true" : undefined}
                           data-no-fade={
                             thumbnailWasLoaded ? "true" : undefined
@@ -7380,20 +7449,21 @@ export function GalleryTab({
                         )}
                         <div
                           data-library-recently-added-grid
-                          className="grid"
+                          className={useContactSheet ? "admin-contact-rows" : "grid"}
                           style={{
-                            gap: LIBRARY_GRID_GAP,
-                            gridTemplateColumns: libraryTracks,
+                            gap: useContactSheet ? CONTACT_SHEET_GAP : LIBRARY_GRID_GAP,
+                            gridTemplateColumns: useContactSheet ? undefined : libraryTracks,
                           }}
                         >
-                          {recentlyAddedPhotos.map((photo, idx) =>
-                            renderLibraryPhotoTile(photo, idx, true),
-                          )}
+                          {useContactSheet ? recentContactRows.map((row) => <div key={row.items[0].index} className="admin-contact-row" style={{ height: row.height, gap: CONTACT_SHEET_GAP }}>
+                            {row.items.map((item) => <div key={recentlyAddedPhotos[item.index].id} style={{ width: item.width, height: row.height }}>{renderLibraryPhotoTile(recentlyAddedPhotos[item.index], item.index, true)}</div>)}
+                          </div>) : recentlyAddedPhotos.map((photo, idx) => renderLibraryPhotoTile(photo, idx, true))}
                         </div>
                       </section>
                     )}
                     <div
                       ref={gridRef}
+                      style={useContactSheet ? { position: "relative", height: contactWindow.totalHeight } : undefined}
                       data-library-grid-mode={libraryMode}
                       role="listbox"
                       aria-label={`Library ${t.headers.libraryPhotos}`}
@@ -7407,15 +7477,17 @@ export function GalleryTab({
                         libraryGridMetrics.gridOffsetTop
                       }
                     >
-                      {virtualGrid.topPadding > 0 && (
-                        <div style={{ height: virtualGrid.topPadding }} />
-                      )}
+                      {/* Keep the full height stable during row replacement: WebKit
+                          can clamp scrollTop while spacer children are removed. */}
+                      {useContactSheet ? <div className="admin-contact-rows" style={{ position: "absolute", top: contactWindow.topPadding, left: 0, right: 0, gap: CONTACT_SHEET_GAP }}>
+                        {contactWindow.visibleRows.map((row) => <div key={row.items[0].index} className="admin-contact-row" style={{ height: row.height, gap: CONTACT_SHEET_GAP }}>
+                          {row.items.map((item) => <div key={regularPhotos[item.index].id} style={{ width: item.width, height: row.height }}>{renderLibraryPhotoTile(regularPhotos[item.index], recentlyAddedPhotos.length + item.index, false)}</div>)}
+                        </div>)}
+                      </div> : <>
+                      {virtualGrid.topPadding > 0 && <div style={{ height: virtualGrid.topPadding }} />}
                       <div
                         className="grid"
-                        style={{
-                          gap: LIBRARY_GRID_GAP,
-                          gridTemplateColumns: libraryTracks,
-                        }}
+                        style={{ gap: LIBRARY_GRID_GAP, gridTemplateColumns: libraryTracks }}
                       >
                         {visibleRegularPhotos.map((photo, localIdx) =>
                           renderLibraryPhotoTile(
@@ -7430,6 +7502,7 @@ export function GalleryTab({
                       {virtualGrid.bottomPadding > 0 && (
                         <div style={{ height: virtualGrid.bottomPadding }} />
                       )}
+                      </>}
                     </div>
                   </>
                 );

@@ -46,7 +46,7 @@
 @keyframes hero-check-pop { 0% { transform:scale(.7); } 65% { transform:scale(1.12); } 100% { transform:scale(1); } }
 @media(max-width:767px) {
   .admin-atelier .admin-content [data-admin-workspace="hero"] > .admin-screen-workspace__scroll { padding:14px 12px 0; }
-  .admin-atelier .admin-content [data-admin-workspace="hero"] .ax-page-title { margin-bottom:10px; }
+  .admin-atelier .admin-content [data-admin-workspace="hero"] .ax-page-title { margin-bottom:10px; margin-inline:calc(var(--ax-inset) - 12px); }
   .admin-atelier .admin-content .hero-selected { margin-bottom:6px; }
   .admin-atelier .admin-content .hero-selected-strip article { flex-basis:88px; }
   .admin-atelier .admin-content .hero-selected-strip img { height:55px; }

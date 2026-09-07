@@ -69,7 +69,8 @@ test.describe("admin — 全体デバッグスイープ", () => {
     });
     page.on("requestfailed", (request) => {
       if (!isLocalRequest(request.url())) return;
-      if (request.failure()?.errorText === "net::ERR_ABORTED") return;
+      // Tab changes cancel in-flight reads; WebKit uses a different spelling.
+      if (["net::ERR_ABORTED", "cancelled", "canceled"].includes(request.failure()?.errorText ?? "")) return;
       runtimeProblems.push(
         `requestfailed: ${request.method()} ${request.url()} ${
           request.failure()?.errorText ?? ""
@@ -235,7 +236,7 @@ test.describe("admin — 全体デバッグスイープ", () => {
     });
 
     const gridMetrics = await grid.evaluate((el) => {
-      const inner = el.querySelector(".grid") as HTMLElement | null;
+      const inner = el.querySelector(".admin-contact-rows") as HTMLElement | null;
       return {
         isVirtualized: el.getAttribute("data-virtualized") === "true",
         renderedCount: Number(el.getAttribute("data-rendered-count") ?? "0"),
@@ -252,7 +253,7 @@ test.describe("admin — 全体デバッグスイープ", () => {
     if (testInfo.project.name === "desktop")
       expect(gridMetrics.renderedCount).toBeGreaterThan(40);
     else expect(gridMetrics.renderedCount).toBeGreaterThanOrEqual(10);
-    expect(gridMetrics.rowGap).toBe("8px");
+    expect(gridMetrics.rowGap).toBe("3px");
 
     await page.getByRole("button", { name: "サイトで確認" }).click();
     const shell = page.locator("[data-admin-preview-shell]");

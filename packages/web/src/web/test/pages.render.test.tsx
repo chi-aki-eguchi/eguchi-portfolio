@@ -2178,6 +2178,8 @@ describe("shared components", () => {
     canned["/api/photos"] = { photos: largePhotos };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
+    // The fixed-column view retains its existing resize and keyboard contract.
+    dom.window.sessionStorage.setItem("admin:libraryLayout", JSON.stringify("grid"));
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), (qc) => {
@@ -2266,7 +2268,7 @@ describe("shared components", () => {
     }
   }, 10000);
 
-  test("AdminPage: 497 regular photos + 50 recently added photos renders 110 tiles", async () => {
+  test("AdminPage: 497 regular photos + 50 recently added photos keeps both contact-sheet sections virtualized", async () => {
     const prevPhotos = canned["/api/photos"];
     const widthDescriptor = Object.getOwnPropertyDescriptor(
       dom.window.HTMLElement.prototype,
@@ -2314,8 +2316,10 @@ describe("shared components", () => {
         section!.querySelectorAll(".admin-photo-tile").length,
       ).toBe(50);
       expect(grid?.getAttribute("data-virtualized")).toBe("true");
-      expect(grid?.getAttribute("data-rendered-count")).toBe("110");
-      expect(host.querySelectorAll(".admin-photo-tile").length).toBe(110);
+      const rendered = Number(grid?.getAttribute("data-rendered-count"));
+      expect(rendered).toBeGreaterThan(50);
+      expect(rendered).toBeLessThan(300);
+      expect(host.querySelectorAll(".admin-photo-tile").length).toBe(rendered);
       cleanup();
     } finally {
       canned["/api/photos"] = prevPhotos;

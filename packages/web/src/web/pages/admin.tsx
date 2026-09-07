@@ -11,6 +11,9 @@ import {
   type CSSProperties,
 } from "react";
 import { useLocation } from "wouter";
+import { LibraryPhotoPreview } from "../components/LibraryPhotoPreview";
+import { LibraryFilterPanel } from "../components/LibraryFilterPanel";
+import "../components/library-workspace.css";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import {
@@ -5081,7 +5084,22 @@ export function GalleryTab({
   };
 
   // Open the inspector for a photo (shared by click + Enter)
+  const inspectorOpenerRef = useRef<HTMLElement | null>(null);
+  const inspectorOpen = !!inspectPhoto;
+  useEffect(() => {
+    if (!inspectorOpen) return;
+    document.querySelector<HTMLButtonElement>("[data-library-inspector-close]")?.focus({ preventScroll: true });
+    return () => {
+      requestAnimationFrame(() => {
+        if (inspectorOpenerRef.current?.isConnected) inspectorOpenerRef.current.focus({ preventScroll: true });
+      });
+    };
+  }, [inspectorOpen]);
+
   const openInspector = (photo: Photo) => {
+    if (!inspectPhoto) inspectorOpenerRef.current = document.querySelector<HTMLElement>(`#admin-photo-${photo.id} [data-library-photo-action]`);
+    setShowLibraryFilters(false);
+    setShowSitePreview(false);
     setInspectPhoto(photo);
     setEditForm(photoToEditForm(photo));
   };
@@ -5225,7 +5243,10 @@ export function GalleryTab({
       // from under a confirm dialog. <dialog> closes itself via `cancel`.
       if (document.querySelector("dialog[open]")) return;
 
-      if (typing) return;
+      if (showLibraryFilters) return;
+      if (typing && e.key !== "Escape") return;
+
+      if (e.target instanceof HTMLElement && e.target.closest("button, summary, a") && (e.key === "Enter" || e.key === " ")) return;
 
       // ? — shortcuts help (Shift+/ on most layouts)
       if (e.key === "?") {
@@ -5401,6 +5422,7 @@ export function GalleryTab({
     showShortcuts,
     effectiveThumbSize,
     inspectPhoto,
+    showLibraryFilters,
     libraryMode,
     reorderTargetId,
     reorderLocked,
@@ -5456,9 +5478,254 @@ export function GalleryTab({
       className="admin-workspace flex h-full"
       data-admin-workspace="library"
       data-library-mode={libraryMode}
+      data-library-editing={!!inspectPhoto}
     >
+      {libraryMode !== "arrange" && !showTrash && showLibraryFilters && (
+        <LibraryFilterPanel title={copy.filters.title} closeLabel={copy.filters.close}
+          resultsLabel={copy.filters.showResults(displayed.length)} clearLabel={copy.filters.clearAll}
+          active={anyFilterActive} onClear={clearLibraryFilters} onClose={() => setShowLibraryFilters(false)}>
+              <div className="admin-filter-fields">
+                <label className="admin-filter-field"><span>{copy.filters.fields.category}</span><select
+                  value={filterCat}
+                  onChange={(e) => setFilterCat(e.target.value)}
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                >
+                  <option value="all">
+                    {copy.filters.categoryAll(allPhotos.length)}
+                  </option>
+                  {categories.map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {c.label} (
+                      {allPhotos.filter((p) => p.category === c.slug).length})
+                    </option>
+                  ))}
+                  {allPhotos.some(isUncategorized) && (
+                    <option value="__uncat__">
+                      {copy.filters.uncategorized} ({allPhotos.filter(isUncategorized).length})
+                    </option>
+                  )}
+                </select></label>
+
+                <label className="admin-filter-field"><span>{copy.filters.fields.series}</span><select
+                  value={filterSeries}
+                  onChange={(e) => setFilterSeries(e.target.value)}
+                  aria-label={copy.filters.seriesAria}
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                >
+                  <option value="all">{copy.filters.seriesAll}</option>
+                  {seriesList.map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.title} (
+                      {allPhotos.filter((p) => p.seriesId === s.id).length})
+                    </option>
+                  ))}
+                  <option value="__none__">
+                    {copy.filters.unassigned} (
+                    {allPhotos.filter((p) => p.seriesId == null).length})
+                  </option>
+                </select></label>
+
+
+
+                <label className="admin-filter-field"><span>{copy.filters.fields.medium}</span><select
+                  value={filterMedium}
+                  onChange={(e) => setFilterMedium(e.target.value)}
+                  aria-label={copy.filters.mediumAria}
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                >
+                  <option value="all">{copy.filters.mediumAll}</option>
+                  <option value="digital">
+                    {copy.filters.mediumDigital} ({mediumCounts.digital})
+                  </option>
+                  <option value="film">
+                    {copy.filters.mediumFilm} ({mediumCounts.film})
+                  </option>
+                  <option value="missing">
+                    {copy.filters.mediumMissing} ({mediumCounts.missing})
+                  </option>
+                </select></label>
+
+                <details className="admin-filter-more"><summary>{copy.filters.more}</summary><div className="admin-filter-fields"><label className="admin-filter-field"><span>{copy.filters.fields.size}</span><select
+                  value={filterSize}
+                  onChange={(e) => setFilterSize(e.target.value)}
+                  aria-label={copy.filters.displaySizeAria}
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                >
+                  <option value="all">{copy.filters.sizeAll}</option>
+                  {(["S", "M", "L"] as const).map((sz) => (
+                    <option key={sz} value={sz}>
+                      {sz} (
+                      {
+                        allPhotos.filter((p) => (p.displaySize || "M") === sz)
+                          .length
+                      }
+                      )
+                    </option>
+                  ))}
+                </select></label><label className="admin-filter-field"><span>{copy.filters.fields.orientation}</span><select
+                  value={filterOrientation}
+                  onChange={(e) => setFilterOrientation(e.target.value)}
+                  aria-label={copy.filters.orientationAria}
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                >
+                  <option value="all">{copy.filters.orientationAll}</option>
+                  <option value="portrait">
+                    {copy.filters.portrait} ({orientationCounts.portrait})
+                  </option>
+                  <option value="landscape">
+                    {copy.filters.landscape} ({orientationCounts.landscape})
+                  </option>
+                  <option value="square">
+                    {copy.filters.square} ({orientationCounts.square})
+                  </option>
+                </select></label>
+
+                <button
+                  onClick={() => setFilterFeatured((v) => !v)}
+                  aria-pressed={filterFeatured}
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
+                    filterFeatured
+                      ? "admin-btn-accent"
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                  }`}
+                >
+                  <Star size={11} /> {copy.filters.featured} ({featuredIds.size})
+                </button>
+
+                <label className="admin-filter-field"><span>{copy.filters.fields.publication}</span><select
+                  value={filterPublished}
+                  onChange={(e) => setFilterPublished(e.target.value)}
+                  aria-label={copy.filters.publicationAria}
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                >
+                  <option value="all">{copy.filters.publicationAll}</option>
+                  <option value="published">
+                    {copy.filters.publishedOnly} ({allPhotos.length - unpublishedCount})
+                  </option>
+                  <option value="unpublished">
+                    {copy.filters.unpublishedOnly} ({unpublishedCount})
+                  </option>
+                </select></label>
+
+                <button
+                  onClick={() => setFilterMissingShotAt((v) => !v)}
+                  aria-pressed={filterMissingShotAt}
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
+                    filterMissingShotAt
+                      ? ""
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                  }`}
+                >
+                  {copy.filters.missingDate} ({missingShotAtCount})
+                </button>
+
+                <button
+                  onClick={() => setFilterMissingCapture((v) => !v)}
+                  aria-pressed={filterMissingCapture}
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
+                    filterMissingCapture
+                      ? ""
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                  }`}
+                >
+                  {copy.filters.missingCapture} ({missingCaptureCount})
+                </button>
+
+                <button
+                  onClick={() => setFilterMissingTitle((v) => !v)}
+                  aria-pressed={filterMissingTitle}
+                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
+                    filterMissingTitle
+                      ? ""
+                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
+                  }`}
+                >
+                  {copy.filters.missingTitle} ({missingTitleCount})
+                </button>
+
+                <label className="admin-filter-field"><span>{copy.filters.fields.recent}</span><select
+                  value={filterRecent}
+                  onChange={(e) => setFilterRecent(e.target.value)}
+                  aria-label={copy.filters.uploadedAria}
+                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+                >
+                  <option value="all">{copy.filters.timeAll}</option>
+                  <option value="7">{copy.filters.recentDays(7)}</option>
+                  <option value="30">{copy.filters.recentDays(30)}</option>
+                </select></label>
+
+</div></details>
+              </div>
+
+              <details className="admin-filter-albums"><summary>{copy.filters.albumsTitle}</summary><div className="admin-filter-album-list">
+                <FolderOpen size={12} className="text-[var(--admin-muted)]" />
+                {smartAlbums.map((a) => {
+                  const conditionLabels = describeAlbumConditions(a.cond);
+                  const shownLabels = conditionLabels.slice(0, 3);
+                  const hiddenLabelCount =
+                    conditionLabels.length - shownLabels.length;
+                  return (
+                    <span
+                      key={a.id}
+                      className={`group/al inline-flex items-center gap-1 text-[length:var(--admin-text-note)] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
+                        activeAlbumId === a.id
+                          ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
+                          : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[var(--admin-paper-deep)]"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveAlbumId((id) => (id === a.id ? null : a.id))
+                        }
+                        className="flex items-center gap-1.5"
+                      >
+                        <span>{a.name}</span>
+                        {shownLabels.map((label) => (
+                          <span
+                            key={label}
+                            className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
+                            title={label}
+                          >
+                            {label}
+                          </span>
+                        ))}
+                        {hiddenLabelCount > 0 && (
+                          <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+                            +{hiddenLabelCount}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = smartAlbums.filter((x) => x.id !== a.id);
+                          if (activeAlbumId === a.id) setActiveAlbumId(null);
+                          saveAlbums.mutate(next);
+                        }}
+                        aria-label={copy.albums.deleteAria(a.name)}
+                        className="admin-danger-on-hover opacity-50 group-hover/al:opacity-100 text-[var(--admin-muted)] transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    setShowLibraryFilters(false);
+                    setAlbumDraft({ ...EMPTY_ALBUM_DRAFT });
+                    setAlbumModalOpen(true);
+                  }}
+                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] px-2 py-1 rounded-sm border border-dashed border-[var(--admin-line)] transition-colors"
+                >
+                  <Plus size={11} /> {copy.albums.add}
+                </button>
+              </div></details>
+        </LibraryFilterPanel>
+      )}
       {/* Main area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="admin-library-main flex-1 flex flex-col min-w-0" inert={!!inspectPhoto}>
         {libraryMode === "arrange" && (
           <header
             data-library-mobile-reorder-header
@@ -5593,7 +5860,7 @@ export function GalleryTab({
             actions={
               <PageHeaderButton
                 active={showSitePreview}
-                onClick={() => setShowSitePreview(!showSitePreview)}
+                onClick={() => { setShowLibraryFilters(false); setShowSitePreview(!showSitePreview); }}
                 ariaLabel={
                   showSitePreview ? t.headers.closeViewSite : t.headers.viewSite
                 }
@@ -5717,8 +5984,10 @@ export function GalleryTab({
                 <button
                   type="button"
                   data-library-filters-toggle
-                  onClick={() => setShowLibraryFilters((value) => !value)}
+                  disabled={isLoading}
+                  onClick={() => { setShowSitePreview(false); setShowLibraryFilters((value) => !value); }}
                   aria-expanded={showLibraryFilters}
+                  aria-controls="library-filter-panel"
                   className={
                     showLibraryFilters || anyFilterActive
                       ? "is-active"
@@ -6030,7 +6299,6 @@ export function GalleryTab({
                     type="button"
                     onClick={() => {
                       setFilterMissingTitle(true);
-                      setShowLibraryFilters(true);
                     }}
                   >
                     {copy.filters.emptyTitle(missingTitleCount)}
@@ -6041,7 +6309,6 @@ export function GalleryTab({
                     type="button"
                     onClick={() => {
                       setFilterCat("__uncat__");
-                      setShowLibraryFilters(true);
                     }}
                   >
                     {copy.filters.emptyCategory(uncategorizedCount)}
@@ -6052,7 +6319,6 @@ export function GalleryTab({
                     type="button"
                     onClick={() => {
                       setFilterSeries("__none__");
-                      setShowLibraryFilters(true);
                     }}
                   >
                     {copy.filters.emptySeries(noSeriesCount)}
@@ -6061,254 +6327,6 @@ export function GalleryTab({
               </p>
             )}
 
-          {libraryMode !== "arrange" &&
-            !showTrash &&
-            showLibraryFilters && (
-            <div data-library-filter-sheet className="admin-library-filter-sheet border-t border-[var(--admin-line)] pt-2 flex flex-col gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  value={filterCat}
-                  onChange={(e) => setFilterCat(e.target.value)}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-                >
-                  <option value="all">
-                    {copy.filters.categoryAll(allPhotos.length)}
-                  </option>
-                  {categories.map((c) => (
-                    <option key={c.slug} value={c.slug}>
-                      {c.label} (
-                      {allPhotos.filter((p) => p.category === c.slug).length})
-                    </option>
-                  ))}
-                  {allPhotos.some(isUncategorized) && (
-                    <option value="__uncat__">
-                      {copy.filters.uncategorized} ({allPhotos.filter(isUncategorized).length})
-                    </option>
-                  )}
-                </select>
-
-                <select
-                  value={filterSeries}
-                  onChange={(e) => setFilterSeries(e.target.value)}
-                  aria-label={copy.filters.seriesAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-                >
-                  <option value="all">{copy.filters.seriesAll}</option>
-                  {seriesList.map((s) => (
-                    <option key={s.id} value={String(s.id)}>
-                      {s.title} (
-                      {allPhotos.filter((p) => p.seriesId === s.id).length})
-                    </option>
-                  ))}
-                  <option value="__none__">
-                    {copy.filters.unassigned} (
-                    {allPhotos.filter((p) => p.seriesId == null).length})
-                  </option>
-                </select>
-
-                <select
-                  value={filterSize}
-                  onChange={(e) => setFilterSize(e.target.value)}
-                  aria-label={copy.filters.displaySizeAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-                >
-                  <option value="all">{copy.filters.sizeAll}</option>
-                  {(["S", "M", "L"] as const).map((sz) => (
-                    <option key={sz} value={sz}>
-                      {sz} (
-                      {
-                        allPhotos.filter((p) => (p.displaySize || "M") === sz)
-                          .length
-                      }
-                      )
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={filterMedium}
-                  onChange={(e) => setFilterMedium(e.target.value)}
-                  aria-label={copy.filters.mediumAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-                >
-                  <option value="all">{copy.filters.mediumAll}</option>
-                  <option value="digital">
-                    {copy.filters.mediumDigital} ({mediumCounts.digital})
-                  </option>
-                  <option value="film">
-                    {copy.filters.mediumFilm} ({mediumCounts.film})
-                  </option>
-                  <option value="missing">
-                    {copy.filters.mediumMissing} ({mediumCounts.missing})
-                  </option>
-                </select>
-
-                <select
-                  value={filterOrientation}
-                  onChange={(e) => setFilterOrientation(e.target.value)}
-                  aria-label={copy.filters.orientationAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-                >
-                  <option value="all">{copy.filters.orientationAll}</option>
-                  <option value="portrait">
-                    {copy.filters.portrait} ({orientationCounts.portrait})
-                  </option>
-                  <option value="landscape">
-                    {copy.filters.landscape} ({orientationCounts.landscape})
-                  </option>
-                  <option value="square">
-                    {copy.filters.square} ({orientationCounts.square})
-                  </option>
-                </select>
-
-                <button
-                  onClick={() => setFilterFeatured((v) => !v)}
-                  aria-pressed={filterFeatured}
-                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
-                    filterFeatured
-                      ? "admin-btn-accent"
-                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                  }`}
-                >
-                  <Star size={11} /> {copy.filters.featured} ({featuredIds.size})
-                </button>
-
-                <select
-                  value={filterPublished}
-                  onChange={(e) => setFilterPublished(e.target.value)}
-                  aria-label={copy.filters.publicationAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-                >
-                  <option value="all">{copy.filters.publicationAll}</option>
-                  <option value="published">
-                    {copy.filters.publishedOnly} ({allPhotos.length - unpublishedCount})
-                  </option>
-                  <option value="unpublished">
-                    {copy.filters.unpublishedOnly} ({unpublishedCount})
-                  </option>
-                </select>
-
-                <button
-                  onClick={() => setFilterMissingShotAt((v) => !v)}
-                  aria-pressed={filterMissingShotAt}
-                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
-                    filterMissingShotAt
-                      ? ""
-                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                  }`}
-                >
-                  {copy.filters.missingDate} ({missingShotAtCount})
-                </button>
-
-                <button
-                  onClick={() => setFilterMissingCapture((v) => !v)}
-                  aria-pressed={filterMissingCapture}
-                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
-                    filterMissingCapture
-                      ? ""
-                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                  }`}
-                >
-                  {copy.filters.missingCapture} ({missingCaptureCount})
-                </button>
-
-                <button
-                  onClick={() => setFilterMissingTitle((v) => !v)}
-                  aria-pressed={filterMissingTitle}
-                  className={`flex items-center gap-1 text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border transition-colors ${
-                    filterMissingTitle
-                      ? ""
-                      : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                  }`}
-                >
-                  {copy.filters.missingTitle} ({missingTitleCount})
-                </button>
-
-                <select
-                  value={filterRecent}
-                  onChange={(e) => setFilterRecent(e.target.value)}
-                  aria-label={copy.filters.uploadedAria}
-                  className="bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-                >
-                  <option value="all">{copy.filters.timeAll}</option>
-                  <option value="7">{copy.filters.recentDays(7)}</option>
-                  <option value="30">{copy.filters.recentDays(30)}</option>
-                </select>
-
-              </div>
-
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <FolderOpen size={12} className="text-[var(--admin-muted)]" />
-                {smartAlbums.map((a) => {
-                  const conditionLabels = describeAlbumConditions(a.cond);
-                  const shownLabels = conditionLabels.slice(0, 3);
-                  const hiddenLabelCount =
-                    conditionLabels.length - shownLabels.length;
-                  return (
-                    <span
-                      key={a.id}
-                      className={`group/al inline-flex items-center gap-1 text-[length:var(--admin-text-note)] pl-2 pr-1 py-1 rounded-sm border transition-colors ${
-                        activeAlbumId === a.id
-                          ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
-                          : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)] hover:bg-[var(--admin-paper-deep)]"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveAlbumId((id) => (id === a.id ? null : a.id))
-                        }
-                        className="flex items-center gap-1.5"
-                      >
-                        <span>{a.name}</span>
-                        {shownLabels.map((label) => (
-                          <span
-                            key={label}
-                            className="max-w-28 truncate rounded-sm bg-black/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
-                            title={label}
-                          >
-                            {label}
-                          </span>
-                        ))}
-                        {hiddenLabelCount > 0 && (
-                          <span className="rounded-sm bg-black/20 px-1.5 py-0.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                            +{hiddenLabelCount}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = smartAlbums.filter((x) => x.id !== a.id);
-                          if (activeAlbumId === a.id) setActiveAlbumId(null);
-                          saveAlbums.mutate(next);
-                        }}
-                        aria-label={copy.albums.deleteAria(a.name)}
-                        className="admin-danger-on-hover opacity-50 group-hover/al:opacity-100 text-[var(--admin-muted)] transition-[opacity,color] duration-[var(--dur-fast)] ease-[var(--ease-out)]"
-                      >
-                        <X size={11} />
-                      </button>
-                    </span>
-                  );
-                })}
-                <button
-                  onClick={() => {
-                    setAlbumDraft({ ...EMPTY_ALBUM_DRAFT });
-                    setAlbumModalOpen(true);
-                  }}
-                  className="flex items-center gap-1 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] px-2 py-1 rounded-sm border border-dashed border-[var(--admin-line)] transition-colors"
-                >
-                  <Plus size={11} /> {copy.albums.add}
-                </button>
-              </div>
-              <footer className="admin-library-filter-sheet__footer">
-                <button type="button" onClick={clearLibraryFilters} disabled={!anyFilterActive}>
-                  {copy.filters.clearAll}
-                </button>
-                <span>{displayed.length} {t.headers.libraryPhotos}</span>
-              </footer>
-            </div>
-          )}
 
           {/* Batch actions */}
           {libraryMode === "select" && !showTrash && (
@@ -8165,39 +8183,17 @@ export function GalleryTab({
       </Toast>
 
       {/* C3: Quick preview (Space) — full-screen image overlay */}
-      {previewPhoto && (
-        <div className="fixed inset-0 z-[9998] bg-black/90 flex items-center justify-center p-6">
-          {/* Backdrop close target — a real <button> behind the image; the image
-              is click-through (pointer-events-none) so clicking anywhere closes,
-              as before. Arrow/Space/Esc are handled by the grid's global keydown. */}
-          <button
-            type="button"
-            aria-label={copy.preview.closeAria}
-            onClick={() => setPreviewPhoto(null)}
-            className="absolute inset-0 cursor-default"
-          />
-          <img
-            src={adminPhotoSrc(previewPhoto, 1600, 85)}
-            alt={previewPhoto.title || previewPhoto.filename}
-            className="relative pointer-events-none max-w-full max-h-full object-contain shadow-2xl"
-          />
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] text-white/60 bg-black/40 px-3 py-1 rounded-sm">
-            {copy.preview.instructions(
-              previewPhoto.title || previewPhoto.filename,
-            )}
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setPreviewPhoto(null);
-            }}
-            aria-label={copy.preview.closeAria}
-            className="absolute top-4 right-4 text-white/70 hover:text-white p-1"
-          >
-            <X size={20} />
-          </button>
-        </div>
-      )}
+      {previewPhoto && <LibraryPhotoPreview
+        src={srcFor(previewPhoto.url, 1600, 85, undefined, inspectPhoto?.id === previewPhoto.id ? editForm.rotationDeg : previewPhoto.rotationDeg)}
+        title={previewPhoto.title || previewPhoto.filename} closeLabel={copy.preview.closeAria}
+        previousLabel={copy.inspector.previous} nextLabel={copy.inspector.next}
+        onClose={() => setPreviewPhoto(null)}
+        onStep={inspectPhoto ? undefined : direction => {
+          const index = displayed.findIndex(photo => photo.id === previewPhoto.id);
+          const next = displayed[index + direction];
+          if (index >= 0 && next) setPreviewPhoto(next);
+        }}
+      />}
 
       {/* C3: Keyboard shortcuts help (?) */}
       {showShortcuts && (
@@ -8250,51 +8246,36 @@ export function GalleryTab({
         </Modal>
       )}
 
-      {/* Right panel — Inspector (like Lr metadata panel).
-          Mobile: bottom sheet. Tablet: right drawer overlay. Desktop: static side panel. */}
+      {/* Dedicated photo workspace. Keep the contact sheet mounted so Back preserves its position. */}
       {inspectPhoto && (
         <>
-          {/* 1280px未満（スマホ・タブレット）: ドロワー外タップで閉じる。背景を薄く暗くして
-              「一覧の上に詳細が乗っている」ことを分かりやすく。
-              未保存の編集がある間は誤タップで内容を失わないよう閉じない
-              (X/保存/破棄の明示操作のみ — Codexレビュー 2026-07-11)。 */}
-          <div
-            aria-hidden="true"
-            data-library-inspector-scrim
-            // 1200px以上で詳細欄は静的な列になる（styles.css）。暗幕の境界を
-            // Tailwindのxl=1280pxに任せると、1200〜1279pxで並んでいる
-            // グリッドまで暗くなるため、CSS側と同じ1200pxで揃える。
-            className="fixed top-56 inset-x-0 bottom-0 z-30 bg-black/30 min-[1200px]:hidden"
-            onClick={() => {
-              if (!photoEditFormChanged(editForm, inspectPhoto)) {
-                setInspectPhoto(null);
-              }
-            }}
-          />
           <div
             data-library-inspector
             data-inspector-mobile-section={inspectorMobileSection}
             className="admin-library-inspector"
+            role="region" aria-label={copy.inspector.editPhoto}
           >
-            {/* Header with close. 幅に関係なく必ず出す — PC(1200px以上)では
-                詳細欄が静的な列になるため、閉じる手段がないと一覧へ戻れない
-                (オーナー確認 2026-07-30)。Escも同じ requestCloseInspector を通る。 */}
-            <div className="flex items-center justify-between px-3 pt-2">
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] uppercase tracking-wider">
-                {copy.inspector.editPhoto}
-              </span>
-              <button
-                onClick={requestCloseInspector}
-                data-library-inspector-close
-                aria-label={copy.inspector.close}
-                title={copy.inspector.close}
-                className="admin-tap text-[var(--admin-muted)] transition-colors -mr-1 flex h-11 w-11 items-center justify-center"
-              >
-                <X size={16} />
+            <header className="admin-inspector-header">
+              <button type="button" onClick={requestCloseInspector} data-library-inspector-close
+                aria-label={copy.inspector.close}>
+                <ChevronLeft size={18} /> {copy.inspector.backToLibrary}
               </button>
-            </div>
+              <span>{copy.inspector.editPhoto}</span>
+              <div className="admin-inspector-navigation">
+                {([-1, 1] as const).map(direction => {
+                  const index = displayed.findIndex(photo => photo.id === inspectPhoto.id);
+                  const next = index >= 0 ? displayed[index + direction] : undefined;
+                  return <button key={direction} type="button" disabled={!next || updatePhoto.isPending}
+                    aria-label={direction < 0 ? copy.inspector.previous : copy.inspector.next}
+                    onClick={() => { if (next) guardInspectorSwitch(next, () => { setLastClicked(next.id); openInspector(next); }); }}>
+                    <ChevronLeft size={18} style={direction > 0 ? { transform: "rotate(180deg)" } : undefined} />
+                  </button>;
+                })}
+              </div>
+            </header>
             {/* Preview */}
-            <div className="admin-inspector-preview p-3">
+            <div className="admin-inspector-preview">
+              <button type="button" className="admin-inspector-enlarge" onClick={() => setPreviewPhoto(inspectPhoto)} aria-label={copy.inspector.enlarge}>
               <img
                 src={srcFor(
                   inspectPhoto.url,
@@ -8306,11 +8287,13 @@ export function GalleryTab({
                 alt={inspectPhoto.title || inspectPhoto.filename}
                 className="w-full h-auto object-contain bg-[var(--admin-paper)]"
               />
+              <span className="admin-inspector-enlarge-hint">{copy.inspector.enlarge}</span>
+              </button>
               <p className="admin-inspector-photo-name">{inspectPhoto.title || inspectPhoto.filename}</p>
             </div>
             <nav
               aria-label={copy.inspector.editPhoto}
-              className="admin-inspector-mobile-sections md:hidden"
+              className="admin-inspector-mobile-sections"
             >
               {(
                 ["basic", "classification", "details"] as const
@@ -8440,7 +8423,7 @@ export function GalleryTab({
                     />
                     </div>
 
-                    <label className="admin-inspector-mobile-title col-span-2 md:hidden">
+                    <label className="admin-inspector-mobile-title col-span-2">
                       <span>{copy.inspector.title}</span>
                       <input
                         aria-label={`${copy.inspector.titleAria} (${copy.inspector.sections.basic})`}
@@ -8938,7 +8921,7 @@ export function GalleryTab({
                         ? "dirty"
                         : "clean"
               }
-              className="admin-inspector-mobile-save md:hidden"
+              className="admin-inspector-mobile-save"
             >
               <span role={metaError ? "alert" : "status"} aria-live="polite">
                 {updatePhoto.isPending

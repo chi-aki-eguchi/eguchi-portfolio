@@ -47,7 +47,8 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       0,
     );
 
-    // 詳細を開いたまま選択へ切り替えると、未編集なら詳細を閉じて0枚から始まる。
+    // 一覧へ戻り、選択へ切り替えると0枚から始まる。
+    await page.locator("[data-library-inspector-close]").click();
     await modeAction(page, "select").click();
     await expect(library(page)).toHaveAttribute("data-library-mode", "select");
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
@@ -66,7 +67,6 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
 
     // 選択を維持したまま検索でき、表示外になった選択枚数も分かる。
     await expect(page.locator("[data-library-filters-toggle]")).toBeVisible();
-    await page.locator("[data-library-filters-toggle]").click();
     const searchInput = page.locator("[data-library-search-input]");
     await expect(searchInput).toBeVisible();
     await searchInput.fill("__library_mode_no_result__");
@@ -192,7 +192,6 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await gotoAdminTab(page, "gallery");
     test.skip((await tiles(page).count()) === 0, "検索対象の写真が必要");
 
-    await page.locator("[data-library-filters-toggle]").click();
     await page
       .locator("[data-library-search-input]")
       .fill("__library_mode_no_result__");
@@ -204,10 +203,13 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       page.locator('[data-library-active-condition="search"]'),
     ).toBeVisible();
 
+    await page.locator("[data-library-filters-toggle]").click();
+    await page.getByText("その他の条件", { exact: true }).click();
     const publicationFilter = page.getByRole("combobox", {
       name: "公開状態で絞り込み",
     });
     await publicationFilter.selectOption("unpublished");
+    await page.getByRole("button", { name: "絞り込みを閉じる" }).click();
     await expect(page.locator("[data-library-filter-count]")).toHaveText("1");
     await expect(page.locator("[data-library-active-condition]")).toHaveCount(
       2,
@@ -220,7 +222,10 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       0,
     );
     await expect(page.locator("[data-library-search-input]")).toHaveValue("");
+    await page.locator("[data-library-filters-toggle]").click();
+    await page.getByText("その他の条件", { exact: true }).click();
     await expect(publicationFilter).toHaveValue("all");
+    await page.getByRole("button", { name: "絞り込みを閉じる" }).click();
 
     await page
       .locator("[data-library-search-input]")
@@ -283,9 +288,9 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(error.locator("p, svg")).toHaveCount(0);
   });
 
-  // 390px では詳細を下側シートで出すため、開いたままでも通常/選択/並べるを切り替えられる。
+  // 390pxでも写真編集から一覧へ戻って選択を開始できる。
   test(
-    "スマホ幅で詳細を開いたままモード切替できる（下側シート）",
+    "スマホ幅で写真編集から戻り、選択を開始できる",
     async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== "mobile", "スマホ幅のみの挙動");
       await loginAsAdmin(page);
@@ -294,16 +299,8 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
 
       await photoAction(page, 0).click();
       await expect(page.locator("[data-library-inspector]")).toBeVisible();
-      const inspectorBox = await page
-        .locator("[data-library-inspector]")
-        .boundingBox();
-      const selectModeBox = await modeAction(page, "select").boundingBox();
-      expect(inspectorBox).not.toBeNull();
-      expect(selectModeBox).not.toBeNull();
-      expect(inspectorBox!.y).toBeGreaterThan(
-        selectModeBox!.y + selectModeBox!.height,
-      );
-      // 下側シートになれば、詳細を開いたままでもモード切替に手が届く。
+      await page.locator("[data-library-inspector-close]").click();
+      await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
       await modeAction(page, "select").click({ timeout: 3000 });
       await expect(library(page)).toHaveAttribute("data-library-mode", "select");
     },

@@ -340,7 +340,8 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       await expect(page.locator("[data-library-filter-sheet]")).toBeVisible();
       const after = (await grid.boundingBox())!;
       expect(after.y).toBeCloseTo(before.y, 0);
-      await expect(page.locator(".admin-library-filter-sheet__footer")).toContainText(/枚/);
+      await expect(page.locator(".admin-filter-footer")).toContainText(/枚/);
+      await page.getByRole("button", { name: "絞り込みを閉じる" }).click();
       await expect(page.locator("[data-library-mobile-select]")).toBeVisible();
       await page.locator(".admin-library-view-menu > summary").click();
       await expect(page.locator("[data-library-mobile-arrange]")).toBeVisible();

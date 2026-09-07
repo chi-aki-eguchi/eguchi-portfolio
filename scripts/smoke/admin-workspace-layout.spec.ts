@@ -96,7 +96,7 @@ test.describe("admin — Workspace layout", () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
-  test("広い画面では畳み状態を保存し、詳細欄を400pxで右に並べる", async ({
+  test("広い画面ではナビの畳み状態を保存し、写真を広い編集画面で見られる", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktopで1440pxを確認する");
@@ -146,17 +146,12 @@ test.describe("admin — Workspace layout", () => {
     await expect(firstPhoto).toBeVisible();
     await firstPhoto.click();
     const inspector = page.locator("[data-library-inspector]");
-    const [inspectorBox, scrollBox] = await Promise.all([
-      inspector.boundingBox(),
-      page.locator("[data-library-scroll]").boundingBox(),
-    ]);
-    expect(inspectorBox?.width).toBeCloseTo(400, 0);
-    expect((scrollBox?.x ?? 0) + (scrollBox?.width ?? 0)).toBeLessThanOrEqual(
-      (inspectorBox?.x ?? 0) + 1,
-    );
+    const inspectorBox = (await inspector.boundingBox())!;
+    const workspaceBox = (await page.locator('[data-admin-workspace="library"]').boundingBox())!;
+    expect(inspectorBox.width).toBeCloseTo(workspaceBox.width, 0);
+    expect((await inspector.locator('.admin-inspector-preview').boundingBox())!.width).toBeGreaterThan(600);
 
-    // PCでも×で閉じられる。閉じた分だけグリッドが広がる（本番で閉じ手段が
-    // なかった問題の回帰、オーナー確認 2026-07-30）。
+    // 写真の作業面から明示的に一覧へ戻れる。
     const closeButton = inspector.locator("[data-library-inspector-close]");
     await expect(closeButton).toBeVisible();
     await expect(closeButton).toHaveAttribute(
@@ -168,19 +163,20 @@ test.describe("admin — Workspace layout", () => {
     const widenedBox = await page
       .locator("[data-library-scroll]")
       .boundingBox();
-    expect(widenedBox?.width ?? 0).toBeGreaterThan(
-      (scrollBox?.width ?? 0) + 380,
-    );
+    expect(widenedBox?.width ?? 0).toBeCloseTo(workspaceBox.width, 0);
 
     // Escでも同じ経路で閉じる。入力欄にいる間のEscは編集を捨てない。
     await firstPhoto.click();
     await expect(inspector).toBeVisible();
     const titleInput = inspector
-      .locator('input[aria-label="タイトル"], input[aria-label="Title"]')
+      .locator('.admin-inspector-mobile-title input')
       .first();
     await titleInput.click();
     await titleInput.fill("Esc guard fixture");
     await titleInput.press("Escape");
+    await expect(page.locator("dialog[open]")).toBeVisible();
+    await page.locator("dialog[open]").getByRole("button", { name: /キャンセル|Cancel/ }).click();
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
     await expect(inspector, "入力中のEscでは詳細を閉じない").toBeVisible();
     await expect(titleInput, "入力中のEscで編集内容を捨てない").toHaveValue(
       "Esc guard fixture",

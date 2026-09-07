@@ -71,7 +71,7 @@ test.describe("admin — タッチ端末の当たり判定", () => {
       page,
       "[data-library-filter-sheet] button, [data-library-filter-sheet] select",
     );
-    await page.locator("[data-library-filters-toggle]").click();
+    await page.getByRole("button", { name: "絞り込みを閉じる" }).click();
 
     await page.locator(".admin-photo-tile").first().locator("[data-library-photo-action]").click();
     await expectTouchTargets(

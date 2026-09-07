@@ -27,6 +27,7 @@ test.describe("admin — JP/EN shared shell", () => {
     await expect(page.getByRole("option", { name: "すべての向き" })).toBeAttached();
     await expect(page.getByRole("option", { name: "すべての期間" })).toBeAttached();
 
+    await page.getByRole("button", { name: "絞り込みを閉じる" }).click();
     await page.locator(".admin-library-view-menu > summary").click();
     await expect(page.getByRole("button", { name: "表形式" })).toBeVisible();
     await expect(page.getByRole("button", { name: /ゴミ箱/ })).toBeVisible();
@@ -34,6 +35,7 @@ test.describe("admin — JP/EN shared shell", () => {
     await page.locator("[data-library-photo-action]").first().click();
     const inspector = page.locator("[data-library-inspector]");
     await expect(inspector.getByText("写真を編集", { exact: true })).toBeVisible();
+    await inspector.getByRole("button", { name: "詳細", exact: true }).click();
     await expect(inspector.getByPlaceholder("タイトル未設定")).toBeVisible();
     await expect(inspector.getByPlaceholder("写真の説明…")).toBeVisible();
     await expect(inspector.getByRole("button", { name: "コピー" })).toBeVisible();

@@ -428,7 +428,6 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
     );
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
-    await page.locator("[data-library-filters-toggle]").click();
     await page
       .locator("[data-library-search-input]")
       .fill("__no_photo_matches__");

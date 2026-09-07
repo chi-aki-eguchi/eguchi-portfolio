@@ -139,6 +139,12 @@ const ADMIN_PHASE_2B_JA = {
         `追加 ${addedCount}枚 / 失敗 ${failedCount}枚`,
     },
     filters: {
+      title: "写真を絞り込む",
+      close: "絞り込みを閉じる",
+      more: "その他の条件",
+      albumsTitle: "保存した絞り込み",
+      showResults: (count: number) => `${count}枚の写真を見る`,
+      fields: { category: "カテゴリー", series: "シリーズ", size: "表示サイズ", medium: "撮影方式", orientation: "写真の向き", publication: "公開状態", recent: "追加した時期" },
       active: "絞り込み中",
       clear: "解除",
       searchPlaceholder: "検索（タイトル・分類・機材・ファイル名）",
@@ -164,7 +170,7 @@ const ADMIN_PHASE_2B_JA = {
       square: "正方形",
       featured: "Hero設定中",
       publicationAria: "公開状態で絞り込み",
-      publicationAll: "公開状態: All",
+      publicationAll: "すべての公開状態",
       publishedOnly: "公開のみ",
       unpublishedOnly: "非公開のみ",
       missingDate: "撮影日なし",
@@ -438,6 +444,11 @@ const ADMIN_PHASE_2B_JA = {
     },
     inspector: {
       editPhoto: "写真を編集",
+      backToLibrary: "一覧に戻る",
+      previous: "前の写真",
+      next: "次の写真",
+      enlarge: "写真を大きく見る",
+
       sections: {
         basic: "基本",
         classification: "分類",
@@ -1872,6 +1883,12 @@ const ADMIN_PHASE_2B_EN = {
         `${addedCount} added / ${failedCount} failed`,
     },
     filters: {
+      title: "Filter photos",
+      close: "Close filters",
+      more: "More conditions",
+      albumsTitle: "Saved filters",
+      showResults: (count: number) => `Show ${count} photos`,
+      fields: { category: "Category", series: "Series", size: "Display size", medium: "Medium", orientation: "Orientation", publication: "Publication", recent: "Date added" },
       active: "Active filters",
       clear: "Clear",
       searchPlaceholder: "Search title, category, camera, or filename",
@@ -2169,6 +2186,10 @@ const ADMIN_PHASE_2B_EN = {
     },
     inspector: {
       editPhoto: "Edit Photo",
+      backToLibrary: "Back to library",
+      previous: "Previous photo",
+      next: "Next photo",
+      enlarge: "Enlarge photo",
       sections: {
         basic: "Basic",
         classification: "Classification",

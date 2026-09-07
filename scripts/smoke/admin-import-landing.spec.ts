@@ -429,7 +429,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     await photoTile(page, 9).locator("[data-library-photo-action]").click();
     const inspector = page.locator("[data-library-inspector]");
-    const titleInput = inspector.getByLabel(/^(タイトル|Title)$/);
+    const titleInput = inspector.locator(".admin-inspector-mobile-title input");
     await titleInput.fill("未保存のタイトル");
 
     finishUpload.resolve();

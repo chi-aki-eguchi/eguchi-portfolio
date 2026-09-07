@@ -7,6 +7,7 @@
 | 知りたいこと | 文書 |
 |---|---|
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
+| 公開サイトの根本デザイン比較（2026-09-08） | `docs/specs/public-design-review-2026-09-08.md` |
 | 2026年9月の管理画面・スマホ・公開サイト見直し | `docs/specs/usability-review-2026-09.md` |
 | 管理画面刷新の目的（6軸） | `docs/specs/admin-renewal-goal.md` |
 | 仕様書の索引（用途と優先順） | `docs/specs/README.md` |

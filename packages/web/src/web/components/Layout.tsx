@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import "./public-mobile-navigation.css";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
@@ -129,6 +130,7 @@ function LanguageSwitchLinks({
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [location] = useLocation();
   // **移動先の中身を、指が触れた時点で取りに行く。**押してから取りに行くと、
@@ -284,32 +286,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setMobileOpen(false);
   }, [location]);
 
-  // Escape closes the open menu, and focus goes back to the button that opened
-  // it. Without this the only way out was the burger or picking a destination —
-  // every other dismissible surface on the site (the photo viewer, the admin
-  // dialogs) closes on Escape, so it reads as stuck.
+  // Keep the menu and its close button in one keyboard surface. Query the
+  // current links on each Tab: service/language links can arrive after settings.
   useEffect(() => {
     if (!mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setMobileOpen(false);
-      menuButtonRef.current?.focus();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileOpen]);
-
-  // メニューを開いている間は後ろを止める。実測（2026-08-11）では、開いたまま
-  // 指を動かすとページだけが流れ、メニューが宙に浮いたまま残っていた。
-  // 写真ビューアは既に同じやり方で後ろを止めており（`overflow:hidden`）、
-  // 開いている面がひとつだけ動く状態を作らないのが、このサイトの約束。
-  // **元の値へ戻す。** 空文字を入れると、他の場所が設定した値まで消える。
-  useEffect(() => {
-    if (!mobileOpen) return;
+    const header = headerRef.current;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const outside = Array.from(header?.parentElement?.children ?? [])
+      .filter((node): node is HTMLElement => node instanceof HTMLElement && node !== header);
+    const inertBefore = outside.map(node => node.inert);
+    outside.forEach(node => { node.inert = true; });
+    header?.querySelector<HTMLElement>("#mobile-menu a")?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileOpen(false);
+        menuButtonRef.current?.focus();
+      } else if (event.key === "Tab") {
+        const items = Array.from(header?.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)") ?? [])
+          .filter(node => node.getClientRects().length > 0 && !node.closest("[inert]"));
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !header?.contains(document.activeElement))) {
+          event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !header?.contains(document.activeElement))) {
+          event.preventDefault(); first?.focus();
+        }
+      }
+    };
+    const media = window.matchMedia("(min-width: 768px)");
+    const onResize = () => { if (media.matches) setMobileOpen(false); };
+    window.addEventListener("keydown", onKey);
+    media.addEventListener("change", onResize);
     return () => {
       document.body.style.overflow = previous;
+      outside.forEach((node, index) => { node.inert = inertBefore[index]; });
+      window.removeEventListener("keydown", onKey);
+      media.removeEventListener("change", onResize);
     };
   }, [mobileOpen]);
 
@@ -377,9 +391,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {footerPolicyLanguage === "en" ? "Skip to content" : "本文へスキップ"}
       </a>
       <header
+        ref={headerRef}
+        role={mobileOpen ? "dialog" : undefined}
+        aria-modal={mobileOpen || undefined}
+        aria-label={mobileOpen ? (isEnglishChrome ? "Navigation" : "ナビゲーション") : undefined}
+        data-mobile-menu-open={mobileOpen || undefined}
         data-header-bg={headerBackground}
         className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[var(--ease-quart)] ${
-          scrolled
+          mobileOpen
+            ? "bg-[var(--background)]"
+            : scrolled
             ? "bg-[rgba(var(--background-rgb),0.82)] backdrop-blur-[14px] shadow-[0_1px_0_rgba(var(--foreground-rgb),0.04)]"
             : seeThrough
               ? "site-header-see-through"
@@ -574,38 +595,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* Mobile menu — `inert` when closed so its links aren't tabbable/announced
-            while collapsed (they stay in the DOM for the height transition). */}
-        <div
-          id="mobile-menu"
-          inert={!mobileOpen}
-          className={`md:hidden transition-all duration-350 ease-[var(--ease-quart)] ${
-            mobileOpen
-              ? // **固定の高さにしない。**以前は max-h-52 → max-h-64 と、項目が
-                // 増えるたびに数字を足していた（About/Contact の JP|EN 行が
-                // 増えたときの対処）。2026-08-30 に Work の棚を足したら、また
-                // 下がはみ出して **JP/EN の切替が丸ごと切り落とされた**
-                // （390px・当たり面が 0）。数字を足す直し方は、次に項目が
-                // 増えたときまた壊れる。画面いっぱいまで開いてよいことにし、
-                // 足りなければ中で送る。**切り落とさない**のが約束で、
-                // 高さはその結果。
-                "max-h-[calc(100svh-var(--header-h)-var(--sai-top))] overflow-y-auto overflow-x-hidden border-t border-[rgba(var(--foreground-rgb),0.05)]"
-              : "max-h-0 overflow-hidden"
-          } bg-[var(--background)]`}
-        >
+        {/* Closed links stay inert; the open menu uses the remaining viewport. */}
+        <div id="mobile-menu" inert={!mobileOpen} className="public-mobile-menu md:hidden">
           {navItems.map(({ href, label }) => (
             <Link
               key={href}
               to={href}
               aria-current={isActive(href) ? "page" : undefined}
               {...warmOn(href)}
-              className="block px-5 py-3 font-en nav-link-public"
+              className="public-mobile-menu__link font-en"
+              data-service-link={href.includes("portfolio-kit") || undefined}
               style={
-                {
-                  fontSize: "var(--nav-size, 14px)",
-                  letterSpacing: "var(--nav-tracking, 0.04em)",
-                  "--link-rest": "var(--nav-opacity, 0.35)",
-                } as React.CSSProperties
+                { letterSpacing: "var(--nav-tracking, 0.04em)" } as React.CSSProperties
               }
               onClick={() => setMobileOpen(false)}
             >
@@ -613,7 +614,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
           {showLanguageSwitch && languagePairHref && (
-            <div className="px-5 py-3">
+            <div className="public-mobile-menu__language">
               <LanguageSwitchLinks
                 isEnglishPage={isEnglishPage}
                 jaHref={isEnglishPage ? languagePairHref : location}

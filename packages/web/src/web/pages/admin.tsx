@@ -650,6 +650,7 @@ function AdminPageContent({
   // Mirrors the invalid-tab correction below so a bad persisted value
   // doesn't make the very first render take the animated exit/enter path
   // (there's nothing valid on screen yet to fade out).
+  const [settingsEntrySection, setSettingsEntrySection] = useState<string | undefined>();
   const [contentTab, setContentTab] = useState<Tab>(() =>
     isAdminTab(tab) ? tab : "gallery",
   );
@@ -772,11 +773,11 @@ function AdminPageContent({
       {demoMode && (
         <div
           ref={demoBannerRef}
-          className="fixed inset-x-0 top-0 z-[100] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-[#f1e8cf] px-4 py-2 text-[length:var(--admin-text-body)] font-medium tracking-[0.04em] text-[#594b2c] shadow-sm"
+          className="admin-demo-banner"
           data-admin-demo-banner
         >
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-center">
-            <span>{t.demo.banner}</span>
+          <span className="admin-demo-banner__status">{t.demo.banner}</span>
+          <div className="admin-demo-banner__actions">
             <a
               href={
                 language === "en"
@@ -794,8 +795,8 @@ function AdminPageContent({
             >
               {t.demo.reset}
             </button>
+            <AdminLanguageToggle />
           </div>
-          <AdminLanguageToggle className="text-[#594b2c]" />
         </div>
       )}
       <aside
@@ -911,6 +912,7 @@ function AdminPageContent({
       <div className="admin-main">
         {!galleryReordering && (
           <AdminMobileTopBar
+            siteHref={buildPublicSiteHref(demoSeed)}
             tab={tab}
             tabMeta={adminTabs}
             onLogout={requestLogout}
@@ -938,6 +940,10 @@ function AdminPageContent({
                 recentlyAddedPhotoIds={recentlyAddedPhotoIds}
                 onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
                 onReorderWorkspaceChange={setGalleryReordering}
+                onOpenOrderSettings={() => {
+                  setSettingsEntrySection("series");
+                  requestTab("settings");
+                }}
               />
             )}
             {contentTab !== "setup" && contentTab !== "gallery" && (
@@ -967,6 +973,7 @@ function AdminPageContent({
                 )}
                 {contentTab === "settings" && (
                   <LazySettingsTab
+                    initialSectionId={settingsEntrySection}
                     onUnsavedChange={setHasUnsaved}
                     demoSeed={demoSeed}
                   />
@@ -2053,6 +2060,7 @@ export function GalleryTab({
   recentlyAddedPhotoIds = EMPTY_RECENTLY_ADDED_PHOTO_IDS,
   onRecentlyAddedPhotoIdsChange = ignoreRecentlyAddedPhotoIdsChange,
   onReorderWorkspaceChange,
+  onOpenOrderSettings,
 }: {
   demoSeed?: string;
   onUploadingChange?: (v: boolean) => void;
@@ -2069,6 +2077,7 @@ export function GalleryTab({
   recentlyAddedPhotoIds?: ReadonlySet<number>;
   onRecentlyAddedPhotoIdsChange?: (ids: Set<number>) => void;
   onReorderWorkspaceChange?: (active: boolean) => void;
+  onOpenOrderSettings?: () => void;
 }) {
   const qc = useQueryClient();
   const { language, t } = useAdminI18n();
@@ -2298,6 +2307,27 @@ export function GalleryTab({
     skipped: number;
     failed: { id: number; name: string }[];
   } | null>(null);
+  const viewMenuRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const onOutside = (event: PointerEvent) => {
+      const menu = viewMenuRef.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      const menu = viewMenuRef.current;
+      if (event.key !== "Escape" || !menu?.open) return;
+      event.preventDefault();
+      event.stopPropagation();
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+    };
+    document.addEventListener("pointerdown", onOutside);
+    window.addEventListener("keydown", onEscape, true);
+    return () => {
+      document.removeEventListener("pointerdown", onOutside);
+      window.removeEventListener("keydown", onEscape, true);
+    };
+  }, []);
   const bulkCancelRef = useRef(false);
   // Leaving the tab (unmount) orphans the loop's UI — treat it as cancel so
   // requests don't keep firing invisibly in the background.
@@ -5588,6 +5618,21 @@ export function GalleryTab({
                 {copy.mode.select}
               </button>
             )}
+            {libraryMode === "normal" && (
+            <button
+              type="button"
+              data-library-mobile-arrange
+              onClick={() => requestLibraryMode("arrange")}
+              disabled={
+                uploading || showTrash || bulkEditMode || allPhotos.length === 0 ||
+                !manualOrder.ok || reorderBusy || publicReorderLockCause !== null ||
+                reorderLockCause !== null
+              }
+              className="md:hidden flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] disabled:opacity-40"
+            >
+              <GripVertical size={11} /> {copy.mode.arrange}
+            </button>
+            )}
             <fieldset
               aria-label={copy.mode.group}
               data-library-mode-switcher
@@ -5692,7 +5737,7 @@ export function GalleryTab({
             {!manualOrder.ok && (
               <span
                 role="alert"
-                className="admin-text-warning text-[length:var(--admin-text-note)]"
+                className="admin-library-order-notice admin-text-warning text-[length:var(--admin-text-note)]"
               >
                 {copy.feedback.invalidManualOrder}
               </span>
@@ -5701,13 +5746,16 @@ export function GalleryTab({
               <span
                 role={publicReorderLockCause === "loading" ? "status" : "alert"}
                 data-library-public-order-lock={publicReorderLockCause}
-                className="admin-text-warning text-[length:var(--admin-text-note)]"
+                className="admin-library-order-notice admin-text-warning text-[length:var(--admin-text-note)]"
               >
                 {publicReorderLockCause === "not-manual"
                   ? copy.reorder.publicOrderLocked
                   : publicReorderLockCause === "error"
                     ? copy.reorder.settingsError
                     : copy.reorder.settingsLoading}
+                {publicReorderLockCause === "not-manual" && onOpenOrderSettings && (
+                  <button type="button" onClick={onOpenOrderSettings}>{copy.reorder.openSettings}</button>
+                )}
               </span>
             )}
             {manualOrder.ok &&
@@ -5715,7 +5763,7 @@ export function GalleryTab({
               reorderLockCause !== null && (
                 <span
                   data-library-reorder-entry-lock={reorderLockCause}
-                  className="admin-library-reorder-entry-lock text-[length:var(--admin-text-note)]"
+                  className="admin-library-order-notice admin-library-reorder-entry-lock text-[length:var(--admin-text-note)]"
                 >
                   <span>
                     {reorderLockCause === "sort"
@@ -5727,7 +5775,7 @@ export function GalleryTab({
                   </button>
                 </span>
               )}
-            <details className="admin-library-view-menu">
+            <details ref={viewMenuRef} className="admin-library-view-menu">
               <summary>
                 <Grid size={12} />
                 {copy.toolbar.view}
@@ -5893,19 +5941,7 @@ export function GalleryTab({
             >
               ?
             </button>
-            <button
-              type="button"
-              data-library-mobile-arrange
-              onClick={() => requestLibraryMode("arrange")}
-              disabled={
-                uploading || showTrash || bulkEditMode || allPhotos.length === 0 ||
-                !manualOrder.ok || reorderBusy || publicReorderLockCause !== null ||
-                reorderLockCause !== null
-              }
-              className="md:hidden flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] disabled:opacity-40"
-            >
-              <GripVertical size={11} /> {copy.mode.arrange}
-            </button>
+
               </div>
             </details>
 
@@ -8238,7 +8274,7 @@ export function GalleryTab({
           <div
             data-library-inspector
             data-inspector-mobile-section={inspectorMobileSection}
-        className="admin-library-inspector relative fixed inset-x-0 bottom-0 z-40 w-full max-h-[60vh] shadow-2xl rounded-t-lg border-t border-[var(--admin-line)] sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-w-xs sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l xl:static xl:z-auto xl:w-64 xl:max-w-none xl:shadow-none bg-[var(--admin-paper)] flex flex-col flex-shrink-0 overflow-y-auto"
+            className="admin-library-inspector"
           >
             {/* Header with close. 幅に関係なく必ず出す — PC(1200px以上)では
                 詳細欄が静的な列になるため、閉じる手段がないと一覧へ戻れない
@@ -8257,6 +8293,21 @@ export function GalleryTab({
                 <X size={16} />
               </button>
             </div>
+            {/* Preview */}
+            <div className="admin-inspector-preview p-3">
+              <img
+                src={srcFor(
+                  inspectPhoto.url,
+                  800,
+                  80,
+                  undefined,
+                  editForm.rotationDeg,
+                )}
+                alt={inspectPhoto.title || inspectPhoto.filename}
+                className="w-full h-auto object-contain bg-[var(--admin-paper)]"
+              />
+              <p className="admin-inspector-photo-name">{inspectPhoto.title || inspectPhoto.filename}</p>
+            </div>
             <nav
               aria-label={copy.inspector.editPhoto}
               className="admin-inspector-mobile-sections md:hidden"
@@ -8274,21 +8325,7 @@ export function GalleryTab({
                 </button>
               ))}
             </nav>
-            {/* Preview */}
-            <div className="admin-inspector-preview p-3">
-              <img
-                src={srcFor(
-                  inspectPhoto.url,
-                  800,
-                  80,
-                  undefined,
-                  editForm.rotationDeg,
-                )}
-                alt={inspectPhoto.title}
-                className="w-full h-auto object-contain bg-[var(--admin-paper)]"
-                style={{ maxHeight: "320px" }}
-              />
-            </div>
+            <div className="admin-inspector-scroll">
 
             {(() => {
               const heroIdx = (heroData?.heroPhotos ?? []).findIndex(
@@ -8887,6 +8924,7 @@ export function GalleryTab({
                 </button>
               </div>
             </div>
+            </div>
             <div
               data-inspector-save-bar
               data-inspector-save-state={
@@ -8911,10 +8949,10 @@ export function GalleryTab({
                       ? copy.inspector.saved
                       : photoEditFormChanged(editForm, inspectPhoto)
                         ? copy.inspector.unsaved
-                        : copy.inspector.saved}
+                        : copy.inspector.clean}
               </span>
               <div>
-                <button type="button" onClick={discardInspectorChanges}>
+                <button type="button" onClick={discardInspectorChanges} disabled={updatePhoto.isPending || (!metaError && !photoEditFormChanged(editForm, inspectPhoto))}>
                   {copy.inspector.reset}
                 </button>
                 <button

@@ -698,6 +698,8 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
     ).toBeVisible();
     expect((await visiblePhotoTitles(page))[0]).toBe("順序確認 9");
 
+    // 確認画面へ移ると表示メニューは閉じる。現在の入口から開き直す。
+    await page.locator(".admin-library-view-menu > summary").click();
     await page.getByRole("button", { name: "表形式" }).click();
     await expect(
       page.locator("tbody tr[data-bulk-edit-photo-id]").first(),

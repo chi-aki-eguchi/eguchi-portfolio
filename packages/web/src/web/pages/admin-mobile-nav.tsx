@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ExternalLink, LogOut, X } from "lucide-react";
 import {
@@ -11,7 +11,7 @@ import { AdminLanguageToggle, useAdminI18n } from "./admin-i18n";
 
 // スマホ admin ナビ(2026-07-11 モバイル操作性改善)。
 // 旧・上部2段横スクロールナビは activeタブが画面外へ流れ、片手の親指で
-// 届かない位置にあった。下部固定バー(3グループ)+ボトムシート(タブ一覧)へ
+// 届かない位置にあった。下部バー(3グループ＋設定への直接入口)とタブ一覧へ
 // 置き換える。fixed ではなく admin-main(h-dvh flex)の最下行として置くことで
 // z-index・キーボード・safe-area の重なり問題を構造的に避ける。
 
@@ -22,11 +22,13 @@ export function AdminMobileTopBar({
   tabMeta,
   onLogout,
   showLanguageToggle = true,
+  siteHref = "/",
 }: {
   tab: Tab;
   tabMeta: AdminTabMeta;
   onLogout: () => void;
   showLanguageToggle?: boolean;
+  siteHref?: string;
 }) {
   const { t } = useAdminI18n();
   const meta = tabMeta[tab];
@@ -41,7 +43,7 @@ export function AdminMobileTopBar({
           <AdminLanguageToggle className="mr-1 text-[var(--admin-muted)]" />
         )}
         <a
-          href="/"
+          href={siteHref}
           target="_blank"
           rel="noopener"
           aria-label={t.navigation.openSite}
@@ -55,7 +57,7 @@ export function AdminMobileTopBar({
           aria-label={t.navigation.logout}
           className="admin-tap flex items-center gap-1 px-2 text-[11px] text-[var(--admin-muted)] transition-colors"
         >
-          <LogOut size={14} /> {t.navigation.logoutButton}
+          <LogOut size={16} />
         </button>
       </div>
     </header>
@@ -78,18 +80,28 @@ export function AdminMobileTabBar({
 }) {
   const { t } = useAdminI18n();
   const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
-  const activeGroup = groupForTab(tab, tabGroups);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const mobileGroups = useMemo(() => tabGroups.map(group => ({
+    ...group, tabs: group.tabs.filter(key => key !== "settings"),
+  })).filter(group => group.tabs.length > 0), [tabGroups]);
+  const activeGroup = groupForTab(tab, mobileGroups);
   const openGroup =
-    tabGroups.find((g) => g.key === openGroupKey) ?? null;
+    mobileGroups.find((g) => g.key === openGroupKey) ?? null;
 
   useEffect(() => {
-    if (!openGroup) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenGroupKey(null);
+    const dialog = dialogRef.current;
+    if (!openGroupKey || !dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    const media = window.matchMedia("(min-width: 768px)");
+    const onResize = () => { if (media.matches) setOpenGroupKey(null); };
+    media.addEventListener("change", onResize);
+    return () => {
+      media.removeEventListener("change", onResize);
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [openGroup]);
+  }, [openGroupKey]);
 
   const selectTab = (next: Tab) => {
     // ガードで止められてもシートは閉じる(確認モーダルが前面に出るため)。
@@ -106,9 +118,12 @@ export function AdminMobileTabBar({
   return (
     <>
       {openGroup && (
-        <div
+        <dialog
+          ref={dialogRef}
           className="admin-sheet md:hidden"
+          data-phase="show"
           aria-label={t.navigation.groupTabs(groupLabel(openGroup))}
+          onCancel={(event) => { event.preventDefault(); setOpenGroupKey(null); }}
         >
           {/* `absolute` はグローバル button リセット(:not(.absolute))の除外用 */}
           <button
@@ -144,14 +159,14 @@ export function AdminMobileTabBar({
               </button>
             ))}
           </div>
-        </div>
+        </dialog>
       )}
       <nav
         className="admin-bottom-nav md:hidden"
         aria-label={t.navigation.label}
       >
-        {tabGroups.map((group) => {
-          const active = group.key === activeGroup.key;
+        {mobileGroups.map((group) => {
+          const active = tab !== "settings" && group.key === activeGroup.key;
           const single = group.tabs.length === 1;
           return (
             <button
@@ -178,6 +193,18 @@ export function AdminMobileTabBar({
             </button>
           );
         })}
+        <button
+          type="button"
+          data-admin-mobile-settings
+          disabled={galleryUploading}
+          aria-current={tab === "settings" ? "page" : undefined}
+          data-active={tab === "settings" || undefined}
+          className="admin-bottom-nav__btn"
+          onClick={() => selectTab("settings")}
+        >
+          <span className="admin-bottom-nav__label">{t.navigation.settingsButton}</span>
+          <span className="admin-bottom-nav__sub">{tab === "settings" ? tabMeta.settings.label : " "}</span>
+        </button>
       </nav>
     </>
   );

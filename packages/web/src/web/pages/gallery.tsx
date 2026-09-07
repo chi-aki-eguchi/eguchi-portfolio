@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { MobileGalleryFilters } from "../components/MobileGalleryFilters";
 import { PageTitle } from "../components/PageTitle";
 import { useLocation, useSearch } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
@@ -271,6 +272,10 @@ export default function GalleryPage() {
         {settings?.galleryLabel ?? "Gallery"}
       </PageTitle>
 
+      <MobileGalleryFilters categories={filterItems} activeCategory={activeFilter}
+        activeMedium={activeMedium} hasMedium={allPhotos.some(p => Boolean(p.filmType))}
+        count={filtered.length} loading={photosLoading} failed={photosError} onChange={applyFilters} />
+
       {/* Filter — カテゴリ */}
       {categories.length > 0 && (
         <div
@@ -359,8 +364,11 @@ export default function GalleryPage() {
             {/* 見出し（GALLERY）は英語で揃えてあるが、読み手へ向けた「文」は
                 日本語にする。/gallery に英語ルートは無いので出し分けは要らない。 */}
             <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
-              まだ写真がありません
+              {activeFilter !== "all" || activeMedium !== "all" ? "この条件に合う写真はありません" : "まだ写真がありません"}
             </p>
+            {(activeFilter !== "all" || activeMedium !== "all") && <button type="button"
+              className="mt-4 min-h-11 text-sm underline underline-offset-4"
+              onClick={() => applyFilters({ c: "all", medium: "all" })}>絞り込みを解除</button>}
           </div>
         )
       ) : (

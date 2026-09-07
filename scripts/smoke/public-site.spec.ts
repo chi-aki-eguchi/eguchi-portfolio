@@ -1113,7 +1113,7 @@ test.describe("public-site — JP/EN切替の実タップ領域", () => {
       ]);
 
       await page.goto("/about", { waitUntil: "domcontentloaded" });
-      await expect(page.locator(".language-switch:visible")).toBeVisible();
+      await openMobileLanguageSwitch(page);
       // Work がナビに出ていること（この前提が崩れたらテストの意味が無い）。
       // ヘッダーは横並びとハンバーガーの**両方**にリンクを持つので数は1では
       // ない。「1つ以上ある」で見る。
@@ -1160,7 +1160,7 @@ test.describe("public-site — JP/EN切替の実タップ領域", () => {
       for (const theme of LANGUAGE_SWITCH_THEMES) {
         for (const scenario of LANGUAGE_SWITCH_CASES) {
           await page.goto(scenario.path, { waitUntil: "domcontentloaded" });
-          await expect(page.locator(".language-switch:visible")).toBeVisible();
+          await expect(page.locator("main h1")).toBeVisible();
           await setPublicTheme(page, theme);
           await openMobileLanguageSwitch(page);
 
@@ -1182,10 +1182,10 @@ test.describe("public-site — JP/EN切替の実タップ領域", () => {
             page,
             scenario.destination,
           );
-          // The text remains the original compact editorial size; only the
-          // transparent child expands what receives a real pointer event.
-          expect(hitArea.visual.width).toBeLessThan(24);
-          expect(hitArea.visual.height).toBeLessThan(24);
+          // スマホのメニューでは、言語リンク自体を44pxの操作面にする。
+          // 実際のポインター判定と遷移の検証も残す。
+          expect(hitArea.visual.width).toBeGreaterThanOrEqual(44);
+          expect(hitArea.visual.height).toBeGreaterThanOrEqual(44);
           expect(hitArea.hit).toMatchObject({
             width: 32,
             height: 32,

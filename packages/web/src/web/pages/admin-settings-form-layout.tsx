@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Check, ChevronDown, Loader2, X } from "lucide-react";
+import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 
 // 目次で選んだ1節だけを本文へ出すための現在地。目次（左）と本文（右）に
 // 同じ節名の一覧が二重に並ぶのをやめ、本文には実際の入力欄だけを置く
@@ -24,6 +24,7 @@ export type AdminSettingsSectionItem = {
   changed: boolean;
   failed: boolean;
   advanced?: boolean;
+  keywords?: string;
 };
 
 export type AdminSettingsFormCopy = {
@@ -44,6 +45,9 @@ export type AdminSettingsFormCopy = {
   savedAt: (time: string) => string;
   basicSettings: string;
   advancedSettings: string;
+  searchLabel?: string;
+  clearSearch?: string;
+  noResults?: string;
 };
 
 function SectionMarkers({
@@ -82,6 +86,7 @@ export function AdminSettingsFormLayout({
   saveError,
   lastSavedAt,
   focusSectionId = null,
+  initialSectionId,
   onSave,
   onDiscard,
   copy,
@@ -97,6 +102,7 @@ export function AdminSettingsFormLayout({
   lastSavedAt: string | null;
   // 保存に失敗した節など、本文へ強制的に出したい節。目次の選択より優先する。
   focusSectionId?: string | null;
+  initialSectionId?: string;
   onSave: () => void;
   onDiscard: () => void;
   copy: AdminSettingsFormCopy;
@@ -112,9 +118,11 @@ export function AdminSettingsFormLayout({
   children: ReactNode;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeId, setActiveId] = useState(sections[0]?.id ?? "");
+  const [activeId, setActiveId] = useState(initialSectionId ?? sections[0]?.id ?? "");
   const [navSeq, setNavSeq] = useState(0);
   const [mobileListOpen, setMobileListOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const changedSections = sections.filter((section) => section.changed);
   const failedSection = sections.find((section) => section.failed);
   const activeSection =
@@ -150,26 +158,43 @@ export function AdminSettingsFormLayout({
 
   useEffect(() => {
     if (!mobileListOpen) return;
-    const firstButton = document.querySelector<HTMLButtonElement>(
-      "[data-settings-mobile-section-list] button",
-    );
-    firstButton?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setMobileListOpen(false);
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    const media = window.matchMedia("(min-width: 768px)");
+    const onResize = () => { if (media.matches) setMobileListOpen(false); };
+    media.addEventListener("change", onResize);
+    return () => {
+      media.removeEventListener("change", onResize);
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileListOpen]);
 
   const navigateTo = (id: string) => {
     setActiveId(id);
+    setSearch("");
     setMobileListOpen(false);
     setNavSeq((seq) => seq + 1);
   };
 
-  const basicSections = sections.filter((section) => !section.advanced);
-  const advancedSections = sections.filter((section) => section.advanced);
+  const words = search.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const matchingSections = sections.filter(section => {
+    const haystack = `${section.label} ${section.summary} ${section.keywords ?? ""}`.toLocaleLowerCase();
+    return words.every(word => haystack.includes(word));
+  });
+  const basicSections = matchingSections.filter((section) => !section.advanced);
+  const advancedSections = matchingSections.filter((section) => section.advanced);
+  const searchControl = (
+    <div className="admin-settings-search">
+      <Search size={15} aria-hidden="true" />
+      <input type="search" value={search} onChange={event => setSearch(event.target.value)}
+        aria-label={copy.searchLabel ?? copy.navigationLabel}
+        placeholder={copy.searchLabel ?? copy.navigationLabel} />
+      {search && <button type="button" aria-label={copy.clearSearch} onClick={() => setSearch("")}><X size={14} /></button>}
+    </div>
+  );
   const sectionButtons = (items: AdminSettingsSectionItem[]) => items.map((section) => (
     <button
       key={section.id}
@@ -185,12 +210,14 @@ export function AdminSettingsFormLayout({
   ));
   const navigation = (
     <nav aria-label={copy.navigationLabel} className="admin-form-toc__nav">
-      <span className="admin-form-toc__group-label">{copy.basicSettings}</span>
+      {searchControl}
+      {matchingSections.length === 0 && <output className="admin-settings-search-empty">{copy.noResults}</output>}
+      {basicSections.length > 0 && <span className="admin-form-toc__group-label">{copy.basicSettings}</span>}
       {sectionButtons(basicSections)}
       {advancedSections.length > 0 && (
         <details
           className="admin-form-toc__advanced"
-          open={advancedSections.some((section) => section.id === activeId) || undefined}
+          open={words.length > 0 || advancedSections.some((section) => section.id === activeId) || undefined}
         >
           <summary>{copy.advancedSettings}</summary>
           {sectionButtons(advancedSections)}
@@ -314,11 +341,18 @@ export function AdminSettingsFormLayout({
 
       {mobileListOpen && (
         <dialog
-          open
+          ref={dialogRef}
           className="admin-settings-section-sheet"
-          aria-modal="true"
+          data-phase="show"
           aria-label={copy.navigationLabel}
           data-settings-mobile-section-list
+          onCancel={event => { event.preventDefault(); setMobileListOpen(false); }}
+          onKeyDown={event => {
+            // A search input consumes Escape to clear itself before the native
+            // dialog can cancel. The sheet's close action must work there too.
+            if (event.key === "Escape") { event.preventDefault(); setMobileListOpen(false); }
+          }}
+
         >
           <div className="admin-settings-section-sheet__header">
             <strong>{copy.navigationLabel}</strong>
@@ -330,8 +364,10 @@ export function AdminSettingsFormLayout({
               <X size={16} />
             </button>
           </div>
+          {searchControl}
           <div className="admin-settings-section-sheet__list">
-            {sections.map((section) => (
+            {matchingSections.length === 0 && <output className="admin-settings-search-empty">{copy.noResults}</output>}
+            {matchingSections.map((section) => (
               <button
                 key={section.id}
                 type="button"

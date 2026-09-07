@@ -16,18 +16,9 @@ test.describe("admin — サイドバーのインジケータがリサイズ後�
     await loginAsAdmin(page);
     await page.waitForTimeout(500);
 
-    // 2026-07-11 スマホナビ再設計に追随: モバイル幅のタブ移動は
-    // 下部ナビ(グループ)→ボトムシート(タブ)経由になった。
-    // 検証対象(リサイズ後のインジケータ追従)は変わらない。
-    await page
-      .locator(".admin-bottom-nav")
-      .getByRole("button", { name: /サイト/ })
-      .click();
-    await page.waitForTimeout(200);
-    await page
-      .locator(".admin-sheet__panel")
-      .getByRole("button", { name: /Settings/ })
-      .click();
+    // 設定はスマホの下部ナビから直接開く。
+    // リサイズ後のインジケータ追従という検証対象は同じ。
+    await page.locator("[data-admin-mobile-settings]").click();
     await page.waitForTimeout(300);
 
     await page.setViewportSize({ width: 1440, height: 900 });

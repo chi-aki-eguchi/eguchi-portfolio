@@ -7,6 +7,7 @@
 | 知りたいこと | 文書 |
 |---|---|
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
+| 2026年9月の管理画面・スマホ・公開サイト見直し | `docs/specs/usability-review-2026-09.md` |
 | 管理画面刷新の目的（6軸） | `docs/specs/admin-renewal-goal.md` |
 | 仕様書の索引（用途と優先順） | `docs/specs/README.md` |
 | 未完了の作業 | `docs/agents/backlog.md`（完了したらこの文書から消す） |

@@ -904,7 +904,7 @@ describe("shared components", () => {
     try {
       const Demo = (await import("../pages/admin-demo")).default;
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
-      await waitForText(host, "これは体験版です");
+      await waitForText(host, "体験版 · 本番への保存なし");
       expect(host.querySelector("[data-admin-demo-banner]")).not.toBeNull();
       expect(host.textContent).toContain("Library");
       cleanup();
@@ -924,7 +924,7 @@ describe("shared components", () => {
     try {
       const Demo = (await import("../pages/admin-demo")).default;
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
-      await waitForText(host, "これは体験版です");
+      await waitForText(host, "体験版 · 本番への保存なし");
       // デモは専用キーへ保存する。本番用キーは読みも書きもしない。
       expect(dom.window.localStorage.getItem("admin:tab:demo")).not.toBeNull();
       expect(dom.window.localStorage.getItem("admin:tab")).toBe(
@@ -948,9 +948,9 @@ describe("shared components", () => {
       const { ADMIN_DEMO_WRITE_EVENT } =
         await import("../lib/admin-demo-fetch");
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
-      await waitForText(host, "This is a demo");
+      await waitForText(host, "Demo · No live changes");
       expect(host.textContent).toContain("Start with these three steps");
-      expect(host.textContent).toContain("Change a photo layout in Gallery");
+      expect(host.textContent).toContain("Choose a photo layout in Settings → Gallery layout");
       expect(host.textContent).toContain("Start exploring");
       expect(host.textContent).toContain("Start over");
       expect(

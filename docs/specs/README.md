@@ -20,6 +20,7 @@
 | 3 レイアウト | `admin-layout-implementation.md` | 層2を実装可能な粒度へ落としたもの |
 | 4 個別Phase | `admin-phase1-settings-preview.md` | Settings プレビューと視覚基盤 |
 | 4 個別Phase | `admin-mobile-usability-plan.md` | スマホの実測と改善設計 |
+| 2026年9月の見直し | `usability-review-2026-09.md` | 管理画面・スマホ・公開側の実測と改善判断 |
 | 現状の記録 | `admin-library-states.md` | Library の状態遷移。**提案ではなく記録** |
 
 矛盾したら**番号の小さい層を優先**する。ただし並べ替えの保存経路だけは

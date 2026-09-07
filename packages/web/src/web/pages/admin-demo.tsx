@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { isServiceOwnerSite, resolveServiceVisibility } from "../../shared/service-visibility";
@@ -88,16 +89,16 @@ function AdminDemoContent() {
     <>
       <AdminPage demoMode demoSeed={demoSeed} />
       {showGuide && (
-        <div className="fixed inset-0 z-[120] grid place-items-center bg-black/25 px-5" role="presentation">
-          <dialog ref={guideDialogRef} onCancel={(event) => { event.preventDefault(); setShowGuide(false); }} className="relative w-full max-w-md rounded-sm bg-[#f7f4ec] p-6 text-[#332f28] shadow-2xl" aria-labelledby="admin-demo-guide-title" data-admin-demo-guide>
-            <div className="flex items-start justify-between gap-4">
+        <div>
+          <dialog ref={guideDialogRef} onCancel={(event) => { event.preventDefault(); setShowGuide(false); }} className="admin-demo-guide" aria-labelledby="admin-demo-guide-title" data-admin-demo-guide>
+            <div className="admin-demo-guide__heading">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-[#817868]">{t.demo.guideEyebrow}</p>
                 <h1 id="admin-demo-guide-title" className="mt-1 text-lg font-medium">{t.demo.guideTitle}</h1>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="admin-demo-guide__tools">
                 <AdminLanguageToggle className="text-[#746c60]" />
-                <button type="button" onClick={() => setShowGuide(false)} className="text-xs text-[#746c60] underline underline-offset-4">{t.common.close}</button>
+                <button type="button" onClick={() => setShowGuide(false)} aria-label={t.common.close}><X size={18} /></button>
               </div>
             </div>
             <ol className="mt-5 space-y-4 text-sm leading-relaxed">

@@ -5,6 +5,7 @@ import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageLanguage } from "../hooks/usePageLanguage";
+import { Link } from "wouter";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
 
@@ -286,6 +287,13 @@ export default function ProfilePage({
                 ))}
               </ul>
             </div>
+          )}
+
+          {(settings?.homeCtaEnabled ?? "off") === "on" && (
+            <Link to={english ? "/en/contact" : "/contact"}
+              className="self-start mt-8 inline-flex items-center gap-4 min-h-11 border-b border-[rgba(var(--foreground-rgb),0.3)] text-sm text-[var(--foreground)] page-entrance page-entrance-delay-2">
+              {english ? "Photography inquiries" : "撮影のご相談"}<span aria-hidden="true">→</span>
+            </Link>
           )}
 
           <div className="flex-1" />

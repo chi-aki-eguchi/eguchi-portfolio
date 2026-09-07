@@ -284,7 +284,7 @@ test.describe("admin — Form layout", () => {
     await input.fill("スマホで変更");
     await expect(page.locator(".admin-floating-save-bar")).toBeVisible();
 
-    await current.getByRole("button", { name: /切り替え/ }).click();
+    await current.getByRole("button", { name: /設定項目/ }).click();
     const sheet = page.locator("[data-settings-mobile-section-list]");
     await expect(sheet).toBeVisible();
     await expect(sheet.locator(".admin-settings-section-sheet__list > button"))
@@ -320,7 +320,7 @@ test.describe("admin — Form layout", () => {
 
     await page
       .locator(".admin-settings-mobile-current")
-      .getByRole("button", { name: /切り替え/ })
+      .getByRole("button", { name: /設定項目/ })
       .click();
     await page
       .locator("[data-settings-mobile-section-list]")
@@ -342,7 +342,7 @@ test.describe("admin — Form layout", () => {
     await expect(
       current.locator(".admin-form-toc__dot--changed"),
     ).toHaveCount(1);
-    await current.getByRole("button", { name: /切り替え/ }).click();
+    await current.getByRole("button", { name: /設定項目/ }).click();
     const sheet = page.locator("[data-settings-mobile-section-list]");
     const galleryRow = sheet
       .locator("button")

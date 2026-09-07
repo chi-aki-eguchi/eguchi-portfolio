@@ -30,7 +30,7 @@ async function openSettingsSection(
   } else {
     await page
       .locator(".admin-settings-mobile-current")
-      .getByRole("button", { name: /切り替え|Switch/ })
+      .getByRole("button", { name: /設定項目|Settings list/ })
       .click();
     await page.locator(`[data-settings-sheet-link="${sectionId}"]`).click();
   }

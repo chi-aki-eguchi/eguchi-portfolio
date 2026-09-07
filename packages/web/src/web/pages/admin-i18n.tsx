@@ -315,6 +315,7 @@ const ADMIN_PHASE_2B_JA = {
     reorder: {
       activeLabel:
         "公開ギャラリーの手動順を変更中・1操作ごと自動保存",
+      openSettings: "公開する並び順の設定を開く",
       publicOrderLocked:
         "現在の公開並びは手動順ではないため、ここでは並べ替えできません",
       settingsLoading:
@@ -487,6 +488,7 @@ const ADMIN_PHASE_2B_JA = {
       descriptionPlaceholder: "写真の説明…",
       saving: "保存中…",
       saved: "保存しました",
+      clean: "変更なし",
       save: "保存",
       reset: "元に戻す",
       duplicate: "この写真を複製",
@@ -880,6 +882,9 @@ const ADMIN_PHASE_2B_JA = {
     },
     siteBasics: {
       title: "サイト基本情報",
+      identity: "サイトの名前と紹介",
+      contact: "お問い合わせ",
+      publishing: "公開URL・検索・クレジット",
       fields: {
         siteName: {
           label: "サイト名（ロゴ・日本語）",
@@ -2042,6 +2047,7 @@ const ADMIN_PHASE_2B_EN = {
     reorder: {
       activeLabel:
         "Changing the public gallery's manual order · autosaves every move",
+      openSettings: "Open public sort order settings",
       publicOrderLocked:
         "The public order is not manual, so photos cannot be reordered here.",
       settingsLoading:
@@ -2213,6 +2219,7 @@ const ADMIN_PHASE_2B_EN = {
       descriptionPlaceholder: "Photo description...",
       saving: "Saving...",
       saved: "Saved",
+      clean: "No changes",
       save: "Save",
       reset: "Reset",
       duplicate: "Duplicate this photo",
@@ -2602,6 +2609,9 @@ const ADMIN_PHASE_2B_EN = {
     },
     siteBasics: {
       title: "Site Basics",
+      identity: "Site identity",
+      contact: "Contact",
+      publishing: "Publishing, search & credits",
       fields: {
         siteName: {
           label: "Site Name (Logo)",
@@ -3517,6 +3527,7 @@ export type AdminMessages = {
     logout: string;
     siteButton: string;
     logoutButton: string;
+    settingsButton: string;
     collapseSidebar: string;
     expandSidebar: string;
     groupTabs: (group: string) => string;
@@ -3612,6 +3623,9 @@ export type AdminMessages = {
   };
   formLayout: {
     navigationLabel: string;
+    searchLabel: string;
+    clearSearch: string;
+    noResults: string;
     currentSection: string;
     switchSection: string;
     closeSectionList: string;
@@ -3689,6 +3703,7 @@ export const ADMIN_DICTIONARY = {
       logout: "ログアウト",
       siteButton: "サイト",
       logoutButton: "ログアウト",
+      settingsButton: "設定",
       collapseSidebar: "サイドバーを畳む",
       expandSidebar: "サイドバーを開く",
       groupTabs: (group) => `${group}のタブ`,
@@ -3729,13 +3744,13 @@ export const ADMIN_DICTIONARY = {
       closeViewSite: "サイトで確認を閉じる",
     },
     demo: {
-      banner: "これは体験版です。変更は実際には保存されません。",
-      purchase: "気に入ったら ¥30,000・公開までおまかせ",
-      reset: "最初からやり直す",
+      banner: "体験版 · 本番への保存なし",
+      purchase: "制作プランを見る",
+      reset: "リセット",
       guideEyebrow: "クイックツアー",
-      guideTitle: "まず、3つだけ触ってみてください",
+      guideTitle: "写真と設定を、試してみる",
       guideSteps: [
-        "Galleryで写真のレイアウトを変える",
+        "Settingsの「ギャラリー配置」で写真の並べ方を選ぶ",
         "Settingsでフォントを選び、ライブプレビューを見る",
         "Libraryで写真を並び替え、「サイトで確認」を開く",
       ],
@@ -3839,9 +3854,12 @@ export const ADMIN_DICTIONARY = {
       unsaved: "保存していない変更があります",
     },
     formLayout: {
-      navigationLabel: "設定の節一覧",
+      navigationLabel: "設定項目",
+      searchLabel: "設定を検索",
+      clearSearch: "検索をクリア",
+      noResults: "見つかりませんでした。別の言葉で検索してください。",
       currentSection: "現在地",
-      switchSection: "切り替え",
+      switchSection: "設定項目",
       closeSectionList: "節一覧を閉じる",
       changed: "変更あり",
       failed: "保存できず",
@@ -3912,6 +3930,7 @@ export const ADMIN_DICTIONARY = {
       logout: "Log out",
       siteButton: "Site",
       logoutButton: "Log out",
+      settingsButton: "Settings",
       collapseSidebar: "Collapse sidebar",
       expandSidebar: "Expand sidebar",
       groupTabs: (group) => `${group} tabs`,
@@ -3948,13 +3967,13 @@ export const ADMIN_DICTIONARY = {
       closeViewSite: "Close site preview",
     },
     demo: {
-      banner: "This is a demo. Changes are not saved to a live site.",
-      purchase: "Get your own — ¥30,000, fully set up",
+      banner: "Demo · No live changes",
+      purchase: "View website plans",
       reset: "Start over",
       guideEyebrow: "Quick tour",
       guideTitle: "Start with these three steps",
       guideSteps: [
-        "Change a photo layout in Gallery",
+        "Choose a photo layout in Settings → Gallery layout",
         "Choose a font in Settings and open the live preview",
         "Reorder photos in Library, then open “View on site”",
       ],
@@ -4060,8 +4079,11 @@ export const ADMIN_DICTIONARY = {
     },
     formLayout: {
       navigationLabel: "Settings sections",
+      searchLabel: "Search settings",
+      clearSearch: "Clear search",
+      noResults: "No matching settings. Try another word.",
       currentSection: "Current",
-      switchSection: "Switch",
+      switchSection: "Settings list",
       closeSectionList: "Close section list",
       changed: "Changed",
       failed: "Could not save",

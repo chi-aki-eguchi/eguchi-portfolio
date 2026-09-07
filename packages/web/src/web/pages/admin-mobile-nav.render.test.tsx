@@ -24,6 +24,10 @@ Object.assign(globalThis, {
   sessionStorage: dom.window.sessionStorage,
 });
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
+Object.defineProperty(dom.window.HTMLDialogElement.prototype, "showModal", { value() { this.open = true; } });
+Object.defineProperty(dom.window.HTMLDialogElement.prototype, "close", { value() { this.open = false; } });
+dom.window.matchMedia = (() => ({ matches: false, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+
 
 const { createElement, act } = await import("react");
 const { createRoot } = await import("react-dom/client");
@@ -79,6 +83,7 @@ test("下部バー: 3グループ表示 → シートからタブ選択、setup�
   for (const g of ADMIN_TAB_GROUPS) {
     expect(findButton(host, g.label)).toBeDefined();
   }
+  expect(host.querySelectorAll(".admin-bottom-nav__btn")).toHaveLength(4);
   // active グループには現在タブ名が添えられる
   expect(host.textContent).toContain("label-gallery");
 
@@ -129,9 +134,15 @@ test("下部バー: 3グループ表示 → シートからタブ選択、setup�
   });
   expect(selected).toEqual(["gallery"]);
 
+  selected.length = 0;
+  await act(async () => click(host.querySelector("[data-admin-mobile-settings]")!));
+  expect(selected).toEqual(["settings"]);
+  expect(host.querySelector(".admin-sheet")).toBeNull();
+
   // アップロード中: gallery を含まないグループは無効
   await render("gallery", true);
   expect((findButton(host, "見せ方") as HTMLButtonElement).disabled).toBe(true);
+  expect((host.querySelector("[data-admin-mobile-settings]") as HTMLButtonElement).disabled).toBe(true);
   expect((findButton(host, "写真") as HTMLButtonElement).disabled).toBe(false);
 
   await act(async () => {

@@ -4320,9 +4320,11 @@ export function ServiceTab({
 export function SettingsTab({
   onUnsavedChange,
   demoSeed,
+  initialSectionId,
 }: {
   onUnsavedChange?: (v: boolean) => void;
   demoSeed?: string;
+  initialSectionId?: string;
 }) {
   const qc = useQueryClient();
   const { t } = useAdminI18n();
@@ -4877,11 +4879,27 @@ export function SettingsTab({
       ? firstValue
       : `${firstValue} · ${t.formLayout.summaryItems(values.length)}`;
   };
+  const sectionKeywords: Partial<Record<SettingsSectionId, string>> = {
+    "site-basics": "名前 紹介 メール 問い合わせ 連絡先 送信 フォーム 検索 SEO URL contact email name address form",
+    hero: "トップ 写真 高さ 動き first top hero image",
+    navigation: "メニュー 移動 header menu navigation",
+    "gallery-layout": "写真 一覧 列数 余白 配置 grid columns layout gallery",
+    "page-layout": "プロフィール お問い合わせ フッター profile about contact footer",
+    series: "写真 並び順 並び 順番 並べ替え 表示順 sort order reorder series",
+    theme: "背景色 文字色 背景 色 明るい 暗い ダークモード ダーク color colour dark light background",
+    fonts: "文字 書体 フォント font typeface typography",
+    "font-size": "文字サイズ 文字の大きさ 文字 大きさ サイズ size text",
+    "font-color": "文字 色 color colour text",
+    "font-spacing": "文字 字間 行間 spacing line height",
+    "site-copy": "文言 ボタン ラベル words labels copy",
+    mood: "雰囲気 まとめて 見た目 デザイン style mood design",
+  };
   const settingsSections: AdminSettingsSectionItem[] = (
     Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]
   ).map((id) => ({
     id,
     label: sectionTitles[id],
+    keywords: `${sectionKeywords[id] ?? ""} ${SETTINGS_SECTION_KEYS[id].join(" ")}`,
     summary: summarizeSection(id),
     changed: changedSectionIds.includes(id),
     failed:
@@ -4991,6 +5009,7 @@ export function SettingsTab({
       {/* Settings panel */}
       <div className="admin-settings-workspace__form">
         <AdminSettingsFormLayout
+          initialSectionId={initialSectionId}
           sections={settingsSections}
           changedCount={dirtyKeys.length}
           pending={save.isPending}
@@ -5063,8 +5082,19 @@ export function SettingsTab({
                 title={copy.siteBasics.title}
                 defaultOpen={false}
               >
-                <div className="ax-field-grid">
-                {fields.map((f) => {
+                {(["identity", "contact", "publishing"] as const).map((group) => {
+                  const Wrapper = group === "publishing" ? "details" : "section";
+                  const Heading = group === "publishing" ? "summary" : "h3";
+                  const identityKeys = ["siteName", "siteNameEn", "heroSubtitle", "footerText", "siteDescription"];
+                  const groupedFields = fields.filter(field => {
+                    const fieldGroup = identityKeys.includes(field.key) ? "identity"
+                      : field.key.startsWith("contact") || field.key === "formspreeUrl" ? "contact" : "publishing";
+                    return fieldGroup === group;
+                  });
+                  return <Wrapper key={group} className="admin-settings-field-group">
+                    <Heading>{copy.siteBasics[group]}</Heading>
+                    <div className="ax-field-grid">
+                {groupedFields.map((f) => {
                   const contactKey = isContactSettingKey(f.key) ? f.key : null;
                   const validationError = contactKey
                     ? contactValidationErrors[contactKey]
@@ -5072,10 +5102,13 @@ export function SettingsTab({
                   const errorId = contactKey
                     ? `settings-${contactKey}-error`
                     : undefined;
+                  const multiline = /^(siteDescription|contactIntro|contactNote|contactFlow)(En)?$/.test(f.key);
+                  const Control = multiline ? "textarea" : "input";
                   return (
                     <AdminField key={f.key} label={f.label} hint={f.hint} span={f.wide}>
-                      <input
-                        type={
+                      <Control
+                        rows={multiline ? 3 : undefined}
+                        type={multiline ? undefined :
                           contactKey === "contactEmail"
                             ? "email"
                             : contactKey === "formspreeUrl"
@@ -5093,8 +5126,8 @@ export function SettingsTab({
                           contactKey === "contactEmail" ? "email" : undefined
                         }
                         data-contact-setting={contactKey ?? undefined}
-                        ref={(input) => {
-                          if (contactKey) contactInputRefs.current[contactKey] = input;
+                        ref={(input: HTMLInputElement | HTMLTextAreaElement | null) => {
+                          if (contactKey) contactInputRefs.current[contactKey] = input as HTMLInputElement | null;
                         }}
                         aria-label={f.label}
                         aria-invalid={validationError ? true : undefined}
@@ -5130,7 +5163,9 @@ export function SettingsTab({
                     </AdminField>
                   );
                 })}
-                </div>
+                    </div>
+                  </Wrapper>;
+                })}
               </Section>
 
               <Section

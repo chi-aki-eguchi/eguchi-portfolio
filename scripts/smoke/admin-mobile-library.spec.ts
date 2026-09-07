@@ -108,7 +108,6 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await expect(tiles.nth(0).getByRole("button", { name: "後へ移動" })).toHaveCount(
     0,
   );
-  await page.locator(".admin-library-view-menu > summary").click();
   await page.locator("[data-library-mobile-arrange]").click();
   await expect(page.locator("[data-library-mode]")).toHaveAttribute(
     "data-library-mode",
@@ -322,7 +321,7 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       await expect(page.getByRole("button", { name: "取り込む", exact: true })).toBeVisible();
     });
 
-    test("作業バーは100px以下で、絞り込みを開いても写真を押し下げない", async ({
+    test("写真操作が常設され、絞り込みを開いても写真を押し下げない", async ({
       page,
     }, testInfo) => {
       test.skip(testInfo.project.name !== "mobile", "mobileのみ");
@@ -332,7 +331,10 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       const workbar = page.locator(".admin-library-workbar");
       const grid = page.locator("[data-library-scroll]");
       const before = (await grid.boundingBox())!;
-      expect((await workbar.boundingBox())!.height).toBeLessThanOrEqual(100);
+      // 44pxの写真操作＋検索の2行。古い小さな1行へ戻さない。
+      expect((await workbar.boundingBox())!.height).toBeLessThanOrEqual(112);
+      await expect(page.locator("[data-library-mobile-arrange]")).toBeVisible();
+      expect((await page.locator(".admin-library-search input").boundingBox())!.width).toBeGreaterThanOrEqual(140);
 
       await page.locator("[data-library-filters-toggle]").click();
       await expect(page.locator("[data-library-filter-sheet]")).toBeVisible();

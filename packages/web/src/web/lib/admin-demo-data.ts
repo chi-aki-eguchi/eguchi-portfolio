@@ -33,6 +33,7 @@ export function makeAdminDemoSettings(): Record<string, string> {
     navLabelContact: "Contact",
     worksLabel: "Works",
     galleryLabel: "Gallery",
+    gallerySortOrder: "manual",
     profileLabel: "About",
     contactLabel: "Contact",
     servicePageMode: "off",

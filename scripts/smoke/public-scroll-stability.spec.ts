@@ -157,7 +157,10 @@ test("公開サイト — 送っている最中に版面が動かない › 出�
   await page.waitForTimeout(2000);
   // 全部は出しきれないので、点数の少ない分類に絞る。**「出さない」だけの
   // 修正になっていないことを見張る** — 終端に着いたら必ず出ること。
-  const buttons = page.locator(".gallery-filter-row button");
+  const mobileFilters = page.locator(".gallery-mobile-filters__bar button");
+  const mobile = await mobileFilters.isVisible();
+  if (mobile) await mobileFilters.click();
+  const buttons = page.locator(mobile ? ".gallery-filter-dialog fieldset:first-child button" : ".gallery-filter-row button");
   const n = await buttons.count();
   let switched = false;
   for (let i = 1; i < n; i++) {
@@ -168,6 +171,7 @@ test("公開サイト — 送っている最中に版面が動かない › 出�
     const shown = await page.locator(".series-colophon").count();
     if (shown > 0) { switched = true; break; }
   }
+  if (mobile) await page.getByRole("button", { name: "絞り込みを閉じる" }).click();
   expect(switched, "どの分類でも奥付が出なかった").toBe(true);
   await expect(page.locator("footer")).toBeVisible();
   const studio = page.locator('[data-studio-bridge="footer"]');
@@ -206,7 +210,8 @@ test("公開サイト — 移動先の先読み › ナビに触れた時点で�
     await burger.click();
     link = page.locator('#mobile-menu a[href="/gallery"]').first();
     await link.waitFor({ state: "visible" });
-    asked.length = 0;
+    // メニューは先頭のリンクへフォーカスを移す。その時点で始まった
+    // 正常な先読みを消してから「通信がない」と誤判定しない。
   }
   await link.hover();
   await page.waitForTimeout(1200);

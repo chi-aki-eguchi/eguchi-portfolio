@@ -13,7 +13,8 @@
 - **公開 Series 札**: 2列スマホで期間の「月」だけが孤立して折り返す→ isMobile時は点数と期間を別行（区切りを行末に残さない）。期間は `PeriodText` で年月ごとの nowrap inline-block にし、ダッシュは前の年月に付けその後ろにだけ `<wbr/>`。狭い札で「2024年8月–」／「2025年8月」と日付単位で改行、"月"や"–"は単独行にしない。期間全体の無条件nowrapには戻さず、年月単位で折り返す。PCは「点数 ／ 期間」1行のまま。`series-scale.render.test.tsx` 他の文字列・意味は不変。320px画像で確認。
 - **フッター "X" リンク**: 当たり判定 横25px→ `.footer-sns-nav` に coarse時 リンク間隔（横gap）24→36px＋`.tap-target::before` 横±17.5px。実測 **44×54px**、Instagram 95 / note 61、隣接1pxクリア。グリフ不変、リンク間隔のみ12px広がる（タッチのみ）。方針リンク(Privacy 56/利用条件 62)は未変更。
 - 検証: `bun run typecheck`(tsc -b, ビルド情報再生成) 成功 / `bun run lint` 成功 / `bun test packages/web/src/web` 724 pass 0 fail / `bun run build` 成功 / `bun run smoke -- admin-library-contact-sheet.spec.ts`(desktop+mobile-touch) 6/6 pass / **`bun run smoke`(全体, foreground完了) 501 passed・160 skipped・0 failed（17.6分, flake/retryなし）**。
-- 証拠 `scratch/mobile-claude-20260908/`（flows.cjs / shoot.cjs / measure.cjs / footer-measure.cjs / filter-flow.cjs / anchor-drag.cjs、before/after 画像、progress.md、result.md）。commit・push・本番確認は未実施（次の指示待ち）。編集ヘッダー閉じるボタン実測h=40のみ低優先の残点。
+- 証拠 `scratch/mobile-claude-20260908/`（flows.cjs / shoot.cjs / measure.cjs / footer-measure.cjs / filter-flow.cjs / anchor-drag.cjs / prod-verify.cjs、before/after 画像、progress.md、result.md）。
+- commit・push・本番反映・本番ブラウザ確認（Chromium/WebKit×320/390/430、実画像・拡大・Series期間・SNS当たり判定・写真/設定スナップショット比較で不変）まで完了。実施日時・commit・build・比較結果は 2026-09-09 開発ログを正本とする。本番 admin の認証済み目視はこの環境ではできず未実施（回帰は全体smokeとテストでカバー）。編集ヘッダー閉じるボタン実測h=40のみ低優先の残点。
 
 ### 公開の言葉とAdminの操作欄を軽くする
 

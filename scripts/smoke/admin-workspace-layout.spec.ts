@@ -125,7 +125,7 @@ test.describe("admin — Workspace layout", () => {
     const sidebar = page.locator(".admin-sidebar");
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(248, 0);
+      .toBeCloseTo(200, 0);
     await page.locator("[data-sidebar-collapse]").click();
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
@@ -138,7 +138,7 @@ test.describe("admin — Workspace layout", () => {
     await page.locator("[data-compact-sidebar-expand]").click();
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(248, 0);
+      .toBeCloseTo(200, 0);
 
     const firstPhoto = page
       .locator(".admin-photo-tile [data-library-photo-action]")

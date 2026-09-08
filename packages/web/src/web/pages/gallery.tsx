@@ -364,11 +364,11 @@ export default function GalleryPage() {
             {/* 見出し（GALLERY）は英語で揃えてあるが、読み手へ向けた「文」は
                 日本語にする。/gallery に英語ルートは無いので出し分けは要らない。 */}
             <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
-              {activeFilter !== "all" || activeMedium !== "all" ? "この条件に合う写真はありません" : "まだ写真がありません"}
+              {activeFilter !== "all" || activeMedium !== "all" ? "写真が見つかりませんでした" : "まだ写真がありません"}
             </p>
             {(activeFilter !== "all" || activeMedium !== "all") && <button type="button"
               className="mt-4 min-h-11 text-sm underline underline-offset-4"
-              onClick={() => applyFilters({ c: "all", medium: "all" })}>絞り込みを解除</button>}
+              onClick={() => applyFilters({ c: "all", medium: "all" })}>すべての写真を見る</button>}
           </div>
         )
       ) : (

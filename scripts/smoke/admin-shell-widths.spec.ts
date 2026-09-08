@@ -42,8 +42,11 @@ test.describe("admin — 幅ごとの土台", () => {
     await gotoAdminTab(page, "settings");
 
     // This checks the full navigation when the preview is closed.
+    const workspace = page.locator(".admin-settings-workspace");
+    await expect(workspace).toBeVisible();
     const closePreview = page.getByRole("button", { name: "プレビューを閉じる" });
-    if (await closePreview.isVisible()) await closePreview.click();
+    if (await workspace.getAttribute("data-preview") === "true") await closePreview.click();
+    await expect(workspace).toHaveAttribute("data-preview", "false");
 
     for (const width of [1440, 1199, 1024, 900, 768]) {
       await page.setViewportSize({ width, height: 900 });
@@ -96,25 +99,25 @@ test.describe("admin — 幅ごとの土台", () => {
     );
     expect(paper.trim().length).toBeGreaterThan(0);
 
-    // 選択中のモード(閲覧)は「インクの下線 + インクの文字」。面はほぼ紙のまま。
+    // 選択は薄い面で示し、取り込みの強い塗りと区別する。
+    // color-mix() は color(srgb ...) として返るため、正規表現でRGB扱いしない。
     const selected = page.locator('[data-library-mode-action="normal"]');
     const style = await selected.evaluate((el) => {
+      const pixel = (color: string) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 1;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 1, 1);
+        return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+      };
       const cs = getComputedStyle(el);
-      return { bg: cs.backgroundColor, shadow: cs.boxShadow };
+      const unselected = document.querySelector('[data-library-mode-action="select"]')!;
+      return { bg: pixel(cs.backgroundColor), unselected: pixel(getComputedStyle(unselected).backgroundColor) };
     });
-    // 黒塗り = 濃い色が不透明で乗っている状態。紙に合成した結果の明るさで見る。
-    const parts = (style.bg.match(/\d+(\.\d+)?/g) ?? []).map(Number);
-    expect(parts.length).toBeGreaterThanOrEqual(3);
-    const alpha = parts.length >= 4 ? parts[3] : 1;
-    const composited = parts
-      .slice(0, 3)
-      .map((channel) => channel * alpha + 247 * (1 - alpha));
-    expect(
-      Math.max(...composited),
-      `選択トグルが黒塗りに戻っている: ${style.bg}`,
-    ).toBeGreaterThan(150);
-    // 代わりに下線が入っていること。
-    expect(style.shadow).not.toBe("none");
+    expect(Math.max(...style.bg.slice(0, 3)), "選択の面が黒塗りになっていない").toBeGreaterThan(150);
+    expect(style.bg, "選択中と未選択を区別できる").not.toEqual(style.unselected);
+    await expect(selected).toHaveAttribute("aria-pressed", "true");
 
     // 取り込む(その画面で一番強い1操作)だけは黒塗りのまま。
     // 透明度を見ないと「透明な黒」でも成功してしまうので、紙へ合成して判定する。

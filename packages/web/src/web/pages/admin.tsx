@@ -5560,7 +5560,7 @@ export function GalleryTab({
                   ))}
                   {allPhotos.some(isUncategorized) && (
                     <option value="__uncat__">
-                      {copy.filters.uncategorized} ({allPhotos.filter(isUncategorized).length})
+                      {copy.filters.uncategorized} ({uncategorizedCount})
                     </option>
                   )}
                 </select></label>
@@ -5580,7 +5580,7 @@ export function GalleryTab({
                   ))}
                   <option value="__none__">
                     {copy.filters.unassigned} (
-                    {allPhotos.filter((p) => p.seriesId == null).length})
+                    {noSeriesCount})
                   </option>
                 </select></label>
 
@@ -5933,8 +5933,8 @@ export function GalleryTab({
         {!showTrash && !bulkEditMode && libraryMode !== "arrange" && (
           <div className="admin-library-density" data-library-density>
             <select aria-label={language === "ja" ? "写真の並べ方" : "Photo layout"} value={useContactSheet ? "contact" : "grid"} onChange={(e) => { rememberDensityAnchor(); setLibraryLayout(e.target.value as "contact" | "grid"); }}>
-              <option value="contact">{language === "ja" ? "行にそろえる" : "Justified rows"}</option>
-              <option value="grid">{language === "ja" ? "列をそろえる" : "Fixed columns"}</option>
+              <option value="contact">{language === "ja" ? "行組み" : "Rows"}</option>
+              <option value="grid">{language === "ja" ? "グリッド" : "Grid"}</option>
             </select>
             {useContactSheet ? <label>
               <span>{language === "ja" ? "小" : "Small"}</span>
@@ -6356,57 +6356,6 @@ export function GalleryTab({
             </div>
             )}
           </div>
-
-          {/* **まだ埋まっていないものを、探さなくても見えるようにする。**
-              件数は前から絞り込みの中にあったが、選択肢を開かないと見えない。
-              2026-08-29 の実測では、公開している497枚のうち題名が付いている
-              写真が0枚、分類なしが403枚、どのシリーズにも入っていないのが
-              425枚だった。**見えないものは埋まらない。**
-
-              四角い札を並べると設定画面の見た目になる（`admin-renewal-goal.md`
-              の「AI感の削減」が避けろと言っている汎用UI）。文として置き、
-              押せるところだけ罫線で示す。全部埋まっていれば何も出さない
-              （褒めない。用が無いときは黙っている）。 */}
-          {libraryMode !== "arrange" &&
-            !showTrash &&
-            (missingTitleCount > 0 ||
-              uncategorizedCount > 0 ||
-              noSeriesCount > 0) && (
-              <p className="admin-library-empty-note">
-                <span>{copy.filters.emptyLead}</span>
-                {missingTitleCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterMissingTitle(true);
-                    }}
-                  >
-                    {copy.filters.emptyTitle(missingTitleCount)}
-                  </button>
-                )}
-                {uncategorizedCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterCat("__uncat__");
-                    }}
-                  >
-                    {copy.filters.emptyCategory(uncategorizedCount)}
-                  </button>
-                )}
-                {noSeriesCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterSeries("__none__");
-                    }}
-                  >
-                    {copy.filters.emptySeries(noSeriesCount)}
-                  </button>
-                )}
-              </p>
-            )}
-
 
           {/* Batch actions */}
           {libraryMode === "select" && !showTrash && (

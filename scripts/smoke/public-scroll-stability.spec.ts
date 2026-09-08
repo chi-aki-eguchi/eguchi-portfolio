@@ -171,7 +171,7 @@ test("公開サイト — 送っている最中に版面が動かない › 出�
     const shown = await page.locator(".series-colophon").count();
     if (shown > 0) { switched = true; break; }
   }
-  if (mobile) await page.getByRole("button", { name: "絞り込みを閉じる" }).click();
+  if (mobile) await page.getByRole("button", { name: "写真を探すメニューを閉じる" }).click();
   expect(switched, "どの分類でも奥付が出なかった").toBe(true);
   await expect(page.locator("footer")).toBeVisible();
   const studio = page.locator('[data-studio-bridge="footer"]');

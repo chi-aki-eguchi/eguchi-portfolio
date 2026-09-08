@@ -15,7 +15,8 @@ const SETTINGS = {
   servicePageMode: "off",
 };
 
-async function installMocks(page: Page) {
+async function installMocks(page: Page, persist = false) {
+  const savedPayloads: Record<string, string>[] = [];
   const writes: string[] = [];
   const unknownWrites: string[] = [];
   const currentSettings = { ...SETTINGS };
@@ -61,6 +62,9 @@ async function installMocks(page: Page) {
   );
   await page.route("**/api/admin/settings**", async (route) => {
     writes.push(`${route.request().method()} ${route.request().url()}`);
+    const payload = route.request().postDataJSON() as Record<string, string>;
+    savedPayloads.push(payload);
+    if (persist) Object.assign(currentSettings, payload);
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -68,7 +72,7 @@ async function installMocks(page: Page) {
     });
   });
 
-  return { writes, unknownWrites };
+  return { writes, unknownWrites, savedPayloads };
 }
 
 async function openSettings(page: Page) {
@@ -535,4 +539,29 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     expect(mocks.writes).toEqual([]);
     expect(mocks.unknownWrites).toEqual([]);
   });
+});
+
+
+test("admin — 写真アプリへ未保存プレビューし、表示だけを保存して元へ戻せる", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "設定・プレビューの往復はdesktopで確認");
+  const mocks = await installMocks(page, true);
+  await openSettings(page);
+  await page.locator('[data-settings-section-link="mood"]').click();
+  const select = page.getByRole("combobox", { name: "サイトの表示", exact: true });
+  await expect(select).toHaveValue("portfolio");
+  await select.selectOption("photo-app");
+  await openPreview(page);
+  const preview = page.frameLocator('iframe[title="Site Preview"]');
+  await expect(preview.locator(".photo-app")).toBeVisible();
+  expect(mocks.writes).toEqual([]);
+  // The field participates in the existing section save, without touching images or layout values.
+  await page.locator("[data-settings-save-panel] .admin-form-save-panel__primary").click();
+  await expect.poll(() => mocks.savedPayloads.length).toBe(1);
+  expect(mocks.savedPayloads[0]).toEqual({ publicExperience: "photo-app" });
+  await select.selectOption("portfolio");
+  await expect(preview.locator(".photo-app")).toHaveCount(0);
+  await page.locator("[data-settings-save-panel] .admin-form-save-panel__primary").click();
+  await expect.poll(() => mocks.savedPayloads.length).toBe(2);
+  expect(mocks.savedPayloads[1]).toEqual({ publicExperience: "portfolio" });
+  expect(mocks.unknownWrites).toEqual([]);
 });

@@ -148,3 +148,22 @@ describe("app.tsx との対応", () => {
     expect(missing).toEqual([]);
   });
 });
+
+
+describe("photo-app route preloads", () => {
+  const key = "src/web/components/photo-app/PhotoApp.tsx";
+  const manifest = { ...MANIFEST, [key]: { file: "assets/PhotoApp-PA.js", imports: ["index.html"], css: ["assets/PhotoApp-PA.css"] } };
+  test("loads the selected shell without fetching the unused classic gallery", () => {
+    for (const path of ["/", "/gallery", "/series", "/series/a", "/work/b", "/about", "/en/contact"]) {
+      expect(routeModuleFor(path, "photo-app")).toBe(key);
+      const tags = buildRoutePreloadTags(manifest, path, "photo-app");
+      expect(tags).toContain('rel="modulepreload" crossorigin href="/assets/PhotoApp-PA.js"');
+      expect(tags).toContain('rel="stylesheet" crossorigin href="/assets/PhotoApp-PA.css"');
+      expect(tags).not.toContain("top-T.js");
+    }
+  });
+  test("keeps photo permalinks, policies, services and admin on their existing routes", () => {
+    for (const path of ["/photo/42", "/privacy", "/portfolio-kit", "/admin"]) expect(routeModuleFor(path, "photo-app")).toBe(routeModuleFor(path));
+    expect(routeModuleFor("/gallery", "unknown")).toBe(routeModuleFor("/gallery"));
+  });
+});

@@ -67,7 +67,7 @@ export default defineConfig({
       // 描画エンジンは Chromium のまま（Pixel 7）にして、変数をタッチ有無に絞る。
       name: "mobile-touch",
       testMatch:
-        /(public-site|admin-reorder-safety|admin-touch-targets|admin-mobile-input-zoom|admin-page-header-geometry|admin-library-panels|admin-library-contact-sheet|admin-hero-picker)\.spec\.ts/,
+        /(public-site|public-photo-app|admin-reorder-safety|admin-touch-targets|admin-mobile-input-zoom|admin-page-header-geometry|admin-library-panels|admin-library-contact-sheet|admin-hero-picker)\.spec\.ts/,
       use: {
         ...devices["Pixel 7"],
         viewport: { width: 390, height: 844 },
@@ -75,7 +75,7 @@ export default defineConfig({
     },
     {
       name: "mobile-safari",
-      testMatch: /(admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker)\.spec\.ts/,
+      testMatch: /(public-photo-app|admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker)\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
       },

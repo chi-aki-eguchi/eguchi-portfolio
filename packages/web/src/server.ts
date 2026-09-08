@@ -43,6 +43,7 @@ import {
   photoPageTitle,
 } from "./shared/photo-page-text";
 import { injectNoscriptFallback } from "./api/spa-fallback";
+import { isPhotoAppPath, usesPhotoApp } from "./shared/public-experience";
 import { buildGalleryPreloadTags } from "./api/gallery-preload";
 import {
   buildRoutePreloadTags,
@@ -1019,6 +1020,7 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         };
       }
     }
+    const photoApp = usesPhotoApp(settings) && isPhotoAppPath(routePathname);
     let injected = injectOgp(
       html,
       settings,
@@ -1027,27 +1029,27 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       override,
       publicOrigin,
       heroImg.rotationDeg,
-      heroPreloadAllowed(settings.heroRandom)
+      !photoApp && heroPreloadAllowed(settings.heroRandom)
         ? heroImg.preloadUrl
         : undefined,
-      heroPreloadAllowed(settings.heroRandom)
+      !photoApp && heroPreloadAllowed(settings.heroRandom)
         ? heroImg.preloadSrcSet
         : undefined,
-      heroPreloadAllowed(settings.heroRandom),
+      !photoApp && heroPreloadAllowed(settings.heroRandom),
     );
     // その経路のチャンクを先読みさせる。lazy import なので、これが無いと
     // `index.js` が動くまで発見されない（実測で2波・往復1回ぶんの遅れ）。
     const routePreload = serviceUnavailable
       ? ""
-      : buildRoutePreloadTags(viteManifest, routePathname);
+      : buildRoutePreloadTags(viteManifest, routePathname, settings.publicExperience);
     if (routePreload)
       injected = injected.replace(
         "</head>",
         () => `  ${routePreload}\n  </head>`,
       );
     if (
-      routePathname === "/gallery" ||
-      (routePathname === "/" && (settings.topWorksMode ?? "auto") !== "random")
+      !photoApp && (routePathname === "/gallery" ||
+      (routePathname === "/" && (settings.topWorksMode ?? "auto") !== "random"))
     ) {
       const preloadImages = await getGalleryPreloadImages();
       if (preloadImages.length > 0) {

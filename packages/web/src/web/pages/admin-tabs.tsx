@@ -174,7 +174,7 @@ export const SETTINGS_SECTION_KEYS = {
   // 作風プリセットは自分のキーを持たない（他の節のキーをまとめて入れ替える
   // だけ）。台帳では空にしておく。所属キーの検査は
   // admin-settings-section-keys.test.ts が見ている。
-  mood: [],
+  mood: ["publicExperience"],
   // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
   // 変わらない部分をここでまとめて扱う。
   "page-layout": [
@@ -4290,7 +4290,7 @@ export function SettingsTab({
   initialSectionId?: string;
 }) {
   const qc = useQueryClient();
-  const { t } = useAdminI18n();
+  const { t, language } = useAdminI18n();
   const copy = t.phase2b.settingsBasic;
   const copyIntegrations = t.phase2b.settingsIntegrations;
   const copyDesign = t.phase2b.settingsDesign;
@@ -4818,12 +4818,27 @@ export function SettingsTab({
     "site-copy": copyDesign.siteCopy.title,
     presets: copyDesign.presets.title,
   };
+  const publicExperienceCopy = language === "ja"
+    ? {
+      label: "サイトの表示",
+      options: [
+        { value: "photo-app", label: "写真アプリ" },
+        { value: "portfolio", label: "従来のポートフォリオ" },
+      ],
+      note: "写真アプリは、列数を変えられる写真一覧と、透ける操作バーで閲覧できます。セレクトにはHEROとトップ掲載写真を使います。従来の配色・書体・レイアウト設定は保持され、いつでも戻せます。",
+    }
+    : {
+      label: "Site experience",
+      options: [
+        { value: "photo-app", label: "Photo app" },
+        { value: "portfolio", label: "Classic portfolio" },
+      ],
+      note: "Photo app uses a denser adjustable photo overview with glass controls. Classic layout settings are retained, so you can switch back without losing them.",
+    };
   const dirtyKeys = dirtySettingsKeys(form, data);
   const changedSectionIds = settingsSectionIdsForKeys(dirtyKeys);
   const summarizeSection = (sectionId: SettingsSectionId) => {
-    // 作風は自分のキーを持たないので、値の要約ではなく役割を出す。
-    // 空のまま既定の要約に任せると「未設定」と出て、設定し忘れに見える。
-    if (sectionId === "mood") return copy.mood.summary;
+    if (sectionId === "mood") return publicExperienceCopy.options.find(option => option.value === (current.publicExperience || "portfolio"))?.label || copy.mood.summary;
     if (sectionId === "presets") {
       return t.formLayout.summaryItems(
         cameraPresets.length + lensPresets.length,
@@ -4855,7 +4870,7 @@ export function SettingsTab({
     "font-color": "文字 色 color colour text",
     "font-spacing": "文字 字間 行間 spacing line height",
     "site-copy": "文言 ボタン ラベル words labels copy",
-    mood: "雰囲気 まとめて 見た目 デザイン style mood design",
+    mood: "写真アプリ サイトの表示 雰囲気 まとめて 見た目 デザイン glass style mood design photo app",
   };
   const settingsSections: AdminSettingsSectionItem[] = (
     Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]
@@ -5013,6 +5028,23 @@ export function SettingsTab({
                 title={copy.mood.title}
                 defaultOpen={false}
               >
+                <AdminField label={publicExperienceCopy.label}>
+                  <select
+                    aria-label={publicExperienceCopy.label}
+                    value={current.publicExperience ?? "portfolio"}
+                    onChange={(e) => set("publicExperience", e.target.value)}
+                    className="ax-input ax-select"
+                  >
+                    {publicExperienceCopy.options.map((option) => (
+                      <option value={option.value} key={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {publicExperienceCopy.note}
+                </p>
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.mood.intro}
                 </p>

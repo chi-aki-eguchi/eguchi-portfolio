@@ -13,6 +13,8 @@
  * 転送は増えないが、head が無駄に長くなる。
  */
 
+import { isPhotoAppPath } from "../shared/public-experience";
+
 export type ViteManifestEntry = {
   file: string;
   isEntry?: boolean;
@@ -67,8 +69,13 @@ const SERVICE_ROUTES: Record<string, string> = {
   "/portfolio-kit/start/en": "src/web/pages/service-start.tsx",
 };
 
-export function routeModuleFor(pathname: string): string | null {
+export function routeModuleFor(
+  pathname: string,
+  publicExperience?: string,
+): string | null {
   const clean = pathname.replace(/\/+$/, "") || "/";
+  if (publicExperience === "photo-app" && isPhotoAppPath(clean))
+    return "src/web/components/photo-app/PhotoApp.tsx";
   const direct = ROUTE_MODULES[clean] ?? SERVICE_ROUTES[clean];
   if (direct) return direct;
   for (const [pattern, mod] of DYNAMIC_ROUTES)
@@ -94,8 +101,9 @@ function alreadyInHtml(manifest: ViteManifest): Set<string> {
 export function preloadFilesFor(
   manifest: ViteManifest,
   pathname: string,
+  publicExperience?: string,
 ): string[] {
-  const rootKey = routeModuleFor(pathname);
+  const rootKey = routeModuleFor(pathname, publicExperience);
   if (!rootKey || !manifest[rootKey]) return [];
 
   const skip = alreadyInHtml(manifest);
@@ -124,11 +132,24 @@ function safeHref(file: string): string | null {
 export function buildRoutePreloadTags(
   manifest: ViteManifest | null,
   pathname: string,
+  publicExperience?: string,
 ): string {
   if (!manifest) return "";
-  return preloadFilesFor(manifest, pathname)
+  const scripts = preloadFilesFor(manifest, pathname, publicExperience)
     .map(safeHref)
     .filter((href): href is string => href !== null)
     .map((href) => `<link rel="modulepreload" crossorigin href="${href}">`)
     .join("\n  ");
+  // Photo-app CSS is scoped: safely load it with the shell, before the first paint.
+  const module = routeModuleFor(pathname, publicExperience);
+  const styles =
+    publicExperience === "photo-app" &&
+    module === "src/web/components/photo-app/PhotoApp.tsx"
+      ? (manifest[module]?.css || [])
+          .map(safeHref)
+          .filter(Boolean)
+          .map((href) => `<link rel="stylesheet" crossorigin href="${href}">`)
+          .join("\n  ")
+      : "";
+  return [scripts, styles].filter(Boolean).join("\n  ");
 }

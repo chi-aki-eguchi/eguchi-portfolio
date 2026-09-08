@@ -172,12 +172,12 @@ export default function ProfilePage({
       }`}
       ref={entranceRef}
     >
-      <PageTitle className="mb-12">{pageLabel}</PageTitle>
+      <PageTitle className="mb-8">{pageLabel}</PageTitle>
 
       <div
         className={
           layout === "side"
-            ? "grid md:grid-cols-[300px_1fr] gap-14 items-start"
+            ? "grid md:grid-cols-[300px_1fr] gap-8 md:gap-10 items-start"
             : "block"
         }
         data-profile-layout={layout}
@@ -338,7 +338,7 @@ export default function ProfilePage({
       {/* J1: Journal — latest note posts as cards (thumbnail + date + title + excerpt).
           Hidden if disabled or fetch returned nothing. */}
       {noteOn && notePosts.length > 0 && (
-        <div className="mt-20 md:mt-28 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
+        <div className="mt-12 md:mt-16 pt-8 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
           <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-8">
             Journal
           </h3>

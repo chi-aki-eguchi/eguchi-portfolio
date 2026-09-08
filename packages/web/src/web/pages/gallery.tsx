@@ -264,11 +264,11 @@ export default function GalleryPage() {
 
   return (
     <section
-      className="max-w-5xl mx-auto site-page site-page-top pb-12 md:pb-32"
+      className="max-w-5xl mx-auto site-page site-page-top pb-8 md:pb-16"
       ref={fadeRef}
       data-gallery-pending={photosLoading || rendered.length < filtered.length}
     >
-      <PageTitle className="mb-10 md:mb-24" revealClass="section-reveal">
+      <PageTitle className="mb-6 md:mb-10" revealClass="section-reveal">
         {settings?.galleryLabel ?? "Gallery"}
       </PageTitle>
 
@@ -308,7 +308,7 @@ export default function GalleryPage() {
       {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
       {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
         <div
-          className="gallery-filter-row gallery-filter-row--sub flex md:flex-wrap md:justify-center gap-x-5 gap-y-2 mb-14 md:mb-16 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
+          className="gallery-filter-row gallery-filter-row--sub flex md:flex-wrap md:justify-center gap-x-5 gap-y-2 mb-6 md:mb-8 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
           style={{
             transitionDelay: "0.15s",
             WebkitOverflowScrolling: "touch",

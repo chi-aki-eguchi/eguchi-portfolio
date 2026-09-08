@@ -1595,10 +1595,10 @@ export default function TopPage() {
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
-          className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(2rem*var(--spacing-hero-bottom,1))] md:pt-[calc(3rem*var(--spacing-hero-bottom,1))] pb-[calc(5rem*var(--spacing-section-gap,1))] md:pb-[calc(8rem*var(--spacing-section-gap,1))]"
+          className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(2rem*var(--spacing-hero-bottom,1))] md:pt-[calc(3rem*var(--spacing-hero-bottom,1))] pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(4rem*var(--spacing-section-gap,1))]"
           ref={fadeRef}
         >
-          <div className="flex items-center justify-between mb-10 md:mb-14">
+          <div className="flex items-center justify-between mb-6 md:mb-8">
             <h2
               className="font-en uppercase section-reveal break-words min-w-0"
               style={{

@@ -3003,8 +3003,8 @@
 .admin-atelier .admin-content [class~="px-6"],
 .admin-atelier .admin-content [class~="p-5"],
 .admin-atelier .admin-content [class~="p-6"] {
-  padding-left: clamp(18px, 2.5vw, 34px) !important;
-  padding-right: clamp(18px, 2.5vw, 34px) !important;
+  padding-left: var(--ax-inset) !important;
+  padding-right: var(--ax-inset) !important;
 }
 
 .admin-atelier .admin-content h1:not(.admin-page-header__title) {
@@ -3288,13 +3288,14 @@
    「見出しの左端は9タブ共通」で直したが、公開側は同じ直しを受けていなかった。
 
    **最大幅はページごとに違ってよい**（Gallery は広く、Contact は細い列）。
-   揃えるのは "紙の縁からの距離" だけ。 */
+   揃えるのは本文の縁。2026-09-08: 本文は16pxへ縮小し、写真一覧は
+   PhotoGallery側で枠の外まで広げる。写真間隔はAdmin設定を使う。 */
 .site-page {
   padding-left: var(--page-inset);
   padding-right: var(--page-inset);
 }
 :root {
-  --page-inset: 24px;
+  --page-inset: 16px;
 }
 
 /* ─── 読み込み中の「場所取り」───
@@ -3325,11 +3326,11 @@
   padding-top: calc(var(--page-top) * var(--spacing-page-top, 1));
 }
 :root {
-  --page-top: 3.5rem;
+  --page-top: 1.5rem;
 }
 @media (min-width: 768px) {
   :root {
-    --page-top: 7rem;
+    --page-top: 3rem;
   }
 }
 
@@ -3352,7 +3353,7 @@
 }
 @media (min-width: 768px) {
   :root {
-    --page-inset: 48px;
+    --page-inset: 24px;
   }
 }
 

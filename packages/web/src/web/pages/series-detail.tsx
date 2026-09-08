@@ -159,7 +159,7 @@ export default function SeriesDetailPage() {
 
   return (
     <section
-      className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]"
+      className="max-w-5xl mx-auto site-page site-page-top pb-8 md:pb-16 min-h-[60vh]"
       ref={entranceRef}
       style={seriesBgColor ? { backgroundColor: seriesBgColor } : undefined}
     >
@@ -171,7 +171,7 @@ export default function SeriesDetailPage() {
       />
 
       {!hasCover && (
-        <header className="max-w-2xl mx-auto text-center mb-16 md:mb-24 page-entrance">
+        <header className="max-w-2xl mx-auto text-center mb-8 md:mb-12 page-entrance">
           <h1
             className="font-ja break-words"
             style={{ fontSize: "var(--heading-size, 1.6rem)", color: `rgba(var(--foreground-rgb),0.82)`, letterSpacing: "0.03em", lineHeight: "var(--section-leading, 1.3)" }}
@@ -198,7 +198,7 @@ export default function SeriesDetailPage() {
       {series.statement && (
         <p
           className={`series-statement max-w-2xl mx-auto font-ja whitespace-pre-line break-words ja-prose page-entrance ${
-            hasCover ? "mb-20 md:mb-32 text-left" : "-mt-8 mb-20 md:mb-32 text-left md:text-center"
+            hasCover ? "mb-10 md:mb-16 text-left" : "-mt-4 mb-10 md:mb-16 text-left md:text-center"
           }`}
         >
           {series.statement}
@@ -223,7 +223,7 @@ export default function SeriesDetailPage() {
 
       <InquiryCta />
 
-      <div className={`mt-20 md:mt-28 flex items-baseline ${nextSeries ? "justify-between" : "justify-center"}`}>
+      <div className={`mt-10 md:mt-14 flex items-baseline ${nextSeries ? "justify-between" : "justify-center"}`}>
         <Link
           to={shelf === "work" ? "/work" : "/series"}
           className="shrink-0 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"

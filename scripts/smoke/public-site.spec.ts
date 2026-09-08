@@ -1303,7 +1303,7 @@ test.describe("public-site — generated thumbnail density", () => {
       hasTouch: true,
     });
 
-    test("under-dense panorama alone upgrades to static medium without a proxy request", async ({
+    test("edge-to-edge crops upgrade only under-dense photos without a proxy request", async ({
       page,
     }) => {
       const runtimeProblems = collectPageRuntimeProblems(page);
@@ -1323,12 +1323,14 @@ test.describe("public-site — generated thumbnail density", () => {
           return (
             images.length === 3 &&
             images[0]?.currentSrc.endsWith("/medium-pano.svg") === true &&
-            images[1]?.currentSrc.endsWith("/thumb-landscape.svg") === true &&
+            images[1]?.currentSrc.endsWith("/medium-landscape.svg") === true &&
             images[2]?.currentSrc.endsWith("/thumb-portrait.svg") === true
           );
         })
         .toBe(true);
 
+      // The 390px edge-to-edge grid gives each square about 194px. At DPR3,
+      // both 272px and 450px short edges need an upgrade; the portrait does not.
       const images = await densityImageState(page);
       expect(images.map((image) => image.dataSrc)).toEqual([null, null, null]);
       expect(images.map((image) => image.dataSrcset)).toEqual([
@@ -1340,7 +1342,7 @@ test.describe("public-site — generated thumbnail density", () => {
         naturalWidth: 1920,
         naturalHeight: 817,
       });
-      expect(images[1]).toMatchObject({ naturalWidth: 640, naturalHeight: 450 });
+      expect(images[1]).toMatchObject({ naturalWidth: 1920, naturalHeight: 1350 });
       expect(images[2]).toMatchObject({ naturalWidth: 640, naturalHeight: 910 });
       expect(images.every((image) => image.clientWidth > 0 && image.clientHeight > 0)).toBe(
         true,
@@ -1350,7 +1352,7 @@ test.describe("public-site — generated thumbnail density", () => {
         new Set(
           apiMocks.imageRequests.filter((name) => name.startsWith("medium-")),
         ),
-      ).toEqual(new Set(["medium-pano.svg"]));
+      ).toEqual(new Set(["medium-pano.svg", "medium-landscape.svg"]));
       expect(
         new Set(
           apiMocks.imageRequests.filter((name) => name.startsWith("thumb-")),

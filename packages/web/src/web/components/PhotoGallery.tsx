@@ -232,6 +232,7 @@ const LqipImage = memo(function LqipImage({
   thumbUrl,
   upgradeUrl,
   qualityUpgradeUrl,
+  layoutWidth,
   alt,
   sizes,
   isNearViewport,
@@ -245,6 +246,7 @@ const LqipImage = memo(function LqipImage({
   thumbUrl?: string | null;
   upgradeUrl?: string | null;
   qualityUpgradeUrl?: string | null;
+  layoutWidth: number;
   alt: string;
   sizes: string;
   isNearViewport: boolean;
@@ -345,7 +347,8 @@ const LqipImage = memo(function LqipImage({
           });
           return;
         }
-        swappedRef.current = true;
+        // A sharp thumbnail may still need an upgrade after the frame grows.
+        // Only an attempted upgrade is final; keep this fallback eligible.
         setLoaded(true);
         return;
       }
@@ -369,7 +372,7 @@ const LqipImage = memo(function LqipImage({
       return;
     }
     handleLoadedImage(el);
-  }, [handleLoadedImage, hasAlwaysThumbUpgrade, isNearViewport, thumbUrl]);
+  }, [handleLoadedImage, hasAlwaysThumbUpgrade, isNearViewport, thumbUrl, layoutWidth]);
 
   // Use the pre-generated WebP as the instant first paint. Large layouts keep
   // their intentional always-upgrade. Normal grids only use the existing static
@@ -564,7 +567,7 @@ export function PhotoGallery({
   // much room there is to grow beyond it. Shared with the series cover, which
   // breaks out the same way — see hooks/useBreakoutRoom.ts for why this cannot
   // be a plain 100vw calc.
-  const room = useBreakoutRoom(containerRef);
+  const room = useBreakoutRoom(containerRef, 0);
 
   const isTop = variant === "top";
   const pick = (topKey: string, galleryKey: string, fallback: number) => {
@@ -611,14 +614,31 @@ export function PhotoGallery({
     return clamp(Math.floor(containerW / minTile) || 1, 1, fitted);
   };
   const columns = columnsFor(3);
+  const mode: GalleryLayoutType = KNOWN_LAYOUTS.includes(
+    layoutType as GalleryLayoutType,
+  )
+    ? (layoutType as GalleryLayoutType)
+    : "mosaic";
   const requestedColumns = pick("topWorksColumns", "galleryColumns", NaN);
-  const frameW = galleryFrameWidth({
+  const fittedFrameW = galleryFrameWidth({
     requestedColumns,
     minTile,
     isMobile,
     itemCount: photos.length,
     ...room,
+    // Keep the original desktop mat for composed layouts; tilted corners
+    // need slightly more room than rectangular photos.
+    available: room.available - (mode === "collage" ? 48 : 32),
   });
+  // Contact sheets use the available photo surface. Editorial layouts keep
+  // their configured desktop composition; mobile has no redundant outer mat.
+  const edgeToEdge =
+    isMobile ||
+    ["clean-grid", "portrait-grid", "landscape-grid", "justified", "masonry"].includes(mode);
+  // Rotated collage corners need a small mat to stay inside the viewport.
+  const frameW = edgeToEdge
+    ? Math.max(0, room.available - (mode === "collage" ? 24 : 0))
+    : fittedFrameW;
   const frameStyle = frameW
     ? ({
         // Wider than the parent, still centred on it: the negative margin is
@@ -635,11 +655,6 @@ export function PhotoGallery({
     if (w) setContainerW(w);
   }, [frameW]);
   const seed = Math.round(num(settings?.gallerySeed, 1));
-  const mode: GalleryLayoutType = KNOWN_LAYOUTS.includes(
-    layoutType as GalleryLayoutType,
-  )
-    ? (layoutType as GalleryLayoutType)
-    : "mosaic";
 
   const mosaicCells = useMemo(
     () =>
@@ -820,6 +835,7 @@ export function PhotoGallery({
               thumbUrl={photo.thumbUrl}
               upgradeUrl={opts.preferMediumGrid ? photo.mediumUrl : undefined}
               qualityUpgradeUrl={photo.mediumUrl}
+              layoutWidth={frameW || containerW}
               alt={alt}
               sizes={opts.sizes}
               isNearViewport={isNearViewport}
@@ -875,7 +891,7 @@ export function PhotoGallery({
           display: "grid",
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
           gap: tightGap,
-          padding: tightGap,
+          padding: 0,
           alignItems: "start",
         }}
       >

@@ -975,7 +975,7 @@ test("a shell wider than the room is left as-is rather than narrowed", () => {
   ).toBe(0);
 });
 
-test("the widened frame reaches the DOM and stays centred on the page shell", async () => {
+test("a contact sheet uses the available width and stays centred on the page shell", async () => {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, enabled: false } },
   });
@@ -1013,21 +1013,21 @@ test("the widened frame reaches the DOM and stays centred on the page shell", as
   });
   const grid = host.querySelector<HTMLElement>(".filter-grid-animated");
   expect(grid).not.toBeNull();
-  expect(grid!.style.width).toBe("1597px");
+  expect(grid!.style.width).toBe("1868px");
   // Half the overhang pulled off each side — jsdom reserialises the calc(),
   // so assert the parts rather than the exact spelling.
-  expect(grid!.style.marginInline).toContain("100% - 1597px");
+  expect(grid!.style.marginInline).toContain("100% - 1868px");
   await act(async () => {
     root.unmount();
   });
   host.remove();
 });
 
-test("a site that never set the column key renders no frame at all", async () => {
+test("an editorial layout without a column key keeps its natural frame", async () => {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, enabled: false } },
   });
-  qc.setQueryData(["settings"], { galleryLayout: "clean-grid" });
+  qc.setQueryData(["settings"], { galleryLayout: "stagger" });
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   Object.defineProperty(host, "clientWidth", { value: 928, configurable: true });
@@ -1039,7 +1039,7 @@ test("a site that never set the column key renders no frame at all", async () =>
       createElement(
         QueryClientProvider,
         { client: qc },
-        createElement(PhotoGallery, { photos, layoutType: "clean-grid" }),
+        createElement(PhotoGallery, { photos, layoutType: "stagger" }),
       ),
     );
   });

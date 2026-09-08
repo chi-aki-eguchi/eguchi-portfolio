@@ -24,6 +24,7 @@ export type BreakoutRoom = {
  */
 export function useBreakoutRoom(
   ref: RefObject<HTMLElement | null>,
+  edgeInset = 16,
 ): BreakoutRoom {
   const [room, setRoom] = useState<BreakoutRoom>({ natural: 0, available: 0 });
   useLayoutEffect(() => {
@@ -39,7 +40,7 @@ export function useBreakoutRoom(
       // the limit.
       const centre = parent.getBoundingClientRect().left + padL + natural / 2;
       const viewport = document.documentElement.clientWidth; // excludes scrollbar
-      const available = 2 * Math.min(centre, viewport - centre) - 32;
+      const available = 2 * Math.min(centre, viewport - centre) - edgeInset * 2;
       setRoom((prev) =>
         prev.natural === natural && prev.available === available
           ? prev
@@ -59,6 +60,6 @@ export function useBreakoutRoom(
       window.removeEventListener("resize", measure);
       ro?.disconnect();
     };
-  }, [ref]);
+  }, [ref, edgeInset]);
   return room;
 }

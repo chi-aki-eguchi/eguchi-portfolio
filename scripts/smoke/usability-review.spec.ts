@@ -47,6 +47,13 @@ test("設定へ直接進み、目的の言葉で節を探して編集に戻れ�
 
 test("公開スマホの絞り込みはURLと点数を保ち、メニューから戻れる", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "スマホの公開導線を検証");
+  // Classic mobile menu and filters remain supported independently of the
+  // owner's active experience. Photo-first navigation has its own smoke suite.
+  await page.route("**/api/settings**", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...await response.json(), publicExperience: "portfolio" } });
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/gallery?utm_source=ux-check");
   const filters = page.locator(".gallery-mobile-filters__bar");

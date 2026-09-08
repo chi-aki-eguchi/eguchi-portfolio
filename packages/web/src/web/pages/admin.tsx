@@ -1,3 +1,4 @@
+import "../components/admin-workbench.css";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Library uses the approved ARIA listbox/option pattern with custom photo tiles. */
 import {
   useState,
@@ -766,7 +767,7 @@ function AdminPageContent({
   return (
     <div
       ref={adminRootRef}
-      className="admin-atelier relative flex select-none overflow-hidden"
+      className="admin-atelier admin-workbench relative flex select-none overflow-hidden"
       style={{
         ...adminThemeVars,
         ...(demoMode
@@ -5117,19 +5118,28 @@ export function GalleryTab({
 
   // Open the inspector for a photo (shared by click + Enter)
   const inspectorOpenerRef = useRef<HTMLElement | null>(null);
+  const inspectorReturnFrame = useRef(0);
   const inspectorOpen = !!inspectPhoto;
   useEffect(() => {
     if (!inspectorOpen) return;
+    cancelAnimationFrame(inspectorReturnFrame.current);
     document.querySelector<HTMLButtonElement>("[data-library-inspector-close]")?.focus({ preventScroll: true });
     const openerId = inspectorOpenerRef.current?.closest(".admin-photo-tile")?.id;
     return () => {
-      requestAnimationFrame(() => {
+      const started = performance.now();
+      const restore = () => {
         // Virtual rows may remount while the editor is open (notably Safari).
         const opener = openerId ? document.getElementById(openerId)?.querySelector<HTMLElement>("[data-library-photo-action]") : inspectorOpenerRef.current;
-        opener?.focus({ preventScroll: true });
-      });
+        if (opener?.isConnected && getComputedStyle(opener).visibility === "visible" && !opener.closest("[inert]")) {
+          opener.focus({ preventScroll: true });
+        } else if (performance.now() - started < 800) {
+          inspectorReturnFrame.current = requestAnimationFrame(restore);
+        }
+      };
+      inspectorReturnFrame.current = requestAnimationFrame(restore);
     };
   }, [inspectorOpen]);
+  useEffect(() => () => cancelAnimationFrame(inspectorReturnFrame.current), []);
 
   const openInspector = (photo: Photo) => {
     if (!inspectPhoto) inspectorOpenerRef.current = document.querySelector<HTMLElement>(`#admin-photo-${photo.id} [data-library-photo-action]`);
@@ -5915,10 +5925,31 @@ export function GalleryTab({
                 }
               >
                 {showSitePreview ? <EyeOff size={13} /> : <Eye size={13} />}
-                {t.headers.viewSite}
+                <span className="admin-library-preview-label">{t.headers.viewSite}</span>
               </PageHeaderButton>
             }
           />
+        {/* Keep photo density controls beside the library heading. */}
+        {!showTrash && !bulkEditMode && libraryMode !== "arrange" && (
+          <div className="admin-library-density" data-library-density>
+            <select aria-label={language === "ja" ? "写真の並べ方" : "Photo layout"} value={useContactSheet ? "contact" : "grid"} onChange={(e) => { rememberDensityAnchor(); setLibraryLayout(e.target.value as "contact" | "grid"); }}>
+              <option value="contact">{language === "ja" ? "行にそろえる" : "Justified rows"}</option>
+              <option value="grid">{language === "ja" ? "列をそろえる" : "Fixed columns"}</option>
+            </select>
+            {useContactSheet ? <label>
+              <span>{language === "ja" ? "小" : "Small"}</span>
+              <input type="range" aria-label={language === "ja" ? "一覧の写真サイズ" : "Contact sheet photo size"} min={60} max={260} step={10} value={contactHeight} onChange={(e) => { rememberDensityAnchor(); setContactHeight(Number(e.target.value)); }} />
+              <span>{language === "ja" ? "大" : "Large"}</span>
+            </label> : <label>
+              <span>{language === "ja" ? "列数" : "Columns"}</span>
+              <select aria-label={language === "ja" ? "一覧の列数" : "Contact sheet columns"} value={coarsePointer ? mobileLibraryColumns : desktopColumns} onChange={(e) => { rememberDensityAnchor(); const n = Number(e.target.value); if (coarsePointer) setMobileLibraryColumns(n as LibraryColumnChoice); else setDesktopColumns(n); }}>
+                {!coarsePointer && <option value={0}>{language === "ja" ? "自動" : "Auto"}</option>}
+                {(coarsePointer ? LIBRARY_COLUMN_CHOICES : [2,3,4,5,6,8,10,12]).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>}
+            <span className="admin-library-density-count">{displayed.length} {t.headers.libraryPhotos}</span>
+          </div>
+        )}
         </div>
         {/* Workspace bar: one mode switcher on the left, find/view tools on the right. */}
         <div className="admin-library-workbar">
@@ -6824,27 +6855,6 @@ export function GalleryTab({
           </div>
         )}
 
-        {/* Drop zone overlay */}
-        {!showTrash && !bulkEditMode && libraryMode !== "arrange" && (
-          <div className="admin-library-density" data-library-density>
-            <select aria-label={language === "ja" ? "写真の並べ方" : "Photo layout"} value={useContactSheet ? "contact" : "grid"} onChange={(e) => { rememberDensityAnchor(); setLibraryLayout(e.target.value as "contact" | "grid"); }}>
-              <option value="contact">{language === "ja" ? "行にそろえる" : "Justified rows"}</option>
-              <option value="grid">{language === "ja" ? "列をそろえる" : "Fixed columns"}</option>
-            </select>
-            {useContactSheet ? <label>
-              <span>{language === "ja" ? "小" : "Small"}</span>
-              <input type="range" aria-label={language === "ja" ? "一覧の写真サイズ" : "Contact sheet photo size"} min={60} max={260} step={10} value={contactHeight} onChange={(e) => { rememberDensityAnchor(); setContactHeight(Number(e.target.value)); }} />
-              <span>{language === "ja" ? "大" : "Large"}</span>
-            </label> : <label>
-              <span>{language === "ja" ? "列数" : "Columns"}</span>
-              <select aria-label={language === "ja" ? "一覧の列数" : "Contact sheet columns"} value={coarsePointer ? mobileLibraryColumns : desktopColumns} onChange={(e) => { rememberDensityAnchor(); const n = Number(e.target.value); if (coarsePointer) setMobileLibraryColumns(n as LibraryColumnChoice); else setDesktopColumns(n); }}>
-                {!coarsePointer && <option value={0}>{language === "ja" ? "自動" : "Auto"}</option>}
-                {(coarsePointer ? LIBRARY_COLUMN_CHOICES : [2,3,4,5,6,8,10,12]).map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>}
-            <span className="admin-library-density-count">{displayed.length} {t.headers.libraryPhotos}</span>
-          </div>
-        )}
         <div
           ref={scrollRef}
           data-library-scroll

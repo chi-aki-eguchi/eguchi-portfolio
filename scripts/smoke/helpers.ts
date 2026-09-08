@@ -108,6 +108,21 @@ export async function gotoAdminTab(page: Page, tab: string): Promise<void> {
   await page.waitForTimeout(300);
 }
 
+/** Section navigation keeps the editor wide while its site preview is open. */
+export async function chooseSettingsSection(page: Page, sectionId: string): Promise<void> {
+  await expect(page.locator(".admin-settings-form-layout")).toBeVisible();
+  const toc = page.locator(".admin-form-toc");
+  const link = toc.locator(`[data-settings-section-link="${sectionId}"]`);
+  if (await toc.isVisible()) {
+    if (!(await link.isVisible())) await toc.locator(".admin-form-toc__advanced > summary").click();
+    await link.click();
+  } else {
+    await page.locator(".admin-settings-mobile-current").getByRole("button", { name: /設定項目|Settings list/ }).click();
+    await page.locator(`[data-settings-sheet-link="${sectionId}"]`).click();
+  }
+  await expect(page.locator(`[data-settings-section="${sectionId}"]`)).toBeVisible();
+}
+
 export type ScrollProbe = {
   scrollTop: number;
   scrollHeight: number;

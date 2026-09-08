@@ -146,13 +146,10 @@ export const SETTINGS_PREVIEW_HANDLE_WIDTH = 8;
 // 既定幅。viewport ではなく実測した Workspace 幅から決める。左ナビの開閉で
 // Workspace は変わるので、viewport 固定値を当てると幅が合わない(§13 A2)。
 export function defaultSettingsPreviewWidth(workspaceWidth: number): number {
-  if (workspaceWidth >= 1300) return 520;
-  if (workspaceWidth >= 1100) return 480;
-  if (workspaceWidth >= 1000) return 440;
-  return 360;
+  return Math.round(workspaceWidth * 0.58);
 }
 
-// 最大幅は「55%」だけで決めない。フォームが潰れないことを常に優先する。
+// 最大幅は比率だけで決めない。フォームが潰れないことを常に優先する。
 export function settingsPreviewWidthBounds(workspaceWidth: number): {
   min: number;
   max: number;
@@ -162,7 +159,7 @@ export function settingsPreviewWidthBounds(workspaceWidth: number): {
     1,
     Math.round(
       Math.min(
-        usable * 0.55,
+        usable * 0.68,
         usable - SETTINGS_FORM_MIN_WIDTH - SETTINGS_PREVIEW_HANDLE_WIDTH,
       ),
     ),

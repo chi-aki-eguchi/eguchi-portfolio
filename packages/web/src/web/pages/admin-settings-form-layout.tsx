@@ -260,6 +260,7 @@ export function AdminSettingsFormLayout({
           <ChevronDown size={13} />
         </button>
         {mobilePreviewControl}
+        <span className="admin-settings-current-preview">{previewToggle}</span>
       </div>
 
       <div className="admin-settings-form-layout__inner">
@@ -271,6 +272,17 @@ export function AdminSettingsFormLayout({
           {previewToggle && (
             <div className="admin-form-toc__preview-toggle">{previewToggle}</div>
           )}
+
+        </aside>
+
+        <main className="admin-settings-form-layout__body">
+          <AdminSettingsActiveSectionContext.Provider value={activeId || null}>
+            {children}
+          </AdminSettingsActiveSectionContext.Provider>
+        </main>
+      </div>
+
+      <div className="admin-settings-save-dock">
           <output
             className="admin-form-save-panel"
             data-settings-save-panel
@@ -330,13 +342,6 @@ export function AdminSettingsFormLayout({
               </span>
             )}
           </output>
-        </aside>
-
-        <main className="admin-settings-form-layout__body">
-          <AdminSettingsActiveSectionContext.Provider value={activeId || null}>
-            {children}
-          </AdminSettingsActiveSectionContext.Provider>
-        </main>
       </div>
 
       {mobileListOpen && (

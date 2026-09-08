@@ -1,3 +1,4 @@
+import { chooseSettingsSection } from "./helpers";
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers";
 
@@ -20,7 +21,7 @@ test.describe("admin — ライブプレビューがタブ復帰後も編集内�
   const previewOpenButton = page.getByRole("button", { name: "プレビューを開く" });
   if ((await previewOpenButton.count()) > 0) await previewOpenButton.click();
     await page.waitForTimeout(300);
-    await page.locator('[data-settings-section-link="theme"]').click();
+    await chooseSettingsSection(page, "theme");
     await page.waitForTimeout(200);
 
     // exact: 「暗い表示のときの背景色（HEX）」など、この名前を含む別の入力が

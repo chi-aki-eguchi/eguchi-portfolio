@@ -1,3 +1,4 @@
+import { chooseSettingsSection } from "./helpers";
 import { expect, test } from "@playwright/test";
 import { loginAsAdmin } from "./helpers";
 
@@ -35,10 +36,17 @@ const HERO_MODES = [
 ] as const;
 
 async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
+  // These controls belong to the classic portfolio. The owner's active public
+  // experience may differ; exercise the classic preview without saving settings.
+  await page.route("**/api/settings**", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...await response.json(), publicExperience: "portfolio" } });
+  });
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Settings" }).click();
   // 設定の本文は目次で選んだ1節だけを出す。折りたたみ行は廃止した。
-  await page.locator('[data-settings-section-link="hero"]').click();
+  await chooseSettingsSection(page, "hero");
   await expect(page.locator('[data-settings-section="hero"]')).toBeVisible();
   // プレビューは既定で開く。閉じている時だけ押す。
   const previewOpenButton = page.getByRole("button", { name: "プレビューを開く" });

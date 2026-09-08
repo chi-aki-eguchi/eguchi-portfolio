@@ -1,3 +1,4 @@
+import { chooseSettingsSection } from "./helpers";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const ADMIN_SETTINGS = {
@@ -92,7 +93,7 @@ async function openSettings(
 
 async function openSiteBasicsThroughTheAdminUi(page: Page, width: number) {
   if (width >= 768) {
-    await page.locator('[data-settings-section-link="site-basics"]').click();
+    await chooseSettingsSection(page, "site-basics");
   } else {
     await page
       .locator('.admin-settings-mobile-current > button[aria-expanded]')
@@ -177,7 +178,12 @@ test.describe("admin — Contact setting validation", () => {
 
     await email.fill("not-a-url");
     await endpoint.fill("http://compatible.example.test/contact");
-    await save.click();
+    // Saving from the preview must reveal the invalid field, even while the
+    // form is hidden by desktop expansion or the mobile preview switch.
+    if (desktop) await page.getByRole("button", { name: "大きく表示", exact: true }).click();
+    else await page.locator(".admin-settings-mobile-current__view-switch").getByRole("button", { name: "Preview", exact: true }).click();
+    await expect(email).not.toBeVisible();
+    await page.locator(".admin-preview-save-dock").getByRole("button", { name: labels.save, exact: true }).click();
 
     const emailError = page.locator("#settings-contactEmail-error");
     const endpointError = page.locator("#settings-formspreeUrl-error");

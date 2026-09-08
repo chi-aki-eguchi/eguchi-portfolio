@@ -41,6 +41,10 @@ test.describe("admin — 幅ごとの土台", () => {
     await loginAsAdmin(page);
     await gotoAdminTab(page, "settings");
 
+    // This checks the full navigation when the preview is closed.
+    const closePreview = page.getByRole("button", { name: "プレビューを閉じる" });
+    if (await closePreview.isVisible()) await closePreview.click();
+
     for (const width of [1440, 1199, 1024, 900, 768]) {
       await page.setViewportSize({ width, height: 900 });
       await page.waitForTimeout(300);

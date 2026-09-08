@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useLayoutEffect, useRef, useState } from "react";
 import {
   ExternalLink,
   Maximize2,
@@ -59,6 +59,12 @@ export const AdminSettingsPreviewPane = forwardRef<
     onResetWidth: () => void;
     unsavedCount: number;
     dragging: boolean;
+    onSave: () => void;
+    onEdit: () => void;
+    pending: boolean;
+    saveLabel: string;
+    editLabel: string;
+    saveError?: string;
     copy: AdminSettingsPreviewCopy;
   }
 >(function AdminSettingsPreviewPane(
@@ -78,10 +84,36 @@ export const AdminSettingsPreviewPane = forwardRef<
     onResetWidth,
     unsavedCount,
     dragging,
+    onSave,
+    onEdit,
+    pending,
+    saveLabel,
+    editLabel,
+    saveError,
     copy,
   },
   iframeRef,
 ) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    const element = stageRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.floor(entry.contentRect.width), height = Math.floor(entry.contentRect.height);
+      if (width <= 0 || height <= 0) return;
+      setStage(current => current.width === width && current.height === height ? current : { width, height });
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const scale = stage.width > 0 ? Math.min(1, stage.width / 1280) : 1;
+  const desktopStyle = device === "desktop" ? {
+    width: Math.max(1280, stage.width),
+    height: Math.max(800, stage.height / scale),
+    transform: `scale(${scale})`,
+    transformOrigin: "top left",
+  } : undefined;
   return (
     <section
       className="admin-settings-preview"
@@ -180,7 +212,7 @@ export const AdminSettingsPreviewPane = forwardRef<
         </p>
       )}
 
-      <div className="admin-settings-preview__stage">
+      <div ref={stageRef} className="admin-settings-preview__stage">
         <div className="admin-settings-preview__frame" data-device={device}>
           <iframe
             ref={iframeRef}
@@ -188,10 +220,17 @@ export const AdminSettingsPreviewPane = forwardRef<
             onLoad={onIframeLoad}
             title="Site Preview"
             // ドラッグ中に iframe がマウスイベントを飲むと掴んだ帯が外れる。
-            style={dragging ? { pointerEvents: "none" } : undefined}
+            style={{ ...desktopStyle, ...(dragging ? { pointerEvents: "none" as const } : {}) }}
           />
         </div>
       </div>
+      {(expanded || unsavedCount > 0) && (
+        <div className="admin-preview-save-dock">
+          <button type="button" onClick={onEdit}>{editLabel}</button>
+          <span role={saveError ? "alert" : undefined}>{saveError || (unsavedCount > 0 ? copy.unsavedWhileExpanded(unsavedCount) : "")}</span>
+          {unsavedCount > 0 && <button type="button" className="admin-btn-primary" onClick={onSave} disabled={pending}>{saveLabel}</button>}
+        </div>
+      )}
     </section>
   );
 });

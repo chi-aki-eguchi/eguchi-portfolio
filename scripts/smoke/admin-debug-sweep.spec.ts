@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { ADMIN_TABS, gotoAdminTab, loginAsAdmin } from "./helpers";
+import { ADMIN_TABS, chooseSettingsSection, gotoAdminTab, loginAsAdmin } from "./helpers";
 
 const OLD_DARK_COLORS = [
   "rgb(17, 17, 17)",
@@ -8,36 +8,6 @@ const OLD_DARK_COLORS = [
   "rgb(44, 44, 44)",
   "rgb(56, 56, 56)",
 ] as const;
-
-// Settingsの本文は目次で選んだ1節だけを出す（2026-07-30）。PCは左の目次、
-// スマホは上部1行の「切り替え」→節一覧シートから目的の節を出す。
-async function openSettingsSection(
-  page: Parameters<typeof loginAsAdmin>[0],
-  sectionId: string,
-) {
-  const tocLink = page.locator(
-    `.admin-form-toc [data-settings-section-link="${sectionId}"]`,
-  );
-  // `isVisible()` は待たない。PC幅でも目次が描画される前に呼ぶと false が返り、
-  // スマホ用の分岐へ落ちて、存在しないボタンを30秒待って死ぬ。実際にこの形で
-  // 3回落ちた（2026-08-07）。少しだけ待ってから分岐する。
-  const hasToc = await tocLink
-    .waitFor({ state: "visible", timeout: 5_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (hasToc) {
-    await tocLink.click();
-  } else {
-    await page
-      .locator(".admin-settings-mobile-current")
-      .getByRole("button", { name: /設定項目|Settings list/ })
-      .click();
-    await page.locator(`[data-settings-sheet-link="${sectionId}"]`).click();
-  }
-  await expect(
-    page.locator(`[data-settings-section="${sectionId}"]`),
-  ).toBeVisible();
-}
 
 function isLocalRequest(url: string): boolean {
   try {
@@ -113,11 +83,11 @@ test.describe("admin — 全体デバッグスイープ", () => {
         const titleFont = await title.evaluate(
           (el) => getComputedStyle(el).fontFamily,
         );
-        expect(titleFont).toContain("Cormorant Garamond");
+        expect(titleFont).toContain("Hiragino Sans");
       }
 
       if (tab === "settings") {
-        await openSettingsSection(page, "theme");
+        await chooseSettingsSection(page, "theme");
         const themeBg = await page
           .locator('[data-admin-setting="themeBg-color"]')
           .evaluate((el) => (el as HTMLInputElement).value);

@@ -1029,13 +1029,13 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       override,
       publicOrigin,
       heroImg.rotationDeg,
-      !photoApp && heroPreloadAllowed(settings.heroRandom)
+      heroPreloadAllowed(settings.heroRandom)
         ? heroImg.preloadUrl
         : undefined,
-      !photoApp && heroPreloadAllowed(settings.heroRandom)
+      heroPreloadAllowed(settings.heroRandom)
         ? heroImg.preloadSrcSet
         : undefined,
-      !photoApp && heroPreloadAllowed(settings.heroRandom),
+      heroPreloadAllowed(settings.heroRandom),
     );
     // その経路のチャンクを先読みさせる。lazy import なので、これが無いと
     // `index.js` が動くまで発見されない（実測で2波・往復1回ぶんの遅れ）。

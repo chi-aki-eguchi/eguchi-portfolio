@@ -16,21 +16,13 @@ import {
 // (仕様 admin-phase1-settings-preview.md §3-1 / §3-3 / テスト計画 U1・U2)。
 
 describe("settings preview width", () => {
-  test("既定幅は Workspace の実測幅で段階的に決まる", () => {
-    expect(defaultSettingsPreviewWidth(960)).toBe(360); // viewport 1024 相当
-    expect(defaultSettingsPreviewWidth(1032)).toBe(440); // viewport 1280 相当
-    expect(defaultSettingsPreviewWidth(1192)).toBe(480); // viewport 1440 相当
-    expect(defaultSettingsPreviewWidth(1352)).toBe(520); // viewport 1600 相当
+  test("既定幅は写真を確認するpreviewに58%を割り当てる", () => {
+    for (const width of [960, 1032, 1192, 1352]) expect(defaultSettingsPreviewWidth(width)).toBe(Math.round(width * .58));
   });
 
-  test("最大幅は 55% だけで決めず、フォーム 400px を常に優先する", () => {
-    // 1192px では 55%(655) より「フォーム 400px を残す」側(784)が小さくない
-    // ため 55% が効く。
-    expect(settingsPreviewWidthBounds(1192).max).toBe(Math.round(1192 * 0.55));
-    // 900px では 55%(495) より残り幅(900-400-8=492)の方が小さい。
-    expect(settingsPreviewWidthBounds(900).max).toBe(
-      900 - SETTINGS_FORM_MIN_WIDTH - SETTINGS_PREVIEW_HANDLE_WIDTH,
-    );
+  test("previewを広げても設定本文のためにフォーム400pxを残す", () => {
+    expect(settingsPreviewWidthBounds(1192).max).toBe(1192 - SETTINGS_FORM_MIN_WIDTH - SETTINGS_PREVIEW_HANDLE_WIDTH);
+    expect(settingsPreviewWidthBounds(900).max).toBe(900 - SETTINGS_FORM_MIN_WIDTH - SETTINGS_PREVIEW_HANDLE_WIDTH);
   });
 
   test("どんな幅でも、プレビューを広げてフォームが 400px を割らない", () => {

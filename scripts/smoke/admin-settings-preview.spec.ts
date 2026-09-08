@@ -1,3 +1,4 @@
+import { chooseSettingsSection } from "./helpers";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { SETTINGS_SECTION_COUNT } from "./helpers";
 
@@ -125,7 +126,7 @@ const documentOverflow = (page: Page) =>
   );
 
 test.describe("admin — Settings プレビュー Workspace", () => {
-  test("プレビューを開いても目次は縦のまま全節へ到達でき、横に溢れない", async ({
+  test("プレビュー中も設定項目一覧から全節へ到達し、入力欄を圧迫しない", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
@@ -134,26 +135,17 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     await openSettings(page);
     await openPreview(page);
 
-    // P4 の回帰防止: 以前は目次が横帯へ変わり、19節のうち一部が切れていた。
-    const nav = page.locator(".admin-form-toc__nav");
-    const shape = await nav.evaluate((el) => ({
-      direction: getComputedStyle(el).flexDirection,
-      hidden: el.scrollWidth - el.clientWidth,
-    }));
-    expect(shape.direction).toBe("column");
-    expect(shape.hidden).toBeLessThanOrEqual(1);
-    await expect(page.locator("[data-settings-section-link]")).toHaveCount(SETTINGS_SECTION_COUNT);
-
-    // 最後の節まで実際に選べ、本文がその節へ入れ替わる。
-    await page.locator(".admin-form-toc__advanced > summary").click();
-    const last = page.locator("[data-settings-section-link]").last();
-    const lastId = await last.getAttribute("data-settings-section-link");
-    await last.click();
+    await expect(page.locator(".admin-form-toc")).toBeHidden();
+    await page.locator(".admin-settings-mobile-current").getByRole("button", { name: "設定項目" }).click();
+    const entries = page.locator("[data-settings-sheet-link]");
+    await expect(entries).toHaveCount(SETTINGS_SECTION_COUNT);
+    const lastId = await entries.last().getAttribute("data-settings-sheet-link");
+    await entries.last().click();
     await expect(page.locator("[data-settings-section]")).toHaveCount(1);
-    await expect(page.locator("[data-settings-section]")).toHaveAttribute(
-      "data-settings-section",
-      lastId ?? "",
-    );
+    await expect(page.locator("[data-settings-section]")).toHaveAttribute("data-settings-section", lastId!);
+    await expect.poll(() => page.locator(".admin-settings-form-layout__body").evaluate(el => el.clientWidth)).toBeGreaterThanOrEqual(360);
+    const frame = page.frameLocator('iframe[title="Site Preview"]');
+    await expect.poll(() => frame.locator('html').evaluate(() => innerWidth)).toBeGreaterThanOrEqual(1280);
 
     expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
     expect(mocks.writes).toEqual([]);
@@ -280,6 +272,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     const max = Number(await resizer.getAttribute("aria-valuemax"));
     expect(widest).toBeLessThanOrEqual(max + 1);
     expect(await formWidth()).toBeGreaterThanOrEqual(400);
+    expect(await page.locator(".admin-settings-form-layout__body").evaluate(el => el.clientWidth)).toBeGreaterThanOrEqual(360);
 
     await page.keyboard.press("Home");
     await page.waitForTimeout(150);
@@ -293,7 +286,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     expect(await paneWidth()).toBe(min);
 
     // 明示ボタンでも標準幅へ戻る(§3-3)。
-    const standard = 480;
+    const standard = Math.min(Math.round(await page.locator("[data-settings-workspace]").evaluate(el => el.clientWidth) * .58), Number(await resizer.getAttribute("aria-valuemax")));
     await page.getByRole("button", { name: "幅を戻す" }).click();
     await page.waitForTimeout(150);
     expect(await paneWidth()).toBe(standard);
@@ -439,7 +432,7 @@ test.describe("admin — Settings プレビュー Workspace", () => {
     await openSettings(page);
     await openPreview(page);
 
-    await page.locator('[data-settings-section-link="site-basics"]').click();
+    await chooseSettingsSection(page, "site-basics");
     const input = page
       .locator("[data-settings-section] input[type='text']")
       .first();
@@ -546,7 +539,7 @@ test("admin — 写真アプリへ未保存プレビューし、表示だけを�
   test.skip(testInfo.project.name !== "desktop", "設定・プレビューの往復はdesktopで確認");
   const mocks = await installMocks(page, true);
   await openSettings(page);
-  await page.locator('[data-settings-section-link="mood"]').click();
+  await chooseSettingsSection(page, "mood");
   const select = page.getByRole("combobox", { name: "サイトの表示", exact: true });
   await expect(select).toHaveValue("portfolio");
   await select.selectOption("photo-app");
@@ -554,6 +547,9 @@ test("admin — 写真アプリへ未保存プレビューし、表示だけを�
   const preview = page.frameLocator('iframe[title="Site Preview"]');
   await expect(preview.locator(".photo-app")).toBeVisible();
   expect(mocks.writes).toEqual([]);
+  await chooseSettingsSection(page, "hero");
+  await expect(page.locator("[data-settings-experience-note]")).toContainText("写真中心のポートフォリオ");
+  await chooseSettingsSection(page, "mood");
   // The field participates in the existing section save, without touching images or layout values.
   await page.locator("[data-settings-save-panel] .admin-form-save-panel__primary").click();
   await expect.poll(() => mocks.savedPayloads.length).toBe(1);

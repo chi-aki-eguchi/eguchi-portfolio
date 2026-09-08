@@ -4414,7 +4414,7 @@ export function SettingsTab({
     let attempts = 0;
     const focusWhenMounted = () => {
       const input = contactInputRefs.current[target];
-      if (input?.isConnected) {
+      if (input?.isConnected && input.getClientRects().length > 0 && !input.closest("[inert]")) {
         input.focus({ preventScroll: true });
         input.scrollIntoView({ block: "nearest", behavior: "smooth" });
         setContactValidationFocusKey(null);
@@ -4532,6 +4532,8 @@ export function SettingsTab({
     );
     if (firstInvalid) {
       // 前回の通信失敗が残っている場合でも、今回の問題は入力値だと分かるようにする。
+      setPreviewExpanded(false);
+      setNarrowView("edit");
       setSaveError(false);
       setFailedSectionIds([]);
       setContactValidationErrors(contactErrors);
@@ -4822,18 +4824,18 @@ export function SettingsTab({
     ? {
       label: "サイトの表示",
       options: [
-        { value: "photo-app", label: "写真アプリ" },
+        { value: "photo-app", label: "写真中心のポートフォリオ" },
         { value: "portfolio", label: "従来のポートフォリオ" },
       ],
-      note: "写真アプリは、列数を変えられる写真一覧と、透ける操作バーで閲覧できます。セレクトにはHEROとトップ掲載写真を使います。従来の配色・書体・レイアウト設定は保持され、いつでも戻せます。",
+      note: "代表写真と作品一覧を中心にした表示です。HEROとトップ掲載写真を使い、一覧の列数を変えて閲覧できます。従来の配色・書体・レイアウト設定は、従来のポートフォリオを選ぶと使用されます。",
     }
     : {
       label: "Site experience",
       options: [
-        { value: "photo-app", label: "Photo app" },
+        { value: "photo-app", label: "Photo-first portfolio" },
         { value: "portfolio", label: "Classic portfolio" },
       ],
-      note: "Photo app uses a denser adjustable photo overview with glass controls. Classic layout settings are retained, so you can switch back without losing them.",
+      note: "A photographic cover and an adjustable overview of your selected work. Uses your HERO and TOP selections. Classic colors, typography, and layout settings apply when you choose Classic portfolio.",
     };
   const dirtyKeys = dirtySettingsKeys(form, data);
   const changedSectionIds = settingsSectionIdsForKeys(dirtyKeys);
@@ -4891,6 +4893,17 @@ export function SettingsTab({
   }));
   const sectionProps = (sectionId: SettingsSectionId) => ({
     sectionId,
+    experienceNote: current.publicExperience === "photo-app"
+      ? (["theme", "fonts", "font-size", "font-color", "font-spacing", "spacing", "texture", "reveal", "navigation"].includes(sectionId)
+        ? (language === "ja"
+          ? "この項目は従来のポートフォリオ用です。現在は「写真中心のポートフォリオ」を表示しています。表示の切り替えは「作風を選ぶ」で行えます。"
+          : "These controls apply to Classic portfolio. Your current experience is Photo-first portfolio. Change it in Site style.")
+        : ["hero", "gallery-layout", "page-layout", "series"].includes(sectionId)
+          ? (language === "ja"
+            ? "現在の表示は「写真中心のポートフォリオ」です。写真の指定・公開順は共通です。この節の高さ・配置・登場する動きは、従来のポートフォリオで使用されます。"
+            : "You are using Photo-first portfolio. Photo selections and publishing order are shared. Height, composition, and entrance effects in this section apply to Classic portfolio.")
+          : undefined)
+      : undefined,
     changed: changedSectionIds.includes(sectionId),
     failed:
       failedSectionIds.includes(sectionId) ||
@@ -5046,7 +5059,9 @@ export function SettingsTab({
                   {publicExperienceCopy.note}
                 </p>
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  {copy.mood.intro}
+                  {current.publicExperience === "photo-app"
+                    ? (language === "ja" ? "下のスタイルは、従来のポートフォリオの配色・書体・配置をまとめて設定します。" : "The styles below configure the colors, type, and layout of Classic portfolio.")
+                    : copy.mood.intro}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {SITE_MOOD_IDS.map((id) => (
@@ -6045,7 +6060,8 @@ export function SettingsTab({
                       num(current["gallerySizeScale"], 1),
                     );
                     // プレビューの器から左右の余白ぶんを引いた、写真が使える幅。
-                    const usable = previewWidth - 32;
+                    const viewportWidth = previewDevice === "desktop" ? Math.max(1280, previewWidth - 28) : 375;
+                    const usable = viewportWidth - 32;
                     const fits = columnsThatFit({
                       width: usable,
                       sizeScale,
@@ -6056,7 +6072,7 @@ export function SettingsTab({
                     return (
                       <p className="mt-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                         {copy.galleryLayout.columnsCappedByPreview(
-                          Math.round(previewWidth),
+                          viewportWidth,
                           fits,
                         )}
                       </p>
@@ -7924,6 +7940,12 @@ export function SettingsTab({
             onResetWidth={() => setPreviewRatio(null)}
             unsavedCount={dirtyKeys.length}
             dragging={previewDragging}
+            onSave={saveSettings}
+            onEdit={() => { setPreviewExpanded(false); setNarrowView("edit"); }}
+            pending={save.isPending}
+            saveLabel={save.isPending ? t.formLayout.saving : t.formLayout.save}
+            editLabel={language === "ja" ? "編集へ戻る" : "Back to editing"}
+            saveError={saveError ? t.formLayout.saveFailed : undefined}
             copy={{
               title: copy.previewTitle,
               desktop: t.phase2b.library.sitePreview.desktop,
@@ -7961,6 +7983,7 @@ function Section({
   sectionId,
   title,
   summary,
+  experienceNote,
   defaultOpen = false,
   changed = false,
   failed = false,
@@ -7974,6 +7997,7 @@ function Section({
   // already set (Settings可視化 Phase 1, 2026-07-09).
   // 単節表示（目次で1節ずつ出す画面）では折りたたみ自体がないため使わない。
   summary?: string;
+  experienceNote?: string;
   defaultOpen?: boolean;
   changed?: boolean;
   failed?: boolean;
@@ -8078,7 +8102,10 @@ function Section({
         style={{ gridTemplateRows: singleView || open ? "1fr" : "0fr" }}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="pb-10 pt-2 flex flex-col gap-6">{children}</div>
+          <div className="pb-10 pt-2 flex flex-col gap-6">
+            {experienceNote && <p data-settings-experience-note className="admin-settings-experience-note">{experienceNote}</p>}
+            {children}
+          </div>
         </div>
       </div>
     </div>

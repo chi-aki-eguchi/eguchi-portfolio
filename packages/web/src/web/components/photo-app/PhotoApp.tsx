@@ -19,7 +19,6 @@ import { shouldShowShelf } from "../../lib/shelf-nav";
 import { sortPhotosBySetting } from "../../lib/photo-sort";
 import { srcFor } from "../../lib/picture";
 import { hasPublicEnglishContent } from "../../../shared/public-english";
-import { isServiceOwnerSite } from "../../../shared/service-visibility";
 import { signalAnalyticsPageReady } from "../../lib/analytics";
 import { ContentStatus } from "../ContentStatus";
 import type { GalleryPhoto } from "../PhotoGallery";
@@ -27,7 +26,9 @@ import { PhotoAppGallery, type PhotoAppGalleryHandle } from "./PhotoAppGallery";
 import { PhotoAppViewer } from "./PhotoAppViewer";
 import { PhotoAppIcon as Icon } from "./PhotoAppIcons";
 import { usePhotoAppGlass } from "./photo-app-glass";
+import { PhotoAppCover } from "./PhotoAppCover";
 import "./photo-app.css";
+import "./photo-app-portfolio.css";
 
 const ProfilePage = lazy(() => import("../../pages/profile"));
 const ContactPage = lazy(() => import("../../pages/contact"));
@@ -68,6 +69,7 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
     scroll = useRef<HTMLElement>(null),
     gallery = useRef<PhotoAppGalleryHandle>(null);
   const opener = useRef<DOMRect | null>(null),
+    openerElement = useRef<HTMLButtonElement | null>(null),
     lastViewed = useRef<number | null>(null);
   const [columns, setColumns] = useState(readColumns),
     [mobile, setMobile] = useState(() => innerWidth <= 700);
@@ -95,7 +97,7 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
     english = path.startsWith("/en/");
   const isDetail = Boolean(detailPath);
   const photoPage = selected || isGallery || isDetail;
-  const { showService, showServiceInNav } = useServiceVisibility();
+  const { showService } = useServiceVisibility();
   const count = Math.min(
     60,
     Math.max(1, Number(settings.homeGalleryCount) || 18),
@@ -179,6 +181,12 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
     }
   }, [detail?.series.themeConfig]);
   const allPhotos = (photoQuery.data?.photos ?? EMPTY) as GalleryPhoto[];
+  const heroes = useMemo(() => {
+    const picked = (heroQuery.data?.heroPhotos ?? []) as GalleryPhoto[];
+    return settings.heroRandom === "any"
+      ? sortPhotosBySetting(allPhotos, "random").slice(0, Math.max(1, picked.length || 5))
+      : settings.heroRandom === "shuffle" ? sortPhotosBySetting(picked, "random") : picked;
+  }, [heroQuery.data, allPhotos, settings.heroRandom]);
   const photos = useMemo(() => {
     let list: GalleryPhoto[];
     if (isDetail) {
@@ -207,20 +215,6 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
               .filter((photo): photo is GalleryPhoto => Boolean(photo))
           : [];
       const picked = manual.length ? manual : ordered.slice(0, count);
-      // Keep the owner's HERO choices at the front of the compact overview.
-      // Dedicated choices are read as references; neither order nor data is rewritten.
-      const heroPicks = (heroQuery.data?.heroPhotos ?? []).filter(
-        Boolean,
-      ) as GalleryPhoto[];
-      const heroes =
-        settings.heroRandom === "any"
-          ? sortPhotosBySetting(allPhotos, "random").slice(
-              0,
-              Math.max(1, heroPicks.length || 5),
-            )
-          : settings.heroRandom === "shuffle"
-            ? sortPhotosBySetting(heroPicks, "random")
-            : heroPicks;
       list = [
         ...new Map(
           [...heroes, ...picked].map((photo) => [photo.id, photo]),
@@ -278,10 +272,9 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
     settings.seriesSortOrder,
     settings.topWorksIds,
     settings.topWorksMode,
-    settings.heroRandom,
     settings.galleryExcludeSeries,
     count,
-    heroQuery.data,
+    heroes,
     category,
     medium,
     query,
@@ -424,6 +417,7 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
     ? photos.findIndex((photo) => photo.id === photoId)
     : -1;
   const openPhoto = (photo: GalleryPhoto, button: HTMLButtonElement) => {
+    openerElement.current = button;
     opener.current =
       button.querySelector("img")?.getBoundingClientRect() ||
       button.getBoundingClientRect();
@@ -453,7 +447,9 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
       return;
     }
     if (lastViewed.current != null) {
-      gallery.current?.reveal(lastViewed.current);
+      if (openerElement.current?.isConnected && openerElement.current.classList.contains("pa-cover-photo")) {
+        openerElement.current.focus({ preventScroll: true });
+      } else gallery.current?.reveal(lastViewed.current);
       lastViewed.current = null;
     }
   }, [index, photos]);
@@ -479,19 +475,13 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
   };
   const activeShelf = shelf === "work" ? works : series,
     shelfQuery = shelf === "work" ? worksQuery : seriesQuery;
-  const navStyle = {
-    "--pa-nav-count": links.length,
-    "--pa-nav-index": Math.max(
-      0,
-      links.findIndex((link) => link.current),
-    ),
-  } as CSSProperties;
+  const showCover = selected && !query && category === "all" && medium === "all" && heroes.length > 0;
   const siteName = settings.siteName || settings.siteNameEn || "Photographs";
 
   return (
     <div
       ref={root}
-      className={`photo-app${searchOpen && photoPage ? " pa-search-open" : ""}${photoPage ? "" : " pa-reading"}`}
+      className={`photo-app pa-portfolio${selected ? " pa-home" : ""}${searchOpen && photoPage ? " pa-search-open" : ""}${photoPage ? "" : " pa-reading"}`}
       data-public-experience="photo-app"
     >
       <a
@@ -504,158 +494,39 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
       >
         写真へ移動
       </a>
-      <aside className="pa-sidebar pa-glass">
-        <Link to="/" className="pa-identity">
-          {siteName}
-          <small>{settings.siteNameEn}</small>
+      <header className="pa-portfolio-header">
+        <Link to="/" className="pa-wordmark" aria-label={siteName}>
+          <span>{siteName}</span><small>{settings.siteNameEn}</small>
         </Link>
-        <span className="pa-section-label">作品</span>
-        <nav
-          className="pa-primary-nav"
-          style={navStyle}
-          aria-label="主なページ"
-        >
-          <span
-            className="pa-nav-indicator"
-            aria-hidden="true"
-            hidden={!links.some((link) => link.current)}
-          />
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              to={link.href}
-              aria-current={link.current ? "page" : undefined}
-            >
-              <Icon name={link.icon} />
-              <span>{link.label}</span>
-            </Link>
-          ))}
+        <nav className="pa-public-nav pa-glass" aria-label="主なページ" data-pa-lens>
+          {links.map((link) => <Link key={link.href} to={link.href} aria-current={link.current ? "page" : undefined}>{link.label}</Link>)}
+          <Link to={english ? "/en/contact" : "/contact"} aria-current={isContact ? "page" : undefined}>{english ? "Contact" : "お問い合わせ"}</Link>
         </nav>
-        {showSeries && series.length > 0 && (
-          <div className="pa-sidebar-albums">
-            <span className="pa-section-label">シリーズ</span>
-            {series.slice(0, 5).map((item) => (
-              <Link key={item.id} to={`/series/${item.slug}`}>
-                {item.coverUrl && (
-                  <img
-                    src={srcFor(
-                      item.coverUrl,
-                      80,
-                      70,
-                      "webp",
-                      item.coverRotationDeg,
-                    )}
-                    alt=""
-                    loading="lazy"
-                  />
-                )}
-                {item.title}
-              </Link>
-            ))}
-          </div>
-        )}
-        <div className="pa-sidebar-bottom">
-          <Link to={english ? "/en/contact" : "/contact"}>
-            {english ? "Contact" : "撮影のご相談"}
-            <span>↗</span>
-          </Link>
-          {showService &&
-            (showServiceInNav ||
-              isServiceOwnerSite(
-                settings.siteUrl,
-                window.location.hostname,
-              )) && (
-              <Link to="/portfolio-kit">
-                ポートフォリオ制作<span>↗</span>
-              </Link>
-            )}
-          <small>{settings.heroSubtitle}</small>
-          <div className="pa-legal">
-            <Link to={english ? "/privacy/en" : "/privacy"}>Privacy</Link>
-            <Link to={english ? "/terms/en" : "/terms"}>Terms</Link>
-          </div>
-        </div>
-      </aside>
+      </header>
       <section className="pa-workspace">
-        <header className="pa-toolbar pa-glass" data-pa-lens>
-          <div className="pa-heading">
-            {detailPath && (
-              <Link
-                className="pa-icon"
-                to={`/${shelf}`}
-                aria-label="一覧に戻る"
-              >
-                <Icon name="left" />
-              </Link>
-            )}
-            <div>
-              {isAbout || isContact ? (
-                <div className="pa-toolbar-title">{title}</div>
-              ) : (
-                <h1>{title}</h1>
-              )}
-              <p>
-                {photoPage
-                  ? `${siteName} · ${loading ? "読み込み中" : `${photos.length}枚`}${selected ? "のセレクト" : ""}`
-                  : isShelf
-                    ? `${activeShelf.length}つの${shelf === "work" ? settings.navLabelWork || "Work" : "シリーズ"}`
-                    : settings.siteNameEn}
-              </p>
+        <main
+          ref={scroll}
+          id="photo-app-content"
+          className="pa-scroll"
+          tabIndex={-1}
+        >
+          <div className="pa-page">
+            {showCover && <PhotoAppCover key={heroes.map((photo) => photo.id).join(",")} photos={heroes} name={siteName} subtitle={settings.heroSubtitle || settings.siteNameEn || ""} onOpen={openPhoto} />}
+            <div className="pa-collection-heading">
+              <div className="pa-heading">
+                {detailPath && <Link className="pa-icon" to={`/${shelf}`} aria-label="一覧に戻る"><Icon name="left" /></Link>}
+                <div>
+                  {isAbout || isContact ? <div className="pa-toolbar-title">{title}</div> : showCover ? <h2>Selected photographs</h2> : <h1>{selected ? siteName : title}</h1>}
+                  {photoPage && <p>{loading ? "読み込み中" : `${photos.length}枚の写真`}</p>}
+                </div>
+              </div>
+              {(isAbout || isContact) && (english || hasPublicEnglishContent(settings)) && <Link className="pa-language" to={`${english ? "" : "/en"}/${isAbout ? "about" : "contact"}`}>{english ? "JP" : "EN"}</Link>}
             </div>
-          </div>
-          <div className="pa-toolbar-actions">
-            {photoPage && (
-              <>
-                <label className="pa-search">
-                  <Icon name="search" />
-                  <input
-                    ref={searchInput}
-                    type="search"
-                    aria-label="写真を検索"
-                    placeholder="写真を検索"
-                    value={query}
-                    onChange={(event) =>
-                      putParams({ q: event.target.value }, true)
-                    }
-                  />
-                </label>
-                <button
-                  className="pa-icon pa-search-toggle"
-                  aria-label={searchOpen ? "検索を閉じる" : "検索を開く"}
-                  aria-expanded={searchOpen}
-                  onClick={() => {
-                    setSearchOpen((value) => !value);
-                    if (!searchOpen)
-                      requestAnimationFrame(() => searchInput.current?.focus());
-                  }}
-                >
-                  <Icon name="search" />
-                </button>
-              </>
-            )}
-            <Link
-              className="pa-icon"
-              to={english ? "/en/contact" : "/contact"}
-              aria-label="撮影のご相談"
-            >
-              <Icon name="mail" />
-            </Link>
-            {(isAbout || isContact) &&
-              (english || hasPublicEnglishContent(settings)) && (
-                <Link
-                  className="pa-language"
-                  to={`${english ? "" : "/en"}/${isAbout ? "about" : "contact"}`}
-                >
-                  {english ? "JP" : "EN"}
-                </Link>
-              )}
-          </div>
-        </header>
         {photoPage && (
           <div className="pa-controls">
             {!detailPath ? (
               <nav
-                className="pa-segmented pa-glass"
+                className="pa-segmented"
                 aria-label="写真の範囲"
                 style={
                   { "--pa-segment-index": selected ? 0 : 1 } as CSSProperties
@@ -676,6 +547,7 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
               <span />
             )}
             <div className="pa-view-tools pa-glass">
+              <button className="pa-icon pa-search-toggle" aria-label={searchOpen ? "検索を閉じる" : "検索を開く"} aria-expanded={searchOpen} onClick={() => { setSearchOpen((value) => !value); if (!searchOpen) requestAnimationFrame(() => searchInput.current?.focus()); }}><Icon name="search" /></button>
               <button
                 ref={filtersButton}
                 className="pa-icon"
@@ -724,13 +596,9 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
             </div>
           </div>
         )}
-        <main
-          ref={scroll}
-          id="photo-app-content"
-          className="pa-scroll"
-          tabIndex={-1}
-        >
-          <div className="pa-page">
+
+            {photoPage && searchOpen && <label className="pa-portfolio-search"><Icon name="search" /><input ref={searchInput} type="search" aria-label="写真を検索" placeholder="写真を検索" value={query} onChange={(event) => putParams({ q: event.target.value }, true)} /><button className="pa-icon" aria-label="検索を閉じる" onClick={() => setSearchOpen(false)}><Icon name="close" /></button></label>}
+
             {photoPage ? (
               <>
                 {detail &&
@@ -856,28 +724,6 @@ export default function PhotoApp({ settings }: { settings: Settings }) {
             </footer>
           </div>
         </main>
-        <nav
-          className="pa-mobile-nav pa-glass"
-          aria-label="モバイルの主なページ"
-          style={navStyle}
-          data-pa-lens
-        >
-          <span
-            className="pa-nav-indicator"
-            aria-hidden="true"
-            hidden={!links.some((link) => link.current)}
-          />
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              to={link.href}
-              aria-current={link.current ? "page" : undefined}
-            >
-              <Icon name={link.icon} />
-              <span>{link.label}</span>
-            </Link>
-          ))}
-        </nav>
       </section>
       <dialog
         ref={filtersDialog}

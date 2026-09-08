@@ -432,6 +432,20 @@ async function runningAnimations(page: Page): Promise<number> {
   );
 }
 
+test("公開ポートフォリオ — 代表写真から拡大して元の表紙へ戻れる", async ({ page }) => {
+  const apiMocks = await installPhotoAppApiMocks(page, SYNTHETIC_SETTINGS);
+  await page.goto("/");
+  const cover = page.getByRole("button", { name: "代表作品を拡大", exact: true });
+  await expect(cover).toBeVisible();
+  const scroller = page.locator(".pa-scroll");
+  await cover.click();
+  await expect(page.getByRole("dialog", { name: "写真ビューア" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(cover).toBeFocused();
+  await expect.poll(() => scroller.evaluate(el => el.scrollTop)).toBe(0);
+  await expectNoUnexpectedMutations(apiMocks);
+});
+
 test("公開PhotoApp — ギャラリー初期描画は428枚・仮想DOM・サムネイルのみ最初に要求", async ({
   page,
 }) => {
@@ -506,19 +520,24 @@ test("公開PhotoApp — 深いスクロールでも仮想DOM件数は有界、�
     page.locator('main.pa-scroll [data-photo-tile] img').first(),
   ).toBeVisible();
 
+  await expect.poll(() => firstFullyVisiblePhotoId(page)).not.toBeNull();
   const beforePhotoId = await firstFullyVisiblePhotoId(page);
   const beforeColumnsText = await page.locator(".pa-view-tools output").innerText();
   const beforeColumns = Number.parseInt(beforeColumnsText, 10) || 5;
 
   const densityButton = page.getByRole("button", { name: "写真を小さく" });
   if (await densityButton.isEnabled()) {
-    await densityButton.click();
+    const point = await densityButton.boundingBox();
+    if (!point) throw new Error("Density button is not visible");
+    // A sticky toolbar is already onscreen; avoid locator autoscroll moving the gallery.
+    await page.mouse.click(point.x + point.width / 2, point.y + point.height / 2);
   } else {
     await page.getByRole("button", { name: "写真を大きく" }).click();
   }
 
   const afterColumnsText = await page.locator(".pa-view-tools output").innerText();
   const afterColumns = Number.parseInt(afterColumnsText, 10) || beforeColumns;
+  await expect.poll(() => firstFullyVisiblePhotoId(page)).not.toBeNull();
   const afterPhotoId = await firstFullyVisiblePhotoId(page);
 
   expect(beforePhotoId).not.toBeNull();
@@ -536,6 +555,9 @@ test("公開PhotoApp — 深いスクロールでも仮想DOM件数は有界、�
 
   const lastTile = page.locator(`main.pa-scroll button[data-photo-tile="${lastId}"]`);
   await expect.poll(() => lastTile.count()).toBeGreaterThan(0);
+  await expect(page.locator(".pa-end-note")).toBeInViewport();
+  await expect(page.locator(".pa-page-footer")).toBeInViewport();
+  await expect(page.locator('.pa-page-footer a[href="/contact"]')).toBeVisible();
   await lastTile.first().click();
 
   const dialog = page.getByRole("dialog", { name: "写真ビューア" });
@@ -601,8 +623,8 @@ test("公開PhotoApp — スクロール位置を保った写真ビューア遷�
       const active = document.activeElement;
       if (!(active instanceof HTMLButtonElement)) return false;
       const tileRect = active.getBoundingClientRect();
-      const toolbar = document.querySelector<HTMLElement>(".pa-toolbar");
-      const mobileNav = document.querySelector<HTMLElement>(".pa-mobile-nav");
+      const toolbar = document.querySelector<HTMLElement>(".pa-portfolio-header");
+      const mobileNav = document.querySelector<HTMLElement>(".pa-controls");
 
       const overlaps = (a: DOMRect | null, b: DOMRect | null) =>
         !!a &&
@@ -804,7 +826,7 @@ test("公開PhotoApp — reduced motion / high contrastでアニメは停止し 
   await page.goto("/gallery");
   await waitForPhotoGrid(page);
 
-  await expect(page.locator(".pa-toolbar")).toBeVisible();
+  await expect(page.locator(".pa-public-nav")).toBeVisible();
   await expect(runningAnimations(page)).resolves.toBe(0);
 
   await page
@@ -815,11 +837,11 @@ test("公開PhotoApp — reduced motion / high contrastでアニメは停止し 
   await expect(dialog).toBeVisible();
   await expect(runningAnimations(page)).resolves.toBe(0);
 
-  const toolbarColor = await page.locator(".pa-toolbar").evaluate(toolbar => getComputedStyle(toolbar).backgroundColor);
+  const toolbarColor = await page.locator(".pa-public-nav").evaluate(toolbar => getComputedStyle(toolbar).backgroundColor);
   const toolbarAlpha = extractBgAlpha(toolbarColor);
   expect(toolbarAlpha).toBe(1);
 
-  const toolbarBackdrop = await page.locator(".pa-toolbar").evaluate((toolbar) => {
+  const toolbarBackdrop = await page.locator(".pa-public-nav").evaluate((toolbar) => {
     const style = getComputedStyle(toolbar);
     return style.backdropFilter ?? "";
   });
@@ -835,7 +857,7 @@ test("公開PhotoApp — reduced motion / high contrastでアニメは停止し 
   await expect(runningAnimations(page)).resolves.toBe(0);
 
   const glassAlpha = await page
-    .locator(".pa-toolbar")
+    .locator(".pa-public-nav")
     .evaluate((node) => getComputedStyle(node).backgroundColor);
   expect(extractBgAlpha(glassAlpha)).toBe(1);
 
@@ -856,7 +878,7 @@ test.describe("公開PhotoApp — 幅別レイアウト比較", () => {
         viewportWidth: Math.ceil(window.innerWidth),
       }));
       expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-      await expect(page.locator(".pa-toolbar")).toBeVisible();
+      await expect(page.locator(".pa-public-nav")).toBeVisible();
       await expect(page.locator(".pa-workspace")).toBeVisible();
 
       await expectNoUnexpectedMutations(apiMocks);

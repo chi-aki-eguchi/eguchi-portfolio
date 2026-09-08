@@ -7280,7 +7280,9 @@ export function GalleryTab({
                         {/* eager固定: マウント範囲は仮想化が既に絞っている(可視+overscan)。
                         lazyだと高速スワイプ中のremountでキャッシュ済み画像すら白抜けし
                         (Chromeはスクロール中lazy読込を後回しにする)、静止後まで持続する
-                        強いチラつきになる。背景はpaper-deepで「読込中の台紙」に見せる */}
+                        強いチラつきになる。縮小画像のdecodeも同期させ、complete後に
+                        描画だけが遅れて空白になるのを防ぐ。対象は仮想化範囲のサムネイルのみ。
+                        背景はpaper-deepで「読込中の台紙」に見せる */}
                         <img
                           ref={(image) => {
                             if (image?.complete && image.naturalWidth > 0)
@@ -7311,7 +7313,7 @@ export function GalleryTab({
                             e.currentTarget.dataset.broken = "true";
                           }}
                           loading="eager"
-                          decoding="async"
+                          decoding="sync"
                           draggable={false}
                         />
                         {/* M2: non-public badge (offset right so it clears the category dot) */}

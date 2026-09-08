@@ -2758,9 +2758,8 @@
 }
 
 .admin-atelier .admin-library-thumbnail {
-  /* The virtual list already limits image work to the nearby rows. Keep the
-     pixels visible as soon as they decode: per-image fades can leave stale
-     transparent layers in a dense, asynchronously loaded contact sheet. */
+  /* The virtual list already limits image work to nearby rows. Once decoded,
+     show the pixels immediately without adding an opacity layer per photo. */
   opacity: 1;
   transition: none;
 }

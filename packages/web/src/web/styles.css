@@ -1243,11 +1243,11 @@
   button[aria-pressed="true"]:not(.absolute):not(.admin-state-chip):not(
     .admin-btn-primary
   ) {
-  background-color: rgba(var(--admin-ink-rgb), 0.05) !important;
-  border-color: transparent !important;
+  background-color: var(--admin-selected-bg, rgba(var(--admin-ink-rgb), 0.05)) !important;
+  border-color: var(--admin-selected-border, transparent) !important;
   color: var(--admin-ink) !important;
   font-weight: 500;
-  box-shadow: inset 0 -1.5px 0 var(--admin-ink) !important;
+  box-shadow: var(--admin-selected-shadow, inset 0 -1.5px 0 var(--admin-ink)) !important;
 }
 
 /* 開閉ボタンは aria-expanded で状態を示す。要素側のクラスは通常ボタンのリセットに

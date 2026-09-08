@@ -36,13 +36,6 @@ const HERO_MODES = [
 ] as const;
 
 async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
-  // These controls belong to the classic portfolio. The owner's active public
-  // experience may differ; exercise the classic preview without saving settings.
-  await page.route("**/api/settings**", async (route) => {
-    if (route.request().method() !== "GET") return route.fallback();
-    const response = await route.fetch();
-    await route.fulfill({ response, json: { ...await response.json(), publicExperience: "portfolio" } });
-  });
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Settings" }).click();
   // 設定の本文は目次で選んだ1節だけを出す。折りたたみ行は廃止した。

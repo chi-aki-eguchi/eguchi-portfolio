@@ -7,6 +7,9 @@ import { SETTINGS_SECTION_COUNT } from "./helpers";
 // 本番と同じDBへ繋がないよう、APIはすべて人工データで差し替える。
 
 const SETTINGS = {
+  // A retired display value may still exist in saved data. It must never
+  // bypass the owner's layout, color, and typography settings again.
+  publicExperience: "photo-app",
   setupCompleted: "true",
   siteName: "Preview workspace fixture",
   siteNameEn: "Preview workspace fixture",
@@ -535,29 +538,25 @@ test.describe("admin — Settings プレビュー Workspace", () => {
 });
 
 
-test("admin — 写真アプリへ未保存プレビューし、表示だけを保存して元へ戻せる", async ({ page }, testInfo) => {
+test("admin — 以前の表示値が残っていてもHEROと配色の下書き・保存が公開表示に反映される", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "設定・プレビューの往復はdesktopで確認");
   const mocks = await installMocks(page, true);
   await openSettings(page);
-  await chooseSettingsSection(page, "mood");
-  const select = page.getByRole("combobox", { name: "サイトの表示", exact: true });
-  await expect(select).toHaveValue("portfolio");
-  await select.selectOption("photo-app");
+  await chooseSettingsSection(page, "hero");
+  await page.getByRole("button", { name: /^エディトリアル/ }).click();
   await openPreview(page);
   const preview = page.frameLocator('iframe[title="Site Preview"]');
-  await expect(preview.locator(".photo-app")).toBeVisible();
+  await expect(preview.locator('.top-page[data-hero-mode="editorial"]')).toBeVisible();
+  await expect(preview.locator(".photo-app")).toHaveCount(0);
   expect(mocks.writes).toEqual([]);
-  await chooseSettingsSection(page, "hero");
-  await expect(page.locator("[data-settings-experience-note]")).toContainText("写真中心のポートフォリオ");
-  await chooseSettingsSection(page, "mood");
-  // The field participates in the existing section save, without touching images or layout values.
+  await chooseSettingsSection(page, "theme");
+  await page.getByLabel("背景色（HEX）", { exact: true }).fill("#ebe7df");
+  await expect.poll(() => preview.locator("html").evaluate(el => el.style.getPropertyValue("--background").trim())).toBe("#ebe7df");
   await page.locator("[data-settings-save-panel] .admin-form-save-panel__primary").click();
   await expect.poll(() => mocks.savedPayloads.length).toBe(1);
-  expect(mocks.savedPayloads[0]).toEqual({ publicExperience: "photo-app" });
-  await select.selectOption("portfolio");
-  await expect(preview.locator(".photo-app")).toHaveCount(0);
-  await page.locator("[data-settings-save-panel] .admin-form-save-panel__primary").click();
-  await expect.poll(() => mocks.savedPayloads.length).toBe(2);
-  expect(mocks.savedPayloads[1]).toEqual({ publicExperience: "portfolio" });
+  expect(mocks.savedPayloads[0]).toEqual({ heroMode: "editorial", themeBg: "#ebe7df" });
+  await page.reload();
+  await expect(preview.locator('.top-page[data-hero-mode="editorial"]')).toBeVisible();
+  await expect.poll(() => preview.locator("html").evaluate(el => el.style.getPropertyValue("--background").trim())).toBe("#ebe7df");
   expect(mocks.unknownWrites).toEqual([]);
 });

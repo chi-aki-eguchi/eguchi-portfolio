@@ -43,7 +43,6 @@ import {
   photoPageTitle,
 } from "./shared/photo-page-text";
 import { injectNoscriptFallback } from "./api/spa-fallback";
-import { isPhotoAppPath, usesPhotoApp } from "./shared/public-experience";
 import { buildGalleryPreloadTags } from "./api/gallery-preload";
 import {
   buildRoutePreloadTags,
@@ -1020,7 +1019,6 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         };
       }
     }
-    const photoApp = usesPhotoApp(settings) && isPhotoAppPath(routePathname);
     let injected = injectOgp(
       html,
       settings,
@@ -1041,15 +1039,15 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     // `index.js` が動くまで発見されない（実測で2波・往復1回ぶんの遅れ）。
     const routePreload = serviceUnavailable
       ? ""
-      : buildRoutePreloadTags(viteManifest, routePathname, settings.publicExperience);
+      : buildRoutePreloadTags(viteManifest, routePathname);
     if (routePreload)
       injected = injected.replace(
         "</head>",
         () => `  ${routePreload}\n  </head>`,
       );
     if (
-      !photoApp && (routePathname === "/gallery" ||
-      (routePathname === "/" && (settings.topWorksMode ?? "auto") !== "random"))
+      routePathname === "/gallery" ||
+      (routePathname === "/" && (settings.topWorksMode ?? "auto") !== "random")
     ) {
       const preloadImages = await getGalleryPreloadImages();
       if (preloadImages.length > 0) {

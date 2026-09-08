@@ -28,16 +28,6 @@ const LIMIT = 0.1;
 // retryで成功しても最初の失敗は調査対象。動いた要素も記録する。
 test.describe.configure({ retries: 1 });
 
-// This suite measures the classic gallery's progressive batches and colophon.
-// Photo-first portfolio uses virtual rows, covered by public-photo-app.spec.ts.
-test.beforeEach(async ({ page }) => {
-  await page.route("**/api/settings**", async (route) => {
-    if (route.request().method() !== "GET") return route.fallback();
-    const response = await route.fetch();
-    await route.fulfill({ response, json: { ...await response.json(), publicExperience: "portfolio" } });
-  });
-});
-
 // 合計値だけ残すと、落ちても「0.14 だった」としか分からない。**何が動いたか**
 // を一緒に控える。数字しか残っていなかったせいで、この検査は一度
 // 別の要素のせいにされている（backlog B-23 の 2026-09-02 訂正）。

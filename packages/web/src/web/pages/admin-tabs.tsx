@@ -174,7 +174,7 @@ export const SETTINGS_SECTION_KEYS = {
   // 作風プリセットは自分のキーを持たない（他の節のキーをまとめて入れ替える
   // だけ）。台帳では空にしておく。所属キーの検査は
   // admin-settings-section-keys.test.ts が見ている。
-  mood: ["publicExperience"],
+  mood: [],
   // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
   // 変わらない部分をここでまとめて扱う。
   "page-layout": [
@@ -4820,27 +4820,10 @@ export function SettingsTab({
     "site-copy": copyDesign.siteCopy.title,
     presets: copyDesign.presets.title,
   };
-  const publicExperienceCopy = language === "ja"
-    ? {
-      label: "サイトの表示",
-      options: [
-        { value: "photo-app", label: "写真中心のポートフォリオ" },
-        { value: "portfolio", label: "従来のポートフォリオ" },
-      ],
-      note: "代表写真と作品一覧を中心にした表示です。HEROとトップ掲載写真を使い、一覧の列数を変えて閲覧できます。従来の配色・書体・レイアウト設定は、従来のポートフォリオを選ぶと使用されます。",
-    }
-    : {
-      label: "Site experience",
-      options: [
-        { value: "photo-app", label: "Photo-first portfolio" },
-        { value: "portfolio", label: "Classic portfolio" },
-      ],
-      note: "A photographic cover and an adjustable overview of your selected work. Uses your HERO and TOP selections. Classic colors, typography, and layout settings apply when you choose Classic portfolio.",
-    };
   const dirtyKeys = dirtySettingsKeys(form, data);
   const changedSectionIds = settingsSectionIdsForKeys(dirtyKeys);
   const summarizeSection = (sectionId: SettingsSectionId) => {
-    if (sectionId === "mood") return publicExperienceCopy.options.find(option => option.value === (current.publicExperience || "portfolio"))?.label || copy.mood.summary;
+    if (sectionId === "mood") return copy.mood.summary;
     if (sectionId === "presets") {
       return t.formLayout.summaryItems(
         cameraPresets.length + lensPresets.length,
@@ -4872,7 +4855,7 @@ export function SettingsTab({
     "font-color": "文字 色 color colour text",
     "font-spacing": "文字 字間 行間 spacing line height",
     "site-copy": "文言 ボタン ラベル words labels copy",
-    mood: "写真アプリ サイトの表示 雰囲気 まとめて 見た目 デザイン glass style mood design photo app",
+    mood: "雰囲気 まとめて 見た目 デザイン style mood design",
   };
   const settingsSections: AdminSettingsSectionItem[] = (
     Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]
@@ -4893,17 +4876,6 @@ export function SettingsTab({
   }));
   const sectionProps = (sectionId: SettingsSectionId) => ({
     sectionId,
-    experienceNote: current.publicExperience === "photo-app"
-      ? (["theme", "fonts", "font-size", "font-color", "font-spacing", "spacing", "texture", "reveal", "navigation"].includes(sectionId)
-        ? (language === "ja"
-          ? "この項目は従来のポートフォリオ用です。現在は「写真中心のポートフォリオ」を表示しています。表示の切り替えは「作風を選ぶ」で行えます。"
-          : "These controls apply to Classic portfolio. Your current experience is Photo-first portfolio. Change it in Site style.")
-        : ["hero", "gallery-layout", "page-layout", "series"].includes(sectionId)
-          ? (language === "ja"
-            ? "現在の表示は「写真中心のポートフォリオ」です。写真の指定・公開順は共通です。この節の高さ・配置・登場する動きは、従来のポートフォリオで使用されます。"
-            : "You are using Photo-first portfolio. Photo selections and publishing order are shared. Height, composition, and entrance effects in this section apply to Classic portfolio.")
-          : undefined)
-      : undefined,
     changed: changedSectionIds.includes(sectionId),
     failed:
       failedSectionIds.includes(sectionId) ||
@@ -5041,27 +5013,8 @@ export function SettingsTab({
                 title={copy.mood.title}
                 defaultOpen={false}
               >
-                <AdminField label={publicExperienceCopy.label}>
-                  <select
-                    aria-label={publicExperienceCopy.label}
-                    value={current.publicExperience ?? "portfolio"}
-                    onChange={(e) => set("publicExperience", e.target.value)}
-                    className="ax-input ax-select"
-                  >
-                    {publicExperienceCopy.options.map((option) => (
-                      <option value={option.value} key={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                  {publicExperienceCopy.note}
-                </p>
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  {current.publicExperience === "photo-app"
-                    ? (language === "ja" ? "下のスタイルは、従来のポートフォリオの配色・書体・配置をまとめて設定します。" : "The styles below configure the colors, type, and layout of Classic portfolio.")
-                    : copy.mood.intro}
+                  {copy.mood.intro}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {SITE_MOOD_IDS.map((id) => (
@@ -7983,7 +7936,6 @@ function Section({
   sectionId,
   title,
   summary,
-  experienceNote,
   defaultOpen = false,
   changed = false,
   failed = false,
@@ -7997,7 +7949,6 @@ function Section({
   // already set (Settings可視化 Phase 1, 2026-07-09).
   // 単節表示（目次で1節ずつ出す画面）では折りたたみ自体がないため使わない。
   summary?: string;
-  experienceNote?: string;
   defaultOpen?: boolean;
   changed?: boolean;
   failed?: boolean;
@@ -8103,7 +8054,6 @@ function Section({
       >
         <div className="min-h-0 overflow-hidden">
           <div className="pb-10 pt-2 flex flex-col gap-6">
-            {experienceNote && <p data-settings-experience-note className="admin-settings-experience-note">{experienceNote}</p>}
             {children}
           </div>
         </div>

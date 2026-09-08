@@ -156,6 +156,7 @@ const SYNTHETIC_PHOTOS = Array.from({ length: 18 }, (_, index) => {
 });
 
 const SYNTHETIC_SETTINGS = {
+  publicExperience: "photo-app", // Retired data must not override these saved settings.
   siteName: "Synthetic Smoke Studio",
   siteNameEn: "Synthetic Portfolio",
   heroSubtitle: "Artificial photography fixtures",
@@ -553,7 +554,10 @@ async function expectVisibleImagesLoaded(page: Page) {
   expect(broken, "画面内で読み込めなかった画像").toEqual([]);
 }
 
-async function expectKeyboardReachabilityAndVisibleFocus(page: Page) {
+async function expectKeyboardReachabilityAndVisibleFocus(page: Page, browserName: string) {
+  // WebKit's default Tab traversal only visits text inputs. Option+Tab also
+  // visits links/buttons; keep real key navigation instead of forcing focus.
+  const navigationKey = browserName === "webkit" ? "Alt+Tab" : "Tab";
   const targetIds = await page.evaluate(() => {
     const selector =
       'main a[href], main button:not([disabled]), main input:not([disabled]):not([type="hidden"]), main select:not([disabled]), main textarea:not([disabled]), main [tabindex]:not([tabindex="-1"])';
@@ -603,7 +607,7 @@ async function expectKeyboardReachabilityAndVisibleFocus(page: Page) {
   >();
 
   for (let press = 0; press < 80 && reached.size < targetIds.length; press++) {
-    await page.keyboard.press("Tab");
+    await page.keyboard.press(navigationKey);
     const state = await page.evaluate(() => {
       const active = document.activeElement;
       if (!(active instanceof HTMLElement)) return null;
@@ -646,7 +650,7 @@ async function expectKeyboardReachabilityAndVisibleFocus(page: Page) {
     const state = reached.get(id);
     expect(
       state,
-      `main内の主要操作要素 data-public-smoke-focus-target="${id}" にTabで到達できない`,
+      `main内の主要操作要素 data-public-smoke-focus-target="${id}" に${navigationKey}で到達できない`,
     ).toBeDefined();
     expect(state).toMatchObject({
       focusVisible: true,
@@ -807,6 +811,7 @@ test.describe("public-site — 公開ページ基本検査（APIは人工デー�
     for (const publicPage of pages) {
       test(`${publicPage.label} ${publicPage.path} — console・見出し・画像alt・外部リンク・キーボード`, async ({
         page,
+        browserName,
       }) => {
         const runtimeProblems = collectPageRuntimeProblems(page);
         const apiMocks = await installPublicApiMocks(page, settings);
@@ -849,7 +854,7 @@ test.describe("public-site — 公開ページ基本検査（APIは人工デー�
           );
         expect(unsafeBlankLinks).toEqual([]);
 
-        await expectKeyboardReachabilityAndVisibleFocus(page);
+        await expectKeyboardReachabilityAndVisibleFocus(page, browserName);
 
         if (!publicPage.hasH1) {
           const bodyText = (await page.locator("body").innerText()).trim();
@@ -1479,6 +1484,8 @@ test.describe("public-site — 横スクロール検査", () => {
 test.describe("public-site — Galleryライトボックス", () => {
   test("/gallery — 写真クリックで開き、背後を固定し、Escで閉じる", async ({
     page,
+    browserName,
+    isMobile,
   }) => {
     const runtimeProblems = collectPageRuntimeProblems(page);
     const apiMocks = await installPublicApiMocks(page);
@@ -1508,7 +1515,10 @@ test.describe("public-site — Galleryライトボックス", () => {
       )
       .toEqual({ bodyOverflow: "hidden", scrollY: scrollBeforeOpen });
 
-    await page.mouse.wheel(0, 700);
+    // Mobile WebKit does not expose wheel injection. Exercise a keyboard
+    // scroll there; the computed scroll lock is checked above in every engine.
+    if (browserName === "webkit" && isMobile) await page.keyboard.press("PageDown");
+    else await page.mouse.wheel(0, 700);
     await page.evaluate(
       () =>
         new Promise<void>((resolve) =>

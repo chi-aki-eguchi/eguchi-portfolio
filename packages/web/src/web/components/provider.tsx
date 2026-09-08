@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState, createContext, useContext } from "react";
-import { useLocation } from "wouter";
-import { isPhotoAppPath, usesPhotoApp } from "../../shared/public-experience";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
@@ -321,7 +319,6 @@ interface ProviderProps {
 
 export function Provider({ children }: ProviderProps) {
   const qc = useQueryClient();
-  const [publicPath] = useLocation();
   const darkMode = useDarkMode();
   const { data } = useQuery({
     queryKey: ["settings"],
@@ -342,10 +339,6 @@ export function Provider({ children }: ProviderProps) {
     siteUrl: "",
     isResolved: false,
   });
-  const applyPublicExperience = (raw: string | undefined) => {
-    document.documentElement.dataset.publicExperience =
-      raw === "photo-app" ? "photo-app" : "portfolio";
-  };
 
   useEffect(() => {
     if (isPreviewRef.current || data === undefined) return;
@@ -355,10 +348,6 @@ export function Provider({ children }: ProviderProps) {
       isResolved: true,
     });
   }, [data?.servicePageMode, data?.siteUrl, data]);
-  useEffect(() => {
-    if (isPreviewRef.current || data === undefined) return;
-    applyPublicExperience(data.publicExperience);
-  }, [data?.publicExperience, data]);
 
   // Theme colors — B-21: 明/暗それぞれに当てる色を選び直す。
   const resolvedTheme = darkMode.resolved;
@@ -578,18 +567,10 @@ export function Provider({ children }: ProviderProps) {
     data?.heroOverlay,
   ]);
 
-  const useSystemFonts = usesPhotoApp(data) && isPhotoAppPath(publicPath);
   // Fonts (A5: category-aware fallback)
   useEffect(() => {
     if (isPreviewRef.current) return;
     const root = document.documentElement;
-    if (useSystemFonts) {
-      ["gfont-ja", "gfont-en", "cfont-ja", "cfont-en"].forEach(removeElement);
-      root.style.removeProperty("--font-ja");
-      root.style.removeProperty("--font-en");
-      document.body.style.fontFamily = "";
-      return;
-    }
     const fontJa = data?.fontJa ?? "";
     const fontEn = data?.fontEn ?? "";
 
@@ -662,7 +643,6 @@ export function Provider({ children }: ProviderProps) {
     document.body.style.fontFamily =
       getComputedStyle(root).getPropertyValue("--font-ja") || "";
   }, [
-    useSystemFonts,
     data?.fontJa,
     data?.fontEn,
     data?.customFontJaName,
@@ -856,8 +836,6 @@ export function Provider({ children }: ProviderProps) {
           root.style.setProperty("--hero-overlay-opacity", "0");
         else root.style.removeProperty("--hero-overlay-opacity"); // on/"" → CSS default (0.38)
       }
-      if (s.publicExperience !== undefined)
-        applyPublicExperience(s.publicExperience);
 
       // Fonts (A5: category-aware fallback)
       if (s.fontJa !== undefined) {

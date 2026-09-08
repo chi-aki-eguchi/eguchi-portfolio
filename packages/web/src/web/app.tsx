@@ -11,7 +11,6 @@ import type {
   PolicyLanguage,
 } from "../shared/policy-content";
 import { PublicAnalytics } from "./components/PublicAnalytics";
-import { PublicExperience } from "./components/PublicExperience";
 
 // Lazy-load all pages — only the shell is eagerly loaded
 const TopPage = lazy(() => import("./pages/top"));
@@ -93,7 +92,6 @@ function App() {
     <Provider>
       <PublicAnalytics />
       <ErrorBoundary>
-        <PublicExperience>
         <Switch>
           {/* Admin — no layout */}
           <Route path="/admin/demo">
@@ -409,7 +407,6 @@ function App() {
             </Layout>
           </Route>
         </Switch>
-        </PublicExperience>
       </ErrorBoundary>
     </Provider>
   );

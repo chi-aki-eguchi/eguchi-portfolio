@@ -788,7 +788,7 @@ export function injectOgp(
   if (pathname === "/" && heroImg && heroPreloadEnabled) {
     // Must match HERO_WIDTHS in lib/picture.ts exactly — a mismatched URL
     // makes the preload useless and the hero downloads twice.
-    const heroSizes = settings.publicExperience === "photo-app" ? "100vw" : heroImageSizes(
+    const heroSizes = heroImageSizes(
       settings.heroMode,
       settings.heroDisplayMode,
     );

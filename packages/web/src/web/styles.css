@@ -2758,15 +2758,9 @@
 }
 
 .admin-atelier .admin-library-thumbnail {
-  opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-
-.admin-atelier .admin-library-thumbnail[data-loaded="true"] {
-  opacity: 1;
-}
-
-.admin-atelier .admin-library-thumbnail[data-no-fade="true"] {
+  /* The virtual list already limits image work to the nearby rows. Keep the
+     pixels visible as soon as they decode: per-image fades can leave stale
+     transparent layers in a dense, asynchronously loaded contact sheet. */
   opacity: 1;
   transition: none;
 }

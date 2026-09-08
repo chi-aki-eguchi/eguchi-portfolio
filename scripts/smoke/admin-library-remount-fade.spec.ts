@@ -9,6 +9,7 @@ test("admin — Safariで再マウントしたLibrary写真を透明にしない
 }) => {
   await loginAsAdmin(page);
   await gotoAdminTab(page, "gallery");
+  await expect(page.locator(".admin-photo-tile").first()).toBeVisible();
 
   const setup = await page.evaluate(async () => {
     const scrollElement = document.querySelector<HTMLElement>(

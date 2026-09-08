@@ -28,13 +28,32 @@ function seriesScale(s: {
   photoCount?: number | null;
   shotAtFirst?: string | null;
   shotAtLast?: string | null;
-}): string | null {
+}): string[] {
   const parts: string[] = [];
   if (typeof s.photoCount === "number" && s.photoCount > 0)
     parts.push(`${s.photoCount}点`);
   const period = formatPeriodRange(s.shotAtFirst, s.shotAtLast);
   if (period) parts.push(period);
-  return parts.length ? parts.join(" ／ ") : null;
+  return parts;
+}
+
+/**
+ * 「2024年8月–2025年8月」のような期間。狭いスマホの2列では札に入りきらず折り返す。
+ * **折り返してよいのは年月と年月の境目だけ。** そのままだと "月" や "–" だけが
+ * 次行に落ちて読みにくかった（2026-09-09 実測、320px）。年月ひとかたまりを
+ * nowrap の inline-block にし、区切りのダッシュは前の年月にくっつけて、
+ * その後ろにだけ改行機会（<wbr/>）を置く。テキストの中身と PC の1行表示は不変。
+ */
+function PeriodText({ text }: { text: string }) {
+  const dash = text.indexOf("–");
+  if (dash < 0) return <>{text}</>;
+  return (
+    <>
+      <span className="inline-block whitespace-nowrap">{text.slice(0, dash + 1)}</span>
+      <wbr />
+      <span className="inline-block whitespace-nowrap">{text.slice(dash + 1)}</span>
+    </>
+  );
 }
 
 /**
@@ -237,11 +256,23 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
                   {s.subtitle}
                 </p>
               )}
-              {seriesScale(s) && (
+              {seriesScale(s).length > 0 && (
                 /* 押す前に規模と時期が分かる。5点の組と59点の組が、
-                   一覧では見分けられなかった。 */
-                <p className="mt-1 font-en text-[length:var(--text-small)] tracking-[0.10em] text-[color:var(--text-quiet)]">
-                  {seriesScale(s)}
+                   一覧では見分けられなかった。狭いスマホの2列では点数と期間を
+                   別行へ分け（区切りを行末に残さない）、PCは従来どおり
+                   「点数 ／ 期間」を1行に組む。期間は PeriodText で年月単位に
+                   折り返す（"月" や "–" を単独行にしない）。 */
+                <p
+                  className={`mt-1 font-en text-[length:var(--text-small)] tracking-[0.10em] text-[color:var(--text-quiet)]${
+                    isMobile ? " flex flex-col gap-y-0.5" : ""
+                  }`}
+                >
+                  {seriesScale(s).map((part, i) => (
+                    <span key={i}>
+                      {i > 0 && !isMobile && " ／ "}
+                      {part.includes("–") ? <PeriodText text={part} /> : part}
+                    </span>
+                  ))}
                 </p>
               )}
             </>

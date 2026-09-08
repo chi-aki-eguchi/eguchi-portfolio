@@ -67,3 +67,135 @@ test('上下キーで隣の行の写真へ移動し、Enterで同じ写真を開
  await expect(page.locator('[data-library-inspector]')).toBeVisible();
  await expect(page.locator('.admin-inspector-photo-name')).toContainText(expected.name!);
 });
+
+test('サイズ・列数を連続で動かしても、見ていた写真を見失わない', async ({ page }) => {
+  test.setTimeout(90_000);
+  await loginAsAdmin(page);
+  await gotoAdminTab(page, 'gallery');
+  const scroll = page.locator('[data-library-scroll]');
+  const layout = page.getByRole('combobox', { name: '写真の並べ方' });
+  const size = page.getByRole('slider', { name: '一覧の写真サイズ' });
+  await expect(size).toBeVisible();
+
+  // id + viewport offset of the top-most partially visible tile.
+  const topAnchor = () => scroll.evaluate((el) => {
+    const top = el.getBoundingClientRect().top;
+    const tile = [...el.querySelectorAll<HTMLElement>('.admin-photo-tile')]
+      .find((t) => t.getBoundingClientRect().bottom > top + 4);
+    return tile ? { id: tile.closest('[id^="admin-photo-"]')!.id, rel: Math.round(tile.getBoundingClientRect().top - top) } : null;
+  });
+  // Where the ORIGINAL captured photo sits now — measuring by its id defeats any
+  // "re-capture a different photo to look stationary" cheat.
+  const anchorRel = (id: string) => scroll.evaluate((el, pid) => {
+    const found = document.getElementById(pid);
+    if (!found) return null;
+    const top = el.getBoundingClientRect().top;
+    const r = found.getBoundingClientRect();
+    return { rel: Math.round(r.top - top), inView: r.bottom > top + 8 && r.top < top + el.clientHeight - 8, dom: true };
+  }, id);
+  const settleFrames = () => page.evaluate(() => new Promise<void>((r) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 150)))));
+
+  // Real pointer drag that starts on the thumb (from the current value), like a
+  // hand grabbing the handle — not a jump-to-track click.
+  const thumbDrag = async (dir: 1 | -1, steps: number) => {
+    const bb = (await size.boundingBox())!;
+    const { value, min, max } = await size.evaluate((el: HTMLInputElement) => ({ value: +el.value, min: +el.min, max: +el.max }));
+    const y = bb.y + bb.height / 2;
+    const x0 = bb.x + Math.max(6, Math.min(bb.width - 6, bb.width * ((value - min) / (max - min))));
+    await page.mouse.move(x0, y);
+    await page.mouse.down();
+    const span = bb.width * 0.36 * dir;
+    for (let i = 1; i <= steps; i++) {
+      await page.mouse.move(x0 + (span * i) / steps, y);
+      await page.waitForTimeout(55);
+    }
+    await page.mouse.up();
+    await settleFrames();
+  };
+
+  const grow = async (label: string, run: () => Promise<void>) => {
+    let start: Awaited<ReturnType<typeof topAnchor>> = null;
+    await expect.poll(async () => { start = await topAnchor(); return start?.id ?? null; }, { message: `${label}: no anchor tile`, timeout: 8000 }).toBeTruthy();
+    await run();
+    const end = await anchorRel(start!.id);
+    expect(end, `${label}: anchor photo left the DOM entirely`).not.toBeNull();
+    expect(end!.inView, `${label}: the photo you were on scrolled off screen (rel ${end!.rel})`).toBe(true);
+    return { start, end: end! };
+  };
+
+  await scroll.evaluate((el) => { el.scrollTop = Math.round(el.scrollHeight * 0.45); });
+  await page.waitForTimeout(200);
+
+  // 1. Fast grow drag from the thumb.
+  await grow('thumb drag / grow', () => thumbDrag(1, 10));
+  // 2. Fast shrink drag from the thumb.
+  await grow('thumb drag / shrink', () => thumbDrag(-1, 8));
+
+  // 3. Track click (jump) then a short drag — the jarring case.
+  await scroll.evaluate((el) => { el.scrollTop = Math.round(el.scrollHeight * 0.3); });
+  await page.waitForTimeout(200);
+  await grow('track click + drag', async () => {
+    const bb = (await size.boundingBox())!;
+    const y = bb.y + bb.height / 2;
+    await page.mouse.move(bb.x + bb.width * 0.55, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 5; i++) { await page.mouse.move(bb.x + bb.width * (0.55 + 0.06 * i), y); await page.waitForTimeout(50); }
+    await page.mouse.up();
+    await settleFrames();
+  });
+
+  // 4. Release, move the list, next gesture must anchor to the NEW top photo.
+  await scroll.evaluate((el) => { el.scrollTop = Math.round(el.scrollHeight * 0.15); });
+  await page.waitForTimeout(200);
+  await grow('re-anchor after moving the list', () => thumbDrag(1, 6));
+
+  // 5. Rows → grid layout switch keeps the photo visible, and so does the
+  // follow-up column change from a new scroll position.
+  await scroll.evaluate((el) => { el.scrollTop = Math.round(el.scrollHeight * 0.3); });
+  await page.waitForTimeout(200);
+  await grow('layout switch rows→grid', async () => {
+    await layout.selectOption('grid');
+    await settleFrames();
+  });
+  const cols = page.getByRole('combobox', { name: '一覧の列数' });
+  await expect(cols).toBeVisible();
+  await scroll.evaluate((el) => { el.scrollTop = Math.round(el.scrollHeight * 0.35); });
+  await page.waitForTimeout(200);
+  await grow('grid column change', async () => {
+    const next = (await cols.evaluate((el: HTMLSelectElement) => el.selectedIndex)) + 1;
+    await cols.selectOption({ index: next }).catch(() => cols.selectOption({ index: 0 }));
+    await settleFrames();
+  });
+  await layout.selectOption('contact');
+  await expect(size).toBeVisible();
+
+  // 6. Keyboard repeat, then Tab out of the control (a real blur that does NOT
+  // open a photo). The editor must not have opened and the photo must still show.
+  await scroll.evaluate((el) => { el.scrollTop = Math.round(el.scrollHeight * 0.35); });
+  await page.waitForTimeout(200);
+  const kb = await grow('keyboard repeat then Tab-blur', async () => {
+    await size.focus();
+    for (let i = 0; i < 10; i++) { await size.press('ArrowRight'); await page.waitForTimeout(45); }
+    await size.press('Tab');
+    await settleFrames();
+  });
+  await expect(page.locator('[data-library-inspector]')).toHaveCount(0);
+  expect(Math.abs(kb.end.rel - kb.start.rel), `keyboard: drifted ${kb.end.rel - kb.start.rel}px`).toBeLessThan(200);
+
+  // 7. Keep focus on the slider, hand-scroll the list, then a new key gesture
+  // must anchor to the photo that is on screen NOW — not the earlier one.
+  await size.focus();
+  await size.press('ArrowLeft');
+  await page.waitForTimeout(120);
+  await scroll.evaluate((el) => { el.scrollTop = el.scrollTop + Math.round(el.clientHeight * 1.4); });
+  await page.waitForTimeout(200);
+  const moved = (await topAnchor())!;
+  await size.press('ArrowRight');
+  await size.press('ArrowRight');
+  await size.press('Tab');
+  await settleFrames();
+  const movedEnd = await anchorRel(moved.id);
+  expect(movedEnd, 'stale-anchor guard: no tile after hand-scroll + key').not.toBeNull();
+  expect(movedEnd!.inView, `stale-anchor guard: the photo on screen at the new key gesture scrolled away (rel ${movedEnd!.rel})`).toBe(true);
+});

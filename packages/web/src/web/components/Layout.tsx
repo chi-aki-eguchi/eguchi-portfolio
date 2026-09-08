@@ -659,7 +659,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {(data?.profileInstagram ||
             data?.profileTwitter ||
             data?.profileNote) && (
-            <nav aria-label="SNS" className="flex gap-6">
+            <nav aria-label="SNS" className="footer-sns-nav flex gap-6">
               {data?.profileInstagram && (
                 <a
                   href={safeHref(data.profileInstagram)}

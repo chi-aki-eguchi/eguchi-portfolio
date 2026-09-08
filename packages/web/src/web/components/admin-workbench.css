@@ -89,7 +89,14 @@
 .admin-atelier.admin-workbench .admin-content .hero-candidate img { aspect-ratio: 1; }
 .admin-atelier.admin-workbench .admin-content .hero-candidate footer { position: absolute; right: 5px; bottom: 5px; padding: 0; }
 .admin-atelier.admin-workbench .admin-content .hero-candidate footer > span { display: none; }
-.admin-atelier.admin-workbench .admin-content .hero-candidate footer button { min-height: 36px; min-width: 36px; color: #fff !important; background-color: #202329a8 !important; border: 0; border-radius: 50% !important; }
+/* Separate the touch target from the visual weight: the button carries a
+   40px hit area, but only a ~27px translucent disc is painted so two heavy
+   filled circles per thumbnail no longer sit on a photo-first screen. */
+.admin-atelier.admin-workbench .admin-content .hero-candidate footer button { min-height: 40px; min-width: 40px; color: #fff !important; background-color: transparent !important; border: 0; border-radius: 50% !important; }
+.admin-atelier.admin-workbench .admin-content .hero-candidate footer button svg { box-sizing: content-box; width: 15px; height: 15px; padding: 6px; border-radius: 50%; background: #1c1f2480; }
+/* The unselected "+" is only a hint that tapping the photo adds it — keep it
+   quiet; the selected check stays at full accent weight (defined upstream). */
+.admin-atelier.admin-workbench .admin-content .hero-candidate:not([data-selected="true"]) .hero-candidate-check { width: 18px; height: 18px; font-size: 12px; background: color-mix(in srgb, var(--admin-paper) 62%, transparent); color: var(--admin-muted); border-color: var(--admin-line); opacity: 0.85; }
 .admin-atelier.admin-workbench .admin-content .hero-candidate footer { transition: opacity 140ms ease-out; }
 .admin-atelier.admin-workbench .admin-content .hero-candidate-check { transition: opacity 140ms ease-out; }
 @media (hover: hover) and (pointer: fine) {
@@ -145,7 +152,12 @@
   .admin-atelier.admin-workbench .admin-workspace__header .admin-library-density { grid-column: 2; grid-row: 1; min-height: 44px; width: auto; justify-content: space-between; }
   .admin-atelier.admin-workbench .admin-workspace__header .admin-library-density label > span { display: none; }
   .admin-atelier.admin-workbench .admin-workspace__header .admin-library-density select { width: 80px; min-height: 44px; font-size: 16px; }
-  .admin-atelier.admin-workbench .admin-workspace__header .admin-library-density input[type="range"] { width: 64px; min-height: 44px; }
+  /* Size slider track. The old fixed 64px gave 3.2px per step for a 20-step
+     range; the clamp keeps it near that at 320px (74px measured, heading still
+     one row — the heading cell is minmax(0,1fr) and only needs ~52px for
+     "Library" / "ライブラリ") and widens it to ~116px / ~140px at 390 / 430px
+     (~5.8 / ~7 px/step). Measured 2026-09-09. */
+  .admin-atelier.admin-workbench .admin-workspace__header .admin-library-density input[type="range"] { width: clamp(64px, calc(60vw - 118px), 180px); min-height: 44px; }
   .admin-atelier.admin-workbench .admin-workspace__header .admin-library-density label select { width: 64px; }
   .admin-atelier.admin-workbench .admin-library-workbar :is(button,a,input,select) { min-height: 44px; }
   .admin-atelier.admin-workbench .admin-library-workbar input,
@@ -166,6 +178,6 @@
   .admin-atelier.admin-workbench .admin-content .hero-selected-strip img { height: 44px; }
   .admin-atelier.admin-workbench .admin-content .hero-picker-toolbar { gap: 4px; padding: 4px 0; }
   .admin-atelier.admin-workbench .admin-content .hero-picker-summary { min-height: 34px; }
-  .admin-atelier.admin-workbench .admin-content .hero-candidate footer button { min-height: 40px; min-width: 40px; }
+  .admin-atelier.admin-workbench .admin-content .hero-candidate footer button { min-height: 44px; min-width: 44px; }
   .admin-atelier.admin-workbench .admin-preview-save-dock { gap: 6px; padding: 6px 8px; }
 }

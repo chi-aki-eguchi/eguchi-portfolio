@@ -931,13 +931,20 @@ export function Lightbox({
           {
             ...chromeVis,
             position: "absolute",
-            top: "calc(12px + var(--sai-top))",
-            left: "calc(16px + var(--sai-left))",
+            top: "calc(9px + var(--sai-top))",
+            left: "calc(13px + var(--sai-left))",
             background: "none",
             border: "none",
             cursor: "pointer",
             "--lb-rest": 0.4,
-            padding: 10,
+            // ≥44px touch target (HIG). Icon stays 18px; the padding carries the
+            // hit area so it matches the close button's reachability on phones.
+            width: 44,
+            height: 44,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
             lineHeight: 0,
             zIndex: 10,
           } as React.CSSProperties
@@ -1534,13 +1541,19 @@ export function Lightbox({
                 {
                   ...chromeVis,
                   position: "absolute",
-                  bottom: "calc(16px + var(--sai-bottom))",
-                  left: "calc(16px + var(--sai-left))",
+                  bottom: "calc(13px + var(--sai-bottom))",
+                  left: "calc(13px + var(--sai-left))",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                   "--lb-rest": exifOpen ? 0.8 : 0.4,
-                  padding: 10,
+                  // ≥44px touch target (HIG); icon stays 18px.
+                  width: 44,
+                  height: 44,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
                   lineHeight: 0,
                   zIndex: 10,
                 } as React.CSSProperties
@@ -1569,8 +1582,8 @@ export function Lightbox({
               aria-hidden={!exifOpen}
               style={{
                 position: "absolute",
-                bottom: "calc(52px + var(--sai-bottom))",
-                left: "calc(16px + var(--sai-left))",
+                bottom: "calc(64px + var(--sai-bottom))",
+                left: "calc(13px + var(--sai-left))",
                 background: veil(0.82),
                 border: `1px solid ${ink(0.08)}`,
                 backdropFilter: "blur(12px)",

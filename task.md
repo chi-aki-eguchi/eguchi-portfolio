@@ -1,9 +1,21 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-09-08 JST
+## Current State — 2026-09-09 JST
 
-### 最新: 公開の言葉とAdminの操作欄を軽くする
+### 最新: スマホの使用感 — 公開＋adminを実操作で改善
+
+- Codex司令塔・実装Claude。公開/adminのスマホを 320/390/430px タッチで実操作（Library=スクロール→サイズ変更→写真を開く→編集→戻る、条件パネルで実カテゴリ選択→閉じる→解除、写真編集のフォーカス＋モック保存、HERO拡大、Settings入力→保存）。本番の写真・設定・DBは未変更（全モック）。
+- **拡大ビューア（Lightbox）**: 拡大／撮影情報ボタン 38→44×44の当たり判定（アイコン18pxのまま、位置・見た目・PC不変）。情報パネル下オフセット 52→64px。
+- **Library サイズスライダー**: 64px固定（20段で3.2px/step）→ `clamp(64px, calc(60vw-118px), 180px)`。320px=**74px**で見出し1段（singleRow実測）、390→116px(5.8/step)、430→140px(7/step)。機能追加なし。
+- **HERO 候補ボタン**: 写真ごとに濃い塗り円が2つで「ボテっ」→ 目ボタンは40/44pxの当たり判定を保ち描画は約27pxの半透明ディスクに、未選択の「+」印を21→18px・半透明・muted。選択済み✓は accent 濃色を維持。dark/高コントラストも確認。
+- **サイズ・列数のアンカー**: 速いドラッグ/連打で見ていた写真を見失う（旧: 上端が約370–530px逸脱で画面外）→ `admin.tsx` を書き直し。ジェスチャー開始時に写真を`{id,offset,pinnedTop}`で1回捕捉し調整中保持、密度値変更ごとにアンカー行を復元（effect依存は密度値4つのみ＝ループ回避）、offsetを新row高でクランプ（縮小しても必ず画面内）。終端=pointerup/cancel/lostcapture/blur・key-up・単発changeは220msアイドル（ドラッグ中は時間切れで消さない）。手動スクロールで基準がずれたら次のkeydownで再捕捉。空/絞り込みゼロは捕捉せず（-1固着を除去）。実写真390/430の全ケースで開始写真がinView（grow −20→−17 / keyboard −83→−80 / grid列数 −101→−57・−21→−18）。回帰テストを `admin-library-contact-sheet.spec.ts` に追加（thumbドラッグ/track-click/rows→grid/列数/keyboard連打+Tab/手動スクロール後の新gesture、desktop+mobile-touch緑）。
+- **公開 Series 札**: 2列スマホで期間の「月」だけが孤立して折り返す→ isMobile時は点数と期間を別行（区切りを行末に残さない）。期間は `PeriodText` で年月ごとの nowrap inline-block にし、ダッシュは前の年月に付けその後ろにだけ `<wbr/>`。狭い札で「2024年8月–」／「2025年8月」と日付単位で改行、"月"や"–"は単独行にしない。期間全体の無条件nowrapには戻さず、年月単位で折り返す。PCは「点数 ／ 期間」1行のまま。`series-scale.render.test.tsx` 他の文字列・意味は不変。320px画像で確認。
+- **フッター "X" リンク**: 当たり判定 横25px→ `.footer-sns-nav` に coarse時 リンク間隔（横gap）24→36px＋`.tap-target::before` 横±17.5px。実測 **44×54px**、Instagram 95 / note 61、隣接1pxクリア。グリフ不変、リンク間隔のみ12px広がる（タッチのみ）。方針リンク(Privacy 56/利用条件 62)は未変更。
+- 検証: `bun run typecheck`(tsc -b, ビルド情報再生成) 成功 / `bun run lint` 成功 / `bun test packages/web/src/web` 724 pass 0 fail / `bun run build` 成功 / `bun run smoke -- admin-library-contact-sheet.spec.ts`(desktop+mobile-touch) 6/6 pass / **`bun run smoke`(全体, foreground完了) 501 passed・160 skipped・0 failed（17.6分, flake/retryなし）**。
+- 証拠 `scratch/mobile-claude-20260908/`（flows.cjs / shoot.cjs / measure.cjs / footer-measure.cjs / filter-flow.cjs / anchor-drag.cjs、before/after 画像、progress.md、result.md）。commit・push・本番確認は未実施（次の指示待ち）。編集ヘッダー閉じるボタン実測h=40のみ低優先の残点。
+
+### 公開の言葉とAdminの操作欄を軽くする
 
 - 公開スマホGalleryの入口を「写真を探す」に変更。件数は「枚」、カテゴリー欄は「テーマ」、解除は「すべての写真」とし、条件選択の塗りつぶしを細い下線へ変更。Adminの検索・絞り込み操作は保持する。
 - Adminの操作欄のボタン枠・選択時の影を整理。PCの展開サイドバーは200px、スマホLibraryの見出し・行組み／グリッド・密度調整・プレビューは1段。写真に題名／分類がないという常設行を外し、同じ条件は絞り込みパネルへ集約。保存・取り込みの主操作、入力文字とタップ領域は保持する。

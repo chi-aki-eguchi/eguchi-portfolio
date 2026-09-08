@@ -4479,6 +4479,20 @@ a:hover {
   transform: translate(-50%, -50%);
 }
 
+/* Footer SNS links are single words (X is one glyph, ~9px). The glyphs keep
+   their size and weight; on touch the row gap widens by 12px (24→36) and the
+   invisible hit expander grows so even "X" clears 44px horizontally while the
+   neighbouring hit boxes stay 1px apart (36px gap − 2×17.5px expander). */
+@media (pointer: coarse) {
+  .footer-sns-nav {
+    gap: 2.25rem;
+  }
+  .footer-sns-nav .tap-target::before {
+    left: -17.5px;
+    right: -17.5px;
+  }
+}
+
 /* 行の説明のうしろに添える「まだ空です」。細い罫で区切るだけにする。
    色を変えて警告に見せない——責めるためではなく、気づくためのもの。 */
 .admin-atelier .ax-row__note-empty {

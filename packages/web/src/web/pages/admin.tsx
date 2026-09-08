@@ -2148,7 +2148,14 @@ export function GalleryTab({
     },
     [],
   );
-  const pendingDensityAnchorRef = useRef<number | null>(null);
+  // The photo the viewer is looking at when they start adjusting library density,
+  // held stable for the whole gesture (pointer drag / key repeat) so resizing the
+  // thumbnails doesn't walk the list away from it. Identity is the photo id, not
+  // an index, so it survives re-filtering; `offset` is where the tile sat in the
+  // scroll viewport at capture time, so it lands back in the same place.
+  const densityAnchorRef = useRef<{ id: number; offset: number; pinnedTop: number } | null>(null);
+  const densityAnchorIdleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const densityPointerActiveRef = useRef(false);
   const [libraryLayout, setLibraryLayout] = usePersistentState<"contact" | "grid">("admin:libraryLayout", "contact");
   const [contactHeight, setContactHeight] = usePersistentState("admin:contactHeight", typeof window !== "undefined" && window.innerWidth < 768 ? 80 : 110);
   const [desktopColumns, setDesktopColumns] = usePersistentState("admin:desktopColumns", 0);
@@ -3538,25 +3545,108 @@ export function GalleryTab({
       recentlyAddedPhotos.length,
     ],
   );
-  const rememberDensityAnchor = () => {
+  const clearDensityAnchorTimers = () => {
+    if (densityAnchorIdleRef.current !== null) {
+      clearTimeout(densityAnchorIdleRef.current);
+      densityAnchorIdleRef.current = null;
+    }
+  };
+  // Release the anchor once the value has been quiet for a beat — long enough
+  // that the restore effect's last run has re-pinned before the reference is
+  // dropped. Covers a released pointer, a keyboard user who moved on, and a
+  // one-shot programmatic set (tests) with no gesture end at all.
+  const releaseDensityAnchorSoon = () => {
+    if (densityAnchorIdleRef.current !== null) clearTimeout(densityAnchorIdleRef.current);
+    densityAnchorIdleRef.current = setTimeout(() => {
+      densityAnchorIdleRef.current = null;
+      densityAnchorRef.current = null;
+      densityPointerActiveRef.current = false;
+    }, 220);
+  };
+  // Pointer gesture ended (up / cancel / focus left the controls).
+  const endDensityAnchorGesture = () => {
+    densityPointerActiveRef.current = false;
+    releaseDensityAnchorSoon();
+  };
+  // Keyboard repeat and programmatic sets fire only `change` — arm the same
+  // idle release, but never while a pointer drag is still in progress.
+  const idleReleaseDensityAnchor = () => {
+    if (densityPointerActiveRef.current) return;
+    releaseDensityAnchorSoon();
+  };
+  // Capture the photo the viewer is looking at, once, at the start of a density
+  // adjustment, and hold it steady for the whole adjustment. `fresh` forces a
+  // new capture when a genuinely new pointer gesture begins so the next
+  // adjustment anchors to wherever the list sits now. Called while the DOM still
+  // shows the old sizes.
+  const beginDensityAnchor = (fresh: boolean) => {
     const scroll = scrollRef.current;
     if (!scroll) return;
+    if (fresh) {
+      clearDensityAnchorTimers();
+      densityAnchorRef.current = null;
+      densityPointerActiveRef.current = true;
+    }
+    // Keyboard has no pointerdown to force a fresh capture. If the user kept
+    // focus on the control, scrolled the list by hand, then pressed a key again,
+    // the held anchor is stale — the list is no longer where we last pinned it.
+    if (
+      densityAnchorRef.current &&
+      Math.abs(scroll.scrollTop - densityAnchorRef.current.pinnedTop) > 24
+    ) {
+      densityAnchorRef.current = null;
+    }
+    if (densityAnchorRef.current) return;
     const top = scroll.getBoundingClientRect().top;
-    const tile = [...scroll.querySelectorAll<HTMLElement>(".admin-photo-tile")].find((tile) => tile.getBoundingClientRect().bottom > top + 1);
+    const tile = [...scroll.querySelectorAll<HTMLElement>(".admin-photo-tile")].find(
+      (candidate) => candidate.getBoundingClientRect().bottom > top + 1,
+    );
     const id = Number(tile?.id.replace("admin-photo-", ""));
-    pendingDensityAnchorRef.current = displayed.findIndex((photo) => photo.id === id);
+    // No usable tile (empty list, filter with no matches): do not lock onto an
+    // invalid anchor — a stale -1 used to freeze every later adjustment.
+    if (!Number.isFinite(id) || id <= 0) return;
+    densityAnchorRef.current = {
+      id,
+      offset: tile!.getBoundingClientRect().top - top,
+      pinnedTop: scroll.scrollTop,
+    };
   };
+  useEffect(() => () => clearDensityAnchorTimers(), []);
+  // Re-pin the anchored photo whenever a density *value* changes. Deps are the
+  // four density values only — adding `displayed`/`contactRows`/measure outputs
+  // makes this loop against the measure call during a fast drag. The body reads
+  // the latest layout (contactRows / virtualGrid) from closure.
   useLayoutEffect(() => {
-    const index = pendingDensityAnchorRef.current;
+    const anchor = densityAnchorRef.current;
     const scroll = scrollRef.current;
-    if (index === null || index < 0 || !scroll) return;
-    pendingDensityAnchorRef.current = null;
+    if (!anchor || !scroll) return;
+    const index = displayed.findIndex((photo) => photo.id === anchor.id);
+    if (index < 0) return;
     const regularIndex = index - recentlyAddedPhotos.length;
-    if (regularIndex < 0) { scroll.scrollTop = 0; return; }
-    const row = useContactSheet ? contactRows.find((row) => row.items.some((item) => item.index === regularIndex)) : undefined;
-    scroll.scrollTop = currentLibraryGridOffsetTop() + (row?.top ?? Math.floor(regularIndex / virtualGrid.columns) * virtualGrid.rowHeight);
+    if (regularIndex < 0) {
+      scroll.scrollTop = 0;
+      return;
+    }
+    const viewH = scroll.clientHeight;
+    const row = useContactSheet
+      ? contactRows.find((candidate) => candidate.items.some((item) => item.index === regularIndex))
+      : undefined;
+    const rowHeight = row?.height ?? virtualGrid.rowHeight;
+    const rowTop =
+      currentLibraryGridOffsetTop() +
+      (row?.top ?? Math.floor(regularIndex / virtualGrid.columns) * virtualGrid.rowHeight);
+    // Put the anchor row where it sat when the gesture began, but clamp the
+    // offset so the row can never be pushed fully off screen (a large negative
+    // capture offset against a now-shorter row). Keeping the *photo* on screen
+    // matters; the exact pixel does not.
+    const offset = Math.min(Math.max(anchor.offset, 40 - rowHeight), viewH - 40);
+    scroll.scrollTop = Math.max(0, rowTop - offset);
+    // Remember where we left it so beginDensityAnchor can tell a later
+    // hand-scroll (stale anchor) from our own correction.
+    anchor.pinnedTop = scroll.scrollTop;
     measureLibraryGrid();
-  }, [contactHeight, libraryLayout, desktopColumns, mobileLibraryColumns, contactRows, currentLibraryGridOffsetTop, measureLibraryGrid, recentlyAddedPhotos.length, useContactSheet, virtualGrid.columns, virtualGrid.rowHeight]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactHeight, libraryLayout, desktopColumns, mobileLibraryColumns]);
   const dismissRecentlyAdded = useCallback(() => {
     pendingRecentlyAddedScrollRef.current = null;
     onRecentlyAddedPhotoIdsChange(new Set());
@@ -5931,18 +6021,28 @@ export function GalleryTab({
           />
         {/* Keep photo density controls beside the library heading. */}
         {!showTrash && !bulkEditMode && libraryMode !== "arrange" && (
-          <div className="admin-library-density" data-library-density>
-            <select aria-label={language === "ja" ? "写真の並べ方" : "Photo layout"} value={useContactSheet ? "contact" : "grid"} onChange={(e) => { rememberDensityAnchor(); setLibraryLayout(e.target.value as "contact" | "grid"); }}>
+          <div
+            className="admin-library-density"
+            data-library-density
+            onPointerDownCapture={() => beginDensityAnchor(true)}
+            onKeyDownCapture={() => beginDensityAnchor(false)}
+            onKeyUpCapture={idleReleaseDensityAnchor}
+            onPointerUp={endDensityAnchorGesture}
+            onPointerCancel={endDensityAnchorGesture}
+            onLostPointerCapture={endDensityAnchorGesture}
+            onBlurCapture={endDensityAnchorGesture}
+          >
+            <select aria-label={language === "ja" ? "写真の並べ方" : "Photo layout"} value={useContactSheet ? "contact" : "grid"} onChange={(e) => { beginDensityAnchor(false); idleReleaseDensityAnchor(); setLibraryLayout(e.target.value as "contact" | "grid"); }}>
               <option value="contact">{language === "ja" ? "行組み" : "Rows"}</option>
               <option value="grid">{language === "ja" ? "グリッド" : "Grid"}</option>
             </select>
             {useContactSheet ? <label>
               <span>{language === "ja" ? "小" : "Small"}</span>
-              <input type="range" aria-label={language === "ja" ? "一覧の写真サイズ" : "Contact sheet photo size"} min={60} max={260} step={10} value={contactHeight} onChange={(e) => { rememberDensityAnchor(); setContactHeight(Number(e.target.value)); }} />
+              <input type="range" aria-label={language === "ja" ? "一覧の写真サイズ" : "Contact sheet photo size"} min={60} max={260} step={10} value={contactHeight} onChange={(e) => { beginDensityAnchor(false); idleReleaseDensityAnchor(); setContactHeight(Number(e.target.value)); }} />
               <span>{language === "ja" ? "大" : "Large"}</span>
             </label> : <label>
               <span>{language === "ja" ? "列数" : "Columns"}</span>
-              <select aria-label={language === "ja" ? "一覧の列数" : "Contact sheet columns"} value={coarsePointer ? mobileLibraryColumns : desktopColumns} onChange={(e) => { rememberDensityAnchor(); const n = Number(e.target.value); if (coarsePointer) setMobileLibraryColumns(n as LibraryColumnChoice); else setDesktopColumns(n); }}>
+              <select aria-label={language === "ja" ? "一覧の列数" : "Contact sheet columns"} value={coarsePointer ? mobileLibraryColumns : desktopColumns} onChange={(e) => { beginDensityAnchor(false); idleReleaseDensityAnchor(); const n = Number(e.target.value); if (coarsePointer) setMobileLibraryColumns(n as LibraryColumnChoice); else setDesktopColumns(n); }}>
                 {!coarsePointer && <option value={0}>{language === "ja" ? "自動" : "Auto"}</option>}
                 {(coarsePointer ? LIBRARY_COLUMN_CHOICES : [2,3,4,5,6,8,10,12]).map((n) => <option key={n} value={n}>{n}</option>)}
               </select>

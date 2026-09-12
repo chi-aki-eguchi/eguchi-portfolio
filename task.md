@@ -1,7 +1,20 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
-## Current State — 2026-09-09 JST
+## Current State — 2026-09-12 JST
+
+### admin 黒ベース化 + 操作のカクつき + 本番の隠れたReact devモード混入（実装・検証・本番反映まで完了）
+
+- Codex司令塔・実装Claude。依頼「adminは黒ベースで見やすく、黒/白/好きな色にできる完成度を上げる。admin操作のカクつきも」。調査→設計→実装→複数回のレビューと修正を経て完了。
+- **admin だけの明暗**（新規・DBキーなし）: `useAdminSurface`（端末ローカル `localStorage`、既定 **dark**）。単一44pxトリガー→ラベル付きメニュー（明るい/暗い/サイトに合わせる、現在の選択に✓、Arrow/Home/End/Escapeキーボード対応、選択後トリガーへフォーカス復帰）。色相はCMSの明/暗パレットから従来どおり派生、公開サイトの表示・プレビューは不変（実測確認済み）。
+- **配色コントラスト**: `adminThemeFromSettings` の `ensureContrast` が黒/白どちらを目標にするか「背景輝度>0.5」だけで決めていたバグを修正（中間輝度の背景で片方の極でしか基準に届かないのに届かない方を選ぶことがあった。実測 #999999 で2.85:1→6.6:1に改善、回帰テスト追加）。意味色（危険/注意/成功/情報）も `muted` と同じく最も明度が近い面（paper-deep）に対して基準を満たすよう修正。暗テーマの面の段差（paper-soft/deep/line）を拡大。
+- **カクつき**: contact-sheet の各セルを photo.id キーの絶対配置へフラット化（密度変更で `<img>` を作り直さなくなった）。スライダーは1フレーム1回のrAFプレビュー+release/blur/keyup/180msアイドルで確定。
+- **本番に隠れていた別バグを発見・修正**: CPUプロファイルで密度スライダーの残カクつきの77.6%がReactの開発用JSXランタイム(`jsxDEV`)の自己時間と判明。ローカルの `packages/web/.env`(`NODE_ENV=development`, gitignore対象)を `vite.config.ts` が無条件に `process.env` へマージしていたことが原因と考えたが、**本番(Railway)にも同じ現象が実際に出ていた**（deploy前の本番 `react-vendor` バンドルがローカルの壊れたビルドと同一ハッシュ・同一バイト数で、`jsxDEV` 呼び出しを含んでいた）。`package.json`/`packages/web/package.json` のbuildスクリプトへ明示的に `NODE_ENV=production` を追加して解消。**本番の `react-vendor` バンドルが365.9KB→185.7KB(-49%)に縮小したことをdeploy後に実測確認**（全訪問者に影響する未知の性能劣化が本番から消えた）。
+- 検証: `bun run check`（1337 pass, build確認）、全体 `bun run smoke`（665件, 502 passed/163 skipped/**0 failed**, 事前の7件の失敗は「admin既定がdarkになったことで、既定lightを前提にしていた既存の見た目アサーションが変わった」ことが原因と特定し、smoke共通の `loginAsAdmin` ヘルパーでlight固定に修正して解消。加えてOLD_DARK_COLORS回帰ガードとの数値衝突、rowGapのCSS前提の陳腐化も修正）。
+- 実写真検証: `scratch/admin-color-performance-20260909/final-look-real.cjs` で本番写真URL（読み取り専用フェッチ、書込み一切なし）+ prod-snapshot実設定を使い、Library(PC dark/390 light)・写真編集・全9タブ巡回を実施。76/76画像 naturalWidth>0・白抜け0・JS例外0。
+- commit `fca2879` → push → Railway反映確認（`/api/health` build `a736e957`→`fca2879c`、約90秒）。本番の公開ページ(200)・admin未認証画面(200)を確認、本番配信中の `react-vendor` バンドルを実際にダウンロードして jsxDEV 0件・サイズ半減を確認。**本番の認証済みadmin目視は未実施**（認証済みセッション無し、Save/Delete等の書込み操作は一切していない）。
+- 証拠・測定値・限界: `scratch/admin-color-performance-20260909/result.md`、開発ログ 2026-09-12。
+
 
 ### 最新: スマホの使用感 — 公開＋adminを実操作で改善
 

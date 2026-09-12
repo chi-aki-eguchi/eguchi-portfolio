@@ -321,6 +321,26 @@
   --admin-ink-rgb: 232, 232, 232;
 }
 
+/* 管理画面だけの明暗（`useAdminSurface` / 端末ローカル）。実際の描画は
+   `adminThemeFromSettings` が要素へ付けるインライン変数（`resolvedTheme` 由来）が
+   決める。ここは JS が当たる前の一瞬と、JS が動かない場合の控え。値は
+   `[data-theme="dark"] .admin-atelier` / `.admin-atelier` の既定と一致させる
+   （`admin-theme-independence` が見張る）。`data-admin-theme` は常に light|dark の
+   どちらかが付くので、公開サイトが暗くても管理画面だけ明るくできる。 */
+.admin-atelier[data-admin-theme="dark"] {
+  --admin-paper: #121212;
+  --admin-paper-rgb: 18, 18, 18;
+  --admin-ink: #e8e8e8;
+  --admin-ink-rgb: 232, 232, 232;
+}
+
+.admin-atelier[data-admin-theme="light"] {
+  --admin-paper: #f7f5f1;
+  --admin-paper-rgb: 247, 245, 241;
+  --admin-ink: #1b1917;
+  --admin-ink-rgb: 27, 25, 23;
+}
+
 .admin-atelier * {
   scrollbar-color: var(--admin-line-strong) transparent;
 }
@@ -387,6 +407,79 @@
     min-width: 32px !important;
     padding: 0 6px !important;
   }
+}
+
+/* 「表示の明るさ」— 単一の操作からラベル付きメニューを開く。3アイコンを
+   常時並べない。選択中は静かに印を付けるだけ（黒塗りにしない）。 */
+.admin-atelier.admin-atelier [data-admin-surface-toggle] .admin-surface-toggle__trigger:not(.absolute) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px !important;
+  min-width: 44px !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  border-radius: var(--admin-radius-sm) !important;
+  background: transparent !important;
+  color: var(--admin-muted) !important;
+  opacity: 1;
+  box-shadow: none !important;
+  transition:
+    color var(--admin-hover-transition),
+    background-color var(--admin-hover-transition);
+}
+
+.admin-atelier.admin-atelier [data-admin-surface-toggle] .admin-surface-toggle__trigger:not(.absolute):hover,
+.admin-atelier.admin-atelier [data-admin-surface-toggle][data-preference] .admin-surface-toggle__trigger[aria-expanded="true"]:not(.absolute) {
+  color: var(--admin-ink) !important;
+}
+
+.admin-atelier [data-admin-surface-toggle] .admin-surface-toggle__trigger:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 1px;
+}
+
+.admin-atelier .admin-surface-toggle__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 176px;
+  padding: 4px;
+  border: 1px solid var(--admin-line);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-paper);
+  box-shadow: var(--admin-shadow-lg);
+}
+
+.admin-atelier.admin-atelier .admin-surface-toggle__item:not(.absolute) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  border-radius: var(--admin-radius-sm) !important;
+  background: transparent !important;
+  color: var(--admin-muted) !important;
+  font-size: 13px;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.admin-atelier.admin-atelier .admin-surface-toggle__item:not(.absolute):hover {
+  background: rgba(var(--admin-ink-rgb), 0.06) !important;
+  color: var(--admin-ink) !important;
+}
+
+.admin-atelier.admin-atelier .admin-surface-toggle__item[data-active="true"]:not(.absolute) {
+  color: var(--admin-ink) !important;
+}
+
+.admin-surface-toggle__item-check {
+  margin-left: auto;
+  color: var(--admin-accent);
 }
 
 /* ─── Glass surface (structural layers only — sidebar / save bar / modal /
@@ -6336,6 +6429,7 @@ dialog.lightbox-exit .lb-content {
     flex-shrink: 0;
     align-items: center;
     justify-content: flex-end;
+    gap: 14px;
     padding-inline: 16px;
     border-bottom: 1px solid var(--admin-line);
   }

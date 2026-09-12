@@ -15,7 +15,7 @@ import { useLocation } from "wouter";
 import { LibraryPhotoPreview } from "../components/LibraryPhotoPreview";
 import { LibraryFilterPanel } from "../components/LibraryFilterPanel";
 import "../components/library-workspace.css";
-import { contactSheetRows, contactSheetWindow, contactSheetNeighbor, CONTACT_SHEET_GAP } from "../lib/library-contact-sheet";
+import { contactSheetRows, contactSheetWindow, contactSheetNeighbor, flattenContactRows } from "../lib/library-contact-sheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import {
@@ -38,6 +38,8 @@ import {
   reconstructManualPhotoOrder,
 } from "../lib/reorder";
 import { useDarkModeContext } from "../components/provider";
+import { useAdminSurface } from "../hooks/useAdminSurface";
+import { AdminSurfaceProvider, AdminSurfaceToggle } from "./admin-surface";
 import { ensureAccentContrast } from "../lib/color-contrast";
 import { themeColorsFor } from "../lib/theme-colors";
 import { splitRecentlyAddedPhotos } from "../lib/recently-added-photos";
@@ -173,6 +175,11 @@ type PaletteDestination = {
 // view preferences — sessionStorage keeps them for the browser session without
 // leaking drafts across devices the way the settings DB would.
 type PersistentStorageKind = "session" | "local";
+
+// `usePersistentState` の既定ストレージ(session)を使うキー。アンマウント時の
+// 最終確定（下の contactHeightDraft cleanup）が、このキー・このストレージへ
+// 直接書くために参照する。値がずれると保存先が食い違うので定数を共有する。
+const CONTACT_HEIGHT_STORAGE_KEY = "admin:contactHeight";
 
 function getStorage(kind: PersistentStorageKind): Storage | null {
   try {
@@ -360,10 +367,19 @@ function contrastRatio(a: Rgb, b: Rgb): number {
 
 function ensureContrast(foreground: Rgb, background: Rgb, min: number): Rgb {
   if (contrastRatio(foreground, background) >= min) return foreground;
+  const black = { r: 18, g: 17, b: 15 };
+  const white = { r: 250, g: 248, b: 242 };
+  // 背景の輝度が 0.5 を跨ぐかどうかだけで黒/白を選ぶと、中間輝度の背景で
+  // 「片方の極のほうが高いコントラストに届く」のに、届かない方を選んでしまう
+  // ことがあった（実測: 背景 #999999・輝度0.32 は黒目標で最大 6.6:1、白目標では
+  // 2.85:1 止まり。輝度0.5未満というだけで白側を選ぶと後者になる）。実際に
+  // どちらの極が高いコントラストへ届くかを測って選ぶ。なお、この背景の例が
+  // 示すとおり、紙の輝度次第では黒・白どちらの目標でも 7:1 に届かない帯がある
+  // （`adminThemeFromSettings` 冒頭のコメント参照）。
   const target =
-    relativeLuminance(background) > 0.5
-      ? { r: 18, g: 17, b: 15 }
-      : { r: 250, g: 248, b: 242 };
+    contrastRatio(black, background) >= contrastRatio(white, background)
+      ? black
+      : white;
   let adjusted = foreground;
   for (let i = 1; i <= 24; i += 1) {
     adjusted = mix(foreground, target, i / 24);
@@ -385,9 +401,13 @@ function ensureContrast(foreground: Rgb, background: Rgb, min: number): Rgb {
  * 明るい用と暗い用を別々に持つ（`themeBg` / `themeBgDark`）ので、admin だけ
  * 片方を流用すると「明るい紙に暗いテーマの文字色」のような組み合わせが起きる。
  *
- * 読めなくなる組み合わせは選ばせない。文字は紙に対して 7:1、補助文字と
- * 意味を持つ色（危険・注意・成功・情報）は 4.5:1 を必ず満たすところまで
- * 自動で寄せる。オーナーの色を無視するのではなく、**足りない分だけ寄せる。**
+ * 読めない組み合わせは、届く範囲で自動で寄せる。文字は紙に対して 7:1、補助文字と
+ * 意味を持つ色（危険・注意・成功・情報）は 4.5:1 を狙う。オーナーの色を無視する
+ * のではなく、**足りない分だけ寄せる。**
+ * ただし紙の輝度によっては黒・白どちらの文字色でも 7:1 に届かない帯がある
+ * （黒/白それぞれの目標との理論値が交差する中間輝度、実測だと概ね #6f6f6f 前後
+ * の紙）。その場合は `ensureContrast` が黒/白のうち高いほうへ寄せた「届く限り」
+ * の色を返す — 「必ず 7:1 を満たす」とは言えない、紙の選び方次第の限界がある。
  */
 export function adminThemeFromSettings(
   settings?: Record<string, string>,
@@ -401,10 +421,18 @@ export function adminThemeFromSettings(
     base,
     7,
   );
-  const soft = mix(base, ink, 0.025);
-  const deep = mix(base, ink, 0.055);
-  const line = mix(base, ink, 0.11);
-  const lineStrong = mix(base, ink, 0.18);
+  // 面の段差（紙→soft→deep→line）は base↔ink の一律 mix。暗い紙は sRGB の
+  // ガンマ特性上、同じ mix% でも相対輝度の変化が小さく段差が沈みがちなので
+  // （実測: 黒 #000 で line/paper が 1.22:1 まで潰れた）、暗いテーマだけ
+  // mix% を上げて見分けを補う。CMS が選んだ色そのものは変えない。
+  // 数値は `admin-debug-sweep.spec.ts` の OLD_DARK_COLORS
+  // （17/26/32/44/56、旧・単色グレー時代の値を再検出する回帰ガード）と
+  // 意図せず一致しないよう、各段が離れた値へ丸まるよう選んでいる。
+  const isDark = resolvedTheme === "dark";
+  const soft = mix(base, ink, isDark ? 0.05 : 0.025);
+  const deep = mix(base, ink, isDark ? 0.15 : 0.055);
+  const line = mix(base, ink, isDark ? 0.24 : 0.11);
+  const lineStrong = mix(base, ink, isDark ? 0.32 : 0.18);
   // Checked against `deep` (the darkest paper tone actually used behind text,
   // e.g. the sidebar) rather than `base` — passing against the darkest paper
   // variant guarantees the same minimum against the lighter ones too.
@@ -415,30 +443,42 @@ export function adminThemeFromSettings(
   // インク側へ少し倒して作る。既定色のときは従来の値をそのまま使い、
   // 何も設定していないオーナーの画面が今日と同じに見えるようにする。
   const chosenAccent = settings?.accentColor?.trim();
+  // 差し色は focus リング・下線・選択の面に使う。未設定のときも紙に対して
+  // UI 要素の下限 3:1 までは寄せる（既定の青は明るい紙では 3.9:1 でそのまま
+  // 通るが、中間グレーの紙を選ぶと 3:1 を割って focus が見えなくなる）。
   const accent = chosenAccent
     ? parseHexColor(ensureAccentContrast(chosenAccent, toHex(base)))!
-    : parseHexColor(ATELIER_FALLBACK.accent)!;
+    : ensureContrast(parseHexColor(ATELIER_FALLBACK.accent)!, base, 3);
+  // `accentFill` は塗りの面で、上に紙色の文字が乗る（hero の選択チェック、
+  // タグ、`--admin-accent-fill` を color に使う箇所）。差し色未設定のときも
+  // 紙に対して 4.5:1 まで寄せる — 既定の青 #3f607e は明るい紙では 6:1 で
+  // そのまま通るが、暗い紙（既定 dark が標準）では 2.8:1 で文字が読めない。
   const accentFill = chosenAccent
     ? ensureContrast(mix(accent, ink, 0.2), base, 4.5)
-    : parseHexColor(ATELIER_FALLBACK.accentFill)!;
+    : ensureContrast(parseHexColor(ATELIER_FALLBACK.accentFill)!, base, 4.5);
+  // 意味色は紙(base)だけでなく `.admin-status-*`/`.admin-text-*` が実際に
+  // 使うカード面(-soft)・サイドバー等(-deep)の上にも文字として乗る。muted と
+  // 同じ理由で、text と最も明度が近い（＝一番厳しい）面である deep に対して
+  // 4.5:1 を満たせば、そこより text から明度が離れる paper / soft でも満たす
+  // （実測: base だけで通していたときは -soft/-deep で 3.3〜4.4:1 まで沈んでいた）。
   const danger = ensureContrast(
     parseHexColor(ATELIER_FALLBACK.danger)!,
-    base,
+    deep,
     4.5,
   );
   const warning = ensureContrast(
     parseHexColor(ATELIER_FALLBACK.warning)!,
-    base,
+    deep,
     4.5,
   );
   const success = ensureContrast(
     parseHexColor(ATELIER_FALLBACK.success)!,
-    base,
+    deep,
     4.5,
   );
   const info = ensureContrast(
     parseHexColor(ATELIER_FALLBACK.info)!,
-    base,
+    deep,
     4.5,
   );
 
@@ -601,9 +641,13 @@ function AdminPageContent({
     onSuccess: () => navigate("/admin/login"),
     onError: () => navigate("/admin/login"),
   });
-  // 明暗は公開サイトと同じ解決結果を使う。Provider の外（テストなど）では
-  // context が null になるので、その場合は明るい方を使う。
-  const resolvedTheme = useDarkModeContext()?.resolved ?? "light";
+  // 公開サイトの解決済みテーマ（"サイトに合わせる" を選んだときの追従先）。
+  // Provider の外（テストなど）では context が null になるので明るい方を使う。
+  const siteResolvedTheme = useDarkModeContext()?.resolved ?? "light";
+  // 管理画面だけの明暗（端末ローカル・既定は暗い）。色相は下の
+  // adminThemeFromSettings が CMS の明/暗パレットから派生させる。
+  const adminSurface = useAdminSurface(siteResolvedTheme);
+  const resolvedTheme = adminSurface.resolved;
   const adminThemeVars = useMemo(
     () => adminThemeFromSettings(shellSettings, resolvedTheme),
     [shellSettings, resolvedTheme],
@@ -765,9 +809,11 @@ function AdminPageContent({
   ];
 
   return (
+    <AdminSurfaceProvider value={adminSurface}>
     <div
       ref={adminRootRef}
       className="admin-atelier admin-workbench relative flex select-none overflow-hidden"
+      data-admin-theme={resolvedTheme}
       style={{
         ...adminThemeVars,
         ...(demoMode
@@ -800,6 +846,7 @@ function AdminPageContent({
             >
               {t.demo.reset}
             </button>
+            <AdminSurfaceToggle />
             <AdminLanguageToggle />
           </div>
         </div>
@@ -1037,6 +1084,7 @@ function AdminPageContent({
         destinations={paletteDestinations}
       />
     </div>
+    </AdminSurfaceProvider>
   );
 }
 
@@ -2157,7 +2205,72 @@ export function GalleryTab({
   const densityAnchorIdleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const densityPointerActiveRef = useRef(false);
   const [libraryLayout, setLibraryLayout] = usePersistentState<"contact" | "grid">("admin:libraryLayout", "contact");
-  const [contactHeight, setContactHeight] = usePersistentState("admin:contactHeight", typeof window !== "undefined" && window.innerWidth < 768 ? 80 : 110);
+  const [contactHeight, setContactHeight] = usePersistentState(CONTACT_HEIGHT_STORAGE_KEY, typeof window !== "undefined" && window.innerWidth < 768 ? 80 : 110);
+  // 連続ドラッグ中は 1フレーム1回だけ下書き値で描き、確定（sessionStorage 保存、
+  // `usePersistentState` の既定ストレージ）は指を離したときに1回。毎 input で
+  // 永続 state を書くと、写真行の組み直しと保存が 60回/秒 走ってカクついていた
+  // （measured）。
+  const [contactHeightDraft, setContactHeightDraft] = useState<number | null>(null);
+  const contactHeightPendingRef = useRef<number | null>(null);
+  const contactHeightRafRef = useRef<number | null>(null);
+  const contactHeightCommitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const effectiveContactHeight = contactHeightDraft ?? (Number(contactHeight) || 110);
+  const flushContactHeightDraft = useCallback(() => {
+    if (contactHeightRafRef.current !== null) {
+      cancelAnimationFrame(contactHeightRafRef.current);
+      contactHeightRafRef.current = null;
+    }
+    if (contactHeightCommitRef.current !== null) {
+      clearTimeout(contactHeightCommitRef.current);
+      contactHeightCommitRef.current = null;
+    }
+    const pending = contactHeightPendingRef.current;
+    contactHeightPendingRef.current = null;
+    if (pending !== null) setContactHeight(pending);
+    setContactHeightDraft(null);
+  }, [setContactHeight]);
+  const previewContactHeight = useCallback((next: number) => {
+    contactHeightPendingRef.current = next;
+    // ドラッグ中は 1フレーム1回だけ下書き値で描く（毎 input の全体再レンダーを避ける）。
+    if (contactHeightRafRef.current === null) {
+      contactHeightRafRef.current = requestAnimationFrame(() => {
+        contactHeightRafRef.current = null;
+        if (contactHeightPendingRef.current !== null) {
+          setContactHeightDraft(contactHeightPendingRef.current);
+        }
+      });
+    }
+    // 指を離す/blur/キーの他に、操作が 180ms 止まったら確定（保存）する。
+    // pointerup が来ない経路（プログラム的 fill 等）でも最終値を必ず残す。
+    if (contactHeightCommitRef.current !== null)
+      clearTimeout(contactHeightCommitRef.current);
+    contactHeightCommitRef.current = setTimeout(flushContactHeightDraft, 180);
+  }, [flushContactHeightDraft]);
+  useEffect(
+    () => () => {
+      if (contactHeightRafRef.current !== null)
+        cancelAnimationFrame(contactHeightRafRef.current);
+      if (contactHeightCommitRef.current !== null)
+        clearTimeout(contactHeightCommitRef.current);
+      // アンマウント時に最後の下書きを取りこぼさない。`setContactHeight` は
+      // useState のディスパッチで、React はアンマウント中のコンポーネントの
+      // state 更新を捨てる（`usePersistentState` 側の保存 useEffect も、その
+      // state 更新を受けて走る機会がない）。だから確定は state 経由ではなく、
+      // `usePersistentState` の既定ストレージ(session)へ直接書く。
+      const pending = contactHeightPendingRef.current;
+      if (pending !== null) {
+        try {
+          window.sessionStorage.setItem(
+            CONTACT_HEIGHT_STORAGE_KEY,
+            JSON.stringify(pending),
+          );
+        } catch {
+          /* quota/private mode: 最終値の保存だけ諦める */
+        }
+      }
+    },
+    [],
+  );
   const [desktopColumns, setDesktopColumns] = usePersistentState("admin:desktopColumns", 0);
   const [thumbSize, setThumbSize] = usePersistentState("admin:thumbSize", 220); // px
   const [mobileLibraryColumns, setMobileLibraryColumns] =
@@ -3421,8 +3534,16 @@ export function GalleryTab({
     thumbSize: effectiveThumbSize,
     explicit: preferredColumns !== undefined,
   });
-  const contactRows = useMemo(() => contactSheetRows(regularPhotos, libraryGridMetrics.gridWidth, Math.max(60, Math.min(260, Number(contactHeight) || 110))), [regularPhotos, libraryGridMetrics.gridWidth, contactHeight]);
-  const recentContactRows = useMemo(() => contactSheetRows(recentlyAddedPhotos, libraryGridMetrics.gridWidth - 20, Math.max(60, Math.min(260, Number(contactHeight) || 110))), [recentlyAddedPhotos, libraryGridMetrics.gridWidth, contactHeight]);
+  const clampedContactHeight = Math.max(60, Math.min(260, effectiveContactHeight || 110));
+  const contactRows = useMemo(() => contactSheetRows(regularPhotos, libraryGridMetrics.gridWidth, clampedContactHeight), [regularPhotos, libraryGridMetrics.gridWidth, clampedContactHeight]);
+  const recentContactRows = useMemo(() => contactSheetRows(recentlyAddedPhotos, libraryGridMetrics.gridWidth - 20, clampedContactHeight), [recentlyAddedPhotos, libraryGridMetrics.gridWidth, clampedContactHeight]);
+  // 「最近追加」も密度変更で行が組み直る。写真 ID キーの絶対配置で <img> を
+  // 作り直さない（本体一覧と同じ理由）。件数は普通少ないが仕組みは揃える。
+  const recentContactItems = useMemo(() => flattenContactRows(recentContactRows), [recentContactRows]);
+  const recentContactHeight = useMemo(() => {
+    const last = recentContactRows[recentContactRows.length - 1];
+    return last ? last.top + last.height : 0;
+  }, [recentContactRows]);
   const contactWindow = useMemo(() => contactSheetWindow(contactRows, Math.max(0, libraryGridMetrics.scrollTop - libraryGridMetrics.gridOffsetTop), libraryGridMetrics.viewportHeight), [contactRows, libraryGridMetrics]);
   const squareVirtualGrid = useMemo(
     () =>
@@ -3646,7 +3767,7 @@ export function GalleryTab({
     anchor.pinnedTop = scroll.scrollTop;
     measureLibraryGrid();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactHeight, libraryLayout, desktopColumns, mobileLibraryColumns]);
+  }, [clampedContactHeight, libraryLayout, desktopColumns, mobileLibraryColumns]);
   const dismissRecentlyAdded = useCallback(() => {
     pendingRecentlyAddedScrollRef.current = null;
     onRecentlyAddedPhotoIdsChange(new Set());
@@ -6038,7 +6159,24 @@ export function GalleryTab({
             </select>
             {useContactSheet ? <label>
               <span>{language === "ja" ? "小" : "Small"}</span>
-              <input type="range" aria-label={language === "ja" ? "一覧の写真サイズ" : "Contact sheet photo size"} min={60} max={260} step={10} value={contactHeight} onChange={(e) => { beginDensityAnchor(false); idleReleaseDensityAnchor(); setContactHeight(Number(e.target.value)); }} />
+              <input
+                type="range"
+                aria-label={language === "ja" ? "一覧の写真サイズ" : "Contact sheet photo size"}
+                min={60}
+                max={260}
+                step={10}
+                value={effectiveContactHeight}
+                onChange={(e) => {
+                  beginDensityAnchor(false);
+                  idleReleaseDensityAnchor();
+                  previewContactHeight(Number(e.target.value));
+                }}
+                onPointerUp={flushContactHeightDraft}
+                onPointerCancel={flushContactHeightDraft}
+                onLostPointerCapture={flushContactHeightDraft}
+                onBlur={flushContactHeightDraft}
+                onKeyUp={flushContactHeightDraft}
+              />
               <span>{language === "ja" ? "大" : "Large"}</span>
             </label> : <label>
               <span>{language === "ja" ? "列数" : "Columns"}</span>
@@ -7511,14 +7649,29 @@ export function GalleryTab({
                         <div
                           data-library-recently-added-grid
                           className={useContactSheet ? "admin-contact-rows" : "grid"}
-                          style={{
-                            gap: useContactSheet ? CONTACT_SHEET_GAP : LIBRARY_GRID_GAP,
-                            gridTemplateColumns: useContactSheet ? undefined : libraryTracks,
-                          }}
+                          style={
+                            useContactSheet
+                              ? { position: "relative", height: recentContactHeight }
+                              : {
+                                  gap: LIBRARY_GRID_GAP,
+                                  gridTemplateColumns: libraryTracks,
+                                }
+                          }
                         >
-                          {useContactSheet ? recentContactRows.map((row) => <div key={row.items[0].index} className="admin-contact-row" style={{ height: row.height, gap: CONTACT_SHEET_GAP }}>
-                            {row.items.map((item) => <div key={recentlyAddedPhotos[item.index].id} style={{ width: item.width, height: row.height }}>{renderLibraryPhotoTile(recentlyAddedPhotos[item.index], item.index, true)}</div>)}
-                          </div>) : recentlyAddedPhotos.map((photo, idx) => renderLibraryPhotoTile(photo, idx, true))}
+                          {useContactSheet
+                            ? recentContactItems.map((it) => {
+                                const photo = recentlyAddedPhotos[it.index];
+                                return (
+                                  <div
+                                    key={photo.id}
+                                    className="admin-contact-cell"
+                                    style={{ top: it.top, left: it.left, width: it.width, height: it.height }}
+                                  >
+                                    {renderLibraryPhotoTile(photo, it.index, true)}
+                                  </div>
+                                );
+                              })
+                            : recentlyAddedPhotos.map((photo, idx) => renderLibraryPhotoTile(photo, idx, true))}
                         </div>
                       </section>
                     )}
@@ -7540,10 +7693,19 @@ export function GalleryTab({
                     >
                       {/* Keep the full height stable during row replacement: WebKit
                           can clamp scrollTop while spacer children are removed. */}
-                      {useContactSheet ? <div className="admin-contact-rows" style={{ position: "absolute", top: contactWindow.topPadding, left: 0, right: 0, gap: CONTACT_SHEET_GAP }}>
-                        {contactWindow.visibleRows.map((row) => <div key={row.items[0].index} className="admin-contact-row" style={{ height: row.height, gap: CONTACT_SHEET_GAP }}>
-                          {row.items.map((item) => <div key={regularPhotos[item.index].id} style={{ width: item.width, height: row.height }}>{renderLibraryPhotoTile(regularPhotos[item.index], recentlyAddedPhotos.length + item.index, false)}</div>)}
-                        </div>)}
+                      {useContactSheet ? <div className="admin-contact-rows" style={{ position: "absolute", top: contactWindow.topPadding, left: 0, right: 0 }}>
+                        {contactWindow.visibleItems.map((it) => {
+                          const photo = regularPhotos[it.index];
+                          return (
+                            <div
+                              key={photo.id}
+                              className="admin-contact-cell"
+                              style={{ top: it.top, left: it.left, width: it.width, height: it.height }}
+                            >
+                              {renderLibraryPhotoTile(photo, recentlyAddedPhotos.length + it.index, false)}
+                            </div>
+                          );
+                        })}
                       </div> : <>
                       {virtualGrid.topPadding > 0 && <div style={{ height: virtualGrid.topPadding }} />}
                       <div

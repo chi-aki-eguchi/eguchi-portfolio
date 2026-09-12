@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 import { AdminLanguageToggle } from "./admin-i18n";
+import { AdminSurfaceToggle } from "./admin-surface";
 import { PageTitle } from "./admin-ui";
 
 export function AdminDesktopLanguageBar() {
   return (
     <div className="admin-lang-bar">
+      <AdminSurfaceToggle className="text-[var(--admin-muted)]" />
       <AdminLanguageToggle className="text-[var(--admin-muted)]" />
     </div>
   );

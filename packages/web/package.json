@@ -6,7 +6,7 @@
     ".": "./src/api/index.ts"
   },
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && NODE_ENV=production vite build",
     "dev": "vite",
     "typecheck": "tsc -b",
     "test": "bun test ./src",

@@ -17,6 +17,40 @@ export function contactSheetRows(photos: readonly JustifiedPhotoInput[], width: 
 }
 export type ContactSheetRow = ReturnType<typeof contactSheetRows>[number];
 
+/**
+ * 行を「写真1枚ずつの絶対座標」へ展開する。密度（写真サイズ）を変えると行の
+ * 組み直しで行の境界と写真の並びが変わるが、DOM は写真 ID をキーに使い回し、
+ * 変わるのは各セルの top/left/width/height だけにしたい（行を親にすると境界が
+ * 変わるたびに配下の <img> ごと作り直され、連続ドラッグでカクつく）。
+ * `topOffset` を引くと、可視ウィンドウの先頭を 0 とした座標になる。
+ */
+export function flattenContactRows(
+  rows: readonly ContactSheetRow[],
+  topOffset = 0,
+) {
+  const items: {
+    index: number;
+    width: number;
+    height: number;
+    top: number;
+    left: number;
+  }[] = [];
+  for (const row of rows) {
+    let left = 0;
+    for (const item of row.items) {
+      items.push({
+        index: item.index,
+        width: item.width,
+        height: row.height,
+        top: row.top - topOffset,
+        left,
+      });
+      left += item.width + CONTACT_SHEET_GAP;
+    }
+  }
+  return items;
+}
+
 export function contactSheetWindow(rows: ContactSheetRow[], scrollTop: number, viewportHeight: number) {
   const total = rows[rows.length - 1];
   const totalHeight = total ? total.top + total.height : 0;
@@ -31,7 +65,8 @@ export function contactSheetWindow(rows: ContactSheetRow[], scrollTop: number, v
   const topPadding = visibleRows[0]?.top ?? 0;
   // Include the gap after the visible block in the bottom spacer only.
   const bottomPadding = Math.max(0, totalHeight - ((lastRow?.top ?? 0) + (lastRow?.height ?? 0)));
-  return { visibleRows, startIndex, endIndex, topPadding, bottomPadding, totalHeight,
+  return { visibleRows, visibleItems: flattenContactRows(visibleRows, topPadding),
+    startIndex, endIndex, topPadding, bottomPadding, totalHeight,
     columns: Math.max(1, ...visibleRows.map((row) => row.items.length)),
     rowHeight: visibleRows[0]?.height ?? 1,
     renderedCount: endIndex - startIndex,

@@ -9,6 +9,16 @@ const root = path.resolve(__dirname, "../..");
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, root, '');
+	// ローカルの `.env`（gitignore・本番未配布）は開発用に `NODE_ENV=development`
+	// を持つ。ここへ無条件に Object.assign すると、`vite build`（mode=production）
+	// で Vite が設定した NODE_ENV=production を上書きし、React が jsx-dev-runtime
+	// （key/children検証つきの重い経路）のまま本番相当ビルドに混入する
+	// （実測 CPUプロファイル: contactHeight スライダー連続ドラッグの自己時間の
+	// 77.6% が `jsxDEV`）。本番デプロイは `.env` を含まないため Railway 上の
+	// 実ビルドはこの影響を受けないが、ローカルで `bun run build:web` して
+	// 「本番相当」を測る・検証するときは常にこの経路を踏んでいた。
+	// mode から来る NODE_ENV だけは .env に譲らない。
+	delete env.NODE_ENV;
 	Object.assign(process.env, env);
 
 	return {

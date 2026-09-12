@@ -8,6 +8,7 @@ import {
   type Tab,
 } from "./admin-shared";
 import { AdminLanguageToggle, useAdminI18n } from "./admin-i18n";
+import { AdminSurfaceToggle } from "./admin-surface";
 
 // スマホ admin ナビ(2026-07-11 モバイル操作性改善)。
 // 旧・上部2段横スクロールナビは activeタブが画面外へ流れ、片手の親指で
@@ -39,6 +40,7 @@ export function AdminMobileTopBar({
         <span className="text-[13px] tracking-wide truncate">{meta.label}</span>
       </div>
       <div className="flex items-center flex-shrink-0">
+        <AdminSurfaceToggle className="mr-1 text-[var(--admin-muted)]" />
         {showLanguageToggle && (
           <AdminLanguageToggle className="mr-1 text-[var(--admin-muted)]" />
         )}

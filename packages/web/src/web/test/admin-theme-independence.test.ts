@@ -99,6 +99,32 @@ describe("CSS側は admin.tsx の控えとして正しい", () => {
     expect(darkBlock).toContain(`--admin-ink: ${dark.ink};`);
   });
 
+  test("管理画面だけの明暗（data-admin-theme）は data-theme と同じ既定値を使う", () => {
+    // `useAdminSurface` は端末ローカルで admin だけの明暗を切り替える。CSS 側は
+    // JS が当たる前の一瞬の控えなので、`[data-theme="dark"] .admin-atelier` /
+    // `.admin-atelier`（明）の既定値と一字一句同じでなければ、切替直後だけ別の色が出る。
+    const adminDark = ruleBlock('.admin-atelier[data-admin-theme="dark"]');
+    expect(adminDark).toContain("--admin-paper: #121212;");
+    expect(adminDark).toContain("--admin-ink: #e8e8e8;");
+    expect(adminDark).toContain("--admin-paper-rgb: 18, 18, 18;");
+    expect(adminDark).toContain("--admin-ink-rgb: 232, 232, 232;");
+    const adminLight = ruleBlock('.admin-atelier[data-admin-theme="light"]');
+    expect(adminLight).toContain("--admin-paper: #f7f5f1;");
+    expect(adminLight).toContain("--admin-ink: #1b1917;");
+    // 公開サイトの色トークンを継がない（明暗の解決は adminThemeFromSettings が行う）。
+    for (const block of [adminDark, adminLight]) {
+      expect(block).not.toContain("var(--background");
+      expect(block).not.toContain("var(--foreground");
+    }
+  });
+
+  test("data-admin-theme=light は data-theme=dark より後に宣言し上書きできる", () => {
+    // 公開サイトが暗くても管理画面だけ明るくできること。source order で勝つ必要がある。
+    expect(styles.indexOf('.admin-atelier[data-admin-theme="light"] {')).toBeGreaterThan(
+      styles.indexOf('[data-theme="dark"] .admin-atelier {'),
+    );
+  });
+
   test("暗いほうの既定は公開サイトと同じ黒", () => {
     const dark = ruleBlock('[data-theme="dark"] .admin-atelier');
     expect(dark).toContain("--admin-paper: #121212;");

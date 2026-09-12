@@ -52,6 +52,24 @@ const cases = [
   },
 ];
 
+// 回帰: 黒/白どちらの目標色を選ぶかを「背景輝度が0.5を跨ぐか」だけで決めていたとき、
+// 輝度0.32の #999999 に白文字（themeText）を選ぶと、既に白に近い前景色を
+// さらに白目標へ寄せるだけで 2.85:1 止まりだった。実際にどちらの極が高い
+// コントラストへ届くかを測って選ぶよう修正すると、黒目標へ寄せて 6.6:1 まで届く。
+// **この背景輝度そのものが 7:1 の理論上限を下回る**（黒・白どちらの目標色でも
+// 最大 6.6:1 前後にしかならない）ので、ここだけは 7 ではなく「大きく改善した」
+// ことを確認する。全背景で 7:1 に届くとは主張しない。
+test("中間輝度の紙は、黒/白どちらの目標が実際に届くかで選ぶ（#999999 の回帰）", () => {
+  const theme = adminThemeFromSettings({ themeBg: "#999999", themeText: "#ffffff" });
+  const ink = themeColor(theme, "--admin-ink");
+  const paper = themeColor(theme, "--admin-paper");
+  const ratio = contrastRatio(ink, paper);
+  // 旧実装（輝度0.5だけで黒/白を選ぶ）はここで白へ寄せて 2.85:1 止まりだった。
+  expect(ratio).toBeGreaterThan(6);
+  // この背景では黒目標でも 7:1 には届かない（理論上限が約6.6〜6.7:1）。
+  expect(ratio).toBeLessThan(7);
+});
+
 describe("adminThemeFromSettings contrast guarantees", () => {
   for (const { name, settings } of cases) {
     test(name, () => {

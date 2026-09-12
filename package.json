@@ -13,7 +13,7 @@
     "start": "node scripts/start-pm2.mjs",
     "deploy:runable:legacy": "bash docs/archive/deploy.sh",
     "build": "turbo build",
-    "build:web": "cd packages/web && bunx vite build",
+    "build:web": "cd packages/web && NODE_ENV=production bunx vite build",
     "lint": "oxlint . --deny-warnings --no-error-on-unmatched-pattern",
     "lint:fix": "oxlint . --fix --deny-warnings --no-error-on-unmatched-pattern",
     "typecheck": "turbo typecheck",

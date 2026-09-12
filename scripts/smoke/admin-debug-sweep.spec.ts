@@ -206,11 +206,29 @@ test.describe("admin — 全体デバッグスイープ", () => {
     });
 
     const gridMetrics = await grid.evaluate((el) => {
-      const inner = el.querySelector(".admin-contact-rows") as HTMLElement | null;
+      // セルは photo.id キーで絶対配置される（密度変更で <img> を作り直さない
+      // ため）ので、行間の3pxはCSSの row-gap ではなく各セルの top/left に
+      // 織り込まれている。同じ行(同じtop)で隣り合う2セルの実測 left の差から
+      // 幅ぶんを引いて確認する。
+      const cells = [...el.querySelectorAll<HTMLElement>(".admin-contact-cell")];
+      const rows = new Map<number, HTMLElement[]>();
+      for (const cell of cells) {
+        const top = Math.round(cell.getBoundingClientRect().top);
+        (rows.get(top) ?? rows.set(top, []).get(top)!).push(cell);
+      }
+      const firstRow = [...rows.values()][0] ?? [];
+      let measuredGap: number | null = null;
+      if (firstRow.length >= 2) {
+        const [a, b] = firstRow;
+        const ra = a.getBoundingClientRect();
+        const rb = b.getBoundingClientRect();
+        const [left, right] = ra.left < rb.left ? [ra, rb] : [rb, ra];
+        measuredGap = Math.round((right.left - left.right) * 10) / 10;
+      }
       return {
         isVirtualized: el.getAttribute("data-virtualized") === "true",
         renderedCount: Number(el.getAttribute("data-rendered-count") ?? "0"),
-        rowGap: inner ? getComputedStyle(inner).rowGap : "",
+        measuredGap,
       };
     });
     test.skip(
@@ -223,7 +241,8 @@ test.describe("admin — 全体デバッグスイープ", () => {
     if (testInfo.project.name === "desktop")
       expect(gridMetrics.renderedCount).toBeGreaterThan(40);
     else expect(gridMetrics.renderedCount).toBeGreaterThanOrEqual(10);
-    expect(gridMetrics.rowGap).toBe("3px");
+    if (gridMetrics.measuredGap !== null)
+      expect(gridMetrics.measuredGap).toBeCloseTo(3, 0);
 
     await page.getByRole("button", { name: "サイトで確認" }).click();
     const shell = page.locator("[data-admin-preview-shell]");

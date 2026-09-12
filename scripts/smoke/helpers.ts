@@ -85,6 +85,18 @@ test.afterEach(() => {
 });
 
 export async function loginAsAdmin(page: Page): Promise<void> {
+  // 管理画面の明るさ（`useAdminSurface`）は端末ローカルで既定 dark。この
+  // スイートの見た目検査の大半は、その機能ができる前の「既定 light」を前提に
+  // 値・しきい値を選んでいる。個別テストの意図（暗さそのものの検証）を
+  // 混ぜないよう、smoke 全体では明示的に light へ固定する。暗さそのものを
+  // 確かめるテストは、ログイン後に自分で "dark"/"site" へ上書きしてよい。
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("admin-surface-preference", "light");
+    } catch {
+      /* ignore */
+    }
+  });
   await page.goto("/admin/login");
   await page.locator('input[type="password"]').fill(getAdminPassword());
   await page.locator('button[type="submit"]').click();

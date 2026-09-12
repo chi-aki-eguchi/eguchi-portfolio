@@ -6,17 +6,25 @@ test("写真の構図を保つ行組み・サイズ変更・固定列・一覧�
   await gotoAdminTab(page, "gallery");
   const layout = page.getByRole("combobox", { name: "写真の並べ方" });
   await expect(layout).toHaveValue("contact");
-  const row = page.locator(".admin-contact-row").first();
-  await expect(row).toBeVisible();
+  const cell = page.locator(".admin-contact-cell").first();
+  await expect(cell).toBeVisible();
   const size = page.getByRole("slider", { name: "一覧の写真サイズ" });
   await size.fill("200");
-  await expect.poll(async () => (await row.boundingBox())!.height).toBeGreaterThan(100);
-  const before = (await row.boundingBox())!;
+  await expect.poll(async () => (await cell.boundingBox())!.height).toBeGreaterThan(100);
+  const before = (await cell.boundingBox())!;
   await size.fill("60");
-  await expect.poll(async () => (await row.boundingBox())!.height).toBeLessThan(before.height);
-  const widths = await row.evaluate(el => ({ width: el.getBoundingClientRect().width, sum: [...el.children].reduce((n, child) => n + child.getBoundingClientRect().width, 0) + (el.children.length - 1) * 3 }));
-  expect(Math.abs(widths.width - widths.sum)).toBeLessThan(1);
-  await expect(row.locator("img").first()).toHaveCSS("object-fit", "contain");
+  await expect.poll(async () => (await cell.boundingBox())!.height).toBeLessThan(before.height);
+  // 密度を変えても justified 行組みは維持: 最上段のセル幅の合計＋隙間が枠幅に一致する。
+  const fit = await page.locator(".admin-contact-cell").evaluateAll(cells => {
+    const rows = new Map<number, DOMRect[]>();
+    for (const c of cells) { const r = c.getBoundingClientRect(); const k = Math.round(r.top); (rows.get(k) ?? rows.set(k, []).get(k)!).push(r); }
+    const first = [...rows.entries()].sort((a, b) => a[0] - b[0])[0][1];
+    const container = (cells[0].parentElement as HTMLElement).getBoundingClientRect().width;
+    const sum = first.reduce((n, r) => n + r.width, 0) + (first.length - 1) * 3;
+    return { container, sum };
+  });
+  expect(Math.abs(fit.container - fit.sum)).toBeLessThan(2);
+  await expect(cell.locator("img").first()).toHaveCSS("object-fit", "contain");
   // Density changes keep the current group of photos near the viewport.
   const scroll = page.locator("[data-library-scroll]");
   await scroll.evaluate(el => { el.scrollTop = 1000; });
@@ -54,11 +62,14 @@ test("写真の構図を保つ行組み・サイズ変更・固定列・一覧�
 
 test('上下キーで隣の行の写真へ移動し、Enterで同じ写真を開く',async({page})=>{
  await loginAsAdmin(page);await gotoAdminTab(page,'gallery');
- const first=page.locator('.admin-contact-row').first().locator('[data-library-photo-action]').first();
+ const first=page.locator('.admin-contact-cell').first().locator('[data-library-photo-action]').first();
  await first.focus();
- const expected=await page.locator('.admin-contact-row').evaluateAll(rows=>{
-  const current=rows[0].children[0].getBoundingClientRect();const x=current.x+current.width/2;
-  const next=[...rows[1].querySelectorAll('[data-library-photo-action]')].sort((a,b)=>{const aa=a.getBoundingClientRect(),bb=b.getBoundingClientRect();return Math.abs(aa.x+aa.width/2-x)-Math.abs(bb.x+bb.width/2-x)})[0]; return {id:next.closest('.admin-photo-tile')!.id,name:next.getAttribute('aria-label')};
+ const expected=await page.locator('.admin-contact-cell').evaluateAll(cells=>{
+  const rows=new Map<number,Element[]>();
+  for(const c of cells){const k=Math.round(c.getBoundingClientRect().top);(rows.get(k)??rows.set(k,[]).get(k)!).push(c);}
+  const sorted=[...rows.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
+  const current=sorted[0][0].getBoundingClientRect();const x=current.x+current.width/2;
+  const next=sorted[1].map(c=>c.querySelector('[data-library-photo-action]')!).sort((a,b)=>{const aa=a.getBoundingClientRect(),bb=b.getBoundingClientRect();return Math.abs(aa.x+aa.width/2-x)-Math.abs(bb.x+bb.width/2-x)})[0]; return {id:next.closest('.admin-photo-tile')!.id,name:next.getAttribute('aria-label')};
  });
  await page.keyboard.press('ArrowDown');
  const target=page.locator(`[id="${expected.id}"] [data-library-photo-action]`);
@@ -198,4 +209,25 @@ test('サイズ・列数を連続で動かしても、見ていた写真を見�
   const movedEnd = await anchorRel(moved.id);
   expect(movedEnd, 'stale-anchor guard: no tile after hand-scroll + key').not.toBeNull();
   expect(movedEnd!.inView, `stale-anchor guard: the photo on screen at the new key gesture scrolled away (rel ${movedEnd!.rel})`).toBe(true);
+});
+
+test('サイズ変更の直後にタブを離れても、次にLibraryへ戻ったとき最後の値が残る', async ({ page }, testInfo) => {
+  // 密度スライダーは 1フレーム1回の下書き＋180msアイドルで確定する（連続ドラッグの
+  // カクつき対策）。確定タイマーは AdminPageContent 側の state を持つため、通常の
+  // タブ切替（同コンポーネント内でどのタブの中身を出すかを切り替えるだけ）では
+  // 効いたまま残るが、値が sessionStorage へ確実に届くこと自体は環境非依存の
+  // 挙動なので、UIが違うタブ切替導線を持つ端末は増やさずPCだけで確認する。
+  testInfo.skip(testInfo.project.name !== 'desktop', 'サイドバーでのタブ切替はPC導線のみ確認する');
+  await loginAsAdmin(page);
+  await gotoAdminTab(page, 'gallery');
+  const size = page.getByRole('slider', { name: '一覧の写真サイズ' });
+  await expect(size).toBeVisible();
+  const before = await size.inputValue();
+  const target = before === '250' ? '90' : '250';
+  await size.fill(target);
+  // 確定(180ms)を待たず、すぐ実クリックで別タブへ離れる。
+  await page.locator('.admin-sidebar__tab, .admin-sidebar__link').filter({ hasText: 'Hero' }).first().click();
+  await expect(page.locator('[data-library-scroll]')).toHaveCount(0);
+  await page.locator('.admin-sidebar__tab, .admin-sidebar__link').filter({ hasText: 'Library' }).first().click();
+  await expect(page.getByRole('slider', { name: '一覧の写真サイズ' })).toHaveValue(target);
 });

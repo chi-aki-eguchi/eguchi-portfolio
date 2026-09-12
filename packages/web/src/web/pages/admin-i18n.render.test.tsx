@@ -39,7 +39,7 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   const en = ADMIN_DICTIONARY.en.phase2b;
 
   expect(ja.library.sort.label).toBe("並び替え");
-  expect(ja.library.sort.options.manual).toBe("手動（保存されている順）");
+  expect(ja.library.sort.options.manual).toBe("手動順");
   expect(ja.library.inspector.shotDate).toBe("撮影日");
   expect(ja.series.coverPhoto).toBe("表紙写真");
   expect(ja.categories.description).toBe(

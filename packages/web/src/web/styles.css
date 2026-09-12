@@ -1334,7 +1334,7 @@
 
 .admin-atelier.admin-atelier.admin-atelier.admin-atelier
   button[aria-pressed="true"]:not(.absolute):not(.admin-state-chip):not(
-    .admin-btn-primary
+    .admin-btn-primary, .admin-segmented__option
   ) {
   background-color: var(--admin-selected-bg, rgba(var(--admin-ink-rgb), 0.05)) !important;
   border-color: var(--admin-selected-border, transparent) !important;
@@ -1705,44 +1705,6 @@
 .admin-atelier .tabular-nums {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   letter-spacing: 0.08em;
-}
-
-/* 工程3: hand-drawn selection mark (dermatologist-style grease-pencil
-   circle) — replaces the old static ::after background-image. Always
-   mounted per visible tile so opacity can transition both ways; only the
-   most-recently-selected tile actually draws the circle (perf guard for
-   large multi-select), others simply appear already-drawn. */
-.admin-atelier .admin-select-mark {
-  position: absolute;
-  right: 4px;
-  top: 4px;
-  z-index: 4;
-  width: 28px;
-  height: 28px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-.admin-atelier .admin-select-mark[data-state="draw"],
-.admin-atelier .admin-select-mark[data-state="fade"] {
-  opacity: 1;
-}
-.admin-atelier .admin-select-mark__circle {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-}
-.admin-atelier
-  .admin-select-mark[data-state="draw"]
-  .admin-select-mark__circle {
-  animation: admin-select-draw var(--dur-slow) var(--ease-out) forwards;
-}
-@keyframes admin-select-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
 }
 
 /* SegmentedControl options must stay transparent so the one shared sliding

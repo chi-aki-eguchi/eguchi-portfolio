@@ -313,7 +313,10 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       const toolbar = page.locator("[data-library-selection-toolbar]");
       await expect(toolbar).toBeVisible();
       const box = (await toolbar.boundingBox())!;
-      expect(box.y + box.height).toBeLessThanOrEqual(812 - 55);
+      const nav = (await page.locator(".admin-bottom-nav").boundingBox())!;
+      expect(Math.abs(box.y + box.height - nav.y)).toBeLessThanOrEqual(1);
+      const scroll = (await page.locator("[data-library-scroll]").boundingBox())!;
+      expect(scroll.y + scroll.height).toBeLessThanOrEqual(box.y + 1);
       await expect(toolbar.getByText("選択中 1枚", { exact: true })).toHaveCount(1);
       await expect(toolbar.getByRole("button", { name: "選択終了" })).toBeVisible();
       await toolbar.locator(".admin-selection-more > summary").click();

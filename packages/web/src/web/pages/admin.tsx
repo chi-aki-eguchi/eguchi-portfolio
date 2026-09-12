@@ -2171,6 +2171,9 @@ export function GalleryTab({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [libraryMode, setLibraryMode] = useState<LibraryMode>("normal");
   const [lastClicked, setLastClicked] = useState<number | null>(null);
+  // Focus moves before click. Keep the range anchor separate from the cursor.
+  const selectionAnchorRef = useRef<number | null>(null);
+  const selectionRangeBaseRef = useRef<Set<number> | null>(null);
   const [reorderTargetId, setReorderTargetId] = useState<number | null>(null);
   const [reorderPositionValue, setReorderPositionValue] = useState("");
   const [lastMove, setLastMove] = useState<{
@@ -3393,6 +3396,13 @@ export function GalleryTab({
         : [...recentlyAddedPhotos, ...regularPhotos],
     [recentlyAddedPhotos, regularPhotos],
   );
+  useEffect(() => {
+    // A new filter/order starts a new range; do not resurrect a stale range.
+    selectionRangeBaseRef.current = null;
+  }, [displayed]);
+  useEffect(() => {
+    if (selected.size === 0) selectionRangeBaseRef.current = null;
+  }, [selected]);
   useEffect(() => {
     if (reorderTargetId === null) return;
     const index = displayed.findIndex((photo) => photo.id === reorderTargetId);
@@ -4793,7 +4803,12 @@ export function GalleryTab({
         onRecentlyAddedPhotoIdsChange(addedIds);
         // applyLibraryMode が選択を消すため、モード変更後のコールバックで
         // 成功分だけを選択する。未保存詳細の確認も従来どおり通る。
-        requestLibraryMode("select", () => setSelected(new Set(addedIds)));
+        requestLibraryMode("select", () => {
+          setSelected(new Set(addedIds));
+          selectionAnchorRef.current = addedPhotoIds[0];
+          selectionRangeBaseRef.current = null;
+          setLastClicked(addedPhotoIds[0]);
+        });
       }
     } finally {
       activeUploadProgressRef.current.delete(uploadGeneration);
@@ -4856,7 +4871,11 @@ export function GalleryTab({
     setDragSrcId(null);
     setDragOverId(null);
     setPreviewPhoto(null);
-    if (!keepSelection) setSelected(new Set());
+    if (!keepSelection) {
+      setSelected(new Set());
+      selectionRangeBaseRef.current = null;
+      if (nextMode === "normal") selectionAnchorRef.current = null;
+    }
     if (nextMode !== "arrange") {
       setReorderTargetId(null);
       setReorderPositionValue("");
@@ -4884,6 +4903,10 @@ export function GalleryTab({
     nextMode: LibraryMode,
     afterChange?: () => void,
   ) => {
+    if (nextMode === libraryMode) {
+      afterChange?.();
+      return;
+    }
     if (
       libraryMode === "arrange" &&
       nextMode !== "arrange" &&
@@ -4984,22 +5007,38 @@ export function GalleryTab({
   }, [pendingLibraryMode, reorderBusy, reorderNeedsReload]);
 
   const selectRangeThrough = (photo: Photo, idx: number) => {
-    const lastIdx =
-      lastClicked === null
-        ? -1
-        : displayed.findIndex((p) => p.id === lastClicked);
-    if (lastIdx < 0) {
+    const anchorIndex = displayed.findIndex((p) => p.id === selectionAnchorRef.current);
+    if (anchorIndex < 0) {
+      selectionAnchorRef.current = photo.id;
+      selectionRangeBaseRef.current = new Set();
       setSelected(new Set([photo.id]));
       return;
     }
-    const start = Math.min(lastIdx, idx);
-    const end = Math.max(lastIdx, idx);
-    const range = displayed.slice(start, end + 1).map((p) => p.id);
-    setSelected((prev) => {
-      const next = new Set(prev);
-      range.forEach((id) => next.add(id));
-      return next;
-    });
+    // Preserve unrelated selections, but replace the previous range so Shift
+    // can both extend and shrink it, including across virtualized rows.
+    selectionRangeBaseRef.current ??= new Set(selected);
+    const next = new Set(selectionRangeBaseRef.current);
+    displayed.slice(Math.min(anchorIndex, idx), Math.max(anchorIndex, idx) + 1)
+      .forEach((p) => next.add(p.id));
+    setSelected(next);
+  };
+
+  const selectDisplayedPhotos = () => {
+    if (!displayed.length || bulkBusyRef.current || uploading) return;
+    const proceed = () => {
+      setSelected((prev) => new Set([...prev, ...displayed.map((p) => p.id)]));
+      selectionAnchorRef.current = displayed[0].id;
+      selectionRangeBaseRef.current = null;
+    };
+    if (libraryMode === "select") proceed();
+    else requestLibraryMode("select", proceed);
+  };
+
+  const clearPhotoSelection = () => {
+    if (bulkBusyRef.current) return;
+    setSelected(new Set());
+    selectionAnchorRef.current = null;
+    selectionRangeBaseRef.current = null;
   };
 
   // 閲覧=詳細、選択=選択/解除、並べ替え=対象を1枚だけ指定する。
@@ -5024,6 +5063,8 @@ export function GalleryTab({
     if (libraryMode === "normal" && !(e.metaKey || e.ctrlKey || e.shiftKey)) {
       guardInspectorSwitch(photo, () => {
         setSelected(new Set());
+        selectionAnchorRef.current = photo.id;
+        selectionRangeBaseRef.current = null;
         openInspectorFor(photo);
         setLastClicked(photo.id);
       });
@@ -5033,7 +5074,11 @@ export function GalleryTab({
     if (libraryMode === "normal") {
       requestLibraryMode("select", () => {
         if (e.shiftKey) selectRangeThrough(photo, idx);
-        else setSelected(new Set([photo.id]));
+        else {
+          setSelected(new Set([photo.id]));
+          selectionAnchorRef.current = photo.id;
+          selectionRangeBaseRef.current = null;
+        }
         setLastClicked(photo.id);
       });
       return;
@@ -5042,6 +5087,8 @@ export function GalleryTab({
     if (e.shiftKey) {
       selectRangeThrough(photo, idx);
     } else {
+      selectionAnchorRef.current = photo.id;
+      selectionRangeBaseRef.current = null;
       setSelected((prev) => {
         const next = new Set(prev);
         if (next.has(photo.id)) next.delete(photo.id);
@@ -5442,7 +5489,7 @@ export function GalleryTab({
 
   // C3: move the keyboard cursor (lastClicked) by an offset within `displayed`.
   // 選択モードだけ単独選択へ寄せ、通常モードでは詳細表示用カーソルとして扱う。
-  const navByOffset = (offset: number) => {
+  const navByOffset = (offset: number, extend = false) => {
     if (displayed.length === 0) return;
     const curIdx =
       lastClicked !== null
@@ -5456,9 +5503,15 @@ export function GalleryTab({
     // 未保存の下書きがある間はガードを通す。キャンセル時はカーソル・選択・
     // プレビュー・スクロールのどれも動かさない。
     guardInspectorSwitch(photo, () => {
-      setSelected(
-        libraryMode === "select" ? new Set([photo.id]) : new Set(),
-      );
+      if (extend && !inspectPhoto) {
+        selectionAnchorRef.current ??= curIdx >= 0 ? displayed[curIdx].id : photo.id;
+        if (libraryMode === "normal") requestLibraryMode("select", () => selectRangeThrough(photo, nextIdx));
+        else selectRangeThrough(photo, nextIdx);
+      } else {
+        setSelected(libraryMode === "select" ? new Set([photo.id]) : new Set());
+        selectionAnchorRef.current = photo.id;
+        selectionRangeBaseRef.current = null;
+      }
       setLastClicked(photo.id);
       setPreviewPhoto((prev) => (prev ? photo : prev)); // keep quick-preview in sync if open
       if (libraryMode === "normal" && inspectPhoto) openInspectorFor(photo);
@@ -5471,18 +5524,18 @@ export function GalleryTab({
     });
   };
 
-  const navByRow = (direction: -1 | 1) => {
-    if (!useContactSheet) { navByOffset(direction * gridCols()); return; }
+  const navByRow = (direction: -1 | 1, extend = false) => {
+    if (!useContactSheet) { navByOffset(direction * gridCols(), extend); return; }
     const index = displayed.findIndex((p) => p.id === lastClicked);
-    if (index < 0) { navByOffset(0); return; }
+    if (index < 0) { navByOffset(0, extend); return; }
     const recentCount = recentlyAddedPhotos.length;
     const inRecent = index < recentCount;
     const rows = inRecent ? recentContactRows : contactRows;
     const localIndex = inRecent ? index : index - recentCount;
     const next = contactSheetNeighbor(rows, localIndex, direction);
-    if (next === localIndex && direction === 1 && inRecent && regularPhotos.length) navByOffset(recentCount - index);
-    else if (next === localIndex && direction === -1 && !inRecent && recentCount) navByOffset(recentCount - 1 - index);
-    else navByOffset(next - localIndex);
+    if (next === localIndex && direction === 1 && inRecent && regularPhotos.length) navByOffset(recentCount - index, extend);
+    else if (next === localIndex && direction === -1 && !inRecent && recentCount) navByOffset(recentCount - 1 - index, extend);
+    else navByOffset(next - localIndex, extend);
   };
 
   // Number of grid columns, derived from the rendered grid width / thumb size.
@@ -5506,7 +5559,8 @@ export function GalleryTab({
       const typing =
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
-        e.target instanceof HTMLSelectElement;
+        e.target instanceof HTMLSelectElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable);
 
       // An open modal dialog owns the keyboard: without this, Esc would ALSO
       // clear the selection underneath, and Delete would trash the selection
@@ -5516,7 +5570,8 @@ export function GalleryTab({
       if (showLibraryFilters) return;
       if (typing && e.key !== "Escape") return;
 
-      if (e.target instanceof HTMLElement && e.target.closest("button, summary, a") && (e.key === "Enter" || e.key === " ")) return;
+      if (e.target instanceof HTMLElement && e.target.closest("button, summary, a") &&
+        !e.target.closest("[data-library-photo-action]") && (e.key === "Enter" || e.key === " ")) return;
 
       // ? — shortcuts help (Shift+/ on most layouts)
       if (e.key === "?") {
@@ -5574,11 +5629,11 @@ export function GalleryTab({
         }
         return;
       }
-      if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
+      if (e.key.toLowerCase() === "a" && (e.metaKey || e.ctrlKey)) {
+        if (inspectPhoto || bulkEditMode || uploading) return;
         e.preventDefault();
-        requestLibraryMode("select", () =>
-          setSelected(new Set(displayed.map((p) => p.id))),
-        );
+        if (e.shiftKey) clearPhotoSelection();
+        else selectDisplayedPhotos();
         return;
       }
       if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === "[") {
@@ -5591,6 +5646,7 @@ export function GalleryTab({
         rotateActivePhotos("rotate_right");
         return;
       }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (libraryMode === "arrange") {
         if (
           (e.key === "Enter" || e.key === " ") &&
@@ -5635,22 +5691,22 @@ export function GalleryTab({
       // Arrow navigation
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        navByOffset(-1);
+        navByOffset(-1, e.shiftKey);
         return;
       }
       if (e.key === "ArrowRight") {
         e.preventDefault();
-        navByOffset(1);
+        navByOffset(1, e.shiftKey);
         return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        navByRow(-1);
+        navByRow(-1, e.shiftKey);
         return;
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        navByRow(1);
+        navByRow(1, e.shiftKey);
         return;
       }
       // Enter — open inspector for the cursor photo
@@ -5668,7 +5724,6 @@ export function GalleryTab({
       }
       // Space — quick preview (toggle) for the cursor photo
       if (
-        libraryMode === "normal" &&
         e.key === " " &&
         lastClicked !== null
       ) {
@@ -5693,6 +5748,8 @@ export function GalleryTab({
     effectiveThumbSize,
     inspectPhoto,
     showLibraryFilters,
+    bulkEditMode,
+    uploading,
     libraryMode,
     reorderTargetId,
     reorderLocked,
@@ -6277,6 +6334,15 @@ export function GalleryTab({
                 </button>
               ))}
             </fieldset>
+            <button
+              onClick={() => setShowShortcuts(true)}
+              title={copy.toolbar.shortcutsTitle}
+              aria-label={copy.toolbar.shortcutsAria}
+              className="admin-library-shortcuts admin-tap-sm flex items-center justify-center w-8 h-8 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] rounded-sm border border-[var(--admin-line)] transition-colors"
+            >
+              ?
+            </button>
+
             {libraryMode !== "arrange" && (
               <div className="admin-library-find-tools">
                 <div className="admin-library-search">
@@ -6520,15 +6586,11 @@ export function GalleryTab({
                 ` (${trashData!.photos.length})`}
             </button>
 
-            <button
-              onClick={() => setShowShortcuts(true)}
-              title={copy.toolbar.shortcutsTitle}
-              aria-label={copy.toolbar.shortcutsAria}
-              className="admin-tap-sm flex items-center justify-center w-6 h-6 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] rounded-sm border border-[var(--admin-line)] transition-colors"
-            >
-              ?
-            </button>
 
+                <button type="button" onClick={() => setShowShortcuts(true)}
+                  aria-label={copy.toolbar.shortcutsAria} className="md:hidden admin-tap-sm">
+                  {copy.preview.shortcutsTitle}
+                </button>
               </div>
             </details>
 
@@ -6595,6 +6657,77 @@ export function GalleryTab({
             )}
           </div>
 
+          {libraryMode === "arrange" && !showTrash && (
+            <div
+              data-library-arrange-toolbar
+              data-reorder-locked={reorderLocked ? "true" : "false"}
+              data-reorder-lock-cause={
+                publicReorderLockCause ?? reorderLockCause ?? "none"
+              }
+              className="flex items-center gap-2 flex-wrap"
+            >
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
+                {copy.reorder.activeLabel}
+              </span>
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+                {reorderLocked
+                  ? publicReorderLockCause === "not-manual"
+                    ? copy.reorder.publicOrderLocked
+                    : publicReorderLockCause === "error"
+                      ? copy.reorder.settingsError
+                      : publicReorderLockCause === "loading"
+                        ? copy.reorder.settingsLoading
+                        : reorderLockCause === "sort"
+                          ? copy.reorder.lockedBySort
+                          : copy.reorder.lockedByFilter
+                  : reorderTargetPosition > 0
+                    ? copy.reorder.targetLabel(reorderTargetPosition)
+                    : copy.reorder.targetPrompt}
+              </span>
+              {reorderLocked && publicReorderLockCause === null && (
+                <button
+                  type="button"
+                  onClick={unlockReorder}
+                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
+                >
+                  {copy.reorder.unlock}
+                </button>
+              )}
+              {onlySeriesFilter && (
+                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+                  {copy.reorder.seriesPositionHint}
+                </span>
+              )}
+            </div>
+          )}
+          {libraryMode !== "arrange" &&
+            !showTrash &&
+            (reorderFeedback || reorderUndo) && (
+              <div
+                data-library-reorder-status={
+                  reorderFeedback?.state ?? "undo-available"
+                }
+                role={reorderFeedback?.state === "error" ? "alert" : "status"}
+                className="flex items-center gap-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
+              >
+                {reorderFeedback?.state === "saving" && (
+                  <Loader2 size={11} className="animate-spin" />
+                )}
+                <span>{reorderFeedback?.message}</span>
+                {reorderUndo && !reorderBusy && (
+                  <button
+                    type="button"
+                    data-library-reorder-undo
+                    onClick={undoPhotoOrder}
+                    className="px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)]"
+                  >
+                    {copy.reorder.undo}
+                  </button>
+                )}
+              </div>
+            )}
+        </div>
+
           {/* Batch actions */}
           {libraryMode === "select" && !showTrash && (
             <div
@@ -6614,6 +6747,14 @@ export function GalleryTab({
                       )
                     : copy.selection.selected(selected.size)}
                 </span>
+                <button type="button" data-library-select-all onClick={selectDisplayedPhotos}
+                  disabled={!displayed.length || bulkBusy || uploading}>
+                  {language === "ja" ? "すべて選択" : "Select all"}
+                </button>
+                <button type="button" data-library-clear-selection onClick={clearPhotoSelection}
+                  disabled={!selected.size || bulkBusy}>
+                  {language === "ja" ? "選択解除" : "Deselect"}
+                </button>
                 <button
                   type="button"
                   className="admin-selection-cancel"
@@ -6632,7 +6773,7 @@ export function GalleryTab({
                   </span>
                 )}
                 <span className="hidden lg:inline text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                  {copy.mode.selectionHint}
+                  {language === "ja" ? "Shiftで範囲選択 · ⌘/Ctrl Aですべて" : "Shift for range · ⌘/Ctrl A for all"}
                 </span>
               </div>
               {selected.size > 0 && (
@@ -6925,76 +7066,6 @@ export function GalleryTab({
             </div>
           )}
 
-          {libraryMode === "arrange" && !showTrash && (
-            <div
-              data-library-arrange-toolbar
-              data-reorder-locked={reorderLocked ? "true" : "false"}
-              data-reorder-lock-cause={
-                publicReorderLockCause ?? reorderLockCause ?? "none"
-              }
-              className="flex items-center gap-2 flex-wrap"
-            >
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
-                {copy.reorder.activeLabel}
-              </span>
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                {reorderLocked
-                  ? publicReorderLockCause === "not-manual"
-                    ? copy.reorder.publicOrderLocked
-                    : publicReorderLockCause === "error"
-                      ? copy.reorder.settingsError
-                      : publicReorderLockCause === "loading"
-                        ? copy.reorder.settingsLoading
-                        : reorderLockCause === "sort"
-                          ? copy.reorder.lockedBySort
-                          : copy.reorder.lockedByFilter
-                  : reorderTargetPosition > 0
-                    ? copy.reorder.targetLabel(reorderTargetPosition)
-                    : copy.reorder.targetPrompt}
-              </span>
-              {reorderLocked && publicReorderLockCause === null && (
-                <button
-                  type="button"
-                  onClick={unlockReorder}
-                  className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
-                >
-                  {copy.reorder.unlock}
-                </button>
-              )}
-              {onlySeriesFilter && (
-                <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                  {copy.reorder.seriesPositionHint}
-                </span>
-              )}
-            </div>
-          )}
-          {libraryMode !== "arrange" &&
-            !showTrash &&
-            (reorderFeedback || reorderUndo) && (
-              <div
-                data-library-reorder-status={
-                  reorderFeedback?.state ?? "undo-available"
-                }
-                role={reorderFeedback?.state === "error" ? "alert" : "status"}
-                className="flex items-center gap-2 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]"
-              >
-                {reorderFeedback?.state === "saving" && (
-                  <Loader2 size={11} className="animate-spin" />
-                )}
-                <span>{reorderFeedback?.message}</span>
-                {reorderUndo && !reorderBusy && (
-                  <button
-                    type="button"
-                    data-library-reorder-undo
-                    onClick={undoPhotoOrder}
-                    className="px-2 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-ink)]"
-                  >
-                    {copy.reorder.undo}
-                  </button>
-                )}
-              </div>
-            )}
-        </div>
 
         {activeFilterLabels.length > 0 && (
           <div data-library-active-conditions className="admin-library-active-conditions">
@@ -7400,6 +7471,7 @@ export function GalleryTab({
                         <button
                           type="button"
                           data-library-photo-action
+                          aria-pressed={libraryMode === "select" ? isSelected : undefined}
                           aria-label={
                             `${
                               photo.title ||
@@ -7422,6 +7494,11 @@ export function GalleryTab({
                               : "cursor-pointer"
                           }`}
                         />
+                        {libraryMode === "select" && (
+                          <span className="admin-photo-selection-mark" data-selected={isSelected} aria-hidden="true">
+                            {isSelected && <Check size={12} strokeWidth={2.5} />}
+                          </span>
+                        )}
                         {libraryMode === "arrange" &&
                           !reorderLocked &&
                           !showTrash && (
@@ -7563,43 +7640,8 @@ export function GalleryTab({
                               )}
                             </div>
                           )}
-                        {/* Selection mark — hand-drawn grease-pencil circle.
-                        Always mounted (for tiles the virtualizer renders) so
-                        opacity can transition on deselect too; only the most
-                        recently (de)selected tile pays for the stroke-draw
-                        animation — bulk selections just fade in already-drawn. */}
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 32 32"
-                          className="admin-select-mark"
-                          data-state={
-                            !isSelected
-                              ? "hidden"
-                              : photo.id === lastClicked
-                                ? "draw"
-                                : "fade"
-                          }
-                        >
-                          <path
-                            className="admin-select-mark__circle"
-                            d="M15.8 3.6c6.9-.2 11.9 5 12 12.2.1 7-4.9 12.5-12 12.6C8.8 28.5 3.6 23.2 3.8 16 4 8.7 8.9 3.8 15.8 3.6Z"
-                            fill="none"
-                            stroke="var(--admin-accent)"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            pathLength={1}
-                          />
-                          <path
-                            d="M9.4 16.7c2 2.2 3.5 3.6 5.1 5.4 2.5-4.6 5.1-8 9.3-12.2"
-                            fill="none"
-                            stroke="var(--admin-accent)"
-                            strokeWidth={2.7}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
                         {/* Title strip on hover */}
-                        <div className="admin-photo-hover-only absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="admin-photo-hover-only absolute bottom-0 left-0 right-0 bg-black/70 px-2 py-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none">
                           <p className="text-[10px] text-white/80 truncate">
                             {photo.title || photo.filename}
                           </p>
@@ -8522,6 +8564,8 @@ export function GalleryTab({
                   copy.preview.shortcutRange,
                 ],
                 ["⌘/Ctrl + A", copy.preview.shortcutAll],
+                ["⌘/Ctrl + Shift + A", language === "ja" ? "選択解除" : "Deselect all"],
+                ["Shift + ← → ↑ ↓", copy.preview.shortcutRange],
                 ["← → ↑ ↓", copy.preview.shortcutMove],
                 ["[ / ]", copy.preview.shortcutRotate],
                 ["Enter", copy.preview.shortcutInspector],
@@ -10289,7 +10333,7 @@ function SegmentedControl<T extends string>({
       {pill && (
         <div
           aria-hidden="true"
-          className="admin-segmented__indicator absolute top-0.5 bottom-0.5 rounded-[var(--radius-s)] transition-[transform,width] duration-[var(--dur-base)] ease-[var(--ease-inout)]"
+          className="admin-segmented__indicator absolute left-0 top-0.5 bottom-0.5 rounded-[var(--radius-s)] transition-[transform,width] duration-[var(--dur-base)] ease-[var(--ease-inout)]"
           style={{
             transform: `translateX(${pill.left}px)`,
             width: pill.width,

@@ -917,11 +917,11 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       "true",
     );
     await expect(
-      photoTile(page, 9).locator(".admin-select-mark"),
-    ).toHaveAttribute("data-state", "hidden");
+      photoTile(page, 9).locator("[data-library-photo-action]"),
+    ).toHaveAttribute("aria-pressed", "false");
     await expect(
-      photoTile(page, 401).locator(".admin-select-mark"),
-    ).not.toHaveAttribute("data-state", "hidden");
+      photoTile(page, 401).locator("[data-library-photo-action]"),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   test("詳細欄を閉じるEscでは目印を残し、次のEscで消す", async ({

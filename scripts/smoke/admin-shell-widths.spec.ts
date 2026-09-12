@@ -99,7 +99,7 @@ test.describe("admin — 幅ごとの土台", () => {
     );
     expect(paper.trim().length).toBeGreaterThan(0);
 
-    // 選択は薄い面で示し、取り込みの強い塗りと区別する。
+    // 選択は下線で示し、取り込みの強い塗りと区別する。
     // color-mix() は color(srgb ...) として返るため、正規表現でRGB扱いしない。
     const selected = page.locator('[data-library-mode-action="normal"]');
     const style = await selected.evaluate((el) => {
@@ -113,10 +113,11 @@ test.describe("admin — 幅ごとの土台", () => {
       };
       const cs = getComputedStyle(el);
       const unselected = document.querySelector('[data-library-mode-action="select"]')!;
-      return { bg: pixel(cs.backgroundColor), unselected: pixel(getComputedStyle(unselected).backgroundColor) };
+      return { bg: pixel(cs.backgroundColor), shadow: cs.boxShadow, unselectedShadow: getComputedStyle(unselected).boxShadow };
     });
-    expect(Math.max(...style.bg.slice(0, 3)), "選択の面が黒塗りになっていない").toBeGreaterThan(150);
-    expect(style.bg, "選択中と未選択を区別できる").not.toEqual(style.unselected);
+    expect(style.bg[3], "モードの背景は透明").toBe(0);
+    expect(style.shadow, "選択中の下線がある").toContain("inset");
+    expect(style.shadow, "選択中と未選択を区別できる").not.toEqual(style.unselectedShadow);
     await expect(selected).toHaveAttribute("aria-pressed", "true");
 
     // 取り込む(その画面で一番強い1操作)だけは黒塗りのまま。

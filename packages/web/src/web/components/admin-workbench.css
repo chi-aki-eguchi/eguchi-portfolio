@@ -8,9 +8,9 @@
   --ax-inset: 12px;
   --ax-gap-page: 14px;
   --ax-gap-block: 12px;
-  --admin-radius-sm: 6px;
-  --admin-radius-md: 10px;
-  --admin-radius-lg: 14px;
+  --admin-radius-sm: 3px;
+  --admin-radius-md: 5px;
+  --admin-radius-lg: 8px;
   --admin-selected-bg: color-mix(in srgb, var(--admin-paper) 92%, var(--admin-ink));
   --admin-selected-border: var(--admin-line);
   --admin-selected-shadow: none;
@@ -63,10 +63,10 @@
 .admin-atelier.admin-workbench .admin-workspace__header .admin-library-density-count { display: none; }
 .admin-atelier.admin-workbench .admin-library-workbar { padding: 6px 12px; }
 .admin-atelier.admin-workbench .admin-library-workbar__row { gap: 6px 10px; }
-.admin-atelier.admin-workbench .admin-library-search { padding-left: 10px; border: 0; border-radius: 8px; background: var(--admin-paper-soft); }
+.admin-atelier.admin-workbench .admin-library-search { padding-left: 10px; border: 1px solid var(--admin-line); border-radius: 3px; background: transparent; }
 .admin-atelier.admin-workbench .admin-library-workbar input { background: transparent; }
-.admin-atelier.admin-workbench .admin-library-mode-switcher { border-radius: 8px; padding: 3px; border: 0; background: var(--admin-paper-soft); }
-.admin-atelier.admin-workbench .admin-library-mode-switcher button { border-radius: 8px; border: 0 !important; }
+.admin-atelier.admin-workbench .admin-library-mode-switcher { --admin-selected-bg: transparent; --admin-selected-border: transparent; --admin-selected-shadow: inset 0 -2px 0 var(--admin-ink); border-radius: 0; padding: 0; gap: 4px; border: 0; background: transparent; }
+.admin-atelier.admin-workbench .admin-library-mode-switcher button { border-radius: 0; border: 0 !important; }
 .admin-atelier.admin-workbench .admin-library-workbar__row > button:not(.admin-btn-primary),
 .admin-atelier.admin-workbench .admin-library-find-tools > button,
 .admin-atelier.admin-workbench .admin-library-view-menu > summary,
@@ -180,4 +180,68 @@
   .admin-atelier.admin-workbench .admin-content .hero-picker-summary { min-height: 34px; }
   .admin-atelier.admin-workbench .admin-content .hero-candidate footer button { min-height: 44px; min-width: 44px; }
   .admin-atelier.admin-workbench .admin-preview-save-dock { gap: 6px; padding: 6px 8px; }
+}
+
+/* Selection is a working toolbar, aligned with the contact sheet. */
+.admin-atelier.admin-workbench .admin-library-selection-toolbar { flex-shrink: 0; padding: 6px 12px; gap: 6px 12px; border-bottom: 1px solid var(--admin-line); background: var(--admin-paper); }
+.admin-atelier.admin-workbench .admin-library-selection-toolbar > div:first-child { flex-wrap: wrap; border-right: 0; padding-right: 0; gap: 4px 12px; }
+.admin-atelier.admin-workbench .admin-library-selection-toolbar button { min-height: 32px; border-radius: 3px; }
+.admin-atelier.admin-workbench .admin-library-selection-toolbar button:disabled { opacity: .4; }
+.admin-atelier.admin-workbench .admin-library-selection-toolbar [data-library-select-all],
+.admin-atelier.admin-workbench .admin-library-selection-toolbar [data-library-clear-selection] { text-decoration: underline; text-underline-offset: 4px; }
+.admin-atelier.admin-workbench .admin-library-selection-toolbar .admin-selection-cancel { margin-left: auto; }
+.admin-atelier.admin-workbench .admin-photo-selection-mark { position: absolute; top: 6px; right: 6px; z-index: 3; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; pointer-events: none; border: 1px solid #fff9; border-radius: 2px; background: #0008; color: white; }
+.admin-atelier.admin-workbench .admin-photo-selection-mark[data-selected="true"] { background: var(--admin-ink); color: var(--admin-paper); border-color: var(--admin-ink); }
+@media (min-width: 768px) {
+  .admin-atelier.admin-workbench .admin-library-selection-toolbar > div:first-child { flex-basis: 100%; }
+  .admin-atelier.admin-workbench .admin-library-selection-toolbar > div:first-child > span:last-child { margin-left: auto; }
+  .admin-atelier.admin-workbench .admin-library-selection-toolbar .admin-selection-cancel { order: 3; margin-left: 12px; }
+}
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench .admin-library-selection-toolbar { position: relative; order: 1; bottom: auto; left: auto; right: auto; padding: 8px 12px; border: 0; border-top: 1px solid var(--admin-line-strong); border-radius: 0; box-shadow: none; }
+  .admin-atelier.admin-workbench .admin-library-selection-toolbar button { min-height: 44px; }
+  .admin-atelier.admin-workbench .admin-library-selection-toolbar > div:first-child { justify-content: flex-start; gap: 2px 12px; }
+  .admin-atelier.admin-workbench .admin-library-selection-toolbar > div:first-child > span:first-child { flex-basis: 100%; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-atelier.admin-workbench .admin-photo-tile:not(:hover):not(:focus-within) .admin-photo-selection-mark[data-selected="false"] { opacity: 0; }
+}
+
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(2) > button,
+  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(3) > button { padding: 6px 3px; gap: 2px; white-space: nowrap; font-size: 11px; }
+  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(2) > button > svg:first-child,
+  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(3) > button > svg:first-child { display: none; }
+}
+
+/* Working dialogs use a solid surface so photos do not compete with text. */
+.admin-atelier.admin-workbench dialog.admin-glass {
+  background: var(--admin-paper) !important;
+  border-radius: var(--admin-radius-md) !important;
+  box-shadow: 0 8px 32px #0003 !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.admin-atelier.admin-workbench dialog.admin-glass::backdrop {
+  background: #0006;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (max-width: 767px) {
+  .admin-atelier.admin-workbench [data-library-mode="normal"] .admin-library-shortcuts,
+  .admin-atelier.admin-workbench [data-library-mode="arrange"] .admin-library-shortcuts { display: none; }
+}
+
+@media (max-width: 767px) {
+  /* Menus in the bottom toolbar open into the available photo area. */
+  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-cat] > div,
+  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-series] > div {
+    top: auto;
+    bottom: calc(100% + 4px);
+    max-height: min(320px, 50dvh);
+    overflow-y: auto;
+  }
+  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-series] > div { left: auto; right: 0; }
 }

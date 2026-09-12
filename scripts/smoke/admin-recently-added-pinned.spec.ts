@@ -281,12 +281,12 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
       .click();
     await page.keyboard.press("ArrowRight");
     await expect(
-      photoTile(page, 1).locator(".admin-select-mark"),
-    ).not.toHaveAttribute("data-state", "hidden");
+      photoTile(page, 1).locator("[data-library-photo-action]"),
+    ).toHaveAttribute("aria-pressed", "true");
     await page.keyboard.press("ArrowLeft");
     await expect(
-      photoTile(page, 102).locator(".admin-select-mark"),
-    ).not.toHaveAttribute("data-state", "hidden");
+      photoTile(page, 102).locator("[data-library-photo-action]"),
+    ).toHaveAttribute("aria-pressed", "true");
 
     // Shift範囲選択も pinned 2枚と regular 先頭を1本の配列として扱う。
     await photoTile(page, 101)

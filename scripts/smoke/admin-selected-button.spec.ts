@@ -70,6 +70,14 @@ test.describe("admin — 選択済みボタンが実際にハイライト表示�
     await expect(selectedOption).toBeVisible();
     await expect(indicator).toBeVisible();
 
+    // A correct indicator color is not enough: an opaque button used to cover
+    // it, leaving dark text on a dark surface despite the contrast test passing.
+    expect(await selectedOption.evaluate(el => getComputedStyle(el).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+    const selectedBox = (await selectedOption.boundingBox())!;
+    const indicatorBox = (await indicator.boundingBox())!;
+    expect(Math.abs(selectedBox.x - indicatorBox.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(selectedBox.width - indicatorBox.width)).toBeLessThanOrEqual(1);
+
     if (testInfo.project.name === "mobile") {
       await testInfo.attach("390px-photo-inspector.png", {
         body: await page.screenshot(),

@@ -254,6 +254,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
           buffer: Buffer.from("duplicate"),
         },
       ]);
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 
     await expect(page.locator("[data-library-mode]")).toHaveAttribute(
       "data-library-mode",
@@ -425,6 +426,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         mimeType: "image/jpeg",
         buffer: Buffer.from("added-1"),
       });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
     await uploadStarted.promise;
 
     await photoTile(page, 9).locator("[data-library-photo-action]").click();
@@ -499,12 +501,14 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       mimeType: "image/jpeg",
       buffer: Buffer.from("slow-a"),
     });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
     await slowUploadStarted.promise;
     await input.setInputFiles({
       name: "fast-b.jpg",
       mimeType: "image/jpeg",
       buffer: Buffer.from("fast-b"),
     });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 
     await expect(photoTile(page, 202)).toHaveAttribute(
       "data-library-recently-added",
@@ -598,6 +602,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         mimeType: "image/jpeg",
         buffer: Buffer.from("delayed-refresh"),
       });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
     await refreshStarted.promise;
 
     // 再取得が止まっている間に古い一覧へ選択を載せないことを確認する。
@@ -698,6 +703,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         mimeType: "image/jpeg",
         buffer: Buffer.from("failed-refresh"),
       });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 
     await expect(
       page.getByRole("alert").filter({
@@ -761,6 +767,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         mimeType: "image/jpeg",
         buffer: Buffer.from("duplicate"),
       });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 
     await expect(
       page.getByRole("alert").filter({
@@ -822,6 +829,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         mimeType: "image/jpeg",
         buffer: Buffer.from("all-failed"),
       });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 
     await expect(
       page.getByRole("alert").filter({ hasText: "all-failed.jpg" }),
@@ -896,6 +904,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     const photoGrid = page.locator("[data-library-scroll]");
     await photoGrid.dispatchEvent("dragover", { dataTransfer });
     await photoGrid.dispatchEvent("drop", { dataTransfer });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 
     await expect(selectionToolbar).toHaveAttribute(
       "data-library-selected-count",
@@ -988,6 +997,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
         mimeType: "image/jpeg",
         buffer: Buffer.from("added-1"),
       });
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 
     const marker = page.locator("[data-library-recently-added-marker]");
     await expect(marker).toHaveCount(1);

@@ -18,7 +18,7 @@ describe("admin library virtual grid", () => {
     expect(window.columns).toBe(6);
     expect(window.startIndex).toBe(0);
     expect(window.endIndex).toBeLessThan(445);
-    expect(window.renderedCount).toBe(78);
+    expect(window.renderedCount).toBe(54);
     expect(window.isVirtualized).toBe(true);
   });
 
@@ -45,6 +45,13 @@ describe("admin library virtual grid", () => {
         85,
       ),
     ).toBe("/api/images/medium/original.webp");
+  });
+
+  test("an unsaved rotation bypasses the cached image, without breaking unchanged rotations", () => {
+    const photo = { url: "/api/images/photos/original.jpg", mediumUrl: "/api/images/medium/original.webp", rotationDeg: 90 };
+    expect(adminPhotoSrc(photo, 1600, 80, 90)).toBe(photo.mediumUrl);
+    expect(adminPhotoSrc(photo, 1600, 80, 180)).not.toBe(photo.mediumUrl);
+    expect(adminPhotoSrc(photo, 1600, 80, 180)).toContain("rot=180");
   });
 
   test("keeps global indexes stable after scrolling", () => {

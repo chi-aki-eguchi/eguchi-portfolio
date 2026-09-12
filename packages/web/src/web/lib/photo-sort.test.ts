@@ -12,8 +12,8 @@ describe("sortPhotosBySetting", () => {
     expect(sortPhotosBySetting(photos, "manual").map((p) => p.id)).toEqual([2, 3, 1]);
   });
 
-  test("date sorts fall back to upload date when shotAt is missing", () => {
-    expect(sortPhotosBySetting(photos, "date_desc").map((p) => p.id)).toEqual([2, 3, 1]);
+  test("date sorts leave undated photos last instead of using upload time", () => {
+    expect(sortPhotosBySetting(photos, "date_desc").map((p) => p.id)).toEqual([3, 1, 2]);
     expect(sortPhotosBySetting(photos, "date_asc").map((p) => p.id)).toEqual([1, 3, 2]);
   });
 

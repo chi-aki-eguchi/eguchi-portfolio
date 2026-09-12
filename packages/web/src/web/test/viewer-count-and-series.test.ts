@@ -71,8 +71,8 @@ describe("取り込みの入口", () => {
     // エラーも出ないまま無反応になる（取り込みに失敗して選び直すときに踏む）。
     expect(admin).toContain('event.target.value = ""');
     const i = admin.indexOf('event.target.value = ""');
-    const j = admin.indexOf("handleFiles(picked)");
-    expect(j, "handleFiles を呼んでいない").toBeGreaterThan(-1);
+    const j = admin.indexOf("setPendingImportFiles(picked)");
+    expect(j, "取り込み確認を開いていない").toBeGreaterThan(-1);
     // 空へ戻すのは handleFiles より先（後だと選択内容を読めない）。
     expect(i).toBeLessThan(j);
   });

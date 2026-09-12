@@ -1,3 +1,4 @@
+import { normalizePhotoDate } from "../../shared/photo-dates";
 type UploadMedium = "digital" | "film";
 
 export type ShotAtSource =
@@ -12,10 +13,6 @@ export type UploadedPhotoShotAt = {
   shotAtSource: ShotAtSource;
 };
 
-function toShotAt(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 19);
-}
-
 export function shotAtWithSourceForUploadedPhoto(
   exifShotAt: unknown,
   exifDateDigitized: unknown,
@@ -23,42 +20,13 @@ export function shotAtWithSourceForUploadedPhoto(
   uploadMedium: UploadMedium,
   now = Date.now(),
 ): UploadedPhotoShotAt {
-  if (uploadMedium === "film") {
-    // Film: a scanner/lab has no way to know the original shot date, so
-    // DateTimeOriginal (and the Image.DateTime fallback folded into
-    // exifShotAt server-side) is untrustworthy here — it's often just the
-    // scan/export timestamp mislabeled as capture time. DateTimeDigitized is
-    // the EXIF-spec-correct tag for "when this became a digital file", so
-    // it's the only EXIF signal trusted for film. Falls back to the file's
-    // own modified date — still a real digitization-time fact, not a guess.
-    if (typeof exifDateDigitized === "string" && exifDateDigitized.trim()) {
-      return {
-        shotAt: exifDateDigitized.trim(),
-        shotAtSource: "exif_digitized",
-      };
-    }
-    // Browsers almost always provide File.lastModified, so the `now` fallback
-    // below is not expected in normal uploads. Keep it to preserve the existing
-    // timestamp behavior, and classify that fallback as file_modified too.
-    const fileModified =
-      typeof file.lastModified === "number" &&
-      Number.isFinite(file.lastModified) &&
-      file.lastModified > 0
-        ? file.lastModified
-        : now;
-    return {
-      shotAt: toShotAt(fileModified),
-      shotAtSource: "file_modified",
-    };
-  }
-
-  // Digital: camera-written DateTimeOriginal (or Image.DateTime fallback) is trustworthy.
-  if (typeof exifShotAt === "string" && exifShotAt.trim()) {
-    return {
-      shotAt: exifShotAt.trim(),
-      shotAtSource: "exif_original",
-    };
-  }
+  // A camera scan's DateTimeOriginal is the scan time, not the film exposure.
+  // Keep its provenance and name it accordingly in Admin. Never substitute now.
+  const original = normalizePhotoDate(exifShotAt);
+  const digitized = normalizePhotoDate(exifDateDigitized);
+  if (original) return { shotAt: original, shotAtSource: "exif_original" };
+  if (digitized) return { shotAt: digitized, shotAtSource: "exif_digitized" };
+  void file; void uploadMedium; void now;
   return { shotAt: "", shotAtSource: "none" };
 }
 

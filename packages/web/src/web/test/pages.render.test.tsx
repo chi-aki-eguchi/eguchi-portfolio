@@ -1015,12 +1015,9 @@ describe("shared components", () => {
       expect(host.textContent).toContain("サイト");
       expect(host.textContent).toContain("Library");
       expect(host.textContent).toContain("取り込む");
-      // Digital/Film は Import 設定 — 絞り込みと誤読されない明札付きグループ
-      expect(
-        host.querySelector('fieldset[aria-label="取り込み媒体"]'),
-      ).not.toBeNull();
-      expect(host.textContent).toContain("デジタル");
-      expect(host.textContent).toContain("フィルム");
+      // Import type is chosen with the files, not mixed into Library filters.
+      expect(host.querySelector('input[aria-label="画像ファイルを選択"]')).not.toBeNull();
+      expect(host.querySelector('fieldset[aria-label="取り込み媒体"]')).toBeNull();
       expect(host.textContent).toContain("絞り込み");
       // Workspace仕様: 検索は主要操作として常時表示し、詳細条件だけを展開する。
       expect(
@@ -1166,12 +1163,8 @@ describe("shared components", () => {
       expect(
         host.querySelector('select[aria-label="Sort Library view"]'),
       ).not.toBeNull();
-      expect(
-        host.querySelector('fieldset[aria-label="Import medium"]'),
-      ).not.toBeNull();
-      expect(host.textContent).toContain("Import as");
-      expect(host.textContent).toContain("Digital");
-      expect(host.textContent).toContain("Film");
+      expect(host.querySelector('input[aria-label="Choose image files"]')).not.toBeNull();
+      expect(host.querySelector('fieldset[aria-label="Import medium"]')).toBeNull();
 
       buttonWithText(host, "Filters").click();
       await flush(30);
@@ -1744,10 +1737,10 @@ describe("shared components", () => {
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
       await flush(60);
-      expect(host.textContent).toContain("写真を編集");
+      expect(host.querySelector("[data-library-inspector]")).not.toBeNull();
       inspectorClose()!.click();
       await flush(60);
-      expect(host.textContent).not.toContain("写真を編集");
+      expect(host.querySelector("[data-library-inspector]")).toBeNull();
       expect(host.textContent).not.toContain("保存せずに閉じますか");
 
       // 未保存の編集あり: × で確認が出て、キャンセルなら編集を続けられる
@@ -1760,11 +1753,11 @@ describe("shared components", () => {
       expect(host.textContent).toContain(
         "保存していない編集があります。保存せずに閉じますか？",
       );
-      expect(host.textContent).toContain("写真を編集");
+      expect(host.querySelector("[data-library-inspector]")).not.toBeNull();
       buttonWithText(host, "キャンセル").click();
       await flush(60);
       expect(host.textContent).not.toContain("保存せずに閉じますか");
-      expect(host.textContent).toContain("写真を編集");
+      expect(host.querySelector("[data-library-inspector]")).not.toBeNull();
       expect((inputByLabel(host, "タイトル") as HTMLInputElement).value).toBe(
         "Dirty close title",
       );
@@ -1774,7 +1767,7 @@ describe("shared components", () => {
       await flush(60);
       buttonWithText(host, "保存せず閉じる").click();
       await flush(60);
-      expect(host.textContent).not.toContain("写真を編集");
+      expect(host.querySelector("[data-library-inspector]")).toBeNull();
 
       cleanup();
     } finally {
@@ -1843,12 +1836,12 @@ describe("shared components", () => {
         confirmShown(),
         "古いダイアログの後始末が新しい確認を閉じた",
       ).toBe(true);
-      expect(host.textContent).toContain("写真を編集");
+      expect(host.querySelector("[data-library-inspector]")).not.toBeNull();
 
       // 2つ目の確認は正常に機能する
       buttonWithText(host, "保存せず閉じる").click();
       await flush(60);
-      expect(host.textContent).not.toContain("写真を編集");
+      expect(host.querySelector("[data-library-inspector]")).toBeNull();
 
       cleanup();
     } finally {
@@ -2025,7 +2018,7 @@ describe("shared components", () => {
         expect(confirmShown(), `round ${round}: 2回目の確認が出ない`).toBe(true);
         buttonWithText(host, "保存せず閉じる").click();
         await flush(60);
-        expect(host.textContent).not.toContain("写真を編集");
+        expect(host.querySelector("[data-library-inspector]")).toBeNull();
       }
       // 全部閉じ切った後、残存タイマーで何かが起きないこと
       await flush(400);

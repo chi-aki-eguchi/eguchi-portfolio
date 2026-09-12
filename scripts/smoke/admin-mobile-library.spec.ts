@@ -190,7 +190,8 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   // × は即閉じ(確認ダイアログなし・非書き込み)。
   await tiles.nth(0).locator("[data-library-photo-action]").click();
   const inspector = page.locator("[data-library-inspector]");
-  await expect(inspector.getByText("写真を編集")).toBeVisible({ timeout: 5_000 });
+  await expect(inspector).toBeVisible({ timeout: 5_000 });
+  await expect(inspector).toHaveAttribute("aria-label", "写真を編集");
   await expect(inspector).toHaveAttribute("data-inspector-mobile-section", "basic");
   await expect(inspector.locator("[data-inspector-save-bar]")).toBeVisible();
   await expect(inspector.locator("[data-inspector-save-bar]")).toHaveAttribute(
@@ -221,7 +222,7 @@ async function assertContactSheet(page: Page, width: number, height: number) {
     "clean",
   );
   await page.locator("[data-library-inspector-close]").click();
-  await expect(page.getByText("写真を編集")).toBeHidden();
+  await expect(inspector).toBeHidden();
 }
 
 test.describe("admin — スマホLibraryコンタクトシート", () => {
@@ -335,8 +336,8 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       const workbar = page.locator(".admin-library-workbar");
       const grid = page.locator("[data-library-scroll]");
       const before = (await grid.boundingBox())!;
-      // 44pxの写真操作＋検索の2行。古い小さな1行へ戻さない。
-      expect((await workbar.boundingBox())!.height).toBeLessThanOrEqual(112);
+      // 写真操作・検索・現在のソートを3行以内に保つ。
+      expect((await workbar.boundingBox())!.height).toBeLessThanOrEqual(150);
       await expect(page.locator("[data-library-mobile-arrange]")).toBeVisible();
       expect((await page.locator(".admin-library-search input").boundingBox())!.width).toBeGreaterThanOrEqual(140);
 

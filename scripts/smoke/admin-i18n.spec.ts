@@ -34,7 +34,8 @@ test.describe("admin — JP/EN shared shell", () => {
 
     await page.locator("[data-library-photo-action]").first().click();
     const inspector = page.locator("[data-library-inspector]");
-    await expect(inspector.getByText("写真を編集", { exact: true })).toBeVisible();
+    await expect(inspector).toHaveAttribute("aria-label", "写真を編集");
+    await expect(inspector.locator(".admin-inspector-current-file")).toContainText(/1 \/ \d+/);
     await inspector.getByRole("button", { name: "詳細", exact: true }).click();
     await expect(inspector.getByPlaceholder("タイトル未設定")).toBeVisible();
     await expect(inspector.getByPlaceholder("写真の説明…")).toBeVisible();
@@ -117,10 +118,11 @@ test.describe("admin — JP/EN shared shell", () => {
     await expect(page.getByRole("button", { name: "Filters" })).toBeVisible();
     await page.locator(".admin-library-view-menu > summary").click();
     await expect(page.getByLabel("Sort Library view")).toBeVisible();
-    const importMedium = page.getByLabel("Import medium");
-    await expect(importMedium).toContainText("Import as");
-    await expect(importMedium).toContainText("Digital");
-    await expect(importMedium).toContainText("Film");
+    await page.getByLabel("Choose image files").setInputFiles({ name: "preflight.jpg", mimeType: "image/jpeg", buffer: Buffer.from("preflight") });
+    const importDialog = page.getByRole("dialog");
+    await expect(importDialog.getByRole("radio", { name: "Digital photographs" })).toBeVisible();
+    await expect(importDialog.getByRole("radio", { name: "Film scans" })).toBeVisible();
+    await importDialog.getByRole("button", { name: "Close", exact: true }).click();
 
     await gotoAdminTab(page, "categories");
     await expect(

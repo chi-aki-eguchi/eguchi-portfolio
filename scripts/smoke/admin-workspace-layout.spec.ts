@@ -85,7 +85,8 @@ test.describe("admin — Workspace layout", () => {
     // 取り込み一式は見出しではなく作業バーの右端にある(2026-07-31 刷新)。
     const importGroup = page.locator("[data-library-exit-actions]");
     await expect(importGroup).toBeVisible();
-    await expect(importGroup.locator("fieldset")).toBeVisible();
+    // 種類はファイル選択後に確認する。常設のフィルターと混同させない。
+    await expect(importGroup.locator("fieldset")).toHaveCount(0);
     await expect(
       importGroup.locator(".admin-library-import-button"),
     ).toBeVisible();

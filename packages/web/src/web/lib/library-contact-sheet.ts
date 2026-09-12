@@ -56,8 +56,8 @@ export function contactSheetWindow(rows: ContactSheetRow[], scrollTop: number, v
   const totalHeight = total ? total.top + total.height : 0;
   const first = rows.findIndex((row) => row.top + row.height >= scrollTop);
   const last = rows.findIndex((row) => row.top > scrollTop + viewportHeight);
-  const startRow = viewportHeight <= 0 ? 0 : Math.max(0, (first < 0 ? rows.length - 1 : first) - 8);
-  const endRow = viewportHeight <= 0 || last < 0 ? rows.length : Math.min(rows.length, last + 8);
+  const startRow = viewportHeight <= 0 ? 0 : Math.max(0, (first < 0 ? rows.length - 1 : first) - 4);
+  const endRow = viewportHeight <= 0 || last < 0 ? rows.length : Math.min(rows.length, last + 4);
   const visibleRows = rows.slice(startRow, endRow);
   const startIndex = visibleRows[0]?.items[0]?.index ?? 0;
   const lastRow = visibleRows[visibleRows.length - 1];

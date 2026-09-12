@@ -1,4 +1,8 @@
 import "../components/admin-workbench.css";
+import { comparePhotoDates } from "../../shared/photo-dates";
+import { PhotoImportReview, type ImportDatePolicy } from "../components/PhotoImportReview";
+import { PhotoDateRecovery } from "../components/PhotoDateRecovery";
+import { photoDateSourceLabel } from "../lib/photo-date-recovery";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Library uses the approved ARIA listbox/option pattern with custom photo tiles. */
 import {
   useState,
@@ -738,13 +742,14 @@ function AdminPageContent({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        if (!paletteOpen && document.querySelector("dialog[open]")) return;
         e.preventDefault();
         setPaletteOpen((v) => !v);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [paletteOpen]);
 
   if (isLoading)
     return (
@@ -931,6 +936,7 @@ function AdminPageContent({
           ))}
         </nav>
         <div className="admin-sidebar__footer admin-sidebar__full">
+          <button type="button" className="admin-sidebar__link" onClick={() => setPaletteOpen(true)}><Search size={13} /> {t.navigation.paletteLabel}<kbd className="ml-auto text-[10px] text-[var(--admin-muted)]">⌘ K</kbd></button>
           <a
             href={publicSiteHref}
             target="_blank"
@@ -1712,6 +1718,7 @@ export type Photo = {
   lens?: string | null;
   filmType?: string | null;
   shotAt?: string | null;
+  shotAtSource?: string | null;
   description: string;
   category: string;
   filename: string;
@@ -1828,7 +1835,9 @@ export function adminPhotoSrc(
   },
   w: number,
   q: number,
+  rotationDeg = photo.rotationDeg,
 ): string {
+  if (normalizeRotationDeg(rotationDeg) !== normalizeRotationDeg(photo.rotationDeg)) return srcFor(photo.url, w, q, undefined, rotationDeg);
   if (w <= 640 && photo.thumbUrl) return photo.thumbUrl;
   if (w <= 1920 && photo.mediumUrl) return photo.mediumUrl;
   return srcFor(photo.url, w, q, undefined, photo.rotationDeg);
@@ -1887,11 +1896,11 @@ const EMPTY_ALBUM_DRAFT = {
 const LIBRARY_GRID_GAP = 8;
 // Keep more than one extra screen of rows mounted so fast trackpad scrolling
 // does not repeatedly tear down the next thumbnail rows at the viewport edge.
-const LIBRARY_GRID_OVERSCAN_ROWS = 8;
+const LIBRARY_GRID_OVERSCAN_ROWS = 4;
 // Fetch one more overscan-sized band without mounting extra tiles. The browser
 // cache can then supply thumbnails when a fast trackpad gesture jumps beyond
 // the currently mounted rows, without giving up DOM virtualization.
-const LIBRARY_GRID_PRELOAD_ROWS = LIBRARY_GRID_OVERSCAN_ROWS;
+const LIBRARY_GRID_PRELOAD_ROWS = 2;
 // Large purges get an extra wrinkle (ack checkbox + countdown) — a fat-finger
 // "Purge All" on a big trash shouldn't be one accidental click away.
 const PURGE_EXTRA_STEP_THRESHOLD = 10;
@@ -2560,6 +2569,10 @@ export function GalleryTab({
   const [uploadMedium, setUploadMedium] = usePersistentState<
     "digital" | "film"
   >("admin:uploadMedium", "digital");
+  const [pendingImportFiles, setPendingImportFiles] = useState<File[] | null>(null);
+  const [importDatePolicy, setImportDatePolicy] = useState<ImportDatePolicy>("exif");
+  const [dateRecoveryPhotos, setDateRecoveryPhotos] = useState<Photo[] | null>(null);
+  const [dateRecoveryBusy, setDateRecoveryBusy] = useState(false);
 
   const showCaptureClipboardStatus = useCallback(
     (status: CaptureClipboardStatus) => {
@@ -2926,6 +2939,7 @@ export function GalleryTab({
         "camera",
         "category",
         "title",
+        "filename",
         "published",
         "random",
       ].includes(librarySort)
@@ -3298,7 +3312,6 @@ export function GalleryTab({
       const arr = [...list];
       const time = (v: string | number | null | undefined) =>
         v ? new Date(v).getTime() : 0;
-      const photoDate = (p: Photo) => time(p.shotAt) || time(p.createdAt);
       const seriesTitle = (id: number | null | undefined) =>
         id == null ? "￿" : seriesTitleFor(id);
       const bySlot = (a: string, b: string) => a.localeCompare(b, "ja");
@@ -3310,20 +3323,10 @@ export function GalleryTab({
           arr.sort((a, b) => time(a.createdAt) - time(b.createdAt));
           break;
         case "shotAt-desc":
-          arr.sort((a, b) => {
-            const A = photoDate(a);
-            const B = photoDate(b);
-            if (!A || !B) return Number(!A) - Number(!B);
-            return B - A;
-          });
+          arr.sort((a, b) => comparePhotoDates(a.shotAt, b.shotAt, "desc"));
           break;
         case "shotAt-asc":
-          arr.sort((a, b) => {
-            const A = photoDate(a);
-            const B = photoDate(b);
-            if (!A || !B) return Number(!A) - Number(!B);
-            return A - B;
-          });
+          arr.sort((a, b) => comparePhotoDates(a.shotAt, b.shotAt, "asc"));
           break;
         case "series":
           arr.sort((a, b) =>
@@ -3347,6 +3350,9 @@ export function GalleryTab({
           break;
         case "category":
           arr.sort((a, b) => bySlot(a.category || "￿", b.category || "￿"));
+          break;
+        case "filename":
+          arr.sort((a, b) => a.filename.localeCompare(b.filename, "ja", { numeric: true }));
           break;
         case "title":
           arr.sort((a, b) =>
@@ -3373,7 +3379,7 @@ export function GalleryTab({
     [allPhotos, sortPhotosForView],
   );
   const recentlyAddedSectionEnabled =
-    !showTrash && libraryMode !== "arrange";
+    !showTrash && libraryMode !== "arrange" && librarySort === "manual";
   const { recentlyAddedPhotos, regularPhotos } = useMemo(
     () =>
       splitRecentlyAddedPhotos({
@@ -3444,7 +3450,9 @@ export function GalleryTab({
     const scrollEl = scrollRef.current;
     const gridEl = gridRef.current;
     const next = {
-      scrollTop: scrollEl?.scrollTop ?? 0,
+      // The overscan covers this 96px buffer. Do not redraw all tiles for
+      // every pixel of native scrolling; only advance the render window.
+      scrollTop: Math.floor((scrollEl?.scrollTop ?? 0) / 96) * 96,
       viewportHeight: scrollEl?.clientHeight ?? 0,
       gridWidth: measuredContentWidth(gridEl),
       gridOffsetTop: currentLibraryGridOffsetTop(),
@@ -3784,6 +3792,15 @@ export function GalleryTab({
   }, [onRecentlyAddedPhotoIdsChange]);
   useLayoutEffect(() => {
     const pending = pendingRecentlyAddedScrollRef.current;
+    if (pending && pending.generation === uploadGenerationRef.current && !recentlyAddedSectionEnabled) {
+      if (!allPhotos.some(photo => pending.ids.has(photo.id))) return;
+      // Respect the selected sort, but still bring a newly imported photo
+      // into view. Never leave a pending jump that fires later on sort change.
+      pendingRecentlyAddedScrollRef.current = null;
+      const index = displayed.findIndex(photo => pending.ids.has(photo.id));
+      if (!showTrash && !bulkEditMode && index >= 0) scrollLibraryIndexIntoView(index);
+      return;
+    }
     if (
       !pending ||
       pending.generation !== uploadGenerationRef.current ||
@@ -3811,7 +3828,11 @@ export function GalleryTab({
     }
     scheduleLibraryGridMeasure();
   }, [
+    allPhotos,
     bulkEditMode,
+    displayed,
+    showTrash,
+    scrollLibraryIndexIntoView,
     recentlyAddedPhotos,
     recentlyAddedSectionEnabled,
     scheduleLibraryGridMeasure,
@@ -3824,9 +3845,8 @@ export function GalleryTab({
     () => allPhotos.filter((p) => selected.has(p.id) && !p.shotAt).length,
     [allPhotos, selected],
   );
-  // Film shotAt can't be re-read from EXIF after upload (R2 stores an
-  // EXIF-stripped master) — this counts selected film photos with a
-  // (possibly wrong) date, i.e. candidates for the "clear" rescue op below.
+  // Original files can now restore dates locally. Clearing remains available
+  // for known incorrect dates, without deleting or reimporting photographs.
   const selectedFilmShotAtSetCount = useMemo(
     () =>
       allPhotos.filter(
@@ -4585,7 +4605,7 @@ export function GalleryTab({
   };
 
   // Upload — server-side resize (no more presigned URLs)
-  const handleFiles = async (files: File[]) => {
+  const handleFiles = async (files: File[], datePolicy = importDatePolicy) => {
     // 次の取り込みを始めた時点で、前回分の目印だけを解除する。
     // 選択状態とは別なので、ここでは selected を変更しない。
     pendingRecentlyAddedScrollRef.current = null;
@@ -4693,7 +4713,7 @@ export function GalleryTab({
         const filmTypeVal = isDigital ? "デジタル" : "フィルム";
         const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
         const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
-        const {
+        let {
           shotAt: shotAtVal,
           shotAtSource: shotAtSourceVal,
         } = shotAtWithSourceForUploadedPhoto(
@@ -4702,6 +4722,12 @@ export function GalleryTab({
           file,
           uploadMedium,
         );
+        if (!shotAtVal && datePolicy === "file" && Number.isFinite(file.lastModified) && file.lastModified > 0) {
+          const d = new Date(file.lastModified);
+          const pad = (n: number) => String(n).padStart(2, "0");
+          shotAtVal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+          shotAtSourceVal = "file_modified";
+        }
         const created = await adminApi.photos.$post({
           json: {
             filename: file.name,
@@ -4713,7 +4739,7 @@ export function GalleryTab({
             mediumKey: (mediumKey as string) ?? "",
             shotAt: shotAtVal,
             shotAtSource: shotAtSourceVal,
-            shotAtDigitized: (exifDateDigitized as string) ?? "",
+            shotAtDigitized: isDigital ? ((exifDateDigitized as string) ?? "") : shotAtVal,
             sourceWidth: (sourceWidth as number) ?? null,
             sourceHeight: (sourceHeight as number) ?? null,
             sourceFormat: (sourceFormat as string) ?? null,
@@ -5377,6 +5403,18 @@ export function GalleryTab({
   // Open the inspector for a photo (shared by click + Enter)
   const inspectorOpenerRef = useRef<HTMLElement | null>(null);
   const inspectorReturnFrame = useRef(0);
+  const reviewPhotoId = previewPhoto?.id ?? inspectPhoto?.id;
+  useEffect(() => {
+    if (reviewPhotoId == null) return;
+    const index = displayed.findIndex(photo => photo.id === reviewPhotoId);
+    if (index < 0) return;
+    const images = [displayed[index - 1], displayed[index + 1]].filter((photo): photo is Photo => !!photo).map(photo => {
+      const image = new Image(); image.decoding = "async"; image.fetchPriority = "low";
+      image.src = adminPhotoSrc(photo, 1600, 80); return image;
+    });
+    return () => { for (const image of images) { image.onload = null; image.onerror = null; } };
+  }, [reviewPhotoId, displayed]);
+
   const inspectorOpen = !!inspectPhoto;
   useEffect(() => {
     if (!inspectorOpen) return;
@@ -6435,42 +6473,6 @@ export function GalleryTab({
                 <ChevronDown size={11} />
               </summary>
               <div className="admin-library-view-menu__panel">
-            {/* U1: view sort — display-only until explicitly written to sortOrder */}
-            <div className="flex items-center gap-2">
-              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
-                {copy.sort.label}
-              </span>
-              <select
-                data-library-sort
-                value={librarySort}
-                onChange={(e) => setLibrarySort(e.target.value)}
-                aria-label={copy.sort.ariaLabel}
-                className="admin-tap-sm bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
-              >
-                <option value="manual">{copy.sort.options.manual}</option>
-                <option value="createdAt-desc">
-                  {copy.sort.options.uploadedNewest}
-                </option>
-                <option value="createdAt-asc">
-                  {copy.sort.options.uploadedOldest}
-                </option>
-                <option value="shotAt-desc">
-                  {copy.sort.options.dateNewest}
-                </option>
-                <option value="shotAt-asc">
-                  {copy.sort.options.dateOldest}
-                </option>
-                <option value="series">{copy.sort.options.series}</option>
-                <option value="size">{copy.sort.options.displaySize}</option>
-                <option value="filmType">{copy.sort.options.medium}</option>
-                <option value="camera">{copy.sort.options.camera}</option>
-                <option value="category">{copy.sort.options.category}</option>
-                <option value="title">{copy.sort.options.title}</option>
-                <option value="published">
-                  {copy.sort.options.publication}
-                </option>
-                <option value="random">{copy.sort.options.random}</option>
-              </select>
               {librarySort !== "manual" && (
                 <button
                   disabled={
@@ -6507,8 +6509,6 @@ export function GalleryTab({
                   {copy.sort.saveAction}
                 </button>
               )}
-            </div>
-
             {/* **出し分けは幅ではなくポインタ種別で決める。** 列数の指定が効くのは
                 タッチ端末（`preferredColumns`）で、幅とは無関係。以前は
                 ボタンが `md:hidden`、スライダーが `hidden md:flex` だったため、
@@ -6607,26 +6607,6 @@ export function GalleryTab({
               className="admin-library-import-group"
               data-library-exit-actions
             >
-              <fieldset
-                aria-label={copy.import.mediumAria}
-                title={copy.import.mediumHint}
-                className="admin-library-import-medium"
-              >
-                <span>{copy.import.mediumLabel}</span>
-                {[
-                  ["digital", copy.import.digital] as const,
-                  ["film", copy.import.film] as const,
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setUploadMedium(value)}
-                    aria-pressed={uploadMedium === value}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </fieldset>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -6650,12 +6630,57 @@ export function GalleryTab({
                   // 押した側からは壊れて見える）。取り込みに失敗して選び直す
                   // ときに必ず踏む。ドラッグ＆ドロップ側にはこの制約が無い。
                   event.target.value = "";
-                  handleFiles(picked);
+                  if (picked.length) setPendingImportFiles(picked);
                 }}
               />
             </div>
             )}
           </div>
+
+          {!showTrash && <div className="admin-library-orderbar">
+            {/* U1: view sort — display-only until explicitly written to sortOrder */}
+            <div className="flex items-center gap-2">
+              <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
+                {copy.sort.label}
+              </span>
+              <select
+                data-library-sort
+                value={librarySort}
+                onChange={(e) => setLibrarySort(e.target.value)}
+                aria-label={copy.sort.ariaLabel}
+                className="admin-tap-sm bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
+              >
+                <option value="manual">{copy.sort.options.manual}</option>
+                <option value="createdAt-desc">
+                  {copy.sort.options.uploadedNewest}
+                </option>
+                <option value="createdAt-asc">
+                  {copy.sort.options.uploadedOldest}
+                </option>
+                <option value="shotAt-desc">
+                  {copy.sort.options.dateNewest}
+                </option>
+                <option value="shotAt-asc">
+                  {copy.sort.options.dateOldest}
+                </option>
+                <option value="series">{copy.sort.options.series}</option>
+                <option value="size">{copy.sort.options.displaySize}</option>
+                <option value="filmType">{copy.sort.options.medium}</option>
+                <option value="camera">{copy.sort.options.camera}</option>
+                <option value="category">{copy.sort.options.category}</option>
+                <option value="title">{copy.sort.options.title}</option>
+                <option value="filename">{language === "ja" ? "ファイル名順" : "Filename order"}</option>
+                <option value="published">
+                  {copy.sort.options.publication}
+                </option>
+                <option value="random">{copy.sort.options.random}</option>
+              </select>
+
+            </div>
+
+            <span className="admin-library-order-hint">{librarySort.startsWith("shotAt") ? (language === "ja" ? "フィルムはスキャン日時 · 日付なしは末尾" : "Film uses scan time · Undated last") : (language === "ja" ? "一覧での並び順" : "Library display order")}</span>
+            {missingShotAtCount > 0 && <button type="button" onClick={() => setFilterMissingShotAt(!filterMissingShotAt)} aria-pressed={filterMissingShotAt}>{language === "ja" ? `日付なし ${missingShotAtCount}枚` : `${missingShotAtCount} undated`}</button>}
+          </div>}
 
           {libraryMode === "arrange" && !showTrash && (
             <div
@@ -6891,6 +6916,7 @@ export function GalleryTab({
               <details className="admin-selection-more">
                 <summary>{copy.selection.more}</summary>
                 <div className="admin-selection-more__panel">
+                  <button type="button" disabled={bulkBusy} onClick={() => setDateRecoveryPhotos(allPhotos.filter(photo => selected.has(photo.id)))}>{language === "ja" ? "元ファイルから日時を読み直す" : "Recover dates from source files"}</button>
               {/* M2: Set display size */}
               <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-1">
                 <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
@@ -7138,7 +7164,7 @@ export function GalleryTab({
             e.preventDefault();
             setDragOver(false);
             if (e.dataTransfer.files.length)
-              handleFiles(Array.from(e.dataTransfer.files));
+              if (!uploading) setPendingImportFiles(Array.from(e.dataTransfer.files));
           }}
         >
           {dragOver && (
@@ -8522,7 +8548,7 @@ export function GalleryTab({
 
       {/* C3: Quick preview (Space) — full-screen image overlay */}
       {previewPhoto && <LibraryPhotoPreview
-        src={srcFor(previewPhoto.url, 1600, 85, undefined, inspectPhoto?.id === previewPhoto.id ? editForm.rotationDeg : previewPhoto.rotationDeg)}
+        src={adminPhotoSrc(previewPhoto, 1600, 85, inspectPhoto?.id === previewPhoto.id ? editForm.rotationDeg : previewPhoto.rotationDeg)}
         title={previewPhoto.title || previewPhoto.filename} closeLabel={copy.preview.closeAria}
         previousLabel={copy.inspector.previous} nextLabel={copy.inspector.next}
         onClose={() => setPreviewPhoto(null)}
@@ -8586,6 +8612,20 @@ export function GalleryTab({
         </Modal>
       )}
 
+      {pendingImportFiles && <Modal onClose={() => setPendingImportFiles(null)} label={language === "ja" ? "写真を取り込む" : "Import photographs"} widthClass="admin-file-dialog">
+        <header className="admin-file-dialog-header"><h2>{language === "ja" ? "写真を取り込む" : "Import photographs"}</h2><button type="button" onClick={() => setPendingImportFiles(null)} aria-label={language === "ja" ? "閉じる" : "Close"}><X size={18} /></button></header>
+        <PhotoImportReview files={pendingImportFiles} medium={uploadMedium} onMedium={setUploadMedium} language={language} onImport={(files, policy) => { setImportDatePolicy(policy); setPendingImportFiles(null); void handleFiles(files, policy); }} />
+      </Modal>}
+      {dateRecoveryPhotos && <Modal onClose={() => setDateRecoveryPhotos(null)} label={language === "ja" ? "写真の日付を読み直す" : "Recover photo dates"} canClose={!dateRecoveryBusy} widthClass="admin-file-dialog">
+        <header className="admin-file-dialog-header"><h2>{language === "ja" ? "写真の日付を読み直す" : "Recover photo dates"}</h2><button type="button" disabled={dateRecoveryBusy} onClick={() => setDateRecoveryPhotos(null)} aria-label={language === "ja" ? "閉じる" : "Close"}><X size={18} /></button></header>
+        <PhotoDateRecovery photos={dateRecoveryPhotos} language={language} onBusy={setDateRecoveryBusy} onUpdated={updates => {
+          qc.invalidateQueries({ queryKey: ["photos"] }); qc.invalidateQueries({ queryKey: ["series"] });
+          qc.invalidateQueries({ queryKey: ["hero-photos"] }); qc.invalidateQueries({ queryKey: ["admin-hero-photos"] });
+          const updated = updates.find(p => p.id === inspectPhoto?.id);
+          if (updated && inspectPhoto) { setInspectPhoto({ ...inspectPhoto, ...updated }); setEditForm(form => ({ ...form, shotAt: updated.shotAt.slice(0, 10) })); }
+        }} />
+      </Modal>}
+
       {/* Dedicated photo workspace. Keep the contact sheet mounted so Back preserves its position. */}
       {inspectPhoto && (
         <>
@@ -8600,7 +8640,7 @@ export function GalleryTab({
                 aria-label={copy.inspector.close}>
                 <ChevronLeft size={18} /> {copy.inspector.backToLibrary}
               </button>
-              <span>{copy.inspector.editPhoto}</span>
+              <span className="admin-inspector-current-file">{displayed.findIndex(photo => photo.id === inspectPhoto.id) + 1} / {displayed.length} · {inspectPhoto.filename}</span>
               <div className="admin-inspector-navigation">
                 {([-1, 1] as const).map(direction => {
                   const index = displayed.findIndex(photo => photo.id === inspectPhoto.id);
@@ -8617,19 +8657,17 @@ export function GalleryTab({
             <div className="admin-inspector-preview">
               <button type="button" className="admin-inspector-enlarge" onClick={() => setPreviewPhoto(inspectPhoto)} aria-label={copy.inspector.enlarge}>
               <img
-                src={srcFor(
-                  inspectPhoto.url,
-                  800,
-                  80,
-                  undefined,
-                  editForm.rotationDeg,
-                )}
+                src={adminPhotoSrc(inspectPhoto, 1600, 80, editForm.rotationDeg)}
+                decoding="async"
                 alt={inspectPhoto.title || inspectPhoto.filename}
                 className="w-full h-auto object-contain bg-[var(--admin-paper)]"
               />
               <span className="admin-inspector-enlarge-hint">{copy.inspector.enlarge}</span>
               </button>
               <p className="admin-inspector-photo-name">{inspectPhoto.title || inspectPhoto.filename}</p>
+              <button type="button" className="admin-inspector-date-link" onClick={() => setInspectorMobileSection("details")}>
+                {inspectPhoto.filmType || (language === "ja" ? "種類未設定" : "Type unset")} · {inspectPhoto.shotAt ? `${inspectPhoto.shotAt.replace("T", " ")} · ${photoDateSourceLabel(inspectPhoto.shotAtSource, inspectPhoto.filmType === "フィルム", language === "ja")}` : (language === "ja" ? "日時なし · 日付を確認" : "No date · Review date")}
+              </button>
             </div>
             <nav
               aria-label={copy.inspector.editPhoto}
@@ -8893,13 +8931,8 @@ export function GalleryTab({
                 <div className="grid grid-cols-[72px_1fr] gap-2">
                   <div className="relative aspect-square overflow-hidden bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm">
                     <img
-                      src={srcFor(
-                        inspectPhoto.url,
-                        400,
-                        78,
-                        undefined,
-                        editForm.rotationDeg,
-                      )}
+                      src={adminPhotoSrc(inspectPhoto, 400, 78, editForm.rotationDeg)}
+                      decoding="async"
                       alt=""
                       className="w-full h-full object-cover"
                       style={{
@@ -9076,8 +9109,8 @@ export function GalleryTab({
               </InspectField>
 
               <InspectField
-                label={copy.inspector.shotDate}
-                hint={copy.inspector.shotDateHint}
+                label={editForm.filmType === "フィルム" ? (language === "ja" ? "スキャン・並び順の日付" : "Scan / ordering date") : copy.inspector.shotDate}
+                hint={editForm.filmType === "フィルム" ? (language === "ja" ? "フィルムを複写・デジタル化した日時。フィルムを撮影した日とは区別します。" : "When the film was scanned, distinct from its original exposure date.") : copy.inspector.shotDateHint}
               >
                 <div className="flex gap-1.5 items-center">
                   <input
@@ -9101,6 +9134,11 @@ export function GalleryTab({
                   )}
                 </div>
               </InspectField>
+
+              <div className="admin-photo-date-source">
+                <p>{inspectPhoto.shotAt ? `${inspectPhoto.shotAt.replace("T", " ")} · ${photoDateSourceLabel(inspectPhoto.shotAtSource, inspectPhoto.filmType === "フィルム", language === "ja")}` : (language === "ja" ? "日時なし · 日付順では末尾に表示します" : "No date · Shown last in date order")}</p>
+                <button type="button" disabled={updatePhoto.isPending || photoEditFormChanged(editForm, inspectPhoto)} onClick={() => setDateRecoveryPhotos([inspectPhoto])}>{language === "ja" ? "元ファイルから日時を読み直す" : "Recover date from source file"}</button>
+              </div>
 
               <InspectField
                 label={copy.inspector.description}
@@ -10092,11 +10130,17 @@ function Modal({
   onClose,
   children,
   widthClass = "w-72",
+  canClose = true,
+  label,
 }: {
   onClose: () => void;
   children: React.ReactNode;
   widthClass?: string;
+  canClose?: boolean;
+  label?: string;
 }) {
+  const canCloseRef = useRef(canClose);
+  canCloseRef.current = canClose;
   const ref = useRef<HTMLDialogElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -10124,7 +10168,7 @@ function Modal({
     [],
   );
   const requestClose = useCallback(() => {
-    if (closingRef.current) return;
+    if (closingRef.current || !canCloseRef.current) return;
     closingRef.current = true;
     if (prefersReducedMotion()) {
       onCloseRef.current();
@@ -10173,6 +10217,7 @@ function Modal({
   return (
     <dialog
       ref={ref}
+      aria-label={label}
       data-phase={phase}
       className={`admin-glass p-6 ${widthClass} m-auto text-left`}
     >

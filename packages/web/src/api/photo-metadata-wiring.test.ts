@@ -34,7 +34,7 @@ describe("photo source metadata wiring", () => {
     }
   });
 
-  test("the admin passes all seven values to photo registration without displaying them", () => {
+  test("the admin passes source metadata and retains the film scan time", () => {
     const upload = section(
       adminSource,
       "const uploadOne = async",
@@ -43,7 +43,7 @@ describe("photo source metadata wiring", () => {
     expect(upload).toContain("shotAtWithSourceForUploadedPhoto(");
     for (const mapping of [
       "shotAtSource: shotAtSourceVal",
-      "shotAtDigitized: (exifDateDigitized as string) ?? \"\"",
+      'shotAtDigitized: isDigital ? ((exifDateDigitized as string) ?? "") : shotAtVal',
       "sourceWidth: (sourceWidth as number) ?? null",
       "sourceHeight: (sourceHeight as number) ?? null",
       "sourceFormat: (sourceFormat as string) ?? null",

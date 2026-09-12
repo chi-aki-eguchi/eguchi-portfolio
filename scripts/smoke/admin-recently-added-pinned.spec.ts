@@ -159,6 +159,7 @@ async function importMockFiles(page: Page, filenames: string[]) {
         buffer: Buffer.from(name),
       })),
     );
+    await page.getByRole("button", { name: /^\d+枚を取り込む$|^Import \d+ photographs$/ }).click();
 }
 
 const photoTile = (page: Page, id: number) =>
@@ -300,14 +301,13 @@ test.describe("admin — 「今回追加」を一覧先頭へ一時表示", () =
     ).toHaveAttribute("data-library-selected-count", "3");
     await page.locator('[data-library-mode-action="normal"]').click();
 
-    // 表示用ソートを変えても区画は先頭に残る。
-    await page.locator(".admin-library-view-menu > summary").click();
+    // 明示的に選んだソートを「今回追加」で上書きしない。
     await page.locator("[data-library-sort]").selectOption("title");
-    await expect(section).toBeVisible();
-    expect(
-      await tileIds(section.locator(".admin-photo-tile")),
-    ).toEqual([101, 102]);
+    await expect(section).toHaveCount(0);
+    expect(await tileIds(page.locator(".admin-photo-tile"))).toEqual([1, 2, 3, 101, 102]);
     await page.locator("[data-library-sort]").selectOption("manual");
+    await expect(section).toBeVisible();
+    expect(await tileIds(section.locator(".admin-photo-tile"))).toEqual([101, 102]);
 
     // 並べ替え中は区画だけを隠し、保存される順は従来の通常一覧そのもの。
     await page.locator('[data-library-mode-action="arrange"]').click();

@@ -1,4 +1,55 @@
 /* Shared working scale: photographs take the space; controls remain readable. */
+.admin-file-dialog { width: min(720px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.admin-file-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--admin-line); }
+.admin-file-dialog-header h2 { font-size: 20px; font-weight: 550; }
+.admin-file-dialog-header button { min-width: 40px; min-height: 40px; display: grid; place-items: center; }
+.admin-import-review { color: var(--admin-ink); font-size: 13px; }
+.admin-import-review > p { color: var(--admin-muted); line-height: 1.7; margin: 16px 0; }
+.admin-import-medium { margin: 20px 0; padding: 0; border: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.admin-import-medium legend { margin-bottom: 10px; font-size: 12px; color: var(--admin-muted); }
+.admin-import-medium label { display: flex; align-items: start; gap: 10px; padding: 14px 12px; border: 1px solid var(--admin-line); cursor: pointer; }
+.admin-import-medium label:has(input:checked) { border-color: var(--admin-ink); }
+.admin-import-medium input { margin-top: 4px; accent-color: var(--admin-ink); }
+.admin-import-review small { display: block; color: var(--admin-muted); font-size: 11px; font-weight: 400; margin-top: 4px; }
+.admin-import-medium strong { font-size: 14px; font-weight: 500; }
+.admin-import-summary { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-top: 1px solid var(--admin-line); }
+.admin-import-summary span { color: var(--admin-muted); }
+.admin-import-date-policy { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 8px; margin-bottom: 16px; }
+.admin-import-date-policy select { width: 100%; min-width: 0; color: var(--admin-ink); background: var(--admin-paper-soft); border: 1px solid var(--admin-line); min-height: 40px; padding: 8px; max-width: 100%; }
+.admin-import-file-list { max-height: 300px; overflow: auto; border-block: 1px solid var(--admin-line); }
+.admin-import-file-list table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.admin-import-file-list th { text-align: left; color: var(--admin-muted); font-weight: 400; font-size: 11px; position: sticky; top: 0; background: var(--admin-paper); z-index: 1; }
+.admin-import-file-list :is(th,td) { padding: 10px 8px; border-bottom: 1px solid var(--admin-line); overflow-wrap: anywhere; vertical-align: top; }
+.admin-import-file-list > button { padding: 12px; text-decoration: underline; }
+.admin-import-review footer { position: sticky; bottom: -24px; background: var(--admin-paper); display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 0; margin-top: 4px; }
+.admin-import-review footer > span { color: var(--admin-muted); font-size: 11px; }
+.admin-import-review footer button { min-height: 44px; padding: 10px 20px; white-space: nowrap; }
+.admin-import-review button:disabled { opacity: .45; cursor: default; }
+.admin-date-recovery-input { display: grid; gap: 10px; padding-top: 10px; }
+.admin-date-recovery-input input { max-width: 100%; font-size: 12px; }
+.admin-photo-date-source { font-size: 11px; line-height: 1.6; color: var(--admin-muted); }
+.admin-photo-date-source button { color: var(--admin-ink); min-height: 40px; text-decoration: underline; text-underline-offset: 4px; }
+.admin-photo-date-source button:disabled { opacity: .5; }
+.admin-library-orderbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--admin-line); padding: 6px 0 0; font-size: 11px; }
+.admin-library-orderbar select { border: 0; background: transparent; max-width: 240px; }
+.admin-library-order-hint { color: var(--admin-muted); }
+.admin-library-orderbar > button { margin-left: auto; min-height: 32px; padding: 4px 8px; color: var(--admin-muted); }
+.admin-inspector-current-file { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.admin-atelier .admin-inspector-date-link { flex-shrink: 0; color: #c5c5c0; font-size: 11px; min-height: 28px; line-height: 1.5; text-align: center; margin-top: 4px; }
+.admin-atelier .admin-inspector-date-link:hover { text-decoration: underline; }
+.admin-atelier .admin-inspector-mobile-sections { border-bottom: 1px solid var(--admin-line); gap: 10px; }
+.admin-atelier .admin-inspector-mobile-sections button { border: 0 !important; border-radius: 0; background: transparent; box-shadow: none; }
+.admin-atelier .admin-inspector-mobile-sections button[aria-pressed="true"] { --admin-selected-bg: transparent; --admin-selected-shadow: inset 0 -2px 0 var(--admin-ink); }
+@media (max-width: 767px) {
+  .admin-library-orderbar { gap: 4px 8px; }
+  .admin-library-orderbar > div > span { display: none; }
+  .admin-library-order-hint { display: none; }
+  .admin-library-orderbar select { max-width: 180px; }
+  .admin-import-medium { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .admin-file-dialog { padding: 16px !important; }
+  .admin-import-review footer { bottom: -16px; }
+  .admin-import-review footer > span { max-width: 45%; }
+}
 .admin-atelier.admin-workbench {
   --admin-font-title: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
   --admin-font-ui: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;

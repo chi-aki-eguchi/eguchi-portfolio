@@ -20,7 +20,7 @@ function timeValue(value: string | null | undefined): number | null {
 }
 
 function photoDateValue(photo: SortablePhoto): number | null {
-  return timeValue(photo.shotAt) ?? timeValue(photo.createdAt);
+  return timeValue(photo.shotAt);
 }
 
 function sortOrderValue(photo: SortablePhoto): number {

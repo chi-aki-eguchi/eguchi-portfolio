@@ -33,7 +33,7 @@ describe("shotAtWithSourceForUploadedPhoto", () => {
     ).toEqual({ shotAt: "", shotAtSource: "none" });
   });
 
-  test("film uploads return DateTimeDigitized and exif_digitized", () => {
+  test("camera film scans prefer original exposure time over later digitization/export time", () => {
     expect(
       shotAtWithSourceForUploadedPhoto(
         "2026-06-29T10:11:12",
@@ -42,12 +42,12 @@ describe("shotAtWithSourceForUploadedPhoto", () => {
         "film",
       ),
     ).toEqual({
-      shotAt: "2026-07-01T09:00:00",
-      shotAtSource: "exif_digitized",
+      shotAt: "2026-06-29T10:11:12",
+      shotAtSource: "exif_original",
     });
   });
 
-  test("film uploads without DateTimeDigitized return the file date and file_modified", () => {
+  test("camera film scans retain DateTimeOriginal when Digitized is absent", () => {
     expect(
       shotAtWithSourceForUploadedPhoto(
         "2026-06-29T10:11:12",
@@ -56,12 +56,12 @@ describe("shotAtWithSourceForUploadedPhoto", () => {
         "film",
       ),
     ).toEqual({
-      shotAt: "2026-06-30T01:02:03",
-      shotAtSource: "file_modified",
+      shotAt: "2026-06-29T10:11:12",
+      shotAtSource: "exif_original",
     });
   });
 
-  test("film keeps the current-time fallback classified as file_modified when lastModified is unusable", () => {
+  test("film does not invent a current or modified date when EXIF is absent", () => {
     expect(
       shotAtWithSourceForUploadedPhoto(
         null,
@@ -71,8 +71,8 @@ describe("shotAtWithSourceForUploadedPhoto", () => {
         Date.UTC(2026, 6, 2, 3, 4, 5),
       ),
     ).toEqual({
-      shotAt: "2026-07-02T03:04:05",
-      shotAtSource: "file_modified",
+      shotAt: "",
+      shotAtSource: "none",
     });
   });
 
@@ -100,18 +100,18 @@ describe("shotAtWithSourceForUploadedPhoto", () => {
 });
 
 describe("shotAtForUploadedPhoto", () => {
-  test("film uploads prefer DateTimeDigitized over DateTimeOriginal — a scanner can't know the real shot date", () => {
+  test("camera film scans use the camera exposure time", () => {
     expect(
       shotAtForUploadedPhoto(
-        "2026-06-29T10:11:12", // DateTimeOriginal ?? Image.DateTime — untrusted for film
+        "2026-06-29T10:11:12", // DateTimeOriginal records the camera scan
         "2026-07-01T09:00:00", // DateTimeDigitized — the scan/dupe moment
         { lastModified: Date.UTC(2026, 5, 30, 1, 2, 3) },
         "film",
       ),
-    ).toBe("2026-07-01T09:00:00");
+    ).toBe("2026-06-29T10:11:12");
   });
 
-  test("falls back to the file modified date for film uploads without DateTimeDigitized", () => {
+  test("does not replace camera scan time with file modification time", () => {
     expect(
       shotAtForUploadedPhoto(
         "2026-06-29T10:11:12",
@@ -119,7 +119,7 @@ describe("shotAtForUploadedPhoto", () => {
         { lastModified: Date.UTC(2026, 5, 30, 1, 2, 3) },
         "film",
       ),
-    ).toBe("2026-06-30T01:02:03");
+    ).toBe("2026-06-29T10:11:12");
   });
 
   test("keeps EXIF date for digital uploads", () => {

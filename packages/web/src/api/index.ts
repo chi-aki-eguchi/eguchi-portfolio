@@ -76,6 +76,7 @@ import sharp from "sharp";
 sharp.cache(false);
 sharp.concurrency(2);
 import exifReader from "exif-reader";
+import { readPhotoDates, normalizePhotoDate } from "../shared/photo-dates";
 import { createHash } from "node:crypto";
 import {
   imageUrlWithParams,
@@ -1707,16 +1708,9 @@ const app = new Hono()
     // Capture intrinsic dimensions so the client can reserve aspect-ratio (CLS)
     const { width = null, height = null } = await sharp(optimised).metadata();
 
-    // U2: EXIF → shotAt / camera / lens. Read from *original* bytes — the
-    // optimised JPEG has its metadata stripped. Datetimes are timezone-less
-    // wall-clock values; exif-reader surfaces them as UTC Dates.
-    // shotAt (DateTimeOriginal ?? Image.DateTime) is trustworthy for digital
-    // captures, but not for film: a scanner/lab has no way to know when the
-    // film was actually shot, so DateTimeOriginal on a film scan is often the
-    // scan/export timestamp mislabeled as capture time. exifDateDigitized
-    // (DateTimeDigitized) is the EXIF-spec-correct tag for "when this became
-    // a digital file" — the client picks between the two based on medium
-    // (see shotAtWithSourceForUploadedPhoto in lib/upload-date.ts).
+    // Read source metadata before the website JPEG loses it. Camera clock
+    // values remain timezone-less. For film, DateTimeOriginal is interpreted
+    // as camera scan time, not as the original film exposure date.
     let shotAt: string | null = null;
     let exifDateDigitized: string | null = null;
     let sourceWidth: number | null = null;
@@ -1739,10 +1733,10 @@ const app = new Hono()
         sourceHeight,
         sourceFormat,
       } = sourceMetadataFromSharpMetadata(originalMetadata));
-      const { exif } = originalMetadata;
+      const exif = originalMetadata.exif ?? (originalMetadata.format === "tiff" ? inputBuf : null);
       if (exif) {
         const tags = exifReader(exif);
-        const dt = tags?.Photo?.DateTimeOriginal ?? tags?.Image?.DateTime;
+        const dt = tags?.Photo?.DateTimeOriginal;
         if (dt instanceof Date && !Number.isNaN(dt.getTime()))
           shotAt = dt.toISOString().slice(0, 19);
         const dtDigitized = tags?.Photo?.DateTimeDigitized;
@@ -1782,6 +1776,14 @@ const app = new Hono()
     } catch {
       /* EXIFなし・壊れたEXIF → null のまま（手入力可） */
     }
+
+    // libvips can return no EXIF buffer for TIFF even when its IFDs contain
+    // dates. Parse the source container directly, also supporting XMP dates.
+    try {
+      const dates = await readPhotoDates(inputBuf);
+      shotAt = dates.original ?? shotAt;
+      exifDateDigitized = dates.digitized ?? exifDateDigitized;
+    } catch { /* Unreadable metadata must not prevent importing the image. */ }
 
     const key = uniqueUploadStorageKey(
       "photos",
@@ -2070,6 +2072,12 @@ const app = new Hono()
           shotAtSource: schema.photos.shotAtSource,
         }),
       );
+    }
+    if (body.shotAtSource !== undefined) {
+      if (!normalizePhotoDate(body.shotAt) || !["exif_original", "exif_digitized"].includes(body.shotAtSource)) {
+        return c.json({ error: "Invalid recovered photo date" }, 400);
+      }
+      update.shotAtSource = body.shotAtSource;
     }
     if (body.description !== undefined) update.description = body.description;
     if (body.category !== undefined) update.category = body.category;

@@ -3,7 +3,7 @@ import { loginAsAdmin } from "./helpers";
 
 // 2026-07-11 スマホ操作性改善の回帰テスト。
 // 旧・上部2段横スクロールナビは active タブが画面外へ流れ、片手で届かなかった。
-// 新UI: 下部3グループバー + ボトムシート。ここではタブ切替(localStorage のみ、
+// 写真・サイト編集への直行と「移動」のシート。ここではタブ切替(localStorage のみ、
 // 非書き込み)とタップ領域の高さだけを検証する — Save/Delete/Add は一切触らない。
 test.describe("admin — スマホ下部ナビ", () => {
   test("下部バーからシート経由でタブ移動でき、タップ領域が確保されている", async ({
@@ -15,23 +15,23 @@ test.describe("admin — スマホ下部ナビ", () => {
     );
     await loginAsAdmin(page);
 
-    // 下部バー: 3グループが常時見える
+    // 作業の入口と、その他の画面への移動が常時見える。
     const nav = page.locator(".admin-bottom-nav");
     await expect(nav).toBeVisible();
-    for (const label of ["写真", "見せ方", "サイト"]) {
+    for (const label of ["写真", "サイト編集", "移動"]) {
       await expect(
-        nav.getByRole("button", { name: new RegExp(label) }),
+        nav.getByRole("button", { name: label, exact: true }),
       ).toBeVisible();
     }
 
     // グループボタンは 44px 以上(タップ領域)
     const btnBox = await nav
-      .getByRole("button", { name: /見せ方/ })
+      .getByRole("button", { name: "移動", exact: true })
       .boundingBox();
     expect(btnBox!.height).toBeGreaterThanOrEqual(44);
 
-    // 見せ方 → シートが開き、Series へ移動できる
-    await nav.getByRole("button", { name: /見せ方/ }).click();
+    // 移動 → シートが開き、Series へ移動できる。
+    await nav.getByRole("button", { name: "移動", exact: true }).click();
     const sheet = page.locator(".admin-sheet__panel");
     await expect(sheet).toBeVisible();
     const seriesRow = sheet.getByRole("button", { name: /Series/ });
@@ -43,8 +43,8 @@ test.describe("admin — スマホ下部ナビ", () => {
       page.locator(".admin-screen").getByRole("heading", { name: "Series" }),
     ).toBeVisible({ timeout: 10_000 });
 
-    // サイトグループのシートには setup(はじめに)も並ぶ
-    await nav.getByRole("button", { name: /サイト/ }).click();
+    // 同じシートには setup(はじめに)も並ぶ。
+    await nav.getByRole("button", { name: "移動", exact: true }).click();
     await expect(
       page
         .locator(".admin-sheet__panel")

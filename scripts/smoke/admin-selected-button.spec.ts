@@ -39,7 +39,7 @@ test.describe("admin — 選択済みボタンが実際にハイライト表示�
     await page.getByRole("button", { name: "Series" }).click();
     await page.waitForTimeout(1000);
 
-    const editBtn = page.getByRole("button", { name: "編集" }).first();
+    const editBtn = page.getByRole("button", { name: "編集", exact: true }).first();
     await editBtn.click();
     await page.waitForTimeout(400);
 
@@ -59,7 +59,7 @@ test.describe("admin — 選択済みボタンが実際にハイライト表示�
     await page
       .locator(".admin-photo-tile [data-library-photo-action]")
       .first()
-      .click();
+      .dblclick();
 
     const inspector = page.locator("[data-library-inspector]");
     await expect(inspector).toBeVisible();

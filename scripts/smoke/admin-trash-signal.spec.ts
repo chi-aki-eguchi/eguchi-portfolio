@@ -27,9 +27,9 @@ test.describe("admin — ⌘KのTrashが後続のLibrary表示に持ち越され
     const trashMarker = /ゴミ箱は空です|削除済み写真 —/;
     expect(await page.getByText(trashMarker).count()).toBeGreaterThan(0);
 
-    await page.getByRole("button", { name: "Hero" }).click();
+    await page.locator(".studio-workspace-switch").getByRole("button", { name: "サイト編集", exact: true }).click();
     await page.waitForTimeout(500);
-    await page.getByRole("button", { name: "Library" }).click();
+    await page.locator(".studio-workspace-switch").getByRole("button", { name: "写真", exact: true }).click();
     await page.waitForTimeout(1000);
 
     // 修正前はここで再び Trash が開いてしまっていた。ツールバー（絞り込み）は

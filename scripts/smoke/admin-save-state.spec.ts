@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
+import { chooseSettingsSection } from "./helpers";
 
 // 管理画面の保存状態まわりを、**本番DBへ一切触らずに**検査する。
 //
@@ -80,6 +81,7 @@ async function openAdminTab(page: Page, label: string) {
   });
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
+  await page.locator(".studio-workspace-switch").getByRole("button", { name: label === "Categories" ? "写真" : "サイト編集", exact: true }).click();
   await page
     .locator("button, a")
     .filter({ hasText: new RegExp(`^\\s*${label}\\s*$`) })
@@ -144,15 +146,16 @@ test.describe("admin — 保存状態の表示", () => {
 
     const mocks = await installAdminApiMocks(page);
     await openAdminTab(page, "Settings");
+    await chooseSettingsSection(page, "site-basics");
 
     // 設定の本文は目次で選んだ1節だけを出す。既定は先頭の節。
     const firstSection = page.locator("[data-settings-section]").first();
     await expect(firstSection, "設定の先頭節が本文に出ている").toBeVisible();
 
-    const input = page.locator("input[type='text']").first();
+    const input = page.locator('[data-settings-section="site-basics"] input[type="text"]').first();
     await expect(input, "設定の入力欄が見つかる").toBeVisible();
 
-    const saveBar = page.locator(".admin-floating-save-bar");
+    const saveBar = page.locator("[data-settings-save-panel]").getByRole("button", {name: "保存", exact: true});
     await expect(saveBar, "最初は未保存バーが出ていない").toHaveCount(0);
 
     const original = await input.inputValue();

@@ -226,8 +226,8 @@ test('サイズ変更の直後にタブを離れても、次にLibraryへ戻っ�
   const target = before === '250' ? '90' : '250';
   await size.fill(target);
   // 確定(180ms)を待たず、すぐ実クリックで別タブへ離れる。
-  await page.locator('.admin-sidebar__tab, .admin-sidebar__link').filter({ hasText: 'Hero' }).first().click();
+  await page.locator('.studio-workspace-switch').getByRole('button', { name: 'サイト編集', exact: true }).click();
   await expect(page.locator('[data-library-scroll]')).toHaveCount(0);
-  await page.locator('.admin-sidebar__tab, .admin-sidebar__link').filter({ hasText: 'Library' }).first().click();
+  await page.locator('.studio-workspace-switch').getByRole('button', { name: '写真', exact: true }).click();
   await expect(page.getByRole('slider', { name: '一覧の写真サイズ' })).toHaveValue(target);
 });

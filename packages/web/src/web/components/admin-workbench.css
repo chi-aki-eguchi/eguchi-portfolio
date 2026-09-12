@@ -260,10 +260,10 @@
 }
 
 @media (max-width: 767px) {
-  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(2) > button,
-  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(3) > button { padding: 6px 3px; gap: 2px; white-space: nowrap; font-size: 11px; }
-  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(2) > button > svg:first-child,
-  .admin-atelier.admin-workbench .admin-selection-actions > div:nth-child(3) > button > svg:first-child { display: none; }
+  .admin-atelier.admin-workbench .admin-selection-actions > [data-batch-cat] > button,
+  .admin-atelier.admin-workbench .admin-selection-actions > [data-batch-series] > button { padding: 6px 3px; gap: 2px; white-space: nowrap; font-size: 11px; }
+  .admin-atelier.admin-workbench .admin-selection-actions > [data-batch-cat] > button > svg:first-child,
+  .admin-atelier.admin-workbench .admin-selection-actions > [data-batch-series] > button > svg:first-child { display: none; }
 }
 
 /* Working dialogs use a solid surface so photos do not compete with text. */

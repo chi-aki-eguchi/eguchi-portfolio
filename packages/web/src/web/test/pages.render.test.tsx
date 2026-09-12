@@ -1006,7 +1006,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       expect(host.textContent).toContain("Template Studio");
       expect(host.textContent).not.toContain("Aki Eguchi");
@@ -1088,13 +1088,13 @@ describe("shared components", () => {
       );
       expect(host.textContent).toContain("Photos");
       expect(host.textContent).toContain("Presentation");
-      expect(host.textContent).toContain("Getting started");
+      expect(host.textContent).toContain("Site editor");
       expect(host.textContent).toContain("View on site");
       expect(
         host.querySelector('[data-admin-language-toggle][data-language="en"]'),
       ).not.toBeNull();
 
-      navGroup(host, "Site").click();
+      navGroup(host, "Navigate").click();
       await flush(30);
       sheetRow(host, "Profile").click();
       await waitForText(
@@ -1106,7 +1106,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Discard");
       expect(host.textContent).toContain("Save");
 
-      navGroup(host, "Presentation").click();
+      navGroup(host, "Navigate").click();
       await flush(30);
       sheetRow(host, "Hero").click();
       await waitForText(host, "Your changes have not been saved");
@@ -1159,6 +1159,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       await waitForText(host, "Filters");
       expect(
         host.querySelector('select[aria-label="Sort Library view"]'),
@@ -1304,7 +1307,7 @@ describe("shared components", () => {
     }) as typeof fetch;
     try {
       const Admin = (await import("../pages/admin")).default;
-      const { host, cleanup } = await mount(createElement(Admin));
+      const { host, cleanup } = await mount(createElement(Admin), seedCompletedSetup);
       expect(host.textContent).toContain("… 枚");
       expect(host.textContent).not.toContain("0 / 0 枚");
       cleanup();
@@ -1431,7 +1434,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       expect(host.querySelector('iframe[title="サイトプレビュー"]')).toBeNull();
 
@@ -1475,7 +1478,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       expect(
         host.querySelector('input[aria-label="写真を検索"]'),
@@ -1487,24 +1490,11 @@ describe("shared components", () => {
       ).toBe("false");
       expect(host.textContent).not.toContain("選択中 1枚");
 
-      // モード分離(2026-07-23承認)後: 通常モードのタイルクリックは詳細を開くだけで、
-      // 選択にも一括操作にも入らない。一括操作は選択モードに入ってから出る。
-      const firstTile = host.querySelector(
-        'button[aria-label="A"]',
-      ) as HTMLButtonElement | null;
-      expect(firstTile).not.toBeNull();
-      firstTile!.click();
-      await flush(30);
-      expect(host.textContent).not.toContain("選択中 1枚");
+      // The default contact sheet selects immediately; batch controls appear only after a selection.
+      expect(host.querySelector('[data-library-mode="select"]')).not.toBeNull();
       expect(host.textContent).not.toContain("一括編集");
-
-      modeAction(host, "select").click();
-      await flush(30);
-      const tileInSelectMode = host.querySelector(
-        'button[aria-label="A"]',
-      ) as HTMLButtonElement | null;
-      expect(tileInSelectMode).not.toBeNull();
-      tileInSelectMode!.click();
+      const firstTile = host.querySelector('button[aria-label="A"]') as HTMLButtonElement;
+      firstTile.click();
       await flush(30);
       expect(host.textContent).toContain("選択中 1枚");
       expect(host.textContent).toContain("公開");
@@ -1539,27 +1529,27 @@ describe("shared components", () => {
 
       expect(host.textContent).toContain("Library");
 
-      navGroup(host, "見せ方").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Hero").click();
       await waitForText(host, "トップページの写真");
 
-      navGroup(host, "見せ方").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Series").click();
       await waitForText(host, "新しいシリーズ");
 
-      navGroup(host, "見せ方").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Categories").click();
       await waitForText(host, "新しいカテゴリ");
 
-      navGroup(host, "サイト").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Profile").click();
       await waitForText(host, "プロフィール写真（Aboutページ）");
 
-      navGroup(host, "サイト").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Pricing").click();
       await waitForText(host, "プランを追加");
@@ -1571,7 +1561,7 @@ describe("shared components", () => {
       await waitForText(host, "/portfolio-kit 販売ページの料金です");
 
       buttonWithText(host, "Settings").click();
-      await waitForText(host, "ふだんの設定");
+      await waitForText(host, "トップの見せ方");
       // 設定の本文は目次で選んだ1節だけを出す（2026-07-30）。
       (
         host.querySelector(
@@ -1611,7 +1601,7 @@ describe("shared components", () => {
         seedAdminPhotos,
       );
 
-      navGroup(host, "サイト").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Profile").click();
       await waitForText(host, "プロフィール写真（Aboutページ）");
@@ -1619,7 +1609,7 @@ describe("shared components", () => {
       changeInput(nameInput, "Draft Name");
       await flush(80);
 
-      navGroup(host, "見せ方").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Hero").click();
       await flush(80);
@@ -1648,13 +1638,16 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
       await flush(60);
 
       changeInput(inputByLabel(host, "タイトル"), "Unsaved photo title");
       await flush(80);
-      navGroup(host, "見せ方").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Hero").click();
       await flush(80);
@@ -1688,6 +1681,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       const tile = await waitForButton(host, 'button[aria-label="A"]');
       tile.click();
       await flush(60);
@@ -1697,7 +1693,7 @@ describe("shared components", () => {
       buttonWithText(host, "保存").click();
       await waitForText(host, "保存しました");
 
-      navGroup(host, "見せ方").click();
+      navGroup(host, "移動").click();
       await flush(30);
       sheetRow(host, "Hero").click();
       await waitForText(host, "トップページの写真");
@@ -1728,6 +1724,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       const inspectorClose = () =>
         host.querySelector(
           "button[data-library-inspector-close]",
@@ -1797,6 +1796,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       const inspectorClose = () =>
         host.querySelector(
           "button[data-library-inspector-close]",
@@ -1864,6 +1866,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       const inspectorClose = () =>
         host.querySelector(
           "button[data-library-inspector-close]",
@@ -1994,6 +1999,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       const inspectorClose = () =>
         host.querySelector(
           "button[data-library-inspector-close]",
@@ -2045,6 +2053,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       const pressArrowRight = async () => {
         dom.window.dispatchEvent(
           new dom.window.KeyboardEvent("keydown", {
@@ -2129,7 +2140,7 @@ describe("shared components", () => {
       // 2026-07-20仕様変更: 名前は最短の必須導線から「あとで整える」へ
       // 移したが、Settingsへの移動ボタンは引き続き機能する。
       setupOpenButton(host, "サイトの名前と説明").click();
-      await waitForText(host, "ふだんの設定");
+      await waitForText(host, "トップの見せ方");
 
       buttonWithText(host, "写真").click();
       await waitForText(host, "Library");
@@ -2196,6 +2207,9 @@ describe("shared components", () => {
           bubbles: true,
         }),
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       await flush(30);
       const initialThumbs = Array.from(host.querySelectorAll("img"))
         .map((img) => img.getAttribute("src") ?? "")
@@ -2378,6 +2392,9 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
+      // These cases exercise the explicit single-photo browsing view.
+      modeAction(host, "normal").click();
+      await flush(30);
       await flush(100);
       const tile = host.querySelector(
         'button[aria-label="B"]',
@@ -2500,7 +2517,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       await flush(30);
       expect(host.textContent).toContain("Library");
@@ -2544,7 +2561,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       await flush(80);
       expect(host.textContent).toContain("Library");
@@ -2586,7 +2603,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       buttonWithText(host, "絞り込み").click();
       await flush(30);
@@ -2633,7 +2650,7 @@ describe("shared components", () => {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
         createElement(Admin),
-        seedAdminPhotos,
+        seedEstablishedAdminSite,
       );
       buttonWithText(host, "絞り込み").click();
       await flush(30);

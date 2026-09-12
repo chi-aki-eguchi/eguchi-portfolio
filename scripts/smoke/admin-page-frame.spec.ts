@@ -27,8 +27,8 @@ for (const width of [1440, 1024, 375]) {
     }
     if (width >= 1024) {
       await page.getByRole("button", { name: "プレビューを閉じる", exact: true }).click();
-      await expect(page.locator("h1.admin-page-header__title")).toBeVisible();
-      await expect(page.locator(".admin-form-toc")).toBeVisible();
+      await expect(page.locator(".admin-settings-mobile-current__label")).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "設定項目", exact: true })).toBeVisible();
     }
   });
 }

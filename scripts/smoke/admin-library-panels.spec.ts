@@ -71,7 +71,7 @@ test("写真を大きく見て編集し、未保存内容を保護して一覧�
   await editor.getByRole("button", { name: "写真を大きく見る", exact: true }).click();
   const preview = page.locator(".admin-library-photo-preview");
   await expect(preview).toHaveCSS("opacity", "1");
-  expect((await preview.locator("img").boundingBox())!.height).toBeGreaterThan(page.viewportSize()!.height * .7);
+  expect((await preview.locator("[data-library-preview-image]").boundingBox())!.height).toBeGreaterThan(page.viewportSize()!.height * .7);
   await page.keyboard.press("Escape");
   await expect(preview).toHaveCount(0);
   await expect(title).toHaveValue("未保存の作業を保持");

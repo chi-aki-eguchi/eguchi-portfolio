@@ -1,3 +1,4 @@
+import { chooseSettingsSection } from "./helpers";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { SETTINGS_SECTION_COUNT } from "./helpers";
 
@@ -112,13 +113,14 @@ test.describe("admin — Form layout", () => {
     await openTab(page, "settings");
 
     const layout = page.locator('[data-admin-form-layout="settings"]');
-    const toc = layout.locator(".admin-form-toc");
+    const toc = page.locator(".studio-editor-outline");
     const links = toc.locator("[data-settings-section-link]");
     await expect(layout).toBeVisible();
     await expect(toc).toBeVisible();
     await expect(links).toHaveCount(SETTINGS_SECTION_COUNT);
 
     // 本文は現在地の1節だけ。左の目次と同じ節名の一覧を本文へ二重に置かない。
+    await chooseSettingsSection(page, "site-basics");
     const basics = page.locator('[data-settings-section="site-basics"]');
     await expect(basics).toBeVisible();
     await expect(page.locator("[data-settings-section]")).toHaveCount(1);
@@ -175,15 +177,15 @@ test.describe("admin — Form layout", () => {
 
     await installMocks(page);
     for (const [width, expectedToc, maxBody] of [
-      [1440, 196, 642],
-      [1024, 184, 642],
+      [1440, 199, 720],
+      [1024, 171, 720],
     ] as const) {
       await page.setViewportSize({ width, height: 900 });
       await openTab(page, "settings");
       const measurements = await page
         .locator('[data-admin-form-layout="settings"]')
         .evaluate((root) => {
-          const toc = root.querySelector(".admin-form-toc");
+          const toc = document.querySelector(".studio-editor-outline");
           const body = root.querySelector(".admin-settings-form-layout__body");
           return {
             toc: toc?.getBoundingClientRect().width ?? 0,
@@ -231,7 +233,7 @@ test.describe("admin — Form layout", () => {
     );
     await expect(tocMarker).toHaveCount(1);
     await expect(savePanel).toContainText("未保存の変更 1件");
-    await expect(savePanel).toContainText("ギャラリー配置");
+    await expect(savePanel).toContainText("写真一覧のレイアウト");
 
     await page.evaluate(() => {
       Math.random = () => 0;
@@ -278,11 +280,12 @@ test.describe("admin — Form layout", () => {
     await expect(current).toBeVisible();
     await expect(page.locator(".admin-form-toc")).toBeHidden();
 
+    await chooseSettingsSection(page, "site-basics");
     const basics = page.locator('[data-settings-section="site-basics"]');
     await expect(basics).toBeVisible();
     const input = basics.locator("input[type='text']").first();
     await input.fill("スマホで変更");
-    await expect(page.locator(".admin-floating-save-bar")).toBeVisible();
+    await expect(page.locator("[data-settings-save-panel]")).toBeVisible();
 
     await current.getByRole("button", { name: /設定項目/ }).click();
     const sheet = page.locator("[data-settings-mobile-section-list]");
@@ -290,14 +293,14 @@ test.describe("admin — Form layout", () => {
     await expect(sheet.locator(".admin-settings-section-sheet__list > button"))
       .toHaveCount(SETTINGS_SECTION_COUNT);
     await expect(sheet).toContainText("変更あり");
-    await sheet.getByRole("button", { name: /Hero/ }).click();
+    await sheet.locator('[data-settings-sheet-link="hero"]').click();
     await expect(sheet).toHaveCount(0);
     await expect(
       page.locator('[data-settings-section="hero"] [data-settings-section-heading]'),
     ).toBeFocused();
     // 節を選ぶと本文がその節へ入れ替わり、上部1行の現在地も追随する。
     await expect(page.locator("[data-settings-section]")).toHaveCount(1);
-    await expect(current).toContainText("Hero");
+    await expect(current).toContainText("トップの見せ方");
 
     const overflow = await page.evaluate(
       () =>
@@ -325,7 +328,7 @@ test.describe("admin — Form layout", () => {
     await page
       .locator("[data-settings-mobile-section-list]")
       .locator("button")
-      .filter({ hasText: "ギャラリー配置" })
+      .filter({ hasText: "写真一覧のレイアウト" })
       .click();
     const section = page.locator(
       '[data-settings-section="gallery-layout"]',
@@ -346,7 +349,7 @@ test.describe("admin — Form layout", () => {
     const sheet = page.locator("[data-settings-mobile-section-list]");
     const galleryRow = sheet
       .locator("button")
-      .filter({ hasText: "ギャラリー配置" });
+      .filter({ hasText: "写真一覧のレイアウト" });
     await expect(galleryRow).toContainText("変更あり");
 
     expect(mocks.writes).toEqual([]);
@@ -367,10 +370,6 @@ test.describe("admin — Form layout", () => {
     const sectionIds = await links.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("data-settings-section-link")),
     );
-    const advanced = page.locator(".admin-form-toc__advanced");
-    if ((await advanced.getAttribute("open")) === null) {
-      await advanced.locator(":scope > summary").click();
-    }
 
     for (const sectionId of sectionIds) {
       await page.locator(`[data-settings-section-link="${sectionId}"]`).click();

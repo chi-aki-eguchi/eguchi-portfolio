@@ -194,7 +194,7 @@ test("日付のないTIFは空欄が既定で、狭い確認画面にも収ま�
   await dialog.getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   if (page.viewportSize()!.width >= 1200) {
-    await page.getByRole("button", { name: /クイック移動/ }).click();
+    await page.getByRole("button", { name: /設定・移動先を検索/ }).click();
     await expect(page.locator(".admin-palette")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator(".admin-palette")).toHaveCount(0);
@@ -257,6 +257,6 @@ test("拡大・編集は生成済み画像を共通で使う", async ({ page }) 
     .getByRole("button", { name: "写真を大きく見る", exact: true })
     .click();
   await expect(
-    page.locator(".admin-library-photo-preview img"),
+    page.locator("[data-library-preview-image]"),
   ).toHaveAttribute("src", "/date-medium.svg");
 });

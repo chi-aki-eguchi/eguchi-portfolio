@@ -105,7 +105,7 @@ export async function loginAsAdmin(page: Page): Promise<void> {
 
 // タブは sessionStorage 経由の usePersistentState ではなく localStorage("admin:tab")
 // に永続化されているため、直接書き換えてリロードするのが最短経路。
-export async function gotoAdminTab(page: Page, tab: string): Promise<void> {
+export async function gotoAdminTab(page: Page, tab: string, libraryView: "normal" | "select" = "normal"): Promise<void> {
   await page.evaluate(
     (t) => localStorage.setItem("admin:tab", JSON.stringify(t)),
     tab,
@@ -118,15 +118,25 @@ export async function gotoAdminTab(page: Page, tab: string): Promise<void> {
     })
     .catch(() => {});
   await page.waitForTimeout(300);
+  // Existing detail/reorder scenarios explicitly start in the single-photo view.
+  // Tests of the new default selection flow use "select" or open /admin directly.
+  if (tab === "gallery") {
+    const view = page.locator(`[data-library-mode-action="${libraryView}"]:visible`).first();
+    if (await view.isVisible()) await view.click();
+    else if (libraryView === "normal") {
+      const finish = page.locator(".admin-selection-cancel");
+      if (await finish.isVisible()) await finish.click();
+    }
+  }
 }
 
 /** Section navigation keeps the editor wide while its site preview is open. */
 export async function chooseSettingsSection(page: Page, sectionId: string): Promise<void> {
   await expect(page.locator(".admin-settings-form-layout")).toBeVisible();
-  const toc = page.locator(".admin-form-toc");
+  const toc = page.locator(".studio-editor-outline, .admin-form-toc").filter({has: page.locator("[data-settings-section-link]")}).first();
   const link = toc.locator(`[data-settings-section-link="${sectionId}"]`);
   if (await toc.isVisible()) {
-    if (!(await link.isVisible())) await toc.locator(".admin-form-toc__advanced > summary").click();
+    await link.scrollIntoViewIfNeeded();
     await link.click();
   } else {
     await page.locator(".admin-settings-mobile-current").getByRole("button", { name: /設定項目|Settings list/ }).click();

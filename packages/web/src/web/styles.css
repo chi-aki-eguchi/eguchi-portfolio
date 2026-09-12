@@ -858,21 +858,21 @@
    「幅はあるのに操作がスマホのまま」という崩れ方をしていた(オーナー指摘
    「中間幅でレイアウトが崩れる」)。レールは 768px から。 */
 @media (min-width: 768px) and (max-width: 1199px) {
-  .admin-atelier .admin-sidebar {
+  .admin-atelier:not(.admin-studio) .admin-sidebar {
     width: 64px;
     flex-basis: 64px;
     padding: 8px 4px;
   }
 
-  .admin-atelier .admin-sidebar > .admin-sidebar__full {
+  .admin-atelier:not(.admin-studio) .admin-sidebar > .admin-sidebar__full {
     display: none;
   }
 
-  .admin-atelier .admin-sidebar > .admin-sidebar-compact {
+  .admin-atelier:not(.admin-studio) .admin-sidebar > .admin-sidebar-compact {
     display: flex;
   }
 
-  .admin-atelier .admin-sidebar-compact__expand {
+  .admin-atelier:not(.admin-studio) .admin-sidebar-compact__expand {
     display: none;
   }
 }
@@ -2519,13 +2519,13 @@
     min-height: 40px;
   }
 
-  .admin-atelier .admin-selection-actions > div:nth-child(1) {
+  .admin-atelier .admin-selection-actions > [data-library-publication-actions] {
     display: contents;
   }
 
-  .admin-atelier .admin-selection-actions > div:nth-child(1) button,
-  .admin-atelier .admin-selection-actions > div:nth-child(2) > button,
-  .admin-atelier .admin-selection-actions > div:nth-child(3) > button {
+  .admin-atelier .admin-selection-actions > [data-library-publication-actions] button,
+  .admin-atelier .admin-selection-actions > [data-batch-cat] > button,
+  .admin-atelier .admin-selection-actions > [data-batch-series] > button {
     justify-content: center;
     width: 100%;
     padding-inline: 4px;

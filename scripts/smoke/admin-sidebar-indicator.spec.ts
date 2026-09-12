@@ -4,8 +4,8 @@ import { loginAsAdmin } from "./helpers";
 // 回帰テスト(工程2 fix #8): モバイル→デスクトップの画面幅復帰で、サイドバーの
 // アクティブタブ位置インジケータ(縦帯)が先頭に固着し、実際のタブに
 // 追従しないバグ。desktopプロジェクトで、リサイズそのものを検証する。
-test.describe("admin — サイドバーのインジケータがリサイズ後も正しい位置に追従する", () => {
-  test("モバイル幅でタブ移動→デスクトップ幅へ復帰で位置が一致する", async ({
+test.describe("admin — 画面幅が変わっても作業場所と設定の現在地を保つ", () => {
+  test("モバイルからサイト編集を開き、PC幅へ戻っても現在地が一致する", async ({
     page,
   }, testInfo) => {
     test.skip(
@@ -24,13 +24,11 @@ test.describe("admin — サイドバーのインジケータがリサイズ後�
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.waitForTimeout(400);
 
-    const indicatorTransform = await page
-      .locator(".admin-sidebar__indicator")
-      .evaluate((el) => getComputedStyle(el).transform);
-    const settingsTop = await page
-      .locator(".admin-sidebar__tab", { hasText: "Settings" })
-      .evaluate((el) => (el as HTMLElement).offsetTop);
+    const activeTab = page.locator('.admin-sidebar__tab[aria-current="page"]');
+    await expect(activeTab).toHaveText("Settings");
+    await expect(activeTab).toBeVisible();
+    await expect(page.locator('.studio-workspace-switch button[aria-pressed="true"]')).toHaveText("サイト編集");
+    await expect(page.locator('[data-settings-section-link][aria-current="location"]')).toHaveText("トップの見せ方");
 
-    expect(indicatorTransform).toContain(`, ${settingsTop})`);
   });
 });

@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ExternalLink, LogOut, X } from "lucide-react";
 import {
   ADMIN_TAB_GROUPS,
-  groupForTab,
   type AdminTabGroup,
   type Tab,
 } from "./admin-shared";
@@ -66,148 +65,61 @@ export function AdminMobileTopBar({
   );
 }
 
-export function AdminMobileTabBar({
-  tab,
-  tabMeta,
-  tabGroups = ADMIN_TAB_GROUPS,
-  galleryUploading,
-  onSelectTab,
-}: {
-  tab: Tab;
-  tabMeta: AdminTabMeta;
-  tabGroups?: readonly AdminTabGroup[];
-  galleryUploading: boolean;
-  // requestTab と同じ契約: 未保存ガードで拒否されたら false。
-  onSelectTab: (tab: Tab) => boolean;
+export function AdminMobileTabBar({ tab, tabMeta, tabGroups = ADMIN_TAB_GROUPS, galleryUploading, onSelectTab, onSearch }: {
+  tab: Tab; tabMeta: AdminTabMeta; tabGroups?: readonly AdminTabGroup[];
+  galleryUploading: boolean; onSelectTab: (tab: Tab) => boolean; onSearch?: () => void;
 }) {
-  const { t } = useAdminI18n();
-  const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
+  const { t, language } = useAdminI18n();
+  const ja = language === "ja";
+  const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const mobileGroups = useMemo(() => tabGroups.map(group => ({
-    ...group, tabs: group.tabs.filter(key => key !== "settings"),
-  })).filter(group => group.tabs.length > 0), [tabGroups]);
-  const activeGroup = groupForTab(tab, mobileGroups);
-  const openGroup =
-    mobileGroups.find((g) => g.key === openGroupKey) ?? null;
-
+  const photoTabs: Tab[] = ["gallery", "series", "categories"];
+  const isPhotos = photoTabs.includes(tab);
+  const available = tabGroups.flatMap(group => group.tabs);
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!openGroupKey || !dialog) return;
+    if (!open || !dialog) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog.showModal();
     const media = window.matchMedia("(min-width: 768px)");
-    const onResize = () => { if (media.matches) setOpenGroupKey(null); };
-    media.addEventListener("change", onResize);
+    const close = () => { if (media.matches) setOpen(false); };
+    media.addEventListener("change", close);
     return () => {
-      media.removeEventListener("change", onResize);
-      if (dialog.open) dialog.close();
-      if (opener?.isConnected) opener.focus({ preventScroll: true });
+      media.removeEventListener("change", close);
+      dialog.close();
+      if (opener?.isConnected) opener.focus({preventScroll: true});
     };
-  }, [openGroupKey]);
-
-  const selectTab = (next: Tab) => {
-    // ガードで止められてもシートは閉じる(確認モーダルが前面に出るため)。
-    onSelectTab(next);
-    setOpenGroupKey(null);
-  };
-  const groupLabel = (group: AdminTabGroup) => {
-    if (group.key === "photos") return t.navigation.groups.photos;
-    if (group.key === "presentation") return t.navigation.groups.presentation;
-    if (group.key === "site") return t.navigation.groups.site;
-    return group.label;
-  };
-
-  return (
-    <>
-      {openGroup && (
-        <dialog
-          ref={dialogRef}
-          className="admin-sheet md:hidden"
-          data-phase="show"
-          aria-label={t.navigation.groupTabs(groupLabel(openGroup))}
-          onCancel={(event) => { event.preventDefault(); setOpenGroupKey(null); }}
-        >
-          {/* `absolute` はグローバル button リセット(:not(.absolute))の除外用 */}
-          <button
-            type="button"
-            aria-label={t.common.close}
-            className="admin-sheet__backdrop absolute"
-            onClick={() => setOpenGroupKey(null)}
-          />
-          <div className="admin-sheet__panel">
-            <div className="admin-sheet__head">
-              <span>{groupLabel(openGroup)}</span>
-              <button
-                type="button"
-                aria-label={t.navigation.closeSheet}
-                className="admin-tap text-[var(--admin-muted)]"
-                onClick={() => setOpenGroupKey(null)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            {openGroup.tabs.map((key) => (
-              <button
-                key={key}
-                type="button"
-                disabled={galleryUploading && key !== "gallery"}
-                aria-current={tab === key ? "page" : undefined}
-                data-active={tab === key || undefined}
-                className="admin-sheet__row"
-                onClick={() => selectTab(key)}
-              >
-                {tabMeta[key].icon}
-                <span>{tabMeta[key].label}</span>
-              </button>
-            ))}
-          </div>
-        </dialog>
-      )}
-      <nav
-        className="admin-bottom-nav md:hidden"
-        aria-label={t.navigation.label}
-      >
-        {mobileGroups.map((group) => {
-          const active = tab !== "settings" && group.key === activeGroup.key;
-          const single = group.tabs.length === 1;
-          return (
-            <button
-              key={group.key}
-              type="button"
-              disabled={galleryUploading && !group.tabs.includes("gallery")}
-              aria-expanded={single ? undefined : openGroupKey === group.key}
-              data-active={active || undefined}
-              className="admin-bottom-nav__btn"
-              onClick={() => {
-                if (single) {
-                  selectTab(group.tabs[0]);
-                } else {
-                  setOpenGroupKey((k) => (k === group.key ? null : group.key));
-                }
-              }}
-            >
-              <span className="admin-bottom-nav__label">
-                {groupLabel(group)}
-              </span>
-              <span className="admin-bottom-nav__sub">
-                {active ? tabMeta[tab].label : " "}
-              </span>
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          data-admin-mobile-settings
-          disabled={galleryUploading}
-          aria-current={tab === "settings" ? "page" : undefined}
-          data-active={tab === "settings" || undefined}
-          className="admin-bottom-nav__btn"
-          onClick={() => selectTab("settings")}
-        >
-          <span className="admin-bottom-nav__label">{t.navigation.settingsButton}</span>
-          <span className="admin-bottom-nav__sub">{tab === "settings" ? tabMeta.settings.label : " "}</span>
-        </button>
-      </nav>
-    </>
-  );
+  }, [open]);
+  const select = (next: Tab) => { onSelectTab(next); setOpen(false); };
+  return <>
+    {open && <dialog ref={dialogRef} className="admin-sheet md:hidden" data-phase="show"
+      aria-label={ja ? "移動先" : "Navigate"} onCancel={event => { event.preventDefault(); setOpen(false); }}>
+      <button type="button" aria-label={t.common.close} className="admin-sheet__backdrop absolute" onClick={() => setOpen(false)} />
+      <div className="admin-sheet__panel">
+        <div className="admin-sheet__head"><span>{ja ? "移動先" : "Navigate"}</span>
+          <button type="button" className="admin-tap" aria-label={t.navigation.closeSheet} onClick={() => setOpen(false)}><X size={16} /></button>
+        </div>
+        {onSearch && <button type="button" className="admin-sheet__row" onClick={() => { setOpen(false); onSearch(); }}>{ja ? "設定・移動先を検索" : "Find a setting or page"}</button>}
+        {[{title: ja ? "写真" : "Photographs", tabs: available.filter(key => photoTabs.includes(key))},
+          {title: ja ? "サイト編集" : "Site editor", tabs: available.filter(key => !photoTabs.includes(key))}].map(group =>
+          <section key={group.title}><h3 className="studio-mobile-nav-heading">{group.title}</h3>
+            {group.tabs.map(key => <button key={key} type="button" className="admin-sheet__row"
+              disabled={galleryUploading && key !== "gallery"} aria-current={tab === key ? "page" : undefined}
+              onClick={() => select(key)}>{tabMeta[key].icon}<span>{tabMeta[key].label}</span></button>)}
+          </section>)}
+      </div>
+    </dialog>}
+    <nav className="admin-bottom-nav md:hidden" aria-label={t.navigation.label}>
+      <button type="button" data-active={isPhotos || undefined} className="admin-bottom-nav__btn" onClick={() => select("gallery")}>
+        <span className="admin-bottom-nav__label">{ja ? "写真" : "Photographs"}</span>
+      </button>
+      <button type="button" data-admin-mobile-settings disabled={galleryUploading} data-active={!isPhotos || undefined}
+        className="admin-bottom-nav__btn" onClick={() => select("settings")}>
+        <span className="admin-bottom-nav__label">{ja ? "サイト編集" : "Site editor"}</span>
+      </button>
+      <button type="button" className="admin-bottom-nav__btn" aria-expanded={open} onClick={() => setOpen(true)}>
+        <span className="admin-bottom-nav__label">{ja ? "移動" : "Navigate"}</span>
+      </button>
+    </nav>
+  </>;
 }

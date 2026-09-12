@@ -168,13 +168,11 @@ async function installMocks(
 }
 
 async function enterArrange(page: Page) {
-  if (!(await page.locator('button[data-library-mode-action="arrange"]:visible').count())) {
+  const action = page.locator('button[data-library-mode-action="arrange"]:visible, [data-library-mobile-arrange]:visible').first();
+  if (!(await action.isVisible())) {
     await page.locator(".admin-library-view-menu > summary").click();
   }
-  await page
-    .locator('button[data-library-mode-action="arrange"]:visible, [data-library-mobile-arrange]:visible')
-    .first()
-    .click();
+  await action.click();
   await expect(
     page.locator("[data-library-arrange-toolbar]"),
   ).toBeVisible();
@@ -205,33 +203,7 @@ async function openLibrary(page: Page) {
   });
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 20_000 });
-  // 幅が狭いと左メニューが隠れ、下部ナビになる。見えている方から Library へ入る。
-  // ここを間違えると「はじめに」タブのまま検査してしまい、並べ替え欄を一度も見ずに
-  // 「見つからない」と落ちる（実際に一度そうなった）。
-  const sidebar = page
-    .locator("button:visible, a:visible")
-    .filter({ hasText: /^\s*Library\s*$/ });
-  if ((await sidebar.count()) > 0) {
-    await sidebar.first().click();
-  } else if (
-    (await page
-      .locator('[data-compact-sidebar-group="photos"]:visible')
-      .count()) > 0
-  ) {
-    await page
-      .locator('[data-compact-sidebar-group="photos"]:visible')
-      .click();
-  } else {
-    await page
-      .locator(".admin-bottom-nav__btn")
-      .filter({ hasText: /写真/ })
-      .first()
-      .click();
-    const sheetRow = page
-      .locator(".admin-sheet__row")
-      .filter({ hasText: "Library" });
-    if ((await sheetRow.count()) > 0) await sheetRow.first().click();
-  }
+  await page.locator(".studio-workspace-switch button:visible, .admin-bottom-nav__btn:visible").filter({ hasText: /^写真$/ }).first().click();
   // Library に着いたことを、全幅Workspaceの存在で確かめてから先へ進む。
   await page
     .locator('[data-admin-workspace="library"]')

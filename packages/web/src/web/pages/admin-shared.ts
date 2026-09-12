@@ -127,9 +127,10 @@ export function usePersistentState<T>(
 // 左ナビ「サイトを見る」と Settings プレビューの「別窓」で同じものを使う。
 // デモモードのクエリ組み立てを画面ごとに書き写さない(2026-07-31 オーナー確定)。
 // Library の「サイトで確認」は同じ画面内のプレビュー開閉なので対象外。
-export function buildPublicSiteHref(demoSeed?: string | null): string {
-  if (!demoSeed) return "/";
-  return `/?${ADMIN_DEMO_PREVIEW_PARAM}=${encodeURIComponent(demoSeed)}`;
+export function buildPublicSiteHref(demoSeed?: string | null, page = "/"): string {
+  const path = ["/", "/gallery", "/series", "/about", "/contact"].includes(page) ? page : "/";
+  if (!demoSeed) return path;
+  return `${path}?${ADMIN_DEMO_PREVIEW_PARAM}=${encodeURIComponent(demoSeed)}`;
 }
 
 // ── Settings プレビュー列の幅 ──────────────────────────────────────────

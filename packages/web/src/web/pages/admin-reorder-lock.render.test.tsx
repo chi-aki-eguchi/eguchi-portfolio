@@ -166,7 +166,7 @@ test("手動表示以外では入口を無効化し、1回で解除して並び�
   expect(arrange).not.toBeNull();
   expect(arrange!.disabled).toBe(true);
   expect(arrange!.title).toContain("手動");
-  expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("normal");
+  expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("select");
 
   expect(host.textContent).toContain("いまは並び替えを保存できません");
   const buttons = Array.from(host.querySelectorAll("button"));

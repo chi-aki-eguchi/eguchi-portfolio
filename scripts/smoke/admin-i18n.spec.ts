@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { gotoAdminTab, loginAsAdmin } from "./helpers";
+import { gotoAdminTab, loginAsAdmin, chooseSettingsSection } from "./helpers";
 
 // Language selection is browser-only state. This test changes localStorage and
 // signs in, but never clicks Save/Delete/Add or any other data-writing action.
@@ -32,7 +32,7 @@ test.describe("admin — JP/EN shared shell", () => {
     await expect(page.getByRole("button", { name: "表形式" })).toBeVisible();
     await expect(page.getByRole("button", { name: /ゴミ箱/ })).toBeVisible();
 
-    await page.locator("[data-library-photo-action]").first().click();
+    await page.locator("[data-library-photo-action]").first().dblclick();
     const inspector = page.locator("[data-library-inspector]");
     await expect(inspector).toHaveAttribute("aria-label", "写真を編集");
     await expect(inspector.locator(".admin-inspector-current-file")).toContainText(/1 \/ \d+/);
@@ -79,7 +79,8 @@ test.describe("admin — JP/EN shared shell", () => {
     await expect(shellToggle).toHaveAttribute("data-language", "en");
     if (testInfo.project.name === "desktop") {
       const groups = page.locator(".admin-sidebar__group-title");
-      await expect(groups).toContainText(["Photos", "Presentation", "Site"]);
+      await expect(groups).toContainText(["Photos", "Presentation"]);
+      await page.locator(".studio-workspace-switch").getByRole("button", { name: "Site editor", exact: true }).click();
       await expect(
         page.locator(".admin-sidebar").getByRole("button", {
           name: "Getting started",
@@ -87,9 +88,9 @@ test.describe("admin — JP/EN shared shell", () => {
       ).toBeVisible();
     } else {
       const nav = page.locator(".admin-bottom-nav");
-      await expect(nav.getByRole("button", { name: /Photos/ })).toBeVisible();
+      await expect(nav.getByRole("button", { name: /Photographs/ })).toBeVisible();
       await expect(
-        nav.getByRole("button", { name: /Presentation/ }),
+        nav.getByRole("button", { name: /Navigate/ }),
       ).toBeVisible();
       await expect(nav.getByRole("button", { name: /Site/ })).toBeVisible();
     }
@@ -141,12 +142,13 @@ test.describe("admin — JP/EN shared shell", () => {
     await expect(page.getByLabel("New series title")).toBeVisible();
 
     await gotoAdminTab(page, "settings");
+    await chooseSettingsSection(page, "site-basics");
     // 2c-3で設定タブ「基本・見た目」もEN化されたため、境界マーカーをEN表記に更新。
     await expect(
       page.locator(
         '[data-settings-section="site-basics"] [data-settings-section-heading]',
       ),
-    ).toContainText("Site Basics");
+    ).toContainText("Identity, contact & SEO");
     expect(writes).toEqual([]);
   });
 });

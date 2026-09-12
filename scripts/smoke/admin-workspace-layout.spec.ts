@@ -34,7 +34,7 @@ const WORKSPACE_PHOTO = {
 };
 
 test.describe("admin — Workspace layout", () => {
-  test("1024pxでは64pxナビと900px以上のLibrary作業面を保つ", async ({
+  test("1024pxでも項目名を読め、必要なら畳んで作業面を広げられる", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktopで1024pxを確認する");
@@ -50,8 +50,11 @@ test.describe("admin — Workspace layout", () => {
       main.boundingBox(),
       workspace.boundingBox(),
     ]);
-    expect(sidebarBox?.width).toBeCloseTo(64, 0);
-    expect(mainBox?.width ?? 0).toBeGreaterThanOrEqual(900);
+    expect(sidebarBox?.width).toBeCloseTo(196, 0);
+    expect(mainBox?.width ?? 0).toBeGreaterThanOrEqual(800);
+    await expect(sidebar.locator(".admin-sidebar__tab").first()).toBeVisible();
+    await page.locator("[data-sidebar-collapse]").click();
+    expect((await sidebar.boundingBox())?.width).toBeCloseTo(64, 0);
     expect(workspaceBox?.width).toBeCloseTo(mainBox?.width ?? 0, 0);
     await expect(
       sidebar.locator('[data-compact-sidebar-group="photos"]'),
@@ -126,7 +129,7 @@ test.describe("admin — Workspace layout", () => {
     const sidebar = page.locator(".admin-sidebar");
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(200, 0);
+      .toBeCloseTo(224, 0);
     await page.locator("[data-sidebar-collapse]").click();
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
@@ -139,13 +142,13 @@ test.describe("admin — Workspace layout", () => {
     await page.locator("[data-compact-sidebar-expand]").click();
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(200, 0);
+      .toBeCloseTo(224, 0);
 
     const firstPhoto = page
       .locator(".admin-photo-tile [data-library-photo-action]")
       .first();
     await expect(firstPhoto).toBeVisible();
-    await firstPhoto.click();
+    await firstPhoto.dblclick();
     const inspector = page.locator("[data-library-inspector]");
     const inspectorBox = (await inspector.boundingBox())!;
     const workspaceBox = (await page.locator('[data-admin-workspace="library"]').boundingBox())!;
@@ -167,7 +170,7 @@ test.describe("admin — Workspace layout", () => {
     expect(widenedBox?.width ?? 0).toBeCloseTo(workspaceBox.width, 0);
 
     // Escでも同じ経路で閉じる。入力欄にいる間のEscは編集を捨てない。
-    await firstPhoto.click();
+    await firstPhoto.dblclick();
     await expect(inspector).toBeVisible();
     const titleInput = inspector
       .locator('.admin-inspector-mobile-title input')

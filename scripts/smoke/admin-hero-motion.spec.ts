@@ -37,7 +37,7 @@ const HERO_MODES = [
 
 async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
   await loginAsAdmin(page);
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "サイト編集", exact: true }).filter({visible: true}).first().click();
   // 設定の本文は目次で選んだ1節だけを出す。折りたたみ行は廃止した。
   await chooseSettingsSection(page, "hero");
   await expect(page.locator('[data-settings-section="hero"]')).toBeVisible();
@@ -59,12 +59,12 @@ test.describe("admin — TOPの動き設定", () => {
 
     for (const speed of SPEEDS) {
       await page
-        .getByRole("button", { name: `登場する速さ: ${speed.label}` })
-        .click();
+        .getByRole("combobox", { name: "登場する速さ", exact: true })
+        .selectOption({label: speed.label});
       for (const order of ORDERS) {
         await page
-          .getByRole("button", { name: `出てくる順番: ${order.label}` })
-          .click();
+          .getByRole("combobox", { name: "出てくる順番", exact: true })
+          .selectOption({label: order.label});
         await expect
           .poll(() =>
             iframe.evaluate((el: HTMLIFrameElement) => {
@@ -144,20 +144,17 @@ test.describe("admin — TOPの動き設定", () => {
     const hero = page.locator('[data-settings-section="hero"]');
     await hero.getByRole("button", { name: /^カルーセル/ }).click();
     await hero
-      .getByRole("button", {
-        name: "通常（高さ設定に従う）",
-        exact: true,
-      })
-      .click();
+      .getByRole("combobox", { name: "画面の使い方", exact: true })
+      .selectOption("normal");
 
     // 通常カルーセル: 高さと文字寄せは効く。暗幕は写真上に名前を置かない
     // この状態では効かないので出さない。
     await expect(
-      hero.getByRole("button", { name: "フルスクリーン", exact: true }),
+      hero.getByRole("combobox", { name: "画面の使い方", exact: true }),
     ).toBeVisible();
     await expect(hero.getByRole("slider", { name: "高さ" })).toBeVisible();
     await expect(
-      hero.getByRole("button", { name: "右上", exact: true }),
+      hero.getByRole("combobox", { name: "名前の表示位置", exact: true }),
     ).toBeVisible();
     await expect(
       hero.getByRole("button", { name: "あり", exact: true }),
@@ -166,8 +163,8 @@ test.describe("admin — TOPの動き設定", () => {
     // フルスクリーンでは高さが無効。以前は説明に「無効」と書きながら
     // スライダーを出し続けていた。
     await hero
-      .getByRole("button", { name: "フルスクリーン", exact: true })
-      .click();
+      .getByRole("combobox", { name: "画面の使い方", exact: true })
+      .selectOption("fullscreen");
     await expect(hero.getByRole("slider", { name: "高さ" })).toHaveCount(0);
     await expect(
       hero.getByRole("button", { name: "あり", exact: true }),

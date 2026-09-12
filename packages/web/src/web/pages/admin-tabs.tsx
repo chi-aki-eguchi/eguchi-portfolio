@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import { useRowDraftGuard } from "../hooks/useRowDraftGuard";
+import { AdminChoiceSelect } from "../components/AdminChoiceSelect";
 import {
   countPhotosInCategory,
   type CategorizedPhoto,
@@ -31,6 +32,8 @@ import {
   Shuffle,
   Pencil,
   GripVertical,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import {
   adminPhotoObjectPosition,
@@ -44,14 +47,13 @@ import {
   postAdminSettings,
   usePersistentState,
   buildPublicSiteHref,
-  settingsPreviewRatioFromWidth,
-  settingsPreviewWidthBounds,
-  settingsPreviewWidthFromRatio,
-  SETTINGS_PREVIEW_WIDTH_KEY,
   type HeroPhotoRow,
   type Photo,
 } from "./admin-shared";
 import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
+import { PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
+import { settingsNavigationItems, previewPageForSection } from "./admin-settings-navigation";
+import { useSettingsHistory } from "../hooks/useSettingsHistory";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
 import {
@@ -598,17 +600,11 @@ function VisualChoiceCard({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`text-left px-2 py-2 rounded-sm border transition-colors ${
-        active
-          ? "admin-btn-primary font-medium"
-          : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
-      }`}
+      className="studio-option"
     >
-      {preview}
-      <span className="block text-[length:var(--admin-text-note)] leading-tight mt-1">{name}</span>
-      <span className="block text-[length:var(--admin-text-note)] leading-tight opacity-70 font-normal mt-0.5">
-        {desc}
-      </span>
+      <span className="studio-option-indicator" aria-hidden="true">{active ? <Check size={13} /> : null}</span>
+      <span className="studio-option-preview" aria-hidden="true">{preview}</span>
+      <span className="studio-option-label"><strong>{name}</strong><small>{desc}</small></span>
     </button>
   );
 }
@@ -4284,10 +4280,14 @@ export function SettingsTab({
   onUnsavedChange,
   demoSeed,
   initialSectionId,
+  onOpenTab,
+  onActiveSectionChange,
 }: {
   onUnsavedChange?: (v: boolean) => void;
   demoSeed?: string;
   initialSectionId?: string;
+  onOpenTab?: (tab: "hero" | "profile" | "series" | "pricing") => void;
+  onActiveSectionChange?: (section: string) => void;
 }) {
   const qc = useQueryClient();
   const { t, language } = useAdminI18n();
@@ -4305,6 +4305,15 @@ export function SettingsTab({
     demoSeed ? `admin-demo:settingsDraft:${demoSeed}` : "admin:settingsDraft",
     {},
   );
+  const history = useSettingsHistory(form, setForm);
+  const [previewPage, setPreviewPage] = useState("/");
+  const [activeSection, setActiveSection] = useState(initialSectionId ?? "hero");
+  const handleSectionChange = useCallback((id: string) => {
+    setActiveSection(id);
+    onActiveSectionChange?.(id);
+    const page = previewPageForSection(id);
+    if (page) setPreviewPage(page);
+  }, [onActiveSectionChange]);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [contactValidationErrors, setContactValidationErrors] = useState<
@@ -4326,22 +4335,12 @@ export function SettingsTab({
     "desktop" | "mobile"
   >("admin:previewDevice", "desktop");
   const [liveSync, setLiveSync] = usePersistentState("admin:liveSync", true);
-  // プレビュー列の幅。px ではなく Workspace に対する比率で保存する(§3-3)。
-  const [previewRatio, setPreviewRatio] = usePersistentState<number | null>(
-    SETTINGS_PREVIEW_WIDTH_KEY,
-    null,
-    "local",
-  );
+  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>(previewDevice === "mobile" ? PREVIEW_MOBILE : PREVIEW_DESKTOP);
   // 展開は保存しない。開き直したら通常幅へ戻る(§5-1)。
   const [previewExpanded, setPreviewExpanded] = useState(false);
   // 幅が足りないときの編集/プレビュー切り替え。フォームはアンマウントしないので
   // 未保存の入力はどちらの表示でも残る(§7)。
   const [narrowView, setNarrowView] = useState<"edit" | "preview">("edit");
-  const [previewDragging, setPreviewDragging] = useState(false);
-  const [workspaceWidth, setWorkspaceWidth] = useState(0);
-  // 読み込み中は早期 return するため、ref ではなく state のコールバック ref で
-  // 実際に DOM へ載った時点を捉える。
-  const [workspaceEl, setWorkspaceEl] = useState<HTMLDivElement | null>(null);
   const expandButtonRef = useRef<HTMLButtonElement>(null);
   const [layoutTarget, setLayoutTarget] = usePersistentState<
     "galleryLayout" | "seriesLayout" | "topWorksLayout"
@@ -4491,6 +4490,7 @@ export function SettingsTab({
       return submitted;
     },
     onSuccess: (submitted) => {
+      history.clear();
       setSaveError(false);
       setContactValidationErrors({});
       setFailedSectionIds([]);
@@ -4522,8 +4522,12 @@ export function SettingsTab({
     },
   });
 
-  const set = (key: string, val: string) =>
-    setForm((f) => ({ ...f, [key]: val }));
+  const set = history.update;
+  const stepHistory = (redo = false) => {
+    if (redo) history.redo(); else history.undo();
+    setContactValidationErrors({});
+    setContactValidationFocusKey(null);
+  };
 
   const saveSettings = () => {
     const contactErrors = invalidDirtyContactValues();
@@ -4546,12 +4550,12 @@ export function SettingsTab({
 
   // Send preview settings to iframe whenever current changes.
   const previewPayload = useMemo(
-    () => makeSettingsPreviewPayload({ ...data, ...form }),
-    [data, form],
+    () => makeSettingsPreviewPayload(liveSync ? { ...data, ...form } : { ...data }),
+    [data, form, liveSync],
   );
 
   useEffect(() => {
-    if (!showPreview || !liveSync || !iframeRef.current?.contentWindow) return;
+    if (!showPreview || !iframeRef.current?.contentWindow) return;
     iframeRef.current.contentWindow.postMessage(
       { type: "preview-settings", settings: previewPayload },
       window.location.origin,
@@ -4590,71 +4594,6 @@ export function SettingsTab({
     window.addEventListener("message", onReady);
     return () => window.removeEventListener("message", onReady);
   }, []);
-
-  // ── プレビュー列の幅 ──────────────────────────────────────────────
-  // Workspace の実測幅から px を決める。左ナビの開閉で Workspace は変わるので
-  // viewport 固定値は当てない(§13 A2)。
-  useEffect(() => {
-    if (!workspaceEl) return;
-    setWorkspaceWidth(workspaceEl.getBoundingClientRect().width);
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width;
-      if (typeof width === "number") setWorkspaceWidth(width);
-    });
-    observer.observe(workspaceEl);
-    return () => observer.disconnect();
-  }, [workspaceEl]);
-
-  const previewWidth = settingsPreviewWidthFromRatio(
-    previewRatio,
-    workspaceWidth,
-  );
-  const previewBounds = settingsPreviewWidthBounds(workspaceWidth);
-  const applyPreviewWidth = useCallback(
-    (nextWidth: number) => {
-      if (!(workspaceWidth > 0)) return;
-      setPreviewRatio(settingsPreviewRatioFromWidth(nextWidth, workspaceWidth));
-    },
-    [setPreviewRatio, workspaceWidth],
-  );
-
-  // ドラッグ中に画面を離れても window の待ち受けを残さない。
-  const dragCleanupRef = useRef<(() => void) | null>(null);
-  useEffect(() => () => dragCleanupRef.current?.(), []);
-
-  const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || !workspaceEl) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setPreviewDragging(true);
-    // 右端は毎回測る。ドラッグ中に左ナビを開閉されても位置がずれない。
-    const onMove = (moveEvent: PointerEvent) =>
-      applyPreviewWidth(
-        workspaceEl.getBoundingClientRect().right - moveEvent.clientX,
-      );
-    const onEnd = () => {
-      setPreviewDragging(false);
-      dragCleanupRef.current = null;
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onEnd);
-      window.removeEventListener("pointercancel", onEnd);
-    };
-    dragCleanupRef.current = onEnd;
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onEnd);
-    window.addEventListener("pointercancel", onEnd);
-  };
-
-  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = event.shiftKey ? 64 : 16;
-    // 帯を左へ動かす = プレビューが広がる。
-    if (event.key === "ArrowLeft") applyPreviewWidth(previewWidth + step);
-    else if (event.key === "ArrowRight") applyPreviewWidth(previewWidth - step);
-    else if (event.key === "Home") applyPreviewWidth(previewBounds.min);
-    else if (event.key === "End") applyPreviewWidth(previewBounds.max);
-    else return;
-    event.preventDefault();
-  };
 
   const reloadPreview = useCallback(() => {
     iframeRef.current?.contentWindow?.location.reload();
@@ -4720,6 +4659,26 @@ export function SettingsTab({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasUnsaved, initialLoadFailed]);
+
+  const keyboardActions = useRef({ saveSettings, stepHistory, hasUnsaved, pending: save.isPending });
+  keyboardActions.current = { saveSettings, stepHistory, hasUnsaved, pending: save.isPending };
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || document.querySelector("dialog[open]")) return;
+      const actions = keyboardActions.current;
+      if (event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        if (actions.hasUnsaved && !actions.pending) actions.saveSettings();
+      }
+      const typing = event.target instanceof HTMLElement && event.target.closest("input,textarea,[contenteditable=true]");
+      if (event.key.toLowerCase() === "z" && !typing) {
+        event.preventDefault();
+        actions.stepHistory(event.shiftKey);
+      }
+    };
+    window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  }, []);
 
   // 読み込み中でも見出しは出したままにする（Hero / Profile と同じ理由）。
   // Settings は目次つきの専用レイアウトなので、その枠のクラスをそのまま使い、
@@ -4861,8 +4820,9 @@ export function SettingsTab({
     Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]
   ).map((id) => ({
     id,
-    label: sectionTitles[id],
-    keywords: `${sectionKeywords[id] ?? ""} ${SETTINGS_SECTION_KEYS[id].join(" ")}`,
+    label: settingsNavigationItems.find(item => item.id === id)?.[language === "ja" ? "ja" : "en"] ?? sectionTitles[id],
+    group: settingsNavigationItems.find(item => item.id === id)?.group,
+    keywords: `${sectionTitles[id]} ${settingsNavigationItems.find(item => item.id === id)?.keywords ?? ""} ${sectionKeywords[id] ?? ""} ${SETTINGS_SECTION_KEYS[id].join(" ")}`,
     summary: summarizeSection(id),
     changed: changedSectionIds.includes(id),
     failed:
@@ -4903,7 +4863,7 @@ export function SettingsTab({
     (selectedHeroMode === "carousel" && configurableHeroIsFullscreen);
 
   const previewCopy = copyDesign.preview;
-  const publicSiteHref = buildPublicSiteHref(demoSeed);
+  const publicSiteHref = buildPublicSiteHref(demoSeed, previewPage);
   const openPreview = (next: boolean) => {
     setShowPreview(next);
     if (next) setNarrowView("preview");
@@ -4955,24 +4915,20 @@ export function SettingsTab({
 
   return (
     <div
-      ref={setWorkspaceEl}
       className="admin-settings-workspace"
       data-settings-workspace
       data-preview={showPreview ? "true" : "false"}
       data-preview-expanded={showPreview && previewExpanded ? "true" : "false"}
       data-preview-view={showPreview ? narrowView : "edit"}
-      style={
-        showPreview
-          ? ({
-              "--settings-preview-w": `${previewWidth}px`,
-            } as React.CSSProperties)
-          : undefined
-      }
+
     >
       {/* Settings panel */}
       <div className="admin-settings-workspace__form">
         <AdminSettingsFormLayout
-          initialSectionId={initialSectionId}
+          initialSectionId={initialSectionId ?? "hero"}
+          onSectionChange={handleSectionChange}
+          language={language}
+          historyControls={<span className="studio-history-controls"><button type="button" onClick={() => stepHistory()} disabled={!history.canUndo} aria-label={language === "ja" ? "設定を元に戻す" : "Undo setting change"} title="⌘ Z"><Undo2 size={15} /></button><button type="button" onClick={() => stepHistory(true)} disabled={!history.canRedo} aria-label={language === "ja" ? "設定をやり直す" : "Redo setting change"} title="⌘ ⇧ Z"><Redo2 size={15} /></button></span>}
           sections={settingsSections}
           changedCount={dirtyKeys.length}
           pending={save.isPending}
@@ -4985,6 +4941,7 @@ export function SettingsTab({
           onSave={saveSettings}
           onDiscard={() => {
             setForm({});
+            history.clear();
             setSaveError(false);
             setContactValidationErrors({});
             setContactValidationFocusKey(null);
@@ -5000,6 +4957,11 @@ export function SettingsTab({
             />
           }
         >
+            {onOpenTab && <div className="studio-context-actions">
+              {activeSection === "hero" && <button type="button" onClick={() => onOpenTab("hero")}><Upload size={14} />{language === "ja" ? "トップに載せる写真を選ぶ" : "Choose home photographs"}</button>}
+              {activeSection === "page-layout" && <button type="button" onClick={() => onOpenTab("profile")}><Pencil size={14} />{language === "ja" ? "プロフィールの文章を編集" : "Edit profile content"}</button>}
+              {activeSection === "gallery-layout" && <button type="button" onClick={() => onOpenTab("series")}><Pencil size={14} />{language === "ja" ? "シリーズと作品を編集" : "Edit series and works"}</button>}
+            </div>}
             <div className="flex flex-col">
               {/* General */}
               <SettingsGroup
@@ -5021,8 +4983,7 @@ export function SettingsTab({
                     <button
                       key={id}
                       onClick={() => {
-                        for (const [k, v] of Object.entries(SITE_MOODS[id]))
-                          set(k, v);
+                        history.apply(SITE_MOODS[id]);
                       }}
                       className="text-left px-3 py-2 rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper-soft)] hover:border-[var(--admin-ink)] transition-colors"
                     >
@@ -5215,130 +5176,18 @@ export function SettingsTab({
                     {copy.hero.composedLayoutHint}
                   </p>
                 )}
-                <AdminField
-                  label={copy.hero.randomLabel}
-                  hint={copy.hero.randomHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["off", copy.hero.randomOptions.off],
-                        ["shuffle", copy.hero.randomOptions.shuffle],
-                        ["any", copy.hero.randomOptions.any],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        type="button"
-                        aria-pressed={(current["heroRandom"] || "off") === val}
-                        onClick={() => set("heroRandom", val)}
-                        className={`text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${
-                          (current["heroRandom"] || "off") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                <AdminField
-                  label={copy.hero.speedLabel}
-                  hint={copy.hero.speedHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {HERO_MOTION_SPEED_OPTIONS.map(({ value, label }) => {
-                      const text =
-                        copy.hero.speedNames[
-                          value as keyof typeof copy.hero.speedNames
-                        ] ?? label;
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-label={copy.hero.speedAriaLabel(text)}
-                          aria-pressed={
-                            (current["heroMotionSpeed"] || "standard") ===
-                            value
-                          }
-                          onClick={() => set("heroMotionSpeed", value)}
-                          className={`text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${
-                            (current["heroMotionSpeed"] || "standard") ===
-                            value
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                          }`}
-                        >
-                          {text}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </AdminField>
-                <AdminField
-                  label={copy.hero.orderLabel}
-                  hint={copy.hero.orderHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {HERO_REVEAL_ORDER_OPTIONS.map(({ value, label }) => {
-                      const text =
-                        copy.hero.orderNames[
-                          value as keyof typeof copy.hero.orderNames
-                        ] ?? label;
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-label={copy.hero.orderAriaLabel(text)}
-                          aria-pressed={
-                            (current["heroRevealOrder"] || "photo-first") ===
-                            value
-                          }
-                          onClick={() => set("heroRevealOrder", value)}
-                          className={`text-[length:var(--admin-text-note)] py-2 rounded-sm border transition-colors ${
-                            (current["heroRevealOrder"] || "photo-first") ===
-                            value
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border-[var(--admin-line)]"
-                          }`}
-                        >
-                          {text}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </AdminField>
-                {usesConfigurableHeroFrame && (
-                  <AdminField
-                    label={copy.hero.displayModeLabel}
-                    hint={copy.hero.displayModeHint}
-                  >
-                    <div className="flex gap-1">
-                      {(
-                        [
-                          ["normal", copy.hero.displayModeOptions.normal],
-                          [
-                            "fullscreen",
-                            copy.hero.displayModeOptions.fullscreen,
-                          ],
-                        ] as const
-                      ).map(([val, lbl]) => (
-                        <button
-                          key={val}
-                          onClick={() => set("heroDisplayMode", val)}
-                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                            (current["heroDisplayMode"] || "normal") === val
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                          }`}
-                        >
-                          {lbl}
-                        </button>
-                      ))}
-                    </div>
-                  </AdminField>
-                )}
+                <AdminChoiceSelect label={copy.hero.randomLabel} hint={copy.hero.randomHint}
+                  value={current.heroRandom || "off"} onChange={value => set("heroRandom", value)}
+                  options={Object.entries(copy.hero.randomOptions)} />
+                <AdminChoiceSelect label={copy.hero.speedLabel} hint={copy.hero.speedHint}
+                  value={current.heroMotionSpeed || "standard"} onChange={value => set("heroMotionSpeed", value)}
+                  options={HERO_MOTION_SPEED_OPTIONS.map(({value, label}) => [value, copy.hero.speedNames[value as keyof typeof copy.hero.speedNames] ?? label])} />
+                <AdminChoiceSelect label={copy.hero.orderLabel} hint={copy.hero.orderHint}
+                  value={current.heroRevealOrder || "photo-first"} onChange={value => set("heroRevealOrder", value)}
+                  options={HERO_REVEAL_ORDER_OPTIONS.map(({value, label}) => [value, copy.hero.orderNames[value as keyof typeof copy.hero.orderNames] ?? label])} />
+                {usesConfigurableHeroFrame && <AdminChoiceSelect label={copy.hero.displayModeLabel} hint={copy.hero.displayModeHint}
+                  value={current.heroDisplayMode || "normal"} onChange={value => set("heroDisplayMode", value)}
+                  options={Object.entries(copy.hero.displayModeOptions)} />}
                 {!configurableHeroIsFullscreen && (
                   <AdminField
                     label={copy.hero.heightLabel}
@@ -5389,75 +5238,12 @@ export function SettingsTab({
                     )}
                   </AdminField>
                 )}
-                {usesConfigurableHeroFrame && (
-                  <AdminField
-                    label={copy.hero.titlePositionLabel}
-                    hint={copy.hero.titlePositionHint}
-                  >
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(
-                        [
-                          ["center", copy.hero.titlePositionOptions.center],
-                          [
-                            "bottom-left",
-                            copy.hero.titlePositionOptions["bottom-left"],
-                          ],
-                          [
-                            "bottom-right",
-                            copy.hero.titlePositionOptions["bottom-right"],
-                          ],
-                          [
-                            "top-left",
-                            copy.hero.titlePositionOptions["top-left"],
-                          ],
-                          [
-                            "top-right",
-                            copy.hero.titlePositionOptions["top-right"],
-                          ],
-                        ] as const
-                      ).map(([val, lbl]) => (
-                        <button
-                          key={val}
-                          onClick={() => set("heroTitlePosition", val)}
-                          className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                            (current["heroTitlePosition"] || "center") === val
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                          }`}
-                        >
-                          {lbl}
-                        </button>
-                      ))}
-                    </div>
-                  </AdminField>
-                )}
-                <AdminField
-                  label={copy.hero.scrollEffectLabel}
-                  hint={copy.hero.scrollEffectHint}
-                >
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(
-                      [
-                        ["none", copy.hero.scrollEffectOptions.none],
-                        ["fade", copy.hero.scrollEffectOptions.fade],
-                        ["sink", copy.hero.scrollEffectOptions.sink],
-                        ["parallax", copy.hero.scrollEffectOptions.parallax],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("heroScrollEffect", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["heroScrollEffect"] || "none") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
+                {usesConfigurableHeroFrame && <AdminChoiceSelect label={copy.hero.titlePositionLabel} hint={copy.hero.titlePositionHint}
+                  value={current.heroTitlePosition || "center"} onChange={value => set("heroTitlePosition", value)}
+                  options={Object.entries(copy.hero.titlePositionOptions)} />}
+                <AdminChoiceSelect label={copy.hero.scrollEffectLabel} hint={copy.hero.scrollEffectHint}
+                  value={current.heroScrollEffect || "none"} onChange={value => set("heroScrollEffect", value)}
+                  options={Object.entries(copy.hero.scrollEffectOptions)} />
                 {heroOverlayIsEffective && (
                   <AdminField
                     label={copy.hero.overlayLabel}
@@ -6013,7 +5799,7 @@ export function SettingsTab({
                       num(current["gallerySizeScale"], 1),
                     );
                     // プレビューの器から左右の余白ぶんを引いた、写真が使える幅。
-                    const viewportWidth = previewDevice === "desktop" ? Math.max(1280, previewWidth - 28) : 375;
+                    const viewportWidth = previewViewport.width;
                     const usable = viewportWidth - 32;
                     const fits = columnsThatFit({
                       width: usable,
@@ -6021,7 +5807,7 @@ export function SettingsTab({
                       maxColumns,
                       isMobile: false,
                     });
-                    if (!(previewWidth > 0) || fits >= maxColumns) return null;
+                    if (fits >= maxColumns) return null;
                     return (
                       <p className="mt-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                         {copy.galleryLayout.columnsCappedByPreview(
@@ -7116,7 +6902,7 @@ export function SettingsTab({
                   label={copyDesign.fonts.pairingLabel}
                   hint={copyDesign.fonts.pairingHint}
                 >
-                  <PairingPicker current={current} set={set} />
+                  <PairingPicker current={current} apply={history.apply} />
                 </AdminField>
                 <FontPicker
                   label={copyDesign.fonts.jaFontLabel}
@@ -7859,25 +7645,11 @@ export function SettingsTab({
           留まる。左ナビ・言語切替・グローバルナビはそのまま残る(§5-1)。 */}
       {showPreview && (
         <>
-          {/* ARIA の window splitter。フォーカスでき、値を持つ分割線なので
-              hr へは置き換えられない(§3-2)。 */}
-          {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
-          <div role="separator"
-            aria-orientation="vertical"
-            aria-label={previewCopy.resizeLabel}
-            aria-valuenow={previewWidth}
-            aria-valuemin={previewBounds.min}
-            aria-valuemax={previewBounds.max}
-            tabIndex={0}
-            className="admin-settings-workspace__resizer"
-            data-settings-preview-resizer
-            title={previewCopy.resetWidthTitle}
-            onPointerDown={handleResizePointerDown}
-            onDoubleClick={() => setPreviewRatio(null)}
-            onKeyDown={handleResizeKeyDown}
-          />
           <AdminSettingsPreviewPane
             ref={iframeRef}
+            language={language}
+            page={previewPage}
+            onPageChange={setPreviewPage}
             device={previewDevice}
             onDeviceChange={setPreviewDevice}
             liveSync={liveSync}
@@ -7889,10 +7661,8 @@ export function SettingsTab({
             expanded={previewExpanded}
             onToggleExpanded={() => setPreviewExpanded((value) => !value)}
             expandButtonRef={expandButtonRef}
-            canResetWidth={previewRatio !== null}
-            onResetWidth={() => setPreviewRatio(null)}
+            onViewportChange={setPreviewViewport}
             unsavedCount={dirtyKeys.length}
-            dragging={previewDragging}
             onSave={saveSettings}
             onEdit={() => { setPreviewExpanded(false); setNarrowView("edit"); }}
             pending={save.isPending}
@@ -7956,6 +7726,8 @@ function Section({
   children: React.ReactNode;
 }) {
   const activeSectionId = useAdminSettingsActiveSection();
+  const { language } = useAdminI18n();
+  if (activeSectionId && sectionId) title = settingsNavigationItems.find(item => item.id === sectionId)?.[language === "ja" ? "ja" : "en"] ?? title;
   // 目次で1節ずつ出す画面では、選ばれた節だけを実際の入力欄として描く。
   // 折りたたみ行を19本並べると、左の目次と同じ一覧が本文にも重なるため。
   const singleView = activeSectionId !== null && sectionId !== undefined;
@@ -8083,10 +7855,10 @@ function SettingsGroup({
     return null;
   }
   return (
-    <div className="mb-12 border-t border-[var(--admin-line)] pt-3">
-      <p className="text-[length:var(--admin-text-note)] tracking-widest text-[color:var(--admin-muted)] mb-1">
+    <div className={activeSectionId ? "mb-8" : "mb-12 border-t border-[var(--admin-line)] pt-3"}>
+      {!activeSectionId && <p className="text-[length:var(--admin-text-note)] tracking-widest text-[color:var(--admin-muted)] mb-1">
         {title}
-      </p>
+      </p>}
       <div className="[&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]">
         {children}
       </div>
@@ -8178,10 +7950,10 @@ function fontFallbackStr(category: "serif" | "sans-serif"): string {
 
 function PairingPicker({
   current,
-  set,
+  apply,
 }: {
   current: Record<string, string>;
-  set: (key: string, val: string) => void;
+  apply: (values: Record<string, string>) => void;
 }) {
   useEffect(() => {
     const families = new Set<string>();
@@ -8223,8 +7995,7 @@ function PairingPicker({
           <button
             key={name}
             onClick={() => {
-              set("fontJa", ja);
-              set("fontEn", en);
+              apply({ fontJa: ja, fontEn: en });
             }}
             title={desc}
             className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border border-[var(--admin-line)]"}`}

@@ -373,6 +373,8 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
       page.locator("[data-library-recently-added-marker]"),
     ).toHaveCount(3);
 
+    // Library returns in selection mode; Escape exits it before dismissing the import marker.
+    await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
     await expect(
       page.locator("[data-library-recently-added-marker]"),

@@ -159,6 +159,7 @@ describe("列数の説明", () => {
   test("届かないときだけ理由を出す", () => {
     const tabs = src("../pages/admin-tabs.tsx");
     expect(tabs).toContain("columnsCappedByPreview");
-    expect(tabs).toContain("if (!(previewWidth > 0) || fits >= maxColumns)");
+    expect(tabs.includes("if (fits >= maxColumns)")).toBe(true);
+    expect(tabs.includes("const viewportWidth = previewViewport.width")).toBe(true);
   });
 });

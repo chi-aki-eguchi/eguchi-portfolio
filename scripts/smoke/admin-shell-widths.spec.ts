@@ -8,7 +8,7 @@ import { gotoAdminTab, loginAsAdmin } from "./helpers";
 //  3. 選択トグル(閲覧/選択/並べ替え)が実行ボタンと同じ黒塗りだった
 // 読み取り専用。保存・削除・追加は一切押さない。
 test.describe("admin — 幅ごとの土台", () => {
-  test("中間幅ではアイコンレールを使い、スマホ用の下部バーを出さない", async ({
+  test("中間幅でも左ナビを使い、スマホ用の下部バーを出さない", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "幅を明示して確認する");
@@ -53,10 +53,6 @@ test.describe("admin — 幅ごとの土台", () => {
       await page.waitForTimeout(300);
       const nav = page.locator(".admin-form-toc__nav");
       await expect(nav, `${width}px で目次が必要`).toBeVisible();
-      const advanced = nav.locator(".admin-form-toc__advanced");
-      if ((await advanced.getAttribute("open")) === null) {
-        await advanced.locator(":scope > summary").click();
-      }
 
       // 縦積み = ボタンの左端が全部そろっている。横帯になると左端がばらける。
       const lefts = await nav

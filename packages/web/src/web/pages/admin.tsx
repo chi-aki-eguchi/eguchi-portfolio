@@ -1,4 +1,5 @@
 import "../components/admin-workbench.css";
+import { AdminSettingsNavigationContext, settingsNavigationItems } from "./admin-settings-navigation";
 import { comparePhotoDates } from "../../shared/photo-dates";
 import { PhotoImportReview, type ImportDatePolicy } from "../components/PhotoImportReview";
 import { PhotoDateRecovery } from "../components/PhotoDateRecovery";
@@ -17,8 +18,10 @@ import {
 } from "react";
 import { useLocation } from "wouter";
 import { LibraryPhotoPreview } from "../components/LibraryPhotoPreview";
+import { fitPreviewViewport, PREVIEW_DESKTOP, PREVIEW_MOBILE } from "../lib/admin-preview-viewport";
 import { LibraryFilterPanel } from "../components/LibraryFilterPanel";
 import "../components/library-workspace.css";
+import "../components/admin-studio.css";
 import { contactSheetRows, contactSheetWindow, contactSheetNeighbor, flattenContactRows } from "../lib/library-contact-sheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
@@ -170,6 +173,7 @@ type PaletteDestination = {
   id: string;
   label: string;
   group: string;
+  keywords?: string;
   icon: React.ReactNode;
   action: () => void;
 };
@@ -551,11 +555,12 @@ function AdminPageContent({
   // デモは本番の管理画面と別のキーに保存する。同じキーだと、購入検討者が
   // デモで開いたタブがオーナーの本番管理画面の開始タブを書き換えてしまう
   // (同一オリジンなので localStorage を共有する)。
-  const [tab, setTab] = usePersistentState<Tab>(
+  const [storedTab, setTab] = usePersistentState<Tab>(
     demoMode ? "admin:tab:demo" : "admin:tab",
     "gallery",
     "local",
   );
+  const tab = isAdminTab(storedTab) ? storedTab : "gallery";
   // setupCompleted !== "true" の間は、/admin を開くたびに初期タブを「はじめに」
   // にする(セッション中の自由なタブ移動は妨げないよう、マウントごとに一度だけ)。
   // 完了確定は SetupTab の「セットアップ完了」ボタンの明示操作のみ — 表示した
@@ -629,8 +634,8 @@ function AdminPageContent({
   );
 
   useEffect(() => {
-    if (!isAdminTab(tab)) setTab("gallery");
-  }, [tab, setTab]);
+    if (!isAdminTab(storedTab)) setTab("gallery");
+  }, [storedTab, setTab]);
 
   useEffect(() => {
     if (serviceVisibilityResolved && !showService && tab === "service") {
@@ -675,68 +680,10 @@ function AdminPageContent({
     return () => observer.disconnect();
   }, [demoMode, language]);
 
-  // 工程3: sidebar active indicator slides between tabs (transform only) —
-  // one shared bar instead of each tab fading its own in/out independently.
-  const tabButtonRefs = useRef<Partial<Record<Tab, HTMLButtonElement>>>({});
-  const [indicatorTop, setIndicatorTop] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    const el = tabButtonRefs.current[tab];
-    if (el) setIndicatorTop(el.offsetTop);
-  }, [tab]);
-  // The sidebar is `hidden md:flex` — its buttons have no layout box (and
-  // offsetTop 0) below the lg breakpoint. Resizing back past it doesn't
-  // change `tab`, so the effect above never re-fires and the indicator stays
-  // wherever it last measured (usually the top). Re-measure on resize too.
-  useEffect(() => {
-    const onResize = () => {
-      const el = tabButtonRefs.current[tab];
-      if (el) setIndicatorTop(el.offsetTop);
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [tab]);
-
-  // 工程4: screen transition — the content area crossfades (old screen out,
-  // then new screen in+up) instead of an instant swap. `tab` itself still
-  // switches the sidebar highlight immediately; `contentTab` is what the
-  // content area actually renders, lagging by the exit duration.
-  // Mirrors the invalid-tab correction below so a bad persisted value
-  // doesn't make the very first render take the animated exit/enter path
-  // (there's nothing valid on screen yet to fade out).
   const [settingsEntrySection, setSettingsEntrySection] = useState<string | undefined>();
-  const [contentTab, setContentTab] = useState<Tab>(() =>
-    isAdminTab(tab) ? tab : "gallery",
-  );
-  const [screenPhase, setScreenPhase] = useState<"enter" | "show" | "exit">(
-    "show",
-  );
-  useEffect(() => {
-    if (tab === contentTab) {
-      // Recover from an interrupted transition: if the user switched away and
-      // back before the exit timer below fired, that timer's cleanup cancels
-      // it, but screenPhase is left stuck at "exit" (opacity:0) forever since
-      // nothing else would ever set it back to "show".
-      setScreenPhase((prev) => (prev === "exit" ? "show" : prev));
-      return;
-    }
-    if (prefersReducedMotion()) {
-      setContentTab(tab);
-      setScreenPhase("show");
-      return;
-    }
-    setScreenPhase("exit");
-    const t = setTimeout(() => {
-      setContentTab(tab);
-      setScreenPhase("enter");
-    }, 160);
-    return () => clearTimeout(t);
-  }, [tab, contentTab]);
-  useEffect(() => {
-    if (screenPhase === "enter") {
-      const id = requestAnimationFrame(() => setScreenPhase("show"));
-      return () => cancelAnimationFrame(id);
-    }
-  }, [screenPhase]);
+  const [settingsNavigationHost, setSettingsNavigationHost] = useState<HTMLDivElement | null>(null);
+  // Navigation responds immediately; the destination renders its own loading state.
+  const contentTab = isAdminTab(tab) ? tab : "gallery";
 
   // 工程5: ⌘K / Ctrl+K toggles the quick palette from anywhere in admin.
   useEffect(() => {
@@ -763,6 +710,7 @@ function AdminPageContent({
     shellSettings?.siteNameEn?.trim() ||
     shellSettings?.siteName?.trim() ||
     "Photography";
+  const photoWorkspace = ["gallery", "series", "categories"].includes(tab);
   // Returns whether the switch actually happened (false when blocked by the
   // unsaved-changes guard) — callers that queue a follow-up action (like
   // opening Trash) must only do so once the switch has actually gone through.
@@ -795,6 +743,14 @@ function AdminPageContent({
         action: () => requestTab(key),
       })),
     ),
+    ...settingsNavigationItems.map(item => ({
+      id: `settings-${item.id}`,
+      label: language === "ja" ? item.ja : item.en,
+      group: language === "ja" ? `サイト編集 · ${item.groupJa}` : `Site editor · ${item.groupEn}`,
+      keywords: item.keywords,
+      icon: ADMIN_TAB_ICONS.settings,
+      action: () => { setSettingsEntrySection(item.id); requestTab("settings"); },
+    })),
     {
       id: "trash",
       label: t.navigation.trash,
@@ -817,8 +773,10 @@ function AdminPageContent({
     <AdminSurfaceProvider value={adminSurface}>
     <div
       ref={adminRootRef}
-      className="admin-atelier admin-workbench relative flex select-none overflow-hidden"
+      className="admin-atelier admin-workbench admin-studio relative flex select-none overflow-hidden"
       data-admin-theme={resolvedTheme}
+      data-studio-workspace={photoWorkspace ? "photos" : "site"}
+      data-studio-editor={tab === "settings" || undefined}
       style={{
         ...adminThemeVars,
         ...(demoMode
@@ -876,29 +834,22 @@ function AdminPageContent({
             <ChevronLeft size={16} />
           </button>
         </div>
+        <div className="studio-workspace-switch admin-sidebar__full" role="group" aria-label={language === "ja" ? "作業スペース" : "Workspace"}>
+          <button type="button" aria-pressed={photoWorkspace} disabled={galleryUploading || galleryReordering} onClick={() => requestTab("gallery")}>{language === "ja" ? "写真" : "Photographs"}</button>
+          <button type="button" aria-pressed={!photoWorkspace} disabled={galleryUploading || galleryReordering} onClick={() => requestTab("settings")}>{language === "ja" ? "サイト編集" : "Site editor"}</button>
+        </div>
+        <button type="button" className="studio-command-search admin-sidebar__full" onClick={() => setPaletteOpen(true)}><Search size={14} /><span>{language === "ja" ? "設定・移動先を検索" : "Find a setting or page"}</span><kbd>⌘ K</kbd></button>
         <nav
           className="admin-sidebar__nav admin-sidebar__full"
           aria-label={t.navigation.label}
         >
-          {indicatorTop != null && (
-            <div
-              aria-hidden="true"
-              className="admin-sidebar__indicator"
-              style={{ transform: `translateY(${indicatorTop}px)` }}
-            />
-          )}
-          {adminTabGroups.map((group) => (
+          {adminTabGroups.map(group => ({ ...group, tabs: group.tabs.filter(key => photoWorkspace === ["gallery", "series", "categories"].includes(key)) })).filter(group => group.tabs.length).map((group) => (
             <section
               key={group.key}
               className={`admin-sidebar__group${
                 group.key === "photos" ? " admin-sidebar__group--lead" : ""
               }`}
             >
-              {/* 「写真」グループには Library しか入っていない。1項目のための
-                  見出しは置かず、Library そのものを主役として大きく出す。
-                  毎日開くのはここだけで、他の8つは月に数回。9個が同じ重さで
-                  並んでいるのは、道具の実際の使われ方と合っていない。
-                  読み上げ用の名前は `aria-label` で残す。 */}
               {group.key === "photos" ? (
                 <h2 className="admin-sidebar__group-title sr-only">
                   {group.label}
@@ -913,9 +864,6 @@ function AdminPageContent({
                   return (
                     <button
                       key={key}
-                      ref={(el) => {
-                        if (el) tabButtonRefs.current[key] = el;
-                      }}
                       type="button"
                       disabled={
                         (galleryUploading && key !== "gallery") ||
@@ -935,8 +883,8 @@ function AdminPageContent({
             </section>
           ))}
         </nav>
+        <div ref={setSettingsNavigationHost} className="studio-editor-outline admin-sidebar__full" />
         <div className="admin-sidebar__footer admin-sidebar__full">
-          <button type="button" className="admin-sidebar__link" onClick={() => setPaletteOpen(true)}><Search size={13} /> {t.navigation.paletteLabel}<kbd className="ml-auto text-[10px] text-[var(--admin-muted)]">⌘ K</kbd></button>
           <a
             href={publicSiteHref}
             target="_blank"
@@ -983,7 +931,7 @@ function AdminPageContent({
         <div className="admin-content">
           <div
             className="admin-screen"
-            data-phase={screenPhase}
+            data-phase="show"
           >
             {contentTab === "setup" && (
               <SetupTab onOpenTab={requestTab} demoMode={demoMode} />
@@ -1030,11 +978,15 @@ function AdminPageContent({
                   <LazyServiceTab onUnsavedChange={setHasUnsaved} />
                 )}
                 {contentTab === "settings" && (
+                  <AdminSettingsNavigationContext.Provider value={sidebarCollapsed ? null : settingsNavigationHost}>
                   <LazySettingsTab
                     initialSectionId={settingsEntrySection}
                     onUnsavedChange={setHasUnsaved}
                     demoSeed={demoSeed}
+                    onOpenTab={requestTab}
+                    onActiveSectionChange={setSettingsEntrySection}
                   />
+                  </AdminSettingsNavigationContext.Provider>
                 )}
               </Suspense>
             )}
@@ -1048,6 +1000,7 @@ function AdminPageContent({
             tabGroups={adminTabGroups}
             galleryUploading={galleryUploading}
             onSelectTab={requestTab}
+            onSearch={() => setPaletteOpen(true)}
           />
         )}
       </div>
@@ -2178,7 +2131,7 @@ export function GalleryTab({
     total: number;
   } | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [libraryMode, setLibraryMode] = useState<LibraryMode>("normal");
+  const [libraryMode, setLibraryMode] = useState<LibraryMode>("select");
   const [lastClicked, setLastClicked] = useState<number | null>(null);
   // Focus moves before click. Keep the range anchor separate from the cursor.
   const selectionAnchorRef = useRef<number | null>(null);
@@ -5404,6 +5357,7 @@ export function GalleryTab({
   const inspectorOpenerRef = useRef<HTMLElement | null>(null);
   const inspectorReturnFrame = useRef(0);
   const reviewPhotoId = previewPhoto?.id ?? inspectPhoto?.id;
+  const previewIndex = displayed.findIndex(photo => photo.id === previewPhoto?.id);
   useEffect(() => {
     if (reviewPhotoId == null) return;
     const index = displayed.findIndex(photo => photo.id === reviewPhotoId);
@@ -5545,14 +5499,14 @@ export function GalleryTab({
         selectionAnchorRef.current ??= curIdx >= 0 ? displayed[curIdx].id : photo.id;
         if (libraryMode === "normal") requestLibraryMode("select", () => selectRangeThrough(photo, nextIdx));
         else selectRangeThrough(photo, nextIdx);
-      } else {
+      } else if (!inspectPhoto) {
         setSelected(libraryMode === "select" ? new Set([photo.id]) : new Set());
         selectionAnchorRef.current = photo.id;
         selectionRangeBaseRef.current = null;
       }
       setLastClicked(photo.id);
       setPreviewPhoto((prev) => (prev ? photo : prev)); // keep quick-preview in sync if open
-      if (libraryMode === "normal" && inspectPhoto) openInspectorFor(photo);
+      if (inspectPhoto) openInspectorFor(photo);
       scrollLibraryIndexIntoView(nextIdx);
       requestAnimationFrame(() => {
         const tile = document.getElementById(`admin-photo-${photo.id}`);
@@ -5633,6 +5587,11 @@ export function GalleryTab({
           setReorderTargetId(null);
           setReorderPositionValue("");
           setLastMove(null);
+          return;
+        }
+        if (inspectPhoto) {
+          e.preventDefault();
+          requestCloseInspector();
           return;
         }
         if (libraryMode !== "normal") {
@@ -5747,10 +5706,15 @@ export function GalleryTab({
         navByRow(1, e.shiftKey);
         return;
       }
-      // Enter — open inspector for the cursor photo
+      if (e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        if (inspectPhoto) requestCloseInspector();
+        else requestLibraryMode("select");
+        return;
+      }
+      // Enter / E — edit the cursor photo without losing the selection.
       if (
-        libraryMode === "normal" &&
-        e.key === "Enter" &&
+        (e.key === "Enter" || e.key.toLowerCase() === "e") &&
         lastClicked !== null
       ) {
         const photo = displayed.find((p) => p.id === lastClicked);
@@ -6298,7 +6262,7 @@ export function GalleryTab({
                 {copy.mode.select}
               </button>
             )}
-            {libraryMode === "normal" && (
+            {libraryMode !== "arrange" && (
             <button
               type="button"
               data-library-mobile-arrange
@@ -6322,8 +6286,8 @@ export function GalleryTab({
             >
               {(
                 [
-                  ["normal", copy.mode.normal],
                   ["select", copy.mode.select],
+                  ["normal", copy.mode.normal],
                   ["arrange", copy.mode.arrange],
                 ] as const
               ).map(([mode, label]) => (
@@ -6423,7 +6387,7 @@ export function GalleryTab({
                 </button>
               </div>
             )}
-            {libraryMode === "normal" && (
+            {libraryMode !== "arrange" && (
               <>
             {!manualOrder.ok && (
               <span
@@ -6803,8 +6767,18 @@ export function GalleryTab({
               </div>
               {selected.size > 0 && (
                 <div data-library-batch-actions className="admin-selection-actions">
+              {selected.size === 1 && <div className="studio-selection-review">
+                <button type="button" onClick={() => {
+                  const photo = allPhotos.find(item => selected.has(item.id));
+                  if (photo) { setLastClicked(photo.id); setPreviewPhoto(photo); }
+                }}>{language === "ja" ? "拡大" : "Preview"}<kbd>Space</kbd></button>
+                <button type="button" onClick={() => {
+                  const photo = allPhotos.find(item => selected.has(item.id));
+                  if (photo) guardInspectorSwitch(photo, () => openInspectorFor(photo));
+                }}>{language === "ja" ? "情報を編集" : "Edit details"}<kbd>↵</kbd></button>
+              </div>}
               {/* M2: Publish / Unpublish */}
-              <div className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-0.5">
+              <div data-library-publication-actions className="flex items-center gap-1 bg-[var(--admin-paper-soft)] rounded-sm px-1.5 py-0.5">
                 <button
                   onClick={() => batchOp.mutate({ operation: "publish" })}
                   disabled={batchOp.isPending}
@@ -7511,6 +7485,12 @@ export function GalleryTab({
                             }`
                           }
                           onClick={(e) => handlePhotoClick(photo, idx, e)}
+                          onDoubleClick={() => {
+                            if (libraryMode !== "arrange") guardInspectorSwitch(photo, () => {
+                              setSelected(current => new Set([...current, photo.id]));
+                              openInspectorFor(photo);
+                            });
+                          }}
                           onFocus={() => setLastClicked(photo.id)}
                           className={`absolute inset-0 z-[1] ${
                             libraryMode === "arrange"
@@ -7628,7 +7608,7 @@ export function GalleryTab({
                               aria-label={copy.badges.missingAria(
                                 metadataBadges.join(", "),
                               )}
-                              className="absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
+                              className="pointer-events-none absolute top-4 left-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1"
                             >
                               {metadataBadges.map((label) => (
                                 <span
@@ -7647,7 +7627,7 @@ export function GalleryTab({
                               aria-label={copy.badges.usageAria(
                                 usageBadgeLabels.join(", "),
                               )}
-                              className="absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
+                              className="pointer-events-none absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
                             >
                               {heroIndex >= 0 && (
                                 <span className="inline-flex items-center gap-0.5 rounded-sm bg-[color:var(--admin-accent-fill)] px-1.5 py-0.5 text-[9px] leading-none text-white">
@@ -8552,10 +8532,30 @@ export function GalleryTab({
         title={previewPhoto.title || previewPhoto.filename} closeLabel={copy.preview.closeAria}
         previousLabel={copy.inspector.previous} nextLabel={copy.inspector.next}
         onClose={() => setPreviewPhoto(null)}
-        onStep={inspectPhoto ? undefined : direction => {
+        onRestoreFocus={inspectPhoto ? undefined : () => {
+          const id = previewPhoto.id;
+          if (previewIndex >= 0) scrollLibraryIndexIntoView(previewIndex);
+          requestAnimationFrame(() => {
+            document.querySelector<HTMLElement>(`#admin-photo-${id} [data-library-photo-action]`)?.focus({ preventScroll: true });
+            setLastClicked(id);
+          });
+        }}
+        position={previewIndex >= 0 ? `${previewIndex + 1} / ${displayed.length}` : language === "ja" ? "絞り込みの外" : "Outside current filter"}
+        filmstrip={previewIndex >= 0 ? displayed.slice(Math.max(0, previewIndex - 7), previewIndex + 8).map(photo => ({id: photo.id, src: adminPhotoSrc(photo, 400, 70), title: photo.title || photo.filename})) : undefined}
+        activeId={previewPhoto.id}
+        onPick={id => {
+          const photo = displayed.find(item => item.id === id);
+          if (!photo) return;
+          if (inspectPhoto && photoEditFormChanged(editForm, inspectPhoto)) setPreviewPhoto(null);
+          guardInspectorSwitch(photo, () => { if (inspectPhoto) openInspectorFor(photo); setPreviewPhoto(photo); setLastClicked(photo.id); });
+        }}
+        onStep={direction => {
           const index = displayed.findIndex(photo => photo.id === previewPhoto.id);
           const next = displayed[index + direction];
-          if (index >= 0 && next) setPreviewPhoto(next);
+          if (index >= 0 && next) {
+            if (inspectPhoto && photoEditFormChanged(editForm, inspectPhoto)) setPreviewPhoto(null);
+            guardInspectorSwitch(next, () => { if (inspectPhoto) openInspectorFor(next); setPreviewPhoto(next); setLastClicked(next.id); });
+          }
         }}
       />}
 
@@ -8594,7 +8594,8 @@ export function GalleryTab({
                 ["Shift + ← → ↑ ↓", copy.preview.shortcutRange],
                 ["← → ↑ ↓", copy.preview.shortcutMove],
                 ["[ / ]", copy.preview.shortcutRotate],
-                ["Enter", copy.preview.shortcutInspector],
+                ["Enter / E", copy.preview.shortcutInspector],
+                ["G", copy.inspector.backToLibrary],
                 ["Space", copy.preview.shortcutPreview],
                 ["Delete / Backspace", copy.preview.shortcutDelete],
                 ["Esc", copy.preview.shortcutClose],
@@ -9412,53 +9413,16 @@ export function GalleryTab({
             data-admin-preview-stage
             className="flex-1 overflow-hidden bg-[color:var(--admin-paper)]"
           >
-            {sitePreviewDevice === "mobile" ? (
-              <div className="h-full flex items-start justify-center overflow-auto p-3">
-                <div
-                  className="bg-white overflow-hidden shadow-lg w-[375px] max-w-full h-full max-h-[720px]"
-                  style={{
-                    border: "8px solid var(--admin-line-strong)",
-                    borderRadius: "20px",
-                  }}
-                >
-                  <iframe
-                    ref={sitePreviewRef}
-                    src={`${sitePreviewPage === "top" ? "/" : "/gallery"}${demoSeed ? `?admin-demo-preview=${encodeURIComponent(demoSeed)}` : ""}`}
-                    className="w-full h-full border-0"
-                    title={copy.sitePreview.title}
-                  />
+            {(() => {
+              const viewport = sitePreviewDevice === "mobile" ? PREVIEW_MOBILE : PREVIEW_DESKTOP;
+              const fit = fitPreviewViewport(viewport, { width: Math.max(0, previewStage.w - 24), height: Math.max(0, previewStage.h - 24) });
+              return <div className="studio-library-preview-stage">
+                <div style={{ width: fit.width, height: fit.height, overflow: "hidden", flexShrink: 0 }}>
+                  <iframe ref={sitePreviewRef} src={buildPublicSiteHref(demoSeed, sitePreviewPage === "top" ? "/" : "/gallery")}
+                    title={copy.sitePreview.title} style={{ width: viewport.width, height: viewport.height, maxWidth: "none", border: 0, transform: `scale(${fit.scale})`, transformOrigin: "top left" }} />
                 </div>
-              </div>
-            ) : (
-              // PC幅: 1280px の紙面をパネル幅に合わせて縮小して見せる
-              <div className="w-full h-full overflow-hidden">
-                {(() => {
-                  const scale =
-                    previewStage.w > 0
-                      ? Math.min(1, previewStage.w / 1280)
-                      : 0.33;
-                  return (
-                    <div
-                      style={{
-                        width: 1280,
-                        height:
-                          previewStage.h > 0 ? previewStage.h / scale : 2000,
-                        transform: `scale(${scale})`,
-                        transformOrigin: "top left",
-                      }}
-                      className="bg-white"
-                    >
-                      <iframe
-                        ref={sitePreviewRef}
-                        src={`${sitePreviewPage === "top" ? "/" : "/gallery"}${demoSeed ? `?admin-demo-preview=${encodeURIComponent(demoSeed)}` : ""}`}
-                        className="w-full h-full border-0"
-                        title={copy.sitePreview.title}
-                      />
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+              </div>;
+            })()}
           </div>
         </div>
       )}
@@ -10066,7 +10030,7 @@ function QuickPalette({
 
   const filtered = destinations.filter(
     (d) =>
-      !query.trim() || fuzzyMatch(d.label, query) || fuzzyMatch(d.group, query),
+      !query.trim() || fuzzyMatch(d.label, query) || fuzzyMatch(d.group, query) || fuzzyMatch(d.keywords ?? "", query),
   );
 
   const activate = (d: PaletteDestination) => {

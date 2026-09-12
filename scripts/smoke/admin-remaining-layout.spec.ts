@@ -225,7 +225,7 @@ test.describe("admin — 残画面のWorkspace / Form振り分け", () => {
 
     await openTab(page, "series");
     await expect(page.locator('[data-admin-page-shell="list"]')).toBeVisible();
-    await page.getByRole("button", { name: "編集" }).click();
+    await page.getByRole("button", { name: "編集", exact: true }).click();
     const editor = page.locator('[data-admin-mixed-form="series-edit"]');
     await expect(editor).toBeVisible();
 

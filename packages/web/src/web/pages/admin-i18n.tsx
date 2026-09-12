@@ -1047,7 +1047,7 @@ const ADMIN_PHASE_2B_JA = {
           : `${modeName}・レイアウト既定`,
       modeLabel: "表示モード",
       modeHint:
-        "カルーセル/1枚絵=従来 / 静謐グリッド・エディトリアル・没入型=新レイアウト。切替は保存後に反映",
+        "写真の構成を選び、プレビューで確認できます。保存すると公開サイトへ反映します。",
       modeNames: {
         carousel: "カルーセル",
         single: "1枚絵",
@@ -2793,7 +2793,7 @@ const ADMIN_PHASE_2B_EN = {
           : `${modeName} · Layout default`,
       modeLabel: "Display Mode",
       modeHint:
-        "Carousel and Single Photo are the original layouts; Quiet Grid, Editorial, and Immersive are newer ones. Switching takes effect after you save.",
+        "Choose a composition and check it in the preview. Save to apply it to the published site.",
       modeNames: {
         carousel: "Carousel",
         single: "Single Photo",

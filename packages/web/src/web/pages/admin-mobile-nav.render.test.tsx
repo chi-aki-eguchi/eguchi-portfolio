@@ -80,16 +80,14 @@ test("下部バー: 3グループ表示 → シートからタブ選択、setup�
   await render("gallery");
 
   // 3グループが常時見える(横スクロールに依存しない)
-  for (const g of ADMIN_TAB_GROUPS) {
-    expect(findButton(host, g.label)).toBeDefined();
-  }
-  expect(host.querySelectorAll(".admin-bottom-nav__btn")).toHaveLength(4);
+  for (const label of ["写真", "サイト編集", "移動"]) expect(findButton(host, label)).toBeDefined();
+  expect(host.querySelectorAll(".admin-bottom-nav__btn")).toHaveLength(3);
   // active グループには現在タブ名が添えられる
-  expect(host.textContent).toContain("label-gallery");
+  expect(host.querySelector(".admin-bottom-nav__btn[data-active]")?.textContent).toContain("写真");
 
   // 複数タブのグループ → シートが開く
   await act(async () => {
-    click(findButton(host, "見せ方")!);
+    click(findButton(host, "移動")!);
   });
   const sheet = host.querySelector(".admin-sheet");
   expect(sheet).not.toBeNull();
@@ -107,7 +105,7 @@ test("下部バー: 3グループ表示 → シートからタブ選択、setup�
   // サイトグループのシートには setup(はじめに)も並ぶ
   await render("series");
   await act(async () => {
-    click(findButton(host, "サイト")!);
+    click(findButton(host, "移動")!);
   });
   expect(host.querySelector(".admin-sheet")!.textContent).toContain(
     "label-setup",
@@ -118,9 +116,9 @@ test("下部バー: 3グループ表示 → シートからタブ選択、setup�
   });
   await render("setup");
   await act(async () => {
-    click(findButton(host, "サイト")!);
+    click(findButton(host, "移動")!);
   });
-  const activeRow = host.querySelector('.admin-sheet__row[data-active="true"]');
+  const activeRow = host.querySelector('.admin-sheet__row[aria-current="page"]');
   expect(activeRow?.textContent).toContain("label-setup");
   await act(async () => {
     click(host.querySelector(".admin-sheet__backdrop")!);
@@ -141,7 +139,7 @@ test("下部バー: 3グループ表示 → シートからタブ選択、setup�
 
   // アップロード中: gallery を含まないグループは無効
   await render("gallery", true);
-  expect((findButton(host, "見せ方") as HTMLButtonElement).disabled).toBe(true);
+  expect((findButton(host, "移動") as HTMLButtonElement).disabled).toBe(false);
   expect((host.querySelector("[data-admin-mobile-settings]") as HTMLButtonElement).disabled).toBe(true);
   expect((findButton(host, "写真") as HTMLButtonElement).disabled).toBe(false);
 
@@ -189,15 +187,15 @@ test("EN: 上部トグルと英語グループ名・Getting startedを表示す�
   });
 
   expect(host.querySelector('[data-admin-language-toggle][data-language="en"]')).not.toBeNull();
-  expect(findButton(host, "Photos")).toBeDefined();
-  expect(findButton(host, "Presentation")).toBeDefined();
+  expect(findButton(host, "Photographs")).toBeDefined();
+  expect(findButton(host, "Navigate")).toBeDefined();
   expect(findButton(host, "Site")).toBeDefined();
-  await act(async () => click(findButton(host, "Site")!));
+  await act(async () => click(findButton(host, "Navigate")!));
   expect(host.querySelector(".admin-sheet")?.textContent).toContain(
     "Getting started",
   );
   expect(host.querySelector(".admin-sheet")?.getAttribute("aria-label")).toBe(
-    "Site tabs",
+    "Navigate",
   );
 
   await act(async () => root.unmount());

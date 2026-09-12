@@ -1,104 +1,50 @@
-import { forwardRef, useLayoutEffect, useRef, useState } from "react";
-import {
-  ExternalLink,
-  Maximize2,
-  Minimize2,
-  Monitor,
-  RotateCw,
-  Smartphone,
-} from "lucide-react";
-
-// Settings のプレビュー列。ツールバーと iframe だけを持ち、幅の管理と
-// 「大きく表示」の状態は呼び出し側(admin-tabs の SettingsTab)が持つ。
-// iframe をこのツリーから外さないことが前提 — 外すと読み込み済みの
-// プレビューとスクロール位置が消える(仕様 §5-1)。
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ExternalLink, Maximize2, Minimize2, RotateCw } from "lucide-react";
+import { boundedPreviewDimension, fitPreviewViewport, PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
 
 export type AdminSettingsPreviewCopy = {
-  title: string;
-  desktop: string;
-  desktopTitle: string;
-  mobile: string;
-  mobileTitle: string;
-  syncOn: string;
-  syncOff: string;
-  syncOnTitle: string;
-  syncOffTitle: string;
-  reload: string;
-  expand: string;
-  collapse: string;
-  expandTitle: string;
-  openInNewTab: string;
-  openInNewTabTitle: string;
-  resetWidth: string;
-  resetWidthTitle: string;
+  title: string; desktop: string; desktopTitle: string; mobile: string; mobileTitle: string;
+  syncOn: string; syncOff: string; syncOnTitle: string; syncOffTitle: string;
+  reload: string; expand: string; collapse: string; expandTitle: string;
+  openInNewTab: string; openInNewTabTitle: string; resetWidth: string; resetWidthTitle: string;
   unsavedWhileExpanded: (count: number) => string;
 };
-
 export type AdminSettingsPreviewDevice = "desktop" | "mobile";
+export const SETTINGS_PREVIEW_MOBILE_FRAME_WIDTH = PREVIEW_MOBILE.width;
+export const SETTINGS_PREVIEW_MOBILE_FRAME_HEIGHT = PREVIEW_MOBILE.height;
 
-// スマホ枠は等倍で出す。横に潰すと「スマホ幅の確認」が成立しない(P3)。
-export const SETTINGS_PREVIEW_MOBILE_FRAME_WIDTH = 375;
-export const SETTINGS_PREVIEW_MOBILE_FRAME_HEIGHT = 667;
+function DimensionInput({label, value, onCommit}: {label: string; value: number; onCommit: (value: number) => void}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  return <input type="number" min={280} max={3840} aria-label={label} value={draft}
+    onChange={event => setDraft(event.target.value)}
+    onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+    onBlur={() => { const next = boundedPreviewDimension(draft.trim() ? Number(draft) : NaN, value); setDraft(String(next)); onCommit(next); }} />;
+}
 
-export const AdminSettingsPreviewPane = forwardRef<
-  HTMLIFrameElement,
-  {
-    device: AdminSettingsPreviewDevice;
-    onDeviceChange: (device: AdminSettingsPreviewDevice) => void;
-    liveSync: boolean;
-    onLiveSyncChange: (next: boolean) => void;
-    src: string;
-    publicHref: string;
-    onIframeLoad: () => void;
-    onReload: () => void;
-    expanded: boolean;
-    onToggleExpanded: () => void;
-    expandButtonRef?: React.Ref<HTMLButtonElement>;
-    // 幅を標準へ戻す明示操作(§3-3)。ダブルクリックだけに頼らせない。
-    canResetWidth: boolean;
-    onResetWidth: () => void;
-    unsavedCount: number;
-    dragging: boolean;
-    onSave: () => void;
-    onEdit: () => void;
-    pending: boolean;
-    saveLabel: string;
-    editLabel: string;
-    saveError?: string;
-    copy: AdminSettingsPreviewCopy;
-  }
->(function AdminSettingsPreviewPane(
-  {
-    device,
-    onDeviceChange,
-    liveSync,
-    onLiveSyncChange,
-    src,
-    publicHref,
-    onIframeLoad,
-    onReload,
-    expanded,
-    onToggleExpanded,
-    expandButtonRef,
-    canResetWidth,
-    onResetWidth,
-    unsavedCount,
-    dragging,
-    onSave,
-    onEdit,
-    pending,
-    saveLabel,
-    editLabel,
-    saveError,
-    copy,
-  },
-  iframeRef,
-) {
+export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
+  device: AdminSettingsPreviewDevice; onDeviceChange: (device: AdminSettingsPreviewDevice) => void;
+  liveSync: boolean; onLiveSyncChange: (next: boolean) => void;
+  src: string; publicHref: string; onIframeLoad: () => void; onReload: () => void;
+  expanded: boolean; onToggleExpanded: () => void; expandButtonRef?: React.Ref<HTMLButtonElement>;
+  unsavedCount: number; onViewportChange?: (viewport: PreviewViewport) => void;
+  onSave: () => void; onEdit: () => void; pending: boolean; saveLabel: string; editLabel: string;
+  saveError?: string; copy: AdminSettingsPreviewCopy; language?: string;
+  page?: string; onPageChange?: (page: string) => void;
+}>(function AdminSettingsPreviewPane(props, iframeRef) {
+  const { device, onDeviceChange, liveSync, onLiveSyncChange, src, publicHref, onIframeLoad,
+    onReload, expanded, onToggleExpanded, expandButtonRef, unsavedCount, onViewportChange,
+    onSave, onEdit, pending, saveLabel, editLabel, saveError, copy, page = "/", onPageChange,
+  } = props;
+  const ja = props.language !== "en";
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ width: 0, height: 0 });
+  const [viewport, setViewport] = useState(device === "mobile" ? PREVIEW_MOBILE : PREVIEW_DESKTOP);
+  useEffect(() => { onViewportChange?.(viewport); }, [viewport, onViewportChange]);
+  useEffect(() => { setViewport(device === "mobile" ? PREVIEW_MOBILE : PREVIEW_DESKTOP); }, [device]);
   useLayoutEffect(() => {
     const element = stageRef.current;
-    if (!element) return;
+    if (!element || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(([entry]) => {
       const width = Math.floor(entry.contentRect.width), height = Math.floor(entry.contentRect.height);
       if (width <= 0 || height <= 0) return;
@@ -107,130 +53,47 @@ export const AdminSettingsPreviewPane = forwardRef<
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const scale = stage.width > 0 ? Math.min(1, stage.width / 1280) : 1;
-  const desktopStyle = device === "desktop" ? {
-    width: Math.max(1280, stage.width),
-    height: Math.max(800, stage.height / scale),
-    transform: `scale(${scale})`,
-    transformOrigin: "top left",
-  } : undefined;
-  return (
-    <section
-      className="admin-settings-preview"
-      aria-label={copy.title}
-      data-settings-preview
-    >
-      {/* 上部操作は sticky。スクロールしても PC幅/スマホ幅へ戻れる(§3-5)。
-          グループ単位で折り返す — 1列へ押し込まない(§4-1)。 */}
-      <div className="admin-settings-preview__toolbar">
-        <div className="admin-settings-preview__group admin-settings-preview__segment">
-          <button
-            type="button"
-            aria-pressed={device === "desktop"}
-            onClick={() => onDeviceChange("desktop")}
-            title={copy.desktopTitle}
-          >
-            <Monitor size={13} aria-hidden="true" />
-            {copy.desktop}
-          </button>
-          <button
-            type="button"
-            aria-pressed={device === "mobile"}
-            onClick={() => onDeviceChange("mobile")}
-            title={copy.mobileTitle}
-          >
-            <Smartphone size={13} aria-hidden="true" />
-            {copy.mobile}
-          </button>
+  const fit = fitPreviewViewport(viewport, stage);
+  const dimensions = `${viewport.width} × ${viewport.height}`;
+  return <section className="admin-settings-preview studio-preview" aria-label={copy.title} data-settings-preview>
+    <div className="studio-preview-toolbar">
+      {onPageChange && <select aria-label={ja ? "確認するページ" : "Preview page"} value={page} onChange={e => onPageChange(e.target.value)}>
+        <option value="/">{ja ? "トップページ" : "Home"}</option>
+        <option value="/gallery">Gallery</option><option value="/series">Series</option>
+        <option value="/about">{ja ? "プロフィール" : "About"}</option>
+        <option value="/contact">{ja ? "お問い合わせ" : "Contact"}</option>
+      </select>}
+      <fieldset className="studio-preview-devices" aria-label={ja ? "画面サイズ" : "Screen size"}>
+        <button type="button" aria-pressed={device === "desktop"} onClick={() => { onDeviceChange("desktop"); setViewport(PREVIEW_DESKTOP); }}>{copy.desktop}</button>
+        <button type="button" aria-pressed={device === "mobile"} onClick={() => { onDeviceChange("mobile"); setViewport(PREVIEW_MOBILE); }}>{copy.mobile}</button>
+      </fieldset>
+      <details className="studio-preview-dimensions">
+        <summary title={ja ? "幅と高さを指定" : "Set width and height"}>{dimensions}<span>px</span></summary>
+        <div>
+          <label>{ja ? "幅" : "Width"}<DimensionInput label={ja ? "プレビューの幅" : "Preview width"} value={viewport.width} onCommit={width => setViewport(v => ({...v, width}))} /></label>
+          <label>{ja ? "高さ" : "Height"}<DimensionInput label={ja ? "プレビューの高さ" : "Preview height"} value={viewport.height} onCommit={height => setViewport(v => ({...v, height}))} /></label>
+          <button type="button" onClick={() => setViewport({ width: window.innerWidth, height: window.innerHeight })}>{ja ? "このウィンドウと同じ" : "Match this window"}</button>
         </div>
-
-        {/* 同期の状態と、今の内容を取り直す操作。 */}
-        <div className="admin-settings-preview__group">
-          <button
-            type="button"
-            aria-pressed={liveSync}
-            onClick={() => onLiveSyncChange(!liveSync)}
-            title={liveSync ? copy.syncOnTitle : copy.syncOffTitle}
-          >
-            {liveSync ? copy.syncOn : copy.syncOff}
-          </button>
-          <button type="button" onClick={onReload}>
-            <RotateCw size={13} aria-hidden="true" />
-            {copy.reload}
-          </button>
-        </div>
-
-        {/* どこで見るか。「大きく表示」は Admin Shell 内の Workspace 展開で、
-            全画面 overlay を作らないので左ナビ・言語切替はそのまま残る(§5-1)。
-            「別窓」は保存済みの公開サイトだけ。window.open は使わない(§6)。 */}
-        <div className="admin-settings-preview__group">
-          <button
-            type="button"
-            ref={expandButtonRef}
-            className="admin-settings-preview__expand"
-            aria-pressed={expanded}
-            onClick={onToggleExpanded}
-            title={copy.expandTitle}
-          >
-            {expanded ? (
-              <Minimize2 size={13} aria-hidden="true" />
-            ) : (
-              <Maximize2 size={13} aria-hidden="true" />
-            )}
-            {expanded ? copy.collapse : copy.expand}
-          </button>
-          <a
-            href={publicHref}
-            target="_blank"
-            rel="noopener"
-            title={copy.openInNewTabTitle}
-          >
-            <ExternalLink size={13} aria-hidden="true" />
-            {copy.openInNewTab}
-          </a>
-        </div>
-
-        {/* 幅を標準へ戻す。幅を変えたときだけ出す。 */}
-        {canResetWidth && (
-          <div className="admin-settings-preview__group">
-            <button
-              type="button"
-              className="admin-settings-preview__reset-width"
-              onClick={onResetWidth}
-              title={copy.resetWidthTitle}
-            >
-              {copy.resetWidth}
-            </button>
-          </div>
-        )}
+      </details>
+      <button type="button" ref={expandButtonRef} aria-label={expanded ? copy.collapse : copy.expand} aria-pressed={expanded} onClick={onToggleExpanded}>{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
+    </div>
+    <div ref={stageRef} className="studio-preview-stage">
+      <div className="studio-preview-frame" data-device={device} style={{ width: fit.width, height: fit.height }}>
+        <iframe ref={iframeRef} src={src} onLoad={onIframeLoad} title="Site Preview" style={{ width: viewport.width, height: viewport.height, transform: `scale(${fit.scale})`, transformOrigin: "top left" }} />
       </div>
-
-      {/* 展開中は保存バーが見えないので、未保存の件数だけ文字で残す(§5-1)。 */}
-      {expanded && unsavedCount > 0 && (
-        <p className="admin-settings-preview__unsaved" aria-live="polite">
-          {copy.unsavedWhileExpanded(unsavedCount)}
-        </p>
-      )}
-
-      <div ref={stageRef} className="admin-settings-preview__stage">
-        <div className="admin-settings-preview__frame" data-device={device}>
-          <iframe
-            ref={iframeRef}
-            src={src}
-            onLoad={onIframeLoad}
-            title="Site Preview"
-            // ドラッグ中に iframe がマウスイベントを飲むと掴んだ帯が外れる。
-            style={{ ...desktopStyle, ...(dragging ? { pointerEvents: "none" as const } : {}) }}
-          />
-        </div>
-      </div>
-      {(expanded || unsavedCount > 0) && (
-        <div className="admin-preview-save-dock">
-          <button type="button" onClick={onEdit}>{editLabel}</button>
-          <span role={saveError ? "alert" : undefined}>{saveError || (unsavedCount > 0 ? copy.unsavedWhileExpanded(unsavedCount) : "")}</span>
-          {unsavedCount > 0 && <button type="button" className="admin-btn-primary" onClick={onSave} disabled={pending}>{saveLabel}</button>}
-        </div>
-      )}
-    </section>
-  );
+    </div>
+    <footer className="studio-preview-status">
+      <select aria-label={ja ? "プレビューの内容" : "Preview content"} value={liveSync ? "draft" : "saved"} onChange={e => onLiveSyncChange(e.target.value === "draft")}>
+        <option value="draft">{ja ? "編集中の内容" : "Current draft"}</option><option value="saved">{ja ? "保存済みの内容" : "Saved site"}</option>
+      </select>
+      <span>{Math.round(fit.scale * 100)}%</span>
+      <button type="button" aria-label={copy.reload} title={copy.reload} onClick={onReload}><RotateCw size={14} /></button>
+      <a href={publicHref} target="_blank" rel="noopener" title={copy.openInNewTabTitle}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></a>
+    </footer>
+    {(expanded || saveError || unsavedCount > 0) && <div className="admin-preview-save-dock" data-expanded={expanded} data-error={!!saveError}>
+      <button type="button" onClick={onEdit}>{editLabel}</button>
+      <span role={saveError ? "alert" : "status"}>{saveError || (unsavedCount ? copy.unsavedWhileExpanded(unsavedCount) : (ja ? "保存済み" : "Saved"))}</span>
+      {unsavedCount > 0 && <button type="button" className="admin-btn-primary" onClick={onSave} disabled={pending}>{saveLabel}</button>}
+    </div>}
+  </section>;
 });

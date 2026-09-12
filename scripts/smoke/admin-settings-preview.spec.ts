@@ -128,410 +128,118 @@ const documentOverflow = (page: Page) =>
       document.documentElement.clientWidth,
   );
 
-test.describe("admin — Settings プレビュー Workspace", () => {
-  test("プレビュー中も設定項目一覧から全節へ到達し、入力欄を圧迫しない", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
-
+test.describe("admin — サイト編集のプレビューと下書き", () => {
+  test("常設の項目一覧から全節へ到達でき、編集中に現在地が戻らない", async ({page}, info) => {
+    test.skip(info.project.name !== "desktop", "desktop navigation");
     const mocks = await installMocks(page);
     await openSettings(page);
-    await openPreview(page);
-
-    await expect(page.locator(".admin-form-toc")).toBeHidden();
-    await page.locator(".admin-settings-mobile-current").getByRole("button", { name: "設定項目" }).click();
-    const entries = page.locator("[data-settings-sheet-link]");
-    await expect(entries).toHaveCount(SETTINGS_SECTION_COUNT);
-    const lastId = await entries.last().getAttribute("data-settings-sheet-link");
-    await entries.last().click();
-    await expect(page.locator("[data-settings-section]")).toHaveCount(1);
-    await expect(page.locator("[data-settings-section]")).toHaveAttribute("data-settings-section", lastId!);
-    await expect.poll(() => page.locator(".admin-settings-form-layout__body").evaluate(el => el.clientWidth)).toBeGreaterThanOrEqual(360);
-    const frame = page.frameLocator('iframe[title="Site Preview"]');
-    await expect.poll(() => frame.locator('html').evaluate(() => innerWidth)).toBeGreaterThanOrEqual(1280);
-
-    expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
-    expect(mocks.writes).toEqual([]);
+    const links = page.locator(".studio-editor-outline [data-settings-section-link]");
+    await expect(links).toHaveCount(SETTINGS_SECTION_COUNT);
+    for (const id of ["site-basics", "fonts", "gallery-layout", "hero"]) {
+      await chooseSettingsSection(page, id);
+      await expect(page.locator("[data-settings-section]")).toHaveAttribute("data-settings-section", id);
+    }
+    await page.getByRole("combobox", {name: "登場する速さ", exact: true}).selectOption({label: "すばやく"});
+    await expect(page.locator("[data-settings-section]")).toHaveAttribute("data-settings-section", "hero");
     expect(mocks.unknownWrites).toEqual([]);
+    expect(mocks.writes).toEqual([]);
   });
 
-  test("開閉ボタンは最下部までスクロールしても届き、上部操作はstickyに残る", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
-
+  test("欄の幅に関係なく実際のPC・スマホ寸法を保ち、縦横を一緒に縮小する", async ({page}, info) => {
+    test.skip(info.project.name !== "desktop", "desktop dimensions");
     await installMocks(page);
     await openSettings(page);
-    await openPreview(page);
-
-    const layout = page.locator(".admin-settings-form-layout");
-    await layout.evaluate((el) => {
-      el.scrollTop = el.scrollHeight;
-    });
-    await page.waitForTimeout(200);
-
-    // P6: 開閉ボタンは sticky な目次の中にあるので画面内に残る。
-    const toggle = page.getByRole("button", { name: "プレビューを閉じる" });
-    await expect(toggle).toBeInViewport();
-
-    const toolbar = page.locator(".admin-settings-preview__toolbar");
-    await expect(toolbar).toBeInViewport();
-    await page.locator(".admin-settings-preview__stage").evaluate((el) => {
-      el.scrollTop = el.scrollHeight;
-    });
-    await expect(toolbar).toBeInViewport();
-  });
-
-  test("プレビュー操作のラベルは1行に収まり、グループ単位で折り返す", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
-
-    await installMocks(page);
-    await openSettings(page);
-    await openPreview(page);
-
-    // P5 の回帰防止: 以前は「スマホ幅」が1文字ずつ縦に折れていた。
-    const controls = page.locator(
-      ".admin-settings-preview__toolbar button, .admin-settings-preview__toolbar a",
-    );
-    const count = await controls.count();
-    expect(count).toBeGreaterThanOrEqual(6);
-    for (let index = 0; index < count; index += 1) {
-      const control = controls.nth(index);
-      // 折り返しは行数で測る。テキストノードを Range で囲むと、実際に何行へ
-      // 分かれたかがそのまま矩形の数になる。
-      const info = await control.evaluate((el) => {
-        const textNode = Array.from(el.childNodes).find(
-          (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
-        );
-        if (!textNode) return { text: "", lines: 1 };
-        const range = document.createRange();
-        range.selectNodeContents(textNode);
-        return {
-          text: (textNode.textContent ?? "").trim(),
-          lines: range.getClientRects().length,
-        };
-      });
-      expect(info.lines, `${info.text} が2行以上になっている`).toBeLessThanOrEqual(
-        1,
-      );
+    const iframe = page.locator('iframe[title="Site Preview"]');
+    for (const width of [1600, 1440, 1024, 768]) {
+      await page.setViewportSize({width, height: 900});
+      await openPreview(page);
+      await expect.poll(() => iframe.evaluate((el: HTMLIFrameElement) => [el.contentWindow!.innerWidth, el.contentWindow!.innerHeight])).toEqual([1440, 900]);
+      const rect = (await iframe.boundingBox())!;
+      expect(rect.width / rect.height).toBeCloseTo(1440 / 900, 2);
+      expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
     }
-
-    // 最小幅まで詰めても、要素は列の外へ出ない。
-    await page.locator("[data-settings-preview-resizer]").focus();
-    await page.keyboard.press("Home");
-    await page.waitForTimeout(150);
-    const escaped = await page
-      .locator("[data-settings-preview]")
-      .evaluate((pane) => {
-        const paneRect = pane.getBoundingClientRect();
-        return Array.from(
-          pane.querySelectorAll(
-            ".admin-settings-preview__toolbar button, .admin-settings-preview__toolbar a",
-          ),
-        ).filter((el) => {
-          const rect = el.getBoundingClientRect();
-          return rect.right > paneRect.right + 1 || rect.left < paneRect.left - 1;
-        }).length;
-      });
-    expect(escaped).toBe(0);
-    expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+    await page.setViewportSize({width: 1440, height: 900});
+    await page.getByRole("button", {name: "スマホ幅", exact: true}).click();
+    await expect.poll(() => iframe.evaluate((el: HTMLIFrameElement) => [el.contentWindow!.innerWidth, el.contentWindow!.innerHeight])).toEqual([390, 844]);
+    const rect = (await iframe.boundingBox())!;
+    expect(rect.width / rect.height).toBeCloseTo(390 / 844, 2);
   });
 
-  test("幅はキーボードで変えられ、範囲を超えず、再読み込み後も残る", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
-
+  test("比較したいウィンドウの寸法を入力し、公開リンクは確認中のページを開く", async ({page}, info) => {
+    test.skip(info.project.name !== "desktop", "desktop custom dimensions");
     await installMocks(page);
     await openSettings(page);
-    await openPreview(page);
-
-    const pane = page.locator("[data-settings-preview]");
-    const resizer = page.locator("[data-settings-preview-resizer]");
-    const paneWidth = () =>
-      pane.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-    const formWidth = () =>
-      page
-        .locator(".admin-settings-workspace__form")
-        .evaluate((el) => Math.round(el.getBoundingClientRect().width));
-
-    const before = await paneWidth();
-    await resizer.focus();
-    await page.keyboard.press("ArrowLeft");
-    await page.waitForTimeout(120);
-    expect(await paneWidth()).toBe(before + 16);
-
-    await page.keyboard.press("Shift+ArrowRight");
-    await page.waitForTimeout(120);
-    expect(await paneWidth()).toBe(before - 48);
-
-    // End = 最大。ここでもフォーム列は 400px を割らない。
-    await page.keyboard.press("End");
-    await page.waitForTimeout(150);
-    const widest = await paneWidth();
-    const min = Number(await resizer.getAttribute("aria-valuemin"));
-    const max = Number(await resizer.getAttribute("aria-valuemax"));
-    expect(widest).toBeLessThanOrEqual(max + 1);
-    expect(await formWidth()).toBeGreaterThanOrEqual(400);
-    expect(await page.locator(".admin-settings-form-layout__body").evaluate(el => el.clientWidth)).toBeGreaterThanOrEqual(360);
-
-    await page.keyboard.press("Home");
-    await page.waitForTimeout(150);
-    expect(await paneWidth()).toBe(min);
-    expect(min).toBe(320);
-
-    // 比率で保存しているので、再読み込みしても同じ幅で開く。
-    await page.reload();
-    await page.waitForSelector("[data-settings-preview]", { timeout: 20_000 });
-    await page.waitForTimeout(400);
-    expect(await paneWidth()).toBe(min);
-
-    // 明示ボタンでも標準幅へ戻る(§3-3)。
-    const standard = Math.min(Math.round(await page.locator("[data-settings-workspace]").evaluate(el => el.clientWidth) * .58), Number(await resizer.getAttribute("aria-valuemax")));
-    await page.getByRole("button", { name: "幅を戻す" }).click();
-    await page.waitForTimeout(150);
-    expect(await paneWidth()).toBe(standard);
-    // 標準幅のときは戻す操作を出さない。
-    await expect(page.getByRole("button", { name: "幅を戻す" })).toBeHidden();
-
-    // ダブルクリックでも標準幅へ戻る。
-    await resizer.focus();
-    await page.keyboard.press("Home");
-    await page.waitForTimeout(150);
-    expect(await paneWidth()).toBe(min);
-    await resizer.dblclick();
-    await page.waitForTimeout(150);
-    expect(await paneWidth()).toBe(standard);
+    await page.locator(".studio-preview-dimensions summary").click();
+    const width = page.getByRole("spinbutton", {name: "プレビューの幅"});
+    await width.fill("1080");
+    await width.press("Tab");
+    const height = page.getByRole("spinbutton", {name: "プレビューの高さ"});
+    await height.fill("720");
+    await height.press("Tab");
+    const iframe = page.locator('iframe[title="Site Preview"]');
+    await expect.poll(() => iframe.evaluate((el: HTMLIFrameElement) => [el.contentWindow!.innerWidth, el.contentWindow!.innerHeight])).toEqual([1080, 720]);
+    await page.locator(".studio-preview-dimensions summary").click();
+    await page.getByRole("combobox", {name: "確認するページ"}).selectOption("/contact");
+    await expect(page.locator(".studio-preview-status a")).toHaveAttribute("href", "/contact");
+    await expect(page.locator(".studio-preview-status a")).toHaveAttribute("rel", "noopener");
   });
 
-  test("境界をドラッグして幅が変わり、下限・上限を超えない", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
-
-    await installMocks(page);
+  test("下書きと保存済みを切り替え、元に戻す・やり直す・保存が使える", async ({page}, info) => {
+    test.skip(info.project.name !== "desktop", "desktop editing");
+    const mocks = await installMocks(page, true);
     await openSettings(page);
-    await openPreview(page);
-
-    const pane = page.locator("[data-settings-preview]");
-    const resizer = page.locator("[data-settings-preview-resizer]");
-    const paneWidth = () =>
-      pane.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-
-    const before = await paneWidth();
-    const handle = await resizer.boundingBox();
-    if (!handle) throw new Error("掴み帯が見つからない");
-    const centerY = handle.y + handle.height / 2;
-
-    // 左へ 120px 引くとプレビューが広がる。
-    await page.mouse.move(handle.x + handle.width / 2, centerY);
-    await page.mouse.down();
-    await page.mouse.move(handle.x + handle.width / 2 - 120, centerY, {
-      steps: 8,
-    });
-    await page.mouse.up();
-    await page.waitForTimeout(150);
-    const widened = await paneWidth();
-    expect(widened).toBeGreaterThan(before + 80);
-
-    // 画面外まで引いても上限を超えない。
-    const next = await resizer.boundingBox();
-    if (!next) throw new Error("掴み帯が見つからない");
-    await page.mouse.move(next.x + next.width / 2, centerY);
-    await page.mouse.down();
-    await page.mouse.move(0, centerY, { steps: 10 });
-    await page.mouse.up();
-    await page.waitForTimeout(150);
-    const max = Number(await resizer.getAttribute("aria-valuemax"));
-    expect(await paneWidth()).toBeLessThanOrEqual(max + 1);
-    expect(
-      await page
-        .locator(".admin-settings-workspace__form")
-        .evaluate((el) => Math.round(el.getBoundingClientRect().width)),
-    ).toBeGreaterThanOrEqual(400);
-    expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
-  });
-
-  test("7つの幅で横に溢れず、目次は縦のまま到達できる", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "幅を変えて確認する");
-
-    await installMocks(page);
-    await openSettings(page);
-    await openPreview(page);
-
-    for (const width of [1600, 1440, 1280, 1024, 768, 390, 320]) {
-      await page.setViewportSize({ width, height: 860 });
-      await page.waitForTimeout(250);
-
-      expect(
-        await documentOverflow(page),
-        `${width}px で横スクロールが出ている`,
-      ).toBeLessThanOrEqual(1);
-
-      if (width >= 1024) {
-        // 横並びの幅では目次が縦のまま19節を保つ(P4 の回帰防止)。
-        const nav = page.locator(".admin-form-toc__nav");
-        const shape = await nav.evaluate((el) => ({
-          direction: getComputedStyle(el).flexDirection,
-          hidden: el.scrollWidth - el.clientWidth,
-        }));
-        expect(shape.direction, `${width}px の目次が横帯になっている`).toBe(
-          "column",
-        );
-        expect(shape.hidden).toBeLessThanOrEqual(1);
-        await expect(page.locator("[data-settings-preview]")).toBeVisible();
-      } else {
-        // 狭い幅では横に並べず、切り替え表示になる。
-        const stacked = await page
-          .locator(".admin-settings-workspace")
-          .evaluate((el) => getComputedStyle(el).flexDirection);
-        expect(stacked).toBe("column");
-      }
-    }
-  });
-
-  test("スマホ幅は375pxの枠を横に潰さず、別窓は保存済みサイトを指す", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
-
-    await installMocks(page);
-    await openSettings(page);
-    await openPreview(page);
-
-    await page.getByRole("button", { name: "スマホ幅" }).click();
-    await page.waitForTimeout(200);
-    const frame = page.locator(".admin-settings-preview__frame");
-    // P3: 枠の中身は常に等倍の 375px。列が狭くても横へ縮めない。
-    expect(
-      await frame.evaluate((el) => Math.round(el.clientWidth)),
-    ).toBe(375);
-
-    await page.locator("[data-settings-preview-resizer]").focus();
-    await page.keyboard.press("Home");
-    await page.waitForTimeout(200);
-    expect(
-      await frame.evaluate((el) => Math.round(el.clientWidth)),
-    ).toBe(375);
-    // 潰す代わりに、プレビュー列の内側だけがスクロールする。
-    expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
-
-    const external = page.locator(".admin-settings-preview__toolbar a");
-    await expect(external).toHaveAttribute("href", "/");
-    await expect(external).toHaveAttribute("target", "_blank");
-    await expect(external).toHaveAttribute("rel", "noopener");
-  });
-
-  test("大きく表示はEscapeで戻り、未保存の入力とプレビュー状態が残る", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "横並びは1024px以上");
-
-    const mocks = await installMocks(page);
-    await openSettings(page);
-    await openPreview(page);
-
     await chooseSettingsSection(page, "site-basics");
-    const input = page
-      .locator("[data-settings-section] input[type='text']")
-      .first();
-    await input.fill("展開しても残る文字");
-
-    await page.getByRole("button", { name: "スマホ幅" }).click();
-    await page.waitForTimeout(150);
-
-    const expand = page.getByRole("button", { name: "大きく表示" });
-    await expand.click();
-    await page.waitForTimeout(200);
-
-    // 全画面 overlay を作らないので、左ナビは隠れず残っている(§5-1)。
-    await expect(page.locator(".admin-sidebar, .admin-sidebar-compact").first())
-      .toBeVisible();
-    await expect(page.locator(".admin-settings-form-layout")).toBeHidden();
-    // 展開中も PC幅/スマホ幅・同期・再読み込みが実際に効く。
-    const sync = page.getByRole("button", { name: /同期/ });
-    const syncBefore = await sync.getAttribute("aria-pressed");
-    await sync.click();
-    await expect(sync).toHaveAttribute(
-      "aria-pressed",
-      syncBefore === "true" ? "false" : "true",
-    );
-    await sync.click();
-    await expect(sync).toHaveAttribute("aria-pressed", syncBefore ?? "true");
-
-    await page.getByRole("button", { name: "PC幅" }).click();
-    await expect(page.getByRole("button", { name: "PC幅" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    await page.getByRole("button", { name: "スマホ幅" }).click();
-    await expect(page.locator(".admin-settings-preview__frame")).toHaveAttribute(
-      "data-device",
-      "mobile",
-    );
-
-    const reloaded = page.waitForResponse(
-      (response) =>
-        response.request().resourceType() === "document" &&
-        response.url().includes("/"),
-      { timeout: 10_000 },
-    );
-    await page.getByRole("button", { name: "再読み込み" }).click();
-    await reloaded;
-    await expect(page.locator(".admin-settings-preview__unsaved")).toContainText(
-      "未保存",
-    );
-
-    // iframe の中へフォーカスがある状態でも Escape で戻れる。
-    await page
-      .frameLocator('iframe[title="Site Preview"]')
-      .locator("body")
-      .click({ position: { x: 5, y: 5 } });
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(250);
-    await expect(page.locator(".admin-settings-form-layout")).toBeVisible();
-    // 戻ったとき「大きく表示」へフォーカスを返す。
-    await expect(page.getByRole("button", { name: "大きく表示" })).toBeFocused();
-    // 未保存の入力もプレビューの表示幅も保たれている。
-    await expect(input).toHaveValue("展開しても残る文字");
-    await expect(
-      page.getByRole("button", { name: "スマホ幅" }),
-    ).toHaveAttribute("aria-pressed", "true");
-
-    expect(mocks.writes).toEqual([]);
+    const input = page.locator('[data-settings-section] input[type="text"]').first();
+    await input.fill("Undo draft");
+    await page.getByRole("button", {name: "設定を元に戻す", exact: true}).click();
+    await expect(input).toHaveValue(SETTINGS.siteName);
+    await page.getByRole("button", {name: "設定をやり直す", exact: true}).click();
+    await expect(input).toHaveValue("Undo draft");
+    const frame = page.frameLocator('iframe[title="Site Preview"]');
+    await expect(frame.locator('[data-hero-name-part="primary"]')).toContainText("Undo draft");
+    await page.getByRole("combobox", {name: "プレビューの内容"}).selectOption("saved");
+    await expect(frame.locator('[data-hero-name-part="primary"]')).toContainText(SETTINGS.siteName);
+    await expect(input).toHaveValue("Undo draft");
+    await page.getByRole("combobox", {name: "プレビューの内容"}).selectOption("draft");
+    await expect(frame.locator('[data-hero-name-part="primary"]')).toContainText("Undo draft");
+    await input.press("ControlOrMeta+s");
+    await expect.poll(() => mocks.savedPayloads.length).toBe(1);
+    expect(mocks.savedPayloads[0]).toEqual({siteName: "Undo draft"});
     expect(mocks.unknownWrites).toEqual([]);
   });
 
-  test("375pxは編集↔プレビューを1操作で往復し、入力を保持する", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "mobile", "狭い幅の切り替えを確認する");
-
+  test("大きく表示からEscapeで編集へ戻り、下書きと画面寸法を保持する", async ({page}, info) => {
+    test.skip(info.project.name !== "desktop", "desktop expansion");
     const mocks = await installMocks(page);
     await openSettings(page);
+    await chooseSettingsSection(page, "site-basics");
+    const input = page.locator('[data-settings-section] input[type="text"]').first();
+    await input.fill("Keep draft");
+    await page.getByRole("button", {name: "スマホ幅", exact: true}).click();
+    await page.getByRole("button", {name: "大きく表示", exact: true}).click();
+    await expect(page.locator(".admin-settings-form-layout")).toBeHidden();
+    await expect(page.locator(".admin-preview-save-dock")).toContainText("未保存");
+    await page.frameLocator('iframe[title="Site Preview"]').locator("body").click({position: {x: 5, y: 5}});
+    await page.keyboard.press("Escape");
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue("Keep draft");
+    await expect(page.getByRole("button", {name: "大きく表示", exact: true})).toBeFocused();
+    expect(mocks.writes).toEqual([]);
+  });
 
-    const input = page
-      .locator("[data-settings-section] input[type='text']")
-      .first();
-    await input.fill("スマホでも残る文字");
-
-    // 上部 sticky の中から1操作でプレビューへ移る。下部固定バーは増やさない。
+  test("320pxでも項目選択・編集・プレビューを往復して下書きを保持する", async ({page}, info) => {
+    test.skip(info.project.name !== "mobile", "mobile editing");
+    await page.setViewportSize({width: 320, height: 812});
+    const mocks = await installMocks(page);
+    await openSettings(page);
+    await chooseSettingsSection(page, "site-basics");
+    const input = page.locator('[data-settings-section] input[type="text"]').first();
+    await input.fill("Mobile draft");
     await openPreview(page);
     await expect(page.locator("[data-settings-preview]")).toBeVisible();
-    await expect(page.locator(".admin-settings-form-layout__inner")).toBeHidden();
-    await expect(page.locator(".admin-floating-save-bar")).toBeHidden();
     expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
-    // 狭い幅では「大きく表示」を出さない（既に全面のため）。
-    await expect(page.getByRole("button", { name: "大きく表示" })).toBeHidden();
-
-    await page.getByRole("button", { name: "編集", exact: true }).click();
-    await expect(page.locator(".admin-settings-form-layout__inner")).toBeVisible();
-    await expect(input).toHaveValue("スマホでも残る文字");
-
+    await page.getByRole("button", {name: "編集", exact: true}).click();
+    await expect(input).toHaveValue("Mobile draft");
     expect(mocks.writes).toEqual([]);
     expect(mocks.unknownWrites).toEqual([]);
   });

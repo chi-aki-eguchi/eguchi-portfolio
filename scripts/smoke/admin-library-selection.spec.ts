@@ -12,9 +12,9 @@ async function openFixture(page: Page) {
   })) } }));
   await page.route("**/selection-fixture.svg", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100"><path fill="#8a8782" d="M0 0h150v100H0z"/></svg>' }));
   await loginAsAdmin(page);
-  await gotoAdminTab(page, "gallery");
+  await gotoAdminTab(page, "gallery", "select");
   await expect(photo(page, 0)).toBeVisible();
-  await page.locator('[data-library-mode-action="select"]:visible, [data-library-mobile-select]:visible').first().click();
+  await expect(page.locator('[data-library-mode="select"]')).toBeVisible();
 }
 
 test("ボタンで画面外を含む全選択と解除、絞り込み外の選択を保持", async ({ page }) => {
@@ -57,6 +57,30 @@ test("ボタンで画面外を含む全選択と解除、絞り込み外の選�
   await page.locator("[data-library-clear-selection]").click();
   await expect(count(page)).toHaveAttribute("data-library-selected-count", "0");
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test("選択から拡大・前後確認・情報編集・一覧へ戻っても選択を保つ", async ({page}, info) => {
+  test.skip(info.project.name !== "desktop", "keyboard photo workflow");
+  await openFixture(page);
+  await expect(page.locator('[data-library-mode="select"]')).toBeVisible();
+  await photo(page, 0).click();
+  await photo(page, 5).click({modifiers: ["Shift"]});
+  await expect(count(page)).toHaveAttribute("data-library-selected-count", "6");
+  await page.keyboard.press("Space");
+  await expect(page.locator(".studio-review-position")).toHaveText("6 / 120");
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".studio-review-position")).toHaveText("7 / 120");
+  await expect(page.locator(".studio-filmstrip button[aria-current=true]")).toHaveAttribute("aria-label", "Keep 6");
+  await page.keyboard.press("Space");
+  await expect(count(page)).toHaveAttribute("data-library-selected-count", "6");
+  await expect(photo(page, 6)).toBeFocused();
+  await page.keyboard.press("e");
+  await expect(page.locator("[data-library-inspector-close]")).toBeVisible();
+  await expect(page.locator(".admin-inspector-mobile-title input")).toHaveValue("Keep 6");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("g");
+  await expect(page.locator("[data-library-inspector-close]")).toHaveCount(0);
+  await expect(count(page)).toHaveAttribute("data-library-selected-count", "6");
 });
 
 test("Shiftクリックはフォーカス移動で起点を失わず、範囲を拡大・縮小できる", async ({ page }, info) => {

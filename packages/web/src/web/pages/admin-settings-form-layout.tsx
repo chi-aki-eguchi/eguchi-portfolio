@@ -1,12 +1,15 @@
 import {
   createContext,
+  Fragment,
   useContext,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
+import { AdminSettingsNavigationContext, SETTINGS_NAVIGATION } from "./admin-settings-navigation";
 
 // 目次で選んだ1節だけを本文へ出すための現在地。目次（左）と本文（右）に
 // 同じ節名の一覧が二重に並ぶのをやめ、本文には実際の入力欄だけを置く
@@ -25,6 +28,7 @@ export type AdminSettingsSectionItem = {
   failed: boolean;
   advanced?: boolean;
   keywords?: string;
+  group?: string;
 };
 
 export type AdminSettingsFormCopy = {
@@ -94,6 +98,9 @@ export function AdminSettingsFormLayout({
   mobilePreviewControl = null,
   header = null,
   children,
+  onSectionChange,
+  language = "ja",
+  historyControls,
 }: {
   sections: AdminSettingsSectionItem[];
   changedCount: number;
@@ -116,7 +123,11 @@ export function AdminSettingsFormLayout({
   // タブを切り替えると見出しが横に飛んでいた。
   header?: ReactNode;
   children: ReactNode;
+  onSectionChange?: (id: string) => void;
+  language?: string;
+  historyControls?: ReactNode;
 }) {
+  const navigationHost = useContext(AdminSettingsNavigationContext);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeId, setActiveId] = useState(initialSectionId ?? sections[0]?.id ?? "");
   const [navSeq, setNavSeq] = useState(0);
@@ -127,6 +138,13 @@ export function AdminSettingsFormLayout({
   const failedSection = sections.find((section) => section.failed);
   const activeSection =
     sections.find((section) => section.id === activeId) ?? sections[0];
+  const lastExternalSection = useRef(initialSectionId);
+  useEffect(() => {
+    if (lastExternalSection.current === initialSectionId) return;
+    lastExternalSection.current = initialSectionId;
+    if (initialSectionId && sections.some(section => section.id === initialSectionId)) setActiveId(initialSectionId);
+  }, [initialSectionId, sections]);
+  useEffect(() => { if (activeId) onSectionChange?.(activeId); }, [activeId, onSectionChange]);
 
   useEffect(() => {
     if (sections.some((section) => section.id === activeId)) return;
@@ -180,16 +198,20 @@ export function AdminSettingsFormLayout({
   };
 
   const words = search.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const matchingSections = sections.filter(section => {
+  const sectionOrder: readonly string[] = SETTINGS_NAVIGATION.flatMap(group => group.items.map(item => item.id));
+  const navigationSections = [...sections].sort((a, b) => {
+    const rank = (id: string) => { const index = sectionOrder.indexOf(id); return index < 0 ? sectionOrder.length : index; };
+    return rank(a.id) - rank(b.id);
+  });
+  const matchingSections = navigationSections.filter(section => {
     const haystack = `${section.label} ${section.summary} ${section.keywords ?? ""}`.toLocaleLowerCase();
     return words.every(word => haystack.includes(word));
   });
-  const basicSections = matchingSections.filter((section) => !section.advanced);
-  const advancedSections = matchingSections.filter((section) => section.advanced);
   const searchControl = (
     <div className="admin-settings-search">
       <Search size={15} aria-hidden="true" />
       <input type="search" value={search} onChange={event => setSearch(event.target.value)}
+        onKeyDown={event => { if (event.key === "Enter" && matchingSections[0]) { event.preventDefault(); navigateTo(matchingSections[0].id); } }}
         aria-label={copy.searchLabel ?? copy.navigationLabel}
         placeholder={copy.searchLabel ?? copy.navigationLabel} />
       {search && <button type="button" aria-label={copy.clearSearch} onClick={() => setSearch("")}><X size={14} /></button>}
@@ -212,17 +234,11 @@ export function AdminSettingsFormLayout({
     <nav aria-label={copy.navigationLabel} className="admin-form-toc__nav">
       {searchControl}
       {matchingSections.length === 0 && <output className="admin-settings-search-empty">{copy.noResults}</output>}
-      {basicSections.length > 0 && <span className="admin-form-toc__group-label">{copy.basicSettings}</span>}
-      {sectionButtons(basicSections)}
-      {advancedSections.length > 0 && (
-        <details
-          className="admin-form-toc__advanced"
-          open={words.length > 0 || advancedSections.some((section) => section.id === activeId) || undefined}
-        >
-          <summary>{copy.advancedSettings}</summary>
-          {sectionButtons(advancedSections)}
-        </details>
-      )}
+      {SETTINGS_NAVIGATION.map(group => {
+        const items = matchingSections.filter(section => section.group === group.group);
+        return items.length ? <section key={group.group} className="studio-settings-nav-group"><h3>{language === "ja" ? group.ja : group.en}</h3>{sectionButtons(items)}</section> : null;
+      })}
+      {sectionButtons(matchingSections.filter(section => !section.group))}
     </nav>
   );
 
@@ -231,6 +247,7 @@ export function AdminSettingsFormLayout({
       ref={scrollRef}
       className="admin-settings-form-layout"
       data-admin-form-layout="settings"
+      data-external-outline={navigationHost ? "true" : undefined}
     >
       <div className="admin-settings-mobile-current">
         <span className="admin-settings-mobile-current__label">
@@ -261,19 +278,20 @@ export function AdminSettingsFormLayout({
         </button>
         {mobilePreviewControl}
         <span className="admin-settings-current-preview">{previewToggle}</span>
+        {historyControls}
       </div>
 
       <div className="admin-settings-form-layout__inner">
         {header && (
           <div className="admin-settings-form-layout__header">{header}</div>
         )}
-        <aside className="admin-form-toc">
+        {navigationHost ? createPortal(navigation, navigationHost) : <aside className="admin-form-toc">
           {navigation}
           {previewToggle && (
             <div className="admin-form-toc__preview-toggle">{previewToggle}</div>
           )}
 
-        </aside>
+        </aside>}
 
         <main className="admin-settings-form-layout__body">
           <AdminSettingsActiveSectionContext.Provider value={activeId || null}>
@@ -372,7 +390,11 @@ export function AdminSettingsFormLayout({
           {searchControl}
           <div className="admin-settings-section-sheet__list">
             {matchingSections.length === 0 && <output className="admin-settings-search-empty">{copy.noResults}</output>}
-            {matchingSections.map((section) => (
+            {SETTINGS_NAVIGATION.map(group => {
+              const items = matchingSections.filter(section => section.group === group.group || (!section.group && group.group === "pages"));
+              return items.length > 0 && <Fragment key={group.group}>
+                <h3 className="studio-mobile-nav-heading">{language === "ja" ? group.ja : group.en}</h3>
+                {items.map((section) => (
               <button
                 key={section.id}
                 type="button"
@@ -382,14 +404,15 @@ export function AdminSettingsFormLayout({
               >
                 <span>
                   <strong>{section.label}</strong>
-                  <small>{section.summary}</small>
                 </span>
                 <span className="admin-settings-section-sheet__state">
                   {section.changed && <em>{copy.changed}</em>}
                   {section.failed && <em className="is-error">{copy.failed}</em>}
                 </span>
               </button>
-            ))}
+                ))}
+              </Fragment>;
+            })}
           </div>
         </dialog>
       )}

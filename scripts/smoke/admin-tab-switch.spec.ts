@@ -17,13 +17,13 @@ test.describe("admin — 高速タブ切替でコンテンツが消えたまま�
     );
     await loginAsAdmin(page);
 
-    await page.getByRole("button", { name: "Profile" }).click();
+    await page.locator(".studio-workspace-switch").getByRole("button", { name: "サイト編集", exact: true }).click();
     await page.waitForTimeout(400);
 
     // exit タイマー(160ms)が完了する前に Library → Profile と素早く往復させる。
-    await page.getByRole("button", { name: "Library" }).click();
+    await page.locator(".studio-workspace-switch").getByRole("button", { name: "写真", exact: true }).click();
     await page.waitForTimeout(60);
-    await page.getByRole("button", { name: "Profile" }).click();
+    await page.locator(".studio-workspace-switch").getByRole("button", { name: "サイト編集", exact: true }).click();
 
     // 修正前はここで screenPhase が "exit" に固着し、二度と回復しなかった。
     await page.waitForTimeout(2000);

@@ -161,6 +161,7 @@
   @container library-main (max-width: 960px) {
     .admin-atelier .admin-library-workbar__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
     .admin-atelier .admin-library-mode-switcher { grid-area: 1 / 1; justify-self: start; }
+    .admin-atelier .admin-library-shortcuts { grid-area: 1 / 1; justify-self: end; }
     .admin-atelier .admin-library-import-group { grid-area: 1 / 2; justify-self: end; margin: 0; padding: 0; border: 0; }
     .admin-atelier .admin-library-find-tools { grid-area: 2 / 1 / 3 / -1; width: 100%; min-width: 0; padding-right: 80px; }
     .admin-atelier .admin-library-search { width: auto; flex: 1; min-width: 180px; }

@@ -184,8 +184,18 @@ test("手動表示以外でも並べ替え入口を押せば、条件を解除�
   );
   expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("arrange");
   expect(host.textContent).not.toContain("いまは並び替えを保存できません");
-  // 並べ替えは手動順だけを保存する。画面内から日時順などへ変え直せない。
-  expect(host.querySelector("[data-library-sort]")).toBeNull();
+  // 並べ替え中も日時順などを選び、その表示順を手動順として保存できる。
+  const sort = host.querySelector<HTMLSelectElement>("[data-library-sort]");
+  expect(sort).not.toBeNull();
+  await act(async () => {
+    sort!.value = "createdAt-desc";
+    sort!.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+  });
+  await flush();
+  const saveCurrentOrder = Array.from(host.querySelectorAll("button")).find(
+    (button) => (button.textContent ?? "").includes("この並びを保存"),
+  );
+  expect(saveCurrentOrder).toBeDefined();
 
   await act(async () => {
     root.unmount();

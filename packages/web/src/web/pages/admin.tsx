@@ -4521,6 +4521,18 @@ export function GalleryTab({
     });
   };
 
+  // 日時順などで見ている並びを、そのまま公開ギャラリーの手動順へ確定する。
+  // 閲覧・並べ替えのどちらからでも同じ確認と保存経路を使う。
+  const saveCurrentViewOrder = () =>
+    openConfirmDialog({
+      message: copy.sort.saveConfirm,
+      confirmLabel: copy.sort.saveAction,
+      onConfirm: () =>
+        savePhotoOrder(sortPhotosForView(allPhotos).map((photo) => photo.id), {
+          afterConfirmed: () => setLibrarySort("manual"),
+        }),
+    });
+
   const undoPhotoOrder = () => {
     if (!reorderUndo || reorderBusyRef.current) return;
     savePhotoOrder(reorderUndo.beforeIds, {
@@ -6622,9 +6634,7 @@ export function GalleryTab({
             )}
           </div>
 
-          {/* 並べ替えは手動順だけを保存する。ここで日時順などへ変えられると
-              操作中に自分自身をロックしてしまうため、並べ替え中は表示しない。 */}
-          {!showTrash && libraryMode !== "arrange" && <div className="admin-library-orderbar">
+          {!showTrash && <div className="admin-library-orderbar">
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
               <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">
@@ -6633,7 +6643,12 @@ export function GalleryTab({
               <select
                 data-library-sort
                 value={librarySort}
-                onChange={(e) => setLibrarySort(e.target.value)}
+                onChange={(e) => {
+                  setLibrarySort(e.target.value);
+                  setReorderTargetId(null);
+                  setReorderPositionValue("");
+                  setLastMove(null);
+                }}
                 aria-label={copy.sort.ariaLabel}
                 className="admin-tap-sm bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line)] outline-none"
               >
@@ -6666,7 +6681,7 @@ export function GalleryTab({
             </div>
 
             <span className="admin-library-order-hint">{librarySort.startsWith("shotAt") ? (language === "ja" ? "フィルムはスキャン日時 · 日付なしは末尾" : "Film uses scan time · Undated last") : (language === "ja" ? "一覧での並び順" : "Library display order")}</span>
-            {missingShotAtCount > 0 && <button type="button" onClick={() => setFilterMissingShotAt(!filterMissingShotAt)} aria-pressed={filterMissingShotAt}>{language === "ja" ? `日付なし ${missingShotAtCount}枚` : `${missingShotAtCount} undated`}</button>}
+            {libraryMode !== "arrange" && missingShotAtCount > 0 && <button type="button" onClick={() => setFilterMissingShotAt(!filterMissingShotAt)} aria-pressed={filterMissingShotAt}>{language === "ja" ? `日付なし ${missingShotAtCount}枚` : `${missingShotAtCount} undated`}</button>}
           </div>}
 
           {libraryMode === "arrange" && !showTrash && (
@@ -6679,7 +6694,9 @@ export function GalleryTab({
               className="flex items-center gap-2 flex-wrap"
             >
               <span className="text-[length:var(--admin-text-note)] text-[var(--admin-ink)]">
-                {copy.reorder.activeLabel}
+                {librarySort === "manual"
+                  ? copy.reorder.activeLabel
+                  : copy.sort.saveHint}
               </span>
               <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                 {reorderLocked
@@ -6690,7 +6707,7 @@ export function GalleryTab({
                       : publicReorderLockCause === "loading"
                         ? copy.reorder.settingsLoading
                         : reorderLockCause === "sort"
-                          ? copy.reorder.lockedBySort
+                          ? copy.sort.saveHint
                           : copy.reorder.lockedByFilter
                   : reorderTargetPosition > 0
                     ? copy.reorder.targetLabel(reorderTargetPosition)
@@ -6699,10 +6716,16 @@ export function GalleryTab({
               {reorderLocked && publicReorderLockCause === null && (
                 <button
                   type="button"
-                  onClick={unlockReorder}
+                  onClick={
+                    reorderLockCause === "sort"
+                      ? saveCurrentViewOrder
+                      : unlockReorder
+                  }
                   className="text-[length:var(--admin-text-note)] px-2 py-1 rounded-sm border border-[var(--admin-line-strong)] text-[var(--admin-ink)] bg-[var(--admin-paper-soft)] transition-colors"
                 >
-                  {copy.reorder.unlock}
+                  {reorderLockCause === "sort"
+                    ? copy.sort.saveAction
+                    : copy.reorder.unlock}
                 </button>
               )}
               <div

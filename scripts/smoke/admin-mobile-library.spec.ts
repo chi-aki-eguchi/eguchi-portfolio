@@ -139,6 +139,15 @@ async function assertContactSheet(page: Page, width: number, height: number) {
       { timeout: 10_000, message: `${width}pxで並べ替え中に2列へ変更` },
     )
     .toBe(2);
+  // 並べ替え画面でも自動順を選び、その順を公開の手動順へ保存できる。
+  // 保存は実行せず、選択→保存入口→手動順へ戻すところまでを確認する。
+  const arrangeSort = page.getByRole("combobox", { name: "表示の並び替え" });
+  await expect(arrangeSort).toBeVisible();
+  await arrangeSort.selectOption("shotAt-desc");
+  await expect(
+    page.getByRole("button", { name: "この並びを保存" }),
+  ).toBeVisible();
+  await arrangeSort.selectOption("manual");
   await tiles.nth(0).locator("[data-library-photo-action]").click();
   const reorderBar = page.locator("[data-library-reorder-bar]");
   await expect(reorderBar).toBeVisible();

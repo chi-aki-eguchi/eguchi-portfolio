@@ -1156,16 +1156,16 @@ const ADMIN_PHASE_2B_JA = {
         dot: "点がともる",
         blur: "にじみ→くっきり",
       },
-      headerBgLabel: "ページ最上部の帯",
+      headerBgLabel: "写真の上に重ねるナビ",
       headerBgHint:
-        "いちばん上にいるときの、メニューの後ろの地。下へスクロールすると、どれを選んでもぼかした帯に戻ります（本文の上でリンクが読めなくなるため）",
+        "いちばん上にいるときの、メニューの後ろの見え方。写真に直接重ねる場合も、下へスクロールするとぼかした帯に戻ります（本文の上でリンクが読めなくなるため）",
       headerBgOptions: {
         solid: "帯を出す（既定）",
-        fade: "薄いフェード",
-        none: "文字だけ",
+        fade: "写真に重ねる（読みやすい）",
+        none: "写真に重ねる（文字のみ）",
       },
       headerBgNote:
-        "帯が消えて写真が上まで伸びるのは、TOPのHERO表示を「全画面」にしているときだけです。全画面でない場合、帯の裏は本文の余白なので見た目はほとんど変わりません。文字のまわりには暈しが入りますが、「文字だけ」は写真の明暗に左右されます。明るい配色のまま暗い写真を使うと、メニューが沈んで読みにくくなります（実測で確認）。迷うときは「薄いフェード」が安全です。",
+        "写真が上まで伸びるのは、TOPのHERO表示を「全画面」にしているときだけです。「読みやすい」は文字の後ろにごく薄い幕と文字の暈しを入れるため、迷ったときはこちらが安全です。「文字のみ」も暈しで輪郭を保ちますが、写真の明暗によっては読みにくくなることがあります。",
       hoverShortNames: {
         fade: "フェード",
         underline: "下線",
@@ -2903,16 +2903,16 @@ const ADMIN_PHASE_2B_EN = {
         dot: "Dot lights up",
         blur: "Blur to sharp",
       },
-      headerBgLabel: "Header Bar at the Top",
+      headerBgLabel: "Navigation over the photo",
       headerBgHint:
-        "What sits behind the menu while you are at the very top. Once you scroll, every option returns to the blurred bar, so links stay readable over the content.",
+        "How the area behind the menu looks at the very top. A photo overlay returns to the blurred bar after scrolling, so links remain readable over page content.",
       headerBgOptions: {
         solid: "Show the bar (default)",
-        fade: "Soft fade",
-        none: "Text only",
+        fade: "Over the photo (readable)",
+        none: "Over the photo (text only)",
       },
       headerBgNote:
-        "The bar disappears and the photo reaches the top only when the home hero is set to fullscreen. Otherwise there is only page margin behind the bar, so little changes. The text gets a soft halo, but Text only still depends on the photo: a light colour scheme over a dark photo leaves the menu hard to read. Soft fade is the safer choice.",
+        "The photo reaches the very top only when the home hero is fullscreen. Readable adds a very light veil behind the type as well as its halo, so it is the safer choice. Text only keeps the halo, but can still be harder to read on some photographs.",
       hoverShortNames: {
         fade: "Fade",
         underline: "Underline",

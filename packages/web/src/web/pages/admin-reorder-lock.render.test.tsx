@@ -129,7 +129,7 @@ const flush = async () => {
   });
 };
 
-test("手動表示以外では入口を無効化し、1回で解除して並び替えへ入る", async () => {
+test("手動表示以外でも並べ替え入口を押せば、条件を解除して入れる", async () => {
   gallerySortOrder = "manual";
   currentPhotoOrder = samplePhotos.map((photo) => photo.id);
   // ブラウザ別 sessionStorage に非manualソートが残っている状態を再現
@@ -164,22 +164,16 @@ test("手動表示以外では入口を無効化し、1回で解除して並び�
     '[data-library-mode-action="arrange"]',
   );
   expect(arrange).not.toBeNull();
-  expect(arrange!.disabled).toBe(true);
-  expect(arrange!.title).toContain("手動");
-  expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("select");
+  expect(arrange!.disabled).toBe(false);
+  expect(arrange!.title).toContain("解除して並べ替える");
+  expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("normal");
 
   expect(host.textContent).toContain("いまは並び替えを保存できません");
-  const buttons = Array.from(host.querySelectorAll("button"));
-  const restore = buttons.find((b) =>
-    (b.textContent ?? "").includes("解除して並べ替える"),
-  );
-  expect(restore).toBeDefined();
-
-  // 入口で止めるため、並べ替え中の操作帯にはまだ入らない。
+  // まだ入る前には並べ替え用の操作帯を出さない。
   expect(host.querySelector("[data-library-reorder-bar]")).toBeNull();
 
   await act(async () => {
-    restore!.dispatchEvent(
+    arrange!.dispatchEvent(
       new dom.window.MouseEvent("click", { bubbles: true }),
     );
   });

@@ -4972,6 +4972,18 @@ export function GalleryTab({
     proceed();
   };
 
+  // ローカルに残った検索・絞り込み・表示順は、並べ替えを始める意図と
+  // 両立しない。入口を無効化せず、押した1回で手動順の全件表示へ戻す。
+  // 公開側の並び順など、ここで安全に解除できない条件は
+  // requestLibraryMode() が理由を表示して止める。
+  const startArrange = () => {
+    if (publicReorderLockCause === null && reorderLockCause !== null) {
+      unlockAndArrange();
+      return;
+    }
+    requestLibraryMode("arrange");
+  };
+
   useEffect(() => {
     if (!pendingLibraryMode || reorderBusy) return;
     if (reorderFeedback?.state === "error") {
@@ -6278,11 +6290,10 @@ export function GalleryTab({
             <button
               type="button"
               data-library-mobile-arrange
-              onClick={() => requestLibraryMode("arrange")}
+              onClick={startArrange}
               disabled={
                 uploading || showTrash || bulkEditMode || allPhotos.length === 0 ||
-                !manualOrder.ok || reorderBusy || publicReorderLockCause !== null ||
-                reorderLockCause !== null
+                !manualOrder.ok || reorderBusy || publicReorderLockCause !== null
               }
               className="md:hidden flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] disabled:opacity-40"
             >
@@ -6308,7 +6319,7 @@ export function GalleryTab({
                   type="button"
                   data-library-mode-action={mode}
                   aria-pressed={libraryMode === mode}
-                  onClick={() => requestLibraryMode(mode)}
+                  onClick={mode === "arrange" ? startArrange : () => requestLibraryMode(mode)}
                   disabled={
                     mode === "select"
                       ? uploading ||
@@ -6322,8 +6333,7 @@ export function GalleryTab({
                           allPhotos.length === 0 ||
                           !manualOrder.ok ||
                           reorderBusy ||
-                          publicReorderLockCause !== null ||
-                          reorderLockCause !== null
+                          publicReorderLockCause !== null
                         : false
                   }
                   title={
@@ -6338,9 +6348,9 @@ export function GalleryTab({
                             : publicReorderLockCause === "loading"
                               ? copy.reorder.settingsLoading
                               : reorderLockCause === "sort"
-                                ? copy.reorder.lockedBySort
+                                ? copy.reorder.unlockAndArrange
                                 : reorderLockCause === "filters"
-                                  ? copy.reorder.lockedByFilter
+                                  ? copy.reorder.unlockAndArrange
                               : undefined
                   }
                 >

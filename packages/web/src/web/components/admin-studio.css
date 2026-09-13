@@ -3,7 +3,7 @@
 .admin-atelier.admin-workbench.admin-studio :is(button,input,select,textarea) { letter-spacing: normal; }
 .admin-atelier.admin-workbench.admin-studio { --admin-selected-bg: var(--studio-hover); --admin-selected-shadow: none; --admin-text-body: 14px; --admin-text-note: 12px; --admin-text-micro: 11px; --admin-radius-sm: 6px; --admin-radius-md: 8px; }
 .admin-atelier.admin-workbench.admin-studio button:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
-.admin-atelier.admin-workbench.admin-studio .admin-sidebar:not([data-collapsed=true]) { width: 240px; flex-basis: 240px; padding: 24px 16px 14px; border-right: 1px solid var(--admin-line); background: var(--studio-field); }
+.admin-atelier.admin-workbench.admin-studio .admin-sidebar:not([data-collapsed=true]) { width: 216px; flex-basis: 216px; padding: 20px 12px 14px; border-right: 1px solid var(--admin-line); background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__brand { padding: 0 4px 24px; margin-bottom: 0; border: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__eyebrow { font-size: 10px; letter-spacing: .14em; margin-bottom: 7px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__title { font-size: 21px; font-weight: 550; letter-spacing: -.035em; }
@@ -157,16 +157,16 @@
 .admin-atelier.admin-workbench.admin-studio .studio-preview-devices { background: var(--studio-field); border: 1px solid var(--admin-line); border-radius: 6px; padding: 2px; gap: 2px; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-devices button { padding-inline: 9px !important; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-frame[data-device=mobile] { border-radius: 14px; }
-.admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header { padding: 18px 20px 14px; }
+.admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header { padding: 10px 16px 6px; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header .ax-page-title__text { font-size: 25px !important; font-weight: 600; letter-spacing: -.035em; }
-.admin-atelier.admin-workbench.admin-studio .admin-library-workbar { padding: 10px 20px; }
+.admin-atelier.admin-workbench.admin-studio .admin-library-workbar { padding: 6px 16px; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-mode-switcher { gap: 2px; padding: 3px; background: var(--studio-field); border: 1px solid var(--admin-line); border-radius: 7px; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-mode-switcher button { min-height: 34px; padding: 6px 12px; font-size: 12px; border: 0 !important; border-radius: 4px; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-mode-switcher button[aria-pressed=true] { background: var(--studio-hover) !important; box-shadow: none !important; color: var(--admin-ink) !important; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-search { border: 1px solid var(--admin-line); background: var(--studio-field); border-radius: 6px; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-search input { padding-block: 8px; font-size: 13px; }
-.admin-atelier.admin-workbench.admin-studio .admin-library-orderbar { padding-top: 10px; margin-top: 8px; border-top: 0; font-size: 12px; }
-.admin-atelier.admin-workbench.admin-studio .admin-library-selection-toolbar { padding: 10px 20px; }
+.admin-atelier.admin-workbench.admin-studio .admin-library-orderbar { padding-top: 4px; margin-top: 2px; border-top: 0; font-size: 12px; }
+.admin-atelier.admin-workbench.admin-studio .admin-library-selection-toolbar { padding: 6px 16px; }
 .admin-atelier.admin-workbench.admin-studio .admin-library-grid { background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .admin-photo-selection-mark { width: 21px; height: 21px; border-radius: 5px; }
 .admin-atelier.admin-workbench.admin-studio .admin-photo-tile[aria-selected=true] { box-shadow: inset 0 0 0 2px var(--admin-accent); }

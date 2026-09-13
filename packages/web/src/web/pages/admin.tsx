@@ -188,6 +188,11 @@ type PersistentStorageKind = "session" | "local";
 // 最終確定（下の contactHeightDraft cleanup）が、このキー・このストレージへ
 // 直接書くために参照する。値がずれると保存先が食い違うので定数を共有する。
 const CONTACT_HEIGHT_STORAGE_KEY = "admin:contactHeight";
+// PCの行組みは、一覧性を失わずに写真の色・構図を判断できる高さを基準にする。
+// 160pxだと横長画面で写真が小さくなりすぎたため、操作欄の高さ・幅は変えず
+// 写真面だけを190pxへ広げる。既に選んだサイズは sessionStorage の値を優先する。
+const DEFAULT_DESKTOP_CONTACT_HEIGHT = 190;
+const DEFAULT_MOBILE_CONTACT_HEIGHT = 110;
 
 function getStorage(kind: PersistentStorageKind): Storage | null {
   try {
@@ -2170,7 +2175,12 @@ export function GalleryTab({
   const densityAnchorIdleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const densityPointerActiveRef = useRef(false);
   const [libraryLayout, setLibraryLayout] = usePersistentState<"contact" | "grid">("admin:libraryLayout", "contact");
-  const [contactHeight, setContactHeight] = usePersistentState(CONTACT_HEIGHT_STORAGE_KEY, typeof window !== "undefined" && window.innerWidth < 768 ? 110 : 160);
+  const [contactHeight, setContactHeight] = usePersistentState(
+    CONTACT_HEIGHT_STORAGE_KEY,
+    typeof window !== "undefined" && window.innerWidth < 768
+      ? DEFAULT_MOBILE_CONTACT_HEIGHT
+      : DEFAULT_DESKTOP_CONTACT_HEIGHT,
+  );
   // 連続ドラッグ中は 1フレーム1回だけ下書き値で描き、確定（sessionStorage 保存、
   // `usePersistentState` の既定ストレージ）は指を離したときに1回。毎 input で
   // 永続 state を書くと、写真行の組み直しと保存が 60回/秒 走ってカクついていた

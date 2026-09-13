@@ -184,6 +184,8 @@ test("手動表示以外でも並べ替え入口を押せば、条件を解除�
   );
   expect(host.querySelector("[data-library-mode]")?.getAttribute("data-library-mode")).toBe("arrange");
   expect(host.textContent).not.toContain("いまは並び替えを保存できません");
+  // 並べ替えは手動順だけを保存する。画面内から日時順などへ変え直せない。
+  expect(host.querySelector("[data-library-sort]")).toBeNull();
 
   await act(async () => {
     root.unmount();

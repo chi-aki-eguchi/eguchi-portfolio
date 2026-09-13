@@ -6622,7 +6622,9 @@ export function GalleryTab({
             )}
           </div>
 
-          {!showTrash && <div className="admin-library-orderbar">
+          {/* 並べ替えは手動順だけを保存する。ここで日時順などへ変えられると
+              操作中に自分自身をロックしてしまうため、並べ替え中は表示しない。 */}
+          {!showTrash && libraryMode !== "arrange" && <div className="admin-library-orderbar">
             {/* U1: view sort — display-only until explicitly written to sortOrder */}
             <div className="flex items-center gap-2">
               <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider">

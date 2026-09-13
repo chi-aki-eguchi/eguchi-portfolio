@@ -102,7 +102,8 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await expect(firstImage).toHaveAttribute("data-broken", "true");
 
   // 通常モードの3列は写真を一覧する密度優先なので、移動ボタンを写真上へ
-  // 出さない。並べ替え開始時は2列へ切り替えるため、3列のまま覆うこともない。
+  // 出さない。並べ替えでも下部の操作帯で移動するため、選んだ写真サイズを
+  // 保ったままにできる。
   await expect(tiles.nth(0).getByRole("button", { name: "前へ移動" })).toHaveCount(
     0,
   );
@@ -120,7 +121,22 @@ async function assertContactSheet(page: Page, width: number, height: number) {
         tileGrid(page).evaluate(
           (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
         ),
-      { timeout: 10_000, message: `${width}pxで並べるモードは2列` },
+      { timeout: 10_000, message: `${width}pxで選んだ3列を保つ` },
+    )
+    .toBe(3);
+  const arrangeDensity = page.locator("[data-library-arrange-density]");
+  await expect(arrangeDensity).toBeVisible();
+  const arrangeTwoColumns = arrangeDensity.getByRole("button", {
+    name: "2列表示",
+  });
+  await arrangeTwoColumns.click();
+  await expect
+    .poll(
+      async () =>
+        tileGrid(page).evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+        ),
+      { timeout: 10_000, message: `${width}pxで並べ替え中に2列へ変更` },
     )
     .toBe(2);
   await tiles.nth(0).locator("[data-library-photo-action]").click();

@@ -60,6 +60,34 @@ test("写真の構図を保つ行組み・サイズ変更・固定列・一覧�
   await expect(size).toHaveValue("160");
 });
 
+test("並べ替え中もPCで写真サイズを変えられる", async ({ page }) => {
+  await loginAsAdmin(page);
+  await gotoAdminTab(page, "gallery");
+
+  await page.locator('[data-library-mode-action="arrange"]:visible').click();
+  await expect(page.locator("[data-library-mode]")).toHaveAttribute(
+    "data-library-mode",
+    "arrange",
+  );
+
+  const density = page.locator("[data-library-arrange-density]");
+  const size = density.getByRole("slider", { name: "サムネイルサイズ" });
+  await expect(size).toBeVisible();
+  const grid = page.locator("[data-library-grid-mode] > .grid");
+
+  await size.fill("80");
+  const compactColumns = await grid.evaluate(
+    (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length,
+  );
+  await size.fill("300");
+  await expect.poll(
+    async () =>
+      grid.evaluate(
+        (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length,
+      ),
+  ).toBeLessThan(compactColumns);
+});
+
 test('上下キーで隣の行の写真へ移動し、Enterで同じ写真を開く',async({page})=>{
  await loginAsAdmin(page);await gotoAdminTab(page,'gallery');
  const first=page.locator('.admin-contact-cell').first().locator('[data-library-photo-action]').first();

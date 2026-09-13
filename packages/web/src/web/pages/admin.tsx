@@ -3486,12 +3486,11 @@ export function GalleryTab({
   );
   // スマホは2列/3列をオーナーが選べる。Library の grid CSS・仮想化・
   // キーボード列数はこの実効幅で統一する(Trash/Table・PC sliderは従来どおり)。
-  // 並べ替え中は2列に固定する（タイル上の移動ボタンが小さいタイルに収まらない）。
+  // 並べ替え中も、スマホで選んだ列数を維持する。移動は下部の操作帯で完結し、
+  // タイル上には取っ手だけなので、写真サイズを変えても操作を圧迫しない。
   const useContactSheet = libraryLayout !== "grid" && libraryMode !== "arrange";
   const preferredColumns = coarsePointer
-    ? libraryMode === "arrange"
-      ? 2
-      : mobileLibraryColumns
+    ? mobileLibraryColumns
     : libraryMode === "arrange" || !Number(desktopColumns) ? undefined : Math.max(2, Math.min(12, Number(desktopColumns)));
   const effectiveThumbSize = useMemo(
     () =>
@@ -6704,6 +6703,47 @@ export function GalleryTab({
                   {copy.reorder.unlock}
                 </button>
               )}
+              <div
+                data-library-arrange-density
+                className="flex items-center gap-1.5"
+              >
+                {!coarsePointer ? (
+                  <label className="flex items-center gap-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+                    <span>{copy.toolbar.thumbnailSize}</span>
+                    <input
+                      aria-label={copy.toolbar.thumbnailSize}
+                      type="range"
+                      min={80}
+                      max={300}
+                      value={thumbSize}
+                      onChange={(event) => setThumbSize(Number(event.target.value))}
+                      className="ax-slider w-24 accent-[var(--admin-muted)]"
+                    />
+                  </label>
+                ) : (
+                  <div
+                    className="flex items-center gap-1"
+                    aria-label={copy.toolbar.photoColumns}
+                  >
+                    {([2, 3] as const).map((columns) => (
+                      <button
+                        key={columns}
+                        type="button"
+                        aria-label={copy.toolbar.columns(columns)}
+                        aria-pressed={mobileLibraryColumns === columns}
+                        onClick={() => setMobileLibraryColumns(columns)}
+                        className={`min-w-8 admin-tap-sm px-1.5 py-1 rounded-sm border text-[length:var(--admin-text-note)] transition-colors ${
+                          mobileLibraryColumns === columns
+                            ? "bg-[var(--admin-ink)] text-[var(--admin-paper)] border-[var(--admin-ink)]"
+                            : "text-[var(--admin-muted)] border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {columns}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {onlySeriesFilter && (
                 <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
                   {copy.reorder.seriesPositionHint}

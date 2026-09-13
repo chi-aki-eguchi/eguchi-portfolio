@@ -11,6 +11,9 @@ import { chooseSettingsSection } from "./helpers";
 // 非GETが1件でもネットワークへ出たらテストを失敗させる。書き込み事故の番人。
 
 const SETTINGS = {
+  // This spec exercises an established editor recovering from a failed read,
+  // not first-run setup routing when settings arrive for the first time.
+  setupCompleted: "true",
   siteName: "検査用サイト",
   siteNameEn: "Fixture Site",
   heroSubtitle: "検査用",
@@ -81,7 +84,7 @@ async function openAdminTab(page: Page, label: string) {
   });
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
-  await page.locator(".studio-workspace-switch").getByRole("button", { name: label === "Categories" ? "写真" : "サイト編集", exact: true }).click();
+  await page.locator(".studio-workspace-switch").getByRole("button", { name: label === "分類" ? "写真" : "サイト編集", exact: true }).click();
   await page
     .locator("button, a")
     .filter({ hasText: new RegExp(`^\\s*${label}\\s*$`) })
@@ -145,7 +148,7 @@ test.describe("admin — 保存状態の表示", () => {
     test.skip(testInfo.project.name !== "desktop", "PCの保存バーで検証する");
 
     const mocks = await installAdminApiMocks(page);
-    await openAdminTab(page, "Settings");
+    await openAdminTab(page, "サイトデザイン");
     await chooseSettingsSection(page, "site-basics");
 
     // 設定の本文は目次で選んだ1節だけを出す。既定は先頭の節。
@@ -178,7 +181,7 @@ test.describe("admin — 保存状態の表示", () => {
     );
 
     const mocks = await installAdminApiMocks(page);
-    await openAdminTab(page, "Categories");
+    await openAdminTab(page, "分類");
 
     const target = page
       .locator('button[aria-label*="削除"], button[aria-label*="Delete"]')

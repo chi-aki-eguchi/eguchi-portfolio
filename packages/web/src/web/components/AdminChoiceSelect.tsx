@@ -1,5 +1,6 @@
 import { Field } from "../pages/admin-ui";
 import { useAdminI18n } from "../pages/admin-i18n";
+import { CircleHelp } from "lucide-react";
 
 /** Keyboard-native choices for settings that do not need a visual layout diagram. */
 export function AdminChoiceSelect({ label, hint, value, options, onChange }: {
@@ -12,6 +13,6 @@ export function AdminChoiceSelect({ label, hint, value, options, onChange }: {
     <select className="ax-input ax-select" aria-label={label} value={value} onChange={event => onChange(event.target.value)}>
       {options.map(([key, text]) => <option key={key} value={key}>{text}</option>)}
     </select>
-    {hint && <details className="studio-choice-hint"><summary>{language === "ja" ? "選び方" : "About this setting"}</summary><p>{hint}</p></details>}
+    {hint && <details className="studio-choice-hint"><summary aria-label={language === "ja" ? `${label}について` : `About ${label}`}><CircleHelp size={15} /></summary><p>{hint}</p></details>}
   </Field>;
 }

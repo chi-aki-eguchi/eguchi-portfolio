@@ -95,7 +95,7 @@ test.describe("admin — 幅ごとの土台", () => {
     );
     expect(paper.trim().length).toBeGreaterThan(0);
 
-    // 選択は下線で示し、取り込みの強い塗りと区別する。
+    // 選択は薄い面で示し、取り込みの強い塗りと区別する。
     // color-mix() は color(srgb ...) として返るため、正規表現でRGB扱いしない。
     const selected = page.locator('[data-library-mode-action="normal"]');
     const style = await selected.evaluate((el) => {
@@ -109,11 +109,13 @@ test.describe("admin — 幅ごとの土台", () => {
       };
       const cs = getComputedStyle(el);
       const unselected = document.querySelector('[data-library-mode-action="select"]')!;
-      return { bg: pixel(cs.backgroundColor), shadow: cs.boxShadow, unselectedShadow: getComputedStyle(unselected).boxShadow };
+      return { bg: pixel(cs.backgroundColor), unselectedBg: pixel(getComputedStyle(unselected).backgroundColor) };
     });
-    expect(style.bg[3], "モードの背景は透明").toBe(0);
-    expect(style.shadow, "選択中の下線がある").toContain("inset");
-    expect(style.shadow, "選択中と未選択を区別できる").not.toEqual(style.unselectedShadow);
+    expect(style.bg[3], "選択中の面が見える").toBeGreaterThan(0);
+    const modeAlpha = style.bg[3] / 255;
+    const modeOnPaper = style.bg.slice(0, 3).map(channel => channel * modeAlpha + 247 * (1 - modeAlpha));
+    expect(Math.min(...modeOnPaper), "実行ボタンの濃い塗りとは区別する").toBeGreaterThan(150);
+    expect(style.bg, "選択中と未選択を区別できる").not.toEqual(style.unselectedBg);
     await expect(selected).toHaveAttribute("aria-pressed", "true");
 
     // 取り込む(その画面で一番強い1操作)だけは黒塗りのまま。
@@ -156,10 +158,10 @@ test.describe("admin — 折りたたんだ左ナビ", () => {
 
     // 表示されているだけでなく、押して実際に画面が変わることを見る。
     for (const [group, tab, heading] of [
-      ["presentation", "hero", "Hero"],
-      ["presentation", "series", "Series"],
-      ["site", "settings", "Settings"],
-      ["photos", "gallery", "Library"],
+      ["presentation", "hero", "トップの写真"],
+      ["presentation", "series", "シリーズ"],
+      ["site", "settings", "サイトデザイン"],
+      ["photos", "gallery", "写真一覧"],
     ] as const) {
       const groupButton = rail.locator(
         `[data-compact-sidebar-group="${group}"]`,

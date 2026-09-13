@@ -25,7 +25,7 @@ test.describe("admin — 画面幅が変わっても作業場所と設定の現�
     await page.waitForTimeout(400);
 
     const activeTab = page.locator('.admin-sidebar__tab[aria-current="page"]');
-    await expect(activeTab).toHaveText("Settings");
+    await expect(activeTab).toHaveText("サイトデザイン");
     await expect(activeTab).toBeVisible();
     await expect(page.locator('.studio-workspace-switch button[aria-pressed="true"]')).toHaveText("サイト編集");
     await expect(page.locator('[data-settings-section-link][aria-current="location"]')).toHaveText("トップの見せ方");

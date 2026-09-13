@@ -28,11 +28,11 @@ const ORDERS = [
 ] as const;
 
 const HERO_MODES = [
-  { label: /^カルーセル/, value: "carousel" },
+  { label: /^順に切り替え/, value: "carousel" },
   { label: /^1枚絵/, value: "single" },
-  { label: /^静謐グリッド/, value: "quiet-grid" },
-  { label: /^エディトリアル/, value: "editorial" },
-  { label: /^没入型/, value: "immersive" },
+  { label: /^均等に並べる/, value: "quiet-grid" },
+  { label: /^大小をつける/, value: "editorial" },
+  { label: /^画面いっぱい/, value: "immersive" },
 ] as const;
 
 async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
@@ -142,7 +142,7 @@ test.describe("admin — TOPの動き設定", () => {
     test.skip(testInfo.project.name !== "desktop", "desktopの設定パネルで検証");
     await openMotionSettings(page);
     const hero = page.locator('[data-settings-section="hero"]');
-    await hero.getByRole("button", { name: /^カルーセル/ }).click();
+    await hero.getByRole("button", { name: /^順に切り替え/ }).click();
     await hero
       .getByRole("combobox", { name: "画面の使い方", exact: true })
       .selectOption("normal");
@@ -172,7 +172,7 @@ test.describe("admin — TOPの動き設定", () => {
 
     // 新レイアウト3種は画面の使い方・名前位置を自身で決める。この2項目を
     // 操作してもプレビューが一切変わらないため、値は保持したまま隠す。
-    await hero.getByRole("button", { name: /^静謐グリッド/ }).click();
+    await hero.getByRole("button", { name: /^均等に並べる/ }).click();
     await expect(
       hero.getByRole("button", { name: "フルスクリーン", exact: true }),
     ).toHaveCount(0);

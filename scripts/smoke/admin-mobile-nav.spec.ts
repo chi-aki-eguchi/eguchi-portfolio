@@ -34,13 +34,13 @@ test.describe("admin — スマホ下部ナビ", () => {
     await nav.getByRole("button", { name: "移動", exact: true }).click();
     const sheet = page.locator(".admin-sheet__panel");
     await expect(sheet).toBeVisible();
-    const seriesRow = sheet.getByRole("button", { name: /Series/ });
+    const seriesRow = sheet.getByRole("button", { name: "シリーズ", exact: true });
     const rowBox = await seriesRow.boundingBox();
     expect(rowBox!.height).toBeGreaterThanOrEqual(44);
     await seriesRow.click();
     await expect(sheet).not.toBeVisible();
     await expect(
-      page.locator(".admin-screen").getByRole("heading", { name: "Series" }),
+      page.locator(".admin-screen").getByRole("heading", { name: "シリーズ", exact: true }),
     ).toBeVisible({ timeout: 10_000 });
 
     // 同じシートには setup(はじめに)も並ぶ。

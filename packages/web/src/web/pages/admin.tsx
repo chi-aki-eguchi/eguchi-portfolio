@@ -2170,7 +2170,7 @@ export function GalleryTab({
   const densityAnchorIdleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const densityPointerActiveRef = useRef(false);
   const [libraryLayout, setLibraryLayout] = usePersistentState<"contact" | "grid">("admin:libraryLayout", "contact");
-  const [contactHeight, setContactHeight] = usePersistentState(CONTACT_HEIGHT_STORAGE_KEY, typeof window !== "undefined" && window.innerWidth < 768 ? 80 : 110);
+  const [contactHeight, setContactHeight] = usePersistentState(CONTACT_HEIGHT_STORAGE_KEY, typeof window !== "undefined" && window.innerWidth < 768 ? 110 : 160);
   // 連続ドラッグ中は 1フレーム1回だけ下書き値で描き、確定（sessionStorage 保存、
   // `usePersistentState` の既定ストレージ）は指を離したときに1回。毎 input で
   // 永続 state を書くと、写真行の組み直しと保存が 60回/秒 走ってカクついていた
@@ -6172,7 +6172,7 @@ export function GalleryTab({
           }`}
         >
           <PageHeader
-            title="Library"
+            title={t.navigation.tabs.gallery}
             description={
               // 読込中に "0 / 0 photos" と断定表示しない — 写真家には消失に見える
               isLoading ? (
@@ -7627,7 +7627,7 @@ export function GalleryTab({
                               aria-label={copy.badges.usageAria(
                                 usageBadgeLabels.join(", "),
                               )}
-                              className="pointer-events-none absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
+                              className="studio-photo-usage pointer-events-none absolute bottom-1 right-1 z-[2] flex max-w-[calc(100%-0.5rem)] flex-wrap justify-end gap-1"
                             >
                               {heroIndex >= 0 && (
                                 <span className="inline-flex items-center gap-0.5 rounded-sm bg-[color:var(--admin-accent-fill)] px-1.5 py-0.5 text-[9px] leading-none text-white">

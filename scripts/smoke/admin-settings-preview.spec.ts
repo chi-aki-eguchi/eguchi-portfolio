@@ -251,7 +251,7 @@ test("admin — 以前の表示値が残っていてもHEROと配色の下書き
   const mocks = await installMocks(page, true);
   await openSettings(page);
   await chooseSettingsSection(page, "hero");
-  await page.getByRole("button", { name: /^エディトリアル/ }).click();
+  await page.getByRole("button", { name: /^大小をつける/ }).click();
   await openPreview(page);
   const preview = page.frameLocator('iframe[title="Site Preview"]');
   await expect(preview.locator('.top-page[data-hero-mode="editorial"]')).toBeVisible();

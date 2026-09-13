@@ -906,7 +906,7 @@ describe("shared components", () => {
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
       await waitForText(host, "体験版 · 本番への保存なし");
       expect(host.querySelector("[data-admin-demo-banner]")).not.toBeNull();
-      expect(host.textContent).toContain("Library");
+      expect(host.textContent).toContain("写真一覧");
       cleanup();
     } finally {
       dom.reconfigure({ url: "http://localhost/" });
@@ -1013,7 +1013,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("写真");
       expect(host.textContent).toContain("見せ方");
       expect(host.textContent).toContain("サイト");
-      expect(host.textContent).toContain("Library");
+      expect(host.textContent).toContain("写真一覧");
       expect(host.textContent).toContain("取り込む");
       // Import type is chosen with the files, not mixed into Library filters.
       expect(host.querySelector('input[aria-label="画像ファイルを選択"]')).not.toBeNull();
@@ -1527,31 +1527,34 @@ describe("shared components", () => {
         seedAdminPhotos,
       );
 
-      expect(host.textContent).toContain("Library");
+      // The fixture may land on first-run setup. Enter the photo workspace
+      // explicitly instead of mistaking "Library" in its help for the Library.
+      navGroup(host, "写真").click();
+      await waitForText(host, "写真一覧");
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Hero").click();
+      sheetRow(host, "トップの写真").click();
       await waitForText(host, "トップページの写真");
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Series").click();
+      sheetRow(host, "シリーズ").click();
       await waitForText(host, "新しいシリーズ");
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Categories").click();
+      sheetRow(host, "分類").click();
       await waitForText(host, "新しいカテゴリ");
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Profile").click();
+      sheetRow(host, "プロフィール").click();
       await waitForText(host, "プロフィール写真（Aboutページ）");
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Pricing").click();
+      sheetRow(host, "料金・プラン").click();
       await waitForText(host, "プランを追加");
       expect(host.textContent).toContain("Contactページに表示される料金です");
 
@@ -1560,7 +1563,7 @@ describe("shared components", () => {
       buttonWithText(host, "料金").click();
       await waitForText(host, "/portfolio-kit 販売ページの料金です");
 
-      buttonWithText(host, "Settings").click();
+      buttonWithText(host, "サイトデザイン").click();
       await waitForText(host, "トップの見せ方");
       // 設定の本文は目次で選んだ1節だけを出す（2026-07-30）。
       (
@@ -1603,7 +1606,7 @@ describe("shared components", () => {
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Profile").click();
+      sheetRow(host, "プロフィール").click();
       await waitForText(host, "プロフィール写真（Aboutページ）");
       const nameInput = inputByLabel(host, "名前（日本語）");
       changeInput(nameInput, "Draft Name");
@@ -1611,7 +1614,7 @@ describe("shared components", () => {
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Hero").click();
+      sheetRow(host, "トップの写真").click();
       await flush(80);
       expect(host.textContent).toContain("未保存の変更があります");
       expect(host.textContent).toContain(
@@ -1649,14 +1652,14 @@ describe("shared components", () => {
       await flush(80);
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Hero").click();
+      sheetRow(host, "トップの写真").click();
       await flush(80);
 
       expect(host.textContent).toContain("未保存の変更があります");
       expect(host.textContent).toContain(
         "保存していない内容があります。このまま移動しますか？",
       );
-      expect(host.textContent).toContain("Library");
+      expect(host.textContent).toContain("写真一覧");
 
       cleanup();
     } finally {
@@ -1695,7 +1698,7 @@ describe("shared components", () => {
 
       navGroup(host, "移動").click();
       await flush(30);
-      sheetRow(host, "Hero").click();
+      sheetRow(host, "トップの写真").click();
       await waitForText(host, "トップページの写真");
       expect(host.textContent).not.toContain("未保存の変更があります");
 
@@ -2143,7 +2146,7 @@ describe("shared components", () => {
       await waitForText(host, "トップの見せ方");
 
       buttonWithText(host, "写真").click();
-      await waitForText(host, "Library");
+      await waitForText(host, "写真一覧");
 
       cleanup();
     } finally {
@@ -2520,7 +2523,7 @@ describe("shared components", () => {
         seedEstablishedAdminSite,
       );
       await flush(30);
-      expect(host.textContent).toContain("Library");
+      expect(host.textContent).toContain("写真一覧");
       expect(host.textContent).toContain("取り込む");
       cleanup();
     } finally {
@@ -2564,7 +2567,7 @@ describe("shared components", () => {
         seedEstablishedAdminSite,
       );
       await flush(80);
-      expect(host.textContent).toContain("Library");
+      expect(host.textContent).toContain("写真一覧");
       expect(dom.window.sessionStorage.getItem("admin:filterCat")).toBe(
         JSON.stringify("all"),
       );
@@ -2683,7 +2686,7 @@ describe("shared components", () => {
       const { host, cleanup } = await mount(createElement(Admin), (qc) =>
         qc.setQueryData(["hero-photos"], { heroPhotos: [samplePhotos[0]] }),
       );
-      buttonWithText(host, "Hero").click();
+      buttonWithText(host, "トップの写真").click();
       await flush(500);
 
       expect(host.textContent).toContain("トップページの写真");

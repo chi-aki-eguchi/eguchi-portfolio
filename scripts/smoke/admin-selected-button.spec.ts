@@ -36,7 +36,7 @@ test.describe("admin — 選択済みボタンが実際にハイライト表示�
       "サイドバー操作のため desktop のみで検証",
     );
     await loginAsAdmin(page);
-    await page.getByRole("button", { name: "Series" }).click();
+    await page.getByRole("button", { name: "シリーズ", exact: true }).click();
     await page.waitForTimeout(1000);
 
     const editBtn = page.getByRole("button", { name: "編集", exact: true }).first();

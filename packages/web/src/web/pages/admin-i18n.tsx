@@ -1049,11 +1049,11 @@ const ADMIN_PHASE_2B_JA = {
       modeHint:
         "写真の構成を選び、プレビューで確認できます。保存すると公開サイトへ反映します。",
       modeNames: {
-        carousel: "カルーセル",
+        carousel: "順に切り替え",
         single: "1枚絵",
-        "quiet-grid": "静謐グリッド",
-        editorial: "エディトリアル",
-        immersive: "没入型",
+        "quiet-grid": "均等に並べる",
+        editorial: "大小をつける",
+        immersive: "画面いっぱい",
       },
       modeDescriptions: {
         carousel: "複数写真が順番に切り替わる",
@@ -3728,14 +3728,14 @@ export const ADMIN_DICTIONARY = {
       label: "管理画面",
       tabs: {
         setup: "はじめに",
-        gallery: "Library",
-        hero: "Hero",
-        profile: "Profile",
-        categories: "Categories",
-        series: "Series",
-        pricing: "Pricing",
+        gallery: "写真一覧",
+        hero: "トップの写真",
+        profile: "プロフィール",
+        categories: "分類",
+        series: "シリーズ",
+        pricing: "料金・プラン",
         service: "Portfolio Kit",
-        settings: "Settings",
+        settings: "サイトデザイン",
       },
       groups: {
         photos: "写真",

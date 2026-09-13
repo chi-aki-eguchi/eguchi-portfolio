@@ -103,6 +103,29 @@ async function openTab(page: Page, tab: string) {
 }
 
 test.describe("admin — Form layout", () => {
+  test("構図の選択が明暗両方で見分けられ、キーボードで変更・取り消しできる", async ({ page }) => {
+    const mocks = await installMocks(page);
+    for (const surface of ["light", "dark"]) {
+      await page.addInitScript(next => localStorage.setItem("admin-surface-preference", next), surface);
+      await openTab(page, "settings");
+      const single = page.getByRole("button", { name: /^1枚絵/ });
+      await single.focus();
+      await page.keyboard.press("Enter");
+      await expect(single).toHaveAttribute("aria-pressed", "true");
+      const paint = await single.evaluate(element => {
+        const selected = getComputedStyle(element);
+        const unselected = getComputedStyle(document.querySelector('.studio-option[aria-pressed="false"]')!);
+        return { border: selected.borderColor, otherBorder: unselected.borderColor, shadow: selected.boxShadow };
+      });
+      expect(paint.border).not.toBe(paint.otherBorder);
+      expect(paint.shadow).not.toBe("none");
+      await page.keyboard.press("ControlOrMeta+z");
+      await expect(single).toHaveAttribute("aria-pressed", "false");
+    }
+    expect(mocks.writes).toEqual([]);
+    expect(mocks.unknownWrites).toEqual([]);
+  });
+
   test("Settingsは全節の目次・変更節・失敗節・保存時刻を対応させる", async ({
     page,
   }, testInfo) => {
@@ -177,8 +200,8 @@ test.describe("admin — Form layout", () => {
 
     await installMocks(page);
     for (const [width, expectedToc, maxBody] of [
-      [1440, 199, 720],
-      [1024, 171, 720],
+      [1440, 207, 720],
+      [1024, 163, 720],
     ] as const) {
       await page.setViewportSize({ width, height: 900 });
       await openTab(page, "settings");
@@ -397,7 +420,7 @@ test.describe("admin — Form layout", () => {
     expect(mocks.unknownWrites).toEqual([]);
   });
 
-  test("390pxでは目次が本文を押し下げず、最初の入力欄が1画面に入る", async ({
+  test("390pxでは目次が本文を押し下げず、最初の設定操作が1画面に入る", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "390pxで確認する");
@@ -423,15 +446,15 @@ test.describe("admin — Form layout", () => {
     await expect(heading).toBeVisible();
 
     // 目次が本文を押し下げていないことを結果で測る: スクロールせずに
-    // 最初の入力欄まで届く。
+    // 最初の設定操作まで届く。構図は写真付きの選択ボタンで編集する。
     const firstField = page
-      .locator("[data-settings-section] input, [data-settings-section] select")
+      .locator("[data-settings-section] .studio-option, [data-settings-section] input, [data-settings-section] select")
       .first();
     await expect(firstField).toBeVisible();
     const fieldBox = await firstField.boundingBox();
     expect(
       (fieldBox?.y ?? 9999) + (fieldBox?.height ?? 0),
-      "最初の入力欄が1画面目に収まる",
+      "最初の設定操作が1画面目に収まる",
     ).toBeLessThanOrEqual(844);
 
     const overflow = await page.evaluate(

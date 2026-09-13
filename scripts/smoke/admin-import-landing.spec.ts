@@ -361,12 +361,12 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     // Galleryを離れて戻っても、親状態にある目印は消えない。
     await page
       .locator(".admin-sidebar__tab")
-      .filter({ hasText: "Categories" })
+      .filter({ hasText: "分類" })
       .click();
     await page.waitForTimeout(250);
     await page
       .locator(".admin-sidebar__tab")
-      .filter({ hasText: "Library" })
+      .filter({ hasText: "写真一覧" })
       .click();
     await expect(recentSection).toBeVisible();
     await expect(

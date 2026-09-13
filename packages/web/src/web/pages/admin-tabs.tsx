@@ -543,32 +543,41 @@ const LAYOUT_ICON_RECTS: Record<GalleryLayoutType, LayoutIconRect[]> = {
   ],
 };
 
-// Generic line-diagram renderer shared by every visual choice picker in
-// Settings (gallery layout, Hero mode, nav position, ...). Kept separate from
-// LayoutIcon's gallery-specific rect data so non-gallery pickers can supply
-// their own rects without depending on GalleryLayoutType.
+// Use the owner's photographs to make composition choices legible. This public
+// query shares the gallery cache; thumbnails never request the original file.
 function MiniDiagram({ rects }: { rects: LayoutIconRect[] }) {
+  const { data } = useQuery({
+    queryKey: ["photos"],
+    queryFn: async () => jsonOrThrow(await api.photos.$get()),
+    staleTime: 60_000,
+  });
+  const photos = (data?.photos ?? []).slice(0, 6);
   return (
     <div
+      className="studio-composition"
       aria-hidden="true"
       style={{ position: "relative", width: "100%", paddingTop: "62%" }}
     >
-      {rects.map((r, i) => (
+      {rects.map((r, i) => {
+        const photo = r.h >= 18 && r.w >= 18 ? photos[i % photos.length] : undefined;
+        return (
         <div
           key={i}
+          className="studio-composition-part"
+          data-photo={photo ? "true" : undefined}
           style={{
             position: "absolute",
             left: `${r.l}%`,
             top: `${r.t}%`,
             width: `${r.w}%`,
             height: `${r.h}%`,
-            border: "1.5px solid currentColor",
-            borderRadius: 1,
-            opacity: r.opacity ?? 0.7,
+            opacity: r.opacity ?? 1,
             transform: r.rotate ? `rotate(${r.rotate}deg)` : undefined,
           }}
-        />
-      ))}
+        >
+          {photo && <img src={adminPhotoSrc(photo, 400, 70)} alt="" loading="lazy" decoding="async" style={{ objectPosition: adminPhotoObjectPosition(photo) }} />}
+        </div>
+      );})}
     </div>
   );
 }
@@ -577,11 +586,8 @@ function LayoutIcon({ value }: { value: GalleryLayoutType }) {
   return <MiniDiagram rects={LAYOUT_ICON_RECTS[value] ?? []} />;
 }
 
-// Shared card for every "pick one, see what it looks like" control in
-// Settings (Settings可視化 Phase 1, 2026-07-09): a diagram or preview node,
-// a name, and an always-visible one-line description. Deliberately
-// monochrome (currentColor + admin-ink/admin-paper-soft only) — no color
-// badges, no icons beyond the diagram, per owner's "quiet, editorial" brief.
+// A visual sample and a plain-language explanation, with an explicit selected
+// mark. Color alone must never be the only indication of the current choice.
 function VisualChoiceCard({
   active,
   name,
@@ -618,7 +624,7 @@ const HERO_MODE_OPTIONS: {
 }[] = [
   {
     value: "carousel",
-    name: "カルーセル",
+    name: "順に切り替え",
     desc: "複数写真が順番に切り替わる",
     rects: [
       { l: 6, t: 4, w: 88, h: 74 },
@@ -635,7 +641,7 @@ const HERO_MODE_OPTIONS: {
   },
   {
     value: "quiet-grid",
-    name: "静謐グリッド",
+    name: "均等に並べる",
     desc: "複数枚を整然と見せる",
     rects: [
       { l: 2, t: 2, w: 46, h: 46 },
@@ -646,7 +652,7 @@ const HERO_MODE_OPTIONS: {
   },
   {
     value: "editorial",
-    name: "エディトリアル",
+    name: "大小をつける",
     desc: "大小をつけた写真集風",
     rects: [
       { l: 2, t: 4, w: 56, h: 92 },
@@ -655,7 +661,7 @@ const HERO_MODE_OPTIONS: {
   },
   {
     value: "immersive",
-    name: "没入型",
+    name: "画面いっぱい",
     desc: "画面いっぱいに写真を見せる",
     rects: [{ l: 0, t: 0, w: 100, h: 100 }],
   },

@@ -2136,7 +2136,9 @@ export function GalleryTab({
     total: number;
   } | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [libraryMode, setLibraryMode] = useState<LibraryMode>("select");
+  // 初期表示は写真を見渡すための閲覧。未選択でも一括操作帯を常設すると、
+  // PC・スマホとも写真の面積を奪うだけになる。選択は一覧上部の1操作で入れる。
+  const [libraryMode, setLibraryMode] = useState<LibraryMode>("normal");
   const [lastClicked, setLastClicked] = useState<number | null>(null);
   // Focus moves before click. Keep the range anchor separate from the cursor.
   const selectionAnchorRef = useRef<number | null>(null);

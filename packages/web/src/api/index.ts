@@ -2700,23 +2700,30 @@ const app = new Hono()
         .map((r) => [r.seriesId as number, r]),
     );
 
-    const list = rows.map((s) => {
-      const cover =
-        (s.coverPhotoId ? coverMap.get(s.coverPhotoId) : undefined) ??
-        firstBySeries.get(s.id) ??
-        null;
-      const stat = statMap.get(s.id);
-      return {
-        ...s,
-        coverUrl: cover?.url ?? null,
-        coverRotationDeg: cover?.rotationDeg ?? 0,
-        coverFocalX: cover?.focalX ?? 50,
-        coverFocalY: cover?.focalY ?? 50,
-        photoCount: Number(stat?.photoCount ?? 0),
-        shotAtFirst: stat?.shotAtFirst ?? null,
-        shotAtLast: stat?.shotAtLast ?? null,
-      };
-    });
+    const list = rows
+      .map((s) => {
+        const cover =
+          (s.coverPhotoId ? coverMap.get(s.coverPhotoId) : undefined) ??
+          firstBySeries.get(s.id) ??
+          null;
+        const stat = statMap.get(s.id);
+        return {
+          ...s,
+          coverUrl: cover?.url ?? null,
+          coverRotationDeg: cover?.rotationDeg ?? 0,
+          coverFocalX: cover?.focalX ?? 50,
+          coverFocalY: cover?.focalY ?? 50,
+          photoCount: Number(stat?.photoCount ?? 0),
+          shotAtFirst: stat?.shotAtFirst ?? null,
+          shotAtLast: stat?.shotAtLast ?? null,
+        };
+      })
+      // 見せる写真が1枚も無い作品群は、公開の棚に並べない。並べると灰色の札
+      // になり、押しても「まだ写真がありません」で行き止まる。本番では
+      // シリーズ3件のうち2件がそれで、唯一中身のある組の「Next」も空の組を
+      // 指していた（2026-09-15）。公開状態・URL・管理画面の一覧は変えない。
+      // 写真を公開すれば、そのまま棚・ナビ・TOPの帯・「Next」に戻る。
+      .filter((s) => s.photoCount > 0);
     return c.json({ series: list }, 200);
   })
 

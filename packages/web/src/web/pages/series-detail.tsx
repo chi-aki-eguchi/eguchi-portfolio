@@ -11,6 +11,7 @@ import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { SeriesCover } from "../components/SeriesCover";
 import { SeriesColophon } from "../components/SeriesColophon";
+import { seriesColophon } from "../lib/series-colophon";
 import { signalAnalyticsPageReady } from "../lib/analytics";
 
 export default function SeriesDetailPage() {
@@ -63,13 +64,13 @@ export default function SeriesDetailPage() {
     (s: { slug: string }) => s.slug === slug,
   ) as
     | {
+        coverPhotoId?: number | null;
         coverUrl?: string | null;
         coverRotationDeg?: number | null;
         coverFocalX?: number | null;
         coverFocalY?: number | null;
       }
     | undefined;
-  const hasCover = Boolean(coverSource?.coverUrl);
   const curIdx = seriesList.findIndex((s) => s.slug === slug);
   const nextSeries = seriesList.length > 1 && curIdx >= 0
     ? seriesList[(curIdx + 1) % seriesList.length]
@@ -98,7 +99,11 @@ export default function SeriesDetailPage() {
   if (isLoading) {
     // 1画面ぶん場所を取る。60vh だと 900px の画面でフッターが y=596 に
     // 描かれ、中身が届いた瞬間に画面外へ飛ぶ（実測 CLS 0.142）。
-    return <section className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-32 site-page-hold" aria-hidden="true" />;
+    // key は本文の <section> と別の要素にするため。同じ要素が使い回されると、
+    // 上余白 128px→9.6px の変化が「動きを減らす」設定の極短い transition に
+    // 乗り、1フレーム遅れて題名と1枚目が 118px 跳ねる（実測 CLS 0.111、
+    // 2026-09-15。表紙の見開きがある間は画面の下で起きていて目立たなかった）。
+    return <section key="series-hold" className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-32 site-page-hold" aria-hidden="true" />;
   }
 
   // 取得そのものに失敗したときは「見つかりません」と言わない。この query は
@@ -157,15 +162,34 @@ export default function SeriesDetailPage() {
   const seriesBgColor = themeConfig.bgColor ?? null;
   const seriesLayout = themeConfig.layout || settings?.seriesLayout;
 
+  // 表紙の見開きは「オーナーが選んだ表紙が、1枚目とは別の写真」のときだけ。
+  // 一覧 API は表紙が未設定だと先頭の写真を代わりに返す（札を空にしないため）。
+  // それを詳細でも見開きにすると、同じ写真が表紙と1枚目で2度続き、PCでは
+  // 縦写真を横長に切った断片から始まっていた（/series/sicf、2026-09-15）。
+  const coverUrl = coverSource?.coverUrl;
+  const hasCover =
+    coverSource?.coverPhotoId != null &&
+    Boolean(coverUrl) &&
+    coverUrl !== photos[0]?.url;
+  // 紙の上の題名に、一覧の札と同じ「規模と時期」を添える。何点の組を
+  // 見始めるのかが、写真の前に分かる。新しい通信はしない（手元の写真から数える）。
+  const scale = hasCover ? null : seriesColophon(photos);
+  const scaleLine = scale
+    ? [`${scale.count}点`, scale.period].filter(Boolean).join(" ／ ")
+    : "";
+  const aboutLabel = settings?.navLabelAbout || "About";
+  const photographerName = settings?.profileName || settings?.siteName || "";
+
   return (
     <section
+      key="series-body"
       className="max-w-5xl mx-auto site-page site-page-top pb-8 md:pb-16 min-h-[60vh]"
       ref={entranceRef}
       style={seriesBgColor ? { backgroundColor: seriesBgColor } : undefined}
     >
       {/* 表紙があれば、そこで開く。無ければ従来どおり紙の上の題名。 */}
       <SeriesCover
-        series={coverSource}
+        series={hasCover ? coverSource : undefined}
         title={series.title}
         subtitle={series.subtitle || undefined}
       />
@@ -188,6 +212,9 @@ export default function SeriesDetailPage() {
             >
               {series.subtitle}
             </p>
+          )}
+          {scaleLine && (
+            <p className="series-scale mt-3 font-en">{scaleLine}</p>
           )}
         </header>
       )}
@@ -223,26 +250,46 @@ export default function SeriesDetailPage() {
 
       <InquiryCta />
 
-      <div className={`mt-10 md:mt-14 flex items-baseline ${nextSeries ? "justify-between" : "justify-center"}`}>
+      {/* 見終わったあとの行き先。次の作品群があればそれを、なければ（あっても）
+          撮った人のプロフィールを。以前は「← Series」と「Next」だけで、次が
+          無い作品群では戻るしかなかった。見出しは小さな英字、行き先の名前は
+          一覧の札と同じ濃さで読ませる。 */}
+      <nav
+        aria-label="次に見る"
+        className="mt-10 md:mt-14 flex items-baseline justify-between gap-6"
+      >
         <Link
           to={shelf === "work" ? "/work" : "/series"}
           className="shrink-0 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
         >
           ← {shelf === "work" ? (settings?.navLabelWork || "Work") : "Series"}
         </Link>
-        {nextSeries && (
+        <div className="min-w-0 flex flex-col items-end gap-5 md:flex-row md:items-baseline md:gap-12">
+          {nextSeries && (
+            <Link
+              to={`/${shelf}/${nextSeries.slug}`}
+              /* min-w-0: flex の子は内容より狭くならないので、これが無いと
+                 折り返せない長いシリーズ名で行ごと画面外へ出る（実測 320px で
+                 530px）。break-words だけでは足りない。 */
+              className="series-onward min-w-0 max-w-full text-right nav-link-luxury"
+            >
+              <span className="series-onward__label font-en">Next</span>
+              <span className="series-onward__name font-ja break-words">{nextSeries.title} →</span>
+            </Link>
+          )}
           <Link
-            to={`/${shelf}/${nextSeries.slug}`}
-            /* min-w-0: flex の子は内容より狭くならないので、これが無いと
-               折り返せない長いシリーズ名で行ごと画面外へ出る（実測 320px で
-               530px）。break-words だけでは足りない。 */
-            className="min-w-0 text-right font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
+            to="/about"
+            className="series-onward min-w-0 max-w-full text-right nav-link-luxury"
           >
-            <span className="block text-[0.6rem] uppercase tracking-[0.14em] text-[color:var(--text-quiet)] mb-1">Next</span>
-            <span className="font-ja break-words">{nextSeries.title}</span> →
+            {photographerName && (
+              <span className="series-onward__label font-en">{aboutLabel}</span>
+            )}
+            <span className="series-onward__name font-ja break-words">
+              {photographerName || aboutLabel} →
+            </span>
           </Link>
-        )}
-      </div>
+        </div>
+      </nav>
     </section>
   );
 }

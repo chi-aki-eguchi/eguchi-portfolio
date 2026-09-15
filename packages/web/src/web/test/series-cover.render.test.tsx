@@ -5,11 +5,15 @@
  * いた（`ishigakiisland` は118枚・25,000px）。一方でオーナーが選んだ表紙は
  * 一覧でしか使われず、詳細では一度も出ていなかった。
  *
- * ここで縛るのは3点。
+ * ここで縛るのは5点。
  *  1. 表紙があれば、そこで開く。題名は写真の上に載り、`h1` は1つだけ
  *  2. **表紙が無ければ従来どおり紙の上の題名。** 灰色の空箱を置かない
  *     （`site-and-data-direction.md` §0「0件のときに何が見えるか」）
  *  3. 作家の言葉は、表紙の有無にかかわらず必ず出る
+ *  4. **見開きにするのは、選ばれた表紙が1枚目と別の写真のときだけ。**
+ *     一覧 API は表紙未設定でも先頭の写真を返すので、それを見開きにすると
+ *     同じ写真が表紙と1枚目で2度続いた（/series/sicf、2026-09-15）
+ *  5. 見終わったあと、次の組が無くてもプロフィールへ進める
  */
 import { test, expect, describe, afterEach } from "bun:test";
 import { setupDom, canned, flush } from "./jsdom-setup";
@@ -35,8 +39,39 @@ const SERIES = {
   themeConfig: null,
 };
 
-async function mount({ cover }: { cover: boolean }) {
-  canned["/api/series/sea"] = { series: SERIES, photos: [] };
+const photo = (id: number, url: string, shotAt: string) => ({
+  id,
+  url,
+  width: 2560,
+  height: 3200,
+  rotationDeg: 0,
+  focalX: 50,
+  focalY: 50,
+  camera: "PENTAX 67",
+  filmType: "フィルム",
+  shotAt,
+  isPublished: true,
+});
+const PHOTOS = [
+  photo(11, "/api/images/photos/first.jpg", "2025-03-11T00:00:00"),
+  photo(12, "/api/images/photos/second.jpg", "2026-08-02T00:00:00"),
+];
+
+async function mount({
+  cover,
+  coverPhotoId = cover ? 12 : null,
+  coverUrl = cover ? "/api/images/photos/cover.jpg" : null,
+  photos = [],
+  settings = {},
+}: {
+  cover: boolean;
+  coverPhotoId?: number | null;
+  coverUrl?: string | null;
+  photos?: unknown[];
+  settings?: Record<string, string>;
+}) {
+  canned["/api/series/sea"] = { series: SERIES, photos };
+  canned["/api/settings"] = settings;
   canned["/api/series"] = {
     series: [
       {
@@ -44,7 +79,8 @@ async function mount({ cover }: { cover: boolean }) {
         slug: "sea",
         title: "海の記憶",
         subtitle: "Sea",
-        coverUrl: cover ? "/api/images/photos/cover.jpg" : null,
+        coverPhotoId,
+        coverUrl,
         coverRotationDeg: 0,
         coverFocalX: 30,
         coverFocalY: 70,
@@ -83,6 +119,7 @@ async function mount({ cover }: { cover: boolean }) {
 afterEach(() => {
   delete canned["/api/series/sea"];
   canned["/api/series"] = { series: [] };
+  canned["/api/settings"] = {};
 });
 
 describe("シリーズ詳細の巻頭", () => {
@@ -136,6 +173,70 @@ describe("シリーズ詳細の巻頭", () => {
       } finally {
         m.cleanup();
       }
+    }
+  });
+  test("表紙が未設定で一覧が先頭の写真を代わりに返しても、見開きにせず題名と規模で始める", async () => {
+    const m = await mount({
+      cover: false,
+      coverPhotoId: null,
+      coverUrl: PHOTOS[0]!.url,
+      photos: PHOTOS,
+    });
+    try {
+      expect(m.host.querySelector(".series-cover")).toBeNull();
+      expect(m.host.querySelectorAll("h1").length).toBe(1);
+      expect(m.host.querySelector(".series-scale")?.textContent).toBe(
+        "2点 ／ 2025年3月–2026年8月",
+      );
+    } finally {
+      m.cleanup();
+    }
+  });
+
+  test("選んだ表紙が1枚目と同じ写真なら、同じ写真を2度続けない", async () => {
+    const m = await mount({
+      cover: true,
+      coverPhotoId: 11,
+      coverUrl: PHOTOS[0]!.url,
+      photos: PHOTOS,
+    });
+    try {
+      expect(m.host.querySelector(".series-cover")).toBeNull();
+    } finally {
+      m.cleanup();
+    }
+  });
+
+  test("選んだ表紙が1枚目と別の写真なら見開きで開き、規模の行は重ねない", async () => {
+    const m = await mount({
+      cover: true,
+      coverPhotoId: 12,
+      coverUrl: PHOTOS[1]!.url,
+      photos: PHOTOS,
+    });
+    try {
+      expect(m.host.querySelector(".series-cover")).not.toBeNull();
+      expect(m.host.querySelector(".series-scale")).toBeNull();
+    } finally {
+      m.cleanup();
+    }
+  });
+
+  test("次の組が無くても、見終わったあとプロフィールへ進める", async () => {
+    const m = await mount({
+      cover: false,
+      photos: PHOTOS,
+      settings: { profileName: "江口 秋", navLabelAbout: "About" },
+    });
+    try {
+      const nav = m.host.querySelector('nav[aria-label="次に見る"]');
+      expect(nav).not.toBeNull();
+      const about = nav!.querySelector<HTMLAnchorElement>('a[href="/about"]');
+      expect(about?.textContent).toBe("About江口 秋 →");
+      // 同じ棚に他の組が無いので「Next」は出さない。
+      expect(nav!.textContent).not.toContain("Next");
+    } finally {
+      m.cleanup();
     }
   });
 });

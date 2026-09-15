@@ -134,6 +134,9 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
   // slab. Hold a lone cover to roughly the width it would have had beside a
   // neighbour, centred, so it reads as deliberate rather than blown up.
   const soloWidth = !isMobile && columns === 1 && configuredColumns > 1;
+  // 点数と期間を別行に分けるのは、スマホで札が2列以上に並んで狭いときだけ。
+  // 1列なら札は画面幅いっぱいなので、PCと同じ「点数 ／ 期間」の1行に収まる。
+  const stackScale = isMobile && columns > 1;
   // P3: reuse the gallery gap scale so spacing feels of-a-piece with the photo grid.
   const gapScale = clampSetting(
     "galleryGapScale",
@@ -264,12 +267,12 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
                    折り返す（"月" や "–" を単独行にしない）。 */
                 <p
                   className={`mt-1 font-en text-[length:var(--text-small)] tracking-[0.10em] text-[color:var(--text-quiet)]${
-                    isMobile ? " flex flex-col gap-y-0.5" : ""
+                    stackScale ? " flex flex-col gap-y-0.5" : ""
                   }`}
                 >
                   {seriesScale(s).map((part, i) => (
                     <span key={i}>
-                      {i > 0 && !isMobile && " ／ "}
+                      {i > 0 && !stackScale && " ／ "}
                       {part.includes("–") ? <PeriodText text={part} /> : part}
                     </span>
                   ))}

@@ -165,6 +165,13 @@ export function galleryFrameWidth({
 const DENSITY_RATIO_EPSILON = 0.01;
 
 /**
+ * Editorial spreads keep a photo within the window height minus this much:
+ * the fixed site header (~56–78px) plus enough air that the frame's top and
+ * bottom edges are both in view at once.
+ */
+const EDITORIAL_WINDOW_RESERVE = 160;
+
+/**
  * Columns never outnumber the photos that go in them.
  *
  * Measured 2026-08-23 at 1440px on the Series list: two items in a fixed
@@ -1223,15 +1230,31 @@ export function PhotoGallery({
     const pairs: GalleryPhoto[][] = [];
     for (let i = 0; i < photos.length; i += 2)
       pairs.push(photos.slice(i, i + 2));
-    // Mobile keeps the two-up spread (large-left / small-right offset) so the
-    // editorial character survives the narrow screen — stacking it made the
-    // layout indistinguishable from "scroll".
+    // A spread only works if each photo can be seen whole. On a 1440×900 screen
+    // the 56% slot made portraits 753×941px — taller than the window, so every
+    // vertical frame had to be scrolled through (9 of 32 on /series/sicf,
+    // 2026-09-15). Hold each slot to the window height; the pair stays pinned
+    // to both edges, so the page margins still line up down the page.
+    const fitWindow = (photo: GalleryPhoto, share: number) => {
+      const d = orientedDimensions(photo.width, photo.height, photo.rotationDeg);
+      if (!d.width || !d.height) return `${share}%`;
+      const aspect = (d.width / d.height).toFixed(4);
+      // The floor keeps a short window (a laptop split screen) from shrinking
+      // the photos to stamps; there the reader scrolls a little instead.
+      return `min(${share}%, max(calc((100vh - ${EDITORIAL_WINDOW_RESERVE}px) * ${aspect}), ${Math.round(share * 0.6)}%))`;
+    };
+    // Phones stack the spread instead of squeezing it side by side. Side by
+    // side, the second photo was 140px wide on a 390px phone — too small to look
+    // at. Stacked, the large frame runs edge to edge and its partner follows
+    // close beneath at 72%, set to the right like the desktop spread. The tight
+    // gap inside a pair against the wide gap between pairs keeps the pairing
+    // readable, which is what separates this from "scroll".
     body = (
       <div
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: `${(isMobile ? 56 : 104) * gapScale}px`,
+          gap: `${(isMobile ? 64 : 104) * gapScale}px`,
         }}
       >
         {pairs.map((pair, pi) =>
@@ -1240,11 +1263,37 @@ export function PhotoGallery({
               key={pair[0].id}
               style={{ display: "flex", justifyContent: "center" }}
             >
-              <div style={{ width: isMobile ? "88%" : "60%" }}>
+              <div style={{ width: isMobile ? "88%" : fitWindow(pair[0], 60) }}>
                 {tile(pair[0], pi * 2, {
                   width: "100%",
                   justifySelf: "stretch",
                   sizes: isMobile ? "88vw" : "60vw",
+                  preferMediumGrid: true,
+                })}
+              </div>
+            </div>
+          ) : isMobile ? (
+            <div
+              key={pair[0].id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: `${Math.max(10, Math.round(18 * gapScale))}px`,
+              }}
+            >
+              <div>
+                {tile(pair[0], pi * 2, {
+                  width: "100%",
+                  justifySelf: "stretch",
+                  sizes: "100vw",
+                  preferMediumGrid: true,
+                })}
+              </div>
+              <div style={{ width: "72%", alignSelf: "flex-end" }}>
+                {tile(pair[1], pi * 2 + 1, {
+                  width: "100%",
+                  justifySelf: "stretch",
+                  sizes: "72vw",
                   preferMediumGrid: true,
                 })}
               </div>
@@ -1255,29 +1304,30 @@ export function PhotoGallery({
               style={{
                 display: "flex",
                 flexDirection: "row",
-                gap: `${(isMobile ? 12 : 48) * gapScale}px`,
+                justifyContent: "space-between",
+                gap: `${48 * gapScale}px`,
                 alignItems: "flex-start",
               }}
             >
-              <div style={{ width: isMobile ? "58%" : "56%", flexShrink: 0 }}>
+              <div style={{ width: fitWindow(pair[0], 56), flexShrink: 0 }}>
                 {tile(pair[0], pi * 2, {
                   width: "100%",
                   justifySelf: "stretch",
-                  sizes: isMobile ? "58vw" : "56vw",
+                  sizes: "56vw",
                   preferMediumGrid: true,
                 })}
               </div>
               <div
                 style={{
-                  width: isMobile ? "36%" : "38%",
+                  width: fitWindow(pair[1], 38),
                   flexShrink: 0,
-                  marginTop: isMobile ? "9%" : "7%",
+                  marginTop: "7%",
                 }}
               >
                 {tile(pair[1], pi * 2 + 1, {
                   width: "100%",
                   justifySelf: "stretch",
-                  sizes: isMobile ? "36vw" : "38vw",
+                  sizes: "38vw",
                   preferMediumGrid: true,
                 })}
               </div>

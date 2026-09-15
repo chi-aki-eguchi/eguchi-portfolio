@@ -3584,6 +3584,37 @@ body {
   display: inline-block;
 }
 
+/* 紙の上の題名に添える「点数 ／ 期間」。一覧の札の同じ行と揃える。 */
+.series-scale {
+  font-size: var(--text-small);
+  letter-spacing: 0.1em;
+  color: var(--text-quiet);
+}
+
+/* 見終わったあとの行き先（次の作品群・プロフィール）。 */
+.series-onward {
+  display: block;
+  color: rgba(var(--foreground-rgb), 0.72);
+  transition: color 0.3s;
+}
+.series-onward:hover {
+  color: rgba(var(--foreground-rgb), 0.9);
+}
+.series-onward__label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-quiet);
+}
+.series-onward__name {
+  display: block;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+}
+
 /* ─── Series cover: the opening spread ───────────────────────
    Series 詳細は「紙の上の文字のタイトル」から始まり、そのまま写真が延々と
    続いていた（`ishigakiisland` は118枚・25,000px）。開きも間も無い。一方で
@@ -4832,6 +4863,13 @@ dialog.lightbox-exit .lb-content {
 }
 
 /* ─── Filter switch layout animation ─── */
+/* 枠そのものは動かさない。下の「動きを減らす」一括指定は transition-duration
+   だけを 0.01ms にするので、transition-property が初期値の all のままだと、
+   画面幅へ広げる幅と余白の変更が1フレーム遅れて横へ跳ねる（実測
+   /series/sicf 1440px で CLS 0.099、2026-09-15）。 */
+.filter-grid-animated {
+  transition-property: none;
+}
 .filter-grid-animated > * {
   transition:
     opacity var(--dur-caption) var(--ease-quart),

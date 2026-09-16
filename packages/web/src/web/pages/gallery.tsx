@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MobileGalleryFilters } from "../components/MobileGalleryFilters";
 import { PageTitle } from "../components/PageTitle";
-import { useLocation, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { ContentStatus } from "../components/ContentStatus";
@@ -70,6 +70,13 @@ export default function GalleryPage() {
     queryKey: ["series"],
     queryFn: async () => jsonOrThrow(await api.series.$get()),
   });
+  // 行き先の案内（下の「並べる写真が1枚も無いとき」）で使う。ナビが既に
+  // 同じ鍵で引いているので、通信は増えない。
+  const { data: worksData } = useQuery({
+    queryKey: ["works"],
+    queryFn: async () =>
+      jsonOrThrow(await api.series.$get({ query: { kind: "work" } })),
+  });
   const { data: catsData } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => jsonOrThrow(await api.categories.$get()),
@@ -106,26 +113,52 @@ export default function GalleryPage() {
     () => Object.fromEntries(categories.map((c) => [c.slug, c.label])),
     [categories],
   );
+  // シリーズに入れた写真をギャラリーから外す（2026-08-09 オーナー依頼）。
+  // シリーズはシリーズのページで見せるものなので、ギャラリーには
+  // どこにも属さない単発の写真だけを並べたい、という選択。既定は従来どおり
+  // 「出す」。シリーズの写真もギャラリーに出るのが今までの見え方のため。
+  //
+  // **絞り込みの前に、この一覧が持ちうる写真を出しておく。** 分けておかないと
+  // 「絞り込みに合わなかった」と「そもそも並べる写真が無い」を見分けられず、
+  // 後者にも「写真が見つかりませんでした」と出てしまう（共通ナビも同じ規則で
+  // Gallery の入口を出し入れする。規則の正本はここ）。
+  const pool = useMemo(
+    () =>
+      (settings?.galleryExcludeSeries ?? "off") === "on"
+        ? allPhotos.filter((p) => p.seriesId == null)
+        : allPhotos,
+    [allPhotos, settings?.galleryExcludeSeries],
+  );
+  // 送り先は、実際に中身のある棚だけ。棚の名前は設定に従う（Series は固定、
+  // Work は呼び方を変えられる）。先頭の組の題名を添えて、何があるか伝える。
+  const onwardShelves = useMemo(() => {
+    const shelves: { href: string; label: string; lead: string }[] = [];
+    const series = seriesData?.series ?? [];
+    const works = worksData?.series ?? [];
+    if (series.length > 0)
+      shelves.push({ href: "/series", label: "Series", lead: series[0]!.title });
+    if (works.length > 0)
+      shelves.push({
+        href: "/work",
+        label: settings?.navLabelWork || "Work",
+        lead: works[0]!.title,
+      });
+    return shelves;
+  }, [seriesData, worksData, settings?.navLabelWork]);
+
   const filtered = useMemo(() => {
     let list =
       activeFilter === "all"
-        ? allPhotos
-        : allPhotos.filter((p) => p.category === activeFilter);
+        ? pool
+        : pool.filter((p) => p.category === activeFilter);
     if (activeMedium !== "all") {
       const target = activeMedium === "film" ? "フィルム" : "デジタル";
       list = list.filter(
         (p) => (p as Record<string, unknown>).filmType === target,
       );
     }
-    // シリーズに入れた写真をギャラリーから外す（2026-08-09 オーナー依頼）。
-    // シリーズはシリーズのページで見せるものなので、ギャラリーには
-    // どこにも属さない単発の写真だけを並べたい、という選択。既定は従来どおり
-    // 「出す」。シリーズの写真もギャラリーに出るのが今までの見え方のため。
-    if ((settings?.galleryExcludeSeries ?? "off") === "on") {
-      list = list.filter((p) => p.seriesId == null);
-    }
     return list;
-  }, [allPhotos, activeFilter, activeMedium, settings?.galleryExcludeSeries]);
+  }, [pool, activeFilter, activeMedium]);
 
   // If the active category no longer exists (e.g. it was deleted/renamed), fall
   // back to "All" instead of stranding the user on an empty, unhighlighted filter.
@@ -272,12 +305,16 @@ export default function GalleryPage() {
         {settings?.galleryLabel ?? "Gallery"}
       </PageTitle>
 
-      <MobileGalleryFilters categories={filterItems} activeCategory={activeFilter}
-        activeMedium={activeMedium} hasMedium={allPhotos.some(p => Boolean(p.filmType))}
-        count={filtered.length} loading={photosLoading} failed={photosError} onChange={applyFilters} />
+      {/* 絞り込みは、並べる写真があるときだけ出す。1枚も無い一覧の上に
+          分類の行だけが残ると、押しても何も変わらない操作を差し出すことになる。 */}
+      {pool.length > 0 && (
+        <MobileGalleryFilters categories={filterItems} activeCategory={activeFilter}
+          activeMedium={activeMedium} hasMedium={pool.some(p => Boolean(p.filmType))}
+          count={filtered.length} loading={photosLoading} failed={photosError} onChange={applyFilters} />
+      )}
 
       {/* Filter — カテゴリ */}
-      {categories.length > 0 && (
+      {categories.length > 0 && pool.length > 0 && (
         <div
           /* 下の段（Film / Digital）とは別の絞り込みなのに、間が 16px しか
              なく、しかもどちらの先頭も「All」で始まる。1つの並びが折り返して
@@ -306,7 +343,7 @@ export default function GalleryPage() {
       )}
 
       {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
-      {allPhotos.some((p) => (p as Record<string, unknown>).filmType) && (
+      {pool.some((p) => (p as Record<string, unknown>).filmType) && (
         <div
           className="gallery-filter-row gallery-filter-row--sub flex md:flex-wrap md:justify-center gap-x-5 gap-y-2 mb-6 md:mb-8 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
           style={{
@@ -364,11 +401,33 @@ export default function GalleryPage() {
             {/* 見出し（GALLERY）は英語で揃えてあるが、読み手へ向けた「文」は
                 日本語にする。/gallery に英語ルートは無いので出し分けは要らない。 */}
             <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
-              {activeFilter !== "all" || activeMedium !== "all" ? "写真が見つかりませんでした" : "まだ写真がありません"}
+              {activeFilter !== "all" || activeMedium !== "all"
+                ? "写真が見つかりませんでした"
+                : onwardShelves.length > 0
+                  ? "いまは、まとまった組にした写真を公開しています。"
+                  : "まだ写真がありません"}
             </p>
             {(activeFilter !== "all" || activeMedium !== "all") && <button type="button"
               className="mt-4 min-h-11 text-sm underline underline-offset-4"
               onClick={() => applyFilters({ c: "all", medium: "all" })}>すべての写真を見る</button>}
+            {/* 共通ナビから Gallery を外しても、共有された URL・検索結果・
+                ブックマークからは人が来る。**行き止まりにせず、写真のある
+                場所へ送る。** 出すのは実際に中身のある棚だけ。 */}
+            {activeFilter === "all" && activeMedium === "all" && onwardShelves.length > 0 && (
+              <nav
+                aria-label="写真のある場所"
+                className="mt-8 flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-12"
+              >
+                {onwardShelves.map((shelf) => (
+                  <Link key={shelf.href} to={shelf.href} className="series-onward nav-link-luxury">
+                    <span className="series-onward__label font-en">{shelf.label}</span>
+                    <span className="series-onward__name font-ja break-words">
+                      {shelf.lead} →
+                    </span>
+                  </Link>
+                ))}
+              </nav>
+            )}
           </div>
         )
       ) : (

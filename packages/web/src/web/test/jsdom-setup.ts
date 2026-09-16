@@ -16,6 +16,9 @@ export const samplePhotos = [
 export const canned: Record<string, unknown> = {
   "/api/settings": {},
   "/api/photos": { photos: samplePhotos },
+  // 共通ナビが Gallery の入口を出すかを決める件数（写真一覧は読まない）。
+  // 既定は samplePhotos と同じ内訳＝単発2枚・組の写真1枚。
+  "/api/photos/availability": { total: 3, standalone: 2 },
   "/api/hero-photos": { heroPhotos: [] },
   "/api/admin/hero-photos": { heroPhotos: [] },
   "/api/series": { series: [] },

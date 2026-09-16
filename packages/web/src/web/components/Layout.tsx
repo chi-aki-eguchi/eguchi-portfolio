@@ -180,6 +180,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   });
   const showWork = shouldShowShelf(workNav, workData?.series.length ?? 0);
 
+  // Gallery の入口も、中身があるときだけ出す（棚と同じ考え方）。
+  // `galleryExcludeSeries` が `on` のサイトでは、Gallery はどこの組にも
+  // 属さない写真だけを並べる。その写真が1枚も無いあいだ Gallery を出すと、
+  // 押した先が「まだ写真がありません」で行き止まる（2026-09-16、本番は
+  // 公開写真133枚が全部シリーズ／Work に入っていてこの状態だった）。
+  // 数えるのは件数だけの経路で、写真一覧そのものはここでは読まない。
+  const { data: photoCounts } = useQuery({
+    queryKey: ["photo-availability"],
+    queryFn: async (): Promise<{ total: number; standalone: number }> =>
+      jsonOrThrow(await api.photos.availability.$get()),
+    staleTime: 60_000,
+  });
+  const galleryExcludesSeries = (data?.galleryExcludeSeries ?? "off") === "on";
+  // 数が分かるまでは出しておく。取得に失敗しただけで入口が消えるより、
+  // 出したままのほうが害が小さい（棚の `auto` と同じ「消すのは確信したときだけ」）。
+  const showGallery =
+    photoCounts === undefined ||
+    (galleryExcludesSeries ? photoCounts.standalone : photoCounts.total) > 0;
+
   const dm = useDarkModeContext();
   const { showService, showServiceInNav } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
@@ -222,7 +241,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const chromeReady =
     Boolean(data) &&
     (!shelfNeedsCount(seriesNav) || seriesData !== undefined) &&
-    (!shelfNeedsCount(workNav) || workData !== undefined);
+    (!shelfNeedsCount(workNav) || workData !== undefined) &&
+    photoCounts !== undefined;
   const [chromeRevealed, setChromeRevealed] = useState(false);
   useEffect(() => {
     if (chromeReady) {
@@ -235,7 +255,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [chromeReady]);
 
   const navItems = [
-    { href: "/gallery", label: data?.navLabelGallery ?? "Gallery" },
+    ...(showGallery
+      ? [{ href: "/gallery", label: data?.navLabelGallery ?? "Gallery" }]
+      : []),
     ...(showSeries ? [{ href: "/series", label: "Series" }] : []),
     ...(showWork
       ? [{ href: "/work", label: data?.navLabelWork || "Work" }]

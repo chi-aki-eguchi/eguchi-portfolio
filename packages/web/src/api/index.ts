@@ -1505,6 +1505,41 @@ const app = new Hono()
     return c.json({ photos: withThumbs.map(toPublicPhoto) }, 200);
   })
 
+  // 公開写真の件数だけ。**一覧そのものは返さない。**
+  //
+  // 共通ナビは全ページに出るので、Gallery の入口を出すかどうかを決めるために
+  // 写真一覧（実測 2026-08-08・497枚で 400KB）をどのページでも読ませるわけには
+  // いかない。数える場所はここ1つにして、どう使うかは呼ぶ側が決める——
+  // `galleryExcludeSeries` が `on` のときの Gallery は `standalone` の並びで、
+  // `off` のときは `total` の並びになる（規則は `pages/gallery.tsx` にある）。
+  //
+  // `:id` より前に置く。あとに置くと `/photos/availability` が
+  // 「id = availability」として読まれ、404 になる。
+  .get("/photos/availability", async (c) => {
+    const [row] = await withRetry(() =>
+      db
+        .select({
+          total: sql<number>`count(*)`,
+          standalone: sql<number>`sum(case when ${schema.photos.seriesId} is null then 1 else 0 end)`,
+        })
+        .from(schema.photos)
+        .where(
+          and(
+            isNull(schema.photos.deletedAt),
+            eq(schema.photos.isPublished, true),
+          ),
+        ),
+    );
+    // PostgreSQL の count(*)/sum() は bigint で、ドライバは文字列で返す。
+    return c.json(
+      {
+        total: Number(row?.total ?? 0),
+        standalone: Number(row?.standalone ?? 0),
+      },
+      200,
+    );
+  })
+
   // 写真1枚ぶんの公開データ。
   //
   // 画像検索や共有から該当する1枚へ直接着地できるよう、`/photo/:id` 用の

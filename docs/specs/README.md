@@ -46,6 +46,7 @@
 | `spec-layout-expansion.md` | レイアウト拡張 |
 | `i18n-en-spec.md` | 日英切り替え |
 | `site-and-data-direction.md` | 公開サイトとデータモデルの方向（オーナー確定分） |
+| `publishing-and-placement-2026-09-17.md` | 下書きと公開・写真の掲載先・作品ページ編集の設計と分割（未実装。§0 に確定方針との衝突とオーナー判断） |
 | `inbound-traffic-plan.md` | **検索・外部からの流入を増やす計画。**次に何をするかの正本 |
 
 ## 事業計画
@@ -61,3 +62,4 @@
 - [reading-layer-audit-2026-08.md](../archive/audits/reading-layer-audit-2026-08.md) — 読む文書の棚卸し（2026-08-20）
 - [rule-review-2026-08.md](../archive/audits/rule-review-2026-08.md) — 運用ルール再検討と Codex 連携案（2026-08-20）
 - `seo-audit-2026-09.md` — 検索・外部流入の監査（2026-09-02）。流入強化フェーズ0の記録
+- [adobe-comparison-verification-2026-09-17.md](../archive/audits/adobe-comparison-verification-2026-09-17.md) — Adobe Portfolio 比較監査の再確認と第1段階の判定（2026-09-17）

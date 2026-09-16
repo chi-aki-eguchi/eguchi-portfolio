@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { objectPositionFromFocal, srcFor } from "../lib/picture";
 import { adminApi } from "../lib/api";
 import { ADMIN_DEMO_PREVIEW_PARAM } from "../lib/admin-demo-data";
+import { isPreviewablePath } from "../lib/admin-preview-pages";
 import { getStoredAdminMessages } from "./admin-i18n";
 
 export type Tab =
@@ -127,8 +128,9 @@ export function usePersistentState<T>(
 // 左ナビ「サイトを見る」と Settings プレビューの「別窓」で同じものを使う。
 // デモモードのクエリ組み立てを画面ごとに書き写さない(2026-07-31 オーナー確定)。
 // Library の「サイトで確認」は同じ画面内のプレビュー開閉なので対象外。
+// 開けるページの定義は admin-preview-pages.ts（固定ページと作品の詳細）。
 export function buildPublicSiteHref(demoSeed?: string | null, page = "/"): string {
-  const path = ["/", "/gallery", "/series", "/about", "/contact"].includes(page) ? page : "/";
+  const path = isPreviewablePath(page) ? page : "/";
   if (!demoSeed) return path;
   return `${path}?${ADMIN_DEMO_PREVIEW_PARAM}=${encodeURIComponent(demoSeed)}`;
 }

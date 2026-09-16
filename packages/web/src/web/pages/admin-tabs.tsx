@@ -53,6 +53,7 @@ import {
 import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
 import { PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
 import { settingsNavigationItems, previewPageForSection } from "./admin-settings-navigation";
+import { previewWorksFrom } from "../lib/admin-preview-pages";
 import { useSettingsHistory } from "../hooks/useSettingsHistory";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
@@ -4341,6 +4342,17 @@ export function SettingsTab({
     "desktop" | "mobile"
   >("admin:previewDevice", "desktop");
   const [liveSync, setLiveSync] = usePersistentState("admin:liveSync", true);
+  // プレビューで作品の詳細を直接選ぶための一覧。シリーズ画面と同じ鍵なので、
+  // 作品の追加・公開切替・削除がここにも反映される。
+  const previewWorksQuery = useQuery({
+    queryKey: ["admin-series"],
+    queryFn: async (): Promise<{ series: unknown[] }> =>
+      jsonOrThrow(await adminApi.series.$get()),
+    enabled: showPreview,
+  });
+  const previewWorks = previewWorksQuery.data
+    ? previewWorksFrom(previewWorksQuery.data.series)
+    : undefined;
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>(previewDevice === "mobile" ? PREVIEW_MOBILE : PREVIEW_DESKTOP);
   // 展開は保存しない。開き直したら通常幅へ戻る(§5-1)。
   const [previewExpanded, setPreviewExpanded] = useState(false);
@@ -7656,6 +7668,10 @@ export function SettingsTab({
             language={language}
             page={previewPage}
             onPageChange={setPreviewPage}
+            works={previewWorks}
+            worksFailed={previewWorksQuery.isError && !previewWorksQuery.data}
+            onRetryWorks={() => void previewWorksQuery.refetch()}
+            workLabel={current["navLabelWork"] || "Work"}
             device={previewDevice}
             onDeviceChange={setPreviewDevice}
             liveSync={liveSync}

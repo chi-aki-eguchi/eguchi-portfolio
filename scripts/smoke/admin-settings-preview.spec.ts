@@ -268,3 +268,124 @@ test("admin — 以前の表示値が残っていてもHEROと配色の下書き
   await expect.poll(() => preview.locator("html").evaluate(el => el.style.getPropertyValue("--background").trim())).toBe("#ebe7df");
   expect(mocks.unknownWrites).toEqual([]);
 });
+
+// 作品の詳細を「確認するページ」から直接選ぶ（2026-09-17）。一覧は管理用API、
+// 詳細は公開APIの人工データ。非公開の作品は公開APIに出ないので選べない。
+test.describe("admin — プレビューで作品を直接選ぶ", () => {
+  const WORK_PATH = "/work/%E6%B8%AF%202026";
+  const LONG_TITLE = "港で働く人たちの一年を追いかけた長い題名の作品".repeat(3);
+  const row = (id: number, slug: string, title: string, kind: string, isPublished = true) => ({
+    id, slug, title, kind, isPublished,
+    subtitle: "", statement: "", coverPhotoId: null, sortOrder: id, themeConfig: null,
+  });
+  const ROWS = [
+    row(1, "harbour", "港の記録", "series"),
+    row(2, "draft", "下書きの作品", "series", false),
+    row(3, "港 2026", LONG_TITLE, "work"),
+  ];
+
+  async function installWorks(page: Page) {
+    const state = { failing: false, listCalls: 0 };
+    await page.route("**/api/admin/series**", (route) => {
+      state.listCalls += 1;
+      if (state.failing)
+        return route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "test failure" }) });
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ series: ROWS }) });
+    });
+    await page.route("**/api/series/**", (route) => {
+      const slug = decodeURIComponent(new URL(route.request().url()).pathname.split("/").pop() ?? "");
+      const found = ROWS.find((r) => r.slug === slug && r.isPublished);
+      return route.fulfill({
+        status: found ? 200 : 404,
+        contentType: "application/json",
+        body: JSON.stringify(found ? { series: found, photos: [] } : { error: "Not found" }),
+      });
+    });
+    return state;
+  }
+
+  const framePath = (page: Page) =>
+    page.locator('iframe[title="Site Preview"]').evaluate((el: HTMLIFrameElement) => el.contentWindow!.location.pathname);
+  const frameBackground = (page: Page) =>
+    page.frameLocator('iframe[title="Site Preview"]').locator("html").evaluate((el) => el.style.getPropertyValue("--background").trim());
+
+  test("作品を選ぶと、プレビューと公開リンクが同じ作品を指し、下書きと寸法を保つ", async ({page}, info) => {
+    test.skip(!["desktop", "mobile"].includes(info.project.name), "PCとスマホ幅で確認");
+    const mobile = info.project.name === "mobile";
+    if (mobile) await page.setViewportSize({width: 390, height: 844});
+    const mocks = await installMocks(page);
+    await installWorks(page);
+    await openSettings(page);
+    await chooseSettingsSection(page, "theme");
+    const background = page.getByLabel("背景色（HEX）", { exact: true });
+    await background.fill("#ebe7df");
+    await openPreview(page);
+
+    const select = page.getByRole("combobox", {name: "確認するページ"});
+    await expect(select.locator('option[value="/work"]')).toHaveText("Work");
+    await expect(select.locator('option[value="/series/draft"]')).toBeDisabled();
+    await expect(select.locator('option[value="/series/draft"]')).toHaveText("下書きの作品（非公開・確認不可）");
+    await select.selectOption(WORK_PATH);
+
+    await expect.poll(() => framePath(page)).toBe(WORK_PATH);
+    const frame = page.frameLocator('iframe[title="Site Preview"]');
+    await expect(frame.locator("h1")).toHaveText(LONG_TITLE);
+    await expect(frame.getByRole("link", {name: "← Work"})).toHaveAttribute("href", "/work");
+    await expect(page.locator(".studio-preview-status a")).toHaveAttribute("href", WORK_PATH);
+    await expect(page.locator(".studio-preview-note")).toHaveCount(0);
+    await expect.poll(() => frameBackground(page)).toBe("#ebe7df");
+
+    // 端末の寸法と、編集中／保存済みの切り替えでは確認中のページを変えない。
+    await page.getByRole("button", {name: mobile ? "PC幅" : "スマホ幅", exact: true}).click();
+    await expect.poll(() => framePath(page)).toBe(WORK_PATH);
+    await page.getByRole("combobox", {name: "プレビューの内容"}).selectOption("saved");
+    await expect.poll(() => frameBackground(page)).not.toBe("#ebe7df");
+    await page.getByRole("combobox", {name: "プレビューの内容"}).selectOption("draft");
+    await expect.poll(() => frameBackground(page)).toBe("#ebe7df");
+    await expect.poll(() => framePath(page)).toBe(WORK_PATH);
+    await expect(select).toHaveValue(WORK_PATH);
+
+    // 長い作品名を選んでも、欄の外へはみ出さない。
+    const widths = mobile ? [390] : [1440, 1024, 768];
+    for (const width of widths) {
+      await page.setViewportSize({width, height: mobile ? 844 : 900});
+      await openPreview(page);
+      expect(await documentOverflow(page)).toBeLessThanOrEqual(1);
+      const pane = (await page.locator("[data-settings-preview]").boundingBox())!;
+      const box = (await select.boundingBox())!;
+      expect(box.x + box.width).toBeLessThanOrEqual(pane.x + pane.width + 1);
+    }
+
+    if (mobile) await page.getByRole("button", {name: "編集", exact: true}).click();
+    await expect(background).toHaveValue("#ebe7df");
+    expect(mocks.writes).toEqual([]);
+    expect(mocks.unknownWrites).toEqual([]);
+  });
+
+  test("作品の一覧が読めないときは理由を出し、再読み込みで選べるようになる", async ({page}, info) => {
+    test.skip(info.project.name !== "desktop", "desktop failure path");
+    const mocks = await installMocks(page);
+    const works = await installWorks(page);
+    works.failing = true;
+    await openSettings(page);
+    await openPreview(page);
+    const note = page.locator(".studio-preview-note");
+    await expect(note).toContainText("作品の一覧を読み込めませんでした。");
+    const select = page.getByRole("combobox", {name: "確認するページ"});
+    await expect(select.locator("option", {hasText: "作品の一覧を読み込めませんでした"})).toBeDisabled();
+    // 固定ページは失敗中も使える。
+    await expect(page.locator(".studio-preview-status a")).toHaveAttribute("href", "/");
+    await expect.poll(() => framePath(page)).toBe("/");
+
+    works.failing = false;
+    const before = works.listCalls;
+    await note.getByRole("button", {name: "再読み込み"}).click();
+    await expect(note).toHaveCount(0);
+    expect(works.listCalls).toBeGreaterThan(before);
+    await select.selectOption("/series/harbour");
+    await expect.poll(() => framePath(page)).toBe("/series/harbour");
+    await expect(page.locator(".studio-preview-status a")).toHaveAttribute("href", "/series/harbour");
+    expect(mocks.writes).toEqual([]);
+    expect(mocks.unknownWrites).toEqual([]);
+  });
+});

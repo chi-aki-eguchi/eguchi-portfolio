@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ExternalLink, Maximize2, Minimize2, RotateCw } from "lucide-react";
 import { boundedPreviewDimension, fitPreviewViewport, PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
+import { previewPageNotice, previewWorkPath, PREVIEW_STATIC_PATHS, type PreviewPageNotice, type PreviewWork } from "../lib/admin-preview-pages";
 
 export type AdminSettingsPreviewCopy = {
   title: string; desktop: string; desktopTitle: string; mobile: string; mobileTitle: string;
@@ -22,6 +23,52 @@ function DimensionInput({label, value, onCommit}: {label: string; value: number;
     onBlur={() => { const next = boundedPreviewDimension(draft.trim() ? Number(draft) : NaN, value); setDraft(String(next)); onCommit(next); }} />;
 }
 
+function noticeText(notice: PreviewPageNotice, ja: boolean, workLabel: string): string {
+  if (notice.reason === "unpublished") return ja
+    ? `「${notice.title}」は非公開のため、プレビューと公開サイトには表示されません。公開すると確認できます。`
+    : `"${notice.title}" is unpublished, so neither the preview nor the published site can show it.`;
+  if (notice.reason === "missing") return ja
+    ? "選んでいた作品が見つかりません。削除されたか、URLが変わった可能性があります。"
+    : "The selected work was not found. It may have been deleted or renamed.";
+  return ja
+    ? `公開中の${workLabel}がないため、このページはSeriesへ移動します。`
+    : `No ${workLabel} is published, so this page moves to Series.`;
+}
+
+/** 固定ページと、Series／Work の作品ごとの詳細ページ。 */
+function PreviewPageOptions({ page, works, worksFailed, workLabel, ja }: {
+  page: string; works?: PreviewWork[]; worksFailed: boolean; workLabel: string; ja: boolean;
+}) {
+  const staticLabels: Record<(typeof PREVIEW_STATIC_PATHS)[number], string> = {
+    "/": ja ? "トップページ" : "Home", "/gallery": "Gallery", "/series": "Series", "/work": workLabel,
+    "/about": ja ? "プロフィール" : "About", "/contact": ja ? "お問い合わせ" : "Contact",
+  };
+  const noPublishedWork = !!works && !works.some(w => w.kind === "work" && w.isPublished);
+  const shelves = [
+    { kind: "series" as const, label: ja ? "作品（Series）" : "Series pages" },
+    { kind: "work" as const, label: ja ? `作品（${workLabel}）` : `${workLabel} pages` },
+  ];
+  const isStatic = (PREVIEW_STATIC_PATHS as readonly string[]).includes(page);
+  const listed = isStatic || !!works?.some(w => previewWorkPath(w) === page);
+  return <>
+    {PREVIEW_STATIC_PATHS.map(path => <option key={path} value={path} disabled={path === "/work" && noPublishedWork && page !== path}>
+      {staticLabels[path]}{path === "/work" && noPublishedWork ? (ja ? "（公開中の作品なし）" : " (none published)") : ""}
+    </option>)}
+    {!listed && <option value={page} disabled>{ja ? "選んでいた作品" : "Selected work"}{works ? (ja ? "（見つかりません）" : " (not found)") : ""}</option>}
+    {!works ? <optgroup label={ja ? "作品" : "Works"}>
+      <option disabled value="">{worksFailed ? (ja ? "作品の一覧を読み込めませんでした" : "Could not load works") : (ja ? "作品を読み込み中…" : "Loading works…")}</option>
+    </optgroup> : shelves.map(({ kind, label }) => {
+      const items = works.filter(w => w.kind === kind);
+      return <optgroup key={kind} label={label}>
+        {items.length === 0 && <option disabled value="">{ja ? "作品はまだありません" : "No works yet"}</option>}
+        {items.map(w => <option key={w.id} value={previewWorkPath(w)} disabled={!w.isPublished}>
+          {w.title}{w.isPublished ? "" : (ja ? "（非公開・確認不可）" : " (unpublished)")}
+        </option>)}
+      </optgroup>;
+    })}
+  </>;
+}
+
 export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
   device: AdminSettingsPreviewDevice; onDeviceChange: (device: AdminSettingsPreviewDevice) => void;
   liveSync: boolean; onLiveSyncChange: (next: boolean) => void;
@@ -31,12 +78,16 @@ export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
   onSave: () => void; onEdit: () => void; pending: boolean; saveLabel: string; editLabel: string;
   saveError?: string; copy: AdminSettingsPreviewCopy; language?: string;
   page?: string; onPageChange?: (page: string) => void;
+  /** 作品の一覧。undefined は読み込み中か失敗（worksFailed で区別）。 */
+  works?: PreviewWork[]; worksFailed?: boolean; onRetryWorks?: () => void; workLabel?: string;
 }>(function AdminSettingsPreviewPane(props, iframeRef) {
   const { device, onDeviceChange, liveSync, onLiveSyncChange, src, publicHref, onIframeLoad,
     onReload, expanded, onToggleExpanded, expandButtonRef, unsavedCount, onViewportChange,
     onSave, onEdit, pending, saveLabel, editLabel, saveError, copy, page = "/", onPageChange,
+    works, worksFailed = false, onRetryWorks, workLabel = "Work",
   } = props;
   const ja = props.language !== "en";
+  const notice = onPageChange ? previewPageNotice(page, works) : null;
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(device === "mobile" ? PREVIEW_MOBILE : PREVIEW_DESKTOP);
@@ -58,10 +109,7 @@ export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
   return <section className="admin-settings-preview studio-preview" aria-label={copy.title} data-settings-preview>
     <div className="studio-preview-toolbar">
       {onPageChange && <select aria-label={ja ? "確認するページ" : "Preview page"} value={page} onChange={e => onPageChange(e.target.value)}>
-        <option value="/">{ja ? "トップページ" : "Home"}</option>
-        <option value="/gallery">Gallery</option><option value="/series">Series</option>
-        <option value="/about">{ja ? "プロフィール" : "About"}</option>
-        <option value="/contact">{ja ? "お問い合わせ" : "Contact"}</option>
+        <PreviewPageOptions page={page} works={works} worksFailed={worksFailed} workLabel={workLabel} ja={ja} />
       </select>}
       <fieldset className="studio-preview-devices" aria-label={ja ? "画面サイズ" : "Screen size"}>
         <button type="button" aria-pressed={device === "desktop"} onClick={() => { onDeviceChange("desktop"); setViewport(PREVIEW_DESKTOP); }}>{copy.desktop}</button>
@@ -77,6 +125,10 @@ export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
       </details>
       <button type="button" ref={expandButtonRef} aria-label={expanded ? copy.collapse : copy.expand} aria-pressed={expanded} onClick={onToggleExpanded}>{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
     </div>
+    {onPageChange && (notice || worksFailed) && <output className="studio-preview-note" aria-live="polite">
+      {notice ? noticeText(notice, ja, workLabel) : (ja ? "作品の一覧を読み込めませんでした。" : "Could not load the list of works.")}
+      {!notice && onRetryWorks && <button type="button" onClick={onRetryWorks}>{ja ? "再読み込み" : "Retry"}</button>}
+    </output>}
     <div ref={stageRef} className="studio-preview-stage">
       <div className="studio-preview-frame" data-device={device} style={{ width: fit.width, height: fit.height }}>
         <iframe ref={iframeRef} src={src} onLoad={onIframeLoad} title="Site Preview" style={{ width: viewport.width, height: viewport.height, transform: `scale(${fit.scale})`, transformOrigin: "top left" }} />
@@ -88,7 +140,9 @@ export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
       </select>
       <span>{Math.round(fit.scale * 100)}%</span>
       <button type="button" aria-label={copy.reload} title={copy.reload} onClick={onReload}><RotateCw size={14} /></button>
-      <a href={publicHref} target="_blank" rel="noopener" title={copy.openInNewTabTitle}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></a>
+      {notice
+        ? <span className="studio-preview-public" aria-disabled="true" title={noticeText(notice, ja, workLabel)}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></span>
+        : <a className="studio-preview-public" href={publicHref} target="_blank" rel="noopener" title={copy.openInNewTabTitle}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></a>}
     </footer>
     {(expanded || saveError || unsavedCount > 0) && <div className="admin-preview-save-dock" data-expanded={expanded} data-error={!!saveError}>
       <button type="button" onClick={onEdit}>{editLabel}</button>

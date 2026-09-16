@@ -73,7 +73,7 @@
 .admin-atelier.admin-workbench.admin-studio .studio-preview { background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-paper); z-index: 5; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar :is(button,select,summary) { min-height: 32px; font-size: 12px; color: var(--admin-muted); background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 4px !important; }
-.admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar > select { max-width: 140px; color: var(--admin-ink); }
+.admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar > select { max-width: 140px; color: var(--admin-ink); padding-right: 22px !important; text-overflow: ellipsis; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar > button { margin-left: auto; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-devices { display: flex; gap: 6px; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-devices button[aria-pressed=true] { color: var(--admin-ink) !important; background: var(--studio-hover) !important; border-radius: 5px; text-decoration: none; }
@@ -83,12 +83,15 @@
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions > div { position: absolute; right: 0; top: 38px; width: 230px; display: flex; flex-wrap: wrap; gap: 10px; padding: 14px; border: 1px solid var(--admin-line); border-radius: 6px; background: var(--admin-paper); box-shadow: 0 8px 24px #0003; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions label { width: calc(50% - 5px); font-size: 11px; color: var(--admin-muted); }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-dimensions input { width: 100%; padding: 6px; margin-top: 5px; border: 1px solid var(--admin-line); border-radius: 3px; background: var(--studio-field); color: var(--admin-ink); }
+.admin-atelier.admin-workbench.admin-studio .studio-preview-note { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 16px; border-bottom: 1px solid var(--admin-line); font-size: 12px; line-height: 1.6; color: var(--admin-muted); background: var(--admin-paper); overflow-wrap: anywhere; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview-note button { min-height: 32px; padding: 4px; font-size: 12px; color: var(--admin-ink); background: transparent; border: 0; text-decoration: underline; text-underline-offset: 3px; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-stage { flex: 1; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 28px; overflow: hidden; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-frame { flex: 0 0 auto; position: relative; overflow: hidden; background: #fff; border-radius: 4px; box-shadow: 0 0 0 1px #0002, 0 12px 32px #0003; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-frame iframe { display: block; border: 0; max-width: none; max-height: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-status { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 6px 16px; border-top: 1px solid var(--admin-line); font-size: 11px; color: var(--admin-muted); background: var(--admin-paper); }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-status :is(select,button,a) { color: inherit; background: transparent; border: 0; font-size: 10px; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-status a { display: flex; align-items: center; gap: 5px; margin-left: auto; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview-status span.studio-preview-public { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: 10px; opacity: .45; cursor: not-allowed; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock { position: sticky; bottom: 0; display: block; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { padding: 10px 16px; font-size: 11px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel__actions button { min-height: 34px; border-radius: 4px; padding: 6px 10px; }

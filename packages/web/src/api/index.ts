@@ -134,6 +134,7 @@ import {
   type SourceFormat,
 } from "./source-metadata";
 import { buildShotAtPatchUpdate } from "./photo-shot-at-update";
+import { duplicatedPhotoValues } from "./photo-duplicate";
 import { errorDetailsForLog } from "./error-log";
 
 // Keep list responses stable when new database columns are added. The property
@@ -2163,8 +2164,9 @@ const app = new Hono()
   })
 
   // ── Admin: Duplicate a photo (O1) ───────────────────────
-  // New row inheriting all metadata, pointing at the SAME stored image (no copy) — so
-  // one photo can live in multiple categories / series cheaply.
+  // New row inheriting the photo's information, pointing at the SAME stored image
+  // (no copy) — so one photo can live in multiple categories / series cheaply.
+  // What is inherited and what the new row decides is listed in photo-duplicate.ts.
   .post("/admin/photos/:id/duplicate", requireAdmin, async (c) => {
     const id = Number(c.req.param("id"));
     const row = await runPhotoIntegrityMutation(() =>
@@ -2177,34 +2179,11 @@ const app = new Hono()
             .limit(1);
           if (!orig) return null;
           const [created] = await tx
-        .insert(schema.photos)
-        .values({
-          filename: orig.filename,
-          url: orig.url,
-          title: orig.title,
-          meta: orig.meta,
-          camera: orig.camera,
-          lens: orig.lens,
-          focalLength: orig.focalLength,
-          fNumber: orig.fNumber,
-          exposureTime: orig.exposureTime,
-          iso: orig.iso,
-          filmType: orig.filmType,
-          description: orig.description,
-          category: orig.category,
-          displaySize: orig.displaySize,
-          isPublished: orig.isPublished,
-          seriesId: orig.seriesId,
-          width: orig.width,
-          height: orig.height,
-          rotationDeg: orig.rotationDeg,
-          focalX: orig.focalX,
-          focalY: orig.focalY,
-          fileHash: orig.fileHash,
-          thumbKey: orig.thumbKey,
-          mediumKey: orig.mediumKey,
-          sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos)`,
-        })
+            .insert(schema.photos)
+            .values({
+              ...duplicatedPhotoValues(orig),
+              sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos)`,
+            })
             .returning();
           return created;
         }),

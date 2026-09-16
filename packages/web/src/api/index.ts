@@ -2794,7 +2794,14 @@ const app = new Hono()
         )
         .orderBy(seriesOrderExpr),
     );
-    return c.json({ series: s, photos: photos.map(photoWithThumbs) }, 200);
+    // 公開一覧・写真1枚と同じ公開用の形で返す（管理用の列は送らない）。
+    return c.json(
+      {
+        series: s,
+        photos: photos.map((p) => toPublicPhoto(photoWithThumbs(p))),
+      },
+      200,
+    );
   })
 
   // ── Admin: Series ───────────────────────────────────────
@@ -3071,15 +3078,19 @@ const app = new Hono()
     // Join with photos table to get URL etc — fetch only the referenced rows
     const photoIds = rows.map((r) => r.photoId);
     if (photoIds.length === 0) return c.json({ heroPhotos: [] }, 200);
+    // 写真一覧と同じ列・同じ公開用の形。以前は全列を読み、元ファイルの情報や
+    // 保存キーまでトップページへ送っていた。
     const heroRows = await withRetry(() =>
       db
-        .select()
+        .select(PHOTO_LIST_COLUMNS)
         .from(schema.photos)
         .where(
           sql`${inArray(schema.photos.id, photoIds)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
         ),
     );
-    const photoMap = new Map(heroRows.map((p) => [p.id, photoWithThumbs(p)]));
+    const photoMap = new Map(
+      heroRows.map((p) => [p.id, toPublicPhoto(photoWithThumbs(p))]),
+    );
     const result = rows.map((r) => photoMap.get(r.photoId)).filter(Boolean);
     return c.json({ heroPhotos: result }, 200);
   })

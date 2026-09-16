@@ -100,9 +100,10 @@ describe("photo list columns", () => {
     expect(postgresColumnKeys).toEqual(sqliteColumnKeys);
   });
 
-  // `/photos/:id` を含む写真取得は同じ公開列定義を使う。
-  test("uses the shared column definition in exactly the four photo list queries", () => {
-    expect(source.match(/\.select\(PHOTO_LIST_COLUMNS\)/g)).toHaveLength(4);
+  // 写真を返す取得（一覧・写真1枚・ゴミ箱・作品詳細・トップの写真）は同じ列定義を使う。
+  // 公開応答の形は public-photo-response.api.test.ts が実際の経路で確かめる。
+  test("uses the shared column definition in exactly the five photo queries", () => {
+    expect(source.match(/\.select\(PHOTO_LIST_COLUMNS\)/g)).toHaveLength(5);
   });
 
   // 公開サイトはどのページでも最初に GET /photos を待つ。実測（2026-08-08・

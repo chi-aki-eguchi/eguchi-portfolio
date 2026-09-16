@@ -379,8 +379,17 @@ async function installPublicApiMocks(
   await page.route("**/api/settings**", (route) =>
     fulfillJson(route, settings),
   );
+  // 写真一覧と、共通ナビが読む件数（`/api/photos/availability`）は同じ
+  // `**/api/photos**` に当たる。**1本の中で振り分ける。** 別々に登録すると、
+  // Playwright は後から登録したほうを先に見るので、件数の経路に写真一覧を
+  // 返してしまい、ナビが Gallery の入口を出せなくなる（2026-09-16 実測）。
   await page.route("**/api/photos**", (route) =>
-    fulfillJson(route, { photos: SYNTHETIC_PHOTOS }),
+    new URL(route.request().url()).pathname.endsWith("/availability")
+      ? fulfillJson(route, {
+          total: SYNTHETIC_PHOTOS.length,
+          standalone: SYNTHETIC_PHOTOS.filter((p) => p.seriesId == null).length,
+        })
+      : fulfillJson(route, { photos: SYNTHETIC_PHOTOS }),
   );
   await page.route("**/api/hero-photos**", (route) =>
     fulfillJson(route, { heroPhotos: SYNTHETIC_PHOTOS.slice(0, 3) }),

@@ -1469,7 +1469,7 @@ describe("shared components", () => {
     }
   });
 
-  test("AdminPage: Library keeps filters collapsed and shows batch actions only after selection", async () => {
+  test("AdminPage: Library opens in viewing mode, keeps filters collapsed, and shows batch actions only after selection", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };
     dom.window.sessionStorage.clear();
@@ -1490,7 +1490,17 @@ describe("shared components", () => {
       ).toBe("false");
       expect(host.textContent).not.toContain("選択中 1枚");
 
-      // The default contact sheet selects immediately; batch controls appear only after a selection.
+      // 写真一覧は「閲覧」で開く（2026-09-13 の 024430a。未選択のまま一括操作の
+      // 帯を常設すると、PC・スマホとも写真の面積を奪うだけだったため）。
+      // 選択は一覧上部の「選択」1操作で入る。**開いた直後は一括操作を出さない。**
+      expect(host.querySelector('[data-library-mode="normal"]')).not.toBeNull();
+      expect(host.textContent).not.toContain("一括編集");
+      (
+        host.querySelector(
+          '[data-library-mode-action="select"]',
+        ) as HTMLButtonElement
+      ).click();
+      await flush(30);
       expect(host.querySelector('[data-library-mode="select"]')).not.toBeNull();
       expect(host.textContent).not.toContain("一括編集");
       const firstTile = host.querySelector('button[aria-label="A"]') as HTMLButtonElement;

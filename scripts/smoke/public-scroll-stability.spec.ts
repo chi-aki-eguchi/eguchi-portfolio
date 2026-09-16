@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
 
 /**
  * **送っている最中に版面が動かないこと。**
@@ -150,32 +150,176 @@ test("公開サイト — 送っている最中に版面が動かない › 送�
   expect(worst.n, `${worst.y}px の地点で画面に何も無かった`).toBeGreaterThan(0);
 });
 
+/**
+ * **出しきったら、終わりの帯が出る。**
+ *
+ * 版面のズレを消すために「終わりの帯は出しきったときだけ出す」ことにした。
+ * その修正が「出さない」だけで終わっていないかを見張る。
+ *
+ * 写真は固定の検証データを使う（2026-09-16）。以前は本番の写真と設定に乗って
+ * いたので、**本番の写真構成が変わるとテストが落ちた** —— 実際、公開写真が
+ * すべてシリーズ／Work に入り `galleryExcludeSeries=on` になった時点で、
+ * Gallery はどの分類でも0枚になり、この検査は製品の不具合ではない理由で
+ * 失敗し続けていた。本番の写真も設定も、テストの都合で変えない。
+ */
+const GALLERY_FIXTURE_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAT0lEQVR42u3PQQkAAAgEsEtsAxsY2gi+hcEKLNXzWgQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQELgtzg3Fa6mxyjAAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+const galleryPhoto = (index: number, seriesId: number | null) => {
+  const portrait = index % 2 === 1;
+  return {
+    id: 9_300_001 + index,
+    filename: `scroll-fixture-${index}.png`,
+    url: `/api/images/scroll-fixture/${index}.png`,
+    thumbUrl: `/api/images/scroll-fixture/thumb-${index}.png`,
+    mediumUrl: `/api/images/scroll-fixture/medium-${index}.png`,
+    title: `検証用の写真 ${index + 1}`,
+    meta: "",
+    description: "",
+    category: "fixture-life",
+    camera: "FIXTURE 67",
+    lens: "FIXTURE 105mm F2.4",
+    focalLength: null,
+    fNumber: null,
+    exposureTime: null,
+    iso: null,
+    filmType: "フィルム",
+    shotAt: `2026-0${(index % 9) + 1}-10T10:00:00`,
+    displaySize: "M",
+    width: portrait ? 800 : 1200,
+    height: portrait ? 1200 : 800,
+    rotationDeg: 0,
+    focalX: 50,
+    focalY: 50,
+    sortOrder: index,
+    seriesId,
+    isPublished: true,
+    fileHash: null,
+    deletedAt: null,
+    createdAt: null,
+  };
+};
+
+const FIXTURE_SERIES = [
+  {
+    id: 9_400_001,
+    slug: "fixture-series",
+    title: "検証用のシリーズ",
+    subtitle: "",
+    statement: "",
+    coverPhotoId: null,
+    sortOrder: 1,
+    isPublished: true,
+    themeConfig: null,
+    kind: "series",
+    coverUrl: "/api/images/scroll-fixture/0.png",
+    coverRotationDeg: 0,
+    coverFocalX: 50,
+    coverFocalY: 50,
+    photoCount: 6,
+    shotAtFirst: "2026-01-10T10:00:00",
+    shotAtLast: "2026-06-10T10:00:00",
+  },
+];
+
+/**
+ * Gallery を固定の検証データで開く。`standalone` は「どこの組にも属さない
+ * 写真」の枚数——0 にすると、Gallery に並べる写真が1枚も無いサイトになる。
+ */
+async function installGalleryFixture(page: Page, standalone: number) {
+  const photos = [
+    ...Array.from({ length: standalone }, (_, i) => galleryPhoto(i, null)),
+    ...Array.from({ length: 6 }, (_, i) =>
+      galleryPhoto(standalone + i, FIXTURE_SERIES[0]!.id),
+    ),
+  ];
+  const json = (route: Route, value: unknown) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(value),
+    });
+  await page.route("**/api/images/**", (route) =>
+    route.fulfill({ status: 200, contentType: "image/png", body: GALLERY_FIXTURE_PNG }),
+  );
+  await page.route("**/api/settings**", (route) =>
+    json(route, {
+      galleryExcludeSeries: "on",
+      galleryLayout: "masonry",
+      seriesNavEnabled: "auto",
+      workNavEnabled: "auto",
+      // TOP の作品は別のキャッシュ鍵（`["photos","top-random",n]`）で取る。
+      // 先読みの検査は「Gallery へ触れた時点で ["photos"] を取りに行くか」を
+      // 見るので、TOP が同じ鍵を先に埋めていると何も起きない。
+      topWorksMode: "random",
+    }),
+  );
+  // **1本にまとめる。** Playwright は後から登録した route を先に見るので、
+  // `**/api/photos**` を別に登録すると、件数の経路まで写真一覧で応えてしまう
+  // （2026-09-16 実測：ナビが件数を読めず、Gallery の入口が出なかった）。
+  await page.route("**/api/photos**", (route) =>
+    new URL(route.request().url()).pathname.endsWith("/availability")
+      ? json(route, { total: photos.length, standalone })
+      : json(route, { photos }),
+  );
+  await page.route("**/api/series**", (route) =>
+    json(
+      route,
+      new URL(route.request().url()).searchParams.get("kind") === "work"
+        ? { series: [] }
+        : { series: FIXTURE_SERIES },
+    ),
+  );
+  await page.route("**/api/categories**", (route) =>
+    json(route, {
+      categories: [{ id: 1, slug: "fixture-life", label: "fixture-life", sortOrder: 0 }],
+    }),
+  );
+  await page.route("**/api/hero-photos**", (route) => json(route, { heroPhotos: [] }));
+  await page.route("**/api/pricing**", (route) => json(route, { plans: [] }));
+  await page.route("**/api/note-posts**", (route) => json(route, { posts: [] }));
+}
+
 test("公開サイト — 送っている最中に版面が動かない › 出しきったら奥付と締めの帯が出る", async ({
   page,
 }) => {
+  await installGalleryFixture(page, 12);
   await page.goto("/gallery", { waitUntil: "networkidle" });
-  await page.waitForTimeout(2000);
-  // 全部は出しきれないので、点数の少ない分類に絞る。**「出さない」だけの
-  // 修正になっていないことを見張る** — 終端に着いたら必ず出ること。
-  const mobileFilters = page.locator(".gallery-mobile-filters__bar button");
-  const mobile = await mobileFilters.isVisible();
-  if (mobile) await mobileFilters.click();
-  const buttons = page.locator(mobile ? ".gallery-filter-dialog fieldset:first-child button" : ".gallery-filter-row button");
-  const n = await buttons.count();
-  let switched = false;
-  for (let i = 1; i < n; i++) {
-    const label = (await buttons.nth(i).innerText()).trim();
-    if (!label || /^(All|Film|Digital)$/i.test(label)) continue;
-    await buttons.nth(i).click();
-    await page.waitForTimeout(1800);
-    const shown = await page.locator(".series-colophon").count();
-    if (shown > 0) { switched = true; break; }
+  await page.waitForTimeout(1500);
+  // 終端まで送る。奥付は最後の1枚まで出しきったときだけ出る。
+  for (let i = 0; i < 20; i++) {
+    if (await page.locator(".series-colophon").count()) break;
+    await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+    await page.waitForTimeout(400);
   }
-  if (mobile) await page.getByRole("button", { name: "写真を探すメニューを閉じる" }).click();
-  expect(switched, "どの分類でも奥付が出なかった").toBe(true);
+  await expect(
+    page.locator(".series-colophon"),
+    "写真を出しきっても奥付が出なかった",
+  ).toBeVisible();
   await expect(page.locator("footer")).toBeVisible();
   const studio = page.locator('[data-studio-bridge="footer"]');
   if (await studio.count()) await expect(studio).toBeVisible();
+});
+
+/**
+ * **並べる写真が1枚も無いときは、行き止まりにしない。**
+ *
+ * `galleryExcludeSeries=on` の Gallery は、どこの組にも属さない写真だけを
+ * 並べる。その写真が無いあいだ、共通ナビは Gallery を出さない。それでも
+ * URL・検索・ブックマークからは人が来るので、写真のある棚へ送る。
+ */
+test("公開サイト — Gallery › 並べる写真が無いときは棚へ送る", async ({ page }) => {
+  await installGalleryFixture(page, 0);
+  await page.goto("/gallery", { waitUntil: "networkidle" });
+  await page.waitForTimeout(1500);
+  await expect(page.locator("[data-photo-tile]")).toHaveCount(0);
+  const guide = page.locator('nav[aria-label="写真のある場所"]');
+  await expect(guide).toBeVisible();
+  await expect(guide.locator('a[href="/series"]')).toBeVisible();
+  await expect(page.locator("header a[href='/gallery']")).toHaveCount(0);
+  await expect(page.locator("footer")).toBeVisible();
 });
 
 /**
@@ -191,6 +335,10 @@ test("公開サイト — 送っている最中に版面が動かない › 出�
 test("公開サイト — 移動先の先読み › ナビに触れた時点で、押す前に写真を取りに行く", async ({
   page,
 }) => {
+  // 固定の検証データで開く（2026-09-16）。ナビの Gallery は、そこに並べる
+  // 写真があるときだけ出る。本番の写真構成に乗っていると、単発の写真が
+  // 無くなった時点で「触れる相手が居ない」という理由で落ちる。
+  await installGalleryFixture(page, 12);
   const asked: string[] = [];
   page.on("request", (r) => {
     const u = new URL(r.url());

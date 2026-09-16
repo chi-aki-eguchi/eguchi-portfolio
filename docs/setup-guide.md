@@ -3,8 +3,7 @@
 このガイドは、配布する側・セットアップ担当者向けです。
 
 写真家本人が読む必要はありません。写真家本人には
-[photographer-guide.md](./photographer-guide.md)（自分で立ててもらう場合は
-[post-deploy-guide.md](./post-deploy-guide.md) も）と、サイトURL・管理画面URL・
+[photographer-guide.md](./photographer-guide.md) と、サイトURL・管理画面URL・
 管理パスワードを渡します。
 
 納品済みサイトへ最新版を届けるときは、作り直さず
@@ -15,8 +14,8 @@
 >
 > - **方法1: Railway テンプレート（推奨）** — Turso も R2 も使わず、Railway だけで
 >   完結します。Deploy ボタン → 変数を入れる → 公開、で立ち上がり、database schema は
->   起動時に自動作成されます（`db:push` 不要）。非エンジニアの写真家本人でも、
->   [post-deploy-guide.md](./post-deploy-guide.md) を見れば自力で立てられます。
+>   起動時に自動作成されます（`db:push` 不要）。設置担当者は
+>   [post-deploy-guide.md](./post-deploy-guide.md) の手順で、専門知識なしに立てられます。
 > - **方法2: Turso + R2（従来・上級者向け）** — 保存先を個別に用意する方式。秋さん本番
 >   `akieguchi.com` と同じ構成です。既存の Turso/R2 を使いたい場合や、Railway 以外で
 >   運用したい場合の選択肢です。
@@ -37,25 +36,25 @@ GitHub / Railway / Turso / R2 や環境変数は、セットアップ担当者�
 一番かんたんで、毎回の手順が少ない方法です。PostgreSQL と Storage が Railway 側に
 含まれるので、Turso や R2 を別に用意する必要がありません。
 
-### だれが立てるか（2通り）
+### だれが立てるか
 
-- **写真家本人にまかせる（おすすめ）**: 購入者向けの setup link と
-  [post-deploy-guide.md](./post-deploy-guide.md) を渡すだけ。本人が自分で
-  立てられます。専門用語なしの手順書です。
-- **担当者が代わりに立てる（コンシェルジュ）**: 下の手順で担当者がデプロイし、
-  最後に URL と管理パスワードだけ本人に渡します。
+**担当者が立てます（コンシェルジュ）。** 2026-07-18 から、Railway setup link は
+オーナー専用の設置ツールです。購入者・公開ページ・決済後の案内・メールには載せません
+（[DISTRIBUTION.md](../DISTRIBUTION.md)）。以前の「写真家本人に setup link を渡して
+立ててもらう」形は廃止しました。下の手順で担当者がデプロイし、最後に URL と
+管理パスワードを本人に渡します。
 
 ### 手順（担当者が立てる場合）
 
-1. 購入者向けに管理している Railway setup link を開く。
+1. オーナー専用の Railway setup link を開く。
 2. デプロイ画面の変数で **`ADMIN_PASSWORD`** に管理パスワードを入れる
    （本人に決めてもらう、または担当者が決めて後で伝える）。ほかの変数は
    テンプレート既定のままでよい。
 3. **Deploy** → すべてのサービスが緑（Active）になるまで待つ。
 4. **web** サービス → **Settings → Networking → Generate Domain** で公開URLを作る。
 5. `/api/health` が 200、`/admin/login` でログインできることを確認。
-6. 本人に **サイトURL** と **管理パスワード** を渡す（必要なら
-   [post-deploy-guide.md](./post-deploy-guide.md) も）。
+6. 本人に **サイトURL** と **管理パスワード**、
+   [photographer-guide.md](./photographer-guide.md) を渡す。
 
 ### テンプレート側の注意（保守者向け）
 
@@ -170,7 +169,8 @@ git push
 公開後に確認するもの:
 
 - `/` が表示される
-- `/gallery` が空でも壊れない
+- `/gallery` が空でも壊れない（写真をすべて Series／Work に置く場合、ナビに Gallery は
+  出ず、`/gallery` では Series・Work への案内が出る）
 - `/about` が本人情報、または汎用の表示になっている
 - `/contact` が表示される
 - `/admin/login` にログインできる
@@ -181,12 +181,11 @@ git push
 
 ## 写真家本人に渡すもの
 
-渡すものはこの3つ（自分で立ててもらう場合は4つ目も）にします。
+渡すものはこの3つにします。
 
 1. サイトURL
 2. 管理画面URLとパスワード
 3. [photographer-guide.md](./photographer-guide.md)
-4. （自分で立ててもらう場合）[post-deploy-guide.md](./post-deploy-guide.md)
 
 GitHub、Railway、Turso、R2、環境変数は渡さなくて大丈夫です。
 

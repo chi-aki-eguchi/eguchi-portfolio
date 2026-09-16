@@ -11,13 +11,15 @@ portfolio template for other photographers. The distribution roadmap lives in
 ## Status
 
 - Production app: yes, deployed through Railway from `git push`.
-- Railway template: buyer-only link, shared after purchase or by direct handoff.
+- Railway template: an owner-only setup link. Since 2026-07-18 the owner or a
+  setup operator deploys each photographer's site; buyers never receive the link
+  (see [DISTRIBUTION.md](./DISTRIBUTION.md)).
 - Recommended distribution model for now: one Railway project per photographer
   (web service + PostgreSQL + Storage bucket).
 - SaaS/multi-tenant mode: intentionally out of scope until the template flow is
   stable.
 
-## Buyer-Only Railway Setup
+## Operator-Only Railway Setup
 
 The distribution version runs entirely on Railway — PostgreSQL and a Storage
 bucket replace Turso and R2, so a photographer only needs one Railway account.
@@ -25,18 +27,18 @@ The application code is the same; the database/storage backend is selected at
 runtime with `DATABASE_PROVIDER=postgres` (unset keeps the original
 Turso/libSQL + R2 setup that powers `akieguchi.com`).
 
-A non-engineer photographer can run this whole flow themselves, but the actual
-Railway setup link is shared only after purchase. The public product page should
-send people to the checkout first; the buyer receives the setup link in the
-Stripe confirmation page, confirmation email, or a direct message from Aki.
+Since 2026-07-18 the Railway setup link is an owner-only setup tool
+([DISTRIBUTION.md](./DISTRIBUTION.md)). It is not sent to buyers and does not
+appear on public pages, checkout pages or purchase emails. The owner or a setup
+operator deploys the site, then hands the photographer the site URL, the admin
+URL and password, and [docs/photographer-guide.md](./docs/photographer-guide.md).
 
-After purchase, the step-by-step, jargon-free walkthrough is
-[docs/post-deploy-guide.md](./docs/post-deploy-guide.md), starting from the
-buyer-only Railway setup link.
+The operator's step-by-step, jargon-free walkthrough is
+[docs/post-deploy-guide.md](./docs/post-deploy-guide.md).
 
-> **Maintainer note:** keep the Railway setup URL out of public pages and this
-> public README. Share it only in buyer-only confirmation copy or direct
-> messages. There is **no `railway.json` on `main`** — it is omitted on purpose
+> **Maintainer note:** keep the Railway setup URL out of public pages, this
+> public README, checkout confirmation copy and buyer emails. It is used only by
+> the owner or a setup operator. There is **no `railway.json` on `main`** — it is omitted on purpose
 > so it cannot override production `akieguchi.com`'s Railway deploy settings.
 > Because of that, the template's web service must set these explicitly in its
 > Railway service config (the repo root `start` script is pm2 and is **not** the
@@ -194,7 +196,7 @@ be generalized. See [DISTRIBUTION.md](./DISTRIBUTION.md) for the live checklist.
 | Document | Audience |
 | --- | --- |
 | [docs/setup-guide.md](./docs/setup-guide.md) | Engineer setting up the site |
-| [docs/post-deploy-guide.md](./docs/post-deploy-guide.md) | Non-engineer deploying via Railway button |
+| [docs/post-deploy-guide.md](./docs/post-deploy-guide.md) | Setup operator deploying with the owner-only Railway link (no engineering needed) |
 | [docs/photographer-guide.md](./docs/photographer-guide.md) | Photographer receiving the site |
 | [docs/admin-guide.md](./docs/admin-guide.md) | Admin panel feature reference |
 | [docs/api.md](./docs/api.md) | API endpoint reference |

@@ -1,18 +1,21 @@
 # Portfolio Kit: Quick Setup Guide
 
-This is the short English guide for publishing your Portfolio Kit after purchase.
-No programming knowledge is required. Allow about 10–15 minutes, including a few
-minutes while Railway prepares the site.
+This is the short English guide for the setup operator who publishes a
+photographer's Portfolio Kit site. No programming knowledge is required. Allow
+about 10–15 minutes, including a few minutes while Railway prepares the site.
 
-> Keep the Deploy link from your purchase email private. It is for the buyer only
-> and should not be posted on a public page or shared as a general template link.
+> Since 2026-07-18 the Deploy link (Railway setup link) is an owner-only setup
+> tool. Do not send it to buyers, and do not post it on a public page or in an
+> email. The buyer receives the finished site URL, the admin URL and password,
+> and the photographer guide.
 
 ## Before you begin
 
 - Use a computer if possible; the Railway setup screen is easier to read there.
 - Sign in to Railway. You can use a GitHub account to sign in.
-- Choose an admin password with at least eight characters and keep it somewhere
-  safe. This is the only setup value you need to enter.
+- Choose the photographer's admin password (at least eight characters), or ask
+  the photographer to choose it, and keep it somewhere safe. This is the only
+  setup value you need to enter.
 
 Railway is the separate service that hosts the site. Its prices can change and are
 based on usage. If it asks for a payment card while activating hosting, that is an
@@ -20,7 +23,7 @@ expected part of its setup. Ask before continuing if the cost is unclear.
 
 ## Publish the site
 
-1. Open the private Deploy link from your purchase email.
+1. Open the owner-only Deploy link.
 2. On the screen labelled **2 services and 1 bucket**, find
    **eguchi-portfolio-app** and select **Configure**. Enter your password in
    **ADMIN_PASSWORD**, then select **Save Config**. Do not change the other values.

@@ -205,8 +205,9 @@ SaaS 化は別プロジェクト。必要になるものが一気に増える。
 - Add deployment guide:
   - Done: `docs/setup-guide.md` covers Turso database, R2 bucket/access keys,
     Railway service, env vars, `bun run db:push`, custom domain, and handoff.
-  - Done: README explains the buyer-only Railway setup flow without exposing the
-    setup link, and `docs/post-deploy-guide.md` covers the non-engineer flow.
+  - Done: README explains the Railway setup flow without exposing the setup
+    link (owner-only since 2026-07-18), and `docs/post-deploy-guide.md` is the
+    operator's non-engineer walkthrough.
   - Done: `docs/photographer-guide.md` is a short no-code guide for the
     photographer receiving the site.
 - Add setup checklist in `/admin`:
@@ -343,7 +344,7 @@ half-built business platform.
 The distribution version runs entirely on Railway (PostgreSQL + Storage bucket)
 and is selected at runtime with `DATABASE_PROVIDER=postgres`. The original
 Turso/libSQL + R2 stack (production `akieguchi.com`, `DATABASE_PROVIDER` unset)
-is unchanged. See README → "Buyer-Only Railway Setup".
+is unchanged. See README → "Operator-Only Railway Setup".
 
 ### Automatic migrations on startup
 

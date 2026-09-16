@@ -11,22 +11,36 @@ Error responses use `{ error: string }`.
 | GET | `/api/settings` | Site settings (theme, labels, feature flags) |
 | GET | `/api/categories` | Published categories, sorted |
 | GET | `/api/photos` | Published photos, sorted by gallerySortOrder setting |
-| GET | `/api/photos?all=1` | All non-deleted photos (admin session required, otherwise same as above) |
+| GET | `/api/photos?all=1` | All non-deleted photos with management fields (admin session required, otherwise same as above) |
+| GET | `/api/photos/availability` | Published photo counts only: `{ total, standalone }` (standalone = not in a series/work) |
+| GET | `/api/photos/:id` | One published photo + its published series/work + indexable `prev` / `next` |
 | GET | `/api/hero-photos` | Hero carousel photos (published + non-deleted only) |
-| GET | `/api/series` | Published series with cover URLs |
-| GET | `/api/series/:slug` | Single published series + its photos |
+| GET | `/api/series` | Published series with cover URLs (`?kind=work` for the Work shelf) |
+| GET | `/api/series/:slug` | Single published series or work + its published photos |
 | GET | `/api/pricing` | Published pricing plans |
 | GET | `/api/note-posts` | note.com RSS posts (cached, when enabled) |
 | GET | `/api/images/*` | Image proxy with optional resize (`?w=`, `?q=`) |
+
+### Public photo shape
+
+`/api/photos`, `/api/photos/:id`, `/api/series/:slug` and `/api/hero-photos` return the
+same public photo object: the photo list columns plus `thumbUrl` / `mediumUrl`, without
+the management fields `fileHash`, `thumbKey`, `mediumKey`, `isPublished`, `deletedAt`
+and `shotAtSource`. The source-file record (`shotAtDigitized`, `sourceWidth`,
+`sourceHeight`, `sourceFormat`, `cameraMake`, `cameraModel`) is not part of any list
+response. `packages/web/src/api/public-photo-response.api.test.ts` checks this on the
+real routes.
 
 ### Image proxy
 
 `GET /api/images/:key?w=800&q=85`
 
-- `w`: width in px (50-3200, omit for original)
+- `w` / `h`: size in px (each 50-3200, omit for original)
 - `q`: quality 10-100 (default 90)
-- Format negotiation: set `IMAGE_FORMAT_NEGOTIATION=1` env to enable AVIF/WebP via Accept header
-- Allowed key prefixes: `photos/`, `hero/`, `profile/`, `fonts/`
+- Format: always negotiated. An explicit `fmt=avif|webp|jpeg` wins; otherwise the
+  `Accept` header picks AVIF, then WebP, then JPEG (`Vary: Accept`). No environment
+  variable is needed.
+- Allowed key prefixes: `photos/`, `thumbs/`, `medium/`, `hero/`, `profile/`, `fonts/`
 - Responses are cached with `Cache-Control: public, max-age=31536000, immutable`
 
 ## Auth
@@ -52,13 +66,13 @@ Unauthorized requests receive `401 { error: "Unauthorized" }`.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| POST | `/api/admin/upload` | Upload image (multipart `file`). Returns `{ url, key, size, width, height, fileHash, shotAt, exifCamera, exifLens }`. Duplicates return `{ duplicate: true, fileHash }`. Max 60MB, image MIME only |
+| POST | `/api/admin/upload` | Upload image (multipart `file`). Returns `{ url, key, size, width, height, fileHash, shotAt, exifCamera, exifLens }`. Duplicates return `{ duplicate: true, fileHash }`. Max 300MB (`IMAGE_UPLOAD_MAX_BYTES` in `packages/web/src/shared/upload-limits.ts`), image MIME only |
 | POST | `/api/admin/photos` | Create photo record. Body: `{ filename, url, title?, meta?, category?, camera?, lens?, filmType?, width?, height?, fileHash?, shotAt? }` |
 | PATCH | `/api/admin/photos/:id` | Update photo fields |
 | DELETE | `/api/admin/photos/:id` | Soft-delete (move to trash) |
 | POST | `/api/admin/photos/:id/restore` | Restore from trash |
 | DELETE | `/api/admin/photos/:id/purge` | Permanent delete (removes from storage if no other reference) |
-| POST | `/api/admin/photos/:id/duplicate` | Duplicate photo record (shares storage object) |
+| POST | `/api/admin/photos/:id/duplicate` | Duplicate photo record (shares storage object). Copies every photo field, including the shot-date origin and the source-file record; the copy gets a new id, the last library position, a fresh `createdAt` and is not trashed |
 | GET | `/api/admin/photos/trash` | List trashed photos. Auto-purges items older than 30 days |
 | POST | `/api/admin/photos/reorder` | Reorder photos. Body: `{ ids: number[] }` |
 | POST | `/api/admin/photos/batch` | Batch operation. Body: `{ ids, operation, value? }`. Operations: publish, unpublish, category, camera, lens, filmType, size, series, feature, unfeature |

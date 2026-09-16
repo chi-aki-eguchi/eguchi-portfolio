@@ -3,6 +3,12 @@
 セットアップ担当者は、一番上の更新だけを確認します。詳しい操作は
 [template-update-guide.md](./template-update-guide.md) を使います。
 
+> 各版の「更新後の確認」にある「`/gallery` の写真」は、Gallery に写真を置いている
+> サイトの場合です。写真をすべて Series／Work に置いているサイトでは、ナビに Gallery が
+> 出ず、`/gallery` では Series・Work への案内が出るのが正常です。その場合は、更新前に
+> 確認した Series／Work の作品で写真が残っていることを見ます
+> （[template-update-guide.md](./template-update-guide.md) の手順1）。
+
 ## 2026-08-17 — 2026-07-16 以降の177件（公開サイト・管理画面の作り込み）
 
 - 10分更新: **可（ただし更新前のDBバックアップが必須）**

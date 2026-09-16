@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { prefetchRoute } from "../lib/prefetch-route";
+import { galleryHasPhotos } from "../lib/work-entries";
 import { shelfNeedsCount, shouldShowShelf } from "../lib/shelf-nav";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
@@ -192,12 +193,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       jsonOrThrow(await api.photos.availability.$get()),
     staleTime: 60_000,
   });
-  const galleryExcludesSeries = (data?.galleryExcludeSeries ?? "off") === "on";
-  // 数が分かるまでは出しておく。取得に失敗しただけで入口が消えるより、
-  // 出したままのほうが害が小さい（棚の `auto` と同じ「消すのは確信したときだけ」）。
-  const showGallery =
-    photoCounts === undefined ||
-    (galleryExcludesSeries ? photoCounts.standalone : photoCounts.total) > 0;
+  // 判定は `lib/work-entries.ts` に1つだけ置く。TOP の「作品を見る」導線も
+  // 同じ関数を読む——別々に書くと、ナビは出ていないのに導線だけ Gallery を
+  // 指す、のような食い違いが起きる。数が分からないうちは消さない。
+  const showGallery = galleryHasPhotos(
+    photoCounts,
+    (data?.galleryExcludeSeries ?? "off") === "on",
+  );
 
   const dm = useDarkModeContext();
   const { showService, showServiceInNav } = useServiceVisibility();

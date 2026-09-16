@@ -7,13 +7,13 @@ import {
   useCallback,
   useMemo,
 } from "react";
-import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
+import { WorkEntries } from "../components/WorkEntryLinks";
 import { ContentStatus } from "../components/ContentStatus";
 import { SeriesStream } from "../components/SeriesStream";
 import { num } from "../lib/utils";
@@ -766,17 +766,17 @@ function WorksHeader({
       >
         {settings?.worksLabel ?? "Works"}
       </h2>
-      <Link
-        to="/gallery"
+      <WorkEntries
+        settings={settings}
+        kind="short"
+        wrapperClassName="flex items-center gap-x-5 min-w-0"
         className="tap-target font-en transition-colors duration-300 hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))]"
         style={{
           fontSize: "var(--section-label-size-eff, var(--text-caption))",
           letterSpacing: "var(--section-label-tracking, 0.06em)",
           color: "var(--section-label-color)",
         }}
-      >
-        {settings?.viewAllLabel ?? "View all →"}
-      </Link>
+      />
     </div>
   );
 }
@@ -895,14 +895,12 @@ function HomeQuietGrid({
             />
           )}
 
-          <div className="mt-16 md:mt-24 text-center section-reveal">
-            <Link
-              to="/gallery"
-              className="works-cta font-ja"
-            >
-              {settings?.viewAllCtaLabel || "すべての作品を見る"}
-            </Link>
-          </div>
+          <WorkEntries
+            settings={settings}
+            kind="sentence"
+            wrapperClassName="mt-16 md:mt-24 section-reveal flex flex-wrap items-center justify-center gap-x-10 gap-y-4"
+            className="works-cta font-ja"
+          />
         </section>
       )}
 
@@ -1033,14 +1031,12 @@ function HomeEditorial({
             />
           )}
 
-          <div className="mt-16 md:mt-24 text-center section-reveal">
-            <Link
-              to="/gallery"
-              className="works-cta font-ja"
-            >
-              {settings?.viewAllCtaLabel || "すべての作品を見る"}
-            </Link>
-          </div>
+          <WorkEntries
+            settings={settings}
+            kind="sentence"
+            wrapperClassName="mt-16 md:mt-24 section-reveal flex flex-wrap items-center justify-center gap-x-10 gap-y-4"
+            className="works-cta font-ja"
+          />
         </section>
       )}
 
@@ -1186,14 +1182,12 @@ function HomeImmersive({
             />
           )}
 
-          <div className="mt-16 md:mt-24 text-center section-reveal">
-            <Link
-              to="/gallery"
-              className="works-cta font-ja"
-            >
-              {settings?.viewAllCtaLabel || "すべての作品を見る"}
-            </Link>
-          </div>
+          <WorkEntries
+            settings={settings}
+            kind="sentence"
+            wrapperClassName="mt-16 md:mt-24 section-reveal flex flex-wrap items-center justify-center gap-x-10 gap-y-4"
+            className="works-cta font-ja"
+          />
         </section>
       )}
 
@@ -1610,18 +1604,18 @@ export default function TopPage() {
             >
               {settings?.worksLabel ?? "Works"}
             </h2>
-            <Link
-              to="/gallery"
-              className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5 break-words shrink-0 max-w-[45%]"
+            <WorkEntries
+              settings={settings}
+              kind="short"
+              wrapperClassName="flex items-center gap-x-5 min-w-0 shrink-0 max-w-[45%]"
+              className="font-en hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.55))] transition-colors duration-300 nav-link-luxury section-reveal py-1.5 break-words"
               style={{
                 transitionDelay: "0.1s",
                 fontSize: "var(--section-label-size-eff, 0.6875rem)",
                 letterSpacing: "var(--section-label-tracking, 0.06em)",
                 color: "var(--section-label-color)",
               }}
-            >
-              {settings?.viewAllLabel ?? "View all →"}
-            </Link>
+            />
           </div>
 
           {/* N: top Works section honours topWorksLayout (default ずらし大 / stagger) */}
@@ -1646,14 +1640,12 @@ export default function TopPage() {
           {/* Works → Gallery funnel: a quiet but unmissable CTA after the photos,
               where the "もっと見たい" moment actually happens. The header's small
               "View all" link stays for orientation; this is the conversion path. */}
-          <div className="mt-16 md:mt-24 text-center section-reveal">
-            <Link
-              to="/gallery"
-              className="works-cta font-ja"
-            >
-              {settings?.viewAllCtaLabel || "すべての作品を見る"}
-            </Link>
-          </div>
+          <WorkEntries
+            settings={settings}
+            kind="sentence"
+            wrapperClassName="mt-16 md:mt-24 section-reveal flex flex-wrap items-center justify-center gap-x-10 gap-y-4"
+            className="works-cta font-ja"
+          />
         </section>
       )}
 

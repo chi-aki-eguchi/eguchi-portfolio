@@ -76,6 +76,15 @@ PostgreSQL 経路の実測（2026-09-17 の環境には PostgreSQL が無かっ�
   （2026-07-18 以降はオーナー専用）。wiki は要約層で鮮度警告の対象。`knowledge/WIKI_SCHEMA.md` の手順で
   ソースと突き合わせて更新する。
 
+### B-29. 全体smokeが本番のゴミ箱を完全削除し得る 🟠 コードで確認（2026-09-17）
+
+`scripts/smoke/admin-trash-signal.spec.ts` は、ルートの `.env`（本番接続）の `ADMIN_PASSWORD` で正規ログインし、
+⌘K からゴミ箱をモックなしで開く。`GET /api/admin/photos/trash` は開くたびに30日を過ぎたゴミ箱写真を
+DB と保存先から完全削除する（`packages/web/src/api/index.ts` の trash ルート）。`helpers.ts` の書き込みの番人は
+非GETしか止めないため、通常の `bun run smoke` がこの削除を本番で起こし得る（AGENTS.md「本番へ Delete を確定しない」に反する）。
+案: 該当specでゴミ箱の応答をモックする／番人がこのGETも止める／smoke 全体を隔離DBで回す
+（2026-09-17 は一時SQLiteの `.env` を worktree に置いて比較した）。
+
 ## 写真データの整合性（T-10 の残り）
 
 > 背景と全項目は `docs/archive/task-queue.md` の T-10。P0×1 と P1×7 は

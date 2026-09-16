@@ -1,6 +1,19 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
+## Current State — 2026-09-17 JST
+
+### Adobe比較監査の第1段階（ローカルブランチ `audit/stage1-fixes`、未push・未統合）
+
+- 依頼: `claude_code_akieguchi_handoff.md`（監査原文 `akieguchi_adobe_portfolio_audit_2026-09-17.md`）。第1段階を実装・テストし、第2段階は設計と分割まで。本番書き込み・migration・push・mainへのmerge・デプロイは禁止の指定。
+- 判定: 第1段階の5項目はすべて `1ef90fc` に現存（根拠は `docs/archive/audits/adobe-comparison-verification-2026-09-17.md`）。本番 build も `1ef90fc1` で一致。
+- 修正（worktree `/Users/chiaki/wt-audit-stage1`）: 複製で撮影日時・由来・元ファイル情報を保つ `8dfdff2` / Work の404・通信失敗の戻り先 `7a18fe7` / 作品詳細とトップ写真の公開応答を一覧と同じ形に `95f0843` / 設定プレビューで Work と各作品を直接選ぶ `72554f8` / 設置リンク（オーナー専用）・API上限・画像形式・一覧の初期モード・Gallery空のサイトの更新確認の文書 `4b033f9` / 第2段階の設計 `f814ed2`。
+- 新しい検証基盤: `packages/web/src/api/test-support/isolated-api.ts` が本物のAPIを子プロセスで起動する（一時SQLite・127.0.0.1の偽ストレージ・正規ログイン。親の環境変数を渡さない）。
+- 第2段階: `docs/specs/publishing-and-placement-2026-09-17.md`。版管理・アクセス制御・多対多は `site-and-data-direction.md` §2・§4-2 で「作らない」と確定済みのため、A-2以降はオーナー判断待ち（backlog B-27）。次の最小単位は A-1（設定の保存前に変わる項目を一覧で見せる。スキーマ変更なし）。
+- 触れていない判断事項: FAQ・販売文書の「24時間／3日」と 2026-09-06 の運用文書の食い違い、wiki の buyer-only 要約（backlog B-28）。
+- 2026-09-17検証: `bun run check` 成功（製品1433件＝変更前1381件＋52、ツール60件、型・lint・build、wiki鮮度は既存8件の警告のみ）。変更前後で失敗テストを確認（修正前のコードで新テストが失敗し、修正後に成功）。追加smoke（設定プレビュー）10成功。全体smokeは一時SQLiteの隔離環境で変更前 421成功／157対象外／123失敗、変更後 424成功／158対象外／123失敗。**失敗の集合は完全に一致**（写真の無い空DBで写真依存のテストが落ちるもの）で、変更による新しい失敗は無い。本番DBでの全体smokeは実行していない。証拠は worktree の `scratch/audit-stage1-20260917/`（画面・計測）。
+- 注意: 全体smokeはルートの `.env`（本番接続）でログインし、管理画面でゴミ箱を開くと `GET /api/admin/photos/trash` が30日超のゴミ箱写真を完全削除する（書き込みの番人は非GETしか止めない）。本番の削除を避けるため、今回は一時SQLiteの隔離環境で変更前後を比較した。
+
 ## Current State — 2026-09-16 JST
 
 ### シリーズ閲覧・Galleryの入口・TOPの作品導線（main へ統合）

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { ContentStatus } from "../components/ContentStatus";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useRoute } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageTitle } from "../hooks/usePageTitle";
@@ -17,6 +17,10 @@ import { signalAnalyticsPageReady } from "../lib/analytics";
 export default function SeriesDetailPage() {
   const params = useParams();
   const slug = params.slug ?? "";
+  // 詳細が届く前・届かなかったときの棚は、実際に開いた経路で決める。
+  // 同じ部品が `/series/:slug` と `/work/:slug` の両方を描くので、固定で
+  // Series へ戻すと、Work の読み込み失敗や404からシリーズの棚へ飛ばしてしまう。
+  const [onWorkRoute] = useRoute("/work/:slug");
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["series", slug],
@@ -44,7 +48,9 @@ export default function SeriesDetailPage() {
   // one body of work to the next instead of dead-ending at the foot of a page.
   // 棚（2026-08-30）。詳細の応答に `kind` が入っているので、それに従って
   // 「戻る先」と「次」を同じ棚の中で回す。**棚をまたいで次へ飛ばさない。**
-  const shelf = data?.series.kind === "work" ? "work" : "series";
+  const shelf = data
+    ? data.series.kind === "work" ? "work" : "series"
+    : onWorkRoute ? "work" : "series";
   const { data: seriesListData } = useQuery({
     queryKey: shelf === "work" ? ["works"] : ["series"],
     queryFn: async () =>
@@ -90,6 +96,18 @@ export default function SeriesDetailPage() {
     return () => window.clearTimeout(timer);
   }, [data, settings, settingsError]);
 
+  const shelfHref = shelf === "work" ? "/work" : "/series";
+  const shelfLabel = shelf === "work" ? (settings?.navLabelWork || "Work") : "Series";
+  const shelfNoun = shelf === "work" ? "作品" : "シリーズ";
+  const backToShelf = (
+    <Link
+      to={shelfHref}
+      className="inline-block mt-8 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300"
+    >
+      ← {shelfLabel}
+    </Link>
+  );
+
   const entranceRef = usePageEntrance([data]);
   // PhotoGallery tiles use fade-in-item (opacity:0 until visible). usePageEntrance
   // only watches .page-entrance, so we need a separate ref for the gallery area.
@@ -118,14 +136,7 @@ export default function SeriesDetailPage() {
           error={error}
           onRetry={() => void refetch()}
         />
-        <div className="text-center">
-          <Link
-            to="/series"
-            className="inline-block mt-8 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300"
-          >
-            ← Series
-          </Link>
-        </div>
+        <div className="text-center">{backToShelf}</div>
       </section>
     );
   }
@@ -135,14 +146,9 @@ export default function SeriesDetailPage() {
     return (
       <section className="max-w-3xl mx-auto px-6 py-32 md:py-48 text-center min-h-[50vh]">
         <p className="font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">
-          シリーズが見つかりませんでした。
+          {shelfNoun}が見つかりませんでした。
         </p>
-        <Link
-          to="/series"
-          className="inline-block mt-8 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300"
-        >
-          ← Series
-        </Link>
+        {backToShelf}
       </section>
     );
   }
@@ -235,7 +241,7 @@ export default function SeriesDetailPage() {
       <div ref={fadeRef}>
         {photos.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">このシリーズにはまだ写真がありません</p>
+            <p className="font-ja text-xs tracking-[0.08em] text-[color:var(--text-quiet)]">この{shelfNoun}にはまだ写真がありません</p>
           </div>
         ) : (
           <PhotoGallery
@@ -259,10 +265,10 @@ export default function SeriesDetailPage() {
         className="mt-10 md:mt-14 flex items-baseline justify-between gap-6"
       >
         <Link
-          to={shelf === "work" ? "/work" : "/series"}
+          to={shelfHref}
           className="shrink-0 font-en text-xs tracking-[0.08em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.65)] nav-link-luxury transition-colors duration-300"
         >
-          ← {shelf === "work" ? (settings?.navLabelWork || "Work") : "Series"}
+          ← {shelfLabel}
         </Link>
         <div className="min-w-0 flex flex-col items-end gap-5 md:flex-row md:items-baseline md:gap-12">
           {nextSeries && (

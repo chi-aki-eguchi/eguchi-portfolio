@@ -32,12 +32,12 @@
     "test:smoke-guard": "node scripts/smoke/guard/run.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.0",
+    "@playwright/test": "1.61.1",
     "@tursodatabase/api": "^1.9.2",
     "@types/bun": "latest",
     "@types/sharp": "^0.32.0",
     "oxlint": "^1.66.0",
-    "playwright": "^1.61.0",
+    "playwright": "1.61.1",
     "pngjs": "^7.0.0",
     "turbo": "^2"
   },

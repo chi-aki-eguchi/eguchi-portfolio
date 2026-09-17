@@ -8,6 +8,9 @@ import {
   SMOKE_ISOLATION_PATH,
   smokeDatabasePath,
 } from "../../packages/web/vite/smoke-isolation.ts";
+// import() で読まない。Playwright 1.61.1 は変換結果をファイル名だけで覚えるので、ここで ESM として
+// 読むと、同じファイルを require する spec（audit-stage1-real-api.spec.ts）が読めなくなる（2026-09-18）。
+import { SMOKE_PROBE_IMAGE_KEY } from "../../packages/web/src/test-fixtures/smoke-site.ts";
 import {
   SMOKE_BASE_URL,
   SMOKE_EGRESS_PROXY_PORT,
@@ -38,9 +41,6 @@ export async function verifyIsolation(): Promise<void> {
     throw new Error("[smoke] API の保存先がこの実行の偽ストレージではない");
 
   // 画像を1枚、API 経由で取り、偽ストレージがその要求を受けたことを確かめる。
-  const { SMOKE_PROBE_IMAGE_KEY } = await import(
-    "../../packages/web/src/test-fixtures/smoke-site.ts"
-  );
   const image = await fetch(`${SMOKE_BASE_URL}/api/images/${SMOKE_PROBE_IMAGE_KEY}?w=64`);
   if (!image.ok || !(image.headers.get("content-type") ?? "").startsWith("image/"))
     throw new Error(`[smoke] 人工データの画像を API から取れない（HTTP ${image.status}）`);

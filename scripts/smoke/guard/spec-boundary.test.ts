@@ -108,6 +108,17 @@ test("specs and helpers open no network connections of their own from Node", () 
   assert.deepEqual(found, ["smoke-isolation.spec.ts: const res = await fetch(url, init);"]);
 });
 
+test("the Playwright runner never loads a TypeScript module with import()", () => {
+  // Playwright 1.61.1 は変換結果をファイル名だけで覚える。global-setup.ts が import() で smoke-site.ts を
+  // ESM として読んだ後、spec の require が同じ結果を受け取り、smoke 全体が読み込みで止まった（2026-09-18）。
+  // isolated-server.ts は Bun で動くので対象外。
+  const runnerFiles = readdirSync(smokeDir).filter(
+    (name) => name.endsWith(".ts") && name !== "isolated-server.ts",
+  );
+  for (const name of [...runnerFiles, ...probes])
+    assert.doesNotMatch(read(name), /\bimport\s*\(\s*["'`][^"'`]+\.ts["'`]/, name);
+});
+
 test("the guard is an automatic fixture and the config sends other traffic to the blocking proxy", () => {
   const fixtures = read("fixtures.ts");
   assert.match(fixtures, /egressLabel: \[[\s\S]*\{ auto: true \}/);

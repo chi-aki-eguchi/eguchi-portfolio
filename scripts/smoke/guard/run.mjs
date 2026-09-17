@@ -1,13 +1,13 @@
 // `bun run test:smoke-guard` の入口。いまの Node に合わせて guard/*.test.ts を起動する。
-// 型除去の要否と下限は node-support.mjs。
+// 型除去の要否・下限・Playwright が読めない Node の判定は node-support.mjs。
 import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { guardNodeFlags } from "./node-support.mjs";
+import { guardNodeFlags, requireHookConditions } from "./node-support.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const support = guardNodeFlags(process.version);
+const support = guardNodeFlags(process.version, requireHookConditions(process.execPath));
 if (!support.ok) {
   console.error(`[smoke-guard] ${support.reason}`);
   process.exit(1);

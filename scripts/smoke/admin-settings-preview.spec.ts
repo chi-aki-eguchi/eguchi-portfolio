@@ -4,7 +4,7 @@ import { SETTINGS_SECTION_COUNT } from "./helpers";
 
 // Settings のプレビュー Workspace（Phase 1A）。実測で確定した P1〜P6 の回帰を
 // 止めるための検査。仕様は docs/specs/admin-phase1-settings-preview.md §12-1。
-// 本番と同じDBへ繋がないよう、APIはすべて人工データで差し替える。
+// 保存の成否やページの中身を固定するため、APIはすべて人工データで差し替える。
 
 const SETTINGS = {
   // A retired display value may still exist in saved data. It must never

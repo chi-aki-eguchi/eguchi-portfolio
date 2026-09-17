@@ -1,10 +1,10 @@
 import { test, expect, type Page, type Route } from "./fixtures.ts";
 import { chooseSettingsSection } from "./helpers";
 
-// 管理画面の保存状態まわりを、**本番DBへ一切触らずに**検査する。
+// 管理画面の保存状態まわりを、保存の成否を自由に作れる人工データで検査する。
 //
-// helpers.ts の警告どおり、この開発環境は本番と同じDBにつながっている。
-// そこでこのスペックはログインせず、`/api/**` をすべて人工データで塞ぐ。
+// smoke の開発サーバーは一時SQLiteにつながる（isolated-server.ts）。そのうえで
+// このスペックはログインせず、`/api/**` をすべて人工データで塞ぐ。
 // 認証確認(`/api/admin/me`)も差し替えるため、ネットワークへ出る本物の要求は無い。
 // `/admin/demo` は所有者ドメインでしか有効にならないため、ここでは使えない。
 //

@@ -2,10 +2,8 @@
 // あわせて、ブラウザから外へ出る通信を受け止めて拒否するプロキシを立てる。
 //
 // 起動順は webServer（isolated-server.ts）→ ここ。終了はここ → webServer。
-import { mkdirSync, writeFileSync } from "node:fs";
-import net from "node:net";
+import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { realpathSync } from "node:fs";
 import {
   SMOKE_ISOLATION_PATH,
   smokeDatabasePath,
@@ -16,47 +14,7 @@ import {
   SMOKE_RUN_DIR,
   SMOKE_STORAGE_PORT,
 } from "./smoke-env.ts";
-
-export type EgressHit = { at: string; request: string };
-
-/** 受けた要求を記録して 403 を返すだけのプロキシ。CONNECT（https）も同じ。 */
-export function startEgressProxy(port: number): Promise<{ hits: EgressHit[]; close: () => Promise<void> }> {
-  const hits: EgressHit[] = [];
-  const sockets = new Set<net.Socket>();
-  const server = net.createServer((socket) => {
-    sockets.add(socket);
-    socket.on("close", () => sockets.delete(socket));
-    socket.on("error", () => {});
-    let head = "";
-    socket.on("data", (chunk) => {
-      if (head.includes("\r\n")) return;
-      head += chunk.toString("latin1");
-      const line = head.split("\r\n")[0];
-      if (!head.includes("\r\n")) return;
-      hits.push({ at: new Date().toISOString(), request: line.slice(0, 300) });
-      socket.end("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
-    });
-  });
-  return new Promise((resolveProxy, reject) => {
-    server.once("error", (error: NodeJS.ErrnoException) =>
-      reject(
-        new Error(
-          `[smoke] 外部通信の遮断プロキシを 127.0.0.1:${port} に立てられない（${error.code}）。使用中なら止めてから実行し直す。`,
-        ),
-      ),
-    );
-    server.listen({ port, host: "127.0.0.1", exclusive: true }, () =>
-      resolveProxy({
-        hits,
-        close: () =>
-          new Promise<void>((done) => {
-            for (const socket of sockets) socket.destroy();
-            server.close(() => done());
-          }),
-      }),
-    );
-  });
-}
+import { splitEgressHits, startEgressProxy } from "./egress-proxy.ts";
 
 async function json(url: string) {
   const res = await fetch(url, { cache: "no-store" });
@@ -101,8 +59,12 @@ export default async function globalSetup() {
     const dir = process.env.SMOKE_EVIDENCE_DIR ?? resolve(__dirname, "../../scratch/smoke-evidence");
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "blocked-egress.json"), JSON.stringify(proxy.hits, null, 2));
+    const { preconnect, unexpected } = splitEgressHits(proxy.hits);
+    if (preconnect.length > 0)
+      console.log(`[smoke] Google Fonts への preconnect を ${preconnect.length} 件拒否した（要求本文は送られない）。`);
+    if (unexpected.length === 0) return;
     throw new Error(
-      `[smoke] fixtures.ts を通らずに外部へ出ようとした通信を ${proxy.hits.length} 件止めた（モックかfixtureで扱う）:\n- ${proxy.hits
+      `[smoke] fixtures.ts を通らずに外部へ出ようとした通信を ${unexpected.length} 件止めた（モックかfixtureで扱う）:\n- ${unexpected
         .map((hit) => hit.request)
         .slice(0, 20)
         .join("\n- ")}`,

@@ -35,6 +35,8 @@ process.env.SMOKE_EVIDENCE_DIR = EVIDENCE_DIR;
 
 export default defineConfig({
   testDir: "./",
+  // guard/ の *.test.ts は Node のテスト（`bun run test:smoke-guard`）。Playwright では読まない。
+  testMatch: /\.spec\.ts$/,
   timeout: 30_000,
   fullyParallel: false,
   workers: 1,

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // 2026-07-31 の刷新で 30px の小さいボタン(`.ax-btn--small` / `.ax-status-toggle`)を

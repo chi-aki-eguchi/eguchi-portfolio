@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Route } from "@playwright/test";
+import { test, expect, type Page, type Route } from "./fixtures.ts";
 
 // 並べ替えの土台の安全性を実ブラウザで確かめる。
 //

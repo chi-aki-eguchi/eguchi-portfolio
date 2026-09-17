@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures.ts";
 const intakeOrigin = "https://photo-work-pricing.chi-aki-18.chatgpt.site";
 async function mockPublic(page: Page, owner = true) {
   await page.route("**/api/**", async route => {

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { ADMIN_TABS, gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // Photo workspaces use compact headings; Settings names the current section

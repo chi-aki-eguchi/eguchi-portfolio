@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin } from "./helpers";
 
 // 2026-07-11 スマホ操作性改善の回帰テスト。

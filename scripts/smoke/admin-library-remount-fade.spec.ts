@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // WebKit applies opacity: 0 before a cached virtualized tile receives its

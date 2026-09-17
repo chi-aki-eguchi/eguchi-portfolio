@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
 test("写真の構図を保つ行組み・サイズ変更・固定列・一覧復帰", async ({ page }) => {

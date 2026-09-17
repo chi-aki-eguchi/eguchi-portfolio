@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures.ts";
 import { gotoAdminTab, loginAsAdmin } from "./helpers";
 import { dateTiff } from "../../packages/web/src/test-fixtures/date-tiff";
 

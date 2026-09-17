@@ -1,8 +1,24 @@
 import { resolve } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+import {
+  SMOKE_ADMIN_PASSWORD_ENV,
+  SMOKE_BASE_URL,
+  SMOKE_EGRESS_PROXY_PORT,
+  SMOKE_RUN_DIR,
+  SMOKE_STORAGE_PORT,
+  SMOKE_WEB_PORT,
+} from "./smoke-env.ts";
+import { SMOKE_ISOLATION_PATH } from "../../packages/web/vite/smoke-isolation.ts";
 
-// 専用ポート。手動起動中の `bun run dev` (5173/5174等) と衝突しないよう固定する。
-const PORT = 4310;
+// smoke は本番のDB・保存先へつながらない（2026-09-17）。
+// - 開発サーバーは isolated-server.ts が起動する。実行ごとの一時SQLite・人工データ・
+//   127.0.0.1 の偽ストレージ・テスト専用パスワードだけを使い、リポジトリ直下の
+//   `.env` は読まない。接続先を安全と確かめられなければ起動しない。
+// - 既に同じポートで動いているサーバーは再利用しない（本番につながっているかも
+//   しれない）。終了もさせず、その場で止まる。
+// - 起動の合図は API 側の隔離確認（実際に開いている DB ファイルまで見る）。
+// - ブラウザから外へ出る通信は fixtures.ts が止め、漏れたものは global-setup.ts の
+//   遮断プロキシが止めて記録する。
 
 // 実行ごとに別フォルダへ出す。Playwrightの既定の出力先は実行のたびに消えるため、
 // 同じ場所を使うと「たまに落ちる」テストの証拠が次の実行で失われる。
@@ -24,8 +40,14 @@ export default defineConfig({
   workers: 1,
   outputDir: `${EVIDENCE_DIR}/artifacts`,
   reporter: [["list"], ["./evidence-reporter.ts"]],
+  globalSetup: "./global-setup.ts",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: SMOKE_BASE_URL,
+    // fixtures.ts を通らない通信（自分で作った context など）も外へ出さない。
+    proxy: {
+      server: `http://127.0.0.1:${SMOKE_EGRESS_PROXY_PORT}`,
+      bypass: "localhost,127.0.0.1,[::1]",
+    },
     trace: "retain-on-failure",
     // アプリは /sw.js を登録する。Service Worker が居ると、そこから出る通信は
     // page.route() を通らず本物のAPIへ抜けてしまう。APIを差し替えるテストが
@@ -35,16 +57,25 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: `cd ../../packages/web && bunx vite --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    command: "bun --no-env-file scripts/smoke/isolated-server.ts",
+    cwd: resolve(__dirname, "../.."),
+    url: `${SMOKE_BASE_URL}${SMOKE_ISOLATION_PATH}`,
+    reuseExistingServer: false,
+    timeout: 120_000,
+    gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
+    stdout: "pipe",
+    stderr: "pipe",
+    env: {
+      SMOKE_RUN_DIR,
+      SMOKE_WEB_PORT: String(SMOKE_WEB_PORT),
+      SMOKE_STORAGE_PORT: String(SMOKE_STORAGE_PORT),
+      SMOKE_ADMIN_PASSWORD: process.env[SMOKE_ADMIN_PASSWORD_ENV] ?? "",
+    },
   },
   projects: [
     {
       name: "desktop",
-      // scratch/ は調査用の使い捨てスペック置き場(gitignore対象)。
-      // 本番と同じDBにつながるため、full smoke に紛れ込ませない。
+      // scratch/ は調査用の使い捨てスペック置き場(gitignore対象)。full smoke に紛れ込ませない。
       testIgnore: [/admin-library-remount-fade\.spec\.ts/, /scratch\//],
       use: {
         ...devices["Desktop Chrome"],

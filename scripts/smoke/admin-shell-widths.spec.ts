@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // 2026-07-31 の刷新で決めた「幅ごとの見え方」を機械で守る。

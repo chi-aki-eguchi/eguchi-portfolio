@@ -1,5 +1,5 @@
 import { chooseSettingsSection } from "./helpers";
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "./fixtures.ts";
 import { SETTINGS_SECTION_COUNT } from "./helpers";
 
 // Settings のプレビュー Workspace（Phase 1A）。実測で確定した P1〜P6 の回帰を

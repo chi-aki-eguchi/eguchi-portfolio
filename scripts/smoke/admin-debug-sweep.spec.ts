@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { ADMIN_TABS, chooseSettingsSection, gotoAdminTab, loginAsAdmin } from "./helpers";
 
 const OLD_DARK_COLORS = [

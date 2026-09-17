@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 
 /**
  * **「宣言した長さ」ではなく「目に見えている長さ」を見張る。**

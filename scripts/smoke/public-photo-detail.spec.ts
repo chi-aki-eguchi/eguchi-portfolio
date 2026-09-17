@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 
 test("a directly opened photo becomes visible after its data arrives", async ({ page }) => {
   await page.route("**/api/**", async (route) => {

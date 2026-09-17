@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin } from "./helpers";
 
 function firstFamily(fontList: string): string {

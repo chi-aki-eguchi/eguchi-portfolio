@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin } from "./helpers";
 
 // 回帰テスト(工程2 fix #8): モバイル→デスクトップの画面幅復帰で、サイドバーの

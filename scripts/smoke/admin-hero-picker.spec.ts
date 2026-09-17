@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin, gotoAdminTab } from './helpers';
 const image = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="90"%3E%3Crect width="120" height="90" fill="%238f9986"/%3E%3C/svg%3E';
 test('HERO候補を探して並べ替え、公開順を保持して追加できる', async ({page})=>{

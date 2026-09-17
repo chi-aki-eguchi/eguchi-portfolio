@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
 import { gotoAdminTab, loginAsAdmin, chooseSettingsSection } from "./helpers";
 
 // Language selection is browser-only state. This test changes localStorage and

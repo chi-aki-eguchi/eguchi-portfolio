@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures.ts";
 import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
 const count = (page: Page) => page.locator("[data-library-selection-toolbar]");

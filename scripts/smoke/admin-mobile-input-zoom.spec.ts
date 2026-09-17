@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
 import { ADMIN_TABS, gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // 2026-08-05: iOS Safari は 16px 未満の入力欄にフォーカスすると画面ごと拡大し、

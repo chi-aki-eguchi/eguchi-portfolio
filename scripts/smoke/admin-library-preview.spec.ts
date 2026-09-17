@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
 // Library のサイトプレビュー(2026-07-06 追加): 並べ替え・S/M/L の結果を

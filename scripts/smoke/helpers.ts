@@ -1,14 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "./fixtures.ts";
+import { smokeAdminPassword } from "./smoke-env.ts";
 
-// 【重要】この開発環境(bun run dev / bun run smoke)は本番と同じTursoデータベースに
-// 直接つながっている(ステージングDB分離なし)。スモークテストを追加する時は、
-// Save/Delete/Add確定などデータを実際に書き込む操作をクリックしないこと
-// (ローカルstateの変更・discard・確認ダイアログのキャンセルまでに留める)。
-// どうしても書き込みが必要な場合は、テスト終了時に必ず自分でデータを削除する
-// teardownを書くこと。現状の全スペックはログイン(セッションCookie発行のみ)以外
-// 非GETリクエストを一切発生させない設計(findings.md「検証用DB分離」参照)。
+// smoke の開発サーバーは、実行ごとの一時SQLite・人工データ・偽ストレージだけに
+// つながる（isolated-server.ts、2026-09-17）。本番のDB・保存先・`.env` は使わない。
+// それでもテスト同士が共有データを変えないよう、書き込みは fixtures.ts が止める。
+// 書き込みを確かめるテストは page.route でモックする。
 
 // Settings の節の数。正本は admin-tabs.tsx の `SETTINGS_SECTION_KEYS` で、
 // ここはその写し。**節を足したらここも直す。**
@@ -31,58 +27,10 @@ export const ADMIN_TABS = [
   "settings",
 ] as const;
 
+/** テスト専用のパスワード（playwright.config.ts が実行ごとに作る）。 */
 export function getAdminPassword(): string {
-  const envPath = path.resolve(__dirname, "../../.env");
-  const text = fs.readFileSync(envPath, "utf8");
-  const m = text.match(/^ADMIN_PASSWORD=(.*)$/m);
-  if (!m || !m[1].trim()) {
-    throw new Error(
-      "ADMIN_PASSWORD が .env に設定されていません。スモークテストには管理画面ログインが必要です。",
-    );
-  }
-  return m[1].trim();
+  return smokeAdminPassword();
 }
-
-// ── 書き込み事故の番人 ───────────────────────────────────────────────
-// 上のコメントは「ログイン以外の非GETは発生しない設計」と言っているだけで、
-// 実際に破られていないかを機械的に確かめる仕組みが無かった。ここで見張る。
-//
-// `loginAsAdmin` を通ったページで、ログイン以外の非GETがネットワークへ出たら
-// その要求を止めたうえで記録し、テスト自体を失敗させる。テストを止める前に
-// 握りつぶさないよう、afterEach で必ず突き合わせる。
-const forbiddenWrites: string[] = [];
-const LOGIN_PATH = "/api/admin/login";
-
-// **beforeEach で登録する理由**: Playwright は新しく登録した route を先に見る。
-// 各 spec が本文で登録するモック(`page.route`)より後に番人を入れると、番人が
-// モック済みの要求まで横取りして止めてしまう(実際に一度そうなった)。
-// beforeEach なら番人が最も古いハンドラになり、spec のモックが優先される。
-// つまり番人が見るのは「どのモックにも当たらず、本当にサーバーへ出る要求」だけ。
-test.beforeEach(async ({ page }) => {
-  forbiddenWrites.length = 0;
-  await page.route("**/*", async (route) => {
-    const request = route.request();
-    const method = request.method();
-    if (method === "GET" || method === "HEAD") {
-      await route.fallback();
-      return;
-    }
-    if (new URL(request.url()).pathname === LOGIN_PATH) {
-      await route.fallback();
-      return;
-    }
-    forbiddenWrites.push(`${method} ${request.url()}`);
-    await route.abort();
-  });
-});
-
-test.afterEach(() => {
-  const seen = forbiddenWrites.splice(0, forbiddenWrites.length);
-  expect(
-    seen,
-    "本番と同じDBにつながっているため、ログイン以外の非GETは1件も許さない",
-  ).toEqual([]);
-});
 
 export async function loginAsAdmin(page: Page): Promise<void> {
   // 管理画面の明るさ（`useAdminSurface`）は端末ローカルで既定 dark。この

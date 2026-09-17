@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
 test("スマホの写真編集で写真・保存帯・下部ナビが同時に使える", async ({ page }, info) => {

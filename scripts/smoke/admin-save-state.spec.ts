@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Route } from "@playwright/test";
+import { test, expect, type Page, type Route } from "./fixtures.ts";
 import { chooseSettingsSection } from "./helpers";
 
 // 管理画面の保存状態まわりを、**本番DBへ一切触らずに**検査する。

@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Route } from "@playwright/test";
+import { test, expect, type Page, type Route } from "./fixtures.ts";
 
 // 共通ページ枠の見出しが、狭い画面で1文字ずつ縦に積まれないことを幾何で固定する。
 // 実測で 390px のとき見出しが 幅43px × 高さ383px になっていた（font-size 34px）。

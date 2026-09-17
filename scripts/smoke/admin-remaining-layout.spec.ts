@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "./fixtures.ts";
 
 const PHOTOS = Array.from({ length: 5 }, (_, index) => ({
   id: 8_200_000 + index,

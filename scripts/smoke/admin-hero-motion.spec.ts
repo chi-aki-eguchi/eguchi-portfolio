@@ -1,5 +1,5 @@
 import { chooseSettingsSection } from "./helpers";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
 import { loginAsAdmin } from "./helpers";
 
 // 「標準」と「写真から」は値を持たず**スタイルシートの既定**が出るので、

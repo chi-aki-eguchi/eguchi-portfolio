@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Route } from "@playwright/test";
+import { test, expect, type Page, type Route } from "./fixtures.ts";
 
 /**
  * **送っている最中に版面が動かないこと。**

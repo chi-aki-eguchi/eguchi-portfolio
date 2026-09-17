@@ -1,5 +1,5 @@
 import { chooseSettingsSection } from "./helpers";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin } from "./helpers";
 
 // 回帰テスト(工程2 fix #3): Settingsのライブプレビューiframeが、タブ移動→復帰で

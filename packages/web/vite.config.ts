@@ -1,13 +1,23 @@
 // Railway deployment trigger 2026-06-17
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite"
 import path from "path";
 import honoDevPlugin from "./vite/plugins/hono-dev-plugin";
+import { assertIsolated, SMOKE_ISOLATION_FLAG } from "./vite/smoke-isolation.ts";
+import { installSmokeEgressGuard } from "./vite/smoke-egress-guard.ts";
 
 const root = path.resolve(__dirname, "../..");
 
 export default defineConfig(({ mode }) => {
+	// smoke（scripts/smoke/isolated-server.ts から起動）では、リポジトリ直下の
+	// `.env`（本番の接続情報）を読まない。起動側が一から作った環境だけを使い、
+	// 一時SQLite・127.0.0.1 の偽ストレージを指していなければここで止める。
+	if (process.env[SMOKE_ISOLATION_FLAG] === "1") {
+		installSmokeEgressGuard();
+		assertIsolated(process.env, "vite.config.ts");
+		return appConfig();
+	}
 	const env = loadEnv(mode, root, '');
 	// ローカルの `.env`（gitignore・本番未配布）は開発用に `NODE_ENV=development`
 	// を持つ。ここへ無条件に Object.assign すると、`vite build`（mode=production）
@@ -20,7 +30,10 @@ export default defineConfig(({ mode }) => {
 	// mode から来る NODE_ENV だけは .env に譲らない。
 	delete env.NODE_ENV;
 	Object.assign(process.env, env);
+	return appConfig();
+});
 
+function appConfig(): UserConfig {
 	return {
 		plugins: [honoDevPlugin(), react(), tailwind()],
 		resolve: {
@@ -62,4 +75,4 @@ export default defineConfig(({ mode }) => {
 			cors: false
 		}
 	};
-});
+}

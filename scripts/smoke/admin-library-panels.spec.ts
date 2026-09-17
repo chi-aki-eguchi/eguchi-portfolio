@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
 test("絞り込みの閉じる・結果・追加条件に届き、写真へ戻れる", async ({ page }) => {

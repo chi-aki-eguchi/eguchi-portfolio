@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Route } from "@playwright/test";
+import { test, expect, type Page, type Route } from "./fixtures.ts";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
 // 2026-07-11 スマホLibraryコンタクトシート化の回帰テスト。

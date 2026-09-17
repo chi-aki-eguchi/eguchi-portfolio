@@ -29,7 +29,7 @@
     "db:studio": "turbo db:studio",
     "kill:port": "lsof -t -i :${PORT:-4200} | xargs kill -9",
     "check:migrations": "bun packages/web/scripts/check-migrations.ts",
-    "test:smoke-guard": "node --test scripts/smoke/guard/*.test.ts"
+    "test:smoke-guard": "node scripts/smoke/guard/run.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

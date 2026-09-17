@@ -109,3 +109,29 @@ smoke は実行ごとの一時SQLite・人工データ（`packages/web/src/test-
 残り: Node 22 系での番人テスト、PostgreSQL・実機・本番（従来どおり未検証）。レビューで指摘された
 フィルム日時のコメント・テスト名の言い回しのずれ（処理は元値の複写で問題なし）は、今回の R1〜R4 の範囲外として未修正。
 公開文書と同じ文字列だったローカル設定の ADMIN_PASSWORD は、利用先を確認していない（本番の漏えいとも無害とも断定しない）。
+
+## 追記: R4 を Node 22 で実行して確認（2026-09-17、検証したコミット `c7dd520`）
+
+公式配布の `node-v22.12.0-darwin-arm64.tar.gz`・`node-v22.18.0-darwin-arm64.tar.gz` を作業用の一時フォルダへ取得し、
+nodejs.org の `SHASUMS256.txt` と SHA-256 が一致することを確かめて展開した（GPG 署名は gpg が無く未確認）。
+既定の Node（24.16.0）・シェル設定・依存・lockfile・`engines` は変えていない。各版で、環境を空から作り
+PATH の先頭をその版にし（`/usr/local/bin` の Node 24 は PATH に入れない）、`.env` を読まずに
+`<その版>/bin/node scripts/smoke/guard/run.mjs` を実行した。観測のため、Node の中から版と実行ファイルを書く
+プリロード（`NODE_OPTIONS=--import`）と、子孫プロセスの実行ファイルを `lsof`／`ps` で記録する監視を併用した。
+番人テスト自体は変えていない。
+
+| 版 | `f1a636c`（修正前） | `c7dd520`（修正後） | 使われた Node |
+|---|---|---|---|
+| 22.12.0 | 46件すべて成功（`--experimental-strip-types` を付与） | 48件すべて成功 | 入口・各テストファイル・Vite・Playwright の本体と worker はすべて 22.12.0。Node 24 は0件。isolated-server は Bun |
+| 22.18.0 | 41成功・5失敗（Playwright を起動する5件） | 起動前に理由を出して終了コード1（テストは実行しない） | 入口・各テストファイル・Vite・Playwright CLI は 22.18.0。Node 24 は0件 |
+
+22.18.0 の5件は、Playwright 1.61 が設定・spec を読む段階の `TypeError: context.conditions?.includes is not a function`。
+Node 22.18.0 の `module.registerHooks` は require の解決で `conditions` を Set で渡す（24.16.0 は配列、22.12.0 には
+この API が無い）。相対 import を1つ持つだけの最小の spec でも同じく読めず、`1ef90fc` の spec も `./helpers` を
+相対 import するので、互換性の問題でありこのブランチの変更や観測の仕組みが原因ではない（main の smoke は実行していない）。
+`c7dd520` で、入口がその Node のフックの動きを子プロセスで確かめ、読めない Node では理由を出して止めるようにした
+（`node-support.test.ts` に判定と実測の検査を追加）。Playwright・Node の版は変えていない（backlog S-4）。
+
+`c7dd520` で `bun run check`（Node 24.16）も実行した（結果は同じ記録先の `final-c7dd520/`）。smoke の spec・fixture は
+変えていないので、全体 smoke は再実行していない（直近は `d6b34aa` の 726件＝成功542・スキップ171・失敗13）。
+記録: worktree の `scratch/audit-stage1-20260917/review-r1-r4/`、レビュー用の出力 `scratch/review-audit-stage1-fixes-c7dd520/`。

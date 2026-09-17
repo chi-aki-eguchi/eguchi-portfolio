@@ -46,7 +46,8 @@
 | `spec-layout-expansion.md` | レイアウト拡張 |
 | `i18n-en-spec.md` | 日英切り替え |
 | `site-and-data-direction.md` | 公開サイトとデータモデルの方向（オーナー確定分） |
-| `publishing-and-placement-2026-09-17.md` | 下書きと公開・写真の掲載先・作品ページ編集の設計と分割（未実装。§0 に確定方針との衝突とオーナー判断） |
+| `publishing-and-placement-2026-09-17.md` | 下書きと公開・掲載先・作品ページ編集の**未承認の検討案**。2026-09-17 に現行方針の維持が決まり、実装は止めている |
+| `trash-list-and-purge-separation-2026-09-17.md` | ゴミ箱の一覧取得と期限切れの完全削除を分ける案（未承認・未実装） |
 | `inbound-traffic-plan.md` | **検索・外部からの流入を増やす計画。**次に何をするかの正本 |
 
 ## 事業計画

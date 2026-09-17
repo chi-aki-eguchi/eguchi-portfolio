@@ -139,7 +139,7 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
 8件（spec・helpers が 2026-09-13〜16 の製品変更やスマホ幅の画面に追従していない）、未調査は5件
 （admin-workspace-layout 2件、admin-form-layout・admin-i18n・admin-selected-button 各1件）。一覧と分類は
 `docs/archive/audits/adobe-comparison-verification-2026-09-17.md` の追記。期待値を弱めずに1件ずつ直す。
-写真一覧の仮想表示の検査（admin-debug-sweep:195）は人工データ26枚では動かずスキップになる。
+写真一覧の仮想表示の検査（admin-debug-sweep:195）は、人工データで一覧に出る写真25枚（ゴミ箱2枚を除く）では動かずスキップになる。
 
 ### S-2. `admin-workspace-layout` が全体実行のときだけ落ちる 🟠 実測済み（2026-08-08）
 

@@ -79,4 +79,4 @@ smoke は実行ごとの一時SQLite・人工データ（`packages/web/src/test-
 | admin-selected-button:55（mobile） | スマホ幅の写真編集で選択中の区分ボタンが非表示 | 原因は未調査 |
 
 スキップ171件の多くは spec が対象外の端末幅・project を飛ばす指定。人工データの量で飛ぶと分かっているのは
-`admin-debug-sweep:195`（写真26枚では一覧の仮想表示が動かない）。
+`admin-debug-sweep:195`（人工データの写真27枚のうち一覧に出る25枚では、一覧の仮想表示が動かない）。

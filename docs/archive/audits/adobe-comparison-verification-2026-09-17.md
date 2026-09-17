@@ -135,3 +135,37 @@ Node 22.18.0 の `module.registerHooks` は require の解決で `conditions` �
 `c7dd520` で `bun run check`（Node 24.16）も実行した（結果は同じ記録先の `final-c7dd520/`）。smoke の spec・fixture は
 変えていないので、全体 smoke は再実行していない（直近は `d6b34aa` の 726件＝成功542・スキップ171・失敗13）。
 記録: worktree の `scratch/audit-stage1-20260917/review-r1-r4/`、レビュー用の出力 `scratch/review-audit-stage1-fixes-c7dd520/`。
+
+## 追記: Playwright 1.61.1 への更新（2026-09-18、検証したコミット `32a47d9`）
+
+レビューで、Node 22.18.0 の件は Playwright 1.61.1 で修正済みと確認された（microsoft/playwright#41319）。オーナーの許可で
+Playwright 関連だけを更新した。第1段階の製品修正と R1〜R3 は変えていない。本番・migration・push・mainへの統合・デプロイ・
+main での smoke は行っていない。
+
+- `6564aa8`: `@playwright/test`・`playwright` を `^1.61.0` から `1.61.1` に固定（レジストリの最新は 1.63.0 なので範囲指定にしない）。
+  lockfile の変化は `@playwright/test`・`playwright`・`playwright-core` の3件と指定だけ。ブラウザの版は 1.61.0 と同じ。
+  インストールされた 1.61.1 の読み込み処理は、公式の v1.61.1 ソースと同じく `conditions` を配列でも Set でも扱う。
+- `2c64c7b`: 番人テストの入口から、1.61.0 専用だった「Node のフックが配列を渡さなければ止める」判定と子プロセスでの確認を外した。
+  型除去フラグ・下限 22.12・ファイルを1つずつ動かす処理は残した。宣言と実際に入っている Playwright の版の一致を検査に加えた。
+- `32a47d9`: 更新後、Node 24 でも `bun run smoke` がテストの読み込みで止まった（`Cannot use import statement outside a module`）。
+  global-setup.ts が smoke-site.ts を `import()` で ESM として読み、Playwright 1.61.1 が同じファイルの変換結果をファイル名だけで
+  覚えていて、`require` する audit-stage1-real-api.spec.ts にその結果を返すため。2ファイルの最小再現（global setup の
+  `import()` の有無だけを変える）で、1.61.1 は Node 24・22.18.0 で、1.61.0 と 1.61.1 は Node 22.12.0 で同じく失敗し、
+  `import()` をやめるとすべて通った。global-setup.ts を静的 import にし、Playwright が読むファイルで `.ts` を `import()` しない
+  ことを spec-boundary.test.ts で検査する。期待値・遮断の条件は変えていない。
+
+結果（`32a47d9`）:
+
+| Node | 番人テスト（`run.mjs`） | 関連 smoke（smoke-isolation・audit-stage1-real-api・usability-review） | 子プロセスの Node |
+|---|---|---|---|
+| 22.12.0（公式配布、一時フォルダ） | 48件すべて成功（観測あり・なしとも） | 成功14・スキップ13・失敗0 | すべて 22.12.0、Node 24 は0件 |
+| 22.18.0（同上） | 48件すべて成功（観測あり・なしとも）。Playwright の CLI・worker・Vite が 22.18.0 で動き、相対 import を含む spec を読んで実行 | 成功14・スキップ13・失敗0 | すべて 22.18.0、Node 24 は0件 |
+| 24.16.0（既定） | 48件すべて成功（`bun run check` の中） | 成功14・スキップ13・失敗0 | — |
+
+- `bun run check` 成功（Node 24.16、製品1433・ツール60・番人48、lint。lockfile が変わったので型検査と build は実行された）。
+- 全体 smoke 726件＝成功542・スキップ171・**失敗13**（全体成功ではない）。13件は `d6b34aa` と project・ファイル・行・状態・
+  エラーの先頭まで同じで、スキップの一覧も同じ。新しい失敗は無い。終了時の判定は通過（ブラウザ側の遮断228件はすべて
+  テスト中の Google Fonts 先行接続、テスト外0件、サーバー側0件）。
+- backlog S-4（Node 22.18.0 で smoke を読めない）は解消したので backlog から外した。
+- 記録: worktree の `scratch/smoke-evidence/2026-09-17T16-15-36-217Z/`、`scratch/audit-stage1-20260917/pw-1611/`、
+  最小再現 `scratch/audit-stage1-20260917/pw-1611-min/`。Node 22 の実行記録はセッションの一時フォルダ（ZIP は作り直していない）。

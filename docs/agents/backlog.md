@@ -145,13 +145,6 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
 `docs/archive/audits/adobe-comparison-verification-2026-09-17.md` の追記。期待値を弱めずに1件ずつ直す。
 写真一覧の仮想表示の検査（admin-debug-sweep:195）は、人工データで一覧に出る写真25枚（ゴミ箱2枚を除く）では動かずスキップになる。
 
-### S-4. Node 22.18.0 では Playwright 1.61 が smoke を読めない 🟠 実測済み（2026-09-17）
-
-公式の Node 22.18.0 では、Playwright 1.61 が `module.registerHooks` の `context.conditions` を配列として扱う一方、
-Node が require の解決で Set を渡すため、相対 import を含む TS の spec・設定を読めない（最小の spec でも再現）。
-`engines` は `22.x` のまま。22.12.0 と 24.16.0 では動く。他の 22.x の版は調べていない。番人テストの入口
-（`scripts/smoke/guard/run.mjs`）はこの状態を起動前に見つけて止める。Playwright・Node の版を変えるかはオーナー判断。
-
 ### S-2. `admin-workspace-layout` が全体実行のときだけ落ちる 🟠 実測済み（2026-08-08）
 
 **2026-09-05の追記:** 同じ「キャンセル」ボタンの消失を全体smokeで再現した。Inspectorまたはモードを閉じるEscの既定動作を抑え、新しく開いた確認画面が同じキーでnative cancelされる経路を修正。表示が退場時間を越えて維持されることも既存ブラウザーテストで確認する。以下の「負荷だけが原因」という説明は当時の推測として扱う。

@@ -108,7 +108,7 @@ export default defineConfig({
     },
     {
       name: "mobile-safari",
-      testMatch: /(public-site|admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker|admin-photo-dates)\.spec\.ts/,
+      testMatch: /(public-site|admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker|admin-photo-dates|smoke-isolation)\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
       },

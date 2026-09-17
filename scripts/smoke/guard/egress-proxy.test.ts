@@ -1,8 +1,15 @@
-// ブラウザ用の遮断プロキシ（scripts/smoke/egress-proxy.ts）。宛先は .invalid だけで、外へは出ない。
+// ブラウザ用の遮断プロキシ（scripts/smoke/egress-proxy.ts）と、先行接続の分類の境界。
+// 宛先は .invalid と、分類の境界を確かめる文字列だけ。どこへも転送しない。
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import net from "node:net";
-import { splitEgressHits, startEgressProxy } from "../egress-proxy.ts";
+import {
+  isExpectedPreconnect,
+  splitEgressHits,
+  startEgressProxy,
+  summarizeEgressHits,
+  type EgressHit,
+} from "../egress-proxy.ts";
 
 async function freePort(): Promise<number> {
   const server = net.createServer();
@@ -22,33 +29,85 @@ function send(port: number, text: string): Promise<string> {
   });
 }
 
-test("the proxy answers 403 without forwarding, and only font preconnects are expected", async () => {
+test("every attempt is refused with 403, recorded with the running test, and never forwarded", async () => {
   const port = await freePort();
   const proxy = await startEgressProxy(port);
   try {
+    // テスト名が付く前の試行は「テスト外」。
+    const early = await send(port, "CONNECT fonts.gstatic.com:443 HTTP/1.1\r\nHost: fonts.gstatic.com:443\r\n\r\n");
+    const labelled = await fetch(`http://127.0.0.1:${port}/__smoke/label?value=${encodeURIComponent("desktop › a.spec.ts › t")}`);
+    assert.equal(labelled.status, 200);
     const plain = await send(port, "GET http://tracker.invalid/pixel HTTP/1.1\r\nHost: tracker.invalid\r\n\r\n");
     const tunnel = await send(port, "CONNECT api.invalid:443 HTTP/1.1\r\nHost: api.invalid:443\r\n\r\n");
-    const font = await send(port, "CONNECT fonts.gstatic.com:443 HTTP/1.1\r\nHost: fonts.gstatic.com:443\r\n\r\n");
-    for (const response of [plain, tunnel, font]) assert.match(response, /^HTTP\/1\.1 403 Forbidden/);
+    const font = await send(port, "CONNECT fonts.googleapis.com:443 HTTP/1.1\r\nHost: fonts.googleapis.com:443\r\n\r\n");
+    for (const response of [early, plain, tunnel, font]) assert.match(response, /^HTTP\/1\.1 403 Forbidden/);
+
+    const listed = (await (await fetch(`http://127.0.0.1:${port}/__smoke/hits`)).json()) as EgressHit[];
     assert.deepEqual(
-      proxy.hits.map((hit) => hit.request),
+      listed.map(({ kind, target, label }) => ({ kind, target, label })),
       [
-        "GET http://tracker.invalid/pixel HTTP/1.1",
-        "CONNECT api.invalid:443 HTTP/1.1",
-        "CONNECT fonts.gstatic.com:443 HTTP/1.1",
+        { kind: "connect", target: "fonts.gstatic.com:443", label: "" },
+        { kind: "http", target: "tracker.invalid:80", label: "desktop › a.spec.ts › t" },
+        { kind: "connect", target: "api.invalid:443", label: "desktop › a.spec.ts › t" },
+        { kind: "connect", target: "fonts.googleapis.com:443", label: "desktop › a.spec.ts › t" },
       ],
     );
     const { preconnect, unexpected } = splitEgressHits(proxy.hits);
-    assert.equal(preconnect.length, 1);
+    assert.deepEqual(preconnect.map((hit) => hit.target), ["fonts.googleapis.com:443"]);
     assert.deepEqual(unexpected.map((hit) => hit.request), [
+      "CONNECT fonts.gstatic.com:443 HTTP/1.1",
       "GET http://tracker.invalid/pixel HTTP/1.1",
       "CONNECT api.invalid:443 HTTP/1.1",
     ]);
-    // フォントでも CONNECT 以外（平文の要求）は想定外として扱う。
-    assert.equal(splitEgressHits([{ at: "", request: "GET http://fonts.gstatic.com/x HTTP/1.1" }]).unexpected.length, 1);
+    assert.deepEqual(
+      summarizeEgressHits(proxy.hits).map(({ kind, target, project, count, specs }) => ({ kind, target, project, count, specs })),
+      [
+        { kind: "connect", target: "fonts.gstatic.com:443", project: "", count: 1, specs: [] },
+        { kind: "http", target: "tracker.invalid:80", project: "desktop", count: 1, specs: ["a.spec.ts"] },
+        { kind: "connect", target: "api.invalid:443", project: "desktop", count: 1, specs: ["a.spec.ts"] },
+        { kind: "connect", target: "fonts.googleapis.com:443", project: "desktop", count: 1, specs: ["a.spec.ts"] },
+      ],
+    );
   } finally {
     await proxy.close();
   }
+});
+
+const hit = (request: string, overrides: Partial<EgressHit> = {}): EgressHit => {
+  const [method, target] = request.split(" ");
+  return {
+    at: "",
+    request,
+    kind: method === "CONNECT" ? "connect" : "http",
+    target,
+    label: "mobile-safari › public-site.spec.ts › t",
+    ...overrides,
+  };
+};
+
+test("only exact font preconnects during a test are counted as expected", () => {
+  assert.equal(isExpectedPreconnect(hit("CONNECT fonts.googleapis.com:443 HTTP/1.1")), true);
+  assert.equal(isExpectedPreconnect(hit("CONNECT fonts.gstatic.com:443 HTTP/1.1")), true);
+  const refused = [
+    // CONNECT というだけでは対象にしない。
+    hit("CONNECT api.invalid:443 HTTP/1.1"),
+    hit("CONNECT www.google-analytics.com:443 HTTP/1.1"),
+    // 似た名前・別ポート・別の形は対象にしない。
+    hit("CONNECT fonts.googleapis.com.evil.invalid:443 HTTP/1.1"),
+    hit("CONNECT evil-fonts.googleapis.com:443 HTTP/1.1"),
+    hit("CONNECT fonts.googleapis.com:8443 HTTP/1.1"),
+    hit("CONNECT fonts.gstatic.com:443 HTTP/1.0"),
+    hit("CONNECT  fonts.gstatic.com:443 HTTP/1.1", { target: "fonts.gstatic.com:443" }),
+    // 平文の要求は、宛先が同じでも対象にしない。
+    hit("GET http://fonts.googleapis.com/css2 HTTP/1.1", { kind: "http", target: "fonts.googleapis.com:80" }),
+    hit("GET https://fonts.gstatic.com/x HTTP/1.1", { kind: "http", target: "fonts.gstatic.com:443" }),
+    // テストの外で起きたものは、どのブラウザでも対象にしない。
+    hit("CONNECT fonts.gstatic.com:443 HTTP/1.1", { label: "" }),
+    // 読めない試行。
+    hit("garbage", { kind: "other", target: "" }),
+  ];
+  for (const attempt of refused) assert.equal(isExpectedPreconnect(attempt), false, attempt.request);
+  assert.equal(splitEgressHits(refused).unexpected.length, refused.length);
 });
 
 test("a busy proxy port stops the run instead of sharing it", async () => {

@@ -14,7 +14,7 @@ import {
   SMOKE_RUN_DIR,
   SMOKE_STORAGE_PORT,
 } from "./smoke-env.ts";
-import { splitEgressHits, startEgressProxy } from "./egress-proxy.ts";
+import { splitEgressHits, startEgressProxy, summarizeEgressHits } from "./egress-proxy.ts";
 
 async function json(url: string) {
   const res = await fetch(url, { cache: "no-store" });
@@ -57,15 +57,27 @@ export default async function globalSetup() {
     await proxy.close();
     if (proxy.hits.length === 0) return;
     const dir = process.env.SMOKE_EVIDENCE_DIR ?? resolve(__dirname, "../../scratch/smoke-evidence");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "blocked-egress.json"), JSON.stringify(proxy.hits, null, 2));
     const { preconnect, unexpected } = splitEgressHits(proxy.hits);
-    if (preconnect.length > 0)
-      console.log(`[smoke] Google Fonts への preconnect を ${preconnect.length} 件拒否した（要求本文は送られない）。`);
-    if (unexpected.length === 0) return;
+    const report = {
+      total: proxy.hits.length,
+      expectedPreconnect: preconnect.length,
+      unexpected: unexpected.length,
+      summary: summarizeEgressHits(proxy.hits),
+      hits: proxy.hits,
+    };
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "blocked-egress.json"), `${JSON.stringify(report, null, 2)}\n`);
+    for (const row of report.summary)
+      console.log(
+        `[smoke] 遮断 ${row.count}件: ${row.kind} ${row.target || "(不明)"} [${row.project || "テスト外"}] ${row.specs.join(", ")}`,
+      );
+    if (unexpected.length === 0) {
+      console.log(`[smoke] 遮断した ${preconnect.length} 件はすべて Google Fonts への preconnect（要求本文なし）。`);
+      return;
+    }
     throw new Error(
-      `[smoke] fixtures.ts を通らずに外部へ出ようとした通信を ${unexpected.length} 件止めた（モックかfixtureで扱う）:\n- ${unexpected
-        .map((hit) => hit.request)
+      `[smoke] 想定外の外部への試行を ${unexpected.length} 件止めた（モックかfixtureで扱う）:\n- ${unexpected
+        .map((hit) => `${hit.request} [${hit.label || "テスト外"}]`)
         .slice(0, 20)
         .join("\n- ")}`,
     );

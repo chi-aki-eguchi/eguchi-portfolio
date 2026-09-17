@@ -2,7 +2,8 @@
 import { SMOKE_ISOLATION_PATH, smokeDatabasePath } from "../../packages/web/vite/smoke-isolation.ts";
 import { expect, test, type Page } from "./fixtures.ts";
 import { loginAsAdmin } from "./helpers.ts";
-import { SMOKE_RUN_DIR, SMOKE_STORAGE_PORT } from "./smoke-env.ts";
+import { SMOKE_EGRESS_PROXY_PORT, SMOKE_RUN_DIR, SMOKE_STORAGE_PORT } from "./smoke-env.ts";
+import { splitEgressHits, type EgressHit } from "./egress-proxy.ts";
 
 async function isolationReport(page: Page) {
   const res = await page.request.get(SMOKE_ISOLATION_PATH);
@@ -83,5 +84,42 @@ test.describe("fixtures.ts の番人", () => {
     ]);
     expect(networkGuard.writes).toEqual(["POST /api/admin/settings"]);
     expect(networkGuard.fonts).toContain("https://fonts.googleapis.com/css2");
+  });
+});
+
+test.describe("遮断プロキシの境界", () => {
+  const proxyHits = async (): Promise<EgressHit[]> =>
+    (await fetch(`http://127.0.0.1:${SMOKE_EGRESS_PROXY_PORT}/__smoke/hits`)).json();
+
+  test("フォントの実際の取得はプロキシへ届かず、届くのは Google Fonts への先行接続だけ", async ({ page, networkGuard }, info) => {
+    test.skip(!["desktop", "mobile-safari"].includes(info.project.name), "Chromium と WebKit で1回ずつ");
+    const probe = (preconnect: boolean) => `<!doctype html><html><head>
+${preconnect ? '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' : ""}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Smoke+Probe&display=swap">
+</head><body><p style="font-family:'Smoke Probe'">probe</p></body></html>`;
+    await page.route("**/__smoke-probe-*", (route) =>
+      route.fulfill({ contentType: "text/html", body: probe(route.request().url().endsWith("-with-preconnect")) }),
+    );
+
+    // preconnect の無いページ: フォントの取得はあっても、プロキシには何も届かない。
+    let before = (await proxyHits()).length;
+    await page.goto("/__smoke-probe-without-preconnect");
+    await expect.poll(() => networkGuard.fonts.length).toBeGreaterThan(0);
+    await page.waitForTimeout(1500);
+    expect((await proxyHits()).slice(before)).toEqual([]);
+
+    // preconnect のあるページ: 届くのは先行接続だけ。
+    const fontRequests = networkGuard.fonts.length;
+    before = (await proxyHits()).length;
+    await page.goto("/__smoke-probe-with-preconnect");
+    await expect.poll(() => networkGuard.fonts.length).toBeGreaterThan(fontRequests);
+    await page.waitForTimeout(1500);
+    const added = (await proxyHits()).slice(before);
+    info.annotations.push({ type: "proxy-hits", description: added.map((hit) => hit.request).join(", ") || "none" });
+    // 実際の要求（stylesheet）は fixtures.ts が手元で答え、プロキシへは届かない。
+    expect(added.filter((hit) => hit.kind !== "connect")).toEqual([]);
+    // 届いたものは、このテストの実行中の Google Fonts への先行接続としてだけ分類できる。
+    expect(splitEgressHits(added).unexpected).toEqual([]);
+    for (const hit of added) expect(hit.label).toContain("フォントの実際の取得");
   });
 });

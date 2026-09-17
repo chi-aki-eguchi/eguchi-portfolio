@@ -14,7 +14,8 @@
 //   （page.route は context.route より先に効くので、ここまで来ない）。
 // 記録が1件でもあれば、そのテストは失敗する。
 import { test as base, expect } from "@playwright/test";
-import { SMOKE_ALLOWED_ORIGINS } from "./smoke-env.ts";
+import { relative } from "node:path";
+import { SMOKE_ALLOWED_ORIGINS, SMOKE_EGRESS_PROXY_PORT } from "./smoke-env.ts";
 
 export * from "@playwright/test";
 
@@ -35,7 +36,13 @@ export const test = base.extend<{
   // 番人そのものを確かめるテストだけが "record" にする。
   unmockedRequestPolicy: ["fail", { option: true }],
   networkGuard: [
-    async ({ context, unmockedRequestPolicy }, use) => {
+    async ({ context, unmockedRequestPolicy }, use, testInfo) => {
+      // 遮断プロキシの記録に、どのテストの試行かを残す（global-setup.ts が集計する）。
+      const label = [testInfo.project.name, relative(__dirname, testInfo.file), testInfo.title].join(" › ");
+      const marked = await fetch(
+        `http://127.0.0.1:${SMOKE_EGRESS_PROXY_PORT}/__smoke/label?value=${encodeURIComponent(label)}`,
+      ).catch(() => null);
+      if (!marked?.ok) throw new Error("[smoke] 外部通信の遮断プロキシに届かない（global-setup.ts が立てる）");
       const record: NetworkGuardRecord = { external: [], writes: [], fonts: [] };
       await context.route("**/*", async (route) => {
         const request = route.request();

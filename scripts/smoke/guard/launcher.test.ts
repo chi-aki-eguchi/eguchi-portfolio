@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import { tmpdir } from "node:os";
@@ -44,6 +44,12 @@ async function trap() {
 
 function newRunDir() {
   return join(realpathSync(tmpdir()), `portfolio-smoke-guardtest-${randomBytes(4).toString("hex")}`);
+}
+
+/** このテストが起動する Playwright の証拠フォルダ。scratch/ に残さず、終わったら消す。 */
+function evidenceDir(): { path: string; remove: () => void } {
+  const path = mkdtempSync(join(realpathSync(tmpdir()), "portfolio-guard-evidence-"));
+  return { path, remove: () => rmSync(path, { recursive: true, force: true }) };
 }
 
 function baseEnv(extra: Record<string, string>): Record<string, string> {
@@ -228,6 +234,7 @@ test("an existing server on the smoke port is neither reused nor stopped", async
   const { port } = existing.address() as net.AddressInfo;
   const [storagePort, proxyPort] = [await freePort(), await freePort()];
   const before = new Set((await import("node:fs")).readdirSync(realpathSync(tmpdir())));
+  const evidence = evidenceDir();
   try {
     // launcher 単体: 使用中なら 3 で止まる。
     const run = launch(
@@ -250,6 +257,7 @@ test("an existing server on the smoke port is neither reused nor stopped", async
           SMOKE_WEB_PORT: String(port),
           SMOKE_STORAGE_PORT: String(storagePort),
           SMOKE_EGRESS_PROXY_PORT: String(proxyPort),
+          SMOKE_EVIDENCE_DIR: evidence.path,
         }),
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -266,6 +274,7 @@ test("an existing server on the smoke port is neither reused nor stopped", async
     assert.equal(still.status, 200, "the existing server keeps running");
   } finally {
     await new Promise((r) => existing.close(r));
+    evidence.remove();
   }
   const after = (await import("node:fs")).readdirSync(realpathSync(tmpdir()));
   const leftovers = after.filter((name) => name.startsWith("portfolio-smoke-") && !before.has(name));
@@ -276,6 +285,7 @@ test("connection variables from the calling shell are removed before tests run",
   const trapDb = await trap();
   const [webPort, storagePort, proxyPort] = [await freePort(), await freePort(), await freePort()];
   const before = new Set((await import("node:fs")).readdirSync(realpathSync(tmpdir())));
+  const evidence = evidenceDir();
   const pw = spawn(
     join(repoRoot, "node_modules/.bin/playwright"),
     ["test", "--config", "scripts/smoke/playwright.config.ts", "smoke-isolation.spec.ts", "--project=desktop", "-g", "接続情報・資格情報が残っていない|この実行の一時SQLiteと偽ストレージ"],
@@ -285,6 +295,7 @@ test("connection variables from the calling shell are removed before tests run",
         SMOKE_WEB_PORT: String(webPort),
         SMOKE_STORAGE_PORT: String(storagePort),
         SMOKE_EGRESS_PROXY_PORT: String(proxyPort),
+        SMOKE_EVIDENCE_DIR: evidence.path,
         // `bun run smoke` が .env から読み込んだ想定のダミー値。
         DATABASE_URL: `libsql://127.0.0.1:${trapDb.port}`,
         DATABASE_AUTH_TOKEN: "dummy-token",
@@ -301,6 +312,7 @@ test("connection variables from the calling shell are removed before tests run",
   pw.stderr!.on("data", (c) => (output += c));
   const code = await new Promise<number | null>((r) => pw.once("exit", r));
   await trapDb.close();
+  evidence.remove();
   assert.equal(code, 0, output);
   assert.match(output, /2 passed/);
   assert.equal(trapDb.count(), 0);

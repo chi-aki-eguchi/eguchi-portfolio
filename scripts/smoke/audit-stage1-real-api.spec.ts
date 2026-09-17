@@ -10,11 +10,11 @@ const ADMIN_ONLY = ["fileHash", "thumbKey", "mediumKey", "isPublished", "deleted
 const SOURCE_RECORD = ["shotAtDigitized", "sourceWidth", "sourceHeight", "sourceFormat", "cameraMake", "cameraModel"];
 
 test.describe("第1段階（実API＋人工データ）", () => {
-  test("B-04: 作品詳細とトップ写真は公開用の形だけを返し、管理画面は管理用の項目を受け取る", async ({ page }, info) => {
+  test("B-04: 作品詳細とトップ写真は公開用の形だけを返し、管理画面は管理用の項目を受け取る", async ({ page, api }, info) => {
     test.skip(info.project.name !== "desktop", "API の確認は1回でよい");
-    const detail = await (await page.request.get(`/api/series/${SMOKE_SERIES.harbour.slug}`)).json();
-    const hero = await (await page.request.get("/api/hero-photos")).json();
-    const list = await (await page.request.get("/api/photos")).json();
+    const detail = await (await api.get(`/api/series/${SMOKE_SERIES.harbour.slug}`)).json();
+    const hero = await (await api.get("/api/hero-photos")).json();
+    const list = await (await api.get("/api/photos")).json();
     expect(detail.photos.map((p: { id: number }) => p.id)).toEqual([7101, 7102, 7103, 7104, 7105, 7106]);
     const listKeys = Object.keys(list.photos[0]).sort();
     for (const row of [...detail.photos, ...hero.heroPhotos]) {
@@ -22,7 +22,7 @@ test.describe("第1段階（実API＋人工データ）", () => {
       for (const key of [...ADMIN_ONLY, ...SOURCE_RECORD]) expect(row).not.toHaveProperty(key);
     }
     await loginAsAdmin(page);
-    const all = await (await page.request.get("/api/photos?all=1")).json();
+    const all = await (await api.get("/api/photos?all=1")).json();
     const unpublished = all.photos.find((p: { id: number }) => p.id === 7107);
     expect(unpublished).toMatchObject({ isPublished: false, fileHash: "smoke-hash-7107", thumbKey: "thumbs/smoke-7107.webp" });
   });

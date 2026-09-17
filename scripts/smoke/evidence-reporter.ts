@@ -5,6 +5,7 @@ import type {
   FullResult,
   Reporter,
   TestCase,
+  TestError,
   TestResult,
 } from "@playwright/test/reporter";
 
@@ -41,10 +42,16 @@ export default class EvidenceReporter implements Reporter {
   private passed = 0;
   private skipped = 0;
   private readonly skippedTitles: string[] = [];
+  // テストの外の失敗（global-setup.ts の終了時の判定など）。
+  private readonly runErrors: string[] = [];
 
   onBegin(config: FullConfig): void {
     this.root = config.rootDir;
     this.startedAt = Date.now();
+  }
+
+  onError(error: TestError): void {
+    this.runErrors.push(error.stack ?? error.message ?? String(error));
   }
 
   onTestEnd(test: TestCase, result: TestResult): void {
@@ -86,7 +93,8 @@ export default class EvidenceReporter implements Reporter {
     if (!this.dir) return;
 
     // 全部成功した実行は残さない。失敗した実行だけがフォルダとして残る。
-    if (this.failures.length === 0) {
+    // テストが全部通っても、終了時の判定（外部への試行など）で落ちた実行は残す。
+    if (this.failures.length === 0 && this.runErrors.length === 0 && result.status === "passed") {
       rmSync(this.dir, { recursive: true, force: true });
       return;
     }
@@ -100,6 +108,7 @@ export default class EvidenceReporter implements Reporter {
       failed: this.failures.length,
       skipped: this.skipped,
       skippedTitles: this.skippedTitles,
+      runErrors: this.runErrors,
       failures: this.failures,
     };
     writeFileSync(
@@ -115,6 +124,8 @@ export default class EvidenceReporter implements Reporter {
       `所要: ${Math.round(summary.durationMs / 1000)}秒`,
       "",
     ];
+    if (this.runErrors.length > 0)
+      lines.push("## テストの外の失敗", "", "```", ...this.runErrors, "```", "");
     for (const failure of this.failures) {
       lines.push(
         `## ${failure.title}`,

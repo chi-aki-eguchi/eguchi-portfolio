@@ -4,7 +4,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import net from "node:net";
 import {
+  egressVerdict,
   isExpectedPreconnect,
+  readEgressProxyHits,
   splitEgressHits,
   startEgressProxy,
   summarizeEgressHits,
@@ -119,4 +121,61 @@ test("a busy proxy port stops the run instead of sharing it", async () => {
   } finally {
     await new Promise((r) => blocker.close(r));
   }
+});
+
+test("the running-test name is cleared, so attempts after it count as unexpected", async () => {
+  const port = await freePort();
+  const proxy = await startEgressProxy(port);
+  const responses: string[] = [];
+  const connect = async () =>
+    responses.push(await send(port, "CONNECT fonts.gstatic.com:443 HTTP/1.1\r\nHost: fonts.gstatic.com:443\r\n\r\n"));
+  const mark = async (query: string) => assert.equal((await fetch(`http://127.0.0.1:${port}/__smoke/label${query}`)).status, 200);
+  try {
+    await connect(); // 開始前
+    await mark(`?value=${encodeURIComponent("desktop › a.spec.ts › first")}`);
+    await connect(); // テスト中
+    await mark("?value="); // 終了（fixtures.ts が必ず送る）
+    await connect(); // テストの間
+    await mark(`?value=${encodeURIComponent("desktop › a.spec.ts › second")}`);
+    await mark(""); // 値の無い終了も「テスト外」
+    await connect(); // 最後のテストの後
+    assert.equal(responses.length, 4);
+    for (const response of responses) assert.match(response, /^HTTP\/1\.1 403 Forbidden/);
+    const hits = await readEgressProxyHits(port);
+    assert.deepEqual(hits.map((hit) => hit.label), ["", "desktop › a.spec.ts › first", "", ""]);
+    assert.deepEqual(hits.map(isExpectedPreconnect), [false, true, false, false]);
+  } finally {
+    await proxy.close();
+  }
+});
+
+test("the run verdict includes server-side blocks and fails closed", () => {
+  const during = hit("CONNECT fonts.googleapis.com:443 HTTP/1.1");
+  const outside = hit("CONNECT fonts.googleapis.com:443 HTTP/1.1", { label: "" });
+  const healthy = { reachable: true as const, status: 200, body: { ok: true, problems: [], blockedConnections: [] } };
+
+  assert.equal(egressVerdict([], healthy).ok, true);
+  const fonts = egressVerdict([during], healthy);
+  assert.equal(fonts.ok, true);
+  assert.equal(fonts.preconnect.length, 1);
+
+  // ブラウザ側が0件でも、サーバー側の遮断が1件あれば失敗（宛先の例外は無い）。
+  const note = egressVerdict([], {
+    ...healthy,
+    body: { ...healthy.body, blockedConnections: [{ host: "note.com", port: "443" }] },
+  });
+  assert.equal(note.ok, false);
+  assert.deepEqual(note.serverBlocked, [{ host: "note.com", port: "443" }]);
+  assert.match(note.problems.join("\n"), /サーバー側で外部への接続を止めた: note\.com:443/);
+
+  // 読めない・隔離が崩れた・記録の欄が無い、はどれも成功扱いにしない。
+  const failures = [
+    egressVerdict([], { reachable: false, error: "fetch failed" }),
+    egressVerdict([], { reachable: true, status: 503, body: { ok: false, problems: ["x"], blockedConnections: [] } }),
+    egressVerdict([], { reachable: true, status: 200, body: { ok: true } }),
+    egressVerdict([], { reachable: true, status: 200, body: null }),
+    egressVerdict([outside], healthy),
+  ];
+  for (const verdict of failures) assert.equal(verdict.ok, false, JSON.stringify(verdict.problems));
+  assert.match(failures[4]!.problems[0]!, /テスト外/);
 });

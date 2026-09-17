@@ -14,7 +14,12 @@ import {
   SMOKE_RUN_DIR,
   SMOKE_STORAGE_PORT,
 } from "./smoke-env.ts";
-import { splitEgressHits, startEgressProxy, summarizeEgressHits } from "./egress-proxy.ts";
+import {
+  egressVerdict,
+  startEgressProxy,
+  summarizeEgressHits,
+  type ServerEgressReport,
+} from "./egress-proxy.ts";
 
 async function json(url: string) {
   const res = await fetch(url, { cache: "no-store" });
@@ -45,6 +50,16 @@ export async function verifyIsolation(): Promise<void> {
     throw new Error("[smoke] API の画像取得が偽ストレージへ届いていない");
 }
 
+/** 終了時、開発サーバーがまだ動いているうちに隔離確認（サーバー側の遮断記録を含む）を読む。 */
+async function readServerEgress(): Promise<ServerEgressReport> {
+  try {
+    const { status, body } = await json(`${SMOKE_BASE_URL}${SMOKE_ISOLATION_PATH}`);
+    return { reachable: true, status, body };
+  } catch (error) {
+    return { reachable: false, error: (error as Error).message };
+  }
+}
+
 export default async function globalSetup() {
   const proxy = await startEgressProxy(SMOKE_EGRESS_PROXY_PORT);
   try {
@@ -53,33 +68,38 @@ export default async function globalSetup() {
     await proxy.close();
     throw error;
   }
+  // 片付けの順は、ここ → webServer（isolated-server.ts）。ここではサーバーはまだ動いている。
+  // ブラウザ側の記録が0件でも、サーバー側を必ず読んで判定する（部分実行でも同じ）。
   return async () => {
     await proxy.close();
-    if (proxy.hits.length === 0) return;
-    const dir = process.env.SMOKE_EVIDENCE_DIR ?? resolve(__dirname, "../../scratch/smoke-evidence");
-    const { preconnect, unexpected } = splitEgressHits(proxy.hits);
-    const report = {
-      total: proxy.hits.length,
-      expectedPreconnect: preconnect.length,
-      unexpected: unexpected.length,
-      summary: summarizeEgressHits(proxy.hits),
-      hits: proxy.hits,
-    };
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "blocked-egress.json"), `${JSON.stringify(report, null, 2)}\n`);
-    for (const row of report.summary)
+    const server = await readServerEgress();
+    const verdict = egressVerdict(proxy.hits, server);
+    for (const row of summarizeEgressHits(proxy.hits))
       console.log(
         `[smoke] 遮断 ${row.count}件: ${row.kind} ${row.target || "(不明)"} [${row.project || "テスト外"}] ${row.specs.join(", ")}`,
       );
-    if (unexpected.length === 0) {
-      console.log(`[smoke] 遮断した ${preconnect.length} 件はすべて Google Fonts への preconnect（要求本文なし）。`);
-      return;
+    if (proxy.hits.length > 0 || !verdict.ok) {
+      const dir = process.env.SMOKE_EVIDENCE_DIR ?? resolve(__dirname, "../../scratch/smoke-evidence");
+      const report = {
+        ok: verdict.ok,
+        problems: verdict.problems,
+        total: proxy.hits.length,
+        expectedPreconnect: verdict.preconnect.length,
+        unexpected: verdict.unexpected.length,
+        server: server.reachable
+          ? { status: server.status, blockedConnections: verdict.serverBlocked }
+          : { error: server.error },
+        summary: summarizeEgressHits(proxy.hits),
+        hits: proxy.hits,
+      };
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "blocked-egress.json"), `${JSON.stringify(report, null, 2)}\n`);
     }
-    throw new Error(
-      `[smoke] 想定外の外部への試行を ${unexpected.length} 件止めた（モックかfixtureで扱う）:\n- ${unexpected
-        .map((hit) => `${hit.request} [${hit.label || "テスト外"}]`)
-        .slice(0, 20)
-        .join("\n- ")}`,
-    );
+    if (!verdict.ok)
+      throw new Error(`[smoke] 外部への試行の確認で失敗（モックかfixtureで扱う）:\n- ${verdict.problems.join("\n- ")}`);
+    if (verdict.preconnect.length > 0)
+      console.log(
+        `[smoke] 遮断した ${verdict.preconnect.length} 件はすべてテスト中の Google Fonts への preconnect（要求本文なし）。サーバー側の遮断は0件。`,
+      );
   };
 }

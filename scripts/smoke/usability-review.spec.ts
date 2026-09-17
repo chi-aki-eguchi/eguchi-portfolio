@@ -45,7 +45,7 @@ test("設定へ直接進み、目的の言葉で節を探して編集に戻れ�
   await expect(page.locator(".admin-settings-mobile-current").getByRole("button", { name: /設定項目/ })).toBeFocused();
 });
 
-test("公開スマホの絞り込みはURLと点数を保ち、メニューから戻れる", async ({ page }, info) => {
+test("公開スマホの絞り込みはURLと点数を保ち、メニューから戻れる", async ({ page, api }, info) => {
   test.skip(info.project.name !== "mobile", "スマホの公開導線を検証");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/gallery?utm_source=ux-check");
@@ -58,8 +58,8 @@ test("公開スマホの絞り込みはURLと点数を保ち、メニューか�
   await expect(page).toHaveURL(/medium=film/);
   await expect(page).toHaveURL(/utm_source=ux-check/);
   await expect(dialog.getByRole("button", { name: "Film", exact: true })).toHaveAttribute("aria-pressed", "true");
-  const apiPhotos = await (await page.request.get("/api/photos")).json();
-  const settings = await (await page.request.get("/api/settings")).json();
+  const apiPhotos = await (await api.get("/api/photos")).json();
+  const settings = await (await api.get("/api/settings")).json();
   const filmCount = apiPhotos.photos.filter((photo: { filmType?: string; seriesId?: number }) =>
     photo.filmType === "フィルム" && (settings.galleryExcludeSeries !== "on" || photo.seriesId == null)).length;
   await expect(dialog.getByRole("button", { name: `${filmCount}枚の写真を見る`, exact: true })).toBeVisible();

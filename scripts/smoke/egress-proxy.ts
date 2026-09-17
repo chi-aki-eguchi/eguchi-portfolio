@@ -30,6 +30,13 @@ function parseRequestLine(line: string): Pick<EgressHit, "kind" | "target"> {
   }
 }
 
+/** 制御用の `/__smoke/hits` を読む（宛先は 127.0.0.1 のこのプロキシだけ）。 */
+export async function readEgressProxyHits(port: number): Promise<EgressHit[]> {
+  const res = await fetch(`http://127.0.0.1:${port}/__smoke/hits`, { redirect: "error" });
+  if (!res.ok) throw new Error(`[smoke] 遮断プロキシの記録を読めない（HTTP ${res.status}）`);
+  return (await res.json()) as EgressHit[];
+}
+
 /** 受けた要求を記録して 403 を返すだけのプロキシ。CONNECT（https）も同じ。 */
 export function startEgressProxy(
   port: number,
@@ -108,6 +115,41 @@ export function splitEgressHits(hits: EgressHit[]) {
   const preconnect = hits.filter(isExpectedPreconnect);
   const unexpected = hits.filter((hit) => !isExpectedPreconnect(hit));
   return { preconnect, unexpected };
+}
+
+/** 終了時に開発サーバーの `/__smoke/isolation` から読んだ結果（global-setup.ts）。 */
+export type ServerEgressReport =
+  | { reachable: false; error: string }
+  | { reachable: true; status: number; body: Record<string, unknown> | null };
+
+/**
+ * ブラウザ側（このプロキシ）とサーバー側（smoke-egress-guard.ts）の外部への試行を、
+ * 実行全体の1つの判定にまとめる（2026-09-17 のレビュー R2）。
+ * - サーバー側の遮断記録は、宛先を問わず1件でも失敗（例外は置かない）。
+ * - 終了時に隔離確認を読めない・隔離が崩れている・記録の欄が無い場合も失敗。
+ * - ブラウザ側は isExpectedPreconnect に当たらないものが1件でも失敗。
+ * どの spec を実行したか（smoke-isolation.spec.ts を含むか）には依らない。
+ */
+export function egressVerdict(proxyHits: EgressHit[], server: ServerEgressReport) {
+  const { preconnect, unexpected } = splitEgressHits(proxyHits);
+  const problems: string[] = [];
+  let serverBlocked: { host: string; port: string }[] = [];
+  if (!server.reachable) {
+    problems.push(`終了時に開発サーバーの隔離確認を読めない（${server.error}）`);
+  } else {
+    const body = server.body;
+    if (server.status !== 200 || body?.ok !== true)
+      problems.push(`終了時の隔離確認が通らない（HTTP ${server.status}: ${JSON.stringify(body?.problems ?? null)}）`);
+    if (Array.isArray(body?.blockedConnections))
+      serverBlocked = body.blockedConnections as { host: string; port: string }[];
+    else problems.push("終了時の隔離確認に、サーバー側の遮断記録（blockedConnections）が無い");
+  }
+  for (const connection of serverBlocked)
+    problems.push(`サーバー側で外部への接続を止めた: ${connection.host}:${connection.port}`);
+  for (const hit of unexpected.slice(0, 20))
+    problems.push(`ブラウザ側で想定外の外部への試行を止めた: ${hit.request} [${hit.label || "テスト外"}]`);
+  if (unexpected.length > 20) problems.push(`ブラウザ側の想定外の試行、ほか ${unexpected.length - 20} 件`);
+  return { ok: problems.length === 0, preconnect, unexpected, serverBlocked, problems };
 }
 
 /** 宛先・種類・project ごとの件数（ログと報告用。値に秘密は含まない）。 */

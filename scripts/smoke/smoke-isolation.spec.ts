@@ -1,26 +1,26 @@
 // smoke の隔離（開発サーバーの接続先・実行環境）と、fixtures.ts の通信の番人を確かめる。
 import { SMOKE_ISOLATION_PATH, smokeDatabasePath } from "../../packages/web/vite/smoke-isolation.ts";
-import { expect, test, type Page } from "./fixtures.ts";
+import { expect, test, type SmokeApi } from "./fixtures.ts";
 import { loginAsAdmin } from "./helpers.ts";
 import { SMOKE_EGRESS_PROXY_PORT, SMOKE_RUN_DIR, SMOKE_STORAGE_PORT } from "./smoke-env.ts";
-import { splitEgressHits, type EgressHit } from "./egress-proxy.ts";
+import { readEgressProxyHits, splitEgressHits } from "./egress-proxy.ts";
 
-async function isolationReport(page: Page) {
-  const res = await page.request.get(SMOKE_ISOLATION_PATH);
+async function isolationReport(api: SmokeApi) {
+  const res = await api.get(SMOKE_ISOLATION_PATH);
   return { status: res.status(), body: await res.json() };
 }
 
 test.describe("smoke の隔離", () => {
-  test("開発サーバーの API は、この実行の一時SQLiteと偽ストレージだけにつながる", async ({ page }, info) => {
+  test("開発サーバーの API は、この実行の一時SQLiteと偽ストレージだけにつながる", async ({ api }, info) => {
     test.skip(info.project.name !== "desktop", "サーバー側の確認は1回でよい");
-    const { status, body } = await isolationReport(page);
+    const { status, body } = await isolationReport(api);
     expect(status).toBe(200);
     expect(body.ok).toBe(true);
     expect(body.database).toBe(smokeDatabasePath(SMOKE_RUN_DIR));
     expect(body.storage).toBe(`http://127.0.0.1:${SMOKE_STORAGE_PORT}`);
     expect(body.expiredTrash).toBe(0);
     expect(body.blockedConnections).toEqual([]);
-    const settings = await (await page.request.get("/api/settings")).json();
+    const settings = await (await api.get("/api/settings")).json();
     expect(settings.siteName).toBe("Smoke Fixture Studio");
   });
 
@@ -34,16 +34,16 @@ test.describe("smoke の隔離", () => {
     expect(leaked).toEqual([]);
   });
 
-  test("ゴミ箱を開いても、人工データの写真は消えない（保持期間の内側だけを置いている）", async ({ page }, info) => {
+  test("ゴミ箱を開いても、人工データの写真は消えない（保持期間の内側だけを置いている）", async ({ page, api }, info) => {
     test.skip(info.project.name !== "desktop", "サーバー側の確認は1回でよい");
     await loginAsAdmin(page);
     for (let i = 0; i < 2; i += 1) {
-      const res = await page.request.get("/api/admin/photos/trash");
+      const res = await api.get("/api/admin/photos/trash");
       expect(res.status()).toBe(200);
       const { photos } = await res.json();
       expect(photos.map((p: { id: number }) => p.id).sort()).toEqual([7901, 7902]);
     }
-    expect((await isolationReport(page)).body.expiredTrash).toBe(0);
+    expect((await isolationReport(api)).body.expiredTrash).toBe(0);
   });
 });
 
@@ -88,8 +88,7 @@ test.describe("fixtures.ts の番人", () => {
 });
 
 test.describe("遮断プロキシの境界", () => {
-  const proxyHits = async (): Promise<EgressHit[]> =>
-    (await fetch(`http://127.0.0.1:${SMOKE_EGRESS_PROXY_PORT}/__smoke/hits`)).json();
+  const proxyHits = () => readEgressProxyHits(SMOKE_EGRESS_PROXY_PORT);
 
   test("フォントの実際の取得はプロキシへ届かず、届くのは Google Fonts への先行接続だけ", async ({ page, networkGuard }, info) => {
     test.skip(!["desktop", "mobile-safari"].includes(info.project.name), "Chromium と WebKit で1回ずつ");

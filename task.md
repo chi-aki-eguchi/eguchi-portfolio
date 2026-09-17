@@ -3,16 +3,16 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-09-17 JST
 
-### Adobe比較監査の第1段階（ローカルブランチ `audit/stage1-fixes`、未push・未統合）
+### Adobe比較監査の第1段階と smoke の本番接続の遮断（ローカルブランチ `audit/stage1-fixes`、未push・未統合）
 
-- 依頼: `claude_code_akieguchi_handoff.md`（監査原文 `akieguchi_adobe_portfolio_audit_2026-09-17.md`）。第1段階を実装・テストし、第2段階は設計と分割まで。本番書き込み・migration・push・mainへのmerge・デプロイは禁止の指定。
-- 判定: 第1段階の5項目はすべて `1ef90fc` に現存（根拠は `docs/archive/audits/adobe-comparison-verification-2026-09-17.md`）。本番 build も `1ef90fc1` で一致。
-- 修正（worktree `/Users/chiaki/wt-audit-stage1`）: 複製で撮影日時・由来・元ファイル情報を保つ `8dfdff2` / Work の404・通信失敗の戻り先 `7a18fe7` / 作品詳細とトップ写真の公開応答を一覧と同じ形に `95f0843` / 設定プレビューで Work と各作品を直接選ぶ `72554f8` / 設置リンク（オーナー専用）・API上限・画像形式・一覧の初期モード・Gallery空のサイトの更新確認の文書 `4b033f9` / 第2段階の設計 `f814ed2`。
-- 新しい検証基盤: `packages/web/src/api/test-support/isolated-api.ts` が本物のAPIを子プロセスで起動する（一時SQLite・127.0.0.1の偽ストレージ・正規ログイン。親の環境変数を渡さない）。
-- 第2段階: `docs/specs/publishing-and-placement-2026-09-17.md`。版管理・アクセス制御・多対多は `site-and-data-direction.md` §2・§4-2 で「作らない」と確定済みのため、A-2以降はオーナー判断待ち（backlog B-27）。次の最小単位は A-1（設定の保存前に変わる項目を一覧で見せる。スキーマ変更なし）。
-- 触れていない判断事項: FAQ・販売文書の「24時間／3日」と 2026-09-06 の運用文書の食い違い、wiki の buyer-only 要約（backlog B-28）。
-- 2026-09-17検証: `bun run check` 成功（製品1433件＝変更前1381件＋52、ツール60件、型・lint・build、wiki鮮度は既存8件の警告のみ）。変更前後で失敗テストを確認（修正前のコードで新テストが失敗し、修正後に成功）。追加smoke（設定プレビュー）10成功。全体smokeは一時SQLiteの隔離環境で変更前 421成功／157対象外／123失敗、変更後 424成功／158対象外／123失敗。**失敗の集合は完全に一致**（写真の無い空DBで写真依存のテストが落ちるもの）で、変更による新しい失敗は無い。本番DBでの全体smokeは実行していない。証拠は worktree の `scratch/audit-stage1-20260917/`（画面・計測）。
-- 注意: 全体smokeはルートの `.env`（本番接続）でログインし、管理画面でゴミ箱を開くと `GET /api/admin/photos/trash` が30日超のゴミ箱写真を完全削除する（書き込みの番人は非GETしか止めない）。本番の削除を避けるため、今回は一時SQLiteの隔離環境で変更前後を比較した。
+- 依頼: `claude_code_akieguchi_handoff.md`（監査原文 `akieguchi_adobe_portfolio_audit_2026-09-17.md`）。第1段階を実装・テスト。続けてオーナー指示で B-29（smoke の本番接続）を最優先に対応。本番書き込み・migration・push・mainへの統合・デプロイはしない指定。
+- オーナー判断（2026-09-17）: `site-and-data-direction.md` の現行方針を維持。版管理・公開履歴・限定公開・多対多・保存前の変更一覧は実装しない。第2段階の文書（`docs/specs/publishing-and-placement-2026-09-17.md`）は未承認の検討案。ゴミ箱の一覧と削除の分離（`docs/specs/trash-list-and-purge-separation-2026-09-17.md`）も未承認の案。
+- 第1段階（worktree `/Users/chiaki/wt-audit-stage1`）: 複製で撮影日時・由来・元ファイル情報を保つ `8dfdff2` / Work の404・通信失敗の戻り先 `7a18fe7` / 作品詳細とトップ写真の公開応答 `95f0843` / 設定プレビューで Work と各作品を選ぶ `72554f8` / 文書 `4b033f9`。判定と根拠は `docs/archive/audits/adobe-comparison-verification-2026-09-17.md`。
+- smoke の遮断: `7bd685c`・`847a824`・`86f65e2`。`bun run smoke` は `scripts/smoke/isolated-server.ts` が実行ごとの一時SQLite＋人工データ（`packages/web/src/test-fixtures/smoke-site.ts`）＋127.0.0.1の偽ストレージ＋`smoke-only-` パスワードで起動し、`.env` と親の接続情報を使わない。接続先を確認できない・ポート使用中なら止まる。spec は `./fixtures.ts` の自動 fixture（外部・別ポート・書き込みを止める）を使う。残りのブラウザの外向き接続は遮断プロキシが拒否・記録し、Google Fonts への preconnect（CONNECT 2宛先の完全一致・テスト中）以外は失敗にする。番人の検証は `bun run test:smoke-guard`（`check` に含む）。
+- 以前の helpers.ts の書き込みの番人は、最上位の `beforeEach` のため最初の spec にしか効いていなかった。
+- 2026-09-17 最終検証（コミット `86f65e2`）: `bun run check` 成功（製品1433・ツール60・番人34、型・lint・build）。全体smoke 726件＝成功542・スキップ171・**失敗13**。13件は変更前（`1ef90fc`＋安全対策のみ）でも同じ要素・値で失敗し、第1段階の検証に使っていない spec（backlog S-3）。遮断228件はすべて WebKit からの Google Fonts preconnect。記録は worktree の `scratch/smoke-evidence/2026-09-17T05-15-23-111Z/` と `scratch/audit-stage1-20260917/`。PostgreSQL・スマホ実機・本番は未検証。
+- **main 統合前の注意**: main の `bun run smoke` はまだ本番接続のまま。統合までは main で smoke を回さない。
+- 触れていない判断事項: FAQ・販売文書の「24時間／3日」（B-28）、ゴミ箱GETの削除（B-29 製品側）。
 
 ## Current State — 2026-09-16 JST
 

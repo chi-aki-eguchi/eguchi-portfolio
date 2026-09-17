@@ -133,6 +133,14 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
 
 ## smoke の失敗
 
+### S-3. 隔離した smoke で変更前から落ちる13件 🟠 実測済み（2026-09-17）
+
+`bun run smoke` を一時SQLite・人工データで動かすと、`1ef90fc` の時点から13件が落ちる。原因を確認できたのは
+8件（spec・helpers が 2026-09-13〜16 の製品変更やスマホ幅の画面に追従していない）、未調査は5件
+（admin-workspace-layout 2件、admin-form-layout・admin-i18n・admin-selected-button 各1件）。一覧と分類は
+`docs/archive/audits/adobe-comparison-verification-2026-09-17.md` の追記。期待値を弱めずに1件ずつ直す。
+写真一覧の仮想表示の検査（admin-debug-sweep:195）は人工データ26枚では動かずスキップになる。
+
 ### S-2. `admin-workspace-layout` が全体実行のときだけ落ちる 🟠 実測済み（2026-08-08）
 
 **2026-09-05の追記:** 同じ「キャンセル」ボタンの消失を全体smokeで再現した。Inspectorまたはモードを閉じるEscの既定動作を抑え、新しく開いた確認画面が同じキーでnative cancelされる経路を修正。表示が退場時間を越えて維持されることも既存ブラウザーテストで確認する。以下の「負荷だけが原因」という説明は当時の推測として扱う。

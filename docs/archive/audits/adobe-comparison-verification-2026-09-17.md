@@ -41,3 +41,42 @@
   この環境に PostgreSQL が無く、実行して確かめていない。
 - 本番の管理画面・スマホ実機での操作。確認はローカルのブラウザー（Playwright の Chromium、人工データ）と jsdom。
 - 監査 §5 の見た目・速度の比較、§6 の問い合わせの実送信（今回は扱っていない）。
+
+## 追記: 隔離した smoke での再検証（2026-09-17、検証したコミット `86f65e2`）
+
+smoke は実行ごとの一時SQLite・人工データ（`packages/web/src/test-fixtures/smoke-site.ts`）・127.0.0.1 の
+偽ストレージ・テスト専用パスワードで動くようにした（`scripts/smoke/isolated-server.ts`、backlog B-29）。
+ブラウザは Playwright 1.61 の Chromium（desktop・mobile・Pixel 7）と WebKit（iPhone 13）。PostgreSQL・実機・本番は使っていない。
+
+| 項目 | UI をモックで確認 | 実 API ＋ 隔離DB で確認 | 未検証 |
+|---|---|---|---|
+| B-01 複製 | なし（書き込みは smoke で止める） | `photo-duplicate.api.test.ts`（実APIを子プロセスで起動、10件） | PostgreSQL、管理画面から複製する操作 |
+| B-03 プレビュー | `admin-settings-preview.spec.ts`（PC・375px・取得失敗→再読み込み）、jsdom の描画テスト（空・削除・非公開化・読み込み中） | `audit-stage1-real-api.spec.ts`（実際の一覧、非公開は選べない、符号化が要る slug、iframe と公開リンクの一致、写真0枚、PC・375px） | 表示中に作品を削除・非公開にする操作（書き込みのため jsdom で確認）、本番の管理画面 |
+| B-04 公開応答 | なし | `public-photo-response.api.test.ts`、`audit-stage1-real-api.spec.ts`（開発サーバー経由） | PostgreSQL、本番の応答サイズ |
+| B-05 失敗時の戻り先 | jsdom の描画テスト（両方の棚で正常・404・通信失敗・空・再試行） | `audit-stage1-real-api.spec.ts`（404 は実API、通信失敗は route.abort で再現し再読み込みで実APIから表示、写真0枚、次の作品へ遷移、PC・375px） | 本番 |
+| B-06 文書 | — | `docs-contract.test.ts`（静的） | 公開サイト側の案内 |
+
+最終結果（`86f65e2`）: `bun run check` 成功（製品1433件・ツール60件・smoke の番人34件、型・lint・build）。
+全体 smoke 726件のうち成功542・スキップ171・**失敗13**（全体成功ではない）。遮断プロキシが止めた228件は
+すべて WebKit から Google Fonts 2宛先への先行接続（想定外0件）。記録は worktree の
+`scratch/smoke-evidence/2026-09-17T05-15-23-111Z/` と `scratch/audit-stage1-20260917/final-86f65e2/`。
+
+### 残る13件（いずれも変更前にも同じ条件で起きる）
+
+`1ef90fc` に安全対策（`7bd685c`）だけを載せた環境で同じ13件を実行し、失敗した要素・受け取った値まで一致した
+（`scratch/audit-stage1-20260917/baseline-13/`）。第1段階の5項目の検証には使っていない spec で、
+5項目の確認結果に影響しない。
+
+| spec（project） | 失敗の内容 | 分類 |
+|---|---|---|
+| admin-contact-settings-validation:271（desktop） | spec 自身の「想定外の通信」に `/api/photos/availability` が入る | 2026-09-16 `d82d461` でナビが件数APIを読むようになり、spec のモック一覧が未追従 |
+| admin-library-modes:163（desktop） | 検索中の「並べ替え」が無効でなく、有効で「解除して並べ替える」 | 2026-09-13 `208c1e1`/`2031c56` の意図した動作（単体テスト `admin-reorder-lock.render.test.tsx` が確認）に smoke が未追従。空DBの実行では成功扱いだった（理由は未特定） |
+| admin-library-modes:16・:292、admin-library-selection:20（mobile） | スマホ幅で `[data-library-mode-action="select"]` や選択モードが見つからない | スマホの閲覧時は別の「選択」ボタン（`data-library-mobile-select`）になっている（画面の記録で確認）。selection:20 は helpers.ts の `gotoAdminTab(…, "select")` がこのボタンを押さないため選択に入れない。:16・:292 は「写真2枚未満ならスキップ」で、空DBでは隠れていた |
+| admin-library-contact-sheet:63（mobile・mobile-touch・mobile-safari） | 「PCで」の検査がスマホ幅でも走り、並べ替えの入口が見つからない | spec に project の指定が無い（2026-09-13 `1991751` で追加。desktop では成功） |
+| admin-workspace-layout:37・:103（desktop） | 畳んだナビのフォーカスが移らない／開いたナビの幅が 216px（期待 240px） | 原因は未調査（寸法・フォーカスの期待と現行の差。2026-09-13 の再設計以降の変化と推定）。既存の S-2 と同じ spec |
+| admin-form-layout:196（desktop） | 目次の幅が期待より 16px 違う | 寸法の期待値との差。原因は未調査 |
+| admin-i18n:7（desktop） | 写真編集の「詳細」を押せずに時間切れ | 原因は未調査（押す位置が他の要素に覆われている可能性） |
+| admin-selected-button:55（mobile） | スマホ幅の写真編集で選択中の区分ボタンが非表示 | 原因は未調査 |
+
+スキップ171件の多くは spec が対象外の端末幅・project を飛ばす指定。人工データの量で飛ぶと分かっているのは
+`admin-debug-sweep:195`（写真26枚では一覧の仮想表示が動かない）。

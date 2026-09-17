@@ -61,11 +61,13 @@ smoke は実行ごとの一時SQLite・人工データ（`packages/web/src/test-
 すべて WebKit から Google Fonts 2宛先への先行接続（想定外0件）。記録は worktree の
 `scratch/smoke-evidence/2026-09-17T05-15-23-111Z/` と `scratch/audit-stage1-20260917/final-86f65e2/`。
 
-### 残る13件（いずれも変更前にも同じ条件で起きる）
+### 残る13件（同じ隔離条件で基準コードでも再現。原因確認済8・未調査5）
 
 `1ef90fc` に安全対策（`7bd685c`）だけを載せた環境で同じ13件を実行し、失敗した要素・受け取った値まで一致した
-（`scratch/audit-stage1-20260917/baseline-13/`）。第1段階の5項目の検証には使っていない spec で、
-5項目の確認結果に影響しない。
+（`scratch/audit-stage1-20260917/baseline-13/`）。第1段階の5項目の検証には使っていない spec。
+比較の基準に安全対策を含むため、これは第1段階の製品修正との切り分けであって、ブランチ全体（安全対策を含む）に
+回帰が無いことの証明ではない。安全対策の無い `1ef90fc` の smoke は本番につながるため実行していない。
+未調査の5件は、テスト側の書体の差し替え（Google Fonts を空で返す）などの影響も除けていない。
 
 | spec（project） | 失敗の内容 | 分類 |
 |---|---|---|
@@ -80,3 +82,30 @@ smoke は実行ごとの一時SQLite・人工データ（`packages/web/src/test-
 
 スキップ171件の多くは spec が対象外の端末幅・project を飛ばす指定。人工データの量で飛ぶと分かっているのは
 `admin-debug-sweep:195`（人工データの写真27枚のうち一覧に出る25枚では、一覧の仮想表示が動かない）。
+
+## 追記: 外部レビュー R1〜R4 の限定修正（2026-09-17、検証したコミット `d6b34aa`）
+
+`ee38df9` の差分レビュー（REVIEW_RESULT.md、ZIP SHA-256 `bec2436d…c829` を対象）で、テスト基盤に4点の指摘があった。
+第1段階の製品修正は変えていない。本番・migration・push・mainへの統合・デプロイはしていない。
+
+| 指摘 | 修正（`d6b34aa`、R4 は `5fd840e`） | 再現テスト（`ee38df9` で失敗 → 修正後に成功） |
+|---|---|---|
+| R1 `page.request`・`context.request`・request fixture は Node から直接送り、`context.route` を通らない | fixtures.ts が context の `fetch` を塞ぎ、request fixture は準備で失敗させる。spec の API 読取は `api`（`smoke-api.ts`: 同一オリジンの `/` パス・GET/HEAD・`maxRedirects: 0`、3xx は失敗）。直接の要求・`route.fetch`・Node からの独自接続は `spec-boundary.test.ts` が書き方でも検出 | `playwright-probes.test.ts` R1: 修正前は別ポートの罠へ GET・POST・fetch の3件が届いた。修正後は0件、同一オリジンの GET は成功。`smoke-api.test.ts` は本物の APIRequestContext で、POST 等が送る前に失敗・リダイレクト不追従を確認 |
+| R2 終了時の判定がブラウザ側の記録だけを見て、0件なら終わっていた | 終了時にサーバーがまだ動いているうちに `/__smoke/isolation` を必ず読み、サーバー側の遮断が1件でも・読めなくても・隔離が崩れていても失敗（`egressVerdict`）。テストが全部通っても、その判定で落ちた実行は証拠フォルダを残す | R2: note の取得をサーバー側だけで1件起こす部分実行（smoke-isolation.spec.ts を含まない）。修正前は終了コード0、修正後は失敗し `note.com:443` を記録 |
+| R3 実行中テスト名を付けるだけで外さず、終了後の接続も「テスト中」に数え得た | 名前は context を作る前に付け、context を閉じた後に外す（成功・失敗・時間切れのどれでも）。403 の拒否は変えない | R3: 修正前は成功したテストの後の CONNECT にそのテスト名が残った。修正後は開始前・各テストの間・失敗後・時間切れ後・最後の後の CONNECT がすべて名前なし・想定外、テスト本文の CONNECT だけが想定内 |
+| R4 `node --test *.test.ts` は Node 22.16 で起動前に失敗（型除去は 22.18 から既定） | `node scripts/smoke/guard/run.mjs`: 22.12〜22.17・23.0〜23.5 は `--experimental-strip-types` を付ける。22.12 未満は理由を出して止める（型除去は 22.6、launcher のテストが起動する Vite 7.3 は 22.12 から）。ファイルは1つずつ動かす | `node-support.test.ts` は版ごとの判定だけ。**Node 22 系での実行は未検証**（この Mac は Node 24.16 だけ。レビュー側で 22.16＋フラグの25件は成功、全46件は未確認） |
+
+結果（`d6b34aa`、Node 24.16）:
+
+- 番人テスト 46件成功（以前34件。R1〜R4 で12件追加）。`bun run check` 成功（製品1433・ツール60・番人46、lint。
+  型検査と build は製品コードに変更が無く turbo のキャッシュ再生）。
+- 関連 smoke（smoke-isolation・audit-stage1-real-api・usability-review）27件＝成功14・スキップ13・失敗0。
+- 全体 smoke 726件＝成功542・スキップ171・**失敗13**（全体成功ではない）。13件は `86f65e2` の13件と
+  project・ファイル・行・エラーの先頭まで同じ。終了時の判定は通過: ブラウザ側の遮断228件はすべてテスト実行中の
+  Google Fonts 2宛先への先行接続、テストの外の接続0件、サーバー側の遮断0件。
+- 記録: worktree の `scratch/smoke-evidence/2026-09-17T11-17-44-504Z/`、`scratch/audit-stage1-20260917/review-r1-r4/`
+  （修正前の再現ログ `repro-before-ee38df9.log` を含む）。
+
+残り: Node 22 系での番人テスト、PostgreSQL・実機・本番（従来どおり未検証）。レビューで指摘された
+フィルム日時のコメント・テスト名の言い回しのずれ（処理は元値の複写で問題なし）は、今回の R1〜R4 の範囲外として未修正。
+公開文書と同じ文字列だったローカル設定の ADMIN_PASSWORD は、利用先を確認していない（本番の漏えいとも無害とも断定しない）。

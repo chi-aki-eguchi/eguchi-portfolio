@@ -81,6 +81,8 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
   ログインし、`admin-trash-signal.spec.ts` がゴミ箱をモックなしで開いていた。helpers.ts の書き込みの番人は
   最上位の `beforeEach` だったため最初の spec にしか効いていなかった。いまは実行ごとの一時SQLite・人工データ・
   偽ストレージで動き、接続先を確認できなければ起動しない（`scripts/smoke/isolated-server.ts`）。
+- 外部レビューの指摘（R1〜R3）への対応 `d6b34aa`: `page.request` などの直接の要求は fixtures.ts が送る前に止め、
+  spec は `api` で読む。終了時の判定はサーバー側の遮断記録も必ず見る。実行中テスト名は終了時に外す。
 
 ## 写真データの整合性（T-10 の残り）
 
@@ -133,9 +135,11 @@ admin 刷新は機能追加ではなく**機能を保った再設計**（`docs/s
 
 ## smoke の失敗
 
-### S-3. 隔離した smoke で変更前から落ちる13件 🟠 実測済み（2026-09-17）
+### S-3. 隔離した smoke で基準コードでも再現する13件 🟠 実測済み（2026-09-17）
 
-`bun run smoke` を一時SQLite・人工データで動かすと、`1ef90fc` の時点から13件が落ちる。原因を確認できたのは
+`bun run smoke` を一時SQLite・人工データで動かすと13件が落ちる。同じ13件は、`1ef90fc` に安全対策 `7bd685c` を
+載せた基準でも同じ隔離条件で再現した。安全対策の無い `1ef90fc` の smoke は本番につながるため実行していない。
+基準に安全対策を含むので、ブランチ全体に回帰が無いことの証明ではない。原因を確認できたのは
 8件（spec・helpers が 2026-09-13〜16 の製品変更やスマホ幅の画面に追従していない）、未調査は5件
 （admin-workspace-layout 2件、admin-form-layout・admin-i18n・admin-selected-button 各1件）。一覧と分類は
 `docs/archive/audits/adobe-comparison-verification-2026-09-17.md` の追記。期待値を弱めずに1件ずつ直す。

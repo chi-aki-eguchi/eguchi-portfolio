@@ -780,7 +780,24 @@ const ADMIN_PHASE_2B_JA = {
   },
   service: {
     topWorksEmpty: "公開中の写真はまだありません",
-    topWorksSelectedSuffix: "（選択中）",
+    topWorksPicker: {
+      chosenHeading: (count: number) => `選んだ順（${count}枚）`,
+      chosenEmpty:
+        "まだ選んでいません。下の候補を押すと、押した順に並びます。",
+      candidatesHeading: "候補から選ぶ（押して選択／解除）",
+      missingPhoto: "この写真はいま公開されていません",
+      earlier: "前へ",
+      later: "後ろへ",
+      remove: "外す",
+      moveEarlier: (name: string, position: number) =>
+        `${name}を${position - 1}番目へ`,
+      moveLater: (name: string, position: number) =>
+        `${name}を${position + 1}番目へ`,
+      removeFromTop: (name: string) => `${name}をトップから外す`,
+      candidate: (name: string) => `${name}をトップに加える`,
+      candidateChosen: (name: string, position: number) =>
+        `${name}（トップの${position}番目）を外す`,
+    },
     arrayControls: {
       up: "上へ",
       down: "下へ",
@@ -1361,11 +1378,11 @@ const ADMIN_PHASE_2B_JA = {
       topWorksHeading: "トップ（Works）に出す写真",
       topWorksModeLabel: "選び方",
       topWorksModeHint:
-        "自動=ギャラリーの並び順の先頭9枚 / ランダム=訪問ごとに入れ替え / 手動=下で選んだ写真を選んだ順に表示。最上部のヒーロー写真とは別の設定です",
+        "自動=写真一覧の並び順どおり / ランダム=訪問ごとに入れ替え / 手動=下で選んだ写真を選んだ順に表示。何枚から出すかは下の「初期表示枚数」。最上部のヒーロー写真とは別の設定です",
       topWorksModeOptions: {
         auto: {
           name: "並び順から自動",
-          desc: "ギャラリーの並びの先頭9枚",
+          desc: "写真一覧の並び順どおり",
         },
         random: {
           name: "ランダム",
@@ -1378,7 +1395,7 @@ const ADMIN_PHASE_2B_JA = {
       },
       topWorksPickerLabel: "トップに出す写真",
       topWorksPickerHint:
-        "クリックで選択/解除。番号の順（選んだ順）に表示されます。未選択のあいだは自動と同じ表示",
+        "選んだ順がそのままトップの表示順になります。写真一覧全体の並び順は変わりません。未選択のあいだは自動と同じ表示",
       initialCountLabel: "初期表示枚数",
       initialCountHint:
         "トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます",
@@ -2527,7 +2544,24 @@ const ADMIN_PHASE_2B_EN = {
   },
   service: {
     topWorksEmpty: "No published photos yet.",
-    topWorksSelectedSuffix: " (selected)",
+    topWorksPicker: {
+      chosenHeading: (count: number) => `In order (${count})`,
+      chosenEmpty:
+        "Nothing chosen yet. Pick from the candidates below — they line up in the order you pick them.",
+      candidatesHeading: "Choose from your photos (click to select or deselect)",
+      missingPhoto: "This photo is not published right now",
+      earlier: "Move earlier",
+      later: "Move later",
+      remove: "Remove",
+      moveEarlier: (name: string, position: number) =>
+        `Move ${name} to position ${position - 1}`,
+      moveLater: (name: string, position: number) =>
+        `Move ${name} to position ${position + 1}`,
+      removeFromTop: (name: string) => `Remove ${name} from Top`,
+      candidate: (name: string) => `Add ${name} to Top`,
+      candidateChosen: (name: string, position: number) =>
+        `Remove ${name} (position ${position} on Top)`,
+    },
     arrayControls: {
       up: "Move up",
       down: "Move down",
@@ -3105,11 +3139,11 @@ const ADMIN_PHASE_2B_EN = {
       topWorksHeading: "Photos Shown in Top (Works)",
       topWorksModeLabel: "Selection",
       topWorksModeHint:
-        "Auto shows the first 9 photos in the Gallery order; Random reshuffles on every visit; Manual shows the photos you choose below, in the order you chose them. This is separate from the hero photos at the very top.",
+        "Auto follows your photo order; Random reshuffles on every visit; Manual shows the photos you choose below, in the order you chose them. How many appear at first is set in Initial Count. This is separate from the hero photos at the very top.",
       topWorksModeOptions: {
         auto: {
           name: "Auto, from sort order",
-          desc: "The first 9 photos in the Gallery order",
+          desc: "Follows your photo order",
         },
         random: {
           name: "Random",
@@ -3122,7 +3156,7 @@ const ADMIN_PHASE_2B_EN = {
       },
       topWorksPickerLabel: "Photos Shown in Top",
       topWorksPickerHint:
-        "Click to select or deselect. Photos display in the numbered order you chose them. Behaves like Auto until you make a selection.",
+        "The order you choose is the order they appear on Top. Your overall photo order is not affected. Behaves like Auto until you make a selection.",
       initialCountLabel: "Initial Count",
       initialCountHint:
         "How many photos appear initially in the Works section below the hero on the home page. More load in as visitors scroll.",

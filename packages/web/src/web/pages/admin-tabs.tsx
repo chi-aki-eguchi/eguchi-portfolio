@@ -8,6 +8,12 @@ import {
   type CategorizedPhoto,
 } from "../../shared/category-usage";
 import { makeSettingsPreviewPayload } from "../lib/settings-preview";
+import {
+  moveTopWorksId,
+  parseTopWorksIds,
+  serializeTopWorksIds,
+  toggleTopWorksId,
+} from "../lib/top-works-ids";
 import { uploadErrorMessageFromResponse } from "../lib/upload-file";
 import {
   GOOGLE_FONTS_JA,
@@ -3180,7 +3186,19 @@ export function PricingTab({
 /* ══════════════════════════════════════════════════
    SETTINGS TAB
 ══════════════════════════════════════════════════ */
-/** トップWorks手動選択: クリックで選択/解除。選んだ順がそのまま表示順になる。 */
+/**
+ * トップ（Works）に手動で出す写真。
+ *
+ * **2つの操作を分ける。** 以前は候補の格子が1つあるだけで、選ぶことはできても
+ * 「選んだ写真が、どの順で出るのか」を確かめる場所が無かった（番号の札は候補の
+ * 格子の中に散らばっていて、順に読むことができなかった）。上に「選んだ順」、
+ * 下に「候補から選ぶ」を置く。
+ *
+ * ここで編集するのは `topWorksIds` の並びだけで、写真一覧全体の並び順
+ * （掲載順）も写真の原本も変わらない。値の書き戻しは今までどおり `onChange`
+ * →設定の下書き→既存の保存・取り消し（⌘Z）・プレビューに乗る。新しい保存の
+ * 概念も、並べ替えの部品も足さない。
+ */
 function TopWorksPicker({
   value,
   onChange,
@@ -3189,58 +3207,182 @@ function TopWorksPicker({
   onChange: (v: string) => void;
 }) {
   const { t } = useAdminI18n();
+  const copy = t.phase2b.service.topWorksPicker;
   const { data } = useQuery({
     queryKey: ["photos"],
     queryFn: async () => jsonOrThrow(await api.photos.$get()),
   });
-  const photos = data?.photos ?? [];
-  const picked = value
-    .split(",")
-    .map((s) => parseInt(s.trim(), 10))
-    .filter(Number.isFinite);
-  const toggle = (id: number) => {
-    const next = picked.includes(id)
-      ? picked.filter((x) => x !== id)
-      : [...picked, id];
-    onChange(next.join(","));
+  const photos = useMemo(() => data?.photos ?? [], [data]);
+  const picked = useMemo(() => parseTopWorksIds(value), [value]);
+  const byId = useMemo(
+    () => new Map(photos.map((p) => [p.id, p])),
+    [photos],
+  );
+  const apply = (next: number[]) => onChange(serializeTopWorksIds(next));
+  const toggle = (id: number) => apply(toggleTopWorksId(picked, id));
+  const move = (from: number, to: number) =>
+    apply(moveTopWorksId(picked, from, to));
+
+  // 動かしたあとも同じボタンを押し続けられるように、行ではなく「何番目の
+  // どのボタンか」でフォーカスを戻す。連打で並べ替えるときに手が離れない。
+  const refocus = useRef<string | null>(null);
+  useEffect(() => {
+    const key = refocus.current;
+    if (!key) return;
+    refocus.current = null;
+    document
+      .querySelector<HTMLButtonElement>(`[data-top-works-control="${key}"]`)
+      ?.focus();
+  }, [value]);
+  const moveAndKeepFocus = (from: number, to: number, dir: "up" | "down") => {
+    refocus.current = `${dir}-${to}`;
+    move(from, to);
   };
+
   if (photos.length === 0)
     return (
       <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
         {t.phase2b.service.topWorksEmpty}
       </p>
     );
+
   return (
-    <div className="max-h-64 overflow-y-auto border border-[var(--admin-line)] rounded-sm p-1.5 grid grid-cols-5 gap-1">
-      {photos.map((p) => {
-        const pos = picked.indexOf(p.id);
-        return (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => toggle(p.id)}
-            title={p.title || p.filename}
-            aria-label={`${p.title || p.filename}${pos >= 0 ? t.phase2b.service.topWorksSelectedSuffix : ""}`}
-            aria-pressed={pos >= 0}
-            className={`relative aspect-square overflow-hidden rounded-[2px] transition-opacity ${pos >= 0 ? "ring-[length:var(--admin-accent-line)] ring-[color:var(--admin-accent)]" : "opacity-55 hover:opacity-100"}`}
-          >
-            <img
-              src={adminPhotoSrc(p, 200, 60)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-              className="w-full h-full object-cover bg-[var(--admin-paper)]"
-              style={{ objectPosition: adminPhotoObjectPosition(p) }}
-            />
-            {pos >= 0 && (
-              <span className="admin-accent-marker absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 text-[9px] font-medium rounded-sm flex items-center justify-center">
-                {pos + 1}
-              </span>
-            )}
-          </button>
-        );
-      })}
+    <div className="space-y-4" data-top-works-picker>
+      <section aria-labelledby="top-works-chosen">
+        <p
+          id="top-works-chosen"
+          className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5"
+        >
+          {copy.chosenHeading(picked.length)}
+        </p>
+        {picked.length === 0 ? (
+          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] border border-dashed border-[var(--admin-line)] rounded-sm px-3 py-4">
+            {copy.chosenEmpty}
+          </p>
+        ) : (
+          <ol className="border border-[var(--admin-line)] rounded-sm divide-y divide-[var(--admin-line)]">
+            {picked.map((id, index) => {
+              const photo = byId.get(id);
+              const name = photo
+                ? photo.title || photo.filename
+                : copy.missingPhoto;
+              return (
+                <li
+                  key={id}
+                  className="flex items-center gap-2 p-1.5"
+                  data-top-works-row={id}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="w-5 shrink-0 text-center text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tabular-nums"
+                  >
+                    {index + 1}
+                  </span>
+                  {photo ? (
+                    <img
+                      src={adminPhotoSrc(photo, 120, 60)}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      draggable={false}
+                      className="w-10 h-10 shrink-0 object-cover rounded-[2px] bg-[var(--admin-paper)]"
+                      style={{ objectPosition: adminPhotoObjectPosition(photo) }}
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="w-10 h-10 shrink-0 rounded-[2px] border border-dashed border-[var(--admin-line)]"
+                    />
+                  )}
+                  <span
+                    data-top-works-name
+                    className="min-w-0 flex-1 truncate text-[length:var(--admin-text-note)] text-[var(--admin-ink)]"
+                  >
+                    {name}
+                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      data-top-works-control={`up-${index}`}
+                      disabled={index === 0}
+                      onClick={() => moveAndKeepFocus(index, index - 1, "up")}
+                      className="admin-tap-sm ax-nudge text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label={copy.moveEarlier(name, index + 1)}
+                      title={copy.earlier}
+                    >
+                      <ChevronUp size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      data-top-works-control={`down-${index}`}
+                      disabled={index === picked.length - 1}
+                      onClick={() => moveAndKeepFocus(index, index + 1, "down")}
+                      className="admin-tap-sm ax-nudge text-[var(--admin-muted)] disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label={copy.moveLater(name, index + 1)}
+                      title={copy.later}
+                    >
+                      <ChevronDown size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggle(id)}
+                      className="admin-tap-sm admin-danger-on-hover ax-nudge text-[var(--admin-muted)]"
+                      aria-label={copy.removeFromTop(name)}
+                      title={copy.remove}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </section>
+
+      <section aria-labelledby="top-works-candidates">
+        <p
+          id="top-works-candidates"
+          className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-1.5"
+        >
+          {copy.candidatesHeading}
+        </p>
+        <div className="max-h-64 overflow-y-auto border border-[var(--admin-line)] rounded-sm p-1.5 grid grid-cols-5 gap-1">
+          {photos.map((p) => {
+            const pos = picked.indexOf(p.id);
+            const name = p.title || p.filename;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                data-top-works-candidate={p.id}
+                onClick={() => toggle(p.id)}
+                title={name}
+                aria-label={
+                  pos >= 0 ? copy.candidateChosen(name, pos + 1) : copy.candidate(name)
+                }
+                aria-pressed={pos >= 0}
+                className={`relative aspect-square overflow-hidden rounded-[2px] transition-opacity ${pos >= 0 ? "ring-[length:var(--admin-accent-line)] ring-[color:var(--admin-accent)]" : "opacity-55 hover:opacity-100"}`}
+              >
+                <img
+                  src={adminPhotoSrc(p, 200, 60)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  draggable={false}
+                  className="w-full h-full object-cover bg-[var(--admin-paper)]"
+                  style={{ objectPosition: adminPhotoObjectPosition(p) }}
+                />
+                {pos >= 0 && (
+                  <span className="admin-accent-marker absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 text-[9px] font-medium rounded-sm flex items-center justify-center">
+                    {pos + 1}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }
@@ -5713,7 +5855,10 @@ export function SettingsTab({
                     </>
                   );
                 })()}
-                {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定） */}
+                {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定）。
+                    この節を開くとプレビューは Gallery を映すが、ここから下の3つは
+                    **トップにしか出ない**。触ったらプレビューをトップへ向ける
+                    ——そうしないと、選んでも何も変わらない画面を見ることになる。 */}
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
                   {copy.galleryLayout.topWorksHeading}
                 </p>
@@ -5743,7 +5888,10 @@ export function SettingsTab({
                     ).map(([val, name, desc]) => (
                       <button
                         key={val}
-                        onClick={() => set("topWorksMode", val)}
+                        onClick={() => {
+                          setPreviewPage("/");
+                          set("topWorksMode", val);
+                        }}
                         title={desc}
                         className={`text-[length:var(--admin-text-note)] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
                           (current["topWorksMode"] || "auto") === val
@@ -5763,7 +5911,14 @@ export function SettingsTab({
                   >
                     <TopWorksPicker
                       value={current["topWorksIds"] ?? ""}
-                      onChange={(v) => set("topWorksIds", v)}
+                      /* 選ぶ・動かす・外すは、1操作＝1回の取り消しにする。
+                         `set` は同じキーの連続した変更を 500ms でまとめるので
+                         （文字入力やスライダー向けの挙動）、写真を続けて押すと
+                         ⌘Z で何枚ぶんも一度に戻ってしまう。 */
+                      onChange={(v) => {
+                        setPreviewPage("/");
+                        history.apply({ topWorksIds: v });
+                      }}
                     />
                   </AdminField>
                 )}
@@ -5775,7 +5930,10 @@ export function SettingsTab({
                     label={copy.galleryLayout.initialCountLabel}
                     valueKey="homeGalleryCount"
                     current={current}
-                    set={set}
+                    set={(key, val) => {
+                      setPreviewPage("/");
+                      set(key, val);
+                    }}
                     min={1}
                     max={200}
                     step={1}

@@ -14,6 +14,9 @@ import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
 import { InquiryCta } from "../components/InquiryCta";
 import { WorkEntries } from "../components/WorkEntryLinks";
+import { useSeriesLinks } from "../hooks/useSeriesLinks";
+import { parseTopWorksIds } from "../lib/top-works-ids";
+import type { SeriesLink } from "../lib/series-links";
 import { ContentStatus } from "../components/ContentStatus";
 import { SeriesStream } from "../components/SeriesStream";
 import { num } from "../lib/utils";
@@ -532,8 +535,7 @@ type HomeLayoutProps = {
   /** ビューアのキャプションから作品群へ入れるようにするための対応表。
    *  ギャラリーは渡しているのにトップだけ渡しておらず、同じ写真をトップで
    *  開くとシリーズ名が出ず、そこから先へ進めなかった。 */
-  seriesNameById: Record<number, string>;
-  seriesSlugById: Record<number, string>;
+  seriesLinkById: Record<number, SeriesLink>;
   featured: GalleryPhoto[];
   worksPoolLen: number;
   worksSentinelRef: React.RefObject<HTMLDivElement | null>;
@@ -788,8 +790,7 @@ function WorksHeader({
 function HomeQuietGrid({
   heroPhotos,
   heroLoading,
-  seriesNameById,
-  seriesSlugById,
+  seriesLinkById,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -883,8 +884,7 @@ function HomeQuietGrid({
             layoutType={settings?.topWorksLayout ?? "clean-grid"}
             variant="top"
             totalCount={worksPoolLen}
-            seriesNameById={seriesNameById}
-            seriesSlugById={seriesSlugById}
+            seriesLinkById={seriesLinkById}
           />
 
           {featured.length < worksPoolLen && (
@@ -919,8 +919,7 @@ function HomeQuietGrid({
 function HomeEditorial({
   heroPhotos,
   heroLoading,
-  seriesNameById,
-  seriesSlugById,
+  seriesLinkById,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -1019,8 +1018,7 @@ function HomeEditorial({
             layoutType={settings?.topWorksLayout ?? "editorial"}
             variant="top"
             totalCount={worksPoolLen}
-            seriesNameById={seriesNameById}
-            seriesSlugById={seriesSlugById}
+            seriesLinkById={seriesLinkById}
           />
 
           {featured.length < worksPoolLen && (
@@ -1052,8 +1050,7 @@ function HomeEditorial({
 function HomeImmersive({
   heroPhotos,
   heroLoading,
-  seriesNameById,
-  seriesSlugById,
+  seriesLinkById,
   featured,
   worksPoolLen,
   worksSentinelRef,
@@ -1170,8 +1167,7 @@ function HomeImmersive({
             layoutType={settings?.topWorksLayout ?? "large-format"}
             variant="top"
             totalCount={worksPoolLen}
-            seriesNameById={seriesNameById}
-            seriesSlugById={seriesSlugById}
+            seriesLinkById={seriesLinkById}
           />
 
           {featured.length < worksPoolLen && (
@@ -1309,18 +1305,10 @@ export default function TopPage() {
   const topWorksIds = settings?.topWorksIds || "";
   const worksPool = useMemo(() => {
     if (topWorksMode === "manual") {
-      // Dedupe IDs: the admin enters topWorksIds as free-text CSV, and a repeated
-      // ID would map to the same photo object twice — PhotoGallery keys tiles by
-      // photo.id, so duplicates trigger a React key collision (a tile vanishes /
-      // its reveal transition breaks). Set preserves first-seen order.
-      const ids = [
-        ...new Set(
-          topWorksIds
-            .split(",")
-            .map((s: string) => parseInt(s.trim(), 10))
-            .filter(Number.isFinite),
-        ),
-      ];
+      // 並びの読み方は `lib/top-works-ids.ts` に1つだけ置く（管理画面の
+      // 選択欄と同じ規則で読む）。重複は落とす——同じ ID が2度あると同じ
+      // 写真を2度指し、PhotoGallery は写真IDを key にするのでタイルが消える。
+      const ids = parseTopWorksIds(topWorksIds);
       const byId = new Map(allPhotos.map((p) => [p.id, p]));
       const picked = ids
         .map((id: number) => byId.get(id))
@@ -1433,27 +1421,15 @@ export default function TopPage() {
       />
     ) : null;
 
-  // ナビと SeriesStream が同じ鍵で既に引いているので、新しい通信は増えない。
-  const { data: seriesData } = useQuery({
-    queryKey: ["series"],
-    queryFn: async () => jsonOrThrow(await api.series.$get()),
-  });
-  const seriesNameById = useMemo(
-    () =>
-      Object.fromEntries((seriesData?.series ?? []).map((s) => [s.id, s.title])),
-    [seriesData],
-  );
-  const seriesSlugById = useMemo(
-    () =>
-      Object.fromEntries((seriesData?.series ?? []).map((s) => [s.id, s.slug])),
-    [seriesData],
-  );
+  // ナビ・SeriesStream・WorkEntryLinks が同じ鍵で既に引いているので、新しい
+  // 通信は増えない。**両方の棚を見る**（Work 棚の写真がここで対応表から
+  // 漏れていたので、拡大しても作品名もリンクも出なかった）。
+  const seriesLinkById = useSeriesLinks();
 
   const homeLayoutProps: HomeLayoutProps = {
     heroPhotos,
     heroLoading: heroLoading || photosLoading,
-    seriesNameById,
-    seriesSlugById,
+    seriesLinkById,
     featured,
     worksPoolLen: worksPool.length,
     worksSentinelRef,
@@ -1624,8 +1600,7 @@ export default function TopPage() {
             layoutType={settings?.topWorksLayout ?? "stagger"}
             variant="top"
             totalCount={worksPool.length}
-            seriesNameById={seriesNameById}
-            seriesSlugById={seriesSlugById}
+            seriesLinkById={seriesLinkById}
           />
 
           {/* Infinite-feed sentinel — fires ~900px before it scrolls into view. */}

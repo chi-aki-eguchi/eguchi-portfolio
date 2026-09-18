@@ -50,3 +50,21 @@ describe("送信失敗時のメールへの逃げ道", () => {
     );
   });
 });
+
+test("参考作品はメールの逃げ道にも残る", () => {
+  const fields = new Map<string, string>([
+    ["subject", "Shooting"],
+    ["name", "秋"],
+    ["message", "相談させてください。"],
+    ["reference", "Rintaro Otsuka — https://akieguchi.com/work/rintaro"],
+  ]);
+  const mailto = buildFailoverMailto("a@example.com", {
+    get: (key) => fields.get(key) ?? null,
+  });
+  const body = decodeURIComponent(
+    new URL(mailto).search.replace(/^\?/, "").split("&").find((p) => p.startsWith("body="))!.slice(5),
+  );
+  expect(body).toContain("相談させてください。");
+  expect(body).toContain("参考作品: Rintaro Otsuka — https://akieguchi.com/work/rintaro");
+  expect(body).toContain("— 秋");
+});

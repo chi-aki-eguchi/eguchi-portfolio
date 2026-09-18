@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
@@ -9,8 +10,15 @@ import {
   usableContactEmail,
   usableContactEndpoint,
 } from "../../shared/contact-settings";
+import { isPortfolioKitSubject } from "../../shared/contact-defaults";
 import { buildFailoverMailto } from "../../shared/contact-failover";
 import { sendAnalyticsEvent } from "../lib/analytics";
+import { useSeriesDetail } from "../hooks/useSeriesDetail";
+import {
+  contactReferenceValue,
+  workPublicUrl,
+  workSlugFromSearch,
+} from "../../shared/contact-reference";
 
 type Status = "idle" | "sending" | "success" | "error";
 type ContactAnalyticsEvent =
@@ -135,6 +143,38 @@ export default function ContactPage({
     queryFn: async () => jsonOrThrow(await api.pricing.$get()),
   });
   const plans = pricingData?.plans ?? [];
+
+  // 作品ページから「この作品について相談する」で来たときの参考作品。
+  // URL に載っているのは公開作品の識別子だけで、氏名・メール・本文は載らない。
+  // 引き直して**公開されている作品のときだけ**出す。読めない識別子・非公開・
+  // 存在しない slug は、ただの Contact として扱う（何も出さない）。
+  const search = useSearch();
+  const referenceSlug = workSlugFromSearch(search);
+  // 外したことは「どの作品を外したか」で覚える。真偽値だと、別の作品から
+  // 来たときに外したままになる。
+  const [clearedSlug, setClearedSlug] = useState("");
+  const referenceCleared = !!referenceSlug && clearedSlug === referenceSlug;
+  // 鍵は作品ページと同じなので、そこから来た人には新しい通信が起きない。
+  const { data: referenceData } = useSeriesDetail(
+    referenceSlug,
+    !referenceCleared,
+  );
+  // `enabled: false` にしても取得済みの値は残る。外したかどうかは、ここで
+  // はっきり見る（残っていた値がそのまま出続けるのを防ぐ）。
+  const referenceWork =
+    !referenceCleared && referenceData && referenceData.series.kind === "work"
+      ? referenceData.series
+      : null;
+  const referenceUrl = referenceWork
+    ? workPublicUrl(
+        data?.siteUrl,
+        typeof window === "undefined" ? "" : window.location.origin,
+        referenceWork.slug,
+      )
+    : "";
+  const referenceValue = referenceWork
+    ? contactReferenceValue(referenceWork.title, referenceUrl)
+    : "";
   // Pricing does not have separate EN fields yet. Do not put a Japanese plan
   // card into the English route; an English-authored plan still renders.
   const visiblePlans = english
@@ -203,6 +243,8 @@ export default function ContactPage({
   );
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // 件名は非制御のままにして、書く案内を出し分けるためだけに写しを持つ。
+  const [subject, setSubject] = useState("");
   // 失敗したときだけ組み立てる mailto。書いた本文をそのまま持っていける形に
   // する（もう一度打ち直させない）。フォームは非制御なので、送信時の
   // FormData から作って持っておく。
@@ -287,6 +329,20 @@ export default function ContactPage({
   // このページのどこにも出ていない（表示するのは「フォーム未設定のとき」の枝
   // だけ）ので、繰り返しても直らない失敗——送信先サービスの停止や上限超過——に
   // 当たった人は、連絡する手段を失ったまま去ることになる。
+  // 何を書けばいいのかを、書き始めても消えない形で置く。placeholder は打ち始めた
+  // 瞬間に消えるので、途中で迷ったときには残っていない。
+  // 撮影の相談とサイト制作（Portfolio Kit）の相談では、書いてほしいことが違う。
+  // **切り替えるのはこの案内だけ**で、欄も必須項目も増やさない。
+  const kitSubject = isPortfolioKitSubject(subject);
+  const messageGuide = english
+    ? kitSubject
+      ? "Your current site (if any), roughly how many photos, and when you would like to publish. \u201CNot decided yet\u201D is a fine answer."
+      : "What the photos are for, rough timing, location, and any work of mine you have in mind. \u201CNot decided yet\u201D is a fine answer."
+    : kitSubject
+      ? "いまのサイト（あれば）・写真の枚数・公開したい時期。決まっていない項目は「未定」で大丈夫です。"
+      : "用途・希望時期・場所・参考にしたい作品。決まっていない項目は「未定」で大丈夫です。";
+  const referenceLabel = english ? "Reference work" : "参考作品";
+  const referenceClear = english ? "Remove" : "参考作品を外す";
   const fallbackMailtoLead =
     language === "en"
       ? "Still not going through? Email works too:"
@@ -365,6 +421,7 @@ export default function ContactPage({
         setFailoverMailto("");
         setStatus("success");
         formRef.current?.reset();
+        setSubject("");
         trackContactEvent("contact_submit_success", language);
       } else {
         failed();
@@ -550,26 +607,39 @@ export default function ContactPage({
             {note}
           </p>
         )}
-        {areas && (
-          <p
-            className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
-            style={readableBodyStyle}
-          >
-            {areas}
-          </p>
-        )}
-        {formspreeUrl && status !== "success" && flow && (
-          <div className="mb-10 px-5 py-4 border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg page-entrance page-entrance-delay-1">
-            <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
-              Flow
-            </p>
-            <p
-              className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
-              style={readableBodyStyle}
-            >
-              {flow}
-            </p>
-          </div>
+        {/* 「どこで撮るのか」「どう進むのか」は、読む人が同じ気持ちで探す2つの
+            事実なのに、片方は見出しの無い段落、もう片方は枠の中、と組みが
+            揃っていなかった。**同じ枠の中に、同じ形の小さな見出しを付けて
+            並べる。**設定の値には触らない（空なら、その行ごと出ない）。 */}
+        {status !== "success" && (areas || flow) && (
+          <dl className="mb-10 px-5 py-4 border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg space-y-4 page-entrance page-entrance-delay-1">
+            {areas && (
+              <div>
+                <dt className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
+                  {english ? "Areas" : "Areas ／ 対応地域"}
+                </dt>
+                <dd
+                  className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
+                  style={readableBodyStyle}
+                >
+                  {areas}
+                </dd>
+              </div>
+            )}
+            {formspreeUrl && flow && (
+              <div>
+                <dt className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
+                  {english ? "Flow" : "Flow ／ 流れ"}
+                </dt>
+                <dd
+                  className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
+                  style={readableBodyStyle}
+                >
+                  {flow}
+                </dd>
+              </div>
+            )}
+          </dl>
         )}
         </div>
         <div>
@@ -692,6 +762,37 @@ export default function ContactPage({
               aria-hidden="true"
               className="absolute left-[-9999px] w-px h-px opacity-0 pointer-events-none"
             />
+            {/* 参考作品。作品ページから来た人が「どの作品の話か」を書き直さずに
+                済むようにする。**本文には触れない**（書いた文を上書きしない）。
+                外せば送信内容からも消える。 */}
+            {referenceWork && (
+              <div
+                data-contact-reference
+                className="flex items-start gap-3 rounded-lg border border-[rgba(var(--foreground-rgb),0.08)] px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)]">
+                    {referenceLabel}
+                  </p>
+                  <p className="mt-1 break-words text-[rgba(var(--foreground-rgb),0.78)] text-sm">
+                    {referenceWork.title}
+                  </p>
+                  <p className="mt-0.5 break-all font-en text-xs text-[color:var(--text-quiet)]">
+                    {referenceUrl}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setClearedSlug(referenceSlug)}
+                  className="tap-target shrink-0 font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300 py-1.5"
+                >
+                  {referenceClear}
+                </button>
+              </div>
+            )}
+            {referenceValue && (
+              <input type="hidden" name="reference" value={referenceValue} />
+            )}
             <Field
               label={formName}
               htmlFor="contact-name"
@@ -741,6 +842,7 @@ export default function ContactPage({
               <select
                 id="contact-subject"
                 name="subject"
+                onChange={(e) => setSubject(e.target.value)}
                 className={`${inputCls(false)} cursor-pointer appearance-none pr-9`}
                 style={{
                   backgroundImage:
@@ -768,6 +870,7 @@ export default function ContactPage({
               label={formMessage}
               htmlFor="contact-message"
               error={errors.message}
+              hint={messageGuide}
             >
               <textarea
                 id="contact-message"
@@ -777,7 +880,12 @@ export default function ContactPage({
                 aria-required="true"
                 aria-invalid={!!errors.message || undefined}
                 aria-describedby={
-                  errors.message ? "contact-message-error" : undefined
+                  [
+                    errors.message ? "contact-message-error" : "",
+                    "contact-message-hint",
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || undefined
                 }
                 onChange={() => setErrors((e) => ({ ...e, message: "" }))}
                 className={`${inputCls(!!errors.message)} resize-y`}
@@ -873,11 +981,14 @@ function Field({
   label,
   htmlFor,
   error,
+  hint,
   children,
 }: {
   label: string;
   htmlFor: string;
   error?: string;
+  /** 入力欄の下にいつも出る短い案内。placeholder と違い、書き始めても消えない。 */
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -889,6 +1000,16 @@ function Field({
         {label}
       </label>
       {children}
+      {hint && (
+        <p
+          id={`${htmlFor}-hint`}
+          data-contact-hint
+          className="text-xs text-[color:var(--text-quiet)]"
+          style={{ lineHeight: 1.8 }}
+        >
+          {hint}
+        </p>
+      )}
       {error && (
         <p
           id={`${htmlFor}-error`}

@@ -21,8 +21,15 @@ export function buildFailoverMailto(
   const subject = text("subject");
   const name = text("name");
   const message = text("message");
+  // 作品ページから来た人の「参考作品」。逃げ道でも落とさない——どの作品の話か
+  // を書き直させないために付けた行なので、ここで消えたら意味が無い。
+  const reference = text("reference");
 
-  const body = [message, name ? `— ${name}` : ""]
+  const body = [
+    message,
+    reference ? `参考作品: ${reference}` : "",
+    name ? `— ${name}` : "",
+  ]
     .filter(Boolean)
     .join("\n\n");
 

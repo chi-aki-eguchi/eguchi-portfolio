@@ -6,13 +6,15 @@ import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
-import { PhotoGallery, type GalleryPhoto } from "../components/PhotoGallery";
+import { PhotoGallery } from "../components/PhotoGallery";
+import { useSeriesDetail } from "../hooks/useSeriesDetail";
 import { InquiryCta } from "../components/InquiryCta";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { SeriesCover } from "../components/SeriesCover";
 import { SeriesColophon } from "../components/SeriesColophon";
 import { seriesColophon } from "../lib/series-colophon";
 import { signalAnalyticsPageReady } from "../lib/analytics";
+import { contactHrefForWork } from "../../shared/contact-reference";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -22,21 +24,8 @@ export default function SeriesDetailPage() {
   // Series へ戻すと、Work の読み込み失敗や404からシリーズの棚へ飛ばしてしまう。
   const [onWorkRoute] = useRoute("/work/:slug");
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["series", slug],
-    // The ":slug" subtree of the typed client collapses under TS instantiation
-    // limits (see lib/api.ts) — the response shape is annotated manually instead.
-    queryFn: async (): Promise<{
-      series: { id: number; slug: string; title: string; subtitle: string; statement: string; themeConfig?: string | null; kind?: string | null };
-      photos: GalleryPhoto[];
-    } | null> => {
-      const res = await (api.series as Record<string, any>)[":slug"].$get({ param: { slug } });
-      if (res.status === 404) return null;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    },
-    enabled: !!slug,
-  });
+  // Contact の「参考作品」と同じ鍵で引く（`hooks/useSeriesDetail.ts`）。
+  const { data, isLoading, isError, error, refetch } = useSeriesDetail(slug);
 
   // N: series pages get their own layout setting.
   const { data: settings, isError: settingsError } = useQuery({
@@ -235,6 +224,24 @@ export default function SeriesDetailPage() {
           }`}
         >
           {series.statement}
+        </p>
+      )}
+
+      {/* 長い作品は、最後まで読み切らないと相談へ着かない。実測（2026-09-19、
+          390px の本番 /work/rintaro）で、本文中の問い合わせリンクはページ先頭から
+          34,653px、ページ全体は 35,161px だった。**導入のすぐ下に、静かな一行を
+          1本だけ置く。** 写真の上には何も重ねない。
+          Series 棚には置かない——作品を見ている途中に同じ強さの営業導線を
+          2つの棚へ出す理由が無い。見終わったあとの帯（InquiryCta）は今までどおり。
+          CTA を切っているサイト（配布版の既定）では出ない。 */}
+      {shelf === "work" && (settings?.homeCtaEnabled ?? "off") === "on" && (
+        <p className="max-w-2xl mx-auto mb-10 md:mb-14 text-center page-entrance">
+          <Link
+            to={contactHrefForWork(series.slug)}
+            className="inline-block font-ja text-xs tracking-[0.06em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.70)] nav-link-luxury transition-colors duration-300 py-1.5"
+          >
+            この作品について相談する →
+          </Link>
         </p>
       )}
 

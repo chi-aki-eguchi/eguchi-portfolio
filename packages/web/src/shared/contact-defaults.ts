@@ -84,3 +84,17 @@ export function resolveContactText(
     flow: settings.contactFlow ?? d.contactFlow,
   };
 }
+
+/**
+ * 選ばれた件名が「Portfolio Kit（サイト制作）の相談」か。
+ *
+ * 撮影の相談とサイト制作の相談は、書いてほしいことが違う。件名は管理画面で
+ * 自由に変えられる文字列なので、**この2語を含むときだけ**そう扱い、それ以外は
+ * 撮影の相談として扱う（判定できないときは撮影側＝既定の案内のまま）。
+ * 販売の導線や表示そのものはここでは変えない。
+ */
+export function isPortfolioKitSubject(subject: string | null | undefined): boolean {
+  const value = (subject ?? "").trim();
+  if (!value) return false;
+  return /テンプレート|portfolio\s*kit/i.test(value);
+}

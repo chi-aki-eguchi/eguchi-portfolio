@@ -6,7 +6,7 @@
  * DBに値が無いので、既定を変えると本番の表示がそのまま変わる。
  */
 import { test, expect, describe } from "bun:test";
-import { contactDefaultsFor } from "./contact-defaults";
+import { contactDefaultsFor, isPortfolioKitSubject } from "./contact-defaults";
 
 const OWNER = "https://akieguchi.com";
 const BUYER = "https://someone-else.example";
@@ -56,4 +56,15 @@ describe("Contact の既定文", () => {
     expect(contactDefaultsFor(undefined)).toEqual(contactDefaultsFor(BUYER));
     expect(contactDefaultsFor("")).toEqual(contactDefaultsFor(BUYER));
   });
+});
+
+test("件名がサイト制作の相談かどうかを、2語だけで見分ける", () => {
+  expect(isPortfolioKitSubject("テンプレートについて")).toBe(true);
+  expect(isPortfolioKitSubject("Portfolio Kit")).toBe(true);
+  expect(isPortfolioKitSubject("portfolio kit について")).toBe(true);
+  expect(isPortfolioKitSubject("Shooting")).toBe(false);
+  expect(isPortfolioKitSubject("撮影依頼")).toBe(false);
+  expect(isPortfolioKitSubject("")).toBe(false);
+  expect(isPortfolioKitSubject(null)).toBe(false);
+  expect(isPortfolioKitSubject(undefined)).toBe(false);
 });

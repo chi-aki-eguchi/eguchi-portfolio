@@ -1571,7 +1571,7 @@ const SYNTHETIC_WORK = {
   kind: "work",
 };
 
-test.describe("public-site — 作品群への戻り道", () => {
+test.describe("public-site — 作品と相談をつなぐ道", () => {
   test("トップで開いたWork棚の写真が、その作品のページを指す", async ({
     page,
   }) => {
@@ -1627,6 +1627,150 @@ test.describe("public-site — 作品群への戻り道", () => {
     await expect(
       page.getByRole("heading", { name: SYNTHETIC_WORK.title }),
     ).toBeVisible();
+
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+    expect(runtimeProblems).toEqual([]);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 長い作品を最後まで読み切らないと相談へ着かない状態を直したぶんの回帰。
+  // 実測（2026-09-19、390px の本番 /work/rintaro）で、本文中の問い合わせリンクは
+  // ページ先頭から 34,653px、ページ全体は 35,161px だった。
+  // ───────────────────────────────────────────────────────────────────────────
+  test("作品の導入から相談へ進むと、参考作品を持ったまま送信できる", async ({
+    page,
+  }) => {
+    const runtimeProblems = collectPageRuntimeProblems(page);
+    const workPhotos = SYNTHETIC_PHOTOS.map((photo, index) =>
+      index >= 9 ? { ...photo, seriesId: SYNTHETIC_WORK.id } : photo,
+    ).filter((photo) => photo.seriesId === SYNTHETIC_WORK.id);
+    const apiMocks = await installPublicApiMocks(
+      page,
+      {
+        ...SYNTHETIC_SETTINGS,
+        homeCtaEnabled: "on",
+        siteUrl: "https://synthetic.example",
+        formspreeUrl: "https://example.test/synthetic-contact",
+      },
+      [SYNTHETIC_WORK],
+    );
+    await page.route(`**/api/series/${SYNTHETIC_WORK.slug}`, (route) =>
+      fulfillJson(route, { series: SYNTHETIC_WORK, photos: workPhotos }),
+    );
+    const posted: string[] = [];
+    await page.route("https://example.test/**", async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.continue();
+        return;
+      }
+      posted.push(route.request().postData() ?? "");
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    });
+
+    const consult = async () => {
+      await page.goto(`/work/${SYNTHETIC_WORK.slug}`, {
+        waitUntil: "domcontentloaded",
+      });
+      const link = page.getByRole("link", { name: /この作品について相談する/ });
+      await expect(link).toBeVisible();
+      // 導入のうちに出る（写真を読み切らないと着かない位置ではない）。
+      const box = (await link.boundingBox())!;
+      const pageHeight = await page.evaluate(
+        () => document.documentElement.scrollHeight,
+      );
+      const top = box.y + (await page.evaluate(() => window.scrollY));
+      expect(top).toBeLessThan(pageHeight / 2);
+      expect(top).toBeLessThan(2000);
+      await link.click();
+      await expect
+        .poll(() => new URL(page.url()).pathname + new URL(page.url()).search)
+        .toBe(`/contact?work=${SYNTHETIC_WORK.slug}`);
+      await expect(page.locator("form")).toBeVisible();
+    };
+
+    const fillAndSend = async () => {
+      await page.locator("#contact-name").fill("Smoke reference");
+      await page.locator("#contact-email").fill("smoke@example.test");
+      await page.locator("#contact-message").fill("Work reference smoke");
+      await page.locator('button[type="submit"]').click();
+      await expect(page.locator('p[aria-live="polite"]')).toBeVisible();
+    };
+
+    // 1) 参考作品が題名と公開URLで出て、送信内容にも入る。
+    await consult();
+    const reference = page.locator("[data-contact-reference]");
+    await expect(reference).toContainText(SYNTHETIC_WORK.title);
+    await expect(reference).toContainText(
+      `https://synthetic.example/work/${SYNTHETIC_WORK.slug}`,
+    );
+    await fillAndSend();
+    expect(posted).toHaveLength(1);
+    expect(posted[0]).toContain("reference");
+    expect(posted[0]).toContain(SYNTHETIC_WORK.title);
+
+    // 2) 外せば、表示からも送信内容からも消える（本文は書いたまま）。
+    await consult();
+    await page.getByRole("button", { name: "参考作品を外す" }).click();
+    await expect(reference).toBeHidden();
+    await fillAndSend();
+    expect(posted).toHaveLength(2);
+    expect(posted[1]).not.toContain(SYNTHETIC_WORK.title);
+    expect(posted[1]).toContain("Work reference smoke");
+
+    // 3) 読めない識別子は、ただの Contact として扱う。
+    await page.goto("/contact?work=%2Fnot-a-slug", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.locator("form")).toBeVisible();
+    await expect(reference).toHaveCount(0);
+
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+    expect(runtimeProblems).toEqual([]);
+  });
+
+  // 何を書けばよいかの案内。placeholder は打ち始めた瞬間に消えるので、
+  // 途中で迷ったときには残っていない。撮影の相談とサイト制作の相談で
+  // 書いてほしいことが違うぶんだけ、案内を切り替える（欄は増やさない）。
+  test("記入の案内は書き始めても残り、件名で内容が変わる", async ({ page }) => {
+    const runtimeProblems = collectPageRuntimeProblems(page);
+    const apiMocks = await installPublicApiMocks(page, {
+      ...SYNTHETIC_SETTINGS,
+      formspreeUrl: "https://example.test/synthetic-contact",
+      contactSubjectOptions:
+        "Shooting,Press / Media,Collaboration,テンプレートについて,Other",
+    });
+
+    await page.goto("/contact", { waitUntil: "domcontentloaded" });
+    const hint = page.locator("[data-contact-hint]");
+    await expect(hint).toContainText("用途");
+    await expect(hint).toContainText("未定");
+    await page.locator("#contact-message").fill("書き始めても案内は残る");
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText("用途");
+    // 入力欄と案内はつながっている（読み上げでも本文欄の説明として届く）。
+    await expect(page.locator("#contact-message")).toHaveAttribute(
+      "aria-describedby",
+      /contact-message-hint/,
+    );
+
+    await page
+      .locator("#contact-subject")
+      .selectOption({ label: "テンプレートについて" });
+    await expect(hint).toContainText("いまのサイト");
+    await expect(hint).not.toContainText("用途");
+    // 本文は書いたまま（案内が変わっても入力は触らない）。
+    await expect(page.locator("#contact-message")).toHaveValue(
+      "書き始めても案内は残る",
+    );
+
+    await page.goto("/en/contact", { waitUntil: "domcontentloaded" });
+    await expect(hint).toContainText("What the photos are for");
+    await page.locator("#contact-subject").selectOption({ label: "Portfolio Kit" });
+    await expect(hint).toContainText("Your current site");
 
     expect(apiMocks.unexpectedRequests).toEqual([]);
     expect(runtimeProblems).toEqual([]);

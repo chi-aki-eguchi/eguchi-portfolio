@@ -1778,6 +1778,84 @@ test.describe("public-site — 作品と相談をつなぐ道", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 作り置きサムネ（長辺640px）を、実際に描く大きさで頼めているか。
+//
+// 2026-09-19 実測（390px・DPR2 のスマホで本番トップを開いたとき、スクロール前）:
+// タイル47枚が 74px の枠に 640px の画像を受け取り、画像の合計は 2,308,083B。
+// 枠に合う幅で頼むと 974,503B（-57.8%）。先読み済みの最初の8枚は、先読みが
+// 空振りしないように今までどおりサムネのURLのまま取る。
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — タイル画像の大きさ", () => {
+  test("先頭8枚はそのまま、それ以降は枠に合う幅で頼む", async ({ page }) => {
+    const runtimeProblems = collectPageRuntimeProblems(page);
+    const requested: string[] = [];
+    page.on("request", (request) => {
+      const url = request.url();
+      if (url.includes("/api/images/synthetic-smoke/thumb-")) requested.push(url);
+    });
+    const apiMocks = await installPublicApiMocks(page, {
+      ...SYNTHETIC_SETTINGS,
+      galleryLayout: "grid",
+      galleryColumns: "8",
+      galleryExcludeSeries: "off",
+    });
+    // 本番と同じ順序にする（設定は小さく、写真の一覧は大きい）。配置が決まる
+    // 前にタイルを描くと、その枚数は今までどおり元のURLのまま取りに行く。
+    await page.route("**/api/photos**", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      await (new URL(route.request().url()).pathname.endsWith("/availability")
+        ? fulfillJson(route, {
+            total: SYNTHETIC_PHOTOS.length,
+            standalone: SYNTHETIC_PHOTOS.filter((p) => p.seriesId == null)
+              .length,
+          })
+        : fulfillJson(route, { photos: SYNTHETIC_PHOTOS }));
+    });
+
+    await gotoPublicPage(page, PUBLIC_PAGES.find((p) => p.path === "/gallery")!);
+    // 画面外のタイルも取りに行かせて、両方の枝を見る。
+    await page.evaluate(() =>
+      window.scrollTo(0, document.documentElement.scrollHeight),
+    );
+    await expect.poll(() => requested.length).toBeGreaterThan(8);
+
+    // 同じ写真が2度出てくる（再描画・再読込）ので、枚数ではなく**写真ごと**に見る。
+    const byPhoto = new Map<string, Set<string>>();
+    for (const url of requested) {
+      const parsed = new URL(url);
+      const key = parsed.pathname;
+      if (!byPhoto.has(key)) byPhoto.set(key, new Set());
+      byPhoto.get(key)!.add(parsed.searchParams.get("w") ?? "");
+    }
+    const plain = [...byPhoto].filter(([, widths]) => widths.has(""));
+    const fitted = [...byPhoto].filter(([, widths]) =>
+      [...widths].some((w) => w !== ""),
+    );
+    expect(
+      plain.length,
+      "先読み済みの枚数だけが元のURLのまま（先読みを空振りさせない）",
+    ).toBe(8);
+    expect(fitted.length, "残りは枠に合う幅で頼む").toBeGreaterThan(0);
+    // 同じ写真を2つの大きさで取りに行っていない。
+    for (const [path, widths] of byPhoto) {
+      expect(widths.size, `${path} を2つの大きさで取りに行っている`).toBe(1);
+    }
+    // 頼む幅は段で刻む（サーバー側の縮小結果の控えを増やさない）。
+    for (const url of requested.filter((u) => u.includes("w="))) {
+      const parsed = new URL(url);
+      expect([160, 240, 320, 480]).toContain(Number(parsed.searchParams.get("w")));
+      expect(parsed.searchParams.get("fmt")).toBe("webp");
+    }
+    // 小さく頼んだせいで「やっぱり大きいのを」と取り直していない。
+    const upgrades = requested.filter((url) => url.includes("medium-"));
+    expect(upgrades, "縮めたぶんを取り直していない").toEqual([]);
+
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+    expect(runtimeProblems).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2026-08-05: 「設定しても反映されない」の再発防止（CSS カスケード編）。
 //
 // `.nav-pos-left > header > nav ul a:not([aria-current])` が literal な alpha を

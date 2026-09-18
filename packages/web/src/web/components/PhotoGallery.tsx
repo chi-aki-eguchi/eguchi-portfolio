@@ -23,6 +23,7 @@ import {
 } from "../../shared/gallery-metrics";
 import { Lightbox, FIT_SIZES } from "./Lightbox";
 import {
+  imageUrlWithParams,
   objectPositionFromFocal,
   orientedAspectRatio,
   orientedDimensions,
@@ -31,6 +32,7 @@ import {
   srcFor,
   srcSetFor,
 } from "../lib/picture";
+import { fittedThumbWidth } from "../../shared/thumb-fit";
 import { photoAltText } from "../../shared/photo-alt";
 
 const _preloaded = new Set<string>();
@@ -240,6 +242,7 @@ const LqipImage = memo(function LqipImage({
   upgradeUrl,
   qualityUpgradeUrl,
   layoutWidth,
+  fitWidth,
   alt,
   sizes,
   isNearViewport,
@@ -254,6 +257,11 @@ const LqipImage = memo(function LqipImage({
   upgradeUrl?: string | null;
   qualityUpgradeUrl?: string | null;
   layoutWidth: number;
+  /**
+   * このタイルが実際に描かれる CSS 幅。分かっている配置だけが渡す。
+   * 作り置きサムネを、その大きさに合わせて頼むために使う（`shared/thumb-fit.ts`）。
+   */
+  fitWidth?: number;
   alt: string;
   sizes: string;
   isNearViewport: boolean;
@@ -265,6 +273,8 @@ const LqipImage = memo(function LqipImage({
 }) {
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  // 最初に頼んだサムネのURL（写真が入れ替わるまで変えない）。
+  const firstSrcRef = useRef<{ key: string; src: string } | null>(null);
   const swappedRef = useRef(false);
   const upgradeInFlightRef = useRef(false);
   const hasAlwaysThumbUpgrade = Boolean(
@@ -387,10 +397,37 @@ const LqipImage = memo(function LqipImage({
   // never request a proxy/srcset variant after the thumbnail loads.
   if (thumbUrl) {
     const hasUpgrade = Boolean(upgradeUrl && upgradeUrl !== thumbUrl);
+    // 作り置きサムネは長辺640px の1種類しかない。小さいタイルではその大半が
+    // 捨てられる（2026-09-19 実測: 74px の枠に 640px、1枚 140.8KB）。枠に合う
+    // 段があれば、その幅で頼む。
+    //
+    // **最初の8枚には手を付けない。** サーバーはその8枚をサムネのURLのまま
+    // 先読みしており（server.ts の GALLERY_PRELOAD_COUNT、`isNearViewport` と
+    // 同じ境目）、ここで別のURLにすると先読みが空振りして2回取りに行く。
+    //
+    // 決めるのは**最初に頼むときの1回だけ**。配置は設定が届く前後で変わり
+    // （届くまでは既定の mosaic）、枠の見積もりも ResizeObserver で動く。
+    // そのたびにURLを変えると、同じ写真を2回取りに行って逆に増える。
+    // 見積もりが小さすぎたときは、既存の shouldUpgradeGeneratedThumb が
+    // 読み込み後の実寸で拾う。
+    if (firstSrcRef.current?.key !== thumbUrl) {
+      const fitted = isNearViewport
+        ? null
+        : fittedThumbWidth(
+            fitWidth,
+            typeof window === "undefined" ? 1 : window.devicePixelRatio,
+          );
+      firstSrcRef.current = {
+        key: thumbUrl,
+        src: fitted
+          ? imageUrlWithParams(thumbUrl, { w: fitted, q: 82, fmt: "webp" })
+          : thumbUrl,
+      };
+    }
     return (
       <img
         ref={imgRef}
-        src={thumbUrl}
+        src={firstSrcRef.current.src}
         data-src={hasUpgrade ? (upgradeUrl ?? undefined) : undefined}
         sizes={sizes}
         alt={alt}
@@ -756,6 +793,12 @@ export function PhotoGallery({
       showHoverCaption?: boolean;
       preferMediumGrid?: boolean;
       cardAspectRatio?: string;
+      /**
+       * このタイルが実際に描かれる CSS 幅。**1枚が1列ぶんで、写真そのものの
+       * 縦横比で描く配置だけが渡す。** 正方形や固定比に切り抜く配置では、
+       * 幅から高さを推せないので渡さない（足りない画像を頼んでしまう）。
+       */
+      renderWidth?: number;
     },
   ) => {
     const ratio = orientedAspectRatio(
@@ -844,6 +887,7 @@ export function PhotoGallery({
               upgradeUrl={opts.preferMediumGrid ? photo.mediumUrl : undefined}
               qualityUpgradeUrl={photo.mediumUrl}
               layoutWidth={frameW || containerW}
+              fitWidth={opts.renderWidth}
               alt={alt}
               sizes={opts.sizes}
               isNearViewport={isNearViewport}
@@ -867,6 +911,13 @@ export function PhotoGallery({
   const colGap = (isMobile ? 24 : 40) * gapScale;
   const rowGap = (isMobile ? 48 : 80) * gapScale;
   const gridSizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
+  /** 等分の列に1枚ずつ並べる配置での、1枚ぶんの CSS 幅。 */
+  const evenColumnWidth = (cols: number, gap: number) => {
+    const frame = frameW || containerW;
+    if (!frame || cols < 1) return undefined;
+    const w = (frame - gap * (cols - 1)) / cols;
+    return w > 0 ? w : undefined;
+  };
   const quietCardClass = "photo-card-quiet";
   const squareCoverStyle: React.CSSProperties = {
     aspectRatio: "1 / 1",
@@ -979,6 +1030,7 @@ export function PhotoGallery({
                 sizes: `${Math.round(100 / cols)}vw`,
                 cardClassName: quietCardClass,
                 staggerIdx: idx,
+                renderWidth: evenColumnWidth(cols, masonryGap),
               }),
             )}
           </div>
@@ -1116,6 +1168,7 @@ export function PhotoGallery({
             width: "100%",
             justifySelf: "stretch",
             sizes: gridSizes,
+            renderWidth: evenColumnWidth(columns, colGap),
           }),
         )}
       </div>

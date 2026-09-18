@@ -90,3 +90,45 @@ test("撮影日は月までにとどめる（日は出さない）", () => {
     photoAltText({ shotAt: "2024-08-19T13:47:04" }, { photographerName: "江口秋" }),
   ).not.toContain("19");
 });
+
+// 2026-09-19: フィルムの shotAt は複写（スキャン）した時刻で、撮影日ではない。
+// ビューアの撮影情報は既に "Scanned" と出しているのに、説明文だけが
+// 「○年○月に撮影」と言っていた（本番のフィルム39枚が該当）。
+test("フィルムの日時を撮影日として言わない", () => {
+  const alt = photoAltText(
+    { shotAt: "2024-08-19T13:47:04", filmType: "フィルム" },
+    { seriesName: "SICF Fukuoka", photographerName: "江口秋" },
+  );
+  expect(alt).toBe(
+    "SICF Fukuokaシリーズより、江口秋撮影のフィルム写真（2024年8月スキャン）",
+  );
+  expect(alt).not.toContain("に撮影した");
+});
+
+test("フィルムでも時期は残すので、同じ組の写真が同じ一文にならない", () => {
+  const ctx = { seriesName: "SICF Fukuoka", photographerName: "江口秋" };
+  const a = photoAltText({ shotAt: "2024-08-19T13:47:04", filmType: "フィルム" }, ctx);
+  const b = photoAltText({ shotAt: "2025-03-02T10:00:00", filmType: "フィルム" }, ctx);
+  expect(a).not.toBe(b);
+});
+
+test("日時のないフィルムは、時期を足さずにフィルム写真とだけ言う", () => {
+  expect(
+    photoAltText({ filmType: "フィルム" }, { photographerName: "江口秋" }),
+  ).toBe("江口秋撮影のフィルム写真");
+  expect(
+    photoAltText(
+      { filmType: "フィルム", shotAt: "not-a-date" },
+      { photographerName: "江口秋", categoryLabel: "ポートレート" },
+    ),
+  ).toBe("江口秋撮影のポートレートのフィルム写真");
+});
+
+test("デジタルは従来どおり撮影日として言える", () => {
+  expect(
+    photoAltText(
+      { shotAt: "2024-08-19T13:47:04", filmType: "デジタル" },
+      { photographerName: "江口秋" },
+    ),
+  ).toBe("江口秋が2024年8月に撮影した写真");
+});

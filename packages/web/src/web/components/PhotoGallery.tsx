@@ -463,8 +463,7 @@ export function PhotoGallery({
   onRequestMore,
   totalCount,
   seriesName,
-  seriesNameById,
-  seriesSlugById,
+  seriesLinkById,
   categoryLabelBySlug,
 }: {
   photos: GalleryPhoto[];
@@ -474,11 +473,11 @@ export function PhotoGallery({
   /** 絞り込みに当てはまる本当の枚数。未指定なら描画済みの枚数を使う。 */
   totalCount?: number;
   // Used when every photo in this grid belongs to one known series (e.g. a
-  // series detail page). `seriesNameById` covers the mixed case (e.g. the
-  // general gallery grid, where photos may belong to different series).
+  // series detail page). `seriesLinkById` covers the mixed case (e.g. the top
+  // page and the general gallery grid, where photos come from different
+  // 作品群 and the URL differs per 棚 — see `lib/series-links.ts`).
   seriesName?: string;
-  seriesNameById?: Record<number, string>;
-  seriesSlugById?: Record<number, string>;
+  seriesLinkById?: Record<number, { name: string; href: string }>;
   categoryLabelBySlug?: Record<string, string>;
 }) {
   useEffect(() => {
@@ -777,7 +776,9 @@ export function PhotoGallery({
     const isNearViewport = idx < 8;
     const tileSeriesName =
       seriesName ??
-      (photo.seriesId != null ? seriesNameById?.[photo.seriesId] : undefined);
+      (photo.seriesId != null
+        ? seriesLinkById?.[photo.seriesId]?.name
+        : undefined);
     const categoryLabel = photo.category
       ? categoryLabelBySlug?.[photo.category]
       : undefined;
@@ -1436,8 +1437,7 @@ export function PhotoGallery({
           totalCount={totalCount}
           photographerName={photographerName}
           seriesName={seriesName}
-          seriesNameById={seriesNameById}
-          seriesSlugById={seriesSlugById}
+          seriesLinkById={seriesLinkById}
           categoryLabelBySlug={categoryLabelBySlug}
         />
       )}

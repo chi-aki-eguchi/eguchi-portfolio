@@ -43,22 +43,32 @@ describe("ビューアの枚数", () => {
   });
 });
 
-describe("トップで開いた写真からシリーズへ行けるか", () => {
-  test("トップの一覧すべてにシリーズの対応表を渡す", () => {
+describe("トップで開いた写真から、その作品へ行けるか", () => {
+  test("トップの一覧すべてに作品群の対応表を渡す", () => {
     expect(
-      (top.match(/seriesNameById=\{seriesNameById\}/g) ?? []).length,
-      "トップの一覧がシリーズ名を渡していない",
-    ).toBe(4);
-    expect(
-      (top.match(/seriesSlugById=\{seriesSlugById\}/g) ?? []).length,
+      (top.match(/seriesLinkById=\{seriesLinkById\}/g) ?? []).length,
+      "トップの一覧が作品群の対応表を渡していない",
     ).toBe(4);
   });
 
+  test("対応表は両方の棚から作る（Work 棚の写真も行き先を持つ）", () => {
+    // `/api/series` は Series 棚しか返さない。ここを片方だけにしていたので、
+    // 2026-09-19 の本番では Work 棚の101枚（公開写真の76%）が拡大しても
+    // 作品名もリンクも持っていなかった。
+    expect(top).toContain("useSeriesLinks()");
+    const hook = src("../hooks/useSeriesLinks.ts");
+    expect(hook).toContain('queryKey: ["series"]');
+    expect(hook).toContain('queryKey: ["works"]');
+  });
+
   test("シリーズは既存の鍵で引く（新しい通信を増やさない）", () => {
-    // ナビと SeriesStream が同じ鍵で引いているので、キャッシュを共有する。
-    expect(top).toContain('queryKey: ["series"]');
+    // ナビ・SeriesStream・WorkEntryLinks が同じ鍵で引いているので、
+    // キャッシュを共有する。
     expect(src("../components/SeriesStream.tsx")).toContain(
       'queryKey: ["series"]',
+    );
+    expect(src("../components/WorkEntryLinks.tsx")).toContain(
+      'queryKey: ["works"]',
     );
   });
 });

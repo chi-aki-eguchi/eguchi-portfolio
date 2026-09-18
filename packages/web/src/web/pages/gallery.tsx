@@ -7,6 +7,7 @@ import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { ContentStatus } from "../components/ContentStatus";
 import { PhotoGallery } from "../components/PhotoGallery";
+import { useSeriesLinks } from "../hooks/useSeriesLinks";
 import { InquiryCta } from "../components/InquiryCta";
 import { SeriesColophon } from "../components/SeriesColophon";
 import { sortPhotosBySetting } from "../lib/photo-sort";
@@ -97,18 +98,9 @@ export default function GalleryPage() {
     [photosData, settings?.gallerySortOrder],
   );
   const categories = useMemo(() => catsData?.categories ?? [], [catsData]);
-  const seriesNameById = useMemo(
-    () =>
-      Object.fromEntries(
-        (seriesData?.series ?? []).map((s) => [s.id, s.title]),
-      ),
-    [seriesData],
-  );
-  const seriesSlugById = useMemo(
-    () =>
-      Object.fromEntries((seriesData?.series ?? []).map((s) => [s.id, s.slug])),
-    [seriesData],
-  );
+  // 棚が2つあるので、行き先は棚から決める（`lib/series-links.ts`）。
+  // 読むのは上の `seriesData` / `worksData` と同じキャッシュで、通信は増えない。
+  const seriesLinkById = useSeriesLinks();
   const categoryLabelBySlug = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.slug, c.label])),
     [categories],
@@ -442,8 +434,7 @@ export default function GalleryPage() {
                 : undefined
             }
             totalCount={filtered.length}
-            seriesNameById={seriesNameById}
-            seriesSlugById={seriesSlugById}
+            seriesLinkById={seriesLinkById}
             categoryLabelBySlug={categoryLabelBySlug}
           />
           </div>

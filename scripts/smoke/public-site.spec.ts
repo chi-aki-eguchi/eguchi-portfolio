@@ -1547,6 +1547,93 @@ test.describe("public-site — Galleryライトボックス", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 2026-09-19: トップで開いた写真から「どの作品の1枚か」へ戻れるか。
+//
+// 対応表を `/api/series`（= Series 棚だけ）で作っていたので、**Work 棚に
+// 置いた作品の写真は、拡大しても作品名もリンクも出なかった**。本番では
+// 公開写真133枚のうち101枚（76%）がこの状態だった。行き先を `/series/<slug>`
+// と決め打ちにしていた点も一緒に直した——サーバーは棚の違う URL を 404 で返す。
+// ─────────────────────────────────────────────────────────────────────────────
+const SYNTHETIC_WORK = {
+  id: 9_300_001,
+  slug: "synthetic-work-one",
+  title: "Synthetic Work One",
+  subtitle: "Artificial commission set",
+  statement: "Fixture data only.",
+  coverPhotoId: SYNTHETIC_PHOTOS[9].id,
+  coverUrl: SYNTHETIC_PHOTOS[9].url,
+  coverRotationDeg: 0,
+  coverFocalX: 50,
+  coverFocalY: 50,
+  sortOrder: 0,
+  isPublished: true,
+  themeConfig: null,
+  kind: "work",
+};
+
+test.describe("public-site — 作品群への戻り道", () => {
+  test("トップで開いたWork棚の写真が、その作品のページを指す", async ({
+    page,
+  }) => {
+    const runtimeProblems = collectPageRuntimeProblems(page);
+    const apiMocks = await installPublicApiMocks(page, SYNTHETIC_SETTINGS, [
+      SYNTHETIC_WORK,
+    ]);
+    // 後から登録した route が先に見られる。写真の後半を Work 棚へ移す。
+    const photos = SYNTHETIC_PHOTOS.map((photo, index) =>
+      index >= 9 ? { ...photo, seriesId: SYNTHETIC_WORK.id } : photo,
+    );
+    await page.route("**/api/photos**", (route) =>
+      new URL(route.request().url()).pathname.endsWith("/availability")
+        ? fulfillJson(route, {
+            total: photos.length,
+            standalone: photos.filter((p) => p.seriesId == null).length,
+          })
+        : fulfillJson(route, { photos }),
+    );
+    await page.route(`**/api/series/${SYNTHETIC_WORK.slug}`, (route) =>
+      fulfillJson(route, {
+        series: SYNTHETIC_WORK,
+        photos: photos.filter((p) => p.seriesId === SYNTHETIC_WORK.id),
+      }),
+    );
+
+    await gotoPublicPage(page, PUBLIC_PAGES.find((p) => p.path === "/")!);
+
+    const workPhoto = photos[9];
+    const tile = page
+      .locator("main button")
+      .filter({ has: page.locator(".photo-card") })
+      .filter({ has: page.locator(`img[alt="${workPhoto.title}"]`) })
+      .first();
+    await tile.scrollIntoViewIfNeeded();
+    await tile.click();
+
+    const lightbox = page.locator('dialog[aria-label="写真ビューア"]');
+    await expect(lightbox).toBeVisible();
+    const shelfLink = lightbox.getByRole("link", {
+      name: new RegExp(SYNTHETIC_WORK.title),
+    });
+    await expect(shelfLink).toHaveAttribute(
+      "href",
+      `/work/${SYNTHETIC_WORK.slug}`,
+    );
+
+    await shelfLink.click();
+    await expect(lightbox).toBeHidden();
+    await expect.poll(() => new URL(page.url()).pathname).toBe(
+      `/work/${SYNTHETIC_WORK.slug}`,
+    );
+    await expect(
+      page.getByRole("heading", { name: SYNTHETIC_WORK.title }),
+    ).toBeVisible();
+
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+    expect(runtimeProblems).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2026-08-05: 「設定しても反映されない」の再発防止（CSS カスケード編）。
 //
 // `.nav-pos-left > header > nav ul a:not([aria-current])` が literal な alpha を

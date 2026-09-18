@@ -124,8 +124,7 @@ export function Lightbox({
   totalCount,
   photographerName,
   seriesName,
-  seriesNameById,
-  seriesSlugById,
+  seriesLinkById,
   categoryLabelBySlug,
 }: {
   photos: LightboxPhoto[];
@@ -145,10 +144,12 @@ export function Lightbox({
   totalCount?: number;
   photographerName?: string;
   seriesName?: string;
-  seriesNameById?: Record<number, string>;
-  // When set, the caption links the photo's series name to its page — the one
-  // "next room" doorway while inside the viewer.
-  seriesSlugById?: Record<number, string>;
+  /**
+   * 写真が属する作品群の名前と、その公開ページ。キャプションの唯一の
+   * 「次の部屋」への扉になる。**行き先は棚（Series / Work）で変わる**ので、
+   * ここでは名前ではなく URL を受け取る（`lib/series-links.ts`）。
+   */
+  seriesLinkById?: Record<number, { name: string; href: string }>;
   categoryLabelBySlug?: Record<string, string>;
 }) {
   // ビューアの壁。設定が読めていない間は既定の白い壁で描く（点滅しない）。
@@ -838,7 +839,9 @@ export function Lightbox({
     photographerName,
     seriesName:
       seriesName ??
-      (photo.seriesId != null ? seriesNameById?.[photo.seriesId] : undefined),
+      (photo.seriesId != null
+        ? seriesLinkById?.[photo.seriesId]?.name
+        : undefined),
     categoryLabel: photo.category
       ? categoryLabelBySlug?.[photo.category]
       : undefined,
@@ -1414,11 +1417,8 @@ export function Lightbox({
       {/* Caption — overlaid at the bottom so it never shrinks the photo; part of chrome. */}
       {(() => {
         const captionSeries =
-          photo.seriesId != null && seriesSlugById?.[photo.seriesId]
-            ? {
-                slug: seriesSlugById[photo.seriesId],
-                name: seriesNameById?.[photo.seriesId] ?? "Series",
-              }
+          photo.seriesId != null
+            ? (seriesLinkById?.[photo.seriesId] ?? null)
             : null;
         if (!photo.title && !photo.description && !captionSeries) return null;
         return (
@@ -1472,7 +1472,7 @@ export function Lightbox({
             )}
             {captionSeries && (
               <Link
-                to={`/series/${captionSeries.slug}`}
+                to={captionSeries.href}
                 data-lb-chrome
                 tabIndex={chromeTab}
                 onClick={(e) => e.stopPropagation()}

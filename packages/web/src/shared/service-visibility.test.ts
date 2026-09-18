@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  isContactRoute,
   isServiceVisibilityGatedPath,
   resolveServiceContactEmail,
   resolveServiceNavVisibility,
@@ -106,4 +107,16 @@ describe("resolveServiceNavVisibility", () => {
     expect(resolveServiceNavVisibility(undefined)).toBe(false);
     expect(resolveServiceNavVisibility("off")).toBe(false);
   });
+});
+
+test("Contact のページを日英・クエリつきで見分ける", () => {
+  expect(isContactRoute("/contact")).toBe(true);
+  expect(isContactRoute("/contact/")).toBe(true);
+  expect(isContactRoute("/contact?work=rintaro")).toBe(true);
+  expect(isContactRoute("/en/contact")).toBe(true);
+  expect(isContactRoute("/en/contact?work=rintaro#form")).toBe(true);
+  expect(isContactRoute("/")).toBe(false);
+  expect(isContactRoute("/about")).toBe(false);
+  expect(isContactRoute("/portfolio-kit/consult")).toBe(false);
+  expect(isContactRoute(undefined)).toBe(false);
 });

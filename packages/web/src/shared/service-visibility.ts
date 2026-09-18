@@ -65,3 +65,16 @@ export function isServiceVisibilityGatedPath(pathname: string): boolean {
   const normalized = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
   return SERVICE_VISIBILITY_GATED_PATHS.has(normalized);
 }
+
+/**
+ * Contact のページか（日英）。
+ *
+ * このページの仕事は1つだけなので、他の事業の案内を重ねない
+ * （`components/Layout.tsx` の StudioBridge）。末尾のスラッシュとクエリを
+ * 落として見る——`/contact?work=<slug>`（作品からの相談）も Contact である。
+ */
+export function isContactRoute(pathname: string | undefined): boolean {
+  const head = (pathname ?? "").split(/[?#]/, 1)[0] || "";
+  const normalized = head.replace(/\/+$/, "") || "/";
+  return normalized === "/contact" || normalized === "/en/contact";
+}

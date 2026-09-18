@@ -12,7 +12,10 @@ import { BackToTop } from "./BackToTop";
 import { StudioBridge } from "./StudioBridge";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
-import { isServiceOwnerSite } from "../../shared/service-visibility";
+import {
+  isContactRoute,
+  isServiceOwnerSite,
+} from "../../shared/service-visibility";
 
 // i18n Phase 3 スライス1: /about・/contact の英語ペア。/profile は /about の
 // エイリアスなので EN→JA 側は常に /about を正とする（ogp.ts の canonPath 扱いに合わせる）。
@@ -660,9 +663,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {showService && !location.includes("portfolio-kit") && (
-        <StudioBridge siteUrl={data?.siteUrl} language={location.startsWith("/en/") ? "en" : "ja"} compact />
-      )}
+      {/* Contact には出さない。**このページの仕事は1つだけ**で、そこへ別の
+          事業の案内を重ねると、頼もうとしている人の次の行動と競合する。
+          2026-09-19 実測（390px の本番 /contact）: 送信ボタンが y=1013、
+          「FOR PHOTOGRAPHERS／ポートフォリオ制作・料金を見る」が y=1097 と
+          48px 下。撮影の料金と制作の料金が同じ画面に並ぶ紛らわしさもある。
+          販売の導線そのものは残す——Top・Gallery・Series・Work・About と
+          /portfolio-kit では今までどおり出る。 */}
+      {showService &&
+        !location.includes("portfolio-kit") &&
+        !isContactRoute(location) && (
+          <StudioBridge siteUrl={data?.siteUrl} language={location.startsWith("/en/") ? "en" : "ja"} compact />
+        )}
 
       <footer
         className="pt-[calc(3rem*var(--spacing-footer-top,1))] footer-reveal"

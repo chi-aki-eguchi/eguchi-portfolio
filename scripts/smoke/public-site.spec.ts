@@ -1777,6 +1777,34 @@ test.describe("public-site — 作品と相談をつなぐ道", () => {
   });
 });
 
+test.describe("公開サイト — 相談の画面に別の事業を重ねない", () => {
+  // 2026-09-19 実測（390px の本番 /contact）: 送信ボタン y=1013 の 48px 下に
+  // 「FOR PHOTOGRAPHERS／ポートフォリオ制作・料金を見る」が出ていた。頼もうと
+  // している人の次の行動と競合する。販売の導線そのものは他のページに残す。
+  test("Contact には出さず、Top には今までどおり出す", async ({ page }) => {
+    const apiMocks = await installPublicApiMocks(page, {
+      ...SYNTHETIC_SETTINGS,
+      servicePageMode: "on",
+      // StudioBridge は持ち主のサイトでしか出ない（配布版に自分の販売案内を
+      // 出さないためのガード）。ここではその条件を満たしたうえで確かめる。
+      siteUrl: "https://akieguchi.com",
+      formspreeUrl: "https://example.test/synthetic-contact",
+    });
+    const bridge = page.locator("[data-studio-bridge]");
+
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(bridge, "Top では今までどおり出る").toBeVisible();
+
+    for (const path of ["/contact", "/en/contact", "/contact?work=anything"]) {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(page.locator("form")).toBeVisible();
+      await expect(bridge, `${path} に別の事業の案内が出ている`).toHaveCount(0);
+    }
+
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 作り置きサムネ（長辺640px）を、実際に描く大きさで頼めているか。
 //

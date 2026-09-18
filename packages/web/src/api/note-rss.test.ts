@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { decodeXml, stripTags, parseNoteRss } from "./note-rss";
+import { decodeXml, stripTags, parseNoteRss, trimExcerpt } from "./note-rss";
 
 describe("decodeXml", () => {
   test("unwraps CDATA and decodes entities", () => {
@@ -91,4 +91,40 @@ describe("parseNoteRss", () => {
       expect(withThumb(``)).toBe("");
     });
   });
+});
+
+// 2026-09-19: 本番 About の Journal 3件のうち2件が語の途中で切れていた。
+test("trimExcerpt ends at a sentence boundary instead of mid-word", () => {
+  const body =
+    "お待たせいたしました。ほんとに。たいへん（） 先日の67写真たちの続きとして、6×6や6×7の中判フィルム写真を見ていただこうかなと！好きな写真あったらスキしてね！🫶 コメントでこの写真好きです！もお待ちしております どうしてもﾊｯｾﾙﾌﾞﾗｯﾄﾞの話をしたい";
+  const out = trimExcerpt(body);
+  expect(out.endsWith("どうしてもﾊｯｾﾙﾌ")).toBe(false);
+  expect(/[。！？…]$/.test(out)).toBe(true);
+  expect(out.length).toBeLessThanOrEqual(121);
+});
+
+test("trimExcerpt keeps short text untouched and drops note's own link label", () => {
+  expect(trimExcerpt("短い本文です。")).toBe("短い本文です。");
+  expect(trimExcerpt("本文です。 続きをみる")).toBe("本文です。");
+});
+
+test("trimExcerpt falls back to a soft break with an ellipsis", () => {
+  const noPeriod = "あ".repeat(60) + "、" + "い".repeat(80);
+  const out = trimExcerpt(noPeriod);
+  expect(out.endsWith("…")).toBe(true);
+  expect(out.startsWith("あ")).toBe(true);
+});
+
+test("trimExcerpt never returns a stub when the first sentence is very short", () => {
+  const body = "はい。" + "あ".repeat(200);
+  expect(trimExcerpt(body).length).toBeGreaterThan(100);
+});
+
+test("trimExcerpt does not stop inside an unclosed bracket", () => {
+  const body =
+    "お久しぶりです。秋です。 1ヶ月毎日投稿チャレンジ、余裕をもって失敗致しました。悔しい。（ 後で67の写真あるから見てください！ ） 風邪ひいて1回書けなくなって、そのまま「 あぁ、、もうだめだ、、、 」ってなりまして、、、 せめて体調少しよくなってから";
+  const out = trimExcerpt(body);
+  expect(out).toBe(
+    "お久しぶりです。秋です。 1ヶ月毎日投稿チャレンジ、余裕をもって失敗致しました。悔しい。",
+  );
 });

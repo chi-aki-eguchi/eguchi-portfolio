@@ -183,3 +183,22 @@ describe("buildSitemapXml", () => {
     expect(xml).not.toContain("/photo/92");
   });
 });
+
+test("フィルムの写真は、sitemap の説明文でも撮影日を名乗らない", () => {
+  // 画面（ビューア・alt）と sitemap が同じことを言う。渡していなかったので
+  // sitemap だけが「○年○月に撮影」のままだった（2026-09-19）。
+  const xml = buildSitemapXml({
+    ...base(),
+    photos: [
+      photo({
+        id: 20,
+        url: "/api/images/photos/film.jpg",
+        seriesId: 7,
+        shotAt: "2024-08-19T13:47:04",
+        filmType: "フィルム",
+      }),
+    ],
+  });
+  expect(xml).toContain("フィルム写真（2024年8月スキャン）");
+  expect(xml).not.toContain("2024年8月に撮影");
+});

@@ -639,6 +639,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     seriesId: number | null;
     createdAt: Date | null;
     shotAt: string | null;
+    filmType: string | null;
   };
   let livePhotos: SitemapPhoto[] = [];
   try {
@@ -652,6 +653,9 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
           seriesId: schema.photos.seriesId,
           createdAt: schema.photos.createdAt,
           shotAt: schema.photos.shotAt,
+          // フィルムの shotAt は複写した時刻。これが無いと sitemap の説明文
+          // だけが「○年○月に撮影」と言い続ける。
+          filmType: schema.photos.filmType,
         })
         .from(schema.photos)
         .where(

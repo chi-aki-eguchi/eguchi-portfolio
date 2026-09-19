@@ -13,6 +13,12 @@ export type SitemapPhoto = {
   createdAt: Date | null;
   /** 撮影日。題の無い写真の説明文を、撮った時期で見分けられるようにする。 */
   shotAt?: string | Date | null;
+  /**
+   * "フィルム" | "デジタル" | 未設定。**フィルムの `shotAt` は複写した時刻で、
+   * 撮影日ではない。** これを渡さないと、サイトが画面で言っていることと
+   * sitemap が検索エンジンへ渡す説明文が食い違う（`shared/photo-alt.ts`）。
+   */
+  filmType?: string | null;
   sortOrder?: number | null;
 };
 

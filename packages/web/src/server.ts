@@ -49,6 +49,7 @@ import {
   type ViteManifest,
 } from "./api/route-preload";
 import {
+  isServiceOwnerSite,
   isServiceVisibilityGatedPath,
   resolveServiceVisibility,
 } from "./shared/service-visibility";
@@ -582,6 +583,9 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     ...(resolveServiceVisibility(settings.servicePageMode, siteUrl, "")
       ? ["/portfolio-kit", "/portfolio-kit/en", "/portfolio-kit/guide"]
       : []),
+    ...(isServiceOwnerSite(siteUrl, "")
+      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html"]
+      : []),
   ];
   // Include each published series detail page so crawlers discover the actual
   // work, not just the section index. Failure → static paths only (never throw).
@@ -811,6 +815,14 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     (await getSettings()).siteUrl || process.env.SITE_URL || "";
   const hostRedirect = canonicalHostRedirect(request.url, canonicalOrigin);
   if (hostRedirect) return Response.redirect(hostRedirect, 301);
+  // This is the owner's separate downloadable product, not a Kit customer's service.
+  if (
+    (url.pathname === "/tools/photo-select-bin.html" ||
+      url.pathname.startsWith("/tools/photo-select-bin/")) &&
+    !isServiceOwnerSite(canonicalOrigin, url.hostname)
+  ) {
+    return new Response("Not found", { status: 404 });
+  }
   const routePathname = canonicalPortfolioKitPath(url.pathname);
   if (routePathname !== url.pathname && !url.pathname.includes(".")) {
     return Response.redirect(
@@ -940,7 +952,9 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
       if (contentType) headers["Content-Type"] = contentType;
       // Hashed assets (e.g. /assets/index-Bzsuqb-e.js) — cache forever
       const immutable = url.pathname.startsWith("/assets/");
-      if (immutable) {
+      if (contentType?.startsWith("text/html")) {
+        headers["Cache-Control"] = "no-store";
+      } else if (immutable) {
         headers["Cache-Control"] = "public, max-age=31536000, immutable";
       } else {
         // Non-hashed static files (og-image.jpg, etc.) can't be immutable, but

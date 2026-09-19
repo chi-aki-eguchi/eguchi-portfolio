@@ -2,6 +2,7 @@ const STATIC_CONTENT_TYPES: Record<string, string> = {
   ".avif": "image/avif",
   ".css": "text/css; charset=utf-8",
   ".gif": "image/gif",
+  ".html": "text/html; charset=utf-8",
   ".ico": "image/x-icon",
   ".jpeg": "image/jpeg",
   ".jpg": "image/jpeg",
@@ -19,6 +20,7 @@ const STATIC_CONTENT_TYPES: Record<string, string> = {
   ".woff": "font/woff",
   ".woff2": "font/woff2",
   ".xml": "application/xml; charset=utf-8",
+  ".zip": "application/zip",
 };
 
 export function contentTypeForStaticPath(pathname: string): string | undefined {

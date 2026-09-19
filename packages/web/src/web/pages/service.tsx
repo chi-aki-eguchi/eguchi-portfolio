@@ -1400,6 +1400,10 @@ export default function ServicePage({
       </section>
 
       {/* ── FAQ (accordion) ── */}
+      {owner && language === "ja" && <p className="mt-8 text-center text-sm text-[color:var(--text-quiet)]">
+        依頼主に写真を選んでもらう方へ：{" "}
+        <a href="/tools/photo-select-bin.html" className="underline underline-offset-4">写真セレクト便の無料体験版</a>
+      </p>}
       <section className="mt-10 md:mt-14 page-entrance">
         <SectionLabel>{config.faq.label}</SectionLabel>
         <div className="max-w-2xl mx-auto">

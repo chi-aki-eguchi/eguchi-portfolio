@@ -113,6 +113,8 @@ export const heroPhotos = pgTable("hero_photos", {
   id: serial("id").primaryKey(),
   photoId: integer("photo_id").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
+  focalX: integer("focal_x"),
+  focalY: integer("focal_y"),
 });
 
 export const siteSettings = pgTable("site_settings", {

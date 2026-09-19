@@ -879,6 +879,9 @@ export function HeroTab() {
     from: number;
     to: number;
   } | null>(null);
+  const [heroFocalDrafts, setHeroFocalDrafts] = useState<
+    Record<number, { focalX: number; focalY: number }>
+  >({});
 
   // All gallery photos
   const { data: photosData, isLoading: photosLoading, isError: photosFailed, refetch: retryPhotos } = useQuery({
@@ -900,9 +903,20 @@ export function HeroTab() {
   const heroPhotos = (heroData?.heroPhotos ?? [])
     .map((h) => {
       const photo = allPhotos.find((p) => p.id === h.photoId);
-      return photo ? { ...photo, heroSort: h.sortOrder } : null;
+      return photo
+        ? {
+            ...photo,
+            heroSort: h.sortOrder,
+            heroFocalX: h.focalX,
+            heroFocalY: h.focalY,
+          }
+        : null;
     })
-    .filter(Boolean) as ((typeof allPhotos)[number] & { heroSort: number })[];
+    .filter(Boolean) as ((typeof allPhotos)[number] & {
+      heroSort: number;
+      heroFocalX: number | null;
+      heroFocalY: number | null;
+    })[];
   const sequenceRef = useRef<HTMLDivElement>(null);
   const sequencePositions = useRef(new Map<number, number>());
   const sequenceOrder = heroPhotos.map(photo => photo.id).join(",");
@@ -953,6 +967,32 @@ export function HeroTab() {
     mutationFn: async (photoId: number) => {
       const res = await adminApi["hero-photos"][":id"].$delete({
         param: { id: String(photoId) },
+      });
+      assertOk(res);
+    },
+    onSuccess: async () => {
+      setHeroError("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-hero-photos"] }),
+        qc.invalidateQueries({ queryKey: ["hero-photos"] }),
+      ]);
+    },
+    onError: onHeroError,
+  });
+
+  const updateHeroComposition = useMutation({
+    mutationFn: async ({
+      photoId,
+      focalX,
+      focalY,
+    }: {
+      photoId: number;
+      focalX: number | null;
+      focalY: number | null;
+    }) => {
+      const res = await adminApi["hero-photos"][":id"].$patch({
+        param: { id: String(photoId) },
+        json: { focalX, focalY },
       });
       assertOk(res);
     },
@@ -1053,7 +1093,7 @@ export function HeroTab() {
     onError: onHeroError,
   });
 
-  const heroBusy = addHero.isPending || removeHero.isPending || reorderHero.isPending || cleanupDangling.isPending;
+  const heroBusy = addHero.isPending || removeHero.isPending || reorderHero.isPending || cleanupDangling.isPending || updateHeroComposition.isPending;
 
   const submitHeroOrder = (
     before: number[],
@@ -1323,6 +1363,81 @@ export function HeroTab() {
                     <GripVertical size={15} />
                   </span>
                 </button>
+                {reorderTargetId === photo.id && (() => {
+                  const focal = heroFocalDrafts[photo.id] ?? {
+                    focalX: photo.heroFocalX ?? photo.focalX ?? 50,
+                    focalY: photo.heroFocalY ?? photo.focalY ?? 50,
+                  };
+                  const pointFromEvent = (event: React.PointerEvent<HTMLElement>) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    return {
+                      focalX: Math.round(Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100))),
+                      focalY: Math.round(Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100))),
+                    };
+                  };
+                  return (
+                    <div className="mt-2 border-t border-[var(--admin-line)] pt-2">
+                      <div className="mb-1 flex items-baseline justify-between gap-2 text-[length:var(--admin-text-note)]">
+                        <span>このHEROだけの見せる中心</span>
+                        <button
+                          type="button"
+                          disabled={heroBusy || (photo.heroFocalX === null && photo.heroFocalY === null)}
+                          onClick={() => updateHeroComposition.mutate({ photoId: photo.id, focalX: null, focalY: null })}
+                          className="text-[var(--admin-muted)] underline underline-offset-2 disabled:no-underline disabled:opacity-40"
+                        >
+                          写真の基準点に戻す
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`HERO ${i + 1} の見せる中心: 横 ${focal.focalX}%・縦 ${focal.focalY}%`}
+                        onPointerDown={(event) => {
+                          event.currentTarget.setPointerCapture(event.pointerId);
+                          setHeroFocalDrafts((drafts) => ({ ...drafts, [photo.id]: pointFromEvent(event) }));
+                        }}
+                        onPointerMove={(event) => {
+                          if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                          setHeroFocalDrafts((drafts) => ({ ...drafts, [photo.id]: pointFromEvent(event) }));
+                        }}
+                        onClick={(event) => {
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          const point = {
+                            focalX: Math.round(Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100))),
+                            focalY: Math.round(Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100))),
+                          };
+                          setHeroFocalDrafts((drafts) => ({ ...drafts, [photo.id]: point }));
+                          updateHeroComposition.mutate({ photoId: photo.id, ...point });
+                        }}
+                        onKeyDown={(event) => {
+                          const step = event.shiftKey ? 10 : 1;
+                          let next = focal;
+                          if (event.key === "ArrowLeft") next = { ...focal, focalX: Math.max(0, focal.focalX - step) };
+                          if (event.key === "ArrowRight") next = { ...focal, focalX: Math.min(100, focal.focalX + step) };
+                          if (event.key === "ArrowUp") next = { ...focal, focalY: Math.max(0, focal.focalY - step) };
+                          if (event.key === "ArrowDown") next = { ...focal, focalY: Math.min(100, focal.focalY + step) };
+                          if (next === focal) return;
+                          event.preventDefault();
+                          setHeroFocalDrafts((drafts) => ({ ...drafts, [photo.id]: next }));
+                          updateHeroComposition.mutate({ photoId: photo.id, ...next });
+                        }}
+                        className="relative aspect-[3/2] w-full cursor-crosshair touch-none overflow-hidden border-0 bg-[var(--admin-paper)] p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-accent)]"
+                      >
+                        <img
+                          src={adminPhotoSrc(photo, 900, 82)}
+                          alt=""
+                          draggable={false}
+                          className="h-full w-full object-cover"
+                          style={{ objectPosition: `${focal.focalX}% ${focal.focalY}%` }}
+                        />
+                        <span
+                          aria-hidden="true"
+                          className="absolute h-3 w-3 rounded-full border border-white bg-black/40 shadow-[0_0_0_1px_rgba(0,0,0,.55)]"
+                          style={{ left: `${focal.focalX}%`, top: `${focal.focalY}%`, transform: "translate(-50%, -50%)" }}
+                        />
+                      </button>
+                    </div>
+                  );
+                })()}
                 <div className="mt-1 flex min-h-5 items-center justify-between gap-2 text-[length:var(--admin-text-note)]">
                   <span className="text-[var(--admin-muted)]">
                     {i + 1}

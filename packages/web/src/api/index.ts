@@ -3091,7 +3091,20 @@ const app = new Hono()
     const photoMap = new Map(
       heroRows.map((p) => [p.id, toPublicPhoto(photoWithThumbs(p))]),
     );
-    const result = rows.map((r) => photoMap.get(r.photoId)).filter(Boolean);
+    // Hero framing is an assignment-level override.  It intentionally replaces
+    // the public focal point only in this response: Gallery, series covers and
+    // every other use of the photo retain the photo's own composition.
+    const result = rows
+      .map((r) => {
+        const photo = photoMap.get(r.photoId);
+        if (!photo) return undefined;
+        return {
+          ...photo,
+          focalX: r.focalX ?? photo.focalX,
+          focalY: r.focalY ?? photo.focalY,
+        };
+      })
+      .filter(Boolean);
     return c.json({ heroPhotos: result }, 200);
   })
 
@@ -3132,6 +3145,40 @@ const app = new Hono()
         .delete(schema.heroPhotos)
         .where(eq(schema.heroPhotos.photoId, photoId)),
     );
+    return c.json({ ok: true }, 200);
+  })
+
+  // Change the composition of one Hero assignment without changing the photo's
+  // base focal point.  Sending null for either coordinate clears the override.
+  .patch("/admin/hero-photos/:id", requireAdmin, async (c) => {
+    const photoId = Number(c.req.param("id"));
+    if (!Number.isInteger(photoId) || photoId < 1)
+      return c.json({ error: "Invalid photo id" }, 400);
+    const body = (await c.req.json()) as {
+      focalX?: unknown;
+      focalY?: unknown;
+    };
+    const update: { focalX?: number | null; focalY?: number | null } = {};
+    for (const key of ["focalX", "focalY"] as const) {
+      if (body[key] === undefined) continue;
+      if (body[key] === null) {
+        update[key] = null;
+        continue;
+      }
+      const focal = parseFocalPoint(body[key]);
+      if (focal === null) return c.json({ error: `Invalid ${key}` }, 400);
+      update[key] = focal;
+    }
+    if (Object.keys(update).length === 0)
+      return c.json({ error: "No Hero composition supplied" }, 400);
+    const changed = await withRetry(() =>
+      db
+        .update(schema.heroPhotos)
+        .set(update)
+        .where(eq(schema.heroPhotos.photoId, photoId))
+        .returning({ id: schema.heroPhotos.id }),
+    );
+    if (changed.length === 0) return c.json({ error: "Hero photo not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 

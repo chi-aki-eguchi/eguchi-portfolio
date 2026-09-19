@@ -1765,17 +1765,16 @@ function photoEditFormChanged(form: PhotoEditForm, photo: Photo): boolean {
 }
 
 const ROTATION_OPTIONS = [0, 90, 180, 270] as const;
-const FOCAL_PRESETS = [
-  { x: 0, y: 0, key: "topLeft" },
-  { x: 50, y: 0, key: "top" },
-  { x: 100, y: 0, key: "topRight" },
-  { x: 0, y: 50, key: "left" },
-  { x: 50, y: 50, key: "center" },
-  { x: 100, y: 50, key: "right" },
-  { x: 0, y: 100, key: "bottomLeft" },
-  { x: 50, y: 100, key: "bottom" },
-  { x: 100, y: 100, key: "bottomRight" },
-] as const;
+function focalPointFromPointer(
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+) {
+  return {
+    focalX: Math.round(Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))),
+    focalY: Math.round(Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100))),
+  };
+}
 
 function rotatedBy(
   current: number | null | undefined,
@@ -9048,8 +9047,33 @@ export function GalleryTab({
                 label={copy.inspector.focalPoint}
                 hint={copy.inspector.focalPointHint}
               >
-                <div className="grid grid-cols-[72px_1fr] gap-2">
-                  <div className="relative aspect-square overflow-hidden bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm">
+                <div className="grid gap-2">
+                  <button
+                    type="button"
+                    aria-label={`${copy.inspector.focalPoint}: 横 ${editForm.focalX}%・縦 ${editForm.focalY}%`}
+                    onPointerDown={(event) => {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      const point = focalPointFromPointer(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY);
+                      setEditForm((form) => ({ ...form, ...point }));
+                    }}
+                    onPointerMove={(event) => {
+                      if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                      const point = focalPointFromPointer(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY);
+                      setEditForm((form) => ({ ...form, ...point }));
+                    }}
+                    onKeyDown={(event) => {
+                      const step = event.shiftKey ? 10 : 1;
+                      const changes: Partial<Pick<PhotoEditForm, "focalX" | "focalY">> = {};
+                      if (event.key === "ArrowLeft") changes.focalX = Math.max(0, editForm.focalX - step);
+                      if (event.key === "ArrowRight") changes.focalX = Math.min(100, editForm.focalX + step);
+                      if (event.key === "ArrowUp") changes.focalY = Math.max(0, editForm.focalY - step);
+                      if (event.key === "ArrowDown") changes.focalY = Math.min(100, editForm.focalY + step);
+                      if (Object.keys(changes).length === 0) return;
+                      event.preventDefault();
+                      setEditForm((form) => ({ ...form, ...changes }));
+                    }}
+                    className="relative aspect-[4/3] cursor-crosshair touch-none overflow-hidden rounded-sm border border-[var(--admin-line)] bg-[var(--admin-paper)] p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--admin-accent)]"
+                  >
                     <img
                       src={adminPhotoSrc(inspectPhoto, 400, 78, editForm.rotationDeg)}
                       decoding="async"
@@ -9072,44 +9096,10 @@ export function GalleryTab({
                         transform: "translate(-50%, -50%)",
                       }}
                     />
-                  </div>
-                  <div className="grid grid-cols-3 gap-1">
-                    {FOCAL_PRESETS.map((point) => {
-                      const label = copy.focalPoints[point.key];
-                      const active =
-                        editForm.focalX === point.x &&
-                        editForm.focalY === point.y;
-                      return (
-                        <button
-                          key={`${point.x}-${point.y}`}
-                          type="button"
-                          onClick={() =>
-                            setEditForm((f) => ({
-                              ...f,
-                              focalX: point.x,
-                              focalY: point.y,
-                            }))
-                          }
-                          aria-label={copy.inspector.focalPointAria(label)}
-                          aria-pressed={active}
-                          title={label}
-                          className={`admin-tap-sm h-5 rounded-sm border flex items-center justify-center transition-colors ${
-                            active
-                              ? "admin-btn-primary border-[var(--admin-line)]"
-                              : "bg-[var(--admin-paper-soft)] border-[var(--admin-line)]"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              active
-                                ? "bg-[var(--admin-paper)]"
-                                : "bg-[var(--admin-muted)]"
-                            }`}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
+                    <span className="absolute bottom-2 left-2 bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                      横 {editForm.focalX}% ・ 縦 {editForm.focalY}%
+                    </span>
+                  </button>
                 </div>
               </InspectField>
 

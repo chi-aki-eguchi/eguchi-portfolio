@@ -103,6 +103,14 @@ export const TURSO_SAFETY_NET_COLUMNS: readonly SafetyNetColumn[] = [
   ["photos", "camera_model", "text"],
 ];
 
+// hero_photos is deliberately separate from the long-lived `photos` safety
+// contract above.  The test and recovery path for old photo-only databases can
+// create just `photos`; production always has hero_photos from the base schema.
+const TURSO_HERO_PRESENTATION_COLUMNS: readonly SafetyNetColumn[] = [
+  ["hero_photos", "focal_x", "integer"],
+  ["hero_photos", "focal_y", "integer"],
+];
+
 /**
  * 欠けている列だけを足す。**既にある列には触らない。**
  *
@@ -140,6 +148,7 @@ export async function ensureColumnsExist(
 async function ensureTursoColumns(): Promise<void> {
   const { db } = await import("./libsql");
   await ensureColumnsExist(db);
+  await ensureColumnsExist(db, TURSO_HERO_PRESENTATION_COLUMNS);
 }
 
 export async function runStartupMigrations(): Promise<void> {

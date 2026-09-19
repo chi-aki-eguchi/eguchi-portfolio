@@ -58,6 +58,29 @@ test('HEROの一覧密度と拡大確認、短いスマホでも候補へ戻れ�
  await page.emulateMedia({reducedMotion:'reduce'});
  expect(await page.locator('.hero-candidate-check').first().evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
 });
+test('HEROだけの見せる中心を自由に動かして、写真の基準点へ戻せる', async ({ page }) => {
+ const photo={id:1,title:'Hero',filename:'hero.jpg',url:image,thumbUrl:image,mediumUrl:image,width:400,height:300,category:'street',description:'',meta:'',sortOrder:0,createdAt:'2026-08-01',isPublished:true,focalX:50,focalY:50};
+ const writes: unknown[]=[];
+ let heroFocalX:number|null=null, heroFocalY:number|null=null;
+ await page.route('**/api/photos**', route => route.fulfill({json:{photos:[photo]}}));
+ await page.route('**/api/admin/hero-photos**', async route => {
+  const request=route.request();
+  if(request.method()==='GET') return route.fulfill({json:{heroPhotos:[{id:1,photoId:1,sortOrder:0,focalX:heroFocalX,focalY:heroFocalY}]}});
+  if(request.method()==='PATCH') { const body=request.postDataJSON(); writes.push(body); heroFocalX=body.focalX; heroFocalY=body.focalY; }
+  return route.fulfill({json:{ok:true}});
+ });
+ await page.route('**/api/hero-photos**',route=>route.fulfill({json:{heroPhotos:[]}}));
+ await loginAsAdmin(page); await gotoAdminTab(page,'hero');
+ await page.locator('[data-hero-slide="1"] button').click();
+ const stage=page.getByRole('button',{name:/HERO 1 の見せる中心/});
+ await stage.focus();
+ await page.keyboard.press('ArrowRight');
+ await expect.poll(()=>writes.length).toBe(1);
+ expect(writes[0]).toEqual({focalX:51,focalY:50});
+ await page.getByRole('button',{name:'写真の基準点に戻す'}).click();
+ await expect.poll(()=>writes.length).toBe(2);
+ expect(writes[1]).toEqual({focalX:null,focalY:null});
+});
 test('写真一覧の取得失敗を空や削除済みと判定せず再試行できる',async({page})=>{
  let fail=true;
  await page.route('**/api/photos**',route=>route.fulfill(fail?{status:500,json:{error:'test'}}:{json:{photos:[]}}));

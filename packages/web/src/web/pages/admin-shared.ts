@@ -346,4 +346,10 @@ export type AdminSeries = {
   sortOrder?: number;
   isPublished?: boolean;
 };
-export type HeroPhotoRow = { id: number; photoId: number; sortOrder: number };
+export type HeroPhotoRow = {
+  id: number;
+  photoId: number;
+  sortOrder: number;
+  focalX: number | null;
+  focalY: number | null;
+};

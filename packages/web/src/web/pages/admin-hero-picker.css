@@ -8,6 +8,7 @@
 .admin-atelier .admin-content .hero-selected-heading span { font-size:11px; color:var(--admin-muted); }
 .admin-atelier .admin-content .hero-selected-strip { position:relative; display:flex; overflow:auto; gap:10px; padding:4px 2px; scrollbar-width:thin; }
 .admin-atelier .admin-content .hero-selected-strip article { flex:0 0 112px; animation:hero-pick-arrive 200ms ease-out both; }
+.admin-atelier .admin-content .hero-selected-strip article[data-hero-reorder-target="true"] { flex-basis:min(340px, calc(100vw - 72px)); }
 .admin-atelier .admin-content .hero-selected-strip img { width:100%; height:76px; object-fit:contain; background:var(--admin-paper-deep); }
 .admin-atelier .admin-content .hero-selected-strip article > button { min-height:0; padding:0; line-height:0; }
 .admin-atelier .admin-content .hero-selected-strip article > button > span { width:20px; height:20px; bottom:4px; left:4px; }

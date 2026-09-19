@@ -137,6 +137,10 @@ export const heroPhotos = sqliteTable("hero_photos", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   photoId: integer("photo_id").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
+  // Optional, Hero-only composition. Null deliberately means "use the photo's
+  // base focal point", so adjusting a Hero never changes gallery framing.
+  focalX: integer("focal_x"),
+  focalY: integer("focal_y"),
 });
 
 // サイト設定テーブル（key-value形式）

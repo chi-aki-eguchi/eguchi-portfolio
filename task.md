@@ -1,6 +1,25 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
+## Current State — 2026-09-19 JST
+
+### 見つける・見る・作家を知る・相談する（main、push・本番反映まで完了）
+
+- 依頼: 写真の魅力と静かな品位を保ったまま、初めての人が作品を見つけ、十分に見て、気になった作品について相談できるようにする。オーナーが少ない操作でそれを保てるようにする。**判断と実測の正本は `docs/specs/find-view-ask-2026-09-19.md`**（何を変えなかったかとその理由も書いてある）。
+- 先に測った本番（読み取りのみ、build `eaefe997`）: 公開写真133枚（standalone 0）、Series 1本32枚・Work 1本101枚、題・説明・副題・作家の言葉はすべて0件、デジタル94／フィルム39。Top は `topWorksMode=random`・`homeGalleryCount=29`・`topWorksLayout=grid`・`topWorksColumns=8`。
+- 変更:
+  - `31f079c` フィルムの `shotAt` は複写日時なので「○年○月に撮影」と言わない（本番の該当39枚）。ビューアが既に "Scanned" と区別していたのに説明文だけがずれていた。`d0f8bf8` で sitemap 側にも同じ判定を渡した。
+  - `416efe3` About の Journal の抜粋を文の終わりで切る（本番3件中2件が語の途中で切れていた）。
+  - `a6575a5` Work 棚の写真から作品ページへ戻れるようにする。対応表を Series 棚だけで作り、行き先を `/series/<slug>` と決め打ちにしていたため、**公開写真133枚のうち101枚（76%）が拡大しても作品名もリンクも持たなかった**（`/series/rintaro` はサーバーが404を返す）。
+  - `36a7592` 「トップに出す写真」に「選んだ順」を作り、前へ／後ろへ／外すを付けた。1操作＝1回の取り消し。トップ専用の設定を触ったらプレビューをトップへ向ける。編集するのは `topWorksIds` の並びだけ。
+  - `f33e2c0` 作品の導入から相談へ（`?work=<slug>` で公開作品の識別子だけを渡し、参考作品は外せる）。本文欄に消えない記入案内、対応地域と流れを同じ枠へ、件名が Portfolio Kit なら案内だけ切り替え。
+  - `864a184` タイル画像を枠の大きさで頼む（先頭8枚は先読みのURLのまま）。
+  - `17318ed` Contact に別の事業の案内（StudioBridge）を出さない。販売導線は他のページに残す。
+- **測って「やらない」と決めた**: Top の「さらに見る」（390pxで3,376px＝約4画面、Series の帯 y=2,379・Work リンク y=850 で到達性の問題は無かった）、Contact のラベルの英語表記（サイト全体の意匠）、件名の選択肢「テンプレートについて」（2026-07-08 承認の計測用）、縦横比の予約と遅延読み込み（既に十分だった）。
+- 性能の実測（390×844・DPR2、本番トップ、スクロール前）: 画像 2,308,083B → 974,503B（-57.8%）。タイルは 1,809,482B → 475,902B。74px の枠に 640px を配っていた（必要 148px の4.32倍）。LCP 1,284ms（Top）／1,356ms（`/work/rintaro`）、CLS はどちらも 0。
+- 2026-09-19 検証: `bun run check` 成功。全体 `bun run smoke` = 565成功／177スキップ／**失敗13**。13件は backlog S-3 に記録済みの既知の失敗と spec・project まで同一で、新しい失敗は無い（新規の29件はすべて成功またはスキップ）。証拠・測定スクリプト・比較画像は `scratch/site-improve-20260919/`。
+- 残した判断（コードでは決められない）: 作品の題・説明・撮影地が0件、Work の副題・作家の言葉が空、件名の選択肢を残すか、本番の `topWorksMode`（random は60枚上限）。**問い合わせ数・売上への効果は未測定。**
+
 ## Current State — 2026-09-17 JST
 
 ### Adobe比較監査の第1段階と smoke の本番接続の遮断（ローカルブランチ `audit/stage1-fixes`、未push・未統合）
@@ -12,7 +31,7 @@
 - 以前の helpers.ts の書き込みの番人は、最上位の `beforeEach` のため最初の spec にしか効いていなかった。
 - 2026-09-17 検証（コミット `86f65e2`）: `bun run check` 成功（製品1433・ツール60・番人34、型・lint・build）。全体smoke 726件＝成功542・スキップ171・**失敗13**。13件は `1ef90fc` に安全対策 `7bd685c` を載せた基準でも、同じ隔離条件・同じ要素と値で再現した（原因確認済8・未調査5、backlog S-3）。基準に安全対策を含むため、ブランチ全体に回帰が無いことの証明ではない。遮断228件はすべて WebKit からの Google Fonts preconnect。記録は worktree の `scratch/smoke-evidence/2026-09-17T05-15-23-111Z/` と `scratch/audit-stage1-20260917/`。PostgreSQL・スマホ実機・本番は未検証。
 - 外部レビュー（`ee38df9` の差分、2026-09-17）の R1〜R4 を限定修正: R4 `5fd840e`、R1〜R3 `d6b34aa`。R1 `page.request`・`context.request`・request fixture は route を通らないので fixtures.ts が送る前に止め、spec の API 読取は `api`（同一オリジン・GET/HEAD・リダイレクト不追従）だけ。R2 終了時の判定はサーバー側の遮断記録を必ず読み、1件でも・読めなくても失敗。R3 実行中テスト名は context の前に付け、閉じた後に外す（成功・失敗・時間切れ）。R4 番人テストは `node scripts/smoke/guard/run.mjs`（22.12〜22.17 は型除去フラグを付与、22.12 未満は理由を出して止める）。R1〜R3 は本物の fixture で動かす `guard/playwright-probes.test.ts` が `ee38df9` では失敗し修正後に成功。Node 22 の確認（公式配布を一時フォルダで使用、既定の Node 24 は変えていない）: Playwright 1.61.0 では 22.18.0 で相対 import を含む TS を読めなかった（Node が require の conditions を Set で渡すため）。2026-09-18 にオーナーの許可で Playwright を 1.61.1 に更新（`6564aa8`、`@playwright/test`・`playwright` を 1.61.1 に固定。lockfile は Playwright の3件だけ）し、22.18.0 を拒否する判定を外した（`2c64c7b`）。更新後は global-setup.ts が smoke-site.ts を import() で読むと spec が読めなくなったため、静的 import にした（`32a47d9`）。`32a47d9` で番人テスト48件と関連 smoke（成功14・スキップ13・失敗0）が 22.12.0・22.18.0・24.16.0 のすべてで通り、子プロセスも同じ Node だった。結果は `docs/archive/audits/adobe-comparison-verification-2026-09-17.md` の追記。
-- **main 統合前の注意**: main の `bun run smoke` はまだ本番接続のまま。統合までは main で smoke を回さない。
+- ~~**main 統合前の注意**: main の `bun run smoke` はまだ本番接続のまま。~~ **2026-09-19 追記: `audit/stage1-fixes` は main へ統合・push 済み（`eaefe99`）で、main の `bun run smoke` も隔離済み。** 見出しの「未push・未統合」も同様に解消している。
 - 触れていない判断事項: FAQ・販売文書の「24時間／3日」（B-28）、ゴミ箱GETの削除（B-29 製品側）。
 
 ## Current State — 2026-09-16 JST

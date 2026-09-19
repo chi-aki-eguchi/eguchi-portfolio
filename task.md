@@ -3,11 +3,11 @@
 <!-- CURRENT_STATE_START -->
 ## Current State — 2026-09-19 JST
 
-### HEROと写真の構図を任意位置で扱う（実装・検証完了、commit/push前）
+### HEROと写真の構図を任意位置で扱う（mainへcommit・push・本番反映済み）
 
 - Libraryの「見せる中心」は9点固定を廃止し、実写真をクリック／ドラッグで任意位置へ置けるようにした。矢印キーは1%、Shift+矢印は10%ずつ動く。写真共通の基準点なので、切り抜きを使う既存の表示にも反映する。
 - HEROには `hero_photos` の任意座標上書きを追加。HEROタブで選んだ写真だけ、専用の大きいプレビューから寄せを保存でき、「写真の基準点に戻す」で上書きを消せる。Galleryやシリーズの構図は変えない。
-- Turso/PostgreSQL両方にmigrationを追加。2026-09-19に `bun run check` とHEROのPC smoke（4件）を成功。
+- Turso/PostgreSQL両方にmigrationを追加。2026-09-19に `bun run check` とHEROのPC smoke（4件）を成功。commit `818026f` をmainへpushし、本番 `/api/health` build `818026fb` と公開TOP・`/api/hero-photos`を確認。
 
 ### 見つける・見る・作家を知る・相談する（main、push・本番反映まで完了）
 

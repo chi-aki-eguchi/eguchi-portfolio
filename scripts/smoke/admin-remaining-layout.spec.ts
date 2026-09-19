@@ -190,8 +190,9 @@ test.describe("admin — 残画面のWorkspace / Form振り分け", () => {
 
     await slides
       .nth(0)
-      .locator("button")
-      .dragTo(slides.nth(2).locator("button"));
+      // 選択中の写真には構図編集ボタンもあるため、並べ替えの写真だけを動かす。
+      .locator("button[draggable]")
+      .dragTo(slides.nth(2).locator("button[draggable]"));
     await expect.poll(() => state.reorderWrites.length).toBe(4);
     expect(state.heroIds[2]).toBe(PHOTOS[2].id);
 

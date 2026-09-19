@@ -29,10 +29,15 @@ test("ボタンで画面外を含む全選択と解除、絞り込み外の選�
       const menu = group.locator(":scope > div");
       await expect(menu).toBeVisible();
       const bounds = (await menu.boundingBox())!;
-      expect(bounds.y).toBeGreaterThanOrEqual(0);
-      expect(bounds.y + bounds.height).toBeLessThanOrEqual((await trigger.boundingBox())!.y);
-      expect(bounds.x).toBeGreaterThanOrEqual(0);
-      expect(bounds.x + bounds.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+      const triggerBox = (await trigger.boundingBox())!;
+      // どちらのメニューが画面から出たのかが分からないと直せない。
+      const where = `${selector} menu=${JSON.stringify(bounds)} trigger=${JSON.stringify(triggerBox)}`;
+      expect(bounds.y, where).toBeGreaterThanOrEqual(0);
+      expect(bounds.y + bounds.height, where).toBeLessThanOrEqual(triggerBox.y);
+      expect(bounds.x, where).toBeGreaterThanOrEqual(0);
+      expect(bounds.x + bounds.width, where).toBeLessThanOrEqual(
+        page.viewportSize()!.width,
+      );
       await trigger.click();
     }
     const toolbar = (await count(page).boundingBox())!;

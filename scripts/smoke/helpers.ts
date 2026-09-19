@@ -71,7 +71,15 @@ export async function gotoAdminTab(page: Page, tab: string, libraryView: "normal
   if (tab === "gallery") {
     const view = page.locator(`[data-library-mode-action="${libraryView}"]:visible`).first();
     if (await view.isVisible()) await view.click();
-    else if (libraryView === "normal") {
+    else if (libraryView === "select") {
+      // スマホ幅には3つ並ぶ切替が出ない。同じ「選択」へ入る入口は、操作帯の
+      // 専用ボタン（`data-library-mobile-select`）になる。ここが押されないまま
+      // だったので、スマホの選択の検査は選択に入れずに落ち続けていた。
+      const mobileSelect = page
+        .locator("[data-library-mobile-select]:visible")
+        .first();
+      if (await mobileSelect.isVisible()) await mobileSelect.click();
+    } else if (libraryView === "normal") {
       const finish = page.locator(".admin-selection-cancel");
       if (await finish.isVisible()) await finish.click();
     }

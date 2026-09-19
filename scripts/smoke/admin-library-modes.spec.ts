@@ -9,8 +9,53 @@ const dragHandle = (page: Page, index: number) =>
   tiles(page)
     .nth(index)
     .getByRole("button", { name: /ドラッグして並べ替え|Drag to reorder/ });
+/**
+ * モードの入口。**スマホ幅には3つ並ぶ切替が出ない**ので、同じモードへ入る
+ * 操作帯の専用ボタンを代わりに使う（`data-library-mobile-select` /
+ * `data-library-mobile-arrange`）。ここを見ていなかったので、スマホの検査は
+ * 「選択に入れない」で落ち続けていた。
+ */
 const modeAction = (page: Page, action: string) =>
-  page.locator(`[data-library-mode-action="${action}"]:visible`).first();
+  page
+    .locator(
+      `[data-library-mode-action="${action}"]:visible, [data-library-mobile-${action}]:visible`,
+    )
+    .first();
+
+/**
+ * そのモードへ入る。
+ *
+ * スマホ幅は**並べ替え中に切替そのものを出さない**（画面が狭いので、並べ替えを
+ * 終えてから次へ進む形）。その状態から他のモードを押そうとして、スマホの検査は
+ * ずっと時間切れになっていた。先に「並べ替えを終了」を押してから入る。
+ */
+async function enterMode(
+  page: Page,
+  mode: "normal" | "select" | "arrange",
+): Promise<void> {
+  const direct = modeAction(page, mode);
+  if (await direct.isVisible()) {
+    await direct.click();
+    return;
+  }
+  const finishArrange = page
+    .locator('[data-library-mode-action="finish-arrange"]:visible')
+    .first();
+  if (await finishArrange.isVisible()) {
+    await finishArrange.click();
+    // 「並べ替えを終了」は通常へ戻る。目的地が通常ならそれで着いている。
+    if (mode === "normal") return;
+    await modeAction(page, mode).click();
+    return;
+  }
+  if (mode === "normal") {
+    // スマホの選択中は「選択終了」で通常へ戻る（切替は出ていない）。
+    const cancel = page.locator(".admin-selection-cancel:visible").first();
+    if (await cancel.isVisible()) await cancel.click();
+    return;
+  }
+  await modeAction(page, mode).click();
+}
 
 test.describe("admin — Libraryの通常・選択・並べる分離", () => {
   test("通常は詳細、選択は選択だけ、並べるは並べ替えだけを行う", async ({
@@ -49,7 +94,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
 
     // 一覧へ戻り、選択へ切り替えると0枚から始まる。
     await page.locator("[data-library-inspector-close]").click();
-    await modeAction(page, "select").click();
+    await enterMode(page, "select");
     await expect(library(page)).toHaveAttribute("data-library-mode", "select");
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveAttribute(
@@ -99,7 +144,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       .getAttribute("data-library-selected-count");
     // 選択集合と並べ替え対象は別。選択→並べ替えでは対象なしで入り、
     // 写真を対象にしても選択集合は隠して保持し、選択へ戻ると復元する。
-    await modeAction(page, "arrange").click();
+    await enterMode(page, "arrange");
     await expect(library(page)).toHaveAttribute("data-library-mode", "arrange");
     await expect(page.locator("[data-library-reorder-bar]")).toHaveCount(0);
     await photoAction(page, 0).click();
@@ -107,14 +152,21 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
     await expect(
       tiles(page).nth(0).locator("[data-library-reorder-target-pill]"),
     ).toBeVisible();
-    await modeAction(page, "select").click();
+    // ここから先は**画面幅で道が分かれる**。
+    //  PC: 並べ替え → 選択 へ直接戻れるので、隠していた選択集合が復元する。
+    //  スマホ: 切替が出ないので「並べ替えを終了」→通常 を通るしかなく、
+    //          そこで選択は終わる（`applyLibraryMode` の keepSelection は
+    //          arrange→select だけ）。**スマホには復元まで戻る道が無い**ことを
+    //          そのまま書いておく（隠すと、直すかどうかの判断材料が消える）。
+    const narrow = (page.viewportSize()?.width ?? 0) < 768;
+    await enterMode(page, "select");
     await expect(library(page)).toHaveAttribute("data-library-mode", "select");
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveAttribute(
       "data-library-selected-count",
-      selectedCount ?? "0",
+      narrow ? "0" : (selectedCount ?? "0"),
     );
 
-    await modeAction(page, "normal").click();
+    await enterMode(page, "normal");
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(0);
 
@@ -128,10 +180,10 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       "1",
     );
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
-    await modeAction(page, "normal").click();
+    await enterMode(page, "normal");
 
     // 並べ替えモードはタイルクリックで対象だけを指定する。
-    await modeAction(page, "arrange").click();
+    await enterMode(page, "arrange");
     await expect(library(page)).toHaveAttribute("data-library-mode", "arrange");
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
       0,
@@ -154,7 +206,7 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
         .locator("button:not([data-library-photo-action])"),
     ).toHaveCount(1);
 
-    await modeAction(page, "normal").click();
+    await enterMode(page, "normal");
     await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
     await expect(dragHandle(page, 0)).toHaveCount(0);
     await expect(photoAction(page, 0)).not.toHaveAttribute("draggable", "true");
@@ -232,12 +284,19 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       .fill("__library_mode_no_result__");
     await expect(page.locator('[data-library-empty="search"]')).toBeVisible();
 
+    // 絞り込み中の「並べ替え」は、押せなくするのではなく**押したら解除して
+    // 入る**（2026-09-13 `208c1e1`/`2031c56`。単体は
+    // `admin-reorder-lock.render.test.tsx`）。押せない状態にするのは
+    // 「公開の並びが手動順でない」ときだけで、理由が違う。
     const arrange = modeAction(page, "arrange");
-    await expect(arrange).toBeDisabled();
-    await expect(arrange).toHaveAttribute("title", /検索|絞り込み/);
+    await expect(arrange).toBeEnabled();
+    await expect(arrange).toHaveAttribute("title", /解除して並べ替える/);
     await expect(
       page.locator('[data-library-reorder-entry-lock="filters"]'),
     ).toBeVisible();
+    // 押す前は並べ替えに入っていない。
+    await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
+    await expect(page.locator("[data-library-arrange-toolbar]")).toHaveCount(0);
     await expect(page.locator("[data-library-inspector]")).toHaveCount(0);
     await expect(page.locator("[data-library-selection-toolbar]")).toHaveCount(
       0,
@@ -249,6 +308,14 @@ test.describe("admin — Libraryの通常・選択・並べる分離", () => {
       "data-reorder-locked",
       "false",
     );
+    // 「解除して」の部分。条件が残ったまま並べ替えに入ると、見えている一部だけを
+    // 動かして全体の並びを保存してしまう。並べ替え中は検索欄そのものを出さない
+    // ので、通常へ戻して**本当に消えている**ことを見る（隠れているだけではない）。
+    await expect(page.locator("[data-library-active-conditions]")).toHaveCount(0);
+    await enterMode(page, "normal");
+    await expect(library(page)).toHaveAttribute("data-library-mode", "normal");
+    await expect(page.locator("[data-library-search-input]")).toHaveValue("");
+    await expect(page.locator("[data-library-active-conditions]")).toHaveCount(0);
   });
 
   test("写真0枚では空状態を示し、選択・並べるを開始しない", async ({

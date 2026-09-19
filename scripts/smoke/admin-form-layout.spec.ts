@@ -199,9 +199,13 @@ test.describe("admin — Form layout", () => {
     test.skip(testInfo.project.name !== "desktop", "PCの2幅で確認する");
 
     await installMocks(page);
-    for (const [width, expectedToc, maxBody] of [
-      [1440, 207, 720],
-      [1024, 163, 720],
+    // 目次はナビの中に入っているので、幅はナビの内側いっぱい。以前は 207/163 と
+    // 直接の数字で縛っていたが、2026-09-13 の再設計でナビの幅が変わり（240→216、
+    // 1024pxは196）、**期待値だけが古いまま落ち続けていた**。数字を書き直すと
+    // また同じことになるので、「ナビの内側に一致し、読める幅がある」を測る。
+    for (const [width, maxBody] of [
+      [1440, 720],
+      [1024, 720],
     ] as const) {
       await page.setViewportSize({ width, height: 900 });
       await openTab(page, "settings");
@@ -209,16 +213,29 @@ test.describe("admin — Form layout", () => {
         .locator('[data-admin-form-layout="settings"]')
         .evaluate((root) => {
           const toc = document.querySelector(".studio-editor-outline");
+          const sidebar = document.querySelector(".admin-sidebar");
+          const sidebarStyle = sidebar ? getComputedStyle(sidebar) : null;
           const body = root.querySelector(".admin-settings-form-layout__body");
           return {
             toc: toc?.getBoundingClientRect().width ?? 0,
+            sidebarInner: sidebar
+              ? sidebar.getBoundingClientRect().width -
+                parseFloat(sidebarStyle!.paddingLeft) -
+                parseFloat(sidebarStyle!.paddingRight) -
+                parseFloat(sidebarStyle!.borderRightWidth || "0")
+              : 0,
             body: body?.getBoundingClientRect().width ?? 0,
             overflow:
               document.documentElement.scrollWidth -
               document.documentElement.clientWidth,
           };
         });
-      expect(Math.abs(measurements.toc - expectedToc)).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(measurements.toc - measurements.sidebarInner),
+        `${width}px: 目次がナビの内側と違う幅になっている`,
+      ).toBeLessThanOrEqual(1);
+      // 節の名前が読めなくなるほど細ければ、それは壊れている。
+      expect(measurements.toc, `${width}px: 目次が細すぎる`).toBeGreaterThanOrEqual(150);
       expect(measurements.body).toBeLessThanOrEqual(maxBody);
       expect(measurements.overflow).toBeLessThanOrEqual(1);
     }

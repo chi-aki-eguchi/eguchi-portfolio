@@ -127,9 +127,12 @@ test.describe("admin — Workspace layout", () => {
     await gotoAdminTab(page, "gallery");
 
     const sidebar = page.locator(".admin-sidebar");
+    // 2026-09-13 の再設計で、広い画面の展開幅は 240px から 216px になった
+    // （`admin-studio.css` の `.admin-sidebar:not([data-collapsed=true])`）。
+    // 期待値だけが古いまま残っていた。1024px の 196px は下の検査が見ている。
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(240, 0);
+      .toBeCloseTo(216, 0);
     await page.locator("[data-sidebar-collapse]").click();
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
@@ -142,7 +145,7 @@ test.describe("admin — Workspace layout", () => {
     await page.locator("[data-compact-sidebar-expand]").click();
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(240, 0);
+      .toBeCloseTo(216, 0);
 
     const firstPhoto = page
       .locator(".admin-photo-tile [data-library-photo-action]")

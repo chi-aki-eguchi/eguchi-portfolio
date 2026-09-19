@@ -65,22 +65,40 @@ export function AdminCompactSidebar({
   useEffect(() => setOpenGroup(null), [activeTab]);
 
   const focusPopoverItem = (groupKey: string, index: number) => {
-    requestAnimationFrame(() => {
-      const items = rootRef.current?.querySelectorAll<HTMLButtonElement>(
-        `[data-compact-sidebar-popover="${groupKey}"] [data-compact-sidebar-item]`,
-      );
-      if (!items?.length) return;
-      items[Math.max(0, Math.min(index, items.length - 1))]?.focus();
-    });
+    const items = rootRef.current?.querySelectorAll<HTMLButtonElement>(
+      `[data-compact-sidebar-popover="${groupKey}"] [data-compact-sidebar-item]`,
+    );
+    if (!items?.length) return;
+    items[Math.max(0, Math.min(index, items.length - 1))]?.focus();
   };
+
+  // 開くのと同じ処理の中で焦点を当てると、まだ中身が描かれていない。
+  // 以前は requestAnimationFrame 1回で待っていたが、React の反映より先に
+  // 走ることがあり、**畳んだナビをキーボードで開いても焦点がどこへも行かない**
+  // ことがあった（実ブラウザで再現。jsdom は間に合ってしまうので気づけない）。
+  // 開いた「あと」に当てる。
+  const pendingFocusRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!openGroup) return;
+    const index = pendingFocusRef.current;
+    if (index === null) return;
+    pendingFocusRef.current = null;
+    focusPopoverItem(openGroup, index);
+    // focusPopoverItem は毎レンダー作り直す小さな関数で、見るのは DOM だけ。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup]);
 
   const openAndFocus = (group: AdminTabGroup, index = 0) => {
     if (group.tabs.length === 1) {
       onRequestTab(group.tabs[0]);
       return;
     }
+    if (openGroup === group.key) {
+      focusPopoverItem(group.key, index);
+      return;
+    }
+    pendingFocusRef.current = index;
     setOpenGroup(group.key);
-    focusPopoverItem(group.key, index);
   };
 
   const handlePopoverKeys = (

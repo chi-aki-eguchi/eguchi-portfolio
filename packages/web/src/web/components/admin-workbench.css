@@ -286,13 +286,33 @@
 }
 
 @media (max-width: 767px) {
-  /* Menus in the bottom toolbar open into the available photo area. */
+  /* Menus in the bottom toolbar open into the available photo area.
+
+     **狭い画面では、押したボタンではなく操作帯に合わせて開く。** ボタンの端に
+     合わせると、中身のいちばん長い行の幅までメニューが広がり、画面の外へ出る。
+     実測（2026-09-19、375px・人工データの長いシリーズ名）: シリーズのメニューが
+     幅504pxになり、左端が x=-212.6 と画面外だった。包みを静的にして、位置の
+     基準を操作帯（`.admin-library-selection-toolbar`）へ移す。 */
+  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-cat],
+  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-series] {
+    position: static;
+  }
   .admin-atelier.admin-workbench .admin-selection-actions [data-batch-cat] > div,
   .admin-atelier.admin-workbench .admin-selection-actions [data-batch-series] > div {
     top: auto;
     bottom: calc(100% + 4px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    min-width: 0;
     max-height: min(320px, 50dvh);
     overflow-y: auto;
   }
-  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-series] > div { left: auto; right: 0; }
+  /* 長い名前は折り返す。横に伸ばして読めなくするより、行を増やす。 */
+  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-cat] > div button,
+  .admin-atelier.admin-workbench .admin-selection-actions [data-batch-series] > div button {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
 }

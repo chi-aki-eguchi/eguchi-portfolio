@@ -5390,6 +5390,8 @@ export function GalleryTab({
 
   // Open the inspector for a photo (shared by click + Enter)
   const inspectorOpenerRef = useRef<HTMLElement | null>(null);
+  /** 詳細が開いた時刻。開いた直後に届く連打の2打目を捨てるために見る。 */
+  const inspectorOpenedAtRef = useRef(0);
   const inspectorReturnFrame = useRef(0);
   const reviewPhotoId = previewPhoto?.id ?? inspectPhoto?.id;
   const previewIndex = displayed.findIndex(photo => photo.id === previewPhoto?.id);
@@ -5430,6 +5432,7 @@ export function GalleryTab({
     if (!inspectPhoto) inspectorOpenerRef.current = document.querySelector<HTMLElement>(`#admin-photo-${photo.id} [data-library-photo-action]`);
     setShowLibraryFilters(false);
     setShowSitePreview(false);
+    inspectorOpenedAtRef.current = Date.now();
     setInspectPhoto(photo);
     setEditForm(photoToEditForm(photo));
   };
@@ -5599,6 +5602,21 @@ export function GalleryTab({
 
       if (e.target instanceof HTMLElement && e.target.closest("button, summary, a") &&
         !e.target.closest("[data-library-photo-action]") && (e.key === "Enter" || e.key === " ")) return;
+
+      // 矢印・Home/End は写真を動かすが、**焦点がほかの操作の中にあるときは
+      // 奪わない。** 畳んだナビのグループは ArrowRight で自分のメニューを開く
+      // のに、ここが先に写真一覧へ飛ばして焦点ごと持っていっていた（実ブラウザ
+      // で確認、2026-09-19）。同じことがメニューや切替でも起きる。
+      // 写真一覧の中か、どこにも焦点が無いときだけ受け持つ。
+      if (
+        (e.key.startsWith("Arrow") || e.key === "Home" || e.key === "End") &&
+        e.target instanceof HTMLElement &&
+        e.target !== document.body &&
+        !e.target.closest(
+          "[data-library-photo-action], [data-library-scroll], [data-library-grid-mode]",
+        )
+      )
+        return;
 
       // ? — shortcuts help (Shift+/ on most layouts)
       if (e.key === "?") {
@@ -8722,6 +8740,20 @@ export function GalleryTab({
             data-inspector-mobile-section={inspectorMobileSection}
             className="admin-library-inspector"
             role="region" aria-label={copy.inspector.editPhoto}
+            /* 一覧の写真をダブルクリックすると、1打目でここが開き、**2打目は
+               開いたばかりのこの画面の、同じ座標にあるもの**へ当たる。実際に
+               「拡大」が一緒に開いたり（PC）、スマホでは節の切替が勝手に動いて
+               いた。開いた直後に届く連打の2打目だけ捨てる。自分でここを
+               ダブルクリックしたときも、1打目は通るので結果は同じ。 */
+            onClickCapture={(event) => {
+              if (
+                event.detail > 1 &&
+                Date.now() - inspectorOpenedAtRef.current < 500
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
           >
             <header className="admin-inspector-header">
               <button type="button" onClick={requestCloseInspector} data-library-inspector-close

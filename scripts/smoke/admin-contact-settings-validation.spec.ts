@@ -127,6 +127,14 @@ async function installPublicMocks(page: Page) {
   // Layout decides whether to show the Series navigation from this read-only
   // list, even on Contact.
   await page.route("**/api/series**", json({ series: [] }));
+  // 共通ナビは Gallery の入口を出すかどうかを件数で決める（2026-09-16
+  // `d82d461`）。**この検査の対象ではないが、実際に飛ぶ通信**なので、
+  // 「想定外の通信」として数えず、写真0枚の応答を返す（series: [] と揃える）。
+  await page.route("**/api/photos**", (route) =>
+    new URL(route.request().url()).pathname.endsWith("/availability")
+      ? json({ total: 0, standalone: 0 })(route)
+      : json({ photos: [] })(route),
+  );
   return { unexpectedRequests };
 }
 

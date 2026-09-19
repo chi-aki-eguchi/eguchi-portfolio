@@ -60,7 +60,15 @@ test("写真の構図を保つ行組み・サイズ変更・固定列・一覧�
   await expect(size).toHaveValue("160");
 });
 
-test("並べ替え中もPCで写真サイズを変えられる", async ({ page }) => {
+test("並べ替え中もPCで写真サイズを変えられる", async ({ page }, testInfo) => {
+  // 題のとおり **PC の導線** を測る検査。スマホは並べ替えへ入る道が別で
+  // （選択中から進む）、この密度つまみも出ない。project の指定が無いまま
+  // 追加されていたので、スマホ3種でずっと落ちていた（2026-09-13 `1991751`）。
+  // スマホの並べ替えは admin-mobile-library.spec.ts が別に見ている。
+  testInfo.skip(
+    testInfo.project.name !== "desktop",
+    "並べ替え中の密度つまみはPCの導線",
+  );
   await loginAsAdmin(page);
   await gotoAdminTab(page, "gallery");
 

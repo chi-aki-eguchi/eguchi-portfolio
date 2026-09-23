@@ -1,4 +1,5 @@
 import "../components/admin-workbench.css";
+import { uploadPhotoFile } from "../lib/admin-upload";
 import { AdminSettingsNavigationContext, settingsNavigationItems } from "./admin-settings-navigation";
 import { comparePhotoDates } from "../../shared/photo-dates";
 import { PhotoImportReview, type ImportDatePolicy } from "../components/PhotoImportReview";
@@ -51,15 +52,11 @@ import { ensureAccentContrast } from "../lib/color-contrast";
 import { themeColorsFor } from "../lib/theme-colors";
 import { splitRecentlyAddedPhotos } from "../lib/recently-added-photos";
 import { shouldLandOnSetup } from "../lib/setup-flow";
-import {
-  shotAtForDateInputSave,
-  shotAtWithSourceForUploadedPhoto,
-} from "../lib/upload-date";
+import { shotAtForDateInputSave } from "../lib/upload-date";
 import {
   imageFileTooLarge,
   isUploadableImageFile,
   shouldUploadImagesSerially,
-  storageMissingFromErrorBody,
   UPLOAD_IMAGE_ACCEPT,
   uploadFailureNotice,
   uploadSizeLimitLabel,
@@ -129,11 +126,60 @@ import {
 } from "./admin-ui";
 import { shuffleWithSeed, visitShuffleSeed } from "../lib/shuffle";
 import {
+  AdminCopyOverride,
   AdminLanguageProvider,
   AdminLanguageToggle,
   getStoredAdminMessages,
   useAdminI18n,
+  type AdminLanguage,
+  type AdminMessages,
 } from "./admin-i18n";
+import {
+  BOOK_HIDDEN_SETTINGS,
+  BOOK_SETTINGS_LABELS,
+  BookAdminShell,
+  BookSiteView,
+  bookSiteGroups,
+  type BookAdminView,
+  type SitePanelItem,
+} from "../components/admin-book/BookAdminShell";
+import { Workbench } from "../components/admin-book/Workbench";
+import { siteDesignFrom } from "../lib/book";
+
+/**
+ * 写真集の管理画面だけ、似た名前の操作を言い分ける（2026-09-23）。
+ * サイトの順番を変えるのは「作品」の作業台と「サイトの順番を変える」モードだけ。
+ * 一覧の並びは見るときだけのもので、サイトは変わらないと名前で分かるようにする。
+ */
+function bookAdminCopy(t: AdminMessages, language: AdminLanguage): AdminMessages {
+  const lib = t.phase2b.library;
+  const ja = language === "ja";
+  return {
+    ...t,
+    phase2b: {
+      ...t.phase2b,
+      library: {
+        ...lib,
+        sort: {
+          ...lib.sort,
+          label: ja ? "一覧の表示順" : "List view order",
+          ariaLabel: ja
+            ? "この一覧の表示順（サイトの順番は変わりません）"
+            : "Order of this list (does not change the site)",
+          displayHint: ja
+            ? "見るときだけの並び。サイトの順番は変わりません"
+            : "For viewing only — the site order stays",
+        },
+        mode: {
+          ...lib.mode,
+          arrange: ja ? "サイトの順番を変える" : "Change site order",
+          startArrange: ja ? "サイトの順番を変える" : "Change site order",
+          finishArrange: ja ? "順番を変えるのを終える" : "Finish changing order",
+        },
+      },
+    },
+  };
+}
 
 const LazyHeroTab = lazy(() =>
   import("./admin-tabs").then((mod) => ({ default: mod.HeroTab })),
@@ -687,6 +733,21 @@ function AdminPageContent({
 
   const [settingsEntrySection, setSettingsEntrySection] = useState<string | undefined>();
   const [settingsNavigationHost, setSettingsNavigationHost] = useState<HTMLDivElement | null>(null);
+  // 写真集の管理画面（siteDesign = "book"）の入口と、サイトの目次で開いている項目。
+  const [bookView, setBookView] = usePersistentState<BookAdminView>(
+    demoMode ? "admin:book:view:demo" : "admin:book:view",
+    "works",
+    "local",
+  );
+  const [bookPanelId, setBookPanelId] = usePersistentState<string>(
+    demoMode ? "admin:book:panel:demo" : "admin:book:panel",
+    "settings:page-layout",
+    "local",
+  );
+  const [bookPending, setBookPending] = useState<
+    { view: BookAdminView; panel?: string } | null
+  >(null);
+  const [bookOutlineHost, setBookOutlineHost] = useState<HTMLDivElement | null>(null);
   // Navigation responds immediately; the destination renders its own loading state.
   const contentTab = isAdminTab(tab) ? tab : "gallery";
 
@@ -773,6 +834,230 @@ function AdminPageContent({
       action: () => window.open("/", "_blank", "noopener"),
     },
   ];
+
+  const demoBanner = demoMode ? (
+    <div ref={demoBannerRef} className="admin-demo-banner" data-admin-demo-banner>
+      <span className="admin-demo-banner__status">{t.demo.banner}</span>
+      <div className="admin-demo-banner__actions">
+        <a
+          href={language === "en" ? "/portfolio-kit/en#pricing" : "/portfolio-kit#pricing"}
+          className="underline underline-offset-4"
+        >
+          {t.demo.purchase}
+        </a>
+        <button type="button" onClick={() => window.location.reload()} className="underline underline-offset-4">
+          {t.demo.reset}
+        </button>
+        <AdminLanguageToggle />
+      </div>
+    </div>
+  ) : null;
+
+  if (siteDesignFrom(shellSettings?.siteDesign) === "book") {
+    const groups = bookSiteGroups(showService);
+    const allItems = groups.flatMap((g) => g.items);
+    const activeItem =
+      allItems.find((item) => item.id === bookPanelId) ?? allItems[0]!;
+    const goBook = (view: BookAdminView, panel?: string) => {
+      if (galleryReordering || galleryUploading) return;
+      const leaving = view !== bookView || (panel && panel !== bookPanelId);
+      if (hasUnsaved && leaving) {
+        setBookPending({ view, panel });
+        return;
+      }
+      if (panel) setBookPanelId(panel);
+      setBookView(view);
+    };
+    const openFromSettings = (next: Tab) => {
+      if (next === "series") goBook("works");
+      else if (next === "profile" || next === "pricing") goBook("site", `tab:${next}`);
+      else goBook("site");
+    };
+    const bookDestinations: PaletteDestination[] = [
+      { id: "book-works", label: "作品（作業台）", group: "管理画面", icon: ADMIN_TAB_ICONS.series, action: () => goBook("works") },
+      { id: "book-library", label: "写真の一覧", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("library") },
+      ...allItems.map((item) => ({
+        id: `book-${item.id}`,
+        label: item.label,
+        group: "サイト",
+        keywords: item.note,
+        icon: ADMIN_TAB_ICONS.settings,
+        action: () => goBook("site", item.id),
+      })),
+      {
+        id: "trash",
+        label: t.navigation.trash,
+        group: "管理画面",
+        icon: <Trash2 size={15} />,
+        action: () => {
+          goBook("library");
+          setOpenTrashRequest((n) => n + 1);
+        },
+      },
+      {
+        id: "open-site",
+        label: t.navigation.openSite,
+        group: "サイト",
+        icon: <ExternalLink size={15} />,
+        action: () => window.open("/", "_blank", "noopener"),
+      },
+    ];
+    const galleryTab = (
+      <GalleryTab
+        demoSeed={demoSeed}
+        onUploadingChange={setGalleryUploading}
+        onUnsavedChange={setHasUnsaved}
+        openTrashSignal={openTrashRequest}
+        onTrashSignalConsumed={() => setOpenTrashRequest(0)}
+        recentlyAddedPhotoIds={recentlyAddedPhotoIds}
+        onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
+        onReorderWorkspaceChange={setGalleryReordering}
+        onOpenOrderSettings={() => goBook("site", "settings:series")}
+      />
+    );
+    const panel = activeItem.panel;
+    const sitePanel = (
+      <Suspense
+        fallback={
+          <div className="h-full flex items-center justify-center">
+            <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
+          </div>
+        }
+      >
+        {panel.kind === "settings" && (
+          <AdminSettingsNavigationContext.Provider value={bookOutlineHost}>
+            <LazySettingsTab
+              key={panel.section}
+              initialSectionId={panel.section}
+              hiddenSectionIds={BOOK_HIDDEN_SETTINGS}
+              sectionLabels={BOOK_SETTINGS_LABELS}
+              onUnsavedChange={setHasUnsaved}
+              demoSeed={demoSeed}
+              onOpenTab={openFromSettings}
+              onActiveSectionChange={(section) => setBookPanelId(`settings:${section}`)}
+            />
+          </AdminSettingsNavigationContext.Provider>
+        )}
+        {panel.kind === "tab" && panel.tab === "profile" && <LazyProfileTab onUnsavedChange={setHasUnsaved} />}
+        {panel.kind === "tab" && panel.tab === "pricing" && <LazyPricingTab onUnsavedChange={setHasUnsaved} />}
+        {panel.kind === "tab" && panel.tab === "service" && showService && <LazyServiceTab onUnsavedChange={setHasUnsaved} />}
+        {panel.kind === "tab" && panel.tab === "categories" && <LazyCategoriesTab />}
+        {panel.kind === "tab" && panel.tab === "setup" && (
+          <SetupTab onOpenTab={(next) => openFromSettings(next)} demoMode={demoMode} />
+        )}
+      </Suspense>
+    );
+    return (
+      <AdminSurfaceProvider value={adminSurface}>
+        <AdminCopyOverride patch={bookAdminCopy}>
+          <div
+            ref={adminRootRef}
+            className="admin-atelier admin-workbench admin-studio admin-book-root relative flex select-none overflow-hidden"
+            data-admin-theme="light"
+            data-studio-workspace={bookView === "site" ? "site" : "photos"}
+            data-studio-editor={(bookView === "site" && panel.kind === "settings") || undefined}
+            style={{
+              ...adminThemeFromSettings(shellSettings, "light"),
+              ...(demoMode ? { paddingTop: "var(--admin-demo-banner-height, 84px)" } : {}),
+            }}
+          >
+            <BookAdminShell
+              siteName={shellSettings?.siteName?.trim() || sidebarSiteName}
+              view={bookView}
+              onView={(v) => goBook(v)}
+              onSearch={() => setPaletteOpen(true)}
+              siteHref={publicSiteHref}
+              onLogout={requestLogout}
+              locked={galleryReordering || galleryUploading}
+              banner={demoBanner}
+              overlays={
+                <>
+                  <div ref={setBookOutlineHost} hidden aria-hidden="true" />
+                  {bookPending && (
+                    <Modal onClose={() => setBookPending(null)} widthClass="w-80">
+                      <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
+                        {t.shell.unsavedTitle}
+                      </p>
+                      <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
+                        {t.shell.unsavedBody}
+                      </p>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setBookPending(null)} className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+                          {t.common.cancel}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setHasUnsaved(false);
+                            if (bookPending.panel) setBookPanelId(bookPending.panel);
+                            setBookView(bookPending.view);
+                            setBookPending(null);
+                          }}
+                          className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm"
+                        >
+                          {t.shell.leaveWithoutSaving}
+                        </button>
+                      </div>
+                    </Modal>
+                  )}
+                  {unsavedConfirm === "logout" && (
+                    <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
+                      <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-5">
+                        {t.shell.unsavedTitle}
+                      </p>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setUnsavedConfirm(null)} className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+                          {t.common.cancel}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setHasUnsaved(false);
+                            setUnsavedConfirm(null);
+                            logout.mutate();
+                          }}
+                          className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm"
+                        >
+                          {t.shell.leaveWithoutSaving}
+                        </button>
+                      </div>
+                    </Modal>
+                  )}
+                  <QuickPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} destinations={bookDestinations} />
+                </>
+              }
+            >
+              {bookView === "works" && (
+                <Workbench
+                  onOpenLibrary={() => goBook("library")}
+                  onImported={(ids) => setRecentlyAddedPhotoIds(new Set(ids))}
+                  onUploadingChange={setGalleryUploading}
+                />
+              )}
+              {bookView === "library" && (
+                <div className="admin-main admin-book__library">
+                  <div className="admin-content">
+                    <div className="admin-screen" data-phase="show">{galleryTab}</div>
+                  </div>
+                </div>
+              )}
+              {bookView === "site" && (
+                <BookSiteView
+                  groups={groups}
+                  active={activeItem.id}
+                  onSelect={(item: SitePanelItem) => goBook("site", item.id)}
+                >
+                  <div className="admin-main">
+                    <div className="admin-content">
+                      <div className="admin-screen" data-phase="show">{sitePanel}</div>
+                    </div>
+                  </div>
+                </BookSiteView>
+              )}
+            </BookAdminShell>
+          </div>
+        </AdminCopyOverride>
+      </AdminSurfaceProvider>
+    );
+  }
 
   return (
     <AdminSurfaceProvider value={adminSurface}>
@@ -4629,132 +4914,20 @@ export function GalleryTab({
 
     const uploadOne = async (file: File) => {
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-        if (!res.ok) {
-          try {
-            const body = (await res.clone().json()) as unknown;
-            const missing = storageMissingFromErrorBody(body);
-            if (missing) storageMissing = missing;
-          } catch {
-            // 非JSONエラーは従来どおり下の汎用メッセージに任せる
-          }
-          const message =
+        const result = await uploadPhotoFile(file, {
+          medium: uploadMedium,
+          datePolicy,
+          failureMessage: async (res) =>
             language === "en"
               ? `${copy.import.failedReason} (HTTP ${res.status})`
-              : await responseErrorMessage(res);
-          try {
-            assertOk(res);
-          } catch (err) {
-            if (res.status === 401) throw err;
-          }
-          throw new Error(message);
-        }
-        assertOk(res);
-        const data = await res.json();
-        // C1: server detected an identical image already registered — skip it.
-        if (data.duplicate) {
-          duplicates.push(file.name);
-          return;
-        }
-        const {
-          url,
-          width,
-          height,
-          fileHash,
-          thumbKey,
-          mediumKey,
-          shotAt,
-          exifDateDigitized,
-          sourceWidth,
-          sourceHeight,
-          sourceFormat,
-          exifCamera,
-          exifMake,
-          exifModel,
-          exifLens,
-          exifFocalLength,
-          exifFNumber,
-          exifExposureTime,
-          exifIso,
-        } = data as Record<string, unknown>;
-        if (!url) throw new Error("no url returned");
-        const isDigital = uploadMedium === "digital";
-        const filmTypeVal = isDigital ? "デジタル" : "フィルム";
-        const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
-        const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
-        let {
-          shotAt: shotAtVal,
-          shotAtSource: shotAtSourceVal,
-        } = shotAtWithSourceForUploadedPhoto(
-          shotAt,
-          exifDateDigitized,
-          file,
-          uploadMedium,
-        );
-        if (!shotAtVal && datePolicy === "file" && Number.isFinite(file.lastModified) && file.lastModified > 0) {
-          const d = new Date(file.lastModified);
-          const pad = (n: number) => String(n).padStart(2, "0");
-          shotAtVal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-          shotAtSourceVal = "file_modified";
-        }
-        const created = await adminApi.photos.$post({
-          json: {
-            filename: file.name,
-            url: url as string,
-            width: width as number,
-            height: height as number,
-            fileHash: fileHash as string,
-            thumbKey: (thumbKey as string) ?? "",
-            mediumKey: (mediumKey as string) ?? "",
-            shotAt: shotAtVal,
-            shotAtSource: shotAtSourceVal,
-            shotAtDigitized: isDigital ? ((exifDateDigitized as string) ?? "") : shotAtVal,
-            sourceWidth: (sourceWidth as number) ?? null,
-            sourceHeight: (sourceHeight as number) ?? null,
-            sourceFormat: (sourceFormat as string) ?? null,
-            title: "",
-            meta: "",
-            category: "",
-            filmType: filmTypeVal,
-            camera: cameraVal,
-            cameraMake: isDigital ? ((exifMake as string) ?? "") : "",
-            cameraModel: isDigital ? ((exifModel as string) ?? "") : "",
-            lens: lensVal,
-            focalLength: isDigital ? ((exifFocalLength as string) ?? "") : "",
-            fNumber: isDigital ? ((exifFNumber as string) ?? "") : "",
-            exposureTime: isDigital ? ((exifExposureTime as string) ?? "") : "",
-            iso: isDigital ? ((exifIso as string) ?? "") : "",
-          },
+              : await responseErrorMessage(res),
         });
-        assertOk(created);
-        const createdBody = (await created.json()) as {
-          duplicate?: boolean;
-          photo?: { id?: unknown };
-        };
-        if (createdBody.duplicate) {
-          duplicates.push(file.name);
-          return;
+        if (result.kind === "duplicate") duplicates.push(file.name);
+        else if (result.kind === "added") addedPhotoIds.push(result.id);
+        else {
+          if (result.storageMissing) storageMissing = result.storageMissing;
+          failed.push({ file, reason: result.reason });
         }
-        const createdId = createdBody.photo?.id;
-        if (
-          created.status !== 201 ||
-          typeof createdId !== "number" ||
-          !Number.isInteger(createdId)
-        ) {
-          throw new Error("no photo id returned");
-        }
-        addedPhotoIds.push(createdId);
-      } catch (err) {
-        failed.push({
-          file,
-          reason: err instanceof Error ? err.message : undefined,
-        });
       } finally {
         done += 1;
         activeUploadProgressRef.current.set(uploadGeneration, {
@@ -6697,7 +6870,7 @@ export function GalleryTab({
 
             </div>
 
-            <span className="admin-library-order-hint">{librarySort.startsWith("shotAt") ? (language === "ja" ? "フィルムはスキャン日時 · 日付なしは末尾" : "Film uses scan time · Undated last") : (language === "ja" ? "一覧での並び順" : "Library display order")}</span>
+            <span className="admin-library-order-hint">{librarySort.startsWith("shotAt") ? (language === "ja" ? "フィルムはスキャン日時 · 日付なしは末尾" : "Film uses scan time · Undated last") : copy.sort.displayHint}</span>
             {libraryMode !== "arrange" && missingShotAtCount > 0 && <button type="button" onClick={() => setFilterMissingShotAt(!filterMissingShotAt)} aria-pressed={filterMissingShotAt}>{language === "ja" ? `日付なし ${missingShotAtCount}枚` : `${missingShotAtCount} undated`}</button>}
           </div>}
 

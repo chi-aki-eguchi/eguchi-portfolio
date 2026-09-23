@@ -1,5 +1,5 @@
 import { BookCoverPicker } from "../components/book/BookCoverPicker";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
 import { useRowDraftGuard } from "../hooks/useRowDraftGuard";
@@ -1344,7 +1344,11 @@ export function HeroTab() {
                     setReorderFeedback(null);
                   }}
                   aria-pressed={reorderTargetId === photo.id}
-                  aria-label={reorderCopy.targetLabel(i + 1)}
+                  aria-label={
+                    reorderTargetId === photo.id
+                      ? reorderCopy.targetLabel(i + 1)
+                      : reorderCopy.chooseTargetLabel(i + 1)
+                  }
                   className={`group relative block w-full overflow-hidden rounded-sm border-[length:var(--admin-accent-line)] transition-colors ${
                     reorderTargetId === photo.id
                       ? "border-[color:var(--admin-accent)]"
@@ -4546,16 +4550,28 @@ export function ServiceTab({
 export function SettingsTab({
   onUnsavedChange,
   demoSeed,
-  initialSectionId,
+  initialSectionId: requestedSectionId,
   onOpenTab,
   onActiveSectionChange,
+  hiddenSectionIds,
+  sectionLabels,
 }: {
   onUnsavedChange?: (v: boolean) => void;
   demoSeed?: string;
   initialSectionId?: string;
   onOpenTab?: (tab: "hero" | "profile" | "series" | "pricing") => void;
   onActiveSectionChange?: (section: string) => void;
+  /** 目次に出さない節（写真集の管理画面で、写真集では効かない設定）。 */
+  hiddenSectionIds?: readonly string[];
+  /** 節の名前の言い換え（目次と見出しの両方）。 */
+  sectionLabels?: Readonly<Record<string, string>>;
 }) {
+  const hiddenSections = new Set(hiddenSectionIds ?? []);
+  const initialSectionId =
+    requestedSectionId && hiddenSections.has(requestedSectionId)
+      ? "page-layout"
+      : (requestedSectionId ??
+        (hiddenSections.has("hero") ? "page-layout" : undefined));
   const qc = useQueryClient();
   const { t, language } = useAdminI18n();
   const copy = t.phase2b.settingsBasic;
@@ -5096,9 +5112,9 @@ export function SettingsTab({
   };
   const settingsSections: AdminSettingsSectionItem[] = (
     Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]
-  ).map((id) => ({
+  ).filter((id) => !hiddenSections.has(id)).map((id) => ({
     id,
-    label: settingsNavigationItems.find(item => item.id === id)?.[language === "ja" ? "ja" : "en"] ?? sectionTitles[id],
+    label: sectionLabels?.[id] ?? settingsNavigationItems.find(item => item.id === id)?.[language === "ja" ? "ja" : "en"] ?? sectionTitles[id],
     group: settingsNavigationItems.find(item => item.id === id)?.group,
     keywords: `${sectionTitles[id]} ${settingsNavigationItems.find(item => item.id === id)?.keywords ?? ""} ${sectionKeywords[id] ?? ""} ${SETTINGS_SECTION_KEYS[id].join(" ")}`,
     summary: summarizeSection(id),
@@ -5192,6 +5208,7 @@ export function SettingsTab({
   );
 
   return (
+    <SettingsSectionLabelContext.Provider value={sectionLabels ?? null}>
     <div
       className="admin-settings-workspace"
       data-settings-workspace
@@ -8033,6 +8050,7 @@ export function SettingsTab({
         </>
       )}
     </div>
+    </SettingsSectionLabelContext.Provider>
   );
 }
 
@@ -8042,6 +8060,8 @@ export function SettingsTab({
 // children — that mount/remount was what caused the open-moment flicker.
 // Transition is disabled for the first frame so a defaultOpen row never plays
 // an unwanted "opening" animation on initial mount.
+const SettingsSectionLabelContext = createContext<Readonly<Record<string, string>> | null>(null);
+
 function Section({
   sectionId,
   title,
@@ -8067,7 +8087,8 @@ function Section({
 }) {
   const activeSectionId = useAdminSettingsActiveSection();
   const { language } = useAdminI18n();
-  if (activeSectionId && sectionId) title = settingsNavigationItems.find(item => item.id === sectionId)?.[language === "ja" ? "ja" : "en"] ?? title;
+  const labelOverrides = useContext(SettingsSectionLabelContext);
+  if (activeSectionId && sectionId) title = labelOverrides?.[sectionId] ?? settingsNavigationItems.find(item => item.id === sectionId)?.[language === "ja" ? "ja" : "en"] ?? title;
   // 目次で1節ずつ出す画面では、選ばれた節だけを実際の入力欄として描く。
   // 折りたたみ行を19本並べると、左の目次と同じ一覧が本文にも重なるため。
   const singleView = activeSectionId !== null && sectionId !== undefined;

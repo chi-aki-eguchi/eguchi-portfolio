@@ -51,6 +51,7 @@ const ADMIN_PHASE_2B_JA = {
     sort: {
       label: "並び替え",
       ariaLabel: "表示の並び替え",
+      displayHint: "一覧での並び順",
       options: {
         manual: "手動順",
         manualShort: "手動",
@@ -354,6 +355,8 @@ const ADMIN_PHASE_2B_JA = {
       targetPrompt: "動かす写真を1枚選んでください",
       targetLabel: (position: number) =>
         `${position}番の写真を動かしています`,
+      chooseTargetLabel: (position: number) =>
+        `${position}番の写真を、動かす写真に選ぶ`,
       targetPill: "動かす写真",
       positionLabel: (position: number, total: number) =>
         `${position} / ${total} 番目`,
@@ -1836,6 +1839,7 @@ const ADMIN_PHASE_2B_EN = {
     sort: {
       label: "Sort",
       ariaLabel: "Sort Library view",
+      displayHint: "Library display order",
       options: {
         manual: "Manual order",
         manualShort: "Manual",
@@ -2135,6 +2139,7 @@ const ADMIN_PHASE_2B_EN = {
       region: "Photo reorder controls",
       targetPrompt: "Choose one photo to move",
       targetLabel: (position: number) => `Moving photo ${position}`,
+      chooseTargetLabel: (position: number) => `Choose photo ${position} to move`,
       targetPill: "Moving photo",
       positionLabel: (position: number, total: number) =>
         `${position} / ${total}`,
@@ -4316,5 +4321,27 @@ export function AdminLanguageToggle({ className = "" }: { className?: string }) 
         EN
       </button>
     </nav>
+  );
+}
+
+/**
+ * 一部の画面だけ言葉を差し替える（写真集の管理画面で、似た名前の操作を
+ * 言い分けるため。2026-09-23）。外側の言語の切り替えはそのまま使う。
+ * 差し替えない画面（配布版・いつもの構成）の言葉は変わらない。
+ */
+export function AdminCopyOverride({
+  patch,
+  children,
+}: {
+  patch: (t: AdminMessages, language: AdminLanguage) => AdminMessages;
+  children: ReactNode;
+}) {
+  const parent = useAdminI18n();
+  const value = useMemo(
+    () => ({ ...parent, t: patch(parent.t, parent.language) }),
+    [parent, patch],
+  );
+  return (
+    <AdminLanguageContext.Provider value={value}>{children}</AdminLanguageContext.Provider>
   );
 }

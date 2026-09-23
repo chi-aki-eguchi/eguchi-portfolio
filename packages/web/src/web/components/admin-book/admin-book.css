@@ -1,0 +1,607 @@
+/* 写真集の管理画面（2026-09-23 試作）。
+   公開サイトの写真集と同じ紙・同じ書体・同じベタ焼き。
+   枠線の箱・角丸のボタン・細い区切り線の並びをやめ、面の濃淡と文字で分ける。
+   色は adminThemeFromSettings（公開サイトの明るい配色から作る）を使う。 */
+
+.admin-book-root {
+  --admin-text-note: 13.5px;
+  --admin-text-body: 15px;
+  --admin-text-page: 26px;
+  --bench-ink: var(--admin-ink);
+  --bench-quiet: rgba(var(--admin-ink-rgb), 0.66);
+  --bench-soft: var(--admin-paper-soft);
+  --bench-deep: var(--admin-paper-deep);
+  background: var(--admin-paper) !important;
+  color: var(--admin-ink);
+  height: 100dvh;
+}
+.admin-book {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  font-size: var(--admin-text-body);
+}
+
+/* ── 上の帯 ─────────────────────────────── */
+.admin-book__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  padding: 0 28px;
+  height: 64px;
+  background: var(--admin-paper);
+}
+.admin-book__name {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.admin-book__name-sub {
+  margin-left: 0.4em;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--bench-quiet);
+}
+.admin-book__tabs {
+  display: flex;
+  gap: 1.75rem;
+  height: 100%;
+}
+.admin-book__tab {
+  position: relative;
+  padding: 0 2px;
+  font-size: 15.5px;
+  color: var(--bench-quiet);
+  background: none;
+  border: 0;
+}
+.admin-book__tab[aria-current="page"] { color: var(--bench-ink); }
+.admin-book__tab[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  height: 2px;
+  background: var(--bench-ink);
+}
+.admin-book__tab:disabled { opacity: 0.4; }
+.admin-book__tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  white-space: nowrap;
+}
+.admin-book__tool {
+  font-size: 13.5px;
+  color: var(--bench-ink);
+  background: none;
+  border: 0;
+}
+.admin-book__tool kbd {
+  margin-left: 0.35em;
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--bench-quiet);
+}
+.admin-book__tool--quiet { color: var(--bench-quiet); }
+.admin-book__main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.admin-book__main > * { flex: 1; min-width: 0; }
+.admin-book__library,
+.book-site__panel .admin-main {
+  height: 100%;
+  min-height: 0;
+}
+
+/* ── 作業台 ─────────────────────────────── */
+.bench {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 340px;
+  height: 100%;
+  min-height: 0;
+}
+.bench-works,
+.bench-sheet,
+.bench-side {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.bench-works {
+  padding: 12px 14px 24px 20px;
+}
+.bench-works__shelf { margin-bottom: 18px; }
+.bench-works__shelf ul { list-style: none; margin: 0; padding: 0; }
+.bench-works__shelf-label {
+  margin: 8px 8px 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: var(--bench-quiet);
+}
+.bench-work {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 8px;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 2px;
+  color: var(--bench-ink);
+}
+.bench-work:hover { background: var(--bench-soft); }
+.bench-work[aria-current="true"] { background: var(--bench-deep); }
+.bench-work__thumb {
+  grid-row: 1 / 3;
+  width: 40px;
+  height: 40px;
+  background: var(--bench-deep);
+  overflow: hidden;
+}
+.bench-work__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bench-work__name {
+  font-size: 15.5px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.bench-work__count {
+  font-size: 13px;
+  color: var(--bench-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.bench-work__state {
+  grid-column: 2 / 4;
+  font-size: 12px;
+  color: var(--bench-quiet);
+}
+.bench-work--loose .bench-work__thumb {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(var(--admin-ink-rgb), 0.18);
+}
+.bench-works__new {
+  margin: 10px 8px 0;
+  font-size: 14px;
+  color: var(--bench-ink);
+  background: none;
+  border: 0;
+}
+.bench-new { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.bench-new__actions { display: flex; gap: 12px; }
+
+.bench-sheet {
+  position: relative;
+  padding: 18px 28px 96px;
+  background: var(--admin-paper);
+}
+.bench-sheet__head {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.bench-sheet__titles { flex: 1; min-width: 12rem; }
+.bench-sheet__title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+.bench-sheet__meta {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--bench-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.bench-sheet__actions { display: flex; align-items: center; gap: 1.25rem; }
+.bench-sheet__hint {
+  margin: 10px 0 22px;
+  font-size: 13.5px;
+  color: var(--bench-quiet);
+}
+.bench-empty {
+  padding: 3rem 0;
+  font-size: 15px;
+  color: var(--bench-quiet);
+}
+.bench-empty p { margin: 0 0 0.4rem; }
+
+/* ボタン: 角丸の枠を使わない。主な操作は墨の面、そのほかは文字。 */
+.bench-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 14.5px;
+  color: var(--bench-ink);
+  background: var(--bench-soft);
+  border: 0;
+  border-radius: 2px;
+}
+.bench-btn:hover:not(:disabled) { background: var(--bench-deep); }
+.bench-btn:disabled { opacity: 0.4; }
+.bench-btn--primary {
+  color: var(--admin-paper);
+  background: var(--bench-ink);
+  padding: 0 20px;
+}
+.bench-btn--primary:hover:not(:disabled) { background: rgba(var(--admin-ink-rgb), 0.85); }
+.bench-btn--wide { width: 100%; }
+.bench-link {
+  font-size: 14px;
+  color: var(--bench-ink);
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--admin-ink-rgb), 0.3);
+  text-underline-offset: 4px;
+  text-align: left;
+}
+.bench-link:hover { text-decoration-color: currentColor; }
+.bench-link--danger { color: var(--admin-danger); }
+.bench-row { display: flex; gap: 8px; }
+.bench-row > * { flex: 1; }
+.bench-row--end { justify-content: flex-end; }
+.bench-row--end > * { flex: none; }
+
+/* ベタ焼き（公開サイトの目次と同じ）。フィルムは黒い帯、デジタルは紙の上。 */
+.bench-frames {
+  --frame-h: 128px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px 18px;
+  align-items: flex-start;
+}
+.bench-run { display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+.bench-run__label { margin: 0; font-size: 13px; color: var(--bench-quiet); }
+.bench-run__frames {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.bench-run[data-medium="film"] .bench-run__frames {
+  background: #0b0b0b;
+  padding: 10px 10px 6px;
+  gap: 10px 8px;
+}
+.bench-frame { position: relative; margin: 0; cursor: grab; }
+.bench-frame[data-dragging] { opacity: 0.35; }
+.bench-frame[data-drop="before"]::before,
+.bench-frame[data-drop="after"]::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 3px;
+  background: var(--admin-accent);
+}
+.bench-frame[data-drop="before"]::before { left: -7px; }
+.bench-frame[data-drop="after"]::after { right: -7px; }
+.bench-frame__btn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  text-align: left;
+}
+.bench-frame__img {
+  display: block;
+  height: var(--frame-h);
+  width: calc(var(--frame-h) * var(--ar, 0.8));
+  background: rgba(var(--admin-ink-rgb), 0.06);
+  overflow: hidden;
+}
+.bench-frame__img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bench-frame[data-hidden] .bench-frame__img img { opacity: 0.38; filter: grayscale(0.4); }
+.bench-frame[data-selected] .bench-frame__img {
+  outline: 3px solid var(--admin-accent);
+  outline-offset: 3px;
+}
+.bench-frame__num {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--bench-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.bench-run[data-medium="film"] .bench-frame__num { color: rgba(255, 255, 255, 0.62); }
+.bench-frame__tag {
+  font-size: 11.5px;
+  padding: 0 5px;
+  background: var(--bench-deep);
+  color: var(--bench-ink);
+}
+.bench-run[data-medium="film"] .bench-frame__tag { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+.bench-sheet[data-drop-active] { background: var(--bench-soft); }
+.bench-dropcover {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(var(--admin-ink-rgb), 0.35);
+  pointer-events: none;
+}
+.bench-dropcover p { font-size: 20px; }
+
+/* 右の欄 */
+.bench-side {
+  background: var(--bench-soft);
+  padding: 20px 22px 96px;
+}
+.bench-panel { display: flex; flex-direction: column; gap: 14px; }
+.bench-panel__head { display: flex; justify-content: space-between; align-items: baseline; }
+.bench-panel__kicker {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--bench-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.bench-panel__photo {
+  width: 100%;
+  max-height: 44vh;
+  object-fit: contain;
+  background: var(--bench-deep);
+}
+.bench-panel__facts { margin: 0; font-size: 14px; }
+.bench-panel__file { margin: -8px 0 0; font-size: 12.5px; color: var(--bench-quiet); overflow-wrap: anywhere; }
+.bench-panel__lede { margin: 0; font-size: 15px; line-height: 1.8; }
+.bench-panel__cover { display: flex; flex-direction: column; gap: 6px; }
+.bench-panel__cover img,
+.bench-panel__cover span { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--bench-deep); display: block; }
+.bench-panel__cover p { margin: 0; font-size: 13px; color: var(--bench-quiet); }
+.bench-panel__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.bench-field { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--bench-quiet); }
+.bench-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 15px;
+  color: var(--bench-ink);
+  background: var(--admin-paper);
+  border: 0;
+  border-bottom: 1px solid rgba(var(--admin-ink-rgb), 0.25);
+  border-radius: 0;
+}
+.bench-input:focus { outline: 2px solid var(--admin-accent); outline-offset: 1px; }
+.bench-input--area { line-height: 1.8; resize: vertical; }
+
+/* 公開／非公開などの2択。押している方だけ墨の面にする。 */
+.bench-switch {
+  display: flex;
+  background: var(--bench-deep);
+  padding: 3px;
+  gap: 3px;
+}
+.bench-switch button {
+  flex: 1;
+  min-height: 38px;
+  font-size: 14.5px;
+  color: var(--bench-quiet);
+  background: none;
+  border: 0;
+}
+
+
+/* 通知と「元に戻す」 */
+.bench-notice {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 70;
+  pointer-events: none;
+}
+.bench-notice p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  font-size: 14.5px;
+  color: var(--admin-paper);
+  background: var(--bench-ink);
+  pointer-events: auto;
+  max-width: calc(100vw - 32px);
+}
+.bench-notice__undo {
+  color: inherit;
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  white-space: nowrap;
+}
+.bench-dialog {
+  width: min(460px, calc(100vw - 32px));
+  padding: 24px;
+  color: var(--bench-ink);
+  background: var(--admin-paper);
+  border: 0;
+  border-radius: 2px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+.bench-dialog::backdrop { background: rgba(0, 0, 0, 0.3); }
+.bench-dialog h2 { margin: 0 0 8px; font-size: 20px; font-weight: 400; }
+.bench-dialog p { margin: 0 0 16px; font-size: 14.5px; line-height: 1.8; color: var(--bench-quiet); }
+.bench-dialog .bench-switch { background: var(--bench-soft); margin-bottom: 20px; }
+
+/* ── サイト ─────────────────────────────── */
+.book-site {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+.book-site__toc {
+  overflow-y: auto;
+  padding: 12px 14px 24px 20px;
+}
+.book-site__group { margin-bottom: 18px; }
+.book-site__group ul { list-style: none; margin: 0; padding: 0; }
+.book-site__group-label {
+  margin: 8px 8px 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  color: var(--bench-quiet);
+}
+.book-site__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px;
+  text-align: left;
+  font-size: 15px;
+  color: var(--bench-ink);
+  background: none;
+  border: 0;
+  border-radius: 2px;
+}
+.book-site__item small { font-size: 12.5px; color: var(--bench-quiet); }
+.book-site__item:hover { background: var(--bench-soft); }
+.book-site__item[aria-current="page"] { background: var(--bench-deep); }
+.book-site__note { margin: 12px 8px 0; font-size: 12.5px; line-height: 1.7; color: var(--bench-quiet); }
+.book-site__panel { min-width: 0; min-height: 0; display: flex; }
+.book-site__panel > * { flex: 1; min-width: 0; }
+
+/* ── スマホ ─────────────────────────────── */
+@media (max-width: 767px) {
+  .admin-book__bar {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    padding: 12px 16px 0;
+  }
+  .admin-book__tools { gap: 1rem; }
+  .admin-book__tools .admin-book__tool:first-child { display: none; }
+  .admin-book__tabs {
+    order: 3;
+    width: 100%;
+    height: 44px;
+    gap: 1.5rem;
+    overflow-x: auto;
+  }
+  .admin-book__tab { font-size: 15px; }
+  .admin-book__tab[aria-current="page"]::after { bottom: 6px; }
+
+  .bench {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .bench-works,
+  .bench-sheet,
+  .bench-side { overflow: visible; }
+  .bench-works {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px 12px;
+    flex: none;
+  }
+  .bench-works__shelf { margin: 0; display: flex; gap: 8px; align-items: center; flex: none; }
+  .bench-works__shelf ul { display: flex; gap: 6px; }
+  .bench-works__shelf-label { display: none; }
+  .bench-work {
+    grid-template-columns: 32px auto auto;
+    column-gap: 8px;
+    padding: 6px 10px 6px 6px;
+    background: var(--bench-soft);
+    white-space: nowrap;
+  }
+  .bench-work__thumb { width: 32px; height: 32px; }
+  .bench-work__state { display: none; }
+  .bench-works__new { margin: 0; white-space: nowrap; }
+  .bench-sheet { padding: 12px 12px 24px; }
+  .bench-sheet__title { font-size: 24px; }
+  .bench-sheet__hint { display: none; }
+  .bench-frames { --frame-h: 88px; gap: 16px 10px; }
+  .bench-run__frames { gap: 8px; }
+  .bench-side { padding: 16px 16px 96px; }
+  /* 写真を選んだら、右の欄は下からの欄になる（指で公開・順番・表紙）。 */
+  .bench[data-has-selection] .bench-side {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    max-height: 72dvh;
+    overflow-y: auto;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.16);
+  }
+  .bench-panel__photo { max-height: 28dvh; }
+  .bench-notice { bottom: 14px; }
+
+  .book-site { display: flex; flex-direction: column; overflow-y: auto; }
+  .book-site__toc { overflow: visible; padding: 8px 12px; }
+  .book-site__panel { min-height: 70dvh; }
+}
+
+/* 既存の管理画面のボタン指定（aria-pressed の塗りなど、!important つき）より
+   作業台の見た目を優先する。写真集の管理画面の中だけに効く。 */
+/* 2択は「選んでいる側だけ紙の白い面＋濃い文字」。墨の塗りは、その画面で
+   いちばん強い1操作（写真を加える・保存）だけに残す（既存の管理画面の決まり）。 */
+.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root .bench-switch button {
+  background: none !important;
+  color: var(--bench-quiet) !important;
+  border: 0 !important;
+}
+.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root .bench-switch button[aria-pressed="true"] {
+  background: var(--admin-paper) !important;
+  color: var(--bench-ink) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+.admin-book-root .bench-btn { background: var(--bench-deep) !important; color: var(--bench-ink) !important; }
+.admin-book-root .bench-btn:hover:not(:disabled) { background: rgba(var(--admin-ink-rgb), 0.12) !important; }
+.admin-book-root .bench-btn--primary { background: var(--bench-ink) !important; color: var(--admin-paper) !important; }
+.admin-book-root .bench-btn--primary:hover:not(:disabled) { background: rgba(var(--admin-ink-rgb), 0.85) !important; }
+.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root.admin-book-root .bench-frame__btn {
+  background: none !important;
+  color: inherit !important;
+  border: 0 !important;
+}
+
+/* 見出しと作品名は、公開サイトの和文書体（明朝）で組む。操作の文字は
+   管理画面の読みやすい書体のまま。公開サイトと同じ本の中にいると分かるように。 */
+.admin-book-root .admin-book__name,
+.admin-book-root .bench-sheet__title,
+.admin-book-root .bench-work__name,
+.admin-book-root .bench-dialog h2,
+.admin-book-root .bench-panel__lede,
+.admin-book-root .bench-dropcover p {
+  font-family: var(--font-ja, "Shippori Mincho", "Hiragino Mincho ProN", serif) !important;
+}
+.admin-book-root fieldset.bench-switch,
+.admin-book-root fieldset.bench-row { border: 0; margin: 0; min-width: 0; }
+.admin-book-root fieldset.bench-row { padding: 0; }

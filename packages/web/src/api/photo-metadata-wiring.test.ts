@@ -6,6 +6,11 @@ const adminSource = readFileSync(
   import.meta.dir + "/../web/pages/admin.tsx",
   "utf8",
 );
+// 取り込みの手順は 2026-09-23 に共通部品へ切り出した（写真一覧と作業台が使う）。
+const uploadSource = readFileSync(
+  import.meta.dir + "/../web/lib/admin-upload.ts",
+  "utf8",
+);
 
 function section(source: string, start: string, end: string): string {
   return source.slice(source.indexOf(start), source.indexOf(end));
@@ -35,11 +40,10 @@ describe("photo source metadata wiring", () => {
   });
 
   test("the admin passes source metadata and retains the film scan time", () => {
-    const upload = section(
-      adminSource,
-      "const uploadOne = async",
-      "const workers =",
-    );
+    expect(
+      section(adminSource, "const uploadOne = async", "const workers ="),
+    ).toContain("uploadPhotoFile(file, {");
+    const upload = uploadSource;
     expect(upload).toContain("shotAtWithSourceForUploadedPhoto(");
     for (const mapping of [
       "shotAtSource: shotAtSourceVal",

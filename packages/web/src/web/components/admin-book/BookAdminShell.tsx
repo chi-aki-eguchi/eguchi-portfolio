@@ -24,6 +24,8 @@ export function BookAdminShell({
   banner,
   children,
   overlays,
+  theme,
+  onToggleTheme,
 }: {
   siteName: string;
   view: BookAdminView;
@@ -36,6 +38,9 @@ export function BookAdminShell({
   banner?: ReactNode;
   children: ReactNode;
   overlays?: ReactNode;
+  /** 管理画面の明暗（写真の色を見るため、暗い部屋でも使えるように）。 */
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }) {
   const tabs: { id: BookAdminView; label: string; hint: string }[] = [
     { id: "works", label: "作品", hint: "写真を加える・順番・表紙・公開" },
@@ -68,6 +73,9 @@ export function BookAdminShell({
         <div className="admin-book__tools">
           <button type="button" className="bk-ax-btn admin-book__tool" onClick={onSearch}>
             探す <kbd>⌘K</kbd>
+          </button>
+          <button type="button" className="bk-ax-btn admin-book__tool" onClick={onToggleTheme} aria-pressed={theme === "dark"}>
+            {theme === "dark" ? "明るい表示" : "暗い表示"}
           </button>
           <a className="admin-book__tool" href={siteHref} target="_blank" rel="noopener">
             サイトを見る ↗

@@ -718,3 +718,10 @@
   .book-title:has(.book-title__name:not([data-vertical])) .book-title__en { grid-row: 3; }
   .book-title:has(.book-title__name:not([data-vertical])) .book-toc { grid-row: 4; }
 }
+
+/* 目次は全作品のコマを並べるので、写真が1000枚を超えても軽いように、
+   画面の外のコマは描かない（大きさだけ取っておく）。 */
+.book-run__frames > .book-frame {
+  content-visibility: auto;
+  contain-intrinsic-size: auto calc(var(--frame-h) * 0.8) auto calc(var(--frame-h) + 16px);
+}

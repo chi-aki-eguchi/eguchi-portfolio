@@ -5,7 +5,8 @@
  *  1. 写真集のときだけ作業台の器になり、いつもの構成（配布版の既定）は
  *     今までの左メニューのまま
  *  2. 作業台のベタ焼きは写真1枚ずつの媒体どおり（フィルムを黒い帯に）
- *  3. 公開／非公開の切り替えは PATCH を1回送り、元に戻す入口を出す
+ *  3. 公開／非公開の切り替えはまとめて扱う要求（/admin/photos/batch）を1回送り、
+ *     元に戻す入口を出す
  */
 import { test, expect, describe, afterEach } from "bun:test";
 import { setupDom, canned, flush } from "./jsdom-setup";
@@ -121,7 +122,7 @@ describe("写真集の管理画面", () => {
     }
   });
 
-  test("非公開にすると PATCH を1回送り、元に戻す入口が出る", async () => {
+  test("非公開にすると一括の要求を1回送り、元に戻す入口が出る", async () => {
     const calls: { url: string; method: string; body: string }[] = [];
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -141,10 +142,10 @@ describe("写真集の管理画面", () => {
       ) as HTMLButtonElement;
       privateBtn.click();
       await flush(40);
-      const patches = calls.filter((c) => c.method === "PATCH");
-      expect(patches).toHaveLength(1);
-      expect(patches[0]!.url).toContain("/api/admin/photos/1");
-      expect(JSON.parse(patches[0]!.body)).toEqual({ isPublished: false });
+      const writes = calls.filter((c) => c.method !== "GET");
+      expect(writes).toHaveLength(1);
+      expect(writes[0]!.url).toContain("/api/admin/photos/batch");
+      expect(JSON.parse(writes[0]!.body)).toEqual({ ids: [1], operation: "unpublish" });
       expect(m.host.querySelector(".bench-notice__undo")?.textContent).toBe("元に戻す");
     } finally {
       m.cleanup();

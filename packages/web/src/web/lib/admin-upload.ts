@@ -17,7 +17,14 @@ export type UploadMedium = "digital" | "film";
 export type UploadDatePolicy = "file" | "none" | string;
 
 export type UploadResult =
-  | { kind: "added"; id: number }
+  | {
+      kind: "added";
+      id: number;
+      /** 実際に登録した媒体（"auto" のときはカメラの記録から決めたもの）。 */
+      medium: UploadMedium;
+      /** 画像に入っていたカメラ名（あとで媒体を直すときに戻すため）。 */
+      exifCamera: string;
+    }
   | { kind: "duplicate" }
   | { kind: "failed"; reason?: string; storageMissing?: string[] };
 
@@ -39,7 +46,13 @@ export async function uploadPhotoFile(
     datePolicy,
     failureMessage,
   }: {
-    medium: UploadMedium;
+    /**
+     * "auto" はカメラの記録（EXIF の機種・メーカー）があればデジタル、
+     * 無ければフィルムとして登録する。フィルムを手持ちのデジタルカメラで
+     * 複写した画像は、複写したカメラの記録が入るのでデジタルと判定される。
+     * 作業台では取り込み後に一覧で直せる。
+     */
+    medium: UploadMedium | "auto";
     datePolicy: UploadDatePolicy;
     /** 失敗の文言を言語に合わせたいとき。省略時はサーバーの文言。 */
     failureMessage?: (res: Response) => Promise<string> | string;
@@ -98,12 +111,19 @@ export async function uploadPhotoFile(
       exifIso,
     } = data;
     if (!url) throw new Error("no url returned");
-    const isDigital = medium === "digital";
+    const hasCameraRecord = Boolean(
+      (typeof exifMake === "string" && exifMake.trim()) ||
+        (typeof exifModel === "string" && exifModel.trim()) ||
+        (typeof exifCamera === "string" && exifCamera.trim()),
+    );
+    const resolved: UploadMedium =
+      medium === "auto" ? (hasCameraRecord ? "digital" : "film") : medium;
+    const isDigital = resolved === "digital";
     const filmTypeVal = isDigital ? "デジタル" : "フィルム";
     const cameraVal = isDigital ? ((exifCamera as string) ?? "") : "";
     const lensVal = isDigital ? ((exifLens as string) ?? "") : "";
     let { shotAt: shotAtVal, shotAtSource: shotAtSourceVal } =
-      shotAtWithSourceForUploadedPhoto(shotAt, exifDateDigitized, file, medium);
+      shotAtWithSourceForUploadedPhoto(shotAt, exifDateDigitized, file, resolved);
     if (
       !shotAtVal &&
       datePolicy === "file" &&
@@ -158,7 +178,12 @@ export async function uploadPhotoFile(
     ) {
       throw new Error("no photo id returned");
     }
-    return { kind: "added", id: createdId };
+    return {
+      kind: "added",
+      id: createdId,
+      medium: resolved,
+      exifCamera: typeof exifCamera === "string" ? exifCamera : "",
+    };
   } catch (err) {
     // 401 は assertOk がログイン画面へ送る。ここでは従来どおり失敗として数える。
     return {

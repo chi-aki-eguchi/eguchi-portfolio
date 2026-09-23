@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { ContentStatus } from "../ContentStatus";
 import { orientedDimensions } from "../../../shared/image-url";
@@ -13,6 +13,56 @@ const MEDIUM_LABEL: Record<Medium, { ja: string; en: string }> = {
   digital: { ja: "デジタル", en: "Digital" },
   unknown: { ja: "媒体の記録なし", en: "Medium not recorded" },
 };
+
+/** 作品ごとに最初に描くコマの数。残りは、その作品の下の端に近づいたら描く。 */
+const INITIAL_FRAMES = 40;
+
+/**
+ * 写真が1000枚を超えても目次が固まらないよう、作品ごとに最初の40コマだけ
+ * 描き、下の端（目印）が画面に近づいたら残りを描く。番号・リンクは変わらない。
+ * 2000枚・1451コマで計ったとき、スマホ（CPU 1/4）で開くまで 2.4秒・固まる
+ * 時間 1.5秒だった（2026-09-23）。
+ */
+function SheetFrames({
+  count,
+  eagerAll,
+  children,
+}: {
+  count: number;
+  eagerAll?: boolean;
+  children: (limit: number) => React.ReactNode;
+}) {
+  const [limit, setLimit] = useState(eagerAll ? count : Math.min(count, INITIAL_FRAMES));
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (limit >= count) return;
+    const el = sentinel.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setLimit(count);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setLimit(count);
+      },
+      { rootMargin: "1200px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [limit, count]);
+  // 番地（#sheet-…）やコマへの移動の前に、その作品は全部描いておく。
+  useEffect(() => {
+    const onHash = () => setLimit(count);
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [count]);
+  return (
+    <>
+      {children(limit)}
+      {limit < count && <div ref={sentinel} className="book-sheet__more" aria-hidden="true" />}
+    </>
+  );
+}
 
 /**
  * 目次（ベタ焼き）。すべての章のコマを、作品ページと同じ順・同じ番号で並べる。
@@ -89,8 +139,10 @@ export function BookContents({ focusShelf }: { focusShelf?: "series" | "work" })
             <FactLines facts={chapter.facts} />
           </div>
 
+          <SheetFrames count={chapter.photos.length} eagerAll={ci === 0 && chapter.photos.length <= INITIAL_FRAMES}>
+            {(limit) => (
           <div className="book-sheet__frames">
-            {mediumRuns(chapter.photos).map((run) => (
+            {mediumRuns(chapter.photos.slice(0, limit)).map((run) => (
               <div
                 key={`${run.medium}-${run.start}`}
                 className="book-run"
@@ -142,6 +194,8 @@ export function BookContents({ focusShelf }: { focusShelf?: "series" | "work" })
               </div>
             ))}
           </div>
+            )}
+          </SheetFrames>
         </section>
       ))}
     </div>

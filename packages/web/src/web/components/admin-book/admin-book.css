@@ -357,8 +357,8 @@
 .bench-panel__head { display: flex; justify-content: space-between; align-items: baseline; }
 .bench-panel__kicker {
   margin: 0;
-  font-size: 13.5px;
-  color: var(--bench-quiet);
+  font-size: 15px;
+  color: var(--bench-ink);
   font-variant-numeric: tabular-nums;
 }
 .bench-panel__photo {
@@ -367,29 +367,29 @@
   object-fit: contain;
   background: var(--bench-deep);
 }
-.bench-panel__facts { margin: 0; font-size: 14px; }
-.bench-panel__file { margin: -8px 0 0; font-size: 12.5px; color: var(--bench-quiet); overflow-wrap: anywhere; }
+.bench-panel__facts { margin: 0; font-size: 15px; line-height: 1.6; }
+.bench-panel__file { margin: -8px 0 0; font-size: 13.5px; color: var(--bench-quiet); overflow-wrap: anywhere; }
 .bench-panel__lede { margin: 0; font-size: 15px; line-height: 1.8; }
 .bench-panel__cover { display: flex; flex-direction: column; gap: 6px; }
 .bench-panel__cover img,
 .bench-panel__cover span { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--bench-deep); display: block; }
-.bench-panel__cover p { margin: 0; font-size: 13px; color: var(--bench-quiet); }
+.bench-panel__cover p { margin: 0; font-size: 14px; color: var(--bench-quiet); line-height: 1.6; }
 .bench-panel__foot {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-top: 6px;
 }
-.bench-field { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--bench-quiet); }
+.bench-field { display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; color: rgba(var(--admin-ink-rgb), 0.78); }
 .bench-input {
   width: 100%;
   min-height: 40px;
   padding: 8px 10px;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--bench-ink);
   background: var(--admin-paper);
   border: 0;
-  border-bottom: 1px solid rgba(var(--admin-ink-rgb), 0.25);
+  border-bottom: 1px solid rgba(var(--admin-ink-rgb), 0.3);
   border-radius: 0;
 }
 .bench-input:focus { outline: 2px solid var(--admin-accent); outline-offset: 1px; }
@@ -610,4 +610,68 @@
   inset: 0;
   margin: auto !important;
   height: fit-content;
+}
+
+/* ── 探す・絞り込む／番号で移す／まとめて選ぶ ─────────────── */
+.bench-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0 0;
+}
+.bench-filter__search { flex: 1 1 18rem; min-width: 0; }
+.bench-filter__select { width: auto; min-width: 11rem; }
+.admin-book-root .bench-btn[aria-pressed="true"] { background: var(--bench-ink) !important; color: var(--admin-paper) !important; }
+.bench-works__hint { margin: 14px 8px 0; font-size: 12.5px; color: var(--bench-quiet); line-height: 1.6; }
+.bench-work[data-drop] { box-shadow: inset 0 0 0 2px var(--admin-accent); }
+.bench-position { display: flex; flex-direction: column; gap: 8px; }
+.bench-position__row { display: flex; gap: 8px; }
+.bench-position__row .bench-input { flex: 1; min-width: 0; }
+.bench-multi__thumbs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.bench-multi__thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.bench-multi__thumbs span { display: flex; align-items: center; justify-content: center; font-size: 13px; background: var(--bench-deep); }
+.admin-book-root .bench-btn--danger { background: var(--admin-danger) !important; color: #fff !important; }
+.bench-dialog--wide { width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; }
+.bench-review {
+  list-style: none;
+  margin: 12px 0 18px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.bench-review__item {
+  display: flex !important;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 4px !important;
+  background: var(--bench-soft) !important;
+  border: 0 !important;
+  color: var(--bench-ink) !important;
+  font-size: 13px;
+}
+.bench-review__item[data-medium="film"] { background: #0b0b0b !important; color: #fff !important; }
+.bench-review__item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+
+/* ── 暗い表示 ─────────────────────────────── */
+/* 紙の色は adminThemeFromSettings が暗い配色から作る。フィルムの黒い帯は
+   暗い紙と溶けないよう縁を付ける（公開サイトの目次と同じ）。 */
+.admin-book-root[data-admin-theme="dark"] .bench-run[data-medium="film"] .bench-run__frames {
+  background: #000;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+.admin-book-root[data-admin-theme="dark"] .bench-dialog { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); }
+.admin-book-root[data-admin-theme="dark"] .bench-notice p { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
+
+/* 写真が数百枚の作品でも軽く動くように、画面の外のコマは描かない
+   （位置と大きさだけ取っておく）。2000枚・1作品500枚で計った。 */
+.bench-run__frames > .bench-frame {
+  content-visibility: auto;
+  contain-intrinsic-size: auto calc(var(--frame-h) * 0.8) auto calc(var(--frame-h) + 20px);
+}
+@media (max-width: 767px) {
+  /* まとめて選んでいる間は、下の欄を低くしてコマを選び続けられるように。 */
+  .bench[data-multi][data-has-selection] .bench-side { max-height: 46dvh; }
 }

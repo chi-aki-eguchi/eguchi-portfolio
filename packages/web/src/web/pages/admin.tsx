@@ -748,6 +748,12 @@ function AdminPageContent({
     { view: BookAdminView; panel?: string } | null
   >(null);
   const [bookOutlineHost, setBookOutlineHost] = useState<HTMLDivElement | null>(null);
+  // 写真集の管理画面の明暗。いつもの管理画面の明暗とは別に持つ（既定は明るい紙）。
+  const [bookTheme, setBookTheme] = usePersistentState<"light" | "dark">(
+    "admin:book:theme",
+    "light",
+    "local",
+  );
   // Navigation responds immediately; the destination renders its own loading state.
   const contentTab = isAdminTab(tab) ? tab : "gallery";
 
@@ -953,11 +959,11 @@ function AdminPageContent({
           <div
             ref={adminRootRef}
             className="admin-atelier admin-workbench admin-studio admin-book-root relative flex select-none overflow-hidden"
-            data-admin-theme="light"
+            data-admin-theme={bookTheme}
             data-studio-workspace={bookView === "site" ? "site" : "photos"}
             data-studio-editor={(bookView === "site" && panel.kind === "settings") || undefined}
             style={{
-              ...adminThemeFromSettings(shellSettings, "light"),
+              ...adminThemeFromSettings(shellSettings, bookTheme),
               ...(demoMode ? { paddingTop: "var(--admin-demo-banner-height, 84px)" } : {}),
             }}
           >
@@ -970,6 +976,8 @@ function AdminPageContent({
               onLogout={requestLogout}
               locked={galleryReordering || galleryUploading}
               banner={demoBanner}
+              theme={bookTheme}
+              onToggleTheme={() => setBookTheme(bookTheme === "dark" ? "light" : "dark")}
               overlays={
                 <>
                   <div ref={setBookOutlineHost} hidden aria-hidden="true" />

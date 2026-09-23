@@ -173,16 +173,30 @@ async function main() {
   let child: ChildProcess | null = null;
   let storage: ReturnType<typeof startStorage> | null = null;
   let cleaned = false;
-  const cleanup = () => {
+  // Vite に終了を頼んだら、**本当に終わってポートを放すまで待ってから**
+  // 一時フォルダを消して自分も終わる。待たずに抜けると、呼んだ側からは
+  // 「片付いた」のにポートがまだ開いていて、続けて起動した smoke が
+  // 「ポート使用中」で止まる（2026-09-23、launcher.test.ts で毎回再現）。
+  const childGone = (timeoutMs: number) =>
+    new Promise<void>((resolve) => {
+      if (!child || child.exitCode !== null || child.signalCode !== null)
+        return resolve();
+      const timer = setTimeout(resolve, timeoutMs);
+      child.once("exit", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  const cleanup = async () => {
     if (cleaned) return;
     cleaned = true;
     if (child && child.exitCode === null) child.kill("SIGTERM");
     storage?.stop(true);
+    await childGone(10_000);
     rmSync(inputs.runDir, { recursive: true, force: true });
   };
   const stop = (code: number) => {
-    cleanup();
-    process.exit(code);
+    void cleanup().finally(() => process.exit(code));
   };
   process.on("SIGTERM", () => stop(0));
   process.on("SIGINT", () => stop(130));

@@ -66,6 +66,18 @@ test("the admin's sliders take their bounds from the table, not from literals", 
       );
     }
   }
+  // A control does not have to be a slider. The mobile column ceilings
+  // (2026-09-19) are button groups, because "未設定 = PCに合わせる" is a state
+  // a slider cannot show. What this test is actually for still has to hold:
+  // the bounds come from this table, and something really writes the key.
+  for (const key of KEYS) {
+    if (seen.has(key)) continue;
+    const derivesBounds =
+      src.includes(`SETTING_RANGES.${key}.min`) &&
+      src.includes(`SETTING_RANGES.${key}.max`);
+    const isWritten = src.includes(`set("${key}"`);
+    if (derivesBounds && isWritten) seen.add(key);
+  }
   // Every ranged key must actually reach a control — a key nobody offers is a
   // range nobody can hit.
   expect([...seen].sort()).toEqual([...KEYS].sort());

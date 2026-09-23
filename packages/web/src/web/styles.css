@@ -6663,3 +6663,126 @@ dialog.lightbox-exit .lb-content {
 .site-header-see-through .nav-link-luxury::before {
   text-shadow: none;
 }
+
+/* ==========================================================================
+   写真の見せ方 — body[data-photo-crop="whole"]（設定キー photoCrop）
+   ==========================================================================
+
+   既定（属性なし）は従来どおり「枠に合わせて切り抜く」。ここは切り抜かない
+   ほうを選んだときだけ効く。
+
+   **なぜ1か所にまとめるか。** 公開側で写真を切り抜いていた場所は HERO・
+   シリーズ/作品の表紙・シリーズの札・シリーズの帯 の4つに散っていて、
+   それぞれ別の理由で `object-fit: cover` を持っていた（2026-09-19 調査）。
+   どれか1つを直しても「どこかがまだ切れている」状態になるので、切替は
+   body の属性1つに集め、面ごとの規則はここへ並べる。次に写真を置く面を
+   足すときも、この節へ1行足せば揃う。
+
+   切り抜かない選択には必ず余白が出る。横長の画面に縦位置の写真を出せば
+   左右が空く——それが「全体を見せる」の意味なので、余白は隠さずサイトの
+   地の色に合わせる。舞台の高さを写真から決められる面（HERO の1枚絵と
+   表紙）では `--photo-ar` を先に受け取っているので、その余白を最小にする。
+   寸法が無い古い記録では変数が出ず、従来の固定高のまま contain になる。 */
+
+/* --- HERO ------------------------------------------------------------- */
+body[data-photo-crop="whole"] .hero-single-img,
+body[data-photo-crop="whole"] .hero-slide,
+body[data-photo-crop="whole"] .hero-fullscreen .hero-slide-contain img {
+  object-fit: contain;
+}
+/* 舞台の地。切り抜くときは写真が端まで届くので黒が締まって見えるが、
+   切り抜かないと「黒い額」になる。サイトの地に合わせて余白を目立たせない。 */
+body[data-photo-crop="whole"] .hero-single {
+  background: var(--background);
+}
+/* 写真の縦横比を渡せているときだけ、舞台をその比まで縮める。縦位置の写真は
+   高さの上限で止まり、左右が空く（それ以上は切り抜くしかないため）。
+   舞台の高さを --hero-h に一度だけ書き、下の「写真の実際の幅」の計算でも
+   同じ値を使う。式を2か所に書くと、片方だけ直したときにずれる。 */
+body[data-photo-crop="whole"] .hero-single {
+  --hero-h: min(
+    var(--hero-height, 78vh),
+    calc(100vw / (var(--photo-ar, 100 / 78)))
+  );
+  height: var(--hero-h);
+  min-height: 0;
+}
+body[data-photo-crop="whole"] .hero-fullscreen .hero-single {
+  --hero-h: min(
+    calc(100svh - var(--header-h) - var(--sai-top)),
+    calc(100vw / (var(--photo-ar, 100 / 78)))
+  );
+  max-height: none;
+}
+@media (max-width: 768px) {
+  body[data-photo-crop="whole"] .hero-single {
+    --hero-h: min(
+      var(--hero-height, 68vh),
+      calc(100vw / (var(--photo-ar, 100 / 68)))
+    );
+    max-height: none;
+  }
+}
+/* 名前と、名前を読ませるための陰は、**写真の上にだけ**置く。舞台いっぱいに
+   敷くと、写真の左右に出た地の上に灰色のにじみが残り、左下・右下に置いた
+   名前は写真の外（明るい地）へ白で落ちて読めなくなる（2026-09-23 確認）。
+   写真が実際に描かれる幅は「舞台の幅」と「高さ×縦横比」の小さいほう。 */
+body[data-photo-crop="whole"] .hero-single {
+  --hero-photo-inset: calc(
+    (100% - min(100%, calc(var(--hero-h) * (var(--photo-ar, 100 / 78))))) / 2
+  );
+}
+body[data-photo-crop="whole"] .hero-single-overlay,
+body[data-photo-crop="whole"] .hero-single-caption {
+  left: var(--hero-photo-inset);
+  right: var(--hero-photo-inset);
+}
+
+/* --- シリーズ / 作品の表紙 --------------------------------------------- */
+/* 切り抜くときは題名を写真の上に白で重ねている。切り抜かないと写真の横に
+   地が出て、白い題名がその地の上に落ちて読めなくなる（2026-09-23 確認:
+   縦位置の表紙で題名が左下の余白に白で残った）。なので題名は写真の下へ
+   出し、本文と同じ色にする。写真の上に文字を重ねないので幕も要らない。
+
+   高さの上限は写真のほうに持たせる。枠に持たせると題名のぶん写真が縮む。 */
+body[data-photo-crop="whole"] .series-cover__frame {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+}
+body[data-photo-crop="whole"] .series-cover__img {
+  height: min(68vh, calc(100vw / (var(--photo-ar, 100 / 62))));
+  object-fit: contain;
+}
+@media (max-width: 640px) {
+  body[data-photo-crop="whole"] .series-cover__img {
+    height: min(72vh, calc(100vw / (var(--photo-ar, 100 / 118))));
+  }
+}
+body[data-photo-crop="whole"] .series-cover__scrim {
+  display: none;
+}
+body[data-photo-crop="whole"] .series-cover__caption {
+  position: static;
+  padding: 1.1rem 0 0;
+  text-align: center;
+}
+body[data-photo-crop="whole"] .series-cover__title {
+  color: var(--foreground);
+  text-shadow: none;
+}
+body[data-photo-crop="whole"] .series-cover__subtitle {
+  color: rgba(var(--foreground-rgb), 0.6);
+  text-shadow: none;
+}
+
+/* --- シリーズの札と帯 --------------------------------------------------- */
+/* 札は枠の形をそろえたまま（列がそろわないと一覧が読めない）、写真だけを
+   枠の中に収める。空いた分は札の地。 */
+/* Tailwind の object-cover と同じ詳細度では勝てないので、ここだけ強める。
+   クラスは SeriesGrid / SeriesStream の <img> に付いている。 */
+body[data-photo-crop="whole"] img.series-card-media,
+body[data-photo-crop="whole"] img.series-stream-media {
+  object-fit: contain;
+}

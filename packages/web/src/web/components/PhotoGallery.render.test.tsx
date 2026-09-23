@@ -1110,3 +1110,190 @@ test("枠は、写真が入らない列のぶんまで広がらない", () => {
     galleryFrameWidth({ ...OWNER, itemCount: 8, natural: 928, available: 1836 }),
   ).toBe(1597);
 });
+
+/** matchMedia を「スマホ」に固定して差し替える。返り値で元へ戻す。 */
+function pretendPhone() {
+  const original = dom.window.matchMedia;
+  const mm = (query: string) => ({
+    matches: query.includes("max-width: 767px"),
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    onchange: null,
+    dispatchEvent: () => false,
+  });
+  // テスト用の代役。読まれるのは matches と listener の組だけ。
+  dom.window.matchMedia = mm as unknown as typeof dom.window.matchMedia;
+  Object.assign(globalThis, { matchMedia: mm });
+  return () => {
+    dom.window.matchMedia = original;
+    Object.assign(globalThis, { matchMedia: original });
+  };
+}
+
+async function renderGallery(
+  settings: Record<string, string>,
+  props: { photos: typeof photos; layoutType: string },
+  viewportWidth: number,
+) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  qc.setQueryData(["settings"], settings);
+  const host = dom.window.document.createElement("div");
+  dom.window.document.body.appendChild(host);
+  // jsdom does no layout, so hand the component the geometry it measures.
+  Object.defineProperty(host, "clientWidth", {
+    value: viewportWidth,
+    configurable: true,
+  });
+  host.getBoundingClientRect = () =>
+    ({
+      left: 0,
+      right: viewportWidth,
+      width: viewportWidth,
+    }) as DOMRect;
+  Object.defineProperty(dom.window.document.documentElement, "clientWidth", {
+    value: viewportWidth,
+    configurable: true,
+  });
+  // 列数は実測した器の幅から決まる。共有の ResizeObserver スタブは何もしない
+  // ので、放っておくと `window.innerWidth - 48` という初期見積もりのままに
+  // なり、渡した幅が効かない。ここだけ「観測したら即その幅を返す」ものに
+  // 差し替える。
+  const originalRO = globalThis.ResizeObserver;
+  class ImmediateRO {
+    constructor(private cb: ResizeObserverCallback) {}
+    observe() {
+      this.cb(
+        [{ contentRect: { width: viewportWidth } }] as never,
+        this as never,
+      );
+    }
+    unobserve() {}
+    disconnect() {}
+  }
+  Object.assign(globalThis, { ResizeObserver: ImmediateRO });
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(
+      createElement(
+        QueryClientProvider,
+        { client: qc },
+        createElement(PhotoGallery, props as never),
+      ),
+    );
+  });
+  Object.assign(globalThis, { ResizeObserver: originalRO });
+  return {
+    host,
+    cleanup: async () => {
+      await act(async () => {
+        root.unmount();
+      });
+      host.remove();
+    },
+  };
+}
+
+/** `repeat(N, minmax(0, 1fr))` の N。空白で割ると repeat() の中身を数えて
+ *  しまい、何列でも 3 になる。 */
+function columnsOf(host: HTMLElement) {
+  const tracks = host.querySelector<HTMLElement>(
+    "[style*='grid-template-columns']",
+  )!.style.gridTemplateColumns;
+  const repeated = tracks.match(/repeat\((\d+),/);
+  return repeated
+    ? Number(repeated[1])
+    : tracks.split(" ").filter(Boolean).length;
+}
+
+// 列数と「写真の大きさ」はどちらもPCとスマホへ同時に効く。PCで詰めるために
+// 写真の大きさを下げると、スマホの最小タイル幅まで一緒に縮み、375pxの画面で
+// 5列71pxになっていた（2026-09-19 本番実測）。スマホ側の上限だけを別に
+// 持てることを確かめる。**未設定のときに従来どおりであること**が同じくらい
+// 大事なので、両方見る。
+test("the phone column ceiling caps the count, and leaves it alone when unset", async () => {
+  const restore = pretendPhone();
+  try {
+    const nine = Array.from({ length: 9 }, (_, i) => ({
+      ...photos[i % photos.length]!,
+      id: 300 + i,
+    }));
+    // 写真の大きさ 0.5 → スマホの最小タイル幅 75px。390px の幅なら5列入る。
+    const base = { galleryColumns: "8", gallerySizeScale: "0.5" };
+
+    const before = await renderGallery(
+      base,
+      { photos: nine, layoutType: "grid" },
+      390,
+    );
+    expect(columnsOf(before.host)).toBe(5);
+    await before.cleanup();
+
+    const after = await renderGallery(
+      { ...base, galleryColumnsMobile: "2" },
+      { photos: nine, layoutType: "grid" },
+      390,
+    );
+    expect(columnsOf(after.host)).toBe(2);
+    await after.cleanup();
+  } finally {
+    restore();
+  }
+});
+
+// スマホの上限はスマホにだけ効く。PC の列数を巻き込むと、片方を直すために
+// もう片方を壊すという元の問題に戻る。
+test("the phone column ceiling does not touch the desktop count", async () => {
+  const nine = Array.from({ length: 9 }, (_, i) => ({
+    ...photos[i % photos.length]!,
+    id: 400 + i,
+  }));
+  const { host, cleanup } = await renderGallery(
+    { galleryColumns: "8", gallerySizeScale: "0.5", galleryColumnsMobile: "2" },
+    { photos: nine, layoutType: "grid" },
+    1440,
+  );
+  expect(columnsOf(host)).toBe(8);
+  await cleanup();
+});
+
+// コンタクトシートの要点は2つ。(1) 切り抜かない — 行組みと同じで各タイルは
+// 元の縦横比のまま。(2) 列は詰め、行は大きく空ける — この比だけがこの配置の
+// 存在理由で、「間隔」のつまみでは 1:2 にしかならない。
+test("the contact sheet packs tight across and open between rows, uncropped", async () => {
+  const twelve = Array.from({ length: 12 }, (_, i) => ({
+    ...photos[i % photos.length]!,
+    id: 500 + i,
+  }));
+  const { host, cleanup } = await renderGallery(
+    { galleryGapScale: "1", gallerySizeScale: "1" },
+    { photos: twelve, layoutType: "contact-sheet" },
+    1440,
+  );
+  const column = host.querySelector<HTMLElement>(
+    "[style*='flex-direction: column']",
+  )!;
+  const rowGap = Number.parseFloat(column.style.gap);
+  const row = column.querySelector<HTMLElement>("[style*='display: flex']")!;
+  const colGap = Number.parseFloat(row.style.gap);
+  expect(colGap).toBeGreaterThan(0);
+  // 行の間は列の間より一桁ゆるい。数値そのものではなく比を見る（「間隔」で
+  // 全体が伸び縮みしても、この関係は保たれていなければならない）。
+  expect(rowGap / colGap).toBeGreaterThan(8);
+
+  // 切り抜かない: 各タイルは元の(回転を考慮した)縦横比を持つ。
+  const cards = host.querySelectorAll<HTMLElement>(".photo-card");
+  expect(cards.length).toBe(twelve.length);
+  const natural = [3200 / 2133, 2133 / 3200, 3200 / 2133];
+  cards.forEach((card, i) => {
+    expect(Number.parseFloat(card.style.aspectRatio)).toBeCloseTo(
+      natural[i % natural.length]!,
+      3,
+    );
+  });
+  await cleanup();
+});

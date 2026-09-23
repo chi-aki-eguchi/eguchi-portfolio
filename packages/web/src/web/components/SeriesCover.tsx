@@ -1,12 +1,15 @@
 import { useRef } from "react";
 import { useBreakoutRoom } from "../hooks/useBreakoutRoom";
-import { imageUrlWithParams } from "../../shared/image-url";
+import { imageUrlWithParams, orientedDimensions } from "../../shared/image-url";
 
 export type SeriesCoverData = {
   coverUrl?: string | null;
   coverRotationDeg?: number | null;
   coverFocalX?: number | null;
   coverFocalY?: number | null;
+  /** 回転前の実寸。「切り抜かずに全体を見せる」ときの枠の高さに使う。 */
+  coverWidth?: number | null;
+  coverHeight?: number | null;
 };
 
 /**
@@ -56,9 +59,23 @@ export function SeriesCover({
   const focalX = series?.coverFocalX ?? 50;
   const focalY = series?.coverFocalY ?? 50;
 
+  // 「切り抜かずに全体を見せる」を選んだとき、枠の高さは写真の縦横比から
+  // 決まる（styles.css の body[data-photo-crop="whole"] が読む）。**測らずに
+  // 先に渡す**のが要点で、読み込み後に測って高さを変えると版がずれる。
+  // 寸法が無い古い記録では変数を出さず、従来の固定高のままにする。
+  const dims = orientedDimensions(
+    series?.coverWidth,
+    series?.coverHeight,
+    series?.coverRotationDeg ?? 0,
+  );
+  const frameStyle =
+    dims.width && dims.height
+      ? ({ "--photo-ar": `${dims.width} / ${dims.height}` } as React.CSSProperties)
+      : undefined;
+
   return (
     <div ref={ref} style={frame} className="series-cover page-entrance">
-      <div className="series-cover__frame">
+      <div className="series-cover__frame" style={frameStyle}>
         <img
           // Rotation is applied by the image pipeline, not by a CSS transform:
           // rotating the element would turn the frame with it and leave the

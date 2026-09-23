@@ -28,7 +28,34 @@ import {
 // srcset without pulling the full 3200px master stored in R2.
 const FIT_W = "95vw";
 const FIT_H = "94dvh";
+// **一定に保つ。** PhotoGallery の先読みが同じ値を使っていて、ここが
+// マットごとに動くと先読みと本番で別の候補を選び、同じ写真を2回取りに行く。
+// 実際の箱より広めの見積もりになるだけで、選ばれる候補は変わらない。
 export const FIT_SIZES = "95vw";
+
+// ── 写真ビューアのマット（設定キー viewerMat） ──
+//
+// 写真が画面の高さの 94% まで広がるため、「写真ビューアの壁」で選んだ色が
+// 上下 3% ずつしか見えていなかった（2026-09-19 実測）。額装のマットのように
+// 地を残すと、同じ写真が「画面に貼られた画像」ではなく「掛かった作品」に
+// 見える。
+//
+// `lift` は中央寄せしている親の下 padding。**上の余白を下より狭くする**ため
+// に要る。人の目は図形の中心を幾何学的な中心よりわずかに上に感じるので、
+// 上下を同じにすると沈んで見える。親に padding を足しても写真は縮まない
+//（高さが dvh で画面から直に決まっているため）。ずれるのは位置だけ。
+//
+//   高さ H・下padding P のとき 上 = (100 - P - H) / 2、下 = 上 + P。
+//   framed: H=76, P=8 → 上8 / 下16。full: H=94, P=0 → 上下3（従来どおり）。
+type ViewerMat = { w: string; h: string; lift: string };
+const VIEWER_MATS: Record<string, ViewerMat> = {
+  full: { w: FIT_W, h: FIT_H, lift: "0dvh" },
+  soft: { w: "92vw", h: "86dvh", lift: "3dvh" },
+  framed: { w: "88vw", h: "76dvh", lift: "8dvh" },
+};
+export function viewerMat(style: string | null | undefined): ViewerMat {
+  return VIEWER_MATS[style ?? ""] ?? VIEWER_MATS.full;
+}
 type PhotoImage = { url: string; rotationDeg?: number | null };
 export const fitSrcSet = (photo: PhotoImage) =>
   photoSrcSetFor(photo, "lightbox");
@@ -158,6 +185,7 @@ export function Lightbox({
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const palette = viewerPalette(viewerSettings?.viewerStyle);
+  const mat = viewerMat(viewerSettings?.viewerMat);
   const ink = (alpha: number) => `rgba(${palette.ink},${alpha})`;
   const veil = (alpha: number) => `rgba(${palette.veil},${alpha})`;
 
@@ -1103,7 +1131,9 @@ export function Lightbox({
             justifyContent: "center",
             // 札のぶんだけ写真を短く収める。札が無い写真は 0 なので、
             // これまでどおり画面いっぱいに出る。
-            paddingBottom: captionH ? captionH + 28 : 0,
+            // マットの `lift` も同じ下 padding に乗せる（写真は縮まず、
+            // 位置だけ上がる — VIEWER_MATS の註を参照）。
+            paddingBottom: `calc(${captionH ? captionH + 28 : 0}px + ${mat.lift})`,
             boxSizing: "border-box",
             opacity: swapPhase === "out" ? 0 : 1,
             transition:
@@ -1235,15 +1265,15 @@ export function Lightbox({
                     decoding="async"
                     style={{
                       display: "block",
-                      width: FIT_W,
+                      width: mat.w,
                       // **この1枚が舞台の大きさを決めている。**ほかの層は
                       // この箱の中に absolute で重なるだけ。だから札のぶんを
                       // 引くのはここ。親に padding を足しても、高さが
                       // `94dvh` と画面から直に決まっているので効かない
                       // （2026-08-29: 実測で写真が箱を20px はみ出していた）。
                       height: captionH
-                        ? `calc(${FIT_H} - ${captionH + 28}px)`
-                        : FIT_H,
+                        ? `calc(${mat.h} - ${captionH + 28}px)`
+                        : mat.h,
                       objectFit: "contain",
                     }}
                   />

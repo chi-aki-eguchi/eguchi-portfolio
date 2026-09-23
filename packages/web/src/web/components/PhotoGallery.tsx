@@ -102,7 +102,8 @@ export type GalleryLayoutType =
   | "landscape-grid"
   | "masonry"
   | "large-format"
-  | "justified";
+  | "justified"
+  | "contact-sheet";
 // 作風プリセットの検査からも参照する（12種の正本をここ1つに保つ）。
 export const KNOWN_LAYOUTS: GalleryLayoutType[] = [
   "mosaic",
@@ -117,6 +118,7 @@ export const KNOWN_LAYOUTS: GalleryLayoutType[] = [
   "masonry",
   "large-format",
   "justified",
+  "contact-sheet",
 ];
 
 /**
@@ -648,11 +650,30 @@ export function PhotoGallery({
   // an untouched site keeps the exact look it had while the admin's 列数 slider
   // now reaches every layout — previously masonry / clean-grid / large-format
   // ignored it entirely and the control did nothing on those layouts.
-  const columnsFor = (layoutDefaultMax: number) => {
-    const maxColumns = clampSettingRounded(
-      isTop ? "topWorksColumns" : "galleryColumns",
-      pick("topWorksColumns", "galleryColumns", layoutDefaultMax),
+  // スマホだけ列数の上限を別に持てる。空 = PC の値に従う（従来どおり）。
+  //
+  // **なぜ要るか。** 列数と「写真の大きさ」はどちらも PC とスマホの両方に
+  // 同時に効く。PC で詰めて見せるために写真の大きさを下げると、スマホの
+  // 最小タイル幅まで一緒に縮み、375px の画面で 5列71px になっていた
+  //（2026-09-19 実測。参考にしたサイトは同じ幅で 2列172px）。
+  // シリーズ一覧が既に `seriesGridColumnsMobile` で同じ形を持っているので、
+  // 考え方を増やさずに揃える。
+  const mobileColumnsMax = (): number | null => {
+    if (!isMobile) return null;
+    const raw = pick("topWorksColumnsMobile", "galleryColumnsMobile", NaN);
+    if (!Number.isFinite(raw)) return null;
+    return clampSettingRounded(
+      isTop ? "topWorksColumnsMobile" : "galleryColumnsMobile",
+      raw,
     );
+  };
+  const columnsFor = (layoutDefaultMax: number) => {
+    const maxColumns =
+      mobileColumnsMax() ??
+      clampSettingRounded(
+        isTop ? "topWorksColumns" : "galleryColumns",
+        pick("topWorksColumns", "galleryColumns", layoutDefaultMax),
+      );
     const fitted = galleryColumnCap(maxColumns, photos.length);
     return clamp(Math.floor(containerW / minTile) || 1, 1, fitted);
   };
@@ -677,7 +698,14 @@ export function PhotoGallery({
   // their configured desktop composition; mobile has no redundant outer mat.
   const edgeToEdge =
     isMobile ||
-    ["clean-grid", "portrait-grid", "landscape-grid", "justified", "masonry"].includes(mode);
+    [
+      "clean-grid",
+      "portrait-grid",
+      "landscape-grid",
+      "justified",
+      "masonry",
+      "contact-sheet",
+    ].includes(mode);
   // Rotated collage corners need a small mat to stay inside the viewport.
   const frameW = edgeToEdge
     ? Math.max(0, room.available - (mode === "collage" ? 24 : 0))
@@ -1037,19 +1065,37 @@ export function PhotoGallery({
         ))}
       </div>
     );
-  } else if (mode === "justified") {
+  } else if (mode === "justified" || mode === "contact-sheet") {
     // Justified 行組み (owner-approved 12th layout, 2026-07-12): photos flow
     // strictly in sortOrder 左→右・上→下, keep their natural rotation-aware
     // ratio uncropped, and every packed row is flush. S/M/L weights the target
     // row height — the math lives in lib/justified-layout.ts (unit-tested).
-    const jGap = Math.round((isMobile ? 6 : 10) * gapScale);
+    //
+    // コンタクトシート (2026-09-19) は同じ行組みを使い、**間隔の縦横比だけ**
+    // を変える。列は詰め、行は大きく空けるので1行が「帯」として読め、目が
+    // 行の終わりで休める。参考にしたサイトは列 3.5px / 行 60px（比 1:17）で
+    // これをやっていた（2026-09-19 実測）。「間隔」は1本のつまみで縦横へ
+    // 同じ比（1:2）にしか効かないので、この比は配置側が持つしかない。
+    // 行組みを土台にしたのは **写真を切り抜かないため**。そろった枠に見える
+    // のは行の高さがそろうからで、縦横比はどの写真も元のまま。
+    const sheet = mode === "contact-sheet";
+    const jGap = sheet
+      ? Math.max(1, Math.round((isMobile ? 3 : 4) * gapScale))
+      : Math.round((isMobile ? 6 : 10) * gapScale);
+    const jRowGap = sheet
+      ? Math.max(jGap, Math.round((isMobile ? 26 : 56) * gapScale))
+      : jGap;
     const jRows = computeJustifiedRows(photos, {
       containerWidth: containerW,
       gap: jGap,
-      baseRowHeight: (isMobile ? 200 : 250) * sizeScale,
+      // スマホでは行を高くとる。列数で密度を決める配置と違い、行組みの密度は
+      // 行の高さで決まるため、PC 向けに「写真の大きさ」を下げた設定が
+      // そのままスマホの行まで潰さないようにする。
+      baseRowHeight:
+        (sheet ? (isMobile ? 260 : 200) : isMobile ? 200 : 250) * sizeScale,
     });
     body = (
-      <div style={{ display: "flex", flexDirection: "column", gap: jGap }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: jRowGap }}>
         {jRows.map((row) => (
           <div
             key={photos[row.items[0].index].id}

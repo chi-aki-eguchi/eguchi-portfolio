@@ -454,6 +454,13 @@ export function Provider({ children }: ProviderProps) {
     if (data?.photoRevealEffect && data.photoRevealEffect !== "fade")
       document.body.dataset.reveal = data.photoRevealEffect;
     else delete document.body.dataset.reveal;
+    // 写真の見せ方 — body[data-photo-crop="whole"] が styles.css の
+    // object-fit: cover を contain へ替える。**1か所で全部の面に効かせる**の
+    // が要点で、HERO・表紙・シリーズの札・帯がばらばらに切り抜きを持って
+    // いると、「切り抜かない」を選んでも どこかが切れたままになる。
+    if (data?.photoCrop === "whole")
+      document.body.dataset.photoCrop = "whole";
+    else delete document.body.dataset.photoCrop;
     for (const [key, value] of Object.entries(
       heroMotionCssVars(data?.heroMotionSpeed, data?.heroRevealOrder),
     )) {
@@ -561,6 +568,7 @@ export function Provider({ children }: ProviderProps) {
     data?.bgTexture,
     data?.bgTextureOpacity,
     data?.photoRevealEffect,
+    data?.photoCrop,
     data?.heroMotionSpeed,
     data?.heroRevealOrder,
     data?.heroHeight,
@@ -782,6 +790,11 @@ export function Provider({ children }: ProviderProps) {
         if (s.photoRevealEffect && s.photoRevealEffect !== "fade")
           document.body.dataset.reveal = s.photoRevealEffect;
         else delete document.body.dataset.reveal;
+      }
+      if (s.photoCrop !== undefined) {
+        if (s.photoCrop === "whole")
+          document.body.dataset.photoCrop = "whole";
+        else delete document.body.dataset.photoCrop;
       }
       if (
         s.heroMotionSpeed !== undefined ||

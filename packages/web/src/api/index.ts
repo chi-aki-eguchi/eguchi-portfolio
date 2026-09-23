@@ -1341,11 +1341,20 @@ const app = new Hono()
         homeStatement: settings.homeStatement ?? "off",
         // 写真ビューアの壁。wall（白い展示壁・既定）| cinema（暗室）| paper（生成りの紙）
         viewerStyle: settings.viewerStyle ?? "wall",
+        // 写真を開いたときに写真が占める大きさ。full（既定・従来どおり
+        // 画面いっぱい）| soft（少し余白）| framed（額装）。壁の色を選べる
+        // のに、写真が画面高の94%まで広がって壁が見えていなかった。
+        viewerMat: settings.viewerMat ?? "full",
         // DD: 紙質感テクスチャ（none = 現状どおり何も乗せない）
         bgTexture: settings.bgTexture ?? "none", // none | grain-fine | grain-coarse | paper | marble | mist
         bgTextureOpacity: settings.bgTextureOpacity ?? "", // 0–0.15, CSS default 0.06
         // 写真のフェードイン方式 — fade(既定) | none | rise | scale
         photoRevealEffect: settings.photoRevealEffect ?? "fade",
+        // 写真の見せ方。fill（既定・枠に合わせて切り抜く。従来どおり）|
+        // whole（切り抜かずに元の縦横比のまま全体を見せる）。HERO・表紙・
+        // シリーズの札と帯に効く。切り抜きが名前になっている3配置
+        //（すべて正方形 / 縦長4:5 / 横長3:2）はこの設定に従わない。
+        photoCrop: settings.photoCrop ?? "fill",
         // Search Console の HTML タグ検証（content 値のみ）。server の OGP 注入で出力
         googleSiteVerification: settings.googleSiteVerification ?? "",
         // 公開オリジン。sitemap/canonical/og:url/JSON-LD の基底。空 = SITE_URL/default
@@ -1388,8 +1397,11 @@ const app = new Hono()
         gallerySizeVariation: settings.gallerySizeVariation ?? "0.5",
         galleryColumns: settings.galleryColumns ?? "3", // W: a *maximum*; the rendered count steps down with width
         gallerySizeScale: settings.gallerySizeScale ?? "1", // X: tile size multiplier
+        // スマホ専用の最大列数。空 = PC の値に従う（従来どおりの動き）。
+        galleryColumnsMobile: settings.galleryColumnsMobile ?? "",
         // X: top (Works) overrides — empty string = inherit the gallery values
         topWorksColumns: settings.topWorksColumns ?? "",
+        topWorksColumnsMobile: settings.topWorksColumnsMobile ?? "",
         topWorksSizeScale: settings.topWorksSizeScale ?? "",
         topWorksGapScale: settings.topWorksGapScale ?? "",
         gallerySeed: settings.gallerySeed ?? "1", // integer
@@ -2643,6 +2655,10 @@ const app = new Hono()
               rotationDeg: schema.photos.rotationDeg,
               focalX: schema.photos.focalX,
               focalY: schema.photos.focalY,
+              // 「切り抜かずに全体を見せる」を選んだときに表紙の枠の高さを
+              // 写真から決めるために要る。読み込み後に測ると版がずれる（CLS）。
+              width: schema.photos.width,
+              height: schema.photos.height,
             })
             .from(schema.photos)
             .where(buildPublicCoverPhotoFilter(schema.photos, coverIds)),
@@ -2662,6 +2678,8 @@ const app = new Hono()
         rotationDeg: number;
         focalX: number;
         focalY: number;
+        width: number | null;
+        height: number | null;
       }
     >();
     if (needFallback.length) {
@@ -2672,6 +2690,8 @@ const app = new Hono()
             rotationDeg: schema.photos.rotationDeg,
             focalX: schema.photos.focalX,
             focalY: schema.photos.focalY,
+            width: schema.photos.width,
+            height: schema.photos.height,
             seriesId: schema.photos.seriesId,
             sortOrder: schema.photos.sortOrder,
           })
@@ -2731,6 +2751,8 @@ const app = new Hono()
           coverRotationDeg: cover?.rotationDeg ?? 0,
           coverFocalX: cover?.focalX ?? 50,
           coverFocalY: cover?.focalY ?? 50,
+          coverWidth: cover?.width ?? null,
+          coverHeight: cover?.height ?? null,
           photoCount: Number(stat?.photoCount ?? 0),
           shotAtFirst: stat?.shotAtFirst ?? null,
           shotAtLast: stat?.shotAtLast ?? null,

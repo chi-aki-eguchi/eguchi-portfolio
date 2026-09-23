@@ -29,6 +29,7 @@ import { HeroPicture } from "../components/HeroPicture";
 export { HeroPicture } from "../components/HeroPicture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../../shared/photo-alt";
+import { orientedDimensions } from "../../shared/image-url";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { BookHome } from "../components/book/BookHome";
 import { siteDesignFrom } from "../lib/book";
@@ -496,8 +497,20 @@ function HeroSingle({
   photographerName?: string;
 }) {
   const { posClass, overlayTop } = heroCaptionPosition(titlePosition);
+  // 「切り抜かずに全体を見せる」ときだけ、舞台の高さを写真の縦横比から
+  // 決める（styles.css の body[data-photo-crop="whole"] が読む）。寸法は
+  // 最初の描画から手元にあるので、読み込み後に測り直して版をずらさない。
+  const dims = orientedDimensions(
+    photo.width,
+    photo.height,
+    photo.rotationDeg ?? 0,
+  );
+  const stageStyle =
+    dims.width && dims.height
+      ? ({ "--photo-ar": `${dims.width} / ${dims.height}` } as React.CSSProperties)
+      : undefined;
   return (
-    <div className="hero-single">
+    <div className="hero-single" style={stageStyle}>
       <div ref={fxRef} className="hero-fx-layer absolute inset-0">
         <div className="hero-photo-reveal absolute inset-0">
           <HeroPicture

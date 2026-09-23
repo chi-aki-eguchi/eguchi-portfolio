@@ -47,6 +47,7 @@
 | `i18n-en-spec.md` | 日英切り替え |
 | `site-and-data-direction.md` | 公開サイトとデータモデルの方向（オーナー確定分） |
 | `photobook-structure-2026-09-23.md` | 公開サイトの骨格「写真集」の試作（siteDesign=book）。**オーナー確認前** |
+| `photo-aspect-2026-09-23.md` | 写真を切り抜かない選択（photoCrop）・スマホ列数・コンタクトシート・ビューアのマット。ブランチ `feature/photo-aspect`、**main 未統合** |
 | `publishing-and-placement-2026-09-17.md` | 下書きと公開・掲載先・作品ページ編集の**未承認の検討案**。2026-09-17 に現行方針の維持が決まり、実装は止めている |
 | `trash-list-and-purge-separation-2026-09-17.md` | ゴミ箱の一覧取得と期限切れの完全削除を分ける案（未承認・未実装） |
 | `inbound-traffic-plan.md` | **検索・外部からの流入を増やす計画。**次に何をするかの正本 |

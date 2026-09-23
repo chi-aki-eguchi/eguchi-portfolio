@@ -175,6 +175,8 @@ export const SETTINGS_SECTION_KEYS = {
     "gallerySizeScale",
     "galleryGapScale",
     "topWorksColumns",
+    "galleryColumnsMobile",
+    "topWorksColumnsMobile",
     "topWorksSizeScale",
     "topWorksGapScale",
     "galleryEmptyRate",
@@ -196,7 +198,11 @@ export const SETTINGS_SECTION_KEYS = {
     "footerLayout",
     "pageTitleStyle",
     "homeStatement",
+    // 写真を切り抜くかどうか。HERO・表紙・札・帯にまたがるので、
+    // 面ごとの節ではなくここ（ページの骨格）に置く。
+    "photoCrop",
     "viewerStyle",
+    "viewerMat",
   ],
   series: [
     "seriesNavEnabled",
@@ -430,6 +436,12 @@ const GALLERY_LAYOUT_OPTIONS: {
     category: "aligned",
   },
   {
+    value: "contact-sheet",
+    name: "コンタクトシート",
+    desc: "切り抜かずに小さく詰める・列は詰め行は空ける",
+    category: "aligned",
+  },
+  {
     value: "mosaic",
     name: "モザイク",
     desc: "S/M/L混在・抜け感のある並び",
@@ -550,6 +562,22 @@ const LAYOUT_ICON_RECTS: Record<GalleryLayoutType, LayoutIconRect[]> = {
     { l: 34, t: 35, w: 64, h: 31 },
     { l: 2, t: 70, w: 44, h: 26 },
     { l: 49, t: 70, w: 25, h: 26 },
+  ],
+  // 列はほとんど接し、行のあいだだけ大きく空く — この図の要点は「帯」。
+  "contact-sheet": [
+    { l: 2, t: 4, w: 23, h: 17 },
+    { l: 26, t: 4, w: 15, h: 17 },
+    { l: 42, t: 4, w: 21, h: 17 },
+    { l: 64, t: 4, w: 16, h: 17 },
+    { l: 81, t: 4, w: 17, h: 17 },
+    { l: 2, t: 42, w: 17, h: 18 },
+    { l: 20, t: 42, w: 24, h: 18 },
+    { l: 45, t: 42, w: 16, h: 18 },
+    { l: 62, t: 42, w: 20, h: 18 },
+    { l: 83, t: 42, w: 15, h: 18 },
+    { l: 2, t: 81, w: 21, h: 15 },
+    { l: 24, t: 81, w: 16, h: 15 },
+    { l: 41, t: 81, w: 22, h: 15 },
   ],
 };
 
@@ -6112,6 +6140,51 @@ export function SettingsTab({
                     );
                   })()}
                 </AdminField>
+                {/* スマホだけ列数の上限を別に持つ。空 = PCに合わせる（従来
+                    どおり）なので、触らないかぎり表示は変わらない。数値の
+                    スライダーではなくボタンにしたのは、「未設定＝PCに合わせる」
+                    という状態がスライダーでは表せないため。 */}
+                <AdminField
+                  label={copy.galleryLayout.mobileColumnsLabel}
+                  hint={copy.galleryLayout.mobileColumnsHint}
+                >
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {(
+                      [
+                        ["", copy.galleryLayout.mobileColumnsInherit],
+                        ...Array.from(
+                          {
+                            length:
+                              SETTING_RANGES.galleryColumnsMobile.max -
+                              SETTING_RANGES.galleryColumnsMobile.min +
+                              1,
+                          },
+                          (_, i) => {
+                            const n = String(
+                              SETTING_RANGES.galleryColumnsMobile.min + i,
+                            );
+                            return [n, n] as const;
+                          },
+                        ),
+                      ] as ReadonlyArray<readonly [string, string]>
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val || "inherit"}
+                        onClick={() => set("galleryColumnsMobile", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["galleryColumnsMobile"] || "") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.galleryLayout.mobileColumnsNote}
+                </p>
                 <AdminField
                   label={copy.galleryLayout.photoSizeLabel}
                   hint={copy.galleryLayout.photoSizeHint}
@@ -6162,6 +6235,48 @@ export function SettingsTab({
                     unit={copy.units.columns}
                     defaultVal={current["galleryColumns"] || "3"}
                   />
+                </AdminField>
+                {/* スマホだけ列数の上限を別に持つ。空 = PCに合わせる（従来
+                    どおり）なので、触らないかぎり表示は変わらない。数値の
+                    スライダーではなくボタンにしたのは、「未設定＝PCに合わせる」
+                    という状態がスライダーでは表せないため。 */}
+                <AdminField
+                  label={copy.galleryLayout.mobileColumnsLabel}
+                  hint={copy.galleryLayout.mobileColumnsHint}
+                >
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {(
+                      [
+                        ["", copy.galleryLayout.mobileColumnsInherit],
+                        ...Array.from(
+                          {
+                            length:
+                              SETTING_RANGES.topWorksColumnsMobile.max -
+                              SETTING_RANGES.topWorksColumnsMobile.min +
+                              1,
+                          },
+                          (_, i) => {
+                            const n = String(
+                              SETTING_RANGES.topWorksColumnsMobile.min + i,
+                            );
+                            return [n, n] as const;
+                          },
+                        ),
+                      ] as ReadonlyArray<readonly [string, string]>
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val || "inherit"}
+                        onClick={() => set("topWorksColumnsMobile", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["topWorksColumnsMobile"] || "") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
                 </AdminField>
                 <AdminField
                   label={copy.galleryLayout.topPhotoSizeLabel}
@@ -6416,6 +6531,34 @@ export function SettingsTab({
                   </p>
                 )}
                 <AdminField
+                  label={copy.pageLayout.cropLabel}
+                  hint={copy.pageLayout.cropHint}
+                >
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(
+                      [
+                        ["fill", copy.pageLayout.cropOptions.fill],
+                        ["whole", copy.pageLayout.cropOptions.whole],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("photoCrop", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["photoCrop"] || "fill") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.cropNote}
+                </p>
+                <AdminField
                   label={copy.pageLayout.viewerLabel}
                   hint={copy.pageLayout.viewerHint}
                 >
@@ -6443,6 +6586,35 @@ export function SettingsTab({
                 </AdminField>
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.viewerNote}
+                </p>
+                <AdminField
+                  label={copy.pageLayout.matLabel}
+                  hint={copy.pageLayout.matHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["full", copy.pageLayout.matOptions.full],
+                        ["soft", copy.pageLayout.matOptions.soft],
+                        ["framed", copy.pageLayout.matOptions.framed],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("viewerMat", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["viewerMat"] || "full") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.matNote}
                 </p>
                 <AdminField
                   label={copy.pageLayout.statementLabel}

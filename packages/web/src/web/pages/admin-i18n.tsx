@@ -708,6 +708,7 @@ const ADMIN_PHASE_2B_JA = {
       "landscape-grid": "横長グリッド",
       masonry: "マソンリー",
       justified: "行組み",
+      "contact-sheet": "コンタクトシート",
       mosaic: "モザイク",
       scroll: "縦スクロール1枚",
       stagger: "ずらし大",
@@ -1252,6 +1253,15 @@ const ADMIN_PHASE_2B_JA = {
       },
       seriesNote:
         "重ねるときは、文字が沈まないように表紙の下側へ暗い幕を敷きます。それでも明るい表紙では読みにくくなることがあるので、迷うときは「表紙の下に題名」が安全です。表紙を登録していないシリーズは、空の四角ではなく題名を出します。",
+      cropLabel: "写真の見せ方",
+      cropHint:
+        "HERO・シリーズ/作品の表紙・シリーズの札と帯に効きます。写真一覧の並べ方は「ギャラリー配置」で選んだものに従います",
+      cropOptions: {
+        fill: "枠に合わせて切り抜く（既定）",
+        whole: "切り抜かず全体を見せる",
+      },
+      cropNote:
+        "「切り抜かず全体を見せる」は、写真の縦横比をそのまま残します。横長の画面に縦位置の写真を出すと左右が空きますが、その余白はサイトの地の色になります。HERO と表紙は写真の形に合わせて高さも縮むので、余白は必要な分だけです。なお「正方形グリッド」「縦長グリッド」「横長グリッド」の3つは切り抜くことが目的の配置なので、この設定では変わりません。",
       viewerLabel: "写真ビューアの壁",
       viewerHint: "写真を大きく開いたときの地の色",
       viewerOptions: {
@@ -1261,6 +1271,15 @@ const ADMIN_PHASE_2B_JA = {
       },
       viewerNote:
         "壁と文字の色は必ず対で替わるので、どれを選んでも操作は読めます。サイト全体のテーマ（明／暗）とは切り離してあり、ビューアだけこの設定に従います。",
+      matLabel: "写真の入る大きさ",
+      matHint: "写真を大きく開いたとき、写真が画面をどこまで使うか",
+      matOptions: {
+        full: "画面いっぱい（既定）",
+        soft: "少し余白",
+        framed: "額装",
+      },
+      matNote:
+        "「画面いっぱい」は写真が画面の高さの94%を使うので、上で選んだ壁は上下に3%ずつしか見えません。余白を残すと壁が見え、写真が作品らしく見えます。額装では上の余白を下より狭くして、写真をわずかに持ち上げます。拡大（ズーム）は従来どおり画面いっぱいまで使えます。",
       statementLabel: "TOPに作家の言葉を置く",
       statementHint: "Profile の「作家ステートメント」をトップページにも出します",
       statementOptions: {
@@ -1379,6 +1398,10 @@ const ADMIN_PHASE_2B_JA = {
         // 狭くて3列までしか入らないため、固定に見えていた。
         masonry: "縦横比を保って敷き詰め・列数は最大列数に従う",
         justified: "縦横比を保ち行ごとに敷き詰め・S/M/Lで大小",
+        // 2026-09-19 追加。行組みと同じ「切り抜かない」土台で、間隔の
+        // 縦横比だけを変えたもの。行の高さがそろうので枠がそろって見えるが、
+        // どの写真も元の縦横比のまま。
+        "contact-sheet": "切り抜かずに小さく詰める・列は詰め行は空ける",
         mosaic: "S/M/L混在・抜け感のある並び",
         scroll: "1枚ずつ大きく＋情報を添えて表示",
         stagger: "1枚ずつ左右互い違いに配置",
@@ -1412,6 +1435,12 @@ const ADMIN_PHASE_2B_JA = {
         "トップページのヒーロー下 Works 欄に最初から表示する写真の枚数。スクロールするとさらに追加表示されます",
       gridHeading: "ギャラリーの列数・大きさ・余白",
       maxColumnsLabel: "最大列数",
+      mobileColumnsLabel: "最大列数（スマホ）",
+      mobileColumnsHint:
+        "スマホだけ列数の上限を別にします。「PCに合わせる」が既定で、従来どおりの動きです",
+      mobileColumnsInherit: "PCに合わせる",
+      mobileColumnsNote:
+        "列数と「写真の大きさ」はどちらもPCとスマホの両方に同時に効きます。PCで詰めて見せるために写真の大きさを下げると、スマホの写真も一緒に小さくなります（375pxの画面で5列・1枚71px）。ここだけスマホの上限を決めると、PCの見え方を変えずにスマホの写真を大きくできます。行組みとコンタクトシートは列ではなく行の高さで密度が決まるので、この設定は効きません。",
       maxColumnsHint:
         "広い画面で最大何列まで並べるか。実際の列数は「表示できる幅 ÷ 写真1枚の最小幅」で決まり、足りなければ自動で減ります（スマホは1〜2列）。配置の種類は関係なく、マソンリーも同じ",
       columnsCappedByPreview: (previewWidth: number, fits: number) =>
@@ -2486,6 +2515,7 @@ const ADMIN_PHASE_2B_EN = {
       "landscape-grid": "Landscape grid",
       masonry: "Masonry",
       justified: "Justified rows",
+      "contact-sheet": "Contact sheet",
       mosaic: "Mosaic",
       scroll: "Single-photo scroll",
       stagger: "Large stagger",
@@ -3027,6 +3057,15 @@ const ADMIN_PHASE_2B_EN = {
       },
       seriesNote:
         "Overlaid titles get a dark scrim along the bottom of the cover so they stay readable, but a bright cover can still swallow them — “title below the cover” is the safer choice. A series with no cover shows its title instead of an empty box.",
+      cropLabel: "How photos are shown",
+      cropHint:
+        "Applies to the hero, series and work covers, and the series cards and strip. Photo grids follow whichever arrangement you picked under Gallery Layout",
+      cropOptions: {
+        fill: "Crop to fit the frame (default)",
+        whole: "Show the whole photo, uncropped",
+      },
+      cropNote:
+        "Showing the whole photo keeps every original aspect ratio. A portrait photo on a wide screen leaves space at the sides, filled with the site’s own background. The hero and covers also shrink to the photo’s shape, so only the necessary space is left. The three crop-by-design arrangements (Square, Portrait and Landscape grids) are unaffected — cropping is their purpose.",
       viewerLabel: "Photo viewer backdrop",
       viewerHint: "The ground behind a photo opened large",
       viewerOptions: {
@@ -3036,6 +3075,15 @@ const ADMIN_PHASE_2B_EN = {
       },
       viewerNote:
         "The backdrop and the text colour always change together, so the controls stay readable whichever you pick. This is independent of the site’s light/dark theme — only the viewer follows it.",
+      matLabel: "How much of the screen a photo uses",
+      matHint: "When a photo is opened large",
+      matOptions: {
+        full: "Fill the screen (default)",
+        soft: "A little space",
+        framed: "Matted",
+      },
+      matNote:
+        "Filling the screen gives the photo 94% of the height, so the backdrop you picked above shows only 3% at the top and bottom. Leaving space lets the backdrop read, and the photo looks like a print. Matted keeps the top margin narrower than the bottom, lifting the photo slightly. Zoom still uses the whole screen.",
       statementLabel: "Your words on the home page",
       statementHint: "Shows the artist statement from Profile on the home page too",
       statementOptions: {
@@ -3151,6 +3199,8 @@ const ADMIN_PHASE_2B_EN = {
         "landscape-grid": "Landscape 3:2 crop, suited to scenery and landscapes",
         masonry: "Packed tightly while keeping aspect ratio; follows Max Columns",
         justified: "Packed row by row at true aspect ratio; S/M/L sets the size",
+        "contact-sheet":
+          "Small and uncropped; tight across, open between rows",
         mosaic: "A mix of S/M/L sizes with open, airy gaps",
         scroll: "One large photo at a time, with its details alongside",
         stagger: "One photo at a time, alternating left and right",
@@ -3184,6 +3234,12 @@ const ADMIN_PHASE_2B_EN = {
         "How many photos appear initially in the Works section below the hero on the home page. More load in as visitors scroll.",
       gridHeading: "Gallery Columns, Size & Spacing",
       maxColumnsLabel: "Max Columns",
+      mobileColumnsLabel: "Max columns (mobile)",
+      mobileColumnsHint:
+        "A separate ceiling for phones. \u201cMatch desktop\u201d is the default and behaves exactly as before",
+      mobileColumnsInherit: "Match desktop",
+      mobileColumnsNote:
+        "Columns and photo size both apply to desktop and phones at once, so shrinking photos to pack a desktop grid also shrinks them on a phone (5 columns at 71px on a 375px screen). Setting a phone ceiling here enlarges phone photos without touching the desktop view. Justified rows and the contact sheet set their density by row height, not columns, so this does not affect them.",
       maxColumnsHint:
         "The maximum number of columns on a wide screen. The actual count is “available width ÷ minimum photo width”, dropping automatically when there is not enough room (1–2 on mobile). This applies to every layout, masonry included.",
       columnsCappedByPreview: (previewWidth: number, fits: number) =>

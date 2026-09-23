@@ -108,6 +108,9 @@ export const SETTINGS_PREVIEW_KEYS = [
   "bgTexture",
   "bgTextureOpacity",
   "photoRevealEffect",
+  // 枠に合わせて切り抜くか、元の縦横比のまま全体を見せるか。
+  // fill（既定・従来どおり）| whole。HERO・表紙・シリーズの札と帯に効く。
+  "photoCrop",
   "navPosition",
   "navHoverEffect",
   "headerBackground",
@@ -124,6 +127,9 @@ export const SETTINGS_PREVIEW_KEYS = [
   "bookCoverPhotoId",
   "homeStatement",
   "viewerStyle",
+  // 写真を開いたときに写真が占める大きさ。full（既定・従来どおり画面いっぱい）
+  // | soft | framed。壁の色を選べるのに壁が見えない状態を解く。
+  "viewerMat",
   "heroMode",
   "heroMotionSpeed",
   "heroRevealOrder",
@@ -146,6 +152,11 @@ export const SETTINGS_PREVIEW_KEYS = [
   "galleryColumns",
   "gallerySizeScale",
   "topWorksColumns",
+  // スマホだけ列数を別に持つ。空 = PC の値に従う（従来どおり）。
+  // 写真の大きさ1本が PC とスマホ両方に効くため、PC を詰めるとスマホが
+  // 5列71px まで縮んでいた（2026-09-19 実測）。
+  "galleryColumnsMobile",
+  "topWorksColumnsMobile",
   "topWorksSizeScale",
   "topWorksGapScale",
   "gallerySeed",

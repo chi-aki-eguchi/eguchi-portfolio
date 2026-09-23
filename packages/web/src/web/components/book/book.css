@@ -602,3 +602,8 @@
   .book-title { gap: 1.25rem; padding-top: 1.75rem; }
   .book-title .book-photo { --book-max-h: 62svh; }
 }
+
+/* スマホの作品の扉では、文字が写真より上に来る。頁番号は右下の札に任せる。 */
+@media (max-width: 767px) {
+  .book-page__folio--opener { display: none; }
+}

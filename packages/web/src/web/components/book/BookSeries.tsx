@@ -6,7 +6,6 @@ import { contactHrefForWork } from "../../../shared/contact-reference";
 import { bookFacts, pad2, pageHash, pageIndexFromHash } from "../../lib/book";
 import { FactLines } from "./BookFacts";
 import {
-  BookCounter,
   BookPhoto,
   BookPhotoPage,
   BookViewer,
@@ -42,7 +41,7 @@ export function BookSeries({
   const facts = bookFacts(photos);
   const photographerName = settings?.siteName || settings?.siteNameEn || "";
   const viewer = useBookViewer(photos);
-  const current = useBookPager([photos.length, series.slug]);
+  useBookPager([photos.length, series.slug]);
 
   // 表紙を選んでいて、それが1枚目と違うときだけ扉に表紙を置く。
   // 選んでいなければ1枚目が扉の写真で、頁は2枚目から続く。
@@ -181,7 +180,6 @@ export function BookSeries({
         </nav>
       </section>
 
-      <BookCounter current={current} />
       <BookViewer
         photos={photos}
         viewer={viewer}

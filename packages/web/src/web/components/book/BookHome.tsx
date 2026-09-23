@@ -7,7 +7,6 @@ import { pad2, pageHash } from "../../lib/book";
 import { FactLines } from "./BookFacts";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
 import {
-  BookCounter,
   BookPhoto,
   BookPhotoPage,
   BookViewer,
@@ -93,7 +92,7 @@ export function BookHome({
     const i = shown.findIndex((p) => p.id === id);
     if (i >= 0) viewer.open(i);
   };
-  const current = useBookPager([plan.length, shown.length]);
+  useBookPager([plan.length, shown.length]);
 
   const nameJa = settings?.siteName || "";
   const nameEn = settings?.siteNameEn || "";
@@ -232,7 +231,6 @@ export function BookHome({
         </div>
       ))}
 
-      <BookCounter current={current} />
       <BookViewer
         photos={shown}
         viewer={viewer}

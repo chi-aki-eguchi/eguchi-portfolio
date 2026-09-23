@@ -86,8 +86,10 @@ export function placementFor(photo: GalleryPhoto, index: number): BookPlacement 
 }
 
 /**
- * 写真1枚の頁。キャプションは写真の反対側の頁の下に置く（見開きの写真は
- * 写真の下）。**写真の上には何も重ねない。**
+ * 写真1枚の頁。**文字を置かない**（題・枚数・頁番号は扉の頁だけ、2026-09-23
+ * オーナー指示）。写真は画面の高さいっぱい近くまで、横の写真は版面の幅
+ * いっぱいまで。まわりの余白は均等な縁として残す。頁番号は読み上げ用の
+ * 名前（aria-label）にだけ持つ。
  */
 export function BookPhotoPage({
   photo,
@@ -114,13 +116,13 @@ export function BookPhotoPage({
 }) {
   const alt = photoAltText(photo, { photographerName, seriesName: label });
   const num = `${pad2(index + 1)} / ${pad2(total)}`;
-  const title = photo.title?.trim();
   return (
     <section
       id={id}
       className="book-page"
       data-placement={placement}
       data-book-page=""
+      data-book-kind="photo"
       data-book-label={label}
       data-book-num={num}
       aria-label={`${label} ${num}`}
@@ -132,8 +134,8 @@ export function BookPhotoPage({
           eager={eager}
           sizes={
             placement === "spread"
-              ? "(min-width: 768px) calc(100vw - 16rem), 100vw"
-              : "(min-width: 768px) calc((100vw - 13rem) / 2), 100vw"
+              ? "100vw"
+              : "(min-width: 768px) 70vh, 100vw"
           }
           onOpen={onOpen}
           openLabel={
@@ -141,11 +143,6 @@ export function BookPhotoPage({
           }
         />
       </figure>
-      <p className="book-page__folio font-en">
-        <span className="book-page__num">{pad2(index + 1)}</span>
-        <span className="book-page__of">/ {pad2(total)}</span>
-        {title && <span className="book-page__title font-ja">{title}</span>}
-      </p>
     </section>
   );
 }
@@ -159,49 +156,63 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 /**
- * いま開いている頁を数え、左右の矢印で頁を送る。
+ * いま開いている頁を見て、写真の頁では左のメニューを引っ込める
+ * （`body[data-book-immersive]`、book.css）。上へ戻る方向に動かしたとき・
+ * 左の縁に指を乗せたとき・メニューへ焦点が来たときは出す。
  *
- * 上下の矢印・スペース・PageDown はブラウザ本来のスクロールのまま残す。
- * ビューア（dialog）が開いている間と、文字を打っている間は何もしない。
+ * 左右の矢印で頁を送る。上下の矢印・スペース・PageDown はブラウザ本来の
+ * スクロールのまま残す。ビューア（dialog）が開いている間と、文字を打って
+ * いる間は何もしない。
  */
 export function useBookPager(deps: unknown[]) {
-  const [current, setCurrent] = useState<{ label: string; num: string } | null>(
-    null,
-  );
+  const [onPhoto, setOnPhoto] = useState(false);
+  const [goingUp, setGoingUp] = useState(false);
   useEffect(() => {
-    const pages = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-book-page]"),
-    );
-    if (pages.length === 0 || typeof IntersectionObserver === "undefined") return;
-    // 見えている頁の割合を覚えておき、いちばん多く見えている頁を札に出す。
-    // 頁のない所（奥付・フッター）まで来たら札を消す。IntersectionObserver は
-    // 変わった頁しか知らせないので、最後の知らせだけで決めると古い頁が残る。
-    const ratios = new Map<Element, number>();
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) ratios.set(e.target, e.intersectionRatio);
-          else ratios.delete(e.target);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < lastY - 12) setGoingUp(true);
+      else if (y > lastY + 12) setGoingUp(false);
+      if (Math.abs(y - lastY) > 12) lastY = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const immersive = onPhoto && !goingUp;
+  useEffect(() => {
+    const body = document.body;
+    if (immersive) body.dataset.bookImmersive = "";
+    else delete body.dataset.bookImmersive;
+  }, [immersive]);
+  useEffect(
+    () => () => {
+      delete document.body.dataset.bookImmersive;
+    },
+    [],
+  );
+  // 画面の縦の真ん中にある頁が写真の頁かどうかで決める。スマホでは写真の
+  // 頁が短く一度に何枚も見えるので、「いちばん多く見えている頁」では決まらない。
+  useEffect(() => {
+    const check = () => {
+      const mid = window.innerHeight / 2;
+      const pages = document.querySelectorAll<HTMLElement>("[data-book-page]");
+      let kind: string | undefined;
+      for (const el of pages) {
+        const r = el.getBoundingClientRect();
+        if (r.top <= mid && r.bottom >= mid) {
+          kind = el.dataset.bookKind;
+          break;
         }
-        let best: HTMLElement | null = null;
-        let bestRatio = 0;
-        ratios.forEach((ratio, el) => {
-          if (ratio > bestRatio) {
-            bestRatio = ratio;
-            best = el as HTMLElement;
-          }
-        });
-        const el = best as HTMLElement | null;
-        setCurrent(
-          el
-            ? { label: el.dataset.bookLabel ?? "", num: el.dataset.bookNum ?? "" }
-            : null,
-        );
-      },
-      { threshold: [0, 0.35, 0.6] },
-    );
-    pages.forEach((p) => io.observe(p));
-    return () => io.disconnect();
+      }
+      setOnPhoto(kind === "photo");
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
@@ -231,22 +242,6 @@ export function useBookPager(deps: unknown[]) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  return current;
-}
-
-/** PCでは左の余白の下、スマホでは右下の小さな札。 */
-export function BookCounter({
-  current,
-}: {
-  current: { label: string; num: string } | null;
-}) {
-  if (!current) return null;
-  return (
-    <p className="book-counter font-en" aria-hidden="true">
-      <span className="book-counter__label">{current.label}</span>
-      <span className="book-counter__num">{current.num}</span>
-    </p>
-  );
 }
 
 /**

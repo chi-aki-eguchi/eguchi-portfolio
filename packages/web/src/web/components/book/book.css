@@ -13,14 +13,40 @@
 }
 
 /* ── 頁と見開き ───────────────────────────────── */
-.book-spread,
-.book-page {
+.book-spread {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1.75rem;
   padding: var(--book-pad-y) var(--book-pad-x);
   scroll-margin-top: 56px;
+}
+
+/* 写真の頁。文字は置かず、写真のまわりに均等な縁だけを残す。
+   縁の幅（--book-edge）は上下左右で同じ。写真は「画面の高さ − 縁×2」と
+   「版面の幅 − 縁×2」の小さいほうまで大きくする。 */
+.book-page {
+  --book-edge: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--book-edge);
+  scroll-margin-top: 56px;
+}
+.book-page .book-photo {
+  --book-max-h: calc(100svh - 56px - var(--book-edge) * 2);
+}
+@media (min-width: 768px) {
+  .book-page {
+    --book-edge: clamp(16px, 2.2vmin, 28px);
+    /* 頁の高さは写真＋縁。縦の写真は画面の高さちょうど、横長の写真は
+       それより低くなり、どちらも縁は上下左右で同じ幅になる。 */
+    scroll-margin-top: 0;
+  }
+  .book-page .book-photo {
+    --book-max-h: calc(100svh - var(--book-edge) * 2);
+  }
 }
 .book-spread__text {
   min-width: 0;
@@ -36,50 +62,34 @@
 }
 .book-page__figure {
   margin: 0;
+  width: 100%;
   min-width: 0;
   display: flex;
   justify-content: center;
 }
 
 @media (min-width: 768px) {
-  .book-spread,
-  .book-page {
+  .book-spread {
     min-height: 100svh;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: clamp(2rem, 5vw, 5rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    column-gap: clamp(2rem, 4vw, 4rem);
     align-items: center;
     scroll-margin-top: 0;
+    /* 扉の写真も、写真の頁と同じ縁まで大きくする。文字は左下に寄せる。 */
+    --book-edge: clamp(16px, 2.2vmin, 28px);
+    --book-max-h: calc(100svh - var(--book-edge) * 2);
+    padding-top: var(--book-edge);
+    padding-bottom: var(--book-edge);
+    padding-right: var(--book-edge);
   }
   .book-spread__text {
     align-self: stretch;
     justify-content: flex-end;
-    padding-bottom: 1rem;
+    padding-top: var(--book-pad-y);
+    padding-bottom: var(--book-pad-y);
   }
-  .book-page[data-placement="recto"] .book-page__figure { grid-column: 2; grid-row: 1; }
-  .book-page[data-placement="recto"] .book-page__folio { grid-column: 1; grid-row: 1; }
-  .book-page[data-placement="verso"] .book-page__figure { grid-column: 1; grid-row: 1; }
-  .book-page[data-placement="verso"] .book-page__folio {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-    text-align: right;
-  }
-  .book-page .book-page__folio {
-    align-self: end;
-    padding-bottom: 1rem;
-  }
-  .book-page[data-placement="spread"] {
-    grid-template-columns: minmax(0, 1fr);
-    align-content: center;
-    row-gap: 1.25rem;
-    --book-max-h: 76svh;
-  }
-  .book-page[data-placement="spread"] .book-page__figure {
-    justify-content: flex-start;
-  }
-  .book-page[data-placement="spread"] .book-page__folio {
-    align-self: start;
-    padding-bottom: 0;
+  .book-spread__photo {
+    justify-content: flex-end;
   }
 }
 
@@ -333,54 +343,6 @@
   font-size: 0.8125rem;
 }
 
-/* ── 今いる頁の札 ─────────────────────────── */
-.book-counter {
-  position: fixed;
-  z-index: 45;
-  right: 12px;
-  bottom: calc(12px + var(--sai-bottom, 0px));
-  margin: 0;
-  display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
-  max-width: calc(100vw - 96px);
-  padding: 0.35rem 0.6rem;
-  background: rgba(var(--background-rgb), 0.86);
-  color: var(--book-ink);
-  font-size: 0.6875rem;
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
-}
-.book-counter__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--book-quiet);
-}
-@media (min-width: 768px) {
-  .book-counter {
-    z-index: 55;
-    right: auto;
-    left: 2rem;
-    bottom: 2.25rem;
-    width: 9rem;
-    max-width: none;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.3rem;
-    background: none;
-    font-size: 0.75rem;
-  }
-  .book-counter__label {
-    white-space: normal;
-    font-size: 0.75rem;
-  }
-  .book-counter__num {
-    font-size: 1.1rem;
-    font-weight: 300;
-  }
-}
-
 /* ── 目次（ベタ焼き） ─────────────────────────── */
 .book-contents {
   padding: var(--book-pad-y) var(--book-pad-x) 6rem;
@@ -546,6 +508,31 @@
   .site-book.nav-pos-left > main {
     padding-left: 13rem;
   }
+  /* 写真の頁がある画面（トップ・作品ページ）では、本文を左の列の下まで
+     広げる。写真の頁は画面の全幅で真ん中に置き、文字の頁（扉・続き・奥付）
+     だけが左の列のぶん内側から始まる。 */
+  .site-book.nav-pos-left > main:has(.book-page) {
+    padding-left: 0;
+  }
+  .site-book.nav-pos-left > main:has(.book-page) .book-spread,
+  .site-book.nav-pos-left > main:has(.book-page) .book-continue {
+    padding-left: calc(13rem + var(--book-pad-x));
+  }
+  .site-book.nav-pos-left > header {
+    transition:
+      transform 0.45s var(--ease-quart, ease),
+      opacity 0.35s ease;
+  }
+  /* 写真の頁を見ている間は、左の列を引っ込める。左の縁に指を乗せる・
+     焦点が来る・上へ戻ると出る。 */
+  body[data-book-immersive] .site-book.nav-pos-left > header:not(:hover):not(:focus-within) {
+    transform: translateX(calc(-100% + 14px));
+    opacity: 0;
+  }
+  body[data-book-immersive] .site-book .back-to-top {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
   /* 左の余白の下は「いまの頁」の札が使う。先頭へ戻る丸は余白の中、
      メニューの下へ。 */
   /* 制作サービスの案内とフッターも、頁の左の版面にそろえる（中央に積まない）。 */
@@ -606,4 +593,14 @@
 /* スマホの作品の扉では、文字が写真より上に来る。頁番号は右下の札に任せる。 */
 @media (max-width: 767px) {
   .book-page__folio--opener { display: none; }
+}
+
+/* スマホ: 写真の頁を見ている間は上の帯も引っ込める（上へ戻ると出る）。 */
+@media (max-width: 767px) {
+  .site-book > header {
+    transition: transform 0.35s ease;
+  }
+  body[data-book-immersive] .site-book > header:not([data-mobile-menu-open]) {
+    transform: translateY(-100%);
+  }
 }

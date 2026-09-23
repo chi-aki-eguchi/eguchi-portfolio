@@ -1221,7 +1221,7 @@ const ADMIN_PHASE_2B_JA = {
       siteDesignHint: "トップ・作品ページ・目次の組み方",
       siteDesignOptions: {
         classic: "いつもの構成（既定）",
-        book: "写真集（試作）",
+        book: "写真集",
       },
       siteDesignNote:
         "写真集: 1画面に1枚ずつ、作品の順番どおりに頁をめくる構成です。メニューは左の余白に、目次はすべての作品のコマを並べたベタ焼きになります。フィルムとデジタルは写真ごとの記録どおりに分けて見せます。",
@@ -2996,7 +2996,7 @@ const ADMIN_PHASE_2B_EN = {
       siteDesignHint: "How the home, work pages and contents are composed",
       siteDesignOptions: {
         classic: "Standard (default)",
-        book: "Photobook (trial)",
+        book: "Photobook",
       },
       siteDesignNote:
         "Photobook: one photograph per screen, turned page by page in the order of the work. The menu sits in the left margin and the contents page becomes a contact sheet of every work. Film and digital are shown exactly as each photo is recorded.",

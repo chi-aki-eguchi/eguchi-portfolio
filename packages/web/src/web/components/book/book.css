@@ -185,6 +185,8 @@
   }
   .book-title__name {
     align-self: flex-start;
+  }
+  .book-title__name[data-vertical] {
     writing-mode: vertical-rl;
     font-size: clamp(3rem, 5.4vw, 5.4rem);
     letter-spacing: 0.3em;
@@ -671,6 +673,8 @@
     grid-column: 1;
     grid-row: 1;
     align-self: start;
+  }
+  .book-title .book-title__name[data-vertical] {
     writing-mode: vertical-rl;
     font-size: 2.1rem;
     letter-spacing: 0.34em;
@@ -699,4 +703,18 @@
   .book-page { padding: 6px 12px; }
   .book-opener { padding-bottom: 6px; }
   .book-opener .book-spread__photo { margin: 0 -8px; }
+}
+
+/* 英字の名前（縦に組まない）のスマホの扉は、名前 → 写真 → 英字 → 目次の順に積む。 */
+@media (max-width: 767px) {
+  .book-title:has(.book-title__name:not([data-vertical])) .book-title__name {
+    grid-column: 1 / -1;
+    font-size: 2rem;
+  }
+  .book-title:has(.book-title__name:not([data-vertical])) .book-spread__photo {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .book-title:has(.book-title__name:not([data-vertical])) .book-title__en { grid-row: 3; }
+  .book-title:has(.book-title__name:not([data-vertical])) .book-toc { grid-row: 4; }
 }

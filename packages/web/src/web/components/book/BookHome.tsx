@@ -141,7 +141,14 @@ export function BookHome({
       <section className="book-spread book-title" data-book-stop="">
         <div className="book-spread__text">
           <p className="book-kicker font-ja">写真</p>
-          <h1 className="book-title__name font-ja">{nameJa || nameEn}</h1>
+          {/* 縦に組むのは漢字・かなの名前だけ。英字を縦にすると横倒しで
+              画面の下まで伸びる（配布版の既定名 "Photographer Name" で確認）。 */}
+          <h1
+            className="book-title__name font-ja"
+            data-vertical={/[\u3040-\u30ff\u3400-\u9fff]/.test(nameJa || nameEn) ? "" : undefined}
+          >
+            {nameJa || nameEn}
+          </h1>
           {nameJa && nameEn && (
             <p className="book-title__en font-en">{nameEn}</p>
           )}

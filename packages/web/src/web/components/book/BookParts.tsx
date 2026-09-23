@@ -166,8 +166,6 @@ function isTypingTarget(target: EventTarget | null): boolean {
  */
 export function useBookPager(deps: unknown[]) {
   const [onPhoto, setOnPhoto] = useState(false);
-  // 作品の中で、いまどのあたりか（0〜1）。頁の外（奥付など）では null。
-  const [progress, setProgress] = useState<number | null>(null);
   const [goingUp, setGoingUp] = useState(false);
   useEffect(() => {
     let lastY = window.scrollY;
@@ -199,17 +197,14 @@ export function useBookPager(deps: unknown[]) {
       const mid = window.innerHeight / 2;
       const pages = document.querySelectorAll<HTMLElement>("[data-book-page]");
       let kind: string | undefined;
-      let at = -1;
-      pages.forEach((el, i) => {
-        if (at >= 0) return;
+      for (const el of pages) {
         const r = el.getBoundingClientRect();
         if (r.top <= mid && r.bottom >= mid) {
           kind = el.dataset.bookKind;
-          at = i;
+          break;
         }
-      });
+      }
       setOnPhoto(kind === "photo");
-      setProgress(at < 0 ? null : pages.length > 1 ? at / (pages.length - 1) : 1);
     };
     check();
     window.addEventListener("scroll", check, { passive: true });
@@ -246,27 +241,8 @@ export function useBookPager(deps: unknown[]) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  return { progress };
 }
 
-/**
- * 進み具合の細い線。写真の縁の中（左端）に、1px の線で済みと残りを分ける。
- * 数字も文字も出さない。読み上げには頁の名前が既にあるので隠す。
- */
-export function BookProgress({ progress }: { progress: number | null }) {
-  return (
-    <div
-      className="book-progress"
-      aria-hidden="true"
-      data-visible={progress === null ? undefined : ""}
-    >
-      <span
-        className="book-progress__done"
-        style={{ transform: `scaleY(${progress ?? 0})` }}
-      />
-    </div>
-  );
-}
 
 /**
  * 頁の写真を押したら、今までと同じビューア（撮影情報・前後送り付き）で開く。

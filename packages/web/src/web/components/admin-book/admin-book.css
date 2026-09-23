@@ -605,3 +605,9 @@
 .admin-book-root fieldset.bench-switch,
 .admin-book-root fieldset.bench-row { border: 0; margin: 0; min-width: 0; }
 .admin-book-root fieldset.bench-row { padding: 0; }
+.admin-book-root dialog.bench-dialog[open] {
+  position: fixed;
+  inset: 0;
+  margin: auto !important;
+  height: fit-content;
+}

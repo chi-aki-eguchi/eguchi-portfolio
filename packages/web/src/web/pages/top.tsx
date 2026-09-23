@@ -30,6 +30,8 @@ export { HeroPicture } from "../components/HeroPicture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../../shared/photo-alt";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
+import { BookHome } from "../components/book/BookHome";
+import { siteDesignFrom } from "../lib/book";
 
 const PortfolioKitExperience = lazy(
   () => import("../components/PortfolioKitExperience"),
@@ -1201,6 +1203,7 @@ export default function TopPage() {
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
   const topWorksMode = settings?.topWorksMode || "auto";
+  const isBookDesign = siteDesignFrom(settings?.siteDesign) === "book";
   const homeGalleryCount = Math.max(
     1,
     parseInt(settings?.homeGalleryCount ?? "12", 10) || 12,
@@ -1231,7 +1234,9 @@ export default function TopPage() {
       }
       return jsonOrThrow(await api.photos.$get());
     },
-    enabled: !settingsLoading,
+    // 写真集の骨格では、トップの写真は章（作品ページと同じ順）から出す。
+    // ランダムの束は使わないので取りに行かない。
+    enabled: !settingsLoading && !isBookDesign,
   });
   const { data: heroData, isLoading: heroLoading } = useQuery({
     queryKey: ["hero-photos"],
@@ -1455,6 +1460,16 @@ export default function TopPage() {
     </Suspense>
   );
 
+  if (isBookDesign)
+    return (
+      <>
+        <BookHome
+          settings={settings}
+          heroPhoto={(heroPhotosPicked[0] as GalleryPhoto | undefined) ?? null}
+        />
+        {experiencePanel}
+      </>
+    );
   if (heroMode === "quiet-grid")
     return (
       <>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./public-mobile-navigation.css";
+// 写真集の骨格の器（左の余白）と頁。どのページから開いても効くよう、共通の枠で読む。
+import "./book/book.css";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
@@ -9,6 +11,7 @@ import { shelfNeedsCount, shouldShowShelf } from "../lib/shelf-nav";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
+import { siteDesignFrom, usesBookChrome } from "../lib/book";
 import { StudioBridge } from "./StudioBridge";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
@@ -259,7 +262,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(t);
   }, [chromeReady]);
 
-  const navItems = [
+  // 写真集の骨格（2026-09-23 試作）。制作サービス・管理画面は従来の帯のまま。
+  const bookChrome = usesBookChrome(siteDesignFrom(data?.siteDesign), location);
+  const shelfItems = bookChrome
+    ? showSeries || showWork
+      ? [{ href: "/series", label: isEnglishChrome ? "Contents" : "目次" }]
+      : []
+    : [
     ...(showGallery
       ? [{ href: "/gallery", label: data?.navLabelGallery ?? "Gallery" }]
       : []),
@@ -267,6 +276,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ...(showWork
       ? [{ href: "/work", label: data?.navLabelWork || "Work" }]
       : []),
+  ];
+  const navItems = [
+    ...shelfItems,
     {
       href: isEnglishChrome ? "/en/about" : "/about",
       label: data?.navLabelAbout ?? "About",
@@ -300,6 +312,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) => {
     const section = canonicalSection(href);
     if (section) return canonicalSection(location) === section;
+    if (bookChrome && href === "/series")
+      return /^\/(series|work)(\/|$)/.test(location);
     return location === href || location.startsWith(`${href}/`);
   };
 
@@ -406,9 +420,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // layer here would cover the DD grain texture (body::before at z-index:-1).
   return (
     <div
-      className={`min-h-screen text-[var(--foreground)] nav-pos-${navPosition} nav-fx-${navHoverEffect}${
-        seeThrough ? " header-see-through" : ""
+      className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "left site-book" : navPosition} nav-fx-${navHoverEffect}${
+        seeThrough && !bookChrome ? " header-see-through" : ""
       }`}
+      data-site-design={bookChrome ? "book" : undefined}
     >
       {/* Skip link — visible only on keyboard focus, lets SR/keyboard users jump past the nav */}
       <a
@@ -446,9 +461,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Link
             to="/"
             {...warmOn("/")}
-            className="font-en text-sm font-semibold tracking-[0.08em] text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300 inline-flex items-center min-h-[44px]"
+            className={`${
+              bookChrome ? "" : "font-en text-sm font-semibold tracking-[0.08em] "
+            }text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300 inline-flex items-center min-h-[44px]`}
           >
-            {data?.navLabelTop ?? "TOP"}
+            {bookChrome ? (
+              <span className="book-rail-name">
+                <span className={`book-rail-name__ja ${isEnglishChrome ? "font-en" : "font-ja"}`}>
+                  {(isEnglishChrome ? data?.siteNameEn : data?.siteName) ||
+                    data?.navLabelTop ||
+                    "TOP"}
+                </span>
+                {!isEnglishChrome && data?.siteNameEn && (
+                  <span className="book-rail-name__en font-en">{data.siteNameEn}</span>
+                )}
+              </span>
+            ) : (
+              (data?.navLabelTop ?? "TOP")
+            )}
           </Link>
 
           {/* Desktop nav */}

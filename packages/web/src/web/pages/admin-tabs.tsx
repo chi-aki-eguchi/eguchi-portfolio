@@ -187,6 +187,7 @@ export const SETTINGS_SECTION_KEYS = {
   // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
   // 変わらない部分をここでまとめて扱う。
   "page-layout": [
+    "siteDesign",
     "profileLayout",
     "contactLayout",
     "seriesCardStyle",
@@ -6278,6 +6279,36 @@ export function SettingsTab({
               >
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.pageLayout.intro}
+                </p>
+                <AdminField
+                  label={copy.pageLayout.siteDesignLabel}
+                  hint={copy.pageLayout.siteDesignHint}
+                >
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(
+                      [
+                        ["classic", copy.pageLayout.siteDesignOptions.classic],
+                        ["book", copy.pageLayout.siteDesignOptions.book],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        aria-pressed={(current["siteDesign"] || "classic") === val}
+                        onClick={() => set("siteDesign", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["siteDesign"] || "classic") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.siteDesignNote}
                 </p>
                 <AdminField
                   label={copy.pageLayout.aboutLabel}

@@ -15,6 +15,8 @@ import { SeriesColophon } from "../components/SeriesColophon";
 import { seriesColophon } from "../lib/series-colophon";
 import { signalAnalyticsPageReady } from "../lib/analytics";
 import { contactHrefForWork } from "../../shared/contact-reference";
+import { BookSeries } from "../components/book/BookSeries";
+import { siteDesignFrom } from "../lib/book";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -154,6 +156,25 @@ export default function SeriesDetailPage() {
       ? themeConfig.photoOrder
       : settings?.seriesSortOrder;
   const photos = sortPhotosBySetting(data.photos, photoOrder);
+
+  // 写真集の骨格（siteDesign = "book"）。並び・棚・次の章は上と同じ値を渡す。
+  if (siteDesignFrom(settings?.siteDesign) === "book") {
+    return (
+      <BookSeries
+        key={series.slug}
+        series={series}
+        photos={photos}
+        shelf={shelf}
+        coverPhotoId={coverSource?.coverPhotoId ?? null}
+        nextChapter={
+          nextSeries && nextSeries.slug !== series.slug
+            ? { slug: nextSeries.slug, title: nextSeries.title }
+            : null
+        }
+        settings={settings}
+      />
+    );
+  }
   const seriesBgColor = themeConfig.bgColor ?? null;
   const seriesLayout = themeConfig.layout || settings?.seriesLayout;
 

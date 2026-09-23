@@ -1,0 +1,604 @@
+/* 写真集の骨格（siteDesign = "book"、2026-09-23 試作）。
+   写真の上に文字を重ねない・中央揃えにしない・切り抜かない、の3つを守る。
+   色は公開サイトのテーマ変数だけを使う（明暗どちらでも読める）。 */
+
+.book {
+  --book-max-h: 84svh;
+  --book-pad-y: clamp(2.5rem, 7vh, 5rem);
+  --book-pad-x: clamp(1.25rem, 4vw, 4rem);
+  --book-ink: rgba(var(--foreground-rgb), 0.86);
+  --book-quiet: rgba(var(--foreground-rgb), 0.5);
+  --book-hair: rgba(var(--foreground-rgb), 0.12);
+  color: var(--book-ink);
+}
+
+/* ── 頁と見開き ───────────────────────────────── */
+.book-spread,
+.book-page {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.75rem;
+  padding: var(--book-pad-y) var(--book-pad-x);
+  scroll-margin-top: 56px;
+}
+.book-spread__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.book-spread__photo {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.book-page__figure {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .book-spread,
+  .book-page {
+    min-height: 100svh;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: clamp(2rem, 5vw, 5rem);
+    align-items: center;
+    scroll-margin-top: 0;
+  }
+  .book-spread__text {
+    align-self: stretch;
+    justify-content: flex-end;
+    padding-bottom: 1rem;
+  }
+  .book-page[data-placement="recto"] .book-page__figure { grid-column: 2; grid-row: 1; }
+  .book-page[data-placement="recto"] .book-page__folio { grid-column: 1; grid-row: 1; }
+  .book-page[data-placement="verso"] .book-page__figure { grid-column: 1; grid-row: 1; }
+  .book-page[data-placement="verso"] .book-page__folio {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    text-align: right;
+  }
+  .book-page .book-page__folio {
+    align-self: end;
+    padding-bottom: 1rem;
+  }
+  .book-page[data-placement="spread"] {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    row-gap: 1.25rem;
+    --book-max-h: 76svh;
+  }
+  .book-page[data-placement="spread"] .book-page__figure {
+    justify-content: flex-start;
+  }
+  .book-page[data-placement="spread"] .book-page__folio {
+    align-self: start;
+    padding-bottom: 0;
+  }
+}
+
+/* ── 写真の器。縦横比を先に決め、全体を見せる ───────────── */
+.book-photo {
+  display: block;
+  position: relative;
+  aspect-ratio: var(--book-ar, 0.8);
+  width: min(100%, calc(var(--book-max-h) * var(--book-ar, 0.8)));
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(var(--foreground-rgb), 0.04);
+  cursor: zoom-in;
+}
+.book-photo picture,
+.book-photo__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.book-photo__img {
+  object-fit: cover;
+}
+.book-photo:focus-visible {
+  outline: 1px solid var(--foreground);
+  outline-offset: 6px;
+}
+
+/* ── 頁番号 ─────────────────────────────── */
+.book-page__folio {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--book-quiet);
+}
+.book-page__num {
+  font-size: clamp(1.6rem, 2.6vw, 2.4rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--book-ink);
+  font-variant-numeric: tabular-nums;
+}
+.book-page__of {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.book-page__title {
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+  color: var(--book-ink);
+}
+.book-page__folio--opener {
+  margin-top: 1.5rem;
+}
+
+/* ── 扉・章の扉の文字 ─────────────────────────── */
+.book-kicker {
+  margin: 0;
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--book-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.book-kicker__shelf {
+  font-size: 0.75rem;
+}
+.book-title__name {
+  margin: 0;
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.12em;
+  color: var(--foreground);
+}
+.book-title__en {
+  margin: -0.5rem 0 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  color: var(--book-quiet);
+}
+@media (min-width: 768px) {
+  /* 扉の名前は縦に組む。左頁の上から下へ、本の背のように。 */
+  .book-title .book-spread__text {
+    justify-content: space-between;
+  }
+  .book-title__name {
+    align-self: flex-start;
+    writing-mode: vertical-rl;
+    font-size: clamp(3rem, 5.4vw, 5.4rem);
+    letter-spacing: 0.3em;
+    margin-top: 1rem;
+  }
+  .book-title__en {
+    margin: 0;
+  }
+}
+
+.book-opener__title,
+.book-contents__title,
+.book-end__title {
+  margin: 0;
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.book-end__title {
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+}
+.book-opener__sub {
+  margin: -0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--book-quiet);
+}
+.book-opener__statement {
+  margin: 0;
+  max-width: 30em;
+  font-size: 0.9375rem;
+  line-height: 2;
+  white-space: pre-line;
+}
+.book-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8125rem;
+  color: var(--book-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.book-facts p { margin: 0; }
+.book-facts__unit { margin-left: 0.15em; }
+.book-facts__sep { margin: 0 0.5em; opacity: 0.6; }
+
+.book-opener__links {
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  align-items: baseline;
+}
+.book-link {
+  display: inline-block;
+  padding: 0.35rem 0;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--book-hair);
+  transition: border-color 0.2s ease;
+}
+.book-link:hover { border-bottom-color: var(--foreground); }
+.book-link--quiet {
+  color: var(--book-quiet);
+  border-bottom-color: transparent;
+}
+.book-link--quiet:hover { color: var(--foreground); }
+
+/* ── 扉の目次 ─────────────────────────────── */
+.book-toc {
+  max-width: 24rem;
+}
+.book-toc__head {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--book-quiet);
+}
+.book-toc ol {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--book-hair);
+}
+.book-toc__row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--book-hair);
+  color: var(--book-ink);
+}
+.book-toc__row:hover .book-toc__name { color: var(--foreground); }
+.book-toc__num,
+.book-toc__count {
+  font-size: 0.75rem;
+  color: var(--book-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.book-toc__name {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+/* ── 章の続き・奥付 ─────────────────────────── */
+.book-continue {
+  margin: 0;
+  padding: 2rem var(--book-pad-x) 5rem;
+}
+.book-continue__link {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--book-ink);
+}
+.book-continue__label { font-size: 0.875rem; color: var(--book-quiet); }
+.book-continue__num {
+  font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--book-hair);
+  padding-bottom: 0.3rem;
+}
+.book-continue__link:hover .book-continue__num { border-bottom-color: var(--foreground); }
+@media (min-width: 768px) {
+  .book-continue { padding: 3rem var(--book-pad-x) 8rem 50%; }
+}
+
+.book-end {
+  min-height: auto;
+  align-items: end;
+}
+@media (min-width: 768px) {
+  .book-end { min-height: 70svh; }
+}
+.book-end__next {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--book-hair);
+}
+.book-end__row {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--book-hair);
+}
+.book-end__label { font-size: 0.75rem; color: var(--book-quiet); }
+.book-end__name { font-size: 0.9375rem; overflow-wrap: anywhere; }
+.book-end__row:hover .book-end__name { color: var(--foreground); }
+.book-empty {
+  padding: 3rem var(--book-pad-x);
+  color: var(--book-quiet);
+  font-size: 0.8125rem;
+}
+
+/* ── 今いる頁の札 ─────────────────────────── */
+.book-counter {
+  position: fixed;
+  z-index: 45;
+  right: 12px;
+  bottom: calc(12px + var(--sai-bottom, 0px));
+  margin: 0;
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  max-width: calc(100vw - 96px);
+  padding: 0.35rem 0.6rem;
+  background: rgba(var(--background-rgb), 0.86);
+  color: var(--book-ink);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.book-counter__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--book-quiet);
+}
+@media (min-width: 768px) {
+  .book-counter {
+    z-index: 55;
+    right: auto;
+    left: 2rem;
+    bottom: 2.25rem;
+    width: 9rem;
+    max-width: none;
+    padding: 0;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: none;
+    font-size: 0.75rem;
+  }
+  .book-counter__label {
+    white-space: normal;
+    font-size: 0.75rem;
+  }
+  .book-counter__num {
+    font-size: 1.1rem;
+    font-weight: 300;
+  }
+}
+
+/* ── 目次（ベタ焼き） ─────────────────────────── */
+.book-contents {
+  padding: var(--book-pad-y) var(--book-pad-x) 6rem;
+}
+.book-contents__head {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 38rem;
+  margin-bottom: clamp(2.5rem, 7vh, 5rem);
+}
+.book-contents__lede {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.9;
+}
+.book-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--book-quiet);
+}
+.book-legend li { display: flex; align-items: center; gap: 0.6rem; }
+.book-legend__swatch {
+  flex: none;
+  width: 1.6rem;
+  height: 0.9rem;
+}
+.book-legend__swatch--film {
+  background: #0b0b0b;
+  box-shadow: inset 0 0 0 1px rgba(var(--foreground-rgb), 0.22);
+}
+.book-legend__swatch--digital {
+  background: var(--background);
+  box-shadow: inset 0 0 0 1px var(--book-hair);
+}
+.book-legend__note { padding-left: 2.2rem; font-size: 0.75rem; }
+
+.book-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 2.5rem 0 3rem;
+  border-top: 1px solid var(--book-hair);
+  scroll-margin-top: 64px;
+}
+@media (min-width: 1024px) {
+  .book-sheet {
+    grid-template-columns: 15rem minmax(0, 1fr);
+    column-gap: 3rem;
+    scroll-margin-top: 16px;
+  }
+}
+.book-sheet__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-self: start;
+}
+@media (min-width: 1024px) {
+  .book-sheet__head { position: sticky; top: 2rem; }
+}
+.book-sheet__title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  font-weight: 400;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.book-sheet__title a:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+
+.book-sheet__frames {
+  --frame-h: 60px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 1rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  .book-sheet__frames { --frame-h: 88px; }
+}
+.book-run {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.book-run__label {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--book-quiet);
+}
+.book-run__frames {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+/* フィルムのコマだけ、黒い帯の上に並べる。刻印や銘柄は付けない。 */
+.book-run[data-medium="film"] .book-run__frames {
+  background: #0b0b0b;
+  padding: 8px 8px 4px;
+  gap: 8px 6px;
+  /* 暗い表示では背景も黒に近いので、帯の縁を見せて紙の上と区別する。 */
+  box-shadow: inset 0 0 0 1px rgba(var(--foreground-rgb), 0.22);
+}
+.book-frame { margin: 0; }
+.book-frame__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.book-frame__img {
+  display: block;
+  height: var(--frame-h);
+  width: calc(var(--frame-h) * var(--book-ar, 0.8));
+  background: rgba(var(--foreground-rgb), 0.06);
+  overflow: hidden;
+}
+.book-frame__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.2s ease;
+}
+.book-frame__link:hover .book-frame__img img { opacity: 0.78; }
+.book-frame__link:focus-visible {
+  outline: 1px solid var(--foreground);
+  outline-offset: 3px;
+}
+.book-frame__num {
+  font-size: 0.625rem;
+  line-height: 1;
+  color: var(--book-quiet);
+  font-variant-numeric: tabular-nums;
+}
+.book-run[data-medium="film"] .book-frame__num {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── 器（左の余白に名前とメニュー） ───────────────────── */
+@media (min-width: 768px) {
+  .site-book.nav-pos-left > header {
+    width: 13rem;
+    box-shadow: none;
+    background: var(--background) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .site-book.nav-pos-left > header > nav {
+    padding: 2.25rem 2rem 7rem !important;
+    gap: 2.5rem;
+  }
+  .site-book.nav-pos-left > main {
+    padding-left: 13rem;
+  }
+  /* 左の余白の下は「いまの頁」の札が使う。先頭へ戻る丸は余白の中、
+     メニューの下へ。 */
+  /* 制作サービスの案内とフッターも、頁の左の版面にそろえる（中央に積まない）。 */
+  .site-book > aside[data-studio-bridge],
+  .site-book > footer > div {
+    max-width: 60rem;
+    margin-left: 0 !important;
+    margin-right: auto;
+    padding-left: calc(13rem + clamp(1.25rem, 4vw, 4rem)) !important;
+    padding-right: clamp(1.25rem, 4vw, 4rem) !important;
+    align-items: flex-start !important;
+    box-sizing: content-box;
+  }
+  .site-book.nav-pos-left > footer,
+  .site-book.nav-pos-left > aside[data-studio-bridge] {
+    padding-left: 0;
+  }
+  .site-book.nav-pos-left .back-to-top {
+    --back-to-top-left: 2rem;
+    --back-to-top-bottom: 7.5rem;
+    z-index: 56;
+  }
+  .site-book.nav-pos-left > header > nav ul {
+    align-items: flex-start;
+  }
+  .site-book .book-rail-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+}
+.site-book .book-rail-name__ja {
+  font-size: 1rem;
+  letter-spacing: 0.14em;
+}
+.site-book .book-rail-name__en {
+  display: none;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: rgba(var(--foreground-rgb), 0.5);
+}
+@media (min-width: 768px) {
+  .site-book .book-rail-name__en { display: block; }
+}
+
+/* スマホの扉は「名前 → 写真 → 目次」の順。開いた最初の画面に写真を入れる。 */
+@media (max-width: 767px) {
+  .book-title .book-spread__text { display: contents; }
+  .book-title .book-kicker { order: 1; }
+  .book-title .book-title__name { order: 2; }
+  .book-title .book-title__en { order: 3; margin-top: -0.5rem; }
+  .book-title .book-spread__photo { order: 4; }
+  .book-title .book-toc { order: 5; }
+  .book-title { gap: 1.25rem; padding-top: 1.75rem; }
+  .book-title .book-photo { --book-max-h: 62svh; }
+}

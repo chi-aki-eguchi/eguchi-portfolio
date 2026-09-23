@@ -116,6 +116,9 @@ export const SETTINGS_PREVIEW_KEYS = [
   "seriesCardStyle",
   "footerLayout",
   "pageTitleStyle",
+  // サイト全体の骨格。classic（既定・従来どおり）| book（写真集: 1画面に1枚・
+  // 左の余白にメニュー・目次はベタ焼き）。2026-09-23 試作。
+  "siteDesign",
   "homeStatement",
   "viewerStyle",
   "heroMode",

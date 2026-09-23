@@ -1333,6 +1333,8 @@ const app = new Hono()
         footerLayout: settings.footerLayout ?? "center",
         // 各ページの見出しの型。label（小さな大文字・中央・既定）| left | display | hidden
         pageTitleStyle: settings.pageTitleStyle ?? "label",
+        // サイト全体の骨格。classic（既定・従来どおり）| book（写真集の試作）
+        siteDesign: settings.siteDesign ?? "classic",
         // TOP に作家ステートメントを出す位置。off（既定）| before-works | after-works
         homeStatement: settings.homeStatement ?? "off",
         // 写真ビューアの壁。wall（白い展示壁・既定）| cinema（暗室）| paper（生成りの紙）

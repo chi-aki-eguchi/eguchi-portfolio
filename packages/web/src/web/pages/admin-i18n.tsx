@@ -1214,6 +1214,14 @@ const ADMIN_PHASE_2B_JA = {
       title: "ページの構成",
       intro:
         "色や文字の大きさではなく、写真と文章の置き方そのものを変えます。同じ設定でも構成が違えば、サイトの印象は大きく変わります。",
+      siteDesignLabel: "サイト全体の骨格",
+      siteDesignHint: "トップ・作品ページ・目次の組み方",
+      siteDesignOptions: {
+        classic: "いつもの構成（既定）",
+        book: "写真集（試作）",
+      },
+      siteDesignNote:
+        "写真集: 1画面に1枚ずつ、作品の順番どおりに頁をめくる構成です。メニューは左の余白に、目次はすべての作品のコマを並べたベタ焼きになります。フィルムとデジタルは写真ごとの記録どおりに分けて見せます。",
       aboutLabel: "About（プロフィール）の構成",
       aboutHint: "顔写真と自己紹介の並べ方",
       aboutOptions: {
@@ -2978,6 +2986,14 @@ const ADMIN_PHASE_2B_EN = {
       title: "Page Composition",
       intro:
         "This changes how the photo and the words are arranged, not their colour or size. The same settings can read very differently once the composition changes.",
+      siteDesignLabel: "Overall site structure",
+      siteDesignHint: "How the home, work pages and contents are composed",
+      siteDesignOptions: {
+        classic: "Standard (default)",
+        book: "Photobook (trial)",
+      },
+      siteDesignNote:
+        "Photobook: one photograph per screen, turned page by page in the order of the work. The menu sits in the left margin and the contents page becomes a contact sheet of every work. Film and digital are shown exactly as each photo is recorded.",
       aboutLabel: "About page composition",
       aboutHint: "How the portrait and the introduction sit together",
       aboutOptions: {

@@ -3,6 +3,8 @@ import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { SeriesGrid, type ShelfKind } from "../components/SeriesGrid";
+import { BookContents } from "../components/book/BookContents";
+import { siteDesignFrom } from "../lib/book";
 
 /**
  * 作品群の一覧。棚は2つ（2026-08-30）——`series` と `work`。
@@ -22,6 +24,12 @@ export default function SeriesListPage({
   // シリーズ側の見出しは従来どおり固定。Work は名前を設定で変えられる
   // （棚を何と呼ぶかは、その人の作品の呼び方だから）。
   const heading = kind === "work" ? (data?.navLabelWork || "Work") : "Series";
+
+  // 写真集の骨格では、棚の一覧の代わりに全作品のベタ焼き（目次）を出す。
+  // Work の棚から来たときは、Work の章から見せる。
+  if (siteDesignFrom(data?.siteDesign) === "book") {
+    return <BookContents focusShelf={kind} />;
+  }
 
   return (
     <section className="max-w-5xl mx-auto site-page site-page-top pb-16 md:pb-32 min-h-[60vh]" ref={entranceRef}>

@@ -8,6 +8,7 @@ import { FactLines } from "./BookFacts";
 import {
   BookPhoto,
   BookPhotoPage,
+  BookProgress,
   BookViewer,
   placementFor,
   useBookPager,
@@ -24,6 +25,7 @@ type Settings = Record<string, string | null | undefined> | undefined;
  * 直接開ける。
  */
 export function BookSeries({
+  showProgress = true,
   series,
   photos,
   shelf,
@@ -31,6 +33,8 @@ export function BookSeries({
   nextChapter,
   settings,
 }: {
+  /** 進み具合の細い線。`?progress=off` で消して見比べられる（試作用）。 */
+  showProgress?: boolean;
   series: { slug: string; title: string; subtitle?: string; statement?: string };
   photos: GalleryPhoto[];
   shelf: "series" | "work";
@@ -41,7 +45,7 @@ export function BookSeries({
   const facts = bookFacts(photos);
   const photographerName = settings?.siteName || settings?.siteNameEn || "";
   const viewer = useBookViewer(photos);
-  useBookPager([photos.length, series.slug]);
+  const { progress } = useBookPager([photos.length, series.slug]);
 
   // 表紙を選んでいて、それが1枚目と違うときだけ扉に表紙を置く。
   // 選んでいなければ1枚目が扉の写真で、頁は2枚目から続く。
@@ -112,7 +116,7 @@ export function BookSeries({
                 photographerName,
                 seriesName: series.title,
               })}
-              sizes="(min-width: 768px) calc((100vw - 13rem) / 2), 100vw"
+              sizes="(min-width: 768px) 50vw, 100vw"
               onOpen={() =>
                 viewer.open(Math.max(0, photos.findIndex((p) => p.id === openerPhoto.id)))
               }
@@ -180,6 +184,7 @@ export function BookSeries({
         </nav>
       </section>
 
+      {showProgress && <BookProgress progress={progress} />}
       <BookViewer
         photos={photos}
         viewer={viewer}

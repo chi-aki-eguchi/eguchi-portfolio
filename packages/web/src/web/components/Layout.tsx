@@ -569,8 +569,47 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             )}
           </ul>
 
+          {/* 写真集の骨格のスマホ: アイコンの帯ではなく、本の柱のような文字だけ。
+              上へ戻るのはスクロールしたときだけ出す（浮かぶ丸は写真に重なる）。
+              明暗の切り替えはメニューの中へ。 */}
+          {bookChrome && (
+            <div className="md:hidden book-running-head">
+              {scrolled && (
+                <button
+                  type="button"
+                  className="book-running-head__item font-en"
+                  onClick={() => window.scrollTo({ top: 0 })}
+                  aria-label={isEnglishChrome ? "Back to top" : "ページの先頭へ"}
+                >
+                  ↑
+                </button>
+              )}
+              {shelfItems[0] && (
+                <Link
+                  to={shelfItems[0].href}
+                  className="book-running-head__item font-ja"
+                  aria-current={isActive(shelfItems[0].href) ? "page" : undefined}
+                >
+                  {shelfItems[0].label}
+                </Link>
+              )}
+              <button
+                type="button"
+                className="book-running-head__item font-ja"
+                ref={menuButtonRef}
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-menu"
+              >
+                {mobileOpen
+                  ? isEnglishChrome ? "Close" : "閉じる"
+                  : isEnglishChrome ? "Menu" : "メニュー"}
+              </button>
+            </div>
+          )}
+
           {/* Dark mode toggle + Mobile hamburger */}
-          <div className="md:hidden flex items-center gap-0.5">
+          <div className={`md:hidden ${bookChrome ? "hidden" : "flex"} items-center gap-0.5`}>
             {dm && (
               <button
                 onClick={dm.toggle}
@@ -627,7 +666,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               right-edge where the old 32px button had it. */}
             <button
               className="w-11 h-11 -mr-1.5 flex flex-col items-center justify-center gap-[5px] text-[var(--foreground)]"
-              ref={menuButtonRef}
+              ref={bookChrome ? undefined : menuButtonRef}
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Menu"
               aria-expanded={mobileOpen}
@@ -670,6 +709,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {label}
             </Link>
           ))}
+          {bookChrome && dm && (
+            <button
+              type="button"
+              onClick={dm.toggle}
+              className="public-mobile-menu__link font-ja book-menu-theme"
+            >
+              {isEnglishChrome
+                ? dm.resolved === "dark" ? "Light" : "Dark"
+                : dm.resolved === "dark" ? "明るい表示にする" : "暗い表示にする"}
+            </button>
+          )}
           {showLanguageSwitch && languagePairHref && (
             <div className="public-mobile-menu__language">
               <LanguageSwitchLinks

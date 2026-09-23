@@ -162,6 +162,9 @@ export default function SeriesDetailPage() {
     return (
       <BookSeries
         key={series.slug}
+        showProgress={
+          new URLSearchParams(window.location.search).get("progress") !== "off"
+        }
         series={series}
         photos={photos}
         shelf={shelf}

@@ -40,6 +40,43 @@ function chapterCover(chapter: BookChapter, skip: Set<number>) {
   );
 }
 
+/** 作品ページの扉に出る写真（表紙を選んでいればそれ、無ければ1枚目）。 */
+function seriesOpenerId(chapter: BookChapter): number | undefined {
+  const chosen =
+    chapter.coverPhotoId != null
+      ? chapter.photos.find((p) => p.id === chapter.coverPhotoId)
+      : undefined;
+  return (chosen ?? chapter.photos[0])?.id;
+}
+
+/**
+ * トップの扉の写真。
+ *  1. 管理画面「写真集のトップの写真」で選んだ1枚（公開中なら）
+ *  2. 自動: HERO の写真のうち、どの作品の扉とも重ならない最初の1枚
+ *  3. 自動: 最初の章の、扉ではない最初の写真
+ * 自動のときに作品の扉と同じ写真を避けるのは、トップを開いて作品へ進むと
+ * 同じ写真が続いてしまうため（2026-09-23 オーナー指摘）。
+ */
+export function titlePhoto(
+  chapters: BookChapter[],
+  heroPhotos: GalleryPhoto[],
+  chosenId: string | null | undefined,
+): GalleryPhoto | null {
+  const all = chapters.flatMap((c) => c.photos);
+  const chosen = chosenId ? all.find((p) => String(p.id) === chosenId) : undefined;
+  if (chosen) return chosen;
+  const openers = new Set(chapters.map(seriesOpenerId));
+  const hero = heroPhotos.find((p) => !openers.has(p.id));
+  if (hero) return hero;
+  const first = chapters[0];
+  return (
+    first?.photos.find((p) => !openers.has(p.id)) ??
+    heroPhotos[0] ??
+    first?.photos[0] ??
+    null
+  );
+}
+
 /**
  * 写真集の骨格のトップ（siteDesign = "book"）。
  *
@@ -49,16 +86,18 @@ function chapterCover(chapter: BookChapter, skip: Set<number>) {
  */
 export function BookHome({
   settings,
-  heroPhoto: pickedHero,
+  heroPhotos,
 }: {
   settings: Settings;
-  heroPhoto: GalleryPhoto | null;
+  heroPhotos: GalleryPhoto[];
 }) {
   const { chapters, isLoading, isError, refetch } = useBookChapters();
   const seriesLinkById = useSeriesLinks();
   const photographerName = settings?.siteName || settings?.siteNameEn || "";
-  // HERO を選んでいなければ、最初の章の1枚目を扉に置く（章の側では飛ばす）。
-  const heroPhoto = pickedHero ?? chapters[0]?.photos[0] ?? null;
+  const heroPhoto = useMemo(
+    () => titlePhoto(chapters, heroPhotos, settings?.bookCoverPhotoId),
+    [chapters, heroPhotos, settings?.bookCoverPhotoId],
+  );
 
   const plan = useMemo(() => {
     const used = new Set<number>();
@@ -133,7 +172,7 @@ export function BookHome({
               photo={heroPhoto}
               eager
               alt={photoAltText(heroPhoto, { photographerName })}
-              sizes="(min-width: 768px) calc((100vw - 13rem) / 2), 100vw"
+              sizes="(min-width: 768px) 50vw, 100vw"
               onOpen={() => openById(heroPhoto.id)}
               openLabel="この写真を拡大して見る"
             />
@@ -190,7 +229,7 @@ export function BookHome({
                     photographerName,
                     seriesName: chapter.title,
                   })}
-                  sizes="(min-width: 768px) calc((100vw - 13rem) / 2), 100vw"
+                  sizes="(min-width: 768px) 50vw, 100vw"
                   onOpen={() => openById(cover.id)}
                   openLabel={`${chapter.title}の写真を拡大して見る`}
                 />

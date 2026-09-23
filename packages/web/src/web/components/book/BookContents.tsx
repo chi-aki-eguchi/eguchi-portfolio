@@ -59,7 +59,7 @@ export function BookContents({ focusShelf }: { focusShelf?: "series" | "work" })
             <span className="book-legend__swatch book-legend__swatch--digital" aria-hidden="true" />
             紙の上 — デジタルで撮った写真
           </li>
-          <li className="book-legend__note">番号は作品の中の順番です（フィルムのコマ番号ではありません）。</li>
+          <li className="book-legend__note">番号は作品の中の順番（フィルムのコマ番号とは別）</li>
         </ul>
       </header>
 

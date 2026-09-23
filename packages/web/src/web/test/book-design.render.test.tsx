@@ -27,6 +27,7 @@ const { QueryClient, QueryClientProvider } = await import(
 );
 const { Router, Route } = await import("wouter");
 const SeriesListPage = (await import("../pages/series")).default;
+const { titlePhoto } = await import("../components/book/BookHome");
 const SeriesDetailPage = (await import("../pages/series-detail")).default;
 
 const doc = dom.window.document;
@@ -138,6 +139,24 @@ describe("写真集の骨格の計算", () => {
     expect(siteDesignFrom("book")).toBe("book");
     expect(siteDesignFrom("anything")).toBe("classic");
     expect(siteDesignFrom(undefined)).toBe("classic");
+  });
+});
+
+describe("トップの扉の写真", () => {
+  const p = (id: number) => ({ id, url: `/p${id}.jpg`, title: "" });
+  const chapter = (photos: { id: number }[], coverPhotoId: number | null = null) =>
+    ({ photos, coverPhotoId }) as never;
+  const chapters = [chapter([p(1), p(2), p(3)]), chapter([p(7), p(8)], 8)];
+
+  test("選んだ写真があればそれ", () => {
+    expect(titlePhoto(chapters, [p(1)] as never, "3")?.id).toBe(3);
+  });
+  test("自動では、作品の扉と同じ写真（HERO が1枚目と同じなど）を避ける", () => {
+    expect(titlePhoto(chapters, [p(1)] as never, "")?.id).toBe(2);
+    expect(titlePhoto(chapters, [p(8), p(3)] as never, "")?.id).toBe(3);
+  });
+  test("選んだ写真が公開されていなければ自動へ戻る", () => {
+    expect(titlePhoto(chapters, [] as never, "999")?.id).toBe(2);
   });
 });
 

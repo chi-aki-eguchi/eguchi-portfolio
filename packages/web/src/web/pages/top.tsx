@@ -1465,7 +1465,7 @@ export default function TopPage() {
       <>
         <BookHome
           settings={settings}
-          heroPhoto={(heroPhotosPicked[0] as GalleryPhoto | undefined) ?? null}
+          heroPhotos={heroPhotosPicked as GalleryPhoto[]}
         />
         {experiencePanel}
       </>

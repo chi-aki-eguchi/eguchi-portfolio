@@ -1335,6 +1335,8 @@ const app = new Hono()
         pageTitleStyle: settings.pageTitleStyle ?? "label",
         // サイト全体の骨格。classic（既定・従来どおり）| book（写真集の試作）
         siteDesign: settings.siteDesign ?? "classic",
+        // 写真集のトップの写真。空 = 自動
+        bookCoverPhotoId: settings.bookCoverPhotoId ?? "",
         // TOP に作家ステートメントを出す位置。off（既定）| before-works | after-works
         homeStatement: settings.homeStatement ?? "off",
         // 写真ビューアの壁。wall（白い展示壁・既定）| cinema（暗室）| paper（生成りの紙）

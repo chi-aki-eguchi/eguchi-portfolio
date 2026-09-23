@@ -1214,6 +1214,9 @@ const ADMIN_PHASE_2B_JA = {
       title: "ページの構成",
       intro:
         "色や文字の大きさではなく、写真と文章の置き方そのものを変えます。同じ設定でも構成が違えば、サイトの印象は大きく変わります。",
+      bookCoverLabel: "写真集のトップの写真",
+      bookCoverHint: "開いて最初に見える1枚",
+      bookCoverAuto: "自動（作品の扉と重ならない1枚）",
       siteDesignLabel: "サイト全体の骨格",
       siteDesignHint: "トップ・作品ページ・目次の組み方",
       siteDesignOptions: {
@@ -2986,6 +2989,9 @@ const ADMIN_PHASE_2B_EN = {
       title: "Page Composition",
       intro:
         "This changes how the photo and the words are arranged, not their colour or size. The same settings can read very differently once the composition changes.",
+      bookCoverLabel: "Photobook home photograph",
+      bookCoverHint: "The first photograph people see",
+      bookCoverAuto: "Automatic (one not used on a work’s opening page)",
       siteDesignLabel: "Overall site structure",
       siteDesignHint: "How the home, work pages and contents are composed",
       siteDesignOptions: {

@@ -762,7 +762,8 @@
 }
 .book-title[data-entrance] .book-title__char {
   animation: book-set 1.2s var(--ease-reveal) both;
-  animation-delay: calc(0.2s + var(--i, 0) * 0.16s);
+  /* 1字 0.16s。長い名前（英字の名前など）でも組み終わりまで約1.4秒に収める。 */
+  animation-delay: calc(0.2s + var(--i, 0) * min(0.16s, 1.4s / var(--n, 1)));
 }
 .book-title[data-entrance] .book-kicker,
 .book-title[data-entrance] .book-title__en {

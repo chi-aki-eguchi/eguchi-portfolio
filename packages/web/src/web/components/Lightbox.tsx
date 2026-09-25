@@ -908,7 +908,16 @@ export function Lightbox({
       historyCleanupTimerRef.current = null;
     }
     if (!historyPushedRef.current) {
+      // ビューアを閉じて自分で積んだ履歴を戻すとき、ブラウザに開いた時点の
+      // スクロール位置を復元させない。させると、送った先の頁へ戻ったあと
+      // 1フレームだけ開いた写真の頁へ跳ね戻って見える（2026-09-25 実測:
+      // 4500 → 2700 → 4500）。復元の仕方は戻り先の履歴項目に記録されるので、
+      // 積む前の項目にだけ manual を付け、積んだ項目は元の設定のまま。
+      // 戻り先の位置は下の後片付けと各一覧が自分で決める。
+      const restoration = window.history.scrollRestoration;
+      window.history.scrollRestoration = "manual";
       window.history.pushState({ lightbox: true }, "");
+      window.history.scrollRestoration = restoration;
       historyPushedRef.current = true;
     }
     window.addEventListener("popstate", onPop);

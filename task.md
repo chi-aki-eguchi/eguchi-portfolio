@@ -10,6 +10,7 @@
 - 2026-09-25 smoke（Chromium の desktop/mobile/mobile-touch。WebKit はこの環境に無く未実行）: 475成功・166スキップ・7失敗。失敗は admin-reorder-safety「保存中の終了」と public-site「Portfolio Kit /portfolio-kit・/start の基本検査」×3画面で、**origin/main でも同じく失敗**（worktree で再現）。追加した `public-book-motion.spec.ts` は desktop/mobile 6件成功。
 - 気づき: `test.use({ reducedMotion: "reduce" })` はこの smoke の fixture では効かない（matchMedia が false のまま）。新しい spec は `page.emulateMedia` で指定。既存の `public-motion-tempo.spec.ts` の「動きを減らす設定」も同じ理由で本当は検査できていない可能性がある（未修正）。
 - 動画とコマ撮り: `scratch/motion-20260925/share/`（gitignore、人工データ）。
+- 2026-09-25 追加: オーナーが触って試せるよう `bun run try`（`packages/web/vite.try.config.ts`、本番の公開 GET だけを中継、書き込みは 403、`.env` を読まない、siteDesign だけ差し替え）。あわせて、ビューアを閉じた直後に1フレーム開いた位置へ跳ね戻る不具合（履歴を戻すときのスクロール復元）を修正し、長い名前の組み上がりを約1.4秒に抑えた。再検証: typecheck・lint 成功、公開系 smoke（public-site / scroll-stability / photo-detail / book-motion / motion-tempo、Chromium 3種）274成功・6失敗（既知の Portfolio Kit 基本検査、main でも失敗）。`lightbox-gestures` のスワイプ単体テストは origin/main でもこの環境で失敗。
 
 ## Current State — 2026-09-23 JST / 写真集の管理画面「作品ごとの作業台」（オーナー承認、main へ push）
 

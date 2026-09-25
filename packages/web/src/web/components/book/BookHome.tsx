@@ -177,6 +177,7 @@ export function BookHome({
           <h1
             className="book-title__name font-ja"
             data-vertical={/[\u3040-\u30ff\u3400-\u9fff]/.test(titleName) ? "" : undefined}
+            style={{ "--n": Array.from(titleName).length } as React.CSSProperties}
           >
             {/* 一字ずつ組む（book.css の book-set）。読み上げは名前のまま。 */}
             <span className="sr-only">{titleName}</span>

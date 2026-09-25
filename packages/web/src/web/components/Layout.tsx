@@ -262,12 +262,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(t);
   }, [chromeReady]);
 
-  // 写真集の骨格（2026-09-23 試作）。制作サービス・管理画面は従来の帯のまま。
+  // 写真集の骨格（2026-09-23 試作、2026-09-25 見直し）。制作サービス・
+  // 管理画面は従来の帯のまま。作品（Series / Work）は「Works」1つにまとめ、
+  // 作品に入っていない写真も見られるよう「Photos」（/gallery）を並べる。
   const bookChrome = usesBookChrome(siteDesignFrom(data?.siteDesign), location);
   const shelfItems = bookChrome
-    ? showSeries || showWork
-      ? [{ href: "/series", label: isEnglishChrome ? "Contents" : "目次" }]
-      : []
+    ? [
+        ...(showSeries || showWork ? [{ href: "/series", label: "Works" }] : []),
+        ...(showGallery
+          ? [{ href: "/gallery", label: "Photos" }]
+          : []),
+      ]
     : [
     ...(showGallery
       ? [{ href: "/gallery", label: data?.navLabelGallery ?? "Gallery" }]
@@ -420,7 +425,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // layer here would cover the DD grain texture (body::before at z-index:-1).
   return (
     <div
-      className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "left site-book" : navPosition} nav-fx-${navHoverEffect}${
+      className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "top site-book" : navPosition} nav-fx-${navHoverEffect}${
         seeThrough && !bookChrome ? " header-see-through" : ""
       }`}
       data-site-design={bookChrome ? "book" : undefined}
@@ -584,26 +589,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   ↑
                 </button>
               )}
-              {shelfItems[0] && (
-                <Link
-                  to={shelfItems[0].href}
-                  className="book-running-head__item font-ja"
-                  aria-current={isActive(shelfItems[0].href) ? "page" : undefined}
-                >
-                  {shelfItems[0].label}
-                </Link>
-              )}
               <button
                 type="button"
-                className="book-running-head__item font-ja"
+                className="book-running-head__item font-en"
                 ref={menuButtonRef}
                 onClick={() => setMobileOpen(!mobileOpen)}
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
               >
-                {mobileOpen
-                  ? isEnglishChrome ? "Close" : "閉じる"
-                  : isEnglishChrome ? "Menu" : "メニュー"}
+                {mobileOpen ? "Close" : "Menu"}
               </button>
             </div>
           )}

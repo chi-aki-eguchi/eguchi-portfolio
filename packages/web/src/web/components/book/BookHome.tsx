@@ -1,112 +1,233 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { api, jsonOrThrow } from "../../lib/api";
 import { ContentStatus } from "../ContentStatus";
+import { HeroPicture } from "../HeroPicture";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { photoAltText } from "../../../shared/photo-alt";
-import { pad2, pageHash } from "../../lib/book";
-import { FactLines } from "./BookFacts";
+import { pad2 } from "../../lib/book";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
-import {
-  BookPhoto,
-  BookPhotoPage,
-  BookViewer,
-  placementFor,
-  useBookDevelop,
-  useBookPager,
-  useBookViewer,
-} from "./BookParts";
-import { useBookChapters, type BookChapter } from "./useBookChapters";
-
-/** 章ごとにトップで見せる枚数。残りは作品ページで続きから読む。 */
-const EXCERPT = 5;
-
-/**
- * 扉の名前を一字ずつ組む動きは、その回の訪問で最初にトップを開いたとき
- * だけ。2回目からは待たせない（写真の現像は毎回ある）。
- */
-const ENTRANCE_KEY = "book-title-entrance";
-function useTitleEntrance(): boolean {
-  const [entrance] = useState(() => {
-    try {
-      return window.sessionStorage.getItem(ENTRANCE_KEY) === null;
-    } catch {
-      return false;
-    }
-  });
-  useEffect(() => {
-    try {
-      window.sessionStorage.setItem(ENTRANCE_KEY, "1");
-    } catch {
-      // 保存できない環境では、毎回組む。
-    }
-  }, []);
-  return entrance;
-}
+import { BookPhoto, BookViewer, useBookDevelop, useBookViewer } from "./BookParts";
+import { WorksGrid } from "./BookWorks";
+import { useBookChapters, useBookGalleryEntry, type BookChapter } from "./useBookChapters";
 
 type Settings = Record<string, string | null | undefined> | undefined;
 
-type ShownPage = {
-  chapter: BookChapter;
-  photo: GalleryPhoto;
-  /** 章の中での位置（0 始まり）。頁番号はここから出す。 */
-  index: number;
-};
-
-function chapterCover(chapter: BookChapter, skip: Set<number>) {
-  const chosen =
-    chapter.coverPhotoId != null
-      ? chapter.photos.find((p) => p.id === chapter.coverPhotoId)
-      : undefined;
-  return (
-    (chosen && !skip.has(chosen.id) ? chosen : undefined) ??
-    chapter.photos.find((p) => !skip.has(p.id)) ??
-    null
-  );
-}
-
-/** 作品ページの扉に出る写真（表紙を選んでいればそれ、無ければ1枚目）。 */
-function seriesOpenerId(chapter: BookChapter): number | undefined {
-  const chosen =
-    chapter.coverPhotoId != null
-      ? chapter.photos.find((p) => p.id === chapter.coverPhotoId)
-      : undefined;
-  return (chosen ?? chapter.photos[0])?.id;
-}
+/** トップの写真の束に入れる枚数の上限。 */
+const MAX_SLIDES = 8;
+/** トップの「写真」に並べる枚数。作品に入っていない写真も含め、毎回変わる。 */
+const FIELD_COUNT = 18;
 
 /**
- * トップの扉の写真。
- *  1. 管理画面「写真集のトップの写真」で選んだ1枚（公開中なら）
- *  2. 自動: HERO の写真のうち、どの作品の扉とも重ならない最初の1枚
- *  3. 自動: 最初の章の、扉ではない最初の写真
- * 自動のときに作品の扉と同じ写真を避けるのは、トップを開いて作品へ進むと
- * 同じ写真が続いてしまうため（2026-09-23 オーナー指摘）。
+ * トップの最初の画面に出す写真の並び。
+ *  1. 管理画面「写真集のトップの写真」で選んだ1枚（公開中なら）を先頭に
+ *  2. HERO の写真（管理画面の HERO で選んだ順）
+ *  3. どちらも無ければ、各作品の表紙
+ * 同じ写真は2度入れない。
  */
-export function titlePhoto(
+export function heroSlides(
   chapters: BookChapter[],
   heroPhotos: GalleryPhoto[],
   chosenId: string | null | undefined,
-): GalleryPhoto | null {
+): GalleryPhoto[] {
   const all = chapters.flatMap((c) => c.photos);
   const chosen = chosenId ? all.find((p) => String(p.id) === chosenId) : undefined;
-  if (chosen) return chosen;
-  const openers = new Set(chapters.map(seriesOpenerId));
-  const hero = heroPhotos.find((p) => !openers.has(p.id));
-  if (hero) return hero;
-  const first = chapters[0];
+  const out: GalleryPhoto[] = [];
+  const seen = new Set<number>();
+  const add = (p: GalleryPhoto | undefined | null) => {
+    if (!p || seen.has(p.id) || out.length >= MAX_SLIDES) return;
+    seen.add(p.id);
+    out.push(p);
+  };
+  add(chosen);
+  heroPhotos.forEach(add);
+  if (out.length === 0) {
+    for (const c of chapters) {
+      add(
+        (c.coverPhotoId != null ? c.photos.find((p) => p.id === c.coverPhotoId) : undefined) ??
+          c.photos[0],
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * 最初の画面いっぱいの写真。写真の「見せる中心」を軸に切り抜く。
+ *
+ * 送るのは押したときだけ（自動では変わらない。2026-09-08 オーナー判断と
+ * 同じ）。右の3分の2を押すと次、左の3分の1で前。矢印キーも同じ。
+ * 下の端には、その写真が入っている作品へのリンクと枚数だけを置く。
+ */
+function BookHero({
+  slides,
+  seriesLinkById,
+  photographerName,
+}: {
+  slides: GalleryPhoto[];
+  seriesLinkById: Record<number, { name: string; href: string }>;
+  photographerName: string;
+}) {
+  const [index, setIndex] = useState(0);
+  const count = slides.length;
+  const go = useCallback(
+    (step: number) => setIndex((i) => (count ? (i + step + count) % count : 0)),
+    [count],
+  );
+  const heroRef = useRef<HTMLElement>(null);
+
+  // 器（名前とメニュー）が写真の上にいる間だけ、地を消して白い文字にする
+  // （book.css の body[data-book-over-photo]）。
+  useEffect(() => {
+    const body = document.body;
+    const check = () => {
+      const r = heroRef.current?.getBoundingClientRect();
+      if (count > 0 && r && r.bottom > 64) body.dataset.bookOverPhoto = "";
+      else delete body.dataset.bookOverPhoto;
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+      delete body.dataset.bookOverPhoto;
+    };
+  }, [count]);
+
+  useEffect(() => {
+    if (count < 2) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return;
+      if (document.querySelector("dialog[open]")) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
+      const r = heroRef.current?.getBoundingClientRect();
+      if (!r || r.bottom < window.innerHeight * 0.5) return;
+      e.preventDefault();
+      go(e.key === "ArrowRight" ? 1 : -1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [count, go]);
+
+  if (count === 0) return <section ref={heroRef} className="bk-hero bk-hero--empty" />;
+  const current = slides[index]!;
+  const link = current.seriesId != null ? seriesLinkById[current.seriesId] : undefined;
+  // 描くのは、いま・前後の3枚だけ（前後は先に読んでおく）。
+  const near = new Set([index, (index + 1) % count, (index - 1 + count) % count]);
+
+  const onStageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (count < 2) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    go(e.clientX < r.left + r.width / 3 ? -1 : 1);
+  };
+
   return (
-    first?.photos.find((p) => !openers.has(p.id)) ??
-    heroPhotos[0] ??
-    first?.photos[0] ??
-    null
+    <section ref={heroRef} className="bk-hero bk-bleed" aria-roledescription="carousel" aria-label="写真">
+      {/* 押す場所で送るのはマウスの近道。下の ← → と矢印キーでも同じ。 */}
+      <div className="bk-hero__stage" role="presentation" onClick={onStageClick} data-multi={count > 1 ? "" : undefined}>
+        {slides.map((photo, i) =>
+          near.has(i) ? (
+            <div key={photo.id} className="bk-hero__slide" data-active={i === index ? "" : undefined} aria-hidden={i !== index}>
+              <HeroPicture
+                url={photo.url}
+                thumbUrl={photo.thumbUrl}
+                mediumUrl={photo.mediumUrl}
+                width={photo.width}
+                height={photo.height}
+                rotationDeg={photo.rotationDeg}
+                focalX={photo.focalX}
+                focalY={photo.focalY}
+                alt={i === index ? photoAltText(photo, { photographerName, seriesName: seriesLinkById[photo.seriesId ?? -1]?.name }) : ""}
+                sizes="100vw"
+                className="bk-hero__img"
+                fetchPriority={i === index ? "high" : "low"}
+                loading="eager"
+                decoding="async"
+                draggable={false}
+              />
+            </div>
+          ) : null,
+        )}
+      </div>
+      <div className="bk-hero__meta">
+        {link ? (
+          <Link to={link.href} className="bk-hero__work font-ja">
+            {link.name}
+            <span aria-hidden="true"> →</span>
+          </Link>
+        ) : (
+          <span />
+        )}
+        {count > 1 && (
+          <span className="bk-hero__nav font-en">
+            <button type="button" onClick={() => go(-1)} aria-label="前の写真">
+              ←
+            </button>
+            <span aria-live="polite">
+              {pad2(index + 1)} / {pad2(count)}
+            </span>
+            <button type="button" onClick={() => go(1)} aria-label="次の写真">
+              →
+            </button>
+          </span>
+        )}
+      </div>
+    </section>
   );
 }
 
 /**
- * 写真集の骨格のトップ（siteDesign = "book"）。
+ * 作品に入っていない写真も含めた、いろいろな写真（毎回違う組み合わせ）。
+ * 写真の比のまま、段組みで大きく並べる。押すとその場でビューアが開く。
+ */
+function PhotoField({
+  photos,
+  photographerName,
+  seriesLinkById,
+}: {
+  photos: GalleryPhoto[];
+  photographerName: string;
+  seriesLinkById: Record<number, { name: string; href: string }>;
+}) {
+  const viewer = useBookViewer(photos);
+  return (
+    <>
+      <ul className="bk-field">
+        {photos.map((photo, i) => (
+          <li key={photo.id} className="bk-field__item">
+            <BookPhoto
+              photo={photo}
+              alt={photoAltText(photo, {
+                photographerName,
+                seriesName: seriesLinkById[photo.seriesId ?? -1]?.name,
+              })}
+              sizes="(min-width: 1024px) 33vw, 50vw"
+              onOpen={() => viewer.open(i)}
+              openLabel="この写真を大きく見る"
+            />
+          </li>
+        ))}
+      </ul>
+      <BookViewer
+        photos={photos}
+        viewer={viewer}
+        photographerName={photographerName}
+        seriesLinkById={seriesLinkById}
+      />
+    </>
+  );
+}
+
+/**
+ * 写真集の骨格のトップ（siteDesign = "book"、2026-09-25 見直し）。
  *
- * 扉（名前と目次と1枚）→ 章ごとに「扉の見開き」と数枚の頁 → 続きへの入口。
- * 写真はランダムにせず、作品ページと同じ順で出す。どの写真がどの章の
- * 何枚目なのかが、頁番号でいつも分かる。
+ * 画面いっぱいの写真 → 作品（大きな表紙）→ いろいろな写真。
+ * それまでの「縦書きの扉と目次 → 章ごとに5枚」は、写真が小さく余白が
+ * 多いうえ、作品に入っていない写真の居場所が無かった（2026-09-25 オーナー）。
  */
 export function BookHome({
   settings,
@@ -118,215 +239,64 @@ export function BookHome({
   const { chapters, isLoading, isError, refetch } = useBookChapters();
   const seriesLinkById = useSeriesLinks();
   const photographerName = settings?.siteName || settings?.siteNameEn || "";
-  const heroPhoto = useMemo(
-    () => titlePhoto(chapters, heroPhotos, settings?.bookCoverPhotoId),
+  const gallery = useBookGalleryEntry(settings);
+  const slides = useMemo(
+    () => heroSlides(chapters, heroPhotos, settings?.bookCoverPhotoId),
     [chapters, heroPhotos, settings?.bookCoverPhotoId],
   );
-
-  const plan = useMemo(() => {
-    const used = new Set<number>();
-    if (heroPhoto) used.add(heroPhoto.id);
-    return chapters.map((chapter) => {
-      const cover = chapterCover(chapter, used);
-      if (cover) used.add(cover.id);
-      const pages: ShownPage[] = [];
-      chapter.photos.forEach((photo, index) => {
-        if (pages.length >= EXCERPT || used.has(photo.id)) return;
-        used.add(photo.id);
-        pages.push({ chapter, photo, index });
-      });
-      const lastShown = pages.length ? pages[pages.length - 1]!.index : -1;
-      return { chapter, cover, pages, resumeAt: lastShown + 1 };
-    });
-  }, [chapters, heroPhoto]);
-
-  // ビューアは、トップに出ている写真を頁の順に送る。
-  const shown = useMemo(() => {
-    const list: GalleryPhoto[] = [];
-    if (heroPhoto) list.push(heroPhoto);
-    plan.forEach(({ cover, pages }) => {
-      if (cover) list.push(cover);
-      pages.forEach((p) => list.push(p.photo));
-    });
-    return list;
-  }, [plan, heroPhoto]);
-  const viewer = useBookViewer(shown);
-  const openById = (id: number) => {
-    const i = shown.findIndex((p) => p.id === id);
-    if (i >= 0) viewer.open(i);
-  };
-  useBookPager([plan.length, shown.length]);
-  useBookDevelop([plan.length, shown.length]);
-
-  const nameJa = settings?.siteName || "";
-  const nameEn = settings?.siteNameEn || "";
-  const titleName = nameJa || nameEn;
-  const entrance = useTitleEntrance();
+  const { data: fieldData } = useQuery({
+    queryKey: ["photos", "book-field", FIELD_COUNT],
+    queryFn: async () =>
+      jsonOrThrow(
+        await api.photos.$get({ query: { limit: String(FIELD_COUNT), order: "random" } }),
+      ),
+    staleTime: 5 * 60_000,
+  });
+  const field = useMemo(() => {
+    const onHero = new Set(slides.map((p) => p.id));
+    return ((fieldData?.photos ?? []) as GalleryPhoto[]).filter((p) => !onHero.has(p.id));
+  }, [fieldData, slides]);
+  useBookDevelop([chapters.length, field.length]);
 
   return (
     <div className="book" data-book-view="home">
-      <section
-        className="book-spread book-title"
-        data-book-stop=""
-        data-entrance={entrance ? "" : undefined}
-      >
-        <div className="book-spread__text">
-          <p className="book-kicker font-ja">写真</p>
-          {/* 縦に組むのは漢字・かなの名前だけ。英字を縦にすると横倒しで
-              画面の下まで伸びる（配布版の既定名 "Photographer Name" で確認）。 */}
-          <h1
-            className="book-title__name font-ja"
-            data-vertical={/[\u3040-\u30ff\u3400-\u9fff]/.test(titleName) ? "" : undefined}
-            style={{ "--n": Array.from(titleName).length } as React.CSSProperties}
-          >
-            {/* 一字ずつ組む（book.css の book-set）。読み上げは名前のまま。 */}
-            <span className="sr-only">{titleName}</span>
-            <span aria-hidden="true">
-              {Array.from(titleName).map((ch, i) => (
-                <span
-                  key={i}
-                  className="book-title__char"
-                  style={{ "--i": i } as React.CSSProperties}
-                >
-                  {ch}
-                </span>
-              ))}
-            </span>
-          </h1>
-          {nameJa && nameEn && (
-            <p className="book-title__en font-en">{nameEn}</p>
-          )}
-          {chapters.length > 0 && (
-            <nav className="book-toc" aria-label="目次">
-              <p className="book-toc__head font-ja">目次</p>
-              <ol>
-                {chapters.map((c, i) => (
-                  <li key={c.slug} style={{ "--i": i } as React.CSSProperties}>
-                    <a href={`#chapter-${c.slug}`} className="book-toc__row">
-                      <span className="book-toc__num font-en">{pad2(i + 1)}</span>
-                      <span className="book-toc__name font-ja">{c.title}</span>
-                      <span className="book-toc__count font-en">{c.facts.count}</span>
-                    </a>
-                  </li>
-                ))}
-              </ol>
-              <Link to="/series" className="book-link font-ja">
-                すべてのコマをベタ焼きで見る
-                <span aria-hidden="true"> →</span>
-              </Link>
-            </nav>
-          )}
-        </div>
-        <div className="book-spread__photo">
-          {heroPhoto && (
-            <BookPhoto
-              photo={heroPhoto}
-              eager
-              alt={photoAltText(heroPhoto, { photographerName })}
-              sizes="(min-width: 768px) 50vw, 100vw"
-              onOpen={() => openById(heroPhoto.id)}
-              openLabel="この写真を拡大して見る"
-            />
-          )}
-        </div>
-      </section>
+      <h1 className="sr-only">{photographerName}</h1>
+      <BookHero slides={slides} seriesLinkById={seriesLinkById} photographerName={photographerName} />
 
       {isLoading && chapters.length === 0 && <ContentStatus state="loading" />}
-      {isError && chapters.length === 0 && (
-        <ContentStatus state="error" onRetry={refetch} />
+      {isError && chapters.length === 0 && <ContentStatus state="error" onRetry={refetch} />}
+
+      {chapters.length > 0 && (
+        <section className="bk-section" aria-labelledby="bk-works-head">
+          <header className="bk-section__head">
+            <h2 id="bk-works-head" className="bk-section__title font-en">
+              Works
+            </h2>
+            <Link to="/series?view=list" className="bk-section__aside font-ja">
+              作品名で見る<span aria-hidden="true"> →</span>
+            </Link>
+          </header>
+          <WorksGrid chapters={chapters} photographerName={photographerName} headingLevel={3} />
+        </section>
       )}
 
-      {plan.map(({ chapter, cover, pages, resumeAt }, ci) => (
-        <div key={chapter.slug} className="book-chapter">
-          <section
-            id={`chapter-${chapter.slug}`}
-            className="book-spread book-opener"
-            data-book-stop=""
-          >
-            <div className="book-spread__text">
-              <p className="book-kicker font-en">
-                {pad2(ci + 1)}
-                <span className="book-kicker__shelf">
-                  {chapter.kind === "work" ? "Work" : "Series"}
-                </span>
-              </p>
-              <h2 className="book-opener__title font-ja">{chapter.title}</h2>
-              {chapter.subtitle && (
-                <p className="book-opener__sub font-en">{chapter.subtitle}</p>
-              )}
-              {chapter.statement && (
-                <p className="book-opener__statement font-ja">
-                  {chapter.statement}
-                </p>
-              )}
-              <FactLines facts={chapter.facts} />
-              <p className="book-opener__links">
-                <Link to={chapter.href} className="book-link font-ja">
-                  最初から見る<span aria-hidden="true"> →</span>
-                </Link>
-                <Link
-                  to={`/series#sheet-${chapter.slug}`}
-                  className="book-link book-link--quiet font-ja"
-                >
-                  ベタ焼き
-                </Link>
-              </p>
-            </div>
-            <div className="book-spread__photo">
-              {cover && (
-                <BookPhoto
-                  photo={cover}
-                  alt={photoAltText(cover, {
-                    photographerName,
-                    seriesName: chapter.title,
-                  })}
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  onOpen={() => openById(cover.id)}
-                  openLabel={`${chapter.title}の写真を拡大して見る`}
-                />
-              )}
-            </div>
-          </section>
-
-          {pages.map((p, pi) => (
-            <BookPhotoPage
-              key={p.photo.id}
-              photo={p.photo}
-              index={p.index}
-              total={chapter.photos.length}
-              label={chapter.title}
-              placement={placementFor(p.photo, pi)}
-              onOpen={() => openById(p.photo.id)}
-              photographerName={photographerName}
-              language="ja"
-            />
-          ))}
-
-          {resumeAt < chapter.photos.length && (
-            <p className="book-continue" data-book-stop="">
-              <Link
-                to={`${chapter.href}#${pageHash(resumeAt)}`}
-                className="book-continue__link"
-              >
-                <span className="book-continue__label font-ja">
-                  {chapter.title}の続き
-                </span>
-                <span className="book-continue__num font-en">
-                  {pad2(resumeAt + 1)} — {pad2(chapter.photos.length)}
-                  <span aria-hidden="true"> →</span>
-                </span>
+      {field.length > 0 && (
+        <section className="bk-section" aria-labelledby="bk-photos-head">
+          <header className="bk-section__head">
+            <h2 id="bk-photos-head" className="bk-section__title font-en">
+              Photos
+            </h2>
+            {gallery && (
+              <Link to={gallery.href} className="bk-section__aside font-ja">
+                {gallery.label}
+                {gallery.count != null && <span className="font-en">（{gallery.count}）</span>}
+                <span aria-hidden="true"> →</span>
               </Link>
-            </p>
-          )}
-        </div>
-      ))}
-
-      <BookViewer
-        photos={shown}
-        viewer={viewer}
-        photographerName={photographerName}
-        seriesLinkById={seriesLinkById}
-      />
+            )}
+          </header>
+          <PhotoField photos={field} photographerName={photographerName} seriesLinkById={seriesLinkById} />
+        </section>
+      )}
     </div>
   );
 }

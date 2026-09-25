@@ -7,6 +7,7 @@ import {
 } from "../../hooks/useSeriesDetail";
 import { bookFacts, orderedSeriesPhotos, type BookFacts } from "../../lib/book";
 import type { GalleryPhoto } from "../PhotoGallery";
+import { galleryHasPhotos } from "../../lib/work-entries";
 
 export type BookChapter = {
   slug: string;
@@ -98,4 +99,26 @@ export function useBookChapters() {
     details.forEach((d) => void d.refetch());
   };
   return { chapters, isLoading, isError, refetch, settings };
+}
+
+/**
+ * Photos（/gallery）への入口。共通ナビと同じ判定（`lib/work-entries.ts`）で、
+ * 中身があるときだけ出す。`galleryExcludeSeries` が on のサイトでは、
+ * Gallery は作品に入っていない写真だけなので、言い方もそれに合わせる。
+ */
+export function useBookGalleryEntry(settings: Record<string, string | null | undefined> | undefined) {
+  const { data: counts } = useQuery({
+    queryKey: ["photo-availability"],
+    queryFn: async (): Promise<{ total: number; standalone: number }> =>
+      jsonOrThrow(await api.photos.availability.$get()),
+    staleTime: 60_000,
+  });
+  const excludeSeries = (settings?.galleryExcludeSeries ?? "off") === "on";
+  if (!galleryHasPhotos(counts, excludeSeries)) return null;
+  const count = counts ? (excludeSeries ? counts.standalone : counts.total) : null;
+  return {
+    href: "/gallery",
+    label: excludeSeries ? "作品に入っていない写真を見る" : "すべての写真を見る",
+    count,
+  };
 }

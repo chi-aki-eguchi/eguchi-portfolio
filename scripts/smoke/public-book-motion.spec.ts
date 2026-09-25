@@ -1,14 +1,15 @@
 import { test, expect, type Page } from "./fixtures.ts";
 
 /**
- * 写真集の骨格（siteDesign = "book"）の動き（2026-09-25）。
+ * 写真集の骨格（siteDesign = "book"、2026-09-25 見直し）。
  *
- * 1. 現像: 頁が画面に入ると写真が濃くなる。**どの写真も隠れたまま残らない。**
- *    写真を待たせる印（`data-develop="wait"`）が付いたまま画面にあると、
- *    写真集なのに写真が見えない。
- * 2. ビューアの開閉: 頁の写真の「影」が運ばれ、閉じたあとに影が残らない。
- *    ビューアの中で先へ送ってから閉じると、その写真の頁へ戻る。
- * 3. 動きを減らす設定: 影は運ばない（移動なので）。現像の濃淡は残す。
+ * 1. トップ: 画面いっぱいの写真 → Works → Photos。現像（写真が画面に入ると
+ *    濃くなる）で、**どの写真も隠れたまま残らない。**
+ * 2. Photos の写真からビューアが開き（影が運ばれる）、閉じたあとに影が残らない。
+ * 3. 作品ページ: 番地の写真から開き、→ で送ると番地も進む。Index のコマで
+ *    その写真へ。最後の次は奥付。
+ * 4. 動きを減らす設定: 影は運ばない（移動なので）。現像の濃淡は残す。
+ * 5. 横はみ出しが無い。
  *
  * 人工データのサイトの設定だけを book に差し替えて見る。
  */
@@ -37,7 +38,7 @@ function hiddenInView(page: Page) {
 
 async function readThrough(page: Page) {
   const vh = page.viewportSize()?.height ?? 800;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 6; i++) {
     await page.mouse.wheel(0, vh * 0.8);
     // 現像（濃淡 1.1s）が終わるまで待ってから数える。
     await page.waitForTimeout(1800);
@@ -45,36 +46,55 @@ async function readThrough(page: Page) {
   }
 }
 
-test("写真集 › 頁の写真は現像されて、隠れたまま残らない", async ({ page }) => {
-  await openAsBook(page, "/series/harbour-light");
-  await page.waitForTimeout(2000);
-  expect(await hiddenInView(page)).toBe(0);
+function noSideScroll(page: Page) {
+  return page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+}
+
+test("写真集 › トップは写真から始まり、どの写真も隠れたまま残らない", async ({ page }) => {
+  await openAsBook(page, "/");
+  await expect(page.locator(".bk-hero__slide[data-active] img")).toBeVisible();
+  const hero = await page.locator(".bk-hero").boundingBox();
+  const vh = page.viewportSize()!.height;
+  expect(hero!.height, "最初の写真が画面いっぱいではない").toBeGreaterThanOrEqual(vh - 1);
+  expect(hero!.y).toBeLessThanOrEqual(0);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
   await readThrough(page);
 });
 
-test("写真集 › ビューアは頁の写真から開き、送った先の頁へ戻る", async ({ page }) => {
-  await openAsBook(page, "/series/harbour-light#p-03");
+test("写真集 › Photos の写真からビューアが開き、影を残さず閉じる", async ({ page }) => {
+  await openAsBook(page, "/");
+  const tile = page.locator(".bk-field [data-photo-tile]").first();
+  await tile.scrollIntoViewIfNeeded();
   await page.waitForTimeout(2000);
-  await page.locator("#p-03 [data-photo-tile]").click();
+  await tile.click();
   await page.waitForTimeout(200);
   expect(await page.locator("dialog .lb-ghost").count(), "開く途中で影が運ばれていない").toBe(1);
   await page.waitForTimeout(1600);
   expect(await page.locator(".lb-ghost").count(), "開き終えても影が残っている").toBe(0);
   await expect(page.locator("dialog .lb-content")).toHaveCSS("opacity", "1");
-
-  await page.keyboard.press("ArrowRight");
-  await page.waitForTimeout(300);
-  await page.keyboard.press("ArrowRight");
-  await page.waitForTimeout(800);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(1200);
   await expect(page.locator("dialog[open]")).toHaveCount(0);
   expect(await page.locator(".lb-ghost").count(), "閉じたあとに影が残っている").toBe(0);
-  const top = await page.evaluate(() =>
-    Math.round(document.getElementById("p-05")!.getBoundingClientRect().top),
-  );
-  expect(top, "送った先（5枚目）の頁へ戻っていない").toBeLessThanOrEqual(60);
-  expect(top).toBeGreaterThanOrEqual(-2);
+});
+
+test("写真集 › 作品ページは1枚ずつ送り、Index と奥付へ行ける", async ({ page }) => {
+  await openAsBook(page, "/series/harbour-light#p-03");
+  const count = page.locator(".bk-bar__count");
+  await expect(count).toHaveText(/^03(–\d\d)? \/ 06$/);
+  await page.keyboard.press("ArrowRight");
+  await expect(count).not.toHaveText(/^03 /);
+  expect(page.url()).toMatch(/#p-0[4-6]$/);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
+
+  await page.getByRole("button", { name: "Index" }).click();
+  await page.locator('.book-frame__link[href="#p-01"]').click();
+  await expect(count).toHaveText(/^01(–\d\d)? \/ 06$/);
+  await expect(page.locator(".bk-sheet")).toHaveCount(0);
+
+  for (let i = 0; i < 8; i++) await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".bk-colophon")).toBeVisible();
+  await expect(count).toHaveText("— / 06");
 });
 
 test.describe("動きを減らす設定", () => {
@@ -82,17 +102,17 @@ test.describe("動きを減らす設定", () => {
     // `test.use({ reducedMotion })` はこの fixture の context に届かない
     // （2026-09-25 実測で matchMedia が false のままだった）。ページで直接指定する。
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await openAsBook(page, "/series/harbour-light");
-    await page.waitForTimeout(2000);
-    // 次の頁の写真が濃くなっていく途中を拾う（濃淡の transition が 0 でない）。
+    await openAsBook(page, "/");
     const duration = await page.evaluate(() => {
-      const img = document.querySelector<HTMLElement>(".book-page .book-photo img");
+      const img = document.querySelector<HTMLElement>(".bk-field .book-photo img, .bk-work .book-photo img");
       return img ? getComputedStyle(img).transitionDuration : "";
     });
     expect(parseFloat(duration), `現像の濃淡が消えている: ${duration}`).toBeGreaterThan(0.3);
     await readThrough(page);
 
-    await page.locator(".book-page [data-photo-tile]").first().click();
+    const tile = page.locator(".bk-field [data-photo-tile]").first();
+    await tile.scrollIntoViewIfNeeded();
+    await tile.click();
     await page.waitForTimeout(150);
     expect(await page.locator(".lb-ghost").count(), "動きを減らす設定で影が動いた").toBe(0);
     await page.keyboard.press("Escape");

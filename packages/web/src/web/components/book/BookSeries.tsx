@@ -10,6 +10,7 @@ import {
   BookPhotoPage,
   BookViewer,
   placementFor,
+  useBookDevelop,
   useBookPager,
   useBookViewer,
 } from "./BookParts";
@@ -42,6 +43,7 @@ export function BookSeries({
   const photographerName = settings?.siteName || settings?.siteNameEn || "";
   const viewer = useBookViewer(photos);
   useBookPager([photos.length, series.slug]);
+  useBookDevelop([photos.length, series.slug]);
 
   // 表紙を選んでいて、それが1枚目と違うときだけ扉に表紙を置く。
   // 選んでいなければ1枚目が扉の写真で、頁は2枚目から続く。

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { ContentStatus } from "../ContentStatus";
 import type { GalleryPhoto } from "../PhotoGallery";
@@ -11,6 +11,7 @@ import {
   BookPhotoPage,
   BookViewer,
   placementFor,
+  useBookDevelop,
   useBookPager,
   useBookViewer,
 } from "./BookParts";
@@ -18,6 +19,29 @@ import { useBookChapters, type BookChapter } from "./useBookChapters";
 
 /** 章ごとにトップで見せる枚数。残りは作品ページで続きから読む。 */
 const EXCERPT = 5;
+
+/**
+ * 扉の名前を一字ずつ組む動きは、その回の訪問で最初にトップを開いたとき
+ * だけ。2回目からは待たせない（写真の現像は毎回ある）。
+ */
+const ENTRANCE_KEY = "book-title-entrance";
+function useTitleEntrance(): boolean {
+  const [entrance] = useState(() => {
+    try {
+      return window.sessionStorage.getItem(ENTRANCE_KEY) === null;
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(ENTRANCE_KEY, "1");
+    } catch {
+      // 保存できない環境では、毎回組む。
+    }
+  }, []);
+  return entrance;
+}
 
 type Settings = Record<string, string | null | undefined> | undefined;
 
@@ -132,22 +156,41 @@ export function BookHome({
     if (i >= 0) viewer.open(i);
   };
   useBookPager([plan.length, shown.length]);
+  useBookDevelop([plan.length, shown.length]);
 
   const nameJa = settings?.siteName || "";
   const nameEn = settings?.siteNameEn || "";
+  const titleName = nameJa || nameEn;
+  const entrance = useTitleEntrance();
 
   return (
     <div className="book" data-book-view="home">
-      <section className="book-spread book-title" data-book-stop="">
+      <section
+        className="book-spread book-title"
+        data-book-stop=""
+        data-entrance={entrance ? "" : undefined}
+      >
         <div className="book-spread__text">
           <p className="book-kicker font-ja">写真</p>
           {/* 縦に組むのは漢字・かなの名前だけ。英字を縦にすると横倒しで
               画面の下まで伸びる（配布版の既定名 "Photographer Name" で確認）。 */}
           <h1
             className="book-title__name font-ja"
-            data-vertical={/[\u3040-\u30ff\u3400-\u9fff]/.test(nameJa || nameEn) ? "" : undefined}
+            data-vertical={/[\u3040-\u30ff\u3400-\u9fff]/.test(titleName) ? "" : undefined}
           >
-            {nameJa || nameEn}
+            {/* 一字ずつ組む（book.css の book-set）。読み上げは名前のまま。 */}
+            <span className="sr-only">{titleName}</span>
+            <span aria-hidden="true">
+              {Array.from(titleName).map((ch, i) => (
+                <span
+                  key={i}
+                  className="book-title__char"
+                  style={{ "--i": i } as React.CSSProperties}
+                >
+                  {ch}
+                </span>
+              ))}
+            </span>
           </h1>
           {nameJa && nameEn && (
             <p className="book-title__en font-en">{nameEn}</p>
@@ -157,7 +200,7 @@ export function BookHome({
               <p className="book-toc__head font-ja">目次</p>
               <ol>
                 {chapters.map((c, i) => (
-                  <li key={c.slug}>
+                  <li key={c.slug} style={{ "--i": i } as React.CSSProperties}>
                     <a href={`#chapter-${c.slug}`} className="book-toc__row">
                       <span className="book-toc__num font-en">{pad2(i + 1)}</span>
                       <span className="book-toc__name font-ja">{c.title}</span>

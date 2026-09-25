@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Picture } from "../Picture";
 import { Lightbox } from "../Lightbox";
 import type { GalleryPhoto } from "../PhotoGallery";
@@ -243,6 +243,67 @@ export function useBookPager(deps: unknown[]) {
   }, []);
 }
 
+
+/**
+ * 頁が画面に入ったら、写真を「現像」する（2026-09-25）。
+ *
+ * 印画紙に像が出てくるように、少し明るく眠い調子から本来の濃さへ落ち着く。
+ * 動くのは濃淡と調子だけで、写真の位置も大きさも変えない（版がずれない）。
+ * 1枚につき1度きり。戻ってきても繰り返さない。
+ *
+ * 画像が読み込み終わってから始める。読み込み前に始めると、空の枠が
+ * 濃くなったあとで写真が「パッ」と出てしまう。
+ *
+ * 待たせる印 `data-develop="wait"` は、このフックが見張ると決めた写真にだけ
+ * 付ける。見張っていない写真（あとから増えた頁など）は印が無いので、
+ * いつもどおりそのまま見える——隠れたまま残ることはない。
+ */
+export function useBookDevelop(deps: unknown[]) {
+  useLayoutEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const photos = Array.from(
+      document.querySelectorAll<HTMLElement>(".book .book-photo:not([data-develop])"),
+    );
+    if (photos.length === 0) return;
+    const develop = (el: HTMLElement) => {
+      const img = el.querySelector("img");
+      const show = () => {
+        // 1フレーム置いてから外す。同じフレームで付け外しすると、
+        // transition が始まらずに即座に見えてしまう。
+        requestAnimationFrame(() => {
+          el.dataset.develop = "done";
+        });
+      };
+      if (!img || (img.complete && img.naturalWidth > 0)) return show();
+      img.addEventListener("load", show, { once: true });
+      img.addEventListener("error", show, { once: true });
+    };
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          io.unobserve(entry.target);
+          develop(entry.target as HTMLElement);
+        }
+      },
+      // 少し画面に入ってから。縁にかかった瞬間だと、見る前に終わっている。
+      { rootMargin: "0px 0px -8% 0px" },
+    );
+    for (const el of photos) {
+      el.dataset.develop = "wait";
+      io.observe(el);
+    }
+    return () => {
+      io.disconnect();
+      // 見張りをやめる写真は、隠したまま残さない。印を外しておけば、次に
+      // 見張るとき（頁が増えた・開発時の StrictMode の付け直し）に拾い直せる。
+      for (const el of photos) {
+        if (el.dataset.develop === "wait") delete el.dataset.develop;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
 
 /**
  * 頁の写真を押したら、今までと同じビューア（撮影情報・前後送り付き）で開く。

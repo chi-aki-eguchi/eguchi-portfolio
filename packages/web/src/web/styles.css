@@ -4862,6 +4862,24 @@ dialog.lightbox-exit .lb-content {
   }
 }
 
+/* ─── 頁の写真から開く・頁の写真へ戻る（lib/viewer-morph.ts、2026-09-25）───
+   写真そのものは JS の「影」が運ぶ。ここで決めるのは、その間のまわり:
+   本物の写真は隠しておき、ボタンと札は影が着く少し前から浮かぶ。
+   閉じるときは、ボタンと札が先に退き、影が頁へ戻る。 */
+dialog.lightbox-morph[data-morph-flying] .lb-content,
+dialog.lightbox-morph[data-morph-closing] .lb-content {
+  opacity: 0;
+}
+dialog.lightbox-morph > :not(.lb-content):not(.lb-ghost) {
+  animation: lb-in 0.5s var(--ease-reveal) 0.34s both;
+}
+dialog.lightbox-morph[data-morph-closing] {
+  pointer-events: none;
+}
+dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
+  animation: lb-out 0.18s var(--ease-exit) both;
+}
+
 /* ─── Filter switch layout animation ─── */
 /* 枠そのものは動かさない。下の「動きを減らす」一括指定は transition-duration
    だけを 0.01ms にするので、transition-property が初期値の all のままだと、

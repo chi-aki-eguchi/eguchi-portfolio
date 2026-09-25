@@ -18,6 +18,18 @@ import { api, jsonOrThrow } from "../lib/api";
 import { photoAltText } from "../../shared/photo-alt";
 import { historyBridge } from "../lib/scroll-memory";
 import {
+  MORPH_CLOSE_MS,
+  MORPH_OPEN_MS,
+  containRect,
+  createGhost,
+  isMostlyInView,
+  prefersReducedMotion,
+  rectOf,
+  sourceImageFor,
+  type Ghost,
+  type Rect,
+} from "../lib/viewer-morph";
+import {
   isMeaningfulGear,
   isMeaningfulNumber,
   tidyCameraName,
@@ -37,6 +49,8 @@ const GRID_THUMB_SIZES =
   "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
 
 export type LightboxPhoto = {
+  /** 頁の写真（`data-photo-tile`）から開閉を運ぶときの目印。 */
+  id?: number;
   url: string;
   title: string;
   meta?: string;
@@ -235,16 +249,23 @@ export function Lightbox({
     const noMotion = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    const source = bringSourceIntoViewRef.current();
     if (noMotion) {
       onClose();
       return;
     }
+    if (source && closeIntoPageRef.current(source)) return;
     setClosing(true);
     // content-out: 0.3s, backdrop-out: 0.12s delay + 0.25s = 0.37s total
     setTimeout(() => onClose(), 370);
   }, [onClose]);
   const touchRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // 閉じたあとに戻すスクロール位置。開いたときの位置が既定で、頁の写真へ
+  // 戻る動きで頁を送ったときはそこへ置き換える（下の履歴の片付けが読む）。
+  const returnScrollRef = useRef(
+    typeof window === "undefined" ? 0 : window.scrollY,
+  );
   const fitImgRef = useRef<HTMLImageElement>(null); // hi-res fitted image
   const placeImgRef = useRef<HTMLImageElement>(null); // thumbnail (defines the layout box)
 
@@ -410,6 +431,161 @@ export function Lightbox({
       }
     }
     setChrome((c) => !c);
+  };
+
+  // ── 頁の写真から開き、頁の写真へ戻る（lib/viewer-morph.ts）──────────
+  // 押した写真が画面に見えていて読み込み済みなら、その画像の「影」を
+  // 頁の位置からビューアの位置まで運ぶ。運んでいる間、本物の写真は隠し、
+  // 壁の色は透明から濃くなる。見えていない・読み込み前・動きを減らす
+  // 設定のときは、従来の現れ方（lightbox-enter）のまま。
+  const morphFromRef = useRef<{
+    from: Rect;
+    src: string;
+    aspect: number;
+    position: string;
+  } | null>(null);
+  const [morphUsed] = useState(() => {
+    if (prefersReducedMotion()) return false;
+    const img = sourceImageFor(photos[index]?.id);
+    if (!img) return false;
+    const from = rectOf(img);
+    if (!isMostlyInView(from, 0.3)) return false;
+    morphFromRef.current = {
+      from,
+      src: img.currentSrc || img.src,
+      aspect: img.naturalWidth / img.naturalHeight,
+      position: getComputedStyle(img).objectPosition || "50% 50%",
+    };
+    return true;
+  });
+  const [morphFlying, setMorphFlying] = useState(morphUsed);
+  const [morphIndex] = useState(index);
+  const [morphClosing, setMorphClosing] = useState(false);
+  const ghostRef = useRef<Ghost | null>(null);
+  const openedIndexRef = useRef(index);
+  const wallRef = useRef(palette.wall);
+  wallRef.current = palette.wall;
+
+  useEffect(() => {
+    const m = morphFromRef.current;
+    const dlg = dialogRef.current;
+    if (!m || !dlg) return;
+    let cancelled = false;
+    let raf = 0;
+    let wallIn: Animation | null = null;
+    const done = () => {
+      ghostRef.current?.remove();
+      ghostRef.current = null;
+      if (!cancelled) setMorphFlying(false);
+    };
+    const start = async () => {
+      const place = placeImgRef.current;
+      if (cancelled || closingRef.current || !place) return done();
+      // 札の高さを測り終えてから行き先を決める（2フレーム待つのはそのため）。
+      const to = containRect(rectOf(place), m.aspect);
+      const ghost = createGhost(dlg, m.src, m.from, m.position);
+      ghostRef.current = ghost;
+      // 壁は透明から濃くなり、そのまま留まる（本物の写真と入れ替わると
+      // インラインの壁の色に戻るので、そこで animation を外す）。
+      wallIn = dlg.animate(
+        [{ backgroundColor: "rgba(0,0,0,0)" }, { backgroundColor: wallRef.current }],
+        { duration: MORPH_OPEN_MS * 0.9, easing: "ease-out", fill: "forwards" },
+      );
+      await ghost.fly(to, MORPH_OPEN_MS);
+      // 着いたら、ビューアの高精細の写真が読めるまで少しだけ待つ。待ちきれ
+      // なければ段階読み込み（ぼかし → 中 → 大）にそのまま任せる。
+      const waitUntil = performance.now() + 700;
+      while (
+        !cancelled &&
+        ghostRef.current === ghost &&
+        performance.now() < waitUntil &&
+        !(fitImgRef.current?.complete && fitImgRef.current.naturalWidth > 0)
+      ) {
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+      if (cancelled || ghostRef.current !== ghost) return;
+      setMorphFlying(false);
+      requestAnimationFrame(() => wallIn?.cancel());
+      await ghost.fadeOut(260);
+      if (ghostRef.current === ghost) done();
+    };
+    raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => void start());
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      wallIn?.cancel();
+      ghostRef.current?.remove();
+      ghostRef.current = null;
+    };
+    // 開いた瞬間に1度だけ。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 運んでいる途中で別の写真へ送ったら、影は捨てて本物を見せる。
+  useEffect(() => {
+    if (index === openedIndexRef.current) return;
+    openedIndexRef.current = index;
+    if (!ghostRef.current || closingRef.current) return;
+    ghostRef.current.remove();
+    ghostRef.current = null;
+    setMorphFlying(false);
+    dialogRef.current?.getAnimations().forEach((a) => a.cancel());
+  }, [index]);
+
+  // 閉じるとき、いま見ている写真が頁の外にあれば、先にその頁を送って
+  // おく（写真集の頁は頁の頭、一覧は真ん中へ）。ビューアの中で先へ送って
+  // から閉じても、見ていた写真の前に戻る。閉じたあとのスクロールの復元
+  // （下の履歴の片付け）もここへ合わせる。
+  const bringSourceIntoViewRef = useRef<() => HTMLImageElement | null>(
+    () => null,
+  );
+  bringSourceIntoViewRef.current = () => {
+    const src = sourceImageFor(photos[index]?.id);
+    if (!src) return null;
+    if (!isMostlyInView(rectOf(src), 0.6)) {
+      const page = src.closest<HTMLElement>("[data-book-page]");
+      if (page) page.scrollIntoView({ block: "start" });
+      else src.scrollIntoView({ block: "center" });
+      returnScrollRef.current = window.scrollY;
+    }
+    return src;
+  };
+
+  // 閉じるとき、いま見ている写真が頁に見えていれば、そこへ運んで戻す。
+  // 使えなければ false を返し、従来の閉じ方（lightbox-exit）になる。
+  const closeIntoPageRef = useRef<(src: HTMLImageElement) => boolean>(
+    () => false,
+  );
+  closeIntoPageRef.current = (src) => {
+    const dlg = dialogRef.current;
+    if (!dlg || scaleRef.current > 1) return false;
+    const to = rectOf(src);
+    if (!isMostlyInView(to, 0.3)) return false;
+    const shown =
+      fitImgRef.current?.complete && fitImgRef.current.naturalWidth > 0
+        ? fitImgRef.current
+        : placeImgRef.current;
+    const from = visibleImageRect();
+    if (!shown || !from) return false;
+    ghostRef.current?.remove();
+    const ghost = createGhost(
+      dlg,
+      shown.currentSrc || shown.src,
+      { x: from.x, y: from.y, w: from.w, h: from.h },
+      getComputedStyle(src).objectPosition || "50% 50%",
+    );
+    ghostRef.current = ghost;
+    setMorphFlying(false);
+    setMorphClosing(true);
+    dlg.getAnimations().forEach((a) => a.cancel());
+    dlg.animate(
+      [{ backgroundColor: wallRef.current }, { backgroundColor: "rgba(0,0,0,0)" }],
+      { duration: MORPH_CLOSE_MS * 0.85, easing: "ease-in", fill: "forwards" },
+    );
+    void ghost.fly(to, MORPH_CLOSE_MS).then(() => onClose());
+    return true;
   };
 
   useEffect(() => {
@@ -725,7 +901,7 @@ export function Lightbox({
     onCloseRef.current = doClose;
   });
   useEffect(() => {
-    const scrollY = window.scrollY;
+    returnScrollRef.current = window.scrollY;
     const onPop = () => onCloseRef.current();
     if (historyCleanupTimerRef.current !== null) {
       window.clearTimeout(historyCleanupTimerRef.current);
@@ -756,7 +932,9 @@ export function Lightbox({
         historyPushedRef.current = false;
         // After the body scroll lock above is released (cleanup order isn't
         // guaranteed, hence the rAF), put the viewer back where they were.
-        requestAnimationFrame(() => window.scrollTo(0, scrollY));
+        requestAnimationFrame(() =>
+          window.scrollTo(0, returnScrollRef.current),
+        );
       }, 0);
     };
   }, []);
@@ -860,7 +1038,15 @@ export function Lightbox({
   return createPortal(
     <dialog
       ref={dialogRef}
-      className={closing ? "lightbox-exit" : "lightbox-enter"}
+      className={
+        closing
+          ? "lightbox-exit"
+          : morphUsed || morphClosing
+            ? "lightbox-morph"
+            : "lightbox-enter"
+      }
+      data-morph-flying={morphFlying ? "" : undefined}
+      data-morph-closing={morphClosing ? "" : undefined}
       aria-modal="true"
       aria-label="写真ビューア"
       data-viewer-style={viewerSettings?.viewerStyle ?? "wall"}
@@ -886,7 +1072,8 @@ export function Lightbox({
         padding: 0,
         border: "none",
         zIndex: 99999,
-        background: palette.wall,
+        // 頁の写真から運んで開く間は透明から始める（壁は下の animate が濃くする）。
+        background: morphFlying && !morphClosing ? "transparent" : palette.wall,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -1203,7 +1390,12 @@ export function Lightbox({
                       objectFit: "contain",
                       filter: "blur(20px)",
                       transform: "scale(1.1)",
-                      opacity: loadStage === "thumb" ? 1 : 0,
+                      // 頁の写真から運んで開いた1枚には出さない。鮮明な影の
+                      // あとにぼけが現れると、後戻りして見える。
+                      opacity:
+                        loadStage === "thumb" && !(morphUsed && index === morphIndex)
+                          ? 1
+                          : 0,
                       transition:
                         loadStage === "thumb"
                           ? "opacity 0ms"

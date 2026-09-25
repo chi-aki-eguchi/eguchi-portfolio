@@ -6,6 +6,7 @@ import { ContentStatus } from "../ContentStatus";
 import { HeroPicture } from "../HeroPicture";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { photoAltText } from "../../../shared/photo-alt";
+import { orientedDimensions } from "../../../shared/image-url";
 import { pad2 } from "../../lib/book";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
 import { BookPhoto, BookViewer, useBookDevelop, useBookViewer } from "./BookParts";
@@ -78,12 +79,14 @@ function BookHero({
   const heroRef = useRef<HTMLElement>(null);
 
   // 器（名前とメニュー）が写真の上にいる間だけ、地を消して白い文字にする
-  // （book.css の body[data-book-over-photo]）。
+  // （book.css の body[data-book-over-photo]）。写真の下の端（作品名と枚数の
+  // 帯）が器の下まで上がってきたら地に戻す。透けたままだと作品名が名前と
+  // 重なって読めない。
   useEffect(() => {
     const body = document.body;
     const check = () => {
       const r = heroRef.current?.getBoundingClientRect();
-      if (count > 0 && r && r.bottom > 64) body.dataset.bookOverPhoto = "";
+      if (count > 0 && r && r.bottom > 150) body.dataset.bookOverPhoto = "";
       else delete body.dataset.bookOverPhoto;
     };
     check();
@@ -181,6 +184,43 @@ function BookHero({
 }
 
 /**
+ * 写真を縦の列へ振り分ける（いちばん短い列へ順に足す）。返すのは各列の添字。
+ *
+ * CSS の段組み（columns）は使わない。Safari（WebKit）では、段組みの中に
+ * position: relative の枠があると2列目以降が描かれず空白になった（2026-09-26）。
+ */
+export function splitIntoColumns(photos: GalleryPhoto[], count: number): number[][] {
+  const cols: number[][] = Array.from({ length: Math.max(1, count) }, () => []);
+  const heights = cols.map(() => 0);
+  photos.forEach((photo, i) => {
+    const d = orientedDimensions(photo.width, photo.height, photo.rotationDeg);
+    const h = d.width && d.height ? d.height / d.width : 1.25;
+    const shortest = heights.indexOf(Math.min(...heights));
+    cols[shortest]!.push(i);
+    heights[shortest]! += h;
+  });
+  return cols;
+}
+
+const WIDE_FIELD = "(min-width: 1024px)";
+
+/** 広い画面は3列、それ以外は2列。 */
+function useFieldColumnCount() {
+  const [wide, setWide] = useState(
+    () => typeof window !== "undefined" && !!window.matchMedia?.(WIDE_FIELD).matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia?.(WIDE_FIELD);
+    if (!mq) return;
+    const onChange = () => setWide(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return wide ? 3 : 2;
+}
+
+/**
  * 作品に入っていない写真も含めた、いろいろな写真（毎回違う組み合わせ）。
  * 写真の比のまま、段組みで大きく並べる。押すとその場でビューアが開く。
  */
@@ -194,24 +234,34 @@ function PhotoField({
   seriesLinkById: Record<number, { name: string; href: string }>;
 }) {
   const viewer = useBookViewer(photos);
+  const columnCount = useFieldColumnCount();
+  const columns = useMemo(() => splitIntoColumns(photos, columnCount), [photos, columnCount]);
+  useBookDevelop([columnCount]);
   return (
     <>
-      <ul className="bk-field">
-        {photos.map((photo, i) => (
-          <li key={photo.id} className="bk-field__item">
-            <BookPhoto
-              photo={photo}
-              alt={photoAltText(photo, {
-                photographerName,
-                seriesName: seriesLinkById[photo.seriesId ?? -1]?.name,
-              })}
-              sizes="(min-width: 1024px) 33vw, 50vw"
-              onOpen={() => viewer.open(i)}
-              openLabel="この写真を大きく見る"
-            />
-          </li>
+      <div className="bk-field">
+        {columns.map((indices, c) => (
+          <ul key={c} className="bk-field__col">
+            {indices.map((i) => {
+              const photo = photos[i]!;
+              return (
+                <li key={photo.id} className="bk-field__item">
+                  <BookPhoto
+                    photo={photo}
+                    alt={photoAltText(photo, {
+                      photographerName,
+                      seriesName: seriesLinkById[photo.seriesId ?? -1]?.name,
+                    })}
+                    sizes="(min-width: 1024px) 33vw, 50vw"
+                    onOpen={() => viewer.open(i)}
+                    openLabel="この写真を大きく見る"
+                  />
+                </li>
+              );
+            })}
+          </ul>
         ))}
-      </ul>
+      </div>
       <BookViewer
         photos={photos}
         viewer={viewer}

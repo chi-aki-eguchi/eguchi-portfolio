@@ -125,7 +125,33 @@ body[data-book-over-photo] .site-book > header:not([data-mobile-menu-open]) {
 .bk-hero__img {
   object-fit: cover;
 }
+/* 白い文字を写真の明暗に関係なく読ませる、上と下の淡い陰。
+   文字の影だけでは、白い波や空の上で名前とメニューが消えた（2026-09-26）。 */
+.bk-hero::before,
+.bk-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.bk-hero::before {
+  top: 0;
+  height: calc(150px + var(--sai-top, 0px));
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0));
+}
+.bk-hero::after {
+  bottom: 0;
+  height: calc(130px + var(--sai-bottom, 0px));
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1) 55%, rgba(0, 0, 0, 0));
+}
+.bk-hero--empty::before,
+.bk-hero--empty::after {
+  content: none;
+}
 .bk-hero__meta {
+  z-index: 2;
   position: absolute;
   left: 0;
   right: 0;
@@ -364,21 +390,23 @@ body[data-book-over-photo] .site-book > header:not([data-mobile-menu-open]) {
 }
 
 /* ── いろいろな写真：比のまま、段組みで大きく ───────────── */
+/* 列への振り分けは BookHome の splitIntoColumns。CSS の columns は Safari で
+   2列目以降が空白になったので使わない。 */
 .bk-field {
+  --bk-field-gap: clamp(8px, 1.2vw, 18px);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bk-field-gap);
+}
+.bk-field__col {
+  flex: 1 1 0;
+  min-width: 0;
   list-style: none;
   margin: 0;
   padding: 0;
-  columns: 2;
-  column-gap: clamp(8px, 1.2vw, 18px);
-}
-@media (min-width: 1024px) {
-  .bk-field {
-    columns: 3;
-  }
-}
-.bk-field__item {
-  break-inside: avoid;
-  margin-bottom: clamp(8px, 1.2vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--bk-field-gap);
 }
 .bk-field .book-photo {
   width: 100%;

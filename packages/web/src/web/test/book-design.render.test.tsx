@@ -29,7 +29,7 @@ const { QueryClient, QueryClientProvider } = await import(
 );
 const { Router, Route } = await import("wouter");
 const SeriesListPage = (await import("../pages/series")).default;
-const { heroSlides } = await import("../components/book/BookHome");
+const { heroSlides, splitIntoColumns } = await import("../components/book/BookHome");
 const { stageGroups } = await import("../components/book/BookSeries");
 const SeriesDetailPage = (await import("../pages/series-detail")).default;
 
@@ -170,6 +170,16 @@ describe("見開き", () => {
   });
   test("狭い画面では1枚ずつ", () => {
     expect(stageGroups(photos as never, false).length).toBe(7);
+  });
+});
+
+describe("Photos の列", () => {
+  const ph = (id: number, w: number, h: number) => ({ id, url: "", title: "", width: w, height: h });
+  test("どの写真も1度だけ、いちばん短い列へ順に入る", () => {
+    const photos = [ph(1, 800, 1200), ph(2, 1200, 800), ph(3, 1200, 800), ph(4, 800, 1200), ph(5, 1200, 800)];
+    const cols = splitIntoColumns(photos as never, 2);
+    expect(cols).toEqual([[0, 4], [1, 2, 3]]);
+    expect(cols.flat().sort()).toEqual([0, 1, 2, 3, 4]);
   });
 });
 

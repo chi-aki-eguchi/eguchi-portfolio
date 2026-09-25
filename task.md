@@ -6,7 +6,7 @@
 - オーナーが `bun run try` で触った指摘: 元の仕様が邪魔して細部が変／写真が小さく余白が多い／目次が分からない／作品に入っていない写真の居場所が無くシリーズ中心。**設定「写真集」のときだけ**骨格を作り直した（classic は不変、設定の追加なし）。**main へは未 push。** 正本は `docs/specs/motion-2026-09-25.md` の「2回目」。
 - 器: 左の列をやめ、左上に名前・右上に Works / Photos / About / Contact（写真の上では白い文字）。トップ: 画面いっぱいの写真（見せる中心で切り抜き、押して送る）→ Works（大きな表紙）→ Photos（作品外も含む毎回違う18枚）。`/series`: Works の Grid / List。作品ページ: 1枚ずつ送る・広い画面で縦2枚は見開き・Index（ベタ焼き）・Info・奥付。`/gallery`: Photos の見た目にそろえた。
 - 既存の不具合を修正: `shared/contact-reference.ts` の正規表現に制御文字がそのまま入り JavaScriptCore（Bun・Safari 系）で読めなかった → 文字コードで判定。単体テストの失敗は 26〜30件 → 5件（残る5件は origin/main でも同じ、実行順に依存）。
-- 2026-09-25 検証: typecheck・lint 成功、単体 1483成功・5失敗（上記）、`public-book-motion.spec.ts` を新しい骨格で書き直し desktop/mobile 8件成功。全体 smoke は下に追記。
+- 2026-09-25 検証: typecheck・lint 成功、単体 1483成功・5失敗（上記）、`public-book-motion.spec.ts` を新しい骨格で書き直し desktop/mobile 8件成功。全体 smoke（Chromium 3種、WebKit はこの環境に無く未実行）483成功・166スキップ・7失敗。7件は admin-reorder-safety「保存中の終了」と Portfolio Kit の基本検査×3画面で、origin/main でも同じく失敗（同日確認済み）。動画・画面は `scratch/motion-20260925/share2/`。
 
 ## Current State — 2026-09-25 JST / 動き（モーション）とUXの強化（試作、オーナー確認待ち）
 

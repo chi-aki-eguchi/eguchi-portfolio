@@ -6,7 +6,10 @@
 - 依頼: 「モーションデザイン、UI、UXを強化したい」。静けさを保ち、写真を見る体験に意味のある動きだけを足す。**main へは未 push。ブランチ `claude/akieguchi-motion-design-s9odvq` で目視確認を待つ。** 判断は `docs/specs/motion-2026-09-25.md`。
 - 写真集（book）: 頁が画面に入ると写真が「現像」される／トップの扉の名前が一字ずつ組み上がる（その訪問で1度）／頁の移り変わりは持ち上げずにその場で濃く。全デザイン共通: ビューアが押した写真そのものから開き、閉じると元の場所へ戻る。動きを減らす設定では移動を使わず、濃淡は残す。
 - 既存の不具合も修正: 写真集でビューアを前後へ送ってから閉じると、開いた位置へ戻されていた。
-- 2026-09-25 検証（この環境）: typecheck・lint・build 成功。単体テストは変更前後とも同じ約26〜30件が失敗（contact-reference.ts の正規表現が Bun 1.3.5/1.3.11 の両方で SyntaxError、ほか実行ごとに揺れる render テスト）。変更前の main でも同じく失敗するので今回の差分とは無関係、未解決。smoke の結果は下に追記。
+- 2026-09-25 検証（この環境）: typecheck・lint・build 成功。単体テストは変更前後とも同じ約26〜30件が失敗（contact-reference.ts の正規表現が Bun 1.3.5/1.3.11 の両方で SyntaxError、ほか実行ごとに揺れる render テスト）。変更前の main でも同じく失敗するので今回の差分とは無関係、未解決。
+- 2026-09-25 smoke（Chromium の desktop/mobile/mobile-touch。WebKit はこの環境に無く未実行）: 475成功・166スキップ・7失敗。失敗は admin-reorder-safety「保存中の終了」と public-site「Portfolio Kit /portfolio-kit・/start の基本検査」×3画面で、**origin/main でも同じく失敗**（worktree で再現）。追加した `public-book-motion.spec.ts` は desktop/mobile 6件成功。
+- 気づき: `test.use({ reducedMotion: "reduce" })` はこの smoke の fixture では効かない（matchMedia が false のまま）。新しい spec は `page.emulateMedia` で指定。既存の `public-motion-tempo.spec.ts` の「動きを減らす設定」も同じ理由で本当は検査できていない可能性がある（未修正）。
+- 動画とコマ撮り: `scratch/motion-20260925/share/`（gitignore、人工データ）。
 
 ## Current State — 2026-09-23 JST / 写真集の管理画面「作品ごとの作業台」（オーナー承認、main へ push）
 

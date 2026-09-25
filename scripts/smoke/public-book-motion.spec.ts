@@ -78,9 +78,10 @@ test("写真集 › ビューアは頁の写真から開き、送った先の頁
 });
 
 test.describe("動きを減らす設定", () => {
-  test.use({ reducedMotion: "reduce" });
-
   test("写真集 › 影は運ばず、現像の濃淡は残る", async ({ page }) => {
+    // `test.use({ reducedMotion })` はこの fixture の context に届かない
+    // （2026-09-25 実測で matchMedia が false のままだった）。ページで直接指定する。
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await openAsBook(page, "/series/harbour-light");
     await page.waitForTimeout(2000);
     // 次の頁の写真が濃くなっていく途中を拾う（濃淡の transition が 0 でない）。

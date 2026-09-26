@@ -807,7 +807,7 @@ test("Portfolio Kit — 実演動画は任意再生で、説明と相談へ進�
   await page.locator("#admin-video-transcript summary").click();
   await expect(page.locator("#admin-video-transcript")).toContainText("体験版での保存");
   await page.locator('a[href="/portfolio-kit/guide"]').first().click();
-  await expect(page.locator("h1")).toHaveText("写真家のポートフォリオサイトの作り方");
+  await expect(page.locator("h1")).toHaveText("写真ポートフォリオの作り方｜写真選び・構成・Web公開");
   await expect(page.locator('a[href="/portfolio-kit/consult"]').first()).toBeVisible();
   expect(apiMocks.unexpectedRequests).toEqual([]);
 });

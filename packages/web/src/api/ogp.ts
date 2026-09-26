@@ -22,6 +22,7 @@ import {
 } from "../shared/service-visibility";
 import { OWNER_SERVICE_FAQ } from "../shared/portfolio-service-copy";
 import { hasPublicEnglishContent } from "../shared/public-english";
+import { photographyInquiryFor } from "../shared/photography-inquiry";
 import { resolveContactText } from "../shared/contact-defaults";
 import {
   PORTFOLIO_DISCOVERY_GUIDE,
@@ -284,6 +285,11 @@ export function publicPageFallbackText(
     )
       .map((t) => (t || "").trim())
       .filter(Boolean);
+    const photographyInquiry = photographyInquiryFor(siteUrlFrom(settings, fallbackOrigin), isEn);
+    if (photographyInquiry) {
+      paragraphs.push(photographyInquiry.title, photographyInquiry.intro,
+        ...photographyInquiry.questions.flatMap(({ q, a }) => [q, a]));
+    }
     return {
       // 英語ページの見出しに日本語の表記名を出さない（説明文と同じ規則）。
       heading: `${PAGE_TITLES[pathname] ?? "Contact"} — ${

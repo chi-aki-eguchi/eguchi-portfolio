@@ -156,9 +156,9 @@ describe("injectOgp robots policy", () => {
       { siteUrl: "https://akieguchi.com" },
       "/portfolio-kit/guide",
     );
-    expect(html).toContain("<title>写真家のポートフォリオサイトの作り方 | ");
+    expect(html).toContain(`<title>${PORTFOLIO_DISCOVERY_GUIDE.title} | `);
     expect(html).toContain(
-      'og:title" content="写真家のポートフォリオサイトの作り方 | ',
+      `og:title" content="${PORTFOLIO_DISCOVERY_GUIDE.title} | `,
     );
     expect(html).toContain(PORTFOLIO_DISCOVERY_GUIDE.description);
     expect(html).toContain('rel="canonical" href="https://akieguchi.com/portfolio-kit/guide"');

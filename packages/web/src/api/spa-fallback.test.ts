@@ -239,7 +239,7 @@ describe("撮影依頼と販売の言葉が HTML に出ているか", () => {
 
   test("/contact に、依頼の入口・流れ・但し書きが出る", () => {
     const text = publicPageFallbackText(settings, "/contact");
-    expect(text.paragraphs).toEqual([
+    expect(text.paragraphs?.slice(0, 3)).toEqual([
       settings.contactIntro,
       settings.contactFlow,
       settings.contactNote,

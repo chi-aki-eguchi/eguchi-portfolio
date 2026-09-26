@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { sql } from "drizzle-orm";
 import { heroPhotos, photos, series } from "./database/schema";
+import { REPAIR_SERIES_MEMBERSHIP_SQL } from "./database/migrate";
 import { startIsolatedApi, type IsolatedApi } from "./test-support/isolated-api";
 
 // 公開サイトへ写真を返す4つの経路が、同じ公開用の形を返すことを、本物の
@@ -17,7 +19,7 @@ const RENDERED = [
   "id", "filename", "url", "thumbUrl", "mediumUrl", "width", "height",
   "rotationDeg", "focalX", "focalY", "title", "description", "meta",
   "camera", "lens", "focalLength", "fNumber", "exposureTime", "iso",
-  "filmType", "shotAt", "category", "displaySize", "seriesId", "sortOrder",
+  "filmType", "shotAt", "category", "displaySize", "seriesId", "seriesIds", "sortOrder",
   "createdAt",
 ];
 
@@ -67,6 +69,8 @@ beforeAll(async () => {
   await insert("unpublished", { seriesId: shown.id, sortOrder: 2, isPublished: false });
   await insert("trashed", { seriesId: shown.id, sortOrder: 3, deletedAt: new Date() });
   await insert("in-draft", { seriesId: hidden.id, sortOrder: 4 });
+  // 本番の起動時と同じく、代表のシリーズから結びつき（多対多）を写す。
+  await api.db.run(sql.raw(REPAIR_SERIES_MEMBERSHIP_SQL));
   for (const [sortOrder, name] of ["first", "rotated", "unpublished", "trashed"].entries()) {
     await api.db.insert(heroPhotos).values({ photoId: ids[name], sortOrder });
   }

@@ -1,4 +1,3 @@
-import { BookCoverPicker } from "../components/book/BookCoverPicker";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
@@ -6336,18 +6335,6 @@ export function SettingsTab({
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.siteDesignNote}
                 </p>
-                {(current["siteDesign"] || "classic") === "book" && (
-                  <AdminField
-                    label={copy.pageLayout.bookCoverLabel}
-                    hint={copy.pageLayout.bookCoverHint}
-                  >
-                    <BookCoverPicker
-                      value={current["bookCoverPhotoId"] || ""}
-                      onChange={(id) => set("bookCoverPhotoId", id)}
-                      autoLabel={copy.pageLayout.bookCoverAuto}
-                    />
-                  </AdminField>
-                )}
                 <AdminField
                   label={copy.pageLayout.aboutLabel}
                   hint={copy.pageLayout.aboutHint}

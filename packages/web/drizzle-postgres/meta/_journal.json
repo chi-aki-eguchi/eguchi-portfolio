@@ -36,6 +36,13 @@
       "when": 1789797946358,
       "tag": "0004_oval_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790399749642,
+      "tag": "0005_series_photos",
+      "breakpoints": true
     }
   ]
 }

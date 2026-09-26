@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./public-mobile-navigation.css";
 // 写真集の骨格の器（左の余白）と頁。どのページから開いても効くよう、共通の枠で読む。
-import "./book/book.css";
+import "./photo-site/photo-site.css";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
@@ -12,6 +12,8 @@ import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
 import { galleryExcludesSeries, siteDesignFrom, usesBookChrome } from "../lib/book";
+import { PhotoSiteFrame } from "./photo-site/PhotoSiteFrame";
+import { waitForWebFonts } from "../lib/web-fonts";
 import { StudioBridge } from "./StudioBridge";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
@@ -44,6 +46,9 @@ const ALWAYS_BILINGUAL_POLICY_PATHS = new Set([
 
 // 方針本文は policy.tsx の遅延チャンクに置いたままにする。ここから本文の
 // module を読むと、全ページの共通Layoutへ日英全文が混ざってしまう。
+/** 写真中心のサイトの器を、この訪問で一度出したか（ページを移っても保つ）。 */
+let photoFrameRevealed = false;
+
 const footerPolicyPath = (
   kind: "privacy" | "terms",
   language: "ja" | "en",
@@ -259,6 +264,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(t);
   }, [chromeReady]);
 
+  // 写真中心のサイトの器は、設定・棚・制作サービスの有無・書体が揃ってから
+  // 一度だけ出す（PhotoSiteFrame）。途中の形を見せない。
+  const serviceVisibility = useServiceVisibility();
+  const frameInputsReady =
+    Boolean(data) &&
+    (!shelfNeedsCount(seriesNav) || seriesData !== undefined) &&
+    (!shelfNeedsCount(workNav) || workData !== undefined) &&
+    serviceVisibility.isResolved;
+  // ページごとに Layout は作り直される（ルートごとに <Layout> がある）。一度
+  // 出した器は、次のページで消して出し直さない。
+  const [frameReady, setFrameReadyState] = useState(() => photoFrameRevealed);
+  const setFrameReady = (v: boolean) => {
+    if (v) photoFrameRevealed = true;
+    setFrameReadyState(v);
+  };
+  useEffect(() => {
+    if (frameReady) return;
+    if (!frameInputsReady) {
+      const t = window.setTimeout(() => setFrameReady(true), 2500);
+      return () => window.clearTimeout(t);
+    }
+    // 項目が揃った器を（見えないまま）描いてから、その文字の書体が届くのを待つ。
+    // 先に待ち始めると、あとから要る書体（「ポートフォリオ制作」の和文など）が
+    // 出たあとに届き、文字の幅が変わって項目が横へずれる。
+    let cancelled = false;
+    const reveal = () => {
+      if (!cancelled) setFrameReady(true);
+    };
+    const t = window.setTimeout(reveal, 1600);
+    requestAnimationFrame(() => {
+      void waitForWebFonts(1400).then(reveal, reveal);
+    });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [frameInputsReady, frameReady]);
+
   // 写真集の骨格（2026-09-23 試作、2026-09-25 見直し）。制作サービス・
   // 管理画面は従来の帯のまま。作品（Series / Work）は「Works」1つにまとめ、
   // 作品に入っていない写真も見られるよう「Photos」（/gallery）を並べる。
@@ -417,6 +460,114 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   )
     ? data!.footerLayout!
     : "center";
+
+  // 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）は専用の器で描く。
+  // いつもの構成（配布版）の器には触らない。
+  if (bookChrome) {
+    const serviceItem =
+      showServiceInNav || (showService && isServiceOwnerSite(data?.siteUrl, undefined))
+        ? [
+            {
+              href: footerPolicyLanguage === "en" ? "/portfolio-kit/en" : "/portfolio-kit",
+              label: isServiceOwnerSite(data?.siteUrl, undefined)
+                ? isEnglishChrome
+                  ? "Portfolio Websites"
+                  : "ポートフォリオ制作"
+                : "Portfolio Kit",
+            },
+          ]
+        : [];
+    const frameNav = [
+      ...(showSeries || showWork ? [{ href: "/series", label: "Series" }] : []),
+      {
+        href: isEnglishChrome ? "/en/about" : "/about",
+        label: data?.navLabelAbout || "About",
+      },
+      {
+        href: isEnglishChrome ? "/en/contact" : "/contact",
+        label: data?.navLabelContact || "Contact",
+      },
+      ...serviceItem,
+    ];
+    const snsLinks = [
+      { href: data?.profileInstagram, label: data?.snsLabelInstagram || "Instagram" },
+      { href: data?.profileTwitter, label: data?.snsLabelTwitter || "X" },
+      { href: data?.profileNote, label: data?.snsLabelNote || "note" },
+    ].filter((l): l is { href: string; label: string } => Boolean(l.href));
+    return (
+      <PhotoSiteFrame
+        name={
+          (isEnglishChrome ? data?.siteNameEn : data?.siteName) ||
+          data?.siteName ||
+          ""
+        }
+        nameEn={data?.siteNameEn}
+        navItems={frameNav}
+        isActive={isActive}
+        ready={frameReady}
+        dark={dm}
+        english={isEnglishChrome}
+        languageSwitch={
+          showLanguageSwitch && languagePairHref ? (
+            <LanguageSwitchLinks
+              isEnglishPage={isEnglishPage}
+              jaHref={isEnglishPage ? languagePairHref : location}
+              enHref={isEnglishPage ? location : languagePairHref}
+            />
+          ) : undefined
+        }
+        footer={
+          <>
+            {showService &&
+              !location.includes("portfolio-kit") &&
+              !isContactRoute(location) && (
+                <StudioBridge
+                  siteUrl={data?.siteUrl}
+                  language={location.startsWith("/en/") ? "en" : "ja"}
+                  compact
+                />
+              )}
+            <div className="ps-footer__row">
+              {snsLinks.length > 0 && (
+                <ul className="ps-footer__links font-en" aria-label="SNS">
+                  {snsLinks.map((l) => (
+                    <li key={l.label}>
+                      <a href={safeHref(l.href)} target="_blank" rel="noopener noreferrer">
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <ul className="ps-footer__links font-en" aria-label={isEnglishChrome ? "Site policies" : "サイトの方針・利用条件"}>
+                <li>
+                  <Link to={footerPolicyPath("privacy", footerPolicyLanguage)}>Privacy</Link>
+                </li>
+                <li>
+                  <Link to={footerPolicyPath("terms", footerPolicyLanguage)}>
+                    {footerPolicyLanguage === "en" ? "Terms" : "利用条件"}
+                  </Link>
+                </li>
+              </ul>
+              <p className="ps-footer__copy font-en">
+                {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
+              </p>
+              {data?.templateCreditLabel &&
+                (templateCreditUrl ? (
+                  <a className="ps-footer__credit font-en" href={templateCreditUrl} target="_blank" rel="noopener noreferrer">
+                    {data.templateCreditLabel}
+                  </a>
+                ) : (
+                  <span className="ps-footer__credit font-en">{data.templateCreditLabel}</span>
+                ))}
+            </div>
+          </>
+        }
+      >
+        {children}
+      </PhotoSiteFrame>
+    );
+  }
 
   // No background on this wrapper — body paints var(--background); an opaque
   // layer here would cover the DD grain texture (body::before at z-index:-1).

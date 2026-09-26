@@ -3,6 +3,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -97,6 +98,20 @@ export const series = pgTable("series", {
   // いま入っているものは全部そのままシリーズの棚に残る。
   kind: text("kind").notNull().default("series"),
 });
+
+// シリーズと写真の結びつき（多対多）。説明は schema.ts の同名の表。
+export const seriesPhotos = pgTable(
+  "series_photos",
+  {
+    seriesId: integer("series_id").notNull(),
+    photoId: integer("photo_id").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.seriesId, t.photoId] }),
+    index("series_photos_photo_idx").on(t.photoId),
+  ],
+);
 
 export const pricingPlans = pgTable("pricing_plans", {
   id: serial("id").primaryKey(),

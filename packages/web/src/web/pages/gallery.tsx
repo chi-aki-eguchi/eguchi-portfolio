@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MobileGalleryFilters } from "../components/MobileGalleryFilters";
 import { PageTitle } from "../components/PageTitle";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, Redirect, useLocation, useSearch } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { ContentStatus } from "../components/ContentStatus";
@@ -13,7 +13,6 @@ import { SeriesColophon } from "../components/SeriesColophon";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 import { galleryExcludesSeries, siteDesignFrom } from "../lib/book";
-import { PhotoField } from "../components/book/BookHome";
 
 export default function GalleryPage() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
@@ -288,29 +287,20 @@ export default function GalleryPage() {
     }
   }, [activeFilter, fadeRef]);
 
-  // 写真集の骨格では「Photos」。画面の幅いっぱいに、写真の比のまま大きく
-  // 並べる（トップの Photos と同じ見え方）。絞り込み・読み足しは同じ。
+  // 写真中心のサイトでは、トップがすべての写真の一覧そのもの。/gallery は
+  // 絞り込みを持ったままトップへ送る（共有された URL を行き止まりにしない）。
   const book = siteDesignFrom(settings?.siteDesign) === "book";
+  if (book) return <Redirect to={search ? `/?${search}` : "/"} replace />;
 
   return (
     <section
-      className={
-        book
-          ? "book bk-page bk-gallery pb-8 md:pb-16"
-          : "max-w-5xl mx-auto site-page site-page-top pb-8 md:pb-16"
-      }
+      className="max-w-5xl mx-auto site-page site-page-top pb-8 md:pb-16"
       ref={fadeRef}
       data-gallery-pending={photosLoading || rendered.length < filtered.length}
     >
-      {book ? (
-        <header className="bk-head">
-          <h1 className="bk-head__title font-en">Photos</h1>
-        </header>
-      ) : (
-        <PageTitle className="mb-6 md:mb-10" revealClass="section-reveal">
-          {settings?.galleryLabel ?? "Gallery"}
-        </PageTitle>
-      )}
+      <PageTitle className="mb-6 md:mb-10" revealClass="section-reveal">
+        {settings?.galleryLabel ?? "Gallery"}
+      </PageTitle>
 
       {/* 絞り込みは、並べる写真があるときだけ出す。1枚も無い一覧の上に
           分類の行だけが残ると、押しても何も変わらない操作を差し出すことになる。 */}
@@ -440,16 +430,6 @@ export default function GalleryPage() {
       ) : (
         <>
           <div ref={gridBoxRef}>
-          {book ? (
-            // 写真集の Photos は、トップの Photos と同じ並べ方（広い画面3列・
-            // それ以外2列、写真は切り抜かない）。管理画面の Gallery の列数などは
-            // 写真集の作業台に出ないので、それに頼らない（2026-09-26）。
-            <PhotoField
-              photos={rendered}
-              photographerName={settings?.siteName || settings?.siteNameEn || ""}
-              seriesLinkById={seriesLinkById}
-            />
-          ) : (
           <PhotoGallery
             photos={rendered}
             layoutType={settings?.galleryLayout}
@@ -462,7 +442,6 @@ export default function GalleryPage() {
             seriesLinkById={seriesLinkById}
             categoryLabelBySlug={categoryLabelBySlug}
           />
-          )}
           </div>
           {rendered.length < filtered.length && (
             <div

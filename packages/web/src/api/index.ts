@@ -18,6 +18,7 @@ import {
   UNREADABLE_IMAGE_MESSAGE,
 } from "./uploaded-image-processing";
 import { buildPublicCoverPhotoFilter } from "./series-cover-visibility";
+import { seriesMembership } from "./series-membership";
 import { photoDetailId } from "./public-routes";
 import { isShelfKind, normalizeShelfKind } from "../shared/shelf";
 import { indexablePhotoNeighbours } from "../shared/photo-page-text";
@@ -96,6 +97,25 @@ import {
   assertStorageConfigured,
   storageHealth,
 } from "./storage-config";
+
+// シリーズと写真の結びつき（多対多）。切り替え済みの schema で作る。
+const {
+  addPhotosToSeries,
+  allMemberships,
+  copyMemberships,
+  deletePhotoMemberships,
+  deleteSeriesMemberships,
+  membershipsByPhoto,
+  removePhotosFromSeries,
+  reorderSeriesPhotos,
+  replaceMemberships,
+} = seriesMembership(schema);
+
+/** 公開用の写真に「入っているシリーズ全部」を添える（多対多）。 */
+async function withSeriesIds<T extends { id: number }>(rows: T[]): Promise<(T & { seriesIds: number[] })[]> {
+  const byPhoto = await withRetry(() => membershipsByPhoto(db, rows.map((r) => r.id)));
+  return rows.map((r) => ({ ...r, seriesIds: byPhoto.get(r.id) ?? [] }));
+}
 
 // Node's Buffer<ArrayBufferLike> isn't assignable to DOM BodyInit in TS lib
 // types, though Bun's Response accepts it at runtime. The cast is contained
@@ -517,6 +537,7 @@ async function purgePhotoFromDb(
       await tx
         .delete(schema.heroPhotos)
         .where(eq(schema.heroPhotos.photoId, id));
+      await deletePhotoMemberships(tx, [id]);
       await tx
         .update(schema.series)
         .set({ coverPhotoId: null })
@@ -1499,7 +1520,12 @@ const app = new Hono()
         .orderBy(orderExpr);
       return limit ? q.limit(limit) : q;
     });
-    const withThumbs = photos.map(photoWithThumbs);
+    // どのシリーズに入っているか（多対多、シリーズの並び順）。1回で全部読む。
+    const seriesByPhoto = await withRetry(() => membershipsByPhoto(db));
+    const withThumbs = photos.map((p) => ({
+      ...photoWithThumbs(p),
+      seriesIds: seriesByPhoto.get(p.id) ?? [],
+    }));
     // 公開サイトには管理用の列を送らない。実測（2026-08-08・写真497枚）で
     // この応答は 400KB / 2.6秒 あり、公開サイトはどのページでも最初にこれを
     // 待つ。内訳の上位が fileHash 38.8KB・mediumKey 25.3KB・thumbKey 24.8KB で、
@@ -1525,7 +1551,8 @@ const app = new Hono()
       db
         .select({
           total: sql<number>`count(*)`,
-          standalone: sql<number>`sum(case when ${schema.photos.seriesId} is null then 1 else 0 end)`,
+          // どのシリーズにも結びついていない写真（多対多の表で数える）。
+          standalone: sql<number>`sum(case when not exists (select 1 from series_photos sp where sp.photo_id = ${schema.photos.id}) then 1 else 0 end)`,
         })
         .from(schema.photos)
         .where(
@@ -1606,7 +1633,7 @@ const app = new Hono()
     }
 
     return c.json(
-      { photo: toPublicPhoto(photoWithThumbs(row)), series, prev, next },
+      { photo: (await withSeriesIds([toPublicPhoto(photoWithThumbs(row))]))[0], series, prev, next },
       200,
     );
   })
@@ -2150,20 +2177,33 @@ const app = new Hono()
         return c.json({ error: "Invalid isPublished" }, 400);
       update.isPublished = isPublished;
     }
-    // I1: series assignment — "" / null clears membership.
-    if (body.seriesId !== undefined)
-      update.seriesId =
-        body.seriesId === null || body.seriesId === ""
+    // I1: series assignment — "" / null clears membership. いつもの構成の画面は
+    // 1枚1シリーズなので、送られた1本に「置き換える」（series-membership.ts）。
+    const seriesChange =
+      body.seriesId === undefined
+        ? undefined
+        : body.seriesId === null || body.seriesId === ""
           ? null
           : Number(body.seriesId);
-    const [row] = await withRetry(() =>
-      db
-        .update(schema.photos)
-        .set(update)
-        .where(and(eq(schema.photos.id, id), isNull(schema.photos.deletedAt)))
-        .returning({ id: schema.photos.id }),
+    if (seriesChange !== undefined && seriesChange !== null && !Number.isInteger(seriesChange))
+      return c.json({ error: "Invalid seriesId" }, 400);
+    const found = await withRetry(() =>
+      db.transaction(async (tx) => {
+        const alive = and(eq(schema.photos.id, id), isNull(schema.photos.deletedAt));
+        const [row] =
+          Object.keys(update).length > 0
+            ? await tx
+                .update(schema.photos)
+                .set(update)
+                .where(alive)
+                .returning({ id: schema.photos.id })
+            : await tx.select({ id: schema.photos.id }).from(schema.photos).where(alive).limit(1);
+        if (!row) return false;
+        if (seriesChange !== undefined) await replaceMemberships(tx, [id], seriesChange);
+        return true;
+      }),
     );
-    if (!row) return c.json({ error: "Not found" }, 404);
+    if (!found) return c.json({ error: "Not found" }, 404);
     return c.json({ ok: true }, 200);
   })
 
@@ -2189,6 +2229,7 @@ const app = new Hono()
               sortOrder: sql`(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos)`,
             })
             .returning();
+          if (created) await copyMemberships(tx, orig.id, created.id);
           return created;
         }),
       ),
@@ -2501,15 +2542,30 @@ const app = new Hono()
         );
         break;
       case "series": {
+        // いつもの構成の画面: 1本に置き換える。
         const seriesId =
           value === undefined || value === null || value === ""
             ? null
             : Number(value);
+        if (seriesId !== null && !Number.isInteger(seriesId))
+          return c.json({ error: "Invalid series" }, 400);
         await withRetry(() =>
-          db
-            .update(schema.photos)
-            .set({ seriesId })
-            .where(inArray(schema.photos.id, cleanIds)),
+          db.transaction((tx) => replaceMemberships(tx, cleanIds, seriesId)),
+        );
+        break;
+      }
+      case "series_add":
+      case "series_remove": {
+        // 写真家サイトの管理画面: ほかの所属はそのままに、1本へ足す／外す。
+        const seriesId = Number(value);
+        if (!Number.isInteger(seriesId))
+          return c.json({ error: "Invalid series" }, 400);
+        await withRetry(() =>
+          db.transaction((tx) =>
+            operation === "series_add"
+              ? addPhotosToSeries(tx, seriesId, cleanIds)
+              : removePhotosFromSeries(tx, seriesId, cleanIds),
+          ),
         );
         break;
       }
@@ -2672,17 +2728,18 @@ const app = new Hono()
             rotationDeg: schema.photos.rotationDeg,
             focalX: schema.photos.focalX,
             focalY: schema.photos.focalY,
-            seriesId: schema.photos.seriesId,
-            sortOrder: schema.photos.sortOrder,
+            seriesId: schema.seriesPhotos.seriesId,
+            sortOrder: schema.seriesPhotos.sortOrder,
           })
-          .from(schema.photos)
+          .from(schema.seriesPhotos)
+          .innerJoin(schema.photos, eq(schema.photos.id, schema.seriesPhotos.photoId))
           .where(
             sql`${inArray(
-              schema.photos.seriesId,
+              schema.seriesPhotos.seriesId,
               needFallback.map((s) => s.id),
             )} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
           )
-          .orderBy(schema.photos.sortOrder),
+          .orderBy(schema.seriesPhotos.sortOrder),
       );
       // orderBy sortOrder asc → the first row seen per series is its lead photo.
       for (const p of leadPhotos)
@@ -2696,19 +2753,20 @@ const app = new Hono()
       ? await withRetry(() =>
           db
             .select({
-              seriesId: schema.photos.seriesId,
+              seriesId: schema.seriesPhotos.seriesId,
               photoCount: sql<number>`count(*)`,
               shotAtFirst: sql<string | null>`min(${schema.photos.shotAt})`,
               shotAtLast: sql<string | null>`max(${schema.photos.shotAt})`,
             })
-            .from(schema.photos)
+            .from(schema.seriesPhotos)
+            .innerJoin(schema.photos, eq(schema.photos.id, schema.seriesPhotos.photoId))
             .where(
               sql`${inArray(
-                schema.photos.seriesId,
+                schema.seriesPhotos.seriesId,
                 rows.map((s) => s.id),
               )} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
             )
-            .groupBy(schema.photos.seriesId),
+            .groupBy(schema.seriesPhotos.seriesId),
         )
       : [];
     // PostgreSQL の count(*) は bigint で、ドライバは文字列で返す。
@@ -2788,21 +2846,23 @@ const app = new Hono()
           ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
           : sortKey === "upload_desc"
             ? sql`${schema.photos.createdAt} DESC`
-            : schema.photos.sortOrder;
+            : schema.seriesPhotos.sortOrder;
+    // シリーズの中の並びは結びつきの表が持つ（写真ごとの全体の並びとは別）。
     const photos = await withRetry(() =>
       db
         .select(PHOTO_LIST_COLUMNS)
-        .from(schema.photos)
+        .from(schema.seriesPhotos)
+        .innerJoin(schema.photos, eq(schema.photos.id, schema.seriesPhotos.photoId))
         .where(
-          sql`${eq(schema.photos.seriesId, s.id)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
+          sql`${eq(schema.seriesPhotos.seriesId, s.id)} AND ${isNull(schema.photos.deletedAt)} AND ${eq(schema.photos.isPublished, true)}`,
         )
-        .orderBy(seriesOrderExpr),
+        .orderBy(seriesOrderExpr, schema.photos.id),
     );
     // 公開一覧・写真1枚と同じ公開用の形で返す（管理用の列は送らない）。
     return c.json(
       {
         series: s,
-        photos: photos.map((p) => toPublicPhoto(photoWithThumbs(p))),
+        photos: await withSeriesIds(photos.map((p) => toPublicPhoto(photoWithThumbs(p)))),
       },
       200,
     );
@@ -2895,11 +2955,8 @@ const app = new Hono()
     // than creating photos that point at a series which no longer exists.
     await withRetry(() =>
       db.transaction(async (tx) => {
-        await tx
-          .update(schema.photos)
-          .set({ seriesId: null })
-          .where(eq(schema.photos.seriesId, id));
         await tx.delete(schema.series).where(eq(schema.series.id, id));
+        await deleteSeriesMemberships(tx, id);
       }),
     );
     return c.json({ ok: true }, 200);
@@ -2934,6 +2991,51 @@ const app = new Hono()
   })
 
   // ── Pricing plans (public) — H1 ─────────────────────────
+  // ── Admin: シリーズと写真の結びつき（多対多、2026-09-26） ──────────
+  // 全部の結びつき。管理画面は写真一覧と一緒に読み、どの写真がどのシリーズに
+  // 入っているかを手元で組み立てる。
+  .get("/admin/series-photos", requireAdmin, async (c) => {
+    const memberships = await withRetry(() => allMemberships(db));
+    return c.json({ memberships }, 200);
+  })
+
+  // シリーズへ写真を足す・外す（ほかのシリーズの所属はそのまま）。
+  .post("/admin/series/:id/photos", requireAdmin, async (c) => {
+    const seriesId = Number(c.req.param("id"));
+    if (!Number.isInteger(seriesId)) return c.json({ error: "Invalid id" }, 400);
+    const body = (await c.req.json()) as { add?: unknown; remove?: unknown };
+    const add = body.add === undefined ? { ok: true as const, ids: [] } : parseIdList(body.add);
+    const remove =
+      body.remove === undefined ? { ok: true as const, ids: [] } : parseIdList(body.remove);
+    if (!add.ok) return c.json({ error: idListError(add.reason) }, 400);
+    if (!remove.ok) return c.json({ error: idListError(remove.reason) }, 400);
+    const [series] = await withRetry(() =>
+      db.select({ id: schema.series.id }).from(schema.series).where(eq(schema.series.id, seriesId)).limit(1),
+    );
+    if (!series) return c.json({ error: "Not found" }, 404);
+    await withRetry(() =>
+      db.transaction(async (tx) => {
+        await addPhotosToSeries(tx, seriesId, add.ids);
+        await removePhotosFromSeries(tx, seriesId, remove.ids);
+      }),
+    );
+    return c.json({ ok: true }, 200);
+  })
+
+  // シリーズの中の並び。送るのはそのシリーズの写真全部（食い違えば 409）。
+  .post("/admin/series/:id/photos/reorder", requireAdmin, async (c) => {
+    const seriesId = Number(c.req.param("id"));
+    if (!Number.isInteger(seriesId)) return c.json({ error: "Invalid id" }, 400);
+    const body = (await c.req.json()) as { ids?: unknown };
+    const parsed = parseIdList(body.ids);
+    if (!parsed.ok) return c.json({ error: idListError(parsed.reason) }, 400);
+    const result = await withRetry(() =>
+      db.transaction((tx) => reorderSeriesPhotos(tx, seriesId, parsed.ids)),
+    );
+    if (!result.ok) return c.json({ error: result.error }, 409);
+    return c.json({ ok: true }, 200);
+  })
+
   .get("/pricing", async (c) => {
     const rows = await withRetry(() =>
       db
@@ -3093,7 +3195,10 @@ const app = new Hono()
         ),
     );
     const photoMap = new Map(
-      heroRows.map((p) => [p.id, toPublicPhoto(photoWithThumbs(p))]),
+      (await withSeriesIds(heroRows.map((p) => toPublicPhoto(photoWithThumbs(p))))).map((p) => [
+        p.id,
+        p,
+      ]),
     );
     // Hero framing is an assignment-level override.  It intentionally replaces
     // the public focal point only in this response: Gallery, series covers and

@@ -10,6 +10,11 @@ export type SitemapPhoto = {
   title: string;
   description?: string | null;
   seriesId: number | null;
+  /**
+   * 入っているシリーズ全部（多対多、2026-09-26）。無ければ `seriesId` の1本
+   * だけとみなす（古い呼び出し・テスト）。
+   */
+  seriesIds?: readonly number[];
   createdAt: Date | null;
   /** 撮影日。題の無い写真の説明文を、撮った時期で見分けられるようにする。 */
   shotAt?: string | Date | null;
@@ -97,6 +102,8 @@ export function buildSitemapXml(input: SitemapInput): string {
     return m ? Number.parseInt(m[1], 10) : null;
   };
 
+  const inSeries = (p: SitemapPhoto, sid: number) =>
+    p.seriesIds ? p.seriesIds.includes(sid) : p.seriesId === sid;
   const imagesFor = (path: string): string => {
     // 写真1枚ぶんのページは、その1枚だけを載せる。
     const pid = photoIdOf(path);
@@ -127,7 +134,7 @@ export function buildSitemapXml(input: SitemapInput): string {
         : undefined;
     // 表紙を先頭に、そのシリーズの写真をページの中身として並べる。
     // 表紙が未設定・削除済みなら先頭の写真がそのまま先頭になる。
-    const members = photos.filter((p) => p.seriesId === sid);
+    const members = photos.filter((p) => inSeries(p, sid));
     const ordered = cover
       ? [cover, ...members.filter((p) => p.id !== cover.id)]
       : members;
@@ -154,10 +161,11 @@ export function buildSitemapXml(input: SitemapInput): string {
     if (!p.createdAt) continue;
     if (!latestOverall || p.createdAt > latestOverall)
       latestOverall = p.createdAt;
-    if (p.seriesId == null) continue;
-    const current = latestBySeries.get(p.seriesId);
-    if (!current || p.createdAt > current)
-      latestBySeries.set(p.seriesId, p.createdAt);
+    const sids = p.seriesIds ?? (p.seriesId == null ? [] : [p.seriesId]);
+    for (const sid of sids) {
+      const current = latestBySeries.get(sid);
+      if (!current || p.createdAt > current) latestBySeries.set(sid, p.createdAt);
+    }
   }
   const lastmodFor = (path: string): string => {
     const pid = photoIdOf(path);

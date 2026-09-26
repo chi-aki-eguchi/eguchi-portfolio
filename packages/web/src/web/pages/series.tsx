@@ -3,7 +3,7 @@ import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { SeriesGrid, type ShelfKind } from "../components/SeriesGrid";
-import { BookWorksPage } from "../components/book/BookWorksPage";
+import { PhotoSeriesIndex } from "../components/photo-site/PhotoSeries";
 import { siteDesignFrom } from "../lib/book";
 
 /**
@@ -25,9 +25,9 @@ export default function SeriesListPage({
   // （棚を何と呼ぶかは、その人の作品の呼び方だから）。
   const heading = kind === "work" ? (data?.navLabelWork || "Work") : "Series";
 
-  // 写真集の骨格では、Series と Work の棚を1つの「Works」にまとめる。
+  // 写真中心のサイトでは、Series と Work の棚を1つの目次にまとめる。
   if (siteDesignFrom(data?.siteDesign) === "book") {
-    return <BookWorksPage shelf={kind} />;
+    return <PhotoSeriesIndex settings={data} />;
   }
 
   return (

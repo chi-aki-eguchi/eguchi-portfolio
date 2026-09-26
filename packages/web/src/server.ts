@@ -2,6 +2,7 @@ import { resolve as pathResolve } from "node:path";
 import app, { getOriginal, photoWithThumbs } from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
+import { seriesMembership } from "./api/series-membership";
 import { eq, and, isNull, inArray, sql } from "drizzle-orm";
 import {
   injectOgp,
@@ -641,6 +642,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
     title: string;
     description: string | null;
     seriesId: number | null;
+    seriesIds?: number[];
     createdAt: Date | null;
     shotAt: string | null;
     filmType: string | null;
@@ -670,6 +672,9 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
         )
         .orderBy(schema.photos.sortOrder),
     );
+    // シリーズのページに載せる写真は、結びつきの表から（1枚が複数のシリーズに入れる）。
+    const bySeries = await withRetry(() => seriesMembership(schema).membershipsByPhoto(db));
+    livePhotos = livePhotos.map((p) => ({ ...p, seriesIds: bySeries.get(p.id) ?? [] }));
   } catch (e) {
     console.error("[sitemap] photos fetch failed:", e);
   }

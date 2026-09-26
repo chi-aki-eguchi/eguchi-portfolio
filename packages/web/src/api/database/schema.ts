@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, primaryKey } from "drizzle-orm/sqlite-core";
 
 // 写真テーブル
 export const photos = sqliteTable(
@@ -117,6 +117,26 @@ export const series = sqliteTable("series", {
   // いま入っているものは全部そのままシリーズの棚に残る。
   kind: text("kind").notNull().default("series"),
 });
+
+// シリーズと写真の結びつき（多対多、2026-09-26 オーナー「同じ写真が違う
+// シリーズに同時に存在できないのが困る」）。1枚の写真を何本のシリーズにも
+// 入れられ、並び順はシリーズごとに持つ。
+//
+// `photos.series_id` は残す。いつもの構成（配布版）と古い読み手のための
+// 「代表のシリーズ」で、ここが変わるたびに `series-membership.ts` がそろえる
+// （所属のうちシリーズの並びが最も前のもの。無ければ null）。
+export const seriesPhotos = sqliteTable(
+  "series_photos",
+  {
+    seriesId: integer("series_id").notNull(),
+    photoId: integer("photo_id").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.seriesId, t.photoId] }),
+    index("series_photos_photo_idx").on(t.photoId),
+  ],
+);
 
 // 料金プランテーブル — H1（撮影依頼の料金表）
 export const pricingPlans = sqliteTable("pricing_plans", {

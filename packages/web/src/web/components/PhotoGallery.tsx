@@ -85,6 +85,8 @@ export type GalleryPhoto = {
   description?: string | null;
   category?: string | null;
   seriesId?: number | null;
+  /** 入っているシリーズ全部（多対多、シリーズの並び順。先頭が seriesId と同じ）。 */
+  seriesIds?: number[];
 };
 
 // N1/N4: the selectable grid layouts. Unknown / unset values fall back to mosaic.

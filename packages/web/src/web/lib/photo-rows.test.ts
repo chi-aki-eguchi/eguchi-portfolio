@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { planRows, rowOptionsFor } from "./photo-rows";
+import { planRows, rowOptionsFor, leadCount } from "./photo-rows";
 
 // 縦(0.667)・横(1.5)・正方形・パノラマを混ぜた、現実に近い並び。
 const mix = [1.5, 0.667, 1.5, 1.5, 0.667, 0.667, 1, 1.5, 2.4, 0.8, 1.5, 0.667, 1.5, 1.33, 0.667, 1.5, 1.5, 0.75, 1.5, 0.667];
@@ -84,5 +84,41 @@ describe("段の組み方", () => {
     const plan = planRows([1.5, 1.5, 1.5, 0.667], desktop);
     const last = plan.rows[plan.rows.length - 1]!;
     expect(last.height).toBeLessThanOrEqual(desktop.maxHeight);
+  });
+
+  // 表紙の段（オーナー 2026-09-26「TOP の謎の余白」: 縦の写真1枚だと左半分が空いていた）。
+  test("表紙の段は、どの写真が先頭に来ても横幅いっぱいで、画面の残りを超えない", () => {
+    const shapes = [0.667, 0.8, 1, 1.5, 1.78, 2.4, 3.2, 0.45];
+    let seed = 11;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (const [w, vh, maxCount] of [[1390, 956, 4], [1209, 800, 4], [358, 844, 2]] as const) {
+      const lead = { height: vh - 220, maxCount };
+      for (let trial = 0; trial < 400; trial++) {
+        const n = 1 + Math.floor(rand() * 20);
+        const ratios = Array.from({ length: n }, () => shapes[Math.floor(rand() * shapes.length)]!);
+        const plan = planRows(ratios, { ...rowOptionsFor(w, vh), lead });
+        const first = plan.rows[0]!;
+        const last = first.items[first.items.length - 1]!;
+        expect(first.height).toBeLessThanOrEqual(lead.height + 0.01);
+        if (first.full) expect(Math.abs(last.x + last.width - w)).toBeLessThan(0.5);
+        else {
+          // 横いっぱいにできないのは、どの枚数でも高すぎるとき（縦の写真しか無いなど）だけ。
+          const k = leadCount(ratios, w, rowOptionsFor(w, vh).gap, lead);
+          expect(k).toBe(first.items.length);
+          expect(Math.abs(first.items[0]!.x - (w - (last.x + last.width)))).toBeLessThan(0.5);
+        }
+        // すべての写真が1度ずつ、元の比のまま
+        const idx = plan.rows.flatMap((r) => r.items.map((it) => it.index));
+        expect(idx).toEqual(ratios.map((_, i) => i));
+      }
+    }
+  });
+
+  test("表紙の段: 縦の写真のあとに写真が続けば、足して横幅を埋める", () => {
+    const opts = { ...rowOptionsFor(1390, 956), lead: { height: 736, maxCount: 4 } };
+    const plan = planRows([0.667, 1.5, 0.8, 1.5, 1.5], opts);
+    expect(plan.rows[0]!.full).toBe(true);
+    expect(plan.rows[0]!.items.length).toBeGreaterThan(1);
+    expect(plan.rows[0]!.height).toBeGreaterThan(736 * 0.6);
   });
 });

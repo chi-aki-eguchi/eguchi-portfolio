@@ -25,6 +25,8 @@ export function PhotoStream({
   seriesName,
   label,
   after,
+  lead,
+  maxRows,
 }: {
   photos: GalleryPhoto[];
   photographerName: string;
@@ -35,6 +37,13 @@ export function PhotoStream({
   label: string;
   /** 写真を全部並べ終えたあとに出すもの（撮影依頼の案内など）。途中では出さない。 */
   after?: React.ReactNode;
+  /**
+   * 1段目を表紙の段にする（トップ）。画面の高さから reserve（上の帯・名前の分）を
+   * 引いた高さに合わせて、先頭から何枚並べるかを決める。
+   */
+  lead?: { reserve: number };
+  /** 段の数の上限（トップを「表紙だけ」にするとき 1）。 */
+  maxRows?: number;
 }) {
   const boxRef = useRef<HTMLUListElement>(null);
   const [width, setWidth] = useState(0);
@@ -69,10 +78,30 @@ export function PhotoStream({
       }),
     [photos],
   );
-  const plan = useMemo(
-    () => (width > 0 ? planRows(ratios, rowOptionsFor(width, viewportHeight)) : null),
-    [ratios, width, viewportHeight],
-  );
+  const leadReserve = lead?.reserve;
+  const plan = useMemo(() => {
+    if (!(width > 0)) return null;
+    const opts = rowOptionsFor(width, viewportHeight);
+    if (leadReserve === undefined) return planRows(ratios, opts);
+    const full = planRows(ratios, {
+      ...opts,
+      lead: {
+        height: Math.max(width < 640 ? 260 : 320, viewportHeight - leadReserve),
+        maxCount: width < 640 ? 2 : 4,
+      },
+    });
+    if (!maxRows || full.rows.length <= maxRows) return full;
+    const rows = full.rows.slice(0, maxRows);
+    const last = rows[rows.length - 1]!;
+    return { rows, height: last.top + last.height };
+  }, [ratios, width, viewportHeight, leadReserve, maxRows]);
+  // 段の数を絞ったときは、並んだ写真だけをビューアで送る。
+  const shownPhotos = useMemo(() => {
+    if (!plan || !maxRows) return photos;
+    const lastRow = plan.rows[plan.rows.length - 1];
+    const end = lastRow ? lastRow.items[lastRow.items.length - 1]!.index + 1 : 0;
+    return photos.slice(0, end);
+  }, [plan, maxRows, photos]);
 
   const [count, setCount] = useState(FIRST_BATCH);
   useEffect(() => setCount(FIRST_BATCH), [photos]);
@@ -125,7 +154,7 @@ export function PhotoStream({
     };
   });
 
-  const viewer = usePhotoViewer(photos);
+  const viewer = usePhotoViewer(shownPhotos);
   const eagerUntil = viewportHeight * 1.2;
 
   return (
@@ -182,7 +211,7 @@ export function PhotoStream({
       {more && <div ref={sentinelRef} className="ps-sentinel" aria-hidden="true" />}
       {!more && plan && after}
       <PhotoViewer
-        photos={photos}
+        photos={shownPhotos}
         viewer={viewer}
         photographerName={photographerName}
         seriesName={seriesName}

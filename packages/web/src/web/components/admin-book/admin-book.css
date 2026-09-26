@@ -675,3 +675,16 @@
   /* まとめて選んでいる間は、下の欄を低くしてコマを選び続けられるように。 */
   .bench[data-multi][data-has-selection] .bench-side { max-height: 46dvh; }
 }
+
+/* 「サイト」の選択肢: 選んでいる状態を黒塗りにしない（2026-09-26 オーナー「admin も安っぽい」）。
+   黒塗りは実行の操作（保存・追加）だけに残す、という styles.css の約束に合わせ、ほかの選択と
+   同じ「インクの下線とごく薄い面」にする。いつもの構成の管理画面は変えない。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier
+  .admin-book[data-view="site"]
+  .grid
+  > button.admin-btn-primary:not(.absolute):not(.admin-state-chip) {
+  background-color: var(--admin-selected-bg, rgba(var(--admin-ink-rgb), 0.05)) !important;
+  border-color: var(--admin-selected-border, transparent) !important;
+  color: var(--admin-ink) !important;
+  box-shadow: var(--admin-selected-shadow, inset 0 -1.5px 0 var(--admin-ink)) !important;
+}

@@ -189,6 +189,7 @@ export const SETTINGS_SECTION_KEYS = {
   "page-layout": [
     "siteDesign",
     "bookCoverPhotoId",
+    "photoTopLayout",
     "profileLayout",
     "contactLayout",
     "seriesCardStyle",
@@ -6335,6 +6336,35 @@ export function SettingsTab({
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.siteDesignNote}
                 </p>
+                {(current["siteDesign"] || "classic") === "book" && (
+                  <>
+                    <AdminField
+                      label={copy.pageLayout.topLayoutLabel}
+                      hint={copy.pageLayout.topLayoutHint}
+                    >
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(["cover-selection", "cover-only"] as const).map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            aria-pressed={(current["photoTopLayout"] || "cover-selection") === val}
+                            onClick={() => set("photoTopLayout", val)}
+                            className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                              (current["photoTopLayout"] || "cover-selection") === val
+                                ? "admin-btn-primary font-medium"
+                                : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                            }`}
+                          >
+                            {copy.pageLayout.topLayoutOptions[val]}
+                          </button>
+                        ))}
+                      </div>
+                    </AdminField>
+                    <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                      {copy.pageLayout.topLayoutNote}
+                    </p>
+                  </>
+                )}
                 <AdminField
                   label={copy.pageLayout.aboutLabel}
                   hint={copy.pageLayout.aboutHint}

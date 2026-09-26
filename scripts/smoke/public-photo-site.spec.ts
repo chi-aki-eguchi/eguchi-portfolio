@@ -3,24 +3,29 @@ import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
 /**
  * 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）。
  *
- * 1. トップを開くと表紙（大きな名前と「トップの最初に並べる」写真）。その下に写真の段。
- *    写真は元の縦横比のまま（切り抜かない・引き伸ばさない）、段は横幅いっぱいにそろい、
- *    横はみ出しが無い
+ * 1. トップを開くと名前と表紙の段（「トップに出す」写真を横いっぱいに、最初の画面に収まる）。
+ *    その下に選んだ写真の続きと、Gallery・Series への入口。写真は元の縦横比のまま
+ *    （切り抜かない・引き伸ばさない）、段は横幅いっぱいにそろい、横はみ出しが無い
  * 2. 器（名前とメニュー）は揃ってから一度だけ現れ、そのあと動かない
  *    （オーナー 2026-09-26「チラチラ動くのがうるさい」）
  * 3. 写真を押すとビューアが開き、閉じられる
  * 4. シリーズの一覧とシリーズのページ。1枚が2本のシリーズに入っていれば両方に出る
- * 5. /gallery はトップへ（絞り込みを持ったまま）
+ * 5. /gallery はすべての写真（絞り込み付き）。トップの形「表紙だけ」は表紙の段で終わる
  *
  * 人工データのサイトの設定だけを book に差し替えて見る。
  */
-async function openAsPhotoSite(page: Page, api: SmokeApi, path: string) {
+async function openAsPhotoSite(
+  page: Page,
+  api: SmokeApi,
+  path: string,
+  extra: Record<string, string> = {},
+) {
   const settings = (await (await api.get("/api/settings")).json()) as Record<string, unknown>;
   await page.route("**/api/settings**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ ...settings, siteDesign: "book" }),
+      body: JSON.stringify({ ...settings, siteDesign: "book", ...extra }),
     }),
   );
   await page.goto(path, { waitUntil: "networkidle" });
@@ -35,9 +40,7 @@ function noSideScroll(page: Page) {
 function worstRatioGap(page: Page) {
   return page.evaluate(() => {
     let worst = 0;
-    for (const img of document.querySelectorAll<HTMLImageElement>(".ps-tile__img, .ps-cover__img")) {
-      // 表紙の写真は舞台いっぱいの枠に contain で収める（枠と写真の比は違ってよい、切り抜かない）。
-      if (img.classList.contains("ps-cover__img") && getComputedStyle(img).objectFit === "contain") continue;
+    for (const img of document.querySelectorAll<HTMLImageElement>(".ps-tile__img")) {
       if (!img.complete || !img.naturalWidth) continue;
       const r = img.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight || r.width < 10) continue;
@@ -49,45 +52,63 @@ function worstRatioGap(page: Page) {
   });
 }
 
-test("写真中心 › トップは表紙から始まり、写真は元の比のまま並ぶ", async ({ page, api }) => {
+/** 段ごとの右端（上から順）。 */
+function rowRightEdges(page: Page) {
+  return page.evaluate(() => {
+    const byTop = new Map<number, number>();
+    for (const el of document.querySelectorAll<HTMLElement>(".ps-tile")) {
+      const r = el.getBoundingClientRect();
+      const top = Math.round(r.top + scrollY);
+      byTop.set(top, Math.max(byTop.get(top) ?? 0, r.right));
+    }
+    return [...byTop.entries()].sort((a, b) => a[0] - b[0]).map(([, right]) => right);
+  });
+}
+
+test("写真中心 › トップは名前と表紙の段から始まり、写真は元の比のまま並ぶ", async ({ page, api }) => {
   await openAsPhotoSite(page, api, "/");
-  // 表紙: 名前と写真が最初の画面に収まる。
-  const cover = page.locator(".ps-cover");
-  await expect(cover.locator("h1")).toHaveText("Smoke Fixture Studio");
-  const box = await cover.boundingBox();
-  const vh = page.viewportSize()!.height;
-  expect(box!.y + box!.height).toBeLessThanOrEqual(vh + 1);
-  // 名前は欄からはみ出さない（1行か、折り返しても欄の中）。
-  expect(
-    await page.locator(".ps-cover__words").evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
-  ).toBe(true);
-  // 「トップの最初に並べる」写真が3枚あるので、送れる。
-  await expect(page.locator(".ps-cover__nav")).toContainText("01 / 03");
-  await page.locator(".ps-cover__nav").getByRole("button", { name: "次の写真" }).click();
-  await expect(page.locator(".ps-cover__nav")).toContainText("02 / 03");
-  // その下に写真の段。
-  await page.getByRole("button", { name: /Photographs/ }).click();
+  await expect(page.locator(".ps-top-name h1")).toHaveText("Smoke Fixture Studio");
   const tiles = page.locator(".ps-tile");
   await expect(tiles.first()).toBeInViewport();
-  expect(await tiles.count()).toBeGreaterThan(5);
-  // 表紙の写真は、絞り込んでいない一覧には重ねない。
-  for (const id of [7001, 7101, 7601]) await expect(page.locator(`[data-photo-tile="${id}"]`)).toHaveCount(0);
+  // 表紙の段: 「トップに出す」写真が先頭から並び、最初の画面に収まり、横幅いっぱい。
+  const firstIds = await page.locator(".ps-tile__button").evaluateAll((els) =>
+    els.slice(0, 3).map((e) => Number(e.getAttribute("data-photo-tile"))),
+  );
+  expect(firstIds[0]).toBe(7001);
+  const lead = await page.evaluate(() => {
+    const tiles = [...document.querySelectorAll<HTMLElement>(".ps-tile")];
+    const top = Math.min(...tiles.map((t) => t.getBoundingClientRect().top));
+    const row = tiles.filter((t) => Math.abs(t.getBoundingClientRect().top - top) < 1);
+    const box = document.querySelector(".ps-stream")!.getBoundingClientRect();
+    return {
+      bottom: Math.max(...row.map((t) => t.getBoundingClientRect().bottom)),
+      left: Math.min(...row.map((t) => t.getBoundingClientRect().left)) - box.left,
+      right: box.right - Math.max(...row.map((t) => t.getBoundingClientRect().right)),
+    };
+  });
+  expect(lead.bottom).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+  expect(Math.abs(lead.left)).toBeLessThan(1);
+  expect(Math.abs(lead.right)).toBeLessThan(1);
   await page.waitForTimeout(1500);
   // 比の差 2% 未満（段の丸めだけ）。切り抜き・引き伸ばしがあればここで落ちる。
   expect(await worstRatioGap(page)).toBeLessThan(0.02);
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
   // 段の右端がそろう（最後の段以外）。
-  const rightEdges = await page.evaluate(() => {
-    const byTop = new Map<number, number>();
-    for (const el of document.querySelectorAll<HTMLElement>(".ps-tile")) {
-      const r = el.getBoundingClientRect();
-      const top = Math.round(r.top);
-      byTop.set(top, Math.max(byTop.get(top) ?? 0, r.right));
-    }
-    return [...byTop.entries()].sort((a, b) => a[0] - b[0]).map(([, right]) => right);
-  });
-  const full = rightEdges.slice(0, -1);
+  const full = (await rowRightEdges(page)).slice(0, -1);
   expect(Math.max(...full) - Math.min(...full)).toBeLessThan(2);
+  // 終わりに Gallery と Series への入口。
+  const gallery = page.locator(".ps-entrances a[href='/gallery']");
+  await gallery.scrollIntoViewIfNeeded();
+  await expect(gallery).toBeVisible();
+  await expect(page.locator(".ps-entrances a[href='/series']")).toBeVisible();
+});
+
+test("写真中心 › トップの形「表紙だけ」は表紙の段で終わる", async ({ page, api }) => {
+  await openAsPhotoSite(page, api, "/", { photoTopLayout: "cover-only" });
+  await expect(page.locator(".ps-tile").first()).toBeInViewport();
+  expect(await rowRightEdges(page)).toHaveLength(1);
+  await expect(page.locator(".ps-entrances")).toHaveCount(0);
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 });
 
 test("写真中心 › 器は一度だけ現れ、そのあと動かない", async ({ page, api }) => {
@@ -146,8 +167,17 @@ test("写真中心 › シリーズの一覧とページ。2本に入った写�
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 });
 
-test("写真中心 › /gallery は絞り込みを持ったままトップへ", async ({ page, api }) => {
-  await openAsPhotoSite(page, api, "/gallery?medium=film");
-  await expect(page).toHaveURL(/\/\?medium=film$/);
+test("写真中心 › Gallery はすべての写真。絞り込みは URL に残る", async ({ page, api }) => {
+  const all = ((await (await api.get("/api/photos")).json()) as { photos: unknown[] }).photos.length;
+  await openAsPhotoSite(page, api, "/gallery");
+  await expect(page.locator("h1")).toHaveText("Gallery");
+  await expect(page.locator(".ps-tile").first()).toBeInViewport();
+  await expect(page.locator(".ps-tile")).toHaveCount(Math.min(all, 40));
+  // 「トップに出す」写真も、ここではほかの写真と一緒に並ぶ。
+  await expect(page.locator('[data-photo-tile="7001"]')).toHaveCount(1);
+  await page.locator(".ps-filters a", { hasText: "Film" }).click();
+  await expect(page).toHaveURL(/\/gallery\?medium=film$/);
   await expect(page.locator(".ps-filters a", { hasText: "Film" })).toHaveAttribute("aria-current", "true");
+  expect(await page.locator(".ps-tile").count()).toBeLessThan(Math.min(all, 40));
+  expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
 });

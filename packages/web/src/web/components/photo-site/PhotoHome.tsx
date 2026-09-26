@@ -1,39 +1,37 @@
-import { useMemo } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../../lib/api";
 import { ContentStatus } from "../ContentStatus";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
 import { PhotoStream } from "./PhotoStream";
-import { PhotoCover } from "./PhotoCover";
-import { InquiryCta } from "../InquiryCta";
+import { TopEntrances, TopName } from "./PhotoTop";
 
 type Settings = Record<string, string | null | undefined> | undefined;
-type Medium = "all" | "film" | "digital";
+
+/** 「トップに出す」写真がこの枚数より少ないうちは、サイトの並び順で補う。 */
+export const TOP_SELECTION_MIN = 12;
+/** 補うときの合計の枚数。 */
+export const TOP_FILL = 24;
 
 /**
- * 表紙に出す写真: 「トップの最初に並べる」で選んだ写真（公開中のもの、選んだ順）。
- * 選んでいなければ、サイトの並びの先頭の1枚。
+ * トップに並べる写真: 管理画面で「トップに出す」にした写真（公開中のもの、選んだ順）。
+ * 選んだ写真が少ないうちは、サイトの並び順の写真で補う（トップが寂しくならないように）。
+ * 先頭から表紙の段に入り、残りがその下に続く。
  */
-export function coverPhotosFor(all: GalleryPhoto[], lead: GalleryPhoto[]): GalleryPhoto[] {
+export function topPhotosFor(all: GalleryPhoto[], picked: Pick<GalleryPhoto, "id">[]): GalleryPhoto[] {
   const byId = new Map(all.map((p) => [p.id, p]));
-  const picked = lead.map((p) => byId.get(p.id)).filter((p): p is GalleryPhoto => Boolean(p));
-  return picked.length > 0 ? picked : all.slice(0, 1);
+  const chosen = picked
+    .map((p) => byId.get(p.id))
+    .filter((p): p is GalleryPhoto => Boolean(p));
+  if (chosen.length >= TOP_SELECTION_MIN) return chosen;
+  const used = new Set(chosen.map((p) => p.id));
+  return [...chosen, ...all.filter((p) => !used.has(p.id))].slice(0, TOP_FILL);
 }
 
-/**
- * 表紙の下の一覧。絞り込んでいないときは、表紙の写真を外す（すぐ下に同じ写真が
- * 続かないように）。絞り込んだときは、当たる写真を全部出す。
- */
-export function streamPhotosFor(
-  all: GalleryPhoto[],
-  cover: GalleryPhoto[],
-  filtering: boolean,
-): GalleryPhoto[] {
-  if (filtering) return all;
-  const onCover = new Set(cover.map((p) => p.id));
-  return all.filter((p) => !onCover.has(p.id));
+/** トップの形（管理画面「トップの形」）。cover-selection: 表紙と選んだ写真 ／ cover-only: 表紙だけ。 */
+export function topLayoutFrom(value: string | null | undefined): "cover-selection" | "cover-only" {
+  return value === "cover-only" ? "cover-only" : "cover-selection";
 }
 
 /** トップの言葉（プロフィールの文章）。段落ごとに。空なら出さない。 */
@@ -49,16 +47,15 @@ function HomeStatement({ text }: { text: string }) {
   );
 }
 
-function mediumOf(p: GalleryPhoto): Medium {
-  return p.filmType === "フィルム" ? "film" : p.filmType === "デジタル" ? "digital" : "all";
-}
+/** 表紙の段の下に取っておく余白（px）。段の下端が画面の下にぴったり付かないように。 */
+const COVER_BREATH = 28;
 
 /**
- * 写真中心のサイトのトップ（siteDesign = "book"、2026-09-26 作り直し）。
+ * 写真中心のサイトのトップ（2026-09-26 作り直し）。
  *
- * 開いた瞬間から写真が並ぶ。シリーズに入っている写真も入っていない写真も、
- * 全部が同じ場所に並ぶ（オーナー: 本来はシリーズに入っていない写真のほうが多い）。
- * 絞り込みは上の1行だけ（分類・フィルム／デジタル、URL に残す）。
+ * 名前の帯 → 表紙の段（選んだ写真を横いっぱいに、画面の残りの高さで）→ 選んだ写真の
+ * 続き → すべての写真（Gallery）と Series への入口。全部の写真は Gallery のページ。
+ * 「表紙だけ」にすると、表紙の段で終わる。
  */
 export function PhotoHome({
   settings,
@@ -67,148 +64,76 @@ export function PhotoHome({
   settings: Settings;
   leadPhotos: GalleryPhoto[];
 }) {
+  const name = settings?.siteName || settings?.siteNameEn || settings?.profileName || "Photographs";
   const photographerName = settings?.siteName || settings?.siteNameEn || settings?.profileName || "";
-  const [location, setLocation] = useLocation();
-  const search = useSearch();
-  const params = useMemo(() => new URLSearchParams(search), [search]);
-  const category = params.get("c") || "all";
-  const medium: Medium = (() => {
-    const v = params.get("medium");
-    return v === "film" || v === "digital" ? v : "all";
-  })();
+  const layout = topLayoutFrom(settings?.photoTopLayout);
 
   const photosQ = useQuery({
     queryKey: ["photos"],
     queryFn: async () => jsonOrThrow(await api.photos.$get()),
   });
-  const { data: catsData } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => jsonOrThrow(await api.categories.$get()),
-    staleTime: 5 * 60_000,
-  });
   const seriesLinkById = useSeriesLinks();
-
-  // 写真の一覧は、サイトの並び順そのまま。「トップの最初に並べる」写真は表紙に出す。
+  // Series の入口は、公開しているシリーズか作品があるときだけ。
+  const seriesQ = useQuery({
+    queryKey: ["series"],
+    queryFn: async () => jsonOrThrow(await api.series.$get()),
+  });
+  const worksQ = useQuery({
+    queryKey: ["works"],
+    queryFn: async () => jsonOrThrow(await api.series.$get({ query: { kind: "work" } })),
+  });
+  const showSeries =
+    (seriesQ.data?.series?.length ?? 0) > 0 || (worksQ.data?.series?.length ?? 0) > 0;
   const all = useMemo(() => (photosQ.data?.photos ?? []) as GalleryPhoto[], [photosQ.data]);
-  const coverPhotos = useMemo(() => coverPhotosFor(all, leadPhotos), [all, leadPhotos]);
-  const usedCategories = useMemo(() => {
-    const used = new Set(all.map((p) => p.category).filter(Boolean));
-    return (catsData?.categories ?? []).filter((c) => used.has(c.slug));
-  }, [all, catsData]);
-  const hasMedium = all.some((p) => mediumOf(p) !== "all");
-  const shown = useMemo(
-    () =>
-      streamPhotosFor(all, coverPhotos, category !== "all" || medium !== "all").filter(
-        (p) =>
-          (category === "all" || p.category === category) &&
-          (medium === "all" || mediumOf(p) === medium),
-      ),
-    [all, coverPhotos, category, medium],
-  );
+  const photos = useMemo(() => topPhotosFor(all, leadPhotos), [all, leadPhotos]);
 
-  const hrefWith = (next: { c?: string; medium?: Medium }) => {
-    const q = new URLSearchParams(params);
-    const put = (key: string, value: string | undefined) => {
-      if (value === undefined) return;
-      if (value === "all") q.delete(key);
-      else q.set(key, value);
+  // 表紙の段の高さ = 画面の高さ − 名前の帯の下端まで − 息をつく余白。
+  // 帯の下端は、描いた後に測る（文字の大きさは管理画面の設定で変わる）。
+  const nameRef = useRef<HTMLElement>(null);
+  const [reserve, setReserve] = useState(220);
+  useLayoutEffect(() => {
+    const el = nameRef.current;
+    if (!el) return;
+    const measure = () => {
+      const bottom = el.getBoundingClientRect().bottom + window.scrollY;
+      setReserve(Math.round(bottom + COVER_BREATH));
     };
-    put("c", next.c);
-    put("medium", next.medium);
-    const qs = q.toString();
-    return qs ? `${location}?${qs}` : location;
-  };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-  const filtering = category !== "all" || medium !== "all";
-  // 管理画面「トップの言葉」: 表紙の前（before-works）か、写真の一覧の後（after-works）。
   const statementAt = settings?.homeStatement ?? "off";
   const statement = settings?.profileStatement ?? "";
 
   return (
-    <div className="ps-page ps-home">
-      {coverPhotos.length > 0 ? (
-        <PhotoCover
-          photos={coverPhotos}
-          name={settings?.siteName || settings?.siteNameEn || settings?.profileName || "Photographs"}
-          nameEn={settings?.siteNameEn}
-          subtitle={settings?.heroSubtitle}
-          total={all.length}
-          photographerName={photographerName}
-          streamId="photographs"
-          seriesLinkById={seriesLinkById}
-          nameTracking={settings?.heroNameTracking}
-        />
-      ) : (
-        <h1 className="sr-only">{photographerName}</h1>
-      )}
+    <div className="ps-page ps-home" data-layout={layout}>
+      <TopName ref={nameRef} name={name} nameEn={settings?.siteNameEn} subtitle={settings?.heroSubtitle} />
       {statementAt === "before-works" && <HomeStatement text={statement} />}
-      <div id="photographs" className="ps-home__stream-start" />
-      {(usedCategories.length > 0 || hasMedium) && (
-        <nav className="ps-filters" aria-label="写真の絞り込み">
-          <ul className="ps-filters__group">
-            <li>
-              <Link to={hrefWith({ c: "all" })} aria-current={category === "all" ? "true" : undefined}>
-                {settings?.filterAllLabel || "All"}
-              </Link>
-            </li>
-            {usedCategories.map((c) => (
-              <li key={c.slug}>
-                <Link to={hrefWith({ c: c.slug })} aria-current={category === c.slug ? "true" : undefined}>
-                  {c.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {hasMedium && (
-            <ul className="ps-filters__group">
-              <li>
-                <Link to={hrefWith({ medium: "film" })} aria-current={medium === "film" ? "true" : undefined}>
-                  Film
-                </Link>
-              </li>
-              <li>
-                <Link to={hrefWith({ medium: "digital" })} aria-current={medium === "digital" ? "true" : undefined}>
-                  Digital
-                </Link>
-              </li>
-            </ul>
-          )}
-          <p className="ps-filters__count font-en" aria-live="polite">
-            {photosQ.data ? `${shown.length}` : ""}
-          </p>
-        </nav>
-      )}
-
       {photosQ.isLoading && <ContentStatus state="loading" />}
       {photosQ.isError && (
         <ContentStatus state="error" error={photosQ.error} onRetry={() => void photosQ.refetch()} />
       )}
-      {photosQ.data && shown.length === 0 && (
-        <p className="ps-empty">
-          {filtering ? (
-            <>
-              写真が見つかりませんでした。
-              <button type="button" onClick={() => setLocation(hrefWith({ c: "all", medium: "all" }))}>
-                すべての写真を見る
-              </button>
-            </>
-          ) : (
-            "まだ写真がありません。"
-          )}
-        </p>
-      )}
-      {shown.length > 0 && (
+      {photosQ.data && photos.length === 0 && <p className="ps-empty">まだ写真がありません。</p>}
+      {photos.length > 0 && (
         <PhotoStream
-          key={`${category}/${medium}`}
-          photos={shown}
+          photos={photos}
           photographerName={photographerName}
           seriesLinkById={seriesLinkById}
-          label="写真"
+          label="トップの写真"
+          lead={{ reserve }}
+          maxRows={layout === "cover-only" ? 1 : undefined}
           after={
-            <>
-              {statementAt === "after-works" && <HomeStatement text={statement} />}
-              <InquiryCta />
-            </>
+            layout === "cover-only" ? (
+              statementAt === "after-works" ? <HomeStatement text={statement} /> : undefined
+            ) : (
+              <>
+                {statementAt === "after-works" && <HomeStatement text={statement} />}
+                <TopEntrances settings={settings} showSeries={showSeries} />
+              </>
+            )
           }
         />
       )}

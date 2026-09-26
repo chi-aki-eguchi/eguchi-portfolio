@@ -30,7 +30,7 @@ const FILTER_LABEL: Record<Exclude<Filter["kind"], "series">, string> = {
   all: "すべての写真",
   loose: "シリーズに入っていない写真",
   hidden: "非公開の写真",
-  hero: "トップの最初に並べる写真",
+  hero: "トップに出す写真",
   recent: "今回加えた写真",
   film: "フィルム",
   digital: "デジタル",
@@ -291,7 +291,7 @@ export function LibraryView({
           {side({ kind: "all" }, "すべての写真", counts.all)}
           {side({ kind: "loose" }, "シリーズに入っていない", counts.loose)}
           {side({ kind: "hidden" }, "非公開", counts.hidden)}
-          {side({ kind: "hero" }, "トップの最初", counts.hero)}
+          {side({ kind: "hero" }, "トップに出す", counts.hero)}
           {counts.recent > 0 && side({ kind: "recent" }, "今回加えた", counts.recent)}
         </ul>
         <ul className="st-side__list st-side__list--quiet">
@@ -326,7 +326,6 @@ export function LibraryView({
             </li>
           ))}
         </ul>
-        <p className="st-side__hint">写真をここへドラッグすると、そのシリーズに入ります。1枚を何本に入れても構いません。</p>
         <div className="st-side__foot">
           <button type="button" className="st-ax-btn st-link" onClick={() => setTrashOpen(true)}>
             ゴミ箱

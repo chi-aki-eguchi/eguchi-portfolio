@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MobileGalleryFilters } from "../components/MobileGalleryFilters";
 import { PageTitle } from "../components/PageTitle";
-import { Link, Redirect, useLocation, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 import { ContentStatus } from "../components/ContentStatus";
@@ -13,6 +13,7 @@ import { SeriesColophon } from "../components/SeriesColophon";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 import { galleryExcludesSeries, siteDesignFrom } from "../lib/book";
+import { PhotoAllPage } from "../components/photo-site/PhotoAll";
 
 export default function GalleryPage() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
@@ -287,10 +288,9 @@ export default function GalleryPage() {
     }
   }, [activeFilter, fadeRef]);
 
-  // 写真中心のサイトでは、トップがすべての写真の一覧そのもの。/gallery は
-  // 絞り込みを持ったままトップへ送る（共有された URL を行き止まりにしない）。
+  // 写真中心のサイトでは、すべての写真をここに（トップは表紙と選んだ写真）。
   const book = siteDesignFrom(settings?.siteDesign) === "book";
-  if (book) return <Redirect to={search ? `/?${search}` : "/"} replace />;
+  if (book) return <PhotoAllPage settings={settings} />;
 
   return (
     <section

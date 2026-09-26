@@ -183,7 +183,6 @@ export function SeriesView({
             </button>
           </div>
         )}
-        <p className="st-side__hint">ドラッグでシリーズの並びを変えられます。</p>
       </nav>
 
       {active ? (
@@ -412,13 +411,18 @@ function SeriesEditor({
             </label>
           </div>
           <div className="st-series-head__save">
-            <button type="button" className="st-ax-btn st-button st-button--primary" disabled={!dirty || saving} onClick={() => void save()}>
-              {saving ? "保存しています…" : dirty ? "言葉を保存する" : "保存済み"}
-            </button>
-            {dirty && (
-              <button type="button" className="st-ax-btn st-link" onClick={() => setDraft(initial)}>
-                元に戻す
-              </button>
+            {/* 変えたときだけ保存のボタンを出す（押せない「保存済み」の灰色のボタンは置かない）。 */}
+            {(dirty || saving) && (
+              <>
+                <button type="button" className="st-ax-btn st-button st-button--primary" disabled={saving} onClick={() => void save()}>
+                  {saving ? "保存しています…" : "保存する"}
+                </button>
+                {!saving && (
+                  <button type="button" className="st-ax-btn st-link" onClick={() => setDraft(initial)}>
+                    元に戻す
+                  </button>
+                )}
+              </>
             )}
             <span className="st-series-head__spacer" />
             <fieldset className="st-seg st-seg--small" aria-label="棚">

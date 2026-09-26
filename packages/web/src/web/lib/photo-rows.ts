@@ -23,6 +23,17 @@ export type RowPlanOptions = {
   maxPerRow: number;
 };
 
+/**
+ * 表紙の段（トップの1段目）。狙いの高さ（画面の残り）に近くなる枚数を先頭から選ぶ。
+ * 1枚目が縦の写真でも、後ろの写真を足して横幅を埋める（左右に空きを作らない）。
+ */
+export type LeadRowOptions = {
+  /** 狙いの高さ（px）。これを超えない範囲で、いちばん近い枚数にする。 */
+  height: number;
+  /** 1段に並べる枚数の上限 */
+  maxCount: number;
+};
+
 export type PlannedItem = { index: number; x: number; width: number };
 export type PlannedRow = { top: number; height: number; items: PlannedItem[]; full: boolean };
 export type RowPlan = { rows: PlannedRow[]; height: number };
@@ -129,33 +140,79 @@ function balanceTail(
   return groups;
 }
 
-export function planRows(ratios: readonly number[], opts: RowPlanOptions): RowPlan {
+/** 表紙の段の枚数: 狙いの高さを超えない範囲で最も近いもの。どれも超えるなら、最も低いもの。 */
+export function leadCount(ratios: readonly number[], width: number, gap: number, lead: LeadRowOptions): number {
+  const limit = Math.min(lead.maxCount, ratios.length);
+  let best = 0;
+  let bestH = 0;
+  let lowest = 1;
+  let lowestH = Infinity;
+  for (let k = 1; k <= limit; k++) {
+    const h = fullHeight(ratios.slice(0, k), width, gap);
+    if (h < lowestH) {
+      lowest = k;
+      lowestH = h;
+    }
+    if (h <= lead.height && h > bestH) {
+      best = k;
+      bestH = h;
+    }
+  }
+  return best || lowest;
+}
+
+/** 1段を横に並べる。横幅いっぱいにすると上限より高い段だけ、上限の高さで真ん中に置く。 */
+function layoutRow(
+  ratios: readonly number[],
+  start: number,
+  end: number,
+  top: number,
+  opts: { width: number; gap: number; maxHeight: number },
+): PlannedRow {
+  const { width, gap, maxHeight } = opts;
+  const slice = ratios.slice(start, end);
+  let height = fullHeight(slice, width, gap);
+  // それでも画面より高くなる段（一覧に写真が1〜2枚しか無いときなど）だけは、
+  // 高さで止めて真ん中に置く（左右の空きをそろえ、片側だけ空けない）。
+  let full = true;
+  if (height > maxHeight) {
+    height = maxHeight;
+    full = false;
+  }
+  const items: PlannedItem[] = [];
+  const rowWidth = slice.reduce((a, r) => a + r * height, 0) + (slice.length - 1) * gap;
+  let x = full ? 0 : Math.max(0, (width - rowWidth) / 2);
+  slice.forEach((r, j) => {
+    const w = full && j === slice.length - 1 ? width - x : r * height;
+    items.push({ index: start + j, x, width: w });
+    x += w + gap;
+  });
+  return { top, height, items, full };
+}
+
+export function planRows(
+  ratios: readonly number[],
+  opts: RowPlanOptions & { lead?: LeadRowOptions },
+): RowPlan {
   const { width, gap, targets, maxHeight } = opts;
   const rows: PlannedRow[] = [];
   if (!(width > 0) || targets.length === 0) return { rows, height: 0 };
-  const groups = balanceTail(ratios, groupRows(ratios, opts), opts);
   let top = 0;
-  groups.forEach((g) => {
-    const slice = ratios.slice(g.start, g.end);
-    let height = fullHeight(slice, width, gap);
-    // それでも画面より高くなる段（一覧に写真が1〜2枚しか無いときなど）だけは、
-    // 高さで止めて真ん中に置く（左右の空きをそろえ、片側だけ空けない）。
-    let full = true;
-    if (height > maxHeight) {
-      height = maxHeight;
-      full = false;
-    }
-    const items: PlannedItem[] = [];
-    const rowWidth = slice.reduce((a, r) => a + r * height, 0) + (slice.length - 1) * gap;
-    let x = full ? 0 : Math.max(0, (width - rowWidth) / 2);
-    slice.forEach((r, j) => {
-      const w = full && j === slice.length - 1 ? width - x : r * height;
-      items.push({ index: g.start + j, x, width: w });
-      x += w + gap;
-    });
-    rows.push({ top, height, items, full });
-    top += height + gap;
-  });
+  let from = 0;
+  if (opts.lead && ratios.length > 0) {
+    // 表紙の段は画面の残りに合わせる。上限もその高さ（画面からはみ出さない）。
+    from = leadCount(ratios, width, gap, opts.lead);
+    const row = layoutRow(ratios, 0, from, 0, { width, gap, maxHeight: opts.lead.height });
+    rows.push(row);
+    top = row.height + gap;
+  }
+  const rest = ratios.slice(from);
+  const groups = balanceTail(rest, groupRows(rest, opts), opts);
+  for (const g of groups) {
+    const row = layoutRow(ratios, from + g.start, from + g.end, top, { width, gap, maxHeight });
+    rows.push(row);
+    top += row.height + gap;
+  }
   return { rows, height: rows.length ? top - gap : 0 };
 }
 

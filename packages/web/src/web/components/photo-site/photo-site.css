@@ -241,195 +241,172 @@ html:has(.ps-site) {
   padding-top: 0;
 }
 
-/* ── トップの表紙 ─────────────────────────────────
-   枠は写真に合わせて変えない。左に名前の欄（幅は固定）、右に写真の舞台。
-   写真は舞台の中に元の比のまま、右下にそろえて収まる最大の大きさで置く。
-   縦でも横でもパノラマでも、名前と写真の下端がそろう同じ構図になる。 */
-.ps-cover {
-  --ps-cover-h: calc(100svh - var(--ps-header-h) - var(--sai-top, 0px));
-  --ps-cover-pad: clamp(20px, 4.5vh, 48px);
-  /* 文字を大きくする設定のときは、表紙のほうが伸びる（文字を上へはみ出させない）。 */
-  min-height: max(460px, var(--ps-cover-h));
-  display: grid;
-  grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
-  align-items: end;
-  gap: clamp(24px, 3.5vw, 64px);
-  padding-block: 6px var(--ps-cover-pad);
-}
-.ps-cover__words {
-  container-type: inline-size;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(10px, 1.6vh, 18px);
-  animation: ps-cover-rise 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
-}
-/* 名前は欄の幅に収まる大きさ（字数から決める）。長い名前は折り返す。 */
-.ps-cover__name {
-  margin: 0;
-  font-family: var(--font-ja);
-  font-weight: 500;
-  font-size: clamp(2.4rem, calc(100cqi / (var(--chars, 3) * 1.2)), 8rem);
-  line-height: 1.08;
-  letter-spacing: 0.14em;
-  color: var(--foreground);
-  text-wrap: balance;
-  overflow-wrap: anywhere;
-}
-.ps-cover__en {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: 13px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--ps-quiet);
-}
-.ps-cover__caption {
-  margin: clamp(12px, 3vh, 32px) 0 0;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  color: var(--ps-quiet);
-}
-.ps-cover__series {
-  color: var(--ps-ink);
-  text-decoration: underline;
-  text-decoration-color: var(--ps-hair);
-  text-underline-offset: 5px;
-}
-.ps-cover__series:hover {
-  text-decoration-color: currentColor;
-}
-.ps-cover__foot {
+/* ── トップ：名前の帯と、その下の表紙の段 ──────────────────
+   前は「左に名前・右に写真」の2列で、縦の写真だと左上の半分が空いていた。
+   今は名前を1行の帯にし、表紙の段（PhotoStream の lead）が画面の残りを写真で埋める。 */
+.ps-top-name {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 28px;
-  margin-top: clamp(4px, 1.5vh, 16px);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 2rem;
+  padding: clamp(18px, 4vh, 44px) 0 clamp(14px, 2.6vh, 26px);
 }
-.ps-cover__more {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  color: var(--ps-ink);
-  cursor: pointer;
+.ps-top-name__main {
+  margin: 0;
+  line-height: 1.1;
+  min-width: 0;
 }
-.ps-cover__num {
-  color: var(--ps-faint);
-  font-variant-numeric: tabular-nums;
+.ps-top-name__sub {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.4rem;
+  min-width: 0;
 }
-.ps-cover__arrow {
-  display: inline-block;
-  transition: transform 0.3s ease;
-}
-.ps-cover__more:hover .ps-cover__arrow {
-  transform: translateY(3px);
-}
-.ps-cover__nav {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 13px;
-  letter-spacing: 0.08em;
+.ps-top-name__role {
   color: var(--ps-quiet);
-  font-variant-numeric: tabular-nums;
 }
-.ps-cover__nav button {
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font-size: 15px;
-  cursor: pointer;
+/* 表紙の段の写真は、名前のあとに静かに現れる。 */
+.ps-home .ps-stream {
+  animation: ps-top-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
 }
-/* 写真の舞台。舞台そのものは色を持たない（写真の外は紙のまま）。 */
-.ps-cover__photo {
-  display: block;
-  width: 100%;
-  height: calc(var(--ps-cover-h) - var(--ps-cover-pad) - 6px);
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-.ps-cover__photo picture {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.ps-cover__img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: 100% 100%;
-  opacity: 0;
-  transition: opacity 1.1s ease;
-}
-.ps-cover__photo[data-loaded] .ps-cover__img {
-  opacity: 1;
-}
-.ps-cover__photo:focus-visible {
-  outline: 1px solid var(--foreground);
-  outline-offset: 4px;
-}
-@keyframes ps-cover-rise {
+@keyframes ps-top-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ps-cover__words {
+  .ps-home .ps-stream {
     animation: none;
   }
-  .ps-cover__img {
-    transition: none;
-  }
 }
-/* 表紙が見えている間は、上の帯の名前を隠す（二重に並ばないように）。濃さだけ。 */
+/* 名前の帯が見えている間は、上の帯の名前を隠す（二重に並ばないように）。濃さだけ。 */
 html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   opacity: 0;
   pointer-events: none;
 }
-/* スマホ: 写真を上（写真の形のまま、画面の高さの 62% まで）、名前を下に。 */
-@media (max-width: 767px) {
-  .ps-cover {
-    height: auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 22px;
-    padding-block: 4px 28px;
-  }
-  .ps-cover__photo {
-    order: -1;
-    height: auto;
-    aspect-ratio: var(--r);
-    width: min(100%, calc(62svh * var(--r)));
-  }
-  .ps-cover__img {
-    object-fit: cover;
-  }
-  .ps-cover__name {
-    font-size: clamp(2.4rem, calc(100cqi / (var(--chars, 3) * 1.25)), 3.8rem);
+
+/* トップの終わりの入口（すべての写真・Series）。大きな言葉で、矢印は使わない。 */
+.ps-entrances {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0;
+  margin-top: clamp(3rem, 9vh, 6rem);
+  border-top: 1px solid var(--ps-hair);
+}
+.ps-entrance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: clamp(1.4rem, 4vh, 2.4rem) 0;
+  color: var(--foreground);
+  min-width: 0;
+}
+.ps-entrance + .ps-entrance {
+  border-top: 1px solid var(--ps-hair);
+}
+@media (min-width: 640px) {
+  .ps-entrance + .ps-entrance {
+    border-top: 0;
+    border-left: 1px solid var(--ps-hair);
+    padding-left: clamp(1.2rem, 3vw, 2.4rem);
   }
 }
-.ps-home__stream-start {
-  scroll-margin-top: calc(var(--ps-header-h) + 10px);
+.ps-entrance__en {
+  font-size: calc(clamp(1.9rem, 3.4vw, 2.8rem) * var(--global-font-scale, 1));
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+.ps-entrance__note {
+  margin-top: 0.4rem;
+  font-size: calc(12.5px * var(--global-font-scale, 1));
+  line-height: 1.8;
+  color: var(--ps-faint);
+}
+.ps-entrances--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ps-service__line {
+  display: inline-block;
+}
+.ps-entrance__ja {
+  font-size: calc(13px * var(--global-font-scale, 1));
+  color: var(--ps-quiet);
+}
+.ps-entrance__en {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color 0.3s ease;
+}
+.ps-entrance:hover .ps-entrance__en,
+.ps-entrance:focus-visible .ps-entrance__en {
+  text-decoration-color: currentColor;
+}
+
+/* ── フッターの制作の入口（オーナーのサイトだけ）──────────────
+   広告の帯にしない: 太字・矢印・色の地を使わず、言葉の大きさと余白で誘う。 */
+.ps-service {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: clamp(2rem, 6vh, 3.5rem) 0 clamp(1.5rem, 4vh, 2.5rem);
+  border-top: 1px solid var(--ps-hair);
+}
+.ps-service__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-areas: "title lead" "title go";
+  align-items: end;
+  gap: 0.6rem clamp(1.5rem, 5vw, 4rem);
+  color: var(--foreground);
+}
+.ps-service__title {
+  grid-area: title;
+  font-size: calc(clamp(1.35rem, 2.4vw, 2rem) * var(--global-font-scale, 1));
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+.ps-service__lead {
+  grid-area: lead;
+  font-size: calc(13.5px * var(--global-font-scale, 1));
+  line-height: 1.9;
+  color: var(--ps-quiet);
+}
+.ps-service__go {
+  grid-area: go;
+  justify-self: start;
+  font-size: calc(13.5px * var(--global-font-scale, 1));
+  padding-bottom: 2px;
+  background: linear-gradient(currentColor, currentColor) left bottom / 100% 1px no-repeat;
+  transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ps-service__main:hover .ps-service__go,
+.ps-service__main:focus-visible .ps-service__go {
+  background-size: 0% 1px;
+  background-position: right bottom;
+}
+.ps-service__sub {
+  align-self: flex-end;
+  font-size: calc(12px * var(--global-font-scale, 1));
+  color: var(--ps-faint);
+}
+.ps-service__sub:hover {
+  color: var(--foreground);
+}
+@media (max-width: 639px) {
+  .ps-service__main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "title" "lead" "go";
+  }
+  .ps-service__sub {
+    align-self: flex-start;
+  }
 }
 
 /* 絞り込みの1行。写真の前に、ごく小さく。 */
@@ -451,7 +428,8 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   padding: 0;
 }
 .ps-filters__group a {
-  font-family: var(--font-en);
+  font-family: var(--font-en-mixed, var(--font-en));
+  text-transform: capitalize;
   display: inline-flex;
   align-items: center;
   min-height: 36px;
@@ -468,21 +446,7 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   text-underline-offset: 6px;
   text-decoration-thickness: 1px;
 }
-.ps-filters__group + .ps-filters__group {
-  padding-left: 1.5rem;
-  border-left: 1px solid var(--ps-hair);
-}
-.ps-filters__count {
-  margin: 0 0 0 auto;
-  color: var(--ps-faint);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
-}
 @media (max-width: 639px) {
-  /* 横に流れる絞り込みの行では、端で枚数が切れて見えるので出さない。 */
-  .ps-filters__count {
-    display: none;
-  }
   .ps-filters {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -589,6 +553,24 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   color: var(--foreground);
 }
 
+/* Gallery: 見出しと絞り込みを1行に。 */
+.ps-page-head--with-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+}
+.ps-page-head--with-filters .ps-filters {
+  margin-bottom: 0;
+  min-width: 0;
+}
+@media (max-width: 639px) {
+  .ps-page-head--with-filters .ps-filters {
+    width: 100%;
+  }
+}
+
 /* ── シリーズの一覧：題名で読む目次 ────────────────────── */
 .ps-series-group + .ps-series-group {
   margin-top: 3.5rem;
@@ -609,32 +591,30 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-series-entry {
   border-bottom: 1px solid var(--ps-hair);
 }
+/* 題名と期間の下に、写真を横幅いっぱいの1段で（元の比のまま）。番号・枚数は出さない。 */
 .ps-series-entry__link {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
-  grid-template-areas:
-    "num text facts"
-    ". strip strip";
-  gap: 0.9rem 1rem;
-  padding: 1.4rem 0 1.6rem;
-  color: inherit;
-}
-.ps-series-entry__num {
-  grid-area: num;
-  font-size: 13px;
-  color: var(--ps-faint);
-  font-variant-numeric: tabular-nums;
-  padding-top: 0.35em;
-}
-.ps-series-entry__text {
-  grid-area: text;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: clamp(0.8rem, 2vh, 1.2rem);
+  padding: clamp(1.6rem, 4vh, 2.6rem) 0 clamp(1.8rem, 4.5vh, 2.8rem);
+  color: inherit;
+}
+.ps-series-entry__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.3rem 2rem;
+}
+.ps-series-entry__text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 1.2rem;
   min-width: 0;
 }
 .ps-series-entry__title {
-  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  font-size: clamp(1.3rem, 2.2vw, 1.8rem);
   letter-spacing: 0.04em;
   color: var(--foreground);
 }
@@ -643,27 +623,21 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   color: var(--ps-quiet);
 }
 .ps-series-entry__facts {
-  grid-area: facts;
   font-size: 13px;
   color: var(--ps-quiet);
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  padding-top: 0.45em;
 }
-/* 入りきらない写真は次の行へ送って隠す（端で写真を切らない）。 */
 .ps-series-entry__strip {
-  grid-area: strip;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  height: clamp(84px, 11vw, 160px);
-  overflow: hidden;
+  width: 100%;
 }
 .ps-series-entry__frame {
   display: block;
-  height: 100%;
-  flex: none;
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: 0;
   background: var(--ps-tile);
+  overflow: hidden;
 }
 .ps-series-entry__frame picture,
 .ps-series-entry__frame img {
@@ -676,22 +650,6 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   text-decoration: underline;
   text-underline-offset: 6px;
   text-decoration-thickness: 1px;
-}
-@media (max-width: 639px) {
-  .ps-series-entry__link {
-    grid-template-columns: 2rem minmax(0, 1fr);
-    grid-template-areas:
-      "num text"
-      ". facts"
-      "strip strip";
-    gap: 0.4rem 0.75rem;
-  }
-  .ps-series-entry__facts {
-    padding-top: 0;
-  }
-  .ps-series-entry__strip {
-    margin-top: 0.6rem;
-  }
 }
 
 /* ── シリーズ1本のページ ─────────────────────────────── */
@@ -725,6 +683,9 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 .ps-series-head__facts {
   margin: 1rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.4rem;
   font-size: 13px;
   color: var(--ps-quiet);
   letter-spacing: 0.04em;
@@ -752,12 +713,12 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   color: var(--foreground);
   font-size: clamp(1.1rem, 2vw, 1.5rem);
 }
-.ps-series-foot__next .font-en {
+.ps-series-foot__label {
   font-size: 12px;
   letter-spacing: 0.08em;
   color: var(--ps-quiet);
 }
-.ps-series-foot__next:hover span:last-child {
+.ps-series-foot__next:hover .ps-series-foot__title {
   text-decoration: underline;
   text-underline-offset: 6px;
 }
@@ -820,6 +781,10 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
    値は provider.tsx が設定から作る変数。設定が空なら、上で決めた見た目に戻る。
    px の大きさは「全体の文字の倍率」（--global-font-scale）を掛けて使う。
    表紙の名前の大きさだけは、欄の幅に収まるよう自動（「名前の大きさ」は使わない）。 */
+/* 英字の書体に日本語の字が無いときは、日本語の書体で（provider.tsx の --font-en-mixed）。 */
+.ps-site .font-en {
+  font-family: var(--font-en-mixed, var(--font-en));
+}
 .ps-site {
   --ps-scale: var(--global-font-scale, 1);
   font-weight: var(--body-weight, 400);
@@ -845,18 +810,16 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-menu__link {
   font-size: calc(28px * var(--ps-scale));
 }
-.ps-cover__en {
-  font-size: var(--hero-name-en-size, calc(13px * var(--ps-scale)));
-  letter-spacing: var(--hero-name-en-tracking, 0.24em);
-  color: var(--hero-name-en-color, var(--ps-quiet));
+.ps-top-name__en {
+  font-size: var(--hero-name-en-size, calc(14px * var(--ps-scale)));
+  letter-spacing: var(--hero-name-en-tracking, 0.08em);
+  color: var(--hero-name-en-color, var(--ps-ink));
 }
-.ps-cover__sub {
-  font-size: var(--hero-sub-size, inherit);
-  color: var(--hero-sub-color, inherit);
+.ps-top-name__role {
+  font-size: var(--hero-sub-size, calc(13px * var(--ps-scale)));
+  color: var(--hero-sub-color, var(--ps-quiet));
+  letter-spacing: 0.04em;
 }
-.ps-cover__caption,
-.ps-cover__more,
-.ps-cover__nav,
 .ps-filters,
 .ps-series-group__label,
 .ps-series-entry__facts,
@@ -865,7 +828,6 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-series-foot__all {
   font-size: var(--section-label-size, calc(13px * var(--ps-scale)));
 }
-.ps-cover__caption,
 .ps-series-group__label,
 .ps-series-entry__facts,
 .ps-series-head__facts {
@@ -891,18 +853,15 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-series-head__statement {
   line-height: var(--body-leading, 2.05);
 }
-.ps-cover__series,
 .ps-empty a,
 .ps-empty button {
   text-decoration-line: var(--link-underline, underline);
 }
-.ps-cover__series:hover,
 .ps-series-foot__next:hover,
 .ps-series-head__up:hover {
   color: var(--link-hover-color, var(--foreground));
 }
-.ps-tile__button:focus-visible,
-.ps-cover__photo:focus-visible {
+.ps-tile__button:focus-visible {
   outline-color: var(--accent-color, var(--foreground));
 }
 .ps-footer__row {
@@ -936,17 +895,12 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-footer[data-layout="left"] .ps-footer__copy {
   margin-left: 0;
 }
-/* 表紙の名前: 太さ・色・字間は管理画面の設定。大きさは字間も含めて欄に収まるよう計算する。 */
-.ps-cover__name {
+/* トップの名前: 大きさ・太さ・色・字間は管理画面の「名前」の設定。 */
+.ps-top-name__main {
+  font-size: var(--hero-name-size, calc(clamp(2.4rem, 4.4vw, 4.2rem) * var(--ps-scale)));
   font-weight: var(--hero-name-weight, 500);
   color: var(--hero-name-color, var(--foreground));
-  letter-spacing: calc(var(--name-tracking, 0.14) * 1em);
-  font-size: clamp(2.2rem, calc(100cqi / (var(--chars, 3) * (1.06 + var(--name-tracking, 0.14)))), 8rem);
-}
-@media (max-width: 767px) {
-  .ps-cover__name {
-    font-size: clamp(2.2rem, calc(100cqi / (var(--chars, 3) * (1.12 + var(--name-tracking, 0.14)))), 3.8rem);
-  }
+  letter-spacing: var(--hero-name-tracking, 0.08em);
 }
 /* トップの言葉（管理画面「トップの言葉」）。 */
 .ps-statement {
@@ -977,7 +931,6 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   overflow-wrap: anywhere;
 }
 .ps-series-head__up,
-.ps-cover__more,
 .ps-series-foot__all,
 .ps-series-foot__next,
 .ps-footer__cta,
@@ -993,21 +946,17 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   min-width: 0;
 }
 .ps-series-entry__facts {
-  white-space: normal;
-  text-align: right;
   min-width: 0;
 }
-.ps-series-entry__link {
-  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(0, max-content);
+
+/* 暗い表示: 管理画面の名前の色は1色（明るい地に合わせて選んだ色）なので、暗い地では
+   読めなくなる（本番の #404040 は黒い地で沈んでいた）。暗い表示だけ文字の色に戻す。 */
+[data-theme="dark"] .ps-top-name__main {
+  color: var(--foreground);
 }
-@media (max-width: 639px) {
-  .ps-series-entry__link {
-    grid-template-columns: 2rem minmax(0, 1fr);
-  }
-  .ps-series-entry__facts {
-    text-align: left;
-  }
+[data-theme="dark"] .ps-top-name__en {
+  color: var(--ps-ink);
 }
-.ps-cover__nav {
-  flex-wrap: wrap;
+[data-theme="dark"] .ps-top-name__role {
+  color: var(--ps-quiet);
 }

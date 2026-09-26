@@ -572,7 +572,12 @@
   color: var(--st-ink);
   text-decoration-color: currentColor;
 }
+/* 消す操作は、ふだんは目立たせない（触れたときだけ赤く）。 */
 .st-link--danger {
+  color: var(--st-faint);
+}
+.st-link--danger:hover,
+.st-link--danger:focus-visible {
   color: var(--st-danger);
 }
 .st-seg {

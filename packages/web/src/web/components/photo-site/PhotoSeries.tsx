@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../../lib/api";
@@ -6,13 +6,13 @@ import { ContentStatus } from "../ContentStatus";
 import { Picture } from "../Picture";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { orientedDimensions } from "../../../shared/image-url";
-import { bookFacts, mediumLine } from "../../lib/book";
+import { bookFacts } from "../../lib/book";
 import { seriesHref } from "../../lib/series-links";
 import { formatPeriodRange } from "../../lib/series-colophon";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
-import { aspectOf } from "../../lib/photo-rows";
+import { aspectOf, leadCount } from "../../lib/photo-rows";
 import { PhotoStream } from "./PhotoStream";
-import { InquiryCta } from "../InquiryCta";
+import { PhotoInquiry } from "./PhotoTop";
 
 type Settings = Record<string, string | null | undefined> | undefined;
 
@@ -41,51 +41,61 @@ function periodOf(s: SeriesRow): string {
   return formatPeriodRange(s.shotAtFirst ?? null, s.shotAtLast ?? null) ?? "";
 }
 
-function SeriesEntry({ series, photos, index }: { series: SeriesRow; photos: GalleryPhoto[]; index: number }) {
-  const strip = stripFor(series, photos);
+/** 一覧の1段の狙いの高さ（px）。幅から決める。 */
+function stripHeightFor(width: number): number {
+  return width < 640 ? width * 0.62 : Math.min(340, Math.max(200, width * 0.2));
+}
+
+function SeriesEntry({ series, photos, width }: { series: SeriesRow; photos: GalleryPhoto[]; width: number }) {
+  const candidates = stripFor(series, photos, 6);
   const period = periodOf(series);
+  const ratios = candidates.map((p) => {
+    const d = orientedDimensions(p.width, p.height, p.rotationDeg);
+    return aspectOf(d.width, d.height);
+  });
+  // 題名の下に、写真を横幅いっぱいの1段で（元の比のまま、切り抜かない）。
+  // 何枚並べるかは、狙いの高さに近くなる枚数（縦の写真が多いシリーズは少なく、横は多く）。
+  const gap = width < 640 ? 4 : 6;
+  const count =
+    width > 0 && ratios.length > 0
+      ? leadCount(ratios, width, gap, { height: stripHeightFor(width), maxCount: width < 640 ? 2 : 5 })
+      : Math.min(candidates.length, width < 640 ? 2 : 4);
+  const strip = candidates.slice(0, count);
   return (
     <li className="ps-series-entry">
       <Link to={seriesHref(series)} className="ps-series-entry__link">
-        <span className="ps-series-entry__num font-en" aria-hidden="true">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <span className="ps-series-entry__text">
-          <span className="ps-series-entry__title">{series.title}</span>
-          {series.subtitle && <span className="ps-series-entry__sub">{series.subtitle}</span>}
-        </span>
-        <span className="ps-series-entry__facts font-en">
-          {[period, series.photoCount ? `${series.photoCount}` : ""].filter(Boolean).join(" · ")}
-          {series.photoCount ? <span className="font-ja">枚</span> : null}
+        <span className="ps-series-entry__head">
+          <span className="ps-series-entry__text">
+            <span className="ps-series-entry__title">{series.title}</span>
+            {series.subtitle && <span className="ps-series-entry__sub">{series.subtitle}</span>}
+          </span>
+          {period && <span className="ps-series-entry__facts font-en">{period}</span>}
         </span>
         {strip.length > 0 && (
-          <span className="ps-series-entry__strip" aria-hidden="true">
-            {strip.map((p) => {
-              const d = orientedDimensions(p.width, p.height, p.rotationDeg);
-              return (
-                <span
-                  key={p.id}
-                  className="ps-series-entry__frame"
-                  style={{ aspectRatio: String(aspectOf(d.width, d.height)) }}
-                >
-                  <Picture
-                    url={p.url}
-                    thumbUrl={p.thumbUrl}
-                    mediumUrl={p.mediumUrl}
-                    width={p.width}
-                    height={p.height}
-                    rotationDeg={p.rotationDeg}
-                    alt=""
-                    preset="lightbox"
-                    sizes="240px"
-                    fallbackW={600}
-                    fallbackQ={78}
-                    loading="lazy"
-                    draggable={false}
-                  />
-                </span>
-              );
-            })}
+          <span className="ps-series-entry__strip" aria-hidden="true" style={{ gap }}>
+            {strip.map((p, i) => (
+              <span
+                key={p.id}
+                className="ps-series-entry__frame"
+                style={{ flexGrow: ratios[i], aspectRatio: String(ratios[i]) }}
+              >
+                <Picture
+                  url={p.url}
+                  thumbUrl={p.thumbUrl}
+                  mediumUrl={p.mediumUrl}
+                  width={p.width}
+                  height={p.height}
+                  rotationDeg={p.rotationDeg}
+                  alt=""
+                  preset="lightbox"
+                  sizes={width < 640 ? "50vw" : "25vw"}
+                  fallbackW={900}
+                  fallbackQ={80}
+                  loading="lazy"
+                  draggable={false}
+                />
+              </span>
+            ))}
           </span>
         )}
       </Link>
@@ -122,9 +132,22 @@ export function PhotoSeriesIndex({ settings }: { settings: Settings }) {
   ].filter((g) => g.rows.length > 0);
   const loading = seriesQ.isLoading || worksQ.isLoading;
   const failed = seriesQ.isError || worksQ.isError;
+  // 札の写真の段は、一覧の幅から組む（どの札も同じ幅）。
+  const listRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const measure = () => setWidth(el.clientWidth);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
-    <div className="ps-page ps-series-index">
+    <div className="ps-page ps-series-index" ref={listRef}>
       <header className="ps-page-head">
         <h1 className="ps-page-head__title font-en">Series</h1>
       </header>
@@ -145,10 +168,13 @@ export function PhotoSeriesIndex({ settings }: { settings: Settings }) {
       )}
       {groups.map((g) => (
         <section key={g.label} className="ps-series-group" aria-label={g.label}>
-          {groups.length > 1 && <h2 className="ps-series-group__label font-en">{g.label}</h2>}
+          {/* 見出しの「Series」と同じ名前の最初の棚には、見出しを重ねない。 */}
+          {groups.length > 1 && g.label !== "Series" && (
+            <h2 className="ps-series-group__label font-en">{g.label}</h2>
+          )}
           <ol className="ps-series-list">
-            {g.rows.map((s, i) => (
-              <SeriesEntry key={s.id} series={s} photos={photos} index={i} />
+            {g.rows.map((s) => (
+              <SeriesEntry key={s.id} series={s} photos={photos} width={width} />
             ))}
           </ol>
         </section>
@@ -179,26 +205,27 @@ export function PhotoSeriesPage({
   const facts = useMemo(() => bookFacts(photos), [photos]);
   const shelfLabel = shelf === "work" ? settings?.navLabelWork || "Work" : "Series";
   const period = facts.digitalPeriod;
+  // 媒体は言葉だけ（枚数は出さない）。「フィルム」「デジタル」「フィルムとデジタル」。
+  const medium =
+    facts.film > 0 && facts.digital > 0
+      ? "フィルムとデジタル"
+      : facts.film > 0
+        ? "フィルム"
+        : facts.digital > 0
+          ? "デジタル"
+          : "";
   return (
     <div className="ps-page ps-series-page">
       <header className="ps-series-head">
         <Link to="/series" className="ps-series-head__up font-en">
-          ← {shelfLabel}
+          {shelfLabel}
         </Link>
         <h1 className="ps-series-head__title">{series.title}</h1>
         {series.subtitle && <p className="ps-series-head__sub">{series.subtitle}</p>}
-        {photos.length > 0 && (
-          <p className="ps-series-head__facts font-en">
-            {facts.count}
-            <span className="font-ja">枚</span>
-            <span aria-hidden="true"> · </span>
-            <span className="font-ja">{mediumLine(facts, "ja")}</span>
-            {period && (
-              <>
-                <span aria-hidden="true"> · </span>
-                {period}
-              </>
-            )}
+        {photos.length > 0 && (period || medium) && (
+          <p className="ps-series-head__facts">
+            {period && <span className="font-en">{period}</span>}
+            {medium && <span>{medium}</span>}
           </p>
         )}
         {series.statement && <p className="ps-series-head__statement">{series.statement}</p>}
@@ -214,19 +241,19 @@ export function PhotoSeriesPage({
           label={series.title}
         />
       )}
-      <InquiryCta />
+      <PhotoInquiry settings={settings} />
       <nav className="ps-series-foot" aria-label="ほかのシリーズ">
         {nextChapter && (
           <Link
             to={seriesHref({ slug: nextChapter.slug, kind: shelf })}
             className="ps-series-foot__next"
           >
-            <span className="font-en">Next</span>
-            <span>{nextChapter.title} →</span>
+            <span className="ps-series-foot__label">次のシリーズ</span>
+            <span className="ps-series-foot__title">{nextChapter.title}</span>
           </Link>
         )}
-        <Link to="/series" className="ps-series-foot__all font-en">
-          All series
+        <Link to="/series" className="ps-series-foot__all">
+          シリーズの一覧
         </Link>
       </nav>
     </div>

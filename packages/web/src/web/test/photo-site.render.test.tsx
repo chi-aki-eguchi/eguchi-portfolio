@@ -2,7 +2,7 @@
  * 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）。
  *
  * ここで縛るのは、見た目ではなく**事実と行き先**:
- *  1. トップは表紙（「トップの最初に並べる」写真と大きな名前）、その下に残りの写真を全部
+ *  1. トップは名前と、選んだ写真（少なければサイトの並びで補う）。すべての写真は Gallery
  *  2. シリーズの一覧の札は、そのシリーズに入っている写真だけ（1枚が複数の
  *     シリーズに入れる）。表紙が先頭
  *  3. シリーズのページは、そのシリーズの並び順どおりに写真を置く
@@ -23,9 +23,10 @@ const { QueryClient, QueryClientProvider } = await import(
 const { Router, Route } = await import("wouter");
 const SeriesListPage = (await import("../pages/series")).default;
 const SeriesDetailPage = (await import("../pages/series-detail")).default;
-const { coverPhotosFor, streamPhotosFor } = await import("../components/photo-site/PhotoHome");
+const { topPhotosFor, topLayoutFrom, TOP_SELECTION_MIN, TOP_FILL } = await import(
+  "../components/photo-site/PhotoHome"
+);
 const { stripFor } = await import("../components/photo-site/PhotoSeries");
-const { coverCaption } = await import("../components/photo-site/PhotoCover");
 
 const doc = dom.window.document;
 
@@ -127,29 +128,27 @@ describe("計算", () => {
   });
 });
 
-describe("トップの表紙と一覧", () => {
+describe("トップに並べる写真", () => {
   const p = (id: number) => ({ id, url: `/p${id}.jpg`, title: "" });
-  const all = [p(1), p(2), p(3), p(4)];
-  test("表紙は選んだ写真（公開中のもの、選んだ順）。選んでいなければ先頭の1枚", () => {
-    expect(coverPhotosFor(all as never, [p(3), p(9), p(1)] as never).map((x) => x.id)).toEqual([3, 1]);
-    expect(coverPhotosFor(all as never, [] as never).map((x) => x.id)).toEqual([1]);
+  const all = Array.from({ length: 40 }, (_, i) => p(i + 1));
+  test("選んだ写真（公開中のもの、選んだ順）が先頭。少ないうちはサイトの並びで補う", () => {
+    const top = topPhotosFor(all as never, [p(3), p(99), p(1)] as never).map((x) => x.id);
+    expect(top.slice(0, 2)).toEqual([3, 1]);
+    expect(top).toHaveLength(TOP_FILL);
+    expect(new Set(top).size).toBe(top.length);
+    expect(top.slice(2, 5)).toEqual([2, 4, 5]);
   });
-  test("絞り込んでいない一覧からは表紙の写真を外し、絞り込んだら全部", () => {
-    const cover = [p(3)];
-    expect(streamPhotosFor(all as never, cover as never, false).map((x) => x.id)).toEqual([1, 2, 4]);
-    expect(streamPhotosFor(all as never, cover as never, true).map((x) => x.id)).toEqual([1, 2, 3, 4]);
+  test("選んだ写真が十分あれば、選んだ写真だけ", () => {
+    const picked = all.slice(0, TOP_SELECTION_MIN + 3).reverse();
+    expect(topPhotosFor(all as never, picked as never).map((x) => x.id)).toEqual(picked.map((x) => x.id));
   });
-});
-
-describe("表紙の添え書き", () => {
-  const links = { 4: { name: "海の記憶", href: "/series/sea" } };
-  test("シリーズ名と媒体。年はデジタルの撮影日だけ（フィルムの日付は複写日なので出さない）", () => {
-    expect(coverCaption({ seriesId: 4, filmType: "デジタル", shotAt: "2025-08-24T10:00:00" }, links)).toEqual({
-      series: links[4],
-      facts: "Digital, 2025",
-    });
-    expect(coverCaption({ seriesId: 4, filmType: "フィルム", shotAt: "2026-03-11T00:00:00" }, links).facts).toBe("Film");
-    expect(coverCaption({ seriesId: null, filmType: null, shotAt: null }, links)).toEqual({ series: undefined, facts: "" });
+  test("写真が少ないサイトでも、ある分だけ", () => {
+    expect(topPhotosFor(all.slice(0, 5) as never, [] as never).map((x) => x.id)).toEqual([1, 2, 3, 4, 5]);
+  });
+  test("トップの形: 既定は「表紙と選んだ写真」", () => {
+    expect(topLayoutFrom(undefined)).toBe("cover-selection");
+    expect(topLayoutFrom("cover-only")).toBe("cover-only");
+    expect(topLayoutFrom("???")).toBe("cover-selection");
   });
 });
 
@@ -163,7 +162,7 @@ describe("シリーズの札", () => {
 });
 
 describe("シリーズの一覧", () => {
-  test("題名で読む目次。行はシリーズのページへ開く", async () => {
+  test("題名と写真の1段。行はシリーズのページへ開く", async () => {
     seedApi({ siteDesign: "book" });
     const previousPhotos = canned["/api/photos"];
     canned["/api/photos"] = { photos: PHOTOS };
@@ -172,7 +171,10 @@ describe("シリーズの一覧", () => {
       const links = Array.from(m.host.querySelectorAll(".ps-series-entry__link")).map((a) => a.getAttribute("href"));
       expect(links).toEqual(["/series/sea"]);
       expect(m.host.querySelector(".ps-series-entry__title")?.textContent).toBe("海の記憶");
-      expect(m.host.querySelectorAll(".ps-series-entry__frame").length).toBe(4);
+      // 札の写真は1段（枚数は幅で決まる）。そのシリーズの4枚を超えない。
+      const frames = m.host.querySelectorAll(".ps-series-entry__frame").length;
+      expect(frames).toBeGreaterThan(0);
+      expect(frames).toBeLessThanOrEqual(4);
     } finally {
       m.cleanup();
       // 共通の見本（jsdom-setup）を消さずに戻す。消すと後のテストが空の一覧を読む。

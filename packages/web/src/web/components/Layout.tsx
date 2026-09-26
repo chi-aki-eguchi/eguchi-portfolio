@@ -13,6 +13,7 @@ import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
 import { galleryExcludesSeries, siteDesignFrom, usesBookChrome } from "../lib/book";
 import { PhotoSiteFrame } from "./photo-site/PhotoSiteFrame";
+import { PhotoServiceNote } from "./photo-site/PhotoServiceNote";
 import { waitForWebFonts } from "../lib/web-fonts";
 import { StudioBridge } from "./StudioBridge";
 import { useNavFit } from "../hooks/useNavFit";
@@ -485,20 +486,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）は専用の器で描く。
   // いつもの構成（配布版）の器には触らない。
   if (bookChrome) {
+    // 制作の入口は、オーナーのサイトではフッターへ（PhotoServiceNote）。配布先で
+    // 「メニューに出す」を選んだときだけ、今までどおりメニューに置く。
     const serviceItem =
-      showServiceInNav || (showService && isServiceOwnerSite(data?.siteUrl, undefined))
+      showServiceInNav && !isServiceOwnerSite(data?.siteUrl, undefined)
         ? [
             {
               href: footerPolicyLanguage === "en" ? "/portfolio-kit/en" : "/portfolio-kit",
-              label: isServiceOwnerSite(data?.siteUrl, undefined)
-                ? isEnglishChrome
-                  ? "Portfolio Websites"
-                  : "ポートフォリオ制作"
-                : "Portfolio Kit",
+              label: "Portfolio Kit",
             },
           ]
         : [];
     const frameNav = [
+      { href: "/gallery", label: data?.navLabelGallery || "Gallery" },
       ...(showSeries || showWork ? [{ href: "/series", label: "Series" }] : []),
       {
         href: isEnglishChrome ? "/en/about" : "/about",
@@ -546,10 +546,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {showService &&
               !location.includes("portfolio-kit") &&
               !isContactRoute(location) && (
-                <StudioBridge
+                <PhotoServiceNote
                   siteUrl={data?.siteUrl}
                   language={location.startsWith("/en/") ? "en" : "ja"}
-                  compact
                 />
               )}
             <div className="ps-footer__row">

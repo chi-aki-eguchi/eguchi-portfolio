@@ -111,7 +111,7 @@ test.describe("写真中心の管理画面", () => {
     await page.getByRole("button", { name: /シリーズの中の並び/ }).click();
     const note = page.locator(".admin-book-unused");
     await expect(note).toBeVisible();
-    await expect(note).toContainText("トップにはいつもすべての公開写真");
+    await expect(note).toContainText("Gallery にはいつもすべての公開写真");
     await page.getByRole("button", { name: /背景と配色/ }).click();
     await expect(note).toHaveCount(0);
   });

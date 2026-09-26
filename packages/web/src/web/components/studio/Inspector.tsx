@@ -326,7 +326,7 @@ function HeroRow({ data, photos }: { data: StudioData; photos: StudioPhoto[] }) 
         }}
         onChange={() => void toggle()}
       />
-      <span className="st-check__label">トップの最初に並べる</span>
+      <span className="st-check__label">トップに出す</span>
     </label>
   );
 }

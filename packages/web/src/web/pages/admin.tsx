@@ -141,9 +141,10 @@ import {
   BookSiteView,
   bookSiteGroups,
   type BookAdminView,
+  normalizeBookView,
   type SitePanelItem,
 } from "../components/admin-book/BookAdminShell";
-import { Workbench } from "../components/admin-book/Workbench";
+import { Studio } from "../components/studio/Studio";
 import { siteDesignFrom } from "../lib/book";
 
 /**
@@ -734,11 +735,12 @@ function AdminPageContent({
   const [settingsEntrySection, setSettingsEntrySection] = useState<string | undefined>();
   const [settingsNavigationHost, setSettingsNavigationHost] = useState<HTMLDivElement | null>(null);
   // 写真集の管理画面（siteDesign = "book"）の入口と、サイトの目次で開いている項目。
-  const [bookView, setBookView] = usePersistentState<BookAdminView>(
+  const [storedBookView, setBookView] = usePersistentState<BookAdminView>(
     demoMode ? "admin:book:view:demo" : "admin:book:view",
-    "works",
+    "photos",
     "local",
   );
+  const bookView = normalizeBookView(storedBookView);
   const [bookPanelId, setBookPanelId] = usePersistentState<string>(
     demoMode ? "admin:book:panel:demo" : "admin:book:panel",
     "settings:page-layout",
@@ -875,13 +877,14 @@ function AdminPageContent({
       setBookView(view);
     };
     const openFromSettings = (next: Tab) => {
-      if (next === "series") goBook("works");
+      if (next === "series") goBook("series");
       else if (next === "profile" || next === "pricing") goBook("site", `tab:${next}`);
       else goBook("site");
     };
     const bookDestinations: PaletteDestination[] = [
-      { id: "book-works", label: "作品（作業台）", group: "管理画面", icon: ADMIN_TAB_ICONS.series, action: () => goBook("works") },
-      { id: "book-library", label: "写真の一覧", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("library") },
+      { id: "book-photos", label: "写真", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("photos") },
+      { id: "book-series", label: "シリーズ", group: "管理画面", icon: ADMIN_TAB_ICONS.series, action: () => goBook("series") },
+      { id: "book-library", label: "詳しい道具（構図・日付の一括入力・表での一括編集）", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("library") },
       ...allItems.map((item) => ({
         id: `book-${item.id}`,
         label: item.label,
@@ -1033,10 +1036,11 @@ function AdminPageContent({
                 </>
               }
             >
-              {bookView === "works" && (
-                <Workbench
-                  onOpenLibrary={() => goBook("library")}
-                  onImported={(ids) => setRecentlyAddedPhotoIds(new Set(ids))}
+              {(bookView === "photos" || bookView === "series") && (
+                <Studio
+                  view={bookView}
+                  onView={(v) => goBook(v)}
+                  onOpenDetails={() => goBook("library")}
                   onUploadingChange={setGalleryUploading}
                 />
               )}

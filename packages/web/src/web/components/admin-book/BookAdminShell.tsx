@@ -1,16 +1,26 @@
 import type { ReactNode } from "react";
 import "./admin-book.css";
 
-export type BookAdminView = "works" | "library" | "site";
+/**
+ * 管理画面の入口（2026-09-26 作り直し）。`library` は従来の写真の一覧
+ * （構図・日付の一括入力などの詳しい道具）で、上の入口には出さず、
+ * 右の欄の「構図・詳しい道具」と ⌘K から開く。
+ */
+export type BookAdminView = "photos" | "series" | "site" | "library";
+
+/** 保存されていた古い入口の名前を、今の入口へ読み替える。 */
+export function normalizeBookView(v: string | null | undefined): BookAdminView {
+  if (v === "series" || v === "site" || v === "library" || v === "photos") return v;
+  return "photos";
+}
 
 /**
- * 写真集の管理画面の器（2026-09-23 試作）。
+ * 写真中心の管理画面の器（2026-09-23 試作、2026-09-26 作り直し）。
  *
- * 左右のメニューを2組切り替える作りをやめ、上に3つの入口だけを置く。
- *   作品      — 作業台（ふだんの仕事はここで終わる）
- *   写真の一覧 — すべての写真。撮影情報の確認・日付の一括入力・表形式の
- *               一括編集・ゴミ箱など、今までの道具をそのまま使う
- *   サイト    — 写真集の骨格・作品以外のページ・見た目
+ * 上に3つの入口だけを置く。
+ *   写真     — すべての写真（ふだんの仕事はここで終わる）
+ *   シリーズ — 写真をまとめて見せる入れ物（1枚を何本にも入れられる）
+ *   サイト   — About・Contact・見た目・名前
  * 設定や移動先は ⌘K の「探す」からも開ける。
  */
 export function BookAdminShell({
@@ -43,10 +53,11 @@ export function BookAdminShell({
   onToggleTheme: () => void;
 }) {
   const tabs: { id: BookAdminView; label: string; hint: string }[] = [
-    { id: "works", label: "作品", hint: "写真を加える・順番・表紙・公開" },
-    { id: "library", label: "写真の一覧", hint: "撮影情報・日付・まとめて直す・ゴミ箱" },
-    { id: "site", label: "サイト", hint: "写真集の骨格・About・Contact・見た目" },
+    { id: "photos", label: "写真", hint: "写真を加える・公開・シリーズへ入れる・並び" },
+    { id: "series", label: "シリーズ", hint: "シリーズの言葉・写真の並び・表紙" },
+    { id: "site", label: "サイト", hint: "About・Contact・見た目・名前" },
   ];
+  const current = view === "library" ? "photos" : view;
   return (
     <div className="admin-book" data-view={view}>
       {banner}
@@ -61,8 +72,8 @@ export function BookAdminShell({
               key={t.id}
               type="button"
               className="bk-ax-btn admin-book__tab"
-              aria-current={view === t.id ? "page" : undefined}
-              disabled={locked && view !== t.id}
+              aria-current={current === t.id ? "page" : undefined}
+              disabled={locked && current !== t.id}
               onClick={() => onView(t.id)}
               title={t.hint}
             >
@@ -112,10 +123,10 @@ export function bookSiteGroups(showService: boolean): { label: string; items: Si
   ): SitePanelItem => ({ id: `tab:${tab}`, label, note, panel: { kind: "tab", tab } });
   return [
     {
-      label: "写真集",
+      label: "サイトの形",
       items: [
-        s("page-layout", "骨格とトップの写真", "写真集／いつもの構成、トップの1枚目"),
-        s("series", "作品ページの並べ方", "作業台の順番か、撮影日の順か"),
+        s("page-layout", "サイトの骨格", "写真中心／いつもの構成、About・Contact の組み方"),
+        s("series", "シリーズの中の並び", "並べた順か、撮影日の順か"),
       ],
     },
     {
@@ -175,8 +186,8 @@ export const BOOK_HIDDEN_SETTINGS = [
 ] as const;
 
 export const BOOK_SETTINGS_LABELS: Record<string, string> = {
-  "page-layout": "骨格とトップの写真",
-  series: "作品ページの並べ方",
+  "page-layout": "サイトの骨格",
+  series: "シリーズの中の並び",
 };
 
 export function BookSiteView({
@@ -214,7 +225,7 @@ export function BookSiteView({
           </div>
         ))}
         <p className="book-site__note">
-          写真集では使わない設定（トップの見せ方・写真一覧のレイアウト・メニューの位置・動き）は、
+          写真中心の構成では使わない設定（トップの見せ方・写真一覧のレイアウト・メニューの位置・動き）は、
           値を残したまま隠しています。「いつもの構成」に戻すと、また出てきます。
         </p>
       </nav>

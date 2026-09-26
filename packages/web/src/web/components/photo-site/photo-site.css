@@ -2,6 +2,15 @@
    写真が主役。器は小さく静かに、写真は元の縦横比のまま大きく。
    色は公開サイトのテーマ変数だけを使う（明暗どちらでも）。 */
 
+/* スクロールバーの場所を最初から取っておく。読み込みの途中でページの高さが
+   変わるたびにスクロールバーが出入りし、横幅が変わって器と写真が横へずれて
+   いた（2026-09-26、Safari で測定: 1436px ⇄ 1440px）。scrollbar-gutter が
+   効かない Safari のため、縦のスクロールバーを常に出す。 */
+html:has(.ps-site) {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 .ps-site {
   --ps-gutter: clamp(14px, 2.6vw, 40px);
   --ps-header-h: 60px;
@@ -248,6 +257,10 @@
   letter-spacing: 0.06em;
 }
 @media (max-width: 639px) {
+  /* 横に流れる絞り込みの行では、端で枚数が切れて見えるので出さない。 */
+  .ps-filters__count {
+    display: none;
+  }
   .ps-filters {
     flex-wrap: nowrap;
     overflow-x: auto;

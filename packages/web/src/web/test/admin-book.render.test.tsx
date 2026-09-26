@@ -1,10 +1,10 @@
 /**
- * 写真集の管理画面（siteDesign = "book"、2026-09-23 試作）。
+ * 写真中心の管理画面（siteDesign = "book"、2026-09-26 作り直し）。
  *
  * 縛るのは3点。
- *  1. 写真集のときだけ作業台の器になり、いつもの構成（配布版の既定）は
- *     今までの左メニューのまま
- *  2. 作業台のベタ焼きは写真1枚ずつの媒体どおり（フィルムを黒い帯に）
+ *  1. 写真中心のときだけ新しい器（写真・シリーズ・サイト）になり、いつもの構成
+ *     （配布版の既定）は今までの左メニューのまま
+ *  2. 最初は「写真」。シリーズに入っていない写真を数え、絞り込める
  *  3. 公開／非公開の切り替えはまとめて扱う要求（/admin/photos/batch）を1回送り、
  *     元に戻す入口を出す
  */
@@ -44,8 +44,16 @@ const SERIES = [
   { id: 4, slug: "sea", title: "海の記憶", kind: "series", isPublished: true, sortOrder: 0, coverPhotoId: null },
 ];
 
+const MEMBERSHIPS = [
+  { seriesId: 4, photoId: 1, sortOrder: 0 },
+  { seriesId: 4, photoId: 2, sortOrder: 1 },
+  { seriesId: 4, photoId: 3, sortOrder: 2 },
+];
+
 async function mountAdmin(settings: Record<string, string>) {
   canned["/api/admin/me"] = { authenticated: true };
+  canned["/api/admin/series-photos"] = { memberships: MEMBERSHIPS };
+  canned["/api/admin/hero-photos"] = { heroPhotos: [] };
   canned["/api/settings"] = { setupCompleted: "true", ...settings };
   canned["/api/admin/series"] = { series: SERIES };
   canned["/api/photos"] = { photos: PHOTOS };
@@ -56,6 +64,8 @@ async function mountAdmin(settings: Record<string, string>) {
   qc.setQueryData(["admin-me"], { authenticated: true });
   qc.setQueryData(["photos", "all"], { photos: PHOTOS });
   qc.setQueryData(["admin-series"], { series: SERIES });
+  qc.setQueryData(["admin-series-photos"], { memberships: MEMBERSHIPS });
+  qc.setQueryData(["admin-hero-photos"], { heroPhotos: [] });
   const Admin = (await import("../pages/admin")).default;
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
@@ -78,7 +88,11 @@ const saved = {
   photos: canned["/api/photos"],
   me: canned["/api/admin/me"],
   adminSeries: canned["/api/admin/series"],
+  memberships: canned["/api/admin/series-photos"],
+  hero: canned["/api/admin/hero-photos"],
 };
+// jsdom には幅が無いので、写真の段を組めるよう幅を与える（後で必ず外す）。
+const elementProto = dom.window.HTMLElement.prototype as unknown as Record<string, unknown>;
 afterEach(() => {
   globalThis.fetch = prevFetch;
   canned["/api/settings"] = saved.settings;
@@ -86,6 +100,11 @@ afterEach(() => {
   canned["/api/admin/me"] = saved.me;
   if (saved.adminSeries === undefined) delete canned["/api/admin/series"];
   else canned["/api/admin/series"] = saved.adminSeries;
+  if (saved.memberships === undefined) delete canned["/api/admin/series-photos"];
+  else canned["/api/admin/series-photos"] = saved.memberships;
+  if (saved.hero === undefined) delete canned["/api/admin/hero-photos"];
+  else canned["/api/admin/hero-photos"] = saved.hero;
+  delete elementProto.clientWidth;
   dom.window.localStorage.clear();
 });
 
@@ -100,29 +119,28 @@ describe("写真集の管理画面", () => {
     }
   });
 
-  test("写真集では作業台になり、媒体どおりのベタ焼きと入口3つが出る", async () => {
+  test("写真中心では「写真」から始まり、シリーズに入っていない写真を数える", async () => {
+    Object.defineProperty(elementProto, "clientWidth", { configurable: true, get: () => 900 });
     const m = await mountAdmin({ siteDesign: "book" });
     try {
       expect(m.host.querySelector("aside.admin-sidebar")).toBeNull();
       const tabs = Array.from(m.host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent);
-      expect(tabs).toEqual(["作品", "写真の一覧", "サイト"]);
-      expect(m.host.querySelector(".bench-sheet__title")?.textContent).toBe("海の記憶");
-      const runs = Array.from(m.host.querySelectorAll(".bench-run")).map((r) => [
-        r.getAttribute("data-medium"),
-        r.querySelectorAll(".bench-frame").length,
-      ]);
-      expect(runs).toEqual([
-        ["film", 2],
-        ["digital", 1],
-      ]);
-      // 未整理（作品に入っていない写真）の棚も出る
-      expect(m.host.textContent).toContain("未整理");
+      expect(tabs).toEqual(["写真", "シリーズ", "サイト"]);
+      const loose = Array.from(m.host.querySelectorAll(".st-side__item")).find((b) =>
+        b.textContent?.includes("シリーズに入っていない"),
+      ) as HTMLButtonElement;
+      expect(loose.querySelector(".st-side__count")?.textContent).toBe("1");
+      expect(m.host.querySelectorAll(".st-tile").length).toBe(4);
+      loose.click();
+      await flush(40);
+      expect(Array.from(m.host.querySelectorAll(".st-tile")).map((t) => t.getAttribute("data-photo-id"))).toEqual(["9"]);
     } finally {
       m.cleanup();
     }
   });
 
   test("非公開にすると一括の要求を1回送り、元に戻す入口が出る", async () => {
+    Object.defineProperty(elementProto, "clientWidth", { configurable: true, get: () => 900 });
     const calls: { url: string; method: string; body: string }[] = [];
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -135,18 +153,18 @@ describe("写真集の管理画面", () => {
     }) as typeof fetch;
     const m = await mountAdmin({ siteDesign: "book" });
     try {
-      (m.host.querySelector(".bench-frame__btn") as HTMLButtonElement).click();
+      (m.host.querySelector('.st-tile[data-photo-id="1"]') as HTMLButtonElement).click();
       await flush(20);
-      const privateBtn = Array.from(m.host.querySelectorAll(".bench-side .bench-switch button")).find(
+      const privateBtn = Array.from(m.host.querySelectorAll(".st-inspector .st-seg__item")).find(
         (b) => b.textContent === "非公開",
       ) as HTMLButtonElement;
       privateBtn.click();
-      await flush(40);
+      await flush(60);
       const writes = calls.filter((c) => c.method !== "GET");
       expect(writes).toHaveLength(1);
       expect(writes[0]!.url).toContain("/api/admin/photos/batch");
       expect(JSON.parse(writes[0]!.body)).toEqual({ ids: [1], operation: "unpublish" });
-      expect(m.host.querySelector(".bench-notice__undo")?.textContent).toBe("元に戻す");
+      expect(dom.window.document.querySelector(".st-toast__undo")?.textContent).toBe("元に戻す");
     } finally {
       m.cleanup();
     }

@@ -1224,15 +1224,15 @@ const ADMIN_PHASE_2B_JA = {
       siteDesignHint: "トップ・作品ページ・目次の組み方",
       siteDesignOptions: {
         classic: "いつもの構成（既定）",
-        book: "写真集",
+        book: "写真中心（おすすめ）",
       },
       siteDesignNote:
-        "写真集: トップは写真の全体を画面に収めて1枚ずつ送り、その下に Works（作品の表紙）と Photos（毎回違う写真）が続きます。作品ページは1枚ずつ送り、Index でその作品の全コマを見られます。メニューは上に Works・Photos・About・Contact。Photos には作品に入っている写真も含めて、すべての公開写真が並びます。写真は切り抜かず、元の縦横比のまま見せます。",
+        "写真中心: トップを開くと、すべての公開写真が元の縦横比のまま、大小の段に組まれて並びます（切り抜かない）。シリーズに入っている写真も入っていない写真も同じ場所に並び、シリーズは「Series」のページにまとまります。管理画面は「写真」「シリーズ」「サイト」の3つになり、1枚の写真を何本のシリーズにも入れられます。",
       bookUnusedNotes: {
-        hero: "写真集では、この節の見た目と動き（名前の大きさ・高さ・重ね方など）は使いません。トップに出る写真は「トップに載せる写真を選ぶ」で選んだ写真と、「各ページの構成」の「写真集のトップの写真」で決まります。",
-        navigation: "写真集では、メニューはいつも上で、紙の地の帯です。ここの位置と帯の背景は使いません（触れたときの効果は使います）。",
-        "gallery-layout": "写真集では、この節は使いません。写真集のトップと Photos のページは、写真を切り抜かずに大きく並べる決まった組み方です（広い画面は3列、スマホは2列）。",
-        series: "写真集では、トップのシリーズ帯、シリーズ一覧の列数、「Gallery から作品の写真を外す」は使いません。Photos はいつもすべての公開写真です。",
+        hero: "写真中心の構成では、この節の見た目と動き（名前の大きさ・高さ・重ね方など）は使いません。トップの最初に並ぶ写真は、「写真」画面で写真を選び「トップの最初に並べる」にチェックして決めます。",
+        navigation: "写真中心の構成では、メニューはいつも上の帯です。ここの位置と帯の背景は使いません。",
+        "gallery-layout": "写真中心の構成では、この節は使いません。トップとシリーズのページは、写真を切り抜かずに大小の段で並べる決まった組み方です。",
+        series: "写真中心の構成では、トップのシリーズ帯・シリーズ一覧の列数・「Gallery から作品の写真を外す」は使いません。トップにはいつもすべての公開写真が並びます。",
       } as Record<string, string>,
       aboutLabel: "About（プロフィール）の構成",
       aboutHint: "顔写真と自己紹介の並べ方",
@@ -3007,15 +3007,15 @@ const ADMIN_PHASE_2B_EN = {
       siteDesignHint: "How the home, work pages and contents are composed",
       siteDesignOptions: {
         classic: "Standard (default)",
-        book: "Photobook",
+        book: "Photographs first (recommended)",
       },
       siteDesignNote:
-        "Photobook: the home page shows each photograph whole, one at a time, followed by Works (cover of each work) and Photos (a different selection each visit). Work pages turn one photograph at a time, with an Index of every frame. The menu sits at the top: Works, Photos, About, Contact. Photos lists every public photograph, including those in works. Photographs are never cropped and keep their original proportions.",
+        "Photographs first: the home page shows every public photograph in its original proportions, set in rows of varying height (never cropped). Photographs in a series and those outside one sit together; series are gathered on the Series page. The admin becomes Photos, Series and Site, and one photograph can belong to several series.",
       bookUnusedNotes: {
-        hero: "The photobook does not use the look and motion set here (name size, height, overlay and so on). The home photographs come from “Choose home photographs” and the photobook home photograph under Page layout.",
-        navigation: "In the photobook the menu is always at the top on a plain band. Position and band background here are not used (the hover effect is).",
-        "gallery-layout": "The photobook does not use this section. Its home page and Photos page have a fixed composition that shows photographs large and uncropped (three columns on wide screens, two on phones).",
-        series: "The photobook does not use the home series strip, the series grid columns, or “exclude work photographs from the gallery”. Photos always lists every public photograph.",
+        hero: "The photographs-first design does not use the look and motion set here. The first photographs on the home page are the ones marked “Show first on the home page” in Photos.",
+        navigation: "In the photographs-first design the menu is always the band at the top. Position and band background here are not used.",
+        "gallery-layout": "The photographs-first design does not use this section. The home and series pages use a fixed layout of uncropped rows of varying height.",
+        series: "The photographs-first design does not use the home series strip, the series grid columns, or “exclude series photographs from the gallery”. The home page always shows every public photograph.",
       } as Record<string, string>,
       aboutLabel: "About page composition",
       aboutHint: "How the portrait and the introduction sit together",

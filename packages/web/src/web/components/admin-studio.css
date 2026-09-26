@@ -61,6 +61,8 @@
 .admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body [data-settings-group-label] { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-context-actions:empty { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-context-actions button { display: flex; align-items: center; gap: 8px; padding: 0 0 16px; color: var(--admin-muted); font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
+/* 写真集を選んでいるときの「この節は写真集では使わない」案内。 */
+.admin-book-unused { margin: 0 0 16px; padding: 10px 12px; border-left: 2px solid var(--admin-border, currentColor); color: var(--admin-muted); font-size: var(--admin-text-note, 12px); line-height: 1.7; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body .grid:has(> .studio-option) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .admin-atelier.admin-workbench.admin-studio .studio-option { position: relative; width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 0; min-height: 0; padding: 0 !important; text-align: left; border: 1px solid var(--admin-line) !important; border-radius: 8px; overflow: hidden; box-shadow: none !important; background: var(--studio-field) !important; color: var(--admin-ink) !important; }
 .admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true] { border-color: var(--admin-accent) !important; box-shadow: 0 0 0 1px var(--admin-accent) !important; }

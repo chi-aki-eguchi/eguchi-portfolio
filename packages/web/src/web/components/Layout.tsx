@@ -11,7 +11,7 @@ import { shelfNeedsCount, shouldShowShelf } from "../lib/shelf-nav";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
-import { siteDesignFrom, usesBookChrome } from "../lib/book";
+import { galleryExcludesSeries, siteDesignFrom, usesBookChrome } from "../lib/book";
 import { StudioBridge } from "./StudioBridge";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
@@ -202,10 +202,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // 判定は `lib/work-entries.ts` に1つだけ置く。TOP の「作品を見る」導線も
   // 同じ関数を読む——別々に書くと、ナビは出ていないのに導線だけ Gallery を
   // 指す、のような食い違いが起きる。数が分からないうちは消さない。
-  const showGallery = galleryHasPhotos(
-    photoCounts,
-    (data?.galleryExcludeSeries ?? "off") === "on",
-  );
+  const showGallery = galleryHasPhotos(photoCounts, galleryExcludesSeries(data));
 
   const dm = useDarkModeContext();
   const { showService, showServiceInNav } = useServiceVisibility();

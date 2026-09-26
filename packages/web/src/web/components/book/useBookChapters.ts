@@ -5,7 +5,7 @@ import {
   fetchSeriesDetail,
   seriesDetailQueryKey,
 } from "../../hooks/useSeriesDetail";
-import { bookFacts, orderedSeriesPhotos, type BookFacts } from "../../lib/book";
+import { bookFacts, galleryExcludesSeries, orderedSeriesPhotos, type BookFacts } from "../../lib/book";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { galleryHasPhotos } from "../../lib/work-entries";
 
@@ -113,7 +113,7 @@ export function useBookGalleryEntry(settings: Record<string, string | null | und
       jsonOrThrow(await api.photos.availability.$get()),
     staleTime: 60_000,
   });
-  const excludeSeries = (settings?.galleryExcludeSeries ?? "off") === "on";
+  const excludeSeries = galleryExcludesSeries(settings);
   if (!galleryHasPhotos(counts, excludeSeries)) return null;
   const count = counts ? (excludeSeries ? counts.standalone : counts.total) : null;
   return {

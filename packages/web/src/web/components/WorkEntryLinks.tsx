@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { api, jsonOrThrow } from "../lib/api";
+import { galleryExcludesSeries } from "../lib/book";
 import {
   workEntries,
   type PhotoCounts,
@@ -34,7 +35,7 @@ export function useWorkEntries(
   });
   return workEntries({
     counts,
-    galleryExcludeSeries: (settings?.galleryExcludeSeries ?? "off") === "on",
+    galleryExcludeSeries: galleryExcludesSeries(settings),
     seriesCount: seriesData?.series.length ?? 0,
     workCount: worksData?.series.length ?? 0,
     // 帯は `topSeriesStream` が off 以外のとき、シリーズが1本でもあれば出る。

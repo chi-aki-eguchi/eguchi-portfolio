@@ -55,7 +55,9 @@ export function heroSlides(
 }
 
 /**
- * 最初の画面いっぱいの写真。写真の「見せる中心」を軸に切り抜く。
+ * 最初の画面の写真。写真の全体を、元の縦横比のまま画面に収める。
+ * 切り抜かない・引き伸ばさない・拡大しない（2026-09-26 オーナー
+ * 「元の写真をもっと尊重して」）。
  *
  * 送るのは押したときだけ（自動では変わらない。2026-09-08 オーナー判断と
  * 同じ）。右の3分の2を押すと次、左の3分の1で前。矢印キーも同じ。
@@ -77,27 +79,6 @@ function BookHero({
     [count],
   );
   const heroRef = useRef<HTMLElement>(null);
-
-  // 器（名前とメニュー）が写真の上にいる間だけ、地を消して白い文字にする
-  // （book.css の body[data-book-over-photo]）。写真の下の端（作品名と枚数の
-  // 帯）が器の下まで上がってきたら地に戻す。透けたままだと作品名が名前と
-  // 重なって読めない。
-  useEffect(() => {
-    const body = document.body;
-    const check = () => {
-      const r = heroRef.current?.getBoundingClientRect();
-      if (count > 0 && r && r.bottom > 150) body.dataset.bookOverPhoto = "";
-      else delete body.dataset.bookOverPhoto;
-    };
-    check();
-    window.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
-    return () => {
-      window.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
-      delete body.dataset.bookOverPhoto;
-    };
-  }, [count]);
 
   useEffect(() => {
     if (count < 2) return;
@@ -147,6 +128,7 @@ function BookHero({
                 alt={i === index ? photoAltText(photo, { photographerName, seriesName: seriesLinkById[photo.seriesId ?? -1]?.name }) : ""}
                 sizes="100vw"
                 className="bk-hero__img"
+                style={{ objectPosition: "50% 50%" }}
                 fetchPriority={i === index ? "high" : "low"}
                 loading="eager"
                 decoding="async"

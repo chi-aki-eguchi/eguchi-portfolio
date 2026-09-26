@@ -47,7 +47,7 @@ export function WorksGrid({
               {cover && (
                 <BookPhoto
                   photo={cover}
-                  coverRatio={3 / 2}
+                  frameRatio={3 / 2}
                   eager={i < 2}
                   alt={photoAltText(cover, { photographerName, seriesName: chapter.title })}
                   sizes="(min-width: 1024px) 50vw, 100vw"

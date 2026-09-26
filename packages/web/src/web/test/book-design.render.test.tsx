@@ -173,6 +173,15 @@ describe("見開き", () => {
   });
 });
 
+describe("Photos に並べる写真", () => {
+  test("写真集では、作品の写真を外す設定に関わらず、すべての写真", async () => {
+    const { galleryExcludesSeries } = await import("../lib/book");
+    expect(galleryExcludesSeries({ siteDesign: "book", galleryExcludeSeries: "on" })).toBe(false);
+    expect(galleryExcludesSeries({ siteDesign: "classic", galleryExcludeSeries: "on" })).toBe(true);
+    expect(galleryExcludesSeries({ galleryExcludeSeries: "off" })).toBe(false);
+  });
+});
+
 describe("Photos の列", () => {
   const ph = (id: number, w: number, h: number) => ({ id, url: "", title: "", width: w, height: h });
   test("どの写真も1度だけ、いちばん短い列へ順に入る", () => {

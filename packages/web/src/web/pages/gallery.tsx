@@ -12,7 +12,7 @@ import { InquiryCta } from "../components/InquiryCta";
 import { SeriesColophon } from "../components/SeriesColophon";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
-import { siteDesignFrom } from "../lib/book";
+import { galleryExcludesSeries, siteDesignFrom } from "../lib/book";
 
 export default function GalleryPage() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
@@ -115,12 +115,11 @@ export default function GalleryPage() {
   // 「絞り込みに合わなかった」と「そもそも並べる写真が無い」を見分けられず、
   // 後者にも「写真が見つかりませんでした」と出てしまう（共通ナビも同じ規則で
   // Gallery の入口を出し入れする。規則の正本はここ）。
+  // 写真集では外さない（`galleryExcludesSeries`）。
+  const excludeSeries = galleryExcludesSeries(settings);
   const pool = useMemo(
-    () =>
-      (settings?.galleryExcludeSeries ?? "off") === "on"
-        ? allPhotos.filter((p) => p.seriesId == null)
-        : allPhotos,
-    [allPhotos, settings?.galleryExcludeSeries],
+    () => (excludeSeries ? allPhotos.filter((p) => p.seriesId == null) : allPhotos),
+    [allPhotos, excludeSeries],
   );
   // 送り先は、実際に中身のある棚だけ。棚の名前は設定に従う（Series は固定、
   // Work は呼び方を変えられる）。先頭の組の題名を添えて、何があるか伝える。

@@ -13,24 +13,13 @@
   color: var(--bk-ink);
 }
 
-/* ── 器：名前は左上、メニューは右上。写真の上では色を反転させて読ませる ── */
+/* ── 器：名前は左上、メニューは右上。写真には重ねない（紙の地の上）── */
 .site-book > header {
   background: var(--background) !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   --nav-opacity: 0.72;
-  transition: background-color 0.35s var(--ease-quart) !important;
-}
-/* 画面いっぱいの写真の上にいる間だけ、地を消して白い文字にする。
-   写真の明暗に関係なく読めるよう、ごく淡い影を敷く。 */
-body[data-book-over-photo] .site-book > header:not([data-mobile-menu-open]) {
-  background: transparent !important;
-  --foreground: #fff;
-  --foreground-rgb: 255, 255, 255;
-  --nav-opacity: 0.95;
-  color: #fff;
-  text-shadow: 0 0 14px rgba(0, 0, 0, 0.32), 0 0 2px rgba(0, 0, 0, 0.18);
 }
 .site-book > header > nav {
   max-width: none !important;
@@ -89,20 +78,22 @@ body[data-book-over-photo] .site-book > header:not([data-mobile-menu-open]) {
   padding-top: 0;
 }
 
-/* ── トップ：画面いっぱいの写真 ─────────────────────── */
+/* ── トップ：最初の画面の写真 ─────────────────────────
+   写真の全体を元の縦横比のまま、器と下の帯のあいだに収める。
+   切り抜かない・引き伸ばさない（2026-09-26 オーナー）。 */
 .bk-hero {
   position: relative;
   height: 100svh;
   min-height: 420px;
   overflow: hidden;
-  background: rgba(var(--foreground-rgb), 0.05);
 }
 .bk-hero--empty {
   height: 40svh;
 }
 .bk-hero__stage {
   position: absolute;
-  inset: 0;
+  inset: calc(var(--header-h, 56px) + var(--sai-top, 0px)) var(--bk-edge)
+    calc(var(--bk-bar-h) + var(--sai-bottom, 0px));
 }
 .bk-hero__stage[data-multi] {
   cursor: e-resize;
@@ -123,46 +114,20 @@ body[data-book-over-photo] .site-book > header:not([data-mobile-menu-open]) {
   height: 100%;
 }
 .bk-hero__img {
-  object-fit: cover;
-}
-/* 白い文字を写真の明暗に関係なく読ませる、上と下の淡い陰。
-   文字の影だけでは、白い波や空の上で名前とメニューが消えた（2026-09-26）。 */
-.bk-hero::before,
-.bk-hero::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-.bk-hero::before {
-  top: 0;
-  height: calc(150px + var(--sai-top, 0px));
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.15) 55%, rgba(0, 0, 0, 0));
-}
-.bk-hero::after {
-  bottom: 0;
-  height: calc(130px + var(--sai-bottom, 0px));
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1) 55%, rgba(0, 0, 0, 0));
-}
-.bk-hero--empty::before,
-.bk-hero--empty::after {
-  content: none;
+  object-fit: contain;
 }
 .bk-hero__meta {
-  z-index: 2;
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
+  height: calc(var(--bk-bar-h) + var(--sai-bottom, 0px));
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0 var(--bk-gutter) calc(14px + var(--sai-bottom, 0px));
-  color: #fff;
-  text-shadow: 0 0 14px rgba(0, 0, 0, 0.32), 0 0 2px rgba(0, 0, 0, 0.18);
+  padding: 0 var(--bk-gutter) var(--sai-bottom, 0px);
+  color: var(--bk-ink);
   pointer-events: none;
 }
 .bk-hero__meta > * {
@@ -260,7 +225,7 @@ body[data-book-over-photo] .site-book > header:not([data-mobile-menu-open]) {
   text-decoration-thickness: 1px;
 }
 
-/* 作品の表紙：大きく。1本なら全幅、2本以上は2列（広い画面で3本以上は3列）。 */
+/* 作品の表紙：大きく。写真は切り抜かず、3:2 の枠の左下に全体を収める。1本なら全幅、2本以上は2列（広い画面で3本以上は3列）。 */
 .bk-works {
   list-style: none;
   margin: 0;
@@ -433,6 +398,10 @@ body[data-book-over-photo] .site-book > header:not([data-mobile-menu-open]) {
 }
 .book-photo__img {
   object-fit: contain;
+}
+/* 枠の比が決まっている写真（作品の表紙）は、写真の外に地を塗らない。 */
+.book-photo[data-framed] {
+  background: none;
 }
 .book-photo:focus-visible {
   outline: 1px solid var(--foreground);

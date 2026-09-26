@@ -3,7 +3,7 @@ import { Picture } from "../Picture";
 import { Lightbox } from "../Lightbox";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { orientedDimensions } from "../../../shared/image-url";
-import { objectPositionFromFocal, photoSrcFor } from "../../lib/picture";
+import { photoSrcFor } from "../../lib/picture";
 import type { SeriesLink } from "../../lib/series-links";
 
 /**
@@ -20,7 +20,7 @@ export function BookPhoto({
   eager,
   onOpen,
   openLabel,
-  coverRatio,
+  frameRatio,
 }: {
   photo: GalleryPhoto;
   alt: string;
@@ -29,13 +29,14 @@ export function BookPhoto({
   onOpen?: () => void;
   openLabel: string;
   /**
-   * 枠の縦横比を決めて、写真の「見せる中心」を軸に切り抜く（作品の表紙）。
-   * 無ければ写真そのままの比で、切り抜かない。
+   * 枠の縦横比を決める（作品の表紙を揃えて並べるため）。写真は枠の中に
+   * 全体を収め、左下に寄せる。切り抜かない・引き伸ばさない。
+   * 無ければ写真そのままの比の枠。
    */
-  coverRatio?: number;
+  frameRatio?: number;
 }) {
   const dims = orientedDimensions(photo.width, photo.height, photo.rotationDeg);
-  const ar = coverRatio ?? (dims.width && dims.height ? dims.width / dims.height : 4 / 5);
+  const ar = frameRatio ?? (dims.width && dims.height ? dims.width / dims.height : 4 / 5);
   const style = { "--book-ar": String(ar) } as React.CSSProperties;
   const picture = (
     <Picture
@@ -51,11 +52,7 @@ export function BookPhoto({
       fallbackW={1600}
       fallbackQ={82}
       className="book-photo__img"
-      style={
-        coverRatio
-          ? { objectFit: "cover", objectPosition: objectPositionFromFocal(photo.focalX, photo.focalY) }
-          : undefined
-      }
+      style={frameRatio ? { objectPosition: "0% 100%" } : undefined}
       loading={eager ? "eager" : "lazy"}
       fetchPriority={eager ? "high" : "auto"}
       draggable={false}
@@ -63,7 +60,7 @@ export function BookPhoto({
   );
   if (!onOpen) {
     return (
-      <div className="book-photo" style={style}>
+      <div className="book-photo" style={style} data-framed={frameRatio ? "" : undefined}>
         {picture}
       </div>
     );
@@ -73,6 +70,7 @@ export function BookPhoto({
       type="button"
       className="book-photo"
       style={style}
+      data-framed={frameRatio ? "" : undefined}
       onClick={onOpen}
       aria-label={openLabel}
       data-photo-tile={photo.id}

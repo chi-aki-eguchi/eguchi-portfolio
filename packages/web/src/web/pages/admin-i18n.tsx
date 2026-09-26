@@ -1227,7 +1227,13 @@ const ADMIN_PHASE_2B_JA = {
         book: "写真集",
       },
       siteDesignNote:
-        "写真集: 1画面に1枚ずつ、作品の順番どおりに頁をめくる構成です。メニューは左の余白に、目次はすべての作品のコマを並べたベタ焼きになります。フィルムとデジタルは写真ごとの記録どおりに分けて見せます。",
+        "写真集: トップは写真の全体を画面に収めて1枚ずつ送り、その下に Works（作品の表紙）と Photos（毎回違う写真）が続きます。作品ページは1枚ずつ送り、Index でその作品の全コマを見られます。メニューは上に Works・Photos・About・Contact。Photos には作品に入っている写真も含めて、すべての公開写真が並びます。写真は切り抜かず、元の縦横比のまま見せます。",
+      bookUnusedNotes: {
+        hero: "写真集では、この節の見た目と動き（名前の大きさ・高さ・重ね方など）は使いません。トップに出る写真は「トップに載せる写真を選ぶ」で選んだ写真と、「各ページの構成」の「写真集のトップの写真」で決まります。",
+        navigation: "写真集では、メニューはいつも上で、紙の地の帯です。ここの位置と帯の背景は使いません（触れたときの効果は使います）。",
+        "gallery-layout": "写真集では、Gallery の列数・大きさ・間隔を Photos のページに使います（並べ方の種類は段組みに決まっています）。トップの作品や写真の並べ方は使いません（写真集のトップは決まった組み方です）。",
+        series: "写真集では、トップのシリーズ帯、シリーズ一覧の列数、「Gallery から作品の写真を外す」は使いません。Photos はいつもすべての公開写真です。",
+      } as Record<string, string>,
       aboutLabel: "About（プロフィール）の構成",
       aboutHint: "顔写真と自己紹介の並べ方",
       aboutOptions: {
@@ -3004,7 +3010,13 @@ const ADMIN_PHASE_2B_EN = {
         book: "Photobook",
       },
       siteDesignNote:
-        "Photobook: one photograph per screen, turned page by page in the order of the work. The menu sits in the left margin and the contents page becomes a contact sheet of every work. Film and digital are shown exactly as each photo is recorded.",
+        "Photobook: the home page shows each photograph whole, one at a time, followed by Works (cover of each work) and Photos (a different selection each visit). Work pages turn one photograph at a time, with an Index of every frame. The menu sits at the top: Works, Photos, About, Contact. Photos lists every public photograph, including those in works. Photographs are never cropped and keep their original proportions.",
+      bookUnusedNotes: {
+        hero: "The photobook does not use the look and motion set here (name size, height, overlay and so on). The home photographs come from “Choose home photographs” and the photobook home photograph under Page layout.",
+        navigation: "In the photobook the menu is always at the top on a plain band. Position and band background here are not used (the hover effect is).",
+        "gallery-layout": "In the photobook, the gallery columns, size and spacing are used on the Photos page (the arrangement itself is always the column layout). The home page arrangements are not used; the photobook home has a fixed composition.",
+        series: "The photobook does not use the home series strip, the series grid columns, or “exclude work photographs from the gallery”. Photos always lists every public photograph.",
+      } as Record<string, string>,
       aboutLabel: "About page composition",
       aboutHint: "How the portrait and the introduction sit together",
       aboutOptions: {

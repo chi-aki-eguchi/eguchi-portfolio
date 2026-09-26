@@ -3,8 +3,9 @@ import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
 /**
  * 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）。
  *
- * 1. トップを開くと写真が並ぶ。写真は元の縦横比のまま（切り抜かない・引き伸ばさない）、
- *    段は横幅いっぱいにそろい、横はみ出しが無い
+ * 1. トップを開くと表紙（大きな名前と「トップの最初に並べる」写真）。その下に写真の段。
+ *    写真は元の縦横比のまま（切り抜かない・引き伸ばさない）、段は横幅いっぱいにそろい、
+ *    横はみ出しが無い
  * 2. 器（名前とメニュー）は揃ってから一度だけ現れ、そのあと動かない
  *    （オーナー 2026-09-26「チラチラ動くのがうるさい」）
  * 3. 写真を押すとビューアが開き、閉じられる
@@ -34,7 +35,7 @@ function noSideScroll(page: Page) {
 function worstRatioGap(page: Page) {
   return page.evaluate(() => {
     let worst = 0;
-    for (const img of document.querySelectorAll<HTMLImageElement>(".ps-tile__img")) {
+    for (const img of document.querySelectorAll<HTMLImageElement>(".ps-tile__img, .ps-cover__img")) {
       if (!img.complete || !img.naturalWidth) continue;
       const r = img.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight || r.width < 10) continue;
@@ -46,14 +47,25 @@ function worstRatioGap(page: Page) {
   });
 }
 
-test("写真中心 › トップは写真から始まり、写真は元の比のまま並ぶ", async ({ page, api }) => {
+test("写真中心 › トップは表紙から始まり、写真は元の比のまま並ぶ", async ({ page, api }) => {
   await openAsPhotoSite(page, api, "/");
+  // 表紙: 名前と写真が最初の画面に収まる。
+  const cover = page.locator(".ps-cover");
+  await expect(cover.locator("h1")).toHaveText("Smoke Fixture Studio");
+  const photo = await page.locator(".ps-cover__photo").boundingBox();
+  const vh = page.viewportSize()!.height;
+  expect(photo!.y + photo!.height).toBeLessThanOrEqual(vh + 1);
+  // 「トップの最初に並べる」写真が3枚あるので、送れる。
+  await expect(page.locator(".ps-cover__nav")).toContainText("01 / 03");
+  await page.locator(".ps-cover__nav").getByRole("button", { name: "次の写真" }).click();
+  await expect(page.locator(".ps-cover__nav")).toContainText("02 / 03");
+  // その下に写真の段。
+  await page.getByRole("button", { name: /Photographs/ }).click();
   const tiles = page.locator(".ps-tile");
-  await expect(tiles.first()).toBeVisible();
+  await expect(tiles.first()).toBeInViewport();
   expect(await tiles.count()).toBeGreaterThan(5);
-  // 最初の写真は画面の上のほう（器の下）にある。
-  const first = await tiles.first().boundingBox();
-  expect(first!.y).toBeLessThan(160);
+  // 表紙の写真は、絞り込んでいない一覧には重ねない。
+  for (const id of [7001, 7101, 7601]) await expect(page.locator(`[data-photo-tile="${id}"]`)).toHaveCount(0);
   await page.waitForTimeout(1500);
   // 比の差 2% 未満（段の丸めだけ）。切り抜き・引き伸ばしがあればここで落ちる。
   expect(await worstRatioGap(page)).toBeLessThan(0.02);

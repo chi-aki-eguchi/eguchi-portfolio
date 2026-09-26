@@ -2,7 +2,7 @@
  * 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）。
  *
  * ここで縛るのは、見た目ではなく**事実と行き先**:
- *  1. トップは「トップに載せる写真」を先頭に、ほかの写真を全部（重ねない）
+ *  1. トップは表紙（「トップの最初に並べる」写真と大きな名前）、その下に残りの写真を全部
  *  2. シリーズの一覧の札は、そのシリーズに入っている写真だけ（1枚が複数の
  *     シリーズに入れる）。表紙が先頭
  *  3. シリーズのページは、そのシリーズの並び順どおりに写真を置く
@@ -23,7 +23,7 @@ const { QueryClient, QueryClientProvider } = await import(
 const { Router, Route } = await import("wouter");
 const SeriesListPage = (await import("../pages/series")).default;
 const SeriesDetailPage = (await import("../pages/series-detail")).default;
-const { leadOrdered } = await import("../components/photo-site/PhotoHome");
+const { coverPhotosFor, streamPhotosFor } = await import("../components/photo-site/PhotoHome");
 const { stripFor } = await import("../components/photo-site/PhotoSeries");
 
 const doc = dom.window.document;
@@ -126,12 +126,17 @@ describe("計算", () => {
   });
 });
 
-describe("トップの並び", () => {
+describe("トップの表紙と一覧", () => {
   const p = (id: number) => ({ id, url: `/p${id}.jpg`, title: "" });
-  test("トップに載せる写真を先頭に、ほかを全部。重ねない。公開されていない写真は入れない", () => {
-    const all = [p(1), p(2), p(3), p(4)];
-    expect(leadOrdered(all as never, [p(3), p(9), p(1)] as never).map((x) => x.id)).toEqual([3, 1, 2, 4]);
-    expect(leadOrdered(all as never, [] as never).map((x) => x.id)).toEqual([1, 2, 3, 4]);
+  const all = [p(1), p(2), p(3), p(4)];
+  test("表紙は選んだ写真（公開中のもの、選んだ順）。選んでいなければ先頭の1枚", () => {
+    expect(coverPhotosFor(all as never, [p(3), p(9), p(1)] as never).map((x) => x.id)).toEqual([3, 1]);
+    expect(coverPhotosFor(all as never, [] as never).map((x) => x.id)).toEqual([1]);
+  });
+  test("絞り込んでいない一覧からは表紙の写真を外し、絞り込んだら全部", () => {
+    const cover = [p(3)];
+    expect(streamPhotosFor(all as never, cover as never, false).map((x) => x.id)).toEqual([1, 2, 4]);
+    expect(streamPhotosFor(all as never, cover as never, true).map((x) => x.id)).toEqual([1, 2, 3, 4]);
   });
 });
 

@@ -6,19 +6,33 @@ import { ContentStatus } from "../ContentStatus";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
 import { PhotoStream } from "./PhotoStream";
+import { PhotoCover } from "./PhotoCover";
 
 type Settings = Record<string, string | null | undefined> | undefined;
 type Medium = "all" | "film" | "digital";
 
 /**
- * トップの並び: 「トップに載せる写真」（管理画面で選んだ写真）を先頭に、
- * そのあとにほかの公開写真を全部。同じ写真は2度入れない。
+ * 表紙に出す写真: 「トップの最初に並べる」で選んだ写真（公開中のもの、選んだ順）。
+ * 選んでいなければ、サイトの並びの先頭の1枚。
  */
-export function leadOrdered(photos: GalleryPhoto[], lead: GalleryPhoto[]): GalleryPhoto[] {
-  const byId = new Map(photos.map((p) => [p.id, p]));
-  const first = lead.map((p) => byId.get(p.id)).filter((p): p is GalleryPhoto => Boolean(p));
-  const seen = new Set(first.map((p) => p.id));
-  return [...first, ...photos.filter((p) => !seen.has(p.id))];
+export function coverPhotosFor(all: GalleryPhoto[], lead: GalleryPhoto[]): GalleryPhoto[] {
+  const byId = new Map(all.map((p) => [p.id, p]));
+  const picked = lead.map((p) => byId.get(p.id)).filter((p): p is GalleryPhoto => Boolean(p));
+  return picked.length > 0 ? picked : all.slice(0, 1);
+}
+
+/**
+ * 表紙の下の一覧。絞り込んでいないときは、表紙の写真を外す（すぐ下に同じ写真が
+ * 続かないように）。絞り込んだときは、当たる写真を全部出す。
+ */
+export function streamPhotosFor(
+  all: GalleryPhoto[],
+  cover: GalleryPhoto[],
+  filtering: boolean,
+): GalleryPhoto[] {
+  if (filtering) return all;
+  const onCover = new Set(cover.map((p) => p.id));
+  return all.filter((p) => !onCover.has(p.id));
 }
 
 function mediumOf(p: GalleryPhoto): Medium {
@@ -60,10 +74,9 @@ export function PhotoHome({
   });
   const seriesLinkById = useSeriesLinks();
 
-  const all = useMemo(
-    () => leadOrdered((photosQ.data?.photos ?? []) as GalleryPhoto[], leadPhotos),
-    [photosQ.data, leadPhotos],
-  );
+  // 写真の一覧は、サイトの並び順そのまま。「トップの最初に並べる」写真は表紙に出す。
+  const all = useMemo(() => (photosQ.data?.photos ?? []) as GalleryPhoto[], [photosQ.data]);
+  const coverPhotos = useMemo(() => coverPhotosFor(all, leadPhotos), [all, leadPhotos]);
   const usedCategories = useMemo(() => {
     const used = new Set(all.map((p) => p.category).filter(Boolean));
     return (catsData?.categories ?? []).filter((c) => used.has(c.slug));
@@ -71,12 +84,12 @@ export function PhotoHome({
   const hasMedium = all.some((p) => mediumOf(p) !== "all");
   const shown = useMemo(
     () =>
-      all.filter(
+      streamPhotosFor(all, coverPhotos, category !== "all" || medium !== "all").filter(
         (p) =>
           (category === "all" || p.category === category) &&
           (medium === "all" || mediumOf(p) === medium),
       ),
-    [all, category, medium],
+    [all, coverPhotos, category, medium],
   );
 
   const hrefWith = (next: { c?: string; medium?: Medium }) => {
@@ -96,7 +109,20 @@ export function PhotoHome({
 
   return (
     <div className="ps-page ps-home">
-      <h1 className="sr-only">{photographerName}</h1>
+      {coverPhotos.length > 0 ? (
+        <PhotoCover
+          photos={coverPhotos}
+          name={settings?.siteName || photographerName}
+          nameEn={settings?.siteNameEn}
+          subtitle={settings?.heroSubtitle}
+          total={all.length}
+          photographerName={photographerName}
+          streamId="photographs"
+        />
+      ) : (
+        <h1 className="sr-only">{photographerName}</h1>
+      )}
+      <div id="photographs" className="ps-home__stream-start" />
       {(usedCategories.length > 0 || hasMedium) && (
         <nav className="ps-filters" aria-label="写真の絞り込み">
           <ul className="ps-filters__group">

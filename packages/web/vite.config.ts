@@ -36,6 +36,8 @@ export default defineConfig(({ mode }) => {
 function appConfig(): UserConfig {
 	return {
 		plugins: [honoDevPlugin(), react(), tailwind()],
+		// Worker dependencies must be pre-bundled before editing starts (avoid a cold-start reload).
+		optimizeDeps: { include: ["pdf-lib", "@pdf-lib/fontkit"] },
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "./src/web"),

@@ -6,6 +6,7 @@
 
 | 知りたいこと | 文書 |
 |---|---|
+| 管理画面内のPDF作品集の試作（2026-09-27） | `docs/specs/portfolio-pdf-v0.md` |
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
 | 写真管理・サイト編集の再設計（2026-09-13） | `docs/specs/admin-studio-2026-09-13.md` |
 | 公開サイトの根本デザイン比較（2026-09-08） | `docs/specs/public-design-review-2026-09-08.md` |

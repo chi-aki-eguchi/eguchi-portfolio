@@ -968,6 +968,7 @@ function AdminPageContent({
             }}
           >
             <BookAdminShell
+              pdfEnabled={!demoMode}
               siteName={shellSettings?.siteName?.trim() || sidebarSiteName}
               view={bookView}
               onView={(v) => goBook(v)}
@@ -1183,6 +1184,7 @@ function AdminPageContent({
         </nav>
         <div ref={setSettingsNavigationHost} className="studio-editor-outline admin-sidebar__full" />
         <div className="admin-sidebar__footer admin-sidebar__full">
+          {!demoMode && <a href="/admin/pdf" target="_blank" rel="noopener" className="admin-sidebar__link">PDF作品集</a>}
           <a
             href={publicSiteHref}
             target="_blank"
@@ -1224,6 +1226,7 @@ function AdminPageContent({
           />
         )}
         {!demoMode && <AdminDesktopLanguageBar />}
+        {!demoMode && !galleryReordering && <a className="admin-sidebar__link md:hidden" href="/admin/pdf" target="_blank" rel="noopener">PDF作品集</a>}
 
         {/* Content */}
         <div className="admin-content">

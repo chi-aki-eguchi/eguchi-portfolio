@@ -1,6 +1,18 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
+## Current State — 2026-09-27 JST / PDF作品集 v0（ローカル試作・未push）
+
+- 依頼: `portfolio-kit-web-pdf-v0-spec.md` のA段階。既存管理画面で作品を選び、Webとは独立した本としてA4 PDFを作る。課金・一般公開体験・本番データ・デプロイは対象外。
+- ブランチ `codex/portfolio-pdf`、worktree `/Users/chiaki/.codex/worktrees/portfolio-pdf/eguchi-portfolio-app`。現在の写真中心ブランチのHEADを基に分離。元checkoutの未コミット変更は保持。
+- 追加: `/admin/pdf`、認証必須の読み取り専用 `/api/admin/pdf/*`、独立文書モデル、ブラウザー内30冊保存／JSON往復、写真20枚、1枚／2枚のページ・順番・回転、任意表紙とPDF用プロフィール、A4縦横、送信用／印刷用PDF。日本語フォント埋め込み、文字枠超過・字形不足・欠落画像の停止、実画像寸法に基づくdpi注意、実ページ数・バイト数、Workerの進捗・中止。
+- 試す: このworktreeで `bun run try:pdf` → `http://localhost:5499/admin/pdf`。人工データ・一時SQLite・偽ストレージ。本番には接続しない。今回起動中の環境には公開写真12枚のコピーを非公開状態で追加し、専用Chromeで見本を保存・出力済み（再起動で写真コピーは消える）。通常の管理画面の入口は別タブで開き、既存編集中の内容を保持。
+- 見本: `output/pdf/portfolio-screen.pdf`（13ページ・3,632,669 bytes）、`portfolio-print.pdf`（28,235,779 bytes）、`portfolio-landscape.pdf`（28,235,815 bytes）。公開写真12枚から生成。全ページをPopplerで画像化して確認、日本語をpypdfで抽出、埋め込み画像にEXIFなし。見本とJSONはGit対象外。
+- 検証: `bun run check` 成功（単体1519・ツール60・番人48・型・lint・build、その時点）。その後の日本語ファイル名対応を含む最終差分で関連単体9・型・lint・build成功。全体smokeは624成功／186対象外／3失敗（同じ新テストの用紙選択を `getByLabel` で探して停止）。指定を `getByRole` へ修正し、新機能12件（PC・スマホ幅・WebKit、各4件）すべて再検証成功。既存smokeの失敗なし。番人の初回1件は別smokeの起動との重複で一時フォルダ検査に失敗し、重複を避けたcheckで成功。
+- 実測: Chrome 154.0.8037.57で実写真12枚の送信用生成2.439秒・JS例外0。人工画像20枚／22ページは0.407〜0.942秒、25msタイマー最大間隔31〜33ms。写真内容・環境ごとの測定であり速度保証ではない。
+- 未確認: 紙へのA4印刷、Safariアプリそのもの、スマホ実機、本番の認証済み出力、PostgreSQL実接続。ブラウザー保存は暗号化・同期なし。PDF/X・CMYK・指定容量保証・一般向け体験・決済は未実装。
+- 正本: `docs/specs/portfolio-pdf-v0.md`。証拠・検証スクリプトは `scratch/pdf-check/`、全体smoke失敗の証拠は `scratch/smoke-evidence/2026-09-26T18-11-06-117Z/`。次は本人の紙と操作の確認。push・デプロイは別途指示を受けてから。
+
 
 ## Current State — 2026-09-26 JST / 人物撮影の相談とPortfolio Kitの集客
 

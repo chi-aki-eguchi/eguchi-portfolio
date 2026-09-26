@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { portfolioPdfRoutes } from "./portfolio-pdf";
 import { cors } from "hono/cors";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { db, withRetry, schema } from "./database";
@@ -1162,6 +1163,8 @@ const app = new Hono()
     const session = getCookie(c, SESSION_KEY);
     return c.json({ authenticated: session === SESSION_VALUE }, 200);
   })
+
+  .route("/admin/pdf", portfolioPdfRoutes(requireAdmin, getOriginal))
 
   // ── Admin: Setup health (read-only) ─────────────────────
   // 「はじめに」画面が写真を選ぶ前に保存先の未接続へ気づけるようにする。

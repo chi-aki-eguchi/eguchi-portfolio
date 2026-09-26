@@ -26,6 +26,7 @@ const PortfolioGuidePage = lazy(() => import("./pages/portfolio-guide"));
 const ServiceConsultPage = lazy(() => import("./pages/service-consult"));
 const ServiceStartPage = lazy(() => import("./pages/service-start"));
 const AdminLoginPage = lazy(() => import("./pages/admin-login"));
+const AdminPdfPage = lazy(() => import("./pages/admin-pdf"));
 const AdminPage = lazy(() => import("./pages/admin"));
 const AdminDemoPage = lazy(() => import("./pages/admin-demo"));
 
@@ -108,6 +109,7 @@ function App() {
               </TitledRoute>
             </Suspense>
           </Route>
+          <Route path="/admin/pdf"><Suspense fallback={<PageFallback />}><TitledRoute title="PDF作品集"><AdminPdfPage /></TitledRoute></Suspense></Route>
           <Route path="/admin">
             <Suspense fallback={<PageFallback />}>
               <TitledRoute title="Admin">

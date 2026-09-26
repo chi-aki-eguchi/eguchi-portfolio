@@ -79,3 +79,6 @@ scripts/smoke/scratch/
 
 # per-night scratch instructions (recreated per run)
 claude-code-night-run.md
+
+# Local PDF samples and verification exports (may contain personal data)
+/output/pdf/

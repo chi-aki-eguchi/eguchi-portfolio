@@ -14,6 +14,7 @@ export type BookAdminView = "works" | "library" | "site";
  * 設定や移動先は ⌘K の「探す」からも開ける。
  */
 export function BookAdminShell({
+  pdfEnabled,
   siteName,
   view,
   onView,
@@ -27,6 +28,7 @@ export function BookAdminShell({
   theme,
   onToggleTheme,
 }: {
+  pdfEnabled?: boolean;
   siteName: string;
   view: BookAdminView;
   onView: (view: BookAdminView) => void;
@@ -71,6 +73,7 @@ export function BookAdminShell({
           ))}
         </nav>
         <div className="admin-book__tools">
+          {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pdf" target="_blank" rel="noopener">PDF作品集</a>}
           <button type="button" className="bk-ax-btn admin-book__tool" onClick={onSearch}>
             探す <kbd>⌘K</kbd>
           </button>

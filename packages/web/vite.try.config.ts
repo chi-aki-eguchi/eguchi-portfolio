@@ -23,6 +23,22 @@ function readOnlyApi(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ?? "/";
+        // 管理画面はここでは開けない（ログインも本番へ送らない）。ログイン画面だけ
+        // 出て必ず失敗すると迷うので、見本データで試せる try:admin へ案内する。
+        if (/^\/admin(\/|\?|$)/.test(url) && (req.headers.accept ?? "").includes("text/html")) {
+          res.statusCode = 200;
+          res.setHeader("content-type", "text/html; charset=utf-8");
+          res.setHeader("cache-control", "no-store");
+          res.end(`<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>管理画面はこちら</title>
+<body style="font:16px/1.8 system-ui,sans-serif;max-width:34rem;margin:12vh auto;padding:0 20px;color:#222">
+<h1 style="font-size:20px">このお試しでは管理画面を開けません</h1>
+<p>ここ（localhost:4400）は、本番の写真を<strong>読むだけ</strong>で表示するお試しです。ログインや保存は本番へ送りません。</p>
+<p>管理画面は、見本の写真で試せる別のお試しで開けます。</p>
+<p><a href="http://localhost:5299/admin" style="font-size:18px">http://localhost:5299/admin</a></p>
+<p style="color:#666;font-size:14px">開かないときは、ターミナルで <code>bun run try:admin</code> を実行してください。パスワードはそのターミナルに表示されます。</p>
+</body></html>`);
+          return;
+        }
         if (!url.startsWith("/api/")) return next();
         const method = req.method ?? "GET";
         if ((method !== "GET" && method !== "HEAD") || url.startsWith("/api/admin")) {

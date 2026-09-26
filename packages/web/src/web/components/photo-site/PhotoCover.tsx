@@ -7,6 +7,16 @@ import { aspectOf } from "../../lib/photo-rows";
 import type { SeriesLink } from "../../lib/series-links";
 import { Link } from "wouter";
 
+/**
+ * 名前の字間（em）。空・読めない値は表紙の既定 0.14em。管理画面の範囲
+ * （-0.06〜0.8em）はそのまま使い、外れた値だけ範囲に収める。
+ */
+export function trackingOf(value: string | null | undefined): number {
+  const n = Number.parseFloat(value ?? "");
+  if (!Number.isFinite(n)) return 0.14;
+  return Math.min(0.8, Math.max(-0.06, n));
+}
+
 /** 表紙の写真の添え書き: シリーズ名・媒体・年（年はデジタルの撮影日だけ。フィルムの日付は複写日）。 */
 export function coverCaption(
   photo: Pick<GalleryPhoto, "filmType" | "shotAt" | "seriesId">,
@@ -44,6 +54,7 @@ export function PhotoCover({
   photographerName,
   streamId,
   seriesLinkById,
+  nameTracking,
 }: {
   photos: GalleryPhoto[];
   name: string;
@@ -54,6 +65,8 @@ export function PhotoCover({
   /** 「写真を見る」で送る先（写真の一覧の id） */
   streamId: string;
   seriesLinkById?: Record<number, SeriesLink>;
+  /** 管理画面「名前の字間」（em、数字だけ）。名前を欄に収める計算にも使う。 */
+  nameTracking?: string | null;
 }) {
   const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -120,13 +133,21 @@ export function PhotoCover({
 
   return (
     <section ref={coverRef} className="ps-cover" aria-label={name}>
-      <div className="ps-cover__words" style={{ "--chars": String(Math.max(3, [...name].length)) } as React.CSSProperties}>
+      <div
+        className="ps-cover__words"
+        style={
+          {
+            "--chars": String(Math.max(3, [...name].length)),
+            "--name-tracking": String(trackingOf(nameTracking)),
+          } as React.CSSProperties
+        }
+      >
         <h1 className="ps-cover__name font-ja">{name}</h1>
-        {(nameEn || subtitle) && (
+        {((nameEn && nameEn !== name) || subtitle) && (
           <p className="ps-cover__en font-en">
-            {nameEn}
-            {nameEn && subtitle && <span aria-hidden="true"> — </span>}
-            {subtitle}
+            {nameEn !== name && nameEn}
+            {nameEn && nameEn !== name && subtitle && <span aria-hidden="true"> — </span>}
+            {subtitle && <span className="ps-cover__sub">{subtitle}</span>}
           </p>
         )}
         {(caption.series || caption.facts) && (

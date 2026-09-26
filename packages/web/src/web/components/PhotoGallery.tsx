@@ -1397,6 +1397,23 @@ export function PhotoGallery({
     // photos stacked on top (z-index) so the topmost is the click target. Mobile
     // keeps the same character, just dialled down (smaller tilt / overlap).
     const overlap = isMobile ? 6 : 13;
+    const maxTilt = isMobile ? 2 : 4;
+    // The outer cards reach past the grid by their nudge plus the corner the
+    // tilt swings out (taller photos swing further) and the hover lift. Where
+    // the page leaves less margin than that — 24px on a 768px tablet — pad the
+    // grid so no card pokes off the screen and adds a sideways scroll.
+    const gridW = frameW || room.natural;
+    const colW = columns > 0 ? (gridW - (columns - 1) * colGap) / columns : 0;
+    const tallest = photos.reduce((h, p) => {
+      const d = orientedDimensions(p.width, p.height, p.rotationDeg);
+      return d.width && d.height && d.width > 0 && d.height > 0
+        ? Math.max(h, (colW * d.height) / d.width)
+        : h;
+    }, colW);
+    const reach =
+      overlap + (tallest * Math.sin((maxTilt * Math.PI) / 180)) / 2 + colW * 0.01 + 2;
+    const sideRoom = (room.available - gridW) / 2;
+    const mat = room.available > 0 && gridW > 0 ? Math.max(0, Math.ceil(reach - sideRoom)) : 0;
     body = (
       <div
         style={{
@@ -1405,6 +1422,7 @@ export function PhotoGallery({
           columnGap: `${colGap}px`,
           rowGap: `${Math.max(0, rowGap - overlap)}px`,
           alignItems: "start",
+          paddingInline: mat ? `${mat}px` : undefined,
         }}
       >
         {photos.map((photo, idx) => {

@@ -12,6 +12,7 @@ import { formatPeriodRange } from "../../lib/series-colophon";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
 import { aspectOf } from "../../lib/photo-rows";
 import { PhotoStream } from "./PhotoStream";
+import { InquiryCta } from "../InquiryCta";
 
 type Settings = Record<string, string | null | undefined> | undefined;
 
@@ -213,6 +214,7 @@ export function PhotoSeriesPage({
           label={series.title}
         />
       )}
+      <InquiryCta />
       <nav className="ps-series-foot" aria-label="ほかのシリーズ">
         {nextChapter && (
           <Link

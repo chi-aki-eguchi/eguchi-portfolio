@@ -24,6 +24,7 @@ export function PhotoStream({
   seriesLinkById,
   seriesName,
   label,
+  after,
 }: {
   photos: GalleryPhoto[];
   photographerName: string;
@@ -32,6 +33,8 @@ export function PhotoStream({
   seriesName?: string;
   /** 一覧の名前（読み上げ用） */
   label: string;
+  /** 写真を全部並べ終えたあとに出すもの（撮影依頼の案内など）。途中では出さない。 */
+  after?: React.ReactNode;
 }) {
   const boxRef = useRef<HTMLUListElement>(null);
   const [width, setWidth] = useState(0);
@@ -177,6 +180,7 @@ export function PhotoStream({
         )}
       </ul>
       {more && <div ref={sentinelRef} className="ps-sentinel" aria-hidden="true" />}
+      {!more && plan && after}
       <PhotoViewer
         photos={photos}
         viewer={viewer}

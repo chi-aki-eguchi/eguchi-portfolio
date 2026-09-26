@@ -15,6 +15,8 @@ import { galleryExcludesSeries, siteDesignFrom, usesBookChrome } from "../lib/bo
 import { PhotoSiteFrame } from "./photo-site/PhotoSiteFrame";
 import { waitForWebFonts } from "../lib/web-fonts";
 import { StudioBridge } from "./StudioBridge";
+import { useNavFit } from "../hooks/useNavFit";
+import { lockPageScroll } from "../lib/scroll-lock";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
 import {
@@ -143,6 +145,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const navBarRef = useRef<HTMLElement>(null);
+  const navLogoRef = useRef<HTMLAnchorElement>(null);
+  const navListRef = useRef<HTMLUListElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [location] = useLocation();
   // **移動先の中身を、指が触れた時点で取りに行く。**押してから取りに行くと、
@@ -377,8 +382,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mobileOpen) return;
     const header = headerRef.current;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockPageScroll();
     const outside = Array.from(header?.parentElement?.children ?? [])
       .filter((node): node is HTMLElement => node instanceof HTMLElement && node !== header);
     const inertBefore = outside.map(node => node.inert);
@@ -391,7 +395,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         menuButtonRef.current?.focus();
       } else if (event.key === "Tab") {
         const items = Array.from(header?.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)") ?? [])
-          .filter(node => node.getClientRects().length > 0 && !node.closest("[inert]"));
+          .filter(node => node.getClientRects().length > 0 && !node.closest("[inert]") && getComputedStyle(node).visibility !== "hidden");
         const first = items[0];
         const last = items[items.length - 1];
         if (event.shiftKey && (document.activeElement === first || !header?.contains(document.activeElement))) {
@@ -406,7 +410,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", onKey);
     media.addEventListener("change", onResize);
     return () => {
-      document.body.style.overflow = previous;
+      unlock();
       outside.forEach((node, index) => { node.inert = inertBefore[index]; });
       window.removeEventListener("keydown", onKey);
       media.removeEventListener("change", onResize);
@@ -461,6 +465,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? data!.footerLayout!
     : "center";
 
+  // メニューの文字を大きくしても崩れないように、入りきるかを測る（useNavFit）。
+  // 入らなければ PC でもハンバーガーへ。左のメニューは帯を広げてから。
+  const navFit = useNavFit(
+    navBarRef,
+    navLogoRef,
+    navListRef,
+    navPosition,
+    [
+      navPosition,
+      data?.navLabelTop,
+      ...navItems.map((i) => i.label),
+      dm ? "dm" : "",
+      showLanguageSwitch && languagePairHref ? "lang" : "",
+    ].join("|"),
+  );
+  const effectiveNavPosition = navFit.collapsed && navPosition === "left" ? "top" : navPosition;
+
   // 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）は専用の器で描く。
   // いつもの構成（配布版）の器には触らない。
   if (bookChrome) {
@@ -497,11 +518,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
       <PhotoSiteFrame
         name={
+          // 名前が空でも器を空にしない（英語名 → プロフィールの名前 → 「Photographs」）。
           (isEnglishChrome ? data?.siteNameEn : data?.siteName) ||
           data?.siteName ||
-          ""
+          data?.siteNameEn ||
+          data?.profileName ||
+          "Photographs"
         }
         nameEn={data?.siteNameEn}
+        footerLayout={footerLayout}
         navItems={frameNav}
         isActive={isActive}
         ready={frameReady}
@@ -539,6 +564,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   ))}
                 </ul>
               )}
+              {data?.footerCtaLabel && (
+                <Link
+                  to={footerPolicyLanguage === "en" ? "/en/contact" : "/contact"}
+                  className="ps-footer__cta font-en"
+                >
+                  {footerPolicyLanguage === "en" ? "Contact" : data.footerCtaLabel}
+                </Link>
+              )}
               <ul className="ps-footer__links font-en" aria-label={isEnglishChrome ? "Site policies" : "サイトの方針・利用条件"}>
                 <li>
                   <Link to={footerPolicyPath("privacy", footerPolicyLanguage)}>Privacy</Link>
@@ -573,10 +606,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // layer here would cover the DD grain texture (body::before at z-index:-1).
   return (
     <div
-      className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "top site-book" : navPosition} nav-fx-${navHoverEffect}${
+      className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "top site-book" : effectiveNavPosition} nav-fx-${navHoverEffect}${
         seeThrough && !bookChrome ? " header-see-through" : ""
       }`}
       data-site-design={bookChrome ? "book" : undefined}
+      style={
+        navFit.railPx
+          ? ({ "--nav-rail-w": `${navFit.railPx}px` } as React.CSSProperties)
+          : undefined
+      }
     >
       {/* Skip link — visible only on keyboard focus, lets SR/keyboard users jump past the nav */}
       <a
@@ -591,6 +629,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         aria-modal={mobileOpen || undefined}
         aria-label={mobileOpen ? (isEnglishChrome ? "Navigation" : "ナビゲーション") : undefined}
         data-mobile-menu-open={mobileOpen || undefined}
+        data-nav-collapsed={navFit.collapsed || undefined}
         data-header-bg={headerBackground}
         className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[var(--ease-quart)] ${
           mobileOpen
@@ -607,11 +646,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }}
       >
         <nav
+          ref={navBarRef}
           className="site-chrome-reveal max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between"
           data-ready={chromeRevealed ? "true" : undefined}
         >
           {/* Logo */}
           <Link
+            ref={navLogoRef}
             to="/"
             {...warmOn("/")}
             className={`${
@@ -635,7 +676,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Desktop nav */}
-          <ul className="hidden md:flex gap-8 items-center">
+          <ul
+            ref={navListRef}
+            className="public-nav-list hidden md:flex gap-8 items-center whitespace-nowrap"
+          >
             {navItems.map(({ href, label }) => (
               <li key={href}>
                 <Link
@@ -751,7 +795,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Dark mode toggle + Mobile hamburger */}
-          <div className={`md:hidden ${bookChrome ? "hidden" : "flex"} items-center gap-0.5`}>
+          <div className={`public-nav-compact md:hidden ${bookChrome ? "hidden" : "flex"} items-center gap-0.5`}>
             {dm && (
               <button
                 onClick={dm.toggle}

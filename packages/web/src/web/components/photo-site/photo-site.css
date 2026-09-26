@@ -60,6 +60,8 @@ html:has(.ps-site) {
   gap: 1.5rem;
 }
 .ps-name {
+  min-width: 0;
+  overflow: hidden;
   display: inline-flex;
   align-items: baseline;
   gap: 0.8em;
@@ -72,6 +74,10 @@ html:has(.ps-site) {
 .ps-name__main {
   font-size: 16px;
   letter-spacing: 0.12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .ps-name__en {
   font-size: 12px;
@@ -98,6 +104,9 @@ html:has(.ps-site) {
   align-items: center;
 }
 .ps-nav__list {
+  /* 項目は折り返さない（折り返すと、入りきるかの測り方が狂う）。 */
+  white-space: nowrap;
+  overflow-wrap: normal;
   display: flex;
   align-items: center;
   gap: clamp(1rem, 2.2vw, 2rem);
@@ -144,6 +153,24 @@ html:has(.ps-site) {
   border: 0;
   padding: 0;
   cursor: pointer;
+}
+/* 入りきらないとき（PhotoSiteFrame が測る）とスマホは「Menu」。一覧は測れるよう
+   場所を取らずに残し、見えなくする。 */
+.ps-header__bar[data-collapsed] .ps-nav__list {
+  /* 幅も高さも取らない（ページを横へ押し広げない）。中身の幅は scrollWidth で測れる。 */
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+.ps-header__bar[data-collapsed] .ps-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 @media (max-width: 767px) {
   .ps-nav__list {
@@ -221,8 +248,8 @@ html:has(.ps-site) {
 .ps-cover {
   --ps-cover-h: calc(100svh - var(--ps-header-h) - var(--sai-top, 0px));
   --ps-cover-pad: clamp(20px, 4.5vh, 48px);
-  height: var(--ps-cover-h);
-  min-height: 460px;
+  /* 文字を大きくする設定のときは、表紙のほうが伸びる（文字を上へはみ出させない）。 */
+  min-height: max(460px, var(--ps-cover-h));
   display: grid;
   grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
   align-items: end;
@@ -251,6 +278,7 @@ html:has(.ps-site) {
 }
 .ps-cover__en {
   margin: 0;
+  overflow-wrap: anywhere;
   font-size: 13px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -459,6 +487,10 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
+    /* 横へ送れることが分かるよう、右端を淡くぼかす（文字の途中で切れて見えない）。 */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+    padding-right: 28px;
   }
   .ps-filters::-webkit-scrollbar {
     display: none;
@@ -782,4 +814,200 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
     margin-left: 0;
     width: 100%;
   }
+}
+
+/* ── 管理画面の文字の設定を効かせる（2026-09-26 オーナー「admin と対応しながら」）──
+   値は provider.tsx が設定から作る変数。設定が空なら、上で決めた見た目に戻る。
+   px の大きさは「全体の文字の倍率」（--global-font-scale）を掛けて使う。
+   表紙の名前の大きさだけは、欄の幅に収まるよう自動（「名前の大きさ」は使わない）。 */
+.ps-site {
+  --ps-scale: var(--global-font-scale, 1);
+  font-weight: var(--body-weight, 400);
+}
+.ps-name__main {
+  font-size: calc(16px * var(--ps-scale));
+}
+.ps-name__en {
+  font-size: calc(12px * var(--ps-scale));
+}
+.ps-nav__link,
+.ps-menu-button {
+  font-size: var(--nav-size, calc(13px * var(--ps-scale)));
+  letter-spacing: var(--nav-tracking, 0.06em);
+}
+.ps-nav__link {
+  color: rgba(var(--foreground-rgb), var(--nav-opacity, 0.56));
+}
+.ps-nav__link:hover,
+.ps-nav__link[aria-current="page"] {
+  color: var(--link-hover-color, var(--foreground));
+}
+.ps-menu__link {
+  font-size: calc(28px * var(--ps-scale));
+}
+.ps-cover__en {
+  font-size: var(--hero-name-en-size, calc(13px * var(--ps-scale)));
+  letter-spacing: var(--hero-name-en-tracking, 0.24em);
+  color: var(--hero-name-en-color, var(--ps-quiet));
+}
+.ps-cover__sub {
+  font-size: var(--hero-sub-size, inherit);
+  color: var(--hero-sub-color, inherit);
+}
+.ps-cover__caption,
+.ps-cover__more,
+.ps-cover__nav,
+.ps-filters,
+.ps-series-group__label,
+.ps-series-entry__facts,
+.ps-series-head__facts,
+.ps-series-head__up,
+.ps-series-foot__all {
+  font-size: var(--section-label-size, calc(13px * var(--ps-scale)));
+}
+.ps-cover__caption,
+.ps-series-group__label,
+.ps-series-entry__facts,
+.ps-series-head__facts {
+  letter-spacing: var(--section-label-tracking, 0.06em);
+  color: rgba(var(--foreground-rgb), var(--section-label-opacity, 0.56));
+}
+.ps-page-head__title {
+  font-size: var(--heading-size, clamp(1.75rem, 3vw, 2.5rem));
+}
+.ps-series-head__title {
+  font-size: var(--heading-size, clamp(1.9rem, 3.6vw, 3rem));
+}
+.ps-series-entry__title {
+  font-size: calc(clamp(1.2rem, 2vw, 1.6rem) * var(--ps-scale));
+}
+.ps-series-head__statement,
+.ps-series-head__sub,
+.ps-series-entry__sub,
+.ps-empty {
+  font-size: var(--body-size, calc(15px * var(--ps-scale)));
+  letter-spacing: var(--body-tracking, normal);
+}
+.ps-series-head__statement {
+  line-height: var(--body-leading, 2.05);
+}
+.ps-cover__series,
+.ps-empty a,
+.ps-empty button {
+  text-decoration-line: var(--link-underline, underline);
+}
+.ps-cover__series:hover,
+.ps-series-foot__next:hover,
+.ps-series-head__up:hover {
+  color: var(--link-hover-color, var(--foreground));
+}
+.ps-tile__button:focus-visible,
+.ps-cover__photo:focus-visible {
+  outline-color: var(--accent-color, var(--foreground));
+}
+.ps-footer__row {
+  font-size: var(--footer-size, calc(12px * var(--ps-scale)));
+  color: rgba(var(--foreground-rgb), var(--footer-opacity, 0.36));
+}
+.ps-footer__links a {
+  color: inherit;
+}
+.ps-footer__links[aria-label="SNS"] a {
+  color: rgba(var(--foreground-rgb), var(--sns-opacity, 0.56));
+}
+.ps-footer__links a:hover {
+  color: var(--link-hover-color, var(--foreground));
+}
+/* フッターの並べ方（管理画面「各ページの構成 → フッター」）。
+   center: 中央に積む ／ left: 左に積む ／ split: 1行に並べ、著作表示を右端へ。 */
+.ps-footer[data-layout="center"] .ps-footer__row,
+.ps-footer[data-layout="left"] .ps-footer__row {
+  flex-direction: column;
+  gap: 10px;
+}
+.ps-footer[data-layout="center"] .ps-footer__row {
+  align-items: center;
+  text-align: center;
+}
+.ps-footer[data-layout="left"] .ps-footer__row {
+  align-items: flex-start;
+}
+.ps-footer[data-layout="center"] .ps-footer__copy,
+.ps-footer[data-layout="left"] .ps-footer__copy {
+  margin-left: 0;
+}
+/* 表紙の名前: 太さ・色・字間は管理画面の設定。大きさは字間も含めて欄に収まるよう計算する。 */
+.ps-cover__name {
+  font-weight: var(--hero-name-weight, 500);
+  color: var(--hero-name-color, var(--foreground));
+  letter-spacing: calc(var(--name-tracking, 0.14) * 1em);
+  font-size: clamp(2.2rem, calc(100cqi / (var(--chars, 3) * (1.06 + var(--name-tracking, 0.14)))), 8rem);
+}
+@media (max-width: 767px) {
+  .ps-cover__name {
+    font-size: clamp(2.2rem, calc(100cqi / (var(--chars, 3) * (1.12 + var(--name-tracking, 0.14)))), 3.8rem);
+  }
+}
+/* トップの言葉（管理画面「トップの言葉」）。 */
+.ps-statement {
+  max-width: 36rem;
+  margin: clamp(1.5rem, 5vh, 3rem) 0 clamp(2rem, 6vh, 4rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  font-size: var(--body-size, calc(15px * var(--ps-scale)));
+  line-height: var(--body-leading, 2.05);
+  letter-spacing: var(--body-tracking, normal);
+}
+.ps-statement p {
+  margin: 0;
+}
+.ps-footer__cta {
+  color: var(--ps-ink);
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── どの文字の設定でも画面の中で折り返す（2026-09-26 設定の総当たりで検出）──
+   文字を大きく・字間を広くすると、「← Series」「Photographs ↓」「期間・枚数」
+   著作表示などの1行が画面より長くなり、ページが横へはみ出していた。 */
+.ps-main,
+.ps-footer {
+  overflow-wrap: anywhere;
+}
+.ps-series-head__up,
+.ps-cover__more,
+.ps-series-foot__all,
+.ps-series-foot__next,
+.ps-footer__cta,
+.ps-footer__links a,
+.ps-footer__copy,
+.ps-footer__credit {
+  max-width: 100%;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.ps-footer__links {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.ps-series-entry__facts {
+  white-space: normal;
+  text-align: right;
+  min-width: 0;
+}
+.ps-series-entry__link {
+  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(0, max-content);
+}
+@media (max-width: 639px) {
+  .ps-series-entry__link {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+  .ps-series-entry__facts {
+    text-align: left;
+  }
+}
+.ps-cover__nav {
+  flex-wrap: wrap;
 }

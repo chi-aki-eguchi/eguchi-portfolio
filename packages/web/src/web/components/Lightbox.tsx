@@ -882,8 +882,12 @@ export function Lightbox({
     // スクロールバーは広くても20px程度。それを超える値は幅がまだ確定して
     // いないときの異常値なので、埋め物として採用しない（レイアウトが大きく
     // ずれるほうが元の横跳ねより悪い）。
+    // html に overflow-y: scroll が付いているとき（写真中心のサイト）は、body を
+    // 止めてもスクロールバーは消えない。埋めると逆に本文が狭まり、裏の写真の段が
+    // 組み直されていた（2026-09-26 Safari で実測: 1209.5px → 1205.5px）。
     const raw = window.innerWidth - document.documentElement.clientWidth;
-    const gap = Number.isFinite(raw) && raw > 0 && raw <= 32 ? raw : 0;
+    const barStays = getComputedStyle(document.documentElement).overflowY === "scroll";
+    const gap = !barStays && Number.isFinite(raw) && raw > 0 && raw <= 32 ? raw : 0;
     body.style.overflow = "hidden";
     if (gap > 0) body.style.paddingRight = `${gap}px`;
     return () => {

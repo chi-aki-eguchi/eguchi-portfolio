@@ -7,6 +7,7 @@ import type { GalleryPhoto } from "../PhotoGallery";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
 import { PhotoStream } from "./PhotoStream";
 import { PhotoCover } from "./PhotoCover";
+import { InquiryCta } from "../InquiryCta";
 
 type Settings = Record<string, string | null | undefined> | undefined;
 type Medium = "all" | "film" | "digital";
@@ -35,6 +36,19 @@ export function streamPhotosFor(
   return all.filter((p) => !onCover.has(p.id));
 }
 
+/** トップの言葉（プロフィールの文章）。段落ごとに。空なら出さない。 */
+function HomeStatement({ text }: { text: string }) {
+  const paras = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  if (paras.length === 0) return null;
+  return (
+    <section className="ps-statement" aria-label="言葉">
+      {paras.map((p, i) => (
+        <p key={i}>{p}</p>
+      ))}
+    </section>
+  );
+}
+
 function mediumOf(p: GalleryPhoto): Medium {
   return p.filmType === "フィルム" ? "film" : p.filmType === "デジタル" ? "digital" : "all";
 }
@@ -53,7 +67,7 @@ export function PhotoHome({
   settings: Settings;
   leadPhotos: GalleryPhoto[];
 }) {
-  const photographerName = settings?.siteName || settings?.siteNameEn || "";
+  const photographerName = settings?.siteName || settings?.siteNameEn || settings?.profileName || "";
   const [location, setLocation] = useLocation();
   const search = useSearch();
   const params = useMemo(() => new URLSearchParams(search), [search]);
@@ -106,30 +120,35 @@ export function PhotoHome({
   };
 
   const filtering = category !== "all" || medium !== "all";
+  // 管理画面「トップの言葉」: 表紙の前（before-works）か、写真の一覧の後（after-works）。
+  const statementAt = settings?.homeStatement ?? "off";
+  const statement = settings?.profileStatement ?? "";
 
   return (
     <div className="ps-page ps-home">
       {coverPhotos.length > 0 ? (
         <PhotoCover
           photos={coverPhotos}
-          name={settings?.siteName || photographerName}
+          name={settings?.siteName || settings?.siteNameEn || settings?.profileName || "Photographs"}
           nameEn={settings?.siteNameEn}
           subtitle={settings?.heroSubtitle}
           total={all.length}
           photographerName={photographerName}
           streamId="photographs"
           seriesLinkById={seriesLinkById}
+          nameTracking={settings?.heroNameTracking}
         />
       ) : (
         <h1 className="sr-only">{photographerName}</h1>
       )}
+      {statementAt === "before-works" && <HomeStatement text={statement} />}
       <div id="photographs" className="ps-home__stream-start" />
       {(usedCategories.length > 0 || hasMedium) && (
         <nav className="ps-filters" aria-label="写真の絞り込み">
           <ul className="ps-filters__group">
             <li>
               <Link to={hrefWith({ c: "all" })} aria-current={category === "all" ? "true" : undefined}>
-                All
+                {settings?.filterAllLabel || "All"}
               </Link>
             </li>
             {usedCategories.map((c) => (
@@ -185,6 +204,12 @@ export function PhotoHome({
           photographerName={photographerName}
           seriesLinkById={seriesLinkById}
           label="写真"
+          after={
+            <>
+              {statementAt === "after-works" && <HomeStatement text={statement} />}
+              <InquiryCta />
+            </>
+          }
         />
       )}
     </div>

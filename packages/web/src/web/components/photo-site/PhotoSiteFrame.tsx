@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "wouter";
+import { lockPageScroll } from "../../lib/scroll-lock";
 
 export type FrameNavItem = { href: string; label: string };
 
@@ -39,6 +40,7 @@ export function PhotoSiteFrame({
   english,
   languageSwitch,
   footer,
+  footerLayout,
   children,
 }: {
   name: string;
@@ -50,16 +52,43 @@ export function PhotoSiteFrame({
   english: boolean;
   languageSwitch?: React.ReactNode;
   footer: React.ReactNode;
+  /** 管理画面「フッターの並べ方」: center / left / split */
+  footerLayout?: string;
   children: React.ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  // メニューが横に入りきらないときは「Menu」にまとめる（管理画面でメニューの文字を
+  // 大きくしたとき・項目が増えたとき・画面が狭いとき）。描く前に測るので、はみ出した
+  // 形は一度も見せない。
+  const barRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLAnchorElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const measure = () => {
+      const list = listRef.current;
+      const name = nameRef.current;
+      if (!list || !name) return;
+      const style = getComputedStyle(bar);
+      const inner = bar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const needed = name.scrollWidth + list.scrollWidth + 32;
+      setCollapsed(needed > inner);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(bar);
+    if (listRef.current) ro.observe(listRef.current);
+    return () => ro.disconnect();
+  }, [navItems.length, ready]);
   const menuRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockPageScroll();
     menuRef.current?.querySelector<HTMLElement>("a, button")?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -73,7 +102,7 @@ export function PhotoSiteFrame({
     window.addEventListener("keydown", onKey);
     wide.addEventListener("change", onWide);
     return () => {
-      document.body.style.overflow = previous;
+      unlock();
       window.removeEventListener("keydown", onKey);
       wide.removeEventListener("change", onWide);
     };
@@ -93,15 +122,20 @@ export function PhotoSiteFrame({
         {english ? "Skip to content" : "本文へスキップ"}
       </a>
       <header className="ps-header" data-menu-open={menuOpen || undefined}>
-        <div className="ps-header__bar" data-ready={ready || undefined}>
-          <Link to="/" className="ps-name" onClick={() => setMenuOpen(false)}>
+        <div
+          ref={barRef}
+          className="ps-header__bar"
+          data-ready={ready || undefined}
+          data-collapsed={collapsed || undefined}
+        >
+          <Link ref={nameRef} to="/" className="ps-name" onClick={() => setMenuOpen(false)}>
             <span className={english ? "ps-name__main font-en" : "ps-name__main font-ja"}>
               {name}
             </span>
-            {!english && nameEn && <span className="ps-name__en font-en">{nameEn}</span>}
+            {!english && nameEn && nameEn !== name && <span className="ps-name__en font-en">{nameEn}</span>}
           </Link>
           <nav className="ps-nav" aria-label={english ? "Main" : "メイン"}>
-            <ul className="ps-nav__list">
+            <ul ref={listRef} className="ps-nav__list" aria-hidden={collapsed || undefined}>
               {navItems.map((item) => (
                 <li key={item.href}>
                   <Link
@@ -184,7 +218,9 @@ export function PhotoSiteFrame({
       <main id="main-content" tabIndex={-1} className="ps-main">
         {children}
       </main>
-      <footer className="ps-footer">{footer}</footer>
+      <footer className="ps-footer" data-layout={footerLayout ?? "center"}>
+        {footer}
+      </footer>
     </div>
   );
 }

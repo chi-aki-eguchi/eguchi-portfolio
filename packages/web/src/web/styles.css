@@ -3853,11 +3853,13 @@ header > nav {
     padding-left: calc(3rem + var(--sai-left, 0px)) !important;
     padding-right: calc(3rem + var(--sai-right, 0px)) !important;
   }
+  /* 帯の幅は、メニューの文字を大きくしたときだけ広げる（useNavFit が
+     --nav-rail-w を置く）。既定は 11rem のまま。 */
   .nav-pos-left > header {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 11rem;
+    width: var(--nav-rail-w, 11rem);
     box-shadow: 1px 0 0 rgba(var(--foreground-rgb), 0.04);
   }
   .nav-pos-left > header > nav {
@@ -3875,7 +3877,7 @@ header > nav {
   }
   .nav-pos-left > main,
   .nav-pos-left > footer {
-    padding-left: 11rem;
+    padding-left: var(--nav-rail-w, 11rem);
   }
   .nav-pos-left > main {
     padding-top: 0;
@@ -3886,7 +3888,7 @@ header > nav {
      and nothing could click it (measured with elementFromPoint at its centre).
      Move it clear rather than fighting the stacking order. */
   .nav-pos-left .back-to-top {
-    --back-to-top-left: calc(11rem + 1.5rem);
+    --back-to-top-left: calc(var(--nav-rail-w, 11rem) + 1.5rem);
   }
   .nav-pos-bottom .back-to-top {
     --back-to-top-bottom: calc(var(--header-h) + 1.5rem);

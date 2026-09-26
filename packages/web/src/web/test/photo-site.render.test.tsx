@@ -25,6 +25,7 @@ const SeriesListPage = (await import("../pages/series")).default;
 const SeriesDetailPage = (await import("../pages/series-detail")).default;
 const { coverPhotosFor, streamPhotosFor } = await import("../components/photo-site/PhotoHome");
 const { stripFor } = await import("../components/photo-site/PhotoSeries");
+const { coverCaption } = await import("../components/photo-site/PhotoCover");
 
 const doc = dom.window.document;
 
@@ -137,6 +138,18 @@ describe("トップの表紙と一覧", () => {
     const cover = [p(3)];
     expect(streamPhotosFor(all as never, cover as never, false).map((x) => x.id)).toEqual([1, 2, 4]);
     expect(streamPhotosFor(all as never, cover as never, true).map((x) => x.id)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe("表紙の添え書き", () => {
+  const links = { 4: { name: "海の記憶", href: "/series/sea" } };
+  test("シリーズ名と媒体。年はデジタルの撮影日だけ（フィルムの日付は複写日なので出さない）", () => {
+    expect(coverCaption({ seriesId: 4, filmType: "デジタル", shotAt: "2025-08-24T10:00:00" }, links)).toEqual({
+      series: links[4],
+      facts: "Digital, 2025",
+    });
+    expect(coverCaption({ seriesId: 4, filmType: "フィルム", shotAt: "2026-03-11T00:00:00" }, links).facts).toBe("Film");
+    expect(coverCaption({ seriesId: null, filmType: null, shotAt: null }, links)).toEqual({ series: undefined, facts: "" });
   });
 });
 

@@ -36,6 +36,8 @@ function worstRatioGap(page: Page) {
   return page.evaluate(() => {
     let worst = 0;
     for (const img of document.querySelectorAll<HTMLImageElement>(".ps-tile__img, .ps-cover__img")) {
+      // 表紙の写真は舞台いっぱいの枠に contain で収める（枠と写真の比は違ってよい、切り抜かない）。
+      if (img.classList.contains("ps-cover__img") && getComputedStyle(img).objectFit === "contain") continue;
       if (!img.complete || !img.naturalWidth) continue;
       const r = img.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight || r.width < 10) continue;
@@ -52,9 +54,13 @@ test("写真中心 › トップは表紙から始まり、写真は元の比の
   // 表紙: 名前と写真が最初の画面に収まる。
   const cover = page.locator(".ps-cover");
   await expect(cover.locator("h1")).toHaveText("Smoke Fixture Studio");
-  const photo = await page.locator(".ps-cover__photo").boundingBox();
+  const box = await cover.boundingBox();
   const vh = page.viewportSize()!.height;
-  expect(photo!.y + photo!.height).toBeLessThanOrEqual(vh + 1);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(vh + 1);
+  // 名前は欄からはみ出さない（1行か、折り返しても欄の中）。
+  expect(
+    await page.locator(".ps-cover__words").evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+  ).toBe(true);
   // 「トップの最初に並べる」写真が3枚あるので、送れる。
   await expect(page.locator(".ps-cover__nav")).toContainText("01 / 03");
   await page.locator(".ps-cover__nav").getByRole("button", { name: "次の写真" }).click();

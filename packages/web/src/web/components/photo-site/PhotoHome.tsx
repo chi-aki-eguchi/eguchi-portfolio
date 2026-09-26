@@ -118,6 +118,7 @@ export function PhotoHome({
           total={all.length}
           photographerName={photographerName}
           streamId="photographs"
+          seriesLinkById={seriesLinkById}
         />
       ) : (
         <h1 className="sr-only">{photographerName}</h1>

@@ -4,12 +4,31 @@ import type { GalleryPhoto } from "../PhotoGallery";
 import { orientedDimensions } from "../../../shared/image-url";
 import { photoAltText } from "../../../shared/photo-alt";
 import { aspectOf } from "../../lib/photo-rows";
+import type { SeriesLink } from "../../lib/series-links";
+import { Link } from "wouter";
+
+/** 表紙の写真の添え書き: シリーズ名・媒体・年（年はデジタルの撮影日だけ。フィルムの日付は複写日）。 */
+export function coverCaption(
+  photo: Pick<GalleryPhoto, "filmType" | "shotAt" | "seriesId">,
+  seriesLinkById?: Record<number, SeriesLink>,
+): { series?: SeriesLink; facts: string } {
+  const series = photo.seriesId != null ? seriesLinkById?.[photo.seriesId] : undefined;
+  const film = photo.filmType === "フィルム";
+  const digital = photo.filmType === "デジタル";
+  const year = digital ? /^(\d{4})/.exec(photo.shotAt ?? "")?.[1] : undefined;
+  const facts = [film ? "Film" : digital ? "Digital" : "", year ?? ""].filter(Boolean).join(", ");
+  return { series, facts };
+}
 
 /**
- * トップの表紙（2026-09-26 オーナー「TOP は目を引く TOP 感が欲しい」）。
+ * トップの表紙（2026-09-26 オーナー「TOP は目を引く TOP 感が欲しい」
+ * 「どの写真がどこにあっても成り立つ構成」）。
  *
- * 開いた最初の画面を、大きな名前と1枚の写真で組む。写真は元の縦横比のまま、
- * 表紙の枠に収まる最大の大きさ（切り抜かない・引き伸ばさない）。
+ * 開いた最初の画面を、大きな名前と1枚の写真で組む。**枠は写真に合わせて変えない。**
+ * 名前の欄（左、幅は固定）と写真の舞台（右、残り全部）を先に決め、写真は舞台の中に
+ * 元の縦横比のまま、右下にそろえて収まる最大の大きさで置く（切り抜かない）。
+ * 縦でも横でもパノラマでも、名前と写真の下端がそろう同じ構図になる。
+ * 名前は欄の幅に収まる大きさに合わせる（長い名前でも折れて崩れない）。
  * 写真は「トップの最初に並べる」で選んだもの。押すか ← → で次へ（自動では変わらない）。
  * 下へ送ると写真の一覧が続く。
  *
@@ -24,6 +43,7 @@ export function PhotoCover({
   total,
   photographerName,
   streamId,
+  seriesLinkById,
 }: {
   photos: GalleryPhoto[];
   name: string;
@@ -33,6 +53,7 @@ export function PhotoCover({
   photographerName: string;
   /** 「写真を見る」で送る先（写真の一覧の id） */
   streamId: string;
+  seriesLinkById?: Record<number, SeriesLink>;
 }) {
   const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -90,6 +111,7 @@ export function PhotoCover({
   if (!photo) return null;
   const d = orientedDimensions(photo.width, photo.height, photo.rotationDeg);
   const ratio = aspectOf(d.width, d.height);
+  const caption = coverCaption(photo, seriesLinkById);
   const toStream = () =>
     document.getElementById(streamId)?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
@@ -98,13 +120,24 @@ export function PhotoCover({
 
   return (
     <section ref={coverRef} className="ps-cover" aria-label={name}>
-      <div className="ps-cover__words">
+      <div className="ps-cover__words" style={{ "--chars": String(Math.max(3, [...name].length)) } as React.CSSProperties}>
         <h1 className="ps-cover__name font-ja">{name}</h1>
         {(nameEn || subtitle) && (
           <p className="ps-cover__en font-en">
             {nameEn}
             {nameEn && subtitle && <span aria-hidden="true"> — </span>}
             {subtitle}
+          </p>
+        )}
+        {(caption.series || caption.facts) && (
+          <p className="ps-cover__caption font-en" aria-live="polite">
+            {caption.series && (
+              <Link to={caption.series.href} className="ps-cover__series">
+                {caption.series.name}
+              </Link>
+            )}
+            {caption.series && caption.facts && <span aria-hidden="true"> — </span>}
+            {caption.facts}
           </p>
         )}
         <div className="ps-cover__foot">

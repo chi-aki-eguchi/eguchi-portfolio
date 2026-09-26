@@ -32,13 +32,18 @@ export function aspectOf(width?: number | null, height?: number | null): number 
   return width && height && width > 0 && height > 0 ? width / height : 1.5;
 }
 
-export function planRows(ratios: readonly number[], opts: RowPlanOptions): RowPlan {
+/** 段の高さ（横幅いっぱいに並べたとき）。 */
+function fullHeight(ratios: readonly number[], width: number, gap: number): number {
+  const sum = ratios.reduce((a, b) => a + b, 0);
+  return (width - (ratios.length - 1) * gap) / sum;
+}
+
+/** 前から1段ずつ、狙いの高さに最も近くなる枚数で区切る。 */
+function groupRows(ratios: readonly number[], opts: RowPlanOptions): { start: number; end: number; target: number }[] {
   const { width, gap, targets, maxHeight, maxPerRow } = opts;
-  const rows: PlannedRow[] = [];
-  let top = 0;
+  const groups: { start: number; end: number; target: number }[] = [];
   let i = 0;
   let turn = 0;
-  if (!(width > 0) || targets.length === 0) return { rows, height: 0 };
   while (i < ratios.length) {
     const target = targets[turn % targets.length]!;
     turn++;
@@ -58,29 +63,99 @@ export function planRows(ratios: readonly number[], opts: RowPlanOptions): RowPl
       }
       if (h < target * 0.5) break;
     }
-    const slice = ratios.slice(i, i + best);
-    const sumR = slice.reduce((a, b) => a + b, 0);
-    let height = (width - (best - 1) * gap) / sumR;
-    // 最後の写真が足りず、横幅いっぱいにすると狙いより大きくなりすぎる段は、
-    // 狙いの高さで止めて左に寄せる（最後の1〜2枚だけが巨大になるのを防ぐ）。
-    const last = i + best >= ratios.length;
+    groups.push({ start: i, end: i + best, target });
+    i += best;
+  }
+  return groups;
+}
+
+/**
+ * 最後の段を、どの写真が何枚来ても横幅いっぱいにそろえる。
+ *
+ * 写真が足りず横幅いっぱいにすると高すぎる最後の段は、1つ前の段と合わせて
+ * 組み直す（1段にまとめるか、比の合計が近い2段に分ける）。こうすると、
+ * 一覧の終わりに「右側だけ空いた段」ができない（オーナー 2026-09-26
+ * 「どの写真がどこにあっても成り立つ構成」）。
+ */
+function balanceTail(
+  ratios: readonly number[],
+  groups: { start: number; end: number; target: number }[],
+  opts: RowPlanOptions,
+) {
+  const { width, gap, maxHeight, maxPerRow, targets } = opts;
+  const minRow = Math.min(...targets) * 0.6;
+  const rowOk = (a: number, b: number) => {
+    if (b - a > maxPerRow + 1) return false;
+    const h = fullHeight(ratios.slice(a, b), width, gap);
+    return h <= maxHeight && h >= minRow;
+  };
+  const last = groups[groups.length - 1];
+  if (!last || groups.length < 2) return groups;
+  const lastH = fullHeight(ratios.slice(last.start, last.end), width, gap);
+  if (lastH <= maxHeight && lastH <= last.target * 1.35) return groups;
+  // 後ろの段を2つ、3つ…と合わせ、その写真を1〜4段に組み直す。どの段も
+  // 横幅いっぱいで高さが範囲に収まる分け方のうち、狙いの高さに最も近いもの。
+  for (let take = 2; take <= Math.min(5, groups.length); take++) {
+    const pool = groups.slice(-take);
+    const from = pool[0]!.start;
+    const to = last.end;
+    const target = pool[0]!.target;
+    let best: { cuts: number[]; score: number } | null = null;
+    const search = (a: number, cuts: number[], score: number) => {
+      if (cuts.length > 4) return;
+      if (a === to) {
+        if (!best || score < best.score) best = { cuts: [...cuts], score };
+        return;
+      }
+      for (let b = a + 1; b <= to; b++) {
+        if (!rowOk(a, b)) continue;
+        const h = fullHeight(ratios.slice(a, b), width, gap);
+        search(b, [...cuts, b], score + Math.abs(Math.log(h / target)));
+      }
+    };
+    search(from, [], 0);
+    const found = best as { cuts: number[]; score: number } | null;
+    if (found) {
+      const head = groups.slice(0, -take);
+      let a = from;
+      const rebuilt = found.cuts.map((b, n) => {
+        const g = { start: a, end: b, target: pool[Math.min(n, pool.length - 1)]!.target };
+        a = b;
+        return g;
+      });
+      return [...head, ...rebuilt];
+    }
+  }
+  return groups;
+}
+
+export function planRows(ratios: readonly number[], opts: RowPlanOptions): RowPlan {
+  const { width, gap, targets, maxHeight } = opts;
+  const rows: PlannedRow[] = [];
+  if (!(width > 0) || targets.length === 0) return { rows, height: 0 };
+  const groups = balanceTail(ratios, groupRows(ratios, opts), opts);
+  let top = 0;
+  groups.forEach((g) => {
+    const slice = ratios.slice(g.start, g.end);
+    let height = fullHeight(slice, width, gap);
+    // それでも画面より高くなる段（一覧に写真が1〜2枚しか無いときなど）だけは、
+    // 高さで止めて真ん中に置く（左右の空きをそろえ、片側だけ空けない）。
     let full = true;
-    if (height > maxHeight || (last && height > target * 1.35)) {
-      height = Math.min(maxHeight, last ? target : maxHeight);
+    if (height > maxHeight) {
+      height = maxHeight;
       full = false;
     }
     const items: PlannedItem[] = [];
-    let x = 0;
+    const rowWidth = slice.reduce((a, r) => a + r * height, 0) + (slice.length - 1) * gap;
+    let x = full ? 0 : Math.max(0, (width - rowWidth) / 2);
     slice.forEach((r, j) => {
-      const w =
-        full && j === slice.length - 1 ? width - x : r * height;
-      items.push({ index: i + j, x, width: w });
+      const w = full && j === slice.length - 1 ? width - x : r * height;
+      items.push({ index: g.start + j, x, width: w });
       x += w + gap;
     });
     rows.push({ top, height, items, full });
     top += height + gap;
-    i += best;
-  }
+  });
   return { rows, height: rows.length ? top - gap : 0 };
 }
 

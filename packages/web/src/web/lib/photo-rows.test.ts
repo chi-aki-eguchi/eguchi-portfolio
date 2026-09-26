@@ -32,8 +32,40 @@ describe("段の組み方", () => {
   test("写真を後ろへ読み足しても、それまでの段は動かない", () => {
     const head = planRows(mix.slice(0, 12), desktop);
     const all = planRows(mix, desktop);
-    // 最後の段（足りない写真で組んだ段）以外は同じ。
-    for (let r = 0; r < head.rows.length - 1; r++) expect(all.rows[r]).toEqual(head.rows[r]!);
+    // 終わりの2段（足りない写真で組み直す段）以外は同じ。
+    for (let r = 0; r < head.rows.length - 2; r++) expect(all.rows[r]).toEqual(head.rows[r]!);
+  });
+
+  // 「どの写真がどこにあっても成り立つ」: 縦・横・正方形・パノラマ・極端に細長い写真を
+  // 乱数で並べ替えた 400 通りで、途中の段は全部横幅いっぱいにそろい、画面より高い段も、
+  // 低すぎる段も無い。最後の段だけは、どうしても収まらないとき真ん中に置く。
+  test("どんな並びでも、全部の段が横幅いっぱいにそろう", () => {
+    const shapes = [0.667, 0.8, 1, 1.25, 1.5, 1.78, 2.4, 3.2, 0.45];
+    let seed = 7;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (const opts of [desktop, phone, rowOptionsFor(900, 1100)]) {
+      for (let trial = 0; trial < 400; trial++) {
+        const n = 2 + Math.floor(rand() * 40);
+        const ratios = Array.from({ length: n }, () => shapes[Math.floor(rand() * shapes.length)]!);
+        const plan = planRows(ratios, opts);
+        const lowest = Math.min(...opts.targets) * 0.28;
+        for (const row of plan.rows) {
+          const last = row.items[row.items.length - 1]!;
+          const label = `${opts.width}px ${ratios.map((r) => r.toFixed(2)).join(",")}`;
+          if (!row.full) {
+            // 横幅いっぱいにできないのは、最後の段で、どう組み直しても画面より高く
+            // なる極端に細長い写真が残ったときだけ。そのときは真ん中に置く。
+            expect({ label, last: row === plan.rows[plan.rows.length - 1] }).toEqual({ label, last: true });
+            const first = row.items[0]!;
+            expect(Math.abs(first.x - (opts.width - (last.x + last.width)))).toBeLessThan(0.5);
+            continue;
+          }
+          expect(Math.abs(last.x + last.width - opts.width)).toBeLessThan(0.5);
+          expect(row.height).toBeLessThanOrEqual(opts.maxHeight + 0.01);
+          expect(row.height).toBeGreaterThan(lowest);
+        }
+      }
+    }
   });
 
   test("大きな段と小さな段が交互に来る（同じ高さの段が続く一覧にしない）", () => {

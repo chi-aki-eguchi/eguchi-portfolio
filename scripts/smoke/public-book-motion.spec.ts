@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "./fixtures.ts";
+import { loginAsAdmin } from "./helpers";
 
 /**
  * 写真集の骨格（siteDesign = "book"、2026-09-25 見直し）。
@@ -118,4 +119,24 @@ test.describe("動きを減らす設定", () => {
     await page.keyboard.press("Escape");
     await expect(page.locator("dialog[open]")).toHaveCount(0);
   });
+});
+
+test("写真集 › 管理画面の作品ページの並べ方に、写真集で使わない設定を書く", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "管理画面の案内は PC 幅で1度見れば足りる");
+  await page.route("**/api/settings**", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const response = await route.fetch();
+    const json = await response.json();
+    await route.fulfill({ response, json: { ...json, siteDesign: "book" } });
+  });
+  await loginAsAdmin(page);
+  await page.getByRole("navigation", { name: "管理画面の入口" }).getByRole("button", { name: "サイト" }).click();
+  await page.getByRole("button", { name: /作品ページの並べ方/ }).click();
+  const note = page.locator(".admin-book-unused");
+  await expect(note).toBeVisible();
+  await expect(note).toContainText("Photos はいつもすべての公開写真");
+  await page.screenshot({ path: process.env.BOOK_ADMIN_SHOT || testInfo.outputPath("admin-book-series-note.png") });
+  // 写真集でも使う節には出さない。
+  await page.getByRole("button", { name: /背景と配色/ }).click();
+  await expect(note).toHaveCount(0);
 });

@@ -203,10 +203,10 @@ function useFieldColumnCount() {
 }
 
 /**
- * 作品に入っていない写真も含めた、いろいろな写真（毎回違う組み合わせ）。
  * 写真の比のまま、段組みで大きく並べる。押すとその場でビューアが開く。
+ * トップの Photos（毎回違う組み合わせ）と、Photos のページ（すべての写真）で使う。
  */
-function PhotoField({
+export function PhotoField({
   photos,
   photographerName,
   seriesLinkById,

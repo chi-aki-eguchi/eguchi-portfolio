@@ -1231,7 +1231,7 @@ const ADMIN_PHASE_2B_JA = {
       bookUnusedNotes: {
         hero: "写真集では、この節の見た目と動き（名前の大きさ・高さ・重ね方など）は使いません。トップに出る写真は「トップに載せる写真を選ぶ」で選んだ写真と、「各ページの構成」の「写真集のトップの写真」で決まります。",
         navigation: "写真集では、メニューはいつも上で、紙の地の帯です。ここの位置と帯の背景は使いません（触れたときの効果は使います）。",
-        "gallery-layout": "写真集では、Gallery の列数・大きさ・間隔を Photos のページに使います（並べ方の種類は段組みに決まっています）。トップの作品や写真の並べ方は使いません（写真集のトップは決まった組み方です）。",
+        "gallery-layout": "写真集では、この節は使いません。写真集のトップと Photos のページは、写真を切り抜かずに大きく並べる決まった組み方です（広い画面は3列、スマホは2列）。",
         series: "写真集では、トップのシリーズ帯、シリーズ一覧の列数、「Gallery から作品の写真を外す」は使いません。Photos はいつもすべての公開写真です。",
       } as Record<string, string>,
       aboutLabel: "About（プロフィール）の構成",
@@ -3014,7 +3014,7 @@ const ADMIN_PHASE_2B_EN = {
       bookUnusedNotes: {
         hero: "The photobook does not use the look and motion set here (name size, height, overlay and so on). The home photographs come from “Choose home photographs” and the photobook home photograph under Page layout.",
         navigation: "In the photobook the menu is always at the top on a plain band. Position and band background here are not used (the hover effect is).",
-        "gallery-layout": "In the photobook, the gallery columns, size and spacing are used on the Photos page (the arrangement itself is always the column layout). The home page arrangements are not used; the photobook home has a fixed composition.",
+        "gallery-layout": "The photobook does not use this section. Its home page and Photos page have a fixed composition that shows photographs large and uncropped (three columns on wide screens, two on phones).",
         series: "The photobook does not use the home series strip, the series grid columns, or “exclude work photographs from the gallery”. Photos always lists every public photograph.",
       } as Record<string, string>,
       aboutLabel: "About page composition",

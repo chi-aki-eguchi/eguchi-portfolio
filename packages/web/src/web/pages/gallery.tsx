@@ -13,6 +13,7 @@ import { SeriesColophon } from "../components/SeriesColophon";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 import { galleryExcludesSeries, siteDesignFrom } from "../lib/book";
+import { PhotoField } from "../components/book/BookHome";
 
 export default function GalleryPage() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
@@ -439,9 +440,19 @@ export default function GalleryPage() {
       ) : (
         <>
           <div ref={gridBoxRef}>
+          {book ? (
+            // 写真集の Photos は、トップの Photos と同じ並べ方（広い画面3列・
+            // それ以外2列、写真は切り抜かない）。管理画面の Gallery の列数などは
+            // 写真集の作業台に出ないので、それに頼らない（2026-09-26）。
+            <PhotoField
+              photos={rendered}
+              photographerName={settings?.siteName || settings?.siteNameEn || ""}
+              seriesLinkById={seriesLinkById}
+            />
+          ) : (
           <PhotoGallery
             photos={rendered}
-            layoutType={book ? "masonry" : settings?.galleryLayout}
+            layoutType={settings?.galleryLayout}
             onRequestMore={
               rendered.length < filtered.length
                 ? requestMorePhotos
@@ -451,6 +462,7 @@ export default function GalleryPage() {
             seriesLinkById={seriesLinkById}
             categoryLabelBySlug={categoryLabelBySlug}
           />
+          )}
           </div>
           {rendered.length < filtered.length && (
             <div

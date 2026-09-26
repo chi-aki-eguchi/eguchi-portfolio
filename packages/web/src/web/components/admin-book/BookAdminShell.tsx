@@ -114,7 +114,7 @@ export function bookSiteGroups(showService: boolean): { label: string; items: Si
     {
       label: "写真集",
       items: [
-        s("page-layout", "骨格とトップの写真", "写真集／いつもの構成、扉の1枚"),
+        s("page-layout", "骨格とトップの写真", "写真集／いつもの構成、トップの1枚目"),
         s("series", "作品ページの並べ方", "作業台の順番か、撮影日の順か"),
       ],
     },
@@ -158,9 +158,9 @@ export function bookSiteGroups(showService: boolean): { label: string; items: Si
 /**
  * 写真集では効かない設定の節。値は消さずに残し、目次から外すだけ
  * （いつもの構成へ戻したときにそのまま効く）。
- *   hero           トップの見せ方（5種）— 写真集の扉は別の仕組み
- *   gallery-layout 写真一覧のレイアウト — 写真集の頁は写真ごとの大きさで決まる
- *   navigation     メニューとヘッダー — 写真集は左の余白のメニューに固定
+ *   hero           トップの見せ方（5種）— 写真集のトップは別の仕組み
+ *   gallery-layout 写真一覧のレイアウト — 写真集のトップと Photos は決まった段組み
+ *   navigation     メニューとヘッダー — 写真集は上のメニューに固定
  *   mood           デザインの出発点 — 上の3つをまとめて入れ替えるもの
  *   reveal         写真の表示アニメーション — 写真集の頁では使わない
  *   spacing        ページの余白 — 写真集の縁は写真の大きさから決める

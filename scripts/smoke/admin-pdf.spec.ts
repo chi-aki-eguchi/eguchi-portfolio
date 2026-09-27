@@ -30,9 +30,18 @@ test("本の編集・保存・読み戻し・PDF出力はWebデータを変え�
   await expect(page.getByLabel("本の名前")).toBeVisible();
   await page.getByLabel("本の名前").fill("2026 光と影の記録");
   await page.getByLabel("氏名", { exact: true }).fill("写真家 秋");
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "写真を選ぶ", exact: true })
+    .click();
   await page.locator(".pdf-picker button").nth(0).click();
   await page.locator(".pdf-picker button").nth(1).click();
   await page.locator(".pdf-picker button").nth(2).click();
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "ページを整える", exact: true })
+    .click();
+
   await page
     .getByRole("button", { name: "1ページを編集", exact: true })
     .click();
@@ -65,6 +74,7 @@ test("本の編集・保存・読み戻し・PDF出力はWebデータを変え�
   await page.reload();
   await expect(page.getByLabel("本の名前")).toHaveValue("2026 光と影の記録");
   const jsonDownload = page.waitForEvent("download");
+  await page.locator(".pdf-book-menu > summary").click();
   await page.getByRole("button", { name: "作品集ファイルを書き出す" }).click();
   const file = await jsonDownload;
   const filePath = await file.path();
@@ -72,6 +82,10 @@ test("本の編集・保存・読み戻し・PDF出力はWebデータを変え�
   await page.locator('input[type="file"]').setInputFiles(filePath!);
   await expect(page.getByLabel("本の名前")).toHaveValue("2026 光と影の記録");
   expect(JSON.parse(saved!)[0].pages).toHaveLength(2);
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "PDFを書き出す", exact: true })
+    .click();
   const sizes: number[] = [];
   for (const quality of ["送信用", "印刷用"]) {
     await page.getByRole("button", { name: `${quality}PDFを生成` }).click();
@@ -101,6 +115,10 @@ test("本の編集・保存・読み戻し・PDF出力はWebデータを変え�
   page.on("request", (r) => {
     if (!["GET", "HEAD"].includes(r.method())) requests.push(r.url());
   });
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "ページを整える", exact: true })
+    .click();
   await page.getByLabel("本の名前").fill("変更後");
   await expect(
     page.getByRole("link", { name: "PDFを保存", exact: true }),
@@ -118,10 +136,23 @@ test("画像欠落・通信失敗・長文は成功と表示しない", async ({
   test.setTimeout(90000);
   await loginAsAdmin(page);
   await page.goto("/admin/pdf");
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "写真を選ぶ", exact: true })
+    .click();
   await page.locator(".pdf-picker button").first().click();
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "ページを整える", exact: true })
+    .click();
+
   await page.route("**/api/admin/pdf/photos/*/image?quality=screen", (r) =>
     r.fulfill({ status: 404, body: "missing" }),
   );
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "PDFを書き出す", exact: true })
+    .click();
   await page.getByRole("button", { name: "送信用PDFを生成" }).click();
   await expect(page.getByRole("alert")).toContainText("画像を読み込めません");
   await expect(
@@ -129,8 +160,17 @@ test("画像欠落・通信失敗・長文は成功と表示しない", async ({
   ).toHaveCount(0);
   await page.unroute("**/api/admin/pdf/photos/*/image?quality=screen");
   await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "ページを整える", exact: true })
+    .click();
+
+  await page
     .getByLabel("作品説明", { exact: true })
     .fill("長文の説明です。".repeat(200));
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "PDFを書き出す", exact: true })
+    .click();
   await page.getByRole("button", { name: "送信用PDFを生成" }).click();
   await expect(page.locator(".pdf-issues")).toContainText(
     "文字が枠を超えています",
@@ -150,9 +190,18 @@ test("20枚の横A4出力でも操作の応答と実ページ数を保つ", asyn
   test.setTimeout(90000);
   await loginAsAdmin(page);
   await page.goto("/admin/pdf");
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "写真を選ぶ", exact: true })
+    .click();
   await expect(page.locator(".pdf-picker button").nth(19)).toBeVisible();
   for (let n = 0; n < 20; n++)
     await page.locator(".pdf-picker button").nth(n).click();
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "ページを整える", exact: true })
+    .click();
+
   await page
     .getByRole("button", { name: "1ページを編集", exact: true })
     .click();
@@ -170,6 +219,10 @@ test("20枚の横A4出力でも操作の応答と実ページ数を保つ", asyn
       state.last = now;
     }, 25);
   });
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "PDFを書き出す", exact: true })
+    .click();
   const start = Date.now();
   await page.getByRole("button", { name: "印刷用PDFを生成" }).click();
   await expect(
@@ -211,8 +264,17 @@ test("ページを見て並べ替え、取り消し、用途切替、複製を�
   await loginAsAdmin(page);
   await page.goto("/admin/pdf");
   await page.getByLabel("本の名前").fill("提出する本");
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "写真を選ぶ", exact: true })
+    .click();
   for (let n = 0; n < 3; n++)
     await page.locator(".pdf-picker button").nth(n).click();
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "ページを整える", exact: true })
+    .click();
+
   await expect(page.locator(".pdf-canvas .pdf-paper image")).toHaveCount(1);
   const originalLast = await page
     .locator(".pdf-canvas .pdf-paper image")
@@ -241,9 +303,11 @@ test("ページを見て並べ替え、取り消し、用途切替、複製を�
   await expect(
     page.locator(".pdf-canvas svg text").filter({ hasText: "提出するとき" }),
   ).toHaveCount(0);
+  await page.locator(".pdf-photo-details > summary").click();
   await expect(
     page.getByRole("textbox", { name: "作品説明", exact: true }),
   ).toHaveValue("提出するときだけ表示する文章");
+  await page.locator(".pdf-book-menu > summary").click();
   await page.getByRole("button", { name: "この本を複製", exact: true }).click();
   await expect(page.getByLabel("本の名前")).toHaveValue("提出する本 のコピー");
   await page.getByLabel("本の名前").fill("展示で見せる本");
@@ -267,4 +331,58 @@ test("ページを見て並べ替え、取り消し、用途切替、複製を�
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("余白・2枚組の配置を保存し、小さな画面でも操作メニューが収まる", async ({
+  page,
+}) => {
+  await loginAsAdmin(page);
+  await page.goto("/admin/pdf");
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "写真を選ぶ", exact: true })
+    .click();
+  for (let n = 0; n < 2; n++)
+    await page.locator(".pdf-picker button").nth(n).click();
+  await page
+    .locator(".pdf-workflow")
+    .getByRole("button", { name: "ページを整える", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "2ページを編集", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "次の写真と2枚に", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "写真の大きさ", exact: true })
+    .selectOption("0.7");
+  await page
+    .getByRole("combobox", { name: "2枚の並べ方", exact: true })
+    .selectOption("across");
+  await page
+    .getByRole("button", { name: "ブラウザーに保存", exact: true })
+    .click();
+  await page.reload();
+  await page
+    .getByRole("button", { name: "2ページを編集", exact: true })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "写真の大きさ", exact: true }),
+  ).toHaveValue("0.7");
+  await expect(
+    page.getByRole("combobox", { name: "2枚の並べ方", exact: true }),
+  ).toHaveValue("across");
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.locator(".pdf-book-menu > summary").click();
+  await expect(
+    page.getByRole("button", { name: "この本を複製", exact: true }),
+  ).toBeVisible();
+  const box = await page.locator(".pdf-menu-actions").boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "この本を複製", exact: true }),
+  ).toBeHidden();
 });

@@ -65,7 +65,12 @@ export function fitImage(
   return { width: w * scale, height: h * scale, scale, dpi: 72 / scale };
 }
 /** Shared point-based layout for SVG editing and PDF output. No image cropping. */
-export function layoutBook(book: PortfolioDocument, font: Measure): Sheet[] {
+export type ImageSizes = ReadonlyMap<string, { width: number; height: number }>;
+export function layoutBook(
+  book: PortfolioDocument,
+  font: Measure,
+  sizes: ImageSizes = new Map(),
+): Sheet[] {
   const [W, H] =
     book.orientation === "portrait" ? [595.276, 841.89] : [841.89, 595.276];
   const M = book.purpose === "photobook" ? 34.016 : 42.52,
@@ -137,17 +142,39 @@ export function layoutBook(book: PortfolioDocument, font: Measure): Sheet[] {
   for (const source of book.pages) {
     const p = page(source.id),
       count = source.itemIds.length;
-    const across = count === 2 && book.orientation === "landscape",
-      gap = 24;
+    const across =
+      count === 2 &&
+      (source.pairing === "across" ||
+        (source.pairing !== "stacked" && book.orientation === "landscape"));
+    const gap = 28,
+      scale = source.imageScale ?? 1;
     const pageCaptionH = Math.min(60, measured(source.pageCaption, CW, 9));
-    const bottomSpace = pageCaptionH ? pageCaptionH + 18 : 0;
-    const bw = across ? (CW - gap) / 2 : CW;
+    // A single image and its page caption form one group. Pair captions sit below both cells.
+    const singleCaption = count === 1;
+    const bottomSpace = !singleCaption && pageCaptionH ? pageCaptionH + 18 : 0;
+    const ratios = source.itemIds.map((id) => {
+      const size = sizes.get(id),
+        item = book.items.find((i) => i.id === id)!;
+      if (!size) return null;
+      return item.rotation === 90 || item.rotation === 270
+        ? size.height / size.width
+        : size.width / size.height;
+    });
+    const firstWidth =
+      across && ratios[0] && ratios[1]
+        ? ((CW - gap) * ratios[0]) / (ratios[0] + ratios[1])
+        : (CW - gap) / 2;
     const available = H - 2 * M - bottomSpace;
     const bh = count === 2 && !across ? (available - gap) / 2 : available;
     source.itemIds.forEach((id, index) => {
       const item = book.items.find((i) => i.id === id)!;
-      const x = M + (across ? index * (bw + gap) : 0);
-      const top = M + (count === 2 && !across ? index * (bh + gap) : 0);
+      const bw = across
+        ? index === 0
+          ? firstWidth
+          : CW - gap - firstWidth
+        : CW;
+      const cellX = M + (across && index === 1 ? firstWidth + gap : 0);
+      const cellTop = M + (count === 2 && !across ? index * (bh + gap) : 0);
       const details =
         book.purpose === "photobook"
           ? ""
@@ -158,17 +185,70 @@ export function layoutBook(book: PortfolioDocument, font: Measure): Sheet[] {
             ]
               .filter(Boolean)
               .join("\n");
-      const captionH = Math.min(bh * 0.4, measured(details, bw, 10.5));
+      const caption = singleCaption ? source.pageCaption : "";
+      const natural = sizes.get(id);
+      const maxText = bh * 0.4;
+      // Choose a stable text column from the maximum photo width. Capped at 360pt for readable lines.
+      const initialFit = natural
+        ? fitImage(
+            natural.width,
+            natural.height,
+            bw * scale,
+            bh * scale,
+            item.rotation,
+          )
+        : { width: bw * scale, height: bh * scale };
+      const textWidth = Math.min(
+        bw,
+        Math.max(Math.min(240, bw), Math.min(360, initialFit.width)),
+      );
+      const detailH = Math.min(maxText, measured(details, textWidth, 10.5));
+      const extraH = Math.min(60, measured(caption, textWidth, 9));
+      const textGap = detailH || extraH ? 14 : 0;
+      const interGap = detailH && extraH ? 10 : 0;
+      const reserve = detailH + extraH + textGap + interGap;
+      const photoH = Math.max(1, (bh - reserve) * scale);
+      const fit = natural
+        ? fitImage(
+            natural.width,
+            natural.height,
+            bw * scale,
+            photoH,
+            item.rotation,
+          )
+        : { width: bw * scale, height: photoH };
+      const groupTop = cellTop + (bh - fit.height - reserve) / 2;
+      const photoX = cellX + (bw - fit.width) / 2;
       p.photos.push({
         id,
-        x,
-        top,
-        width: bw,
-        height: bh - captionH - (captionH ? 14 : 0),
+        x: photoX,
+        top: groupTop,
+        width: fit.width,
+        height: fit.height,
       });
-      text(p, details, x, top + bh - captionH, bw, captionH, 10.5, id);
+      const textX = cellX + (bw - Math.max(fit.width, textWidth)) / 2;
+      text(
+        p,
+        details,
+        textX,
+        groupTop + fit.height + textGap,
+        textWidth,
+        detailH,
+        10.5,
+        id,
+      );
+      text(
+        p,
+        caption,
+        textX,
+        groupTop + fit.height + textGap + detailH + interGap,
+        textWidth,
+        60,
+        9,
+      );
     });
-    text(p, source.pageCaption, M, H - M - pageCaptionH, CW, 60, 9);
+    if (!singleCaption)
+      text(p, source.pageCaption, M, H - M - pageCaptionH, CW, 60, 9);
   }
   if (book.pdfProfile.enabled) {
     const p = page("profile");
@@ -177,8 +257,8 @@ export function layoutBook(book: PortfolioDocument, font: Measure): Sheet[] {
     text(p, book.pdfProfile.text, M, M + 120, CW, H - 2 * M - 245, 11);
     text(p, book.pdfProfile.contact, M, H - M - 100, CW, 100, 10);
   }
-  sheets.forEach((p, n) =>
-    text(p, `${n + 1} / ${sheets.length}`, W - M - 36, H - 30, 70, 20, 8),
+  sheets.forEach(
+    (p, n) => n > 0 && text(p, `${n + 1}`, W - M - 12, H - 30, 24, 20, 8),
   );
   return sheets;
 }

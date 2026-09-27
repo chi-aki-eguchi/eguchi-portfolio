@@ -50,6 +50,25 @@ export default function AdminPdfPage() {
     [output, setOutput] = useState<Output | null>(null);
   const [storageBroken, setStorageBroken] = useState(false);
   const [active, setActive] = useState("cover");
+  const [view, setView] = useState<"photos" | "edit" | "export">("edit");
+  useEffect(() => {
+    const dismiss = (event: MouseEvent | KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (event instanceof KeyboardEvent) {
+        if (event.key !== "Escape") return;
+      } else if (target.closest(".pdf-book-menu") && !target.closest("button"))
+        return;
+      const menu = document.querySelector<HTMLDetailsElement>(".pdf-book-menu");
+      if (menu) menu.open = false;
+    };
+    document.addEventListener("click", dismiss);
+    document.addEventListener("keydown", dismiss);
+    return () => {
+      document.removeEventListener("click", dismiss);
+      document.removeEventListener("keydown", dismiss);
+    };
+  }, []);
+
   const [undo, setUndo] = useState<PortfolioDocument[]>([]),
     [redo, setRedo] = useState<PortfolioDocument[]>([]);
   const selectedPage = book.pages.find((p) => p.id === active);
@@ -62,6 +81,7 @@ export default function AdminPdfPage() {
     setUndo([]);
     setRedo([]);
     setActive("cover");
+    setView("edit");
   };
   const duplicate = () => {
     try {
@@ -310,98 +330,107 @@ export default function AdminPdfPage() {
                 ))}
               </select>
             </label>
-            <button
-              disabled={busy}
-              onClick={() => {
-                if (mayLeave()) {
-                  setBook(createBook());
-                  resetHistory();
-                  setIssues([]);
-                  setDirty(false);
-                  setOutput(null);
-                }
-              }}
-            >
-              新しい本
-            </button>
-            <button disabled={busy || storageBroken} onClick={duplicate}>
-              この本を複製
-            </button>
             <button disabled={busy || storageBroken} onClick={save}>
               ブラウザーに保存
             </button>
-            <button
-              disabled={busy}
-              onClick={() =>
-                download(
-                  new Blob([JSON.stringify(book, null, 2)], {
-                    type: "application/json",
-                  }),
-                  `${book.title}.portfolio.json`,
-                )
-              }
-            >
-              作品集ファイルを書き出す
-            </button>
-            <button disabled={busy} onClick={() => fileRef.current?.click()}>
-              読み戻す
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              hidden
-              accept=".json,application/json"
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (!f || !mayLeave()) return;
-                try {
-                  if (f.size > 2_000_000)
-                    throw new Error("ファイルが大きすぎます");
-                  const b = parseBook(JSON.parse(await f.text()));
-                  edit({ ...b, id: crypto.randomUUID() });
-                  resetHistory();
-                  setNotice(
-                    "別の本として読み込みました。保存するとこのブラウザーに残ります",
-                  );
-                  setError("");
-                } catch (err) {
-                  setError((err as Error).message);
-                }
-              }}
-            />
-            <button
-              disabled={busy || !books.some((b) => b.id === book.id)}
-              onClick={removeSaved}
-            >
-              この本を削除
-            </button>
-            <button
-              disabled={busy}
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "PDF作品集の保存データをすべてこのブラウザーから削除しますか？",
-                  )
-                ) {
-                  try {
-                    localStorage.removeItem(STORAGE_KEY);
-                    setBooks([]);
-                    setBook(createBook());
-                    setStorageBroken(false);
-                    resetHistory();
-                    setIssues([]);
-                    setOutput(null);
-                    setDirty(false);
-                    setError("");
-                  } catch {
-                    setError("削除できませんでした");
+            <details className="pdf-book-menu">
+              <summary>本の操作</summary>
+              <div className="pdf-menu-actions">
+                <button
+                  disabled={busy}
+                  onClick={() => {
+                    if (mayLeave()) {
+                      setBook(createBook());
+                      resetHistory();
+                      setIssues([]);
+                      setDirty(false);
+                      setOutput(null);
+                    }
+                  }}
+                >
+                  新しい本
+                </button>
+                <button disabled={busy || storageBroken} onClick={duplicate}>
+                  この本を複製
+                </button>
+
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    download(
+                      new Blob([JSON.stringify(book, null, 2)], {
+                        type: "application/json",
+                      }),
+                      `${book.title}.portfolio.json`,
+                    )
                   }
-                }
-              }}
-            >
-              保存データを全削除
-            </button>
+                >
+                  作品集ファイルを書き出す
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  読み戻す
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  hidden
+                  accept=".json,application/json"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!f || !mayLeave()) return;
+                    try {
+                      if (f.size > 2_000_000)
+                        throw new Error("ファイルが大きすぎます");
+                      const b = parseBook(JSON.parse(await f.text()));
+                      edit({ ...b, id: crypto.randomUUID() });
+                      resetHistory();
+                      setNotice(
+                        "別の本として読み込みました。保存するとこのブラウザーに残ります",
+                      );
+                      setError("");
+                    } catch (err) {
+                      setError((err as Error).message);
+                    }
+                  }}
+                />
+                <button
+                  disabled={busy || !books.some((b) => b.id === book.id)}
+                  onClick={removeSaved}
+                >
+                  この本を削除
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "PDF作品集の保存データをすべてこのブラウザーから削除しますか？",
+                      )
+                    ) {
+                      try {
+                        localStorage.removeItem(STORAGE_KEY);
+                        setBooks([]);
+                        setBook(createBook());
+                        setStorageBroken(false);
+                        resetHistory();
+                        setIssues([]);
+                        setOutput(null);
+                        setDirty(false);
+                        setError("");
+                      } catch {
+                        setError("削除できませんでした");
+                      }
+                    }
+                  }}
+                >
+                  保存データを全削除
+                </button>
+              </div>
+            </details>
           </div>
           <p aria-live="polite">
             {busy
@@ -409,7 +438,30 @@ export default function AdminPdfPage() {
               : notice || (dirty ? "未保存の編集があります" : "")}
             　{book.items.length} / 20 枚 ・ {pageCount(book)} / 24 ページ
           </p>
-          <div className="pdf-toolbar pdf-purpose-bar">
+          <nav className="pdf-workflow" aria-label="作品集の作業">
+            <button
+              disabled={busy}
+              aria-current={view === "photos" ? "step" : undefined}
+              onClick={() => setView("photos")}
+            >
+              写真を選ぶ
+            </button>
+            <button
+              disabled={busy}
+              aria-current={view === "edit" ? "step" : undefined}
+              onClick={() => setView("edit")}
+            >
+              ページを整える
+            </button>
+            <button
+              disabled={busy}
+              aria-current={view === "export" ? "step" : undefined}
+              onClick={() => setView("export")}
+            >
+              PDFを書き出す
+            </button>
+          </nav>
+          <div className="pdf-toolbar pdf-purpose-bar" hidden={view !== "edit"}>
             <label>
               仕上がり
               <select
@@ -462,7 +514,7 @@ export default function AdminPdfPage() {
             </button>
           </div>
           <fieldset disabled={busy} className="pdf-fields">
-            <div className="pdf-workspace">
+            <div className="pdf-workspace" hidden={view !== "edit"}>
               <BookCanvas
                 book={book}
                 active={activePage}
@@ -472,10 +524,10 @@ export default function AdminPdfPage() {
                   edit(movePage(book, from, to - from));
                 }}
                 onItem={(id) => {
-                  document
-                    .getElementById(`pdf-item-${id}`)
-                    ?.querySelector("input")
-                    ?.focus();
+                  const target = document.getElementById(`pdf-item-${id}`);
+                  const details = target?.querySelector("details");
+                  if (details) details.open = true;
+                  target?.querySelector("input")?.focus();
                 }}
               />
               <div className="pdf-inspector">
@@ -612,18 +664,22 @@ export default function AdminPdfPage() {
                   </div>
                 </details>
                 <section>
-                  <h2>このページを整える</h2>
+                  <h2>
+                    {activePage === "cover"
+                      ? "表紙"
+                      : activePage === "profile"
+                        ? "プロフィール"
+                        : "ページの配置"}
+                  </h2>
                   {book.purpose === "photobook" && (
                     <p className="pdf-note">
                       写真集に載る文章は「ページの説明」です。作品タイトル・制作年・技法・作品説明は保持され、提出用に切り替えると表示されます。
                     </p>
                   )}
-                  <p className="pdf-note">
-                    写真は全体が入るように配置します。制作年は必要に応じて入力してください。
-                  </p>
+
                   {activePage === "cover" && (
                     <p className="pdf-note">
-                      下の写真一覧から作品を選ぶと、ページが増えていきます。
+                      「写真を選ぶ」から作品を加えると、ページが増えていきます。
                     </p>
                   )}
                   {book.pages.map((p, index) =>
@@ -726,6 +782,55 @@ export default function AdminPdfPage() {
                             </>
                           )}
                         </div>
+                        <label>
+                          写真の大きさ
+                          <select
+                            value={p.imageScale ?? 1}
+                            onChange={(e) =>
+                              edit({
+                                ...book,
+                                pages: book.pages.map((page) =>
+                                  page.id === p.id
+                                    ? {
+                                        ...page,
+                                        imageScale: Number(e.target.value),
+                                      }
+                                    : page,
+                                ),
+                              })
+                            }
+                          >
+                            <option value={1}>大きく見せる</option>
+                            <option value={0.85}>余白を少し広く</option>
+                            <option value={0.7}>余白を広く</option>
+                          </select>
+                        </label>
+                        {p.itemIds.length === 2 && (
+                          <label>
+                            2枚の並べ方
+                            <select
+                              value={p.pairing ?? "auto"}
+                              onChange={(e) =>
+                                edit({
+                                  ...book,
+                                  pages: book.pages.map((page) =>
+                                    page.id === p.id
+                                      ? {
+                                          ...page,
+                                          pairing: e.target.value as
+                                            "auto" | "across" | "stacked",
+                                        }
+                                      : page,
+                                  ),
+                                })
+                              }
+                            >
+                              <option value="auto">用紙に合わせる</option>
+                              <option value="across">左右に並べる</option>
+                              <option value="stacked">上下に並べる</option>
+                            </select>
+                          </label>
+                        )}
                         <div className="pdf-items">
                           {p.itemIds.map((id) => {
                             const item = book.items.find((i) => i.id === id)!;
@@ -745,53 +850,78 @@ export default function AdminPdfPage() {
                                   />
                                 </div>
                                 <div>
-                                  <label>
-                                    作品タイトル
-                                    <input
-                                      value={item.title}
-                                      maxLength={500}
-                                      onChange={(e) =>
-                                        editItem(id, { title: e.target.value })
-                                      }
-                                    />
-                                  </label>
-                                  <div className="pdf-columns">
-                                    <label>
-                                      制作年
-                                      <input
-                                        value={item.year}
-                                        maxLength={100}
-                                        onChange={(e) =>
-                                          editItem(id, { year: e.target.value })
-                                        }
+                                  <details
+                                    className="pdf-photo-details"
+                                    open={book.purpose === "submission"}
+                                  >
+                                    <summary>
+                                      <img
+                                        className="pdf-detail-thumb"
+                                        src={`/api/admin/pdf/photos/${item.sourcePhotoId}/image?quality=thumb`}
+                                        alt=""
+                                        style={{
+                                          transform: `rotate(${item.rotation}deg)`,
+                                        }}
                                       />
-                                    </label>
+                                      {item.title ||
+                                        `写真 ${p.itemIds.indexOf(id) + 1}`}{" "}
+                                      — 作品情報
+                                      {book.purpose === "photobook"
+                                        ? "（提出用で表示）"
+                                        : ""}
+                                    </summary>
                                     <label>
-                                      技法
+                                      作品タイトル
                                       <input
-                                        value={item.technique}
+                                        value={item.title}
                                         maxLength={500}
                                         onChange={(e) =>
                                           editItem(id, {
-                                            technique: e.target.value,
+                                            title: e.target.value,
                                           })
                                         }
                                       />
                                     </label>
-                                  </div>
-                                  <label>
-                                    作品説明
-                                    <textarea
-                                      rows={3}
-                                      value={item.captionOverride}
-                                      maxLength={8000}
-                                      onChange={(e) =>
-                                        editItem(id, {
-                                          captionOverride: e.target.value,
-                                        })
-                                      }
-                                    />
-                                  </label>
+                                    <div className="pdf-columns">
+                                      <label>
+                                        制作年
+                                        <input
+                                          value={item.year}
+                                          maxLength={100}
+                                          onChange={(e) =>
+                                            editItem(id, {
+                                              year: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label>
+                                        技法
+                                        <input
+                                          value={item.technique}
+                                          maxLength={500}
+                                          onChange={(e) =>
+                                            editItem(id, {
+                                              technique: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                    </div>
+                                    <label>
+                                      作品説明
+                                      <textarea
+                                        rows={3}
+                                        value={item.captionOverride}
+                                        maxLength={8000}
+                                        onChange={(e) =>
+                                          editItem(id, {
+                                            captionOverride: e.target.value,
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                  </details>
                                   <button
                                     onClick={() =>
                                       editItem(id, {
@@ -813,7 +943,8 @@ export default function AdminPdfPage() {
                         </div>
                         <label>
                           ページの説明
-                          <input
+                          <textarea
+                            rows={2}
                             value={p.pageCaption}
                             maxLength={2000}
                             onChange={(e) =>
@@ -834,17 +965,10 @@ export default function AdminPdfPage() {
                 </section>
               </div>
             </div>
-            <section>
+            <section className="pdf-library" hidden={view !== "photos"}>
               <div className="pdf-toolbar">
-                <h2>写真を選ぶ</h2>
-                <button
-                  type="button"
-                  onClick={() =>
-                    document
-                      .querySelector(".pdf-workspace")
-                      ?.scrollIntoView({ block: "start" })
-                  }
-                >
+                <h2>この本に入れる写真</h2>
+                <button type="button" onClick={() => setView("edit")}>
                   選んだページを見る
                 </button>
               </div>
@@ -896,10 +1020,10 @@ export default function AdminPdfPage() {
               </div>
             </section>
           </fieldset>
-          <section className="pdf-export">
+          <section className="pdf-export" hidden={view !== "export"}>
             <h2>PDFに仕上げる</h2>
             <p className="pdf-note">
-              送信用：長辺1600px・JPEG品質78。印刷用：保存画像の長辺3200px以内・品質95。画像は拡大しません。容量の上限保証・PDF/X・CMYKには対応していません。
+              メールで送るときは送信用、紙で見るときは印刷用を選んでください。生成後にページ数と容量を確認できます。
             </p>
             <div className="pdf-toolbar">
               <button

@@ -4,6 +4,7 @@ import {
   layoutBook,
   type Measure,
   type Sheet,
+  type ImageSizes,
 } from "../../lib/portfolio-pdf/layout";
 import type { PortfolioDocument } from "../../lib/portfolio-pdf/model";
 let fontPromise: Promise<Measure> | undefined;
@@ -109,6 +110,34 @@ export default function BookCanvas({
 }) {
   const [font, setFont] = useState<Measure | null>(null),
     [error, setError] = useState("");
+  const [sizes, setSizes] = useState<ImageSizes>(new Map());
+  const sources = book.items.map((i) => `${i.id}:${i.sourcePhotoId}`).join(",");
+  useEffect(() => {
+    let alive = true;
+    // Use the same delivery pipeline as the PDF, including EXIF orientation.
+    const images = book.items.map((item) => {
+      const image = new Image();
+      image.onload = () => {
+        if (alive)
+          setSizes((previous) =>
+            new Map(previous).set(item.id, {
+              width: image.naturalWidth,
+              height: image.naturalHeight,
+            }),
+          );
+      };
+      image.src = `/api/admin/pdf/photos/${item.sourcePhotoId}/image?quality=thumb`;
+      return image;
+    });
+    return () => {
+      alive = false;
+      images.forEach((image) => {
+        image.onload = null;
+      });
+    };
+    // Image references, not caption edits, determine which resources are loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sources]);
   const [dragged, setDragged] = useState<number | null>(null);
   useEffect(() => {
     let alive = true;
@@ -124,8 +153,8 @@ export default function BookCanvas({
     };
   }, []);
   const sheets = useMemo(
-    () => (font ? layoutBook(book, font) : []),
-    [book, font],
+    () => (font ? layoutBook(book, font, sizes) : []),
+    [book, font, sizes],
   );
   const index = Math.max(
     0,

@@ -23,10 +23,12 @@ export type BookPage = {
   layout: "one" | "two";
   itemIds: string[];
   pageCaption: string;
+  imageScale?: number;
+  pairing?: "auto" | "across" | "stacked";
 };
 export type PortfolioDocument = {
   schemaVersion: 1;
-  templateVersion: 2;
+  templateVersion: 3;
   purpose: "submission" | "photobook";
   id: string;
   title: string;
@@ -41,7 +43,7 @@ export type PortfolioDocument = {
 export const STORAGE_KEY = "portfolio-pdf.v1.books";
 export const createBook = (): PortfolioDocument => ({
   schemaVersion: 1,
-  templateVersion: 2,
+  templateVersion: 3,
   purpose: "submission",
   id: crypto.randomUUID(),
   title: "新しい作品集",
@@ -126,7 +128,7 @@ export function parseBook(raw: unknown): PortfolioDocument {
   if (!object(raw)) return fail();
   if (
     raw.schemaVersion !== 1 ||
-    ![1, 2].includes(Number(raw.templateVersion)) ||
+    ![1, 2, 3].includes(Number(raw.templateVersion)) ||
     typeof raw.templateVersion !== "number" ||
     (raw.purpose !== undefined &&
       !["submission", "photobook"].includes(String(raw.purpose))) ||
@@ -189,6 +191,10 @@ export function parseBook(raw: unknown): PortfolioDocument {
       pageIds.has(p.id) ||
       !["one", "two"].includes(String(p.layout)) ||
       !str(p.pageCaption, 2000) ||
+      (p.imageScale !== undefined &&
+        ![0.7, 0.85, 1].includes(p.imageScale as number)) ||
+      (p.pairing !== undefined &&
+        !["auto", "across", "stacked"].includes(p.pairing as string)) ||
       !Array.isArray(p.itemIds) ||
       p.itemIds.length < 1 ||
       p.itemIds.length > (p.layout === "one" ? 1 : 2)
@@ -208,7 +214,7 @@ export function parseBook(raw: unknown): PortfolioDocument {
   // Re-serialize drops prototypes; no URL from this file is ever fetched.
   return {
     ...JSON.parse(JSON.stringify(raw)),
-    templateVersion: 2,
+    templateVersion: 3,
     purpose: raw.purpose ?? "submission",
   } as PortfolioDocument;
 }

@@ -138,7 +138,7 @@ describe("本を見ながら整える", () => {
     delete old.purpose;
     old.templateVersion = 1;
     expect(parseBook(old).purpose).toBe("submission");
-    expect(parseBook(old).templateVersion).toBe(2);
+    expect(parseBook(old).templateVersion).toBe(3);
     const copy = duplicateBook(b);
     expect(parseBook(copy)).toEqual(copy);
     expect(copy.id).not.toBe(b.id);
@@ -182,4 +182,73 @@ describe("本を見ながら整える", () => {
     expect(photo.texts.some((t) => t.value.includes("説明"))).toBe(false);
     expect(b.items[0].captionOverride).toContain("三行目");
   });
+});
+
+test("実画像の縦横比で写真と説明をまとめ、余白と2枚組を保持する", async () => {
+  const { layoutBook } = await import("./layout");
+  const measure = {
+    widthOfTextAtSize: (s: string, size: number) => s.length * size,
+  };
+  let b = make();
+  b.items[0].rotation = 0;
+  const sizes = new Map([[b.items[0].id, { width: 2000, height: 1000 }]]);
+  const sheet = layoutBook(b, measure, sizes)[1];
+  const photo = sheet.photos[0],
+    caption = sheet.texts[0];
+  expect(photo.width / photo.height).toBeCloseTo(2);
+  expect(caption.top - photo.top - photo.height).toBeCloseTo(14);
+  expect(caption.top + caption.lines.length * caption.leading).toBeLessThan(
+    sheet.height - 42,
+  );
+  b.pages[0].imageScale = 0.7;
+  expect(layoutBook(b, measure, sizes)[1].photos[0].width).toBeCloseTo(
+    photo.width * 0.7,
+  );
+  b = addPhoto(b, { ...source, id: 2 });
+  b.pages[0] = {
+    ...b.pages[0],
+    layout: "two",
+    itemIds: b.items.map((i) => i.id),
+    pairing: "across",
+  };
+  b.pages.pop();
+  expect(parseBook(b)).toEqual(b);
+  const pair = layoutBook(b, measure, sizes)[1].photos;
+  expect(pair[1].x).toBeGreaterThan(pair[0].x + pair[0].width);
+  expect(() =>
+    parseBook({ ...b, pages: [{ ...b.pages[0], imageScale: 4 }] }),
+  ).toThrow();
+});
+
+test("縦横の2枚組は切り抜かず同じ高さでそろえる", async () => {
+  const { layoutBook } = await import("./layout");
+  let b = addPhoto(make(), { ...source, id: 2 });
+  b.purpose = "photobook";
+  b.orientation = "landscape";
+  b.items.forEach((i) => (i.rotation = 0));
+  b.pages = [
+    {
+      ...b.pages[0],
+      layout: "two",
+      itemIds: b.items.map((i) => i.id),
+      pairing: "across",
+    },
+  ];
+  const sizes = new Map([
+    [b.items[0].id, { width: 1000, height: 1600 }],
+    [b.items[1].id, { width: 1600, height: 1000 }],
+  ]);
+  const sheet = layoutBook(
+    b,
+    { widthOfTextAtSize: (s) => s.length * 10 },
+    sizes,
+  )[1];
+  expect(sheet.photos[0].height).toBeCloseTo(sheet.photos[1].height);
+  expect(sheet.photos[0].top).toBeCloseTo(sheet.photos[1].top);
+  expect(sheet.photos[0].width / sheet.photos[0].height).toBeCloseTo(
+    1000 / 1600,
+  );
+  expect(sheet.photos[1].width / sheet.photos[1].height).toBeCloseTo(
+    1600 / 1000,
+  );
 });

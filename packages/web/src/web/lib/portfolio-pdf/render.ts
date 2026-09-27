@@ -21,10 +21,10 @@ export async function renderPortfolio(
   pdf.registerFontkit(fontkit);
   const font = await pdf.embedFont(fontBytes, { subset: true });
   const supported = new Set(font.getCharacterSet());
-  const sheets = layoutBook(book, font),
-    issues = sheets.flatMap((p) => p.issues);
   const images = new Map<string, Awaited<ReturnType<typeof pdf.embedJpg>>>();
   for (const a of assets) images.set(a.id, await pdf.embedJpg(a.bytes));
+  const sheets = layoutBook(book, font, images),
+    issues = sheets.flatMap((p) => p.issues);
   for (const [n, sheet] of sheets.entries()) {
     const p = pdf.addPage([sheet.width, sheet.height]);
     for (const t of sheet.texts) {
@@ -92,7 +92,7 @@ export async function renderPortfolio(
     progress(n + 1, sheets.length);
   }
   pdf.setTitle(book.title);
-  pdf.setCreator("Portfolio Kit PDF v2");
+  pdf.setCreator("Portfolio Kit PDF v3");
   pdf.setProducer("Portfolio Kit");
   return {
     bytes: issues.some((i) => i.severity === "error") ? null : await pdf.save(),

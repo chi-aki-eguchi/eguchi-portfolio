@@ -8,6 +8,7 @@ import { db, schema, withRetry } from "./database";
 export function portfolioPdfRoutes(
   auth: MiddlewareHandler,
   read: (key: string) => Promise<{ buf: Buffer }>,
+  transform: <T>(signal: AbortSignal, run: () => Promise<T>) => Promise<T>,
 ) {
   return new Hono()
     .use("*", async (c, next) => {
@@ -52,12 +53,15 @@ export function portfolioPdfRoutes(
           422,
         );
       try {
-        const { buf } = await read(key);
         const quality = c.req.query("quality");
         const edge =
           quality === "print" ? 3200 : quality === "thumb" ? 320 : 1600;
         // sharp removes EXIF/ICC by default; pixels converted to sRGB, never upscaled.
-        const data = await sharp(buf)
+        // Share the public image queue so HTTP/2 thumbnail bursts cannot decode
+        // many full-size source images at once. Read inside the same bound.
+        const data = await transform(c.req.raw.signal, async () => {
+          const { buf } = await read(key);
+          return sharp(buf)
           .rotate()
           .resize({
             width: edge,
@@ -68,6 +72,7 @@ export function portfolioPdfRoutes(
           .flatten({ background: "#fff" })
           .jpeg({ quality: quality === "print" ? 95 : 78 })
           .toBuffer();
+        });
         c.header("Content-Type", "image/jpeg");
         return c.body(new Uint8Array(data));
       } catch {

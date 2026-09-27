@@ -1185,7 +1185,7 @@ const app = new Hono()
     return c.json({ authenticated: session === SESSION_VALUE }, 200);
   })
 
-  .route("/admin/pdf", portfolioPdfRoutes(requireAdmin, getOriginal))
+  .route("/admin/pdf", portfolioPdfRoutes(requireAdmin, getOriginal, withImageTransformLimit))
 
   // ── Admin: Setup health (read-only) ─────────────────────
   // 「はじめに」画面が写真を選ぶ前に保存先の未接続へ気づけるようにする。

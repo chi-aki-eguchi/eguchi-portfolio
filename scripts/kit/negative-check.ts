@@ -1,0 +1,30 @@
+import { cpSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { strict as assert } from 'node:assert';
+import { root, lab, sql, dbName, sha } from './local';
+const before = sql(dbName('restored'), 'SELECT count(*) FROM photos');
+const reports: { test: string; status: string }[] = [];
+function refuses(args: string[], reason: RegExp, name: string) {
+ const r = spawnSync('bun', ['--no-env-file', 'scripts/kit/local.ts', ...args], { cwd: root, env: { PATH: process.env.PATH! }, encoding: 'utf8' });
+ assert.notEqual(r.status, 0); assert(reason.test(r.stderr + r.stdout)); reports.push({ test: name, status: 'PASS' });
+}
+refuses(['backup', 'busy-must-not-exist'], /EADDRINUSE/, 'Backup refuses running application');
+assert(!existsSync(join(lab, 'backups/busy-must-not-exist')));
+const label = `corrupt-${Date.now()}`;
+const test = join(lab, 'backups', label);
+cpSync(join(lab, 'backups/delivery-20260928'), test, { recursive: true });
+const manifest = JSON.parse(readFileSync(join(test, 'manifest.json'), 'utf8'));
+manifest.inventory[0].sha256 = sha('intentionally-corrupted');
+writeFileSync(join(test, 'manifest.json'), JSON.stringify(manifest));
+refuses(['restore', label, '--apply'], /integrity mismatch/, 'Corrupt backup rejected before target mutation');
+const original = JSON.parse(readFileSync(join(lab, 'backups/delivery-20260928/manifest.json'), 'utf8'));
+writeFileSync(join(test, 'manifest.json'), JSON.stringify(original));
+writeFileSync(join(test, 'unlisted.txt'), 'unexpected');
+refuses(['restore', label, '--apply'], /inventory mismatch/, 'Unlisted backup file rejected');
+manifest.inventory[0].path = '../forbidden'; writeFileSync(join(test, 'manifest.json'), JSON.stringify(manifest));
+refuses(['restore', label, '--apply'], /Unsafe manifest path/, 'Traversal in backup manifest rejected');
+assert.equal(sql(dbName('restored'), 'SELECT count(*) FROM photos'), before);
+reports.push({ test: 'Failed restore leaves existing customer records unchanged', status: 'PASS' });
+writeFileSync(join(lab, 'negative-verification.json'), JSON.stringify({ time: new Date().toISOString(), reports }, null, 2));
+console.log('Negative backup/restore checks passed');

@@ -1,0 +1,194 @@
+{
+  "date": "2026-09-28",
+  "scope": "Installed direct production dependencies only; transitive and commercial rights not certified",
+  "dependencies": [
+    {
+      "workspace": "package.json",
+      "name": "@aws-sdk/client-s3",
+      "version": "3.1069.0",
+      "license": "Apache-2.0",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "package.json",
+      "name": "@libsql/client",
+      "version": "0.17.4",
+      "license": "MIT",
+      "licenseFiles": []
+    },
+    {
+      "workspace": "package.json",
+      "name": "cloudflare",
+      "version": "5.2.0",
+      "license": "Apache-2.0",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "package.json",
+      "name": "detect-libc",
+      "version": "2.1.2",
+      "license": "Apache-2.0",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "package.json",
+      "name": "js-yaml",
+      "version": "5.2.1",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "package.json",
+      "name": "pm2",
+      "version": "7.0.1",
+      "license": "AGPL-3.0",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "package.json",
+      "name": "sharp",
+      "version": "0.34.5",
+      "license": "Apache-2.0",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "package.json",
+      "name": "ws",
+      "version": "8.21.0",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "@aws-sdk/client-s3",
+      "version": "3.1069.0",
+      "license": "Apache-2.0",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "@libsql/client",
+      "version": "0.17.4",
+      "license": "MIT",
+      "licenseFiles": []
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "@pdf-lib/fontkit",
+      "version": "1.1.1",
+      "license": "MIT",
+      "licenseFiles": []
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "@tanstack/react-query",
+      "version": "5.101.0",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "drizzle-orm",
+      "version": "0.45.2",
+      "license": "Apache-2.0",
+      "licenseFiles": []
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "exif-reader",
+      "version": "2.0.3",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "exifr",
+      "version": "7.1.3",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "hono",
+      "version": "4.12.25",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "lucide-react",
+      "version": "0.577.0",
+      "license": "ISC",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "pdf-lib",
+      "version": "1.17.1",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE.md"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "pg",
+      "version": "8.22.0",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "react",
+      "version": "19.1.0",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "react-dom",
+      "version": "19.1.0",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ]
+    },
+    {
+      "workspace": "packages/web/package.json",
+      "name": "wouter",
+      "version": "3.10.0",
+      "license": "Unlicense",
+      "licenseFiles": []
+    }
+  ]
+}

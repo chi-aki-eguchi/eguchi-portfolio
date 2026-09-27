@@ -82,3 +82,6 @@ claude-code-night-run.md
 
 # Local PDF samples and verification exports (may contain personal data)
 /output/pdf/
+
+# Local delivery rehearsal bundles (never credentials or real customers)
+/output/kit-delivery/

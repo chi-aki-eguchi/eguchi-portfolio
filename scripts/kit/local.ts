@@ -117,6 +117,7 @@ export async function serve(s: Slot) {
 export async function backup(s: Slot, label: string) {
   assertLab(); await free(slots[s].port); // App must be stopped: database and objects form one quiet snapshot.
   if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Invalid snapshot label');
+  if (sql('postgres', 'SHOW data_directory') !== join(lab, 'postgres')) throw new Error('Wrong PostgreSQL process');
   const target = join(lab, 'backups', label);
   mkdirSync(join(lab, 'backups'), { recursive: true, mode: 0o700 });
   mkdirSync(target, { mode: 0o700 }); // Fail if already exists, never overwrite.
@@ -129,7 +130,7 @@ export async function backup(s: Slot, label: string) {
     }
   }
   const inventory = files(target).map(path => ({ path, bytes: statSync(join(target, path)).size, sha256: sha(readFileSync(join(target, path))) }));
-  writeFileSync(join(target, 'manifest.json'), JSON.stringify({ schema: 1, source: s, createdAt: new Date().toISOString(), commit: run('git', ['rev-parse', 'HEAD']), inventory, excludes: ['credentials', 'browser-local projects not exported', 'camera originals'] }, null, 2));
+  writeFileSync(join(target, 'manifest.json'), JSON.stringify({ schema: 1, source: s, createdAt: new Date().toISOString(), commit: existsSync(join(dir(s), 'active-release.json')) ? JSON.parse(readFileSync(join(dir(s), 'active-release.json'), 'utf8')).commit : run('git', ['rev-parse', 'HEAD']), inventory, excludes: ['credentials', 'browser-local projects not exported', 'camera originals'] }, null, 2));
   console.log(`Backup ${label}: ${inventory.length} files. Credentials excluded.`);
 }
 export async function restore(label: string, apply = false) {
@@ -137,10 +138,13 @@ export async function restore(label: string, apply = false) {
   if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Invalid snapshot label');
   const source = join(lab, 'backups', label);
   const manifest = JSON.parse(readFileSync(join(source, 'manifest.json'), 'utf8'));
+  if (manifest.schema !== 1 || !Array.isArray(manifest.inventory)) throw new Error('Invalid backup manifest');
   for (const item of manifest.inventory) {
     if (typeof item.path !== 'string' || item.path.includes('..') || item.path.startsWith('/')) throw new Error('Unsafe manifest path');
     if (sha(readFileSync(join(source, item.path))) !== item.sha256) throw new Error('Backup integrity mismatch');
   }
+  const listed = manifest.inventory.map((item: { path: string }) => item.path).sort();
+  if (JSON.stringify(listed) !== JSON.stringify(files(source).filter(path => path !== 'manifest.json')) || !listed.includes('database.dump')) throw new Error('Backup inventory mismatch');
   await init('restored'); await free(slots.restored.port);
   if (sql(dbName('restored'), "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')") !== '0' || files(join(dir('restored'), 'objects')).length || files(join(dir('restored'), 'projects')).length)
     throw new Error('Restore target must be empty; existing data is never overwritten');

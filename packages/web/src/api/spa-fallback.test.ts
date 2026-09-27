@@ -288,6 +288,7 @@ describe("撮影依頼と販売の言葉が HTML に出ているか", () => {
     const text = publicPageFallbackText(
       {
         ...settings,
+        siteUrl: "https://customer.example",
         servicePageConfig: JSON.stringify({
           pricing: {
             plans: [

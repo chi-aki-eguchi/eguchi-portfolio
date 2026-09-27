@@ -1,0 +1,25 @@
+/** Synthetic manual-order rehearsal. No provider call, customer record, message or charge. */
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { strict as assert } from 'node:assert';
+import { lab, assertLab } from './local';
+import { readiness, reconcile, type Order } from './order';
+assertLab();
+const health = await (await fetch('http://127.0.0.1:5599/api/health')).json();
+const verification = JSON.parse(readFileSync(join(lab, 'evidence/sample/verification.json'), 'utf8'));
+const recovery = JSON.parse(readFileSync(join(lab, 'recovery-verification.json'), 'utf8'));
+assert(verification.results.every((r: {status:string}) => r.status === 'PASS'));
+assert.equal(recovery.status, 'PASS');
+let order: Order = { id: 'SYNTHETIC-DELIVERY-001', contractVersion: 'DRAFT-TEST-ONLY', release: health.build, quote: { totalJpy: 30000, runningCost: 'ローカル実費0円、商用条件は未承認', scope: '説明用写真3枚の独立サイト', cancellation: '実請求なしのテスト条件', support: 'ローカル技術リハーサルのみ', agreedAt: null }, payment: { state: 'pending', reference: null, amountJpy: null, verifiedBy: null }, materialsApproved: false, publicApproval: false, deliveredAt: null, ownerUpdateConfirmed: false };
+const stages: unknown[] = [];
+const record = (stage: string) => stages.push({ stage, decision: readiness(order) });
+record('相談・条件下書き'); assert(!readiness(order).canDeliver);
+order.quote.agreedAt = 'SIMULATED-NOT-A-CONTRACT'; record('テスト条件を確認'); assert(!readiness(order).canProduce);
+order = reconcile(order, { state: 'paid', reference: 'TEST-NO-CHARGE', amountJpy: 30000, verifiedBy: 'synthetic-fixture-not-provider' });
+record('架空入金を照合'); assert(!readiness(order).canProduce);
+order.materialsApproved = true; record('出典確認済み見本の素材許可'); assert(readiness(order).canProduce); assert(!readiness(order).canDeliver);
+order.publicApproval = true; record('架空公開承認と実物サイト・復元の技術確認'); assert(readiness(order).canDeliver);
+order.deliveredAt = new Date().toISOString(); record('ローカル納品パック生成可能'); assert(!readiness(order).ownerConfirmed);
+order = reconcile(order, { ...order.payment, state: 'refunded' }); record('架空返金で新規納品を停止'); assert(!readiness(order).canDeliver);
+writeFileSync(join(lab, 'order-rehearsal.json'), JSON.stringify({ time: new Date().toISOString(), status: 'PASS', performedBy: 'Codex simulation', actualPayment: false, actualCustomer: false, actualDelivery: false, release: health.build, stages, limitation: 'Provider sandbox, human acceptance, billing shutdown and messages are not exercised' }, null, 2), { mode: 0o600 });
+console.log('Synthetic order through delivery eligibility and refund: PASS; no payment or customer action');

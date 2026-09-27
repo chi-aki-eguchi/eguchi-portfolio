@@ -41,6 +41,7 @@ await api('/admin/settings', 'POST', {
   siteDescription: '風景を読む。公的アーカイブ写真によるPortfolio Kitの納品見本。顧客実績ではありません。',
   profileName: 'LAND / ARCHIVE', profileNameEn: 'LAND / ARCHIVE',
   profileBio: '風景のかたち、光、そして遠くへ続く線。\n\nこれはPortfolio Kitの説明用見本です。写真はAnsel AdamsがNational Park Serviceの職務として撮影した公的アーカイブ資料を使用しています。実在の顧客や納品実績を表していません。\n\nPhotographs: Ansel Adams / U.S. National Archives, 79-AA-G01, 79-AA-G09, 79-AAB-10. Public domain. https://commons.wikimedia.org/wiki/File:Ansel_Adams_-_National_Archives_79-AA-G01.jpg',
+  profileBioEn: 'An illustrative Portfolio Kit delivery sample, not a real client. Photographs by Ansel Adams / National Park Service / U.S. National Archives. Public domain archival images. No sales or client endorsement is implied.',
   contactEmail: 'sample@example.invalid', formspreeUrl: '',
   siteDesign: 'book', servicePageMode: 'off', serviceNavMode: 'off', templateCreditLabel: '', templateCreditUrl: '',
 });

@@ -21,3 +21,10 @@ test('late failed notice and different receipt cannot overwrite confirmed paymen
   expect(() => reconcile(done, { ...paid, state: 'failed' })).toThrow();
   expect(() => reconcile(done, { ...paid, reference: 'OTHER' })).toThrow();
 });
+
+test('late paid notice cannot resurrect a refunded order', () => {
+  const refunded = reconcile(reconcile(order, paid), { ...paid, state: 'refunded' });
+  expect(() => reconcile(refunded, paid)).toThrow();
+  expect(reconcile(refunded, { ...paid, state: 'refunded' })).toEqual(refunded);
+  expect(readiness(refunded).canDeliver).toBe(false);
+});

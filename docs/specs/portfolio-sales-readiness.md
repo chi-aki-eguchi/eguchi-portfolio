@@ -1,42 +1,103 @@
 # Portfolio Kit 販売・納品検証
 
-2026-09-28 着手。統合依頼: Downloads/portfolio-kit-sales-delivery-codex.md。元の依頼書を保持し、この表を更新版とする。
+2026-09-28 JST。統合依頼 `Downloads/portfolio-kit-sales-delivery-codex.md` の現状表を実物に照らして更新した正本。元の依頼書は保持。
 
-基準・最新origin/main: `bd4ea81871928fe6aa290d3a43c07e4dc7531a73`。mainの `.gitignore` / `vite.try.config.ts` と未追跡資料を保持。既存PDF等のworktreeは操作しない。今回: `codex/kit-delivery`。本番へのmain pushは行わず、レビュー用ブランチで検証する。
+**判定: ローカルの技術納品リハーサルは完了。初回有料提供は条件付き可。** 顧客名義の独立環境を担当者が設置し、設定済みサイトと管理画面を渡す方式。新規顧客クラウド、正式な提供・保守・取消条件、公開承認、本人操作・実受信の確認が揃うまで新しい約束で受注・公開しない。会員登録・自動課金・一般SaaSは初回納品の前提にしない。
 
-## 着手時の現状表
+## 実物と変更の所在
 
-|ID|利用者への約束|コードと文書の場所|現状|再現手順|顧客への影響|優先度|完了証拠|
-|---|---|---|---|---|---|---|---|
-|C01|検証した版を渡す|task.md / Git|実装・実測確認済み|fetch・HEAD・worktree list|基準と一致|P0|上記SHA|
-|C02|個人サイトと独立|service-visibility.ts|実装あり・未検証|顧客URLで起動|営業ページ混入の検査が必要|P0|リハーサルへ|
-|C03|PostgreSQL + S3|database/index.ts|実装あり・未検証|空PGへ起動|実接続の証拠不足|P0|リハーサルへ|
-|C04|個別設置|DISTRIBUTION.md|文書だけ|空環境構築|再現性不足|P0|ツール追加へ|
-|C05|30,000 / 69,800 / 任意9,800円|PortfolioServicePricing.tsx|実装確認済み・契約未再確認|日英UI|条件を無断変更しない|P0|商品定義を共通化|
-|C06|設定済み納品|料金部品|実装あり・未検証|素材登録→納品|基本プラン枚数等は個別合意|P0|納品例へ|
-|C07|自分で更新|photographer-guide.md|文書の不一致|初回案内を読む|初期構築と日常更新が混同|P0|ガイド改訂へ|
-|C08|顧客の版更新|template-update-guide.md|文書だけ|main追従手順|未検証更新の危険|P0|固定配布版へ|
-|C09|版履歴|template-release-notes.md|文書だけ・古い|先頭2026-08-17|現行PDF等と不一致|P0|リリース記録へ|
-|C10|提出PDF・写真集|admin-pdf / portfolio-pdf|実装あり・今回未検証|専用smoke|成果を保持|P1|回帰へ|
-|C11|制作物保存|portfolio-pdf/model.ts|実装あり・今回未検証|JSON export/import|ブラウザー保存・画像別途|P0|バックアップへ|
-|C12|画像品質|api/index.ts|実装確認済み|UPLOAD_MAX_PX=3200|原本復元・印刷保証不可|P1|ガイドに明記|
-|C13|PDF負荷|共有image queue|実装あり・今回未検証|繰返し生成|過去RSS対処を成功扱いしない|P1|負荷検証へ|
-|C14|相談・通知|portfolio-intake.ts|実装あり・外部未確認|モック送信|実受信は別確認|P0|既存specへ|
-|C15|受付ID・再送|portfolio-intake.ts|実装あり・今回未検証|失敗系spec|二重受付防止|P0|既存specへ|
-|C16|表示の一致|ogp.ts / service.tsx|不具合再現|publicPageFallbackText|旧静的説明と2プランUIが不一致|P0|共通商品定義で修正中|
-|C17|本番と作業の分離|main push→Railway|実装確認済み|Git運用|main pushは公開操作|P0|作業ブランチに隔離|
+- 確認用入口: http://127.0.0.1:5799/ （このMacのみ、公開URLではない）
+- 顧客用見本 LAND / ARCHIVE: http://127.0.0.1:5599/ / 管理画面 `/admin`
+- 別DB・別画像保存先・別認証へ復元した見本: http://127.0.0.1:5699/
+- [受取人ガイド](../photographer-guide.md)、[納品パック・商談文](../delivery/customer-pack.md)、[設置・復元・終了手順](../delivery/operations.md)、[原価・承認事項](../delivery/cost-and-approval.md)
+- `output/pdf/portfolio-kit-sample-screen.pdf` / `portfolio-kit-sample-print.pdf`。各4頁、アプリから出力。`output/kit-delivery/` はローカル納品パック、Gitへ載せない。
+- 基準・着手時origin/main: `bd4ea81871928fe6aa290d3a43c07e4dc7531a73`。元checkoutの `.gitignore` / `vite.try.config.ts` と未追跡資料、既存PDF・自由編集worktreeを保持。
+- 作業: `codex/kit-delivery`、`/Users/chiaki/.codex/worktrees/kit-delivery/eguchi-portfolio-app`。個人サイトへのmain push・本番設定・本番データ変更は未実施。
+- 製品検証版: `eaf032793193c87d8b0e63cd9d2ac59b0b64d46d`。最終配布版は末尾の固定版記録。PDF・写真集の製品コードは基準版から変更していない。
 
-## 提供方式の判断
+## 更新した現状表
 
-推奨: 初期設定付き個別環境、顧客名義のドメイン・ホスティング、担当者による設置・版更新。顧客は管理画面のみ。運用窓口と作品編集代行を分ける。顧客ごとにDB・バケット・認証を分離し、共通SaaSは初回納品の前提にしない。
+状態の「実測済み」は以下のローカル環境・担当者による技術試験を指す。商用クラウド・本人による操作・販売実績へ拡大解釈しない。
 
-代案: オーナー名義で複数環境を運用。請求集約はできるが、停止・移管・障害・継続料金の責任が増える。未承認の月額を作らず、契約と費用上限承認後に選ぶ。既存契約は変更しない。
+|ID|利用者への約束|コード／文書|現在の状態|再現・顧客への効果|優先度|証拠|
+|---|---|---|---|---|---|---|
+|C01|検証した版を渡す|scripts/kit/release.ts|実装・実測済み|ソースとbuildをSHA256固定、health照合|P0|release manifest|
+|C02|個人サイトと独立|service-visibility.ts / seed.ts|実測済み|名前・写真・OG・宛先・解析・販売ルート分離|P0|sample/verification.json|
+|C03|PostgreSQL + S3|database / local.ts|実PG・ローカルS3試験済み|空DB、独立画像保存先|P0|migration / recovery|
+|C04|空から個別設置|local.ts / materials.ts / seed.ts|実装・実測済み|再実行は既存編集を保持、同一ID再利用|P0|V01–V02|
+|C05|現行料金と範囲|shared/portfolio-product.ts|2プラン共通化済み|30,000 / 69,800 / 任意9,800円の変更なし。正式条件は要承認|P0|ogp / SPA単体|
+|C06|設定済み納品|delivery/customer-pack.md|完成見本あり|公的写真3点・シリーズ・紹介文・連絡先設定|P0|見本5599|
+|C07|自分で更新|photographer-guide.md / ui-update.ts|UI技術試験済み|追加・非公開・ドラッグ・紹介文・再ログイン|P0|ui-update.json|
+|C08|顧客の版更新|release.ts / recovery-check.ts|実測済み|配布版固定・既存データ保持|P0|recovery-verification.json|
+|C09|版履歴|template-release-notes.md|現行に更新|schema変更なし、互換・制限記載|P0|固定版manifest|
+|C10|提出PDF・写真集|admin-pdf / portfolio-pdf|現行回帰・実出力済み|4頁×送信／印刷、全頁描画確認|P1|PDF / renders|
+|C11|制作物保存|portfolio-pdf/model.ts|JSON復元実測済み|未書出しブラウザー本は対象外と明記|P0|project SHA / 再読込|
+|C12|画像品質|API / photographer-guide|制約確認・資料整合|最大3200px、原本ではない。紙の保証なし|P1|元コード / PDF|
+|C13|PDF画像負荷|共有image queue|短期実測済み・長期未確認|12巡で枠解放、RSS増加傾向は残る|P1|security-load.json|
+|C14|相談・通知|portfolio-intake.ts|既存モック回帰成功・実受信未確認|実メール送信をしていない|P0|単体 / smoke|
+|C15|受付ID・再送|portfolio-intake.ts|既存回帰成功|外部ops本番の挙動は未確認|P0|単体 / smoke|
+|C16|販売表示の一致|ogp.ts / Pricing|不一致を修正|ownerの静的説明と構造化Offerも同じ2プラン|P0|ogp / SPA単体|
+|C17|作業と本番の分離|作業branch / opt-in flags|維持|現行本番の公開範囲を変えない|P0|Git差分・health|
 
-## 索引
+## 検証の版・日時・環境
 
-- 商品定義: `packages/web/src/shared/portfolio-product.ts`（現行表示の共通化）
-- 顧客ガイド: `docs/photographer-guide.md`
-- 納品・商談資料: `docs/delivery/`（承認前は下書き）
-- リハーサルと証拠: `scripts/kit/` / `scratch/kit-delivery/`
+実行: 2026-09-28 JST、担当Codex。Mac / PostgreSQL 17.11（127.0.0.1:56430、専用クラスタ）/ Bun、偽S3はloopbackのみ。Chromium desktop・390px、全体smokeはdesktop/mobile/WebKitのエミュレーション。スマホ実機やSafariアプリでの試験ではない。個人サイトのDB・ストレージ・`.env`は使用しない。
 
-初回販売可否は検証終了後に更新。購入・実機・紙・実顧客による更新は技術試験と別。
+証拠の根: `scratch/kit-delivery/`。JSONのtimeはUTC表記。検証のPASSは表の限定された技術範囲に対するもの。NOT_RUNの部分をPASSに含めない。
+
+|ID|状態|今回の証拠／残る確認|
+|---|---|---|
+|V01|PASS|local.tsのinit→起動→素材設定、実PG空DB。クラウドはNOT_RUN|
+|V02|PASS|init再実行、素材checksum、seed再実行は書込みなし。途中試行で既存ID再利用。任意段階の自動障害注入は未実施|
+|V03|PASS|sample/verification.json、名前・OG・canonical・宛先・GA・owner販売404。画像は公的素材だけ|
+|V04|PASS|実PG17と0004→0005 migration再実行。通常回帰はSQLite/libSQL経路。外部Turso通信はNOT_RUN|
+|V05|PASS|見本3作品・1シリーズ・紹介文・ガイド。架空の納品、実顧客契約なし|
+|V06|PASS|ui-update.jsonとverification.json。実UI追加・ドラッグ・紹介文保存・公開状態・再ログイン。本人操作はV35|
+|V07|PASS|既存保存失敗・PDF中止・容量/JSON回帰の単体とsmoke。実クラウドのディスク満杯はNOT_RUN|
+|V08|PASS|横構図の公的写真と人工縦写真、長い日本語シリーズ名、既存多数写真回帰。実顧客の全素材はNOT_RUN|
+|V09|PASS|390px/desktop/WebKit・キーボード関連smoke。スマホ実機はNOT_RUN|
+|V10|NOT_RUN|見本の宛先分離とmailtoは確認。sample@example.invalidのため実送信・実受信はしない|
+|V11|PASS|既存相談保存・同ID再送・通知失敗のモック回帰。外部ops実配信はNOT_RUN|
+|V12|PASS|版・範囲・合意・金額を保持するorder型と未合意拒否、記入用確認書。実契約は未承認|
+|V13|NOT_RUN|order.testとorder-rehearsal.jsonで架空の成功／重複／遅延／失敗／中断／返金・納品資格を照合。決済事業者sandbox・実決済は未実施|
+|V14|PASS|新規顧客private初期登録、非公開画像本体・派生URLを匿名404。掲載許可の実顧客同意は未実施|
+|V15|PASS|security-load.json、認証なしの画像/PDF拒否、別顧客PW拒否。非公開クラウドバケットはNOT_RUN|
+|V16|PASS|個別ランダム秘密、担当者によるPW更新後に旧PW・旧cookie401、新PW200、データ不変。実受渡しはNOT_RUN|
+|V17|PASS|停止中にPG dump＋12画像ファイル＋1 JSON、14filesのmanifest。認証・カメラ原本・未export本を除外|
+|V18|PASS|別DB/保存先で7テーブル完全一致（siteUrl除外）、全画像・JSON SHA一致、PDF再出力の4頁描画一致|
+|V19|PASS|固定版artifactとhealth、実PG migrationで既存写真・設定・シリーズ保持。クラウド自動デプロイ設定はNOT_RUN|
+|V20|PASS|旧bd4ea81を実起動しデータ照合→候補版へ再更新。schemaは今回変更なし。旧版は画像保護が無いため顧客本番への推奨rollback先ではない|
+|V21|NOT_RUN|local canonical/OG・loopback隔離は確認。顧客DNS/TLS/検索は未承認・未実施|
+|V22|PASS|DB・画像・JSON・出力PDFを納品パックへ、再読込・復元実証。別クラウドへの移管はNOT_RUN|
+|V23|NOT_RUN|終了・持ち出し・保持・停止手順と架空返金の納品停止は確認。実ホスティング停止・請求停止は未実施|
+|V24|PASS|商品共通定義、日英料金UI・noscript・構造化2Offer、FAQ/購入後の現行条件保持。新しい価格は公開しない。本番反映はNOT_RUN|
+|V25|NOT_RUN|条件確認書と取消等の承認票を用意。正式事業者情報・保守責任・取消を未記入のまま公開していない|
+|V26|PASS|生成時間・容量・ローカル負荷の実測と費用未測定・工数仮定を分離。実顧客原価・利益はNOT_RUN|
+|V27|PASS|送信934,956bytes/332ms、印刷3,839,825bytes/823ms（1回のlocal実測）。各A4 4頁、全頁PNG確認、日本語抽出|
+|V28|PASS|既存PDF専用smokeと実PGのJSON取込／生成。Webデータの更新経路から独立|
+|V29|PASS|20画像要求×12巡（実3素材を繰返し）、同時4。中止/失敗後active・queue・inflight0。RSS435→452MB、短期増加あり。長期リーク解決やクラウド耐久を証明しない|
+|V30|PASS|旧JSONの読み戻し・文書変換の既存単体、見本JSON再読込。既存PDF worktreeや元作品は変更なし|
+|V31|NOT_APPLICABLE|今回の販売範囲に未完成の自由配置・白紙・見開き完成を加えない。既存開発と方向は保持|
+|V32|NOT_APPLICABLE|製本・印刷先適合を今回販売保証しない。印刷用データの技術検証だけ、物理印刷はNOT_RUN|
+|V33|PASS|sample-sources.jsonの個別PD表示・checksum。説明用と明記、実顧客の声や実績を作っていない|
+|V34|PASS|GAなし・公開証拠に秘密を含めない。初回失敗ログのcookieを削除し、以後はエラークラスのみ保存。private labと配布allowlistを分離|
+|V35|NOT_RUN|本人のログイン→写真追加→並べ替え→紹介文→公開確認→再ログインの確認票をガイドに用意|
+|V36|NOT_RUN|実購入・本人納品・継続利用・売上は未実施。架空orderの成功を実績に数えない|
+
+## 復元と失敗系の詳細
+
+- `backups/delivery-20260928/manifest.json` がスナップショット。実復元apply処理は0.342秒（小規模local、設置・検証時間を含まない、SLAではない）。
+- `recovery-verification.json`: photos4、series1、series_photos3、settings13、hero3、categories0、pricing0。公開3＋非公開試験1。12画像・1作品集JSON。サイトURL以外の全列比較。
+- `negative-verification.json`: 稼働中backup拒否、破損hash拒否、未登録ファイル拒否、path traversal拒否、失敗前後の顧客データ不変。既存データがある復元先も上書き拒否。
+- `evidence/restored/render-comparison.json`: sample/restoredの送信用PDFを全4頁描画しピクセル同一。復元後の印刷用PDFも生成・全頁目視。
+- 今回は同じMac内の別環境。災害対策、外部への暗号化保管、自動日次backup、失敗通知は商用構成の承認後に実施する。
+
+## 原因を直した途中失敗
+
+API型checkでreplaceAllの対象ECMAScript差を修正。owner静的料金の修正後、汎用顧客のカスタム料金テストに顧客siteUrlを明示。UI取り込み待機のtile数条件を修正。Bunの個別testに`./`が無いとファイルfilterになりscratchの旧ソースまで走るため、個別testは`bun test ./...`を使う。修正後の実行だけを最終合格に採用。
+
+## 承認と最小の外部確認
+
+詳細・推奨案・影響は[原価・承認事項](../delivery/cost-and-approval.md)へ集約。現行価格を維持し、登録量・納期・修正と、操作相談／環境保守／作品編集代行を分けて合意する。過去の1,480円/1,500円案や30日制限を採用していない。
+
+次は①この差分の本番適用範囲、②最初の顧客環境の名義・課金上限、③正式な保守と取消・移管条件の承認。承認後に実クラウド設置→非公開バケット・DNS/TLS・メール受信→本人の短い更新試験→公開承認を行う。物理印刷と実売上は別記録。サブスクリプション基盤を作る必要はない。

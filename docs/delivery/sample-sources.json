@@ -1,0 +1,26 @@
+[
+  {
+    "file": "79-AA-G01.jpg",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/1/18/Ansel_Adams_-_National_Archives_79-AA-G01.jpg",
+    "licensePage": "https://commons.wikimedia.org/wiki/File:Ansel_Adams_-_National_Archives_79-AA-G01.jpg",
+    "author": "Ansel Adams / National Park Service",
+    "rights": "Public domain (US federal government work), per individual source page",
+    "sha256": "156fa30c4967eb261286522370e16c2825b232ceabb66b991847cbb3894da2ba"
+  },
+  {
+    "file": "79-AA-G09.jpg",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Ansel_Adams_-_National_Archives_79-AA-G09.jpg",
+    "licensePage": "https://commons.wikimedia.org/wiki/File:Ansel_Adams_-_National_Archives_79-AA-G09.jpg",
+    "author": "Ansel Adams / National Park Service",
+    "rights": "Public domain (US federal government work), per individual source page",
+    "sha256": "b6ec6997d9992c5f57f257ef4253e378776b3d7a748fb8bd025bda0f6dd50910"
+  },
+  {
+    "file": "79-AAB-10.jpg",
+    "source": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Ansel_Adams_-_National_Archives_79-AAB-10.jpg",
+    "licensePage": "https://commons.wikimedia.org/wiki/File:Ansel_Adams_-_National_Archives_79-AAB-10.jpg",
+    "author": "Ansel Adams / National Park Service",
+    "rights": "Public domain (US federal government work), per individual source page",
+    "sha256": "692d6005bd102eb2b014fbcdb9475408a464627766afc53c5b20b6d5397aa55b"
+  }
+]

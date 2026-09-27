@@ -17,6 +17,7 @@ export function readiness(order: Order) {
 export function reconcile(order: Order, receipt: Order['payment']) {
   if (order.payment.reference && order.payment.reference !== receipt.reference) throw new Error('決済識別子不一致: 手動確認が必要');
   if (receipt.state === 'paid' && (receipt.amountJpy !== order.quote.totalJpy || !receipt.reference || !receipt.verifiedBy)) throw new Error('金額・決済事業者照合が不足');
+  if (order.payment.state === 'refunded' && receipt.state !== 'refunded') throw new Error('返金済みの注文を遅延通知で再開できません');
   if (['paid', 'refunded'].includes(order.payment.state) && ['pending', 'failed', 'cancelled'].includes(receipt.state)) throw new Error('遅延通知で確定状態を戻せません');
   return { ...order, payment: { ...receipt } };
 }

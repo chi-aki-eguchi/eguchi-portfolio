@@ -34,7 +34,7 @@
     "check:migrations": "bun packages/web/scripts/check-migrations.ts",
     "test:smoke-guard": "node scripts/smoke/guard/run.mjs",
     "kit:sample": "bun --no-env-file scripts/kit/local.ts serve sample",
-    "test:kit": "bun --no-env-file test scripts/kit/order.test.ts"
+    "test:kit": "bun --no-env-file test ./scripts/kit/order.test.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",

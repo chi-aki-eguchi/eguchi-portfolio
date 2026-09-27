@@ -15,7 +15,7 @@ bun --no-env-file scripts/kit/local.ts serve sample
 
 新規のDB・独立したローカルS3互換保存先・サイト別ランダム認証。既存ポートは使いません。サイト5599、保存5598、復元版5699/5698。公開クラウドには接続しません。停止は起動した端末でCtrl+C。DB・作品は残ります。秘密を含む `access.json` とクラスタはGit管理外・権限0600/0700。起動ログにパスワードを出しません。
 
-見本素材は `materials/sources.json` のURL・権利表示・SHA256に従い用意し、`seed.ts` を実行。完了済みのseedは何も書かず、途中失敗時は既存の写真IDを再利用します。途中に手動編集した場合は先に差分を確認します。顧客素材を使うときはこの架空見本用seedを転用しません。
+見本素材は `bun --no-env-file scripts/kit/materials.ts` で取得・検証し、起動したサイトに `bun --no-env-file scripts/kit/seed.ts` を実行。出典とSHA256は `docs/delivery/sample-sources.json`。`bun --no-env-file scripts/kit/review.ts` で資料の入口5799も起動できます。完了済みのseedは何も書かず、途中失敗時は既存の写真IDを再利用します。途中に手動編集した場合は先に差分を確認します。顧客素材を使うときはこの架空見本用seedを転用しません。
 
 ## 顧客の環境を作る前の契約確認
 

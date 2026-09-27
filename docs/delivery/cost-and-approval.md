@@ -39,3 +39,9 @@ Railway公式はHobbyが月$5、Proが月$20の基本枠で、それぞれ同額
 - https://www.no-trouble.caa.go.jp/qa/advertising.html
 
 技術試験が成功しても、契約未確定のまま新しい「保守込み」商品として受注開始しない。既存契約の有無は不明で、ゼロと扱わない。
+
+## プログラム・素材・書体の受渡し
+
+今回の直接production依存の実インストール版とlicense表記は `dependency-licenses.json`。MIT / Apache-2.0 / ISC / Unlicense等に加え、既存のPM2にAGPL-3.0表記がある。今回のローカルBun起動はPM2を使わず、納品source.tarにもnode_modulesは含めない。推移依存や商用再配布全体への適合認定はしていない。顧客へバイナリ・依存コードを含めて渡す場合は、該当noticeと必要なソースを揃える。
+
+NotoフォントのOFLは `packages/web/assets/fonts/OFL.txt` と `public/fonts/pdf/OFL.txt` をソースに保持。見本の写真の出典・権利表示は `sample-sources.json`。アプリ本体には独立したLICENSEファイルが無いため、顧客へ認める利用・改変・移管・再配布の範囲を条件確認書でオーナーが確定する。公開リポジトリという理由で顧客に無制限の再販権を付けない。

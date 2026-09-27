@@ -128,3 +128,58 @@ describe("PDFの実物", () => {
     }
   });
 });
+
+describe("本を見ながら整える", () => {
+  test("旧文書を移行し、複製は元の説明と参照を壊さない", async () => {
+    const { duplicateBook } = await import("./model");
+    const b = make();
+    b.cover.itemId = b.items[0].id;
+    const old: any = JSON.parse(JSON.stringify(b));
+    delete old.purpose;
+    old.templateVersion = 1;
+    expect(parseBook(old).purpose).toBe("submission");
+    expect(parseBook(old).templateVersion).toBe(2);
+    const copy = duplicateBook(b);
+    expect(parseBook(copy)).toEqual(copy);
+    expect(copy.id).not.toBe(b.id);
+    expect(copy.items[0].id).not.toBe(b.items[0].id);
+    expect(copy.cover.itemId).toBe(copy.items[0].id);
+    copy.items[0].captionOverride = "複製だけの説明";
+    expect(b.items[0].captionOverride).toBe(source.description);
+    expect(copy.items[0].sourcePhotoId).toBe(b.items[0].sourcePhotoId);
+    expect(() => parseBook({ ...b, purpose: "unknown" })).toThrow();
+  });
+  test("ドラッグしたページを挿入し、中間の順序を保つ", () => {
+    let b = make();
+    for (let id = 2; id <= 4; id++) b = addPhoto(b, { ...source, id });
+    const ids = b.pages.map((p) => p.id);
+    expect(movePage(b, 0, 3).pages.map((p) => p.id)).toEqual([
+      ids[1],
+      ids[2],
+      ids[3],
+      ids[0],
+    ]);
+    expect(b.pages.map((p) => p.id)).toEqual(ids);
+  });
+  test("空欄の枠をなくし、文章の分だけ写真を縮め、写真集でも説明を保持", async () => {
+    const { layoutBook } = await import("./layout");
+    const measure = {
+      widthOfTextAtSize: (s: string, size: number) => s.length * size,
+    };
+    const b = make();
+    b.items[0].title = "";
+    b.items[0].captionOverride = "";
+    const empty = layoutBook(b, measure)[1].photos[0];
+    b.items[0].captionOverride = "説明";
+    const short = layoutBook(b, measure)[1].photos[0];
+    expect(empty.height - short.height).toBeCloseTo(10.5 * 1.65 + 14);
+    b.items[0].captionOverride = "説明\n二行目\n三行目";
+    const longer = layoutBook(b, measure)[1].photos[0];
+    expect(short.height - longer.height).toBeCloseTo(2 * 10.5 * 1.65);
+    b.purpose = "photobook";
+    const photo = layoutBook(b, measure)[1];
+    expect(photo.photos[0].height).toBeGreaterThan(empty.height);
+    expect(photo.texts.some((t) => t.value.includes("説明"))).toBe(false);
+    expect(b.items[0].captionOverride).toContain("三行目");
+  });
+});

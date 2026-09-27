@@ -1,6 +1,16 @@
 # Task Log
 
 <!-- CURRENT_STATE_START -->
+## Current State — 2026-09-27 JST / PDF作品集の視覚編集（ローカル・未push）
+
+- 依頼: 前回提案した「本を見ながら編集」「文章量に応じた写真サイズ」「提出用／写真集」「一冊の複製」を実装。
+- 同じ `codex/portfolio-pdf` worktree。大きな一頁とページ一覧、頁単位の編集、ドラッグ挿入・前後移動・元に戻す／やり直すを追加。SVGとPDFは同じ配置処理／フォント字幅を利用。旧文書は版2へ読み戻す。複製は未保存の元本も同時に保存する。
+- 写真集は作品情報を保持して非表示、ページの説明だけを載せる。提出用は必要な文章高だけ確保。写真は切り抜かず比率を維持。ローカル `http://localhost:5499/admin/pdf` の専用Chromeには両見本を保存済み。
+- 2026-09-27検証: 関連単体11成功、型・lint・build成功。PDF専用smokeはPC／スマホ幅／WebKitの15件成功（45.5秒）。初回のブラウザー向けフォントimport、続く新テストのtextarea検索を修正した後の最終結果。今回は全体smokeを繰り返していない。
+- 見本: `output/pdf/portfolio-submission-v2.pdf`（13頁・28,235,637 bytes）、`portfolio-photobook-v2.pdf`（13頁・28,232,725 bytes）。全26頁の画像確認、日本語抽出、EXIF除去を確認。Chromeの実写真ドラッグ・390px表示・写真集の生成はJS例外0。証拠は `scratch/pdf-check/upgrade-*`、画面 `v2-editor-desktop.png`／`v2-editor-mobile.png`。
+- 本番push・デプロイなし。紙への印刷、スマホ実機、Safariアプリ、本番の認証付き出力は未確認。次は本人の操作と紙での確認。詳しくは `docs/specs/portfolio-pdf-v0.md`。
+
+
 ## Current State — 2026-09-27 JST / PDF作品集 v0（ローカル試作・未push）
 
 - 依頼: `portfolio-kit-web-pdf-v0-spec.md` のA段階。既存管理画面で作品を選び、Webとは独立した本としてA4 PDFを作る。課金・一般公開体験・本番データ・デプロイは対象外。

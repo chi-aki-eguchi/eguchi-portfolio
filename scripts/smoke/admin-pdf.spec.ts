@@ -33,13 +33,22 @@ test("本の編集・保存・読み戻し・PDF出力はWebデータを変え�
   await page.locator(".pdf-picker button").nth(0).click();
   await page.locator(".pdf-picker button").nth(1).click();
   await page.locator(".pdf-picker button").nth(2).click();
+  await page
+    .getByRole("button", { name: "1ページを編集", exact: true })
+    .click();
   await page.getByLabel("表紙の写真").selectOption({ index: 1 });
+  await page
+    .getByRole("button", { name: "2ページを編集", exact: true })
+    .click();
   await page.getByRole("button", { name: "次の写真と2枚に" }).first().click();
   await page.getByRole("button", { name: "右へ90°回転" }).first().click();
   await page
     .getByLabel("作品説明", { exact: true })
     .first()
     .fill("日常の光を記録する。日本語と English、句読点を確認します。");
+  await page
+    .getByRole("button", { name: "1ページを編集", exact: true })
+    .click();
   await page.getByLabel("最後のページに載せる").check();
   await page
     .getByLabel("PDF用プロフィール", { exact: true })
@@ -144,7 +153,12 @@ test("20枚の横A4出力でも操作の応答と実ページ数を保つ", asyn
   await expect(page.locator(".pdf-picker button").nth(19)).toBeVisible();
   for (let n = 0; n < 20; n++)
     await page.locator(".pdf-picker button").nth(n).click();
-  await page.getByRole("combobox", { name: "用紙", exact: true }).selectOption("landscape");
+  await page
+    .getByRole("button", { name: "1ページを編集", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "用紙", exact: true })
+    .selectOption("landscape");
   await page.getByLabel("最後のページに載せる").check();
   await page.evaluate(() => {
     const state = { ticks: 0, maxDelay: 0, last: performance.now() };
@@ -189,4 +203,68 @@ test("20枚の横A4出力でも操作の応答と実ページ数を保つ", asyn
   await page
     .getByRole("button", { name: "ブラウザーに保存", exact: true })
     .click();
+});
+
+test("ページを見て並べ替え、取り消し、用途切替、複製を独立して保存する", async ({
+  page,
+}) => {
+  await loginAsAdmin(page);
+  await page.goto("/admin/pdf");
+  await page.getByLabel("本の名前").fill("提出する本");
+  for (let n = 0; n < 3; n++)
+    await page.locator(".pdf-picker button").nth(n).click();
+  await expect(page.locator(".pdf-canvas .pdf-paper image")).toHaveCount(1);
+  const originalLast = await page
+    .locator(".pdf-canvas .pdf-paper image")
+    .getAttribute("href");
+  await page.getByRole("button", { name: "前へ", exact: true }).click();
+  await expect(
+    page.locator('.pdf-filmstrip [aria-current="page"]'),
+  ).toHaveAccessibleName("3ページを編集");
+  await page.getByRole("button", { name: "元に戻す", exact: true }).click();
+  await expect(
+    page.locator('.pdf-filmstrip [aria-current="page"]'),
+  ).toHaveAccessibleName("4ページを編集");
+  await expect(page.locator(".pdf-canvas .pdf-paper image")).toHaveAttribute(
+    "href",
+    originalLast!,
+  );
+  await page
+    .getByLabel("作品説明", { exact: true })
+    .fill("提出するときだけ表示する文章");
+  await expect(
+    page.locator(".pdf-canvas svg text").filter({ hasText: "提出するとき" }),
+  ).toHaveCount(1);
+  await page
+    .getByRole("combobox", { name: "仕上がり", exact: true })
+    .selectOption("photobook");
+  await expect(
+    page.locator(".pdf-canvas svg text").filter({ hasText: "提出するとき" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "作品説明", exact: true }),
+  ).toHaveValue("提出するときだけ表示する文章");
+  await page.getByRole("button", { name: "この本を複製", exact: true }).click();
+  await expect(page.getByLabel("本の名前")).toHaveValue("提出する本 のコピー");
+  await page.getByLabel("本の名前").fill("展示で見せる本");
+  await page
+    .getByRole("button", { name: "ブラウザーに保存", exact: true })
+    .click();
+  const stored = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("portfolio-pdf.v1.books")!),
+  );
+  expect(stored).toHaveLength(2);
+  expect(stored[0].title).toBe("展示で見せる本");
+  expect(stored[1].title).toBe("提出する本");
+  expect(stored[0].items[0].id).not.toBe(stored[1].items[0].id);
+  await page.reload();
+  await expect(page.getByLabel("本の名前")).toHaveValue("展示で見せる本");
+  await expect(
+    page.getByRole("combobox", { name: "仕上がり", exact: true }),
+  ).toHaveValue("photobook");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });

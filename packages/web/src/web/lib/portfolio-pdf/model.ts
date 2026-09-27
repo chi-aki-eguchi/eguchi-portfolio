@@ -26,7 +26,8 @@ export type BookPage = {
 };
 export type PortfolioDocument = {
   schemaVersion: 1;
-  templateVersion: 1;
+  templateVersion: 2;
+  purpose: "submission" | "photobook";
   id: string;
   title: string;
   updatedAt: string;
@@ -40,7 +41,8 @@ export type PortfolioDocument = {
 export const STORAGE_KEY = "portfolio-pdf.v1.books";
 export const createBook = (): PortfolioDocument => ({
   schemaVersion: 1,
-  templateVersion: 1,
+  templateVersion: 2,
+  purpose: "submission",
   id: crypto.randomUUID(),
   title: "新しい作品集",
   updatedAt: new Date().toISOString(),
@@ -107,7 +109,7 @@ export function movePage(
   const pages = [...book.pages],
     target = index + delta;
   if (target < 0 || target >= pages.length) return book;
-  [pages[index], pages[target]] = [pages[target], pages[index]];
+  pages.splice(target, 0, ...pages.splice(index, 1));
   return { ...book, pages };
 }
 const object = (v: unknown): v is Record<string, unknown> =>
@@ -124,7 +126,10 @@ export function parseBook(raw: unknown): PortfolioDocument {
   if (!object(raw)) return fail();
   if (
     raw.schemaVersion !== 1 ||
-    raw.templateVersion !== 1 ||
+    ![1, 2].includes(Number(raw.templateVersion)) ||
+    typeof raw.templateVersion !== "number" ||
+    (raw.purpose !== undefined &&
+      !["submission", "photobook"].includes(String(raw.purpose))) ||
     raw.pageSize !== "A4" ||
     !["portrait", "landscape"].includes(String(raw.orientation)) ||
     !str(raw.id, 100) ||
@@ -201,7 +206,33 @@ export function parseBook(raw: unknown): PortfolioDocument {
   )
     return fail();
   // Re-serialize drops prototypes; no URL from this file is ever fetched.
-  return JSON.parse(JSON.stringify(raw)) as PortfolioDocument;
+  return {
+    ...JSON.parse(JSON.stringify(raw)),
+    templateVersion: 2,
+    purpose: raw.purpose ?? "submission",
+  } as PortfolioDocument;
 }
 export const pageCount = (b: PortfolioDocument) =>
   1 + b.pages.length + Number(b.pdfProfile.enabled);
+
+/** Independent copy, including page/item references; source photos remain shared read-only. */
+export function duplicateBook(book: PortfolioDocument): PortfolioDocument {
+  const copy = parseBook(book);
+  const ids = new Map(copy.items.map((i) => [i.id, crypto.randomUUID()]));
+  return {
+    ...copy,
+    id: crypto.randomUUID(),
+    title: `${copy.title.slice(0, 490)} のコピー`,
+    updatedAt: new Date().toISOString(),
+    cover: {
+      ...copy.cover,
+      itemId: copy.cover.itemId ? ids.get(copy.cover.itemId)! : null,
+    },
+    items: copy.items.map((i) => ({ ...i, id: ids.get(i.id)! })),
+    pages: copy.pages.map((p) => ({
+      ...p,
+      id: crypto.randomUUID(),
+      itemIds: p.itemIds.map((id) => ids.get(id)!),
+    })),
+  };
+}

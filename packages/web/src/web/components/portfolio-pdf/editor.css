@@ -213,3 +213,176 @@
     font-size: 16px;
   }
 }
+
+/* The paper stays in view while only the selected page is edited. */
+.pdf-editor {
+  max-width: 1600px;
+}
+.pdf-storage-note {
+  margin-bottom: 14px;
+}
+.pdf-editor summary {
+  cursor: pointer;
+  padding: 10px 0;
+}
+.pdf-purpose-bar {
+  padding: 16px 0;
+  border-top: 1px solid #d7d4cb;
+}
+.pdf-purpose-bar label {
+  min-width: 110px;
+}
+.pdf-purpose-bar .pdf-note {
+  flex: 1;
+  min-width: 160px;
+}
+.pdf-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px;
+  align-items: start;
+  border-block: 1px solid #d7d4cb;
+  padding: 24px 0;
+}
+.pdf-book-view {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 24px;
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+}
+.pdf-filmstrip {
+  max-height: 78vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 8px 4px 4px;
+}
+.pdf-filmstrip button {
+  border: 1px solid transparent;
+  padding: 5px;
+  flex-shrink: 0;
+}
+.pdf-filmstrip button[aria-current="page"] {
+  border-color: #3d4f56;
+  background: #e8e7e0;
+}
+.pdf-filmstrip span {
+  font-size: 11px;
+}
+.pdf-paper {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: white;
+  border: 1px solid #dfddd6;
+}
+.pdf-canvas {
+  min-width: 0;
+  padding: 0 18px;
+}
+.pdf-canvas > .pdf-paper {
+  max-height: 72vh;
+  border: 0;
+  background: transparent;
+}
+.pdf-canvas-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.pdf-canvas-nav button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.pdf-inspector {
+  min-width: 0;
+}
+.pdf-inspector .pdf-columns {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.pdf-inspector .pdf-item {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  border-top: 1px solid #d7d4cb;
+  padding-top: 16px;
+}
+.pdf-inspector .pdf-photo {
+  display: none;
+}
+.pdf-inspector .pdf-sheet {
+  padding-top: 10px;
+  border-top: 0;
+}
+.pdf-inspector h2 {
+  font-size: 16px;
+  margin-top: 16px;
+}
+.pdf-inspector .pdf-toolbar {
+  gap: 6px;
+}
+.pdf-inspector .pdf-toolbar button {
+  font-size: 12px;
+  padding: 5px 8px;
+}
+.pdf-inspector .pdf-toolbar h3 {
+  width: 100%;
+}
+.pdf-inspector input,
+.pdf-inspector textarea {
+  padding: 7px;
+}
+.pdf-picker {
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+  max-height: 260px;
+}
+.pdf-picker img {
+  width: 100%;
+  height: 110px;
+}
+@media (max-width: 1000px) {
+  .pdf-workspace {
+    grid-template-columns: minmax(0, 1fr) 275px;
+    gap: 18px;
+  }
+  .pdf-book-view {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .pdf-canvas {
+    padding: 0;
+  }
+}
+@media (max-width: 760px) {
+  .pdf-workspace {
+    grid-template-columns: 1fr;
+  }
+  .pdf-book-view {
+    position: static;
+    display: flex;
+    flex-direction: column;
+  }
+  .pdf-filmstrip {
+    flex-direction: row;
+    max-height: none;
+    overflow-x: auto;
+    order: 1;
+  }
+  .pdf-filmstrip button {
+    width: 68px;
+  }
+  .pdf-canvas > .pdf-paper {
+    max-height: 62vh;
+  }
+  .pdf-inspector {
+    border-top: 1px solid #d7d4cb;
+  }
+  .pdf-purpose-bar {
+    align-items: end;
+  }
+}

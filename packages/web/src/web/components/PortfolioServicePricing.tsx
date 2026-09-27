@@ -1,11 +1,9 @@
+import { portfolioPlans } from "../../shared/portfolio-product";
 import { CONSULT_PATH } from "../lib/portfolio-intake";
 import { studioHref } from "./StudioBridge";
 
 export function PortfolioServicePricing({ en = false }: { en?: boolean }) {
-  const plans = [
-    { id: "basic", name: en ? "Setup & publishing" : "公開おまかせ", price: "30,000", intro: en ? "For photographs and text you have already prepared." : "写真と文章は、自分で用意できる方へ。", items: en ? ["Site setup with your photographs and text", "Your own domain and public launch", "An admin panel you can keep using"] : ["ご用意いただいた写真・文章でサイトを設定", "独自ドメインの設定・公開確認", "納品後も自分で使える管理画面"] },
-    { id: "editorial", name: en ? "Editing, setup & publishing" : "写真・文章編集付き", price: "69,800", intro: en ? "For help choosing the photographs and finding the words." : "写真選び・並べ方・プロフィールから相談したい方へ。", items: en ? ["Everything in setup & publishing", "Select up to 30 photographs from 60 candidates", "Organize up to 1,500 Japanese characters", "Home, 3 galleries, profile and contact", "45-minute meeting and one revision", "Target: 7 business days after receiving all materials"] : ["公開おまかせの内容をすべて含む", "候補60枚から掲載30枚までを選定・構成", "日本語1,500字までの文章を整理", "トップ・3ギャラリー・プロフィール・問い合わせ", "45分の打ち合わせ・修正1回", "素材が揃ってから7営業日を目安に公開"] },
-  ];
+  const plans = portfolioPlans(en);
   return <div data-portfolio-pricing="unified">
     <h2 className="text-center text-2xl leading-relaxed mb-4">{en ? "One website. Choose how much help you need." : "同じサイトを、どこから一緒につくるか。"}</h2>
     <p className="max-w-2xl mx-auto text-center text-base leading-8 mb-8 text-[color:var(--text-quiet)]">{en ? "Both plans use the same Portfolio Kit admin panel. Aki Eguchi handles your consultation, production and delivery. Support is in Japanese." : "どちらも同じ Portfolio Kit の管理画面で、自分で更新できるサイトです。相談から制作・納品まで江口秋が担当します。違いは、写真と文章の編集を含めるかどうか。"}</p>

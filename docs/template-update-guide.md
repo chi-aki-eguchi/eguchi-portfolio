@@ -1,3 +1,5 @@
+> 2026-09-28追記: 新規顧客の更新は検証済みcommit／artifactを固定する。以下の過去のmain追従・所要10分の記載を、保証や自動更新の指示として使わない。最新手順・バックアップ／復元・リリース検証は [納品運用](delivery/operations.md) と [販売・納品検証](specs/portfolio-sales-readiness.md) を参照。既存契約の変更はしない。
+
 # 配布先サイトの更新手順
 
 対象: Railway テンプレート（`DATABASE_PROVIDER=postgres`）から作った、

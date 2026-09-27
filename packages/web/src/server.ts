@@ -775,6 +775,7 @@ const compressedAssets = createCompressedAssetCache();
 
 const server = Bun.serve({
   port,
+  hostname: process.env.HOST || "0.0.0.0",
   maxRequestBodySize: IMAGE_UPLOAD_REQUEST_MAX_BYTES,
   async fetch(request) {
     try {

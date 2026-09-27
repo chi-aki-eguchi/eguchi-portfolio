@@ -1,3 +1,4 @@
+import { portfolioPlans } from "../shared/portfolio-product";
 import {
   DEFAULT_SITE_URL as SITE_URL_DEFAULT,
   displayNameEnFrom,
@@ -227,7 +228,13 @@ export function publicPageFallbackText(
       // 売っているものの中身を、説明文1行で終わらせない。プランに何が
       // 含まれるかは、買う前に探している人がいちばん読みたい所。
       paragraphs:
-        pathname === "/portfolio-kit" ? servicePlanParagraphs(settings) : [],
+        isServiceSiteUrl(siteUrlFrom(settings, fallbackOrigin))
+          ? portfolioPlans(pathname.endsWith("/en")).flatMap((plan) => [
+              `${plan.name}: ¥${plan.price}`, plan.intro, ...plan.items,
+            ]).concat(pathname.endsWith("/en")
+              ? ["Hosting and domain charges are separate. Scope, schedule and terms are agreed before payment. Support is in Japanese."]
+              : ["サーバー・ドメインの実費は別途。制作範囲・日程・取引条件に合意してからお支払いへ進みます。"])
+          : pathname === "/portfolio-kit" ? servicePlanParagraphs(settings) : [],
     };
   }
   if (pathname === "/portfolio-kit/guide") {
@@ -1105,13 +1112,12 @@ function buildJsonLd(
         : {}),
       url: lpUrl,
       brand: { "@type": "Brand", name: "Aki Eguchi Portfolio Kit" },
-      offers: {
-        "@type": "Offer",
-        price: String(servicePriceJpy(settings)),
-        priceCurrency: "JPY",
-        availability: "https://schema.org/InStock",
-        url: lpUrl,
-      },
+      offers: isServiceSiteUrl(siteUrl)
+        ? portfolioPlans(isEnglishLp).map(plan => ({
+            "@type": "Offer", name: plan.name, price: plan.price.replaceAll(",", ""),
+            priceCurrency: "JPY", availability: "https://schema.org/InStock", url: lpUrl,
+          }))
+        : { "@type": "Offer", price: String(servicePriceJpy(settings)), priceCurrency: "JPY", availability: "https://schema.org/InStock", url: lpUrl },
     });
     // FAQ は日本語でしか書かれていない（英語化されるのは料金プランの文だけ）。
     // 英語URLに日本語のFAQを付けると、そのページの言語宣言と食い違うので出さない。

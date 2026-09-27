@@ -1374,7 +1374,7 @@ describe("injectOgp 販売ページの構造化データ", () => {
       injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/portfolio-kit"),
       "Product",
     );
-    expect(product?.offers).toMatchObject({
+    expect(product?.offers?.[0]).toMatchObject({
       "@type": "Offer",
       price: "30000",
       priceCurrency: "JPY",
@@ -1383,15 +1383,17 @@ describe("injectOgp 販売ページの構造化データ", () => {
     });
     // 公開名と法的な販売者名が同じとは未確認。構造化データだけで販売者を
     // 断定せず、法定表示の確認済み情報を唯一の正本にする。
-    expect(product?.offers?.seller).toBeUndefined();
+    expect(product?.offers?.[0]?.seller).toBeUndefined();
+    expect(product?.offers?.[1]?.price).toBe("69800");
   });
 
-  test("値段は管理画面の設定から読む（既定値を焼き付けない）", () => {
+  test("配布先の値段は管理画面の設定から読む（既定値を焼き付けない）", () => {
     const product = nodeOf(
       injectOgp(
         page,
         {
-          siteUrl: "https://akieguchi.com",
+          siteUrl: "https://customer.example",
+          servicePageMode: "on",
           servicePageConfig: JSON.stringify({
             pricing: {
               plans: [
@@ -1414,7 +1416,7 @@ describe("injectOgp 販売ページの構造化データ", () => {
       { siteUrl: "https://akieguchi.com", servicePageConfig: "{ not json" },
       "/portfolio-kit",
     );
-    expect(nodeOf(out, "Product")?.offers?.price).toBe("30000");
+    expect(nodeOf(out, "Product")?.offers?.map((p: { price: string }) => p.price)).toEqual(["30000", "69800"]);
   });
 
   test("配布先のFAQ は設定にある問答から作る", () => {
@@ -1470,7 +1472,7 @@ describe("injectOgp 販売ページの構造化データ", () => {
     );
     expect(nodeOf(out, "FAQPage")).toBeUndefined();
     // 値段は言語に関係なく同じものなので、英語側にも出す。
-    expect(nodeOf(out, "Product")?.offers?.price).toBe("30000");
+    expect(nodeOf(out, "Product")?.offers?.map((p: { price: string }) => p.price)).toEqual(["30000", "69800"]);
   });
 
   test("配布先のホストでは、屋号入りの画像を Product に名乗らせない", () => {
@@ -1711,5 +1713,18 @@ describe("injectOgp 撮影を受ける地域", () => {
       svcOf(injectOgp(page, { siteUrl: "https://akieguchi.com" }, "/contact"))
         .areaServed,
     ).toBeUndefined();
+  });
+});
+
+
+describe("owner product HTML matches current offer", () => {
+  test("both prices and agreed schedule replace legacy fallback on owner site", () => {
+    const ja = publicPageFallbackText({ siteUrl: "https://akieguchi.com" }, "/portfolio-kit");
+    expect(ja.paragraphs.join(" ")).toContain("69,800");
+    expect(ja.paragraphs.join(" ")).toContain("30,000");
+    expect(ja.paragraphs.join(" ")).not.toContain("3日以内");
+    const en = publicPageFallbackText({ siteUrl: "https://akieguchi.com" }, "/portfolio-kit/en");
+    expect(en.paragraphs.join(" ")).toContain("69,800");
+    expect(en.paragraphs.join(" ")).toContain("Support is in Japanese");
   });
 });

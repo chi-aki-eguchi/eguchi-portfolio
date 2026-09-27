@@ -469,6 +469,10 @@ const runSettingsImageCleanup = createSettingsImageCleanupRunner({
   },
 });
 const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+const PRIVATE_MEDIA_ACCESS = process.env.PRIVATE_MEDIA_ACCESS === "1";
+if (PRIVATE_MEDIA_ACCESS && R2_PUBLIC_URL) {
+  throw new Error("PRIVATE_MEDIA_ACCESS requires a private bucket without R2_PUBLIC_URL");
+}
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 // NOTE: Do NOT throw at module load — a missing env var would crash the whole
 // process on startup (502). Instead we validate lazily inside the login route.
@@ -953,7 +957,7 @@ const app = new Hono()
         headers: {
           "Content-Type": type,
           "Content-Length": String(buf.length),
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": PRIVATE_MEDIA_ACCESS ? "private, no-store" : "public, max-age=31536000, immutable",
           ...extraHeaders,
         },
       });
@@ -968,6 +972,28 @@ const app = new Hono()
     }
     if (!isAllowedImageKey(decodedKey)) {
       return c.json({ error: "Not found" }, 404);
+    }
+    // New isolated customer sites check visibility BEFORE reading any cached bytes.
+    // Existing sites opt in separately; their already published URLs are not silently changed.
+    if (PRIVATE_MEDIA_ACCESS && getCookie(c, SESSION_KEY) !== SESSION_VALUE) {
+      c.header("Cache-Control", "private, no-store");
+      let visible = false;
+      if (/^(photos|thumbs|medium)\//.test(decodedKey)) {
+        const rows = await withRetry(() => db.select({ id: schema.photos.id }).from(schema.photos).where(and(
+          eq(schema.photos.isPublished, true), isNull(schema.photos.deletedAt),
+          or(eq(schema.photos.url, keyToProxyUrl(decodedKey)), eq(schema.photos.thumbKey, decodedKey), eq(schema.photos.mediumKey, decodedKey)),
+        )).limit(1));
+        visible = rows.length > 0;
+      } else if (/^(hero|profile)\//.test(decodedKey)) {
+        const rows = await withRetry(() => db.select({ key: schema.siteSettings.key }).from(schema.siteSettings).where(and(
+          inArray(schema.siteSettings.key, ["heroPhotoUrl", "profilePhotoUrl"]), eq(schema.siteSettings.value, keyToProxyUrl(decodedKey)),
+        )).limit(1));
+        visible = rows.length > 0;
+      } else if (decodedKey.startsWith("fonts/")) {
+        // Uploaded web fonts are public presentation resources, never photo originals.
+        visible = true;
+      }
+      if (!visible) return c.json({ error: "Not found" }, 404);
     }
     const width = clampImageWidth(c.req.query("w"));
     const height = clampImageHeight(c.req.query("h"));
@@ -1012,7 +1038,7 @@ const app = new Hono()
         status: 304,
         headers: {
           ETag: etag,
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": PRIVATE_MEDIA_ACCESS ? "private, no-store" : "public, max-age=31536000, immutable",
           ...(!fmtParam ? { Vary: "Accept" } : {}),
         },
       });
@@ -2024,6 +2050,8 @@ const app = new Hono()
               .values({
           filename: body.filename,
           url: body.url,
+          // Opt-in for new customer installations. Existing sites keep their current default.
+          isPublished: process.env.UPLOAD_DEFAULT_VISIBILITY !== "private",
           title: body.title ?? "",
           meta: body.meta ?? "",
           category: body.category ?? "", // default to uncategorized, not a phantom slug

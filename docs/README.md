@@ -17,6 +17,7 @@
 | 未完了の作業 | `docs/agents/backlog.md`（完了したらこの文書から消す） |
 | 測り方・存在しない不具合を作らない手順 | `docs/agents/measuring.md` |
 | 分野別の確認ポイント | `docs/checklists.md` |
+| Portfolio Kitの販売・納品・復元検証 | `docs/specs/portfolio-sales-readiness.md` |
 | 配布版（Portfolio Kit）のDB差分・運用 | `DISTRIBUTION.md` |
 
 ## ディレクトリの役割

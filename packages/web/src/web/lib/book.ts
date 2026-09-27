@@ -24,6 +24,21 @@ export function siteDesignFrom(value: string | null | undefined): SiteDesign {
 }
 
 /**
+ * Gallery（写真集では Photos）から、作品に入っている写真を外すか。
+ *
+ * 写真集では外さない。Photos は「作品に入っているものも入っていないものも、
+ * すべての写真」を見る場所（2026-09-26 オーナー「写真をいっぱい見られるように」）。
+ * 設定 `galleryExcludeSeries` はいつもの構成の Gallery のためのもので、
+ * 本番は全部の写真が作品に入っているため、写真集で従うと Photos が消えていた。
+ */
+export function galleryExcludesSeries(
+  settings: { siteDesign?: string | null; galleryExcludeSeries?: string | null } | null | undefined,
+): boolean {
+  if (siteDesignFrom(settings?.siteDesign) === "book") return false;
+  return (settings?.galleryExcludeSeries ?? "off") === "on";
+}
+
+/**
  * 写真集の器を使わない経路。制作サービスの案内・管理画面は別の仕事の
  * ページなので、今までどおりの上の帯で描く。
  */

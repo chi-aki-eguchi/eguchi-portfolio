@@ -15,7 +15,7 @@ import { SeriesColophon } from "../components/SeriesColophon";
 import { seriesColophon } from "../lib/series-colophon";
 import { signalAnalyticsPageReady } from "../lib/analytics";
 import { contactHrefForWork } from "../../shared/contact-reference";
-import { BookSeries } from "../components/book/BookSeries";
+import { PhotoSeriesPage } from "../components/photo-site/PhotoSeries";
 import { siteDesignFrom } from "../lib/book";
 
 export default function SeriesDetailPage() {
@@ -157,15 +157,14 @@ export default function SeriesDetailPage() {
       : settings?.seriesSortOrder;
   const photos = sortPhotosBySetting(data.photos, photoOrder);
 
-  // 写真集の骨格（siteDesign = "book"）。並び・棚・次の章は上と同じ値を渡す。
+  // 写真中心のサイト（siteDesign = "book"）。並び・棚・次のシリーズは上と同じ値を渡す。
   if (siteDesignFrom(settings?.siteDesign) === "book") {
     return (
-      <BookSeries
+      <PhotoSeriesPage
         key={series.slug}
         series={series}
         photos={photos}
         shelf={shelf}
-        coverPhotoId={coverSource?.coverPhotoId ?? null}
         nextChapter={
           nextSeries && nextSeries.slug !== series.slug
             ? { slug: nextSeries.slug, title: nextSeries.title }

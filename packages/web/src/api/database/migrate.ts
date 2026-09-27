@@ -79,7 +79,7 @@ export type ColumnRunner = { run: (query: SQL) => Promise<unknown> };
  * `db.select()` が存在しない列を名指しして写真取得が 500 になる。
  * 2026-08-20 まで下半分（`0005` の7列）が抜けており、その状態だった。
  *
- * 型と既定値は各 migration の SQL と一字一句そろえる。ずれると、この経路で
+ * 型と既定値は各 migration の SQL と列・型・索引をそろえる（ここは IF NOT EXISTS 付き）。ずれると、この経路で
  * 作られた列と `db:push` で作られた列が違う形になる。
  * 上9列 = `0003_material_apocalypse` + `0004_flowery_bloodstorm`
  * 下7列 = `0005_mysterious_madame_masque`
@@ -145,10 +145,53 @@ export async function ensureColumnsExist(
   return { added, present, failed };
 }
 
+/**
+ * シリーズと写真の結びつきの表（多対多、2026-09-26）。Turso では drizzle の
+ * migration を走らせないので、無ければここで作る。形は `drizzle/0008_series_photos.sql`
+ * と列・型・索引をそろえる（ここは IF NOT EXISTS 付き）。
+ */
+export const SERIES_PHOTOS_TABLE_SQL = [
+  "CREATE TABLE IF NOT EXISTS `series_photos` (\n\t`series_id` integer NOT NULL,\n\t`photo_id` integer NOT NULL,\n\t`sort_order` integer DEFAULT 0 NOT NULL,\n\tPRIMARY KEY(`series_id`, `photo_id`)\n)",
+  "CREATE INDEX IF NOT EXISTS `series_photos_photo_idx` ON `series_photos` (`photo_id`)",
+] as const;
+
+/**
+ * 代表のシリーズ（`photos.series_id`）はあるのに、結びつきが1本も無い写真へ、
+ * その代表のシリーズの結びつきを足す。
+ *
+ * - 表を作った直後: 今までの所属をそのまま写す（最初の1回の移し替え）。
+ * - ふだん: 何もしない。結びつきを変える経路は、いつも代表をそろえるので
+ *   「代表あり・結びつきなし」の写真は生まれない。
+ * - いつもの構成の管理画面や古い経路が `series_id` だけを書いた場合: ここで拾う。
+ *
+ * 既にある結びつきには触らない。何度呼んでも同じ結果になる。
+ */
+export const REPAIR_SERIES_MEMBERSHIP_SQL =
+  "INSERT INTO series_photos (series_id, photo_id, sort_order) " +
+  "SELECT p.series_id, p.id, p.sort_order FROM photos p " +
+  "WHERE p.series_id IS NOT NULL " +
+  "AND NOT EXISTS (SELECT 1 FROM series_photos sp WHERE sp.photo_id = p.id)";
+
+export async function ensureSeriesPhotos(
+  db: ColumnRunner,
+  { createTable }: { createTable: boolean },
+): Promise<void> {
+  try {
+    if (createTable)
+      for (const stmt of SERIES_PHOTOS_TABLE_SQL) await db.run(sql.raw(stmt));
+    await db.run(sql.raw(REPAIR_SERIES_MEMBERSHIP_SQL));
+  } catch (e) {
+    // 1つの表の失敗で起動全体を止めない（列の安全網と同じ考え方）。表が
+    // 無いままなら、シリーズの写真を読む経路が 500 を返して気づける。
+    console.warn("[migrate] series_photos の用意に失敗:", e);
+  }
+}
+
 async function ensureTursoColumns(): Promise<void> {
   const { db } = await import("./libsql");
   await ensureColumnsExist(db);
   await ensureColumnsExist(db, TURSO_HERO_PRESENTATION_COLUMNS);
+  await ensureSeriesPhotos(db, { createTable: true });
 }
 
 export async function runStartupMigrations(): Promise<void> {
@@ -187,6 +230,10 @@ export async function runStartupMigrations(): Promise<void> {
       );
       await migrate(db, { migrationsFolder });
       console.log("[migrate] PostgreSQL schema is up to date.");
+      await ensureSeriesPhotos(
+        { run: (query) => db.execute(query) },
+        { createTable: false },
+      );
       return;
     } catch (err) {
       const delayMs = MIGRATION_RETRY_DELAYS_MS[attempt - 1];

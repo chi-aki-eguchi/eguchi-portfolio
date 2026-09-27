@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./public-mobile-navigation.css";
 // 写真集の骨格の器（左の余白）と頁。どのページから開いても効くよう、共通の枠で読む。
-import "./book/book.css";
+import "./photo-site/photo-site.css";
 import { Link, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
@@ -11,8 +11,13 @@ import { shelfNeedsCount, shouldShowShelf } from "../lib/shelf-nav";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { httpHrefOrNull, safeHref } from "../lib/utils";
 import { BackToTop } from "./BackToTop";
-import { siteDesignFrom, usesBookChrome } from "../lib/book";
+import { galleryExcludesSeries, siteDesignFrom, usesBookChrome } from "../lib/book";
+import { PhotoSiteFrame } from "./photo-site/PhotoSiteFrame";
+import { PhotoServiceNote } from "./photo-site/PhotoServiceNote";
+import { waitForWebFonts } from "../lib/web-fonts";
 import { StudioBridge } from "./StudioBridge";
+import { useNavFit } from "../hooks/useNavFit";
+import { lockPageScroll } from "../lib/scroll-lock";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
 import { hasPublicEnglishContent } from "../../shared/public-english";
 import {
@@ -44,6 +49,9 @@ const ALWAYS_BILINGUAL_POLICY_PATHS = new Set([
 
 // 方針本文は policy.tsx の遅延チャンクに置いたままにする。ここから本文の
 // module を読むと、全ページの共通Layoutへ日英全文が混ざってしまう。
+/** 写真中心のサイトの器を、この訪問で一度出したか（ページを移っても保つ）。 */
+let photoFrameRevealed = false;
+
 const footerPolicyPath = (
   kind: "privacy" | "terms",
   language: "ja" | "en",
@@ -138,6 +146,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const navBarRef = useRef<HTMLElement>(null);
+  const navLogoRef = useRef<HTMLAnchorElement>(null);
+  const navListRef = useRef<HTMLUListElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [location] = useLocation();
   // **移動先の中身を、指が触れた時点で取りに行く。**押してから取りに行くと、
@@ -202,10 +213,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // 判定は `lib/work-entries.ts` に1つだけ置く。TOP の「作品を見る」導線も
   // 同じ関数を読む——別々に書くと、ナビは出ていないのに導線だけ Gallery を
   // 指す、のような食い違いが起きる。数が分からないうちは消さない。
-  const showGallery = galleryHasPhotos(
-    photoCounts,
-    (data?.galleryExcludeSeries ?? "off") === "on",
-  );
+  const showGallery = galleryHasPhotos(photoCounts, galleryExcludesSeries(data));
 
   const dm = useDarkModeContext();
   const { showService, showServiceInNav } = useServiceVisibility();
@@ -262,12 +270,55 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(t);
   }, [chromeReady]);
 
-  // 写真集の骨格（2026-09-23 試作）。制作サービス・管理画面は従来の帯のまま。
+  // 写真中心のサイトの器は、設定・棚・制作サービスの有無・書体が揃ってから
+  // 一度だけ出す（PhotoSiteFrame）。途中の形を見せない。
+  const serviceVisibility = useServiceVisibility();
+  const frameInputsReady =
+    Boolean(data) &&
+    (!shelfNeedsCount(seriesNav) || seriesData !== undefined) &&
+    (!shelfNeedsCount(workNav) || workData !== undefined) &&
+    serviceVisibility.isResolved;
+  // ページごとに Layout は作り直される（ルートごとに <Layout> がある）。一度
+  // 出した器は、次のページで消して出し直さない。
+  const [frameReady, setFrameReadyState] = useState(() => photoFrameRevealed);
+  const setFrameReady = (v: boolean) => {
+    if (v) photoFrameRevealed = true;
+    setFrameReadyState(v);
+  };
+  useEffect(() => {
+    if (frameReady) return;
+    if (!frameInputsReady) {
+      const t = window.setTimeout(() => setFrameReady(true), 2500);
+      return () => window.clearTimeout(t);
+    }
+    // 項目が揃った器を（見えないまま）描いてから、その文字の書体が届くのを待つ。
+    // 先に待ち始めると、あとから要る書体（「ポートフォリオ制作」の和文など）が
+    // 出たあとに届き、文字の幅が変わって項目が横へずれる。
+    let cancelled = false;
+    const reveal = () => {
+      if (!cancelled) setFrameReady(true);
+    };
+    const t = window.setTimeout(reveal, 1600);
+    requestAnimationFrame(() => {
+      void waitForWebFonts(1400).then(reveal, reveal);
+    });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [frameInputsReady, frameReady]);
+
+  // 写真集の骨格（2026-09-23 試作、2026-09-25 見直し）。制作サービス・
+  // 管理画面は従来の帯のまま。作品（Series / Work）は「Works」1つにまとめ、
+  // 作品に入っていない写真も見られるよう「Photos」（/gallery）を並べる。
   const bookChrome = usesBookChrome(siteDesignFrom(data?.siteDesign), location);
   const shelfItems = bookChrome
-    ? showSeries || showWork
-      ? [{ href: "/series", label: isEnglishChrome ? "Contents" : "目次" }]
-      : []
+    ? [
+        ...(showSeries || showWork ? [{ href: "/series", label: "Works" }] : []),
+        ...(showGallery
+          ? [{ href: "/gallery", label: "Photos" }]
+          : []),
+      ]
     : [
     ...(showGallery
       ? [{ href: "/gallery", label: data?.navLabelGallery ?? "Gallery" }]
@@ -332,8 +383,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mobileOpen) return;
     const header = headerRef.current;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockPageScroll();
     const outside = Array.from(header?.parentElement?.children ?? [])
       .filter((node): node is HTMLElement => node instanceof HTMLElement && node !== header);
     const inertBefore = outside.map(node => node.inert);
@@ -346,7 +396,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         menuButtonRef.current?.focus();
       } else if (event.key === "Tab") {
         const items = Array.from(header?.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)") ?? [])
-          .filter(node => node.getClientRects().length > 0 && !node.closest("[inert]"));
+          .filter(node => node.getClientRects().length > 0 && !node.closest("[inert]") && getComputedStyle(node).visibility !== "hidden");
         const first = items[0];
         const last = items[items.length - 1];
         if (event.shiftKey && (document.activeElement === first || !header?.contains(document.activeElement))) {
@@ -361,7 +411,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", onKey);
     media.addEventListener("change", onResize);
     return () => {
-      document.body.style.overflow = previous;
+      unlock();
       outside.forEach((node, index) => { node.inert = inertBefore[index]; });
       window.removeEventListener("keydown", onKey);
       media.removeEventListener("change", onResize);
@@ -416,14 +466,154 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? data!.footerLayout!
     : "center";
 
+  // メニューの文字を大きくしても崩れないように、入りきるかを測る（useNavFit）。
+  // 入らなければ PC でもハンバーガーへ。左のメニューは帯を広げてから。
+  const navFit = useNavFit(
+    navBarRef,
+    navLogoRef,
+    navListRef,
+    navPosition,
+    [
+      navPosition,
+      data?.navLabelTop,
+      ...navItems.map((i) => i.label),
+      dm ? "dm" : "",
+      showLanguageSwitch && languagePairHref ? "lang" : "",
+    ].join("|"),
+  );
+  const effectiveNavPosition = navFit.collapsed && navPosition === "left" ? "top" : navPosition;
+
+  // 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）は専用の器で描く。
+  // いつもの構成（配布版）の器には触らない。
+  if (bookChrome) {
+    // 制作の入口は、オーナーのサイトではフッターへ（PhotoServiceNote）。配布先で
+    // 「メニューに出す」を選んだときだけ、今までどおりメニューに置く。
+    const serviceItem =
+      showServiceInNav && !isServiceOwnerSite(data?.siteUrl, undefined)
+        ? [
+            {
+              href: footerPolicyLanguage === "en" ? "/portfolio-kit/en" : "/portfolio-kit",
+              label: "Portfolio Kit",
+            },
+          ]
+        : [];
+    const frameNav = [
+      { href: "/gallery", label: data?.navLabelGallery || "Gallery" },
+      ...(showSeries || showWork ? [{ href: "/series", label: "Series" }] : []),
+      {
+        href: isEnglishChrome ? "/en/about" : "/about",
+        label: data?.navLabelAbout || "About",
+      },
+      {
+        href: isEnglishChrome ? "/en/contact" : "/contact",
+        label: data?.navLabelContact || "Contact",
+      },
+      ...serviceItem,
+    ];
+    const snsLinks = [
+      { href: data?.profileInstagram, label: data?.snsLabelInstagram || "Instagram" },
+      { href: data?.profileTwitter, label: data?.snsLabelTwitter || "X" },
+      { href: data?.profileNote, label: data?.snsLabelNote || "note" },
+    ].filter((l): l is { href: string; label: string } => Boolean(l.href));
+    return (
+      <PhotoSiteFrame
+        name={
+          // 名前が空でも器を空にしない（英語名 → プロフィールの名前 → 「Photographs」）。
+          (isEnglishChrome ? data?.siteNameEn : data?.siteName) ||
+          data?.siteName ||
+          data?.siteNameEn ||
+          data?.profileName ||
+          "Photographs"
+        }
+        nameEn={data?.siteNameEn}
+        footerLayout={footerLayout}
+        navItems={frameNav}
+        isActive={isActive}
+        ready={frameReady}
+        dark={dm}
+        english={isEnglishChrome}
+        languageSwitch={
+          showLanguageSwitch && languagePairHref ? (
+            <LanguageSwitchLinks
+              isEnglishPage={isEnglishPage}
+              jaHref={isEnglishPage ? languagePairHref : location}
+              enHref={isEnglishPage ? location : languagePairHref}
+            />
+          ) : undefined
+        }
+        footer={
+          <>
+            {showService &&
+              !location.includes("portfolio-kit") &&
+              !isContactRoute(location) && (
+                <PhotoServiceNote
+                  siteUrl={data?.siteUrl}
+                  language={location.startsWith("/en/") ? "en" : "ja"}
+                />
+              )}
+            <div className="ps-footer__row">
+              {snsLinks.length > 0 && (
+                <ul className="ps-footer__links font-en" aria-label="SNS">
+                  {snsLinks.map((l) => (
+                    <li key={l.label}>
+                      <a href={safeHref(l.href)} target="_blank" rel="noopener noreferrer">
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {data?.footerCtaLabel && (
+                <Link
+                  to={footerPolicyLanguage === "en" ? "/en/contact" : "/contact"}
+                  className="ps-footer__cta font-en"
+                >
+                  {footerPolicyLanguage === "en" ? "Contact" : data.footerCtaLabel}
+                </Link>
+              )}
+              <ul className="ps-footer__links font-en" aria-label={isEnglishChrome ? "Site policies" : "サイトの方針・利用条件"}>
+                <li>
+                  <Link to={footerPolicyPath("privacy", footerPolicyLanguage)}>Privacy</Link>
+                </li>
+                <li>
+                  <Link to={footerPolicyPath("terms", footerPolicyLanguage)}>
+                    {footerPolicyLanguage === "en" ? "Terms" : "利用条件"}
+                  </Link>
+                </li>
+              </ul>
+              <p className="ps-footer__copy font-en">
+                {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
+              </p>
+              {data?.templateCreditLabel &&
+                (templateCreditUrl ? (
+                  <a className="ps-footer__credit font-en" href={templateCreditUrl} target="_blank" rel="noopener noreferrer">
+                    {data.templateCreditLabel}
+                  </a>
+                ) : (
+                  <span className="ps-footer__credit font-en">{data.templateCreditLabel}</span>
+                ))}
+            </div>
+          </>
+        }
+      >
+        {children}
+      </PhotoSiteFrame>
+    );
+  }
+
   // No background on this wrapper — body paints var(--background); an opaque
   // layer here would cover the DD grain texture (body::before at z-index:-1).
   return (
     <div
-      className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "left site-book" : navPosition} nav-fx-${navHoverEffect}${
+      className={`min-h-screen text-[var(--foreground)] nav-pos-${bookChrome ? "top site-book" : effectiveNavPosition} nav-fx-${navHoverEffect}${
         seeThrough && !bookChrome ? " header-see-through" : ""
       }`}
       data-site-design={bookChrome ? "book" : undefined}
+      style={
+        navFit.railPx
+          ? ({ "--nav-rail-w": `${navFit.railPx}px` } as React.CSSProperties)
+          : undefined
+      }
     >
       {/* Skip link — visible only on keyboard focus, lets SR/keyboard users jump past the nav */}
       <a
@@ -438,6 +628,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         aria-modal={mobileOpen || undefined}
         aria-label={mobileOpen ? (isEnglishChrome ? "Navigation" : "ナビゲーション") : undefined}
         data-mobile-menu-open={mobileOpen || undefined}
+        data-nav-collapsed={navFit.collapsed || undefined}
         data-header-bg={headerBackground}
         className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[var(--ease-quart)] ${
           mobileOpen
@@ -454,11 +645,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         }}
       >
         <nav
+          ref={navBarRef}
           className="site-chrome-reveal max-w-5xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between"
           data-ready={chromeRevealed ? "true" : undefined}
         >
           {/* Logo */}
           <Link
+            ref={navLogoRef}
             to="/"
             {...warmOn("/")}
             className={`${
@@ -482,7 +675,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Desktop nav */}
-          <ul className="hidden md:flex gap-8 items-center">
+          <ul
+            ref={navListRef}
+            className="public-nav-list hidden md:flex gap-8 items-center whitespace-nowrap"
+          >
             {navItems.map(({ href, label }) => (
               <li key={href}>
                 <Link
@@ -584,32 +780,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   ↑
                 </button>
               )}
-              {shelfItems[0] && (
-                <Link
-                  to={shelfItems[0].href}
-                  className="book-running-head__item font-ja"
-                  aria-current={isActive(shelfItems[0].href) ? "page" : undefined}
-                >
-                  {shelfItems[0].label}
-                </Link>
-              )}
               <button
                 type="button"
-                className="book-running-head__item font-ja"
+                className="book-running-head__item font-en"
                 ref={menuButtonRef}
                 onClick={() => setMobileOpen(!mobileOpen)}
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
               >
-                {mobileOpen
-                  ? isEnglishChrome ? "Close" : "閉じる"
-                  : isEnglishChrome ? "Menu" : "メニュー"}
+                {mobileOpen ? "Close" : "Menu"}
               </button>
             </div>
           )}
 
           {/* Dark mode toggle + Mobile hamburger */}
-          <div className={`md:hidden ${bookChrome ? "hidden" : "flex"} items-center gap-0.5`}>
+          <div className={`public-nav-compact md:hidden ${bookChrome ? "hidden" : "flex"} items-center gap-0.5`}>
             {dm && (
               <button
                 onClick={dm.toggle}

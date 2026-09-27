@@ -104,6 +104,9 @@ const PHOTO_SEEDS: PhotoSeed[] = [
 
 export const SMOKE_HERO_PHOTO_IDS = [7001, 7101, 7601];
 
+/** 代表のほかにもう1本のシリーズへ入っている写真。 */
+export const SMOKE_SHARED_MEMBERSHIPS = [{ seriesId: 502, photoId: 7101, sortOrder: 9000 }];
+
 export function smokeImageKeys(id: number) {
   const stem = `smoke-${id}`;
   return {
@@ -195,6 +198,16 @@ export async function createSmokeDatabase(file: string, now = Date.now()) {
     await db.insert(schema.categories).values(SMOKE_CATEGORIES);
     await db.insert(schema.series).values(seriesRows());
     await db.insert(schema.photos).values(PHOTO_SEEDS.map((seed) => photoRow(seed, now)));
+    // シリーズとの結びつき（多対多）。代表のシリーズ（seriesId）と同じものに加え、
+    // 1枚を2本のシリーズへ同時に入れた写真を置く（7101 は港の光と長い題名の組）。
+    await db.insert(schema.seriesPhotos).values([
+      ...PHOTO_SEEDS.filter((seed) => seed.seriesId != null).map((seed) => ({
+        seriesId: seed.seriesId!,
+        photoId: seed.id,
+        sortOrder: seed.id,
+      })),
+      ...SMOKE_SHARED_MEMBERSHIPS,
+    ]);
     await db.insert(schema.heroPhotos).values(
       SMOKE_HERO_PHOTO_IDS.map((photoId, sortOrder) => ({ photoId, sortOrder })),
     );

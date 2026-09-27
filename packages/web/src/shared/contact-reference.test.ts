@@ -28,6 +28,10 @@ test("識別子として成り立たないものは無視する（通常のConta
   expect(workSlugFromSearch("?work=a/b")).toBe("");
   expect(workSlugFromSearch("?work=a%20b")).toBe("");
   expect(workSlugFromSearch(`?work=${"x".repeat(201)}`)).toBe("");
+  // 制御文字（改行以外も）。以前の正規表現は JavaScriptCore で読めなかった。
+  expect(workSlugFromSearch("?work=a%01b")).toBe("");
+  expect(workSlugFromSearch("?work=a%1Fb")).toBe("");
+  expect(workSlugFromSearch("?work=sea-2026")).toBe("sea-2026");
 });
 
 test("送信内容の一行は、題名と公開URLの両方を持つ", () => {

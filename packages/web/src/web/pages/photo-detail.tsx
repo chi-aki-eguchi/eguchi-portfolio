@@ -10,7 +10,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Link, useParams } from "wouter";
-import { api } from "../lib/api";
+import { api, jsonOrThrow } from "../lib/api";
 import { ContentStatus } from "../components/ContentStatus";
 import { Picture } from "../components/Picture";
 import { usePageEntrance } from "../hooks/usePageEntrance";
@@ -59,10 +59,13 @@ export default function PhotoDetailPage() {
   });
   const entranceRef = usePageEntrance([data?.photo.id]);
 
+  // 取り寄せ方を必ず書く。無いと、このページを直接開いたときに設定を読む手段が
+  // 無く、読み込むたびにエラーを出していた（2026-09-26 設定の総当たりで検出）。
   const { data: settings, isError: settingsError } = useQuery<
     Record<string, string>
   >({
     queryKey: ["settings"],
+    queryFn: async () => (await jsonOrThrow(await api.settings.$get())) as Record<string, string>,
   });
 
   const alt = data

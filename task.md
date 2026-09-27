@@ -5,7 +5,7 @@
 ## Current State — 2026-09-27 / PDF作品集の本番公開
 
 - オーナーが統合・全体テスト・公開を承認。PDFの4コミットだけをorigin/main（577fa61）へ移し、別作業のサイト・DB改修を除いた。元の試作履歴はcodex/portfolio-pdf-before-release-20260927に保持。
-- 現在は統合後のcheck・全体smokeを検証中。本番公開後に認証付き画像読み取りとPDF生成を確認する。
+- 検証中にサイト改修のmain公開（6555e4a）が完了したため、その最新mainを取り込んだ。旧版の全体smokeを中断し、統合後のcheck・全体smokeを再検証中。本番公開後に認証付き画像読み取りとPDF生成を確認する。
 
 ## Current State — 2026-09-27 JST / PDF管理画面のUIデザイン
 
@@ -46,6 +46,53 @@
 - 未確認: 紙へのA4印刷、Safariアプリそのもの、スマホ実機、本番の認証済み出力、PostgreSQL実接続。ブラウザー保存は暗号化・同期なし。PDF/X・CMYK・指定容量保証・一般向け体験・決済は未実装。
 - 正本: `docs/specs/portfolio-pdf-v0.md`。証拠・検証スクリプトは `scratch/pdf-check/`、全体smoke失敗の証拠は `scratch/smoke-evidence/2026-09-26T18-11-06-117Z/`。次は本人の紙と操作の確認。push・デプロイは別途指示を受けてから。
 
+## 2026-09-27 本番公開用の統合・検証完了
+
+- オーナー「本番に出せるなら出して。確認してから」で公開を承認。最新mainの撮影相談・集客改善（577fa61）を統合。以前の目視承認待ちは解除。
+- 統合後の `bun run check` 成功（単体1519・ツール60・番人48、型・lint・build・DB定義）。既存wiki鮮度警告8件あり。
+- 全smokeを環境別に分離し、各サーバー・SQLite・ストレージ・プロキシで1並列実行。desktop 238成功/32対象外、mobile 156/114、touch 106/26、desktop-safari+mobile-safari 115/14。計615成功・186対象外・失敗0、終了時の通信分類エラー0。直列の途中実行はこの分離実行に置き換えた。
+- 公開前の写真354枚・シリーズ3件・Work1件、およびシリーズ別の写真IDと順序を記録。本番はbook設定。起動時のseries_photos追加は既存の所属を写すだけ。写真原本・本番の書体設定は保持。
+- mainへ反映後のbuild・画面・データ照合結果は、2026-09-27のObsidian開発ログへ記録する。
+
+## Current State — 2026-09-27 JST / TOPとGalleryを分離（ローカルプレビュー）
+
+- オーナーが構成案を了承。TOPは選んだ公開写真だけを選択順で表示、24枚までの自動補充を廃止。先頭1枚が表紙、続きは2枚・1枚の組。未選択時のみ公開写真の先頭1枚を表示。「表紙だけ」設定は維持。
+- Galleryはスマホ2列・中間3列・PC4列の一覧。元の比、絞り込み、追加読み込み、ビューアを維持。Seriesは従来の段組み。制作サービスのフッターを控えめにし、管理画面の説明・通知も新動作へ変更。
+- プレビュー: http://localhost:4400/ と /gallery。本番の選写真・設定・DBは未変更。今のTOP選択は1枚。構成と写真選びの目視確認が次。
+- 検証: 関連単体16成功、型・lint・build成功。関連smoke24成功。全体smoke（4並列）は614成功・186対象外・通信隔離1失敗と終了時の通信分類エラー（共有記録への並列テストの混入）。該当Safari隔離検証を通常の1並列で再実行し1成功・4対象外、終了時エラーなし。全体一括成功とは扱わない。写真中心ブランチのまま、main・本番へは未反映。
+
+
+## Current State — 2026-09-26 JST / 写真中心への作り直し（オーナー確認待ち、main 未 push）
+
+- 依頼: 「チラチラ動く・謎の空白・トップに惹かれない・同じ写真を複数シリーズに入れたい・シリーズが主役になりすぎ・管理画面が使いづらい・元の写真を尊重・縛りを壊して一番いいサイトに」。正本は `docs/specs/photo-first-2026-09-26.md`。
+- 公開サイト（siteDesign = "book" のときだけ。いつもの構成は不変）: トップ＝すべての公開写真を元の比のまま大小の段で（`lib/photo-rows.ts`）、Series は題名で読む目次、シリーズのページも同じ段。器は揃ってから一度だけ出る（読み込み中にナビが5回組み替わっていたのが「チラチラ」）。/gallery はトップへ。
+- データ: `series_photos`（多対多）。`photos.series_id` は代表として残し自動でそろえる。本番 Turso は起動時に表を作り今の所属を写す（`migrate.ts`）。PostgreSQL は `drizzle-postgres/0005`。
+- 管理画面: 「写真」「シリーズ」「サイト」（`components/studio/`）。前の作業台（Workbench）は削除。
+- 2026-09-26 検証: `bun run check` 成功（単体1502・ツール60・番人48・build）。全体 smoke 610成功・186スキップ・1失敗（mobile-safari `/en/about` 390px の読み込み待ち30秒。横スクロール検査を2回ずつ再実行 104/104 成功）。新 smoke `public-photo-site`・`admin-studio`（PC/スマホ/PC Safari/スマホ Safari）32成功。手元の隔離サーバーで管理画面のドラッグ・元に戻す・2本目のシリーズ・並べ替え・取り込みを実書き込みで確認。
+- 2026-09-26 追加（オーナー「adminで設定変更した時でも崩れない？全部治してね」）: 設定の総当たりを WebKit で巡回。写真中心 1344 画面・いつもの構成 630 画面・いつもの構成のメニュー 240 画面、直した後はすべて 0 件。直したもの: 文字を大きくしたときの折り返し・メニューのまとめ方（両構成、`useNavFit`）・コラージュのはみ出し・Safari 768px でメニューが即閉じる・写真中心でメニューの後ろが流れる（`lockPageScroll`）・ビューアを開くと裏の段が組み直される。詳細は正本の「管理画面の設定を変えても崩れないか」。
+- 2026-09-26 夜（オーナー「TOP の謎の余白」「Gallery と TOP が融合」「安っぽさと AI っぽさ」「admin の自由度を維持」「先輩が配布版を使っている」）: トップを名前・表紙の段・選んだ写真・入口に、すべての写真は `/gallery` に分け直した。トップの形（表紙と選んだ写真／表紙だけ）を管理画面で選べる（`photoTopLayout`）。型どおりの見た目（ダッシュ・数字・矢印・太字の制作リンク・黒塗りの選択肢など）を外し、制作の入口はフッターへ。先輩の設定でいつもの構成を確認して 0 件。詳細は正本の 6・7。
+- 試す入口: 公開は `bun run try`（本番の写真を読むだけ）、管理は `bun run try:admin`（人工データ・本番に触れない、パスワードは起動時に表示）。
+- 次: オーナーの目視 → 了承後に main へ push（本番の DB に表が1つ増える。写真・シリーズの行は変えない）。オーナーが本番の管理画面で取り込み中の間は push しない（再起動で止まる）。
+
+## Current State — 2026-09-25 JST / 写真集の骨格の見直し（浜田英明プランを交えて、オーナー確認待ち）
+
+- オーナーが `bun run try` で触った指摘: 元の仕様が邪魔して細部が変／写真が小さく余白が多い／目次が分からない／作品に入っていない写真の居場所が無くシリーズ中心。**設定「写真集」のときだけ**骨格を作り直した（classic は不変、設定の追加なし）。**main へは未 push。** 正本は `docs/specs/motion-2026-09-25.md` の「2回目」。
+- 器: 左の列をやめ、左上に名前・右上に Works / Photos / About / Contact（写真の上では白い文字）。トップ: 画面いっぱいの写真（見せる中心で切り抜き、押して送る）→ Works（大きな表紙）→ Photos（作品外も含む毎回違う18枚）。`/series`: Works の Grid / List。作品ページ: 1枚ずつ送る・広い画面で縦2枚は見開き・Index（ベタ焼き）・Info・奥付。`/gallery`: Photos の見た目にそろえた。
+- 既存の不具合を修正: `shared/contact-reference.ts` の正規表現に制御文字がそのまま入り JavaScriptCore（Bun・Safari 系）で読めなかった → 文字コードで判定。単体テストの失敗は 26〜30件 → 5件（残る5件は origin/main でも同じ、実行順に依存）。
+- 2026-09-26 追加（オーナー「写真をいっぱい見られるように」「adminも合わせて」「元の写真を尊重、勝手に伸ばしたりズームしない」）: 写真集では Photos を常にすべての公開写真に（`galleryExcludesSeries`、本番は `galleryExcludeSeries=on` かつ作品外0枚で Photos が消えていた）。トップの写真と作品の表紙を切り抜かず元の比で収める（写真に文字を重ねるのもやめた）。管理画面の写真集の説明文を今の形に直し、写真集で使わない設定の節（HERO・ナビ・並べ方・シリーズ）に案内を表示。検証: 単体 1490成功、typecheck・lint 成功、全体 smoke 586成功・1失敗（mobile-safari `/profile` 768px の読み込み待ち、単独で3回ずつ再実行 15/15 成功）。続けて: 写真集の作業台は HERO・Gallery の並べ方の節を元から隠しているため、Photos のページもトップと同じ段組み（PC3列・スマホ2列、切り抜かない）に固定し、隠れた設定（本番は8列）に頼らないようにした。管理画面「作品ページの並べ方」の案内は smoke で表示を確認（`public-book-motion` 9成功）。未確認: ビューアが写真から広がって開く動きを残すか（オーナーに確認中）。
+- 2026-09-26 オーナー「バグりすぎ」（`bun run try` の写真集）。ヘッドレスの Chromium と WebKit で PC・スマホを巡回して2件を修正: ① Safari（WebKit）でトップの Photos が1列目しか描かれず残りが空白（CSS columns の中の `position: relative` の枠が原因）→ 列を React で振り分ける方式へ（`splitIntoColumns`）。② トップの写真が明るいと名前・メニュー・作品名が読めない → 写真の上下に淡い陰、器が地に戻る境目も作品名と重ならない位置へ。検証: 単体 1488成功・0失敗、typecheck・lint 成功、smoke `public-book-motion`＋`public-site`（desktop/mobile/mobile-touch/mobile-safari）333成功・0失敗。巡回用スクリプトは `scratch/book-probe.mjs`（gitignore）。
+- 2026-09-25 検証: typecheck・lint 成功、単体 1483成功・5失敗（上記）、`public-book-motion.spec.ts` を新しい骨格で書き直し desktop/mobile 8件成功。全体 smoke（Chromium 3種、WebKit はこの環境に無く未実行）483成功・166スキップ・7失敗。7件は admin-reorder-safety「保存中の終了」と Portfolio Kit の基本検査×3画面で、origin/main でも同じく失敗（同日確認済み）。動画・画面は `scratch/motion-20260925/share2/`。
+
+## Current State — 2026-09-25 JST / 動き（モーション）とUXの強化（試作、オーナー確認待ち）
+
+- 依頼: 「モーションデザイン、UI、UXを強化したい」。静けさを保ち、写真を見る体験に意味のある動きだけを足す。**main へは未 push。ブランチ `claude/akieguchi-motion-design-s9odvq` で目視確認を待つ。** 判断は `docs/specs/motion-2026-09-25.md`。
+- 写真集（book）: 頁が画面に入ると写真が「現像」される／トップの扉の名前が一字ずつ組み上がる（その訪問で1度）／頁の移り変わりは持ち上げずにその場で濃く。全デザイン共通: ビューアが押した写真そのものから開き、閉じると元の場所へ戻る。動きを減らす設定では移動を使わず、濃淡は残す。
+- 既存の不具合も修正: 写真集でビューアを前後へ送ってから閉じると、開いた位置へ戻されていた。
+- 2026-09-25 検証（この環境）: typecheck・lint・build 成功。単体テストは変更前後とも同じ約26〜30件が失敗（contact-reference.ts の正規表現が Bun 1.3.5/1.3.11 の両方で SyntaxError、ほか実行ごとに揺れる render テスト）。変更前の main でも同じく失敗するので今回の差分とは無関係、未解決。
+- 2026-09-25 smoke（Chromium の desktop/mobile/mobile-touch。WebKit はこの環境に無く未実行）: 475成功・166スキップ・7失敗。失敗は admin-reorder-safety「保存中の終了」と public-site「Portfolio Kit /portfolio-kit・/start の基本検査」×3画面で、**origin/main でも同じく失敗**（worktree で再現）。追加した `public-book-motion.spec.ts` は desktop/mobile 6件成功。
+- 気づき: `test.use({ reducedMotion: "reduce" })` はこの smoke の fixture では効かない（matchMedia が false のまま）。新しい spec は `page.emulateMedia` で指定。既存の `public-motion-tempo.spec.ts` の「動きを減らす設定」も同じ理由で本当は検査できていない可能性がある（未修正）。
+- 動画とコマ撮り: `scratch/motion-20260925/share/`（gitignore、人工データ）。
+- 2026-09-25 追加: オーナーが触って試せるよう `bun run try`（`packages/web/vite.try.config.ts`、本番の公開 GET だけを中継、書き込みは 403、`.env` を読まない、siteDesign だけ差し替え）。あわせて、ビューアを閉じた直後に1フレーム開いた位置へ跳ね戻る不具合（履歴を戻すときのスクロール復元）を修正し、長い名前の組み上がりを約1.4秒に抑えた。再検証: typecheck・lint 成功、公開系 smoke（public-site / scroll-stability / photo-detail / book-motion / motion-tempo、Chromium 3種）274成功・6失敗（既知の Portfolio Kit 基本検査、main でも失敗）。`lightbox-gestures` のスワイプ単体テストは origin/main でもこの環境で失敗。
 
 ## Current State — 2026-09-26 JST / 人物撮影の相談とPortfolio Kitの集客
 

@@ -122,6 +122,9 @@ export const SETTINGS_PREVIEW_KEYS = [
   // 写真集のトップ（扉）に置く写真の id。空 = 自動（どの作品の扉とも
   // 重ならない写真）。2026-09-23 試作。
   "bookCoverPhotoId",
+  // 写真中心のトップの形。cover-selection（既定: 名前・表紙の段・選んだ写真・入口）|
+  // cover-only（名前と表紙の段だけ）。2026-09-26。
+  "photoTopLayout",
   "homeStatement",
   "viewerStyle",
   "heroMode",

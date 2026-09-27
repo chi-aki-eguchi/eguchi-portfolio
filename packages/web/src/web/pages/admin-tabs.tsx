@@ -1,4 +1,3 @@
-import { BookCoverPicker } from "../components/book/BookCoverPicker";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../lib/api";
@@ -190,6 +189,7 @@ export const SETTINGS_SECTION_KEYS = {
   "page-layout": [
     "siteDesign",
     "bookCoverPhotoId",
+    "photoTopLayout",
     "profileLayout",
     "contactLayout",
     "seriesCardStyle",
@@ -5257,6 +5257,13 @@ export function SettingsTab({
               {activeSection === "page-layout" && <button type="button" onClick={() => onOpenTab("profile")}><Pencil size={14} />{language === "ja" ? "プロフィールの文章を編集" : "Edit profile content"}</button>}
               {activeSection === "gallery-layout" && <button type="button" onClick={() => onOpenTab("series")}><Pencil size={14} />{language === "ja" ? "シリーズと作品を編集" : "Edit series and works"}</button>}
             </div>}
+            {/* 写真集を選んでいるとき、その骨格が使わない設定の節に一言添える。
+                使わない設定を触っても見た目が変わらず「効かない」と迷わせた（2026-09-26）。 */}
+            {(current["siteDesign"] || "classic") === "book" && copy.pageLayout.bookUnusedNotes[activeSection] && (
+              <p className="admin-book-unused" role="note">
+                {copy.pageLayout.bookUnusedNotes[activeSection]}
+              </p>
+            )}
             <div className="flex flex-col">
               {/* General */}
               <SettingsGroup
@@ -6330,16 +6337,33 @@ export function SettingsTab({
                   {copy.pageLayout.siteDesignNote}
                 </p>
                 {(current["siteDesign"] || "classic") === "book" && (
-                  <AdminField
-                    label={copy.pageLayout.bookCoverLabel}
-                    hint={copy.pageLayout.bookCoverHint}
-                  >
-                    <BookCoverPicker
-                      value={current["bookCoverPhotoId"] || ""}
-                      onChange={(id) => set("bookCoverPhotoId", id)}
-                      autoLabel={copy.pageLayout.bookCoverAuto}
-                    />
-                  </AdminField>
+                  <>
+                    <AdminField
+                      label={copy.pageLayout.topLayoutLabel}
+                      hint={copy.pageLayout.topLayoutHint}
+                    >
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(["cover-selection", "cover-only"] as const).map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            aria-pressed={(current["photoTopLayout"] || "cover-selection") === val}
+                            onClick={() => set("photoTopLayout", val)}
+                            className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                              (current["photoTopLayout"] || "cover-selection") === val
+                                ? "admin-btn-primary font-medium"
+                                : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                            }`}
+                          >
+                            {copy.pageLayout.topLayoutOptions[val]}
+                          </button>
+                        ))}
+                      </div>
+                    </AdminField>
+                    <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                      {copy.pageLayout.topLayoutNote}
+                    </p>
+                  </>
                 )}
                 <AdminField
                   label={copy.pageLayout.aboutLabel}

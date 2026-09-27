@@ -99,10 +99,13 @@ export default function PageTransition({
   const swapAndFadeIn = useCallback(
     (newChildren: React.ReactNode) => {
       const el = containerRef.current;
+      // 写真集の骨格では、次の頁は下から持ち上がらずに、その場で濃くなる。
+      // 頁をめくった先がずれて現れると、本ではなくアプリの画面に見える。
+      const lift = el?.closest(".site-book") ? "none" : "translateY(12px)";
       if (el) {
         el.style.visibility = "hidden";
         el.style.opacity = "0";
-        el.style.transform = "translateY(12px)";
+        el.style.transform = lift;
         el.style.transition = "none";
       }
 
@@ -124,7 +127,7 @@ export default function PageTransition({
           el.style.transition =
             "opacity var(--dur-reveal) var(--ease-reveal), transform var(--dur-reveal) var(--ease-reveal)";
           el.style.opacity = "1";
-          el.style.transform = "translateY(0)";
+          el.style.transform = lift === "none" ? "none" : "translateY(0)";
         }
         setOpacity(1);
         transitioning.current = false;

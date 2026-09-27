@@ -30,7 +30,7 @@ export { HeroPicture } from "../components/HeroPicture";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { photoAltText } from "../../shared/photo-alt";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
-import { BookHome } from "../components/book/BookHome";
+import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
 
 const PortfolioKitExperience = lazy(
@@ -1463,9 +1463,9 @@ export default function TopPage() {
   if (isBookDesign)
     return (
       <>
-        <BookHome
+        <PhotoHome
           settings={settings}
-          heroPhotos={heroPhotosPicked as GalleryPhoto[]}
+          leadPhotos={heroPhotosPicked as GalleryPhoto[]}
         />
         {experiencePanel}
       </>

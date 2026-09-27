@@ -196,6 +196,23 @@ export const FONT_PAIRINGS: {
   },
 ];
 
+/**
+ * 写真中心のサイトの英字の書体に、日本語の字が無いときの受け皿を足す
+ * （--font-en-mixed）。英字の書体に日本語が無いと、「利用条件」「© 江口秋」などが
+ * 端末の標準のゴシックになり、そこだけ太く浮いていた（2026-09-26）。
+ * いつもの構成は --font-en のまま（配布先の見た目を変えない）。
+ */
+function applyFontEnMixed(root: HTMLElement, fontEn: string | undefined, customName: string | undefined) {
+  const face =
+    fontEn === "custom" && customName
+      ? `'${safeFontFamily(customName)}'`
+      : fontEn && GOOGLE_FONTS_EN[fontEn]
+        ? `'${fontEn}'`
+        : "";
+  if (face) root.style.setProperty("--font-en-mixed", `${face}, var(--font-ja)`);
+  else root.style.removeProperty("--font-en-mixed");
+}
+
 function fontFallback(category: "serif" | "sans-serif"): string {
   return category === "serif"
     ? "'Hiragino Mincho ProN', serif"
@@ -639,6 +656,7 @@ export function Provider({ children }: ProviderProps) {
       removeElement("cfont-en");
       root.style.removeProperty("--font-en");
     }
+    applyFontEnMixed(root, fontEn, data?.customFontEnName);
 
     document.body.style.fontFamily =
       getComputedStyle(root).getPropertyValue("--font-ja") || "";
@@ -899,6 +917,7 @@ export function Provider({ children }: ProviderProps) {
           removeElement("cfont-en");
           root.style.removeProperty("--font-en");
         }
+        applyFontEnMixed(root, fontEn, s.customFontEnName);
       }
     }
 

@@ -88,11 +88,10 @@ describe("ギャラリーからシリーズの写真を外す", () => {
 
   // 実際の見え方（写真あり／なし）は `gallery-entry.render.test.tsx` が
   // 固定データで確かめる。ここは規則が gallery.tsx から消えていないことだけ。
+  // on/off と写真集の扱いは `galleryExcludesSeries`（book-design.render.test）。
   test("on のときだけ seriesId を持つ写真を落とす", () => {
     const gallery = src("../pages/gallery.tsx");
-    expect(gallery).toContain(
-      '(settings?.galleryExcludeSeries ?? "off") === "on"',
-    );
+    expect(gallery).toContain("galleryExcludesSeries(settings)");
     expect(gallery).toContain("filter((p) => p.seriesId == null)");
   });
 });

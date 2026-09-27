@@ -57,6 +57,13 @@
       "when": 1789797931230,
       "tag": "0007_dry_calypso",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1790399749260,
+      "tag": "0008_series_photos",
+      "breakpoints": true
     }
   ]
 }

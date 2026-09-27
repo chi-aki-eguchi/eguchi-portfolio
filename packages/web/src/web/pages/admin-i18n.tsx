@@ -1224,10 +1224,26 @@ const ADMIN_PHASE_2B_JA = {
       siteDesignHint: "トップ・作品ページ・目次の組み方",
       siteDesignOptions: {
         classic: "いつもの構成（既定）",
-        book: "写真集",
+        book: "写真中心（おすすめ）",
       },
       siteDesignNote:
-        "写真集: 1画面に1枚ずつ、作品の順番どおりに頁をめくる構成です。メニューは左の余白に、目次はすべての作品のコマを並べたベタ焼きになります。フィルムとデジタルは写真ごとの記録どおりに分けて見せます。",
+        "写真中心: トップは名前と選んだ写真、すべての写真は Gallery、シリーズは Series のページ。写真は切り抜かず、元の縦横比のまま段に並べます。1枚の写真を何本のシリーズにも入れられます。",
+      topLayoutLabel: "トップの形",
+      topLayoutHint: "写真中心のときのトップ",
+      topLayoutOptions: {
+        "cover-selection": "表紙と選んだ写真",
+        "cover-only": "表紙だけ",
+      },
+      topLayoutNote:
+        "「写真」画面の「トップに出す」で選んだ写真だけを表示します。先頭1枚が表紙、続きは1枚・2枚の組み合わせです。未選択のときだけ公開写真の先頭1枚を表示します。",
+      bookUnusedNotes: {
+        hero: "写真中心の構成では、この節の見た目と動きは使いません。トップの写真は「写真」画面の「トップに出す」で選び、トップの形は「各ページの構成」で選びます。",
+        navigation: "写真中心の構成では、メニューはいつも上の帯です。ここの位置と帯の背景は使いません。",
+        "gallery-layout": "写真中心の構成では、この節は使いません。トップとシリーズのページは、写真を切り抜かずに大小の段で並べる決まった組み方です。",
+        series: "写真中心の構成では、トップのシリーズ帯・シリーズ一覧の列数・「Gallery から作品の写真を外す」は使いません。Gallery にはいつもすべての公開写真が並びます。",
+        "page-layout": "写真中心の構成では「シリーズの札の形」は使いません。「トップの言葉」は名前のすぐ下か、トップの写真の後に出ます。",
+        "site-copy": "写真中心の構成では「TOP」「すべて見る」「ギャラリー見出し」の言葉は使いません。Gallery・Works・About・Contact・SNS・絞り込みの「すべて」・お問い合わせの言葉は効きます。",
+      } as Record<string, string>,
       aboutLabel: "About（プロフィール）の構成",
       aboutHint: "顔写真と自己紹介の並べ方",
       aboutOptions: {
@@ -3001,10 +3017,26 @@ const ADMIN_PHASE_2B_EN = {
       siteDesignHint: "How the home, work pages and contents are composed",
       siteDesignOptions: {
         classic: "Standard (default)",
-        book: "Photobook",
+        book: "Photographs first (recommended)",
       },
       siteDesignNote:
-        "Photobook: one photograph per screen, turned page by page in the order of the work. The menu sits in the left margin and the contents page becomes a contact sheet of every work. Film and digital are shown exactly as each photo is recorded.",
+        "Photographs first: the home page shows your name and the photographs you pick, every photograph lives in Gallery and series on the Series page. Photographs are never cropped. One photograph can belong to several series.",
+      topLayoutLabel: "Home page",
+      topLayoutHint: "Photographs-first home",
+      topLayoutOptions: {
+        "cover-selection": "Cover and picked photos",
+        "cover-only": "Cover only",
+      },
+      topLayoutNote:
+        "Only photographs selected with “Show on the home page” appear here. The first is the cover; the rest alternate between pairs and single photographs. If none are selected, the first public photograph is used.",
+      bookUnusedNotes: {
+        hero: "The photographs-first design does not use the look and motion set here. Pick the home photographs with “Show on the home page” in Photos, and the home layout under page layout.",
+        navigation: "In the photographs-first design the menu is always the band at the top. Position and band background here are not used.",
+        "gallery-layout": "The photographs-first design does not use this section. The home and series pages use a fixed layout of uncropped rows of varying height.",
+        series: "The photographs-first design does not use the home series strip, the series grid columns, or “exclude series photographs from the gallery”. Gallery always shows every public photograph.",
+        "page-layout": "The photographs-first design does not use the series card style. The home statement appears under your name or after the home photographs.",
+        "site-copy": "The photographs-first design does not use the TOP, View all and gallery heading labels. Gallery, Works, About, Contact, social, the filter’s All and the contact form labels apply.",
+      } as Record<string, string>,
       aboutLabel: "About page composition",
       aboutHint: "How the portrait and the introduction sit together",
       aboutOptions: {

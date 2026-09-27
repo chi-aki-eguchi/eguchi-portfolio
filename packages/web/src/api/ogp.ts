@@ -1114,7 +1114,7 @@ function buildJsonLd(
       brand: { "@type": "Brand", name: "Aki Eguchi Portfolio Kit" },
       offers: isServiceSiteUrl(siteUrl)
         ? portfolioPlans(isEnglishLp).map(plan => ({
-            "@type": "Offer", name: plan.name, price: plan.price.replaceAll(",", ""),
+            "@type": "Offer", name: plan.name, price: plan.price.replace(/,/g, ""),
             priceCurrency: "JPY", availability: "https://schema.org/InStock", url: lpUrl,
           }))
         : { "@type": "Offer", price: String(servicePriceJpy(settings)), priceCurrency: "JPY", availability: "https://schema.org/InStock", url: lpUrl },

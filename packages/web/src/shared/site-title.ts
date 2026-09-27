@@ -53,6 +53,7 @@ export function composePageTitle(
  * `contactLabel` などが持つ）。だから検索で使われる語を入れても見た目は変わらない。
  */
 export const PAGE_TITLE = {
+  portfolioGuide: "写真ポートフォリオの作り方｜写真選び・構成・Web公開",
   gallery: "Gallery",
   series: "Series",
   work: "Work",

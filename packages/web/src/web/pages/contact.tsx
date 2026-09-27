@@ -10,6 +10,7 @@ import {
   usableContactEmail,
   usableContactEndpoint,
 } from "../../shared/contact-settings";
+import { photographyInquiryFor } from "../../shared/photography-inquiry";
 import { isPortfolioKitSubject } from "../../shared/contact-defaults";
 import { buildFailoverMailto } from "../../shared/contact-failover";
 import { sendAnalyticsEvent } from "../lib/analytics";
@@ -143,6 +144,7 @@ export default function ContactPage({
     queryFn: async () => jsonOrThrow(await api.pricing.$get()),
   });
   const plans = pricingData?.plans ?? [];
+  const photographyInquiry = photographyInquiryFor(data?.siteUrl, english);
 
   // 作品ページから「この作品について相談する」で来たときの参考作品。
   // URL に載っているのは公開作品の識別子だけで、氏名・メール・本文は載らない。
@@ -966,6 +968,21 @@ export default function ContactPage({
         )}
         </div>
         </div>
+        {status !== "success" && photographyInquiry && (
+          <section className="mt-12 border-t border-[rgba(var(--foreground-rgb),0.12)] pt-8" aria-labelledby="photography-inquiry-heading">
+            <h2 id="photography-inquiry-heading" className="text-lg leading-8">{photographyInquiry.title}</h2>
+            <p className="mt-4 leading-8 text-[color:var(--text-quiet)]">{photographyInquiry.intro}</p>
+            <p className="mt-4 text-sm leading-7"><a href="/gallery" className="underline underline-offset-4">写真を見る</a> ／ <a href="/about" className="underline underline-offset-4">撮り手について</a></p>
+            <dl className="mt-6 space-y-6">
+              {photographyInquiry.questions.map(({ q, a }) => (
+                <div key={q}>
+                  <dt className="leading-7">{q}</dt>
+                  <dd className="mt-2 leading-8 text-[color:var(--text-quiet)]">{a}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
       </section>
     </>
   );

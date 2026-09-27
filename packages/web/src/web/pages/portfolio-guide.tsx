@@ -100,6 +100,15 @@ export default function PortfolioGuidePage() {
         このサイトは作者自身の運用例です。<a href="/" className="underline underline-offset-4">作品を見る</a> ／ <a href="/about" className="underline underline-offset-4">作者について</a>
       </p>
 
+      <aside className="mt-8 border-y border-[rgba(var(--foreground-rgb),0.12)] py-5 text-sm leading-7" aria-label="サイト制作の実例と相談">
+        <p>自分で更新できるサイトを検討している方へ。Portfolio Kit は、写真・文章・並び方を管理画面から変えられる、このサイトと同じ仕組みです。</p>
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          <a href="/portfolio-kit#pricing" className="underline underline-offset-4">制作内容・料金を見る</a>
+          <a href="/admin/demo" className="underline underline-offset-4">登録せず管理画面を試す</a>
+          <a href="/portfolio-kit/consult" className="underline underline-offset-4">制作を相談する</a>
+        </p>
+      </aside>
+
       <nav
         aria-label="目次"
         className="mt-8 border border-[rgba(var(--foreground-rgb),0.12)] rounded-md p-5"

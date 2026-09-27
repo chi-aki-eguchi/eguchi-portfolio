@@ -145,6 +145,16 @@ describe("public analytics", () => {
     });
   });
 
+  test("measures Kit referrals without counting pricing jumps or leaking query values", () => {
+    expect(analyticsEventForLink("/portfolio-kit?email=private#pricing", "/portfolio-kit/guide", ORIGIN)).toEqual({
+      name: "portfolio_kit_interest_click",
+      params: { from_path: "/portfolio-kit/guide", destination_path: "/portfolio-kit", destination_host: "akieguchi.com" },
+    });
+    expect(analyticsEventForLink("#pricing", "/portfolio-kit", ORIGIN)).toBeNull();
+    expect(analyticsEventForLink("/portfolio-kit#pricing", "/portfolio-kit", ORIGIN)).toBeNull();
+    expect(analyticsEventForLink("https://example.com/portfolio-kit", "/", ORIGIN)?.name).toBe("outbound_click");
+  });
+
   test("ignores non-web links and ordinary internal navigation", () => {
     expect(analyticsEventForLink("mailto:test@example.com", "/contact", ORIGIN)).toBeNull();
     expect(analyticsEventForLink("/gallery", "/", ORIGIN)).toBeNull();

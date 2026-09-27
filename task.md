@@ -2,6 +2,11 @@
 
 <!-- CURRENT_STATE_START -->
 
+## 2026-09-27 本番公開の検証中
+
+- オーナー「本番に出せるなら出して。確認してから」で公開を承認。最新origin/mainの撮影相談・集客改善を統合し、検証後に本番へ反映する。以前の目視承認待ちは解除。
+
+
 ## Current State — 2026-09-27 JST / TOPとGalleryを分離（ローカルプレビュー）
 
 - オーナーが構成案を了承。TOPは選んだ公開写真だけを選択順で表示、24枚までの自動補充を廃止。先頭1枚が表紙、続きは2枚・1枚の組。未選択時のみ公開写真の先頭1枚を表示。「表紙だけ」設定は維持。
@@ -41,6 +46,16 @@
 - 気づき: `test.use({ reducedMotion: "reduce" })` はこの smoke の fixture では効かない（matchMedia が false のまま）。新しい spec は `page.emulateMedia` で指定。既存の `public-motion-tempo.spec.ts` の「動きを減らす設定」も同じ理由で本当は検査できていない可能性がある（未修正）。
 - 動画とコマ撮り: `scratch/motion-20260925/share/`（gitignore、人工データ）。
 - 2026-09-25 追加: オーナーが触って試せるよう `bun run try`（`packages/web/vite.try.config.ts`、本番の公開 GET だけを中継、書き込みは 403、`.env` を読まない、siteDesign だけ差し替え）。あわせて、ビューアを閉じた直後に1フレーム開いた位置へ跳ね戻る不具合（履歴を戻すときのスクロール復元）を修正し、長い名前の組み上がりを約1.4秒に抑えた。再検証: typecheck・lint 成功、公開系 smoke（public-site / scroll-stability / photo-detail / book-motion / motion-tempo、Chromium 3種）274成功・6失敗（既知の Portfolio Kit 基本検査、main でも失敗）。`lightbox-gestures` のスワイプ単体テストは origin/main でもこの環境で失敗。
+
+## Current State — 2026-09-26 JST / 人物撮影の相談とPortfolio Kitの集客
+
+- オーナー依頼: サイトのアクセス・撮影依頼・Portfolio Kitへの流入を増やす。撮影の重点は人物・アーティスト。SNSは告知案の用意だけで、調整と投稿は本人が行う。
+- Contact: 人物・アーティスト写真の相談内容、参考作品の伝え方、料金・納期を相談するときの情報をフォームの後ろに追加。作者サイトの日本語ページだけに表示し、非JS本文とも共有。料金・納期の新しい約束は追加しない。
+- 既存の検索ガイド: 紙・PDF・Webの使い分けと人物写真の構成例、冒頭の料金・デモ・相談リンクを追加。題名を検索語に合わせ、サーバーとSPAで共有。
+- 計測: サイト内からKitへ進む `portfolio_kit_interest_click` を追加。クエリやフォーム値を送らず、同じ販売ページ内のアンカー移動と言語切替は分ける。相談・受注・入金とは別に数える。
+- 検証: `bun run check` 成功（単体1488、ツール60、番人48、型・lint・build）。最後の題名共有の調整後も型・lint・関連109テスト・build成功。全体smokeは578成功・180既定スキップ・1失敗（管理画面の保存中終了のタイミング）。当該操作は同じ版で3回再実行して全成功。変更前origin/mainの該当操作とKit基本/幅検査も6成功。新しい製品不具合は確認していない。
+- 本番確認はpush後に `/api/health` のbuildとContact・guideの実表示で行う。アクセス増・実依頼・売上増は未実証。別ブランチで進行中の写真中心リニューアルは、この変更に含めていない。
+
 
 ## Current State — 2026-09-23 JST / 写真集の管理画面「作品ごとの作業台」（オーナー承認、main へ push）
 

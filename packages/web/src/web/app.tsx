@@ -324,7 +324,7 @@ function App() {
             <ServiceVisibilityGate>
               <Layout>
                 <PageTransition>
-                  <TitledRoute title="写真家のポートフォリオサイトの作り方">
+                  <TitledRoute title={PAGE_TITLE.portfolioGuide}>
                     <Suspense fallback={<PageFallback />}>
                       <PortfolioGuidePage />
                     </Suspense>

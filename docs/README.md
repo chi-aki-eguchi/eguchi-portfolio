@@ -6,7 +6,7 @@
 
 | 知りたいこと | 文書 |
 |---|---|
-| 管理画面内のPDF作品集の試作（2026-09-27） | `docs/specs/portfolio-pdf-v0.md` |
+| 管理画面内のPDF作品集（2026-09-27） | `docs/specs/portfolio-pdf-v0.md` |
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
 | 写真中心への作り直し・1枚を複数シリーズへ（2026-09-26） | `docs/specs/photo-first-2026-09-26.md` |
 | 写真管理・サイト編集の再設計（2026-09-13） | `docs/specs/admin-studio-2026-09-13.md` |

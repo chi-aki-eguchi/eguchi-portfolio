@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { randomUUID } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
 import {
   SMOKE_ADMIN_PASSWORD_ENV,
@@ -27,7 +28,7 @@ import { SMOKE_ISOLATION_PATH } from "../../packages/web/vite/smoke-isolation.ts
 // Playwrightは親プロセスとworkerでこの設定を読み直す。読み直すたびに新しい
 // 時刻を使うと、まとめと添付が別フォルダに分かれてしまう。先に決まった値が
 // 環境変数として子へ渡るので、既にあればそれを使う。
-const RUN_ID = new Date().toISOString().replace(/[:.]/g, "-");
+const RUN_ID = `${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID()}`;
 const EVIDENCE_DIR =
   process.env.SMOKE_EVIDENCE_DIR ??
   resolve(__dirname, "../../scratch/smoke-evidence", RUN_ID);

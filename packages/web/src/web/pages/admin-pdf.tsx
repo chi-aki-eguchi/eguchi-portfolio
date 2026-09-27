@@ -295,13 +295,7 @@ export default function AdminPdfPage() {
         </p>
       ) : (
         <>
-          <details className="pdf-storage-note">
-            <summary>保存について</summary>
-            <p className="pdf-note">
-              この端末・このブラウザーに、作品の選択・説明・氏名・連絡先を保存します。端末間の同期はありません。ブラウザーのデータ消去で失われるため、作品集ファイルも保存してください。画像本体は含まれません。保存データは暗号化されないため、共用端末では利用後に削除してください。Webの公開状態・文章・順番は変更しません。
-            </p>
-          </details>
-          <div className="pdf-toolbar">
+          <div className="pdf-toolbar pdf-document-bar">
             <label>
               保存した本
               <select
@@ -330,7 +324,11 @@ export default function AdminPdfPage() {
                 ))}
               </select>
             </label>
-            <button disabled={busy || storageBroken} onClick={save}>
+            <button
+              className="pdf-save-button"
+              disabled={busy || storageBroken}
+              onClick={save}
+            >
               ブラウザーに保存
             </button>
             <details className="pdf-book-menu">
@@ -429,10 +427,16 @@ export default function AdminPdfPage() {
                 >
                   保存データを全削除
                 </button>
+                <details className="pdf-storage-note">
+                  <summary>保存について</summary>
+                  <p className="pdf-note">
+                    この端末・このブラウザーに、作品の選択・説明・氏名・連絡先を保存します。端末間の同期はありません。ブラウザーのデータ消去で失われるため、作品集ファイルも保存してください。画像本体は含まれません。保存データは暗号化されないため、共用端末では利用後に削除してください。Webの公開状態・文章・順番は変更しません。
+                  </p>
+                </details>
               </div>
             </details>
           </div>
-          <p aria-live="polite">
+          <p className="pdf-save-status" aria-live="polite">
             {busy
               ? progress
               : notice || (dirty ? "未保存の編集があります" : "")}

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "wouter";
 
 /**
@@ -6,15 +6,20 @@ import { Link } from "wouter";
  *
  * 前の表紙は「左に名前・右に写真」の2列で、縦の写真だと左上の半分が空いていた
  * （オーナー「TOP の謎の余白」）。今は名前を1行の帯にして、その下の表紙の段を
- * 写真で横いっぱいに埋める（PhotoStream の lead）。
+ * 写真1枚を元の比で収める（PhotoStream の selection）。
  *
  * 大きさ・太さ・色・字間は管理画面の「名前」の設定がそのまま効く。
  * 帯が見えている間は、上の帯の名前を隠す（同じ名前が二重に並ばないように）。
  */
-export const TopName = forwardRef<
-  HTMLElement,
-  { name: string; nameEn?: string | null; subtitle?: string | null }
->(function TopName({ name, nameEn, subtitle }, ref) {
+export function TopName({
+  name,
+  nameEn,
+  subtitle,
+}: {
+  name: string;
+  nameEn?: string | null;
+  subtitle?: string | null;
+}) {
   const ownRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const el = ownRef.current;
@@ -35,14 +40,7 @@ export const TopName = forwardRef<
   }, []);
   const en = nameEn && nameEn !== name ? nameEn : "";
   return (
-    <header
-      ref={(el) => {
-        ownRef.current = el;
-        if (typeof ref === "function") ref(el);
-        else if (ref) ref.current = el;
-      }}
-      className="ps-top-name"
-    >
+    <header ref={ownRef} className="ps-top-name">
       <h1 className="ps-top-name__main font-ja">{name}</h1>
       {(en || subtitle) && (
         <p className="ps-top-name__sub font-en">
@@ -52,7 +50,7 @@ export const TopName = forwardRef<
       )}
     </header>
   );
-});
+}
 
 type Settings = Record<string, string | null | undefined> | undefined;
 

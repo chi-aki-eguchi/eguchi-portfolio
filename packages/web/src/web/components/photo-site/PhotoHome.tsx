@@ -9,24 +9,13 @@ import { TopEntrances, TopName } from "./PhotoTop";
 
 type Settings = Record<string, string | null | undefined> | undefined;
 
-/** 「トップに出す」写真がこの枚数より少ないうちは、サイトの並び順で補う。 */
-export const TOP_SELECTION_MIN = 12;
-/** 補うときの合計の枚数。 */
-export const TOP_FILL = 24;
-
-/**
- * トップに並べる写真: 管理画面で「トップに出す」にした写真（公開中のもの、選んだ順）。
- * 選んだ写真が少ないうちは、サイトの並び順の写真で補う（トップが寂しくならないように）。
- * 先頭から表紙の段に入り、残りがその下に続く。
- */
+/** 選択した公開写真だけを、選択順のまま表示。未選択の場合だけ先頭1枚を表紙にする。 */
 export function topPhotosFor(all: GalleryPhoto[], picked: Pick<GalleryPhoto, "id">[]): GalleryPhoto[] {
   const byId = new Map(all.map((p) => [p.id, p]));
-  const chosen = picked
-    .map((p) => byId.get(p.id))
+  const chosen = [...new Set(picked.map((p) => p.id))]
+    .map((id) => byId.get(id))
     .filter((p): p is GalleryPhoto => Boolean(p));
-  if (chosen.length >= TOP_SELECTION_MIN) return chosen;
-  const used = new Set(chosen.map((p) => p.id));
-  return [...chosen, ...all.filter((p) => !used.has(p.id))].slice(0, TOP_FILL);
+  return chosen.length ? chosen : all.slice(0, 1);
 }
 
 /** トップの形（管理画面「トップの形」）。cover-selection: 表紙と選んだ写真 ／ cover-only: 表紙だけ。 */
@@ -53,7 +42,7 @@ const COVER_BREATH = 28;
 /**
  * 写真中心のサイトのトップ（2026-09-26 作り直し）。
  *
- * 名前の帯 → 表紙の段（選んだ写真を横いっぱいに、画面の残りの高さで）→ 選んだ写真の
+ * 名前の帯 → 表紙1枚（元の比で画面の残りの高さに収める）→ 選んだ写真の
  * 続き → すべての写真（Gallery）と Series への入口。全部の写真は Gallery のページ。
  * 「表紙だけ」にすると、表紙の段で終わる。
  */
@@ -87,12 +76,12 @@ export function PhotoHome({
   const all = useMemo(() => (photosQ.data?.photos ?? []) as GalleryPhoto[], [photosQ.data]);
   const photos = useMemo(() => topPhotosFor(all, leadPhotos), [all, leadPhotos]);
 
-  // 表紙の段の高さ = 画面の高さ − 名前の帯の下端まで − 息をつく余白。
-  // 帯の下端は、描いた後に測る（文字の大きさは管理画面の設定で変わる）。
-  const nameRef = useRef<HTMLElement>(null);
+  // 表紙の段の高さ = 画面の高さ − 名前の帯（と「トップの言葉」）の下端まで − 息をつく余白。
+  // 下端は、描いた後に測る（文字の大きさは管理画面の設定で変わる）。
+  const headRef = useRef<HTMLDivElement>(null);
   const [reserve, setReserve] = useState(220);
   useLayoutEffect(() => {
-    const el = nameRef.current;
+    const el = headRef.current;
     if (!el) return;
     const measure = () => {
       const bottom = el.getBoundingClientRect().bottom + window.scrollY;
@@ -110,8 +99,10 @@ export function PhotoHome({
 
   return (
     <div className="ps-page ps-home" data-layout={layout}>
-      <TopName ref={nameRef} name={name} nameEn={settings?.siteNameEn} subtitle={settings?.heroSubtitle} />
-      {statementAt === "before-works" && <HomeStatement text={statement} />}
+      <div ref={headRef} className="ps-home__head">
+        <TopName name={name} nameEn={settings?.siteNameEn} subtitle={settings?.heroSubtitle} />
+        {statementAt === "before-works" && <HomeStatement text={statement} />}
+      </div>
       {photosQ.isLoading && <ContentStatus state="loading" />}
       {photosQ.isError && (
         <ContentStatus state="error" error={photosQ.error} onRetry={() => void photosQ.refetch()} />
@@ -123,6 +114,7 @@ export function PhotoHome({
           photographerName={photographerName}
           seriesLinkById={seriesLinkById}
           label="トップの写真"
+          presentation="selection"
           lead={{ reserve }}
           maxRows={layout === "cover-only" ? 1 : undefined}
           after={

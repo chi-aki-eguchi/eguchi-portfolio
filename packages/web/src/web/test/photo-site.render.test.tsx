@@ -23,7 +23,7 @@ const { QueryClient, QueryClientProvider } = await import(
 const { Router, Route } = await import("wouter");
 const SeriesListPage = (await import("../pages/series")).default;
 const SeriesDetailPage = (await import("../pages/series-detail")).default;
-const { topPhotosFor, topLayoutFrom, TOP_SELECTION_MIN, TOP_FILL } = await import(
+const { topPhotosFor, topLayoutFrom } = await import(
   "../components/photo-site/PhotoHome"
 );
 const { stripFor } = await import("../components/photo-site/PhotoSeries");
@@ -131,19 +131,18 @@ describe("計算", () => {
 describe("トップに並べる写真", () => {
   const p = (id: number) => ({ id, url: `/p${id}.jpg`, title: "" });
   const all = Array.from({ length: 40 }, (_, i) => p(i + 1));
-  test("選んだ写真（公開中のもの、選んだ順）が先頭。少ないうちはサイトの並びで補う", () => {
+  test("選んだ公開写真だけを選んだ順で表示し、自動補充しない", () => {
     const top = topPhotosFor(all as never, [p(3), p(99), p(1)] as never).map((x) => x.id);
     expect(top.slice(0, 2)).toEqual([3, 1]);
-    expect(top).toHaveLength(TOP_FILL);
+    expect(top).toHaveLength(2);
     expect(new Set(top).size).toBe(top.length);
-    expect(top.slice(2, 5)).toEqual([2, 4, 5]);
   });
   test("選んだ写真が十分あれば、選んだ写真だけ", () => {
-    const picked = all.slice(0, TOP_SELECTION_MIN + 3).reverse();
+    const picked = all.slice(0, 15).reverse();
     expect(topPhotosFor(all as never, picked as never).map((x) => x.id)).toEqual(picked.map((x) => x.id));
   });
-  test("写真が少ないサイトでも、ある分だけ", () => {
-    expect(topPhotosFor(all.slice(0, 5) as never, [] as never).map((x) => x.id)).toEqual([1, 2, 3, 4, 5]);
+  test("未選択なら表紙1枚だけを使う", () => {
+    expect(topPhotosFor(all.slice(0, 5) as never, [] as never).map((x) => x.id)).toEqual([1]);
   });
   test("トップの形: 既定は「表紙と選んだ写真」", () => {
     expect(topLayoutFrom(undefined)).toBe("cover-selection");

@@ -3,9 +3,9 @@ import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
 /**
  * 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）。
  *
- * 1. トップを開くと名前と表紙の段（「トップに出す」写真を横いっぱいに、最初の画面に収まる）。
+ * 1. トップを開くと名前と表紙1枚（「トップに出す」写真の先頭、最初の画面に収まる）。
  *    その下に選んだ写真の続きと、Gallery・Series への入口。写真は元の縦横比のまま
- *    （切り抜かない・引き伸ばさない）、段は横幅いっぱいにそろい、横はみ出しが無い
+ *    （切り抜かない・引き伸ばさない）、横はみ出しが無い
  * 2. 器（名前とメニュー）は揃ってから一度だけ現れ、そのあと動かない
  *    （オーナー 2026-09-26「チラチラ動くのがうるさい」）
  * 3. 写真を押すとビューアが開き、閉じられる
@@ -70,7 +70,7 @@ test("写真中心 › トップは名前と表紙の段から始まり、写真
   await expect(page.locator(".ps-top-name h1")).toHaveText("Smoke Fixture Studio");
   const tiles = page.locator(".ps-tile");
   await expect(tiles.first()).toBeInViewport();
-  // 表紙の段: 「トップに出す」写真が先頭から並び、最初の画面に収まり、横幅いっぱい。
+  // 表紙: 「トップに出す」写真の先頭1枚が、最初の画面に元の比で収まる。
   const firstIds = await page.locator(".ps-tile__button").evaluateAll((els) =>
     els.slice(0, 3).map((e) => Number(e.getAttribute("data-photo-tile"))),
   );
@@ -87,15 +87,16 @@ test("写真中心 › トップは名前と表紙の段から始まり、写真
     };
   });
   expect(lead.bottom).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
-  expect(Math.abs(lead.left)).toBeLessThan(1);
-  expect(Math.abs(lead.right)).toBeLessThan(1);
+  expect(lead.left).toBeGreaterThanOrEqual(-1);
+  expect(Math.abs(lead.left - lead.right)).toBeLessThan(2);
   await page.waitForTimeout(1500);
   // 比の差 2% 未満（段の丸めだけ）。切り抜き・引き伸ばしがあればここで落ちる。
   expect(await worstRatioGap(page)).toBeLessThan(0.02);
   expect(await noSideScroll(page)).toBeLessThanOrEqual(0);
-  // 段の右端がそろう（最後の段以外）。
-  const full = (await rowRightEdges(page)).slice(0, -1);
-  expect(Math.max(...full) - Math.min(...full)).toBeLessThan(2);
+  // 表紙は1枚。写真の幅を埋めるための自動補充はしない。
+  const firstTop = await tiles.first().evaluate((el) => el.getBoundingClientRect().top);
+  const onFirstRow = await tiles.evaluateAll((els, top) => els.filter((el) => Math.abs(el.getBoundingClientRect().top - top) < 1).length, firstTop);
+  expect(onFirstRow).toBe(1);
   // 終わりに Gallery と Series への入口。
   const gallery = page.locator(".ps-entrances a[href='/gallery']");
   await gallery.scrollIntoViewIfNeeded();
@@ -173,6 +174,12 @@ test("写真中心 › Gallery はすべての写真。絞り込みは URL に�
   await expect(page.locator("h1")).toHaveText("Gallery");
   await expect(page.locator(".ps-tile").first()).toBeInViewport();
   await expect(page.locator(".ps-tile")).toHaveCount(Math.min(all, 40));
+  expect(await worstRatioGap(page)).toBeLessThan(0.02);
+  const gallerySize = await page.locator(".ps-tile").first().evaluate((el) => ({
+    tile: el.getBoundingClientRect().width,
+    stream: el.parentElement!.getBoundingClientRect().width,
+  }));
+  expect(gallerySize.tile).toBeLessThan(gallerySize.stream / 2);
   // 「トップに出す」写真も、ここではほかの写真と一緒に並ぶ。
   await expect(page.locator('[data-photo-tile="7001"]')).toHaveCount(1);
   await page.locator(".ps-filters a", { hasText: "Film" }).click();

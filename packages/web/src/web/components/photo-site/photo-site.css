@@ -355,7 +355,7 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  padding: clamp(2rem, 6vh, 3.5rem) 0 clamp(1.5rem, 4vh, 2.5rem);
+  padding: 1.5rem 0;
   border-top: 1px solid var(--ps-hair);
 }
 .ps-service__main {
@@ -368,7 +368,7 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 .ps-service__title {
   grid-area: title;
-  font-size: calc(clamp(1.35rem, 2.4vw, 2rem) * var(--global-font-scale, 1));
+  font-size: calc(14px * var(--global-font-scale, 1));
   line-height: 1.45;
   letter-spacing: 0.02em;
 }
@@ -959,4 +959,9 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 [data-theme="dark"] .ps-top-name__role {
   color: var(--ps-quiet);
+}
+
+/* 名前の帯と「トップの言葉」。下の余白まで含めて測る（表紙の段の高さの計算、PhotoHome）。 */
+.ps-home__head {
+  display: flow-root;
 }

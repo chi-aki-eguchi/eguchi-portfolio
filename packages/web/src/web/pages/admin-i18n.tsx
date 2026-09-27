@@ -1235,7 +1235,7 @@ const ADMIN_PHASE_2B_JA = {
         "cover-only": "表紙だけ",
       },
       topLayoutNote:
-        "表紙に並ぶ写真は「写真」画面の「トップに出す」で選びます。12枚より少ないうちは、サイトの並び順の写真で補います。",
+        "「写真」画面の「トップに出す」で選んだ写真だけを表示します。先頭1枚が表紙、続きは1枚・2枚の組み合わせです。未選択のときだけ公開写真の先頭1枚を表示します。",
       bookUnusedNotes: {
         hero: "写真中心の構成では、この節の見た目と動きは使いません。トップの写真は「写真」画面の「トップに出す」で選び、トップの形は「各ページの構成」で選びます。",
         navigation: "写真中心の構成では、メニューはいつも上の帯です。ここの位置と帯の背景は使いません。",
@@ -3028,7 +3028,7 @@ const ADMIN_PHASE_2B_EN = {
         "cover-only": "Cover only",
       },
       topLayoutNote:
-        "Pick the cover photographs with “Show on the home page” in Photos. With fewer than 12 picked, the site order fills in.",
+        "Only photographs selected with “Show on the home page” appear here. The first is the cover; the rest alternate between pairs and single photographs. If none are selected, the first public photograph is used.",
       bookUnusedNotes: {
         hero: "The photographs-first design does not use the look and motion set here. Pick the home photographs with “Show on the home page” in Photos, and the home layout under page layout.",
         navigation: "In the photographs-first design the menu is always the band at the top. Position and band background here are not used.",

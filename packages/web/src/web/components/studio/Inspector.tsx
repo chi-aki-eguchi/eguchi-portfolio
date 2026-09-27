@@ -309,8 +309,8 @@ function HeroRow({ data, photos }: { data: StudioData; photos: StudioPhoto[] }) 
       await batch(changing, next ? "feature" : "unfeature");
       await refresh();
       remember(
-        { label: "トップの先頭", run: () => batch(changing, next ? "unfeature" : "feature") },
-        next ? "トップの先頭に並べました" : "トップの先頭から外しました（写真はトップに残ります）",
+        { label: "トップに出す写真", run: () => batch(changing, next ? "unfeature" : "feature") },
+        next ? "トップに出す写真に加えました" : "トップの選択から外しました（Galleryには残ります）",
       );
     } catch {
       fail("トップの設定を保存できませんでした。");

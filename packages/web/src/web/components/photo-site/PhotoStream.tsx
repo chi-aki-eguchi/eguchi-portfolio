@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { planSelection, planContactSheet } from "../../lib/photo-presentation";
 import { Picture } from "../Picture";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { orientedDimensions } from "../../../shared/image-url";
@@ -27,7 +28,9 @@ export function PhotoStream({
   after,
   lead,
   maxRows,
+  presentation = "rows",
 }: {
+  presentation?: "rows" | "selection" | "contact-sheet";
   photos: GalleryPhoto[];
   photographerName: string;
   seriesLinkById?: Record<number, SeriesLink>;
@@ -81,6 +84,10 @@ export function PhotoStream({
   const leadReserve = lead?.reserve;
   const plan = useMemo(() => {
     if (!(width > 0)) return null;
+    if (presentation === "contact-sheet") return planContactSheet(ratios, width);
+    if (presentation === "selection") {
+      return planSelection(maxRows === 1 ? ratios.slice(0, 1) : ratios, width, viewportHeight, leadReserve ?? 220);
+    }
     const opts = rowOptionsFor(width, viewportHeight);
     if (leadReserve === undefined) return planRows(ratios, opts);
     const full = planRows(ratios, {
@@ -94,7 +101,7 @@ export function PhotoStream({
     const rows = full.rows.slice(0, maxRows);
     const last = rows[rows.length - 1]!;
     return { rows, height: last.top + last.height };
-  }, [ratios, width, viewportHeight, leadReserve, maxRows]);
+  }, [ratios, width, viewportHeight, leadReserve, maxRows, presentation]);
   // 段の数を絞ったときは、並んだ写真だけをビューアで送る。
   const shownPhotos = useMemo(() => {
     if (!plan || !maxRows) return photos;
@@ -115,7 +122,7 @@ export function PhotoStream({
     return out;
   }, [plan, count]);
   const shownHeight = rows.length
-    ? rows[rows.length - 1]!.top + rows[rows.length - 1]!.height
+    ? Math.max(...rows.map((row) => row.top + row.height))
     : 0;
   const more = plan ? rows.length < plan.rows.length : false;
 
@@ -161,7 +168,7 @@ export function PhotoStream({
     <>
       <ul
         ref={boxRef}
-        className="ps-stream"
+        className={`ps-stream ps-stream--${presentation}`}
         aria-label={label}
         style={{ height: shownHeight }}
       >

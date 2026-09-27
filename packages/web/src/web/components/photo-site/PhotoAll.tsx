@@ -145,6 +145,7 @@ export function PhotoAllPage({ settings }: { settings: Settings }) {
           photographerName={photographerName}
           seriesLinkById={seriesLinkById}
           label="すべての写真"
+          presentation="contact-sheet"
           after={<PhotoInquiry settings={settings} />}
         />
       )}

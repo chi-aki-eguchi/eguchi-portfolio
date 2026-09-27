@@ -112,6 +112,7 @@ const PAGE_TITLES: Record<string, string> = {
   // 下の startsWith("/admin") noindex 条件が isKnown と無関係に維持する。
   "/admin": "Admin",
   "/admin/login": "Admin Login",
+  "/admin/pdf": "PDF作品集",
 };
 
 // Per-route settings key for a distinct meta description, mirroring PAGE_TITLES
@@ -559,6 +560,7 @@ export function injectOgp(
     "/start/en",
     "/admin",
     "/admin/login",
+    "/admin/pdf",
   ];
   // /series/:slug is indexable only when the slug resolved to a real published
   // series (override.title set by the caller). Unknown/unpublished slugs render

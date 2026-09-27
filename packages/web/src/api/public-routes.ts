@@ -25,6 +25,7 @@ const SPA_STATIC_PATHS = new Set([
   "/start/en",
   "/admin",
   "/admin/login",
+  "/admin/pdf",
   // LPから誘導する公開デモ。未掲載だと直接アクセス/リロードがHTTP 404になり
   // 監視・リンク検査で「存在しないページ」扱いされる(Codexデバッグ 2026-07-20 P2)
   "/admin/demo",

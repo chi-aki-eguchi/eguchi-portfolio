@@ -1008,7 +1008,7 @@ describe("shared components", () => {
         createElement(Admin),
         seedEstablishedAdminSite,
       );
-      expect(host.textContent).toContain("Template Studio");
+      await waitForText(host, "Template Studio");
       expect(host.textContent).not.toContain("Aki Eguchi");
       expect(host.textContent).toContain("写真");
       expect(host.textContent).toContain("見せ方");

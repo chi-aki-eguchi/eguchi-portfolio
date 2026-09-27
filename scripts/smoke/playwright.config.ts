@@ -107,8 +107,7 @@ export default defineConfig({
       },
     },
     {
-      // 写真中心の構成は Safari でだけ崩れた前例がある（CSS の段組みで2列目以降が
-      // 空白、2026-09-26）。オーナーも Safari で見るので、PC の Safari でも回す。
+      // PDF の実生成を PC Safari 相当のエンジンでも検証する。
       name: "desktop-safari",
       testMatch: /admin-pdf\.spec\.ts/,
       use: {

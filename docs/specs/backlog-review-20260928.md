@@ -43,4 +43,4 @@ Galleryの初期表示でも、設定が遅いと従来の見出し（高さ15px
 
 ローカル証拠: `scratch/backlog-check-complete.log`、`scratch/backlog-complete-{desktop,mobile,other}.log`、`scratch/backlog-audit/`（初期表示前後JSON・DPR2測定JSON・各ブラウザーの画面）。
 
-本番反映はcommit・push後に確認する。顧客固定版847ac5f3と納品ZIPの更新・再復元は今回の実施範囲に含めない。実機スマホ、第三者購入・本人更新、物理印刷、実クラウドはこの自動検査とは別。
+製品commit `8ce8d83`をmainへpush、Railway成功・本番health build `8ce8d831`を確認。公開Galleryの表示中8画像の読込、横はみ出しなし、体験版の候補追加と入力消去、候補削除32×40px・プレビューselect96×32px・再読込32×32pxを確認。本番DBへ保存していない。画面証拠は `scratch/backlog-audit/production-gallery.png` と `production-presets.png`。顧客固定版847ac5f3と納品ZIPの更新・再復元は今回の実施範囲に含めない。実機スマホ、第三者購入・本人更新、物理印刷、実クラウドはこの自動検査とは別。

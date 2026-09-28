@@ -87,8 +87,8 @@ function englishServiceConfigFrom(
     enabled: source.enabled,
     hero: {
       label: "Portfolio Kit",
-      title: "Your photographs. Your choices.\nYour site to keep updating.",
-      body: "Add new photographs. Refine their order. Rewrite your profile.\nA clear, fully featured admin panel puts everyday updates in your hands, without writing code.\nI handle the initial setup and launch. You take it from there.",
+      title: "Portfolio websites\nfor photographers",
+      body: "I build and publish your photography website.\nAfter launch, you can update photographs, text, and layout in the admin panel.",
       facts: [
         {
           title: "Price",
@@ -244,8 +244,8 @@ function englishServiceConfigFrom(
     },
     adminShowcase: {
       label: "Admin panel",
-      title: "Simple everyday controls.\nRoom for the details you care about.",
-      body: "Choose photographs by looking at them, then edit the settings you need. Update the work and shape the feel of your site in the browser, without commissioning everyday changes or editing code.",
+      title: "Editing your website",
+      body: "Upload and arrange photographs, edit your profile, and preview layout changes before saving.",
       features: [
         {
           title: "Replace photographs",
@@ -353,7 +353,7 @@ function ServiceButton({
   return (
     <a
       href={href}
-      className={`inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md px-7 py-2.5 font-en text-sm tracking-[0.03em] transition-all duration-300 ${cls}`}
+      className={`inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-[2px] px-7 py-2.5 font-en text-sm tracking-[0.03em] transition-all duration-300 ${cls}`}
     >
       {children}
     </a>
@@ -480,7 +480,7 @@ function HeroSitePreview({ photos }: { photos: ServicePhoto[] }) {
   return (
     <div className="mt-9 md:mt-12 page-entrance page-entrance-delay-2">
       <div
-        className="overflow-hidden rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.018)] shadow-[0_18px_60px_rgba(var(--foreground-rgb),0.06)]"
+        className="overflow-hidden rounded-[2px] border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.018)] "
         aria-label="Portfolio site preview"
       >
         <div className="flex items-center justify-between border-b border-[rgba(var(--foreground-rgb),0.08)] px-4 py-2.5">
@@ -643,7 +643,7 @@ function PortfolioProof({
   return (
     <section id="example" className="mt-7 md:mt-10 page-entrance scroll-mt-24">
       <SectionLabel>{config.label}</SectionLabel>
-      <div className="max-w-3xl mx-auto text-center">
+      <div className="max-w-3xl mx-auto text-left">
         <h2
           className="font-ja text-[rgba(var(--foreground-rgb),0.82)]"
           style={{
@@ -757,7 +757,7 @@ function PurchaseDetails({
       className="mt-12 md:mt-16 page-entrance scroll-mt-24"
     >
       <SectionLabel>{config.label}</SectionLabel>
-      <div className="max-w-3xl mx-auto text-center">
+      <div className="max-w-3xl mx-auto text-left">
         <h2
           className="font-ja text-[rgba(var(--foreground-rgb),0.82)]"
           style={{
@@ -869,9 +869,9 @@ function PlanCard({
         : "問い合わせる";
   return (
     <article
-      className={`relative rounded-md flex flex-col min-h-full transition-shadow duration-300 ${
+      className={`relative rounded-[2px] flex flex-col min-h-full transition-shadow duration-300 ${
         plan.primary
-          ? "border-2 border-[rgba(var(--foreground-rgb),0.28)] bg-[rgba(var(--foreground-rgb),0.025)] p-7 md:p-9 shadow-[0_2px_20px_rgba(var(--foreground-rgb),0.06)]"
+          ? "border-2 border-[rgba(var(--foreground-rgb),0.28)] bg-[rgba(var(--foreground-rgb),0.025)] p-7 md:p-9 "
           : "border border-[rgba(var(--foreground-rgb),0.10)] p-6 md:p-8"
       }`}
     >
@@ -926,7 +926,7 @@ function PlanCard({
       <a
         href={finalHref}
         {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-        className={`mt-7 inline-flex min-h-11 items-center self-start font-en text-sm tracking-[0.03em] px-7 py-2.5 rounded-md transition-opacity duration-300 ${
+        className={`mt-7 inline-flex min-h-11 items-center self-start font-en text-sm tracking-[0.03em] px-7 py-2.5 rounded-[2px] transition-opacity duration-300 ${
           plan.primary
             ? "bg-[var(--foreground)] text-[var(--background)] hover:opacity-85"
             : "border border-[rgba(var(--foreground-rgb),0.25)] text-[rgba(var(--foreground-rgb),0.70)] hover:opacity-70"
@@ -952,7 +952,7 @@ function AdminShowcase({
       className="mt-10 md:mt-14 page-entrance scroll-mt-24"
     >
       <SectionLabel>{config.label}</SectionLabel>
-      <div className="max-w-3xl mx-auto text-center">
+      <div className="max-w-3xl mx-auto text-left">
         <h2
           className="font-ja whitespace-pre-line text-[rgba(var(--foreground-rgb),0.82)]"
           style={{
@@ -1007,7 +1007,7 @@ function AdminShowcase({
       {language === "en" && (
         <div
           role="note"
-          className="mt-7 max-w-3xl mx-auto rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-5 py-4 text-left text-[color:var(--text-quiet)]"
+          className="mt-7 max-w-3xl mx-auto rounded-[2px] border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-5 py-4 text-left text-[color:var(--text-quiet)]"
           style={bodyStyle}
         >
           <p>
@@ -1085,7 +1085,7 @@ function FinalCTA({
           <a
             href={href}
             {...(live ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            className="inline-flex min-h-11 items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-8 py-2.5 rounded-md hover:opacity-85 transition-opacity duration-300"
+            className="inline-flex min-h-11 items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-8 py-2.5 rounded-[2px] hover:opacity-85 transition-opacity duration-300"
           >
             {live ? config.ctaOnline : config.ctaOffline}
           </a>
@@ -1181,7 +1181,7 @@ function StickyCtaBar({
               {...(live
                 ? { target: "_blank", rel: "noopener noreferrer" }
                 : {})}
-              className="inline-flex items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-5 py-2 rounded-md hover:opacity-85 transition-opacity duration-300"
+              className="inline-flex items-center font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-5 py-2 rounded-[2px] hover:opacity-85 transition-opacity duration-300"
             >
               {live ? config.ctaOnline : config.ctaOffline}
             </a>
@@ -1233,7 +1233,7 @@ export default function ServicePage({
     >
       <LanguageSwitch language={language} />
       {/* ── Hero ── */}
-      <header className="max-w-3xl mx-auto text-center">
+      <header className="max-w-3xl mx-auto text-left">
         <p className={`${labelCls} mb-8 page-entrance`} style={labelStyle}>
           {owner ? "AKI EGUCHI / PORTFOLIO WEBSITES" : config.hero.label}
         </p>
@@ -1383,19 +1383,19 @@ export default function ServicePage({
         <div className="mt-5 flex flex-col sm:flex-row sm:flex-wrap justify-center gap-3">
           <a
             href="/portfolio-kit/guide"
-            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.14)] px-5 py-2.5 text-sm hover:bg-[rgba(var(--foreground-rgb),0.03)] transition-colors duration-300"
+            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-[2px] border border-[rgba(var(--foreground-rgb),0.14)] px-5 py-2.5 text-sm hover:bg-[rgba(var(--foreground-rgb),0.03)] transition-colors duration-300"
           >
             {language === "en" ? "Read the guide (Japanese)" : "ポートフォリオサイトの作り方を読む"}
           </a>
           <a
             href="#pricing"
-            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.14)] px-5 py-2.5 text-sm hover:bg-[rgba(var(--foreground-rgb),0.03)] transition-colors duration-300"
+            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-[2px] border border-[rgba(var(--foreground-rgb),0.14)] px-5 py-2.5 text-sm hover:bg-[rgba(var(--foreground-rgb),0.03)] transition-colors duration-300"
           >
             {language === "en" ? "View pricing / flow" : "価格と流れを見る"}
           </a>
           <a
             href="/portfolio-kit/consult"
-            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-md bg-[var(--foreground)] text-[var(--background)] px-5 py-2.5 text-sm hover:opacity-90 transition-opacity duration-300"
+            className="inline-flex min-h-11 min-w-52 items-center justify-center rounded-[2px] bg-[var(--foreground)] text-[var(--background)] px-5 py-2.5 text-sm hover:opacity-90 transition-opacity duration-300"
           >
             {language === "en" ? "Free consultation" : "無料相談へ"}
           </a>
@@ -1415,7 +1415,7 @@ export default function ServicePage({
       </section>
 
       {/* ── Final CTA ── */}
-      {owner ? <section className="mt-14 border-t pt-10 text-center text-base leading-8"><h2 className="text-2xl">{language === "en" ? "Start with your photographs." : "まだ整理できていなくても、大丈夫。"}</h2><p className="mt-4">{language === "en" ? "Tell us what you want to publish. Consultation is free, with no obligation to buy." : "つくりたいものと、いま困っていることから聞かせてください。"}</p><a href="/portfolio-kit/consult" className="inline-block mt-6 rounded-md px-8 py-4 bg-[var(--foreground)] text-[var(--background)]">{language === "en" ? "Free consultation (Japanese)" : "無料で制作を相談する"}</a></section> : <FinalCTA
+      {owner ? <section className="mt-14 border-t pt-10 text-center text-base leading-8"><h2 className="text-2xl">{language === "en" ? "Discuss your website" : "制作の相談"}</h2><p className="mt-4">{language === "en" ? "Tell us what you want to publish. Consultation is free, with no obligation to buy." : "用途・写真の準備状況・希望時期をお知らせください。"}</p><a href="/portfolio-kit/consult" className="inline-block mt-6 rounded-[2px] px-8 py-4 bg-[var(--foreground)] text-[var(--background)]">{language === "en" ? "Free consultation (Japanese)" : "無料で制作を相談する"}</a></section> : <FinalCTA
         config={config.finalCta}
         stripeHref={primaryStripeUrl(config)}
         contactEmail={contactEmail}

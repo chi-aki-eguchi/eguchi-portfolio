@@ -949,10 +949,10 @@
   margin: auto;
   padding: 24px;
   overflow-y: auto;
-  border: 1px solid #d9d2c5;
-  border-radius: 4px;
-  background: #f7f4ec;
-  color: #332f28;
+  border: 1px solid var(--admin-line, #d9d9d9);
+  border-radius: 2px;
+  background: var(--admin-paper, #fafafa);
+  color: var(--admin-ink, #252525);
   font-family: var(--admin-font-ui, sans-serif);
 }
 .admin-demo-guide::backdrop { background: rgb(0 0 0 / 40%); }
@@ -3207,21 +3207,22 @@
    smoke suite's login detection) relies on. */
 .admin-login {
   background-color: var(--background);
-  background-image: var(--admin-paper-grain);
+  background-image: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
   color: var(--foreground);
 }
 
 .admin-login__title {
-  font-family: var(--font-en), "Cormorant Garamond", "Georgia", serif;
-  font-size: 30px;
+  font-family: var(--font-en-mixed, var(--font-en));
+  font-size: 24px;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  line-height: 1.1;
+  letter-spacing: 0;
+  line-height: 1.4;
 }
 
 .admin-login__input {
   border: 1px solid rgba(var(--foreground-rgb), 0.14);
-  border-radius: var(--radius-s);
+  border-radius: 2px;
   background: rgba(var(--background-rgb), 0.72);
   color: var(--foreground);
   outline: 2px solid rgba(var(--foreground-rgb), 0);
@@ -3246,7 +3247,7 @@
 
 .admin-login__submit {
   border: 1px solid rgba(var(--foreground-rgb), 0.8);
-  border-radius: var(--radius-s);
+  border-radius: 2px;
   background: var(--foreground);
   color: var(--background);
   transform: scale(1);
@@ -3261,7 +3262,7 @@
 }
 
 .admin-login__submit:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: none;
 }
 
 .admin-login__submit:focus-visible {

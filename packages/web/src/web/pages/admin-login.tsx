@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { Lock } from "lucide-react";
 import {
   AdminLanguageProvider,
   AdminLanguageToggle,
@@ -64,18 +63,10 @@ function AdminLoginContent() {
     <div className="admin-login relative min-h-screen flex items-center justify-center px-4">
       <AdminLanguageToggle className="absolute right-5 top-5 text-[color:var(--foreground)]" />
       <div className="w-full max-w-sm">
-        <div className="flex justify-center mb-6">
-          <Lock
-            size={24}
-            strokeWidth={1.5}
-            className="opacity-40"
-            aria-hidden="true"
-          />
-        </div>
-        <p className="text-center font-en text-[10px] tracking-[0.12em] uppercase opacity-50 mb-1">
+        <p className="text-xs tracking-[0.08em] uppercase opacity-60 mb-3">
           {t.login.eyebrow}
         </p>
-        <h1 className="admin-login__title text-center mb-10">
+        <h1 className="admin-login__title mb-10">
           {t.login.title}
         </h1>
 
@@ -108,11 +99,12 @@ function AdminLoginContent() {
             type="submit"
             disabled={login.isPending}
             aria-busy={login.isPending || undefined}
-            className="admin-login__submit text-xs tracking-[0.2em] uppercase py-3 disabled:opacity-50"
+            className="admin-login__submit text-sm py-3 disabled:opacity-50"
           >
             {login.isPending ? "..." : t.login.submit}
           </button>
         </form>
+        <a className="inline-flex items-center min-h-11 mt-6 text-sm underline underline-offset-4 opacity-70" href="/">{language === "ja" ? "公開サイトへ" : "View website"}</a>
       </div>
     </div>
   );

@@ -615,7 +615,7 @@ describe("shared components", () => {
       for (const [url, expected] of [
         [
           "https://portfolio.example/portfolio-kit/en",
-          "Your site to keep updating.",
+          "for photographers",
         ],
         [
           "https://portfolio.example/start/en",
@@ -750,7 +750,7 @@ describe("shared components", () => {
     {
       const { host, cleanup } = await mount(createElement(ServiceStartPage));
       const text = host.textContent ?? "";
-      expect(text).toContain("独自ドメインを持っていなくても、大丈夫です");
+      expect(text).toContain("独自ドメインの準備");
       expect(text).toContain("あなた名義");
       expect(text).toContain("実費だけ別にかかります");
       expect(text).toContain("購入前に内容と金額を確認");
@@ -761,7 +761,7 @@ describe("shared components", () => {
         createElement(ServiceStartPage, { language: "en" }),
       );
       const text = host.textContent ?? "";
-      expect(text).toContain("You do not need to own a domain yet");
+      expect(text).toContain("Your domain name");
       expect(text).toContain("registered in your name");
       expect(text).toContain("actual fee separately");
       cleanup();

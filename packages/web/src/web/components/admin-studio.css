@@ -1,16 +1,16 @@
 /* Admin Studio: a photo workspace and a page editor, sharing one navigation and control language. */
 .admin-atelier.admin-workbench.admin-studio { --studio-field: color-mix(in srgb, var(--admin-paper) 94%, var(--admin-ink)); --studio-hover: color-mix(in srgb, var(--admin-paper) 88%, var(--admin-ink)); font-variant-numeric: tabular-nums; }
 .admin-atelier.admin-workbench.admin-studio :is(button,input,select,textarea) { letter-spacing: normal; }
-.admin-atelier.admin-workbench.admin-studio { --admin-selected-bg: var(--studio-hover); --admin-selected-shadow: none; --admin-text-page: 22px; --admin-text-body: 14px; --admin-text-note: 12px; --admin-text-micro: 11px; --admin-radius-sm: 6px; --admin-radius-md: 8px; }
+.admin-atelier.admin-workbench.admin-studio { --admin-selected-bg: var(--studio-hover); --admin-selected-shadow: none; --admin-text-page: 22px; --admin-text-body: 14px; --admin-text-note: 12px; --admin-text-micro: 11px; --admin-radius-sm: 2px; --admin-radius-md: 3px; --admin-radius-lg: 4px; }
 .admin-atelier.admin-workbench.admin-studio button:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar:not([data-collapsed=true]) { width: 216px; flex-basis: 216px; padding: 20px 12px 14px; border-right: 1px solid var(--admin-line); background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__brand { padding: 0 4px 24px; margin-bottom: 0; border: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__eyebrow { font-size: 10px; letter-spacing: .14em; margin-bottom: 7px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__title { font-size: var(--admin-text-page); font-weight: 500; letter-spacing: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__indicator { display: none; }
-.admin-atelier.admin-workbench.admin-studio .studio-workspace-switch { display: flex; flex: 0 0 auto; gap: 3px; padding: 4px; border: 1px solid var(--admin-line); border-radius: 9px; background: var(--admin-paper); }
-.admin-atelier.admin-workbench.admin-studio .studio-workspace-switch button { position: relative; flex: 1; min-height: 36px; border: 0; background: none !important; color: var(--admin-muted) !important; padding: 6px 4px !important; font-size: 13px; font-weight: 500; border-radius: 6px; }
-.admin-atelier.admin-workbench.admin-studio .studio-workspace-switch button[aria-pressed=true] { color: var(--admin-ink) !important; background: var(--studio-hover) !important; box-shadow: 0 1px 3px #0001; }
+.admin-atelier.admin-workbench.admin-studio .studio-workspace-switch { display: flex; flex: 0 0 auto; gap: 16px; padding: 0; border: 0; border-bottom: 1px solid var(--admin-line); border-radius: 0; background: transparent; }
+.admin-atelier.admin-workbench.admin-studio .studio-workspace-switch button { position: relative; flex: 1; min-height: 36px; border: 0; background: none !important; color: var(--admin-muted) !important; padding: 6px 4px !important; font-size: 13px; font-weight: 500; border-radius: 0; }
+.admin-atelier.admin-workbench.admin-studio .studio-workspace-switch button[aria-pressed=true] { color: var(--admin-ink) !important; background: transparent !important; box-shadow: inset 0 -2px var(--admin-ink); }
 .admin-atelier.admin-workbench.admin-studio .studio-command-search { display: flex; align-items: center; gap: 8px; margin: 14px 0 20px; min-height: 38px; padding: 8px; border: 0; border-radius: 6px; color: var(--admin-muted); text-align: left; font-size: 12px; }
 .admin-atelier.admin-workbench.admin-studio .studio-command-search span { flex: 1; }
 .admin-atelier.admin-workbench.admin-studio .studio-command-search kbd { white-space: nowrap; font-size: 10px; }
@@ -19,7 +19,7 @@
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab[data-active=true]::before { display: none; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__group { margin-bottom: 12px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__group-title { font-size: 10px; margin: 5px 8px; }
-.admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab { min-height: 40px; padding: 8px 10px; gap: 10px; font-size: 13px; border-radius: 6px; color: var(--admin-muted); }
+.admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab { min-height: 40px; padding: 8px 10px; gap: 10px; font-size: 13px; border-radius: 0; color: var(--admin-muted); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab svg { display: block; width: 14px; height: 14px; opacity: .8; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab[data-active=true] { background: var(--studio-hover); color: var(--admin-ink); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__footer { padding: 10px 4px 0; gap: 4px; margin-top: 8px; }
@@ -29,8 +29,8 @@
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__group { margin-bottom: 4px; }
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__group + .admin-sidebar__group { margin-top: 4px; }
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__group-title { display: none; }
-.admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
-.admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tab { font-size: 12px; min-height: 36px; padding: 7px 4px; }
+.admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tabs { display: flex; flex-direction: column; gap: 0; }
+.admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tab { font-size: 12px; min-height: 32px; padding: 6px 10px; }
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tab svg { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-editor-outline { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--admin-line); margin-top: 16px; padding-top: 16px; }
 .admin-atelier.admin-workbench.admin-studio .admin-form-toc__nav { max-height: none; overflow: visible; gap: 3px; padding: 0; }
@@ -63,13 +63,13 @@
 .admin-atelier.admin-workbench.admin-studio .studio-context-actions button { display: flex; align-items: center; gap: 8px; padding: 0 0 16px; color: var(--admin-muted); font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
 /* 写真集を選んでいるときの「この節は写真集では使わない」案内。 */
 .admin-book-unused { margin: 0 0 16px; padding: 10px 12px; border-left: 2px solid var(--admin-border, currentColor); color: var(--admin-muted); font-size: var(--admin-text-note, 12px); line-height: 1.7; }
-.admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body .grid:has(> .studio-option) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.admin-atelier.admin-workbench.admin-studio .studio-option { position: relative; width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 0; min-height: 0; padding: 0 !important; text-align: left; border: 1px solid var(--admin-line) !important; border-radius: 8px; overflow: hidden; box-shadow: none !important; background: var(--studio-field) !important; color: var(--admin-ink) !important; }
-.admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true] { border-color: var(--admin-accent) !important; box-shadow: 0 0 0 1px var(--admin-accent) !important; }
-.admin-atelier.admin-workbench.admin-studio .studio-option-indicator { position: absolute; right: 8px; top: 8px; z-index: 1; width: 20px; height: 20px; border: 1px solid var(--admin-line-strong); background: var(--admin-paper); border-radius: 50%; display: grid; place-items: center; }
-.admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true] .studio-option-indicator { background: var(--admin-ink); border-color: var(--admin-ink); color: var(--admin-paper); }
-.admin-atelier.admin-workbench.admin-studio .studio-option-preview { width: 100%; padding: 14px 18px 10px; background: var(--admin-paper); }
-.admin-atelier.admin-workbench.admin-studio .studio-option-label { padding: 12px 14px 14px; border-top: 1px solid var(--admin-line); }
+.admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body .grid:has(> .studio-option) { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; border-top: 1px solid var(--admin-line); }
+.admin-atelier.admin-workbench.admin-studio .studio-option { position: relative; width: 100%; display: grid; grid-template-columns: 88px minmax(0, 1fr) 20px; align-items: center; gap: 16px; min-height: 92px; padding: 12px 8px !important; text-align: left; border: 0 !important; border-bottom: 1px solid var(--admin-line) !important; border-radius: 0; box-shadow: none !important; background: transparent !important; color: var(--admin-ink) !important; }
+.admin-atelier.admin-workbench.admin-studio .studio-option:hover { background: var(--studio-field) !important; }
+.admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true] { background: var(--studio-field) !important; box-shadow: inset 2px 0 var(--admin-ink) !important; }
+.admin-atelier.admin-workbench.admin-studio .studio-option-indicator { position: static; grid-column: 3; grid-row: 1; width: 18px; height: 18px; display: grid; place-items: center; color: var(--admin-ink); }
+.admin-atelier.admin-workbench.admin-studio .studio-option-preview { grid-column: 1; grid-row: 1; width: 88px; padding: 4px; background: var(--admin-paper); }
+.admin-atelier.admin-workbench.admin-studio .studio-option-label { grid-column: 2; grid-row: 1; min-width: 0; padding: 0; border: 0; }
 .admin-atelier.admin-workbench.admin-studio .studio-option-label strong { display: block; font-size: var(--admin-text-body); font-weight: 500; line-height: 1.5; }
 .admin-atelier.admin-workbench.admin-studio .studio-option-label small { display: block; margin-top: 3px; font-size: 12px; color: var(--admin-muted); font-weight: 400; line-height: 1.6; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview { background: var(--studio-field); }
@@ -100,7 +100,7 @@
 .admin-atelier.admin-workbench.admin-studio .ax-page-title__text { font-size: var(--admin-text-page); font-weight: 500; line-height: 1.45; letter-spacing: 0; }
 .admin-atelier.admin-workbench.admin-studio .ax-page-title { padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--admin-line); }
 .admin-atelier.admin-workbench.admin-studio .ax-row { padding-block: 18px; }
-.admin-atelier.admin-workbench.admin-studio .ax-input { border: 1px solid var(--admin-line) !important; border-radius: 6px !important; background-color: var(--studio-field) !important; padding: 10px 12px; min-height: 42px; font-size: 14px; line-height: 1.5; }
+.admin-atelier.admin-workbench.admin-studio .ax-input { border: 1px solid var(--admin-line) !important; border-radius: 2px !important; background-color: var(--studio-field) !important; padding: 10px 12px; min-height: 42px; font-size: 14px; line-height: 1.5; }
 .admin-atelier.admin-workbench.admin-studio .ax-select { padding-right: 28px; }
 .admin-atelier.admin-workbench.admin-studio .studio-choice-hint { font-size: 12px; color: var(--admin-muted); margin: 0; }
 .admin-atelier.admin-workbench.admin-studio .ax-field:has(> .studio-choice-hint) { position: relative; }
@@ -132,10 +132,10 @@
 .admin-atelier.admin-workbench.admin-studio .admin-bottom-nav__btn { min-height: 48px; }
 /* Composition samples retain a neutral canvas when the library is empty. */
 .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace .admin-settings-form-layout__inner { padding: 24px 28px 40px; }
-.admin-atelier.admin-workbench.admin-studio .studio-option { --admin-selected-border: var(--admin-accent); --admin-selected-shadow: 0 0 0 1px var(--admin-accent); --admin-selected-bg: var(--studio-field); }
+.admin-atelier.admin-workbench.admin-studio .studio-option { --admin-selected-border: var(--admin-line); --admin-selected-shadow: inset 2px 0 var(--admin-ink); --admin-selected-bg: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .admin-library-mode-switcher { --admin-selected-shadow: none; --admin-selected-bg: var(--studio-hover); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__tab[data-active=true] { background-color: var(--studio-hover) !important; color: var(--admin-ink) !important; font-weight: 550; }
-.admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group button[aria-current=location] { background-color: var(--studio-hover) !important; box-shadow: inset 2px 0 var(--admin-accent) !important; }
+.admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group button[aria-current=location] { background-color: var(--studio-hover) !important; box-shadow: inset 2px 0 var(--admin-ink) !important; }
 .admin-atelier.admin-workbench.admin-studio label { letter-spacing: normal; }
 .admin-atelier.admin-workbench.admin-studio .studio-composition { max-width: 140px; margin-inline: auto; }
 .admin-atelier.admin-workbench.admin-studio .studio-option-preview .studio-composition { padding-top: min(62%, 87px) !important; }
@@ -143,8 +143,8 @@
 .admin-atelier.admin-workbench.admin-studio .studio-composition-part[data-photo] { border: 0; }
 .admin-atelier.admin-workbench.admin-studio .studio-composition-part img { width: 100%; height: 100%; object-fit: cover; }
 .admin-atelier.admin-workbench.admin-studio .studio-option:hover { border-color: var(--admin-muted) !important; }
-.admin-atelier.admin-workbench.admin-studio .studio-option:hover .studio-option-label { background: var(--studio-hover); }
-.admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true]:hover { border-color: var(--admin-accent) !important; }
+.admin-atelier.admin-workbench.admin-studio .studio-option:hover .studio-option-label { background: transparent; }
+.admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true]:hover { border-color: var(--admin-line) !important; }
 .admin-atelier.admin-workbench.admin-studio .studio-option:not([aria-pressed=true]) .studio-option-indicator { visibility: hidden; }
 .admin-atelier.admin-workbench.admin-studio .ax-field__label { color: var(--admin-ink); font-size: 13px; font-weight: 500; line-height: 1.5; }
 .admin-atelier.admin-workbench.admin-studio .ax-field__hint { font-size: 12px; line-height: 1.7; margin-top: 5px; margin-bottom: 12px; }
@@ -207,6 +207,7 @@
   .admin-atelier.admin-workbench.admin-studio .admin-sidebar[data-collapsed=true] > .admin-sidebar-compact { display: flex; }
 }
 @media (max-width: 767px) {
+  .admin-atelier.admin-workbench.admin-studio .studio-option { grid-template-columns: 72px minmax(0, 1fr) 18px; gap: 12px; }
   .admin-atelier.admin-workbench.admin-studio { --admin-text-page: 18px; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace .admin-settings-form-layout__inner { padding: 20px 16px 32px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header { padding: 4px 12px; grid-template-columns: max-content minmax(0, 1fr) 44px; }
@@ -216,8 +217,8 @@
   .admin-atelier.admin-workbench.admin-studio .admin-library-orderbar { padding-top: 4px; margin-top: 2px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-selection-toolbar { padding: 8px 12px; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: var(--admin-text-page); }
-  .admin-atelier.admin-workbench.admin-studio .studio-option-preview { padding: 12px 12px 8px; }
-  .admin-atelier.admin-workbench.admin-studio .studio-option-label { padding: 10px; }
+  .admin-atelier.admin-workbench.admin-studio .studio-option-preview { padding: 4px; width: 72px; }
+  .admin-atelier.admin-workbench.admin-studio .studio-option-label { padding: 0; }
   .admin-atelier.admin-workbench.admin-studio .studio-option-label strong { font-size: 13px; }
   .admin-atelier.admin-workbench.admin-studio .studio-option-label small { font-size: 11px; }
   .admin-atelier.admin-workbench.admin-studio .ax-input { font-size: 16px; min-height: 44px; }
@@ -277,3 +278,11 @@
   background-repeat: no-repeat;
   background-position: right 5px center;
 }
+
+/* 公開準備は作業一覧。完了・未完了と操作を同じ列で読む。 */
+.admin-atelier.admin-workbench.admin-studio .studio-setup-list { display: block; border-top: 1px solid var(--admin-line); }
+.admin-atelier.admin-workbench.admin-studio .studio-setup-row { display: flex; align-items: baseline; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--admin-line); background: transparent; }
+.admin-atelier.admin-workbench.admin-studio .studio-setup-state { flex: 0 0 48px; font-size: 11px; color: var(--admin-muted); }
+.admin-atelier.admin-workbench.admin-studio .studio-setup-row p { max-width: 58ch; }
+.admin-atelier.admin-workbench.admin-studio .studio-setup-row button { min-height: 36px; text-decoration: underline; text-underline-offset: 4px; }
+.admin-atelier.admin-workbench.admin-studio .studio-setup-note { padding: 0 0 16px; border-bottom: 1px solid var(--admin-line); font-size: 12px; line-height: 1.8; color: var(--admin-muted); }

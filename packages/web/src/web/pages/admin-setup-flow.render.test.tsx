@@ -551,9 +551,9 @@ test("SetupTab — 連絡先は実際に使えるメールかHTTPS送信先だ�
         const title = Array.from(container.querySelectorAll("h3")).find(
           (heading) => heading.textContent === scenario.title,
         );
-        const row = title?.closest("div.border");
+        const row = title?.closest(".studio-setup-row");
         expect(row, `${scenario.language}の連絡先行が表示される`).not.toBeNull();
-        expect(row?.querySelector(".admin-icon-success") !== null).toBe(
+        expect(row?.getAttribute("data-complete") === "true").toBe(
           scenario.done,
         );
         expect(requests.filter((request) => request.method !== "GET")).toEqual(

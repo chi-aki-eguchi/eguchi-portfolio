@@ -83,7 +83,7 @@ function PaymentGuidanceBanner({
   const en = language === "en";
   const summaryRows = copy.summaryRows;
   return (
-    <section className="mb-10 rounded-md border border-[rgba(var(--foreground-rgb),0.20)] bg-[rgba(var(--foreground-rgb),0.035)] p-6 sm:p-8">
+    <section className="mb-10 rounded-[2px] border border-[rgba(var(--foreground-rgb),0.20)] bg-[rgba(var(--foreground-rgb),0.035)] p-6 sm:p-8">
       <div className="flex items-start gap-3">
         <Info
           size={22}
@@ -134,7 +134,7 @@ function PaymentGuidanceBanner({
 function DomainReassurance({ language }: { language: ServiceStartLanguage }) {
   const en = language === "en";
   return (
-    <section className="mt-12 md:mt-16 rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.025)] p-5 sm:p-7">
+    <section className="mt-12 md:mt-16 border-t border-[rgba(var(--foreground-rgb),0.16)] pt-8">
       <p className="font-en uppercase mb-3" style={labelStyle}>
         Your domain
       </p>
@@ -143,8 +143,8 @@ function DomainReassurance({ language }: { language: ServiceStartLanguage }) {
         style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)", lineHeight: 1.55 }}
       >
         {en
-          ? "You do not need to own a domain yet."
-          : "独自ドメインを持っていなくても、大丈夫です。"}
+          ? "Your domain name"
+          : "独自ドメインの準備"}
       </h2>
       <p
         className="mt-4 max-w-3xl text-[color:var(--text-quiet)]"
@@ -176,7 +176,7 @@ function ExternalButton({
       href={href}
       target={href.startsWith("http") ? "_blank" : undefined}
       rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-      className={`inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-md px-6 py-2.5 font-ja text-sm transition-all duration-300 ${cls}`}
+      className={`inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-[2px] px-6 py-2.5 font-ja text-sm transition-all duration-300 ${cls}`}
     >
       {children}
       {href.startsWith("http") ? <ArrowUpRight size={15} /> : null}
@@ -196,7 +196,7 @@ function StepPanel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.018)] p-5 sm:p-7">
+    <section className="border-t border-[rgba(var(--foreground-rgb),0.16)] pt-7">
       <p className="font-en uppercase mb-3" style={labelStyle}>
         {subtitle}
       </p>
@@ -210,7 +210,7 @@ function StepPanel({
         {steps.map((step, index) => (
           <li key={step.title} className="grid grid-cols-[2rem_1fr] gap-4">
             <span
-              className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(var(--foreground-rgb),0.14)] font-en text-xs text-[color:var(--text-quiet)]"
+              className="mt-1 font-en text-sm tabular-nums text-[color:var(--text-quiet)]"
               aria-hidden="true"
             >
               {index + 1}
@@ -288,7 +288,7 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
   const en = language === "en";
   const copy = SERVICE_START_COPY[language];
   return (
-    <section className="mt-12 md:mt-16 rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--background-rgb),0.52)] p-5 sm:p-7">
+    <section className="mt-12 md:mt-16 border-t border-[rgba(var(--foreground-rgb),0.16)] pt-8">
       <div className="grid gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-start">
         <div>
           <p className="font-en uppercase mb-3" style={labelStyle}>
@@ -318,7 +318,7 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
             {copy.handoffPasswordNote}
           </p>
         </div>
-        <div className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.025)] p-4 sm:p-5">
+        <div className="border-l border-[rgba(var(--foreground-rgb),0.16)] pl-5">
           <p className="font-en text-xs uppercase tracking-[0.12em] text-[color:var(--text-quiet)]">
             Aki Eguchi Portfolio Kit
           </p>
@@ -400,7 +400,7 @@ export default function ServiceStartPage({
           >
             {copy.introNote}
           </p>
-          <div className="mt-6 rounded-md border border-[rgba(var(--foreground-rgb),0.12)] bg-[rgba(var(--foreground-rgb),0.018)] px-4 py-3 text-[color:var(--text-quiet)]"
+          <div className="mt-6 border-l border-[rgba(var(--foreground-rgb),0.18)] pl-4 text-[color:var(--text-quiet)]"
             style={bodyStyle}
           >
             <p>{copy.supportNotice}</p>
@@ -414,7 +414,7 @@ export default function ServiceStartPage({
             )}
             <Link
               to={en ? "/portfolio-kit/en" : "/portfolio-kit"}
-              className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-md border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-ja text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
+              className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-[2px] border border-[rgba(var(--foreground-rgb),0.16)] px-6 py-2.5 font-ja text-sm text-[rgba(var(--foreground-rgb),0.62)] hover:border-[rgba(var(--foreground-rgb),0.32)] hover:text-[rgba(var(--foreground-rgb),0.82)] transition-colors duration-300"
             >
               {en ? "Back to pricing" : "料金ページへ戻る"}
             </Link>
@@ -441,13 +441,13 @@ export default function ServiceStartPage({
           </p>
         </div>
 
-        <figure className="rounded-md border border-[rgba(var(--foreground-rgb),0.10)] bg-[rgba(var(--foreground-rgb),0.018)] p-3 shadow-[0_20px_70px_rgba(var(--foreground-rgb),0.06)]">
+        <figure className="border border-[rgba(var(--foreground-rgb),0.12)]">
           <img
             src="/og-service.jpg"
             alt="Aki Eguchi Portfolio Kit"
             width="1200"
             height="630"
-            className="aspect-[1200/630] w-full rounded-[4px] object-cover"
+            className="aspect-[1200/630] w-full object-cover"
             loading="eager"
             decoding="async"
           />

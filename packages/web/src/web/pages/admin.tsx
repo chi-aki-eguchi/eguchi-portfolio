@@ -1683,7 +1683,7 @@ export function SetupTab({
           />
         )}
         {demoMode && (
-          <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm px-4 py-3 text-[length:var(--admin-text-body)] leading-6 text-[color:var(--admin-muted)]">
+          <div className="studio-setup-note">
             {t.setup.demoIntro}
           </div>
         )}
@@ -1760,7 +1760,7 @@ export function SetupTab({
           </div>
         )}
 
-        <section className="grid gap-3 md:grid-cols-2">
+        <section className="studio-setup-list">
           {checklist.map((item) => (
             <SetupChecklistRow
               key={item.title}
@@ -1774,7 +1774,7 @@ export function SetupTab({
           <h2 className="text-[length:var(--admin-text-body)] uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             {t.setup.recommendedTitle}
           </h2>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="studio-setup-list">
             {recommended.map((item) => (
               <SetupChecklistRow
                 key={item.title}
@@ -1802,12 +1802,8 @@ function SetupChecklistRow({
 }) {
   const { t } = useAdminI18n();
   return (
-    <div className="border border-[color:var(--admin-line)] bg-[color:var(--admin-paper-soft)] rounded-sm p-4 flex gap-3">
-      <div
-        className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.done ? "admin-icon-success" : "bg-[color:var(--admin-paper-deep)] text-[color:var(--admin-muted)]"}`}
-      >
-        {item.done ? <Check size={13} /> : <AlertTriangle size={12} />}
-      </div>
+    <div className="studio-setup-row" data-complete={item.done}>
+      <span className="studio-setup-state">{item.done ? t.setup.doneLabel : t.setup.pendingLabel}</span>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-[length:var(--admin-text-body)] text-[color:var(--admin-ink)]">

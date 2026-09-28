@@ -56,7 +56,7 @@ function GuideLinks({
         {links.map((link) => (
           <li
             key={link.href}
-            className="border border-[rgba(var(--foreground-rgb),0.16)] rounded-md p-4"
+            className="border-t border-[rgba(var(--foreground-rgb),0.16)] py-4"
           >
             <a
               href={link.href}
@@ -114,7 +114,7 @@ export default function PortfolioGuidePage() {
 
       <nav
         aria-label="目次"
-        className="mt-8 border border-[rgba(var(--foreground-rgb),0.12)] rounded-md p-5"
+        className="mt-8 border-y border-[rgba(var(--foreground-rgb),0.12)] py-6"
       >
         <p className={`${headingClass} text-[color:var(--text-quiet)]`}>
           目次
@@ -148,7 +148,7 @@ export default function PortfolioGuidePage() {
             </figure>
           )}
           {section.id === "operations" && (
-            <figure className="mt-6 overflow-hidden rounded-md border border-[rgba(var(--foreground-rgb),0.12)]">
+            <figure className="mt-6 overflow-hidden border border-[rgba(var(--foreground-rgb),0.12)]">
               <a href="/portfolio-kit/admin-20260928-settings-ja.jpg" target="_blank" rel="noopener noreferrer" aria-label="実際の管理画面を拡大する（新しいタブ）">
                 <img src="/portfolio-kit/admin-20260928-settings-ja.jpg" alt="実際の管理画面。左でギャラリー配置を選び、右でサイトの見え方を確認できます。" width={1440} height={1000} loading="lazy" decoding="async" className="block h-auto w-full" />
               </a>

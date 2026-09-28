@@ -115,9 +115,9 @@ test.describe("admin — Form layout", () => {
       const paint = await single.evaluate(element => {
         const selected = getComputedStyle(element);
         const unselected = getComputedStyle(document.querySelector('.studio-option[aria-pressed="false"]')!);
-        return { border: selected.borderColor, otherBorder: unselected.borderColor, shadow: selected.boxShadow };
+        return { background: selected.backgroundColor, otherBackground: unselected.backgroundColor, shadow: selected.boxShadow };
       });
-      expect(paint.border).not.toBe(paint.otherBorder);
+      expect(paint.background).not.toBe(paint.otherBackground);
       expect(paint.shadow).not.toBe("none");
       await page.keyboard.press("ControlOrMeta+z");
       await expect(single).toHaveAttribute("aria-pressed", "false");

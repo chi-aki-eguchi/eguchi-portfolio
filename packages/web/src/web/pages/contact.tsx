@@ -466,7 +466,7 @@ export default function ContactPage({
               return (
                 <div
                   key={p.id}
-                  className={`page-entrance page-entrance-delay-${Math.min(i + 1, 2)} border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg p-6 md:p-8 flex flex-col min-w-0`}
+                  className={`page-entrance page-entrance-delay-${Math.min(i + 1, 2)} border border-[rgba(var(--foreground-rgb),0.08)] rounded-[2px] p-6 md:p-8 flex flex-col min-w-0`}
                 >
                   <h3
                     className="font-ja font-medium break-words"
@@ -770,7 +770,7 @@ export default function ContactPage({
             {referenceWork && (
               <div
                 data-contact-reference
-                className="flex items-start gap-3 rounded-lg border border-[rgba(var(--foreground-rgb),0.08)] px-4 py-3"
+                className="flex items-start gap-3 rounded-[2px] border border-[rgba(var(--foreground-rgb),0.08)] px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)]">
@@ -958,7 +958,7 @@ export default function ContactPage({
               type="submit"
               disabled={status === "sending"}
               aria-busy={status === "sending" || undefined}
-              className="self-start font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-6 py-2 rounded-md hover:opacity-85 transition-opacity duration-300 disabled:opacity-30 mt-1"
+              className="self-start font-en text-sm tracking-[0.03em] bg-[var(--foreground)] text-[var(--background)] px-6 py-2 rounded-[2px] hover:opacity-85 transition-opacity duration-300 disabled:opacity-30 mt-1"
             >
               {status === "sending"
                 ? sendingButton
@@ -991,7 +991,7 @@ export default function ContactPage({
 function inputCls(hasError: boolean) {
   return `w-full bg-[var(--background)] border ${
     hasError ? "border-red-400/50" : "border-[rgba(var(--foreground-rgb),0.10)]"
-  } text-[var(--foreground)] px-3 py-2.5 text-sm rounded-md outline-none focus:border-[var(--accent-color,rgba(var(--foreground-rgb),0.25))] transition-colors duration-300 placeholder:text-[color:var(--text-quiet)]`;
+  } text-[var(--foreground)] px-3 py-2.5 text-sm rounded-[2px] outline-none focus:border-[var(--accent-color,rgba(var(--foreground-rgb),0.25))] transition-colors duration-300 placeholder:text-[color:var(--text-quiet)]`;
 }
 
 function Field({

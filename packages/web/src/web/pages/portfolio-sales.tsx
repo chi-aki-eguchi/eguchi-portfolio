@@ -11,25 +11,25 @@ const samples = [
   {
     id: "home",
     title: "トップ",
-    copy: "最初に見てほしい作品を、大きく。",
+    copy: "代表作を置くトップページ。",
     alt: "LAND / ARCHIVEのトップ。風景写真を余白とともに並べた納品見本",
   },
   {
     id: "series",
     title: "シリーズ",
-    copy: "まとまりと、その背景を伝える。",
+    copy: "写真をシリーズごとにまとめます。",
     alt: "地形を読むシリーズ。題名と説明に続いて作品を並べた画面",
   },
   {
     id: "gallery",
     title: "写真一覧",
-    copy: "一覧から、一枚に向き合う。",
+    copy: "一覧と拡大表示で作品を見られます。",
     alt: "作品を一覧できるギャラリーの画面",
   },
   {
     id: "profile",
     title: "プロフィール",
-    copy: "人となりと、連絡先へ。",
+    copy: "プロフィールと連絡先を掲載します。",
     alt: "名前と紹介文をまとめたプロフィールの画面",
   },
 ] as const;
@@ -61,28 +61,24 @@ export default function PortfolioSalesPage() {
         <div className="ks-hero-copy">
           <p className="ks-label">AKI EGUCHI / PORTFOLIO KIT</p>
           <h1>
-            作品を見せる。
+            写真家のための
             <br />
-            次の一枚を、
-            <br />
-            加えていく。
+            ポートフォリオサイト制作
           </h1>
           <p className="ks-lead">
-            写真家のための、初期設定付きポートフォリオサイト。
+            写真と文章を整え、公開まで担当します。
             <br />
-            写真と文章を整えて渡し、公開後は自分で更新できます。
+            公開後は、管理画面から自分で更新できます。
           </p>
           <p className="ks-quiet">
-            このサイトと同じ仕組みで、あなたの作品を。
-            <br />
             写真家・江口秋が、相談から制作・納品まで担当します。
           </p>
           <div className="ks-actions">
             <a className="ks-button" href="#samples">
-              納品の見本を見る ↓
+              納品の見本を見る
             </a>
             <a href="/portfolio-kit/consult?plan=basic">
-              自分に合うか無料で相談する →
+              制作を相談する
             </a>
           </div>
           <p className="ks-cost">

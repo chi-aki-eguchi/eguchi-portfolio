@@ -3788,6 +3788,8 @@ export type AdminMessages = {
     homePageOpenFailed: string;
     later: string;
     recommendedTitle: string;
+    doneLabel: string;
+    pendingLabel: string;
     checklist: {
       siteName: ChecklistCopy;
       profile: ChecklistCopy;
@@ -3961,7 +3963,7 @@ export const ADMIN_DICTIONARY = {
       reopen: "もう一度見る",
       title: "公開までにやること",
       description:
-        "まずは写真を1枚追加し、トップページに表示されることを確かめましょう。この3つだけ終えれば、最初の準備は完了です。名前やプロフィールは、あとからゆっくり整えられます。",
+        "写真を追加し、トップ写真を選んで、公開ページで表示を確認します。",
       checking: "確認中...",
       loadError: {
         title: "読み込めませんでした",
@@ -3971,7 +3973,7 @@ export const ADMIN_DICTIONARY = {
           "再試行しても解決しない場合は、この画面が表示されたことを設定担当者へ連絡してください。",
       },
       demoIntro:
-        "これは、購入後にご自身のサイトを公開まで進める手順表の見本です。体験版ではサンプル一式が入っているためすべて完了になっていますが、実際は空の状態から、この順に埋めていくだけで公開できます。",
+        "体験版には見本の写真と設定が入っています。納品後は、この一覧で公開準備を確認できます。",
       progress: (done, total) => `${done} / ${total} 完了`,
       resumeSummary: (done, total, next) =>
         `${done} / ${total} まで進んでいます。次は「${next}」です。`,
@@ -3983,7 +3985,9 @@ export const ADMIN_DICTIONARY = {
       homePageOpenFailed:
         "トップページを新しいタブで開けませんでした。ブラウザでポップアップを許可して、もう一度「開く」を押してください。",
       later: "あとで",
-      recommendedTitle: "あとでゆっくり整える",
+      recommendedTitle: "名前・連絡先・表示設定",
+      doneLabel: "完了",
+      pendingLabel: "未完了",
       checklist: {
         siteName: {
           title: "サイトの名前を入れる",
@@ -4184,7 +4188,7 @@ export const ADMIN_DICTIONARY = {
       reopen: "View again",
       title: "Before you publish",
       description:
-        "Start by adding one photo and confirming that it appears on the home page. Once these three steps are done, the initial setup is complete. You can take your time with your name and profile later.",
+        "Add a photo, choose your home-page image, then check it on the public page.",
       checking: "Checking...",
       loadError: {
         title: "Could not load your setup",
@@ -4195,7 +4199,7 @@ export const ADMIN_DICTIONARY = {
           "If trying again does not help, tell the person who set up your site that you saw this screen.",
       },
       demoIntro:
-        "This is a preview of the checklist that guides you from a fresh install to a published site. In this demo everything is marked complete because sample content is preloaded — on your own site, you simply work through these steps from the top.",
+        "This demo includes sample photos and settings. Use this checklist to prepare your own site for publication.",
       progress: (done, total) => `${done} / ${total} complete`,
       resumeSummary: (done, total, next) =>
         `You have completed ${done} of ${total}. Next: ${next}.`,
@@ -4207,7 +4211,9 @@ export const ADMIN_DICTIONARY = {
       homePageOpenFailed:
         "The home page could not open in a new tab. Allow pop-ups in your browser, then select “Open” again.",
       later: "Later",
-      recommendedTitle: "Take your time with these later",
+      recommendedTitle: "Identity, contact and display settings",
+      doneLabel: "Done",
+      pendingLabel: "Pending",
       checklist: {
         siteName: {
           title: "Add your site name",

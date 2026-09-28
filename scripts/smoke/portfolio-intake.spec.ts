@@ -24,7 +24,7 @@ test("one pricing page selects a plan and the native consultation remains within
   await pricing.locator('a[href="/portfolio-kit/consult?plan=basic"]').click();
   await expect(page).toHaveURL(/\/portfolio-kit\/consult\?plan=basic$/);
   await expect(page.getByRole("combobox")).toHaveValue("basic");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("あなたの写真");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("ポートフォリオ制作の相談");
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({ path: info.outputPath("consultation.png"), fullPage: true });
 });
@@ -68,7 +68,7 @@ test("owner sales page shares the photo frame and shows usable delivery samples"
   await expect(page.locator(".kit-sales")).toBeVisible();
   await expect(page.locator('.ps-site[data-site-design="book"]')).toHaveCount(1);
   await expect(page).toHaveTitle("写真を置く場所をつくる | 写真家のポートフォリオサイト");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("作品を見せる。");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("写真家のための");
   const tabs = page.getByRole("tablist", { name: "納品見本のページ" });
   await tabs.getByRole("tab", { name: "トップ", exact: true }).focus();
   await page.keyboard.press("ArrowRight");

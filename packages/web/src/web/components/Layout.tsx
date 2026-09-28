@@ -308,11 +308,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
   }, [frameInputsReady, frameReady]);
 
-  // 写真集の骨格（2026-09-23 試作、2026-09-25 見直し）。制作サービス・
-  // 管理画面は従来の帯のまま。作品（Series / Work）は「Works」1つにまとめ、
-  // 作品に入っていない写真も見られるよう「Photos」（/gallery）を並べる。
+  // オーナーの制作案内・開始ガイドも、作品と同じ名前・ナビでつなぐ。
+  // 管理画面と独立ツールの器はそれぞれの操作に合わせて保つ。
   const ownerServiceChrome = isServiceOwnerSite(data?.siteUrl, undefined) &&
-    /^\/portfolio-kit(?:\/(?:consult|guide|en))?$/.test(location);
+    /^(?:\/portfolio-kit(?:\/(?:consult|guide|en|start(?:\/en)?))?|\/start(?:\/en)?)$/.test(location);
   const bookChrome = usesBookChrome(siteDesignFrom(data?.siteDesign), location) ||
     (siteDesignFrom(data?.siteDesign) === "book" && ownerServiceChrome);
   const shelfItems = bookChrome

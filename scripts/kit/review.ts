@@ -13,6 +13,7 @@ const downloads: Record<string, string> = {
  '/print.pdf': join(lab, 'evidence/sample/print.pdf'),
  '/preview.css': join(import.meta.dir, 'review/style.css'),
  '/preview.js': join(import.meta.dir, 'review/client.js'),
+ '/preview-theme.js': join(import.meta.dir, 'review/theme.js'),
  '/visual/series.png': join(lab, 'evidence/sample/-series-landforms-desktop.png'),
  '/visual/gallery.png': join(lab, 'evidence/sample/-gallery-desktop.png'),
  '/visual/profile.png': join(lab, 'evidence/sample/-profile-desktop.png'),

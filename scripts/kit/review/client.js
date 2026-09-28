@@ -1,4 +1,28 @@
-/* Local preview controls. No analytics, storage, API writes or form submission. */
+/* Local preview controls. No analytics, API writes or form submission.
+   Only theme.js persists a display preference, matching the public site. */
+const menuButton = document.querySelector('.site-menu-toggle');
+const menu = document.getElementById('site-menu');
+menuButton.hidden = false;
+function closeMenu(returnFocus = false) {
+  menu.hidden = true;
+  menuButton.setAttribute('aria-expanded', 'false');
+  menuButton.textContent = 'Menu';
+  if (returnFocus) menuButton.focus();
+}
+menuButton.addEventListener('click', () => {
+  const open = menuButton.getAttribute('aria-expanded') !== 'true';
+  menu.hidden = !open;
+  menuButton.setAttribute('aria-expanded', String(open));
+  menuButton.textContent = open ? 'Close' : 'Menu';
+});
+menu.addEventListener('click', event => { if (event.target.closest('a')) closeMenu(); });
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !menu.hidden) closeMenu(true);
+});
+document.addEventListener('click', event => {
+  if (!event.target.closest('.site-header')) closeMenu();
+});
+matchMedia('(min-width:901px)').addEventListener('change', event => { if (event.matches) closeMenu(); });
 const tabs = [...document.querySelectorAll('[data-tour-tab]')];
 function selectTab(tab, focus = false) {
   for (const candidate of tabs) {

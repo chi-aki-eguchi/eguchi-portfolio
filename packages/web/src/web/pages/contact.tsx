@@ -614,7 +614,7 @@ export default function ContactPage({
             揃っていなかった。**同じ枠の中に、同じ形の小さな見出しを付けて
             並べる。**設定の値には触らない（空なら、その行ごと出ない）。 */}
         {status !== "success" && (areas || flow) && (
-          <dl className="mb-10 px-5 py-4 border border-[rgba(var(--foreground-rgb),0.08)] rounded-lg space-y-4 page-entrance page-entrance-delay-1">
+          <dl className="mb-10 py-6 border-y border-[rgba(var(--foreground-rgb),0.14)] space-y-6 page-entrance page-entrance-delay-1">
             {areas && (
               <div>
                 <dt className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">

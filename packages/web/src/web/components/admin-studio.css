@@ -1,12 +1,12 @@
 /* Admin Studio: a photo workspace and a page editor, sharing one navigation and control language. */
 .admin-atelier.admin-workbench.admin-studio { --studio-field: color-mix(in srgb, var(--admin-paper) 94%, var(--admin-ink)); --studio-hover: color-mix(in srgb, var(--admin-paper) 88%, var(--admin-ink)); font-variant-numeric: tabular-nums; }
 .admin-atelier.admin-workbench.admin-studio :is(button,input,select,textarea) { letter-spacing: normal; }
-.admin-atelier.admin-workbench.admin-studio { --admin-selected-bg: var(--studio-hover); --admin-selected-shadow: none; --admin-text-body: 14px; --admin-text-note: 12px; --admin-text-micro: 11px; --admin-radius-sm: 6px; --admin-radius-md: 8px; }
+.admin-atelier.admin-workbench.admin-studio { --admin-selected-bg: var(--studio-hover); --admin-selected-shadow: none; --admin-text-page: 22px; --admin-text-body: 14px; --admin-text-note: 12px; --admin-text-micro: 11px; --admin-radius-sm: 6px; --admin-radius-md: 8px; }
 .admin-atelier.admin-workbench.admin-studio button:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar:not([data-collapsed=true]) { width: 216px; flex-basis: 216px; padding: 20px 12px 14px; border-right: 1px solid var(--admin-line); background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__brand { padding: 0 4px 24px; margin-bottom: 0; border: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__eyebrow { font-size: 10px; letter-spacing: .14em; margin-bottom: 7px; }
-.admin-atelier.admin-workbench.admin-studio .admin-sidebar__title { font-size: 21px; font-weight: 550; letter-spacing: -.035em; }
+.admin-atelier.admin-workbench.admin-studio .admin-sidebar__title { font-size: var(--admin-text-page); font-weight: 500; letter-spacing: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-sidebar__indicator { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-workspace-switch { display: flex; flex: 0 0 auto; gap: 3px; padding: 4px; border: 1px solid var(--admin-line); border-radius: 9px; background: var(--admin-paper); }
 .admin-atelier.admin-workbench.admin-studio .studio-workspace-switch button { position: relative; flex: 1; min-height: 36px; border: 0; background: none !important; color: var(--admin-muted) !important; padding: 6px 4px !important; font-size: 13px; font-weight: 500; border-radius: 6px; }
@@ -30,14 +30,14 @@
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__group + .admin-sidebar__group { margin-top: 4px; }
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__group-title { display: none; }
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
-.admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tab { font-size: 12px; min-height: 36px; padding: 7px 8px; }
+.admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tab { font-size: 12px; min-height: 36px; padding: 7px 4px; }
 .admin-atelier.admin-workbench.admin-studio[data-studio-editor=true] .admin-sidebar__tab svg { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-editor-outline { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--admin-line); margin-top: 16px; padding-top: 16px; }
 .admin-atelier.admin-workbench.admin-studio .admin-form-toc__nav { max-height: none; overflow: visible; gap: 3px; padding: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-search { min-height: 32px; margin: 0 0 10px; border: 0; border-bottom: 1px solid var(--admin-line); background: transparent; border-radius: 0; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-search input { font-size: 11px; }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group { margin: 0 0 13px; }
-.admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group h3 { margin: 12px 10px 6px; font-size: 11px; color: var(--admin-muted); font-weight: 500; }
+.admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group h3 { margin: 16px 10px 8px; font-size: var(--admin-text-note); color: var(--admin-muted); font-weight: 500; }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group button { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 36px; padding: 7px 10px; text-align: left; font-size: 13px; color: var(--admin-muted); border: 0; border-radius: 4px; background: transparent; }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group button:hover { color: var(--admin-ink); background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .studio-settings-nav-group button[aria-current=location] { background: var(--studio-hover); color: var(--admin-ink); font-weight: 500; }
@@ -57,7 +57,7 @@
 .admin-atelier.admin-workbench.admin-studio .studio-history-controls { display: flex; gap: 2px; }
 .admin-atelier.admin-workbench.admin-studio .studio-history-controls button { min-width: 30px; min-height: 30px; display: grid; place-items: center; color: var(--admin-muted); background: transparent; }
 .admin-atelier.admin-workbench.admin-studio .studio-history-controls button:disabled { opacity: .3; }
-.admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: 25px; font-weight: 600; letter-spacing: -.035em; line-height: 1.4; margin-bottom: 14px; }
+.admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: var(--admin-text-page); font-weight: 500; letter-spacing: 0; line-height: 1.45; margin-bottom: 20px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout__body [data-settings-group-label] { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-context-actions:empty { display: none; }
 .admin-atelier.admin-workbench.admin-studio .studio-context-actions button { display: flex; align-items: center; gap: 8px; padding: 0 0 16px; color: var(--admin-muted); font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
@@ -70,7 +70,7 @@
 .admin-atelier.admin-workbench.admin-studio .studio-option[aria-pressed=true] .studio-option-indicator { background: var(--admin-ink); border-color: var(--admin-ink); color: var(--admin-paper); }
 .admin-atelier.admin-workbench.admin-studio .studio-option-preview { width: 100%; padding: 14px 18px 10px; background: var(--admin-paper); }
 .admin-atelier.admin-workbench.admin-studio .studio-option-label { padding: 12px 14px 14px; border-top: 1px solid var(--admin-line); }
-.admin-atelier.admin-workbench.admin-studio .studio-option-label strong { display: block; font-size: 14px; font-weight: 550; }
+.admin-atelier.admin-workbench.admin-studio .studio-option-label strong { display: block; font-size: var(--admin-text-body); font-weight: 500; line-height: 1.5; }
 .admin-atelier.admin-workbench.admin-studio .studio-option-label small { display: block; margin-top: 3px; font-size: 12px; color: var(--admin-muted); font-weight: 400; line-height: 1.6; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview { background: var(--studio-field); }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--admin-line); background: var(--admin-paper); z-index: 5; }
@@ -97,7 +97,7 @@
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock { position: sticky; bottom: 0; display: block; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { padding: 10px 16px; font-size: 11px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel__actions button { min-height: 34px; border-radius: 4px; padding: 6px 10px; }
-.admin-atelier.admin-workbench.admin-studio .ax-page-title__text { font-size: 22px; font-weight: 500; }
+.admin-atelier.admin-workbench.admin-studio .ax-page-title__text { font-size: var(--admin-text-page); font-weight: 500; line-height: 1.45; letter-spacing: 0; }
 .admin-atelier.admin-workbench.admin-studio .ax-page-title { padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--admin-line); }
 .admin-atelier.admin-workbench.admin-studio .ax-row { padding-block: 18px; }
 .admin-atelier.admin-workbench.admin-studio .ax-input { border: 1px solid var(--admin-line) !important; border-radius: 6px !important; background-color: var(--studio-field) !important; padding: 10px 12px; min-height: 42px; font-size: 14px; line-height: 1.5; }
@@ -207,6 +207,7 @@
   .admin-atelier.admin-workbench.admin-studio .admin-sidebar[data-collapsed=true] > .admin-sidebar-compact { display: flex; }
 }
 @media (max-width: 767px) {
+  .admin-atelier.admin-workbench.admin-studio { --admin-text-page: 18px; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace .admin-settings-form-layout__inner { padding: 20px 16px 32px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header { padding: 4px 12px; grid-template-columns: max-content minmax(0, 1fr) 44px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-main > .admin-workspace__header .ax-page-title__text { font-size: 16px !important; white-space: nowrap; }
@@ -214,7 +215,7 @@
   .admin-atelier.admin-workbench.admin-studio .admin-library-workbar { padding: 6px 12px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-orderbar { padding-top: 4px; margin-top: 2px; }
   .admin-atelier.admin-workbench.admin-studio .admin-library-selection-toolbar { padding: 8px 12px; }
-  .admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: 24px; }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-section h2 { font-size: var(--admin-text-page); }
   .admin-atelier.admin-workbench.admin-studio .studio-option-preview { padding: 12px 12px 8px; }
   .admin-atelier.admin-workbench.admin-studio .studio-option-label { padding: 10px; }
   .admin-atelier.admin-workbench.admin-studio .studio-option-label strong { font-size: 13px; }

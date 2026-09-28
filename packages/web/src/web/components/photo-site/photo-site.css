@@ -15,10 +15,13 @@ html:has(.ps-site) {
   --ps-gutter: clamp(14px, 2.6vw, 40px);
   --ps-header-h: 60px;
   --ps-ink: rgba(var(--foreground-rgb), 0.9);
-  --ps-quiet: rgba(var(--foreground-rgb), 0.56);
-  --ps-faint: rgba(var(--foreground-rgb), 0.36);
+  --ps-quiet: rgba(var(--foreground-rgb), 0.64);
+  --ps-faint: rgba(var(--foreground-rgb), 0.52);
   --ps-hair: rgba(var(--foreground-rgb), 0.12);
   --ps-tile: rgba(var(--foreground-rgb), 0.05);
+  --ps-text-note: calc(12px * var(--global-font-scale, 1));
+  --ps-text-ui: calc(13px * var(--global-font-scale, 1));
+  --ps-ui-tracking: 0.04em;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -323,7 +326,7 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 .ps-entrance__note {
   margin-top: 0.4rem;
-  font-size: calc(12.5px * var(--global-font-scale, 1));
+  font-size: var(--ps-text-note);
   line-height: 1.8;
   color: var(--ps-faint);
 }
@@ -355,7 +358,7 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  padding: 1.5rem 0;
+  padding: clamp(1.5rem, 3vw, 2.5rem) 0;
   border-top: 1px solid var(--ps-hair);
 }
 .ps-service__main {
@@ -363,25 +366,25 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   grid-template-areas: "title lead" "title go";
   align-items: end;
-  gap: 0.6rem clamp(1.5rem, 5vw, 4rem);
+  gap: 0.85rem clamp(1.5rem, 5vw, 4rem);
   color: var(--foreground);
 }
 .ps-service__title {
   grid-area: title;
   font-size: calc(14px * var(--global-font-scale, 1));
-  line-height: 1.45;
+  line-height: 1.8;
   letter-spacing: 0.02em;
 }
 .ps-service__lead {
   grid-area: lead;
-  font-size: calc(13.5px * var(--global-font-scale, 1));
+  font-size: var(--ps-text-ui);
   line-height: 1.9;
   color: var(--ps-quiet);
 }
 .ps-service__go {
   grid-area: go;
   justify-self: start;
-  font-size: calc(13.5px * var(--global-font-scale, 1));
+  font-size: var(--ps-text-ui);
   padding-bottom: 2px;
   background: linear-gradient(currentColor, currentColor) left bottom / 100% 1px no-repeat;
   transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
@@ -432,8 +435,8 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   text-transform: capitalize;
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
-  color: var(--ps-faint);
+  min-height: 44px;
+  color: var(--ps-quiet);
   letter-spacing: 0.04em;
   transition: color 0.2s ease;
 }
@@ -836,9 +839,13 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 .ps-page-head__title {
   font-size: var(--heading-size, clamp(1.75rem, 3vw, 2.5rem));
+  line-height: var(--section-leading, 1.25);
+  letter-spacing: var(--body-tracking, 0.02em);
 }
 .ps-series-head__title {
   font-size: var(--heading-size, clamp(1.9rem, 3.6vw, 3rem));
+  line-height: var(--section-leading, 1.25);
+  letter-spacing: var(--body-tracking, 0.02em);
 }
 .ps-series-entry__title {
   font-size: calc(clamp(1.2rem, 2vw, 1.6rem) * var(--ps-scale));
@@ -964,4 +971,29 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 /* 名前の帯と「トップの言葉」。下の余白まで含めて測る（表紙の段の高さの計算、PhotoHome）。 */
 .ps-home__head {
   display: flow-root;
+}
+
+/* 同じ役割の小さな文字は同じリズム。設定された書体・サイズを引き継ぐ。 */
+.ps-name__en,
+.ps-service__lead,
+.ps-service__go,
+.ps-service__sub {
+  letter-spacing: var(--ps-ui-tracking);
+}
+.ps-service__sub {
+  margin-top: 0.5rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.ps-site :is(a, button):focus-visible {
+  outline: 2px solid var(--accent-color, var(--foreground));
+  outline-offset: 4px;
+}
+.ps-footer__links a,
+.ps-footer__cta,
+.ps-footer__credit {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }

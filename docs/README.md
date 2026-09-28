@@ -6,6 +6,7 @@
 
 | 知りたいこと | 文書 |
 |---|---|
+| 文字・余白・操作部品の仕上げ（2026-09-29） | `docs/specs/ui-polish-20260929.md` |
 | 管理画面内のPDF作品集（2026-09-27） | `docs/specs/portfolio-pdf-v0.md` |
 | 残件修正・最終配布版と復元の証拠 | `docs/specs/remaining-issues-20260928.md` |
 | 未完了一覧の再確認・候補保存の修正 | `docs/specs/backlog-review-20260928.md` |

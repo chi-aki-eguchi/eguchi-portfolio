@@ -1401,7 +1401,7 @@ const ADMIN_PHASE_2B_JA = {
       introPrefix: "ページごとに写真の並べ方を選べます。プレビューで",
       introTop: "トップ",
       introSuffix:
-        "ページを開くと即反映。列数・大きさ・間隔はどの配置にも効きます。",
+        "ページを開くと即反映。配置に応じて、列数・写真の大きさ・間隔を調整できます。",
       targetLabel: "対象ページ",
       categoryLabels: {
         aligned: "整列グリッド",
@@ -1463,7 +1463,7 @@ const ADMIN_PHASE_2B_JA = {
       mobileColumnsNote:
         "列数と「写真の大きさ」はどちらもPCとスマホの両方に同時に効きます。PCで詰めて見せるために写真の大きさを下げると、スマホの写真も一緒に小さくなります（375pxの画面で5列・1枚71px）。ここだけスマホの上限を決めると、PCの見え方を変えずにスマホの写真を大きくできます。行組みとコンタクトシートは列ではなく行の高さで密度が決まるので、この設定は効きません。",
       maxColumnsHint:
-        "広い画面で最大何列まで並べるか。実際の列数は「表示できる幅 ÷ 写真1枚の最小幅」で決まり、足りなければ自動で減ります（スマホは1〜2列）。配置の種類は関係なく、マソンリーも同じ",
+        "広い画面で最大何列まで並べるか。写真を置ける幅に応じて実際の列数は減ります。グリッドやマソンリーに有効です。行組み・コンタクトシートは「写真の大きさ」で調整します",
       columnsCappedByPreview: (previewWidth: number, fits: number) =>
         `このプレビューは幅 ${previewWidth}px なので、ここでは最大 ${fits} 列までしか出ません。公開サイトの実際の幅ではもっと並びます。ここで列を増やしたいときは「写真の大きさ」を下げてください`,
       photoSizeLabel: "写真の大きさ",
@@ -3225,7 +3225,7 @@ const ADMIN_PHASE_2B_EN = {
       introPrefix: "Choose how photos are arranged, per page. Changes apply as soon as you open the",
       introTop: "Top",
       introSuffix:
-        "preview page. Columns, size and spacing apply to every layout.",
+        "preview page. Adjust columns, photo size and spacing according to the chosen layout.",
       targetLabel: "Target Page",
       categoryLabels: {
         aligned: "Aligned Grids",
@@ -3282,7 +3282,7 @@ const ADMIN_PHASE_2B_EN = {
       mobileColumnsNote:
         "Columns and photo size both apply to desktop and phones at once, so shrinking photos to pack a desktop grid also shrinks them on a phone (5 columns at 71px on a 375px screen). Setting a phone ceiling here enlarges phone photos without touching the desktop view. Justified rows and the contact sheet set their density by row height, not columns, so this does not affect them.",
       maxColumnsHint:
-        "The maximum number of columns on a wide screen. The actual count is “available width ÷ minimum photo width”, dropping automatically when there is not enough room (1–2 on mobile). This applies to every layout, masonry included.",
+        "Maximum columns on a wide screen; fewer fit when space is limited. Applies to grids and masonry. For justified rows and contact sheets, adjust photo size instead.",
       columnsCappedByPreview: (previewWidth: number, fits: number) =>
         `This preview is ${previewWidth}px wide, so it can only show ${fits} columns here. The live site has more room. To see more columns in this preview, lower “Photo Size”.`,
       photoSizeLabel: "Photo Size",

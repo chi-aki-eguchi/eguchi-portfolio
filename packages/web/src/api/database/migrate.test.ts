@@ -194,3 +194,25 @@ describe("ensureColumnsExist — 失敗しても起動を止めない", () => {
     expect(await columnNames(db)).toContain("camera_model");
   });
 });
+
+describe("startup safety net transient failures", () => {
+  test("a disconnected read is retried before deciding a column is missing", async () => {
+    let calls = 0;
+    const result = await ensureColumnsExist({ run: async () => {
+      calls++;
+      if (calls === 1) throw Object.assign(new Error("temporary disconnect"), { code: "ECONNRESET" });
+    } }, [["photos", "existing", "text"]]);
+    expect(result).toEqual({ present: ["photos.existing"], added: [], failed: [] });
+    expect(calls).toBe(2);
+  });
+  test("a disconnected column addition is retried", async () => {
+    let calls = 0;
+    const result = await ensureColumnsExist({ run: async () => {
+      calls++;
+      if (calls === 1) throw new Error("no such column: missing");
+      if (calls === 2) throw Object.assign(new Error("temporary disconnect"), { code: "ECONNRESET" });
+    } }, [["photos", "missing", "text"]]);
+    expect(result).toEqual({ present: [], added: ["photos.missing"], failed: [] });
+    expect(calls).toBe(3);
+  });
+});

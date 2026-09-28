@@ -8,6 +8,7 @@
 |---|---|
 | 管理画面内のPDF作品集（2026-09-27） | `docs/specs/portfolio-pdf-v0.md` |
 | 残件修正・最終配布版と復元の証拠 | `docs/specs/remaining-issues-20260928.md` |
+| 未完了一覧の再確認・候補保存の修正 | `docs/specs/backlog-review-20260928.md` |
 | 現在地・進行中の作業 | `task.md` 冒頭 Current State |
 | 写真表示機能の統合と旧試作の扱い | `docs/specs/prototype-integration-20260928.md` |
 | 紹介素材・About写真の仕上げ | `docs/specs/finish-review-20260928.md` |

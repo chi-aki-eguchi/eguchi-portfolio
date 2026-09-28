@@ -55,7 +55,7 @@ export default function GalleryPage() {
   const setActiveMedium = (v: "all" | "film" | "digital") =>
     applyFilters({ medium: v });
 
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
   });
@@ -80,7 +80,7 @@ export default function GalleryPage() {
     queryFn: async () =>
       jsonOrThrow(await api.series.$get({ query: { kind: "work" } })),
   });
-  const { data: catsData } = useQuery({
+  const { data: catsData, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => jsonOrThrow(await api.categories.$get()),
     // Categories rarely change; keep them fresh longer so the prefetched data is
@@ -201,7 +201,8 @@ export default function GalleryPage() {
   );
   const gallerySentinelRef = useRef<HTMLDivElement>(null);
   const gridBoxRef = useRef<HTMLDivElement>(null);
-  const fadeRef = useScrollFadeIn([rendered, settings?.galleryLayout]);
+  const structureLoading = settingsLoading || categoriesLoading || photosLoading;
+  const fadeRef = useScrollFadeIn([rendered, settings?.galleryLayout, structureLoading]);
   const loadMoreRetryRef = useRef<number | null>(null);
   const requestMorePhotos = useCallback(() => {
     const pendingImages = Array.from(
@@ -260,7 +261,7 @@ export default function GalleryPage() {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [renderCount, filtered.length, requestMorePhotos]);
+  }, [renderCount, filtered.length, requestMorePhotos, structureLoading]);
 
   // Switching the filter while scrolled deep can shrink the page and strand the
   // viewer at the footer of a now-short grid. Scroll back to the top of the
@@ -289,6 +290,14 @@ export default function GalleryPage() {
   }, [activeFilter, fadeRef]);
 
   // 写真中心のサイトでは、すべての写真をここに（トップは表紙と選んだ写真）。
+  // Do not flash the default classic heading or insert filter rows above photos
+  // while the actual design/categories are still arriving. Cached data renders
+  // immediately; failed reads settle and retain the existing fallback behavior.
+  if (structureLoading) return (
+    <section ref={fadeRef} className="min-h-[70vh] flex items-center justify-center" data-gallery-pending="true" aria-busy="true">
+      <ContentStatus state="loading" />
+    </section>
+  );
   const book = siteDesignFrom(settings?.siteDesign) === "book";
   if (book) return <PhotoAllPage settings={settings} />;
 

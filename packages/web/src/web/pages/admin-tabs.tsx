@@ -4760,48 +4760,56 @@ export function SettingsTab({
     parsePresetList(data?.metaPresetsLens),
     DEFAULT_LENS_PRESETS,
   );
+  type PresetPayload = { metaPresetsCamera?: string; metaPresetsLens?: string };
+  const presetSaveInFlight = useRef(false);
   const savePresets = useMutation({
-    mutationFn: async (payload: {
-      metaPresetsCamera?: string;
-      metaPresetsLens?: string;
-    }) => {
+    mutationFn: async (payload: PresetPayload) => {
       await postAdminSettings(payload);
     },
-    onSuccess: () => {
+    onSuccess: async (_result, payload) => {
       setPresetError(false);
-      qc.invalidateQueries({ queryKey: ["settings"] });
+      // Publish the acknowledged list immediately, then keep controls locked
+      // until the settings refresh finishes. The next add must use this list.
+      qc.setQueryData(["settings"], (current: Record<string, string> | undefined) => ({ ...current, ...payload }));
+      await qc.invalidateQueries({ queryKey: ["settings"] });
     },
-    // Without this the add/remove just silently no-ops on a failed request.
     onError: () => setPresetError(true),
+    onSettled: () => { presetSaveInFlight.current = false; },
   });
+  const persistPresets = (payload: PresetPayload, onSuccess?: () => void) => {
+    // Covers repeated Enter/click events before React renders the pending state.
+    if (presetSaveInFlight.current) return;
+    presetSaveInFlight.current = true;
+    savePresets.mutate(payload, { onSuccess });
+  };
   const addCamPreset = () => {
+    if (presetSaveInFlight.current) return;
     const v = newCamPreset.trim();
     if (!v || cameraPresets.includes(v)) {
       setNewCamPreset("");
       return;
     }
-    savePresets.mutate({
+    persistPresets({
       metaPresetsCamera: JSON.stringify([...cameraPresets, v]),
-    });
-    setNewCamPreset("");
+    }, () => setNewCamPreset(current => current.trim() === v ? "" : current));
   };
   const addLensPreset = () => {
+    if (presetSaveInFlight.current) return;
     const v = newLensPreset.trim();
     if (!v || lensPresets.includes(v)) {
       setNewLensPreset("");
       return;
     }
-    savePresets.mutate({
+    persistPresets({
       metaPresetsLens: JSON.stringify([...lensPresets, v]),
-    });
-    setNewLensPreset("");
+    }, () => setNewLensPreset(current => current.trim() === v ? "" : current));
   };
   const removeCamPreset = (v: string) =>
-    savePresets.mutate({
+    persistPresets({
       metaPresetsCamera: JSON.stringify(cameraPresets.filter((x) => x !== v)),
     });
   const removeLensPreset = (v: string) =>
-    savePresets.mutate({
+    persistPresets({
       metaPresetsLens: JSON.stringify(lensPresets.filter((x) => x !== v)),
     });
 
@@ -8446,7 +8454,7 @@ function PresetEditor({
   const { t } = useAdminI18n();
   const copy = t.phase2b.settingsDesign.presets;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="admin-preset-editor flex flex-col gap-2">
       <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {items.length === 0 && (
@@ -8461,10 +8469,11 @@ function PresetEditor({
           >
             {p}
             <button
+              type="button"
               onClick={() => onRemove(p)}
               disabled={busy}
               aria-label={copy.removeAria(p)}
-              className="admin-danger-on-hover text-[var(--admin-muted)] transition-colors disabled:opacity-40"
+              className="admin-preset-remove admin-danger-on-hover text-[var(--admin-muted)] transition-colors disabled:opacity-40"
             >
               <X size={11} />
             </button>
@@ -8475,10 +8484,11 @@ function PresetEditor({
         <input
           aria-label={placeholder}
           type="text"
+          disabled={busy}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !busy && !e.nativeEvent.isComposing) {
               e.preventDefault();
               onAdd();
             }
@@ -8487,6 +8497,7 @@ function PresetEditor({
           className="ax-input flex-1"
         />
         <button
+          type="button"
           onClick={onAdd}
           disabled={busy || !value.trim()}
           className="flex items-center gap-1 px-3 py-2 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors disabled:opacity-40"

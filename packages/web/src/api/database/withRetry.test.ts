@@ -1,44 +1,6 @@
 import { describe, test, expect } from "bun:test";
 
-// Hand-duplicated from libsql.ts (kept in sync manually), because the real
-// module creates a Turso client at import time and can't be loaded standalone
-// in a unit test. Mirror any change to libsql.ts's withRetry here too.
-function isTransientDbError(err: unknown): boolean {
-  const seen = new Set<unknown>();
-  let current: any = err;
-  while (current && typeof current === "object" && !seen.has(current)) {
-    seen.add(current);
-    if (current.code === "ECONNRESET") return true;
-    if (
-      typeof current.message === "string" &&
-      (current.message.includes("ECONNRESET") ||
-        current.message.includes("socket connection was closed"))
-    ) {
-      return true;
-    }
-    current = current.cause;
-  }
-  return false;
-}
-
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-  delayMs = 10,
-): Promise<T> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      if (isTransientDbError(err) && attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, delayMs * attempt));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error("withRetry: unreachable");
-}
+import { withRetry } from "./retry";
 
 describe("withRetry", () => {
   test("returns result on first success", async () => {

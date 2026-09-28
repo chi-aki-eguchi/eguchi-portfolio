@@ -14,6 +14,7 @@
 // Railway は前バージョンを維持する（壊れた新版がトラフィックを受けない）。
 import { resolve } from "node:path";
 import { sql, type SQL } from "drizzle-orm";
+import { withRetry } from "./retry";
 
 const MIGRATION_RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 12_000, 16_000];
 
@@ -127,13 +128,13 @@ export async function ensureColumnsExist(
   const failed: string[] = [];
   for (const [table, col, type] of columns) {
     try {
-      await db.run(sql`SELECT ${sql.raw(col)} FROM ${sql.raw(table)} LIMIT 0`);
+      await withRetry(() => db.run(sql`SELECT ${sql.raw(col)} FROM ${sql.raw(table)} LIMIT 0`));
       present.push(`${table}.${col}`);
     } catch {
       try {
-        await db.run(
+        await withRetry(() => db.run(
           sql`ALTER TABLE ${sql.raw(table)} ADD COLUMN ${sql.raw(col)} ${sql.raw(type)}`,
-        );
+        ));
         console.log(`[migrate] added missing column ${table}.${col}`);
         added.push(`${table}.${col}`);
       } catch (e) {

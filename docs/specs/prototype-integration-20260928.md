@@ -34,3 +34,9 @@
 - 最初の共有プロキシで3workerの実行は663成功/186対象外/2失敗と終了エラー。写真一覧の高速スクロールで一時的な未読込画像、通信検査では別テストの先行接続記録が混在。既定の1workerへ戻して環境ごとに分離し、全体を再実行して上記の成功を確認。失敗記録は消していない。
 - ログ: `scratch/integration-check-final.log`、`scratch/integration-shard-{1,2,3}.log`。初回失敗は `scratch/integration-smoke-final.log`。画面確認は `scratch/prototype-integration-20260928/`。
 - 移植commit `6f0741f`、元ブランチの履歴合流 `67e8aed`、表示案内の仕上げ `9143f0e`。本番確認は反映後に追記。
+
+### 本番確認済み（2026-09-28 17:49 JST）
+
+mainへ通常push、Railway成功、health build `2f9b4369`。`/admin/demo` で新設定を選択して体験内の保存通知・プレビューを確認。本番DBの設定更新は行っていない。公開APIのsiteDesign・heroMode・heroDisplayMode・galleryLayout・galleryColumnsは反映前と同値。新たにAPIへ現れた写真表示項目はphotoCrop=fill、viewerMat=full、galleryColumnsMobile=2、topWorksColumnsMobile空。既存の保存値を保持して返している。
+
+証拠は `scratch/prototype-integration-20260928/production-before.json`、`production-after.json`、`production-controls.png`。主checkoutのmainも同期し、元からあった未コミット変更と未追跡資料は保持。`feature/photo-aspect` はmainの祖先となり、未統合commit数0。

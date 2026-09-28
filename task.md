@@ -4,6 +4,7 @@
 - 多対多のシリーズAPIへ追従し、カルーセルの余白と名前位置、スマホ列数の継承説明も修正。
 - 7月のB-2/Finder別画面試作は採用終了。現行の写真一覧と重複する実装は投入せず、元履歴は保管。古いCurrent State見出しは記録時点だと分かるよう変更。
 - 検証・公開状態と使い方の正本: `docs/specs/prototype-integration-20260928.md`。顧客固定版・別checkoutの未コミット変更は保持。
+- check成功（単体1543/tools60/guard48）、独立3環境の全体smoke689成功・186対象外・失敗0。mainへpush、本番build `2f9b4369`・体験版の新設定と保存を確認済み。写真表示ブランチの未統合commitは0。
 
 ## Recorded State — 2026-09-28 JST / About写真・紹介素材の仕上げ
 

@@ -37,41 +37,14 @@ export function InquiryCta({
   const button = english ? "Get in touch" : data?.homeCtaButton || "お問い合わせ";
 
   return (
-    <section lang={language} className="max-w-3xl mx-auto px-6 pt-[calc(5rem*var(--spacing-section-gap,1))] pb-[calc(6rem*var(--spacing-section-gap,1))] md:pt-[calc(7rem*var(--spacing-section-gap,1))] md:pb-[calc(9rem*var(--spacing-section-gap,1))] text-center" ref={ref}>
-      <div
-        aria-hidden="true"
-        className="mx-auto mb-10 md:mb-14 section-reveal"
-        style={{ width: 1, height: 48, background: `rgba(var(--foreground-rgb), 0.18)` }}
-      />
-      <h2
-        className={`${english ? "font-en" : "font-ja"} section-reveal break-words`}
-        style={{ fontSize: "clamp(1.6rem, 4.5vw, 2.4rem)", letterSpacing: "0.08em", lineHeight: 1.45, color: `rgba(var(--foreground-rgb), 0.82)` }}
-      >
-        {title}
-      </h2>
-      {text && (
-        <p
-          className="section-reveal mt-5 md:mt-6 mx-auto max-w-md break-words"
-          style={{ fontSize: "var(--body-size, 0.875rem)", lineHeight: "var(--body-leading, 1.9)", letterSpacing: "0.02em", color: "var(--text-quiet)", transitionDelay: "0.05s" }}
-        >
-          {text}
-        </p>
-      )}
-      <div className="section-reveal mt-9 md:mt-11" style={{ transitionDelay: "0.1s" }}>
-        <Link
-          to={english ? "/en/contact" : "/contact"}
-          className="font-en inline-block uppercase nav-link-luxury transition-colors duration-300 break-words"
-          /* この帯は Top / Gallery / Series / About / Contact のすべてに出る。
-             ボタンの文言が折り返せないと、5ページ全部が横に伸びる
-             （実測 320px の画面で 1147px）。max-w-full が無いと inline-block は
-             内容の幅のままなので、折り返す先が無い。 */
-          style={{ fontSize: "0.8125rem", letterSpacing: "0.14em", paddingBottom: 6, color: "var(--text-quiet)", borderBottom: `1px solid rgba(var(--foreground-rgb), 0.25)`, maxWidth: "100%" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = `var(--accent-color, rgba(var(--foreground-rgb), 0.9))`; e.currentTarget.style.borderColor = `var(--accent-color, rgba(var(--foreground-rgb), 0.6))`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-quiet)"; e.currentTarget.style.borderColor = `rgba(var(--foreground-rgb), 0.25)`; }}
-        >
-          {button}
-        </Link>
+    <section lang={language} className="inquiry-note" ref={ref}>
+      <div className="section-reveal">
+        <h2 className="break-words">{title}</h2>
+        {text && <p className="break-words">{text}</p>}
       </div>
+      <Link to={english ? "/en/contact" : "/contact"} className="inquiry-note__link section-reveal">
+        {button}
+      </Link>
     </section>
   );
 }

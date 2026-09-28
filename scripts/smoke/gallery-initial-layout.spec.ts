@@ -44,3 +44,16 @@ for (const design of ["book", "classic"]) {
     }
   });
 }
+
+// The book layout previously ignored this setting and always rendered a large title.
+test("Book Gallery and Series honor the shared hidden page title setting", async ({ page, api }) => {
+  const settings = await (await api.get("/api/settings")).json();
+  await page.route("**/api/settings**", route => route.fulfill({ json: { ...settings, siteDesign: "book", pageTitleStyle: "hidden" } }));
+  for (const path of ["/gallery", "/series"]) {
+    await page.goto(path);
+    const title = page.locator("main h1");
+    await expect(title).toHaveCount(1);
+    await expect(title).toHaveClass("sr-only");
+    await expect(page.locator(".ps-page")).toBeVisible();
+  }
+});

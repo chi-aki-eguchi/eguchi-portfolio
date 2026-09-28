@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../../lib/api";
+import { PageTitle } from "../PageTitle";
 import { ContentStatus } from "../ContentStatus";
 import { Picture } from "../Picture";
 import type { GalleryPhoto } from "../PhotoGallery";
@@ -149,7 +150,7 @@ export function PhotoSeriesIndex({ settings }: { settings: Settings }) {
   return (
     <div className="ps-page ps-series-index" ref={listRef}>
       <header className="ps-page-head">
-        <h1 className="ps-page-head__title font-en">Series</h1>
+        <PageTitle className="ps-page-head__title" revealClass="">{settings?.navLabelSeries || "Series"}</PageTitle>
       </header>
       {loading && <ContentStatus state="loading" />}
       {failed && (

@@ -6820,3 +6820,22 @@ body[data-photo-crop="whole"] img.series-card-media,
 body[data-photo-crop="whole"] img.series-stream-media {
   object-fit: contain;
 }
+
+/* ページ末の問い合わせは、見出しと連絡先を一つの欄に。 */
+.inquiry-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem 3rem;
+  max-width: 62rem;
+  margin: calc(4rem * var(--spacing-section-gap, 1)) auto 0;
+  padding: 2rem 0;
+  border-top: 1px solid rgba(var(--foreground-rgb), 0.16);
+  text-align: left;
+}
+.inquiry-note > div { min-width: 0; flex: 1 1 20rem; }
+.inquiry-note h2 { font-size: var(--body-size, 1rem); font-weight: 400; line-height: 1.6; }
+.inquiry-note p { margin-top: 0.75rem; font-size: var(--body-size, 0.875rem); line-height: var(--body-leading, 1.9); color: var(--text-quiet); }
+.inquiry-note__link { flex-shrink: 0; max-width: 100%; min-height: 44px; display: inline-flex; align-items: center; font-size: var(--body-size, 0.875rem); text-decoration: underline; text-underline-offset: 5px; overflow-wrap: anywhere; }
+@media (max-width: 639px) { .inquiry-note { flex-direction: column; gap: 0.75rem; } .inquiry-note > div { flex: none; } }

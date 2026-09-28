@@ -23,7 +23,7 @@ const DESIGN = process.env.TRY_DESIGN || "book";
 const LOCAL_SETTINGS = path.resolve(__dirname, "vite/try-settings.local.json");
 
 function localSettings(): Record<string, string> {
-  if (!existsSync(LOCAL_SETTINGS)) return {};
+  if (process.env.TRY_IGNORE_LOCAL_SETTINGS === "1" || !existsSync(LOCAL_SETTINGS)) return {};
   try {
     const raw = JSON.parse(readFileSync(LOCAL_SETTINGS, "utf8")) as Record<string, unknown>;
     return Object.fromEntries(

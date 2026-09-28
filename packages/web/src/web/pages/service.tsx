@@ -108,7 +108,7 @@ function englishServiceConfigFrom(
     },
     examples: {
       label: "Actual site",
-      title: "The site you are viewing is\nthe working example.",
+      title: "A working website",
       body: "Explore its Gallery, About, and Contact pages to see the pacing, spacing, and path from photographs to inquiries.",
       cta: "View pricing",
       links: [
@@ -170,7 +170,7 @@ function englishServiceConfigFrom(
     },
     purchaseFlow: {
       label: "After purchase",
-      title: "A clear handover, without a hidden wait.",
+      title: "Setup and handover",
       body: "Within 24 hours of payment you receive a request for your materials, and once they are ready, the site is delivered within three days, already published.",
       steps: [
         {
@@ -218,7 +218,7 @@ function englishServiceConfigFrom(
         },
         {
           q: "What languages are available?",
-          a: "The admin panel is available in English and Japanese — switch anytime with the JP | EN toggle. Support is provided in Japanese and simple English.",
+          a: "Settings and guidance support Japanese and English. The current photo and series workspace uses Japanese controls. Support is provided in Japanese and simple English.",
         },
         {
           q: "What happens if I stop using the site?",
@@ -227,7 +227,7 @@ function englishServiceConfigFrom(
       ],
     },
     finalCta: {
-      title: "New photographs.\nA site you can keep making your own.",
+      title: "Discuss your website",
       body: "I handle the launch. You handle everyday updates. Start by exploring the admin panel for yourself.",
       ctaOnline: "Choose assisted setup",
       ctaOffline: "Ask by email",
@@ -1011,8 +1011,8 @@ function AdminShowcase({
           style={bodyStyle}
         >
           <p>
-            The admin panel is available in English and Japanese — switch
-            anytime with the JP | EN toggle.
+            Settings and guidance support Japanese and English. The current photo
+            and series workspace uses Japanese controls.
           </p>
           <p className="mt-2">
             Support is provided in Japanese and simple English.

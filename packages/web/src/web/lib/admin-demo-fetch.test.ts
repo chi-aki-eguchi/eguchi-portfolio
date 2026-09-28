@@ -39,6 +39,7 @@ test("demo fetch keeps every write off the network and updates memory only", asy
 
 test("demo settings are neutral and never copy owner-specific public settings", () => {
   const settings = makeAdminDemoSettings();
+  expect(settings.siteDesign).toBe("book");
   expect(settings.siteName).toBe("Photographer Name");
   expect(settings.siteNameEn).toBe("Photographer Name");
   expect(settings.contactEmail).toBe("");
@@ -65,4 +66,64 @@ test("demo snapshot limits photos and keeps related data consistent", () => {
   expect(snapshot.categories.every((category) => snapshot.photos.some((photo) => photo.category === category.slug))).toBe(true);
   expect(snapshot.series.every((series) => snapshot.photos.some((photo) => photo.seriesId === series.id))).toBe(true);
   expect(snapshot.heroPhotos.every((photo) => snapshot.photos.some((sample) => sample.id === photo.id))).toBe(true);
+});
+
+
+test("current Studio demo persists membership, series edits, publish state and undo locally", async () => {
+  const calls: string[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const path = new URL(String(input), "https://akieguchi.com").pathname;
+    calls.push(path);
+    return Response.json(path === "/api/photos" ? { photos: [{ id: 1, isPublished: true, seriesIds: [4, 5] }] }
+      : path === "/api/series" ? { series: [{ id: 4, slug: "one" }, { id: 5, slug: "two" }] } : {});
+  }) as typeof fetch;
+  const restore = installAdminDemoFetch("studio-test");
+  const read = async (path: string) => (await fetch(path)).json();
+  const write = async (path: string, body: unknown, method: "POST" | "PATCH" | "DELETE" = "POST") => fetch(path, { method, body: JSON.stringify(body) });
+  try {
+    expect((await read("/api/admin/series-photos")).memberships).toHaveLength(2);
+    const created = await (await write("/api/admin/series", { title: "Local", slug: "local", kind: "series" })).json();
+    const id = created.series.id;
+    await write(`/api/admin/series/${id}/photos`, { add: [1] });
+    expect((await read("/api/admin/series-photos")).memberships).toHaveLength(3);
+    await write(`/api/admin/series/${id}`, { title: "Edited" }, "PATCH");
+    expect((await read("/api/series/local")).series.title).toBe("Edited");
+    expect((await read("/api/series/local")).photos).toHaveLength(1);
+    await write("/api/admin/photos/batch", { ids: [1], operation: "unpublish" });
+    expect((await read("/api/photos?all=1")).photos[0].isPublished).toBe(false);
+    expect((await read("/api/series/local")).photos).toHaveLength(0);
+    await write("/api/admin/photos/batch", { ids: [1], operation: "publish" });
+    await write(`/api/admin/series/${id}/photos`, { remove: [1] });
+    expect((await read("/api/series/local")).photos).toHaveLength(0);
+    await write("/api/admin/photos/1", {}, "DELETE");
+    expect((await read("/api/admin/photos/trash")).photos).toHaveLength(1);
+    await write("/api/admin/photos/1/restore", {});
+    expect((await read("/api/admin/photos/trash")).photos).toHaveLength(0);
+    expect((await write("/api/admin/unsupported", {})).status).toBe(409);
+    expect(calls.every(path => ["/api/photos", "/api/categories", "/api/series", "/api/hero-photos"].includes(path))).toBe(true);
+  } finally { restore(); }
+});
+
+test("a separate preview tab reads only the snapshot for its demo seed", async () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  const values = new Map<string, string>();
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, value: {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+  } });
+  globalThis.fetch = (async () => Response.json({})) as unknown as typeof fetch;
+  let restore = installAdminDemoFetch("preview-sharing");
+  try {
+    await fetch("/api/admin/settings", { method: "POST", body: JSON.stringify({ siteName: "My preview" }) });
+    restore();
+    restore = installAdminDemoFetch("preview-sharing");
+    expect((await (await fetch("/api/settings")).json()).siteName).toBe("My preview");
+    restore();
+    restore = installAdminDemoFetch("other-demo");
+    expect((await (await fetch("/api/settings")).json()).siteName).toBe("Photographer Name");
+  } finally {
+    restore();
+    if (previous) Object.defineProperty(globalThis, "localStorage", previous);
+    else Reflect.deleteProperty(globalThis, "localStorage");
+  }
 });

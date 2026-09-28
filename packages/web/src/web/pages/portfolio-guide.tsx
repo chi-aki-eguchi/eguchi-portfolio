@@ -82,10 +82,10 @@ export default function PortfolioGuidePage() {
     <article className="max-w-3xl mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20">
       <p className={`${headingClass} text-[color:var(--text-quiet)]`}>ガイド</p>
       <h1
-        className="mt-3 text-[1.9rem] sm:text-[2.25rem] leading-tight"
+        className="mt-3 font-normal text-[1.7rem] sm:text-[2rem] leading-snug"
         style={{ letterSpacing: "0.01em" }}
       >
-        {PORTFOLIO_DISCOVERY_GUIDE.title}
+        写真ポートフォリオの作り方
       </h1>
       <p className="mt-4 text-xs text-[color:var(--text-quiet)] tracking-[0.05em]">
         文・運営：{PORTFOLIO_DISCOVERY_GUIDE.author}
@@ -102,15 +102,7 @@ export default function PortfolioGuidePage() {
         このサイトは作者自身の運用例です。<a href="/" className="underline underline-offset-4">作品を見る</a> ／ <a href="/about" className="underline underline-offset-4">作者について</a>
       </p>
 
-      <aside className="mt-8 border-y border-[rgba(var(--foreground-rgb),0.12)] py-5 text-sm leading-7" aria-label="サイト制作の実例と相談">
-        <p>自分で更新できるサイトを検討している方へ。Portfolio Kit は、写真・文章・並び方を管理画面から変えられる、このサイトと同じ仕組みです。</p>
-        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-          <a href="/portfolio-kit#samples" className="underline underline-offset-4">完成見本を見る</a>
-          <a href="/portfolio-kit#pricing" className="underline underline-offset-4">制作内容・料金を見る</a>
-          <a href="/admin/demo" className="underline underline-offset-4">登録せず管理画面を試す</a>
-          <a href="/portfolio-kit/consult" className="underline underline-offset-4">制作を相談する</a>
-        </p>
-      </aside>
+
 
       <nav
         aria-label="目次"
@@ -149,11 +141,11 @@ export default function PortfolioGuidePage() {
           )}
           {section.id === "operations" && (
             <figure className="mt-6 overflow-hidden border border-[rgba(var(--foreground-rgb),0.12)]">
-              <a href="/portfolio-kit/admin-20260928-settings-ja.jpg" target="_blank" rel="noopener noreferrer" aria-label="実際の管理画面を拡大する（新しいタブ）">
-                <img src="/portfolio-kit/admin-20260928-settings-ja.jpg" alt="実際の管理画面。左でギャラリー配置を選び、右でサイトの見え方を確認できます。" width={1440} height={1000} loading="lazy" decoding="async" className="block h-auto w-full" />
+              <a href="/portfolio-kit/admin-20260929-settings.jpg" target="_blank" rel="noopener noreferrer" aria-label="実際の管理画面を拡大する（新しいタブ）">
+                <img src="/portfolio-kit/admin-20260929-settings.jpg" alt="実際の管理画面。左でサイトの構成を選び、右で公開画面を確認できます。" width={1244} height={996} loading="lazy" decoding="async" className="block h-auto w-full" />
               </a>
               <figcaption className="px-4 py-4 text-sm leading-7 text-[color:var(--text-quiet)]">
-                体験版の実画面です。<a href="/portfolio-kit#admin-video" className="underline underline-offset-4">現在の更新画面を動画で見る</a> ／ <a href="/admin/demo" className="underline underline-offset-4">自分で触ってみる</a>
+                体験版の実画面です。<a href="/portfolio-kit#admin-video" className="underline underline-offset-4">現在の管理画面を見る</a> ／ <a href="/admin/demo" className="underline underline-offset-4">自分で触ってみる</a>
               </figcaption>
             </figure>
           )}
@@ -170,6 +162,16 @@ export default function PortfolioGuidePage() {
           </p>
         ))}
       </section>
+
+      <aside className="mt-8 border-y border-[rgba(var(--foreground-rgb),0.12)] py-5 text-sm leading-7" aria-label="サイト制作の実例と相談">
+        <p>自分で更新できるサイトを検討している方へ。Portfolio Kit は、写真・文章・並び方を管理画面から変えられる、このサイトと同じ仕組みです。</p>
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          <a href="/portfolio-kit#samples" className="underline underline-offset-4">完成見本を見る</a>
+          <a href="/portfolio-kit#pricing" className="underline underline-offset-4">制作内容・料金を見る</a>
+          <a href="/admin/demo" className="underline underline-offset-4">登録せず管理画面を試す</a>
+          <a href="/portfolio-kit/consult" className="underline underline-offset-4">制作を相談する</a>
+        </p>
+      </aside>
 
       <GuideLinks links={PORTFOLIO_DISCOVERY_GUIDE.links} />
     </article>

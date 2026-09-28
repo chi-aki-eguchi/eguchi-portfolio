@@ -3946,15 +3946,15 @@ export const ADMIN_DICTIONARY = {
       guideEyebrow: "クイックツアー",
       guideTitle: "写真と設定を、試してみる",
       guideSteps: [
-        "「写真一覧」で作品を見て、「サイトで確認」を開く",
-        "「サイト編集」→「サイトデザイン」で見せ方を選ぶ",
-        "「サイト編集」→「プロフィール」で文章を編集して保存する",
+        "「写真」で写真を選び、右の欄から公開状態やトップへの掲載を変える",
+        "「シリーズ」で写真をまとめ、並び順や表紙を変える",
+        "「サイト」からプロフィールや文字・配色を編集する",
       ],
       guideNote:
-        "変更はプレビューへその場で反映されます。保存しても本物のサイトには影響しません。",
+        "現行の管理画面を見本データで操作できます。画像の取り込みとPDF出力は対象外です。変更は体験版の中だけに反映されます。",
       guideStart: "体験をはじめる",
       savedNotice:
-        "体験モード: 画面内だけに反映しました。実際には保存されません。",
+        "体験版に反映しました。本番サイトは変わりません。",
     },
     setup: {
       collapsedCompleted: "セットアップは完了しています。",
@@ -4171,15 +4171,15 @@ export const ADMIN_DICTIONARY = {
       guideEyebrow: "Quick tour",
       guideTitle: "Start with these three steps",
       guideSteps: [
-        "Browse photographs in Library, then open “View on site”",
-        "Open Site editor → Site design to shape the presentation",
-        "Open Site editor → Profile to edit and save your biography",
+        "Select photos in 写真 and change publishing or home-page placement",
+        "Group and arrange photographs in シリーズ",
+        "Edit your profile, typography and colours in サイト",
       ],
       guideNote:
-        "Changes appear in the preview immediately. Saving here never affects a live site.",
+        "Uses the current admin interface with sample data. Uploads and PDF export are unavailable; changes stay in this demo.",
       guideStart: "Start exploring",
       savedNotice:
-        "Demo mode: Applied on this screen only. Nothing was saved.",
+        "Applied in this demo. The live site is unchanged.",
     },
     setup: {
       collapsedCompleted: "Setup is complete.",

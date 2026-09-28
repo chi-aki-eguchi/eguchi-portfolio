@@ -122,7 +122,8 @@ describe("public English routes keep one language", () => {
       );
       expect(
         page.host.querySelector('a[href="/en/contact"]')?.textContent,
-      ).toContain("Photography inquiries");
+      ).toContain("Get in touch");
+      expect(page.host.querySelectorAll('a[href="/en/contact"]')).toHaveLength(1);
       expect(page.host.querySelector('a[href="/contact"]')).toBeNull();
       expect(
         page.host.querySelector('a[href="https://prints.example.test"]')

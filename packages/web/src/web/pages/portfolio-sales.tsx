@@ -115,12 +115,7 @@ export default function PortfolioSalesPage() {
       <section className="ks-wrap ks-section" id="samples">
         <div className="ks-heading">
           <div>
-            <p className="ks-label">01 / YOUR WEBSITE</p>
-            <h2>
-              どんなサイトを受け取るか、
-              <br />
-              先に確かめる。
-            </h2>
+            <h2>納品見本</h2>
           </div>
           <p>
             写真の一覧、制作のまとまり、あなたについて。
@@ -205,12 +200,7 @@ export default function PortfolioSalesPage() {
       <section className="ks-wrap ks-section" id="update">
         <div className="ks-heading">
           <div>
-            <p className="ks-label">02 / KEEP IT GROWING</p>
-            <h2>
-              新しい作品は、
-              <br />
-              自分の手で加えていく。
-            </h2>
+            <h2>公開後の更新</h2>
           </div>
           <p>
             写真の追加・並べ替え、プロフィールの変更。
@@ -245,12 +235,7 @@ export default function PortfolioSalesPage() {
       <section className="ks-band">
         <div className="ks-wrap ks-pdf">
           <div>
-            <p className="ks-label">03 / A SMALL COLLECTION</p>
-            <h2>
-              相手に合わせて、
-              <br />
-              PDFでも作品を渡す。
-            </h2>
+            <h2>PDF作品集</h2>
             <p>
               Webとは別の順序や文章で、提出用の作品集を作れます。掲載しているのは見本から出力した実際のページです。
             </p>
@@ -289,7 +274,6 @@ export default function PortfolioSalesPage() {
         </div>
       </section>
       <section className="ks-wrap ks-section" id="pricing">
-        <p className="ks-label">04 / COST AND SCOPE</p>
         <PortfolioServicePricing />
         <p className="ks-quiet">
           制作費は初期設定と制作の費用です。任意の作品更新代行は、環境保守や24時間監視を含むプランではありません。
@@ -298,17 +282,12 @@ export default function PortfolioSalesPage() {
       <section className="ks-wrap ks-section" id="delivery">
         <div className="ks-heading">
           <div>
-            <p className="ks-label">05 / FROM CONSULTATION TO HANDOVER</p>
-            <h2>
-              相談から、
-              <br />
-              最初の更新まで。
-            </h2>
+            <h2>相談から納品まで</h2>
           </div>
           <p>
-            空のテンプレートを渡して終わりにはしません。
+            公開後、ご本人による写真の追加・保存を一緒に確認します。
             <br />
-            ご本人が一度更新できたところまで確認します。
+            操作ガイドと管理画面をお渡しします。
           </p>
         </div>
         <ol className="ks-flow">
@@ -340,12 +319,7 @@ export default function PortfolioSalesPage() {
       </section>
       <section className="ks-wrap ks-section ks-faq">
         <div>
-          <p className="ks-label">06 / BEFORE YOU START</p>
-          <h2>
-            始める前に、
-            <br />
-            確かめたいこと。
-          </h2>
+          <h2>よくある質問</h2>
         </div>
         <div>
           {OWNER_SERVICE_FAQ.map(({ q, a }) => (
@@ -359,12 +333,7 @@ export default function PortfolioSalesPage() {
       <section className="ks-band">
         <div className="ks-wrap ks-consult">
           <div>
-            <p className="ks-label">LET'S START WITH YOUR WORK</p>
-            <h2>
-              誰に、どんな作品を
-              <br />
-              見せたいですか。
-            </h2>
+            <h2>制作のご相談</h2>
             <p>
               まずは用途と、今困っていることから。
               <br />

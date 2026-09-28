@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../../lib/api";
+import { PageTitle } from "../PageTitle";
 import { ContentStatus } from "../ContentStatus";
 import type { GalleryPhoto } from "../PhotoGallery";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
@@ -78,8 +79,8 @@ export function PhotoAllPage({ settings }: { settings: Settings }) {
   return (
     <div className="ps-page ps-all">
       {/* header にしない: 全体の「header > nav」の余白（サイトの帯用）が絞り込みに付く。 */}
-      <div className="ps-page-head ps-page-head--with-filters">
-        <h1 className="ps-page-head__title font-en">{title}</h1>
+      <div className="ps-page-head ps-page-head--with-filters" data-title-style={settings?.pageTitleStyle || "label"}>
+        <PageTitle className="ps-page-head__title" revealClass="">{title}</PageTitle>
         {(usedCategories.length > 0 || hasMedium) && (
           <nav className="ps-filters" aria-label="写真の絞り込み">
             <ul className="ps-filters__group">

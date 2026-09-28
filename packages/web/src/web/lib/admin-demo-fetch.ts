@@ -1,5 +1,7 @@
 import { makeAdminDemoSnapshot, type AdminDemoSnapshot } from "./admin-demo-data";
 
+import { demoMemberships, writeDemoStudio } from "./admin-demo-studio";
+
 export const ADMIN_DEMO_WRITE_EVENT = "admin-demo-write";
 
 function jsonResponse(value: unknown, status = 200): Response {
@@ -38,9 +40,13 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
   const original = globalThis.fetch.bind(globalThis);
   const memory = new Map<string, unknown>();
   const storageKey = `admin-demo:${seed}`;
+  const sharedKey = `admin-demo-preview-snapshot:${seed}`;
   let snapshotPromise: Promise<AdminDemoSnapshot> | undefined;
 
   const persist = (snapshot: AdminDemoSnapshot) => {
+    // noopener preview tabs do not inherit sessionStorage. Share only this
+    // random demo session, never admin credentials or the owner's settings.
+    try { localStorage.setItem(sharedKey, JSON.stringify({ savedAt: Date.now(), snapshot })); } catch { /* private mode/quota */ }
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(snapshot));
     } catch {
@@ -51,6 +57,10 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
   const getSnapshot = async (): Promise<AdminDemoSnapshot> => {
     if (snapshotPromise) return snapshotPromise;
     snapshotPromise = (async () => {
+      try {
+        const shared = JSON.parse(localStorage.getItem(sharedKey) ?? "null");
+        if (shared?.snapshot && Date.now() - shared.savedAt < 24 * 60 * 60 * 1000) return shared.snapshot as AdminDemoSnapshot;
+      } catch { /* unavailable or expired: fall back to this tab */ }
       try {
         const stored = sessionStorage.getItem(storageKey);
         if (stored) return JSON.parse(stored) as AdminDemoSnapshot;
@@ -79,6 +89,8 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
     const snapshot = await getSnapshot();
     update(snapshot);
     persist(snapshot);
+    memory.clear();
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(ADMIN_DEMO_WRITE_EVENT));
   };
 
   const loadPublic = async (path: string): Promise<unknown> => {
@@ -104,23 +116,32 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
       if (path === "/api/admin/setup-health")
         return jsonResponse({ storageConfigured: true, missingStorageVariables: [] });
       if (path === "/api/admin/photos/trash")
-        return jsonResponse({ photos: [], automaticDeletion: false });
+        return jsonResponse({ photos: (await getSnapshot()).photos.filter(p => p.deletedAt), automaticDeletion: false });
       if (path === "/api/admin/hero-photos") {
         return jsonResponse({ heroPhotos: (await getSnapshot()).adminHeroPhotos });
       }
+      if (path === "/api/admin/series-photos") return jsonResponse({ memberships: demoMemberships(await getSnapshot()) });
       if (path === "/api/admin/series") {
         return jsonResponse({ series: (await getSnapshot()).series });
       }
       if (path === "/api/admin/pricing") return jsonResponse({ plans: [] });
       if (path.startsWith("/api/admin/")) return jsonResponse({});
+      const detail = path.match(/^\/api\/series\/([^/]+)$/);
+      if (detail) {
+        const snapshot = await getSnapshot();
+        const series = snapshot.series.find(s => s.slug === decodeURIComponent(detail[1]));
+        if (!series) return jsonResponse({ error: "Series not found" }, 404);
+        const members = demoMemberships(snapshot).filter(m => m.seriesId === series.id).sort((a, b) => a.sortOrder - b.sortOrder);
+        return jsonResponse({ series, photos: members.map(m => snapshot.photos.find(p => p.id === m.photoId)).filter(p => p && !p.deletedAt && p.isPublished !== false) });
+      }
+      if (path === "/api/photos" && url.searchParams.get("all") !== "1") return jsonResponse({ photos: (await getSnapshot()).photos.filter(p => !p.deletedAt && p.isPublished !== false) });
+      if (path === "/api/series" && url.searchParams.has("kind")) return jsonResponse({ series: (await getSnapshot()).series.filter(s => s.kind === url.searchParams.get("kind")) });
       if (path === "/api/photos" || path === "/api/settings" || path === "/api/categories" || path === "/api/series" || path === "/api/hero-photos")
         return jsonResponse(await loadPublic(path));
       return original(input, init);
     }
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(ADMIN_DEMO_WRITE_EVENT));
-    }
+    if (path === "/api/admin/logout") return jsonResponse({ success: true });
 
     if (path === "/api/admin/settings" && body && typeof body === "object") {
       const current = (await loadPublic("/api/settings")) as Record<string, unknown>;
@@ -155,10 +176,17 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
       return jsonResponse({ success: true });
     }
 
+    const snapshot = await getSnapshot();
+    const studio = writeDemoStudio(snapshot, path, method, (body && typeof body === "object" ? body : {}) as Record<string, unknown>);
+    if (studio) {
+      if (!studio.status || studio.status < 400) await updateSnapshot(() => {});
+      return jsonResponse(studio.data, studio.status);
+    }
+
     if (path.includes("/upload"))
       return jsonResponse({ error: "体験版では画像アップロードを利用できません" }, 409);
 
-    return jsonResponse({ success: true, count: 1 });
+    return jsonResponse({ error: "この操作は体験版では利用できません。変更は保存されていません。" }, 409);
   };
 
   globalThis.fetch = demoFetch as typeof globalThis.fetch;

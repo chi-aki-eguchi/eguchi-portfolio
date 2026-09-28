@@ -294,7 +294,7 @@ export default function ContactPage({
   const hasLead = !!(englishWelcome || intro || note || flow || areas);
   const layout =
     contactLayout === "split" && !hasLead ? "left" : contactLayout;
-  const leadAlign = layout === "center" ? "text-center" : "text-left";
+  const leadAlign = data?.siteDesign === "book" ? "text-left" : layout === "center" ? "text-center" : "text-left";
   // Re-run entrance observer when settings load or the form state switches, so
   // newly-rendered sections (form / success view) fade in rather than stay hidden.
   const entranceRef = usePageEntrance([data, status]);
@@ -554,7 +554,7 @@ export default function ContactPage({
             : layout === "left"
               ? "max-w-xl"
               : "max-w-3xl"
-        } mx-auto site-page ${visiblePlans.length > 0 ? "pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))]" : "site-page-top"} pb-12 md:pb-20 min-h-[calc(100dvh-180px)]`}
+        } contact-page mx-auto site-page ${visiblePlans.length > 0 ? "pt-[calc(3rem*var(--spacing-page-top,1))] md:pt-[calc(5rem*var(--spacing-page-top,1))]" : "site-page-top"} pb-12 md:pb-20 min-h-[calc(100dvh-180px)]`}
         ref={entranceRef}
         data-contact-layout={layout}
       >

@@ -76,6 +76,12 @@ test("Local owner demo works, but a customer site cannot enable it", async ({ pa
   await page.locator("[data-admin-demo-guide-start]").click();
   await expect(page.locator("[data-admin-demo-guide]")).toHaveCount(0);
   await expect(page.locator("[data-admin-demo-banner]")).toBeVisible();
+  await expect(page.locator(".admin-book")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "管理画面の入口", exact: true })).toBeVisible();
+  await page.getByRole("navigation", { name: "管理画面の入口", exact: true }).getByRole("button", { name: "シリーズ", exact: true }).click();
+  await expect(page.locator(".admin-book")).toHaveAttribute("data-view", "series");
+  await page.getByRole("navigation", { name: "管理画面の入口", exact: true }).getByRole("button", { name: "サイト", exact: true }).click();
+  await expect(page.locator(".admin-book")).toHaveAttribute("data-view", "site");
   siteUrl = "https://customer.example";
   await page.reload({ waitUntil: "networkidle" });
   await expect(page.getByText("404 — Page not found", { exact: true })).toBeVisible();

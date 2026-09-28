@@ -457,7 +457,7 @@ describe("shared components", () => {
       expect(text).toContain("¥30,000 (approx. $195 USD)");
       expect(text).toContain("exchange rates and your card provider");
       expect(text).toContain(
-        "The admin panel is available in English and Japanese — switch anytime with the JP | EN toggle.",
+        "Settings and guidance support Japanese and English. The current photo and series workspace uses Japanese controls.",
       );
       expect(text).toContain(
         "Support is provided in Japanese and simple English.",
@@ -901,14 +901,16 @@ describe("shared components", () => {
   test("Admin demo reuses the full admin and shows the permanent experience banner", async () => {
     dom.reconfigure({ url: "https://akieguchi.com/admin/demo" });
     dom.window.localStorage.clear();
+    let unmount: (() => void) | undefined;
     try {
       const Demo = (await import("../pages/admin-demo")).default;
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
-      await waitForText(host, "体験版 · 本番への保存なし");
+      unmount = cleanup;
+      await waitForText(host, "すべての写真");
       expect(host.querySelector("[data-admin-demo-banner]")).not.toBeNull();
-      expect(host.textContent).toContain("写真一覧");
-      cleanup();
+      expect(host.textContent).toContain("すべての写真");
     } finally {
+      unmount?.();
       dom.reconfigure({ url: "http://localhost/" });
       dom.window.localStorage.clear();
     }
@@ -921,17 +923,19 @@ describe("shared components", () => {
     dom.reconfigure({ url: "https://akieguchi.com/admin/demo" });
     dom.window.localStorage.clear();
     dom.window.localStorage.setItem("admin:tab", JSON.stringify("settings"));
+    let unmount: (() => void) | undefined;
     try {
       const Demo = (await import("../pages/admin-demo")).default;
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
+      unmount = cleanup;
       await waitForText(host, "体験版 · 本番への保存なし");
       // デモは専用キーへ保存する。本番用キーは読みも書きもしない。
       expect(dom.window.localStorage.getItem("admin:tab:demo")).not.toBeNull();
       expect(dom.window.localStorage.getItem("admin:tab")).toBe(
         JSON.stringify("settings"),
       );
-      cleanup();
     } finally {
+      unmount?.();
       dom.reconfigure({ url: "http://localhost/" });
       dom.window.localStorage.clear();
     }
@@ -943,14 +947,16 @@ describe("shared components", () => {
     const { ADMIN_LANGUAGE_STORAGE_KEY } =
       await import("../pages/admin-i18n");
     dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
+    let unmount: (() => void) | undefined;
     try {
       const Demo = (await import("../pages/admin-demo")).default;
       const { ADMIN_DEMO_WRITE_EVENT } =
         await import("../lib/admin-demo-fetch");
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
+      unmount = cleanup;
       await waitForText(host, "Demo · No live changes");
       expect(host.textContent).toContain("Start with these three steps");
-      expect(host.textContent).toContain("Open Site editor → Site design to shape the presentation");
+      expect(host.textContent).toContain("Group and arrange photographs in シリーズ");
       expect(host.textContent).toContain("Start exploring");
       expect(host.textContent).toContain("Start over");
       expect(
@@ -973,10 +979,10 @@ describe("shared components", () => {
       expect(host.querySelector("[data-admin-demo-guide]")).toBeNull();
 
       dom.window.dispatchEvent(new dom.window.Event(ADMIN_DEMO_WRITE_EVENT));
-      await waitForText(host, "Applied on this screen only");
-      expect(host.textContent).toContain("Nothing was saved");
-      cleanup();
+      await waitForText(host, "Applied in this demo");
+      expect(host.textContent).toContain("The live site is unchanged");
     } finally {
+      unmount?.();
       dom.reconfigure({ url: "http://localhost/" });
       dom.window.localStorage.clear();
     }

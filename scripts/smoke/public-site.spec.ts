@@ -793,21 +793,15 @@ async function expectLanguageSwitchKeyboardFocus(page: Page, destination: string
   expect(Number.parseFloat(focusState.outlineWidth)).toBeGreaterThan(0);
 }
 
-test("Portfolio Kit — 実演動画は任意再生で、説明と相談へ進める", async ({ page }) => {
+test("Portfolio Kit — 現行Adminの画面から説明と相談へ進める", async ({ page }) => {
   const apiMocks = await installPublicApiMocks(page, SYNTHETIC_SERVICE_SETTINGS);
   await page.goto("/portfolio-kit");
-  const video = page.locator("#admin-video video");
-  await expect(video).toHaveAttribute("preload", "none");
-  await expect(video).not.toHaveAttribute("autoplay", "");
-  await video.scrollIntoViewIfNeeded();
-  await video.evaluate(async (element: HTMLVideoElement) => { await element.play(); });
-  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeGreaterThan(0);
-  expect(await video.evaluate((element: HTMLVideoElement) => element.videoWidth)).toBe(1440);
-  await video.evaluate((element: HTMLVideoElement) => element.pause());
-  await page.locator("#admin-video-transcript summary").click();
-  await expect(page.locator("#admin-video-transcript")).toContainText("体験版での保存");
+  const preview = page.locator("#admin-video");
+  await expect(preview).toContainText("2026年9月29日の現行管理画面");
+  await expect(preview.locator("img")).toHaveAttribute("src", "/portfolio-kit/admin-20260929-library.jpg");
+  await expect(preview.locator("video")).toHaveCount(0);
   await page.locator('a[href="/portfolio-kit/guide"]').first().click();
-  await expect(page.locator("h1")).toHaveText("写真ポートフォリオの作り方｜写真選び・構成・Web公開");
+  await expect(page.locator("h1")).toHaveText("写真ポートフォリオの作り方");
   await expect(page.locator('a[href="/portfolio-kit/consult"]').first()).toBeVisible();
   expect(apiMocks.unexpectedRequests).toEqual([]);
 });

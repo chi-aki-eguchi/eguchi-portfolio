@@ -22,6 +22,7 @@ export function makeAdminDemoSettings(): Record<string, string> {
   return {
     ...settings,
     ...CLIENT_SITE_FALLBACKS,
+    siteDesign: "book",
     siteDescription: "Photography portfolio.",
     profileBio: "Photographer.",
     fontJa: "Shippori Mincho",
@@ -74,7 +75,7 @@ export function makeAdminDemoSnapshot(
   const photoIds = new Set(photos.map((photo) => Number(photo.id)));
   const categorySlugs = new Set(photos.map((photo) => String(photo.category ?? "")));
   const seriesIds = new Set(
-    photos.map((photo) => Number(photo.seriesId)).filter(Number.isFinite),
+    photos.flatMap((photo) => Array.isArray(photo.seriesIds) ? photo.seriesIds.map(Number) : [Number(photo.seriesId)]).filter(Number.isFinite),
   );
   const categories = (sources.categories ?? []).filter((category) =>
     categorySlugs.has(String(category.slug ?? "")),
@@ -85,7 +86,7 @@ export function makeAdminDemoSnapshot(
       ...item,
       coverPhotoId: photoIds.has(Number(item.coverPhotoId))
         ? item.coverPhotoId
-        : photos.find((photo) => Number(photo.seriesId) === Number(item.id))?.id ?? null,
+        : photos.find((photo) => Array.isArray(photo.seriesIds) ? photo.seriesIds.includes(Number(item.id)) : Number(photo.seriesId) === Number(item.id))?.id ?? null,
     }));
   const selectedHeroes = (sources.heroPhotos ?? []).filter((photo) =>
     photoIds.has(Number(photo.id)),

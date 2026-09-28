@@ -5,7 +5,6 @@ import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageLanguage } from "../hooks/usePageLanguage";
-import { Link } from "wouter";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
 import { imageUrlWithParams } from "../../shared/image-url";
@@ -154,7 +153,7 @@ export default function ProfilePage({
   if (settingsLoading) {
     return (
       <section
-        className="max-w-3xl mx-auto site-page site-page-top site-page-hold"
+        className="profile-page max-w-3xl mx-auto site-page site-page-top site-page-hold"
         aria-hidden="true"
       />
     );
@@ -168,7 +167,7 @@ export default function ProfilePage({
          帯が y=537 から画面外へ飛び、ズレ 0.063）。基準内ではあるが、読んで
          いる最中に動くことに変わりはない。届くまで1画面ぶん場所を取り、
          帯を最初から画面の外に置く（`.site-page-hold`）。 */
-      className={`max-w-3xl mx-auto site-page site-page-top pb-12 md:pb-20 min-h-[60vh] ${
+      className={`profile-page max-w-3xl mx-auto site-page site-page-top pb-12 md:pb-20 min-h-[60vh] ${
         noteOn && noteData === undefined ? "site-page-hold" : ""
       }`}
       ref={entranceRef}
@@ -193,7 +192,7 @@ export default function ProfilePage({
         {/* Bio */}
         {/* min-w-0: grid の子は既定で min-width:auto なので、中身が折り返せない
             とき列そのものが広がる。下の break-words と両方要る。 */}
-        <div className="pt-1 flex flex-col min-w-0">
+        <div className="profile-bio pt-1 flex flex-col min-w-0">
           <h2
             /* break-words が無いと、折り返せない長い名前（URL を貼った等）で
                About が横に伸びる。実測 320px の画面で 1650px まで広がっていた。
@@ -290,13 +289,6 @@ export default function ProfilePage({
             </div>
           )}
 
-          {(settings?.homeCtaEnabled ?? "off") === "on" && (
-            <Link to={english ? "/en/contact" : "/contact"}
-              className="self-start mt-8 inline-flex items-center gap-4 min-h-11 border-b border-[rgba(var(--foreground-rgb),0.3)] text-sm text-[var(--foreground)] page-entrance page-entrance-delay-2">
-              {english ? "Photography inquiries" : "撮影のご相談"}<span aria-hidden="true">→</span>
-            </Link>
-          )}
-
           <div className="flex-1" />
 
           {hasSns && (
@@ -339,21 +331,21 @@ export default function ProfilePage({
       {/* J1: Journal — latest note posts as cards (thumbnail + date + title + excerpt).
           Hidden if disabled or fetch returned nothing. */}
       {noteOn && notePosts.length > 0 && (
-        <div className="mt-12 md:mt-16 pt-8 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
+        <div className="profile-journal mt-12 md:mt-16 pt-8 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
           <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-8">
             Journal
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
+          <div className="profile-journal__list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
             {notePosts.map((post) => (
               <a
                 key={post.link}
                 href={safeHref(post.link)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block"
+                className="profile-journal__entry group block"
               >
                 {/* Thumbnail — 3:2 photographic ratio */}
-                <div className="aspect-[3/2] overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] mb-4">
+                <div className="profile-journal__image aspect-[3/2] overflow-hidden bg-[rgba(var(--foreground-rgb),0.04)] mb-4">
                   {post.thumbnail ? (
                     <img
                       src={post.thumbnail}
@@ -390,7 +382,7 @@ export default function ProfilePage({
                 {/* Excerpt — first ~120 chars, 2-line clamp */}
                 {post.excerpt && (
                   <p
-                    className="line-clamp-2 text-[color:var(--text-quiet)]"
+                    className="profile-journal__excerpt line-clamp-2 text-[color:var(--text-quiet)]"
                     style={{
                       fontSize: "0.78rem",
                       lineHeight: "1.75",

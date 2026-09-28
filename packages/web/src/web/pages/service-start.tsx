@@ -373,7 +373,7 @@ export default function ServiceStartPage({
       {checkoutArrivalCopy ? (
         <PaymentGuidanceBanner language={language} copy={checkoutArrivalCopy} />
       ) : null}
-      <header className="grid gap-10 md:grid-cols-[1.02fr_0.98fr] md:items-center">
+      <header className="max-w-3xl">
         <div>
           <p className="font-en uppercase mb-7" style={labelStyle}>
             {copy.pageLabel}
@@ -381,7 +381,7 @@ export default function ServiceStartPage({
           <h1
             className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.88)]`}
             style={{
-              fontSize: "clamp(1.75rem, 4vw, 3rem)",
+              fontSize: "clamp(1.75rem, 3vw, 2.25rem)",
               lineHeight: 1.45,
               letterSpacing: "0.02em",
             }}
@@ -441,17 +441,7 @@ export default function ServiceStartPage({
           </p>
         </div>
 
-        <figure className="border border-[rgba(var(--foreground-rgb),0.12)]">
-          <img
-            src="/og-service.jpg"
-            alt="Aki Eguchi Portfolio Kit"
-            width="1200"
-            height="630"
-            className="aspect-[1200/630] w-full object-cover"
-            loading="eager"
-            decoding="async"
-          />
-        </figure>
+
       </header>
 
       <DomainReassurance language={language} />

@@ -11,11 +11,13 @@ export type StudioView = "photos" | "series";
  * 同じデータ・同じ通知・同じ取り込みを使う。
  */
 export function Studio({
+  demoSeed,
   view,
   onView,
   onOpenDetails,
   onUploadingChange,
 }: {
+  demoSeed?: string;
   view: StudioView;
   onView: (view: StudioView) => void;
   /** 構図・日付の一括入力など、詳しい道具（従来の写真の一覧）を開く */
@@ -23,7 +25,7 @@ export function Studio({
   onUploadingChange?: (busy: boolean) => void;
 }) {
   return (
-    <StudioProvider onUploadingChange={onUploadingChange}>
+    <StudioProvider demoSeed={demoSeed} onUploadingChange={onUploadingChange}>
       <StudioScreens view={view} onView={onView} onOpenDetails={onOpenDetails} />
       <StudioToast />
     </StudioProvider>

@@ -122,6 +122,7 @@ export type StudioNotice = { text: string; undo?: UndoEntry; tone?: "error" };
 export type UploadState = { done: number; total: number; target: number | null } | null;
 
 type StudioCtx = {
+  demoSeed?: string;
   notice: StudioNotice | null;
   say: (n: StudioNotice) => void;
   dismiss: () => void;
@@ -145,9 +146,11 @@ export function useStudio(): StudioCtx {
 }
 
 export function StudioProvider({
+  demoSeed,
   children,
   onUploadingChange,
 }: {
+  demoSeed?: string;
   children: React.ReactNode;
   onUploadingChange?: (busy: boolean) => void;
 }) {
@@ -280,8 +283,8 @@ export function StudioProvider({
   );
 
   const value = useMemo(
-    () => ({ notice, say, dismiss, remember, undo, fail, refresh, upload, importFiles, recentIds }),
-    [notice, say, dismiss, remember, undo, fail, refresh, upload, importFiles, recentIds],
+    () => ({ demoSeed, notice, say, dismiss, remember, undo, fail, refresh, upload, importFiles, recentIds }),
+    [demoSeed, notice, say, dismiss, remember, undo, fail, refresh, upload, importFiles, recentIds],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

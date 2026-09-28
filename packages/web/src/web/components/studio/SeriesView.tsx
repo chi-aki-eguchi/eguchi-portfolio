@@ -1,3 +1,4 @@
+import { buildPublicSiteHref } from "../../pages/admin-shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminPhotoSrc, usePersistentState } from "../../pages/admin-shared";
@@ -224,7 +225,7 @@ function SeriesEditor({
   importFiles: (files: File[], target: number | null) => Promise<number[]>;
   uploading: boolean;
 }) {
-  const { remember, fail, refresh, say } = useStudio();
+  const { demoSeed, remember, fail, refresh, say } = useStudio();
   const qc = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -375,7 +376,7 @@ function SeriesEditor({
                   非公開
                 </button>
               </fieldset>
-              <a className="st-link" href={seriesHref(series)} target="_blank" rel="noopener">
+              <a className="st-link" href={buildPublicSiteHref(demoSeed, seriesHref(series))} target="_blank" rel="noopener">
                 サイトで見る ↗
               </a>
             </div>

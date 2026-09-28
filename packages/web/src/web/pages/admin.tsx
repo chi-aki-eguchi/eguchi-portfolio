@@ -839,7 +839,7 @@ function AdminPageContent({
       label: t.navigation.openSite,
       group: t.navigation.groups.site,
       icon: <ExternalLink size={15} />,
-      action: () => window.open("/", "_blank", "noopener"),
+      action: () => window.open(publicSiteHref, "_blank", "noopener"),
     },
   ];
 
@@ -908,7 +908,7 @@ function AdminPageContent({
         label: t.navigation.openSite,
         group: "サイト",
         icon: <ExternalLink size={15} />,
-        action: () => window.open("/", "_blank", "noopener"),
+        action: () => window.open(publicSiteHref, "_blank", "noopener"),
       },
     ];
     const galleryTab = (
@@ -1039,6 +1039,7 @@ function AdminPageContent({
             >
               {(bookView === "photos" || bookView === "series") && (
                 <Studio
+                  demoSeed={demoSeed}
                   view={bookView}
                   onView={(v) => goBook(v)}
                   onOpenDetails={() => goBook("library")}

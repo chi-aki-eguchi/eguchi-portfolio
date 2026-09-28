@@ -997,3 +997,58 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   display: inline-flex;
   align-items: center;
 }
+
+/* 読むページも写真の紙面と同じ基準線に揃える。レイアウト選択は保持。 */
+.ps-site .profile-page {
+  max-width: 62rem;
+  padding-top: clamp(2rem, 5vw, 4rem);
+}
+.ps-site .profile-page > h1 {
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+}
+.ps-site .profile-bio > h2 { font-weight: 400; }
+.ps-site .profile-journal__list { display: block; }
+.ps-site .profile-journal__entry {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  column-gap: 2rem;
+  padding-block: 1.25rem;
+  border-top: 1px solid var(--ps-hair);
+}
+.ps-site .profile-journal__image {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  margin: 0;
+}
+.ps-site .profile-journal__entry > p { grid-column: 2; min-height: 0 !important; }
+.ps-site .profile-journal__entry > p:last-child { margin-bottom: 0; }
+.ps-site .profile-journal__image img { transform: none; }
+.ps-site .contact-page { padding-top: clamp(2rem, 5vw, 4rem); }
+@media (min-width: 768px) {
+  .ps-site [data-profile-layout="side"] {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+    column-gap: clamp(3rem, 7vw, 7rem);
+  }
+}
+@media (max-width: 479px) {
+  .ps-site .profile-journal__entry { grid-template-columns: 5rem minmax(0, 1fr); gap: 0.25rem 1rem; }
+  .ps-site .profile-journal__excerpt { display: none; }
+}
+
+.ps-site .profile-page [data-profile-layout] img { box-shadow: none; }
+/* ページ末の案内は作品の続きとして、短い書誌情報ほどの大きさに。 */
+.ps-service__main {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "title go" "lead go";
+  align-items: center;
+  gap: 0.25rem 2rem;
+}
+.ps-service__sub { align-self: flex-start; }
+@media (max-width: 639px) {
+  .ps-service__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "lead" "go"; gap: 0.5rem; }
+}
+
+/* Gallery / Series / About / Contact は同じ「各ページの見出し」設定を使う。 */
+.ps-page-head--with-filters[data-title-style="label"] { display: block; }
+.ps-page-head--with-filters[data-title-style="label"] .ps-filters { margin-top: 1.5rem; }
+.ps-site .profile-page:has([data-profile-layout="quiet"]) { max-width: 42rem; }

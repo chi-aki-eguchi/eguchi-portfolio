@@ -844,7 +844,8 @@ describe("injectOgp /portfolio-kit route", () => {
     expect(out).toContain(
       "<title>写真を置く場所をつくる | 写真家のポートフォリオサイト</title>",
     );
-    expect(out).toContain("写真の入れ替えも、文章も、レイアウトも自分で");
+    expect(out).toContain("納品見本・管理画面体験・PDF見本");
+    expect(out).toContain("サーバー・ドメイン実費は別途");
   });
 
   test("/portfolio-kit is indexable on akieguchi.com", () => {

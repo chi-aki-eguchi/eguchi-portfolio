@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { CLIENT_SITE_FALLBACKS } from "../lib/site-fallbacks";
-import { composePageTitle } from "../../shared/site-title";
+import { isServiceOwnerSite } from "../../shared/service-visibility";
+import { composePageTitle, OWNER_SERVICE_TITLE } from "../../shared/site-title";
 
 /**
  * Sets document.title on SPA navigation.
@@ -23,6 +24,10 @@ export function usePageTitle(page?: string) {
     // flash used to make GA record different titles for the same URL
     // depending on hydration timing.
     if (!settings && !isError) return;
+    if (isServiceOwnerSite(settings?.siteUrl, undefined) && (page === "Portfolio Kit" || page === "Portfolio Kit — English")) {
+      document.title = OWNER_SERVICE_TITLE[page === "Portfolio Kit" ? "ja" : "en"];
+      return;
+    }
     document.title = composePageTitle(page, {
       nameJa: settings?.siteName || CLIENT_SITE_FALLBACKS.siteName,
       nameEn: settings?.siteNameEn || CLIENT_SITE_FALLBACKS.siteNameEn,

@@ -15,6 +15,7 @@ import tailwind from "@tailwindcss/vite";
 import path from "path";
 
 const TARGET = (process.env.TRY_TARGET || "https://akieguchi.com").replace(/\/$/, "");
+const KIT_PREVIEW = process.env.TRY_KIT === "1";
 const DESIGN = process.env.TRY_DESIGN || "book";
 
 function readOnlyApi(): Plugin {
@@ -23,9 +24,15 @@ function readOnlyApi(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ?? "/";
+        // 販売プレビューでは、外部相談受付・解析へのブラウザー送信も禁止する。
+        // 画面のリンクを確認する用途。受付成功・実受信の試験は隔離smokeで行う。
+        if (KIT_PREVIEW) {
+          res.setHeader("Content-Security-Policy", "connect-src 'self'; form-action 'self'");
+          res.setHeader("X-Robots-Tag", "noindex, nofollow");
+        }
         // 管理画面はここでは開けない（ログインも本番へ送らない）。ログイン画面だけ
         // 出て必ず失敗すると迷うので、見本データで試せる try:admin へ案内する。
-        if (/^\/admin(\/|\?|$)/.test(url) && (req.headers.accept ?? "").includes("text/html")) {
+        if (!(KIT_PREVIEW && /^\/admin\/demo(?:[/?]|$)/.test(url)) && /^\/admin(\/|\?|$)/.test(url) && (req.headers.accept ?? "").includes("text/html")) {
           res.statusCode = 200;
           res.setHeader("content-type", "text/html; charset=utf-8");
           res.setHeader("cache-control", "no-store");
@@ -78,5 +85,5 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src/web") },
   },
-  server: { port: 4400, strictPort: true, host: true, hmr: { overlay: false } },
+  server: { port: KIT_PREVIEW ? 5899 : 4400, strictPort: true, host: KIT_PREVIEW ? "127.0.0.1" : true, hmr: { overlay: false } },
 });

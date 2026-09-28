@@ -1,9 +1,10 @@
+import { PORTFOLIO_PRODUCT } from "../../shared/portfolio-product";
 export const INTAKE_ORIGIN = "https://photo-work-pricing.chi-aki-18.chatgpt.site";
 export const CONSULT_PATH = "/portfolio-kit/consult";
 export const CONSULT_PLANS = {
-  basic: "公開おまかせ · 30,000円",
-  editorial: "写真・文章編集付き · 69,800円",
-  care: "公開後の更新 · 月額9,800円（任意）",
+  basic: `公開おまかせ · ${PORTFOLIO_PRODUCT.setupPrice.toLocaleString("ja-JP")}円`,
+  editorial: `写真・文章編集付き · ${PORTFOLIO_PRODUCT.editorialPrice.toLocaleString("ja-JP")}円`,
+  care: `公開後の更新 · 月額${PORTFOLIO_PRODUCT.optionalEditingMonthlyPrice.toLocaleString("ja-JP")}円（任意）`,
 } as const;
 export type ConsultPlan = keyof typeof CONSULT_PLANS;
 export type Intake = { id: string; name: string; email: string; website: string; plan: ConsultPlan; brief: string; consent: boolean; company: string; elapsed: number; source: string };

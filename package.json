@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "cd packages/web && bunx vite",
+    "try:kit": "cd packages/web && TRY_KIT=1 bun --no-env-file x vite --config vite.try.config.ts",
     "try:pdf": "bun --no-env-file scripts/try-admin.ts --pdf",
     "try": "cd packages/web && bunx vite --config vite.try.config.ts",
     "try:admin": "bun --no-env-file scripts/try-admin.ts",

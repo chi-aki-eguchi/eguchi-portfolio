@@ -71,3 +71,9 @@ export const PAGE_TITLE = {
   terms: "利用条件",
   termsEn: "Terms of Use",
 } as const;
+
+/** Owner offer titles are complete titles, not prefixes for the customer's name. */
+export const OWNER_SERVICE_TITLE = {
+  ja: "写真を置く場所をつくる | 写真家のポートフォリオサイト",
+  en: "A Place to Keep Your Photographs | Portfolio Websites for Photographers",
+} as const;

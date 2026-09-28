@@ -1,3 +1,4 @@
+import { OWNER_SERVICE_TITLE } from "../shared/site-title";
 import { portfolioPlans } from "../shared/portfolio-product";
 import {
   DEFAULT_SITE_URL as SITE_URL_DEFAULT,
@@ -397,8 +398,8 @@ export function ogCardTitleFrom(settings: Record<string, string>): string {
 // 置かない。「Aki Eguchi Portfolio Kit」は、この製品を既に知っている人しか
 // 打たない語なので、題の頭には置かず説明の末尾で名乗る。
 const SERVICE_OG = {
-  title: "写真を置く場所をつくる | 写真家のポートフォリオサイト",
-  desc: "写真の入れ替えも、文章も、レイアウトも自分で。わかりやすく機能のそろった管理画面で、コードを書かずに更新できる写真家のポートフォリオサイト。初期設定・公開込み、買い切り¥30,000（Aki Eguchi Portfolio Kit）。",
+  title: OWNER_SERVICE_TITLE.ja,
+  desc: "写真家・江口秋が、あなたの写真と文章を設定したサイトを制作。納品見本・管理画面体験・PDF見本で仕上がりと更新方法を確認できます。初期制作¥30,000から、サーバー・ドメイン実費は別途。無料相談受付（Aki Eguchi Portfolio Kit）。",
   image: "/og-service.jpg",
 };
 
@@ -409,7 +410,7 @@ const SERVICE_START_OG = {
 };
 
 const SERVICE_OG_EN = {
-  title: "A Place to Keep Your Photographs | Portfolio Websites for Photographers",
+  title: OWNER_SERVICE_TITLE.en,
   desc: "Update photographs, text, and layouts yourself in a clear, fully featured admin panel. A portfolio website for photographers, without coding for everyday updates. Setup and launch included — ¥30,000 one-time (Aki Eguchi Portfolio Kit).",
   image: "/og-service.jpg",
 };

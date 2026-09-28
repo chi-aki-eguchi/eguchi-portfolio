@@ -3,7 +3,7 @@ const intakeOrigin = "https://photo-work-pricing.chi-aki-18.chatgpt.site";
 async function mockPublic(page: Page, owner = true) {
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
-    const data = path === "/api/settings" ? { siteUrl: owner ? "https://akieguchi.com" : "https://customer.example", siteName: "Local QA", nameJa: "Local QA", servicePageMode: "on", heroMode: "none", homeSections: "[]", contactEmail: "qa@example.invalid" } : path === "/api/photos" ? { photos: [], total: 0 } : path === "/api/series" ? { series: [] } : {};
+    const data = path === "/api/settings" ? { siteUrl: owner ? "https://akieguchi.com" : "https://customer.example", siteDesign: "book", siteName: "Local QA", nameJa: "Local QA", servicePageMode: "on", heroMode: "none", homeSections: "[]", contactEmail: "qa@example.invalid" } : path === "/api/photos" ? { photos: [], total: 0 } : path === "/api/series" ? { series: [] } : {};
     await route.fulfill({ json: data });
   });
   await page.route("https://formspree.io/**", route => route.fulfill({ json: { ok: true } }));
@@ -60,4 +60,37 @@ test("distributed customer sites cannot submit to the owner's intake", async ({ 
   await mockPublic(page, false); await page.goto("/portfolio-kit/consult");
   await expect(page.getByText("このサイトでは制作相談を受け付けていません。", { exact: false })).toBeVisible();
   await expect(page.locator("form")).toHaveCount(0);
+});
+
+test("owner sales page shares the photo frame and shows usable delivery samples", async ({ page }, info) => {
+  await mockPublic(page);
+  await page.goto("/portfolio-kit");
+  await expect(page.locator(".kit-sales")).toBeVisible();
+  await expect(page.locator('.ps-site[data-site-design="book"]')).toHaveCount(1);
+  await expect(page).toHaveTitle("写真を置く場所をつくる | 写真家のポートフォリオサイト");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("作品を見せる。");
+  const tabs = page.getByRole("tablist", { name: "納品見本のページ" });
+  await tabs.getByRole("tab", { name: "トップ", exact: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.getByRole("tab", { name: "シリーズ", exact: true })).toBeFocused();
+  await expect(page.locator("#sample-panel img")).toHaveAttribute("src", "/portfolio-kit/sample/series.webp");
+  await expect.poll(() => page.locator("#sample-panel img").evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+  await expect(page.getByRole("link", { name: "実物のPDFを見る", exact: false })).toHaveAttribute("href", "/portfolio-kit/sample/portfolio.pdf");
+  await expect(page.locator("#admin-video")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.screenshot({ path: info.outputPath("sales.png"), fullPage: true });
+  await page.getByRole("link", { name: "無料で制作を相談する", exact: false }).click();
+  await expect(page).toHaveURL(/\/portfolio-kit\/consult\?plan=basic$/);
+  await expect(page.getByRole("combobox")).toHaveValue("basic");
+});
+
+test("a guide link reaches the sales sample after lazy loading", async ({ page }) => {
+  await mockPublic(page);
+  await page.goto("/portfolio-kit/guide");
+  await page.getByRole("link", { name: "完成見本を見る", exact: true }).click();
+  await expect(page).toHaveURL(/\/portfolio-kit#samples$/);
+  await expect.poll(() => page.locator("#samples").evaluate(element => {
+    const top = element.getBoundingClientRect().top;
+    return top >= 0 && top < 120;
+  })).toBe(true);
 });

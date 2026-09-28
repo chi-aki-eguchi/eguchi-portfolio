@@ -1,0 +1,436 @@
+/* The sales page inherits the public site's identity, settings and light/dark theme. */
+.kit-sales {
+  --ks-line: rgba(var(--foreground-rgb), 0.18);
+  --ks-quiet: rgba(var(--foreground-rgb), 0.72);
+  font-family: var(--font-ja);
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.95;
+}
+.kit-sales .ks-wrap {
+  width: min(1280px, calc(100% - 80px));
+  margin-inline: auto;
+}
+.kit-sales p {
+  margin: 0 0 18px;
+}
+.kit-sales h1,
+.kit-sales h2,
+.kit-sales h3 {
+  font-weight: 400;
+  line-height: 1.6;
+}
+.kit-sales h1 {
+  font-size: clamp(34px, 3.7vw, 53px);
+  letter-spacing: 0.035em;
+  margin: 24px 0 30px;
+}
+.kit-sales h2 {
+  font-size: clamp(25px, 3vw, 36px);
+  margin: 0 0 22px;
+}
+.kit-sales h3 {
+  font-size: 17px;
+  margin: 0 0 12px;
+}
+.kit-sales a {
+  text-underline-offset: 5px;
+}
+.kit-sales a:hover {
+  text-decoration: underline;
+}
+.kit-sales :focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 5px;
+}
+.kit-sales .ks-label {
+  font: 400 12px/1.8 var(--font-en);
+  letter-spacing: 0.12em;
+  color: var(--ks-quiet);
+  margin-bottom: 22px;
+}
+.kit-sales .ks-quiet,
+.kit-sales small,
+.kit-sales figcaption {
+  color: var(--ks-quiet);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.kit-sales figcaption {
+  margin-top: 12px;
+  font-size: 11px;
+}
+.kit-sales img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.kit-sales figure {
+  margin: 0;
+}
+.kit-sales .ks-subnav {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 12px;
+  padding-block: 24px;
+  color: var(--ks-quiet);
+}
+.kit-sales .ks-subnav p {
+  margin: 0;
+}
+.kit-sales .ks-subnav nav {
+  display: flex;
+  gap: 24px;
+}
+.kit-sales .ks-hero {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  align-items: center;
+  gap: 64px;
+  padding-block: 28px 65px;
+}
+.kit-sales .ks-lead {
+  font-size: 17px;
+}
+.kit-sales .ks-hero-image img {
+  width: 100%;
+  height: 635px;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid var(--ks-line);
+}
+.kit-sales .ks-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-block: 25px;
+  font-size: 13px;
+}
+.kit-sales .ks-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 22px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 13px;
+  border: 1px solid var(--foreground);
+  text-decoration: none;
+}
+.kit-sales .ks-button:hover {
+  opacity: 0.85;
+}
+.kit-sales .ks-cost {
+  border-top: 1px solid var(--ks-line);
+  padding-top: 20px;
+  font-size: 14px;
+  margin-top: 28px;
+}
+.kit-sales .ks-band {
+  background: rgba(var(--foreground-rgb), 0.035);
+  border-block: 1px solid var(--ks-line);
+  padding-block: 28px;
+}
+.kit-sales .ks-section {
+  padding-block: 75px;
+  border-bottom: 1px solid var(--ks-line);
+  scroll-margin-top: 80px;
+}
+.kit-sales .ks-heading {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 45px;
+  align-items: end;
+  margin-bottom: 35px;
+}
+.kit-sales .ks-heading p {
+  color: var(--ks-quiet);
+}
+.kit-sales .ks-heading h2 {
+  margin-bottom: 0;
+}
+.kit-sales .ks-tabs {
+  display: flex;
+  gap: 22px;
+  border-bottom: 1px solid var(--ks-line);
+  margin-bottom: 22px;
+}
+.kit-sales .ks-tabs button {
+  background: none;
+  border: 0;
+  padding: 12px 0;
+  color: var(--ks-quiet);
+  font-size: 14px;
+  cursor: pointer;
+}
+.kit-sales .ks-tabs button[aria-selected="true"] {
+  color: var(--foreground);
+  box-shadow: 0 1px currentColor;
+}
+.kit-sales .ks-sample figure {
+  max-width: 950px;
+  margin-inline: auto;
+}
+.kit-sales .ks-sample img {
+  width: 100%;
+  height: 560px;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid var(--ks-line);
+}
+.kit-sales .ks-sample figcaption {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.kit-sales .ks-deliverables {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: 30px;
+  border-top: 1px solid var(--ks-line);
+  margin-top: 35px;
+  padding-top: 25px;
+}
+.kit-sales .ks-deliverables ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 30px;
+  list-style: disc;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.kit-sales .ks-responsibility {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 40px;
+}
+.kit-sales .ks-responsibility > div {
+  border-top: 1px solid var(--ks-line);
+  padding-top: 22px;
+}
+.kit-sales .ks-responsibility p {
+  font-size: 14px;
+  color: var(--ks-quiet);
+}
+.kit-sales .ks-pdf {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 60px;
+  padding-block: 45px;
+  align-items: center;
+}
+.kit-sales .ks-pdf .ks-quiet {
+  margin-top: 15px;
+}
+.kit-sales .ks-pdf-pages {
+  display: flex;
+  gap: 8px;
+}
+.kit-sales .ks-pdf-pages img {
+  width: calc(50% - 4px);
+  border: 1px solid var(--ks-line);
+}
+.kit-sales .ks-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 35px;
+  padding: 0;
+  list-style: none;
+}
+.kit-sales .ks-flow li {
+  border-top: 1px solid var(--ks-line);
+  padding-top: 20px;
+}
+.kit-sales .ks-flow span {
+  font: 400 25px var(--font-en);
+  color: var(--ks-quiet);
+}
+.kit-sales .ks-flow h3 {
+  margin-top: 15px;
+}
+.kit-sales .ks-flow p {
+  font-size: 13px;
+  color: var(--ks-quiet);
+}
+.kit-sales .ks-faq {
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 60px;
+}
+.kit-sales details {
+  border-top: 1px solid var(--ks-line);
+}
+.kit-sales summary {
+  cursor: pointer;
+  padding: 18px 0;
+  font-size: 14px;
+}
+.kit-sales details > p {
+  font-size: 14px;
+  color: var(--ks-quiet);
+}
+.kit-sales .ks-consult {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 60px;
+  padding-block: 40px;
+  align-items: center;
+}
+.kit-sales .ks-consult ol {
+  padding-left: 20px;
+  margin-block: 18px;
+}
+.kit-sales .ks-consult .ks-quiet {
+  margin-top: 15px;
+}
+.kit-sales .ks-bottom {
+  padding-block: 30px;
+  font-size: 12px;
+}
+.kit-sales .ks-bottom details {
+  margin-bottom: 25px;
+}
+.kit-sales #pricing,
+.kit-sales #samples,
+.kit-sales #sample-sources,
+.kit-sales #admin-video {
+  scroll-margin-top: 80px;
+}
+@media (max-width: 1050px) {
+  .kit-sales .ks-wrap {
+    width: calc(100% - 48px);
+  }
+  .kit-sales .ks-hero {
+    gap: 35px;
+  }
+  .kit-sales .ks-hero-image img {
+    height: 570px;
+  }
+  .kit-sales .ks-pdf {
+    gap: 32px;
+  }
+}
+@media (max-width: 720px) {
+  .kit-sales .ks-wrap {
+    width: calc(100% - 40px);
+  }
+  .kit-sales .ks-subnav {
+    flex-direction: column;
+    gap: 14px;
+    font-size: 11px;
+  }
+  .kit-sales .ks-subnav nav {
+    justify-content: space-between;
+  }
+  .kit-sales .ks-hero {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding-block: 12px 38px;
+  }
+  .kit-sales .ks-hero-copy {
+    display: contents;
+  }
+  .kit-sales .ks-hero .ks-label {
+    order: 0;
+    margin: 0;
+  }
+  .kit-sales h1 {
+    order: 1;
+    font-size: 36px;
+    margin: 0;
+  }
+  .kit-sales .ks-hero-image {
+    order: 2;
+  }
+  .kit-sales .ks-hero .ks-lead {
+    order: 3;
+    font-size: 15px;
+    margin: 0;
+  }
+  .kit-sales .ks-hero .ks-quiet {
+    order: 4;
+    margin: 0;
+  }
+  .kit-sales .ks-hero .ks-actions {
+    order: 5;
+    margin: 0;
+  }
+  .kit-sales .ks-hero .ks-cost {
+    order: 6;
+    margin: 0;
+  }
+  .kit-sales .ks-hero-image img {
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+  .kit-sales .ks-label {
+    font-size: 11px;
+  }
+  .kit-sales .ks-section {
+    padding-block: 45px;
+  }
+  .kit-sales .ks-heading,
+  .kit-sales .ks-pdf,
+  .kit-sales .ks-faq,
+  .kit-sales .ks-consult {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .kit-sales .ks-heading > p {
+    font-size: 13px;
+    margin: 0;
+  }
+  .kit-sales .ks-sample img {
+    height: 360px;
+  }
+  .kit-sales .ks-tabs {
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .kit-sales .ks-tabs button {
+    font-size: 12px;
+  }
+  .kit-sales .ks-deliverables {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .kit-sales .ks-deliverables ul {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .kit-sales .ks-responsibility {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .kit-sales .ks-flow {
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+  }
+  .kit-sales .ks-flow h3 {
+    font-size: 15px;
+  }
+  .kit-sales .ks-flow p {
+    font-size: 12px;
+  }
+  .kit-sales .ks-band {
+    font-size: 13px;
+  }
+  .kit-sales .ks-consult,
+  .kit-sales .ks-pdf {
+    padding-block: 20px;
+  }
+}
+@media (max-width: 370px) {
+  .kit-sales .ks-wrap {
+    width: calc(100% - 32px);
+  }
+  .kit-sales h1 {
+    font-size: 32px;
+  }
+}

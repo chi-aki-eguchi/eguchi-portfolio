@@ -85,3 +85,6 @@ claude-code-night-run.md
 
 # Local delivery rehearsal bundles (never credentials or real customers)
 /output/kit-delivery/
+
+# Owner-only pricing drafts, search metrics and approval notes
+/output/portfolio-kit-owner/

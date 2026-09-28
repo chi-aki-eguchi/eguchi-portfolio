@@ -1,3 +1,4 @@
+import { useInitialHashScroll } from "../hooks/useInitialHashScroll";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import {
   PORTFOLIO_DISCOVERY_GUIDE,
@@ -51,7 +52,7 @@ function GuideLinks({
       <h2 className="mt-2 text-xl md:text-2xl">
         自分に合うか、まず確かめてみる
       </h2>
-      <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2">
         {links.map((link) => (
           <li
             key={link.href}
@@ -74,6 +75,7 @@ function GuideLinks({
 }
 
 export default function PortfolioGuidePage() {
+  useInitialHashScroll();
   usePageEntrance([]);
 
   return (
@@ -103,6 +105,7 @@ export default function PortfolioGuidePage() {
       <aside className="mt-8 border-y border-[rgba(var(--foreground-rgb),0.12)] py-5 text-sm leading-7" aria-label="サイト制作の実例と相談">
         <p>自分で更新できるサイトを検討している方へ。Portfolio Kit は、写真・文章・並び方を管理画面から変えられる、このサイトと同じ仕組みです。</p>
         <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          <a href="/portfolio-kit#samples" className="underline underline-offset-4">完成見本を見る</a>
           <a href="/portfolio-kit#pricing" className="underline underline-offset-4">制作内容・料金を見る</a>
           <a href="/admin/demo" className="underline underline-offset-4">登録せず管理画面を試す</a>
           <a href="/portfolio-kit/consult" className="underline underline-offset-4">制作を相談する</a>
@@ -136,6 +139,14 @@ export default function PortfolioGuidePage() {
       {PORTFOLIO_DISCOVERY_GUIDE.sections.map((section, index) => (
         <div key={section.id}>
           <GuideSection section={section} index={index + 1} />
+          {section.id === "finished-example" && (
+            <figure className="mt-6 border border-[rgba(var(--foreground-rgb),0.12)]">
+              <a href="/portfolio-kit#samples" aria-label="完成見本の各ページと出典を見る">
+                <img src="/portfolio-kit/sample/home.webp" alt="説明用のLAND / ARCHIVE。代表作の大きな写真と続く2枚を並べたトップ" width={1200} height={1500} loading="lazy" decoding="async" className="block w-full max-h-[560px] object-cover object-top" />
+              </a>
+              <figcaption className="p-4 text-sm leading-7 text-[color:var(--text-quiet)]">架空サイトの実画面。<a href="/portfolio-kit#samples" className="underline underline-offset-4">シリーズ・プロフィールとPDFの見本を見る</a> ／ <a href="/portfolio-kit#sample-sources" className="underline underline-offset-4">写真の出典</a></figcaption>
+            </figure>
+          )}
           {section.id === "operations" && (
             <figure className="mt-6 overflow-hidden rounded-md border border-[rgba(var(--foreground-rgb),0.12)]">
               <a href="/portfolio-kit/admin-settings-ja.jpg" target="_blank" rel="noopener noreferrer" aria-label="実際の管理画面を拡大する（新しいタブ）">

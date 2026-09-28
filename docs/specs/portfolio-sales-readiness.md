@@ -6,6 +6,7 @@
 
 ## 実物と変更の所在
 
+- 本体へ統合した販売導線: http://127.0.0.1:5899/portfolio-kit （このMacのみ、外部相談送信は遮断）
 - 確認用入口: http://127.0.0.1:5799/ （このMacのみ、公開URLではない）
 - 顧客用見本 LAND / ARCHIVE: http://127.0.0.1:5599/ / 管理画面 `/admin`
 - 別DB・別画像保存先・別認証へ復元した見本: http://127.0.0.1:5699/
@@ -38,6 +39,9 @@
 |C15|受付ID・再送|portfolio-intake.ts|既存回帰成功|外部ops本番の挙動は未確認|P0|単体 / smoke|
 |C16|販売表示の一致|ogp.ts / Pricing|不一致を修正|ownerの静的説明と構造化Offerも同じ2プラン|P0|ogp / SPA単体|
 |C17|作業と本番の分離|作業branch / opt-in flags|維持|現行本番の公開範囲を変えない|P0|Git差分・health|
+|C18|本体に統合した販売・検索導線|portfolio-sales / shared FAQ / usePageTitle|実装、表示確認済み・公開前|作品サイトと同じ器、実画面/PDF、ガイドから見本へ|P0|sales evidence / intake smoke|
+|C19|秋さんが初回を納品する手順|output/portfolio-kit-owner/owner-start-here.md|返信・見積・本人更新・運用まで整理|実顧客の受入れは未実施|P0|納品手順・料金判断案|
+|C20|検索の現在値|output/portfolio-kit-owner/search-baseline-20260928.md|Search Consoleを実確認|Kit登録済み。件数の実測は手元の非公開資料|P0|2026-08-31〜09-25の表示期間|
 
 ## 検証の版・日時・環境
 
@@ -136,3 +140,21 @@ PDF検証時のPopplerは埋め込みフォントに警告を出す。描画し�
 `review/theme.js` は公開側と同じ `theme-preference` のlight/dark/systemを扱い、初回描画前に適用。端末の明暗追従、手動変更の保持、他タブ変更、保存禁止時の切り替えも対応。localhostとakieguchi.comは別オリジンのため、現在のプレビューが本番の選択を自動継承するわけではない。同一オリジンへ本番統合する際は共通の設定とヘッダーを使用する。今回、公開サイトの設定やリンク先は変更していない。
 
 証拠は `continuity-verification.json` / `evidence/continuity-*`。明暗それぞれ1440/390/320px、メニュー・Escape・ページ内移動、テーマ変更と再読込・端末変更・他タブ同期、保存禁止、JS無効時のメイン導線、戻り先のHTTP応答を検証。ブラウザーでもスマホのメインサイトへの往復と両書体の読込を確認した。既存の見本切替・相談メモ・動画・秘密パス拒否は `refinement-verification.json` で再確認。商用公開・実受信・購入者本人の更新・物理印刷の未確認状態は変更なし。
+
+
+## 2026-09-28 集客・初回納品の再設計
+
+独立した静的プレビューの改善だけで終わらせず、販売画面を実アプリへ統合。作者サイトの書体・設定色・明暗・写真中心ヘッダーを引き継ぐ。実物の納品画面4種、更新デモ、PDF、料金、相談へ接続。価格表示と受付のプラン表示を共通定義へ寄せ、本文FAQと検索用FAQも一致させた。作者の販売ページtitleがブラウザー遷移後に別の題へ変わる問題と、遅延表示で見本アンカーに着かない問題を修正。顧客サイトでは作者用販売画面を出さない。
+
+検索ガイドには架空見本の構成理由・画像・PDFとの使い分け・年間費用の計算を追加。Google登録済みだけをもって集客成功としない。実測の根拠・期間・公開後の見る指標は 手元の `output/portfolio-kit-owner/search-baseline-20260928.md`。
+
+最初は顧客名義の環境を担当者が設定し、URL・管理画面・短いガイド・運用カードを渡す。秋さんの仕事と技術作業を分け、返信文と本人操作の説明順序を 手元の `output/portfolio-kit-owner/owner-start-here.md` に整理。新しい保守案は 手元の `output/portfolio-kit-owner/offer-review-20260928.md` にだけ記載し、公表価格や契約へ反映していない。
+
+今回の公開・実受信テストの対象と影響は、手元の `output/portfolio-kit-owner/publication-review.md`。。本番公開、実際のメール通知、新しい有料契約は未実施。
+
+
+今回の検証（2026-09-28）：`bun run check` 成功（単体1534、ツール60、guard48、型・lint・build）。その後の見本ガイド・アンカーの差分は型・lint・build、関連SEO単体411、PC/スマホの販売・受付smoke12で成功。全体smokeは634成功・186対象外・1中断（Library高速スクロール検査中の `Execution context was destroyed`）。この実行中にもコードを更新しており、トレースにViteの再接続を確認。編集を止めた版で該当ケースを3回再実行してすべて成功。全体一括成功とは記録しない。架空注文の4単体も成功。
+
+実画面では1440/390/320px、明暗、見本画像、相談画面、ガイドから見本への移動を確認。新しい確認用5899は本番の公開GETだけを中継し、API書込み403、ブラウザーの外部送信はCSPで遮断。資料3種・受取人ガイド・PDFの200、秘密パス404を確認。sample5599/復元5699のhealthはともにdc392383。復元の内容・画像照合は先行リハーサルの証拠を保持し、今回復元を再実行したとは扱わない。
+
+根拠：`scratch/kit-sales-check.log`、`kit-sales-intake-final.log`、`kit-sales-scroll-recheck.log`、`kit-sales-smoke.log`、`scratch/kit-delivery/evidence/sales/`。未採用の料金案とSearch Consoleの実測値は公開Gitへ入れず `output/portfolio-kit-owner/` に保存。

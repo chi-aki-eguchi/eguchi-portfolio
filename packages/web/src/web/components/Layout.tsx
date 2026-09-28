@@ -311,7 +311,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // 写真集の骨格（2026-09-23 試作、2026-09-25 見直し）。制作サービス・
   // 管理画面は従来の帯のまま。作品（Series / Work）は「Works」1つにまとめ、
   // 作品に入っていない写真も見られるよう「Photos」（/gallery）を並べる。
-  const bookChrome = usesBookChrome(siteDesignFrom(data?.siteDesign), location);
+  const ownerServiceChrome = isServiceOwnerSite(data?.siteUrl, undefined) &&
+    /^\/portfolio-kit(?:\/(?:consult|guide|en))?$/.test(location);
+  const bookChrome = usesBookChrome(siteDesignFrom(data?.siteDesign), location) ||
+    (siteDesignFrom(data?.siteDesign) === "book" && ownerServiceChrome);
   const shelfItems = bookChrome
     ? [
         ...(showSeries || showWork ? [{ href: "/series", label: "Works" }] : []),
@@ -489,11 +492,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     // 制作の入口は、オーナーのサイトではフッターへ（PhotoServiceNote）。配布先で
     // 「メニューに出す」を選んだときだけ、今までどおりメニューに置く。
     const serviceItem =
-      showServiceInNav && !isServiceOwnerSite(data?.siteUrl, undefined)
+      (showServiceInNav && !isServiceOwnerSite(data?.siteUrl, undefined)) || ownerServiceChrome
         ? [
             {
               href: footerPolicyLanguage === "en" ? "/portfolio-kit/en" : "/portfolio-kit",
-              label: "Portfolio Kit",
+              label: ownerServiceChrome && !isEnglishChrome ? "ポートフォリオ制作" : "Portfolio Kit",
             },
           ]
         : [];

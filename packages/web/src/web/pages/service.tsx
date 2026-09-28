@@ -8,6 +8,7 @@ import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 import { safeHref } from "../lib/utils";
 import { PortfolioServicePricing } from "../components/PortfolioServicePricing";
+import PortfolioSalesPage from "./portfolio-sales";
 import { OWNER_SERVICE_FAQ, OWNER_SERVICE_FAQ_EN } from "../../shared/portfolio-service-copy";
 import { isServiceOwnerSite, resolveServiceContactEmail } from "../../shared/service-visibility";
 import {
@@ -1221,6 +1222,8 @@ export default function ServicePage({
   const ref = usePageEntrance([photos.length, language]);
 
   usePageLanguage(language);
+
+  if (owner && language === "ja") return <PortfolioSalesPage />;
 
   return (
     <section

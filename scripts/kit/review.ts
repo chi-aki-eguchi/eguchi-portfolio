@@ -5,6 +5,9 @@ import { portfolioPlans, PORTFOLIO_PRODUCT } from '../../packages/web/src/shared
 import { lab, root, free } from './local';
 const escape = (s: string) => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
 const downloads: Record<string, string> = {
+ '/owner.md': join(root, 'output/portfolio-kit-owner/owner-start-here.md'),
+ '/offer-review.md': join(root, 'output/portfolio-kit-owner/offer-review-20260928.md'),
+ '/search.md': join(root, 'output/portfolio-kit-owner/search-baseline-20260928.md'),
  '/guide.md': join(root, 'docs/photographer-guide.md'),
  '/delivery.md': join(root, 'docs/delivery/customer-pack.md'),
  '/operations.md': join(root, 'docs/delivery/operations.md'),

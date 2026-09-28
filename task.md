@@ -3,7 +3,7 @@
 - 体験版が旧classicのAdminだったことを訂正。現行bookの写真・シリーズ・サイトへ揃え、編集と別タブのプレビューを見本データ内で動かす。
 - Gallery/Seriesの見出しを共通設定へ接続。Aboutの写真・略歴・Journal、Contactの本文整列、重複した問い合わせ導線、実際のStudioの文字と操作部品を整理。
 - 制作案内とガイドの旧Admin動画・画像を現行画面に更新。抽象的な見出し、ガイド冒頭の宣伝、開始手順の飾り画像を整理。
-- 全体check成功。全体smoke723成功・189対象外・失敗0。最後の局所差分もsmoke92成功・render125成功、型・lint・build成功。本番反映前。
+- 全体check成功。全体smoke723成功・189対象外・失敗0。最後の局所差分もsmoke92成功・render125成功、型・lint・build成功。製品5d7ef40をmainへpushし、Railway成功・本番health5d7ef40bとAbout/Gallery/制作案内/現行Admin体験版を確認済み。
 - 正本: `docs/specs/editorial-ui-20260929.md`。本番設定・写真原本・顧客固定配布版は保持。実機検証は未実施。
 
 ## Recorded State — 2026-09-29 JST / 全ページ・Adminの装飾とコピー見直し

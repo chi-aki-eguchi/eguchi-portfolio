@@ -96,4 +96,8 @@
 
 ChromeでTop / Gallery / Series / シリーズ詳細 / About / Contact / 制作案内JA・EN / ガイド / 開始手順 / 相談 / 方針JA・ENを確認。390pxのAbout・Contact・Gallery・現行Admin、明暗、現行Adminの画像3枚と切替も確認。実機ではない。
 
-commit・push・本番確認はこの後に実施する。
+### 本番反映
+
+2026-09-29 JST: 製品commit `5d7ef40` をmainへpush。Railwayの成功と `/api/health` のbuild `5d7ef40b` を確認。公開中のAbout・Gallery・制作案内・Admin体験版をChromeで表示し、共通見出し、現行Admin画像、写真／シリーズ／サイトの入口を確認した。
+
+画面証拠: `scratch/current-admin-review/production-admin.jpg`、`production-gallery.jpg`。体験版: https://akieguchi.com/admin/demo 、制作案内: https://akieguchi.com/portfolio-kit#admin-video 。実機確認や第三者の印象評価とは区別する。独立した写真セレクト便は入口の表示を確認しただけで、ツール本体・固定納品ZIPは今回変更していない。

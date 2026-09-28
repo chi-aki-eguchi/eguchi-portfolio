@@ -2,6 +2,8 @@
 
 2026-09-28 JST。統合依頼 `Downloads/portfolio-kit-sales-delivery-codex.md` の現状表を実物に照らして更新した正本。元の依頼書は保持。
 
+最終の修正・固定版・検証は [残件の最終確認](remaining-issues-20260928.md) を参照。配布版 `847ac5f3`、本番buildも同版。以下の過去検証記録は実施時点のもの。
+
 **判定: ローカルの技術納品リハーサルは完了。初回有料提供は条件付き可。** 顧客名義の独立環境を担当者が設置し、設定済みサイトと管理画面を渡す方式。販売ページの本番公開と作者宛て相談の実受信は2026-09-28に確認済み。顧客ごとのクラウド・総額・提供／保守／取消条件を合意し、公開承認と本人操作を確認して納品する。会員登録・自動課金・一般SaaSは初回納品の前提にしない。
 
 ## 実物と変更の所在
@@ -9,7 +11,7 @@
 - 公開した販売導線: https://akieguchi.com/portfolio-kit ／作り方ガイド `/portfolio-kit/guide`。手元の5899は外部送信を遮断した確認用。
 - 確認用入口: http://127.0.0.1:5799/ （このMacのみ、公開URLではない）
 - 顧客用見本 LAND / ARCHIVE: http://127.0.0.1:5599/ / 管理画面 `/admin`
-- 別DB・別画像保存先・別認証へ復元した見本: http://127.0.0.1:5699/
+- 別DB・別画像保存先・別認証へ復元した見本: http://127.0.0.1:5999/
 - [受取人ガイド](../photographer-guide.md)、[納品パック・商談文](../delivery/customer-pack.md)、[設置・復元・終了手順](../delivery/operations.md)、[原価・承認事項](../delivery/cost-and-approval.md)
 - `output/pdf/portfolio-kit-sample-screen.pdf` / `portfolio-kit-sample-print.pdf`。各4頁、アプリから出力。`output/kit-delivery/` はローカル納品パック、Gitへ載せない。
 - 基準・着手時origin/main: `bd4ea81871928fe6aa290d3a43c07e4dc7531a73`。元checkoutの `.gitignore` / `vite.try.config.ts` と未追跡資料、既存PDF・自由編集worktreeを保持。
@@ -34,7 +36,7 @@
 |C10|提出PDF・写真集|admin-pdf / portfolio-pdf|現行回帰・実出力済み|4頁×送信／印刷、全頁描画確認|P1|PDF / renders|
 |C11|制作物保存|portfolio-pdf/model.ts|JSON復元実測済み|未書出しブラウザー本は対象外と明記|P0|project SHA / 再読込|
 |C12|画像品質|API / photographer-guide|制約確認・資料整合|最大3200px、原本ではない。紙の保証なし|P1|元コード / PDF|
-|C13|PDF画像負荷|共有image queue|短期実測済み・長期未確認|12巡で枠解放、RSS増加傾向は残る|P1|security-load.json|
+|C13|PDF画像負荷|共有image queue|約10分の連続負荷を実測|6000要求、巡終了時の処理・キュー0、終盤RSS323–338MB。無期限／クラウド費用は未保証|P1|security-soak-c412914.json / soak-summary.json|
 |C14|相談・通知|portfolio-intake.ts|本番1件の受付・Gmail受信箱への到着を実確認|承認済みテスト。実顧客・契約・入金ではない|P0|production-receipt evidence|
 |C15|受付ID・再送|portfolio-intake.ts|本番の受付IDと案件管理・メールを照合|同ID再送はモック回帰。今回の実送信は1件だけ|P0|ops / Gmail / smoke|
 |C16|販売表示の一致|ogp.ts / Pricing|不一致を修正|ownerの静的説明と構造化Offerも同じ2プラン|P0|ogp / SPA単体|
@@ -115,7 +117,7 @@ API型checkでreplaceAllの対象ECMAScript差を修正。owner静的料金の�
 - `review-verification.json`: 資料リンクとPDF全リンク200、1440/390px、横はみ出しなし、秘密ファイルへのパス404。画面は `evidence/review-desktop.png` / `review-mobile.png`。
 - すべてレビュー用branch。main統合、本番デプロイ、外部送信、新規有料契約はしていない。
 
-PDF検証時のPopplerは埋め込みフォントに警告を出す。描画した全頁の日本語・写真の目視とpypdfの日本語抽出は正常で、復元後も同一描画。警告を「物理印刷適合」の証拠として扱わず、紙での確認は未実施のまま残す。
+**初回版の記録（最終版では解消）:** PDF検証時のPopplerは埋め込みフォントに警告を出す。描画した全頁の日本語・写真の目視とpypdfの日本語抽出は正常で、復元後も同一描画。警告を「物理印刷適合」の証拠として扱わず、紙での確認は未実施のまま残す。
 
 ## 2026-09-28 オーナーの見た目・販売力の再確認
 
@@ -168,3 +170,7 @@ PDF検証時のPopplerは埋め込みフォントに警告を出す。描画し�
 公開フォームからテスト1件を送り、受付番号を画面・既存案件管理・Gmailのメール本文で照合。Gmail受信箱への到着も確認した。テスト案件は識別名付きで残し、入金0、顧客への連絡なし。受付番号とメール証拠は非公開の `output/portfolio-kit-owner/production-acceptance.md`。公開証拠は `scratch/kit-delivery/evidence/sales/production-http.json` と `production-desktop.png` / `production-mobile.png`。
 
 今回の製品コードは先行検証済みf426107と同一。新しい全体テストを実行したとは扱わない。検索順位・新規相談・実売上の増加、第三者本人の更新、実顧客クラウドの復元、物理印刷は未確認。無料相談の受付は開始可能。有料受注は個別総額と条件の合意後に進める。
+
+## 2026-09-28 最終修正・再納品検証
+
+固定配布版847ac5f3へ更新。静的TrueTypeの全体埋込みで文字欠けを修正し、Poppler警告0・全頁の日本語と写真を確認。ゴミ箱GETの自動削除を廃止、モバイルメニューも修正。Git archive内で直接ビルドして古いTurbo成果物の混入を防止。最終バックアップから空の5999環境へ復元し、版更新・認証再発行・データ照合・両サイト各13項目とPDFの描画一致に成功。詳細・実測・未確認事項は [最終確認](remaining-issues-20260928.md)。

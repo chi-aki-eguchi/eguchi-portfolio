@@ -20,6 +20,10 @@ instead, and only link to it from here if a wiki update was triggered by it.
 
 ## Entries
 
+### 2026-09-28 — distribution の設置担当を訂正
+
+配布wikiの購入者自身による初期設置という旧説明を、現行の担当者設置・顧客には設定済み環境を渡す手順へ揃えた。根拠は `docs/delivery/operations.md` と `docs/delivery/customer-pack.md`。ページ全体は未再監査のため last_verified は更新しない。
+
 ### 2026-08-20 — Re-verified invariants.md and database.md (first two cleared)
 
 The freshness check flagged 10 pages. These two were taken first because a

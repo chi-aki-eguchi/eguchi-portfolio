@@ -9,7 +9,7 @@ import {
 import type { PortfolioDocument } from "../../lib/portfolio-pdf/model";
 let fontPromise: Promise<Measure> | undefined;
 function loadMeasure() {
-  return (fontPromise ??= fetch("/fonts/pdf/NotoSansJP-Regular.otf")
+  return (fontPromise ??= fetch("/fonts/pdf/NotoSansJP-Regular.ttf")
     .then(async (response) => {
       if (!response.ok) throw new Error("文字のプレビューを読み込めません");
       const buffer = await response.arrayBuffer();

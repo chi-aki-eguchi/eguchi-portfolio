@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from "pdf-lib";
+import { PDFDocument, PDFDict, PDFName, PDFRawStream, decodePDFRawStream } from "pdf-lib";
 import {
   addPhoto,
   createBook,
@@ -23,7 +23,7 @@ const make = () => addPhoto(createBook(), source);
 const font = new Uint8Array(
   readFileSync(
     new URL(
-      "../../../../public/fonts/pdf/NotoSansJP-Regular.otf",
+      "../../../../public/fonts/pdf/NotoSansJP-Regular.ttf",
       import.meta.url,
     ),
   ),
@@ -74,19 +74,21 @@ describe("PDF作品集の分離と読み戻し", () => {
   });
 });
 describe("PDFの実物", () => {
-  test("日本語の埋め込みCFFは有効なoffSizeを持つ", async () => {
+  test("PDF preserves the complete TrueType font and Japanese glyph outlines", async () => {
     const b = make();
     const result = await renderPortfolio(b, [{ id: b.items[0].id, bytes: jpeg }], font);
     const pdf = await PDFDocument.load(result.bytes!);
-    const streams = pdf.context.enumerateIndirectObjects().map(([, o]) => o)
-      .filter((o): o is PDFRawStream => o instanceof PDFRawStream &&
-        o.dict.get(PDFName.of("Subtype")) === PDFName.of("CIDFontType0C"));
-    expect(streams).toHaveLength(1);
-    for (const stream of streams) {
+    const descriptors = pdf.context.enumerateIndirectObjects().map(([, o]) => o)
+      .filter((o): o is PDFDict => o instanceof PDFDict &&
+        o.get(PDFName.of("Type")) === PDFName.of("FontDescriptor"));
+    expect(descriptors).toHaveLength(1);
+    for (const descriptor of descriptors) {
+      const stream = descriptor.lookup(PDFName.of("FontFile2"));
+      if (!(stream instanceof PDFRawStream)) throw new Error("Missing embedded TrueType font");
       const bytes = decodePDFRawStream(stream).decode();
-      expect(Array.from(bytes.slice(0, 3))).toEqual([1, 0, 4]);
-      expect(bytes[3]).toBeGreaterThanOrEqual(1);
-      expect(bytes[3]).toBeLessThanOrEqual(4);
+      expect(Array.from(bytes.slice(0, 4))).toEqual([0, 1, 0, 0]);
+      expect(Buffer.from(bytes).equals(Buffer.from(font))).toBe(true);
+      expect(descriptor.has(PDFName.of("FontFile3"))).toBe(false);
     }
   });
   test("回転後の比率を保ち、実埋め込み寸法からdpiを求める", () => {

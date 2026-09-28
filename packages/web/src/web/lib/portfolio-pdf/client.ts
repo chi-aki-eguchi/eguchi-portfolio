@@ -46,7 +46,7 @@ export async function generate(
       );
     assets.push({ id: item.id, bytes: new Uint8Array(await r.arrayBuffer()) });
   }
-  const r = await fetch("/fonts/pdf/NotoSansJP-Regular.otf", { signal });
+  const r = await fetch("/fonts/pdf/NotoSansJP-Regular.ttf", { signal });
   if (!r.ok)
     throw new Error("日本語フォントを読み込めません。再試行してください");
   const fontBytes = new Uint8Array(await r.arrayBuffer());

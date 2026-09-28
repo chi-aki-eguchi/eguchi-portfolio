@@ -17,7 +17,10 @@ if (command === 'pack') {
   run('tar', ['-xf', archive, '-C', code]);
   const sourceFiles = files(code).map(path => ({ path, sha256: sha(readFileSync(join(code, path))) }));
   run('bun', ['install', '--frozen-lockfile'], { cwd: code });
-  run('bun', ['run', 'build'], { cwd: code, env: { PATH: process.env.PATH!, NODE_ENV: 'production' } });
+  // git archive lives under ignored scratch/. Turbo can reuse an ancestor
+  // checkout's cache without hashing these extracted source files correctly.
+  // Build the web workspace directly so the immutable artifact uses this source.
+  run('bun', ['run', 'build'], { cwd: join(code, 'packages/web'), env: { PATH: process.env.PATH!, NODE_ENV: 'production' } });
   const dist = join(code, 'packages/web/dist');
   writeFileSync(join(release, 'manifest.json'), JSON.stringify({ commit, createdAt: new Date().toISOString(), database: 'postgres', sourceArchiveSha256: sha(readFileSync(archive)), sourceFiles, builtFiles: files(dist).map(path => ({ path, sha256: sha(readFileSync(join(dist, path))) })), migrations: files(join(code, 'packages/web/drizzle-postgres')).filter(p => p.endsWith('.sql')) }, null, 2));
   console.log(`Packaged immutable commit ${commit}`);

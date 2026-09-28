@@ -3,7 +3,7 @@
 - 公開Gallery/Seriesの見出し、補足文字、フッターの余白と操作領域、Contactの整列、管理画面の文字階層とサイドバーの折り返しを修正。
 - 型・lint・build、関連render21成功。全体smoke719成功・189対象外・失敗0、最後の余白調整の追加smoke16成功・14対象外。
 - ChromeのPC/390/320px、明暗、英語を実画面で確認。実機は未検証。写真原本・本番設定・顧客固定配布版は保持。
-- 正本: `docs/specs/ui-polish-20260929.md`。mainへのpushと本番確認を進める。
+- 正本: `docs/specs/ui-polish-20260929.md`。製品cd307ffをmainへpush、本番health cd307ffe・Contact・管理体験版・390px Galleryを確認済み。
 
 ## Recorded State — 2026-09-28 JST / 古い未完了一覧の再検証
 

@@ -23,15 +23,19 @@ function AdminDemoContent() {
   const queryClient = useQueryClient();
   const { t } = useAdminI18n();
   const ownerSite = typeof window !== "undefined" && isServiceOwnerSite(undefined, window.location.hostname);
+  // The read-only local preview can show the owner's demo as well. Production
+  // customer hosts stay closed; local access still checks the fetched site URL.
+  const localPreview = import.meta.env.DEV && typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const canCheckAvailability = ownerSite || localPreview;
   const [ready, setReady] = useState(false);
-  const [available, setAvailable] = useState<boolean | null>(ownerSite ? null : false);
+  const [available, setAvailable] = useState<boolean | null>(canCheckAvailability ? null : false);
   const [savedNotice, setSavedNotice] = useState(false);
   const [showGuide, setShowGuide] = useState(true);
   const guideDialogRef = useRef<HTMLDialogElement>(null);
   const [demoSeed] = useState(() => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => {
-    if (!ownerSite) return;
+    if (!canCheckAvailability) return;
     let restore: (() => void) | undefined;
     let cancelled = false;
     const onWrite = () => {
@@ -43,7 +47,7 @@ function AdminDemoContent() {
       .then((res) => res.json() as Promise<Record<string, string>>)
       .then((settings) => {
         if (cancelled) return;
-        const allowed = resolveServiceVisibility(settings.servicePageMode, settings.siteUrl, window.location.hostname);
+        const allowed = isServiceOwnerSite(settings.siteUrl, window.location.hostname) && resolveServiceVisibility(settings.servicePageMode, settings.siteUrl, window.location.hostname);
         setAvailable(allowed);
         if (!allowed) return;
         restore = installAdminDemoFetch(demoSeed);
@@ -65,7 +69,7 @@ function AdminDemoContent() {
         queryClient.removeQueries();
       }
     };
-  }, [demoSeed, ownerSite, queryClient]);
+  }, [demoSeed, canCheckAvailability, queryClient]);
 
   useEffect(() => {
     if (!ready || !showGuide) return;

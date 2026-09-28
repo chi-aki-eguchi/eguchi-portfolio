@@ -46,6 +46,11 @@ async function mountProfile(settings: Record<string, string> = {}) {
   return {
     host,
     frame: () => host.querySelector("[data-profile-layout]"),
+    update: async (next: Record<string, string>) => {
+      canned["/api/settings"] = next;
+      await qc.invalidateQueries({ queryKey: ["settings"] });
+      await flush(30);
+    },
     cleanup: () => {
       root.unmount();
       host.remove();
@@ -58,6 +63,19 @@ afterEach(() => {
 });
 
 describe("About の構成", () => {
+  test("読込失敗した写真を差し替えると、新しい写真を表示できる", async () => {
+    const m = await mountProfile({ profilePhotoUrl: PHOTO });
+    try {
+      m.host.querySelector("img")!.dispatchEvent(new dom.window.Event("error"));
+      await flush(30);
+      expect(m.frame()?.getAttribute("data-profile-layout")).toBe("quiet");
+      await m.update({ profilePhotoUrl: "https://example.test/replacement.jpg" });
+      expect(m.frame()?.getAttribute("data-profile-layout")).toBe("side");
+      expect(m.host.querySelector("img")?.getAttribute("src")).toContain("replacement.jpg");
+    } finally {
+      m.cleanup();
+    }
+  });
   test("既定は写真左・本文右のまま", async () => {
     const m = await mountProfile({ profilePhotoUrl: PHOTO });
     try {
@@ -79,8 +97,9 @@ describe("About の構成", () => {
       expect(m.frame()?.className).not.toContain("md:grid-cols-[300px_1fr]");
       const img = m.host.querySelector("img");
       expect(img).not.toBeNull();
-      // 上に大きく置くので 3:4 の肖像切りではなく 3:2
-      expect(img?.className).toContain("aspect-[3/2]");
+      // 横長・縦長とも元の比率で表示する。実寸の比率はsmokeで検証する。
+      expect(img?.className).toContain("h-auto");
+      expect(img?.className).not.toContain("object-cover");
     } finally {
       m.cleanup();
     }

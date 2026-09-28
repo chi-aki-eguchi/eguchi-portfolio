@@ -1678,12 +1678,12 @@ export function ProfileTab({
         <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] tracking-wider mb-3">
           {copy.photoTitle}
         </p>
-        <div className="flex items-start gap-4">
+        <div className="flex flex-wrap items-start gap-4">
           {data?.profilePhotoUrl ? (
             <img
               src={`${data.profilePhotoUrl}?w=300&q=80`}
               alt="Profile"
-              className="w-28 h-36 object-cover border border-[var(--admin-line)] rounded-sm"
+              className="block w-28 h-auto shrink-0 max-w-full border border-[var(--admin-line)] rounded-sm"
             />
           ) : (
             <div className="w-28 h-36 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm flex items-center justify-center">

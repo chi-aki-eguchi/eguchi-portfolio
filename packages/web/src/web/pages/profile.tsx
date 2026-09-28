@@ -8,6 +8,7 @@ import { usePageLanguage } from "../hooks/usePageLanguage";
 import { Link } from "wouter";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
+import { imageUrlWithParams } from "../../shared/image-url";
 
 const CJK_TEXT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
@@ -49,7 +50,7 @@ export default function ProfilePage({
 }) {
   usePageLanguage(language);
   const english = language === "en";
-  const [photoBroken, setPhotoBroken] = useState(false);
+  const [brokenPhotoUrl, setBrokenPhotoUrl] = useState<string | null>(null);
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -108,7 +109,7 @@ export default function ProfilePage({
   // 写真が無い（未設定・読み込み失敗）ときは、どれを選んでいても quiet で描く。
   // 従来は空の灰色の四角を場所取りしていたが、それは「作りかけに見える」
   // （admin-renewal-goal 到達点(6)）だけで、誰の役にも立っていなかった。
-  const hasPhoto = !!data?.profilePhotoUrl && !photoBroken;
+  const hasPhoto = !!data?.profilePhotoUrl && data.profilePhotoUrl !== brokenPhotoUrl;
   const requestedLayout = ["side", "stack", "quiet"].includes(
     data?.profileLayout ?? "",
   )
@@ -118,22 +119,22 @@ export default function ProfilePage({
 
   const photoImg = data?.profilePhotoUrl ? (
     <img
-      src={`${data.profilePhotoUrl}?w=900&q=90`}
-      srcSet={`${data.profilePhotoUrl}?w=600&q=90 600w, ${data.profilePhotoUrl}?w=900&q=90 900w, ${data.profilePhotoUrl}?w=1200&q=90 1200w`}
+      src={imageUrlWithParams(data.profilePhotoUrl, { w: 900, q: 90 })}
+      srcSet={[600, 900, 1200].map((w) => `${imageUrlWithParams(data.profilePhotoUrl, { w, q: 90 })} ${w}w`).join(", ")}
       sizes={
         layout === "stack" ? "(min-width: 768px) 768px, 90vw" : "(min-width: 768px) 300px, 90vw"
       }
       alt={displayName}
       decoding="async"
       fetchPriority="high"
-      onError={() => setPhotoBroken(true)}
+      onError={() => setBrokenPhotoUrl(data.profilePhotoUrl)}
       className={
         layout === "stack"
-          ? "w-full aspect-[3/2] object-cover"
+          ? "block w-full h-auto max-w-full"
           : // 写真は角を丸めない（トークンの「the frame principle」）。ここだけ
             // rounded-lg が付いていて、同じ画面の JOURNAL のサムネイルや
             // ギャラリーの写真と角の形が違っていた。影も写真用の共通トークンへ。
-            "w-full aspect-[3/4] object-cover shadow-[var(--shadow-photo)]"
+            "block w-full h-auto max-w-full shadow-[var(--shadow-photo)]"
       }
     />
   ) : null;

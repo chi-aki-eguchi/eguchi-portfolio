@@ -950,7 +950,7 @@ describe("shared components", () => {
       const { host, cleanup } = await mount(createElement(Demo), seedAdminPhotos);
       await waitForText(host, "Demo · No live changes");
       expect(host.textContent).toContain("Start with these three steps");
-      expect(host.textContent).toContain("Choose a photo layout in Settings → Gallery layout");
+      expect(host.textContent).toContain("Open Site editor → Site design to shape the presentation");
       expect(host.textContent).toContain("Start exploring");
       expect(host.textContent).toContain("Start over");
       expect(

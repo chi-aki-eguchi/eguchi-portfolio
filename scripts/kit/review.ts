@@ -25,9 +25,9 @@ const downloads: Record<string, string> = {
  '/visual/editor.png': join(lab, 'evidence/sample/pdf-editor.png'),
  '/visual/page-2.png': join(lab, 'evidence/sample/render-screen/page-2.png'),
  '/visual/page-3.png': join(lab, 'evidence/sample/render-screen/page-3.png'),
- '/visual/demo.webm': join(root, 'packages/web/public/portfolio-kit/admin-demo-ja.webm'),
- '/visual/demo.jpg': join(root, 'packages/web/public/portfolio-kit/admin-demo-video-poster.jpg'),
- '/visual/demo.vtt': join(root, 'packages/web/public/portfolio-kit/admin-demo-ja.vtt'),
+ '/visual/demo.webm': join(root, 'packages/web/public/portfolio-kit/admin-demo-20260928-ja.webm'),
+ '/visual/demo.jpg': join(root, 'packages/web/public/portfolio-kit/admin-demo-20260928-poster.jpg'),
+ '/visual/demo.vtt': join(root, 'packages/web/public/portfolio-kit/admin-demo-20260928-ja.vtt'),
 };
 const types: Record<string,string> = { css:'text/css; charset=utf-8', js:'text/javascript; charset=utf-8', pdf:'application/pdf', png:'image/png', jpg:'image/jpeg', webm:'video/webm', vtt:'text/vtt; charset=utf-8', md:'text/plain; charset=utf-8' };
 await free(5799);

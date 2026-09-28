@@ -610,7 +610,7 @@ const ADMIN_PHASE_2B_JA = {
     selectPhotoAria: "プロフィール写真を選択",
     photoTitle: "プロフィール写真（Aboutページ）",
     uploadPhoto: "写真を選ぶ",
-    portraitRecommendation: "縦3:4がおすすめ",
+    portraitRecommendation: "横長・縦長とも、写真の元の比率で表示します",
     fields: {
       nameLabel: "名前（日本語）",
       namePlaceholder: "写真家の名前",
@@ -622,12 +622,12 @@ const ADMIN_PHASE_2B_JA = {
       bioPlaceholder: "自己紹介を書く",
       bioEnLabel: "自己紹介（英語）",
       bioEnPlaceholder:
-        "Write your bio in English... (blank falls back to Bio)",
+        "Write your bio in English... (blank hides the English biography)",
       statementLabel: "作家ステートメント",
       statementPlaceholder: "空欄でも崩れません。後から追記OK",
       statementEnLabel: "作家ステートメント (EN)",
       statementEnPlaceholder:
-        "English version (blank falls back to Statement)",
+        "English statement (blank hides this section)",
       gearLabel: "使用機材 (1行に1つ)",
       gearPlaceholder: "PENTAX 67\nLeica M6\n...",
       instagramLabel: "Instagram",
@@ -2408,7 +2408,7 @@ const ADMIN_PHASE_2B_EN = {
     selectPhotoAria: "Choose profile photo",
     photoTitle: "Profile Photo (About page)",
     uploadPhoto: "Upload photo",
-    portraitRecommendation: "3:4 portrait recommended",
+    portraitRecommendation: "Landscape or portrait: the original proportions are preserved",
     fields: {
       nameLabel: "Name (JP)",
       namePlaceholder: "Photographer Name",
@@ -2420,13 +2420,13 @@ const ADMIN_PHASE_2B_EN = {
       bioPlaceholder: "Write your bio...",
       bioEnLabel: "Bio (EN)",
       bioEnPlaceholder:
-        "Write your bio in English... (blank falls back to Bio)",
+        "Write your bio in English... (blank hides the English biography)",
       statementLabel: "Statement",
       statementPlaceholder:
         "It's fine to leave this blank — you can add it later.",
       statementEnLabel: "Statement (EN)",
       statementEnPlaceholder:
-        "English version (blank falls back to Statement)",
+        "English statement (blank hides this section)",
       gearLabel: "Equipment used (one per line)",
       gearPlaceholder: "PENTAX 67\nLeica M6\n...",
       instagramLabel: "Instagram",
@@ -3886,9 +3886,9 @@ export const ADMIN_DICTIONARY = {
       guideEyebrow: "クイックツアー",
       guideTitle: "写真と設定を、試してみる",
       guideSteps: [
-        "Settingsの「ギャラリー配置」で写真の並べ方を選ぶ",
-        "Settingsでフォントを選び、ライブプレビューを見る",
-        "Libraryで写真を並び替え、「サイトで確認」を開く",
+        "「写真一覧」で作品を見て、「サイトで確認」を開く",
+        "「サイト編集」→「サイトデザイン」で見せ方を選ぶ",
+        "「サイト編集」→「プロフィール」で文章を編集して保存する",
       ],
       guideNote:
         "変更はプレビューへその場で反映されます。保存しても本物のサイトには影響しません。",
@@ -4109,9 +4109,9 @@ export const ADMIN_DICTIONARY = {
       guideEyebrow: "Quick tour",
       guideTitle: "Start with these three steps",
       guideSteps: [
-        "Choose a photo layout in Settings → Gallery layout",
-        "Choose a font in Settings and open the live preview",
-        "Reorder photos in Library, then open “View on site”",
+        "Browse photographs in Library, then open “View on site”",
+        "Open Site editor → Site design to shape the presentation",
+        "Open Site editor → Profile to edit and save your biography",
       ],
       guideNote:
         "Changes appear in the preview immediately. Saving here never affects a live site.",

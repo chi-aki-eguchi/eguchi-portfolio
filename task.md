@@ -1,4 +1,11 @@
-## Current State — 2026-09-28 JST / Portfolio Kit 本番公開・実受信確認
+## Current State — 2026-09-28 JST / About写真・紹介素材の仕上げ
+
+- Aboutと管理画面の写真を元比率へ。横長・縦長・正方形・極端な比率、欠落と差し替え復帰を検証。
+- 操作動画と日英6画面を現行の体験版へ更新。古いメニュー名と英語未入力の説明も訂正。
+- check成功、関連smoke40ケース成功（分割実行）。未統合の旧写真表示機能と保管ブランチを区別。詳細は `docs/specs/finish-review-20260928.md`。
+- 今回の本番反映は下記の公開確認記録で判定。顧客固定版dc392383と既存の未コミット変更は保持。
+
+## Previous State — 2026-09-28 JST / Portfolio Kit 本番公開・実受信確認
 
 - 販売 https://akieguchi.com/portfolio-kit 、ガイド・相談をmainへ反映。製品commit f426107、Railway成功・本番build f4261078を確認。現行価格を維持、新しい保守案は未採用。
 - 本番PC/390px、メインからの移動、見本切替、ガイドからのアンカー、検索用HTMLと画像/PDFの一致を確認。承認済みテスト1件は受付画面・案件管理・Gmail受信箱で照合済み。実顧客・入金ではない。
@@ -6,7 +13,7 @@
 - 無料相談の受付は開始可能。有料受注は顧客ごとの環境名義・継続費用・保守／取消／移管条件の合意後。第三者の購入・本人更新・物理印刷は未実施。
 - 正本: docs/specs/portfolio-sales-readiness.md。秋さんの手順と非公開の実受信証拠: output/portfolio-kit-owner/。先行check・smokeの範囲と一括未成功の記録は正本に保持。
 
-## Current State — 2026-09-28 JST / Portfolio Kit 販売・納品リハーサル
+## Previous State — 2026-09-28 JST / Portfolio Kit 販売・納品リハーサル
 
 - `codex/kit-delivery` で独立作業。顧客用見本 http://127.0.0.1:5599/、復元5699、資料入口5799（このMacのみ）。個人サイト・既存PDF/自由編集worktree・未コミット変更を保持。
 - 販売2プランを商品定義と静的HTMLへ共通化。新規顧客向けprivate取り込み・画像本体の公開判定を追加。現行価格・既存サイトの公開設定は変更なし。

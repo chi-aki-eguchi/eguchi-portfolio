@@ -149,11 +149,11 @@ export default function PortfolioGuidePage() {
           )}
           {section.id === "operations" && (
             <figure className="mt-6 overflow-hidden rounded-md border border-[rgba(var(--foreground-rgb),0.12)]">
-              <a href="/portfolio-kit/admin-settings-ja.jpg" target="_blank" rel="noopener noreferrer" aria-label="実際の管理画面を拡大する（新しいタブ）">
-                <img src="/portfolio-kit/admin-settings-ja.jpg" alt="実際の管理画面。左でギャラリー配置を選び、右でサイトの見え方を確認できます。" width={1440} height={1000} loading="lazy" decoding="async" className="block h-auto w-full" />
+              <a href="/portfolio-kit/admin-20260928-settings-ja.jpg" target="_blank" rel="noopener noreferrer" aria-label="実際の管理画面を拡大する（新しいタブ）">
+                <img src="/portfolio-kit/admin-20260928-settings-ja.jpg" alt="実際の管理画面。左でギャラリー配置を選び、右でサイトの見え方を確認できます。" width={1440} height={1000} loading="lazy" decoding="async" className="block h-auto w-full" />
               </a>
               <figcaption className="px-4 py-4 text-sm leading-7 text-[color:var(--text-quiet)]">
-                体験版の実画面です。<a href="/portfolio-kit#admin-video" className="underline underline-offset-4">29秒の操作動画を見る</a> ／ <a href="/admin/demo" className="underline underline-offset-4">自分で触ってみる</a>
+                体験版の実画面です。<a href="/portfolio-kit#admin-video" className="underline underline-offset-4">現在の更新画面を動画で見る</a> ／ <a href="/admin/demo" className="underline underline-offset-4">自分で触ってみる</a>
               </figcaption>
             </figure>
           )}

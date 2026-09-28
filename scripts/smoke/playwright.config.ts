@@ -111,7 +111,7 @@ export default defineConfig({
       // 写真中心の構成は Safari でだけ崩れた前例がある（CSS の段組みで2列目以降が
       // 空白、2026-09-26）。オーナーも Safari で見るので、PC の Safari でも回す。
       name: "desktop-safari",
-      testMatch: /(public-photo-site|profile-aspect|portfolio-media|admin-studio|admin-pdf)\.spec\.ts/,
+      testMatch: /(public-photo-site|photo-presentation|profile-aspect|portfolio-media|admin-studio|admin-pdf)\.spec\.ts/,
       use: {
         ...devices["Desktop Safari"],
         viewport: { width: 1440, height: 900 },
@@ -119,7 +119,7 @@ export default defineConfig({
     },
     {
       name: "mobile-safari",
-      testMatch: /(public-site|public-photo-site|profile-aspect|portfolio-media|admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker|admin-photo-dates|smoke-isolation)\.spec\.ts/,
+      testMatch: /(public-site|public-photo-site|photo-presentation|profile-aspect|portfolio-media|admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker|admin-photo-dates|smoke-isolation)\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
       },

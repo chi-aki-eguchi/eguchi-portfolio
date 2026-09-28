@@ -219,7 +219,7 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
                     s.coverFocalY,
                   ),
                 }}
-                className="w-full h-full object-cover transition-[transform,filter] duration-[1.1s] ease-[var(--ease-quart)] group-hover:scale-[1.04] group-hover:brightness-[1.04]"
+                className="series-card-media w-full h-full object-cover transition-[transform,filter] duration-[1.1s] ease-[var(--ease-quart)] group-hover:scale-[1.04] group-hover:brightness-[1.04]"
               />
             ) : (
               /* 表紙未設定。以前は空の四角を置いていたが、それは場所を取るだけで

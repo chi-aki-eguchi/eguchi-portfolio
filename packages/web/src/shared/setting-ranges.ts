@@ -27,11 +27,18 @@ export type SettingRange = {
 export const SETTING_RANGES = {
   // Gallery grid. Columns are a *maximum* — the rendered count steps down with
   // the available width; see galleryFrameWidth in PhotoGallery.tsx.
-  galleryColumns: { min: 1, max: 8, step: 1 },
+  // 2026-09-19: 上限を 8 から 12 へ広げた。1440px の画面で画面幅いっぱいに
+  // 並ぶ配置を選ぶと 8 列では 171px になり、参考にした密度（11 列 128px）に
+  // 届かなかった。保存済みの値は変わらないので既存サイトの見え方は同じ。
+  galleryColumns: { min: 1, max: 12, step: 1 },
+  // スマホ専用の上限。写真の大きさは PC と共有のままなので、ここだけで
+  // 「PC は詰める・スマホは大きく」を両立させる。空 = PC の値に従う。
+  galleryColumnsMobile: { min: 1, max: 4, step: 1 },
   gallerySizeScale: { min: 0.5, max: 3, step: 0.05, fallback: 1 },
   galleryGapScale: { min: 0.2, max: 5, step: 0.05, fallback: 1 },
   // Top (Works) grid — independent keys, falling back to the gallery's values.
-  topWorksColumns: { min: 1, max: 8, step: 1 },
+  topWorksColumns: { min: 1, max: 12, step: 1 },
+  topWorksColumnsMobile: { min: 1, max: 4, step: 1 },
   topWorksSizeScale: { min: 0.5, max: 3, step: 0.05, fallback: 1 },
   topWorksGapScale: { min: 0.2, max: 5, step: 0.05, fallback: 1 },
   // Mosaic-only shaping.

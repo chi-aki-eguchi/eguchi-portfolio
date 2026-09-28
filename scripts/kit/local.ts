@@ -9,10 +9,10 @@ export const root = resolve(import.meta.dir, '../..');
 export const lab = join(root, 'scratch/kit-delivery');
 export const pgBin = '/opt/homebrew/opt/postgresql@17/bin';
 export const pgPort = 56430;
-export const slots = { sample: { port: 5599, storage: 5598 }, restored: { port: 5699, storage: 5698 } } as const;
+export const slots = { sample: { port: 5599, storage: 5598 }, restored: { port: 5699, storage: 5698 }, recovered: { port: 5999, storage: 5998 } } as const;
 export type Slot = keyof typeof slots;
 export function slot(value: string): Slot {
-  if (!(value === 'sample' || value === 'restored')) throw new Error('Only sample / restored are allowed');
+  if (!(value === 'sample' || value === 'restored' || value === 'recovered')) throw new Error('Only sample / restored / recovered are allowed');
   return value;
 }
 export function run(command: string, args: string[], options: Record<string, unknown> = {}) {
@@ -133,7 +133,8 @@ export async function backup(s: Slot, label: string) {
   writeFileSync(join(target, 'manifest.json'), JSON.stringify({ schema: 1, source: s, createdAt: new Date().toISOString(), commit: existsSync(join(dir(s), 'active-release.json')) ? JSON.parse(readFileSync(join(dir(s), 'active-release.json'), 'utf8')).commit : run('git', ['rev-parse', 'HEAD']), inventory, excludes: ['credentials', 'browser-local projects not exported', 'camera originals'] }, null, 2));
   console.log(`Backup ${label}: ${inventory.length} files. Credentials excluded.`);
 }
-export async function restore(label: string, apply = false) {
+export async function restore(label: string, apply = false, target: Slot = 'restored') {
+  if (target === 'sample') throw new Error('Cannot restore over the source slot');
   assertLab();
   if (!/^[a-z0-9-]+$/.test(label)) throw new Error('Invalid snapshot label');
   const source = join(lab, 'backups', label);
@@ -145,25 +146,25 @@ export async function restore(label: string, apply = false) {
   }
   const listed = manifest.inventory.map((item: { path: string }) => item.path).sort();
   if (JSON.stringify(listed) !== JSON.stringify(files(source).filter(path => path !== 'manifest.json')) || !listed.includes('database.dump')) throw new Error('Backup inventory mismatch');
-  await init('restored'); await free(slots.restored.port);
-  if (sql(dbName('restored'), "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')") !== '0' || files(join(dir('restored'), 'objects')).length || files(join(dir('restored'), 'projects')).length)
+  await init(target); await free(slots[target].port);
+  if (sql(dbName(target), "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')") !== '0' || files(join(dir(target), 'objects')).length || files(join(dir(target), 'projects')).length)
     throw new Error('Restore target must be empty; existing data is never overwritten');
-  console.log(`Verified ${label}; target=restored (local empty database). ${apply ? 'Applying' : 'Dry-run only; pass --apply'}`);
+  console.log(`Verified ${label}; target=${target} (local empty database). ${apply ? 'Applying' : 'Dry-run only; pass --apply'}`);
   if (!apply) return;
-  run(join(pgBin, 'pg_restore'), [...pgArgs(dbName('restored')), '--exit-on-error', '--single-transaction', '--no-owner', join(source, 'database.dump')]);
+  run(join(pgBin, 'pg_restore'), [...pgArgs(dbName(target)), '--exit-on-error', '--single-transaction', '--no-owner', join(source, 'database.dump')]);
   for (const area of ['objects', 'projects']) for (const rel of files(join(source, area))) {
-    mkdirSync(resolve(dir('restored'), area, rel, '..'), { recursive: true });
-    copyFileSync(join(source, area, rel), join(dir('restored'), area, rel));
+    mkdirSync(resolve(dir(target), area, rel, '..'), { recursive: true });
+    copyFileSync(join(source, area, rel), join(dir(target), area, rel));
   }
   // Restored site gets its own origin and independently generated credential.
-  sql(dbName('restored'), `UPDATE site_settings SET value='http://127.0.0.1:${slots.restored.port}' WHERE key='siteUrl'`);
-  writeFileSync(join(dir('restored'), 'restore.json'), JSON.stringify({ label, restoredAt: new Date().toISOString(), manifestSha256: sha(readFileSync(join(source, 'manifest.json'))) }, null, 2));
+  sql(dbName(target), `UPDATE site_settings SET value='http://127.0.0.1:${slots[target].port}' WHERE key='siteUrl'`);
+  writeFileSync(join(dir(target), 'restore.json'), JSON.stringify({ label, restoredAt: new Date().toISOString(), manifestSha256: sha(readFileSync(join(source, 'manifest.json'))) }, null, 2));
 }
 if (import.meta.main) {
-  const [command, argument = 'sample', flag] = process.argv.slice(2);
+  const [command, argument = 'sample', flag, destination = 'restored'] = process.argv.slice(2);
   if (command === 'init') await init(slot(argument));
   else if (command === 'serve') await serve(slot(argument));
   else if (command === 'backup') await backup('sample', argument);
-  else if (command === 'restore') await restore(argument, flag === '--apply');
+  else if (command === 'restore') await restore(argument, flag === '--apply', slot(destination));
   else throw new Error('Usage: bun --no-env-file scripts/kit/local.ts init|serve sample|restored / backup LABEL / restore LABEL [--apply]');
 }

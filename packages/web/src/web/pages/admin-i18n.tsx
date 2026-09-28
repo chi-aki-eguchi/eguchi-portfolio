@@ -287,15 +287,14 @@ const ADMIN_PHASE_2B_JA = {
     },
     trash: {
       empty: "ゴミ箱は空です。移動した写真はここに表示されます。",
-      retention: (days: number) =>
-        `削除済み写真 — 復元するか、完全削除してください（${days}日後に自動で完全削除されます）`,
+      retention:
+        "削除済み写真 — 自動では消えません。復元するか、確認して完全削除してください。保管中はストレージを使用します。",
       // まとめる入口が「壊す側」にしか無いと、200枚戻すのに200回マウスを
       // 乗せて狙うことになる。戻すのは取り返しがつくので確認は挟まない。
       restoreAll: "すべて戻す",
       purgeAll: "すべて完全削除",
       purgeAllConfirm: (count: number) =>
         `${count}枚をすべて完全削除しますか？この操作は取り消せません。`,
-      daysLeft: (days: number) => `残り${days}日`,
       restore: "復元",
       purge: "完全削除",
       purgeOneConfirm:
@@ -2120,13 +2119,12 @@ const ADMIN_PHASE_2B_EN = {
     },
     trash: {
       empty: "Trash is empty. Photos moved to Trash appear here.",
-      retention: (days: number) =>
-        `Deleted photos — restore or permanently delete them. They are permanently deleted automatically after ${days} days.`,
+      retention:
+        "Deleted photos — kept until you explicitly delete them permanently. You can restore them at any time. They still use storage space.",
       restoreAll: "Restore all",
       purgeAll: "Delete all permanently",
       purgeAllConfirm: (count: number) =>
         `Permanently delete all ${count} photo${count === 1 ? "" : "s"}? This cannot be undone.`,
-      daysLeft: (days: number) => `${days} day${days === 1 ? "" : "s"} left`,
       restore: "Restore",
       purge: "Permanently delete",
       purgeOneConfirm:

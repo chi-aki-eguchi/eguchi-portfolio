@@ -9,7 +9,10 @@
 // - `.env` は読まない（DB・保存先・パスワードに一切つながらない）。
 // - 設定（/api/settings）の `siteDesign` だけを差し替えて返す。本番の設定は
 //   変わらない。
+// - `vite/try-settings.local.json`（git に入れない）があれば、その値も差し替える。
+//   書体などを本番を変えずに試すため。ファイルは毎回読むので、書き換えたら再読み込みだけでよい。
 import { defineConfig, type Plugin } from "vite";
+import { existsSync, readFileSync } from "fs";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
 import path from "path";
@@ -17,6 +20,19 @@ import path from "path";
 const TARGET = (process.env.TRY_TARGET || "https://akieguchi.com").replace(/\/$/, "");
 const KIT_PREVIEW = process.env.TRY_KIT === "1";
 const DESIGN = process.env.TRY_DESIGN || "book";
+const LOCAL_SETTINGS = path.resolve(__dirname, "vite/try-settings.local.json");
+
+function localSettings(): Record<string, string> {
+  if (!existsSync(LOCAL_SETTINGS)) return {};
+  try {
+    const raw = JSON.parse(readFileSync(LOCAL_SETTINGS, "utf8")) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(raw).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+    );
+  } catch {
+    return {};
+  }
+}
 
 function readOnlyApi(): Plugin {
   return {
@@ -65,7 +81,7 @@ function readOnlyApi(): Plugin {
           res.setHeader("cache-control", "no-store");
           if (url.startsWith("/api/settings") && type.includes("json") && upstream.ok) {
             const json = (await upstream.json()) as Record<string, unknown>;
-            res.end(JSON.stringify({ ...json, siteDesign: DESIGN }));
+            res.end(JSON.stringify({ ...json, siteDesign: DESIGN, ...localSettings() }));
             return;
           }
           res.end(Buffer.from(await upstream.arrayBuffer()));

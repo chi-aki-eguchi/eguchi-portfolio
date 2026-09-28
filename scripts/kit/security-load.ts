@@ -31,14 +31,20 @@ assert.equal((await fetch(origin + hidden.url, { method: 'HEAD' })).status, 404)
 checks.push('Publish -> warm public cache -> unpublish immediately revokes GET and HEAD');
 const health = async () => (await (await fetch(origin + '/api/health')).json()).mem;
 const before = await health();
+const rounds = Number(process.env.KIT_LOAD_ROUNDS ?? 12);
+const pauseMs = Number(process.env.KIT_LOAD_PAUSE_MS ?? 0);
+assert(Number.isInteger(rounds) && rounds >= 1 && rounds <= 1000);
+assert(Number.isFinite(pauseMs) && pauseMs >= 0 && pauseMs <= 10000);
+const started = Date.now();
 const runs = [];
 const ids = photos.filter((p: { isPublished: boolean }) => p.isPublished).map((p: { id: number }) => p.id);
-for (let n = 0; n < 12; n++) {
+for (let n = 0; n < rounds; n++) {
  const start = performance.now(); let bytes = 0;
  for (let batch = 0; batch < 5; batch++) await Promise.all(Array.from({ length: 4 }, async (_, i) => {
    const r = await fetch(`${origin}/api/admin/pdf/photos/${ids[(batch * 4 + i) % ids.length]}/image?quality=print`, { headers: { cookie } }); assert(r.ok); bytes += (await r.arrayBuffer()).byteLength;
  }));
  const memory = await health(); assert.equal(memory.activeImageTransforms, 0); assert.equal(memory.queuedImageTransforms, 0);
+ if (pauseMs) await new Promise(r => setTimeout(r, pauseMs));
  runs.push({ round: n + 1, requests: 20, concurrency: 4, bytes, milliseconds: Math.round(performance.now() - start), memory });
 }
 const controller = new AbortController();
@@ -47,5 +53,5 @@ const missing = await fetch(origin + '/api/admin/pdf/photos/999999/image?quality
 await new Promise(r => setTimeout(r, 1000)); const final = await health();
 assert.equal(final.activeImageTransforms, 0); assert.equal(final.queuedImageTransforms, 0);
 checks.push('Repeated transforms, abort and missing image release shared queue');
-writeFileSync(join(lab, 'security-load.json'), JSON.stringify({ time: new Date().toISOString(), input: '3 public-domain photographs, max 3000px, 20 image requests per round (not 20 distinct original files)', checks, before, runs, final, limitation: 'Short local run, not cloud cost or long-term leak proof. Fake S3 is loopback only; real bucket privacy needs cloud verification.' }, null, 2));
+writeFileSync(join(lab, 'security-load.json'), JSON.stringify({ time: new Date().toISOString(), elapsedMs: Date.now() - started, rounds, pauseMs, input: '3 public-domain photographs, max 3000px, 20 image requests per round (not 20 distinct original files)', checks, before, runs, final, limitation: 'Finite local soak, not cloud cost or indefinite leak proof. Fake S3 is loopback only; real bucket privacy needs cloud verification.' }, null, 2));
 console.log('Security and load checks passed');

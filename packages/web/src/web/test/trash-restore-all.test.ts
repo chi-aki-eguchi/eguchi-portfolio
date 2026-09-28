@@ -52,7 +52,7 @@ describe("ゴミ箱の一括復元", () => {
   function trashBar(): string {
     const s = src("../pages/admin.tsx");
     const from = s.indexOf("copy.trash.retention");
-    const to = s.indexOf("copy.trash.daysLeft");
+    const to = s.indexOf("{/* Buttons always visible on touch", from);
     expect(from, "ゴミ箱の帯が見つからない").toBeGreaterThan(-1);
     expect(to).toBeGreaterThan(from);
     return s.slice(from, to);

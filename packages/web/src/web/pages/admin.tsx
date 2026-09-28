@@ -3037,7 +3037,6 @@ export function GalleryTab({
       const res = await adminApi.photos.trash.$get();
       return jsonOrThrow(res) as Promise<{
         photos: Photo[];
-        retentionDays?: number;
       }>;
     },
     enabled: showTrash,
@@ -6774,10 +6773,11 @@ export function GalleryTab({
             </button>
 
             <button
-              onClick={() => {
+              onClick={(event) => {
                 setShowTrash((v) => !v);
                 setSelected(new Set());
                 setInspectPhoto(null);
+                event.currentTarget.closest("details")?.removeAttribute("open");
               }}
               aria-pressed={showTrash}
               className="flex items-center gap-1 text-[length:var(--admin-text-note)] px-2.5 py-1 rounded-sm border border-[var(--admin-line)] text-[var(--admin-muted)] transition-colors"
@@ -7473,7 +7473,7 @@ export function GalleryTab({
               <div className="p-3">
                 <div className="admin-status-warning text-[length:var(--admin-text-note)] rounded-sm px-3 py-1.5 mb-3 flex items-center justify-between">
                   <span>
-                    {copy.trash.retention(trashData?.retentionDays ?? 30)}
+                    {copy.trash.retention}
                   </span>
                   {/* まとめる入口を「戻す」側にも置く。以前はここが
                       「すべて完全削除」だけで、復元は1枚ずつ、しかもPC幅では
@@ -7515,21 +7515,6 @@ export function GalleryTab({
                   }}
                 >
                   {(trashData?.photos ?? []).map((photo) => {
-                    // Days until lazy auto-purge — helps the owner triage what to rescue first.
-                    const delT = photo.deletedAt
-                      ? new Date(photo.deletedAt).getTime()
-                      : 0;
-                    const daysLeft = delT
-                      ? Math.max(
-                          0,
-                          Math.ceil(
-                            (delT +
-                              (trashData?.retentionDays ?? 30) * 86_400_000 -
-                              Date.now()) /
-                              86_400_000,
-                          ),
-                        )
-                      : null;
                     return (
                       <div key={photo.id} className="relative group">
                         <img
@@ -7542,13 +7527,6 @@ export function GalleryTab({
                           loading="lazy"
                           draggable={false}
                         />
-                        {daysLeft !== null && (
-                          <span
-                            className={`absolute top-1 left-1 z-[2] text-[9px] px-1.5 py-0.5 rounded-sm bg-black/65 ${daysLeft <= 5 ? "admin-text-danger" : "admin-text-warning"}`}
-                          >
-                            {copy.trash.daysLeft(daysLeft)}
-                          </span>
-                        )}
                         {/* Buttons always visible on touch (no hover there); hover-reveal on desktop */}
                         <div className="absolute inset-0 bg-black/0 sm:group-hover:bg-black/50 transition-colors flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                           <button

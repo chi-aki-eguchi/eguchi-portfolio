@@ -58,10 +58,7 @@ refine-and-loop-spec.md:11`'s old "3箇所 (admin previewPayload …)" list —
    comment「本番(turso)は no-op」— was corrected on 2026-07-07 to say
    `ensureTursoColumns()` runs real `SELECT`/`ALTER TABLE ADD COLUMN` work
    on every boot. See database.md.
-3. **Resolved 2026-07-06 by buyer-only setup-link wording**:
-   `README.md` no longer publishes the Railway setup link directly. It now
-   points to a buyer-only setup handoff, and public docs avoid exposing the
-   actual link.
+3. **Superseded 2026-09-28:** the Railway setup tool is owner-only; customers receive a configured site. See README.md and docs/portfolio-kit-operations.md. The older buyer-only description is historical.
 4. **Resolved 2026-07-02 by owner-approved retirement**:
    `NIGHT-RUN-LOG.md`, `claude-code-night-run.md`, and
    `.claude/skills/night-run/` were removed. The former BUILD_ID

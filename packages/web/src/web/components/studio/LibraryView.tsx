@@ -442,7 +442,7 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
   const trashQ = useQuery({
     queryKey: ["admin-trash"],
     queryFn: async () =>
-      jsonOrThrow<{ photos: TrashPhoto[]; retentionDays: number }>(await adminApi.photos.trash.$get()),
+      jsonOrThrow<{ photos: TrashPhoto[] }>(await adminApi.photos.trash.$get()),
   });
   useEffect(() => {
     const d = ref.current;
@@ -466,7 +466,7 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
       <div className="st-dialog__head">
         <h2>ゴミ箱</h2>
         <p className="st-note">
-          ここにある写真はサイトに出ません。{trashQ.data?.retentionDays ?? 30}日たつと自動で消えます。
+          ここにある写真はサイトに出ません。自動では消えず、保管中はストレージを使用します。復元するか、確認して完全削除してください。
         </p>
         <button type="button" className="st-ax-btn st-link" onClick={() => ref.current?.close()}>
           閉じる

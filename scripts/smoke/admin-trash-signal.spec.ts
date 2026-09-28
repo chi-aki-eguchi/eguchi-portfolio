@@ -38,3 +38,28 @@ test.describe("admin — ⌘KのTrashが後続のLibrary表示に持ち越され
     expect(await page.getByText(trashMarker).count()).toBe(0);
   });
 });
+
+test("old trash remains restorable and permanent deletion requires confirmation", async ({ page }) => {
+  let deletions = 0;
+  await page.route("**/api/admin/photos/trash", route => route.fulfill({ json: {
+    automaticDeletion: false,
+    photos: [{ id: 99199, filename: "old.svg", title: "保管中の写真", url: "/trash-fixture.svg", width: 300, height: 200, deletedAt: "2020-01-01T00:00:00Z" }],
+  } }));
+  await page.route("**/trash-fixture.svg*", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><path fill="#888" d="M0 0h300v200H0z"/></svg>' }));
+  await page.route("**/api/admin/photos/99199/purge", route => {
+    deletions++;
+    return route.fulfill({ json: { ok: true } });
+  });
+  await loginAsAdmin(page);
+  await page.locator("summary").filter({ hasText: "表示" }).click();
+  await page.getByRole("button", { name: /^ゴミ箱/ }).last().click();
+  await expect(page.getByText(/削除済み写真 — 自動では消えません/)).toBeVisible();
+  await expect(page.getByText(/残り\d+日/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "復元", exact: true })).toBeAttached();
+  expect(deletions).toBe(0);
+  await page.getByRole("button", { name: "すべて完全削除", exact: true }).click();
+  await expect(page.getByText("1枚をすべて完全削除しますか？この操作は取り消せません。")).toBeVisible();
+  expect(deletions).toBe(0);
+  await page.getByRole("button", { name: "キャンセル", exact: true }).click();
+  expect(deletions).toBe(0);
+});

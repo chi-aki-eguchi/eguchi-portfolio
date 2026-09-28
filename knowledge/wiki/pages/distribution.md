@@ -62,7 +62,7 @@ caution and check README.md/task.md for what's actually shipped.
   (docs/archive/RUNABLE_AI.md:1-47; git log -1 confirms 2026-06-16 only)
 - **DISTRIBUTION.md is stale relative to a substantial, unmentioned
   productization push**: a live `/service` sales page with two real Stripe
-  Payment Links, a buyer-only Railway setup link, and supporting docs
+  Payment Links, an owner-only Railway setup tool, and supporting docs
   (`docs/sales-page.md`, `docs/post-deploy-guide.md`,
   `docs/purchase-thankyou.md`, `docs/order-handling.md`, etc.) mostly
   last touched 2026-06-26/27, with task.md handoffs through 2026-06-30 —
@@ -106,8 +106,7 @@ caution and check README.md/task.md for what's actually shipped.
   never being cross-referenced by any distribution doc — inferred from
   absence of references, not a fact confirmed by any doc stating it's
   deprecated.
-- The buyer-only Railway setup link is assumed live/functional because the
-  repo's own docs describe it as prepared; this was not tested over the network.
+- The Railway setup link is owner-only (README.md and docs/portfolio-kit-operations.md, checked 2026-09-28). Buyers receive their configured site and admin access. A real customer cloud deployment remains unverified.
 
 ## Open Questions
 

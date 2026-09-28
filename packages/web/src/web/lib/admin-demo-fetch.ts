@@ -104,7 +104,7 @@ export function installAdminDemoFetch(seed = "demo"): () => void {
       if (path === "/api/admin/setup-health")
         return jsonResponse({ storageConfigured: true, missingStorageVariables: [] });
       if (path === "/api/admin/photos/trash")
-        return jsonResponse({ photos: [], retentionDays: 30 });
+        return jsonResponse({ photos: [], automaticDeletion: false });
       if (path === "/api/admin/hero-photos") {
         return jsonResponse({ heroPhotos: (await getSnapshot()).adminHeroPhotos });
       }

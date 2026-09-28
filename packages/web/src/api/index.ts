@@ -63,7 +63,6 @@ import {
   isNull,
   isNotNull,
   inArray,
-  lt,
   and,
   or,
   type SQL,
@@ -501,10 +500,6 @@ const SESSION_VALUE = ADMIN_PASSWORD
 // 4:2:0 visibly softens these on photographic content.
 const UPLOAD_MAX_PX = 3200;
 const UPLOAD_QUALITY = 92;
-
-// Trash retention — items soft-deleted longer ago than this are purged for good.
-const TRASH_RETENTION_DAYS = 30;
-const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
 // 写真行と共有R2オブジェクトの整合性に関わる変更を直列化する。同じ画像を
 // 参照する duplicate / register / purge が同一プロセス内で割り込まないための
@@ -2331,34 +2326,7 @@ const app = new Hono()
 
   // ── Admin: List trashed photos ─────────────────────────
   .get("/admin/photos/trash", requireAdmin, async (c) => {
-    // Lazy retention: there is no cron in this runtime, so opportunistically
-    // purge items trashed more than TRASH_RETENTION_DAYS ago whenever the trash
-    // is opened. This keeps the bin (and object storage) from growing unbounded.
-    const cutoff = new Date(Date.now() - TRASH_RETENTION_MS);
-    const stale = await withRetry(() =>
-      db
-        .select({
-          id: schema.photos.id,
-          url: schema.photos.url,
-          thumbKey: schema.photos.thumbKey,
-          mediumKey: schema.photos.mediumKey,
-        })
-        .from(schema.photos)
-        .where(
-          and(
-            isNotNull(schema.photos.deletedAt),
-            lt(schema.photos.deletedAt, cutoff),
-          ),
-        ),
-    );
-    for (const p of stale) {
-      const result = await runPhotoIntegrityMutation(() =>
-        purgePhotoFromDb(p.id, cutoff),
-      );
-      if (result.status === "purged")
-        await deleteStorageKeys(result.storageKeys);
-    }
-
+    // Listing trash is read-only. Permanent deletion requires an explicit action.
     const photos = await withRetry(() =>
       db
         .select(PHOTO_LIST_COLUMNS)
@@ -2366,7 +2334,7 @@ const app = new Hono()
         .where(isNotNull(schema.photos.deletedAt))
         .orderBy(schema.photos.deletedAt),
     );
-    return c.json({ photos, retentionDays: TRASH_RETENTION_DAYS }, 200);
+    return c.json({ photos, automaticDeletion: false }, 200);
   })
 
   // ── Admin: Reorder photos ───────────────────────────────

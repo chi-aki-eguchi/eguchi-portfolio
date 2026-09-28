@@ -88,3 +88,6 @@ claude-code-night-run.md
 
 # Owner-only pricing drafts, search metrics and approval notes
 /output/portfolio-kit-owner/
+
+# お試しサーバー（bun run try）で本番を変えずに試す設定
+packages/web/vite/try-settings.local.json

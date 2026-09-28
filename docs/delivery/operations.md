@@ -36,6 +36,19 @@ bun --no-env-file scripts/kit/release.ts activate 完全なcommitID sample
 
 ## バックアップと復元
 
+既存の復元見本を残して追加検証する場合は、空の `recovered`（5999/5998、独立DB）を使えます。
+
+```sh
+bun --no-env-file scripts/kit/local.ts restore バックアップ名 --dry-run recovered
+bun --no-env-file scripts/kit/local.ts restore バックアップ名 --apply recovered
+bun --no-env-file scripts/kit/release.ts activate 完全なcommitID recovered
+bun --no-env-file scripts/kit/local.ts serve recovered
+```
+
+`recovery-check.ts recovered 旧版commitID` は、このローカル復元先だけでデータ照合・旧版への切替・新版へ戻す操作・パスワード再発行を試します。認証情報を更新して終了時に停止するので、検証後は上記serveを再実行します。sampleへの復元と、既存データのある復元先への上書きは拒否します。
+
+ゴミ箱は自動では空になりません。一覧を見ても日数が経っても画像を消さず、確認付きの「完全削除」でのみ消します。保管中の画像はストレージを使うため、容量点検時に本人と整理対象を確認します。
+
 ブラウザー内の本をJSONで書き出し、対象サイトの `projects/` へ置く。全ての編集端末について確認する。次にアプリを停止して、画像とDBが変化しない時間帯で取得します。
 
 ```sh

@@ -34,3 +34,7 @@
 - 手元のログ: `scratch/finish-check-final.log`、`finish-focused-smoke.log`（初回32成功/4失敗）、`finish-corrected-smoke.log`（修正後8成功）、`profile-aspect-smoke-final.log`。
 
 顧客リハーサル環境5599/5699とソフトウェア配布物は固定版dc392383のまま。今回の本番改善を顧客固定版へ適用・復元したとは扱わない。第三者購入・本人更新・物理印刷・集客効果の新たな実績はない。
+
+## 本番確認
+
+2026-09-28、製品commit `993ef53` をmainと作業ブランチへ通常push。Railway成功、`/api/health` build `993ef532`。本番Aboutのプロフィール画像は自然寸法・表示寸法とも300×240で切り抜きなし。販売ページを再読み込みし、35秒の新版見出しと日付入りWebM/MP4参照を確認。公開WebM/MP4/VTTは200・適切なMIME・ローカルとバイト一致。証拠: `scratch/admin-demo-20260928/production-media.json`、`production-about.png`、`production-video.png`。主checkoutもmainへfast-forwardし既存変更を保持。ローカル資料入口5799も再起動して新版VTTを確認。

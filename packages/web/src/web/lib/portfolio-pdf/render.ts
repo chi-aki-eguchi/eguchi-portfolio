@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, degrees } from "pdf-lib";
+import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream, rgb, degrees } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { parseBook, type PortfolioDocument } from "./model";
 import { layoutBook, fitImage, type PdfIssue } from "./layout";
@@ -10,6 +10,26 @@ export type PdfResult = {
   pageCount: number;
   issues: PdfIssue[];
 };
+
+async function normalizeCffSubsetHeaders(pdf: PDFDocument): Promise<void> {
+  await pdf.flush();
+  // @pdf-lib/fontkit 1.1.1 CFFSubset writes cff.length into offSize.
+  // CFF 1.0 requires 1..4 (Adobe Technical Note 5176, sections 3 and 6).
+  // Correct only that header byte, keeping every glyph and INDEX offset intact.
+  for (const [ref, object] of pdf.context.enumerateIndirectObjects()) {
+    if (!(object instanceof PDFRawStream) ||
+        object.dict.get(PDFName.of("Subtype")) !== PDFName.of("CIDFontType0C")) continue;
+    const bytes = decodePDFRawStream(object).decode();
+    if (bytes.length < 4 || bytes[0] !== 1 || bytes[1] !== 0 || bytes[2] !== 4 ||
+        (bytes[3] >= 1 && bytes[3] <= 4)) continue;
+    const corrected = bytes.slice();
+    corrected[3] = 4;
+    const entries = object.dict.entries().filter(([key]) =>
+      !["Length", "Filter", "DecodeParms"].includes(key.decodeText()));
+    pdf.context.assign(ref, pdf.context.flateStream(corrected,
+      Object.fromEntries(entries.map(([key, value]) => [key.decodeText(), value]))));
+  }
+}
 export async function renderPortfolio(
   bookInput: PortfolioDocument,
   assets: PdfAsset[],
@@ -94,6 +114,7 @@ export async function renderPortfolio(
   pdf.setTitle(book.title);
   pdf.setCreator("Portfolio Kit PDF v3");
   pdf.setProducer("Portfolio Kit");
+  if (!issues.some((i) => i.severity === "error")) await normalizeCffSubsetHeaders(pdf);
   return {
     bytes: issues.some((i) => i.severity === "error") ? null : await pdf.save(),
     pageCount: pdf.getPageCount(),

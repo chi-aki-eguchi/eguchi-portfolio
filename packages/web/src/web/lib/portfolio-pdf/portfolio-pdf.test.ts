@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from "pdf-lib";
 import {
   addPhoto,
   createBook,
@@ -74,6 +74,21 @@ describe("PDF作品集の分離と読み戻し", () => {
   });
 });
 describe("PDFの実物", () => {
+  test("日本語の埋め込みCFFは有効なoffSizeを持つ", async () => {
+    const b = make();
+    const result = await renderPortfolio(b, [{ id: b.items[0].id, bytes: jpeg }], font);
+    const pdf = await PDFDocument.load(result.bytes!);
+    const streams = pdf.context.enumerateIndirectObjects().map(([, o]) => o)
+      .filter((o): o is PDFRawStream => o instanceof PDFRawStream &&
+        o.dict.get(PDFName.of("Subtype")) === PDFName.of("CIDFontType0C"));
+    expect(streams).toHaveLength(1);
+    for (const stream of streams) {
+      const bytes = decodePDFRawStream(stream).decode();
+      expect(Array.from(bytes.slice(0, 3))).toEqual([1, 0, 4]);
+      expect(bytes[3]).toBeGreaterThanOrEqual(1);
+      expect(bytes[3]).toBeLessThanOrEqual(4);
+    }
+  });
   test("回転後の比率を保ち、実埋め込み寸法からdpiを求める", () => {
     const fit = fitImage(1600, 800, 400, 600, 90);
     expect(fit.width).toBe(300);

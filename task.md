@@ -1,4 +1,12 @@
-## Current State — 2026-09-29 JST / 文字・余白・UIの仕上げ
+## Current State — 2026-09-29 JST / 全ページ・Adminの装飾とコピー見直し
+
+- Adminの設定選択を写真付き一覧、公開準備を作業リスト、ナビを縦一覧へ。入力部品・ログイン・PDF作業台を整理。
+- 日英制作案内を具体的なコピーへ変更。料金・ガイド・開始手順の枠を罫線にし、startのヘッダーも作品ページと共有。
+- 写真主体のTOP/Gallery/Series/Aboutは構成を保持。価格・契約条件・写真原本・本番設定・固定配布版は変更なし。
+- check成功、英語コピーの最終render116・lint/build成功。全体smoke初回711成功・189対象外・8失敗、該当箇所再検査31成功・11対象外で全失敗ケースが通過。
+- 正本: `docs/specs/editorial-ui-20260929.md`。製品4d96889をmainへpush、Railway成功・本番health4d968896・制作案内/Admin体験版/startの実画面を確認済み。実機は未検証。
+
+## Recorded State — 2026-09-29 JST / 文字・余白・UIの仕上げ
 
 - 公開Gallery/Seriesの見出し、補足文字、フッターの余白と操作領域、Contactの整列、管理画面の文字階層とサイドバーの折り返しを修正。
 - 型・lint・build、関連render21成功。全体smoke719成功・189対象外・失敗0、最後の余白調整の追加smoke16成功・14対象外。

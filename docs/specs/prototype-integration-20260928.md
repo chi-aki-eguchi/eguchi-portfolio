@@ -28,4 +28,9 @@
 
 ## 検証と公開
 
-検証ログは `scratch/integration-check-final.log`、`scratch/integration-smoke-final.log` と `scratch/presentation-*-smoke*.log`。件数・本番buildは検証完了後に追記する。
+- `bun run check` 成功。単体1543、tools60、guard48、型・lint・build。説明文の最後の調整もlintと差分検査成功。
+- 全体smokeは独立した3環境へ分割し、各環境1workerで実行。260/180/249成功＝計689成功、対象外34/112/40＝186、失敗0。通信分類の終了エラー0。PDF・写真中心・About・管理画面・相談・新しい表示設定を含む。
+- 追加の24ケース: 元比率と表紙、スマホ列数とコンタクトシート、額装、プレビュー→保存→再読込、カルーセルの地色、全画面の縦写真/パノラマの名前位置をChromium/WebKitのPC/スマホ構成で検証。実機の検証ではない。
+- 最初の共有プロキシで3workerの実行は663成功/186対象外/2失敗と終了エラー。写真一覧の高速スクロールで一時的な未読込画像、通信検査では別テストの先行接続記録が混在。既定の1workerへ戻して環境ごとに分離し、全体を再実行して上記の成功を確認。失敗記録は消していない。
+- ログ: `scratch/integration-check-final.log`、`scratch/integration-shard-{1,2,3}.log`。初回失敗は `scratch/integration-smoke-final.log`。画面確認は `scratch/prototype-integration-20260928/`。
+- 移植commit `6f0741f`、元ブランチの履歴合流 `67e8aed`、表示案内の仕上げ `9143f0e`。本番確認は反映後に追記。

@@ -1120,8 +1120,7 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-top-name__sub {
   align-items: baseline;
 }
-.ps-site .contact-page p:is(.ja-prose, .font-en).mb-8,
-.ps-site .contact-page p:is(.ja-prose, .font-en).mb-6 {
+.ps-site .contact-page p:is(.ja-prose, .font-en):is(.mb-8, .mb-6, .mb-5) {
   color: var(--ps-read);
 }
 
@@ -1144,4 +1143,16 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 .kit-text :is(h1, h2, h3, p, li) {
   word-break: auto-phrase;
+}
+
+/* 「各ページの見出し」を出さないとき（見出しは読み上げ用に残る）。
+   見出しの下の区切り線と余白だけが先頭に残り、線から始まるページになっていた。 */
+.ps-page-head:has(> h1.sr-only) {
+  padding-bottom: 0;
+}
+.ps-series-index:has(> .ps-page-head > h1.sr-only) .ps-series-group:first-of-type > .ps-series-list {
+  border-top-color: transparent;
+}
+.ps-site .contact-page:has(h1.sr-only) {
+  padding-top: clamp(2.5rem, 7vw, 5rem);
 }

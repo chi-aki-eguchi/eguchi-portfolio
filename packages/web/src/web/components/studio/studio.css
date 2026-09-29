@@ -497,7 +497,8 @@
 }
 .st-field-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* 撮影日の値（2025-06-09T09:30…）が半分の幅では切れていたので、狭い欄では1列に。 */
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
   gap: 10px;
 }
 .st-input {

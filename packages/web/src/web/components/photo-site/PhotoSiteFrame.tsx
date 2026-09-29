@@ -110,11 +110,11 @@ export function PhotoSiteFrame({
 
   const themeLabel = english
     ? dark?.resolved === "dark"
-      ? "Light"
-      : "Dark"
+      ? "Light mode"
+      : "Dark mode"
     : dark?.resolved === "dark"
-      ? "明るく"
-      : "暗く";
+      ? "明るい表示"
+      : "暗い表示";
 
   return (
     <div className="ps-site" data-site-design="book">
@@ -186,11 +186,6 @@ export function PhotoSiteFrame({
         {menuOpen && (
           <nav id="ps-menu" ref={menuRef} className="ps-menu" aria-label={english ? "Menu" : "メニュー"}>
             <ul>
-              <li>
-                <Link to="/" className="ps-menu__link font-en" onClick={() => setMenuOpen(false)}>
-                  Photographs
-                </Link>
-              </li>
               {navItems.map((item) => (
                 <li key={item.href}>
                   <Link

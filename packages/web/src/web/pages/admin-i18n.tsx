@@ -620,8 +620,7 @@ const ADMIN_PHASE_2B_JA = {
       bioLabel: "自己紹介",
       bioPlaceholder: "自己紹介を書く",
       bioEnLabel: "自己紹介（英語）",
-      bioEnPlaceholder:
-        "Write your bio in English... (blank hides the English biography)",
+      bioEnPlaceholder: "英語の自己紹介（空欄なら英語ページには出しません）",
       statementLabel: "作家ステートメント",
       statementPlaceholder: "空欄でも崩れません。後から追記OK",
       statementEnLabel: "作家ステートメント (EN)",
@@ -1636,7 +1635,7 @@ const ADMIN_PHASE_2B_JA = {
     },
     fonts: {
       title: "フォント",
-      pairingLabel: "ペアリング",
+      pairingLabel: "書体の組み合わせ",
       pairingHint:
         "和文と欧文の組み合わせをワンクリックで一括設定。下の個別選択でいつでも上書きできます",
       jaFontLabel: "日本語フォント",

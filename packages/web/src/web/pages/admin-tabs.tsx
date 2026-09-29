@@ -8166,7 +8166,9 @@ export function SettingsTab({
               </Section>
               </SettingsGroup>
 
-              {/* Admin */}
+              {/* Admin — 写真中心の管理画面では節を1つずつ開くので、パスワードの案内は
+                  「名前・連絡先・検索」の下だけに出す（配色などの節の下に出ていた）。 */}
+              {(!hiddenSectionIds || activeSection === "site-basics") && (
               <div className="pt-1 pb-4 px-1">
                 <p className="text-[length:var(--admin-text-note)] tracking-wider text-[color:var(--admin-muted)] mb-2">
                   {copy.adminPasswordTitle}
@@ -8178,6 +8180,7 @@ export function SettingsTab({
                   </code>
                 </p>
               </div>
+              )}
             </div>
         </AdminSettingsFormLayout>
         <div className="admin-settings-mobile-save">
@@ -8565,18 +8568,14 @@ function PairingPicker({
             onClick={() => {
               apply({ fontJa: ja, fontEn: en });
             }}
-            title={desc}
             className={`text-left px-3 py-2.5 rounded-sm transition-colors ${active ? "admin-btn-primary" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border border-[var(--admin-line)]"}`}
           >
-            <div className="flex items-baseline justify-between gap-3">
+            {/* 2026-09-29: 英語の雰囲気名（Classic Mincho・Fashion など）ではなく、実際の書体名と短い説明で選ぶ。 */}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
               <span className={`text-[length:var(--admin-text-note)] ${active ? "font-medium" : ""}`}>
-                {name}
-              </span>
-              <span
-                className="text-[length:var(--admin-text-note)] shrink-0"
-              >
                 {ja} × {en}
               </span>
+              <span className="text-[length:var(--admin-text-note)] opacity-75">{desc}</span>
             </div>
             <div className="mt-1.5 flex gap-3 items-baseline">
               {jaFamily && (

@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.ts";
-import { loginAsAdmin } from "./helpers";
+import { gotoAdminTab, loginAsAdmin, revealAdminPanel } from "./helpers";
 
 test.describe("admin — accentと意味色を混同しない", () => {
   test("Serviceの削除は通常時ニュートラル、hover時だけdangerになる", async ({
@@ -7,7 +7,7 @@ test.describe("admin — accentと意味色を混同しない", () => {
   }, testInfo) => {
     test.skip(
       testInfo.project.name !== "desktop",
-      "サイドバー操作のため desktop のみで検証",
+      "PC幅で検証",
     );
     await loginAsAdmin(page);
     const serviceTab = page.getByRole("button", { name: "Portfolio Kit" });
@@ -40,10 +40,10 @@ test.describe("admin — accentと意味色を混同しない", () => {
   }, testInfo) => {
     test.skip(
       testInfo.project.name !== "desktop",
-      "サイドバー操作のため desktop のみで検証",
+      "PC幅で検証",
     );
     await loginAsAdmin(page);
-    await page.locator(".studio-workspace-switch").getByRole("button", { name: "写真", exact: true }).click();
+    await gotoAdminTab(page, "gallery");
     await page.waitForTimeout(1500);
 
     await page.locator('[data-library-mode-action="select"]').click();
@@ -79,11 +79,14 @@ test.describe("admin — accentと意味色を混同しない", () => {
       "1つのdesktopセッションで3幅を連続検証",
     );
     await loginAsAdmin(page);
-    await page.getByRole("button", { name: "サイト編集", exact: true }).filter({visible: true}).first().click();
+    await gotoAdminTab(page, "settings");
     await expect(page.locator('[data-admin-form-layout="settings"]')).toBeVisible();
 
     for (const width of [1440, 1024, 390]) {
       await page.setViewportSize({ width, height: 900 });
+      // スマホ幅のサイトは目次から始まる。設定の中身へ入ってから測る。
+      await revealAdminPanel(page);
+      await expect(page.locator('[data-admin-form-layout="settings"]')).toBeVisible();
       await expect
         .poll(() =>
           page.evaluate(() => ({

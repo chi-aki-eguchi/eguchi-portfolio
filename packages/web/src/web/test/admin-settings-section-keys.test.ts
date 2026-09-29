@@ -4,6 +4,7 @@ import {
   SETTINGS_SECTION_GROUPS,
   SETTINGS_SECTION_KEYS,
 } from "../pages/admin-tabs";
+import { SITE_OUTLINE } from "../pages/admin-settings-navigation";
 
 // site_settings の許可台帳には、Settingsタブ以外が直接管理する値と
 // 旧バージョン互換の値も含まれる。ここへ明示したもの以外は、
@@ -84,7 +85,7 @@ describe("Settings section key registry", () => {
     expect(
       Object.keys(SETTINGS_SECTION_KEYS).length,
       "節を増減したら scripts/smoke/helpers.ts の SETTINGS_SECTION_COUNT も直す",
-    ).toBe(21);
+    ).toBe(25);
   });
 
   test("グループ台帳は全節をちょうど1回ずつ含む", () => {
@@ -95,5 +96,15 @@ describe("Settings section key registry", () => {
     expect([...grouped].sort()).toEqual(
       Object.keys(SETTINGS_SECTION_KEYS).sort(),
     );
+  });
+
+  // 管理画面「サイト」の目次（SITE_OUTLINE）が、設定の節をちょうど1回ずつ並べる。
+  // 目次から漏れた節は、管理画面のどこからも開けなくなる（2026-09-29 に節を分けたとき）。
+  test("サイトの目次は全節をちょうど1回ずつ含む", () => {
+    const listed = SITE_OUTLINE.flatMap((group) =>
+      group.items.filter((item) => item.kind === "settings").map((item) => item.id),
+    );
+    expect(new Set(listed).size, "同じ節を目次に2回並べていない").toBe(listed.length);
+    expect([...listed].sort()).toEqual(Object.keys(SETTINGS_SECTION_KEYS).sort());
   });
 });

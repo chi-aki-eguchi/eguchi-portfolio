@@ -30,10 +30,13 @@ export function SeriesView({
   data,
   initialId,
   onShowInLibrary,
+  onOpenDetails,
 }: {
   data: StudioData;
   initialId: number | null;
   onShowInLibrary: (id: number) => void;
+  /** シリーズごとの配色・並び順の上書きなど、詳しい設定（サイト → シリーズの詳しい設定）を開く */
+  onOpenDetails?: () => void;
 }) {
   const [storedId, setStoredId] = usePersistentState<number | null>("studio:series", null);
   const activeId = initialId ?? storedId;
@@ -193,6 +196,7 @@ export function SeriesView({
           series={active}
           onDeleted={() => setStoredId(null)}
           onShowInLibrary={onShowInLibrary}
+          onOpenDetails={onOpenDetails}
           importFiles={importFiles}
           uploading={upload !== null}
         />
@@ -215,6 +219,7 @@ function SeriesEditor({
   series,
   onDeleted,
   onShowInLibrary,
+  onOpenDetails,
   importFiles,
   uploading,
 }: {
@@ -222,6 +227,7 @@ function SeriesEditor({
   series: StudioSeries;
   onDeleted: () => void;
   onShowInLibrary: (id: number) => void;
+  onOpenDetails?: () => void;
   importFiles: (files: File[], target: number | null) => Promise<number[]>;
   uploading: boolean;
 }) {
@@ -457,6 +463,11 @@ function SeriesEditor({
             ) : (
               <button type="button" className="st-ax-btn st-link st-link--danger" onClick={() => setConfirmDelete(true)}>
                 シリーズを消す
+              </button>
+            )}
+            {onOpenDetails && (
+              <button type="button" className="st-ax-btn st-link" onClick={onOpenDetails}>
+                配色・並び順の上書き
               </button>
             )}
           </div>

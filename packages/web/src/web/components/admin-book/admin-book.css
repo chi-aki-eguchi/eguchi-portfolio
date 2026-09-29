@@ -71,7 +71,6 @@
 }
 .admin-book__tab:disabled { opacity: 0.4; }
 .admin-book__tools {
-  margin-left: auto;
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
@@ -93,6 +92,11 @@
   color: var(--bench-quiet);
 }
 .admin-book__tool--quiet { color: var(--bench-quiet); }
+/* 管理画面の言葉（JP / EN）。PC は道具の右端。 */
+.admin-book__lang { flex: none; }
+/* 道具のかたまり。PC は右寄せで横に並べ、「メニュー」は出さない。 */
+.admin-book__menu-wrap { margin-left: auto; min-width: 0; position: relative; }
+.admin-book__menu { display: none; }
 .admin-book__main {
   flex: 1;
   min-height: 0;
@@ -461,7 +465,7 @@
 /* ── サイト ─────────────────────────────── */
 .book-site {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
@@ -494,19 +498,111 @@
 .book-site__item:hover { background: var(--bench-soft); }
 .book-site__item[aria-current="page"] { background: var(--bench-deep); }
 .book-site__note { margin: 12px 8px 0; font-size: 12.5px; line-height: 1.7; color: var(--bench-quiet); }
+.book-site__lede { margin: 8px 8px 12px; font-size: 12.5px; line-height: 1.7; color: var(--bench-quiet); }
+.book-site__search { margin: 0 8px 16px; }
+.book-site__search input { width: 100%; min-height: 40px; font-size: 14px; }
+/* スマホは 16px 未満だと入力時に画面が拡大されるので、そこだけ大きくする。 */
+@media (max-width: 767px) { .book-site__search input { font-size: 16px; } }
+.book-site__empty { display: block; margin: 8px; font-size: 13px; line-height: 1.7; color: var(--bench-quiet); }
+/* どちらかの骨格でしか使わない項目の札。名前の行の右に小さく置く。
+   今の骨格で使わない項目は薄くする（隠さない）。 */
+.book-site__item-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.book-site__only {
+  flex: none;
+  font-style: normal;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--bench-quiet);
+}
+/* 保存していない変更がある節の印（設定の保存欄の「未保存の変更」と同じ色）。 */
+.book-site__changed {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-right: auto;
+  margin-left: 2px;
+  align-self: center;
+  border-radius: 50%;
+  background: var(--admin-accent);
+}
+.book-site__item[data-skeleton-inactive] > span,
+.book-site__item[data-skeleton-inactive] > small { opacity: 0.55; }
 .book-site__panel { min-width: 0; min-height: 0; display: flex; }
 .book-site__panel > * { flex: 1; min-width: 0; }
+/* スマホで目次へ戻るボタン。PC は目次が横に並んでいるので出さない。 */
+.book-site__back { display: none; }
+
+/* 設定の項目名に付く「写真中心のとき」「いつもの構成のとき」の札。 */
+.admin-skeleton-tag {
+  margin-left: 0.75em;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--admin-muted);
+  white-space: nowrap;
+}
+.ax-field[data-skeleton-inactive] > :not(.ax-field__label) { opacity: 0.55; }
+/* 設定の中の「項目を切り替え」一覧は、左（スマホは戻るボタン）の目次と重なるので出さない。 */
+.admin-atelier.admin-workbench.admin-book-root .admin-settings-mobile-current > button[aria-expanded] { display: none; }
 
 /* ── スマホ ─────────────────────────────── */
 @media (max-width: 767px) {
   .admin-book__bar {
+    position: relative;
     height: auto;
     flex-wrap: wrap;
-    gap: 6px 16px;
-    padding: 12px 16px 0;
+    gap: 0 12px;
+    padding: 4px 8px 0 16px;
   }
-  .admin-book__tools { gap: 1rem; }
-  .admin-book__tools button.admin-book__tool:first-of-type { display: none; }
+  .admin-book__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .admin-book__menu-wrap { position: static; }
+  .admin-book__menu {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 14px;
+    color: var(--bench-ink);
+    background: none;
+    border: 0;
+  }
+  /* 「メニュー」を押したときだけ、帯の下に道具を縦に並べる。 */
+  .admin-book__tools { display: none; }
+  .admin-book__tools[data-open] {
+    position: absolute;
+    top: 48px;
+    right: 8px;
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 12rem;
+    padding: 6px 0;
+    background: var(--admin-paper);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+    white-space: nowrap;
+  }
+  .admin-book__tools[data-open] .admin-book__tool {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 14px;
+    text-align: left;
+  }
+  .admin-book__tools[data-open] .admin-book__tool kbd { display: none; }
+  .admin-book__tools[data-open] .admin-book__lang {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+  }
   .admin-book__tabs {
     order: 3;
     width: 100%;
@@ -568,7 +664,26 @@
 
   .book-site { display: flex; flex-direction: column; overflow-y: auto; }
   .book-site__toc { overflow: visible; padding: 8px 12px; }
-  .book-site__panel { min-height: 70dvh; }
+  .book-site__panel { min-height: 70dvh; flex-direction: column; }
+  /* 目次と中身を1画面ずつ出す。 */
+  .book-site[data-mobile="toc"] .book-site__panel { display: none; }
+  .book-site[data-mobile="panel"] .book-site__toc { display: none; }
+  .book-site[data-mobile="panel"] .book-site__panel { flex: 1; }
+  .book-site__back {
+    display: flex;
+    flex: none !important;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: var(--bench-ink);
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--admin-line);
+    text-align: left;
+  }
+  .book-site__back span { color: var(--bench-quiet); font-size: 13px; }
 }
 
 /* 既存の管理画面のボタン指定（aria-pressed の塗りなど、!important つき）より

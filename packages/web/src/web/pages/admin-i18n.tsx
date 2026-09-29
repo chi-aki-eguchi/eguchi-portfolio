@@ -1213,9 +1213,26 @@ const ADMIN_PHASE_2B_JA = {
         "押すと下の各設定が書き換わりますが、まだ保存はされません。プレビューで確かめてから保存してください。気に入らなければ「変更を破棄」で元に戻せます。色と書体は変えないので、選び直した配色はそのまま残ります。",
     },
     pageLayout: {
-      title: "ページの構成",
+      title: "サイトの骨格",
       intro:
-        "色や文字の大きさではなく、写真と文章の置き方そのものを変えます。同じ設定でも構成が違えば、サイトの印象は大きく変わります。",
+        "公開サイトの写真と文章の置き方そのものを変えます。どちらを選んでも、この管理画面の形は変わりません。",
+      homeTitle: "トップの形と作家の言葉",
+      viewerTitle: "写真を開いたとき",
+      partsTitle: "About・Contact の組み方",
+      frameTitle: "見出しとフッター",
+      onlyTag: {
+        book: "写真中心のとき",
+        classic: "いつもの構成のとき",
+      },
+      otherSkeletonNote: {
+        classic:
+          "この項目は「いつもの構成」のときだけ公開サイトに効きます。今は写真中心なので、変えても見た目は変わりません。値は残り、いつもの構成に戻すとそのまま使われます。",
+        book:
+          "この項目は「写真中心」のときだけ公開サイトに効きます。今はいつもの構成なので、変えても見た目は変わりません。値は残り、写真中心に切り替えるとそのまま使われます。",
+      },
+      classicUnusedNotes: {
+        home: "いつもの構成では「トップの形」は使いません（トップの写真の見せ方は「トップの見せ方」で選びます）。作家の言葉は、どちらの骨格でも効きます。",
+      } as Record<string, string>,
       bookCoverLabel: "写真集のトップの写真",
       bookCoverHint: "開いて最初に見える1枚",
       bookCoverAuto: "自動（作品の扉と重ならない1枚）",
@@ -1226,9 +1243,9 @@ const ADMIN_PHASE_2B_JA = {
         book: "写真中心（おすすめ）",
       },
       siteDesignNote:
-        "写真中心: トップは名前と選んだ写真、すべての写真は Gallery、シリーズは Series のページ。写真は切り抜かず、元の縦横比のまま段に並べます。1枚の写真を何本のシリーズにも入れられます。",
+        "写真中心: トップは名前と選んだ写真、すべての写真は Gallery、シリーズは Series のページ。写真は切り抜かず、元の縦横比のまま段に並べます。いつもの構成: トップの見せ方・写真一覧のレイアウト・メニューの位置を細かく選べます。どちらかでしか使わない項目には、目次と項目名に「写真中心のとき」「いつもの構成のとき」と書いてあります。",
       topLayoutLabel: "トップの形",
-      topLayoutHint: "写真中心のときのトップ",
+      topLayoutHint: "開いて最初に見えるトップの組み方",
       topLayoutOptions: {
         "cover-selection": "表紙と選んだ写真",
         "cover-only": "表紙だけ",
@@ -1236,11 +1253,11 @@ const ADMIN_PHASE_2B_JA = {
       topLayoutNote:
         "「写真」画面の「トップに出す」で選んだ写真だけを表示します。先頭1枚が表紙、続きは1枚・2枚の組み合わせです。未選択のときだけ公開写真の先頭1枚を表示します。",
       bookUnusedNotes: {
-        hero: "写真中心の構成では、この節の見た目と動きは使いません。トップの写真は「写真」画面の「トップに出す」で選び、トップの形は「各ページの構成」で選びます。",
+        hero: "写真中心の構成では、この節の見た目と動きは使いません。トップの写真は「写真」画面の「トップに出す」で選び、トップの形は「トップの形と作家の言葉」で選びます。",
         navigation: "写真中心の構成では、メニューはいつも上の帯です。ここの位置と帯の背景は使いません。",
-        "gallery-layout": "写真中心の構成では、この節は使いません。トップとシリーズのページは、写真を切り抜かずに大小の段で並べる決まった組み方です。",
+        "gallery-layout": "写真中心の構成では、この節（シリーズの札・切り抜きを含む）は使いません。トップとシリーズのページは、写真を切り抜かずに大小の段で並べる決まった組み方です。",
+        mood: "写真中心の構成では、トップ・写真一覧・メニューの入れ替えは使いません。背景の質感・About・Contact・見出し・フッター・ビューアの壁は、写真中心でも入れ替わります。",
         series: "写真中心の構成では、トップのシリーズ帯・シリーズ一覧の列数・「Gallery から作品の写真を外す」は使いません。Gallery にはいつもすべての公開写真が並びます。",
-        "page-layout": "写真中心の構成では「シリーズの札の形」は使いません。「トップの言葉」は名前のすぐ下か、トップの写真の後に出ます。",
         "site-copy": "写真中心の構成では「TOP」「すべて見る」「ギャラリー見出し」の言葉は使いません。Gallery・Works・About・Contact・SNS・絞り込みの「すべて」・お問い合わせの言葉は効きます。",
       } as Record<string, string>,
       aboutLabel: "About（プロフィール）の構成",
@@ -3036,9 +3053,26 @@ const ADMIN_PHASE_2B_EN = {
         "Pressing one rewrites the settings below but does not save yet. Check it in the preview first — “Discard changes” puts everything back. Colours and typefaces are left alone, so your palette survives.",
     },
     pageLayout: {
-      title: "Page Composition",
+      title: "Site structure",
       intro:
-        "This changes how the photo and the words are arranged, not their colour or size. The same settings can read very differently once the composition changes.",
+        "This changes how photographs and words are arranged on the public site. The admin looks the same whichever you choose.",
+      homeTitle: "Home layout & statement",
+      viewerTitle: "Photo viewer",
+      partsTitle: "About & Contact layout",
+      frameTitle: "Page titles & footer",
+      onlyTag: {
+        book: "Photographs-first only",
+        classic: "Classic only",
+      },
+      otherSkeletonNote: {
+        classic:
+          "This only affects the public site with the classic structure. You are using photographs first, so changes here will not show. The values are kept and apply again if you switch back.",
+        book:
+          "This only affects the public site with the photographs-first structure. You are using the classic structure, so changes here will not show. The values are kept and apply when you switch.",
+      },
+      classicUnusedNotes: {
+        home: "The classic structure does not use the home layout (choose the look of the home photographs under Home hero). The statement applies to both structures.",
+      } as Record<string, string>,
       bookCoverLabel: "Photobook home photograph",
       bookCoverHint: "The first photograph people see",
       bookCoverAuto: "Automatic (one not used on a work’s opening page)",
@@ -3049,9 +3083,9 @@ const ADMIN_PHASE_2B_EN = {
         book: "Photographs first (recommended)",
       },
       siteDesignNote:
-        "Photographs first: the home page shows your name and the photographs you pick, every photograph lives in Gallery and series on the Series page. Photographs are never cropped. One photograph can belong to several series.",
+        "Photographs first: the home page shows your name and the photographs you pick, every photograph lives in Gallery and series on the Series page. Photographs are never cropped. Classic: choose the home hero, gallery layout and menu position in detail. Items used by only one structure are marked in the outline and next to their names.",
       topLayoutLabel: "Home page",
-      topLayoutHint: "Photographs-first home",
+      topLayoutHint: "How the home page opens",
       topLayoutOptions: {
         "cover-selection": "Cover and picked photos",
         "cover-only": "Cover only",
@@ -3059,11 +3093,11 @@ const ADMIN_PHASE_2B_EN = {
       topLayoutNote:
         "Only photographs selected with “Show on the home page” appear here. The first is the cover; the rest alternate between pairs and single photographs. If none are selected, the first public photograph is used.",
       bookUnusedNotes: {
-        hero: "The photographs-first design does not use the look and motion set here. Pick the home photographs with “Show on the home page” in Photos, and the home layout under page layout.",
+        hero: "The photographs-first design does not use the look and motion set here. Pick the home photographs with “Show on the home page” in Photos, and the home layout under Home layout & statement.",
         navigation: "In the photographs-first design the menu is always the band at the top. Position and band background here are not used.",
-        "gallery-layout": "The photographs-first design does not use this section. The home and series pages use a fixed layout of uncropped rows of varying height.",
+        "gallery-layout": "The photographs-first design does not use this section, including series cards and cropping. The home and series pages use a fixed layout of uncropped rows of varying height.",
+        mood: "The photographs-first design does not use the home, gallery and menu parts of a preset. Texture, About, Contact, page titles, footer and viewer wall still change.",
         series: "The photographs-first design does not use the home series strip, the series grid columns, or “exclude series photographs from the gallery”. Gallery always shows every public photograph.",
-        "page-layout": "The photographs-first design does not use the series card style. The home statement appears under your name or after the home photographs.",
         "site-copy": "The photographs-first design does not use the TOP, View all and gallery heading labels. Gallery, Works, About, Contact, social, the filter’s All and the contact form labels apply.",
       } as Record<string, string>,
       aboutLabel: "About page composition",
@@ -3922,10 +3956,10 @@ export const ADMIN_DICTIONARY = {
       leaveWithoutSaving: "保存せず移動",
     },
     headers: {
-      hero: "トップページのカルーセルに表示する写真を選びます。",
+      hero: "トップに出す写真の順番と切り抜きを決めます。「写真」画面で「トップに出す」を付けた写真と同じです。",
       profile: "About ページに表示する自己紹介とプロフィール写真です。",
       categories: "Gallery の絞り込みに使うカテゴリを管理します。",
-      series: "作品をシリーズにまとめます。写真の割り当てはLibraryで行います。",
+      series: "写真の出し入れは上の「シリーズ」で行います。ここでは配色と並び順の上書きを編集します。",
       pricing:
         "Contactページに表示される料金です。↑↓で並び替え。販売ページの料金はPortfolio Kit画面で編集します。",
       service:
@@ -4147,10 +4181,10 @@ export const ADMIN_DICTIONARY = {
       leaveWithoutSaving: "Leave without saving",
     },
     headers: {
-      hero: "Choose the photos shown in the home-page carousel.",
+      hero: "Order and crop the home-page photographs — the same ones marked “Show on the home page” in 写真.",
       profile: "Your biography and profile photo shown on the About page.",
       categories: "Manage the categories used to filter Gallery.",
-      series: "Group work into series. Assign photos from Library.",
+      series: "Arrange photographs under シリーズ. Edit colour and order overrides here.",
       pricing:
         "Manage pricing shown on the Contact page. Set the sort order with ↑↓. Edit sales-page pricing in Portfolio Kit.",
       service:

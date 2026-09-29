@@ -37,7 +37,7 @@ const HERO_MODES = [
 
 async function openMotionSettings(page: Parameters<typeof loginAsAdmin>[0]) {
   await loginAsAdmin(page);
-  await page.getByRole("button", { name: "サイト編集", exact: true }).filter({visible: true}).first().click();
+  await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
   // 設定の本文は目次で選んだ1節だけを出す。折りたたみ行は廃止した。
   await chooseSettingsSection(page, "hero");
   await expect(page.locator('[data-settings-section="hero"]')).toBeVisible();

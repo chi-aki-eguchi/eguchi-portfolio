@@ -108,7 +108,7 @@ test.describe("写真中心の管理画面", () => {
   test("サイト › シリーズの中の並びに、この構成で使わない設定を書く", async ({ page, api }) => {
     await openStudio(page, api);
     await page.getByRole("navigation", { name: "管理画面の入口" }).getByRole("button", { name: "サイト" }).click();
-    await page.getByRole("button", { name: /シリーズの中の並び/ }).click();
+    await page.getByRole("button", { name: /写真の並び順とシリーズの入口/ }).click();
     const note = page.locator(".admin-book-unused");
     await expect(note).toBeVisible();
     await expect(note).toContainText("Gallery にはいつもすべての公開写真");

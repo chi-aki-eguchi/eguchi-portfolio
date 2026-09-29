@@ -12,7 +12,7 @@ import { smokeAdminPassword } from "./smoke-env.ts";
 // 4件が同時に落ちた（原因は同じ1箇所なのに、直す場所が4つあった）。
 // 写しがずれていないことは packages/web の
 // `admin-settings-section-keys.test.ts` が `bun run check` の速さで見張る。
-export const SETTINGS_SECTION_COUNT = 21;
+export const SETTINGS_SECTION_COUNT = 25;
 
 // 9タブ全て(setup=はじめに含む)。追加/削除時はここを更新する。
 export const ADMIN_TABS = [
@@ -51,21 +51,26 @@ export async function loginAsAdmin(page: Page): Promise<void> {
   await page.waitForSelector(".admin-atelier", { timeout: 10_000 });
 }
 
-// タブは sessionStorage 経由の usePersistentState ではなく localStorage("admin:tab")
-// に永続化されているため、直接書き換えてリロードするのが最短経路。
+// 管理画面は、サイトの骨格に関係なく「写真・シリーズ・サイト」の1つの器（2026-09-29）。
+// 以前の左メニューのタブ名で呼べるよう、入口（admin:book:view）とサイトの目次の項目
+// （admin:book:panel）へ読み替えて localStorage に書き、リロードする。
+//   gallery  → 写真の詳しい道具（従来の写真一覧）
+//   settings → サイト › トップの見せ方（節は chooseSettingsSection で選ぶ）
+//   そのほか → サイト › その編集画面（トップの写真・About・分類・シリーズの詳しい設定…）
 export async function gotoAdminTab(page: Page, tab: string, libraryView: "normal" | "select" = "normal"): Promise<void> {
-  await page.evaluate(
-    (t) => localStorage.setItem("admin:tab", JSON.stringify(t)),
-    tab,
-  );
+  const view = tab === "gallery" ? "library" : "site";
+  await page.evaluate(storeAdminTab, tab);
   await page.reload();
-  await page.waitForSelector(".admin-screen", { timeout: 10_000 });
+  // スマホ幅のサイトは目次から始まり、中身（.admin-screen）はまだ隠れている。
+  await page.waitForSelector(".admin-screen", { state: "attached", timeout: 10_000 });
   await page
     .waitForFunction(() => !document.body.innerText.includes("Loading..."), {
       timeout: 15_000,
     })
     .catch(() => {});
   await page.waitForTimeout(300);
+  // スマホ幅のサイトは目次と中身を1画面ずつ出す。タブ名で開いたときは中身を出す。
+  if (view === "site") await revealAdminPanel(page);
   // Existing detail/reorder scenarios explicitly start in the single-photo view.
   // Tests of the new default selection flow use "select" or open /admin directly.
   if (tab === "gallery") {
@@ -86,18 +91,39 @@ export async function gotoAdminTab(page: Page, tab: string, libraryView: "normal
   }
 }
 
-/** Section navigation keeps the editor wide while its site preview is open. */
+/**
+ * 以前のタブ名を、管理画面の入口（admin:book:view）とサイトの目次の項目
+ * （admin:book:panel）へ書き込む。`page.addInitScript(storeAdminTab, "setup")` や
+ * `page.evaluate(storeAdminTab, tab)` で使う（関数は文字列にして送られるので、
+ * 外の変数を使わない）。settings は以前の既定の節（トップの見せ方）。
+ */
+export function storeAdminTab(tab: string): void {
+  const view = tab === "gallery" ? "library" : "site";
+  const panel = tab === "gallery" ? null : tab === "settings" ? "settings:hero" : `tab:${tab}`;
+  localStorage.setItem("admin:book:view", JSON.stringify(view));
+  if (panel) localStorage.setItem("admin:book:panel", JSON.stringify(panel));
+}
+
+/** スマホ幅のサイトは目次から始まる。開いている項目の中身へ入る（PC幅では何もしない）。 */
+export async function revealAdminPanel(page: Page): Promise<void> {
+  const toc = page.locator('.book-site[data-mobile="toc"]');
+  if (!(await toc.isVisible().catch(() => false))) return;
+  const active = page.locator('.book-site__toc [data-site-item][aria-current="page"]');
+  if ((page.viewportSize()?.width ?? 1440) >= 768) return;
+  if (await active.count()) await active.first().click();
+}
+
+/** サイトの目次から設定の節を開く（スマホ幅は「← サイトの一覧」で目次へ戻ってから）。 */
 export async function chooseSettingsSection(page: Page, sectionId: string): Promise<void> {
-  await expect(page.locator(".admin-settings-form-layout")).toBeVisible();
-  const toc = page.locator(".studio-editor-outline, .admin-form-toc").filter({has: page.locator("[data-settings-section-link]")}).first();
-  const link = toc.locator(`[data-settings-section-link="${sectionId}"]`);
-  if (await toc.isVisible()) {
-    await link.scrollIntoViewIfNeeded();
-    await link.click();
-  } else {
-    await page.locator(".admin-settings-mobile-current").getByRole("button", { name: /設定項目|Settings list/ }).click();
-    await page.locator(`[data-settings-sheet-link="${sectionId}"]`).click();
+  const item = page.locator(`[data-site-item="settings:${sectionId}"]`);
+  if (!(await item.isVisible())) {
+    const back = page.locator(".book-site__back");
+    if (await back.isVisible()) await back.click();
+    else await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
   }
+  await item.scrollIntoViewIfNeeded();
+  await item.click();
+  await expect(page.locator(".admin-settings-form-layout")).toBeVisible();
   await expect(page.locator(`[data-settings-section="${sectionId}"]`)).toBeVisible();
 }
 

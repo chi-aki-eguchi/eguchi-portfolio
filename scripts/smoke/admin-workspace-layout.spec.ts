@@ -34,7 +34,7 @@ const WORKSPACE_PHOTO = {
 };
 
 test.describe("admin — Workspace layout", () => {
-  test("1024pxでも項目名を読め、必要なら畳んで作業面を広げられる", async ({
+  test("1024pxでも写真の作業面が画面幅いっぱいに使え、操作がはみ出さない", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktopで1024pxを確認する");
@@ -42,40 +42,12 @@ test.describe("admin — Workspace layout", () => {
     await loginAsAdmin(page);
     await gotoAdminTab(page, "gallery");
 
-    const sidebar = page.locator(".admin-sidebar");
-    const main = page.locator(".admin-main");
-    const workspace = page.locator('[data-admin-workspace="library"]');
-    const [sidebarBox, mainBox, workspaceBox] = await Promise.all([
-      sidebar.boundingBox(),
-      main.boundingBox(),
-      workspace.boundingBox(),
-    ]);
-    expect(sidebarBox?.width).toBeCloseTo(196, 0);
-    expect(mainBox?.width ?? 0).toBeGreaterThanOrEqual(800);
-    await expect(sidebar.locator(".admin-sidebar__tab").first()).toBeVisible();
-    await page.locator("[data-sidebar-collapse]").click();
-    expect((await sidebar.boundingBox())?.width).toBeCloseTo(64, 0);
-    expect(workspaceBox?.width).toBeCloseTo(mainBox?.width ?? 0, 0);
-    await expect(
-      sidebar.locator('[data-compact-sidebar-group="photos"]'),
-    ).toBeVisible();
-    await expect(sidebar.locator(".admin-sidebar__tab").first()).toBeHidden();
-
-    const presentation = sidebar.locator(
-      '[data-compact-sidebar-group="presentation"]',
-    );
-    await presentation.focus();
-    await presentation.press("ArrowRight");
-    const popover = sidebar.locator(
-      '[data-compact-sidebar-popover="presentation"]',
-    );
-    await expect(popover).toBeVisible();
-    const popoverItems = popover.locator("[data-compact-sidebar-item]");
-    await expect(popoverItems.first()).toBeFocused();
-    await popoverItems.first().press("ArrowDown");
-    await expect(popoverItems.nth(1)).toBeFocused();
-    await popoverItems.nth(1).press("Escape");
-    await expect(presentation).toBeFocused();
+    // 左のナビは無い（2026-09-29 に上の入口だけの器にした）。作業面は画面幅いっぱい。
+    await expect(page.locator(".admin-sidebar")).toHaveCount(0);
+    const workspaceBox = await page
+      .locator('[data-admin-workspace="library"]')
+      .boundingBox();
+    expect(workspaceBox?.width ?? 0).toBeGreaterThanOrEqual(1000);
 
     await expect(page.locator("[data-library-mode-switcher]")).toHaveCount(1);
     await expect(page.locator("[data-library-search-input]")).toBeVisible();
@@ -100,7 +72,7 @@ test.describe("admin — Workspace layout", () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
-  test("広い画面ではナビの畳み状態を保存し、写真を広い編集画面で見られる", async ({
+  test("広い画面では写真を広い編集画面で見られる", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktopで1440pxを確認する");
@@ -120,32 +92,7 @@ test.describe("admin — Workspace layout", () => {
       }),
     );
     await loginAsAdmin(page);
-    await page.evaluate(() =>
-      localStorage.removeItem("admin:sidebarCollapsed"),
-    );
-    await page.reload();
     await gotoAdminTab(page, "gallery");
-
-    const sidebar = page.locator(".admin-sidebar");
-    // 2026-09-13 の再設計で、広い画面の展開幅は 240px から 216px になった
-    // （`admin-studio.css` の `.admin-sidebar:not([data-collapsed=true])`）。
-    // 期待値だけが古いまま残っていた。1024px の 196px は下の検査が見ている。
-    await expect
-      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(216, 0);
-    await page.locator("[data-sidebar-collapse]").click();
-    await expect
-      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(64, 0);
-    await page.reload();
-    await expect(page.locator('[data-admin-workspace="library"]')).toBeVisible();
-    await expect
-      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(64, 0);
-    await page.locator("[data-compact-sidebar-expand]").click();
-    await expect
-      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-      .toBeCloseTo(216, 0);
 
     const firstPhoto = page
       .locator(".admin-photo-tile [data-library-photo-action]")

@@ -15,9 +15,10 @@ test.describe("admin — JP/EN shared shell", () => {
     await page.evaluate(() => localStorage.setItem("admin:language", "ja"));
     await page.reload();
 
-    const sidebar = page.locator(".admin-sidebar");
-    await expect(sidebar.getByRole("link", { name: "サイト" })).toBeVisible();
-    await expect(sidebar.getByRole("button", { name: "ログアウト" })).toBeVisible();
+    const tools = page.locator(".admin-book__tools");
+    await expect(tools.getByRole("link", { name: /サイトを見る/ })).toBeVisible();
+    await expect(tools.getByRole("button", { name: "ログアウト" })).toBeVisible();
+    await gotoAdminTab(page, "gallery");
     await expect(page.getByText(/\d+ \/ \d+ 枚/)).toBeVisible();
 
     await page.getByRole("button", { name: "絞り込み" }).click();
@@ -49,7 +50,7 @@ test.describe("admin — JP/EN shared shell", () => {
 
   test("EN survives reload and is shared by login and the admin shell", async ({
     page,
-  }, testInfo) => {
+  }) => {
     await page.goto("/admin/login");
     const loginToggle = page.locator("[data-admin-language-toggle]:visible");
     await expect(loginToggle).toHaveAttribute("data-language", "ja");
@@ -73,30 +74,24 @@ test.describe("admin — JP/EN shared shell", () => {
     ).toHaveAttribute("data-language", "en");
     await loginAsAdmin(page);
 
+    // スマホ幅では、言葉の切り替えは右上の「メニュー」の中にある。
+    const menu = page.locator(".admin-book__menu");
+    if (await menu.isVisible()) await menu.click();
     const shellToggle = page.locator(
       "[data-admin-language-toggle]:visible",
     );
     await expect(shellToggle).toHaveAttribute("data-language", "en");
-    if (testInfo.project.name === "desktop") {
-      const groups = page.locator(".admin-sidebar__group-title");
-      await expect(groups).toContainText(["Photos", "Presentation"]);
-      await page.locator(".studio-workspace-switch").getByRole("button", { name: "Site editor", exact: true }).click();
-      await expect(
-        page.locator(".admin-sidebar").getByRole("button", {
-          name: "Getting started",
-        }),
-      ).toBeVisible();
-    } else {
-      const nav = page.locator(".admin-bottom-nav");
-      await expect(nav.getByRole("button", { name: /Photographs/ })).toBeVisible();
-      await expect(
-        nav.getByRole("button", { name: /Navigate/ }),
-      ).toBeVisible();
-      await expect(nav.getByRole("button", { name: /Site/ })).toBeVisible();
-    }
+    // 入口と目次は日本語のまま（2026-09-29 の器）。編集画面の中身が英語になる。
+    await gotoAdminTab(page, "profile");
+    await expect(
+      page.getByText("Your biography and profile photo shown on the About page."),
+    ).toBeVisible();
 
+    if (await menu.isVisible()) await menu.click();
     await shellToggle.getByRole("button", { name: "JP" }).click();
     await page.reload();
+    await expect(page.locator(".admin-book__tab").first()).toBeVisible();
+    if (await menu.isVisible()) await menu.click();
     await expect(
       page.locator("[data-admin-language-toggle]:visible"),
     ).toHaveAttribute("data-language", "ja");
@@ -118,7 +113,7 @@ test.describe("admin — JP/EN shared shell", () => {
     await gotoAdminTab(page, "gallery");
     await expect(page.getByRole("button", { name: "Filters" })).toBeVisible();
     await page.locator(".admin-library-view-menu > summary").click();
-    await expect(page.getByLabel("Sort Library view")).toBeVisible();
+    await expect(page.getByLabel("Order of this list (does not change the site)")).toBeVisible();
     await page.getByLabel("Choose image files").setInputFiles({ name: "preflight.jpg", mimeType: "image/jpeg", buffer: Buffer.from("preflight") });
     const importDialog = page.getByRole("dialog");
     await expect(importDialog.getByRole("radio", { name: "Digital photographs" })).toBeVisible();
@@ -136,7 +131,7 @@ test.describe("admin — JP/EN shared shell", () => {
 
     await gotoAdminTab(page, "series");
     await expect(
-      page.getByText("Group work into series", { exact: false }),
+      page.getByText("Arrange photographs under", { exact: false }),
     ).toBeVisible();
     await page.getByText("New Series", { exact: true }).click();
     await expect(page.getByLabel("New series title")).toBeVisible();

@@ -22,6 +22,7 @@
 | 4 個別Phase | `admin-mobile-usability-plan.md` | スマホの実測と改善設計 |
 | 2026年9月の見直し | `usability-review-2026-09.md` | 管理画面・スマホ・公開側の実測と改善判断 |
 | 現状の記録 | `admin-library-states.md` | Library の状態遷移。**提案ではなく記録** |
+| 現在の器（2026-09-29） | `admin-one-shell-20260929.md` | **管理画面は骨格に関係なく「写真・シリーズ・サイト」の1つ。**サイトの目次の正本は `SITE_OUTLINE`。左ナビ前提の古い層より優先 |
 
 矛盾したら**番号の小さい層を優先**する。ただし並べ替えの保存経路だけは
 `library-reorder-safety.md` が層1〜4より優先（層3の冒頭に明記されている）。

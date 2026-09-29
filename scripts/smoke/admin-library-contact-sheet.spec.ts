@@ -253,7 +253,7 @@ test('サイズ変更の直後にタブを離れても、次にLibraryへ戻っ�
   // タブ切替（同コンポーネント内でどのタブの中身を出すかを切り替えるだけ）では
   // 効いたまま残るが、値が sessionStorage へ確実に届くこと自体は環境非依存の
   // 挙動なので、UIが違うタブ切替導線を持つ端末は増やさずPCだけで確認する。
-  testInfo.skip(testInfo.project.name !== 'desktop', 'サイドバーでのタブ切替はPC導線のみ確認する');
+  testInfo.skip(testInfo.project.name !== 'desktop', '入口の切替はPC導線のみ確認する');
   await loginAsAdmin(page);
   await gotoAdminTab(page, 'gallery');
   const size = page.getByRole('slider', { name: '一覧の写真サイズ' });
@@ -262,8 +262,11 @@ test('サイズ変更の直後にタブを離れても、次にLibraryへ戻っ�
   const target = before === '250' ? '90' : '250';
   await size.fill(target);
   // 確定(180ms)を待たず、すぐ実クリックで別タブへ離れる。
-  await page.locator('.studio-workspace-switch').getByRole('button', { name: 'サイト編集', exact: true }).click();
+  await page.locator('.admin-book__tab', { hasText: 'サイト' }).click();
   await expect(page.locator('[data-library-scroll]')).toHaveCount(0);
-  await page.locator('.studio-workspace-switch').getByRole('button', { name: '写真', exact: true }).click();
+  // 写真の詳しい道具（この一覧）へ ⌘K から戻る。
+  await page.keyboard.press('Meta+k');
+  await page.getByPlaceholder(/移動先/).fill('詳しい道具');
+  await page.keyboard.press('Enter');
   await expect(page.getByRole('slider', { name: '一覧の写真サイズ' })).toHaveValue(target);
 });

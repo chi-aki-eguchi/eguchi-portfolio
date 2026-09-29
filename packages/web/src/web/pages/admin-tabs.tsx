@@ -58,7 +58,13 @@ import {
 } from "./admin-shared";
 import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
 import { PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
-import { settingsNavigationItems, previewPageForSection } from "./admin-settings-navigation";
+import {
+  settingsNavigationItems,
+  previewPageForSection,
+  siteSkeletonFrom,
+  skeletonOnlyForSection,
+  type SiteSkeleton,
+} from "./admin-settings-navigation";
 import { previewWorksFrom } from "../lib/admin-preview-pages";
 import { useSettingsHistory } from "../hooks/useSettingsHistory";
 import { PageHeader, PageHeaderButton } from "./admin-page-header";
@@ -181,29 +187,27 @@ export const SETTINGS_SECTION_KEYS = {
     "galleryEmptyRate",
     "gallerySizeVariation",
     "gallerySeed",
+    // いつもの構成だけで効く2つ。写真中心は元から切り抜かず、札も持たない。
+    // 写真を切り抜くかどうか（HERO・表紙・札・帯）と、Series の札の形。
+    "photoCrop",
+    "seriesCardStyle",
   ],
   // 作風プリセットは自分のキーを持たない（他の節のキーをまとめて入れ替える
   // だけ）。台帳では空にしておく。所属キーの検査は
   // admin-settings-section-keys.test.ts が見ている。
   mood: [],
-  // 各ページの骨格（写真と文章の関係）を選ぶ節。色や大きさの調整では
-  // 変わらない部分をここでまとめて扱う。
-  "page-layout": [
-    "siteDesign",
-    "bookCoverPhotoId",
-    "photoTopLayout",
-    "profileLayout",
-    "contactLayout",
-    "seriesCardStyle",
-    "footerLayout",
-    "pageTitleStyle",
-    "homeStatement",
-    // 写真を切り抜くかどうか。HERO・表紙・札・帯にまたがるので、
-    // 面ごとの節ではなくここ（ページの骨格）に置く。
-    "photoCrop",
-    "viewerStyle",
-    "viewerMat",
-  ],
+  // サイトの骨格（写真中心／いつもの構成）だけを選ぶ節。以前はここに About・
+  // Contact・ビューア・フッターまで11個を詰めていて、どこに何があるか分からな
+  // かった（2026-09-29）。公開サイトのページごとの節へ分けた。
+  "page-layout": ["siteDesign"],
+  // トップの形（写真中心）と、トップに置く作家の言葉（両方の骨格）。
+  home: ["bookCoverPhotoId", "photoTopLayout", "homeStatement"],
+  // 写真を大きく開いたとき。
+  viewer: ["viewerStyle", "viewerMat"],
+  // About と Contact の組み方。
+  "page-parts": ["profileLayout", "contactLayout"],
+  // 全ページに共通の見出しとフッター。
+  "page-frame": ["pageTitleStyle", "footerLayout"],
   series: [
     "seriesNavEnabled",
     // Work の棚（2026-08-30）。シリーズと同じ節に置く——同じ仕組みの
@@ -320,6 +324,10 @@ export const SETTINGS_SECTION_GROUPS = {
     "reveal",
     "gallery-layout",
     "page-layout",
+    "home",
+    "viewer",
+    "page-parts",
+    "page-frame",
     "series",
   ],
   integrations: ["note", "print", "cta"],
@@ -4581,25 +4589,21 @@ export function SettingsTab({
   initialSectionId: requestedSectionId,
   onOpenTab,
   onActiveSectionChange,
-  hiddenSectionIds,
-  sectionLabels,
+  onChangedSectionsChange,
 }: {
   onUnsavedChange?: (v: boolean) => void;
   demoSeed?: string;
   initialSectionId?: string;
   onOpenTab?: (tab: "hero" | "profile" | "series" | "pricing") => void;
   onActiveSectionChange?: (section: string) => void;
-  /** 目次に出さない節（写真集の管理画面で、写真集では効かない設定）。 */
-  hiddenSectionIds?: readonly string[];
-  /** 節の名前の言い換え（目次と見出しの両方）。 */
-  sectionLabels?: Readonly<Record<string, string>>;
+  /** 保存していない変更がある節（サイトの目次に印を付けるため） */
+  onChangedSectionsChange?: (sectionIds: string[]) => void;
 }) {
-  const hiddenSections = new Set(hiddenSectionIds ?? []);
+  // 保存されていた古い節の名前（分ける前の「各ページの構成」など）は、今ある節へ読み替える。
   const initialSectionId =
-    requestedSectionId && hiddenSections.has(requestedSectionId)
-      ? "page-layout"
-      : (requestedSectionId ??
-        (hiddenSections.has("hero") ? "page-layout" : undefined));
+    requestedSectionId && requestedSectionId in SETTINGS_SECTION_KEYS
+      ? requestedSectionId
+      : undefined;
   const qc = useQueryClient();
   const { t, language } = useAdminI18n();
   const copy = t.phase2b.settingsBasic;
@@ -4981,6 +4985,15 @@ export function SettingsTab({
   useEffect(() => {
     onUnsavedChange?.(initialLoadFailed ? false : hasUnsaved);
   }, [hasUnsaved, initialLoadFailed, onUnsavedChange]);
+  // 下書きは節をまたいで1つ。どの節に保存していない変更があるかを外（サイトの目次）へ知らせる。
+  const changedSectionsKey = data
+    ? settingsSectionIdsForKeys(dirtySettingsKeys(form, data)).join(" ")
+    : "";
+  useEffect(() => {
+    onChangedSectionsChange?.(
+      initialLoadFailed || !changedSectionsKey ? [] : changedSectionsKey.split(" "),
+    );
+  }, [changedSectionsKey, initialLoadFailed, onChangedSectionsChange]);
   useEffect(() => {
     if (initialLoadFailed || !hasUnsaved) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -5097,6 +5110,10 @@ export function SettingsTab({
     reveal: copy.fade.title,
     "gallery-layout": copy.galleryLayout.title,
     "page-layout": copy.pageLayout.title,
+    home: copy.pageLayout.homeTitle,
+    viewer: copy.pageLayout.viewerTitle,
+    "page-parts": copy.pageLayout.partsTitle,
+    "page-frame": copy.pageLayout.frameTitle,
     series: copy.seriesSection.title,
     note: copyIntegrations.note.title,
     print: copyIntegrations.print.title,
@@ -5136,7 +5153,11 @@ export function SettingsTab({
     hero: "トップ 写真 高さ 動き first top hero image",
     navigation: "メニュー 移動 header menu navigation",
     "gallery-layout": "写真 一覧 列数 余白 配置 grid columns layout gallery",
-    "page-layout": "プロフィール お問い合わせ フッター profile about contact footer",
+    "page-layout": "骨格 構成 写真中心 いつもの 写真集 design structure",
+    home: "トップ 表紙 形 作家の言葉 ステートメント home cover statement",
+    viewer: "写真 拡大 ビューア 壁 余白 額装 viewer lightbox",
+    "page-parts": "プロフィール お問い合わせ 構成 profile about contact layout",
+    "page-frame": "見出し タイトル フッター title heading footer",
     series: "写真 並び順 並び 順番 並べ替え 表示順 sort order reorder series",
     theme: "背景色 文字色 背景 色 明るい 暗い ダークモード ダーク color colour dark light background",
     fonts: "文字 書体 フォント font typeface typography",
@@ -5148,9 +5169,9 @@ export function SettingsTab({
   };
   const settingsSections: AdminSettingsSectionItem[] = (
     Object.keys(SETTINGS_SECTION_KEYS) as SettingsSectionId[]
-  ).filter((id) => !hiddenSections.has(id)).map((id) => ({
+  ).map((id) => ({
     id,
-    label: sectionLabels?.[id] ?? settingsNavigationItems.find(item => item.id === id)?.[language === "ja" ? "ja" : "en"] ?? sectionTitles[id],
+    label: settingsNavigationItems.find(item => item.id === id)?.[language === "ja" ? "ja" : "en"] ?? sectionTitles[id],
     group: settingsNavigationItems.find(item => item.id === id)?.group,
     keywords: `${sectionTitles[id]} ${settingsNavigationItems.find(item => item.id === id)?.keywords ?? ""} ${sectionKeywords[id] ?? ""} ${SETTINGS_SECTION_KEYS[id].join(" ")}`,
     summary: summarizeSection(id),
@@ -5191,6 +5212,16 @@ export function SettingsTab({
   const heroOverlayIsEffective =
     selectedHeroMode === "single" ||
     (selectedHeroMode === "carousel" && configurableHeroIsFullscreen);
+
+  const skeleton = siteSkeletonFrom(current["siteDesign"]);
+  const sectionOnly = skeletonOnlyForSection(activeSection);
+  const skeletonNote =
+    (skeleton === "book"
+      ? copy.pageLayout.bookUnusedNotes
+      : copy.pageLayout.classicUnusedNotes)[activeSection] ??
+    (sectionOnly && sectionOnly !== skeleton
+      ? copy.pageLayout.otherSkeletonNote[sectionOnly]
+      : undefined);
 
   const previewCopy = copyDesign.preview;
   const publicSiteHref = buildPublicSiteHref(demoSeed, previewPage);
@@ -5244,7 +5275,7 @@ export function SettingsTab({
   );
 
   return (
-    <SettingsSectionLabelContext.Provider value={sectionLabels ?? null}>
+    <SiteSkeletonContext.Provider value={skeleton}>
     <div
       className="admin-settings-workspace"
       data-settings-workspace
@@ -5290,14 +5321,15 @@ export function SettingsTab({
         >
             {onOpenTab && <div className="studio-context-actions">
               {activeSection === "hero" && <button type="button" onClick={() => onOpenTab("hero")}><Upload size={14} />{language === "ja" ? "トップに載せる写真を選ぶ" : "Choose home photographs"}</button>}
-              {activeSection === "page-layout" && <button type="button" onClick={() => onOpenTab("profile")}><Pencil size={14} />{language === "ja" ? "プロフィールの文章を編集" : "Edit profile content"}</button>}
+              {activeSection === "page-parts" && <button type="button" onClick={() => onOpenTab("profile")}><Pencil size={14} />{language === "ja" ? "プロフィールの文章を編集" : "Edit profile content"}</button>}
               {activeSection === "gallery-layout" && <button type="button" onClick={() => onOpenTab("series")}><Pencil size={14} />{language === "ja" ? "シリーズと作品を編集" : "Edit series and works"}</button>}
             </div>}
-            {/* 写真集を選んでいるとき、その骨格が使わない設定の節に一言添える。
-                使わない設定を触っても見た目が変わらず「効かない」と迷わせた（2026-09-26）。 */}
-            {(current["siteDesign"] || "classic") === "book" && copy.pageLayout.bookUnusedNotes[activeSection] && (
+            {/* 今の骨格では使わない設定の節・項目に一言添える。使わない設定を触っても
+                見た目が変わらず「効かない」と迷わせた（2026-09-26）。骨格を切り替えても
+                節は隠さない（出たり消えたりすると、どこに何があるか分からない。2026-09-29）。 */}
+            {skeletonNote && (
               <p className="admin-book-unused" role="note">
-                {copy.pageLayout.bookUnusedNotes[activeSection]}
+                {skeletonNote}
               </p>
             )}
             <div className="flex flex-col">
@@ -6400,6 +6432,65 @@ export function SettingsTab({
                     </div>
                   </AdminField>
                 </div>
+                <AdminField
+                  label={copy.pageLayout.seriesLabel}
+                  hint={copy.pageLayout.seriesHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["caption", copy.pageLayout.seriesOptions.caption],
+                        ["overlay", copy.pageLayout.seriesOptions.overlay],
+                        ["wide", copy.pageLayout.seriesOptions.wide],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("seriesCardStyle", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["seriesCardStyle"] || "caption") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["seriesCardStyle"] || "caption") === "overlay" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.seriesNote}
+                  </p>
+                )}
+                <AdminField
+                  label={copy.pageLayout.cropLabel}
+                  hint={copy.pageLayout.cropHint}
+                >
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(
+                      [
+                        ["fill", copy.pageLayout.cropOptions.fill],
+                        ["whole", copy.pageLayout.cropOptions.whole],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("photoCrop", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["photoCrop"] || "fill") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.cropNote}
+                </p>
                 <button
                   onClick={() => {
                     [
@@ -6420,7 +6511,7 @@ export function SettingsTab({
                 </button>
               </Section>
 
-              {/* ページの骨格。写真と文章の関係そのものを選ぶ */}
+              {/* サイトの骨格。写真と文章の置き方そのものを選ぶ。管理画面の形は変わらない */}
               <Section
                 {...sectionProps("page-layout")}
                 title={copy.pageLayout.title}
@@ -6459,35 +6550,145 @@ export function SettingsTab({
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.siteDesignNote}
                 </p>
-                {(current["siteDesign"] || "classic") === "book" && (
-                  <>
-                    <AdminField
-                      label={copy.pageLayout.topLayoutLabel}
-                      hint={copy.pageLayout.topLayoutHint}
-                    >
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {(["cover-selection", "cover-only"] as const).map((val) => (
-                          <button
-                            key={val}
-                            type="button"
-                            aria-pressed={(current["photoTopLayout"] || "cover-selection") === val}
-                            onClick={() => set("photoTopLayout", val)}
-                            className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                              (current["photoTopLayout"] || "cover-selection") === val
-                                ? "admin-btn-primary font-medium"
-                                : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                            }`}
-                          >
-                            {copy.pageLayout.topLayoutOptions[val]}
-                          </button>
-                        ))}
-                      </div>
-                    </AdminField>
-                    <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                      {copy.pageLayout.topLayoutNote}
-                    </p>
-                  </>
+              </Section>
+
+              {/* トップの形と、トップに置く作家の言葉 */}
+              <Section
+                {...sectionProps("home")}
+                title={copy.pageLayout.homeTitle}
+                defaultOpen={false}
+              >
+                <AdminField
+                  label={copy.pageLayout.topLayoutLabel}
+                  hint={copy.pageLayout.topLayoutHint}
+                  only="book"
+                >
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(["cover-selection", "cover-only"] as const).map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        aria-pressed={(current["photoTopLayout"] || "cover-selection") === val}
+                        onClick={() => set("photoTopLayout", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["photoTopLayout"] || "cover-selection") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {copy.pageLayout.topLayoutOptions[val]}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.topLayoutNote}
+                </p>
+                <AdminField
+                  label={copy.pageLayout.statementLabel}
+                  hint={copy.pageLayout.statementHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["off", copy.pageLayout.statementOptions.off],
+                        ["before-works", copy.pageLayout.statementOptions.before],
+                        ["after-works", copy.pageLayout.statementOptions.after],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("homeStatement", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["homeStatement"] || "off") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["homeStatement"] || "off") !== "off" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.statementNote}
+                  </p>
                 )}
+              </Section>
+
+              {/* 写真を大きく開いたとき */}
+              <Section
+                {...sectionProps("viewer")}
+                title={copy.pageLayout.viewerTitle}
+                defaultOpen={false}
+              >
+                <AdminField
+                  label={copy.pageLayout.viewerLabel}
+                  hint={copy.pageLayout.viewerHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["wall", copy.pageLayout.viewerOptions.wall],
+                        ["cinema", copy.pageLayout.viewerOptions.cinema],
+                        ["paper", copy.pageLayout.viewerOptions.paper],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("viewerStyle", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["viewerStyle"] || "wall") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.viewerNote}
+                </p>
+                <AdminField
+                  label={copy.pageLayout.matLabel}
+                  hint={copy.pageLayout.matHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["full", copy.pageLayout.matOptions.full],
+                        ["soft", copy.pageLayout.matOptions.soft],
+                        ["framed", copy.pageLayout.matOptions.framed],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("viewerMat", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["viewerMat"] || "full") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                  {copy.pageLayout.matNote}
+                </p>
+              </Section>
+
+              {/* About と Contact の組み方 */}
+              <Section
+                {...sectionProps("page-parts")}
+                title={copy.pageLayout.partsTitle}
+                defaultOpen={false}
+              >
                 <AdminField
                   label={copy.pageLayout.aboutLabel}
                   hint={copy.pageLayout.aboutHint}
@@ -6548,154 +6749,22 @@ export function SettingsTab({
                     {copy.pageLayout.contactNote}
                   </p>
                 )}
-                <AdminField
-                  label={copy.pageLayout.seriesLabel}
-                  hint={copy.pageLayout.seriesHint}
+                <button
+                  onClick={() => {
+                    ["profileLayout", "contactLayout"].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["caption", copy.pageLayout.seriesOptions.caption],
-                        ["overlay", copy.pageLayout.seriesOptions.overlay],
-                        ["wide", copy.pageLayout.seriesOptions.wide],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("seriesCardStyle", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["seriesCardStyle"] || "caption") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                {(current["seriesCardStyle"] || "caption") === "overlay" && (
-                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                    {copy.pageLayout.seriesNote}
-                  </p>
-                )}
-                <AdminField
-                  label={copy.pageLayout.cropLabel}
-                  hint={copy.pageLayout.cropHint}
-                >
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {(
-                      [
-                        ["fill", copy.pageLayout.cropOptions.fill],
-                        ["whole", copy.pageLayout.cropOptions.whole],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("photoCrop", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["photoCrop"] || "fill") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                  {copy.pageLayout.cropNote}
-                </p>
-                <AdminField
-                  label={copy.pageLayout.viewerLabel}
-                  hint={copy.pageLayout.viewerHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["wall", copy.pageLayout.viewerOptions.wall],
-                        ["cinema", copy.pageLayout.viewerOptions.cinema],
-                        ["paper", copy.pageLayout.viewerOptions.paper],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("viewerStyle", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["viewerStyle"] || "wall") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                  {copy.pageLayout.viewerNote}
-                </p>
-                <AdminField
-                  label={copy.pageLayout.matLabel}
-                  hint={copy.pageLayout.matHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["full", copy.pageLayout.matOptions.full],
-                        ["soft", copy.pageLayout.matOptions.soft],
-                        ["framed", copy.pageLayout.matOptions.framed],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("viewerMat", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["viewerMat"] || "full") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                  {copy.pageLayout.matNote}
-                </p>
-                <AdminField
-                  label={copy.pageLayout.statementLabel}
-                  hint={copy.pageLayout.statementHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["off", copy.pageLayout.statementOptions.off],
-                        ["before-works", copy.pageLayout.statementOptions.before],
-                        ["after-works", copy.pageLayout.statementOptions.after],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("homeStatement", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["homeStatement"] || "off") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                {(current["homeStatement"] || "off") !== "off" && (
-                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                    {copy.pageLayout.statementNote}
-                  </p>
-                )}
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* 全ページに共通の見出しとフッター */}
+              <Section
+                {...sectionProps("page-frame")}
+                title={copy.pageLayout.frameTitle}
+                defaultOpen={false}
+              >
                 <AdminField
                   label={copy.pageLayout.titleLabel}
                   hint={copy.pageLayout.titleHint}
@@ -6754,14 +6823,6 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
-                <button
-                  onClick={() => {
-                    ["profileLayout", "contactLayout"].forEach((k) => set(k, ""));
-                  }}
-                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-                >
-                  {copy.resetToDefault}
-                </button>
               </Section>
 
               {/* I: Series navigation toggle */}
@@ -8168,7 +8229,7 @@ export function SettingsTab({
 
               {/* Admin — 写真中心の管理画面では節を1つずつ開くので、パスワードの案内は
                   「名前・連絡先・検索」の下だけに出す（配色などの節の下に出ていた）。 */}
-              {(!hiddenSectionIds || activeSection === "site-basics") && (
+              {activeSection === "site-basics" && (
               <div className="pt-1 pb-4 px-1">
                 <p className="text-[length:var(--admin-text-note)] tracking-wider text-[color:var(--admin-muted)] mb-2">
                   {copy.adminPasswordTitle}
@@ -8257,7 +8318,7 @@ export function SettingsTab({
         </>
       )}
     </div>
-    </SettingsSectionLabelContext.Provider>
+    </SiteSkeletonContext.Provider>
   );
 }
 
@@ -8267,7 +8328,9 @@ export function SettingsTab({
 // children — that mount/remount was what caused the open-moment flicker.
 // Transition is disabled for the first frame so a defaultOpen row never plays
 // an unwanted "opening" animation on initial mount.
-const SettingsSectionLabelContext = createContext<Readonly<Record<string, string>> | null>(null);
+// 今選んでいる骨格（下書きを含む）。`AdminField` の `only` がこれを見て、
+// その骨格で使わない項目に札を付けて薄くする。
+const SiteSkeletonContext = createContext<SiteSkeleton>("classic");
 
 function Section({
   sectionId,
@@ -8294,8 +8357,7 @@ function Section({
 }) {
   const activeSectionId = useAdminSettingsActiveSection();
   const { language } = useAdminI18n();
-  const labelOverrides = useContext(SettingsSectionLabelContext);
-  if (activeSectionId && sectionId) title = labelOverrides?.[sectionId] ?? settingsNavigationItems.find(item => item.id === sectionId)?.[language === "ja" ? "ja" : "en"] ?? title;
+  if (activeSectionId && sectionId) title = settingsNavigationItems.find(item => item.id === sectionId)?.[language === "ja" ? "ja" : "en"] ?? title;
   // 目次で1節ずつ出す画面では、選ばれた節だけを実際の入力欄として描く。
   // 折りたたみ行を19本並べると、左の目次と同じ一覧が本文にも重なるため。
   const singleView = activeSectionId !== null && sectionId !== undefined;
@@ -8988,16 +9050,31 @@ function AdminField({
   hint,
   children,
   span,
+  only,
 }: {
   label: string;
   hint?: string;
   children: React.ReactNode;
   /** 2列に組んでいるとき、この項目だけ全幅にする（長い本文用） */
   span?: boolean;
+  /** この骨格を選んでいるときだけ公開サイトに効く項目。札を付け、今の骨格で使わなければ薄くする */
+  only?: SiteSkeleton;
 }) {
+  const skeleton = useContext(SiteSkeletonContext);
+  const { t } = useAdminI18n();
   return (
-    <div className={`ax-field${span ? " ax-field--span" : ""}`}>
-      <label className="ax-field__label">{label}</label>
+    <div
+      className={`ax-field${span ? " ax-field--span" : ""}`}
+      data-skeleton-inactive={(only && only !== skeleton) || undefined}
+    >
+      <label className="ax-field__label">
+        {label}
+        {only && (
+          <span className="admin-skeleton-tag">
+            {t.phase2b.settingsBasic.pageLayout.onlyTag[only]}
+          </span>
+        )}
+      </label>
       {hint && <p className="ax-field__hint">{hint}</p>}
       {children}
     </div>

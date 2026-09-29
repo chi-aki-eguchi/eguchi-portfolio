@@ -1,7 +1,7 @@
 import { test, expect } from "./fixtures.ts";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
-test("スマホの写真編集で写真・保存帯・下部ナビが同時に使える", async ({ page }, info) => {
+test("スマホの写真編集で写真と保存帯が同時に使える", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "スマホの高さと操作を検証");
   await page.setViewportSize({ width: 390, height: 667 });
   await loginAsAdmin(page);
@@ -15,8 +15,7 @@ test("スマホの写真編集で写真・保存帯・下部ナビが同時に�
   const save = inspector.locator("[data-inspector-save-bar]");
   await expect(save).toContainText("変更なし");
   const barBox = (await save.boundingBox())!;
-  const navBox = (await page.locator(".admin-bottom-nav").boundingBox())!;
-  expect(barBox.y + barBox.height).toBeLessThanOrEqual(navBox.y);
+  expect(barBox.y + barBox.height).toBeLessThanOrEqual(667);
   expect((await inspector.locator(".admin-inspector-scroll").boundingBox())!.height).toBeGreaterThan(120);
   await inspector.locator(".admin-inspector-mobile-title input").fill("画面確認のみ");
   await expect(save).toHaveAttribute("data-inspector-save-state", "dirty");
@@ -26,23 +25,22 @@ test("スマホの写真編集で写真・保存帯・下部ナビが同時に�
   await expect(inspector).toHaveCount(0);
 });
 
-test("設定へ直接進み、目的の言葉で節を探して編集に戻れる", async ({ page }, info) => {
+test("サイトの目次を目的の言葉で探し、編集から一覧へ戻れる", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "スマホの設定入口を検証");
   await loginAsAdmin(page);
-  await page.locator("[data-admin-mobile-settings]").click();
-  await page.locator(".admin-settings-mobile-current").getByRole("button", { name: /設定項目/ }).click();
-  const dialog = page.locator("[data-settings-mobile-section-list]");
-  await expect(dialog).toHaveCSS("opacity", "1");
-  await dialog.getByRole("searchbox", { name: "設定を検索" }).fill("並び順");
-  await dialog.locator('[data-settings-sheet-link="series"]').click();
-  await expect(dialog).toHaveCount(0);
+  await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
+  const search = page.getByRole("searchbox", { name: "設定を探す" });
+  await search.fill("並び順");
+  const series = page.locator('[data-site-item="settings:series"]');
+  await expect(series).toBeVisible();
+  await expect(page.locator('[data-site-item="settings:fonts"]')).toHaveCount(0);
+  await series.click();
   await expect(page.locator("#settings-section-series")).toBeVisible();
-  await page.locator(".admin-settings-mobile-current").getByRole("button", { name: /設定項目/ }).click();
-  await dialog.getByRole("searchbox").fill("見つからない項目");
-  await expect(dialog.getByRole("status")).toContainText("見つかりませんでした");
-  await page.keyboard.press("Escape");
-  await expect(dialog).toHaveCount(0);
-  await expect(page.locator(".admin-settings-mobile-current").getByRole("button", { name: /設定項目/ })).toBeFocused();
+  await page.locator(".book-site__back").click();
+  await search.fill("見つからない項目");
+  await expect(page.locator(".book-site__toc").getByRole("status")).toContainText("見つかりませんでした");
+  await search.fill("");
+  await expect(page.locator('[data-site-item="settings:fonts"]')).toBeVisible();
 });
 
 test("公開スマホの絞り込みはURLと点数を保ち、メニューから戻れる", async ({ page, api }, info) => {

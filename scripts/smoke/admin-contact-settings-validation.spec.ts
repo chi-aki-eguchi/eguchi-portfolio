@@ -78,7 +78,8 @@ async function openSettings(
   await page.addInitScript((next) => {
     localStorage.clear();
     sessionStorage.clear();
-    localStorage.setItem("admin:tab", JSON.stringify("settings"));
+    localStorage.setItem("admin:book:view", JSON.stringify("site"));
+    localStorage.setItem("admin:book:panel", JSON.stringify("settings:hero"));
     localStorage.setItem("admin:language", next.language);
     localStorage.setItem("theme-preference", next.theme);
   }, options);
@@ -91,17 +92,9 @@ async function openSettings(
   );
 }
 
-async function openSiteBasicsThroughTheAdminUi(page: Page, width: number) {
-  if (width >= 768) {
-    await chooseSettingsSection(page, "site-basics");
-  } else {
-    await page
-      .locator('.admin-settings-mobile-current > button[aria-expanded]')
-      .click();
-    await page
-      .locator('[data-settings-mobile-section-list] [data-settings-sheet-link="site-basics"]')
-      .click();
-  }
+// サイトの目次から開く（スマホ幅は目次から始まり、項目を押すと中身だけになる）。
+async function openSiteBasicsThroughTheAdminUi(page: Page, _width: number) {
+  await chooseSettingsSection(page, "site-basics");
   await expect(
     page.locator('[data-settings-section="site-basics"]'),
   ).toBeVisible();

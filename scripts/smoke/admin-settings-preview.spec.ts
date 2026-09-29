@@ -91,7 +91,9 @@ async function openSettings(page: Page) {
       localStorage.setItem("admin:previewDevice", JSON.stringify("desktop"));
       sessionStorage.clear();
     }
-    localStorage.setItem("admin:tab", JSON.stringify("settings"));
+    // サイト › トップの見せ方（以前の設定タブの既定の節）を開く。
+    localStorage.setItem("admin:book:view", JSON.stringify("site"));
+    localStorage.setItem("admin:book:panel", JSON.stringify("settings:hero"));
   });
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 20_000 });
@@ -133,7 +135,7 @@ test.describe("admin — サイト編集のプレビューと下書き", () => {
     test.skip(info.project.name !== "desktop", "desktop navigation");
     const mocks = await installMocks(page);
     await openSettings(page);
-    const links = page.locator(".studio-editor-outline [data-settings-section-link]");
+    const links = page.locator('.book-site__toc [data-site-item^="settings:"]');
     await expect(links).toHaveCount(SETTINGS_SECTION_COUNT);
     for (const id of ["site-basics", "fonts", "gallery-layout", "hero"]) {
       await chooseSettingsSection(page, id);

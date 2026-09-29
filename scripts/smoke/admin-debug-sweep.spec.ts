@@ -61,7 +61,7 @@ test.describe("admin — 全体デバッグスイープ", () => {
           siteBackground: root.getPropertyValue("--background").trim(),
           adminPaper: style.getPropertyValue("--admin-paper").trim(),
           sidebarFont: getComputedStyle(
-            document.querySelector(".admin-sidebar__tab span") ?? el,
+            document.querySelector(".admin-book__tab") ?? el,
           ).fontFamily,
         };
       });

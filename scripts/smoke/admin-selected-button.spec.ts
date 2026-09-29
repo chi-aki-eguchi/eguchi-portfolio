@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.ts";
-import { loginAsAdmin } from "./helpers";
+import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
 function relativeLuminance(color: string) {
   const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
@@ -33,10 +33,11 @@ test.describe("admin — 選択済みボタンが実際にハイライト表示�
   }, testInfo) => {
     test.skip(
       testInfo.project.name !== "desktop",
-      "サイドバー操作のため desktop のみで検証",
+      "PC幅で検証",
     );
     await loginAsAdmin(page);
-    await page.getByRole("button", { name: "シリーズ", exact: true }).click();
+    // シリーズごとの詳しい設定（サイト › シリーズの詳しい設定）。
+    await gotoAdminTab(page, "series");
     await page.waitForTimeout(1000);
 
     const editBtn = page.getByRole("button", { name: "編集", exact: true }).first();
@@ -56,6 +57,7 @@ test.describe("admin — 選択済みボタンが実際にハイライト表示�
     page,
   }, testInfo) => {
     await loginAsAdmin(page);
+    await gotoAdminTab(page, "gallery");
     await page
       .locator(".admin-photo-tile [data-library-photo-action]")
       .first()

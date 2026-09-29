@@ -82,9 +82,13 @@ async function installMocks(page: Page) {
   };
 }
 
+// 管理画面はいつも「写真・シリーズ・サイト」の器（2026-09-29）。以前のタブ名を
+// サイトの目次の項目へ読み替える。settings は以前の既定の節（トップの見せ方）。
 async function openTab(page: Page, tab: string) {
-  await page.addInitScript((nextTab) => {
-    localStorage.setItem("admin:tab", JSON.stringify(nextTab));
+  const panel = tab === "settings" ? "settings:hero" : `tab:${tab}`;
+  await page.addInitScript((nextPanel) => {
+    localStorage.setItem("admin:book:view", JSON.stringify("site"));
+    localStorage.setItem("admin:book:panel", JSON.stringify(nextPanel));
     localStorage.removeItem("admin:settingsDraft");
     sessionStorage.clear();
     // この spec が測るのは「プレビューを開いていない時」の寸法。
@@ -92,9 +96,13 @@ async function openTab(page: Page, tab: string) {
     // usePersistentState の既定の保存先は **sessionStorage**（localStorage
     // ではない）。上の clear() より後に置かないと消える。
     sessionStorage.setItem("admin:showPreview", JSON.stringify(false));
-  }, tab);
+  }, panel);
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 20_000 });
+  // スマホ幅のサイトは目次から始まる。開きたい項目の中身へ入る。
+  const item = page.locator(`[data-site-item="${panel}"]`);
+  await item.waitFor({ state: "attached", timeout: 20_000 });
+  if ((page.viewportSize()?.width ?? 1440) < 768) await item.click();
   await page.waitForFunction(
     () => !document.body.innerText.includes("Loading..."),
     undefined,
@@ -136,8 +144,8 @@ test.describe("admin — Form layout", () => {
     await openTab(page, "settings");
 
     const layout = page.locator('[data-admin-form-layout="settings"]');
-    const toc = page.locator(".studio-editor-outline");
-    const links = toc.locator("[data-settings-section-link]");
+    const toc = page.locator(".book-site__toc");
+    const links = toc.locator('[data-site-item^="settings:"]');
     await expect(layout).toBeVisible();
     await expect(toc).toBeVisible();
     await expect(links).toHaveCount(SETTINGS_SECTION_COUNT);
@@ -157,7 +165,7 @@ test.describe("admin — Form layout", () => {
       "true",
     );
     await expect(
-      toc.locator('[data-settings-section-link="site-basics"]')
+      toc.locator('[data-site-item="settings:site-basics"]')
         .locator("[data-settings-section-changed]"),
     ).toHaveCount(1);
     await expect(page.locator("[data-settings-save-panel]")).toContainText(
@@ -199,10 +207,8 @@ test.describe("admin — Form layout", () => {
     test.skip(testInfo.project.name !== "desktop", "PCの2幅で確認する");
 
     await installMocks(page);
-    // 目次はナビの中に入っているので、幅はナビの内側いっぱい。以前は 207/163 と
-    // 直接の数字で縛っていたが、2026-09-13 の再設計でナビの幅が変わり（240→216、
-    // 1024pxは196）、**期待値だけが古いまま落ち続けていた**。数字を書き直すと
-    // また同じことになるので、「ナビの内側に一致し、読める幅がある」を測る。
+    // 目次はサイトの目次（左の列）。数字で縛ると器の幅を変えるたびに落ちるので、
+    // 「読める幅がある・本文が広がりすぎない・はみ出さない」を測る。
     for (const [width, maxBody] of [
       [1440, 720],
       [1024, 720],
@@ -212,28 +218,16 @@ test.describe("admin — Form layout", () => {
       const measurements = await page
         .locator('[data-admin-form-layout="settings"]')
         .evaluate((root) => {
-          const toc = document.querySelector(".studio-editor-outline");
-          const sidebar = document.querySelector(".admin-sidebar");
-          const sidebarStyle = sidebar ? getComputedStyle(sidebar) : null;
+          const toc = document.querySelector(".book-site__toc");
           const body = root.querySelector(".admin-settings-form-layout__body");
           return {
             toc: toc?.getBoundingClientRect().width ?? 0,
-            sidebarInner: sidebar
-              ? sidebar.getBoundingClientRect().width -
-                parseFloat(sidebarStyle!.paddingLeft) -
-                parseFloat(sidebarStyle!.paddingRight) -
-                parseFloat(sidebarStyle!.borderRightWidth || "0")
-              : 0,
             body: body?.getBoundingClientRect().width ?? 0,
             overflow:
               document.documentElement.scrollWidth -
               document.documentElement.clientWidth,
           };
         });
-      expect(
-        Math.abs(measurements.toc - measurements.sidebarInner),
-        `${width}px: 目次がナビの内側と違う幅になっている`,
-      ).toBeLessThanOrEqual(1);
       // 節の名前が読めなくなるほど細ければ、それは壊れている。
       expect(measurements.toc, `${width}px: 目次が細すぎる`).toBeGreaterThanOrEqual(150);
       expect(measurements.body).toBeLessThanOrEqual(maxBody);
@@ -250,7 +244,7 @@ test.describe("admin — Form layout", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openTab(page, "settings");
 
-    await page.locator('[data-settings-section-link="gallery-layout"]').click();
+    await page.locator('[data-site-item="settings:gallery-layout"]').click();
     const section = page.locator(
       '[data-settings-section="gallery-layout"]',
     );
@@ -259,7 +253,7 @@ test.describe("admin — Form layout", () => {
       name: "配置をシャッフル",
     });
     const tocMarker = page
-      .locator('[data-settings-section-link="gallery-layout"]')
+      .locator('[data-site-item="settings:gallery-layout"]')
       .locator("[data-settings-section-changed]");
     const savePanel = page.locator("[data-settings-save-panel]");
 
@@ -307,7 +301,7 @@ test.describe("admin — Form layout", () => {
     expect(mocks.unknownWrites).toEqual([]);
   });
 
-  test("390pxは上部1行と全節シートを持ち、下部保存帯を維持する", async ({
+  test("390pxは目次と中身を1画面ずつ出し、下部保存帯と変更印を保つ", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "スマホ幅で確認する");
@@ -319,6 +313,8 @@ test.describe("admin — Form layout", () => {
     const current = page.locator(".admin-settings-mobile-current");
     await expect(current).toBeVisible();
     await expect(page.locator(".admin-form-toc")).toBeHidden();
+    // 設定の中の「設定項目」一覧は出さない（サイトの目次と2つ目の一覧が重なる）。
+    await expect(current.getByRole("button", { name: /設定項目/ })).toBeHidden();
 
     await chooseSettingsSection(page, "site-basics");
     const basics = page.locator('[data-settings-section="site-basics"]');
@@ -327,20 +323,17 @@ test.describe("admin — Form layout", () => {
     await input.fill("スマホで変更");
     await expect(page.locator("[data-settings-save-panel]")).toBeVisible();
 
-    await current.getByRole("button", { name: /設定項目/ }).click();
-    const sheet = page.locator("[data-settings-mobile-section-list]");
-    await expect(sheet).toBeVisible();
-    await expect(sheet.locator(".admin-settings-section-sheet__list > button"))
-      .toHaveCount(SETTINGS_SECTION_COUNT);
-    await expect(sheet).toContainText("変更あり");
-    await sheet.locator('[data-settings-sheet-link="hero"]').click();
-    await expect(sheet).toHaveCount(0);
+    // 目次へ戻ると、変更した節に印が付いている。別の節へ移っても下書きは残る。
+    await page.locator(".book-site__back").click();
     await expect(
-      page.locator('[data-settings-section="hero"] [data-settings-section-heading]'),
-    ).toBeFocused();
-    // 節を選ぶと本文がその節へ入れ替わり、上部1行の現在地も追随する。
+      page.locator('[data-site-item="settings:site-basics"] [data-settings-section-changed]'),
+    ).toHaveCount(1);
+    await page.locator('[data-site-item="settings:hero"]').click();
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
     await expect(page.locator("[data-settings-section]")).toHaveCount(1);
-    await expect(current).toContainText("トップの見せ方");
+    await expect(page.locator('[data-settings-section="hero"]')).toBeVisible();
+    await expect(page.locator(".book-site__back")).toContainText("トップの見せ方");
+    await expect(page.locator("[data-settings-save-panel]")).toContainText("未保存の変更 1件");
 
     const overflow = await page.evaluate(
       () =>
@@ -352,7 +345,7 @@ test.describe("admin — Form layout", () => {
     expect(mocks.unknownWrites).toEqual([]);
   });
 
-  test("390pxの節一覧にもgallerySeedの変更印を出す", async ({
+  test("390pxの目次にもgallerySeedの変更印を出す", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "390pxで確認する");
@@ -361,15 +354,7 @@ test.describe("admin — Form layout", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openTab(page, "settings");
 
-    await page
-      .locator(".admin-settings-mobile-current")
-      .getByRole("button", { name: /設定項目/ })
-      .click();
-    await page
-      .locator("[data-settings-mobile-section-list]")
-      .locator("button")
-      .filter({ hasText: "写真一覧のレイアウト" })
-      .click();
+    await chooseSettingsSection(page, "gallery-layout");
     const section = page.locator(
       '[data-settings-section="gallery-layout"]',
     );
@@ -385,12 +370,10 @@ test.describe("admin — Form layout", () => {
     await expect(
       current.locator(".admin-form-toc__dot--changed"),
     ).toHaveCount(1);
-    await current.getByRole("button", { name: /設定項目/ }).click();
-    const sheet = page.locator("[data-settings-mobile-section-list]");
-    const galleryRow = sheet
-      .locator("button")
-      .filter({ hasText: "写真一覧のレイアウト" });
-    await expect(galleryRow).toContainText("変更あり");
+    await page.locator(".book-site__back").click();
+    await expect(
+      page.locator('[data-site-item="settings:gallery-layout"] [data-settings-section-changed]'),
+    ).toHaveCount(1);
 
     expect(mocks.writes).toEqual([]);
     expect(mocks.unknownWrites).toEqual([]);
@@ -405,14 +388,14 @@ test.describe("admin — Form layout", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openTab(page, "settings");
 
-    const links = page.locator("[data-settings-section-link]");
+    const links = page.locator('[data-site-item^="settings:"]');
     await expect(links).toHaveCount(SETTINGS_SECTION_COUNT);
     const sectionIds = await links.evaluateAll((nodes) =>
-      nodes.map((node) => node.getAttribute("data-settings-section-link")),
+      nodes.map((node) => node.getAttribute("data-site-item")!.slice("settings:".length)),
     );
 
     for (const sectionId of sectionIds) {
-      await page.locator(`[data-settings-section-link="${sectionId}"]`).click();
+      await page.locator(`[data-site-item="settings:${sectionId}"]`).click();
       const sections = page.locator("[data-settings-section]");
       await expect(
         sections,
@@ -423,8 +406,8 @@ test.describe("admin — Form layout", () => {
         sectionId!,
       );
       await expect(
-        page.locator(`[data-settings-section-link="${sectionId}"]`),
-      ).toHaveAttribute("aria-current", "location");
+        page.locator(`[data-site-item="settings:${sectionId}"]`),
+      ).toHaveAttribute("aria-current", "page");
       const overflow = await page.evaluate(
         () =>
           document.documentElement.scrollWidth -

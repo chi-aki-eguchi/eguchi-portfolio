@@ -15,6 +15,7 @@ export function Studio({
   view,
   onView,
   onOpenDetails,
+  onOpenSeriesDetails,
   onUploadingChange,
 }: {
   demoSeed?: string;
@@ -22,11 +23,13 @@ export function Studio({
   onView: (view: StudioView) => void;
   /** 構図・日付の一括入力など、詳しい道具（従来の写真の一覧）を開く */
   onOpenDetails: (photoId: number) => void;
+  /** シリーズごとの配色・並び順の上書きなど、詳しい設定を開く */
+  onOpenSeriesDetails?: () => void;
   onUploadingChange?: (busy: boolean) => void;
 }) {
   return (
     <StudioProvider demoSeed={demoSeed} onUploadingChange={onUploadingChange}>
-      <StudioScreens view={view} onView={onView} onOpenDetails={onOpenDetails} />
+      <StudioScreens view={view} onView={onView} onOpenDetails={onOpenDetails} onOpenSeriesDetails={onOpenSeriesDetails} />
       <StudioToast />
     </StudioProvider>
   );
@@ -36,10 +39,12 @@ function StudioScreens({
   view,
   onView,
   onOpenDetails,
+  onOpenSeriesDetails,
 }: {
   view: StudioView;
   onView: (view: StudioView) => void;
   onOpenDetails: (photoId: number) => void;
+  onOpenSeriesDetails?: () => void;
 }) {
   const data = useStudioData();
   const [seriesTarget, setSeriesTarget] = useState<number | null>(null);
@@ -76,6 +81,7 @@ function StudioScreens({
         <SeriesView
           data={data}
           initialId={seriesTarget}
+          onOpenDetails={onOpenSeriesDetails}
           onShowInLibrary={(id) => {
             setLibraryRequest((r) => ({ seriesId: id, n: (r?.n ?? 0) + 1 }));
             onView("photos");

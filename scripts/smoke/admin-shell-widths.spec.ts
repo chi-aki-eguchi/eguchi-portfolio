@@ -6,78 +6,49 @@ import { gotoAdminTab, loginAsAdmin } from "./helpers";
 //  1. 900px の横長画面にスマホ用の下部タブバーが出ていた
 //  2. 中間幅で Settings の目次が横スクロールの帯になり、後ろの節が押せなかった
 //  3. 選択トグル(閲覧/選択/並べ替え)が実行ボタンと同じ黒塗りだった
+// 2026-09-29 に管理画面を「写真・シリーズ・サイト」の1つの器にした。左ナビと
+// 下部タブバーは無くなり、1・2はサイトの目次で同じことを確かめる。
 // 読み取り専用。保存・削除・追加は一切押さない。
 test.describe("admin — 幅ごとの土台", () => {
-  test("中間幅でも左ナビを使い、スマホ用の下部バーを出さない", async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "幅を明示して確認する");
-    await loginAsAdmin(page);
-
-    // 境界そのもの(768 / 767)と、旧しきい値だった 1024 を必ず含める。
-    for (const width of [1440, 1200, 1199, 1180, 1024, 900, 768]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.waitForTimeout(250);
-      await expect(
-        page.locator(".admin-bottom-nav"),
-        `${width}px で下部タブバーが出てはいけない`,
-      ).toBeHidden();
-      await expect(
-        page.locator(".admin-sidebar"),
-        `${width}px で左ナビが必要`,
-      ).toBeVisible();
-    }
-
-    // 767px 以下だけがスマホ扱い。境界の 767 で確認する。
-    await page.setViewportSize({ width: 767, height: 900 });
-    await page.waitForTimeout(250);
-    await expect(page.locator(".admin-bottom-nav")).toBeVisible();
-  });
-
-  test("Settingsの目次は中間幅でも縦のまま、全節へ到達できる", async ({
+  test("中間幅でも上の入口とサイトの目次が並び、767px以下だけ1画面ずつになる", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "幅を明示して確認する");
     await loginAsAdmin(page);
     await gotoAdminTab(page, "settings");
 
-    // This checks the full navigation when the preview is closed.
-    const workspace = page.locator(".admin-settings-workspace");
-    await expect(workspace).toBeVisible();
-    const closePreview = page.getByRole("button", { name: "プレビューを閉じる" });
-    if (await workspace.getAttribute("data-preview") === "true") await closePreview.click();
-    await expect(workspace).toHaveAttribute("data-preview", "false");
-
-    for (const width of [1440, 1199, 1024, 900, 768]) {
+    // 境界そのもの(768 / 767)と、旧しきい値だった 1024 を必ず含める。
+    for (const width of [1440, 1200, 1024, 900, 768]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.waitForTimeout(300);
-      const nav = page.locator(".admin-form-toc__nav");
-      await expect(nav, `${width}px で目次が必要`).toBeVisible();
+      await page.waitForTimeout(250);
+      await expect(page.locator(".admin-book__tabs"), `${width}px で入口が必要`).toBeVisible();
+      await expect(page.locator(".book-site__toc"), `${width}px で目次が必要`).toBeVisible();
+      await expect(page.locator(".book-site__back"), `${width}px で戻るボタンは出さない`).toBeHidden();
 
-      // 縦積み = ボタンの左端が全部そろっている。横帯になると左端がばらける。
-      const lefts = await nav
-        .locator("button[data-settings-section-link]")
-        .evaluateAll((buttons) =>
-          buttons.map((button) => Math.round(button.getBoundingClientRect().x)),
-        );
-      expect(lefts.length).toBeGreaterThan(10);
+      // 縦積み = 項目の左端が全部そろっている。横帯になると左端がばらける。
+      const items = page.locator(".book-site__toc [data-site-item]");
+      const lefts = await items.evaluateAll((buttons) =>
+        buttons.map((button) => Math.round(button.getBoundingClientRect().x)),
+      );
+      expect(lefts.length).toBeGreaterThan(20);
       expect(
         Math.max(...lefts) - Math.min(...lefts),
         `${width}px で目次が横に流れている`,
       ).toBeLessThanOrEqual(1);
-
-      // 右へはみ出して押せない節が無いこと。
-      const overflowing = await nav
-        .locator("button[data-settings-section-link]")
-        .evaluateAll(
-          (buttons, limit) =>
-            buttons.filter(
-              (button) => button.getBoundingClientRect().right > limit,
-            ).length,
-          width,
-        );
-      expect(overflowing, `${width}px で画面外の節がある`).toBe(0);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
+      expect(overflow, `${width}px で横にはみ出さない`).toBeLessThanOrEqual(1);
     }
+
+    // 767px 以下だけがスマホ扱い。PC 幅で開いていた項目は中身のまま出し、戻るボタンを出す。
+    await page.setViewportSize({ width: 767, height: 900 });
+    await page.waitForTimeout(250);
+    await expect(page.locator(".book-site__back")).toBeVisible();
+    await expect(page.locator(".book-site__toc")).toBeHidden();
+    await page.locator(".book-site__back").click();
+    await expect(page.locator(".book-site__toc")).toBeVisible();
+    await expect(page.locator('[data-settings-section="hero"]')).toBeHidden();
   });
 
   test("Libraryの選択トグルは実行ボタンと同じ黒塗りにしない", async ({
@@ -142,49 +113,5 @@ test.describe("admin — 幅ごとの土台", () => {
       page.locator("[data-library-exit-actions] .admin-library-import-button"),
       "選択モードでも取り込めること",
     ).toBeVisible();
-  });
-});
-
-test.describe("admin — 折りたたんだ左ナビ", () => {
-  test("レールから全タブへ実際に移動できる", async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "PC幅のレールで検証");
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await loginAsAdmin(page);
-    await page.locator("[data-sidebar-collapse]").click();
-    await page.waitForTimeout(300);
-
-    const rail = page.locator(".admin-sidebar-compact");
-    await expect(rail).toBeVisible();
-
-    // 表示されているだけでなく、押して実際に画面が変わることを見る。
-    for (const [group, tab, heading] of [
-      ["presentation", "hero", "トップの写真"],
-      ["presentation", "series", "シリーズ"],
-      ["site", "settings", "サイトデザイン"],
-      ["photos", "gallery", "写真一覧"],
-    ] as const) {
-      const groupButton = rail.locator(
-        `[data-compact-sidebar-group="${group}"]`,
-      );
-      await groupButton.click();
-      await page.waitForTimeout(200);
-      const popover = rail.locator(
-        `[data-compact-sidebar-popover="${group}"]`,
-      );
-      if (await popover.count()) {
-        // 別の要素に覆われていたらこのクリックが失敗する。
-        await popover.locator(`[data-compact-sidebar-item]`).filter({
-          hasText: new RegExp(heading, "i"),
-        }).first().click({ timeout: 5000 });
-      }
-      await expect(
-        page.locator("h1.admin-page-header__title"),
-        `${tab} へ移動できること`,
-      ).toHaveText(new RegExp(heading, "i"), { timeout: 10_000 });
-    }
-
-    // 元に戻せること。
-    await page.locator("[data-compact-sidebar-expand]").click();
-    await expect(page.locator(".admin-sidebar__title")).toBeVisible();
   });
 });

@@ -194,7 +194,7 @@ test("日付のないTIFは空欄が既定で、狭い確認画面にも収ま�
   await dialog.getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   if (page.viewportSize()!.width >= 1200) {
-    await page.getByRole("button", { name: /設定・移動先を検索/ }).click();
+    await page.locator(".admin-book__tools").getByRole("button", { name: /探す/ }).click();
     await expect(page.locator(".admin-palette")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator(".admin-palette")).toHaveCount(0);

@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "./fixtures.ts";
+import { revealAdminPanel, storeAdminTab } from "./helpers";
 
 // 共通ページ枠の見出しが、狭い画面で1文字ずつ縦に積まれないことを幾何で固定する。
 // 実測で 390px のとき見出しが 幅43px × 高さ383px になっていた（font-size 34px）。
@@ -102,16 +103,24 @@ async function installAdminApiMocks(page: Page, settings = SETTINGS) {
 }
 
 async function openAdminTab(page: Page, tab: (typeof ADMIN_TABS)[number]) {
-  await page.evaluate((nextTab) => {
-    localStorage.setItem("admin:tab", JSON.stringify(nextTab));
-  }, tab);
+  await page.evaluate(storeAdminTab, tab);
   await page.reload();
   await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
+  await revealAdminPanel(page);
   // 初回の画面切替アニメーションではなく、静止した通常状態だけを測る。
   await page.waitForTimeout(350);
 }
 
+// スマホ幅では、言葉の切り替えは右上の「メニュー」の中にある。閉じていれば開く。
+async function openShellMenu(page: Page) {
+  const menu = page.locator(".admin-book__menu");
+  if ((await menu.isVisible()) && (await menu.getAttribute("aria-expanded")) !== "true") {
+    await menu.click();
+  }
+}
+
 async function languageToggleSample(page: Page) {
+  await openShellMenu(page);
   return page.evaluate(() => {
     const isVisible = (element: Element) => {
       const rect = element.getBoundingClientRect();
@@ -195,12 +204,14 @@ test.describe("admin — 共通ページ枠の見出しの形", () => {
       const mocks = await installAdminApiMocks(page);
       await page.setViewportSize({ width, height: 900 });
       await page.addInitScript(() => {
-        // 「はじめに」を明示して開く。既定タブは前回の状態に左右されるため。
-        localStorage.setItem("admin:tab", JSON.stringify("setup"));
         sessionStorage.clear();
       });
+      // 「はじめに」を明示して開く。既定の入口は前回の状態に左右されるため。
+      await page.addInitScript(storeAdminTab, "setup");
       await page.goto("/admin");
       await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
+      await page.locator("[data-site-item]").first().waitFor({ state: "attached" });
+      await revealAdminPanel(page);
 
       const title = page.locator("h1.admin-page-header__title").first();
       await title.waitFor({ timeout: 15_000 });
@@ -248,8 +259,8 @@ test.describe("admin — 共通ページ枠の見出しの形", () => {
   }
 
   for (const [language, expectedNote] of [
-    ["ja", "作品をシリーズにまとめます。写真の割り当てはLibraryで行います。"],
-    ["en", "Group work into series. Assign photos from Library."],
+    ["ja", "写真の出し入れは上の「シリーズ」で行います。ここでは配色と並び順の上書きを編集します。"],
+    ["en", "Arrange photographs under シリーズ. Edit colour and order overrides here."],
   ] as const) {
     test(`390px / ${language}: Seriesの説明は写真の割り当てを残して2行以内`, async ({
       page,
@@ -266,12 +277,14 @@ test.describe("admin — 共通ページ枠の見出しの形", () => {
       });
       await page.setViewportSize({ width: 390, height: 844 });
       await page.addInitScript((nextLanguage) => {
-        localStorage.setItem("admin:tab", JSON.stringify("series"));
         localStorage.setItem("admin:language", nextLanguage);
         sessionStorage.clear();
       }, language);
+      await page.addInitScript(storeAdminTab, "series");
       await page.goto("/admin");
       await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
+      await page.locator("[data-site-item]").first().waitFor({ state: "attached" });
+      await revealAdminPanel(page);
 
       const note = page.locator(".ax-page-title__note");
       await expect(note).toHaveText(expectedNote);
@@ -324,12 +337,13 @@ test.describe("admin — 言語切替の読める濃度", () => {
       });
       await page.addInitScript(() => {
         localStorage.setItem("admin:language", "ja");
-        localStorage.setItem("admin:tab", JSON.stringify("gallery"));
         sessionStorage.clear();
       });
+      await page.addInitScript(storeAdminTab, "gallery");
       await page.goto("/admin");
       await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
       await page.waitForTimeout(350);
+      await openShellMenu(page);
 
       const toggle = page.locator("[data-admin-language-toggle]:visible");
       await expect(toggle).toHaveCount(1);
@@ -394,6 +408,7 @@ test.describe("admin — 言語切替の読める濃度", () => {
         await openAdminTab(page, tab);
         await expectReadable(tab);
       }
+      await openShellMenu(page);
 
       if (testInfo.project.name === "mobile-touch") {
         const boxes = await Promise.all([

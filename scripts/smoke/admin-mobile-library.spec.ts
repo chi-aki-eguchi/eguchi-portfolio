@@ -141,7 +141,8 @@ async function assertContactSheet(page: Page, width: number, height: number) {
     .toBe(2);
   // 並べ替え画面でも自動順を選び、その順を公開の手動順へ保存できる。
   // 保存は実行せず、選択→保存入口→手動順へ戻すところまでを確認する。
-  const arrangeSort = page.getByRole("combobox", { name: "表示の並び替え" });
+  // 名前は「見るときだけの並び」と分かる言い方（この一覧の表示順）に変えた。
+  const arrangeSort = page.getByRole("combobox", { name: /表示の並び替え|この一覧の表示順/ });
   await expect(arrangeSort).toBeVisible();
   await arrangeSort.selectOption("shotAt-desc");
   await expect(
@@ -163,7 +164,9 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await expect(
     reorderBar.getByRole("button", { name: "末尾へ移動" }),
   ).toBeVisible();
-  await expect(page.locator(".admin-bottom-nav")).toHaveCount(0);
+  // 並べ替えの間は、上の入口で別の画面へ移れない（途中の順番を失わない）。
+  const seriesTab = page.locator(".admin-book__tab", { hasText: "シリーズ" });
+  await expect(seriesTab).toBeDisabled();
 
   // 写真上はドラッグ取っ手1つだけ。触ってもスクロール中扱いにしない。
   const dragButton = tiles
@@ -209,7 +212,7 @@ async function assertContactSheet(page: Page, width: number, height: number) {
   await page
     .locator('[data-library-mode-action="finish-arrange"]:visible')
     .click();
-  await expect(page.locator(".admin-bottom-nav")).toBeVisible();
+  await expect(seriesTab).toBeEnabled();
 
   // タイルタップ → Inspector(モバイルはドロワー)が開く。編集していないので
   // × は即閉じ(確認ダイアログなし・非書き込み)。
@@ -339,8 +342,9 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       const toolbar = page.locator("[data-library-selection-toolbar]");
       await expect(toolbar).toBeVisible();
       const box = (await toolbar.boundingBox())!;
-      const nav = (await page.locator(".admin-bottom-nav").boundingBox())!;
-      expect(Math.abs(box.y + box.height - nav.y)).toBeLessThanOrEqual(1);
+      // 下部に固定する（以前の下部タブバーは無い。画面の下端に接する）。
+      const viewportHeight = page.viewportSize()!.height;
+      expect(Math.abs(box.y + box.height - viewportHeight)).toBeLessThanOrEqual(1);
       const scroll = (await page.locator("[data-library-scroll]").boundingBox())!;
       expect(scroll.y + scroll.height).toBeLessThanOrEqual(box.y + 1);
       await expect(toolbar.getByText("選択中 1枚", { exact: true })).toHaveCount(1);

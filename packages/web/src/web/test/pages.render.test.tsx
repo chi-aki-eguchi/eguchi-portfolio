@@ -85,6 +85,27 @@ function buttonWithText(host: Element, text: string): HTMLButtonElement {
 
 // モード分離(2026-07-23承認・docs/specs/library-redesign-spec.md)後、通常/選択/
 // 並べるの切替はこの data 属性が入口になる。テキストは JA/EN で変わるため属性で引く。
+// 管理画面の上の入口（写真・シリーズ・サイト）と、サイトの目次の項目。
+function shellTab(host: Element, label: string): HTMLButtonElement {
+  const tab = Array.from(host.querySelectorAll(".admin-book__tab")).find(
+    (el) => el.textContent === label,
+  ) as HTMLButtonElement | undefined;
+  if (!tab) throw new Error(`Shell tab not found: ${label}`);
+  return tab;
+}
+
+async function openSiteItem(host: Element, id: string) {
+  const item = host.querySelector(`[data-site-item="${id}"]`) as HTMLButtonElement | null;
+  if (!item) {
+    shellTab(host, "サイト").click();
+    await flush(30);
+  }
+  const target = host.querySelector(`[data-site-item="${id}"]`) as HTMLButtonElement | null;
+  if (!target) throw new Error(`Site outline item not found: ${id}`);
+  target.click();
+  await flush(30);
+}
+
 function modeAction(host: Element, action: string): HTMLButtonElement {
   const button = host.querySelector(
     `[data-library-mode-action="${action}"]`,
@@ -125,26 +146,6 @@ function setupOpenButton(host: Element, rowTitle: string): HTMLButtonElement {
   const button = row?.querySelector("button") as HTMLButtonElement | null;
   if (!button) throw new Error(`Setup row button not found: ${rowTitle}`);
   return button;
-}
-
-// 2026-07-11 スマホナビ再設計: グループボタンはボトムシートを開き、
-// タブはシート内の行から選ぶ(グループ→タブの2クリック導線は不変)。
-// グループは .admin-bottom-nav__btn を直接探す — buttonWithText だと
-// 「サイトで確認」等の同語ボタンに先にマッチするため。
-function navGroup(host: Element, label: string): HTMLButtonElement {
-  const btn = Array.from(host.querySelectorAll(".admin-bottom-nav__btn")).find(
-    (el) => el.textContent?.includes(label),
-  ) as HTMLButtonElement | undefined;
-  if (!btn) throw new Error(`Bottom nav group not found: ${label}`);
-  return btn;
-}
-
-function sheetRow(host: Element, label: string): HTMLButtonElement {
-  const row = Array.from(host.querySelectorAll(".admin-sheet__row")).find(
-    (el) => el.textContent?.includes(label),
-  ) as HTMLButtonElement | undefined;
-  if (!row) throw new Error(`Sheet row not found: ${label}`);
-  return row;
 }
 
 async function waitForText(host: Element, text: string, attempts = 20) {
@@ -918,11 +919,11 @@ describe("shared components", () => {
 
   test("Admin demo keeps its open tab out of the real admin's storage key", async () => {
     // デモと本番は同一オリジンなので localStorage を共有する。同じキーだと、
-    // 購入検討者がデモで開いたタブがオーナーの本番管理画面の開始タブを
+    // 購入検討者がデモで開いた入口がオーナーの本番管理画面の開始位置を
     // 書き換えてしまう (2026-08-04 に Codex の read-only レビューで発見)。
     dom.reconfigure({ url: "https://akieguchi.com/admin/demo" });
     dom.window.localStorage.clear();
-    dom.window.localStorage.setItem("admin:tab", JSON.stringify("settings"));
+    dom.window.localStorage.setItem("admin:book:view", JSON.stringify("site"));
     let unmount: (() => void) | undefined;
     try {
       const Demo = (await import("../pages/admin-demo")).default;
@@ -930,9 +931,13 @@ describe("shared components", () => {
       unmount = cleanup;
       await waitForText(host, "体験版 · 本番への保存なし");
       // デモは専用キーへ保存する。本番用キーは読みも書きもしない。
-      expect(dom.window.localStorage.getItem("admin:tab:demo")).not.toBeNull();
-      expect(dom.window.localStorage.getItem("admin:tab")).toBe(
-        JSON.stringify("settings"),
+      shellTab(host, "シリーズ").click();
+      await flush(30);
+      expect(dom.window.localStorage.getItem("admin:book:view:demo")).toBe(
+        JSON.stringify("series"),
+      );
+      expect(dom.window.localStorage.getItem("admin:book:view")).toBe(
+        JSON.stringify("site"),
       );
     } finally {
       unmount?.();
@@ -1014,15 +1019,16 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
       );
       await waitForText(host, "Template Studio");
       expect(host.textContent).not.toContain("Aki Eguchi");
-      expect(host.textContent).toContain("写真");
-      expect(host.textContent).toContain("見せ方");
-      expect(host.textContent).toContain("サイト");
+      expect(
+        Array.from(host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent),
+      ).toEqual(["写真", "シリーズ", "サイト"]);
       expect(host.textContent).toContain("写真一覧");
       expect(host.textContent).toContain("取り込む");
       // Import type is chosen with the files, not mixed into Library filters.
@@ -1076,7 +1082,7 @@ describe("shared components", () => {
     }
   });
 
-  test("AdminPage: EN localStorage translates the shared shell, headers, and unsaved UI", async () => {
+  test("AdminPage: EN localStorage translates the editors, headers, and unsaved UI", async () => {
     const prev = canned["/api/admin/me"];
     const prevSettings = canned["/api/settings"];
     canned["/api/admin/me"] = { authenticated: true };
@@ -1096,17 +1102,7 @@ describe("shared components", () => {
         createElement(Admin),
         seedAdminPhotos,
       );
-      expect(host.textContent).toContain("Photos");
-      expect(host.textContent).toContain("Presentation");
-      expect(host.textContent).toContain("Site editor");
-      expect(host.textContent).toContain("View on site");
-      expect(
-        host.querySelector('[data-admin-language-toggle][data-language="en"]'),
-      ).not.toBeNull();
-
-      navGroup(host, "Navigate").click();
-      await flush(30);
-      sheetRow(host, "Profile").click();
+      await openSiteItem(host, "tab:profile");
       await waitForText(
         host,
         "Your biography and profile photo shown on the About page.",
@@ -1116,9 +1112,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Discard");
       expect(host.textContent).toContain("Save");
 
-      navGroup(host, "Navigate").click();
-      await flush(30);
-      sheetRow(host, "Hero").click();
+      await openSiteItem(host, "tab:hero");
       await waitForText(host, "Your changes have not been saved");
       expect(host.textContent).toContain("Cancel");
       expect(host.textContent).toContain("Leave without saving");
@@ -1165,6 +1159,7 @@ describe("shared components", () => {
     dom.window.localStorage.setItem(ADMIN_LANGUAGE_STORAGE_KEY, "en");
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -1174,7 +1169,7 @@ describe("shared components", () => {
       await flush(30);
       await waitForText(host, "Filters");
       expect(
-        host.querySelector('select[aria-label="Sort Library view"]'),
+        host.querySelector('select[aria-label="Order of this list (does not change the site)"]'),
       ).not.toBeNull();
       expect(host.querySelector('input[aria-label="Choose image files"]')).not.toBeNull();
       expect(host.querySelector('fieldset[aria-label="Import medium"]')).toBeNull();
@@ -1317,6 +1312,7 @@ describe("shared components", () => {
     }) as typeof fetch;
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(createElement(Admin), seedCompletedSetup);
       expect(host.textContent).toContain("… 枚");
       expect(host.textContent).not.toContain("0 / 0 枚");
@@ -1342,6 +1338,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -1442,6 +1439,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -1486,6 +1484,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -1530,7 +1529,7 @@ describe("shared components", () => {
     }
   });
 
-  test("AdminPage: grouped navigation reaches every tab within two clicks", async () => {
+  test("AdminPage: every site outline item opens within two clicks", async () => {
     const prev = canned["/api/admin/me"];
     const prevSettings = canned["/api/settings"];
     canned["/api/admin/me"] = { authenticated: true };
@@ -1547,50 +1546,33 @@ describe("shared components", () => {
         seedAdminPhotos,
       );
 
-      // The fixture may land on first-run setup. Enter the photo workspace
-      // explicitly instead of mistaking "Library" in its help for the Library.
-      navGroup(host, "写真").click();
-      await waitForText(host, "写真一覧");
+      // 上の入口は骨格に関係なく同じ3つ。
+      expect(
+        Array.from(host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent),
+      ).toEqual(["写真", "シリーズ", "サイト"]);
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "トップの写真").click();
+      await openSiteItem(host, "tab:hero");
       await waitForText(host, "トップページの写真");
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "シリーズ").click();
+      await openSiteItem(host, "tab:series");
       await waitForText(host, "新しいシリーズ");
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "分類").click();
+      await openSiteItem(host, "tab:categories");
       await waitForText(host, "新しいカテゴリ");
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "プロフィール").click();
+      await openSiteItem(host, "tab:profile");
       await waitForText(host, "プロフィール写真（Aboutページ）");
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "料金・プラン").click();
+      await openSiteItem(host, "tab:pricing");
       await waitForText(host, "プランを追加");
       expect(host.textContent).toContain("Contactページに表示される料金です");
 
-      buttonWithText(host, "Portfolio Kit").click();
+      await openSiteItem(host, "tab:service");
       await waitForText(host, "/portfolio-kit 販売ページの内容を編集します");
       buttonWithText(host, "料金").click();
       await waitForText(host, "/portfolio-kit 販売ページの料金です");
 
-      buttonWithText(host, "サイトデザイン").click();
-      await waitForText(host, "トップの見せ方");
-      // 設定の本文は目次で選んだ1節だけを出す（2026-07-30）。
-      (
-        host.querySelector(
-          '[data-settings-section-link="portfolio-kit"]',
-        ) as HTMLButtonElement
-      ).click();
+      await openSiteItem(host, "settings:portfolio-kit");
       await flush(40);
       const serviceModeSelect = host.querySelector(
         'select[aria-label="Portfolio Kitの表示"]',
@@ -1600,7 +1582,7 @@ describe("shared components", () => {
         Array.from(serviceModeSelect!.options).map((option) => option.value),
       ).toEqual(["", "on", "off"]);
 
-      buttonWithText(host, "はじめに").click();
+      await openSiteItem(host, "tab:setup");
       await waitForText(host, "公開までにやること");
 
       cleanup();
@@ -1612,7 +1594,7 @@ describe("shared components", () => {
     }
   });
 
-  test("AdminPage: unsaved guard appears when switching groups", async () => {
+  test("AdminPage: unsaved guard appears when switching site items", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };
     dom.window.sessionStorage.clear();
@@ -1624,17 +1606,13 @@ describe("shared components", () => {
         seedAdminPhotos,
       );
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "プロフィール").click();
+      await openSiteItem(host, "tab:profile");
       await waitForText(host, "プロフィール写真（Aboutページ）");
       const nameInput = inputByLabel(host, "名前（日本語）");
       changeInput(nameInput, "Draft Name");
       await flush(80);
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "トップの写真").click();
+      await openSiteItem(host, "tab:hero");
       await flush(80);
       expect(host.textContent).toContain("未保存の変更があります");
       expect(host.textContent).toContain(
@@ -1655,6 +1633,7 @@ describe("shared components", () => {
     canned["/api/admin/me"] = { authenticated: true };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
+    dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
@@ -1670,9 +1649,7 @@ describe("shared components", () => {
 
       changeInput(inputByLabel(host, "タイトル"), "Unsaved photo title");
       await flush(80);
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "トップの写真").click();
+      shellTab(host, "サイト").click();
       await flush(80);
 
       expect(host.textContent).toContain("未保存の変更があります");
@@ -1698,6 +1675,7 @@ describe("shared components", () => {
     canned["/api/admin/settings"] = { ok: true };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
+    dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
@@ -1716,9 +1694,7 @@ describe("shared components", () => {
       buttonWithText(host, "保存").click();
       await waitForText(host, "保存しました");
 
-      navGroup(host, "移動").click();
-      await flush(30);
-      sheetRow(host, "トップの写真").click();
+      await openSiteItem(host, "tab:hero");
       await waitForText(host, "トップページの写真");
       expect(host.textContent).not.toContain("未保存の変更があります");
 
@@ -1743,6 +1719,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -1815,6 +1792,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -1885,6 +1863,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -1968,6 +1947,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -2018,6 +1998,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -2072,6 +2053,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -2209,6 +2191,7 @@ describe("shared components", () => {
     dom.window.sessionStorage.setItem("admin:libraryLayout", JSON.stringify("grid"));
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(createElement(Admin), (qc) => {
         qc.setQueryData(["photos", "all"], { photos: largePhotos });
         seedCompletedSetup(qc);
@@ -2411,6 +2394,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -2485,6 +2469,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -2530,12 +2515,12 @@ describe("shared components", () => {
     }
   });
 
-  test("AdminPage: invalid persisted tab falls back to Library", async () => {
+  test("AdminPage: invalid persisted view falls back to 写真", async () => {
     const prev = canned["/api/admin/me"];
     canned["/api/admin/me"] = { authenticated: true };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
-    dom.window.localStorage.setItem("admin:tab", JSON.stringify("old-tab"));
+    dom.window.localStorage.setItem("admin:book:view", JSON.stringify("old-view"));
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
@@ -2543,8 +2528,8 @@ describe("shared components", () => {
         seedEstablishedAdminSite,
       );
       await flush(30);
-      expect(host.textContent).toContain("写真一覧");
-      expect(host.textContent).toContain("取り込む");
+      expect(shellTab(host, "写真").getAttribute("aria-current")).toBe("page");
+      expect(host.textContent).toContain("すべての写真");
       cleanup();
     } finally {
       canned["/api/admin/me"] = prev;
@@ -2582,6 +2567,7 @@ describe("shared components", () => {
     );
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -2624,6 +2610,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,
@@ -2671,6 +2658,7 @@ describe("shared components", () => {
     dom.window.localStorage.clear();
     try {
       const Admin = (await import("../pages/admin")).default;
+      dom.window.localStorage.setItem("admin:book:view", JSON.stringify("library"));
       const { host, cleanup } = await mount(
         createElement(Admin),
         seedEstablishedAdminSite,

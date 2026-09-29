@@ -112,7 +112,7 @@ test("小さい画面からPC幅へ変えてもパネルと背景の操作が復
   const footer = editor.locator("[data-inspector-save-bar]");
   await expect(footer.getByRole("button", { name: "保存", exact: true })).toBeInViewport();
   const box = (await footer.boundingBox())!;
-  expect(box.y + box.height).toBeLessThanOrEqual((await page.locator(".admin-bottom-nav").boundingBox())!.y + 1);
+  expect(box.y + box.height).toBeLessThanOrEqual(568 + 1);
   expect((await editor.locator(".admin-inspector-scroll").boundingBox())!.height).toBeGreaterThan(100);
   await editor.getByRole("button", { name: "写真の詳細を閉じる" }).click();
   await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");

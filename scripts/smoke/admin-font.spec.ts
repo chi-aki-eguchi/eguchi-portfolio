@@ -17,12 +17,12 @@ function firstFamily(fontList: string): string {
  * 読みにくくならないこと。**
  */
 test.describe("admin — 書体は公開サイト設定から独立している", () => {
-  test("サイドバーは admin 専用の書体変数を使う", async ({
+  test("入口と操作は admin 専用の書体変数を使う", async ({
     page,
   }, testInfo) => {
     test.skip(
       testInfo.project.name !== "desktop",
-      "サイドバー操作のため desktop のみで検証",
+      "PC幅の入口で検証",
     );
     await loginAsAdmin(page);
     await page.waitForTimeout(500);
@@ -42,16 +42,19 @@ test.describe("admin — 書体は公開サイト設定から独立している"
     expect(firstFamily(vars.adminTitle)).not.toBe("");
     expect(firstFamily(vars.adminUi)).not.toBe("");
 
-    const titleFont = await page
-      .locator(".admin-sidebar__title")
-      .evaluate((el) => getComputedStyle(el).fontFamily);
+    // 上の入口（写真・シリーズ・サイト）と右の操作。サイト名だけは、公開サイトと
+    // 同じ本の中にいると分かるよう、わざと公開サイトの和文書体で組む（admin-book.css）。
     const tabFont = await page
-      .locator(".admin-sidebar__tab span")
+      .locator(".admin-book__tab")
+      .first()
+      .evaluate((el) => getComputedStyle(el).fontFamily);
+    const toolFont = await page
+      .locator(".admin-book__tools button")
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily);
 
-    expect(titleFont).toContain(firstFamily(vars.adminTitle));
     expect(tabFont).toContain(firstFamily(vars.adminUi));
+    expect(toolFont).toContain(firstFamily(vars.adminUi));
   });
 
   test("公開サイトの書体変数が変わっても管理画面は動かない", async ({
@@ -59,7 +62,7 @@ test.describe("admin — 書体は公開サイト設定から独立している"
   }, testInfo) => {
     test.skip(
       testInfo.project.name !== "desktop",
-      "サイドバー操作のため desktop のみで検証",
+      "PC幅の入口で検証",
     );
     await loginAsAdmin(page);
     await page.waitForTimeout(500);
@@ -71,8 +74,8 @@ test.describe("admin — 書体は公開サイト設定から独立している"
           return el ? getComputedStyle(el).fontFamily : "";
         };
         return {
-          title: q(".admin-sidebar__title"),
-          tab: q(".admin-sidebar__tab span"),
+          title: q(".admin-book__tools button"),
+          tab: q(".admin-book__tab"),
         };
       });
 

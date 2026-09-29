@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "./fixtures.ts";
+import { revealAdminPanel, storeAdminTab } from "./helpers";
 
 const PHOTOS = Array.from({ length: 5 }, (_, index) => ({
   id: 8_200_000 + index,
@@ -133,10 +134,10 @@ async function installMocks(page: Page) {
 }
 
 async function openTab(page: Page, tab: string) {
-  await page.addInitScript((nextTab) => {
-    localStorage.setItem("admin:tab", JSON.stringify(nextTab));
+  await page.addInitScript(() => {
     sessionStorage.clear();
-  }, tab);
+  });
+  await page.addInitScript(storeAdminTab, tab);
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 20_000 });
   await page.waitForFunction(
@@ -144,6 +145,7 @@ async function openTab(page: Page, tab: string) {
     undefined,
     { timeout: 20_000 },
   );
+  await revealAdminPanel(page);
 }
 
 test.describe("admin — 残画面のWorkspace / Form振り分け", () => {
@@ -197,7 +199,9 @@ test.describe("admin — 残画面のWorkspace / Form振り分け", () => {
     expect(state.heroIds[2]).toBe(PHOTOS[2].id);
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator(".admin-bottom-nav")).toBeHidden();
+    // スマホ幅のサイトは目次から始まる。作業中の項目の中身へ入る。
+    await revealAdminPanel(page);
+    await expect(bar).toBeVisible();
     expect(
       await page.evaluate(
         () => document.body.scrollWidth - document.body.clientWidth,
@@ -205,7 +209,6 @@ test.describe("admin — 残画面のWorkspace / Form振り分け", () => {
     ).toBe(0);
     await bar.getByRole("button", { name: "選び直す" }).click();
     await expect(bar).toHaveCount(0);
-    await expect(page.locator(".admin-bottom-nav")).toBeVisible();
     expect(state.unknownWrites).toEqual([]);
   });
 

@@ -2,8 +2,10 @@
  * 写真中心の管理画面（siteDesign = "book"、2026-09-26 作り直し）。
  *
  * 縛るのは3点。
- *  1. 写真中心のときだけ新しい器（写真・シリーズ・サイト）になり、いつもの構成
- *     （配布版の既定）は今までの左メニューのまま
+ *  1. サイトの骨格（写真中心／いつもの構成）に関係なく、管理画面は同じ器
+ *     （写真・シリーズ・サイト）。サイトの目次も同じ項目・同じ順で、その骨格で
+ *     使わない項目には札を付けて薄くするだけ（2026-09-29 オーナー「骨格を変えたら
+ *     admin も全部変わってわからない」）
  *  2. 最初は「写真」。シリーズに入っていない写真を数え、絞り込める
  *  3. 公開／非公開の切り替えはまとめて扱う要求（/admin/photos/batch）を1回送り、
  *     元に戻す入口を出す
@@ -109,14 +111,36 @@ afterEach(() => {
 });
 
 describe("写真集の管理画面", () => {
-  test("いつもの構成では今までの左メニューのまま", async () => {
-    const m = await mountAdmin({});
-    try {
-      expect(m.host.querySelector(".admin-book")).toBeNull();
-      expect(m.host.querySelector("aside.admin-sidebar")).not.toBeNull();
-    } finally {
-      m.cleanup();
-    }
+  test("骨格を切り替えても管理画面とサイトの目次は同じで、使わない項目に札が付くだけ", async () => {
+    const outline = async (settings: Record<string, string>) => {
+      const m = await mountAdmin(settings);
+      try {
+        expect(m.host.querySelector("aside.admin-sidebar")).toBeNull();
+        const tabs = Array.from(m.host.querySelectorAll(".admin-book__tab"));
+        expect(tabs.map((b) => b.textContent)).toEqual(["写真", "シリーズ", "サイト"]);
+        (tabs[2] as HTMLButtonElement).click();
+        await flush(40);
+        const items = Array.from(m.host.querySelectorAll<HTMLElement>("[data-site-item]"));
+        return {
+          ids: items.map((b) => b.dataset.siteItem),
+          inactive: items.filter((b) => b.hasAttribute("data-skeleton-inactive")).map((b) => b.dataset.siteItem),
+        };
+      } finally {
+        m.cleanup();
+      }
+    };
+    const classic = await outline({});
+    const book = await outline({ siteDesign: "book" });
+    expect(book.ids).toEqual(classic.ids);
+    // いつもの構成だけの項目は、写真中心のときに薄くなる（隠さない）。
+    expect(classic.inactive).toEqual([]);
+    expect(book.inactive).toEqual(
+      expect.arrayContaining(["settings:hero", "settings:gallery-layout", "settings:navigation"]),
+    );
+    // 分けた節と、以前は写真中心の目次に無かった「トップの写真と順番」も並ぶ。
+    expect(classic.ids).toEqual(
+      expect.arrayContaining(["settings:page-layout", "settings:home", "settings:viewer", "settings:page-parts", "settings:page-frame", "tab:hero", "tab:series"]),
+    );
   });
 
   test("写真中心では「写真」から始まり、シリーズに入っていない写真を数える", async () => {

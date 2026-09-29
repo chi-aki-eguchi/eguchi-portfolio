@@ -13,9 +13,13 @@ test("Photo presentation previews before save and persists through reload", asyn
     await r.fulfill({ json: { ok: true, ignoredKeys: [] } });
   });
   await loginAsAdmin(page);
-  await page.getByRole("button", { name: "サイト編集", exact: true }).filter({ visible: true }).first().click();
-  await chooseSettingsSection(page, "page-layout");
+  await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
+  // 切り抜き（いつもの構成の一覧）と額装（写真を開いたとき）は別の節。
+  // 節をまたいでも下書きは1つで、1回の保存でまとめて送る。
+  await chooseSettingsSection(page, "gallery-layout");
   await page.getByRole("button", { name: "切り抜かず全体を見せる", exact: true }).click();
+  await chooseSettingsSection(page, "viewer");
+  await expect(page.locator("dialog[open]")).toHaveCount(0);
   await page.getByRole("button", { name: "額装", exact: true }).click();
   const frame = page.locator('iframe[title="Site Preview"]');
   await expect.poll(() => frame.evaluate((el: HTMLIFrameElement) => el.contentDocument?.body.dataset.photoCrop)).toBe("whole");

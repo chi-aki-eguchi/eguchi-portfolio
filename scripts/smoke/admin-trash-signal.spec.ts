@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.ts";
-import { loginAsAdmin } from "./helpers";
+import { gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // 回帰テスト(工程2 fix #7): ⌘KパレットからTrashを開くと openTrashRequest
 // カウンタが無条件に加算され、以後 Library タブを普通に開くたびに
@@ -27,9 +27,14 @@ test.describe("admin — ⌘KのTrashが後続のLibrary表示に持ち越され
     const trashMarker = /ゴミ箱は空です|削除済み写真 —/;
     expect(await page.getByText(trashMarker).count()).toBeGreaterThan(0);
 
-    await page.locator(".studio-workspace-switch").getByRole("button", { name: "サイト編集", exact: true }).click();
+    await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
     await page.waitForTimeout(500);
-    await page.locator(".studio-workspace-switch").getByRole("button", { name: "写真", exact: true }).click();
+    // 写真の詳しい道具（ゴミ箱のある一覧）へ、⌘K から普通に戻る。
+    await page.keyboard.press("Meta+k");
+    await page.waitForTimeout(300);
+    await page.getByPlaceholder(/移動先/).fill("詳しい道具");
+    await page.waitForTimeout(200);
+    await page.keyboard.press("Enter");
     await page.waitForTimeout(1000);
 
     // 修正前はここで再び Trash が開いてしまっていた。ツールバー（絞り込み）は
@@ -51,6 +56,7 @@ test("old trash remains restorable and permanent deletion requires confirmation"
     return route.fulfill({ json: { ok: true } });
   });
   await loginAsAdmin(page);
+  await gotoAdminTab(page, "gallery");
   await page.locator("summary").filter({ hasText: "表示" }).click();
   await page.getByRole("button", { name: /^ゴミ箱/ }).last().click();
   await expect(page.getByText(/削除済み写真 — 自動では消えません/)).toBeVisible();

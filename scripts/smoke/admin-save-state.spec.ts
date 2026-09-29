@@ -76,7 +76,13 @@ async function installAdminApiMocks(page: Page): Promise<Mocks> {
   return { nonGet, unknown };
 }
 
-// 初期表示は「はじめに」になることがあるため、左メニューを実際に押して移動する。
+// 初期表示は「はじめに」になることがあるため、上の「サイト」と目次を実際に押して移動する。
+// 以前の左メニューの名前を、サイトの目次の項目へ読み替える。
+const SITE_ITEMS: Record<string, string> = {
+  "Portfolio Kit": "tab:service",
+  "サイトデザイン": "settings:hero",
+  "分類": "tab:categories",
+};
 async function openAdminTab(page: Page, label: string) {
   await page.addInitScript(() => {
     // 前回の下書きが残っていると未保存判定の検査にならない
@@ -84,12 +90,8 @@ async function openAdminTab(page: Page, label: string) {
   });
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
-  await page.locator(".studio-workspace-switch").getByRole("button", { name: label === "分類" ? "写真" : "サイト編集", exact: true }).click();
-  await page
-    .locator("button, a")
-    .filter({ hasText: new RegExp(`^\\s*${label}\\s*$`) })
-    .first()
-    .click();
+  await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
+  await page.locator(`[data-site-item="${SITE_ITEMS[label]}"]`).click();
 }
 
 test.describe("admin — 保存状態の表示", () => {
@@ -118,15 +120,16 @@ test.describe("admin — 保存状態の表示", () => {
       });
     });
 
-    // 左メニューでの表示名は「Portfolio Kit」
+    // サイトの目次の「制作案内のページ」
     await openAdminTab(page, "Portfolio Kit");
 
     await expect(
       page.getByRole("heading", { name: "読み込めませんでした" }),
       "設定を読めない時は、既定値のService編集画面ではなく失敗画面を出す",
     ).toBeVisible({ timeout: 15_000 });
+    // 目次の「設定を探す」は編集欄ではないので、編集画面の中だけを数える。
     await expect(
-      page.locator("input, textarea"),
+      page.locator(".book-site__panel").locator("input, textarea"),
       "失敗中は編集欄を出さない",
     ).toHaveCount(0);
     await expect(
@@ -137,7 +140,7 @@ test.describe("admin — 保存状態の表示", () => {
     settingsAvailable = true;
     await page.getByRole("button", { name: "再試行" }).click();
     await expect(
-      page.locator("input, textarea").first(),
+      page.locator(".book-site__panel").locator("input, textarea").first(),
       "再試行に成功したら通常のService編集画面に戻る",
     ).toBeVisible();
 

@@ -11,11 +11,12 @@ test.describe("admin — ライブプレビューがタブ復帰後も編集内�
   }, testInfo) => {
     test.skip(
       testInfo.project.name !== "desktop",
-      "サイドバー操作のため desktop のみで検証",
+      "PC幅の入口で検証",
     );
     await loginAsAdmin(page);
 
-    await page.getByRole("button", { name: "サイト編集", exact: true }).filter({visible: true}).first().click();
+    const shellTab = (name: string) => page.locator(".admin-book__tab", { hasText: name });
+    await shellTab("サイト").click();
     await page.waitForTimeout(400);
     // プレビューは既定で開く。閉じている時だけ押す。
   const previewOpenButton = page.getByRole("button", { name: "プレビューを開く" });
@@ -40,13 +41,13 @@ test.describe("admin — ライブプレビューがタブ復帰後も編集内�
 
     expect((await readBg()).trim()).toBe("#000005");
 
-    await page.locator(".studio-workspace-switch").getByRole("button", { name: "写真", exact: true }).click();
+    await shellTab("写真").click();
     await page
       .getByRole("button", { name: "保存せず移動" })
       .click()
       .catch(() => {});
     await page.waitForTimeout(500);
-    await page.getByRole("button", { name: "サイト編集", exact: true }).filter({visible: true}).first().click();
+    await shellTab("サイト").click();
     await page.waitForSelector('iframe[title="Site Preview"]', {
       timeout: 10_000,
     });

@@ -2,8 +2,9 @@ import { test, expect } from "./fixtures.ts";
 import { ADMIN_TABS, gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // Photo workspaces use compact headings; Settings names the current section
-// beside its preview. Each tab must still identify itself visibly, inside the
-// content area, without reserving an oversized heading above the photographs.
+// with its own heading (the small bar label is kept for screen readers only).
+// Each screen must still identify itself visibly, inside the content area,
+// without reserving an oversized heading above the photographs.
 for (const width of [1440, 1024, 375]) {
   test(`admin — ${width}pxで全9タブの現在地が画面内に表示される`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== (width === 375 ? "mobile" : "desktop"));
@@ -12,7 +13,7 @@ for (const width of [1440, 1024, 375]) {
     for (const tab of ADMIN_TABS) {
       await gotoAdminTab(page, tab);
       const heading = tab === "settings"
-        ? page.locator(".admin-settings-mobile-current__label")
+        ? page.locator("[data-settings-section] [data-settings-section-heading]").first()
         : page.locator("h1.admin-page-header__title");
       await expect(heading, `${tab}の現在地`).toBeVisible();
       await expect(heading).toBeInViewport();
@@ -27,8 +28,8 @@ for (const width of [1440, 1024, 375]) {
     }
     if (width >= 1024) {
       await page.getByRole("button", { name: "プレビューを閉じる", exact: true }).click();
-      await expect(page.locator(".admin-settings-mobile-current__label")).toBeVisible();
-      await expect(page.getByRole("navigation", { name: "設定項目", exact: true })).toBeVisible();
+      await expect(page.locator("[data-settings-section] [data-settings-section-heading]").first()).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "サイトの設定", exact: true })).toBeVisible();
     }
   });
 }

@@ -1,6 +1,6 @@
 import "../components/admin-workbench.css";
 import { uploadPhotoFile } from "../lib/admin-upload";
-import { AdminSettingsNavigationContext, settingsNavigationItems } from "./admin-settings-navigation";
+import { AdminSettingsNavigationContext, siteSkeletonFrom } from "./admin-settings-navigation";
 import { comparePhotoDates } from "../../shared/photo-dates";
 import { PhotoImportReview, type ImportDatePolicy } from "../components/PhotoImportReview";
 import { PhotoDateRecovery } from "../components/PhotoDateRecovery";
@@ -47,7 +47,7 @@ import {
 } from "../lib/reorder";
 import { useDarkModeContext } from "../components/provider";
 import { useAdminSurface } from "../hooks/useAdminSurface";
-import { AdminSurfaceProvider, AdminSurfaceToggle } from "./admin-surface";
+import { AdminSurfaceProvider } from "./admin-surface";
 import { ensureAccentContrast } from "../lib/color-contrast";
 import { themeColorsFor } from "../lib/theme-colors";
 import { splitRecentlyAddedPhotos } from "../lib/recently-added-photos";
@@ -63,7 +63,6 @@ import {
   uploadTooLargeNotice,
 } from "../lib/upload-file";
 import {
-  LogOut,
   Upload,
   Trash2,
   Check,
@@ -101,9 +100,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import {
-  adminTabGroupsForService,
   buildPublicSiteHref,
-  isAdminTab,
   postAdminSettings,
   reorderLockReason,
   type Tab,
@@ -111,14 +108,11 @@ import {
 import { resolveServiceVisibility } from "../../shared/service-visibility";
 import { hasUsableContactChannel } from "../../shared/contact-settings";
 import {
-  AdminDesktopLanguageBar,
   PageHeader,
   PageHeaderButton,
 } from "./admin-page-header";
 import { PageShell } from "./admin-page-shell";
-import { AdminMobileTopBar, AdminMobileTabBar } from "./admin-mobile-nav";
 import { AdminReorderBar } from "./admin-reorder-bar";
-import { AdminCompactSidebar } from "./admin-compact-sidebar";
 import {
   Button as AxButton,
   ListLoading,
@@ -135,17 +129,14 @@ import {
   type AdminMessages,
 } from "./admin-i18n";
 import {
-  BOOK_HIDDEN_SETTINGS,
-  BOOK_SETTINGS_LABELS,
   BookAdminShell,
   BookSiteView,
-  bookSiteGroups,
+  siteOutlineGroups,
   type BookAdminView,
   normalizeBookView,
   type SitePanelItem,
 } from "../components/admin-book/BookAdminShell";
 import { Studio } from "../components/studio/Studio";
-import { siteDesignFrom } from "../lib/book";
 
 /**
  * 写真集の管理画面だけ、似た名前の操作を言い分ける（2026-09-23）。
@@ -604,36 +595,8 @@ function AdminPageContent({
     queryFn: async () =>
       jsonOrThrow<Record<string, string>>(await api.settings.$get()),
   });
-  // デモは本番の管理画面と別のキーに保存する。同じキーだと、購入検討者が
-  // デモで開いたタブがオーナーの本番管理画面の開始タブを書き換えてしまう
-  // (同一オリジンなので localStorage を共有する)。
-  const [storedTab, setTab] = usePersistentState<Tab>(
-    demoMode ? "admin:tab:demo" : "admin:tab",
-    "gallery",
-    "local",
-  );
-  const tab = isAdminTab(storedTab) ? storedTab : "gallery";
-  // setupCompleted !== "true" の間は、/admin を開くたびに初期タブを「はじめに」
-  // にする(セッション中の自由なタブ移動は妨げないよう、マウントごとに一度だけ)。
-  // 完了確定は SetupTab の「セットアップ完了」ボタンの明示操作のみ — 表示した
-  // だけでは何も書き込まない(旧・自動バックフィルは削除。setup-flow.ts 参照)。
-  const initialSetupRedirectDone = useRef(false);
-  useEffect(() => {
-    if (initialSetupRedirectDone.current) return;
-    if (authenticated !== true || shellSettings === undefined) return;
-    initialSetupRedirectDone.current = true;
-    // 体験版はセットアップ導線ではなく3操作ガイド+Libraryが入口。
-    // サンプル一式が入力済みのため「はじめに」に飛ばすと完了表示だけが残る。
-    if (demoMode) return;
-    if (shouldLandOnSetup(authenticated, shellSettings)) setTab("setup");
-  }, [authenticated, shellSettings, setTab, demoMode]);
   const [galleryUploading, setGalleryUploading] = useState(false);
   const [galleryReordering, setGalleryReordering] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState(
-    "admin:sidebarCollapsed",
-    false,
-    "local",
-  );
   // 「今回追加」は選択とは別の一時状態。GalleryTab より上で持つことで、
   // カテゴリ等の別タブへ移動して戻ってもページ再読込までは目印を残す。
   const [recentlyAddedPhotoIds, setRecentlyAddedPhotoIds] = useState<
@@ -641,14 +604,11 @@ function AdminPageContent({
   >(new Set());
   // Generic unsaved-draft flag reported by any tab with a draft form.
   const [hasUnsaved, setHasUnsaved] = useState(false);
-  const [unsavedConfirm, setUnsavedConfirm] = useState<Tab | "logout" | null>(
-    null,
-  );
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   // 工程5: ⌘K quick palette (navigation only) + a signal GalleryTab watches
   // to auto-open Trash, since that's a toggle inside the tab, not a Tab.
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [openTrashRequest, setOpenTrashRequest] = useState(0);
-  const serviceVisibilityResolved = shellSettings !== undefined;
   // Vite dev also powers the local admin and smoke suite. Keep Service
   // reachable there even when legacy auto-detection sees an empty siteUrl on
   // localhost; production admin still follows the configured/host gate.
@@ -659,41 +619,6 @@ function AdminPageContent({
       shellSettings?.siteUrl,
       typeof window === "undefined" ? "" : window.location.hostname,
     );
-  const adminTabs = useMemo(
-    () =>
-      Object.fromEntries(
-        (Object.keys(ADMIN_TAB_ICONS) as Tab[]).map((key) => [
-          key,
-          { label: t.navigation.tabs[key], icon: ADMIN_TAB_ICONS[key] },
-        ]),
-      ) as Record<Tab, { label: string; icon: React.ReactNode }>,
-    [t],
-  );
-  const adminTabGroups = useMemo(
-    () =>
-      adminTabGroupsForService(showService).map((group) => ({
-        ...group,
-        label:
-          group.key === "photos"
-            ? t.navigation.groups.photos
-            : group.key === "presentation"
-              ? t.navigation.groups.presentation
-              : group.key === "site"
-                ? t.navigation.groups.site
-                : group.label,
-      })),
-    [showService, t],
-  );
-
-  useEffect(() => {
-    if (!isAdminTab(storedTab)) setTab("gallery");
-  }, [storedTab, setTab]);
-
-  useEffect(() => {
-    if (serviceVisibilityResolved && !showService && tab === "service") {
-      setTab("settings");
-    }
-  }, [serviceVisibilityResolved, setTab, showService, tab]);
 
   const logout = useMutation({
     mutationFn: async () => jsonOrThrow(await adminApi.logout.$post()),
@@ -705,14 +630,7 @@ function AdminPageContent({
   // 公開サイトの解決済みテーマ（"サイトに合わせる" を選んだときの追従先）。
   // Provider の外（テストなど）では context が null になるので明るい方を使う。
   const siteResolvedTheme = useDarkModeContext()?.resolved ?? "light";
-  // 管理画面だけの明暗（端末ローカル・既定は暗い）。色相は下の
-  // adminThemeFromSettings が CMS の明/暗パレットから派生させる。
   const adminSurface = useAdminSurface(siteResolvedTheme);
-  const resolvedTheme = adminSurface.resolved;
-  const adminThemeVars = useMemo(
-    () => adminThemeFromSettings(shellSettings, resolvedTheme),
-    [shellSettings, resolvedTheme],
-  );
 
   useLayoutEffect(() => {
     if (!demoMode) return;
@@ -732,9 +650,12 @@ function AdminPageContent({
     return () => observer.disconnect();
   }, [demoMode, language]);
 
-  const [settingsEntrySection, setSettingsEntrySection] = useState<string | undefined>();
-  const [settingsNavigationHost, setSettingsNavigationHost] = useState<HTMLDivElement | null>(null);
-  // 写真集の管理画面（siteDesign = "book"）の入口と、サイトの目次で開いている項目。
+  // 管理画面の入口（写真・シリーズ・サイト）と、サイトの目次で開いている項目。
+  // サイトの骨格（写真中心／いつもの構成）に関係なく、管理画面はいつもこの形
+  // （2026-09-29。以前は骨格ごとに別の管理画面へ入れ替わっていた）。
+  // デモは本番の管理画面と別のキーに保存する。同じキーだと、購入検討者が
+  // デモで開いた入口がオーナーの本番管理画面の開始位置を書き換えてしまう
+  // (同一オリジンなので localStorage を共有する)。
   const [storedBookView, setBookView] = usePersistentState<BookAdminView>(
     demoMode ? "admin:book:view:demo" : "admin:book:view",
     "photos",
@@ -750,14 +671,42 @@ function AdminPageContent({
     { view: BookAdminView; panel?: string } | null
   >(null);
   const [bookOutlineHost, setBookOutlineHost] = useState<HTMLDivElement | null>(null);
-  // 写真集の管理画面の明暗。いつもの管理画面の明暗とは別に持つ（既定は明るい紙）。
+  // スマホのサイトで、項目の中身（true）と目次（false）のどちらを出すか。「サイト」を
+  // 押したら目次、項目を開いたら（目次・探す・画面の中の案内から）中身。PC で開いた
+  // 画面は中身のまま（幅を狭めても作業中の項目が消えない）。
+  const [siteShowsPanel, setSiteShowsPanel] = useState(() => {
+    try {
+      return !window.matchMedia("(max-width: 767px)").matches;
+    } catch {
+      return true;
+    }
+  });
+  // 保存していない変更がある設定の節（目次に印を付ける）。
+  const [changedSettings, setChangedSettings] = useState<string[]>([]);
+  // 管理画面の明暗（既定は明るい紙）。写真の色を見るため、暗い部屋でも使えるように。
   const [bookTheme, setBookTheme] = usePersistentState<"light" | "dark">(
     "admin:book:theme",
     "light",
     "local",
   );
-  // Navigation responds immediately; the destination renders its own loading state.
-  const contentTab = isAdminTab(tab) ? tab : "gallery";
+  // setupCompleted !== "true" の間は、/admin を開くたびに「はじめに」を開く
+  // (セッション中の自由な移動は妨げないよう、マウントごとに一度だけ)。
+  // 完了確定は SetupTab の「セットアップ完了」ボタンの明示操作のみ — 表示した
+  // だけでは何も書き込まない(旧・自動バックフィルは削除。setup-flow.ts 参照)。
+  const initialSetupRedirectDone = useRef(false);
+  useEffect(() => {
+    if (initialSetupRedirectDone.current) return;
+    if (authenticated !== true || shellSettings === undefined) return;
+    initialSetupRedirectDone.current = true;
+    // 体験版はセットアップ導線ではなく3操作ガイド+写真が入口。
+    // サンプル一式が入力済みのため「はじめに」に飛ばすと完了表示だけが残る。
+    if (demoMode) return;
+    if (shouldLandOnSetup(authenticated, shellSettings)) {
+      setBookPanelId("tab:setup");
+      setBookView("site");
+      setSiteShowsPanel(true);
+    }
+  }, [authenticated, shellSettings, setBookPanelId, setBookView, demoMode]);
 
   // 工程5: ⌘K / Ctrl+K toggles the quick palette from anywhere in admin.
   useEffect(() => {
@@ -784,64 +733,13 @@ function AdminPageContent({
     shellSettings?.siteNameEn?.trim() ||
     shellSettings?.siteName?.trim() ||
     "Photography";
-  const photoWorkspace = ["gallery", "series", "categories"].includes(tab);
-  // Returns whether the switch actually happened (false when blocked by the
-  // unsaved-changes guard) — callers that queue a follow-up action (like
-  // opening Trash) must only do so once the switch has actually gone through.
-  const requestTab = (nextTab: Tab): boolean => {
-    if (nextTab === "service" && !showService) return false;
-    if (galleryReordering && nextTab !== "gallery") return false;
-    if (hasUnsaved && nextTab !== tab) {
-      setUnsavedConfirm(nextTab);
-      return false;
-    }
-    setTab(nextTab);
-    return true;
-  };
   const requestLogout = () => {
     if (hasUnsaved) {
-      setUnsavedConfirm("logout");
+      setLogoutConfirm(true);
       return;
     }
     logout.mutate();
   };
-
-  // 工程5: ⌘K destinations — navigation only, no photo search / actions.
-  const paletteDestinations: PaletteDestination[] = [
-    ...adminTabGroups.flatMap((group) =>
-      group.tabs.map((key) => ({
-        id: key,
-        label: adminTabs[key].label,
-        group: group.label,
-        icon: adminTabs[key].icon,
-        action: () => requestTab(key),
-      })),
-    ),
-    ...settingsNavigationItems.map(item => ({
-      id: `settings-${item.id}`,
-      label: language === "ja" ? item.ja : item.en,
-      group: language === "ja" ? `サイト編集 · ${item.groupJa}` : `Site editor · ${item.groupEn}`,
-      keywords: item.keywords,
-      icon: ADMIN_TAB_ICONS.settings,
-      action: () => { setSettingsEntrySection(item.id); requestTab("settings"); },
-    })),
-    {
-      id: "trash",
-      label: t.navigation.trash,
-      group: t.navigation.groups.photos,
-      icon: <Trash2 size={15} />,
-      action: () => {
-        if (requestTab("gallery")) setOpenTrashRequest((n) => n + 1);
-      },
-    },
-    {
-      id: "open-site",
-      label: t.navigation.openSite,
-      group: t.navigation.groups.site,
-      icon: <ExternalLink size={15} />,
-      action: () => window.open(publicSiteHref, "_blank", "noopener"),
-    },
-  ];
 
   const demoBanner = demoMode ? (
     <div ref={demoBannerRef} className="admin-demo-banner" data-admin-demo-banner>
@@ -861,493 +759,229 @@ function AdminPageContent({
     </div>
   ) : null;
 
-  if (siteDesignFrom(shellSettings?.siteDesign) === "book") {
-    const groups = bookSiteGroups(showService);
-    const allItems = groups.flatMap((g) => g.items);
-    const activeItem =
-      allItems.find((item) => item.id === bookPanelId) ?? allItems[0]!;
-    const goBook = (view: BookAdminView, panel?: string) => {
-      if (galleryReordering || galleryUploading) return;
-      const leaving = view !== bookView || (panel && panel !== bookPanelId);
-      if (hasUnsaved && leaving) {
-        setBookPending({ view, panel });
-        return;
-      }
-      if (panel) setBookPanelId(panel);
-      setBookView(view);
-    };
-    const openFromSettings = (next: Tab) => {
-      if (next === "series") goBook("series");
-      else if (next === "profile" || next === "pricing") goBook("site", `tab:${next}`);
-      else goBook("site");
-    };
-    const bookDestinations: PaletteDestination[] = [
-      { id: "book-photos", label: "写真", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("photos") },
-      { id: "book-series", label: "シリーズ", group: "管理画面", icon: ADMIN_TAB_ICONS.series, action: () => goBook("series") },
-      { id: "book-library", label: "詳しい道具（構図・日付の一括入力・表での一括編集）", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("library") },
-      ...allItems.map((item) => ({
+  const siteSkeleton = siteSkeletonFrom(shellSettings?.siteDesign);
+  const groups = siteOutlineGroups(showService);
+  const allItems = groups.flatMap((g) => g.items);
+  const activeItem =
+    allItems.find((item) => item.id === bookPanelId) ??
+    // 分ける前の節（「各ページの構成」の中にあった About など）を覚えていたときは骨格へ。
+    allItems[0]!;
+  const goBook = (view: BookAdminView, panel?: string) => {
+    if (galleryReordering || galleryUploading) return;
+    const leaving = view !== bookView || (panel && panel !== bookPanelId);
+    // 設定の節どうしの移動は下書きを持ち越す（節をまたいで1つの下書き・1回の保存）。
+    const settingsHop =
+      view === "site" &&
+      bookView === "site" &&
+      activeItem.panel.kind === "settings" &&
+      panel?.startsWith("settings:");
+    if (hasUnsaved && leaving && !settingsHop) {
+      setBookPending({ view, panel });
+      return;
+    }
+    if (panel) setBookPanelId(panel);
+    if (view === "site") setSiteShowsPanel(Boolean(panel));
+    setBookView(view);
+  };
+  const openFromSettings = (next: Tab) => {
+    if (next === "gallery") goBook("photos");
+    else if (next === "series") goBook("series");
+    else if (next === "settings") goBook("site");
+    else goBook("site", `tab:${next}`);
+  };
+  const bookDestinations: PaletteDestination[] = [
+    { id: "book-photos", label: "写真", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("photos") },
+    { id: "book-series", label: "シリーズ", group: "管理画面", icon: ADMIN_TAB_ICONS.series, action: () => goBook("series") },
+    { id: "book-library", label: "詳しい道具（構図・日付の一括入力・表での一括編集）", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("library") },
+    ...groups.flatMap((group) =>
+      group.items.map((item) => ({
         id: `book-${item.id}`,
         label: item.label,
-        group: "サイト",
-        keywords: item.note,
+        group: `サイト · ${group.label}`,
+        keywords: [item.note, item.keywords].filter(Boolean).join(" "),
         icon: ADMIN_TAB_ICONS.settings,
         action: () => goBook("site", item.id),
       })),
-      {
-        id: "trash",
-        label: t.navigation.trash,
-        group: "管理画面",
-        icon: <Trash2 size={15} />,
-        action: () => {
-          goBook("library");
-          setOpenTrashRequest((n) => n + 1);
-        },
+    ),
+    {
+      id: "trash",
+      label: t.navigation.trash,
+      group: "管理画面",
+      icon: <Trash2 size={15} />,
+      action: () => {
+        goBook("library");
+        setOpenTrashRequest((n) => n + 1);
       },
-      {
-        id: "open-site",
-        label: t.navigation.openSite,
-        group: "サイト",
-        icon: <ExternalLink size={15} />,
-        action: () => window.open(publicSiteHref, "_blank", "noopener"),
-      },
-    ];
-    const galleryTab = (
-      <GalleryTab
-        demoSeed={demoSeed}
-        onUploadingChange={setGalleryUploading}
-        onUnsavedChange={setHasUnsaved}
-        openTrashSignal={openTrashRequest}
-        onTrashSignalConsumed={() => setOpenTrashRequest(0)}
-        recentlyAddedPhotoIds={recentlyAddedPhotoIds}
-        onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
-        onReorderWorkspaceChange={setGalleryReordering}
-        onOpenOrderSettings={() => goBook("site", "settings:series")}
-      />
-    );
-    const panel = activeItem.panel;
-    const sitePanel = (
-      <Suspense
-        fallback={
-          <div className="h-full flex items-center justify-center">
-            <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
-          </div>
-        }
-      >
-        {panel.kind === "settings" && (
-          <AdminSettingsNavigationContext.Provider value={bookOutlineHost}>
-            <LazySettingsTab
-              key={panel.section}
-              initialSectionId={panel.section}
-              hiddenSectionIds={BOOK_HIDDEN_SETTINGS}
-              sectionLabels={BOOK_SETTINGS_LABELS}
-              onUnsavedChange={setHasUnsaved}
-              demoSeed={demoSeed}
-              onOpenTab={openFromSettings}
-              onActiveSectionChange={(section) => setBookPanelId(`settings:${section}`)}
-            />
-          </AdminSettingsNavigationContext.Provider>
-        )}
-        {panel.kind === "tab" && panel.tab === "profile" && <LazyProfileTab onUnsavedChange={setHasUnsaved} />}
-        {panel.kind === "tab" && panel.tab === "pricing" && <LazyPricingTab onUnsavedChange={setHasUnsaved} />}
-        {panel.kind === "tab" && panel.tab === "service" && showService && <LazyServiceTab onUnsavedChange={setHasUnsaved} />}
-        {panel.kind === "tab" && panel.tab === "categories" && <LazyCategoriesTab />}
-        {panel.kind === "tab" && panel.tab === "setup" && (
-          <SetupTab onOpenTab={(next) => openFromSettings(next)} demoMode={demoMode} />
-        )}
-      </Suspense>
-    );
-    return (
-      <AdminSurfaceProvider value={adminSurface}>
-        <AdminCopyOverride patch={bookAdminCopy}>
-          <div
-            ref={adminRootRef}
-            className="admin-atelier admin-workbench admin-studio admin-book-root relative flex select-none overflow-hidden"
-            data-admin-theme={bookTheme}
-            data-studio-workspace={bookView === "site" ? "site" : "photos"}
-            data-studio-editor={(bookView === "site" && panel.kind === "settings") || undefined}
-            style={{
-              ...adminThemeFromSettings(shellSettings, bookTheme),
-            }}
-          >
-            <BookAdminShell
-              pdfEnabled={!demoMode}
-              siteName={shellSettings?.siteName?.trim() || sidebarSiteName}
-              view={bookView}
-              onView={(v) => goBook(v)}
-              onSearch={() => setPaletteOpen(true)}
-              siteHref={publicSiteHref}
-              onLogout={requestLogout}
-              locked={galleryReordering || galleryUploading}
-              banner={demoBanner}
-              theme={bookTheme}
-              onToggleTheme={() => setBookTheme(bookTheme === "dark" ? "light" : "dark")}
-              overlays={
-                <>
-                  <div ref={setBookOutlineHost} hidden aria-hidden="true" />
-                  {bookPending && (
-                    <Modal onClose={() => setBookPending(null)} widthClass="w-80">
-                      <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
-                        {t.shell.unsavedTitle}
-                      </p>
-                      <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
-                        {t.shell.unsavedBody}
-                      </p>
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => setBookPending(null)} className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                          {t.common.cancel}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setHasUnsaved(false);
-                            if (bookPending.panel) setBookPanelId(bookPending.panel);
-                            setBookView(bookPending.view);
-                            setBookPending(null);
-                          }}
-                          className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm"
-                        >
-                          {t.shell.leaveWithoutSaving}
-                        </button>
-                      </div>
-                    </Modal>
-                  )}
-                  {unsavedConfirm === "logout" && (
-                    <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
-                      <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-5">
-                        {t.shell.unsavedTitle}
-                      </p>
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => setUnsavedConfirm(null)} className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
-                          {t.common.cancel}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setHasUnsaved(false);
-                            setUnsavedConfirm(null);
-                            logout.mutate();
-                          }}
-                          className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm"
-                        >
-                          {t.shell.leaveWithoutSaving}
-                        </button>
-                      </div>
-                    </Modal>
-                  )}
-                  <QuickPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} destinations={bookDestinations} />
-                </>
-              }
-            >
-              {(bookView === "photos" || bookView === "series") && (
-                <Studio
-                  demoSeed={demoSeed}
-                  view={bookView}
-                  onView={(v) => goBook(v)}
-                  onOpenDetails={() => goBook("library")}
-                  onUploadingChange={setGalleryUploading}
-                />
-              )}
-              {bookView === "library" && (
-                <div className="admin-main admin-book__library">
-                  <div className="admin-content">
-                    <div className="admin-screen" data-phase="show">{galleryTab}</div>
-                  </div>
-                </div>
-              )}
-              {bookView === "site" && (
-                <BookSiteView
-                  groups={groups}
-                  active={activeItem.id}
-                  onSelect={(item: SitePanelItem) => goBook("site", item.id)}
-                >
-                  <div className="admin-main">
-                    <div className="admin-content">
-                      <div className="admin-screen" data-phase="show">{sitePanel}</div>
-                    </div>
-                  </div>
-                </BookSiteView>
-              )}
-            </BookAdminShell>
-          </div>
-        </AdminCopyOverride>
-      </AdminSurfaceProvider>
-    );
-  }
-
+    },
+    {
+      id: "open-site",
+      label: t.navigation.openSite,
+      group: "サイト",
+      icon: <ExternalLink size={15} />,
+      action: () => window.open(publicSiteHref, "_blank", "noopener"),
+    },
+  ];
+  const galleryTab = (
+    <GalleryTab
+      demoSeed={demoSeed}
+      onUploadingChange={setGalleryUploading}
+      onUnsavedChange={setHasUnsaved}
+      openTrashSignal={openTrashRequest}
+      onTrashSignalConsumed={() => setOpenTrashRequest(0)}
+      recentlyAddedPhotoIds={recentlyAddedPhotoIds}
+      onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
+      onReorderWorkspaceChange={setGalleryReordering}
+      onOpenOrderSettings={() => goBook("site", "settings:series")}
+    />
+  );
+  const panel = activeItem.panel;
+  const sitePanel = (
+    <Suspense
+      fallback={
+        <div className="h-full flex items-center justify-center">
+          <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
+        </div>
+      }
+    >
+      {panel.kind === "settings" && (
+        <AdminSettingsNavigationContext.Provider value={bookOutlineHost}>
+          <LazySettingsTab
+            key={panel.section}
+            initialSectionId={panel.section}
+            onUnsavedChange={setHasUnsaved}
+            demoSeed={demoSeed}
+            onOpenTab={openFromSettings}
+            onActiveSectionChange={(section) => setBookPanelId(`settings:${section}`)}
+            onChangedSectionsChange={setChangedSettings}
+          />
+        </AdminSettingsNavigationContext.Provider>
+      )}
+      {panel.kind === "tab" && panel.tab === "hero" && <LazyHeroTab />}
+      {panel.kind === "tab" && panel.tab === "profile" && <LazyProfileTab onUnsavedChange={setHasUnsaved} />}
+      {panel.kind === "tab" && panel.tab === "pricing" && <LazyPricingTab onUnsavedChange={setHasUnsaved} />}
+      {panel.kind === "tab" && panel.tab === "service" && showService && <LazyServiceTab onUnsavedChange={setHasUnsaved} />}
+      {panel.kind === "tab" && panel.tab === "categories" && <LazyCategoriesTab />}
+      {panel.kind === "tab" && panel.tab === "series" && <LazySeriesTab onUnsavedChange={setHasUnsaved} />}
+      {panel.kind === "tab" && panel.tab === "setup" && (
+        <SetupTab onOpenTab={(next) => openFromSettings(next)} demoMode={demoMode} />
+      )}
+    </Suspense>
+  );
+  const leaveModal = (onCancel: () => void, onLeave: () => void, body = true) => (
+    <Modal onClose={onCancel} widthClass="w-80">
+      <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
+        {t.shell.unsavedTitle}
+      </p>
+      {body && (
+        <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
+          {t.shell.unsavedBody}
+        </p>
+      )}
+      <div className={`flex gap-2 justify-end${body ? "" : " mt-5"}`}>
+        <button onClick={onCancel} className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+          {t.common.cancel}
+        </button>
+        <button
+          onClick={onLeave}
+          className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm"
+        >
+          {t.shell.leaveWithoutSaving}
+        </button>
+      </div>
+    </Modal>
+  );
   return (
     <AdminSurfaceProvider value={adminSurface}>
-    <div
-      ref={adminRootRef}
-      className="admin-atelier admin-workbench admin-studio relative flex select-none overflow-hidden"
-      data-admin-theme={resolvedTheme}
-      data-studio-workspace={photoWorkspace ? "photos" : "site"}
-      data-studio-editor={tab === "settings" || undefined}
-      style={{
-        ...adminThemeVars,
-        ...(demoMode
-          ? { paddingTop: "var(--admin-demo-banner-height, 84px)" }
-          : {}),
-      }}
-    >
-      {demoMode && (
+      <AdminCopyOverride patch={bookAdminCopy}>
         <div
-          ref={demoBannerRef}
-          className="admin-demo-banner"
-          data-admin-demo-banner
-        >
-          <span className="admin-demo-banner__status">{t.demo.banner}</span>
-          <div className="admin-demo-banner__actions">
-            <a
-              href={
-                language === "en"
-                  ? "/portfolio-kit/en#pricing"
-                  : "/portfolio-kit#pricing"
-              }
-              className="underline underline-offset-4"
-            >
-              {t.demo.purchase}
-            </a>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="underline underline-offset-4"
-            >
-              {t.demo.reset}
-            </button>
-            <AdminSurfaceToggle />
-            <AdminLanguageToggle />
-          </div>
-        </div>
-      )}
-      <aside
-        className="admin-sidebar admin-glass hidden md:flex"
-        data-navigation-locked={galleryReordering || undefined}
-        data-collapsed={sidebarCollapsed || undefined}
-      >
-        <div className="admin-sidebar__brand admin-sidebar__full">
-          <div>
-            <span className="admin-sidebar__eyebrow">{t.login.eyebrow}</span>
-            <span className="admin-sidebar__title">{sidebarSiteName}</span>
-          </div>
-          <button
-            type="button"
-            data-sidebar-collapse
-            onClick={() => setSidebarCollapsed(true)}
-            aria-label={t.navigation.collapseSidebar}
-            className="admin-sidebar__collapse"
-          >
-            <ChevronLeft size={16} />
-          </button>
-        </div>
-        <div className="studio-workspace-switch admin-sidebar__full" role="group" aria-label={language === "ja" ? "作業スペース" : "Workspace"}>
-          <button type="button" aria-pressed={photoWorkspace} disabled={galleryUploading || galleryReordering} onClick={() => requestTab("gallery")}>{language === "ja" ? "写真" : "Photographs"}</button>
-          <button type="button" aria-pressed={!photoWorkspace} disabled={galleryUploading || galleryReordering} onClick={() => requestTab("settings")}>{language === "ja" ? "サイト編集" : "Site editor"}</button>
-        </div>
-        <button type="button" className="studio-command-search admin-sidebar__full" onClick={() => setPaletteOpen(true)}><Search size={14} /><span>{language === "ja" ? "設定・移動先を検索" : "Find a setting or page"}</span><kbd>⌘ K</kbd></button>
-        <nav
-          className="admin-sidebar__nav admin-sidebar__full"
-          aria-label={t.navigation.label}
-        >
-          {adminTabGroups.map(group => ({ ...group, tabs: group.tabs.filter(key => photoWorkspace === ["gallery", "series", "categories"].includes(key)) })).filter(group => group.tabs.length).map((group) => (
-            <section
-              key={group.key}
-              className={`admin-sidebar__group${
-                group.key === "photos" ? " admin-sidebar__group--lead" : ""
-              }`}
-            >
-              {group.key === "photos" ? (
-                <h2 className="admin-sidebar__group-title sr-only">
-                  {group.label}
-                </h2>
-              ) : (
-                <h2 className="admin-sidebar__group-title">{group.label}</h2>
-              )}
-              <div className="admin-sidebar__tabs">
-                {group.tabs.map((key) => {
-                  const item = adminTabs[key];
-                  const active = tab === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      disabled={
-                        (galleryUploading && key !== "gallery") ||
-                        (galleryReordering && key !== "gallery")
-                      }
-                      onClick={() => requestTab(key)}
-                      aria-current={active ? "page" : undefined}
-                      className="admin-sidebar__tab"
-                      data-active={active || undefined}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-        </nav>
-        <div ref={setSettingsNavigationHost} className="studio-editor-outline admin-sidebar__full" />
-        <div className="admin-sidebar__footer admin-sidebar__full">
-          {!demoMode && <a href="/admin/pdf" target="_blank" rel="noopener" className="admin-sidebar__link">PDF作品集</a>}
-          <a
-            href={publicSiteHref}
-            target="_blank"
-            rel="noopener"
-            className="admin-sidebar__link"
-          >
-            <ExternalLink size={13} /> {t.navigation.siteButton}
-          </a>
-          <button onClick={requestLogout} className="admin-sidebar__link">
-            <LogOut size={13} /> {t.navigation.logoutButton}
-          </button>
-        </div>
-        <AdminCompactSidebar
-          groups={adminTabGroups}
-          tabMeta={adminTabs}
-          activeTab={tab}
-          navigationLocked={galleryReordering}
-          onRequestTab={requestTab}
-          onExpand={() => setSidebarCollapsed(false)}
-          onLogout={requestLogout}
-          siteHref={publicSiteHref}
-          labels={{
-            navigation: t.navigation.label,
-            expand: t.navigation.expandSidebar,
-            openSite: t.navigation.openSite,
-            logout: t.navigation.logout,
+          ref={adminRootRef}
+          className="admin-atelier admin-workbench admin-studio admin-book-root relative flex select-none overflow-hidden"
+          data-admin-theme={bookTheme}
+          data-site-skeleton={siteSkeleton}
+          data-studio-workspace={bookView === "site" ? "site" : "photos"}
+          data-studio-editor={(bookView === "site" && panel.kind === "settings") || undefined}
+          style={{
+            ...adminThemeFromSettings(shellSettings, bookTheme),
           }}
-        />
-      </aside>
-
-      <div className="admin-main">
-        {!galleryReordering && (
-          <AdminMobileTopBar
-            siteHref={buildPublicSiteHref(demoSeed)}
-            tab={tab}
-            tabMeta={adminTabs}
+        >
+          <BookAdminShell
+            pdfEnabled={!demoMode}
+            siteName={shellSettings?.siteName?.trim() || sidebarSiteName}
+            view={bookView}
+            onView={(v) => goBook(v)}
+            onSearch={() => setPaletteOpen(true)}
+            siteHref={publicSiteHref}
             onLogout={requestLogout}
-            showLanguageToggle={!demoMode}
-          />
-        )}
-        {!demoMode && <AdminDesktopLanguageBar />}
-        {!demoMode && !galleryReordering && <a className="admin-sidebar__link md:hidden" href="/admin/pdf" target="_blank" rel="noopener">PDF作品集</a>}
-
-        {/* Content */}
-        <div className="admin-content">
-          <div
-            className="admin-screen"
-            data-phase="show"
+            locked={galleryReordering || galleryUploading}
+            banner={demoBanner}
+            theme={bookTheme}
+            onToggleTheme={() => setBookTheme(bookTheme === "dark" ? "light" : "dark")}
+            languageToggle={demoMode ? undefined : <AdminLanguageToggle />}
+            overlays={
+              <>
+                <div ref={setBookOutlineHost} hidden aria-hidden="true" />
+                {bookPending &&
+                  leaveModal(
+                    () => setBookPending(null),
+                    () => {
+                      setHasUnsaved(false);
+                      if (bookPending.panel) setBookPanelId(bookPending.panel);
+                      if (bookPending.view === "site") setSiteShowsPanel(Boolean(bookPending.panel));
+                      setBookView(bookPending.view);
+                      setBookPending(null);
+                    },
+                  )}
+                {logoutConfirm &&
+                  leaveModal(
+                    () => setLogoutConfirm(false),
+                    () => {
+                      setHasUnsaved(false);
+                      setLogoutConfirm(false);
+                      logout.mutate();
+                    },
+                    false,
+                  )}
+                <QuickPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} destinations={bookDestinations} />
+              </>
+            }
           >
-            {contentTab === "setup" && (
-              <SetupTab onOpenTab={requestTab} demoMode={demoMode} />
-            )}
-            {contentTab === "gallery" && (
-              <GalleryTab
+            {(bookView === "photos" || bookView === "series") && (
+              <Studio
                 demoSeed={demoSeed}
+                view={bookView}
+                onView={(v) => goBook(v)}
+                onOpenDetails={() => goBook("library")}
+                onOpenSeriesDetails={() => goBook("site", "tab:series")}
                 onUploadingChange={setGalleryUploading}
-                onUnsavedChange={setHasUnsaved}
-                openTrashSignal={openTrashRequest}
-                onTrashSignalConsumed={() => setOpenTrashRequest(0)}
-                recentlyAddedPhotoIds={recentlyAddedPhotoIds}
-                onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
-                onReorderWorkspaceChange={setGalleryReordering}
-                onOpenOrderSettings={() => {
-                  setSettingsEntrySection("series");
-                  requestTab("settings");
-                }}
               />
             )}
-            {contentTab !== "setup" && contentTab !== "gallery" && (
-              <Suspense
-                fallback={
-                  <div className="h-full flex items-center justify-center">
-                    <Loader2
-                      size={18}
-                      className="animate-spin text-[var(--admin-muted)]"
-                    />
-                  </div>
-                }
-              >
-                {contentTab === "hero" && <LazyHeroTab />}
-                {contentTab === "profile" && (
-                  <LazyProfileTab onUnsavedChange={setHasUnsaved} />
-                )}
-                {contentTab === "categories" && <LazyCategoriesTab />}
-                {contentTab === "series" && (
-                  <LazySeriesTab onUnsavedChange={setHasUnsaved} />
-                )}
-                {contentTab === "pricing" && (
-                  <LazyPricingTab onUnsavedChange={setHasUnsaved} />
-                )}
-                {contentTab === "service" && showService && (
-                  <LazyServiceTab onUnsavedChange={setHasUnsaved} />
-                )}
-                {contentTab === "settings" && (
-                  <AdminSettingsNavigationContext.Provider value={sidebarCollapsed ? null : settingsNavigationHost}>
-                  <LazySettingsTab
-                    initialSectionId={settingsEntrySection}
-                    onUnsavedChange={setHasUnsaved}
-                    demoSeed={demoSeed}
-                    onOpenTab={requestTab}
-                    onActiveSectionChange={setSettingsEntrySection}
-                  />
-                  </AdminSettingsNavigationContext.Provider>
-                )}
-              </Suspense>
+            {bookView === "library" && (
+              <div className="admin-main admin-book__library">
+                <div className="admin-content">
+                  <div className="admin-screen" data-phase="show">{galleryTab}</div>
+                </div>
+              </div>
             )}
-          </div>
+            {bookView === "site" && (
+              <BookSiteView
+                groups={groups}
+                active={activeItem.id}
+                skeleton={siteSkeleton}
+                changedSections={changedSettings}
+                showPanel={siteShowsPanel}
+                onShowPanel={setSiteShowsPanel}
+                onSelect={(item: SitePanelItem) => goBook("site", item.id)}
+              >
+                <div className="admin-main">
+                  <div className="admin-content">
+                    <div className="admin-screen" data-phase="show">{sitePanel}</div>
+                  </div>
+                </div>
+              </BookSiteView>
+            )}
+          </BookAdminShell>
         </div>
-
-        {!galleryReordering && (
-          <AdminMobileTabBar
-            tab={tab}
-            tabMeta={adminTabs}
-            tabGroups={adminTabGroups}
-            galleryUploading={galleryUploading}
-            onSelectTab={requestTab}
-            onSearch={() => setPaletteOpen(true)}
-          />
-        )}
-      </div>
-
-      {/* Unsaved settings confirmation */}
-      {unsavedConfirm && (
-        <Modal onClose={() => setUnsavedConfirm(null)} widthClass="w-80">
-          <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
-            {t.shell.unsavedTitle}
-          </p>
-          <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] mb-5">
-            {t.shell.unsavedBody}
-          </p>
-          <div className="flex gap-2 justify-end">
-            <button
-              onClick={() => setUnsavedConfirm(null)}
-              className="px-4 py-1.5 text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-            >
-              {t.common.cancel}
-            </button>
-            <button
-              onClick={() => {
-                setHasUnsaved(false);
-                if (unsavedConfirm === "logout") logout.mutate();
-                else setTab(unsavedConfirm);
-                setUnsavedConfirm(null);
-              }}
-              className="px-4 py-1.5 text-[length:var(--admin-text-note)] admin-btn-primary rounded-sm transition-colors"
-            >
-              {t.shell.leaveWithoutSaving}
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {/* ⌘K quick palette (工程5) — navigation only */}
-      <QuickPalette
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-        destinations={paletteDestinations}
-      />
-    </div>
+      </AdminCopyOverride>
     </AdminSurfaceProvider>
   );
 }

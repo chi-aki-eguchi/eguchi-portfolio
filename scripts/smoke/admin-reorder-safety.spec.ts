@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Route } from "./fixtures.ts";
+import { storeAdminTab } from "./helpers";
 
 // 並べ替えの土台の安全性を実ブラウザで確かめる。
 //
@@ -140,6 +141,8 @@ async function installMocks(
       contentType: "application/json",
       body: JSON.stringify({
         siteName: "順序検査",
+        // 未セットアップだと最初に「はじめに」を開く。ここが見るのは写真の一覧。
+        setupCompleted: "true",
         gallerySortOrder: options.gallerySortOrder ?? "manual",
       }),
     });
@@ -198,12 +201,12 @@ async function visiblePhotoTitles(page: Page) {
 
 async function openLibrary(page: Page) {
   await page.addInitScript(() => {
-    localStorage.setItem("admin:tab", JSON.stringify("gallery"));
     sessionStorage.clear();
   });
+  // 写真の詳しい道具（従来の写真一覧）を開く。
+  await page.addInitScript(storeAdminTab, "gallery");
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 20_000 });
-  await page.locator(".studio-workspace-switch button:visible, .admin-bottom-nav__btn:visible").filter({ hasText: /^写真$/ }).first().click();
   // Library に着いたことを、全幅Workspaceの存在で確かめてから先へ進む。
   await page
     .locator('[data-admin-workspace="library"]')
@@ -720,14 +723,16 @@ test.describe("admin — 並べ替えの土台の安全性", () => {
       page.locator('[data-library-reorder-status="saved"]'),
     ).toBeVisible();
     expect(state.captured?.ids[9]).toBe(PHOTOS[0].id);
-    await expect(page.locator(".admin-bottom-nav")).toHaveCount(0);
+    // 並べ替えの間は、上の入口で別の画面へ移れない（途中の順番を失わない）。
+    const seriesTab = page.locator(".admin-book__tab", { hasText: "シリーズ" });
+    await expect(seriesTab).toBeDisabled();
     await expect(
       page.locator("[data-library-mobile-reorder-header]"),
     ).toBeVisible();
     await page
       .locator('[data-library-mode-action="finish-arrange"]:visible')
       .click();
-    await expect(page.locator(".admin-bottom-nav")).toBeVisible();
+    await expect(seriesTab).toBeEnabled();
     expect(state.otherWrites).toEqual([]);
   });
 });

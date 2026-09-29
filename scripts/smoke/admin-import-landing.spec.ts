@@ -359,21 +359,20 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     });
 
     // Galleryを離れて戻っても、親状態にある目印は消えない。
-    await page
-      .locator(".admin-sidebar__tab")
-      .filter({ hasText: "分類" })
-      .click();
+    await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
+    await page.locator('[data-site-item="tab:categories"]').click();
     await page.waitForTimeout(250);
-    await page
-      .locator(".admin-sidebar__tab")
-      .filter({ hasText: "写真一覧" })
-      .click();
+    await page.keyboard.press("Meta+k");
+    await page.getByPlaceholder(/移動先/).fill("詳しい道具");
+    await page.keyboard.press("Enter");
     await expect(recentSection).toBeVisible();
     await expect(
       page.locator("[data-library-recently-added-marker]"),
     ).toHaveCount(3);
 
     // Library returns in selection mode; Escape exits it before dismissing the import marker.
+    // 移動に使った ⌘K の窓が閉じきってから押す（閉じる途中の窓が Escape を受け取らないように）。
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
     await expect(

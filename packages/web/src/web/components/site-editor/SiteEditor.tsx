@@ -116,7 +116,9 @@ export function SiteEditorBar({
           onClick={() => onMode("look")}
         >
           <Palette size={15} aria-hidden="true" />
-          {ja ? "全体の見た目" : "Overall look"}
+          {/* スマホは短く（帯を横に送らなくても見えるように） */}
+          <span className="se-bar__long">{ja ? "全体の見た目" : "Overall look"}</span>
+          <span className="se-bar__short">{ja ? "見た目" : "Look"}</span>
         </button>
         <button
           type="button"

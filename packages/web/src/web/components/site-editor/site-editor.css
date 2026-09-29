@@ -486,3 +486,12 @@
   background: var(--admin-paper-soft);
   border-radius: 8px;
 }
+
+/* スマホ: 「全体の見た目」は「見た目」と短く。帯が横に続くときは右端を薄くして知らせる。 */
+.se-bar__short { display: none; }
+@media (max-width: 767px) {
+  .se-bar__long { display: none; }
+  .se-bar__short { display: inline; }
+  /* 右端を薄くし、端まで送ったときは最後の項目が薄い所に掛からないよう余白を足す。 */
+  .se-bar { padding-right: 32px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+}

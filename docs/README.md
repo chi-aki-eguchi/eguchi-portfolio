@@ -8,6 +8,7 @@
 |---|---|
 | 管理画面を骨格に関係なく1つに（2026-09-29） | `docs/specs/admin-one-shell-20260929.md` |
 | 「サイト」を見ながら直す画面（2026-09-29） | `docs/specs/admin-site-editor-20260929.md` |
+| 管理画面の仕上げ（部分ごとの設定・効かない設定の実測・英語）（2026-09-30） | `docs/specs/admin-complete-20260930.md` |
 | 全ページ・Adminの定型的な装飾とコピーの見直し | `docs/specs/editorial-ui-20260929.md` |
 | 文字・余白・操作部品の仕上げ（2026-09-29） | `docs/specs/ui-polish-20260929.md` |
 | 管理画面内のPDF作品集（2026-09-27） | `docs/specs/portfolio-pdf-v0.md` |

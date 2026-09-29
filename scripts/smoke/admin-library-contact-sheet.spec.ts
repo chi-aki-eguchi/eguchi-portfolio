@@ -266,7 +266,7 @@ test('サイズ変更の直後にタブを離れても、次にLibraryへ戻っ�
   await expect(page.locator('[data-library-scroll]')).toHaveCount(0);
   // 写真の詳しい道具（この一覧）へ ⌘K から戻る。
   await page.keyboard.press('Meta+k');
-  await page.getByPlaceholder(/移動先/).fill('詳しい道具');
+  await page.locator(".admin-palette__input").fill('詳しい道具');
   await page.keyboard.press('Enter');
   await expect(page.getByRole('slider', { name: '一覧の写真サイズ' })).toHaveValue(target);
 });

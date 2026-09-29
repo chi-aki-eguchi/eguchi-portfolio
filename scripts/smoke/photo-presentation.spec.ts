@@ -14,9 +14,9 @@ test("Photo presentation previews before save and persists through reload", asyn
   });
   await loginAsAdmin(page);
   await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
-  // 切り抜き（いつもの構成の一覧）と額装（写真を開いたとき）は別の節。
+  // 切り抜き（いつもの構成の札・帯・表紙）と額装（写真を開いたとき）は別の節。
   // 節をまたいでも下書きは1つで、1回の保存でまとめて送る。
-  await chooseSettingsSection(page, "gallery-layout");
+  await chooseSettingsSection(page, "series-cards");
   await page.getByRole("button", { name: "切り抜かず全体を見せる", exact: true }).click();
   await chooseSettingsSection(page, "viewer");
   await expect(page.locator("dialog[open]")).toHaveCount(0);

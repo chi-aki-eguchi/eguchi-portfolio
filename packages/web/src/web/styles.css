@@ -2376,8 +2376,10 @@
   .admin-atelier .admin-library-import-group .admin-library-import-button {
     min-height: 40px;
     margin-left: 0;
-    padding-inline: 10px;
+    padding-inline: 8px;
   }
+  /* 「写真を加える」（2026-09-30 まで「取り込む」）を3つ並びの1行に収める。 */
+  .admin-atelier .admin-library-import-group .admin-library-import-button svg { display: none; }
 
 
 }

@@ -6944,7 +6944,7 @@ export function SettingsTab({
                     {current["profilePhotoUrl"] ? (
                       <img
                         src={`${current["profilePhotoUrl"]}?w=300&q=80`}
-                        alt=""
+                        alt={language === "ja" ? "プロフィール写真" : "Profile photo"}
                         className="block w-24 h-auto shrink-0 max-w-full border border-[var(--admin-line)] rounded-sm"
                       />
                     ) : (

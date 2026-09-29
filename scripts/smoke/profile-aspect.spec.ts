@@ -52,7 +52,8 @@ test("Admin profile shows the same uncropped photo at narrow widths", async ({ p
   await page.route("**/api/images/profile/wide.svg**", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300"><rect width="900" height="300" fill="#718085"/></svg>' }));
   await loginAsAdmin(page);
   await gotoAdminTab(page, "profile");
-  const img = page.getByRole("img", { name: "Profile", exact: true });
+  // About の写真は 2026-09-30 からサイトの画面の「About の文章と写真」で直す。
+  const img = page.getByRole("img", { name: "プロフィール写真", exact: true });
   await expect(img).toBeVisible();
   await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
   for (const width of [768, 320]) {

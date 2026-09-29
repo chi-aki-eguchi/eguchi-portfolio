@@ -363,7 +363,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
     await openSitePart(page, "categories", { mode: "more" });
     await page.waitForTimeout(250);
     await page.keyboard.press("Meta+k");
-    await page.getByPlaceholder(/移動先/).fill("詳しい道具");
+    await page.locator(".admin-palette__input").fill("詳しい道具");
     await page.keyboard.press("Enter");
     await expect(recentSection).toBeVisible();
     await expect(

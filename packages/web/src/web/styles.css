@@ -961,6 +961,12 @@
 .admin-demo-guide__tools button { display: grid; place-items: center; min-width: 44px; min-height: 44px; }
 .admin-demo-guide h1 { font-size: 20px; line-height: 1.5; }
 .admin-demo-guide > button { min-height: 44px; }
+.admin-demo-guide__steps { list-style: none; margin: 0; padding: 0; }
+.admin-demo-guide__steps li { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); padding: 10px 0; border-top: 1px solid var(--admin-line, #e2e2e2); }
+.admin-demo-guide__num { font-variant-numeric: tabular-nums; color: rgba(0 0 0 / 50%); }
+.admin-demo-guide__note { border-top: 1px solid var(--admin-line, #e2e2e2); color: rgba(0 0 0 / 62%); }
+.admin-demo-guide__start { background: var(--admin-ink, #1f1f1f); color: var(--admin-paper, #fafafa); font-weight: 500; }
+.admin-demo-guide__start:hover { opacity: 0.88; }
 
 .admin-atelier {
   height: 100vh;

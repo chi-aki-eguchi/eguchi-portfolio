@@ -33,10 +33,9 @@ export default function ServiceConsultPage() {
   }
   if (!settings) return <p className="p-12">読込中…</p>;
   if (!owner) return <p className="p-12">このサイトでは制作相談を受け付けていません。<a href="/contact">お問い合わせ</a></p>;
-  return <main className="max-w-3xl mx-auto px-5 sm:px-8 py-14 md:py-20 text-base leading-8">
+  return <main className="kit-text max-w-3xl mx-auto px-5 sm:px-8 py-14 md:py-20 text-base leading-8">
     <a href="/portfolio-kit#pricing" className="underline underline-offset-4">← 制作内容・料金を見る</a>
-    <p className="mt-10 font-en text-sm tracking-widest">AKI EGUCHI / PORTFOLIO</p>
-    <h1 className="mt-3 text-3xl sm:text-4xl leading-snug">ポートフォリオ制作の相談</h1>
+    <h1 className="mt-10 text-3xl sm:text-4xl leading-snug">ポートフォリオ制作の相談</h1>
     <p className="mt-6 text-[color:var(--text-quiet)]">用途・写真の準備状況・希望時期をお知らせください。江口秋が内容を確認し、原則2営業日以内に返信します。</p>
     {receipt ? <section className="mt-10 border-y border-[rgba(var(--foreground-rgb),0.18)] py-8" aria-live="polite">
       <h2 className="text-2xl">相談を受け付けました</h2>

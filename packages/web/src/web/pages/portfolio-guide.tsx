@@ -79,7 +79,7 @@ export default function PortfolioGuidePage() {
   usePageEntrance([]);
 
   return (
-    <article className="max-w-3xl mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20">
+    <article className="kit-text max-w-3xl mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20">
       <p className={`${headingClass} text-[color:var(--text-quiet)]`}>ガイド</p>
       <h1
         className="mt-3 font-normal text-[1.7rem] sm:text-[2rem] leading-snug"
@@ -118,7 +118,7 @@ export default function PortfolioGuidePage() {
                 className="underline underline-offset-4 hover:text-[rgba(var(--foreground-rgb),0.72)]"
                 href={`#${section.id}`}
               >
-                <span className="font-en text-[0.66rem] tracking-[0.09em] text-[color:var(--text-quiet)] mr-2">
+                <span className="font-en text-xs tabular-nums text-[color:var(--text-quiet)] mr-2">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 {section.title}

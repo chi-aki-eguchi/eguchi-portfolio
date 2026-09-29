@@ -223,7 +223,7 @@ export default function ProfilePage({
                 .map((line, i) => (
                   <p
                     key={i}
-                    className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
+                    className={`profile-bio__text text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
                     style={readableBodyStyle}
                   >
                     {line}
@@ -233,7 +233,7 @@ export default function ProfilePage({
           ) : (
             <div className="mt-8 page-entrance page-entrance-delay-2">
               <p
-                className="text-[color:var(--text-quiet)] italic break-words"
+                className="profile-bio__text text-[color:var(--text-quiet)] italic break-words"
                 style={readableBodyStyle}
               >
                 {english
@@ -246,7 +246,7 @@ export default function ProfilePage({
           {/* E5: Statement (作家ステートメント) — 空欄なら非表示 */}
           {statement && (
             <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
+              <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
                 Statement
               </h3>
               <div className="space-y-3">
@@ -256,7 +256,7 @@ export default function ProfilePage({
                   .map((para, i) => (
                     <p
                       key={i}
-                      className={`text-[color:var(--text-quiet)] text-pretty break-words ${english ? "font-en" : "ja-prose"}`}
+                      className={`profile-bio__text text-[color:var(--text-quiet)] text-pretty break-words ${english ? "font-en" : "ja-prose"}`}
                       style={readableBodyStyle}
                     >
                       {para.replace(/\n/g, " ")}
@@ -269,7 +269,7 @@ export default function ProfilePage({
           {/* E5: Equipment (使用機材) — 空欄なら非表示 */}
           {gear.length > 0 && (
             <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
+              <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
                 Equipment
               </h3>
               <ul className="space-y-1.5">
@@ -298,7 +298,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileInstagram)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {english ? "Instagram" : data?.snsLabelInstagram ?? "Instagram"}
                 </a>
@@ -308,7 +308,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileTwitter)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {english ? "X" : data?.snsLabelTwitter ?? "X"}
                 </a>
@@ -318,7 +318,7 @@ export default function ProfilePage({
                   href={safeHref(data.profileNote)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                 >
                   {english ? "note" : data?.snsLabelNote ?? "note"}
                 </a>
@@ -332,7 +332,7 @@ export default function ProfilePage({
           Hidden if disabled or fetch returned nothing. */}
       {noteOn && notePosts.length > 0 && (
         <div className="profile-journal mt-12 md:mt-16 pt-8 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
-          <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-8">
+          <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-8">
             Journal
           </h3>
           <div className="profile-journal__list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
@@ -361,7 +361,7 @@ export default function ProfilePage({
                 </div>
                 {/* Date */}
                 {post.date && (
-                  <p className="font-en text-[length:var(--text-note)] tracking-[0.10em] text-[color:var(--text-quiet)] mb-2">
+                  <p className="profile-journal__date font-en text-[length:var(--text-note)] tracking-[0.10em] text-[color:var(--text-quiet)] mb-2">
                     {formatNoteDate(post.date)}
                   </p>
                 )}
@@ -369,7 +369,7 @@ export default function ProfilePage({
                     混ざると、その下の抜粋の開始位置が札ごとに上下してしまい、
                     横に並べたときに揃って見えない（実測で19pxずれていた）。 */}
                 <p
-                  className="line-clamp-2 text-[rgba(var(--foreground-rgb),0.68)] group-hover:text-[rgba(var(--foreground-rgb),0.88)] transition-colors duration-300 mb-2"
+                  className="profile-journal__title line-clamp-2 text-[rgba(var(--foreground-rgb),0.68)] group-hover:text-[rgba(var(--foreground-rgb),0.88)] transition-colors duration-300 mb-2"
                   style={{
                     fontSize: "var(--body-size, 0.875rem)",
                     lineHeight: "1.6",
@@ -411,7 +411,7 @@ export default function ProfilePage({
       {/* K1: Prints — quiet external store link. Hidden unless enabled + URL set. */}
       {printOn && (
         <div className="mt-16 md:mt-20 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
-          <h3 className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-4">
+          <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-4">
             Prints
           </h3>
           {printDescription && (

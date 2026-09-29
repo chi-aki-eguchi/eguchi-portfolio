@@ -1223,7 +1223,7 @@ export default function ServicePage({
 
   usePageLanguage(language);
 
-  if (owner && language === "ja") return <PortfolioSalesPage />;
+  if (owner) return <PortfolioSalesPage language={language} />;
 
   return (
     <section

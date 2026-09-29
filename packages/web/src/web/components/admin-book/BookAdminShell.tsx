@@ -140,7 +140,7 @@ export function bookSiteGroups(showService: boolean): { label: string; items: Si
         s("site-basics", "名前・連絡先・検索"),
         t("pricing", "料金・プラン"),
         ...(showService
-          ? [t("service", "ポートフォリオ制作の紹介ページ"), s("portfolio-kit", "ポートフォリオ制作の入口の表示")]
+          ? [t("service", "制作案内のページ"), s("portfolio-kit", "制作案内への入口")]
           : []),
       ],
     },

@@ -586,7 +586,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="ps-footer__copy font-en">
                 {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
               </p>
+              {/* オーナーのサイトでは、制作の入口（PhotoServiceNote）と同じ行き先なので出さない。 */}
               {data?.templateCreditLabel &&
+                !isServiceOwnerSite(data?.siteUrl, undefined) &&
                 (templateCreditUrl ? (
                   <a className="ps-footer__credit font-en" href={templateCreditUrl} target="_blank" rel="noopener noreferrer">
                     {data.templateCreditLabel}

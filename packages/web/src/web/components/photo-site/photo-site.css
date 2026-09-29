@@ -293,123 +293,82 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
   pointer-events: none;
 }
 
-/* トップの終わりの入口（すべての写真・Series）。大きな言葉で、矢印は使わない。 */
+/* トップの終わりの目次（すべての写真・Series）。写真集の目次のように1行ずつ、
+   呼び名・説明・数を同じ基準線に並べる（2026-09-29、3つの同じ枠から変更）。 */
 .ps-entrances {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-  gap: 0;
   margin-top: clamp(3rem, 9vh, 6rem);
   border-top: 1px solid var(--ps-hair);
 }
 .ps-entrance {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: clamp(1.4rem, 4vh, 2.4rem) 0;
+  display: grid;
+  grid-template-columns: minmax(7rem, 16rem) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.25rem 1.5rem;
+  padding: clamp(1rem, 2.4vh, 1.4rem) 0;
+  border-bottom: 1px solid var(--ps-hair);
   color: var(--foreground);
   min-width: 0;
 }
-.ps-entrance + .ps-entrance {
-  border-top: 1px solid var(--ps-hair);
-}
-@media (min-width: 640px) {
-  .ps-entrance + .ps-entrance {
-    border-top: 0;
-    border-left: 1px solid var(--ps-hair);
-    padding-left: clamp(1.2rem, 3vw, 2.4rem);
-  }
-}
 .ps-entrance__en {
-  font-size: calc(clamp(1.9rem, 3.4vw, 2.8rem) * var(--global-font-scale, 1));
-  line-height: 1.1;
+  font-size: calc(clamp(1.35rem, 2.1vw, 1.8rem) * var(--global-font-scale, 1));
+  line-height: 1.2;
   letter-spacing: 0.01em;
-}
-.ps-entrance__note {
-  margin-top: 0.4rem;
-  font-size: var(--ps-text-note);
-  line-height: 1.8;
-  color: var(--ps-faint);
-}
-.ps-entrances--single {
-  grid-template-columns: minmax(0, 1fr);
-}
-.ps-service__line {
-  display: inline-block;
-}
-.ps-entrance__ja {
-  font-size: calc(13px * var(--global-font-scale, 1));
-  color: var(--ps-quiet);
-}
-.ps-entrance__en {
   text-decoration-line: underline;
   text-decoration-color: transparent;
   text-decoration-thickness: 1px;
-  text-underline-offset: 0.18em;
+  text-underline-offset: 0.2em;
   transition: text-decoration-color 0.3s ease;
 }
 .ps-entrance:hover .ps-entrance__en,
 .ps-entrance:focus-visible .ps-entrance__en {
   text-decoration-color: currentColor;
 }
-
-/* ── フッターの制作の入口（オーナーのサイトだけ）──────────────
-   広告の帯にしない: 太字・矢印・色の地を使わず、言葉の大きさと余白で誘う。 */
-.ps-service {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: clamp(1.5rem, 3vw, 2.5rem) 0;
-  border-top: 1px solid var(--ps-hair);
-}
-.ps-service__main {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  grid-template-areas: "title lead" "title go";
-  align-items: end;
-  gap: 0.85rem clamp(1.5rem, 5vw, 4rem);
-  color: var(--foreground);
-}
-.ps-service__title {
-  grid-area: title;
+.ps-entrance__ja {
   font-size: calc(14px * var(--global-font-scale, 1));
-  line-height: 1.8;
-  letter-spacing: 0.02em;
-}
-.ps-service__lead {
-  grid-area: lead;
-  font-size: var(--ps-text-ui);
-  line-height: 1.9;
   color: var(--ps-quiet);
 }
-.ps-service__go {
-  grid-area: go;
-  justify-self: start;
-  font-size: var(--ps-text-ui);
-  padding-bottom: 2px;
-  background: linear-gradient(currentColor, currentColor) left bottom / 100% 1px no-repeat;
-  transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ps-service__main:hover .ps-service__go,
-.ps-service__main:focus-visible .ps-service__go {
-  background-size: 0% 1px;
-  background-position: right bottom;
-}
-.ps-service__sub {
-  align-self: flex-end;
-  font-size: calc(12px * var(--global-font-scale, 1));
-  color: var(--ps-faint);
-}
-.ps-service__sub:hover {
-  color: var(--foreground);
+.ps-entrance__count {
+  font-size: calc(13px * var(--global-font-scale, 1));
+  color: var(--ps-quiet);
+  font-variant-numeric: tabular-nums;
 }
 @media (max-width: 639px) {
-  .ps-service__main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "title" "lead" "go";
+  .ps-entrance {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
-  .ps-service__sub {
-    align-self: flex-start;
+  .ps-entrance__ja {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
+}
+
+/* 撮影のご依頼。写真の後ろに1行で（作品の入口と同じ強さにしない）。 */
+.ps-inquiry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1.25rem;
+  margin: clamp(2.5rem, 7vh, 4.5rem) 0 0;
+  font-size: calc(14px * var(--global-font-scale, 1));
+  line-height: 1.8;
+}
+.ps-inquiry__title {
+  color: var(--ps-ink);
+}
+.ps-inquiry__text {
+  color: var(--ps-quiet);
+}
+.ps-inquiry__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ps-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.35em;
+}
+.ps-inquiry__link:hover {
+  color: var(--link-hover-color, var(--foreground));
 }
 
 /* 絞り込みの1行。写真の前に、ごく小さく。 */
@@ -974,17 +933,8 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 
 /* 同じ役割の小さな文字は同じリズム。設定された書体・サイズを引き継ぐ。 */
-.ps-name__en,
-.ps-service__lead,
-.ps-service__go,
-.ps-service__sub {
+.ps-name__en {
   letter-spacing: var(--ps-ui-tracking);
-}
-.ps-service__sub {
-  margin-top: 0.5rem;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
 }
 .ps-site :is(a, button):focus-visible {
   outline: 2px solid var(--accent-color, var(--foreground));
@@ -1036,19 +986,162 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 }
 
 .ps-site .profile-page [data-profile-layout] img { box-shadow: none; }
-/* ページ末の案内は作品の続きとして、短い書誌情報ほどの大きさに。 */
-.ps-service__main {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "title go" "lead go";
-  align-items: center;
-  gap: 0.25rem 2rem;
-}
-.ps-service__sub { align-self: flex-start; }
-@media (max-width: 639px) {
-  .ps-service__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "lead" "go"; gap: 0.5rem; }
-}
-
 /* Gallery / Series / About / Contact は同じ「各ページの見出し」設定を使う。 */
 .ps-page-head--with-filters[data-title-style="label"] { display: block; }
 .ps-page-head--with-filters[data-title-style="label"] .ps-filters { margin-top: 1.5rem; }
 .ps-site .profile-page:has([data-profile-layout="quiet"]) { max-width: 42rem; }
+
+/* ── フッターの制作の入口（オーナーのサイトだけ、2026-09-29 に1行へ）──────
+   作品を見終えた直後に毎ページ出るので、節ではなくフッターの1行として。 */
+.ps-service {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1.25rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--ps-hair);
+  font-size: var(--footer-size, calc(12px * var(--ps-scale)));
+  line-height: 1.8;
+}
+.ps-footer[data-layout="center"] .ps-service {
+  justify-content: center;
+  text-align: center;
+}
+.ps-service__lead {
+  margin: 0;
+  color: var(--ps-quiet);
+}
+.ps-service__go,
+.ps-service__sub {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.ps-service__go {
+  color: var(--ps-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.35em;
+}
+.ps-service__sub {
+  color: var(--ps-quiet);
+}
+.ps-service__go:hover,
+.ps-service__sub:hover {
+  color: var(--link-hover-color, var(--foreground));
+}
+
+/* 中央・左の並べ方でも、リンクは1行ずつ積まずに折り返しで並べる。
+   以前は SNS・方針・著作・クレジットが4段に積まれ、ページ末が長い箱になっていた。 */
+.ps-footer[data-layout="center"] .ps-footer__row,
+.ps-footer[data-layout="left"] .ps-footer__row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0 2rem;
+}
+.ps-footer[data-layout="center"] .ps-footer__row {
+  justify-content: center;
+}
+.ps-footer[data-layout="left"] .ps-footer__row {
+  justify-content: flex-start;
+}
+.ps-footer[data-layout="center"] .ps-footer__copy,
+.ps-footer[data-layout="left"] .ps-footer__copy {
+  flex-basis: 100%;
+}
+.ps-footer__copy {
+  margin-block: 0.25rem 0;
+}
+.ps-service + .ps-footer__row {
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* ── 読む文字と補足の役割（2026-09-29）────────────────────────
+   略歴・連絡の説明など「読む文」は、補足と同じ薄さ（0.62）にしない。
+   補足・ラベルは 12px を下限に、大文字・広い字間の英字飾りにしない。
+   大きさは管理画面の設定がより大きいときはそちらを使う。 */
+.ps-site {
+  --ps-read: rgba(var(--foreground-rgb), 0.84);
+}
+.ps-site .profile-bio__text,
+.ps-site .contact-page dd,
+.ps-site .contact-inquiry > p,
+.ps-site .contact-inquiry dd {
+  color: var(--ps-read);
+}
+.ps-site .profile-bio__text {
+  font-size: max(0.9375rem, var(--body-size, 0.9375rem)) !important;
+  line-height: 1.9 !important;
+}
+.ps-site .contact-inquiry > p,
+.ps-site .contact-inquiry dd,
+.ps-site .contact-inquiry dt {
+  line-height: 1.9;
+}
+.ps-site .contact-inquiry dt {
+  color: var(--ps-ink);
+}
+.ps-site :is(.profile-label, .contact-label) {
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: calc(13px * var(--ps-scale));
+  color: var(--ps-quiet);
+}
+.ps-site .profile-journal__date {
+  letter-spacing: 0.04em;
+  font-size: calc(12px * var(--ps-scale));
+  font-variant-numeric: tabular-nums;
+}
+.ps-site .profile-journal__title {
+  color: var(--ps-ink);
+  font-size: calc(15px * var(--ps-scale)) !important;
+}
+.ps-site .profile-journal__excerpt {
+  font-size: calc(13px * var(--ps-scale)) !important;
+  color: var(--ps-quiet);
+}
+.ps-site .profile-sns {
+  font-size: calc(13px * var(--ps-scale));
+  color: var(--ps-quiet);
+}
+/* 期間（2023年3月–2025年11月）は和文を含むので、英字の書体で組まない。 */
+.ps-series-entry__facts,
+.ps-series-head__facts {
+  font-family: var(--font-ja);
+  font-variant-numeric: tabular-nums;
+  font-size: max(12px, var(--section-label-size, calc(13px * var(--ps-scale))));
+}
+.ps-footer__row,
+.ps-service {
+  font-size: max(12px, var(--footer-size, calc(12px * var(--ps-scale))));
+}
+/* 名前の帯の英名と肩書きは同じ基準線に。 */
+.ps-top-name__sub {
+  align-items: baseline;
+}
+.ps-site .contact-page p:is(.ja-prose, .font-en).mb-8,
+.ps-site .contact-page p:is(.ja-prose, .font-en).mb-6 {
+  color: var(--ps-read);
+}
+
+/* 制作案内の読むページ（ガイド・相談・開始手順）。本文はゴシック体、見出しだけ
+   サイトの和文書体（制作案内 portfolio-sales.css と同じ役割分け、2026-09-29）。 */
+.kit-text {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: rgba(var(--foreground-rgb), 0.88);
+}
+.kit-text :is(.font-ja, .font-en):not(h1, h2) {
+  font-family: inherit;
+}
+.kit-text :is(h1, h2) {
+  font-family: var(--font-ja);
+  font-weight: 500;
+  font-feature-settings: "palt";
+  letter-spacing: 0.03em;
+}
+.kit-text :is(h1, h2, h3, p, li) {
+  word-break: auto-phrase;
+}

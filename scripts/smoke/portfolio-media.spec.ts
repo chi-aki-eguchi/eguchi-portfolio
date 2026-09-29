@@ -5,7 +5,7 @@ test("Current admin screenshots load and preview tabs switch without overflow", 
   await page.route("**/api/settings**", route => route.fulfill({ json: { ...settings, siteUrl: "https://akieguchi.com", servicePageMode: "on" } }));
   await page.goto("/portfolio-kit#admin-video", { waitUntil: "networkidle" });
   const preview = page.locator("#admin-video");
-  for (const [label, id] of [["写真を入れ替える", "library"], ["見せ方を変える", "settings"], ["文章を更新する", "profile"]]) {
+  for (const [label, id] of [["写真の入れ替え", "library"], ["見せ方の変更", "settings"], ["文章の更新", "profile"]]) {
     await preview.getByRole("button", { name: new RegExp(label) }).click();
     const image = preview.locator("img");
     await expect(image).toHaveAttribute("src", `/portfolio-kit/admin-20260929-${id}.jpg`);

@@ -135,9 +135,6 @@ function DomainReassurance({ language }: { language: ServiceStartLanguage }) {
   const en = language === "en";
   return (
     <section className="mt-12 md:mt-16 border-t border-[rgba(var(--foreground-rgb),0.16)] pt-8">
-      <p className="font-en uppercase mb-3" style={labelStyle}>
-        Your domain
-      </p>
       <h2
         className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.84)]`}
         style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)", lineHeight: 1.55 }}
@@ -186,20 +183,15 @@ function ExternalButton({
 
 function StepPanel({
   title,
-  subtitle,
   steps,
   children,
 }: {
   title: string;
-  subtitle: string;
   steps: readonly { title: string; body: string }[];
   children: React.ReactNode;
 }) {
   return (
     <section className="border-t border-[rgba(var(--foreground-rgb),0.16)] pt-7">
-      <p className="font-en uppercase mb-3" style={labelStyle}>
-        {subtitle}
-      </p>
       <h2
         className="font-ja text-[rgba(var(--foreground-rgb),0.84)]"
         style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)", lineHeight: 1.55 }}
@@ -246,14 +238,11 @@ function SupportSection({
   const en = language === "en";
   return (
     <section className="mt-12 md:mt-16">
-      <p className="font-en uppercase mb-3" style={labelStyle}>
-        Support
-      </p>
       <h2
         className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.84)]`}
         style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)", lineHeight: 1.55 }}
       >
-        {en ? "If anything is unclear, just ask." : "困ったら、そのまま聞いてください。"}
+        {en ? "Questions after delivery" : "納品後に分からないとき"}
       </h2>
       <p
         className="mt-4 max-w-2xl text-[color:var(--text-quiet)]"
@@ -291,9 +280,6 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
     <section className="mt-12 md:mt-16 border-t border-[rgba(var(--foreground-rgb),0.16)] pt-8">
       <div className="grid gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-start">
         <div>
-          <p className="font-en uppercase mb-3" style={labelStyle}>
-            Handoff card
-          </p>
           <h2
             className={`${en ? "font-en" : "font-ja"} text-[rgba(var(--foreground-rgb),0.84)]`}
             style={{
@@ -301,9 +287,7 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
               lineHeight: 1.55,
             }}
           >
-            {en
-              ? "The handover is one simple card."
-              : "納品時に渡すのは、これだけです。"}
+            {en ? "What you receive at handover" : "納品時にお渡しするもの"}
           </h2>
           <p
             className="mt-4 text-[color:var(--text-quiet)]"
@@ -319,8 +303,8 @@ function HandoffCard({ language }: { language: ServiceStartLanguage }) {
           </p>
         </div>
         <div className="border-l border-[rgba(var(--foreground-rgb),0.16)] pl-5">
-          <p className="font-en text-xs uppercase tracking-[0.12em] text-[color:var(--text-quiet)]">
-            Aki Eguchi Portfolio Kit
+          <p className="text-sm text-[color:var(--text-quiet)]">
+            {en ? "Handover card" : "納品時のカード"}
           </p>
           <div className="mt-5 divide-y divide-[rgba(var(--foreground-rgb),0.08)]">
             {copy.handoffRows.map((row) => (
@@ -367,7 +351,7 @@ export default function ServiceStartPage({
   return (
     <section
       lang={language}
-      className="max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
+      className="kit-text max-w-5xl mx-auto px-5 sm:px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(6.5rem*var(--spacing-page-top,1))] pb-16 md:pb-28"
     >
       <LanguageSwitch language={language} search={search} />
       {checkoutArrivalCopy ? (
@@ -449,7 +433,6 @@ export default function ServiceStartPage({
       <div className="mt-12 grid gap-6 lg:grid-cols-2">
         <StepPanel
           title={copy.deliveryPanelTitle}
-          subtitle="Delivery"
           steps={copy.deliverySteps}
         >
           {contactEmail && (
@@ -462,7 +445,6 @@ export default function ServiceStartPage({
 
         <StepPanel
           title={copy.afterHandoffTitle}
-          subtitle="First steps"
           steps={copy.afterHandoffSteps}
         >
           <ExternalButton href="/admin/login" variant="outline">

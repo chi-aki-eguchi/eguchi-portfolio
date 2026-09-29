@@ -691,3 +691,10 @@
   color: var(--admin-ink) !important;
   box-shadow: var(--admin-selected-shadow, inset 0 -1.5px 0 var(--admin-ink)) !important;
 }
+
+/* 体験版の帯は、写真中心の管理画面では上の帯の直前に置く（固定しない）。
+   固定のままだと、帯の高さを測る前の既定値 84px だけ上が空いていた（2026-09-29 実測）。 */
+.admin-atelier .admin-book > .admin-demo-banner {
+  position: static;
+  flex: none;
+}

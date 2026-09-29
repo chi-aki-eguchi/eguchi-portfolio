@@ -96,25 +96,23 @@ function AdminDemoContent() {
         <div>
           <dialog ref={guideDialogRef} onCancel={(event) => { event.preventDefault(); setShowGuide(false); }} className="admin-demo-guide" aria-labelledby="admin-demo-guide-title" data-admin-demo-guide>
             <div className="admin-demo-guide__heading">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-[#817868]">{t.demo.guideEyebrow}</p>
-                <h1 id="admin-demo-guide-title" className="mt-1 text-lg font-medium">{t.demo.guideTitle}</h1>
-              </div>
+              <h1 id="admin-demo-guide-title" className="text-lg font-medium">{t.demo.guideTitle}</h1>
               <div className="admin-demo-guide__tools">
-                <AdminLanguageToggle className="text-[#746c60]" />
+                <AdminLanguageToggle />
                 <button type="button" onClick={() => setShowGuide(false)} aria-label={t.common.close}><X size={18} /></button>
               </div>
             </div>
-            <ol className="mt-5 space-y-4 text-sm leading-relaxed">
+            {/* 2026-09-29: 金色の番号・茶色のボタン・英字の肩書きをやめ、管理画面と同じ黒と灰の文字で。 */}
+            <ol className="admin-demo-guide__steps mt-4 text-sm leading-relaxed">
               {t.demo.guideSteps.map((step, index) => (
                 <li key={step}>
-                  <span className="mr-2 text-[#8b7650]">{String(index + 1).padStart(2, "0")}</span>
-                  {step}
+                  <span className="admin-demo-guide__num" aria-hidden="true">{index + 1}</span>
+                  <span>{step}</span>
                 </li>
               ))}
             </ol>
-            <p className="mt-5 border-t border-[#d9d2c5] pt-4 text-xs leading-relaxed text-[#746c60]">{t.demo.guideNote}</p>
-            <button type="button" data-admin-demo-guide-start onClick={() => setShowGuide(false)} className="mt-5 w-full rounded-sm bg-[#332f28] px-4 py-3 text-xs text-white">{t.demo.guideStart}</button>
+            <p className="admin-demo-guide__note mt-5 pt-4 text-[13px] leading-relaxed">{t.demo.guideNote}</p>
+            <button type="button" data-admin-demo-guide-start onClick={() => setShowGuide(false)} className="admin-demo-guide__start mt-5 w-full rounded-[2px] px-4 py-3 text-sm">{t.demo.guideStart}</button>
           </dialog>
         </div>
       )}

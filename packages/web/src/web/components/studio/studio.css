@@ -206,6 +206,12 @@
 .st-input.st-search {
   width: min(320px, 40vw);
 }
+@media (max-width: 640px) {
+  /* 狭い画面では探す欄を1行に。40vw では説明が途中で切れていた。 */
+  .st-input.st-search {
+    width: 100%;
+  }
+}
 
 .st-empty {
   padding: 56px 0;
@@ -444,7 +450,8 @@
 .st-check input {
   width: 18px;
   height: 18px;
-  accent-color: var(--st-accent);
+  /* 選択は黒で。青は、ドラッグ先など「今ここに入る」の合図だけに残す。 */
+  accent-color: var(--st-ink);
   flex: none;
 }
 .st-check__label {

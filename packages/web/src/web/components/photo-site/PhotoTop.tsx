@@ -55,52 +55,66 @@ export function TopName({
 type Settings = Record<string, string | null | undefined> | undefined;
 
 /**
- * 撮影のご依頼の枠（写真中心のサイト）。管理画面「撮影のご依頼」の設定を読む
- * （出す／出さない・題・文）。大きな言葉はメニューの Contact の呼び方にそろえる。いつもの構成の帯（中央寄せ・縦の飾り線・
- * 大文字のボタン）は使わず、入口と同じ並びの1枠にする。
+ * 撮影のご依頼（写真中心のサイト）。管理画面「撮影のご依頼」の設定を読む
+ * （出す／出さない・題・文）。
+ *
+ * 2026-09-29: 以前は Gallery・Series と同じ大きさの枠で並べていた。作品の入口と
+ * 依頼の案内が同じ強さになり、写真を見終えるたびに大きな「Contact」が出ていた。
+ * 今は1行の案内にして、写真の後ろに静かに置く。
  */
-function InquiryCell({ settings }: { settings: Settings }) {
+function InquiryLine({ settings }: { settings: Settings }) {
   if ((settings?.homeCtaEnabled ?? "off") !== "on") return null;
   return (
-    <Link to="/contact" className="ps-entrance">
-      <span className="ps-entrance__en font-en">{settings?.navLabelContact || "Contact"}</span>
-      <span className="ps-entrance__ja">{settings?.homeCtaTitle || "撮影のご依頼"}</span>
-      {settings?.homeCtaText && <span className="ps-entrance__note">{settings.homeCtaText}</span>}
-    </Link>
+    <p className="ps-inquiry">
+      <span className="ps-inquiry__title">{settings?.homeCtaTitle || "撮影のご依頼"}</span>
+      {settings?.homeCtaText && <span className="ps-inquiry__text">{settings.homeCtaText}</span>}
+      <Link to="/contact" className="ps-inquiry__link">
+        {settings?.homeCtaButton || "お問い合わせ"}
+      </Link>
+    </p>
   );
 }
 
-/** トップの終わりの入口: すべての写真（Gallery）・Series・撮影のご依頼。 */
+/**
+ * トップの終わりの目次: すべての写真（Gallery）と Series。
+ *
+ * 2026-09-29: 3つの同じ枠（Gallery／Series／Contact）をやめ、写真集の目次のように
+ * 1行ずつ。メニューと同じ言葉を大きく繰り返すより、何枚・いくつあるかを添える
+ * ほうが、次に何を見るかを選べる。数は公開中の写真・シリーズから数える。
+ */
 export function TopEntrances({
   settings,
   showSeries,
+  photoCount,
+  seriesCount,
 }: {
   settings: Settings;
   showSeries: boolean;
+  photoCount?: number;
+  seriesCount?: number;
 }) {
   return (
-    <nav className="ps-entrances" aria-label="写真を見る">
-      <Link to="/gallery" className="ps-entrance">
-        <span className="ps-entrance__en font-en">{settings?.navLabelGallery || "Gallery"}</span>
-        <span className="ps-entrance__ja">すべての写真</span>
-      </Link>
-      {showSeries && (
-        <Link to="/series" className="ps-entrance">
-          <span className="ps-entrance__en font-en">Series</span>
-          <span className="ps-entrance__ja">シリーズで見る</span>
+    <>
+      <nav className="ps-entrances" aria-label="写真を見る">
+        <Link to="/gallery" className="ps-entrance">
+          <span className="ps-entrance__en font-en">{settings?.navLabelGallery || "Gallery"}</span>
+          <span className="ps-entrance__ja">すべての写真</span>
+          {photoCount ? <span className="ps-entrance__count">{photoCount}枚</span> : null}
         </Link>
-      )}
-      <InquiryCell settings={settings} />
-    </nav>
+        {showSeries && (
+          <Link to="/series" className="ps-entrance">
+            <span className="ps-entrance__en font-en">Series</span>
+            <span className="ps-entrance__ja">シリーズで見る</span>
+            {seriesCount ? <span className="ps-entrance__count">{seriesCount}組</span> : null}
+          </Link>
+        )}
+      </nav>
+      <InquiryLine settings={settings} />
+    </>
   );
 }
 
 /** Gallery・シリーズのページの終わりの撮影のご依頼（設定が「出す」のときだけ）。 */
 export function PhotoInquiry({ settings }: { settings: Settings }) {
-  if ((settings?.homeCtaEnabled ?? "off") !== "on") return null;
-  return (
-    <div className="ps-entrances ps-entrances--single">
-      <InquiryCell settings={settings} />
-    </div>
-  );
+  return <InquiryLine settings={settings} />;
 }

@@ -967,7 +967,6 @@ function AdminPageContent({
             data-studio-editor={(bookView === "site" && panel.kind === "settings") || undefined}
             style={{
               ...adminThemeFromSettings(shellSettings, bookTheme),
-              ...(demoMode ? { paddingTop: "var(--admin-demo-banner-height, 84px)" } : {}),
             }}
           >
             <BookAdminShell

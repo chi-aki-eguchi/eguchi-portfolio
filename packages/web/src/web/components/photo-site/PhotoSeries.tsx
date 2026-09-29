@@ -70,7 +70,7 @@ function SeriesEntry({ series, photos, width }: { series: SeriesRow; photos: Gal
             <span className="ps-series-entry__title">{series.title}</span>
             {series.subtitle && <span className="ps-series-entry__sub">{series.subtitle}</span>}
           </span>
-          {period && <span className="ps-series-entry__facts font-en">{period}</span>}
+          {period && <span className="ps-series-entry__facts">{period}</span>}
         </span>
         {strip.length > 0 && (
           <span className="ps-series-entry__strip" aria-hidden="true" style={{ gap }}>
@@ -225,7 +225,7 @@ export function PhotoSeriesPage({
         {series.subtitle && <p className="ps-series-head__sub">{series.subtitle}</p>}
         {photos.length > 0 && (period || medium) && (
           <p className="ps-series-head__facts">
-            {period && <span className="font-en">{period}</span>}
+            {period && <span>{period}</span>}
             {medium && <span>{medium}</span>}
           </p>
         )}
@@ -242,7 +242,6 @@ export function PhotoSeriesPage({
           label={series.title}
         />
       )}
-      <PhotoInquiry settings={settings} />
       <nav className="ps-series-foot" aria-label="ほかのシリーズ">
         {nextChapter && (
           <Link
@@ -257,6 +256,8 @@ export function PhotoSeriesPage({
           シリーズの一覧
         </Link>
       </nav>
+      {/* 依頼の案内は、次のシリーズへ進む道の後ろに（作品を見続ける人の邪魔をしない）。 */}
+      <PhotoInquiry settings={settings} />
     </div>
   );
 }

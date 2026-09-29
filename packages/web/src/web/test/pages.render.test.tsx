@@ -568,7 +568,7 @@ describe("shared components", () => {
     const ServiceStartPage = (await import("../pages/service-start")).default;
     const { host, cleanup } = await mount(createElement(ServiceStartPage));
     const text = host.textContent ?? "";
-    expect(text).toContain("Aki Eguchi Portfolio Kit");
+    expect(text).toContain("納品時のカード");
     expect(text).toContain("通常2営業日以内");
     expect(text).toContain("合意した見積内容");
     expect(text).toContain("既存のご購入条件や合意内容");
@@ -964,9 +964,13 @@ describe("shared components", () => {
           .querySelector('[data-admin-demo-banner] a')
           ?.getAttribute("href"),
       ).toBe("/portfolio-kit/en#pricing");
+      // 写真中心の管理画面では、体験版の帯は上の帯の直前に並ぶ（固定して余白を測らない）。
+      expect(
+        host.querySelector(".admin-book > [data-admin-demo-banner]"),
+      ).not.toBeNull();
       expect(
         (host.querySelector(".admin-atelier") as HTMLElement).style.paddingTop,
-      ).toContain("--admin-demo-banner-height");
+      ).toBe("");
       const guide = host.querySelector(
         "[data-admin-demo-guide]",
       ) as HTMLDialogElement;

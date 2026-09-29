@@ -617,8 +617,8 @@ export default function ContactPage({
           <dl className="mb-10 py-6 border-y border-[rgba(var(--foreground-rgb),0.14)] space-y-6 page-entrance page-entrance-delay-1">
             {areas && (
               <div>
-                <dt className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
-                  {english ? "Areas" : "Areas ／ 対応地域"}
+                <dt className="contact-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
+                  {english ? "Areas" : "対応地域"}
                 </dt>
                 <dd
                   className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
@@ -630,8 +630,8 @@ export default function ContactPage({
             )}
             {formspreeUrl && flow && (
               <div>
-                <dt className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
-                  {english ? "Flow" : "Flow ／ 流れ"}
+                <dt className="contact-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-2">
+                  {english ? "Flow" : "撮影までの流れ"}
                 </dt>
                 <dd
                   className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
@@ -969,7 +969,7 @@ export default function ContactPage({
         </div>
         </div>
         {status !== "success" && photographyInquiry && (
-          <section className="mt-12 border-t border-[rgba(var(--foreground-rgb),0.12)] pt-8" aria-labelledby="photography-inquiry-heading">
+          <section className="contact-inquiry mt-12 border-t border-[rgba(var(--foreground-rgb),0.12)] pt-8" aria-labelledby="photography-inquiry-heading">
             <h2 id="photography-inquiry-heading" className="text-lg leading-8">{photographyInquiry.title}</h2>
             <p className="mt-4 leading-8 text-[color:var(--text-quiet)]">{photographyInquiry.intro}</p>
             <p className="mt-4 text-sm leading-7"><a href="/gallery" className="underline underline-offset-4">写真を見る</a> ／ <a href="/about" className="underline underline-offset-4">撮り手について</a></p>

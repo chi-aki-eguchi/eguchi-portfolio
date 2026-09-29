@@ -350,7 +350,8 @@ export function LibraryView({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="探す（題・ファイル名・カメラ・2025-10）"
+              placeholder="題・ファイル名・カメラで探す"
+              title="題・ファイル名・カメラ・撮影年月（例 2025-10）で探せます"
               aria-label="写真を探す"
             />
             <fieldset className="st-seg st-seg--small" aria-label="写真の大きさ">

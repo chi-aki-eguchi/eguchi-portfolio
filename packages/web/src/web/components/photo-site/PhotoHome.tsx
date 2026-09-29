@@ -123,7 +123,12 @@ export function PhotoHome({
             ) : (
               <>
                 {statementAt === "after-works" && <HomeStatement text={statement} />}
-                <TopEntrances settings={settings} showSeries={showSeries} />
+                <TopEntrances
+                  settings={settings}
+                  showSeries={showSeries}
+                  photoCount={all.length}
+                  seriesCount={(seriesQ.data?.series?.length ?? 0) + (worksQ.data?.series?.length ?? 0)}
+                />
               </>
             )
           }

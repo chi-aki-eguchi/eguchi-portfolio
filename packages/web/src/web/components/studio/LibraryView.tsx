@@ -15,6 +15,7 @@ import {
   type StudioData,
   type StudioPhoto,
 } from "./studio-data";
+import { adminText as tx } from "../../pages/admin-i18n";
 
 type Filter =
   | { kind: "all" }
@@ -26,15 +27,17 @@ type Filter =
   | { kind: "digital" }
   | { kind: "series"; id: number };
 
-const FILTER_LABEL: Record<Exclude<Filter["kind"], "series">, string> = {
-  all: "すべての写真",
-  loose: "シリーズに入っていない写真",
-  hidden: "非公開の写真",
-  hero: "トップに出す写真",
-  recent: "今回加えた写真",
-  film: "フィルム",
-  digital: "デジタル",
-};
+// 見出しの言葉。管理画面の言語で変わるので、描くたびに引く。
+const filterLabel = (kind: Exclude<Filter["kind"], "series">): string =>
+  ({
+    all: tx("すべての写真", "All photos"),
+    loose: tx("シリーズに入っていない写真", "Photos not in a series"),
+    hidden: tx("非公開の写真", "Hidden photos"),
+    hero: tx("トップに出す写真", "Photos on the home page"),
+    recent: tx("今回加えた写真", "Just added"),
+    film: tx("フィルム", "Film"),
+    digital: tx("デジタル", "Digital"),
+  })[kind];
 
 function sameFilter(a: Filter, b: Filter) {
   return a.kind === b.kind && (a.kind !== "series" || (b.kind === "series" && a.id === b.id));
@@ -188,10 +191,10 @@ export function LibraryView({
       try {
         await reorderSeriesPhotos(filter.id, after);
         await refresh();
-        remember({ label: "並び", run: () => reorderSeriesPhotos(filter.id, before) }, "シリーズの中の並びを変えました");
+        remember({ label: tx("並び", "Order"), run: () => reorderSeriesPhotos(filter.id, before) }, tx("シリーズの中の並びを変えました", "Changed the order in the series"));
       } catch {
         await refresh();
-        fail("並びを保存できませんでした。最新の並びを読み直しました。");
+        fail(tx("並びを保存できませんでした。最新の並びを読み直しました。", "Could not save the order. Reloaded the latest order."));
       }
       return;
     }
@@ -204,13 +207,13 @@ export function LibraryView({
     try {
       await reorderAllPhotos(after, before);
       await refresh();
-      remember({ label: "並び", run: () => reorderAllPhotos(before, after) }, "サイトでの並びを変えました");
+      remember({ label: tx("並び", "Order"), run: () => reorderAllPhotos(before, after) }, tx("サイトでの並びを変えました", "Changed the order on the site"));
     } catch (e) {
       await refresh();
       fail(
         e instanceof Error && e.message === "conflict"
-          ? "別の画面で並びが変わっていました。最新の並びを読み直しました。"
-          : "並びを保存できませんでした。",
+          ? tx("別の画面で並びが変わっていました。最新の並びを読み直しました。", "The order was changed elsewhere. Reloaded the latest order.")
+          : tx("並びを保存できませんでした。", "Could not save the order."),
       );
     }
   };
@@ -225,18 +228,18 @@ export function LibraryView({
     const ids = (JSON.parse(raw) as number[]).filter((id) => !(data.membersBySeries.get(seriesId) ?? []).includes(id));
     const name = data.seriesById.get(seriesId)?.title ?? "";
     if (ids.length === 0) {
-      fail(`もう「${name}」に入っています。`);
+      fail(tx(`もう「${name}」に入っています。`, `Already in “${name}”.`));
       return;
     }
     try {
       await seriesPhotos(seriesId, { add: ids });
       await refresh();
       remember(
-        { label: "シリーズへ入れる", run: () => seriesPhotos(seriesId, { remove: ids }) },
-        `${ids.length === 1 ? "" : `${ids.length}枚を`}「${name}」に入れました`,
+        { label: tx("シリーズへ入れる", "Add to series"), run: () => seriesPhotos(seriesId, { remove: ids }) },
+        tx(`${ids.length === 1 ? "" : `${ids.length}枚を`}「${name}」に入れました`, `Added ${ids.length === 1 ? "1 photo" : `${ids.length} photos`} to “${name}”`),
       );
     } catch {
-      fail("シリーズへ入れられませんでした。");
+      fail(tx("シリーズへ入れられませんでした。", "Could not add to the series."));
     }
   };
 
@@ -260,13 +263,13 @@ export function LibraryView({
   };
 
   const title =
-    filter.kind === "series" ? (data.seriesById.get(filter.id)?.title ?? "") : FILTER_LABEL[filter.kind];
+    filter.kind === "series" ? (data.seriesById.get(filter.id)?.title ?? "") : filterLabel(filter.kind);
 
   const badges = (p: StudioPhoto) => {
     const out: string[] = [];
-    if (p.isPublished === false) out.push("非公開");
-    if (filter.kind !== "hero" && data.heroSet.has(p.id)) out.push("トップ");
-    if (filter.kind === "series" && data.seriesById.get(filter.id)?.coverPhotoId === p.id) out.push("表紙");
+    if (p.isPublished === false) out.push(tx("非公開", "Hidden"));
+    if (filter.kind !== "hero" && data.heroSet.has(p.id)) out.push(tx("トップ", "Home"));
+    if (filter.kind === "series" && data.seriesById.get(filter.id)?.coverPhotoId === p.id) out.push(tx("表紙", "Cover"));
     return out;
   };
 
@@ -286,19 +289,19 @@ export function LibraryView({
 
   return (
     <div className="st-workspace" data-inspector={selection.length > 0 || undefined}>
-      <nav className="st-side" aria-label="写真の絞り込み">
+      <nav className="st-side" aria-label={tx("写真の絞り込み", "Photo filters")}>
         <ul className="st-side__list">
-          {side({ kind: "all" }, "すべての写真", counts.all)}
-          {side({ kind: "loose" }, "シリーズに入っていない", counts.loose)}
-          {side({ kind: "hidden" }, "非公開", counts.hidden)}
-          {side({ kind: "hero" }, "トップに出す", counts.hero)}
-          {counts.recent > 0 && side({ kind: "recent" }, "今回加えた", counts.recent)}
+          {side({ kind: "all" }, tx("すべての写真", "All photos"), counts.all)}
+          {side({ kind: "loose" }, tx("シリーズに入っていない", "Not in a series"), counts.loose)}
+          {side({ kind: "hidden" }, tx("非公開", "Hidden"), counts.hidden)}
+          {side({ kind: "hero" }, tx("トップに出す", "On the home page"), counts.hero)}
+          {counts.recent > 0 && side({ kind: "recent" }, tx("今回加えた", "Just added"), counts.recent)}
         </ul>
         <ul className="st-side__list st-side__list--quiet">
-          {side({ kind: "film" }, "フィルム", counts.film)}
-          {side({ kind: "digital" }, "デジタル", counts.digital)}
+          {side({ kind: "film" }, tx("フィルム", "Film"), counts.film)}
+          {side({ kind: "digital" }, tx("デジタル", "Digital"), counts.digital)}
         </ul>
-        <p className="st-side__label">シリーズ</p>
+        <p className="st-side__label">{tx("シリーズ", "Series")}</p>
         <ul className="st-side__list">
           {data.series.map((s) => (
             <li key={s.id}>
@@ -319,7 +322,7 @@ export function LibraryView({
               >
                 <span className="st-side__title">
                   <span className="st-side__text">{s.title}</span>
-                  {s.isPublished === false && <span className="st-tag">非公開</span>}
+                  {s.isPublished === false && <span className="st-tag">{tx("非公開", "Hidden")}</span>}
                 </span>
                 <span className="st-side__count">{data.membersBySeries.get(s.id)?.length ?? 0}</span>
               </button>
@@ -328,7 +331,7 @@ export function LibraryView({
         </ul>
         <div className="st-side__foot">
           <button type="button" className="st-ax-btn st-link" onClick={() => setTrashOpen(true)}>
-            ゴミ箱
+            {tx("ゴミ箱", "Trash")}
           </button>
         </div>
       </nav>
@@ -337,10 +340,10 @@ export function LibraryView({
         <div className="st-toolbar">
           <div className="st-toolbar__title">
             <h2>{title}</h2>
-            <span className="st-toolbar__count">{visible.length}枚</span>
+            <span className="st-toolbar__count">{tx(`${visible.length}枚`, `${visible.length}`)}</span>
             {filter.kind === "series" && (
               <button type="button" className="st-ax-btn st-link" onClick={() => onOpenSeries(filter.id)}>
-                シリーズを編集
+                {tx("シリーズを編集", "Edit series")}
               </button>
             )}
           </div>
@@ -350,22 +353,22 @@ export function LibraryView({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="題・ファイル名・カメラで探す"
-              title="題・ファイル名・カメラ・撮影年月（例 2025-10）で探せます"
-              aria-label="写真を探す"
+              placeholder={tx("題・ファイル名・カメラで探す", "Search title, file name, camera")}
+              title={tx("題・ファイル名・カメラ・撮影年月（例 2025-10）で探せます", "Search by title, file name, camera or month (e.g. 2025-10)")}
+              aria-label={tx("写真を探す", "Search photos")}
             />
-            <fieldset className="st-seg st-seg--small" aria-label="写真の大きさ">
+            <fieldset className="st-seg st-seg--small" aria-label={tx("写真の大きさ", "Photo size")}>
               {(Object.keys(GRID_SIZES) as GridSize[]).map((k) => (
                 <button key={k} type="button" aria-pressed={size === k} className="st-ax-btn st-seg__item" onClick={() => setSize(k)}>
-                  {k === "s" ? "小" : k === "m" ? "中" : "大"}
+                  {k === "s" ? tx("小", "S") : k === "m" ? tx("中", "M") : tx("大", "L")}
                 </button>
               ))}
             </fieldset>
             <button type="button" className="st-ax-btn st-button" aria-pressed={pickMode} onClick={() => setPickMode((v) => !v)}>
-              {pickMode ? "選び終える" : "まとめて選ぶ"}
+              {pickMode ? tx("選び終える", "Done") : tx("まとめて選ぶ", "Select")}
             </button>
             <button type="button" className="st-ax-btn st-button st-button--primary" onClick={() => fileInput.current?.click()} disabled={upload !== null}>
-              写真を加える
+              {tx("写真を加える", "Add photos")}
             </button>
             <input
               ref={fileInput}
@@ -382,17 +385,17 @@ export function LibraryView({
           </div>
         </div>
         {!canReorder && filter.kind !== "hero" && query.trim() && (
-          <p className="st-note st-note--bar">探している間は並べ替えできません。</p>
+          <p className="st-note st-note--bar">{tx("探している間は並べ替えできません。", "Reordering is off while searching.")}</p>
         )}
         {data.failed ? (
           <div className="st-empty">
-            <p>写真を読み込めませんでした。</p>
+            <p>{tx("写真を読み込めませんでした。", "Could not load the photos.")}</p>
             <button type="button" className="st-ax-btn st-button" onClick={data.retry}>
-              もう一度読み込む
+              {tx("もう一度読み込む", "Try again")}
             </button>
           </div>
         ) : data.loading ? (
-          <p className="st-empty">読み込んでいます…</p>
+          <p className="st-empty">{tx("読み込んでいます…", "Loading…")}</p>
         ) : (
           <StudioGrid
             photos={visible}
@@ -407,15 +410,15 @@ export function LibraryView({
             scrollRef={scrollRef}
             empty={
               query.trim() ? (
-                <p>見つかりませんでした。</p>
+                <p>{tx("見つかりませんでした。", "Nothing found.")}</p>
               ) : filter.kind === "loose" ? (
-                <p>どの写真もシリーズに入っています。</p>
+                <p>{tx("どの写真もシリーズに入っています。", "Every photo is in a series.")}</p>
               ) : filter.kind === "all" ? (
                 <p>
-                  まだ写真がありません。ここへ写真を落とすか、「写真を加える」から選んでください。
+                  {tx("まだ写真がありません。ここへ写真を落とすか、「写真を加える」から選んでください。", "No photos yet. Drop photos here or choose them with “Add photos”.")}
                 </p>
               ) : (
-                <p>この絞り込みに当たる写真はありません。</p>
+                <p>{tx("この絞り込みに当たる写真はありません。", "No photos match this filter.")}</p>
               )
             }
           />
@@ -456,27 +459,27 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
     try {
       for (const id of ids) await restorePhoto(id);
       await Promise.all([refresh(), trashQ.refetch()]);
-      say({ text: `${ids.length === 1 ? "" : `${ids.length}枚を`}戻しました` });
+      say({ text: tx(`${ids.length === 1 ? "" : `${ids.length}枚を`}戻しました`, `Restored ${ids.length === 1 ? "1 photo" : `${ids.length} photos`}`) });
     } catch {
-      fail("戻せませんでした。");
+      fail(tx("戻せませんでした。", "Could not restore."));
     }
   };
   const photos = trashQ.data?.photos ?? [];
   return (
-    <dialog ref={ref} className="st-dialog" onClose={onClose} aria-label="ゴミ箱">
+    <dialog ref={ref} className="st-dialog" onClose={onClose} aria-label={tx("ゴミ箱", "Trash")}>
       <div className="st-dialog__head">
-        <h2>ゴミ箱</h2>
+        <h2>{tx("ゴミ箱", "Trash")}</h2>
         <p className="st-note">
-          ここにある写真はサイトに出ません。自動では消えず、保管中はストレージを使用します。復元するか、確認して完全削除してください。
+          {tx("ここにある写真はサイトに出ません。自動では消えず、保管中はストレージを使用します。復元するか、確認して完全削除してください。", "Photos here are not on the site. They are never removed automatically and keep using storage until you restore or permanently delete them.")}
         </p>
         <button type="button" className="st-ax-btn st-link" onClick={() => ref.current?.close()}>
-          閉じる
+          {tx("閉じる", "Close")}
         </button>
       </div>
       {trashQ.isLoading ? (
-        <p className="st-empty">読み込んでいます…</p>
+        <p className="st-empty">{tx("読み込んでいます…", "Loading…")}</p>
       ) : photos.length === 0 ? (
-        <p className="st-empty">ゴミ箱は空です。</p>
+        <p className="st-empty">{tx("ゴミ箱は空です。", "The trash is empty.")}</p>
       ) : (
         <>
           <ul className="st-trash">
@@ -484,14 +487,14 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
               <li key={p.id} className="st-trash__item">
                 <img src={adminPhotoSrc(p, 320, 60)} alt="" />
                 <button type="button" className="st-ax-btn st-link" onClick={() => void restore([p.id])}>
-                  戻す
+                  {tx("戻す", "Restore")}
                 </button>
               </li>
             ))}
           </ul>
           <div className="st-dialog__foot">
             <button type="button" className="st-ax-btn st-button" onClick={() => void restore(photos.map((p) => p.id))}>
-              すべて戻す
+              {tx("すべて戻す", "Restore all")}
             </button>
           </div>
         </>

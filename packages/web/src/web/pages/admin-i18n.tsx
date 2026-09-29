@@ -107,14 +107,14 @@ const ADMIN_PHASE_2B_JA = {
       arrangeHint: "動かす写真を1枚選んでください",
     },
     import: {
-      mediumAria: "取り込み媒体",
-      mediumHint: "取り込む写真に付く媒体です",
+      mediumAria: "加える写真の媒体",
+      mediumHint: "加える写真に付く媒体です",
       mediumLabel: "媒体",
-      action: "取り込む",
+      action: "写真を加える",
       digital: "デジタル",
       film: "フィルム",
       chooseImages: "画像ファイルを選択",
-      dropHere: "ここにドロップして読み込み",
+      dropHere: "ここへ写真を落とす",
       retryFailed: "失敗分を再アップロード",
       // 取り込み中の進捗。ここだけ英語の直書きが残っていた。
       progress: (done: number, total: number) =>
@@ -4423,10 +4423,18 @@ export function getStoredAdminMessages(): AdminMessages {
   return ADMIN_DICTIONARY[readStoredAdminLanguage()];
 }
 
+// 辞書（ADMIN_DICTIONARY）を持たない画面（写真・シリーズ）の言葉を、いまの言語で選ぶ。
+// 言語を変えると管理画面の木が描き直されるので、描くたびに読めば足りる。
+let activeAdminLanguage: AdminLanguage = "ja";
+export function adminText(ja: string, en: string): string {
+  return activeAdminLanguage === "en" ? en : ja;
+}
+
 function AdminLanguageStateProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<AdminLanguage>(
     readStoredAdminLanguage,
   );
+  activeAdminLanguage = language;
 
   useEffect(() => {
     try {

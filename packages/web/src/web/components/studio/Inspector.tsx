@@ -15,6 +15,7 @@ import {
   type StudioData,
   type StudioPhoto,
 } from "./studio-data";
+import { adminText as tx } from "../../pages/admin-i18n";
 
 const FILM = "フィルム";
 const DIGITAL = "デジタル";
@@ -42,13 +43,13 @@ export function Inspector({
 }) {
   if (selection.length === 0) return null;
   return (
-    <aside className="st-inspector" aria-label="選んでいる写真">
+    <aside className="st-inspector" aria-label={tx("選んでいる写真", "Selected photos")}>
       <div className="st-inspector__head">
         <p className="st-inspector__count">
-          {selection.length === 1 ? "1枚" : `${selection.length}枚を選んでいます`}
+          {selection.length === 1 ? tx("1枚", "1 photo") : tx(`${selection.length}枚を選んでいます`, `${selection.length} selected`)}
         </p>
         <button type="button" className="st-ax-btn st-link" onClick={onClear}>
-          選ぶのをやめる
+          {tx("選ぶのをやめる", "Clear selection")}
         </button>
       </div>
       {selection.length === 1 ? (
@@ -146,7 +147,7 @@ function SeriesChecklist({
       await refresh();
       remember(
         {
-          label: add ? "シリーズへ入れる" : "シリーズから外す",
+          label: add ? tx("シリーズへ入れる", "Add to series") : tx("シリーズから外す", "Remove from series"),
           run: async () => {
             await seriesPhotos(seriesId, add ? { remove: changing } : { add: changing });
             if (!add) {
@@ -155,10 +156,10 @@ function SeriesChecklist({
             }
           },
         },
-        `${changing.length === 1 ? "" : `${changing.length}枚を`}「${name}」${add ? "に入れました" : "から外しました"}`,
+        tx(`${changing.length === 1 ? "" : `${changing.length}枚を`}「${name}」${add ? "に入れました" : "から外しました"}`, `${add ? "Added" : "Removed"} ${changing.length === 1 ? "1 photo" : `${changing.length} photos`} ${add ? "to" : "from"} “${name}”`),
       );
     } catch {
-      fail("シリーズを保存できませんでした。");
+      fail(tx("シリーズを保存できませんでした。", "Could not save the series."));
     }
   };
   const create = async () => {
@@ -171,26 +172,26 @@ function SeriesChecklist({
       setCreating(false);
       await refresh();
       remember(
-        { label: "シリーズへ入れる", run: () => seriesPhotos(series.id, { remove: ids }) },
-        `新しいシリーズ「${t}」を作って入れました`,
+        { label: tx("シリーズへ入れる", "Add to series"), run: () => seriesPhotos(series.id, { remove: ids }) },
+        tx(`新しいシリーズ「${t}」を作って入れました`, `Created “${t}” and added the photos`),
       );
     } catch {
-      fail("シリーズを作れませんでした（同じ URL のシリーズが既にあるかもしれません）。");
+      fail(tx("シリーズを作れませんでした（同じ URL のシリーズが既にあるかもしれません）。", "Could not create the series (a series with the same URL may already exist)."));
     }
   };
   return (
     <Section
-      title="シリーズ"
+      title={tx("シリーズ", "Series")}
       aside={
         !creating && (
           <button type="button" className="st-ax-btn st-link" onClick={() => setCreating(true)}>
-            ＋ 新しく作る
+            {tx("＋ 新しく作る", "+ New")}
           </button>
         )
       }
     >
       {data.series.length === 0 && !creating && (
-        <p className="st-note">まだシリーズがありません。どのシリーズにも入れなくても、写真はサイトに並びます。</p>
+        <p className="st-note">{tx("まだシリーズがありません。どのシリーズにも入れなくても、写真はサイトに並びます。", "No series yet. Photos appear on the site even when they are in no series.")}</p>
       )}
       <ul className="st-checks">
         {data.series.map((s) => {
@@ -212,7 +213,7 @@ function SeriesChecklist({
                 />
                 <span className="st-check__label">{s.title}</span>
                 {s.kind === "work" && <span className="st-tag">Work</span>}
-                {s.isPublished === false && <span className="st-tag">非公開</span>}
+                {s.isPublished === false && <span className="st-tag">{tx("非公開", "Hidden")}</span>}
               </label>
             </li>
           );
@@ -230,16 +231,16 @@ function SeriesChecklist({
             className="st-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="シリーズの題名"
-            aria-label="新しいシリーズの題名"
+            placeholder={tx("シリーズの題名", "Series title")}
+            aria-label={tx("新しいシリーズの題名", "New series title")}
             // oxlint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
           />
           <button type="submit" className="st-ax-btn st-button st-button--primary" disabled={!title.trim()}>
-            作って入れる
+            {tx("作って入れる", "Create and add")}
           </button>
           <button type="button" className="st-ax-btn st-link" onClick={() => setCreating(false)}>
-            やめる
+            {tx("やめる", "Cancel")}
           </button>
         </form>
       )}
@@ -268,20 +269,20 @@ function PublishRow({ photos }: { photos: StudioPhoto[] }) {
       await batch(changing, publish ? "publish" : "unpublish");
       await refresh();
       remember(
-        { label: publish ? "公開" : "非公開", run: () => batch(changing, publish ? "unpublish" : "publish") },
-        `${changing.length === 1 ? "" : `${changing.length}枚を`}${publish ? "公開しました" : "非公開にしました（サイトに出ません）"}`,
+        { label: publish ? tx("公開", "Public") : tx("非公開", "Hidden"), run: () => batch(changing, publish ? "unpublish" : "publish") },
+        tx(`${changing.length === 1 ? "" : `${changing.length}枚を`}${publish ? "公開しました" : "非公開にしました（サイトに出ません）"}`, `${publish ? "Published" : "Hid"} ${changing.length === 1 ? "1 photo" : `${changing.length} photos`}${publish ? "" : " (not on the site)"}`),
       );
     } catch {
-      fail("公開の設定を保存できませんでした。");
+      fail(tx("公開の設定を保存できませんでした。", "Could not save the visibility."));
     }
   };
   return (
     <Segmented
-      label="公開"
+      label={tx("公開", "Visibility")}
       value={value}
       options={[
-        ["public", "公開"],
-        ["hidden", "非公開"],
+        ["public", tx("公開", "Public")],
+        ["hidden", tx("非公開", "Hidden")],
       ]}
       onChange={(v) => void set(v === "public")}
     />
@@ -309,11 +310,11 @@ function HeroRow({ data, photos }: { data: StudioData; photos: StudioPhoto[] }) 
       await batch(changing, next ? "feature" : "unfeature");
       await refresh();
       remember(
-        { label: "トップに出す写真", run: () => batch(changing, next ? "unfeature" : "feature") },
-        next ? "トップに出す写真に加えました" : "トップの選択から外しました（Galleryには残ります）",
+        { label: tx("トップに出す写真", "Home page photos"), run: () => batch(changing, next ? "unfeature" : "feature") },
+        next ? tx("トップに出す写真に加えました", "Added to the home page") : tx("トップの選択から外しました（Galleryには残ります）", "Removed from the home page (still in Gallery)"),
       );
     } catch {
-      fail("トップの設定を保存できませんでした。");
+      fail(tx("トップの設定を保存できませんでした。", "Could not save the home page choice."));
     }
   };
   return (
@@ -326,7 +327,7 @@ function HeroRow({ data, photos }: { data: StudioData; photos: StudioPhoto[] }) 
         }}
         onChange={() => void toggle()}
       />
-      <span className="st-check__label">トップに出す</span>
+      <span className="st-check__label">{tx("トップに出す", "Show on the home page")}</span>
     </label>
   );
 }
@@ -355,24 +356,24 @@ function MediumRow({ photos }: { photos: StudioPhoto[] }) {
       await refresh();
       remember(
         {
-          label: "媒体",
+          label: tx("媒体", "Medium"),
           run: async () => {
             for (const [ft, ids] of before) await batch(ids, "filmType", ft ?? "");
           },
         },
-        `${changing.length === 1 ? "" : `${changing.length}枚を`}${target}にしました`,
+        tx(`${changing.length === 1 ? "" : `${changing.length}枚を`}${target}にしました`, `Set ${changing.length === 1 ? "1 photo" : `${changing.length} photos`} to ${target === "フィルム" ? "film" : "digital"}`),
       );
     } catch {
-      fail("媒体を保存できませんでした。");
+      fail(tx("媒体を保存できませんでした。", "Could not save the medium."));
     }
   };
   return (
     <Segmented
-      label="媒体"
+      label={tx("媒体", "Medium")}
       value={value}
       options={[
-        ["film", FILM],
-        ["digital", DIGITAL],
+        ["film", tx(FILM, "Film")],
+        ["digital", tx(DIGITAL, "Digital")],
       ]}
       onChange={(v) => void set(v)}
     />
@@ -391,36 +392,36 @@ function TrashButton({ photos, onDone }: { photos: StudioPhoto[]; onDone: () => 
         done.push(p.id);
       }
     } catch {
-      fail(done.length ? `${done.length}枚だけゴミ箱へ移しました。` : "ゴミ箱へ移せませんでした。");
+      fail(done.length ? tx(`${done.length}枚だけゴミ箱へ移しました。`, `Moved only ${done.length} to the trash.`) : tx("ゴミ箱へ移せませんでした。", "Could not move to the trash."));
     }
     if (!done.length) return;
     await refresh();
     onDone();
     remember(
       {
-        label: "ゴミ箱への移動",
+        label: tx("ゴミ箱への移動", "Move to trash"),
         run: async () => {
           for (const id of done) await restorePhoto(id);
         },
       },
-      `${done.length === 1 ? "" : `${done.length}枚を`}ゴミ箱へ移しました（30日間は戻せます）`,
+      tx(`${done.length === 1 ? "" : `${done.length}枚を`}ゴミ箱へ移しました（ゴミ箱から戻せます）`, `Moved ${done.length === 1 ? "1 photo" : `${done.length} photos`} to the trash (you can restore from the trash)`),
     );
   };
   return confirm ? (
     <div className="st-confirm">
-      <p>{photos.length === 1 ? "この写真" : `${photos.length}枚`}をゴミ箱へ移しますか？（30日間は戻せます）</p>
+      <p>{tx(`${photos.length === 1 ? "この写真" : `${photos.length}枚`}をゴミ箱へ移しますか？（ゴミ箱から戻せます）`, `Move ${photos.length === 1 ? "this photo" : `${photos.length} photos`} to the trash? (You can restore it from the trash.)`)}</p>
       <div className="st-confirm__actions">
         <button type="button" className="st-ax-btn st-button st-button--danger" onClick={() => void run()}>
-          ゴミ箱へ移す
+          {tx("ゴミ箱へ移す", "Move to trash")}
         </button>
         <button type="button" className="st-ax-btn st-link" onClick={() => setConfirm(false)}>
-          やめる
+          {tx("やめる", "Cancel")}
         </button>
       </div>
     </div>
   ) : (
     <button type="button" className="st-ax-btn st-link st-link--danger" onClick={() => setConfirm(true)}>
-      ゴミ箱へ
+      {tx("ゴミ箱へ", "Trash")}
     </button>
   );
 }
@@ -447,9 +448,9 @@ function SeriesContextActions({
     try {
       await patchSeries(s.id, { coverPhotoId: single.id });
       await refresh();
-      remember({ label: "表紙", run: () => patchSeries(s.id, { coverPhotoId: before }) }, `「${s.title}」の表紙にしました`);
+      remember({ label: tx("表紙", "Cover"), run: () => patchSeries(s.id, { coverPhotoId: before }) }, tx(`「${s.title}」の表紙にしました`, `Made it the cover of “${s.title}”`));
     } catch {
-      fail("表紙を保存できませんでした。");
+      fail(tx("表紙を保存できませんでした。", "Could not save the cover."));
     }
   };
   const remove = async () => {
@@ -460,16 +461,16 @@ function SeriesContextActions({
       onClear();
       remember(
         {
-          label: "シリーズから外す",
+          label: tx("シリーズから外す", "Remove from series"),
           run: async () => {
             await seriesPhotos(seriesId, { add: ids });
             await reorderSeriesPhotos(seriesId, before);
           },
         },
-        `${ids.length === 1 ? "" : `${ids.length}枚を`}「${s.title}」から外しました（写真は残ります）`,
+        tx(`${ids.length === 1 ? "" : `${ids.length}枚を`}「${s.title}」から外しました（写真は残ります）`, `Removed ${ids.length === 1 ? "1 photo" : `${ids.length} photos`} from “${s.title}” (the photos are kept)`),
       );
     } catch {
-      fail("シリーズから外せませんでした。");
+      fail(tx("シリーズから外せませんでした。", "Could not remove from the series."));
     }
   };
   return (
@@ -481,11 +482,11 @@ function SeriesContextActions({
           disabled={s.coverPhotoId === single.id}
           onClick={() => void setCover()}
         >
-          {s.coverPhotoId === single.id ? "このシリーズの表紙です" : "このシリーズの表紙にする"}
+          {s.coverPhotoId === single.id ? tx("このシリーズの表紙です", "This is the series cover") : tx("このシリーズの表紙にする", "Make it the series cover")}
         </button>
       )}
       <button type="button" className="st-ax-btn st-button" onClick={() => void remove()}>
-        このシリーズから外す
+        {tx("このシリーズから外す", "Remove from this series")}
       </button>
     </div>
   );
@@ -501,15 +502,15 @@ function useAutosave(photo: StudioPhoto, field: "title" | "description" | "camer
   const save = async () => {
     if (value === initial) return;
     if (field === "shotAt" && value && !/^\d{4}-\d{2}-\d{2}/.test(value)) {
-      fail("撮影日は 2025-10-04 の形で入れてください。");
+      fail(tx("撮影日は 2025-10-04 の形で入れてください。", "Enter the date as 2025-10-04."));
       return;
     }
     try {
       await patchPhoto(photo.id, { [field]: value.trim() ? value.trim() : field === "title" || field === "description" ? "" : null });
       await refresh();
-      say({ text: "保存しました" });
+      say({ text: tx("保存しました", "Saved") });
     } catch {
-      fail("保存できませんでした。もう一度お試しください。");
+      fail(tx("保存できませんでした。もう一度お試しください。", "Could not save. Please try again."));
     }
   };
   return { value, setValue, save };
@@ -539,9 +540,9 @@ function Single({
     try {
       await patchPhoto(photo.id, { category: slug });
       await refresh();
-      say({ text: "保存しました" });
+      say({ text: tx("保存しました", "Saved") });
     } catch {
-      fail("分類を保存できませんでした。");
+      fail(tx("分類を保存できませんでした。", "Could not save the category."));
     }
   };
   const rotate = async () => {
@@ -549,7 +550,7 @@ function Single({
       await batch([photo.id], "rotate_right");
       await refresh();
     } catch {
-      fail("回転できませんでした。");
+      fail(tx("回転できませんでした。", "Could not rotate."));
     }
   };
   const keyToSave = (e: React.KeyboardEvent, save: () => Promise<void>) => {
@@ -572,16 +573,16 @@ function Single({
         <SeriesContextActions data={data} seriesId={seriesContext} photos={[photo]} onClear={onClear} />
       )}
 
-      <Section title="サイトに出す">
+      <Section title={tx("サイトに出す", "On the site")}>
         <PublishRow photos={[photo]} />
         <HeroRow data={data} photos={[photo]} />
       </Section>
 
       <SeriesChecklist data={data} photos={[photo]} />
 
-      <Section title="言葉">
+      <Section title={tx("言葉", "Words")}>
         <label className="st-field">
-          <span className="st-field__label">題（なくても構いません）</span>
+          <span className="st-field__label">{tx("題（なくても構いません）", "Title (optional)")}</span>
           <input
             className="st-input"
             value={title.value}
@@ -591,7 +592,7 @@ function Single({
           />
         </label>
         <label className="st-field">
-          <span className="st-field__label">説明</span>
+          <span className="st-field__label">{tx("説明", "Description")}</span>
           <textarea
             className="st-input st-input--area"
             rows={3}
@@ -602,11 +603,11 @@ function Single({
         </label>
       </Section>
 
-      <Section title="撮影">
+      <Section title={tx("撮影", "Capture")}>
         <MediumRow photos={[photo]} />
         <div className="st-field-row">
           <label className="st-field">
-            <span className="st-field__label">撮影日</span>
+            <span className="st-field__label">{tx("撮影日", "Date")}</span>
             <input
               className="st-input"
               value={shotAt.value}
@@ -618,13 +619,13 @@ function Single({
           </label>
           {data.categories.length > 0 && (
             <label className="st-field">
-              <span className="st-field__label">分類</span>
+              <span className="st-field__label">{tx("分類", "Category")}</span>
               <select
                 className="st-input"
                 value={photo.category ?? ""}
                 onChange={(e) => void setCategory(e.target.value)}
               >
-                <option value="">なし</option>
+                <option value="">{tx("なし", "None")}</option>
                 {data.categories.map((c) => (
                   <option key={c.slug} value={c.slug}>
                     {c.label}
@@ -635,7 +636,7 @@ function Single({
           )}
         </div>
         <label className="st-field">
-          <span className="st-field__label">カメラ</span>
+          <span className="st-field__label">{tx("カメラ", "Camera")}</span>
           <input
             className="st-input"
             value={camera.value}
@@ -645,7 +646,7 @@ function Single({
           />
         </label>
         <label className="st-field">
-          <span className="st-field__label">レンズ</span>
+          <span className="st-field__label">{tx("レンズ", "Lens")}</span>
           <input
             className="st-input"
             value={lens.value}
@@ -658,11 +659,11 @@ function Single({
 
       <div className="st-inspector__foot">
         <button type="button" className="st-ax-btn st-link" onClick={() => void rotate()}>
-          右に90°回す
+          {tx("右に90°回す", "Rotate 90° right")}
         </button>
         {onOpenDetails && (
           <button type="button" className="st-ax-btn st-link" onClick={() => onOpenDetails(photo.id)}>
-            構図・詳しい道具
+            {tx("構図・詳しい道具", "Crop and more tools")}
           </button>
         )}
         <TrashButton photos={[photo]} onDone={onClear} />
@@ -694,15 +695,15 @@ function Many({
       await refresh();
       remember(
         {
-          label: "分類",
+          label: tx("分類", "Category"),
           run: async () => {
             for (const [c, ids] of before) await batch(ids, "category", c);
           },
         },
-        `${photos.length}枚の分類を変えました`,
+        tx(`${photos.length}枚の分類を変えました`, `Changed the category of ${photos.length} photos`),
       );
     } catch {
-      fail("分類を保存できませんでした。");
+      fail(tx("分類を保存できませんでした。", "Could not save the category."));
     }
   };
   return (
@@ -716,23 +717,23 @@ function Many({
       {seriesContext != null && (
         <SeriesContextActions data={data} seriesId={seriesContext} photos={photos} onClear={onClear} />
       )}
-      <Section title="サイトに出す">
+      <Section title={tx("サイトに出す", "On the site")}>
         <PublishRow photos={photos} />
         <HeroRow data={data} photos={photos} />
       </Section>
       <SeriesChecklist data={data} photos={photos} />
-      <Section title="撮影">
+      <Section title={tx("撮影", "Capture")}>
         <MediumRow photos={photos} />
         {data.categories.length > 0 && (
           <label className="st-field">
-            <span className="st-field__label">分類</span>
+            <span className="st-field__label">{tx("分類", "Category")}</span>
             <select
               className="st-input"
               value=""
               onChange={(e) => e.target.value !== "__" && void setCategory(e.target.value)}
             >
-              <option value="__">まとめて変える…</option>
-              <option value="">なし</option>
+              <option value="__">{tx("まとめて変える…", "Change all…")}</option>
+              <option value="">{tx("なし", "None")}</option>
               {data.categories.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.label}

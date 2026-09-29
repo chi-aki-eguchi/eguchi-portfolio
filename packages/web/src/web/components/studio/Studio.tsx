@@ -3,6 +3,7 @@ import { LibraryView } from "./LibraryView";
 import { SeriesView } from "./SeriesView";
 import { StudioProvider, useStudio, useStudioData } from "./studio-data";
 import "./studio.css";
+import { adminText as tx, useAdminI18n } from "../../pages/admin-i18n";
 
 export type StudioView = "photos" | "series";
 
@@ -50,20 +51,21 @@ function StudioScreens({
   const [seriesTarget, setSeriesTarget] = useState<number | null>(null);
   const [libraryRequest, setLibraryRequest] = useState<{ seriesId: number; n: number } | null>(null);
   const { upload } = useStudio();
+  useAdminI18n(); // 言語を変えたら描き直す（写真・シリーズの言葉は adminText）
   return (
     <div className="st-root">
       {upload && (
         <div className="st-progress" aria-live="polite">
           <span>
-            取り込んでいます {upload.done} / {upload.total}
+            {tx("取り込んでいます", "Importing")} {upload.done} / {upload.total}
             {upload.target != null && data.seriesById.get(upload.target)
-              ? `（「${data.seriesById.get(upload.target)!.title}」へ）`
+              ? tx(`（「${data.seriesById.get(upload.target)!.title}」へ）`, ` (into “${data.seriesById.get(upload.target)!.title}”)`)
               : ""}
           </span>
           <span className="st-progress__bar">
             <span style={{ width: `${(upload.done / Math.max(1, upload.total)) * 100}%` }} />
           </span>
-          <span className="st-note">取り込みが終わるまで、このページを閉じないでください。</span>
+          <span className="st-note">{tx("取り込みが終わるまで、このページを閉じないでください。", "Please keep this page open until the import finishes.")}</span>
         </div>
       )}
       {view === "photos" ? (
@@ -100,10 +102,10 @@ function StudioToast() {
       <span>{notice.text}</span>
       {notice.undo && (
         <button type="button" className="st-ax-btn st-toast__undo" onClick={() => void undo(notice.undo)}>
-          元に戻す
+          {tx("元に戻す", "Undo")}
         </button>
       )}
-      <button type="button" className="st-ax-btn st-toast__close" aria-label="閉じる" onClick={dismiss}>
+      <button type="button" className="st-ax-btn st-toast__close" aria-label={tx("閉じる", "Close")} onClick={dismiss}>
         ×
       </button>
     </div>

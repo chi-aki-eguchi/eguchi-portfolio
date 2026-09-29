@@ -4,6 +4,7 @@ import { adminPhotoSrc } from "../../pages/admin-shared";
 import { aspectOf, planRows } from "../../lib/photo-rows";
 import { moveManyTo } from "../../lib/work-order";
 import type { StudioPhoto } from "./studio-data";
+import { adminText as tx } from "../../pages/admin-i18n";
 
 export const DRAG_TYPE = "application/x-studio-photos";
 
@@ -116,7 +117,7 @@ export function StudioGrid({
     setDragIds(moving);
     e.dataTransfer.effectAllowed = "copyMove";
     e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(moving));
-    e.dataTransfer.setData("text/plain", `${moving.length}枚の写真`);
+    e.dataTransfer.setData("text/plain", tx(`${moving.length}枚の写真`, `${moving.length} photos`));
   };
   const endDrag = () => {
     setDragIds(null);
@@ -185,7 +186,7 @@ export function StudioGrid({
               data-drop={drop}
               data-photo-id={p.id}
               aria-pressed={isSelected}
-              aria-label={`${p.title || p.filename}${p.isPublished === false ? "（非公開）" : ""}`}
+              aria-label={`${p.title || p.filename}${p.isPublished === false ? tx("（非公開）", " (hidden)") : ""}`}
               style={{ left: item.x, top: row.top, width: item.width, height: row.height }}
               draggable
               onDragStart={(e) => onDragStart(e, p.id)}

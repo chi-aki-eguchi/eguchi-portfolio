@@ -352,7 +352,8 @@ test.describe("admin — スマホLibraryコンタクトシート", () => {
       await toolbar.locator(".admin-selection-more > summary").click();
       await expect(toolbar.getByRole("button", { name: "一括編集" })).toBeVisible();
       await expect(toolbar.getByRole("button", { name: "ゴミ箱へ" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "取り込む", exact: true })).toBeVisible();
+      // 写真の画面と同じ言葉（2026-09-30 まで「取り込む」）。
+      await expect(page.getByRole("button", { name: "写真を加える", exact: true })).toBeVisible();
     });
 
     test("写真操作が常設され、絞り込みを開いても写真を押し下げない", async ({

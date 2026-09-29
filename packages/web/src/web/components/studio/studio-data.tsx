@@ -4,6 +4,7 @@ import { api, adminApi } from "../../lib/api";
 import { assertOk, jsonOrThrow, type AdminSeries, type Photo } from "../../pages/admin-shared";
 import { uploadPhotoFile } from "../../lib/admin-upload";
 import { isUploadableImageFile, imageFileTooLarge } from "../../lib/upload-file";
+import { adminText as tx } from "../../pages/admin-i18n";
 
 /**
  * 管理画面（写真中心、2026-09-26 作り直し）のデータと操作。
@@ -195,10 +196,10 @@ export function StudioProvider({
       try {
         await target.run();
         await refresh();
-        say({ text: `元に戻しました（${target.label}）` });
+        say({ text: tx(`元に戻しました（${target.label}）`, `Undone (${target.label})`) });
       } catch {
         await refresh();
-        fail("元に戻せませんでした。最新の状態を読み直しました。");
+        fail(tx("元に戻せませんでした。最新の状態を読み直しました。", "Could not undo. Reloaded the latest state."));
       }
     },
     [fail, refresh, say],
@@ -235,7 +236,7 @@ export function StudioProvider({
       const usable = files.filter((f) => isUploadableImageFile(f) && !imageFileTooLarge(f));
       const skipped = files.length - usable.length;
       if (usable.length === 0) {
-        fail("取り込める画像がありませんでした（JPEG・PNG・HEIC など、容量の上限内の画像）。");
+        fail(tx("取り込める画像がありませんでした（JPEG・PNG・HEIC など、容量の上限内の画像）。", "No images to import (JPEG, PNG, HEIC and similar, within the size limit)."));
         return [];
       }
       setUpload({ done: 0, total: usable.length, target });
@@ -272,10 +273,10 @@ export function StudioProvider({
       setUpload(null);
       setRecentIds(added);
       await refresh();
-      const parts = [`${added.length}枚を加えました`];
-      if (duplicates) parts.push(`${duplicates}枚は登録済みのため飛ばしました`);
-      if (failed) parts.push(`${failed}枚は取り込めませんでした`);
-      if (skipped) parts.push(`${skipped}件は画像ではないか大きすぎました`);
+      const parts = [tx(`${added.length}枚を加えました`, `Added ${added.length}`)];
+      if (duplicates) parts.push(tx(`${duplicates}枚は登録済みのため飛ばしました`, `Skipped ${duplicates} already added`));
+      if (failed) parts.push(tx(`${failed}枚は取り込めませんでした`, `${failed} could not be imported`));
+      if (skipped) parts.push(tx(`${skipped}件は画像ではないか大きすぎました`, `${skipped} were not images or too large`));
       say({ text: parts.join(" · "), tone: failed ? "error" : undefined });
       return added;
     },
@@ -367,7 +368,10 @@ export function shotLine(p: Photo): string | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(p.shotAt ?? "");
   if (!m) return null;
   const date = `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日`;
-  return p.filmType === "フィルム" ? `${date}にスキャン` : `${date}に撮影`;
+  const enDate = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).toLocaleDateString("en", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
+  return p.filmType === "フィルム"
+    ? tx(`${date}にスキャン`, `Scanned ${enDate}`)
+    : tx(`${date}に撮影`, `Taken ${enDate}`);
 }
 
 /** 検索語に当たるか（ファイル名・題・カメラ・レンズ・日付「2025-10」「2025年10月」）。 */

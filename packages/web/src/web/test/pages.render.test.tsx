@@ -1056,7 +1056,7 @@ describe("shared components", () => {
         Array.from(host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent),
       ).toEqual(["写真", "シリーズ", "サイト"]);
       expect(host.textContent).toContain("写真一覧");
-      expect(host.textContent).toContain("取り込む");
+      expect(host.textContent).toContain("写真を加える");
       // Import type is chosen with the files, not mixed into Library filters.
       expect(host.querySelector('input[aria-label="画像ファイルを選択"]')).not.toBeNull();
       expect(host.querySelector('fieldset[aria-label="取り込み媒体"]')).toBeNull();

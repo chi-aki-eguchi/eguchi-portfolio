@@ -9323,9 +9323,12 @@ function TypoControl({
   // focused the user's keystrokes win (intermediate states like "0." parse as
   // NaN and just don't commit); blur returns to the canonical value.
   const [editing, setEditing] = useState<string | null>(null);
+  // 濃さは「%」で見せる（0.3 より 30% の方が伝わる。2026-09-30）。保存する値は 0〜1 のまま。
+  const scale = isOpacity ? 100 : 1;
+  const shown = isOpacity ? String(Math.round(value * 100)) : String(value);
   const commit = (text: string) => {
     const n = parseFloat(text);
-    if (!isNaN(n)) set(valueKey, String(Math.min(max, Math.max(min, n))));
+    if (!isNaN(n)) set(valueKey, String(Math.min(max, Math.max(min, n / scale))));
   };
 
   return (
@@ -9348,11 +9351,11 @@ function TypoControl({
           label,
         )}
         type="number"
-        min={min}
-        max={max}
-        step={step}
-        value={editing ?? String(value)}
-        onFocus={() => setEditing(String(value))}
+        min={min * scale}
+        max={max * scale}
+        step={isOpacity ? 1 : step}
+        value={editing ?? shown}
+        onFocus={() => setEditing(shown)}
         onChange={(e) => {
           setEditing(e.target.value);
           commit(e.target.value);
@@ -9360,9 +9363,7 @@ function TypoControl({
         onBlur={() => setEditing(null)}
         title={
           isOpacity
-            ? t.phase2b.settingsBasic.typoControl.opacityTitle(
-                Math.round(value * 100),
-              )
+            ? undefined
             : unit
               ? t.phase2b.settingsBasic.typoControl.unitTitle(unit)
               : undefined
@@ -9375,7 +9376,7 @@ function TypoControl({
         </span>
       ) : isOpacity ? (
         <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] w-4 shrink-0">
-          α
+          %
         </span>
       ) : (
         <span className="w-4 shrink-0" />

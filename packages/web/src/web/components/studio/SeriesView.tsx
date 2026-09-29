@@ -20,6 +20,7 @@ import {
   type StudioPhoto,
   type StudioSeries,
 } from "./studio-data";
+import { adminText as tx } from "../../pages/admin-i18n";
 
 /**
  * 管理画面の「シリーズ」。左にシリーズ、右にそのシリーズの言葉と写真。
@@ -65,10 +66,10 @@ export function SeriesView({
     try {
       await reorderSeriesList(after, before);
       await refresh();
-      remember({ label: "シリーズの並び", run: () => reorderSeriesList(before, after) }, "シリーズの並びを変えました");
+      remember({ label: tx("シリーズの並び", "Series order"), run: () => reorderSeriesList(before, after) }, tx("シリーズの並びを変えました", "Changed the series order"));
     } catch {
       await refresh();
-      fail("シリーズの並びを保存できませんでした。最新の並びを読み直しました。");
+      fail(tx("シリーズの並びを保存できませんでした。最新の並びを読み直しました。", "Could not save the series order. Reloaded the latest order."));
     }
   };
 
@@ -85,7 +86,7 @@ export function SeriesView({
       await refresh();
       setStoredId(series.id);
     } catch {
-      fail("シリーズを作れませんでした（同じ URL のシリーズが既にあるかもしれません）。");
+      fail(tx("シリーズを作れませんでした（同じ URL のシリーズが既にあるかもしれません）。", "Could not create the series (a series with the same URL may already exist)."));
     }
   };
 
@@ -96,12 +97,12 @@ export function SeriesView({
 
   return (
     <div className="st-workspace st-workspace--series">
-      <nav className="st-side" aria-label="シリーズ">
+      <nav className="st-side" aria-label={tx("シリーズ", "Series")}>
         {groups.map((g) => (
           <div key={g.kind}>
             <p className="st-side__label">{g.label}</p>
             <ul className="st-side__list">
-              {g.rows.length === 0 && <li className="st-side__none">まだありません</li>}
+              {g.rows.length === 0 && <li className="st-side__none">{tx("まだありません", "None yet")}</li>}
               {g.rows.map((s) => {
                 const members = data.membersBySeries.get(s.id) ?? [];
                 const cover = data.photoById.get(s.coverPhotoId ?? -1) ?? data.photoById.get(members[0] ?? -1);
@@ -136,7 +137,7 @@ export function SeriesView({
                       </span>
                       <span className="st-side__title">
                         <span className="st-side__text">{s.title}</span>
-                        {s.isPublished === false && <span className="st-tag">非公開</span>}
+                        {s.isPublished === false && <span className="st-tag">{tx("非公開", "Hidden")}</span>}
                       </span>
                       <span className="st-side__count">{members.length}</span>
                     </button>
@@ -158,12 +159,12 @@ export function SeriesView({
               className="st-input"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="題名"
-              aria-label="新しいシリーズの題名"
+              placeholder={tx("題名", "Title")}
+              aria-label={tx("新しいシリーズの題名", "New series title")}
               // oxlint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
-            <fieldset className="st-seg st-seg--small" aria-label="棚">
+            <fieldset className="st-seg st-seg--small" aria-label={tx("棚", "Shelf")}>
               <button type="button" className="st-ax-btn st-seg__item" aria-pressed={newKind === "series"} onClick={() => setNewKind("series")}>
                 Series
               </button>
@@ -173,17 +174,17 @@ export function SeriesView({
             </fieldset>
             <div className="st-side__create-actions">
               <button type="submit" className="st-ax-btn st-button st-button--primary" disabled={!newTitle.trim()}>
-                作る
+                {tx("作る", "Create")}
               </button>
               <button type="button" className="st-ax-btn st-link" onClick={() => setCreating(false)}>
-                やめる
+                {tx("やめる", "Cancel")}
               </button>
             </div>
           </form>
         ) : (
           <div className="st-side__foot">
             <button type="button" className="st-ax-btn st-button" onClick={() => setCreating(true)}>
-              ＋ 新しいシリーズ
+              {tx("＋ 新しいシリーズ", "+ New series")}
             </button>
           </div>
         )}
@@ -203,9 +204,9 @@ export function SeriesView({
       ) : (
         <div className="st-main">
           <div className="st-empty">
-            <p>シリーズは、写真をまとめて見せたいときの入れ物です。どのシリーズにも入れなくても、写真はサイトに並びます。</p>
+            <p>{tx("シリーズは、写真をまとめて見せたいときの入れ物です。どのシリーズにも入れなくても、写真はサイトに並びます。", "A series groups photographs you want to show together. Photos appear on the site even when they are in no series.")}</p>
             <button type="button" className="st-ax-btn st-button st-button--primary" onClick={() => setCreating(true)}>
-              ＋ 新しいシリーズ
+              {tx("＋ 新しいシリーズ", "+ New series")}
             </button>
           </div>
         </div>
@@ -261,20 +262,20 @@ function SeriesEditor({
   const [saving, setSaving] = useState(false);
   const save = async () => {
     if (!draft.title.trim()) {
-      fail("題名を入れてください。");
+      fail(tx("題名を入れてください。", "Please enter a title."));
       return;
     }
     if (!/^[\p{L}\p{N}-]+$/u.test(draft.slug.trim())) {
-      fail("URL には文字・数字・ハイフンだけを使えます。");
+      fail(tx("URL には文字・数字・ハイフンだけを使えます。", "Use only letters, numbers and hyphens in the URL."));
       return;
     }
     setSaving(true);
     try {
       await patchSeries(series.id, { ...draft, slug: draft.slug.trim(), title: draft.title.trim() });
       await refresh();
-      say({ text: "保存しました" });
+      say({ text: tx("保存しました", "Saved") });
     } catch {
-      fail("保存できませんでした（同じ URL のシリーズが既にあるかもしれません）。");
+      fail(tx("保存できませんでした（同じ URL のシリーズが既にあるかもしれません）。", "Could not save (a series with the same URL may already exist)."));
     } finally {
       setSaving(false);
     }
@@ -283,9 +284,9 @@ function SeriesEditor({
     try {
       await patchSeries(series.id, body);
       await refresh();
-      remember({ label, run: () => patchSeries(series.id, undoBody) }, `${label}を変えました`);
+      remember({ label, run: () => patchSeries(series.id, undoBody) }, tx(`${label}を変えました`, `Changed ${label}`));
     } catch {
-      fail("保存できませんでした。");
+      fail(tx("保存できませんでした。", "Could not save."));
     }
   };
 
@@ -332,10 +333,10 @@ function SeriesEditor({
     try {
       await reorderSeriesPhotos(series.id, after);
       await refresh();
-      remember({ label: "並び", run: () => reorderSeriesPhotos(series.id, before) }, "並びを変えました");
+      remember({ label: tx("並び", "Order"), run: () => reorderSeriesPhotos(series.id, before) }, tx("並びを変えました", "Changed the order"));
     } catch {
       await refresh();
-      fail("並びを保存できませんでした。最新の並びを読み直しました。");
+      fail(tx("並びを保存できませんでした。最新の並びを読み直しました。", "Could not save the order. Reloaded the latest order."));
     }
   };
 
@@ -346,9 +347,9 @@ function SeriesEditor({
       await deleteSeries(series.id);
       await refresh();
       onDeleted();
-      say({ text: `「${series.title}」を消しました（写真は残っています）` });
+      say({ text: tx(`「${series.title}」を消しました（写真は残っています）`, `Deleted “${series.title}” (the photos are kept)`) });
     } catch {
-      fail("シリーズを消せませんでした。");
+      fail(tx("シリーズを消せませんでした。", "Could not delete the series."));
     }
   };
 
@@ -361,35 +362,35 @@ function SeriesEditor({
               className="st-title-input"
               value={draft.title}
               onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              aria-label="シリーズの題名"
+              aria-label={tx("シリーズの題名", "Series title")}
             />
             <div className="st-series-head__actions">
-              <fieldset className="st-seg st-seg--small" aria-label="公開">
+              <fieldset className="st-seg st-seg--small" aria-label={tx("公開", "Visibility")}>
                 <button
                   type="button"
                   className="st-ax-btn st-seg__item"
                   aria-pressed={series.isPublished !== false}
-                  onClick={() => series.isPublished === false && void setField({ isPublished: true }, "公開", { isPublished: false })}
+                  onClick={() => series.isPublished === false && void setField({ isPublished: true }, tx("公開", "visibility"), { isPublished: false })}
                 >
-                  公開
+                  {tx("公開", "Public")}
                 </button>
                 <button
                   type="button"
                   className="st-ax-btn st-seg__item"
                   aria-pressed={series.isPublished === false}
-                  onClick={() => series.isPublished !== false && void setField({ isPublished: false }, "非公開", { isPublished: true })}
+                  onClick={() => series.isPublished !== false && void setField({ isPublished: false }, tx("非公開", "visibility"), { isPublished: true })}
                 >
-                  非公開
+                  {tx("非公開", "Hidden")}
                 </button>
               </fieldset>
               <a className="st-link" href={buildPublicSiteHref(demoSeed, seriesHref(series))} target="_blank" rel="noopener">
-                サイトで見る ↗
+                {tx("サイトで見る ↗", "View on site ↗")}
               </a>
             </div>
           </div>
           <div className="st-series-fields">
             <label className="st-field">
-              <span className="st-field__label">副題</span>
+              <span className="st-field__label">{tx("副題", "Subtitle")}</span>
               <input
                 className="st-input"
                 value={draft.subtitle}
@@ -408,7 +409,7 @@ function SeriesEditor({
               </span>
             </label>
             <label className="st-field st-field--wide">
-              <span className="st-field__label">言葉（シリーズのページの最初に出ます）</span>
+              <span className="st-field__label">{tx("言葉（シリーズのページの最初に出ます）", "Statement (shown at the top of the series page)")}</span>
               <textarea
                 className="st-input st-input--area"
                 rows={4}
@@ -422,22 +423,22 @@ function SeriesEditor({
             {(dirty || saving) && (
               <>
                 <button type="button" className="st-ax-btn st-button st-button--primary" disabled={saving} onClick={() => void save()}>
-                  {saving ? "保存しています…" : "保存する"}
+                  {saving ? tx("保存しています…", "Saving…") : tx("保存する", "Save")}
                 </button>
                 {!saving && (
                   <button type="button" className="st-ax-btn st-link" onClick={() => setDraft(initial)}>
-                    元に戻す
+                    {tx("元に戻す", "Undo")}
                   </button>
                 )}
               </>
             )}
             <span className="st-series-head__spacer" />
-            <fieldset className="st-seg st-seg--small" aria-label="棚">
+            <fieldset className="st-seg st-seg--small" aria-label={tx("棚", "Shelf")}>
               <button
                 type="button"
                 className="st-ax-btn st-seg__item"
                 aria-pressed={series.kind !== "work"}
-                onClick={() => series.kind === "work" && void setField({ kind: "series" }, "棚", { kind: "work" })}
+                onClick={() => series.kind === "work" && void setField({ kind: "series" }, tx("棚", "shelf"), { kind: "work" })}
               >
                 Series
               </button>
@@ -445,29 +446,29 @@ function SeriesEditor({
                 type="button"
                 className="st-ax-btn st-seg__item"
                 aria-pressed={series.kind === "work"}
-                onClick={() => series.kind !== "work" && void setField({ kind: "work" }, "棚", { kind: "series" })}
+                onClick={() => series.kind !== "work" && void setField({ kind: "work" }, tx("棚", "shelf"), { kind: "series" })}
               >
                 Work
               </button>
             </fieldset>
             {confirmDelete ? (
               <span className="st-confirm st-confirm--inline">
-                シリーズを消しますか？（写真は残ります）
+                {tx("シリーズを消しますか？（写真は残ります）", "Delete this series? (The photos are kept.)")}
                 <button type="button" className="st-ax-btn st-button st-button--danger" onClick={() => void remove()}>
-                  消す
+                  {tx("消す", "Delete")}
                 </button>
                 <button type="button" className="st-ax-btn st-link" onClick={() => setConfirmDelete(false)}>
-                  やめる
+                  {tx("やめる", "Cancel")}
                 </button>
               </span>
             ) : (
               <button type="button" className="st-ax-btn st-link st-link--danger" onClick={() => setConfirmDelete(true)}>
-                シリーズを消す
+                {tx("シリーズを消す", "Delete series")}
               </button>
             )}
             {onOpenDetails && (
               <button type="button" className="st-ax-btn st-link" onClick={onOpenDetails}>
-                配色・並び順の上書き
+                {tx("配色・並び順の上書き", "Colour and order overrides")}
               </button>
             )}
           </div>
@@ -475,28 +476,28 @@ function SeriesEditor({
 
         <div className="st-toolbar">
           <div className="st-toolbar__title">
-            <h2>写真</h2>
-            <span className="st-toolbar__count">{photos.length}枚</span>
+            <h2>{tx("写真", "Photos")}</h2>
+            <span className="st-toolbar__count">{tx(`${photos.length}枚`, `${photos.length}`)}</span>
             <button type="button" className="st-ax-btn st-link" onClick={() => onShowInLibrary(series.id)}>
-              写真の画面で開く
+              {tx("写真の画面で開く", "Open in Photos")}
             </button>
           </div>
           <div className="st-toolbar__tools">
-            <fieldset className="st-seg st-seg--small" aria-label="写真の大きさ">
+            <fieldset className="st-seg st-seg--small" aria-label={tx("写真の大きさ", "Photo size")}>
               {(["s", "m", "l"] as GridSize[]).map((k) => (
                 <button key={k} type="button" aria-pressed={size === k} className="st-ax-btn st-seg__item" onClick={() => setSize(k)}>
-                  {k === "s" ? "小" : k === "m" ? "中" : "大"}
+                  {k === "s" ? tx("小", "S") : k === "m" ? tx("中", "M") : tx("大", "L")}
                 </button>
               ))}
             </fieldset>
             <button type="button" className="st-ax-btn st-button" aria-pressed={pickMode} onClick={() => setPickMode((v) => !v)}>
-              {pickMode ? "選び終える" : "まとめて選ぶ"}
+              {pickMode ? tx("選び終える", "Done") : tx("まとめて選ぶ", "Select")}
             </button>
             <button type="button" className="st-ax-btn st-button" onClick={() => fileInput.current?.click()} disabled={uploading}>
-              新しく取り込む
+              {tx("新しく取り込む", "Import new")}
             </button>
             <button type="button" className="st-ax-btn st-button st-button--primary" onClick={() => setPickerOpen(true)}>
-              写真を加える
+              {tx("写真を加える", "Add photos")}
             </button>
             <input
               ref={fileInput}
@@ -522,13 +523,13 @@ function SeriesEditor({
           onReorder={(moving, at) => void onReorder(moving, at)}
           onFiles={(files) => void importFiles(files, series.id)}
           badges={(p) => [
-            ...(p.isPublished === false ? ["非公開"] : []),
-            ...(series.coverPhotoId === p.id ? ["表紙"] : []),
+            ...(p.isPublished === false ? [tx("非公開", "Hidden")] : []),
+            ...(series.coverPhotoId === p.id ? [tx("表紙", "Cover")] : []),
           ]}
           scrollRef={scrollRef}
           empty={
             <p>
-              まだ写真がありません。「写真を加える」で写真の一覧から選ぶか、ここへ写真を落としてください。
+              {tx("まだ写真がありません。「写真を加える」で写真の一覧から選ぶか、ここへ写真を落としてください。", "No photos yet. Choose from your photos with “Add photos”, or drop photos here.")}
             </p>
           }
         />
@@ -538,19 +539,19 @@ function SeriesEditor({
         <PhotoPicker
           data={data}
           exclude={new Set(ids)}
-          title={`「${series.title}」に加える写真`}
+          title={tx(`「${series.title}」に加える写真`, `Photos to add to “${series.title}”`)}
           onClose={() => setPickerOpen(false)}
           onPick={async (picked) => {
             try {
               await seriesPhotos(series.id, { add: picked });
               await refresh();
               remember(
-                { label: "シリーズへ入れる", run: () => seriesPhotos(series.id, { remove: picked }) },
-                `${picked.length}枚を加えました`,
+                { label: tx("シリーズへ入れる", "Add to series"), run: () => seriesPhotos(series.id, { remove: picked }) },
+                tx(`${picked.length}枚を加えました`, `Added ${picked.length}`),
               );
               setPickerOpen(false);
             } catch {
-              fail("写真を加えられませんでした。");
+              fail(tx("写真を加えられませんでした。", "Could not add the photos."));
             }
           }}
         />
@@ -602,12 +603,12 @@ function PhotoPicker({
     <dialog ref={ref} className="st-dialog st-dialog--wide" onClose={onClose} aria-label={title}>
       <div className="st-dialog__head">
         <h2>{title}</h2>
-        <fieldset className="st-seg st-seg--small" aria-label="どの写真から">
+        <fieldset className="st-seg st-seg--small" aria-label={tx("どの写真から", "Choose from")}>
           <button type="button" className="st-ax-btn st-seg__item" aria-pressed={scope === "loose"} onClick={() => setScope("loose")}>
-            シリーズに入っていない
+            {tx("シリーズに入っていない", "Not in a series")}
           </button>
           <button type="button" className="st-ax-btn st-seg__item" aria-pressed={scope === "all"} onClick={() => setScope("all")}>
-            すべて
+            {tx("すべて", "All")}
           </button>
         </fieldset>
         <input
@@ -615,11 +616,11 @@ function PhotoPicker({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="探す"
-          aria-label="写真を探す"
+          placeholder={tx("探す", "Search")}
+          aria-label={tx("写真を探す", "Search photos")}
         />
         <button type="button" className="st-ax-btn st-link" onClick={() => ref.current?.close()}>
-          閉じる
+          {tx("閉じる", "Close")}
         </button>
       </div>
       <div className="st-dialog__scroll" ref={scrollRef}>
@@ -643,13 +644,13 @@ function PhotoPicker({
           pickMode
           canReorder={false}
           onReorder={() => undefined}
-          badges={(p) => (p.isPublished === false ? ["非公開"] : [])}
+          badges={(p) => (p.isPublished === false ? [tx("非公開", "Hidden")] : [])}
           scrollRef={scrollRef}
-          empty={<p>加えられる写真はありません。</p>}
+          empty={<p>{tx("加えられる写真はありません。", "No photos to add.")}</p>}
         />
       </div>
       <div className="st-dialog__foot">
-        <span className="st-note">{selected.size}枚を選んでいます（Shift で範囲）</span>
+        <span className="st-note">{tx(`${selected.size}枚を選んでいます（Shift で範囲）`, `${selected.size} selected (Shift for a range)`)}</span>
         <button
           type="button"
           className="st-ax-btn st-button st-button--primary"
@@ -660,7 +661,7 @@ function PhotoPicker({
             setBusy(false);
           }}
         >
-          {selected.size ? `${selected.size}枚を加える` : "写真を選んでください"}
+          {selected.size ? tx(`${selected.size}枚を加える`, `Add ${selected.size}`) : tx("写真を選んでください", "Choose photos")}
         </button>
       </div>
     </dialog>

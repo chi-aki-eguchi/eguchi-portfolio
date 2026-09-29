@@ -3,9 +3,9 @@
  *
  * 縛るのは3点。
  *  1. サイトの骨格（写真中心／いつもの構成）に関係なく、管理画面は同じ器
- *     （写真・シリーズ・サイト）。サイトの目次も同じ項目・同じ順で、その骨格で
- *     使わない項目には札を付けて薄くするだけ（2026-09-29 オーナー「骨格を変えたら
- *     admin も全部変わってわからない」）
+ *     （写真・シリーズ・サイト）。「サイト」は公開サイトのページごとに、そこにある
+ *     部分だけを並べる（2026-09-29 オーナー「骨格を変えたら admin も全部変わって
+ *     わからない」「目次が長くてわかりづらい」）
  *  2. 最初は「写真」。シリーズに入っていない写真を数え、絞り込める
  *  3. 公開／非公開の切り替えはまとめて扱う要求（/admin/photos/batch）を1回送り、
  *     元に戻す入口を出す
@@ -111,36 +111,37 @@ afterEach(() => {
 });
 
 describe("写真集の管理画面", () => {
-  test("骨格を切り替えても管理画面とサイトの目次は同じで、使わない項目に札が付くだけ", async () => {
-    const outline = async (settings: Record<string, string>) => {
+  test("骨格を切り替えても管理画面は同じで、サイトはページごとに変えられる所を並べる", async () => {
+    const siteView = async (settings: Record<string, string>) => {
       const m = await mountAdmin(settings);
       try {
         expect(m.host.querySelector("aside.admin-sidebar")).toBeNull();
         const tabs = Array.from(m.host.querySelectorAll(".admin-book__tab"));
         expect(tabs.map((b) => b.textContent)).toEqual(["写真", "シリーズ", "サイト"]);
         (tabs[2] as HTMLButtonElement).click();
-        await flush(40);
-        const items = Array.from(m.host.querySelectorAll<HTMLElement>("[data-site-item]"));
-        return {
-          ids: items.map((b) => b.dataset.siteItem),
-          inactive: items.filter((b) => b.hasAttribute("data-skeleton-inactive")).map((b) => b.dataset.siteItem),
-        };
+        // 右の一覧は設定の画面（読み込みを待つ）の中に出る。
+        for (let i = 0; i < 40 && !m.host.querySelector("[data-site-part]"); i += 1) await flush(20);
+        const pages = Array.from(m.host.querySelectorAll("[data-site-page]")).map((b) => b.textContent);
+        const topParts = Array.from(m.host.querySelectorAll<HTMLElement>("[data-site-part]")).map((b) => b.dataset.sitePart);
+        (m.host.querySelector('[data-site-mode="look"]') as HTMLButtonElement).click();
+        await flush(30);
+        const lookParts = Array.from(m.host.querySelectorAll<HTMLElement>("[data-site-part]")).map((b) => b.dataset.sitePart);
+        return { pages, topParts, lookParts };
       } finally {
         m.cleanup();
       }
     };
-    const classic = await outline({});
-    const book = await outline({ siteDesign: "book" });
-    expect(book.ids).toEqual(classic.ids);
-    // いつもの構成だけの項目は、写真中心のときに薄くなる（隠さない）。
-    expect(classic.inactive).toEqual([]);
-    expect(book.inactive).toEqual(
-      expect.arrayContaining(["settings:hero", "settings:gallery-layout", "settings:navigation"]),
-    );
-    // 分けた節と、以前は写真中心の目次に無かった「トップの写真と順番」も並ぶ。
-    expect(classic.ids).toEqual(
-      expect.arrayContaining(["settings:page-layout", "settings:home", "settings:viewer", "settings:page-parts", "settings:page-frame", "tab:hero", "tab:series"]),
-    );
+    const classic = await siteView({});
+    const book = await siteView({ siteDesign: "book" });
+    // 入口・ページのタブは同じ。長い目次は無い。
+    expect(book.pages).toEqual(classic.pages);
+    expect(classic.pages).toEqual(["トップ", "Gallery", "Series", "About", "Contact"]);
+    // トップにある物だけを並べる。いつもの構成には作品の並びとシリーズの帯がある。
+    expect(classic.topParts).toEqual(["name", "top-photos", "statement", "works", "series-strip", "cta", "menu", "footer"]);
+    expect(book.topParts).toEqual(["name", "top-photos", "statement", "cta", "menu", "footer"]);
+    // 全体の見た目は、いつもの構成だけの「デザインの出発点」などを写真中心では出さない。
+    expect(classic.lookParts).toEqual(expect.arrayContaining(["fonts", "body", "headings", "theme", "structure", "mood"]));
+    expect(book.lookParts).toEqual(["fonts", "body", "headings", "theme", "structure"]);
   });
 
   test("写真中心では「写真」から始まり、シリーズに入っていない写真を数える", async () => {

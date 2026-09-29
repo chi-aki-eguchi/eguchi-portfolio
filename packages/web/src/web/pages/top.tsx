@@ -628,7 +628,10 @@ function TopStatement({
   const text = settings?.profileStatement ?? "";
   if (!text.trim()) return null;
   return (
-    <section className="max-w-2xl mx-auto px-6 md:px-12 pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(5rem*var(--spacing-section-gap,1))]">
+    <section
+      data-home-statement
+      className="max-w-2xl mx-auto px-6 md:px-12 pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(5rem*var(--spacing-section-gap,1))]"
+    >
       <div className="space-y-4 section-reveal">
         {text
           .split(/\n{2,}/)

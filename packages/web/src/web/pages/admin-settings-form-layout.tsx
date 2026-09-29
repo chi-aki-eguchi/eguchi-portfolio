@@ -391,7 +391,7 @@ export function AdminSettingsFormLayout({
           <div className="admin-settings-section-sheet__list">
             {matchingSections.length === 0 && <output className="admin-settings-search-empty">{copy.noResults}</output>}
             {SETTINGS_NAVIGATION.map(group => {
-              const items = matchingSections.filter(section => section.group === group.group || (!section.group && group.group === "pages"));
+              const items = matchingSections.filter(section => section.group === group.group || (!section.group && group.group === "more"));
               return items.length > 0 && <Fragment key={group.group}>
                 <h3 className="studio-mobile-nav-heading">{language === "ja" ? group.ja : group.en}</h3>
                 {items.map((section) => (

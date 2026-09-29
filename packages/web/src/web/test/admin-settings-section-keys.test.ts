@@ -4,7 +4,14 @@ import {
   SETTINGS_SECTION_GROUPS,
   SETTINGS_SECTION_KEYS,
 } from "../pages/admin-tabs";
-import { SITE_OUTLINE } from "../pages/admin-settings-navigation";
+import {
+  SETTINGS_NAVIGATION,
+  SITE_LOOK_PARTS,
+  SITE_MORE_PARTS,
+  SITE_PAGES,
+  SITE_PARTS,
+  type SitePart,
+} from "../pages/admin-settings-navigation";
 
 // site_settings の許可台帳には、Settingsタブ以外が直接管理する値と
 // 旧バージョン互換の値も含まれる。ここへ明示したもの以外は、
@@ -98,13 +105,28 @@ describe("Settings section key registry", () => {
     );
   });
 
-  // 管理画面「サイト」の目次（SITE_OUTLINE）が、設定の節をちょうど1回ずつ並べる。
-  // 目次から漏れた節は、管理画面のどこからも開けなくなる（2026-09-29 に節を分けたとき）。
-  test("サイトの目次は全節をちょうど1回ずつ含む", () => {
-    const listed = SITE_OUTLINE.flatMap((group) =>
-      group.items.filter((item) => item.kind === "settings").map((item) => item.id),
-    );
-    expect(new Set(listed).size, "同じ節を目次に2回並べていない").toBe(listed.length);
+  // 設定の節の名前（SETTINGS_NAVIGATION）は、どの節にもちょうど1つある。
+  test("設定の節の名前の台帳は全節をちょうど1回ずつ含む", () => {
+    const listed: string[] = SETTINGS_NAVIGATION.flatMap((group) => group.items.map((item) => item.id));
+    expect(new Set(listed).size, "同じ節を2回並べていない").toBe(listed.length);
     expect([...listed].sort()).toEqual(Object.keys(SETTINGS_SECTION_KEYS).sort());
+  });
+
+  // 「サイト」の画面（見ながら直す）から、どの節にも届く。どの部分からも開けない節は、
+  // 管理画面のどこからも直せなくなる（2026-09-29 に目次をやめたとき）。
+  test("どの設定の節も、サイトの画面のいずれかの部分から開ける", () => {
+    const parts = Object.values(SITE_PARTS) as SitePart[];
+    const reachable = new Set(
+      parts.flatMap((part) => [...(part.sections ?? []), ...Object.values(part.bySkeleton ?? {}).flat()]),
+    );
+    expect(Object.keys(SETTINGS_SECTION_KEYS).filter((id) => !reachable.has(id))).toEqual([]);
+    expect([...reachable].filter((id) => !(id in SETTINGS_SECTION_KEYS))).toEqual([]);
+  });
+
+  test("ページ・全体の見た目・そのほかに並べる部分は、すべて台帳にある", () => {
+    const ids = [...SITE_PAGES.flatMap((p) => p.parts), ...SITE_LOOK_PARTS, ...SITE_MORE_PARTS];
+    expect(ids.filter((id) => !(id in SITE_PARTS))).toEqual([]);
+    // 部分は、ページ・全体の見た目・そのほかのどこかに必ず並ぶ（探さないと見つからない部分を作らない）。
+    expect(Object.keys(SITE_PARTS).filter((id) => !ids.includes(id as never))).toEqual([]);
   });
 });

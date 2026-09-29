@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.ts";
-import { loginAsAdmin, gotoAdminTab } from "./helpers";
+import { backToSiteList, loginAsAdmin, gotoAdminTab } from "./helpers";
 
 test("スマホの写真編集で写真と保存帯が同時に使える", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "スマホの高さと操作を検証");
@@ -25,22 +25,23 @@ test("スマホの写真編集で写真と保存帯が同時に使える", async
   await expect(inspector).toHaveCount(0);
 });
 
-test("サイトの目次を目的の言葉で探し、編集から一覧へ戻れる", async ({ page }, info) => {
+test("サイトの設定を目的の言葉で探し、編集から一覧へ戻れる", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "スマホの設定入口を検証");
   await loginAsAdmin(page);
   await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
+  await backToSiteList(page);
   const search = page.getByRole("searchbox", { name: "設定を探す" });
   await search.fill("並び順");
-  const series = page.locator('[data-site-item="settings:series"]');
-  await expect(series).toBeVisible();
-  await expect(page.locator('[data-site-item="settings:fonts"]')).toHaveCount(0);
-  await series.click();
+  const order = page.locator('.se-parts [data-site-sections~="series"]').first();
+  await expect(order).toBeVisible();
+  await expect(page.locator('.se-parts [data-site-sections~="fonts"]')).toHaveCount(0);
+  await order.click();
   await expect(page.locator("#settings-section-series")).toBeVisible();
-  await page.locator(".book-site__back").click();
+  await page.locator(".se-part-head__back").click();
   await search.fill("見つからない項目");
-  await expect(page.locator(".book-site__toc").getByRole("status")).toContainText("見つかりませんでした");
+  await expect(page.locator(".se-panel__empty")).toContainText("見つかりませんでした");
   await search.fill("");
-  await expect(page.locator('[data-site-item="settings:fonts"]')).toBeVisible();
+  await expect(page.locator('.se-parts [data-site-part="name"]')).toBeVisible();
 });
 
 test("公開スマホの絞り込みはURLと点数を保ち、メニューから戻れる", async ({ page, api }, info) => {

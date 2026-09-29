@@ -52,16 +52,43 @@ export async function loginAsAdmin(page: Page): Promise<void> {
 }
 
 // 管理画面は、サイトの骨格に関係なく「写真・シリーズ・サイト」の1つの器（2026-09-29）。
-// 以前の左メニューのタブ名で呼べるよう、入口（admin:book:view）とサイトの目次の項目
-// （admin:book:panel）へ読み替えて localStorage に書き、リロードする。
+// 「サイト」は公開サイトを大きく見ながら直す画面で、右の欄にページの部分を並べる。
+// 以前の左メニューのタブ名で呼べるよう、入口（admin:book:view）と、サイトの
+// ページ・一覧・開く部分（admin:site:page / mode / part）へ読み替えて書き、リロードする。
 //   gallery  → 写真の詳しい道具（従来の写真一覧）
-//   settings → サイト › トップの見せ方（節は chooseSettingsSection で選ぶ）
-//   そのほか → サイト › その編集画面（トップの写真・About・分類・シリーズの詳しい設定…）
+//   settings → サイトで「トップの見せ方」の節（以前の設定タブの既定の節）
+//   そのほか → サイトの編集画面（トップの写真と順番・About・分類・シリーズの詳しい設定…）
+
+/**
+ * 以前のタブ名を、管理画面の入口とサイトの画面の状態へ書き込む。
+ * `page.addInitScript(storeAdminTab, "setup")` や `page.evaluate(storeAdminTab, tab)` で使う
+ * （関数は文字列にして送られるので、外の変数を使わない。読み替えは中に書く）。
+ */
+export function storeAdminTab(tab: string): void {
+  const map: Record<string, { page?: string; mode: string; part: string }> = {
+    settings: { page: "top", mode: "page", part: "section:hero" },
+    hero: { mode: "more", part: "hero-photos" },
+    profile: { page: "about", mode: "page", part: "about" },
+    categories: { mode: "more", part: "categories" },
+    series: { mode: "more", part: "series-details" },
+    pricing: { mode: "more", part: "pricing" },
+    service: { mode: "more", part: "service" },
+    setup: { mode: "more", part: "setup" },
+  };
+  if (tab === "gallery") {
+    localStorage.setItem("admin:book:view", JSON.stringify("library"));
+    return;
+  }
+  const site = map[tab] ?? map.settings;
+  localStorage.setItem("admin:book:view", JSON.stringify("site"));
+  if (site.page) localStorage.setItem("admin:site:page", JSON.stringify(site.page));
+  localStorage.setItem("admin:site:mode", JSON.stringify(site.mode));
+  localStorage.setItem("admin:site:part", JSON.stringify(site.part));
+}
+
 export async function gotoAdminTab(page: Page, tab: string, libraryView: "normal" | "select" = "normal"): Promise<void> {
-  const view = tab === "gallery" ? "library" : "site";
   await page.evaluate(storeAdminTab, tab);
   await page.reload();
-  // スマホ幅のサイトは目次から始まり、中身（.admin-screen）はまだ隠れている。
   await page.waitForSelector(".admin-screen", { state: "attached", timeout: 10_000 });
   await page
     .waitForFunction(() => !document.body.innerText.includes("Loading..."), {
@@ -69,8 +96,6 @@ export async function gotoAdminTab(page: Page, tab: string, libraryView: "normal
     })
     .catch(() => {});
   await page.waitForTimeout(300);
-  // スマホ幅のサイトは目次と中身を1画面ずつ出す。タブ名で開いたときは中身を出す。
-  if (view === "site") await revealAdminPanel(page);
   // Existing detail/reorder scenarios explicitly start in the single-photo view.
   // Tests of the new default selection flow use "select" or open /admin directly.
   if (tab === "gallery") {
@@ -91,40 +116,54 @@ export async function gotoAdminTab(page: Page, tab: string, libraryView: "normal
   }
 }
 
-/**
- * 以前のタブ名を、管理画面の入口（admin:book:view）とサイトの目次の項目
- * （admin:book:panel）へ書き込む。`page.addInitScript(storeAdminTab, "setup")` や
- * `page.evaluate(storeAdminTab, tab)` で使う（関数は文字列にして送られるので、
- * 外の変数を使わない）。settings は以前の既定の節（トップの見せ方）。
- */
-export function storeAdminTab(tab: string): void {
-  const view = tab === "gallery" ? "library" : "site";
-  const panel = tab === "gallery" ? null : tab === "settings" ? "settings:hero" : `tab:${tab}`;
-  localStorage.setItem("admin:book:view", JSON.stringify(view));
-  if (panel) localStorage.setItem("admin:book:panel", JSON.stringify(panel));
-}
-
-/** スマホ幅のサイトは目次から始まる。開いている項目の中身へ入る（PC幅では何もしない）。 */
-export async function revealAdminPanel(page: Page): Promise<void> {
-  const toc = page.locator('.book-site[data-mobile="toc"]');
-  if (!(await toc.isVisible().catch(() => false))) return;
-  const active = page.locator('.book-site__toc [data-site-item][aria-current="page"]');
-  if ((page.viewportSize()?.width ?? 1440) >= 768) return;
-  if (await active.count()) await active.first().click();
-}
-
-/** サイトの目次から設定の節を開く（スマホ幅は「← サイトの一覧」で目次へ戻ってから）。 */
-export async function chooseSettingsSection(page: Page, sectionId: string): Promise<void> {
-  const item = page.locator(`[data-site-item="settings:${sectionId}"]`);
-  if (!(await item.isVisible())) {
-    const back = page.locator(".book-site__back");
-    if (await back.isVisible()) await back.click();
-    else await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
+/** サイトの画面で、右の欄を一覧（探す・部分の一覧）に戻す。 */
+export async function backToSiteList(page: Page): Promise<void> {
+  if (!(await page.locator(".se-bar").isVisible())) {
+    await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
   }
-  await item.scrollIntoViewIfNeeded();
-  await item.click();
+  // 細い画面は「編集／プレビュー」の切り替え。一覧は編集の側にある。
+  const edit = page.locator(".admin-settings-mobile-current__view-switch button", { hasText: /^(編集|Edit)$/ });
+  if (await edit.isVisible()) await edit.click();
+  // 設定の画面は後から読み込まれる。一覧か、開いている部分の「戻る」が出るまで待つ。
+  const search = page.locator(".se-search input");
+  const back = page.locator(".se-part-head__back, .se-editor-back button");
+  await expect(search.or(back).first()).toBeVisible({ timeout: 15_000 });
+  if (await back.first().isVisible()) await back.first().click();
+  await expect(search).toBeVisible();
+}
+
+/**
+ * サイトの画面が描かれるまで待つ（開いている部分があればその設定、なければ一覧）。
+ * 以前はスマホ幅で目次から中身へ入る手順だった。今は開いた部分がそのまま出る。
+ */
+export async function revealAdminPanel(page: Page): Promise<void> {
+  if (!(await page.locator(".se-bar").isVisible().catch(() => false))) return;
+  await page
+    .locator(".se-search input, .se-part-head__back, .se-editor-back button")
+    .first()
+    .waitFor({ state: "visible", timeout: 15_000 })
+    .catch(() => {});
+}
+
+/**
+ * 設定の節を開く。右の欄の「探す」に節の id を入れ、その節を開く行を押す
+ * （部分の行も、節を直接開く行も `data-site-sections` に出す節を持つ）。
+ */
+export async function chooseSettingsSection(page: Page, sectionId: string): Promise<void> {
+  await backToSiteList(page);
+  const search = page.locator(".se-search input");
+  await search.fill(sectionId);
+  const row = page.locator(`.se-parts [data-site-sections~="${sectionId}"]`).first();
+  await row.click();
   await expect(page.locator(".admin-settings-form-layout")).toBeVisible();
   await expect(page.locator(`[data-settings-section="${sectionId}"]`)).toBeVisible();
+}
+
+/** サイトの画面の部分を、ページ（なければ全体の見た目・そのほか）から開く。 */
+export async function openSitePart(page: Page, partId: string, where: { page?: string; mode?: "look" | "more" } = { page: "top" }): Promise<void> {
+  await backToSiteList(page);
+  await page.locator(where.mode ? `[data-site-mode="${where.mode}"]` : `[data-site-page="${where.page}"]`).click();
+  await page.locator(`[data-site-part="${partId}"]`).click();
 }
 
 export type ScrollProbe = {

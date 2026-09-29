@@ -138,12 +138,9 @@ test.describe("admin — JP/EN shared shell", () => {
 
     await gotoAdminTab(page, "settings");
     await chooseSettingsSection(page, "site-basics");
-    // 2c-3で設定タブ「基本・見た目」もEN化されたため、境界マーカーをEN表記に更新。
-    await expect(
-      page.locator(
-        '[data-settings-section="site-basics"] [data-settings-section-heading]',
-      ),
-    ).toContainText("Identity, contact & SEO");
+    // サイトの画面（2026-09-29〜）: 開いた部分の名前と、設定の欄の言葉が英語になる。
+    await expect(page.locator(".se-part-head__title")).toHaveText(/Contact/);
+    await expect(page.getByLabel("Contact Email", { exact: true })).toBeVisible();
     expect(writes).toEqual([]);
   });
 });

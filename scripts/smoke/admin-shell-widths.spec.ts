@@ -1,54 +1,63 @@
 import { test, expect } from "./fixtures.ts";
-import { gotoAdminTab, loginAsAdmin } from "./helpers";
+import { backToSiteList, gotoAdminTab, loginAsAdmin } from "./helpers";
 
 // 2026-07-31 の刷新で決めた「幅ごとの見え方」を機械で守る。
 // 直したのは次の3つで、どれも実際に壊れていたもの:
 //  1. 900px の横長画面にスマホ用の下部タブバーが出ていた
 //  2. 中間幅で Settings の目次が横スクロールの帯になり、後ろの節が押せなかった
 //  3. 選択トグル(閲覧/選択/並べ替え)が実行ボタンと同じ黒塗りだった
-// 2026-09-29 に管理画面を「写真・シリーズ・サイト」の1つの器にした。左ナビと
-// 下部タブバーは無くなり、1・2はサイトの目次で同じことを確かめる。
+// 2026-09-29 に管理画面を「写真・シリーズ・サイト」の1つの器にし、「サイト」を
+// 公開サイトを見ながら直す画面にした。左ナビと下部タブバーは無くなり、1・2は
+// サイトの画面（プレビューと右の一覧）で同じことを確かめる。
 // 読み取り専用。保存・削除・追加は一切押さない。
 test.describe("admin — 幅ごとの土台", () => {
-  test("中間幅でも上の入口とサイトの目次が並び、767px以下だけ1画面ずつになる", async ({
+  test("900px以上はプレビューと右の一覧が並び、それより狭いと1画面ずつになる", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "幅を明示して確認する");
     await loginAsAdmin(page);
     await gotoAdminTab(page, "settings");
+    await backToSiteList(page);
 
-    // 境界そのもの(768 / 767)と、旧しきい値だった 1024 を必ず含める。
-    for (const width of [1440, 1200, 1024, 900, 768]) {
+    // 境界そのもの(900 / 899 / 768 / 767)と、旧しきい値だった 1024 を必ず含める。
+    for (const width of [1440, 1200, 1024, 900, 899, 768]) {
       await page.setViewportSize({ width, height: 900 });
       await page.waitForTimeout(250);
       await expect(page.locator(".admin-book__tabs"), `${width}px で入口が必要`).toBeVisible();
-      await expect(page.locator(".book-site__toc"), `${width}px で目次が必要`).toBeVisible();
-      await expect(page.locator(".book-site__back"), `${width}px で戻るボタンは出さない`).toBeHidden();
+      await expect(page.locator(".se-bar"), `${width}px でページの帯が必要`).toBeVisible();
+      await expect(page.locator(".se-parts"), `${width}px で一覧が必要`).toBeVisible();
 
-      // 縦積み = 項目の左端が全部そろっている。横帯になると左端がばらける。
-      const items = page.locator(".book-site__toc [data-site-item]");
-      const lefts = await items.evaluateAll((buttons) =>
-        buttons.map((button) => Math.round(button.getBoundingClientRect().x)),
+      // 縦積み = 行の左端が全部そろっている。横帯になると左端がばらける。
+      const lefts = await page.locator(".se-parts [data-site-part]").evaluateAll((rows) =>
+        rows.map((row) => Math.round(row.getBoundingClientRect().x)),
       );
-      expect(lefts.length).toBeGreaterThan(20);
-      expect(
-        Math.max(...lefts) - Math.min(...lefts),
-        `${width}px で目次が横に流れている`,
-      ).toBeLessThanOrEqual(1);
+      expect(lefts.length).toBeGreaterThan(3);
+      expect(Math.max(...lefts) - Math.min(...lefts), `${width}px で一覧が横に流れている`).toBeLessThanOrEqual(1);
+
+      const frame = page.locator(".studio-preview-frame");
+      if (width >= 900) {
+        await expect(frame, `${width}px ではプレビューを横に出す`).toBeVisible();
+        const preview = await frame.boundingBox();
+        const list = await page.locator(".se-parts").boundingBox();
+        expect(preview && list && preview.x + preview.width <= list.x, `${width}px でプレビューが左、一覧が右`).toBe(true);
+      } else {
+        await expect(frame, `${width}px では編集とプレビューを切り替える`).toBeHidden();
+      }
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - window.innerWidth,
       );
       expect(overflow, `${width}px で横にはみ出さない`).toBeLessThanOrEqual(1);
     }
 
-    // 767px 以下だけがスマホ扱い。PC 幅で開いていた項目は中身のまま出し、戻るボタンを出す。
+    // 767px 以下はスマホ扱い。部分を開くと一覧は隠れ、戻るで一覧へ戻る。
     await page.setViewportSize({ width: 767, height: 900 });
     await page.waitForTimeout(250);
-    await expect(page.locator(".book-site__back")).toBeVisible();
-    await expect(page.locator(".book-site__toc")).toBeHidden();
-    await page.locator(".book-site__back").click();
-    await expect(page.locator(".book-site__toc")).toBeVisible();
-    await expect(page.locator('[data-settings-section="hero"]')).toBeHidden();
+    await page.locator('.se-parts [data-site-part="name"]').click();
+    await expect(page.locator(".se-part-head__back")).toBeVisible();
+    await expect(page.locator(".se-parts")).toHaveCount(0);
+    await page.locator(".se-part-head__back").click();
+    await expect(page.locator(".se-parts")).toBeVisible();
+    await expect(page.locator('[data-settings-section="name"]')).toBeHidden();
   });
 
   test("Libraryの選択トグルは実行ボタンと同じ黒塗りにしない", async ({

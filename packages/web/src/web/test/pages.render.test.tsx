@@ -94,15 +94,38 @@ function shellTab(host: Element, label: string): HTMLButtonElement {
   return tab;
 }
 
-async function openSiteItem(host: Element, id: string) {
-  const item = host.querySelector(`[data-site-item="${id}"]`) as HTMLButtonElement | null;
-  if (!item) {
+// 「サイト」の画面（見ながら直す）の部分を開く。ページにある部分はそのページのタブ、
+// ほかは「全体の見た目」「そのほか」から。未保存の確認が出たらそこで止める。
+const SITE_PART_HOME: Record<string, { page?: string; mode?: "look" | "more" }> = {
+  about: { page: "about" },
+  "contact-info": { page: "contact" },
+  "hero-photos": { mode: "more" },
+  "series-details": { mode: "more" },
+  categories: { mode: "more" },
+  pricing: { mode: "more" },
+  service: { mode: "more" },
+  "portfolio-kit": { mode: "more" },
+  "site-basics": { mode: "more" },
+  setup: { mode: "more" },
+  fonts: { mode: "look" },
+  theme: { mode: "look" },
+};
+async function openSitePart(host: Element, id: string) {
+  if (!host.querySelector(".se-bar")) {
     shellTab(host, "サイト").click();
     await flush(30);
   }
-  const target = host.querySelector(`[data-site-item="${id}"]`) as HTMLButtonElement | null;
-  if (!target) throw new Error(`Site outline item not found: ${id}`);
-  target.click();
+  const where = SITE_PART_HOME[id] ?? { page: "top" };
+  const control = host.querySelector(
+    where.mode ? `[data-site-mode="${where.mode}"]` : `[data-site-page="${where.page}"]`,
+  ) as HTMLButtonElement | null;
+  if (!control) throw new Error(`Site page/mode not found for: ${id}`);
+  control.click();
+  await flush(30);
+  if (host.textContent?.includes("未保存の変更があります") || host.textContent?.includes("You have unsaved changes") && host.querySelector("dialog")) return;
+  const row = host.querySelector(`[data-site-part="${id}"]`) as HTMLButtonElement | null;
+  if (!row) throw new Error(`Site part not found: ${id}`);
+  row.click();
   await flush(30);
 }
 
@@ -1102,7 +1125,7 @@ describe("shared components", () => {
         createElement(Admin),
         seedAdminPhotos,
       );
-      await openSiteItem(host, "tab:profile");
+      await openSitePart(host, "about");
       await waitForText(
         host,
         "Your biography and profile photo shown on the About page.",
@@ -1112,7 +1135,7 @@ describe("shared components", () => {
       expect(host.textContent).toContain("Discard");
       expect(host.textContent).toContain("Save");
 
-      await openSiteItem(host, "tab:hero");
+      await openSitePart(host, "hero-photos");
       await waitForText(host, "Your changes have not been saved");
       expect(host.textContent).toContain("Cancel");
       expect(host.textContent).toContain("Leave without saving");
@@ -1551,28 +1574,28 @@ describe("shared components", () => {
         Array.from(host.querySelectorAll(".admin-book__tab")).map((b) => b.textContent),
       ).toEqual(["写真", "シリーズ", "サイト"]);
 
-      await openSiteItem(host, "tab:hero");
+      await openSitePart(host, "hero-photos");
       await waitForText(host, "トップページの写真");
 
-      await openSiteItem(host, "tab:series");
+      await openSitePart(host, "series-details");
       await waitForText(host, "新しいシリーズ");
 
-      await openSiteItem(host, "tab:categories");
+      await openSitePart(host, "categories");
       await waitForText(host, "新しいカテゴリ");
 
-      await openSiteItem(host, "tab:profile");
+      await openSitePart(host, "about");
       await waitForText(host, "プロフィール写真（Aboutページ）");
 
-      await openSiteItem(host, "tab:pricing");
+      await openSitePart(host, "pricing");
       await waitForText(host, "プランを追加");
       expect(host.textContent).toContain("Contactページに表示される料金です");
 
-      await openSiteItem(host, "tab:service");
+      await openSitePart(host, "service");
       await waitForText(host, "/portfolio-kit 販売ページの内容を編集します");
       buttonWithText(host, "料金").click();
       await waitForText(host, "/portfolio-kit 販売ページの料金です");
 
-      await openSiteItem(host, "settings:portfolio-kit");
+      await openSitePart(host, "portfolio-kit");
       await flush(40);
       const serviceModeSelect = host.querySelector(
         'select[aria-label="Portfolio Kitの表示"]',
@@ -1582,7 +1605,7 @@ describe("shared components", () => {
         Array.from(serviceModeSelect!.options).map((option) => option.value),
       ).toEqual(["", "on", "off"]);
 
-      await openSiteItem(host, "tab:setup");
+      await openSitePart(host, "setup");
       await waitForText(host, "公開までにやること");
 
       cleanup();
@@ -1606,13 +1629,13 @@ describe("shared components", () => {
         seedAdminPhotos,
       );
 
-      await openSiteItem(host, "tab:profile");
+      await openSitePart(host, "about");
       await waitForText(host, "プロフィール写真（Aboutページ）");
       const nameInput = inputByLabel(host, "名前（日本語）");
       changeInput(nameInput, "Draft Name");
       await flush(80);
 
-      await openSiteItem(host, "tab:hero");
+      await openSitePart(host, "hero-photos");
       await flush(80);
       expect(host.textContent).toContain("未保存の変更があります");
       expect(host.textContent).toContain(
@@ -1694,7 +1717,7 @@ describe("shared components", () => {
       buttonWithText(host, "保存").click();
       await waitForText(host, "保存しました");
 
-      await openSiteItem(host, "tab:hero");
+      await openSitePart(host, "hero-photos");
       await waitForText(host, "トップページの写真");
       expect(host.textContent).not.toContain("未保存の変更があります");
 
@@ -2133,7 +2156,6 @@ describe("shared components", () => {
     canned["/api/admin/me"] = { authenticated: true };
     dom.window.sessionStorage.clear();
     dom.window.localStorage.clear();
-    dom.window.localStorage.setItem("admin:tab", JSON.stringify("setup"));
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(
@@ -2144,11 +2166,13 @@ describe("shared components", () => {
 
       // 2026-07-20仕様変更: 名前は最短の必須導線から「あとで整える」へ
       // 移したが、Settingsへの移動ボタンは引き続き機能する。
+      // 名前と説明は「サイト」の「名前」を直接開く（2026-09-29）。
       setupOpenButton(host, "サイトの名前と説明").click();
-      await waitForText(host, "トップの見せ方");
+      await waitForText(host, "日本語の名前");
+      expect(host.querySelector(".se-part-head__title")?.textContent).toBe("名前");
 
-      buttonWithText(host, "写真").click();
-      await waitForText(host, "写真一覧");
+      shellTab(host, "写真").click();
+      await waitForText(host, "すべての写真");
 
       cleanup();
     } finally {
@@ -2688,13 +2712,14 @@ describe("shared components", () => {
       heroPhotos: [{ photoId: 1, sortOrder: 0 }],
     };
     canned["/api/hero-photos"] = { heroPhotos: [samplePhotos[0]] };
-    dom.window.localStorage.setItem("admin:tab", JSON.stringify("hero"));
     try {
       const Admin = (await import("../pages/admin")).default;
       const { host, cleanup } = await mount(createElement(Admin), (qc) =>
         qc.setQueryData(["hero-photos"], { heroPhotos: [samplePhotos[0]] }),
       );
-      buttonWithText(host, "トップの写真").click();
+      // 未セットアップなので「はじめに」から、トップ写真の編集画面へ進む。
+      await waitForText(host, "公開までにやること");
+      setupOpenButton(host, "トップ写真を選ぶ").click();
       await flush(500);
 
       expect(host.textContent).toContain("トップページの写真");

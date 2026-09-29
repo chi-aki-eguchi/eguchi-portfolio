@@ -124,9 +124,12 @@ async function installMocks(page: Page) {
 
 async function openPicker(page: Page) {
   await page.addInitScript(() => {
+    if (window.top !== window) return;
     localStorage.removeItem("admin:settingsDraft");
     localStorage.setItem("admin:book:view", JSON.stringify("site"));
-    localStorage.setItem("admin:book:panel", JSON.stringify("settings:hero"));
+    localStorage.setItem("admin:site:mode", JSON.stringify("page"));
+    localStorage.setItem("admin:site:page", JSON.stringify("top"));
+    localStorage.setItem("admin:site:part", JSON.stringify("section:hero"));
     localStorage.setItem("admin:previewDevice", JSON.stringify("desktop"));
   });
   await page.goto("/admin");

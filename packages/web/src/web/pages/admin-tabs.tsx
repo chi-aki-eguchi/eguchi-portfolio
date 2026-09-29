@@ -58,6 +58,7 @@ import {
 } from "./admin-shared";
 import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
 import { PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
+import { attachPreviewPicking, selectPreviewPart } from "../lib/admin-preview-pick";
 import {
   settingsNavigationItems,
   previewPageForSection,
@@ -124,12 +125,9 @@ const DEFAULT_THEME_BG_DARK = "#121212";
 const DEFAULT_THEME_TEXT_DARK = "#e8e8e8";
 
 export const SETTINGS_SECTION_KEYS = {
+  // 連絡先と検索。名前は「名前」、フッターの言葉は「フッター」へ移した（2026-09-29）。
   "site-basics": [
-    "siteName",
-    "siteNameEn",
-    "heroSubtitle",
     "siteDescription",
-    "footerText",
     "contactIntro",
     "contactIntroEn",
     "contactNote",
@@ -160,14 +158,21 @@ export const SETTINGS_SECTION_KEYS = {
     "heroTitlePosition",
     "heroScrollEffect",
   ],
-  navigation: ["navPosition", "navHoverEffect", "headerBackground"],
+  // メニュー。位置・帯の背景はいつもの構成だけ、文字はどちらの骨格でも効く。
+  navigation: [
+    "navPosition",
+    "navHoverEffect",
+    "headerBackground",
+    "navSize",
+    "navTracking",
+    "navOpacity",
+  ],
   spacing: [
     "spacingHeroBottom",
     "spacingSectionGap",
     "spacingPageTop",
     "spacingFooterTop",
   ],
-  texture: ["bgTexture", "bgTextureOpacity"],
   reveal: ["photoRevealEffect"],
   "gallery-layout": [
     "galleryLayout",
@@ -200,14 +205,14 @@ export const SETTINGS_SECTION_KEYS = {
   // Contact・ビューア・フッターまで11個を詰めていて、どこに何があるか分からな
   // かった（2026-09-29）。公開サイトのページごとの節へ分けた。
   "page-layout": ["siteDesign"],
-  // トップの形（写真中心）と、トップに置く作家の言葉（両方の骨格）。
-  home: ["bookCoverPhotoId", "photoTopLayout", "homeStatement"],
+  // トップの形（写真中心）。
+  home: ["bookCoverPhotoId", "photoTopLayout"],
+  // トップに置く作家の言葉（両方の骨格）。
+  statement: ["homeStatement"],
   // 写真を大きく開いたとき。
   viewer: ["viewerStyle", "viewerMat"],
   // About と Contact の組み方。
   "page-parts": ["profileLayout", "contactLayout"],
-  // 全ページに共通の見出しとフッター。
-  "page-frame": ["pageTitleStyle", "footerLayout"],
   series: [
     "seriesNavEnabled",
     // Work の棚（2026-08-30）。シリーズと同じ節に置く——同じ仕組みの
@@ -233,7 +238,16 @@ export const SETTINGS_SECTION_KEYS = {
     "printDescription",
   ],
   cta: ["homeCtaEnabled", "homeCtaTitle", "homeCtaText", "homeCtaButton"],
-  theme: ["themeBg", "themeText", "themeBgDark", "themeTextDark"],
+  // 色と背景（差し色・紙の質感も）。
+  theme: [
+    "themeBg",
+    "themeText",
+    "themeBgDark",
+    "themeTextDark",
+    "accentColor",
+    "bgTexture",
+    "bgTextureOpacity",
+  ],
   fonts: [
     "fontJa",
     "customFontJaName",
@@ -243,40 +257,46 @@ export const SETTINGS_SECTION_KEYS = {
     "customFontEnName",
     "customFontEnUrl",
     "customFontEnCategory",
-    "heroNameWeight",
-    "bodyWeight",
   ],
-  "font-size": [
-    "globalFontScale",
+  // ここから下は「もの」ごとの節（2026-09-29）。以前は大きさ・色・字間の軸ごとに
+  // 分かれていて、名前を変えるのに4か所を回る必要があった。
+  name: [
+    "siteName",
+    "siteNameEn",
+    "heroSubtitle",
     "heroNameSize",
-    "heroNameEnSize",
-    "heroSubSize",
-    "navSize",
-    "sectionLabelSize",
-    "headingSize",
-    "bodySize",
-    "footerSize",
-  ],
-  "font-color": [
-    "heroNameColor",
-    "heroNameEnColor",
-    "heroSubColor",
-    "accentColor",
-    "linkHoverColor",
-    "linkUnderline",
-    "navOpacity",
-    "sectionLabelOpacity",
-    "footerOpacity",
-    "snsOpacity",
-  ],
-  "font-spacing": [
+    "heroNameWeight",
     "heroNameTracking",
+    "heroNameColor",
+    "heroNameEnSize",
     "heroNameEnTracking",
-    "navTracking",
+    "heroNameEnColor",
+    "heroSubSize",
+    "heroSubColor",
+  ],
+  headings: [
+    "pageTitleStyle",
+    "headingSize",
+    "sectionLabelSize",
     "sectionLabelTracking",
     "sectionLeading",
+    "sectionLabelOpacity",
+  ],
+  body: [
+    "globalFontScale",
+    "bodySize",
+    "bodyWeight",
     "bodyTracking",
     "bodyLeading",
+    "linkHoverColor",
+    "linkUnderline",
+  ],
+  footer: [
+    "footerText",
+    "footerLayout",
+    "footerSize",
+    "footerOpacity",
+    "snsOpacity",
   ],
   "site-copy": [
     "navLabelTop",
@@ -320,23 +340,23 @@ export const SETTINGS_SECTION_GROUPS = {
     "hero",
     "navigation",
     "spacing",
-    "texture",
     "reveal",
     "gallery-layout",
     "page-layout",
     "home",
+    "statement",
     "viewer",
     "page-parts",
-    "page-frame",
     "series",
   ],
   integrations: ["note", "print", "cta"],
   design: [
     "theme",
     "fonts",
-    "font-size",
-    "font-color",
-    "font-spacing",
+    "name",
+    "headings",
+    "body",
+    "footer",
     "site-copy",
     "presets",
   ],
@@ -4590,6 +4610,7 @@ export function SettingsTab({
   onOpenTab,
   onActiveSectionChange,
   onChangedSectionsChange,
+  visual,
 }: {
   onUnsavedChange?: (v: boolean) => void;
   demoSeed?: string;
@@ -4598,6 +4619,11 @@ export function SettingsTab({
   onActiveSectionChange?: (section: string) => void;
   /** 保存していない変更がある節（サイトの目次に印を付けるため） */
   onChangedSectionsChange?: (sectionIds: string[]) => void;
+  /**
+   * 「サイトを見ながら直す」画面（2026-09-29）。プレビューを大きく出し、右の欄に
+   * 選んだ部分の設定だけを出す。プレビューの中の部分を押すと onPick が呼ばれる。
+   */
+  visual?: SettingsVisualMode;
 }) {
   // 保存されていた古い節の名前（分ける前の「各ページの構成」など）は、今ある節へ読み替える。
   const initialSectionId =
@@ -4642,13 +4668,16 @@ export function SettingsTab({
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   // 設定は「結果を見ながら変えるもの」。既定で閉じていると、変えるたびに
   // 開き直すか、公開サイトを別タブで見に行くことになっていた。既定で開く。
-  const [showPreview, setShowPreview] = usePersistentState(
+  const [showPreviewPref, setShowPreview] = usePersistentState(
     "admin:showPreview",
     true,
   );
+  // 見ながら直す画面では、プレビューはいつも出す。
+  const showPreview = visual ? true : showPreviewPref;
   const [previewDevice, setPreviewDevice] = usePersistentState<
     "desktop" | "mobile"
-  >("admin:previewDevice", "desktop");
+  // スマホで初めて開いたときは、スマホの見え方から（PC幅を縮めると小さすぎて読めない）。
+  >("admin:previewDevice", typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)").matches ? "mobile" : "desktop");
   const [liveSync, setLiveSync] = usePersistentState("admin:liveSync", true);
   // プレビューで作品の詳細を直接選ぶための一覧。シリーズ画面と同じ鍵なので、
   // 作品の追加・公開切替・削除がここにも反映される。
@@ -4883,9 +4912,11 @@ export function SettingsTab({
   };
 
   // Send preview settings to iframe whenever current changes.
+  // 見ながら直す画面は、いつも編集中の内容を映す（保存済みへ切り替える欄を出さない）。
+  const draftPreview = liveSync || !!visual;
   const previewPayload = useMemo(
-    () => makeSettingsPreviewPayload(liveSync ? { ...data, ...form } : { ...data }),
-    [data, form, liveSync],
+    () => makeSettingsPreviewPayload(draftPreview ? { ...data, ...form } : { ...data }),
+    [data, form, draftPreview],
   );
 
   useEffect(() => {
@@ -4908,6 +4939,30 @@ export function SettingsTab({
       window.location.origin,
     );
   }, [previewPayload]);
+
+  // 見ながら直す画面: プレビューの中の部分を押せるようにする。読み込み直すたびに付け直す。
+  const visualRef = useRef(visual);
+  visualRef.current = visual;
+  const visualPartsKey = visual ? visual.partIds.join(" ") : "";
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!visualPartsKey || !iframe) return;
+    return attachPreviewPicking(iframe, {
+      partIds: visualPartsKey.split(" "),
+      chipLabel: (id) => visualRef.current?.chipLabel(id) ?? id,
+      onPick: (id) => {
+        setNarrowView("edit");
+        visualRef.current?.onPick(id);
+      },
+      onFound: (ids) => visualRef.current?.onFound?.(ids),
+    });
+  }, [previewLoadSeq, visualPartsKey]);
+  const visualSelected = visual?.selectedPart ?? null;
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!visualPartsKey || !iframe) return;
+    selectPreviewPart(iframe, visualSelected, true);
+  }, [previewLoadSeq, visualPartsKey, visualSelected]);
 
   // Handshake reply: the iframe's React app pings "preview-ready" once its
   // message listener is attached. Sends fired before that (mount/reload race)
@@ -5106,23 +5161,23 @@ export function SettingsTab({
     hero: copy.hero.title,
     navigation: copy.nav.title,
     spacing: copy.spacing.title,
-    texture: copy.bgTexture.title,
     reveal: copy.fade.title,
     "gallery-layout": copy.galleryLayout.title,
     "page-layout": copy.pageLayout.title,
     home: copy.pageLayout.homeTitle,
+    statement: copy.pageLayout.statementTitle,
     viewer: copy.pageLayout.viewerTitle,
     "page-parts": copy.pageLayout.partsTitle,
-    "page-frame": copy.pageLayout.frameTitle,
     series: copy.seriesSection.title,
     note: copyIntegrations.note.title,
     print: copyIntegrations.print.title,
     cta: copyIntegrations.cta.title,
     theme: copyDesign.themeColors.title,
     fonts: copyDesign.fonts.title,
-    "font-size": copyDesign.fontSize.title,
-    "font-color": copyDesign.fontColor.title,
-    "font-spacing": copyDesign.fontTracking.title,
+    name: copyDesign.parts.name.title,
+    headings: copyDesign.parts.headings.title,
+    body: copyDesign.parts.body.title,
+    footer: copyDesign.parts.footer.title,
     "site-copy": copyDesign.siteCopy.title,
     presets: copyDesign.presets.title,
   };
@@ -5154,16 +5209,17 @@ export function SettingsTab({
     navigation: "メニュー 移動 header menu navigation",
     "gallery-layout": "写真 一覧 列数 余白 配置 grid columns layout gallery",
     "page-layout": "骨格 構成 写真中心 いつもの 写真集 design structure",
-    home: "トップ 表紙 形 作家の言葉 ステートメント home cover statement",
+    home: "トップ 表紙 形 home cover",
+    statement: "作家の言葉 ステートメント statement",
     viewer: "写真 拡大 ビューア 壁 余白 額装 viewer lightbox",
     "page-parts": "プロフィール お問い合わせ 構成 profile about contact layout",
-    "page-frame": "見出し タイトル フッター title heading footer",
     series: "写真 並び順 並び 順番 並べ替え 表示順 sort order reorder series",
     theme: "背景色 文字色 背景 色 明るい 暗い ダークモード ダーク color colour dark light background",
     fonts: "文字 書体 フォント font typeface typography",
-    "font-size": "文字サイズ 文字の大きさ 文字 大きさ サイズ size text",
-    "font-color": "文字 色 color colour text",
-    "font-spacing": "文字 字間 行間 spacing line height",
+    name: "名前 サイト名 肩書き 大きさ 太さ 字間 色 name title",
+    headings: "見出し 小見出し 大きさ 字間 行間 heading title",
+    body: "本文 文字 大きさ 太さ 字間 行間 リンク body text link",
+    footer: "フッター 著作 SNS footer copyright",
     "site-copy": "文言 ボタン ラベル words labels copy",
     mood: "雰囲気 まとめて 見た目 デザイン style mood design",
   };
@@ -5181,8 +5237,8 @@ export function SettingsTab({
       (id === "site-basics" && Object.keys(contactValidationErrors).length > 0) ||
       (id === "presets" && presetError),
     advanced: [
-      "spacing", "texture", "reveal", "fonts", "font-size", "font-color",
-      "font-spacing", "site-copy", "presets",
+      "spacing", "reveal", "fonts", "name", "headings", "body", "footer",
+      "site-copy", "presets",
     ].includes(id),
   }));
   const sectionProps = (sectionId: SettingsSectionId) => ({
@@ -5224,7 +5280,16 @@ export function SettingsTab({
       : undefined);
 
   const previewCopy = copyDesign.preview;
-  const publicSiteHref = buildPublicSiteHref(demoSeed, previewPage);
+  // 見ながら直す画面の Series では、作品ごとのページも選んで確かめられる（2026-09-17 の
+  // 「作品を直接選ぶ」を残す）。ページを移ったら一覧へ戻す。
+  const [visualDetail, setVisualDetail] = useState<{ base: string; path: string } | null>(null);
+  const visualSeries = visual?.page === "/series";
+  const visualBasePage = visual?.page;
+  useEffect(() => setVisualDetail(null), [visualBasePage]);
+  const visualPage = visual
+    ? visualDetail && visualDetail.base === visual.page ? visualDetail.path : visual.page
+    : previewPage;
+  const publicSiteHref = buildPublicSiteHref(demoSeed, visualPage);
   const openPreview = (next: boolean) => {
     setShowPreview(next);
     if (next) setNarrowView("preview");
@@ -5274,6 +5339,8 @@ export function SettingsTab({
     </button>
   );
 
+  const historyControls = <span className="studio-history-controls"><button type="button" onClick={() => stepHistory()} disabled={!history.canUndo} aria-label={language === "ja" ? "設定を元に戻す" : "Undo setting change"} title="⌘ Z"><Undo2 size={15} /></button><button type="button" onClick={() => stepHistory(true)} disabled={!history.canRedo} aria-label={language === "ja" ? "設定をやり直す" : "Redo setting change"} title="⌘ ⇧ Z"><Redo2 size={15} /></button></span>;
+
   return (
     <SiteSkeletonContext.Provider value={skeleton}>
     <div
@@ -5282,15 +5349,15 @@ export function SettingsTab({
       data-preview={showPreview ? "true" : "false"}
       data-preview-expanded={showPreview && previewExpanded ? "true" : "false"}
       data-preview-view={showPreview ? narrowView : "edit"}
-
+      data-visual={visual ? (visual.section ? "part" : "overview") : undefined}
     >
       {/* Settings panel */}
       <div className="admin-settings-workspace__form">
         <AdminSettingsFormLayout
-          initialSectionId={initialSectionId ?? "hero"}
+          initialSectionId={visual?.section ?? initialSectionId ?? "hero"}
           onSectionChange={handleSectionChange}
           language={language}
-          historyControls={<span className="studio-history-controls"><button type="button" onClick={() => stepHistory()} disabled={!history.canUndo} aria-label={language === "ja" ? "設定を元に戻す" : "Undo setting change"} title="⌘ Z"><Undo2 size={15} /></button><button type="button" onClick={() => stepHistory(true)} disabled={!history.canRedo} aria-label={language === "ja" ? "設定をやり直す" : "Redo setting change"} title="⌘ ⇧ Z"><Redo2 size={15} /></button></span>}
+          historyControls={historyControls}
           sections={settingsSections}
           changedCount={dirtyKeys.length}
           pending={save.isPending}
@@ -5319,7 +5386,8 @@ export function SettingsTab({
             />
           }
         >
-            {onOpenTab && <div className="studio-context-actions">
+            {visual?.panel}
+            {onOpenTab && !visual && <div className="studio-context-actions">
               {activeSection === "hero" && <button type="button" onClick={() => onOpenTab("hero")}><Upload size={14} />{language === "ja" ? "トップに載せる写真を選ぶ" : "Choose home photographs"}</button>}
               {activeSection === "page-parts" && <button type="button" onClick={() => onOpenTab("profile")}><Pencil size={14} />{language === "ja" ? "プロフィールの文章を編集" : "Edit profile content"}</button>}
               {activeSection === "gallery-layout" && <button type="button" onClick={() => onOpenTab("series")}><Pencil size={14} />{language === "ja" ? "シリーズと作品を編集" : "Edit series and works"}</button>}
@@ -5379,8 +5447,11 @@ export function SettingsTab({
                 {(["identity", "contact", "publishing"] as const).map((group) => {
                   const Wrapper = group === "publishing" ? "details" : "section";
                   const Heading = group === "publishing" ? "summary" : "h3";
-                  const identityKeys = ["siteName", "siteNameEn", "heroSubtitle", "footerText", "siteDescription"];
+                  const identityKeys = ["siteDescription"];
+                  // 名前は「名前」、フッターの言葉は「フッター」の節で編集する（2026-09-29）。
+                  const movedKeys = ["siteName", "siteNameEn", "heroSubtitle", "footerText"];
                   const groupedFields = fields.filter(field => {
+                    if (movedKeys.includes(field.key)) return false;
                     const fieldGroup = identityKeys.includes(field.key) ? "identity"
                       : field.key.startsWith("contact") || field.key === "formspreeUrl" ? "contact" : "publishing";
                     return fieldGroup === group;
@@ -5679,7 +5750,7 @@ export function SettingsTab({
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
                   {copy.nav.intro}
                 </p>
-                <AdminField label={copy.nav.positionLabel}>
+                <AdminField label={copy.nav.positionLabel} only="classic">
                   <div className="grid grid-cols-3 gap-1.5">
                     {NAV_POSITION_OPTIONS.map(({ value, rects }) => (
                       <VisualChoiceCard
@@ -5704,6 +5775,7 @@ export function SettingsTab({
                 <AdminField
                   label={copy.nav.hoverLabel}
                   hint={copy.nav.hoverHint}
+                  only="classic"
                 >
                   <div className="grid grid-cols-4 gap-1.5">
                     {(
@@ -5731,6 +5803,7 @@ export function SettingsTab({
                 <AdminField
                   label={copy.nav.headerBgLabel}
                   hint={copy.nav.headerBgHint}
+                  only="classic"
                 >
                   <div className="grid grid-cols-3 gap-1.5">
                     {(
@@ -5759,12 +5832,48 @@ export function SettingsTab({
                     {copy.nav.headerBgNote}
                   </p>
                 )}
+                <p className="admin-settings-subhead">{copyDesign.parts.menu.typeGroup}</p>
+                <TypoControl
+                  label={copyDesign.parts.size}
+                  valueKey="navSize"
+                  current={current}
+                  set={set}
+                  min={8}
+                  max={48}
+                  step={1}
+                  unit="px"
+                  defaultVal="14"
+                />
+                <TypoControl
+                  label={copyDesign.parts.tracking}
+                  valueKey="navTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.8}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.04"
+                />
+                <TypoControl
+                  label={copyDesign.parts.opacity}
+                  valueKey="navOpacity"
+                  current={current}
+                  set={set}
+                  min={0.05}
+                  max={1}
+                  step={0.01}
+                  isOpacity
+                />
                 <button
                   onClick={() => {
                     [
                       "navPosition",
                       "navHoverEffect",
                       "headerBackground",
+                      "navSize",
+                      "navTracking",
+                      "navOpacity",
                     ].forEach((k) => set(k, ""));
                   }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
@@ -5854,77 +5963,6 @@ export function SettingsTab({
                       "spacingPageTop",
                       "spacingFooterTop",
                     ].forEach((k) => set(k, ""));
-                  }}
-                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-                >
-                  {copy.resetToDefault}
-                </button>
-              </Section>
-
-              {/* DD: paper/grain background texture */}
-              <Section
-                {...sectionProps("texture")}
-                title={copy.bgTexture.title}
-                defaultOpen={false}
-                summary={
-                  copy.bgTexture.names[
-                    (current["bgTexture"] ||
-                      "none") as keyof typeof copy.bgTexture.names
-                  ] ?? copy.bgTexture.names.none
-                }
-              >
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  {copy.bgTexture.intro}
-                </p>
-                <AdminField
-                  label={copy.bgTexture.textureLabel}
-                  hint={copy.bgTexture.textureHint}
-                >
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {BG_TEXTURE_OPTIONS.map(({ value }) => (
-                      <VisualChoiceCard
-                        key={value}
-                        active={(current["bgTexture"] || "none") === value}
-                        name={
-                          copy.bgTexture.names[
-                            value as keyof typeof copy.bgTexture.names
-                          ]
-                        }
-                        desc={
-                          copy.bgTexture.descriptions[
-                            value as keyof typeof copy.bgTexture.descriptions
-                          ]
-                        }
-                        preview={<TexturePreview value={value} />}
-                        onClick={() => set("bgTexture", value)}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed mt-1.5">
-                    {copy.bgTexture.previewNote}
-                  </p>
-                </AdminField>
-                <AdminField
-                  label={copy.bgTexture.opacityLabel}
-                  hint={copy.bgTexture.opacityHint}
-                >
-                  <TypoControl
-                    label={copy.bgTexture.opacityLabel}
-                    valueKey="bgTextureOpacity"
-                    current={current}
-                    set={set}
-                    min={0}
-                    max={0.15}
-                    step={0.01}
-                    unit=""
-                    defaultVal="0.06"
-                  />
-                </AdminField>
-                <button
-                  onClick={() => {
-                    ["bgTexture", "bgTextureOpacity"].forEach((k) =>
-                      set(k, ""),
-                    );
                   }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
@@ -6584,6 +6622,14 @@ export function SettingsTab({
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.topLayoutNote}
                 </p>
+              </Section>
+
+              {/* トップに置く作家の言葉 */}
+              <Section
+                {...sectionProps("statement")}
+                title={copy.pageLayout.statementTitle}
+                defaultOpen={false}
+              >
                 <AdminField
                   label={copy.pageLayout.statementLabel}
                   hint={copy.pageLayout.statementHint}
@@ -6757,72 +6803,6 @@ export function SettingsTab({
                 >
                   {copy.resetToDefault}
                 </button>
-              </Section>
-
-              {/* 全ページに共通の見出しとフッター */}
-              <Section
-                {...sectionProps("page-frame")}
-                title={copy.pageLayout.frameTitle}
-                defaultOpen={false}
-              >
-                <AdminField
-                  label={copy.pageLayout.titleLabel}
-                  hint={copy.pageLayout.titleHint}
-                >
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {(
-                      [
-                        ["label", copy.pageLayout.titleOptions.label],
-                        ["left", copy.pageLayout.titleOptions.left],
-                        ["display", copy.pageLayout.titleOptions.display],
-                        ["hidden", copy.pageLayout.titleOptions.hidden],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("pageTitleStyle", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["pageTitleStyle"] || "label") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                {(current["pageTitleStyle"] || "label") === "hidden" && (
-                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                    {copy.pageLayout.titleNote}
-                  </p>
-                )}
-                <AdminField
-                  label={copy.pageLayout.footerLabel}
-                  hint={copy.pageLayout.footerHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        ["center", copy.pageLayout.footerOptions.center],
-                        ["left", copy.pageLayout.footerOptions.left],
-                        ["split", copy.pageLayout.footerOptions.split],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("footerLayout", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["footerLayout"] || "center") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
               </Section>
 
               {/* I: Series navigation toggle */}
@@ -7495,12 +7475,72 @@ export function SettingsTab({
                     </div>
                   </div>
                 </AdminField>
+                <p className="admin-settings-subhead">{copyDesign.parts.theme.accentGroup}</p>
+                <ColorRow
+                  label={copyDesign.fontColor.accentLabel}
+                  valueKey="accentColor"
+                  current={current}
+                  set={set}
+                  placeholder={copyDesign.fontColor.accentPlaceholder}
+                  hint={copyDesign.fontColor.accentHint}
+                />
+                <p className="admin-settings-subhead">{copyDesign.parts.theme.textureGroup}</p>
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
+                  {copy.bgTexture.intro}
+                </p>
+                <AdminField
+                  label={copy.bgTexture.textureLabel}
+                  hint={copy.bgTexture.textureHint}
+                >
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {BG_TEXTURE_OPTIONS.map(({ value }) => (
+                      <VisualChoiceCard
+                        key={value}
+                        active={(current["bgTexture"] || "none") === value}
+                        name={
+                          copy.bgTexture.names[
+                            value as keyof typeof copy.bgTexture.names
+                          ]
+                        }
+                        desc={
+                          copy.bgTexture.descriptions[
+                            value as keyof typeof copy.bgTexture.descriptions
+                          ]
+                        }
+                        preview={<TexturePreview value={value} />}
+                        onClick={() => set("bgTexture", value)}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed mt-1.5">
+                    {copy.bgTexture.previewNote}
+                  </p>
+                </AdminField>
+                <AdminField
+                  label={copy.bgTexture.opacityLabel}
+                  hint={copy.bgTexture.opacityHint}
+                >
+                  <TypoControl
+                    label={copy.bgTexture.opacityLabel}
+                    valueKey="bgTextureOpacity"
+                    current={current}
+                    set={set}
+                    min={0}
+                    max={0.15}
+                    step={0.01}
+                    unit=""
+                    defaultVal="0.06"
+                  />
+                </AdminField>
                 <button
                   onClick={() => {
                     set("themeBg", "");
                     set("themeText", "");
                     set("themeBgDark", "");
                     set("themeTextDark", "");
+                    set("accentColor", "");
+                    set("bgTexture", "");
+                    set("bgTextureOpacity", "");
                   }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
@@ -7544,62 +7584,246 @@ export function SettingsTab({
                   set={set}
                   fontMap={GOOGLE_FONTS_EN}
                 />
-                {/* A3: weights — options derive from the selected JA font's definition
-                (loaded weights), falling back to a generic scale when unknown. */}
-                {(() => {
-                  const jaDef = GOOGLE_FONTS_JA[current["fontJa"] || ""];
-                  const weights = jaDef?.weights ?? [300, 400, 500, 700];
-                  const row = (key: string, defWeight: string) => (
-                    <div className="flex gap-1.5 flex-wrap">
+              </Section>
+
+              {/* 名前（トップと上の帯）。表示する名前・大きさ・太さ・字間・色を1か所で */}
+              <Section
+                {...sectionProps("name")}
+                title={copyDesign.parts.name.title}
+                defaultOpen={false}
+              >
+                {(["siteName", "siteNameEn", "heroSubtitle"] as const).map((key) => {
+                  const f = fields.find((field) => field.key === key)!;
+                  return (
+                    <AdminField key={key} label={f.label} hint={f.hint}>
+                      <input
+                        type="text"
+                        aria-label={f.label}
+                        value={current[key] ?? ""}
+                        onChange={(e) => set(key, e.target.value)}
+                        placeholder={f.placeholder}
+                        className="ax-input"
+                      />
+                    </AdminField>
+                  );
+                })}
+                <p className="admin-settings-subhead">{copyDesign.parts.name.jaGroup}</p>
+                <TypoControl
+                  label={copyDesign.parts.size}
+                  valueKey="heroNameSize"
+                  current={current}
+                  set={set}
+                  min={16}
+                  max={160}
+                  step={1}
+                  unit="px"
+                  defaultVal="60"
+                />
+                <AdminField label={copyDesign.parts.weight}>
+                  <WeightChoice valueKey="heroNameWeight" defWeight="700" current={current} set={set} />
+                </AdminField>
+                <TypoControl
+                  label={copyDesign.parts.tracking}
+                  valueKey="heroNameTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.8}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.04"
+                />
+                <ColorRow
+                  label={copyDesign.parts.color}
+                  valueKey="heroNameColor"
+                  current={current}
+                  set={set}
+                  placeholder={copyDesign.parts.autoColor}
+                />
+                <p className="admin-settings-subhead">{copyDesign.parts.name.enGroup}</p>
+                <TypoControl
+                  label={copyDesign.parts.size}
+                  valueKey="heroNameEnSize"
+                  current={current}
+                  set={set}
+                  min={8}
+                  max={80}
+                  step={1}
+                  unit="px"
+                  defaultVal="24"
+                />
+                <TypoControl
+                  label={copyDesign.parts.tracking}
+                  valueKey="heroNameEnTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.6}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.08"
+                />
+                <ColorRow
+                  label={copyDesign.parts.color}
+                  valueKey="heroNameEnColor"
+                  current={current}
+                  set={set}
+                  placeholder={copyDesign.parts.autoColor}
+                />
+                <p className="admin-settings-subhead">{copyDesign.parts.name.subGroup}</p>
+                <TypoControl
+                  label={copyDesign.parts.size}
+                  valueKey="heroSubSize"
+                  current={current}
+                  set={set}
+                  min={6}
+                  max={60}
+                  step={1}
+                  unit="px"
+                  defaultVal="12"
+                />
+                <ColorRow
+                  label={copyDesign.parts.color}
+                  valueKey="heroSubColor"
+                  current={current}
+                  set={set}
+                  placeholder={copyDesign.parts.autoColor}
+                />
+                <button
+                  onClick={() => {
+                    [
+                      "heroNameSize",
+                      "heroNameWeight",
+                      "heroNameTracking",
+                      "heroNameColor",
+                      "heroNameEnSize",
+                      "heroNameEnTracking",
+                      "heroNameEnColor",
+                      "heroSubSize",
+                      "heroSubColor",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* 見出し（各ページの見出しと小見出し） */}
+              <Section
+                {...sectionProps("headings")}
+                title={copyDesign.parts.headings.title}
+                defaultOpen={false}
+              >
+                <p className="admin-settings-subhead">{copyDesign.parts.headings.pageGroup}</p>
+                <AdminField
+                  label={copy.pageLayout.titleLabel}
+                  hint={copy.pageLayout.titleHint}
+                >
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(
+                      [
+                        ["label", copy.pageLayout.titleOptions.label],
+                        ["left", copy.pageLayout.titleOptions.left],
+                        ["display", copy.pageLayout.titleOptions.display],
+                        ["hidden", copy.pageLayout.titleOptions.hidden],
+                      ] as const
+                    ).map(([val, lbl]) => (
                       <button
-                        onClick={() => set(key, "")}
-                        className={`text-[length:var(--admin-text-note)] px-2.5 py-1.5 rounded-sm transition-colors ${
-                          !(current[key] || "")
+                        key={val}
+                        onClick={() => set("pageTitleStyle", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["pageTitleStyle"] || "label") === val
                             ? "admin-btn-primary font-medium"
                             : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
                         }`}
                       >
-                        {copyDesign.fonts.defaultWeight(defWeight)}
+                        {lbl}
                       </button>
-                      {weights.map((w) => (
-                        <button
-                          key={w}
-                          onClick={() => set(key, String(w))}
-                          className={`text-[length:var(--admin-text-note)] px-2.5 py-1.5 rounded-sm transition-colors ${
-                            (current[key] || "") === String(w)
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                          }`}
-                          style={{ fontWeight: w }}
-                        >
-                          {w}
-                        </button>
-                      ))}
-                    </div>
-                  );
-                  const hint = jaDef
-                    ? copyDesign.fonts.heroWeightHintKnown
-                    : copyDesign.fonts.heroWeightHintUnknown;
-                  return (
-                    <>
-                      <AdminField label={copyDesign.fonts.heroWeightLabel} hint={hint}>
-                        {row("heroNameWeight", "700")}
-                      </AdminField>
-                      <AdminField
-                        label={copyDesign.fonts.bodyWeightLabel}
-                        hint={copyDesign.fonts.bodyWeightHint}
-                      >
-                        {row("bodyWeight", "400")}
-                      </AdminField>
-                    </>
-                  );
-                })()}
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["pageTitleStyle"] || "label") === "hidden" && (
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.pageLayout.titleNote}
+                  </p>
+                )}
+                <TypoControl
+                  label={copyDesign.parts.size}
+                  valueKey="headingSize"
+                  current={current}
+                  set={set}
+                  min={12}
+                  max={80}
+                  step={1}
+                  unit="px"
+                  defaultVal="30"
+                />
+                <p className="admin-settings-subhead">{copyDesign.parts.headings.sectionGroup}</p>
+                <TypoControl
+                  label={copyDesign.parts.size}
+                  valueKey="sectionLabelSize"
+                  current={current}
+                  set={set}
+                  min={8}
+                  max={40}
+                  step={1}
+                  unit="px"
+                  defaultVal="16"
+                />
+                <TypoControl
+                  label={copyDesign.parts.tracking}
+                  valueKey="sectionLabelTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.6}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.10"
+                />
+                <TypoControl
+                  label={copyDesign.parts.leading}
+                  valueKey="sectionLeading"
+                  current={current}
+                  set={set}
+                  min={0.9}
+                  max={3.0}
+                  step={0.05}
+                  unit=""
+                  defaultVal="1.2"
+                />
+                <TypoControl
+                  label={copyDesign.parts.opacity}
+                  valueKey="sectionLabelOpacity"
+                  current={current}
+                  set={set}
+                  min={0.05}
+                  max={1}
+                  step={0.01}
+                  isOpacity
+                />
+                <button
+                  onClick={() => {
+                    [
+                      "pageTitleStyle",
+                      "headingSize",
+                      "sectionLabelSize",
+                      "sectionLabelTracking",
+                      "sectionLeading",
+                      "sectionLabelOpacity",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
               </Section>
 
-              {/* Typography — 大きさ (D4: 軸別2階層。まず調整軸→対象) */}
+              {/* 本文とリンク */}
               <Section
-                {...sectionProps("font-size")}
-                title={copyDesign.fontSize.title}
+                {...sectionProps("body")}
+                title={copyDesign.parts.body.title}
                 defaultOpen={false}
               >
                 <AdminField
@@ -7618,89 +7842,9 @@ export function SettingsTab({
                     defaultVal="1"
                   />
                 </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontSize.heroGroupLabel}
-                </p>
+                <p className="admin-settings-subhead">{copyDesign.parts.body.bodyGroup}</p>
                 <TypoControl
-                  label={copyDesign.fontSize.nameLabel}
-                  valueKey="heroNameSize"
-                  current={current}
-                  set={set}
-                  min={16}
-                  max={160}
-                  step={1}
-                  unit="px"
-                  defaultVal="60"
-                />
-                <TypoControl
-                  label={copyDesign.fontSize.enNameLabel}
-                  valueKey="heroNameEnSize"
-                  current={current}
-                  set={set}
-                  min={8}
-                  max={80}
-                  step={1}
-                  unit="px"
-                  defaultVal="24"
-                />
-                <TypoControl
-                  label={copyDesign.fontSize.subtitleLabel}
-                  valueKey="heroSubSize"
-                  current={current}
-                  set={set}
-                  min={6}
-                  max={60}
-                  step={1}
-                  unit="px"
-                  defaultVal="12"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontSize.navGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontSize.sizeLabel}
-                  valueKey="navSize"
-                  current={current}
-                  set={set}
-                  min={8}
-                  max={48}
-                  step={1}
-                  unit="px"
-                  defaultVal="14"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontSize.sectionGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontSize.sizeLabel}
-                  valueKey="sectionLabelSize"
-                  current={current}
-                  set={set}
-                  min={8}
-                  max={40}
-                  step={1}
-                  unit="px"
-                  defaultVal="16"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontSize.pageHeadingGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontSize.sizeLabel}
-                  valueKey="headingSize"
-                  current={current}
-                  set={set}
-                  min={12}
-                  max={80}
-                  step={1}
-                  unit="px"
-                  defaultVal="30"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontSize.bodyGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontSize.sizeLabel}
+                  label={copyDesign.parts.size}
                   valueKey="bodySize"
                   current={current}
                   set={set}
@@ -7710,84 +7854,32 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="16"
                 />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontSize.footerGroupLabel}
-                </p>
+                <AdminField label={copyDesign.parts.weight}>
+                  <WeightChoice valueKey="bodyWeight" defWeight="400" current={current} set={set} />
+                </AdminField>
                 <TypoControl
-                  label={copyDesign.fontSize.sizeLabel}
-                  valueKey="footerSize"
+                  label={copyDesign.parts.tracking}
+                  valueKey="bodyTracking"
                   current={current}
                   set={set}
-                  min={7}
-                  max={32}
-                  step={1}
-                  unit="px"
-                  defaultVal="12"
+                  min={-0.04}
+                  max={0.5}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.01"
                 />
-                <button
-                  onClick={() => {
-                    [
-                      "globalFontScale",
-                      "heroNameSize",
-                      "heroNameEnSize",
-                      "heroSubSize",
-                      "navSize",
-                      "sectionLabelSize",
-                      "headingSize",
-                      "bodySize",
-                      "footerSize",
-                    ].forEach((k) => set(k, ""));
-                  }}
-                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-                >
-                  {copy.resetToDefault}
-                </button>
-              </Section>
-
-              {/* Typography — 色 */}
-              <Section
-                {...sectionProps("font-color")}
-                title={copyDesign.fontColor.title}
-                defaultOpen={false}
-              >
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
-                  {copyDesign.fontColor.heroGroupLabel}
-                </p>
-                <ColorRow
-                  label={copyDesign.fontColor.nameLabel}
-                  valueKey="heroNameColor"
+                <TypoControl
+                  label={copyDesign.parts.leading}
+                  valueKey="bodyLeading"
                   current={current}
                   set={set}
-                  placeholder="#ffffff"
+                  min={1.2}
+                  max={3.0}
+                  step={0.05}
+                  unit=""
+                  defaultVal="1.8"
                 />
-                <ColorRow
-                  label={copyDesign.fontColor.enNameLabel}
-                  valueKey="heroNameEnColor"
-                  current={current}
-                  set={set}
-                  placeholder="rgba(255,255,255,0.75)"
-                />
-                <ColorRow
-                  label={copyDesign.fontColor.subtitleLabel}
-                  valueKey="heroSubColor"
-                  current={current}
-                  set={set}
-                  placeholder="rgba(255,255,255,0.75)"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontColor.accentGroupLabel}
-                </p>
-                <ColorRow
-                  label={copyDesign.fontColor.accentLabel}
-                  valueKey="accentColor"
-                  current={current}
-                  set={set}
-                  placeholder={copyDesign.fontColor.accentPlaceholder}
-                  hint={copyDesign.fontColor.accentHint}
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontColor.linkGroupLabel}
-                </p>
+                <p className="admin-settings-subhead">{copyDesign.parts.body.linkGroup}</p>
                 <ColorRow
                   label={copyDesign.fontColor.linkHoverLabel}
                   valueKey="linkHoverColor"
@@ -7821,31 +7913,85 @@ export function SettingsTab({
                     ))}
                   </div>
                 </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontColor.opacityGroupLabel}
-                </p>
+                <button
+                  onClick={() => {
+                    [
+                      "globalFontScale",
+                      "bodySize",
+                      "bodyWeight",
+                      "bodyTracking",
+                      "bodyLeading",
+                      "linkHoverColor",
+                      "linkUnderline",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* フッター（全ページの終わり） */}
+              <Section
+                {...sectionProps("footer")}
+                title={copyDesign.parts.footer.title}
+                defaultOpen={false}
+              >
+                {(() => {
+                  const f = fields.find((field) => field.key === "footerText")!;
+                  return (
+                    <AdminField label={f.label} hint={f.hint}>
+                      <input
+                        type="text"
+                        aria-label={f.label}
+                        value={current["footerText"] ?? ""}
+                        onChange={(e) => set("footerText", e.target.value)}
+                        placeholder={f.placeholder}
+                        className="ax-input"
+                      />
+                    </AdminField>
+                  );
+                })()}
+                <AdminField
+                  label={copy.pageLayout.footerLabel}
+                  hint={copy.pageLayout.footerHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        ["center", copy.pageLayout.footerOptions.center],
+                        ["left", copy.pageLayout.footerOptions.left],
+                        ["split", copy.pageLayout.footerOptions.split],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        onClick={() => set("footerLayout", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["footerLayout"] || "center") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <p className="admin-settings-subhead">{copyDesign.parts.footer.typeGroup}</p>
                 <TypoControl
-                  label={copyDesign.fontColor.navOpacityLabel}
-                  valueKey="navOpacity"
+                  label={copyDesign.parts.size}
+                  valueKey="footerSize"
                   current={current}
                   set={set}
-                  min={0.05}
-                  max={1}
-                  step={0.01}
-                  isOpacity
+                  min={7}
+                  max={32}
+                  step={1}
+                  unit="px"
+                  defaultVal="12"
                 />
                 <TypoControl
-                  label={copyDesign.fontColor.sectionOpacityLabel}
-                  valueKey="sectionLabelOpacity"
-                  current={current}
-                  set={set}
-                  min={0.05}
-                  max={1}
-                  step={0.01}
-                  isOpacity
-                />
-                <TypoControl
-                  label={copyDesign.fontColor.footerOpacityLabel}
+                  label={copyDesign.parts.opacity}
                   valueKey="footerOpacity"
                   current={current}
                   set={set}
@@ -7855,7 +8001,7 @@ export function SettingsTab({
                   isOpacity
                 />
                 <TypoControl
-                  label={copyDesign.fontColor.snsOpacityLabel}
+                  label={copyDesign.parts.footer.snsOpacity}
                   valueKey="snsOpacity"
                   current={current}
                   set={set}
@@ -7867,129 +8013,10 @@ export function SettingsTab({
                 <button
                   onClick={() => {
                     [
-                      "heroNameColor",
-                      "heroNameEnColor",
-                      "heroSubColor",
-                      "accentColor",
-                      "linkHoverColor",
-                      "linkUnderline",
-                      "navOpacity",
-                      "sectionLabelOpacity",
+                      "footerLayout",
+                      "footerSize",
                       "footerOpacity",
                       "snsOpacity",
-                    ].forEach((k) => set(k, ""));
-                  }}
-                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-                >
-                  {copy.resetToDefault}
-                </button>
-              </Section>
-
-              {/* Typography — 間隔（字間・行間） */}
-              <Section
-                {...sectionProps("font-spacing")}
-                title={copyDesign.fontTracking.title}
-                defaultOpen={false}
-              >
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
-                  {copyDesign.fontTracking.heroGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontTracking.nameTrackingLabel}
-                  valueKey="heroNameTracking"
-                  current={current}
-                  set={set}
-                  min={-0.06}
-                  max={0.8}
-                  step={0.01}
-                  unit="em"
-                  defaultVal="0.04"
-                />
-                <TypoControl
-                  label={copyDesign.fontTracking.enNameTrackingLabel}
-                  valueKey="heroNameEnTracking"
-                  current={current}
-                  set={set}
-                  min={-0.06}
-                  max={0.6}
-                  step={0.01}
-                  unit="em"
-                  defaultVal="0.08"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontTracking.navGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontTracking.trackingLabel}
-                  valueKey="navTracking"
-                  current={current}
-                  set={set}
-                  min={-0.06}
-                  max={0.8}
-                  step={0.01}
-                  unit="em"
-                  defaultVal="0.04"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontTracking.sectionGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontTracking.trackingLabel}
-                  valueKey="sectionLabelTracking"
-                  current={current}
-                  set={set}
-                  min={-0.06}
-                  max={0.6}
-                  step={0.01}
-                  unit="em"
-                  defaultVal="0.10"
-                />
-                <TypoControl
-                  label={copyDesign.fontTracking.leadingLabel}
-                  valueKey="sectionLeading"
-                  current={current}
-                  set={set}
-                  min={0.9}
-                  max={3.0}
-                  step={0.05}
-                  unit=""
-                  defaultVal="1.2"
-                />
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.fontTracking.bodyGroupLabel}
-                </p>
-                <TypoControl
-                  label={copyDesign.fontTracking.trackingLabel}
-                  valueKey="bodyTracking"
-                  current={current}
-                  set={set}
-                  min={-0.04}
-                  max={0.5}
-                  step={0.01}
-                  unit="em"
-                  defaultVal="0.01"
-                />
-                <TypoControl
-                  label={copyDesign.fontTracking.leadingLabel}
-                  valueKey="bodyLeading"
-                  current={current}
-                  set={set}
-                  min={1.2}
-                  max={3.0}
-                  step={0.05}
-                  unit=""
-                  defaultVal="1.8"
-                />
-                <button
-                  onClick={() => {
-                    [
-                      "heroNameTracking",
-                      "heroNameEnTracking",
-                      "navTracking",
-                      "sectionLabelTracking",
-                      "sectionLeading",
-                      "bodyTracking",
-                      "bodyLeading",
                     ].forEach((k) => set(k, ""));
                   }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
@@ -8269,8 +8296,17 @@ export function SettingsTab({
           <AdminSettingsPreviewPane
             ref={iframeRef}
             language={language}
-            page={previewPage}
-            onPageChange={setPreviewPage}
+            page={visualPage}
+            onPageChange={
+              !visual
+                ? setPreviewPage
+                : visualSeries
+                  ? (path) => setVisualDetail(path === "/series" ? null : { base: "/series", path })
+                  : undefined
+            }
+            indexPath={visualSeries ? "/series" : undefined}
+            compact={!!visual}
+            toolbarExtras={visual ? historyControls : undefined}
             works={previewWorks}
             worksFailed={previewWorksQuery.isError && !previewWorksQuery.data}
             onRetryWorks={() => void previewWorksQuery.refetch()}
@@ -8328,6 +8364,22 @@ export function SettingsTab({
 // children — that mount/remount was what caused the open-moment flicker.
 // Transition is disabled for the first frame so a defaultOpen row never plays
 // an unwanted "opening" animation on initial mount.
+/** 見ながら直す画面の指定（`SettingsTab` の `visual`）。 */
+export type SettingsVisualMode = {
+  /** プレビューで見ているページ（"/"・"/gallery" など） */
+  page: string;
+  /** 右の欄に出す設定の節。null はページの部分の一覧だけを出す */
+  section: string | null;
+  /** 右の欄の上に出す見出しと一覧（戻る・部分の名前・関係する画面への入口） */
+  panel: React.ReactNode;
+  /** このページで押せる部分（上から優先） */
+  partIds: readonly string[];
+  chipLabel: (partId: string) => string;
+  onPick: (partId: string) => void;
+  selectedPart?: string | null;
+  onFound?: (partIds: string[]) => void;
+};
+
 // 今選んでいる骨格（下書きを含む）。`AdminField` の `only` がこれを見て、
 // その骨格で使わない項目に札を付けて薄くする。
 const SiteSkeletonContext = createContext<SiteSkeleton>("classic");
@@ -9039,6 +9091,48 @@ function Modal({
     >
       {children}
     </dialog>
+  );
+}
+
+// 文字の太さ（名前・本文）。選んでいる日本語の書体が読み込む太さから選ぶ。
+// 書体が不明・自分の書体のときは一般的な太さを出す（書体に無い値は近い太さで表示される）。
+function WeightChoice({
+  valueKey,
+  defWeight,
+  current,
+  set,
+}: {
+  valueKey: string;
+  defWeight: string;
+  current: Record<string, string>;
+  set: (key: string, val: string) => void;
+}) {
+  const { t } = useAdminI18n();
+  const copyDesign = t.phase2b.settingsDesign;
+  const jaDef = GOOGLE_FONTS_JA[current["fontJa"] || ""];
+  const weights = jaDef?.weights ?? [300, 400, 500, 700];
+  const chosen = current[valueKey] || "";
+  const option = (value: string, label: string, weight?: number) => (
+    <button
+      key={value || "default"}
+      type="button"
+      aria-pressed={chosen === value}
+      onClick={() => set(valueKey, value)}
+      className={`text-[length:var(--admin-text-note)] px-2.5 py-1.5 rounded-sm transition-colors ${
+        chosen === value
+          ? "admin-btn-primary font-medium"
+          : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+      }`}
+      style={weight ? { fontWeight: weight } : undefined}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {option("", copyDesign.fonts.defaultWeight(defWeight))}
+      {weights.map((w) => option(String(w), String(w), w))}
+    </div>
   );
 }
 

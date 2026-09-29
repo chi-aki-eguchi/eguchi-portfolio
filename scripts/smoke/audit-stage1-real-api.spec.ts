@@ -61,6 +61,8 @@ test.describe("第1段階（実API＋人工データ）", () => {
   test("B-03: 設定プレビューで実際の作品一覧から Work・各作品を選び、公開リンクも同じ作品を指す", async ({ page }, info) => {
     await loginAsAdmin(page);
     await gotoAdminTab(page, "settings");
+    // サイトの画面（2026-09-29〜）では、上の「Series」を開くと作品ごとのページを選べる。
+    await page.locator('[data-site-page="series"]').click();
     const preview = page.locator("[data-settings-preview]");
     if (!(await preview.isVisible())) {
       const open = page.getByRole("button", { name: "プレビューを開く" });
@@ -70,7 +72,7 @@ test.describe("第1段階（実API＋人工データ）", () => {
     }
     await expect(preview).toBeVisible();
     const select = page.getByRole("combobox", { name: "確認するページ" });
-    await expect(select.locator('option[value="/work"]')).toBeEnabled();
+    await expect(select.locator('option[value="/series"]')).toBeEnabled();
     for (const value of ["/series/harbour-light", "/series/long-title", "/series/empty-series", "/work/harbour-commission", ENCODED_WORK_PATH])
       await expect(select.locator(`option[value="${value}"]`)).toBeEnabled();
     await expect(select.locator('option[value="/series/long-title"]')).toHaveText(SMOKE_LONG_TITLE);

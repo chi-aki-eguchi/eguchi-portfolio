@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Route } from "./fixtures.ts";
-import { chooseSettingsSection } from "./helpers";
+import { chooseSettingsSection, openSitePart, storeAdminTab } from "./helpers";
 
 // 管理画面の保存状態まわりを、保存の成否を自由に作れる人工データで検査する。
 //
@@ -76,22 +76,30 @@ async function installAdminApiMocks(page: Page): Promise<Mocks> {
   return { nonGet, unknown };
 }
 
-// 初期表示は「はじめに」になることがあるため、上の「サイト」と目次を実際に押して移動する。
-// 以前の左メニューの名前を、サイトの目次の項目へ読み替える。
-const SITE_ITEMS: Record<string, string> = {
-  "Portfolio Kit": "tab:service",
-  "サイトデザイン": "settings:hero",
-  "分類": "tab:categories",
+// 初期表示は「はじめに」になることがあるため、上の「サイト」と右の一覧を実際に押して移動する。
+// 以前の左メニューの名前を、サイトの画面の部分へ読み替える（無いものはサイトを開くだけ）。
+const SITE_PARTS: Record<string, string | null> = {
+  "Portfolio Kit": "service",
+  "サイトデザイン": null,
+  "分類": "categories",
 };
 async function openAdminTab(page: Page, label: string) {
   await page.addInitScript(() => {
-    // 前回の下書きが残っていると未保存判定の検査にならない
-    sessionStorage.clear();
+    // 前回の下書きが残っていると未保存判定の検査にならない（プレビューの読み込みでは消さない）
+    if (window.top === window) sessionStorage.clear();
   });
+  const part = SITE_PARTS[label];
+  if (label === "Portfolio Kit") {
+    // 設定を読めない間は、サイトの一覧（設定の画面の中）が出ない。開く部分を覚えさせてから開く。
+    await page.addInitScript(storeAdminTab, "service");
+    await page.goto("/admin");
+    await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
+    return;
+  }
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
   await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
-  await page.locator(`[data-site-item="${SITE_ITEMS[label]}"]`).click();
+  if (part) await openSitePart(page, part, { mode: "more" });
 }
 
 test.describe("admin — 保存状態の表示", () => {
@@ -120,16 +128,16 @@ test.describe("admin — 保存状態の表示", () => {
       });
     });
 
-    // サイトの目次の「制作案内のページ」
+    // サイトの「そのほか」の「制作案内のページ」
     await openAdminTab(page, "Portfolio Kit");
 
     await expect(
       page.getByRole("heading", { name: "読み込めませんでした" }),
       "設定を読めない時は、既定値のService編集画面ではなく失敗画面を出す",
     ).toBeVisible({ timeout: 15_000 });
-    // 目次の「設定を探す」は編集欄ではないので、編集画面の中だけを数える。
+    // 右の一覧の「設定を探す」は編集欄ではないので、編集画面の中だけを数える。
     await expect(
-      page.locator(".book-site__panel").locator("input, textarea"),
+      page.locator(".se-editor").locator("input, textarea"),
       "失敗中は編集欄を出さない",
     ).toHaveCount(0);
     await expect(
@@ -140,7 +148,7 @@ test.describe("admin — 保存状態の表示", () => {
     settingsAvailable = true;
     await page.getByRole("button", { name: "再試行" }).click();
     await expect(
-      page.locator(".book-site__panel").locator("input, textarea").first(),
+      page.locator(".se-editor").locator("input, textarea").first(),
       "再試行に成功したら通常のService編集画面に戻る",
     ).toBeVisible();
 

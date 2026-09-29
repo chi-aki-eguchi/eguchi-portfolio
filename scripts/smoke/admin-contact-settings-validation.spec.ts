@@ -76,10 +76,14 @@ async function openSettings(
 ) {
   await page.setViewportSize({ width: options.width, height: 900 });
   await page.addInitScript((next) => {
+    // プレビュー（同じオリジンの iframe）の読み込みでは消さない。
+    if (window.top !== window) return;
     localStorage.clear();
     sessionStorage.clear();
     localStorage.setItem("admin:book:view", JSON.stringify("site"));
-    localStorage.setItem("admin:book:panel", JSON.stringify("settings:hero"));
+    localStorage.setItem("admin:site:mode", JSON.stringify("page"));
+    localStorage.setItem("admin:site:page", JSON.stringify("top"));
+    localStorage.setItem("admin:site:part", JSON.stringify("section:hero"));
     localStorage.setItem("admin:language", next.language);
     localStorage.setItem("theme-preference", next.theme);
   }, options);
@@ -180,11 +184,15 @@ test.describe("admin — Contact setting validation", () => {
     await email.fill("not-a-url");
     await endpoint.fill("http://compatible.example.test/contact");
     // Saving from the preview must reveal the invalid field, even while the
-    // form is hidden by desktop expansion or the mobile preview switch.
-    if (desktop) await page.getByRole("button", { name: "大きく表示", exact: true }).click();
-    else await page.locator(".admin-settings-mobile-current__view-switch").getByRole("button", { name: "Preview", exact: true }).click();
-    await expect(email).not.toBeVisible();
-    await page.locator(".admin-preview-save-dock").getByRole("button", { name: labels.save, exact: true }).click();
+    // form is hidden by the mobile preview switch. On desktop the site editor
+    // always shows the form beside the preview (2026-09-29), so save there.
+    if (desktop) {
+      await save.click();
+    } else {
+      await page.locator(".admin-settings-mobile-current__view-switch").getByRole("button", { name: "Preview", exact: true }).click();
+      await expect(email).not.toBeVisible();
+      await page.locator(".admin-preview-save-dock").getByRole("button", { name: labels.save, exact: true }).click();
+    }
 
     const emailError = page.locator("#settings-contactEmail-error");
     const endpointError = page.locator("#settings-formspreeUrl-error");

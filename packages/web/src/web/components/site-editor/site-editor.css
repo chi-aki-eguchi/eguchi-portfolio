@@ -1,0 +1,425 @@
+/* 管理画面「サイト」（2026-09-29 作り直し）。公開サイトを大きく見ながら直す。
+   色は adminThemeFromSettings の紙と墨。箱と罫線を減らし、面の濃淡と文字の大きさで分ける。 */
+
+.se-frame {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.se-frame__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.se-frame__body > * { flex: 1; min-width: 0; }
+
+/* ── 上の帯（ページ） ─────────────────────── */
+.se-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 24px;
+  height: 48px;
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-paper);
+}
+.se-bar__pages { display: flex; gap: 0.25rem; height: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.se-bar__pages::-webkit-scrollbar { display: none; }
+.se-bar__page,
+.se-bar__mode {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--bench-quiet, var(--admin-muted));
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.se-bar__page:hover,
+.se-bar__mode:hover { color: var(--admin-ink); }
+.se-bar__page[aria-current="page"],
+.se-bar__mode[aria-pressed="true"] { color: var(--admin-ink); }
+.se-bar__page[aria-current="page"]::after,
+.se-bar__mode[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--admin-ink);
+}
+.se-bar__more { margin-left: auto; display: flex; gap: 0.25rem; height: 100%; }
+.se-bar__mode { gap: 7px; }
+.se-bar__mode svg { opacity: 0.75; }
+/* 管理画面の共通のボタン指定（押している状態の塗り）より、帯の見た目を優先する。 */
+.admin-atelier.admin-workbench.admin-studio .se-bar .se-bar__page,
+.admin-atelier.admin-workbench.admin-studio .se-bar .se-bar__mode,
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier .se-bar.se-bar button.se-bar__mode.se-bar__mode[aria-pressed] {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* ── 右の欄 ─────────────────────────────── */
+.se-panel { display: flex; flex-direction: column; gap: 0; }
+.se-search { padding: 0 0 18px; }
+.se-search input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--admin-ink);
+  background: var(--admin-paper-soft);
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.se-search input:focus { outline: 2px solid var(--admin-accent); outline-offset: 1px; background: var(--admin-paper); }
+.se-panel__head { margin: 4px 0 14px; }
+.se-panel__title {
+  margin: 0;
+  font-family: var(--font-ja, "Shippori Mincho", "Hiragino Mincho ProN", serif);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--admin-ink);
+}
+.se-panel__lede { margin: 6px 0 0; font-size: 13px; line-height: 1.7; color: var(--admin-muted); }
+.se-panel__empty { display: block; padding: 8px 0; font-size: 13px; line-height: 1.7; color: var(--admin-muted); }
+
+.se-parts { list-style: none; margin: 0 -10px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.se-part {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 14px;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px;
+  text-align: left;
+  color: var(--admin-ink);
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+.se-part:hover,
+.se-part:focus-visible { background: var(--admin-paper-soft); }
+.se-part__icon {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: var(--admin-ink);
+  background: var(--admin-paper-soft);
+  box-shadow: inset 0 0 0 1px var(--admin-line);
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.se-part:hover .se-part__icon,
+.se-part:focus-visible .se-part__icon { background: var(--admin-paper); }
+.se-part__label {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.45;
+  align-self: end;
+}
+.se-part__note { grid-column: 2; font-size: 12.5px; line-height: 1.55; color: var(--admin-muted); align-self: start; }
+.se-part:not(:has(.se-part__note)) .se-part__label { grid-row: 1 / span 2; align-self: center; }
+.se-part__go {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 18px;
+  color: var(--admin-muted);
+  opacity: 0.6;
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+.se-part:hover .se-part__go { opacity: 1; transform: translateX(2px); }
+.se-part__changed { width: 7px; height: 7px; border-radius: 50%; background: var(--admin-accent); }
+
+/* 部分を開いているときの見出し */
+.se-part-head__row { display: flex; align-items: center; gap: 12px; }
+.se-part-head__icon { flex: none; }
+.se-part-head { margin: 0 0 18px; }
+.se-part-head__back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0 2px -2px;
+  padding: 0 2px;
+  font-size: 13px;
+  color: var(--admin-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.se-part-head__back:hover { color: var(--admin-ink); }
+.se-part-head__title {
+  margin: 0;
+  font-family: var(--font-ja, "Shippori Mincho", "Hiragino Mincho ProN", serif);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--admin-ink);
+}
+.se-part-head__note { margin: 6px 0 0; font-size: 13px; line-height: 1.7; color: var(--admin-muted); }
+.se-part-head__links { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 10px; }
+.se-part-head__link {
+  min-height: 36px;
+  padding: 0;
+  font-size: 13.5px;
+  color: var(--admin-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(var(--admin-ink-rgb), 0.3);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* 独立した編集画面（About の文章・料金など）を開いているときの戻る帯 */
+.se-editor-back {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--admin-line);
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+.se-editor-back button {
+  min-height: 40px;
+  padding: 0;
+  font-size: 13px;
+  color: var(--admin-ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.se-editor { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.se-editor > .admin-main { flex: 1; min-height: 0; }
+.admin-atelier .se-editor .admin-content { padding: 28px clamp(16px, 2vw, 24px) 64px; overflow-y: auto; }
+
+/* ── 設定の画面を「見ながら直す」形に組み替える ───────────────── */
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-form-layout__header,
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-current-preview,
+.admin-atelier .admin-settings-workspace[data-visual] [data-settings-section-heading] { display: none; }
+.admin-atelier .admin-settings-workspace[data-visual="overview"] [data-settings-section],
+.admin-atelier .admin-settings-workspace[data-visual="overview"] .admin-book-unused,
+.admin-atelier .admin-settings-workspace[data-visual="overview"] .admin-settings-save-panel-empty { display: none; }
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section { border: 0 !important; }
+.admin-atelier .admin-settings-workspace[data-visual] .admin-settings-section > div > div > div { padding-top: 0; }
+.admin-atelier .admin-settings-workspace[data-visual] .studio-preview { background: var(--admin-paper-deep); }
+
+@media (min-width: 900px) {
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual][data-preview] {
+    flex-direction: row;
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual][data-preview] .admin-settings-preview {
+    order: 1;
+    display: flex !important;
+    flex: 1 1 auto;
+    width: auto;
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual][data-preview] .admin-settings-workspace__form {
+    order: 2;
+    display: flex !important;
+    flex: 0 0 clamp(340px, 30%, 420px) !important;
+    border-left: 1px solid var(--admin-line);
+    background: var(--admin-paper);
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual][data-preview] .admin-settings-form-layout__inner {
+    display: block !important;
+    padding: 22px 24px 40px;
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current__view-switch,
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current__preview-open { display: none !important; }
+}
+
+/* スマホ・細い画面: 右の欄が主役。プレビューは上の「プレビュー」で切り替える。 */
+@media (max-width: 767px) {
+  /* ページと「全体の見た目・そのほか」を1本の帯にして、指で横に送る。 */
+  .se-bar { gap: 0; padding: 0 4px; overflow-x: auto; scrollbar-width: none; }
+  .se-bar::-webkit-scrollbar { display: none; }
+  .se-bar__pages { flex: none; overflow: visible; }
+  .se-bar__more { flex: none; }
+  .se-bar__page,
+  .se-bar__mode { padding: 0 10px; font-size: 14px; }
+  .se-bar__more { margin-left: 0; padding-left: 8px; border-left: 1px solid var(--admin-line); height: 60%; align-self: center; }
+  .se-bar__more .se-bar__mode { height: 48px; }
+  .se-editor-back { padding: 0 16px; }
+}
+
+/* 選んでいる状態は墨の塗りにしない（塗りは保存など実行の操作だけ）。 */
+.admin-atelier.admin-atelier.admin-atelier.admin-atelier .admin-settings-workspace[data-visual]
+  [data-settings-section] button.admin-btn-primary[aria-pressed="true"] {
+  background-color: var(--admin-selected-bg, rgba(var(--admin-ink-rgb), 0.05)) !important;
+  border-color: var(--admin-selected-border, transparent) !important;
+  color: var(--admin-ink) !important;
+  box-shadow: var(--admin-selected-shadow, inset 0 -1.5px 0 var(--admin-ink)) !important;
+}
+
+/* ── プレビューの操作は、下に浮かぶ1本の帯だけ（上の帯・下の帯をやめる） ───────── */
+/* 帯は描く面（studio-preview-canvas）の下に浮かべる。保存の帯（スマホで未保存のとき）はその下に並ぶので重ならない。 */
+.admin-atelier.admin-workbench.admin-studio .studio-preview[data-compact] .studio-preview-canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.admin-atelier.admin-workbench.admin-studio .studio-preview[data-compact] .studio-preview-stage { padding: 28px 32px 88px; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview[data-compact] .studio-preview-frame {
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 18px 48px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: 5px;
+  white-space: nowrap;
+  color: var(--admin-muted);
+  background: var(--admin-paper);
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-devices {
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-history-controls { display: flex; gap: 2px; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float :is(button, a, .studio-preview-public) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 14px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: var(--admin-muted);
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  opacity: 1;
+}
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-history-controls button,
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float > button { padding: 0; width: 36px; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float :is(button, a):hover:not(:disabled) { color: var(--admin-ink); background: var(--admin-paper-soft) !important; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float button:disabled { opacity: 0.3; cursor: default; }
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-devices button[aria-pressed="true"] {
+  color: var(--admin-ink);
+  background: var(--admin-paper-deep) !important;
+}
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float span.studio-preview-public { opacity: 0.45; cursor: not-allowed; }
+.studio-preview-float__sep { flex: none; width: 1px; height: 18px; margin: 0 4px; background: var(--admin-line); }
+
+@media (min-width: 900px) {
+  /* 元に戻す・やり直すはプレビューの帯へ移した。右の欄の上の段は要らない。 */
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual][data-preview] .admin-settings-mobile-current { display: none !important; }
+}
+
+/* 戻る・関係する画面への入口は、指で押せる大きさ（管理画面の共通のボタン指定より優先）。 */
+.admin-atelier.admin-workbench .se-part-head .se-part-head__back,
+.admin-atelier.admin-workbench .se-part-head .se-part-head__link { min-height: 44px; }
+
+/* スマホ: 「編集／プレビュー」は丸い切り替え。選んでいる方を紙の色で浮かせる。 */
+@media (max-width: 899px) {
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current {
+    min-height: 52px;
+    padding: 5px 16px;
+    justify-content: space-between;
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current__view-switch {
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--admin-paper-deep);
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current__view-switch > button {
+    min-width: 5.5em;
+    min-height: 38px;
+    padding: 0 16px;
+    font-size: 13px;
+    color: var(--admin-muted);
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+  }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current__view-switch > button[aria-pressed="true"] {
+    color: var(--admin-ink);
+    background: var(--admin-paper) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  }
+  /* スマホのプレビューでは、帯を下に固定しない（指の届く所に操作が重なる）。 */
+  .admin-atelier.admin-workbench.admin-studio .studio-preview[data-compact] .studio-preview-stage { padding: 16px 16px 84px; }
+}
+@media (max-width: 899px) {
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-workspace[data-visual] .admin-settings-mobile-current { justify-content: center; }
+  /* 帯は画面の幅に収める。元に戻す・やり直すは、スマホでは編集の側に置く。 */
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float { max-width: calc(100% - 24px); bottom: 16px; }
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-history-controls,
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-history-controls + .studio-preview-float__sep,
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__sep:has(+ .studio-history-controls) { display: none; }
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float :is(button, a, .studio-preview-public) { padding: 0 10px; font-size: 12.5px; gap: 5px; }
+}
+
+/* Series では、作品ごとのページも帯から選べる。 */
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__page {
+  max-width: 220px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 28px 0 14px !important;
+  font-size: 13px;
+  color: var(--admin-ink);
+  text-overflow: ellipsis;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+.admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__page:hover { background-color: var(--admin-paper-soft) !important; }
+@media (max-width: 899px) {
+  .admin-atelier.admin-workbench.admin-studio .studio-preview .studio-preview-float .studio-preview-float__page { max-width: 120px; padding: 0 22px 0 10px !important; font-size: 12.5px; }
+}

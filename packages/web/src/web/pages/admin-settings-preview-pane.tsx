@@ -1,5 +1,5 @@
-import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ExternalLink, Maximize2, Minimize2, RotateCw } from "lucide-react";
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ExternalLink, Maximize2, Minimize2, Monitor, RotateCw, Smartphone } from "lucide-react";
 import { boundedPreviewDimension, fitPreviewViewport, PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
 import { previewPageNotice, previewWorkPath, PREVIEW_STATIC_PATHS, type PreviewPageNotice, type PreviewWork } from "../lib/admin-preview-pages";
 
@@ -36,8 +36,10 @@ function noticeText(notice: PreviewPageNotice, ja: boolean, workLabel: string): 
 }
 
 /** 固定ページと、Series／Work の作品ごとの詳細ページ。 */
-function PreviewPageOptions({ page, works, worksFailed, workLabel, ja }: {
+function PreviewPageOptions({ page, works, worksFailed, workLabel, ja, indexPath }: {
   page: string; works?: PreviewWork[]; worksFailed: boolean; workLabel: string; ja: boolean;
+  /** 見ながら直す画面の Series: 固定ページの代わりに、一覧へ戻る1行だけを出す */
+  indexPath?: string;
 }) {
   const staticLabels: Record<(typeof PREVIEW_STATIC_PATHS)[number], string> = {
     "/": ja ? "トップページ" : "Home", "/gallery": "Gallery", "/series": "Series", "/work": workLabel,
@@ -48,10 +50,11 @@ function PreviewPageOptions({ page, works, worksFailed, workLabel, ja }: {
     { kind: "series" as const, label: ja ? "作品（Series）" : "Series pages" },
     { kind: "work" as const, label: ja ? `作品（${workLabel}）` : `${workLabel} pages` },
   ];
-  const isStatic = (PREVIEW_STATIC_PATHS as readonly string[]).includes(page);
+  const isStatic = (PREVIEW_STATIC_PATHS as readonly string[]).includes(page) || page === indexPath;
   const listed = isStatic || !!works?.some(w => previewWorkPath(w) === page);
   return <>
-    {PREVIEW_STATIC_PATHS.map(path => <option key={path} value={path} disabled={path === "/work" && noPublishedWork && page !== path}>
+    {indexPath ? <option value={indexPath}>{ja ? "作品の一覧" : "All works"}</option>
+      : PREVIEW_STATIC_PATHS.map(path => <option key={path} value={path} disabled={path === "/work" && noPublishedWork && page !== path}>
       {staticLabels[path]}{path === "/work" && noPublishedWork ? (ja ? "（公開中の作品なし）" : " (none published)") : ""}
     </option>)}
     {!listed && <option value={page} disabled>{ja ? "選んでいた作品" : "Selected work"}{works ? (ja ? "（見つかりません）" : " (not found)") : ""}</option>}
@@ -80,11 +83,21 @@ export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
   page?: string; onPageChange?: (page: string) => void;
   /** 作品の一覧。undefined は読み込み中か失敗（worksFailed で区別）。 */
   works?: PreviewWork[]; worksFailed?: boolean; onRetryWorks?: () => void; workLabel?: string;
+  /**
+   * 見ながら直す画面（管理画面「サイト」）。上の帯と下の帯をやめ、画面の大きさ・
+   * 元に戻す・読み込み直し・公開サイトを、プレビューの下に浮かぶ1本の帯にまとめる。
+   * プレビューはいつも編集中の内容を映す（2026-09-29）。
+   */
+  compact?: boolean;
+  /** compact の帯に足す操作（元に戻す・やり直す） */
+  toolbarExtras?: ReactNode;
+  /** compact で作品を選ぶとき、一覧のページ（Series）。onPageChange と一緒に渡す */
+  indexPath?: string;
 }>(function AdminSettingsPreviewPane(props, iframeRef) {
   const { device, onDeviceChange, liveSync, onLiveSyncChange, src, publicHref, onIframeLoad,
     onReload, expanded, onToggleExpanded, expandButtonRef, unsavedCount, onViewportChange,
     onSave, onEdit, pending, saveLabel, editLabel, saveError, copy, page = "/", onPageChange,
-    works, worksFailed = false, onRetryWorks, workLabel = "Work",
+    works, worksFailed = false, onRetryWorks, workLabel = "Work", compact = false, toolbarExtras, indexPath,
   } = props;
   const ja = props.language !== "en";
   const notice = onPageChange ? previewPageNotice(page, works) : null;
@@ -106,8 +119,16 @@ export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
   }, []);
   const fit = fitPreviewViewport(viewport, stage);
   const dimensions = `${viewport.width} × ${viewport.height}`;
-  return <section className="admin-settings-preview studio-preview" aria-label={copy.title} data-settings-preview>
-    <div className="studio-preview-toolbar">
+  const publicLink = notice
+    ? <span className="studio-preview-public" aria-disabled="true" title={noticeText(notice, ja, workLabel)}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></span>
+    : <a className="studio-preview-public" href={publicHref} target="_blank" rel="noopener" title={copy.openInNewTabTitle}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></a>;
+  const stageNode = <div ref={stageRef} className="studio-preview-stage">
+    <div className="studio-preview-frame" data-device={device} style={{ width: fit.width, height: fit.height }}>
+      <iframe ref={iframeRef} src={src} onLoad={onIframeLoad} title="Site Preview" style={{ width: viewport.width, height: viewport.height, transform: `scale(${fit.scale})`, transformOrigin: "top left" }} />
+    </div>
+  </div>;
+  return <section className="admin-settings-preview studio-preview" aria-label={copy.title} data-settings-preview data-compact={compact || undefined}>
+    {!compact && <div className="studio-preview-toolbar">
       {onPageChange && <select aria-label={ja ? "確認するページ" : "Preview page"} value={page} onChange={e => onPageChange(e.target.value)}>
         <PreviewPageOptions page={page} works={works} worksFailed={worksFailed} workLabel={workLabel} ja={ja} />
       </select>}
@@ -124,26 +145,35 @@ export const AdminSettingsPreviewPane = forwardRef<HTMLIFrameElement, {
         </div>
       </details>
       <button type="button" ref={expandButtonRef} aria-label={expanded ? copy.collapse : copy.expand} aria-pressed={expanded} onClick={onToggleExpanded}>{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
-    </div>
+    </div>}
     {onPageChange && (notice || worksFailed) && <output className="studio-preview-note" aria-live="polite">
       {notice ? noticeText(notice, ja, workLabel) : (ja ? "作品の一覧を読み込めませんでした。" : "Could not load the list of works.")}
       {!notice && onRetryWorks && <button type="button" onClick={onRetryWorks}>{ja ? "再読み込み" : "Retry"}</button>}
     </output>}
-    <div ref={stageRef} className="studio-preview-stage">
-      <div className="studio-preview-frame" data-device={device} style={{ width: fit.width, height: fit.height }}>
-        <iframe ref={iframeRef} src={src} onLoad={onIframeLoad} title="Site Preview" style={{ width: viewport.width, height: viewport.height, transform: `scale(${fit.scale})`, transformOrigin: "top left" }} />
-      </div>
-    </div>
-    <footer className="studio-preview-status">
+    {compact ? <div className="studio-preview-canvas">{stageNode}<div className="studio-preview-status studio-preview-float" role="toolbar" aria-label={ja ? "プレビューの操作" : "Preview controls"}>
+      {onPageChange && <>
+        <select className="studio-preview-float__page" aria-label={ja ? "確認するページ" : "Preview page"} value={page} onChange={e => onPageChange(e.target.value)}>
+          <PreviewPageOptions page={page} works={works} worksFailed={worksFailed} workLabel={workLabel} ja={ja} indexPath={indexPath} />
+        </select>
+        <span className="studio-preview-float__sep" aria-hidden="true" />
+      </>}
+      <fieldset className="studio-preview-devices" aria-label={ja ? "画面サイズ" : "Screen size"}>
+        <button type="button" title={copy.desktopTitle} aria-pressed={device === "desktop"} onClick={() => { onDeviceChange("desktop"); setViewport(PREVIEW_DESKTOP); }}><Monitor size={15} aria-hidden="true" />{copy.desktop}</button>
+        <button type="button" title={copy.mobileTitle} aria-pressed={device === "mobile"} onClick={() => { onDeviceChange("mobile"); setViewport(PREVIEW_MOBILE); }}><Smartphone size={15} aria-hidden="true" />{copy.mobile}</button>
+      </fieldset>
+      {toolbarExtras && <span className="studio-preview-float__sep" aria-hidden="true" />}
+      {toolbarExtras}
+      <span className="studio-preview-float__sep" aria-hidden="true" />
+      <button type="button" aria-label={copy.reload} title={copy.reload} onClick={onReload}><RotateCw size={14} /></button>
+      {publicLink}
+    </div></div> : <>{stageNode}<footer className="studio-preview-status">
       <select aria-label={ja ? "プレビューの内容" : "Preview content"} value={liveSync ? "draft" : "saved"} onChange={e => onLiveSyncChange(e.target.value === "draft")}>
         <option value="draft">{ja ? "編集中の内容" : "Current draft"}</option><option value="saved">{ja ? "保存済みの内容" : "Saved site"}</option>
       </select>
       <span>{Math.round(fit.scale * 100)}%</span>
       <button type="button" aria-label={copy.reload} title={copy.reload} onClick={onReload}><RotateCw size={14} /></button>
-      {notice
-        ? <span className="studio-preview-public" aria-disabled="true" title={noticeText(notice, ja, workLabel)}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></span>
-        : <a className="studio-preview-public" href={publicHref} target="_blank" rel="noopener" title={copy.openInNewTabTitle}>{ja ? "公開サイト" : "Published site"}<ExternalLink size={13} /></a>}
-    </footer>
+      {publicLink}
+    </footer></>}
     {(expanded || saveError || unsavedCount > 0) && <div className="admin-preview-save-dock" data-expanded={expanded} data-error={!!saveError}>
       <button type="button" onClick={onEdit}>{editLabel}</button>
       <span role={saveError ? "alert" : "status"}>{saveError || (unsavedCount ? copy.unsavedWhileExpanded(unsavedCount) : (ja ? "保存済み" : "Saved"))}</span>

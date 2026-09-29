@@ -210,7 +210,7 @@ test.describe("admin — 共通ページ枠の見出しの形", () => {
       await page.addInitScript(storeAdminTab, "setup");
       await page.goto("/admin");
       await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
-      await page.locator("[data-site-item]").first().waitFor({ state: "attached" });
+      await page.locator(".se-bar").waitFor({ state: "attached" });
       await revealAdminPanel(page);
 
       const title = page.locator("h1.admin-page-header__title").first();
@@ -283,7 +283,7 @@ test.describe("admin — 共通ページ枠の見出しの形", () => {
       await page.addInitScript(storeAdminTab, "series");
       await page.goto("/admin");
       await page.waitForSelector(".admin-atelier", { timeout: 15_000 });
-      await page.locator("[data-site-item]").first().waitFor({ state: "attached" });
+      await page.locator(".se-bar").waitFor({ state: "attached" });
       await revealAdminPanel(page);
 
       const note = page.locator(".ax-page-title__note");

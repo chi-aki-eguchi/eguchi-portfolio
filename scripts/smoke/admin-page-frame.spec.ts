@@ -1,8 +1,8 @@
 import { test, expect } from "./fixtures.ts";
 import { ADMIN_TABS, gotoAdminTab, loginAsAdmin } from "./helpers";
 
-// Photo workspaces use compact headings; Settings names the current section
-// with its own heading (the small bar label is kept for screen readers only).
+// Photo workspaces use compact headings; the site editor names the opened part
+// above its settings, beside the preview.
 // Each screen must still identify itself visibly, inside the content area,
 // without reserving an oversized heading above the photographs.
 for (const width of [1440, 1024, 375]) {
@@ -12,13 +12,16 @@ for (const width of [1440, 1024, 375]) {
     await loginAsAdmin(page);
     for (const tab of ADMIN_TABS) {
       await gotoAdminTab(page, tab);
-      const heading = tab === "settings"
-        ? page.locator("[data-settings-section] [data-settings-section-heading]").first()
+      // サイトの設定（2026-09-29〜）は、プレビューの右の欄に開いた部分の名前を出す。
+      const settings = tab === "settings";
+      // 名前の左には一覧と同じ目印が付くので、目印と名前の1行で測る。
+      const heading = settings
+        ? page.locator(".se-part-head__row")
         : page.locator("h1.admin-page-header__title");
       await expect(heading, `${tab}の現在地`).toBeVisible();
       await expect(heading).toBeInViewport();
       const box = await heading.boundingBox();
-      const content = await page.locator(".admin-content").boundingBox();
+      const content = await page.locator(settings ? ".admin-settings-workspace__form" : ".admin-content").boundingBox();
       expect(box).not.toBeNull();
       expect(content).not.toBeNull();
       expect(box!.x, `${tab}の左余白`).toBeGreaterThanOrEqual(content!.x + 8);
@@ -27,9 +30,10 @@ for (const width of [1440, 1024, 375]) {
       expect(box!.height, `${tab}の見出しが縦積みにならない`).toBeLessThanOrEqual(44);
     }
     if (width >= 1024) {
-      await page.getByRole("button", { name: "プレビューを閉じる", exact: true }).click();
-      await expect(page.locator("[data-settings-section] [data-settings-section-heading]").first()).toBeVisible();
-      await expect(page.getByRole("navigation", { name: "サイトの設定", exact: true })).toBeVisible();
+      // 見ながら直す画面は、プレビューと設定をいつも並べる（閉じるボタンは無い）。
+      await expect(page.getByRole("button", { name: "プレビューを閉じる", exact: true })).toHaveCount(0);
+      await expect(page.locator(".studio-preview-frame")).toBeVisible();
+      await expect(page.locator(".se-part-head__title")).toBeVisible();
     }
   });
 }

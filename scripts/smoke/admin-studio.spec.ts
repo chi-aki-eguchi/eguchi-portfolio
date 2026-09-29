@@ -1,5 +1,5 @@
 import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
-import { loginAsAdmin } from "./helpers";
+import { loginAsAdmin, openSitePart } from "./helpers";
 
 /**
  * 写真中心の管理画面（siteDesign = "book"、2026-09-26 作り直し）。
@@ -108,11 +108,13 @@ test.describe("写真中心の管理画面", () => {
   test("サイト › シリーズの中の並びに、この構成で使わない設定を書く", async ({ page, api }) => {
     await openStudio(page, api);
     await page.getByRole("navigation", { name: "管理画面の入口" }).getByRole("button", { name: "サイト" }).click();
-    await page.getByRole("button", { name: /写真の並び順とシリーズの入口/ }).click();
+    // サイトの画面（2026-09-29〜）: Gallery の「並び順」を開く。
+    await openSitePart(page, "order", { page: "gallery" });
     const note = page.locator(".admin-book-unused");
     await expect(note).toBeVisible();
     await expect(note).toContainText("Gallery にはいつもすべての公開写真");
-    await page.getByRole("button", { name: /背景と配色/ }).click();
+    await openSitePart(page, "theme", { mode: "look" });
+    await expect(page.locator('[data-settings-section="theme"]')).toBeVisible();
     await expect(note).toHaveCount(0);
   });
 });

@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from "./fixtures.ts";
-import { gotoAdminTab, loginAsAdmin } from "./helpers";
+import { gotoAdminTab, loginAsAdmin, openSitePart } from "./helpers";
 
 // 取り込み中の進捗。日本語表示では「取り込み中 3 / 120」になる。以前は英語が
 // 直書きされていたので `Importing` だけを見ていたが、辞書へ移したので両方を
@@ -360,7 +360,7 @@ test.describe("admin — 取り込み後に今回追加した写真へ着地", (
 
     // Galleryを離れて戻っても、親状態にある目印は消えない。
     await page.locator(".admin-book__tab", { hasText: "サイト" }).click();
-    await page.locator('[data-site-item="tab:categories"]').click();
+    await openSitePart(page, "categories", { mode: "more" });
     await page.waitForTimeout(250);
     await page.keyboard.press("Meta+k");
     await page.getByPlaceholder(/移動先/).fill("詳しい道具");

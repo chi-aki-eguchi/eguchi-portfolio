@@ -1,6 +1,19 @@
 import "../components/admin-workbench.css";
 import { uploadPhotoFile } from "../lib/admin-upload";
-import { AdminSettingsNavigationContext, siteSkeletonFrom } from "./admin-settings-navigation";
+import {
+  AdminSettingsNavigationContext,
+  SITE_LOOK_PARTS,
+  SITE_MORE_PARTS,
+  SITE_PAGES,
+  SITE_PARTS,
+  partIsListed,
+  sectionsForPart,
+  siteSkeletonFrom,
+  type SiteOutlineTab,
+  type SitePageId,
+  type SitePart,
+  type SitePartId,
+} from "./admin-settings-navigation";
 import { comparePhotoDates } from "../../shared/photo-dates";
 import { PhotoImportReview, type ImportDatePolicy } from "../components/PhotoImportReview";
 import { PhotoDateRecovery } from "../components/PhotoDateRecovery";
@@ -130,12 +143,20 @@ import {
 } from "./admin-i18n";
 import {
   BookAdminShell,
-  BookSiteView,
-  siteOutlineGroups,
   type BookAdminView,
   normalizeBookView,
-  type SitePanelItem,
 } from "../components/admin-book/BookAdminShell";
+import {
+  SiteEditorBar,
+  SiteEditorFrame,
+  SitePartHeader,
+  SitePartsPanel,
+  partLabel,
+  sectionLabel,
+  type SiteEditorLanguage,
+  type SiteEditorMode,
+  type SiteEditorTarget,
+} from "../components/site-editor/SiteEditor";
 import { Studio } from "../components/studio/Studio";
 
 /**
@@ -662,25 +683,32 @@ function AdminPageContent({
     "local",
   );
   const bookView = normalizeBookView(storedBookView);
-  const [bookPanelId, setBookPanelId] = usePersistentState<string>(
-    demoMode ? "admin:book:panel:demo" : "admin:book:panel",
-    "settings:page-layout",
+  // 「サイト」で見ているページ・右の欄の一覧・開いている部分（2026-09-29 作り直し）。
+  const [storedSitePage, setSitePage] = usePersistentState<SitePageId>(
+    demoMode ? "admin:site:page:demo" : "admin:site:page",
+    "top",
     "local",
   );
+  const sitePage: SitePageId = SITE_PAGES.some((p) => p.id === storedSitePage) ? storedSitePage : "top";
+  const [storedSiteMode, setSiteMode] = usePersistentState<SiteEditorMode>(
+    demoMode ? "admin:site:mode:demo" : "admin:site:mode",
+    "page",
+    "local",
+  );
+  const siteMode: SiteEditorMode = storedSiteMode === "look" || storedSiteMode === "more" ? storedSiteMode : "page";
+  const [siteTarget, setSiteTarget] = usePersistentState<SiteEditorTarget>(
+    demoMode ? "admin:site:part:demo" : "admin:site:part",
+    null,
+    "local",
+  );
+  type SiteMove = { page?: SitePageId; mode?: SiteEditorMode; target: SiteEditorTarget };
   const [bookPending, setBookPending] = useState<
-    { view: BookAdminView; panel?: string } | null
+    { view: BookAdminView; site?: SiteMove } | null
   >(null);
   const [bookOutlineHost, setBookOutlineHost] = useState<HTMLDivElement | null>(null);
-  // スマホのサイトで、項目の中身（true）と目次（false）のどちらを出すか。「サイト」を
-  // 押したら目次、項目を開いたら（目次・探す・画面の中の案内から）中身。PC で開いた
-  // 画面は中身のまま（幅を狭めても作業中の項目が消えない）。
-  const [siteShowsPanel, setSiteShowsPanel] = useState(() => {
-    try {
-      return !window.matchMedia("(max-width: 767px)").matches;
-    } catch {
-      return true;
-    }
-  });
+  // プレビューの中で見つかった部分と、一覧で指している部分（プレビューに枠を出す）。
+  const [foundParts, setFoundParts] = useState<string[]>([]);
+  const [hoverPart, setHoverPart] = useState<SiteEditorTarget>(null);
   // 保存していない変更がある設定の節（目次に印を付ける）。
   const [changedSettings, setChangedSettings] = useState<string[]>([]);
   // 管理画面の明暗（既定は明るい紙）。写真の色を見るため、暗い部屋でも使えるように。
@@ -702,11 +730,11 @@ function AdminPageContent({
     // サンプル一式が入力済みのため「はじめに」に飛ばすと完了表示だけが残る。
     if (demoMode) return;
     if (shouldLandOnSetup(authenticated, shellSettings)) {
-      setBookPanelId("tab:setup");
+      setSiteMode("more");
+      setSiteTarget("setup");
       setBookView("site");
-      setSiteShowsPanel(true);
     }
-  }, [authenticated, shellSettings, setBookPanelId, setBookView, demoMode]);
+  }, [authenticated, shellSettings, setSiteMode, setSiteTarget, setBookView, demoMode]);
 
   // 工程5: ⌘K / Ctrl+K toggles the quick palette from anywhere in admin.
   useEffect(() => {
@@ -760,49 +788,93 @@ function AdminPageContent({
   ) : null;
 
   const siteSkeleton = siteSkeletonFrom(shellSettings?.siteDesign);
-  const groups = siteOutlineGroups(showService);
-  const allItems = groups.flatMap((g) => g.items);
-  const activeItem =
-    allItems.find((item) => item.id === bookPanelId) ??
-    // 分ける前の節（「各ページの構成」の中にあった About など）を覚えていたときは骨格へ。
-    allItems[0]!;
-  const goBook = (view: BookAdminView, panel?: string) => {
+  const siteLanguage: SiteEditorLanguage = language === "en" ? "en" : "ja";
+  // 開いている部分を、出す設定の節か独立した編集画面へ読み替える。
+  const resolveSite = (target: SiteEditorTarget) => {
+    if (!target) return null;
+    if (target.startsWith("section:")) {
+      const section = target.slice("section:".length);
+      return { kind: "settings" as const, sections: [section], label: sectionLabel(section, siteLanguage), note: undefined, links: [] as { label: string; tab: SiteOutlineTab }[] };
+    }
+    const part: SitePart | undefined = (SITE_PARTS as Record<string, SitePart>)[target];
+    if (!part) return null;
+    const label = partLabel(part, siteLanguage);
+    if (part.tab) return { kind: "tab" as const, tab: part.tab, label };
+    return {
+      kind: "settings" as const,
+      sections: sectionsForPart(part, siteSkeleton),
+      label,
+      note: siteLanguage === "ja" ? part.noteJa : part.noteEn,
+      links: (part.links ?? []).map((link) => ({ label: siteLanguage === "ja" ? link.ja : link.en, tab: link.tab })),
+    };
+  };
+  const siteOpen = resolveSite(siteTarget);
+  const sectionsFor = (target: SiteEditorTarget) => {
+    const resolved = resolveSite(target);
+    return resolved?.kind === "settings" ? resolved.sections : [];
+  };
+  const applySite = (move: SiteMove) => {
+    if (move.page) setSitePage(move.page);
+    if (move.mode) setSiteMode(move.mode);
+    setSiteTarget(move.target);
+  };
+  const goBook = (view: BookAdminView, site?: SiteMove) => {
     if (galleryReordering || galleryUploading) return;
-    const leaving = view !== bookView || (panel && panel !== bookPanelId);
-    // 設定の節どうしの移動は下書きを持ち越す（節をまたいで1つの下書き・1回の保存）。
-    const settingsHop =
+    const leaving =
+      view !== bookView ||
+      (site !== undefined &&
+        (site.target !== siteTarget ||
+          (site.page !== undefined && site.page !== sitePage) ||
+          (site.mode !== undefined && site.mode !== siteMode)));
+    // サイトの中で設定どうしを移るときは下書きを持ち越す（1つの下書き・1回の保存）。
+    // 独立した編集画面（About の文章・料金など）や、ほかの入口へ移るときだけ確かめる。
+    const staysInSettings =
       view === "site" &&
       bookView === "site" &&
-      activeItem.panel.kind === "settings" &&
-      panel?.startsWith("settings:");
-    if (hasUnsaved && leaving && !settingsHop) {
-      setBookPending({ view, panel });
+      siteOpen?.kind !== "tab" &&
+      resolveSite(site?.target ?? siteTarget)?.kind !== "tab";
+    if (hasUnsaved && leaving && !staysInSettings) {
+      setBookPending({ view, site });
       return;
     }
-    if (panel) setBookPanelId(panel);
-    if (view === "site") setSiteShowsPanel(Boolean(panel));
+    if (site) applySite(site);
     setBookView(view);
+  };
+  const goSite = (move: SiteMove) => goBook("site", move);
+  // 部分を開く。ページにある部分なら、そのページを見ている状態で開く。
+  const openPart = (target: SiteEditorTarget) => {
+    if (!target || target.startsWith("section:")) return goSite({ target });
+    const pageWithPart = SITE_PAGES.find((p) => (p.parts as readonly string[]).includes(target));
+    if (siteMode === "page" && SITE_PAGES.find((p) => p.id === sitePage)?.parts.includes(target as SitePartId)) {
+      return goSite({ target });
+    }
+    if ((SITE_LOOK_PARTS as readonly string[]).includes(target)) return goSite({ mode: "look", target });
+    if ((SITE_MORE_PARTS as readonly string[]).includes(target)) return goSite({ mode: "more", target });
+    return goSite({ page: pageWithPart?.id, mode: "page", target });
   };
   const openFromSettings = (next: Tab) => {
     if (next === "gallery") goBook("photos");
     else if (next === "series") goBook("series");
-    else if (next === "settings") goBook("site");
-    else goBook("site", `tab:${next}`);
+    else if (next === "settings") goSite({ target: null });
+    else if (next === "hero") openPart("hero-photos");
+    else if (next === "profile") openPart("about");
+    else if (next === "categories") openPart("categories");
+    else openPart(next as SitePartId);
   };
   const bookDestinations: PaletteDestination[] = [
     { id: "book-photos", label: "写真", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("photos") },
     { id: "book-series", label: "シリーズ", group: "管理画面", icon: ADMIN_TAB_ICONS.series, action: () => goBook("series") },
     { id: "book-library", label: "詳しい道具（構図・日付の一括入力・表での一括編集）", group: "管理画面", icon: ADMIN_TAB_ICONS.gallery, action: () => goBook("library") },
-    ...groups.flatMap((group) =>
-      group.items.map((item) => ({
-        id: `book-${item.id}`,
-        label: item.label,
-        group: `サイト · ${group.label}`,
-        keywords: [item.note, item.keywords].filter(Boolean).join(" "),
+    ...(Object.values(SITE_PARTS) as SitePart[])
+      .filter((part) => partIsListed(part, siteSkeleton, showService))
+      .map((part) => ({
+        id: `book-part-${part.id}`,
+        label: partLabel(part, siteLanguage),
+        group: siteLanguage === "ja" ? "サイト" : "Site",
+        keywords: [part.noteJa, part.noteEn, part.keywords].filter(Boolean).join(" "),
         icon: ADMIN_TAB_ICONS.settings,
-        action: () => goBook("site", item.id),
+        action: () => openPart(part.id as SitePartId),
       })),
-    ),
     {
       id: "trash",
       label: t.navigation.trash,
@@ -831,42 +903,113 @@ function AdminPageContent({
       recentlyAddedPhotoIds={recentlyAddedPhotoIds}
       onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
       onReorderWorkspaceChange={setGalleryReordering}
-      onOpenOrderSettings={() => goBook("site", "settings:series")}
+      onOpenOrderSettings={() => openPart("order")}
     />
   );
-  const panel = activeItem.panel;
-  const sitePanel = (
-    <Suspense
-      fallback={
-        <div className="h-full flex items-center justify-center">
-          <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
-        </div>
-      }
-    >
-      {panel.kind === "settings" && (
-        <AdminSettingsNavigationContext.Provider value={bookOutlineHost}>
-          <LazySettingsTab
-            key={panel.section}
-            initialSectionId={panel.section}
-            onUnsavedChange={setHasUnsaved}
-            demoSeed={demoSeed}
-            onOpenTab={openFromSettings}
-            onActiveSectionChange={(section) => setBookPanelId(`settings:${section}`)}
-            onChangedSectionsChange={setChangedSettings}
-          />
-        </AdminSettingsNavigationContext.Provider>
-      )}
-      {panel.kind === "tab" && panel.tab === "hero" && <LazyHeroTab />}
-      {panel.kind === "tab" && panel.tab === "profile" && <LazyProfileTab onUnsavedChange={setHasUnsaved} />}
-      {panel.kind === "tab" && panel.tab === "pricing" && <LazyPricingTab onUnsavedChange={setHasUnsaved} />}
-      {panel.kind === "tab" && panel.tab === "service" && showService && <LazyServiceTab onUnsavedChange={setHasUnsaved} />}
-      {panel.kind === "tab" && panel.tab === "categories" && <LazyCategoriesTab />}
-      {panel.kind === "tab" && panel.tab === "series" && <LazySeriesTab onUnsavedChange={setHasUnsaved} />}
-      {panel.kind === "tab" && panel.tab === "setup" && (
-        <SetupTab onOpenTab={(next) => openFromSettings(next)} demoMode={demoMode} />
-      )}
-    </Suspense>
+  const sitePageDef = SITE_PAGES.find((p) => p.id === sitePage) ?? SITE_PAGES[0]!;
+  const sitePartIds = sitePageDef.parts.filter((id) => partIsListed(SITE_PARTS[id], siteSkeleton, showService));
+  const siteBackLabel =
+    siteMode === "look"
+      ? siteLanguage === "ja" ? "全体の見た目" : "Overall look"
+      : siteMode === "more"
+        ? siteLanguage === "ja" ? "そのほか" : "More"
+        : siteLanguage === "ja" ? sitePageDef.ja : sitePageDef.en;
+  const loading = (
+    <div className="h-full flex items-center justify-center">
+      <Loader2 size={18} className="animate-spin text-[var(--admin-muted)]" />
+    </div>
   );
+  const sitePanelNode =
+    siteOpen?.kind === "settings" ? (
+      <SitePartHeader
+        backLabel={siteBackLabel}
+        onBack={() => goSite({ target: null })}
+        target={siteTarget}
+        title={siteOpen.label}
+        note={siteOpen.note}
+        links={siteOpen.links.map((link) => ({ label: link.label, onClick: () => openPart(
+          link.tab === "hero" ? "hero-photos" : link.tab === "profile" ? "about" : link.tab === "series" ? "series-details" : (link.tab as SitePartId),
+        ) }))}
+      />
+    ) : (
+      <SitePartsPanel
+        mode={siteMode}
+        page={sitePage}
+        skeleton={siteSkeleton}
+        showService={showService}
+        foundParts={foundParts}
+        changedSections={changedSettings}
+        sectionsFor={sectionsFor}
+        onOpen={openPart}
+        onHover={setHoverPart}
+        language={siteLanguage}
+      />
+    );
+  const siteEditorNode =
+    siteOpen?.kind === "tab" ? (
+      <div className="se-editor">
+        <div className="se-editor-back">
+          <button type="button" onClick={() => goSite({ target: null })}>
+            ← {siteBackLabel}
+          </button>
+          <span>{siteOpen.label}</span>
+        </div>
+        <div className="admin-main">
+          <div className="admin-content">
+            <div className="admin-screen" data-phase="show">
+              <Suspense fallback={loading}>
+                {siteOpen.tab === "hero" && <LazyHeroTab />}
+                {siteOpen.tab === "profile" && <LazyProfileTab onUnsavedChange={setHasUnsaved} />}
+                {siteOpen.tab === "pricing" && <LazyPricingTab onUnsavedChange={setHasUnsaved} />}
+                {siteOpen.tab === "service" && showService && <LazyServiceTab onUnsavedChange={setHasUnsaved} />}
+                {siteOpen.tab === "categories" && <LazyCategoriesTab />}
+                {siteOpen.tab === "series" && <LazySeriesTab onUnsavedChange={setHasUnsaved} />}
+                {siteOpen.tab === "setup" && (
+                  <SetupTab
+                    onOpenTab={(next) => openFromSettings(next)}
+                    onOpenPart={(id) => openPart(id as SitePartId)}
+                    demoMode={demoMode}
+                  />
+                )}
+              </Suspense>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="admin-main">
+        <div className="admin-content">
+          <div className="admin-screen" data-phase="show">
+            <Suspense fallback={loading}>
+              <AdminSettingsNavigationContext.Provider value={bookOutlineHost}>
+                <LazySettingsTab
+                  onUnsavedChange={setHasUnsaved}
+                  demoSeed={demoSeed}
+                  onOpenTab={openFromSettings}
+                  onChangedSectionsChange={setChangedSettings}
+                  visual={{
+                    page: sitePageDef.path,
+                    section: siteOpen?.kind === "settings" ? siteOpen.sections[0] ?? null : null,
+                    panel: sitePanelNode,
+                    partIds: sitePartIds,
+                    chipLabel: (id) => {
+                      const part = (SITE_PARTS as Record<string, SitePart>)[id];
+                      const label = part ? partLabel(part, siteLanguage) : id;
+                      return siteLanguage === "ja" ? `${label}を変える` : `Edit ${label}`;
+                    },
+                    onPick: (id) => goSite({ mode: "page", target: id as SitePartId }),
+                    selectedPart:
+                      (hoverPart && !hoverPart.startsWith("section:") ? hoverPart : null) ??
+                      (siteMode === "page" && siteTarget && !siteTarget.startsWith("section:") ? siteTarget : null),
+                    onFound: setFoundParts,
+                  }}
+                />
+              </AdminSettingsNavigationContext.Provider>
+            </Suspense>
+          </div>
+        </div>
+      </div>
+    );
   const leaveModal = (onCancel: () => void, onLeave: () => void, body = true) => (
     <Modal onClose={onCancel} widthClass="w-80">
       <p className="text-[length:var(--admin-text-body)] text-[var(--admin-ink)] mb-1">
@@ -899,7 +1042,7 @@ function AdminPageContent({
           data-admin-theme={bookTheme}
           data-site-skeleton={siteSkeleton}
           data-studio-workspace={bookView === "site" ? "site" : "photos"}
-          data-studio-editor={(bookView === "site" && panel.kind === "settings") || undefined}
+          data-studio-editor={(bookView === "site" && siteOpen?.kind !== "tab") || undefined}
           style={{
             ...adminThemeFromSettings(shellSettings, bookTheme),
           }}
@@ -908,7 +1051,8 @@ function AdminPageContent({
             pdfEnabled={!demoMode}
             siteName={shellSettings?.siteName?.trim() || sidebarSiteName}
             view={bookView}
-            onView={(v) => goBook(v)}
+            // 「サイト」をもう一度押したら、見ているページの一覧へ戻る。
+            onView={(v) => (v === "site" && bookView === "site" ? goSite({ target: null }) : goBook(v))}
             onSearch={() => setPaletteOpen(true)}
             siteHref={publicSiteHref}
             onLogout={requestLogout}
@@ -925,8 +1069,7 @@ function AdminPageContent({
                     () => setBookPending(null),
                     () => {
                       setHasUnsaved(false);
-                      if (bookPending.panel) setBookPanelId(bookPending.panel);
-                      if (bookPending.view === "site") setSiteShowsPanel(Boolean(bookPending.panel));
+                      if (bookPending.site) applySite(bookPending.site);
                       setBookView(bookPending.view);
                       setBookPending(null);
                     },
@@ -951,7 +1094,7 @@ function AdminPageContent({
                 view={bookView}
                 onView={(v) => goBook(v)}
                 onOpenDetails={() => goBook("library")}
-                onOpenSeriesDetails={() => goBook("site", "tab:series")}
+                onOpenSeriesDetails={() => openPart("series-details")}
                 onUploadingChange={setGalleryUploading}
               />
             )}
@@ -963,21 +1106,20 @@ function AdminPageContent({
               </div>
             )}
             {bookView === "site" && (
-              <BookSiteView
-                groups={groups}
-                active={activeItem.id}
-                skeleton={siteSkeleton}
-                changedSections={changedSettings}
-                showPanel={siteShowsPanel}
-                onShowPanel={setSiteShowsPanel}
-                onSelect={(item: SitePanelItem) => goBook("site", item.id)}
+              <SiteEditorFrame
+                fullEditor={siteOpen?.kind === "tab"}
+                bar={
+                  <SiteEditorBar
+                    page={sitePage}
+                    mode={siteMode}
+                    language={siteLanguage}
+                    onPage={(page) => goSite({ page, mode: "page", target: null })}
+                    onMode={(mode) => goSite({ mode, target: null })}
+                  />
+                }
               >
-                <div className="admin-main">
-                  <div className="admin-content">
-                    <div className="admin-screen" data-phase="show">{sitePanel}</div>
-                  </div>
-                </div>
-              </BookSiteView>
+                {siteEditorNode}
+              </SiteEditorFrame>
             )}
           </BookAdminShell>
         </div>
@@ -997,6 +1139,8 @@ type ChecklistItem = {
   body: string;
   done: boolean;
   tab?: Tab;
+  /** 「サイト」の中の開く部分（名前・連絡先など）。無ければ tab を開く */
+  part?: string;
   href?: string;
   onOpen?: () => boolean;
   confirmation?: {
@@ -1009,9 +1153,12 @@ type ChecklistItem = {
 // exportはrenderテスト用(表示だけでPOSTしない/完了ボタンでのみ保存する検証)
 export function SetupTab({
   onOpenTab,
+  onOpenPart,
   demoMode = false,
 }: {
   onOpenTab: (tab: Tab) => void;
+  /** 「サイト」の中の部分を直接開く（無いときは tab の画面を開く） */
+  onOpenPart?: (partId: string) => void;
   demoMode?: boolean;
 }) {
   const qc = useQueryClient();
@@ -1161,6 +1308,7 @@ export function SetupTab({
       ...t.setup.recommended.siteName,
       done: isFilled(settings.siteName) && isFilled(settings.siteDescription),
       tab: "settings",
+      part: "name",
     },
     {
       ...t.setup.recommended.profile,
@@ -1171,11 +1319,13 @@ export function SetupTab({
       ...t.setup.recommended.contact,
       done: hasUsableContactChannel(settings.contactEmail, settings.formspreeUrl),
       tab: "settings",
+      part: "contact-info",
     },
     {
       ...t.setup.recommended.publicUrl,
       done: isFilled(settings.siteUrl),
       tab: "settings",
+      part: "site-basics",
     },
     {
       ...t.setup.recommended.categories,
@@ -1186,6 +1336,7 @@ export function SetupTab({
       ...t.setup.recommended.appearance,
       done: isFilled(settings.galleryLayout),
       tab: "settings",
+      part: "structure",
     },
   ];
 
@@ -1400,6 +1551,7 @@ export function SetupTab({
               key={item.title}
               item={item}
               onOpenTab={onOpenTab}
+              onOpenPart={onOpenPart}
             />
           ))}
         </section>
@@ -1414,6 +1566,7 @@ export function SetupTab({
                 key={item.title}
                 item={item}
                 onOpenTab={onOpenTab}
+                onOpenPart={onOpenPart}
                 compact
               />
             ))}
@@ -1428,10 +1581,12 @@ export function SetupTab({
 function SetupChecklistRow({
   item,
   onOpenTab,
+  onOpenPart,
   compact = false,
 }: {
   item: ChecklistItem;
   onOpenTab: (tab: Tab) => void;
+  onOpenPart?: (partId: string) => void;
   compact?: boolean;
 }) {
   const { t } = useAdminI18n();
@@ -1453,7 +1608,9 @@ function SetupChecklistRow({
             </button>
           ) : (
             <button
-              onClick={() => item.tab && onOpenTab(item.tab)}
+              onClick={() =>
+                item.part && onOpenPart ? onOpenPart(item.part) : item.tab && onOpenTab(item.tab)
+              }
               className="text-[length:var(--admin-text-note)] text-[color:var(--admin-muted)] hover:text-[color:var(--admin-ink)] transition-colors flex-shrink-0"
             >
               {t.common.open}

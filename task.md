@@ -5,6 +5,7 @@
 - 現行Admin: 検索欄の切れ・青いチェック・目次の折り返し。体験版: 上の空白（帯の高さの既定値）を解消、案内を管理画面と同じ色へ。
 - check成功、全体smoke723成功・189対象外・失敗0。最後のWebKit対応後の関連smoke341成功・render424成功。本番設定・写真原本・固定配布版は保持。
 - 追加: オーナー承認後、本番設定を書体 Zen Kaku Gothic New × DM Sans・本文500・見出し「出さない」・ビューア「少し余白」へ（本人のChromeの管理画面から保存）。メニュー・Studio入力欄・書体一覧のUIを仕上げ（f2480d9、全体smoke723成功・失敗0、本番health f2480d9a）。
+- 仕上げ: 名前の太さ500（本番設定）、写真ページ・404・規約・Studio設定の見出しの重なり（985c1d2、全体smoke723成功・失敗0、本番health 985c1d29）。画面とコードで確認できる残りは無し。実機・第三者評価は未実施。
 - 正本: `docs/specs/design-finish-20260929.md`。比較画像 `scratch/design-finish/compare/`。
 
 ## Recorded State — 2026-09-29 JST / 現行Admin体験版と公開UIの再確認

@@ -376,34 +376,25 @@ function App() {
           <Route>
             <Layout>
               <TitledRoute title="Not Found">
-                <section className="max-w-3xl mx-auto px-6 py-32 md:py-48 text-center min-h-[60vh] flex flex-col items-center justify-center">
-                  <p
-                    className="font-en text-[7rem] md:text-[9rem] leading-none tracking-[0.08em] text-[rgba(var(--foreground-rgb),0.06)] font-light select-none"
-                    aria-hidden="true"
-                  >
-                    404
-                  </p>
-                  {/* Every other route has exactly one h1; this page had none,
-                      so assistive tech and crawlers saw an untitled document. */}
-                  <h1 className="font-en text-sm tracking-[0.18em] uppercase text-[color:var(--text-quiet)] -mt-4 md:-mt-6">
-                    Page not found
+                {/* 2026-09-29: 薄い巨大な「404」・大文字の英字・飾りの線をやめ、何が起きたかと次の行き先だけを。 */}
+                <section className="max-w-2xl mx-auto px-6 py-28 md:py-40 min-h-[60vh] flex flex-col justify-center">
+                  <h1 className="text-xl md:text-2xl leading-relaxed text-[var(--foreground)]">
+                    ページが見つかりませんでした
                   </h1>
-                  <div className="w-8 h-px bg-[rgba(var(--foreground-rgb),0.12)] mt-8 mb-8" />
                   <p
-                    className="text-[color:var(--text-quiet)]"
-                    style={{
-                      fontSize: "var(--body-size, 0.85rem)",
-                      lineHeight: 1.9,
-                    }}
+                    className="mt-4 text-[rgba(var(--foreground-rgb),0.72)]"
+                    style={{ fontSize: "max(0.875rem, var(--body-size, 0.875rem))", lineHeight: 1.9 }}
                   >
-                    お探しのページは存在しないか、移動した可能性があります。
+                    お探しのページは存在しないか、移動した可能性があります。<span lang="en" className="block mt-1">Page not found (404).</span>
                   </p>
-                  <Link
-                    to="/"
-                    className="inline-block mt-10 font-en text-[11px] tracking-[0.12em] uppercase text-[color:var(--text-quiet)] hover:text-[var(--accent-color,rgba(var(--foreground-rgb),0.85))] nav-link-luxury transition-colors duration-300"
-                  >
-                    Back to top
-                  </Link>
+                  <p className="mt-8 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                    <Link to="/" className="inline-flex min-h-11 items-center underline underline-offset-4">
+                      トップへ戻る
+                    </Link>
+                    <Link to="/gallery" className="inline-flex min-h-11 items-center underline underline-offset-4">
+                      すべての写真を見る
+                    </Link>
+                  </p>
                 </section>
               </TitledRoute>
             </Layout>

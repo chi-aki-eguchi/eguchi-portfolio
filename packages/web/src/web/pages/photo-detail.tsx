@@ -190,9 +190,9 @@ export default function PhotoDetailPage() {
             <p
               className="mt-3 font-en"
               style={{
-                fontSize: "0.72rem",
-                letterSpacing: "0.06em",
-                color: "var(--section-label-color)",
+                fontSize: "max(0.75rem, var(--section-label-size-eff, 0.75rem))",
+                letterSpacing: "0.04em",
+                color: "var(--text-quiet)",
               }}
             >
               {[film, ...facts].filter(Boolean).join("　/　")}
@@ -202,7 +202,8 @@ export default function PhotoDetailPage() {
             <p className="mt-3">
               <Link
                 href={`/${shelf}/${series.slug}`}
-                className="underline-offset-4 hover:underline"
+                className="inline-flex min-h-11 items-center"
+                style={{ textDecorationLine: "underline", textDecorationThickness: "1px", textUnderlineOffset: "0.3em" }}
               >
                 {series.title}
               </Link>
@@ -212,11 +213,13 @@ export default function PhotoDetailPage() {
         <p className="mt-10 text-center">
           <Link
             href="/contact"
-            className="inline-block font-ja nav-link-luxury transition-colors duration-300"
+            className="inline-flex min-h-11 items-center font-ja underline underline-offset-[0.35em] decoration-1 transition-colors duration-300 hover:text-[var(--foreground)]"
             style={{
-              fontSize: "var(--body-size, 0.875rem)",
-              color: "var(--text-quiet)",
-              letterSpacing: "0.04em",
+              fontSize: "max(0.875rem, var(--body-size, 0.875rem))",
+              color: "rgba(var(--foreground-rgb),0.8)",
+              textDecorationLine: "underline",
+              textDecorationThickness: "1px",
+              textUnderlineOffset: "0.35em",
             }}
           >
             この雰囲気で撮影を相談する
@@ -224,35 +227,37 @@ export default function PhotoDetailPage() {
         </p>
       </figure>
 
-      {/* 前後の導線。検索非対象の写真も、人は静かに見続けられる。 */}
+      {/* 前後の導線。検索非対象の写真も、人は静かに見続けられる。
+          2026-09-29: 大文字の英字（← PREV / GALLERY / NEXT →）を、日本語のページに合わせた言葉と
+          読める大きさへ。 */}
       <nav
-        className="mt-16 md:mt-24 max-w-2xl mx-auto flex items-center justify-between gap-4 font-en"
+        aria-label="ほかの写真"
+        className="mt-16 md:mt-24 max-w-2xl mx-auto flex items-center justify-between gap-4 font-ja"
         style={{
-          fontSize: "0.72rem",
-          letterSpacing: "0.1em",
-          color: "var(--section-label-color)",
+          fontSize: "0.8125rem",
+          color: "var(--text-quiet)",
         }}
       >
         <span>
           {prev != null ? (
             <Link
               href={`/photo/${prev}`}
-              className="hover:underline underline-offset-4"
+              className="inline-flex min-h-11 items-center hover:underline underline-offset-4"
             >
-              ← PREV
+              ← 前の写真
             </Link>
           ) : null}
         </span>
-        <Link href="/gallery" className="hover:underline underline-offset-4">
-          GALLERY
+        <Link href="/gallery" className="inline-flex min-h-11 items-center hover:underline underline-offset-4">
+          すべての写真
         </Link>
         <span>
           {next != null ? (
             <Link
               href={`/photo/${next}`}
-              className="hover:underline underline-offset-4"
+              className="inline-flex min-h-11 items-center hover:underline underline-offset-4"
             >
-              NEXT →
+              次の写真 →
             </Link>
           ) : null}
         </span>

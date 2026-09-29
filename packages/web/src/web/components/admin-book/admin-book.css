@@ -698,3 +698,14 @@
   position: static;
   flex: none;
 }
+
+/* サイトの設定では、上の帯の題（小）と節の見出し（大）が同じ言葉で続いていた。
+   帯の題は読み上げ用に残し、目に見えるのは節の見出しだけにする（2026-09-29）。 */
+.admin-book-root[data-studio-editor] .admin-settings-mobile-current__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

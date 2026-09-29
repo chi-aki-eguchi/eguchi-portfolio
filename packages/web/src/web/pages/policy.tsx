@@ -51,15 +51,7 @@ export default function PolicyPage({
       data-policy-language={language}
     >
       <header className="max-w-2xl page-entrance">
-        <p
-          className="font-en uppercase text-[color:var(--text-quiet)] mb-5"
-          style={{
-            fontSize: "var(--text-note, 0.7rem)",
-            letterSpacing: "0.14em",
-          }}
-        >
-          {doc.eyebrow}
-        </p>
+        {/* 2026-09-29: 見出しの上の大文字の英字（PRIVACY など）は、見出しの繰り返しなので出さない。 */}
         <h1
           className={`${languageFont} font-medium break-words`}
           style={{
@@ -159,7 +151,7 @@ export default function PolicyPage({
                     <dt className={`${languageFont} text-sm font-medium break-words`}>
                       {row.label}
                       {row.pending && (
-                        <span className="ml-2 align-middle font-en text-[0.62rem] font-normal tracking-[0.06em] uppercase text-[rgba(176,119,55,0.92)]">
+                        <span className="ml-2 align-middle text-xs font-normal text-[rgba(150,95,35,0.95)]">
                           {language === "en" ? "Pending" : "要確認"}
                         </span>
                       )}

@@ -773,7 +773,7 @@ export default function ContactPage({
                 className="flex items-start gap-3 rounded-[2px] border border-[rgba(var(--foreground-rgb),0.08)] px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)]">
+                  <p className="contact-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)]">
                     {referenceLabel}
                   </p>
                   <p className="mt-1 break-words text-[rgba(var(--foreground-rgb),0.78)] text-sm">

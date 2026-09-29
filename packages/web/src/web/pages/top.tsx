@@ -98,7 +98,7 @@ function ClassicHeroNameBlock({
         style={{
           fontWeight: "var(--hero-name-weight, 700)" as never,
           fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
-          color: overPhoto ? "#fff" : "var(--hero-name-color, var(--foreground))",
+          color: overPhoto ? "var(--hero-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
           letterSpacing: "var(--hero-name-tracking, 0.04em)",
           textShadow: overPhoto ? "0 1px 18px rgba(0,0,0,0.45)" : undefined,
         }}
@@ -123,7 +123,7 @@ function ClassicHeroNameBlock({
         style={{
           fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
           color: overPhoto
-            ? "rgba(255,255,255,0.82)"
+            ? "var(--hero-name-en-color, rgba(255,255,255,0.82))"
             : "var(--hero-name-en-color, var(--text-quiet))",
           letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
           textShadow: overPhoto ? "0 1px 14px rgba(0,0,0,0.4)" : undefined,
@@ -138,7 +138,7 @@ function ClassicHeroNameBlock({
           style={{
             fontSize: "var(--hero-sub-size, 0.75rem)",
             color: overPhoto
-              ? "rgba(255,255,255,0.62)"
+              ? "var(--hero-sub-color, rgba(255,255,255,0.62))"
               : "var(--hero-sub-color, var(--text-quiet))",
             textShadow: overPhoto ? "0 1px 12px rgba(0,0,0,0.4)" : undefined,
           }}
@@ -721,7 +721,7 @@ function HeroNameBlock({
         style={{
           fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
           fontWeight: "var(--hero-name-weight, 300)" as never,
-          color: overPhoto ? "#fff" : "var(--hero-name-color, var(--foreground))",
+          color: overPhoto ? "var(--hero-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
           letterSpacing: `var(--hero-name-tracking, ${nameTrackingFallback})`,
           textShadow: shadow(8),
         }}
@@ -746,7 +746,7 @@ function HeroNameBlock({
         style={{
           fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
           color: overPhoto
-            ? "rgba(255,255,255,0.82)"
+            ? "var(--hero-name-en-color, rgba(255,255,255,0.82))"
             : "var(--hero-name-en-color, var(--text-quiet))",
           letterSpacing: `var(--hero-name-en-tracking, ${enTrackingFallback})`,
           textShadow: shadow(14),
@@ -761,7 +761,7 @@ function HeroNameBlock({
           style={{
             fontSize: "var(--hero-sub-size, 0.75rem)",
             color: overPhoto
-              ? "rgba(255,255,255,0.62)"
+              ? "var(--hero-sub-color, rgba(255,255,255,0.62))"
               : "var(--hero-sub-color, var(--text-quiet))",
             textShadow: shadow(12),
           }}

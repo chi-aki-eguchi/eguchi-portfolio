@@ -56,7 +56,7 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   expect(ja.pricing.titleLabel).toBe("タイトル");
   expect(ja.pricing.priceLabel).toBe("料金");
   expect(ja.pricing.descriptionLabel).toBe("説明文");
-  expect(ja.service.examples.ctaLabel).toBe("CTA");
+  expect(ja.service.examples.ctaLabel).toBe("ボタン");
   expect(ja.service.pricing.stripePaymentLink).toBe("Stripe の決済リンク");
   expect(ja.settingsDesign.themeColors.backgroundLabel).toBe("背景色");
   expect(ja.settingsDesign.themeColors.textLabel).toBe("文字色");
@@ -84,7 +84,7 @@ test("Phase 2b copy preserves JP and uses standard photography terms in EN", () 
   expect(en.pricing.titleLabel).toBe("Title");
   expect(en.pricing.priceLabel).toBe("Price");
   expect(en.pricing.descriptionLabel).toBe("Description");
-  expect(en.service.examples.ctaLabel).toBe("CTA");
+  expect(en.service.examples.ctaLabel).toBe("Button");
   expect(en.service.pricing.stripePaymentLink).toBe("Stripe Payment Link");
   expect(en.settingsDesign.themeColors.backgroundLabel).toBe("Background");
   expect(en.settingsDesign.themeColors.textLabel).toBe("Text");

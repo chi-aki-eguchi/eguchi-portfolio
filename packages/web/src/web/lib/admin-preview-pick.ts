@@ -24,8 +24,20 @@ export const PREVIEW_PART_SELECTORS: Readonly<Record<string, readonly string[]>>
   order: [".ps-all .ps-stream", ".ps-series-index .ps-series-list", ".site-page .filter-grid-animated", ".site-page-top > div:has(> a.group)"],
   "series-cards": [".site-page-top > div:has(> a.group)"],
   about: [".profile-page [data-profile-layout]"],
+  note: [".profile-journal"],
+  print: ["[data-about-print]"],
   "contact-info": [".contact-page > div"],
   "contact-words": [".contact-page form"],
+  pricing: ["[data-contact-pricing]"],
+};
+
+/**
+ * 同じ要素を指す、2つ目の部分（押すと1つ目の部分が開く）。一覧の行に乗ったときは
+ * この要素に枠を付け、「このページに出ている」ことにする（2026-09-30）。
+ */
+export const PREVIEW_PART_ALSO: Readonly<Record<string, string>> = {
+  "about-layout": "about",
+  "contact-layout": "contact-info",
 };
 
 const STYLE_ID = "admin-preview-pick-style";
@@ -116,7 +128,11 @@ function attachPreviewPickingUnsafe(iframe: HTMLIFrameElement, options: PreviewP
   const mark = () => {
     if (!doc) return;
     const found = markPreviewParts(doc, options.partIds);
-    const all = Array.from(new Set(Array.from(doc.querySelectorAll("[data-edit]")).map((el) => el.getAttribute("data-edit") ?? "")));
+    const marked = new Set(Array.from(doc.querySelectorAll("[data-edit]")).map((el) => el.getAttribute("data-edit") ?? ""));
+    for (const [also, base] of Object.entries(PREVIEW_PART_ALSO)) {
+      if (marked.has(base) && options.partIds.includes(also)) marked.add(also);
+    }
+    const all = Array.from(marked);
     const key = all.sort().join(" ");
     if (key !== lastFound) {
       lastFound = key;
@@ -158,6 +174,11 @@ function attachPreviewPickingUnsafe(iframe: HTMLIFrameElement, options: PreviewP
     chip.setAttribute("data-show", "");
   };
   const onClick = (event: Event) => {
+    // 管理画面が自分で押した写真（「写真を開いたとき」を見せる）は、そのまま通す。
+    if (doc?.documentElement.hasAttribute("data-admin-pick-pass")) {
+      doc.documentElement.removeAttribute("data-admin-pick-pass");
+      return;
+    }
     const target = (event.target as Element | null)?.closest?.("[data-edit]") ?? null;
     const link = (event.target as Element | null)?.closest?.("a");
     if (!target && !link) return;
@@ -204,7 +225,7 @@ export function selectPreviewPart(iframe: HTMLIFrameElement, partId: string | nu
   try {
     doc.querySelectorAll("[data-admin-selected]").forEach((el) => el.removeAttribute("data-admin-selected"));
     if (!partId) return;
-    const value = partId.replace(/["\\]/g, "\\$&");
+    const value = (PREVIEW_PART_ALSO[partId] ?? partId).replace(/["\\]/g, "\\$&");
     const elements = Array.from(doc.querySelectorAll(`[data-edit="${value}"]`));
     elements.forEach((el) => el.setAttribute("data-admin-selected", ""));
     if (scroll && elements[0]) {
@@ -213,4 +234,47 @@ export function selectPreviewPart(iframe: HTMLIFrameElement, partId: string | nu
   } catch {
     /* 印を付けられなくても、設定はそのまま使える */
   }
+}
+
+/**
+ * 「写真を開いたとき」を見ているあいだ、プレビューで写真を1枚開く（2026-09-30）。
+ * 写真はまだ描かれていないことがあるので、少し待って探す。戻り値で片付ける。
+ */
+export function openPreviewPhoto(iframe: HTMLIFrameElement): () => void {
+  let stopped = false;
+  let timer: number | undefined;
+  let tries = 0;
+  const attempt = () => {
+    if (stopped) return;
+    let doc: Document | null = null;
+    try {
+      doc = iframe.contentDocument;
+    } catch {
+      return;
+    }
+    const tile = doc?.querySelector<HTMLElement>("[data-photo-tile]");
+    if (!doc || !tile) {
+      if (tries++ < 30) timer = window.setTimeout(attempt, 200);
+      return;
+    }
+    if (doc.querySelector("dialog[open]")) return;
+    doc.documentElement.setAttribute("data-admin-pick-pass", "");
+    tile.click();
+  };
+  attempt();
+  return () => {
+    stopped = true;
+    if (timer !== undefined) window.clearTimeout(timer);
+    try {
+      const doc = iframe.contentDocument;
+      doc?.documentElement.removeAttribute("data-admin-pick-pass");
+      const dialog = doc?.querySelector("dialog[open]");
+      if (dialog) {
+        doc?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        dialog.dispatchEvent(new Event("cancel", { cancelable: true }));
+      }
+    } catch {
+      /* プレビューを読み込み直した後など */
+    }
+  };
 }

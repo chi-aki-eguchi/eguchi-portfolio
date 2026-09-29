@@ -8,6 +8,7 @@ import type { GalleryPhoto } from "../PhotoGallery";
 import { useSeriesLinks } from "../../hooks/useSeriesLinks";
 import { PhotoStream } from "./PhotoStream";
 import { PhotoInquiry } from "./PhotoTop";
+import { sortPhotosBySetting } from "../../lib/photo-sort";
 
 type Settings = Record<string, string | null | undefined> | undefined;
 type Medium = "all" | "film" | "digital";
@@ -46,7 +47,12 @@ export function PhotoAllPage({ settings }: { settings: Settings }) {
   });
   const seriesLinkById = useSeriesLinks();
 
-  const all = useMemo(() => (photosQ.data?.photos ?? []) as GalleryPhoto[], [photosQ.data]);
+  // 並び順は管理画面「並び順」の設定（いつもの構成の Gallery と同じ）。2026-09-30 まで
+  // 写真中心の Gallery だけこの設定を読まず、「撮影日の新しい順」を選んでも変わらなかった。
+  const all = useMemo(
+    () => sortPhotosBySetting((photosQ.data?.photos ?? []) as GalleryPhoto[], settings?.gallerySortOrder),
+    [photosQ.data, settings?.gallerySortOrder],
+  );
   const usedCategories = useMemo(() => {
     const used = new Set(all.map((p) => p.category).filter(Boolean));
     return (catsData?.categories ?? []).filter((c) => used.has(c.slug));

@@ -54,7 +54,7 @@ export function partLabel(part: SitePart, language: SiteEditorLanguage): string 
 const PART_ICONS: Record<SitePartId, LucideIcon> = {
   name: Type, menu: Menu, footer: PanelBottom, "top-photos": Image, statement: Quote, works: LayoutGrid,
   "series-strip": GalleryHorizontal, cta: Mail, "page-title": Heading, "gallery-photos": LayoutGrid,
-  order: ArrowUpDown, viewer: Maximize2, "series-cards": Layers, about: SquareUser, "about-layout": Columns2,
+  order: ArrowUpDown, viewer: Maximize2, "series-cards": Layers, "series-layout": LayoutGrid, about: SquareUser, "about-layout": Columns2,
   "contact-layout": Columns2, "contact-info": AtSign, "contact-words": MessageSquare, fonts: Baseline,
   body: AlignLeft, headings: Heading, theme: Palette, structure: LayoutTemplate, mood: Sparkles,
   spacing: MoveVertical, reveal: WandSparkles, "site-basics": Globe, "site-copy": TextQuote,
@@ -64,6 +64,12 @@ const PART_ICONS: Record<SitePartId, LucideIcon> = {
 
 function iconFor(target: SiteEditorTarget): LucideIcon {
   return target && !target.startsWith("section:") ? PART_ICONS[target as SitePartId] ?? SlidersHorizontal : SlidersHorizontal;
+}
+
+/** 部分の目印（⌘K の行など、一覧の外で使う）。 */
+export function SitePartIcon({ id, size = 15 }: { id: string; size?: number }) {
+  const Icon = iconFor(id as SiteEditorTarget);
+  return <Icon size={size} strokeWidth={1.6} aria-hidden="true" />;
 }
 
 function partNote(part: SitePart, language: SiteEditorLanguage): string | undefined {
@@ -128,6 +134,14 @@ export function SiteEditorBar({
 }
 
 type Row = { target: SiteEditorTarget; label: string; note?: string; missing?: boolean };
+
+/**
+ * 出す・出さないを選べる部分。プレビューに見つからないときは「今は出ていません」と
+ * 添える（出ていない部分を押しても、プレビューのどこも変わらず迷うため。2026-09-30）。
+ */
+export const SITE_PARTS_THAT_CAN_BE_HIDDEN: readonly string[] = [
+  "statement", "cta", "works", "series-strip", "note", "print", "pricing", "contact-words",
+];
 
 /** 右の欄の一覧（どのページ・全体の見た目・そのほか）と、その上の「探す」。 */
 export function SitePartsPanel({
@@ -249,6 +263,9 @@ export function SitePartsPanel({
         {shown.map((row) => {
           const changed = sectionsFor(row.target).some((sid) => changedSections.includes(sid));
           const onPage = mode === "page" && !searching && typeof row.target === "string" && foundParts.includes(row.target);
+          const offPage =
+            mode === "page" && !searching && foundParts.length > 0 && typeof row.target === "string" &&
+            SITE_PARTS_THAT_CAN_BE_HIDDEN.includes(row.target) && !foundParts.includes(row.target);
           const Icon = iconFor(row.target);
           return (
             <li key={String(row.target)}>
@@ -258,6 +275,7 @@ export function SitePartsPanel({
                 data-site-part={row.target ?? undefined}
                 data-site-sections={sectionsFor(row.target).join(" ") || undefined}
                 data-on-page={onPage || undefined}
+                data-off-page={offPage || undefined}
                 onClick={() => onOpen(row.target)}
                 onMouseEnter={() => onHover(row.target)}
                 onMouseLeave={() => onHover(null)}
@@ -275,7 +293,12 @@ export function SitePartsPanel({
                     </span>
                   )}
                 </span>
-                {row.note && <span className="se-part__note">{row.note}</span>}
+                {row.note && (
+                  <span className="se-part__note">
+                    {offPage && <em className="se-part__off">{ja ? "今は出ていません" : "Not shown now"}</em>}
+                    {row.note}
+                  </span>
+                )}
                 <span className="se-part__go" aria-hidden="true">›</span>
               </button>
             </li>
@@ -291,6 +314,7 @@ export function SitePartHeader({
   backLabel,
   onBack,
   target,
+  offPage,
   title,
   note,
   links,
@@ -299,6 +323,8 @@ export function SitePartHeader({
   onBack: () => void;
   /** 一覧と同じ目印を見出しの横に出す */
   target?: SiteEditorTarget;
+  /** 今このページに出ていない（出す・出さないを選べる部分） */
+  offPage?: string;
   title: string;
   note?: string;
   links?: readonly { label: string; onClick: () => void }[];
@@ -320,6 +346,7 @@ export function SitePartHeader({
         <h2 className="se-part-head__title">{title}</h2>
       </div>
       {note && <p className="se-part-head__note">{note}</p>}
+      {offPage && <p className="se-part-head__off">{offPage}</p>}
       {links && links.length > 0 && (
         <div className="se-part-head__links">
           {links.map((link) => (

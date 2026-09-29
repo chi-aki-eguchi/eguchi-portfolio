@@ -105,7 +105,7 @@ test.describe("admin — 骨格を切り替えても管理画面は同じ", () =
     const item = page.locator('[data-site-part="about-layout"]');
     expect((await item.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
     await item.click();
-    await expect(page.locator('[data-settings-section="page-parts"]')).toBeVisible();
+    await expect(page.locator('[data-settings-section="about-layout"]')).toBeVisible();
     await expect(list).toHaveCount(0);
     await expect(back).toBeVisible();
     await expect(back).toContainText("About");

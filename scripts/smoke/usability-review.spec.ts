@@ -32,16 +32,17 @@ test("サイトの設定を目的の言葉で探し、編集から一覧へ戻�
   await backToSiteList(page);
   const search = page.getByRole("searchbox", { name: "設定を探す" });
   await search.fill("並び順");
-  const order = page.locator('.se-parts [data-site-sections~="series"]').first();
+  const order = page.locator('.se-parts [data-site-sections~="order"]').first();
   await expect(order).toBeVisible();
   await expect(page.locator('.se-parts [data-site-sections~="fonts"]')).toHaveCount(0);
   await order.click();
-  await expect(page.locator("#settings-section-series")).toBeVisible();
+  await expect(page.locator("#settings-section-order")).toBeVisible();
   await page.locator(".se-part-head__back").click();
   await search.fill("見つからない項目");
   await expect(page.locator(".se-panel__empty")).toContainText("見つかりませんでした");
   await search.fill("");
-  await expect(page.locator('.se-parts [data-site-part="name"]')).toBeVisible();
+  // 並び順は Gallery の部分なので、一覧は Gallery に移っている。
+  await expect(page.locator('.se-parts [data-site-part="order"]')).toBeVisible();
 });
 
 test("公開スマホの絞り込みはURLと点数を保ち、メニューから戻れる", async ({ page, api }, info) => {

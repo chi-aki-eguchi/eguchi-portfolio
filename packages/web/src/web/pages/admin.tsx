@@ -149,7 +149,9 @@ import {
 import {
   SiteEditorBar,
   SiteEditorFrame,
+  SITE_PARTS_THAT_CAN_BE_HIDDEN,
   SitePartHeader,
+  SitePartIcon,
   SitePartsPanel,
   partLabel,
   sectionLabel,
@@ -872,7 +874,7 @@ function AdminPageContent({
         label: partLabel(part, siteLanguage),
         group: siteLanguage === "ja" ? "サイト" : "Site",
         keywords: [part.noteJa, part.noteEn, part.keywords].filter(Boolean).join(" "),
-        icon: ADMIN_TAB_ICONS.settings,
+        icon: <SitePartIcon id={part.id} />,
         action: () => openPart(part.id as SitePartId),
       })),
     {
@@ -925,6 +927,14 @@ function AdminPageContent({
         backLabel={siteBackLabel}
         onBack={() => goSite({ target: null })}
         target={siteTarget}
+        offPage={
+          siteMode === "page" && siteTarget && foundParts.length > 0 &&
+          SITE_PARTS_THAT_CAN_BE_HIDDEN.includes(siteTarget) && !foundParts.includes(siteTarget)
+            ? siteLanguage === "ja"
+              ? "今はこのページに出ていません。下の設定で出せます。"
+              : "Not shown on this page now. Turn it on below."
+            : undefined
+        }
         title={siteOpen.label}
         note={siteOpen.note}
         links={siteOpen.links.map((link) => ({ label: link.label, onClick: () => openPart(
@@ -990,6 +1000,7 @@ function AdminPageContent({
                   visual={{
                     page: sitePageDef.path,
                     section: siteOpen?.kind === "settings" ? siteOpen.sections[0] ?? null : null,
+                    sections: siteOpen?.kind === "settings" ? siteOpen.sections : [],
                     panel: sitePanelNode,
                     partIds: sitePartIds,
                     chipLabel: (id) => {
@@ -1061,6 +1072,7 @@ function AdminPageContent({
             theme={bookTheme}
             onToggleTheme={() => setBookTheme(bookTheme === "dark" ? "light" : "dark")}
             languageToggle={demoMode ? undefined : <AdminLanguageToggle />}
+            language={language === "en" ? "en" : "ja"}
             overlays={
               <>
                 <div ref={setBookOutlineHost} hidden aria-hidden="true" />

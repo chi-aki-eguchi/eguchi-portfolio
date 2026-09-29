@@ -15,26 +15,15 @@ import {
 
 // site_settings の許可台帳には、Settingsタブ以外が直接管理する値と
 // 旧バージョン互換の値も含まれる。ここへ明示したもの以外は、
-// Settingsの19節のどれか1つだけに所属しなければならない。
+// Settingsの節のどれか1つだけに所属しなければならない（About の文章と写真も
+// 2026-09-30 から設定の節。プレビューを見ながら直せる）。
 const KEYS_OUTSIDE_SETTINGS_TAB = {
   heroPhotoUrl: "Hero",
-  profilePhotoUrl: "Profile",
   metaDescriptionHome: "legacy metadata",
   metaDescriptionGallery: "legacy metadata",
   metaDescriptionAbout: "legacy metadata",
   metaDescriptionSeries: "legacy metadata",
   metaDescriptionContact: "legacy metadata",
-  profileName: "Profile",
-  profileNameKata: "Profile",
-  profileNameEn: "Profile",
-  profileBio: "Profile",
-  profileBioEn: "Profile",
-  profileInstagram: "Profile",
-  profileTwitter: "Profile",
-  profileNote: "Profile",
-  profileStatement: "Profile",
-  profileStatementEn: "Profile",
-  profileGear: "Profile",
   smartAlbums: "Library",
   servicePageConfig: "Service",
   setupCompleted: "Setup",
@@ -92,7 +81,7 @@ describe("Settings section key registry", () => {
     expect(
       Object.keys(SETTINGS_SECTION_KEYS).length,
       "節を増減したら scripts/smoke/helpers.ts の SETTINGS_SECTION_COUNT も直す",
-    ).toBe(25);
+    ).toBe(34);
   });
 
   test("グループ台帳は全節をちょうど1回ずつ含む", () => {

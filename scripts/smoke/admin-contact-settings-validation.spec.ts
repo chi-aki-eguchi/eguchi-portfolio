@@ -96,11 +96,11 @@ async function openSettings(
   );
 }
 
-// サイトの目次から開く（スマホ幅は目次から始まり、項目を押すと中身だけになる）。
-async function openSiteBasicsThroughTheAdminUi(page: Page, _width: number) {
-  await chooseSettingsSection(page, "site-basics");
+// サイトの画面の右の一覧から開く。連絡先は「連絡先と案内」、サイトの説明は「検索とシェア」。
+async function openSiteBasicsThroughTheAdminUi(page: Page, _width: number, section = "contact") {
+  await chooseSettingsSection(page, section);
   await expect(
-    page.locator('[data-settings-section="site-basics"]'),
+    page.locator(`[data-settings-section="${section}"]`),
   ).toBeVisible();
 }
 
@@ -258,7 +258,7 @@ test.describe("admin — Contact setting validation", () => {
       formspreeUrl: "http://old.example.test/contact",
     });
     await openSettings(page, { language: "ja", theme: "light", width: 1440 });
-    await openSiteBasicsThroughTheAdminUi(page, 1440);
+    await openSiteBasicsThroughTheAdminUi(page, 1440, "site-basics");
 
     const description = page.getByLabel("サイトの説明文", { exact: true });
     await description.fill("連絡先とは無関係な説明文だけを更新します。");

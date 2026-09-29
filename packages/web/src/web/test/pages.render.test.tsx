@@ -102,7 +102,9 @@ const SITE_PART_HOME: Record<string, { page?: string; mode?: "look" | "more" }> 
   "hero-photos": { mode: "more" },
   "series-details": { mode: "more" },
   categories: { mode: "more" },
-  pricing: { mode: "more" },
+  pricing: { page: "contact" },
+  note: { page: "about" },
+  print: { page: "about" },
   service: { mode: "more" },
   "portfolio-kit": { mode: "more" },
   "site-basics": { mode: "more" },
@@ -112,7 +114,8 @@ const SITE_PART_HOME: Record<string, { page?: string; mode?: "look" | "more" }> 
 };
 async function openSitePart(host: Element, id: string) {
   if (!host.querySelector(".se-bar")) {
-    shellTab(host, "サイト").click();
+    // 入口の言葉は英語表示で変わる（Site）。目印で押す。
+    (host.querySelector('[data-book-tab="site"]') as HTMLButtonElement).click();
     await flush(30);
   }
   const where = SITE_PART_HOME[id] ?? { page: "top" };
@@ -1125,13 +1128,11 @@ describe("shared components", () => {
         createElement(Admin),
         seedAdminPhotos,
       );
+      // About の文章と写真は、2026-09-30 からサイトの画面で設定と同じ下書き・保存。
       await openSitePart(host, "about");
-      await waitForText(
-        host,
-        "Your biography and profile photo shown on the About page.",
-      );
+      await waitForText(host, "Biography, portrait, statement, social links");
       changeInput(inputByLabel(host, "Name (JP)"), "Draft Name");
-      await waitForText(host, "You have unsaved changes");
+      await waitForText(host, "1 unsaved change");
       expect(host.textContent).toContain("Discard");
       expect(host.textContent).toContain("Save");
 
@@ -1540,8 +1541,8 @@ describe("shared components", () => {
       await flush(30);
       expect(host.textContent).toContain("選択中 1枚");
       expect(host.textContent).toContain("公開");
-      expect(host.textContent).toContain("Heroに追加");
-      expect(host.textContent).toContain("Heroから外す");
+      expect(host.textContent).toContain("トップに出す");
+      expect(host.textContent).toContain("トップから外す");
       expect(host.textContent).toContain("一括編集");
 
       cleanup();
@@ -1635,13 +1636,19 @@ describe("shared components", () => {
       changeInput(nameInput, "Draft Name");
       await flush(80);
 
+      // 設定どうし（About → 名前）は下書きを持ち越し、確かめない。
+      await openSitePart(host, "name");
+      await flush(80);
+      expect(host.textContent).not.toContain("保存していない内容があります。このまま移動しますか？");
+      expect(host.textContent).toContain("未保存の変更 1件");
+
+      // 別の編集画面（トップの写真と順番）へ移るときは確かめる。
       await openSitePart(host, "hero-photos");
       await flush(80);
       expect(host.textContent).toContain("未保存の変更があります");
       expect(host.textContent).toContain(
         "保存していない内容があります。このまま移動しますか？",
       );
-      expect(host.textContent).toContain("プロフィール写真（Aboutページ）");
 
       cleanup();
     } finally {

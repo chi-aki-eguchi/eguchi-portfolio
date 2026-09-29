@@ -95,7 +95,7 @@ const ADMIN_PHASE_2B_JA = {
       shortcutsAria: "キーボードショートカット",
     },
     mode: {
-      group: "Libraryの操作モード",
+      group: "写真の一覧の操作",
       normal: "閲覧",
       select: "選択",
       arrange: "並べ替え",
@@ -169,7 +169,7 @@ const ADMIN_PHASE_2B_JA = {
       portrait: "縦写真",
       landscape: "横写真",
       square: "正方形",
-      featured: "Hero設定中",
+      featured: "トップに出している写真",
       publicationAria: "公開状態で絞り込み",
       publicationAll: "すべての公開状態",
       publishedOnly: "公開のみ",
@@ -261,8 +261,8 @@ const ADMIN_PHASE_2B_JA = {
         "選択したフィルム写真の撮影日を未設定に戻します（EXIFは保存時に失われるため再読込はできません）",
       clearFilmDate: (count: number) =>
         `フィルムの撮影日をクリア (${count})`,
-      addHero: "Heroに追加",
-      removeHero: "Heroから外す",
+      addHero: "トップに出す",
+      removeHero: "トップから外す",
       bulkEdit: "一括編集",
       moveToTrash: "ゴミ箱へ",
     },
@@ -279,7 +279,7 @@ const ADMIN_PHASE_2B_JA = {
       resetFocalAria: "選択写真の見せる中心を中央に戻す",
     },
     conditions: {
-      aria: "Libraryの表示条件",
+      aria: "写真の一覧の表示条件",
       label: "表示条件",
       manualToDrag: "手動順に戻すとドラッグ可",
       clearToDrag: "条件解除でドラッグ可",
@@ -574,7 +574,7 @@ const ADMIN_PHASE_2B_JA = {
   hero: {
     search: "写真名・ファイル名・機材で探す",
     sortLabel: "候補の並び順",
-    sortOptions: { newest: "追加が新しい順", oldest: "追加が古い順", shot: "撮影日が新しい順", name: "名前順", manual: "Libraryの保存順" },
+    sortOptions: { newest: "追加が新しい順", oldest: "追加が古い順", shot: "撮影日が新しい順", name: "名前順", manual: "並べた順" },
     filters: "絞り込み", category: "カテゴリー", orientation: "写真の向き", all: "すべて",
     orientations: { landscape: "横位置", portrait: "縦位置", square: "正方形" },
     selectedOnly: "選択済みだけ", reset: "条件を解除", density: "一覧の密度",
@@ -599,9 +599,9 @@ const ADMIN_PHASE_2B_JA = {
     removeAria: "ヒーローから削除",
     galleryTitle: "ギャラリー",
     galleryHint: "写真を押して追加・解除。目のボタンで拡大。変更はすぐサイトに反映されます。",
-    noPhotosYet: "まだ写真がありません。Libraryから追加できます。",
+    noPhotosYet: "まだ写真がありません。上の「写真」から加えられます。",
     toggleAria: (name: string, isHero: boolean) =>
-      `${name} をヒーローから${isHero ? "外す" : "追加"}`,
+      `${name} をトップ${isHero ? "から外す" : "に出す"}`,
   },
   profile: {
     selectImageFile: "画像ファイルを選択してください",
@@ -700,7 +700,7 @@ const ADMIN_PHASE_2B_JA = {
     layoutTheme: "レイアウトとテーマ",
     layout: "レイアウト",
     layoutHint:
-      "「グローバルに従う」はSettings→ギャラリー配置の設定を使います",
+      "「グローバルに従う」は、サイトの「写真の並べ方」の設定を使います",
     global: "グローバル",
     layoutNames: {
       grid: "写真比率グリッド",
@@ -719,7 +719,7 @@ const ADMIN_PHASE_2B_JA = {
     },
     photoOrder: "写真の並び順",
     photoOrderHint:
-      "「グローバルに従う」はSettings→シリーズ並び順の設定を使います",
+      "「グローバルに従う」は、サイトの「並び順」の設定を使います",
     manualOrder: "手動順",
     dateNewest: "撮影日↓新しい順",
     dateOldest: "撮影日↑古い順",
@@ -812,15 +812,15 @@ const ADMIN_PHASE_2B_JA = {
       factsHint: "冒頭に出す要点（価格・含まれるもの・公開目安）",
       factLabel: (n: number) => `要点 ${n}: ラベル`,
       factBody: (n: number) => `要点 ${n}: 内容`,
-      ctaPricing: "CTA: 料金",
-      ctaExample: "CTA: 実例",
+      ctaPricing: "ボタン: 料金",
+      ctaExample: "ボタン: 実例",
     },
     examples: {
-      sectionTitle: "実例セクション",
+      sectionTitle: "実例の欄",
       label: "ラベル",
       heading: "見出し",
       description: "説明文",
-      ctaLabel: "CTA",
+      ctaLabel: "ボタン",
       linksHint: "実例リンク",
       linkTitle: "タイトル",
       linkBody: "説明",
@@ -847,7 +847,7 @@ const ADMIN_PHASE_2B_JA = {
       description: "説明文",
       stripePaymentLink: "Stripe の決済リンク",
       features: "特徴（1行ごとに箇条書き）",
-      ctaText: "CTA文言",
+      ctaText: "ボタンの言葉",
       recommended: "おすすめ表示",
       add: "プラン追加",
       noteOnline: "決済後の案内文（Stripe有効時）",
@@ -872,11 +872,11 @@ const ADMIN_PHASE_2B_JA = {
       add: "質問追加",
     },
     finalCta: {
-      sectionTitle: "最下部CTA",
+      sectionTitle: "いちばん下のボタン",
       heading: "見出し",
       description: "説明文",
-      ctaOnline: "CTA（Stripe有効時）",
-      ctaOffline: "CTA（オフライン時）",
+      ctaOnline: "ボタン（オンライン決済を使うとき）",
+      ctaOffline: "ボタン（オンライン決済を使わないとき）",
       snsHint: "SNSリンク",
       add: "SNS追加",
       snsLabelAria: "SNSリンクの表示名",
@@ -885,8 +885,8 @@ const ADMIN_PHASE_2B_JA = {
     stickyCta: {
       leftText: "左側テキスト",
       pricingCta: "料金リンク文言",
-      ctaOnline: "CTA（Stripe有効時）",
-      ctaOffline: "CTA（オフライン時）",
+      ctaOnline: "ボタン（オンライン決済を使うとき）",
+      ctaOffline: "ボタン（オンライン決済を使わないとき）",
     },
     adminShowcase: {
       sectionTitle: "管理画面紹介",
@@ -1026,7 +1026,7 @@ const ADMIN_PHASE_2B_JA = {
           hint: 'Search Console「HTMLタグ」方式の content="..." の中身だけを貼り付け。保存後すぐ全ページの <head> に出力されます（画像サイトマップの登録に必要）',
         },
         footerCtaLabel: {
-          label: "フッター導線テキスト（任意）",
+          label: "フッターのご依頼の案内（任意）",
           placeholder: "例: 撮影のご相談はこちら",
           hint: "",
         },
@@ -1046,7 +1046,7 @@ const ADMIN_PHASE_2B_JA = {
       title: "Portfolio Kit の公開",
       fieldLabel: "Portfolio Kitの表示",
       fieldHint:
-        "自動はakieguchi.comで直リンクとクレジットだけ有効、ナビは非表示です。「表示」はページとナビを有効化、「非表示」はページも無効化します",
+        "「自動」は akieguchi.com のときだけ、制作案内のページとクレジットを出します（メニューには入れません）。「表示」はページを出してメニューにも入れます。「非表示」はページも出しません。",
       modeLabels: {
         auto: "自動（既定）",
         on: "表示",
@@ -1054,7 +1054,7 @@ const ADMIN_PHASE_2B_JA = {
       },
     },
     hero: {
-      title: "Hero の見せ方",
+      title: "トップの写真の見せ方",
       intro:
         "トップページ最上部の写真表示です。ここで選んだ見せ方が、サイトに来た人が最初に見る1画面の印象を決めます。",
       summaryFullscreen: (modeName: string) => `${modeName}・フルスクリーン`,
@@ -1083,9 +1083,9 @@ const ADMIN_PHASE_2B_JA = {
       },
       composedLayoutHint:
         "このレイアウトは、画面の使い方と名前の位置が専用の配置に固定されます。高さだけ必要に応じて調整できます。",
-      randomLabel: "HEROをランダムに",
+      randomLabel: "トップの写真をランダムに",
       randomHint:
-        "「選んだ順」はいま登録してあるHERO写真をその順で出します。「順番だけ」は同じ写真のまま並びを毎回変え、「全体から」は公開中の写真すべてから毎回選びます（HEROに選んでいない写真も出ます）。並びは訪問ごとに変わり、見ている最中は変わりません",
+        "「選んだ順」は、トップに出す写真を選んだ順に出します。「順番だけ」は同じ写真のまま並びを毎回変え、「全体から」は公開中の写真すべてから毎回選びます（トップに選んでいない写真も出ます）。並びは訪問ごとに変わり、見ている最中は変わりません",
       randomOptions: {
         off: "選んだ順",
         shuffle: "順番だけ",
@@ -1151,11 +1151,11 @@ const ADMIN_PHASE_2B_JA = {
       },
     },
     nav: {
-      title: "ナビゲーション",
+      title: "メニュー",
       summary: (positionName: string, hoverName: string) =>
         `${positionName}・${hoverName}`,
       intro:
-        "全ページ共通のメニューです（PC表示）。位置とホバー時の反応を変えられます。スマホでは位置に関わらず常にハンバーガーメニューです。",
+        "全ページ共通のメニューです。スマホでは、どの位置を選んでも「Menu」ボタンにまとまります。",
       positionLabel: "位置",
       positionNames: {
         top: "上",
@@ -1175,7 +1175,7 @@ const ADMIN_PHASE_2B_JA = {
         dot: "点がともる",
         blur: "にじみ→くっきり",
       },
-      headerBgLabel: "写真の上に重ねるナビ",
+      headerBgLabel: "写真の上に重ねるメニュー",
       headerBgHint:
         "いちばん上にいるときの、メニューの後ろの見え方。写真に直接重ねる場合も、下へスクロールするとぼかした帯に戻ります（本文の上でリンクが読めなくなるため）",
       headerBgOptions: {
@@ -1184,7 +1184,7 @@ const ADMIN_PHASE_2B_JA = {
         none: "写真に重ねる（文字のみ）",
       },
       headerBgNote:
-        "写真が上まで伸びるのは、TOPのHERO表示を「全画面」にしているときだけです。「読みやすい」は文字の後ろにごく薄い幕と文字の暈しを入れるため、迷ったときはこちらが安全です。「文字のみ」も暈しで輪郭を保ちますが、写真の明暗によっては読みにくくなることがあります。",
+        "写真が上まで伸びるのは、トップの写真の「画面の使い方」を「フルスクリーン」にしているときだけです。「読みやすい」は文字の後ろにごく薄い幕と文字の暈しを入れるため、迷ったときはこちらが安全です。「文字のみ」も暈しで輪郭を保ちますが、写真の明暗によっては読みにくくなることがあります。",
       hoverShortNames: {
         fade: "フェード",
         underline: "下線",
@@ -1244,7 +1244,7 @@ const ADMIN_PHASE_2B_JA = {
         book: "写真中心（おすすめ）",
       },
       siteDesignNote:
-        "写真中心: トップは名前と選んだ写真、すべての写真は Gallery、シリーズは Series のページ。写真は切り抜かず、元の縦横比のまま段に並べます。いつもの構成: トップの見せ方・写真一覧のレイアウト・メニューの位置を細かく選べます。どちらかでしか使わない項目には、目次と項目名に「写真中心のとき」「いつもの構成のとき」と書いてあります。",
+        "写真中心: トップは名前と選んだ写真、すべての写真は Gallery、シリーズは Series のページ。写真は切り抜かず、元の縦横比のまま段に並べます。いつもの構成: トップの写真の見せ方・写真の並べ方・メニューの位置を細かく選べます。切り替えても、それぞれの設定の値は残ります。",
       topLayoutLabel: "トップの形",
       topLayoutHint: "開いて最初に見えるトップの組み方",
       topLayoutOptions: {
@@ -1255,11 +1255,9 @@ const ADMIN_PHASE_2B_JA = {
         "「写真」画面の「トップに出す」で選んだ写真だけを表示します。先頭1枚が表紙、続きは1枚・2枚の組み合わせです。未選択のときだけ公開写真の先頭1枚を表示します。",
       bookUnusedNotes: {
         hero: "写真中心の構成では、この節の見た目と動きは使いません。トップの写真は「写真」画面の「トップに出す」で選び、トップの形は「トップの写真」で選びます。",
-        navigation: "写真中心の構成では、メニューはいつも上の帯です。ここの位置と帯の背景は使いません。",
-        "gallery-layout": "写真中心の構成では、この節（シリーズの札・切り抜きを含む）は使いません。トップとシリーズのページは、写真を切り抜かずに大小の段で並べる決まった組み方です。",
+        "gallery-layout": "写真中心の構成では、この節は使いません。Gallery は写真を切り抜かずに大小の段で並べる決まった組み方です。",
+        order: "写真中心の構成では、Gallery にはいつもすべての公開写真が並びます。ここで選んだ順に並びます。",
         mood: "写真中心の構成では、トップ・写真一覧・メニューの入れ替えは使いません。背景の質感・About・Contact・見出し・フッター・ビューアの壁は、写真中心でも入れ替わります。",
-        series: "写真中心の構成では、トップのシリーズ帯・シリーズ一覧の列数・「Gallery から作品の写真を外す」は使いません。Gallery にはいつもすべての公開写真が並びます。",
-        "site-copy": "写真中心の構成では「TOP」「すべて見る」「ギャラリー見出し」の言葉は使いません。Gallery・Works・About・Contact・SNS・絞り込みの「すべて」・お問い合わせの言葉は効きます。",
       } as Record<string, string>,
       aboutLabel: "About（プロフィール）の構成",
       aboutHint: "顔写真と自己紹介の並べ方",
@@ -1290,13 +1288,13 @@ const ADMIN_PHASE_2B_JA = {
         "重ねるときは、文字が沈まないように表紙の下側へ暗い幕を敷きます。それでも明るい表紙では読みにくくなることがあるので、迷うときは「表紙の下に題名」が安全です。表紙を登録していないシリーズは、空の四角ではなく題名を出します。",
       cropLabel: "写真の見せ方",
       cropHint:
-        "「いつもの構成」のトップ写真・シリーズ/作品の表紙・シリーズの札と帯に効きます。「写真中心」は元から切り抜きません。写真一覧は「写真一覧のレイアウト」で選びます",
+        "「いつもの構成」のトップ写真・シリーズ/作品の表紙・シリーズの札と帯に効きます。「写真中心」は元から切り抜きません。写真一覧は「写真の並べ方」で選びます",
       cropOptions: {
         fill: "枠に合わせて切り抜く（既定）",
         whole: "切り抜かず全体を見せる",
       },
       cropNote:
-        "「切り抜かず全体を見せる」は、写真の縦横比をそのまま残します。横長の画面に縦位置の写真を出すと左右が空きますが、その余白はサイトの地の色になります。HERO と表紙は写真の形に合わせて高さも縮むので、余白は必要な分だけです。なお「正方形グリッド」「縦長グリッド」「横長グリッド」の3つは切り抜くことが目的の配置なので、この設定では変わりません。",
+        "「切り抜かず全体を見せる」は、写真の縦横比をそのまま残します。横長の画面に縦位置の写真を出すと左右が空きますが、その余白はサイトの地の色になります。トップの写真と表紙は写真の形に合わせて高さも縮むので、余白は必要な分だけです。なお「正方形グリッド」「縦長グリッド」「横長グリッド」の3つは切り抜くことが目的の配置なので、この設定では変わりません。",
       viewerLabel: "写真ビューアの壁",
       viewerHint: "写真を大きく開いたときの地の色",
       viewerOptions: {
@@ -1315,15 +1313,15 @@ const ADMIN_PHASE_2B_JA = {
       },
       matNote:
         "「画面いっぱい」は写真が画面の高さの94%を使うので、上で選んだ壁は上下に3%ずつしか見えません。余白を残すと壁が見え、写真が作品らしく見えます。額装では上の余白を下より狭くして、写真をわずかに持ち上げます。拡大（ズーム）は従来どおり画面いっぱいまで使えます。",
-      statementLabel: "TOPに作家の言葉を置く",
-      statementHint: "Profile の「作家ステートメント」をトップページにも出します",
+      statementLabel: "トップのどこに置くか",
+      statementHint: "About にも同じ文が出ます。トップにも出すときは場所を選びます",
       statementOptions: {
         off: "出さない（既定）",
         before: "作品の前",
         after: "作品の後",
       },
       statementNote:
-        "文章は Profile の「作家ステートメント」をそのまま使います（同じ文を2箇所に書かせると必ず片方が古くなるため）。まだ書いていない場合は何も出ません。",
+        "文を書いていないときは、どれを選んでも出ません（上の「作家の言葉の文」に書きます）。",
       titleLabel: "各ページの見出しの型",
       titleHint: "Gallery / Series / About / Contact の冒頭に出る見出し",
       titleOptions: {
@@ -1347,9 +1345,9 @@ const ADMIN_PHASE_2B_JA = {
       intro:
         "ページの「間」の量を倍率で調整します。1.0 が現在のリズム。スマホは元の比率のまま縮みます。",
       heroBottomLabel: "ヒーロー直下",
-      heroBottomHint: "ヒーロー写真と作品セクションの間",
-      sectionGapLabel: "セクション間",
-      sectionGapHint: "作品〜CTA〜フッターなどセクション同士の基本余白",
+      heroBottomHint: "トップの写真と作品の間",
+      sectionGapLabel: "まとまりの間",
+      sectionGapHint: "作品・撮影のご依頼・フッターなど、まとまり同士の余白",
       pageTopLabel: "ページ冒頭",
       pageTopHint:
         "ギャラリー・シリーズ・About・Contact など各ページ最初の「ため」",
@@ -1514,9 +1512,9 @@ const ADMIN_PHASE_2B_JA = {
     },
     seriesSection: {
       title: "シリーズの見せ方",
-      navLabel: "ナビに「Series」を表示",
+      navLabel: "Series の入口",
       navHint:
-        "「自動」は公開シリーズが1つでもあればリンクを表示します（既定）。「表示」は常に表示、「非表示」は常に隠します。シリーズの作成・写真割り当ては上部の Series タブ・Library のインスペクタから",
+        "メニューに Series を出すか。「自動」は公開中のシリーズが1つでもあれば出します（既定）。シリーズを作る・写真を入れるのは、上の「シリーズ」から。",
       navOptions: {
         auto: "自動",
         on: "表示",
@@ -1539,8 +1537,8 @@ const ADMIN_PHASE_2B_JA = {
         hide: "出さない",
       },
       streamIntro:
-        "TOP ページで、シリーズの表紙写真とキャプションを横へゆっくり流す帯。触れている間は止まり、押すとそのシリーズへ入ります。OS で「視差効果を減らす」を選んでいる人には流さず、自分で横へ送れる帯として出ます。",
-      streamPlaceLabel: "TOP に流す",
+        "トップで、シリーズの表紙写真と題名を横へゆっくり流す帯。触れている間は止まり、押すとそのシリーズへ入ります。OS で「視差効果を減らす」を選んでいる人には流さず、自分で横へ送れる帯として出ます。",
+      streamPlaceLabel: "トップに流す場所",
       streamPlaceHint: "Works（写真の並び）の前と後、どちらに置くか",
       streamPlaceOptions: {
         off: "出さない",
@@ -1563,14 +1561,14 @@ const ADMIN_PHASE_2B_JA = {
       streamHeightHint: "大きいほど1枚が大きく、同時に見える数は減ります",
       streamHeightControlLabel: "高さ",
       orderIntro:
-        "写真の並び順。「手動順」は Library でドラッグした順番。シリーズごとに上書きしたい場合は Series タブの各シリーズ編集から設定できます。",
+        "「並べた順」は「写真」で並べ替えた順です。シリーズごとの順番は、上の「シリーズ」の各シリーズで変えられます。",
       gallerySortLabel: "ギャラリーの並び順",
       gallerySortHint: "ギャラリーページ・トップの写真の並べ方",
       seriesSortLabel: "シリーズ内の並び順",
       seriesSortHint:
         "各シリーズ詳細ページの写真の並べ方（シリーズ側で個別設定もできます）",
       sortOptions: {
-        manual: "手動順（D&D）",
+        manual: "並べた順",
         date_desc: "撮影日↓新しい順",
         date_asc: "撮影日↑古い順",
         upload_desc: "アップロード↓新しい順",
@@ -1585,7 +1583,7 @@ const ADMIN_PHASE_2B_JA = {
     note: {
       title: "note連携",
       intro:
-        "note に投稿すると最新記事が About ページの「Journal」に自動表示されます（30分キャッシュ）。取得失敗時はセクションが消えるだけでサイトは壊れません。",
+        "note に投稿すると、最新の記事が About ページの「Journal」に出ます（30分ごとに読み直します）。読めなかったときは、その欄が出ないだけです。",
       visibilityLabel: "表示",
       visibilityHint: "About ページに最新記事を表示するか",
       usernameLabel: "note ユーザー名",
@@ -1616,20 +1614,20 @@ const ADMIN_PHASE_2B_JA = {
     cta: {
       title: "撮影依頼への案内",
       intro:
-        "トップ・ギャラリー・シリーズ各ページの末尾に「撮影のご依頼」への導線を表示します。閲覧者が作品を見終えた直後に依頼へつなげる動線です。",
+        "トップ・Gallery・シリーズの各ページの終わりに、撮影のご依頼への案内を出します。作品を見終えたところで、お問い合わせへつなげます。",
       visibilityLabel: "表示",
-      visibilityHint: "各ページ末尾に依頼CTAを表示するか",
+      visibilityHint: "各ページの終わりに案内を出すか",
       headingLabel: "見出し",
       headingHint: "例: 撮影のご依頼 / Work with me",
-      headingAria: "CTA見出し",
+      headingAria: "ご依頼の案内の見出し",
       headingPlaceholder: "撮影のご依頼",
       bodyLabel: "本文（任意）",
       bodyHint: "依頼を後押しする一言。撮影ジャンル・対応範囲など",
-      bodyAria: "CTA本文",
+      bodyAria: "ご依頼の案内の文",
       bodyPlaceholder: "ポートレート・作品撮り・取材など、お気軽にご相談ください。",
       buttonLabel: "ボタン文言",
       buttonHint: "Contact ページへのリンク文言",
-      buttonAria: "CTAボタン文言",
+      buttonAria: "ご依頼の案内のボタン",
       buttonPlaceholder: "お問い合わせ",
     },
   },
@@ -1692,14 +1690,22 @@ const ADMIN_PHASE_2B_JA = {
         enGroup: "英語の名前",
         subGroup: "名前の下の言葉",
       },
-      menu: { typeGroup: "メニューの文字" },
+      menu: {
+        typeGroup: "メニューの文字",
+        entriesGroup: "Series と Work の入口",
+        placeGroup: "メニューの位置と動き",
+        workNavLabel: "Work の入口",
+        workNavHint: "仕事の作品（Work）の一覧をメニューに出すか。自動は、公開中の Work が1つでもあれば出します。",
+        workNameLabel: "Work の名前（メニューと見出し）",
+      },
       headings: {
         title: "見出し",
         pageGroup: "各ページの見出し",
         sectionGroup: "小見出し（Recent Work・Contact など）",
+        labelGroup: "見出しと小見出しの文字",
       },
       body: { title: "本文とリンク", bodyGroup: "本文", linkGroup: "リンク" },
-      footer: { title: "フッター", typeGroup: "フッターの文字", snsOpacity: "SNSの濃さ" },
+      footer: { title: "フッター", typeGroup: "フッターの文字", snsOpacity: "SNSの濃さ", linksGroup: "ご依頼の案内とクレジット" },
       theme: { accentGroup: "差し色", textureGroup: "紙の質感" },
     },
     fontSize: {
@@ -1707,20 +1713,20 @@ const ADMIN_PHASE_2B_JA = {
       globalScaleLabel: "全体スケール",
       globalScaleHint: "全部の文字をまとめて大小（モバイル縮小率と併用可）",
       globalScaleControlLabel: "スケール",
-      heroGroupLabel: "ヒーロー名 / サブタイトル",
+      heroGroupLabel: "名前と肩書き",
       nameLabel: "名前",
       enNameLabel: "EN名",
       subtitleLabel: "サブタイトル",
-      navGroupLabel: "ナビゲーション",
+      navGroupLabel: "メニューの言葉",
       sizeLabel: "サイズ",
-      sectionGroupLabel: "セクション見出し（Recent Work / Contact 等）",
+      sectionGroupLabel: "小見出し（Recent Work・Contact など）",
       pageHeadingGroupLabel: "ページ見出し（About名前）",
       bodyGroupLabel: "本文",
       footerGroupLabel: "フッター",
     },
     fontColor: {
       title: "文字の色",
-      heroGroupLabel: "ヒーロー名 / サブタイトル",
+      heroGroupLabel: "名前と肩書き",
       nameLabel: "名前",
       enNameLabel: "EN名",
       subtitleLabel: "サブタイトル",
@@ -1739,46 +1745,46 @@ const ADMIN_PHASE_2B_JA = {
       underlineOn: "あり",
       underlineOff: "なし",
       opacityGroupLabel: "不透明度（詳細）",
-      navOpacityLabel: "ナビ",
-      sectionOpacityLabel: "セクション見出し",
+      navOpacityLabel: "メニュー",
+      sectionOpacityLabel: "小見出し",
       footerOpacityLabel: "フッター",
       snsOpacityLabel: "SNSアイコン",
     },
     fontTracking: {
       title: "文字の間隔",
-      heroGroupLabel: "ヒーロー名",
+      heroGroupLabel: "名前",
       nameTrackingLabel: "名前 字間",
       enNameTrackingLabel: "EN名 字間",
-      navGroupLabel: "ナビゲーション",
+      navGroupLabel: "メニューの言葉",
       trackingLabel: "字間",
-      sectionGroupLabel: "セクション見出し",
+      sectionGroupLabel: "小見出し",
       leadingLabel: "行間",
       bodyGroupLabel: "本文",
     },
     siteCopy: {
       title: "サイト文言",
-      navGroupLabel: "ナビゲーション",
-      snsGroupLabel: "SNS ラベル",
-      sectionGroupLabel: "セクション見出し",
-      formGroupLabel: "コンタクトフォーム（お問い合わせページのフォーム内）",
+      navGroupLabel: "メニューの言葉",
+      snsGroupLabel: "SNS の名前",
+      sectionGroupLabel: "小見出し",
+      formGroupLabel: "フォームの言葉",
       fields: {
         navLabelTop: {
-          label: "ロゴ (TOP)",
+          label: "トップへのリンク（TOP）",
           hint: "",
           placeholder: "TOP",
         },
         navLabelGallery: {
-          label: "Gallery リンク",
+          label: "Gallery へのリンク",
           hint: "",
           placeholder: "Gallery",
         },
         navLabelAbout: {
-          label: "About リンク",
+          label: "About へのリンク",
           hint: "",
           placeholder: "About",
         },
         navLabelContact: {
-          label: "Contact リンク",
+          label: "Contact へのリンク",
           hint: "",
           placeholder: "Contact",
         },
@@ -1798,72 +1804,72 @@ const ADMIN_PHASE_2B_JA = {
           placeholder: "note",
         },
         worksLabel: {
-          label: "Works 見出し",
+          label: "トップの作品の見出し（Works）",
           hint: "",
           placeholder: "Works",
         },
         viewAllLabel: {
-          label: "View all リンク",
+          label: "「すべて見る」のリンク",
           hint: "見出しの横",
           placeholder: "View all →",
         },
         viewAllCtaLabel: {
-          label: "View all ボタン",
+          label: "「すべての作品を見る」ボタン",
           hint: "一覧の下",
           placeholder: "すべての作品を見る",
         },
         galleryLabel: {
-          label: "Gallery 見出し",
+          label: "Gallery の見出し",
           hint: "",
           placeholder: "Gallery",
         },
         filterAllLabel: {
-          label: "フィルター All",
+          label: "絞り込みの「すべて」",
           hint: "",
           placeholder: "All",
         },
         profileLabel: {
-          label: "Profile 見出し",
+          label: "About の見出し",
           hint: "",
           placeholder: "Profile",
         },
         contactLabel: {
-          label: "Contact 見出し",
+          label: "Contact の見出し",
           hint: "",
           placeholder: "Contact",
         },
-        contactFormName: { label: "Name ラベル", placeholder: "Name" },
-        contactFormEmail: { label: "Email ラベル", placeholder: "Email" },
-        contactFormSubject: { label: "Subject ラベル", placeholder: "Subject" },
+        contactFormName: { label: "名前の欄", placeholder: "Name" },
+        contactFormEmail: { label: "メールの欄", placeholder: "Email" },
+        contactFormSubject: { label: "件名の欄", placeholder: "Subject" },
         contactSubjectOptions: {
-          label: "件名選択肢 (カンマ区切り)",
+          label: "件名の選択肢（「,」で区切る）",
           placeholder:
             "Shooting,Press / Media,Collaboration,テンプレートについて,Other",
         },
-        contactFormMessage: { label: "Message ラベル", placeholder: "Message" },
+        contactFormMessage: { label: "本文の欄", placeholder: "Message" },
         contactSendButton: { label: "送信ボタン", placeholder: "Send" },
         contactSendingButton: {
-          label: "送信中ボタン",
+          label: "送っている間のボタン",
           placeholder: "Sending...",
         },
         contactSentMessage: {
-          label: "送信完了メッセージ",
+          label: "送ったあとのお礼",
           placeholder:
             "お送りいただきありがとうございます。2〜3日以内にお返事します。",
         },
         contactSendAnother: {
-          label: "もう一通送る",
+          label: "「もう一通送る」のリンク",
           placeholder: "Send another",
         },
         contactErrorMessage: {
-          label: "エラーメッセージ",
+          label: "送れなかったときの言葉",
           placeholder: "Failed to send. Please try again.",
         },
       },
     },
     presets: {
       title: "撮影情報プリセット",
-      intro: "写真編集インスペクタの Camera / Lens 入力候補。初期候補も削除できます。",
+      intro: "写真の情報に入れるカメラとレンズの候補です。はじめからある候補も消せます。",
       cameraLabel: "カメラ",
       lensLabel: "レンズ",
       cameraPlaceholder: "例: Hasselblad 500C/M",
@@ -2686,7 +2692,7 @@ const ADMIN_PHASE_2B_EN = {
       label: "Label",
       heading: "Heading",
       description: "Description",
-      ctaLabel: "CTA",
+      ctaLabel: "Button",
       linksHint: "Example links",
       linkTitle: "Title",
       linkBody: "Description",
@@ -3109,7 +3115,7 @@ const ADMIN_PHASE_2B_EN = {
         book: "Photographs first (recommended)",
       },
       siteDesignNote:
-        "Photographs first: the home page shows your name and the photographs you pick, every photograph lives in Gallery and series on the Series page. Photographs are never cropped. Classic: choose the home hero, gallery layout and menu position in detail. Items used by only one structure are marked in the outline and next to their names.",
+        "Photographs first: the home page shows your name and the photographs you pick, every photograph lives in Gallery and series on the Series page. Photographs are never cropped. Classic: choose the home hero, gallery layout and menu position in detail. Switching keeps every value.",
       topLayoutLabel: "Home page",
       topLayoutHint: "How the home page opens",
       topLayoutOptions: {
@@ -3120,11 +3126,9 @@ const ADMIN_PHASE_2B_EN = {
         "Only photographs selected with “Show on the home page” appear here. The first is the cover; the rest alternate between pairs and single photographs. If none are selected, the first public photograph is used.",
       bookUnusedNotes: {
         hero: "The photographs-first design does not use the look and motion set here. Pick the home photographs with “Show on the home page” in Photos, and the home layout under Home photographs.",
-        navigation: "In the photographs-first design the menu is always the band at the top. Position and band background here are not used.",
-        "gallery-layout": "The photographs-first design does not use this section, including series cards and cropping. The home and series pages use a fixed layout of uncropped rows of varying height.",
+        "gallery-layout": "The photographs-first design does not use this section. Gallery uses a fixed layout of uncropped rows of varying height.",
+        order: "In the photographs-first design Gallery always shows every public photograph, in the order chosen here.",
         mood: "The photographs-first design does not use the home, gallery and menu parts of a preset. Texture, About, Contact, page titles, footer and viewer wall still change.",
-        series: "The photographs-first design does not use the home series strip, the series grid columns, or “exclude series photographs from the gallery”. Gallery always shows every public photograph.",
-        "site-copy": "The photographs-first design does not use the TOP, View all and gallery heading labels. Gallery, Works, About, Contact, social, the filter’s All and the contact form labels apply.",
       } as Record<string, string>,
       aboutLabel: "About page composition",
       aboutHint: "How the portrait and the introduction sit together",
@@ -3555,14 +3559,22 @@ const ADMIN_PHASE_2B_EN = {
         enGroup: "English name",
         subGroup: "Line under the name",
       },
-      menu: { typeGroup: "Menu text" },
+      menu: {
+        typeGroup: "Menu text",
+        entriesGroup: "Series and Work links",
+        placeGroup: "Menu position and motion",
+        workNavLabel: "Work link",
+        workNavHint: "Whether the Work shelf appears in the menu. Auto shows it once at least one Work is published.",
+        workNameLabel: "Work name (menu and heading)",
+      },
       headings: {
         title: "Headings",
         pageGroup: "Page headings",
         sectionGroup: "Small headings (Recent Work, Contact…)",
+        labelGroup: "Heading and small heading type",
       },
       body: { title: "Body text & links", bodyGroup: "Body text", linkGroup: "Links" },
-      footer: { title: "Footer", typeGroup: "Footer text", snsOpacity: "Social icon strength" },
+      footer: { title: "Footer", typeGroup: "Footer text", snsOpacity: "Social icon strength", linksGroup: "Enquiry link and credit" },
       theme: { accentGroup: "Accent colour", textureGroup: "Paper texture" },
     },
     fontSize: {
@@ -3991,7 +4003,7 @@ export const ADMIN_DICTIONARY = {
       // 一覧に並ぶ項目は「ゴミ箱」なので、探しても一致しない。到達点(3)
       // 「英語はタブ名などの固有名詞だけ」にも反する（2026-08-17 実測）。
       palettePlaceholder:
-        "移動先を検索…（Library / Hero / Settings / ゴミ箱 など）",
+        "探す…（名前・メニュー・色・ゴミ箱 など）",
       paletteLabel: "クイック移動",
       paletteDestinationsLabel: "移動先",
       paletteEmpty: "見つかりません",
@@ -4217,7 +4229,7 @@ export const ADMIN_DICTIONARY = {
       groupTabs: (group) => `${group} tabs`,
       closeSheet: "Close tab menu",
       palettePlaceholder:
-        "Search destinations… (Library, Hero, Settings, Trash)",
+        "Search… (name, menu, colours, trash)",
       paletteLabel: "Quick navigation",
       paletteDestinationsLabel: "Destinations",
       paletteEmpty: "No matches",

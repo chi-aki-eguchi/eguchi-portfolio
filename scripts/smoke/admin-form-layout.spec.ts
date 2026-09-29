@@ -109,11 +109,12 @@ async function changedMarker(page: Page, sectionId: string) {
   return page.locator(`.se-parts [data-site-sections~="${sectionId}"] [data-settings-section-changed]`);
 }
 
-// 25節。台帳（SETTINGS_SECTION_KEYS）と同じ。増減したら SETTINGS_SECTION_COUNT と揃える。
+// 34節。台帳（SETTINGS_SECTION_KEYS）と同じ。増減したら SETTINGS_SECTION_COUNT と揃える。
 const SECTION_IDS = [
-  "site-basics", "portfolio-kit", "hero", "navigation", "spacing", "reveal", "gallery-layout", "mood",
-  "page-layout", "home", "statement", "viewer", "page-parts", "series", "note", "print", "cta", "theme",
-  "fonts", "name", "headings", "body", "footer", "site-copy", "presets",
+  "site-basics", "contact", "contact-words", "portfolio-kit", "hero", "navigation", "spacing", "reveal",
+  "gallery-layout", "top-works", "series-cards", "series-layout", "series-strip", "order", "mood",
+  "page-layout", "home", "statement-text", "statement", "viewer", "about", "about-layout", "contact-layout",
+  "note", "print", "cta", "theme", "fonts", "name", "headings", "body", "footer", "site-copy", "presets",
 ];
 
 test.describe("admin — Form layout", () => {
@@ -371,7 +372,7 @@ test.describe("admin — Form layout", () => {
     expect(mocks.unknownWrites).toEqual([]);
   });
 
-  test("全節へ右の一覧から到達し、本文には常に1節だけ出す", async ({
+  test("全節へ右の一覧から到達し、本文には開いた部分の節だけを出す", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "PCで全節を辿る");
@@ -384,15 +385,10 @@ test.describe("admin — Form layout", () => {
 
     for (const sectionId of SECTION_IDS) {
       await chooseSettingsSection(page, sectionId);
+      // 部分によっては2つの節を並べる（作家の言葉＝文と位置、About＝文章と作家の言葉）。
       const sections = page.locator("[data-settings-section]");
-      await expect(
-        sections,
-        `${sectionId} を選んだら本文はその節だけになる`,
-      ).toHaveCount(1);
-      await expect(sections).toHaveAttribute(
-        "data-settings-section",
-        sectionId,
-      );
+      await expect(page.locator(`[data-settings-section="${sectionId}"]`)).toBeVisible();
+      expect(await sections.count(), `${sectionId} を選んだら、その部分の節だけになる`).toBeLessThanOrEqual(2);
       const overflow = await page.evaluate(
         () =>
           document.documentElement.scrollWidth -
@@ -445,16 +441,17 @@ test.describe("admin — Form layout", () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
-  test("Profile・Pricing・Serviceは目次なしのForm本文幅を使う", async ({
+  test("Pricing・Serviceは目次なしのForm本文幅を使う", async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "PCのForm幅で確認する");
 
     await installMocks(page);
     await page.setViewportSize({ width: 1440, height: 900 });
-    // Pricing は一覧が主役なので list 幅、Profile / Service は入力なので form 幅。
-    // どちらも「目次を持たない共通ページ枠」であることが要点。
-    for (const tab of ["profile", "pricing", "service"]) {
+    // Pricing は一覧が主役なので list 幅、Service は入力なので form 幅。
+    // どちらも「目次を持たない共通ページ枠」であることが要点。About の文章は
+    // 2026-09-30 からサイトの画面の設定（プレビューを見ながら直す）なので含めない。
+    for (const tab of ["pricing", "service"]) {
       await openTab(page, tab);
       await expect(page.locator(".admin-form-toc")).toHaveCount(0);
       const kind = await page

@@ -134,7 +134,7 @@ async function openPicker(page: Page) {
   });
   await page.goto("/admin");
   await page.waitForSelector(".admin-atelier", { timeout: 20_000 });
-  await chooseSettingsSection(page, "gallery-layout");
+  await chooseSettingsSection(page, "top-works");
 }
 
 /** 「選んだ順」の一覧に並んでいる名前。 */

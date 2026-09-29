@@ -49,7 +49,7 @@ test.describe("admin — 書体は公開サイト設定から独立している"
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily);
     const toolFont = await page
-      .locator(".admin-book__tools button")
+      .locator(".admin-book__quick button")
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily);
 
@@ -74,7 +74,7 @@ test.describe("admin — 書体は公開サイト設定から独立している"
           return el ? getComputedStyle(el).fontFamily : "";
         };
         return {
-          title: q(".admin-book__tools button"),
+          title: q(".admin-book__quick button"),
           tab: q(".admin-book__tab"),
         };
       });

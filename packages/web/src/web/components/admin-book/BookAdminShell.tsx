@@ -42,6 +42,7 @@ export function BookAdminShell({
   theme,
   onToggleTheme,
   languageToggle,
+  language = "ja",
 }: {
   pdfEnabled?: boolean;
   siteName: string;
@@ -60,12 +61,21 @@ export function BookAdminShell({
   onToggleTheme: () => void;
   /** 管理画面の言葉（JP / EN）の切り替え。体験版は上の帯に置くので渡さない */
   languageToggle?: ReactNode;
+  /** 入口と道具の言葉 */
+  language?: "ja" | "en";
 }) {
-  const tabs: { id: BookAdminView; label: string; hint: string }[] = [
-    { id: "photos", label: "写真", hint: "写真を加える・公開・シリーズへ入れる・並び" },
-    { id: "series", label: "シリーズ", hint: "シリーズの言葉・写真の並び・表紙" },
-    { id: "site", label: "サイト", hint: "トップ・About・Contact・見た目・名前" },
-  ];
+  const en = language === "en";
+  const tabs: { id: BookAdminView; label: string; hint: string }[] = en
+    ? [
+        { id: "photos", label: "Photos", hint: "Add, publish, place in series, order" },
+        { id: "series", label: "Series", hint: "Series words, photo order and cover" },
+        { id: "site", label: "Site", hint: "Edit the site while looking at it" },
+      ]
+    : [
+        { id: "photos", label: "写真", hint: "写真を加える・公開・シリーズへ入れる・並び" },
+        { id: "series", label: "シリーズ", hint: "シリーズの言葉・写真の並び・表紙" },
+        { id: "site", label: "サイト", hint: "公開サイトを見ながら直す" },
+      ];
   const current = view === "library" ? "photos" : view;
   // スマホは右上の「メニュー」に道具をしまい、上の帯を2行（名前・入口）に収める。
   // 道具を並べたままだと 320px 幅で5行になり、写真の編集欄が 77px まで潰れた（2026-09-29）。
@@ -95,14 +105,15 @@ export function BookAdminShell({
       <header className="admin-book__bar">
         <p className="admin-book__name font-ja">
           {siteName}
-          <span className="admin-book__name-sub">の管理</span>
+          <span className="admin-book__name-sub">{en ? "admin" : "の管理"}</span>
         </p>
-        <nav className="admin-book__tabs" aria-label="管理画面の入口">
+        <nav className="admin-book__tabs" aria-label={en ? "Admin sections" : "管理画面の入口"}>
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               className="bk-ax-btn admin-book__tab"
+              data-book-tab={t.id}
               aria-current={current === t.id ? "page" : undefined}
               disabled={locked && current !== t.id}
               onClick={() => onView(t.id)}
@@ -112,6 +123,16 @@ export function BookAdminShell({
             </button>
           ))}
         </nav>
+        {/* よく使う2つ（探す・サイトを見る）だけを帯に出し、ほかは「その他」にしまう
+            （2026-09-30。道具が6つ並んで、入口より目立っていた）。スマホは全部「メニュー」の中。 */}
+        <div className="admin-book__quick">
+          <button type="button" className="bk-ax-btn admin-book__tool" onClick={onSearch}>
+            {en ? "Search" : "探す"} <kbd>⌘K</kbd>
+          </button>
+          <a className="admin-book__tool" href={siteHref} target="_blank" rel="noopener">
+            {en ? "View site" : "サイトを見る"} ↗
+          </a>
+        </div>
         <div className="admin-book__menu-wrap" ref={menuRef}>
         <button
           type="button"
@@ -120,7 +141,8 @@ export function BookAdminShell({
           aria-controls={toolsId}
           onClick={() => setMenuOpen((open) => !open)}
         >
-          メニュー
+          <span className="admin-book__menu-wide">{en ? "More" : "その他"}</span>
+          <span className="admin-book__menu-narrow">{en ? "Menu" : "メニュー"}</span>
         </button>
         <div
           id={toolsId}
@@ -128,20 +150,20 @@ export function BookAdminShell({
           data-open={menuOpen || undefined}
         >
           {/* 道具を1つ押したら閉じる（言葉の切り替えは続けて見比べられるよう開いたまま）。 */}
-          {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pdf" target="_blank" rel="noopener" onClick={closeMenu}>PDF作品集</a>}
-          <button type="button" className="bk-ax-btn admin-book__tool" onClick={() => { closeMenu(); onSearch(); }}>
-            探す <kbd>⌘K</kbd>
+          <button type="button" className="bk-ax-btn admin-book__tool admin-book__tool--narrow" onClick={() => { closeMenu(); onSearch(); }}>
+            {en ? "Search" : "探す"} <kbd>⌘K</kbd>
           </button>
-          <button type="button" className="bk-ax-btn admin-book__tool" onClick={() => { closeMenu(); onToggleTheme(); }} aria-pressed={theme === "dark"}>
-            {theme === "dark" ? "明るい表示" : "暗い表示"}
-          </button>
-          <a className="admin-book__tool" href={siteHref} target="_blank" rel="noopener" onClick={closeMenu}>
-            サイトを見る ↗
+          <a className="admin-book__tool admin-book__tool--narrow" href={siteHref} target="_blank" rel="noopener" onClick={closeMenu}>
+            {en ? "View site" : "サイトを見る"} ↗
           </a>
-          <button type="button" className="bk-ax-btn admin-book__tool admin-book__tool--quiet" onClick={() => { closeMenu(); onLogout(); }}>
-            ログアウト
+          {pdfEnabled && !locked && <a className="admin-book__tool" href="/admin/pdf" target="_blank" rel="noopener" onClick={closeMenu}>{en ? "PDF portfolio" : "PDF作品集"}</a>}
+          <button type="button" className="bk-ax-btn admin-book__tool" onClick={() => { closeMenu(); onToggleTheme(); }} aria-pressed={theme === "dark"}>
+            {theme === "dark" ? (en ? "Light display" : "明るい表示") : (en ? "Dark display" : "暗い表示")}
           </button>
           {languageToggle && <div className="admin-book__lang">{languageToggle}</div>}
+          <button type="button" className="bk-ax-btn admin-book__tool admin-book__tool--quiet" onClick={() => { closeMenu(); onLogout(); }}>
+            {en ? "Log out" : "ログアウト"}
+          </button>
         </div>
         </div>
       </header>

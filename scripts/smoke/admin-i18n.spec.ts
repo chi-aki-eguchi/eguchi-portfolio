@@ -15,9 +15,11 @@ test.describe("admin — JP/EN shared shell", () => {
     await page.evaluate(() => localStorage.setItem("admin:language", "ja"));
     await page.reload();
 
-    const tools = page.locator(".admin-book__tools");
-    await expect(tools.getByRole("link", { name: /サイトを見る/ })).toBeVisible();
-    await expect(tools.getByRole("button", { name: "ログアウト" })).toBeVisible();
+    // 帯には「探す」「サイトを見る」だけ。ログアウトなどは「その他」の中（2026-09-30）。
+    await expect(page.locator(".admin-book__quick").getByRole("link", { name: /サイトを見る/ })).toBeVisible();
+    await page.locator(".admin-book__menu").click();
+    await expect(page.locator(".admin-book__tools").getByRole("button", { name: "ログアウト" })).toBeVisible();
+    await page.locator(".admin-book__menu").click();
     await gotoAdminTab(page, "gallery");
     await expect(page.getByText(/\d+ \/ \d+ 枚/)).toBeVisible();
 
@@ -84,7 +86,7 @@ test.describe("admin — JP/EN shared shell", () => {
     // 入口と目次は日本語のまま（2026-09-29 の器）。編集画面の中身が英語になる。
     await gotoAdminTab(page, "profile");
     await expect(
-      page.getByText("Your biography and profile photo shown on the About page."),
+      page.getByText("Biography, portrait, statement, social links"),
     ).toBeVisible();
 
     if (await menu.isVisible()) await menu.click();
@@ -137,7 +139,7 @@ test.describe("admin — JP/EN shared shell", () => {
     await expect(page.getByLabel("New series title")).toBeVisible();
 
     await gotoAdminTab(page, "settings");
-    await chooseSettingsSection(page, "site-basics");
+    await chooseSettingsSection(page, "contact");
     // サイトの画面（2026-09-29〜）: 開いた部分の名前と、設定の欄の言葉が英語になる。
     await expect(page.locator(".se-part-head__title")).toHaveText(/Contact/);
     await expect(page.getByLabel("Contact Email", { exact: true })).toBeVisible();

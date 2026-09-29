@@ -441,6 +441,7 @@ export default function ContactPage({
       {visiblePlans.length > 0 && (
         <section
           lang={language}
+          data-contact-pricing
           className="max-w-3xl mx-auto site-page site-page-top pb-4"
           ref={pricingRef}
         >

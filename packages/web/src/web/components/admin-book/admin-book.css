@@ -824,3 +824,91 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* ── 上の帯の道具（2026-09-30）──────────────────────────
+   帯には「探す」「サイトを見る」だけ。PDF作品集・明暗・言葉・ログアウトは「その他」。
+   スマホは名前の段をやめ、入口と「メニュー」を1段にする（上に4段重なっていた）。 */
+.admin-book__quick {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  white-space: nowrap;
+}
+.admin-book__menu-wrap { margin-left: 0; position: relative; }
+.admin-book__menu {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--bench-ink);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+}
+.admin-book__menu:hover,
+.admin-book__menu[aria-expanded="true"] { background: var(--bench-soft); }
+.admin-book__menu-narrow { display: none; }
+.admin-book__tools { display: none; }
+.admin-book__tools[data-open] {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  min-width: 13rem;
+  padding: 6px;
+  white-space: nowrap;
+  background: var(--admin-paper);
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+}
+.admin-book__tools[data-open] .admin-book__tool {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  text-align: left;
+  border-radius: 8px;
+}
+.admin-book__tools[data-open] .admin-book__tool:hover { background: var(--bench-soft); }
+.admin-book__tools[data-open] .admin-book__lang {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+}
+.admin-book__tool--narrow { display: none !important; }
+
+@media (max-width: 767px) {
+  .admin-book__bar {
+    flex-wrap: nowrap;
+    gap: 0 8px;
+    padding: 0 6px 0 12px;
+    height: 52px;
+  }
+  .admin-book__name,
+  .admin-book__quick { display: none; }
+  .admin-book__tabs {
+    order: 0;
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    gap: 1.25rem;
+  }
+  .admin-book__menu { min-height: 44px; font-size: 14px; }
+  .admin-book__menu-wide { display: none; }
+  .admin-book__menu-narrow { display: inline; }
+  .admin-book__menu-wrap { position: static; }
+  .admin-book__tools[data-open] { top: 50px; right: 8px; }
+  .admin-book__tools[data-open] .admin-book__tool { min-height: 44px; }
+  .admin-book__tools[data-open] .admin-book__tool--narrow { display: flex !important; }
+}

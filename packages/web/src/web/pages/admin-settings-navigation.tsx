@@ -30,22 +30,32 @@ export type SiteOutlineTab =
 export const SETTINGS_NAVIGATION = [
   { group: "site", ja: "サイト全体", en: "Whole site", items: [
     { id: "page-layout", ja: "サイトの骨格", en: "Site structure", keywords: "骨格 構成 写真中心 いつもの 写真集 design structure book classic" },
-    { id: "site-basics", ja: "連絡先と検索", en: "Contact & search", keywords: "問い合わせ メール 説明 URL Google 検索 フォーム email contact SEO form" },
+    { id: "site-basics", ja: "検索とシェア", en: "Search & sharing", keywords: "説明 URL Google 検索 シェア SNS SEO search share description" },
     { id: "portfolio-kit", ja: "制作案内への入口", en: "Portfolio Kit visibility", keywords: "Portfolio Kit サービス 制作" },
   ] },
   { group: "parts", ja: "ページの部分", en: "Page parts", items: [
     { id: "name", ja: "名前", en: "Name", keywords: "名前 サイト名 肩書き 大きさ 太さ 字間 色 name title logo" },
-    { id: "navigation", ja: "メニュー", en: "Menu", keywords: "メニュー ナビ 位置 リンク 背景 menu header navigation" },
+    { id: "navigation", ja: "メニュー", en: "Menu", keywords: "メニュー ナビ 入口 リンク 名前 位置 背景 Series Work menu header navigation" },
     { id: "home", ja: "トップの形", en: "Home layout", only: "book", keywords: "トップ 表紙 形 home cover" },
     { id: "hero", ja: "トップの写真の見せ方", en: "Home hero", only: "classic", keywords: "ヒーロー 高さ タイトル 位置 切り抜き スライド fullscreen crop title" },
-    { id: "statement", ja: "作家の言葉", en: "Statement", keywords: "作家の言葉 ステートメント statement" },
-    { id: "cta", ja: "撮影のご依頼", en: "Photography enquiries", keywords: "仕事 撮影 依頼 相談 お問い合わせ CTA" },
-    { id: "gallery-layout", ja: "写真の並べ方", en: "Photo layout", only: "classic", keywords: "列数 サイズ 写真 間隔 余白 グリッド 札 切り抜き gallery grid columns gap card crop" },
-    { id: "series", ja: "並び順とシリーズの入口", en: "Order & series links", keywords: "撮影日 日時 並び順 ソート 新しい 古い シリーズ メニュー 帯 manual sort date series" },
+    { id: "statement-text", ja: "作家の言葉の文", en: "Statement text", keywords: "作家の言葉 ステートメント 文章 statement" },
+    { id: "statement", ja: "作家の言葉の位置", en: "Statement placement", keywords: "作家の言葉 ステートメント 位置 トップ statement" },
+    { id: "top-works", ja: "トップの作品の並び", en: "Home work grid", only: "classic", keywords: "トップ 作品 列数 枚数 選ぶ 並べ方 top works grid" },
+    { id: "series-strip", ja: "シリーズの帯", en: "Series strip", only: "classic", keywords: "シリーズ 帯 流れる 速さ 高さ strip marquee" },
+    { id: "cta", ja: "撮影のご依頼", en: "Photography enquiries", keywords: "仕事 撮影 依頼 相談 お問い合わせ 案内 CTA" },
+    { id: "gallery-layout", ja: "写真の並べ方", en: "Photo layout", only: "classic", keywords: "列数 サイズ 写真 間隔 余白 グリッド 並べ方 gallery grid columns gap" },
+    { id: "order", ja: "並び順", en: "Order", keywords: "撮影日 日時 並び順 ソート 新しい 古い 順番 manual sort date order" },
     { id: "viewer", ja: "写真を開いたとき", en: "Photo viewer", keywords: "ビューア 拡大 壁 余白 額装 viewer lightbox wall mat" },
-    { id: "page-parts", ja: "About・Contact の組み方", en: "About & Contact layout", keywords: "プロフィール 問い合わせ 構成 並べ方 profile about contact layout" },
+    { id: "series-cards", ja: "シリーズの札", en: "Series cards", only: "classic", keywords: "シリーズ 札 表紙 列数 切り抜き series cards cover crop" },
+    { id: "series-layout", ja: "作品ページの並べ方", en: "Work page layout", only: "classic", keywords: "作品 シリーズ ページ 写真 並べ方 series page layout" },
+    { id: "about", ja: "About の文章と写真", en: "About text & portrait", keywords: "プロフィール 略歴 自己紹介 顔写真 名前 機材 SNS インスタ profile about bio portrait" },
+    { id: "about-layout", ja: "About の組み方", en: "About layout", keywords: "プロフィール 構成 並べ方 写真 profile about layout" },
+    { id: "contact", ja: "連絡先と案内", en: "Contact details", keywords: "問い合わせ メール 送信先 フォーム 地域 流れ 案内 email contact form" },
+    { id: "contact-layout", ja: "Contact の組み方", en: "Contact layout", keywords: "お問い合わせ 構成 並べ方 contact layout" },
+    { id: "contact-words", ja: "フォームの言葉", en: "Form wording", keywords: "フォーム 入力欄 ボタン 送信 件名 完了 form labels button" },
     { id: "headings", ja: "見出し", en: "Headings", keywords: "見出し 小見出し タイトル 大きさ 字間 行間 heading title" },
-    { id: "footer", ja: "フッター", en: "Footer", keywords: "フッター 著作 SNS footer copyright" },
+    { id: "site-copy", ja: "ページの言葉", en: "Page words", keywords: "見出し すべて見る すべて 文言 ラベル words labels copy" },
+    { id: "footer", ja: "フッター", en: "Footer", keywords: "フッター 著作 SNS クレジット footer copyright credit" },
   ] },
   { group: "look", ja: "全体の見た目", en: "Overall look", items: [
     { id: "fonts", ja: "書体", en: "Typefaces", keywords: "フォント 日本語 英語 セリフ font typography" },
@@ -56,9 +66,8 @@ export const SETTINGS_NAVIGATION = [
     { id: "reveal", ja: "写真の表示アニメーション", en: "Photo animation", only: "classic", keywords: "動き フェード fade reveal animation" },
   ] },
   { group: "more", ja: "そのほか", en: "More", items: [
-    { id: "site-copy", ja: "表示する言葉", en: "Labels & messages", keywords: "ボタン 文言 メッセージ 翻訳 フォーム words labels copy" },
     { id: "presets", ja: "カメラ・レンズの候補", en: "Camera & lens presets", keywords: "機材 カメラ レンズ プリセット camera lens" },
-    { id: "note", ja: "note の連携", en: "note integration", keywords: "記事 ブログ note blog" },
+    { id: "note", ja: "note の連携", en: "note integration", keywords: "記事 ブログ Journal note blog" },
     { id: "print", ja: "プリント販売", en: "Print sales", keywords: "販売 ショップ print shop" },
   ] },
 ] as const satisfies readonly {
@@ -79,10 +88,11 @@ export function skeletonOnlyForSection(id: string): SiteSkeleton | undefined {
 }
 
 export function previewPageForSection(id: string): string | null {
-  if (["hero", "mood", "home", "statement", "page-layout", "name"].includes(id)) return "/";
-  if (["gallery-layout", "series", "viewer"].includes(id)) return "/gallery";
-  if (id === "cta") return "/contact";
-  if (id === "page-parts") return "/about";
+  if (["hero", "mood", "home", "statement", "statement-text", "page-layout", "name", "top-works", "series-strip"].includes(id)) return "/";
+  if (["gallery-layout", "order", "viewer"].includes(id)) return "/gallery";
+  if (["series-cards", "series-layout"].includes(id)) return "/series";
+  if (["about", "about-layout", "note", "print"].includes(id)) return "/about";
+  if (["contact", "contact-layout", "contact-words", "cta"].includes(id)) return "/contact";
   return null;
 }
 
@@ -115,8 +125,8 @@ export type SitePart = {
 
 export const SITE_PARTS = {
   name: { id: "name", ja: "名前", en: "Name", noteJa: "表示する名前・大きさ・太さ・色", noteEn: "Text, size, weight, colour", sections: ["name"] },
-  menu: { id: "menu", ja: "メニュー", en: "Menu", noteJa: "メニューの文字と並べ方", noteEn: "Menu text and placement", sections: ["navigation"] },
-  footer: { id: "footer", ja: "フッター", en: "Footer", noteJa: "ページの終わりの言葉と並べ方", noteEn: "Footer text and arrangement", sections: ["footer"] },
+  menu: { id: "menu", ja: "メニュー", en: "Menu", noteJa: "メニューの言葉・入口・文字", noteEn: "Menu words, links and type", sections: ["navigation"], keywords: "ナビ 入口 Series Work" },
+  footer: { id: "footer", ja: "フッター", en: "Footer", noteJa: "ページの終わりの言葉・SNS・クレジット", noteEn: "Closing words, social links, credit", sections: ["footer"], keywords: "SNS クレジット 著作" },
   "top-photos": {
     id: "top-photos", ja: "トップの写真", en: "Home photographs",
     noteJa: "表紙と写真の見せ方", noteEn: "Cover and how the photos appear",
@@ -124,23 +134,26 @@ export const SITE_PARTS = {
     links: [{ ja: "トップに出す写真と順番を変える", en: "Choose and order home photographs", tab: "hero" }],
   },
   statement: {
-    id: "statement", ja: "作家の言葉", en: "Statement", noteJa: "トップのどこに置くか", noteEn: "Where it sits on the home page",
-    sections: ["statement"],
-    links: [{ ja: "作家の言葉を書く（About の編集）", en: "Write the statement (About editor)", tab: "profile" }],
+    id: "statement", ja: "作家の言葉", en: "Statement", noteJa: "文と、トップのどこに置くか", noteEn: "The text, and where it sits on the home page",
+    sections: ["statement-text", "statement"],
   },
-  works: { id: "works", ja: "作品の並び", en: "Work grid", only: "classic", noteJa: "トップの作品一覧の組み方", noteEn: "How the home work grid is laid out", sections: ["gallery-layout"] },
-  "series-strip": { id: "series-strip", ja: "シリーズの帯", en: "Series strip", only: "classic", noteJa: "トップに流れるシリーズの帯", noteEn: "The moving series strip", sections: ["series"] },
+  works: { id: "works", ja: "作品の並び", en: "Work grid", only: "classic", noteJa: "トップに並べる作品と組み方", noteEn: "Which works appear on the home page, and how", sections: ["top-works"] },
+  "series-strip": { id: "series-strip", ja: "シリーズの帯", en: "Series strip", only: "classic", noteJa: "トップに流れるシリーズの帯", noteEn: "The moving series strip", sections: ["series-strip"] },
   cta: { id: "cta", ja: "撮影のご依頼", en: "Photography enquiries", noteJa: "作品の後の Contact への案内", noteEn: "Invitation to Contact after the work", sections: ["cta"] },
-  "page-title": { id: "page-title", ja: "ページの見出し", en: "Page heading", noteJa: "見出しの形・大きさ", noteEn: "Heading style and size", sections: ["headings"] },
-  "gallery-photos": { id: "gallery-photos", ja: "写真の並べ方", en: "Photo layout", only: "classic", noteJa: "列数・大きさ・余白", noteEn: "Columns, sizes, gaps", sections: ["gallery-layout"] },
-  order: { id: "order", ja: "並び順", en: "Order", noteJa: "並べた順か、撮影日の順か", noteEn: "Manual or by date", sections: ["series"] },
+  "page-title": { id: "page-title", ja: "ページの見出し", en: "Page heading", noteJa: "見出しの形・大きさ・言葉", noteEn: "Heading style, size and words", sections: ["headings", "site-copy"] },
+  "gallery-photos": { id: "gallery-photos", ja: "写真の並べ方", en: "Photo layout", only: "classic", noteJa: "並べ方・列数・大きさ・余白", noteEn: "Layout, columns, sizes, gaps", sections: ["gallery-layout"] },
+  order: { id: "order", ja: "並び順", en: "Order", noteJa: "並べた順か、撮影日の順か", noteEn: "Manual or by date", sections: ["order"] },
   viewer: { id: "viewer", ja: "写真を開いたとき", en: "Photo viewer", noteJa: "大きく見るときの壁の色・写真の大きさ", noteEn: "Wall colour and photo size", sections: ["viewer"] },
-  "series-cards": { id: "series-cards", ja: "シリーズの札", en: "Series cards", only: "classic", noteJa: "表紙と題名の組み方", noteEn: "Cover and title arrangement", sections: ["gallery-layout"] },
-  about: { id: "about", ja: "About の文章と写真", en: "About text & portrait", noteJa: "略歴・顔写真・作家の言葉", noteEn: "Biography, portrait, statement", tab: "profile" },
-  "about-layout": { id: "about-layout", ja: "About の組み方", en: "About layout", noteJa: "写真と文章の並べ方", noteEn: "How portrait and text sit", sections: ["page-parts"] },
-  "contact-layout": { id: "contact-layout", ja: "Contact の組み方", en: "Contact layout", noteJa: "説明とフォームの並べ方", noteEn: "How text and form sit", sections: ["page-parts"] },
-  "contact-info": { id: "contact-info", ja: "連絡先とフォーム", en: "Contact details & form", noteJa: "メール・送信先・案内の文章", noteEn: "Email, form endpoint, intro text", sections: ["site-basics"] },
-  "contact-words": { id: "contact-words", ja: "フォームの言葉", en: "Form wording", noteJa: "入力欄とボタンの言葉", noteEn: "Field and button labels", sections: ["site-copy"] },
+  "series-cards": { id: "series-cards", ja: "シリーズの札", en: "Series cards", only: "classic", noteJa: "表紙と題名の組み方・列数", noteEn: "Cover, title and columns", sections: ["series-cards"] },
+  "series-layout": { id: "series-layout", ja: "作品ページの並べ方", en: "Work page layout", only: "classic", noteJa: "シリーズを開いたときの写真の並べ方", noteEn: "How photographs sit on a series page", sections: ["series-layout"] },
+  about: { id: "about", ja: "About の文章と写真", en: "About text & portrait", noteJa: "略歴・顔写真・作家の言葉・SNS", noteEn: "Biography, portrait, statement, social links", sections: ["about", "statement-text"] },
+  "about-layout": { id: "about-layout", ja: "About の組み方", en: "About layout", noteJa: "写真と文章の並べ方", noteEn: "How portrait and text sit", sections: ["about-layout"] },
+  "contact-info": { id: "contact-info", ja: "連絡先と案内", en: "Contact details", noteJa: "メール・フォームの送信先・案内の文章", noteEn: "Email, form endpoint, intro text", sections: ["contact"] },
+  "contact-layout": { id: "contact-layout", ja: "Contact の組み方", en: "Contact layout", noteJa: "説明とフォームの並べ方", noteEn: "How text and form sit", sections: ["contact-layout"] },
+  "contact-words": { id: "contact-words", ja: "フォームの言葉", en: "Form wording", noteJa: "入力欄とボタンの言葉", noteEn: "Field and button labels", sections: ["contact-words"] },
+  pricing: { id: "pricing", ja: "料金・プラン", en: "Pricing", noteJa: "Contact に出す料金の表", noteEn: "The price list on Contact", tab: "pricing" },
+  note: { id: "note", ja: "note の記事", en: "note posts", noteJa: "About に最新の記事を出す", noteEn: "Latest posts on About", sections: ["note"] },
+  print: { id: "print", ja: "プリント販売", en: "Print sales", noteJa: "About にプリントの案内を出す", noteEn: "Print sales link on About", sections: ["print"] },
   // 全体の見た目
   fonts: { id: "fonts", ja: "書体", en: "Typefaces", noteJa: "日本語と英語の書体", noteEn: "Japanese and English typefaces", sections: ["fonts"] },
   body: { id: "body", ja: "本文とリンク", en: "Body text & links", noteJa: "文字全体の大きさ・行間・リンク", noteEn: "Overall size, line height, links", sections: ["body"] },
@@ -148,21 +161,18 @@ export const SITE_PARTS = {
   theme: { id: "theme", ja: "色と背景", en: "Colours & background", noteJa: "背景・文字・差し色・紙の質感", noteEn: "Background, text, accent, texture", sections: ["theme"] },
   structure: { id: "structure", ja: "サイトの骨格", en: "Site structure", noteJa: "写真中心／いつもの構成", noteEn: "Photographs-first or classic", sections: ["page-layout"] },
   mood: { id: "mood", ja: "デザインの出発点", en: "Design presets", only: "classic", noteJa: "トップ・一覧・メニューをまとめて入れ替える", noteEn: "Swaps home, gallery and menu together", sections: ["mood"] },
-  spacing: { id: "spacing", ja: "ページの余白", en: "Page spacing", only: "classic", sections: ["spacing"] },
-  reveal: { id: "reveal", ja: "写真の表示アニメーション", en: "Photo animation", only: "classic", sections: ["reveal"] },
+  spacing: { id: "spacing", ja: "ページの余白", en: "Page spacing", only: "classic", noteJa: "トップ・各ページの上下の間隔", noteEn: "Space above and between sections", sections: ["spacing"] },
+  reveal: { id: "reveal", ja: "写真の表示アニメーション", en: "Photo animation", only: "classic", noteJa: "写真が画面に入るときの動き", noteEn: "How photographs appear as you scroll", sections: ["reveal"] },
   // そのほか
-  "site-basics": { id: "site-basics", ja: "連絡先と検索", en: "Contact & search", noteJa: "問い合わせ先・検索に出る説明", noteEn: "Contact address, search description", sections: ["site-basics"] },
-  "site-copy": { id: "site-copy", ja: "表示する言葉", en: "Labels & messages", noteJa: "メニュー・ボタン・フォームの言葉", noteEn: "Menu, button and form wording", sections: ["site-copy"] },
+  "site-basics": { id: "site-basics", ja: "検索とシェア", en: "Search & sharing", noteJa: "検索結果・SNS で出る説明と公開 URL", noteEn: "Description for search and sharing, public URL", sections: ["site-basics"] },
+  "site-copy": { id: "site-copy", ja: "ページの言葉", en: "Page words", noteJa: "見出し・「すべて見る」などの言葉", noteEn: "Headings and link words", sections: ["site-copy"] },
   "hero-photos": { id: "hero-photos", ja: "トップの写真と順番", en: "Home photographs", noteJa: "「トップに出す」写真の順番・切り抜き", noteEn: "Order and crop of home photographs", tab: "hero" },
   categories: { id: "categories", ja: "分類", en: "Categories", noteJa: "写真の分類の名前と順番", noteEn: "Names and order of categories", tab: "categories" },
   "series-details": { id: "series-details", ja: "シリーズの詳しい設定", en: "Series details", noteJa: "シリーズごとの配色・並び順の上書き", noteEn: "Per-series colour and order overrides", tab: "series" },
-  pricing: { id: "pricing", ja: "料金・プラン", en: "Pricing", tab: "pricing" },
-  service: { id: "service", ja: "制作案内のページ", en: "Portfolio Kit page", tab: "service", service: true },
-  "portfolio-kit": { id: "portfolio-kit", ja: "制作案内への入口", en: "Portfolio Kit visibility", sections: ["portfolio-kit"], service: true },
-  presets: { id: "presets", ja: "カメラ・レンズの候補", en: "Camera & lens presets", sections: ["presets"] },
-  note: { id: "note", ja: "note の連携", en: "note integration", sections: ["note"] },
-  print: { id: "print", ja: "プリント販売", en: "Print sales", sections: ["print"] },
-  setup: { id: "setup", ja: "はじめに（最初の設定の確認）", en: "Getting started", tab: "setup" },
+  service: { id: "service", ja: "制作案内のページ", en: "Portfolio Kit page", noteJa: "制作案内（Portfolio Kit）の文章と料金", noteEn: "Portfolio Kit page text and price", tab: "service", service: true },
+  "portfolio-kit": { id: "portfolio-kit", ja: "制作案内への入口", en: "Portfolio Kit visibility", noteJa: "制作案内へのリンクを出すか", noteEn: "Whether to link to the Portfolio Kit page", sections: ["portfolio-kit"], service: true },
+  presets: { id: "presets", ja: "カメラ・レンズの候補", en: "Camera & lens presets", noteJa: "写真の情報に入れる機材の候補", noteEn: "Equipment suggestions for photo details", sections: ["presets"] },
+  setup: { id: "setup", ja: "はじめに（最初の設定の確認）", en: "Getting started", noteJa: "公開までにやることの確認", noteEn: "What to do before publishing", tab: "setup" },
 } as const satisfies Record<string, SitePart>;
 
 export type SitePartId = keyof typeof SITE_PARTS;
@@ -173,14 +183,14 @@ export type SitePageId = "top" | "gallery" | "series" | "about" | "contact";
 export const SITE_PAGES: readonly { id: SitePageId; path: string; ja: string; en: string; parts: readonly SitePartId[] }[] = [
   { id: "top", path: "/", ja: "トップ", en: "Home", parts: ["name", "top-photos", "statement", "works", "series-strip", "cta", "menu", "footer"] },
   { id: "gallery", path: "/gallery", ja: "Gallery", en: "Gallery", parts: ["page-title", "gallery-photos", "order", "viewer", "menu", "footer"] },
-  { id: "series", path: "/series", ja: "Series", en: "Series", parts: ["page-title", "series-cards", "order", "menu", "footer"] },
-  { id: "about", path: "/about", ja: "About", en: "About", parts: ["about", "about-layout", "page-title", "menu", "footer"] },
-  { id: "contact", path: "/contact", ja: "Contact", en: "Contact", parts: ["contact-info", "contact-layout", "contact-words", "page-title", "menu", "footer"] },
+  { id: "series", path: "/series", ja: "Series", en: "Series", parts: ["page-title", "series-cards", "series-layout", "order", "menu", "footer"] },
+  { id: "about", path: "/about", ja: "About", en: "About", parts: ["about", "about-layout", "note", "print", "page-title", "menu", "footer"] },
+  { id: "contact", path: "/contact", ja: "Contact", en: "Contact", parts: ["contact-info", "contact-layout", "contact-words", "pricing", "page-title", "menu", "footer"] },
 ];
 
 /** 「全体の見た目」と「そのほか」に並べる部分。 */
 export const SITE_LOOK_PARTS: readonly SitePartId[] = ["fonts", "body", "headings", "theme", "structure", "mood", "spacing", "reveal"];
-export const SITE_MORE_PARTS: readonly SitePartId[] = ["site-basics", "site-copy", "hero-photos", "series-details", "categories", "pricing", "service", "portfolio-kit", "presets", "note", "print", "setup"];
+export const SITE_MORE_PARTS: readonly SitePartId[] = ["site-basics", "site-copy", "hero-photos", "series-details", "categories", "service", "portfolio-kit", "presets", "setup"];
 
 /** 部分が今の骨格で出す設定の節。 */
 export function sectionsForPart(part: SitePart, skeleton: SiteSkeleton): readonly string[] {

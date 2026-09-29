@@ -13,7 +13,8 @@ for (const width of [1440, 1024, 375]) {
     for (const tab of ADMIN_TABS) {
       await gotoAdminTab(page, tab);
       // サイトの設定（2026-09-29〜）は、プレビューの右の欄に開いた部分の名前を出す。
-      const settings = tab === "settings";
+      // About の文章（profile）も 2026-09-30 からここで直す。
+      const settings = tab === "settings" || tab === "profile";
       // 名前の左には一覧と同じ目印が付くので、目印と名前の1行で測る。
       const heading = settings
         ? page.locator(".se-part-head__row")

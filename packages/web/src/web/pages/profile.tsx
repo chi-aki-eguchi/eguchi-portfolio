@@ -410,7 +410,7 @@ export default function ProfilePage({
 
       {/* K1: Prints — quiet external store link. Hidden unless enabled + URL set. */}
       {printOn && (
-        <div className="mt-16 md:mt-20 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
+        <div data-about-print className="mt-16 md:mt-20 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
           <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-4">
             Prints
           </h3>

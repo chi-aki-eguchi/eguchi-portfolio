@@ -58,7 +58,7 @@ import {
 } from "./admin-shared";
 import { AdminSettingsPreviewPane } from "./admin-settings-preview-pane";
 import { PREVIEW_DESKTOP, PREVIEW_MOBILE, type PreviewViewport } from "../lib/admin-preview-viewport";
-import { attachPreviewPicking, selectPreviewPart } from "../lib/admin-preview-pick";
+import { attachPreviewPicking, openPreviewPhoto, selectPreviewPart } from "../lib/admin-preview-pick";
 import {
   settingsNavigationItems,
   previewPageForSection,
@@ -125,9 +125,13 @@ const DEFAULT_THEME_BG_DARK = "#121212";
 const DEFAULT_THEME_TEXT_DARK = "#e8e8e8";
 
 export const SETTINGS_SECTION_KEYS = {
-  // 連絡先と検索。名前は「名前」、フッターの言葉は「フッター」へ移した（2026-09-29）。
-  "site-basics": [
-    "siteDescription",
+  // 節は「公開サイトの部分」ごと（2026-09-30）。管理画面「サイト」で部分を開くと、
+  // その部分の節だけが出る。以前は1つの節に別の部分の設定が混ざっていて、
+  // 「メニュー」を開くと効かない設定が先に並び、「並び順」を開くとシリーズの列数が出た。
+  // 検索とシェア（サイトの説明・公開URL）。
+  "site-basics": ["siteDescription", "siteUrl", "googleSiteVerification"],
+  // Contact の連絡先と案内の文章・フォームの送信先。
+  contact: [
     "contactIntro",
     "contactIntroEn",
     "contactNote",
@@ -140,11 +144,19 @@ export const SETTINGS_SECTION_KEYS = {
     "contactMessagePlaceholder",
     "contactEmail",
     "formspreeUrl",
-    "siteUrl",
-    "googleSiteVerification",
-    "footerCtaLabel",
-    "templateCreditLabel",
-    "templateCreditUrl",
+  ],
+  // Contact のフォームの言葉。
+  "contact-words": [
+    "contactFormName",
+    "contactFormEmail",
+    "contactFormSubject",
+    "contactSubjectOptions",
+    "contactFormMessage",
+    "contactSendButton",
+    "contactSendingButton",
+    "contactSentMessage",
+    "contactSendAnother",
+    "contactErrorMessage",
   ],
   "portfolio-kit": ["servicePageMode"],
   hero: [
@@ -158,14 +170,21 @@ export const SETTINGS_SECTION_KEYS = {
     "heroTitlePosition",
     "heroScrollEffect",
   ],
-  // メニュー。位置・帯の背景はいつもの構成だけ、文字はどちらの骨格でも効く。
+  // メニュー。文字と各ページの入口はどちらの骨格でも効く。位置・帯の背景はいつもの構成だけ。
   navigation: [
-    "navPosition",
-    "navHoverEffect",
-    "headerBackground",
+    "navLabelTop",
+    "navLabelGallery",
+    "navLabelAbout",
+    "navLabelContact",
+    "seriesNavEnabled",
+    "workNavEnabled",
+    "navLabelWork",
     "navSize",
     "navTracking",
     "navOpacity",
+    "navPosition",
+    "navHoverEffect",
+    "headerBackground",
   ],
   spacing: [
     "spacingHeroBottom",
@@ -174,62 +193,77 @@ export const SETTINGS_SECTION_KEYS = {
     "spacingFooterTop",
   ],
   reveal: ["photoRevealEffect"],
+  // Gallery の写真の並べ方（いつもの構成）。
   "gallery-layout": [
     "galleryLayout",
-    "seriesLayout",
+    "galleryColumns",
+    "galleryColumnsMobile",
+    "gallerySizeScale",
+    "galleryGapScale",
+    "galleryEmptyRate",
+    "gallerySizeVariation",
+    "gallerySeed",
+    "galleryExcludeSeries",
+  ],
+  // トップの作品の並び（いつもの構成）。
+  "top-works": [
     "topWorksLayout",
     "topWorksMode",
     "topWorksIds",
     "homeGalleryCount",
-    "galleryColumns",
-    "gallerySizeScale",
-    "galleryGapScale",
     "topWorksColumns",
-    "galleryColumnsMobile",
     "topWorksColumnsMobile",
     "topWorksSizeScale",
     "topWorksGapScale",
-    "galleryEmptyRate",
-    "gallerySizeVariation",
-    "gallerySeed",
-    // いつもの構成だけで効く2つ。写真中心は元から切り抜かず、札も持たない。
-    // 写真を切り抜くかどうか（HERO・表紙・札・帯）と、Series の札の形。
-    "photoCrop",
-    "seriesCardStyle",
   ],
-  // 作風プリセットは自分のキーを持たない（他の節のキーをまとめて入れ替える
-  // だけ）。台帳では空にしておく。所属キーの検査は
-  // admin-settings-section-keys.test.ts が見ている。
-  mood: [],
-  // サイトの骨格（写真中心／いつもの構成）だけを選ぶ節。以前はここに About・
-  // Contact・ビューア・フッターまで11個を詰めていて、どこに何があるか分からな
-  // かった（2026-09-29）。公開サイトのページごとの節へ分けた。
-  "page-layout": ["siteDesign"],
-  // トップの形（写真中心）。
-  home: ["bookCoverPhotoId", "photoTopLayout"],
-  // トップに置く作家の言葉（両方の骨格）。
-  statement: ["homeStatement"],
-  // 写真を大きく開いたとき。
-  viewer: ["viewerStyle", "viewerMat"],
-  // About と Contact の組み方。
-  "page-parts": ["profileLayout", "contactLayout"],
-  series: [
-    "seriesNavEnabled",
-    // Work の棚（2026-08-30）。シリーズと同じ節に置く——同じ仕組みの
-    // 2つ目の棚なので、離れた場所にあると設定を探せない。
-    "workNavEnabled",
-    "navLabelWork",
-    "galleryExcludeSeries",
+  // Series の一覧の札（いつもの構成）。写真を切り抜くかどうかも札・帯・表紙に効く。
+  "series-cards": [
+    "seriesCardStyle",
+    "seriesGridColumns",
+    "seriesGridColumnsMobile",
+    "photoCrop",
+  ],
+  // 作品（シリーズ）のページの写真の並べ方（いつもの構成）。
+  "series-layout": ["seriesLayout"],
+  // トップに流れるシリーズの帯（いつもの構成）。
+  "series-strip": [
     "topSeriesStream",
     "topSeriesStreamLabel",
     "topSeriesStreamCaption",
     "topSeriesStreamSpeed",
     "topSeriesStreamHeight",
-    "seriesGridColumns",
-    "seriesGridColumnsMobile",
-    "gallerySortOrder",
-    "seriesSortOrder",
   ],
+  // 並び順（どちらの骨格でも効く）。
+  order: ["gallerySortOrder", "seriesSortOrder"],
+  // 作風プリセットは自分のキーを持たない（他の節のキーをまとめて入れ替える
+  // だけ）。台帳では空にしておく。所属キーの検査は
+  // admin-settings-section-keys.test.ts が見ている。
+  mood: [],
+  // サイトの骨格（写真中心／いつもの構成）だけを選ぶ節。
+  "page-layout": ["siteDesign"],
+  // トップの形（写真中心）。
+  home: ["bookCoverPhotoId", "photoTopLayout"],
+  // 作家の言葉の文（トップと About に出る）。
+  "statement-text": ["profileStatement", "profileStatementEn"],
+  // トップのどこに作家の言葉を置くか。
+  statement: ["homeStatement"],
+  // 写真を大きく開いたとき。
+  viewer: ["viewerStyle", "viewerMat"],
+  // About の文章と写真（以前は別画面で、プレビューを見ながら直せなかった）。
+  about: [
+    "profilePhotoUrl",
+    "profileName",
+    "profileNameKata",
+    "profileNameEn",
+    "profileBio",
+    "profileBioEn",
+    "profileGear",
+    "profileInstagram",
+    "profileTwitter",
+    "profileNote",
+  ],
+  "about-layout": ["profileLayout"],
+  "contact-layout": ["contactLayout"],
   note: ["noteEnabled", "noteUsername", "noteShowCount"],
   print: [
     "printEnabled",
@@ -258,8 +292,6 @@ export const SETTINGS_SECTION_KEYS = {
     "customFontEnUrl",
     "customFontEnCategory",
   ],
-  // ここから下は「もの」ごとの節（2026-09-29）。以前は大きさ・色・字間の軸ごとに
-  // 分かれていて、名前を変えるのに4か所を回る必要があった。
   name: [
     "siteName",
     "siteNameEn",
@@ -291,21 +323,22 @@ export const SETTINGS_SECTION_KEYS = {
     "linkHoverColor",
     "linkUnderline",
   ],
+  // フッター（言葉・並べ方・文字・SNS の名前・制作のクレジット）。
   footer: [
     "footerText",
     "footerLayout",
     "footerSize",
     "footerOpacity",
     "snsOpacity",
-  ],
-  "site-copy": [
-    "navLabelTop",
-    "navLabelGallery",
-    "navLabelAbout",
-    "navLabelContact",
     "snsLabelInstagram",
     "snsLabelTwitter",
     "snsLabelNote",
+    "footerCtaLabel",
+    "templateCreditLabel",
+    "templateCreditUrl",
+  ],
+  // ページの見出しなどに出る言葉（いつもの構成の見出し・「すべて見る」など）。
+  "site-copy": [
     "worksLabel",
     "viewAllLabel",
     "viewAllCtaLabel",
@@ -313,16 +346,6 @@ export const SETTINGS_SECTION_KEYS = {
     "filterAllLabel",
     "profileLabel",
     "contactLabel",
-    "contactFormName",
-    "contactFormEmail",
-    "contactFormSubject",
-    "contactSubjectOptions",
-    "contactFormMessage",
-    "contactSendButton",
-    "contactSendingButton",
-    "contactSentMessage",
-    "contactSendAnother",
-    "contactErrorMessage",
   ],
   presets: ["metaPresetsCamera", "metaPresetsLens"],
 } as const;
@@ -330,24 +353,32 @@ export const SETTINGS_SECTION_KEYS = {
 type SettingsSectionId = keyof typeof SETTINGS_SECTION_KEYS;
 
 // 本文へ出す節が属するグループの台帳。単節表示では、現在の節を含まない
-// グループの見出しを描かないためにこれを使う。19節をちょうど1回ずつ含むことを
+// グループの見出しを描かないためにこれを使う。全節をちょうど1回ずつ含むことを
 // `admin-settings-section-keys.test.ts` が固定する。
 export const SETTINGS_SECTION_GROUPS = {
   general: [
     "mood",
     "site-basics",
+    "contact",
     "portfolio-kit",
     "hero",
     "navigation",
     "spacing",
     "reveal",
     "gallery-layout",
+    "top-works",
+    "series-cards",
+    "series-layout",
+    "series-strip",
+    "order",
     "page-layout",
     "home",
+    "statement-text",
     "statement",
     "viewer",
-    "page-parts",
-    "series",
+    "about",
+    "about-layout",
+    "contact-layout",
   ],
   integrations: ["note", "print", "cta"],
   design: [
@@ -358,6 +389,7 @@ export const SETTINGS_SECTION_GROUPS = {
     "body",
     "footer",
     "site-copy",
+    "contact-words",
     "presets",
   ],
 } as const satisfies Record<string, readonly SettingsSectionId[]>;
@@ -4697,9 +4729,7 @@ export function SettingsTab({
   // 未保存の入力はどちらの表示でも残る(§7)。
   const [narrowView, setNarrowView] = useState<"edit" | "preview">("edit");
   const expandButtonRef = useRef<HTMLButtonElement>(null);
-  const [layoutTarget, setLayoutTarget] = usePersistentState<
-    "galleryLayout" | "seriesLayout" | "topWorksLayout"
-  >("admin:layoutTarget", "galleryLayout");
+
   const [newCamPreset, setNewCamPreset] = useState("");
   const [newLensPreset, setNewLensPreset] = useState("");
   const [presetError, setPresetError] = useState(false);
@@ -4957,6 +4987,14 @@ export function SettingsTab({
       onFound: (ids) => visualRef.current?.onFound?.(ids),
     });
   }, [previewLoadSeq, visualPartsKey]);
+  // 「写真を開いたとき」を見ているあいだは、プレビューで写真を1枚開いておく（2026-09-30）。
+  // 設定を変えても、写真を開かないと壁の色も大きさも見えなかった。
+  const visualShowsViewer = !!visual?.sections?.includes("viewer");
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!visualShowsViewer || !iframe) return;
+    return openPreviewPhoto(iframe);
+  }, [previewLoadSeq, visualShowsViewer]);
   const visualSelected = visual?.selectedPart ?? null;
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -5157,18 +5195,27 @@ export function SettingsTab({
   const sectionTitles: Record<SettingsSectionId, string> = {
     mood: copy.mood.title,
     "site-basics": copy.siteBasics.title,
+    contact: copy.siteBasics.contact,
+    "contact-words": copyDesign.siteCopy.formGroupLabel,
     "portfolio-kit": copy.portfolioKit.title,
     hero: copy.hero.title,
     navigation: copy.nav.title,
     spacing: copy.spacing.title,
     reveal: copy.fade.title,
     "gallery-layout": copy.galleryLayout.title,
+    "top-works": copy.galleryLayout.topWorksHeading,
+    "series-cards": copy.pageLayout.seriesLabel,
+    "series-layout": "Series",
+    "series-strip": copy.seriesSection.title,
+    order: copy.seriesSection.title,
     "page-layout": copy.pageLayout.title,
     home: copy.pageLayout.homeTitle,
+    "statement-text": copy.pageLayout.statementTitle,
     statement: copy.pageLayout.statementTitle,
     viewer: copy.pageLayout.viewerTitle,
-    "page-parts": copy.pageLayout.partsTitle,
-    series: copy.seriesSection.title,
+    about: t.navigation.tabs.profile,
+    "about-layout": copy.pageLayout.aboutLabel,
+    "contact-layout": copy.pageLayout.contactLabel,
     note: copyIntegrations.note.title,
     print: copyIntegrations.print.title,
     cta: copyIntegrations.cta.title,
@@ -5204,23 +5251,32 @@ export function SettingsTab({
       : `${firstValue} · ${t.formLayout.summaryItems(values.length)}`;
   };
   const sectionKeywords: Partial<Record<SettingsSectionId, string>> = {
-    "site-basics": "名前 紹介 メール 問い合わせ 連絡先 送信 フォーム 検索 SEO URL contact email name address form",
+    "site-basics": "検索 SEO URL シェア 説明 search share description",
+    contact: "メール 問い合わせ 連絡先 送信 フォーム 地域 流れ contact email form",
+    "contact-words": "フォーム 入力欄 ボタン 送信 件名 form labels button",
     hero: "トップ 写真 高さ 動き first top hero image",
-    navigation: "メニュー 移動 header menu navigation",
-    "gallery-layout": "写真 一覧 列数 余白 配置 grid columns layout gallery",
+    navigation: "メニュー 移動 入口 ナビ header menu navigation",
+    "gallery-layout": "写真 一覧 列数 余白 配置 大きさ grid columns layout gallery",
+    "top-works": "トップ 作品 列数 枚数 選ぶ top works",
+    "series-cards": "シリーズ 札 表紙 列数 切り抜き series cards cover crop",
+    "series-layout": "作品 ページ 並べ方 series page layout",
+    "series-strip": "シリーズ 帯 流れる strip marquee",
+    order: "写真 並び順 並び 順番 並べ替え 表示順 撮影日 sort order",
     "page-layout": "骨格 構成 写真中心 いつもの 写真集 design structure",
     home: "トップ 表紙 形 home cover",
-    statement: "作家の言葉 ステートメント statement",
+    "statement-text": "作家の言葉 ステートメント 文章 statement",
+    statement: "作家の言葉 ステートメント 位置 statement",
     viewer: "写真 拡大 ビューア 壁 余白 額装 viewer lightbox",
-    "page-parts": "プロフィール お問い合わせ 構成 profile about contact layout",
-    series: "写真 並び順 並び 順番 並べ替え 表示順 sort order reorder series",
+    about: "プロフィール 略歴 自己紹介 顔写真 名前 機材 SNS profile about bio portrait",
+    "about-layout": "プロフィール 構成 並べ方 profile about layout",
+    "contact-layout": "お問い合わせ 構成 並べ方 contact layout",
     theme: "背景色 文字色 背景 色 明るい 暗い ダークモード ダーク color colour dark light background",
     fonts: "文字 書体 フォント font typeface typography",
     name: "名前 サイト名 肩書き 大きさ 太さ 字間 色 name title",
     headings: "見出し 小見出し 大きさ 字間 行間 heading title",
     body: "本文 文字 大きさ 太さ 字間 行間 リンク body text link",
-    footer: "フッター 著作 SNS footer copyright",
-    "site-copy": "文言 ボタン ラベル words labels copy",
+    footer: "フッター 著作 SNS クレジット footer copyright credit",
+    "site-copy": "文言 ボタン ラベル 見出し words labels copy",
     mood: "雰囲気 まとめて 見た目 デザイン style mood design",
   };
   const settingsSections: AdminSettingsSectionItem[] = (
@@ -5234,7 +5290,7 @@ export function SettingsTab({
     changed: changedSectionIds.includes(id),
     failed:
       failedSectionIds.includes(id) ||
-      (id === "site-basics" && Object.keys(contactValidationErrors).length > 0) ||
+      (id === "contact" && Object.keys(contactValidationErrors).length > 0) ||
       (id === "presets" && presetError),
     advanced: [
       "spacing", "reveal", "fonts", "name", "headings", "body", "footer",
@@ -5246,7 +5302,7 @@ export function SettingsTab({
     changed: changedSectionIds.includes(sectionId),
     failed:
       failedSectionIds.includes(sectionId) ||
-      (sectionId === "site-basics" &&
+      (sectionId === "contact" &&
         Object.keys(contactValidationErrors).length > 0) ||
       (sectionId === "presets" && presetError),
     focusOnError:
@@ -5339,17 +5395,187 @@ export function SettingsTab({
     </button>
   );
 
+  // 並べ方の見本。Gallery・トップの作品・作品ページの節で、それぞれの設定に使う
+  // （以前は1か所で「どれに当てるか」を切り替えていた。2026-09-30）。
+  const layoutChoices = (
+    key: "galleryLayout" | "seriesLayout" | "topWorksLayout",
+    fallback: string,
+  ) => {
+    const activeValue = current[key] || fallback;
+    return (["aligned", "editorial"] as const).map((cat) => (
+      <AdminField key={cat} label={copy.galleryLayout.categoryLabels[cat]}>
+        <div className="grid grid-cols-2 gap-1.5">
+          {GALLERY_LAYOUT_OPTIONS.filter((o) => o.category === cat).map(({ value }) => (
+            <VisualChoiceCard
+              key={value}
+              active={activeValue === value}
+              name={t.phase2b.series.layoutNames[value as keyof typeof t.phase2b.series.layoutNames]}
+              desc={copy.galleryLayout.descriptions[value as keyof typeof copy.galleryLayout.descriptions]}
+              preview={<LayoutIcon value={value} />}
+              onClick={() => set(key, value)}
+            />
+          ))}
+        </div>
+      </AdminField>
+    ));
+  };
+
+  // 連絡先・検索・フッターの文字の欄（同じ作りの入力欄）。
+  const basicField = (f: (typeof fields)[number]) => {
+                  const contactKey = isContactSettingKey(f.key) ? f.key : null;
+                  const validationError = contactKey
+                    ? contactValidationErrors[contactKey]
+                    : undefined;
+                  const errorId = contactKey
+                    ? `settings-${contactKey}-error`
+                    : undefined;
+                  const multiline = /^(siteDescription|contactIntro|contactNote|contactFlow)(En)?$/.test(f.key);
+                  const Control = multiline ? "textarea" : "input";
+                  return (
+                    <AdminField key={f.key} label={f.label} hint={f.hint} span={f.wide}>
+                      <Control
+                        rows={multiline ? 3 : undefined}
+                        type={multiline ? undefined :
+                          contactKey === "contactEmail"
+                            ? "email"
+                            : contactKey === "formspreeUrl"
+                              ? "url"
+                              : "text"
+                        }
+                        inputMode={
+                          contactKey === "contactEmail"
+                            ? "email"
+                            : contactKey === "formspreeUrl"
+                              ? "url"
+                              : undefined
+                        }
+                        autoComplete={
+                          contactKey === "contactEmail" ? "email" : undefined
+                        }
+                        data-contact-setting={contactKey ?? undefined}
+                        ref={(input: HTMLInputElement | HTMLTextAreaElement | null) => {
+                          if (contactKey) contactInputRefs.current[contactKey] = input as HTMLInputElement | null;
+                        }}
+                        aria-label={f.label}
+                        aria-invalid={validationError ? true : undefined}
+                        aria-describedby={validationError ? errorId : undefined}
+                        value={current[f.key] ?? ""}
+                        onChange={(e) => {
+                          set(f.key, e.target.value);
+                          if (contactKey) {
+                            updateContactValidationAfterChange(
+                              contactKey,
+                              e.target.value,
+                            );
+                          }
+                        }}
+                        onBlur={(e) => {
+                          if (contactKey) {
+                            validateContactField(contactKey, e.target.value);
+                          }
+                        }}
+                        placeholder={f.placeholder}
+                        className="ax-input"
+                      />
+                      {validationError ? (
+                        <p
+                          id={errorId}
+                          aria-live="polite"
+                          aria-atomic="true"
+                          className="admin-text-danger text-[length:var(--admin-text-note)] mt-1"
+                        >
+                          {validationError}
+                        </p>
+                      ) : null}
+                    </AdminField>
+                  );
+  };
+
+  // About の写真。送った写真の場所を下書きに入れ、保存で公開する（プレビューにはすぐ出る）。
+  const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+  const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
+  const [profilePhotoError, setProfilePhotoError] = useState("");
+  const handleProfilePhoto = async (file: File) => {
+    const profileCopy = t.phase2b.profile;
+    if (!file.type.startsWith("image/")) {
+      setProfilePhotoError(profileCopy.selectImageFile);
+      return;
+    }
+    setProfilePhotoError("");
+    setProfilePhotoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/profile/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        if (res.status === 401) assertOk(res);
+        setProfilePhotoError(await uploadErrorMessageFromResponse(res, profileCopy.uploadFailed));
+        return;
+      }
+      const { url } = (await res.json()) as { url?: string };
+      if (!url) throw new Error("no url");
+      set("profilePhotoUrl", url);
+    } catch {
+      setProfilePhotoError(profileCopy.uploadFailed);
+    } finally {
+      setProfilePhotoUploading(false);
+    }
+  };
+
+  // 見ながら直す画面では、今の骨格で効かない欄を畳んでおく（2026-09-30）。
+  // 出たり消えたりで迷わないよう、数を添えた1行から開ける。
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [showInactive, setShowInactive] = useState(false);
+  const visualSectionsKey = visual?.sections?.join(" ") ?? "";
+  useEffect(() => setShowInactive(false), [visualSectionsKey]);
+  const [inactiveCount, setInactiveCount] = useState(0);
+  const visualOn = !!visual;
+  useLayoutEffect(() => {
+    if (!visualOn) return;
+    const root = workspaceRef.current;
+    setInactiveCount(root ? root.querySelectorAll("[data-settings-section] .ax-field[data-skeleton-inactive]").length : 0);
+  }, [visualOn, visualSectionsKey, skeleton, form]);
+  const otherSkeletonName =
+    skeleton === "book"
+      ? language === "ja" ? "いつもの構成" : "the classic structure"
+      : language === "ja" ? "写真中心" : "photographs first";
+  const inactiveToggle =
+    visual?.section && inactiveCount > 0 ? (
+      <button
+        type="button"
+        className="se-inactive-toggle"
+        aria-expanded={showInactive}
+        onClick={() => setShowInactive((value) => !value)}
+      >
+        {language === "ja"
+          ? showInactive
+            ? `${otherSkeletonName}のときの設定を隠す`
+            : `${otherSkeletonName}のときの設定（${inactiveCount}）を表示`
+          : showInactive
+            ? `Hide settings for ${otherSkeletonName}`
+            : `Show settings for ${otherSkeletonName} (${inactiveCount})`}
+      </button>
+    ) : null;
+
   const historyControls = <span className="studio-history-controls"><button type="button" onClick={() => stepHistory()} disabled={!history.canUndo} aria-label={language === "ja" ? "設定を元に戻す" : "Undo setting change"} title="⌘ Z"><Undo2 size={15} /></button><button type="button" onClick={() => stepHistory(true)} disabled={!history.canRedo} aria-label={language === "ja" ? "設定をやり直す" : "Redo setting change"} title="⌘ ⇧ Z"><Redo2 size={15} /></button></span>;
 
   return (
     <SiteSkeletonContext.Provider value={skeleton}>
+    <VisualSectionsContext.Provider value={visual && visual.sections && visual.sections.length > 0 ? visual.sections : null}>
     <div
+      ref={workspaceRef}
       className="admin-settings-workspace"
       data-settings-workspace
+      data-show-inactive={showInactive || undefined}
       data-preview={showPreview ? "true" : "false"}
       data-preview-expanded={showPreview && previewExpanded ? "true" : "false"}
       data-preview-view={showPreview ? narrowView : "edit"}
       data-visual={visual ? (visual.section ? "part" : "overview") : undefined}
+      data-visual-sections={visual?.sections && visual.sections.length > 1 ? visual.sections.length : undefined}
     >
       {/* Settings panel */}
       <div className="admin-settings-workspace__form">
@@ -5365,7 +5591,7 @@ export function SettingsTab({
           lastSavedAt={lastSavedAt}
           focusSectionId={
             failedSectionIds[0] ??
-            (contactValidationFocusKey !== null ? "site-basics" : null)
+            (contactValidationFocusKey !== null ? "contact" : null)
           }
           onSave={saveSettings}
           onDiscard={() => {
@@ -5439,98 +5665,26 @@ export function SettingsTab({
                 </p>
               </Section>
 
+              {/* 検索とシェア（サイトの説明・公開URL） */}
               <Section
                 {...sectionProps("site-basics")}
                 title={copy.siteBasics.title}
                 defaultOpen={false}
               >
-                {(["identity", "contact", "publishing"] as const).map((group) => {
-                  const Wrapper = group === "publishing" ? "details" : "section";
-                  const Heading = group === "publishing" ? "summary" : "h3";
-                  const identityKeys = ["siteDescription"];
-                  // 名前は「名前」、フッターの言葉は「フッター」の節で編集する（2026-09-29）。
-                  const movedKeys = ["siteName", "siteNameEn", "heroSubtitle", "footerText"];
-                  const groupedFields = fields.filter(field => {
-                    if (movedKeys.includes(field.key)) return false;
-                    const fieldGroup = identityKeys.includes(field.key) ? "identity"
-                      : field.key.startsWith("contact") || field.key === "formspreeUrl" ? "contact" : "publishing";
-                    return fieldGroup === group;
-                  });
-                  return <Wrapper key={group} className="admin-settings-field-group">
-                    <Heading>{copy.siteBasics[group]}</Heading>
-                    <div className="ax-field-grid">
-                {groupedFields.map((f) => {
-                  const contactKey = isContactSettingKey(f.key) ? f.key : null;
-                  const validationError = contactKey
-                    ? contactValidationErrors[contactKey]
-                    : undefined;
-                  const errorId = contactKey
-                    ? `settings-${contactKey}-error`
-                    : undefined;
-                  const multiline = /^(siteDescription|contactIntro|contactNote|contactFlow)(En)?$/.test(f.key);
-                  const Control = multiline ? "textarea" : "input";
-                  return (
-                    <AdminField key={f.key} label={f.label} hint={f.hint} span={f.wide}>
-                      <Control
-                        rows={multiline ? 3 : undefined}
-                        type={multiline ? undefined :
-                          contactKey === "contactEmail"
-                            ? "email"
-                            : contactKey === "formspreeUrl"
-                              ? "url"
-                              : "text"
-                        }
-                        inputMode={
-                          contactKey === "contactEmail"
-                            ? "email"
-                            : contactKey === "formspreeUrl"
-                              ? "url"
-                              : undefined
-                        }
-                        autoComplete={
-                          contactKey === "contactEmail" ? "email" : undefined
-                        }
-                        data-contact-setting={contactKey ?? undefined}
-                        ref={(input: HTMLInputElement | HTMLTextAreaElement | null) => {
-                          if (contactKey) contactInputRefs.current[contactKey] = input as HTMLInputElement | null;
-                        }}
-                        aria-label={f.label}
-                        aria-invalid={validationError ? true : undefined}
-                        aria-describedby={validationError ? errorId : undefined}
-                        value={current[f.key] ?? ""}
-                        onChange={(e) => {
-                          set(f.key, e.target.value);
-                          if (contactKey) {
-                            updateContactValidationAfterChange(
-                              contactKey,
-                              e.target.value,
-                            );
-                          }
-                        }}
-                        onBlur={(e) => {
-                          if (contactKey) {
-                            validateContactField(contactKey, e.target.value);
-                          }
-                        }}
-                        placeholder={f.placeholder}
-                        className="ax-input"
-                      />
-                      {validationError ? (
-                        <p
-                          id={errorId}
-                          aria-live="polite"
-                          aria-atomic="true"
-                          className="admin-text-danger text-[length:var(--admin-text-note)] mt-1"
-                        >
-                          {validationError}
-                        </p>
-                      ) : null}
-                    </AdminField>
-                  );
-                })}
-                    </div>
-                  </Wrapper>;
-                })}
+                <div className="ax-field-grid">
+                  {fields.filter((f) => f.key === "siteDescription" || f.key === "siteUrl" || f.key === "googleSiteVerification").map(basicField)}
+                </div>
+              </Section>
+
+              {/* Contact の連絡先と案内の文章 */}
+              <Section
+                {...sectionProps("contact")}
+                title={copy.siteBasics.contact}
+                defaultOpen={false}
+              >
+                <div className="ax-field-grid">
+                  {fields.filter((f) => f.key.startsWith("contact") || f.key === "formspreeUrl").map(basicField)}
+                </div>
               </Section>
 
               <Section
@@ -5697,7 +5851,7 @@ export function SettingsTab({
                           ["off", copy.hero.overlayOptions.off],
                         ] as const
                       ).map(([val, lbl]) => (
-                        <button
+                        <button aria-pressed={(current["heroOverlay"] || "on") === val}
                           key={val}
                           onClick={() => set("heroOverlay", val)}
                           className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
@@ -5747,9 +5901,145 @@ export function SettingsTab({
                   ],
                 )}
               >
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  {copy.nav.intro}
-                </p>
+                <p className="admin-settings-subhead">{copyDesign.siteCopy.navGroupLabel}</p>
+                {(
+                  [
+                    {
+                      key: "navLabelTop",
+                      ...copyDesign.siteCopy.fields.navLabelTop,
+                      only: "classic",
+                    },
+                    {
+                      key: "navLabelGallery",
+                      ...copyDesign.siteCopy.fields.navLabelGallery,
+                    },
+                    {
+                      key: "navLabelAbout",
+                      ...copyDesign.siteCopy.fields.navLabelAbout,
+                    },
+                    {
+                      key: "navLabelContact",
+                      ...copyDesign.siteCopy.fields.navLabelContact,
+                    },
+                  ] as {
+                    key: string;
+                    label: string;
+                    placeholder: string;
+                    hint: string;
+                    only?: SiteSkeleton;
+                  }[]
+                ).map((f) => (
+                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only}>
+                    <input
+                      type="text"
+                      aria-label={f.label}
+                      value={current[f.key] ?? ""}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      placeholder={f.placeholder}
+                      className="ax-input"
+                    />
+                  </AdminField>
+                ))}
+                <p className="admin-settings-subhead">{copyDesign.parts.menu.entriesGroup}</p>
+                <AdminField
+                  label={copy.seriesSection.navLabel}
+                  hint={copy.seriesSection.navHint}
+                >
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        ["auto", copy.seriesSection.navOptions.auto],
+                        ["on", copy.seriesSection.navOptions.on],
+                        ["off", copy.seriesSection.navOptions.off],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button aria-pressed={(current["seriesNavEnabled"] || "auto") === val}
+                        key={val}
+                        onClick={() => set("seriesNavEnabled", val)}
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                          (current["seriesNavEnabled"] || "auto") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+
+                <AdminField
+                  label={copyDesign.parts.menu.workNavLabel}
+                  hint={copyDesign.parts.menu.workNavHint}
+                >
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        ["auto", copy.seriesSection.navOptions.auto],
+                        ["on", copy.seriesSection.navOptions.on],
+                        ["off", copy.seriesSection.navOptions.off],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        aria-pressed={(current["workNavEnabled"] || "auto") === val}
+                        onClick={() => set("workNavEnabled", val)}
+                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                          (current["workNavEnabled"] || "auto") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField label={copyDesign.parts.menu.workNameLabel}>
+                  <input
+                    type="text"
+                    aria-label={copyDesign.parts.menu.workNameLabel}
+                    value={current["navLabelWork"] ?? ""}
+                    onChange={(e) => set("navLabelWork", e.target.value)}
+                    placeholder="Work"
+                    className="ax-input"
+                  />
+                </AdminField>
+                <p className="admin-settings-subhead">{copyDesign.parts.menu.typeGroup}</p>
+                <TypoControl
+                  label={copyDesign.parts.size}
+                  valueKey="navSize"
+                  current={current}
+                  set={set}
+                  min={8}
+                  max={48}
+                  step={1}
+                  unit="px"
+                  defaultVal="14"
+                />
+                <TypoControl
+                  label={copyDesign.parts.tracking}
+                  valueKey="navTracking"
+                  current={current}
+                  set={set}
+                  min={-0.06}
+                  max={0.8}
+                  step={0.01}
+                  unit="em"
+                  defaultVal="0.04"
+                />
+                <TypoControl
+                  label={copyDesign.parts.opacity}
+                  valueKey="navOpacity"
+                  current={current}
+                  set={set}
+                  min={0.05}
+                  max={1}
+                  step={0.01}
+                  isOpacity
+                />
+                <p className="admin-settings-subhead" data-skeleton-inactive={skeleton !== "classic" || undefined}>{copyDesign.parts.menu.placeGroup}</p>
                 <AdminField label={copy.nav.positionLabel} only="classic">
                   <div className="grid grid-cols-3 gap-1.5">
                     {NAV_POSITION_OPTIONS.map(({ value, rects }) => (
@@ -5786,7 +6076,7 @@ export function SettingsTab({
                         ["blur", copy.nav.hoverOptions.blur],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["navHoverEffect"] || "fade") === val}
                         key={val}
                         onClick={() => set("navHoverEffect", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -5813,7 +6103,7 @@ export function SettingsTab({
                         ["none", copy.nav.headerBgOptions.none],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["headerBackground"] || "solid") === val}
                         key={val}
                         onClick={() => set("headerBackground", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -5832,39 +6122,6 @@ export function SettingsTab({
                     {copy.nav.headerBgNote}
                   </p>
                 )}
-                <p className="admin-settings-subhead">{copyDesign.parts.menu.typeGroup}</p>
-                <TypoControl
-                  label={copyDesign.parts.size}
-                  valueKey="navSize"
-                  current={current}
-                  set={set}
-                  min={8}
-                  max={48}
-                  step={1}
-                  unit="px"
-                  defaultVal="14"
-                />
-                <TypoControl
-                  label={copyDesign.parts.tracking}
-                  valueKey="navTracking"
-                  current={current}
-                  set={set}
-                  min={-0.06}
-                  max={0.8}
-                  step={0.01}
-                  unit="em"
-                  defaultVal="0.04"
-                />
-                <TypoControl
-                  label={copyDesign.parts.opacity}
-                  valueKey="navOpacity"
-                  current={current}
-                  set={set}
-                  min={0.05}
-                  max={1}
-                  step={0.01}
-                  isOpacity
-                />
                 <button
                   onClick={() => {
                     [
@@ -6020,175 +6277,14 @@ export function SettingsTab({
                 </button>
               </Section>
 
-              {/* G/N: Gallery layout type + controlled-random tuning */}
+              {/* Gallery の写真の並べ方（いつもの構成）。2026-09-30 に、トップの作品・Series の札・
+                  作品ページの並べ方と1つの節に混ざっていたのを、公開サイトの部分ごとに分けた。 */}
               <Section
                 {...sectionProps("gallery-layout")}
                 title={copy.galleryLayout.title}
                 defaultOpen={false}
               >
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed -mt-1">
-                  {copy.galleryLayout.introPrefix}{" "}
-                  <span className="text-[color:var(--admin-ink)]">
-                    {copy.galleryLayout.introTop}
-                  </span>{" "}
-                  /{" "}
-                  <span className="text-[color:var(--admin-ink)]">Gallery</span>{" "}
-                  /{" "}
-                  <span className="text-[color:var(--admin-ink)]">Series</span>{" "}
-                  {copy.galleryLayout.introSuffix}
-                </p>
-                {/* N1: layout-type picker. One list, applied to whichever
-                    target (Gallery/Series/Top) is selected above it — the
-                    9 choices used to repeat 3x (once per target), which made
-                    the differences between layouts hard to compare. */}
-                {(() => {
-                  const targets = [
-                    { key: "galleryLayout" as const, label: "Gallery" },
-                    { key: "seriesLayout" as const, label: "Series" },
-                    { key: "topWorksLayout" as const, label: "Top" },
-                  ];
-                  const fallbackFor = (key: (typeof targets)[number]["key"]) =>
-                    key === "topWorksLayout" ? "stagger" : "mosaic";
-                  const activeValue =
-                    current[layoutTarget] || fallbackFor(layoutTarget);
-                  return (
-                    <>
-                      <AdminField label={copy.galleryLayout.targetLabel}>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {targets.map(({ key, label }) => (
-                            <button
-                              key={key}
-                              type="button"
-                              onClick={() => setLayoutTarget(key)}
-                              className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${
-                                layoutTarget === key
-                                  ? "admin-btn-primary font-medium"
-                                  : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </AdminField>
-                      {(["aligned", "editorial"] as const).map((cat) => (
-                        <AdminField
-                          key={cat}
-                          label={copy.galleryLayout.categoryLabels[cat]}
-                        >
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {GALLERY_LAYOUT_OPTIONS.filter(
-                              (o) => o.category === cat,
-                            ).map(({ value }) => (
-                              <VisualChoiceCard
-                                key={value}
-                                active={activeValue === value}
-                                name={
-                                  t.phase2b.series.layoutNames[
-                                    value as keyof typeof t.phase2b.series.layoutNames
-                                  ]
-                                }
-                                desc={
-                                  copy.galleryLayout.descriptions[
-                                    value as keyof typeof copy.galleryLayout.descriptions
-                                  ]
-                                }
-                                preview={<LayoutIcon value={value} />}
-                                onClick={() => set(layoutTarget, value)}
-                              />
-                            ))}
-                          </div>
-                        </AdminField>
-                      ))}
-                    </>
-                  );
-                })()}
-                {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定）。
-                    この節を開くとプレビューは Gallery を映すが、ここから下の3つは
-                    **トップにしか出ない**。触ったらプレビューをトップへ向ける
-                    ——そうしないと、選んでも何も変わらない画面を見ることになる。 */}
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copy.galleryLayout.topWorksHeading}
-                </p>
-                <AdminField
-                  label={copy.galleryLayout.topWorksModeLabel}
-                  hint={copy.galleryLayout.topWorksModeHint}
-                >
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(
-                      [
-                        [
-                          "auto",
-                          copy.galleryLayout.topWorksModeOptions.auto.name,
-                          copy.galleryLayout.topWorksModeOptions.auto.desc,
-                        ],
-                        [
-                          "random",
-                          copy.galleryLayout.topWorksModeOptions.random.name,
-                          copy.galleryLayout.topWorksModeOptions.random.desc,
-                        ],
-                        [
-                          "manual",
-                          copy.galleryLayout.topWorksModeOptions.manual.name,
-                          copy.galleryLayout.topWorksModeOptions.manual.desc,
-                        ],
-                      ] as const
-                    ).map(([val, name, desc]) => (
-                      <button
-                        key={val}
-                        onClick={() => {
-                          setPreviewPage("/");
-                          set("topWorksMode", val);
-                        }}
-                        title={desc}
-                        className={`text-[length:var(--admin-text-note)] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
-                          (current["topWorksMode"] || "auto") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                {(current["topWorksMode"] || "auto") === "manual" && (
-                  <AdminField
-                    label={copy.galleryLayout.topWorksPickerLabel}
-                    hint={copy.galleryLayout.topWorksPickerHint}
-                  >
-                    <TopWorksPicker
-                      value={current["topWorksIds"] ?? ""}
-                      /* 選ぶ・動かす・外すは、1操作＝1回の取り消しにする。
-                         `set` は同じキーの連続した変更を 500ms でまとめるので
-                         （文字入力やスライダー向けの挙動）、写真を続けて押すと
-                         ⌘Z で何枚ぶんも一度に戻ってしまう。 */
-                      onChange={(v) => {
-                        setPreviewPage("/");
-                        history.apply({ topWorksIds: v });
-                      }}
-                    />
-                  </AdminField>
-                )}
-                <AdminField
-                  label={copy.galleryLayout.initialCountLabel}
-                  hint={copy.galleryLayout.initialCountHint}
-                >
-                  <TypoControl
-                    label={copy.galleryLayout.initialCountLabel}
-                    valueKey="homeGalleryCount"
-                    current={current}
-                    set={(key, val) => {
-                      setPreviewPage("/");
-                      set(key, val);
-                    }}
-                    min={1}
-                    max={200}
-                    step={1}
-                    unit={copy.units.photos}
-                    defaultVal="12"
-                  />
-                </AdminField>
+                {layoutChoices("galleryLayout", "mosaic")}
                 {/* X: ギャラリーとトップ（Works）で列数・大きさ・余白を独立調整。
                 W: 列数は「最大」を決め、実際の列数は画面幅で自動段階調整。 */}
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
@@ -6270,7 +6366,7 @@ export function SettingsTab({
                         ),
                       ] as ReadonlyArray<readonly [string, string]>
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["galleryColumnsMobile"] || "") === val}
                         key={val || "inherit"}
                         onClick={() => set("galleryColumnsMobile", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6317,99 +6413,6 @@ export function SettingsTab({
                     step={SETTING_RANGES.galleryGapScale.step}
                     unit="×"
                     defaultVal="1"
-                  />
-                </AdminField>
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copy.galleryLayout.topGridHeading}
-                </p>
-                <AdminField
-                  label={copy.galleryLayout.topMaxColumnsLabel}
-                  hint={copy.galleryLayout.topMaxColumnsHint}
-                >
-                  <TypoControl
-                    label={copy.galleryLayout.maxColumnsLabel}
-                    valueKey="topWorksColumns"
-                    current={current}
-                    set={set}
-                    min={SETTING_RANGES.topWorksColumns.min}
-                    max={SETTING_RANGES.topWorksColumns.max}
-                    step={SETTING_RANGES.topWorksColumns.step}
-                    unit={copy.units.columns}
-                    defaultVal={current["galleryColumns"] || "3"}
-                  />
-                </AdminField>
-                {/* スマホだけ列数の上限を別に持つ。空 = PCに合わせる（従来
-                    どおり）なので、触らないかぎり表示は変わらない。数値の
-                    スライダーではなくボタンにしたのは、「未設定＝PCに合わせる」
-                    という状態がスライダーでは表せないため。 */}
-                <AdminField
-                  label={copy.galleryLayout.mobileColumnsLabel}
-                  hint={copy.galleryLayout.topMobileColumnsHint}
-                >
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {(
-                      [
-                        ["", copy.galleryLayout.topMobileColumnsInherit],
-                        ...Array.from(
-                          {
-                            length:
-                              SETTING_RANGES.topWorksColumnsMobile.max -
-                              SETTING_RANGES.topWorksColumnsMobile.min +
-                              1,
-                          },
-                          (_, i) => {
-                            const n = String(
-                              SETTING_RANGES.topWorksColumnsMobile.min + i,
-                            );
-                            return [n, n] as const;
-                          },
-                        ),
-                      ] as ReadonlyArray<readonly [string, string]>
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val || "inherit"}
-                        onClick={() => set("topWorksColumnsMobile", val)}
-                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
-                          (current["topWorksColumnsMobile"] || "") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-                <AdminField
-                  label={copy.galleryLayout.topPhotoSizeLabel}
-                  hint={copy.galleryLayout.topPhotoSizeHint}
-                >
-                  <TypoControl
-                    label={copy.galleryLayout.photoSizeControlLabel}
-                    valueKey="topWorksSizeScale"
-                    current={current}
-                    set={set}
-                    min={SETTING_RANGES.topWorksSizeScale.min}
-                    max={SETTING_RANGES.topWorksSizeScale.max}
-                    step={SETTING_RANGES.topWorksSizeScale.step}
-                    unit="×"
-                    defaultVal={current["gallerySizeScale"] || "1"}
-                  />
-                </AdminField>
-                <AdminField
-                  label={copy.galleryLayout.topGapLabel}
-                  hint={copy.galleryLayout.topGapHint}
-                >
-                  <TypoControl
-                    label={copy.galleryLayout.gapControlLabel}
-                    valueKey="topWorksGapScale"
-                    current={current}
-                    set={set}
-                    min={SETTING_RANGES.topWorksGapScale.min}
-                    max={SETTING_RANGES.topWorksGapScale.max}
-                    step={SETTING_RANGES.topWorksGapScale.step}
-                    unit="×"
-                    defaultVal={current["galleryGapScale"] || "1"}
                   />
                 </AdminField>
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
@@ -6470,6 +6473,265 @@ export function SettingsTab({
                     </div>
                   </AdminField>
                 </div>
+                {/* ギャラリーにシリーズの写真を出すか */}
+                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                  <AdminField
+                    label={copy.seriesSection.excludeLabel}
+                    hint={copy.seriesSection.excludeHint}
+                  >
+                    <div className="flex gap-1">
+                      {(
+                        [
+                          ["off", copy.seriesSection.excludeOptions.show],
+                          ["on", copy.seriesSection.excludeOptions.hide],
+                        ] as const
+                      ).map(([val, lbl]) => (
+                        <button aria-pressed={(current["galleryExcludeSeries"] || "off") === val}
+                          key={val}
+                          onClick={() => set("galleryExcludeSeries", val)}
+                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
+                            (current["galleryExcludeSeries"] || "off") === val
+                              ? "admin-btn-primary font-medium"
+                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </AdminField>
+                </div>
+
+                <button
+                  onClick={() => {
+                    [
+                      "galleryLayout",
+                      "galleryColumns",
+                      "galleryColumnsMobile",
+                      "gallerySizeScale",
+                      "galleryGapScale",
+                      "galleryEmptyRate",
+                      "gallerySizeVariation",
+                      "gallerySeed",
+                      "galleryExcludeSeries",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* トップの作品の並び（いつもの構成） */}
+              <Section
+                {...sectionProps("top-works")}
+                title={copy.galleryLayout.topWorksHeading}
+                defaultOpen={false}
+              >
+                {/* トップ Works の写真選択（ヒーロー最上部スライドとは別の設定）。
+                    この節を開くとプレビューは Gallery を映すが、ここから下の3つは
+                    **トップにしか出ない**。触ったらプレビューをトップへ向ける
+                    ——そうしないと、選んでも何も変わらない画面を見ることになる。 */}
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                  {copy.galleryLayout.topWorksHeading}
+                </p>
+                <AdminField
+                  label={copy.galleryLayout.topWorksModeLabel}
+                  hint={copy.galleryLayout.topWorksModeHint}
+                >
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        [
+                          "auto",
+                          copy.galleryLayout.topWorksModeOptions.auto.name,
+                          copy.galleryLayout.topWorksModeOptions.auto.desc,
+                        ],
+                        [
+                          "random",
+                          copy.galleryLayout.topWorksModeOptions.random.name,
+                          copy.galleryLayout.topWorksModeOptions.random.desc,
+                        ],
+                        [
+                          "manual",
+                          copy.galleryLayout.topWorksModeOptions.manual.name,
+                          copy.galleryLayout.topWorksModeOptions.manual.desc,
+                        ],
+                      ] as const
+                    ).map(([val, name, desc]) => (
+                      <button aria-pressed={(current["topWorksMode"] || "auto") === val}
+                        key={val}
+                        onClick={() => {
+                          setPreviewPage("/");
+                          set("topWorksMode", val);
+                        }}
+                        title={desc}
+                        className={`text-[length:var(--admin-text-note)] leading-tight px-1.5 py-2 rounded-sm border transition-colors ${
+                          (current["topWorksMode"] || "auto") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                {(current["topWorksMode"] || "auto") === "manual" && (
+                  <AdminField
+                    label={copy.galleryLayout.topWorksPickerLabel}
+                    hint={copy.galleryLayout.topWorksPickerHint}
+                  >
+                    <TopWorksPicker
+                      value={current["topWorksIds"] ?? ""}
+                      /* 選ぶ・動かす・外すは、1操作＝1回の取り消しにする。
+                         `set` は同じキーの連続した変更を 500ms でまとめるので
+                         （文字入力やスライダー向けの挙動）、写真を続けて押すと
+                         ⌘Z で何枚ぶんも一度に戻ってしまう。 */
+                      onChange={(v) => {
+                        setPreviewPage("/");
+                        history.apply({ topWorksIds: v });
+                      }}
+                    />
+                  </AdminField>
+                )}
+                <AdminField
+                  label={copy.galleryLayout.initialCountLabel}
+                  hint={copy.galleryLayout.initialCountHint}
+                >
+                  <TypoControl
+                    label={copy.galleryLayout.initialCountLabel}
+                    valueKey="homeGalleryCount"
+                    current={current}
+                    set={(key, val) => {
+                      setPreviewPage("/");
+                      set(key, val);
+                    }}
+                    min={1}
+                    max={200}
+                    step={1}
+                    unit={copy.units.photos}
+                    defaultVal="12"
+                  />
+                </AdminField>
+                {layoutChoices("topWorksLayout", "stagger")}
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
+                  {copy.galleryLayout.topGridHeading}
+                </p>
+                <AdminField
+                  label={copy.galleryLayout.topMaxColumnsLabel}
+                  hint={copy.galleryLayout.topMaxColumnsHint}
+                >
+                  <TypoControl
+                    label={copy.galleryLayout.maxColumnsLabel}
+                    valueKey="topWorksColumns"
+                    current={current}
+                    set={set}
+                    min={SETTING_RANGES.topWorksColumns.min}
+                    max={SETTING_RANGES.topWorksColumns.max}
+                    step={SETTING_RANGES.topWorksColumns.step}
+                    unit={copy.units.columns}
+                    defaultVal={current["galleryColumns"] || "3"}
+                  />
+                </AdminField>
+                {/* スマホだけ列数の上限を別に持つ。空 = PCに合わせる（従来
+                    どおり）なので、触らないかぎり表示は変わらない。数値の
+                    スライダーではなくボタンにしたのは、「未設定＝PCに合わせる」
+                    という状態がスライダーでは表せないため。 */}
+                <AdminField
+                  label={copy.galleryLayout.mobileColumnsLabel}
+                  hint={copy.galleryLayout.topMobileColumnsHint}
+                >
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {(
+                      [
+                        ["", copy.galleryLayout.topMobileColumnsInherit],
+                        ...Array.from(
+                          {
+                            length:
+                              SETTING_RANGES.topWorksColumnsMobile.max -
+                              SETTING_RANGES.topWorksColumnsMobile.min +
+                              1,
+                          },
+                          (_, i) => {
+                            const n = String(
+                              SETTING_RANGES.topWorksColumnsMobile.min + i,
+                            );
+                            return [n, n] as const;
+                          },
+                        ),
+                      ] as ReadonlyArray<readonly [string, string]>
+                    ).map(([val, lbl]) => (
+                      <button aria-pressed={(current["topWorksColumnsMobile"] || "") === val}
+                        key={val || "inherit"}
+                        onClick={() => set("topWorksColumnsMobile", val)}
+                        className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
+                          (current["topWorksColumnsMobile"] || "") === val
+                            ? "admin-btn-primary font-medium"
+                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </AdminField>
+                <AdminField
+                  label={copy.galleryLayout.topPhotoSizeLabel}
+                  hint={copy.galleryLayout.topPhotoSizeHint}
+                >
+                  <TypoControl
+                    label={copy.galleryLayout.photoSizeControlLabel}
+                    valueKey="topWorksSizeScale"
+                    current={current}
+                    set={set}
+                    min={SETTING_RANGES.topWorksSizeScale.min}
+                    max={SETTING_RANGES.topWorksSizeScale.max}
+                    step={SETTING_RANGES.topWorksSizeScale.step}
+                    unit="×"
+                    defaultVal={current["gallerySizeScale"] || "1"}
+                  />
+                </AdminField>
+                <AdminField
+                  label={copy.galleryLayout.topGapLabel}
+                  hint={copy.galleryLayout.topGapHint}
+                >
+                  <TypoControl
+                    label={copy.galleryLayout.gapControlLabel}
+                    valueKey="topWorksGapScale"
+                    current={current}
+                    set={set}
+                    min={SETTING_RANGES.topWorksGapScale.min}
+                    max={SETTING_RANGES.topWorksGapScale.max}
+                    step={SETTING_RANGES.topWorksGapScale.step}
+                    unit="×"
+                    defaultVal={current["galleryGapScale"] || "1"}
+                  />
+                </AdminField>
+                <button
+                  onClick={() => {
+                    [
+                      "topWorksLayout",
+                      "topWorksMode",
+                      "homeGalleryCount",
+                      "topWorksColumns",
+                      "topWorksColumnsMobile",
+                      "topWorksSizeScale",
+                      "topWorksGapScale",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* Series の一覧の札（いつもの構成） */}
+              <Section
+                {...sectionProps("series-cards")}
+                title={copy.pageLayout.seriesLabel}
+                defaultOpen={false}
+              >
                 <AdminField
                   label={copy.pageLayout.seriesLabel}
                   hint={copy.pageLayout.seriesHint}
@@ -6482,7 +6744,7 @@ export function SettingsTab({
                         ["wide", copy.pageLayout.seriesOptions.wide],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["seriesCardStyle"] || "caption") === val}
                         key={val}
                         onClick={() => set("seriesCardStyle", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6501,6 +6763,49 @@ export function SettingsTab({
                     {copy.pageLayout.seriesNote}
                   </p>
                 )}
+                {/* P: series grid (Works series view) */}
+                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
+                    {copy.seriesSection.gridIntroPrefix}{" "}
+                    <span className="text-[color:var(--admin-ink)]">
+                      Series
+                    </span>{" "}
+                    {copy.seriesSection.gridIntroSuffix}
+                  </p>
+                  <AdminField
+                    label={copy.seriesSection.columnsPcLabel}
+                    hint={copy.seriesSection.columnsPcHint}
+                  >
+                    <TypoControl
+                      label={copy.seriesSection.columnsPcControlLabel}
+                      valueKey="seriesGridColumns"
+                      current={current}
+                      set={set}
+                      min={SETTING_RANGES.seriesGridColumns.min}
+                      max={SETTING_RANGES.seriesGridColumns.max}
+                      step={SETTING_RANGES.seriesGridColumns.step}
+                      unit={copy.units.columns}
+                      defaultVal="3"
+                    />
+                  </AdminField>
+                  <AdminField
+                    label={copy.seriesSection.columnsMobileLabel}
+                    hint={copy.seriesSection.columnsMobileHint}
+                  >
+                    <TypoControl
+                      label={copy.seriesSection.columnsMobileControlLabel}
+                      valueKey="seriesGridColumnsMobile"
+                      current={current}
+                      set={set}
+                      min={SETTING_RANGES.seriesGridColumnsMobile.min}
+                      max={SETTING_RANGES.seriesGridColumnsMobile.max}
+                      step={SETTING_RANGES.seriesGridColumnsMobile.step}
+                      unit={copy.units.columns}
+                      defaultVal="2"
+                    />
+                  </AdminField>
+                </div>
+
                 <AdminField
                   label={copy.pageLayout.cropLabel}
                   hint={copy.pageLayout.cropHint}
@@ -6512,7 +6817,7 @@ export function SettingsTab({
                         ["whole", copy.pageLayout.cropOptions.whole],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["photoCrop"] || "fill") === val}
                         key={val}
                         onClick={() => set("photoCrop", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6532,21 +6837,25 @@ export function SettingsTab({
                 <button
                   onClick={() => {
                     [
-                      "galleryGapScale",
-                      "galleryEmptyRate",
-                      "gallerySizeVariation",
-                      "galleryColumns",
-                      "gallerySizeScale",
-                      "topWorksColumns",
-                      "topWorksSizeScale",
-                      "topWorksGapScale",
-                      "gallerySeed",
+                      "seriesCardStyle",
+                      "seriesGridColumns",
+                      "seriesGridColumnsMobile",
+                      "photoCrop",
                     ].forEach((k) => set(k, ""));
                   }}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
+              </Section>
+
+              {/* 作品（シリーズ）のページの写真の並べ方（いつもの構成） */}
+              <Section
+                {...sectionProps("series-layout")}
+                title="Series"
+                defaultOpen={false}
+              >
+                {layoutChoices("seriesLayout", "mosaic")}
               </Section>
 
               {/* サイトの骨格。写真と文章の置き方そのものを選ぶ。管理画面の形は変わらない */}
@@ -6624,6 +6933,133 @@ export function SettingsTab({
                 </p>
               </Section>
 
+              {/* About の文章と写真（2026-09-30 まで別画面。プレビューを見ながら直せるよう設定の節にした） */}
+              <Section
+                {...sectionProps("about")}
+                title={t.navigation.tabs.profile}
+                defaultOpen={false}
+              >
+                <AdminField label={t.phase2b.profile.photoTitle}>
+                  <div className="flex flex-wrap items-start gap-4">
+                    {current["profilePhotoUrl"] ? (
+                      <img
+                        src={`${current["profilePhotoUrl"]}?w=300&q=80`}
+                        alt=""
+                        className="block w-24 h-auto shrink-0 max-w-full border border-[var(--admin-line)] rounded-sm"
+                      />
+                    ) : (
+                      <div className="w-24 h-32 bg-[var(--admin-paper)] border border-[var(--admin-line)] rounded-sm flex items-center justify-center">
+                        <User size={20} className="text-[var(--admin-muted)]" />
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => profilePhotoInputRef.current?.click()}
+                        disabled={profilePhotoUploading}
+                        className="admin-btn inline-flex items-center justify-center gap-2 px-3 py-2 text-[length:var(--admin-text-note)]"
+                      >
+                        {profilePhotoUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                        {profilePhotoUploading ? t.common.uploading : t.phase2b.profile.uploadPhoto}
+                      </button>
+                      {current["profilePhotoUrl"] && (
+                        <button
+                          type="button"
+                          onClick={() => set("profilePhotoUrl", "")}
+                          className="text-left text-[length:var(--admin-text-note)] text-[var(--admin-muted)] underline underline-offset-4"
+                        >
+                          {language === "ja" ? "写真を外す" : "Remove photo"}
+                        </button>
+                      )}
+                      <input
+                        aria-label={t.phase2b.profile.selectPhotoAria}
+                        ref={profilePhotoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) void handleProfilePhoto(f);
+                          e.target.value = "";
+                        }}
+                      />
+                      <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)]">
+                        {t.phase2b.profile.portraitRecommendation}
+                      </p>
+                      {profilePhotoError && (
+                        <p role="alert" className="admin-text-danger text-[length:var(--admin-text-note)]">{profilePhotoError}</p>
+                      )}
+                    </div>
+                  </div>
+                </AdminField>
+                <div className="ax-field-grid">
+                  {(
+                    [
+                      ["profileName", "nameLabel", "namePlaceholder", false],
+                      ["profileNameKata", "nameKataLabel", "nameKataPlaceholder", false],
+                      ["profileNameEn", "nameEnLabel", "nameEnPlaceholder", false],
+                      ["profileBio", "bioLabel", "bioPlaceholder", true],
+                      ["profileBioEn", "bioEnLabel", "bioEnPlaceholder", true],
+                      ["profileGear", "gearLabel", "gearPlaceholder", true],
+                      ["profileInstagram", "instagramLabel", "instagramPlaceholder", false],
+                      ["profileTwitter", "xUrlLabel", "xUrlPlaceholder", false],
+                      ["profileNote", "noteUrlLabel", "noteUrlPlaceholder", false],
+                    ] as const
+                  ).map(([key, labelKey, placeholderKey, multiline]) => {
+                    const label = t.phase2b.profile.fields[labelKey];
+                    const placeholder = t.phase2b.profile.fields[placeholderKey];
+                    return (
+                      <AdminField key={key} label={label} span={multiline}>
+                        {multiline ? (
+                          <textarea
+                            rows={5}
+                            aria-label={label}
+                            value={current[key] ?? ""}
+                            onChange={(e) => set(key, e.target.value)}
+                            placeholder={placeholder}
+                            className="ax-input ax-input--area"
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            aria-label={label}
+                            value={current[key] ?? ""}
+                            onChange={(e) => set(key, e.target.value)}
+                            placeholder={placeholder}
+                            className="ax-input"
+                          />
+                        )}
+                      </AdminField>
+                    );
+                  })}
+                </div>
+              </Section>
+
+              {/* 作家の言葉の文（トップと About に出る） */}
+              <Section
+                {...sectionProps("statement-text")}
+                title={t.phase2b.profile.fields.statementLabel}
+                defaultOpen={false}
+              >
+                {(
+                  [
+                    ["profileStatement", t.phase2b.profile.fields.statementLabel, t.phase2b.profile.fields.statementPlaceholder],
+                    ["profileStatementEn", t.phase2b.profile.fields.statementEnLabel, t.phase2b.profile.fields.statementEnPlaceholder],
+                  ] as const
+                ).map(([key, label, placeholder]) => (
+                  <AdminField key={key} label={label}>
+                    <textarea
+                      rows={6}
+                      aria-label={label}
+                      value={current[key] ?? ""}
+                      onChange={(e) => set(key, e.target.value)}
+                      placeholder={placeholder}
+                      className="ax-input ax-input--area"
+                    />
+                  </AdminField>
+                ))}
+              </Section>
+
               {/* トップに置く作家の言葉 */}
               <Section
                 {...sectionProps("statement")}
@@ -6642,7 +7078,7 @@ export function SettingsTab({
                         ["after-works", copy.pageLayout.statementOptions.after],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["homeStatement"] || "off") === val}
                         key={val}
                         onClick={() => set("homeStatement", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6681,7 +7117,7 @@ export function SettingsTab({
                         ["paper", copy.pageLayout.viewerOptions.paper],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["viewerStyle"] || "wall") === val}
                         key={val}
                         onClick={() => set("viewerStyle", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6710,7 +7146,7 @@ export function SettingsTab({
                         ["framed", copy.pageLayout.matOptions.framed],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["viewerMat"] || "full") === val}
                         key={val}
                         onClick={() => set("viewerMat", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6729,10 +7165,10 @@ export function SettingsTab({
                 </p>
               </Section>
 
-              {/* About と Contact の組み方 */}
+              {/* About の組み方 */}
               <Section
-                {...sectionProps("page-parts")}
-                title={copy.pageLayout.partsTitle}
+                {...sectionProps("about-layout")}
+                title={copy.pageLayout.aboutLabel}
                 defaultOpen={false}
               >
                 <AdminField
@@ -6747,7 +7183,7 @@ export function SettingsTab({
                         ["quiet", copy.pageLayout.aboutOptions.quiet],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["profileLayout"] || "side") === val}
                         key={val}
                         onClick={() => set("profileLayout", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6764,6 +7200,20 @@ export function SettingsTab({
                 <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                   {copy.pageLayout.aboutNote}
                 </p>
+                <button
+                  onClick={() => ["profileLayout"].forEach((k) => set(k, ""))}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* Contact の組み方 */}
+              <Section
+                {...sectionProps("contact-layout")}
+                title={copy.pageLayout.contactLabel}
+                defaultOpen={false}
+              >
                 <AdminField
                   label={copy.pageLayout.contactLabel}
                   hint={copy.pageLayout.contactHint}
@@ -6776,7 +7226,7 @@ export function SettingsTab({
                         ["split", copy.pageLayout.contactOptions.split],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["contactLayout"] || "center") === val}
                         key={val}
                         onClick={() => set("contactLayout", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -6796,132 +7246,22 @@ export function SettingsTab({
                   </p>
                 )}
                 <button
-                  onClick={() => {
-                    ["profileLayout", "contactLayout"].forEach((k) => set(k, ""));
-                  }}
+                  onClick={() => ["contactLayout"].forEach((k) => set(k, ""))}
                   className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
                 >
                   {copy.resetToDefault}
                 </button>
               </Section>
 
-              {/* I: Series navigation toggle */}
+
+              {/* トップに流れるシリーズの帯（いつもの構成） */}
               <Section
-                {...sectionProps("series")}
+                {...sectionProps("series-strip")}
                 title={copy.seriesSection.title}
                 defaultOpen={false}
               >
-                <AdminField
-                  label={copy.seriesSection.navLabel}
-                  hint={copy.seriesSection.navHint}
-                >
-                  <div className="flex gap-1">
-                    {(
-                      [
-                        ["auto", copy.seriesSection.navOptions.auto],
-                        ["on", copy.seriesSection.navOptions.on],
-                        ["off", copy.seriesSection.navOptions.off],
-                      ] as const
-                    ).map(([val, lbl]) => (
-                      <button
-                        key={val}
-                        onClick={() => set("seriesNavEnabled", val)}
-                        className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                          (current["seriesNavEnabled"] || "auto") === val
-                            ? "admin-btn-primary font-medium"
-                            : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                        }`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </AdminField>
-
-                {/* P: series grid (Works series view) */}
-                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
-                  <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
-                    {copy.seriesSection.gridIntroPrefix}{" "}
-                    <span className="text-[color:var(--admin-ink)]">
-                      Series
-                    </span>{" "}
-                    {copy.seriesSection.gridIntroSuffix}
-                  </p>
-                  <AdminField
-                    label={copy.seriesSection.columnsPcLabel}
-                    hint={copy.seriesSection.columnsPcHint}
-                  >
-                    <TypoControl
-                      label={copy.seriesSection.columnsPcControlLabel}
-                      valueKey="seriesGridColumns"
-                      current={current}
-                      set={set}
-                      min={SETTING_RANGES.seriesGridColumns.min}
-                      max={SETTING_RANGES.seriesGridColumns.max}
-                      step={SETTING_RANGES.seriesGridColumns.step}
-                      unit={copy.units.columns}
-                      defaultVal="3"
-                    />
-                  </AdminField>
-                  <AdminField
-                    label={copy.seriesSection.columnsMobileLabel}
-                    hint={copy.seriesSection.columnsMobileHint}
-                  >
-                    <TypoControl
-                      label={copy.seriesSection.columnsMobileControlLabel}
-                      valueKey="seriesGridColumnsMobile"
-                      current={current}
-                      set={set}
-                      min={SETTING_RANGES.seriesGridColumnsMobile.min}
-                      max={SETTING_RANGES.seriesGridColumnsMobile.max}
-                      step={SETTING_RANGES.seriesGridColumnsMobile.step}
-                      unit={copy.units.columns}
-                      defaultVal="2"
-                    />
-                  </AdminField>
-                  <button
-                    onClick={() => {
-                      ["seriesGridColumns", "seriesGridColumnsMobile"].forEach(
-                        (k) => set(k, ""),
-                      );
-                    }}
-                    className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-                  >
-                    {copy.resetToDefault}
-                  </button>
-                </div>
-
-                {/* ギャラリーにシリーズの写真を出すか */}
-                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
-                  <AdminField
-                    label={copy.seriesSection.excludeLabel}
-                    hint={copy.seriesSection.excludeHint}
-                  >
-                    <div className="flex gap-1">
-                      {(
-                        [
-                          ["off", copy.seriesSection.excludeOptions.show],
-                          ["on", copy.seriesSection.excludeOptions.hide],
-                        ] as const
-                      ).map(([val, lbl]) => (
-                        <button
-                          key={val}
-                          onClick={() => set("galleryExcludeSeries", val)}
-                          className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
-                            (current["galleryExcludeSeries"] || "off") === val
-                              ? "admin-btn-primary font-medium"
-                              : "bg-[var(--admin-paper-soft)] text-[var(--admin-muted)] border border-[var(--admin-line)]"
-                          }`}
-                        >
-                          {lbl}
-                        </button>
-                      ))}
-                    </div>
-                  </AdminField>
-                </div>
-
                 {/* TOP のシリーズ帯（横に流れる） */}
-                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                <div className="space-y-3">
                   <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                     {copy.seriesSection.streamIntro}
                   </p>
@@ -6943,7 +7283,7 @@ export function SettingsTab({
                           ],
                         ] as const
                       ).map(([val, lbl]) => (
-                        <button
+                        <button aria-pressed={(current["topSeriesStream"] || "after-works") === val}
                           key={val}
                           onClick={() => set("topSeriesStream", val)}
                           className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
@@ -6982,7 +7322,7 @@ export function SettingsTab({
                           ["off", copy.seriesSection.streamCaptionOptions.off],
                         ] as const
                       ).map(([val, lbl]) => (
-                        <button
+                        <button aria-pressed={(current["topSeriesStreamCaption"] || "on") === val}
                           key={val}
                           onClick={() => set("topSeriesStreamCaption", val)}
                           className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
@@ -7044,8 +7384,16 @@ export function SettingsTab({
                   </button>
                 </div>
 
+              </Section>
+
+              {/* 並び順（どちらの骨格でも効く） */}
+              <Section
+                {...sectionProps("order")}
+                title={copy.seriesSection.title}
+                defaultOpen={false}
+              >
                 {/* 機能8: 並び順独立設定 */}
-                <div className="pt-3 mt-1 border-t border-[var(--admin-line)] space-y-3">
+                <div className="space-y-3">
                   <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">
                     {copy.seriesSection.orderIntro}
                   </p>
@@ -7072,7 +7420,7 @@ export function SettingsTab({
                           ["random", copy.seriesSection.sortOptions.random],
                         ] as const
                       ).map(([val, lbl]) => (
-                        <button
+                        <button aria-pressed={(current["gallerySortOrder"] || "manual") === val}
                           key={val}
                           onClick={() => set("gallerySortOrder", val)}
                           className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(current["gallerySortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
@@ -7104,7 +7452,7 @@ export function SettingsTab({
                           ],
                         ] as const
                       ).map(([val, lbl]) => (
-                        <button
+                        <button aria-pressed={(current["seriesSortOrder"] || "manual") === val}
                           key={val}
                           onClick={() => set("seriesSortOrder", val)}
                           className={`text-[length:var(--admin-text-note)] py-1.5 rounded-sm border transition-colors ${(current["seriesSortOrder"] || "manual") === val ? "admin-btn-primary font-medium" : "bg-[var(--admin-paper-soft)] text-[var(--admin-ink)] border-[var(--admin-line)]"}`}
@@ -7152,7 +7500,7 @@ export function SettingsTab({
                         ["off", copyIntegrations.visibilityOff],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["noteEnabled"] || "off") === val}
                         key={val}
                         onClick={() => set("noteEnabled", val)}
                         className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
@@ -7217,7 +7565,7 @@ export function SettingsTab({
                         ["off", copyIntegrations.visibilityOff],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["printEnabled"] || "off") === val}
                         key={val}
                         onClick={() => set("printEnabled", val)}
                         className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
@@ -7294,7 +7642,7 @@ export function SettingsTab({
                         ["off", copyIntegrations.visibilityOff],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["homeCtaEnabled"] || "off") === val}
                         key={val}
                         onClick={() => set("homeCtaEnabled", val)}
                         className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
@@ -7729,7 +8077,7 @@ export function SettingsTab({
                         ["hidden", copy.pageLayout.titleOptions.hidden],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["pageTitleStyle"] || "label") === val}
                         key={val}
                         onClick={() => set("pageTitleStyle", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -7748,18 +8096,40 @@ export function SettingsTab({
                     {copy.pageLayout.titleNote}
                   </p>
                 )}
-                <TypoControl
-                  label={copyDesign.parts.size}
-                  valueKey="headingSize"
-                  current={current}
-                  set={set}
-                  min={12}
-                  max={80}
-                  step={1}
-                  unit="px"
-                  defaultVal="30"
-                />
-                <p className="admin-settings-subhead">{copyDesign.parts.headings.sectionGroup}</p>
+                {/* 見出しの型ごとに効く大きさが違う。「大きな見出し」は見出しの大きさ、
+                    小さな大文字の型は小見出しと同じ文字の設定（2026-09-30 実測で、型が
+                    小さな大文字のとき「大きさ」を動かしても何も変わらなかった）。 */}
+                {(current["pageTitleStyle"] || "label") === "display" && (
+                  <>
+                    <TypoControl
+                      label={copyDesign.parts.size}
+                      valueKey="headingSize"
+                      current={current}
+                      set={set}
+                      min={12}
+                      max={80}
+                      step={1}
+                      unit="px"
+                      defaultVal="30"
+                    />
+                    <TypoControl
+                      label={copyDesign.parts.leading}
+                      valueKey="sectionLeading"
+                      current={current}
+                      set={set}
+                      min={0.9}
+                      max={3.0}
+                      step={0.05}
+                      unit=""
+                      defaultVal="1.2"
+                    />
+                  </>
+                )}
+                <p className="admin-settings-subhead">
+                  {(current["pageTitleStyle"] || "label") === "display"
+                    ? copyDesign.parts.headings.sectionGroup
+                    : copyDesign.parts.headings.labelGroup}
+                </p>
                 <TypoControl
                   label={copyDesign.parts.size}
                   valueKey="sectionLabelSize"
@@ -7782,17 +8152,19 @@ export function SettingsTab({
                   unit="em"
                   defaultVal="0.10"
                 />
-                <TypoControl
-                  label={copyDesign.parts.leading}
-                  valueKey="sectionLeading"
-                  current={current}
-                  set={set}
-                  min={0.9}
-                  max={3.0}
-                  step={0.05}
-                  unit=""
-                  defaultVal="1.2"
-                />
+                {(current["pageTitleStyle"] || "label") !== "display" && (
+                  <TypoControl
+                    label={copyDesign.parts.leading}
+                    valueKey="sectionLeading"
+                    current={current}
+                    set={set}
+                    min={0.9}
+                    max={3.0}
+                    step={0.05}
+                    unit=""
+                    defaultVal="1.2"
+                  />
+                )}
                 <TypoControl
                   label={copyDesign.parts.opacity}
                   valueKey="sectionLabelOpacity"
@@ -7899,7 +8271,7 @@ export function SettingsTab({
                         ["off", copyDesign.fontColor.underlineOff],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["linkUnderline"] || "off") === val}
                         key={val}
                         onClick={() => set("linkUnderline", val)}
                         className={`flex-1 text-[length:var(--admin-text-note)] py-1.5 rounded-sm transition-colors ${
@@ -7964,7 +8336,7 @@ export function SettingsTab({
                         ["split", copy.pageLayout.footerOptions.split],
                       ] as const
                     ).map(([val, lbl]) => (
-                      <button
+                      <button aria-pressed={(current["footerLayout"] || "center") === val}
                         key={val}
                         onClick={() => set("footerLayout", val)}
                         className={`text-[length:var(--admin-text-note)] leading-tight py-1.5 rounded-sm transition-colors ${
@@ -8010,69 +8382,7 @@ export function SettingsTab({
                   step={0.01}
                   isOpacity
                 />
-                <button
-                  onClick={() => {
-                    [
-                      "footerLayout",
-                      "footerSize",
-                      "footerOpacity",
-                      "snsOpacity",
-                    ].forEach((k) => set(k, ""));
-                  }}
-                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
-                >
-                  {copy.resetToDefault}
-                </button>
-              </Section>
-
-              {/* サイト文言 (D2) — サイトに一度だけ出る固定文言。各項目に表示場所を明記 */}
-              <Section
-                {...sectionProps("site-copy")}
-                title={copyDesign.siteCopy.title}
-                defaultOpen={false}
-              >
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2">
-                  {copyDesign.siteCopy.navGroupLabel}
-                </p>
-                {(
-                  [
-                    {
-                      key: "navLabelTop",
-                      ...copyDesign.siteCopy.fields.navLabelTop,
-                    },
-                    {
-                      key: "navLabelGallery",
-                      ...copyDesign.siteCopy.fields.navLabelGallery,
-                    },
-                    {
-                      key: "navLabelAbout",
-                      ...copyDesign.siteCopy.fields.navLabelAbout,
-                    },
-                    {
-                      key: "navLabelContact",
-                      ...copyDesign.siteCopy.fields.navLabelContact,
-                    },
-                  ] as {
-                    key: string;
-                    label: string;
-                    placeholder: string;
-                    hint: string;
-                  }[]
-                ).map((f) => (
-                  <AdminField key={f.key} label={f.label} hint={f.hint}>
-                    <input
-                      type="text"
-                      aria-label={f.label}
-                      value={current[f.key] ?? ""}
-                      onChange={(e) => set(f.key, e.target.value)}
-                      placeholder={f.placeholder}
-                      className="ax-input"
-                    />
-                  </AdminField>
-                ))}
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.siteCopy.snsGroupLabel}
-                </p>
+                <p className="admin-settings-subhead">{copyDesign.siteCopy.snsGroupLabel}</p>
                 {(
                   [
                     {
@@ -8092,9 +8402,10 @@ export function SettingsTab({
                     label: string;
                     placeholder: string;
                     hint: string;
+                    only?: SiteSkeleton;
                   }[]
                 ).map((f) => (
-                  <AdminField key={f.key} label={f.label} hint={f.hint}>
+                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only}>
                     <input
                       type="text"
                       aria-label={f.label}
@@ -8105,26 +8416,52 @@ export function SettingsTab({
                     />
                   </AdminField>
                 ))}
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.siteCopy.sectionGroupLabel}
-                </p>
+                <p className="admin-settings-subhead">{copyDesign.parts.footer.linksGroup}</p>
+                <div className="ax-field-grid">
+                  {fields.filter((f) => f.key === "footerCtaLabel" || f.key === "templateCreditLabel" || f.key === "templateCreditUrl").map(basicField)}
+                </div>
+                <button
+                  onClick={() => {
+                    [
+                      "footerLayout",
+                      "footerSize",
+                      "footerOpacity",
+                      "snsOpacity",
+                    ].forEach((k) => set(k, ""));
+                  }}
+                  className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] transition-colors"
+                >
+                  {copy.resetToDefault}
+                </button>
+              </Section>
+
+              {/* ページの見出しなどに出る言葉 */}
+              <Section
+                {...sectionProps("site-copy")}
+                title={copyDesign.siteCopy.title}
+                defaultOpen={false}
+              >
                 {(
                   [
                     {
                       key: "worksLabel",
                       ...copyDesign.siteCopy.fields.worksLabel,
+                      only: "classic",
                     },
                     {
                       key: "viewAllLabel",
                       ...copyDesign.siteCopy.fields.viewAllLabel,
+                      only: "classic",
                     },
                     {
                       key: "viewAllCtaLabel",
                       ...copyDesign.siteCopy.fields.viewAllCtaLabel,
+                      only: "classic",
                     },
                     {
                       key: "galleryLabel",
                       ...copyDesign.siteCopy.fields.galleryLabel,
+                      only: "classic",
                     },
                     {
                       key: "filterAllLabel",
@@ -8143,9 +8480,10 @@ export function SettingsTab({
                     label: string;
                     placeholder: string;
                     hint: string;
+                    only?: SiteSkeleton;
                   }[]
                 ).map((f) => (
-                  <AdminField key={f.key} label={f.label} hint={f.hint}>
+                  <AdminField key={f.key} label={f.label} hint={f.hint} only={f.only}>
                     <input
                       type="text"
                       aria-label={f.label}
@@ -8156,9 +8494,14 @@ export function SettingsTab({
                     />
                   </AdminField>
                 ))}
-                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] -mb-2 pt-2 border-t border-[var(--admin-line)]">
-                  {copyDesign.siteCopy.formGroupLabel}
-                </p>
+              </Section>
+
+              {/* Contact のフォームの言葉 */}
+              <Section
+                {...sectionProps("contact-words")}
+                title={copyDesign.siteCopy.formGroupLabel}
+                defaultOpen={false}
+              >
                 {(
                   [
                     {
@@ -8270,6 +8613,7 @@ export function SettingsTab({
               </div>
               )}
             </div>
+            {inactiveToggle}
         </AdminSettingsFormLayout>
         <div className="admin-settings-mobile-save">
           <FloatingSaveBar
@@ -8354,6 +8698,7 @@ export function SettingsTab({
         </>
       )}
     </div>
+    </VisualSectionsContext.Provider>
     </SiteSkeletonContext.Provider>
   );
 }
@@ -8370,6 +8715,8 @@ export type SettingsVisualMode = {
   page: string;
   /** 右の欄に出す設定の節。null はページの部分の一覧だけを出す */
   section: string | null;
+  /** 部分が出す節（上から）。2つ以上なら小見出しを付けて並べる */
+  sections?: readonly string[];
   /** 右の欄の上に出す見出しと一覧（戻る・部分の名前・関係する画面への入口） */
   panel: React.ReactNode;
   /** このページで押せる部分（上から優先） */
@@ -8383,6 +8730,9 @@ export type SettingsVisualMode = {
 // 今選んでいる骨格（下書きを含む）。`AdminField` の `only` がこれを見て、
 // その骨格で使わない項目に札を付けて薄くする。
 const SiteSkeletonContext = createContext<SiteSkeleton>("classic");
+
+// 見ながら直す画面で、開いた部分が出す節（部分の並び順どおり）。null は従来どおり1節ずつ。
+const VisualSectionsContext = createContext<readonly string[] | null>(null);
 
 function Section({
   sectionId,
@@ -8408,11 +8758,14 @@ function Section({
   children: React.ReactNode;
 }) {
   const activeSectionId = useAdminSettingsActiveSection();
+  const visualSections = useContext(VisualSectionsContext);
   const { language } = useAdminI18n();
-  if (activeSectionId && sectionId) title = settingsNavigationItems.find(item => item.id === sectionId)?.[language === "ja" ? "ja" : "en"] ?? title;
+  if ((activeSectionId || visualSections) && sectionId) title = settingsNavigationItems.find(item => item.id === sectionId)?.[language === "ja" ? "ja" : "en"] ?? title;
   // 目次で1節ずつ出す画面では、選ばれた節だけを実際の入力欄として描く。
   // 折りたたみ行を19本並べると、左の目次と同じ一覧が本文にも重なるため。
-  const singleView = activeSectionId !== null && sectionId !== undefined;
+  // 見ながら直す画面では、開いた部分の節（1つ以上）を部分の並び順で描く。
+  const singleView = (activeSectionId !== null || visualSections !== null) && sectionId !== undefined;
+  const visualOrder = visualSections && sectionId ? visualSections.indexOf(sectionId) : -1;
   const [open, setOpen] = useState(defaultOpen);
   const [animated, setAnimated] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -8444,7 +8797,9 @@ function Section({
     };
   }, [focusOnError]);
 
-  if (singleView && sectionId !== activeSectionId) return null;
+  if (visualSections) {
+    if (visualOrder < 0) return null;
+  } else if (singleView && sectionId !== activeSectionId) return null;
 
   const markers = (
     <span className="admin-settings-section__markers" aria-hidden="true">
@@ -8465,6 +8820,7 @@ function Section({
       data-settings-section-changed={changed ? "true" : "false"}
       data-settings-section-error={failed ? "true" : "false"}
       className="admin-settings-section scroll-mt-24"
+      style={visualOrder >= 0 ? { order: visualOrder } : undefined}
     >
       {singleView ? (
         // 単節表示では開閉する扉を置かない。目次が唯一の切替器になる。
@@ -8529,7 +8885,10 @@ function SettingsGroup({
   children: React.ReactNode;
 }) {
   const activeSectionId = useAdminSettingsActiveSection();
-  if (
+  const visualSections = useContext(VisualSectionsContext);
+  if (visualSections && sectionIds) {
+    if (!sectionIds.some((id) => visualSections.includes(id))) return null;
+  } else if (
     activeSectionId !== null &&
     sectionIds &&
     !sectionIds.includes(activeSectionId as SettingsSectionId)
@@ -8541,7 +8900,7 @@ function SettingsGroup({
       {!activeSectionId && <p className="text-[length:var(--admin-text-note)] tracking-widest text-[color:var(--admin-muted)] mb-1">
         {title}
       </p>}
-      <div className="[&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]">
+      <div className={`[&>*+*]:border-t [&>*+*]:border-[color:var(--admin-line)]${visualSections ? " flex flex-col" : ""}`}>
         {children}
       </div>
     </div>

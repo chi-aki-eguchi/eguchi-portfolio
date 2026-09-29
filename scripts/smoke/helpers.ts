@@ -12,7 +12,7 @@ import { smokeAdminPassword } from "./smoke-env.ts";
 // 4件が同時に落ちた（原因は同じ1箇所なのに、直す場所が4つあった）。
 // 写しがずれていないことは packages/web の
 // `admin-settings-section-keys.test.ts` が `bun run check` の速さで見張る。
-export const SETTINGS_SECTION_COUNT = 25;
+export const SETTINGS_SECTION_COUNT = 34;
 
 // 9タブ全て(setup=はじめに含む)。追加/削除時はここを更新する。
 export const ADMIN_TABS = [
@@ -153,7 +153,9 @@ export async function chooseSettingsSection(page: Page, sectionId: string): Prom
   await backToSiteList(page);
   const search = page.locator(".se-search input");
   await search.fill(sectionId);
-  const row = page.locator(`.se-parts [data-site-sections~="${sectionId}"]`).first();
+  // その節だけを出す行があればそれを（部分によっては2つの節を並べて出す）。
+  const exact = page.locator(`.se-parts [data-site-sections="${sectionId}"]`).first();
+  const row = (await exact.count()) > 0 ? exact : page.locator(`.se-parts [data-site-sections~="${sectionId}"]`).first();
   await row.click();
   await expect(page.locator(".admin-settings-form-layout")).toBeVisible();
   await expect(page.locator(`[data-settings-section="${sectionId}"]`)).toBeVisible();

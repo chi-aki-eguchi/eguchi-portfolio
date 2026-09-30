@@ -298,6 +298,13 @@ function removeElement(id: string) {
   document.getElementById(`${id}-style`)?.remove();
 }
 
+// Read the destination background, not a colour partway through the body's
+// theme transition. Contrast correction otherwise gets stuck at the old theme.
+function pageContrastBackground(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue("--background").trim()
+    || getComputedStyle(document.body).backgroundColor;
+}
+
 type HeroTextColorSettings = {
   heroNameColor?: string;
   heroNameEnColor?: string;
@@ -322,10 +329,16 @@ function applyReadableHeroTextColors(
     ["--hero-sub-color", settings.heroSubColor],
   ] as const;
   for (const [cssVar, raw] of pairs) {
+    // The photograph does not change with the page theme. Its ink and halo
+    // must use the same saved colour; paper-only contrast correction made
+    // white ink land on a white scrim when visitors switched to dark mode.
+    const photoVar = cssVar.replace("--hero-", "--hero-photo-");
     if (raw) {
+      root.style.setProperty(photoVar, raw);
       root.style.setProperty(cssVar, ensureAccentContrast(raw, background));
     } else {
       root.style.removeProperty(cssVar);
+      root.style.removeProperty(photoVar);
     }
   }
   // 写真の下側に重ねるにじみは、名前の色と反対の明るさにする（2026-09-30）。
@@ -400,7 +413,7 @@ export function Provider({ children }: ProviderProps) {
     applyThemeColors(bg, text, resolvedTheme);
     applyReadableHeroTextColors(
       previewHeroTextColorsRef.current,
-      getComputedStyle(document.body).backgroundColor,
+      pageContrastBackground(),
     );
   }, [resolvedTheme]);
   const themeBg = data?.themeBg;
@@ -454,7 +467,7 @@ export function Provider({ children }: ProviderProps) {
     // 2-4: リンク/アクセントは実効背景(カスタムthemeBg・ダークモード込み)に
     // 対して AA 4.5:1 を機械的に保証してから適用する — admin と同じ調整式。
     // themeVersion がテーマ切替(data-theme)で増えるたびに再計算される。
-    const effectiveBg = getComputedStyle(document.body).backgroundColor;
+    const effectiveBg = pageContrastBackground();
     set(
       "--link-hover-color",
       data?.linkHoverColor
@@ -799,7 +812,7 @@ export function Provider({ children }: ProviderProps) {
       // D4: global type scale + link styling
       applyVar("--global-font-scale", s.globalFontScale);
       // 2-4: DB適用側と同じ AA 保証をプレビューにもかける(実効背景基準)
-      const accentBg = () => getComputedStyle(document.body).backgroundColor;
+      const accentBg = pageContrastBackground;
       applyVar("--link-hover-color", s.linkHoverColor, (v) =>
         ensureAccentContrast(v, accentBg()),
       );
@@ -858,7 +871,7 @@ export function Provider({ children }: ProviderProps) {
       applyVar("--hero-sub-size", s.heroSubSize, labelSizePx);
       applyReadableHeroTextColors(
         previewHeroTextColorsRef.current,
-        getComputedStyle(document.body).backgroundColor,
+        pageContrastBackground(),
       );
       // A3: font weights
       applyVar("--hero-name-weight", s.heroNameWeight);

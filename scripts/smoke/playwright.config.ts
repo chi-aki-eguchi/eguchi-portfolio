@@ -119,7 +119,7 @@ export default defineConfig({
     },
     {
       name: "mobile-safari",
-      testMatch: /(gallery-initial-layout|admin-preset-save|admin-trash-signal|public-site|public-photo-site|photo-presentation|profile-aspect|portfolio-media|admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker|admin-photo-dates|smoke-isolation)\.spec\.ts/,
+      testMatch: /(hero-readability|gallery-initial-layout|admin-preset-save|admin-trash-signal|public-site|public-photo-site|photo-presentation|profile-aspect|portfolio-media|admin-library-(remount-fade|panels|contact-sheet)|admin-hero-picker|admin-photo-dates|smoke-isolation)\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
       },

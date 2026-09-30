@@ -1125,9 +1125,9 @@ const ADMIN_PHASE_2B_JA = {
       heightResetLayout: "レイアウト本来の高さに戻す",
       titlePositionLabel: "名前の表示位置",
       titlePositionHint:
-        "フルスクリーンではカルーセルも1枚絵も写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます",
+        "1枚絵とフルスクリーンのカルーセルでは写真上の位置、カルーセル（通常）では写真下の文字寄せとして効きます。上の位置を選ぶとメニューを避けます",
       titlePositionOptions: {
-        center: "中央（既定）",
+        center: "下中央（既定）",
         "bottom-left": "左下",
         "bottom-right": "右下",
         "top-left": "左上",
@@ -1144,7 +1144,7 @@ const ADMIN_PHASE_2B_JA = {
       },
       overlayLabel: "オーバーレイ",
       overlayHint:
-        "1枚絵とフルスクリーンのカルーセルで、写真上の名前を読みやすくする暗いグラデーション",
+        "1枚絵とフルスクリーンのカルーセルで、名前の色に合わせて写真に薄い明暗を重ねます。文字の輪郭も補い、選んだ色を保ちます",
       overlayOptions: {
         on: "あり",
         off: "なし",
@@ -1184,7 +1184,7 @@ const ADMIN_PHASE_2B_JA = {
         none: "写真に重ねる（文字のみ）",
       },
       headerBgNote:
-        "写真が上まで伸びるのは、トップの写真の「画面の使い方」を「フルスクリーン」にしているときだけです。「読みやすい」は文字の後ろにごく薄い幕と文字の暈しを入れるため、迷ったときはこちらが安全です。「文字のみ」も暈しで輪郭を保ちますが、写真の明暗によっては読みにくくなることがあります。",
+        "トップの「1枚絵」は通常の高さでも写真に重なります。「順に切り替え」は「フルスクリーン」で重なります。ほかのページでは写真が裏にないため帯のように見えます。「読みやすい」は文字の後ろにごく薄い幕と文字の暈しを入れるため、迷ったときはこちらが安全です。「文字のみ」も暈しで輪郭を保ちますが、写真の明暗によっては読みにくくなることがあります。",
       hoverShortNames: {
         fade: "フェード",
         underline: "下線",
@@ -1686,6 +1686,7 @@ const ADMIN_PHASE_2B_JA = {
       opacity: "濃さ",
       name: {
         title: "名前",
+        responsiveHint: "大きさは上限です。スマホや横長の画面では、収まる大きさへ自動で調整します。英語名・肩書きの色や大きさは下の「細かく調整する」に残っています。",
         jaGroup: "日本語の名前",
         enGroup: "英語の名前",
         subGroup: "名前の下の言葉",
@@ -2996,9 +2997,9 @@ const ADMIN_PHASE_2B_EN = {
       heightResetLayout: "Return to the layout's original height",
       titlePositionLabel: "Name Position",
       titlePositionHint:
-        "In Fullscreen, this positions the name over both Carousel and Single Photo; in Carousel (Normal), it aligns the name below the photo.",
+        "Positions the name over Single Photo and Fullscreen Carousel; in Carousel (Normal), aligns the name below the photo. Top positions leave room for the menu.",
       titlePositionOptions: {
-        center: "Center (default)",
+        center: "Bottom centre (default)",
         "bottom-left": "Bottom left",
         "bottom-right": "Bottom right",
         "top-left": "Top left",
@@ -3015,7 +3016,7 @@ const ADMIN_PHASE_2B_EN = {
       },
       overlayLabel: "Overlay",
       overlayHint:
-        "A dark gradient that keeps the over-photo name readable in Single Photo and Fullscreen Carousel.",
+        "A light or dark gradient matched to the selected ink in Single Photo and Fullscreen Carousel. A contrasting contour keeps that colour readable.",
       overlayOptions: {
         on: "On",
         off: "Off",
@@ -3055,7 +3056,7 @@ const ADMIN_PHASE_2B_EN = {
         none: "Over the photo (text only)",
       },
       headerBgNote:
-        "The photo reaches the very top only when the home hero is fullscreen. Readable adds a very light veil behind the type as well as its halo, so it is the safer choice. Text only keeps the halo, but can still be harder to read on some photographs.",
+        "Single Photo reaches behind the menu at either height. Carousel does so in Fullscreen. Other pages have no photograph behind the menu. Readable adds a very light veil behind the type as well as its halo, so it is the safer choice. Text only keeps the halo, but can still be harder to read on some photographs.",
       hoverShortNames: {
         fade: "Fade",
         underline: "Underline",
@@ -3555,6 +3556,7 @@ const ADMIN_PHASE_2B_EN = {
       opacity: "Strength",
       name: {
         title: "Name",
+        responsiveHint: "Sizes are upper limits and adapt to narrow or short screens. English name and subtitle controls are under Fine adjustments below.",
         jaGroup: "Japanese name",
         enGroup: "English name",
         subGroup: "Line under the name",

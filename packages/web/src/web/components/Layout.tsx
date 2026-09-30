@@ -468,8 +468,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // 地を透かしても、その裏が本文の余白なら同じ色の帯が残るだけで意味がない。
   // 実測（本番 2026-08-09）でも HERO は header の下ではなく **56px 下から**
   // 始まっていた。だから透かすときは、全画面HEROを header の下まで伸ばす
-  // （CSS 側 `.header-see-through`）。全画面HEROでない構成では裏が本文の余白
-  // なので、見た目はほぼ変わらない。管理画面の説明にもそう書いてある。
+  // （CSS 側 `.header-see-through`）。2026-10-01 から通常の高さの1枚写真も
+  // 対応する。写真が裏にないページの本文の余白は変えない。
   const headerBackground = ["solid", "fade", "none"].includes(
     data?.headerBackground ?? "",
   )

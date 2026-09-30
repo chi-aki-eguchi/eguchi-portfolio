@@ -99,10 +99,10 @@ export function textShadowOverPhoto(
   blur: number,
   strength = 0.4,
 ): string {
-  if (isDarkTextColor(color)) {
-    return `0 0 ${blur}px rgba(255,255,255,${Math.min(0.85, strength + 0.3).toFixed(2)})`;
-  }
-  return `0 1px ${blur}px rgba(0,0,0,${strength})`;
+  const rgb = isDarkTextColor(color) ? "255,255,255" : "0,0,0";
+  // A wide halo alone disappears into detailed photographs. Keep a narrow
+  // contour and a soft outer shadow, for both light and dark selected ink.
+  return `0 0 1px rgba(${rgb},0.95), 0 1px 3px rgba(${rgb},0.85), 0 0 ${blur}px rgba(${rgb},${strength})`;
 }
 
 /** 写真の上の文字として「暗い色」か。空・読めない値は既定の白い文字として扱う。 */

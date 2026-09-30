@@ -6,6 +6,7 @@
 
 | 知りたいこと | 文書 |
 |---|---|
+| 設定を保った管理画面とトップの文字（2026-10-01） | `docs/specs/settings-preservation-20261001.md` |
 | 管理画面を骨格に関係なく1つに（2026-09-29） | `docs/specs/admin-one-shell-20260929.md` |
 | 「サイト」を見ながら直す画面（2026-09-29） | `docs/specs/admin-site-editor-20260929.md` |
 | 管理画面の仕上げ（部分ごとの設定・効かない設定の実測・英語）（2026-09-30） | `docs/specs/admin-complete-20260930.md` |

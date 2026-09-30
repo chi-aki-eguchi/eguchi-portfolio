@@ -2962,6 +2962,9 @@ describe("shared components", () => {
       );
       expect(rootStyle.getPropertyValue("--hero-sub-color")).toBe(expectedDark);
       expect(expectedDark).not.toBe("#404040");
+      for (const variable of ["--hero-photo-name-color", "--hero-photo-name-en-color", "--hero-photo-sub-color"]) {
+        expect(rootStyle.getPropertyValue(variable)).toBe("#404040");
+      }
       live.cleanup();
 
       // Preview path uses the same correction, and returns to the exact selected
@@ -3000,6 +3003,13 @@ describe("shared components", () => {
       );
       await flush(10);
       expect(rootStyle.getPropertyValue("--hero-name-color")).toBe("#404040");
+      expect(rootStyle.getPropertyValue("--hero-photo-name-color")).toBe("#404040");
+      dom.window.dispatchEvent(new dom.window.MessageEvent("message", {
+        origin: dom.window.location.origin,
+        data: { type: "preview-settings", settings: { heroNameColor: "", heroNameEnColor: "", heroSubColor: "" } },
+      }));
+      await flush(10);
+      expect(rootStyle.getPropertyValue("--hero-photo-name-color")).toBe("");
       preview.cleanup();
     } finally {
       canned["/api/settings"] = previousSettings;
@@ -3009,6 +3019,10 @@ describe("shared components", () => {
         "--hero-name-color",
         "--hero-name-en-color",
         "--hero-sub-color",
+        "--hero-photo-name-color",
+        "--hero-photo-name-en-color",
+        "--hero-photo-sub-color",
+        "--hero-overlay-rgb",
       ]) {
         rootStyle.removeProperty(property);
       }

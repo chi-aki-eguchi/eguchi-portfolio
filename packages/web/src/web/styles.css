@@ -4125,8 +4125,11 @@ body[data-texture="mist"]::before {
   right: 0;
   bottom: clamp(28px, 6vh, 64px);
   text-align: center;
-  padding: 0 24px;
+  padding: 0 clamp(20px, 5vw, 64px);
   z-index: 2;
+  container-type: inline-size;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 /* ─── AA1: fullscreen hero — the photo owns the first viewport below the
@@ -6658,13 +6661,21 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
    56px 下から始まっていた。そこで透かすときは、全画面HEROを header の下まで
    伸ばして写真そのものを地にする。
 
-   `:has()` で「全画面HEROを含む main」だけに効かせる。ギャラリーや About の
-   本文まで header の下へ潜らせると、見出しが帯に隠れる。 */
+   2026-10-01: 通常の高さの1枚写真にも適用する。`:has()` で写真のある main
+   だけに効かせる。ギャラリーや About の本文の余白は保持する。 */
 .site-main {
   padding-top: calc(var(--header-h) + var(--sai-top));
 }
-.header-see-through .site-main:has(.hero-fullscreen) {
+.header-see-through .site-main:has(.hero-fullscreen, .hero-motion-stage > .hero-single) {
   padding-top: var(--sai-top);
+}
+/* Single-photo covers may have a custom height; transparency must not depend
+   on choosing fullscreen. Keep that height and remove only the top margin. */
+.header-see-through .hero-motion-stage:has(> .hero-single) {
+  padding-top: 0;
+}
+.header-see-through .hero-single-caption:is(.pos-top-left, .pos-top-right) {
+  top: calc(var(--header-h) + clamp(20px, 4svh, 48px));
 }
 .header-see-through .site-main:has(.hero-fullscreen) .hero-single,
 .header-see-through .site-main:has(.hero-fullscreen) .hero-carousel-contain {

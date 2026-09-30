@@ -7944,6 +7944,7 @@ export function SettingsTab({
                 title={copyDesign.parts.name.title}
                 defaultOpen={false}
               >
+                <p className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] leading-relaxed">{copyDesign.parts.name.responsiveHint}</p>
                 {(["siteName", "siteNameEn", "heroSubtitle"] as const).map((key) => {
                   const f = fields.find((field) => field.key === key)!;
                   return (

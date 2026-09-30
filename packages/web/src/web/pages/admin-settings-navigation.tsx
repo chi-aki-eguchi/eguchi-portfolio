@@ -36,8 +36,8 @@ export const SETTINGS_NAVIGATION = [
     { id: "portfolio-kit", ja: "制作案内への入口", en: "Portfolio Kit visibility", keywords: "Portfolio Kit サービス 制作" },
   ] },
   { group: "parts", ja: "ページの部分", en: "Page parts", items: [
-    { id: "name", ja: "名前", en: "Name", keywords: "名前 サイト名 肩書き 大きさ 太さ 字間 色 name title logo" },
-    { id: "navigation", ja: "メニュー", en: "Menu", keywords: "メニュー ナビ 入口 リンク 名前 位置 背景 Series Work menu header navigation" },
+    { id: "name", ja: "名前", en: "Name", keywords: "名前 サイト名 肩書き 大きさ 太さ 字間 色 英語 スマホ name title logo size" },
+    { id: "navigation", ja: "メニュー", en: "Menu", keywords: "メニュー ナビ 入口 リンク 名前 位置 背景 透明 白帯 白い帯 重ねる ヘッダー Series Work menu header navigation transparent overlay" },
     { id: "home", ja: "トップの形", en: "Home layout", only: "book", keywords: "トップ 表紙 形 home cover" },
     { id: "hero", ja: "トップの写真の見せ方", en: "Home hero", only: "classic", keywords: "ヒーロー 高さ タイトル 位置 切り抜き スライド fullscreen crop title" },
     { id: "statement-text", ja: "作家の言葉の文", en: "Statement text", keywords: "作家の言葉 ステートメント 文章 statement" },
@@ -50,7 +50,7 @@ export const SETTINGS_NAVIGATION = [
     { id: "viewer", ja: "写真を開いたとき", en: "Photo viewer", keywords: "ビューア 拡大 壁 余白 額装 viewer lightbox wall mat" },
     { id: "series-cards", ja: "シリーズの札", en: "Series cards", only: "classic", keywords: "シリーズ 札 表紙 列数 切り抜き series cards cover crop" },
     { id: "series-layout", ja: "作品ページの並べ方", en: "Work page layout", only: "classic", keywords: "作品 シリーズ ページ 写真 並べ方 series page layout" },
-    { id: "about", ja: "About の文章と写真", en: "About text & portrait", keywords: "プロフィール 略歴 自己紹介 顔写真 名前 機材 SNS インスタ profile about bio portrait" },
+    { id: "about", ja: "About の文章と写真", en: "About text & portrait", keywords: "プロフィール 略歴 自己紹介 顔写真 名前 読みがな カタカナ 機材 SNS インスタ profile about bio portrait" },
     { id: "about-layout", ja: "About の組み方", en: "About layout", keywords: "プロフィール 構成 並べ方 写真 profile about layout" },
     { id: "contact", ja: "連絡先と案内", en: "Contact details", keywords: "問い合わせ メール 送信先 フォーム 地域 流れ 案内 email contact form" },
     { id: "contact-layout", ja: "Contact の組み方", en: "Contact layout", keywords: "お問い合わせ 構成 並べ方 contact layout" },
@@ -127,7 +127,7 @@ export type SitePart = {
 
 export const SITE_PARTS = {
   name: { id: "name", ja: "名前", en: "Name", noteJa: "表示する名前・大きさ・太さ・色", noteEn: "Text, size, weight, colour", sections: ["name"] },
-  menu: { id: "menu", ja: "メニュー", en: "Menu", noteJa: "メニューの言葉・入口・文字", noteEn: "Menu words, links and type", sections: ["navigation"], keywords: "ナビ 入口 Series Work" },
+  menu: { id: "menu", ja: "メニュー", en: "Menu", noteJa: "言葉・入口・文字・背景（透明／帯）", noteEn: "Words, links, type, background (transparent/bar)", sections: ["navigation"], keywords: "ナビ 入口 Series Work" },
   footer: { id: "footer", ja: "フッター", en: "Footer", noteJa: "ページの終わりの言葉・SNS・クレジット", noteEn: "Closing words, social links, credit", sections: ["footer"], keywords: "SNS クレジット 著作" },
   "top-photos": {
     id: "top-photos", ja: "トップの写真", en: "Home photographs",

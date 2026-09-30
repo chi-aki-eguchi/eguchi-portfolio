@@ -67,9 +67,9 @@ function heroCaptionPosition(titlePosition: string) {
   };
 }
 
-/** 写真の上の読みがな: 名前の色（設定）を 72% に薄めた色。名前の色が空なら白。 */
+/** 写真の上の読みがな: 名前の色（設定）を 90% に薄めた色。名前の色が空なら白。 */
 const KATA_OVER_PHOTO_COLOR =
-  "color-mix(in srgb, var(--hero-name-color, #ffffff) 72%, transparent)";
+  "color-mix(in srgb, var(--hero-photo-name-color, #ffffff) 90%, transparent)";
 
 /**
  * 写真の上の英名・肩書きの既定の色。名前を暗い色にしたのに英名と肩書きの色が
@@ -78,7 +78,7 @@ const KATA_OVER_PHOTO_COLOR =
  */
 function overPhotoFallbackInk(settings: Record<string, string | undefined> | undefined, alpha: number) {
   return isDarkTextColor(settings?.heroNameColor)
-    ? `color-mix(in srgb, var(--hero-name-color) ${Math.round(alpha * 100)}%, transparent)`
+    ? `color-mix(in srgb, var(--hero-photo-name-color) ${Math.round(alpha * 100)}%, transparent)`
     : `rgba(255,255,255,${alpha})`;
 }
 /** 英名・肩書きの影を決める色: その欄の色 → 空なら（暗い名前のときは）名前の色。 */
@@ -87,6 +87,12 @@ function overPhotoPartColor(
   own: string | undefined,
 ) {
   return own || (isDarkTextColor(settings?.heroNameColor) ? settings?.heroNameColor : undefined);
+}
+
+function responsiveNameSize(key: string, fallback: string, tone: "over-photo" | "on-paper", min: number, width: number, height: number) {
+  // The saved size is an upper limit. Adapt to the actual photo/caption width
+  // and short landscape windows without changing the owner's saved value.
+  return `min(var(${key}, ${fallback}), max(${min}px, ${width}${tone === "over-photo" ? "cqi" : "vw"}), max(${min}px, ${height}svh))`;
 }
 
 /** The original carousel / single-photo name treatment.
@@ -122,8 +128,8 @@ function ClassicHeroNameBlock({
         className="font-bold leading-tight break-words hero-text-reveal hero-text-reveal-1"
         style={{
           fontWeight: "var(--hero-name-weight, 700)" as never,
-          fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
-          color: overPhoto ? "var(--hero-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
+          fontSize: responsiveNameSize("--hero-name-size", nameSizeFallback, tone, 24, 12, 12),
+          color: overPhoto ? "var(--hero-photo-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
           letterSpacing: "var(--hero-name-tracking, 0.04em)",
           textShadow: overPhoto ? textShadowOverPhoto(settings?.heroNameColor, 18, 0.45) : undefined,
         }}
@@ -148,9 +154,9 @@ function ClassicHeroNameBlock({
         data-hero-name-part="english"
         className="font-en mt-1 break-words hero-text-reveal hero-text-reveal-2"
         style={{
-          fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
+          fontSize: responsiveNameSize("--hero-name-en-size", enSizeFallback, tone, 12, 5, 6),
           color: overPhoto
-            ? `var(--hero-name-en-color, ${overPhotoFallbackInk(settings, 0.82)})`
+            ? `var(--hero-photo-name-en-color, ${overPhotoFallbackInk(settings, 0.82)})`
             : "var(--hero-name-en-color, var(--text-quiet))",
           letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
           textShadow: shadow(overPhotoPartColor(settings, settings?.heroNameEnColor), 14),
@@ -163,9 +169,9 @@ function ClassicHeroNameBlock({
           data-hero-name-part="subtitle"
           className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
           style={{
-            fontSize: "var(--hero-sub-size, 0.75rem)",
+            fontSize: responsiveNameSize("--hero-sub-size", "0.75rem", tone, 12, 3, 4),
             color: overPhoto
-              ? `var(--hero-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
+              ? `var(--hero-photo-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
               : "var(--hero-sub-color, var(--text-quiet))",
             textShadow: shadow(overPhotoPartColor(settings, settings?.heroSubColor), 12),
           }}
@@ -706,12 +712,9 @@ function heroHeightValue(fallback: string): string {
  * 「ヒーロー」/「文字の色」settings group silently did nothing whenever one of
  * them was selected. They all render this instead now.
  *
- * `tone` decides how far the settings reach. Over a photo the colour pickers are
- * deliberately ignored and white + a shadow is used, because an arbitrary
- * foreground colour over an arbitrary photo is not readable — this is the same
- * rule the default (carousel / single) hero already followed. Size, weight and
- * tracking apply in both tones. Each `var()` fallback is the value that tone
- * rendered before, so an unset site looks unchanged.
+ * Both tones honour the selected colour. Over a photograph it uses the saved
+ * ink and an opposing contour; on paper it follows the page theme's contrast
+ * correction. The selected size is a maximum, fitted to narrow/short screens.
  */
 function HeroNameBlock({
   settings,
@@ -746,9 +749,9 @@ function HeroNameBlock({
         data-hero-name-part="primary"
         className="font-serif leading-tight break-words hero-text-reveal hero-text-reveal-1"
         style={{
-          fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
+          fontSize: responsiveNameSize("--hero-name-size", nameSizeFallback, tone, 24, 12, 12),
           fontWeight: "var(--hero-name-weight, 300)" as never,
-          color: overPhoto ? "var(--hero-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
+          color: overPhoto ? "var(--hero-photo-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
           letterSpacing: `var(--hero-name-tracking, ${nameTrackingFallback})`,
           textShadow: shadow(settings?.heroNameColor, 8),
         }}
@@ -769,11 +772,11 @@ function HeroNameBlock({
       )}
       <p
         data-hero-name-part="english"
-        className="font-en uppercase mt-1 hero-text-reveal hero-text-reveal-2"
+        className="font-en uppercase mt-1 break-words hero-text-reveal hero-text-reveal-2"
         style={{
-          fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
+          fontSize: responsiveNameSize("--hero-name-en-size", enSizeFallback, tone, 12, 5, 6),
           color: overPhoto
-            ? `var(--hero-name-en-color, ${overPhotoFallbackInk(settings, 0.82)})`
+            ? `var(--hero-photo-name-en-color, ${overPhotoFallbackInk(settings, 0.82)})`
             : "var(--hero-name-en-color, var(--text-quiet))",
           letterSpacing: `var(--hero-name-en-tracking, ${enTrackingFallback})`,
           textShadow: shadow(overPhotoPartColor(settings, settings?.heroNameEnColor), 14),
@@ -786,9 +789,9 @@ function HeroNameBlock({
           data-hero-name-part="subtitle"
           className="font-en tracking-[0.10em] mt-1 break-words hero-text-reveal hero-text-reveal-3"
           style={{
-            fontSize: "var(--hero-sub-size, 0.75rem)",
+            fontSize: responsiveNameSize("--hero-sub-size", "0.75rem", tone, 12, 3, 4),
             color: overPhoto
-              ? `var(--hero-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
+              ? `var(--hero-photo-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
               : "var(--hero-sub-color, var(--text-quiet))",
             textShadow: shadow(overPhotoPartColor(settings, settings?.heroSubColor), 12),
           }}

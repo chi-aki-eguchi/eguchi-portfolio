@@ -1,4 +1,5 @@
 import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
+import { BOOK_DESIGN_ENABLED } from "./site-design.ts";
 import { chooseSettingsSection, loginAsAdmin } from "./helpers";
 
 /**
@@ -67,13 +68,20 @@ test.describe("admin — 骨格を切り替えても管理画面は同じ", () =
 
     expect(tabs).toEqual(["写真", "シリーズ", "サイト"]);
     expect(classicFrame.pages).toEqual(["トップ", "Gallery", "Series", "About", "Contact"]);
-    // 同じ部分は同じ順。いつもの構成にだけある部分（作品の並び・シリーズの帯）は写真中心では出ない。
-    expect(classicTop).toEqual(expect.arrayContaining(["name", "top-photos", "works", "series-strip", "menu", "footer"]));
-    expect(bookTop).toEqual(classicTop.filter((id) => id !== "works" && id !== "series-strip"));
-
-    // 写真中心で使わない設定（いつもの構成のトップ）も、探せば開けて、使わないと一言添える。
-    await chooseSettingsSection(page, "hero");
-    await expect(page.locator(".admin-book-unused")).toContainText("写真中心の構成では");
+    // トップの一覧はトップだけの部分。メニュー・フッターは「全体の見た目」に1回だけ（2026-09-30）。
+    expect(classicTop).toEqual(["name", "top-photos", "statement", "works", "series-strip", "cta"]);
+    if (BOOK_DESIGN_ENABLED) {
+      // 同じ部分は同じ順。いつもの構成にだけある部分（作品の並び・シリーズの帯）は写真中心では出ない。
+      expect(bookTop).toEqual(classicTop.filter((id) => id !== "works" && id !== "series-strip"));
+      // 写真中心で使わない設定（いつもの構成のトップ）も、探せば開けて、使わないと一言添える。
+      await chooseSettingsSection(page, "hero");
+      await expect(page.locator(".admin-book-unused")).toContainText("写真中心の構成では");
+    } else {
+      // 構成は いつもの構成 1つ。"book" が保存されていても同じ一覧で、骨格の切り替えは探しても出ない。
+      expect(bookTop).toEqual(classicTop);
+      await page.locator(".se-search input").fill("骨格");
+      await expect(page.locator(".se-panel__empty")).toBeVisible();
+    }
   });
 
   test("PCはプレビューが左、設定が右に並ぶ", async ({ page, api }, testInfo) => {

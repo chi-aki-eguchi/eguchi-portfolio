@@ -6888,3 +6888,40 @@ body[data-photo-crop="whole"] img.series-stream-media {
   text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* 節の「細かく調整する」（2026-09-30）。字間・濃さなどの微調整を開く1行。 */
+.admin-fine-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--admin-text-note, 13px);
+  color: var(--admin-muted);
+  cursor: pointer;
+}
+.admin-fine-toggle::before {
+  content: "›";
+  display: inline-block;
+  transition: transform var(--dur-fast, 160ms);
+}
+.admin-fine-toggle[aria-expanded="true"]::before { transform: rotate(90deg); }
+.admin-fine-toggle:hover { color: var(--admin-ink); }
+
+/* いつもの構成のフッターの制作の入口（2026-09-30）。写真中心の器の1行
+   （PhotoServiceNote・photo-site.css の .ps-service）を、いつもの構成の色で使う。 */
+.classic-service-note {
+  --ps-hair: rgba(var(--foreground-rgb), 0.12);
+  --ps-quiet: var(--text-quiet);
+  --ps-ink: var(--foreground);
+  --ps-scale: var(--global-font-scale, 1);
+  padding-top: 2.5rem;
+}
+.classic-service-note[data-footer-layout="center"] .ps-service {
+  justify-content: center;
+  text-align: center;
+}

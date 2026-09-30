@@ -12,6 +12,7 @@
  */
 import { test, expect, describe, afterEach, beforeEach } from "bun:test";
 import { setupDom, canned, flush } from "./jsdom-setup";
+import { BOOK_DESIGN_ENABLED } from "../lib/site-design-flag";
 
 const dom = setupDom();
 // 管理画面は開いている画面を URL の # に書く（ブラウザの「戻る」用、2026-09-30）。
@@ -144,12 +145,18 @@ describe("写真集の管理画面", () => {
     // 入口・ページのタブは同じ。長い目次は無い。
     expect(book.pages).toEqual(classic.pages);
     expect(classic.pages).toEqual(["トップ", "Gallery", "Series", "About", "Contact"]);
-    // トップにある物だけを並べる。いつもの構成には作品の並びとシリーズの帯がある。
-    expect(classic.topParts).toEqual(["name", "top-photos", "statement", "works", "series-strip", "cta", "menu", "footer"]);
-    expect(book.topParts).toEqual(["name", "top-photos", "statement", "cta", "menu", "footer"]);
-    // 全体の見た目は、いつもの構成だけの「デザインの出発点」などを写真中心では出さない。
-    expect(classic.lookParts).toEqual(expect.arrayContaining(["fonts", "body", "headings", "theme", "structure", "mood"]));
-    expect(book.lookParts).toEqual(["fonts", "body", "headings", "theme", "structure"]);
+    // トップにある物だけを並べる。メニュー・フッター・見出しはどのページにも同じ物が出るので、
+    // 各ページには並べず「全体の見た目」に1回だけ置く（2026-09-30）。
+    expect(classic.topParts).toEqual(["name", "top-photos", "statement", "works", "series-strip", "cta"]);
+    // 全体の見た目: ふだん触る6つと、「詳しい設定」にしまう3つ。骨格の切り替えは出さない。
+    expect(classic.lookParts).toEqual(["fonts", "theme", "body", "page-title", "menu", "footer", "spacing", "reveal", "mood"]);
+    if (BOOK_DESIGN_ENABLED) {
+      expect(book.topParts).toEqual(["name", "top-photos", "statement", "cta"]);
+    } else {
+      // 構成は いつもの構成 1つ（2026-09-30）。"book" が保存されていても同じ一覧になる。
+      expect(book.topParts).toEqual(classic.topParts);
+      expect(book.lookParts).toEqual(classic.lookParts);
+    }
   });
 
   test("写真中心では「写真」から始まり、シリーズに入っていない写真を数える", async () => {

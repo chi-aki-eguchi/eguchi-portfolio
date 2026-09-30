@@ -3,10 +3,11 @@ import {
   AlignLeft, ArrowUpDown, AtSign, Baseline, Bookmark, BookOpen, Briefcase, Columns2, GalleryHorizontal,
   Globe, Heading, Image, Images, JapaneseYen, LayoutGrid, LayoutTemplate, Layers, ListChecks, Mail,
   Maximize2, Menu, MessageSquare, MoveVertical, Package, Palette, PanelBottom, Printer, Quote,
-  SlidersHorizontal, Sparkles, SquareUser, Tags, TextQuote, Type, WandSparkles, type LucideIcon,
+  SlidersHorizontal, Sparkles, SquareUser, Tags, Type, WandSparkles, type LucideIcon,
 } from "lucide-react";
 import {
   SETTINGS_NAVIGATION,
+  SITE_ADVANCED_PARTS,
   SITE_LOOK_PARTS,
   SITE_MORE_PARTS,
   SITE_PAGES,
@@ -19,6 +20,7 @@ import {
   type SiteSkeleton,
 } from "../../pages/admin-settings-navigation";
 import "./site-editor.css";
+import { BOOK_DESIGN_ENABLED } from "../../lib/site-design-flag";
 
 /**
  * 管理画面「サイト」（2026-09-29 作り直し）。公開サイトを大きく出し、変えたい所を
@@ -56,8 +58,8 @@ const PART_ICONS: Record<SitePartId, LucideIcon> = {
   "series-strip": GalleryHorizontal, cta: Mail, "page-title": Heading, "gallery-photos": LayoutGrid,
   order: ArrowUpDown, viewer: Maximize2, "series-cards": Layers, "series-layout": LayoutGrid, about: SquareUser, "about-layout": Columns2,
   "contact-layout": Columns2, "contact-info": AtSign, "contact-words": MessageSquare, fonts: Baseline,
-  body: AlignLeft, headings: Heading, theme: Palette, structure: LayoutTemplate, mood: Sparkles,
-  spacing: MoveVertical, reveal: WandSparkles, "site-basics": Globe, "site-copy": TextQuote,
+  body: AlignLeft, theme: Palette, structure: LayoutTemplate, mood: Sparkles,
+  spacing: MoveVertical, reveal: WandSparkles, "site-basics": Globe,
   "hero-photos": Images, categories: Tags, "series-details": Layers, pricing: JapaneseYen, service: Briefcase,
   "portfolio-kit": Package, presets: Bookmark, note: BookOpen, print: Printer, setup: ListChecks,
 };
@@ -181,7 +183,10 @@ export function SitePartsPanel({
     label: partLabel(SITE_PARTS[id], language),
     note: partNote(SITE_PARTS[id], language),
   });
-  const rows: Row[] = ids.filter(listed).map(rowFor);
+  // ふだん触る物と、めったに触らない物（「詳しい設定」にしまう、2026-09-30）。
+  const isAdvanced = (id: SitePartId) => SITE_ADVANCED_PARTS.includes(id);
+  const rows: Row[] = ids.filter(listed).filter((id) => !isAdvanced(id)).map(rowFor);
+  const advancedRows: Row[] = ids.filter(listed).filter(isAdvanced).map(rowFor);
 
   // 探す: すべての部分と、すべての設定の節から（名前・一言・関連語で）。
   const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
@@ -208,10 +213,12 @@ export function SitePartsPanel({
       sections.forEach((sid) => seenSections.add(sid));
       searchRows.push(rowFor(id));
     }
-    // 今の骨格の一覧に無い節も、探せば開ける（値は残っている）。
+    // 今の骨格の一覧に無い節も、探せば開ける（値は残っている）。ただし止めた骨格
+    // （写真中心）だけの節と骨格の切り替えは出さない（2026-09-30、構成を1つにした）。
     for (const group of SETTINGS_NAVIGATION) {
       for (const item of group.items) {
         if (seenSections.has(item.id)) continue;
+        if (!BOOK_DESIGN_ENABLED && (item.id === "page-layout" || ("only" in item && item.only === "book"))) continue;
         if (!matches(`${item.ja} ${item.en} ${item.keywords} ${item.id}`)) continue;
         seenSections.add(item.id);
         searchRows.push({ target: `section:${item.id}`, label: ja ? item.ja : item.en });
@@ -227,12 +234,56 @@ export function SitePartsPanel({
         : ja ? `${pageDef.ja}で変えられるところ` : `What you can change on ${pageDef.en}`;
   const lede =
     mode === "look"
-      ? ja ? "すべてのページに効く書体・文字・色です。" : "Typefaces, text and colour for every page."
+      ? ja ? "すべてのページに効く書体・色・文字と、どのページにも出るメニュー・フッター・見出しです。" : "Typefaces, colour and text for every page, and the menu, footer and headings that appear on each page."
       : mode === "more"
         ? ja ? "ページの見た目に出ない設定と、ほかの編集画面です。" : "Settings that do not show on a page, and other editors."
         : ja ? "プレビューの中の変えたい所を押しても選べます。" : "You can also click the part you want in the preview.";
 
   const shown = searching ? searchRows : rows;
+  const renderRow = (row: Row) => {
+    const changed = sectionsFor(row.target).some((sid) => changedSections.includes(sid));
+    const onPage = mode === "page" && !searching && typeof row.target === "string" && foundParts.includes(row.target);
+    const offPage =
+      mode === "page" && !searching && foundParts.length > 0 && typeof row.target === "string" &&
+      SITE_PARTS_THAT_CAN_BE_HIDDEN.includes(row.target) && !foundParts.includes(row.target);
+    const Icon = iconFor(row.target);
+    return (
+      <li key={String(row.target)}>
+        <button
+          type="button"
+          className="se-part"
+          data-site-part={row.target ?? undefined}
+          data-site-sections={sectionsFor(row.target).join(" ") || undefined}
+          data-on-page={onPage || undefined}
+          data-off-page={offPage || undefined}
+          onClick={() => onOpen(row.target)}
+          onMouseEnter={() => onHover(row.target)}
+          onMouseLeave={() => onHover(null)}
+          onFocus={() => onHover(row.target)}
+          onBlur={() => onHover(null)}
+        >
+          <span className="se-part__icon" aria-hidden="true">
+            <Icon size={17} strokeWidth={1.6} />
+          </span>
+          <span className="se-part__label">
+            {row.label}
+            {changed && (
+              <span className="se-part__changed" data-settings-section-changed>
+                <span className="sr-only">{ja ? "（保存していない変更があります）" : " (unsaved changes)"}</span>
+              </span>
+            )}
+          </span>
+          {row.note && (
+            <span className="se-part__note">
+              {offPage && <em className="se-part__off">{ja ? "今は出ていません" : "Not shown now"}</em>}
+              {row.note}
+            </span>
+          )}
+          <span className="se-part__go" aria-hidden="true">›</span>
+        </button>
+      </li>
+    );
+  };
   return (
     <div className="se-panel">
       <div className="se-search">
@@ -262,51 +313,16 @@ export function SitePartsPanel({
         </output>
       )}
       <ul className="se-parts" aria-label={heading}>
-        {shown.map((row) => {
-          const changed = sectionsFor(row.target).some((sid) => changedSections.includes(sid));
-          const onPage = mode === "page" && !searching && typeof row.target === "string" && foundParts.includes(row.target);
-          const offPage =
-            mode === "page" && !searching && foundParts.length > 0 && typeof row.target === "string" &&
-            SITE_PARTS_THAT_CAN_BE_HIDDEN.includes(row.target) && !foundParts.includes(row.target);
-          const Icon = iconFor(row.target);
-          return (
-            <li key={String(row.target)}>
-              <button
-                type="button"
-                className="se-part"
-                data-site-part={row.target ?? undefined}
-                data-site-sections={sectionsFor(row.target).join(" ") || undefined}
-                data-on-page={onPage || undefined}
-                data-off-page={offPage || undefined}
-                onClick={() => onOpen(row.target)}
-                onMouseEnter={() => onHover(row.target)}
-                onMouseLeave={() => onHover(null)}
-                onFocus={() => onHover(row.target)}
-                onBlur={() => onHover(null)}
-              >
-                <span className="se-part__icon" aria-hidden="true">
-                  <Icon size={17} strokeWidth={1.6} />
-                </span>
-                <span className="se-part__label">
-                  {row.label}
-                  {changed && (
-                    <span className="se-part__changed" data-settings-section-changed>
-                      <span className="sr-only">{ja ? "（保存していない変更があります）" : " (unsaved changes)"}</span>
-                    </span>
-                  )}
-                </span>
-                {row.note && (
-                  <span className="se-part__note">
-                    {offPage && <em className="se-part__off">{ja ? "今は出ていません" : "Not shown now"}</em>}
-                    {row.note}
-                  </span>
-                )}
-                <span className="se-part__go" aria-hidden="true">›</span>
-              </button>
-            </li>
-          );
-        })}
+        {shown.map(renderRow)}
       </ul>
+      {!searching && advancedRows.length > 0 && (
+        <details className="se-parts-more">
+          <summary>{ja ? `詳しい設定（${advancedRows.length}）` : `More settings (${advancedRows.length})`}</summary>
+          <ul className="se-parts" aria-label={ja ? "詳しい設定" : "More settings"}>
+            {advancedRows.map(renderRow)}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createContext } from "react";
+import { BOOK_DESIGN_ENABLED } from "../lib/site-design-flag";
 
 /** The editor outline lives in the application sidebar; standalone editors keep their own outline. */
 export const AdminSettingsNavigationContext = createContext<HTMLElement | null>(null);
@@ -10,7 +11,8 @@ export const AdminSettingsNavigationContext = createContext<HTMLElement | null>(
 export type SiteSkeleton = "book" | "classic";
 
 export function siteSkeletonFrom(value: string | null | undefined): SiteSkeleton {
-  return value === "book" ? "book" : "classic";
+  // 写真中心は 2026-09-30 に止めた（`lib/site-design-flag.ts`）。管理画面も いつもの構成 だけ。
+  return BOOK_DESIGN_ENABLED && value === "book" ? "book" : "classic";
 }
 
 /** 設定の節ではなく、独立した編集画面として開く項目。 */
@@ -140,7 +142,7 @@ export const SITE_PARTS = {
   works: { id: "works", ja: "作品の並び", en: "Work grid", only: "classic", noteJa: "トップに並べる作品と組み方", noteEn: "Which works appear on the home page, and how", sections: ["top-works"] },
   "series-strip": { id: "series-strip", ja: "シリーズの帯", en: "Series strip", only: "classic", noteJa: "トップに流れるシリーズの帯", noteEn: "The moving series strip", sections: ["series-strip"] },
   cta: { id: "cta", ja: "撮影のご依頼", en: "Photography enquiries", noteJa: "作品の後の Contact への案内", noteEn: "Invitation to Contact after the work", sections: ["cta"] },
-  "page-title": { id: "page-title", ja: "ページの見出し", en: "Page heading", noteJa: "見出しの形・大きさ・言葉", noteEn: "Heading style, size and words", sections: ["headings", "site-copy"] },
+  "page-title": { id: "page-title", ja: "ページの見出しと言葉", en: "Page headings & words", noteJa: "各ページの見出しの形・大きさ・「すべて見る」などの言葉", noteEn: "Heading style and size, and link words such as View all", sections: ["headings", "site-copy"], keywords: "見出し 小見出し ページの言葉 すべて見る ラベル headings words labels" },
   "gallery-photos": { id: "gallery-photos", ja: "写真の並べ方", en: "Photo layout", only: "classic", noteJa: "並べ方・列数・大きさ・余白", noteEn: "Layout, columns, sizes, gaps", sections: ["gallery-layout"] },
   order: { id: "order", ja: "並び順", en: "Order", noteJa: "並べた順か、撮影日の順か", noteEn: "Manual or by date", sections: ["order"] },
   viewer: { id: "viewer", ja: "写真を開いたとき", en: "Photo viewer", noteJa: "大きく見るときの壁の色・写真の大きさ", noteEn: "Wall colour and photo size", sections: ["viewer"] },
@@ -157,15 +159,14 @@ export const SITE_PARTS = {
   // 全体の見た目
   fonts: { id: "fonts", ja: "書体", en: "Typefaces", noteJa: "日本語と英語の書体", noteEn: "Japanese and English typefaces", sections: ["fonts"] },
   body: { id: "body", ja: "本文とリンク", en: "Body text & links", noteJa: "文字全体の大きさ・行間・リンク", noteEn: "Overall size, line height, links", sections: ["body"] },
-  headings: { id: "headings", ja: "見出し", en: "Headings", noteJa: "各ページの見出しと小見出し", noteEn: "Page headings and small headings", sections: ["headings"] },
   theme: { id: "theme", ja: "色と背景", en: "Colours & background", noteJa: "背景・文字・差し色・紙の質感", noteEn: "Background, text, accent, texture", sections: ["theme"] },
-  structure: { id: "structure", ja: "サイトの骨格", en: "Site structure", noteJa: "写真中心／いつもの構成", noteEn: "Photographs-first or classic", sections: ["page-layout"] },
+  // 骨格の切り替えは 2026-09-30 に止めた（`lib/site-design-flag.ts`）。写真中心の骨格のときだけ並べる。
+  structure: { id: "structure", ja: "サイトの骨格", en: "Site structure", only: "book", noteJa: "写真中心／いつもの構成", noteEn: "Photographs-first or classic", sections: ["page-layout"] },
   mood: { id: "mood", ja: "デザインの出発点", en: "Design presets", only: "classic", noteJa: "トップ・一覧・メニューをまとめて入れ替える", noteEn: "Swaps home, gallery and menu together", sections: ["mood"] },
   spacing: { id: "spacing", ja: "ページの余白", en: "Page spacing", only: "classic", noteJa: "トップ・各ページの上下の間隔", noteEn: "Space above and between sections", sections: ["spacing"] },
   reveal: { id: "reveal", ja: "写真の表示アニメーション", en: "Photo animation", only: "classic", noteJa: "写真が画面に入るときの動き", noteEn: "How photographs appear as you scroll", sections: ["reveal"] },
   // そのほか
   "site-basics": { id: "site-basics", ja: "検索とシェア", en: "Search & sharing", noteJa: "検索結果・SNS で出る説明と公開 URL", noteEn: "Description for search and sharing, public URL", sections: ["site-basics"] },
-  "site-copy": { id: "site-copy", ja: "ページの言葉", en: "Page words", noteJa: "見出し・「すべて見る」などの言葉", noteEn: "Headings and link words", sections: ["site-copy"] },
   "hero-photos": { id: "hero-photos", ja: "トップの写真と順番", en: "Home photographs", noteJa: "「トップに出す」写真の順番・切り抜き", noteEn: "Order and crop of home photographs", tab: "hero" },
   categories: { id: "categories", ja: "分類", en: "Categories", noteJa: "写真の分類の名前と順番", noteEn: "Names and order of categories", tab: "categories" },
   "series-details": { id: "series-details", ja: "シリーズの詳しい設定", en: "Series details", noteJa: "シリーズごとの配色・並び順の上書き", noteEn: "Per-series colour and order overrides", tab: "series" },
@@ -181,16 +182,31 @@ export type SitePageId = "top" | "gallery" | "series" | "about" | "contact";
 
 /** 公開サイトのページと、そこにある部分（上から見える順）。 */
 export const SITE_PAGES: readonly { id: SitePageId; path: string; ja: string; en: string; parts: readonly SitePartId[] }[] = [
-  { id: "top", path: "/", ja: "トップ", en: "Home", parts: ["name", "top-photos", "statement", "works", "series-strip", "cta", "menu", "footer"] },
-  { id: "gallery", path: "/gallery", ja: "Gallery", en: "Gallery", parts: ["page-title", "gallery-photos", "order", "viewer", "menu", "footer"] },
-  { id: "series", path: "/series", ja: "Series", en: "Series", parts: ["page-title", "series-cards", "series-layout", "order", "menu", "footer"] },
-  { id: "about", path: "/about", ja: "About", en: "About", parts: ["about", "about-layout", "note", "print", "page-title", "menu", "footer"] },
-  { id: "contact", path: "/contact", ja: "Contact", en: "Contact", parts: ["contact-info", "contact-layout", "contact-words", "pricing", "page-title", "menu", "footer"] },
+  // メニュー・フッター・見出しはどのページにも同じ物が出るので、各ページには並べず
+  // 「全体の見た目」に1回だけ置く（2026-09-30。5ページに同じ3行が重なっていた）。
+  { id: "top", path: "/", ja: "トップ", en: "Home", parts: ["name", "top-photos", "statement", "works", "series-strip", "cta"] },
+  { id: "gallery", path: "/gallery", ja: "Gallery", en: "Gallery", parts: ["gallery-photos", "order", "viewer"] },
+  { id: "series", path: "/series", ja: "Series", en: "Series", parts: ["series-cards", "series-layout", "order"] },
+  { id: "about", path: "/about", ja: "About", en: "About", parts: ["about", "about-layout", "note", "print"] },
+  { id: "contact", path: "/contact", ja: "Contact", en: "Contact", parts: ["contact-info", "contact-layout", "contact-words", "pricing"] },
 ];
 
 /** 「全体の見た目」と「そのほか」に並べる部分。 */
-export const SITE_LOOK_PARTS: readonly SitePartId[] = ["fonts", "body", "headings", "theme", "structure", "mood", "spacing", "reveal"];
-export const SITE_MORE_PARTS: readonly SitePartId[] = ["site-basics", "site-copy", "hero-photos", "series-details", "categories", "service", "portfolio-kit", "presets", "setup"];
+export const SITE_LOOK_PARTS: readonly SitePartId[] = ["fonts", "theme", "body", "page-title", "menu", "footer", "spacing", "reveal", "mood", "structure"];
+export const SITE_MORE_PARTS: readonly SitePartId[] = ["site-basics", "hero-photos", "categories", "service", "portfolio-kit", "series-details", "presets", "setup"];
+
+/**
+ * どのページにも出る部分（2026-09-30）。ページの一覧には並べず「全体の見た目」に1回だけ
+ * 置くが、プレビューの中では今までどおり押して開ける（どのページを見ていても）。
+ */
+export const SITE_SHARED_PARTS: readonly SitePartId[] = ["page-title", "menu", "footer"];
+
+/**
+ * めったに触らない部分（2026-09-30）。一覧では「詳しい設定」の中にしまい、
+ * ふだんは名前・写真・文章・書体・色など、それだけ触れば足りる物だけを見せる。
+ * 探せば、しまってある物も開ける。
+ */
+export const SITE_ADVANCED_PARTS: readonly SitePartId[] = ["spacing", "reveal", "mood", "series-details", "presets", "setup"];
 
 /** 部分が今の骨格で出す設定の節。 */
 export function sectionsForPart(part: SitePart, skeleton: SiteSkeleton): readonly string[] {

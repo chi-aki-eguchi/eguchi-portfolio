@@ -1,4 +1,5 @@
 import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
+import { SITE_DESIGNS } from "./site-design.ts";
 import { loginAsAdmin } from "./helpers";
 
 /**
@@ -64,7 +65,7 @@ const EXPECTED: Record<Design, Record<string, string[]>> = {
 };
 
 test.describe("admin — サイトを見ながら直す", () => {
-  for (const design of ["book", "classic"] as const) {
+  for (const design of SITE_DESIGNS) {
     test(`${design}: 各ページの主な部分がプレビューの中で押せる`, async ({ page, api }, testInfo) => {
       test.skip(testInfo.project.name !== "desktop", "プレビューを横に出すPC幅で確かめる");
       test.setTimeout(90_000);
@@ -74,37 +75,40 @@ test.describe("admin — サイトを見ながら直す", () => {
         await expect
           .poll(() => foundParts(page), { message: `${design} ${pageId} で見つかる部分`, timeout: 15_000 })
           .toEqual(expect.arrayContaining(expected));
-        // 見つかった部分は、右の一覧にも出ている（一覧に無い部分は押しても開けない）。
+        // 見つかった部分は、右の一覧にも出ている。メニュー・フッター・見出しはどのページにも
+        // 出るので一覧には並べず「全体の見た目」に1回だけ置く（プレビューの中では押せる）。
         const listed = await page.locator(".se-parts [data-site-part]").evaluateAll((els) =>
           els.map((el) => el.getAttribute("data-site-part")),
         );
-        expect(listed, `${design} ${pageId} の一覧`).toEqual(expect.arrayContaining(expected));
+        const pageOnly = expected.filter((id) => !["menu", "footer", "page-title"].includes(id));
+        expect(listed, `${design} ${pageId} の一覧`).toEqual(expect.arrayContaining(pageOnly));
       }
     });
   }
 
   test("プレビューの中を押すと、その部分の設定が右に出る", async ({ page, api }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "プレビューを横に出すPC幅で確かめる");
-    await openSite(page, api, "book");
+    await openSite(page, api, "classic");
     const frameUrl = () => page.locator(".studio-preview-frame iframe").evaluate((el) => (el as HTMLIFrameElement).contentWindow?.location.pathname);
     await expect.poll(() => foundParts(page), { timeout: 15_000 }).toContain("name");
 
     // 名前は大きな文字。乗ると「名前を変える」の札が出る。
-    const name = preview(page).locator('.ps-top-name[data-edit="name"]');
+    const name = preview(page).locator('[data-edit="name"]').first();
     await name.hover();
     await expect(preview(page).locator("#admin-preview-pick-chip")).toHaveText("名前を変える");
     await name.click();
     await expect(page.locator(".se-part-head__title")).toHaveText("名前");
     await expect(page.locator('[data-settings-section="name"]')).toBeVisible();
-    await expect(preview(page).locator('.ps-top-name[data-admin-selected]')).toHaveCount(1);
+    await expect(preview(page).locator('[data-edit="name"][data-admin-selected]').first()).toBeAttached();
 
     // メニューの中の Gallery を押しても、ページは移らずメニューの設定が開く。
-    await preview(page).locator(".ps-nav a", { hasText: "Gallery" }).first().click();
+    await preview(page).locator("header nav a", { hasText: "Gallery" }).first().click();
     await expect(page.locator(".se-part-head__title")).toHaveText("メニュー");
     expect(await frameUrl()).toBe("/");
 
     // 戻って一覧の行に乗ると、プレビューのその部分に枠が付く。
     await page.locator(".se-part-head__back").click();
+    await page.locator('[data-site-mode="look"]').click();
     await page.locator('.se-parts [data-site-part="footer"]').hover();
     await expect(preview(page).locator('[data-edit="footer"][data-admin-selected]').first()).toBeAttached();
   });

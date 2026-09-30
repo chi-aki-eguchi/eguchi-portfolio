@@ -1,8 +1,9 @@
 import { test, expect } from "./fixtures.ts";
+import { SITE_DESIGNS } from "./site-design.ts";
 import { loginAsAdmin, gotoAdminTab } from "./helpers";
 
 // Real decoded image dimensions versus the displayed box. No production writes.
-for (const design of ["book", "classic"]) {
+for (const design of SITE_DESIGNS) {
   for (const layout of ["side", "stack"]) {
     test(`About keeps original photo proportions: ${design}/${layout}`, async ({ page, api }) => {
       const base = await (await api.get("/api/settings")).json();

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { siteDesignFrom } from "../lib/book";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { PageTitle } from "../components/PageTitle";
@@ -294,7 +295,7 @@ export default function ContactPage({
   const hasLead = !!(englishWelcome || intro || note || flow || areas);
   const layout =
     contactLayout === "split" && !hasLead ? "left" : contactLayout;
-  const leadAlign = data?.siteDesign === "book" ? "text-left" : layout === "center" ? "text-center" : "text-left";
+  const leadAlign = siteDesignFrom(data?.siteDesign) === "book" ? "text-left" : layout === "center" ? "text-center" : "text-left";
   // 見出しの下へ寄せるための負の余白は、見出しが見えているときだけ（2026-09-30）。
   // 「各ページの見出し」を出さない設定では、最初の一文がヘッダーの下へ潜り込み、
   // 「English inquiries welcome.」が PC で上端 42px（ヘッダーは 56px）に隠れていた。

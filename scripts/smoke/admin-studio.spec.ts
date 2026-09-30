@@ -1,4 +1,5 @@
 import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
+import { BOOK_DESIGN_ENABLED } from "./site-design.ts";
 import { loginAsAdmin, openSitePart } from "./helpers";
 
 /**
@@ -107,6 +108,7 @@ test.describe("写真中心の管理画面", () => {
   });
 
   test("サイト › シリーズの中の並びに、この構成で使わない設定を書く", async ({ page, api }) => {
+    test.skip(!BOOK_DESIGN_ENABLED, "写真中心の骨格だけの一言（2026-09-30 に骨格を止めた）");
     await openStudio(page, api);
     await page.getByRole("navigation", { name: "管理画面の入口" }).getByRole("button", { name: "サイト" }).click();
     // サイトの画面（2026-09-29〜）: Gallery の「並び順」を開く。

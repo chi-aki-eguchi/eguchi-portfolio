@@ -1,5 +1,6 @@
+import { BOOK_DESIGN_ENABLED, SITE_DESIGNS } from "./site-design.ts";
 import { test, expect } from "./fixtures.ts";
-for (const design of ["book", "classic"]) {
+for (const design of SITE_DESIGNS) {
   test(`Gallery waits for its actual ${design} layout before showing headings and filters`, async ({ page, api }) => {
     const base = await (await api.get("/api/settings")).json();
     const categories = await (await api.get("/api/categories")).json();
@@ -47,6 +48,7 @@ for (const design of ["book", "classic"]) {
 
 // The book layout previously ignored this setting and always rendered a large title.
 test("Book Gallery and Series honor the shared hidden page title setting", async ({ page, api }) => {
+  test.skip(!BOOK_DESIGN_ENABLED, "写真中心の骨格は 2026-09-30 に止めた");
   const settings = await (await api.get("/api/settings")).json();
   await page.route("**/api/settings**", route => route.fulfill({ json: { ...settings, siteDesign: "book", pageTitleStyle: "hidden" } }));
   for (const path of ["/gallery", "/series"]) {

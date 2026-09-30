@@ -1784,7 +1784,8 @@ test.describe("公開サイト — 相談の画面に別の事業を重ねない
       siteUrl: "https://akieguchi.com",
       formspreeUrl: "https://example.test/synthetic-contact",
     });
-    const bridge = page.locator("[data-studio-bridge]");
+    // 2026-09-30: 「FOR PHOTOGRAPHERS」の節から、フッターの1行（.ps-service）へ。
+    const bridge = page.locator(".classic-service-note .ps-service");
 
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(bridge, "Top では今までどおり出る").toBeVisible();

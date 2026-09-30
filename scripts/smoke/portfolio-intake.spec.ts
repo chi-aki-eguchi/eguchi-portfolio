@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "./fixtures.ts";
+import { BOOK_DESIGN_ENABLED } from "./site-design.ts";
 const intakeOrigin = "https://photo-work-pricing.chi-aki-18.chatgpt.site";
 async function mockPublic(page: Page, owner = true) {
   await page.route("**/api/**", async route => {
@@ -66,7 +67,9 @@ test("owner sales page shares the photo frame and shows usable delivery samples"
   await mockPublic(page);
   await page.goto("/portfolio-kit");
   await expect(page.locator(".kit-sales")).toBeVisible();
-  await expect(page.locator('.ps-site[data-site-design="book"]')).toHaveCount(1);
+  // 制作案内も作品と同じ器で包む。写真中心の器は 2026-09-30 に止めたので、止めている間は いつもの構成 の器。
+  await expect(page.locator('.ps-site[data-site-design="book"]')).toHaveCount(BOOK_DESIGN_ENABLED ? 1 : 0);
+  if (!BOOK_DESIGN_ENABLED) await expect(page.locator("header nav")).toBeVisible();
   await expect(page).toHaveTitle("写真を置く場所をつくる | 写真家のポートフォリオサイト");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("写真家のための");
   const tabs = page.getByRole("tablist", { name: "納品見本のページ" });

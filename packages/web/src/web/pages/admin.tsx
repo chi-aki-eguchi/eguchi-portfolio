@@ -4,6 +4,7 @@ import {
   AdminSettingsNavigationContext,
   SITE_LOOK_PARTS,
   SITE_MORE_PARTS,
+  SITE_SHARED_PARTS,
   SITE_PAGES,
   SITE_PARTS,
   partIsListed,
@@ -1114,7 +1115,8 @@ function AdminPageContent({
                     section: siteOpen?.kind === "settings" ? siteOpen.sections[0] ?? null : null,
                     sections: siteOpen?.kind === "settings" ? siteOpen.sections : [],
                     panel: sitePanelNode,
-                    partIds: sitePartIds,
+                    // 一覧に並べないメニュー・フッター・見出しも、プレビューの中では押せる。
+                    partIds: [...sitePartIds, ...SITE_SHARED_PARTS],
                     chipLabel: (id) => {
                       const part = (SITE_PARTS as Record<string, SitePart>)[id];
                       const label = part ? partLabel(part, siteLanguage) : id;
@@ -1460,7 +1462,8 @@ export function SetupTab({
       ...t.setup.recommended.appearance,
       done: isFilled(settings.galleryLayout),
       tab: "settings",
-      part: "structure",
+      // 骨格の切り替えは止めたので、決め手の「写真の並べ方」を開く（2026-09-30）。
+      part: "gallery-photos",
     },
   ];
 

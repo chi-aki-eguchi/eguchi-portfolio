@@ -1,4 +1,8 @@
 import { test, expect, type Page, type SmokeApi } from "./fixtures.ts";
+import { BOOK_DESIGN_ENABLED } from "./site-design.ts";
+
+// 写真中心の骨格は 2026-09-30 に止めた。止めている間はこのファイルの確認を飛ばす。
+test.skip(!BOOK_DESIGN_ENABLED, "写真中心の骨格は 2026-09-30 に止めた");
 
 /**
  * 写真中心のサイト（siteDesign = "book"、2026-09-26 作り直し）。

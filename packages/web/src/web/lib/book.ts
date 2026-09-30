@@ -10,6 +10,7 @@
  *   組む（31f079c と同じ判断）。
  */
 import { sortPhotosBySetting } from "./photo-sort";
+import { BOOK_DESIGN_ENABLED } from "./site-design-flag";
 import {
   isMeaningfulGear,
   tidyCameraName,
@@ -19,8 +20,9 @@ import type { GalleryPhoto } from "../components/PhotoGallery";
 export const SITE_DESIGNS = ["classic", "book"] as const;
 export type SiteDesign = (typeof SITE_DESIGNS)[number];
 
+/** 保存されている骨格を読む。写真中心は 2026-09-30 に止めた（`site-design-flag.ts`）。 */
 export function siteDesignFrom(value: string | null | undefined): SiteDesign {
-  return value === "book" ? "book" : "classic";
+  return BOOK_DESIGN_ENABLED && value === "book" ? "book" : "classic";
 }
 
 /**

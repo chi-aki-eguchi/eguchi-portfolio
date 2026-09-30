@@ -113,6 +113,7 @@ import {
 } from "../../shared/contact-settings";
 import { num } from "../lib/utils";
 import { hasSettingProbe, probeSettingValue } from "../lib/admin-setting-probe";
+import { BOOK_DESIGN_ENABLED } from "../lib/site-design-flag";
 import { reorderWithinShelf, shelfOf } from "../lib/shelf-reorder";
 import {
   draftAfterSuccessfulSave,
@@ -5545,8 +5546,9 @@ export function SettingsTab({
     skeleton === "book"
       ? language === "ja" ? "いつもの構成" : "the classic structure"
       : language === "ja" ? "写真中心" : "photographs first";
+  // 写真中心の骨格は止めたので（`site-design-flag.ts`）、その骨格だけの欄は開く入口ごと出さない。
   const inactiveToggle =
-    visual?.section && inactiveCount > 0 ? (
+    BOOK_DESIGN_ENABLED && visual?.section && inactiveCount > 0 ? (
       <button
         type="button"
         className="se-inactive-toggle"
@@ -7969,9 +7971,11 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="60"
                 />
-                <AdminField label={copyDesign.parts.weight}>
-                  <WeightChoice valueKey="heroNameWeight" defWeight="700" current={current} set={set} />
-                </AdminField>
+                <Fine id="heroNameWeight" isSet={!!current["heroNameWeight"]}>
+                  <AdminField label={copyDesign.parts.weight}>
+                    <WeightChoice valueKey="heroNameWeight" defWeight="700" current={current} set={set} />
+                  </AdminField>
+                </Fine>
                 <TypoControl
                   label={copyDesign.parts.tracking}
                   valueKey="heroNameTracking"
@@ -7990,6 +7994,7 @@ export function SettingsTab({
                   set={set}
                   placeholder={copyDesign.parts.autoColor}
                 />
+                <Fine id="name-en-sub" isSet={!!(current["heroNameEnSize"] || current["heroNameEnTracking"] || current["heroNameEnColor"] || current["heroSubSize"] || current["heroSubColor"])}>
                 <p className="admin-settings-subhead">{copyDesign.parts.name.enGroup}</p>
                 <TypoControl
                   label={copyDesign.parts.size}
@@ -8039,6 +8044,7 @@ export function SettingsTab({
                   set={set}
                   placeholder={copyDesign.parts.autoColor}
                 />
+                </Fine>
                 <button
                   onClick={() => {
                     [
@@ -8228,9 +8234,11 @@ export function SettingsTab({
                   unit="px"
                   defaultVal="16"
                 />
-                <AdminField label={copyDesign.parts.weight}>
-                  <WeightChoice valueKey="bodyWeight" defWeight="400" current={current} set={set} />
-                </AdminField>
+                <Fine id="bodyWeight" isSet={!!current["bodyWeight"]}>
+                  <AdminField label={copyDesign.parts.weight}>
+                    <WeightChoice valueKey="bodyWeight" defWeight="400" current={current} set={set} />
+                  </AdminField>
+                </Fine>
                 <TypoControl
                   label={copyDesign.parts.tracking}
                   valueKey="bodyTracking"
@@ -8736,6 +8744,43 @@ const SiteSkeletonContext = createContext<SiteSkeleton>("classic");
 // 見ながら直す画面で、開いた部分が出す節（部分の並び順どおり）。null は従来どおり1節ずつ。
 const VisualSectionsContext = createContext<readonly string[] | null>(null);
 
+// ── 細かく調整する（2026-09-30）────────────────────────────────────────
+// オーナー「自由度が高いのはいいけど、ぐちゃぐちゃで何が何だか分からない」。
+// 字間・行間・濃さ・英名や肩書きの細かい大きさ・写真の余白のばらつきなどは、
+// 節の中で「細かく調整する」を押したときだけ出す。値は消さず、効き目も変えない。
+type FineAdjust = { open: boolean; register: (id: string, isSet: boolean) => () => void };
+const FineAdjustContext = createContext<FineAdjust | null>(null);
+
+/** ふだんは隠す欄（節の「細かく調整する」の中に入る）。 */
+const FINE_SETTING_KEYS = new Set([
+  "navTracking", "navOpacity",
+  "heroNameTracking", "heroNameEnSize", "heroNameEnTracking", "heroSubSize",
+  "sectionLabelTracking", "sectionLeading", "sectionLabelOpacity",
+  "bodyTracking", "bodyLeading",
+  "footerOpacity", "snsOpacity",
+  "bgTextureOpacity",
+  "galleryGapScale", "galleryEmptyRate", "gallerySizeVariation", "gallerySizeScale",
+  "topWorksGapScale", "topWorksSizeScale",
+  "topSeriesStreamSpeed", "topSeriesStreamHeight",
+]);
+
+/** 節の「細かく調整する」に自分を知らせ、閉じている間は隠すかを返す。 */
+function useFineAdjust(id: string, fine: boolean, isSet: boolean): boolean {
+  const ctx = useContext(FineAdjustContext);
+  const register = ctx?.register;
+  useEffect(() => {
+    if (!fine || !register) return;
+    return register(id, isSet);
+  }, [fine, register, id, isSet]);
+  return fine && !!ctx && !ctx.open;
+}
+
+/** 「細かく調整する」の中に入れる塊（見出し・色・太さなど、TypoControl 以外の欄）。 */
+function Fine({ id, isSet = false, children }: { id: string; isSet?: boolean; children: React.ReactNode }) {
+  const hidden = useFineAdjust(id, true, isSet);
+  return hidden ? null : <>{children}</>;
+}
+
 function Section({
   sectionId,
   title,
@@ -8771,6 +8816,22 @@ function Section({
   const [open, setOpen] = useState(defaultOpen);
   const [animated, setAnimated] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  // 細かく調整する欄（しまってある数と、その中に決めた値があるか）。
+  const [fineOpen, setFineOpen] = useState(false);
+  const [fineItems, setFineItems] = useState<Record<string, boolean>>({});
+  const registerFine = useCallback((id: string, isSet: boolean) => {
+    setFineItems((prev) => (prev[id] === isSet ? prev : { ...prev, [id]: isSet }));
+    return () =>
+      setFineItems((prev) => {
+        if (!(id in prev)) return prev;
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+  }, []);
+  const fineAdjust = useMemo<FineAdjust>(() => ({ open: fineOpen, register: registerFine }), [fineOpen, registerFine]);
+  const fineCount = Object.keys(fineItems).length;
+  const fineHasValues = Object.values(fineItems).some(Boolean);
   useEffect(() => {
     const id = requestAnimationFrame(() => setAnimated(true));
     return () => cancelAnimationFrame(id);
@@ -8866,7 +8927,24 @@ function Section({
       >
         <div className="min-h-0 overflow-hidden">
           <div className="pb-10 pt-2 flex flex-col gap-6">
-            {children}
+            <FineAdjustContext.Provider value={fineAdjust}>{children}</FineAdjustContext.Provider>
+            {fineCount > 0 && (
+              <button
+                type="button"
+                className="admin-fine-toggle"
+                aria-expanded={fineOpen}
+                data-fine-toggle
+                onClick={() => setFineOpen((v) => !v)}
+              >
+                {language === "ja"
+                  ? fineOpen
+                    ? "細かい調整を閉じる"
+                    : `細かく調整する（字間・濃さなど）${fineHasValues ? " — 調整済みの欄あり" : ""}`
+                  : fineOpen
+                    ? "Hide fine adjustments"
+                    : `Fine adjustments (spacing, opacity…)${fineHasValues ? " — some are set" : ""}`}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -9341,6 +9419,7 @@ function TypoControl({
   // （名前 24px・濃さ 35〜100%）と違うため、少し動かすだけでサイトが跳ねていた。
   const isAuto = raw.trim() === "" || isNaN(parsed);
   const probed = useProbedSetting(valueKey, isAuto);
+  const fineHidden = useFineAdjust(valueKey, FINE_SETTING_KEYS.has(valueKey), !isAuto);
   const fallback = probed ?? (isOpacity ? 0.3 : parseFloat(defaultVal ?? String(min)));
   // 刻みに合わせて丸める（0.04 が 0.04000000000000001 と出ないよう、刻みの桁で切る）。
   const stepDigits = (String(step).split(".")[1] ?? "").length;
@@ -9358,6 +9437,7 @@ function TypoControl({
     if (!isNaN(n)) set(valueKey, String(Math.min(max, Math.max(min, n / scale))));
   };
 
+  if (fineHidden) return null;
   const autoLabel = language === "en" ? "Auto" : "自動";
   const autoTitle =
     language === "en"

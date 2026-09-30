@@ -495,3 +495,28 @@
   /* 右端を薄くし、端まで送ったときは最後の項目が薄い所に掛からないよう余白を足す。 */
   .se-bar { padding-right: 32px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 }
+
+/* めったに触らない部分をしまっておく「詳しい設定」（2026-09-30）。 */
+.se-parts-more {
+  margin-top: 18px;
+  border-top: 1px solid var(--admin-line);
+  padding-top: 6px;
+}
+.se-parts-more > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+.se-parts-more > summary::-webkit-details-marker { display: none; }
+.se-parts-more > summary::before {
+  content: "›";
+  display: inline-block;
+  transition: transform var(--dur-fast, 160ms);
+}
+.se-parts-more[open] > summary::before { transform: rotate(90deg); }

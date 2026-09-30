@@ -15,7 +15,6 @@ import { galleryExcludesSeries, siteDesignFrom, usesBookChrome } from "../lib/bo
 import { PhotoSiteFrame } from "./photo-site/PhotoSiteFrame";
 import { PhotoServiceNote } from "./photo-site/PhotoServiceNote";
 import { waitForWebFonts } from "../lib/web-fonts";
-import { StudioBridge } from "./StudioBridge";
 import { useNavFit } from "../hooks/useNavFit";
 import { lockPageScroll } from "../lib/scroll-lock";
 import { useDarkModeContext, useServiceVisibility } from "./provider";
@@ -358,7 +357,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: isEnglishChrome ? "/en/contact" : "/contact",
       label: data?.navLabelContact ?? "Contact",
     },
-    ...(showServiceInNav || (showService && isServiceOwnerSite(data?.siteUrl, undefined))
+    // 制作の入口は、オーナーのサイトではメニューに置かずフッターの1行へ（写真中心の器と
+    // 同じ、2026-09-30 オーナー「サイトが複雑」）。制作案内のページを見ている間だけ出す。
+    // 配布先で「メニューに出す」を選んだときは、今までどおりメニューに置く。
+    ...((showServiceInNav && !isServiceOwnerSite(data?.siteUrl, undefined)) || ownerServiceChrome
       ? [
           {
             href:
@@ -965,7 +967,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {showService &&
         !location.includes("portfolio-kit") &&
         !isContactRoute(location) && (
-          <StudioBridge siteUrl={data?.siteUrl} language={location.startsWith("/en/") ? "en" : "ja"} compact />
+          // 以前は「FOR PHOTOGRAPHERS」の見出しと2本のリンクの節（StudioBridge）で、
+          // 作品を見終えた直後に毎ページ宣伝の箱が出ていた。写真中心の器と同じ1行へ。
+          <div className="classic-service-note max-w-5xl mx-auto px-6 md:px-12" data-footer-layout={footerLayout}>
+            <PhotoServiceNote siteUrl={data?.siteUrl} language={location.startsWith("/en/") ? "en" : "ja"} />
+          </div>
         )}
 
       <footer
@@ -1118,7 +1124,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
             </p>
+            {/* オーナーのサイトでは、フッターの制作の1行と同じ行き先なので出さない（写真中心と同じ）。 */}
             {data?.templateCreditLabel &&
+              !isServiceOwnerSite(data?.siteUrl, undefined) &&
               (templateCreditUrl ? (
                 <a
                   href={templateCreditUrl}

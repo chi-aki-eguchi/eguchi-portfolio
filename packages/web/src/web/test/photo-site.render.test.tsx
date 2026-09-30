@@ -10,6 +10,7 @@
  *  5. 設定が無いサイト（配布版の既定）は今までの骨格のまま
  */
 import { test, expect, describe, afterEach, beforeAll, afterAll } from "bun:test";
+import { BOOK_DESIGN_ENABLED } from "../lib/site-design-flag";
 import { setupDom, canned, flush } from "./jsdom-setup";
 import { bookFacts, galleryExcludesSeries, siteDesignFrom } from "../lib/book";
 
@@ -116,12 +117,13 @@ describe("計算", () => {
   });
 
   test("設定値の読み方", () => {
-    expect(siteDesignFrom("book")).toBe("book");
+    // 写真中心は 2026-09-30 に止めた（lib/site-design-flag.ts）。止めている間は "book" も いつもの構成。
+    expect(siteDesignFrom("book")).toBe(BOOK_DESIGN_ENABLED ? "book" : "classic");
     expect(siteDesignFrom("anything")).toBe("classic");
     expect(siteDesignFrom(undefined)).toBe("classic");
   });
 
-  test("写真中心のサイトでは、作品の写真を外す設定に関わらず、すべての写真", () => {
+  test.skipIf(!BOOK_DESIGN_ENABLED)("写真中心のサイトでは、作品の写真を外す設定に関わらず、すべての写真", () => {
     expect(galleryExcludesSeries({ siteDesign: "book", galleryExcludeSeries: "on" })).toBe(false);
     expect(galleryExcludesSeries({ siteDesign: "classic", galleryExcludeSeries: "on" })).toBe(true);
     expect(galleryExcludesSeries({ galleryExcludeSeries: "off" })).toBe(false);
@@ -161,7 +163,8 @@ describe("シリーズの札", () => {
 });
 
 describe("シリーズの一覧", () => {
-  test("題名と写真の1段。行はシリーズのページへ開く", async () => {
+  // 写真中心のページを公開サイトの経路で描くので、止めている間は飛ばす。
+  test.skipIf(!BOOK_DESIGN_ENABLED)("題名と写真の1段。行はシリーズのページへ開く", async () => {
     seedApi({ siteDesign: "book" });
     const previousPhotos = canned["/api/photos"];
     canned["/api/photos"] = { photos: PHOTOS };
@@ -205,7 +208,8 @@ describe("シリーズのページ", () => {
     else delete (proto as unknown as Record<string, unknown>).clientWidth;
   });
 
-  test("見出しは1つ。写真はシリーズの並び順どおりに置き、押すとビューアが開く", async () => {
+  // 写真中心のページを公開サイトの経路で描くので、止めている間は飛ばす。
+  test.skipIf(!BOOK_DESIGN_ENABLED)("見出しは1つ。写真はシリーズの並び順どおりに置き、押すとビューアが開く", async () => {
     seedApi({ siteDesign: "book" });
     const m = await mountAt("/series/sea", "/series/:slug", SeriesDetailPage);
     try {

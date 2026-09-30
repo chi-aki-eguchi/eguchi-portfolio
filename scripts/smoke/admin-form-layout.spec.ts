@@ -1,5 +1,6 @@
 import { backToSiteList, chooseSettingsSection, SETTINGS_SECTION_COUNT, storeAdminTab } from "./helpers";
 import { expect, test, type Page, type Route } from "./fixtures.ts";
+import { BOOK_DESIGN_ENABLED } from "./site-design.ts";
 
 const SETTINGS = {
   setupCompleted: "true",
@@ -383,7 +384,12 @@ test.describe("admin — Form layout", () => {
     await openTab(page, "settings");
     expect(SECTION_IDS).toHaveLength(SETTINGS_SECTION_COUNT);
 
-    for (const sectionId of SECTION_IDS) {
+    // 写真中心の骨格を止めている間（2026-09-30〜）、骨格の切り替えと写真中心だけの節は
+    // 管理画面のどこからも出さない。
+    const reachable = BOOK_DESIGN_ENABLED
+      ? SECTION_IDS
+      : SECTION_IDS.filter((id) => id !== "page-layout" && id !== "home");
+    for (const sectionId of reachable) {
       await chooseSettingsSection(page, sectionId);
       // 部分によっては2つの節を並べる（作家の言葉＝文と位置、About＝文章と作家の言葉）。
       const sections = page.locator("[data-settings-section]");

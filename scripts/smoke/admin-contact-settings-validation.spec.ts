@@ -152,7 +152,7 @@ test.describe("admin — Contact setting validation", () => {
       ? {
           email: "連絡先メールアドレス",
           endpoint: "お問い合わせフォームの送信先",
-          save: "保存",
+          save: "保存して公開",
           emailError: "メールアドレスの形式を確認してください。空欄にすると表示しません。",
           endpointError:
             "送信先は https:// で始まる有効なURLにしてください。空欄にするとフォームを表示しません。",
@@ -160,7 +160,7 @@ test.describe("admin — Contact setting validation", () => {
       : {
           email: "Contact Email",
           endpoint: "Contact Form URL",
-          save: "Save",
+          save: "Save & publish",
           emailError: "Enter a valid email address, or leave this blank to hide it.",
           endpointError:
             "Enter a valid https:// URL, or leave this blank to hide the form.",
@@ -174,10 +174,10 @@ test.describe("admin — Contact setting validation", () => {
     );
     const email = page.getByLabel(labels.email, { exact: true });
     const endpoint = page.getByLabel(labels.endpoint, { exact: true });
-    const save = (desktop
-      ? page.locator("[data-settings-save-panel]")
-      : page.locator(".admin-settings-mobile-save")
-    ).getByRole("button", { name: labels.save, exact: true });
+    // 写真中心の管理画面では、保存の帯はスマホでも下のドック1つ（2026-09-30）。
+    const save = page
+      .locator("[data-settings-save-panel]")
+      .getByRole("button", { name: labels.save, exact: true });
     await expect(email).toHaveAttribute("type", "email");
     await expect(endpoint).toHaveAttribute("type", "url");
 
@@ -264,7 +264,7 @@ test.describe("admin — Contact setting validation", () => {
     await description.fill("連絡先とは無関係な説明文だけを更新します。");
     await page
       .locator("[data-settings-save-panel]")
-      .getByRole("button", { name: "保存", exact: true })
+      .getByRole("button", { name: "保存して公開", exact: true })
       .click();
     await expect.poll(() => mocks.settingsWrites.length).toBe(1);
     expect(mocks.settingsWrites[0]).toEqual({

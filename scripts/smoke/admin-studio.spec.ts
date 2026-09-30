@@ -9,7 +9,7 @@ import { loginAsAdmin, openSitePart } from "./helpers";
  * - 右の欄のチェックで、1枚をほかの所属はそのままに別のシリーズへも入れられる
  * - 写真を左のシリーズへドラッグすると、そのシリーズに入る
  * - ドラッグでサイトの並びを変えられる
- * - シリーズの画面の「写真を加える」で、写真の一覧から選んで入れられる
+ * - シリーズの画面の「写真の一覧から加える」で、写真の一覧から選んで入れられる
  *
  * 書き込みはこの spec の中で受け止め（送られた中身を確かめる）、DB には書かない。
  */
@@ -94,7 +94,8 @@ test.describe("写真中心の管理画面", () => {
     await page.getByRole("button", { name: "シリーズ", exact: true }).click();
     await page.locator(".st-side__item--series", { hasText: "港の光" }).click();
     await expect(page.locator(".st-title-input")).toHaveValue("港の光");
-    await page.getByRole("button", { name: "写真を加える" }).click();
+    // 加える入口は2つ（パソコンから取り込む／写真の一覧から加える、2026-09-30）。
+    await page.getByRole("button", { name: "写真の一覧から加える" }).click();
     const dialog = page.locator("dialog.st-dialog[open]");
     await expect(dialog).toBeVisible();
     await dialog.locator('.st-tile[data-photo-id="7001"]').click();

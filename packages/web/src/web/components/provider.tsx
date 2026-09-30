@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, createContext, useContext } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { JS_PREVIEW_KEYS } from "../lib/settings-preview";
-import { ensureAccentContrast } from "../lib/color-contrast";
+import { ensureAccentContrast, isDarkTextColor } from "../lib/color-contrast";
 import { heroMotionCssVars } from "../lib/hero-motion";
 import {
   applyThemeColors,
@@ -328,6 +328,13 @@ function applyReadableHeroTextColors(
       root.style.removeProperty(cssVar);
     }
   }
+  // 写真の下側に重ねるにじみは、名前の色と反対の明るさにする（2026-09-30）。
+  // 暗い色の名前の下を黒く重ねると、名前がにじみに沈んで読めなかった。
+  if (isDarkTextColor(settings.heroNameColor)) {
+    root.style.setProperty("--hero-overlay-rgb", "255, 255, 255");
+  } else {
+    root.style.removeProperty("--hero-overlay-rgb");
+  }
 }
 
 interface ProviderProps {
@@ -437,6 +444,10 @@ export function Provider({ children }: ProviderProps) {
     // functional reading text below 14px.
     const bodySizePx = (v: string | undefined) =>
       v ? `max(14px, ${sizePx(v)})` : undefined;
+    // 見出しの小さな札・フッター・名前の下の肩書きは 12px を下限に（2026-09-30）。
+    // 管理画面の欄も 12 からにしてあるので、動かしても変わらない範囲は無い。
+    const labelSizePx = (v: string | undefined) =>
+      v ? `max(12px, ${sizePx(v)})` : undefined;
 
     // D4: global type scale + link styling
     set("--global-font-scale", data?.globalFontScale || undefined);
@@ -496,14 +507,14 @@ export function Provider({ children }: ProviderProps) {
     set("--nav-size", sizePx(data?.navSize));
     set("--body-size", bodySizePx(data?.bodySize));
     set("--heading-size", sizePx(data?.headingSize));
-    set("--section-label-size", sizePx(data?.sectionLabelSize));
+    set("--section-label-size", labelSizePx(data?.sectionLabelSize));
     set("--section-label-opacity", data?.sectionLabelOpacity);
     set("--footer-opacity", data?.footerOpacity);
-    set("--footer-size", sizePx(data?.footerSize));
+    set("--footer-size", labelSizePx(data?.footerSize));
     set("--sns-opacity", data?.snsOpacity);
     set("--hero-name-size", sizePx(data?.heroNameSize));
     set("--hero-name-en-size", sizePx(data?.heroNameEnSize));
-    set("--hero-sub-size", sizePx(data?.heroSubSize));
+    set("--hero-sub-size", labelSizePx(data?.heroSubSize));
     applyReadableHeroTextColors(
       {
         heroNameColor: data?.heroNameColor,
@@ -742,6 +753,7 @@ export function Provider({ children }: ProviderProps) {
       const sizePx = (v: string) =>
         `calc(${v}px * var(--global-font-scale, 1))`;
       const bodySizePx = (v: string) => `max(14px, ${sizePx(v)})`;
+      const labelSizePx = (v: string) => `max(12px, ${sizePx(v)})`;
       const em = (v: string) => `${v}em`;
 
       // Colors — B-21: DB適用側と同じ規則で、テーマごとに当てる色を選ぶ。
@@ -836,14 +848,14 @@ export function Provider({ children }: ProviderProps) {
       applyVar("--nav-size", s.navSize, sizePx);
       applyVar("--body-size", s.bodySize, bodySizePx);
       applyVar("--heading-size", s.headingSize, sizePx);
-      applyVar("--section-label-size", s.sectionLabelSize, sizePx);
+      applyVar("--section-label-size", s.sectionLabelSize, labelSizePx);
       applyVar("--section-label-opacity", s.sectionLabelOpacity);
       applyVar("--footer-opacity", s.footerOpacity);
-      applyVar("--footer-size", s.footerSize, sizePx);
+      applyVar("--footer-size", s.footerSize, labelSizePx);
       applyVar("--sns-opacity", s.snsOpacity);
       applyVar("--hero-name-size", s.heroNameSize, sizePx);
       applyVar("--hero-name-en-size", s.heroNameEnSize, sizePx);
-      applyVar("--hero-sub-size", s.heroSubSize, sizePx);
+      applyVar("--hero-sub-size", s.heroSubSize, labelSizePx);
       applyReadableHeroTextColors(
         previewHeroTextColorsRef.current,
         getComputedStyle(document.body).backgroundColor,

@@ -75,6 +75,9 @@ export function storeAdminTab(tab: string): void {
     service: { mode: "more", part: "service" },
     setup: { mode: "more", part: "setup" },
   };
+  // 管理画面は開いている画面を URL の # にも書き、読み込み直すと # を優先する
+  // （ブラウザの「戻る」用、2026-09-30）。ここで決めた画面から始めるよう # を消す。
+  history.replaceState(history.state, "", location.pathname + location.search);
   if (tab === "gallery") {
     localStorage.setItem("admin:book:view", JSON.stringify("library"));
     return;

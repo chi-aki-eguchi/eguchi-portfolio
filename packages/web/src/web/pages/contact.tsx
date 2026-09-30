@@ -295,6 +295,10 @@ export default function ContactPage({
   const layout =
     contactLayout === "split" && !hasLead ? "left" : contactLayout;
   const leadAlign = data?.siteDesign === "book" ? "text-left" : layout === "center" ? "text-center" : "text-left";
+  // 見出しの下へ寄せるための負の余白は、見出しが見えているときだけ（2026-09-30）。
+  // 「各ページの見出し」を出さない設定では、最初の一文がヘッダーの下へ潜り込み、
+  // 「English inquiries welcome.」が PC で上端 42px（ヘッダーは 56px）に隠れていた。
+  const titleVisible = data?.pageTitleStyle !== "hidden";
   // Re-run entrance observer when settings load or the form state switches, so
   // newly-rendered sections (form / success view) fade in rather than stay hidden.
   const entranceRef = usePageEntrance([data, status]);
@@ -582,7 +586,7 @@ export default function ContactPage({
             default JP page still sees they can reach out. Hidden when set to "". */}
         {status !== "success" && englishWelcome && (
           <p
-            className={`${leadAlign} font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] -mt-6 mb-8 break-words page-entrance page-entrance-delay-1`}
+            className={`${leadAlign} font-en text-xs tracking-[0.02em] text-[color:var(--text-quiet)] ${titleVisible ? "-mt-6" : ""} mb-8 break-words page-entrance page-entrance-delay-1`}
           >
             {englishWelcome}
           </p>
@@ -594,7 +598,7 @@ export default function ContactPage({
             so the thank-you moment stays quiet). */}
         {formspreeUrl && status !== "success" && intro && (
           <p
-            className={`${leadAlign} text-[color:var(--text-quiet)] -mt-4 mb-5 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
+            className={`${leadAlign} text-[color:var(--text-quiet)] ${titleVisible || englishWelcome ? "-mt-4" : ""} mb-5 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
             style={readableBodyStyle}
           >
             {intro}

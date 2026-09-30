@@ -5,10 +5,16 @@
  * state (0 photos / empty settings). A throw inside any component leaves the
  * host empty or rejects — either fails here before a ZIP can be built.
  */
-import { test, expect, describe } from "bun:test";
+import { test, expect, describe, beforeEach } from "bun:test";
 import { setupDom, canned, samplePhotos, flush } from "./jsdom-setup";
 
 const dom = setupDom();
+// 管理画面は開いている画面を URL の # に書く（ブラウザの「戻る」用、2026-09-30）。
+// 前のテストの # が残ると、テストが localStorage で決めた開始画面より優先されるので消す。
+beforeEach(() => {
+  const { pathname, search } = dom.window.location;
+  dom.window.history.replaceState(null, "", `${pathname}${search}`);
+});
 
 const { createElement, StrictMode } = await import("react");
 const { createRoot } = await import("react-dom/client");

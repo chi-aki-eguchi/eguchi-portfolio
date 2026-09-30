@@ -112,6 +112,7 @@ import {
   type ContactSettingKey,
 } from "../../shared/contact-settings";
 import { num } from "../lib/utils";
+import { hasSettingProbe, probeSettingValue } from "../lib/admin-setting-probe";
 import { reorderWithinShelf, shelfOf } from "../lib/shelf-reorder";
 import {
   draftAfterSuccessfulSave,
@@ -4899,7 +4900,8 @@ export function SettingsTab({
       );
       setSaved(true);
       setLastSavedAt(
-        new Intl.DateTimeFormat(undefined, {
+        // 管理画面の言葉に合わせる（ブラウザが英語だと「12:46 PM に保存」になっていた）。
+        new Intl.DateTimeFormat(language === "en" ? "en" : "ja-JP", {
           hour: "2-digit",
           minute: "2-digit",
         }).format(new Date()),
@@ -8024,7 +8026,7 @@ export function SettingsTab({
                   valueKey="heroSubSize"
                   current={current}
                   set={set}
-                  min={6}
+                  min={12}
                   max={60}
                   step={1}
                   unit="px"
@@ -8135,7 +8137,7 @@ export function SettingsTab({
                   valueKey="sectionLabelSize"
                   current={current}
                   set={set}
-                  min={8}
+                  min={12}
                   max={40}
                   step={1}
                   unit="px"
@@ -8356,7 +8358,7 @@ export function SettingsTab({
                   valueKey="footerSize"
                   current={current}
                   set={set}
-                  min={7}
+                  min={12}
                   max={32}
                   step={1}
                   unit="px"
@@ -9291,6 +9293,23 @@ function FontPicker({
   );
 }
 
+/** 未設定の欄が、プレビューに今描かれている値を読む（見ているページに無ければ null）。 */
+function useProbedSetting(valueKey: string, enabled: boolean): number | null {
+  const [value, setValue] = useState<number | null>(null);
+  useEffect(() => {
+    if (!enabled || !hasSettingProbe(valueKey)) {
+      setValue(null);
+      return;
+    }
+    const read = () => setValue(probeSettingValue(valueKey));
+    read();
+    // プレビューは読み込み直し・ページ移動・ほかの設定で描き変わるので、軽く読み続ける。
+    const timer = window.setInterval(read, 1200);
+    return () => window.clearInterval(timer);
+  }, [valueKey, enabled]);
+  return value;
+}
+
 function TypoControl({
   label,
   valueKey,
@@ -9314,11 +9333,19 @@ function TypoControl({
   unit?: string;
   defaultVal?: string;
 }) {
-  const { t } = useAdminI18n();
+  const { t, language } = useAdminI18n();
   const raw = current[valueKey] ?? "";
   const parsed = parseFloat(raw);
-  const fallback = isOpacity ? 0.3 : parseFloat(defaultVal ?? String(min));
-  const value = Math.min(max, Math.max(min, isNaN(parsed) ? fallback : parsed));
+  // 未設定のときは、プレビューに今描かれている値から動かし始める（2026-09-30）。
+  // 以前は決め打ちの数字（名前 60px・濃さ 30% など）を出していて、実際の見た目
+  // （名前 24px・濃さ 35〜100%）と違うため、少し動かすだけでサイトが跳ねていた。
+  const isAuto = raw.trim() === "" || isNaN(parsed);
+  const probed = useProbedSetting(valueKey, isAuto);
+  const fallback = probed ?? (isOpacity ? 0.3 : parseFloat(defaultVal ?? String(min)));
+  // 刻みに合わせて丸める（0.04 が 0.04000000000000001 と出ないよう、刻みの桁で切る）。
+  const stepDigits = (String(step).split(".")[1] ?? "").length;
+  const rounded = (v: number) => Number((Math.round(v / step) * step).toFixed(stepDigits));
+  const value = Math.min(max, Math.max(min, isAuto ? rounded(fallback) : parsed));
   // A9: direct numeric entry, two-way with the slider. While the field is
   // focused the user's keystrokes win (intermediate states like "0." parse as
   // NaN and just don't commit); blur returns to the canonical value.
@@ -9331,10 +9358,24 @@ function TypoControl({
     if (!isNaN(n)) set(valueKey, String(Math.min(max, Math.max(min, n / scale))));
   };
 
+  const autoLabel = language === "en" ? "Auto" : "自動";
+  const autoTitle =
+    language === "en"
+      ? probed != null
+        ? "Not set yet — the site uses its own default. Moving it starts from what you see now."
+        : "Not set yet — the site uses its own default."
+      : probed != null
+        ? "まだ決めていません（サイトの既定で表示中）。動かすと、今の見た目から変わります。"
+        : "まだ決めていません（サイトの既定で表示中）。";
   return (
-    <div className="flex items-center gap-3 min-w-0">
+    <div className="flex items-center gap-3 min-w-0" data-typo-auto={isAuto || undefined}>
       <span className="text-[length:var(--admin-text-note)] text-[var(--admin-muted)] w-32 min-w-0 truncate">
         {label}
+        {isAuto && (
+          <span className="admin-typo-auto" title={autoTitle}>
+            {autoLabel}
+          </span>
+        )}
       </span>
       <input
         aria-label={label}
@@ -9354,7 +9395,8 @@ function TypoControl({
         min={min * scale}
         max={max * scale}
         step={isOpacity ? 1 : step}
-        value={editing ?? shown}
+        value={editing ?? (isAuto && probed == null ? "" : shown)}
+        placeholder={isAuto ? autoLabel : undefined}
         onFocus={() => setEditing(shown)}
         onChange={(e) => {
           setEditing(e.target.value);
@@ -9472,6 +9514,10 @@ function WeightChoice({
   const jaDef = GOOGLE_FONTS_JA[current["fontJa"] || ""];
   const weights = jaDef?.weights ?? [300, 400, 500, 700];
   const chosen = current[valueKey] || "";
+  // 「既定」が実際に何の太さで出ているかは骨格・表紙の組み方で違う（写真中心は 500、
+  // いつもの構成は 700 か 300）。プレビューから読めたらその数字を出す（2026-09-30）。
+  const probedWeight = useProbedSetting(valueKey, chosen === "");
+  const defaultLabel = probedWeight != null ? String(Math.round(probedWeight)) : defWeight;
   const option = (value: string, label: string, weight?: number) => (
     <button
       key={value || "default"}
@@ -9490,7 +9536,7 @@ function WeightChoice({
   );
   return (
     <div className="flex gap-1.5 flex-wrap">
-      {option("", copyDesign.fonts.defaultWeight(defWeight))}
+      {option("", copyDesign.fonts.defaultWeight(defaultLabel))}
       {weights.map((w) => option(String(w), String(w), w))}
     </div>
   );
@@ -9684,7 +9730,8 @@ function FloatingSaveBar({
             ) : (
               <Check size={13} />
             )}
-            {t.common.save}
+            {/* 保存すると公開サイトにそのまま出る。設定の画面の帯と同じ言葉にする。 */}
+            {t.formLayout.save}
           </button>
         </div>
       )}

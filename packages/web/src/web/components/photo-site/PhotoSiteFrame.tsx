@@ -39,6 +39,7 @@ export function PhotoSiteFrame({
   dark,
   english,
   languageSwitch,
+  languageSlot,
   footer,
   footerLayout,
   children,
@@ -51,6 +52,8 @@ export function PhotoSiteFrame({
   dark: DarkMode;
   english: boolean;
   languageSwitch?: React.ReactNode;
+  /** 英語のページが無いページで、切り替えと同じ幅を空けておく印（メニューを動かさない）。 */
+  languageSlot?: React.ReactNode;
   footer: React.ReactNode;
   /** 管理画面「フッターの並べ方」: center / left / split */
   footerLayout?: string;
@@ -169,7 +172,11 @@ export function PhotoSiteFrame({
                   </button>
                 </li>
               )}
-              {languageSwitch && <li className="ps-nav__lang">{languageSwitch}</li>}
+              {languageSwitch ? (
+                <li className="ps-nav__lang">{languageSwitch}</li>
+              ) : languageSlot ? (
+                <li className="ps-nav__lang" aria-hidden="true">{languageSlot}</li>
+              ) : null}
             </ul>
             <button
               ref={menuButtonRef}

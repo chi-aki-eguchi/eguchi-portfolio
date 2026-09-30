@@ -196,7 +196,8 @@ export function StudioProvider({
       try {
         await target.run();
         await refresh();
-        say({ text: tx(`元に戻しました（${target.label}）`, `Undone (${target.label})`) });
+        // 「元に戻しました（非公開）」では、いま非公開なのか公開に戻ったのか読み取れなかった。
+        say({ text: tx(`「${target.label}」を取り消しました`, `Undone: ${target.label}`) });
       } catch {
         await refresh();
         fail(tx("元に戻せませんでした。最新の状態を読み直しました。", "Could not undo. Reloaded the latest state."));
@@ -351,6 +352,12 @@ export async function trashPhoto(id: number) {
 
 export async function restorePhoto(id: number) {
   const res = await adminApi.photos[":id"].restore.$post({ param: { id: String(id) } });
+  assertOk(res);
+}
+
+/** ゴミ箱の写真を完全に削除する（元に戻せない）。 */
+export async function purgePhoto(id: number) {
+  const res = await adminApi.photos[":id"].purge.$delete({ param: { id: String(id) } });
   assertOk(res);
 }
 

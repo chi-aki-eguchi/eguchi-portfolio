@@ -86,3 +86,27 @@ export function ensureAccentContrast(
   }
   return toHex(target);
 }
+
+/**
+ * 写真の上に置く文字の影（2026-09-30）。
+ *
+ * 影は文字と反対の明るさにする。暗い色の名前（本番: #404040）に黒い影を重ねると、
+ * 文字の輪郭が黒くにじんで、白い波しぶきの上でも暗い岩の上でも読めなくなっていた。
+ * 色が空・読めない値なら、既定の白い文字に合わせた暗い影。
+ */
+export function textShadowOverPhoto(
+  color: string | undefined,
+  blur: number,
+  strength = 0.4,
+): string {
+  if (isDarkTextColor(color)) {
+    return `0 0 ${blur}px rgba(255,255,255,${Math.min(0.85, strength + 0.3).toFixed(2)})`;
+  }
+  return `0 1px ${blur}px rgba(0,0,0,${strength})`;
+}
+
+/** 写真の上の文字として「暗い色」か。空・読めない値は既定の白い文字として扱う。 */
+export function isDarkTextColor(color: string | undefined): boolean {
+  const rgb = parseColor(color);
+  return Boolean(rgb && relativeLuminance(rgb) < 0.35);
+}

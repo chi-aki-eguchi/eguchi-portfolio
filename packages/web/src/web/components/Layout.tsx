@@ -142,6 +142,24 @@ function LanguageSwitchLinks({
   );
 }
 
+// 英語のページが無いページでも、JP | EN と同じ幅を空けておく（2026-09-30）。
+// About と Contact にだけ切り替えが出ると、そのぶんメニュー全体が 70〜112px
+// 左へずれ、ページを移るたびに項目が動いて見えていた。
+function LanguageSwitchSlot() {
+  return (
+    <span
+      aria-hidden="true"
+      className="language-switch font-en inline-flex items-center gap-1.5"
+      style={{ fontSize: "0.7rem", visibility: "hidden" }}
+      data-language-slot=""
+    >
+      <span>JP</span>
+      <span>|</span>
+      <span>EN</span>
+    </span>
+  );
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -480,7 +498,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       data?.navLabelTop,
       ...navItems.map((i) => i.label),
       dm ? "dm" : "",
-      showLanguageSwitch && languagePairHref ? "lang" : "",
+      showLanguageSwitch ? "lang" : "",
     ].join("|"),
   );
   const effectiveNavPosition = navFit.collapsed && navPosition === "left" ? "top" : navPosition;
@@ -543,6 +561,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           ) : undefined
         }
+        languageSlot={showLanguageSwitch ? <LanguageSwitchSlot /> : undefined}
         footer={
           <>
             {showService &&
@@ -758,7 +777,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </li>
             )}
-            {showLanguageSwitch && languagePairHref && (
+            {showLanguageSwitch && languagePairHref ? (
               <li>
                 <LanguageSwitchLinks
                   isEnglishPage={isEnglishPage}
@@ -766,7 +785,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   enHref={isEnglishPage ? location : languagePairHref}
                 />
               </li>
-            )}
+            ) : showLanguageSwitch ? (
+              <li aria-hidden="true">
+                <LanguageSwitchSlot />
+              </li>
+            ) : null}
           </ul>
 
           {/* 写真集の骨格のスマホ: アイコンの帯ではなく、本の柱のような文字だけ。
@@ -1061,7 +1084,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public py-1.5"
                 style={
                   {
-                    fontSize: "var(--footer-credit-size)",
+                    // 方針・利用条件は押して読む先なので、テンプレート表記
+                    // （--footer-credit-size）ではなくフッターの文字と同じ大きさ。
+                    fontSize: "var(--footer-size, 12px)",
                     "--link-rest": "var(--footer-opacity, 0.22)",
                   } as React.CSSProperties
                 }
@@ -1073,7 +1098,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className="tap-target font-en tracking-[0.05em] nav-link-luxury footer-link-public py-1.5"
                 style={
                   {
-                    fontSize: "var(--footer-credit-size)",
+                    // 方針・利用条件は押して読む先なので、テンプレート表記
+                    // （--footer-credit-size）ではなくフッターの文字と同じ大きさ。
+                    fontSize: "var(--footer-size, 12px)",
                     "--link-rest": "var(--footer-opacity, 0.22)",
                   } as React.CSSProperties
                 }

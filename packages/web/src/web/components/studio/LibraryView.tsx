@@ -7,6 +7,7 @@ import { DRAG_TYPE, GRID_SIZES, StudioGrid, type GridSize } from "./StudioGrid";
 import { Inspector } from "./Inspector";
 import {
   matchesQuery,
+  purgePhoto,
   reorderAllPhotos,
   reorderSeriesPhotos,
   restorePhoto,
@@ -464,6 +465,31 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
       fail(tx("戻せませんでした。", "Could not restore."));
     }
   };
+  // 完全に削除（2026-09-30）。以前は説明に「完全削除してください」とあるのに、
+  // この画面には戻すボタンしか無かった。元に戻せないので、必ず確かめてから消す。
+  const [purgeIds, setPurgeIds] = useState<number[] | null>(null);
+  const [purging, setPurging] = useState(false);
+  const purge = async (ids: number[]) => {
+    setPurging(true);
+    let done = 0;
+    try {
+      for (const id of ids) {
+        await purgePhoto(id);
+        done += 1;
+      }
+      say({ text: tx(`${done === 1 ? "1枚" : `${done}枚`}を完全に削除しました`, `Permanently deleted ${done === 1 ? "1 photo" : `${done} photos`}`) });
+    } catch {
+      fail(
+        done
+          ? tx(`${done}枚だけ完全に削除しました。残りは消せませんでした。`, `Deleted only ${done}. The rest could not be deleted.`)
+          : tx("完全に削除できませんでした。", "Could not delete permanently."),
+      );
+    } finally {
+      setPurging(false);
+      setPurgeIds(null);
+      await Promise.all([refresh(), trashQ.refetch()]);
+    }
+  };
   const photos = trashQ.data?.photos ?? [];
   return (
     <dialog ref={ref} className="st-dialog" onClose={onClose} aria-label={tx("ゴミ箱", "Trash")}>
@@ -484,18 +510,43 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
         <>
           <ul className="st-trash">
             {photos.map((p) => (
-              <li key={p.id} className="st-trash__item">
+              <li key={p.id} className="st-trash__item" data-purge-target={purgeIds?.includes(p.id) || undefined}>
                 <img src={adminPhotoSrc(p, 320, 60)} alt="" />
-                <button type="button" className="st-ax-btn st-link" onClick={() => void restore([p.id])}>
-                  {tx("戻す", "Restore")}
-                </button>
+                <span className="st-trash__actions">
+                  <button type="button" className="st-ax-btn st-link" onClick={() => void restore([p.id])} disabled={purging}>
+                    {tx("戻す", "Restore")}
+                  </button>
+                  <button type="button" className="st-ax-btn st-link st-link--danger" onClick={() => setPurgeIds([p.id])} disabled={purging}>
+                    {tx("完全に削除", "Delete")}
+                  </button>
+                </span>
               </li>
             ))}
           </ul>
           <div className="st-dialog__foot">
-            <button type="button" className="st-ax-btn st-button" onClick={() => void restore(photos.map((p) => p.id))}>
-              {tx("すべて戻す", "Restore all")}
-            </button>
+            {purgeIds ? (
+              <span className="st-confirm st-confirm--inline" role="alert">
+                {tx(
+                  `${purgeIds.length === 1 ? "この写真" : `${purgeIds.length}枚`}を完全に削除しますか？元に戻せません。`,
+                  `Permanently delete ${purgeIds.length === 1 ? "this photo" : `${purgeIds.length} photos`}? This cannot be undone.`,
+                )}
+                <button type="button" className="st-ax-btn st-button st-button--danger" disabled={purging} onClick={() => void purge(purgeIds)}>
+                  {purging ? tx("削除しています…", "Deleting…") : tx("完全に削除する", "Delete permanently")}
+                </button>
+                <button type="button" className="st-ax-btn st-link" disabled={purging} onClick={() => setPurgeIds(null)}>
+                  {tx("やめる", "Cancel")}
+                </button>
+              </span>
+            ) : (
+              <>
+                <button type="button" className="st-ax-btn st-button" onClick={() => void restore(photos.map((p) => p.id))}>
+                  {tx("すべて戻す", "Restore all")}
+                </button>
+                <button type="button" className="st-ax-btn st-button st-button--danger-outline" onClick={() => setPurgeIds(photos.map((p) => p.id))}>
+                  {tx("すべて完全に削除…", "Delete all…")}
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

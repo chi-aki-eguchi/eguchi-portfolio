@@ -24,7 +24,7 @@ test("Photo presentation previews before save and persists through reload", asyn
   const frame = page.locator('iframe[title="Site Preview"]');
   await expect.poll(() => frame.evaluate((el: HTMLIFrameElement) => el.contentDocument?.body.dataset.photoCrop)).toBe("whole");
   expect(writes).toHaveLength(0);
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await page.getByRole("button", { name: "保存して公開", exact: true }).click();
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0]).toMatchObject({ photoCrop: "whole", viewerMat: "framed" });
   await page.reload({ waitUntil: "networkidle" });

@@ -45,11 +45,14 @@ export function Inspector({
   return (
     <aside className="st-inspector" aria-label={tx("選んでいる写真", "Selected photos")}>
       <div className="st-inspector__head">
+        {/* 1枚は「その写真を開いている」状態。複数を選んだときだけ「選ぶ」の言葉を使う
+            （2026-09-30。1枚押しただけで「選ぶのをやめる」と出て、選ぶ操作をした覚えが
+            無いのに選択の画面に入ったように見えていた）。 */}
         <p className="st-inspector__count">
-          {selection.length === 1 ? tx("1枚", "1 photo") : tx(`${selection.length}枚を選んでいます`, `${selection.length} selected`)}
+          {selection.length === 1 ? tx("この写真", "This photo") : tx(`${selection.length}枚を選んでいます`, `${selection.length} selected`)}
         </p>
         <button type="button" className="st-ax-btn st-link" onClick={onClear}>
-          {tx("選ぶのをやめる", "Clear selection")}
+          {selection.length === 1 ? tx("閉じる", "Close") : tx("選ぶのをやめる", "Clear selection")}
         </button>
       </div>
       {selection.length === 1 ? (
@@ -212,7 +215,7 @@ function SeriesChecklist({
                   onChange={() => void toggle(s.id, state !== "all")}
                 />
                 <span className="st-check__label">{s.title}</span>
-                {s.kind === "work" && <span className="st-tag">Work</span>}
+                {s.kind === "work" && <span className="st-tag">{tx("仕事", "Work")}</span>}
                 {s.isPublished === false && <span className="st-tag">{tx("非公開", "Hidden")}</span>}
               </label>
             </li>
@@ -269,7 +272,7 @@ function PublishRow({ photos }: { photos: StudioPhoto[] }) {
       await batch(changing, publish ? "publish" : "unpublish");
       await refresh();
       remember(
-        { label: publish ? tx("公開", "Public") : tx("非公開", "Hidden"), run: () => batch(changing, publish ? "unpublish" : "publish") },
+        { label: publish ? tx("公開にする", "Publish") : tx("非公開にする", "Hide"), run: () => batch(changing, publish ? "unpublish" : "publish") },
         tx(`${changing.length === 1 ? "" : `${changing.length}枚を`}${publish ? "公開しました" : "非公開にしました（サイトに出ません）"}`, `${publish ? "Published" : "Hid"} ${changing.length === 1 ? "1 photo" : `${changing.length} photos`}${publish ? "" : " (not on the site)"}`),
       );
     } catch {

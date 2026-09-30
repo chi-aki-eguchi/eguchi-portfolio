@@ -232,7 +232,7 @@ test.describe("admin — トップに出す写真の選択と並び", () => {
     //    書き換えない。
     await page
       .locator("[data-settings-save-panel]")
-      .getByRole("button", { name: "保存", exact: true })
+      .getByRole("button", { name: "保存して公開", exact: true })
       .click();
     await expect.poll(() => mocks.saved.length).toBe(1);
     const expectedIds = moved.map(

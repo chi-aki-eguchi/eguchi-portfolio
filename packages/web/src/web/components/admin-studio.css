@@ -286,3 +286,8 @@
 .admin-atelier.admin-workbench.admin-studio .studio-setup-row p { max-width: 58ch; }
 .admin-atelier.admin-workbench.admin-studio .studio-setup-row button { min-height: 36px; text-decoration: underline; text-underline-offset: 4px; }
 .admin-atelier.admin-workbench.admin-studio .studio-setup-note { padding: 0 0 16px; border-bottom: 1px solid var(--admin-line); font-size: 12px; line-height: 1.8; color: var(--admin-muted); }
+
+/* 写真中心の管理画面では、保存の帯は下のドック1つだけ（2026-09-30）。スマホで
+   ドック（「保存して公開」）と浮かぶ帯（「保存」）が同時に出て、言葉の違う
+   保存ボタンが2つ並んでいた。 */
+.admin-atelier.admin-workbench.admin-studio .admin-settings-mobile-save { display: none; }

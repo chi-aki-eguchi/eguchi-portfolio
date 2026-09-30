@@ -7,6 +7,12 @@
       "runtimeArgs": ["vite"],
       "cwd": "packages/web",
       "port": 5173
+    },
+    {
+      "name": "try-admin",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "try:admin"],
+      "port": 5299
     }
   ]
 }

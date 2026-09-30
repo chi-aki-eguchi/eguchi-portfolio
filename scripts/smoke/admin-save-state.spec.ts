@@ -169,7 +169,7 @@ test.describe("admin — 保存状態の表示", () => {
     const input = page.locator('[data-settings-section="site-basics"] input[type="text"]').first();
     await expect(input, "設定の入力欄が見つかる").toBeVisible();
 
-    const saveBar = page.locator("[data-settings-save-panel]").getByRole("button", {name: "保存", exact: true});
+    const saveBar = page.locator("[data-settings-save-panel]").getByRole("button", {name: "保存して公開", exact: true});
     await expect(saveBar, "最初は未保存バーが出ていない").toHaveCount(0);
 
     const original = await input.inputValue();

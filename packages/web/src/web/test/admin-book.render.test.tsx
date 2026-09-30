@@ -10,10 +10,16 @@
  *  3. 公開／非公開の切り替えはまとめて扱う要求（/admin/photos/batch）を1回送り、
  *     元に戻す入口を出す
  */
-import { test, expect, describe, afterEach } from "bun:test";
+import { test, expect, describe, afterEach, beforeEach } from "bun:test";
 import { setupDom, canned, flush } from "./jsdom-setup";
 
 const dom = setupDom();
+// 管理画面は開いている画面を URL の # に書く（ブラウザの「戻る」用、2026-09-30）。
+// 前のテストの # が残ると開始画面が変わるので、毎回消す。
+beforeEach(() => {
+  const { pathname, search } = dom.window.location;
+  dom.window.history.replaceState(null, "", `${pathname}${search}`);
+});
 const { createElement } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
@@ -61,6 +67,8 @@ async function mountAdmin(settings: Record<string, string>) {
   canned["/api/photos"] = { photos: PHOTOS };
   dom.window.localStorage.clear();
   dom.window.sessionStorage.clear();
+  // 新しく開いた管理画面として始める（前に開いた画面の # を残さない）。
+  dom.window.history.replaceState(null, "", dom.window.location.pathname);
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   qc.setQueryData(["settings"], { setupCompleted: "true", ...settings });
   qc.setQueryData(["admin-me"], { authenticated: true });

@@ -33,6 +33,7 @@ import { orientedDimensions } from "../../shared/image-url";
 import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
+import { isDarkTextColor, textShadowOverPhoto } from "../lib/color-contrast";
 
 const PortfolioKitExperience = lazy(
   () => import("../components/PortfolioKitExperience"),
@@ -66,6 +67,28 @@ function heroCaptionPosition(titlePosition: string) {
   };
 }
 
+/** 写真の上の読みがな: 名前の色（設定）を 72% に薄めた色。名前の色が空なら白。 */
+const KATA_OVER_PHOTO_COLOR =
+  "color-mix(in srgb, var(--hero-name-color, #ffffff) 72%, transparent)";
+
+/**
+ * 写真の上の英名・肩書きの既定の色。名前を暗い色にしたのに英名と肩書きの色が
+ * 空だと、白のまま明るいにじみ（--hero-overlay-rgb）の上に乗って読めなくなる。
+ * そのときは名前の色を薄めて使う。
+ */
+function overPhotoFallbackInk(settings: Record<string, string | undefined> | undefined, alpha: number) {
+  return isDarkTextColor(settings?.heroNameColor)
+    ? `color-mix(in srgb, var(--hero-name-color) ${Math.round(alpha * 100)}%, transparent)`
+    : `rgba(255,255,255,${alpha})`;
+}
+/** 英名・肩書きの影を決める色: その欄の色 → 空なら（暗い名前のときは）名前の色。 */
+function overPhotoPartColor(
+  settings: Record<string, string | undefined> | undefined,
+  own: string | undefined,
+) {
+  return own || (isDarkTextColor(settings?.heroNameColor) ? settings?.heroNameColor : undefined);
+}
+
 /** The original carousel / single-photo name treatment.
  *
  * Keeping it in one component matters because fullscreen carousel names live
@@ -88,6 +111,8 @@ function ClassicHeroNameBlock({
   const siteNameEn = settings?.siteNameEn ?? CLIENT_SITE_FALLBACKS.siteNameEn;
   const nameKata = settings?.profileNameKata ?? "";
   const subtitle = settings?.heroSubtitle ?? CLIENT_SITE_FALLBACKS.heroSubtitle;
+  const shadow = (color: string | undefined, blur: number) =>
+    overPhoto ? textShadowOverPhoto(color, blur) : undefined;
 
   return (
     <>
@@ -100,7 +125,7 @@ function ClassicHeroNameBlock({
           fontSize: `var(--hero-name-size, ${nameSizeFallback})`,
           color: overPhoto ? "var(--hero-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
           letterSpacing: "var(--hero-name-tracking, 0.04em)",
-          textShadow: overPhoto ? "0 1px 18px rgba(0,0,0,0.45)" : undefined,
+          textShadow: overPhoto ? textShadowOverPhoto(settings?.heroNameColor, 18, 0.45) : undefined,
         }}
       >
         {siteNameJa}
@@ -110,8 +135,10 @@ function ClassicHeroNameBlock({
           data-hero-name-part="kata"
           className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 break-words hero-text-reveal hero-text-reveal-2"
           style={{
-            color: overPhoto ? "rgba(255,255,255,0.70)" : "var(--text-quiet)",
-            textShadow: overPhoto ? "0 1px 12px rgba(0,0,0,0.4)" : undefined,
+            // 読みがなは名前と同じ色を少し薄めて。白に固定していたので、名前を
+            // 暗い色にしたサイトでは読みがなだけ白く浮いていた。
+            color: overPhoto ? KATA_OVER_PHOTO_COLOR : "var(--text-quiet)",
+            textShadow: shadow(settings?.heroNameColor, 12),
           }}
         >
           {nameKata}
@@ -123,10 +150,10 @@ function ClassicHeroNameBlock({
         style={{
           fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
           color: overPhoto
-            ? "var(--hero-name-en-color, rgba(255,255,255,0.82))"
+            ? `var(--hero-name-en-color, ${overPhotoFallbackInk(settings, 0.82)})`
             : "var(--hero-name-en-color, var(--text-quiet))",
           letterSpacing: "var(--hero-name-en-tracking, 0.08em)",
-          textShadow: overPhoto ? "0 1px 14px rgba(0,0,0,0.4)" : undefined,
+          textShadow: shadow(overPhotoPartColor(settings, settings?.heroNameEnColor), 14),
         }}
       >
         {siteNameEn}
@@ -138,9 +165,9 @@ function ClassicHeroNameBlock({
           style={{
             fontSize: "var(--hero-sub-size, 0.75rem)",
             color: overPhoto
-              ? "var(--hero-sub-color, rgba(255,255,255,0.62))"
+              ? `var(--hero-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
               : "var(--hero-sub-color, var(--text-quiet))",
-            textShadow: overPhoto ? "0 1px 12px rgba(0,0,0,0.4)" : undefined,
+            textShadow: shadow(overPhotoPartColor(settings, settings?.heroSubColor), 12),
           }}
         >
           {subtitle}
@@ -709,8 +736,8 @@ function HeroNameBlock({
   const nameKata = settings?.profileNameKata ?? "";
   const subtitle = settings?.heroSubtitle ?? CLIENT_SITE_FALLBACKS.heroSubtitle;
 
-  const shadow = (blur: number) =>
-    overPhoto ? `0 1px ${blur}px rgba(0,0,0,0.4)` : undefined;
+  const shadow = (color: string | undefined, blur: number) =>
+    overPhoto ? textShadowOverPhoto(color, blur) : undefined;
 
   return (
     <>
@@ -723,7 +750,7 @@ function HeroNameBlock({
           fontWeight: "var(--hero-name-weight, 300)" as never,
           color: overPhoto ? "var(--hero-name-color, #fff)" : "var(--hero-name-color, var(--foreground))",
           letterSpacing: `var(--hero-name-tracking, ${nameTrackingFallback})`,
-          textShadow: shadow(8),
+          textShadow: shadow(settings?.heroNameColor, 8),
         }}
       >
         {siteNameJa}
@@ -733,8 +760,8 @@ function HeroNameBlock({
           data-hero-name-part="kata"
           className="text-[length:var(--text-note)] tracking-[0.18em] mt-1.5 break-words hero-text-reveal hero-text-reveal-2"
           style={{
-            color: overPhoto ? "rgba(255,255,255,0.70)" : "var(--text-quiet)",
-            textShadow: shadow(12),
+            color: overPhoto ? KATA_OVER_PHOTO_COLOR : "var(--text-quiet)",
+            textShadow: shadow(settings?.heroNameColor, 12),
           }}
         >
           {nameKata}
@@ -746,10 +773,10 @@ function HeroNameBlock({
         style={{
           fontSize: `var(--hero-name-en-size, ${enSizeFallback})`,
           color: overPhoto
-            ? "var(--hero-name-en-color, rgba(255,255,255,0.82))"
+            ? `var(--hero-name-en-color, ${overPhotoFallbackInk(settings, 0.82)})`
             : "var(--hero-name-en-color, var(--text-quiet))",
           letterSpacing: `var(--hero-name-en-tracking, ${enTrackingFallback})`,
-          textShadow: shadow(14),
+          textShadow: shadow(overPhotoPartColor(settings, settings?.heroNameEnColor), 14),
         }}
       >
         {siteNameEn}
@@ -761,9 +788,9 @@ function HeroNameBlock({
           style={{
             fontSize: "var(--hero-sub-size, 0.75rem)",
             color: overPhoto
-              ? "var(--hero-sub-color, rgba(255,255,255,0.62))"
+              ? `var(--hero-sub-color, ${overPhotoFallbackInk(settings, 0.62)})`
               : "var(--hero-sub-color, var(--text-quiet))",
-            textShadow: shadow(12),
+            textShadow: shadow(overPhotoPartColor(settings, settings?.heroSubColor), 12),
           }}
         >
           {subtitle}

@@ -91,8 +91,8 @@ export function SeriesView({
   };
 
   const groups: { label: string; kind: "series" | "work"; rows: StudioSeries[] }[] = [
-    { label: "Series", kind: "series", rows: data.series.filter((s) => s.kind !== "work") },
-    { label: "Work", kind: "work", rows: data.series.filter((s) => s.kind === "work") },
+    { label: tx("シリーズ", "Series"), kind: "series", rows: data.series.filter((s) => s.kind !== "work") },
+    { label: tx("単発の仕事（Work）", "Work"), kind: "work", rows: data.series.filter((s) => s.kind === "work") },
   ];
 
   return (
@@ -166,10 +166,10 @@ export function SeriesView({
             />
             <fieldset className="st-seg st-seg--small" aria-label={tx("棚", "Shelf")}>
               <button type="button" className="st-ax-btn st-seg__item" aria-pressed={newKind === "series"} onClick={() => setNewKind("series")}>
-                Series
+                {tx("シリーズ", "Series")}
               </button>
               <button type="button" className="st-ax-btn st-seg__item" aria-pressed={newKind === "work"} onClick={() => setNewKind("work")}>
-                Work
+                {tx("単発の仕事", "Work")}
               </button>
             </fieldset>
             <div className="st-side__create-actions">
@@ -246,7 +246,11 @@ function SeriesEditor({
   );
   const ids = useMemo(() => photos.map((p) => p.id), [photos]);
 
-  // ── 言葉（下書きをまとめて保存） ──
+  // ── 言葉（欄を離れたら保存。写真の右の欄と同じ、2026-09-30） ──
+  // 以前は「保存する」を押すまで下書きのままで、ほかのシリーズや画面へ移ると
+  // 何も言わずに消えていた。公開の切り替えなど別の操作で読み直したときも、
+  // 打ちかけの題名が元に戻っていた。
+  type TextKey = "title" | "subtitle" | "statement" | "slug";
   const initial = useMemo(
     () => ({
       title: series.title ?? "",
@@ -257,26 +261,49 @@ function SeriesEditor({
     [series],
   );
   const [draft, setDraft] = useState(initial);
-  useEffect(() => setDraft(initial), [initial]);
+  const prevInitial = useRef(initial);
+  useEffect(() => {
+    const prev = prevInitial.current;
+    prevInitial.current = initial;
+    // 保存し終えた値・ほかの操作で変わった値は取り込み、打ちかけの欄はそのまま残す。
+    setDraft((d) => {
+      const next = { ...d };
+      (Object.keys(initial) as TextKey[]).forEach((k) => {
+        if (d[k] === prev[k]) next[k] = initial[k];
+      });
+      return next;
+    });
+  }, [initial]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const [saving, setSaving] = useState(false);
-  const save = async () => {
+  const savingRef = useRef(false);
+  const saveText = async () => {
+    const changed = (Object.keys(initial) as TextKey[]).filter((k) => draft[k] !== initial[k]);
+    if (changed.length === 0 || savingRef.current) return;
     if (!draft.title.trim()) {
-      fail(tx("題名を入れてください。", "Please enter a title."));
+      fail(tx("題名を入れてください（空のままでは保存しません）。", "Please enter a title (an empty title is not saved)."));
       return;
     }
     if (!/^[\p{L}\p{N}-]+$/u.test(draft.slug.trim())) {
-      fail(tx("URL には文字・数字・ハイフンだけを使えます。", "Use only letters, numbers and hyphens in the URL."));
+      fail(tx("URL には文字・数字・ハイフンだけを使えます（直すまで保存しません）。", "Use only letters, numbers and hyphens in the URL (not saved until fixed)."));
       return;
     }
+    const body: Record<string, string> = {};
+    const undoBody: Record<string, string> = {};
+    for (const k of changed) {
+      body[k] = k === "title" || k === "slug" ? draft[k].trim() : draft[k];
+      undoBody[k] = initial[k];
+    }
+    savingRef.current = true;
     setSaving(true);
     try {
-      await patchSeries(series.id, { ...draft, slug: draft.slug.trim(), title: draft.title.trim() });
+      await patchSeries(series.id, body);
       await refresh();
-      say({ text: tx("保存しました", "Saved") });
+      remember({ label: tx("シリーズの言葉", "series text"), run: () => patchSeries(series.id, undoBody) }, tx("保存しました", "Saved"));
     } catch {
       fail(tx("保存できませんでした（同じ URL のシリーズが既にあるかもしれません）。", "Could not save (a series with the same URL may already exist)."));
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -362,6 +389,7 @@ function SeriesEditor({
               className="st-title-input"
               value={draft.title}
               onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              onBlur={() => void saveText()}
               aria-label={tx("シリーズの題名", "Series title")}
             />
             <div className="st-series-head__actions">
@@ -395,6 +423,7 @@ function SeriesEditor({
                 className="st-input"
                 value={draft.subtitle}
                 onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
+                onBlur={() => void saveText()}
               />
             </label>
             <label className="st-field">
@@ -405,6 +434,8 @@ function SeriesEditor({
                   className="st-input"
                   value={draft.slug}
                   onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
+                  onBlur={() => void saveText()}
+                  title={tx("変えると、前の URL ではページを開けなくなります。", "Changing this breaks links to the old URL.")}
                 />
               </span>
             </label>
@@ -415,23 +446,19 @@ function SeriesEditor({
                 rows={4}
                 value={draft.statement}
                 onChange={(e) => setDraft({ ...draft, statement: e.target.value })}
+                onBlur={() => void saveText()}
               />
             </label>
           </div>
           <div className="st-series-head__save">
-            {/* 変えたときだけ保存のボタンを出す（押せない「保存済み」の灰色のボタンは置かない）。 */}
-            {(dirty || saving) && (
-              <>
-                <button type="button" className="st-ax-btn st-button st-button--primary" disabled={saving} onClick={() => void save()}>
-                  {saving ? tx("保存しています…", "Saving…") : tx("保存する", "Save")}
-                </button>
-                {!saving && (
-                  <button type="button" className="st-ax-btn st-link" onClick={() => setDraft(initial)}>
-                    {tx("元に戻す", "Undo")}
-                  </button>
-                )}
-              </>
-            )}
+            {/* 欄を離れると保存する。押し忘れて消える「保存する」ボタンは置かない。 */}
+            <span className="st-note" aria-live="polite">
+              {saving
+                ? tx("保存しています…", "Saving…")
+                : dirty
+                  ? tx("入力中 — 欄を離れると保存します", "Editing — saved when you leave the field")
+                  : ""}
+            </span>
             <span className="st-series-head__spacer" />
             <fieldset className="st-seg st-seg--small" aria-label={tx("棚", "Shelf")}>
               <button
@@ -440,7 +467,7 @@ function SeriesEditor({
                 aria-pressed={series.kind !== "work"}
                 onClick={() => series.kind === "work" && void setField({ kind: "series" }, tx("棚", "shelf"), { kind: "work" })}
               >
-                Series
+                {tx("シリーズ", "Series")}
               </button>
               <button
                 type="button"
@@ -448,24 +475,9 @@ function SeriesEditor({
                 aria-pressed={series.kind === "work"}
                 onClick={() => series.kind !== "work" && void setField({ kind: "work" }, tx("棚", "shelf"), { kind: "series" })}
               >
-                Work
+                {tx("単発の仕事", "Work")}
               </button>
             </fieldset>
-            {confirmDelete ? (
-              <span className="st-confirm st-confirm--inline">
-                {tx("シリーズを消しますか？（写真は残ります）", "Delete this series? (The photos are kept.)")}
-                <button type="button" className="st-ax-btn st-button st-button--danger" onClick={() => void remove()}>
-                  {tx("消す", "Delete")}
-                </button>
-                <button type="button" className="st-ax-btn st-link" onClick={() => setConfirmDelete(false)}>
-                  {tx("やめる", "Cancel")}
-                </button>
-              </span>
-            ) : (
-              <button type="button" className="st-ax-btn st-link st-link--danger" onClick={() => setConfirmDelete(true)}>
-                {tx("シリーズを消す", "Delete series")}
-              </button>
-            )}
             {onOpenDetails && (
               <button type="button" className="st-ax-btn st-link" onClick={onOpenDetails}>
                 {tx("配色・並び順の上書き", "Colour and order overrides")}
@@ -493,11 +505,13 @@ function SeriesEditor({
             <button type="button" className="st-ax-btn st-button" aria-pressed={pickMode} onClick={() => setPickMode((v) => !v)}>
               {pickMode ? tx("選び終える", "Done") : tx("まとめて選ぶ", "Select")}
             </button>
+            {/* 加える入口は2つあるので、どこから加えるのかを言葉に出す（2026-09-30）。
+                以前は「新しく取り込む」「写真を加える」で違いが分からなかった。 */}
             <button type="button" className="st-ax-btn st-button" onClick={() => fileInput.current?.click()} disabled={uploading}>
-              {tx("新しく取り込む", "Import new")}
+              {tx("パソコンから取り込む", "Import from computer")}
             </button>
             <button type="button" className="st-ax-btn st-button st-button--primary" onClick={() => setPickerOpen(true)}>
-              {tx("写真を加える", "Add photos")}
+              {tx("写真の一覧から加える", "Add from your photos")}
             </button>
             <input
               ref={fileInput}
@@ -513,6 +527,11 @@ function SeriesEditor({
             />
           </div>
         </div>
+        {photos.length > 1 && (
+          <p className="st-note st-note--bar">
+            {tx("写真はドラッグで並べ替えられます。表紙は、写真を押して右の欄で選びます。", "Drag photos to reorder. To choose the cover, click a photo and use the panel on the right.")}
+          </p>
+        )}
         <StudioGrid
           photos={photos}
           size={size}
@@ -529,10 +548,33 @@ function SeriesEditor({
           scrollRef={scrollRef}
           empty={
             <p>
-              {tx("まだ写真がありません。「写真を加える」で写真の一覧から選ぶか、ここへ写真を落としてください。", "No photos yet. Choose from your photos with “Add photos”, or drop photos here.")}
+              {tx("まだ写真がありません。「写真の一覧から加える」で選ぶか、ここへ写真を落としてください。", "No photos yet. Choose from your photos with “Add from your photos”, or drop photos here.")}
             </p>
           }
         />
+        {/* 消す操作は、ふだんの設定と並べず、いちばん下に分けて置く（2026-09-30）。
+            以前は棚の切り替えと「配色・並び順の上書き」の間に同じ灰色の文字で並んでいた。 */}
+        <section className="st-danger" aria-label={tx("シリーズを消す", "Delete series")}>
+          <div className="st-danger__text">
+            <p className="st-danger__title">{tx("このシリーズを消す", "Delete this series")}</p>
+            <p className="st-note">{tx("写真は消えません。どのシリーズにも入っていない写真に戻ります。", "The photos are kept. They go back to photos that are not in a series.")}</p>
+          </div>
+          {confirmDelete ? (
+            <span className="st-confirm st-confirm--inline">
+              {tx(`「${series.title}」を消しますか？`, `Delete “${series.title}”?`)}
+              <button type="button" className="st-ax-btn st-button st-button--danger" onClick={() => void remove()}>
+                {tx("消す", "Delete")}
+              </button>
+              <button type="button" className="st-ax-btn st-link" onClick={() => setConfirmDelete(false)}>
+                {tx("やめる", "Cancel")}
+              </button>
+            </span>
+          ) : (
+            <button type="button" className="st-ax-btn st-button st-button--danger-outline" onClick={() => setConfirmDelete(true)}>
+              {tx("消す…", "Delete…")}
+            </button>
+          )}
+        </section>
       </div>
       <Inspector data={data} selection={selection} seriesContext={series.id} onClear={clear} />
       {pickerOpen && (

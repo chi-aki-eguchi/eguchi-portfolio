@@ -45,11 +45,13 @@
      字間を空けた欧文の大文字は、同じ px 数の和文よりさらに読みにくい。 */
   --text-caption: max(10px, calc(9px * var(--global-font-scale, 1)));
   --text-note: max(11px, calc(10px * var(--global-font-scale, 1)));
-  --text-small: calc(11px * var(--global-font-scale, 1));
+  /* 小さな文（機材・期間・SNS など、読ませる文）は PC でも 12px を下限に
+     （2026-09-30。11px の和文は明朝だと線がつぶれて読めなかった）。 */
+  --text-small: max(12px, calc(11px * var(--global-font-scale, 1)));
   --text-meta: calc(12px * var(--global-font-scale, 1));
   /* フッターのテンプレート表記。`footerSize` から2px下げた値で、下限は
      ここで決める（以前は要素側に 8px と直書きされていた）。 */
-  --footer-credit-size: max(10px, calc(var(--footer-size, 11px) - 2px));
+  --footer-credit-size: max(11px, calc(var(--footer-size, 11px) - 2px));
   /* 見出しラベルの実効サイズ。**設定（`--section-label-size`）を入力にして、
      下限だけここで足す。** provider は設定値を `:root` へインラインで書くので、
      CSS 側から直接は上書きできない（インラインが勝つ）。出力を別の変数に
@@ -3433,7 +3435,7 @@
   :root {
     --text-caption: max(10.5px, calc(9px * var(--global-font-scale, 1)));
     --text-note: max(11px, calc(10px * var(--global-font-scale, 1)));
-    --text-small: max(11.5px, calc(11px * var(--global-font-scale, 1)));
+    --text-small: max(12px, calc(11px * var(--global-font-scale, 1)));
     --footer-credit-size: max(11px, calc(var(--footer-size, 11px) - 2px));
     /* **ページ見出しが本文より小さい**状態を止める。実測（390px）では
        `<h1>` の GALLERY / SERIES / PROFILE / CONTACT が 11px で、本文 12px を
@@ -3584,7 +3586,8 @@ body {
   font-size: var(--text-small);
   letter-spacing: 0.1em;
   line-height: 1.85;
-  color: rgba(var(--foreground-rgb), 0.4);
+  /* 機材名は読ませる文。0.4 だと背景との差が 2.5:1 しかなかった（2026-09-30）。 */
+  color: rgba(var(--foreground-rgb), 0.62);
 }
 /* 機材名は1つの塊。折り返してよいのは名前と名前のあいだだけで、
    名前の途中では折らない（素で置くと「FE / 50mm F1.2 GM」になる）。 */
@@ -3612,7 +3615,8 @@ body {
 .series-onward__label {
   display: block;
   margin-bottom: 0.3rem;
-  font-size: 0.6rem;
+  /* 行き先の札。0.6rem（9.6px）の大文字は読めなかった（2026-09-30）。 */
+  font-size: var(--text-small);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-quiet);
@@ -4110,9 +4114,9 @@ body[data-texture="mist"]::before {
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0) 45%,
-    rgba(0, 0, 0, calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
-    rgba(0, 0, 0, var(--hero-overlay-opacity, 0.38)) 100%
+    rgba(var(--hero-overlay-rgb, 0, 0, 0), 0) 45%,
+    rgba(var(--hero-overlay-rgb, 0, 0, 0), calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
+    rgba(var(--hero-overlay-rgb, 0, 0, 0), var(--hero-overlay-opacity, 0.38)) 100%
   );
 }
 .hero-single-caption {
@@ -4178,9 +4182,9 @@ body[data-texture="mist"]::before {
 .hero-single-overlay.overlay-top {
   background: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0) 45%,
-    rgba(0, 0, 0, calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
-    rgba(0, 0, 0, var(--hero-overlay-opacity, 0.38)) 100%
+    rgba(var(--hero-overlay-rgb, 0, 0, 0), 0) 45%,
+    rgba(var(--hero-overlay-rgb, 0, 0, 0), calc(var(--hero-overlay-opacity, 0.38) * 0.55)) 75%,
+    rgba(var(--hero-overlay-rgb, 0, 0, 0), var(--hero-overlay-opacity, 0.38)) 100%
   );
 }
 
@@ -4469,8 +4473,14 @@ a:hover {
 .nav-link-public:focus-visible {
   color: var(--accent-color, rgba(var(--foreground-rgb), 0.6));
 }
+/* 今いるページは、ほかの項目より濃く、下線を出したままにする（2026-09-30）。
+   以前は 0.7 の濃さに固定していたので、「ナビの濃さ」を 1 にしたサイト（本番）では
+   今いるページだけが薄く、押せない項目のように見えていた。 */
 .nav-link-public[aria-current="page"] {
-  color: var(--accent-color, rgba(var(--foreground-rgb), 0.7));
+  color: var(--accent-color, var(--foreground));
+}
+header .nav-link-luxury.nav-link-public[aria-current="page"]::after {
+  transform: scaleX(1);
 }
 .footer-link-public {
   color: rgba(var(--foreground-rgb), var(--link-rest, 0.25));
@@ -4881,8 +4891,13 @@ dialog.lightbox-morph[data-morph-flying] .lb-content,
 dialog.lightbox-morph[data-morph-closing] .lb-content {
   opacity: 0;
 }
-dialog.lightbox-morph > :not(.lb-content):not(.lb-ghost) {
-  animation: lb-in 0.5s var(--ease-reveal) 0.34s both;
+/* 現れる動きが終わったら、各部品の濃さは部品自身に返す（backwards、2026-09-30）。
+   以前は both で、終わったあとも濃さ 1 のまま固定していたので、
+   - 閉じている撮影情報の枠が、写真の下端を横切る 1 本の線として出続け、
+   - 写真を押して「写真だけ表示」にしても、ボタンと番号が消えなかった。
+   閉じている部品（aria-hidden）は、そもそも現れる動きに入れない。 */
+dialog.lightbox-morph > :not(.lb-content):not(.lb-ghost):not([aria-hidden="true"]) {
+  animation: lb-in 0.5s var(--ease-reveal) 0.34s backwards;
 }
 dialog.lightbox-morph[data-morph-closing] {
   pointer-events: none;
@@ -6847,3 +6862,29 @@ body[data-photo-crop="whole"] img.series-stream-media {
 .inquiry-note p { margin-top: 0.75rem; font-size: var(--body-size, 0.875rem); line-height: var(--body-leading, 1.9); color: var(--text-quiet); }
 .inquiry-note__link { flex-shrink: 0; max-width: 100%; min-height: 44px; display: inline-flex; align-items: center; font-size: var(--body-size, 0.875rem); text-decoration: underline; text-underline-offset: 5px; overflow-wrap: anywhere; }
 @media (max-width: 639px) { .inquiry-note { flex-direction: column; gap: 0.75rem; } .inquiry-note > div { flex: none; } }
+
+/* 文字の欄が未設定のときの「自動」の印（2026-09-30）。数字はプレビューの今の値。 */
+.admin-typo-auto {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--admin-line);
+  border-radius: 3px;
+  font-size: 10.5px;
+  line-height: 16px;
+  color: var(--admin-muted);
+  vertical-align: 1px;
+}
+
+/* 詳しい道具（写真一覧）から、ふだんの「写真」の画面へ戻る（2026-09-30）。 */
+.admin-library-back {
+  margin-left: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--admin-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

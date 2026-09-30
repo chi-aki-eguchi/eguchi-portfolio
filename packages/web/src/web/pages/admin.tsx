@@ -585,6 +585,43 @@ export function adminThemeFromSettings(
   } as CSSProperties;
 }
 
+/** 管理画面の画面を URL の # に書く形（ブラウザの「戻る」用、2026-09-30）。 */
+type AdminHistoryState =
+  | { view: "photos" | "series" | "library" }
+  | { view: "site"; mode: SiteEditorMode; page: SitePageId; target: SiteEditorTarget };
+
+function adminHistoryHash({
+  view,
+  mode,
+  page,
+  target,
+}: {
+  view: BookAdminView;
+  mode: SiteEditorMode;
+  page: SitePageId;
+  target: SiteEditorTarget;
+}): string {
+  if (view !== "site") return view;
+  return ["site", mode, page, ...(target ? [encodeURIComponent(target)] : [])].join("/");
+}
+
+function parseAdminHistoryHash(hash: string): AdminHistoryState | null {
+  const [view, mode, page, target] = hash.split("/");
+  if (view === "photos" || view === "series" || view === "library") return { view };
+  if (view !== "site") return null;
+  const siteMode: SiteEditorMode = mode === "look" || mode === "more" ? mode : "page";
+  const sitePage: SitePageId = SITE_PAGES.some((p) => p.id === page) ? (page as SitePageId) : "top";
+  let siteTarget: SiteEditorTarget = null;
+  if (target) {
+    try {
+      siteTarget = decodeURIComponent(target) as SiteEditorTarget;
+    } catch {
+      siteTarget = null;
+    }
+  }
+  return { view: "site", mode: siteMode, page: sitePage, target: siteTarget };
+}
+
 export default function AdminPage({
   demoMode = false,
   demoSeed,
@@ -751,6 +788,80 @@ function AdminPageContent({
     return () => window.removeEventListener("keydown", handler);
   }, [paletteOpen]);
 
+  // ── ブラウザの「戻る」「進む」（2026-09-30）──────────────────────────
+  // 入口（写真・シリーズ・サイト）と「サイト」で開いている所を URL の # に残す。
+  // 以前は画面の切り替えが履歴に入らず、「戻る」を押すと管理画面から出て
+  // ログイン画面へ飛んでいた（オーナー「画面の移動で迷子になる」）。
+  const historyRef = useRef({ synced: false, hasUnsaved, bookView, siteMode, sitePage, siteTarget });
+  historyRef.current = { ...historyRef.current, hasUnsaved, bookView, siteMode, sitePage, siteTarget };
+  // 読み込み直した・# 付きで開いたときは、その画面から始める。
+  const initialHashRef = useRef(
+    typeof window === "undefined" ? null : parseAdminHistoryHash(window.location.hash.slice(1)),
+  );
+  useEffect(() => {
+    const init = initialHashRef.current;
+    if (!init) return;
+    if (init.view === "site") {
+      setSitePage(init.page);
+      setSiteMode(init.mode);
+      setSiteTarget(init.target);
+    }
+    setBookView(init.view);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const hash = adminHistoryHash({ view: bookView, mode: siteMode, page: sitePage, target: siteTarget });
+    if (window.location.hash.slice(1) === hash) {
+      historyRef.current.synced = true;
+      return;
+    }
+    // # から始める画面へ状態が追いつくまで、URL は書き換えない（1回だけ）。
+    if (!historyRef.current.synced && initialHashRef.current) {
+      initialHashRef.current = null;
+      return;
+    }
+    const url = `${window.location.pathname}${window.location.search}#${hash}`;
+    // 開いた直後の1回は置き換えるだけ（「戻る」1回で前のページへ出られるように）。
+    if (historyRef.current.synced) window.history.pushState(null, "", url);
+    else window.history.replaceState(window.history.state, "", url);
+    historyRef.current.synced = true;
+  }, [bookView, siteMode, sitePage, siteTarget]);
+  useEffect(() => {
+    const onPop = () => {
+      const next = parseAdminHistoryHash(window.location.hash.slice(1));
+      if (!next) return;
+      const cur = historyRef.current;
+      const same =
+        next.view === cur.bookView &&
+        (next.view !== "site" || (next.mode === cur.siteMode && next.page === cur.sitePage && next.target === cur.siteTarget));
+      if (same) return;
+      const site = next.view === "site" ? { page: next.page, mode: next.mode, target: next.target } : undefined;
+      // 独立した編集画面（About の文章・料金など）から出るときも、下書きは消えるので確かめる。
+      const isTabTarget = (target: SiteEditorTarget) =>
+        Boolean(target && (SITE_PARTS as Record<string, SitePart>)[target]?.tab);
+      const leavesDraft =
+        next.view !== cur.bookView ||
+        (next.view === "site" && (isTabTarget(cur.siteTarget) || isTabTarget(next.target)) && next.target !== cur.siteTarget);
+      if (cur.hasUnsaved && leavesDraft) {
+        // 保存していない変更があれば、今の画面の # に戻してから確かめる。
+        const url = `${window.location.pathname}${window.location.search}#${adminHistoryHash({
+          view: cur.bookView, mode: cur.siteMode, page: cur.sitePage, target: cur.siteTarget,
+        })}`;
+        window.history.pushState(null, "", url);
+        setBookPending({ view: next.view, site });
+        return;
+      }
+      if (site) {
+        setSitePage(site.page);
+        setSiteMode(site.mode);
+        setSiteTarget(site.target);
+      }
+      setBookView(next.view);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [setBookView, setSiteMode, setSitePage, setSiteTarget]);
+
   if (isLoading)
     return (
       <div className="min-h-screen bg-[var(--admin-paper)] flex items-center justify-center">
@@ -906,6 +1017,7 @@ function AdminPageContent({
       onRecentlyAddedPhotoIdsChange={setRecentlyAddedPhotoIds}
       onReorderWorkspaceChange={setGalleryReordering}
       onOpenOrderSettings={() => openPart("order")}
+      onBackToPhotos={() => goBook("photos")}
     />
   );
   const sitePageDef = SITE_PAGES.find((p) => p.id === sitePage) ?? SITE_PAGES[0]!;
@@ -2180,6 +2292,7 @@ export function GalleryTab({
   onRecentlyAddedPhotoIdsChange = ignoreRecentlyAddedPhotoIdsChange,
   onReorderWorkspaceChange,
   onOpenOrderSettings,
+  onBackToPhotos,
 }: {
   demoSeed?: string;
   onUploadingChange?: (v: boolean) => void;
@@ -2197,6 +2310,8 @@ export function GalleryTab({
   onRecentlyAddedPhotoIdsChange?: (ids: Set<number>) => void;
   onReorderWorkspaceChange?: (active: boolean) => void;
   onOpenOrderSettings?: () => void;
+  /** ふだんの「写真」の画面へ戻る（写真中心の管理画面から開いたとき） */
+  onBackToPhotos?: () => void;
 }) {
   const qc = useQueryClient();
   const { language, t } = useAdminI18n();
@@ -6221,6 +6336,13 @@ export function GalleryTab({
                 <>
                   <CountSwap value={displayed.length} /> /{" "}
                   <CountSwap value={allPhotos.length} /> {t.headers.libraryPhotos}
+                  {/* 上の入口は「写真」のまま別の画面になるので、戻り道を見出しの下に出す
+                      （2026-09-30。見た目の違う2つの写真の画面の間で迷っていた）。 */}
+                  {onBackToPhotos && (
+                    <button type="button" className="admin-library-back" onClick={onBackToPhotos}>
+                      {language === "en" ? "← Back to Photos" : "← ふだんの「写真」へ戻る"}
+                    </button>
+                  )}
                 </>
               )
             }

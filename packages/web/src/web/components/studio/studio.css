@@ -197,18 +197,35 @@
   color: var(--st-quiet);
   font-variant-numeric: tabular-nums;
 }
+/* 右の欄が開いても道具の並びを動かさない（2026-09-30）。以前は探す欄が 320px の
+   固定幅で、写真を1枚押して右の欄が開くたびに道具が2段目へ折れ、押そうとした
+   ボタンの位置が変わっていた。探す欄のほうが縮む。 */
 .st-toolbar__tools {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+.st-toolbar__tools > * {
+  flex-shrink: 0;
 }
 .st-input.st-search {
-  width: min(320px, 40vw);
+  flex: 1 1 200px;
+  width: auto;
+  min-width: 120px;
+  max-width: 320px;
 }
 @media (max-width: 640px) {
   /* 狭い画面では探す欄を1行に。40vw では説明が途中で切れていた。 */
+  .st-toolbar__tools {
+    flex-wrap: wrap;
+  }
   .st-input.st-search {
+    flex-basis: 100%;
+    max-width: none;
     width: 100%;
   }
 }
@@ -888,6 +905,11 @@
     overflow-y: hidden;
     padding: 8px 12px;
     gap: 6px;
+    /* 横に続く絞り込み。右端を薄くして、続きがあることを見せる（2026-09-30。
+       以前は「非公開」が途中で切れて、端で終わっているように見えた）。 */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    padding-right: 40px;
   }
   .st-side__list {
     flex-direction: row;
@@ -921,4 +943,45 @@
     max-height: 72vh;
     border-radius: 14px 14px 0 0;
   }
+}
+
+/* シリーズを消す欄（2026-09-30）。ふだんの設定から離して、いちばん下に置く。 */
+.st-danger {
+  margin-top: 48px;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--st-danger, #a33a2a) 35%, transparent);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.st-danger__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.st-danger__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--st-danger, #a33a2a);
+}
+.st-button--danger-outline {
+  color: var(--st-danger, #a33a2a);
+  border-color: color-mix(in srgb, var(--st-danger, #a33a2a) 55%, transparent);
+  background: transparent;
+}
+
+.st-trash__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+/* 完全に削除する写真に印を付ける（確かめている写真がどれか分かるように）。 */
+.st-trash__item[data-purge-target] img {
+  outline: 2px solid var(--st-danger, #a33a2a);
+  outline-offset: 2px;
 }

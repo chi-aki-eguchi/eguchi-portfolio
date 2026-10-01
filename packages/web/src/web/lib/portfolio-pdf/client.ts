@@ -1,3 +1,4 @@
+import subsetWasmUrl from "harfbuzzjs/dist/harfbuzz-subset.wasm?url";
 import type { PortfolioDocument, SourcePhoto } from "./model";
 import type { PdfAsset, PdfResult } from "./render";
 export async function readJson<T>(url: string): Promise<T> {
@@ -50,6 +51,10 @@ export async function generate(
   if (!r.ok)
     throw new Error("日本語フォントを読み込めません。再試行してください");
   const fontBytes = new Uint8Array(await r.arrayBuffer());
+  // フォントを使う文字だけに減らす道具。読めなければ元のフォントのまま作る。
+  const subsetWasm = await fetch(subsetWasmUrl, { signal })
+    .then(async (w) => (w.ok ? new Uint8Array(await w.arrayBuffer()) : undefined))
+    .catch(() => undefined);
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./pdf.worker.ts", import.meta.url), {
@@ -86,6 +91,6 @@ export async function generate(
         else reject(new Error(data.message));
       }
     };
-    worker.postMessage({ book, assets, fontBytes });
+    worker.postMessage({ book, assets, fontBytes, quality, subsetWasm });
   });
 }

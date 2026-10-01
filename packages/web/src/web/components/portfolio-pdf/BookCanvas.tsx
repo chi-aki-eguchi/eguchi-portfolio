@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import fontkit from "@pdf-lib/fontkit";
 import {
   layoutBook,
+  TONE_RGB,
   type Measure,
   type Sheet,
   type ImageSizes,
+  type Tone,
 } from "../../lib/portfolio-pdf/layout";
 import type { PortfolioDocument } from "../../lib/portfolio-pdf/model";
 let fontPromise: Promise<Measure> | undefined;
@@ -30,6 +32,9 @@ function loadMeasure() {
       throw error;
     }));
 }
+// PDF と同じ文字の濃さ。
+const toneFill = (tone: Tone) =>
+  `rgb(${TONE_RGB[tone].map((v) => Math.round(v * 255)).join(",")})`;
 export function Paper({
   sheet,
   book,
@@ -79,7 +84,7 @@ export function Paper({
           y={t.top + t.size}
           fontSize={t.size}
           fontFamily="PortfolioPaper"
-          fill="#222"
+          fill={toneFill(t.tone)}
           onClick={() => t.itemId && onItem?.(t.itemId)}
           style={{ cursor: t.itemId && onItem ? "pointer" : undefined }}
         >

@@ -28,6 +28,11 @@ describe("contentTypeForStaticPath", () => {
     expect(contentTypeForStaticPath("/assets/font.woff2")).toBe("font/woff2");
   });
 
+  test("serves the PDF kit's Japanese font and font-subsetting module", () => {
+    expect(contentTypeForStaticPath("/fonts/pdf/NotoSansJP-Regular.ttf")).toBe("font/ttf");
+    expect(contentTypeForStaticPath("/assets/harfbuzz-subset-a1b2c3.wasm")).toBe("application/wasm");
+  });
+
   test("ignores query strings and leaves unknown extensions unset", () => {
     expect(contentTypeForStaticPath("/og-image.jpg?v=1")).toBe("image/jpeg");
     expect(contentTypeForStaticPath("/download.bin")).toBeUndefined();

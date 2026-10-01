@@ -1,5 +1,7 @@
 import { Fragment, useMemo } from "react";
-import { Parser, jaModel } from "budoux";
+import { jaPhrases } from "../lib/ja-phrases";
+
+export { jaPhrases } from "../lib/ja-phrases";
 
 /**
  * 日本語の文を、文節の切れ目でだけ折り返す（2026-10-01）。
@@ -18,25 +20,10 @@ import { Parser, jaModel } from "budoux";
  * しました（／サイトに出ません）」と括弧だけを行末に残していた（WebKit で再現、
  * Chromium は正しい）。長い文節は包まない。細い画面で1行に入らないと横へはみ出すため。
  *
- * 日本語を含まない文（英語のページなど）は、そのまま返す。
+ * 日本語を含まない文（英語のページなど）は、そのまま返す。文節の区切りは
+ * `lib/ja-phrases.ts`（PDF 作品集の組版と共用）。
  */
 const NOWRAP_MAX = 12;
-const JAPANESE = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
-
-let parser: Parser | null = null;
-const cache = new Map<string, string[]>();
-
-export function jaPhrases(text: string): string[] {
-  if (!JAPANESE.test(text)) return [text];
-  const hit = cache.get(text);
-  if (hit) return hit;
-  parser ??= new Parser(jaModel);
-  const phrases = parser.parse(text);
-  // 文はオーナーの設定と写真の説明だけなので多くないが、際限なく溜めない。
-  if (cache.size > 500) cache.clear();
-  cache.set(text, phrases);
-  return phrases;
-}
 
 export function JaPhrases({ children }: { children: string | null | undefined }) {
   const text = children ?? "";

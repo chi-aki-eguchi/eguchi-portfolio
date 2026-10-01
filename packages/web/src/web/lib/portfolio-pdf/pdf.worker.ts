@@ -5,15 +5,18 @@ self.onmessage = async (
     book: PortfolioDocument;
     assets: PdfAsset[];
     fontBytes: Uint8Array;
+    quality: "screen" | "print";
+    subsetWasm?: Uint8Array;
   }>,
 ) => {
   try {
-    const { book, assets, fontBytes } = event.data;
+    const { book, assets, fontBytes, quality, subsetWasm } = event.data;
     const result = await renderPortfolio(
       book,
       assets,
       fontBytes,
       (done, total) => self.postMessage({ type: "progress", done, total }),
+      { quality, subsetWasm },
     );
     self.postMessage({ type: "result", result });
   } catch {

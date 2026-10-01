@@ -722,7 +722,8 @@ function publicOriginFromRequest(request: Request): string {
 // addressed, this can graduate to an enforcing Content-Security-Policy header.
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+  // 'wasm-unsafe-eval': PDF 作品集がフォントを減らす HarfBuzz（WebAssembly）に要る。
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: https:",
   "font-src 'self' https://fonts.gstatic.com",

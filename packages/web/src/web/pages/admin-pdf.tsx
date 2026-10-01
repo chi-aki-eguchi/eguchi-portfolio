@@ -440,7 +440,9 @@ export default function AdminPdfPage() {
             {busy
               ? progress
               : notice || (dirty ? "未保存の編集があります" : "")}
-            　{book.items.length} / 20 枚 ・ {pageCount(book)} / 24 ページ
+            {/* 行頭の全角空白は JSX で消えるので、文字列で入れる。 */}
+            {(busy ? progress : notice || dirty) && "　"}
+            {book.items.length} / 20 枚 ・ {pageCount(book)} / 24 ページ
           </p>
           <nav className="pdf-workflow" aria-label="作品集の作業">
             <button

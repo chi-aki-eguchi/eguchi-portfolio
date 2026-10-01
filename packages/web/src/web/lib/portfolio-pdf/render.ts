@@ -1,7 +1,8 @@
 import { PDFDocument, rgb, degrees } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import { parseBook, type PortfolioDocument } from "./model";
-import { layoutBook, fitImage, type PdfIssue } from "./layout";
+import { layoutBook, fitImage, TONE_RGB, type Measure, type PdfIssue } from "./layout";
+import { subsetFont } from "./font-subset";
 export { fitImage, wrapText } from "./layout";
 export type { PdfIssue } from "./layout";
 export type PdfAsset = { id: string; bytes: Uint8Array };
@@ -10,46 +11,76 @@ export type PdfResult = {
   pageCount: number;
   issues: PdfIssue[];
 };
+export type RenderOptions = {
+  /** 送信用（screen）は画面で見る前提なので、印刷解像度の注意を出さない。 */
+  quality?: "screen" | "print";
+  /** harfbuzz-subset.wasm。あればフォントを使う文字だけに減らす。 */
+  subsetWasm?: Uint8Array;
+};
 export async function renderPortfolio(
   bookInput: PortfolioDocument,
   assets: PdfAsset[],
   fontBytes: Uint8Array,
   progress: (done: number, total: number) => void = () => {},
+  options: RenderOptions = {},
 ): Promise<PdfResult> {
   const book = parseBook(bookInput);
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
-  // The current fontkit subsetter corrupts some Japanese glyph outlines.
-  // Embed the static TrueType font intact so readers do not substitute fonts.
-  const font = await pdf.embedFont(fontBytes, { subset: false });
-  const supported = new Set(font.getCharacterSet());
+  // 組版（文字幅・折り返し）は元のフォントで測る。埋め込むのは減らした物でも、
+  // 字幅は同じなので位置は変わらない。
+  const full = fontkit.create(fontBytes);
+  const measure: Measure = {
+    widthOfTextAtSize: (value, size) =>
+      (full.layout(value).glyphs.reduce((sum, glyph) => sum + glyph.advanceWidth, 0) /
+        full.unitsPerEm) *
+      size,
+  };
   const images = new Map<string, Awaited<ReturnType<typeof pdf.embedJpg>>>();
   for (const a of assets) images.set(a.id, await pdf.embedJpg(a.bytes));
-  const sheets = layoutBook(book, font, images),
+  const sheets = layoutBook(book, measure, images),
     issues = sheets.flatMap((p) => p.issues);
-  for (const [n, sheet] of sheets.entries()) {
-    const p = pdf.addPage([sheet.width, sheet.height]);
-    for (const t of sheet.texts) {
-      if (
-        Array.from(t.value).some(
-          (c) => c !== "\n" && c !== "\r" && !supported.has(c.codePointAt(0)!),
-        )
-      ) {
+  const drawable = sheets.map((sheet, n) =>
+    sheet.texts.filter((t) => {
+      const missing = Array.from(t.value).some(
+        (c) => c !== "\n" && c !== "\r" && !full.hasGlyphForCodePoint(c.codePointAt(0)!),
+      );
+      if (missing)
         issues.push({
           page: n + 1,
           severity: "error",
           message:
             "日本語フォントにない文字があります。絵文字・特殊文字を置き換えてください",
         });
-        continue;
-      }
+      return !missing;
+    }),
+  );
+  // 使う文字だけのフォントを作る。作れない・欠けるときは元のフォントを丸ごと入れる。
+  let embedBytes = fontBytes;
+  if (options.subsetWasm) {
+    const used = new Set(drawable.flat().flatMap((t) => t.lines.flatMap((l) => Array.from(l))));
+    try {
+      const subset = await subsetFont(fontBytes, used, options.subsetWasm);
+      const check = fontkit.create(subset);
+      if ([...used].every((c) => check.hasGlyphForCodePoint(c.codePointAt(0)!)))
+        embedBytes = subset;
+    } catch {
+      // 元のフォントで続ける（ファイルが大きくなるだけで、見た目は同じ）。
+    }
+  }
+  // fontkit のサブセット化は日本語の字形を壊すので使わない（subset: false）。
+  const font = await pdf.embedFont(embedBytes, { subset: false });
+  for (const [n, sheet] of sheets.entries()) {
+    const p = pdf.addPage([sheet.width, sheet.height]);
+    for (const t of drawable[n]) {
+      const [r, g, b] = TONE_RGB[t.tone];
       t.lines.forEach((line, i) =>
         p.drawText(line, {
           x: t.x,
           y: sheet.height - t.top - t.size - i * t.leading,
           size: t.size,
           font,
-          color: rgb(0.13, 0.13, 0.13),
+          color: rgb(r, g, b),
         }),
       );
     }
@@ -66,7 +97,7 @@ export async function renderPortfolio(
       }
       const r = item.rotation,
         fit = fitImage(image.width, image.height, box.width, box.height, r);
-      if (fit.dpi < 200)
+      if (options.quality !== "screen" && fit.dpi < 200)
         issues.push({
           page: n + 1,
           severity: "warning",
@@ -93,8 +124,11 @@ export async function renderPortfolio(
     }
     progress(n + 1, sheets.length);
   }
-  pdf.setTitle(book.title);
-  pdf.setCreator("Portfolio Kit PDF v3");
+  // 開いたときの窓の名前をファイル名ではなく本の名前に。作者・言語も入れる。
+  pdf.setTitle(book.title, { showInWindowTitleBar: true });
+  if (book.cover.name.trim()) pdf.setAuthor(book.cover.name.trim());
+  pdf.setLanguage("ja-JP");
+  pdf.setCreator("Portfolio Kit PDF v4");
   pdf.setProducer("Portfolio Kit");
   return {
     bytes: issues.some((i) => i.severity === "error") ? null : await pdf.save(),

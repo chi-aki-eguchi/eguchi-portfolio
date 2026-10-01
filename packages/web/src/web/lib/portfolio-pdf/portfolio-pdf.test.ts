@@ -9,6 +9,9 @@ import {
   type SourcePhoto,
 } from "./model";
 import { fitImage, renderPortfolio, wrapText } from "./render";
+import { CAPTION_GAP, LEADING, TYPE } from "./layout";
+import { jaPhrases } from "../ja-phrases";
+import fontkit from "@pdf-lib/fontkit";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 const source: SourcePhoto = {
@@ -28,6 +31,24 @@ const font = new Uint8Array(
     ),
   ),
 );
+const subsetWasm = new Uint8Array(
+  readFileSync(new URL(import.meta.resolve("harfbuzzjs/dist/harfbuzz-subset.wasm"))),
+);
+const embeddedFont = async (bytes: Uint8Array) => {
+  const pdf = await PDFDocument.load(bytes);
+  const descriptors = pdf.context
+    .enumerateIndirectObjects()
+    .map(([, o]) => o)
+    .filter(
+      (o): o is PDFDict =>
+        o instanceof PDFDict &&
+        o.get(PDFName.of("Type")) === PDFName.of("FontDescriptor"),
+    );
+  expect(descriptors).toHaveLength(1);
+  const stream = descriptors[0].lookup(PDFName.of("FontFile2"));
+  if (!(stream instanceof PDFRawStream)) throw new Error("Missing embedded TrueType font");
+  return decodePDFRawStream(stream).decode();
+};
 const jpeg = await sharp({
   create: { width: 800, height: 600, channels: 3, background: "#9a8877" },
 })
@@ -91,19 +112,74 @@ describe("PDFの実物", () => {
       expect(descriptor.has(PDFName.of("FontFile3"))).toBe(false);
     }
   });
+  test("フォントを使う文字だけに減らし、字形と字幅は元のまま", async () => {
+    const b = make();
+    b.title = "光と影の作品集";
+    b.cover.name = "江口秋";
+    const assets = [{ id: b.items[0].id, bytes: jpeg }];
+    const whole = await renderPortfolio(b, assets, font);
+    const small = await renderPortfolio(b, assets, font, () => {}, { subsetWasm });
+    expect(small.issues.filter((i) => i.severity === "error")).toEqual([]);
+    // 元は約3.4MB。使う字だけなら数十KB。
+    expect(small.bytes!.byteLength * 20).toBeLessThan(whole.bytes!.byteLength);
+    const bytes = await embeddedFont(small.bytes!);
+    expect(Array.from(bytes.slice(0, 4))).toEqual([0, 1, 0, 0]);
+    const sub = fontkit.create(bytes),
+      full = fontkit.create(font);
+    const used = `${b.title}${b.cover.name}${source.title}${source.description}2`;
+    for (const c of new Set(Array.from(used))) {
+      const cp = c.codePointAt(0)!;
+      expect(sub.hasGlyphForCodePoint(cp)).toBe(true);
+      const g = sub.glyphForCodePoint(cp),
+        g0 = full.glyphForCodePoint(cp);
+      expect(g.advanceWidth).toBe(g0.advanceWidth);
+      expect(g.path.toSVG()).toBe(g0.path.toSVG());
+      if (c.trim()) expect(g.path.toSVG()).not.toBe("");
+    }
+  });
+  test("送信用は印刷解像度の注意を出さず、印刷用だけ出す", async () => {
+    const b = make();
+    const assets = [{ id: b.items[0].id, bytes: jpeg }];
+    const dpi = (r: { issues: { message: string }[] }) =>
+      r.issues.some((i) => i.message.includes("dpi"));
+    expect(dpi(await renderPortfolio(b, assets, font, () => {}, { quality: "print" }))).toBe(true);
+    expect(dpi(await renderPortfolio(b, assets, font, () => {}, { quality: "screen" }))).toBe(false);
+  });
   test("回転後の比率を保ち、実埋め込み寸法からdpiを求める", () => {
     const fit = fitImage(1600, 800, 400, 600, 90);
     expect(fit.width).toBe(300);
     expect(fit.height).toBe(600);
     expect(fit.dpi).toBe(192);
   });
+  const perChar = { widthOfTextAtSize: (s: string) => Array.from(s).length * 10 };
   test("改行と長い日本語を文字欠落なく折り返す", () => {
     const text = "長い日本語の作品名ABC、句読点。";
-    const lines = wrapText(text, 30, 10, {
-      widthOfTextAtSize: (s) => Array.from(s).length * 10,
-    });
+    const lines = wrapText(text, 30, 10, perChar);
     expect(lines.join("")).toBe(text);
+    // 句読点だけは行末にぶら下げ、行頭には置かない。
+    expect(lines.every((s) => s.replace(/[、。]$/, "").length <= 3)).toBe(true);
+    expect(lines.slice(1).some((s) => /^[、。]/.test(s))).toBe(false);
+    expect(wrapText("一行目\n\n三行目", 100, 10, perChar)).toEqual(["一行目", "", "三行目"]);
+  });
+  test("語の途中で折らず、文節の切れ目で折り返す", () => {
+    const text = "デジタルカメラで撮影した、静かな港の朝の写真です。";
+    const ends = new Set<number>();
+    jaPhrases(text).reduce((n, p) => (ends.add(n + p.length), n + p.length), 0);
+    const lines = wrapText(text, 120, 10, perChar);
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines.join("")).toBe(text);
+    let end = 0;
+    for (const line of lines) expect(ends.has((end += line.length))).toBe(true);
+  });
+  test("1文節が枠より長いときも、長音・小書きのかなを行頭に置かない", () => {
+    const lines = wrapText("フォトグラファーのポートフォリオ", 30, 10, perChar);
+    expect(lines.join("")).toBe("フォトグラファーのポートフォリオ");
+    expect(lines.slice(1).some((s) => /^[ーァィゥェォッャュョ]/.test(s))).toBe(false);
     expect(lines.every((s) => s.length <= 3)).toBe(true);
+  });
+  test("欧文は語の切れ目で折る", () => {
+    const lines = wrapText("Light and shadow on the harbor", 100, 10, perChar);
+    expect(lines).toEqual(["Light and", "shadow on", "the harbor"]);
   });
   test("縦横A4・全ページと実際のバイトを読み戻せる", async () => {
     for (const orientation of ["portrait", "landscape"] as const) {
@@ -189,10 +265,14 @@ describe("本を見ながら整える", () => {
     const empty = layoutBook(b, measure)[1].photos[0];
     b.items[0].captionOverride = "説明";
     const short = layoutBook(b, measure)[1].photos[0];
-    expect(empty.height - short.height).toBeCloseTo(10.5 * 1.65 + 14);
+    expect(empty.height - short.height).toBeCloseTo(
+      TYPE.captionText * LEADING.caption + CAPTION_GAP,
+    );
     b.items[0].captionOverride = "説明\n二行目\n三行目";
     const longer = layoutBook(b, measure)[1].photos[0];
-    expect(short.height - longer.height).toBeCloseTo(2 * 10.5 * 1.65);
+    expect(short.height - longer.height).toBeCloseTo(
+      2 * TYPE.captionText * LEADING.caption,
+    );
     b.purpose = "photobook";
     const photo = layoutBook(b, measure)[1];
     expect(photo.photos[0].height).toBeGreaterThan(empty.height);
@@ -213,7 +293,9 @@ test("実画像の縦横比で写真と説明をまとめ、余白と2枚組を�
   const photo = sheet.photos[0],
     caption = sheet.texts[0];
   expect(photo.width / photo.height).toBeCloseTo(2);
-  expect(caption.top - photo.top - photo.height).toBeCloseTo(14);
+  expect(caption.top - photo.top - photo.height).toBeCloseTo(CAPTION_GAP);
+  // 説明は写真の左端にそろえる。
+  expect(caption.x).toBeCloseTo(photo.x);
   expect(caption.top + caption.lines.length * caption.leading).toBeLessThan(
     sheet.height - 42,
   );
@@ -268,4 +350,125 @@ test("縦横の2枚組は切り抜かず同じ高さでそろえる", async () =
   expect(sheet.photos[1].width / sheet.photos[1].height).toBeCloseTo(
     1600 / 1000,
   );
+});
+
+test("作品名だけを濃く、表紙は写真の下に題、番号と柱は下の余白に", async () => {
+  const { layoutBook } = await import("./layout");
+  const measure = {
+    widthOfTextAtSize: (s: string, size: number) => Array.from(s).length * size,
+  };
+  let b = addPhoto(make(), { ...source, id: 2 });
+  b.title = "港の朝";
+  b.cover.name = "江口秋";
+  b.cover.itemId = b.items[0].id;
+  b.items.forEach((i) => (i.rotation = 0));
+  b.items[0].year = "2026";
+  b.items[0].technique = "インクジェットプリント";
+  b.items[1].captionOverride = "長い説明\n二行目\n三行目";
+  b.orientation = "landscape";
+  b.pages = [
+    {
+      ...b.pages[0],
+      layout: "two",
+      itemIds: b.items.map((i) => i.id),
+      pairing: "across",
+    },
+  ];
+  const sizes = new Map([
+    [b.items[0].id, { width: 1600, height: 1000 }],
+    [b.items[1].id, { width: 1600, height: 1000 }],
+  ]);
+  const [cover, work] = layoutBook(b, measure, sizes);
+  // 表紙: 題は写真の下、写真の左端から。名前は控えめな色。
+  const [title, name] = cover.texts;
+  expect(title.value).toBe("港の朝");
+  expect(title.top).toBeGreaterThan(cover.photos[0].top + cover.photos[0].height);
+  expect(title.x).toBeCloseTo(cover.photos[0].x);
+  expect([title.tone, name.tone]).toEqual(["ink", "quiet"]);
+  // 2枚の横並び: 説明の長さが違っても写真の上端・高さ・説明の始まりがそろう。
+  const [a, c] = work.photos;
+  expect(a.top).toBeCloseTo(c.top);
+  expect(a.height).toBeCloseTo(c.height);
+  const first = (id: string) => work.texts.find((t) => t.itemId === id)!;
+  expect(first(b.items[0].id).top).toBeCloseTo(first(b.items[1].id).top);
+  expect(first(b.items[1].id).x).toBeCloseTo(c.x);
+  // 作品名は墨、制作年・技法と説明は控えめ。
+  const own = work.texts.filter((t) => t.itemId === b.items[0].id);
+  expect(own.map((t) => [t.value, t.tone])).toEqual([
+    [source.title, "ink"],
+    ["2026 / インクジェットプリント", "quiet"],
+    [source.description, "quiet"],
+  ]);
+  // ページ番号は右下の余白に右寄せ、提出用は題と名前の柱を左下に。
+  const folio = work.texts.find((t) => t.value === "2")!;
+  expect(folio.tone).toBe("faint");
+  expect(folio.top).toBeGreaterThan(work.height - 42.52);
+  expect(folio.x + measure.widthOfTextAtSize("2", folio.size)).toBeCloseTo(
+    work.width - 42.52,
+  );
+  const running = work.texts.find((t) => t.value === "港の朝　江口秋")!;
+  expect(running.x).toBeCloseTo(42.52);
+  expect(running.top + running.size).toBeCloseTo(folio.top + folio.size);
+  expect(cover.texts.some((t) => t.tone === "faint")).toBe(false);
+  b.purpose = "photobook";
+  expect(
+    layoutBook(b, measure, sizes)[1].texts.some((t) => t.value.includes("江口秋")),
+  ).toBe(false);
+});
+
+test("横並び2枚の説明は、比率と長さがどう違っても自分の列からはみ出さない", async () => {
+  const { layoutBook } = await import("./layout");
+  const measure = {
+    widthOfTextAtSize: (s: string, size: number) => Array.from(s).length * size,
+  };
+  const captions = ["", "短い説明", "説明の一行目\n二行目\n三行目", "長い説明。".repeat(30)];
+  const cases = (["portrait", "landscape"] as const).flatMap((orientation) =>
+    ([1, 0.7] as const).flatMap((imageScale) =>
+      [0.66, 1, 1.5, 2.2].flatMap((r0) =>
+        [0.66, 1.5].flatMap((r1) =>
+          captions.flatMap((c0) =>
+            captions.map((c1) => ({ orientation, imageScale, r0, r1, c0, c1 })),
+          ),
+        ),
+      ),
+    ),
+  );
+  for (const { orientation, imageScale, r0, r1, c0, c1 } of cases) {
+    const b = addPhoto(make(), { ...source, id: 2 });
+    b.orientation = orientation;
+    b.items.forEach((i) => (i.rotation = 0));
+    b.items[0].captionOverride = c0;
+    b.items[1].captionOverride = c1;
+    b.pages = [
+      {
+        ...b.pages[0],
+        layout: "two",
+        itemIds: b.items.map((i) => i.id),
+        pairing: "across",
+        imageScale,
+      },
+    ];
+    const sizes = new Map([
+      [b.items[0].id, { width: 1000 * r0, height: 1000 }],
+      [b.items[1].id, { width: 1000 * r1, height: 1000 }],
+    ]);
+    const sheet = layoutBook(b, measure, sizes)[1];
+    const [left, right] = sheet.photos;
+    expect(left.top).toBeCloseTo(right.top);
+    expect(left.height).toBeCloseTo(right.height);
+    const edge = (id: string) =>
+      Math.max(
+        -Infinity,
+        ...sheet.texts
+          .filter((t) => t.itemId === id)
+          .flatMap((t) => t.lines.map((l) => t.x + measure.widthOfTextAtSize(l, t.size))),
+      );
+    // 句読点のぶら下げ1字（9.5pt 以下）までは許す。
+    expect(edge(b.items[0].id)).toBeLessThanOrEqual(right.x - 28 + 9.5);
+    expect(edge(b.items[1].id)).toBeLessThanOrEqual(sheet.width - 42.52 + 9.5);
+    for (const t of sheet.texts.filter((t) => t.itemId))
+      expect(t.top + t.lines.length * t.leading).toBeLessThanOrEqual(
+        sheet.height - 42.52 + 0.01,
+      );
+  }
 });

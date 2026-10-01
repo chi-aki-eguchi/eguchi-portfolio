@@ -1,4 +1,5 @@
 import type { PortfolioDocument } from "./model";
+import { hasJapanese, jaPhrases } from "../ja-phrases";
 export type Measure = {
   widthOfTextAtSize: (text: string, size: number) => number;
 };
@@ -7,6 +8,13 @@ export type PdfIssue = {
   message: string;
   severity: "error" | "warning";
 };
+/** 文字の濃さ。墨・控えめ・かすか（ページ番号や柱）の3段。 */
+export type Tone = "ink" | "quiet" | "faint";
+export const TONE_RGB: Record<Tone, readonly [number, number, number]> = {
+  ink: [0.11, 0.11, 0.11],
+  quiet: [0.4, 0.4, 0.4],
+  faint: [0.58, 0.58, 0.58],
+};
 export type TextBlock = {
   value: string;
   lines: string[];
@@ -14,6 +22,7 @@ export type TextBlock = {
   top: number;
   size: number;
   leading: number;
+  tone: Tone;
   itemId?: string;
 };
 export type PhotoBox = {
@@ -31,23 +40,109 @@ export type Sheet = {
   photos: PhotoBox[];
   issues: PdfIssue[];
 };
+
+/**
+ * 文字の大きさ（pt）と行送り（2026-10-02 組み直し）。
+ *
+ * 以前は表紙の題 24pt と、作品名・制作年・説明をすべて 10.5pt の同じ黒で
+ * 組んでいて、作品集というより書類に見えた。作品名だけを墨で、制作年や説明は
+ * 一段小さく控えめに。表紙は題を大きく、名前を小さく。
+ */
+export const TYPE = {
+  coverTitle: 26,
+  coverName: 11,
+  captionTitle: 9.5,
+  captionMeta: 8.5,
+  captionText: 8.5,
+  pageCaption: 9,
+  profileLabel: 9,
+  profileName: 16,
+  profileBody: 10,
+  profileContact: 9.5,
+  folio: 8,
+  running: 7.5,
+} as const;
+export const LEADING = { title: 1.3, caption: 1.75, body: 1.85, single: 1.5 } as const;
+/** 写真と説明のあいだ。 */
+export const CAPTION_GAP = 12;
+/** 説明の行の長さ。広い写真の下でも、読める長さ（8.5pt で約35字）に止める。 */
+const CAPTION_MAX_WIDTH = 300;
+const CAPTION_MIN_WIDTH = 200;
+
+// ── 日本語の折り返し ──────────────────────────────────────
+// 行頭に来てはいけない文字（句読点・閉じ括弧・小書きのかな・長音など）と、
+// 行末に残してはいけない文字（開き括弧）。句読点だけは行末にぶら下げる。
+const NO_START = new Set(
+  Array.from(
+    "、。，．・：；？！ー…‥」』）］｝〕〉》】〙〗〟’”ゝゞ々ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶ),.:;?!%",
+  ),
+);
+const HANG = new Set(Array.from("、。，．,."));
+const NO_END = new Set(Array.from("「『（［｛〔〈《【〘〖〝‘“([{"));
+
+function tokens(paragraph: string): string[] {
+  // 日本語は文節（BudouX）、欧文は語（空白の後ろで切る）。
+  if (hasJapanese(paragraph)) return jaPhrases(paragraph);
+  return paragraph.split(/(?<= )/);
+}
+
+/**
+ * 文節の切れ目で折り返す（2026-10-02）。以前は1文字ずつ詰めていたので、
+ * 「デジタ／ル」と語の途中で割れ、行頭に「。」が来ることもあった。
+ * 1つの文節が1行に入らないときだけ文字の途中で折り、そのときも禁則を守る。
+ */
 export function wrapText(
   text: string,
   width: number,
   size: number,
   font: Measure,
 ): string[] {
+  const fits = (s: string) => font.widthOfTextAtSize(s.trimEnd(), size) <= width;
   const lines: string[] = [];
   for (const paragraph of text.replace(/\r\n?/g, "\n").split("\n")) {
+    const out: string[] = [];
     let line = "";
-    for (const char of Array.from(paragraph)) {
-      if (line && font.widthOfTextAtSize(line + char, size) > width) {
-        lines.push(line);
-        line = "";
+    const breakLong = (s: string) => {
+      for (const char of Array.from(s)) {
+        if (line && !fits(line + char)) {
+          // 句読点は行末にぶら下げる。
+          if (HANG.has(char)) {
+            line += char;
+            continue;
+          }
+          let carry = "";
+          const chars = Array.from(line);
+          // 行頭に置けない字（ー・ッ・」など）は、前の字と一緒に次の行へ。
+          if (NO_START.has(char) && chars.length > 1) carry = chars.pop()!;
+          // 行末に開き括弧を残さない。
+          while (chars.length > 1 && NO_END.has(chars[chars.length - 1])) carry = chars.pop()! + carry;
+          out.push(chars.join(""));
+          line = carry;
+        }
+        line += char;
       }
-      line += char;
+    };
+    for (const token of tokens(paragraph)) {
+      if (line && fits(line + token)) {
+        line += token;
+        continue;
+      }
+      if (line) out.push(line.trimEnd());
+      line = "";
+      const next = token.trimStart();
+      if (fits(next)) line = next;
+      else breakLong(next);
     }
-    lines.push(line);
+    out.push(line.trimEnd());
+    // 文節の頭が行頭禁則の文字になったら、その字は前の行の末へ。
+    for (let i = 1; i < out.length; i++) {
+      while (out[i] && NO_START.has(Array.from(out[i])[0])) {
+        const chars = Array.from(out[i]);
+        out[i - 1] += chars.shift();
+        out[i] = chars.join("");
+      }
+    }
+    lines.push(...out.filter((l, i) => l !== "" || i === 0));
   }
   return lines;
 }
@@ -66,6 +161,8 @@ export function fitImage(
 }
 /** Shared point-based layout for SVG editing and PDF output. No image cropping. */
 export type ImageSizes = ReadonlyMap<string, { width: number; height: number }>;
+type Run = { value: string; size: number; leading: number; tone: Tone; gapBefore: number };
+
 export function layoutBook(
   book: PortfolioDocument,
   font: Measure,
@@ -88,45 +185,106 @@ export function layoutBook(
     sheets.push(p);
     return p;
   };
-  const text = (
+  const overflow = (p: Sheet) =>
+    p.issues.push({
+      page: sheets.indexOf(p) + 1,
+      severity: "error",
+      message:
+        "文字が枠を超えています。タイトル・説明・プロフィールを短くするか、1枚のページに分けてください",
+    });
+  const linesOf = (value: string, width: number, size: number) =>
+    value.trim() ? wrapText(value, width, size, font) : [];
+  // 複数の段（作品名・制作年・説明など）の高さ。空の段は場所を取らない。
+  const runsHeight = (runs: Run[], width: number) => {
+    let h = 0,
+      first = true;
+    for (const r of runs) {
+      const n = linesOf(r.value, width, r.size).length;
+      if (!n) continue;
+      h += (first ? 0 : r.gapBefore) + n * r.size * r.leading;
+      first = false;
+    }
+    return h;
+  };
+  const placeRuns = (
     p: Sheet,
-    value: string,
+    runs: Run[],
     x: number,
     top: number,
     width: number,
-    maxHeight: number,
-    size = 10.5,
     itemId?: string,
   ) => {
-    if (!value.trim()) return;
-    const lines = wrapText(value, width, size, font),
-      leading = size * 1.65;
-    if (lines.length * leading > maxHeight) {
-      p.issues.push({
-        page: sheets.length,
-        severity: "error",
-        message:
-          "文字が枠を超えています。タイトル・説明・プロフィールを短くするか、1枚のページに分けてください",
+    let y = top,
+      first = true;
+    for (const r of runs) {
+      const lines = linesOf(r.value, width, r.size);
+      if (!lines.length) continue;
+      if (!first) y += r.gapBefore;
+      p.texts.push({
+        value: r.value,
+        lines,
+        x,
+        top: y,
+        size: r.size,
+        leading: r.size * r.leading,
+        tone: r.tone,
+        itemId,
       });
-      return;
+      y += lines.length * r.size * r.leading;
+      first = false;
     }
-    p.texts.push({ value, lines, x, top, size, leading, itemId });
+    return y;
   };
-  const measured = (value: string, width: number, size: number) =>
-    value.trim() ? wrapText(value, width, size, font).length * size * 1.65 : 0;
+  const ratioOf = (id: string) => {
+    const size = sizes.get(id),
+      item = book.items.find((i) => i.id === id);
+    if (!size || !item) return null;
+    return item.rotation === 90 || item.rotation === 270
+      ? { width: size.height, height: size.width }
+      : size;
+  };
+
+  // ── 表紙: 写真と、その下に題と名前をひとまとまりで ──────────
   const cover = page("cover");
-  const titleH = Math.min(120, measured(book.title, CW, 24));
-  const nameH = Math.min(65, measured(book.cover.name, CW, 12));
-  text(cover, book.title, M, M, CW, 120, 24);
-  text(cover, book.cover.name, M, H - M - nameH, CW, 65, 12);
-  if (book.cover.itemId)
-    cover.photos.push({
-      id: book.cover.itemId,
-      x: M,
-      top: M + titleH + 28,
-      width: CW,
-      height: H - 2 * M - titleH - nameH - 56,
-    });
+  const coverRuns: Run[] = [
+    { value: book.title, size: TYPE.coverTitle, leading: LEADING.title, tone: "ink", gapBefore: 0 },
+    { value: book.cover.name, size: TYPE.coverName, leading: LEADING.single, tone: "quiet", gapBefore: 12 },
+  ];
+  // 題と名前に使える高さ。超えたら置かずに知らせる（写真は小さくしない）。
+  const coverCap = (H - 2 * M) * 0.4;
+  const coverPhoto = book.cover.itemId
+    ? book.items.find((i) => i.id === book.cover.itemId)
+    : undefined;
+  if (coverPhoto) {
+    const gap = 26;
+    let textWidth = CW,
+      fit = { width: CW, height: 0 };
+    // 題の幅は写真の幅に合わせる。幅が決まると題の行数が決まり、写真の高さが決まる。
+    for (let k = 0; k < 3; k++) {
+      const blockH = Math.min(coverCap, runsHeight(coverRuns, textWidth));
+      const boxH = Math.max(1, H - 2 * M - (blockH ? blockH + gap : 0));
+      const natural = ratioOf(coverPhoto.id);
+      fit = natural
+        ? fitImage(natural.width, natural.height, CW, boxH, 0)
+        : { width: CW, height: boxH };
+      const next = Math.max(Math.min(CW, 240), fit.width);
+      if (Math.abs(next - textWidth) < 0.5) break;
+      textWidth = next;
+    }
+    const blockH = runsHeight(coverRuns, textWidth);
+    if (blockH > coverCap) overflow(cover);
+    const shownH = blockH > coverCap ? 0 : blockH;
+    const groupH = fit.height + (shownH ? gap + shownH : 0);
+    const top = M + Math.max(0, (H - 2 * M - groupH) / 2);
+    const x = M + (CW - fit.width) / 2;
+    cover.photos.push({ id: coverPhoto.id, x, top, width: fit.width, height: fit.height });
+    if (shownH) placeRuns(cover, coverRuns, x, top + fit.height + gap, textWidth);
+  } else {
+    // 写真の無い表紙は、題を紙の上から4割ほどの所に。
+    const blockH = runsHeight(coverRuns, CW);
+    if (blockH > coverCap) overflow(cover);
+    else placeRuns(cover, coverRuns, M, Math.min(H * 0.38, H - M - blockH), CW);
+  }
   if (!book.title.trim())
     cover.issues.push({
       page: 1,
@@ -139,6 +297,8 @@ export function layoutBook(
       severity: "error",
       message: "写真を1枚以上選んでください",
     });
+
+  // ── 作品のページ ─────────────────────────────────────
   for (const source of book.pages) {
     const p = page(source.id),
       count = source.itemIds.length;
@@ -148,17 +308,20 @@ export function layoutBook(
         (source.pairing !== "stacked" && book.orientation === "landscape"));
     const gap = 28,
       scale = source.imageScale ?? 1;
-    const pageCaptionH = Math.min(60, measured(source.pageCaption, CW, 9));
-    // A single image and its page caption form one group. Pair captions sit below both cells.
+    const pageCaption: Run = {
+      value: source.pageCaption,
+      size: TYPE.pageCaption,
+      leading: LEADING.caption,
+      tone: "quiet",
+      gapBefore: 10,
+    };
+    // 1枚のページは写真と説明をひとまとまりに。2枚のページの説明は下にまとめる。
     const singleCaption = count === 1;
+    const pageCaptionH = Math.min(60, runsHeight([pageCaption], CW));
     const bottomSpace = !singleCaption && pageCaptionH ? pageCaptionH + 18 : 0;
     const ratios = source.itemIds.map((id) => {
-      const size = sizes.get(id),
-        item = book.items.find((i) => i.id === id)!;
-      if (!size) return null;
-      return item.rotation === 90 || item.rotation === 270
-        ? size.height / size.width
-        : size.width / size.height;
+      const r = ratioOf(id);
+      return r ? r.width / r.height : null;
     });
     const firstWidth =
       across && ratios[0] && ratios[1]
@@ -166,99 +329,148 @@ export function layoutBook(
         : (CW - gap) / 2;
     const available = H - 2 * M - bottomSpace;
     const bh = count === 2 && !across ? (available - gap) / 2 : available;
-    source.itemIds.forEach((id, index) => {
+    const runsFor = (id: string): Run[] => {
       const item = book.items.find((i) => i.id === id)!;
-      const bw = across
-        ? index === 0
-          ? firstWidth
-          : CW - gap - firstWidth
-        : CW;
-      const cellX = M + (across && index === 1 ? firstWidth + gap : 0);
-      const cellTop = M + (count === 2 && !across ? index * (bh + gap) : 0);
-      const details =
+      const runs: Run[] =
         book.purpose === "photobook"
-          ? ""
+          ? []
           : [
-              item.title,
-              [item.year, item.technique].filter(Boolean).join(" / "),
-              item.captionOverride,
-            ]
-              .filter(Boolean)
-              .join("\n");
-      const caption = singleCaption ? source.pageCaption : "";
-      const natural = sizes.get(id);
-      const maxText = bh * 0.4;
-      // Choose a stable text column from the maximum photo width. Capped at 360pt for readable lines.
-      const initialFit = natural
-        ? fitImage(
-            natural.width,
-            natural.height,
-            bw * scale,
-            bh * scale,
-            item.rotation,
-          )
-        : { width: bw * scale, height: bh * scale };
-      const textWidth = Math.min(
-        bw,
-        Math.max(Math.min(240, bw), Math.min(360, initialFit.width)),
-      );
-      const detailH = Math.min(maxText, measured(details, textWidth, 10.5));
-      const extraH = Math.min(60, measured(caption, textWidth, 9));
-      const textGap = detailH || extraH ? 14 : 0;
-      const interGap = detailH && extraH ? 10 : 0;
-      const reserve = detailH + extraH + textGap + interGap;
-      const photoH = Math.max(1, (bh - reserve) * scale);
-      const fit = natural
-        ? fitImage(
-            natural.width,
-            natural.height,
-            bw * scale,
-            photoH,
-            item.rotation,
-          )
-        : { width: bw * scale, height: photoH };
-      const groupTop = cellTop + (bh - fit.height - reserve) / 2;
-      const photoX = cellX + (bw - fit.width) / 2;
-      p.photos.push({
-        id,
-        x: photoX,
-        top: groupTop,
-        width: fit.width,
-        height: fit.height,
-      });
-      const textX = cellX + (bw - Math.max(fit.width, textWidth)) / 2;
-      text(
-        p,
-        details,
-        textX,
-        groupTop + fit.height + textGap,
-        textWidth,
-        detailH,
-        10.5,
-        id,
-      );
-      text(
-        p,
-        caption,
-        textX,
-        groupTop + fit.height + textGap + detailH + interGap,
-        textWidth,
-        60,
-        9,
-      );
+              { value: item.title, size: TYPE.captionTitle, leading: LEADING.single, tone: "ink", gapBefore: 0 },
+              {
+                value: [item.year, item.technique].filter(Boolean).join(" / "),
+                size: TYPE.captionMeta,
+                leading: LEADING.single,
+                tone: "quiet",
+                gapBefore: 1,
+              },
+              { value: item.captionOverride, size: TYPE.captionText, leading: LEADING.caption, tone: "quiet", gapBefore: 6 },
+            ];
+      if (singleCaption) runs.push(pageCaption);
+      return runs;
+    };
+    const cell = (index: number) => ({
+      x: M + (across && index === 1 ? firstWidth + gap : 0),
+      top: M + (count === 2 && !across ? index * (bh + gap) : 0),
+      width: across ? (index === 0 ? firstWidth : CW - gap - firstWidth) : CW,
     });
-    if (!singleCaption)
-      text(p, source.pageCaption, M, H - M - pageCaptionH, CW, 60, 9);
+    // 説明に使える高さ。超えたら置かずに知らせる（写真は小さくしすぎない）。
+    const captionCap = bh * 0.4;
+    type Plan = {
+      id: string;
+      c: ReturnType<typeof cell>;
+      runs: Run[];
+      natural: { width: number; height: number } | null;
+      reserve: number;
+      fit: { width: number; height: number };
+      photoX: number;
+      textWidth: number;
+    };
+    // 説明に reserve の高さを取ったときの写真の大きさと、説明の幅。
+    // 幅は写真の幅から決め（狭すぎず、長すぎず）、写真の左端にそろえる。
+    const solve = (q: Plan, reserve: number) => {
+      const photoH = Math.max(1, (bh - reserve) * scale);
+      q.fit = q.natural
+        ? fitImage(q.natural.width, q.natural.height, q.c.width * scale, photoH, 0)
+        : { width: q.c.width * scale, height: photoH };
+      q.photoX = q.c.x + (q.c.width - q.fit.width) / 2;
+      q.textWidth = Math.min(
+        Math.max(Math.min(q.fit.width, CAPTION_MAX_WIDTH), Math.min(CAPTION_MIN_WIDTH, q.c.width)),
+        q.c.x + q.c.width - q.photoX,
+      );
+      q.reserve = reserve;
+    };
+    const need = (q: Plan) => {
+      const h = runsHeight(q.runs, q.textWidth);
+      return h ? Math.min(captionCap, h) + CAPTION_GAP : 0;
+    };
+    const plan = source.itemIds.map((id, index) => {
+      const q: Plan = {
+        id,
+        c: cell(index),
+        runs: runsFor(id),
+        natural: ratioOf(id),
+        reserve: 0,
+        fit: { width: 0, height: 0 },
+        photoX: 0,
+        textWidth: 0,
+      };
+      solve(q, 0);
+      return q;
+    });
+    // 説明の高さ→写真の大きさ→説明の幅→…を数回でそろえる（説明は増える一方なので止まる）。
+    // 横に並べた2枚は、説明の長さが違っても同じ高さを取り、写真の上端と高さをそろえる。
+    for (let k = 0; k < 6; k++) {
+      const needs = plan.map(need);
+      const targets = across ? needs.map(() => Math.max(...needs)) : needs;
+      if (plan.every((q, i) => Math.abs(targets[i] - q.reserve) < 0.5)) break;
+      plan.forEach((q, i) => solve(q, targets[i]));
+    }
+    for (const q of plan) {
+      if (runsHeight(q.runs, q.textWidth) > captionCap) {
+        overflow(p);
+        q.runs = [];
+      }
+      // 1枚の写真は、紙の真ん中よりわずかに上に置く（目に見える中心）。
+      const lift = singleCaption ? 0.46 : 0.5;
+      const groupTop = q.c.top + Math.max(0, (bh - q.fit.height - q.reserve) * lift);
+      p.photos.push({ id: q.id, x: q.photoX, top: groupTop, width: q.fit.width, height: q.fit.height });
+      if (q.runs.length)
+        placeRuns(p, q.runs, q.photoX, groupTop + q.fit.height + CAPTION_GAP, q.textWidth, q.id);
+    }
+    if (!singleCaption && pageCaptionH) {
+      const lines = linesOf(source.pageCaption, CW, TYPE.pageCaption);
+      if (lines.length * TYPE.pageCaption * LEADING.caption > 60) overflow(p);
+      else placeRuns(p, [pageCaption], M, H - M - pageCaptionH, CW);
+    }
   }
+
+  // ── プロフィール: 見出し・名前・文・連絡先をひと続きに ─────────
   if (book.pdfProfile.enabled) {
     const p = page("profile");
-    text(p, "プロフィール", M, M, CW, 40, 18);
-    text(p, book.cover.name, M, M + 60, CW, 50, 14);
-    text(p, book.pdfProfile.text, M, M + 120, CW, H - 2 * M - 245, 11);
-    text(p, book.pdfProfile.contact, M, H - M - 100, CW, 100, 10);
+    const width = Math.min(CW, 380);
+    const runs: Run[] = [
+      { value: "プロフィール", size: TYPE.profileLabel, leading: LEADING.single, tone: "faint", gapBefore: 0 },
+      { value: book.cover.name, size: TYPE.profileName, leading: LEADING.title, tone: "ink", gapBefore: 14 },
+      { value: book.pdfProfile.text, size: TYPE.profileBody, leading: LEADING.body, tone: "ink", gapBefore: 18 },
+      { value: book.pdfProfile.contact, size: TYPE.profileContact, leading: LEADING.caption, tone: "quiet", gapBefore: 24 },
+    ];
+    const h = runsHeight(runs, width);
+    if (h > H - 2 * M) overflow(p);
+    else placeRuns(p, runs, M, M, width);
   }
-  sheets.forEach(
-    (p, n) => n > 0 && text(p, `${n + 1}`, W - M - 12, H - 30, 24, 20, 8),
-  );
+
+  // ── ページ番号と柱（下の余白の中） ─────────────────────────
+  const footTop = H - M + (M - TYPE.folio) / 2 - 1;
+  const running = [book.title.trim(), book.cover.name.trim()].filter(Boolean).join("　");
+  sheets.forEach((p, n) => {
+    if (n === 0) return;
+    const folio = String(n + 1);
+    p.texts.push({
+      value: folio,
+      lines: [folio],
+      x: W - M - font.widthOfTextAtSize(folio, TYPE.folio),
+      top: footTop,
+      size: TYPE.folio,
+      leading: TYPE.folio * LEADING.single,
+      tone: "faint",
+    });
+    // 提出用は、ばらばらに見られても誰の何か分かるように、題と名前を下に小さく。
+    if (book.purpose === "submission" && running) {
+      let label = running;
+      const max = CW - 60;
+      while (label.length > 1 && font.widthOfTextAtSize(label, TYPE.running) > max)
+        label = Array.from(label).slice(0, -2).join("") + "…";
+      p.texts.push({
+        value: label,
+        lines: [label],
+        x: M,
+        // ページ番号と同じ並び（ベースライン）に。
+        top: footTop + TYPE.folio - TYPE.running,
+        size: TYPE.running,
+        leading: TYPE.running * LEADING.single,
+        tone: "faint",
+      });
+    }
+  });
   return sheets;
 }

@@ -9,6 +9,7 @@ import {
   clampSettingRounded,
 } from "../../shared/setting-ranges";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
+import { useBreakoutRoom } from "../hooks/useBreakoutRoom";
 import { formatPeriodRange } from "../lib/series-colophon";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
 
@@ -149,11 +150,26 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
   // effect ran (series fetch resolving late) would otherwise stay invisible.
   const fadeRef = useScrollFadeIn([series]);
 
-  // Tile is ~(container/columns) CSS px; ask for ~2x for retina. The container
-  // caps at 1024px (max-w-5xl), so desktop tiles range ~250–510px.
-  const sizes = isMobile
-    ? `${Math.round(100 / columns)}vw`
-    : `(max-width: 1024px) ${Math.round(100 / columns)}vw, ${Math.round(1024 / columns)}px`;
+  // 大きな画面では、ページの枠（1024px）より外へ広げる（2026-10-01、オーナー了解）。
+  // 枠のままだと 1920px でも表紙が 230px 角で、真ん中に小さく4枚並び、まわりが
+  // 広く空いていた。広げ方は表紙1枚の幅の上限（TILE_MAX）で決め、列数は設定の
+  // まま。左のメニューがあっても、画面の中の余白は左右同じにする（useBreakoutRoom）。
+  // スマホと、1組だけを真ん中に置くとき（soloWidth）は今までどおり。
+  const room = useBreakoutRoom(fadeRef, 16, series.length > 0);
+  const TILE_MAX = 400;
+  const wantFrame = columns * TILE_MAX + (columns - 1) * gap;
+  const frameW =
+    !isMobile && !soloWidth && room.available > room.natural
+      ? Math.round(Math.min(room.available, wantFrame))
+      : 0;
+  const breakout =
+    frameW > room.natural
+      ? { width: `${frameW}px`, marginInline: `calc((100% - ${frameW}px) / 2)` }
+      : null;
+
+  // 表紙の実際の幅で頼む（広げたぶん大きな画像を選ばせる）。測る前は枠の幅で見積もる。
+  const tileW = ((frameW || room.natural || 1024) - gap * (columns - 1)) / columns;
+  const sizes = isMobile ? `${Math.round(100 / columns)}vw` : `${Math.round(tileW)}px`;
 
   if (series.length === 0) {
     if (isLoading) return <div className="py-24" aria-hidden="true" />;
@@ -187,7 +203,7 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
         alignItems: "start",
         ...(soloWidth
           ? { maxWidth: "min(100%, 460px)", marginInline: "auto" }
-          : null),
+          : breakout),
       }}
     >
       {series.map((s) => (

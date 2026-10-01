@@ -25,6 +25,11 @@ export type BreakoutRoom = {
 export function useBreakoutRoom(
   ref: RefObject<HTMLElement | null>,
   edgeInset = 16,
+  /**
+   * 測る要素が後から現れるとき（データが届いてから描く一覧など）に、現れた
+   * ことを知らせる値。変わると測り直す。最初から要素があるなら要らない。
+   */
+  remeasureKey?: unknown,
 ): BreakoutRoom {
   const [room, setRoom] = useState<BreakoutRoom>({ natural: 0, available: 0 });
   useLayoutEffect(() => {
@@ -60,6 +65,6 @@ export function useBreakoutRoom(
       window.removeEventListener("resize", measure);
       ro?.disconnect();
     };
-  }, [ref, edgeInset]);
+  }, [ref, edgeInset, remeasureKey]);
   return room;
 }

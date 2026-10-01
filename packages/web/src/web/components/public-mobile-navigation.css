@@ -13,14 +13,16 @@ header[data-mobile-menu-open="true"] { background: var(--background); backdrop-f
 header[data-mobile-menu-open="true"] .public-mobile-menu {
   display: flex; flex-direction: column; gap: 4px;
   height: calc(100dvh - var(--header-h) - var(--sai-top));
-  padding: 28px 24px calc(32px + var(--sai-bottom));
+  /* 左右は名前・本文と同じ縁（--page-inset）。 */
+  padding: 28px calc(var(--page-inset) + var(--sai-right, 0px)) calc(32px + var(--sai-bottom)) calc(var(--page-inset) + var(--sai-left, 0px));
   overflow-y: auto; overscroll-behavior: contain;
   border-top: 1px solid rgba(var(--foreground-rgb), .1);
   background: var(--background);
 }
 .public-mobile-menu__link { display: flex; align-items: center; flex-shrink: 0; gap: 16px; min-height: 56px; padding: 8px 0; font-size: clamp(22px, 6vw, 28px); line-height: 1.5; color: var(--foreground); opacity: .72; overflow-wrap: anywhere; }
-.public-mobile-menu__link[aria-current="page"] { opacity: 1; }
-.public-mobile-menu__link[aria-current="page"]::before { content: ""; width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
+/* 今いるページは濃く＋下線（PC のメニューと同じ印）。以前は前に点を置いて
+   いたので、その項目だけ文字が 21px 右へずれていた。 */
+.public-mobile-menu__link[aria-current="page"] { opacity: 1; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 7px; }
 .public-mobile-menu__link[data-service-link] { border-top: 1px solid rgba(var(--foreground-rgb), .14); margin-top: 20px; padding-top: 20px; font-size: 15px; }
 .public-mobile-menu__language { margin-top: auto; padding-top: 24px; }
 .public-mobile-menu__language .language-switch { gap: 16px; font-size: 14px !important; }

@@ -77,8 +77,10 @@ function useFooterReveal() {
 }
 
 // i18n Phase 3 スライス1: nav末尾に出す JP | EN 切り替え。他の nav リンクと
-// 同じ font-en の控えめなトーン。現在の言語は非リンクで濃く表示し、もう一方は
-// 通常の nav リンクとして遷移可能にする。
+// 同じ font-en の控えめなトーン。現在の言語は非リンクで、メニューの今いる
+// ページと同じ「濃く＋下線」。もう一方は通常の nav リンクとして遷移できる。
+// （以前は今の言語を 0.76 の濃さに固定していたので、「ナビの濃さ」を 1 に
+// した本番では、選んでいない側のほうが濃く見えていた。2026-10-01）
 function LanguageSwitchLinks({
   isEnglishPage,
   jaHref,
@@ -107,10 +109,7 @@ function LanguageSwitchLinks({
           <span aria-hidden="true" className="language-switch-hit-area" />
         </Link>
       ) : (
-        <span
-          aria-current="page"
-          style={{ color: `rgba(var(--foreground-rgb),0.76)` }}
-        >
+        <span aria-current="page" className="language-switch-current">
           JP
         </span>
       )}
@@ -121,10 +120,7 @@ function LanguageSwitchLinks({
         |
       </span>
       {isEnglishPage ? (
-        <span
-          aria-current="page"
-          style={{ color: `rgba(var(--foreground-rgb),0.76)` }}
-        >
+        <span aria-current="page" className="language-switch-current">
           EN
         </span>
       ) : (
@@ -655,7 +651,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         data-mobile-menu-open={mobileOpen || undefined}
         data-nav-collapsed={navFit.collapsed || undefined}
         data-header-bg={headerBackground}
-        className={`fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[var(--ease-quart)] ${
+        className={`site-header fixed top-0 left-0 w-full z-50 transition-[background-color,box-shadow,backdrop-filter,-webkit-backdrop-filter] duration-300 ease-[var(--ease-quart)] ${
           mobileOpen
             ? "bg-[var(--background)]"
             : scrolled
@@ -736,7 +732,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         ? "ライトモードに切り替え"
                         : "ダークモードに切り替え"
                   }
-                  className="w-9 h-9 flex items-center justify-center rounded-full transition-colors duration-300 hover:bg-[rgba(var(--foreground-rgb),0.06)]"
+                  className="nav-theme-toggle w-9 h-9 flex items-center justify-center rounded-full transition-colors duration-300 hover:bg-[rgba(var(--foreground-rgb),0.06)]"
                   style={{
                     color: `rgba(var(--foreground-rgb), var(--nav-opacity, 0.35))`,
                   }}
@@ -876,10 +872,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 )}
               </button>
             )}
-            {/* 44px hit target (HIG minimum) — bars stay 20px; -mr keeps their visual
-              right-edge where the old 32px button had it. */}
+            {/* 44px hit target (HIG minimum) — bars stay 20px; -mr-3 puts the bars'
+              right edge on the page edge (--page-inset), like the text below. */}
             <button
-              className="w-11 h-11 -mr-1.5 flex flex-col items-center justify-center gap-[5px] text-[var(--foreground)]"
+              className="w-11 h-11 -mr-3 flex flex-col items-center justify-center gap-[5px] text-[var(--foreground)]"
               ref={bookChrome ? undefined : menuButtonRef}
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Menu"
@@ -969,8 +965,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         !isContactRoute(location) && (
           // 以前は「FOR PHOTOGRAPHERS」の見出しと2本のリンクの節（StudioBridge）で、
           // 作品を見終えた直後に毎ページ宣伝の箱が出ていた。写真中心の器と同じ1行へ。
-          <div className="classic-service-note max-w-5xl mx-auto px-6 md:px-12" data-footer-layout={footerLayout}>
-            <PhotoServiceNote siteUrl={data?.siteUrl} language={location.startsWith("/en/") ? "en" : "ja"} />
+          // 外側の行は main・footer と同じく左のメニューの幅を空ける。以前は
+          // これが無く、この1行と区切り線だけ画面全体の中心に置かれて、本文と
+          // フッターの中心から 88px 左へずれていた（2026-10-01）。
+          <div className="classic-service-note-row">
+            <div className="classic-service-note max-w-5xl mx-auto site-page" data-footer-layout={footerLayout}>
+              <PhotoServiceNote siteUrl={data?.siteUrl} language={location.startsWith("/en/") ? "en" : "ja"} />
+            </div>
           </div>
         )}
 
@@ -981,7 +982,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: "calc(2rem + var(--sai-bottom))" }}
       >
         <div
-          className={`max-w-5xl mx-auto px-6 md:px-12 flex gap-4 min-w-0 ${
+          className={`max-w-5xl mx-auto site-page flex gap-4 min-w-0 ${
             footerLayout === "split"
               ? "flex-col items-start md:flex-row md:items-center md:justify-between"
               : footerLayout === "left"

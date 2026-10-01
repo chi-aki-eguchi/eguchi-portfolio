@@ -112,7 +112,7 @@ export default function SeriesDetailPage() {
     // 上余白 128px→9.6px の変化が「動きを減らす」設定の極短い transition に
     // 乗り、1フレーム遅れて題名と1枚目が 118px 跳ねる（実測 CLS 0.111、
     // 2026-09-15。表紙の見開きがある間は画面の下で起きていて目立たなかった）。
-    return <section key="series-hold" className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-32 site-page-hold" aria-hidden="true" />;
+    return <section key="series-hold" className="max-w-5xl mx-auto site-page py-16 md:py-32 site-page-hold" aria-hidden="true" />;
   }
 
   // 取得そのものに失敗したときは「見つかりません」と言わない。この query は

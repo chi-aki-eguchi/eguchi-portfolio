@@ -177,7 +177,7 @@ export function SeriesStream({
 
   return (
     <section className="pb-[calc(4rem*var(--spacing-section-gap,1))] md:pb-[calc(6rem*var(--spacing-section-gap,1))]">
-      <div className="max-w-5xl mx-auto px-6 md:px-12 flex items-center justify-between gap-4 mb-8 md:mb-10">
+      <div className="max-w-5xl mx-auto site-page flex items-center justify-between gap-4 mb-8 md:mb-10">
         <h2
           /* 帯の見出しは設定で自由に書ける。折り返せない語だと、右の
              「View all」ごと画面外へ押し出す（実測 320px で 504px）。 */

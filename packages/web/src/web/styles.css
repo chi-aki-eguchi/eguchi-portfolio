@@ -3858,14 +3858,24 @@ header > nav {
   padding-left: calc(1.5rem + var(--sai-left, 0px)) !important;
   padding-right: calc(1.5rem + var(--sai-right, 0px)) !important;
 }
-
-/* ─── BB1: nav position — desktop only; mobile always keeps the hamburger.
-   Specificity (.nav-pos-* > header) beats the tailwind utility classes. */
 @media (min-width: 768px) {
   header > nav {
     padding-left: calc(3rem + var(--sai-left, 0px)) !important;
     padding-right: calc(3rem + var(--sai-right, 0px)) !important;
   }
+}
+/* 公開サイトの上のメニューは、名前の左端を本文の左端（.site-page）に
+   そろえる（2026-10-01）。以前はスマホで名前 24px・本文 16px、PC の上の
+   メニューで 48px・24px と、名前と本文の縁が 8〜24px ずれていた。
+   上の `header > nav` は管理画面の帯にも当たっているので、そちらは変えない。 */
+.site-header > nav {
+  padding-left: calc(var(--page-inset) + var(--sai-left, 0px)) !important;
+  padding-right: calc(var(--page-inset) + var(--sai-right, 0px)) !important;
+}
+
+/* ─── BB1: nav position — desktop only; mobile always keeps the hamburger.
+   Specificity (.nav-pos-* > header) beats the tailwind utility classes. */
+@media (min-width: 768px) {
   /* 帯の幅は、メニューの文字を大きくしたときだけ広げる（useNavFit が
      --nav-rail-w を置く）。既定は 11rem のまま。 */
   .nav-pos-left > header {
@@ -3884,16 +3894,36 @@ header > nav {
     gap: 3rem;
     padding: 2.5rem 2rem !important;
   }
+  /* 項目は名前と同じ左端に並べる（2026-10-01）。以前は Tailwind の
+     items-center が残っていて、名前だけ左・項目は中央・下線は左から、と
+     縁が3つあった。中央寄せは一番幅のある項目で中心が決まるので、
+     JP | EN が出る About・Contact では項目が左右に動いてもいた。 */
   .nav-pos-left > header > nav ul {
     flex-direction: column;
+    align-items: flex-start;
     gap: 1.4rem;
   }
+  /* 明暗の切り替えは押せる範囲（36px）の中央に 16px の印がある。印の左端を
+     文字の左端へ合わせる。 */
+  .nav-pos-left > header > nav ul .nav-theme-toggle {
+    margin-left: -10px;
+  }
   .nav-pos-left > main,
-  .nav-pos-left > footer {
+  .nav-pos-left > footer,
+  .nav-pos-left > .classic-service-note-row {
     padding-left: var(--nav-rail-w, 11rem);
   }
-  .nav-pos-left > main {
+  /* 左のメニューでは上に帯が無いので、以前は本文の上余白を 0 にしていた。
+     すると「ページ上端の余白」を詰めた設定（本番 0.2）で、見出しや写真が
+     画面の上端から 10px で始まり、管理画面のプレビュー（狭い幅では上の
+     メニューになる）とも食い違っていた。上の帯がある時と同じだけ空ける。
+     トップの写真だけは今までどおり画面の上端から置き、全画面の写真は
+     帯のぶんを引かずに画面の高さいっぱいにする（--header-h を 0 に）。 */
+  .nav-pos-left > main:has(.hero-motion-stage) {
     padding-top: 0;
+  }
+  .nav-pos-left > main:has(.hero-fullscreen) {
+    --header-h: 0px;
   }
 
   /* Both of these nav positions own the bottom-left corner where the floating
@@ -3920,12 +3950,12 @@ header > nav {
     padding-bottom: calc(5rem + var(--sai-bottom));
   }
 
-  /* Phase 3: sidebar active indicator — horizontal line + outdent for active item */
+  /* 今いるページは、文字の左の余白に短い線を下げて示す。文字はほかの
+     項目と同じ左端のまま動かさない（以前はほかの項目を 18px 字下げしていて、
+     その余白まで hover の下線が伸び、文字より左から線が始まっていた）。 */
   .nav-pos-left > header > nav ul a {
     position: relative;
-    transition:
-      color var(--dur-hover) var(--ease-quart),
-      padding-left var(--dur-hover) var(--ease-quart);
+    transition: color var(--dur-hover) var(--ease-quart);
   }
   /* These three win over .nav-link-public on specificity alone, so a literal
      alpha here silently overrode admin の「ナビの濃さ」(navOpacity) for every
@@ -3934,7 +3964,6 @@ header > nav {
      an untouched site looks the same. */
   .nav-pos-left > header > nav ul a:not([aria-current="page"]) {
     color: rgba(var(--foreground-rgb), var(--nav-opacity, 0.4)) !important;
-    padding-left: 18px;
   }
   .nav-pos-left > header > nav ul a:not([aria-current="page"]):hover {
     color: var(
@@ -3949,12 +3978,16 @@ header > nav {
   .nav-pos-left > header > nav ul a[aria-current="page"]::before {
     content: "";
     position: absolute;
-    right: calc(100% + 6px);
+    right: calc(100% + 8px);
     top: 50%;
     transform: translateY(-50%);
     width: 12px;
     height: 1px;
     background: var(--foreground);
+  }
+  /* 線と下線の二重の印にしない。下線は触れたときの合図に残す。 */
+  .nav-pos-left header .nav-link-luxury.nav-link-public[aria-current="page"]::after {
+    transform: scaleX(0);
   }
 }
 
@@ -4575,6 +4608,14 @@ header .nav-link-luxury.nav-link-public[aria-current="page"]::after {
   color: var(--accent-color, rgba(var(--foreground-rgb), 0.85));
   border-color: var(--accent-color, rgba(var(--foreground-rgb), 0.5));
   background-color: rgba(var(--foreground-rgb), 0.035);
+}
+
+/* 今の言語（JP | EN の選んでいる側）。メニューの今いるページと同じ印。 */
+.language-switch-current {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
 /* Public JP/EN links stay visually compact, but their real touch surface is
@@ -6870,7 +6911,8 @@ body[data-photo-crop="whole"] img.series-stream-media {
 }
 .inquiry-note > div { min-width: 0; flex: 1 1 20rem; }
 .inquiry-note h2 { font-size: var(--body-size, 1rem); font-weight: 400; line-height: 1.6; }
-.inquiry-note p { margin-top: 0.75rem; font-size: var(--body-size, 0.875rem); line-height: var(--body-leading, 1.9); color: var(--text-quiet); }
+/* text-wrap: pretty — スマホで「…ご相談くださ／い。」と最後の1文字だけが次の行へ落ちていた。 */
+.inquiry-note p { margin-top: 0.75rem; font-size: var(--body-size, 0.875rem); line-height: var(--body-leading, 1.9); color: var(--text-quiet); text-wrap: pretty; }
 .inquiry-note__link { flex-shrink: 0; max-width: 100%; min-height: 44px; display: inline-flex; align-items: center; font-size: var(--body-size, 0.875rem); text-decoration: underline; text-underline-offset: 5px; overflow-wrap: anywhere; }
 @media (max-width: 639px) { .inquiry-note { flex-direction: column; gap: 0.75rem; } .inquiry-note > div { flex: none; } }
 

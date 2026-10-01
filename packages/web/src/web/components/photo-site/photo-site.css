@@ -1010,6 +1010,8 @@ html[data-ps-cover] .ps-header__bar[data-ready] > .ps-name {
 .ps-service__lead {
   margin: 0;
   color: var(--ps-quiet);
+  /* スマホで「…サイト／を作っています。」と短い2行目が残らないよう、行の長さをならす。 */
+  text-wrap: balance;
 }
 .ps-service__go,
 .ps-service__sub {

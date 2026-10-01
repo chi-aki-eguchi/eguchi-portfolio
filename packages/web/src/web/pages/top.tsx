@@ -663,7 +663,7 @@ function TopStatement({
   return (
     <section
       data-home-statement
-      className="max-w-2xl mx-auto px-6 md:px-12 pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(5rem*var(--spacing-section-gap,1))]"
+      className="max-w-2xl mx-auto site-page pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(5rem*var(--spacing-section-gap,1))]"
     >
       <div className="space-y-4 section-reveal">
         {text
@@ -929,7 +929,7 @@ function HomeQuietGrid({
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
-          className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
+          className="max-w-5xl mx-auto site-page pt-5 pb-20"
           ref={fadeRef}
         >
           <WorksHeader settings={settings} />
@@ -962,7 +962,9 @@ function HomeQuietGrid({
       <TopSeriesStream settings={settings} at="after-works" />
       <TopStatement settings={settings} at="after-works" />
 
-      <InquiryCta />
+      <div className="max-w-5xl mx-auto site-page">
+        <InquiryCta />
+      </div>
     </div>
   );
 }
@@ -1063,7 +1065,7 @@ function HomeEditorial({
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
-          className="max-w-5xl mx-auto px-6 md:px-12 pt-5 pb-20"
+          className="max-w-5xl mx-auto site-page pt-5 pb-20"
           ref={fadeRef}
         >
           <WorksHeader settings={settings} />
@@ -1096,7 +1098,9 @@ function HomeEditorial({
       <TopSeriesStream settings={settings} at="after-works" />
       <TopStatement settings={settings} at="after-works" />
 
-      <InquiryCta />
+      <div className="max-w-5xl mx-auto site-page">
+        <InquiryCta />
+      </div>
     </div>
   );
 }
@@ -1212,7 +1216,7 @@ function HomeImmersive({
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
-          className="max-w-4xl mx-auto px-6 md:px-12 pt-6 pb-20"
+          className="max-w-4xl mx-auto site-page pt-6 pb-20"
           ref={fadeRef}
         >
           <WorksHeader settings={settings} />
@@ -1245,7 +1249,9 @@ function HomeImmersive({
       <TopSeriesStream settings={settings} at="after-works" />
       <TopStatement settings={settings} at="after-works" />
 
-      <InquiryCta />
+      <div className="max-w-5xl mx-auto site-page">
+        <InquiryCta />
+      </div>
     </div>
   );
 }
@@ -1633,7 +1639,7 @@ export default function TopPage() {
       {featured.length === 0 && worksStatus}
       {featured.length > 0 && (
         <section
-          className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(2rem*var(--spacing-hero-bottom,1))] md:pt-[calc(3rem*var(--spacing-hero-bottom,1))] pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(4rem*var(--spacing-section-gap,1))]"
+          className="max-w-5xl mx-auto site-page pt-[calc(2rem*var(--spacing-hero-bottom,1))] md:pt-[calc(3rem*var(--spacing-hero-bottom,1))] pb-[calc(3rem*var(--spacing-section-gap,1))] md:pb-[calc(4rem*var(--spacing-section-gap,1))]"
           ref={fadeRef}
         >
           <div className="flex items-center justify-between mb-6 md:mb-8">
@@ -1696,7 +1702,9 @@ export default function TopPage() {
       <TopSeriesStream settings={settings} at="after-works" />
       <TopStatement settings={settings} at="after-works" />
 
-      <InquiryCta />
+      <div className="max-w-5xl mx-auto site-page">
+        <InquiryCta />
+      </div>
     </div>
   );
 }

@@ -13,6 +13,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "try:admin"],
       "port": 5299
+    },
+    {
+      "name": "try",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "try"],
+      "port": 4400
     }
   ]
 }

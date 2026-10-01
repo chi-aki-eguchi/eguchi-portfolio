@@ -86,7 +86,7 @@ export default function PhotoDetailPage() {
 
   if (isLoading || isError || !data) {
     return (
-      <section className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]">
+      <section className="max-w-5xl mx-auto site-page pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]">
         {isLoading ? (
           <ContentStatus state="loading" />
         ) : isError ? (
@@ -129,7 +129,7 @@ export default function PhotoDetailPage() {
   return (
     <section
       ref={entranceRef}
-      className="max-w-5xl mx-auto px-6 md:px-12 pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]"
+      className="max-w-5xl mx-auto site-page pt-[calc(4rem*var(--spacing-page-top,1))] md:pt-[calc(7rem*var(--spacing-page-top,1))] pb-16 md:pb-28 min-h-[60vh]"
     >
       <figure className="m-0 page-entrance">
         <Picture

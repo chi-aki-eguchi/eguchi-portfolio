@@ -229,7 +229,15 @@ export function selectPreviewPart(iframe: HTMLIFrameElement, partId: string | nu
     const elements = Array.from(doc.querySelectorAll(`[data-edit="${value}"]`));
     elements.forEach((el) => el.setAttribute("data-admin-selected", ""));
     if (scroll && elements[0]) {
-      elements[0].scrollIntoView?.({ block: "center", behavior: "smooth" });
+      // プレビューの中だけを送る（2026-10-01）。scrollIntoView は iframe の外の
+      // 管理画面の枠まで送ってしまい、Safari ではプレビューが枠の中で 263px 上へ
+      // ずれて、下の4割が白いまま残っていた（「名前」を選んだときに実測）。
+      const view = doc.defaultView;
+      if (view) {
+        const rect = elements[0].getBoundingClientRect();
+        const top = rect.top + view.scrollY - Math.max(0, (view.innerHeight - rect.height) / 2);
+        view.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      }
     }
   } catch {
     /* 印を付けられなくても、設定はそのまま使える */

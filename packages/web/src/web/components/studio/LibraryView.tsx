@@ -451,7 +451,12 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
   });
   useEffect(() => {
     const d = ref.current;
-    if (d && !d.open) d.showModal();
+    if (d && !d.open) {
+      d.showModal();
+      // 開いた直後は窓そのものへ（2026-10-01）。既定では最初のボタン（閉じる）に
+      // 入り、Safari では押して開いただけで青い枠が出ていた。
+      d.focus({ preventScroll: true });
+    }
     // 管理画面の窓は data-phase="show" で現れる（styles.css の .admin-atelier dialog）。
     const f = requestAnimationFrame(() => d?.setAttribute("data-phase", "show"));
     return () => cancelAnimationFrame(f);
@@ -492,15 +497,17 @@ function TrashDialog({ onClose }: { onClose: () => void }) {
   };
   const photos = trashQ.data?.photos ?? [];
   return (
-    <dialog ref={ref} className="st-dialog" onClose={onClose} aria-label={tx("ゴミ箱", "Trash")}>
+    <dialog ref={ref} className="st-dialog" onClose={onClose} aria-label={tx("ゴミ箱", "Trash")} tabIndex={-1}>
+      {/* 閉じるは題の右（シリーズに写真を加える窓と同じ）。以前は説明の下に1行で
+          置かれ、本文の続きのように見えていた。 */}
       <div className="st-dialog__head">
         <h2>{tx("ゴミ箱", "Trash")}</h2>
-        <p className="st-note">
-          {tx("ここにある写真はサイトに出ません。自動では消えず、保管中はストレージを使用します。復元するか、確認して完全削除してください。", "Photos here are not on the site. They are never removed automatically and keep using storage until you restore or permanently delete them.")}
-        </p>
         <button type="button" className="st-ax-btn st-link" onClick={() => ref.current?.close()}>
           {tx("閉じる", "Close")}
         </button>
+        <p className="st-note st-dialog__lead">
+          {tx("ここにある写真はサイトに出ません。自動では消えず、保管中はストレージを使用します。復元するか、確認して完全削除してください。", "Photos here are not on the site. They are never removed automatically and keep using storage until you restore or permanently delete them.")}
+        </p>
       </div>
       {trashQ.isLoading ? (
         <p className="st-empty">{tx("読み込んでいます…", "Loading…")}</p>

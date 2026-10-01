@@ -10227,10 +10227,23 @@ function QuickPalette({
 
   if (!mounted) return null;
 
-  const filtered = destinations.filter(
-    (d) =>
-      !query.trim() || fuzzyMatch(d.label, query) || fuzzyMatch(d.group, query) || fuzzyMatch(d.keywords ?? "", query),
-  );
+  // 名前に探した語が入っている行を先に（2026-10-01）。以前は一覧の順のままで、
+  // 「色」と探すと、言い換えの語に「色」を持つ「名前」が「色と背景」より上に来ていた。
+  // 名前にそのまま入る → 名前に飛び飛びで入る → 区分 → 言い換えの語、の順。同じ順位の中は元の並び。
+  const q = query.trim();
+  const rankOf = (d: PaletteDestination): number => {
+    if (!q) return 0;
+    if (d.label.toLowerCase().includes(q.toLowerCase())) return 0;
+    if (fuzzyMatch(d.label, q)) return 1;
+    if (fuzzyMatch(d.group, q)) return 2;
+    if (fuzzyMatch(d.keywords ?? "", q)) return 3;
+    return -1;
+  };
+  const filtered = destinations
+    .map((d, i) => ({ d, i, rank: rankOf(d) }))
+    .filter((x) => x.rank >= 0)
+    .sort((a, b) => a.rank - b.rank || a.i - b.i)
+    .map((x) => x.d);
 
   const activate = (d: PaletteDestination) => {
     d.action();

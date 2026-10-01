@@ -95,7 +95,16 @@
 .admin-atelier.admin-workbench.admin-studio .studio-preview-status a { display: flex; align-items: center; gap: 5px; margin-left: auto; }
 .admin-atelier.admin-workbench.admin-studio .studio-preview-status span.studio-preview-public { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: 10px; opacity: .45; cursor: not-allowed; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock { position: sticky; bottom: 0; display: block; }
-.admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { padding: 10px 16px; font-size: 11px; }
+/* 未保存の帯は、中身が短い画面（部分の一覧など）でも欄の一番下に置く（2026-10-01）。
+   以前は一覧のすぐ下、欄の途中に浮いて、画面ごとに帯の高さが変わっていた。
+   中身が長い画面では今までどおり、送っても下に貼り付いたまま（sticky）。 */
+.admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout { display: flex; flex-direction: column; }
+.admin-atelier.admin-workbench.admin-studio .admin-settings-form-layout > .admin-settings-save-dock { margin-top: auto; }
+/* 未保存の帯は、文字を左から横に並べ、ボタンを右へ（2026-10-01）。土台の縦並び
+   （styles.css）と帯の中央揃え（admin-workbench.css）が重なって、文字だけが帯の
+   真ん中に寄り、ボタンは右端、と揃いがばらばらだった。左右の余白は右の欄の
+   入力欄の端（PC 24px・スマホ 16px）にそろえる。 */
+.admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { flex-direction: row; align-items: baseline; padding: 10px 24px; font-size: 11px; }
 .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel__actions button { min-height: 34px; border-radius: 4px; padding: 6px 10px; }
 .admin-atelier.admin-workbench.admin-studio .ax-page-title__text { font-size: var(--admin-text-page); font-weight: 500; line-height: 1.45; letter-spacing: 0; }
 .admin-atelier.admin-workbench.admin-studio .ax-page-title { padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--admin-line); }
@@ -246,6 +255,7 @@
   .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar { padding: 5px 8px; gap: 3px 6px; }
   .admin-atelier.admin-workbench.admin-studio .studio-preview-toolbar > select { max-width: 110px; }
   .admin-atelier.admin-workbench.admin-studio .studio-preview-status { gap: 6px; }
+  .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel { padding: 10px 16px; align-items: center; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel__actions { margin-left: auto; }
   .admin-atelier.admin-workbench.admin-studio .admin-settings-save-dock .admin-form-save-panel > span:not(.admin-form-save-panel__actions) { display: none; }
 }

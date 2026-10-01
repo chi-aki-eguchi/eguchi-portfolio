@@ -619,8 +619,11 @@ export default function ContactPage({
         {/* 「どこで撮るのか」「どう進むのか」は、読む人が同じ気持ちで探す2つの
             事実なのに、片方は見出しの無い段落、もう片方は枠の中、と組みが
             揃っていなかった。**同じ枠の中に、同じ形の小さな見出しを付けて
-            並べる。**設定の値には触らない（空なら、その行ごと出ない）。 */}
-        {status !== "success" && (areas || flow) && (
+            並べる。**設定の値には触らない（空なら、その行ごと出ない）。
+            枠は、中に出す物があるときだけ（2026-10-01）。流れは送信フォームが
+            あるときだけ出すので、フォームが無く地域も空のサイトでは、上下の
+            罫だけの空の枠が残っていた（管理画面のプレビューで確認）。 */}
+        {status !== "success" && (areas || (formspreeUrl && flow)) && (
           <dl className="mb-10 py-6 border-y border-[rgba(var(--foreground-rgb),0.14)] space-y-6 page-entrance page-entrance-delay-1">
             {areas && (
               <div>

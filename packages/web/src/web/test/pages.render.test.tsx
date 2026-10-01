@@ -1300,7 +1300,12 @@ describe("shared components", () => {
           createElement(SeriesTab),
         ),
       );
-      await waitForText(series.host, "1 photo · Cover: B");
+      // 点数と表紙は別の欄（細い縦線で区切る。2026-10-01）。
+      await waitForText(series.host, "Cover: B");
+      expect(
+        series.host.querySelector(".ax-row__note-part")?.textContent,
+      ).toBe("Cover: B");
+      expect(series.host.textContent).toContain("1 photo");
       expect(series.host.textContent).toContain("Published");
       expect(series.host.textContent).toContain("New Series");
       const edit = series.host.querySelector(

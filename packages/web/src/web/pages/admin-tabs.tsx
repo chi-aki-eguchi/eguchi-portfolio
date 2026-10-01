@@ -2530,9 +2530,13 @@ export function SeriesTab({
                   {/* 写真クエリ解決前に「0 枚」と断定表示しない */}
                   {!photosLoading && (
                     <p className="ax-row__note">
-                      {copy.cardSummary(
-                        count,
-                        s.coverPhotoId ? photoLabel(s.coverPhotoId) : "",
+                      {/* 点数・表紙・作家の言葉は、同じ細い縦線で区切る（2026-10-01）。
+                          以前は表紙だけ「・」、作家の言葉は縦線で、行ごとに区切りが違った。 */}
+                      {copy.cardSummary(count, "")}
+                      {s.coverPhotoId && (
+                        <span className="ax-row__note-part">
+                          {copy.cardCover(photoLabel(s.coverPhotoId))}
+                        </span>
                       )}
                       {/* シリーズの statement は、公開サイトで**唯一の
                           「人が書いた文」**になる場所。空のまま気づかれない

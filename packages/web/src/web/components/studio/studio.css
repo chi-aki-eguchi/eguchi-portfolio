@@ -819,6 +819,13 @@
 .st-dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);
 }
+/* 開いた直後は窓そのものにフォーカスを置く（TrashDialog・写真を加える窓）。窓の外枠に輪を描かない。
+   管理画面の [tabindex]:focus-visible の輪（styles.css、!important）より強く書く。
+   窓の中のボタン・入力欄の輪はそのまま出る。 */
+.st-dialog:focus,
+.admin-atelier.admin-atelier dialog.st-dialog:focus-visible {
+  outline: none !important;
+}
 .st-dialog--wide {
   width: min(1180px, 96vw);
   height: 88vh;
@@ -835,6 +842,11 @@
   margin: 0 auto 0 0;
   font-size: 19px;
   font-weight: 600;
+}
+/* 題と閉じるの下に、窓の説明を1行ぶん使って置く。 */
+.st-dialog__head .st-dialog__lead {
+  flex: 1 1 100%;
+  margin: 0;
 }
 .st-dialog__head .st-input.st-search {
   width: min(280px, 60vw);
@@ -910,6 +922,12 @@
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
     padding-right: 40px;
+    /* 続きは右端の薄れで見せるので、スクロールバーは出さない（2026-10-01）。
+       Safari では行の下に 17px の灰色の帯が残り、区切り線の太い物に見えていた。 */
+    scrollbar-width: none;
+  }
+  .st-side::-webkit-scrollbar {
+    display: none;
   }
   .st-side__list {
     flex-direction: row;

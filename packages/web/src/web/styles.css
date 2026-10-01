@@ -4661,6 +4661,7 @@ header .nav-link-luxury.nav-link-public[aria-current="page"]::after {
 
 /* 行の説明のうしろに添える「まだ空です」。細い罫で区切るだけにする。
    色を変えて警告に見せない——責めるためではなく、気づくためのもの。 */
+.admin-atelier .ax-row__note-part,
 .admin-atelier .ax-row__note-empty {
   margin-left: 10px;
   padding-left: 10px;

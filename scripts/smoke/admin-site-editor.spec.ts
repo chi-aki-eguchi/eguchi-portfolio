@@ -112,4 +112,29 @@ test.describe("admin — サイトを見ながら直す", () => {
     await page.locator('.se-parts [data-site-part="footer"]').hover();
     await expect(preview(page).locator('[data-edit="footer"][data-admin-selected]').first()).toBeAttached();
   });
+
+  // 2026-10-01: 一覧から部分を選ぶと、プレビューの中をその部分まで送る。以前は
+  // scrollIntoView が iframe の外（管理画面の枠）まで送り、Safari ではプレビューが
+  // 枠の中で上へずれて、下の4割が白いまま残っていた。送るのはプレビューの中だけ。
+  test("一覧から部分を選んでも、プレビューは枠からずれない", async ({ page, api }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "プレビューを横に出すPC幅で確かめる");
+    await openSite(page, api, "classic");
+    await expect.poll(() => foundParts(page), { timeout: 15_000 }).toContain("name");
+    const offset = () =>
+      page.locator(".studio-preview-frame").evaluate((frame) => {
+        const iframe = frame.querySelector("iframe");
+        if (!iframe) return null;
+        return Math.round(iframe.getBoundingClientRect().top - frame.getBoundingClientRect().top);
+      });
+    const before = await offset();
+    // フッターはどのページにも出るので「全体の見た目」の一覧にある。
+    await page.locator('[data-site-mode="look"]').click();
+    await page.locator('.se-parts [data-site-part="footer"]').click();
+    await expect(page.locator(".se-part-head__title")).toHaveText("フッター");
+    // プレビューの中は送られている（フッターはページの最後）
+    await expect
+      .poll(() => preview(page).locator("body").evaluate(() => window.scrollY), { timeout: 10_000 })
+      .toBeGreaterThan(100);
+    expect(await offset(), "iframe が枠の中でずれた").toBe(before);
+  });
 });

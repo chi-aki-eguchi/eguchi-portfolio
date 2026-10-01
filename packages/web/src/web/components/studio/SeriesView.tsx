@@ -624,7 +624,12 @@ function PhotoPicker({
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const d = ref.current;
-    if (d && !d.open) d.showModal();
+    if (d && !d.open) {
+      d.showModal();
+      // 開いた直後は窓そのものへ。最初の「シリーズに入っていない」に入ると、
+      // Safari では押して開いただけで青い枠が出る（ゴミ箱の窓と同じ）。
+      d.focus({ preventScroll: true });
+    }
     // 管理画面の窓は data-phase="show" で現れる（styles.css の .admin-atelier dialog）。
     const f = requestAnimationFrame(() => d?.setAttribute("data-phase", "show"));
     return () => cancelAnimationFrame(f);
@@ -642,7 +647,7 @@ function PhotoPicker({
   const listIds = useMemo(() => list.map((p) => p.id), [list]);
   const anchor = useRef<number | null>(null);
   return (
-    <dialog ref={ref} className="st-dialog st-dialog--wide" onClose={onClose} aria-label={title}>
+    <dialog ref={ref} className="st-dialog st-dialog--wide" onClose={onClose} aria-label={title} tabIndex={-1}>
       <div className="st-dialog__head">
         <h2>{title}</h2>
         <fieldset className="st-seg st-seg--small" aria-label={tx("どの写真から", "Choose from")}>

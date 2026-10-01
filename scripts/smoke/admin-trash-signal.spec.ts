@@ -69,3 +69,16 @@ test("old trash remains restorable and permanent deletion requires confirmation"
   await page.getByRole("button", { name: "キャンセル", exact: true }).click();
   expect(deletions).toBe(0);
 });
+
+// 2026-10-01: ⌘K は、名前に探した語が入っている行を先に出す。以前は一覧の順のままで、
+// 「色」と探すと、言い換えの語に「色」を持つ「名前」が「色と背景」より上に来ていた。
+test("⌘K は名前に語が入っている行を先に出す", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "⌘K のため desktop のみで検証");
+  await loginAsAdmin(page);
+  await page.waitForTimeout(800);
+  await page.keyboard.press("Meta+k");
+  await page.locator(".admin-palette__input").fill("色");
+  const first = page.locator(".admin-palette__option").first();
+  await expect(first).toContainText("色と背景");
+  await page.keyboard.press("Escape");
+});

@@ -3929,9 +3929,13 @@ header > nav {
   /* Both of these nav positions own the bottom-left corner where the floating
      control sits, and the header is z-50 against its z-40 — the button rendered
      and nothing could click it (measured with elementFromPoint at its centre).
-     Move it clear rather than fighting the stacking order. */
+     左のメニューでは、以前はメニューの右隣（本文の左下）へ逃がしていたが、
+     そこはギャラリーの写真や制作案内の本文の上だった（2026-10-01 実測で
+     本文の文字に重なっていた）。メニューの下は空いているので、項目と同じ
+     左端に置き、帯より手前に出す。 */
   .nav-pos-left .back-to-top {
-    --back-to-top-left: calc(var(--nav-rail-w, 11rem) + 1.5rem);
+    --back-to-top-left: 2rem;
+    z-index: 51;
   }
   .nav-pos-bottom .back-to-top {
     --back-to-top-bottom: calc(var(--header-h) + 1.5rem);
@@ -4873,6 +4877,19 @@ img {
 .lb-btn:focus-visible {
   outline: 2px solid rgba(var(--lb-ink, 0, 0, 0), 0.45);
   outline-offset: 2px;
+}
+
+/* 写真ビューアの番号（15 / 149）。既定は上から 18px。横長の画面では、
+   高さいっぱいの写真（縦位置・3:2 など）の上端が 27px（マット「なし」）まで
+   来て、番号の文字が写真に重なっていた（2026-10-01 実測）。上の余白
+   （--lb-band、Lightbox が置く）の中に収まる高さまでだけ上げる。 */
+.lb-counter {
+  top: calc(18px + var(--sai-top));
+}
+@media (orientation: landscape) {
+  .lb-counter {
+    top: calc(max(6px, min(18px, var(--lb-band, 18px) - 22px)) + var(--sai-top));
+  }
 }
 
 /* ─── Lightbox entrance/exit ─── */

@@ -15,6 +15,9 @@ import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 import { galleryExcludesSeries, siteDesignFrom } from "../lib/book";
 import { PhotoAllPage } from "../components/photo-site/PhotoAll";
 
+/** URL の medium= の値と、写真に保存されている撮り方（filmType）の対応。 */
+const MEDIUM_FILM_TYPE = { film: "フィルム", digital: "デジタル" } as const;
+
 export default function GalleryPage() {
   // B-19 (owner decision 2026-08-05): every filter lives in the URL, with short
   // parameter names, and a default never writes a parameter at all — an
@@ -145,7 +148,7 @@ export default function GalleryPage() {
         ? pool
         : pool.filter((p) => p.category === activeFilter);
     if (activeMedium !== "all") {
-      const target = activeMedium === "film" ? "フィルム" : "デジタル";
+      const target = MEDIUM_FILM_TYPE[activeMedium];
       list = list.filter(
         (p) => (p as Record<string, unknown>).filmType === target,
       );
@@ -153,14 +156,45 @@ export default function GalleryPage() {
     return list;
   }, [pool, activeFilter, activeMedium]);
 
-  // If the active category no longer exists (e.g. it was deleted/renamed), fall
-  // back to "All" instead of stranding the user on an empty, unhighlighted filter.
+  // 絞り込みに出すのは、押すと一覧が実際に変わる項目だけ（2026-10-01）。
+  // 本番では分類の付いた写真が全部シリーズに入っていて、シリーズの写真を外す
+  // ギャラリーでは portrait・nature・life・street のどれを押しても「写真が
+  // 見つかりませんでした」になっていた。単発の写真が全部デジタルなので、
+  // Film も同じだった。
+  const availableCategories = useMemo(
+    () =>
+      categories.filter((c) => {
+        const n = pool.filter((p) => p.category === c.slug).length;
+        return n > 0;
+      }),
+    [categories, pool],
+  );
+  // 1つの分類が全部を占めるなら、押しても All と同じなので行ごと出さない。
+  const categoryNarrows = availableCategories.some(
+    (c) => pool.filter((p) => p.category === c.slug).length < pool.length,
+  );
+  const availableMediums = useMemo(
+    () =>
+      (["film", "digital"] as const).filter((m) =>
+        pool.some((p) => (p as Record<string, unknown>).filmType === MEDIUM_FILM_TYPE[m]),
+      ),
+    [pool],
+  );
+  const mediumNarrows = availableMediums.some(
+    (m) =>
+      pool.filter((p) => (p as Record<string, unknown>).filmType === MEDIUM_FILM_TYPE[m])
+        .length < pool.length,
+  );
+
+  // If the active category no longer exists (e.g. it was deleted/renamed) or has
+  // no photo here, fall back to "All" instead of stranding the user on an empty,
+  // unhighlighted filter. 写真が届くまでは判断しない（共有された ?c= を消さない）。
   useEffect(() => {
-    if (
-      activeFilter !== "all" &&
-      categories.length > 0 &&
-      !categories.some((c) => c.slug === activeFilter)
-    ) {
+    if (activeFilter === "all" || categories.length === 0) return;
+    const gone = !categories.some((c) => c.slug === activeFilter);
+    const empty =
+      !photosLoading && pool.length > 0 && !availableCategories.some((c) => c.slug === activeFilter);
+    if (gone || empty) {
       // Drop the parameter rather than writing c=all — a default never appears
       // in the URL (B-19).
       applyFilters({ c: "all" });
@@ -168,11 +202,16 @@ export default function GalleryPage() {
     // applyFilters closes over `location`/`params`, which change on every URL
     // edit; depending on it would re-run this guard on each navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilter, categories]);
+  }, [activeFilter, categories, availableCategories, photosLoading, pool.length]);
+  useEffect(() => {
+    if (activeMedium === "all" || photosLoading || pool.length === 0) return;
+    if (!availableMediums.includes(activeMedium)) applyFilters({ medium: "all" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMedium, availableMediums, photosLoading, pool.length]);
 
   const filterItems = [
     { slug: "all", label: settings?.filterAllLabel ?? "All" },
-    ...categories.map((c) => ({ slug: c.slug, label: c.label })),
+    ...(categoryNarrows ? availableCategories : []).map((c) => ({ slug: c.slug, label: c.label })),
   ];
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
@@ -312,15 +351,17 @@ export default function GalleryPage() {
       </PageTitle>
 
       {/* 絞り込みは、並べる写真があるときだけ出す。1枚も無い一覧の上に
-          分類の行だけが残ると、押しても何も変わらない操作を差し出すことになる。 */}
-      {pool.length > 0 && (
+          分類の行だけが残ると、押しても何も変わらない操作を差し出すことになる。
+          スマホの帯も、押して変わる絞り込みが無いときは出さない（2026-10-01）。
+          残すと「149枚」と下線だけの行が写真の上に残っていた。 */}
+      {pool.length > 0 && (categoryNarrows || mediumNarrows) && (
         <MobileGalleryFilters categories={filterItems} activeCategory={activeFilter}
-          activeMedium={activeMedium} hasMedium={pool.some(p => Boolean(p.filmType))}
+          activeMedium={activeMedium} hasMedium={mediumNarrows} mediums={availableMediums}
           count={filtered.length} loading={photosLoading} failed={photosError} onChange={applyFilters} />
       )}
 
-      {/* Filter — カテゴリ */}
-      {categories.length > 0 && pool.length > 0 && (
+      {/* Filter — カテゴリ（押すと一覧が変わる分類があるときだけ） */}
+      {categoryNarrows && pool.length > 0 && (
         <div
           /* 下の段（Film / Digital）とは別の絞り込みなのに、間が 16px しか
              なく、しかもどちらの先頭も「All」で始まる。1つの並びが折り返して
@@ -348,8 +389,8 @@ export default function GalleryPage() {
         </div>
       )}
 
-      {/* 機能8: フィルム/デジタルフィルター（filmTypeが存在する写真がある場合のみ表示） */}
-      {pool.some((p) => (p as Record<string, unknown>).filmType) && (
+      {/* 機能8: フィルム/デジタルフィルター（押すと一覧が変わるときだけ。写真の無い側は出さない） */}
+      {mediumNarrows && (
         <div
           className="gallery-filter-row gallery-filter-row--sub flex md:flex-wrap md:justify-center gap-x-5 gap-y-2 mb-6 md:mb-8 section-reveal overflow-x-auto md:overflow-x-visible scrollbar-hide"
           style={{
@@ -363,7 +404,7 @@ export default function GalleryPage() {
               ["film", "Film"],
               ["digital", "Digital"],
             ] as const
-          ).map(([val, lbl]) => (
+          ).filter(([val]) => val === "all" || availableMediums.includes(val)).map(([val, lbl]) => (
             <button
               key={val}
               onClick={() => setActiveMedium(val)}

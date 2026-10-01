@@ -619,7 +619,13 @@ export function Lightbox({
   useEffect(() => {
     const dlg = dialogRef.current;
     if (!dlg) return;
-    if (!dlg.open) dlg.showModal();
+    if (!dlg.open) {
+      dlg.showModal();
+      // 開いた直後のフォーカスはビューアそのものへ（2026-10-01）。既定では最初の
+      // ボタン（拡大）に入り、Safari では写真をクリックして開いただけでも
+      // そのボタンに黒い四角の枠が出ていた。Tab を押せば今までどおり拡大から順に進む。
+      dlg.focus({ preventScroll: true });
+    }
 
     const onClick = (e: MouseEvent) => {
       if (e.target !== dlg) return;
@@ -1090,6 +1096,7 @@ export function Lightbox({
       data-morph-closing={morphClosing ? "" : undefined}
       aria-modal="true"
       aria-label="写真ビューア"
+      tabIndex={-1}
       data-viewer-style={viewerSettings?.viewerStyle ?? "wall"}
       // Staged Escape (standard viewer behaviour): first Esc steps back out of
       // the zoom, the next one closes — closing instantly from a zoomed detail
@@ -1129,10 +1136,14 @@ export function Lightbox({
       <div
         aria-live="polite"
         aria-atomic="true"
+        className="lb-counter"
         style={{
           ...chromeVis,
           position: "absolute",
-          top: "calc(18px + var(--sai-top))",
+          // 写真の上の余白の高さ。横長の画面で写真が高さいっぱいになると、
+          // 番号が写真の上端に重なるので、CSS（.lb-counter）でこの余白の中へ上げる。
+          ["--lb-band" as string]: `calc((100dvh - ${mat.h} - ${mat.lift}) / 2)`,
+          lineHeight: 1,
           left: "50%",
           transform: "translateX(-50%)",
           fontFamily: "var(--font-en)",
@@ -1833,6 +1844,10 @@ export function Lightbox({
                 zIndex: 10,
                 pointerEvents: exifOpen ? "auto" : "none",
                 minWidth: 180,
+                // 幅を決めておく（2026-10-01）。中の表が width:100% なので、幅の
+                // 無い枠だと画面いっぱいまで広がり、ラベルは左端・値は画面の
+                // 真ん中から、と項目と値が 700px 離れていた。
+                width: "min(340px, calc(100vw - 26px - var(--sai-left) - var(--sai-right)))",
               }}
             >
               <table
@@ -1849,6 +1864,11 @@ export function Lightbox({
                   tableLayout: "fixed",
                 }}
               >
+                <colgroup>
+                  {/* 一番長いラベル（Focal Length）が収まる幅。値は残り全部。 */}
+                  <col style={{ width: "7.5em" }} />
+                  <col />
+                </colgroup>
                 <tbody>
                   {exifItems.map(([label, value]) => (
                     <tr key={label}>

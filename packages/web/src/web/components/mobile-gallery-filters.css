@@ -12,6 +12,8 @@
 }
 .gallery-filter-dialog { position: fixed; inset: auto 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: calc(100dvh - 24px); padding: 0; border: 1px solid rgba(var(--foreground-rgb), .16); background: var(--background); color: var(--foreground); overflow: hidden; font-family: var(--font-ja); }
 .gallery-filter-dialog[open] { display: flex; flex-direction: column; }
+/* 開いた直後は面そのものにフォーカスを置く（MobileGalleryFilters）。面の外枠に輪を描かない。 */
+.gallery-filter-dialog:focus { outline: none; }
 .gallery-filter-dialog::backdrop { background: rgba(0, 0, 0, .4); }
 .gallery-filter-dialog header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px 8px; }
 .gallery-filter-dialog h2 { margin: 0; font-size: 15px; font-weight: 500; }

@@ -468,8 +468,9 @@
 }
 
 @media (max-width: 960px) {
+  /* 左右は公開サイトの本文と同じ縁（--page-inset: スマホ 16px・PC 24px）。 */
   .kit-sales .ks-wrap {
-    width: calc(100% - 48px);
+    width: calc(100% - 2 * var(--page-inset));
   }
   .kit-sales .ks-hero,
   .kit-sales .ks-pdf {
@@ -484,8 +485,11 @@
   .kit-sales {
     font-size: 15px;
   }
-  /* 公開サイトの枠（.ps-main）が左右の余白を持つので、ここでは重ねない。 */
-  .kit-sales .ks-wrap {
+  /* 写真集の器（.ps-main）は自分で左右の余白を持つので、その中では重ねない。
+     いつもの構成（2026-09-30 から本番はこちら）の main は余白を持たないので、
+     以前ここを無条件に 100% にしていたせいで、スマホでは見出し・本文・ボタンが
+     画面の左端に接していた（2026-10-01 実測）。 */
+  .ps-main .kit-sales .ks-wrap {
     width: 100%;
   }
   .kit-sales .ks-subnav {

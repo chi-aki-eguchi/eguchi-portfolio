@@ -5,12 +5,14 @@ import "./mobile-gallery-filters.css";
 type Medium = "all" | "film" | "digital";
 
 export function MobileGalleryFilters({
-  categories, activeCategory, activeMedium, hasMedium, count, loading, failed, onChange,
+  categories, activeCategory, activeMedium, hasMedium, mediums = ["film", "digital"], count, loading, failed, onChange,
 }: {
   categories: { slug: string; label: string }[];
   activeCategory: string;
   activeMedium: Medium;
   hasMedium: boolean;
+  /** 写真のある撮り方だけ（無い側を押すと0枚になる）。 */
+  mediums?: readonly ("film" | "digital")[];
   count: number;
   loading: boolean;
   failed: boolean;
@@ -28,6 +30,8 @@ export function MobileGalleryFilters({
     if (!open || !dialog) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog.showModal();
+    // 開いた直後は面そのものへ。閉じるボタンに入ると Safari で四角い枠が出る。
+    dialog.focus({ preventScroll: true });
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const media = window.matchMedia("(min-width: 768px)");
@@ -59,7 +63,7 @@ export function MobileGalleryFilters({
       {/* The native dialog handles Escape and focus; this pointer handler only dismisses its backdrop. */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
       {open && <dialog id="gallery-filter-dialog" ref={dialogRef} className="gallery-filter-dialog"
-        aria-labelledby="gallery-filter-title"
+        aria-labelledby="gallery-filter-title" tabIndex={-1}
         onCancel={event => { event.preventDefault(); setOpen(false); }}
         onClick={event => {
           if (event.target !== event.currentTarget) return;
@@ -75,7 +79,8 @@ export function MobileGalleryFilters({
               aria-pressed={activeCategory === category.slug} onClick={() => onChange({ c: category.slug })}>{category.label}</button>)}
           </div></fieldset>}
           {hasMedium && <fieldset><legend>撮影</legend><div>
-            {([ ["all", "すべて"], ["film", "Film"], ["digital", "Digital"] ] as const).map(([value, label]) =>
+            {([ ["all", "すべて"], ["film", "Film"], ["digital", "Digital"] ] as const)
+              .filter(([value]) => value === "all" || mediums.includes(value)).map(([value, label]) =>
               <button type="button" key={value} aria-pressed={activeMedium === value}
                 onClick={() => onChange({ medium: value })}>{label}</button>)}
           </div></fieldset>}

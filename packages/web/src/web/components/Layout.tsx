@@ -231,6 +231,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const dm = useDarkModeContext();
   const { showService, showServiceInNav } = useServiceVisibility();
   const siteNameJa = data?.siteName ?? CLIENT_SITE_FALLBACKS.siteName;
+  // 英語のページ（/en/about など）のフッターは英語の名前（2026-10-01）。
+  // 以前は英語の頁でも「© 2026 江口秋」と日本語の名前だけが出ていた。
+  const siteNameForFooter = (lang: "ja" | "en") =>
+    lang === "en" ? data?.siteNameEn || siteNameJa : siteNameJa;
   const templateCreditUrl = httpHrefOrNull(data?.templateCreditUrl ?? "");
 
   // i18n Phase 3 スライス1: /en/about・/en/contact 表示中は About/Contact の
@@ -601,7 +605,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </li>
               </ul>
               <p className="ps-footer__copy font-en">
-                {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
+                {data?.footerText || `© ${new Date().getFullYear()} ${siteNameForFooter(footerPolicyLanguage)}`}
               </p>
               {/* オーナーのサイトでは、制作の入口（PhotoServiceNote）と同じ行き先なので出さない。 */}
               {data?.templateCreditLabel &&
@@ -1123,7 +1127,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 color: `rgba(var(--foreground-rgb), var(--footer-opacity, 0.20))`,
               }}
             >
-              {data?.footerText || `© ${new Date().getFullYear()} ${siteNameJa}`}
+              {data?.footerText || `© ${new Date().getFullYear()} ${siteNameForFooter(footerPolicyLanguage)}`}
             </p>
             {/* オーナーのサイトでは、フッターの制作の1行と同じ行き先なので出さない（写真中心と同じ）。 */}
             {data?.templateCreditLabel &&

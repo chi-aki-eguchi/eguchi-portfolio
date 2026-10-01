@@ -377,7 +377,7 @@ function App() {
             <Layout>
               <TitledRoute title="Not Found">
                 {/* 2026-09-29: 薄い巨大な「404」・大文字の英字・飾りの線をやめ、何が起きたかと次の行き先だけを。 */}
-                <section className="max-w-2xl mx-auto px-6 py-28 md:py-40 min-h-[60vh] flex flex-col justify-center">
+                <section className="max-w-2xl mx-auto site-page py-28 md:py-40 min-h-[60vh] flex flex-col justify-center">
                   <h1 className="text-xl md:text-2xl leading-relaxed text-[var(--foreground)]">
                     ページが見つかりませんでした
                   </h1>

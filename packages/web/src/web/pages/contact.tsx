@@ -932,7 +932,7 @@ export default function ContactPage({
             )}
 
             <p
-              className="text-xs text-[color:var(--text-quiet)]"
+              className="text-xs text-[color:var(--text-quiet)] text-pretty"
               style={{ lineHeight: 1.8 }}
             >
               {english ? (
@@ -1027,7 +1027,7 @@ function Field({
         <p
           id={`${htmlFor}-hint`}
           data-contact-hint
-          className="text-xs text-[color:var(--text-quiet)]"
+          className="text-xs text-[color:var(--text-quiet)] text-pretty"
           style={{ lineHeight: 1.8 }}
         >
           {hint}

@@ -585,7 +585,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
       ? ["/portfolio-kit", "/portfolio-kit/en", "/portfolio-kit/guide"]
       : []),
     ...(isServiceOwnerSite(siteUrl, "")
-      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html"]
+      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html", "/tools/small-work/index.html", "/tools/small-work/ledger.html", "/tools/small-work/classroom.html", "/tools/small-work/gallery.html", "/tools/small-work/audit.html"]
       : []),
   ];
   // Include each published series detail page so crawlers discover the actual
@@ -824,10 +824,15 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
   // This is the owner's separate downloadable product, not a Kit customer's service.
   if (
     (url.pathname === "/tools/photo-select-bin.html" ||
-      url.pathname.startsWith("/tools/photo-select-bin/")) &&
+      url.pathname.startsWith("/tools/photo-select-bin/") ||
+      url.pathname === "/tools/small-work" ||
+      url.pathname.startsWith("/tools/small-work/")) &&
     !isServiceOwnerSite(canonicalOrigin, url.hostname)
   ) {
     return new Response("Not found", { status: 404 });
+  }
+  if (url.pathname === "/tools/small-work" || url.pathname === "/tools/small-work/") {
+    return Response.redirect(new URL("/tools/small-work/index.html", request.url), 308);
   }
   const routePathname = canonicalPortfolioKitPath(url.pathname);
   if (routePathname !== url.pathname && !url.pathname.includes(".")) {

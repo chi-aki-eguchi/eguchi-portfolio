@@ -11,6 +11,7 @@ const STATIC_CONTENT_TYPES: Record<string, string> = {
   ".map": "application/json; charset=utf-8",
   ".otf": "font/otf",
   ".png": "image/png",
+  ".pdf": "application/pdf",
   ".svg": "image/svg+xml; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
   ".vtt": "text/vtt; charset=utf-8",

@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { contentTypeForStaticPath } from "./static-files";
 
 describe("contentTypeForStaticPath", () => {
+  test("serves the production-tool print sample as PDF", () => {
+    expect(contentTypeForStaticPath("/tools/small-work/audit-sample.pdf")).toBe("application/pdf");
+  });
   test("serves the offline trial as HTML and its download as ZIP", () => {
     expect(contentTypeForStaticPath("/tools/photo-select-bin/trial.html")).toBe("text/html; charset=utf-8");
     expect(contentTypeForStaticPath("/tools/photo-select-bin/photo-select-bin-trial-1.0.0.zip")).toBe("application/zip");

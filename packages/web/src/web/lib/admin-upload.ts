@@ -25,7 +25,11 @@ export type UploadResult =
       /** 画像に入っていたカメラ名（あとで媒体を直すときに戻すため）。 */
       exifCamera: string;
     }
-  | { kind: "duplicate" }
+  | {
+      kind: "duplicate";
+      /** 同じ画像として登録済みの写真（サーバーが返したとき）。 */
+      existingId?: number;
+    }
   | { kind: "failed"; reason?: string; storageMissing?: string[] };
 
 async function serverErrorMessage(res: Response): Promise<string> {
@@ -88,7 +92,8 @@ export async function uploadPhotoFile(
     assertOk(res);
     const data = (await res.json()) as Record<string, unknown>;
     // サーバーが同じ画像を見つけた — 登録しない。
-    if (data.duplicate) return { kind: "duplicate" };
+    if (data.duplicate)
+      return { kind: "duplicate", existingId: typeof data.photoId === "number" ? data.photoId : undefined };
     const {
       url,
       width,
@@ -167,9 +172,14 @@ export async function uploadPhotoFile(
     assertOk(created);
     const createdBody = (await created.json()) as {
       duplicate?: boolean;
+      photoId?: unknown;
       photo?: { id?: unknown };
     };
-    if (createdBody.duplicate) return { kind: "duplicate" };
+    if (createdBody.duplicate)
+      return {
+        kind: "duplicate",
+        existingId: typeof createdBody.photoId === "number" ? createdBody.photoId : undefined,
+      };
     const createdId = createdBody.photo?.id;
     if (
       created.status !== 201 ||

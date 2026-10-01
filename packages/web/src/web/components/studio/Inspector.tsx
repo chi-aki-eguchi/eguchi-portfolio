@@ -32,6 +32,7 @@ export function Inspector({
   seriesContext,
   onClear,
   onOpenDetails,
+  picking = false,
 }: {
   data: StudioData;
   selection: StudioPhoto[];
@@ -40,19 +41,42 @@ export function Inspector({
   onClear: () => void;
   /** 回転・構図・日付の一括入力など、詳しい道具の画面を開く */
   onOpenDetails?: (photoId: number) => void;
+  /**
+   * 「まとめて選ぶ」の最中か（2026-10-01）。スマホでは欄を下の1行にたたみ、写真を
+   * 続けて押せるようにする。以前は1枚押すと画面の7割を覆う面が開き、2枚目を
+   * 押せなかった（選ぶたびに面を閉じる必要があった）。「操作する」で広げる。
+   * 広い画面では何も変わらない（たたむのは styles の 760px 以下だけ）。
+   */
+  picking?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!picking) setOpen(false);
+  }, [picking]);
   if (selection.length === 0) return null;
+  const collapsed = picking && !open;
+  // 1枚は「その写真を開いている」状態。複数を選んだとき・まとめて選んでいるときだけ
+  // 「選ぶ」の言葉を使う（2026-09-30。1枚押しただけで「選ぶのをやめる」と出て、
+  // 選ぶ操作をした覚えが無いのに選択の画面に入ったように見えていた）。
+  const opened = selection.length === 1 && !picking;
   return (
-    <aside className="st-inspector" aria-label={tx("選んでいる写真", "Selected photos")}>
+    <aside className="st-inspector" data-collapsed={collapsed || undefined} aria-label={tx("選んでいる写真", "Selected photos")}>
       <div className="st-inspector__head">
-        {/* 1枚は「その写真を開いている」状態。複数を選んだときだけ「選ぶ」の言葉を使う
-            （2026-09-30。1枚押しただけで「選ぶのをやめる」と出て、選ぶ操作をした覚えが
-            無いのに選択の画面に入ったように見えていた）。 */}
         <p className="st-inspector__count">
-          {selection.length === 1 ? tx("この写真", "This photo") : tx(`${selection.length}枚を選んでいます`, `${selection.length} selected`)}
+          {opened ? tx("この写真", "This photo") : tx(`${selection.length}枚を選んでいます`, `${selection.length} selected`)}
         </p>
+        {picking && (
+          <button
+            type="button"
+            className="st-ax-btn st-link st-inspector__toggle"
+            aria-expanded={!collapsed}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {collapsed ? tx("操作する", "Actions") : tx("たたむ", "Collapse")}
+          </button>
+        )}
         <button type="button" className="st-ax-btn st-link" onClick={onClear}>
-          {selection.length === 1 ? tx("閉じる", "Close") : tx("選ぶのをやめる", "Clear selection")}
+          {opened ? tx("閉じる", "Close") : tx("選ぶのをやめる", "Clear selection")}
         </button>
       </div>
       {selection.length === 1 ? (
@@ -499,7 +523,12 @@ function SeriesContextActions({
 
 function useAutosave(photo: StudioPhoto, field: "title" | "description" | "camera" | "lens" | "shotAt") {
   const { fail, refresh, say } = useStudio();
-  const initial = (photo[field] as string | null | undefined) ?? "";
+  const raw = (photo[field] as string | null | undefined) ?? "";
+  // 撮影日は日付だけを見せる（2026-10-01）。保存されている値は EXIF の時刻つき
+  // （2026-03-11T00:15:53。本番の353枚すべて）で、欄に「T」入りの機械の形が
+  // そのまま出ていた。時刻は捨てない: 日付を書き換えたときも元の時刻を付け直す。
+  const timePart = field === "shotAt" && /^\d{4}-\d{2}-\d{2}T/.test(raw) ? raw.slice(10) : "";
+  const initial = timePart ? raw.slice(0, 10) : raw;
   const [value, setValue] = useState(initial);
   useEffect(() => setValue(initial), [initial]);
   const save = async () => {
@@ -508,8 +537,10 @@ function useAutosave(photo: StudioPhoto, field: "title" | "description" | "camer
       fail(tx("撮影日は 2025-10-04 の形で入れてください。", "Enter the date as 2025-10-04."));
       return;
     }
+    const trimmed = value.trim();
+    const next = timePart && /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed + timePart : trimmed;
     try {
-      await patchPhoto(photo.id, { [field]: value.trim() ? value.trim() : field === "title" || field === "description" ? "" : null });
+      await patchPhoto(photo.id, { [field]: next ? next : field === "title" || field === "description" ? "" : null });
       await refresh();
       say({ text: tx("保存しました", "Saved") });
     } catch {

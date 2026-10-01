@@ -42,7 +42,7 @@ test("日本語の文は文節の切れ目にだけ <wbr> を置き、文字は�
     expect(host.querySelectorAll("wbr").length).toBeGreaterThan(0);
     // 区切った後の各かたまり。語の途中（コラボレーショ／ン など）では切らない。
     const chunks = Array.from(host.querySelector(".ja-phrases")!.childNodes)
-      .filter((n) => n.nodeType === 3)
+      .filter((n) => n.nodeName !== "WBR")
       .map((n) => n.textContent);
     expect(chunks.some((c) => c?.includes("コラボレーション"))).toBe(true);
     expect(chunks.some((c) => c?.includes("ご連絡ください。"))).toBe(true);
@@ -58,6 +58,18 @@ test("日本語を含まない文はそのまま（英語のページに余計�
     expect(host.textContent).toBe(text);
     expect(host.querySelector("wbr")).toBeNull();
     expect(host.querySelector(".ja-phrases")).toBeNull();
+  } finally {
+    cleanup();
+  }
+});
+
+// Safari の text-wrap: pretty は開き括弧の直後で折るので、短い文節は折らない箱に入れる。
+test("短い文節は折らない箱（.ja-phrase）に入り、括弧は次の文節の頭に付く", async () => {
+  const { host, cleanup } = await render("非公開にしました（サイトに出ません）");
+  try {
+    const boxes = Array.from(host.querySelectorAll(".ja-phrase")).map((n) => n.textContent);
+    expect(boxes.some((b) => b?.startsWith("（"))).toBe(true);
+    expect(boxes.some((b) => b?.endsWith("（"))).toBe(false);
   } finally {
     cleanup();
   }

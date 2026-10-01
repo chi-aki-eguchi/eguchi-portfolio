@@ -4,6 +4,7 @@ import { SeriesView } from "./SeriesView";
 import { StudioProvider, useStudio, useStudioData } from "./studio-data";
 import "./studio.css";
 import { adminText as tx, useAdminI18n } from "../../pages/admin-i18n";
+import { JaPhrases } from "../JaPhrases";
 
 export type StudioView = "photos" | "series";
 
@@ -99,7 +100,8 @@ function StudioToast() {
   if (!notice) return null;
   return (
     <div className="st-toast" aria-live="polite" data-tone={notice.tone}>
-      <span>{notice.text}</span>
+      {/* 文節の切れ目で折る。「（サイトに出ませ／ん）」のように語の途中で割らない。 */}
+      <span className="st-toast__text"><JaPhrases>{notice.text}</JaPhrases></span>
       {notice.undo && (
         <button type="button" className="st-ax-btn st-toast__undo" onClick={() => void undo(notice.undo)}>
           {tx("元に戻す", "Undo")}

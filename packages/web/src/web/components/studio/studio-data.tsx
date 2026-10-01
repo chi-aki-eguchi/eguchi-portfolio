@@ -242,6 +242,8 @@ export function StudioProvider({
       }
       setUpload({ done: 0, total: usable.length, target });
       const added: number[] = [];
+      // 登録済みだった写真。シリーズの画面から取り込んだときは、そのシリーズへ入れる。
+      const existing: number[] = [];
       let duplicates = 0;
       let failed = 0;
       let done = 0;
@@ -253,20 +255,25 @@ export function StudioProvider({
             // 媒体はカメラの記録から自動で決める。違っていたら右の欄で直す。
             const r = await uploadPhotoFile(f, { medium: "auto", datePolicy: "exif" });
             if (r.kind === "added") added.push(r.id);
-            else if (r.kind === "duplicate") duplicates += 1;
+            else if (r.kind === "duplicate") {
+              duplicates += 1;
+              if (r.existingId != null) existing.push(r.existingId);
+            }
             else failed += 1;
             done += 1;
             setUpload({ done, total: usable.length, target });
           }
         }),
       );
-      if (target != null && added.length) {
+      let joined = 0;
+      if (target != null && (added.length || existing.length)) {
         try {
           const res = await adminApi.series[":id"].photos.$post({
             param: { id: String(target) },
-            json: { add: added },
+            json: { add: [...added, ...existing] },
           });
           assertOk(res);
+          joined = existing.length;
         } catch {
           /* シリーズへの割り当てに失敗しても写真は残る（どこにも入っていない写真に出る） */
         }
@@ -274,8 +281,17 @@ export function StudioProvider({
       setUpload(null);
       setRecentIds(added);
       await refresh();
-      const parts = [tx(`${added.length}枚を加えました`, `Added ${added.length}`)];
-      if (duplicates) parts.push(tx(`${duplicates}枚は登録済みのため飛ばしました`, `Skipped ${duplicates} already added`));
+      // 何も加わらなかったときに「0枚を加えました」から始めない（2026-10-01）。
+      const parts: string[] = [];
+      if (added.length) parts.push(tx(`${added.length}枚を加えました`, `Added ${added.length}`));
+      if (joined)
+        parts.push(tx(`登録済みの${joined}枚をこのシリーズに入れました`, `Put ${joined} already added ${joined === 1 ? "photo" : "photos"} in this series`));
+      if (duplicates - joined > 0)
+        parts.push(
+          added.length || joined || failed || skipped
+            ? tx(`${duplicates - joined}枚はすでに登録されています`, `${duplicates - joined} already added`)
+            : tx(`選んだ${duplicates}枚は、すでに登録されています`, `${duplicates === 1 ? "That photo is" : `All ${duplicates} are`} already added`),
+        );
       if (failed) parts.push(tx(`${failed}枚は取り込めませんでした`, `${failed} could not be imported`));
       if (skipped) parts.push(tx(`${skipped}件は画像ではないか大きすぎました`, `${skipped} were not images or too large`));
       say({ text: parts.join(" · "), tone: failed ? "error" : undefined });

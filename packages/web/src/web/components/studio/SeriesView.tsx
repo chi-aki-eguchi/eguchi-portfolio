@@ -21,6 +21,7 @@ import {
   type StudioSeries,
 } from "./studio-data";
 import { adminText as tx } from "../../pages/admin-i18n";
+import { JaPhrases } from "../JaPhrases";
 
 /**
  * 管理画面の「シリーズ」。左にシリーズ、右にそのシリーズの言葉と写真。
@@ -529,7 +530,8 @@ function SeriesEditor({
         </div>
         {photos.length > 1 && (
           <p className="st-note st-note--bar">
-            {tx("写真はドラッグで並べ替えられます。表紙は、写真を押して右の欄で選びます。", "Drag photos to reorder. To choose the cover, click a photo and use the panel on the right.")}
+            {/* 「右の欄」はスマホでは下から出る欄なので、どちらでも通じる言い方にする（2026-10-01）。 */}
+            <JaPhrases>{tx("写真はドラッグで並べ替えられます。表紙は、写真を押して「このシリーズの表紙にする」で選びます。", "Drag photos to reorder. To choose the cover, select a photo and use “Make it the series cover”.")}</JaPhrases>
           </p>
         )}
         <StudioGrid
@@ -576,7 +578,7 @@ function SeriesEditor({
           )}
         </section>
       </div>
-      <Inspector data={data} selection={selection} seriesContext={series.id} onClear={clear} />
+      <Inspector data={data} selection={selection} seriesContext={series.id} onClear={clear} picking={pickMode} />
       {pickerOpen && (
         <PhotoPicker
           data={data}
@@ -666,7 +668,7 @@ function PhotoPicker({
           placeholder={tx("探す", "Search")}
           aria-label={tx("写真を探す", "Search photos")}
         />
-        <button type="button" className="st-ax-btn st-link" onClick={() => ref.current?.close()}>
+        <button type="button" className="st-ax-btn st-link st-dialog__close" onClick={() => ref.current?.close()}>
           {tx("閉じる", "Close")}
         </button>
       </div>
@@ -697,7 +699,11 @@ function PhotoPicker({
         />
       </div>
       <div className="st-dialog__foot">
-        <span className="st-note">{tx(`${selected.size}枚を選んでいます（Shift で範囲）`, `${selected.size} selected (Shift for a range)`)}</span>
+        <span className="st-note">
+          {tx(`${selected.size}枚を選んでいます`, `${selected.size} selected`)}
+          {/* Shift はキーボードのある画面だけ。スマホでは意味が無く、「Shift で範／囲」と折れていた。 */}
+          <span className="st-hint-keyboard">{tx("（Shift で範囲）", " (Shift for a range)")}</span>
+        </span>
         <button
           type="button"
           className="st-ax-btn st-button st-button--primary"

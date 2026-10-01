@@ -3466,6 +3466,9 @@
   word-break: keep-all;
   overflow-wrap: break-word;
 }
+.ja-phrase {
+  white-space: nowrap;
+}
 
 /* ─── 禁則処理 ───────────────────────────────────
    既定の `line-break: auto` は、長音符（ー）や小書きのかな（ゃゅょっ）の前で

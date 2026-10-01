@@ -13,9 +13,15 @@ import { Parser, jaModel } from "budoux";
  * 置く。包む `.ja-phrases` が `word-break: keep-all` なので、折り返せるのは
  * `<wbr>` と句読点と空白だけになる。どのブラウザでも同じ所で折れる。
  *
+ * 短い文節は `.ja-phrase`（white-space: nowrap）で包む（2026-10-01）。Safari の
+ * `text-wrap: pretty` は keep-all の中でも開き括弧の直後で折り、「非公開に
+ * しました（／サイトに出ません）」と括弧だけを行末に残していた（WebKit で再現、
+ * Chromium は正しい）。長い文節は包まない。細い画面で1行に入らないと横へはみ出すため。
+ *
  * 日本語を含まない文（英語のページなど）は、そのまま返す。
  */
-const JAPANESE = /[぀-ヿ㐀-鿿豈-﫿ｦ-ﾟ]/;
+const NOWRAP_MAX = 12;
+const JAPANESE = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
 
 let parser: Parser | null = null;
 const cache = new Map<string, string[]>();
@@ -41,7 +47,7 @@ export function JaPhrases({ children }: { children: string | null | undefined })
       {phrases.map((phrase, i) => (
         <Fragment key={i}>
           {i > 0 && <wbr />}
-          {phrase}
+          {phrase.length <= NOWRAP_MAX ? <span className="ja-phrase">{phrase}</span> : phrase}
         </Fragment>
       ))}
     </span>

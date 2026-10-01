@@ -1807,7 +1807,9 @@ const app = new Hono()
     );
     if (dup) {
       // Skip storage upload + DB insert entirely; client counts it as a duplicate.
-      return c.json({ duplicate: true, fileHash }, 200);
+      // photoId は、シリーズの画面から取り込んだとき、登録済みの写真をそのシリーズへ
+      // 入れるために返す（2026-10-01。以前は何も起きず「すでに登録」とだけ出ていた）。
+      return c.json({ duplicate: true, fileHash, photoId: dup.id }, 200);
     }
 
     // Capture intrinsic dimensions so the client can reserve aspect-ratio (CLS)

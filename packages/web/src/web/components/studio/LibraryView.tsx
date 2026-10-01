@@ -432,6 +432,7 @@ export function LibraryView({
         seriesContext={filter.kind === "series" ? filter.id : undefined}
         onClear={clear}
         onOpenDetails={onOpenDetails}
+        picking={pickMode}
       />
 
       {trashOpen && <TrashDialog onClose={() => setTrashOpen(false)} />}

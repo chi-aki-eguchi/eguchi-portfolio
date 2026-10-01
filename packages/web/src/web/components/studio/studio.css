@@ -364,6 +364,10 @@
   font-size: 13px;
   color: var(--st-quiet);
 }
+/* 「操作する／たたむ」はスマホで欄をたたんだときだけ使う（下の 760px 以下）。 */
+.st-inspector__toggle {
+  display: none;
+}
 .st-inspector__body {
   display: flex;
   flex-direction: column;
@@ -733,11 +737,16 @@
 }
 
 /* ── 通知・取り込み・窓 ─────────────────────────── */
+/* 真ん中に置く方法は left/right 0 と margin auto（2026-10-01）。以前は left: 50% と
+   translateX(-50%) で、知らせの幅が画面の半分（スマホで 195px）までしか広がらず、
+   「非公開にし／ました（サイ／トに出ません）」と3行に折れていた。 */
 .st-toast {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 24px;
-  transform: translateX(-50%);
+  margin-inline: auto;
+  width: max-content;
   z-index: 80;
   display: flex;
   align-items: center;
@@ -749,6 +758,9 @@
   color: var(--admin-paper);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   font-size: 14px;
+}
+.st-toast__text {
+  text-wrap: pretty;
 }
 .st-toast[data-tone="error"] {
   background: var(--st-danger, #b3261e);
@@ -819,6 +831,13 @@
 .st-dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);
 }
+/* キーボードの操作の案内（Shift で範囲など）は、指で触る画面では出さない。 */
+@media (hover: none) and (pointer: coarse) {
+  .st-hint-keyboard {
+    display: none;
+  }
+}
+
 /* 開いた直後は窓そのものにフォーカスを置く（TrashDialog・写真を加える窓）。窓の外枠に輪を描かない。
    管理画面の [tabindex]:focus-visible の輪（styles.css、!important）より強く書く。
    窓の中のボタン・入力欄の輪はそのまま出る。 */
@@ -847,6 +866,24 @@
 .st-dialog__head .st-dialog__lead {
   flex: 1 1 100%;
   margin: 0;
+}
+/* スマホでは、閉じるを題と同じ1行目に（2026-10-01）。以前は絞り込み・探す欄の
+   後ろへ折り返し、探す欄の下にぽつんと1行で残っていた。探す欄は横いっぱいに。 */
+@media (max-width: 760px) {
+  .st-dialog__head h2 {
+    order: -2;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .st-dialog__head .st-dialog__close {
+    order: -1;
+  }
+  /* 絞り込みと探す欄は、それぞれ2行目以降に1行ずつ。題と同じ行に並ぶと題が潰れる。 */
+  .st-dialog__head > .st-seg,
+  .st-dialog__head .st-input.st-search {
+    flex: 1 1 100%;
+    width: 100%;
+  }
 }
 .st-dialog__head .st-input.st-search {
   width: min(280px, 60vw);
@@ -960,6 +997,25 @@
     width: 100%;
     max-height: 72vh;
     border-radius: 14px 14px 0 0;
+  }
+  /* まとめて選んでいる最中は、下の1行だけ（写真を続けて押せるように）。 */
+  .st-inspector__toggle {
+    display: inline-flex;
+    margin-left: auto;
+  }
+  .st-inspector[data-collapsed] {
+    overflow: hidden;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .st-inspector[data-collapsed] > :not(.st-inspector__head) {
+    display: none;
+  }
+  .st-inspector[data-collapsed] .st-inspector__head {
+    margin-bottom: 0;
+  }
+  .st-inspector[data-collapsed] .st-inspector__count {
+    color: var(--admin-ink);
+    font-weight: 600;
   }
 }
 

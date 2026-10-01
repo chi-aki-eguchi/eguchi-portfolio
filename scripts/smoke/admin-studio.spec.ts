@@ -107,6 +107,24 @@ test.describe("写真中心の管理画面", () => {
     expect((writes[0]!.body as { add: number[] }).add.sort()).toEqual([7001, 7004]);
   });
 
+  // 2026-10-01: シリーズの画面で「パソコンから取り込む」に登録済みの写真を選ぶと、以前は
+  // 「すでに登録されています」と出るだけで、そのシリーズには入らなかった。
+  test("シリーズの画面から登録済みの写真を取り込むと、そのシリーズに入る", async ({ page, api }) => {
+    const writes = await openStudio(page, api);
+    await page.route("**/api/admin/upload", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ duplicate: true, photoId: 7001 }) }),
+    );
+    await page.getByRole("button", { name: "シリーズ", exact: true }).click();
+    await page.locator(".st-side__item--series", { hasText: "写真のない組" }).click();
+    await expect(page.locator(".st-title-input")).toHaveValue("写真のない組");
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "パソコンから取り込む" }).click();
+    await (await chooser).setFiles({ name: "already.jpg", mimeType: "image/jpeg", buffer: Buffer.from("already") });
+    await expect.poll(() => writes.length).toBe(1);
+    expect(writes[0]).toEqual({ url: "/api/admin/series/503/photos", body: { add: [7001] } });
+    await expect(page.locator(".st-toast")).toContainText("登録済みの1枚をこのシリーズに入れました");
+  });
+
   test("サイト › シリーズの中の並びに、この構成で使わない設定を書く", async ({ page, api }) => {
     test.skip(!BOOK_DESIGN_ENABLED, "写真中心の骨格だけの一言（2026-09-30 に骨格を止めた）");
     await openStudio(page, api);
@@ -119,5 +137,32 @@ test.describe("写真中心の管理画面", () => {
     await openSitePart(page, "theme", { mode: "look" });
     await expect(page.locator('[data-settings-section="theme"]')).toBeVisible();
     await expect(note).toHaveCount(0);
+  });
+});
+
+// 2026-10-01: スマホで「まとめて選ぶ」と、1枚押すたびに画面の7割を覆う欄が開き、
+// 2枚目を押せなかった。選んでいる間は下の1行（N枚を選んでいます・操作する）にたたむ。
+test.describe("写真中心の管理画面（スマホ）", () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 9999) > 760, "スマホ幅の欄のたたみ方を確かめる");
+
+  test("まとめて選ぶ間は欄が下の1行にたたまれ、続けて写真を押せる", async ({ page, api }) => {
+    const writes = await openStudio(page, api);
+    await page.getByRole("button", { name: "まとめて選ぶ" }).click();
+    const tiles = page.locator(".st-tile");
+    await tiles.nth(1).click();
+    const inspector = page.locator(".st-inspector");
+    await expect(inspector).toHaveAttribute("data-collapsed", "true");
+    await expect(inspector.locator(".st-inspector__count")).toHaveText("1枚を選んでいます");
+    // 欄に隠れずに、2枚目・3枚目を押せる
+    await tiles.nth(2).click({ timeout: 5000 });
+    await tiles.nth(3).click({ timeout: 5000 });
+    await expect(inspector.locator(".st-inspector__count")).toHaveText("3枚を選んでいます");
+    const box = await inspector.boundingBox();
+    expect(box!.height, "たたんだ欄は1行ぶん").toBeLessThan(100);
+    // 「操作する」で広げると、まとめての操作が出る
+    await inspector.getByRole("button", { name: "操作する" }).click();
+    await expect(inspector).not.toHaveAttribute("data-collapsed");
+    await expect(inspector.getByRole("button", { name: "ゴミ箱へ" })).toBeVisible();
+    expect(writes).toEqual([]);
   });
 });

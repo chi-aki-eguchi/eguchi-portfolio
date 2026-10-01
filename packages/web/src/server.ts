@@ -832,7 +832,10 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     return new Response("Not found", { status: 404 });
   }
   if (url.pathname === "/tools/small-work" || url.pathname === "/tools/small-work/") {
-    return Response.redirect(new URL("/tools/small-work/index.html", request.url), 308);
+    return new Response(null, {
+      status: 308,
+      headers: { Location: "/tools/small-work/index.html" },
+    });
   }
   const routePathname = canonicalPortfolioKitPath(url.pathname);
   if (routePathname !== url.pathname && !url.pathname.includes(".")) {

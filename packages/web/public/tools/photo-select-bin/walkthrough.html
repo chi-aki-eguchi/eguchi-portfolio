@@ -95,7 +95,7 @@
     $('walk-error').textContent = available ? '' : '選定画面を読み込めませんでした。下のリンクから操作見本を開いてください。';
   }
   frame.addEventListener('load', ready);
-  if (frame.contentDocument?.readyState === 'complete') ready();
+  if (frame.contentDocument?.URL !== 'about:blank' && frame.contentDocument?.readyState === 'complete') ready();
   const el = (tag, content) => { const n = document.createElement(tag); n.textContent = content; return n; };
   function showResult() {
     try {

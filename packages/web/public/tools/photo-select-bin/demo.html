@@ -162,6 +162,12 @@ button,.button,input,textarea,select{border-radius:2px}button,.button{font-size:
   addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   try{const cached=JSON.parse(localStorage.getItem(storageKey)||'null');if(cached){const copy={...cached,reviewer:cached.reviewer||'途中保存'};const valid=P.validateResponse(copy,project);valid.reviewer=cached.reviewer;apply(valid);$('draft-state').textContent='途中の回答を復元';dirty=true;status('このブラウザに残っている途中の回答を復元しました。');}}catch{}
   render();
+  globalThis.photoSelectDemoResponse = () => {
+    if (!selectedCount()) throw new Error('写真を1枚以上選んでください。');
+    const response = P.validateResponse({...draft(), reviewer: $('reviewer').value.trim() || '体験用の回答'}, project);
+    dirty = false;
+    return response;
+  };
 }
 
 clientApp(JSON.parse(document.getElementById('photo-select-project').textContent));</script></body></html>

@@ -585,7 +585,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
       ? ["/portfolio-kit", "/portfolio-kit/en", "/portfolio-kit/guide"]
       : []),
     ...(isServiceOwnerSite(siteUrl, "")
-      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html"]
+      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html"]
       : []),
   ];
   // Include each published series detail page so crawlers discover the actual

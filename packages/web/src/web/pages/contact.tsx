@@ -21,6 +21,7 @@ import {
   workPublicUrl,
   workSlugFromSearch,
 } from "../../shared/contact-reference";
+import { JaPhrases } from "../components/JaPhrases";
 
 type Status = "idle" | "sending" | "success" | "error";
 type ContactAnalyticsEvent =
@@ -602,7 +603,7 @@ export default function ContactPage({
             className={`${leadAlign} text-[color:var(--text-quiet)] ${titleVisible || englishWelcome ? "-mt-4" : ""} mb-5 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
             style={readableBodyStyle}
           >
-            {intro}
+            <JaPhrases>{intro}</JaPhrases>
           </p>
         )}
         {/* 2026-07-08 動線改善: 「頼んでいいんだ」と思える橋 — 相談歓迎の一言と
@@ -612,7 +613,7 @@ export default function ContactPage({
             className={`${leadAlign} text-[color:var(--text-quiet)] mb-8 break-words ${english ? "font-en" : "ja-prose"} page-entrance page-entrance-delay-1`}
             style={readableBodyStyle}
           >
-            {note}
+            <JaPhrases>{note}</JaPhrases>
           </p>
         )}
         {/* 「どこで撮るのか」「どう進むのか」は、読む人が同じ気持ちで探す2つの
@@ -630,7 +631,7 @@ export default function ContactPage({
                   className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
                   style={readableBodyStyle}
                 >
-                  {areas}
+                  <JaPhrases>{areas}</JaPhrases>
                 </dd>
               </div>
             )}
@@ -643,7 +644,7 @@ export default function ContactPage({
                   className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
                   style={readableBodyStyle}
                 >
-                  {flow}
+                  <JaPhrases>{flow}</JaPhrases>
                 </dd>
               </div>
             )}
@@ -658,7 +659,7 @@ export default function ContactPage({
                 className={`text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
                 style={readableBodyStyle}
               >
-                {intro}
+                <JaPhrases>{intro}</JaPhrases>
               </p>
             )}
             {contactEmail && (
@@ -976,14 +977,14 @@ export default function ContactPage({
         </div>
         {status !== "success" && photographyInquiry && (
           <section className="contact-inquiry mt-12 border-t border-[rgba(var(--foreground-rgb),0.12)] pt-8" aria-labelledby="photography-inquiry-heading">
-            <h2 id="photography-inquiry-heading" className="text-lg leading-8">{photographyInquiry.title}</h2>
-            <p className="mt-4 leading-8 text-[color:var(--text-quiet)]">{photographyInquiry.intro}</p>
+            <h2 id="photography-inquiry-heading" className="text-lg leading-8"><JaPhrases>{photographyInquiry.title}</JaPhrases></h2>
+            <p className="mt-4 leading-8 text-[color:var(--text-quiet)] text-pretty"><JaPhrases>{photographyInquiry.intro}</JaPhrases></p>
             <p className="mt-4 text-sm leading-7"><a href="/gallery" className="underline underline-offset-4">写真を見る</a> ／ <a href="/about" className="underline underline-offset-4">撮り手について</a></p>
             <dl className="mt-6 space-y-6">
               {photographyInquiry.questions.map(({ q, a }) => (
                 <div key={q}>
-                  <dt className="leading-7">{q}</dt>
-                  <dd className="mt-2 leading-8 text-[color:var(--text-quiet)]">{a}</dd>
+                  <dt className="leading-7"><JaPhrases>{q}</JaPhrases></dt>
+                  <dd className="mt-2 leading-8 text-[color:var(--text-quiet)] text-pretty"><JaPhrases>{a}</JaPhrases></dd>
                 </div>
               ))}
             </dl>
@@ -1030,7 +1031,7 @@ function Field({
           className="text-xs text-[color:var(--text-quiet)] text-pretty"
           style={{ lineHeight: 1.8 }}
         >
-          {hint}
+          <JaPhrases>{hint}</JaPhrases>
         </p>
       )}
       {error && (

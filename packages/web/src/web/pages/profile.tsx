@@ -8,6 +8,7 @@ import { usePageLanguage } from "../hooks/usePageLanguage";
 import { InquiryCta } from "../components/InquiryCta";
 import { safeHref } from "../lib/utils";
 import { imageUrlWithParams } from "../../shared/image-url";
+import { JaPhrases } from "../components/JaPhrases";
 
 const CJK_TEXT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
@@ -226,7 +227,7 @@ export default function ProfilePage({
                     className={`profile-bio__text text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
                     style={readableBodyStyle}
                   >
-                    {line}
+                    <JaPhrases>{line}</JaPhrases>
                   </p>
                 ))}
             </div>
@@ -259,7 +260,7 @@ export default function ProfilePage({
                       className={`profile-bio__text text-[color:var(--text-quiet)] text-pretty break-words ${english ? "font-en" : "ja-prose"}`}
                       style={readableBodyStyle}
                     >
-                      {para.replace(/\n/g, " ")}
+                      <JaPhrases>{para.replace(/\n/g, " ")}</JaPhrases>
                     </p>
                   ))}
               </div>
@@ -377,7 +378,7 @@ export default function ProfilePage({
                     minHeight: "3.2em",
                   }}
                 >
-                  {post.title}
+                  <JaPhrases>{post.title}</JaPhrases>
                 </p>
                 {/* Excerpt — first ~120 chars, 2-line clamp */}
                 {post.excerpt && (
@@ -389,7 +390,7 @@ export default function ProfilePage({
                       letterSpacing: "0.01em",
                     }}
                   >
-                    {post.excerpt}
+                    <JaPhrases>{post.excerpt}</JaPhrases>
                   </p>
                 )}
               </a>
@@ -419,7 +420,7 @@ export default function ProfilePage({
               className={`text-[color:var(--text-quiet)] mb-5 whitespace-pre-line break-words ${english ? "font-en" : "ja-prose"}`}
               style={readableBodyStyle}
             >
-              {printDescription}
+              <JaPhrases>{printDescription}</JaPhrases>
             </p>
           )}
           <a

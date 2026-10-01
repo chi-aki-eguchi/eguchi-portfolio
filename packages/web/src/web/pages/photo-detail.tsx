@@ -22,6 +22,7 @@ import {
 } from "../../shared/photo-page-text";
 import { orientedAspectRatio } from "../../shared/image-url";
 import { signalAnalyticsPageReady } from "../lib/analytics";
+import { JaPhrases } from "../components/JaPhrases";
 
 type PhotoDetailResponse = {
   photo: PhotoPageInput & {
@@ -183,7 +184,7 @@ export default function PhotoDetailPage() {
                 color: "var(--text-quiet)",
               }}
             >
-              {editorialDescription}
+              <JaPhrases>{editorialDescription}</JaPhrases>
             </p>
           )}
           {(film || facts.length > 0) && (

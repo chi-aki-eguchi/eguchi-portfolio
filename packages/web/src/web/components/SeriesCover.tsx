@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBreakoutRoom } from "../hooks/useBreakoutRoom";
 import { imageUrlWithParams, orientedDimensions } from "../../shared/image-url";
 
@@ -41,7 +41,25 @@ export function SeriesCover({
   subtitle?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const room = useBreakoutRoom(ref);
+  // スマホでは画面の端まで（2026-10-01）。下に続く写真の一覧はスマホだと端から
+  // 端まで並ぶ（PhotoGallery の edgeToEdge）のに、表紙だけ左右 16px 内側にあり、
+  // 作品を開いた最初の1枚が、その下の写真より細く見えていた。判定は
+  // PhotoGallery と同じ幅（767px 以下）。
+  const [isMobile, setIsMobile] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(max-width: 767px)").matches,
+  );
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const room = useBreakoutRoom(ref, isMobile ? 0 : 16);
   const url = series?.coverUrl;
   if (!url) return null;
 

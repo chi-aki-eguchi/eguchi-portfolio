@@ -12,10 +12,19 @@ const FITS: NavFit = { collapsed: false, railPx: null };
 /** 左のメニューの帯（styles.css「BB1: nav position」と同じ値） */
 const RAIL_REM = 11;
 const RAIL_PADDING_REM = 4; // 左右 2rem ずつ
-const RAIL_LINK_INDENT = 18; // 選んでいないリンクの字下げ
+// 選んでいないリンクの字下げ。2026-10-01 に字下げをやめ、今いるページの線は
+// 左の余白（2rem）の中に置いたので 0。
+const RAIL_LINK_INDENT = 0;
 /** 帯を広げてよい上限。これを超えるなら、上のバーとハンバーガーへまとめる */
 const RAIL_MAX_REM = 20;
 const RAIL_MAX_VIEWPORT = 0.3;
+/** 縦の並び（styles.css と同じ値）: 上下の余白・名前とリンクの間・リンクどうしの間 */
+const RAIL_PADDING_Y_REM = 2.5;
+const RAIL_LOGO_GAP_REM = 3;
+const RAIL_ITEM_GAP_REM = 1.4;
+/** 帯の下に置く「上へ戻る」（40px と下の余白 1.5rem）と、その上の間（1.5rem） */
+const RAIL_BACK_TO_TOP_PX = 40;
+const RAIL_BACK_TO_TOP_REM = 3;
 
 function textWidth(el: Element): number {
   const rect = el.getBoundingClientRect();
@@ -31,7 +40,8 @@ function textWidth(el: Element): number {
  *
  * - 上・下: 名前とリンクが横1列に入りきらなければ、PC でもハンバーガーにまとめる。
  * - 左: いちばん長いリンクに合わせて帯を広げる（最大 20rem・画面の 30%）。それでも
- *   入らなければ、上のバーとハンバーガーにまとめる。
+ *   入らなければ、上のバーとハンバーガーにまとめる。帯の中身が画面の高さに
+ *   入らないとき（横向きのスマホ・低い窓）も同じ。
  *
  * リンクは折り返さない（`white-space: nowrap`）ので、文字の幅はまとめる前と後で
  * 変わらない。まとめたせいで「入る」と判定し直して行ったり来たりすることがない。
@@ -68,8 +78,22 @@ export function useNavFit(
         const widest = Math.max(...items.map((w) => w * 1.05 + RAIL_LINK_INDENT));
         const rail = Math.ceil(Math.max(RAIL_REM * rem, widest + RAIL_PADDING_REM * rem));
         const maxRail = Math.min(RAIL_MAX_REM * rem, window.innerWidth * RAIL_MAX_VIEWPORT);
+        // 高さも測る（2026-10-01）。帯は画面に固定で、はみ出したぶんはスクロール
+        // できない。横向きのスマホ（844×390）では JP｜EN が画面の外に落ちて
+        // 押せず、帯が横幅の2割を取ってもいた。入らなければ上のバーへまとめる。
+        // 高さは並べ方（縦・横）で変わらないので、まとめた後に測っても同じ値になる。
+        const itemHeights = Array.from(list.children).map((li) => li.getBoundingClientRect().height);
+        const logoHeight = logoRef.current ? logoRef.current.getBoundingClientRect().height : 0;
+        const railHeight =
+          RAIL_PADDING_Y_REM * 2 * rem +
+          logoHeight +
+          RAIL_LOGO_GAP_REM * rem +
+          itemHeights.reduce((a, b) => a + b, 0) +
+          RAIL_ITEM_GAP_REM * rem * Math.max(0, itemHeights.length - 1) +
+          RAIL_BACK_TO_TOP_PX +
+          RAIL_BACK_TO_TOP_REM * rem;
         next =
-          rail > maxRail
+          rail > maxRail || railHeight > window.innerHeight
             ? { collapsed: true, railPx: null }
             : { collapsed: false, railPx: rail > RAIL_REM * rem ? rail : null };
       } else {

@@ -35,6 +35,7 @@ import {
   tidyCameraName,
   tidyLensName,
 } from "../lib/series-colophon";
+import { JaPhrases } from "./JaPhrases";
 
 // Capped at 1920px — sharp enough for 4K; Retina gets 2× viewport from the
 // srcset without pulling the full 3200px master stored in R2.
@@ -1713,7 +1714,7 @@ export function Lightbox({
                   whiteSpace: "pre-line",
                 }}
               >
-                {photo.description}
+                <JaPhrases>{photo.description}</JaPhrases>
               </p>
             )}
             {captionSeries && (

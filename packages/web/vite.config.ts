@@ -41,6 +41,9 @@ function appConfig(): UserConfig {
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "./src/web"),
+				// budoux（日本語の文節区切り）が Node 向けに読む DOM 実装。
+				// ブラウザでは使わないので、ブラウザの DOMParser に渡すだけの物へ。
+				linkedom: path.resolve(__dirname, "./vite/linkedom-browser.ts"),
 			},
 		},
 		build: {

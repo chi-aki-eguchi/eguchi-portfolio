@@ -7,6 +7,7 @@ import {
 } from "../../shared/policy-content";
 import { usePageEntrance } from "../hooks/usePageEntrance";
 import { usePageLanguage } from "../hooks/usePageLanguage";
+import { JaPhrases } from "../components/JaPhrases";
 
 const POLICY_KINDS: readonly PolicyKind[] = ["privacy", "terms"];
 const policyBodyStyle = {
@@ -68,7 +69,7 @@ export default function PolicyPage({
             ...policyBodyStyle,
           }}
         >
-          {doc.lead}
+          <JaPhrases>{doc.lead}</JaPhrases>
         </p>
       </header>
 
@@ -120,7 +121,7 @@ export default function PolicyPage({
                 className={`mt-4 text-[color:var(--text-quiet)] break-words ${proseClass}`}
                 style={policyBodyStyle}
               >
-                {paragraph}
+                <JaPhrases>{paragraph}</JaPhrases>
               </p>
             ))}
 
@@ -135,7 +136,7 @@ export default function PolicyPage({
                     <span aria-hidden="true" className="select-none opacity-50">
                       —
                     </span>
-                    <span className="min-w-0">{item}</span>
+                    <span className="min-w-0"><JaPhrases>{item}</JaPhrases></span>
                   </li>
                 ))}
               </ul>
@@ -160,7 +161,7 @@ export default function PolicyPage({
                       className={`text-[color:var(--text-quiet)] break-words ${proseClass}`}
                       style={policyBodyStyle}
                     >
-                      {row.value}
+                      <JaPhrases>{row.value}</JaPhrases>
                     </dd>
                   </div>
                 ))}

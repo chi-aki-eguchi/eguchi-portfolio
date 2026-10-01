@@ -1,4 +1,5 @@
 import { isServiceOwnerSite } from "../../../shared/service-visibility";
+import { JaPhrases } from "../JaPhrases";
 
 /**
  * フッターのポートフォリオ制作の入口（写真中心のサイト、2026-09-26）。
@@ -20,7 +21,7 @@ export function PhotoServiceNote({ siteUrl, language = "ja" }: { siteUrl?: strin
       <p className="ps-service__lead">
         {en
           ? "I also build portfolio websites for photographers, on the same system as this site."
-          : "このサイトと同じ仕組みで、写真家のポートフォリオサイトを作っています。"}
+          : <JaPhrases>このサイトと同じ仕組みで、写真家のポートフォリオサイトを作っています。</JaPhrases>}
       </p>
       <a className="ps-service__go" href={en ? "/portfolio-kit/en" : "/portfolio-kit"}>
         {en ? "Portfolio websites" : "ポートフォリオサイト制作について"}

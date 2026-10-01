@@ -17,6 +17,7 @@ import { signalAnalyticsPageReady } from "../lib/analytics";
 import { contactHrefForWork } from "../../shared/contact-reference";
 import { PhotoSeriesPage } from "../components/photo-site/PhotoSeries";
 import { siteDesignFrom } from "../lib/book";
+import { JaPhrases } from "../components/JaPhrases";
 
 export default function SeriesDetailPage() {
   const params = useParams();
@@ -243,7 +244,7 @@ export default function SeriesDetailPage() {
             hasCover ? "mb-10 md:mb-16 text-left" : "-mt-4 mb-10 md:mb-16 text-left md:text-center"
           }`}
         >
-          {series.statement}
+          <JaPhrases>{series.statement}</JaPhrases>
         </p>
       )}
 

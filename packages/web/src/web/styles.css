@@ -3458,6 +3458,14 @@
   word-break: auto-phrase;
   text-wrap: pretty;
 }
+/* 2026-10-01: auto-phrase は Chrome だけで、Safari では語の途中で割れていた
+   （「デジタ／ル」「ご相／談ください。」）。文節は JaPhrases.tsx が BudouX で
+   出して `<wbr>` を置く。ここでは `<wbr>`・句読点・空白でだけ折り返させる。
+   どの文節も1行に入らないとき（細い画面の長い語）だけ、途中で折る。 */
+.ja-phrases {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
 
 /* ─── 禁則処理 ───────────────────────────────────
    既定の `line-break: auto` は、長音符（ー）や小書きのかな（ゃゅょっ）の前で
@@ -3568,7 +3576,10 @@ body {
    本の奥付と同じ位置に、同じ調子で。中央寄せの細い罫を挟んで、字を落とす。
    見出しと値の表にしない —— 表にすると設定画面の見た目になる。 */
 .series-colophon {
-  margin-top: calc(4.5rem * var(--spacing-section-gap, 1));
+  /* 罫の上は、罫の下（2.25rem）より狭くしない（2026-10-01）。「セクションの
+     間隔」を詰めた本番（0.2）では上が 14px になり、短い罫が最後の写真の
+     下線のように貼り付いていた。既定（1）では今までどおり 4.5rem。 */
+  margin-top: max(2.25rem, calc(4.5rem * var(--spacing-section-gap, 1)));
   padding-top: 2.25rem;
   text-align: center;
   /* 罫は幅いっぱいに引かない。短い一本が「ここで区切る」の合図になる。 */

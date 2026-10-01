@@ -11,6 +11,7 @@ import type {
   PolicyLanguage,
 } from "../shared/policy-content";
 import { PublicAnalytics } from "./components/PublicAnalytics";
+import { JaPhrases } from "./components/JaPhrases";
 
 // Lazy-load all pages — only the shell is eagerly loaded
 const TopPage = lazy(() => import("./pages/top"));
@@ -385,7 +386,7 @@ function App() {
                     className="mt-4 text-[rgba(var(--foreground-rgb),0.72)]"
                     style={{ fontSize: "max(0.875rem, var(--body-size, 0.875rem))", lineHeight: 1.9 }}
                   >
-                    お探しのページは存在しないか、移動した可能性があります。<span lang="en" className="block mt-1">Page not found (404).</span>
+                    <JaPhrases>お探しのページは存在しないか、移動した可能性があります。</JaPhrases><span lang="en" className="block mt-1">Page not found (404).</span>
                   </p>
                   <p className="mt-8 flex flex-wrap gap-x-8 gap-y-2 text-sm">
                     <Link to="/" className="inline-flex min-h-11 items-center underline underline-offset-4">

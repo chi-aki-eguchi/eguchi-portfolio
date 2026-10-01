@@ -1928,6 +1928,33 @@ test.describe("公開サイト — 設定がCSSカスケードに勝てている
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 2026-10-01: 左のメニューの帯は画面に固定で、はみ出したぶんはスクロールできない。
+// 横向きのスマホ（844×390）では帯の下の JP｜EN が画面の外に落ちて押せなかった。
+// 帯の中身が画面の高さに入らないときは、上のバーとハンバーガーへまとめる
+// （useNavFit）。高さを戻せば帯に戻る。
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — 左のメニューと画面の高さ", () => {
+  test("navPosition=left は低い画面で上のバーへまとまり、高い画面で帯に戻る", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "帯は広い画面だけ。画面の大きさはこの中で変える");
+    await installPublicApiMocks(page, { ...SYNTHETIC_SETTINGS, navPosition: "left" });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto("/contact");
+    const header = page.locator("header.site-header");
+    const burger = page.locator('header button[aria-controls="mobile-menu"]');
+    await expect(header).toHaveAttribute("data-nav-collapsed", "true");
+    await expect(burger).toBeVisible();
+    await expect(page.locator(".nav-pos-left")).toHaveCount(0);
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(header).not.toHaveAttribute("data-nav-collapsed", "true");
+    await expect(page.locator(".nav-pos-left")).toHaveCount(1);
+    await expect(burger).toBeHidden();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2026-08-05: /gallery で写真が「灰色のまま出ない」件の再発防止。
 //
 // useScrollFadeIn は effect 実行時点の `.fade-in-item` しか

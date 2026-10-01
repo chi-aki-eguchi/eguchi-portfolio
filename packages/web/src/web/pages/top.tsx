@@ -34,6 +34,7 @@ import { isServiceOwnerSite } from "../../shared/service-visibility";
 import { PhotoHome } from "../components/photo-site/PhotoHome";
 import { siteDesignFrom } from "../lib/book";
 import { isDarkTextColor, textShadowOverPhoto } from "../lib/color-contrast";
+import { JaPhrases } from "../components/JaPhrases";
 
 const PortfolioKitExperience = lazy(
   () => import("../components/PortfolioKitExperience"),
@@ -679,7 +680,7 @@ function TopStatement({
                 letterSpacing: "var(--body-tracking, 0.02em)",
               }}
             >
-              {para.replace(/\n/g, " ")}
+              <JaPhrases>{para.replace(/\n/g, " ")}</JaPhrases>
             </p>
           ))}
       </div>

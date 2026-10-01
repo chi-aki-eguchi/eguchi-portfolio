@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
+import { JaPhrases } from "./JaPhrases";
 
 /**
  * Closing "work with me" band shown at the foot of the Top / Gallery / Series
@@ -39,8 +40,8 @@ export function InquiryCta({
   return (
     <section lang={language} className="inquiry-note" ref={ref}>
       <div className="section-reveal">
-        <h2 className="break-words">{title}</h2>
-        {text && <p className="break-words">{text}</p>}
+        <h2 className="break-words"><JaPhrases>{title}</JaPhrases></h2>
+        {text && <p className="break-words"><JaPhrases>{text}</JaPhrases></p>}
       </div>
       <Link to={english ? "/en/contact" : "/contact"} className="inquiry-note__link section-reveal">
         {button}

@@ -585,7 +585,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
       ? ["/portfolio-kit", "/portfolio-kit/en", "/portfolio-kit/guide"]
       : []),
     ...(isServiceOwnerSite(siteUrl, "")
-      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html", "/tools/small-work/index.html", "/tools/small-work/ledger.html", "/tools/small-work/classroom.html", "/tools/small-work/gallery.html", "/tools/small-work/audit.html"]
+      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html", "/tools/small-work/index.html", "/tools/small-work/ledger.html", "/tools/small-work/classroom.html", "/tools/small-work/gallery.html", "/tools/small-work/audit.html", "/workroom/index.html", "/workroom/review.html", "/workroom/monthly.html", "/workroom/notes.html", "/workroom/print-budget.html", "/workroom/photo-files.html", "/workroom/site-check.html", "/workroom/materials.html"]
       : []),
   ];
   // Include each published series detail page so crawlers discover the actual
@@ -821,12 +821,14 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     (await getSettings()).siteUrl || process.env.SITE_URL || "";
   const hostRedirect = canonicalHostRedirect(request.url, canonicalOrigin);
   if (hostRedirect) return Response.redirect(hostRedirect, 301);
-  // This is the owner's separate downloadable product, not a Kit customer's service.
+  // These are the owner's products and services, separate from Kit customers.
   if (
     (url.pathname === "/tools/photo-select-bin.html" ||
       url.pathname.startsWith("/tools/photo-select-bin/") ||
       url.pathname === "/tools/small-work" ||
-      url.pathname.startsWith("/tools/small-work/")) &&
+      url.pathname.startsWith("/tools/small-work/") ||
+      url.pathname === "/workroom" ||
+      url.pathname.startsWith("/workroom/")) &&
     !isServiceOwnerSite(canonicalOrigin, url.hostname)
   ) {
     return new Response("Not found", { status: 404 });
@@ -835,6 +837,12 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     return new Response(null, {
       status: 308,
       headers: { Location: "/tools/small-work/index.html" },
+    });
+  }
+  if (url.pathname === "/workroom" || url.pathname === "/workroom/") {
+    return new Response(null, {
+      status: 308,
+      headers: { Location: "/workroom/index.html" },
     });
   }
   const routePathname = canonicalPortfolioKitPath(url.pathname);

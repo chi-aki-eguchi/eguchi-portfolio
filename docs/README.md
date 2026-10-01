@@ -6,6 +6,7 @@
 
 | 知りたいこと | 文書 |
 |---|---|
+| 5つの収入経路とWorkroom（2026-10-01） | `docs/specs/income-channels-20261001.md` |
 | 公開サイトのズレの総点検（2026-10-01） | `docs/specs/visual-alignment-20261001.md` |
 | 設定を保った管理画面とトップの文字（2026-10-01） | `docs/specs/settings-preservation-20261001.md` |
 | 管理画面を骨格に関係なく1つに（2026-09-29） | `docs/specs/admin-one-shell-20260929.md` |

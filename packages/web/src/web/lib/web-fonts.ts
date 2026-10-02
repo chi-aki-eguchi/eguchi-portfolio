@@ -26,9 +26,15 @@ export function waitForWebFonts(timeoutMs = 1500): Promise<void> {
   const families = ["--font-en", "--font-ja"]
     .map((v) => root.getPropertyValue(v).split(",")[0]?.trim().replace(/^["']|["']$/g, ""))
     .filter((f): f is string => Boolean(f));
+  // 実際に描く太さで読む（2026-10-02）。太さを書かないと 400 として読まれ、本文が 500 の
+  // サイト（本番）では使わない 400 の文字の束を 5本（80KB）読んだうえ、肝心の 500 の
+  // 到着を待たずに幅を測っていた。
+  const weight = getComputedStyle(document.body).fontWeight || "400";
   const work = sheetsLoaded
     .then(() =>
-      Promise.all(families.map((f) => document.fonts.load(`16px "${f}"`, "Aa江口秋").catch(() => []))),
+      Promise.all(
+        families.map((f) => document.fonts.load(`${weight} 16px "${f}"`, "Aa江口秋").catch(() => [])),
+      ),
     )
     .then(() => undefined);
   return Promise.race([work, new Promise<void>((r) => setTimeout(r, timeoutMs))]);

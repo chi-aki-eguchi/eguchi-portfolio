@@ -1,5 +1,15 @@
 import { describe, test, expect } from "bun:test";
-import { PDFDocument, PDFDict, PDFName, PDFRawStream, decodePDFRawStream } from "pdf-lib";
+import {
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFHexString,
+  PDFName,
+  PDFNumber,
+  PDFRawStream,
+  PDFString,
+  decodePDFRawStream,
+} from "pdf-lib";
 import {
   addPhoto,
   createBook,
@@ -471,4 +481,93 @@ test("横並び2枚の説明は、比率と長さがどう違っても自分の�
         sheet.height - 42.52 + 0.01,
       );
   }
+});
+
+describe("受け取った人が使いやすい PDF", () => {
+  test("保存の名前は氏名と本の名前。印刷用だけ印をつけ、ファイル名に使えない字は空白に", async () => {
+    const { pdfFileName } = await import("./model");
+    const b = make();
+    b.title = "光のあと";
+    b.cover.name = "江口秋";
+    expect(pdfFileName(b, "screen")).toBe("江口秋_光のあと.pdf");
+    expect(pdfFileName(b, "print")).toBe("江口秋_光のあと_印刷用.pdf");
+    b.title = "2026/10: 港*の朝";
+    b.cover.name = "";
+    expect(pdfFileName(b, "screen")).toBe("2026 10 港 の朝.pdf");
+    b.title = "";
+    b.cover.name = "江口秋";
+    expect(pdfFileName(b, "screen")).toBe("江口秋_作品集.pdf");
+  });
+  test("メールと URL は押せる。行をまたぐ URL も、日本語のドメインも正しい宛先に", async () => {
+    const { textLinks } = await import("./render");
+    expect(
+      textLinks({
+        value: "autumn@example.invalid\nhttps://akieguchi.com/works（作品）",
+        lines: ["autumn@example.invalid", "https://akieguchi.com/works（作品）"],
+      }),
+    ).toEqual([
+      { line: 0, start: 0, end: 22, uri: "mailto:autumn@example.invalid" },
+      { line: 1, start: 0, end: 27, uri: "https://akieguchi.com/works" },
+    ]);
+    expect(
+      textLinks({
+        value: "サイト https://例え.jp/写真 と www.akieguchi.com.",
+        lines: ["サイト https://例え.jp/写真 と", "www.akieguchi.com."],
+      }).map((l) => l.uri),
+    ).toEqual(["https://xn--r8jz45g.jp/%E5%86%99%E7%9C%9F", "https://www.akieguchi.com/"]);
+    expect(
+      textLinks({
+        value: "https://example.com/very/long/path",
+        lines: ["https://example.com/", "very/long/path"],
+      }),
+    ).toEqual([
+      { line: 0, start: 0, end: 20, uri: "https://example.com/very/long/path" },
+      { line: 1, start: 0, end: 14, uri: "https://example.com/very/long/path" },
+    ]);
+    expect(textLinks({ value: "連絡先は後日", lines: ["連絡先は後日"] })).toEqual([]);
+  });
+  test("PDF の連絡先にリンクが付き、表紙・作品・プロフィールのしおりがある", async () => {
+    const b = make();
+    b.title = "光のあと";
+    b.cover.name = "江口秋";
+    b.pdfProfile = {
+      enabled: true,
+      text: "写真の記録です。",
+      contact: "autumn@example.invalid\nhttps://akieguchi.com",
+    };
+    const r = await renderPortfolio(b, [{ id: b.items[0].id, bytes: jpeg }], font);
+    const pdf = await PDFDocument.load(r.bytes!);
+    const pages = pdf.getPages();
+    const annots = pages[pages.length - 1].node.Annots()!;
+    const links = annots.asArray().map((ref) => {
+      const d = pdf.context.lookup(ref, PDFDict);
+      const a = d.lookup(PDFName.of("A"), PDFDict);
+      const rect = d.lookup(PDFName.of("Rect"), PDFArray).asArray().map((n) => (n as PDFNumber).asNumber());
+      return { uri: (a.lookup(PDFName.of("URI")) as PDFString).decodeText(), rect };
+    });
+    expect(links.map((l) => l.uri)).toEqual(["mailto:autumn@example.invalid", "https://akieguchi.com/"]);
+    for (const { rect } of links) {
+      expect(rect[0]).toBeCloseTo(42.52);
+      expect(rect[2]).toBeGreaterThan(rect[0] + 50);
+      expect(rect[3]).toBeGreaterThan(rect[1]);
+    }
+    expect(pages[0].node.Annots()?.size() ?? 0).toBe(0);
+    const outlines = pdf.catalog.lookup(PDFName.of("Outlines"), PDFDict);
+    expect((outlines.get(PDFName.of("Count")) as PDFNumber).asNumber()).toBe(3);
+    const titles: string[] = [];
+    let item = outlines.lookup(PDFName.of("First")) as PDFDict | undefined;
+    while (item) {
+      titles.push((item.lookup(PDFName.of("Title")) as PDFHexString).decodeText());
+      expect(item.lookup(PDFName.of("Dest"), PDFArray).get(0)).toBe(pages[titles.length - 1].ref);
+      item = item.lookup(PDFName.of("Next")) as PDFDict | undefined;
+    }
+    expect(titles).toEqual(["表紙", source.title, "プロフィール"]);
+    b.purpose = "photobook";
+    const book = await PDFDocument.load(
+      (await renderPortfolio(b, [{ id: b.items[0].id, bytes: jpeg }], font)).bytes!,
+    );
+    const first = book.catalog.lookup(PDFName.of("Outlines"), PDFDict).lookup(PDFName.of("First"), PDFDict);
+    const second = first.lookup(PDFName.of("Next"), PDFDict);
+    expect((second.lookup(PDFName.of("Title")) as PDFHexString).decodeText()).toBe("2ページ");
+  });
 });

@@ -95,6 +95,12 @@ test("本の編集・保存・読み戻し・PDF出力はWebデータを変え�
     const download = page.waitForEvent("download");
     await page.getByRole("link", { name: "PDFを保存", exact: true }).click();
     const pdf = await download;
+    // 受け取った人の手元で誰の何か分かる名前（氏名_本の名前、印刷用だけ印つき）。
+    expect(pdf.suggestedFilename()).toBe(
+      quality === "送信用"
+        ? "写真家 秋_2026 光と影の記録.pdf"
+        : "写真家 秋_2026 光と影の記録_印刷用.pdf",
+    );
     const dest = info.outputPath(`${quality}.pdf`);
     await pdf.saveAs(dest);
     const size = statSync(dest).size;
@@ -146,7 +152,7 @@ test("画像欠落・通信失敗・長文は成功と表示しない", async ({
     .getByRole("button", { name: "ページを整える", exact: true })
     .click();
 
-  await page.route("**/api/admin/pdf/photos/*/image?quality=screen", (r) =>
+  await page.route("**/api/admin/pdf/photos/*/image?quality=send", (r) =>
     r.fulfill({ status: 404, body: "missing" }),
   );
   await page
@@ -158,7 +164,7 @@ test("画像欠落・通信失敗・長文は成功と表示しない", async ({
   await expect(
     page.getByRole("link", { name: "PDFを保存", exact: true }),
   ).toHaveCount(0);
-  await page.unroute("**/api/admin/pdf/photos/*/image?quality=screen");
+  await page.unroute("**/api/admin/pdf/photos/*/image?quality=send");
   await page
     .locator(".pdf-workflow")
     .getByRole("button", { name: "ページを整える", exact: true })

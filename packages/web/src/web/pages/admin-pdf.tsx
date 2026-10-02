@@ -7,6 +7,7 @@ import {
   movePage,
   pageCount,
   parseBook,
+  pdfFileName,
   removeItem,
   STORAGE_KEY,
   type Item,
@@ -23,6 +24,7 @@ type Output = {
   size: number;
   pages: number;
   quality: string;
+  fileName: string;
   snapshot: string;
 };
 const sizeLabel = (bytes: number) =>
@@ -234,6 +236,7 @@ export default function AdminPdfPage() {
           size: blob.size,
           pages: result.pageCount,
           quality: quality === "print" ? "印刷用" : "送信用",
+          fileName: pdfFileName(book, quality),
           snapshot: JSON.stringify(book),
         });
         setNotice("PDFを生成しました。全ページを確認して保存してください");
@@ -1069,7 +1072,7 @@ export default function AdminPdfPage() {
                 <div className="pdf-toolbar">
                   <a
                     href={output.url}
-                    download={`${book.title}-${output.quality}.pdf`}
+                    download={output.fileName}
                   >
                     PDFを保存
                   </a>

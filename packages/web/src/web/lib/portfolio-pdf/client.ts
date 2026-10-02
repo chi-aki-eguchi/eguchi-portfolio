@@ -32,7 +32,7 @@ export async function generate(
       );
     progress(`画像を準備 ${index + 1} / ${book.items.length}`);
     const r = await fetch(
-      `/api/admin/pdf/photos/${item.sourcePhotoId}/image?quality=${quality}`,
+      `/api/admin/pdf/photos/${item.sourcePhotoId}/image?quality=${quality === "print" ? "print" : "send"}`,
       {
         credentials: "same-origin",
         cache: "no-store",

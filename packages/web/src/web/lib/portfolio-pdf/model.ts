@@ -221,6 +221,22 @@ export function parseBook(raw: unknown): PortfolioDocument {
 export const pageCount = (b: PortfolioDocument) =>
   1 + b.pages.length + Number(b.pdfProfile.enabled);
 
+/**
+ * 保存する PDF の名前（2026-10-02）。受け取った人の手元で誰の何か分かるよう、氏名を先に。
+ * 送信用は「江口秋_光のあと.pdf」、印刷用は「江口秋_光のあと_印刷用.pdf」。
+ * 以前は「光のあと-送信用.pdf」で、氏名が無く「送信用」はこちらの言葉だった。
+ */
+export function pdfFileName(book: PortfolioDocument, quality: "screen" | "print") {
+  const clean = (s: string) =>
+    s
+      .replace(/[\\/:*?"<>|\p{Cc}]+/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const parts = [clean(book.cover.name), clean(book.title) || "作品集"].filter(Boolean);
+  if (quality === "print") parts.push("印刷用");
+  return `${Array.from(parts.join("_")).slice(0, 100).join("")}.pdf`;
+}
+
 /** Independent copy, including page/item references; source photos remain shared read-only. */
 export function duplicateBook(book: PortfolioDocument): PortfolioDocument {
   const copy = parseBook(book);

@@ -54,8 +54,17 @@ export function portfolioPdfRoutes(
         );
       try {
         const quality = c.req.query("quality");
+        // send: 送信用 PDF の写真。縦位置 A4 の1ページで約250ppi（Mac のプレビューで幅に
+        // 合わせて見ても粗くならない）。mozjpeg で、1600px の頃から約25%増に抑える（2026-10-02）。
+        // screen は編集画面の見本、thumb は一覧、print は印刷用。
         const edge =
-          quality === "print" ? 3200 : quality === "thumb" ? 320 : 1600;
+          quality === "print"
+            ? 3200
+            : quality === "send"
+              ? 2200
+              : quality === "thumb"
+                ? 320
+                : 1600;
         // sharp removes EXIF/ICC by default; pixels converted to sRGB, never upscaled.
         // Share the public image queue so HTTP/2 thumbnail bursts cannot decode
         // many full-size source images at once. Read inside the same bound.
@@ -70,7 +79,13 @@ export function portfolioPdfRoutes(
             withoutEnlargement: true,
           })
           .flatten({ background: "#fff" })
-          .jpeg({ quality: quality === "print" ? 95 : 78 })
+          .jpeg(
+            quality === "print"
+              ? { quality: 95 }
+              : quality === "send"
+                ? { quality: 76, mozjpeg: true }
+                : { quality: 78 },
+          )
           .toBuffer();
         });
         c.header("Content-Type", "image/jpeg");

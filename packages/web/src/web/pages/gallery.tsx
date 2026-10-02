@@ -13,7 +13,9 @@ import { SeriesColophon } from "../components/SeriesColophon";
 import { sortPhotosBySetting } from "../lib/photo-sort";
 import { routeKeyOf, scrollMemory } from "../lib/scroll-memory";
 import { galleryExcludesSeries, siteDesignFrom } from "../lib/book";
+import { loadPhotos } from "../lib/early-photos";
 import { PhotoAllPage } from "../components/photo-site/PhotoAll";
+
 
 /** URL の medium= の値と、写真に保存されている撮り方（filmType）の対応。 */
 const MEDIUM_FILM_TYPE = { film: "フィルム", digital: "デジタル" } as const;
@@ -70,7 +72,8 @@ export default function GalleryPage() {
     refetch: refetchPhotos,
   } = useQuery({
     queryKey: ["photos"],
-    queryFn: async () => jsonOrThrow(await api.photos.$get()),
+    // HTML が先に始めた取り寄せ（shared/early-photos.ts）があれば、その結果を使う。
+    queryFn: loadPhotos,
   });
   const { data: seriesData } = useQuery({
     queryKey: ["series"],

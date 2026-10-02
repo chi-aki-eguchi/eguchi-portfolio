@@ -18,6 +18,7 @@
 - 設定を HTML に入れる（オーナー「良くなるなら任せます」）: /api/settings と同じ中身をサーバーが HTML に入れ、画面は取り寄せを待たずに描く（api/boot-settings.ts・web/lib/boot-settings.ts）。本番で中身が /api/settings と同じこと、起動時の取り寄せ 0 回を確認。正本: spec「設定を HTML に入れる」。
 - 公開ページの JS を軽く: 外部部品を何でも 1 つに束ねる組み立ての設定で、管理画面の PDF 作成などの部品まで公開ページが読んでいた。入口の JS 384→92KB（brotli）。`vite/public-entry-guard.ts` が入口への戻りを止める。正本: spec「公開ページの JS を軽く」。
 - Gallery の写真の先読みをやめた: サーバーが画面に出ない8枚（約620KB）を毎回先読みさせていた（ランダム表示・作品の写真を外す設定を知らずに選んでいた）。画面と同じ8枚にしても見えるのは早まらず（枠が書体を待つ）、やめるのが一番早かった（8枚とも見える 3.01→2.70秒）。正本: spec「Gallery の写真の先読みをやめる」。
+- Gallery の写真の一覧を HTML の先頭で取り寄せ始める（オーナー「どんどん良くしてって」）: タイルは一覧が届くまで置けない。HTML の先頭の小さなスクリプトで取り寄せを始め、画面が受け取る（`shared/early-photos.ts`・`web/lib/early-photos.ts`）。試算で写真が見えるのが約0.5秒早い。`<link rel=preload as=fetch>` は Safari で二重取り寄せになったので使わない。正本: spec「Gallery の写真の一覧を HTML の先頭で取り寄せ始める」。
 
 ## Recorded State — 2026-10-01 JST / 公開サイトのズレの総点検
 

@@ -8,6 +8,7 @@ import { api, jsonOrThrow, prefetchSettings } from "./lib/api";
 import { seedBootSettings } from "./lib/boot-settings";
 import { ADMIN_DEMO_PREVIEW_PARAM } from "./lib/admin-demo-data";
 import { installAdminDemoFetch } from "./lib/admin-demo-fetch";
+import { loadPhotos } from "./lib/early-photos";
 
 const demoPreviewSeed = new URLSearchParams(window.location.search).get(
 	ADMIN_DEMO_PREVIEW_PARAM,
@@ -45,9 +46,10 @@ if (initialPath === "/gallery") {
 		queryFn: async () => jsonOrThrow(await api.categories.$get()),
 		staleTime: 5 * 60_000,
 	});
+	// HTML の先頭で始めた一覧の取り寄せ（shared/early-photos.ts）があれば、それを受け取る。
 	queryClient.prefetchQuery({
 		queryKey: ["photos"],
-		queryFn: async () => jsonOrThrow(await api.photos.$get()),
+		queryFn: loadPhotos,
 	});
 }
 if (initialPath === "/") {

@@ -26,6 +26,7 @@ import {
 import { contentTypeForStaticPath } from "./api/static-files";
 import { bootThemeStyle } from "./api/boot-style";
 import { bootSettingsScript } from "./api/boot-settings";
+import { earlyPhotosScript } from "./shared/early-photos";
 import {
   compressResponse,
   createCompressedAssetCache,
@@ -1049,11 +1050,20 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         "</head>",
         () => `  ${routePreload}\n  </head>`,
       );
-    // Gallery・トップの写真は HTML から先読みさせない（2026-10-02 にやめた）。
-    // 以前は先頭8枚を先読みさせていたが、並びがランダム・作品の写真を外す設定では
-    // 画面に出ない8枚（約620KB）を毎回読ませていた。画面と同じ8枚に直しても、
-    // Gallery の枠は書体が届くまで出ないため見えるのは早まらず、書体と回線を
-    // 取り合ってかえって約0.1秒遅れた（スマホ・4G 相当で各10回の中央値）。
+    // Gallery は写真の一覧（/api/photos）が届くまで1枚も置けない。画面のプログラムが
+    // 動いてから頼むと遅いので、HTML の先頭で取り寄せを始め、画面がその結果を使う
+    // （shared/early-photos.ts、2026-10-03）。スタイルシートより前に置かないと、
+    // スタイルシートが届くまで動かない。
+    //
+    // 写真そのものは HTML から先読みさせない（2026-10-02 にやめた）。以前は先頭8枚を
+    // 先読みさせていたが、並びがランダム・作品の写真を外す設定では画面に出ない8枚
+    // （約620KB）を毎回読ませていた。画面と同じ8枚に直しても、写真が一覧の取り寄せと
+    // 回線を取り合ってタイルを置くのが遅れ、見えるのはかえって約0.1秒遅かった。
+    if (routePathname === "/gallery")
+      injected = injected.replace(
+        '<meta charset="UTF-8" />',
+        (charset) => `${charset}\n    ${earlyPhotosScript()}`,
+      );
     const htmlStatus = serviceUnavailable
       ? 404
       : htmlStatusForSpaPath(routePathname, {

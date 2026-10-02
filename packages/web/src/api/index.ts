@@ -168,9 +168,11 @@ import { errorDetailsForLog } from "./error-log";
  * Gallery はこれが届くまで写真を1枚も置けない。
  *
  * 管理画面の書き込みが成功すると公開内容の版が進む（下の middleware）ので、版が変われば
- * 作り直す。DB を管理画面の外から書き換えた場合に備えて、60秒でも作り直す。
+ * 作り直す。公開側に書き込みの経路は無い。DB を管理画面の外から書き換えた場合に備えて、
+ * 10分でも作り直す。60秒にしていたが、訪問がまばらなサイトでは次の人が来るまでに切れて、
+ * 毎回作り直し（しばらく空いた後は約0.7秒）になっていた。
  */
-const PUBLIC_PHOTO_LIST_TTL_MS = 60_000;
+const PUBLIC_PHOTO_LIST_TTL_MS = 10 * 60_000;
 const publicPhotoList = (() => {
   let entry: { body: unknown; version: number; time: number } | null = null;
   return {

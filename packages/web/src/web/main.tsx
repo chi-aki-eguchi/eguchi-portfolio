@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./styles.css";
 import App from "./app.tsx";
 import { api, jsonOrThrow, prefetchSettings } from "./lib/api";
+import { seedBootSettings } from "./lib/boot-settings";
 import { ADMIN_DEMO_PREVIEW_PARAM } from "./lib/admin-demo-data";
 import { installAdminDemoFetch } from "./lib/admin-demo-fetch";
 
@@ -24,7 +25,9 @@ const queryClient = new QueryClient({
 	},
 });
 
-void prefetchSettings(queryClient);
+// サーバーが HTML に入れた設定があれば、取り寄せを待たずに使う（lib/boot-settings.ts）。
+// 管理画面の「見本のデータで見る」は見本の設定を返す仕組みなので、HTML の本物は使わない。
+if (demoPreviewSeed || !seedBootSettings(queryClient)) void prefetchSettings(queryClient);
 
 // 先読みも本文を読む前に応答を検証する（`jsonOrThrow`）。ここだけ素の
 // `.json()` だったため、APIが500を返すと `{error: "..."}` がそのまま

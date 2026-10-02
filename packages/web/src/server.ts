@@ -25,6 +25,7 @@ import {
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
 import { bootThemeStyle } from "./api/boot-style";
+import { bootSettingsScript } from "./api/boot-settings";
 import {
   compressResponse,
   createCompressedAssetCache,
@@ -142,6 +143,27 @@ async function getOgCard(): Promise<Buffer> {
   if (settingsVersion() !== version) return getOgCard();
   ogCardCache = generated;
   return generated;
+}
+
+// HTML に入れる設定（/api/settings と同じ中身、api/boot-settings.ts）。設定の版と 60 秒で控える。
+let bootSettingsCache: { json: string; time: number; version: number } | null = null;
+async function getBootSettingsJson(origin: string): Promise<string | null> {
+  const now = Date.now();
+  const version = settingsVersion();
+  if (bootSettingsCache && now - bootSettingsCache.time < SETTINGS_TTL && bootSettingsCache.version === version)
+    return bootSettingsCache.json;
+  try {
+    // 取り寄せ口そのものを呼ぶ。既定値の当て方まで同じになる。
+    const res = await app.fetch(new Request(`${origin}/api/settings`));
+    if (!res.ok) return null;
+    const json = await res.text();
+    const data: unknown = JSON.parse(json);
+    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+    bootSettingsCache = { json, time: now, version };
+    return json;
+  } catch {
+    return null;
+  }
 }
 
 async function getSettings(): Promise<Record<string, string>> {
@@ -567,6 +589,8 @@ function syncPublicContentCaches(): void {
   photoOgCache.clear();
   indexablePhotoIdCache = null;
   indexablePhotoIdCacheTime = 0;
+  // 管理画面の保存（設定以外の経路で設定が変わることもある）のあと、HTML に入れる設定も読み直す。
+  bootSettingsCache = null;
 }
 
 async function buildSitemap(fallbackOrigin: string): Promise<string> {
@@ -1081,6 +1105,10 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
     const bootStyle = routePathname.startsWith("/admin") ? "" : bootThemeStyle(settings);
     if (bootStyle)
       injected = injected.replace("</head>", () => `  ${bootStyle}\n  </head>`);
+    // 設定そのものも入れて、画面のプログラムが取り寄せを待たずに描けるように（boot-settings.ts）。
+    const bootSettings = routePathname.startsWith("/admin") ? null : await getBootSettingsJson(url.origin);
+    if (bootSettings)
+      injected = injected.replace("</head>", () => `  ${bootSettingsScript(bootSettings)}\n  </head>`);
     // その経路のチャンクを先読みさせる。lazy import なので、これが無いと
     // `index.js` が動くまで発見されない（実測で2波・往復1回ぶんの遅れ）。
     const routePreload = serviceUnavailable

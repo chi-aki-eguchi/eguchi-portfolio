@@ -1,6 +1,6 @@
 ## Current State — 2026-10-02 JST / PDF作品集の仕上がり
 
-- 2026-10-02 / Codex 収益再点検: 編集担当は主担当1名。既存 `work/five-income-site` を再利用。範囲は workroomの販売導線・準備ツールと写真セレクト便v1.1.1の候補公開。完成条件は見本・料金・受付の接続、入力を送信しないツールの実動作、PC/mobile・WebKit確認、pushと本番照合。実売上の獲得とは分ける。実装とChrome/Safari系の検証済み。製品5e94f7eをremote mainへpushし本番health5e94f7e7・60公開ファイル・写真用主要5ファイルと実画面を照合。BOOTHの2ZIP更新、ココナラ案件5303494への送信は具体的な許可待ち（応募には本人SMS認証も必要）。公開済みの実用ブログは819202。実受取は未達成。正本 docs/specs/income-growth-20261002.md。
+- 2026-10-02 / Codex 収益再点検: 編集担当は主担当1名。既存 `work/five-income-site` を再利用。範囲は workroomの販売導線・準備ツールと写真セレクト便v1.1.1の候補公開。完成条件は見本・料金・受付の接続、入力を送信しないツールの実動作、PC/mobile・WebKit確認、pushと本番照合。実売上の獲得とは分ける。実装とChrome/Safari系の検証済み。製品5e94f7eをremote mainへpushし本番health5e94f7e7・60公開ファイル・写真用主要5ファイルと実画面を照合。同日の追加許可と本人SMS認証後、BOOTHの製品・無料2ZIPを1.1.1へ公開保存し再取得一致を確認。案件5303494へ3万円・10/31予定の提案を送信（offer6453335）、先方返答待ち。公開済みの実用ブログは819202。実受取は未達成。正本 docs/specs/income-growth-20261002.md。
 
 
 - オーナー「他にない？PDF機能のデザインとかは？作れるPDFの質を向上させるとか」。正本: `docs/specs/visual-alignment-20261001.md`「PDF作品集の仕上がり」。

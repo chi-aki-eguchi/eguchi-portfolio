@@ -71,7 +71,7 @@ function workroomEvent(href, origin) {
   if(/\/(?:demo|review-sample|monthly-sample)\.html$/.test(u.pathname))return 'workroom_sample_open';
   if(u.pathname==='/workroom/site-brief.html')return 'workroom_brief_open';
  }
- if(u.hostname==='coconala.com'&&u.pathname==='/services/4429113')return 'workroom_marketplace_open';
+ if(u.hostname==='coconala.com'&&['/services/4429113','/services/4431355','/services/4431358','/services/4431363'].includes(u.pathname))return 'workroom_marketplace_open';
  return null;
 }
 

@@ -585,7 +585,7 @@ async function buildSitemap(fallbackOrigin: string): Promise<string> {
       ? ["/portfolio-kit", "/portfolio-kit/en", "/portfolio-kit/guide"]
       : []),
     ...(isServiceOwnerSite(siteUrl, "")
-      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html", "/tools/small-work/index.html", "/tools/small-work/ledger.html", "/tools/small-work/classroom.html", "/tools/small-work/gallery.html", "/tools/small-work/audit.html", "/workroom/index.html", "/workroom/review.html", "/workroom/monthly.html", "/workroom/notes.html", "/workroom/print-budget.html", "/workroom/photo-files.html", "/workroom/site-check.html", "/workroom/materials.html"]
+      ? ["/tools/photo-select-bin.html", "/tools/photo-select-bin/guide.html", "/tools/photo-select-bin/request.html", "/tools/small-work/index.html", "/tools/small-work/ledger.html", "/tools/small-work/classroom.html", "/tools/small-work/gallery.html", "/tools/small-work/audit.html", "/workroom/index.html", "/workroom/build.html", "/workroom/care.html", "/workroom/site-brief.html", "/workroom/exhibition-site.html", "/workroom/review.html", "/workroom/monthly.html", "/workroom/notes.html", "/workroom/print-budget.html", "/workroom/photo-files.html", "/workroom/site-check.html", "/workroom/materials.html"]
       : []),
   ];
   // Include each published series detail page so crawlers discover the actual

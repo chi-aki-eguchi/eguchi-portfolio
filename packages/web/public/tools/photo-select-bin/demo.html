@@ -81,9 +81,12 @@ button,.button,input,textarea,select{border-radius:2px}button,.button{font-size:
     if (typeof source !== 'string' || source.length > MAX_BYTES + 2 * 1024 * 1024) fail('案件ファイルが大きすぎます。');
     let json = source.trim();
     if (json.startsWith('<')) {
-      const matches = [...json.matchAll(/<script\s+id="photo-select-project"\s+type="application\/json">([\s\S]*?)<\/script>/g)];
+      // Match whole script elements first. The bundled program itself contains
+      // the HTML template, whose literal marker is not a second data element.
+      const matches = [...json.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+        .filter(match => /^\s+id="photo-select-project"\s+type="application\/json"\s*$/.test(match[1]));
       if (matches.length !== 1) fail('再開できる閲覧ファイルではありません。旧版では案件JSONを選んでください。');
-      json = matches[0][1];
+      json = matches[0][2];
     }
     return validateProject(JSON.parse(json), max);
   }

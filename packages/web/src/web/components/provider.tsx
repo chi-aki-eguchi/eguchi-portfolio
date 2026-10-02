@@ -539,6 +539,10 @@ export function Provider({ children }: ProviderProps) {
     // A3: font weights
     set("--hero-name-weight", data?.heroNameWeight);
     set("--body-weight", data?.bodyWeight);
+    // サーバーが最初の描画用に書いた太さ（api/boot-style.ts）は、ここで役目を終える。
+    // 残すと、管理画面で太さを空に戻したとき古い値が効き続ける。
+    // 設定が届いた（API は bodyWeight を必ず返す。空なら ""）ときだけ外す。
+    if (data?.bodyWeight !== undefined) document.getElementById("boot-theme")?.remove();
     // A1: letter-spacing
     set(
       "--hero-name-tracking",

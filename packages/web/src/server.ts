@@ -24,6 +24,7 @@ import {
   shouldRedirectEmptyWorkShelf,
 } from "./api/public-routes";
 import { contentTypeForStaticPath } from "./api/static-files";
+import { bootThemeStyle } from "./api/boot-style";
 import {
   compressResponse,
   createCompressedAssetCache,
@@ -1076,6 +1077,10 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         : undefined,
       heroPreloadAllowed(settings.heroRandom),
     );
+    // 文字の太さを最初の描画から設定どおりに（boot-style.ts）。管理画面は別の書体なので書かない。
+    const bootStyle = routePathname.startsWith("/admin") ? "" : bootThemeStyle(settings);
+    if (bootStyle)
+      injected = injected.replace("</head>", () => `  ${bootStyle}\n  </head>`);
     // その経路のチャンクを先読みさせる。lazy import なので、これが無いと
     // `index.js` が動くまで発見されない（実測で2波・往復1回ぶんの遅れ）。
     const routePreload = serviceUnavailable

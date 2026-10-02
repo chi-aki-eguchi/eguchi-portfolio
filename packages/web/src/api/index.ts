@@ -48,7 +48,10 @@ import {
   purgeDbThenStorage,
 } from "./photo-integrity";
 import { bumpSettingsVersion } from "./settings-version";
-import { bumpPublicContentVersion } from "../shared/public-content-version";
+import {
+  bumpPublicContentVersion,
+  publicContentVersion,
+} from "../shared/public-content-version";
 import {
   contactDefaultsFor,
   CONTACT_INTRO_DEFAULT,
@@ -156,6 +159,32 @@ import {
 import { buildShotAtPatchUpdate } from "./photo-shot-at-update";
 import { duplicatedPhotoValues } from "./photo-duplicate";
 import { errorDetailsForLog } from "./error-log";
+
+/**
+ * 公開の写真一覧（/api/photos、件数・ランダムの指定なし）の控え。
+ *
+ * 誰が見ても同じ中身なのに、毎回 DB を3回読んで写真の数だけ組み立てていた（本番
+ * 2026-10-03: 353枚・約250KB で、サーバーの処理だけで約0.24秒、しばらく空いた後は約0.7秒）。
+ * Gallery はこれが届くまで写真を1枚も置けない。
+ *
+ * 管理画面の書き込みが成功すると公開内容の版が進む（下の middleware）ので、版が変われば
+ * 作り直す。DB を管理画面の外から書き換えた場合に備えて、60秒でも作り直す。
+ */
+const PUBLIC_PHOTO_LIST_TTL_MS = 60_000;
+const publicPhotoList = (() => {
+  let entry: { body: unknown; version: number; time: number } | null = null;
+  return {
+    get(): unknown {
+      if (!entry) return null;
+      if (entry.version !== publicContentVersion()) return null;
+      if (Date.now() - entry.time >= PUBLIC_PHOTO_LIST_TTL_MS) return null;
+      return entry.body;
+    },
+    set(body: unknown, version: number) {
+      entry = { body, version, time: Date.now() };
+    },
+  };
+})();
 
 // Keep list responses stable when new database columns are added. The property
 // order matches schema.ts so existing JSON key order stays unchanged.
@@ -1530,48 +1559,63 @@ const app = new Hono()
         ? Math.min(rawLimit, includeUnpublished ? 1000 : 60)
         : null;
     const useRandomOrder = c.req.query("order") === "random" && limit !== null;
-    // 機能8: gallerySortOrder 設定に従って並び順を変える
-    const [[sortRow]] = [
-      await withRetry(() =>
-        db
-          .select({ value: schema.siteSettings.value })
-          .from(schema.siteSettings)
-          .where(eq(schema.siteSettings.key, "gallerySortOrder"))
-          .limit(1),
-      ),
-    ];
-    const gallerySortOrder = sortRow?.value ?? "manual";
-    const orderExpr = useRandomOrder
-      ? sql`random()`
-      : gallerySortOrder === "date_desc"
-        ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
-        : gallerySortOrder === "date_asc"
-          ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
-          : gallerySortOrder === "upload_desc"
-            ? sql`${schema.photos.createdAt} DESC`
-            : schema.photos.sortOrder;
-    const photos = await withRetry(() => {
-      const q = db
-        .select(PHOTO_LIST_COLUMNS)
-        .from(schema.photos)
-        .where(where)
-        .orderBy(orderExpr);
-      return limit ? q.limit(limit) : q;
-    });
-    // どのシリーズに入っているか（多対多、シリーズの並び順）。1回で全部読む。
-    const seriesByPhoto = await withRetry(() => membershipsByPhoto(db));
-    const withThumbs = photos.map((p) => ({
-      ...photoWithThumbs(p),
-      seriesIds: seriesByPhoto.get(p.id) ?? [],
-    }));
+    const loadList = async () => {
+      // 機能8: gallerySortOrder 設定に従って並び順を変える
+      const [[sortRow]] = [
+        await withRetry(() =>
+          db
+            .select({ value: schema.siteSettings.value })
+            .from(schema.siteSettings)
+            .where(eq(schema.siteSettings.key, "gallerySortOrder"))
+            .limit(1),
+        ),
+      ];
+      const gallerySortOrder = sortRow?.value ?? "manual";
+      const orderExpr = useRandomOrder
+        ? sql`random()`
+        : gallerySortOrder === "date_desc"
+          ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
+          : gallerySortOrder === "date_asc"
+            ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
+            : gallerySortOrder === "upload_desc"
+              ? sql`${schema.photos.createdAt} DESC`
+              : schema.photos.sortOrder;
+      const photos = await withRetry(() => {
+        const q = db
+          .select(PHOTO_LIST_COLUMNS)
+          .from(schema.photos)
+          .where(where)
+          .orderBy(orderExpr);
+        return limit ? q.limit(limit) : q;
+      });
+      // どのシリーズに入っているか（多対多、シリーズの並び順）。1回で全部読む。
+      const seriesByPhoto = await withRetry(() => membershipsByPhoto(db));
+      return photos.map((p) => ({
+        ...photoWithThumbs(p),
+        seriesIds: seriesByPhoto.get(p.id) ?? [],
+      }));
+    };
+    // 管理画面は `?all=1` で来るので、そちらは今までどおり全部返す（控えない）。
+    if (includeUnpublished) return c.json({ photos: await loadList() }, 200);
     // 公開サイトには管理用の列を送らない。実測（2026-08-08・写真497枚）で
     // この応答は 400KB / 2.6秒 あり、公開サイトはどのページでも最初にこれを
     // 待つ。内訳の上位が fileHash 38.8KB・mediumKey 25.3KB・thumbKey 24.8KB で、
     // どれも公開側は読んでいない（URLは photoWithThumbs が上で作り終えている）。
     // isPublished と deletedAt はこの分岐では常に true / null の定数。
-    // 管理画面は `?all=1` で来るので、そちらは今までどおり全部返す。
-    if (includeUnpublished) return c.json({ photos: withThumbs }, 200);
-    return c.json({ photos: withThumbs.map(toPublicPhoto) }, 200);
+    const toPublicBody = (list: Awaited<ReturnType<typeof loadList>>) => ({
+      photos: list.map(toPublicPhoto),
+    });
+    type PublicBody = ReturnType<typeof toPublicBody>;
+    // 件数・ランダムの指定が無い公開の一覧は、誰が見ても同じ。控えがあればそれを返す
+    // （publicPhotoList の説明）。版は組み立てを始める前に読む。途中で管理画面の書き込みが
+    // あれば、古い中身は古い版で控えられ、次の要求で作り直される。
+    const cacheable = !c.req.query("limit") && !c.req.query("order");
+    const cached = cacheable ? (publicPhotoList.get() as PublicBody | null) : null;
+    if (cached) return c.json(cached, 200);
+    const listVersion = publicContentVersion();
+    const body = toPublicBody(await loadList());
+    if (cacheable) publicPhotoList.set(body, listVersion);
+    return c.json(body, 200);
   })
 
   // 公開写真の件数だけ。**一覧そのものは返さない。**

@@ -162,8 +162,9 @@ describe("photo list columns", () => {
     });
 
     test("管理画面（?all=1）へは今までどおり全部返す", () => {
+      // 公開の一覧は控える（publicPhotoList）が、管理画面の一覧は控えず、剥がさずに返す。
       expect(source).toContain(
-        "if (includeUnpublished) return c.json({ photos: withThumbs }",
+        "if (includeUnpublished) return c.json({ photos: await loadList() }",
       );
     });
   });

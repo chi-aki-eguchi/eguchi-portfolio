@@ -1771,6 +1771,87 @@ test.describe("public-site — 作品と相談をつなぐ道", () => {
   });
 });
 
+test.describe("公開サイト — 月々点検の相談", () => {
+  test("冒頭の相談入口から端末内で相談文を作り、月額の相談先を示す", async ({ page }) => {
+    const runtimeProblems = collectPageRuntimeProblems(page);
+    const posted: string[] = [];
+    page.on("request", (request) => {
+      if (request.method() === "POST") posted.push(request.url());
+    });
+    await page.goto("/workroom/monthly.html", { waitUntil: "domcontentloaded" });
+    const copy = page.locator("[data-copy]");
+    const contact = page.locator("[data-contact]");
+    await expect(copy).toBeHidden();
+    await expect(contact).toBeHidden();
+    await page.getByRole("link", { name: "月々点検を相談する", exact: true }).click();
+    await expect(page).toHaveURL(/#consult$/);
+    await page.locator("#url").fill("https://example.com/");
+    await page.locator("#goal").fill("公開した案内から問い合わせへ進みやすくしたい");
+    await page.getByRole("button", { name: "相談文を作る", exact: true }).click();
+    await expect(copy).toBeVisible();
+    await expect(contact).toBeVisible();
+    await expect(contact).toHaveAttribute("href", "https://akieguchi.com/contact?inquiry=monthly-review");
+    await expect(page.locator("[data-status]")).toContainText("Message欄へ貼り付け");
+    await expect(page.locator("[data-request]")).toContainText("https://example.com/");
+    expect(posted).toEqual([]);
+    expect(runtimeProblems).toEqual([]);
+  });
+
+  test("持ち主の月額リンクは専用件名と案内へ進み、通常撮影も選び直せる", async ({ page }) => {
+    const runtimeProblems = collectPageRuntimeProblems(page);
+    const settings = { ...SYNTHETIC_SETTINGS, siteUrl: "https://akieguchi.com" };
+    const apiMocks = await installPublicApiMocks(page, settings);
+    // 設定がHTMLに入っていない環境でも、後から届く持ち主判定に追従する。
+    await page.route("**/api/settings**", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await fulfillJson(route, settings);
+    });
+    const posted: string[] = [];
+    await page.route("https://example.test/synthetic-contact", async (route) => {
+      posted.push(route.request().postData() ?? "");
+      await fulfillJson(route, { ok: true });
+    });
+    await page.goto("/contact?inquiry=monthly-review", { waitUntil: "domcontentloaded" });
+    const subject = page.locator("#contact-subject");
+    const hint = page.locator("[data-contact-hint]");
+    await expect(subject).toHaveValue("月々点検について");
+    await expect(hint).toContainText("公開サイトのURL");
+    await expect(page.locator("[data-contact-pricing]")).toHaveCount(0);
+    await expect(page.locator("#photography-inquiry-heading")).toHaveCount(0);
+    await page.locator("#contact-message").fill("人工データの点検相談");
+    await subject.selectOption("Shooting");
+    await expect(hint).toContainText("用途");
+    await expect(page.locator("#contact-message")).toHaveValue("人工データの点検相談");
+    await subject.selectOption("月々点検について");
+    await page.locator("#contact-name").fill("Synthetic review");
+    await page.locator("#contact-email").fill("review@example.test");
+    await page.locator('button[type="submit"]').click();
+    await expect(page.getByRole("button", { name: "Send another" })).toBeVisible();
+    expect(posted).toHaveLength(1);
+    expect(posted[0]).toContain("月々点検について");
+    await page.getByRole("button", { name: "Send another" }).click();
+    await expect(subject).toHaveValue("月々点検について");
+    await expect(hint).toContainText("公開サイトのURL");
+    await page.goto("/en/contact?inquiry=monthly-review", { waitUntil: "domcontentloaded" });
+    await expect(subject).toHaveValue("Monthly site review");
+    await expect(hint).toContainText("public site URL");
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+    expect(runtimeProblems).toEqual([]);
+  });
+
+  test("購入者のサイトでは月額queryが件名や撮影の案内を変えない", async ({ page }) => {
+    const apiMocks = await installPublicApiMocks(page, { ...SYNTHETIC_SETTINGS, siteUrl: "https://buyer.example.test" });
+    for (const path of ["/contact?inquiry=monthly-review", "/en/contact?inquiry=monthly-review"]) {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(page.locator("#contact-subject")).toHaveValue("");
+      await expect(page.locator('#contact-subject option[value="月々点検について"], #contact-subject option[value="Monthly site review"]')).toHaveCount(0);
+      await expect(page.locator("[data-contact-hint]")).not.toContainText("public site URL");
+      await expect(page.locator("[data-contact-hint]")).not.toContainText("公開サイトのURL");
+    }
+    expect(apiMocks.unexpectedRequests).toEqual([]);
+  });
+});
+
 test.describe("公開サイト — 相談の画面に別の事業を重ねない", () => {
   // 2026-09-19 実測（390px の本番 /contact）: 送信ボタン y=1013 の 48px 下に
   // 「FOR PHOTOGRAPHERS／ポートフォリオ制作・料金を見る」が出ていた。頼もうと

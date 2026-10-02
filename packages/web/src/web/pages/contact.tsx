@@ -13,6 +13,8 @@ import {
 } from "../../shared/contact-settings";
 import { photographyInquiryFor } from "../../shared/photography-inquiry";
 import { isPortfolioKitSubject } from "../../shared/contact-defaults";
+import { isServiceOwnerSite } from "../../shared/service-visibility";
+import { monthlyReviewRequested, monthlyReviewSubject } from "../../shared/monthly-review-inquiry";
 import { buildFailoverMailto } from "../../shared/contact-failover";
 import { sendAnalyticsEvent } from "../lib/analytics";
 import { useSeriesDetail } from "../hooks/useSeriesDetail";
@@ -146,13 +148,27 @@ export default function ContactPage({
     queryFn: async () => jsonOrThrow(await api.pricing.$get()),
   });
   const plans = pricingData?.plans ?? [];
-  const photographyInquiry = photographyInquiryFor(data?.siteUrl, english);
 
   // 作品ページから「この作品について相談する」で来たときの参考作品。
   // URL に載っているのは公開作品の識別子だけで、氏名・メール・本文は載らない。
   // 引き直して**公開されている作品のときだけ**出す。読めない識別子・非公開・
   // 存在しない slug は、ただの Contact として扱う（何も出さない）。
   const search = useSearch();
+  const serviceOwner = isServiceOwnerSite(
+    data?.siteUrl,
+    typeof window === "undefined" ? undefined : window.location.hostname,
+  );
+  const monthlySubject = monthlyReviewSubject(language);
+  const monthlyRequested = monthlyReviewRequested(search, serviceOwner);
+  const [subject, setSubject] = useState("");
+  // Settings may arrive after the first render. Keep the select and its guide in sync.
+  useEffect(() => {
+    setSubject(monthlyRequested ? monthlySubject : "");
+  }, [monthlyRequested, monthlySubject]);
+  const monthlyInquiry = serviceOwner && subject === monthlySubject;
+  const photographyInquiry = monthlyInquiry
+    ? null
+    : photographyInquiryFor(data?.siteUrl, english);
   const referenceSlug = workSlugFromSearch(search);
   // 外したことは「どの作品を外したか」で覚える。真偽値だと、別の作品から
   // 来たときに外したままになる。
@@ -181,7 +197,7 @@ export default function ContactPage({
     : "";
   // Pricing does not have separate EN fields yet. Do not put a Japanese plan
   // card into the English route; an English-authored plan still renders.
-  const visiblePlans = english
+  const visiblePlans = monthlyInquiry ? [] : english
     ? plans.filter((plan) =>
         [plan.title, plan.description, plan.features, plan.note].every(
           (text) => !CJK_TEXT.test(text ?? ""),
@@ -197,7 +213,11 @@ export default function ContactPage({
   // the page non-empty, but produced a mixed-language enquiry form. Use neutral
   // English guidance instead. Location names are translated only when their
   // Japanese source is actually configured below.
-  const intro = english
+  const intro = monthlyInquiry
+    ? english
+      ? "For a monthly site review, share your public site URL and what you would like to check."
+      : "月々点検のご相談は、公開しているサイトのURLと目的・困りごとをお知らせください。"
+    : english
     ? data
       ? englishOnly(data.contactIntroEn) ||
         "For assignments, interviews, or collaborations, feel free to get in touch."
@@ -209,12 +229,12 @@ export default function ContactPage({
         "You are welcome to write even if the details are still taking shape."
       : ""
     : data?.contactNote;
-  const flow = english
+  const flow = monthlyInquiry ? "" : english
     ? englishOnly(data?.contactFlowEn)
     : data?.contactFlow;
   // 撮影を受ける地域。頼む側がいちばん先に知りたいことで、かつ検索で
   // 実際に打たれる言葉（地名）でもある。空なら節ごと出さない。
-  const areas = english
+  const areas = monthlyInquiry ? "" : english
     ? englishOnly(data?.contactAreasEn) || englishAreasFrom(data?.contactAreas)
     : data?.contactAreas;
   const englishWelcome = english
@@ -235,20 +255,25 @@ export default function ContactPage({
   const formMessage = english
     ? englishInline(data?.contactFormMessage, "Message")
     : data?.contactFormMessage ?? "Message";
-  const messagePlaceholder = english
+  const messagePlaceholder = monthlyInquiry
+    ? english
+      ? "Public site URL / pages to review / purpose or concern"
+      : "公開サイトのURL / 点検したいページ / 目的・困りごと"
+    : english
     ? englishInline(
         data?.contactMessagePlaceholder,
         "Tell me about the project, preferred date and location, and any visual references.",
       )
     : data?.contactMessagePlaceholder || undefined;
-  const subjectOptions = subjectOptionsFor(
+  const configuredSubjectOptions = subjectOptionsFor(
     data?.contactSubjectOptions,
     language,
   );
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // 件名は非制御のままにして、書く案内を出し分けるためだけに写しを持つ。
-  const [subject, setSubject] = useState("");
+  const subjectOptions = serviceOwner
+    ? [...new Set([...configuredSubjectOptions, monthlySubject])]
+    : configuredSubjectOptions;
   // 失敗したときだけ組み立てる mailto。書いた本文をそのまま持っていける形に
   // する（もう一度打ち直させない）。フォームは非制御なので、送信時の
   // FormData から作って持っておく。
@@ -342,7 +367,11 @@ export default function ContactPage({
   // 撮影の相談とサイト制作（Portfolio Kit）の相談では、書いてほしいことが違う。
   // **切り替えるのはこの案内だけ**で、欄も必須項目も増やさない。
   const kitSubject = isPortfolioKitSubject(subject);
-  const messageGuide = english
+  const messageGuide = monthlyInquiry
+    ? english
+      ? "Share the public site URL, up to three pages to review, and your purpose or concern. Paste your prepared consultation text here, if any. No passwords or private customer information are needed."
+      : "公開サイトのURL・点検したい3ページまで・目的や困りごと。作成した相談文があれば、この欄へ貼り付けてください。パスワードや非公開の顧客情報は不要です。"
+    : english
     ? kitSubject
       ? "Your current site (if any), roughly how many photos, and when you would like to publish. \u201CNot decided yet\u201D is a fine answer."
       : "What the photos are for, rough timing, location, and any work of mine you have in mind. \u201CNot decided yet\u201D is a fine answer."
@@ -750,6 +779,7 @@ export default function ContactPage({
             <button
               onClick={() => {
                 focusNameOnIdleRef.current = true;
+                setSubject(monthlyRequested ? monthlySubject : "");
                 setStatus("idle");
               }}
               className="mt-6 font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[color:var(--text-quiet)] transition-colors duration-300"
@@ -854,6 +884,7 @@ export default function ContactPage({
               <select
                 id="contact-subject"
                 name="subject"
+                value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 className={`${inputCls(false)} cursor-pointer appearance-none pr-9`}
                 style={{

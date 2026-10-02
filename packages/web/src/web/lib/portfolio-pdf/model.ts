@@ -37,6 +37,8 @@ export type PortfolioDocument = {
   orientation: "portrait" | "landscape";
   cover: { name: string; itemId: string | null };
   pdfProfile: { enabled: boolean; text: string; contact: string };
+  /** 写真集の最後に作品一覧を載せるか（無い・true なら載せる）。2026-10-02 追加。 */
+  plateList?: boolean;
   items: Item[];
   pages: BookPage[];
 };
@@ -149,7 +151,8 @@ export function parseBook(raw: unknown): PortfolioDocument {
     !object(raw.pdfProfile) ||
     typeof raw.pdfProfile.enabled !== "boolean" ||
     !str(raw.pdfProfile.text) ||
-    !str(raw.pdfProfile.contact, 2000)
+    !str(raw.pdfProfile.contact, 2000) ||
+    (raw.plateList !== undefined && typeof raw.plateList !== "boolean")
   )
     return fail();
   if (
@@ -218,8 +221,24 @@ export function parseBook(raw: unknown): PortfolioDocument {
     purpose: raw.purpose ?? "submission",
   } as PortfolioDocument;
 }
+/**
+ * 写真集の作品一覧に載せる作品と、そのページ番号（2026-10-02）。写真集は作品のページに
+ * 文字を載せないので、作品名・制作年・技法を最後にまとめる（写真集のふつうの作り）。
+ * どれも入っていない作品は載せない。提出用は各ページに載るので一覧は作らない。
+ */
+export function plateEntries(b: PortfolioDocument) {
+  if (b.purpose !== "photobook" || b.plateList === false) return [];
+  return b.pages.flatMap((p, n) =>
+    p.itemIds.flatMap((id) => {
+      const item = b.items.find((i) => i.id === id);
+      return item && [item.title, item.year, item.technique].some((v) => v.trim())
+        ? [{ page: n + 2, item }]
+        : [];
+    }),
+  );
+}
 export const pageCount = (b: PortfolioDocument) =>
-  1 + b.pages.length + Number(b.pdfProfile.enabled);
+  1 + b.pages.length + Number(plateEntries(b).length > 0) + Number(b.pdfProfile.enabled);
 
 /**
  * 保存する PDF の名前（2026-10-02）。受け取った人の手元で誰の何か分かるよう、氏名を先に。

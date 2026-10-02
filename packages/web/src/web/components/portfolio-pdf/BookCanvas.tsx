@@ -3,30 +3,49 @@ import fontkit from "@pdf-lib/fontkit";
 import {
   layoutBook,
   TONE_RGB,
+  type Face,
+  type Fonts,
   type Measure,
   type Sheet,
   type ImageSizes,
   type Tone,
 } from "../../lib/portfolio-pdf/layout";
 import type { PortfolioDocument } from "../../lib/portfolio-pdf/model";
-let fontPromise: Promise<Measure> | undefined;
+import { PDF_FONTS } from "../../lib/portfolio-pdf/client";
+// PDF と同じフォントで測り、同じフォントで描く（ゴシックと、題の明朝）。
+const FAMILY: Record<Face, string> = {
+  sans: "PortfolioPaper",
+  serif: "PortfolioPaperSerif",
+};
+async function loadFace(url: string, family: string) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("文字のプレビューを読み込めません");
+  const buffer = await response.arrayBuffer();
+  const font = fontkit.create(new Uint8Array(buffer));
+  document.fonts.add(await new FontFace(family, buffer).load());
+  const measure: Measure = {
+    widthOfTextAtSize: (value: string, size: number) =>
+      (font
+        .layout(value)
+        .glyphs.reduce((sum, glyph) => sum + glyph.advanceWidth, 0) /
+        font.unitsPerEm) *
+      size,
+  };
+  return {
+    ...measure,
+    supports: (value: string) =>
+      Array.from(value).every(
+        (c) => c === "\n" || c === "\r" || font.hasGlyphForCodePoint(c.codePointAt(0)!),
+      ),
+  };
+}
+let fontPromise: Promise<Fonts> | undefined;
 function loadMeasure() {
-  return (fontPromise ??= fetch("/fonts/pdf/NotoSansJP-Regular.ttf")
-    .then(async (response) => {
-      if (!response.ok) throw new Error("文字のプレビューを読み込めません");
-      const buffer = await response.arrayBuffer();
-      const font = fontkit.create(new Uint8Array(buffer));
-      const face = await new FontFace("PortfolioPaper", buffer).load();
-      document.fonts.add(face);
-      return {
-        widthOfTextAtSize: (value: string, size: number) =>
-          (font
-            .layout(value)
-            .glyphs.reduce((sum, glyph) => sum + glyph.advanceWidth, 0) /
-            font.unitsPerEm) *
-          size,
-      };
-    })
+  return (fontPromise ??= Promise.all([
+    loadFace(PDF_FONTS.sans, FAMILY.sans),
+    loadFace(PDF_FONTS.serif, FAMILY.serif),
+  ])
+    .then(([sans, serif]): Fonts => ({ sans, serif }))
     .catch((error) => {
       fontPromise = undefined;
       throw error;
@@ -50,7 +69,7 @@ export function Paper({
     <svg
       viewBox={`0 0 ${sheet.width} ${sheet.height}`}
       className="pdf-paper"
-      aria-label={`${sheet.id === "cover" ? "表紙" : sheet.id === "profile" ? "プロフィール" : "作品ページ"}の配置`}
+      aria-label={`${sheet.id === "cover" ? "表紙" : sheet.id === "profile" ? "プロフィール" : sheet.id === "plates" ? "作品一覧" : "作品ページ"}の配置`}
     >
       <rect width={sheet.width} height={sheet.height} fill="white" />
       {sheet.photos.map((box, n) => {
@@ -83,7 +102,7 @@ export function Paper({
           x={t.x}
           y={t.top + t.size}
           fontSize={t.size}
-          fontFamily="PortfolioPaper"
+          fontFamily={FAMILY[t.face]}
           fill={toneFill(t.tone)}
           onClick={() => t.itemId && onItem?.(t.itemId)}
           style={{ cursor: t.itemId && onItem ? "pointer" : undefined }}
@@ -113,7 +132,7 @@ export default function BookCanvas({
   onItem: (id: string) => void;
   disabled: boolean;
 }) {
-  const [font, setFont] = useState<Measure | null>(null),
+  const [font, setFont] = useState<Fonts | null>(null),
     [error, setError] = useState("");
   const [sizes, setSizes] = useState<ImageSizes>(new Map());
   const sources = book.items.map((i) => `${i.id}:${i.sourcePhotoId}`).join(",");
@@ -176,7 +195,9 @@ export default function BookCanvas({
             aria-label={`${n + 1}ページを編集`}
             aria-current={n === index ? "page" : undefined}
             disabled={disabled}
-            draggable={!disabled && p.id !== "cover" && p.id !== "profile"}
+            draggable={
+              !disabled && p.id !== "cover" && p.id !== "profile" && p.id !== "plates"
+            }
             onDragStart={(e) => {
               setDragged(n - 1);
               e.dataTransfer.effectAllowed = "move";
@@ -212,7 +233,9 @@ export default function BookCanvas({
                 ? " 表紙"
                 : p.id === "profile"
                   ? " プロフィール"
-                  : ""}
+                  : p.id === "plates"
+                    ? " 作品一覧"
+                    : ""}
             </span>
           </button>
         ))}

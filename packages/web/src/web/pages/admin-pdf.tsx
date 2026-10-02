@@ -8,6 +8,7 @@ import {
   pageCount,
   parseBook,
   pdfFileName,
+  plateEntries,
   removeItem,
   STORAGE_KEY,
   type Item,
@@ -78,7 +79,9 @@ export default function AdminPdfPage() {
     ? active
     : active === "profile" && book.pdfProfile.enabled
       ? "profile"
-      : "cover";
+      : active === "plates" && plateEntries(book).length
+        ? "plates"
+        : "cover";
   const resetHistory = () => {
     setUndo([]);
     setRedo([]);
@@ -490,7 +493,7 @@ export default function AdminPdfPage() {
             <span className="pdf-note">
               {book.purpose === "submission"
                 ? "作品情報を載せる。説明の長さに合わせて写真を配置します。"
-                : "写真を大きく。作品情報は保存したまま、写真とページの説明だけを載せます。"}
+                : "写真を大きく。作品のページには写真とページの説明だけを載せ、作品名・制作年・技法は最後の作品一覧にまとめます。"}
             </span>
             <button
               disabled={busy || !undo.length}
@@ -541,7 +544,11 @@ export default function AdminPdfPage() {
               />
               <div className="pdf-inspector">
                 <details
-                  open={activePage === "cover" || activePage === "profile"}
+                  open={
+                    activePage === "cover" ||
+                    activePage === "profile" ||
+                    activePage === "plates"
+                  }
                   className="pdf-book-settings"
                 >
                   <summary>本の設定・表紙・プロフィール</summary>
@@ -610,6 +617,24 @@ export default function AdminPdfPage() {
                         </select>
                       </label>
                     </section>
+                    {book.purpose === "photobook" && (
+                      <section>
+                        <h2>作品一覧</h2>
+                        <label className="pdf-check">
+                          <input
+                            type="checkbox"
+                            checked={book.plateList !== false}
+                            onChange={(e) =>
+                              edit({ ...book, plateList: e.target.checked })
+                            }
+                          />
+                          最後に作品一覧を載せる
+                        </label>
+                        <p className="pdf-note">
+                          作品名・制作年・技法のある写真を、ページ番号と並べます。
+                        </p>
+                      </section>
+                    )}
                     <section>
                       <h2>プロフィール</h2>
                       <label className="pdf-check">
@@ -678,17 +703,24 @@ export default function AdminPdfPage() {
                       ? "表紙"
                       : activePage === "profile"
                         ? "プロフィール"
-                        : "ページの配置"}
+                        : activePage === "plates"
+                          ? "作品一覧"
+                          : "ページの配置"}
                   </h2>
                   {book.purpose === "photobook" && (
                     <p className="pdf-note">
-                      写真集に載る文章は「ページの説明」です。作品タイトル・制作年・技法・作品説明は保持され、提出用に切り替えると表示されます。
+                      写真集では、作品のページに載る文章は「ページの説明」だけです。作品タイトル・制作年・技法は最後の作品一覧に載り、作品説明は提出用に切り替えると表示されます。
                     </p>
                   )}
 
                   {activePage === "cover" && (
                     <p className="pdf-note">
                       「写真を選ぶ」から作品を加えると、ページが増えていきます。
+                    </p>
+                  )}
+                  {activePage === "plates" && (
+                    <p className="pdf-note">
+                      作品名・制作年・技法は、各ページの「作品情報」で直せます。一覧の作品を押すと、そのページへ移ります。
                     </p>
                   )}
                   {book.pages.map((p, index) =>
@@ -876,7 +908,7 @@ export default function AdminPdfPage() {
                                         `写真 ${p.itemIds.indexOf(id) + 1}`}{" "}
                                       — 作品情報
                                       {book.purpose === "photobook"
-                                        ? "（提出用で表示）"
+                                        ? "（作品一覧に載る）"
                                         : ""}
                                     </summary>
                                     <label>

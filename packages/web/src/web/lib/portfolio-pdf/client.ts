@@ -1,6 +1,11 @@
 import subsetWasmUrl from "harfbuzzjs/dist/harfbuzz-subset.wasm?url";
 import type { PortfolioDocument, SourcePhoto } from "./model";
 import type { PdfAsset, PdfResult } from "./render";
+/** PDF の書体。本文はゴシック、題と作品名はサイトと同じしっぽり明朝（編集画面の見本も同じ物）。 */
+export const PDF_FONTS = {
+  sans: "/fonts/pdf/NotoSansJP-Regular.ttf",
+  serif: "/fonts/pdf/ShipporiMincho-Medium.ttf",
+} as const;
 export async function readJson<T>(url: string): Promise<T> {
   const r = await fetch(url, {
     credentials: "same-origin",
@@ -29,16 +34,19 @@ export async function generate(
         `作品 ${index + 1} の保存画像が削除・変更されています。写真を選び直してください`,
       );
   }
-  // フォントと、フォントを使う文字だけに減らす道具は、写真と同時に読み始める。
-  // 道具が読めなければ元のフォントのまま作る。
-  const fontRequest = fetch("/fonts/pdf/NotoSansJP-Regular.ttf", { signal }).then(
-    async (r) => {
+  // フォント（本文のゴシックと、題の明朝）と、フォントを使う文字だけに減らす道具は、
+  // 写真と同時に読み始める。道具が読めなければ元のフォントのまま作る。
+  const loadFont = (url: string) => {
+    const request = fetch(url, { signal }).then(async (r) => {
       if (!r.ok)
         throw new Error("日本語フォントを読み込めません。再試行してください");
       return new Uint8Array(await r.arrayBuffer());
-    },
-  );
-  fontRequest.catch(() => {});
+    });
+    request.catch(() => {});
+    return request;
+  };
+  const fontRequest = loadFont(PDF_FONTS.sans);
+  const serifRequest = loadFont(PDF_FONTS.serif);
   const wasmRequest = fetch(subsetWasmUrl, { signal })
     .then(async (w) => (w.ok ? new Uint8Array(await w.arrayBuffer()) : undefined))
     .catch(() => undefined);
@@ -81,6 +89,7 @@ export async function generate(
     }),
   );
   const fontBytes = await fontRequest;
+  const serifBytes = await serifRequest;
   const subsetWasm = await wasmRequest;
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {
@@ -118,6 +127,6 @@ export async function generate(
         else reject(new Error(data.message));
       }
     };
-    worker.postMessage({ book, assets, fontBytes, quality, subsetWasm });
+    worker.postMessage({ book, assets, fontBytes, serifBytes, quality, subsetWasm });
   });
 }

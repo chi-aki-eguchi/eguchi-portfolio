@@ -571,3 +571,123 @@ describe("受け取った人が使いやすい PDF", () => {
     expect((second.lookup(PDFName.of("Title")) as PDFHexString).decodeText()).toBe("2ページ");
   });
 });
+
+describe("題と作品名の明朝、写真集の作品一覧", () => {
+  const sans = { widthOfTextAtSize: (s: string, size: number) => Array.from(s).length * size };
+  // 明朝に「𠮷」が無いことにして、無い字を含む題はゴシックへ回ることを確かめる。
+  const fonts = {
+    sans,
+    serif: { ...sans, supports: (s: string) => !s.includes("𠮷") },
+  };
+  test("表紙の題と作品名だけ明朝。名前・制作年・説明・番号はゴシック。明朝に無い字の題はゴシックへ", async () => {
+    const { layoutBook } = await import("./layout");
+    const b = make();
+    b.title = "港の朝";
+    b.cover.name = "江口秋";
+    b.cover.itemId = b.items[0].id;
+    b.items[0].year = "2026";
+    const [cover, work] = layoutBook(b, fonts);
+    const face = (sheet: typeof cover, value: string) =>
+      sheet.texts.find((t) => t.value === value)?.face;
+    expect(face(cover, "港の朝")).toBe("serif");
+    expect(face(cover, "江口秋")).toBe("sans");
+    expect(face(work, source.title)).toBe("serif");
+    expect(face(work, "2026")).toBe("sans");
+    expect(face(work, source.description)).toBe("sans");
+    expect(face(work, "2")).toBe("sans");
+    b.title = "𠮷の朝";
+    expect(face(layoutBook(b, fonts)[0], "𠮷の朝")).toBe("sans");
+    // 明朝が無いとき（古い呼び方）はすべてゴシック。
+    expect(layoutBook(b, sans).every((s) => s.texts.every((t) => t.face === "sans"))).toBe(true);
+  });
+  test("写真集は最後に作品一覧。番号・作品名・制作年と技法を1行に。載せない設定・提出用では作らない", async () => {
+    const { layoutBook } = await import("./layout");
+    const { pageCount, plateEntries } = await import("./model");
+    let b = make();
+    for (let id = 2; id <= 3; id++) b = addPhoto(b, { ...source, id, title: id === 3 ? "" : `作品${id}` });
+    b.purpose = "photobook";
+    b.pdfProfile = { enabled: true, text: "写真の記録です。", contact: "" };
+    b.items[0].year = "2026";
+    b.items[0].technique = "インクジェットプリント";
+    b.items[2].year = "2025";
+    const sheets = layoutBook(b, fonts);
+    expect(sheets.map((s) => s.id)).toEqual(["cover", ...b.pages.map((p) => p.id), "plates", "profile"]);
+    expect(pageCount(b)).toBe(sheets.length);
+    expect(plateEntries(b).map((e) => e.page)).toEqual([2, 3, 4]);
+    const plates = sheets.find((s) => s.id === "plates")!;
+    const row = (id: string) => plates.texts.filter((t) => t.itemId === id);
+    const [num, title, meta] = row(b.items[0].id);
+    expect([num.value, title.value, meta.value]).toEqual(["2", source.title, "2026 / インクジェットプリント"]);
+    expect([num.face, title.face, meta.face]).toEqual(["sans", "serif", "sans"]);
+    expect([num.tone, title.tone, meta.tone]).toEqual(["faint", "ink", "quiet"]);
+    // 同じ行（ベースラインがそろう）で、制作年は作品名の後ろ。
+    expect(meta.top + meta.size).toBeCloseTo(title.top + title.size);
+    expect(meta.x).toBeGreaterThan(title.x);
+    expect(num.x + sans.widthOfTextAtSize("2", num.size)).toBeLessThan(title.x);
+    // 作品名の無い作品は、番号と制作年だけ。
+    expect(row(b.items[2].id).map((t) => t.value)).toEqual(["4", "2025"]);
+    b.plateList = false;
+    expect(layoutBook(b, fonts).some((s) => s.id === "plates")).toBe(false);
+    expect(pageCount(b)).toBe(layoutBook(b, fonts).length);
+    b.plateList = true;
+    b.purpose = "submission";
+    expect(layoutBook(b, fonts).some((s) => s.id === "plates")).toBe(false);
+  });
+  test("20作品の長い題でも、作品一覧は紙の中に収まる（横向きは2列）", async () => {
+    const { layoutBook } = await import("./layout");
+    for (const orientation of ["portrait", "landscape"] as const) {
+      let b = createBook();
+      for (let id = 1; id <= 20; id++)
+        b = addPhoto(b, { ...source, id, title: `とても長い作品の題名をつけた写真 その${id}` });
+      b.items.forEach((i) => ((i.year = "2026"), (i.technique = "ゼラチンシルバープリント")));
+      b.purpose = "photobook";
+      b.orientation = orientation;
+      const plates = layoutBook(b, fonts).find((s) => s.id === "plates")!;
+      expect(plates.issues).toEqual([]);
+      expect(plates.texts.filter((t) => t.face === "serif")).toHaveLength(20);
+      // 一覧の行（ページ番号は下の余白に置くので除く）。
+      for (const t of plates.texts.filter((t) => t.itemId)) {
+        expect(t.top + t.lines.length * t.leading).toBeLessThanOrEqual(plates.height - 34.016 + 0.01);
+        for (const line of t.lines)
+          expect(t.x + sans.widthOfTextAtSize(line, t.size)).toBeLessThanOrEqual(plates.width - 34.016 + 0.01);
+      }
+    }
+  });
+  test("PDF には書体ごとに使う字だけを入れ、明朝の字形は元のしっぽり明朝のまま。しおりに作品一覧", async () => {
+    const serif = new Uint8Array(
+      readFileSync(new URL("../../../../public/fonts/pdf/ShipporiMincho-Medium.ttf", import.meta.url)),
+    );
+    const b = make();
+    b.title = "光のあと";
+    b.cover.name = "江口秋";
+    b.items[0].year = "2026";
+    b.purpose = "photobook";
+    const r = await renderPortfolio(b, [{ id: b.items[0].id, bytes: jpeg }], font, () => {}, {
+      subsetWasm,
+      serifBytes: serif,
+    });
+    expect(r.issues.filter((i) => i.severity === "error")).toEqual([]);
+    const pdf = await PDFDocument.load(r.bytes!);
+    const files = pdf.context
+      .enumerateIndirectObjects()
+      .map(([, o]) => o)
+      .filter((o): o is PDFDict => o instanceof PDFDict && o.get(PDFName.of("Type")) === PDFName.of("FontDescriptor"))
+      .map((d) => decodePDFRawStream(d.lookup(PDFName.of("FontFile2")) as PDFRawStream).decode());
+    expect(files).toHaveLength(2);
+    for (const f of files) expect(f.length).toBeLessThan(100_000);
+    const full = fontkit.create(serif);
+    const sub = files.map((f) => fontkit.create(f)).find((f) => (f.familyName ?? "").includes("Shippori"))!;
+    for (const c of new Set(Array.from(`${b.title}${source.title}`))) {
+      const cp = c.codePointAt(0)!;
+      expect(sub.glyphForCodePoint(cp).path.toSVG()).toBe(full.glyphForCodePoint(cp).path.toSVG());
+      expect(sub.glyphForCodePoint(cp).advanceWidth).toBe(full.glyphForCodePoint(cp).advanceWidth);
+    }
+    const titles: string[] = [];
+    let item = pdf.catalog.lookup(PDFName.of("Outlines"), PDFDict).lookup(PDFName.of("First")) as PDFDict | undefined;
+    while (item) {
+      titles.push((item.lookup(PDFName.of("Title")) as PDFHexString).decodeText());
+      item = item.lookup(PDFName.of("Next")) as PDFDict | undefined;
+    }
+    expect(titles).toEqual(["表紙", "2ページ", "作品一覧"]);
+  });
+});

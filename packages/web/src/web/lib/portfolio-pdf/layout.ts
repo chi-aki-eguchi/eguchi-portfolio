@@ -1,4 +1,4 @@
-import type { PortfolioDocument } from "./model";
+import { plateEntries, type PortfolioDocument } from "./model";
 import { hasJapanese, jaPhrases } from "../ja-phrases";
 export type Measure = {
   widthOfTextAtSize: (text: string, size: number) => number;
@@ -15,6 +15,16 @@ export const TONE_RGB: Record<Tone, readonly [number, number, number]> = {
   quiet: [0.4, 0.4, 0.4],
   faint: [0.58, 0.58, 0.58],
 };
+/** 書体。題と作品名は明朝（サイトと同じしっぽり明朝）、ほかはゴシック（2026-10-02）。 */
+export type Face = "sans" | "serif";
+/**
+ * 文字の幅を測る物。serif が無ければすべてゴシックで組む。明朝に無い字を含む文は
+ * ゴシックで組む（supports で確かめる）ので、プレビューと PDF の組みは同じになる。
+ */
+export type Fonts = {
+  sans: Measure;
+  serif?: Measure & { supports?: (text: string) => boolean };
+};
 export type TextBlock = {
   value: string;
   lines: string[];
@@ -23,6 +33,7 @@ export type TextBlock = {
   size: number;
   leading: number;
   tone: Tone;
+  face: Face;
   itemId?: string;
 };
 export type PhotoBox = {
@@ -161,13 +172,27 @@ export function fitImage(
 }
 /** Shared point-based layout for SVG editing and PDF output. No image cropping. */
 export type ImageSizes = ReadonlyMap<string, { width: number; height: number }>;
-type Run = { value: string; size: number; leading: number; tone: Tone; gapBefore: number };
+type Run = {
+  value: string;
+  size: number;
+  leading: number;
+  tone: Tone;
+  gapBefore: number;
+  face?: Face;
+};
 
 export function layoutBook(
   book: PortfolioDocument,
-  font: Measure,
+  font: Measure | Fonts,
   sizes: ImageSizes = new Map(),
 ): Sheet[] {
+  const fonts: Fonts = "sans" in font ? font : { sans: font };
+  const faceOf = (value: string, want: Face = "sans"): Face =>
+    want === "serif" && fonts.serif && (fonts.serif.supports?.(value) ?? true)
+      ? "serif"
+      : "sans";
+  const measureOf = (face: Face): Measure =>
+    (face === "serif" && fonts.serif) || fonts.sans;
   const [W, H] =
     book.orientation === "portrait" ? [595.276, 841.89] : [841.89, 595.276];
   const M = book.purpose === "photobook" ? 34.016 : 42.52,
@@ -192,14 +217,14 @@ export function layoutBook(
       message:
         "文字が枠を超えています。タイトル・説明・プロフィールを短くするか、1枚のページに分けてください",
     });
-  const linesOf = (value: string, width: number, size: number) =>
-    value.trim() ? wrapText(value, width, size, font) : [];
+  const linesOf = (value: string, width: number, size: number, face: Face = "sans") =>
+    value.trim() ? wrapText(value, width, size, measureOf(face)) : [];
   // 複数の段（作品名・制作年・説明など）の高さ。空の段は場所を取らない。
   const runsHeight = (runs: Run[], width: number) => {
     let h = 0,
       first = true;
     for (const r of runs) {
-      const n = linesOf(r.value, width, r.size).length;
+      const n = linesOf(r.value, width, r.size, faceOf(r.value, r.face)).length;
       if (!n) continue;
       h += (first ? 0 : r.gapBefore) + n * r.size * r.leading;
       first = false;
@@ -217,7 +242,8 @@ export function layoutBook(
     let y = top,
       first = true;
     for (const r of runs) {
-      const lines = linesOf(r.value, width, r.size);
+      const face = faceOf(r.value, r.face);
+      const lines = linesOf(r.value, width, r.size, face);
       if (!lines.length) continue;
       if (!first) y += r.gapBefore;
       p.texts.push({
@@ -228,6 +254,7 @@ export function layoutBook(
         size: r.size,
         leading: r.size * r.leading,
         tone: r.tone,
+        face,
         itemId,
       });
       y += lines.length * r.size * r.leading;
@@ -247,7 +274,7 @@ export function layoutBook(
   // ── 表紙: 写真と、その下に題と名前をひとまとまりで ──────────
   const cover = page("cover");
   const coverRuns: Run[] = [
-    { value: book.title, size: TYPE.coverTitle, leading: LEADING.title, tone: "ink", gapBefore: 0 },
+    { value: book.title, size: TYPE.coverTitle, leading: LEADING.title, tone: "ink", gapBefore: 0, face: "serif" },
     { value: book.cover.name, size: TYPE.coverName, leading: LEADING.single, tone: "quiet", gapBefore: 12 },
   ];
   // 題と名前に使える高さ。超えたら置かずに知らせる（写真は小さくしない）。
@@ -335,7 +362,7 @@ export function layoutBook(
         book.purpose === "photobook"
           ? []
           : [
-              { value: item.title, size: TYPE.captionTitle, leading: LEADING.single, tone: "ink", gapBefore: 0 },
+              { value: item.title, size: TYPE.captionTitle, leading: LEADING.single, tone: "ink", gapBefore: 0, face: "serif" },
               {
                 value: [item.year, item.technique].filter(Boolean).join(" / "),
                 size: TYPE.captionMeta,
@@ -424,6 +451,102 @@ export function layoutBook(
     }
   }
 
+  // ── 作品一覧（写真集だけ）: 番号・作品名・制作年と技法を1行ずつ ──────
+  const plates = plateEntries(book);
+  if (plates.length) {
+    const p = page("plates");
+    const top =
+      placeRuns(
+        p,
+        [{ value: "作品一覧", size: TYPE.profileLabel, leading: LEADING.single, tone: "faint", gapBefore: 0 }],
+        M,
+        M,
+        CW,
+      ) + 18;
+    const numW = 22,
+      numGap = 10,
+      rowGap = 8,
+      colGap = 36;
+    const entry = (item: (typeof plates)[number]["item"], textW: number) => {
+      const title = item.title.trim(),
+        meta = [item.year.trim(), item.technique.trim()].filter(Boolean).join(" / ");
+      const face = faceOf(title, "serif");
+      const titleLines = linesOf(title, textW, TYPE.captionTitle, face);
+      const metaLines = linesOf(meta, textW, TYPE.captionMeta);
+      const titleW = title ? measureOf(face).widthOfTextAtSize(title, TYPE.captionTitle) : 0;
+      // 作品名が1行に収まり、続けて制作年と技法も入るなら同じ行に。
+      const sameLine =
+        titleLines.length === 1 &&
+        metaLines.length === 1 &&
+        titleW + 10 + fonts.sans.widthOfTextAtSize(meta, TYPE.captionMeta) <= textW;
+      const height = sameLine
+        ? TYPE.captionTitle * LEADING.single
+        : titleLines.length * TYPE.captionTitle * LEADING.single +
+          metaLines.length * TYPE.captionMeta * LEADING.single;
+      return { title, meta, face, titleLines, metaLines, titleW, sameLine, height };
+    };
+    const totalHeight = (colW: number) =>
+      plates.reduce((h, e, i) => h + entry(e.item, colW - numW - numGap).height + (i ? rowGap : 0), 0);
+    // 1列で入らなければ2列に（横向きの紙や、作品の多い本）。
+    const oneCol = Math.min(CW, 420);
+    const twoCols = totalHeight(oneCol) > H - M - top;
+    const colW = twoCols ? (CW - colGap) / 2 : oneCol;
+    let col = 0,
+      y = top;
+    for (const { page: folio, item } of plates) {
+      const e = entry(item, colW - numW - numGap);
+      if (y > top && y + e.height > H - M) {
+        col++;
+        y = top;
+      }
+      if (col > (twoCols ? 1 : 0)) {
+        overflow(p);
+        break;
+      }
+      const x = M + col * (colW + colGap),
+        textX = x + numW + numGap;
+      // 番号・作品名・制作年は、作品名の行のベースラインにそろえる。
+      const lift = TYPE.captionTitle - TYPE.captionMeta;
+      const number = String(folio);
+      p.texts.push({
+        value: number,
+        lines: [number],
+        x: x + numW - fonts.sans.widthOfTextAtSize(number, TYPE.captionMeta),
+        top: y + lift,
+        size: TYPE.captionMeta,
+        leading: TYPE.captionMeta * LEADING.single,
+        tone: "faint",
+        face: "sans",
+        itemId: item.id,
+      });
+      if (e.title)
+        p.texts.push({
+          value: e.title,
+          lines: e.titleLines,
+          x: textX,
+          top: y,
+          size: TYPE.captionTitle,
+          leading: TYPE.captionTitle * LEADING.single,
+          tone: "ink",
+          face: e.face,
+          itemId: item.id,
+        });
+      if (e.meta)
+        p.texts.push({
+          value: e.meta,
+          lines: e.metaLines,
+          x: e.sameLine ? textX + e.titleW + 10 : textX,
+          top: e.sameLine || !e.title ? y + lift : y + e.titleLines.length * TYPE.captionTitle * LEADING.single,
+          size: TYPE.captionMeta,
+          leading: TYPE.captionMeta * LEADING.single,
+          tone: "quiet",
+          face: "sans",
+          itemId: item.id,
+        });
+      y += e.height + rowGap;
+    }
+  }
+
   // ── プロフィール: 見出し・名前・文・連絡先をひと続きに ─────────
   if (book.pdfProfile.enabled) {
     const p = page("profile");
@@ -448,17 +571,18 @@ export function layoutBook(
     p.texts.push({
       value: folio,
       lines: [folio],
-      x: W - M - font.widthOfTextAtSize(folio, TYPE.folio),
+      x: W - M - fonts.sans.widthOfTextAtSize(folio, TYPE.folio),
       top: footTop,
       size: TYPE.folio,
       leading: TYPE.folio * LEADING.single,
       tone: "faint",
+      face: "sans",
     });
     // 提出用は、ばらばらに見られても誰の何か分かるように、題と名前を下に小さく。
     if (book.purpose === "submission" && running) {
       let label = running;
       const max = CW - 60;
-      while (label.length > 1 && font.widthOfTextAtSize(label, TYPE.running) > max)
+      while (label.length > 1 && fonts.sans.widthOfTextAtSize(label, TYPE.running) > max)
         label = Array.from(label).slice(0, -2).join("") + "…";
       p.texts.push({
         value: label,
@@ -469,6 +593,7 @@ export function layoutBook(
         size: TYPE.running,
         leading: TYPE.running * LEADING.single,
         tone: "faint",
+        face: "sans",
       });
     }
   });

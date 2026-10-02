@@ -5,6 +5,8 @@ import {
   layoutBook,
   fitImage,
   TONE_RGB,
+  type Face,
+  type Fonts,
   type Measure,
   type PdfIssue,
   type Sheet,
@@ -64,6 +66,8 @@ export type RenderOptions = {
   quality?: "screen" | "print";
   /** harfbuzz-subset.wasm。あればフォントを使う文字だけに減らす。 */
   subsetWasm?: Uint8Array;
+  /** 題と作品名の明朝（しっぽり明朝）。無ければすべてゴシックで組む。 */
+  serifBytes?: Uint8Array;
 };
 export async function renderPortfolio(
   bookInput: PortfolioDocument,
@@ -77,22 +81,37 @@ export async function renderPortfolio(
   pdf.registerFontkit(fontkit);
   // 組版（文字幅・折り返し）は元のフォントで測る。埋め込むのは減らした物でも、
   // 字幅は同じなので位置は変わらない。
-  const full = fontkit.create(fontBytes);
-  const measure: Measure = {
+  const full: Record<Face, ReturnType<typeof fontkit.create> | undefined> = {
+    sans: fontkit.create(fontBytes),
+    serif: options.serifBytes ? fontkit.create(options.serifBytes) : undefined,
+  };
+  const measureOf = (f: ReturnType<typeof fontkit.create>): Measure => ({
     widthOfTextAtSize: (value, size) =>
-      (full.layout(value).glyphs.reduce((sum, glyph) => sum + glyph.advanceWidth, 0) /
-        full.unitsPerEm) *
+      (f.layout(value).glyphs.reduce((sum, glyph) => sum + glyph.advanceWidth, 0) /
+        f.unitsPerEm) *
       size,
+  });
+  const has = (f: ReturnType<typeof fontkit.create>, value: string) =>
+    Array.from(value).every(
+      (c) => c === "\n" || c === "\r" || f.hasGlyphForCodePoint(c.codePointAt(0)!),
+    );
+  const measures: Record<Face, Measure> = {
+    sans: measureOf(full.sans!),
+    serif: measureOf(full.serif ?? full.sans!),
+  };
+  const fonts: Fonts = {
+    sans: measures.sans,
+    serif: full.serif
+      ? { ...measures.serif, supports: (value) => has(full.serif!, value) }
+      : undefined,
   };
   const images = new Map<string, Awaited<ReturnType<typeof pdf.embedJpg>>>();
   for (const a of assets) images.set(a.id, await pdf.embedJpg(a.bytes));
-  const sheets = layoutBook(book, measure, images),
+  const sheets = layoutBook(book, fonts, images),
     issues = sheets.flatMap((p) => p.issues);
   const drawable = sheets.map((sheet, n) =>
     sheet.texts.filter((t) => {
-      const missing = Array.from(t.value).some(
-        (c) => c !== "\n" && c !== "\r" && !full.hasGlyphForCodePoint(c.codePointAt(0)!),
-      );
+      const missing = !has(full[t.face] ?? full.sans!, t.value);
       if (missing)
         issues.push({
           page: n + 1,
@@ -103,26 +122,33 @@ export async function renderPortfolio(
       return !missing;
     }),
   );
-  // 使う文字だけのフォントを作る。作れない・欠けるときは元のフォントを丸ごと入れる。
-  let embedBytes = fontBytes;
-  if (options.subsetWasm) {
-    const used = new Set(drawable.flat().flatMap((t) => t.lines.flatMap((l) => Array.from(l))));
-    try {
-      const subset = await subsetFont(fontBytes, used, options.subsetWasm);
-      const check = fontkit.create(subset);
-      if ([...used].every((c) => check.hasGlyphForCodePoint(c.codePointAt(0)!)))
-        embedBytes = subset;
-    } catch {
-      // 元のフォントで続ける（ファイルが大きくなるだけで、見た目は同じ）。
+  // 書体ごとに、使う文字だけのフォントを作る。作れない・欠けるときは元のフォントを丸ごと入れる。
+  const embedded: Partial<Record<Face, Awaited<ReturnType<typeof pdf.embedFont>>>> = {};
+  for (const face of ["sans", "serif"] as const) {
+    const bytes = face === "sans" ? fontBytes : options.serifBytes;
+    const texts = drawable.flat().filter((t) => t.face === face);
+    if (!bytes || (face === "serif" && !texts.length)) continue;
+    let embedBytes = bytes;
+    if (options.subsetWasm) {
+      const used = new Set(texts.flatMap((t) => t.lines.flatMap((l) => Array.from(l))));
+      try {
+        const subset = await subsetFont(bytes, used, options.subsetWasm);
+        const check = fontkit.create(subset);
+        if ([...used].every((c) => check.hasGlyphForCodePoint(c.codePointAt(0)!)))
+          embedBytes = subset;
+      } catch {
+        // 元のフォントで続ける（ファイルが大きくなるだけで、見た目は同じ）。
+      }
     }
+    // fontkit のサブセット化は日本語の字形を壊すので使わない（subset: false）。
+    embedded[face] = await pdf.embedFont(embedBytes, { subset: false });
   }
-  // fontkit のサブセット化は日本語の字形を壊すので使わない（subset: false）。
-  const font = await pdf.embedFont(embedBytes, { subset: false });
   for (const [n, sheet] of sheets.entries()) {
     const p = pdf.addPage([sheet.width, sheet.height]);
     for (const t of drawable[n]) {
       const [r, g, b] = TONE_RGB[t.tone];
       const baseline = (i: number) => sheet.height - t.top - t.size - i * t.leading;
+      const font = embedded[t.face] ?? embedded.sans!;
       t.lines.forEach((line, i) =>
         p.drawText(line, {
           x: t.x,
@@ -134,6 +160,7 @@ export async function renderPortfolio(
       );
       for (const link of textLinks(t)) {
         const line = t.lines[link.line];
+        const measure = measures[t.face];
         const x0 = t.x + measure.widthOfTextAtSize(line.slice(0, link.start), t.size);
         const x1 = t.x + measure.widthOfTextAtSize(line.slice(0, link.end), t.size);
         const y = baseline(link.line);
@@ -210,6 +237,7 @@ function addOutline(pdf: PDFDocument, sheets: Sheet[], book: PortfolioDocument) 
   const label = (sheet: Sheet, n: number) => {
     if (n === 0) return "表紙";
     if (sheet.id === "profile") return "プロフィール";
+    if (sheet.id === "plates") return "作品一覧";
     const source = book.pages.find((p) => p.id === sheet.id);
     const titles =
       book.purpose === "photobook"

@@ -3,7 +3,7 @@ import app, { getOriginal, photoWithThumbs } from "./api";
 import { db, withRetry, schema } from "./api/database";
 import { runStartupMigrations } from "./api/database/migrate";
 import { seriesMembership } from "./api/series-membership";
-import { eq, and, isNull, inArray, sql } from "drizzle-orm";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 import {
   injectOgp,
   siteUrlFrom,
@@ -46,7 +46,6 @@ import {
   photoPageTitle,
 } from "./shared/photo-page-text";
 import { injectNoscriptFallback } from "./api/spa-fallback";
-import { buildGalleryPreloadTags } from "./api/gallery-preload";
 import {
   buildRoutePreloadTags,
   type ViteManifest,
@@ -269,73 +268,6 @@ async function getHeroOgImage(): Promise<ImageRef> {
     console.error("[OGP] hero image fetch failed:", e); /* use stale/empty */
   }
   return heroOgCache ?? { url: "", rotationDeg: 0 };
-}
-
-// First N gallery photo URLs for preloading grid thumbnails on /gallery.
-let galleryPreloadCache: ImageRef[] = [];
-let galleryPreloadCacheTime = 0;
-const GALLERY_PRELOAD_COUNT = 8;
-async function getGalleryPreloadImages(): Promise<ImageRef[]> {
-  const now = Date.now();
-  if (
-    now - galleryPreloadCacheTime < SETTINGS_TTL &&
-    galleryPreloadCache.length > 0
-  )
-    return galleryPreloadCache;
-  try {
-    const [[sortRow]] = [
-      await withRetry(() =>
-        db
-          .select({ value: schema.siteSettings.value })
-          .from(schema.siteSettings)
-          .where(eq(schema.siteSettings.key, "gallerySortOrder"))
-          .limit(1),
-      ),
-    ];
-    const gallerySortOrder = sortRow?.value ?? "manual";
-    const orderExpr =
-      gallerySortOrder === "date_desc"
-        ? sql`${schema.photos.shotAt} DESC NULLS LAST, ${schema.photos.sortOrder} ASC`
-        : gallerySortOrder === "date_asc"
-          ? sql`${schema.photos.shotAt} ASC NULLS LAST, ${schema.photos.sortOrder} ASC`
-          : gallerySortOrder === "upload_desc"
-            ? sql`${schema.photos.createdAt} DESC`
-            : schema.photos.sortOrder;
-    const rows = await withRetry(() =>
-      db
-        .select({
-          url: schema.photos.url,
-          rotationDeg: schema.photos.rotationDeg,
-          // 一覧が実際に最初に描くのは作り置きのサムネである。これを
-          // 持たずに先読みすると、別のURLを8枚ぶん取りに行って全部捨てる。
-          thumbKey: schema.photos.thumbKey,
-        })
-        .from(schema.photos)
-        .where(
-          and(
-            isNull(schema.photos.deletedAt),
-            eq(schema.photos.isPublished, true),
-          ),
-        )
-        .orderBy(orderExpr)
-        .limit(GALLERY_PRELOAD_COUNT),
-    );
-    galleryPreloadCache = rows.map((r) => {
-      const { thumbUrl } = photoWithThumbs({
-        thumbKey: r.thumbKey,
-        rotationDeg: r.rotationDeg,
-      });
-      return {
-        url: r.url,
-        rotationDeg: r.rotationDeg ?? 0,
-        preloadUrl: thumbUrl ?? undefined,
-      };
-    });
-    galleryPreloadCacheTime = now;
-  } catch (e) {
-    console.error("[preload] gallery photos fetch failed:", e);
-  }
-  return galleryPreloadCache;
 }
 
 // 非JSのクローラに渡すリンクの束。<noscript> にこれが無いと、そういう
@@ -580,8 +512,6 @@ function syncPublicContentCaches(): void {
   observedPublicContentVersion = version;
   heroOgCache = null;
   heroOgCacheTime = 0;
-  galleryPreloadCache = [];
-  galleryPreloadCacheTime = 0;
   navSeriesCache = null;
   navSeriesCacheTime = 0;
   publishedWorkCache = null;
@@ -1119,19 +1049,11 @@ async function serveNonApi(request: Request, url: URL): Promise<Response> {
         "</head>",
         () => `  ${routePreload}\n  </head>`,
       );
-    if (
-      routePathname === "/gallery" ||
-      (routePathname === "/" && (settings.topWorksMode ?? "auto") !== "random")
-    ) {
-      const preloadImages = await getGalleryPreloadImages();
-      if (preloadImages.length > 0) {
-        const preloadTags = buildGalleryPreloadTags(preloadImages);
-        injected = injected.replace(
-          "</head>",
-          () => `  ${preloadTags}\n  </head>`,
-        );
-      }
-    }
+    // Gallery・トップの写真は HTML から先読みさせない（2026-10-02 にやめた）。
+    // 以前は先頭8枚を先読みさせていたが、並びがランダム・作品の写真を外す設定では
+    // 画面に出ない8枚（約620KB）を毎回読ませていた。画面と同じ8枚に直しても、
+    // Gallery の枠は書体が届くまで出ないため見えるのは早まらず、書体と回線を
+    // 取り合ってかえって約0.1秒遅れた（スマホ・4G 相当で各10回の中央値）。
     const htmlStatus = serviceUnavailable
       ? 404
       : htmlStatusForSpaPath(routePathname, {

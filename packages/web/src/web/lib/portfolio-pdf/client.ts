@@ -22,15 +22,33 @@ export async function generate(
   const { photos } = await readJson<{ photos: SourcePhoto[] }>(
     "/api/admin/pdf/photos",
   );
-  const assets: PdfAsset[] = [];
   for (const [index, item] of book.items.entries()) {
-    signal.throwIfAborted();
     const current = photos.find((p) => p.id === item.sourcePhotoId);
     if (!current || current.sourceAssetReference !== item.sourceAssetReference)
       throw new Error(
         `作品 ${index + 1} の保存画像が削除・変更されています。写真を選び直してください`,
       );
-    progress(`画像を準備 ${index + 1} / ${book.items.length}`);
+  }
+  // フォントと、フォントを使う文字だけに減らす道具は、写真と同時に読み始める。
+  // 道具が読めなければ元のフォントのまま作る。
+  const fontRequest = fetch("/fonts/pdf/NotoSansJP-Regular.ttf", { signal }).then(
+    async (r) => {
+      if (!r.ok)
+        throw new Error("日本語フォントを読み込めません。再試行してください");
+      return new Uint8Array(await r.arrayBuffer());
+    },
+  );
+  fontRequest.catch(() => {});
+  const wasmRequest = fetch(subsetWasmUrl, { signal })
+    .then(async (w) => (w.ok ? new Uint8Array(await w.arrayBuffer()) : undefined))
+    .catch(() => undefined);
+  // 写真は2枚ずつ前後して頼む。サーバーは1枚ずつ作るが、受け取りと次の準備が重なる。
+  const assets: PdfAsset[] = Array.from({ length: book.items.length });
+  let next = 0,
+    done = 0,
+    failed = false;
+  const fetchImage = async (index: number) => {
+    const item = book.items[index];
     const r = await fetch(
       `/api/admin/pdf/photos/${item.sourcePhotoId}/image?quality=${quality === "print" ? "print" : "send"}`,
       {
@@ -45,16 +63,25 @@ export async function generate(
           ? "認証が切れました。ログインし直してください"
           : `作品 ${index + 1} の画像を読み込めません。接続と保存画像を確認して再試行してください`,
       );
-    assets.push({ id: item.id, bytes: new Uint8Array(await r.arrayBuffer()) });
-  }
-  const r = await fetch("/fonts/pdf/NotoSansJP-Regular.ttf", { signal });
-  if (!r.ok)
-    throw new Error("日本語フォントを読み込めません。再試行してください");
-  const fontBytes = new Uint8Array(await r.arrayBuffer());
-  // フォントを使う文字だけに減らす道具。読めなければ元のフォントのまま作る。
-  const subsetWasm = await fetch(subsetWasmUrl, { signal })
-    .then(async (w) => (w.ok ? new Uint8Array(await w.arrayBuffer()) : undefined))
-    .catch(() => undefined);
+    assets[index] = { id: item.id, bytes: new Uint8Array(await r.arrayBuffer()) };
+    progress(`画像を準備 ${++done} / ${book.items.length}`);
+  };
+  progress(`画像を準備 0 / ${book.items.length}`);
+  await Promise.all(
+    Array.from({ length: Math.min(2, book.items.length) }, async () => {
+      while (!failed && next < book.items.length) {
+        signal.throwIfAborted();
+        try {
+          await fetchImage(next++);
+        } catch (e) {
+          failed = true;
+          throw e;
+        }
+      }
+    }),
+  );
+  const fontBytes = await fontRequest;
+  const subsetWasm = await wasmRequest;
   signal.throwIfAborted();
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./pdf.worker.ts", import.meta.url), {

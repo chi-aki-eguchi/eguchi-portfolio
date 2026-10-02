@@ -55,7 +55,8 @@ export function portfolioPdfRoutes(
       try {
         const quality = c.req.query("quality");
         // send: 送信用 PDF の写真。縦位置 A4 の1ページで約250ppi（Mac のプレビューで幅に
-        // 合わせて見ても粗くならない）。mozjpeg で、1600px の頃から約25%増に抑える（2026-10-02）。
+        // 合わせて見ても粗くならない）。mozjpeg のトレリス量子化で、1600px の頃から約25%増に
+        // 抑える（2026-10-02）。プログレッシブにはしない（古い印刷機でも読め、作るのも約3割速い）。
         // screen は編集画面の見本、thumb は一覧、print は印刷用。
         const edge =
           quality === "print"
@@ -83,7 +84,12 @@ export function portfolioPdfRoutes(
             quality === "print"
               ? { quality: 95 }
               : quality === "send"
-                ? { quality: 76, mozjpeg: true }
+                ? {
+                    quality: 76,
+                    trellisQuantisation: true,
+                    overshootDeringing: true,
+                    quantisationTable: 3,
+                  }
                 : { quality: 78 },
           )
           .toBuffer();

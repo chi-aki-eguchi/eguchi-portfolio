@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "../../lib/api";
 import { adminPhotoSrc, jsonOrThrow, usePersistentState } from "../../pages/admin-shared";
-import { applyWorkOrder, idsBetween, moveManyTo } from "../../lib/work-order";
+import { applyWorkOrder, idsBetween, moveManyTo, moveTargetIndex } from "../../lib/work-order";
 import { DRAG_TYPE, GRID_SIZES, StudioGrid, type GridSize } from "./StudioGrid";
-import { Inspector } from "./Inspector";
+import { Inspector, type InspectorOrder } from "./Inspector";
 import {
   matchesQuery,
   purgePhoto,
@@ -155,11 +155,38 @@ export function LibraryView({
     });
   };
 
+  // 右の欄を開いたまま隣の写真へ（「前・次」と ←→）。見えていなければ一覧もそこまで送る。
+  const [reveal, setReveal] = useState<number | null>(null);
+  const single = !pickMode && selectedIds.size === 1 ? [...selectedIds][0]! : null;
+  const singleIndex = single == null ? -1 : visibleIds.indexOf(single);
+  const stepTo = (id: number) => {
+    anchor.current = id;
+    setSelectedIds(new Set([id]));
+    setReveal(id);
+  };
+  const step =
+    singleIndex < 0
+      ? undefined
+      : {
+          prev: singleIndex > 0 ? () => stepTo(visibleIds[singleIndex - 1]!) : undefined,
+          next: singleIndex < visibleIds.length - 1 ? () => stepTo(visibleIds[singleIndex + 1]!) : undefined,
+        };
+  const stepRef = useRef(step);
+  stepRef.current = step;
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
       if (document.querySelector("dialog[open]")) return;
+      if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        const go = e.key === "ArrowLeft" ? stepRef.current?.prev : stepRef.current?.next;
+        if (go) {
+          e.preventDefault();
+          go();
+        }
+        return;
+      }
       if (e.key === "Escape") clear();
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
@@ -218,6 +245,19 @@ export function LibraryView({
       );
     }
   };
+
+  // 右の欄の「先頭へ・1つ前へ・1つ後へ・最後へ」。見えている並びの中で、ドラッグと同じ処理で動かす。
+  const movingIds = useMemo(() => visibleIds.filter((id) => selectedIds.has(id)), [visibleIds, selectedIds]);
+  const order: InspectorOrder | undefined =
+    canReorder && movingIds.length > 0 && movingIds.length === selectedIds.size
+      ? {
+          index: visibleIds.indexOf(movingIds[0]!),
+          total: visibleIds.length,
+          scope: filter.kind === "series" ? "series" : "site",
+          target: (where) => moveTargetIndex(visibleIds, movingIds, where),
+          apply: (at) => onReorder(movingIds, at),
+        }
+      : undefined;
 
   // ── 左の列のシリーズへ落とす ──
   const [dropSeries, setDropSeries] = useState<number | null>(null);
@@ -374,7 +414,7 @@ export function LibraryView({
             <input
               ref={fileInput}
               type="file"
-              accept="image/*,.heic,.heif,.tif,.tiff"
+              accept="image/*,.tif,.tiff"
               multiple
               hidden
               onChange={(e) => {
@@ -409,6 +449,7 @@ export function LibraryView({
             onFiles={(files) => void startImport(files)}
             badges={badges}
             scrollRef={scrollRef}
+            reveal={reveal}
             empty={
               query.trim() ? (
                 <p>{tx("見つかりませんでした。", "Nothing found.")}</p>
@@ -433,6 +474,8 @@ export function LibraryView({
         onClear={clear}
         onOpenDetails={onOpenDetails}
         picking={pickMode}
+        order={order}
+        step={step}
       />
 
       {trashOpen && <TrashDialog onClose={() => setTrashOpen(false)} />}

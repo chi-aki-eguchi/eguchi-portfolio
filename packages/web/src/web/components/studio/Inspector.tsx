@@ -16,6 +16,7 @@ import {
   type StudioPhoto,
 } from "./studio-data";
 import { adminText as tx } from "../../pages/admin-i18n";
+import type { MoveWhere } from "../../lib/work-order";
 
 const FILM = "フィルム";
 const DIGITAL = "デジタル";
@@ -26,6 +27,22 @@ const DIGITAL = "デジタル";
  *
  * シリーズは「入れる／外す」のチェック。1枚を何本にも入れられる。
  */
+/**
+ * 並びを変えるボタン（先頭へ・1つ前へ・1つ後へ・最後へ）の中身（2026-10-02）。
+ * ドラッグはスマホで使えず、PC でも遠くへ動かすのが大変だった。呼ぶ側が、いま見えている
+ * 並びと、ドラッグと同じ並べ替えの処理を渡す。並べ替えられない一覧（探している最中など）では渡さない。
+ */
+export type InspectorOrder = {
+  /** 選んだ写真のうち先頭が、いま見えている並びの何番目か（0 始まり）と、並びの数 */
+  index: number;
+  total: number;
+  /** サイトでの並びか、シリーズの中の並びか */
+  scope: "site" | "series";
+  /** その向きに動かすときの位置。動かせないときは null */
+  target: (where: MoveWhere) => number | null;
+  apply: (at: number) => Promise<void>;
+};
+
 export function Inspector({
   data,
   selection,
@@ -33,6 +50,8 @@ export function Inspector({
   onClear,
   onOpenDetails,
   picking = false,
+  order,
+  step,
 }: {
   data: StudioData;
   selection: StudioPhoto[];
@@ -48,6 +67,12 @@ export function Inspector({
    * 広い画面では何も変わらない（たたむのは styles の 760px 以下だけ）。
    */
   picking?: boolean;
+  order?: InspectorOrder;
+  /**
+   * 開いたまま隣の写真へ移る（2026-10-02）。以前は欄を閉じて次の写真を押し直す必要があり、
+   * スマホでは欄が画面の大半を覆うので特に手間だった。端では渡さない（押せなくする）。
+   */
+  step?: { prev?: () => void; next?: () => void };
 }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -65,6 +90,30 @@ export function Inspector({
         <p className="st-inspector__count">
           {opened ? tx("この写真", "This photo") : tx(`${selection.length}枚を選んでいます`, `${selection.length} selected`)}
         </p>
+        {opened && step && (
+          <fieldset className="st-step" aria-label={tx("写真を移る", "Move between photos")}>
+            <button
+              type="button"
+              className="st-ax-btn st-link"
+              disabled={!step.prev}
+              onClick={step.prev}
+              aria-label={tx("前の写真", "Previous photo")}
+              title={tx("前の写真（←）", "Previous photo (←)")}
+            >
+              ‹ {tx("前", "Prev")}
+            </button>
+            <button
+              type="button"
+              className="st-ax-btn st-link"
+              disabled={!step.next}
+              onClick={step.next}
+              aria-label={tx("次の写真", "Next photo")}
+              title={tx("次の写真（→）", "Next photo (→)")}
+            >
+              {tx("次", "Next")} ›
+            </button>
+          </fieldset>
+        )}
         {picking && (
           <button
             type="button"
@@ -87,9 +136,10 @@ export function Inspector({
           seriesContext={seriesContext}
           onClear={onClear}
           onOpenDetails={onOpenDetails}
+          order={order}
         />
       ) : (
-        <Many data={data} photos={selection} seriesContext={seriesContext} onClear={onClear} />
+        <Many data={data} photos={selection} seriesContext={seriesContext} onClear={onClear} order={order} />
       )}
     </aside>
   );
@@ -134,6 +184,52 @@ function Section({ title, children, aside }: { title: string; children: React.Re
       </div>
       {children}
     </section>
+  );
+}
+
+const MOVES: [MoveWhere, string, string][] = [
+  ["first", "先頭へ", "To start"],
+  ["prev", "1つ前へ", "Earlier"],
+  ["next", "1つ後へ", "Later"],
+  ["last", "最後へ", "To end"],
+];
+function OrderRow({ order, count }: { order: InspectorOrder; count: number }) {
+  const [busy, setBusy] = useState(false);
+  const go = async (where: MoveWhere) => {
+    const at = order.target(where);
+    if (at == null || busy) return;
+    setBusy(true);
+    try {
+      await order.apply(at);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Section
+      title={order.scope === "series" ? tx("シリーズの中の並び", "Order in the series") : tx("サイトでの並び", "Order on the site")}
+      aside={
+        <span className="st-order__pos">
+          {count > 1
+            ? tx(`${count}枚をまとめて動かします`, `Moves ${count} together`)
+            : tx(`${order.index + 1}番目 / ${order.total}枚`, `${order.index + 1} of ${order.total}`)}
+        </span>
+      }
+    >
+      <div className="st-order">
+        {MOVES.map(([where, ja, en]) => (
+          <button
+            key={where}
+            type="button"
+            className="st-ax-btn st-button st-order__btn"
+            disabled={busy || order.target(where) == null}
+            onClick={() => void go(where)}
+          >
+            {tx(ja, en)}
+          </button>
+        ))}
+      </div>
+    </Section>
   );
 }
 
@@ -556,12 +652,14 @@ function Single({
   seriesContext,
   onClear,
   onOpenDetails,
+  order,
 }: {
   data: StudioData;
   photo: StudioPhoto;
   seriesContext?: number;
   onClear: () => void;
   onOpenDetails?: (photoId: number) => void;
+  order?: InspectorOrder;
 }) {
   const title = useAutosave(photo, "title");
   const description = useAutosave(photo, "description");
@@ -611,6 +709,7 @@ function Single({
         <PublishRow photos={[photo]} />
         <HeroRow data={data} photos={[photo]} />
       </Section>
+      {order && <OrderRow order={order} count={1} />}
 
       <SeriesChecklist data={data} photos={[photo]} />
 
@@ -713,11 +812,13 @@ function Many({
   photos,
   seriesContext,
   onClear,
+  order,
 }: {
   data: StudioData;
   photos: StudioPhoto[];
   seriesContext?: number;
   onClear: () => void;
+  order?: InspectorOrder;
 }) {
   const strip = useMemo(() => photos.slice(0, 12), [photos]);
   const { fail, refresh, remember } = useStudio();
@@ -755,6 +856,7 @@ function Many({
         <PublishRow photos={photos} />
         <HeroRow data={data} photos={photos} />
       </Section>
+      {order && <OrderRow order={order} count={photos.length} />}
       <SeriesChecklist data={data} photos={photos} />
       <Section title={tx("撮影", "Capture")}>
         <MediumRow photos={photos} />

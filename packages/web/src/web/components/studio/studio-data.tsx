@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, adminApi } from "../../lib/api";
 import { assertOk, jsonOrThrow, type AdminSeries, type Photo } from "../../pages/admin-shared";
 import { uploadPhotoFile } from "../../lib/admin-upload";
-import { isUploadableImageFile, imageFileTooLarge } from "../../lib/upload-file";
+import { heicNotice, isHeicFile, isUploadableImageFile, imageFileTooLarge } from "../../lib/upload-file";
 import { adminText as tx } from "../../pages/admin-i18n";
 
 /**
@@ -235,9 +235,15 @@ export function StudioProvider({
   const importFiles = useCallback(
     async (files: File[], target: number | null) => {
       const usable = files.filter((f) => isUploadableImageFile(f) && !imageFileTooLarge(f));
-      const skipped = files.length - usable.length;
+      // HEIC は理由と直し方を別に伝える（「画像ではない」とまとめると分からない）。
+      const heic = files.filter(isHeicFile).length;
+      const skipped = files.length - usable.length - heic;
       if (usable.length === 0) {
-        fail(tx("取り込める画像がありませんでした（JPEG・PNG・HEIC など、容量の上限内の画像）。", "No images to import (JPEG, PNG, HEIC and similar, within the size limit)."));
+        fail(
+          heic && !skipped
+            ? tx(heicNotice(heic), heicNotice(heic, true))
+            : tx("取り込める画像がありませんでした（JPEG・PNG・TIFF など、容量の上限内の画像）。", "No images to import (JPEG, PNG, TIFF and similar, within the size limit)."),
+        );
         return [];
       }
       setUpload({ done: 0, total: usable.length, target });
@@ -246,6 +252,7 @@ export function StudioProvider({
       const existing: number[] = [];
       let duplicates = 0;
       let failed = 0;
+      let reason = "";
       let done = 0;
       const queue = [...usable];
       await Promise.all(
@@ -259,7 +266,11 @@ export function StudioProvider({
               duplicates += 1;
               if (r.existingId != null) existing.push(r.existingId);
             }
-            else failed += 1;
+            else {
+              failed += 1;
+              // サーバーの言葉（読み取れない・大きすぎる など）を1つだけ添える。
+              reason ||= r.reason ?? "";
+            }
             done += 1;
             setUpload({ done, total: usable.length, target });
           }
@@ -292,9 +303,16 @@ export function StudioProvider({
             ? tx(`${duplicates - joined}枚はすでに登録されています`, `${duplicates - joined} already added`)
             : tx(`選んだ${duplicates}枚は、すでに登録されています`, `${duplicates === 1 ? "That photo is" : `All ${duplicates} are`} already added`),
         );
-      if (failed) parts.push(tx(`${failed}枚は取り込めませんでした`, `${failed} could not be imported`));
+      if (failed)
+        parts.push(
+          tx(
+            `${failed}枚は取り込めませんでした${reason ? `（${reason.replace(/[。.]$/, "")}）` : ""}`,
+            `${failed} could not be imported${reason ? ` (${reason.replace(/[。.]$/, "")})` : ""}`,
+          ),
+        );
+      if (heic) parts.push(tx(heicNotice(heic), heicNotice(heic, true)));
       if (skipped) parts.push(tx(`${skipped}件は画像ではないか大きすぎました`, `${skipped} were not images or too large`));
-      say({ text: parts.join(" · "), tone: failed ? "error" : undefined });
+      say({ text: parts.join(" · "), tone: failed || heic ? "error" : undefined });
       return added;
     },
     [fail, refresh, say],

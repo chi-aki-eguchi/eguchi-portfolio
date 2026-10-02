@@ -364,6 +364,24 @@
   font-size: 13px;
   color: var(--st-quiet);
 }
+/* 開いたまま隣の写真へ（‹ 前・次 ›、2026-10-02）。閉じるの手前に寄せる。 */
+.st-step {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  margin: 0 8px 0 auto;
+  padding: 0;
+  border: 0;
+}
+/* 指で押しやすいように、文字の左右にも押せる所を取る（隣の「閉じる」と押し間違えない）。 */
+.st-step .st-link {
+  min-width: 44px;
+  justify-content: center;
+}
+.st-step .st-link:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 /* 「操作する／たたむ」はスマホで欄をたたんだときだけ使う（下の 760px 以下）。 */
 .st-inspector__toggle {
   display: none;
@@ -444,6 +462,22 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+/* 並びのボタン（先頭へ・1つ前へ・1つ後へ・最後へ、2026-10-02）。ドラッグの代わり。 */
+.st-order {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.st-order__btn {
+  padding: 0 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.st-order__pos {
+  font-size: 12px;
+  color: var(--st-quiet);
+  font-variant-numeric: tabular-nums;
 }
 
 .st-checks {

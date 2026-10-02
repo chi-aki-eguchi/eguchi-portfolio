@@ -58,3 +58,19 @@ export function idsBetween(ids: number[], a: number, b: number): number[] {
   if (i < 0 || j < 0) return [b];
   return ids.slice(Math.min(i, j), Math.max(i, j) + 1);
 }
+
+export type MoveWhere = "first" | "prev" | "next" | "last";
+/**
+ * 選んだ写真を「先頭へ・1つ前へ・1つ後へ・最後へ」動かすときに `moveManyTo` へ渡す位置
+ * （2026-10-02）。ドラッグできないスマホや、遠くへ動かすときのため。複数のときは
+ * ひとまとまりにして動かす。動かしても並びが変わらないとき（もう先頭など）は null。
+ */
+export function moveTargetIndex(workIds: number[], moving: Iterable<number>, where: MoveWhere): number | null {
+  const set = new Set(moving);
+  const first = workIds.findIndex((id) => set.has(id));
+  if (first < 0) return null;
+  const rest = workIds.filter((id) => !set.has(id)).length;
+  const at =
+    where === "first" ? 0 : where === "last" ? rest : where === "prev" ? Math.max(0, first - 1) : Math.min(rest, first + 1);
+  return moveManyTo(workIds, set, at).join() === workIds.join() ? null : at;
+}

@@ -30,13 +30,34 @@ const UPLOAD_IMAGE_EXTENSIONS = new Set([
 
 const EXTENSION_ONLY_IMAGE_EXTENSIONS = new Set(["tif", "tiff"]);
 
+/**
+ * 写真を選ぶ欄に渡す形式。**HEIC は書かない**（2026-10-02）。iPhone の Safari は、欄が
+ * HEIC を受け付けると書いてあると写真を HEIC のまま送り（Safari 17 以降は JPEG まで
+ * HEIC に変えることがある）、書いていなければ JPEG に直して送る。サーバーの画像処理
+ * （sharp の配布版）は HEIC の中身（HEVC）を読めないので、HEIC のままだと必ず失敗していた。
+ */
 export const UPLOAD_IMAGE_ACCEPT =
-  ".jpg,.jpeg,.png,.webp,.heic,.heif,.avif,.tif,.tiff,image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/tiff,image/x-tiff";
+  ".jpg,.jpeg,.png,.webp,.avif,.tif,.tiff,image/jpeg,image/png,image/webp,image/avif,image/tiff,image/x-tiff";
+
+/** HEIC（iPhone の写真の形式）。Mac から選んだときなど、ここへ来た物は送る前に断る。 */
+export function isHeicFile(file: { name?: string; type?: string }): boolean {
+  const type = file.type?.toLowerCase() ?? "";
+  const ext = file.name?.split(".").pop()?.toLowerCase() ?? "";
+  return type === "image/heic" || type === "image/heif" || ext === "heic" || ext === "heif";
+}
+
+/** HEIC を断るときの言葉（どうすれば加えられるかまで）。 */
+export function heicNotice(count: number, english = false): string {
+  return english
+    ? `${count === 1 ? "1 HEIC photo" : `${count} HEIC photos`} could not be imported. Export as JPEG first (adding from Photos on iPhone converts automatically).`
+    : `HEIC（iPhone の写真の形式）の${count}枚は取り込めません。Mac では写真アプリで JPEG に書き出してから加えてください（iPhone から加えると自動で JPEG になります）。`;
+}
 
 export function isUploadableImageFile(file: {
   name?: string;
   type?: string;
 }): boolean {
+  if (isHeicFile(file)) return false;
   const type = file.type?.toLowerCase() ?? "";
   const ext = file.name?.split(".").pop()?.toLowerCase() ?? "";
   if (type && UPLOAD_IMAGE_TYPES.has(type)) return true;

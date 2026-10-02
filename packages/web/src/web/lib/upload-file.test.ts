@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+  heicNotice,
   imageFileTooLarge,
+  isHeicFile,
   isUploadableImageFile,
   shouldUploadImagesSerially,
   STORAGE_NOT_CONFIGURED_CODE,
@@ -59,6 +61,31 @@ describe("UPLOAD_IMAGE_ACCEPT", () => {
     expect(UPLOAD_IMAGE_ACCEPT).toContain(".tif");
     expect(UPLOAD_IMAGE_ACCEPT).toContain(".tiff");
     expect(UPLOAD_IMAGE_ACCEPT).toContain("image/x-tiff");
+  });
+  // iPhone の Safari は、欄が HEIC を受け付けると書いてあると HEIC のまま送る
+  // （サーバーは読めない）。書かなければ JPEG に直して送る。
+  test("does not advertise HEIC, so iPhone Safari sends JPEG", () => {
+    expect(UPLOAD_IMAGE_ACCEPT.toLowerCase()).not.toContain("heic");
+    expect(UPLOAD_IMAGE_ACCEPT.toLowerCase()).not.toContain("heif");
+  });
+});
+
+describe("HEIC", () => {
+  test("is recognised by type or extension and kept out before upload", () => {
+    for (const file of [
+      { name: "IMG_0001.HEIC", type: "image/heic" },
+      { name: "IMG_0002.heif", type: "" },
+      { name: "photo", type: "image/heif" },
+    ]) {
+      expect(isHeicFile(file)).toBe(true);
+      expect(isUploadableImageFile(file)).toBe(false);
+    }
+    expect(isHeicFile({ name: "IMG_0003.JPG", type: "image/jpeg" })).toBe(false);
+  });
+  test("says what to do instead", () => {
+    expect(heicNotice(2)).toContain("JPEG に書き出して");
+    expect(heicNotice(2)).toContain("2枚");
+    expect(heicNotice(1, true)).toContain("1 HEIC photo");
   });
 });
 

@@ -166,3 +166,69 @@ test.describe("写真中心の管理画面（スマホ）", () => {
     expect(writes).toEqual([]);
   });
 });
+
+// 2026-10-02: 並べ替えはドラッグだけで、スマホでは「詳しい道具」の従来の一覧へ行くしかなく、
+// PC でも遠くへ動かすには引きずったまま長くスクロールする必要があった。右の欄のボタンで動かす。
+test.describe("右の欄の並びのボタン（ドラッグの代わり）", () => {
+  test("先頭へで、サイトの並びを変える（スマホでも）", async ({ page, api }) => {
+    const writes = await openStudio(page, api);
+    const tiles = page.locator(".st-tile");
+    const ids = await tiles.evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-photo-id"))));
+    await tiles.nth(4).click();
+    const inspector = page.locator(".st-inspector");
+    // スマホの一覧は見えている所だけ描くので、全体の枚数は画面の数から取らない。
+    await expect(inspector.locator(".st-order__pos")).toHaveText(/^5番目 \/ \d+枚$/);
+    await inspector.locator(".st-order").getByRole("button", { name: "先頭へ", exact: true }).click();
+    await expect.poll(() => writes.length).toBe(1);
+    expect(writes[0]!.url).toBe("/api/admin/photos/reorder");
+    const body = writes[0]!.body as { ids: number[]; expectedIds: number[] };
+    expect(body.ids.slice(0, 5)).toEqual([ids[4], ids[0], ids[1], ids[2], ids[3]]);
+    expect(body.expectedIds.slice(0, 5)).toEqual(ids.slice(0, 5));
+  });
+
+  test("シリーズの画面では、1つ前へでシリーズの中の並びを変える", async ({ page, api }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 1000, "シリーズの画面の開き方は PC 幅で確かめる");
+    const writes = await openStudio(page, api);
+    await page.getByRole("button", { name: "シリーズ", exact: true }).click();
+    await page.locator(".st-side__item--series", { hasText: "港の光" }).click();
+    await expect(page.locator(".st-title-input")).toHaveValue("港の光");
+    const tiles = page.locator(".st-workspace--series .st-tile");
+    const inSeries = await tiles.evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-photo-id"))));
+    await tiles.nth(1).click();
+    const inspector = page.locator(".st-inspector");
+    await expect(inspector.locator(".st-section__title", { hasText: "シリーズの中の並び" })).toBeVisible();
+    await expect(inspector.locator(".st-order__pos")).toHaveText(`2番目 / ${inSeries.length}枚`);
+    await inspector.locator(".st-order").getByRole("button", { name: "1つ前へ", exact: true }).click();
+    await expect.poll(() => writes.length).toBe(1);
+    expect(writes[0]!.url).toBe("/api/admin/series/501/photos/reorder");
+    const order = (writes[0]!.body as { ids: number[] }).ids;
+    expect(order.indexOf(inSeries[1]!)).toBeLessThan(order.indexOf(inSeries[0]!));
+  });
+});
+
+// 2026-10-02: 右の欄を開いたまま隣の写真へ移れなかった（閉じて押し直す。スマホでは欄が
+// 画面の大半を覆う）。「‹ 前・次 ›」と、PC では ←→ で移る。
+test.describe("右の欄の「前・次」", () => {
+  test("開いたまま隣の写真へ移り、端では押せない", async ({ page, api }) => {
+    const writes = await openStudio(page, api);
+    const tiles = page.locator(".st-tile");
+    const ids = await tiles.evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-photo-id"))));
+    await tiles.nth(0).click();
+    const inspector = page.locator(".st-inspector");
+    const prev = inspector.getByRole("button", { name: "前の写真" });
+    const next = inspector.getByRole("button", { name: "次の写真" });
+    await expect(prev).toBeDisabled();
+    await next.click();
+    await expect(page.locator(`.st-tile[data-photo-id="${ids[1]}"]`)).toHaveAttribute("data-selected", "true");
+    await expect(page.locator(".st-tile[data-selected]")).toHaveCount(1);
+    if ((page.viewportSize()?.width ?? 0) >= 1000) {
+      await page.keyboard.press("ArrowRight");
+      await expect(page.locator(`.st-tile[data-photo-id="${ids[2]}"]`)).toHaveAttribute("data-selected", "true");
+      await page.keyboard.press("ArrowLeft");
+      await expect(page.locator(`.st-tile[data-photo-id="${ids[1]}"]`)).toHaveAttribute("data-selected", "true");
+    }
+    await prev.click();
+    await expect(prev).toBeDisabled();
+    expect(writes).toEqual([]);
+  });
+});

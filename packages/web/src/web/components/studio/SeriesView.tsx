@@ -2,10 +2,10 @@ import { buildPublicSiteHref } from "../../pages/admin-shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { adminPhotoSrc, usePersistentState } from "../../pages/admin-shared";
-import { applyWorkOrder, idsBetween, moveManyTo } from "../../lib/work-order";
+import { applyWorkOrder, idsBetween, moveManyTo, moveTargetIndex } from "../../lib/work-order";
 import { seriesHref } from "../../lib/series-links";
 import { StudioGrid, type GridSize } from "./StudioGrid";
-import { Inspector } from "./Inspector";
+import { Inspector, type InspectorOrder } from "./Inspector";
 import {
   createSeries,
   deleteSeries,
@@ -368,6 +368,53 @@ function SeriesEditor({
     }
   };
 
+  // 右の欄を開いたまま隣の写真へ（「前・次」と ←→）。
+  const [reveal, setReveal] = useState<number | null>(null);
+  const single = !pickMode && selectedIds.size === 1 ? [...selectedIds][0]! : null;
+  const singleIndex = single == null ? -1 : ids.indexOf(single);
+  const stepTo = (id: number) => {
+    anchor.current = id;
+    setSelectedIds(new Set([id]));
+    setReveal(id);
+  };
+  const step =
+    singleIndex < 0
+      ? undefined
+      : {
+          prev: singleIndex > 0 ? () => stepTo(ids[singleIndex - 1]!) : undefined,
+          next: singleIndex < ids.length - 1 ? () => stepTo(ids[singleIndex + 1]!) : undefined,
+        };
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
+      if (document.querySelector("dialog[open]")) return;
+      if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      const go = e.key === "ArrowLeft" ? stepRef.current?.prev : stepRef.current?.next;
+      if (go) {
+        e.preventDefault();
+        go();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // 右の欄の「先頭へ・1つ前へ・1つ後へ・最後へ」（シリーズの中の並び）。
+  const movingIds = useMemo(() => ids.filter((id) => selectedIds.has(id)), [ids, selectedIds]);
+  const order: InspectorOrder | undefined =
+    movingIds.length > 0 && movingIds.length === selection.length
+      ? {
+          index: ids.indexOf(movingIds[0]!),
+          total: ids.length,
+          scope: "series",
+          target: (where) => moveTargetIndex(ids, movingIds, where),
+          apply: (at) => onReorder(movingIds, at),
+        }
+      : undefined;
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const remove = async () => {
@@ -517,7 +564,7 @@ function SeriesEditor({
             <input
               ref={fileInput}
               type="file"
-              accept="image/*,.heic,.heif,.tif,.tiff"
+              accept="image/*,.tif,.tiff"
               multiple
               hidden
               onChange={(e) => {
@@ -548,6 +595,7 @@ function SeriesEditor({
             ...(series.coverPhotoId === p.id ? [tx("表紙", "Cover")] : []),
           ]}
           scrollRef={scrollRef}
+          reveal={reveal}
           empty={
             <p>
               {tx("まだ写真がありません。「写真の一覧から加える」で選ぶか、ここへ写真を落としてください。", "No photos yet. Choose from your photos with “Add from your photos”, or drop photos here.")}
@@ -578,7 +626,15 @@ function SeriesEditor({
           )}
         </section>
       </div>
-      <Inspector data={data} selection={selection} seriesContext={series.id} onClear={clear} picking={pickMode} />
+      <Inspector
+        data={data}
+        selection={selection}
+        seriesContext={series.id}
+        onClear={clear}
+        picking={pickMode}
+        order={order}
+        step={step}
+      />
       {pickerOpen && (
         <PhotoPicker
           data={data}

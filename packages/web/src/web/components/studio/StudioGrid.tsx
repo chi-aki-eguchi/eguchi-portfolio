@@ -34,6 +34,7 @@ export function StudioGrid({
   badges,
   scrollRef,
   empty,
+  reveal,
 }: {
   photos: StudioPhoto[];
   size: GridSize;
@@ -47,6 +48,8 @@ export function StudioGrid({
   badges: (p: StudioPhoto) => string[];
   scrollRef: React.RefObject<HTMLElement | null>;
   empty: React.ReactNode;
+  /** この写真が見えていなければ、見える所まで送る（右の欄の「前・次」で移ったとき）。 */
+  reveal?: number | null;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -105,6 +108,21 @@ export function StudioGrid({
   const rows = plan
     ? plan.rows.filter((r) => r.top + r.height > view.top - margin && r.top < view.top + view.height + margin)
     : [];
+
+  useEffect(() => {
+    if (reveal == null || !plan) return;
+    const index = photos.findIndex((p) => p.id === reveal);
+    const row = plan.rows.find((r) => r.items.some((item) => item.index === index));
+    const scroller = scrollRef.current,
+      box = boxRef.current;
+    if (!row || !scroller || !box) return;
+    const offset = box.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    const top = offset + row.top;
+    if (top < scroller.scrollTop || top + row.height > scroller.scrollTop + scroller.clientHeight)
+      scroller.scrollTo({ top: Math.max(0, top - 24) });
+    // 移ったときだけ送る（並びが変わるたびには送らない）。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reveal]);
 
   // ── ドラッグ ──
   const [dragIds, setDragIds] = useState<number[] | null>(null);

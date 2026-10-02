@@ -508,7 +508,7 @@ HTML に `<style id="boot-theme">:root{--body-weight:500;--hero-name-weight:500}
 
 - サーバーが HTML を返すとき、/api/settings と同じ中身を `<script id="boot-settings" type="application/json">` で
   入れる（`api/boot-settings.ts`）。取り寄せ口そのもの（`app.fetch`）を呼ぶので、既定値の当て方まで同じ。
-  設定の版と 60 秒で控え、管理画面の保存のあと（`syncPublicContentCaches`）は読み直す。`<` は `<` に
+  設定の版と 60 秒で控え、管理画面の保存のあと（`syncPublicContentCaches`）は読み直す。`<` は `\u003c` に
   して、自己紹介などに `</script>` があっても閉じさせない。管理画面（/admin）には入れない。
 - 画面側は、入っていればそれを設定の置き場へ入れて取り寄せない（`web/lib/boot-settings.ts`、`main.tsx`）。
   無い・壊れているときは今までどおり取り寄せる。管理画面の「見本のデータで見る」は見本の設定を返す
@@ -516,3 +516,43 @@ HTML に `<style id="boot-theme">:root{--body-weight:500;--hero-name-weight:500}
 - 検証: `bun run check` 成功（単体 1578。埋め込みの閉じさせない処理・画面側の読み取りと取り寄せへの戻りの
   3件を足した）。公開サイトの smoke 326 成功（開発用サーバーは HTML に入れないので、取り寄せへ戻る経路を通る）。
   HTML への差し込みは開発用サーバーを通らないので、本番で確かめる。
+
+### 設定を HTML に入れたあとの本番確認（2026-10-02）
+
+c2ff3b9 を push、本番 build c2ff3b9e。読むだけで確かめた:
+
+- トップ・About・Gallery・英語の About・Contact（と、無い経路の 404 の画面）の HTML に `boot-settings` が
+  1つずつ入り、中身は /api/settings と完全に同じ（182 項目）。生の `<` は無い。/admin・/admin/login には
+  入らない。HTML の `Cache-Control: no-store` と brotli の圧縮もそのまま。
+- 起動時の /api/settings の取り寄せは 0 回（3 回とも）。書体の CSS を頼む時刻は、HTML の到着から
+  1385ms 後 → 1100ms 後（スマホ・4G 相当）。
+- まだ残っていた待ち: 書体の CSS は画面のプログラムが全部届いて組み上がった後に頼む。そのプログラムの
+  読み込みが、外部部品の大きな束（vendor）とトップの写真に回線を取られて遅い → 次の節。
+
+## 公開ページの JS を軽く（2026-10-02）
+
+設定を HTML に入れたあとも、トップの画面が組み上がるのは HTML の到着から約 1.08 秒後（スマホ・4G 相当、
+5 回の中央値）。起動に要る JS のうち、外部部品の束 `vendor`（303KB、brotli）が届くまで、どの JS も動けない。
+束を部品ごとに分けて測ると、公開ページが実際に使う外部部品は 13KB ほど（budoux・hono・wouter など）で、
+残りは管理画面の PDF 作成（@pdf-lib/fontkit・pako）、写真の取り込み（exifr）など。組み立ての設定
+（`vite.config.ts` の `manualChunks`）が外部部品を何でも 1 つの "vendor" に入れていたため、公開ページを
+開く誰もがそれを読んでいた。画面は普通に動くので気づけなかった。
+
+- react と tanstack の束はそのまま、ほかの外部部品は束ねず、使うコードの隣に置く（Rollup に任せる）。
+  PDF 作成の部品（277KB）は /admin/pdf を開いたときだけ読む。
+- 入口が読む JS（brotli、手元の組み立て）: 384KB → 92KB。ページの分を足すとトップ 411 → 119KB、
+  Gallery 408 → 116KB。
+- `vite/public-entry-guard.ts`: 組み立てのたびに、入口の JS に管理画面でしか使わない部品（pdf-lib・
+  @pdf-lib/*・exifr・harfbuzzjs）が入っていないか確かめ、入っていたら組み立てを止める。前の設定に
+  戻して組み立てると「@pdf-lib/fontkit, exifr, harfbuzzjs」を挙げて止まることを確かめた。
+- 開発用サーバー（smoke・練習用）は組み立てた束を使わないので、組み立てた dist を練習用サーバー
+  （人工データ）の上で動かして確かめた（`scratch/look-review-20261001/built-check.mjs`。開いたページの
+  HTML と /assets だけ dist から返し、API などは練習用サーバー）。Chromium・WebKit とも、公開 8 ページ
+  （トップ・Gallery・Series・シリーズの中・About・英語の About・Contact・Privacy）が描け、ページの
+  エラー 0・無い束 0・vendor は読まれない。管理画面の写真・サイトが開き、PDF の送信用を作って保存できた
+  （%PDF、55KB）。WebKit の PDF の画面に出る「modulepreload の href が無効」の警告は前の組み立てでも
+  出ていて（3 回）、今回とは関係ない。
+- `bun run check` 成功（単体 1581・ツール 60・番人 48・組み立て）。
+- 直す前の本番（c2ff3b9、スマホ・4G 相当、中央値。`scratch/look-review-20261001/startup-probe.mjs`）:
+  トップ 組み上がり HTML から +1080ms・LCP 1608ms・JS 451KB（5 回）、Gallery LCP 2624ms・JS 447KB、
+  About LCP 1216ms・JS 430KB（各 3 回）。

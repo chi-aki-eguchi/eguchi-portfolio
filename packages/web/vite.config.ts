@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite"
 import path from "path";
 import honoDevPlugin from "./vite/plugins/hono-dev-plugin";
+import publicEntryGuard from "./vite/public-entry-guard.ts";
 import { assertIsolated, SMOKE_ISOLATION_FLAG } from "./vite/smoke-isolation.ts";
 import { installSmokeEgressGuard } from "./vite/smoke-egress-guard.ts";
 
@@ -35,7 +36,7 @@ export default defineConfig(({ mode }) => {
 
 function appConfig(): UserConfig {
 	return {
-		plugins: [honoDevPlugin(), react(), tailwind()],
+		plugins: [honoDevPlugin(), react(), tailwind(), publicEntryGuard()],
 		// Worker dependencies must be pre-bundled before editing starts (avoid a cold-start reload).
 		optimizeDeps: { include: ["pdf-lib", "@pdf-lib/fontkit"] },
 		resolve: {
@@ -63,13 +64,17 @@ function appConfig(): UserConfig {
 					entryFileNames: `assets/[name]-[hash]-${process.env.BUILD_TAG || "b"}.js`,
 					chunkFileNames: `assets/[name]-[hash]-${process.env.BUILD_TAG || "b"}.js`,
 					assetFileNames: `assets/[name]-[hash]-${process.env.BUILD_TAG || "b"}[extname]`,
-					// Split node_modules into long-cached vendor chunks so the
+					// Split React and TanStack into long-cached vendor chunks so the
 					// per-page index chunk stays small (react-dom was leaking into it).
+					// Every other package is left to Rollup, which places it beside the
+					// code that imports it. A catch-all "vendor" chunk pulled the admin's
+					// PDF maker (pdf-lib, fontkit) and photo import (exifr) into every
+					// public page: 384KB → 92KB brotli at the entry (2026-10-02).
+					// vite/public-entry-guard.ts stops the build if they come back.
 					manualChunks(id) {
 						if (!id.includes("node_modules")) return;
 						if (id.includes("react-dom") || id.includes("/scheduler/") || /\/react\//.test(id)) return "react-vendor";
 						if (id.includes("@tanstack")) return "query-vendor";
-						return "vendor";
 					},
 				},
 			},

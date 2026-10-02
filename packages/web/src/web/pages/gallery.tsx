@@ -333,7 +333,10 @@ export default function GalleryPage() {
   // while the actual design/categories are still arriving. Cached data renders
   // immediately; failed reads settle and retain the existing fallback behavior.
   if (structureLoading) return (
-    <section ref={fadeRef} className="min-h-[70vh] flex items-center justify-center" data-gallery-pending="true" aria-busy="true">
+    // 1画面ぶん場所を取る（`.site-page-hold`）。70vh だとページの下の1行（撮影の
+    // ご依頼の案内）が画面の中に見え、写真が並んだ瞬間に画面の外へ押し出されていた
+    // （本番のスマホ・4G 相当で ずれ 0.19、2026-10-02）。
+    <section ref={fadeRef} className="site-page-hold flex items-center justify-center" data-gallery-pending="true" aria-busy="true">
       <ContentStatus state="loading" />
     </section>
   );

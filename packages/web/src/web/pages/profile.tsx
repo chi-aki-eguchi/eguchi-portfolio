@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageTitle } from "../components/PageTitle";
 import { api, jsonOrThrow } from "../lib/api";
@@ -51,6 +51,19 @@ export default function ProfilePage({
   usePageLanguage(language);
   const english = language === "en";
   const [brokenPhotoUrl, setBrokenPhotoUrl] = useState<string | null>(null);
+  // 写真が文の上にあるとき、写真が届いた URL と、待つのをやめた URL。
+  const [loadedPhotoUrl, setLoadedPhotoUrl] = useState<string | null>(null);
+  const [gaveUpPhotoUrl, setGaveUpPhotoUrl] = useState<string | null>(null);
+  const [wide, setWide] = useState(
+    () => typeof window.matchMedia === "function" && window.matchMedia("(min-width: 768px)").matches,
+  );
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const on = () => setWide(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => jsonOrThrow(await api.settings.$get()),
@@ -117,6 +130,23 @@ export default function ProfilePage({
     : "side";
   const layout = hasPhoto ? requestedLayout : "quiet";
 
+  // **写真が文の上にあるときは、写真が届くまで文を見せない**（2026-10-02）。写真の
+  // 縦横の比は設定に無いので、届くまで写真の高さは 0。先に出た文が、届いた瞬間に
+  // 写真の高さぶん押し下げられていた（本番のスマホ・4G 相当で y=101→387、ずれ 0.268）。
+  // 写真と文をいっしょに出す。届かないときも 2.5 秒で文を出し、そのときは写真に仮の
+  // 枠を取る（遅い回線で文を待たせすぎず、届いたときのずれも小さく）。
+  // PC の「写真左・文右」では写真が文を押さないので待たない。
+  const photoAbove = hasPhoto && (layout === "stack" || (layout === "side" && !wide));
+  const photoUrl = data?.profilePhotoUrl ?? "";
+  const waiting = photoAbove && loadedPhotoUrl !== photoUrl;
+  const holdBio = waiting && gaveUpPhotoUrl !== photoUrl;
+  const provisionalPhoto = waiting && gaveUpPhotoUrl === photoUrl;
+  useEffect(() => {
+    if (!holdBio) return;
+    const timer = window.setTimeout(() => setGaveUpPhotoUrl(photoUrl), 2500);
+    return () => window.clearTimeout(timer);
+  }, [holdBio, photoUrl]);
+
   const photoImg = data?.profilePhotoUrl ? (
     <img
       src={imageUrlWithParams(data.profilePhotoUrl, { w: 900, q: 90 })}
@@ -127,7 +157,18 @@ export default function ProfilePage({
       alt={displayName}
       decoding="async"
       fetchPriority="high"
+      // 先に読み込み済み（2度目の表示）でも取りこぼさないよう、付いた時点でも確かめる。
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth > 0) setLoadedPhotoUrl(data.profilePhotoUrl);
+      }}
+      onLoad={() => setLoadedPhotoUrl(data.profilePhotoUrl)}
       onError={() => setBrokenPhotoUrl(data.profilePhotoUrl)}
+      // 待つのをやめたあと届くまでは、仮の枠で場所を取る（届いたら写真の比へ）。
+      style={
+        provisionalPhoto
+          ? { aspectRatio: layout === "stack" ? "3 / 2" : "4 / 5", background: "var(--photo-placeholder)" }
+          : undefined
+      }
       className={
         layout === "stack"
           ? "block w-full h-auto max-w-full"
@@ -143,7 +184,9 @@ export default function ProfilePage({
   // instead of staying invisible. noteData is fetched after settings, so
   // without it the Journal section mounts after the observer last ran and
   // stays at opacity:0.
-  const entranceRef = usePageEntrance([data, noteData]);
+  // 写真を待つあいだ出さなかった中身も、出たときにふわっと入るよう数え直す。
+  const entranceRef = usePageEntrance([data, noteData, holdBio]);
+
 
   // **設定が届くまで本文を描かない。**このページの中身（写真・文・見出しの
   // 大きさ・余白）は、全部その設定から来る。先に描くと、届いた瞬間に版面を
@@ -169,7 +212,7 @@ export default function ProfilePage({
          いる最中に動くことに変わりはない。届くまで1画面ぶん場所を取り、
          帯を最初から画面の外に置く（`.site-page-hold`）。 */
       className={`profile-page max-w-3xl mx-auto site-page site-page-top pb-12 md:pb-20 min-h-[60vh] ${
-        noteOn && noteData === undefined ? "site-page-hold" : ""
+        (noteOn && noteData === undefined) || holdBio ? "site-page-hold" : ""
       }`}
       ref={entranceRef}
     >
@@ -193,145 +236,147 @@ export default function ProfilePage({
         {/* Bio */}
         {/* min-w-0: grid の子は既定で min-width:auto なので、中身が折り返せない
             とき列そのものが広がる。下の break-words と両方要る。 */}
-        <div className="profile-bio pt-1 flex flex-col min-w-0">
-          <h2
-            /* break-words が無いと、折り返せない長い名前（URL を貼った等）で
-               About が横に伸びる。実測 320px の画面で 1650px まで広がっていた。
-               TOP の作家名には元から付いている。 */
-            className="font-bold tracking-[0.03em] text-[var(--foreground)] break-words page-entrance page-entrance-delay-1"
-            style={{
-              // quiet は写真が無いぶん、名前を大きくして紙面の芯にする。
-              // 同じ大きさのままだと「写真が抜け落ちた side」に見える。
-              fontSize:
-                layout === "quiet"
-                  ? "calc(var(--heading-size, 1.25rem) * 1.6)"
-                  : "var(--heading-size, 1.25rem)",
-            }}
-          >
-            {displayName}
-          </h2>
-          {!english && (
-            <p className="font-en text-sm tracking-[0.04em] text-[color:var(--text-quiet)] mt-1 break-words page-entrance page-entrance-delay-1">
-              {nameEn}
-            </p>
-          )}
-
-          {bio ? (
-            <div className="mt-8 space-y-3 page-entrance page-entrance-delay-2">
-              {bio
-                .split("\n")
-                .filter(Boolean)
-                .map((line, i) => (
-                  <p
-                    key={i}
-                    className={`profile-bio__text text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
-                    style={readableBodyStyle}
-                  >
-                    <JaPhrases>{line}</JaPhrases>
-                  </p>
-                ))}
-            </div>
-          ) : (
-            <div className="mt-8 page-entrance page-entrance-delay-2">
-              <p
-                className="profile-bio__text text-[color:var(--text-quiet)] italic break-words"
-                style={readableBodyStyle}
-              >
-                {english
-                  ? englishInline(settings?.heroSubtitle, "Photographer")
-                  : settings?.heroSubtitle || "Photographer"}
+        {!holdBio && (
+          <div className="profile-bio pt-1 flex flex-col min-w-0">
+            <h2
+              /* break-words が無いと、折り返せない長い名前（URL を貼った等）で
+                 About が横に伸びる。実測 320px の画面で 1650px まで広がっていた。
+                 TOP の作家名には元から付いている。 */
+              className="font-bold tracking-[0.03em] text-[var(--foreground)] break-words page-entrance page-entrance-delay-1"
+              style={{
+                // quiet は写真が無いぶん、名前を大きくして紙面の芯にする。
+                // 同じ大きさのままだと「写真が抜け落ちた side」に見える。
+                fontSize:
+                  layout === "quiet"
+                    ? "calc(var(--heading-size, 1.25rem) * 1.6)"
+                    : "var(--heading-size, 1.25rem)",
+              }}
+            >
+              {displayName}
+            </h2>
+            {!english && (
+              <p className="font-en text-sm tracking-[0.04em] text-[color:var(--text-quiet)] mt-1 break-words page-entrance page-entrance-delay-1">
+                {nameEn}
               </p>
-            </div>
-          )}
+            )}
 
-          {/* E5: Statement (作家ステートメント) — 空欄なら非表示 */}
-          {statement && (
-            <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
-                Statement
-              </h3>
-              <div className="space-y-3">
-                {statement
-                  .split(/\n{2,}/)
+            {bio ? (
+              <div className="mt-8 space-y-3 page-entrance page-entrance-delay-2">
+                {bio
+                  .split("\n")
                   .filter(Boolean)
-                  .map((para, i) => (
+                  .map((line, i) => (
                     <p
                       key={i}
-                      className={`profile-bio__text text-[color:var(--text-quiet)] text-pretty break-words ${english ? "font-en" : "ja-prose"}`}
+                      className={`profile-bio__text text-[color:var(--text-quiet)] break-words ${english ? "font-en" : "ja-prose"}`}
                       style={readableBodyStyle}
                     >
-                      <JaPhrases>{para.replace(/\n/g, " ")}</JaPhrases>
+                      <JaPhrases>{line}</JaPhrases>
                     </p>
                   ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="mt-8 page-entrance page-entrance-delay-2">
+                <p
+                  className="profile-bio__text text-[color:var(--text-quiet)] italic break-words"
+                  style={readableBodyStyle}
+                >
+                  {english
+                    ? englishInline(settings?.heroSubtitle, "Photographer")
+                    : settings?.heroSubtitle || "Photographer"}
+                </p>
+              </div>
+            )}
 
-          {/* E5: Equipment (使用機材) — 空欄なら非表示 */}
-          {gear.length > 0 && (
-            <div className="mt-10 page-entrance page-entrance-delay-2">
-              <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
-                Equipment
-              </h3>
-              <ul className="space-y-1.5">
-                {gear.map((item, i) => (
-                  <li
-                    key={i}
-                    className="font-en text-[color:var(--text-quiet)] break-words"
-                    style={{
-                      fontSize: "var(--body-size, 0.8125rem)",
-                      letterSpacing: "0.02em",
-                    }}
+            {/* E5: Statement (作家ステートメント) — 空欄なら非表示 */}
+            {statement && (
+              <div className="mt-10 page-entrance page-entrance-delay-2">
+                <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
+                  Statement
+                </h3>
+                <div className="space-y-3">
+                  {statement
+                    .split(/\n{2,}/)
+                    .filter(Boolean)
+                    .map((para, i) => (
+                      <p
+                        key={i}
+                        className={`profile-bio__text text-[color:var(--text-quiet)] text-pretty break-words ${english ? "font-en" : "ja-prose"}`}
+                        style={readableBodyStyle}
+                      >
+                        <JaPhrases>{para.replace(/\n/g, " ")}</JaPhrases>
+                      </p>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* E5: Equipment (使用機材) — 空欄なら非表示 */}
+            {gear.length > 0 && (
+              <div className="mt-10 page-entrance page-entrance-delay-2">
+                <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-3">
+                  Equipment
+                </h3>
+                <ul className="space-y-1.5">
+                  {gear.map((item, i) => (
+                    <li
+                      key={i}
+                      className="font-en text-[color:var(--text-quiet)] break-words"
+                      style={{
+                        fontSize: "var(--body-size, 0.8125rem)",
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex-1" />
+
+            {hasSns && (
+              <div className="flex gap-5 mt-10 pt-6 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance page-entrance-delay-2">
+                {data?.profileInstagram && (
+                  <a
+                    href={safeHref(data.profileInstagram)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
                   >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex-1" />
-
-          {hasSns && (
-            <div className="flex gap-5 mt-10 pt-6 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance page-entrance-delay-2">
-              {data?.profileInstagram && (
-                <a
-                  href={safeHref(data.profileInstagram)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
-                >
-                  {english ? "Instagram" : data?.snsLabelInstagram ?? "Instagram"}
-                </a>
-              )}
-              {data?.profileTwitter && (
-                <a
-                  href={safeHref(data.profileTwitter)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
-                >
-                  {english ? "X" : data?.snsLabelTwitter ?? "X"}
-                </a>
-              )}
-              {data?.profileNote && (
-                <a
-                  href={safeHref(data.profileNote)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
-                >
-                  {english ? "note" : data?.snsLabelNote ?? "note"}
-                </a>
-              )}
-            </div>
-          )}
-        </div>
+                    {english ? "Instagram" : data?.snsLabelInstagram ?? "Instagram"}
+                  </a>
+                )}
+                {data?.profileTwitter && (
+                  <a
+                    href={safeHref(data.profileTwitter)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  >
+                    {english ? "X" : data?.snsLabelTwitter ?? "X"}
+                  </a>
+                )}
+                {data?.profileNote && (
+                  <a
+                    href={safeHref(data.profileNote)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="profile-sns tap-target font-en text-xs tracking-[0.04em] text-[color:var(--text-quiet)] hover:text-[rgba(var(--foreground-rgb),0.60)] nav-link-luxury transition-colors duration-300 py-1.5"
+                  >
+                    {english ? "note" : data?.snsLabelNote ?? "note"}
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* J1: Journal — latest note posts as cards (thumbnail + date + title + excerpt).
           Hidden if disabled or fetch returned nothing. */}
-      {noteOn && notePosts.length > 0 && (
+      {!holdBio && noteOn && notePosts.length > 0 && (
         <div className="profile-journal mt-12 md:mt-16 pt-8 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
           <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-8">
             Journal
@@ -410,7 +455,7 @@ export default function ProfilePage({
       )}
 
       {/* K1: Prints — quiet external store link. Hidden unless enabled + URL set. */}
-      {printOn && (
+      {!holdBio && printOn && (
         <div data-about-print className="mt-16 md:mt-20 pt-12 border-t border-[rgba(var(--foreground-rgb),0.06)] page-entrance">
           <h3 className="profile-label font-en uppercase text-[length:var(--text-note)] tracking-[0.14em] text-[color:var(--text-quiet)] mb-4">
             Prints
@@ -441,7 +486,7 @@ export default function ProfilePage({
           外した）。note の記事が後から届くと JOURNAL の段が生まれ、**画面に
           出ている帯を押しのける**（実測: 帯が y=537 から画面外へ）。
           出そろってから出せば、動くものが無い。 */}
-      {(!noteOn || noteData !== undefined) && <InquiryCta language={language} />}
+      {!holdBio && (!noteOn || noteData !== undefined) && <InquiryCta language={language} />}
     </section>
   );
 }

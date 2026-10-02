@@ -26,6 +26,12 @@ async function mount(node: unknown) {
     ),
   );
   await flush(150);
+  // jsdom では画像が届かない。About の写真が文の上にあるときは届くまで文を出さないので、届いたことにする。
+  const photo = host.querySelector("[data-profile-layout] img");
+  if (photo) {
+    photo.dispatchEvent(new dom.window.Event("load"));
+    await flush(30);
+  }
   return {
     host,
     cleanup: () => {

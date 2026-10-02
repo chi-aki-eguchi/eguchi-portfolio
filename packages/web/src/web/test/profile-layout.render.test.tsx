@@ -29,7 +29,14 @@ const ProfilePage = (await import("../pages/profile")).default;
 const doc = dom.window.document;
 const PHOTO = "https://example.test/me.jpg";
 
-async function mountProfile(settings: Record<string, string> = {}) {
+async function photoArrived(host: HTMLElement) {
+  const photo = host.querySelector("[data-profile-layout] img");
+  if (!photo) return;
+  photo.dispatchEvent(new dom.window.Event("load"));
+  await flush(30);
+}
+
+async function mountProfile(settings: Record<string, string> = {}, { arrive = true } = {}) {
   canned["/api/settings"] = settings;
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const host = doc.createElement("div");
@@ -43,6 +50,8 @@ async function mountProfile(settings: Record<string, string> = {}) {
     ),
   );
   await flush(120);
+  // jsdom では画像が届かない。写真が上にある構成は届くまで文を出さないので、届いたことにする。
+  if (arrive) await photoArrived(host);
   return {
     host,
     frame: () => host.querySelector("[data-profile-layout]"),
@@ -169,6 +178,38 @@ describe("About の構成", () => {
     });
     try {
       expect(m.frame()?.getAttribute("data-profile-layout")).toBe("side");
+    } finally {
+      m.cleanup();
+    }
+  });
+});
+
+
+// 2026-10-02: 写真が文の上にあるとき、写真が届く前に文を出すと、届いた瞬間に写真の高さぶん
+// 押し下げられていた（本番のスマホ・4G 相当でずれ 0.268）。届くまで文から下を出さず、1画面ぶん
+// 場所を取る。届いたら写真の下に出す。
+describe("About の写真を待つ", () => {
+  test("写真が届くまで文から下を出さず、届いたら出す", async () => {
+    const m = await mountProfile(
+      { profilePhotoUrl: PHOTO, profileLayout: "stack", profileName: "江口秋", profileBio: "写真を撮っています。" },
+      { arrive: false },
+    );
+    try {
+      const section = m.host.querySelector("section")!;
+      expect(m.host.querySelector("[data-profile-layout] img")).not.toBeNull();
+      expect(m.host.querySelector(".profile-bio")).toBeNull();
+      expect(section.className).toContain("site-page-hold");
+      await photoArrived(m.host);
+      expect(m.host.querySelector(".profile-bio")?.textContent).toContain("江口秋");
+      expect(section.className).not.toContain("site-page-hold");
+    } finally {
+      m.cleanup();
+    }
+  });
+  test("写真が無い構成（quiet）は待たない", async () => {
+    const m = await mountProfile({ profilePhotoUrl: "", profileName: "江口秋" }, { arrive: false });
+    try {
+      expect(m.host.querySelector(".profile-bio")?.textContent).toContain("江口秋");
     } finally {
       m.cleanup();
     }

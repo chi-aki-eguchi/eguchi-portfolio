@@ -6942,7 +6942,10 @@ body[data-photo-crop="whole"] img.series-stream-media {
   text-align: left;
 }
 .inquiry-note > div { min-width: 0; flex: 1 1 20rem; }
-.inquiry-note h2 { font-size: var(--body-size, 1rem); font-weight: 400; line-height: 1.6; }
+/* 太さは本文と同じ（inherit）。以前は 400 で、ページの中で 400 を使うのはこの6文字
+   （撮影のご依頼）だけだったため、しっぽり明朝の 400 の文字の束を9本（149KB）余分に
+   読んでいた（本番のトップ・About で実測、2026-10-02）。 */
+.inquiry-note h2 { font-size: var(--body-size, 1rem); font-weight: inherit; line-height: 1.6; }
 /* text-wrap: pretty — スマホで「…ご相談くださ／い。」と最後の1文字だけが次の行へ落ちていた。 */
 .inquiry-note p { margin-top: 0.75rem; font-size: var(--body-size, 0.875rem); line-height: var(--body-leading, 1.9); color: var(--text-quiet); text-wrap: pretty; }
 .inquiry-note__link { flex-shrink: 0; max-width: 100%; min-height: 44px; display: inline-flex; align-items: center; font-size: var(--body-size, 0.875rem); text-decoration: underline; text-underline-offset: 5px; overflow-wrap: anywhere; }

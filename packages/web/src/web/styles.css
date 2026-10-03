@@ -97,14 +97,19 @@
   --dur-photo-caption: 620ms; /* 写真に出る札 */
   --dur-reveal: 1100ms; /* section/page/footer entrances */
   --dur-hero: 1300ms; /* hero text + slide crossfade */
-  --dur-drift: 1450ms; /* scroll fade-in, collage drift */
+  --dur-drift: 1200ms; /* scroll fade-in, collage drift */
   /* 写真が現れる時間。2026-08-31、ここだけ他の「現れる」より長く取った。
      写真そのものが出る瞬間がこのサイトの主役で、いちばん短かったから
      （実測: ぼけが晴れきるのに見えていたのは 264ms しかなかった）。
      ぼけが晴れてから原寸へ落ち着く——順に起きる方が、一度に終わるより
-     「置かれた」に見えるので、breathe を develop より後ろに置く。 */
-  --dur-develop: 1700ms; /* LQIP のぼけが晴れる */
-  --dur-breathe: 2000ms; /* 晴れたあと原寸へ落ち着く */
+     「置かれた」に見えるので、breathe を develop より後ろに置く。
+
+     2026-10-03 オーナー「短くしても良いけど高級感は保って」。カーブ（静かに
+     始まり、長く落ち着く --ease-reveal）と順番はそのままに、尺だけ約2割詰めた:
+     drift 1450→1200、develop 1700→1450、breathe 2000→1700。上質さは長さより
+     カーブと順番から来ている（前のめりのカーブは長くしても速く見えた、8/31）。 */
+  --dur-develop: 1450ms; /* LQIP のぼけが晴れる */
+  --dur-breathe: 1700ms; /* 晴れたあと原寸へ落ち着く */
 
   /* TOP entrance choreography. Provider overrides only the non-default
      choices; these stylesheet values are the standard/photo-first fallback. */
@@ -3725,6 +3730,19 @@ body {
 @media (max-width: 640px) {
   .series-cover__frame {
     height: min(56vh, 118vw);
+  }
+}
+
+/* 「読み込み中…」は、待ちが 0.8 秒を過ぎてから静かに出す（2026-10-03、全体の
+   高級感の見直し）。写真の一覧はふだん 1 秒前後で届き、その直前に一瞬だけ文字が
+   出て消えていた。待つときは今までどおり出す（オーナーの方針 2026-08-05）。 */
+.content-status-wait {
+  opacity: 0;
+  animation: content-status-wait var(--dur-reveal) var(--ease-reveal) 0.8s forwards;
+}
+@keyframes content-status-wait {
+  to {
+    opacity: 1;
   }
 }
 

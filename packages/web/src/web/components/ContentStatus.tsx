@@ -64,8 +64,10 @@ export function ContentStatus({
         aria-live="polite"
         className={`block py-16 text-center ${className}`}
       >
+        {/* 待ちが短いときに一瞬だけ出て消えると落ち着かないので、0.8秒を過ぎてから
+            静かに出す（styles.css の .content-status-wait）。読み上げは最初から。 */}
         <p
-          className="font-en text-xs tracking-[0.08em]"
+          className="content-status-wait font-en text-xs tracking-[0.08em]"
           style={{ color: "var(--section-label-color)" }}
         >
           {language === "en" ? "Loading…" : "読み込み中…"}

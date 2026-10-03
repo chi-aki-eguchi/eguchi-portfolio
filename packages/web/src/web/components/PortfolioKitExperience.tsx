@@ -93,7 +93,7 @@ export default function PortfolioKitExperience({
       aria-label={
         english ? "Portfolio Kit experience" : "Portfolio Kit 体験モード"
       }
-      className="fixed bottom-3 right-3 z-[80] w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border border-[rgba(var(--foreground-rgb),0.12)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] p-3 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md sm:bottom-5 sm:right-5"
+      className="kit-experience-panel fixed bottom-3 right-3 z-[80] w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border border-[rgba(var(--foreground-rgb),0.12)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] p-3 shadow-[0_10px_40px_rgba(0,0,0,0.14)] backdrop-blur-md sm:bottom-5 sm:right-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div>

@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 /**
  * Floating "back to top" control. Long gallery / series pages can scroll for
  * screens; without this the only way back to the nav (and the Contact link) is a
- * long manual scroll. Appears after the first viewport, bottom-left so it clears
- * the bottom-right platform badge. Honours prefers-reduced-motion.
+ * long manual scroll. Appears after the first viewport. Honours
+ * prefers-reduced-motion. Which corner it sits in is decided in styles.css
+ * (「上へ戻る」の置き場所): bottom-right on narrow screens so it stays off the
+ * start of the text lines, bottom-left on wide ones.
  *
  * The left sidebar and the bottom nav both own that corner, and the header is
  * z-50 against this z-40 — the button rendered but nothing could click it. The
@@ -42,7 +44,8 @@ export function BackToTop({ language = "ja" }: { language?: "ja" | "en" }) {
       style={{
         WebkitBackdropFilter: "blur(8px)",
         bottom: "calc(var(--back-to-top-bottom, 1.5rem) + var(--sai-bottom))",
-        left: "calc(var(--back-to-top-left, 1.5rem) + var(--sai-left))",
+        left: "var(--back-to-top-left, auto)",
+        right: "var(--back-to-top-right, auto)",
       }}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

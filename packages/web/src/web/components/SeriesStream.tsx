@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api, jsonOrThrow } from "../lib/api";
 import { objectPositionFromFocal, srcFor, srcSetFor } from "../lib/picture";
+import { useScrollFadeIn } from "../hooks/useScrollFadeIn";
 
 /**
  * TOP に置くシリーズの帯。表紙写真とキャプションが横へゆっくり流れ、
@@ -54,6 +55,12 @@ export function SeriesStream({
   const [bandW, setBandW] = useState(0);
   const [reduced, setReduced] = useState(false);
   const seriesCount = series.length;
+  // 見出しと「View all」は `section-reveal`（画面に入ると現れる）。見張る側が
+  // 居ないと永久に透明のままになる。TOP では Works の節だけが見張られていて、
+  // この帯はその外に置かれるので、見出しが一度も出ていなかった（2026-10-03
+  // 本番で実測: 2つとも opacity 0、リンクは見えないのに押せた）。帯は一覧が
+  // 届いてから描かれるので、本数が変わったら見張り直す。
+  const headRef = useScrollFadeIn([seriesCount]);
   useEffect(() => {
     const el = bandRef.current;
     if (!el) return;
@@ -116,7 +123,8 @@ export function SeriesStream({
   const animate = streaming && bandW > 0 && durationSec > 0;
   // 埋められない本数なら中央へ。それ以外で流さないときだけ、自分で横へ
   // 送れる帯にする（動きを減らす設定の人）。
-  const bandMode = bandW > 0 && !fillsBand
+  const fits = bandW > 0 && !fillsBand;
+  const bandMode = fits
     ? "series-stream-fits"
     : animate
       ? ""
@@ -143,7 +151,8 @@ export function SeriesStream({
           <img
             src={srcFor(s.coverUrl, 800, 85, undefined, s.coverRotationDeg)}
             srcSet={srcSetFor(s.coverUrl, "grid", undefined, s.coverRotationDeg)}
-            sizes={`${tileW}px`}
+            // 流さない並びは本文の幅まで少し広がる（styles.css の上限と同じ 1.25 倍）。
+            sizes={`${fits ? Math.round(tileW * 1.25) : tileW}px`}
             alt={ariaHidden ? "" : s.subtitle ? `${s.title} — ${s.subtitle}` : s.title}
             loading="lazy"
             decoding="async"
@@ -177,7 +186,10 @@ export function SeriesStream({
 
   return (
     <section className="pb-[calc(4rem*var(--spacing-section-gap,1))] md:pb-[calc(6rem*var(--spacing-section-gap,1))]">
-      <div className="max-w-5xl mx-auto site-page flex items-center justify-between gap-4 mb-8 md:mb-10">
+      <div
+        ref={headRef}
+        className="max-w-5xl mx-auto site-page flex items-center justify-between gap-4 mb-8 md:mb-10"
+      >
         <h2
           /* 帯の見出しは設定で自由に書ける。折り返せない語だと、右の
              「View all」ごと画面外へ押し出す（実測 320px で 504px）。 */
@@ -219,7 +231,10 @@ export function SeriesStream({
                   animationDuration: `${durationSec}s`,
                   gap: `${GAP}px`,
                 } as React.CSSProperties)
-              : ({ gap: `${GAP}px` } as React.CSSProperties)
+              : ({
+                  gap: `${GAP}px`,
+                  "--series-tile-w": `${tileW}px`,
+                } as React.CSSProperties)
           }
         >
           {run.map((s, i) => tile(s, `a-${i}-${s.id}`, false))}

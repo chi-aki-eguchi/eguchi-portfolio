@@ -3580,6 +3580,29 @@ body {
   display: none;
 }
 
+/* ─── 「上へ戻る」の置き場所 ───
+   狭い画面では右下。左下だと本文の行頭に重なる（左揃えの文は必ず左端から
+   始まる）。2026-10-03 本番のスマホ幅で 7ページ・96か所を測ると、文字に
+   重なるのは左 9回・右 4回、Contact と Privacy は 4回→0回。
+   広い画面は今までどおり左下（本文は中央の列なので、どちらの隅も空いている。
+   左メニューではメニューの下）。TOP の体験パネルは右下を使うので、出ている
+   あいだは左へ戻す。 */
+.back-to-top {
+  --back-to-top-right: calc(1.5rem + var(--sai-right));
+}
+@media (min-width: 768px) {
+  .back-to-top {
+    --back-to-top-left: calc(1.5rem + var(--sai-left));
+    --back-to-top-right: auto;
+  }
+}
+@media (max-width: 767.98px) {
+  :root:has(.kit-experience-panel) .back-to-top {
+    --back-to-top-left: calc(1.5rem + var(--sai-left));
+    --back-to-top-right: auto;
+  }
+}
+
 /* ─── Series colophon: 作品群の奥付 ─────────────────────────
    本の奥付と同じ位置に、同じ調子で。中央寄せの細い罫を挟んで、字を落とす。
    見出しと値の表にしない —— 表にすると設定画面の見た目になる。 */
@@ -3598,6 +3621,9 @@ body {
 .series-colophon__head {
   font-size: var(--text-meta);
   letter-spacing: 0.14em;
+  /* 下の機材の行と同じ行送りに。1.4 のままだと 1行目→2行目だけ 24px、
+     2行目→3行目は 31px で、行の間が揃っていなかった（2026-10-03 実測）。 */
+  line-height: 1.85;
   color: rgba(var(--foreground-rgb), 0.55);
 }
 .series-colophon__line {
@@ -3966,7 +3992,7 @@ header > nav {
      本文の文字に重なっていた）。メニューの下は空いているので、項目と同じ
      左端に置き、帯より手前に出す。 */
   .nav-pos-left .back-to-top {
-    --back-to-top-left: 2rem;
+    --back-to-top-left: calc(2rem + var(--sai-left));
     z-index: 51;
   }
   .nav-pos-bottom .back-to-top {
@@ -6729,13 +6755,27 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
 .series-stream-fits::-webkit-scrollbar {
   display: none;
 }
+/* 並びは本文の列（見出し・罫と同じ max-w-5xl + .site-page）に置く。以前は
+   並びの幅のまま中央に寄せていて、4本だと見出しや下の罫より左右 30px ずつ
+   内側から始まっていた（2026-10-03 実測: 見出し 318px、1枚目 348px）。
+   列に少し足りないぶんは札が広がって埋め（1.25倍まで）、それでも足りない
+   本数なら左から並べる。列より広いときは今までどおり横へ送れる。 */
+.series-stream-fits {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
 .series-stream-fits .series-stream-track {
   animation: none;
-  /* width: max-content のままなので、帯より狭いときだけ中央に寄る。
-     広いときは寄らず、そのまま横へ送れる。 */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 64rem;
   margin-inline: auto;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: var(--page-inset);
+  padding-right: var(--page-inset);
+}
+.series-stream-fits .series-stream-item {
+  flex-grow: 1;
+  max-width: calc(var(--series-tile-w, 208px) * 1.25);
 }
 @media (prefers-reduced-motion: reduce) {
   .series-stream-track {

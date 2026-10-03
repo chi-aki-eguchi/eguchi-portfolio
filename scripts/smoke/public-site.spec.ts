@@ -2103,6 +2103,156 @@ test.describe("公開サイト — 遅れて現れる写真タイル", () => {
 // 実測: /gallery → About → 戻る で、アドレスバーは /gallery、画面は About の
 // まま、写真は0枚。戻るを使う人には「ギャラリーが真っ白」に見える。
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-10-04: 数が変わっても崩れないこと（オーナー「今の状況が変わった時にも
+// 対応できるように」）。
+//
+// 見た目の直しは、そのときの本数・枚数にたまたま合っているだけのことがある。
+// 実際に 10/03 の直しは、シリーズ4本では見出しの列にきれいに揃ったが、5本に
+// 増えると PC で右端が画面の外へ切れる作りだった（本数を変えて当てて分かった）。
+// 本数・枚数・幅を振って、次の3つを見張る:
+//   - TOP のシリーズ帯: 見出しが見える／流さない並びは切れない／列か中央に揃う
+//   - TOP の写真の並び: 最後の行が欠けない
+//   - Series 一覧: 狭い幅で表紙が小さくなりすぎない
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe("公開サイト — 数が変わっても崩れない", () => {
+  const seriesOf = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({
+      ...SYNTHETIC_SERIES[i % SYNTHETIC_SERIES.length],
+      id: 9_300_000 + i,
+      slug: `synthetic-count-${i}`,
+      title: i === 1 ? "とても長い題名のシリーズ A Very Long Series Title" : `Series ${i + 1}`,
+    }));
+  const photosOf = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({
+      ...SYNTHETIC_PHOTOS[i % SYNTHETIC_PHOTOS.length],
+      id: 9_400_000 + i,
+    }));
+  const WIDE_ONLY = ["desktop", "desktop-safari"];
+
+  for (const count of [1, 2, 3, 4, 5, 6, 9]) {
+    for (const width of [1440, 1920]) {
+      test(`TOP のシリーズ帯 — ${count}本・${width}px で見出しが見え、並びが切れない`, async ({
+        page,
+      }, testInfo) => {
+        test.skip(!WIDE_ONLY.includes(testInfo.project.name), "流さない並びは広い画面だけ");
+        await page.setViewportSize({ width, height: 900 });
+        await installPublicApiMocks(page, {
+          ...SYNTHETIC_SETTINGS,
+          navPosition: "left",
+          topSeriesStream: "after-works",
+        });
+        await page.route("**/api/series**", (route) =>
+          fulfillJson(
+            route,
+            new URL(route.request().url()).searchParams.get("kind") === "work"
+              ? { series: [] }
+              : { series: seriesOf(count) },
+          ),
+        );
+        await page.goto("/");
+        const band = page.locator(".series-stream");
+        await band.scrollIntoViewIfNeeded();
+        const heading = band.locator("xpath=preceding-sibling::div[1]/h2");
+        await expect(heading).toHaveCSS("opacity", "1");
+        const shape = await band.evaluate((el) => {
+          const bb = el.getBoundingClientRect();
+          const head = el.parentElement!.querySelector("h2")!.getBoundingClientRect();
+          const items = [...el.querySelectorAll(".series-stream-item:not([aria-hidden])")].map(
+            (item) => item.getBoundingClientRect(),
+          );
+          const left = Math.min(...items.map((b) => b.left));
+          const right = Math.max(...items.map((b) => b.right));
+          return {
+            fits: el.classList.contains("series-stream-fits"),
+            scrolls: el.scrollWidth - el.clientWidth,
+            outside: Math.max(0, right - bb.right, bb.left - left),
+            offColumn: Math.abs(left - head.left),
+            offCentre: Math.abs((left + right) / 2 - (bb.left + bb.right) / 2),
+          };
+        });
+        // 流れる帯（本数が多い）は端で切れるのが正しいので、流さない並びだけを見る。
+        if (shape.fits) {
+          expect(shape.scrolls, "流さない並びが横へ送れる＝端が切れている").toBeLessThanOrEqual(1);
+          expect(shape.outside, "並びが帯の外へ出ている").toBeLessThanOrEqual(1);
+          expect(
+            Math.min(shape.offColumn, shape.offCentre),
+            "見出しの列にも帯の中央にも揃っていない",
+          ).toBeLessThanOrEqual(2);
+        }
+      });
+    }
+  }
+
+  for (const count of [7, 13, 21]) {
+    for (const columns of ["3", "5", "8"]) {
+      test(`TOP の写真の並び — ${count}枚・${columns}列で最後の行が欠けない`, async ({ page }) => {
+        await installPublicApiMocks(page, {
+          ...SYNTHETIC_SETTINGS,
+          topWorksLayout: "clean-grid",
+          topWorksMode: "auto",
+          topWorksColumns: columns,
+          homeGalleryCount: String(count),
+        });
+        await page.route("**/api/photos**", (route) =>
+          new URL(route.request().url()).pathname.endsWith("/availability")
+            ? fulfillJson(route, { total: count, standalone: count })
+            : fulfillJson(route, { photos: photosOf(count) }),
+        );
+        await page.goto("/");
+        await page.waitForSelector(".top-page .photo-card");
+        const rows = await page.evaluate(() => {
+          const tops = [...document.querySelectorAll(".top-page .photo-card")].map((card) =>
+            Math.round(card.getBoundingClientRect().top),
+          );
+          const perRow = new Map<number, number>();
+          for (const top of tops) perRow.set(top, (perRow.get(top) ?? 0) + 1);
+          return [...perRow.entries()].sort((a, b) => a[0] - b[0]).map((entry) => entry[1]);
+        });
+        expect(rows.length).toBeGreaterThan(0);
+        // 1行に満たない枚数はそのまま出す。2行以上あるなら最後の行も埋まっている。
+        if (rows.length > 1) expect(rows[rows.length - 1]).toBe(Math.max(...rows));
+      });
+    }
+  }
+
+  for (const width of [768, 820, 900, 1024, 1440]) {
+    test(`Series 一覧 — 左メニュー・${width}px で表紙が小さくなりすぎない`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(!WIDE_ONLY.includes(testInfo.project.name), "幅を振るのは広い画面の設定だけ");
+      await page.setViewportSize({ width, height: 1100 });
+      await installPublicApiMocks(page, {
+        ...SYNTHETIC_SETTINGS,
+        navPosition: "left",
+        seriesGridColumns: "4",
+        seriesGridColumnsMobile: "2",
+      });
+      await page.route("**/api/series**", (route) =>
+        fulfillJson(
+          route,
+          new URL(route.request().url()).searchParams.get("kind") === "work"
+            ? { series: [] }
+            : { series: seriesOf(4) },
+        ),
+      );
+      await page.goto("/series");
+      await page.waitForSelector("main a.group");
+      const result = await page.evaluate(() => {
+        const cards = [...document.querySelectorAll("main a.group")].map((card) =>
+          card.getBoundingClientRect(),
+        );
+        return {
+          narrowest: Math.round(Math.min(...cards.map((b) => b.width))),
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      expect(result.narrowest, "表紙の幅").toBeGreaterThanOrEqual(170);
+      expect(result.overflow).toBeLessThanOrEqual(1);
+    });
+  }
+});
+
 test.describe("公開サイト — 戻る/進むで中身が追従するか", () => {
   test("戻るとURLだけでなく画面もそのページになる", async ({ page }) => {
     const apiMocks = await installPublicApiMocks(page);

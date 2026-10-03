@@ -6753,7 +6753,12 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
    並びの幅のまま中央に寄せていて、4本だと見出しや下の罫より左右 30px ずつ
    内側から始まっていた（2026-10-03 実測: 見出し 318px、1枚目 348px）。
    列に少し足りないぶんは札が広がって埋め（1.25倍まで）、それでも足りない
-   本数なら左から並べる。列より広いときは今までどおり横へ送れる。 */
+   本数なら左から並べる。
+
+   **列には収まらないが帯には収まる本数**（1440px で5本、1920px で5〜6本）は、
+   列の幅に縛ると右端が画面の外へ切れる（2026-10-04、本数を変えて実測）。
+   だから幅は中身のまま（max-content）にして、下限だけを列の幅にする。
+   列より狭ければ列に揃い、列より広ければ今までどおり帯の中央に全部見える。 */
 .series-stream-fits {
   -webkit-mask-image: none;
   mask-image: none;
@@ -6761,8 +6766,8 @@ dialog.lightbox-morph[data-morph-closing] > :not(.lb-content):not(.lb-ghost) {
 .series-stream-fits .series-stream-track {
   animation: none;
   box-sizing: border-box;
-  width: 100%;
-  max-width: 64rem;
+  width: max-content;
+  min-width: min(100%, 64rem);
   margin-inline: auto;
   padding-left: var(--page-inset);
   padding-right: var(--page-inset);

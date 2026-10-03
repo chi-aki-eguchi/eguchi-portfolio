@@ -113,31 +113,6 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
     : "caption";
   const ratio = cardStyle === "wide" ? "aspect-[3/2]" : "aspect-[4/5]";
 
-  // Bounds come from SETTING_RANGES so they cannot drift from what the admin
-  // offers: the 列数 control reached 8 while this clamped at 6, so the last two
-  // steps did nothing (2026-08-07).
-  const configuredColumns = isMobile
-    ? clampSettingRounded(
-        "seriesGridColumnsMobile",
-        num(settings?.seriesGridColumnsMobile, 2),
-      )
-    : clampSettingRounded(
-        "seriesGridColumns",
-        num(settings?.seriesGridColumns, 3),
-      );
-  // Never open more columns than there are series. Measured 2026-08-23 at
-  // 1440px: two series in a fixed 3-column grid stopped two thirds of the way
-  // across and left the right third empty — the shape 到達点 #5 of
-  // `admin-renewal-goal.md` exists to forbid. Fitting the track count to the
-  // item count makes the same two covers fill the width instead.
-  const columns = Math.max(1, Math.min(configuredColumns, series.length || 1));
-  // …but one series stretched over the full 1024px shell becomes a 1280px-tall
-  // slab. Hold a lone cover to roughly the width it would have had beside a
-  // neighbour, centred, so it reads as deliberate rather than blown up.
-  const soloWidth = !isMobile && columns === 1 && configuredColumns > 1;
-  // 点数と期間を別行に分けるのは、スマホで札が2列以上に並んで狭いときだけ。
-  // 1列なら札は画面幅いっぱいなので、PCと同じ「点数 ／ 期間」の1行に収まる。
-  const stackScale = isMobile && columns > 1;
   // P3: reuse the gallery gap scale so spacing feels of-a-piece with the photo grid.
   const gapScale = clampSetting(
     "galleryGapScale",
@@ -156,6 +131,42 @@ export function SeriesGrid({ kind = "series" }: { kind?: ShelfKind }) {
   // まま。左のメニューがあっても、画面の中の余白は左右同じにする（useBreakoutRoom）。
   // スマホと、1組だけを真ん中に置くとき（soloWidth）は今までどおり。
   const room = useBreakoutRoom(fadeRef, 16, series.length > 0);
+  // Bounds come from SETTING_RANGES so they cannot drift from what the admin
+  // offers: the 列数 control reached 8 while this clamped at 6, so the last two
+  // steps did nothing (2026-08-07).
+  const mobileColumns = clampSettingRounded(
+    "seriesGridColumnsMobile",
+    num(settings?.seriesGridColumnsMobile, 2),
+  );
+  const desktopColumns = clampSettingRounded(
+    "seriesGridColumns",
+    num(settings?.seriesGridColumns, 3),
+  );
+  // 画面は広くても、一覧に使える幅が狭いことがある（左のメニューがあるタブレット幅）。
+  // 2026-10-03 本番: 820px では一覧の幅が約 600px で、PC の4列だと表紙が 150px、
+  // 題名が表紙いっぱいに詰まり、下は1画面ぶん空いていた。表紙が TILE_MIN を
+  // 下回るなら、狭い画面用の列数（スマホの設定）で並べる。
+  const TILE_MIN = 180;
+  const roomW = Math.max(room.natural, room.available);
+  const cramped =
+    !isMobile &&
+    roomW > 0 &&
+    desktopColumns > mobileColumns &&
+    (roomW - gap * (desktopColumns - 1)) / desktopColumns < TILE_MIN;
+  const configuredColumns = isMobile || cramped ? mobileColumns : desktopColumns;
+  // Never open more columns than there are series. Measured 2026-08-23 at
+  // 1440px: two series in a fixed 3-column grid stopped two thirds of the way
+  // across and left the right third empty — the shape 到達点 #5 of
+  // `admin-renewal-goal.md` exists to forbid. Fitting the track count to the
+  // item count makes the same two covers fill the width instead.
+  const columns = Math.max(1, Math.min(configuredColumns, series.length || 1));
+  // …but one series stretched over the full 1024px shell becomes a 1280px-tall
+  // slab. Hold a lone cover to roughly the width it would have had beside a
+  // neighbour, centred, so it reads as deliberate rather than blown up.
+  const soloWidth = !isMobile && columns === 1 && configuredColumns > 1;
+  // 点数と期間を別行に分けるのは、スマホで札が2列以上に並んで狭いときだけ。
+  // 1列なら札は画面幅いっぱいなので、PCと同じ「点数 ／ 期間」の1行に収まる。
+  const stackScale = isMobile && columns > 1;
   const TILE_MAX = 400;
   const wantFrame = columns * TILE_MAX + (columns - 1) * gap;
   const frameW =

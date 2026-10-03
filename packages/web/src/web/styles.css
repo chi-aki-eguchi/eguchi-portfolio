@@ -3581,26 +3581,19 @@ body {
 }
 
 /* ─── 「上へ戻る」の置き場所 ───
-   狭い画面では右下。左下だと本文の行頭に重なる（左揃えの文は必ず左端から
-   始まる）。2026-10-03 本番のスマホ幅で 7ページ・96か所を測ると、文字に
-   重なるのは左 9回・右 4回、Contact と Privacy は 4回→0回。
-   広い画面は今までどおり左下（本文は中央の列なので、どちらの隅も空いている。
-   左メニューではメニューの下）。TOP の体験パネルは右下を使うので、出ている
-   あいだは左へ戻す。 */
+   右下。左下だと本文の行頭に重なる（左揃えの文は必ず左端から始まる）。
+   2026-10-03 本番のスマホ幅で 7ページ・96か所を測ると、文字に重なるのは
+   左 9回・右 4回、Contact と Privacy は 4回→0回。幅で分けていたときは、
+   横向きのスマホ（幅 768px 以上・上のメニュー）で左下に残り、フッターの
+   案内文に重なっていたので、幅では分けない。
+   左メニューのときだけ、メニューの下（左下）に置く（下の .nav-pos-left）。
+   TOP の体験パネルは右下を使うので、出ているあいだは左へ。 */
 .back-to-top {
   --back-to-top-right: calc(1.5rem + var(--sai-right));
 }
-@media (min-width: 768px) {
-  .back-to-top {
-    --back-to-top-left: calc(1.5rem + var(--sai-left));
-    --back-to-top-right: auto;
-  }
-}
-@media (max-width: 767.98px) {
-  :root:has(.kit-experience-panel) .back-to-top {
-    --back-to-top-left: calc(1.5rem + var(--sai-left));
-    --back-to-top-right: auto;
-  }
+:root:has(.kit-experience-panel) .back-to-top {
+  --back-to-top-left: calc(1.5rem + var(--sai-left));
+  --back-to-top-right: auto;
 }
 
 /* ─── Series colophon: 作品群の奥付 ─────────────────────────
@@ -3993,6 +3986,7 @@ header > nav {
      左端に置き、帯より手前に出す。 */
   .nav-pos-left .back-to-top {
     --back-to-top-left: calc(2rem + var(--sai-left));
+    --back-to-top-right: auto;
     z-index: 51;
   }
   .nav-pos-bottom .back-to-top {

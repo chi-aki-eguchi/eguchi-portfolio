@@ -791,7 +791,10 @@ export default function ContactPage({
           <form
             ref={formRef}
             onSubmit={handleSubmit}
-            className="flex flex-col gap-6 page-entrance page-entrance-delay-1"
+            // 英語のページでは欄の中と注意書きも英字の書体に（欄は親の書体を
+            // 受け継ぐ）。付けないと選択肢・入力例・注意書きの6か所だけ和文の
+            // 書体で、ラベルや左の案内と字の形が違っていた（2026-10-03 実測）。
+            className={`flex flex-col gap-6 page-entrance page-entrance-delay-1${english ? " font-en" : ""}`}
             noValidate
           >
             {/* Honeypot — off-screen, not announced, skipped by Tab/autofill. Real

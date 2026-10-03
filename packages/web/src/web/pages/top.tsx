@@ -939,6 +939,8 @@ function HomeQuietGrid({
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "clean-grid"}
             variant="top"
+            // 選んで並べた写真（manual）は1枚も落とさない。
+            trimPartialRow={(settings?.topWorksMode || "auto") !== "manual"}
             totalCount={worksPoolLen}
             seriesLinkById={seriesLinkById}
           />
@@ -1075,6 +1077,8 @@ function HomeEditorial({
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "editorial"}
             variant="top"
+            // 選んで並べた写真（manual）は1枚も落とさない。
+            trimPartialRow={(settings?.topWorksMode || "auto") !== "manual"}
             totalCount={worksPoolLen}
             seriesLinkById={seriesLinkById}
           />
@@ -1226,6 +1230,8 @@ function HomeImmersive({
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "large-format"}
             variant="top"
+            // 選んで並べた写真（manual）は1枚も落とさない。
+            trimPartialRow={(settings?.topWorksMode || "auto") !== "manual"}
             totalCount={worksPoolLen}
             seriesLinkById={seriesLinkById}
           />
@@ -1674,6 +1680,8 @@ export default function TopPage() {
             photos={featured}
             layoutType={settings?.topWorksLayout ?? "stagger"}
             variant="top"
+            // 選んで並べた写真（manual）は1枚も落とさない。
+            trimPartialRow={(settings?.topWorksMode || "auto") !== "manual"}
             totalCount={worksPool.length}
             seriesLinkById={seriesLinkById}
           />

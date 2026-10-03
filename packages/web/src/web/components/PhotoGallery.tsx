@@ -507,10 +507,14 @@ export function PhotoGallery({
   seriesName,
   seriesLinkById,
   categoryLabelBySlug,
+  trimPartialRow = false,
 }: {
   photos: GalleryPhoto[];
   layoutType?: string;
   variant?: "top" | "gallery";
+  /** そろった格子（正方形・縦・横）で、最後の半端な行を出さない。TOP の
+   *  「見本の並び」用。写真を選んで並べる場面では付けない（選んだ写真が消える）。 */
+  trimPartialRow?: boolean;
   onRequestMore?: () => void;
   /** 絞り込みに当てはまる本当の枚数。未指定なら描画済みの枚数を使う。 */
   totalCount?: number;
@@ -967,6 +971,14 @@ export function PhotoGallery({
     return Number.isFinite(y) ? String(y) : "";
   };
 
+  // そろった格子は、枚数が列数で割り切れないと最後の行が欠ける。本番
+  // （2026-10-03、56枚）では 8列の幅は偶然割り切れ、6列になる幅（820px など）
+  // だけ最後が2枚で、右に4枚ぶんの穴が空いていた。1行に満たないときは削らない。
+  // 開いた写真の前後送りは今までどおり全部を回る（並びから外すだけ）。
+  const fullRows = (cols: number) =>
+    trimPartialRow && photos.length > cols
+      ? photos.slice(0, photos.length - (photos.length % cols))
+      : photos;
   let body: React.ReactNode;
   if (mode === "clean-grid") {
     // Instagram-style square grid. The outer .photo-card box must be forced to
@@ -985,7 +997,7 @@ export function PhotoGallery({
           alignItems: "start",
         }}
       >
-        {photos.map((photo, idx) =>
+        {fullRows(cols).map((photo, idx) =>
           tile(photo, idx, {
             width: "100%",
             justifySelf: "stretch",
@@ -1022,7 +1034,7 @@ export function PhotoGallery({
           alignItems: "start",
         }}
       >
-        {photos.map((photo, idx) =>
+        {fullRows(columns).map((photo, idx) =>
           tile(photo, idx, {
             width: "100%",
             justifySelf: "stretch",
